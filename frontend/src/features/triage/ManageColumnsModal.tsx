@@ -226,7 +226,7 @@ const ManageColumnsModalContent: React.FC<ManageColumnsModalProps> = ({
             <div>
               <h3 className="text-sm font-semibold text-main">{t('columnsModal.title')}</h3>
               {listTitle && (
-                <p className="text-[10px] text-muted truncate">Liste: {listTitle}</p>
+                <p className="text-[10px] text-muted truncate">{t('columnsModal.list', { title: listTitle })}</p>
               )}
             </div>
           </div>
@@ -247,7 +247,7 @@ const ManageColumnsModalContent: React.FC<ManageColumnsModalProps> = ({
 
           {/* Columns List */}
           <div className="space-y-2">
-            <label className="block text-xs font-semibold text-main">Aktive Spalten ({columns.length}):</label>
+            <label className="block text-xs font-semibold text-main">{t('columnsModal.active', { count: columns.length })}</label>
             <div className="space-y-1.5 max-h-[45vh] overflow-y-auto pr-1" onScroll={() => setColorMenu(null)}>
               {columns.map((col, idx) => (
                 <div key={col.id} className="p-2 bg-canvas border border-border rounded-card space-y-2">
@@ -385,7 +385,7 @@ const ManageColumnsModalContent: React.FC<ManageColumnsModalProps> = ({
             onClick={onClose}
             className="btn-action h-7 px-3 text-xs"
           >
-            Abbrechen
+            {t('common:cancel')}
           </button>
           <button
             type="button"

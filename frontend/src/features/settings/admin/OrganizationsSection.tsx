@@ -81,7 +81,7 @@ export function OrganizationsSection({
                         autoFocus
                       />
                       <button onClick={() => handleRenameOrganization(o.id)} className="btn-primary h-7 px-3 text-[11px]">
-                        Speichern
+                        {t('common:save')}
                       </button>
                       <button onClick={() => setRenamingOrgId(null)} className="btn-action h-7 px-2 text-[11px]">
                         {t('common:cancel')}

@@ -171,7 +171,7 @@ export function MobileTaskCreateSheet({ open, onClose, lists, listId, onListIdCh
               onClick={() => onClose()}
               className="btn-ghost h-10 px-4 text-xs cursor-pointer"
             >
-              Abbrechen
+              {t('common:cancel')}
             </button>
             <button
               type="submit"

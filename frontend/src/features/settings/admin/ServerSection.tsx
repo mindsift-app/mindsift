@@ -58,7 +58,7 @@ export function ServerSection({
                 onClick={() => handleSaveSystemSettings()}
                 className="btn-primary h-9 px-4 text-xs"
               >
-                Speichern
+                {t('common:save')}
               </button>
             </div>
           </div>
@@ -128,7 +128,7 @@ export function ServerSection({
                   {t('server.switchAnyway')}
                 </button>
                 <button onClick={() => setPendingMode(null)} className="btn-action h-7 px-2 text-[11px]">
-                  Abbrechen
+                  {t('common:cancel')}
                 </button>
               </div>
             )}

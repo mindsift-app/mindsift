@@ -90,7 +90,7 @@ export function FocusModeChrome({
             title={t('focus.exitEsc')}
           >
             <Minimize2 className="w-3.5 h-3.5" />
-            Beenden
+            {t('workspace:focus.exit')}
           </button>
         </div>
       </div>

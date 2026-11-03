@@ -48,7 +48,7 @@ export function TodoRollupView({
         <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-border pb-3 gap-2">
           <div>
             <h2 className="text-base sm:text-lg font-bold text-main">
-              To-Dos aus Notizen ({totalOpenTodos} offen)
+              {t('rollup.title', { count: totalOpenTodos })}
             </h2>
             <p className="text-xs text-muted">
               {t('rollup.intro')}
@@ -71,7 +71,7 @@ export function TodoRollupView({
                 }`}
                 title={t('rollup.byFolder')}
               >
-                Gruppiert
+                {t('workspace:rollup.grouped')}
               </button>
               <button
                 type="button"
@@ -86,7 +86,7 @@ export function TodoRollupView({
                 }`}
                 title={t('rollup.flat')}
               >
-                Liste
+                {t('workspace:rollup.list')}
               </button>
             </div>
           </div>
@@ -216,7 +216,7 @@ export function TodoRollupView({
                       <Folder className="w-3.5 h-3.5 text-accent" />
                       <span className="font-bold text-xs text-main">{folderName}</span>
                       <span className="badge-neutral text-[10px] font-mono">
-                        {openCount} offen
+                        {t('rollup.open', { count: openCount })}
                       </span>
                     </div>
 
@@ -261,7 +261,7 @@ export function TodoRollupView({
                                 {doc.icon && <span>{doc.icon}</span>}
                                 <span>{doc.title}</span>
                                 <span className="badge-neutral text-[9px] font-mono">
-                                  {docOpenCount} offen
+                                  {t('rollup.open', { count: docOpenCount })}
                                 </span>
                               </div>
 

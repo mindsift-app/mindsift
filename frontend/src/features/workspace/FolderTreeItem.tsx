@@ -216,7 +216,7 @@ export const FolderTreeItem: React.FC<FolderTreeItemProps> = ({
               style={{ paddingLeft: `${(depth + 1) * 12 + 9}px` }}
               className="py-1 text-[10px] text-faint italic"
             >
-              Leer
+              {t('workspace:folder.empty')}
             </div>
           )}
         </div>

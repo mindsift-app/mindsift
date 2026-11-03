@@ -1,7 +1,7 @@
 {
   "name": "mindsift-frontend",
   "private": true,
-  "version": "0.73.5",
+  "version": "0.73.6",
   "license": "AGPL-3.0-only",
   "type": "module",
   "scripts": {
@@ -33,6 +33,7 @@
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.20",
     "eslint": "9.17.0",
+    "eslint-plugin-i18next": "6.1.5",
     "eslint-plugin-react-hooks": "5.1.0",
     "fake-indexeddb": "^6.2.6",
     "globals": "15.14.0",

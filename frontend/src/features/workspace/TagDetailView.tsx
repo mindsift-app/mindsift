@@ -89,7 +89,7 @@ export function TagDetailView({
         {/* Tag Context Note */}
         <div className="space-y-1">
           <label className="text-[10px] font-bold uppercase tracking-wider text-faint">
-            Tag-Notiz
+            {t('workspace:tags.note')}
           </label>
           <textarea
             rows={3}
@@ -104,7 +104,7 @@ export function TagDetailView({
         {/* Matched bullets: each note as a fixed heading with the live outliner of its branches below,
             edited right in the note (DocumentEditor variant "tag"); editors load when scrolled near */}
         {tagPageGroups.length === 0 ? (
-          <p className="py-8 text-center text-xs text-muted">Keine Punkte mit #{selectedTag} gefunden.</p>
+          <p className="py-8 text-center text-xs text-muted">{t('tags.noBlocks', { tag: selectedTag })}</p>
         ) : (
           <div className="space-y-2 -mx-2 sm:-mx-8">
             {tagPageGroups.map((docGroup) => (

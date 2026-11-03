@@ -76,7 +76,8 @@
     "delete": "Endgültig löschen",
     "really": "Wirklich?",
     "confirmEmpty": "Wirklich {{count}} endgültig löschen?",
-    "empty": "Papierkorb leeren"
+    "empty": "Papierkorb leeren",
+    "discardedAt": "verworfen {{date}}"
   },
   "capture": {
     "okTask": "Als Aufgabe!",
@@ -100,7 +101,8 @@
     "priority": "Priorität:",
     "due": "Fällig am:",
     "placeholderList": "Zu „{{title}}“ hinzufügen…",
-    "list": "Liste"
+    "list": "Liste",
+    "directTask": "Direkt als Aufgabe"
   },
   "fab": {
     "nothing": "Nichts erkannt",
@@ -112,5 +114,6 @@
     "dragCancel": "Nach oben ziehen zum Abbrechen",
     "title": "Schnell erfassen (+)",
     "label": "Schnell erfassen – tippen zum Schreiben, gedrückt halten zum Sprechen"
-  }
+  },
+  "dictation": "Diktat"
 }

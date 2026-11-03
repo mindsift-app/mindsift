@@ -54,5 +54,8 @@
   "admins": "Gruppen-Admins:",
   "nobody": "Keiner",
   "allMembers": "Alle Mitglieder:",
-  "noAdmin": "Du bist derzeit noch in keiner Gruppe als Admin eingetragen. Klicke oben auf \"Neue Gruppe\", um eine eigene Gruppe zu erstellen."
+  "noAdmin": "Du bist derzeit noch in keiner Gruppe als Admin eingetragen. Klicke oben auf \"Neue Gruppe\", um eine eigene Gruppe zu erstellen.",
+  "managed": "Gruppen, die ich verwalte ({{count}})",
+  "you": "(Du)",
+  "memberships": "Meine Mitgliedschaften ({{count}})"
 }

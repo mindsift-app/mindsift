@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Search, X, Check } from 'lucide-react';
 import { User } from '../lib/types';
 import { UserAvatar } from '../components/UserAvatar';
@@ -21,11 +22,12 @@ export const UserAutocomplete: React.FC<UserAutocompleteProps> = ({
   users,
   selectedUser,
   onSelectUser,
-  placeholder = 'Benutzer suchen (Name, @Benutzername oder E-Mail)…',
+  placeholder,
   disabled = false,
   excludeUserIds = [],
   className = '',
 }) => {
+  const { t } = useTranslation();
   const [query, setQuery] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState<number>(-1);
@@ -125,7 +127,7 @@ export const UserAutocomplete: React.FC<UserAutocompleteProps> = ({
               type="button"
               onClick={handleClear}
               className="text-muted hover:text-main p-0.5 rounded hover:bg-canvas transition-colors"
-              title="Auswahl aufheben"
+              title={t('userSearch.clear')}
             >
               <X className="w-3.5 h-3.5" />
             </button>
@@ -147,7 +149,7 @@ export const UserAutocomplete: React.FC<UserAutocompleteProps> = ({
             }}
             onFocus={() => setIsOpen(true)}
             onKeyDown={handleKeyDown}
-            placeholder={placeholder}
+            placeholder={placeholder ?? t('userSearch.placeholder')}
             className="w-full h-11 sm:h-8 pl-8 pr-2.5 bg-input text-main border border-border rounded-btn focus:outline-none focus:border-accent text-base sm:text-xs placeholder:text-muted transition-colors disabled:opacity-50"
           />
 
@@ -155,7 +157,7 @@ export const UserAutocomplete: React.FC<UserAutocompleteProps> = ({
             <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-panel border border-border rounded-card shadow-panel py-1 space-y-0.5">
               {filteredUsers.length === 0 ? (
                 <div className="p-3 text-xs text-muted text-center">
-                  Kein passender Benutzer gefunden
+                  {t('userSearch.none')}
                 </div>
               ) : (
                 filteredUsers.map((u, idx) => {

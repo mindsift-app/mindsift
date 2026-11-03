@@ -175,7 +175,7 @@ export function SmtpSection({
             onClick={() => handleSaveSystemSettings()}
             className="btn-primary h-9 px-5 text-xs font-semibold"
           >
-            SMTP-Konfiguration in Datenbank speichern
+            {t('settings:smtp.save')}
           </button>
         </div>
 

@@ -84,7 +84,9 @@
     "noHitsText": "Keine Notizen, Aufgaben oder Listen-Einträge stimmen mit „{{query}}“ überein.",
     "dueOn": "fällig {{due}}",
     "select": "Auswählen",
-    "switchKind": "Art wechseln"
+    "switchKind": "Art wechseln",
+    "hits": "{{count}} Treffer",
+    "navigate": "Navigieren"
   },
   "share": {
     "chooseGroup": "Bitte eine Gruppe auswählen",
@@ -108,7 +110,8 @@
     "private": "Dieses Element ist aktuell privat (nur für dich sichtbar).",
     "remove": "Freigabe entfernen",
     "defaultTitle": "Freigeben & Berechtigungen",
-    "object": "Objekt:"
+    "object": "Objekt:",
+    "teamOption": "{{name}} ({{count}} Mitglieder)"
   },
   "sharedImport": {
     "whichList": "Auf welche Liste?",
@@ -134,7 +137,9 @@
     "title": "Neue Version verfügbar",
     "subtitle": "Der Server wurde aktualisiert",
     "later": "Später",
-    "now": "Jetzt aktualisieren"
+    "now": "Jetzt aktualisieren",
+    "bodyVersion": "Der Server wurde aktualisiert auf <v>{{version}}</v>. Lade die Seite neu, um sie zu nutzen; ungespeicherte Eingaben in offenen Feldern gehen dabei verloren.",
+    "body": "Der Server wurde aktualisiert. Lade die Seite neu, um sie zu nutzen; ungespeicherte Eingaben in offenen Feldern gehen dabei verloren."
   },
   "theme": {
     "family": "Farbfamilie",
@@ -156,7 +161,8 @@
   },
   "menu": {
     "close": "Menü schließen",
-    "empty": "Keine spezifischen Optionen für diese Ansicht verfügbar."
+    "empty": "Keine spezifischen Optionen für diese Ansicht verfügbar.",
+    "optionsFor": "{{view}} — Optionen & Aktionen"
   },
   "switchList": "Liste wechseln",
   "icon": {
@@ -327,6 +333,17 @@
         "subtitle": "Lavendelpapier, Pflaume & Orchidee (10px)"
       }
     },
-    "custom": "Eigenes Theme"
-  }
+    "custom": "Eigenes Theme",
+    "customFile": "Eigenes Theme (gespeichert auf dem Server)"
+  },
+  "userSearch": {
+    "placeholder": "Benutzer suchen (Name, @Benutzername oder E-Mail)…",
+    "clear": "Auswahl aufheben",
+    "none": "Kein passender Benutzer gefunden"
+  },
+  "done": "Fertig",
+  "edit": "Bearbeiten",
+  "restore": "Wiederherstellen",
+  "discard": "Verwerfen",
+  "download": "Download"
 }

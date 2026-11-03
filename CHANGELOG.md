@@ -6,6 +6,11 @@ Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), die V
 
 ## [Unreleased]
 
+## [0.73.6] - 2026-11-03
+
+### Changed
+- The help now comes from one content file per language, and the remaining interface texts come from language files; a lint rule keeps new fixed texts out of the interface (no visible change).
+
 ## [0.73.5] - 2026-11-03
 
 ### Changed

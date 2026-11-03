@@ -336,7 +336,7 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ currentUser, onBack }) =
                   onClick={() => setShowCreateModal(false)}
                   className="btn-action h-8 px-3 text-xs cursor-pointer"
                 >
-                  Abbrechen
+                  {t('common:cancel')}
                 </button>
                 <button
                   type="submit"
@@ -384,7 +384,7 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ currentUser, onBack }) =
             <div className="flex items-center justify-between">
               <h2 className="text-xs font-bold text-main uppercase tracking-wider text-muted flex items-center gap-2">
                 <Shield className="w-3.5 h-3.5 text-accent" />
-                <span>Gruppen, die ich verwalte ({managedTeams.length})</span>
+                <span>{t('managed', { count: managedTeams.length })}</span>
               </h2>
             </div>
 
@@ -433,14 +433,14 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ currentUser, onBack }) =
                                   onClick={() => handleSaveEdit(team.id)}
                                   className="btn-primary h-7 px-3 text-[11px] cursor-pointer"
                                 >
-                                  Speichern
+                                  {t('common:save')}
                                 </button>
                                 <button
                                   type="button"
                                   onClick={() => setEditingTeamId(null)}
                                   className="btn-action h-7 px-2.5 text-[11px] cursor-pointer"
                                 >
-                                  Abbrechen
+                                  {t('common:cancel')}
                                 </button>
                               </div>
                             </div>
@@ -506,7 +506,7 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ currentUser, onBack }) =
                                   <UserAvatar user={{ displayName: m.displayName, email: m.email, avatarUrl: m.avatarUrl }} size="xs" />
                                   <div className="min-w-0">
                                     <p className="text-main font-medium truncate text-xs">
-                                      {m.displayName} {isSelf && <span className="text-faint">(Du)</span>}
+                                      {m.displayName} {isSelf && <span className="text-faint">{t('you')}</span>}
                                     </p>
                                     <p className="text-[10px] text-muted truncate">
                                       {m.email}
@@ -599,7 +599,7 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ currentUser, onBack }) =
             <div className="space-y-3 pt-2">
               <h2 className="text-xs font-bold text-main uppercase tracking-wider text-muted flex items-center gap-2">
                 <Users className="w-3.5 h-3.5 text-accent" />
-                <span>Meine Mitgliedschaften ({memberTeams.length})</span>
+                <span>{t('memberships', { count: memberTeams.length })}</span>
               </h2>
 
               <div className="space-y-3">

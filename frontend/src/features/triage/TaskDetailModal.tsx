@@ -413,14 +413,14 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
                     }}
                     className="btn-action h-7 px-2.5 text-xs"
                   >
-                    Abbrechen
+                    {t('common:cancel')}
                   </button>
                   <button
                     type="button"
                     onClick={handleTitleSubmit}
                     className="btn-primary h-7 px-3 text-xs"
                   >
-                    Speichern
+                    {t('common:save')}
                   </button>
                 </div>
               </div>
@@ -591,21 +591,21 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
                   onClick={() => handleQuickDueDate(0)}
                   className="px-1.5 py-0.5 bg-canvas border border-border rounded-btn text-muted hover:text-main"
                 >
-                  Heute
+                  {t('common:date.today')}
                 </button>
                 <button
                   type="button"
                   onClick={() => handleQuickDueDate(1)}
                   className="px-1.5 py-0.5 bg-canvas border border-border rounded-btn text-muted hover:text-main"
                 >
-                  Morgen
+                  {t('common:date.tomorrow')}
                 </button>
                 <button
                   type="button"
                   onClick={() => handleQuickDueDate(7)}
                   className="px-1.5 py-0.5 bg-canvas border border-border rounded-btn text-muted hover:text-main"
                 >
-                  +1 Woche
+                  {t('tasks:detail.plusWeek')}
                 </button>
                 {dueParts.time && (
                   <button
@@ -615,7 +615,7 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
                     title={t('detail.removeTime')}
                   >
                     <X className="w-2.5 h-2.5" />
-                    Uhrzeit
+                    {t('tasks:detail.timeShort')}
                   </button>
                 )}
               </div>
@@ -892,7 +892,7 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
                     }}
                     className="text-[11px] text-accent hover:underline"
                   >
-                    Bearbeiten
+                    {t('common:edit')}
                   </button>
                 )}
                 {/* Dictate into the notes: opens the field and appends; saved with "Notiz speichern" */}
@@ -933,7 +933,7 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
                     }}
                     className="btn-action h-7 px-2.5 text-xs"
                   >
-                    Abbrechen
+                    {t('common:cancel')}
                   </button>
                   <button
                     type="button"

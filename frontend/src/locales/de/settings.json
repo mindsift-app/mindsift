@@ -271,7 +271,10 @@
     "needDiscordUrl": "Bitte gib zuerst eine Discord Webhook URL ein.",
     "needWebhookUrl": "Bitte gib zuerst eine eigene Webhook URL ein.",
     "testSent": "Test-Alarm über \"{{label}}\" wurde erfolgreich vom Server versendet!",
-    "testFailedWith": "Test fehlgeschlagen: {{message}}"
+    "testFailedWith": "Test fehlgeschlagen: {{message}}",
+    "title": "Aufgaben-Alarme & Benachrichtigungsziele",
+    "discordDisabled": "Discord-Schalter sind deaktiviert, solange unten kein Discord-Webhook eingetragen ist.",
+    "webhookHint": "Webhook-Schalter werden aktiv, sobald unten eine eigene Webhook-URL eingetragen ist."
   },
   "saving": "Speichere…",
   "sending": "Sende…",
@@ -324,7 +327,8 @@
       "deleteFailed": "Theme konnte nicht gelöscht werden"
     },
     "round": "Rund",
-    "square": "Eckig"
+    "square": "Eckig",
+    "customAccent": "Eigene"
   },
   "retention": {
     "areas": {
@@ -432,7 +436,8 @@
     "revokeFailed": "Fehler beim Beenden der Sitzungen",
     "dataDeleted": "Alle deine Daten wurden gelöscht.",
     "actionFailed": "Aktion fehlgeschlagen",
-    "confirmRevokeAll": "Möchtest du wirklich alle aktiven Sitzungen auf allen Geräten beenden? Du wirst dabei auch auf diesem Gerät abgemeldet."
+    "confirmRevokeAll": "Möchtest du wirklich alle aktiven Sitzungen auf allen Geräten beenden? Du wirst dabei auch auf diesem Gerät abgemeldet.",
+    "emailLogin": "E-Mail-Adresse (Login)"
   },
   "users": {
     "title": "Benutzersteuerung, Rollen & Einladungen",
@@ -608,7 +613,8 @@
     "fromNameHint": "Erscheint beim Empfänger als Absender. Leer = „MindSift“; ein Name direkt in der Adresse („Name <adresse>“) hat Vorrang.",
     "testSending": "Sende Test-Mail…",
     "testSend": "Test-E-Mail senden",
-    "passwordKept": "Gespeichert – leer lassen für keine Änderung"
+    "passwordKept": "Gespeichert – leer lassen für keine Änderung",
+    "save": "SMTP-Konfiguration in Datenbank speichern"
   },
   "import": {
     "readFailed": "Datei konnte nicht gelesen werden",
@@ -682,7 +688,8 @@
     "autoHint": "Täglich ein Abzug der ganzen Datenbank und ein Backup je Benutzer unter <c>backups/</c> im Datenverzeichnis. Das schützt vor Fehlbedienung, nicht vor einer kaputten Platte: den Ordner zusätzlich woanders sichern.",
     "deleteNamed": "Backup {{name}} löschen",
     "restoreHint": "Zurückspielen eines Datenbank-Abzugs: Container stoppen, <c>mindsift.db</c> durch die entpackte Datei ersetzen (<c>gunzip</c>), Container starten. Einzelne Benutzer stellen ihre Daten selbst in den Kontoeinstellungen wieder her.",
-    "time": "Uhrzeit"
+    "time": "Uhrzeit",
+    "restored": "Wiederhergestellt: {{notes}} Notizen, {{tasks}} Aufgaben, {{lists}} Listen, {{inbox}} Gedanken, {{themes}} Themes."
   },
   "voiceStatus": {
     "loadFailed": "Status konnte nicht geladen werden",
@@ -707,6 +714,8 @@
     "unreachable": "Nicht erreichbar",
     "limitsText": "{{minutes}} Min. bzw. {{mb}} MB pro Aufnahme, {{parallel}} gleichzeitig, {{perHour}} pro Person und Stunde, {{timeout}} s Zeitlimit",
     "test": "Testaufnahme ({{seconds}} s)",
-    "nothing": "(nichts erkannt)"
+    "nothing": "(nichts erkannt)",
+    "seconds": "{{value}} s",
+    "title": "Spracherkennung"
   }
 }

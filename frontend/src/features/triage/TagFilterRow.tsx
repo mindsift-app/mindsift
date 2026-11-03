@@ -76,7 +76,7 @@ export function TagFilterRow({ tags, tasks, selected, onSelect, layoutKey }: Tag
             onClick={() => setTagsExpanded(false)}
             className="h-6 px-2 text-[11px] rounded-pill text-accent hover:underline flex-shrink-0"
           >
-            Weniger
+            {t('tasks:tags.less')}
           </button>
         )}
       </div>

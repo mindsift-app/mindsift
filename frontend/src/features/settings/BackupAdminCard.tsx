@@ -128,7 +128,7 @@ export const BackupAdminCard: React.FC<BackupAdminCardProps> = ({ settings, onSa
                   className="btn-action h-11 sm:h-7 px-2.5 text-[11px] inline-flex items-center gap-1"
                 >
                   <Download className="w-3.5 h-3.5" />
-                  Download
+                  {t('common:download')}
                 </button>
                 <button
                   type="button"

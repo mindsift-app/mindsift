@@ -203,9 +203,9 @@ export const UnifiedShareModal: React.FC<UnifiedShareModalProps> = ({
                   disabled={loading}
                 >
                   <option value="" className="bg-panel text-muted">{t('share.pickGroup')}</option>
-                  {availableTeams.map((t) => (
-                    <option key={t.id} value={t.id} className="bg-panel text-main">
-                      👥 {t.name} ({t.members?.length || 1} Mitglieder)
+                  {availableTeams.map((team) => (
+                    <option key={team.id} value={team.id} className="bg-panel text-main">
+                      👥 {t('share.teamOption', { name: team.name, count: team.members?.length || 1 })}
                     </option>
                   ))}
                 </select>

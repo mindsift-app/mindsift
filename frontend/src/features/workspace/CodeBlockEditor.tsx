@@ -568,7 +568,7 @@ export const CodeBlockEditor: React.FC<CodeBlockEditorProps> = ({
             className="min-h-[44px] sm:min-h-0 bg-transparent text-faint hover:text-main focus:text-main font-mono text-[11px] font-medium border border-transparent hover:border-border focus:border-accent rounded-btn px-1 py-0.5 outline-none cursor-pointer"
           >
             <option value="" className="bg-panel text-main">
-              Text
+              {t('workspace:code.plain')}
             </option>
             {hasCustomUnknownLang && (
               <option value={selectValue} className="bg-panel text-main">

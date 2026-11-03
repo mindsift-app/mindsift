@@ -282,7 +282,7 @@ export function KanbanBoard({
                           className="badge-accent text-[9px] cursor-pointer hover:opacity-85 disabled:cursor-default"
                           title={t('row.urgentToNormal')}
                         >
-                          🔥 Dringend
+                          {t('tasks:listing.urgent')}
                         </button>
                       )}
                       {task.priority === 'high' && (
@@ -293,7 +293,7 @@ export function KanbanBoard({
                           className="px-1.5 py-0.2 border border-status-warn text-status-warn rounded-btn text-[9px] font-medium cursor-pointer hover:opacity-85 disabled:cursor-default"
                           title={t('row.highToUrgent')}
                         >
-                          ⚠️ Wichtig
+                          {t('tasks:listing.high')}
                         </button>
                       )}
                       <OriginBadge origin={task.origin} createdAt={task.createdAt} size="xs" />

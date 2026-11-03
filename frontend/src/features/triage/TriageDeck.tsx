@@ -157,7 +157,7 @@ const SwipeableQueueItem: React.FC<SwipeableQueueItemProps> = ({
           </span>
           {item.source?.toLowerCase() === 'voice' && (
             <span className="px-1.5 py-0.5 text-[10px] bg-canvas text-accent border border-border rounded-btn flex items-center gap-1 flex-shrink-0">
-              <Mic className="w-2.5 h-2.5" /> Diktat
+              <Mic className="w-2.5 h-2.5" /> {t('triage:dictation')}
             </span>
           )}
           <OriginBadge origin={item.origin} createdAt={item.createdAt} />
@@ -441,7 +441,7 @@ export const TriageDeck: React.FC<TriageDeckProps> = ({
     if (s === 'voice') {
       return (
         <span className="px-2 py-0.5 text-[11px] bg-canvas text-accent border border-border rounded-btn flex items-center gap-1">
-          <Mic className="w-3 h-3" /> Diktat
+          <Mic className="w-3 h-3" /> {t('triage:dictation')}
         </span>
       );
     }
@@ -660,7 +660,7 @@ export const TriageDeck: React.FC<TriageDeckProps> = ({
                       onClick={() => setIsEditingCard(false)}
                       className="btn-action h-9 px-3.5 text-xs"
                     >
-                      Abbrechen
+                      {t('common:cancel')}
                     </button>
                     <button
                       type="button"

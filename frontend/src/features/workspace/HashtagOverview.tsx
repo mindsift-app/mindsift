@@ -46,7 +46,7 @@ export function HashtagOverview({
             <div className="flex items-center gap-2">
               <Hash className="w-5 h-5 text-accent" />
               <h1 className="text-xl font-bold text-main">{t('hashtags.title')}</h1>
-              <span className="badge-neutral text-xs font-mono">{tagsSummary.length} Tags</span>
+              <span className="badge-neutral text-xs font-mono">{t('hashtags.tagCount', { count: tagsSummary.length })}</span>
             </div>
             <p className="text-xs text-muted mt-0.5">
               {t('hashtags.intro')}
@@ -99,7 +99,7 @@ export function HashtagOverview({
                 }`}
                 title={t('hashtags.byAlpha')}
               >
-                A-Z
+                {t('workspace:hashtags.az')}
               </button>
             </div>
           </div>
@@ -176,7 +176,7 @@ export function HashtagOverview({
                       {meta && meta.openTodosCount > 0 && (
                         <span className="text-status-warn text-[10px] flex items-center gap-1 font-medium">
                           <Check className="w-2.5 h-2.5" />
-                          {meta.openTodosCount} offene To-Dos
+                          {t('hashtags.openTodos', { count: meta.openTodosCount })}
                         </span>
                       )}
                     </div>

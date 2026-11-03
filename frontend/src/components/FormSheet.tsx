@@ -79,7 +79,7 @@ export const FormSheet: React.FC<FormSheetProps> = ({
         {children}
         <div className="flex gap-2 pt-1 sm:justify-end">
           <button type="button" onClick={onClose} className="btn-action flex-1 sm:flex-none h-11 sm:h-8 px-3 text-sm sm:text-xs">
-            Abbrechen
+            {t('common:cancel')}
           </button>
           <button
             type="submit"

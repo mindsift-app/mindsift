@@ -33,7 +33,7 @@ export const MobileHeaderMenu: React.FC<MobileHeaderMenuProps> = ({ activeTabLab
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-accent"></span>
             <span className="text-xs font-bold uppercase tracking-wider text-muted">
-              {activeTabLabel} — Optionen & Aktionen
+              {t('menu.optionsFor', { view: activeTabLabel })}
             </span>
           </div>
           <button

@@ -1,5 +1,5 @@
 import React from 'react';
-import { useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
 import { RefreshCw } from 'lucide-react';
 import { APP_VERSION } from '../version';
 import type { AvailableUpdate } from '../lib/useUpdateCheck';
@@ -26,13 +26,16 @@ export const UpdateAvailableModal: React.FC<{ update: AvailableUpdate; onLater: 
             {t('update.title')}
           </h3>
           <p className="text-xs text-muted leading-relaxed">
-            {t('update.subtitle')}
             {update.version && update.version !== APP_VERSION ? (
-              <>
-                {' '}auf <span className="font-mono text-main">{update.version}</span>
-              </>
-            ) : null}
-            . Lade die Seite neu, um sie zu nutzen; ungespeicherte Eingaben in offenen Feldern gehen dabei verloren.
+              <Trans
+                t={t}
+                i18nKey="update.bodyVersion"
+                values={{ version: update.version }}
+                components={{ v: <span className="font-mono text-main" /> }}
+              />
+            ) : (
+              t('update.body')
+            )}
           </p>
         </div>
       </div>

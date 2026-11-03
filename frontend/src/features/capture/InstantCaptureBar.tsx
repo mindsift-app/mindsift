@@ -477,7 +477,7 @@ export const InstantCaptureBar: React.FC<InstantCaptureBarProps> = ({
                       }`}
                     >
                       <CheckSquare className="w-3.5 h-3.5 text-accent flex-shrink-0" />
-                      <span className="truncate">Direkt als Aufgabe{writableTaskLists.length > 0 ? '…' : ''}</span>
+                      <span className="truncate">{t('triage:capture.directTask')}{writableTaskLists.length > 0 ? '…' : ''}</span>
                     </button>
 
                     {/* Option 3: Direct List Item */}

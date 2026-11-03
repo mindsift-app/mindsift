@@ -482,7 +482,7 @@ export const App: React.FC = () => {
   if (bootLoading) {
     return (
       <div className="min-h-[100dvh] bg-canvas text-muted flex items-center justify-center text-xs font-sans">
-        Verbinde mit MindSift…
+        {t('connecting')}
       </div>
     );
   }

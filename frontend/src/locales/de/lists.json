@@ -35,5 +35,6 @@
   "addedBy": "Hinzugefügt von {{name}}",
   "itemPlaceholder": "Was soll auf „{{title}}“? (z. B. Hafermilch #Kühlregal)",
   "adding": "Wird hinzugefügt…",
-  "general": "Allgemein"
+  "general": "Allgemein",
+  "openCount": "{{count}} offen"
 }

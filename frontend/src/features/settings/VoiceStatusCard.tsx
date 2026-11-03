@@ -90,7 +90,7 @@ export const VoiceStatusCard: React.FC = () => {
         <div>
           <h3 className="font-bold text-main flex items-center gap-1.5">
             <Mic className="w-4 h-4 text-accent" />
-            Spracherkennung
+            {t('settings:voiceStatus.title')}
           </h3>
           <p className="text-muted mt-0.5">
             <Trans t={t} i18nKey="voiceStatus.intro" components={{ c: <code className="font-mono" /> }} />
@@ -184,7 +184,7 @@ export const VoiceStatusCard: React.FC = () => {
           {recording && <span className="text-muted">{t('voiceStatus.speakNow')}</span>}
           {result && (
             <span className="text-main">
-              „{result.text || t('voiceStatus.nothing')}“ <span className="text-faint">· {(result.ms / 1000).toFixed(1)} s</span>
+              „{result.text || t('voiceStatus.nothing')}“ <span className="text-faint">· {t('voiceStatus.seconds', { value: (result.ms / 1000).toFixed(1) })}</span>
             </span>
           )}
         </div>

@@ -164,7 +164,7 @@ export const JournalView: React.FC<JournalViewProps> = ({
           title={t('journal.calendarTitle')}
         >
           <CalendarDays className="w-3.5 h-3.5 text-accent shrink-0" />
-          <span className="truncate">Journal · {shortDateLabel(activeDate)}</span>
+          <span className="truncate">{t('journal.header', { date: shortDateLabel(activeDate) })}</span>
           <ChevronDown className={`lg:hidden w-3.5 h-3.5 text-muted shrink-0 transition-transform ${showCalendar ? 'rotate-180' : ''}`} />
         </button>
         {activeDate !== today && (
@@ -173,7 +173,7 @@ export const JournalView: React.FC<JournalViewProps> = ({
             onClick={() => onJump(today)}
             className="btn-action shrink-0 h-11 sm:h-7 px-2.5 text-xs"
           >
-            Heute
+            {t('common:date.today')}
           </button>
         )}
         <button
