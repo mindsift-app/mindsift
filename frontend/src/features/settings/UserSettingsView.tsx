@@ -96,8 +96,8 @@ export const UserSettingsView: React.FC<UserSettingsViewProps> = ({
 
   const roleBadgeLabel =
     currentUser.role === 'admin'
-      ? 'Server-Admin'
-      : 'Mitglied';
+      ? t('common:role.admin')
+      : t('common:role.member');
 
   return (
     <div className="w-full space-y-4">
@@ -107,21 +107,21 @@ export const UserSettingsView: React.FC<UserSettingsViewProps> = ({
           <button
             onClick={onBack}
             className="btn-action h-8 px-2.5 text-xs flex items-center gap-1.5"
-            title="Zurück zur Übersicht"
+            title={t('user.backTitle')}
           >
             <ArrowLeft className="w-3.5 h-3.5" />
-            <span>Zurück</span>
+            <span>{t('user.back')}</span>
           </button>
           <div>
-            <h1 className="text-base font-bold text-main tracking-tight">Kontoeinstellungen</h1>
+            <h1 className="text-base font-bold text-main tracking-tight">{t('user.title')}</h1>
             <p className="text-xs text-muted">
-              Persönliches Profil, Design-Themes, Aufgaben-Alarme, API, Export & Import
+              {t('user.subtitle')}
             </p>
           </div>
         </div>
 
         <span className="px-2.5 py-1 bg-panel border border-border text-xs text-muted font-medium">
-          Rolle: <strong className="text-accent">{roleBadgeLabel}</strong>
+          {t('user.role')} <strong className="text-accent">{roleBadgeLabel}</strong>
         </span>
       </div>
 
@@ -139,8 +139,8 @@ export const UserSettingsView: React.FC<UserSettingsViewProps> = ({
           >
             <UserIcon className="w-4 h-4 text-accent flex-shrink-0" />
             <div>
-              <p className="font-semibold">Profil & Sicherheit</p>
-              <p className="text-[10px] text-faint">Name, E-Mail & Passwort</p>
+              <p className="font-semibold">{t('user.nav.profile')}</p>
+              <p className="text-[10px] text-faint">{t('user.nav.profileHint')}</p>
             </div>
           </button>
 
@@ -154,8 +154,8 @@ export const UserSettingsView: React.FC<UserSettingsViewProps> = ({
           >
             <Palette className="w-4 h-4 text-accent flex-shrink-0" />
             <div>
-              <p className="font-semibold">Darstellung & Themes</p>
-              <p className="text-[10px] text-faint">Farben, Kontraste & Rundungen</p>
+              <p className="font-semibold">{t('user.nav.appearance')}</p>
+              <p className="text-[10px] text-faint">{t('user.nav.appearanceHint')}</p>
             </div>
           </button>
 
@@ -184,8 +184,8 @@ export const UserSettingsView: React.FC<UserSettingsViewProps> = ({
           >
             <Bell className="w-4 h-4 text-accent flex-shrink-0" />
             <div>
-              <p className="font-semibold">Alarme</p>
-              <p className="text-[10px] text-faint">E-Mail, Discord & Webhooks</p>
+              <p className="font-semibold">{t('user.nav.alarms')}</p>
+              <p className="text-[10px] text-faint">{t('user.nav.alarmsHint')}</p>
             </div>
           </button>
 
@@ -200,8 +200,8 @@ export const UserSettingsView: React.FC<UserSettingsViewProps> = ({
             >
               <Mic className="w-4 h-4 text-accent flex-shrink-0" />
               <div>
-                <p className="font-semibold">Spracheingabe</p>
-                <p className="text-[10px] text-faint">Whisper-Server oder Browser</p>
+                <p className="font-semibold">{t('user.nav.voice')}</p>
+                <p className="text-[10px] text-faint">{t('user.nav.voiceHint')}</p>
               </div>
             </button>
           )}
@@ -216,8 +216,8 @@ export const UserSettingsView: React.FC<UserSettingsViewProps> = ({
           >
             <Clock className="w-4 h-4 text-accent flex-shrink-0" />
             <div>
-              <p className="font-semibold">Aufbewahrung</p>
-              <p className="text-[10px] text-faint">Erledigtes & Papierkörbe aufräumen</p>
+              <p className="font-semibold">{t('user.nav.retention')}</p>
+              <p className="text-[10px] text-faint">{t('user.nav.retentionHint')}</p>
             </div>
           </button>
 
@@ -231,8 +231,8 @@ export const UserSettingsView: React.FC<UserSettingsViewProps> = ({
           >
             <Key className="w-4 h-4 text-accent flex-shrink-0" />
             <div>
-              <p className="font-semibold">API</p>
-              <p className="text-[10px] text-faint">Schlüssel, curl, Smart Home & KI-Agenten</p>
+              <p className="font-semibold">{t('user.nav.api')}</p>
+              <p className="text-[10px] text-faint">{t('user.nav.apiHint')}</p>
             </div>
           </button>
 
@@ -246,8 +246,8 @@ export const UserSettingsView: React.FC<UserSettingsViewProps> = ({
           >
             <Archive className="w-4 h-4 text-accent flex-shrink-0" />
             <div>
-              <p className="font-semibold">Export & Import</p>
-              <p className="text-[10px] text-faint">Backups, Obsidian & Wiederherstellen</p>
+              <p className="font-semibold">{t('user.nav.data')}</p>
+              <p className="text-[10px] text-faint">{t('user.nav.dataHint')}</p>
             </div>
           </button>
         </aside>
@@ -287,11 +287,9 @@ export const UserSettingsView: React.FC<UserSettingsViewProps> = ({
           {section === 'webhooks' && (
             <div className="space-y-5">
               <div className="border-b border-border pb-3">
-                <h2 className="text-sm font-bold text-main">API</h2>
+                <h2 className="text-sm font-bold text-main">{t('user.nav.api')}</h2>
                 <p className="text-muted mt-0.5">
-                  Mit persönlichen API-Schlüsseln lesen und ändern Skripte, dein Smart Home oder KI-Agenten wie Claude Code
-                  und Codex deine Aufgaben, Listen, Notizen und die Inbox: per curl oder über MCP, mit denselben Rechten.
-                  Notizen sowie Lesen und Sortieren der Inbox gehen nur über MCP.
+                  {t('user.apiIntro')}
                 </p>
               </div>
 
@@ -319,7 +317,7 @@ export const UserSettingsView: React.FC<UserSettingsViewProps> = ({
       {/* Footer: legal notices of this instance and project info */}
       <LegalLinks legal={legal} className="pt-4 border-t border-border">
         <button type="button" onClick={() => setShowAbout(true)} className="hover:text-main underline-offset-2 hover:underline">
-          Über MindSift
+          {t('common:aboutMindSift')}
         </button>
       </LegalLinks>
       {showAbout && <AboutModal onClose={() => setShowAbout(false)} />}

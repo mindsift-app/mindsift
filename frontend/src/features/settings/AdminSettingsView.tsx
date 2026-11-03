@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Shield,
   Users,
@@ -29,6 +30,7 @@ export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
   currentUser,
   onBack,
 }) => {
+  const { t } = useTranslation('settings');
   const isServerAdmin = currentUser.role === 'admin';
   const [section, setSection] = useState<AdminSection>('users');
 
@@ -44,23 +46,23 @@ export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
           <button
             onClick={onBack}
             className="btn-action h-8 px-2.5 text-xs flex items-center gap-1.5"
-            title="Zurück zur Übersicht"
+            title={t('user.backTitle')}
           >
             <ArrowLeft className="w-3.5 h-3.5" />
-            <span>Zurück</span>
+            <span>{t('user.back')}</span>
           </button>
           <div>
             <h1 className="text-base font-bold text-main tracking-tight flex items-center gap-2">
               <Shield className="w-4 h-4 text-accent" />
-              <span>Server-Administration</span>
+              <span>{t('admin.title')}</span>
             </h1>
             <p className="text-xs text-muted">
-              Benutzerverwaltung, Einladungscodes, Isolationsmodus & Mail-Server
+              {t('admin.subtitle')}
             </p>
           </div>
         </div>
 
-        <span className="badge-accent">Server-Administrator</span>
+        <span className="badge-accent">{t('admin.badge')}</span>
       </div>
 
       {statusMsg && (
@@ -81,7 +83,7 @@ export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
             onClick={() => setStatusMsg(null)}
             className="text-muted hover:text-main text-[11px]"
           >
-            Schließen
+            {t('admin.close')}
           </button>
         </div>
       )}
@@ -100,8 +102,8 @@ export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
           >
             <Users className="w-4 h-4 text-accent flex-shrink-0" />
             <div>
-              <p className="font-semibold">Benutzer & Einladungen</p>
-              <p className="text-[10px] text-faint">Konten, Rollen & Invite-Codes</p>
+              <p className="font-semibold">{t('admin.nav.users')}</p>
+              <p className="text-[10px] text-faint">{t('admin.nav.usersHint')}</p>
             </div>
           </button>
 
@@ -117,8 +119,8 @@ export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
               >
                 <Building2 className="w-4 h-4 text-accent flex-shrink-0" />
                 <div>
-                  <p className="font-semibold">Organisationen</p>
-                  <p className="text-[10px] text-faint">Wer wen sehen darf</p>
+                  <p className="font-semibold">{t('orgs.title')}</p>
+                  <p className="text-[10px] text-faint">{t('admin.nav.orgsHint')}</p>
                 </div>
               </button>
 
@@ -132,8 +134,8 @@ export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
               >
                 <Server className="w-4 h-4 text-accent flex-shrink-0" />
                 <div>
-                  <p className="font-semibold">Server & Isolation</p>
-                  <p className="text-[10px] text-faint">Sichtbarkeit & Registrierung</p>
+                  <p className="font-semibold">{t('admin.nav.server')}</p>
+                  <p className="text-[10px] text-faint">{t('admin.nav.serverHint')}</p>
                 </div>
               </button>
 
@@ -147,8 +149,8 @@ export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
               >
                 <Mail className="w-4 h-4 text-accent flex-shrink-0" />
                 <div>
-                  <p className="font-semibold">E-Mail / SMTP-Server</p>
-                  <p className="text-[10px] text-faint">Mailversand für Alarme</p>
+                  <p className="font-semibold">{t('admin.nav.smtp')}</p>
+                  <p className="text-[10px] text-faint">{t('admin.nav.smtpHint')}</p>
                 </div>
               </button>
             </>
@@ -161,8 +163,7 @@ export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
             <div className="flex items-center gap-2 alert-err mb-4">
               <AlertCircle className="w-4 h-4 text-status-err flex-shrink-0" />
               <span>
-                In der Demo deaktiviert: Server-Einstellungen, E-Mail und Konten lassen sich hier nur
-                ansehen.
+                {t('admin.demo')}
               </span>
             </div>
           )}

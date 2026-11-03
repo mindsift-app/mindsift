@@ -1,25 +1,20 @@
 import React, { useEffect, useState } from 'react';
+import i18n from '../../../i18n';
 import { Organization, SharingMode, SystemSettings, User, UserInvite, UserRole } from '../../../lib/types';
 import { api, setCurrentSharingMode, triggerHaptic } from '../../../lib/api';
 import { passwordProblem } from '../../../lib/password';
 
-export const SHARING_MODES: { id: SharingMode; title: string; text: string }[] = [
-  {
-    id: 'private',
-    title: '1. Privat (Keiner sieht andere)',
-    text: 'Jeder arbeitet für sich allein. Keine Benutzersuche, kein Teilen, keine Gruppen.',
+// The three sharing modes, stricter first; texts in settings:sharing.<id> in the language shown when read
+const sharingMode = (id: SharingMode) => ({
+  id,
+  get title() {
+    return i18n.t(`settings:sharing.${id}.title`);
   },
-  {
-    id: 'organizations',
-    title: '2. Organisationen (Empfohlen)',
-    text: 'Benutzer sehen nur Mitglieder ihrer eigenen Organisation. Wer keiner Organisation angehört, sieht niemanden.',
+  get text() {
+    return i18n.t(`settings:sharing.${id}.text`);
   },
-  {
-    id: 'open',
-    title: '3. Offen (Alle sehen alle)',
-    text: 'Alle Benutzer dieser Instanz können sich gegenseitig finden und miteinander teilen.',
-  },
-];
+});
+export const SHARING_MODES = [sharingMode('private'), sharingMode('organizations'), sharingMode('open')];
 // Stricter modes come first; switching to a stricter one can remove shares
 export const modeRank = (m: SharingMode) => SHARING_MODES.findIndex((x) => x.id === m);
 
@@ -120,7 +115,7 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
         });
       }
     } catch (err: any) {
-      setStatusMsg({ type: 'err', text: err.message || 'Fehler beim Laden der Administrationsdaten' });
+      setStatusMsg({ type: 'err', text: err.message || i18n.t('settings:admin.loadFailed') });
     }
   };
 
@@ -162,7 +157,7 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
       setNewUserRole('member');
       setStatusMsg({ type: 'ok', text: `Benutzer "${created.displayName}" wurde angelegt.` });
     } catch (err: any) {
-      setStatusMsg({ type: 'err', text: err.message || 'Fehler beim Anlegen des Benutzers' });
+      setStatusMsg({ type: 'err', text: err.message || i18n.t('settings:users.create.failed') });
     }
   };
 
@@ -183,11 +178,11 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
         type: 'ok',
         text:
           inv.maxUses > 1
-            ? `Einladungslink für ${inv.maxUses} Personen erstellt (${inv.code}).`
-            : `Einladungscode ${inv.code} erfolgreich erstellt.`,
+            ? i18n.t('settings:users.invite.linkCreated', { count: inv.maxUses, code: inv.code })
+            : i18n.t('settings:users.invite.codeCreated', { code: inv.code }),
       });
     } catch (err: any) {
-      setStatusMsg({ type: 'err', text: err.message || 'Fehler beim Erstellen der Einladung' });
+      setStatusMsg({ type: 'err', text: err.message || i18n.t('settings:users.invite.failed') });
     }
   };
 
@@ -221,7 +216,7 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
       setMailInviteId(null);
       setMailInviteTo('');
     } catch (err: any) {
-      setStatusMsg({ type: 'err', text: err.message || 'Einladung konnte nicht verschickt werden' });
+      setStatusMsg({ type: 'err', text: err.message || i18n.t('settings:users.invite.mailFailed') });
     } finally {
       setMailInviteBusy(false);
     }
@@ -246,7 +241,7 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
       setUsers((prev) => prev.map((item) => (item.id === u.id ? updated : item)));
       setStatusMsg({
         type: 'ok',
-        text: `Rolle für ${updated.displayName} auf "${role}" aktualisiert.`,
+        text: i18n.t('settings:users.roleChanged', { name: updated.displayName, role }),
       });
     } catch (err: any) {
       setStatusMsg({ type: 'err', text: err.message });
@@ -276,7 +271,7 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
       await api.adminResetPassword(userId, resetPwdVal);
       setResetPwdUserId(null);
       setResetPwdVal('');
-      setStatusMsg({ type: 'ok', text: 'Passwort erfolgreich zurückgesetzt.' });
+      setStatusMsg({ type: 'ok', text: i18n.t('settings:users.passwordReset') });
     } catch (err: any) {
       setStatusMsg({ type: 'err', text: err.message });
     }
@@ -286,8 +281,8 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
     if (
       !window.confirm(
         u.pendingApproval
-          ? `Registrierung von "${u.displayName}" (${u.email}) ablehnen? Das Konto wird gelöscht.`
-          : `Benutzer "${u.displayName}" (${u.email}) wirklich unwiderruflich löschen?`
+          ? i18n.t('settings:users.confirmReject', { name: u.displayName, email: u.email })
+          : i18n.t('settings:users.confirmDelete', { name: u.displayName, email: u.email })
       )
     )
       return;
@@ -295,7 +290,7 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
     try {
       await api.adminDeleteUser(u.id);
       setUsers((prev) => prev.filter((item) => item.id !== u.id));
-      setStatusMsg({ type: 'ok', text: 'Benutzer gelöscht.' });
+      setStatusMsg({ type: 'ok', text: i18n.t('settings:users.deleted') });
     } catch (err: any) {
       setStatusMsg({ type: 'err', text: err.message });
     }
@@ -325,7 +320,7 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
       setNewOrgName('');
       await reloadOrganizations();
     } catch (err: any) {
-      setStatusMsg({ type: 'err', text: err.message || 'Fehler beim Anlegen der Organisation' });
+      setStatusMsg({ type: 'err', text: err.message || i18n.t('settings:orgs.createFailed') });
     }
   };
 
@@ -335,7 +330,7 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
       setRenamingOrgId(null);
       await reloadOrganizations();
     } catch (err: any) {
-      setStatusMsg({ type: 'err', text: err.message || 'Fehler beim Umbenennen' });
+      setStatusMsg({ type: 'err', text: err.message || i18n.t('settings:orgs.renameFailed') });
     }
   };
 
@@ -346,7 +341,7 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
       setUsers((prev) => prev.map((u) => (u.organizationId === orgId ? { ...u, organizationId: '' } : u)));
       await reloadOrganizations();
     } catch (err: any) {
-      setStatusMsg({ type: 'err', text: err.message || 'Fehler beim Löschen' });
+      setStatusMsg({ type: 'err', text: err.message || i18n.t('settings:orgs.deleteFailed') });
     }
   };
 
@@ -357,7 +352,7 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
       setUsers((prev) => prev.map((x) => (x.id === u.id ? { ...x, organizationId: orgId } : x)));
       await reloadOrganizations();
     } catch (err: any) {
-      setStatusMsg({ type: 'err', text: err.message || 'Fehler beim Zuordnen' });
+      setStatusMsg({ type: 'err', text: err.message || i18n.t('settings:orgs.assignFailed') });
     }
   };
 
@@ -394,9 +389,9 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
       const saved = await api.adminUpdateSettings(next);
       setSettings((prev) => ({ ...prev, ...saved }));
       setCurrentSharingMode(saved.sharingMode);
-      setStatusMsg({ type: 'ok', text: 'Server-Einstellungen erfolgreich gespeichert.' });
+      setStatusMsg({ type: 'ok', text: i18n.t('settings:server.saved') });
     } catch (err: any) {
-      setStatusMsg({ type: 'err', text: err.message || 'Fehler beim Speichern' });
+      setStatusMsg({ type: 'err', text: err.message || i18n.t('settings:profile.saveFailed') });
     }
   };
 

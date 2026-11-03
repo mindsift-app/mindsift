@@ -1,4 +1,6 @@
 import React, { useRef, useState } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
+import i18n from '../../i18n';
 import { Upload, Check, AlertCircle, FileArchive } from 'lucide-react';
 import { DATA_SECTIONS, DataSection, ImportSummary } from '../../lib/types';
 import { SectionPicker } from './SectionPicker';
@@ -13,18 +15,19 @@ interface ImportCardProps {
 
 const summaryParts = (s: ImportSummary) =>
   [
-    s.folders && `${s.folders} Ordner`,
-    s.notes && `${s.notes} ${s.notes === 1 ? 'Notiz' : 'Notizen'}`,
-    s.taskLists && `${s.taskLists} Aufgabenliste${s.taskLists === 1 ? '' : 'n'}`,
-    s.tasks && `${s.tasks} Aufgabe${s.tasks === 1 ? '' : 'n'}`,
-    s.lists && `${s.lists} Liste${s.lists === 1 ? '' : 'n'} mit ${s.listItems} Einträgen`,
-    s.inbox && `${s.inbox} Gedanke${s.inbox === 1 ? '' : 'n'} für die Triage`,
-    s.themes && `${s.themes} Theme${s.themes === 1 ? '' : 's'}`,
+    s.folders && i18n.t('settings:import.summary.folders', { count: s.folders }),
+    s.notes && i18n.t('settings:import.summary.notes', { count: s.notes }),
+    s.taskLists && i18n.t('settings:import.summary.taskLists', { count: s.taskLists }),
+    s.tasks && i18n.t('settings:import.summary.tasks', { count: s.tasks }),
+    s.lists && i18n.t('settings:import.summary.lists', { count: s.lists, items: s.listItems }),
+    s.inbox && i18n.t('settings:import.summary.inbox', { count: s.inbox }),
+    s.themes && i18n.t('settings:import.summary.themes', { count: s.themes }),
   ].filter(Boolean) as string[];
 
 // One import path: drop or pick a file, see a preview of what would be created, then import.
 // Touch targets are large enough for phones; the file picker works on mobile browsers.
 export const ImportCard: React.FC<ImportCardProps> = ({ source, title, description, accept }) => {
+  const { t } = useTranslation('settings');
   const inputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<ImportSummary | null>(null);
@@ -56,7 +59,7 @@ export const ImportCard: React.FC<ImportCardProps> = ({ source, title, descripti
     try {
       setPreview(await api.importData(source, f, true, 'merge', sectionParam));
     } catch (err: any) {
-      setError(err.message || 'Datei konnte nicht gelesen werden');
+      setError(err.message || t('import.readFailed'));
     } finally {
       setBusy(false);
     }
@@ -72,7 +75,7 @@ export const ImportCard: React.FC<ImportCardProps> = ({ source, title, descripti
       setPreview(null);
       setConfirmRestore(false);
     } catch (err: any) {
-      setError(err.message || 'Import fehlgeschlagen');
+      setError(err.message || t('import.failed'));
     } finally {
       setBusy(false);
     }
@@ -88,11 +91,11 @@ export const ImportCard: React.FC<ImportCardProps> = ({ source, title, descripti
       </div>
 
       {source === 'mindsift' && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2" role="radiogroup" aria-label="Import-Modus">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2" role="radiogroup" aria-label={t('import.mode')}>
           {(
             [
-              ['merge', 'Hinzufügen', 'Bestehende Daten behalten, Backup daneben anlegen.'],
-              ['restore', 'Wiederherstellen', 'Gewählte Bereiche vorher leeren.'],
+              ['merge', t('import.merge'), t('import.mergeHint')],
+              ['restore', t('import.restore'), t('import.restoreHint')],
             ] as const
           ).map(([value, label, text]) => (
             <button
@@ -152,7 +155,7 @@ export const ImportCard: React.FC<ImportCardProps> = ({ source, title, descripti
           dragOver ? 'border-accent bg-accent/10' : 'border-border'
         }`}
       >
-        <span className="text-[11px] text-muted hidden sm:inline">Datei hierher ziehen oder</span>
+        <span className="text-[11px] text-muted hidden sm:inline">{t('import.dropHint')}</span>
         <button
           type="button"
           disabled={busy}
@@ -160,7 +163,7 @@ export const ImportCard: React.FC<ImportCardProps> = ({ source, title, descripti
           className="btn-action h-11 sm:h-9 px-4 text-xs flex items-center justify-center gap-2 disabled:opacity-50 w-full sm:w-auto"
         >
           <Upload className="w-3.5 h-3.5 text-accent" />
-          <span>Datei auswählen</span>
+          <span>{t('import.choose')}</span>
         </button>
         <input
           ref={inputRef}
@@ -174,7 +177,7 @@ export const ImportCard: React.FC<ImportCardProps> = ({ source, title, descripti
         />
       </div>
 
-      {busy && <p className="text-[11px] text-muted">{preview ? 'Importiere…' : 'Lese Datei…'}</p>}
+      {busy && <p className="text-[11px] text-muted">{preview ? t('import.importing') : t('import.reading')}</p>}
       {error && (
         <p className="text-[11px] text-status-err flex items-start gap-1.5">
           <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-px" />
@@ -190,15 +193,14 @@ export const ImportCard: React.FC<ImportCardProps> = ({ source, title, descripti
         >
           <p className="font-semibold text-main flex items-center gap-1.5">
             {result ? <Check className="w-3.5 h-3.5 text-status-ok" /> : <FileArchive className="w-3.5 h-3.5 text-accent" />}
-            <span>{result ? 'Import abgeschlossen' : `Vorschau: ${file?.name}`}</span>
+            <span>{result ? t('import.done') : t('import.preview', { name: file?.name })}</span>
           </p>
           <p className="text-muted">
-            {result ? 'Angelegt: ' : 'Wird angelegt: '}
-            {summaryParts(shown).join(', ') || 'nichts'}.
+            {t(result ? 'import.created' : 'import.willCreate', { what: summaryParts(shown).join(', ') || t('import.nothing') })}
           </p>
           {shown.skipped.length > 0 && (
             <details className="text-[11px] text-muted">
-              <summary className="cursor-pointer">{shown.skipped.length} übersprungen</summary>
+              <summary className="cursor-pointer">{t('import.skipped', { count: shown.skipped.length })}</summary>
               <ul className="mt-1 space-y-0.5 max-h-40 overflow-y-auto">
                 {shown.skipped.map((s, i) => (
                   <li key={i}>
@@ -217,10 +219,12 @@ export const ImportCard: React.FC<ImportCardProps> = ({ source, title, descripti
                 className="mt-0.5 w-4 h-4 shrink-0"
               />
               <span>
-                <strong className="text-status-err">Achtung:</strong> Deine bisherigen Daten in den gewählten Bereichen
-                ({DATA_SECTIONS.filter((x) => sections.includes(x.id)).map((x) => x.label).join(', ')}) werden vor dem Import
-                unwiderruflich gelöscht und durch das Backup ersetzt. Mit dir geteilte Inhalte anderer
-                bleiben erhalten.
+                <Trans
+                  t={t}
+                  i18nKey="import.restoreWarning"
+                  values={{ sections: DATA_SECTIONS.filter((x) => sections.includes(x.id)).map((x) => x.label).join(', ') }}
+                  components={{ b: <strong className="text-status-err" /> }}
+                />
               </span>
             </label>
           )}
@@ -232,10 +236,10 @@ export const ImportCard: React.FC<ImportCardProps> = ({ source, title, descripti
                 disabled={restoring && !confirmRestore}
                 className={`h-11 sm:h-8 px-4 text-xs font-semibold disabled:opacity-50 ${restoring ? 'btn-action border-status-err text-status-err' : 'btn-primary'}`}
               >
-                {restoring ? 'Löschen und wiederherstellen' : 'Jetzt importieren'}
+                {restoring ? t('import.restoreNow') : t('import.importNow')}
               </button>
               <button type="button" onClick={reset} className="btn-action h-11 sm:h-8 px-3 text-xs">
-                Abbrechen
+                {t('common:cancel')}
               </button>
             </div>
           )}

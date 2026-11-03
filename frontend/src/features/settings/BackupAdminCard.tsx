@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 import { Archive, Download, Loader2, Trash2 } from 'lucide-react';
 import { BackupFile, SystemSettings } from '../../lib/types';
 import { api } from '../../lib/api';
@@ -13,6 +14,7 @@ interface BackupAdminCardProps {
 
 // Admin: automatic daily backups (whole database + one backup per user), list and manual run
 export const BackupAdminCard: React.FC<BackupAdminCardProps> = ({ settings, onSave }) => {
+  const { t } = useTranslation('settings');
   const [files, setFiles] = useState<BackupFile[]>([]);
   const [running, setRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -27,7 +29,7 @@ export const BackupAdminCard: React.FC<BackupAdminCardProps> = ({ settings, onSa
     try {
       setFiles(await api.adminRunBackup());
     } catch (err: any) {
-      setError(err.message || 'Backup fehlgeschlagen');
+      setError(err.message || t('data.backupFailed'));
       api.adminListBackups().then(setFiles).catch(() => {});
     } finally {
       setRunning(false);
@@ -38,17 +40,17 @@ export const BackupAdminCard: React.FC<BackupAdminCardProps> = ({ settings, onSa
     try {
       saveBlob(await api.adminDownloadBackup(name), name);
     } catch (err: any) {
-      setError(err.message || 'Download fehlgeschlagen');
+      setError(err.message || t('backups.downloadFailed'));
     }
   };
 
   const remove = async (name: string) => {
-    if (!window.confirm(`Backup ${name} endgültig löschen?`)) return;
+    if (!window.confirm(t('backups.confirmDelete', { name }))) return;
     setError(null);
     try {
       setFiles(await api.adminDeleteBackup(name));
     } catch (err: any) {
-      setError(err.message || 'Löschen fehlgeschlagen');
+      setError(err.message || t('backups.deleteFailed'));
     }
   };
 
@@ -58,23 +60,22 @@ export const BackupAdminCard: React.FC<BackupAdminCardProps> = ({ settings, onSa
         <div className="pr-4">
           <p className="font-bold text-main flex items-center gap-1.5">
             <Archive className="w-3.5 h-3.5 text-accent" />
-            Automatische Backups
+            {t('backups.autoTitle')}
           </p>
           <p className="text-[11px] text-muted mt-0.5">
-            Täglich ein Abzug der ganzen Datenbank und ein Backup je Benutzer unter <code className="font-mono">backups/</code> im
-            Datenverzeichnis. Das schützt vor Fehlbedienung, nicht vor einer kaputten Platte: den Ordner zusätzlich woanders sichern.
+            <Trans t={t} i18nKey="backups.autoHint" components={{ c: <code className="font-mono" /> }} />
           </p>
         </div>
         <ToggleSwitch
           checked={Boolean(settings.backupEnabled)}
           onChange={(backupEnabled) => onSave({ backupEnabled })}
-          title={settings.backupEnabled ? 'Automatische Backups ausschalten' : 'Automatische Backups einschalten'}
+          title={settings.backupEnabled ? t('backups.autoOff') : t('backups.autoOn')}
         />
       </div>
 
       <div className="flex flex-wrap items-end gap-3">
         <label className="text-[11px] text-muted">
-          Uhrzeit
+          {t('backups.time')}
           <input
             type="time"
             value={settings.backupTime || '03:00'}
@@ -83,7 +84,7 @@ export const BackupAdminCard: React.FC<BackupAdminCardProps> = ({ settings, onSa
           />
         </label>
         <label className="text-[11px] text-muted">
-          Aufbewahren (Tage)
+          {t('backups.keepDays')}
           <input
             type="number"
             min={1}
@@ -103,14 +104,14 @@ export const BackupAdminCard: React.FC<BackupAdminCardProps> = ({ settings, onSa
           className="btn-action h-11 sm:h-8 px-3 text-xs inline-flex items-center gap-1.5 disabled:opacity-50"
         >
           {running ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Archive className="w-3.5 h-3.5 text-accent" />}
-          {running ? 'Sichere…' : 'Jetzt sichern'}
+          {running ? t('backups.running') : t('backups.runNow')}
         </button>
       </div>
       {error && <p className="text-[11px] text-status-err">{error}</p>}
 
       <div className="border border-border divide-y divide-border bg-panel">
         {files.length === 0 ? (
-          <p className="p-3 text-[11px] text-faint">Noch keine Server-Backups vorhanden.</p>
+          <p className="p-3 text-[11px] text-faint">{t('backups.none')}</p>
         ) : (
           files.map((f) => (
             <div key={f.name} className="px-3 py-2 flex items-center justify-between gap-3">
@@ -132,8 +133,8 @@ export const BackupAdminCard: React.FC<BackupAdminCardProps> = ({ settings, onSa
                 <button
                   type="button"
                   onClick={() => remove(f.name)}
-                  title="Backup löschen"
-                  aria-label={`Backup ${f.name} löschen`}
+                  title={t('backups.delete')}
+                  aria-label={t('backups.deleteNamed', { name: f.name })}
                   className="btn-action h-11 w-11 sm:h-7 sm:w-7 inline-flex items-center justify-center text-faint hover:text-status-err"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
@@ -144,9 +145,7 @@ export const BackupAdminCard: React.FC<BackupAdminCardProps> = ({ settings, onSa
         )}
       </div>
       <p className="text-[11px] text-faint">
-        Zurückspielen eines Datenbank-Abzugs: Container stoppen, <code className="font-mono">mindsift.db</code> durch die entpackte Datei
-        ersetzen (<code className="font-mono">gunzip</code>), Container starten. Einzelne Benutzer stellen ihre Daten selbst in den
-        Kontoeinstellungen wieder her.
+        <Trans t={t} i18nKey="backups.restoreHint" components={{ c: <code className="font-mono" /> }} />
       </p>
     </div>
   );

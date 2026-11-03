@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
+import i18n from '../../i18n';
 import {
   Key,
   Plus,
@@ -12,7 +14,7 @@ import {
   Bot,
 } from 'lucide-react';
 import { APIKey, ApiKeyScope, PriorityLevel, SharedList, TaskList } from '../../lib/types';
-import { SCOPES, SCOPE_GROUPS, scopeChip, toggleScopeIn } from '../../lib/apiScopes';
+import { SCOPES, scopeGroups, scopeChip, toggleScopeIn } from '../../lib/apiScopes';
 import { api, triggerHaptic } from '../../lib/api';
 import { ToggleSwitch } from '../../components/ToggleSwitch';
 import { formatDate } from '../../lib/format';
@@ -28,6 +30,7 @@ type Access = 'rest' | 'mcp';
 // Personal API keys with rights (switches) and how to connect: curl / smart home (read examples,
 // delivery simulator) or AI agents over MCP (settings → API)
 export const ApiKeysPanel: React.FC<ApiKeysPanelProps> = ({ onIngested }) => {
+  const { t } = useTranslation('settings');
   const [keys, setKeys] = useState<APIKey[]>([]);
   const [newKeyName, setNewKeyName] = useState('');
   const [newKeyScopes, setNewKeyScopes] = useState<ApiKeyScope[]>(['webhook:triage']);
@@ -42,7 +45,7 @@ export const ApiKeysPanel: React.FC<ApiKeysPanelProps> = ({ onIngested }) => {
   const [mcpEnabled, setMcpEnabled] = useState(true);
 
   // Live Webhook Simulator State
-  const [simTitle, setSimTitle] = useState('Waschmaschine im Keller ist fertig!');
+  const [simTitle, setSimTitle] = useState(() => i18n.t('settings:api.sim.defaultTitle'));
   const [simPriority, setSimPriority] = useState<PriorityLevel>('high');
   const [simTarget, setSimTarget] = useState<SimTarget>('triage');
   const [simListId, setSimListId] = useState('');
@@ -92,14 +95,14 @@ export const ApiKeysPanel: React.FC<ApiKeysPanelProps> = ({ onIngested }) => {
       setEditKeyId(null);
       await loadKeys();
     } catch (err: any) {
-      setEditError(err?.message || 'Speichern fehlgeschlagen');
+      setEditError(err?.message || t('api.saveFailed'));
     }
   };
 
   // Switches grouped by tasks, lists, notes and inbox (same layout for a new and an existing key)
   const renderScopeSwitches = (selected: ApiKeyScope[], toggle: (id: ApiKeyScope) => void, label: string) => (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-3" role="group" aria-label={label}>
-      {SCOPE_GROUPS.filter(([group]) => mcpEnabled || SCOPES.some((sc) => sc.group === group && !sc.mcpOnly)).map(([group, heading]) => (
+      {scopeGroups().filter(([group]) => mcpEnabled || SCOPES.some((sc) => sc.group === group && !sc.mcpOnly)).map(([group, heading]) => (
         <div key={group} className="border border-border rounded-card bg-panel px-3 py-1.5">
           <p className="text-[11px] text-muted pt-1 pb-0.5 font-semibold">{heading}</p>
           {SCOPES.filter((sc) => sc.group === group && (mcpEnabled || !sc.mcpOnly)).map((sc) => (
@@ -121,7 +124,7 @@ export const ApiKeysPanel: React.FC<ApiKeysPanelProps> = ({ onIngested }) => {
   const handleCreateKey = async (e: React.FormEvent) => {
     e.preventDefault();
     triggerHaptic(15);
-    const created = await api.createAPIKey(newKeyName.trim() || 'Home Assistant', newKeyScopes);
+    const created = await api.createAPIKey(newKeyName.trim() || t('api.defaultKeyName'), newKeyScopes);
     if (created.rawKey) {
       setNewlyCreatedKey(created.rawKey);
     }
@@ -131,7 +134,7 @@ export const ApiKeysPanel: React.FC<ApiKeysPanelProps> = ({ onIngested }) => {
   };
 
   const handleDeleteKey = async (k: APIKey) => {
-    if (!window.confirm(k.kind === 'oauth' ? `Die Verbindung „${k.name}“ wirklich trennen?` : 'Diesen API-Schlüssel wirklich widerrufen?')) return;
+    if (!window.confirm(k.kind === 'oauth' ? t('api.confirmDisconnect', { name: k.name }) : t('api.confirmRevoke'))) return;
     triggerHaptic(20);
     await api.deleteAPIKey(k.id);
     await loadKeys();
@@ -146,7 +149,7 @@ export const ApiKeysPanel: React.FC<ApiKeysPanelProps> = ({ onIngested }) => {
   const handleSimulateWebhook = async () => {
     triggerHaptic(20);
     if (simTarget === 'list_item' && !simListId) {
-      setSimStatus('❌ Bitte eine Liste wählen.');
+      setSimStatus(t('api.sim.chooseList'));
       return;
     }
     try {
@@ -161,39 +164,39 @@ export const ApiKeysPanel: React.FC<ApiKeysPanelProps> = ({ onIngested }) => {
       });
       setSimStatus(
         simTarget === 'task'
-          ? '✅ Webhook erfolgreich ausgelöst! Die Aufgabe ist angelegt.'
+          ? t('api.sim.okTask')
           : simTarget === 'list_item'
-          ? '✅ Webhook erfolgreich ausgelöst! Der Eintrag steht in der Liste.'
-          : '✅ Webhook erfolgreich ausgelöst! Neue Karte liegt in deiner Inbox.'
+          ? t('api.sim.okListItem')
+          : t('api.sim.okInbox')
       );
       onIngested?.();
       setTimeout(() => setSimStatus(null), 4000);
     } catch (err: any) {
-      setSimStatus(`❌ Fehler: ${err.message}`);
+      setSimStatus('❌ ' + t('api.sim.error', { message: err.message }));
     }
   };
 
-  const exampleToken = newlyCreatedKey || 'mindsift_sec_dein_api_key';
+  const exampleToken = newlyCreatedKey || t('api.example.token');
   const baseUrl = window.location.origin;
   const examplePayload =
     simTarget === 'task'
       ? `{
     "target": "task",
-    "title": "Filter der Lüftungsanlage wechseln",
+    "title": "${t('api.example.task')}",
     "priority": "high",
     "dueDate": "2026-11-15T09:00"${simTaskListId ? `,\n    "taskListId": "${simTaskListId}"` : ''}
   }`
       : simTarget === 'list_item'
       ? `{
     "target": "list_item",
-    "listId": "${simListId || 'ID_DER_LISTE'}",
-    "content": "Hafermilch",
+    "listId": "${simListId || t('api.example.listIdPlaceholder')}",
+    "content": "${t('api.example.listItem')}",
     "quantity": "2"
   }`
       : `{
-    "title": "Kellerfeuchtigkeit über 70%",
+    "title": "${t('api.example.inbox')}",
     "priority": "urgent",
-    "tags": ["smarthome", "keller"]
+    "tags": ["smarthome", "${t('api.example.inboxTag')}"]
   }`;
 
   const mcpUrl = `${baseUrl}/api/v1/mcp`;
@@ -225,13 +228,9 @@ http_headers = { "X-API-Key" = "${exampleToken}" }`
             <Key className="w-4 h-4" />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-main">API-Schlüssel</h3>
+            <h3 className="text-sm font-bold text-main">{t('api.title')}</h3>
             <p className="text-xs text-muted">
-              Ein Schlüssel verbindet Home Assistant, n8n, eigene Skripte oder KI-Agenten (Claude Code, Codex …) mit
-              MindSift. Was er darf, legst du je Bereich mit Lesen, Anlegen und Ändern fest („Ändern“ schaltet „Lesen“
-              mit ein); das gilt per curl und per MCP gleich, nur Notizen sowie Lesen und Sortieren der Inbox gibt es
-              ausschließlich über MCP. Einstellungen bleiben für Schlüssel gesperrt. Was ein Schlüssel bei Aufgaben
-              und Listen anlegt oder ändert, trägt seinen Namen als Badge.
+              {t('api.intro')}
             </p>
           </div>
         </div>
@@ -242,26 +241,26 @@ http_headers = { "X-API-Key" = "${exampleToken}" }`
               type="text"
               value={newKeyName}
               onChange={(e) => setNewKeyName(e.target.value)}
-              placeholder="Bezeichnung (z. B. Home Assistant, Proxmox Backup, Rauchmelder)…"
+              placeholder={t('api.namePlaceholder')}
               className="w-full sm:flex-1 min-w-0 h-11 sm:h-9 px-3 input-field text-base sm:text-sm"
             />
             <button type="submit" className="btn-primary h-11 sm:h-9 px-4 text-sm flex items-center justify-center gap-1.5">
               <Plus className="w-4 h-4" />
-              <span>API-Key erzeugen</span>
+              <span>{t('api.create')}</span>
             </button>
           </div>
-          {renderScopeSwitches(newKeyScopes, toggleScope, 'Berechtigungen des Schlüssels')}
+          {renderScopeSwitches(newKeyScopes, toggleScope, t('api.rightsNew'))}
         </form>
 
         {newlyCreatedKey && (
           <div className="mt-3 p-3 bg-accent/15 border border-accent/30 flex flex-wrap items-center justify-between gap-3">
             <div className="min-w-0">
-              <p className="text-xs font-semibold text-accent mb-1">Neuer API-Schlüssel erstellt (bitte jetzt kopieren):</p>
+              <p className="text-xs font-semibold text-accent mb-1">{t('api.created')}</p>
               <code className="text-xs sm:text-sm font-mono text-main break-all">{newlyCreatedKey}</code>
             </div>
             <button onClick={() => handleCopy(newlyCreatedKey)} className="btn-primary h-8 px-3 text-xs">
               {copiedKey ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-              <span>{copiedKey ? 'Kopiert!' : 'Key kopieren'}</span>
+              <span>{copiedKey ? t('api.copied') : t('api.copyKey')}</span>
             </button>
           </div>
         )}
@@ -269,7 +268,7 @@ http_headers = { "X-API-Key" = "${exampleToken}" }`
         {/* Active Keys List */}
         <div className="mt-3 border border-border divide-y divide-border">
           {keys.length === 0 ? (
-            <p className="text-xs text-faint px-3 py-2">Noch keine dedizierten API-Schlüssel hinterlegt.</p>
+            <p className="text-xs text-faint px-3 py-2">{t('api.empty')}</p>
           ) : (
             keys.map((k) =>
               editKeyId === k.id ? (
@@ -279,12 +278,12 @@ http_headers = { "X-API-Key" = "${exampleToken}" }`
                       type="text"
                       value={editName}
                       onChange={(e) => setEditName(e.target.value)}
-                      aria-label="Name des Schlüssels"
+                      aria-label={t('api.keyName')}
                       className="w-full sm:flex-1 min-w-0 h-11 sm:h-9 px-3 input-field text-base sm:text-sm"
                     />
                     <div className="flex gap-2">
                       <button type="button" onClick={() => setEditKeyId(null)} className="btn-action h-11 sm:h-9 px-3 text-xs flex-1 sm:flex-none">
-                        Abbrechen
+                        {t('common:cancel')}
                       </button>
                       <button
                         type="button"
@@ -292,15 +291,15 @@ http_headers = { "X-API-Key" = "${exampleToken}" }`
                         disabled={!editName.trim()}
                         className="btn-primary h-11 sm:h-9 px-4 text-xs flex-1 sm:flex-none disabled:opacity-40"
                       >
-                        Speichern
+                        {t('common:save')}
                       </button>
                     </div>
                   </div>
-                  {renderScopeSwitches(editScopes, toggleEditScope, `Berechtigungen von ${k.name}`)}
+                  {renderScopeSwitches(editScopes, toggleEditScope, t('api.rightsOf', { name: k.name }))}
                   <p className="text-[11px] text-faint">
                     {k.kind === 'oauth'
-                      ? 'Die Verbindung bleibt bestehen; die neuen Rechte gelten ab sofort.'
-                      : 'Der Schlüssel selbst bleibt gleich; Geräte und Agenten, die ihn nutzen, müssen nichts ändern. Die neuen Rechte gelten ab sofort.'}
+                      ? t('api.editOauthHint')
+                      : t('api.editKeyHint')}
                   </p>
                   {editError && <p className="text-[11px] text-status-err">{editError}</p>}
                 </div>
@@ -309,7 +308,7 @@ http_headers = { "X-API-Key" = "${exampleToken}" }`
                 <div className="min-w-0 flex flex-wrap items-center gap-x-3 gap-y-1">
                   <span className="text-sm font-medium text-main">{k.name}</span>
                   {k.kind === 'oauth' ? (
-                    <span className="px-1.5 py-0.5 rounded-btn bg-accent/15 text-accent text-[10px] font-semibold" title="Verbunden über OAuth (claude.ai, ChatGPT …)">
+                    <span className="px-1.5 py-0.5 rounded-btn bg-accent/15 text-accent text-[10px] font-semibold" title={t('api.oauthBadge')}>
                       OAuth
                     </span>
                   ) : (
@@ -325,7 +324,7 @@ http_headers = { "X-API-Key" = "${exampleToken}" }`
                     ))}
                   {k.lastUsedAt && (
                     <span className="text-xs text-faint">
-                      Zuletzt genutzt: {formatDate(k.lastUsedAt)}
+                      {t('api.lastUsed', { date: formatDate(k.lastUsedAt) })}
                     </span>
                   )}
                 </div>
@@ -333,15 +332,15 @@ http_headers = { "X-API-Key" = "${exampleToken}" }`
                   <button
                     onClick={() => startEdit(k)}
                     className="btn-icon w-7 h-7"
-                    aria-label={`API-Key ${k.name} bearbeiten`}
-                    title="Name und Rechte ändern"
+                    aria-label={t('api.editKey', { name: k.name })}
+                    title={t('api.editTitle')}
                   >
                     <Pencil className="w-3.5 h-3.5" />
                   </button>
                   <button
                     onClick={() => handleDeleteKey(k)}
                     className="btn-icon btn-icon-danger w-7 h-7"
-                    aria-label={`API-Key ${k.name} löschen`}
+                    aria-label={t('api.deleteKey', { name: k.name })}
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
@@ -356,11 +355,11 @@ http_headers = { "X-API-Key" = "${exampleToken}" }`
       {/* How to connect: one API, two accesses */}
       <div className="pt-4 border-t border-border space-y-4">
         {mcpEnabled && (
-          <div className="flex flex-wrap gap-1.5" role="tablist" aria-label="Zugang">
+          <div className="flex flex-wrap gap-1.5" role="tablist" aria-label={t('api.access')}>
             {(
               [
-                ['rest', 'curl / Smart Home', Terminal],
-                ['mcp', 'KI-Agenten (MCP)', Bot],
+                ['rest', t('api.accessRest'), Terminal],
+                ['mcp', t('api.accessMcp'), Bot],
               ] as const
             ).map(([value, label, Icon]) => (
               <button
@@ -386,22 +385,18 @@ http_headers = { "X-API-Key" = "${exampleToken}" }`
             <div>
               <div className="flex items-center gap-2 text-xs font-medium text-muted mb-2">
                 <Terminal className="w-3.5 h-3.5 text-accent" />
-                <span>Lesen, z. B. was heute fällig ist (Recht „Aufgaben lesen“):</span>
+                <span>{t('api.readExample')}</span>
               </div>
               <pre className="p-3 bg-canvas border border-border font-mono text-xs text-main overflow-x-auto">
 {`curl "${baseUrl}/api/v1/tasks?due=today&status=open" \\
   -H "X-API-Key: ${exampleToken}"`}
               </pre>
               <p className="mt-2 text-[11px] text-faint">
-                Filter: <code className="font-mono">due=today</code>, <code className="font-mono">due=overdue</code> oder ein
-                Datum (<code className="font-mono">JJJJ-MM-TT</code>, fällig bis einschließlich), <code className="font-mono">status=open|done</code>,{' '}
-                <code className="font-mono">taskListId</code>. Listen: <code className="font-mono">GET /api/v1/lists</code> und{' '}
-                <code className="font-mono">/lists/ID</code>. Mit „Ändern“ auch <code className="font-mono">PATCH /api/v1/thoughts/ID</code>{' '}
-                (z. B. <code className="font-mono">{'{"isCompleted": true}'}</code>).
+                <Trans t={t} i18nKey="api.readFilters" components={{ c: <code className="font-mono" /> }} />
               </p>
               <div className="flex items-center gap-2 text-xs font-medium text-muted mt-3 mb-2">
                 <Terminal className="w-3.5 h-3.5 text-accent" />
-                <span>Home Assistant: Sensor „Heute fällig“ (configuration.yaml)</span>
+                <span>{t('api.haSensor')}</span>
               </div>
               <pre className="p-3 bg-canvas border border-border font-mono text-xs text-main overflow-x-auto">
 {`rest:
@@ -410,7 +405,7 @@ http_headers = { "X-API-Key" = "${exampleToken}" }`
       X-API-Key: "${exampleToken}"
     scan_interval: 900
     sensor:
-      - name: "MindSift heute fällig"
+      - name: "${t('api.haSensorName')}"
         value_template: "{{ value_json | length }}"`}
               </pre>
             </div>
@@ -421,20 +416,23 @@ http_headers = { "X-API-Key" = "${exampleToken}" }`
                   <Webhook className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-main">Einliefern testen (Webhook)</h3>
+                  <h3 className="text-sm font-bold text-main">{t('api.sim.title')}</h3>
                   <p className="text-xs text-muted">
-                    Teste das Einliefern per <code className="font-mono">POST /api/v1/webhooks/ingest</code> direkt hier
-                    {newlyCreatedKey ? ' – mit dem eben erzeugten Key und seinen Berechtigungen.' : ' – mit deiner Anmeldung.'}
+                    <Trans
+                      t={t}
+                      i18nKey={newlyCreatedKey ? 'api.sim.introKey' : 'api.sim.introSession'}
+                      components={{ c: <code className="font-mono" /> }}
+                    />
                   </p>
                 </div>
               </div>
 
-              <div className="flex flex-wrap gap-1.5 mb-3" role="radiogroup" aria-label="Ziel">
+              <div className="flex flex-wrap gap-1.5 mb-3" role="radiogroup" aria-label={t('api.sim.target')}>
                 {(
                   [
-                    ['triage', '📥 Inbox'],
-                    ['task', '📋 Aufgabe'],
-                    ['list_item', '📝 Listeneintrag'],
+                    ['triage', t('api.sim.targetInbox')],
+                    ['task', t('api.sim.targetTask')],
+                    ['list_item', t('api.sim.targetListItem')],
                   ] as const
                 ).map(([value, label]) => (
                   <button
@@ -455,9 +453,9 @@ http_headers = { "X-API-Key" = "${exampleToken}" }`
                     value={simListId}
                     onChange={(e) => setSimListId(e.target.value)}
                     className="h-11 sm:h-8 px-2 input-field text-base sm:text-xs bg-panel"
-                    aria-label="Liste"
+                    aria-label={t('api.sim.list')}
                   >
-                    <option value="">Liste wählen…</option>
+                    <option value="">{t('api.sim.chooseListOption')}</option>
                     {lists.map((l) => (
                       <option key={l.id} value={l.id}>
                         {l.icon} {l.title}
@@ -470,9 +468,9 @@ http_headers = { "X-API-Key" = "${exampleToken}" }`
                     value={simTaskListId}
                     onChange={(e) => setSimTaskListId(e.target.value)}
                     className="h-11 sm:h-8 px-2 input-field text-base sm:text-xs bg-panel"
-                    aria-label="Aufgabenliste"
+                    aria-label={t('api.sim.taskList')}
                   >
-                    <option value="">Ohne Aufgabenliste</option>
+                    <option value="">{t('api.sim.noTaskList')}</option>
                     {taskLists.map((tl) => (
                       <option key={tl.id} value={tl.id}>
                         {tl.icon} {tl.title}
@@ -485,9 +483,9 @@ http_headers = { "X-API-Key" = "${exampleToken}" }`
               {simTarget === 'triage' && (
                 <div className="flex flex-wrap gap-1.5 mb-3">
                   {[
-                    { label: '🧺 Waschmaschine fertig', text: 'Waschmaschine im Keller ist fertig – Wäsche aufhängen!', prio: 'high' as PriorityLevel },
-                    { label: '🚨 Rauchmelder Batterie', text: 'Rauchmelder Dachgeschoss meldet niedrige Batterie (12%)', prio: 'urgent' as PriorityLevel },
-                    { label: '💧 Luftfeuchtigkeit Keller', text: 'Kellerfeuchtigkeit über 70% – Lüften oder Entfeuchter starten', prio: 'urgent' as PriorityLevel },
+                    { label: t('api.sim.preset1'), text: t('api.sim.preset1Text'), prio: 'high' as PriorityLevel },
+                    { label: t('api.sim.preset2'), text: t('api.sim.preset2Text'), prio: 'urgent' as PriorityLevel },
+                    { label: t('api.sim.preset3'), text: t('api.sim.preset3Text'), prio: 'urgent' as PriorityLevel },
                   ].map((preset) => (
                     <button
                       key={preset.label}
@@ -517,7 +515,7 @@ http_headers = { "X-API-Key" = "${exampleToken}" }`
                   className="btn-primary h-11 sm:h-9 px-4 text-xs sm:text-sm flex items-center justify-center gap-1.5"
                 >
                   <Zap className="w-4 h-4" />
-                  <span>Webhook jetzt abfeuern</span>
+                  <span>{t('api.sim.fire')}</span>
                 </button>
               </div>
 
@@ -529,7 +527,7 @@ http_headers = { "X-API-Key" = "${exampleToken}" }`
               <div className="mt-4 space-y-2">
                 <div className="flex items-center gap-2 text-xs font-medium text-muted">
                   <Terminal className="w-3.5 h-3.5 text-accent" />
-                  <span>cURL / Home Assistant REST Command:</span>
+                  <span>{t('api.sim.curlTitle')}</span>
                 </div>
                 <pre className="p-3 bg-canvas border border-border font-mono text-xs text-main overflow-x-auto">
 {`curl -X POST "${baseUrl}/api/v1/webhooks/ingest" \\
@@ -538,8 +536,7 @@ http_headers = { "X-API-Key" = "${exampleToken}" }`
   -d '${examplePayload}'`}
                 </pre>
                 <p className="text-[11px] text-faint">
-                  Der Key gehört in den Header <code className="font-mono">X-API-Key</code>, nicht in die URL, damit er nicht in
-                  Proxy-Logs landet. Fehlt dem Key die Berechtigung für das Ziel, antwortet der Server mit 403.
+                  <Trans t={t} i18nKey="api.sim.headerHint" components={{ c: <code className="font-mono" /> }} />
                 </p>
               </div>
             </div>
@@ -553,16 +550,14 @@ http_headers = { "X-API-Key" = "${exampleToken}" }`
                 <Bot className="w-4 h-4" />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-main">KI-Agenten anbinden (MCP)</h3>
+                <h3 className="text-sm font-bold text-main">{t('api.mcp.title')}</h3>
                 <p className="text-xs text-muted">
-                  MindSift ist ein MCP-Server: Claude Code, Codex, Claude Desktop, Cursor und eigene Agenten nutzen dieselben
-                  Schlüssel und Rechte wie curl, nur in der Form, die Agenten erwarten. claude.ai und ChatGPT verbinden sich ohne
-                  Schlüssel: MindSift fragt beim Verbinden, was der Agent darf.
+                  {t('api.mcp.intro')}
                 </p>
               </div>
             </div>
 
-            <div className="flex flex-wrap gap-1.5 mb-2" role="radiogroup" aria-label="Agent">
+            <div className="flex flex-wrap gap-1.5 mb-2" role="radiogroup" aria-label={t('api.mcp.agent')}>
               {(
                 [
                   ['connector', 'claude.ai / ChatGPT'],
@@ -598,30 +593,26 @@ http_headers = { "X-API-Key" = "${exampleToken}" }`
                         setTimeout(() => setCopiedConnector(false), 2000);
                       }}
                       className="btn-icon w-11 h-11 sm:w-9 sm:h-9 flex-shrink-0"
-                      aria-label="Adresse kopieren"
-                      title="Adresse kopieren"
+                      aria-label={t('api.mcp.copyAddress')}
+                      title={t('api.mcp.copyAddress')}
                     >
                       {copiedConnector ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                     </button>
                   </div>
                   <p className="text-xs text-muted">
-                    In claude.ai unter <span className="text-main">Einstellungen → Connectors → Eigenen Connector hinzufügen</span>{' '}
-                    diese Adresse eintragen (in ChatGPT entsprechend als Connector bzw. App). Beim Verbinden öffnet sich MindSift:
-                    anmelden, Rechte wählen, erlauben. Die Verbindung erscheint oben in der Liste und lässt sich dort ändern oder
-                    trennen; unbenutzt endet sie nach einiger Zeit von selbst.
+                    <Trans t={t} i18nKey="api.mcp.connectorHint" components={{ b: <span className="text-main" /> }} />
                   </p>
                 </div>
               ) : (
                 <p className="p-3 bg-canvas border border-border text-xs text-muted">
-                  Verbinden über claude.ai und ChatGPT braucht OAuth, und das setzt <code className="font-mono">BASE_URL</code> in
-                  der Server-Konfiguration voraus. Bitte die Person, die MindSift betreibt, sie zu setzen.
+                  <Trans t={t} i18nKey="api.mcp.needsBaseUrl" components={{ c: <code className="font-mono" /> }} />
                 </p>
               )
             ) : (
               <pre className="p-3 bg-canvas border border-border font-mono text-xs text-main overflow-x-auto">{mcpSnippet}</pre>
             )}
             <p className="mt-2 text-[11px] text-faint">
-              Werkzeuge: <code className="font-mono">list_task_lists</code>, <code className="font-mono">create_task_list</code>,{' '}
+              {t('api.mcp.tools')} <code className="font-mono">list_task_lists</code>, <code className="font-mono">create_task_list</code>,{' '}
               <code className="font-mono">list_tasks</code>, <code className="font-mono">get_task</code>,{' '}
               <code className="font-mono">create_task</code>, <code className="font-mono">update_task</code>,{' '}
               <code className="font-mono">complete_task</code>, <code className="font-mono">add_subtask</code>,{' '}
@@ -631,8 +622,7 @@ http_headers = { "X-API-Key" = "${exampleToken}" }`
               <code className="font-mono">check_list_item</code>, <code className="font-mono">update_list_item</code>,{' '}
               <code className="font-mono">list_notes</code>, <code className="font-mono">get_note</code>,{' '}
               <code className="font-mono">create_note</code>, <code className="font-mono">search</code>,{' '}
-              <code className="font-mono">capture_to_inbox</code>. Der Agent sieht
-              nur die Werkzeuge, für die der Schlüssel bzw. die Verbindung berechtigt ist; Freigaben gelten wie für dich selbst.
+              <code className="font-mono">capture_to_inbox</code>. {t('api.mcp.toolsHint')}
             </p>
           </div>
         )}

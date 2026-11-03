@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import i18n from '../../../i18n';
 import { User } from '../../../lib/types';
 import { api, clearToken, triggerHaptic } from '../../../lib/api';
 import { passwordProblem } from '../../../lib/password';
@@ -39,7 +40,7 @@ export function useProfileSettings(currentUser: User, onUserUpdated: (u: User) =
       setAvatarUrl(dataUrl);
       triggerHaptic(10);
     } catch (err: any) {
-      setProfileMsg({ type: 'err', text: err.message || 'Fehler beim Laden des Bildes' });
+      setProfileMsg({ type: 'err', text: err.message || i18n.t('settings:profile.imageFailed') });
     } finally {
       setIsProcessingAvatar(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -84,16 +85,16 @@ export function useProfileSettings(currentUser: User, onUserUpdated: (u: User) =
       onUserUpdated(updated);
       setNewPassword('');
       setCurrentPassword('');
-      setProfileMsg({ type: 'ok', text: 'Profil und Anmeldedaten erfolgreich gespeichert.' });
+      setProfileMsg({ type: 'ok', text: i18n.t('settings:profile.saved') });
     } catch (err: any) {
-      setProfileMsg({ type: 'err', text: err.message || 'Fehler beim Speichern' });
+      setProfileMsg({ type: 'err', text: err.message || i18n.t('settings:profile.saveFailed') });
     } finally {
       setSavingProfile(false);
     }
   };
 
   const handleRevokeAllSessions = async () => {
-    if (!window.confirm('Möchtest du wirklich alle aktiven Sitzungen auf allen Geräten beenden? Du wirst dabei auch auf diesem Gerät abgemeldet.')) {
+    if (!window.confirm(i18n.t('settings:profile.confirmRevokeAll'))) {
       return;
     }
     setRevokingSessions(true);
@@ -102,7 +103,7 @@ export function useProfileSettings(currentUser: User, onUserUpdated: (u: User) =
       await api.logout();
       window.location.reload();
     } catch (err: any) {
-      setProfileMsg({ type: 'err', text: err.message || 'Fehler beim Beenden der Sitzungen' });
+      setProfileMsg({ type: 'err', text: err.message || i18n.t('settings:profile.revokeFailed') });
       setRevokingSessions(false);
     }
   };
@@ -137,10 +138,10 @@ export function useProfileSettings(currentUser: User, onUserUpdated: (u: User) =
       }
       await api.purgeOwnData(dangerPassword);
       setDangerAction(null);
-      setDangerDone('Alle deine Daten wurden gelöscht.');
+      setDangerDone(i18n.t('settings:profile.dataDeleted'));
       onUserUpdated(currentUser);
     } catch (err: any) {
-      setDangerError(err.message || 'Aktion fehlgeschlagen');
+      setDangerError(err.message || i18n.t('settings:profile.actionFailed'));
     } finally {
       setDangerBusy(false);
     }

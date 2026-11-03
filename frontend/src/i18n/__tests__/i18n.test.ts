@@ -42,7 +42,10 @@ describe('keys in the code', () => {
       for (const [, key] of code.matchAll(/\bt\('([^']+)'/g)) {
         const [keyNs, path] = key.includes(':') ? key.split(':') : [ns, key];
         checked++;
-        if (typeof get((resources.de as Record<string, unknown>)[keyNs], path) !== 'string') missing.push(`${file}: ${key}`);
+        const nsTexts = (resources.de as Record<string, unknown>)[keyNs];
+        // Plural keys exist as key_one / key_other (i18next picks one by count)
+        const found = [path, `${path}_one`, `${path}_other`].some((k) => typeof get(nsTexts, k) === 'string');
+        if (!found) missing.push(`${file}: ${key}`);
       }
     }
     expect(checked).toBeGreaterThan(0);

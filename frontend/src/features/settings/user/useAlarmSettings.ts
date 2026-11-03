@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import i18n from '../../../i18n';
 import { NotificationEvents, NotificationSettings, PushDevice, User } from '../../../lib/types';
 import { api } from '../../../lib/api';
 import { currentPushSubscription, disablePush, enablePush, removePushDevice } from '../../../lib/push';
@@ -87,7 +88,7 @@ export function useAlarmSettings(currentUser: User, onUserUpdated: (u: User) => 
       await removePushDevice(endpoint);
       await reloadPush();
     } catch (err) {
-      setPushMsg({ type: 'err', text: err instanceof Error ? err.message : 'Gerät konnte nicht entfernt werden' });
+      setPushMsg({ type: 'err', text: err instanceof Error ? err.message : i18n.t('settings:alarms.push.removeFailed') });
     } finally {
       setPushBusy(false);
     }
@@ -102,9 +103,9 @@ export function useAlarmSettings(currentUser: User, onUserUpdated: (u: User) => 
       if (on) await enablePush();
       else await disablePush();
       await reloadPush();
-      setPushMsg({ type: 'ok', text: on ? 'Push ist auf diesem Gerät eingeschaltet.' : 'Push ist auf diesem Gerät ausgeschaltet.' });
+      setPushMsg({ type: 'ok', text: on ? i18n.t('settings:alarms.push.on') : i18n.t('settings:alarms.push.off') });
     } catch (err) {
-      setPushMsg({ type: 'err', text: err instanceof Error ? err.message : 'Push konnte nicht eingeschaltet werden' });
+      setPushMsg({ type: 'err', text: err instanceof Error ? err.message : i18n.t('settings:alarms.push.enableFailed') });
     } finally {
       setPushBusy(false);
     }
@@ -114,9 +115,9 @@ export function useAlarmSettings(currentUser: User, onUserUpdated: (u: User) => 
     setPushMsg(null);
     try {
       const res = await api.testPush();
-      setPushMsg({ type: 'ok', text: `Test-Benachrichtigung an ${res.devices} ${res.devices === 1 ? 'Gerät' : 'Geräte'} gesendet.` });
+      setPushMsg({ type: 'ok', text: i18n.t('settings:alarms.push.testSent', { count: res.devices }) });
     } catch (err) {
-      setPushMsg({ type: 'err', text: err instanceof Error ? err.message : 'Test fehlgeschlagen' });
+      setPushMsg({ type: 'err', text: err instanceof Error ? err.message : i18n.t('settings:alarms.push.testFailed') });
     } finally {
       setPushBusy(false);
     }
@@ -168,9 +169,9 @@ export function useAlarmSettings(currentUser: User, onUserUpdated: (u: User) => 
         ...updated,
         notificationSettings: updated.notificationSettings ?? notificationSettings,
       });
-      setAlarmMsg({ type: 'ok', text: 'Alarm-Kanäle und Vorwarnzeit erfolgreich gespeichert.' });
+      setAlarmMsg({ type: 'ok', text: i18n.t('settings:alarms.saved') });
     } catch (err: any) {
-      setAlarmMsg({ type: 'err', text: err.message || 'Fehler beim Speichern der Alarme' });
+      setAlarmMsg({ type: 'err', text: err.message || i18n.t('settings:alarms.saveFailed') });
     } finally {
       setSavingAlarms(false);
     }
@@ -182,19 +183,19 @@ export function useAlarmSettings(currentUser: User, onUserUpdated: (u: User) => 
     if (channel === 'email') {
       target = (alarmEmail || currentUser.email || '').trim();
       if (!target) {
-        setAlarmMsg({ type: 'err', text: 'Bitte gib zuerst eine Empfänger-E-Mail-Adresse an.' });
+        setAlarmMsg({ type: 'err', text: i18n.t('settings:alarms.needEmail') });
         return;
       }
     } else if (channel === 'discord') {
       target = discordWebhookUrl.trim();
       if (!target) {
-        setAlarmMsg({ type: 'err', text: 'Bitte gib zuerst eine Discord Webhook URL ein.' });
+        setAlarmMsg({ type: 'err', text: i18n.t('settings:alarms.needDiscordUrl') });
         return;
       }
     } else if (channel === 'webhook') {
       target = customWebhookUrl.trim();
       if (!target) {
-        setAlarmMsg({ type: 'err', text: 'Bitte gib zuerst eine eigene Webhook URL ein.' });
+        setAlarmMsg({ type: 'err', text: i18n.t('settings:alarms.needWebhookUrl') });
         return;
       }
     }
@@ -203,15 +204,19 @@ export function useAlarmSettings(currentUser: User, onUserUpdated: (u: User) => 
     try {
       await api.testAlarmChannel(channel, target);
       const label =
-        channel === 'email' ? 'E-Mail' : channel === 'discord' ? 'Discord' : 'Eigener Webhook';
+        channel === 'email'
+          ? i18n.t('settings:alarms.channel.email')
+          : channel === 'discord'
+            ? 'Discord'
+            : i18n.t('settings:alarms.channel.ownWebhook');
       setAlarmMsg({
         type: 'ok',
-        text: `Test-Alarm über "${label}" wurde erfolgreich vom Server versendet!`,
+        text: i18n.t('settings:alarms.testSent', { label }),
       });
     } catch (err: any) {
       setAlarmMsg({
         type: 'err',
-        text: `Test fehlgeschlagen: ${err.message || 'Unbekannter Fehler'}`,
+        text: i18n.t('settings:alarms.testFailedWith', { message: err.message || i18n.t('common:errors.unknown') }),
       });
     } finally {
       setTestingChannel(null);

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { AlertCircle, Bell, Check, Globe, Mail, MessageSquare, Send, X } from 'lucide-react';
 import { NotificationEvents, User } from '../../../lib/types';
 import { pushSupported } from '../../../lib/push';
@@ -6,12 +7,6 @@ import { ToggleSwitch } from '../../../components/ToggleSwitch';
 import { useAlarmSettings } from './useAlarmSettings';
 import { formatDate } from '../../../lib/format';
 
-const NOTIFICATION_EVENT_ROWS: { key: keyof NotificationEvents; label: string }[] = [
-  { key: 'due', label: 'Fällige Aufgaben (sofort)' },
-  { key: 'shared', label: 'Freigabe erhalten' },
-  { key: 'taskDone', label: 'Geteilte Aufgabe erledigt' },
-  { key: 'watched', label: 'Beobachtete Aufgaben' },
-];
 
 // Kontoeinstellungen → Alarme (state in useAlarmSettings)
 export function AlarmsSection({
@@ -22,6 +17,13 @@ export function AlarmsSection({
   currentUser: User;
   demoMode: boolean;
 }) {
+  const { t } = useTranslation('settings');
+  const NOTIFICATION_EVENT_ROWS: { key: keyof NotificationEvents; label: string }[] = [
+    { key: 'due', label: t('alarms.event.due') },
+    { key: 'shared', label: t('alarms.event.shared') },
+    { key: 'taskDone', label: t('alarms.event.taskDone') },
+    { key: 'watched', label: t('alarms.event.watched') },
+  ];
   const {
     notificationSettings,
     setNotificationSettings,
@@ -54,15 +56,14 @@ export function AlarmsSection({
           Aufgaben-Alarme & Benachrichtigungsziele
         </h2>
         <p className="text-muted mt-0.5">
-          Wähle aus, über welche Kanäle du benachrichtigt werden möchtest, sobald eine
-          Aufgabe mit Fälligkeitsdatum ansteht. Mehrere Ziele können gleichzeitig aktiv sein.
+          {t('alarms.intro')}
         </p>
       </div>
 
       {demoMode && (
         <div className="flex items-center gap-2 alert-err">
           <AlertCircle className="w-4 h-4 text-status-err flex-shrink-0" />
-          <span>In der Demo deaktiviert: Alarme und Tests werden nicht verschickt.</span>
+          <span>{t('alarms.demoOff')}</span>
         </div>
       )}
 
@@ -86,30 +87,30 @@ export function AlarmsSection({
         <div className="p-3.5 bg-canvas border border-border space-y-3">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <p className="font-semibold text-main">Alle Benachrichtigungen pausieren</p>
+              <p className="font-semibold text-main">{t('alarms.pauseAll')}</p>
               <p className="text-[11px] text-muted">
-                Pausiert vorübergehend sämtliche E-Mail- und Discord-Benachrichtigungen.
+                {t('alarms.pauseAllHint')}
               </p>
             </div>
             <ToggleSwitch
               checked={notificationSettings.paused}
               onChange={(v) => setNotificationSettings((prev) => ({ ...prev, paused: v }))}
-              title="Alle Benachrichtigungen pausieren"
+              title={t('alarms.pauseAll')}
             />
           </div>
           <div className="flex items-center justify-between gap-4 pt-3 border-t border-border">
             <div>
               <p className="font-semibold text-main">
-                Auch eigene Änderungen an beobachteten Aufgaben melden
+                {t('alarms.ownChanges')}
               </p>
               <p className="text-[11px] text-muted">
-                Standardmäßig wirst du nur über Änderungen anderer Personen benachrichtigt.
+                {t('alarms.ownChangesHint')}
               </p>
             </div>
             <ToggleSwitch
               checked={notificationSettings.includeOwnWatched}
               onChange={(v) => setNotificationSettings((prev) => ({ ...prev, includeOwnWatched: v }))}
-              title="Auch eigene Änderungen an beobachteten Aufgaben melden"
+              title={t('alarms.ownChanges')}
             />
           </div>
         </div>
@@ -123,10 +124,10 @@ export function AlarmsSection({
             <>
               <div className="p-4 bg-canvas border border-border space-y-3">
                 <div className="grid grid-cols-[1fr_auto_auto_auto_auto] items-center gap-1 sm:gap-4 pb-2 border-b border-border">
-                  <span className="font-bold text-main">Ereignis</span>
+                  <span className="font-bold text-main">{t('alarms.eventHeader')}</span>
                   <span className="w-12 sm:w-16 text-center font-semibold text-muted flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1">
                     <Mail className="w-3.5 h-3.5 text-accent" />
-                    <span>E-Mail</span>
+                    <span>{t('alarms.channel.email')}</span>
                   </span>
                   <span className="w-12 sm:w-16 text-center font-semibold text-muted flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1">
                     <MessageSquare className="w-3.5 h-3.5 text-accent" />
@@ -155,7 +156,7 @@ export function AlarmsSection({
                           <ToggleSwitch
                             checked={routing.email}
                             onChange={(v) => setEventChannel(row.key, 'email', v)}
-                            title={`${row.label} – E-Mail`}
+                            title={t('alarms.channelTitle', { what: row.label, channel: t('alarms.channel.email') })}
                           />
                         </div>
                         <div className="w-12 sm:w-16 flex justify-center">
@@ -165,8 +166,8 @@ export function AlarmsSection({
                             onChange={(v) => setEventChannel(row.key, 'discord', v)}
                             title={
                               hasDiscordWebhook
-                                ? `${row.label} – Discord`
-                                : 'Bitte zuerst unten eine Discord Webhook URL eintragen'
+                                ? t('alarms.channelTitle', { what: row.label, channel: 'Discord' })
+                                : t('alarms.needDiscord')
                             }
                           />
                         </div>
@@ -177,8 +178,8 @@ export function AlarmsSection({
                             onChange={(v) => setEventChannel(row.key, 'webhook', v)}
                             title={
                               hasCustomWebhook
-                                ? `${row.label} – Webhook`
-                                : 'Bitte zuerst unten eine eigene Webhook URL eintragen'
+                                ? t('alarms.channelTitle', { what: row.label, channel: 'Webhook' })
+                                : t('alarms.needWebhook')
                             }
                           />
                         </div>
@@ -187,7 +188,7 @@ export function AlarmsSection({
                             checked={routing.push}
                             disabled={!hasPush}
                             onChange={(v) => setEventChannel(row.key, 'push', v)}
-                            title={hasPush ? `${row.label} – Push` : 'Bitte zuerst unten Push auf einem Gerät einschalten'}
+                            title={hasPush ? t('alarms.channelTitle', { what: row.label, channel: 'Push' }) : t('alarms.needPush')}
                           />
                         </div>
                       </div>
@@ -196,7 +197,7 @@ export function AlarmsSection({
                 </div>
 
                 <p className="text-[11px] text-faint pt-1">
-                  Gebündelt: höchstens alle 5 Minuten eine Nachricht (außer fällige Aufgaben)
+                  {t('alarms.bundled')}
                 </p>
                 {!hasDiscordWebhook && (
                   <p className="text-[11px] text-status-warn">
@@ -214,9 +215,9 @@ export function AlarmsSection({
               <div className="p-4 bg-canvas border border-border space-y-3">
                 <div className="flex items-center justify-between gap-4">
                   <div>
-                    <p className="font-bold text-main">Tageszusammenfassung</p>
+                    <p className="font-bold text-main">{t('alarms.daily.title')}</p>
                     <p className="text-[11px] text-muted">
-                      Überfällige, heutige und morgige Aufgaben; nichts fällig = keine Nachricht
+                      {t('alarms.daily.hint')}
                     </p>
                   </div>
                   <ToggleSwitch
@@ -226,16 +227,16 @@ export function AlarmsSection({
                         ...prev,
                         dailySummary: { ...prev.dailySummary, enabled: v } }))
                     }
-                    title="Tageszusammenfassung"
+                    title={t('alarms.daily.title')}
                   />
                 </div>
 
                 <div className="flex flex-wrap items-center justify-between gap-4 pt-2 border-t border-border">
                   <label className="flex items-center gap-2 text-xs text-main font-medium">
-                    <span>Uhrzeit:</span>
+                    <span>{t('alarms.daily.time')}</span>
                     <input
                       type="time"
-                      aria-label="Uhrzeit der Tageszusammenfassung"
+                      aria-label={t('alarms.daily.timeLabel')}
                       value={notificationSettings.dailySummary.time}
                       onChange={(e) =>
                         setNotificationSettings((prev) => ({
@@ -249,7 +250,7 @@ export function AlarmsSection({
                   {/* Phones: 2×2 grid, the four switches do not fit in one row */}
                   <div className="grid grid-cols-2 gap-x-6 gap-y-3 w-full sm:w-auto sm:flex sm:items-center sm:gap-5">
                     <div className="flex items-center justify-between sm:justify-start gap-2">
-                      <span className="text-xs text-muted">E-Mail</span>
+                      <span className="text-xs text-muted">{t('alarms.channel.email')}</span>
                       <ToggleSwitch
                         checked={notificationSettings.dailySummary.email}
                         onChange={(v) =>
@@ -257,7 +258,7 @@ export function AlarmsSection({
                             ...prev,
                             dailySummary: { ...prev.dailySummary, email: v } }))
                         }
-                        title="Tageszusammenfassung – E-Mail"
+                        title={t('alarms.daily.email')}
                       />
                     </div>
                     <div className="flex items-center justify-between sm:justify-start gap-2">
@@ -272,8 +273,8 @@ export function AlarmsSection({
                         }
                         title={
                           hasDiscordWebhook
-                            ? 'Tageszusammenfassung – Discord'
-                            : 'Bitte zuerst unten eine Discord Webhook URL eintragen'
+                            ? t('alarms.daily.discord')
+                            : t('alarms.needDiscord')
                         }
                       />
                     </div>
@@ -289,8 +290,8 @@ export function AlarmsSection({
                         }
                         title={
                           hasCustomWebhook
-                            ? 'Tageszusammenfassung – Webhook'
-                            : 'Bitte zuerst unten eine eigene Webhook URL eintragen'
+                            ? t('alarms.daily.webhook')
+                            : t('alarms.needWebhook')
                         }
                       />
                     </div>
@@ -304,7 +305,7 @@ export function AlarmsSection({
                             ...prev,
                             dailySummary: { ...prev.dailySummary, push: v } }))
                         }
-                        title={hasPush ? 'Tageszusammenfassung – Push' : 'Bitte zuerst unten Push auf einem Gerät einschalten'}
+                        title={hasPush ? t('alarms.daily.push') : t('alarms.needPush')}
                       />
                     </div>
                   </div>
@@ -318,10 +319,10 @@ export function AlarmsSection({
         <div className="p-3.5 bg-canvas border border-border flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <label className="font-semibold text-main block">
-              Vorwarnzeit vor Fälligkeit
+              {t('alarms.lead.title')}
             </label>
             <p className="text-[11px] text-muted">
-              Wann soll MindSift den Alarm vor dem Fälligkeitszeitpunkt auslösen?
+              {t('alarms.lead.hint')}
             </p>
           </div>
           <select
@@ -329,12 +330,12 @@ export function AlarmsSection({
             onChange={(e) => setNotifyBeforeMinutes(Number(e.target.value))}
             className="h-9 px-3 input-field min-w-[200px]"
           >
-            <option value={0}>Pünktlich bei Fälligkeit (0 Min.)</option>
-            <option value={15}>15 Minuten vorher</option>
-            <option value={30}>30 Minuten vorher</option>
-            <option value={60}>1 Stunde vorher</option>
-            <option value={120}>2 Stunden vorher</option>
-            <option value={1440}>1 Tag vorher (24 Std.)</option>
+            <option value={0}>{t('alarms.lead.0')}</option>
+            <option value={15}>{t('alarms.lead.15')}</option>
+            <option value={30}>{t('alarms.lead.30')}</option>
+            <option value={60}>{t('alarms.lead.60')}</option>
+            <option value={120}>{t('alarms.lead.120')}</option>
+            <option value={1440}>{t('alarms.lead.1440')}</option>
           </select>
         </div>
 
@@ -344,9 +345,9 @@ export function AlarmsSection({
             <div className="flex items-center gap-2.5">
               <Mail className="w-4 h-4 text-accent" />
               <div>
-                <span className="font-bold text-main block">Ziel: E-Mail</span>
+                <span className="font-bold text-main block">{t('alarms.email.title')}</span>
                 <span className="text-[11px] text-muted">
-                  Sendet eine E-Mail über den konfigurierten SMTP-Server der Instanz.
+                  {t('alarms.email.hint')}
                 </span>
               </div>
             </div>
@@ -358,13 +359,13 @@ export function AlarmsSection({
               className="btn-action h-8 px-3 text-xs flex items-center gap-1.5 flex-shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <Send className="w-3 h-3 text-accent" />
-              <span>{testingChannel === 'email' ? 'Sende…' : 'E-Mail testen'}</span>
+              <span>{testingChannel === 'email' ? t('sending') : t('alarms.email.test')}</span>
             </button>
           </div>
 
           <div className="pl-6">
             <label className="block text-muted mb-1">
-              Abweichende Empfänger-E-Mail (optional, Standard: {currentUser.email})
+              {t('alarms.email.recipient', { email: currentUser.email })}
             </label>
             <input
               type="email"
@@ -382,10 +383,9 @@ export function AlarmsSection({
             <div className="flex items-center gap-2.5">
               <MessageSquare className="w-4 h-4 text-accent" />
               <div>
-                <span className="font-bold text-main block">Ziel: Discord Webhook</span>
+                <span className="font-bold text-main block">{t('alarms.discord.title')}</span>
                 <span className="text-[11px] text-muted">
-                  Sendet eine formatierte Embed-Benachrichtigung direkt in deinen
-                  Discord-Kanal.
+                  {t('alarms.discord.hint')}
                 </span>
               </div>
             </div>
@@ -397,12 +397,12 @@ export function AlarmsSection({
               className="btn-action h-8 px-3 text-xs flex items-center gap-1.5 flex-shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <Send className="w-3 h-3 text-accent" />
-              <span>{testingChannel === 'discord' ? 'Sende…' : 'Discord testen'}</span>
+              <span>{testingChannel === 'discord' ? t('sending') : t('alarms.discord.test')}</span>
             </button>
           </div>
 
           <div className="pl-6">
-            <label className="block text-muted mb-1">Discord Webhook URL</label>
+            <label className="block text-muted mb-1">{t('alarms.discord.url')}</label>
             <input
               type="url"
               value={discordWebhookUrl}
@@ -424,11 +424,10 @@ export function AlarmsSection({
               <Globe className="w-4 h-4 text-accent" />
               <div>
                 <span className="font-bold text-main block">
-                  Ziel: Eigener Webhook (HTTP POST JSON)
+                  {t('alarms.webhook.title')}
                 </span>
                 <span className="text-[11px] text-muted">
-                  Für eigene Empfänger-Skripte, Ntfy, Gotify, Slack, Mattermost oder
-                  Automatisierungen. Welche Ereignisse hierher gehen, stellst du oben in der Spalte „Webhook“ ein.
+                  {t('alarms.webhook.hint')}
                 </span>
               </div>
             </div>
@@ -440,19 +439,19 @@ export function AlarmsSection({
               className="btn-action h-8 px-3 text-xs flex items-center gap-1.5 flex-shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <Send className="w-3 h-3 text-accent" />
-              <span>{testingChannel === 'webhook' ? 'Sende…' : 'Webhook testen'}</span>
+              <span>{testingChannel === 'webhook' ? t('sending') : t('alarms.webhook.test')}</span>
             </button>
           </div>
 
           <div className="pl-6">
             <label className="block text-muted mb-1">
-              Ziel-URL (empfängt JSON-Payload per POST)
+              {t('alarms.webhook.url')}
             </label>
             <input
               type="url"
               value={customWebhookUrl}
               onChange={(e) => setCustomWebhookUrl(e.target.value)}
-              placeholder="https://dein-server.local/webhook/mindsift-alarm"
+              placeholder={t('alarms.webhook.placeholder')}
               className="w-full h-8 px-2.5 input-field font-mono"
             />
           </div>
@@ -464,20 +463,19 @@ export function AlarmsSection({
             <div className="flex items-center gap-2.5 min-w-0">
               <Bell className="w-4 h-4 text-accent shrink-0" />
               <div className="min-w-0">
-                <span className="font-bold text-main block">Ziel: Push-Benachrichtigungen</span>
+                <span className="font-bold text-main block">{t('alarms.push.title')}</span>
                 <span className="text-[11px] text-muted">
-                  Systembenachrichtigung auf diesem Gerät, auch wenn MindSift geschlossen ist. Auf iPhone und
-                  iPad nur, wenn MindSift zum Home-Bildschirm hinzugefügt wurde.
+                  {t('alarms.push.hint')}
                 </span>
               </div>
             </div>
             <div className="flex items-center gap-2 shrink-0">
-              <span className="text-xs text-muted">Dieses Gerät</span>
+              <span className="text-xs text-muted">{t('alarms.push.thisDeviceLabel')}</span>
               <ToggleSwitch
                 checked={pushHere}
                 disabled={pushBusy || demoMode || !pushSupported()}
                 onChange={(v) => void togglePushHere(v)}
-                title={pushSupported() ? 'Push auf diesem Gerät' : 'Dieser Browser unterstützt keine Push-Benachrichtigungen'}
+                title={pushSupported() ? t('alarms.push.toggle') : t('alarms.push.unsupported')}
               />
               <button
                 type="button"
@@ -486,33 +484,32 @@ export function AlarmsSection({
                 className="btn-action h-8 px-3 text-xs flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <Send className="w-3 h-3 text-accent" />
-                <span>Test senden</span>
+                <span>{t('alarms.push.test')}</span>
               </button>
             </div>
           </div>
           {pushDevices.length > 0 && (
             <div className="pl-6 space-y-1">
               <p className="text-[11px] text-faint">
-                Aktiv auf {pushDevices.length} {pushDevices.length === 1 ? 'Gerät' : 'Geräten'}. Alte Installationen
-                verschwinden beim nächsten Push von selbst oder lassen sich hier entfernen.
+                {t('alarms.push.activeOn', { count: pushDevices.length })}
               </p>
               <ul className="border border-border divide-y divide-border bg-panel">
                 {pushDevices.map((d) => (
                   <li key={d.id} className="flex items-center justify-between gap-2 pl-2.5 pr-1 py-1">
                     <span className="min-w-0 text-[11px] text-main truncate">
-                      {d.device || 'Gerät'}
+                      {d.device || t('alarms.push.device')}
                       <span className="text-faint">
-                        {' · seit '}
-                        {formatDate(d.createdAt)}
-                        {d.endpoint === pushEndpointHere && ' · dieses Gerät'}
+                        {' · '}
+                        {t('alarms.push.since', { date: formatDate(d.createdAt) })}
+                        {d.endpoint === pushEndpointHere && ` · ${t('alarms.push.thisDevice')}`}
                       </span>
                     </span>
                     <button
                       type="button"
                       onClick={() => void removeDevice(d.endpoint)}
                       disabled={pushBusy || demoMode}
-                      title="Gerät entfernen"
-                      aria-label={`${d.device || 'Gerät'} entfernen`}
+                      title={t('alarms.push.remove')}
+                      aria-label={t('alarms.push.removeNamed', { name: d.device || t('alarms.push.device') })}
                       className="h-9 w-9 sm:h-7 sm:w-7 shrink-0 flex items-center justify-center text-faint hover:text-status-err disabled:opacity-40"
                     >
                       <X className="w-3.5 h-3.5" />
@@ -533,7 +530,7 @@ export function AlarmsSection({
             disabled={savingAlarms}
             className="btn-primary h-9 px-5 text-xs font-semibold"
           >
-            {savingAlarms ? 'Speichere…' : 'Alarm-Einstellungen speichern'}
+            {savingAlarms ? t('saving') : t('alarms.save')}
           </button>
         </div>
       </form>
