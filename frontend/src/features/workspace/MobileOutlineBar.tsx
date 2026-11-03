@@ -2,6 +2,7 @@ import React from 'react';
 import { createPortal } from 'react-dom';
 import { ArrowDown, ArrowUp, IndentDecrease, IndentIncrease } from 'lucide-react';
 import { useKeyboardInset } from '../../lib/useKeyboardInset';
+import { useTranslation } from 'react-i18next';
 
 // Phones and tablets have no Tab key: while a bullet is being edited, a slim bar sits right above the
 // on-screen keyboard (only while it is open) with outdent / indent and move up / down (the bullet takes its children along).
@@ -18,6 +19,7 @@ interface MobileOutlineBarProps {
 }
 
 export const MobileOutlineBar: React.FC<MobileOutlineBarProps> = ({ onOutdent, onIndent, onMoveUp, onMoveDown }) => {
+  const { t } = useTranslation('workspace');
   // iOS keeps fixed elements behind the keyboard: lift the bar by the keyboard's height
   const { inset, keyboardOpen } = useKeyboardInset();
 
@@ -44,13 +46,13 @@ export const MobileOutlineBar: React.FC<MobileOutlineBarProps> = ({ onOutdent, o
       className="fixed left-0 right-0 z-[70] flex items-center justify-center gap-2 px-3 py-1.5 bg-panel/95 backdrop-blur-md border-t border-border"
       style={{ bottom: inset }}
       role="toolbar"
-      aria-label="Punkt bearbeiten"
+      aria-label={t('outlineBar.label')}
     >
-      {button('Ausrücken', <IndentDecrease className="w-5 h-5" />, onOutdent)}
-      {button('Einrücken', <IndentIncrease className="w-5 h-5" />, onIndent)}
+      {button(t('outlineBar.outdent'), <IndentDecrease className="w-5 h-5" />, onOutdent)}
+      {button(t('outlineBar.indent'), <IndentIncrease className="w-5 h-5" />, onIndent)}
       <span className="w-px h-6 bg-border mx-1" aria-hidden />
-      {button('Nach oben', <ArrowUp className="w-5 h-5" />, onMoveUp)}
-      {button('Nach unten', <ArrowDown className="w-5 h-5" />, onMoveDown)}
+      {button(t('outlineBar.up'), <ArrowUp className="w-5 h-5" />, onMoveUp)}
+      {button(t('outlineBar.down'), <ArrowDown className="w-5 h-5" />, onMoveDown)}
     </div>,
     document.body
   );

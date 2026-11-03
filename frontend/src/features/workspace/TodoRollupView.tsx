@@ -1,4 +1,5 @@
 import React from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 import { Check, ChevronDown, ChevronRight, ExternalLink, Folder, Sparkles } from 'lucide-react';
 import { Document } from '../../lib/types';
 
@@ -38,6 +39,7 @@ export function TodoRollupView({
   handleJumpToDocBlock,
   handleToggleRollupTodo,
 }: TodoRollupViewProps) {
+  const { t } = useTranslation('workspace');
   return (
     /* Each nesting level lays a light tint of the text colour on top: darker per level in
        light themes, lighter per level in dark ones */
@@ -49,7 +51,7 @@ export function TodoRollupView({
               To-Dos aus Notizen ({totalOpenTodos} offen)
             </h2>
             <p className="text-xs text-muted">
-              Alle Aufgaben aus deinen Notizen im gesamten Workspace
+              {t('rollup.intro')}
             </p>
           </div>
 
@@ -67,7 +69,7 @@ export function TodoRollupView({
                     ? 'bg-panel-elevated text-main shadow-xs'
                     : 'text-muted hover:text-main'
                 }`}
-                title="Sortiert nach Ordner und Notiz"
+                title={t('rollup.byFolder')}
               >
                 Gruppiert
               </button>
@@ -82,7 +84,7 @@ export function TodoRollupView({
                     ? 'bg-panel-elevated text-main shadow-xs'
                     : 'text-muted hover:text-main'
                 }`}
-                title="Alle To-Dos als einfache Liste"
+                title={t('rollup.flat')}
               >
                 Liste
               </button>
@@ -94,14 +96,14 @@ export function TodoRollupView({
         {todoFolderDrilldown && (
           <div className="flex items-center justify-between p-2 rounded-btn bg-accent/10 border border-accent text-xs">
             <span>
-              Gefiltert nach Ordner: <strong>{todoFolderDrilldown}</strong>
+              {t('rollup.filteredBy')} <strong>{todoFolderDrilldown}</strong>
             </span>
             <button
               type="button"
               onClick={() => setTodoFolderDrilldown(null)}
               className="text-accent hover:underline font-semibold cursor-pointer"
             >
-              Filter aufheben
+              {t('rollup.clearFilter')}
             </button>
           </div>
         )}
@@ -110,9 +112,9 @@ export function TodoRollupView({
         {allRollupTodos.length === 0 ? (
           <div className="p-8 text-center text-muted text-xs space-y-1 border border-border rounded-card bg-main/[0.03]">
             <Sparkles className="w-6 h-6 text-accent mx-auto mb-1" />
-            <p className="font-semibold text-main">Keine To-Dos in Notizen gefunden!</p>
+            <p className="font-semibold text-main">{t('rollup.empty')}</p>
             <p className="text-faint">
-              Tippe in einem beliebigen Dokument <code>/todo</code> oder <code>[] </code> ein.
+              <Trans t={t} i18nKey="rollup.emptyHint" components={{ c: <code /> }} />
             </p>
           </div>
         ) : todoGrouping === 'list' ? (
@@ -165,7 +167,7 @@ export function TodoRollupView({
                     type="button"
                     onClick={() => handleJumpToDocBlock(item.doc.id, item.blockId)}
                     className="text-faint hover:text-accent opacity-0 group-hover:opacity-100 transition-opacity p-1"
-                    title="Zu dieser Zeile springen"
+                    title={t('rollup.jump')}
                   >
                     <ExternalLink className="w-3 h-3" />
                   </button>
@@ -222,9 +224,9 @@ export function TodoRollupView({
                       type="button"
                       onClick={() => setTodoFolderDrilldown(folderName)}
                       className="text-[10px] text-muted hover:text-main px-1.5 py-0.5 rounded-btn hover:bg-main/[0.06] cursor-pointer"
-                      title="Diesen Ordner isolieren"
+                      title={t('rollup.isolate')}
                     >
-                      Nur diesen Ordner
+                      {t('rollup.onlyFolder')}
                     </button>
                   </div>
 
@@ -267,9 +269,9 @@ export function TodoRollupView({
                                 type="button"
                                 onClick={() => handleJumpToDocBlock(doc.id)}
                                 className="text-[10px] text-accent hover:underline px-1.5 py-0.5 rounded-btn hover:bg-panel cursor-pointer flex items-center gap-1"
-                                title="Notiz öffnen"
+                                title={t('editor.openNote')}
                               >
-                                <span>Notiz öffnen</span>
+                                <span>{t('editor.openNote')}</span>
                                 <ExternalLink className="w-2.5 h-2.5" />
                               </button>
                             </div>
@@ -319,7 +321,7 @@ export function TodoRollupView({
                                         handleJumpToDocBlock(item.doc.id, item.blockId)
                                       }
                                       className="text-faint hover:text-accent opacity-0 group-hover:opacity-100 transition-opacity p-1"
-                                      title="Zu dieser Zeile springen"
+                                      title={t('rollup.jump')}
                                     >
                                       <ExternalLink className="w-3 h-3" />
                                     </button>

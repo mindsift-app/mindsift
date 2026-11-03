@@ -1,4 +1,5 @@
 import React, { Suspense, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { createPortal } from 'react-dom';
 import { X, Trash2, Loader2 } from 'lucide-react';
 import type { EmojiClickData } from 'emoji-picker-react';
@@ -10,17 +11,17 @@ import { isPhoneWidth } from '../../lib/breakpoints';
 const EmojiPicker = React.lazy(() => import('emoji-picker-react'));
 
 // The library's own "recently used" category (stored by it) is the only recent list; a second bar
-// would cost height on phones. Category names in German.
+// would cost height on phones. Category names come from workspace:emoji.<key>.
 const CATEGORIES = [
-  { category: Categories.SUGGESTED, name: 'Zuletzt verwendet' },
-  { category: Categories.SMILEYS_PEOPLE, name: 'Smileys & Personen' },
-  { category: Categories.ANIMALS_NATURE, name: 'Tiere & Natur' },
-  { category: Categories.FOOD_DRINK, name: 'Essen & Trinken' },
-  { category: Categories.TRAVEL_PLACES, name: 'Reisen & Orte' },
-  { category: Categories.ACTIVITIES, name: 'Aktivitäten' },
-  { category: Categories.OBJECTS, name: 'Objekte' },
-  { category: Categories.SYMBOLS, name: 'Symbole' },
-  { category: Categories.FLAGS, name: 'Flaggen' },
+  { category: Categories.SUGGESTED, key: 'suggested' },
+  { category: Categories.SMILEYS_PEOPLE, key: 'smileys' },
+  { category: Categories.ANIMALS_NATURE, key: 'animals' },
+  { category: Categories.FOOD_DRINK, key: 'food' },
+  { category: Categories.TRAVEL_PLACES, key: 'travel' },
+  { category: Categories.ACTIVITIES, key: 'activities' },
+  { category: Categories.OBJECTS, key: 'objects' },
+  { category: Categories.SYMBOLS, key: 'symbols' },
+  { category: Categories.FLAGS, key: 'flags' },
 ];
 
 interface EmojiPickerModalProps {
@@ -38,6 +39,7 @@ export const EmojiPickerModal: React.FC<EmojiPickerModalProps> = ({
   onClose,
   anchor,
 }) => {
+  const { t } = useTranslation('workspace');
   const { inset, visibleHeight } = useKeyboardInset();
   const isPhone = isPhoneWidth();
   // On phones the picker shrinks with the keyboard so search field and results stay visible
@@ -142,7 +144,7 @@ export const EmojiPickerModal: React.FC<EmojiPickerModalProps> = ({
         {/* Top Header: Title, Actions & Close (phone only; on desktop a click outside closes it) */}
         <div className="flex sm:hidden items-center justify-between gap-2 shrink-0 border-b border-border pb-2">
           <div className="flex items-center gap-1.5 text-xs font-semibold text-main">
-            <span>Icon auswählen</span>
+            <span>{t('emojiPicker.title')}</span>
             {currentIcon && (
               <span className="text-base leading-none ml-1">{currentIcon}</span>
             )}
@@ -154,10 +156,10 @@ export const EmojiPickerModal: React.FC<EmojiPickerModalProps> = ({
                 type="button"
                 onClick={() => onSelectEmoji('')}
                 className="h-11 sm:h-7 px-3 sm:px-2 rounded text-xs font-medium text-status-err hover:bg-status-err/10 flex items-center gap-1 transition-colors cursor-pointer"
-                title="Icon entfernen"
+                title={t('emojiPicker.remove')}
               >
                 <Trash2 className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Entfernen</span>
+                <span className="hidden sm:inline">{t('emojiPicker.removeShort')}</span>
               </button>
             )}
 
@@ -165,8 +167,8 @@ export const EmojiPickerModal: React.FC<EmojiPickerModalProps> = ({
               type="button"
               onClick={onClose}
               className="w-11 h-11 sm:w-7 sm:h-7 rounded flex items-center justify-center text-muted hover:text-main hover:bg-panel-elevated transition-colors cursor-pointer"
-              title="Schließen"
-              aria-label="Schließen"
+              title={t('close')}
+              aria-label={t('close')}
             >
               <X className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
             </button>
@@ -179,7 +181,7 @@ export const EmojiPickerModal: React.FC<EmojiPickerModalProps> = ({
             fallback={
               <div className="h-64 flex flex-col items-center justify-center gap-2 text-xs text-muted">
                 <Loader2 className="w-5 h-5 animate-spin text-accent" />
-                <span>Emoji-Katalog wird geladen…</span>
+                <span>{t('emojiPicker.loading')}</span>
               </div>
             }
           >
@@ -189,11 +191,11 @@ export const EmojiPickerModal: React.FC<EmojiPickerModalProps> = ({
               theme={isDark ? Theme.DARK : Theme.LIGHT}
               emojiStyle={EmojiStyle.NATIVE}
               suggestedEmojisMode={SuggestionMode.RECENT}
-              searchPlaceholder="Emoji suchen…"
-              searchPlaceHolder="Emoji suchen…"
+              searchPlaceholder={t('emojiPicker.search')}
+              searchPlaceHolder={t('emojiPicker.search')}
               width="100%"
               height={`${pickerHeight}px`}
-              categories={CATEGORIES as any}
+              categories={CATEGORIES.map((c) => ({ category: c.category, name: t(`emoji.${c.key}`) })) as any}
               previewConfig={{
                 showPreview: false,
               }}
@@ -211,7 +213,7 @@ export const EmojiPickerModal: React.FC<EmojiPickerModalProps> = ({
             className="hidden sm:flex items-center gap-1.5 w-full h-7 px-2 mt-1 rounded-btn text-xs text-muted hover:text-status-err hover:bg-panel-hover transition-colors cursor-pointer"
           >
             <Trash2 className="w-3.5 h-3.5" />
-            Icon entfernen
+            {t('emojiPicker.remove')}
           </button>
         )}
       </div>

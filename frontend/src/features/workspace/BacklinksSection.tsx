@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { ChevronDown, ChevronRight, Folder, Link2 } from 'lucide-react';
 import { Backlink } from '../../lib/types';
 import { api } from '../../lib/api';
+import { useTranslation } from 'react-i18next';
 
 interface BacklinksSectionProps {
   docId: string;
@@ -29,6 +30,7 @@ const Snippet: React.FC<{ text: string }> = ({ text }) => (
 // "Verlinkt auf diese Notiz" at the end of a note. Hidden while nothing links here; reloads shortly
 // after the title changes, since links are matched by title.
 export const BacklinksSection: React.FC<BacklinksSectionProps> = ({ docId, title, onOpen }) => {
+  const { t } = useTranslation('workspace');
   const [links, setLinks] = useState<Backlink[]>([]);
   const [collapsed, setCollapsed] = useState<boolean>(() => {
     try {
@@ -64,7 +66,7 @@ export const BacklinksSection: React.FC<BacklinksSectionProps> = ({ docId, title
   };
 
   return (
-    <section className="mt-10 pt-4 border-t border-border" aria-label="Rückverweise">
+    <section className="mt-10 pt-4 border-t border-border" aria-label={t('backlinks.label')}>
       <button
         type="button"
         onClick={toggle}
@@ -86,7 +88,7 @@ export const BacklinksSection: React.FC<BacklinksSectionProps> = ({ docId, title
               >
                 {l.icon && <span className="shrink-0">{l.icon}</span>}
                 <span className="text-sm font-semibold text-main truncate group-hover:text-accent">
-                  {l.title || 'Unbenannte Notiz'}
+                  {l.title || t('editor.untitled')}
                 </span>
                 {l.folderPath && (
                   <span className="hidden sm:inline-flex items-center gap-1 text-[11px] text-faint min-w-0">

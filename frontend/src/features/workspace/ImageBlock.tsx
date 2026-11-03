@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ImageOff, Loader2, X } from 'lucide-react';
 import { mediaObjectURL, parseMediaContent } from '../../lib/media';
+import { useTranslation } from 'react-i18next';
 
 interface ImageBlockProps {
   content: string;
@@ -11,6 +12,7 @@ interface ImageBlockProps {
 
 // Image block: the picture (click = full screen) and an optional caption below it.
 export const ImageBlock: React.FC<ImageBlockProps> = ({ content, canEdit, onCaptionChange }) => {
+  const { t } = useTranslation('workspace');
   const ref = parseMediaContent(content);
   const [src, setSrc] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
@@ -42,7 +44,7 @@ export const ImageBlock: React.FC<ImageBlockProps> = ({ content, canEdit, onCapt
   }, [zoomed]);
 
   if (!ref) {
-    return <div className="text-xs text-status-err py-1">Bild-Verweis ist beschädigt: {content}</div>;
+    return <div className="text-xs text-status-err py-1">{t('media.imageBroken', { content })}</div>;
   }
 
   const commitCaption = () => {
@@ -53,13 +55,13 @@ export const ImageBlock: React.FC<ImageBlockProps> = ({ content, canEdit, onCapt
     <figure className="my-1 space-y-1">
       {failed ? (
         <div className="flex items-center gap-2 h-24 px-3 rounded-card border border-border bg-panel text-xs text-muted">
-          <ImageOff className="w-4 h-4" /> Bild nicht verfügbar (offline oder gelöscht)
+          <ImageOff className="w-4 h-4" /> {t('media.imageUnavailable')}
         </div>
       ) : src ? (
         <button
           type="button"
           onClick={() => setZoomed(true)}
-          title="Vergrößern"
+          title={t('media.enlarge')}
           className="block max-w-full rounded-card overflow-hidden border border-border bg-panel cursor-zoom-in"
         >
           <img src={src} alt={ref.caption} className="block max-w-full max-h-[28rem] object-contain" />
@@ -82,7 +84,7 @@ export const ImageBlock: React.FC<ImageBlockProps> = ({ content, canEdit, onCapt
               (e.target as HTMLInputElement).blur();
             }
           }}
-          placeholder="Beschriftung hinzufügen…"
+          placeholder={t('media.caption')}
           className="w-full bg-transparent border-0 p-0 text-xs text-muted placeholder-faint focus:outline-none focus:ring-0"
         />
       ) : (
@@ -101,7 +103,7 @@ export const ImageBlock: React.FC<ImageBlockProps> = ({ content, canEdit, onCapt
             <button
               type="button"
               onClick={() => setZoomed(false)}
-              title="Schließen (Esc)"
+              title={t('media.closeEsc')}
               className="absolute top-[calc(0.75rem+env(safe-area-inset-top))] right-3 w-11 h-11 flex items-center justify-center rounded-full bg-black/50 text-white"
             >
               <X className="w-5 h-5" />

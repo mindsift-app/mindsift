@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { monthGrid, monthNames, parseISODate, todayISO } from '../../lib/journal';
 import { formatDate } from '../../lib/format';
+import { useTranslation } from 'react-i18next';
 
 interface JournalCalendarProps {
   /** Day currently in view; the calendar follows its month */
@@ -11,9 +12,11 @@ interface JournalCalendarProps {
   onSelect: (date: string) => void;
 }
 
-const WEEKDAYS = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+// Monday first, as the grid (common:date.weekdayMin.1–6, then 0)
+const WEEKDAY_ORDER = [1, 2, 3, 4, 5, 6, 0];
 
 export const JournalCalendar: React.FC<JournalCalendarProps> = ({ activeDate, entryDates, onSelect }) => {
+  const { t } = useTranslation('workspace');
   const active = parseISODate(activeDate);
   const [view, setView] = useState({ year: active.getFullYear(), month: active.getMonth() });
   useEffect(() => {
@@ -41,14 +44,14 @@ export const JournalCalendar: React.FC<JournalCalendarProps> = ({ activeDate, en
     });
 
   return (
-    <div className="select-none text-xs" aria-label="Journal-Kalender">
+    <div className="select-none text-xs" aria-label={t('journal.calendar')}>
       <div className="flex items-center gap-1 mb-1.5">
         <button
           type="button"
           onClick={() => shiftMonth(-1)}
           className="h-9 w-9 sm:h-7 sm:w-7 shrink-0 rounded-btn flex items-center justify-center text-muted hover:text-main hover:bg-panel transition-colors cursor-pointer"
-          title="Vorheriger Monat"
-          aria-label="Vorheriger Monat"
+          title={t('journal.prevMonth')}
+          aria-label={t('journal.prevMonth')}
         >
           <ChevronLeft className="w-3.5 h-3.5" />
         </button>
@@ -56,7 +59,7 @@ export const JournalCalendar: React.FC<JournalCalendarProps> = ({ activeDate, en
           value={view.month}
           onChange={(e) => setView((v) => ({ ...v, month: Number(e.target.value) }))}
           className="flex-1 min-w-0 h-9 sm:h-7 px-1.5 rounded-btn bg-panel text-main border-0 text-xs font-semibold outline-none focus:ring-1 focus:ring-accent cursor-pointer"
-          aria-label="Monat"
+          aria-label={t('journal.month')}
         >
           {monthNames().map((m, i) => (
             <option key={m} value={i}>
@@ -68,7 +71,7 @@ export const JournalCalendar: React.FC<JournalCalendarProps> = ({ activeDate, en
           value={view.year}
           onChange={(e) => setView((v) => ({ ...v, year: Number(e.target.value) }))}
           className="w-[4.5rem] h-9 sm:h-7 px-1.5 rounded-btn bg-panel text-main border-0 text-xs font-semibold outline-none focus:ring-1 focus:ring-accent cursor-pointer"
-          aria-label="Jahr"
+          aria-label={t('journal.year')}
         >
           {years.map((y) => (
             <option key={y} value={y}>
@@ -80,15 +83,15 @@ export const JournalCalendar: React.FC<JournalCalendarProps> = ({ activeDate, en
           type="button"
           onClick={() => shiftMonth(1)}
           className="h-9 w-9 sm:h-7 sm:w-7 shrink-0 rounded-btn flex items-center justify-center text-muted hover:text-main hover:bg-panel transition-colors cursor-pointer"
-          title="Nächster Monat"
-          aria-label="Nächster Monat"
+          title={t('journal.nextMonth')}
+          aria-label={t('journal.nextMonth')}
         >
           <ChevronRight className="w-3.5 h-3.5" />
         </button>
       </div>
 
       <div className="grid grid-cols-7 gap-0.5 text-center text-[10px] text-faint font-semibold mb-0.5">
-        {WEEKDAYS.map((w) => (
+        {WEEKDAY_ORDER.map((n) => t(`common:date.weekdayMin.${n}`)).map((w) => (
           <span key={w}>{w}</span>
         ))}
       </div>

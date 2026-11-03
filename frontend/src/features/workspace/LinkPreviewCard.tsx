@@ -3,6 +3,7 @@ import { Globe, X } from 'lucide-react';
 import { LinkPreview, loadLinkPreview } from '../../lib/linkPreview';
 import { loadAuthorized } from '../../lib/media';
 import { safeHref } from '../../lib/safeUrl';
+import { useTranslation } from 'react-i18next';
 
 interface LinkPreviewCardProps {
   url: string;
@@ -30,6 +31,7 @@ function usePicture(preview: LinkPreview | null, kind: 'image' | 'icon'): string
 // Compact card above a bullet with a web address: icon and site, title, one line of description and a
 // small picture. Nothing is shown when the page offers nothing usable.
 export const LinkPreviewCard: React.FC<LinkPreviewCardProps> = ({ url, canEdit, onHide }) => {
+  const { t } = useTranslation('workspace');
   const [preview, setPreview] = useState<LinkPreview | null>(null);
   const image = usePicture(preview, 'image');
   const icon = usePicture(preview, 'icon');
@@ -72,8 +74,8 @@ export const LinkPreviewCard: React.FC<LinkPreviewCardProps> = ({ url, canEdit, 
         <button
           type="button"
           onClick={() => onHide(preview.title)}
-          title="Vorschau für diesen Link ausblenden"
-          aria-label="Vorschau ausblenden"
+          title={t('preview.hideTitle')}
+          aria-label={t('preview.hide')}
           className="absolute top-0 right-0 sm:top-1 sm:right-1 w-11 h-11 sm:w-7 sm:h-7 flex items-center justify-center rounded-full bg-panel/70 text-muted hover:text-main"
         >
           <X className="w-3.5 h-3.5" />

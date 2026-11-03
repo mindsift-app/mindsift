@@ -4,6 +4,7 @@ import { Document } from '../../lib/types';
 import { FormSheet } from '../../components/FormSheet';
 import { ConfirmPopover } from '../../components/ConfirmPopover';
 import { EmojiIconButton } from '../../components/EmojiIconButton';
+import { Trans, useTranslation } from 'react-i18next';
 
 interface FolderDialogsProps {
   showNewFolderModal: boolean;
@@ -48,12 +49,13 @@ export function FolderDialogs({
   handleDeleteFolder,
   docs,
 }: FolderDialogsProps) {
+  const { t } = useTranslation('workspace');
   return (
     <>
       {/* New Folder Popover (small & positioned near click, asks only for name & OK) */}
       {showNewFolderModal && (
         <FormSheet
-          title={newFolderParentPath ? `Unterordner in "${newFolderParentPath}"` : 'Neuer Ordner'}
+          title={newFolderParentPath ? t('folder.subfolderIn', { path: newFolderParentPath }) : t('view.newFolder')}
           icon={<FolderPlus className="w-4 h-4 text-accent" />}
           onClose={() => setShowNewFolderModal(false)}
           onSubmit={handleCreateFolderSubmit}
@@ -64,7 +66,7 @@ export function FolderDialogs({
             autoFocus
             value={newFolderName}
             onChange={(e) => setNewFolderName(e.target.value)}
-            placeholder="Ordnername"
+            placeholder={t('folder.namePlaceholder')}
             className="input-field w-full h-11 sm:h-8 px-2.5 text-base sm:text-xs"
           />
         </FormSheet>
@@ -73,7 +75,7 @@ export function FolderDialogs({
       {/* Phones: name and emoji of a new note before it is created */}
       {newNoteSheet && (
         <FormSheet
-          title="Neue Notiz"
+          title={t('menu.newNote')}
           icon={<FilePlus className="w-4 h-4 text-accent" />}
           onClose={() => setNewNoteSheet(null)}
           onSubmit={(e) => {
@@ -90,7 +92,7 @@ export function FolderDialogs({
               autoFocus
               value={newNoteTitle}
               onChange={(e) => setNewNoteTitle(e.target.value)}
-              placeholder="Name der Notiz"
+              placeholder={t('folder.noteNamePlaceholder')}
               className="input-field flex-1 min-w-0 h-11 sm:h-8 px-2.5 text-base sm:text-xs"
             />
           </div>
@@ -107,12 +109,14 @@ export function FolderDialogs({
               x={pendingFolderDelete.x}
               y={pendingFolderDelete.y}
               danger
-              confirmLabel="In den Papierkorb"
+              confirmLabel={t('folder.toTrash')}
               message={
-                <>
-                  Ordner <strong>„{name}“</strong>
-                  {notes > 0 ? ` mit ${notes === 1 ? '1 Notiz' : `${notes} Notizen`}` : ''} wirklich löschen?
-                </>
+                <Trans
+                  t={t}
+                  i18nKey={notes > 0 ? 'folder.confirmDeleteWithNotes' : 'folder.confirmDelete'}
+                  values={{ name, count: notes }}
+                  components={{ b: <strong /> }}
+                />
               }
               onCancel={closeFolderDelete}
               onConfirm={() => {

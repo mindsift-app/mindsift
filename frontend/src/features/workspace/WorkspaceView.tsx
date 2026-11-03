@@ -48,6 +48,8 @@ import { buildWorkspaceMenu } from './workspaceMenu';
 import { buildFolderTree, collectFolderPaths, collectRollupTodos, countOpenTodos, filterTags, groupRollupTodosByFolder, tagGroups, tagsMetadata } from './workspaceListing';
 import { FolderDialogs } from './FolderDialogs';
 import { WorkspaceSubView } from './workspaceTypes';
+import { useTranslation } from 'react-i18next';
+import i18n from '../../i18n';
 
 interface WorkspaceViewProps {
   currentUser?: User | null;
@@ -67,6 +69,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
   onOpenTask,
   onOpenSearch,
 }) => {
+  const { t } = useTranslation('workspace');
   // Coming back here by the browser's back/forward: the note and view of that step
   const navStep = useMemo(() => {
     const place = restoringNavPlace();
@@ -227,13 +230,13 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
   }, [initialDocId]);
 
   const handleCreateDocument = useCallback(
-    async (folderPath = '', title = 'Neue Notiz', icon = '🗒️') => {
+    async (folderPath = '', title = i18n.t('workspace:editor.newNote'), icon = '🗒️') => {
       if (isCreatingRef.current) return;
       isCreatingRef.current = true;
       triggerHaptic(10);
       try {
         const created = await api.createDocument({
-          title: title.trim() || 'Neue Notiz',
+          title: title.trim() || i18n.t('workspace:editor.newNote'),
           icon: icon.trim(),
           folderPath,
           blocks: [
@@ -380,7 +383,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
       setNewFolderParentPath('');
       setShowNewFolderModal(false);
     } catch (err: any) {
-      alert(err.message || 'Fehler beim Erstellen des Ordners');
+      alert(err.message || i18n.t('workspace:folder.createFailed'));
     }
   };
 
@@ -434,9 +437,9 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
     setMobileShowDetail(true);
     setEditorNonce((n) => n + 1);
     reloadTrash();
-    showToast(`„${result.sourceTitle || 'Notiz'}“ wurde angehängt`, [
+    showToast(i18n.t('workspace:merge.appended', { title: result.sourceTitle || i18n.t('workspace:merge.note') }), [
       {
-        label: 'Rückgängig',
+        label: i18n.t('common:sync.undo'),
         run: async () => {
           try {
             await api.undoMerge(result);
@@ -444,9 +447,9 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
             setSelectedDocId(result.sourceId);
             setEditorNonce((n) => n + 1);
             reloadTrash();
-            showToast('Zusammenführen rückgängig gemacht');
+            showToast(i18n.t('workspace:merge.undone'));
           } catch (err: any) {
-            showToast(err?.message || 'Rückgängig fehlgeschlagen');
+            showToast(err?.message || i18n.t('workspace:merge.undoFailed'));
           }
         },
       },
@@ -711,10 +714,10 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
                 type="button"
                 onClick={onOpenSearch}
                 className="input-field flex-1 min-w-0 h-11 sm:h-8 px-2.5 flex items-center gap-2 text-xs text-faint hover:text-main cursor-pointer"
-                title="Globale Suche (Strg+K / ⌘K oder /)"
+                title={t('view.searchTitle')}
               >
                 <Search className="w-3.5 h-3.5 shrink-0" />
-                <span className="flex-1 text-left truncate">Notizen durchsuchen…</span>
+                <span className="flex-1 text-left truncate">{t('view.search')}</span>
                 <span className="hidden xl:inline font-mono text-[10px]">⌘K</span>
               </button>
             )}
@@ -724,8 +727,8 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
                 type="button"
                 onClick={(e) => handleOpenNewFolder('', e)}
                 className="btn-icon h-8 w-8"
-                title="Neuer Ordner"
-                aria-label="Neuer Ordner"
+                title={t('view.newFolder')}
+                aria-label={t('view.newFolder')}
               >
                 <FolderPlus className="w-4 h-4" />
               </button>
@@ -733,8 +736,8 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
                 type="button"
                 onClick={() => handleCreateDocument('')}
                 className="btn-icon h-8 w-8"
-                title="Neue Notiz anlegen"
-                aria-label="Neue Notiz anlegen"
+                title={t('view.newNote')}
+                aria-label={t('view.newNote')}
               >
                 <FilePlus className="w-4 h-4" />
               </button>
@@ -748,8 +751,8 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
                     setZenPinSide((v) => !v);
                   }}
                   className={`hidden lg:inline-flex btn-icon h-8 w-8 ${zenPinSide ? 'text-accent' : ''}`}
-                  title={zenPinSide ? 'Seitenleiste lösen' : 'Seitenleiste anpinnen'}
-                  aria-label={zenPinSide ? 'Seitenleiste lösen' : 'Seitenleiste anpinnen'}
+                  title={zenPinSide ? t('view.unpinSidebar') : t('view.pinSidebar')}
+                  aria-label={zenPinSide ? t('view.unpinSidebar') : t('view.pinSidebar')}
                   aria-pressed={zenPinSide}
                 >
                   {zenPinSide ? <PinOff className="w-4 h-4" /> : <Pin className="w-4 h-4" />}
@@ -948,12 +951,12 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
           <div className="flex-1 flex flex-col items-center justify-center p-12 text-center bg-editor">
             <FileText className="w-10 h-10 text-faint mb-2" />
             <h3 className="text-sm font-semibold text-main mb-1">
-              Keine Notiz ausgewählt
+              {t('view.noneSelected')}
             </h3>
             <p className="text-xs text-muted max-w-sm mb-3">
               {isSidebarCollapsed
-                ? 'Die Ordnerleiste ist eingeklappt. Blende sie ein oder erstelle eine neue Notiz.'
-                : 'Wähle links in der Seitenleiste eine bestehende Notiz aus oder erstelle eine neue.'}
+                ? t('view.sidebarCollapsed')
+                : t('view.pickHint')}
             </p>
             <div className="flex items-center gap-2">
               {isSidebarCollapsed && (
@@ -963,7 +966,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
                   className="btn-action inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold cursor-pointer"
                 >
                   <PanelLeftOpen className="w-3.5 h-3.5" />
-                  <span>Ordner anzeigen</span>
+                  <span>{t('view.showFolders')}</span>
                 </button>
               )}
               <button
@@ -972,7 +975,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
                 className="btn-primary inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold"
               >
                 <Plus className="w-3.5 h-3.5" />
-                <span>Notiz erstellen</span>
+                <span>{t('view.createNote')}</span>
               </button>
             </div>
           </div>

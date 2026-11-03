@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { AlertTriangle, Check, Clock, FileText, Hash, Loader2, PanelLeftClose, PanelLeftOpen, Users } from 'lucide-react';
 import { PresenceAvatars } from './PresenceAvatars';
 import { CountBadge } from '../../components/CountBadge';
@@ -44,6 +45,7 @@ export function WorkspaceTabBar({
   openDocShareModal,
   setDocActionsTarget,
 }: WorkspaceTabBarProps) {
+  const { t } = useTranslation('workspace');
   return (
     <div className="hidden sm:flex flex-wrap items-center justify-between gap-2 border-b border-border pb-2">
       {/* Workspace selector tabs & left sidebar toggle */}
@@ -61,17 +63,17 @@ export function WorkspaceTabBar({
           }`}
           title={
             subView !== 'editor'
-              ? 'Ordnerleiste nur im Notizen-Modus verfügbar'
+              ? t('tabbar.sidebarNotesOnly')
               : isSidebarCollapsed
-              ? 'Ordnerleiste einblenden'
-              : 'Ordnerleiste einklappen'
+              ? t('tabbar.sidebarShow')
+              : t('tabbar.sidebarHide')
           }
           aria-label={
             subView !== 'editor'
-              ? 'Ordnerleiste nur im Notizen-Modus verfügbar'
+              ? t('tabbar.sidebarNotesOnly')
               : isSidebarCollapsed
-              ? 'Ordnerleiste einblenden'
-              : 'Ordnerleiste einklappen'
+              ? t('tabbar.sidebarShow')
+              : t('tabbar.sidebarHide')
           }
         >
           {isSidebarCollapsed ? (
@@ -91,7 +93,7 @@ export function WorkspaceTabBar({
           }`}
         >
           <FileText className="w-3.5 h-3.5 text-accent" />
-          <span>Notizen</span>
+          <span>{t('tabbar.notes')}</span>
         </button>
 
         <button
@@ -151,12 +153,12 @@ export function WorkspaceTabBar({
                 className="inline-flex items-center gap-1 h-7 px-2 rounded-btn text-[11px] bg-panel text-muted"
                 title={
                   docHeaderStatus.channel === 'ws'
-                    ? 'Live-Verbindung über WebSocket'
+                    ? t('tabbar.ws')
                     : docHeaderStatus.channel === 'sse'
-                    ? 'Live-Verbindung über Server-Sent Events (WebSocket wird blockiert)'
+                    ? t('tabbar.sse')
                     : docHeaderStatus.channel === 'longpoll'
-                    ? 'Live über Long-Polling (WebSocket und SSE werden blockiert)'
-                    : 'Keine Live-Verbindung möglich – Änderungen werden alle 3 Sekunden abgefragt'
+                    ? t('tabbar.poll')
+                    : t('tabbar.none')
                 }
               >
                 <span
@@ -165,10 +167,10 @@ export function WorkspaceTabBar({
                   }`}
                 />
                 {docHeaderStatus.channel === 'longpoll'
-                  ? 'Live (Long-Polling)'
+                  ? t('tabbar.liveLongPoll')
                   : docHeaderStatus.channel === 'interval'
-                  ? 'Abgleich alle 3 s'
-                  : 'Live'}
+                  ? t('tabbar.interval')
+                  : t('tabbar.live')}
               </span>
             )}
 
@@ -184,27 +186,27 @@ export function WorkspaceTabBar({
                 const sharesCount = selectedDocObj.sharedWith?.length || 0;
                 const isShared =
                   sharesCount > 0 || !isOwner || Boolean(selectedDocObj.sharedFolderId);
-                const ownerDisplayName = selectedDocObj.ownerName || 'Eigentümer';
+                const ownerDisplayName = selectedDocObj.ownerName || t('tasks:tabs.owner');
                 if (!isShared) return null;
                 return isOwner ? (
                   <button
                     type="button"
                     onClick={() => openDocShareModal(selectedDocObj)}
                     className="inline-flex items-center gap-1 h-7 px-2 rounded-btn text-[11px] bg-panel font-semibold text-accent hover:bg-panel-elevated transition-colors cursor-pointer"
-                    title="Teilen-Menü öffnen: Geteilt mit Nutzern/Gruppen anzeigen & verwalten"
+                    title={t('tabbar.shareMenu')}
                   >
                     <Users className="w-2.5 h-2.5" />
-                    <span>Geteilt{sharesCount > 0 ? ` (${sharesCount})` : ''}</span>
+                    <span>{sharesCount > 0 ? t('tasks:tabs.sharedCount', { count: sharesCount }) : t('tabbar.shared')}</span>
                   </button>
                 ) : (
                   <button
                     type="button"
                     onClick={() => openDocShareModal(selectedDocObj)}
                     className="inline-flex items-center gap-1 h-7 px-2 rounded-btn text-[11px] bg-panel font-medium text-muted hover:bg-panel-elevated hover:text-main transition-colors cursor-pointer"
-                    title="Teilen & Berechtigungen öffnen"
+                    title={t('tabbar.shareOpen')}
                   >
                     <Users className="w-2.5 h-2.5" />
-                    <span>Geteilt von {ownerDisplayName}</span>
+                    <span>{t('tasks:tabs.sharedBy', { name: ownerDisplayName })}</span>
                   </button>
                 );
               })()}
@@ -214,12 +216,12 @@ export function WorkspaceTabBar({
               role="img"
               aria-label={
                 docSaveStatus === 'saved'
-                  ? 'Gespeichert'
+                  ? t('tabbar.saved')
                   : docSaveStatus === 'saving'
-                  ? 'Speichert…'
+                  ? t('editor.saving')
                   : docSaveStatus === 'unsaved'
-                  ? 'Ungespeichert'
-                  : 'Fehler beim Speichern'
+                  ? t('tabbar.unsaved')
+                  : t('editor.saveFailed')
               }
               className={`inline-flex items-center justify-center h-7 w-7 rounded-btn transition-colors ${
                 docSaveStatus === 'saved'
@@ -232,12 +234,12 @@ export function WorkspaceTabBar({
               }`}
               title={
                 docSaveStatus === 'saved'
-                  ? 'Alle Änderungen per HTTPS gesichert'
+                  ? t('tabbar.savedTitle')
                   : docSaveStatus === 'saving'
-                  ? 'Änderungen werden per HTTPS gespeichert…'
+                  ? t('tabbar.savingTitle')
                   : docSaveStatus === 'unsaved'
-                  ? 'Ungespeicherte Änderungen (Auto-Save aktiv)'
-                  : docSaveError || 'Fehler beim Speichern'
+                  ? t('tabbar.unsavedTitle')
+                  : docSaveError || t('editor.saveFailed')
               }
             >
               {docSaveStatus === 'saved' && (

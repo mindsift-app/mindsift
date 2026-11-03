@@ -1,6 +1,7 @@
 import React from 'react';
 import { FolderOpen, Minimize2, Pin, PinOff } from 'lucide-react';
 import { Document } from '../../lib/types';
+import { useTranslation } from 'react-i18next';
 
 type ZenSidebar = 'closed' | 'click' | 'hover';
 
@@ -32,6 +33,7 @@ export function FocusModeChrome({
   setZenActionsTarget,
   setFocusMode,
 }: FocusModeChromeProps) {
+  const { t } = useTranslation('workspace');
   return (
     <>
       {/* Header slides in when the mouse touches the top edge (large screens); pinned, it stays */}
@@ -52,8 +54,8 @@ export function FocusModeChrome({
               zenPinSide ? setZenPinSide(false) : setZenSidebar((v) => (v === 'closed' ? 'click' : 'closed'))
             }
             className="btn-icon h-7 w-7 shrink-0"
-            title={zenSideOpen ? 'Ordner und Notizen ausblenden' : 'Ordner und Notizen einblenden'}
-            aria-label={zenSideOpen ? 'Ordner und Notizen ausblenden' : 'Ordner und Notizen einblenden'}
+            title={zenSideOpen ? t('focus.hideSide') : t('focus.showSide')}
+            aria-label={zenSideOpen ? t('focus.hideSide') : t('focus.showSide')}
             aria-expanded={zenSideOpen}
           >
             <FolderOpen className="w-3.5 h-3.5" />
@@ -62,7 +64,7 @@ export function FocusModeChrome({
             type="button"
             onClick={() => setZenSidebar((v) => (v === 'closed' ? 'click' : 'closed'))}
             className="flex-1 min-w-0 truncate text-left text-xs font-medium text-main hover:text-accent cursor-pointer"
-            title="Andere Notiz wählen"
+            title={t('focus.otherNote')}
           >
             {[selectedDocObj?.icon, selectedDocObj?.title].filter(Boolean).join(' ')}
           </button>
@@ -75,8 +77,8 @@ export function FocusModeChrome({
               setZenPinTop((v) => !v);
             }}
             className={`btn-icon h-7 w-7 shrink-0 ${zenPinTop ? 'text-accent' : ''}`}
-            title={zenPinTop ? 'Leiste lösen' : 'Leiste anpinnen'}
-            aria-label={zenPinTop ? 'Leiste lösen' : 'Leiste anpinnen'}
+            title={zenPinTop ? t('focus.unpinBar') : t('focus.pinBar')}
+            aria-label={zenPinTop ? t('focus.unpinBar') : t('focus.pinBar')}
             aria-pressed={zenPinTop}
           >
             {zenPinTop ? <PinOff className="w-3.5 h-3.5" /> : <Pin className="w-3.5 h-3.5" />}
@@ -85,7 +87,7 @@ export function FocusModeChrome({
             type="button"
             onClick={() => setFocusMode(false)}
             className="btn-action h-7 px-2.5 text-xs inline-flex items-center gap-1.5"
-            title="Fokus-Modus beenden (Esc)"
+            title={t('focus.exitEsc')}
           >
             <Minimize2 className="w-3.5 h-3.5" />
             Beenden
@@ -105,8 +107,8 @@ export function FocusModeChrome({
         type="button"
         onClick={() => setFocusMode(false)}
         className="lg:hidden fixed bottom-4 right-4 z-[46] h-12 w-12 rounded-full bg-panel border border-border shadow-panel flex items-center justify-center text-main"
-        title="Fokus-Modus beenden"
-        aria-label="Fokus-Modus beenden"
+        title={t('editor.exitFocusTitle')}
+        aria-label={t('editor.exitFocusTitle')}
       >
         <Minimize2 className="w-4 h-4" />
       </button>

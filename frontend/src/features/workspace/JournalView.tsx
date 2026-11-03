@@ -4,6 +4,7 @@ import { Document, JournalDay, User } from '../../lib/types';
 import { shortDateLabel, todayISO } from '../../lib/journal';
 import { DocumentEditor } from './DocumentEditor';
 import { JournalCalendar } from './JournalCalendar';
+import { useTranslation } from 'react-i18next';
 
 const PAGE = 7;
 
@@ -55,6 +56,7 @@ export const JournalView: React.FC<JournalViewProps> = ({
   onBackMobile,
   onDaySaved,
 }) => {
+  const { t } = useTranslation('workspace');
   const today = todayISO();
   const docIdByDate = useMemo(() => new Map(days.map((d) => [d.date, d.docId])), [days]);
   const entryDates = useMemo(() => new Set(days.filter((d) => !d.empty).map((d) => d.date)), [days]);
@@ -150,7 +152,7 @@ export const JournalView: React.FC<JournalViewProps> = ({
           type="button"
           onClick={onBackMobile}
           className="lg:hidden btn-icon shrink-0 h-11 w-11"
-          title="Zurück zur Seitenleiste"
+          title={t('editor.backToSidebar')}
         >
           <ArrowLeft className="w-3.5 h-3.5" />
         </button>
@@ -159,7 +161,7 @@ export const JournalView: React.FC<JournalViewProps> = ({
           onClick={() => setShowCalendar((v) => !v)}
           className="lg:pointer-events-none flex-1 min-w-0 flex items-center gap-1.5 text-xs text-main font-medium text-left cursor-pointer"
           aria-expanded={showCalendar}
-          title="Kalender"
+          title={t('journal.calendarTitle')}
         >
           <CalendarDays className="w-3.5 h-3.5 text-accent shrink-0" />
           <span className="truncate">Journal · {shortDateLabel(activeDate)}</span>
@@ -182,7 +184,7 @@ export const JournalView: React.FC<JournalViewProps> = ({
           title={activeDoc ? `${activeDoc.title} teilen` : 'Teilen'}
         >
           <Users className="w-3.5 h-3.5" />
-          <span className="hidden sm:inline text-xs">{sharedCount > 0 ? `Geteilt (${sharedCount})` : 'Teilen'}</span>
+          <span className="hidden sm:inline text-xs">{sharedCount > 0 ? t('tasks:tabs.sharedCount', { count: sharedCount }) : t('journal.share')}</span>
         </button>
       </div>
 
@@ -232,7 +234,7 @@ export const JournalView: React.FC<JournalViewProps> = ({
                   }}
                 />
               ) : (
-                <div className="px-4 sm:px-8 py-6 text-xs text-muted">{shortDateLabel(date)} wird geöffnet…</div>
+                <div className="px-4 sm:px-8 py-6 text-xs text-muted">{t('journal.opening', { date: shortDateLabel(date) })}</div>
               )}
             </section>
           );

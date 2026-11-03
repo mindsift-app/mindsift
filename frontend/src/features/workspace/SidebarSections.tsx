@@ -4,6 +4,7 @@ import { CountBadge } from '../../components/CountBadge';
 import { JournalCalendar } from './JournalCalendar';
 import { useDocDragDrop } from './useDocDragDrop';
 import { WorkspaceSubView } from './workspaceTypes';
+import { useTranslation } from 'react-i18next';
 
 // Journal on top of the sidebar; open, it becomes a panel with the calendar (click the heading to close).
 // Panel and calendar animate open (grid rows 0fr → 1fr) instead of jumping. Only from lg on: below, the
@@ -22,6 +23,7 @@ export function SidebarJournal({
   journalDays: JournalDay[];
   jumpToJournalDay: (date: string) => void;
 }) {
+  const { t } = useTranslation('workspace');
   return (
     <div>
       <div
@@ -33,7 +35,7 @@ export function SidebarJournal({
           type="button"
           onClick={toggleJournal}
           aria-expanded={subView === 'journal'}
-          title={subView === 'journal' ? 'Journal schließen' : 'Journal öffnen'}
+          title={subView === 'journal' ? t('journal.close') : t('journal.open')}
           className={`w-full flex items-center gap-2 text-left cursor-pointer rounded-btn transition-all duration-300 h-11 sm:h-8 px-2 text-sm sm:text-xs text-main hover:bg-panel-elevated ${
             subView === 'journal' ? 'lg:h-7 lg:px-0.5 lg:text-sm lg:font-bold lg:hover:bg-transparent' : ''
           }`}
@@ -41,7 +43,7 @@ export function SidebarJournal({
           <CalendarDays
             className={`text-accent transition-all duration-300 w-3.5 h-3.5 ${subView === 'journal' ? 'lg:w-4 lg:h-4' : ''}`}
           />
-          <span>Journal</span>
+          <span>{t('journal.title')}</span>
         </button>
         <div
           className={`hidden lg:grid transition-[grid-template-rows,opacity] duration-300 ease-out ${
@@ -81,25 +83,26 @@ export function SidebarTags({
   selectedTag: string | null;
   handleSelectTag: (tag: string) => void;
 }) {
+  const { t } = useTranslation('workspace');
   return (
     <div>
       <div className="px-2 mb-1 text-[10px] font-bold uppercase tracking-wider text-faint">
-        Hashtags (#)
+        {t('sidebar.hashtags')}
       </div>
       <div className="flex flex-wrap gap-1 px-1">
-        {tagsSummary.map((t) => (
+        {tagsSummary.map((tag) => (
           <button
-            key={t.tag}
+            key={tag.tag}
             type="button"
-            onClick={() => handleSelectTag(t.tag)}
+            onClick={() => handleSelectTag(tag.tag)}
             className={`inline-flex items-center gap-0.5 px-2 py-0.5 rounded-btn text-[10px] font-medium transition-colors ${
-              subView === 'tag_detail' && selectedTag === t.tag
+              subView === 'tag_detail' && selectedTag === tag.tag
                 ? 'bg-accent text-on-accent'
                 : 'bg-panel-elevated text-muted hover:text-accent'
             }`}
           >
-            <span>#{t.tag}</span>
-            <span className="opacity-60 font-mono text-[9px]">{t.count}</span>
+            <span>#{tag.tag}</span>
+            <span className="opacity-60 font-mono text-[9px]">{tag.count}</span>
           </button>
         ))}
       </div>
@@ -119,6 +122,7 @@ export function SidebarTrash({
   trashCount: number;
   openTrash: () => void;
 }) {
+  const { t } = useTranslation('workspace');
   const { draggingDocId, trashDragOver, setTrashDragOver, handleDropOnTrash } = drag;
   return (
     <div className="p-2 border-t border-border shrink-0">
@@ -133,7 +137,7 @@ export function SidebarTrash({
         }}
         onDragLeave={() => setTrashDragOver(false)}
         onDrop={handleDropOnTrash}
-        title="Papierkorb – Notizen hierher ziehen, um sie zu löschen"
+        title={t('sidebar.trashTitle')}
         className={`w-full flex items-center gap-2 px-2 h-11 sm:h-8 rounded-btn text-xs border transition-colors cursor-pointer ${
           trashDragOver
             ? 'border-status-err bg-status-err/10 text-status-err ring-2 ring-status-err/30'
@@ -143,7 +147,7 @@ export function SidebarTrash({
         }`}
       >
         <Trash2 className="w-3.5 h-3.5" />
-        <span className="flex-1 text-left">Papierkorb</span>
+        <span className="flex-1 text-left">{t('trash.title')}</span>
         <CountBadge count={trashCount} />
       </button>
     </div>
