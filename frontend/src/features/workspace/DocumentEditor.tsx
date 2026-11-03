@@ -35,6 +35,8 @@ import { OutlinerTree, OutlinerTreeHandle } from './OutlinerTree';
 import { extractHashtags } from '../../lib/hashtags';
 import { moveSibling } from '../../lib/outlineList';
 import { reportNav, onNavStep, restoringNavPlace } from '../../lib/navHistory';
+import { useTranslation } from 'react-i18next';
+import i18n from '../../i18n';
 
 export type DocSaveStatus = 'saved' | 'saving' | 'unsaved' | 'error';
 
@@ -247,6 +249,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
   focusMode = false,
   onToggleFocusMode,
 }) => {
+  const { t } = useTranslation('workspace');
   const inJournal = variant === 'journal';
   const inTagPage = variant === 'tag';
   // Embedded in a list of notes (journal, hashtag page): no own scrolling, action bar or backlinks
@@ -304,7 +307,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
   }, [zoomedBlockId, doc?.id, embedded]);
 
   useEffect(() => {
-    if (!loading && (autoFocusTitle || (doc?.title === 'Neue Notiz' && (!doc?.blocks || doc?.blocks.length <= 1)))) {
+    if (!loading && (autoFocusTitle || (doc?.title === i18n.t('workspace:editor.newNote') && (!doc?.blocks || doc?.blocks.length <= 1)))) {
       const focusTitle = () => {
         if (titleInputRef.current) {
           titleInputRef.current.focus();
@@ -381,7 +384,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
         const normalized = ensureNonEmptyBlocks(docId, fetched.blocks);
         setDoc(fetched);
         if (!engineRef.current?.getState().ready) {
-          setTitle(fetched.title || 'Unbenannte Notiz');
+          setTitle(fetched.title || i18n.t('workspace:editor.untitled'));
           currentBlocksRef.current = normalized;
           setBlocks(normalized);
         }
@@ -398,7 +401,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
       })
       .catch((err: any) => {
         if (isCancelled) return;
-        setError(err?.message || 'Dokument konnte nicht geladen werden');
+        setError(err?.message || i18n.t('workspace:editor.loadFailed'));
         setLoading(false);
       });
 
@@ -438,7 +441,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
         onSaveStatusChange?.('saving');
         break;
       case 'offline':
-        onSaveStatusChange?.('unsaved', 'Offline – Änderungen sind lokal gesichert und werden gesendet, sobald die Verbindung zurück ist');
+        onSaveStatusChange?.('unsaved', i18n.t('workspace:editor.offlineSaved'));
         break;
       case 'error':
         onSaveStatusChange?.('error', engineState.errorMessage);
@@ -537,11 +540,11 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
     (blockId: string) => {
       const block = blocks.find((b) => b.id === blockId);
       const link = buildBlockLink(title || doc?.title || 'Notiz', blockId, block?.content || '');
-      const done = () => showNotice('Link zum Punkt kopiert – mit Strg+V in eine Notiz einfügen');
+      const done = () => showNotice(i18n.t('workspace:editor.linkCopied'));
       if (navigator.clipboard?.writeText) {
-        navigator.clipboard.writeText(link).then(done, () => showNotice(`Kopieren nicht möglich: ${link}`));
+        navigator.clipboard.writeText(link).then(done, () => showNotice(i18n.t('workspace:editor.copyFailed', { link })));
       } else {
-        showNotice(`Kopieren nicht möglich: ${link}`);
+        showNotice(i18n.t('workspace:editor.copyFailed', { link }));
       }
     },
     [blocks, title, doc?.title, showNotice]
@@ -554,7 +557,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
     if (!initialFocusedBlockId || !doc?.id) return;
     const timer = window.setTimeout(() => {
       if (!blocksForTargetRef.current.some((b) => b.id === initialFocusedBlockId)) {
-        showNotice('Der verlinkte Punkt ist in dieser Notiz nicht mehr vorhanden');
+        showNotice(i18n.t('workspace:editor.blockGone'));
       }
     }, 1500);
     return () => window.clearTimeout(timer);
@@ -574,7 +577,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
           .restoreDocument(inlined.sourceId)
           .then(() => api.getDocument(inlined.sourceId))
           .then((restored) => onDocCreated?.(restored))
-          .catch((err: any) => showNotice(err?.message || 'Notiz konnte nicht wiederhergestellt werden'));
+          .catch((err: any) => showNotice(err?.message || i18n.t('workspace:editor.restoreFailed')));
       }
     }
     const info = lastExtractRef.current;
@@ -585,7 +588,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
     api
       .undoExtract(info.newDocId)
       .then(() => onDocRemoved?.(info.newDocId))
-      .catch((err: any) => showNotice(err?.message || 'Ausgelagerte Notiz konnte nicht entfernt werden'));
+      .catch((err: any) => showNotice(err?.message || i18n.t('workspace:editor.removeExtractedFailed')));
   }, [onDocCreated, onDocRemoved, showNotice]);
   useEffect(() => () => {
     if (noticeTimerRef.current !== null) window.clearTimeout(noticeTimerRef.current);
@@ -648,12 +651,12 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
         lastInlineRef.current = null;
         lastExtractRef.current = { newDocId: created.id, blockId, link };
         onDocCreated?.(created);
-        showNotice(`In eigene Notiz „${created.title}“ umgewandelt`, [
-          { label: 'Öffnen', run: () => onOpenDocBlock?.(created.id) },
-          { label: 'Rückgängig', run: () => handleUndo() },
+        showNotice(i18n.t('workspace:editor.extracted', { title: created.title }), [
+          { label: i18n.t('workspace:editor.open'), run: () => onOpenDocBlock?.(created.id) },
+          { label: i18n.t('common:sync.undo'), run: () => handleUndo() },
         ]);
       } catch (err: any) {
-        showNotice(err?.message || 'Umwandeln fehlgeschlagen');
+        showNotice(err?.message || i18n.t('workspace:editor.convertFailed'));
       }
     },
     [docId, onOpenDocBlock, onDocCreated, showNotice, handleUndo, applyLocalBlocks]
@@ -680,9 +683,9 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
         lastExtractRef.current = null;
         lastInlineRef.current = { sourceId: res.sourceId, blockId, content: res.content };
         onDocRemoved?.(res.sourceId);
-        showNotice('Notiz zurückgeholt, sie liegt jetzt im Papierkorb', [{ label: 'Rückgängig', run: () => handleUndo() }]);
+        showNotice(i18n.t('workspace:editor.pulledBack'), [{ label: i18n.t('common:sync.undo'), run: () => handleUndo() }]);
       } catch (err: any) {
-        showNotice(err?.message || 'Zurückholen fehlgeschlagen');
+        showNotice(err?.message || i18n.t('workspace:editor.pullBackFailed'));
       }
     },
     [docId, onDocRemoved, showNotice, handleUndo, applyLocalBlocks]
@@ -974,7 +977,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
   };
 
   const handleExportMarkdown = () => {
-    const lines: string[] = [`# ${title || 'Unbenannte Notiz'}`, ''];
+    const lines: string[] = [`# ${title || i18n.t('workspace:editor.untitled')}`, ''];
     for (const b of blocks) {
       const indent = '  '.repeat(Math.max(0, b.level || 0));
       if (b.type === 'todo') {
@@ -999,7 +1002,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${(title || 'notiz').toLowerCase().replace(/[^a-z0-9äöüß_-]+/gi, '-')}.md`;
+    a.download = `${(title || i18n.t('workspace:editor.fileName')).toLowerCase().replace(/[^a-z0-9äöüß_-]+/gi, '-')}.md`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -1008,7 +1011,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
     return (
       <div className="flex-1 flex items-center justify-center p-12 text-muted">
         <Loader2 className="w-5 h-5 animate-spin mr-2 text-accent" />
-        <span className="text-xs">Notiz wird geladen…</span>
+        <span className="text-xs">{t('editor.loading')}</span>
       </div>
     );
   }
@@ -1023,7 +1026,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
             onClick={onBackMobile}
             className="btn-action px-3 py-1.5 text-xs text-main"
           >
-            Zurück zur Übersicht
+            {t('editor.backToOverview')}
           </button>
         )}
       </div>
@@ -1032,14 +1035,14 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
 
   const breadcrumbNav = (
     <nav
-      aria-label="Breadcrumb Navigation"
+      aria-label={t('editor.breadcrumb')}
       className="flex items-center flex-wrap gap-1 text-xs text-muted"
     >
       <button
         type="button"
         onClick={() => setZoomedBlockId(null)}
         className="hover:text-accent inline-flex items-center gap-1 font-medium transition-colors cursor-pointer"
-        title="Zurück zum Hauptdokument"
+        title={t('editor.backToMain')}
       >
         <Home className="w-3.5 h-3.5 text-accent shrink-0" />
         <span className="truncate max-w-[130px]">
@@ -1064,7 +1067,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
                 type="button"
                 onClick={() => setZoomedBlockId(crumb.id)}
                 className="hover:text-main truncate max-w-[120px] transition-colors cursor-pointer"
-                title={`Zoom zu "${crumb.title}"`}
+                title={t('editor.zoomTo', { title: crumb.title })}
               >
                 {crumb.title || 'Punkt'}
               </button>
@@ -1085,8 +1088,8 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
             onClick={handleUndo}
             disabled={!canEdit || !engineState?.canUndo}
             className="btn-icon h-11 w-11 sm:h-7 sm:w-7 disabled:opacity-40 disabled:cursor-not-allowed"
-            title="Rückgängig (Strg+Z)"
-            aria-label="Rückgängig (Strg+Z)"
+            title={t('editor.undo')}
+            aria-label={t('editor.undo')}
           >
             <Undo2 className="w-3.5 h-3.5" />
           </button>
@@ -1095,8 +1098,8 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
             onClick={handleRedo}
             disabled={!canEdit || !engineState?.canRedo}
             className="btn-icon h-11 w-11 sm:h-7 sm:w-7 disabled:opacity-40 disabled:cursor-not-allowed"
-            title="Wiederholen (Strg+Y)"
-            aria-label="Wiederholen (Strg+Y)"
+            title={t('editor.redo')}
+            aria-label={t('editor.redo')}
           >
             <Redo2 className="w-3.5 h-3.5" />
           </button>
@@ -1108,8 +1111,8 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
           type="button"
           onClick={() => onOpenShareModal(doc)}
           className="btn-icon h-11 w-11 sm:h-7 sm:w-7"
-          title="Notiz teilen und Berechtigungen"
-          aria-label="Notiz teilen und Berechtigungen"
+          title={t('editor.share')}
+          aria-label={t('editor.share')}
         >
           <Users className="w-3.5 h-3.5" />
         </button>
@@ -1121,8 +1124,8 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
           onClick={() => setShowActionsMenu((prev) => !prev)}
           aria-expanded={showActionsMenu}
           aria-haspopup="menu"
-          aria-label="Weitere Aktionen"
-          title="Weitere Aktionen"
+          aria-label={t('editor.more')}
+          title={t('editor.more')}
           className="btn-icon h-11 w-11 sm:h-7 sm:w-7"
         >
           <MoreHorizontal className="w-3.5 h-3.5" />
@@ -1148,7 +1151,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
                     doc?.isPinned ? 'text-status-warn' : 'text-accent'
                   }`}
                 />
-                <span>{doc?.isPinned ? 'Anheftung lösen' : 'Notiz anheften'}</span>
+                <span>{doc?.isPinned ? t('editor.unpin') : t('editor.pin')}</span>
               </button>
             )}
 
@@ -1163,7 +1166,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
                 className="w-full min-h-[44px] sm:min-h-0 px-2.5 py-2 sm:py-1.5 rounded-btn hover:bg-panel-elevated text-left text-main font-medium flex items-center gap-2 transition-colors cursor-pointer"
               >
                 <GitMerge className="w-3.5 h-3.5 text-accent shrink-0" />
-                <span>Mit anderer Notiz zusammenführen…</span>
+                <span>{t('editor.merge')}</span>
               </button>
             )}
 
@@ -1182,8 +1185,8 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
                 ) : (
                   <Maximize2 className="w-3.5 h-3.5 text-accent shrink-0" />
                 )}
-                <span className="flex-1">{focusMode ? 'Fokus-Modus beenden' : 'Fokus-Modus starten'}</span>
-                <kbd className="hidden sm:inline text-[10px] text-faint font-mono">Strg+⇧+F</kbd>
+                <span className="flex-1">{focusMode ? t('editor.exitFocusTitle') : 'Fokus-Modus starten'}</span>
+                <kbd className="hidden sm:inline text-[10px] text-faint font-mono">{t('editor.focusShortcut')}</kbd>
               </button>
             )}
 
@@ -1197,7 +1200,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
               className="w-full min-h-[44px] sm:min-h-0 px-2.5 py-2 sm:py-1.5 rounded-btn hover:bg-panel-elevated text-left text-main font-medium flex items-center gap-2 transition-colors cursor-pointer"
             >
               <Download className="w-3.5 h-3.5 text-accent shrink-0" />
-              <span>Als Markdown (.md) exportieren</span>
+              <span>{t('editor.exportMd')}</span>
             </button>
 
             {canEdit && (doc?.isOwner || doc?.permission === 'owner') && (
@@ -1213,7 +1216,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
                   className="w-full min-h-[44px] sm:min-h-0 px-2.5 py-2 sm:py-1.5 rounded-btn hover:bg-status-err/10 text-left text-status-err font-medium flex items-center gap-2 transition-colors cursor-pointer"
                 >
                   <Trash2 className="w-3.5 h-3.5 text-status-err shrink-0" />
-                  <span>Notiz löschen</span>
+                  <span>{t('editor.delete')}</span>
                 </button>
               </>
             )}
@@ -1240,7 +1243,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
               type="button"
               onClick={onBackMobile}
               className="lg:hidden btn-icon shrink-0 h-11 w-11 sm:h-7 sm:w-7"
-              title="Zurück zur Seitenleiste"
+              title={t('editor.backToSidebar')}
             >
               <ArrowLeft className="w-3.5 h-3.5" />
             </button>
@@ -1269,14 +1272,14 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
               className="sm:hidden inline-flex items-center shrink-0"
               title={
                 engineState.status === 'saving'
-                  ? 'Speichert…'
+                  ? t('editor.saving')
                   : engineState.status === 'offline'
-                  ? 'Offline – Änderungen sind lokal gesichert'
+                  ? t('editor.offline')
                   : engineState.status === 'error'
-                  ? engineState.errorMessage || 'Fehler beim Speichern'
+                  ? engineState.errorMessage || t('editor.saveFailed')
                   : 'Gespeichert'
               }
-              aria-label="Speicherstatus"
+              aria-label={t('editor.saveStatus')}
             >
               {engineState.status === 'saving' ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin text-accent" />
@@ -1294,7 +1297,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
           {!canEdit && (
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-btn text-[11px] font-medium bg-status-warn/10 text-status-warn border border-status-warn/30">
               <Lock className="w-3 h-3" />
-              Nur Lesen
+              {t('editor.readOnly')}
             </span>
           )}
         </div>
@@ -1307,7 +1310,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
       {inTrash && (
         <div className="flex flex-wrap items-center gap-2 px-4 sm:px-6 py-2 bg-status-err/10 border-b border-status-err/25 text-status-err text-xs">
           <Trash2 className="w-3.5 h-3.5 shrink-0" />
-          <span className="flex-1 min-w-0">Diese Notiz liegt im Papierkorb und ist schreibgeschützt.</span>
+          <span className="flex-1 min-w-0">{t('editor.inTrash')}</span>
           {onRestoreDoc && (
             <button
               type="button"
@@ -1325,7 +1328,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
       {!canEdit && !inTrash && (
         <div className="flex items-center gap-2 px-4 sm:px-6 py-2 bg-status-warn/10 border-b border-status-warn/25 text-status-warn text-xs">
           <Lock className="w-3.5 h-3.5 shrink-0" />
-          <span>Dieses Dokument wurde schreibgeschützt mit dir geteilt (Nur Lesen).</span>
+          <span>{t('editor.sharedReadOnly')}</span>
         </div>
       )}
 
@@ -1351,7 +1354,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
                     Fokus-Modus
                   </span>
                   <span className="text-[11px] text-faint hidden sm:inline">
-                    Isolierter Ast • Zoom aktiv
+                    {t('editor.zoom')}
                   </span>
                 </div>
                 <input
@@ -1374,7 +1377,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
                       handleCreateBlock(firstChild, zoomedBlock.id);
                     }
                   }}
-                  placeholder="Ast-Titel…"
+                  placeholder={t('editor.branchTitle')}
                   readOnly={!canEdit}
                   className="w-full text-2xl sm:text-3xl font-light text-main bg-transparent border-0 focus:outline-none focus:ring-0 tracking-tight leading-tight"
                 />
@@ -1384,16 +1387,16 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
                 type="button"
                 onClick={() => setZoomedBlockId(null)}
                 className="btn-action inline-flex items-center gap-1.5 px-2.5 py-1 text-xs text-muted hover:text-main shrink-0 mt-1"
-                title="Fokus-Modus beenden"
+                title={t('editor.exitFocusTitle')}
               >
                 <Minimize2 className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Fokus beenden</span>
+                <span className="hidden sm:inline">{t('editor.exitFocus')}</span>
               </button>
             </div>
 
             {childBlocks.length === 0 ? (
               <div className="py-8 text-center text-xs text-faint border border-dashed border-border rounded-card my-2">
-                <p className="mb-2">Dieser Ast hat noch keine Unterpunkte.</p>
+                <p className="mb-2">{t('editor.noChildren')}</p>
                 {canEdit && (
                   <button
                     type="button"
@@ -1411,7 +1414,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
                     className="btn-action inline-flex items-center gap-1.5 px-3 py-1.5 text-xs text-accent font-medium hover:bg-accent/10"
                   >
                     <Plus className="w-3.5 h-3.5" />
-                    <span>Ersten Unterpunkt anlegen (oder Enter drücken)</span>
+                    <span>{t('editor.firstChild')}</span>
                   </button>
                 )}
               </div>
@@ -1460,10 +1463,10 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
                   type="button"
                   onClick={() => onOpenDocBlock?.(docId)}
                   className="flex items-center gap-2 min-w-0 max-w-full text-left text-lg font-semibold text-main hover:text-accent transition-colors cursor-pointer"
-                  title="Notiz öffnen"
+                  title={t('editor.openNote')}
                 >
                   {doc?.icon && <span className="shrink-0">{doc.icon}</span>}
-                  <span className="truncate">{title || 'Unbenannte Notiz'}</span>
+                  <span className="truncate">{title || i18n.t('workspace:editor.untitled')}</span>
                   {doc?.folderPath && <span className="shrink-0 text-[11px] font-normal text-faint">{doc.folderPath}</span>}
                 </button>
                 {tagGroups.map((group) => (
@@ -1509,7 +1512,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
                   className={`text-2xl sm:text-3xl transition-opacity select-none leading-none bg-transparent border-0 outline-none p-0 focus:outline-none focus:ring-0 shadow-none ${
                     inJournal ? 'cursor-default' : 'hover:opacity-80 cursor-pointer'
                   }`}
-                  title={inJournal ? undefined : 'Icon ändern'}
+                  title={inJournal ? undefined : t('editor.changeIcon')}
                 >
                   {/* Journal days: a quiet calendar in the theme's text colour instead of the colourful emoji;
                       a note without an icon shows a faint "choose icon" to editors only */}
@@ -1518,7 +1521,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
                   ) : doc?.icon ? (
                     doc.icon
                   ) : canEdit ? (
-                    <SmilePlus className="w-6 h-6 sm:w-7 sm:h-7 text-faint" strokeWidth={1.5} aria-label="Icon wählen" />
+                    <SmilePlus className="w-6 h-6 sm:w-7 sm:h-7 text-faint" strokeWidth={1.5} aria-label={t('editor.chooseIcon')} />
                   ) : null}
                 </button>
                 {showEmojiPicker && canEdit && (
@@ -1560,7 +1563,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
                   }
                 }}
                 onBlur={handleTitleBlur}
-                placeholder="Titel der Notiz…"
+                placeholder={t('editor.titlePlaceholder')}
                 className="flex-1 min-w-0 text-2xl sm:text-3xl font-light text-main bg-transparent border-0 focus:outline-none focus:ring-0 tracking-tight resize-none leading-snug whitespace-pre-wrap break-words [overflow-wrap:anywhere]"
               />
             </div>

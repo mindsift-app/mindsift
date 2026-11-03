@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Link as LinkIcon,
   FileText,
@@ -29,6 +30,7 @@ export const LinkModal: React.FC<LinkModalProps> = ({
   onInsertLink,
   availableDocs,
 }) => {
+  const { t } = useTranslation('workspace');
   const [tab, setTab] = useState<'note' | 'web'>('note');
   const [search, setSearch] = useState('');
   const [docs, setDocs] = useState<Document[]>([]);
@@ -180,7 +182,7 @@ export const LinkModal: React.FC<LinkModalProps> = ({
   }, [search, isOpen, tab, pickDoc]);
 
   const handleSelectNote = (doc: { title: string }) => {
-    const noteTitle = doc.title.trim() || 'Notiz';
+    const noteTitle = doc.title.trim() || t('link.note');
     onInsertLink(`[[${noteTitle}]]`);
   };
 
@@ -212,9 +214,9 @@ export const LinkModal: React.FC<LinkModalProps> = ({
               <LinkIcon className="w-4 h-4" />
             </div>
             <div className="min-w-0">
-              <h3 className="text-sm font-bold text-main truncate">Link einfügen</h3>
+              <h3 className="text-sm font-bold text-main truncate">{t('link.title')}</h3>
               <p className="text-[11px] text-muted truncate">
-                Notiz intern verknüpfen oder externen Web-Link einbetten
+                {t('link.intro')}
               </p>
             </div>
           </div>
@@ -222,7 +224,7 @@ export const LinkModal: React.FC<LinkModalProps> = ({
             type="button"
             onClick={onClose}
             className="p-1.5 text-muted hover:text-main rounded-btn hover:bg-panel transition-colors cursor-pointer"
-            title="Schließen"
+            title={t('close')}
           >
             <X className="w-4 h-4" />
           </button>
@@ -231,7 +233,7 @@ export const LinkModal: React.FC<LinkModalProps> = ({
         {/* Control Box - matching UnifiedShareModal form header */}
         <div className="space-y-3 p-3 bg-panel-elevated border border-border rounded-card">
           <div className="flex items-center justify-between gap-2">
-            <span className="text-xs font-semibold text-main">Link-Typ:</span>
+            <span className="text-xs font-semibold text-main">{t('link.type')}</span>
             <div className="flex items-center gap-1">
               <button
                 type="button"
@@ -243,7 +245,7 @@ export const LinkModal: React.FC<LinkModalProps> = ({
                 }`}
               >
                 <FileText className="w-3.5 h-3.5" />
-                <span>Notiz</span>
+                <span>{t('link.note')}</span>
               </button>
               <button
                 type="button"
@@ -255,7 +257,7 @@ export const LinkModal: React.FC<LinkModalProps> = ({
                 }`}
               >
                 <Globe className="w-3.5 h-3.5" />
-                <span>Web-Link</span>
+                <span>{t('link.web')}</span>
               </button>
             </div>
           </div>
@@ -268,7 +270,7 @@ export const LinkModal: React.FC<LinkModalProps> = ({
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Notiz suchen (Titel oder Ordner)…"
+                placeholder={t('link.searchNote')}
                 className="input-field bg-panel h-8 pl-8 pr-2.5 text-xs w-full text-main placeholder:text-muted"
               />
             </div>
@@ -283,7 +285,7 @@ export const LinkModal: React.FC<LinkModalProps> = ({
                   type="text"
                   value={webTitle}
                   onChange={(e) => setWebTitle(e.target.value)}
-                  placeholder="z. B. MindSift Dokumentation"
+                  placeholder={t('link.textPlaceholder')}
                   className="input-field bg-panel h-8 px-2.5 text-xs w-full text-main placeholder:text-muted"
                 />
               </div>
@@ -316,7 +318,7 @@ export const LinkModal: React.FC<LinkModalProps> = ({
                   className="btn-primary text-xs h-8 px-3.5 flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                 >
                   <Plus className="w-3.5 h-3.5" />
-                  <span>Link einfügen</span>
+                  <span>{t('link.title')}</span>
                 </button>
               </div>
             </form>
@@ -331,37 +333,37 @@ export const LinkModal: React.FC<LinkModalProps> = ({
                 type="button"
                 onClick={() => setPickDoc(null)}
                 className="btn-icon h-11 w-11 sm:h-7 sm:w-7 shrink-0"
-                title="Zurück zur Notizliste"
-                aria-label="Zurück zur Notizliste"
+                title={t('link.backToList')}
+                aria-label={t('link.backToList')}
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
               </button>
               <span className="text-xs font-semibold text-main truncate">
-                Punkt in „{pickDoc.title || 'Unbenannte Notiz'}“ wählen
+                {t('link.pickBlockIn', { title: pickDoc.title || t('editor.untitled') })}
               </span>
             </div>
             <input
               type="text"
               value={blockSearch}
               onChange={(e) => setBlockSearch(e.target.value)}
-              placeholder="Punkte filtern…"
+              placeholder={t('link.filterBlocks')}
               className="input-field w-full h-11 sm:h-8 px-2.5 text-xs"
-              aria-label="Punkte filtern"
+              aria-label={t('link.filterBlocksLabel')}
             />
             <div className="space-y-0.5 max-h-64 overflow-y-auto pr-0.5">
               {pickBlocks === null ? (
                 <div className="p-4 text-xs text-muted flex items-center gap-2 justify-center">
                   <Loader2 className="w-4 h-4 animate-spin text-accent" />
-                  <span>Punkte werden geladen…</span>
+                  <span>{t('link.loadingBlocks')}</span>
                 </div>
               ) : pickableBlocks.length === 0 ? (
-                <div className="p-4 text-xs text-muted text-center">Keine passenden Punkte.</div>
+                <div className="p-4 text-xs text-muted text-center">{t('link.noBlocks')}</div>
               ) : (
                 pickableBlocks.map((b) => (
                   <button
                     key={b.id}
                     type="button"
-                    onClick={() => onInsertLink(buildBlockLink(pickDoc.title || 'Notiz', b.id, b.content))}
+                    onClick={() => onInsertLink(buildBlockLink(pickDoc.title || t('link.note'), b.id, b.content))}
                     className="w-full text-left min-h-[44px] sm:min-h-0 py-1.5 pr-2 rounded-btn text-xs text-main hover:bg-panel-elevated hover:text-accent flex items-start gap-1.5 cursor-pointer"
                     style={{ paddingLeft: `${0.5 + Math.min(b.level || 0, 5) * 0.875}rem` }}
                   >
@@ -378,9 +380,9 @@ export const LinkModal: React.FC<LinkModalProps> = ({
         {tab === 'note' && !pickDoc && (
           <div className="space-y-2">
             <div className="flex items-center justify-between text-xs font-semibold text-muted uppercase tracking-wider px-0.5">
-              <span>Verfügbare Notizen</span>
+              <span>{t('link.available')}</span>
               <span className="font-mono text-[11px] font-normal lowercase">
-                {filteredDocs.length} {filteredDocs.length === 1 ? 'Notiz' : 'Notizen'}
+                {t('link.notesCount', { count: filteredDocs.length })}
               </span>
             </div>
 
@@ -388,15 +390,15 @@ export const LinkModal: React.FC<LinkModalProps> = ({
               {loading ? (
                 <div className="p-6 bg-canvas border border-border rounded-card text-xs text-muted flex items-center gap-2 justify-center text-center">
                   <Loader2 className="w-4 h-4 animate-spin text-accent" />
-                  <span>Notizen werden geladen…</span>
+                  <span>{t('link.loadingNotes')}</span>
                 </div>
               ) : filteredDocs.length === 0 ? (
                 <div className="p-4 bg-canvas border border-border rounded-card text-xs text-muted flex items-center gap-2.5 justify-center text-center">
                   <Search className="w-4 h-4 text-faint shrink-0" />
                   <span>
                     {search
-                      ? `Keine Notiz für "${search}" gefunden.`
-                      : 'Keine Notizen im Workspace vorhanden.'}
+                      ? t('link.noneFor', { query: search })
+                      : t('link.noNotes')}
                   </span>
                 </div>
               ) : (
@@ -410,7 +412,7 @@ export const LinkModal: React.FC<LinkModalProps> = ({
                       {d.icon && <span className="text-base shrink-0">{d.icon}</span>}
                       <div className="min-w-0">
                         <div className="text-xs font-semibold text-main truncate group-hover:text-accent">
-                          {d.title || 'Unbenannte Notiz'}
+                          {d.title || t('editor.untitled')}
                         </div>
                         {d.folderPath && (
                           <div className="text-[10px] text-muted truncate">
@@ -427,8 +429,8 @@ export const LinkModal: React.FC<LinkModalProps> = ({
                           openBlockPicker(d as Document);
                         }}
                         className="btn-icon h-11 w-11 sm:h-7 sm:w-7 text-muted hover:text-accent"
-                        title="Einen einzelnen Punkt dieser Notiz verlinken"
-                        aria-label="Punkt dieser Notiz wählen"
+                        title={t('link.pickBlockTitle')}
+                        aria-label={t('link.pickBlock')}
                       >
                         <ListTree className="w-3.5 h-3.5" />
                       </button>
@@ -436,7 +438,7 @@ export const LinkModal: React.FC<LinkModalProps> = ({
                         type="button"
                         className="btn-action text-xs h-7 px-2.5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 text-accent cursor-pointer"
                       >
-                        <span>Einfügen</span>
+                        <span>{t('link.insert')}</span>
                         <ExternalLink className="w-3 h-3" />
                       </button>
                     </div>
@@ -449,7 +451,7 @@ export const LinkModal: React.FC<LinkModalProps> = ({
             {search.trim().length >= 3 && (blockHitsLoading || blockHits.length > 0) && (
               <>
                 <div className="flex items-center justify-between text-xs font-semibold text-muted uppercase tracking-wider px-0.5 pt-1">
-                  <span>Punkte</span>
+                  <span>{t('link.blocks')}</span>
                   {blockHitsLoading && <Loader2 className="w-3.5 h-3.5 animate-spin text-accent" />}
                 </div>
                 <div className="space-y-1.5 max-h-56 overflow-y-auto pr-0.5">
@@ -457,14 +459,14 @@ export const LinkModal: React.FC<LinkModalProps> = ({
                     <button
                       key={`${h.docId}:${h.blockId}`}
                       type="button"
-                      onClick={() => onInsertLink(buildBlockLink(h.title || 'Notiz', h.blockId, h.content))}
+                      onClick={() => onInsertLink(buildBlockLink(h.title || t('link.note'), h.blockId, h.content))}
                       className="w-full text-left p-2.5 min-h-11 bg-canvas border border-border rounded-card hover:border-accent/60 transition-colors cursor-pointer space-y-0.5"
-                      title="Diesen Punkt verlinken"
+                      title={t('link.linkBlock')}
                     >
                       <SnippetRenderer snippet={h.snippet} />
                       <span className="block text-[10px] text-faint truncate">
                         {h.icon ? `${h.icon} ` : ''}
-                        {h.title || 'Unbenannte Notiz'}
+                        {h.title || t('editor.untitled')}
                       </span>
                     </button>
                   ))}

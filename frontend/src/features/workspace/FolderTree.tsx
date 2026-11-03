@@ -4,6 +4,7 @@ import { Document, SharedFolder } from '../../lib/types';
 import { FolderTreeItem } from './FolderTreeItem';
 import { useDocDragDrop } from './useDocDragDrop';
 import { FolderTreeNode, WorkspaceSubView } from './workspaceTypes';
+import { useTranslation } from 'react-i18next';
 
 interface FolderTreeProps {
   pinnedDocs: Document[];
@@ -41,11 +42,12 @@ export function FolderTree({
   onOpenDoc,
   onSelectDoc,
 }: FolderTreeProps) {
+  const { t } = useTranslation('workspace');
   const { draggingDocId, draggingFolderPath, dragOverFolder, setDragOverFolder, handleDropOnFolder, handleFolderDragStart, handleDocDragStart, docDropProps, mergeHoverId, markedDocIds, handleDocRowClick } = drag;
   return (
     <>
       {pinnedDocs.length === 0 && folderTree.length === 0 && rootDocs.length === 0 ? (
-        <div className="px-2 py-2 text-xs text-muted">Noch keine Notizen</div>
+        <div className="px-2 py-2 text-xs text-muted">{t('folder.noNotes')}</div>
       ) : (
         <div>
           {/* Pinned Notes */}
@@ -79,7 +81,7 @@ export function FolderTree({
                   }`}
                 >
                   {d.icon && <span className="shrink-0">{d.icon}</span>}
-                  <span className="truncate flex-1">{d.title || 'Unbenannte Notiz'}</span>
+                  <span className="truncate flex-1">{d.title || t('editor.untitled')}</span>
                   {d.sharedWith && d.sharedWith.length > 0 && (
                     <Users className="w-3 h-3 text-status-ok shrink-0" />
                   )}
@@ -140,7 +142,7 @@ export function FolderTree({
                   }`}
                 >
                   {d.icon && <span className="shrink-0">{d.icon}</span>}
-                  <span className="truncate flex-1">{d.title || 'Unbenannte Notiz'}</span>
+                  <span className="truncate flex-1">{d.title || t('editor.untitled')}</span>
                   {d.sharedWith && d.sharedWith.length > 0 && (
                     <Users className="w-3 h-3 text-status-ok shrink-0" />
                   )}
@@ -166,7 +168,7 @@ export function FolderTree({
               : 'border-border/60 bg-panel-elevated/40 text-muted hover:border-accent/40'
           }`}
         >
-          <span>Auf Hauptebene verschieben</span>
+          <span>{t('folder.moveToRoot')}</span>
         </div>
       )}
     </>

@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Document } from '../../lib/types';
 import { api, triggerHaptic } from '../../lib/api';
+import i18n from '../../i18n';
 
 interface UseDocDragDropOptions {
   docs: Document[];
@@ -153,7 +154,7 @@ export function useDocDragDrop({
       }
     }
     if (trashed.length === 0) {
-      showToast('Nur eigene Notizen lassen sich löschen');
+      showToast(i18n.t('workspace:dnd.ownOnlyDelete'));
       return;
     }
     setDocs((prev) => prev.filter((d) => !trashed.includes(d.id)));
@@ -164,9 +165,9 @@ export function useDocDragDrop({
     setMarkedDocIds(new Set());
     onStatsChange();
     reloadTrash();
-    showToast(trashed.length === 1 ? 'Notiz im Papierkorb' : `${trashed.length} Notizen im Papierkorb`, [
+    showToast(i18n.t('workspace:dnd.trashed', { count: trashed.length }), [
       {
-        label: 'Rückgängig',
+        label: i18n.t('common:sync.undo'),
         run: async () => {
           for (const id of trashed) {
             await api.restoreDocument(id).catch(() => {});
@@ -182,7 +183,7 @@ export function useDocDragDrop({
   const requestMerge = (sourceId: string, targetId?: string) => {
     const source = docs.find((d) => d.id === sourceId);
     if (!source?.isOwner) {
-      showToast('Nur eigene Notizen lassen sich in eine andere einfügen');
+      showToast(i18n.t('workspace:dnd.ownOnlyMerge'));
       return;
     }
     setMergeDialog({ sourceId, targetId });

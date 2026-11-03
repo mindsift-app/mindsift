@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Camera, ImagePlus, Link as LinkIcon, Loader2, X } from 'lucide-react';
 import { copyExternalImage, prepareImage, UploadedMedia, uploadMedia } from '../../lib/media';
+import { useTranslation } from 'react-i18next';
 
 interface ImagePickerProps {
   docId: string;
@@ -11,6 +12,7 @@ interface ImagePickerProps {
 // Inline box an empty bullet turns into after /image: pick a file (or the camera on phones), drop or
 // paste an image, or give a link the server copies. Nothing is synced until the upload succeeded.
 export const ImagePicker: React.FC<ImagePickerProps> = ({ docId, onDone, onCancel }) => {
+  const { t } = useTranslation('workspace');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
@@ -26,7 +28,7 @@ export const ImagePicker: React.FC<ImagePickerProps> = ({ docId, onDone, onCance
   const uploadFile = async (file: File | Blob | null | undefined) => {
     if (!file || busy) return;
     if (file.type && !file.type.startsWith('image/')) {
-      setError('Bitte eine Bilddatei wählen');
+      setError(t('media.chooseImage'));
       return;
     }
     setBusy(true);
@@ -35,7 +37,7 @@ export const ImagePicker: React.FC<ImagePickerProps> = ({ docId, onDone, onCance
       const { blob, name } = await prepareImage(file);
       onDone(await uploadMedia(docId, blob, name));
     } catch (err: any) {
-      setError(err?.message || 'Hochladen fehlgeschlagen');
+      setError(err?.message || t('media.uploadFailed'));
       setBusy(false);
     }
   };
@@ -49,7 +51,7 @@ export const ImagePicker: React.FC<ImagePickerProps> = ({ docId, onDone, onCance
     try {
       onDone(await copyExternalImage(docId, target));
     } catch (err: any) {
-      setError(err?.message || 'Bild konnte nicht übernommen werden');
+      setError(err?.message || t('media.imageFetchFailed'));
       setBusy(false);
     }
   };
@@ -89,12 +91,12 @@ export const ImagePicker: React.FC<ImagePickerProps> = ({ docId, onDone, onCance
     >
       <div className="flex items-center justify-between gap-2">
         <span className="text-xs font-semibold text-main flex items-center gap-1.5">
-          <ImagePlus className="w-4 h-4 text-accent" /> Bild einfügen
+          <ImagePlus className="w-4 h-4 text-accent" /> {t('media.insertImage')}
         </span>
         <button
           type="button"
           onClick={onCancel}
-          title="Abbrechen (Esc)"
+          title={t('media.cancelEsc')}
           className="w-11 h-11 sm:w-7 sm:h-7 flex items-center justify-center rounded-btn text-muted hover:text-main hover:bg-panel-elevated"
         >
           <X className="w-4 h-4" />
@@ -113,7 +115,7 @@ export const ImagePicker: React.FC<ImagePickerProps> = ({ docId, onDone, onCance
               onClick={() => fileRef.current?.click()}
               className="btn-primary h-11 sm:h-8 px-3 text-xs flex items-center justify-center gap-1.5"
             >
-              <ImagePlus className="w-4 h-4" /> Datei wählen
+              <ImagePlus className="w-4 h-4" /> {t('media.chooseFile')}
             </button>
             <button
               type="button"
@@ -123,7 +125,7 @@ export const ImagePicker: React.FC<ImagePickerProps> = ({ docId, onDone, onCance
               <Camera className="w-4 h-4" /> Foto aufnehmen
             </button>
             <span className="hidden sm:flex items-center text-[11px] text-faint">
-              oder hierher ziehen bzw. mit Strg+V einfügen
+              {t('media.dropHint')}
             </span>
           </div>
           <form onSubmit={copyLink} className="flex gap-2">
@@ -134,7 +136,7 @@ export const ImagePicker: React.FC<ImagePickerProps> = ({ docId, onDone, onCance
                 inputMode="url"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
-                placeholder="https://… Bild-Link"
+                placeholder={t('media.imageUrl')}
                 className="w-full h-11 sm:h-8 pl-8 pr-2 input-field text-xs"
               />
             </div>
@@ -143,7 +145,7 @@ export const ImagePicker: React.FC<ImagePickerProps> = ({ docId, onDone, onCance
               disabled={!url.trim()}
               className="btn-secondary h-11 sm:h-8 px-3 text-xs shrink-0 disabled:opacity-40"
             >
-              Übernehmen
+              {t('media.take')}
             </button>
           </form>
         </>

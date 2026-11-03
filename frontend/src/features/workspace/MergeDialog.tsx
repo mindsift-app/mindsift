@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { GitMerge, Search } from 'lucide-react';
 import { FormSheet } from '../../components/FormSheet';
 import { api } from '../../lib/api';
@@ -18,6 +19,7 @@ const canWrite = (d: Document) => d.isOwner || d.permission === 'owner' || d.per
 // Merging a note into another: pick the target (when not dropped onto one), confirm, merge. The source
 // is appended to the target under a heading with its title and goes to the trash.
 export const MergeDialog: React.FC<MergeDialogProps> = ({ docs, sourceId, targetId, onClose, onMerged }) => {
+  const { t } = useTranslation('workspace');
   const [target, setTarget] = useState<string | null>(targetId || null);
   const [query, setQuery] = useState('');
   const [busy, setBusy] = useState(false);
@@ -41,47 +43,46 @@ export const MergeDialog: React.FC<MergeDialogProps> = ({ docs, sourceId, target
     try {
       onMerged(await api.mergeDocuments(target, sourceId));
     } catch (err: any) {
-      setError(err?.message || 'Zusammenführen fehlgeschlagen');
+      setError(err?.message || t('merge.failed'));
       setBusy(false);
     }
   };
 
-  const title = (d?: Document) => `„${d?.title || 'Unbenannte Notiz'}“`;
+  const title = (d?: Document) => `„${d?.title || t('editor.untitled')}“`;
 
   return (
     <FormSheet
-      title="Notizen zusammenführen"
+      title={t('merge.title')}
       icon={<GitMerge className="w-4 h-4" />}
       onClose={onClose}
       onSubmit={submit}
-      submitLabel={target ? 'Zusammenführen' : 'Ziel wählen'}
+      submitLabel={target ? t('merge.submit') : t('merge.pickTarget')}
       busy={busy || !target}
     >
       {targetDoc ? (
         <div className="space-y-2 text-xs">
           <p className="text-main">
-            Notiz {title(source)} in {title(targetDoc)} zusammenführen?
+            {t('merge.question', { source: title(source), target: title(targetDoc) })}
           </p>
           <p className="text-muted">
-            Die Punkte von {title(source)} werden als eigener Abschnitt an {title(targetDoc)} angehängt.{' '}
-            {title(source)} wandert danach in den Papierkorb; „Rückgängig“ macht beides wieder rückgängig.
+            {t('merge.explain', { source: title(source), target: title(targetDoc) })}
           </p>
           {!targetId && (
             <button type="button" onClick={() => setTarget(null)} className="text-accent hover:underline min-h-[44px] sm:min-h-0">
-              Anderes Ziel wählen
+              {t('merge.otherTarget')}
             </button>
           )}
         </div>
       ) : (
         <div className="space-y-2">
-          <p className="text-xs text-muted">In welche Notiz soll {title(source)} eingefügt werden?</p>
+          <p className="text-xs text-muted">{t('merge.whichTarget', { source: title(source) })}</p>
           <div className="relative">
             <Search className="w-3.5 h-3.5 text-faint absolute left-2.5 top-1/2 -translate-y-1/2" />
             <input
               autoFocus
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Notiz suchen…"
+              placeholder={t('merge.search')}
               className="w-full h-11 sm:h-9 pl-8 pr-2 input-field text-sm"
             />
           </div>
@@ -94,12 +95,12 @@ export const MergeDialog: React.FC<MergeDialogProps> = ({ docs, sourceId, target
                   className="w-full min-h-[44px] sm:min-h-0 px-3 py-2 flex items-center gap-2 text-left text-xs text-main hover:bg-panel-elevated"
                 >
                   {d.icon && <span className="shrink-0">{d.icon}</span>}
-                  <span className="truncate flex-1">{d.title || 'Unbenannte Notiz'}</span>
+                  <span className="truncate flex-1">{d.title || t('editor.untitled')}</span>
                   {d.folderPath && <span className="text-[10px] text-faint truncate max-w-[40%]">{d.folderPath}</span>}
                 </button>
               </li>
             ))}
-            {candidates.length === 0 && <li className="px-3 py-3 text-xs text-faint">Keine passende Notiz</li>}
+            {candidates.length === 0 && <li className="px-3 py-3 text-xs text-faint">{t('merge.none')}</li>}
           </ul>
         </div>
       )}

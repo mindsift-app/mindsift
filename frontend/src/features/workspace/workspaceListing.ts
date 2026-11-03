@@ -2,6 +2,7 @@ import { Document, DocumentBlock, SharedFolder, TagDetails, TagSummary } from '.
 import { RollupTodo } from './TodoRollupView';
 import { TagMeta } from './HashtagOverview';
 import { FolderTreeNode } from './workspaceTypes';
+import i18n from '../../i18n';
 
 // What the folder tree, the to-do collection and the hashtag views of WorkspaceView show. Pure functions.
 
@@ -92,7 +93,7 @@ export function tagGroups(docs: Document[], selectedTag: string | null, tagDetai
     if (matched.length > 0) {
       map.set(d.id, {
         docId: d.id,
-        title: d.title || 'Unbenannte Notiz',
+        title: d.title || i18n.t('workspace:editor.untitled'),
         icon: d.icon || '',
         folderPath: d.folderPath || '',
         matchedBlocks: matched,
@@ -105,7 +106,7 @@ export function tagGroups(docs: Document[], selectedTag: string | null, tagDetai
       if (!map.has(dg.docId)) {
         map.set(dg.docId, {
           docId: dg.docId,
-          title: dg.title || 'Unbenannte Notiz',
+          title: dg.title || i18n.t('workspace:editor.untitled'),
           icon: dg.icon || '',
           folderPath: dg.folderPath || '',
           matchedBlocks: dg.matchedBlocks || [],
@@ -140,7 +141,7 @@ export function tagsMetadata(tagsSummary: TagSummary[], docs: Document[]): Map<s
       if (hasInDoc) {
         matchingDocs.push({
           id: d.id,
-          title: d.title || 'Unbenannte Notiz',
+          title: d.title || i18n.t('workspace:editor.untitled'),
           icon: d.icon,
           folderPath: d.folderPath,
         });

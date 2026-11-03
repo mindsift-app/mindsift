@@ -4,6 +4,7 @@ import { UploadedMedia, uploadMedia } from '../../lib/media';
 import { VoiceRecorder } from '../../lib/voice';
 import { VoiceWave } from '../../components/VoiceWave';
 import { triggerHaptic } from '../../lib/api';
+import { useTranslation } from 'react-i18next';
 
 interface AudioRecorderPickerProps {
   docId: string;
@@ -21,6 +22,7 @@ function formatTime(ms: number): string {
 // Inline bubble an empty bullet turns into after /audio. Green button = start, red button = stop and
 // save; the live wave runs left of the red button. An existing audio file can be uploaded instead.
 export const AudioRecorderPicker: React.FC<AudioRecorderPickerProps> = ({ docId, onDone, onCancel }) => {
+  const { t } = useTranslation('workspace');
   const [state, setState] = useState<'ready' | 'recording' | 'uploading'>('ready');
   const [elapsed, setElapsed] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -49,7 +51,7 @@ export const AudioRecorderPicker: React.FC<AudioRecorderPickerProps> = ({ docId,
     try {
       onDone(await uploadMedia(docId, blob, name));
     } catch (err: any) {
-      setError(err?.message || 'Hochladen fehlgeschlagen');
+      setError(err?.message || t('media.uploadFailed'));
       setState('ready');
     }
   };
@@ -62,7 +64,7 @@ export const AudioRecorderPicker: React.FC<AudioRecorderPickerProps> = ({ docId,
     triggerHaptic(20);
     const blob = await rec.stop();
     if (!blob) {
-      setError('Die Aufnahme ist leer');
+      setError(t('media.emptyRecording'));
       setState('ready');
       return;
     }
@@ -76,7 +78,7 @@ export const AudioRecorderPicker: React.FC<AudioRecorderPickerProps> = ({ docId,
     try {
       await rec.start();
     } catch {
-      setError('Kein Zugriff auf das Mikrofon (Berechtigung, oder die Seite läuft nicht über HTTPS)');
+      setError(t('media.noMic'));
       return;
     }
     recorderRef.current = rec;
@@ -117,7 +119,7 @@ export const AudioRecorderPicker: React.FC<AudioRecorderPickerProps> = ({ docId,
             <VoiceWave getLevel={() => recorderRef.current?.level() ?? null} bars={11} className="h-6 text-status-err" />
           </>
         )}
-        {state === 'ready' && <span className="text-xs text-muted">Sprachnotiz aufnehmen</span>}
+        {state === 'ready' && <span className="text-xs text-muted">{t('media.record')}</span>}
         {state === 'uploading' && (
           <span className="text-xs text-muted flex items-center gap-1.5">
             <Loader2 className="w-3.5 h-3.5 animate-spin" /> Wird gespeichert…
@@ -128,8 +130,8 @@ export const AudioRecorderPicker: React.FC<AudioRecorderPickerProps> = ({ docId,
           <button
             type="button"
             onClick={() => void stop()}
-            title="Aufnahme beenden und speichern"
-            aria-label="Aufnahme beenden und speichern"
+            title={t('media.stopSave')}
+            aria-label={t('media.stopSave')}
             className="w-14 h-14 sm:w-10 sm:h-10 rounded-full bg-status-err text-on-accent flex items-center justify-center shadow-panel shrink-0"
           >
             <Square className="w-5 h-5 sm:w-4 sm:h-4 fill-current" />
@@ -139,8 +141,8 @@ export const AudioRecorderPicker: React.FC<AudioRecorderPickerProps> = ({ docId,
             type="button"
             onClick={() => void start()}
             disabled={state === 'uploading'}
-            title="Aufnahme starten"
-            aria-label="Aufnahme starten"
+            title={t('media.start')}
+            aria-label={t('media.start')}
             className="w-14 h-14 sm:w-10 sm:h-10 rounded-full bg-status-ok text-on-accent flex items-center justify-center shadow-panel shrink-0 disabled:opacity-40"
           >
             <Mic className="w-6 h-6 sm:w-5 sm:h-5" />
@@ -151,17 +153,17 @@ export const AudioRecorderPicker: React.FC<AudioRecorderPickerProps> = ({ docId,
           <button
             type="button"
             onClick={() => fileRef.current?.click()}
-            title="Audiodatei hochladen"
+            title={t('media.uploadAudio')}
             className="btn-secondary h-11 sm:h-8 px-3 text-xs flex items-center gap-1.5 shrink-0"
           >
-            <Upload className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Datei</span>
+            <Upload className="w-3.5 h-3.5" /> <span className="hidden sm:inline">{t('media.file')}</span>
           </button>
         )}
         <button
           type="button"
           onClick={cancel}
           disabled={state === 'uploading'}
-          title="Abbrechen (Esc)"
+          title={t('media.cancelEsc')}
           className="w-11 h-11 sm:w-7 sm:h-7 flex items-center justify-center rounded-full text-muted hover:text-main hover:bg-panel shrink-0 disabled:opacity-40"
         >
           <X className="w-4 h-4" />

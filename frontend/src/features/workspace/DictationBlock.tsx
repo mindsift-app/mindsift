@@ -3,6 +3,7 @@ import { Loader2, Square } from 'lucide-react';
 import { useVoiceInput } from '../../lib/useVoiceInput';
 import { VoiceWave } from '../../components/VoiceWave';
 import { triggerHaptic } from '../../lib/api';
+import { useTranslation } from 'react-i18next';
 
 interface DictationBlockProps {
   onDone: (text: string) => void;
@@ -19,6 +20,7 @@ function formatDuration(sec: number): string {
 // button with live text growing above the wave, mm:ss timer and a translucent "Stopp" on top. A tap ends
 // it; the text lands in the bullet as plain text.
 export const DictationBlock: React.FC<DictationBlockProps> = ({ onDone, onCancel }) => {
+  const { t } = useTranslation('workspace');
   const [interim, setInterim] = useState('');
   const [elapsedSec, setElapsedSec] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -84,7 +86,7 @@ export const DictationBlock: React.FC<DictationBlockProps> = ({ onDone, onCancel
         }
       }}
       disabled={transcribing || !!error}
-      aria-label="Diktat beenden"
+      aria-label={t('dictation.stop')}
       className="relative w-full min-h-[56px] sm:min-h-[44px] my-1 px-4 py-2 rounded-3xl border border-accent bg-accent-dim overflow-hidden flex flex-col gap-1.5 text-left cursor-pointer disabled:cursor-default focus:outline-none"
     >
       {(interim || chunkBusy) && !error && (

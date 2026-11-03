@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Check, Hash, Search, X } from 'lucide-react';
 import { TagSummary } from '../../lib/types';
 
@@ -32,6 +33,7 @@ export function HashtagOverview({
   tagSortBy,
   setTagSortBy,
 }: HashtagOverviewProps) {
+  const { t } = useTranslation('workspace');
   return (
     /* =========================================================================
        HASHTAG OVERVIEW & TILE DIRECTORY (KACHEL-ANSICHT MIT SUCHE)
@@ -43,11 +45,11 @@ export function HashtagOverview({
           <div>
             <div className="flex items-center gap-2">
               <Hash className="w-5 h-5 text-accent" />
-              <h1 className="text-xl font-bold text-main">Hashtags Übersicht</h1>
+              <h1 className="text-xl font-bold text-main">{t('hashtags.title')}</h1>
               <span className="badge-neutral text-xs font-mono">{tagsSummary.length} Tags</span>
             </div>
             <p className="text-xs text-muted mt-0.5">
-              Entdecke alle Themen, Schlagworte und verknüpften Blöcke aus deinen Notizen
+              {t('hashtags.intro')}
             </p>
           </div>
 
@@ -59,7 +61,7 @@ export function HashtagOverview({
                 type="text"
                 value={tagSearchQuery}
                 onChange={(e) => setTagSearchQuery(e.target.value)}
-                placeholder="Hashtags durchsuchen…"
+                placeholder={t('hashtags.search')}
                 className="input-field w-full pl-8 pr-7 py-1.5 text-xs"
               />
               {tagSearchQuery && (
@@ -83,9 +85,9 @@ export function HashtagOverview({
                     ? 'bg-panel-elevated text-main shadow-xs'
                     : 'text-muted hover:text-main'
                 }`}
-                title="Nach Häufigkeit sortieren"
+                title={t('hashtags.byCount')}
               >
-                Häufigkeit
+                {t('hashtags.count')}
               </button>
               <button
                 type="button"
@@ -95,7 +97,7 @@ export function HashtagOverview({
                     ? 'bg-panel-elevated text-main shadow-xs'
                     : 'text-muted hover:text-main'
                 }`}
-                title="Alphabetisch sortieren"
+                title={t('hashtags.byAlpha')}
               >
                 A-Z
               </button>
@@ -109,13 +111,13 @@ export function HashtagOverview({
             <Hash className="w-8 h-8 text-faint mx-auto" />
             <p className="font-semibold text-main text-sm">
               {tagSearchQuery
-                ? `Keine Hashtags für "${tagSearchQuery}" gefunden`
-                : 'Noch keine Hashtags vorhanden'}
+                ? t('hashtags.noneFor', { query: tagSearchQuery })
+                : t('hashtags.none')}
             </p>
             <p className="text-faint max-w-sm mx-auto">
               {tagSearchQuery
-                ? 'Versuche einen anderen Suchbegriff oder setze die Suche zurück.'
-                : 'Schreibe #tag in einen beliebigen Notiz-Bullet, um Themen automatisch als Kachel zu gruppieren.'}
+                ? t('hashtags.tryOther')
+                : t('hashtags.hint')}
             </p>
             {tagSearchQuery && (
               <button
@@ -123,19 +125,19 @@ export function HashtagOverview({
                 onClick={() => setTagSearchQuery('')}
                 className="btn-action inline-flex items-center gap-1 px-3 py-1 text-xs text-accent mt-2 cursor-pointer"
               >
-                Suche zurücksetzen
+                {t('hashtags.reset')}
               </button>
             )}
           </div>
         ) : (
           <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,18rem),1fr))] gap-3.5">
             {/* As many columns as fit with at least 18rem each, so tag names and note titles have room */}
-            {filteredTags.map((t) => {
-              const meta = tagsMetadataMap.get(t.tag.toLowerCase());
+            {filteredTags.map((tag) => {
+              const meta = tagsMetadataMap.get(tag.tag.toLowerCase());
               return (
                 <div
-                  key={t.tag}
-                  onClick={() => handleSelectTag(t.tag)}
+                  key={tag.tag}
+                  onClick={() => handleSelectTag(tag.tag)}
                   className="p-4 rounded-card border border-border bg-panel hover:border-accent hover:bg-panel-elevated transition-all cursor-pointer group flex flex-col justify-between space-y-3"
                 >
                   <div className="space-y-2.5">
@@ -145,25 +147,25 @@ export function HashtagOverview({
                           #
                         </span>
                         <h3 className="font-bold text-sm text-main group-hover:text-accent transition-colors truncate">
-                          {t.tag.replace(/^#/, '')}
+                          {tag.tag.replace(/^#/, '')}
                         </h3>
                       </div>
                       <span className="badge-neutral font-mono text-[10px] shrink-0">
-                        {t.count} Treffer
+                        {t('hashtags.hits', { count: tag.count })}
                       </span>
                     </div>
 
                     {meta && meta.docs.length > 0 && (
                       <div className="space-y-1">
                         <span className="text-[10px] font-semibold text-faint uppercase tracking-wider block">
-                          Aktuellste Notiz:
+                          {t('hashtags.latest')}
                         </span>
                         <div
                           className="inline-flex items-center gap-1.5 text-[11px] px-2 py-0.5 rounded-btn bg-panel-elevated text-main truncate max-w-full"
                           title={meta.docs[0].title}
                         >
                           {meta.docs[0].icon && <span>{meta.docs[0].icon}</span>}
-                          <span className="truncate">{meta.docs[0].title || 'Unbenannte Notiz'}</span>
+                          <span className="truncate">{meta.docs[0].title || t('editor.untitled')}</span>
                         </div>
                       </div>
                     )}
@@ -179,7 +181,7 @@ export function HashtagOverview({
                       )}
                     </div>
                     <span className="text-accent text-xs font-semibold group-hover:translate-x-0.5 transition-transform flex items-center gap-0.5">
-                      <span>Details</span>
+                      <span>{t('hashtags.details')}</span>
                       <span>→</span>
                     </span>
                   </div>

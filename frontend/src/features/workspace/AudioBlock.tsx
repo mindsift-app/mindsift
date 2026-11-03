@@ -3,6 +3,7 @@ import { FileAudio, Loader2, Wand2 } from 'lucide-react';
 import { api } from '../../lib/api';
 import { mediaBlob, mediaObjectURL, parseMediaContent } from '../../lib/media';
 import { loadVoiceConfig } from '../../lib/voice';
+import { useTranslation } from 'react-i18next';
 
 interface AudioBlockProps {
   content: string;
@@ -13,6 +14,7 @@ interface AudioBlockProps {
 // Audio block: player plus caption. With the own Whisper server the recording can be turned into text,
 // which becomes the caption (and so searchable).
 export const AudioBlock: React.FC<AudioBlockProps> = ({ content, canEdit, onCaptionChange }) => {
+  const { t } = useTranslation('workspace');
   const ref = parseMediaContent(content);
   const mediaId = ref?.id;
   const [src, setSrc] = useState<string | null>(null);
@@ -57,7 +59,7 @@ export const AudioBlock: React.FC<AudioBlockProps> = ({ content, canEdit, onCapt
   }, []);
 
   if (!ref) {
-    return <div className="text-xs text-status-err py-1">Audio-Verweis ist beschädigt: {content}</div>;
+    return <div className="text-xs text-status-err py-1">{t('media.audioBroken', { content })}</div>;
   }
 
   const commitCaption = (value: string) => {
@@ -75,10 +77,10 @@ export const AudioBlock: React.FC<AudioBlockProps> = ({ content, canEdit, onCapt
         setCaption(text);
         commitCaption(text);
       } else {
-        setError('Nichts erkannt');
+        setError(t('media.nothing'));
       }
     } catch (err: any) {
-      setError(err?.message || 'Spracherkennung fehlgeschlagen');
+      setError(err?.message || t('media.sttFailed'));
     } finally {
       setTranscribing(false);
     }
@@ -88,7 +90,7 @@ export const AudioBlock: React.FC<AudioBlockProps> = ({ content, canEdit, onCapt
     <div className="my-1 space-y-1">
       {failed ? (
         <div className="flex items-center gap-2 h-12 px-4 rounded-full border border-border bg-panel text-xs text-muted">
-          <FileAudio className="w-4 h-4" /> Aufnahme nicht verfügbar (offline oder gelöscht)
+          <FileAudio className="w-4 h-4" /> {t('media.audioUnavailable')}
         </div>
       ) : src ? (
         <div className="flex items-center gap-2">
@@ -98,11 +100,11 @@ export const AudioBlock: React.FC<AudioBlockProps> = ({ content, canEdit, onCapt
               type="button"
               onClick={() => void transcribe()}
               disabled={transcribing}
-              title="In Text umwandeln (eigene Spracherkennung)"
+              title={t('media.transcribeTitle')}
               className="btn-secondary !rounded-full h-11 sm:h-8 px-3 text-xs flex items-center gap-1.5 shrink-0 disabled:opacity-40"
             >
               {transcribing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Wand2 className="w-3.5 h-3.5" />}
-              <span className="hidden sm:inline">{transcribing ? 'Wird erkannt…' : 'Transkribieren'}</span>
+              <span className="hidden sm:inline">{transcribing ? t('media.transcribing') : t('media.transcribe')}</span>
             </button>
           )}
         </div>
@@ -124,7 +126,7 @@ export const AudioBlock: React.FC<AudioBlockProps> = ({ content, canEdit, onCapt
               (e.target as HTMLInputElement).blur();
             }
           }}
-          placeholder="Beschriftung hinzufügen…"
+          placeholder={t('media.caption')}
           className="w-full bg-transparent border-0 p-0 text-xs text-muted placeholder-faint focus:outline-none focus:ring-0"
         />
       ) : (

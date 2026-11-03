@@ -1,6 +1,7 @@
 import { Check, FileText, FilePlus, FolderPlus, Hash, Trash2 } from 'lucide-react';
 import { MobileMenuGroup } from '../../context/MobileActionContext';
 import { WorkspaceSubView } from './workspaceTypes';
+import i18n from '../../i18n';
 
 interface WorkspaceMenuInput {
   subView: WorkspaceSubView;
@@ -31,11 +32,11 @@ export function buildWorkspaceMenu({
   return [
         {
           id: 'workspace-views',
-          title: 'Ansicht',
+          title: i18n.t('workspace:menu.view'),
           items: [
             {
               id: 'view-notes',
-              label: 'Notizen',
+              label: i18n.t('workspace:tabbar.notes'),
               icon: <FileText className="w-4 h-4" />,
               active: subView === 'editor' || subView === 'journal' || subView === 'trash',
               onClick: () => {
@@ -45,7 +46,7 @@ export function buildWorkspaceMenu({
             },
             {
               id: 'view-todos',
-              label: 'To-Dos',
+              label: i18n.t('workspace:menu.todos'),
               icon: <Check className="w-4 h-4" />,
               badge: totalOpenTodos || undefined,
               active: subView === 'todos',
@@ -56,7 +57,7 @@ export function buildWorkspaceMenu({
             },
             {
               id: 'view-tags',
-              label: 'Hashtags',
+              label: i18n.t('workspace:menu.hashtags'),
               icon: <Hash className="w-4 h-4" />,
               badge: tagCount || undefined,
               active: subView === 'tags' || subView === 'tag_detail',
@@ -69,24 +70,24 @@ export function buildWorkspaceMenu({
         },
         {
           id: 'workspace-actions',
-          title: 'Notizen & Ordner',
+          title: i18n.t('workspace:menu.notesFolders'),
           items: [
             {
               id: 'new-note',
-              label: 'Neue Notiz',
+              label: i18n.t('workspace:menu.newNote'),
               icon: <FilePlus className="w-4 h-4" />,
               variant: 'accent',
               onClick: () => openNewNote(''),
             },
             {
               id: 'new-folder',
-              label: 'Neuer Ordner',
+              label: i18n.t('workspace:view.newFolder'),
               icon: <FolderPlus className="w-4 h-4" />,
               onClick: () => setShowNewFolderModal(true),
             },
             {
               id: 'trash',
-              label: 'Papierkorb',
+              label: i18n.t('workspace:trash.title'),
               icon: <Trash2 className="w-4 h-4" />,
               badge: trashCount,
               onClick: openTrash,

@@ -2,6 +2,7 @@ import React from 'react';
 import { Folder, FolderOpen, FolderPlus, Plus, Trash2, Users } from 'lucide-react';
 import { SharedFolder } from '../../lib/types';
 import { FolderTreeNode, WorkspaceSubView } from './workspaceTypes';
+import { useTranslation } from 'react-i18next';
 
 interface FolderTreeItemProps {
   node: FolderTreeNode;
@@ -52,6 +53,7 @@ export const FolderTreeItem: React.FC<FolderTreeItemProps> = ({
   markedDocIds,
   onDocRowClick,
 }) => {
+  const { t } = useTranslation('workspace');
   const hasContent = node.subfolders.length > 0 || node.docs.length > 0;
   const isExpanded = Boolean(hasContent && expandedFolders[node.fullPath]);
   const isDragOver = dragOverFolder === node.fullPath;
@@ -109,7 +111,7 @@ export const FolderTreeItem: React.FC<FolderTreeItemProps> = ({
               handleCreateDocument(node.fullPath);
             }}
             className="p-1 h-6 w-6 flex items-center justify-center text-muted hover:text-main transition-colors cursor-pointer"
-            title="Notiz in diesem Ordner erstellen"
+            title={t('folder.newNoteHere')}
           >
             <Plus className="w-3 h-3" />
           </button>
@@ -120,7 +122,7 @@ export const FolderTreeItem: React.FC<FolderTreeItemProps> = ({
               handleOpenNewFolder(node.fullPath, e);
             }}
             className="p-1 h-6 w-6 flex items-center justify-center text-muted hover:text-main transition-colors cursor-pointer"
-            title="Neuen Unterordner erstellen"
+            title={t('folder.newSubfolder')}
           >
             <FolderPlus className="w-3 h-3" />
           </button>
@@ -133,7 +135,7 @@ export const FolderTreeItem: React.FC<FolderTreeItemProps> = ({
             className={`p-1 h-6 w-6 flex items-center justify-center transition-colors cursor-pointer ${
               node.sharedFolderObj ? 'text-accent' : 'text-faint hover:text-accent'
             }`}
-            title="Ordner teilen und Berechtigungen"
+            title={t('folder.share')}
           >
             <Users className="w-3 h-3" />
           </button>
@@ -147,7 +149,7 @@ export const FolderTreeItem: React.FC<FolderTreeItemProps> = ({
               handleDeleteFolder(node.fullPath, byPointer ? { x: e.clientX, y: e.clientY } : { x: r.left, y: r.bottom });
             }}
             className="p-1 h-6 w-6 flex items-center justify-center text-faint hover:text-status-err transition-colors cursor-pointer"
-            title="Ordner löschen"
+            title={t('folder.delete')}
           >
             <Trash2 className="w-3 h-3" />
           </button>
@@ -205,7 +207,7 @@ export const FolderTreeItem: React.FC<FolderTreeItemProps> = ({
               }`}
             >
               {d.icon && <span className="shrink-0">{d.icon}</span>}
-              <span className="truncate flex-1">{d.title || 'Unbenannte Notiz'}</span>
+              <span className="truncate flex-1">{d.title || t('editor.untitled')}</span>
             </div>
           ))}
 

@@ -45,11 +45,13 @@ import { api } from '../../lib/api';
 import { safeHref } from '../../lib/safeUrl';
 import { isNoteLinkOnly } from '../../lib/wikiLink';
 import { caretAfterChange } from '../../lib/caret';
+import { useTranslation } from 'react-i18next';
+import i18n from '../../i18n';
 
 export interface SlashCommand {
   type: BlockType | 'link' | 'dictation' | 'extract';
   label: string;
-  desc: string;
+  readonly desc: string;
   icon: React.ReactNode;
   /** Only offered in an empty bullet; the bullet turns into an inline picker first */
   media?: boolean;
@@ -72,20 +74,20 @@ function slashRank(c: SlashCommand, q: string): number {
 const BUBBLE_IDLE_MS = 1000;
 
 const SLASH_COMMANDS: SlashCommand[] = [
-  { type: 'todo', label: '/todo', desc: 'Aufgabe mit Checkbox', icon: <ListTodo className="w-3.5 h-3.5" /> },
-  { type: 'numbered', label: '/number', desc: 'Nummerierte Liste (1., a., i.)', icon: <ListOrdered className="w-3.5 h-3.5" />, aliases: ['nummer', 'liste', 'ol'] },
-  { type: 'link', label: '/link', desc: 'Notiz oder Weblink', icon: <LinkIcon className="w-3.5 h-3.5" /> },
-  { type: 'bullet', label: '/text', desc: 'In Standardtext umwandeln', icon: <Type className="w-3.5 h-3.5" />, aliases: ['p', 'paragraph', 'bullet', 'standard'] },
-  { type: 'h1', label: '/h1', desc: 'Große Überschrift', icon: <Heading1 className="w-3.5 h-3.5" /> },
-  { type: 'h2', label: '/h2', desc: 'Abschnitts-Überschrift', icon: <Heading2 className="w-3.5 h-3.5" /> },
-  { type: 'h3', label: '/h3', desc: 'Unterabschnitt', icon: <Heading3 className="w-3.5 h-3.5" /> },
-  { type: 'code', label: '/code', desc: 'Code-Block mit Syntax', icon: <Code className="w-3.5 h-3.5" /> },
-  { type: 'callout', label: '/callout', desc: 'Hinweisbox', icon: <MessageSquare className="w-3.5 h-3.5" /> },
-  { type: 'divider', label: '/divider', desc: 'Trennlinie', icon: <Minus className="w-3.5 h-3.5" /> },
-  { type: 'extract', label: '/extract', desc: 'Ast als eigene Notiz', icon: <FileOutput className="w-3.5 h-3.5" />, aliases: ['notiz', 'auslagern'] },
-  { type: 'image', label: '/image', desc: 'Bilder hochladen oder verlinken', icon: <ImageIcon className="w-3.5 h-3.5" />, media: true, aliases: ['bild', 'foto'] },
-  { type: 'audio', label: '/audio', desc: 'Sprachnotiz oder Audiodatei', icon: <Mic className="w-3.5 h-3.5" />, media: true, aliases: ['sprachnotiz'] },
-  { type: 'dictation', label: '/diktat', desc: 'Sprechen statt tippen', icon: <AudioLines className="w-3.5 h-3.5" />, media: true, aliases: ['dictate'] },
+  { type: 'todo', label: '/todo', get desc() { return i18n.t('workspace:slash.todo'); }, icon: <ListTodo className="w-3.5 h-3.5" /> },
+  { type: 'numbered', label: '/number', get desc() { return i18n.t('workspace:slash.numbered'); }, icon: <ListOrdered className="w-3.5 h-3.5" />, aliases: ['nummer', 'liste', 'ol'] },
+  { type: 'link', label: '/link', get desc() { return i18n.t('workspace:slash.link'); }, icon: <LinkIcon className="w-3.5 h-3.5" /> },
+  { type: 'bullet', label: '/text', get desc() { return i18n.t('workspace:slash.bullet'); }, icon: <Type className="w-3.5 h-3.5" />, aliases: ['p', 'paragraph', 'bullet', 'standard'] },
+  { type: 'h1', label: '/h1', get desc() { return i18n.t('workspace:slash.h1'); }, icon: <Heading1 className="w-3.5 h-3.5" /> },
+  { type: 'h2', label: '/h2', get desc() { return i18n.t('workspace:slash.h2'); }, icon: <Heading2 className="w-3.5 h-3.5" /> },
+  { type: 'h3', label: '/h3', get desc() { return i18n.t('workspace:slash.h3'); }, icon: <Heading3 className="w-3.5 h-3.5" /> },
+  { type: 'code', label: '/code', get desc() { return i18n.t('workspace:slash.code'); }, icon: <Code className="w-3.5 h-3.5" /> },
+  { type: 'callout', label: '/callout', get desc() { return i18n.t('workspace:slash.callout'); }, icon: <MessageSquare className="w-3.5 h-3.5" /> },
+  { type: 'divider', label: '/divider', get desc() { return i18n.t('workspace:slash.divider'); }, icon: <Minus className="w-3.5 h-3.5" /> },
+  { type: 'extract', label: '/extract', get desc() { return i18n.t('workspace:slash.extract'); }, icon: <FileOutput className="w-3.5 h-3.5" />, aliases: ['notiz', 'auslagern'] },
+  { type: 'image', label: '/image', get desc() { return i18n.t('workspace:slash.image'); }, icon: <ImageIcon className="w-3.5 h-3.5" />, media: true, aliases: ['bild', 'foto'] },
+  { type: 'audio', label: '/audio', get desc() { return i18n.t('workspace:slash.audio'); }, icon: <Mic className="w-3.5 h-3.5" />, media: true, aliases: ['sprachnotiz'] },
+  { type: 'dictation', label: '/diktat', get desc() { return i18n.t('workspace:slash.dictation'); }, icon: <AudioLines className="w-3.5 h-3.5" />, media: true, aliases: ['dictate'] },
 ];
 
 export interface OutlinerBlockProps {
@@ -186,6 +188,7 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
   onRedo,
   inRangeSelection,
 }) => {
+  const { t } = useTranslation('workspace');
   const [localContent, setLocalContent] = useState<string>(block.content || '');
   const [isLocallyFocused, setIsLocallyFocused] = useState<boolean>(false);
   const activeFocus = isFocused || isLocallyFocused;
@@ -1173,7 +1176,7 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
             }
             // Same width as the spacer of rows without children (the padding is taken back), so bullets stay aligned
             className="p-0.5 -m-0.5 text-muted hover:text-accent transition-[color,opacity] opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
-            title={block.collapsed ? 'Unterpunkte ausklappen' : 'Unterpunkte einklappen'}
+            title={block.collapsed ? t('block.expand') : t('block.collapse')}
           >
             {block.collapsed ? (
               <ChevronRight className="w-3.5 h-3.5" />
@@ -1198,8 +1201,8 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
           }`}
           title={
             canEdit
-              ? 'Ziehen zum Verschieben • Klick: Ast hineinzoomen (Fokus-Modus)'
-              : 'Klick: In diesen Ast hineinzoomen (Fokus-Modus)'
+              ? t('block.dragZoom')
+              : t('block.clickZoom')
           }
         >
           {block.type === 'numbered' && listMarker ? (
@@ -1240,7 +1243,7 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
                 ? 'bg-status-ok border-status-ok text-on-accent'
                 : 'border-strong hover:border-accent text-transparent'
             }`}
-            title={block.checked ? 'Als offen markieren' : 'Als erledigt markieren'}
+            title={block.checked ? t('block.markOpen') : t('block.markDone')}
           >
             <Check className="w-3 h-3 stroke-[3]" />
           </button>
@@ -1378,7 +1381,7 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
                 handleKeyDown(e);
               }}
               className="sr-only"
-              aria-label="Trennlinie"
+              aria-label={t('block.divider')}
             />
           </div>
         ) : block.type === 'code' ? (
@@ -1476,7 +1479,7 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
                   className={`${block.taskId ? 'badge-accent' : 'badge-neutral'} inline-block align-middle ml-1.5 text-[9px] leading-none px-1.5 py-0.5 rounded font-medium select-none cursor-pointer hover:opacity-80 ${
                     activeFocus ? 'pointer-events-none' : 'pointer-events-auto'
                   }`}
-                  title={block.taskId ? 'Erweiterte Aufgabe öffnen' : 'Unteraufgabe einer verknüpften Aufgabe – Aufgabe öffnen'}
+                  title={block.taskId ? t('block.openTask') : t('block.openParentTask')}
                 >
                   <CheckSquare className="w-2.5 h-2.5 inline-block align-[-1px] mr-0.5" />
                   {block.taskId ? 'Erweitert' : 'Unteraufgabe'}
@@ -1553,7 +1556,7 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
           <div className="flex flex-wrap items-center gap-1.5 mt-1 text-[11px] text-status-warn select-none">
             <AlertTriangle className="w-3 h-3 shrink-0" />
             <span>
-              {block.conflictOf === 'title' ? 'Konflikt beim Titel' : 'Konflikt'}
+              {block.conflictOf === 'title' ? t('block.titleConflict') : t('block.conflict')}
               {block.conflictAuthor ? ` – Version von ${block.conflictAuthor}` : ''}
             </span>
             {onResolveConflict && (
@@ -1562,15 +1565,15 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
                   type="button"
                   onClick={() => onResolveConflict(block.id, true)}
                   className="px-1.5 py-0.5 rounded-btn border border-status-warn/40 hover:bg-status-warn/15 cursor-pointer"
-                  title={block.conflictOf === 'title' ? 'Diesen Text als Titel übernehmen' : 'Diesen Text in den ursprünglichen Punkt übernehmen'}
+                  title={block.conflictOf === 'title' ? t('block.takeTitle') : t('block.takeText')}
                 >
-                  Übernehmen
+                  {t('block.take')}
                 </button>
                 <button
                   type="button"
                   onClick={() => onResolveConflict(block.id, false)}
                   className="px-1.5 py-0.5 rounded-btn border border-border text-muted hover:text-main hover:bg-panel cursor-pointer"
-                  title="Diese Version verwerfen"
+                  title={t('block.dropVersion')}
                 >
                   Verwerfen
                 </button>
@@ -1586,7 +1589,7 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
             className="absolute left-0 top-8 z-40 w-72 max-w-[calc(100vw-2rem)] panel-surface shadow-panel border border-border rounded-card p-1"
           >
             <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-faint border-b border-border mb-1">
-              Befehl auswählen
+              {t('block.chooseCommand')}
             </div>
             <div className="max-h-48 overflow-y-auto space-y-0.5">
               {filteredSlashCommands.map((cmd, i) => (
@@ -1615,7 +1618,7 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
               ))}
               {filteredSlashCommands.length === 0 && (
                 <div className="p-2 text-center text-xs text-faint">
-                  Kein Befehl gefunden
+                  {t('block.noCommand')}
                 </div>
               )}
             </div>
@@ -1654,7 +1657,7 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
               flushDebounce(localContent, { type: 'bullet', checked: false });
             }}
             className="p-1 sm:p-0.5 min-w-[28px] min-h-[28px] sm:min-w-0 sm:min-h-0 flex items-center justify-center text-faint hover:text-accent rounded-btn transition-colors cursor-pointer"
-            title="In normalen Text umwandeln"
+            title={t('block.toText')}
           >
             <Type className="w-3.5 h-3.5" />
           </button>
@@ -1670,7 +1673,7 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
                 setShowTodoMenu((prev) => !prev);
               }}
               className="p-1 sm:p-0.5 min-w-[28px] min-h-[28px] sm:min-w-0 sm:min-h-0 flex items-center justify-center text-faint hover:text-accent rounded-btn transition-colors cursor-pointer"
-              title="Aufgaben-Optionen"
+              title={t('block.taskOptions')}
             >
               <MoreHorizontal className="w-3.5 h-3.5" />
             </button>
@@ -1681,7 +1684,7 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
                 onClick={(e) => e.stopPropagation()}
               >
                 {block.subtaskOf && !block.taskId ? (
-                  <p className="px-2 py-1.5 text-faint">Unteraufgabe einer verknüpften Aufgabe</p>
+                  <p className="px-2 py-1.5 text-faint">{t('block.subtaskOfLinked')}</p>
                 ) : !block.taskId ? (
                   <button
                     type="button"
@@ -1702,13 +1705,13 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
                         onUpdateBlockRef.current(updatedBlock, true);
                         onOpenTask?.(thought.id);
                       } catch (err: any) {
-                        alert(err.message || 'Fehler beim Erstellen der erweiterten Aufgabe');
+                        alert(err.message || t('block.createTaskFailed'));
                       }
                     }}
                     className="w-full text-left px-2 py-1.5 rounded-btn hover:bg-panel-elevated hover:text-accent flex items-center gap-1.5 text-main font-medium cursor-pointer"
                   >
                     <CheckSquare className="w-3.5 h-3.5 text-accent" />
-                    <span>In erweiterte Aufgabe umwandeln</span>
+                    <span>{t('block.toTask')}</span>
                   </button>
                 ) : (
                   <button
@@ -1727,13 +1730,13 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
                         };
                         onUpdateBlockRef.current(updatedBlock, true);
                       } catch (err: any) {
-                        alert(err.message || 'Fehler beim Aufheben der Verknüpfung');
+                        alert(err.message || t('block.unlinkFailed'));
                       }
                     }}
                     className="w-full text-left px-2 py-1.5 rounded-btn hover:bg-panel-elevated hover:text-status-warn flex items-center gap-1.5 text-main font-medium cursor-pointer"
                   >
                     <X className="w-3.5 h-3.5 text-status-warn" />
-                    <span>Verknüpfung aufheben</span>
+                    <span>{t('block.unlink')}</span>
                   </button>
                 )}
                 <button
@@ -1746,7 +1749,7 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
                   className="w-full text-left px-2 py-1.5 rounded-btn hover:bg-panel-elevated hover:text-accent flex items-center gap-1.5 text-main font-medium cursor-pointer border-t border-border mt-0.5 pt-1.5"
                 >
                   <Type className="w-3.5 h-3.5 text-accent" />
-                  <span>In normalen Text umwandeln</span>
+                  <span>{t('block.toText')}</span>
                 </button>
               </div>
             )}
@@ -1759,8 +1762,8 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
             type="button"
             onClick={() => onCopyBlockLink(block.id)}
             className="p-1 sm:p-0.5 min-w-[28px] min-h-[28px] sm:min-w-0 sm:min-h-0 flex items-center justify-center text-faint hover:text-accent rounded-btn transition-colors cursor-pointer"
-            title="Link zu diesem Punkt kopieren"
-            aria-label="Link zu diesem Punkt kopieren"
+            title={t('block.copyLink')}
+            aria-label={t('block.copyLink')}
           >
             <Link2 className="w-3.5 h-3.5" />
           </button>
@@ -1772,7 +1775,7 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
             type="button"
             onClick={() => onExtractBlock(block.id)}
             className="p-1 sm:p-0.5 min-w-[28px] min-h-[28px] sm:min-w-0 sm:min-h-0 flex items-center justify-center text-faint hover:text-accent rounded-btn transition-colors cursor-pointer"
-            title="In eigene Notiz umwandeln (mit allen Unterpunkten)"
+            title={t('block.extract')}
           >
             <FileOutput className="w-3.5 h-3.5" />
           </button>
@@ -1784,8 +1787,8 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
             type="button"
             onClick={() => onInlineBlock(block.id)}
             className="p-1 sm:p-0.5 min-w-[28px] min-h-[28px] sm:min-w-0 sm:min-h-0 flex items-center justify-center text-faint hover:text-accent rounded-btn transition-colors cursor-pointer"
-            title="Notiz zurückholen (ihre Punkte kommen wieder hierher, die Notiz in den Papierkorb)"
-            aria-label="Notiz zurückholen"
+            title={t('block.pullBackTitle')}
+            aria-label={t('block.pullBack')}
           >
             <FileInput className="w-3.5 h-3.5" />
           </button>
@@ -1797,7 +1800,7 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
             type="button"
             onClick={() => onZoomBlock(block.id)}
             className="p-1 sm:p-0.5 min-w-[28px] min-h-[28px] sm:min-w-0 sm:min-h-0 flex items-center justify-center text-faint hover:text-accent rounded-btn transition-colors cursor-pointer"
-            title="In diesen Ast hineinzoomen (Fokus-Modus)"
+            title={t('block.zoom')}
           >
             <Maximize2 className="w-3.5 h-3.5" />
           </button>
@@ -1809,7 +1812,7 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
             type="button"
             onClick={() => {
               if (hasChildren) {
-                if (window.confirm('Bist du sicher? Alle Unterpunkte dieses Asts werden ebenfalls gelöscht.')) {
+                if (window.confirm(t('block.confirmDelete'))) {
                   onDeleteBlockRef.current(block.id, true);
                 }
               } else {
@@ -1817,7 +1820,7 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
               }
             }}
             className="p-1 sm:p-0.5 min-w-[28px] min-h-[28px] sm:min-w-0 sm:min-h-0 flex items-center justify-center text-faint hover:text-status-err rounded-btn transition-colors cursor-pointer"
-            title="Block löschen"
+            title={t('block.delete')}
           >
             <Trash2 className="w-3.5 h-3.5" />
           </button>

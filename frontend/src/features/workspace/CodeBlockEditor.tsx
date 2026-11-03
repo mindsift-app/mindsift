@@ -2,6 +2,8 @@ import React, { useState, useEffect, useLayoutEffect, useMemo, useRef, useCallba
 import Prism from 'prismjs';
 import { Copy, Check } from 'lucide-react';
 import { DocumentBlock } from '../../lib/types';
+import { useTranslation } from 'react-i18next';
+import i18n from '../../i18n';
 
 Prism.manual = true;
 if (typeof globalThis !== 'undefined') {
@@ -14,13 +16,15 @@ export interface CodeLanguageOption {
 }
 
 export interface CodeLanguageGroup {
-  label: string;
+  readonly label: string;
   options: CodeLanguageOption[];
 }
 
 export const CODE_LANGUAGE_GROUPS: CodeLanguageGroup[] = [
   {
-    label: 'Konfiguration & Daten',
+    get label() {
+      return i18n.t('workspace:code.group.config');
+    },
     options: [
       { id: 'yaml', label: 'YAML' },
       { id: 'json', label: 'JSON' },
@@ -36,7 +40,9 @@ export const CODE_LANGUAGE_GROUPS: CodeLanguageGroup[] = [
     ],
   },
   {
-    label: 'Shell & Betrieb',
+    get label() {
+      return i18n.t('workspace:code.group.shell');
+    },
     options: [
       { id: 'bash', label: 'Bash / Shell' },
       { id: 'powershell', label: 'PowerShell' },
@@ -49,7 +55,9 @@ export const CODE_LANGUAGE_GROUPS: CodeLanguageGroup[] = [
     ],
   },
   {
-    label: 'Web & Frontend',
+    get label() {
+      return i18n.t('workspace:code.group.web');
+    },
     options: [
       { id: 'javascript', label: 'JavaScript' },
       { id: 'typescript', label: 'TypeScript' },
@@ -62,7 +70,9 @@ export const CODE_LANGUAGE_GROUPS: CodeLanguageGroup[] = [
     ],
   },
   {
-    label: 'Skriptsprachen',
+    get label() {
+      return i18n.t('workspace:code.group.scripting');
+    },
     options: [
       { id: 'python', label: 'Python' },
       { id: 'php', label: 'PHP' },
@@ -72,7 +82,9 @@ export const CODE_LANGUAGE_GROUPS: CodeLanguageGroup[] = [
     ],
   },
   {
-    label: 'System & Backend',
+    get label() {
+      return i18n.t('workspace:code.group.system');
+    },
     options: [
       { id: 'go', label: 'Go' },
       { id: 'rust', label: 'Rust' },
@@ -91,7 +103,9 @@ export const CODE_LANGUAGE_GROUPS: CodeLanguageGroup[] = [
     ],
   },
   {
-    label: 'Dokumentation & Text',
+    get label() {
+      return i18n.t('workspace:code.group.docs');
+    },
     options: [
       { id: 'markdown', label: 'Markdown' },
       { id: 'latex', label: 'LaTeX' },
@@ -332,6 +346,7 @@ export const CodeBlockEditor: React.FC<CodeBlockEditorProps> = ({
   handleContentChange,
   handleKeyDown,
 }) => {
+  const { t } = useTranslation('workspace');
   const isControlled = content !== undefined;
   const [uncontrolledContent, setUncontrolledContent] = useState<string>(block.content || '');
   const currentContent = isControlled ? content : uncontrolledContent;
@@ -547,7 +562,7 @@ export const CodeBlockEditor: React.FC<CodeBlockEditorProps> = ({
       <div className="flex items-center px-1.5 pt-1 text-[11px] font-mono text-faint">
         {canEdit ? (
           <select
-            aria-label="Sprache auswählen"
+            aria-label={t('code.chooseLanguage')}
             value={selectValue}
             onChange={(e) => onChangeLang?.(e.target.value)}
             className="min-h-[44px] sm:min-h-0 bg-transparent text-faint hover:text-main focus:text-main font-mono text-[11px] font-medium border border-transparent hover:border-border focus:border-accent rounded-btn px-1 py-0.5 outline-none cursor-pointer"
@@ -580,8 +595,8 @@ export const CodeBlockEditor: React.FC<CodeBlockEditorProps> = ({
         type="button"
         onClick={handleCopy}
         className="absolute bottom-2 right-2 z-10 h-9 w-9 sm:h-8 sm:w-8 rounded-full bg-panel border border-border shadow-panel flex items-center justify-center text-muted hover:text-main opacity-100 sm:opacity-0 sm:group-hover/code:opacity-100 focus-visible:opacity-100 transition-opacity cursor-pointer"
-        title={copied ? 'Kopiert!' : 'In die Zwischenablage kopieren'}
-        aria-label={copied ? 'Kopiert!' : 'Kopieren'}
+        title={copied ? t('code.copied') : t('code.copyTitle')}
+        aria-label={copied ? t('code.copied') : t('code.copy')}
       >
         {copied ? <Check className="w-3.5 h-3.5 text-status-ok" /> : <Copy className="w-3.5 h-3.5" />}
       </button>
