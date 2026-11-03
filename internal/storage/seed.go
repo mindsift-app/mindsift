@@ -40,9 +40,42 @@ type seedTask struct {
 
 // SeedStarterContent fills a new account with realistic sample data (optional at setup, always in demo mode):
 // inbox thoughts, two task lists with Kanban states, shopping and packing lists and a few linked notes.
+// German accounts get it in German, all others in English (seed_en.go).
 func (s *Store) SeedStarterContent(user *domain.User) error {
-	day := func(offset int) string { return time.Now().AddDate(0, 0, offset).Format("2006-01-02") }
+	if s.MessageLanguage(user.ID) == "de" {
+		return s.seedStarterDE(user)
+	}
+	return s.seedStarterEN(user)
+}
 
+// seedDay: a due date offset days from today
+func seedDay(offset int) string { return time.Now().AddDate(0, 0, offset).Format("2006-01-02") }
+
+// seedTasks adds sample tasks to a task list, with their Kanban state, notes and subtasks.
+func (s *Store) seedTasks(user *domain.User, listID string, tasks []seedTask) {
+	for _, t := range tasks {
+		due := ""
+		if t.due != 0 || t.dueToday {
+			due = seedDay(t.due)
+		}
+		th, err := s.CreateThoughtWithDetails(user.ID, t.content, t.priority, "manual", due, listID, t.status, "")
+		if err != nil {
+			continue
+		}
+		if _, err := s.UpdateThoughtTriage(user.ID, th.ID, "keep", "task", "", due, listID); err != nil {
+			continue
+		}
+		subs := make([]domain.SubTask, len(t.subtasks))
+		for i, title := range t.subtasks {
+			subs[i] = domain.SubTask{ID: domain.NewID("sub"), Title: title, IsCompleted: i < t.doneSubs, CreatedAt: domain.NowISO()}
+		}
+		done := t.status == "done"
+		status, notes := t.status, t.notes
+		_, _ = s.UpdateThoughtDetails(user.ID, th.ID, nil, &done, nil, nil, nil, &status, &notes, &subs, nil)
+	}
+}
+
+func (s *Store) seedStarterDE(user *domain.User) error {
 	inbox := []struct{ content, priority, source string }{
 		{"Zündkerzen und Luftfilter für den Rasenmäher bestellen #garage #wartung", "normal", "manual"},
 		{"Urlaubsidee: Wanderhütte in Südtirol für Oktober buchen #urlaub #familie", "high", "voice"},
@@ -55,32 +88,9 @@ func (s *Store) SeedStarterContent(user *domain.User) error {
 		_, _ = s.CreateThought(user.ID, t.content, t.priority, t.source, "")
 	}
 
-	addTasks := func(listID string, tasks []seedTask) {
-		for _, t := range tasks {
-			due := ""
-			if t.due != 0 || t.dueToday {
-				due = day(t.due)
-			}
-			th, err := s.CreateThoughtWithDetails(user.ID, t.content, t.priority, "manual", due, listID, t.status, "")
-			if err != nil {
-				continue
-			}
-			if _, err := s.UpdateThoughtTriage(user.ID, th.ID, "keep", "task", "", due, listID); err != nil {
-				continue
-			}
-			subs := make([]domain.SubTask, len(t.subtasks))
-			for i, title := range t.subtasks {
-				subs[i] = domain.SubTask{ID: domain.NewID("sub"), Title: title, IsCompleted: i < t.doneSubs, CreatedAt: domain.NowISO()}
-			}
-			done := t.status == "done"
-			status, notes := t.status, t.notes
-			_, _ = s.UpdateThoughtDetails(user.ID, th.ID, nil, &done, nil, nil, nil, &status, &notes, &subs, nil)
-		}
-	}
-
 	homelab, err := s.CreateTaskList(user.ID, "", "", "Homelab", "🖥️", "#2563eb")
 	if err == nil {
-		addTasks(homelab.ID, []seedTask{
+		s.seedTasks(user, homelab.ID, []seedTask{
 			{content: "MindSift-Container auf den neuen Server umziehen #docker", priority: "high", due: 2, status: "in_progress",
 				notes:    "Volume `./data` vorher mit `sqlite3 .backup` sichern.",
 				subtasks: []string{"Backup der Datenbank ziehen", "docker-compose.yml anpassen", "DNS auf neue IP umstellen", "Alten Container stoppen"}, doneSubs: 2},
@@ -95,7 +105,7 @@ func (s *Store) SeedStarterContent(user *domain.User) error {
 	}
 	house, err := s.CreateTaskList(user.ID, "", "", "Haus & Garten", "🏡", "#16a34a")
 	if err == nil {
-		addTasks(house.ID, []seedTask{
+		s.seedTasks(user, house.ID, []seedTask{
 			{content: "Hecke schneiden, bevor die Vögel brüten #garten", priority: "normal", due: 3, status: "todo"},
 			{content: "Heizungswartung beim Installateur anfragen #wartung", priority: "high", dueToday: true, status: "in_progress"},
 			{content: "Steuerunterlagen für 2026 sortieren #finanzen", priority: "normal", due: 14, status: "todo",
@@ -237,8 +247,8 @@ func (s *Store) SeedStarterContent(user *domain.User) error {
 		{text: "Wochenrückblick jeden Sonntag: Inbox leeren, Aufgaben für die Woche planen #routine"},
 	}), []string{"ideen"}, false)
 
-	s.seedLinkedTodos(user, homelab)
-	s.seedHelpNotes(user)
+	s.seedLinkedTodosDE(user, homelab)
+	s.seedHelpNotesDE(user)
 	return nil
 }
 
@@ -248,7 +258,7 @@ func (s *Store) seedDemoShares(admin, member *domain.User) {
 	var docID, taskListID, listID string
 	_ = s.db.QueryRow(`SELECT id FROM documents WHERE user_id = ? AND title LIKE 'Homelab 2.0%'`, admin.ID).Scan(&docID)
 	_ = s.db.QueryRow(`SELECT id FROM task_lists WHERE user_id = ? AND title = 'Homelab'`, admin.ID).Scan(&taskListID)
-	_ = s.db.QueryRow(`SELECT id FROM lists WHERE user_id = ? AND title = 'Wocheneinkauf'`, admin.ID).Scan(&listID)
+	_ = s.db.QueryRow(`SELECT id FROM lists WHERE user_id = ? AND title IN ('Wocheneinkauf', 'Weekly groceries')`, admin.ID).Scan(&listID)
 	if docID != "" {
 		_, _ = s.CreateDocShare(admin.ID, docID, member.ID, "write")
 	}

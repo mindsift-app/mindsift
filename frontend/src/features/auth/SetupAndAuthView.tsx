@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
-import i18n from '../../i18n';
+import i18n, { applyLanguage, isLanguage, LANGUAGES } from '../../i18n';
 import {
   Brain,
   Shield,
@@ -44,6 +44,12 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
   const [sharingMode, setSharingMode] = useState<SharingMode>('organizations');
   const [allowRegistration, setAllowRegistration] = useState(false);
   const [createSampleData, setCreateSampleData] = useState(false);
+  // Default language of the server; the wizard switches to it right away
+  const [defaultLanguage, setDefaultLanguage] = useState(i18n.language);
+  const chooseLanguage = (lang: string) => {
+    setDefaultLanguage(lang);
+    if (isLanguage(lang)) void applyLanguage(lang);
+  };
 
   // --- Login / Invite / Register State ---
   // An invite link (?invite=CODE) opens the invite form with the code filled in
@@ -192,6 +198,7 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
         sharingMode,
         allowRegistration,
         createSampleData,
+        defaultLanguage,
       });
       onAuthenticated(res.user);
     } catch (err: any) {
@@ -368,6 +375,25 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
                   placeholder="MindSift"
                   className="w-full h-8 px-2.5 input-field"
                 />
+              </div>
+
+              <div>
+                <label htmlFor="setup-language" className="block text-muted mb-1">
+                  {t('setup.language')}
+                </label>
+                <select
+                  id="setup-language"
+                  value={defaultLanguage}
+                  onChange={(e) => chooseLanguage(e.target.value)}
+                  className="w-full h-11 sm:h-8 px-2.5 input-field text-base sm:text-xs"
+                >
+                  {LANGUAGES.map((l) => (
+                    <option key={l.id} value={l.id}>
+                      {l.name}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-[11px] text-muted mt-1">{t('setup.languageHint')}</p>
               </div>
 
               <div>

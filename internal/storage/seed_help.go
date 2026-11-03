@@ -4,7 +4,7 @@ import "github.com/mindsift-app/mindsift/internal/domain"
 
 // seedLinkedTodos shows the link between notes and tasks both ways: a checklist in a note whose main
 // checkbox became a task (the checkboxes below are its subtasks), and a task deepened into a note.
-func (s *Store) seedLinkedTodos(user *domain.User, homelab *domain.TaskList) {
+func (s *Store) seedLinkedTodosDE(user *domain.User, homelab *domain.TaskList) {
 	listID := ""
 	if homelab != nil {
 		listID = homelab.ID
@@ -22,7 +22,13 @@ func (s *Store) seedLinkedTodos(user *domain.User, homelab *domain.TaskList) {
 		{level: 1, text: "Neue Häkchen direkt eine Ebene darunter werden automatisch Unteraufgaben"},
 		{level: 1, text: "Umgekehrt: In den Aufgaben „Als Notiz vertiefen“ – siehe die Notiz zur Aufgabe „Uptime-Monitoring“"},
 	})
-	doc, err := s.CreateDocument(user.ID, "", "Backup-Konzept", "💾", "Projekte", blocks, []string{"homelab"}, false)
+	s.seedLinkedTodos(user, listID, "Backup-Konzept", "Projekte", "homelab", blocks)
+}
+
+// seedLinkedTodos creates the note, turns its first checkbox (blocks[1]) into a task of the list and
+// deepens the uptime monitoring task into a note.
+func (s *Store) seedLinkedTodos(user *domain.User, listID, title, folder, tag string, blocks []domain.DocumentBlock) {
+	doc, err := s.CreateDocument(user.ID, "", title, "💾", folder, blocks, []string{tag}, false)
 	if err != nil || doc == nil {
 		return
 	}
@@ -36,7 +42,7 @@ func (s *Store) seedLinkedTodos(user *domain.User, homelab *domain.TaskList) {
 
 	// A task of the list deepened into a note: the note starts with its checkbox and subtasks
 	var monitoringID string
-	_ = s.db.QueryRow(`SELECT id FROM thoughts WHERE user_id = ? AND content LIKE 'Uptime-Monitoring%'`, user.ID).Scan(&monitoringID)
+	_ = s.db.QueryRow(`SELECT id FROM thoughts WHERE user_id = ? AND content LIKE 'Uptime%'`, user.ID).Scan(&monitoringID)
 	if monitoringID != "" {
 		_, _ = s.UpdateThoughtTriage(user.ID, monitoringID, "keep", "document", "", "", "")
 	}
@@ -44,7 +50,7 @@ func (s *Store) seedLinkedTodos(user *domain.User, homelab *domain.TaskList) {
 
 // seedHelpNotes: a short guide to MindSift as notes, so the demo explains itself while showing the block
 // types (headings, callouts, numbered lists, code, links to notes).
-func (s *Store) seedHelpNotes(user *domain.User) {
+func (s *Store) seedHelpNotesDE(user *domain.User) {
 	_, _ = s.CreateFolder(user.ID, "MindSift-Hilfe")
 	help := func(title, icon string, spec []seedBlock) {
 		_, _ = s.CreateDocument(user.ID, "", title, icon, "MindSift-Hilfe", seedBlocks(spec), []string{"hilfe"}, false)

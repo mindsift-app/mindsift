@@ -44,6 +44,7 @@ export const authApi = {
     sharingMode?: SharingMode;
     allowRegistration?: boolean;
     createSampleData?: boolean;
+    defaultLanguage?: string;
   }): Promise<{ token: string; user: User }> {
     const res = await request<{ token: string; user: User }>('/api/v1/auth/setup', {
       method: 'POST',

@@ -4,13 +4,16 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/mindsift-app/mindsift/internal/auth"
+	"github.com/mindsift-app/mindsift/internal/config"
 	"github.com/mindsift-app/mindsift/internal/domain"
 	"github.com/mindsift-app/mindsift/internal/i18n"
 	"github.com/mindsift-app/mindsift/internal/storage"
+	"github.com/mindsift-app/mindsift/internal/ws"
 )
 
 // The language of a person and the server's default language, as the app reads and changes them.
@@ -124,5 +127,43 @@ func TestMessageTextsTranslated(t *testing.T) {
 	}
 	if !strings.Contains(html, `<html lang="en">`) {
 		t.Error("English mail must say lang=en")
+	}
+}
+
+// The setup wizard's language becomes the server's default and the first admin's language; the
+// sample data follows it.
+func TestSetupLanguage(t *testing.T) {
+	dbPath := filepath.Join(t.TempDir(), "setup_lang.db")
+	store, err := storage.NewStore(dbPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer store.Close()
+	srv := NewServer(&config.Config{DatabasePath: dbPath, JWTSecret: "x"}, store, ws.NewHub(), nil)
+	t.Cleanup(srv.Close)
+	router := srv.Router()
+	setup := func(body string) *httptest.ResponseRecorder {
+		req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/setup", strings.NewReader(body))
+		rec := httptest.NewRecorder()
+		router.ServeHTTP(rec, req)
+		return rec
+	}
+	if rec := setup(`{"email":"a@example.com","password":"secretpassword","defaultLanguage":"xx"}`); rec.Code != http.StatusBadRequest {
+		t.Fatalf("unknown language must be refused, got %d", rec.Code)
+	}
+	if rec := setup(`{"email":"a@example.com","password":"secretpassword","defaultLanguage":"fr","createSampleData":true}`); rec.Code != http.StatusCreated {
+		t.Fatalf("setup: %d %s", rec.Code, rec.Body.String())
+	}
+	admin, _ := store.GetUserByEmail("a@example.com")
+	if store.DefaultLanguageSetting() != "fr" || store.Language(admin.ID) != "fr" {
+		t.Fatalf("default %q, admin %q", store.DefaultLanguageSetting(), store.Language(admin.ID))
+	}
+	docs, _ := store.GetDocuments(admin.ID)
+	found := false
+	for _, d := range docs {
+		found = found || d.Title == "Getting started"
+	}
+	if !found {
+		t.Fatal("French admin should get the English sample data")
 	}
 }

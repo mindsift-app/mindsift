@@ -177,6 +177,10 @@ func (s *Store) EnsureDemoAccounts() error {
 		_, _ = s.db.Exec(`UPDATE users SET is_active = 1 WHERE id = ?`, normalUser.ID)
 	}
 
+	// The demo speaks English (sample data included); visitors can switch in the settings
+	_ = s.SetLanguage(adminUser.ID, "en")
+	_ = s.SetLanguage(normalUser.ID, "en")
+
 	// 3. Sample data for the admin, partly shared with the demo user (only on first start). Both accounts
 	// share an organization so they can see each other in the default sharing mode.
 	if adminCreated {
