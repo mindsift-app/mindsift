@@ -1,3 +1,4 @@
+import i18n from '../i18n';
 import { api } from './api';
 
 // Web push in this browser: the service worker shows the notifications, the server sends them over the
@@ -45,12 +46,12 @@ export async function currentPushSubscription(): Promise<PushSubscription | null
 }
 
 export async function enablePush(): Promise<void> {
-  if (!pushSupported()) throw new Error('Dieser Browser unterstützt keine Push-Benachrichtigungen');
-  if (needsHomeScreenInstall()) throw new Error('Auf iPhone und iPad zuerst MindSift „Zum Home-Bildschirm“ hinzufügen und von dort öffnen');
+  if (!pushSupported()) throw new Error(i18n.t('common:push.unsupported'));
+  if (needsHomeScreenInstall()) throw new Error(i18n.t('common:push.homeScreen'));
   const key = await api.getPushKey();
-  if (!key.enabled || !key.publicKey) throw new Error('Push ist auf diesem Server nicht verfügbar');
+  if (!key.enabled || !key.publicKey) throw new Error(i18n.t('common:push.unavailable'));
   const permission = await Notification.requestPermission();
-  if (permission !== 'granted') throw new Error('Benachrichtigungen wurden im Browser nicht erlaubt');
+  if (permission !== 'granted') throw new Error(i18n.t('common:push.denied'));
   const reg = await registration();
   let sub = await reg.pushManager.getSubscription();
   if (!sub) {
@@ -61,7 +62,7 @@ export async function enablePush(): Promise<void> {
       });
     } catch {
       // e.g. "Registration failed – permission denied": blocked for the site or no push service reachable
-      throw new Error('Der Browser hat die Anmeldung beim Push-Dienst abgelehnt (Berechtigung blockiert oder Push-Dienst nicht erreichbar)');
+      throw new Error(i18n.t('common:push.rejected'));
     }
   }
   // The address this browser registered before is dead once it has a new one (e.g. after reinstalling

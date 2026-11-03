@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { AuthStatus } from '../lib/types';
 import { APP_VERSION } from '../version';
 import { LegalLinks } from './LegalLinks';
@@ -9,17 +10,18 @@ interface AppFooterProps {
 }
 
 export const AppFooter: React.FC<AppFooterProps> = ({ legal, onOpenAbout }) => {
+  const { t } = useTranslation();
   // One small, even line: same font, size and weight for every part (mixed mono/bold looked crooked)
   const item = 'leading-none hover:text-muted transition-colors cursor-pointer';
   return (
     <footer className="hidden sm:flex shrink-0 w-full max-w-6xl mx-auto px-4 py-1.5 items-center justify-between text-[10px] leading-none text-faint select-none">
       <div className="flex items-center gap-1.5">
-        <button type="button" onClick={onOpenAbout} className={item} title="Über MindSift & Versionsdetails">
+        <button type="button" onClick={onOpenAbout} className={item} title={t('aboutTitle')}>
           MindSift {APP_VERSION}
         </button>
         <span aria-hidden>·</span>
         <button type="button" onClick={onOpenAbout} className={item}>
-          Über MindSift
+          {t('aboutMindSift')}
         </button>
       </div>
 

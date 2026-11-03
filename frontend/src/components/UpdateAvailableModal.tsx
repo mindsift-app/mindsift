@@ -1,11 +1,14 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { RefreshCw } from 'lucide-react';
 import { APP_VERSION } from '../version';
 import type { AvailableUpdate } from '../lib/useUpdateCheck';
 
 // Shown when the server got a new MindSift (lib/useUpdateCheck): reloading fetches the new app (the
 // service worker loads pages from the network first).
-export const UpdateAvailableModal: React.FC<{ update: AvailableUpdate; onLater: () => void }> = ({ update, onLater }) => (
+export const UpdateAvailableModal: React.FC<{ update: AvailableUpdate; onLater: () => void }> = ({ update, onLater }) => {
+  const { t } = useTranslation();
+  return (
   <div className="fixed inset-0 !m-0 z-[70] modal-overlay flex items-center justify-center p-4" onClick={onLater}>
     <div
       role="dialog"
@@ -20,10 +23,10 @@ export const UpdateAvailableModal: React.FC<{ update: AvailableUpdate; onLater: 
         </div>
         <div className="min-w-0 space-y-1">
           <h3 id="update-title" className="text-sm font-semibold text-main">
-            Neue Version verfügbar
+            {t('update.title')}
           </h3>
           <p className="text-xs text-muted leading-relaxed">
-            Der Server wurde aktualisiert
+            {t('update.subtitle')}
             {update.version && update.version !== APP_VERSION ? (
               <>
                 {' '}auf <span className="font-mono text-main">{update.version}</span>
@@ -35,7 +38,7 @@ export const UpdateAvailableModal: React.FC<{ update: AvailableUpdate; onLater: 
       </div>
       <div className="flex gap-2 sm:justify-end">
         <button type="button" onClick={onLater} className="btn-action flex-1 sm:flex-none h-11 sm:h-8 px-3 text-sm sm:text-xs">
-          Später
+          {t('update.later')}
         </button>
         <button
           type="button"
@@ -43,9 +46,10 @@ export const UpdateAvailableModal: React.FC<{ update: AvailableUpdate; onLater: 
           onClick={() => window.location.reload()}
           className="btn-primary flex-1 sm:flex-none h-11 sm:h-8 px-4 text-sm sm:text-xs font-semibold"
         >
-          Jetzt aktualisieren
+          {t('update.now')}
         </button>
       </div>
     </div>
   </div>
 );
+};

@@ -1,4 +1,5 @@
 import { Plus, Sparkles, Trash2, Users } from 'lucide-react';
+import i18n from '../../i18n';
 import { SharedList } from '../../lib/types';
 import { MobileMenuGroup } from '../../context/MobileActionContext';
 import { deduplicateItems } from './listItems';
@@ -31,11 +32,11 @@ export function buildListsMenu({
   return [
         {
           id: 'lists-actions',
-          title: 'Aktionen',
+          title: i18n.t('lists:menu.actions'),
           items: [
             {
               id: 'list-new-item',
-              label: 'Neuen Eintrag hinzufügen',
+              label: i18n.t('lists:menu.addItem'),
               icon: <Plus className="w-4 h-4" />,
               variant: 'accent',
               onClick: () => {
@@ -44,7 +45,7 @@ export function buildListsMenu({
             },
             {
               id: 'list-new-list',
-              label: 'Neue Einkaufsliste erstellen',
+              label: i18n.t('lists:menu.newList'),
               icon: <Plus className="w-4 h-4" />,
               onClick: () => setShowNewListModal(true),
             },
@@ -62,7 +63,7 @@ export function buildListsMenu({
               ? [
                   {
                     id: 'list-clear-completed',
-                    label: `Erledigte aufräumen (${completedCount})`,
+                    label: i18n.t('lists:menu.clearDone', { count: completedCount }),
                     icon: <Sparkles className="w-4 h-4" />,
                     onClick: () => handleClearCompleted(),
                   },
@@ -72,7 +73,7 @@ export function buildListsMenu({
               ? [
                   {
                     id: 'list-delete',
-                    label: `Liste "${activeList.title}" löschen`,
+                    label: i18n.t('lists:menu.deleteList', { title: activeList.title }),
                     icon: <Trash2 className="w-4 h-4" />,
                     variant: 'danger' as const,
                     onClick: () => handleDeleteList(activeList.id),
@@ -83,7 +84,7 @@ export function buildListsMenu({
         },
         {
           id: 'lists-switcher',
-          title: 'Einkaufslisten wechseln',
+          title: i18n.t('lists:menu.switch'),
           items: lists.map((lst) => {
             const openCount = deduplicateItems(lst.items || []).filter((i) => !i.isCompleted).length;
             return {

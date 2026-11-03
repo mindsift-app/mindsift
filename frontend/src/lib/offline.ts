@@ -1,3 +1,4 @@
+import i18n from '../i18n';
 // Offline support for the REST layer (lib/api/client.ts):
 // - Read cache: successful GET responses are kept in IndexedDB per user. Without network the last
 //   known answer is returned, so thoughts, tasks and lists stay visible offline.
@@ -8,7 +9,7 @@
 /** Thrown by request() when the server could not be reached at all (no HTTP answer). */
 export class OfflineError extends Error {
   constructor() {
-    super('Keine Verbindung zum Server');
+    super(i18n.t('common:offline.noConnection'));
     this.name = 'OfflineError';
   }
 }

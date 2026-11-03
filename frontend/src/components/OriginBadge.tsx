@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import i18n from '../i18n';
 import { Bot, Webhook } from 'lucide-react';
 import { Origin } from '../lib/types';
 import { formatDateTime } from '../lib/format';
@@ -27,14 +28,14 @@ export const originDetails = (origin: Origin | undefined, createdAt?: string): s
   const created = formatWhen(createdAt);
   if (origin.createdVia) {
     const key = origin.createdKey ? ` (${origin.createdKey})` : '';
-    parts.push(`Angelegt per ${VIA_LABEL[origin.createdVia]}${key}${created ? ` am ${created}` : ''}`);
+    parts.push(i18n.t(created ? 'common:origin.createdViaAt' : 'common:origin.createdVia', { via: VIA_LABEL[origin.createdVia], key, when: created }));
   } else {
-    parts.push(`In der App angelegt${created ? ` am ${created}` : ''}`);
+    parts.push(i18n.t(created ? 'common:origin.createdInAppAt' : 'common:origin.createdInApp', { when: created }));
   }
   if (origin.changedVia) {
     const key = origin.changedKey ? ` (${origin.changedKey})` : '';
     const when = formatWhen(origin.changedAt);
-    parts.push(`zuletzt geändert per ${VIA_LABEL[origin.changedVia]}${key}${when ? ` am ${when}` : ''}`);
+    parts.push(i18n.t(when ? 'common:origin.changedViaAt' : 'common:origin.changedVia', { via: VIA_LABEL[origin.changedVia], key, when }));
   }
   return parts.join(' · ');
 };

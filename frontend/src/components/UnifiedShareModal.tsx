@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Users,
   User as UserIcon,
@@ -33,7 +34,7 @@ export interface UnifiedShareModalProps {
 export const UnifiedShareModal: React.FC<UnifiedShareModalProps> = ({
   isOpen,
   onClose,
-  title = 'Freigeben & Berechtigungen',
+  title,
   resourceName,
   resourceIcon,
   isOwner,
@@ -46,6 +47,7 @@ export const UnifiedShareModal: React.FC<UnifiedShareModalProps> = ({
   onAddShare,
   onRemoveShare,
 }) => {
+  const { t } = useTranslation();
   const effectiveFixedPerm = fixedPermission || 'viewer';
   const [shareType, setShareType] = useState<'team' | 'user'>('team');
   const [selectedTeamId, setSelectedTeamId] = useState('');
@@ -63,7 +65,7 @@ export const UnifiedShareModal: React.FC<UnifiedShareModalProps> = ({
     setError(null);
     const targetId = shareType === 'team' ? selectedTeamId : selectedUser?.id;
     if (!targetId) {
-      setError(shareType === 'team' ? 'Bitte eine Gruppe auswählen' : 'Bitte einen Benutzer auswählen');
+      setError(shareType === 'team' ? t('share.chooseGroup') : t('share.chooseUser'));
       return;
     }
 
@@ -74,20 +76,20 @@ export const UnifiedShareModal: React.FC<UnifiedShareModalProps> = ({
       setSelectedTeamId('');
       setSelectedUser(null);
     } catch (err: any) {
-      setError(err?.message || 'Fehler beim Hinzufügen der Freigabe');
+      setError(err?.message || t('share.addFailed'));
     } finally {
       setLoading(false);
     }
   };
 
   const handleRemove = async (shareId: string) => {
-    if (!window.confirm('Möchtest du diese Freigabe wirklich aufheben?')) return;
+    if (!window.confirm(t('share.confirmRemove'))) return;
     setError(null);
     setLoading(true);
     try {
       await onRemoveShare(shareId);
     } catch (err: any) {
-      setError(err?.message || 'Fehler beim Entfernen der Freigabe');
+      setError(err?.message || t('share.removeFailed'));
     } finally {
       setLoading(false);
     }
@@ -125,9 +127,9 @@ export const UnifiedShareModal: React.FC<UnifiedShareModalProps> = ({
               )}
             </div>
             <div className="min-w-0">
-              <h3 className="text-sm font-bold text-main truncate">{title}</h3>
+              <h3 className="text-sm font-bold text-main truncate">{title ?? t('share.defaultTitle')}</h3>
               <p className="text-[11px] text-muted truncate">
-                Objekt: <span className="font-semibold text-main">{resourceName}</span>
+                {t('share.object')} <span className="font-semibold text-main">{resourceName}</span>
               </p>
             </div>
           </div>
@@ -135,7 +137,7 @@ export const UnifiedShareModal: React.FC<UnifiedShareModalProps> = ({
             type="button"
             onClick={onClose}
             className="p-1.5 text-muted hover:text-main rounded-btn hover:bg-panel transition-colors cursor-pointer"
-            title="Schließen"
+            title={t('close')}
           >
             <X className="w-4 h-4" />
           </button>
@@ -150,12 +152,12 @@ export const UnifiedShareModal: React.FC<UnifiedShareModalProps> = ({
         {/* Add Share Section (Only if owner / manager) */}
         {isSharingDisabled() ? (
           <div className="p-3 bg-panel-elevated border border-border rounded-card text-xs text-muted">
-            Teilen ist auf diesem Server deaktiviert (Sichtbarkeits-Modus „Privat“).
+            {t('share.disabled')}
           </div>
         ) : isOwner ? (
           <form onSubmit={handleAdd} className="space-y-3 p-3 bg-panel-elevated border border-border rounded-card">
             <div className="flex items-center justify-between gap-2">
-              <span className="text-xs font-semibold text-main">Freigabe hinzufügen:</span>
+              <span className="text-xs font-semibold text-main">{t('share.add')}</span>
               <div className="flex items-center gap-1">
                 <button
                   type="button"
@@ -171,7 +173,7 @@ export const UnifiedShareModal: React.FC<UnifiedShareModalProps> = ({
                   }`}
                 >
                   <Users className="w-3.5 h-3.5" />
-                  <span>Gruppe</span>
+                  <span>{t('share.group')}</span>
                 </button>
                 <button
                   type="button"
@@ -187,7 +189,7 @@ export const UnifiedShareModal: React.FC<UnifiedShareModalProps> = ({
                   }`}
                 >
                   <UserIcon className="w-3.5 h-3.5" />
-                  <span>Benutzer</span>
+                  <span>{t('share.user')}</span>
                 </button>
               </div>
             </div>
@@ -200,7 +202,7 @@ export const UnifiedShareModal: React.FC<UnifiedShareModalProps> = ({
                   className="input-field bg-panel h-8 px-2.5 text-xs flex-1 cursor-pointer"
                   disabled={loading}
                 >
-                  <option value="" className="bg-panel text-muted">-- Gruppe auswählen --</option>
+                  <option value="" className="bg-panel text-muted">{t('share.pickGroup')}</option>
                   {availableTeams.map((t) => (
                     <option key={t.id} value={t.id} className="bg-panel text-main">
                       👥 {t.name} ({t.members?.length || 1} Mitglieder)
@@ -214,20 +216,20 @@ export const UnifiedShareModal: React.FC<UnifiedShareModalProps> = ({
                     className="input-field bg-panel h-8 px-2.5 text-xs w-full sm:w-36 cursor-pointer shrink-0"
                     disabled={loading}
                   >
-                    <option value="editor" className="bg-panel text-main">Bearbeiten</option>
-                    <option value="viewer" className="bg-panel text-main">Nur Lesen</option>
+                    <option value="editor" className="bg-panel text-main">{t('share.edit')}</option>
+                    <option value="viewer" className="bg-panel text-main">{t('share.readOnly')}</option>
                   </select>
                 ) : (
                   <span className="inline-flex items-center gap-1 text-[11px] text-muted px-2 py-1 bg-panel rounded border border-border shrink-0 self-center">
                     {effectiveFixedPerm === 'editor' ? (
                       <>
                         <Check className="w-3 h-3 text-accent" />
-                        Bearbeiten
+                        {t('share.edit')}
                       </>
                     ) : (
                       <>
                         <Lock className="w-3 h-3 text-faint" />
-                        Nur Lesen
+                        {t('share.readOnly')}
                       </>
                     )}
                   </span>
@@ -242,7 +244,7 @@ export const UnifiedShareModal: React.FC<UnifiedShareModalProps> = ({
                     onSelectUser={setSelectedUser}
                     excludeUserIds={excludedUserIds}
                     disabled={loading}
-                    placeholder="Benutzer suchen (Name oder @Benutzername)…"
+                    placeholder={t('share.searchUser')}
                   />
                 </div>
                 {allowRoleSelection ? (
@@ -252,20 +254,20 @@ export const UnifiedShareModal: React.FC<UnifiedShareModalProps> = ({
                     className="input-field bg-panel h-8 px-2.5 text-xs w-full sm:w-36 cursor-pointer shrink-0"
                     disabled={loading}
                   >
-                    <option value="editor" className="bg-panel text-main">Bearbeiten</option>
-                    <option value="viewer" className="bg-panel text-main">Nur Lesen</option>
+                    <option value="editor" className="bg-panel text-main">{t('share.edit')}</option>
+                    <option value="viewer" className="bg-panel text-main">{t('share.readOnly')}</option>
                   </select>
                 ) : (
                   <span className="inline-flex items-center gap-1 text-[11px] text-muted px-2 py-1 bg-panel rounded border border-border shrink-0 self-center">
                     {effectiveFixedPerm === 'editor' ? (
                       <>
                         <Check className="w-3 h-3 text-accent" />
-                        Bearbeiten
+                        {t('share.edit')}
                       </>
                     ) : (
                       <>
                         <Lock className="w-3 h-3 text-faint" />
-                        Nur Lesen
+                        {t('share.readOnly')}
                       </>
                     )}
                   </span>
@@ -282,10 +284,10 @@ export const UnifiedShareModal: React.FC<UnifiedShareModalProps> = ({
                 <Plus className="w-3.5 h-3.5" />
                 <span>
                   {loading
-                    ? 'Wird gespeichert…'
+                    ? t('share.saving')
                     : shareType === 'team'
-                    ? 'Gruppe freigeben'
-                    : 'Benutzer hinzufügen'}
+                    ? t('share.shareGroup')
+                    : t('share.addUser')}
                 </span>
               </button>
             </div>
@@ -293,14 +295,14 @@ export const UnifiedShareModal: React.FC<UnifiedShareModalProps> = ({
         ) : (
           <div className="p-3 bg-panel-elevated border border-border rounded-card text-xs text-muted flex items-center gap-2">
             <Lock className="w-4 h-4 text-faint shrink-0" />
-            <span>Nur der Eigentümer kann neue Freigaben einrichten.</span>
+            <span>{t('share.ownerOnly')}</span>
           </div>
         )}
 
         {/* Active Shares List */}
         <div className="space-y-2">
           <div className="flex items-center justify-between text-xs font-semibold text-muted uppercase tracking-wider px-0.5">
-            <span>Aktive Freigaben</span>
+            <span>{t('share.active')}</span>
             <span className="font-mono text-[11px] font-normal lowercase">
               {shares.length} {shares.length === 1 ? 'Freigabe' : 'Freigaben'}
             </span>
@@ -310,7 +312,7 @@ export const UnifiedShareModal: React.FC<UnifiedShareModalProps> = ({
             {shares.length === 0 ? (
               <div className="p-4 bg-canvas border border-border rounded-card text-xs text-muted flex items-center gap-2.5 justify-center text-center">
                 <Lock className="w-4 h-4 text-faint shrink-0" />
-                <span>Dieses Element ist aktuell privat (nur für dich sichtbar).</span>
+                <span>{t('share.private')}</span>
               </div>
             ) : (
               shares.map((sh) => {
@@ -338,13 +340,13 @@ export const UnifiedShareModal: React.FC<UnifiedShareModalProps> = ({
                       )}
                       <div className="truncate">
                         <div className="font-medium text-main truncate flex items-center gap-1.5">
-                          <span className="truncate">{sh.targetName || (isTeam ? 'Gruppe' : sh.targetEmail || 'Benutzer')}</span>
+                          <span className="truncate">{sh.targetName || (isTeam ? t('share.group') : sh.targetEmail || t('share.user'))}</span>
                           <span
                             className={`text-[9px] uppercase font-semibold px-1 py-0.2 rounded ${
                               isTeam ? 'badge-neutral' : 'bg-surface-2 text-faint'
                             }`}
                           >
-                            {isTeam ? 'Gruppe' : 'Benutzer'}
+                            {isTeam ? t('share.group') : t('share.user')}
                           </span>
                         </div>
                         {sh.targetEmail && sh.targetEmail !== sh.targetName && (
@@ -369,7 +371,7 @@ export const UnifiedShareModal: React.FC<UnifiedShareModalProps> = ({
                           onClick={() => handleRemove(sh.id)}
                           disabled={loading}
                           className="p-1 text-faint hover:text-status-err rounded transition-colors cursor-pointer"
-                          title="Freigabe entfernen"
+                          title={t('share.remove')}
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -389,7 +391,7 @@ export const UnifiedShareModal: React.FC<UnifiedShareModalProps> = ({
             onClick={onClose}
             className="btn-action text-xs h-8 px-4 cursor-pointer"
           >
-            Schließen
+            {t('close')}
           </button>
         </div>
       </div>

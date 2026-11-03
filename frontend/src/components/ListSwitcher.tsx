@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Check, ChevronDown } from 'lucide-react';
 import { CountBadge } from './CountBadge';
 
@@ -19,6 +20,7 @@ interface ListSwitcherProps {
 
 // Title of the open list in the phone header (Doku/ui-patterns.md): a tap opens all lists to switch to
 export const ListSwitcher: React.FC<ListSwitcherProps> = ({ label, items, activeId, onSelect }) => {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -45,7 +47,7 @@ export const ListSwitcher: React.FC<ListSwitcherProps> = ({ label, items, active
         onClick={() => setOpen((o) => !o)}
         aria-haspopup="listbox"
         aria-expanded={open}
-        title="Liste wechseln"
+        title={t('switchList')}
         className="h-11 -my-1 max-w-full flex items-center gap-1 text-sm font-semibold text-main cursor-pointer"
       >
         <span className="truncate">{label}</span>
@@ -54,7 +56,7 @@ export const ListSwitcher: React.FC<ListSwitcherProps> = ({ label, items, active
       {open && (
         <div
           role="listbox"
-          aria-label="Liste wechseln"
+          aria-label={t('switchList')}
           className="absolute left-0 top-full mt-1 z-40 w-72 max-w-[calc(100vw-2rem)] max-h-[60vh] overflow-y-auto py-1 bg-panel border border-border rounded-card shadow-panel"
         >
           {items.map((item) => {

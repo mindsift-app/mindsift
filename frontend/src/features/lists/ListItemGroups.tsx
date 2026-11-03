@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Check, CloudOff, Sparkles, Trash2 } from 'lucide-react';
 import { ListItem } from '../../lib/types';
 import { OFFLINE_ITEM_PREFIX } from '../../lib/offline';
@@ -21,6 +22,7 @@ export function OpenItemGroups({
   editing: ReturnType<typeof useItemEditing>;
   renderItemAuthor: (item: ListItem) => React.ReactNode;
 }) {
+  const { t } = useTranslation('lists');
   const { draggingItemId, setDraggingItemId, dragOverItemTarget, setDragOverItemTarget, dragOverCategoryTarget, setDragOverCategoryTarget, setDragOverListTab, handleItemDragStart, handleItemDragOver, handleItemDragLeave, handleDropOnItem, handleDropOnCategoryHeader } = drag;
   const { editingQtyItemId, setEditingQtyItemId, editingQtyValue, setEditingQtyValue, handleSaveQuantity, handleToggleItem, handleDeleteItem } = editing;
   return (
@@ -29,9 +31,9 @@ export function OpenItemGroups({
         <div className="p-8 text-center text-muted text-sm space-y-1 panel-surface">
           <p className="font-medium text-main flex items-center justify-center gap-1.5">
             <Sparkles className="w-4 h-4 text-accent" />
-            <span>Alles erledigt</span>
+            <span>{t('allDone')}</span>
           </p>
-          <p className="text-xs text-faint">Keine offenen Punkte auf dieser Liste.</p>
+          <p className="text-xs text-faint">{t('noneOpen')}</p>
         </div>
       ) : (
         <div className="space-y-4">
@@ -113,7 +115,7 @@ export function OpenItemGroups({
                               ? 'bg-status-ok border-status-ok text-on-accent'
                               : 'border-strong hover:border-accent text-transparent'
                           }`}
-                          title={item.isCompleted ? 'Als offen markieren' : 'Als erledigt abhaken'}
+                          title={item.isCompleted ? t('markOpen') : t('markDone')}
                         >
                           <Check className="w-3.5 h-3.5 sm:w-3 sm:h-3 stroke-[3]" />
                         </button>
@@ -122,7 +124,7 @@ export function OpenItemGroups({
                           {displayContent}
                         </span>
                         {item.id.startsWith(OFFLINE_ITEM_PREFIX) && (
-                          <span title="Offline hinzugefügt – wird gesendet, sobald die Verbindung zurück ist">
+                          <span title={t('offlineAdded')}>
                             <CloudOff className="w-3.5 h-3.5 text-faint shrink-0" />
                           </span>
                         )}
@@ -146,7 +148,7 @@ export function OpenItemGroups({
                                 await handleSaveQuantity(item.id, editingQtyValue);
                               }}
                               className="w-16 h-8 sm:h-6 px-1.5 text-base sm:text-xs input-field font-semibold text-accent text-center"
-                              placeholder="Menge"
+                              placeholder={t('quantity')}
                             />
                           </div>
                         ) : (
@@ -162,7 +164,7 @@ export function OpenItemGroups({
                                 ? 'badge-accent cursor-pointer hover:brightness-125'
                                 : 'opacity-0 group-hover:opacity-60 hover:!opacity-100 text-muted hover:text-accent border border-dashed border-border/70 hover:border-accent text-[11px]'
                             }`}
-                            title="Menge bearbeiten"
+                            title={t('editQuantity')}
                           >
                             {item.quantity || '+ Menge'}
                           </button>
@@ -186,7 +188,7 @@ export function OpenItemGroups({
                           handleDeleteItem(item.id);
                         }}
                         className="btn-icon btn-icon-danger p-2 sm:p-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
-                        title="Eintrag löschen"
+                        title={t('deleteItem')}
                       >
                         <Trash2 className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
                       </button>
@@ -212,6 +214,7 @@ export function CompletedItems({
   editing: ReturnType<typeof useItemEditing>;
   renderItemAuthor: (item: ListItem) => React.ReactNode;
 }) {
+  const { t } = useTranslation('lists');
   const { editingQtyItemId, setEditingQtyItemId, editingQtyValue, setEditingQtyValue, handleSaveQuantity, handleToggleItem, handleDeleteItem, handleClearCompleted } = editing;
   return (
     <>
@@ -219,13 +222,13 @@ export function CompletedItems({
         <div className="space-y-1.5 pt-2">
           <div className="flex items-center justify-between px-1">
             <span className="text-xs font-semibold text-muted uppercase tracking-wider">
-              Erledigt ({completedItems.length})
+              {t('doneCount', { count: completedItems.length })}
             </span>
             <button
               onClick={handleClearCompleted}
               className="btn-action min-h-[36px] sm:min-h-0 text-xs"
             >
-              Erledigte aufräumen
+              {t('clearDone')}
             </button>
           </div>
 
@@ -248,7 +251,7 @@ export function CompletedItems({
                         handleToggleItem(item);
                       }}
                       className="w-5 h-5 sm:w-4 sm:h-4 checkbox-square flex items-center justify-center flex-shrink-0 transition-colors border bg-status-ok border-status-ok text-on-accent"
-                      title="Als offen markieren"
+                      title={t('markOpen')}
                     >
                       <Check className="w-3.5 h-3.5 sm:w-3 sm:h-3 stroke-[3]" />
                     </button>
@@ -276,7 +279,7 @@ export function CompletedItems({
                             await handleSaveQuantity(item.id, editingQtyValue);
                           }}
                           className="w-16 h-8 sm:h-6 px-1.5 text-base sm:text-xs input-field font-semibold text-accent text-center"
-                          placeholder="Menge"
+                          placeholder={t('quantity')}
                         />
                       </div>
                     ) : (
@@ -292,7 +295,7 @@ export function CompletedItems({
                             ? 'text-faint hover:text-main cursor-pointer'
                             : 'opacity-0 group-hover:opacity-60 text-faint hover:text-main text-[11px]'
                         }`}
-                        title="Menge bearbeiten"
+                        title={t('editQuantity')}
                       >
                         {item.quantity ? `(${item.quantity})` : '+ Menge'}
                       </button>
@@ -312,7 +315,7 @@ export function CompletedItems({
                         handleDeleteItem(item.id);
                       }}
                       className="btn-icon btn-icon-danger p-2 sm:p-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
-                      title="Löschen"
+                      title={t('delete')}
                     >
                       <Trash2 className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
                     </button>

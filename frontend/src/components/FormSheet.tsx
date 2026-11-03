@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { X } from 'lucide-react';
 import { useKeyboardInset } from '../lib/useKeyboardInset';
 
@@ -29,6 +30,7 @@ export const FormSheet: React.FC<FormSheetProps> = ({
   danger = false,
   busy = false,
 }) => {
+  const { t } = useTranslation();
   const { inset, visibleHeight } = useKeyboardInset();
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
@@ -70,7 +72,7 @@ export const FormSheet: React.FC<FormSheetProps> = ({
             {icon}
             <span className="truncate">{title}</span>
           </h3>
-          <button type="button" onClick={onClose} className="w-11 h-11 sm:w-7 sm:h-7 -mr-2 sm:mr-0 flex items-center justify-center text-muted hover:text-main" title="Schließen">
+          <button type="button" onClick={onClose} className="w-11 h-11 sm:w-7 sm:h-7 -mr-2 sm:mr-0 flex items-center justify-center text-muted hover:text-main" title={t('close')}>
             <X className="w-4 h-4" />
           </button>
         </div>

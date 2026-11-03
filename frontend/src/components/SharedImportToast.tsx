@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from 'react';
+import i18n from '../i18n';
+import { useTranslation } from 'react-i18next';
 import { ArrowRight, CheckSquare, Inbox, ShoppingCart, X } from 'lucide-react';
 import { api, triggerHaptic } from '../lib/api';
 import type { SharedList } from '../lib/types';
@@ -15,6 +17,7 @@ interface SharedImportToastProps {
 }
 
 export const SharedImportToast: React.FC<SharedImportToastProps> = ({ thoughtIds, lists, onClose, onConverted }) => {
+  const { t } = useTranslation();
   const [choosingList, setChoosingList] = useState(false);
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -36,8 +39,11 @@ export const SharedImportToast: React.FC<SharedImportToastProps> = ({ thoughtIds
       for (const id of thoughtIds) {
         await api.triageAction(id, 'keep', { convertTo, targetListId: list?.id });
       }
-      const what = count === 1 ? 'Eintrag' : `${count} Einträge`;
-      onConverted(convertTo === 'task' ? `${count === 1 ? 'Als Aufgabe' : `${count} Aufgaben`} angelegt` : `${what} auf „${list?.title}“`);
+      onConverted(
+        convertTo === 'task'
+          ? i18n.t('common:sharedImport.tasksCreated', { count })
+          : i18n.t('common:sharedImport.onList', { count, title: list?.title })
+      );
     } catch {
       setFailed(true);
       setBusy(false);
@@ -63,7 +69,7 @@ export const SharedImportToast: React.FC<SharedImportToastProps> = ({ thoughtIds
         <button
           type="button"
           onClick={onClose}
-          aria-label="Schließen"
+          aria-label={t('close')}
           className="absolute top-2 right-2 h-8 w-8 flex items-center justify-center rounded-btn text-faint hover:text-main"
         >
           <X className="w-4 h-4" />
@@ -71,26 +77,26 @@ export const SharedImportToast: React.FC<SharedImportToastProps> = ({ thoughtIds
         <div className="pr-8">
           <p className="flex items-center gap-2 text-base font-semibold text-main">
             <Inbox className="w-5 h-5 text-accent shrink-0" />
-            {count === 1 ? 'Im Quick Dump abgelegt' : `${count} Einträge im Quick Dump abgelegt`}
+            {t('sharedImport.queued', { count })}
           </p>
           <p className="text-xs text-muted mt-1">
-            {choosingList ? 'Auf welche Liste?' : 'Oder gleich woanders hin:'}
+            {choosingList ? t('sharedImport.whichList') : t('sharedImport.elsewhere')}
           </p>
         </div>
 
-        {failed && <p className="text-xs text-status-err">Umwandeln hat nicht geklappt – der Eintrag bleibt im Quick Dump.</p>}
+        {failed && <p className="text-xs text-status-err">{t('sharedImport.failed')}</p>}
 
         {!choosingList ? (
           <div className={`grid gap-2 ${writableLists.length > 0 ? 'grid-cols-2' : 'grid-cols-1'}`}>
             {writableLists.length > 0 && (
               <button type="button" disabled={busy} onClick={toList} className={`${big} bg-canvas border border-border text-main`}>
                 <ShoppingCart className="w-4 h-4 text-accent" />
-                <span>Liste</span>
+                <span>{t('sharedImport.list')}</span>
               </button>
             )}
             <button type="button" disabled={busy} onClick={() => convert('task')} className={`${big} bg-accent text-on-accent`}>
               <CheckSquare className="w-4 h-4" />
-              <span>Aufgabe</span>
+              <span>{t('sharedImport.task')}</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>
