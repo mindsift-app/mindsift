@@ -1,0 +1,30 @@
+{
+  "back": "Atrás",
+  "title": "Ayuda y documentación",
+  "subtitle": "Uso del teclado, notas outliner, triage, tablero Kanban y colaboración",
+  "search": "Buscar ayuda y atajos…",
+  "clearSearch": "Borrar búsqueda",
+  "cat": {
+    "all": "Todos los temas",
+    "workspace": "Workspace y notas",
+    "triage": "Captura rápida y triage",
+    "tasks": "Tareas y Kanban",
+    "lists": "Listas compartidas",
+    "collaboration": "Grupos y compartir",
+    "shortcuts": "Atajos de teclado y gestos"
+  },
+  "reset": "Restablecer filtro",
+  "none": "No hay temas de ayuda que coincidan",
+  "noneHint": "Prueba con otro término de búsqueda o cambia a la categoría «Todos los temas».",
+  "shortcutsTitle": "Todos los atajos de teclado y gestos",
+  "shortcutsIntro": "Trabaja más rápido sin el ratón: todas las teclas de acceso rápido y gestos móviles de un vistazo.",
+  "col": {
+    "key": "Tecla / gesto",
+    "scope": "Área",
+    "desc": "Función"
+  },
+  "results_one": "Resultados para <b>«{{query}}»</b>: {{count}} tarjeta de ayuda",
+  "results_other": "Resultados para <b>«{{query}}»</b>: {{count}} tarjetas de ayuda",
+  "shortcutCount_one": "{{count}} atajo",
+  "shortcutCount_other": "{{count}} atajos"
+}

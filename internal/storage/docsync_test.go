@@ -377,7 +377,8 @@ func TestDemoAccountsGetSampleDataAndShares(t *testing.T) {
 		t.Fatalf("sample note missing: %v", err)
 	}
 	doc, err := s.GetDocumentByID(admin.ID, docID)
-	if err != nil || len(doc.Blocks) < 20 || doc.FolderPath != "Projekte" {
+	// The demo speaks English
+	if err != nil || len(doc.Blocks) < 20 || doc.FolderPath != "Projects" || s.Language(admin.ID) != "en" || s.Language(member.ID) != "en" {
 		t.Fatalf("sample note too small or misplaced: %d blocks, folder %q, %v", len(doc.Blocks), doc.FolderPath, err)
 	}
 	maxLevel := 0
@@ -410,10 +411,10 @@ func TestDemoAccountsGetSampleDataAndShares(t *testing.T) {
 	}
 	// The linked example: a task tied to a note checkbox, with the checkboxes below as subtasks
 	var subtasks string
-	if err := s.db.QueryRow(`SELECT subtasks FROM thoughts WHERE user_id = ? AND converted_type = 'document_block' AND content LIKE 'Backup-Konzept%'`, admin.ID).Scan(&subtasks); err != nil {
+	if err := s.db.QueryRow(`SELECT subtasks FROM thoughts WHERE user_id = ? AND converted_type = 'document_block' AND content LIKE 'Put the backup plan%'`, admin.ID).Scan(&subtasks); err != nil {
 		t.Fatalf("linked sample task missing: %v", err)
 	}
-	if !strings.Contains(subtasks, "systemd-Timer") || !strings.Contains(subtasks, "blockId") {
+	if !strings.Contains(subtasks, "systemd timer") || !strings.Contains(subtasks, "blockId") {
 		t.Fatalf("checkboxes below should be linked subtasks: %s", subtasks)
 	}
 }
@@ -434,5 +435,31 @@ func TestAnchorTagMigrationKeepsRealTags(t *testing.T) {
 	got, _ := s.GetThoughtByID(u.ID, th.ID)
 	if len(got.Tags) != 2 || got.Tags[0] != "lesen" || got.Tags[1] != "manuell" {
 		t.Fatalf("only the anchor tag must go: %v", got.Tags)
+	}
+}
+
+// German accounts get the sample data in German, every other language in English.
+func TestStarterContentLanguage(t *testing.T) {
+	s, _ := newSyncTestStore(t)
+	de, _ := s.CreateUser("de@example.com", "hash", "De", "member")
+	it, _ := s.CreateUser("it@example.com", "hash", "It", "member")
+	_ = s.SetLanguage(it.ID, "it")
+	_ = s.SeedStarterContent(de)
+	_ = s.SeedStarterContent(it)
+	for _, c := range []struct{ user, help, list string }{{de.ID, "MindSift-Hilfe", "Wocheneinkauf"}, {it.ID, "MindSift help", "Weekly groceries"}} {
+		var notes, lists int
+		_ = s.db.QueryRow(`SELECT COUNT(*) FROM documents WHERE user_id = ? AND folder_path = ?`, c.user, c.help).Scan(&notes)
+		_ = s.db.QueryRow(`SELECT COUNT(*) FROM lists WHERE user_id = ? AND title = ?`, c.user, c.list).Scan(&lists)
+		if notes < 9 || lists != 1 {
+			t.Errorf("%s: %d help notes in %q, %d lists %q", c.user, notes, c.help, lists, c.list)
+		}
+	}
+	// Same structure in both languages, the linked checkbox task included
+	count := func(uid string) (n int) {
+		_ = s.db.QueryRow(`SELECT COUNT(*) FROM thoughts WHERE user_id = ? AND converted_type = 'document_block'`, uid).Scan(&n)
+		return n
+	}
+	if count(it.ID) == 0 || count(it.ID) != count(de.ID) {
+		t.Errorf("linked sample tasks: English %d, German %d", count(it.ID), count(de.ID))
 	}
 }

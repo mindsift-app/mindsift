@@ -10,4 +10,8 @@ describe('extractHashtags', () => {
     expect(extractHashtags('example.com/blog#ueberschrift')).toEqual([]);
     expect(extractHashtags('https://x.de/#anker und #echt, C# nicht')).toEqual(['echt']);
   });
+
+  it('knows letters of every language', () => {
+    expect(extractHashtags('#café #niño #città #Küche')).toEqual(['café', 'niño', 'città', 'küche']);
+  });
 });

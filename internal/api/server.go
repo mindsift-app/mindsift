@@ -18,6 +18,7 @@ import (
 	"github.com/mindsift-app/mindsift/internal/collab"
 	"github.com/mindsift-app/mindsift/internal/config"
 	"github.com/mindsift-app/mindsift/internal/domain"
+	"github.com/mindsift-app/mindsift/internal/i18n"
 	"github.com/mindsift-app/mindsift/internal/storage"
 	"github.com/mindsift-app/mindsift/internal/ws"
 )
@@ -393,8 +394,17 @@ func (s *Server) Router() http.Handler {
 				w.Header().Set("Pragma", "no-cache")
 				w.Header().Set("Expires", "0")
 			}
+			if path == "manifest.json" {
+				if data, err := fs.ReadFile(s.staticFS, path); err == nil {
+					w.Header().Set("Content-Type", "application/manifest+json")
+					w.WriteHeader(http.StatusOK)
+					_, _ = w.Write(localizeStatic(data, s.requestLanguage(req)))
+					return
+				}
+			}
 			if path == "index.html" {
 				if data, err := fs.ReadFile(s.staticFS, "index.html"); err == nil {
+					data = localizeStatic(data, s.requestLanguage(req))
 					scheme := "http"
 					if req.TLS != nil || req.Header.Get("X-Forwarded-Proto") == "https" {
 						scheme = "https"
@@ -434,6 +444,31 @@ func writeJSON(w http.ResponseWriter, status int, data interface{}) {
 
 // writeError answers with the message in the language of the request (languageMiddleware); the code
 // lets the app react to one specific error regardless of the language
+// staticTexts: the German texts of index.html (description, link preview) and manifest.json (app
+// description, shortcuts), served in the browser's language
+var staticTexts = []string{
+	"MindSift — Der Kopf frei in drei Sekunden. Instant Capture, Tinder-Style Triage, Workspace & Echtzeit-Listen.",
+	"MindSift — Der Kopf frei in drei Sekunden",
+	"Instant Brain-Dump, Tinder-Style Triage, Workspace & Echtzeit-Listen.",
+	"MindSift App Logo & Vorschau",
+	"MindSift — Der Kopf frei in drei Sekunden. Instant Brain-Dump, Tinder-Style Triage, Workspace & Echtzeit-Familienlisten.",
+	"Gedanken schnell in die Triage werfen",
+	"Neue Aufgabe",
+	"Aufgabe",
+	"Direkt eine neue Aufgabe anlegen",
+	"Einkaufsliste",
+	"Einen Eintrag zur Einkaufsliste hinzufügen",
+}
+
+// localizeStatic translates the quoted staticTexts of a static file and sets <html lang>.
+func localizeStatic(data []byte, lang string) []byte {
+	out := strings.Replace(string(data), `<html lang="de"`, `<html lang="`+lang+`"`, 1)
+	for _, de := range staticTexts {
+		out = strings.ReplaceAll(out, `"`+de+`"`, `"`+i18n.T(lang, de)+`"`)
+	}
+	return []byte(out)
+}
+
 func writeError(w http.ResponseWriter, status int, message string) {
 	writeJSON(w, status, map[string]string{"error": tr(w, message)})
 }

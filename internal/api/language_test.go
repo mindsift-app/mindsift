@@ -4,13 +4,16 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/mindsift-app/mindsift/internal/auth"
+	"github.com/mindsift-app/mindsift/internal/config"
 	"github.com/mindsift-app/mindsift/internal/domain"
 	"github.com/mindsift-app/mindsift/internal/i18n"
 	"github.com/mindsift-app/mindsift/internal/storage"
+	"github.com/mindsift-app/mindsift/internal/ws"
 )
 
 // The language of a person and the server's default language, as the app reads and changes them.
@@ -104,6 +107,7 @@ func TestMessageTextsTranslated(t *testing.T) {
 	for _, k := range sharedTexts {
 		keys = append(keys, k)
 	}
+	keys = append(keys, staticTexts...)
 	for _, lang := range i18n.CatalogLanguages() {
 		for _, k := range keys {
 			if !i18n.Has(lang, k) {
@@ -124,5 +128,56 @@ func TestMessageTextsTranslated(t *testing.T) {
 	}
 	if !strings.Contains(html, `<html lang="en">`) {
 		t.Error("English mail must say lang=en")
+	}
+}
+
+// The setup wizard's language becomes the server's default and the first admin's language; the
+// sample data follows it.
+func TestSetupLanguage(t *testing.T) {
+	dbPath := filepath.Join(t.TempDir(), "setup_lang.db")
+	store, err := storage.NewStore(dbPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer store.Close()
+	srv := NewServer(&config.Config{DatabasePath: dbPath, JWTSecret: "x"}, store, ws.NewHub(), nil)
+	t.Cleanup(srv.Close)
+	router := srv.Router()
+	setup := func(body string) *httptest.ResponseRecorder {
+		req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/setup", strings.NewReader(body))
+		rec := httptest.NewRecorder()
+		router.ServeHTTP(rec, req)
+		return rec
+	}
+	if rec := setup(`{"email":"a@example.com","password":"secretpassword","defaultLanguage":"xx"}`); rec.Code != http.StatusBadRequest {
+		t.Fatalf("unknown language must be refused, got %d", rec.Code)
+	}
+	if rec := setup(`{"email":"a@example.com","password":"secretpassword","defaultLanguage":"fr","createSampleData":true}`); rec.Code != http.StatusCreated {
+		t.Fatalf("setup: %d %s", rec.Code, rec.Body.String())
+	}
+	admin, _ := store.GetUserByEmail("a@example.com")
+	if store.DefaultLanguageSetting() != "fr" || store.Language(admin.ID) != "fr" {
+		t.Fatalf("default %q, admin %q", store.DefaultLanguageSetting(), store.Language(admin.ID))
+	}
+	docs, _ := store.GetDocuments(admin.ID)
+	found := false
+	for _, d := range docs {
+		found = found || d.Title == "Getting started"
+	}
+	if !found {
+		t.Fatal("French admin should get the English sample data")
+	}
+}
+
+// index.html and manifest.json come in the browser's language.
+func TestStaticFilesLocalized(t *testing.T) {
+	html := `<html lang="de" class="dark"><meta name="description" content="MindSift — Der Kopf frei in drei Sekunden. Instant Capture, Tinder-Style Triage, Workspace & Echtzeit-Listen." />`
+	got := string(localizeStatic([]byte(html), "it"))
+	if !strings.Contains(got, `<html lang="it"`) || !strings.Contains(got, "La mente libera in tre secondi") {
+		t.Fatalf("Italian index.html: %s", got)
+	}
+	manifest := `{"shortcuts":[{"name": "Neue Aufgabe", "short_name": "Aufgabe"}]}`
+	if got := string(localizeStatic([]byte(manifest), "en")); got != `{"shortcuts":[{"name": "New task", "short_name": "Task"}]}` {
+		t.Fatalf("English manifest: %s", got)
 	}
 }

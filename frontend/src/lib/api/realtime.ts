@@ -108,7 +108,7 @@ function notifyRealtimeStatusChange(connected: boolean, transport: RealtimeTrans
 }
 
 function switchToSSE(reason: string) {
-  console.warn(`[MindSift Realtime] ${reason} -> Schalte sofort und dauerhaft auf Server-Sent Events (SSE) um.`);
+  console.warn(`[MindSift Realtime] ${reason} -> switching to Server-Sent Events (SSE) for good.`);
   clearInterval(wsHeartbeatTimer);
   isWsBlockedByProxy = true;
   try {
@@ -349,7 +349,7 @@ export async function connectWebSocket(): Promise<void> {
     // 2.5s watchdog for corporate proxies silently stripping Upgrade header or hanging
     wsConnectionWatchdog = setTimeout(() => {
       if (ws && ws.readyState !== WebSocket.OPEN) {
-        switchToSSE('WebSocket Timeout nach 2.5s (Proxy Upgrade Header blockiert)');
+        switchToSSE('WebSocket timeout after 2.5 s (proxy blocks the upgrade header)');
       }
     }, 2500);
 
@@ -359,7 +359,7 @@ export async function connectWebSocket(): Promise<void> {
       clearInterval(wsHeartbeatTimer);
       wsHeartbeatTimer = setInterval(() => {
         if (Date.now() - wsLastMessageAt > WS_DEAD_AFTER_MS) {
-          switchToSSE('WebSocket liefert keine Antworten mehr (Proxy leitet nichts weiter)');
+          switchToSSE('WebSocket stopped answering (proxy passes nothing on)');
           return;
         }
         try {

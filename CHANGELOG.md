@@ -6,6 +6,23 @@ Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), die V
 
 ## [Unreleased]
 
+## [0.75.0] - 2026-11-04
+
+### Added
+- MindSift speaks Spanish, French and Italian: the interface, the help, mails, push notifications, alarms, the daily summary and server messages, with dates written the way each language does.
+- The setup wizard asks for the default language; it becomes the server's default and the first admin's language.
+- The app description, the link preview and the app shortcuts (`manifest.json`) come in the browser's language.
+
+### Changed
+- The demo starts in English: both demo accounts and the sample data are English (`DEFAULT_LANGUAGE` changes it).
+- Sample data and the help notes of new accounts come in English for every account that is not German.
+- Server texts a language does not have yet show in English instead of German.
+- The screenshots in the README show the English demo.
+
+### Fixed
+- Hashtags work with the letters of every language (`#café`, `#niño`), not only German umlauts.
+- A few tooltips and messages were still German in other languages (sharing dialogs, recurring tasks, someone editing a bullet, task tabs, device names).
+
 ## [0.74.4] - 2026-11-03
 
 ### Changed

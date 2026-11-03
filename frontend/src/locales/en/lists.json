@@ -36,5 +36,7 @@
   "itemPlaceholder": "What goes on “{{title}}”? (e.g. oat milk #fridge)",
   "adding": "Adding…",
   "general": "General",
-  "openCount": "{{count}} open"
+  "openCount": "{{count}} open",
+  "shareDialogTitle": "Share list: {{title}}",
+  "shareMenuLabel": "Share list “{{title}}”"
 }

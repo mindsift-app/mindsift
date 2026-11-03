@@ -44,6 +44,7 @@ func main() {
 		os.Exit(1)
 	}
 	defer store.Close()
+	store.ConfiguredLanguage = cfg.DefaultLanguage
 
 	if cfg.DemoMode {
 		slog.Info("🧪 Demo-Modus aktiv: Setze Datenbank zurück und richte Demo-Accounts ein...")

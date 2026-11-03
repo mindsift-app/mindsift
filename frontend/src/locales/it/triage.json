@@ -1,0 +1,120 @@
+{
+  "swipe": {
+    "toTask": "Come attività 👉",
+    "discard": "👈 Scarta"
+  },
+  "action": {
+    "taskTitle": "Trasforma subito in attività",
+    "task": "Attività",
+    "noteTitle": "Crea subito come nota nel Workspace",
+    "note": "Nota",
+    "discard": "Scarta"
+  },
+  "quickDump": "Quick Dump",
+  "empty": {
+    "title": "Il mazzo di Triage è vuoto",
+    "capture": "+ Registra Quick Dump",
+    "text": "Tutti i Quick Dump sono stati organizzati o scartati. Tocca il <b>+</b> in basso al centro (o premi il tasto <kbd>C</kbd>) per buttare giù nuovi pensieri."
+  },
+  "undoLast": "Annulla ultima azione",
+  "shortcuts": "← Scarta • → Attività • D Nota • Spazio Più tardi",
+  "undo": "Annulla",
+  "trashTitle": "Cestino di Triage",
+  "next": "Prossimo Quick Dump…",
+  "moreOptions": "Altre opzioni (o tieni premuta la scheda)",
+  "saveText": "Salva testo",
+  "swipeHint": "👈 Scarta · 👉 Attività · Tieni premuto = altre opzioni",
+  "date": {
+    "title": "Crea attività con data di scadenza:",
+    "save": "Salva come attività con scadenza"
+  },
+  "list": {
+    "title": "Assegna il Quick Dump a una lista:",
+    "none": "Nessuna lista presente."
+  },
+  "toList": "Su lista",
+  "withDate": "Con data",
+  "chooseDate": "Scegli data",
+  "asNote": "Come nota",
+  "inWorkspace": "Nel Workspace",
+  "later": "Più tardi",
+  "laterHint": "Sposta in fondo",
+  "discardTitle": "Scarta (tasto H o freccia sinistra)",
+  "laterTitle": "Decidi più tardi – sposta in fondo (Barra spaziatrice)",
+  "noteTitle": "Converti in nota del Workspace (tasto D)",
+  "dateTitle": "Come attività con data di scadenza (tasto T)",
+  "taskTitle": "Converti subito in attività (tasto L o freccia destra)",
+  "queue": {
+    "hint": "Tocca = porta avanti · 👈 Scarta · 👉 Attività",
+    "show": "Mostra coda ({{count}})",
+    "hide": "Nascondi coda ({{count}})",
+    "title": "Coda ({{count}})"
+  },
+  "sheet": {
+    "title": "Organizza Quick Dump",
+    "editText": "Modifica il testo prima di organizzare",
+    "dateTitle": "Scegli la data di scadenza per l'attività:",
+    "back": "Indietro",
+    "saveDate": "Salva con data",
+    "listTitle": "In quale lista vuoi inserire questo elemento?"
+  },
+  "priority": {
+    "urgent": "Urgente",
+    "high": "Importante"
+  },
+  "trashCount": "Cestino ({{count}})",
+  "openCount_one": "{{count}} Quick Dump da organizzare",
+  "openCount_other": "{{count}} Quick Dump da organizzare",
+  "noList": "Nessuna lista presente",
+  "listHint": "Spesa / Condivisa",
+  "onList": "Su {{title}}",
+  "toSharedList": "Metti su una lista condivisa",
+  "setOnList": "Metti su una lista",
+  "trash": {
+    "none": "Nessun pensiero scartato.",
+    "confirmDelete": "Vuoi davvero eliminare definitivamente?",
+    "delete": "Elimina definitivamente",
+    "really": "Davvero?",
+    "confirmEmpty": "Vuoi davvero eliminare definitivamente {{count}} elementi?",
+    "empty": "Svuota cestino",
+    "discardedAt": "scartato il {{date}}"
+  },
+  "capture": {
+    "okTask": "Come attività!",
+    "okList": "Sulla lista!",
+    "okNote": "Come nota!",
+    "okInbox": "In Triage!",
+    "placeholderInbox": "Registra Quick Dump…",
+    "placeholderTask": "Registra attività…",
+    "placeholderNote": "Registra nota…",
+    "placeholder": "Quick Dump…",
+    "targetTitle": "Scegli destinazione (Quick Dump, attività, lista o nota) e opzioni",
+    "asTask": "Come attività",
+    "where": "Dove salvarlo?",
+    "whereHint": "Predefinito: Quick Dump per organizzarlo dopo",
+    "inbox": "Quick Dump (Triage)",
+    "directList": "Direttamente su una lista…",
+    "directNote": "Direttamente come nota",
+    "taskList": "Lista di attività:",
+    "allTasks": "Tutte le attività",
+    "listLabel": "Lista:",
+    "priority": "Priorità:",
+    "due": "Scadenza:",
+    "placeholderList": "Aggiungi a «{{title}}»…",
+    "list": "Lista",
+    "directTask": "Direttamente come attività"
+  },
+  "fab": {
+    "nothing": "Nessun audio rilevato",
+    "saved": "Salvato nel Quick Dump",
+    "saveFailed": "Salvataggio non riuscito",
+    "unsupported": "L'inserimento vocale non è supportato da questo browser",
+    "releaseCancel": "🗑️ Rilascia per annullare",
+    "listening": "Ti ascolto… (rilascia per salvare)",
+    "dragCancel": "Trascina verso l'alto per annullare",
+    "title": "Registrazione rapida (+)",
+    "label": "Registrazione rapida – tocca per scrivere, tieni premuto per parlare"
+  },
+  "dictation": "Dettatura",
+  "putOnList": "Metti direttamente nella lista «{{title}}»"
+}

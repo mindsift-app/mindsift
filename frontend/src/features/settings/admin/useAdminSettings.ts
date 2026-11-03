@@ -155,7 +155,7 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
       setNewUserEmail('');
       setNewUserPassword('');
       setNewUserRole('member');
-      setStatusMsg({ type: 'ok', text: `Benutzer "${created.displayName}" wurde angelegt.` });
+      setStatusMsg({ type: 'ok', text: i18n.t('settings:admin.userCreated', { name: created.displayName }) });
     } catch (err: any) {
       setStatusMsg({ type: 'err', text: err.message || i18n.t('settings:users.create.failed') });
     }
@@ -212,7 +212,7 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
     try {
       const updated = await api.adminSendInvite(inv.id, mailInviteTo.trim());
       setInvites((prev) => prev.map((i) => (i.id === inv.id ? { ...i, ...updated } : i)));
-      setStatusMsg({ type: 'ok', text: `Einladung an ${mailInviteTo.trim()} verschickt.` });
+      setStatusMsg({ type: 'ok', text: i18n.t('settings:admin.inviteSent', { email: mailInviteTo.trim() }) });
       setMailInviteId(null);
       setMailInviteTo('');
     } catch (err: any) {

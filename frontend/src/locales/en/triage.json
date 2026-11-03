@@ -115,5 +115,6 @@
     "title": "Quick capture (+)",
     "label": "Quick capture – tap to type, press and hold to speak"
   },
-  "dictation": "Dictation"
+  "dictation": "Dictation",
+  "putOnList": "Put straight onto the list “{{title}}”"
 }

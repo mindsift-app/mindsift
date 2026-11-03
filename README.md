@@ -6,7 +6,7 @@
 [![Self-Hosted](https://img.shields.io/badge/100%25-Self--Hosted-2563eb?style=flat-square)](#-quick-start)
 [![Docker](https://img.shields.io/badge/Deployment-Single%20Container-2496ed?style=flat-square&logo=docker&logoColor=white)](#-quick-start)
 [![License](https://img.shields.io/badge/License-AGPLv3-6b7280?style=flat-square)](LICENSE)
-[![Version](https://img.shields.io/badge/Version-v0.74.4-16a34a?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-v0.75.0-16a34a?style=flat-square)](CHANGELOG.md)
 
 **Dump a thought, sort it later, turn it into a task, a note or a shopping list, alone or together.**
 Self-hosted, one container, one SQLite file, your server.
@@ -85,7 +85,7 @@ Shopping, packing and checklists with categories by hashtag (`oat milk #fridge`)
 </p>
 
 ### 🎨 Looks & app
-Five colour families, each light and dark, your own accent colour, round or square corners, plus a theme manager for your own CSS. Installable as an app (PWA) on phone and desktop, starts offline, with push notifications. Speaks English and German, with more languages on the way.
+Five colour families, each light and dark, your own accent colour, round or square corners, plus a theme manager for your own CSS. Installable as an app (PWA) on phone and desktop, starts offline, with push notifications. Speaks English, German, Spanish, French and Italian, mails and notifications included.
 
 <table>
   <tr>
@@ -152,7 +152,7 @@ The most important settings (all of them, with explanations, are in [`.env.examp
 |---|---|---|
 | `JWT_SECRET` | generated (`/data/jwt.secret`) | Signing key for sign-in tokens; better set your own long random value |
 | `BASE_URL` | `http://localhost:8080` | Public URL; needed for password reset mails, OAuth for claude.ai/ChatGPT and links in mails |
-| `DEFAULT_LANGUAGE` | `de` | Default language (`de`, `en`) until an admin picks one; everyone can choose their own |
+| `DEFAULT_LANGUAGE` | `de` (demo: `en`) | Default language (`de`, `en`, `es`, `fr`, `it`) until an admin or the setup wizard picks one; everyone can choose their own |
 | `TZ` | `Europe/Berlin` | Time zone for due dates and alarms |
 | `REGISTRATION_MODE` | admin UI decides | `closed`, `approval`, `domain`, `domain+approval` or `open` |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` | empty | Mail for alarms, invites and password reset (also in the admin UI) |

@@ -113,9 +113,14 @@ func (s *Server) handleFirstBootSetup(w http.ResponseWriter, r *http.Request) {
 		AllowRegistration bool   `json:"allowRegistration"`
 		SharingMode       string `json:"sharingMode"`
 		CreateSampleData  bool   `json:"createSampleData"`
+		DefaultLanguage   string `json:"defaultLanguage"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeError(w, http.StatusBadRequest, "Ungültige Anfrage")
+		return
+	}
+	if req.DefaultLanguage != "" && !i18n.Valid(req.DefaultLanguage) {
+		writeError(w, http.StatusBadRequest, "Diese Sprache gibt es nicht")
 		return
 	}
 	if strings.TrimSpace(req.Email) == "" {
@@ -141,10 +146,16 @@ func (s *Server) handleFirstBootSetup(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	_ = s.store.SetLanguage(user.ID, s.requestLanguage(r))
+	// The language chosen in the wizard becomes the server's default and the admin's own
+	lang := req.DefaultLanguage
+	if lang == "" {
+		lang = s.requestLanguage(r)
+	}
+	_ = s.store.SetLanguage(user.ID, lang)
 
 	sys, _ := s.store.GetSystemSettings()
 	if sys != nil {
+		sys.DefaultLanguage = req.DefaultLanguage
 		if strings.TrimSpace(req.InstanceName) != "" {
 			sys.InstanceName = strings.TrimSpace(req.InstanceName)
 		}

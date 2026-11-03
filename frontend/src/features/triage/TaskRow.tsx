@@ -243,7 +243,7 @@ export function TaskRow({
               </span>
             )}
             {task.recurrence && (
-              <span className="inline-flex items-center text-muted" title={`Wiederholt sich ${RECURRENCE_LABELS[task.recurrence]}`}>
+              <span className="inline-flex items-center text-muted" title={t('repeats', { rule: RECURRENCE_LABELS[task.recurrence] })}>
                 <Repeat className="w-3 h-3" />
               </span>
             )}
@@ -259,7 +259,7 @@ export function TaskRow({
                     ? 'bg-accent/15 border-accent text-accent font-semibold'
                     : 'badge-neutral hover:border-accent'
                 }`}
-                title={`Nach #${tag} filtern`}
+                title={t('common:filterTag', { tag })}
               >
                 #{tag}
               </button>

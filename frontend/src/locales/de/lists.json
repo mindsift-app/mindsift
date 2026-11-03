@@ -36,5 +36,7 @@
   "itemPlaceholder": "Was soll auf „{{title}}“? (z. B. Hafermilch #Kühlregal)",
   "adding": "Wird hinzugefügt…",
   "general": "Allgemein",
-  "openCount": "{{count}} offen"
+  "openCount": "{{count}} offen",
+  "shareDialogTitle": "Liste teilen: {{title}}",
+  "shareMenuLabel": "Liste „{{title}}“ teilen"
 }

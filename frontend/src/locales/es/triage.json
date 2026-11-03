@@ -1,0 +1,120 @@
+{
+  "swipe": {
+    "toTask": "A tarea 👉",
+    "discard": "👈 Descartar"
+  },
+  "action": {
+    "taskTitle": "Convertir en tarea de inmediato",
+    "task": "Tarea",
+    "noteTitle": "Crear nota de Workspace de inmediato",
+    "note": "Nota",
+    "discard": "Descartar"
+  },
+  "quickDump": "Quick Dump",
+  "empty": {
+    "title": "La pila de triage está vacía",
+    "capture": "+ Capturar un Quick Dump",
+    "text": "Todas las notas de Quick Dump se han organizado o descartado. Toca el <b>+</b> en el centro inferior (o pulsa <kbd>C</kbd>) para capturar nuevos pensamientos."
+  },
+  "undoLast": "Deshacer última acción",
+  "shortcuts": "← Descartar • → Tarea • D Nota • Espacio Más tarde",
+  "undo": "Deshacer",
+  "trashTitle": "Papelera de triage",
+  "next": "Siguiente Quick Dump…",
+  "moreOptions": "Más opciones (o mantén pulsada la tarjeta)",
+  "saveText": "Guardar texto",
+  "swipeHint": "👈 Descartar · 👉 Tarea · Mantener pulsado = más opciones",
+  "date": {
+    "title": "Crear una tarea con fecha de vencimiento:",
+    "save": "Guardar como tarea con fecha"
+  },
+  "list": {
+    "title": "Poner el Quick Dump en una lista:",
+    "none": "Aún no hay listas."
+  },
+  "toList": "A la lista",
+  "withDate": "Con fecha",
+  "chooseDate": "Elegir fecha",
+  "asNote": "Como nota",
+  "inWorkspace": "En el Workspace",
+  "later": "Más tarde",
+  "laterHint": "Mover al final",
+  "discardTitle": "Descartar (tecla H o flecha izquierda)",
+  "laterTitle": "Decidir más tarde – mover al final (espacio)",
+  "noteTitle": "Convertir en nota del Workspace (tecla D)",
+  "dateTitle": "Como tarea con fecha de vencimiento (tecla T)",
+  "taskTitle": "Asumir como tarea ahora (tecla L o flecha derecha)",
+  "queue": {
+    "hint": "Tocar = traer al frente · 👈 Descartar · 👉 Tarea",
+    "show": "Mostrar cola ({{count}})",
+    "hide": "Ocultar cola ({{count}})",
+    "title": "Cola ({{count}})"
+  },
+  "sheet": {
+    "title": "Clasificar el Quick Dump",
+    "editText": "Editar el texto antes de clasificar",
+    "dateTitle": "Elegir fecha de vencimiento de la tarea:",
+    "back": "Atrás",
+    "saveDate": "Guardar con fecha",
+    "listTitle": "¿En qué lista debe ir este elemento?"
+  },
+  "priority": {
+    "urgent": "Urgente",
+    "high": "Importante"
+  },
+  "trashCount": "Papelera ({{count}})",
+  "openCount_one": "{{count}} Quick Dump pendiente",
+  "openCount_other": "{{count}} Quick Dumps pendientes",
+  "noList": "Aún sin lista",
+  "listHint": "Compra / compartida",
+  "onList": "A {{title}}",
+  "toSharedList": "Poner en lista compartida",
+  "setOnList": "Poner en una lista",
+  "trash": {
+    "none": "No hay pensamientos descartados.",
+    "confirmDelete": "¿De verdad quieres eliminarlo definitivamente?",
+    "delete": "Eliminar definitivamente",
+    "really": "¿Seguro?",
+    "confirmEmpty": "¿De verdad quieres eliminar {{count}} definitivamente?",
+    "empty": "Vaciar papelera",
+    "discardedAt": "descartado el {{date}}"
+  },
+  "capture": {
+    "okTask": "¡Tarea!",
+    "okList": "¡En la lista!",
+    "okNote": "¡Nota!",
+    "okInbox": "¡A triage!",
+    "placeholderInbox": "Capturar un Quick Dump…",
+    "placeholderTask": "Capturar una tarea…",
+    "placeholderNote": "Capturar una nota…",
+    "placeholder": "Quick Dump…",
+    "targetTitle": "Elige destino (Quick Dump, tarea, lista o nota) y opciones",
+    "asTask": "Como tarea",
+    "where": "¿A dónde?",
+    "whereHint": "Por defecto: Quick Dump para clasificar luego",
+    "inbox": "Quick Dump (triage)",
+    "directList": "Directamente a una lista…",
+    "directNote": "Directamente como nota",
+    "taskList": "Lista de tareas:",
+    "allTasks": "Todas las tareas",
+    "listLabel": "Lista:",
+    "priority": "Prioridad:",
+    "due": "Vencimiento:",
+    "placeholderList": "Añadir a «{{title}}»…",
+    "list": "Lista",
+    "directTask": "Directamente como tarea"
+  },
+  "fab": {
+    "nothing": "No se reconoció nada",
+    "saved": "Guardado en el Quick Dump",
+    "saveFailed": "Error al guardar",
+    "unsupported": "Este navegador no admite entrada de voz",
+    "releaseCancel": "🗑️ Suelta para cancelar",
+    "listening": "Escuchando… (suelta para guardar)",
+    "dragCancel": "Arrastra hacia arriba para cancelar",
+    "title": "Captura rápida (+)",
+    "label": "Captura rápida – toca para escribir, mantén pulsado para hablar"
+  },
+  "dictation": "Dictado",
+  "putOnList": "Poner directamente en la lista «{{title}}»"
+}

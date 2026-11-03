@@ -1,0 +1,30 @@
+{
+  "back": "Indietro",
+  "title": "Aiuto e documentazione",
+  "subtitle": "Uso della tastiera, note outliner, triage, bacheca Kanban e collaborazione",
+  "search": "Cerca nella guida e nelle scorciatoie…",
+  "clearSearch": "Cancella ricerca",
+  "cat": {
+    "all": "Tutti i temi",
+    "workspace": "Workspace e note",
+    "triage": "Registrazione rapida e Triage",
+    "tasks": "Attività e Kanban",
+    "lists": "Liste condivise",
+    "collaboration": "Gruppi e condivisioni",
+    "shortcuts": "Scorciatoie da tastiera e gesti"
+  },
+  "reset": "Ripristina filtri",
+  "none": "Nessun argomento della guida trovato",
+  "noneHint": "Prova con un altro termine di ricerca o passa alla categoria «Tutti i temi».",
+  "shortcutsTitle": "Panoramica di tutte le scorciatoie da tastiera e gesti",
+  "shortcutsIntro": "Lavora più velocemente senza mouse: tutti i tasti di scelta rapida e i gesti touch a colpo d'occhio.",
+  "col": {
+    "key": "Tasto / Gesto",
+    "scope": "Ambito",
+    "desc": "Funzione"
+  },
+  "results_one": "Risultati per <b>«{{query}}»</b>: {{count}} scheda della guida",
+  "results_other": "Risultati per <b>«{{query}}»</b>: {{count}} schede della guida",
+  "shortcutCount_one": "{{count}} scorciatoia",
+  "shortcutCount_other": "{{count}} scorciatoie"
+}

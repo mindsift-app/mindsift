@@ -66,7 +66,7 @@ type Config struct {
 	// unset (nil) leaves it to the system settings
 	MCPEnabled *bool
 	// DefaultLanguage: DEFAULT_LANGUAGE gives the server's default language until the admin picks one in
-	// the system settings (unsupported or unset: German)
+	// the system settings (unsupported or unset: German; English in demo mode)
 	DefaultLanguage string
 	// Speech recognition, configured only by environment (STT_*)
 	Speech SpeechConfig
@@ -270,7 +270,7 @@ func Load() *Config {
 		TrustedProxies:          getEnv("TRUSTED_PROXIES", "private"),
 		RetentionAllowNever:     envBoolPtr("RETENTION_ALLOW_NEVER"),
 		MCPEnabled:              envBoolPtr("MCP_ENABLED"),
-		DefaultLanguage:         i18n.Normalize(os.Getenv("DEFAULT_LANGUAGE")),
+		DefaultLanguage:         defaultLanguage(demoMode),
 		DisableLoginProtection:  strings.ToLower(getEnv("LOGIN_PROTECTION", "true")) == "false",
 		OAuthIdleDays:           envInt("OAUTH_IDLE_DAYS", 90, 0, 36500),
 		SMTPHost:                smtpHost,
@@ -399,4 +399,12 @@ func envBoolPtr(key string) *bool {
 		return &v
 	}
 	return nil
+}
+
+// defaultLanguage: DEFAULT_LANGUAGE; the demo starts in English unless it says otherwise.
+func defaultLanguage(demoMode bool) string {
+	if v := i18n.Normalize(os.Getenv("DEFAULT_LANGUAGE")); v != "" || !demoMode {
+		return v
+	}
+	return "en"
 }

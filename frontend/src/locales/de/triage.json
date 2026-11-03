@@ -115,5 +115,6 @@
     "title": "Schnell erfassen (+)",
     "label": "Schnell erfassen – tippen zum Schreiben, gedrückt halten zum Sprechen"
   },
-  "dictation": "Diktat"
+  "dictation": "Diktat",
+  "putOnList": "Direkt auf Liste „{{title}}“ setzen"
 }

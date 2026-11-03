@@ -18,6 +18,7 @@ Reference for developers and administrators. All information has been verified a
 | [sharing-and-permissions.md](sharing-and-permissions.md) | Roles, groups, sharing permissions |
 | [reverse-proxy.md](reverse-proxy.md) | Nginx, Traefik, Caddy, Cloudflare |
 | [theming.md](theming.md) | Themes and design variables |
+| [i18n.md](i18n.md) | Languages: where texts live, adding a language |
 | [ui-patterns.md](ui-patterns.md) | Standard UI elements: user search, avatar stack, counters |
 | [flaws.md](flaws.md) | Known flaws and technical debt |
 

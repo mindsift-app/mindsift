@@ -199,7 +199,7 @@ const SwipeableQueueItem: React.FC<SwipeableQueueItemProps> = ({
                   thoughtOverride: item,
                 })
               }
-              title={`Direkt auf Liste "${lists[0].title}" setzen`}
+              title={t('putOnList', { title: lists[0].title })}
               className="h-7 px-2.5 bg-canvas hover:bg-panel-elevated border border-border rounded-btn text-xs text-muted hover:text-main flex items-center gap-1 transition-colors cursor-pointer"
             >
               <ShoppingCart className="w-3.5 h-3.5 text-accent" />

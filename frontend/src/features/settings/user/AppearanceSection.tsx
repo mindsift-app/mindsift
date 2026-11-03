@@ -278,7 +278,7 @@ export function AppearanceSection({
                 setAccent(c);
               }}
               title={c}
-              aria-label={`Akzentfarbe ${c}`}
+              aria-label={t('appearanceExtra.accentColor', { color: c })}
               className={`w-9 h-9 sm:w-7 sm:h-7 rounded-full transition-transform hover:scale-110 cursor-pointer ${
                 accent === c ? 'ring-2 ring-offset-2 ring-offset-canvas ring-main' : ''
               }`}

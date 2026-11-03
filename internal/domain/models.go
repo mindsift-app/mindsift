@@ -25,10 +25,10 @@ func NowISO() string {
 
 // A hashtag starts the text or follows whitespace or "(". Fragments in links (example.com/blog#ueberschrift)
 // and words like "C#" are not tags. The browser uses the same rule (lib/markdown.tsx, lib/api.ts).
-var hashtagRegex = regexp.MustCompile(`(?:^|[\s(])#([a-zA-Z0-9äöüÄÖÜß_-]+)`)
+var hashtagRegex = regexp.MustCompile(`(?:^|[\s(])#([\p{L}\p{N}_-]+)`)
 
 // legacyHashtagRegex is the rule before anchors were excluded; only used to clean up stored tags.
-var legacyHashtagRegex = regexp.MustCompile(`#([a-zA-Z0-9äöüÄÖÜß_-]+)`)
+var legacyHashtagRegex = regexp.MustCompile(`#([\p{L}\p{N}_-]+)`)
 
 // StaleAnchorTags returns tags the old rule found in content that the current rule does not, i.e. tags that
 // only came from URL fragments and similar.

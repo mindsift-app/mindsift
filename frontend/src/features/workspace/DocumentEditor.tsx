@@ -595,7 +595,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
   }, []);
 
   const handleLockedAction = useCallback(
-    (holder: string) => showNotice(`${holder} bearbeitet diesen Punkt gerade – bitte kurz warten`),
+    (holder: string) => showNotice(i18n.t('workspace:lock.notice', { name: holder })),
     [showNotice]
   );
   const handleUndo = useCallback(() => {
@@ -1002,7 +1002,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${(title || i18n.t('workspace:editor.fileName')).toLowerCase().replace(/[^a-z0-9äöüß_-]+/gi, '-')}.md`;
+    a.download = `${(title || i18n.t('workspace:editor.fileName')).toLowerCase().replace(/[^\p{L}\p{N}_-]+/giu, '-')}.md`;
     a.click();
     URL.revokeObjectURL(url);
   };

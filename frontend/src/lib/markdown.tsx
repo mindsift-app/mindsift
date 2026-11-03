@@ -21,10 +21,10 @@ export interface InlineMarkdownOptions {
 function renderInlineTokens(text: string, options?: InlineMarkdownOptions): React.ReactNode[] {
   if (!text) return [];
 
-  const tagAlt = options?.onTagClick ? '|#[a-zA-Z0-9äöüÄÖÜß_-]+' : '';
+  const tagAlt = options?.onTagClick ? '|#[\\p{L}\\p{N}_-]+' : '';
   const regex = new RegExp(
     '(\\[\\[[^\\]]+\\]\\]|https?:\\/\\/[^\\s<>()\\[\\]]+[^\\s<>()\\[\\].,;:!?"\']|`[^`]+`|\\*\\*[^*]+\\*\\*|__[^_]+__|~~[^~]+~~|\\*[^*]+\\*|_[^_]+_|\\[([^\\]]+)\\]\\(([^)]+)\\)' + tagAlt + ')',
-    'g'
+    'gu'
   );
 
   const elements: React.ReactNode[] = [];
@@ -97,7 +97,7 @@ function renderInlineTokens(text: string, options?: InlineMarkdownOptions): Reac
               options?.onTagClick?.(tag);
             }}
             className="text-accent bg-accent-dim hover:bg-accent/20 rounded-btn px-0.5 cursor-pointer transition-colors"
-            title={`Nach #${tag} filtern`}
+            title={i18n.t('common:filterTag', { tag })}
           >
             {token}
           </span>

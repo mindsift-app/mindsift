@@ -2,6 +2,7 @@ import React from 'react';
 import { api } from '../../lib/api';
 import { TaskList, Team, User } from '../../lib/types';
 import { UnifiedShareModal } from '../../components/UnifiedShareModal';
+import i18n from '../../i18n';
 
 interface TaskListShareDialogProps {
   showShareListModal: boolean;
@@ -35,7 +36,7 @@ export function TaskListShareDialog({
         setShowShareListModal(false);
         setSharingTaskList(null);
       }}
-      title={`Aufgabenliste teilen: ${sharingTaskList.title}`}
+      title={i18n.t('tasks:shareDialogTitle', { title: sharingTaskList.title })}
       resourceName={sharingTaskList.title}
       resourceIcon={sharingTaskList.icon || undefined}
       isOwner={sharingTaskList.isOwner !== false}

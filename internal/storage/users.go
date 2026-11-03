@@ -10,6 +10,7 @@ import (
 
 	"github.com/mindsift-app/mindsift/internal/auth"
 	"github.com/mindsift-app/mindsift/internal/domain"
+	"github.com/mindsift-app/mindsift/internal/i18n"
 )
 
 // --- USERS ---
@@ -176,6 +177,15 @@ func (s *Store) EnsureDemoAccounts() error {
 		_ = s.UpdateUserPassword(normalUser.ID, userHash)
 		_, _ = s.db.Exec(`UPDATE users SET is_active = 1 WHERE id = ?`, normalUser.ID)
 	}
+
+	// The demo accounts speak the default language, English unless DEFAULT_LANGUAGE says otherwise (the
+	// sample data follows it); visitors can switch in the settings
+	lang := s.ConfiguredLanguage
+	if !i18n.Valid(lang) {
+		lang = "en"
+	}
+	_ = s.SetLanguage(adminUser.ID, lang)
+	_ = s.SetLanguage(normalUser.ID, lang)
 
 	// 3. Sample data for the admin, partly shared with the demo user (only on first start). Both accounts
 	// share an organization so they can see each other in the default sharing mode.

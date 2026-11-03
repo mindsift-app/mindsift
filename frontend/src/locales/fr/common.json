@@ -1,0 +1,359 @@
+{
+  "languageAuto": "Identique au navigateur",
+  "nav": {
+    "triage": "Triage",
+    "workspace": "Workspace",
+    "tasks": "Tâches",
+    "lists": "Listes"
+  },
+  "cancel": "Annuler",
+  "trash": "Corbeille",
+  "aboutMindSift": "À propos de MindSift",
+  "role": {
+    "admin": "Admin du serveur",
+    "member": "Membre"
+  },
+  "priority": {
+    "label": "Priorité",
+    "low": "Basse",
+    "normal": "Normale",
+    "high": "Importante",
+    "urgent": "Urgente"
+  },
+  "errors": {
+    "saveFailed": "Échec de l'enregistrement : {{message}}",
+    "unknown": "Erreur inconnue",
+    "downloadFailed": "Le téléchargement a échoué (HTTP {{status}})",
+    "importFailed": "L’importation a échoué (HTTP {{status}})",
+    "uploadFailed": "L’envoi a échoué (HTTP {{status}})",
+    "transcribeFailed": "La reconnaissance vocale a échoué (HTTP {{status}})",
+    "network": "Erreur réseau"
+  },
+  "about": {
+    "tagline": "L'esprit libre en trois secondes.",
+    "intro": "La plupart des applications de notes et de tâches demandent de la structure au mauvais moment. MindSift sépare donc la <b>capture</b> de l'<b>organisation</b> : les pensées atterrissent immédiatement dans le Quick Dump et deviennent plus tard une tâche, une note ou un élément de liste d'une simple touche. Tout fonctionne en auto-hébergement dans un seul conteneur avec un fichier SQLite – tes données restent chez toi.",
+    "version": "Version",
+    "licenseLabel": "Licence",
+    "license": "GNU AGPLv3 – logiciel libre, les modifications restent libres",
+    "source": "Code source",
+    "operator": "L'exploitant de cette instance est responsable de ses mentions légales et de sa politique de confidentialité ; les liens se trouvent dans les paramètres du compte et sur la page de connexion."
+  },
+  "legal": {
+    "imprint": "Mentions légales",
+    "privacy": "Confidentialité",
+    "loadFailed": "Impossible de charger le texte"
+  },
+  "save": "Enregistrer",
+  "add": "Ajouter",
+  "close": "Fermer",
+  "delete": "Supprimer",
+  "palette": {
+    "placeholder": "Rechercher notes, tâches et listes…",
+    "clear": "Effacer la saisie",
+    "small": "Vue compacte",
+    "large": "Vue large avec filtres",
+    "kindLabel": "Type de résultats",
+    "status": "Statut",
+    "taskStatusAll": "À faire et terminées",
+    "onlyOpen": "À faire uniquement",
+    "onlyDone": "Terminées uniquement",
+    "taskList": "Liste de tâches",
+    "allLists": "Toutes les listes",
+    "personal": "Personnel (sans liste)",
+    "priority": "Priorité",
+    "anyPriority": "Toute priorité",
+    "due": "Échéance",
+    "anyDue": "Toute échéance",
+    "overdue": "En retard",
+    "today": "Pour aujourd'hui",
+    "week": "D'ici 7 jours",
+    "folder": "Dossier",
+    "allFolders": "Tous les dossiers",
+    "list": "Liste",
+    "itemStatusAll": "À faire et cochés",
+    "onlyChecked": "Cochés uniquement",
+    "title": "Recherche globale MindSift",
+    "hint": "Tape un mot-clé pour rechercher l'ensemble de ton contenu en quelques secondes.",
+    "noHits": "Aucun résultat",
+    "reopen": "Rouvrir",
+    "check": "Cocher",
+    "open": "À faire",
+    "done": "terminé",
+    "checked": "coché",
+    "kind": {
+      "all": "Tout",
+      "document": "Notes",
+      "thought": "Tâches",
+      "list_item": "Listes"
+    },
+    "noHitsText": "Aucune note, tâche ou élément de liste ne correspond à « {{query}} ».",
+    "dueOn": "pour le {{due}}",
+    "select": "Sélectionner",
+    "switchKind": "Changer de type",
+    "hits_one": "{{count}} résultat",
+    "hits_other": "{{count}} résultats",
+    "navigate": "Naviguer"
+  },
+  "share": {
+    "chooseGroup": "Veuillez choisir un groupe",
+    "chooseUser": "Veuillez choisir un utilisateur",
+    "addFailed": "Échec de l'ajout du partage",
+    "confirmRemove": "Veux-tu vraiment retirer ce partage ?",
+    "removeFailed": "Échec du retrait du partage",
+    "disabled": "Le partage est désactivé sur ce serveur (mode de visibilité « Privé »).",
+    "add": "Ajouter un partage :",
+    "group": "Groupe",
+    "user": "Utilisateur",
+    "pickGroup": "-- Choisir un groupe --",
+    "edit": "Modifier",
+    "readOnly": "Lecture seule",
+    "searchUser": "Rechercher des utilisateurs (nom ou @nom d'utilisateur)…",
+    "saving": "Enregistrement en cours…",
+    "shareGroup": "Partager avec le groupe",
+    "addUser": "Ajouter l'utilisateur",
+    "ownerOnly": "Seul le propriétaire peut ajouter de nouveaux partages.",
+    "active": "Partages actifs",
+    "private": "Cet élément est actuellement privé (visible par toi uniquement).",
+    "remove": "Retirer le partage",
+    "defaultTitle": "Partage et autorisations",
+    "object": "Élément :",
+    "teamOption_one": "{{name}} ({{count}} membre)",
+    "teamOption_other": "{{name}} ({{count}} membres)"
+  },
+  "sharedImport": {
+    "whichList": "Quelle liste ?",
+    "elsewhere": "Ou envoyer ailleurs immédiatement :",
+    "failed": "La conversion a échoué – l'élément reste dans le Quick Dump.",
+    "list": "Liste",
+    "task": "Tâche",
+    "tasksCreated_one": "Créée comme tâche",
+    "tasksCreated_other": "{{count}} tâches créées",
+    "onList_one": "Élément sur « {{title}} »",
+    "onList_other": "{{count}} éléments sur « {{title}} »",
+    "queued_one": "Enregistré dans le Quick Dump",
+    "queued_other": "{{count}} éléments enregistrés dans le Quick Dump"
+  },
+  "live": {
+    "none": "Aucune connexion en direct – les modifications des autres s'affichent après actualisation",
+    "sse": "Connexion en direct via Server-Sent Events (WebSocket bloqué)",
+    "poll": "En direct via long polling (WebSocket et SSE bloqués)",
+    "ws": "Connexion en direct via WebSocket",
+    "longPolling": " (long polling)"
+  },
+  "update": {
+    "title": "Nouvelle version disponible",
+    "subtitle": "Le serveur a été mis à jour",
+    "later": "Plus tard",
+    "now": "Mettre à jour maintenant",
+    "bodyVersion": "Le serveur a été mis à jour vers <v>{{version}}</v>. Recharge la page pour l'utiliser ; les saisies non enregistrées dans les champs ouverts seront perdues.",
+    "body": "Le serveur a été mis à jour. Recharge la page pour l'utiliser ; les saisies non enregistrées dans les champs ouverts seront perdues."
+  },
+  "theme": {
+    "family": "Famille de couleurs",
+    "mode": "Clair ou sombre",
+    "light": "Clair",
+    "dark": "Sombre",
+    "system": "Identique au système"
+  },
+  "voice": {
+    "stop": "Arrêter l'enregistrement",
+    "transcribing": "Transcription en cours…",
+    "input": "Saisie vocale",
+    "failed": "Échec de la reconnaissance vocale",
+    "noMic": "Pas d'accès au micro (autorisation ou page non servie en HTTPS)",
+    "denied": "Microphone refusé",
+    "startFailed": "Impossible de démarrer la saisie vocale",
+    "unsupported": "Ce navigateur ne prend pas en charge la saisie vocale",
+    "off": "La saisie vocale est désactivée"
+  },
+  "menu": {
+    "close": "Fermer le menu",
+    "empty": "Aucune option spécifique pour cette vue.",
+    "optionsFor": "{{view}} — options et actions"
+  },
+  "switchList": "Changer de liste",
+  "icon": {
+    "change": "Changer l'icône",
+    "choose": "Choisir une icône"
+  },
+  "aboutTitle": "À propos de MindSift et informations sur la version",
+  "avatar": {
+    "readFailed": "Échec de la lecture du fichier",
+    "loadFailed": "Échec du chargement de l'image",
+    "canvasFailed": "Impossible de créer le contexte canvas"
+  },
+  "offline": {
+    "waiting_one": "{{count}} modification en attente",
+    "waiting_other": "{{count}} modifications en attente",
+    "syncing": "Synchronisation – {{waiting}}…",
+    "pending": "Hors ligne · {{waiting}} pour une connexion",
+    "idle": "Hors ligne – les modifications seront synchronisées dès la connexion",
+    "noConnection": "Aucune connexion au serveur"
+  },
+  "origin": {
+    "createdVia": "Créé via {{via}}{{key}}",
+    "createdViaAt": "Créé via {{via}}{{key}} le {{when}}",
+    "createdInApp": "Créé dans l'application",
+    "createdInAppAt": "Créé dans l'application le {{when}}",
+    "changedVia": "dernière modification via {{via}}{{key}}",
+    "changedViaAt": "dernière modification via {{via}}{{key}} le {{when}}",
+    "deletedKey": "Clé supprimée"
+  },
+  "date": {
+    "today": "Aujourd'hui",
+    "tomorrow": "Demain",
+    "yesterday": "Hier",
+    "dayThisYear": "{{weekday}} {{day}}/{{month}}",
+    "dayOtherYear": "{{day}}/{{month}}/{{year}}",
+    "withTime": "{{label}}, {{time}}",
+    "weekdayShort": {
+      "0": "dim.",
+      "1": "lun.",
+      "2": "mar.",
+      "3": "mer.",
+      "4": "jeu.",
+      "5": "ven.",
+      "6": "sam."
+    },
+    "months": {
+      "0": "Janvier",
+      "1": "Février",
+      "2": "Mars",
+      "3": "Avril",
+      "4": "Mai",
+      "5": "Juin",
+      "6": "Juillet",
+      "7": "Août",
+      "8": "Septembre",
+      "9": "Octobre",
+      "10": "Novembre",
+      "11": "Décembre"
+    },
+    "weekdayMin": {
+      "0": "Di",
+      "1": "Lu",
+      "2": "Ma",
+      "3": "Me",
+      "4": "Je",
+      "5": "Ve",
+      "6": "Sa"
+    }
+  },
+  "recurrence": {
+    "daily": "quotidien",
+    "weekly": "hebdomadaire",
+    "monthly": "mensuel",
+    "yearly": "annuel"
+  },
+  "dataSections": {
+    "notes": "Notes",
+    "tasks": "Tâches",
+    "lists": "Listes",
+    "inbox": "Boîte de réception",
+    "themes": "Thèmes"
+  },
+  "sync": {
+    "originalLocked": "{{name}} modifie actuellement la puce d'origine",
+    "undo": "Annuler",
+    "redo": "Rétablir",
+    "skippedChanged": "{{action}} ignorée : quelqu'un d'autre a modifié la puce entre-temps",
+    "skippedLocked": "{{action}} ignorée : {{name}} modifie la puce actuellement"
+  },
+  "wikiLink": {
+    "toBlock": "Vers la puce dans « {{title}} »",
+    "openNote": "Ouvrir la note : {{title}}"
+  },
+  "shareTarget": {
+    "mediaNote": "(Image partagée – les images dans la boîte de réception ne sont pas encore prises en charge)"
+  },
+  "media": {
+    "notFound": "Fichier introuvable"
+  },
+  "push": {
+    "unsupported": "Ce navigateur ne prend pas en charge les notifications push",
+    "homeScreen": "Sur iPhone et iPad, ajoute d'abord MindSift à l'écran d'accueil et ouvre-le depuis là",
+    "unavailable": "Le push n'est pas disponible sur ce serveur",
+    "denied": "Les notifications ont été refusées dans le navigateur",
+    "rejected": "Le navigateur a refusé de s'enregistrer auprès du service push (autorisation bloquée ou service push inaccessible)"
+  },
+  "themes": {
+    "families": {
+      "classic": {
+        "name": "Classique",
+        "subtitle": "Neutre avec bleu, carré"
+      },
+      "fjord": {
+        "name": "Fjord",
+        "subtitle": "Papier frais, bleu glacier"
+      },
+      "terracotta": {
+        "name": "Terre cuite",
+        "subtitle": "Papier chaud, terre brûlée"
+      },
+      "polarized": {
+        "name": "Polarisé",
+        "subtitle": "Pétrole et turquoise, carré"
+      },
+      "suri": {
+        "name": "Suri",
+        "subtitle": "Lavande, prune, orchidée"
+      }
+    },
+    "builtin": {
+      "dark": {
+        "name": "MindSift Sombre (par défaut)",
+        "subtitle": "Monochrome, sombre et carré (0px)"
+      },
+      "light": {
+        "name": "MindSift Clair (mode jour)",
+        "subtitle": "Design papier clair et contraste net"
+      },
+      "terracotta": {
+        "name": "Terre cuite (papier chaud)",
+        "subtitle": "Papier crème, encre et terre cuite brûlée (12px)"
+      },
+      "terracotta-night": {
+        "name": "Terre cuite Nuit (braise)",
+        "subtitle": "Espresso, crème et terre cuite éclatante (12px)"
+      },
+      "polarized": {
+        "name": "Polarisé (Émeraude / Sarcelle)",
+        "subtitle": "Obsidienne sombre profonde avec turquoise/vert électrique (0px)"
+      },
+      "suri": {
+        "name": "Suri (Crépuscule velours)",
+        "subtitle": "Prune de minuit chaude avec orchidée veloutée (10px)"
+      },
+      "fjord": {
+        "name": "Fjord (bleu glacier)",
+        "subtitle": "Papier frais, bleu encre et bleu fjord (12px)"
+      },
+      "fjord-night": {
+        "name": "Fjord Nuit (mer profonde)",
+        "subtitle": "Bleu nuit, clair de lune et bleu glacier éclatant (12px)"
+      },
+      "polarized-light": {
+        "name": "Polarisé Clair (lagon)",
+        "subtitle": "Blanc menthe crayeux avec pétrole profond (0px)"
+      },
+      "suri-light": {
+        "name": "Suri Clair (lavande)",
+        "subtitle": "Papier lavande, prune et orchidée (10px)"
+      }
+    },
+    "custom": "Thème personnalisé",
+    "customFile": "Thème personnalisé (stocké sur le serveur)"
+  },
+  "userSearch": {
+    "placeholder": "Rechercher des utilisateurs (nom, @nom d'utilisateur ou e-mail)…",
+    "clear": "Effacer la sélection",
+    "none": "Aucun utilisateur correspondant"
+  },
+  "done": "Terminé",
+  "edit": "Modifier",
+  "restore": "Restaurer",
+  "discard": "Supprimer",
+  "download": "Télécharger",
+  "filterTag": "Filtrer par #{{tag}}",
+  "deviceName": "{{browser}} sur {{os}}"
+}

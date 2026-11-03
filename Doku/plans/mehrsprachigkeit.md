@@ -10,8 +10,8 @@ As of 2026-11-03. Goal: everyone picks their language, and the whole interface p
 | 2 | Move all interface texts into language files | done (v0.73.1–v0.73.6) |
 | 3 | English in the interface | done (v0.74.0) |
 | 4 | Backend in English: emails, push, daily summary, journal, due dates, default columns, error codes, MCP in English | done (v0.74.2: error messages, error codes, MCP; v0.74.3: emails, push, alarms, summary, journal, due dates, columns, export folders) |
-| 5 | Demo and help notes per language, `manifest.json` per language, guide "adding a language" | mechanism by Claude, content by Gemini |
-| 6 | Spanish, French, Italian (interface, help, backend catalog, demo content) | Gemini, after step 4 |
+| 5 | Demo in English (accounts and sample data), sample data and help notes in German or English, `manifest.json` and `index.html` texts in the browser's language, setup wizard asks for the default language, guide [Doku/i18n.md](../i18n.md) | done (v0.75.0) |
+| 6 | Spanish, French, Italian: interface and help (Gemini), server catalogs and date formats; missing server texts fall back to English | done (v0.75.0) |
 
 ## Decisions
 

@@ -83,7 +83,7 @@ export function useAppearanceSettings(
         ? customThemes.map((t) => (t.id === saved.id ? saved : t))
         : [...customThemes, saved];
       onCustomThemesChange(next, customThemeId(saved));
-      setThemeMsg({ type: 'ok', text: `Theme „${saved.name}“ gespeichert und aktiviert.` });
+      setThemeMsg({ type: 'ok', text: i18n.t('settings:appearanceExtra.themeSaved', { name: saved.name }) });
       resetThemeEditor();
     } catch (err: any) {
       setThemeMsg({ type: 'err', text: err.message || i18n.t('settings:appearance.custom.saveFailed') });

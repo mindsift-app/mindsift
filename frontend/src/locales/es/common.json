@@ -1,0 +1,359 @@
+{
+  "languageAuto": "Igual que el navegador",
+  "nav": {
+    "triage": "Triage",
+    "workspace": "Workspace",
+    "tasks": "Tareas",
+    "lists": "Listas"
+  },
+  "cancel": "Cancelar",
+  "trash": "Papelera",
+  "aboutMindSift": "Acerca de MindSift",
+  "role": {
+    "admin": "Administrador del servidor",
+    "member": "Miembro"
+  },
+  "priority": {
+    "label": "Prioridad",
+    "low": "Baja",
+    "normal": "Normal",
+    "high": "Importante",
+    "urgent": "Urgente"
+  },
+  "errors": {
+    "saveFailed": "Error al guardar: {{message}}",
+    "unknown": "Error desconocido",
+    "downloadFailed": "La descarga ha fallado (HTTP {{status}})",
+    "importFailed": "La importación ha fallado (HTTP {{status}})",
+    "uploadFailed": "La subida ha fallado (HTTP {{status}})",
+    "transcribeFailed": "El reconocimiento de voz ha fallado (HTTP {{status}})",
+    "network": "Error de red"
+  },
+  "about": {
+    "tagline": "La mente despejada en tres segundos.",
+    "intro": "La mayoría de apps de notas y tareas piden estructura en el momento equivocado. Por eso MindSift separa <b>capturar</b> de <b>organizar</b>: los pensamientos van directos al Quick Dump y más tarde se convierten en tarea, nota o elemento de lista con una sola pulsación. Todo funciona autoalojado en un contenedor con un único archivo SQLite: tus datos se quedan contigo.",
+    "version": "Versión",
+    "licenseLabel": "Licencia",
+    "license": "GNU AGPLv3 – software libre, las modificaciones siguen siendo libres",
+    "source": "Código fuente",
+    "operator": "El responsable de esta instancia gestiona su aviso legal y política de privacidad; los enlaces se encuentran en los ajustes de la cuenta y en la página de inicio de sesión."
+  },
+  "legal": {
+    "imprint": "Aviso legal",
+    "privacy": "Privacidad",
+    "loadFailed": "No se pudo cargar el texto"
+  },
+  "save": "Guardar",
+  "add": "Añadir",
+  "close": "Cerrar",
+  "delete": "Eliminar",
+  "palette": {
+    "placeholder": "Buscar notas, tareas y listas…",
+    "clear": "Borrar entrada",
+    "small": "Vista compacta",
+    "large": "Vista amplia con filtros",
+    "kindLabel": "Tipo de resultados",
+    "status": "Estado",
+    "taskStatusAll": "Pendientes y completadas",
+    "onlyOpen": "Solo pendientes",
+    "onlyDone": "Solo completadas",
+    "taskList": "Lista de tareas",
+    "allLists": "Todas las listas",
+    "personal": "Personal (sin lista)",
+    "priority": "Prioridad",
+    "anyPriority": "Cualquier prioridad",
+    "due": "Vencimiento",
+    "anyDue": "Cualquier vencimiento",
+    "overdue": "Vencidas",
+    "today": "Vence hoy",
+    "week": "Vence en 7 días",
+    "folder": "Carpeta",
+    "allFolders": "Todas las carpetas",
+    "list": "Lista",
+    "itemStatusAll": "Pendientes y tachados",
+    "onlyChecked": "Solo tachados",
+    "title": "Búsqueda global de MindSift",
+    "hint": "Escribe una palabra clave para buscar en todo tu contenido en segundos.",
+    "noHits": "Sin resultados",
+    "reopen": "Reabrir",
+    "check": "Tachar",
+    "open": "Abrir",
+    "done": "hecho",
+    "checked": "tachado",
+    "kind": {
+      "all": "Todo",
+      "document": "Notas",
+      "thought": "Tareas",
+      "list_item": "Listas"
+    },
+    "noHitsText": "No hay notas, tareas ni elementos de lista que coincidan con «{{query}}».",
+    "dueOn": "vence el {{due}}",
+    "select": "Seleccionar",
+    "switchKind": "Cambiar tipo",
+    "hits_one": "{{count}} resultado",
+    "hits_other": "{{count}} resultados",
+    "navigate": "Navegar"
+  },
+  "share": {
+    "chooseGroup": "Por favor, elige un grupo",
+    "chooseUser": "Por favor, elige un usuario",
+    "addFailed": "Error al añadir el recurso compartido",
+    "confirmRemove": "¿De verdad quieres quitar este recurso compartido?",
+    "removeFailed": "Error al quitar el recurso compartido",
+    "disabled": "La función de compartir está desactivada en este servidor (modo de visibilidad «Privado»).",
+    "add": "Añadir recurso compartido:",
+    "group": "Grupo",
+    "user": "Usuario",
+    "pickGroup": "-- Elegir un grupo --",
+    "edit": "Editar",
+    "readOnly": "Solo lectura",
+    "searchUser": "Buscar usuarios (nombre o @usuario)…",
+    "saving": "Guardando…",
+    "shareGroup": "Compartir con grupo",
+    "addUser": "Añadir usuario",
+    "ownerOnly": "Solo el propietario puede añadir nuevos accesos compartidos.",
+    "active": "Accesos compartidos activos",
+    "private": "Este elemento es privado actualmente (solo visible para ti).",
+    "remove": "Quitar acceso compartido",
+    "defaultTitle": "Compartir y permisos",
+    "object": "Elemento:",
+    "teamOption_one": "{{name}} ({{count}} miembro)",
+    "teamOption_other": "{{name}} ({{count}} miembros)"
+  },
+  "sharedImport": {
+    "whichList": "¿En qué lista?",
+    "elsewhere": "O enviar a otro lugar directamente:",
+    "failed": "No se pudo convertir – el elemento permanece en el Quick Dump.",
+    "list": "Lista",
+    "task": "Tarea",
+    "tasksCreated_one": "Creada como tarea",
+    "tasksCreated_other": "{{count}} tareas creadas",
+    "onList_one": "Elemento en «{{title}}»",
+    "onList_other": "{{count}} elementos en «{{title}}»",
+    "queued_one": "Guardado en el Quick Dump",
+    "queued_other": "{{count}} elementos guardados en el Quick Dump"
+  },
+  "live": {
+    "none": "Sin conexión en vivo – los cambios de otros aparecerán al recargar",
+    "sse": "Conexión en vivo mediante Server-Sent Events (WebSocket bloqueado)",
+    "poll": "En vivo mediante long polling (WebSocket y SSE bloqueados)",
+    "ws": "Conexión en vivo mediante WebSocket",
+    "longPolling": " (long polling)"
+  },
+  "update": {
+    "title": "Nueva versión disponible",
+    "subtitle": "El servidor se ha actualizado",
+    "later": "Más tarde",
+    "now": "Actualizar ahora",
+    "bodyVersion": "El servidor se ha actualizado a <v>{{version}}</v>. Recarga la página para utilizarla; se perderán los datos no guardados en campos abiertos.",
+    "body": "El servidor se ha actualizado. Recarga la página para utilizarla; se perderán los datos no guardados en campos abiertos."
+  },
+  "theme": {
+    "family": "Gama de colores",
+    "mode": "Claro u oscuro",
+    "light": "Claro",
+    "dark": "Oscuro",
+    "system": "Como el sistema"
+  },
+  "voice": {
+    "stop": "Detener grabación",
+    "transcribing": "Transcribiendo…",
+    "input": "Entrada de voz",
+    "failed": "Error en el reconocimiento de voz",
+    "noMic": "Sin acceso al micrófono (permiso denegado o la página no se sirve por HTTPS)",
+    "denied": "Micrófono no permitido",
+    "startFailed": "No se pudo iniciar la entrada de voz",
+    "unsupported": "Este navegador no admite entrada de voz",
+    "off": "La entrada de voz está desactivada"
+  },
+  "menu": {
+    "close": "Cerrar menú",
+    "empty": "No hay opciones específicas para esta vista.",
+    "optionsFor": "{{view}} — opciones y acciones"
+  },
+  "switchList": "Cambiar de lista",
+  "icon": {
+    "change": "Cambiar icono",
+    "choose": "Elegir icono"
+  },
+  "aboutTitle": "Acerca de MindSift y detalles de versión",
+  "avatar": {
+    "readFailed": "Error al leer el archivo",
+    "loadFailed": "Error al cargar la imagen",
+    "canvasFailed": "No se pudo crear un contexto canvas"
+  },
+  "offline": {
+    "waiting_one": "{{count}} cambio pendiente",
+    "waiting_other": "{{count}} cambios pendientes",
+    "syncing": "Sincronizando – {{waiting}}…",
+    "pending": "Sin conexión · {{waiting}} esperando conexión",
+    "idle": "Sin conexión – los cambios se sincronizarán al conectar",
+    "noConnection": "Sin conexión con el servidor"
+  },
+  "origin": {
+    "createdVia": "Creado mediante {{via}}{{key}}",
+    "createdViaAt": "Creado mediante {{via}}{{key}} el {{when}}",
+    "createdInApp": "Creado en la app",
+    "createdInAppAt": "Creado en la app el {{when}}",
+    "changedVia": "última modificación mediante {{via}}{{key}}",
+    "changedViaAt": "última modificación mediante {{via}}{{key}} el {{when}}",
+    "deletedKey": "Clave eliminada"
+  },
+  "date": {
+    "today": "Hoy",
+    "tomorrow": "Mañana",
+    "yesterday": "Ayer",
+    "dayThisYear": "{{weekday}} {{day}}/{{month}}",
+    "dayOtherYear": "{{day}}/{{month}}/{{year}}",
+    "withTime": "{{label}}, {{time}}",
+    "weekdayShort": {
+      "0": "dom.",
+      "1": "lun.",
+      "2": "mar.",
+      "3": "mié.",
+      "4": "jue.",
+      "5": "vie.",
+      "6": "sáb."
+    },
+    "months": {
+      "0": "Enero",
+      "1": "Febrero",
+      "2": "Marzo",
+      "3": "Abril",
+      "4": "Mayo",
+      "5": "Junio",
+      "6": "Julio",
+      "7": "Agosto",
+      "8": "Septiembre",
+      "9": "Octubre",
+      "10": "Noviembre",
+      "11": "Diciembre"
+    },
+    "weekdayMin": {
+      "0": "Do",
+      "1": "Lu",
+      "2": "Ma",
+      "3": "Mi",
+      "4": "Ju",
+      "5": "Vi",
+      "6": "Sá"
+    }
+  },
+  "recurrence": {
+    "daily": "diariamente",
+    "weekly": "semanalmente",
+    "monthly": "mensualmente",
+    "yearly": "anualmente"
+  },
+  "dataSections": {
+    "notes": "Notas",
+    "tasks": "Tareas",
+    "lists": "Listas",
+    "inbox": "Inbox",
+    "themes": "Temas"
+  },
+  "sync": {
+    "originalLocked": "{{name}} está editando el punto original en este momento",
+    "undo": "Deshacer",
+    "redo": "Rehacer",
+    "skippedChanged": "{{action}} omitido: otra persona ha modificado el punto mientras tanto",
+    "skippedLocked": "{{action}} omitido: {{name}} está editando el punto en este momento"
+  },
+  "wikiLink": {
+    "toBlock": "Al punto en «{{title}}»",
+    "openNote": "Abrir nota: {{title}}"
+  },
+  "shareTarget": {
+    "mediaNote": "(Imagen compartida – las imágenes en la bandeja de entrada aún no son compatibles)"
+  },
+  "media": {
+    "notFound": "Archivo no encontrado"
+  },
+  "push": {
+    "unsupported": "Este navegador no admite notificaciones push",
+    "homeScreen": "En iPhone y iPad, primero añade MindSift a la pantalla de inicio y ábrelo desde allí",
+    "unavailable": "Push no está disponible en este servidor",
+    "denied": "No se permitieron las notificaciones en el navegador",
+    "rejected": "El navegador rechazó registrarse en el servicio push (permiso bloqueado o servicio inaccesible)"
+  },
+  "themes": {
+    "families": {
+      "classic": {
+        "name": "Classic",
+        "subtitle": "Neutral con azul, cuadrado"
+      },
+      "fjord": {
+        "name": "Fjord",
+        "subtitle": "Papel frío, azul glaciar"
+      },
+      "terracotta": {
+        "name": "Terracotta",
+        "subtitle": "Papel cálido, tierra quemada"
+      },
+      "polarized": {
+        "name": "Polarized",
+        "subtitle": "Petróleo y turquesa, cuadrado"
+      },
+      "suri": {
+        "name": "Suri",
+        "subtitle": "Lavanda, ciruela, orquídea"
+      }
+    },
+    "builtin": {
+      "dark": {
+        "name": "MindSift Oscuro (predeterminado)",
+        "subtitle": "Monocromo, oscuro y cuadrado (0px)"
+      },
+      "light": {
+        "name": "MindSift Claro (modo diurno)",
+        "subtitle": "Diseño de papel claro y contraste nítido"
+      },
+      "terracotta": {
+        "name": "Terracotta (papel cálido)",
+        "subtitle": "Papel crema, tinta y terracota tostada (12px)"
+      },
+      "terracotta-night": {
+        "name": "Terracotta Night (brasas)",
+        "subtitle": "Café, crema y terracota brillante (12px)"
+      },
+      "polarized": {
+        "name": "Polarized (esmeralda / cerceta)",
+        "subtitle": "Obsidiana profunda con turquesa y verde eléctricos (0px)"
+      },
+      "suri": {
+        "name": "Suri (atardecer aterciopelado)",
+        "subtitle": "Ciruela medianoche cálido con orquídea aterciopelada (10px)"
+      },
+      "fjord": {
+        "name": "Fjord (azul glaciar)",
+        "subtitle": "Papel frío, azul tinta y azul fiordo (12px)"
+      },
+      "fjord-night": {
+        "name": "Fjord Night (mar profundo)",
+        "subtitle": "Azul nocturno, luz de luna y azul glaciar brillante (12px)"
+      },
+      "polarized-light": {
+        "name": "Polarized Light (laguna)",
+        "subtitle": "Blanco menta tiza con petróleo profundo (0px)"
+      },
+      "suri-light": {
+        "name": "Suri Light (lavanda)",
+        "subtitle": "Papel lavanda, ciruela y orquídea (10px)"
+      }
+    },
+    "custom": "Tema personalizado",
+    "customFile": "Tema personalizado (guardado en el servidor)"
+  },
+  "userSearch": {
+    "placeholder": "Buscar usuarios (nombre, @usuario o correo)…",
+    "clear": "Borrar selección",
+    "none": "Ningún usuario coincide"
+  },
+  "done": "Listo",
+  "edit": "Editar",
+  "restore": "Restaurar",
+  "discard": "Descartar",
+  "download": "Descargar",
+  "filterTag": "Filtrar por #{{tag}}",
+  "deviceName": "{{browser}} en {{os}}"
+}

@@ -530,7 +530,7 @@ export const SharedListsView: React.FC<SharedListsViewProps> = ({ onRefreshGloba
         <UnifiedShareModal
           isOpen={showShareModal}
           onClose={() => setShowShareModal(false)}
-          title={`Liste teilen: ${activeList.title}`}
+          title={t('shareDialogTitle', { title: activeList.title })}
           resourceName={activeList.title}
           resourceIcon={activeList.icon || undefined}
           isOwner={activeList.isOwner !== false && (activeList.userId === currentUser?.id || !activeList.userId || currentUser?.role === 'admin')}

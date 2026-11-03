@@ -79,7 +79,7 @@ The frontend is embedded into the binary via `go:embed` ([cmd/server/main.go](..
 | `MEDIA_MAX_IMAGE_MB`, `MEDIA_MAX_AUDIO_MB` | `15` / `50` | Maximum image and audio file size in notes in MB |
 | `MEDIA_QUOTA_MB` | `0` | Storage quota for media per user in MB (`0` = unlimited) |
 | `MEDIA_DEMO_MAX_MB` | `3` | Demo mode only: maximum file size for media uploads in MB |
-| `DEFAULT_LANGUAGE` | `de` | Start value of the server's default language (sign-in screen, new accounts, browsers in other languages) until an admin picks one in Administration → Server & Isolation |
+| `DEFAULT_LANGUAGE` | `de` (demo: `en`) | Start value of the server's default language (`de`, `en`, `es`, `fr`, `it`; sign-in screen, new accounts, browsers in other languages) until the setup wizard or an admin picks one in Administration → Server & Isolation. In demo mode it is also the language of the demo accounts |
 | `MCP_ENABLED` | empty | `false` disables `/api/v1/mcp` (returns `404`, even unauthenticated) and thus OAuth; `true` keeps it permanently enabled. Empty: toggle "Allow AI agents (MCP)" in Administration → Server & Isolation (default: enabled) |
 | `RETENTION_ALLOW_NEVER` | empty | `false` prohibits "never" in retention policies (Account Settings → Retention); users who had selected "never" will fall back to the section default. `true` permanently allows it. Empty: toggle in Administration → Server & Isolation (default: allowed) |
 | `STT_URL` | empty | Dedicated speech-to-text: base URL of an OpenAI-compatible Whisper server (e.g. `http://whisper:8000`, speaches). When set = server mode, otherwise browser speech recognition; always browser in demo mode |

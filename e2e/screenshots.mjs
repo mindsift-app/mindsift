@@ -1,4 +1,4 @@
-// Takes the README screenshots from a fresh server in demo mode (sample data of admin/admin).
+// Takes the README screenshots from a fresh server in demo mode (English sample data of admin/admin).
 // The title picture and the colour-family grid are taken twice in the same state – light and dark
 // theme – and joined along a slanted diagonal (light left, dark right); the others are plain light
 // or dark pictures.
@@ -33,7 +33,7 @@ async function login(user) {
 }
 
 async function open(browser, token, options) {
-  const ctx = await browser.newContext({ ...options, colorScheme: 'dark', locale: 'de-DE' });
+  const ctx = await browser.newContext({ ...options, colorScheme: 'dark', locale: 'en-US' });
   await ctx.addInitScript(
     ([t, theme]) => {
       localStorage.setItem('mindsift_jwt_token', t);
@@ -48,7 +48,7 @@ async function open(browser, token, options) {
   return page;
 }
 
-// Anchored, so "Workspace" does not hit the triage button "Als Notiz – Im Workspace"
+// Anchored, so "Workspace" does not hit the triage button "As note – in the workspace"
 const tab = (page, name) => page.getByRole('button', { name: new RegExp(`^${name}`) }).locator('visible=true').first().click();
 
 // Switches the theme in place (no reload), so both halves show exactly the same state
@@ -137,14 +137,14 @@ async function plain(page, file, mode) {
 const main = async () => {
   const admin = await login('admin');
   const user = await login('user');
-  const browser = await chromium.launch({ args: ['--lang=de-DE'] });
+  const browser = await chromium.launch({ args: ['--lang=en-US'] });
   composer = await (await browser.newContext()).newPage();
 
   const page = await open(browser, admin, DESKTOP);
   await tab(page, 'Triage');
   await shot(page, 'Triage_desktop.png');
 
-  await tab(page, 'Aufgaben');
+  await tab(page, 'Tasks');
   await page.getByText('Homelab', { exact: true }).first().click().catch(() => {});
   await page.getByRole('button', { name: /Kanban|Board/ }).first().click().catch(() => {});
   await plain(page, 'aufgaben_desktop.png', 'dark');
@@ -158,9 +158,9 @@ const main = async () => {
   await tab(other, 'Workspace');
   await other.getByText(/^Homelab 2\.0/).first().click();
   await other.waitForFunction(() => document.querySelectorAll('textarea').length > 5, null, { timeout: 10000 });
-  await other.getByText('Endlich Platz für die Dienste', { exact: false }).first().click();
+  await other.getByText('Finally room for the services', { exact: false }).first().click();
   await other.keyboard.press('End');
-  await other.keyboard.type(': Paperless und Immich', { delay: 20 });
+  await other.keyboard.type(': Paperless and Immich', { delay: 20 });
 
   await tab(page, 'Workspace');
   await page.getByText(/^Homelab 2\.0/).first().click();
@@ -187,27 +187,27 @@ const main = async () => {
     }
     await sleep(600);
   };
-  await write(day(0), ['Standup: Umzug liegt im Plan #homelab', 'Nachmittags Backup-Test mit restic', 'Idee: Wochenrückblick als Vorlage anlegen']);
+  await write(day(0), ['Standup: the move is on schedule #homelab', 'Afternoon: backup test with restic', 'Idea: make a template for the weekly review']);
   for (const offset of [2, 5]) {
-    await page.getByTitle(new RegExp(new Date(today.getFullYear(), today.getMonth(), today.getDate() - offset).toLocaleDateString('de-DE', { day: 'numeric', month: 'long' }))).first().click().catch(() => {});
+    await page.getByTitle(new RegExp(new Date(today.getFullYear(), today.getMonth(), today.getDate() - offset).toLocaleDateString('en-US', { day: 'numeric', month: 'long' }))).first().click().catch(() => {});
     await sleep(1200);
-    await write(day(offset), offset === 2 ? ['Rasen gemäht, Hecke wartet noch #garten'] : ['Erste Gedanken zur Hausrenovierung #renovierung', 'Angebote einholen bis Monatsende']);
+    await write(day(offset), offset === 2 ? ['Mowed the lawn, the hedge still has to wait #garden'] : ['First thoughts on the house renovation #renovation', 'Get quotes by the end of the month']);
   }
-  await page.getByRole('button', { name: 'Heute' }).click().catch(() => {});
+  await page.getByRole('button', { name: 'Today' }).click().catch(() => {});
   await page.mouse.click(1000, 860);
   await sleep(2500);
-  // Round corners (setting "Ecken: rund") for this picture only
+  // Round corners (setting "Corners: round") for this picture only
   await page.evaluate(() => document.documentElement.setAttribute('data-corners', 'round'));
   await plain(page, 'journal_desktop.png', 'dark');
   await page.evaluate(() => document.documentElement.removeAttribute('data-corners'));
   await page.getByRole('button', { name: 'Journal', exact: true }).click(); // close it again
 
-  await tab(page, 'Listen');
-  await page.getByText('Wocheneinkauf', { exact: true }).first().click().catch(() => {});
+  await tab(page, 'Lists');
+  await page.getByText('Weekly groceries', { exact: true }).first().click().catch(() => {});
   await plain(page, 'Listen_desktop.png', 'light');
 
   const mobile = await open(browser, admin, MOBILE);
-  await mobile.getByText('Später im Browser weiter nutzen').click({ timeout: 5000 }).catch(() => {}); // install prompt
+  await mobile.getByText('Keep using it in the browser').click({ timeout: 5000 }).catch(() => {}); // install prompt
   await plain(mobile, 'Mobile_Triage.png', 'light');
 
   await tab(mobile, 'Workspace');
