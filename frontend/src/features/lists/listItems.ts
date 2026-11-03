@@ -64,7 +64,9 @@ export function deduplicateItems(items: ListItem[]): ListItem[] {
 // Viewers of a shared list can only read it
 export const canWriteList = (lst: SharedList) => lst.isOwner || lst.role !== 'viewer';
 
-export type ItemGroup = { category: string; label: string; items: ListItem[] };
+// category: key in lower case (also for the drag highlight); name: the spelling shown and saved when an
+// entry is dropped into the group
+export type ItemGroup = { category: string; name: string; label: string; items: ListItem[] };
 
 // Open entries by category: case-insensitive (key in lower case), the label written with a capital letter
 // unless one entry writes it that way, sorted by label; entries without a category last ("Allgemein" when
@@ -106,6 +108,7 @@ export function groupOpenItems(openItems: ListItem[]): ItemGroup[] {
     const displayLabel = canonicalMap.get(key) || key;
     result.push({
       category: key,
+      name: displayLabel,
       label: `#${displayLabel}`,
       items: groupsMap.get(key)!,
     });
@@ -114,6 +117,7 @@ export function groupOpenItems(openItems: ListItem[]): ItemGroup[] {
   if (uncategorized.length > 0) {
     result.push({
       category: '',
+      name: '',
       label: result.length > 0 ? 'Allgemein' : '',
       items: uncategorized,
     });

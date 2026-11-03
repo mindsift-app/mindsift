@@ -160,7 +160,8 @@ export const InstantCaptureBar: React.FC<InstantCaptureBarProps> = ({
         el.tagName === 'TEXTAREA' ||
         el.isContentEditable;
 
-      if (!isEditing && (e.key === 'c' || e.key === 'C')) {
+      // Only the bare key: Ctrl/Cmd+C copies (e.g. selected bullets or read-only text) and must not land here
+      if (!isEditing && !e.ctrlKey && !e.metaKey && !e.altKey && (e.key === 'c' || e.key === 'C')) {
         e.preventDefault();
         inputRef.current?.focus();
       } else if (e.key === 'Escape' && document.activeElement === inputRef.current) {

@@ -130,7 +130,9 @@ export function useKanbanLayout({ isKanban, isKanbanWide, columnCount, listId, l
       const points = snapPoints();
       const next = down ? points.find((p) => p > cur + 2) : [...points].reverse().find((p) => p < cur - 2);
       if (next === undefined) {
-        // Past the last row (e.g. a very low window): plain scrolling
+        // Past the last row (e.g. a very low window): plain scrolling. Only the page's bottom margin left
+        // below a snapped row is no reason to move again (a second step moved the columns by ~20 px)
+        if (down && area.scrollHeight - area.clientHeight - cur < 48) return;
         area.scrollBy({ top: dy });
         return;
       }

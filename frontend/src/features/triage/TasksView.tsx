@@ -571,8 +571,10 @@ export const TasksView: React.FC<TasksViewProps> = ({
   });
 
 
-  const handleDeleteTaskList = async (listId: string) => {
+  // The phone menu asks here; the tabs ask in a popover at the mouse first (TaskListTabs, confirmed)
+  const handleDeleteTaskList = async (listId: string, confirmed = false) => {
     if (
+      !confirmed &&
       !window.confirm(
         'Möchten Sie diese Aufgabenliste wirklich löschen? Die enthaltenen Aufgaben bleiben erhalten.'
       )
@@ -735,7 +737,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
         drag={taskDrag}
         currentSelectedList={currentSelectedList}
         currentUser={currentUser}
-        handleDeleteTaskList={handleDeleteTaskList}
+        deleteTaskList={(listId) => handleDeleteTaskList(listId, true)}
         handleOpenShareModal={handleOpenShareModal}
         memberToPerson={memberToPerson}
         openTasksCount={openTasksCount}

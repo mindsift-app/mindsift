@@ -6,6 +6,27 @@ Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), die V
 
 ## [Unreleased]
 
+## [0.71.0] - 2026-11-03
+
+### Added
+- Task dialog: closing it with an unsaved title or notes ("Fertig", the X or Escape) asks first: keep editing, discard or save. "Fertig" is shown in the accent colour.
+- Task lists: the open list's tab shows a trash icon; deleting asks in a small confirmation at the mouse instead of the browser dialog. The icon grows in and out when switching lists, with less room next to the counter.
+
+### Changed
+- Workspace: the wheel over the background no longer pushes the tab row (notes, to-dos, hashtags) out of view.
+
+### Fixed
+- Kanban: with one row (and after the last row) the board snaps in one wheel step; a second step no longer moves the columns by a few pixels.
+- Notes: after Ctrl+Z or Ctrl+Y the cursor stays at the changed part of the bullet instead of jumping to its end.
+- Notes: Ctrl+C with bullets selected no longer jumps into the Quick Dump bar (and copies again); a selection that starts or ends in a code block copies the whole block.
+
+## [0.70.1] - 2026-11-03
+
+### Fixed
+- A pinned note stays pinned when it goes to the trash and comes back (restore or "Rückgängig").
+- Dragging a shopping list entry into another category keeps the category's spelling ("Obst & Gemüse" instead of "obst & gemüse").
+- Phones: the plus of "Neuen Eintrag hinzufügen" in the shopping list menu is visible again.
+
 ## [0.70.0] - 2026-11-03
 
 ### Changed

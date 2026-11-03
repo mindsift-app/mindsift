@@ -93,6 +93,8 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
 
   const [isEditingNotes, setIsEditingNotes] = useState(false);
   const [notesDraft, setNotesDraft] = useState(task.notes || '');
+  // Closing with an unsaved title or notes asks first (in the footer) instead of dropping them
+  const [confirmUnsaved, setConfirmUnsaved] = useState(false);
   // The notes field grows with its text, so long notes scroll with the dialog instead of inside a small box
   const growNotes = useCallback((el: HTMLTextAreaElement | null) => {
     if (!el) return;
@@ -134,11 +136,23 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
     }
   };
 
+  const notesDirty = isEditingNotes && notesDraft !== (task.notes || '');
+  const titleDirty = isEditingTitle && titleDraft.trim() !== '' && titleDraft.trim() !== task.content;
+  // "Fertig", the X and Escape: with unsaved changes ask first
+  const requestClose = useCallback(() => {
+    if (notesDirty || titleDirty) setConfirmUnsaved(true);
+    else onClose();
+  }, [notesDirty, titleDirty, onClose]);
+
   // Handle escape key to close
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        if (isEditingNotes) {
+        if (confirmUnsaved) {
+          setConfirmUnsaved(false);
+        } else if (notesDirty || titleDirty) {
+          setConfirmUnsaved(true);
+        } else if (isEditingNotes) {
           setIsEditingNotes(false);
         } else if (isEditingTitle) {
           setIsEditingTitle(false);
@@ -149,7 +163,7 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onClose, isEditingNotes, isEditingTitle]);
+  }, [onClose, isEditingNotes, isEditingTitle, notesDirty, titleDirty, confirmUnsaved]);
 
   const handleTitleSubmit = async () => {
     const trimmed = titleDraft.trim();
@@ -167,6 +181,14 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
   const handleNotesSubmit = async () => {
     await onUpdateNotes(task, notesDraft);
     setIsEditingNotes(false);
+  };
+
+  // From the unsaved-changes question: save what is open, then close
+  const saveAndClose = async () => {
+    if (titleDirty) await onUpdateTitle(task, titleDraft.trim());
+    if (notesDirty) await onUpdateNotes(task, notesDraft);
+    setConfirmUnsaved(false);
+    onClose();
   };
 
   const handleAddSubtaskSubmit = async (e: React.FormEvent) => {
@@ -338,7 +360,7 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
             )}
             <button
               type="button"
-              onClick={onClose}
+              onClick={requestClose}
               className="text-muted hover:text-main p-2 sm:p-1.5 min-h-[38px] min-w-[38px] sm:min-h-0 sm:min-w-0 flex items-center justify-center transition-colors"
               title="Schließen"
             >
@@ -961,13 +983,24 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
             </span>
             <span className="hidden lg:inline">Erstellt: {new Date(task.createdAt).toLocaleDateString('de-DE')}</span>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="btn-action h-7 px-3 text-xs"
-          >
-            Fertig
-          </button>
+          {confirmUnsaved ? (
+            <div role="alertdialog" aria-label="Ungespeicherte Änderungen" className="flex flex-wrap items-center justify-end gap-1.5">
+              <span className="text-xs text-main mr-1">Ungespeicherte Änderungen</span>
+              <button type="button" onClick={() => setConfirmUnsaved(false)} className="btn-action h-7 px-2.5 text-xs">
+                Weiter bearbeiten
+              </button>
+              <button type="button" onClick={onClose} className="btn-action h-7 px-2.5 text-xs text-status-err">
+                Verwerfen
+              </button>
+              <button type="button" onClick={() => void saveAndClose()} className="btn-primary h-7 px-3 text-xs" autoFocus>
+                Speichern
+              </button>
+            </div>
+          ) : (
+            <button type="button" onClick={requestClose} className="btn-primary h-7 px-3 text-xs">
+              Fertig
+            </button>
+          )}
         </div>
       </div>
     </div>

@@ -58,7 +58,7 @@ export function OpenItemGroups({
                 onDragLeave={() => {
                   if (dragOverCategoryTarget === group.category) setDragOverCategoryTarget(null);
                 }}
-                onDrop={(e) => handleDropOnCategoryHeader(e, group.category)}
+                onDrop={(e) => handleDropOnCategoryHeader(e, group.name)}
                 className={`panel-surface divide-y divide-border overflow-hidden transition-all ${
                   dragOverCategoryTarget === group.category && !dragOverItemTarget
                     ? 'ring-2 ring-accent/60 bg-accent/5'
@@ -84,7 +84,7 @@ export function OpenItemGroups({
                       }}
                       onDragOver={(e) => handleItemDragOver(e, item.id)}
                       onDragLeave={(e) => handleItemDragLeave(e, item.id)}
-                      onDrop={(e) => handleDropOnItem(e, item, group.category)}
+                      onDrop={(e) => handleDropOnItem(e, item, group.name)}
                       onClick={() => handleToggleItem(item)}
                       className={`px-3.5 py-3.5 sm:px-3 sm:py-2.5 flex items-center justify-between gap-3 cursor-pointer cursor-grab active:cursor-grabbing select-none transition-colors hover:bg-panel-hover group relative ${
                         isDragging ? 'opacity-30 border border-dashed border-accent/40' : ''

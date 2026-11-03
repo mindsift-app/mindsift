@@ -7,7 +7,6 @@ import { DocHeaderStatus, DocSaveStatus } from './DocumentEditor';
 import { WorkspaceSubView } from './workspaceTypes';
 
 interface WorkspaceTabBarProps {
-  tabRowRef: React.RefObject<HTMLDivElement>;
   subView: WorkspaceSubView;
   setSubView: (view: WorkspaceSubView) => void;
   setMobileShowDetail: (show: boolean) => void;
@@ -29,7 +28,6 @@ interface WorkspaceTabBarProps {
 // note people online, live connection, sharing and save status, then its actions (rendered into the
 // element set via setDocActionsTarget)
 export function WorkspaceTabBar({
-  tabRowRef,
   subView,
   setSubView,
   setMobileShowDetail,
@@ -47,7 +45,7 @@ export function WorkspaceTabBar({
   setDocActionsTarget,
 }: WorkspaceTabBarProps) {
   return (
-    <div ref={tabRowRef} className="hidden sm:flex flex-wrap items-center justify-between gap-2 border-b border-border pb-2">
+    <div className="hidden sm:flex flex-wrap items-center justify-between gap-2 border-b border-border pb-2">
       {/* Workspace selector tabs & left sidebar toggle */}
       <div className="grid grid-cols-3 w-full gap-1 sm:flex sm:flex-wrap sm:items-center sm:w-auto">
         <button

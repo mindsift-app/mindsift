@@ -44,6 +44,7 @@ import { renderInlineMarkdown } from '../../lib/markdown';
 import { api } from '../../lib/api';
 import { safeHref } from '../../lib/safeUrl';
 import { isNoteLinkOnly } from '../../lib/wikiLink';
+import { caretAfterChange } from '../../lib/caret';
 
 export interface SlashCommand {
   type: BlockType | 'link' | 'dictation' | 'extract';
@@ -279,6 +280,8 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
 
   // Right after undo/redo the focused field must show the engine's text, not keep its own
   const acceptRemoteUntilRef = useRef<number>(0);
+  // ...and keep the cursor at the changed part instead of the browser's jump to the end (set after render)
+  const pendingCaretRef = useRef<number | null>(null);
   const onUndoRef = useRef(onUndo);
   onUndoRef.current = onUndo;
   const onRedoRef = useRef(onRedo);
@@ -302,10 +305,19 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
       debounceTimerRef.current === null &&
       block.content !== localContentRef.current
     ) {
+      if (isActivelyEditing) pendingCaretRef.current = caretAfterChange(localContentRef.current, block.content || '');
       setLocalContent(block.content || '');
       localContentRef.current = block.content || '';
     }
   }, [block.content, isLocallyFocused]);
+
+  useLayoutEffect(() => {
+    const pos = pendingCaretRef.current;
+    if (pos === null) return;
+    pendingCaretRef.current = null;
+    const ta = textareaRef.current;
+    if (ta && document.activeElement === ta) ta.setSelectionRange(pos, pos);
+  }, [localContent]);
 
   // Handle window blur / focus to instantly flush debounced input and clear zombie focus
   useEffect(() => {

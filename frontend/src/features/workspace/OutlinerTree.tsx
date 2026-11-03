@@ -48,6 +48,9 @@ export interface OutlinerTreeProps {
   trailingArea?: boolean;
 }
 
+// Blocks that a selection over several bullets copies whole, never cut at the selection's edge
+const WHOLE_IN_SELECTION = ['code', 'divider', 'table', 'progress'];
+
 // Puts text on the clipboard from a key press: through the browser's copy event, which works on plain
 // HTTP too (navigator.clipboard needs HTTPS or localhost); the clipboard API only as a fallback
 function writeClipboardText(text: string) {
@@ -840,14 +843,16 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
   };
 
   // The selection as Markdown (lib/outlineMarkdown.ts): pasted elsewhere it is a proper list, pasted
-  // back into a note it becomes the same bullets again
+  // back into a note it becomes the same bullets again. Code blocks (and other blocks that are not plain
+  // text) at either end come whole: half a code block from where the drag started is no use
   const selectedText = (sel: RangeSel) => {
     const r = resolveRangeSel(sel);
     if (!r) return '';
+    const whole = (b: DocumentBlock) => WHOLE_IN_SELECTION.includes(b.type);
     return blocksToMarkdown([
-      { ...r.first, content: (r.first.content || '').slice(r.firstOffset) },
+      whole(r.first) ? r.first : { ...r.first, content: (r.first.content || '').slice(r.firstOffset) },
       ...blocks.slice(r.fIdx + 1, r.lIdx),
-      { ...r.last, content: (r.last.content || '').slice(0, r.lastOffset) },
+      whole(r.last) ? r.last : { ...r.last, content: (r.last.content || '').slice(0, r.lastOffset) },
     ]);
   };
 

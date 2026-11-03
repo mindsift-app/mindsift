@@ -116,4 +116,34 @@ describe('TaskDetailModal', () => {
     await waitFor(() => expect(unwatchSpy).toHaveBeenCalledWith('th_1'));
     expect(screen.getByRole('button', { name: 'Beobachten' })).toBeTruthy();
   });
+
+  it('asks before closing with unsaved notes and saves on request', async () => {
+    const onClose = vi.fn();
+    const onUpdateNotes = vi.fn(async () => {});
+    render(<TaskDetailModal {...props({ onClose, onUpdateNotes })} />);
+    fireEvent.click(screen.getByText('Detailnotiz hinzufügen…'));
+    fireEvent.change(screen.getByPlaceholderText(/Detailnotizen eingeben/), { target: { value: 'Leiter holen' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Fertig' }));
+    expect(onClose).not.toHaveBeenCalled();
+    expect(screen.getByRole('alertdialog', { name: 'Ungespeicherte Änderungen' })).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Speichern' }));
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
+    expect(onUpdateNotes).toHaveBeenCalledWith(expect.objectContaining({ id: 'th_1' }), 'Leiter holen');
+  });
+
+  it('closes right away without changes, and drops them on "Verwerfen"', () => {
+    const onClose = vi.fn();
+    const onUpdateNotes = vi.fn(async () => {});
+    const { unmount } = render(<TaskDetailModal {...props({ onClose, onUpdateNotes })} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Fertig' }));
+    expect(onClose).toHaveBeenCalledTimes(1);
+    unmount();
+    render(<TaskDetailModal {...props({ onClose, onUpdateNotes })} />);
+    fireEvent.click(screen.getByText('Detailnotiz hinzufügen…'));
+    fireEvent.change(screen.getByPlaceholderText(/Detailnotizen eingeben/), { target: { value: 'x' } });
+    fireEvent.click(screen.getByTitle('Schließen'));
+    fireEvent.click(screen.getByRole('button', { name: 'Verwerfen' }));
+    expect(onClose).toHaveBeenCalledTimes(2);
+    expect(onUpdateNotes).not.toHaveBeenCalled();
+  });
 });
