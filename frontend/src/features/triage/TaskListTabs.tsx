@@ -1,7 +1,8 @@
-import React from 'react';
-import { Columns, LayoutList, Plus, Users, X } from 'lucide-react';
+import React, { useState } from 'react';
+import { Columns, LayoutList, Plus, Trash2, Users } from 'lucide-react';
 import { AvatarStack } from '../../components/AvatarStack';
 import { CountBadge } from '../../components/CountBadge';
+import { ConfirmPopover } from '../../components/ConfirmPopover';
 import { LivePill } from '../../components/LivePill';
 import { TaskList, TaskListMember, Thought, User } from '../../lib/types';
 import { ViewMode } from './taskViewTypes';
@@ -13,7 +14,8 @@ interface TaskListTabsProps {
   drag: ReturnType<typeof useTaskDrag>;
   currentSelectedList: TaskList | undefined;
   currentUser: User | null | undefined;
-  handleDeleteTaskList: (listId: string) => void;
+  // Deletes without asking; the tab asks first, in a small popover at the mouse
+  deleteTaskList: (listId: string) => void;
   handleOpenShareModal: (tl: TaskList) => void;
   memberToPerson: (m: TaskListMember) => AvatarPerson;
   openTasksCount: number | undefined;
@@ -32,7 +34,7 @@ export function TaskListTabs({
   drag,
   currentSelectedList,
   currentUser,
-  handleDeleteTaskList,
+  deleteTaskList,
   handleOpenShareModal,
   memberToPerson,
   openTasksCount,
@@ -45,6 +47,7 @@ export function TaskListTabs({
   tasks,
 }: TaskListTabsProps) {
   const { dragOverListTab, draggingTaskId, handleDropOnListTab, setDragOverListTab } = drag;
+  const [pendingDelete, setPendingDelete] = useState<{ list: TaskList; x: number; y: number } | null>(null);
 
   return (
     <div className="hidden sm:flex flex-wrap items-center justify-between gap-2 border-b border-border pb-2 !mt-0">
@@ -85,7 +88,9 @@ export function TaskListTabs({
           >
             <button
               onClick={() => setSelectedListId(tl.id)}
-              className="h-full px-3 text-xs font-medium flex items-center gap-1.5 rounded-btn"
+              className={`h-full pl-3 text-xs font-medium flex items-center gap-1.5 rounded-btn transition-[padding] duration-200 ${
+                selectedListId === tl.id ? 'pr-1' : 'pr-3'
+              }`}
             >
               <span>{tl.icon}</span>
               <span className="inline-flex items-center">
@@ -114,15 +119,19 @@ export function TaskListTabs({
                 );
               })()}
             </button>
-            {selectedListId === tl.id && (
-              <button
-                onClick={() => handleDeleteTaskList(tl.id)}
-                title="Liste löschen"
-                className="h-6 w-6 text-faint hover:text-status-err hover:bg-status-err/10 rounded-btn flex items-center justify-center transition-colors cursor-pointer"
-              >
-                <X className="w-3 h-3" />
-              </button>
-            )}
+            {/* Delete: only on the open list; it grows in and out when switching lists */}
+            <button
+              onClick={(e) => setPendingDelete({ list: tl, x: e.clientX, y: e.clientY })}
+              title="Liste löschen"
+              aria-label="Liste löschen"
+              tabIndex={selectedListId === tl.id ? 0 : -1}
+              aria-hidden={selectedListId !== tl.id}
+              className={`h-6 text-faint hover:text-status-err hover:bg-status-err/10 rounded-btn flex items-center justify-center overflow-hidden cursor-pointer transition-[width,opacity,color,background-color] duration-200 ${
+                selectedListId === tl.id ? 'w-6 opacity-100' : 'w-0 opacity-0 pointer-events-none'
+              }`}
+            >
+              <Trash2 className="w-3 h-3 shrink-0" />
+            </button>
           </div>
         ))}
 
@@ -215,6 +224,24 @@ export function TaskListTabs({
           </button>
         </div>
       </div>
+      {pendingDelete && (
+        <ConfirmPopover
+          x={pendingDelete.x}
+          y={pendingDelete.y}
+          danger
+          confirmLabel="Löschen"
+          message={
+            <>
+              Aufgabenliste <strong>„{pendingDelete.list.title}“</strong> löschen? Die Aufgaben bleiben erhalten.
+            </>
+          }
+          onCancel={() => setPendingDelete(null)}
+          onConfirm={() => {
+            setPendingDelete(null);
+            deleteTaskList(pendingDelete.list.id);
+          }}
+        />
+      )}
     </div>
   );
 }
