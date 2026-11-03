@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
+import i18n from '../../i18n';
 import { Brain, Bot, AlertCircle, ExternalLink } from 'lucide-react';
 import { ApiKeyScope, OAuthAuthorizeInfo, User } from '../../lib/types';
 import { SCOPES, SCOPE_GROUPS } from '../../lib/apiScopes';
@@ -15,6 +17,7 @@ interface OAuthConsentViewProps {
 // MindSift over MCP. The person picks the rights; the server answers with the URL to return to the
 // client (with a code or access_denied). Shown instead of the app while the address is /oauth/authorize.
 export const OAuthConsentView: React.FC<OAuthConsentViewProps> = ({ user, instanceName, onLogout }) => {
+  const { t } = useTranslation('auth');
   const query = window.location.search;
   const [info, setInfo] = useState<OAuthAuthorizeInfo | null>(null);
   const [scopes, setScopes] = useState<ApiKeyScope[]>([]);
@@ -33,7 +36,7 @@ export const OAuthConsentView: React.FC<OAuthConsentViewProps> = ({ user, instan
         setInfo(res);
         setScopes(res.scopes || []);
       })
-      .catch((err) => setError(err?.message || 'Die Anfrage ist ungültig.'));
+      .catch((err) => setError(err?.message || i18n.t('auth:consent.invalid')));
   }, [query]);
 
   const toggle = (id: ApiKeyScope) =>
@@ -47,7 +50,7 @@ export const OAuthConsentView: React.FC<OAuthConsentViewProps> = ({ user, instan
       const res = await api.answerOAuthAuthorize(query, approve, scopes);
       window.location.replace(res.redirect);
     } catch (err: any) {
-      setError(err?.message || 'Das hat nicht geklappt.');
+      setError(err?.message || t('consent.failed'));
       setBusy(false);
     }
   };
@@ -66,7 +69,7 @@ export const OAuthConsentView: React.FC<OAuthConsentViewProps> = ({ user, instan
         </div>
 
         <div className="p-4 space-y-4">
-          {!info && !error && <p className="text-xs text-muted">Anfrage wird geprüft…</p>}
+          {!info && !error && <p className="text-xs text-muted">{t('consent.checking')}</p>}
 
           {error && (
             <div className="flex items-start gap-2 text-xs text-status-err">
@@ -82,15 +85,19 @@ export const OAuthConsentView: React.FC<OAuthConsentViewProps> = ({ user, instan
                   <Bot className="w-5 h-5" />
                 </div>
                 <div className="min-w-0">
-                  <h2 className="text-sm font-bold text-main">{info.clientName} möchte auf dein MindSift zugreifen</h2>
+                  <h2 className="text-sm font-bold text-main">{t('consent.title', { client: info.clientName })}</h2>
                   <p className="text-xs text-muted mt-0.5">
-                    Angemeldet als <span className="text-main">{user.displayName || user.email}</span>. Freigaben gelten wie
-                    für dich selbst; Einstellungen bleiben gesperrt.
+                    <Trans
+                      t={t}
+                      i18nKey="consent.signedInAs"
+                      values={{ name: user.displayName || user.email }}
+                      components={{ b: <span className="text-main" /> }}
+                    />
                   </p>
                 </div>
               </div>
 
-              <div className="space-y-2" role="group" aria-label="Rechte">
+              <div className="space-y-2" role="group" aria-label={t('consent.rights')}>
                 {groups.map(([group, heading]) => (
                   <div key={group} className="border border-border rounded-card bg-panel px-3 py-1.5">
                     <p className="text-[11px] text-muted pt-1 pb-0.5 font-semibold">{heading}</p>
@@ -110,8 +117,12 @@ export const OAuthConsentView: React.FC<OAuthConsentViewProps> = ({ user, instan
               <p className="text-[11px] text-faint flex items-center gap-1.5">
                 <ExternalLink className="w-3.5 h-3.5 flex-shrink-0" />
                 <span>
-                  Danach geht es zurück zu <span className="font-medium text-main">{info.redirectHost}</span>. Die Verbindung
-                  steht unter Einstellungen → API-Schlüssel und lässt sich dort jederzeit widerrufen.
+                  <Trans
+                    t={t}
+                    i18nKey="consent.returnTo"
+                    values={{ host: info.redirectHost }}
+                    components={{ b: <span className="font-medium text-main" /> }}
+                  />
                 </span>
               </p>
 
@@ -122,7 +133,7 @@ export const OAuthConsentView: React.FC<OAuthConsentViewProps> = ({ user, instan
                   onClick={() => answer(false)}
                   className="btn-action h-11 sm:h-9 px-4 text-sm flex-1 disabled:opacity-40"
                 >
-                  Ablehnen
+                  {t('consent.deny')}
                 </button>
                 <button
                   type="button"
@@ -130,14 +141,14 @@ export const OAuthConsentView: React.FC<OAuthConsentViewProps> = ({ user, instan
                   onClick={() => answer(true)}
                   className="btn-primary h-11 sm:h-9 px-4 text-sm flex-1 disabled:opacity-40"
                 >
-                  Erlauben
+                  {t('consent.allow')}
                 </button>
               </div>
             </>
           )}
 
           <button type="button" onClick={onLogout} className="text-[11px] text-muted hover:text-main underline h-11 sm:h-auto">
-            Mit einem anderen Konto anmelden
+            {t('consent.otherAccount')}
           </button>
         </div>
       </div>

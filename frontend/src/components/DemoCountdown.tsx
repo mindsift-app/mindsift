@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface DemoCountdownProps {
   deadline: number; // ms timestamp of the next reset, in this browser's clock
@@ -14,6 +15,7 @@ const fmt = (ms: number) => {
 
 // "✨ Demo · Reset in MM:SS" in place of the version under the app name while the demo mode resets itself
 export const DemoCountdown: React.FC<DemoCountdownProps> = ({ deadline, minutes, className = '', onElapsed }) => {
+  const { t } = useTranslation('app');
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
@@ -30,9 +32,9 @@ export const DemoCountdown: React.FC<DemoCountdownProps> = ({ deadline, minutes,
   return (
     <span
       className={`font-mono leading-tight text-accent ${className}`}
-      title={`Diese Test-Instanz wird alle ${minutes || 20} Minuten automatisch auf den Ausgangszustand zurückgesetzt.`}
+      title={t('demo.resetEvery', { count: minutes || 20 })}
     >
-      ✨ Demo · {left > 0 ? `Reset in ${fmt(left)}` : 'wird zurückgesetzt…'}
+      ✨ Demo · {left > 0 ? t('demo.resetIn', { time: fmt(left) }) : t('demo.resetting')}
     </span>
   );
 };

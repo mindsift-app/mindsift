@@ -1,3 +1,41 @@
 {
-  "languageAuto": "Wie im Browser"
+  "languageAuto": "Wie im Browser",
+  "nav": {
+    "triage": "Triage",
+    "workspace": "Workspace",
+    "tasks": "Aufgaben",
+    "lists": "Listen"
+  },
+  "cancel": "Abbrechen",
+  "trash": "Papierkorb",
+  "aboutMindSift": "Über MindSift",
+  "role": {
+    "admin": "Server-Admin",
+    "member": "Mitglied"
+  },
+  "priority": {
+    "label": "Priorität",
+    "low": "Niedrig",
+    "normal": "Normal",
+    "high": "Wichtig",
+    "urgent": "Dringend"
+  },
+  "errors": {
+    "saveFailed": "Fehler beim Speichern: {{message}}",
+    "unknown": "Unbekannter Fehler"
+  },
+  "about": {
+    "tagline": "Der Kopf frei in drei Sekunden.",
+    "intro": "Die meisten Notiz- und Aufgaben-Apps verlangen Struktur im falschen Moment. MindSift trennt deshalb <b>Erfassen</b> und <b>Organisieren</b>: Gedanken landen sofort im Quick Dump und werden später mit einem Tastendruck zu Aufgabe, Notiz oder Listeneintrag. Alles läuft selbst gehostet in einem Container mit einer SQLite-Datei – deine Daten bleiben bei dir.",
+    "version": "Version",
+    "licenseLabel": "Lizenz",
+    "license": "GNU AGPLv3 – freie Software, Änderungen bleiben frei",
+    "source": "Quellcode",
+    "operator": "Impressum und Datenschutz dieser Instanz verantwortet ihr Betreiber; die Links stehen in den Kontoeinstellungen und auf der Anmeldeseite."
+  },
+  "legal": {
+    "imprint": "Impressum",
+    "privacy": "Datenschutz",
+    "loadFailed": "Text konnte nicht geladen werden"
+  }
 }

@@ -1,5 +1,6 @@
 import React from 'react';
 import { RotateCcw } from 'lucide-react';
+import i18n from '../i18n';
 
 interface ErrorBoundaryState {
   hasError: boolean;
@@ -17,14 +18,14 @@ export class ViewErrorBoundary extends React.Component<
   }
 
   static getDerivedStateFromError(err: Error): ErrorBoundaryState {
-    return { hasError: true, errorText: err?.message || 'Unbekannter Darstellungsfehler' };
+    return { hasError: true, errorText: err?.message || i18n.t('app:viewError.unknown') };
   }
 
   render() {
     if (this.state.hasError) {
       return (
         <div className="p-6 panel-surface text-xs space-y-3 max-w-lg mx-auto my-8">
-          <h3 className="text-sm font-bold text-main">Ansicht konnte nicht geladen werden</h3>
+          <h3 className="text-sm font-bold text-main">{i18n.t('app:viewError.title')}</h3>
           <p className="text-muted">{this.state.errorText}</p>
           <button
             onClick={() => {
@@ -34,7 +35,7 @@ export class ViewErrorBoundary extends React.Component<
             className="btn-primary h-8 px-3 text-xs flex items-center gap-1.5"
           >
             <RotateCcw className="w-3.5 h-3.5" />
-            <span>Ansicht zurücksetzen</span>
+            <span>{i18n.t('app:viewError.reset')}</span>
           </button>
         </div>
       );

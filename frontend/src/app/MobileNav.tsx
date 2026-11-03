@@ -1,4 +1,5 @@
 import { CheckSquare, FileText, Layers, ShoppingCart } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { DashboardStats, Thought } from '../lib/types';
 import { api, triggerHaptic } from '../lib/api';
 import { CountBadge } from '../components/CountBadge';
@@ -25,6 +26,7 @@ export function MobileNav({
   openMobileTriageCapture,
   handleCaptured,
 }: MobileNavProps) {
+  const { t } = useTranslation();
   return (
     <nav data-mobile-nav className="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-panel/95 backdrop-blur-md border-t border-border px-2 pt-1.5 pb-[calc(0.5rem+env(safe-area-inset-bottom))] grid grid-cols-5 items-center shadow-panel">
       {/* Col 1: Triage */}
@@ -37,13 +39,13 @@ export function MobileNav({
         className={`min-h-[48px] rounded-xl flex flex-col items-center justify-center gap-0.5 transition-colors relative cursor-pointer active:scale-95 ${
           activeTab === 'triage' ? 'text-accent font-semibold' : 'text-muted hover:text-main'
         }`}
-        title="Triage"
+        title={t('nav.triage')}
       >
         <div className="relative">
           <Layers className="w-5 h-5" />
           <CountBadge count={stats.inboxCount} variant="accent" position="corner" className="-top-1.5 -right-2.5" />
         </div>
-        <span className="text-[10px] leading-tight">Triage</span>
+        <span className="text-[10px] leading-tight">{t('nav.triage')}</span>
       </button>
 
       {/* Col 2: Workspace */}
@@ -56,10 +58,10 @@ export function MobileNav({
         className={`min-h-[48px] rounded-xl flex flex-col items-center justify-center gap-0.5 transition-colors relative cursor-pointer active:scale-95 ${
           activeTab === 'workspace' ? 'text-accent font-semibold' : 'text-muted hover:text-main'
         }`}
-        title="Workspace"
+        title={t('nav.workspace')}
       >
         <FileText className="w-5 h-5" />
-        <span className="text-[10px] leading-tight">Workspace</span>
+        <span className="text-[10px] leading-tight">{t('nav.workspace')}</span>
       </button>
 
       {/* Col 3 (EXACT CENTER): + Quick-Add FAB */}
@@ -90,13 +92,13 @@ export function MobileNav({
         className={`min-h-[48px] rounded-xl flex flex-col items-center justify-center gap-0.5 transition-colors relative cursor-pointer active:scale-95 ${
           activeTab === 'tasks' ? 'text-accent font-semibold' : 'text-muted hover:text-main'
         }`}
-        title="Aufgaben"
+        title={t('nav.tasks')}
       >
         <div className="relative">
           <CheckSquare className="w-5 h-5" />
           <CountBadge count={stats.tasksOpenCount} variant="accent" position="corner" className="-top-1.5 -right-2.5" />
         </div>
-        <span className="text-[10px] leading-tight">Aufgaben</span>
+        <span className="text-[10px] leading-tight">{t('nav.tasks')}</span>
       </button>
 
       {/* Col 5: Listen */}
@@ -109,13 +111,13 @@ export function MobileNav({
         className={`min-h-[48px] rounded-xl flex flex-col items-center justify-center gap-0.5 transition-colors relative cursor-pointer active:scale-95 ${
           activeTab === 'lists' ? 'text-accent font-semibold' : 'text-muted hover:text-main'
         }`}
-        title="Listen"
+        title={t('nav.lists')}
       >
         <div className="relative">
           <ShoppingCart className="w-5 h-5" />
           <CountBadge count={stats.listItemsOpenCount} variant="accent" position="corner" className="-top-1.5 -right-2.5" />
         </div>
-        <span className="text-[10px] leading-tight">Listen</span>
+        <span className="text-[10px] leading-tight">{t('nav.lists')}</span>
       </button>
     </nav>
   );

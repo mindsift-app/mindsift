@@ -1,4 +1,5 @@
 import { Brain, Download, Share, Smartphone, X } from 'lucide-react';
+import { Trans, useTranslation } from 'react-i18next';
 import { usePwaInstall } from './usePwaInstall';
 
 // Phones: the offer to install MindSift as an app, with the manual steps when the browser has no prompt
@@ -9,6 +10,7 @@ export function PwaInstallSheet({
   pwa: ReturnType<typeof usePwaInstall>;
   instanceName?: string;
 }) {
+  const { t } = useTranslation('app');
   const { isStandaloneApp, deferredPwaPrompt, showPwaInstallModal, showManualPwaGuide, handleInstallWebApp, handleDismissPwaModal } = pwa;
   if (!showPwaInstallModal || isStandaloneApp) return null;
   return (
@@ -27,10 +29,10 @@ export function PwaInstallSheet({
             </div>
             <div>
               <h3 className="text-base font-bold text-main leading-tight">
-                {instanceName || 'MindSift'} als App installieren
+                {t('pwa.title', { name: instanceName || 'MindSift' })}
               </h3>
               <p className="text-xs text-muted mt-0.5">
-                Vollbild ohne Browser-Leiste, schnellerer Start & Direktzugriff vom Home-Bildschirm.
+                {t('pwa.intro')}
               </p>
             </div>
           </div>
@@ -51,14 +53,14 @@ export function PwaInstallSheet({
               className="btn-primary w-full h-12 text-sm font-semibold rounded-xl flex items-center justify-center gap-2 shadow-md active:scale-98 transition-transform cursor-pointer"
             >
               <Download className="w-4 h-4" />
-              <span>Jetzt als Web-App installieren</span>
+              <span>{t('pwa.installNow')}</span>
             </button>
             <button
               type="button"
               onClick={handleDismissPwaModal}
               className="btn-action w-full h-10 text-xs rounded-xl justify-center cursor-pointer"
             >
-              Später im Browser weiter nutzen
+              {t('pwa.later')}
             </button>
           </div>
         ) : (
@@ -72,27 +74,28 @@ export function PwaInstallSheet({
                 className="btn-primary w-full h-12 text-sm font-semibold rounded-xl flex items-center justify-center gap-2 shadow-md active:scale-98 transition-transform cursor-pointer"
               >
                 <Download className="w-4 h-4" />
-                <span>Jetzt installieren</span>
+                <span>{t('pwa.install')}</span>
               </button>
             )}
             <div className="p-3.5 rounded-xl bg-canvas border border-border space-y-2.5 text-xs text-main">
               <p className="font-semibold text-accent flex items-center gap-1.5">
                 <Smartphone className="w-4 h-4" />
-                <span>In 2 Sekunden zum Home-Bildschirm hinzufügen:</span>
+                <span>{t('pwa.guideTitle')}</span>
               </p>
               <ol className="space-y-2 text-muted list-decimal list-inside">
                 <li>
-                  Tippe im Browser auf{' '}
-                  <strong className="text-main inline-flex items-center gap-1">
-                    <Share className="w-3.5 h-3.5 text-accent inline" /> Teilen
-                  </strong>{' '}
-                  (iPhone/Safari) oder das{' '}
-                  <strong className="text-main">Browser-Menü (⋮)</strong>.
+                  <Trans
+                    t={t}
+                    i18nKey="pwa.guideStep1"
+                    components={{
+                      share: <strong className="text-main inline-flex items-center gap-1" />,
+                      icon: <Share className="w-3.5 h-3.5 text-accent inline" />,
+                      b: <strong className="text-main" />,
+                    }}
+                  />
                 </li>
                 <li>
-                  Wähle{' '}
-                  <strong className="text-main">„Zum Home-Bildschirm“</strong> bzw.{' '}
-                  <strong className="text-main">„App installieren“</strong>.
+                  <Trans t={t} i18nKey="pwa.guideStep2" components={{ b: <strong className="text-main" /> }} />
                 </li>
               </ol>
             </div>
@@ -101,7 +104,7 @@ export function PwaInstallSheet({
               onClick={handleDismissPwaModal}
               className="btn-primary w-full h-11 text-xs font-semibold rounded-xl justify-center cursor-pointer"
             >
-              Verstanden
+              {t('pwa.understood')}
             </button>
           </div>
         )}

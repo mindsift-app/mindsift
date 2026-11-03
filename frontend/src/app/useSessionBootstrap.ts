@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { AuthStatus, DashboardStats, SharedList, Thought, User } from '../lib/types';
 import { api, clearToken, connectWebSocket, disconnectWebSocket, getToken } from '../lib/api';
 import { clearOfflineData, outboxCount } from '../lib/offline';
+import i18n from '../i18n';
 
 // The session of the app: server status (setup, registration, demo), the signed-in user with counters,
 // triage deck and lists, the boot check, offline changes retried when online, the realtime connection,
@@ -136,7 +137,7 @@ export function useSessionBootstrap(onSignedOut: () => void) {
     setDataEpoch((n) => n + 1);
     refreshAll();
     api.getAuthStatus().then(setAuthStatus).catch(() => {});
-    setDemoNotice('Demo-Instanz wurde zurückgesetzt');
+    setDemoNotice(i18n.t('app:demoReset'));
     window.setTimeout(() => setDemoNotice(null), 4000);
   }, [refreshAll]);
   handleDemoResetRef.current = handleDemoReset;

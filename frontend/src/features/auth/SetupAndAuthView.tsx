@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
+import i18n from '../../i18n';
 import {
   Brain,
   Shield,
@@ -32,6 +34,7 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
   onResetDone,
   onResetCancel,
 }) => {
+  const { t } = useTranslation('auth');
   // --- Setup Wizard State ---
   const [setupName, setSetupName] = useState('');
   const [setupEmail, setSetupEmail] = useState('');
@@ -63,7 +66,7 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
     api
       .verifyEmail(token)
       .then((res) => setNotice(res.message))
-      .catch((err) => setError(err.message || 'Der Bestätigungslink ist ungültig oder abgelaufen.'));
+      .catch((err) => setError(err.message || i18n.t('auth:verify.invalidLink')));
   }, []);
   // Login refused because the address is not confirmed: offer to send the link again
   const [resendState, setResendState] = useState<'idle' | 'sending' | 'sent'>('idle');
@@ -73,10 +76,10 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
       await api.resendVerification(email.trim());
       setResendState('sent');
       setError(null);
-      setNotice('Falls die Adresse noch auf Bestätigung wartet, haben wir dir den Link erneut geschickt.');
+      setNotice(t('verify.resent'));
     } catch (err: any) {
       setResendState('idle');
-      setError(err.message || 'Senden fehlgeschlagen');
+      setError(err.message || t('verify.sendFailed'));
     }
   };
 
@@ -92,21 +95,21 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
     const domains = (authStatus.registrationDomains || []).map((d) => '@' + d.replace(/^\*\./, '')).join(', ');
     switch (authStatus.registrationMode) {
       case 'approval':
-        return 'Nach der Registrierung gibt ein Administrator dein Konto frei.';
+        return t('register.hintApproval');
       case 'open':
-        return authStatus.emailVerification ? 'Du bekommst eine E-Mail, um deine Adresse zu bestätigen.' : '';
+        return authStatus.emailVerification ? t('register.hintVerify') : '';
       case 'domain':
-        return domains ? `Registrierung mit E-Mail-Adressen von ${domains}.` : '';
+        return domains ? t('register.hintDomain', { domains }) : '';
       case 'domain+approval':
         return domains
-          ? `Mit Adressen von ${domains} geht es sofort, andere Konten gibt ein Administrator frei.`
-          : 'Nach der Registrierung gibt ein Administrator dein Konto frei.';
+          ? t('register.hintDomainApproval', { domains })
+          : t('register.hintApproval');
     }
     return '';
   })();
   const registrationHintFull =
     registrationHint && authStatus.emailVerification && authStatus.registrationMode !== 'open'
-      ? `${registrationHint} Vorher bestätigst du deine Adresse per E-Mail.`
+      ? t('register.hintVerifyFirst', { hint: registrationHint })
       : registrationHint;
 
   const [submitting, setSubmitting] = useState(false);
@@ -121,10 +124,10 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
     setSubmitting(true);
     try {
       await api.requestPasswordReset(email.trim());
-      setNotice('Falls ein Konto mit dieser E-Mail-Adresse existiert, haben wir dir einen Link zum Zurücksetzen geschickt. Er gilt eine Stunde.');
+      setNotice(t('forgot.sent'));
       setAuthTab('login');
     } catch (err: any) {
-      setError(err.message || 'Anfrage fehlgeschlagen');
+      setError(err.message || t('forgot.failed'));
     } finally {
       setSubmitting(false);
     }
@@ -140,7 +143,7 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
       return;
     }
     if (newPassword !== newPasswordConfirm) {
-      setError('Die eingegebenen Passwörter stimmen nicht überein.');
+      setError(t('password.noMatch'));
       triggerHaptic(25);
       return;
     }
@@ -150,11 +153,11 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
       setNewPassword('');
       setNewPasswordConfirm('');
       setPassword('');
-      setNotice('Dein Passwort wurde geändert. Melde dich jetzt mit dem neuen Passwort an.');
+      setNotice(t('reset.done'));
       setAuthTab('login');
       onResetDone?.();
     } catch (err: any) {
-      setError(err.message || 'Passwort konnte nicht geändert werden');
+      setError(err.message || t('reset.failed'));
     } finally {
       setSubmitting(false);
     }
@@ -171,7 +174,7 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
       return;
     }
     if (setupPassword !== setupPasswordConfirm) {
-      setError('Die eingegebenen Passwörter stimmen nicht überein.');
+      setError(t('password.noMatch'));
       triggerHaptic(25);
       return;
     }
@@ -190,7 +193,7 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
       });
       onAuthenticated(res.user);
     } catch (err: any) {
-      setError(err.message || 'Fehler bei der Ersteinrichtung');
+      setError(err.message || t('setup.failed'));
     } finally {
       setSubmitting(false);
     }
@@ -205,7 +208,7 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
       const res = await api.login(email.trim(), password);
       onAuthenticated(res.user);
     } catch (err: any) {
-      setError(err.message || 'Ungültige Anmeldedaten');
+      setError(err.message || t('login.failed'));
     } finally {
       setSubmitting(false);
     }
@@ -227,14 +230,14 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
       const res = await api.register(email.trim(), password, displayName.trim(), code);
       if (res.pending || !res.user) {
         // Waiting for approval: back to the login form with the explanation
-        setNotice(res.message || 'Dein Konto wartet auf die Freigabe durch einen Administrator.');
+        setNotice(res.message || t('register.pending'));
         setPassword('');
         setAuthTab('login');
         return;
       }
       onAuthenticated(res.user);
     } catch (err: any) {
-      setError(err.message || 'Registrierung fehlgeschlagen');
+      setError(err.message || t('register.failed'));
     } finally {
       setSubmitting(false);
     }
@@ -255,21 +258,19 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
               </div>
               <div>
                 <h1 className="text-base font-bold text-main tracking-tight leading-none">
-                  MindSift Ersteinrichtung
+                  {t('setup.title')}
                 </h1>
                 <p className="text-[11px] text-muted mt-0.5">
-                  Initiales Administrator-Konto & Server-Konfiguration
+                  {t('setup.subtitle')}
                 </p>
               </div>
             </div>
-            <span className="badge-accent uppercase tracking-wider">First Boot</span>
+            <span className="badge-accent uppercase tracking-wider">{t('setup.badge')}</span>
           </div>
 
           <form onSubmit={handleCompleteSetup} className="p-5 space-y-5 text-xs">
             <p className="text-muted leading-relaxed">
-              Willkommen auf deiner neuen MindSift-Instanz. Es existiert noch kein Benutzerkonto in
-              der Datenbank. Lege jetzt das erste <strong className="text-main">Server-Admin-Konto</strong> an und
-              bestimme die Sicherheitseinstellungen.
+              <Trans t={t} i18nKey="setup.welcome" components={{ b: <strong className="text-main" /> }} />
             </p>
 
             {error && (
@@ -283,29 +284,29 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
             <div className="p-3.5 bg-canvas border border-border space-y-3">
               <h2 className="text-xs font-bold text-main uppercase tracking-wider flex items-center gap-1.5">
                 <Shield className="w-3.5 h-3.5 text-accent" />
-                <span>1. Server-Administrator anlegen</span>
+                <span>{t('setup.adminSection')}</span>
               </h2>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-muted mb-1">Dein Anzeigename *</label>
+                  <label className="block text-muted mb-1">{t('setup.yourName')}</label>
                   <input
                     type="text"
                     value={setupName}
                     onChange={(e) => setSetupName(e.target.value)}
-                    placeholder="z.B. Admin / Dein Name"
+                    placeholder={t('setup.yourNamePlaceholder')}
                     required
                     autoFocus
                     className="w-full h-8 px-2.5 input-field"
                   />
                 </div>
                 <div>
-                  <label className="block text-muted mb-1">E-Mail-Adresse (Login) *</label>
+                  <label className="block text-muted mb-1">{t('setup.email')}</label>
                   <input
                     type="email"
                     value={setupEmail}
                     onChange={(e) => setSetupEmail(e.target.value)}
-                    placeholder="admin@deinedomain.de"
+                    placeholder={t('setup.emailPlaceholder')}
                     required
                     className="w-full h-8 px-2.5 input-field"
                   />
@@ -314,23 +315,23 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-muted mb-1">Administrator-Passwort *</label>
+                  <label className="block text-muted mb-1">{t('setup.password')}</label>
                   <input
                     type="password"
                     value={setupPassword}
                     onChange={(e) => setSetupPassword(e.target.value)}
-                    placeholder="Mindestens 8 Zeichen"
+                    placeholder={t('password.minPlaceholder')}
                     required
                     className="w-full h-8 px-2.5 input-field"
                   />
                 </div>
                 <div>
-                  <label className="block text-muted mb-1">Passwort wiederholen *</label>
+                  <label className="block text-muted mb-1">{t('setup.repeat')}</label>
                   <input
                     type="password"
                     value={setupPasswordConfirm}
                     onChange={(e) => setSetupPasswordConfirm(e.target.value)}
-                    placeholder="Passwort erneut eingeben"
+                    placeholder={t('setup.repeatPlaceholder')}
                     required
                     className={`w-full h-8 px-2.5 input-field ${
                       setupPasswordConfirm && setupPassword !== setupPasswordConfirm
@@ -340,7 +341,7 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
                   />
                   {setupPasswordConfirm && setupPassword !== setupPasswordConfirm && (
                     <span className="text-[10px] text-status-err mt-1 block">
-                      Passwörter stimmen nicht überein
+                      {t('password.noMatchShort')}
                     </span>
                   )}
                 </div>
@@ -351,11 +352,11 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
             <div className="p-3.5 bg-canvas border border-border space-y-3">
               <h2 className="text-xs font-bold text-main uppercase tracking-wider flex items-center gap-1.5">
                 <Server className="w-3.5 h-3.5 text-accent" />
-                <span>2. Instanz & Berechtigungen</span>
+                <span>{t('setup.instanceSection')}</span>
               </h2>
 
               <div>
-                <label className="block text-muted mb-1">Name der Instanz</label>
+                <label className="block text-muted mb-1">{t('setup.instanceName')}</label>
                 <input
                   type="text"
                   value={instanceName}
@@ -368,7 +369,7 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
               <div>
                 <label className="block text-muted mb-1.5 flex items-center gap-1">
                   <Users className="w-3 h-3 text-accent" />
-                  <span>Sichtbarkeit & Sharing-Isolation zwischen Benutzern</span>
+                  <span>{t('setup.sharing')}</span>
                 </label>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   <button
@@ -380,9 +381,9 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
                         : 'border-border text-muted hover:text-main'
                     }`}
                   >
-                    <p className="font-bold text-xs">Privat</p>
+                    <p className="font-bold text-xs">{t('setup.private')}</p>
                     <p className="text-[10px] text-muted mt-0.5">
-                      Keiner sieht andere Nutzer. Teilen und Gruppen sind aus.
+                      {t('setup.privateHint')}
                     </p>
                   </button>
 
@@ -395,9 +396,9 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
                         : 'border-border text-muted hover:text-main'
                     }`}
                   >
-                    <p className="font-bold text-xs">Organisationen</p>
+                    <p className="font-bold text-xs">{t('setup.organizations')}</p>
                     <p className="text-[10px] text-muted mt-0.5">
-                      Nutzer sehen nur Mitglieder ihrer Organisation. Du startest in einer Organisation mit dem Namen der Instanz.
+                      {t('setup.organizationsHint')}
                     </p>
                   </button>
 
@@ -410,9 +411,9 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
                         : 'border-border text-muted hover:text-main'
                     }`}
                   >
-                    <p className="font-bold text-xs">Alle sehen alle</p>
+                    <p className="font-bold text-xs">{t('setup.open')}</p>
                     <p className="text-[10px] text-muted mt-0.5">
-                      Offene Zusammenarbeit auf dem gesamten Server.
+                      {t('setup.openHint')}
                     </p>
                   </button>
                 </div>
@@ -422,11 +423,10 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
                 <div className="flex items-center justify-between gap-3 select-none">
                   <div>
                     <span className="font-medium text-main block">
-                      Öffentliche Selbstregistrierung erlauben
+                      {t('setup.allowRegistration')}
                     </span>
                     <span className="text-[11px] text-muted">
-                      Wenn deaktiviert, können neue Nutzer nur per Einladungscode oder durch einen
-                      Admin angelegt werden.
+                      {t('setup.allowRegistrationHint')}
                     </span>
                   </div>
                   <ToggleSwitch checked={allowRegistration} onChange={setAllowRegistration} />
@@ -435,11 +435,10 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
                 <div className="flex items-center justify-between gap-3 select-none pt-1">
                   <div>
                     <span className="font-medium text-main block">
-                      Beispieldaten anlegen
+                      {t('setup.sampleData')}
                     </span>
                     <span className="text-[11px] text-muted">
-                      Füllt dein Konto mit Beispiel-Gedanken, Notizen, Aufgabenlisten und Einkaufslisten zum Ausprobieren.
-                      Es werden keine weiteren Benutzer angelegt.
+                      {t('setup.sampleDataHint')}
                     </span>
                   </div>
                   <ToggleSwitch checked={createSampleData} onChange={setCreateSampleData} />
@@ -455,9 +454,7 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
               >
                 <Check className="w-4 h-4" />
                 <span>
-                  {submitting
-                    ? 'Richte Server ein…'
-                    : 'Ersteinrichtung abschließen & Starten'}
+                  {submitting ? t('setup.submitting') : t('setup.submit')}
                 </span>
               </button>
             </div>
@@ -503,7 +500,7 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
             }`}
           >
             <LogIn className="w-3.5 h-3.5" />
-            <span>Anmelden</span>
+            <span>{t('login.tab')}</span>
           </button>
 
           <button
@@ -519,7 +516,7 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
             }`}
           >
             <KeyRound className="w-3.5 h-3.5" />
-            <span>Einladungscode</span>
+            <span>{t('invite.tab')}</span>
           </button>
 
           {authStatus.allowRegistration && (
@@ -536,7 +533,7 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
               }`}
             >
               <UserPlus className="w-3.5 h-3.5" />
-              <span>Registrieren</span>
+              <span>{t('register.tab')}</span>
             </button>
           )}
         </div>
@@ -547,6 +544,7 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
             <div className="mb-4 alert-err flex items-center gap-2">
               <AlertCircle className="w-4 h-4 text-status-err flex-shrink-0" />
               <span className="flex-1">{error}</span>
+              {/* The server's German message until API errors carry codes (Doku/plans/mehrsprachigkeit.md, step 4) */}
               {/bestätige zuerst deine E-Mail/i.test(error) && email.trim() && (
                 <button
                   type="button"
@@ -554,7 +552,7 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
                   disabled={resendState !== 'idle'}
                   className="btn-action h-8 px-2.5 text-[11px] shrink-0 disabled:opacity-50"
                 >
-                  {resendState === 'sending' ? 'Sende…' : 'Link erneut senden'}
+                  {resendState === 'sending' ? t('sending') : t('verify.resend')}
                 </button>
               )}
             </div>
@@ -569,18 +567,18 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
           {authTab === 'forgot' && (
             <form onSubmit={handleForgotPassword} className="space-y-3.5">
               <div>
-                <h2 className="text-sm font-bold text-main">Passwort vergessen?</h2>
+                <h2 className="text-sm font-bold text-main">{t('forgot.title')}</h2>
                 <p className="text-muted mt-1">
-                  Gib die E-Mail-Adresse deines Kontos ein. Wir schicken dir einen Link, mit dem du ein neues Passwort festlegst.
+                  {t('forgot.intro')}
                 </p>
               </div>
               <div>
-                <label className="block text-muted mb-1">E-Mail-Adresse</label>
+                <label className="block text-muted mb-1">{t('emailLabel')}</label>
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="name@beispiel.de"
+                  placeholder={t('emailPlaceholder')}
                   required
                   autoFocus
                   autoComplete="email"
@@ -596,14 +594,14 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
                   }}
                   className="btn-action h-11 sm:h-9 px-4 text-xs"
                 >
-                  Zurück zur Anmeldung
+                  {t('forgot.back')}
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
                   className="flex-1 btn-primary h-11 sm:h-9 text-xs font-semibold disabled:opacity-50"
                 >
-                  {submitting ? 'Sende…' : 'Link anfordern'}
+                  {submitting ? t('sending') : t('forgot.submit')}
                 </button>
               </div>
             </form>
@@ -612,16 +610,16 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
           {authTab === 'reset' && (
             <form onSubmit={handleResetPassword} className="space-y-3.5">
               <div>
-                <h2 className="text-sm font-bold text-main">Neues Passwort festlegen</h2>
-                <p className="text-muted mt-1">Danach bist du überall abgemeldet und meldest dich mit dem neuen Passwort an.</p>
+                <h2 className="text-sm font-bold text-main">{t('reset.title')}</h2>
+                <p className="text-muted mt-1">{t('reset.intro')}</p>
               </div>
               <div>
-                <label className="block text-muted mb-1">Neues Passwort</label>
+                <label className="block text-muted mb-1">{t('reset.newPassword')}</label>
                 <input
                   type="password"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="Mindestens 8 Zeichen"
+                  placeholder={t('password.minPlaceholder')}
                   required
                   autoFocus
                   autoComplete="new-password"
@@ -629,7 +627,7 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
                 />
               </div>
               <div>
-                <label className="block text-muted mb-1">Passwort wiederholen</label>
+                <label className="block text-muted mb-1">{t('reset.repeat')}</label>
                 <input
                   type="password"
                   value={newPasswordConfirm}
@@ -644,7 +642,7 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
                 disabled={submitting}
                 className="w-full btn-primary h-11 sm:h-9 text-xs font-semibold disabled:opacity-50"
               >
-                {submitting ? 'Speichere…' : 'Passwort speichern'}
+                {submitting ? t('reset.saving') : t('reset.submit')}
               </button>
               <button
                 type="button"
@@ -655,7 +653,7 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
                 }}
                 className="w-full btn-action h-11 sm:h-9 text-xs"
               >
-                {authStatus.passwordReset ? 'Neuen Link anfordern' : 'Zur Anmeldung'}
+                {authStatus.passwordReset ? t('reset.newLink') : t('reset.toLogin')}
               </button>
             </form>
           )}
@@ -665,8 +663,8 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
               {authStatus.demoMode && (
                 <div className="p-2.5 rounded border border-accent/30 bg-accent/10 space-y-1.5">
                   <div className="flex items-center justify-between text-[11px] font-semibold text-accent">
-                    <span>🧪 Demo-Modus aktiv</span>
-                    <span className="text-[10px] text-muted font-normal">Klick zum Ausfüllen:</span>
+                    <span>{t('login.demoActive')}</span>
+                    <span className="text-[10px] text-muted font-normal">{t('login.demoFill')}</span>
                   </div>
                   <div className="flex gap-2">
                     <button
@@ -694,12 +692,12 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
               )}
 
               <div>
-                <label className="block text-muted mb-1">Benutzername oder E-Mail-Adresse</label>
+                <label className="block text-muted mb-1">{t('login.login')}</label>
                 <input
                   type="text"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="admin oder name@beispiel.de"
+                  placeholder={t('login.loginPlaceholder')}
                   required
                   autoFocus
                   className="w-full h-8 px-2.5 input-field"
@@ -707,7 +705,7 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
               </div>
 
               <div className="relative">
-                <label className="block text-muted mb-1">Passwort</label>
+                <label className="block text-muted mb-1">{t('login.password')}</label>
                 <input
                   type="password"
                   value={password}
@@ -728,7 +726,7 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
                     }}
                     className="absolute right-0 -top-1 text-accent hover:underline text-[11px] py-1"
                   >
-                    Passwort vergessen?
+                    {t('forgot.title')}
                   </button>
                 )}
               </div>
@@ -740,21 +738,19 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
                   className="w-full btn-primary h-9 text-xs font-semibold flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                   <LogIn className="w-3.5 h-3.5" />
-                  <span>{submitting ? 'Melde an…' : 'Anmelden'}</span>
+                  <span>{submitting ? t('login.submitting') : t('login.tab')}</span>
                 </button>
               </div>
 
               {!authStatus.allowRegistration && (
                 <p className="text-[11px] text-faint text-center pt-2 border-t border-border">
-                  Öffentliche Registrierung ist deaktiviert. Zugang nur mit Konto oder{' '}
-                  <button
-                    type="button"
-                    onClick={() => setAuthTab('invite')}
-                    className="text-accent hover:underline"
-                  >
-                    Einladungscode
-                  </button>
-                  .
+                  <Trans
+                    t={t}
+                    i18nKey="login.registrationClosed"
+                    components={{
+                      invite: <button type="button" onClick={() => setAuthTab('invite')} className="text-accent hover:underline" />,
+                    }}
+                  />
                 </p>
               )}
             </form>
@@ -767,7 +763,7 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
               )}
               {authTab === 'invite' && (
                 <div>
-                  <label className="block text-muted mb-1">Einladungscode *</label>
+                  <label className="block text-muted mb-1">{t('invite.code')}</label>
                   <input
                     type="text"
                     value={inviteCode}
@@ -781,36 +777,36 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
               )}
 
               <div>
-                <label className="block text-muted mb-1">Anzeigename *</label>
+                <label className="block text-muted mb-1">{t('register.displayName')}</label>
                 <input
                   type="text"
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
-                  placeholder="Dein Name"
+                  placeholder={t('register.displayNamePlaceholder')}
                   required
                   className="w-full h-8 px-2.5 input-field"
                 />
               </div>
 
               <div>
-                <label className="block text-muted mb-1">E-Mail-Adresse *</label>
+                <label className="block text-muted mb-1">{t('register.email')}</label>
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="name@beispiel.de"
+                  placeholder={t('emailPlaceholder')}
                   required
                   className="w-full h-8 px-2.5 input-field"
                 />
               </div>
 
               <div>
-                <label className="block text-muted mb-1">Passwort *</label>
+                <label className="block text-muted mb-1">{t('register.password')}</label>
                 <input
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Mindestens 8 Zeichen"
+                  placeholder={t('password.minPlaceholder')}
                   required
                   className="w-full h-8 px-2.5 input-field"
                 />
@@ -825,10 +821,10 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
                   <UserPlus className="w-3.5 h-3.5" />
                   <span>
                     {submitting
-                      ? 'Konto wird erstellt…'
+                      ? t('register.submitting')
                       : authTab === 'invite'
-                      ? 'Einladung einlösen & Konto erstellen'
-                      : 'Konto registrieren'}
+                      ? t('invite.submit')
+                      : t('register.submit')}
                   </span>
                 </button>
               </div>
