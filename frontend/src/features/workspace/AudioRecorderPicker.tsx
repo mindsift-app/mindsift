@@ -122,7 +122,7 @@ export const AudioRecorderPicker: React.FC<AudioRecorderPickerProps> = ({ docId,
         {state === 'ready' && <span className="text-xs text-muted">{t('media.record')}</span>}
         {state === 'uploading' && (
           <span className="text-xs text-muted flex items-center gap-1.5">
-            <Loader2 className="w-3.5 h-3.5 animate-spin" /> Wird gespeichert…
+            <Loader2 className="w-3.5 h-3.5 animate-spin" /> {t('workspace:media.saving')}
           </span>
         )}
 

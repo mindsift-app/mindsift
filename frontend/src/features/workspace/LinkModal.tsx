@@ -278,7 +278,7 @@ export const LinkModal: React.FC<LinkModalProps> = ({
             <form onSubmit={handleWebLinkSubmit} className="space-y-2.5">
               <div>
                 <label className="text-[10px] font-bold uppercase tracking-wider text-faint mb-1 block">
-                  Link-Text / Label
+                  {t('workspace:link.textLabel')}
                 </label>
                 <input
                   ref={webTitleInputRef}
@@ -292,7 +292,7 @@ export const LinkModal: React.FC<LinkModalProps> = ({
 
               <div>
                 <label className="text-[10px] font-bold uppercase tracking-wider text-faint mb-1 block">
-                  Web-Adresse (URL) *
+                  {t('workspace:link.urlLabel')}
                 </label>
                 <input
                   type="text"
@@ -310,7 +310,7 @@ export const LinkModal: React.FC<LinkModalProps> = ({
                   onClick={onClose}
                   className="btn-action text-xs h-8 px-3.5 cursor-pointer"
                 >
-                  Abbrechen
+                  {t('common:cancel')}
                 </button>
                 <button
                   type="submit"

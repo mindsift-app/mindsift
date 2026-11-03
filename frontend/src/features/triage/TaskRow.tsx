@@ -199,7 +199,7 @@ export function TaskRow({
                 className="badge-accent text-[10px] cursor-pointer hover:opacity-85 disabled:cursor-default"
                 title={t('row.urgentToNormal')}
               >
-                🔥 Dringend
+                {t('tasks:listing.urgent')}
               </button>
             )}
             {task.priority === 'high' && (
@@ -210,7 +210,7 @@ export function TaskRow({
                 className="px-1.5 py-0.5 border border-status-warn text-status-warn rounded-btn text-[10px] font-medium cursor-pointer hover:opacity-85 disabled:cursor-default"
                 title={t('row.highToUrgent')}
               >
-                ⚠️ Wichtig
+                {t('tasks:listing.high')}
               </button>
             )}
 

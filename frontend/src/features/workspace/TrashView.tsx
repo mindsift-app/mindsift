@@ -128,7 +128,7 @@ export const TrashView: React.FC<TrashViewProps> = ({ items, onOpen, onRestore, 
                     className="btn-action h-11 sm:h-8 px-3 text-xs inline-flex items-center justify-center gap-1.5 disabled:opacity-50"
                   >
                     <RotateCcw className="w-3.5 h-3.5 text-accent" />
-                    Wiederherstellen
+                    {t('common:restore')}
                   </button>
                   <button
                     type="button"

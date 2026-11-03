@@ -75,7 +75,7 @@ export const BacklinksSection: React.FC<BacklinksSectionProps> = ({ docId, title
       >
         {collapsed ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
         <Link2 className="w-3.5 h-3.5 text-accent" />
-        <span>Verlinkt auf diese Notiz ({links.length})</span>
+        <span>{t('backlinks.title', { count: links.length })}</span>
       </button>
       {!collapsed && (
         <ul className="mt-2 space-y-2">
@@ -110,7 +110,7 @@ export const BacklinksSection: React.FC<BacklinksSectionProps> = ({ docId, title
                   </li>
                 ))}
               </ul>
-              {!!l.more && <p className="mt-1 text-[11px] text-faint">… und {l.more} weitere Stellen</p>}
+              {!!l.more && <p className="mt-1 text-[11px] text-faint">{t('backlinks.more', { count: l.more })}</p>}
             </li>
           ))}
         </ul>

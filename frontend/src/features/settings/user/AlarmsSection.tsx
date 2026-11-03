@@ -53,7 +53,7 @@ export function AlarmsSection({
     <div className="space-y-5">
       <div className="border-b border-border pb-3">
         <h2 className="text-sm font-bold text-main">
-          Aufgaben-Alarme & Benachrichtigungsziele
+          {t('settings:alarms.title')}
         </h2>
         <p className="text-muted mt-0.5">
           {t('alarms.intro')}
@@ -201,12 +201,12 @@ export function AlarmsSection({
                 </p>
                 {!hasDiscordWebhook && (
                   <p className="text-[11px] text-status-warn">
-                    Discord-Schalter sind deaktiviert, solange unten kein Discord-Webhook eingetragen ist.
+                    {t('settings:alarms.discordDisabled')}
                   </p>
                 )}
                 {!hasCustomWebhook && (
                   <p className="text-[11px] text-faint">
-                    Webhook-Schalter werden aktiv, sobald unten eine eigene Webhook-URL eingetragen ist.
+                    {t('settings:alarms.webhookHint')}
                   </p>
                 )}
               </div>

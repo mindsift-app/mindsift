@@ -1,4 +1,5 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { createPortal } from 'react-dom';
 
 interface ConfirmPopoverProps {
@@ -17,6 +18,7 @@ const MARGIN = 8;
 // Small confirmation right at the mouse (Doku/ui-patterns.md): Enter or the button confirms, Escape, a
 // click outside or "Abbrechen" closes it.
 export const ConfirmPopover: React.FC<ConfirmPopoverProps> = ({ x, y, message, confirmLabel, danger, onConfirm, onCancel }) => {
+  const { t } = useTranslation();
   const ref = useRef<HTMLDivElement>(null);
   const confirmRef = useRef<HTMLButtonElement>(null);
   const [pos, setPos] = useState({ left: x, top: y, ready: false });
@@ -60,7 +62,7 @@ export const ConfirmPopover: React.FC<ConfirmPopoverProps> = ({ x, y, message, c
       <div className="leading-snug">{message}</div>
       <div className="flex justify-end gap-2">
         <button type="button" onClick={onCancel} className="btn-action h-11 sm:h-8 px-3 text-xs">
-          Abbrechen
+          {t('common:cancel')}
         </button>
         <button
           ref={confirmRef}

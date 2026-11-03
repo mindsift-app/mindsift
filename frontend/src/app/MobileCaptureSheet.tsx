@@ -55,7 +55,7 @@ export function MobileCaptureSheet({ capture }: { capture: ReturnType<typeof use
           {/* Text Input with Voice Dictation */}
           <div>
             <label className="text-[11px] font-semibold text-muted block mb-1">
-              Gedanke / Quick Dump
+              {t('capture.textLabel')}
             </label>
             <div className="relative">
               <input

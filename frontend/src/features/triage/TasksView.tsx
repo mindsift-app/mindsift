@@ -685,13 +685,13 @@ export const TasksView: React.FC<TasksViewProps> = ({
     return (
       <div
         className="space-y-0.5 mt-0.5 mb-0.5 select-none"
-        title={`${done} von ${total} Unteraufgaben erledigt (${percent}%)`}
+        title={t('view.subtasksTitle', { done, total, percent })}
       >
         <div className="flex items-center justify-between text-[9px] text-muted font-medium">
           <span className="flex items-center gap-1">
             <CheckSquare className="w-2.5 h-2.5 text-accent" />
             <span>
-              {done}/{total} Unteraufgaben
+              {t('view.subtasks', { done, total })}
             </span>
           </span>
           <span className={percent === 100 ? 'text-status-ok font-bold' : 'text-muted'}>

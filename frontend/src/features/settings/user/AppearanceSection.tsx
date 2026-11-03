@@ -296,7 +296,7 @@ export function AppearanceSection({
               className="w-9 h-9 sm:w-7 sm:h-7 rounded-full border border-border bg-transparent p-0 cursor-pointer"
               aria-label={t('appearance.accentPick')}
             />
-            Eigene
+            {t('settings:appearance.customAccent')}
           </label>
         </div>
       </div>
@@ -372,7 +372,7 @@ export function AppearanceSection({
                       {t('appearance.custom.delete')}
                     </button>
                     <button onClick={() => setDeletingThemeId(null)} className="btn-action h-7 px-2 text-[11px]">
-                      Abbrechen
+                      {t('common:cancel')}
                     </button>
                   </>
                 ) : (
@@ -472,7 +472,7 @@ export function AppearanceSection({
         <div className="flex justify-end gap-2">
           {themeEditId && (
             <button type="button" onClick={resetThemeEditor} className="btn-action h-8 px-3 text-xs">
-              Abbrechen
+              {t('common:cancel')}
             </button>
           )}
           <button

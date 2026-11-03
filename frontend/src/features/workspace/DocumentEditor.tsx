@@ -1318,7 +1318,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
               className="btn-action h-11 sm:h-7 px-3 text-xs text-main inline-flex items-center gap-1.5"
             >
               <RotateCcw className="w-3.5 h-3.5 text-accent" />
-              Wiederherstellen
+              {t('common:restore')}
             </button>
           )}
         </div>
@@ -1351,7 +1351,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
                 <div className="flex items-center gap-2 mb-1.5">
                   <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-accent bg-accent-dim px-2 py-0.5 rounded-btn border border-accent/30">
                     <Sparkles className="w-2.5 h-2.5 text-accent animate-pulse" />
-                    Fokus-Modus
+                    {t('workspace:editor.focusMode')}
                   </span>
                   <span className="text-[11px] text-faint hidden sm:inline">
                     {t('editor.zoom')}

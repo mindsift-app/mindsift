@@ -108,7 +108,7 @@ export function TasksFilterSheet({
         {viewMode !== 'kanban' && (
           <div className="space-y-2 pt-2 border-t border-border">
             <span className="text-[11px] font-bold uppercase tracking-wider text-muted block">
-              Gruppierung
+              {t('tasks:filter.grouping')}
             </span>
             <div className="grid grid-cols-2 gap-1.5">
               {groupOptions.map((g) => (
@@ -133,7 +133,7 @@ export function TasksFilterSheet({
         {viewMode !== 'kanban' && (
           <div className="space-y-2 pt-2 border-t border-border">
             <span className="text-[11px] font-bold uppercase tracking-wider text-muted block">
-              Sortierung
+              {t('tasks:filter.sorting')}
             </span>
             <div className="grid grid-cols-2 gap-1.5">
               {[
@@ -177,7 +177,7 @@ export function TasksFilterSheet({
             onClick={() => setShowFilterModal(false)}
             className="btn-primary h-9 px-5 text-xs font-semibold cursor-pointer"
           >
-            Fertig
+            {t('common:done')}
           </button>
         </div>
       </div>

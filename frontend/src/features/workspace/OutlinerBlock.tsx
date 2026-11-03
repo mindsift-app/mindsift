@@ -1575,7 +1575,7 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
                   className="px-1.5 py-0.5 rounded-btn border border-border text-muted hover:text-main hover:bg-panel cursor-pointer"
                   title={t('block.dropVersion')}
                 >
-                  Verwerfen
+                  {t('common:discard')}
                 </button>
               </>
             )}

@@ -160,7 +160,7 @@ export function ProfileSection({
 
           <div>
             <label className="block text-muted font-medium mb-1">
-              E-Mail-Adresse (Login)
+              {t('settings:profile.emailLogin')}
             </label>
             <input
               type="email"

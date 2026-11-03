@@ -188,7 +188,7 @@ export function MobileListHeader({
         )}
         {openItems.length > 0 && (
           <span className="badge-neutral text-[11px] flex-shrink-0">
-            {openItems.length} offen
+            {t('openCount', { count: openItems.length })}
           </span>
         )}
       </div>

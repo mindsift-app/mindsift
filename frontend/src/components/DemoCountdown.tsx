@@ -34,7 +34,7 @@ export const DemoCountdown: React.FC<DemoCountdownProps> = ({ deadline, minutes,
       className={`font-mono leading-tight text-accent ${className}`}
       title={t('demo.resetEvery', { count: minutes || 20 })}
     >
-      ✨ Demo · {left > 0 ? t('demo.resetIn', { time: fmt(left) }) : t('demo.resetting')}
+      {t('demo.label')} {left > 0 ? t('demo.resetIn', { time: fmt(left) }) : t('demo.resetting')}
     </span>
   );
 };

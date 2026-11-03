@@ -1,0 +1,28 @@
+{
+  "back": "Zurück",
+  "title": "Hilfe & Dokumentation",
+  "subtitle": "Tastaturbedienung, Outliner-Notizen, Triage, Kanban-Board und Zusammenarbeit",
+  "search": "In Hilfe & Kürzeln suchen…",
+  "clearSearch": "Suche leeren",
+  "cat": {
+    "all": "Alle Themen",
+    "workspace": "Workspace & Notizen",
+    "triage": "Schnellerfassung & Triage",
+    "tasks": "Aufgaben & Kanban",
+    "lists": "Geteilte Listen",
+    "collaboration": "Gruppen & Freigaben",
+    "shortcuts": "Tastatur-Kürzel & Gesten"
+  },
+  "reset": "Filter zurücksetzen",
+  "none": "Keine passenden Hilfethemen gefunden",
+  "noneHint": "Versuche einen anderen Suchbegriff oder wechsle zur Kategorie „Alle Themen“.",
+  "shortcutsTitle": "Tastatur-Kürzel & Gesten Gesamtübersicht",
+  "shortcutsIntro": "Schneller arbeiten ohne Maus: Alle Hotkeys und Mobile-Gesten auf einen Blick.",
+  "col": {
+    "key": "Taste / Geste",
+    "scope": "Bereich",
+    "desc": "Funktion"
+  },
+  "results": "Suchergebnisse für <b>„{{query}}“</b>: {{count}} Hilfekarten",
+  "shortcutCount": "{{count}} Tastenkürzel"
+}

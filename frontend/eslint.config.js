@@ -3,6 +3,7 @@ import js from '@eslint/js';
 import globals from 'globals';
 import reactHooks from 'eslint-plugin-react-hooks';
 import tseslint from 'typescript-eslint';
+import i18next from 'eslint-plugin-i18next';
 
 export default tseslint.config(
   { ignores: ['dist', 'node_modules', 'coverage'] },
@@ -20,6 +21,30 @@ export default tseslint.config(
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrors: 'none' }],
       'no-empty': ['error', { allowEmptyCatch: true }],
+    },
+  },
+  // Texts shown to people come from the language files (src/locales); no new fixed text in JSX
+  {
+    files: ['src/**/*.tsx'],
+    ignores: ['src/**/__tests__/**', 'src/features/help/content/**'],
+    plugins: { i18next },
+    rules: {
+      'i18next/no-literal-string': [
+        'error',
+        {
+          mode: 'jsx-text-only',
+          // Names and code that read the same in every language: the product, services, keys, MCP tools,
+          // the demo logins, and anything without letters (symbols, numbers)
+          words: {
+            exclude: [
+              '^\\s*(MindSift|OAuth|Discord|Webhook|Push|Live|Tab|Esc|Enter|⌘K|Hashtags|To-Dos)\\s*$',
+              '^[a-z]+(_[a-z]+)+$',
+              '^(search|admin / admin|user / user)$',
+              '^[^A-Za-zÄÖÜäöüß]*$',
+            ],
+          },
+        },
+      ],
     },
   },
   {

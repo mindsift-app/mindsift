@@ -51,7 +51,8 @@
     "stopRecording": "Aufnahme beenden",
     "voiceInput": "Spracheingabe",
     "dueOptional": "Fällig am (optional)",
-    "submit": "Gedanke erfassen"
+    "submit": "Gedanke erfassen",
+    "textLabel": "Gedanke / Quick Dump"
   },
   "demoReset": "Demo-Instanz wurde zurückgesetzt",
   "sharedQueued": "Im Quick Dump abgelegt",
@@ -76,6 +77,8 @@
   "demo": {
     "resetEvery": "Diese Test-Instanz wird alle {{count}} Minuten automatisch auf den Ausgangszustand zurückgesetzt.",
     "resetIn": "Reset in {{time}}",
-    "resetting": "wird zurückgesetzt…"
-  }
+    "resetting": "wird zurückgesetzt…",
+    "label": "✨ Demo ·"
+  },
+  "connecting": "Verbinde mit MindSift…"
 }

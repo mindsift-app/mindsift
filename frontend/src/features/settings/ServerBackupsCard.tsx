@@ -77,7 +77,7 @@ export const ServerBackupsCard: React.FC = () => {
                     className="btn-action h-11 sm:h-7 px-2.5 text-[11px] inline-flex items-center gap-1"
                   >
                     <Download className="w-3.5 h-3.5" />
-                    Download
+                    {t('common:download')}
                   </button>
                   <button
                     type="button"
@@ -86,7 +86,7 @@ export const ServerBackupsCard: React.FC = () => {
                     className="btn-action h-11 sm:h-7 px-2.5 text-[11px] inline-flex items-center gap-1"
                   >
                     <RotateCcw className="w-3.5 h-3.5 text-accent" />
-                    Wiederherstellen
+                    {t('common:restore')}
                   </button>
                 </div>
               </div>
@@ -121,8 +121,14 @@ export const ServerBackupsCard: React.FC = () => {
                   <SectionPicker value={sections} onChange={setSections} />
                   {result ? (
                     <p className="text-[11px] text-status-ok flex items-center gap-1">
-                      <Check className="w-3.5 h-3.5" /> Wiederhergestellt: {result.notes} Notizen, {result.tasks} Aufgaben, {result.lists} Listen,{' '}
-                      {result.inbox} Gedanken, {result.themes ?? 0} Themes.
+                      <Check className="w-3.5 h-3.5" />{' '}
+                      {t('backups.restored', {
+                        notes: result.notes,
+                        tasks: result.tasks,
+                        lists: result.lists,
+                        inbox: result.inbox,
+                        themes: result.themes ?? 0,
+                      })}
                     </p>
                   ) : (
                     <button

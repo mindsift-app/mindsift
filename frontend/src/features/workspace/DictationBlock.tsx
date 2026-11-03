@@ -107,11 +107,11 @@ export const DictationBlock: React.FC<DictationBlockProps> = ({ onDone, onCancel
             <span className="text-status-err font-normal">{error}</span>
           ) : transcribing ? (
             <>
-              <Loader2 className="w-3.5 h-3.5 animate-spin" /> Wird erkannt…
+              <Loader2 className="w-3.5 h-3.5 animate-spin" /> {t('workspace:media.transcribing')}
             </>
           ) : (
             <>
-              <Square className="w-3 h-3 fill-current" /> Stopp
+              <Square className="w-3 h-3 fill-current" /> {t('workspace:dictation.stopShort')}
             </>
           )}
         </span>

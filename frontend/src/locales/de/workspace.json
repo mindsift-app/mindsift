@@ -11,7 +11,8 @@
     "chooseLanguage": "Sprache auswählen",
     "copied": "Kopiert!",
     "copyTitle": "In die Zwischenablage kopieren",
-    "copy": "Kopieren"
+    "copy": "Kopieren",
+    "plain": "Text"
   },
   "editor": {
     "newNote": "Neue Notiz",
@@ -62,7 +63,8 @@
     "focusShortcut": "Strg+⇧+F",
     "inTrashAction": "Aktion fehlgeschlagen",
     "extracted": "In eigene Notiz „{{title}}“ umgewandelt",
-    "zoomTo": "Zoom zu \"{{title}}\""
+    "zoomTo": "Zoom zu \"{{title}}\"",
+    "focusMode": "Fokus-Modus"
   },
   "slash": {
     "todo": "Aufgabe mit Checkbox",
@@ -156,7 +158,11 @@
     "isolate": "Diesen Ordner isolieren",
     "onlyFolder": "Nur diesen Ordner",
     "filteredBy": "Gefiltert nach Ordner:",
-    "emptyHint": "Tippe in einem beliebigen Dokument <c>/todo</c> oder <c>[] </c> ein."
+    "emptyHint": "Tippe in einem beliebigen Dokument <c>/todo</c> oder <c>[] </c> ein.",
+    "title": "To-Dos aus Notizen ({{count}} offen)",
+    "open": "{{count}} offen",
+    "grouped": "Gruppiert",
+    "list": "Liste"
   },
   "emoji": {
     "suggested": "Zuletzt verwendet",
@@ -193,7 +199,9 @@
     "pickBlockIn": "Punkt in „{{title}}“ wählen",
     "noneFor": "Keine Notiz für \"{{query}}\" gefunden.",
     "notesCount_one": "{{count}} Notiz",
-    "notesCount_other": "{{count}} Notizen"
+    "notesCount_other": "{{count}} Notizen",
+    "textLabel": "Link-Text / Label",
+    "urlLabel": "Web-Adresse (URL) *"
   },
   "close": "Schließen",
   "folder": {
@@ -210,7 +218,8 @@
     "share": "Ordner teilen und Berechtigungen",
     "delete": "Ordner löschen",
     "noNotes": "Noch keine Notizen",
-    "moveToRoot": "Auf Hauptebene verschieben"
+    "moveToRoot": "Auf Hauptebene verschieben",
+    "empty": "Leer"
   },
   "merge": {
     "undone": "Zusammenführen rückgängig gemacht",
@@ -255,7 +264,10 @@
     "latest": "Aktuellste Notiz:",
     "details": "Details",
     "hits": "{{count}} Treffer",
-    "noneFor": "Keine Hashtags für \"{{query}}\" gefunden"
+    "noneFor": "Keine Hashtags für \"{{query}}\" gefunden",
+    "tagCount": "{{count}} Tags",
+    "openTodos": "{{count}} offene To-Dos",
+    "az": "A-Z"
   },
   "emojiPicker": {
     "title": "Icon auswählen",
@@ -292,7 +304,10 @@
     "caption": "Beschriftung hinzufügen…",
     "imageUnavailable": "Bild nicht verfügbar (offline oder gelöscht)",
     "enlarge": "Vergrößern",
-    "closeEsc": "Schließen (Esc)"
+    "closeEsc": "Schließen (Esc)",
+    "saving": "Wird gespeichert…",
+    "uploading": "Wird hochgeladen…",
+    "takePhoto": "Foto aufnehmen"
   },
   "journal": {
     "opening": "{{date}} wird geöffnet…",
@@ -305,7 +320,8 @@
     "open": "Journal öffnen",
     "title": "Journal",
     "calendarTitle": "Kalender",
-    "share": "Teilen"
+    "share": "Teilen",
+    "header": "Journal · {{date}}"
   },
   "dnd": {
     "trashed_one": "Notiz im Papierkorb",
@@ -326,7 +342,8 @@
     "otherNote": "Andere Notiz wählen",
     "unpinBar": "Leiste lösen",
     "pinBar": "Leiste anpinnen",
-    "exitEsc": "Fokus-Modus beenden (Esc)"
+    "exitEsc": "Fokus-Modus beenden (Esc)",
+    "exit": "Beenden"
   },
   "sidebar": {
     "hashtags": "Hashtags (#)",
@@ -342,20 +359,25 @@
   "tags": {
     "allTiles": "Alle Hashtag-Kacheln",
     "overview": "Zur Kachel-Übersicht",
-    "notesFor": "Notizen zu #{{tag}}…"
+    "notesFor": "Notizen zu #{{tag}}…",
+    "noBlocks": "Keine Punkte mit #{{tag}} gefunden.",
+    "note": "Tag-Notiz"
   },
   "preview": {
     "hideTitle": "Vorschau für diesen Link ausblenden",
     "hide": "Vorschau ausblenden"
   },
   "backlinks": {
-    "label": "Rückverweise"
+    "label": "Rückverweise",
+    "title": "Verlinkt auf diese Notiz ({{count}})",
+    "more": "… und {{count}} weitere Stellen"
   },
   "presence": {
     "online": "Gerade online",
     "onlineList": "Gerade online: {{names}}"
   },
   "dictation": {
-    "stop": "Diktat beenden"
+    "stop": "Diktat beenden",
+    "stopShort": "Stopp"
   }
 }

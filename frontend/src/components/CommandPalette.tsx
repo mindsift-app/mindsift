@@ -352,7 +352,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
             onClick={onClose}
             className="sm:hidden px-2 py-1 text-xs font-semibold text-accent"
           >
-            Fertig
+            {t('common:done')}
           </button>
         </div>
 
@@ -563,7 +563,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
           <div className="flex items-center gap-3">
             <span>
               <kbd className="px-1 py-0.5 bg-panel border border-border rounded font-mono text-[10px] text-accent">↑</kbd>{' '}
-              <kbd className="px-1 py-0.5 bg-panel border border-border rounded font-mono text-[10px] text-accent">↓</kbd> Navigieren
+              <kbd className="px-1 py-0.5 bg-panel border border-border rounded font-mono text-[10px] text-accent">↓</kbd> {t('common:palette.navigate')}
             </span>
             <span>
               <kbd className="px-1 py-0.5 bg-panel border border-border rounded font-mono text-[10px] text-accent">↵</kbd> {t('palette.select')}
@@ -577,7 +577,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
           </div>
 
           <div>
-            <span>{flatHits.length} Treffer</span>
+            <span>{t('palette.hits', { count: flatHits.length })}</span>
           </div>
         </div>
       </div>

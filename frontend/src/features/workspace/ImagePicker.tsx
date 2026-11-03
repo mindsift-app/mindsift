@@ -105,7 +105,7 @@ export const ImagePicker: React.FC<ImagePickerProps> = ({ docId, onDone, onCance
 
       {busy ? (
         <div className="flex items-center gap-2 text-xs text-muted py-3">
-          <Loader2 className="w-4 h-4 animate-spin text-accent" /> Wird hochgeladen…
+          <Loader2 className="w-4 h-4 animate-spin text-accent" /> {t('workspace:media.uploading')}
         </div>
       ) : (
         <>
@@ -122,7 +122,7 @@ export const ImagePicker: React.FC<ImagePickerProps> = ({ docId, onDone, onCance
               onClick={() => cameraRef.current?.click()}
               className="btn-secondary h-11 sm:h-8 px-3 text-xs flex items-center justify-center gap-1.5 sm:hidden"
             >
-              <Camera className="w-4 h-4" /> Foto aufnehmen
+              <Camera className="w-4 h-4" /> {t('workspace:media.takePhoto')}
             </button>
             <span className="hidden sm:flex items-center text-[11px] text-faint">
               {t('media.dropHint')}

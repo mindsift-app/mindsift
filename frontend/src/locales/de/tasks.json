@@ -58,7 +58,9 @@
     "edit": "Aufgabe bearbeiten",
     "confirmDelete": "Möchten Sie diese Aufgabe wirklich löschen?",
     "subtasks": "Unteraufgaben ({{done}}/{{total}}):",
-    "created": "Erstellt: {{date}}"
+    "created": "Erstellt: {{date}}",
+    "plusWeek": "+1 Woche",
+    "timeShort": "Uhrzeit"
   },
   "columnsModal": {
     "minOne": "Mindestens eine Spalte muss vorhanden sein.",
@@ -80,7 +82,9 @@
     "doneQuestion": "Sollen Aufgaben in dieser Spalte als erledigt gelten?",
     "reset": "Auf Standard-Spalten zurücksetzen",
     "save": "Spalten speichern",
-    "colorOf": "Farbe der Spalte {{name}}"
+    "colorOf": "Farbe der Spalte {{name}}",
+    "list": "Liste: {{title}}",
+    "active": "Aktive Spalten ({{count}}):"
   },
   "columns": {
     "todo": "Zu erledigen",
@@ -123,7 +127,9 @@
     "columns": "Spalten anpassen",
     "boardNormal": "Board wieder normal breit",
     "boardWide": "Board auf volle Breite strecken",
-    "undoTitle": "Rückgängig (Strg+Z)"
+    "undoTitle": "Rückgängig (Strg+Z)",
+    "subtasksTitle": "{{done}} von {{total}} Unteraufgaben erledigt ({{percent}}%)",
+    "subtasks": "{{done}}/{{total}} Unteraufgaben"
   },
   "allTasks": "Alle Aufgaben",
   "tabs": {
@@ -217,11 +223,14 @@
   "filter": {
     "title": "Filter & Sortierung",
     "byTag": "Nach Hashtags filtern",
-    "reset": "Filter zurücksetzen"
+    "reset": "Filter zurücksetzen",
+    "grouping": "Gruppierung",
+    "sorting": "Sortierung"
   },
   "tags": {
     "showAll": "Alle Hashtags zeigen",
-    "all": "Alle ({{count}})"
+    "all": "Alle ({{count}})",
+    "less": "Weniger"
   },
   "newList": {
     "failed": "Fehler beim Erstellen der Aufgabenliste",

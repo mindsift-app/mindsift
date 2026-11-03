@@ -365,7 +365,9 @@ export function customThemeOption(t: UserTheme): ThemeOption {
     get subtitle() {
       return i18n.t('common:themes.custom');
     },
-    file: 'Eigenes Theme (gespeichert auf dem Server)',
+    get file() {
+      return i18n.t('common:themes.customFile');
+    },
     previewBg: readCssVar(t.css, 'bg-app') || '#121316',
     previewPanel: readCssVar(t.css, 'bg-panel') || '#1a1c20',
     previewAccent: readCssVar(t.css, 'accent-primary') || '#2563eb',
