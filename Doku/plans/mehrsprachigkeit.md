@@ -1,68 +1,74 @@
-# Plan: MindSift mehrsprachig machen
+# Plan: A Multilingual MindSift
 
-Stand 2026-11-03. Ziel: Jeder Nutzer wählt seine Sprache, die ganze Oberfläche und alles, was der Server in seinem Namen schreibt (E-Mails, Push, Tageszusammenfassung, Journal), erscheint darin. Erste weitere Sprache ist **Englisch**; **weitere Sprachen folgen** und sollen ohne Code-Änderung dazukommen können (Beiträge im öffentlichen Repo). Außerdem wird `Doku/` auf Englisch umgestellt.
+As of 2026-11-03. Goal: everyone picks their language, and the whole interface plus everything the server writes on their behalf (emails, push, daily summary, journal) appears in it. Languages offered: **German, English, Spanish, French and Italian**; further languages can be added without code changes (contributions in the public repo). `Doku/` is in English.
 
-## Ausgangslage
+## Status
 
-- Alle Texte stehen fest im Code, auf Deutsch: rund **1.200 Zeilen in 114 Frontend-Dateien** und rund **470 Zeichenketten im Go-Backend** (Fehlermeldungen, E-Mails, Push, Seed- und Hilfe-Notizen).
-- Formate sind fest auf Deutsch: 14 × `'de-DE'`, eigene Wochentags- und Monatslisten (`lib/due.ts`, `api/journal.go`), `HumanDue` mit „Uhr“ (`domain/due.go`), Spracherkennung `recognition.lang = 'de-DE'`, `<html lang="de">`, `manifest.json`.
-- Es gibt keine i18n-Bibliothek und kein Sprachfeld am Nutzer.
-
-## Entscheidungen
-
-Mit dem Nutzer abgestimmt (2026-11-03): bestehende Nutzer bleiben bei Deutsch; weitere Sprachen kommen; der Administrator legt die Standardsprache fest; MCP auf Englisch; `Doku/` wird englisch; das `README.md` bleibt außen vor und wird später gesondert überarbeitet.
-
-| Frage | Entscheidung | Begründung |
+| Step | Content | Status |
 |---|---|---|
-| Bibliothek | **i18next + react-i18next** | Verbreitet, Pluralformen, Platzhalter, Nachladen je Sprache, typisierte Schlüssel. Eigenbau lohnt bei ~1.200 Texten nicht. |
-| Quellsprache | **Deutsch** bleibt Quelle und Rückfallsprache | Die Texte sind auf Deutsch geschrieben und geprüft; Englisch wird daraus übersetzt. |
-| Schlüssel | sprechend und nach Bereich: `tasks.detail.saveAndClose` | Lesbar im Code, Konflikte unwahrscheinlich. |
-| Dateien | `frontend/src/locales/<sprache>/<bereich>.json` (Namespaces wie `features/`) | Übersetzer arbeiten ohne Code; Deutsch wird mitgebündelt, andere Sprachen erst bei Bedarf geladen. |
-| Sprachwahl | Feld `language` am Nutzer; ohne Wahl die Browsersprache (wenn es sie gibt), sonst die Standardsprache der Instanz | Vor der Anmeldung (Login, Registrierung) zählt ebenso die Browsersprache, dann die Standardsprache. |
-| Bestehende Nutzer | Die Migration setzt `language = 'de'` für alle vorhandenen Konten | Für sie ändert sich nichts, auch wenn ihr Browser englisch ist. |
-| Standardsprache | Der Administrator stellt sie in den Admin-Einstellungen ein (gespeichert in der Datenbank wie die übrigen Instanz-Einstellungen); `DEFAULT_LANGUAGE` gibt nur den Startwert für neue Installationen vor (Vorgabe `de`) | Gilt für neue Konten ohne passende Browsersprache, für Demo- und Seed-Daten und für E-Mails an Adressen ohne Konto. |
-| Backend | eigener kleiner Katalog `internal/i18n` (Go-Maps je Sprache, `T(lang, key, args)`) | Wenige Dutzend Texte, keine Abhängigkeit nötig. |
-| API-Fehler | Antwort bekommt zusätzlich einen festen `code`; die Oberfläche übersetzt anhand des Codes, `message` bleibt als Rückfall | Fehler entstehen oft ohne Nutzerbezug (z. B. vor dem Login). |
-| MCP | Werkzeugbeschreibungen und Fehlermeldungen für Agenten **auf Englisch**, unabhängig vom Nutzer | Agenten verstehen Englisch am zuverlässigsten; Inhalte des Nutzers bleiben unverändert. |
-| Doku | `Doku/` wird auf Englisch umgestellt (einmalige Übersetzung, danach wird nur noch englisch geschrieben) | Öffentliches Repo, Beiträge aus anderen Sprachen. Das `README.md` bleibt vorerst deutsch. |
-| Nicht übersetzt | Inhalte der Nutzer (Notizen, Aufgaben, Hashtags), gespeicherte Journal-Titel | Journal-Titel entstehen beim Anlegen in der Sprache des Nutzers und bleiben dann, wie sie sind. |
+| 1 | Groundwork: i18next, `users.language`, admin default language | done (v0.73.0) |
+| 2 | Move all interface texts into language files | done (v0.73.1–v0.73.6) |
+| 3 | English in the interface | done (v0.74.0) |
+| 4 | Backend in English: emails, push, daily summary, journal, due dates, default columns, error codes, MCP in English | next (Claude) |
+| 5 | Demo and help notes per language, `manifest.json` per language, guide "adding a language" | mechanism by Claude, content by Gemini |
+| 6 | Spanish, French, Italian (interface, help, backend catalog, demo content) | Gemini, after step 4 |
 
-## Was alles betroffen ist
+## Decisions
 
-**Frontend**
-- Alle sichtbaren Texte, `aria-label`, `title`, Platzhalter, Bestätigungen, Toasts.
-- Zahlen mit Mehrzahl („1 Aufgabe“ / „3 Aufgaben“) über i18next-Pluralformen statt eigener Bedingungen.
-- Datum und Uhrzeit: ein zentrales `lib/format.ts` auf Basis von `Intl.DateTimeFormat` mit der aktuellen Sprache; `WEEKDAYS` in `lib/due.ts` und alle `'de-DE'` entfallen. Wochenbeginn bleibt Montag (später ggf. aus der Sprache).
-- Spracherkennung (`useVoiceInput.ts`) nimmt die Nutzersprache.
-- `<html lang>` wird zur Laufzeit gesetzt.
-- Eingebaute Themes und Kanban-Standardspalten: Namen über Schlüssel statt gespeicherter deutscher Texte (eigene Namen der Nutzer bleiben).
-- Hilfe-Ansicht (`HelpView.tsx`, ~1.000 Zeilen) ist vor allem Fließtext: je Sprache eine eigene Markdown-Datei statt vieler einzelner Schlüssel.
+Agreed with the user on 2026-11-03: existing users stay on German; more languages follow (es, fr, it); the admin sets the default language; MCP texts are English; `Doku/` is English; the `README.md` is left out and revised separately later.
 
-**Backend**
-- E-Mails (`mailtemplate.go`, Passwort zurücksetzen, Registrierung), Push und Tageszusammenfassung (`notify.go`, `alarms.go`): Sprache des Empfängers.
-- `HumanDue` und `journalTitle`: Format je Sprache.
-- Seed-Daten: Hilfe-Notizen (`seed_help.go`) und Demo-Daten (`seed.go`, `demo.go`) je Sprache; die Demo nimmt den Instanz-Standard.
-- `manifest.json` (Name, Verknüpfungen): vom Server je nach `Accept-Language` ausgeliefert. Android übernimmt Änderungen erst beim nächsten App-Update.
+| Question | Decision | Reason |
+|---|---|---|
+| Library | **i18next + react-i18next** | Widely used, plurals, placeholders, loading per language. |
+| Source language | **German** stays the source and fallback | The texts were written and checked in German. |
+| Keys | descriptive, by area: `tasks.detail.saveAndClose` | Readable in the code. |
+| Files | `frontend/src/locales/<lang>/<area>.json` (namespaces like `features/`) | Translators work without code; German is bundled, other languages load on first use. |
+| Key check | a test instead of TypeScript types | The project compiles without `strictNullChecks`, where i18next cannot type its keys. The test checks that every `t('…')` exists and that every language has the German keys and placeholders (plural forms may differ). |
+| Fixed text | ESLint rule `i18next/no-literal-string` (JSX text) | Keeps new hard-coded text out; names like MindSift, OAuth, Discord, keys and MCP tool names are excluded. |
+| Help | one content file per language (`features/help/content/<lang>.tsx`) instead of Markdown | Keeps the help's layout exactly as it is; translators copy one file. |
+| Language choice | `language` per user; without a choice the browser language (if supported), else the server's default | Before signing in, the browser language and then the default apply as well. |
+| Existing users | migration sets `language = 'de'` for all existing accounts | Nothing changes for them. |
+| Default language | admin setting (system settings); `DEFAULT_LANGUAGE` only gives the start value (default `de`) | Applies to new accounts without a matching browser language, demo and seed data, emails to addresses without an account. |
+| Backend | small catalog `internal/i18n` (Go maps per language, `T(lang, key, args)`) | A few dozen texts, no dependency needed. |
+| API errors | responses get a fixed `code` in addition; the interface translates by code, `message` stays as fallback | Errors often happen without a known user (e.g. before signing in). |
+| MCP | tool descriptions and agent-facing errors **in English**, regardless of the user | Agents understand English most reliably; user content stays unchanged. |
+| Slash commands | names stay (`/diktat` included) and keep their German search aliases | Aliases per language can be added later. |
+| Not translated | user content (notes, tasks, hashtags), stored journal titles | Journal titles are created in the user's language and stay as they are. |
 
-## Umsetzung in Schritten
+## What is affected
 
-Jeder Schritt ist ein eigenes Release. Die Schritte 1 und 2 sind reine Umbauten ohne sichtbare Änderung; als Sicherheitsnetz dient wie beim Aufteilen des Frontends `e2e/refshots.sh`: alle deutschen Screenshots müssen danach gleich aussehen.
+**Frontend** (done in steps 1–3): all visible texts, `aria-label`, `title`, placeholders, confirmations, toasts; plurals via i18next; dates via `lib/format.ts`; voice recognition and `<html lang>` follow the language; built-in theme and default column names via keys.
 
-1. **Grundgerüst** (Patch): i18next einbinden, `lib/format.ts`, Feld `language` am Nutzer (Migration setzt vorhandene Konten auf `de`, `GET/PUT /me`), Standardsprache in den Admin-Einstellungen, Sprachwahl in den Kontoeinstellungen, vorerst nur mit Deutsch. Test, dass jede Sprachdatei dieselben Schlüssel hat wie Deutsch.
-2. **Texte herausziehen** (mehrere Patches, Bereich für Bereich wie die `features/`-Ordner): `app/`, `workspace/`, Aufgaben, Listen, Triage, Einstellungen, Auth, Hilfe. Danach eine ESLint-Regel gegen neue feste Texte in JSX (`i18next/no-literal-string`), damit nichts Neues hart codiert dazukommt.
-3. **Englisch** (Minor): englische Sprachdateien, Auswahl freigeschaltet, zweiter Satz Referenz-Screenshots auf Englisch (vor allem für die Handy-Ansichten: englische Texte sind oft kürzer, deutsche länger; Umbrüche prüfen).
-4. **Backend** (Patch oder Minor): `internal/i18n`, Fehlercodes in den API-Antworten, E-Mails, Push, Tageszusammenfassung, Journal, `HumanDue`, MCP auf Englisch. Zeitabhängige Tests wie gehabt mit mehreren `TZ` laufen lassen.
-5. **Seed, Hilfe, Manifest**: Hilfe-Notizen und Demo-Daten auf Englisch, Manifest je Sprache, `Doku/i18n.md` mit der Anleitung „neue Sprache hinzufügen“ für Beiträge im öffentlichen Repo.
+**Backend** (step 4)
+- Emails (`mailtemplate.go`, password reset, registration), push and daily summary (`notify.go`, `alarms.go`): in the recipient's language.
+- `HumanDue` and `journalTitle`: format per language.
+- Default columns of new task lists (`storage/tasklists.go`): in the creator's language.
+- API errors: a stable `code` per error; the frontend shows the translated text, the server's `message` stays as fallback. Then the login check for unconfirmed emails no longer matches the German text.
+- MCP: descriptions and errors in English.
+- Export folder names (`Aufgaben/`, `Listen/` in the Markdown archive): per language.
 
-## Aufwand und Risiken
+**Seed and manifest** (step 5)
+- Help notes (`seed_help.go`) and demo data (`seed.go`, `demo.go`) per language; the demo uses the default language.
+- `manifest.json` (name, shortcuts): served per `Accept-Language`. Android applies changes only with its next app update.
 
-- **Aufwand: groß.** Der größte Teil ist Schritt 2 (Fleißarbeit, aber mechanisch); Schritt 4 ist mittel.
-- **Risiko Regression:** gering dank Referenz-Screenshots; größte Gefahr sind vergessene Texte (die Schlüsselprüfung und die ESLint-Regel fangen das auf).
-- **Risiko Layout:** längere Übersetzungen sprengen Schaltflächen am Handy. Wird mit dem englischen Screenshot-Satz geprüft.
-- **Laufender Betrieb:** Bestehende Nutzer bekommen `language = 'de'` und sehen weiter Deutsch, bis sie selbst umstellen.
-- **Weitere Sprachen:** Von Anfang an so gebaut, dass eine Sprache nur aus Sprachdateien (Frontend und `internal/i18n`) plus Hilfe-Markdown besteht; Sprachen mit anderen Pluralregeln (z. B. Polnisch) deckt i18next ab. Rechts-nach-links-Schrift ist nicht vorgesehen.
+## Steps
 
-## Nicht Teil dieses Plans
+Every step is a release of its own. Steps 1 and 2 changed nothing visible; the German reference screenshots (`e2e/refshots.sh`) stayed identical. `e2e/enshots.mjs` takes English screenshots for checking translations and line breaks.
 
-- `README.md`: wird später gesondert überarbeitet.
-- Übersetzung von `Doku/` ins Englische: läuft getrennt auf einem eigenen Branch und wird danach gemergt; danach gilt für neue Doku Englisch.
+1. **Groundwork** (done): i18next, `lib/format.ts`, `users.language`, admin default language, language choice in the account settings.
+2. **Extract texts** (done): area by area, then the ESLint rule.
+3. **English** (done): English language files and help, loaded on demand, English screenshots.
+4. **Backend**: `internal/i18n` catalog, error codes, emails, push, daily summary, journal, `HumanDue`, default columns, MCP in English. Run time-dependent tests with several `TZ` values as usual.
+5. **Seed, help, manifest**: seed data per language (mechanism by Claude, English content by Gemini), manifest per language, `Doku/i18n.md` with the guide "adding a language".
+6. **Spanish, French, Italian** (Gemini): locale files, help content, backend catalog and demo content per language; codes added to `LANGUAGES` and `Supported`.
+
+## Effort and risks
+
+- **Regressions:** low thanks to reference screenshots; forgotten texts are caught by the key test and the ESLint rule.
+- **Layout:** longer translations can break buttons on phones; check with `e2e/enshots.mjs` (adapted per language).
+- **Running instances:** existing users have `language = 'de'` and keep German until they change it.
+- **More languages:** a language consists of locale files, a help file, a backend catalog and demo content; plural rules of other languages are covered by i18next. Right-to-left scripts are not planned.
+
+## Not part of this plan
+
+- `README.md`: revised separately later.

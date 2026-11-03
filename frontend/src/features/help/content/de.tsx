@@ -483,7 +483,7 @@ const de: HelpContent = {
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
           <p>
-            MindSift hat eine API. Unter <em className="text-main">Kontoeinstellungen → API</em> erzeugst du persönliche Schlüssel und legst mit Schaltern fest, was jeder darf: Aufgaben lesen, anlegen oder ändern, Listen lesen, ergänzen oder ändern und Gedanken in die Inbox liefern. Diese Rechte gelten für beide Zugänge gleich. Notizen und Einstellungen erreicht ein Schlüssel nie.
+            MindSift hat eine API. Unter <em className="text-main">Kontoeinstellungen → API</em> erzeugst du persönliche Schlüssel und legst mit Schaltern fest, was jeder darf: Aufgaben, Listen, Notizen und die Inbox jeweils lesen, anlegen oder ändern. Diese Rechte gelten für beide Zugänge gleich; Notizen sowie Lesen und Sortieren der Inbox gibt es nur über MCP. Einstellungen erreicht ein Schlüssel nie.
           </p>
           <p>
             <strong className="text-main">curl und Smart Home:</strong> Mit Leserecht liefert z. B. <code className="text-accent bg-panel px-1 py-0.5 rounded font-mono">GET /api/v1/tasks?due=today&amp;status=open</code> alles, was heute ansteht, etwa für einen Home-Assistant-Sensor. Weitere Filter: <code className="font-mono">due=overdue</code>, ein Datum, <code className="font-mono">taskListId</code>. Listen kommen über <code className="font-mono">GET /api/v1/lists</code>. Mit Änderungsrecht hakst du per <code className="font-mono">PATCH /api/v1/thoughts/ID</code> ab. Die Einstellungen zeigen fertige Beispiele.
@@ -492,7 +492,7 @@ const de: HelpContent = {
             <strong className="text-main">Einliefern:</strong> <code className="text-accent bg-panel px-1 py-0.5 rounded font-mono">POST /api/v1/webhooks/ingest</code> nimmt Gedanken aus iOS-Kurzbefehlen, Home Assistant oder n8n an. Mit dem Feld <code className="font-mono">"target"</code> wählst du das Ziel: <code className="font-mono">triage</code> (Standard), <code className="font-mono">task</code> (optional mit <code className="font-mono">taskListId</code>) oder <code className="font-mono">list_item</code> (mit <code className="font-mono">listId</code>).
           </p>
           <p>
-            <strong className="text-main">KI-Agenten:</strong> Über MCP (<code className="text-accent bg-panel px-1 py-0.5 rounded font-mono">POST /api/v1/mcp</code>) lesen, anlegen, ändern, abhaken und löschen Claude Code, OpenAI Codex, Claude Desktop, Cursor und eigene Agenten deine Aufgaben und Listen. Die Einstellungen zeigen den fertigen Befehl für jeden Agenten; ein Agent sieht nur die Werkzeuge, die der Schlüssel erlaubt.
+            <strong className="text-main">KI-Agenten:</strong> Über MCP (<code className="text-accent bg-panel px-1 py-0.5 rounded font-mono">POST /api/v1/mcp</code>) lesen, anlegen, ändern, abhaken und löschen Claude Code, OpenAI Codex, Claude Desktop, Cursor und eigene Agenten deine Aufgaben, Listen und Notizen und sortieren die Inbox. Die Einstellungen zeigen den fertigen Befehl für jeden Agenten; ein Agent sieht nur die Werkzeuge, die der Schlüssel erlaubt.
           </p>
           <p>
             <strong className="text-main">Herkunft:</strong> Was ein Schlüssel anlegt oder ändert, trägt dauerhaft eine Badge mit seinem Namen, vorne ein Webhook-Symbol (API) oder ein Roboter (MCP). Fährst du darüber oder tippst darauf, siehst du, wer wann angelegt und zuletzt geändert hat.

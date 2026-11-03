@@ -79,6 +79,7 @@ The frontend is embedded into the binary via `go:embed` ([cmd/server/main.go](..
 | `MEDIA_MAX_IMAGE_MB`, `MEDIA_MAX_AUDIO_MB` | `15` / `50` | Maximum image and audio file size in notes in MB |
 | `MEDIA_QUOTA_MB` | `0` | Storage quota for media per user in MB (`0` = unlimited) |
 | `MEDIA_DEMO_MAX_MB` | `3` | Demo mode only: maximum file size for media uploads in MB |
+| `DEFAULT_LANGUAGE` | `de` | Start value of the server's default language (sign-in screen, new accounts, browsers in other languages) until an admin picks one in Administration → Server & Isolation |
 | `MCP_ENABLED` | empty | `false` disables `/api/v1/mcp` (returns `404`, even unauthenticated) and thus OAuth; `true` keeps it permanently enabled. Empty: toggle "Allow AI agents (MCP)" in Administration → Server & Isolation (default: enabled) |
 | `RETENTION_ALLOW_NEVER` | empty | `false` prohibits "never" in retention policies (Account Settings → Retention); users who had selected "never" will fall back to the section default. `true` permanently allows it. Empty: toggle in Administration → Server & Isolation (default: allowed) |
 | `STT_URL` | empty | Dedicated speech-to-text: base URL of an OpenAI-compatible Whisper server (e.g. `http://whisper:8000`, speaches). When set = server mode, otherwise browser speech recognition; always browser in demo mode |
@@ -106,6 +107,12 @@ Note: `DATABASE_URL` with `postgres…` causes the default path in `DATA_DIR` to
 - **OAuth for MCP** (`internal/api/oauth.go`, `internal/storage/oauth.go`): MindSift acts as its own OAuth server using `BASE_URL` for `/api/v1/mcp` (RFC 9728/8414 discovery, dynamic client registration, code flow with PKCE S256, rotating refresh tokens), allowing claude.ai and ChatGPT to connect. The consent screen is part of the app (`/oauth/authorize`, `OAuthConsentView`), as authentication state resides in `localStorage`. Consent creates an entry in `api_keys` (`kind = 'oauth'`); tokens (`mindsift_oat_`/`mindsift_ort_`) are linked to it and valid only at the MCP endpoint, sharing the same permissions and provenance as API keys. Expired tokens and idle connections (`OAUTH_IDLE_DAYS`) are cleaned up by the hourly background job. Disabled in demo mode and when MCP is turned off (`MCP_ENABLED` or admin toggle).
 - **Forgot password:** Available only when SMTP and `BASE_URL` are configured (disabled in demo mode; `passwordReset` in `/auth/status`). `POST /auth/forgot-password` returns a uniform response and dispatches the email in the background, rate-limited to once every 2 minutes per account. The link `BASE_URL/?resetToken=…` is single-use and valid for one hour; only its SHA-256 hash is stored (`password_reset_tokens`). `POST /auth/reset-password` updates the password, invalidates all pending reset links for the account, and increments `token_version` (terminating all sessions). The app immediately strips the token from the URL bar.
 - **Registration:** Permitted only with an invitation code or when `allow_registration` is enabled. The first account is created via `/auth/setup` and becomes administrator.
+
+## Languages
+
+- **Frontend:** i18next (`frontend/src/i18n`). Texts live in `frontend/src/locales/<code>/<area>.json`; German is bundled and the fallback, other languages load on first use. The help is one content file per language (`features/help/content/<code>.tsx`). Dates, times and sorting go through `lib/format.ts`. A test checks that every language has the German keys and placeholders and that every `t('…')` in the code exists; the ESLint rule `i18next/no-literal-string` rejects fixed text in JSX.
+- **Language choice:** `users.language` (empty = browser, then default language; accounts from before the choice are `de`), the admin's `default_language` system setting, `DEFAULT_LANGUAGE` as start value. `internal/i18n` lists the supported codes and matches `Accept-Language`.
+- **Adding a language:** locale files and help content for the code, an entry in `LANGUAGES` (`frontend/src/i18n/index.ts`) with a loader, and the code in `Supported` (`internal/i18n/i18n.go`).
 
 ## Media in Notes
 
