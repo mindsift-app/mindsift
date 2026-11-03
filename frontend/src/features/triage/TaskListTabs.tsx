@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 import { Columns, LayoutList, Plus, Trash2, Users } from 'lucide-react';
 import { AvatarStack } from '../../components/AvatarStack';
 import { CountBadge } from '../../components/CountBadge';
@@ -46,6 +47,7 @@ export function TaskListTabs({
   viewMode,
   tasks,
 }: TaskListTabsProps) {
+  const { t } = useTranslation('tasks');
   const { dragOverListTab, draggingTaskId, handleDropOnListTab, setDragOverListTab } = drag;
   const [pendingDelete, setPendingDelete] = useState<{ list: TaskList; x: number; y: number } | null>(null);
 
@@ -63,7 +65,7 @@ export function TaskListTabs({
         >
           {/* Counter on the label, like in the nav bar */}
           <span className="inline-flex items-center">
-            Alle Aufgaben
+            {t('allTasks')}
             <CountBadge count={openTasksCount} position="text" />
           </span>
         </button>
@@ -113,7 +115,7 @@ export function TaskListTabs({
                   );
                 }
                 return (
-                  <span title="Geteilt mit Team oder Benutzern">
+                  <span title={t('tabs.shared')}>
                     <Users className="w-2.5 h-2.5 text-accent ml-0.5" />
                   </span>
                 );
@@ -122,8 +124,8 @@ export function TaskListTabs({
             {/* Delete: only on the open list; it grows in and out when switching lists */}
             <button
               onClick={(e) => setPendingDelete({ list: tl, x: e.clientX, y: e.clientY })}
-              title="Liste löschen"
-              aria-label="Liste löschen"
+              title={t('tabs.deleteList')}
+              aria-label={t('tabs.deleteList')}
               tabIndex={selectedListId === tl.id ? 0 : -1}
               aria-hidden={selectedListId !== tl.id}
               className={`h-6 text-faint hover:text-status-err hover:bg-status-err/10 rounded-btn flex items-center justify-center overflow-hidden cursor-pointer transition-[width,opacity,color,background-color] duration-200 ${
@@ -138,10 +140,10 @@ export function TaskListTabs({
         <button
           onClick={() => setShowNewListModal(true)}
           className="h-8 px-2.5 bg-canvas hover:bg-panel border border-border border-dashed rounded-btn text-xs text-muted hover:text-main flex items-center gap-1 transition-colors"
-          title="Neue Aufgabenliste anlegen"
+          title={t('tabs.newListTitle')}
         >
           <Plus className="w-3.5 h-3.5" />
-          <span>Neue Liste</span>
+          <span>{t('tabs.newList')}</span>
         </button>
       </div>
 
@@ -156,7 +158,7 @@ export function TaskListTabs({
             : (currentSelectedList.members?.filter((m) => m.userId !== listOwnerId).length || 0);
           const isShared = sharesCount > 0 || ((currentSelectedList.members?.length || 0) > 1);
           const ownerMember = currentSelectedList.members?.find((m) => m.role === 'owner' || m.userId === listOwnerId);
-          const ownerDisplayName = currentSelectedList.ownerName || ownerMember?.displayName || ownerMember?.email || 'Eigentümer';
+          const ownerDisplayName = currentSelectedList.ownerName || ownerMember?.displayName || ownerMember?.email || t('tabs.owner');
 
           return (
             <div className="flex items-center gap-1.5">
@@ -166,20 +168,20 @@ export function TaskListTabs({
                     type="button"
                     onClick={() => handleOpenShareModal(currentSelectedList)}
                     className="px-2 py-0.5 rounded text-[10px] font-semibold bg-accent/15 text-accent border border-accent/30 flex items-center gap-1 hover:bg-accent/25 hover:border-accent/50 transition-colors cursor-pointer"
-                    title="Teilen-Menü öffnen: Geteilt mit Nutzern/Gruppen anzeigen & verwalten"
+                    title={t('tabs.shareMenu')}
                   >
                     <Users className="w-2.5 h-2.5" />
-                    <span>Geteilt ({sharesCount > 0 ? sharesCount : currentSelectedList.members?.length || 1})</span>
+                    <span>{t('tabs.sharedCount', { count: sharesCount > 0 ? sharesCount : currentSelectedList.members?.length || 1 })}</span>
                   </button>
                 ) : (
                   <button
                     type="button"
                     onClick={() => handleOpenShareModal(currentSelectedList)}
                     className="px-2 py-0.5 rounded text-[10px] font-medium border border-border text-muted flex items-center gap-1 bg-surface-subtle hover:bg-panel-elevated hover:text-main transition-colors cursor-pointer"
-                    title="Teilen & Berechtigungen öffnen"
+                    title={t('tabs.shareOpen')}
                   >
                     <Users className="w-2.5 h-2.5" />
-                    <span>Geteilt von {ownerDisplayName}</span>
+                    <span>{t('tabs.sharedBy', { name: ownerDisplayName })}</span>
                   </button>
                 )
               )}
@@ -189,7 +191,7 @@ export function TaskListTabs({
                 type="button"
                 onClick={() => handleOpenShareModal(currentSelectedList)}
                 className="btn-icon"
-                title="Aufgabenliste teilen und Berechtigungen"
+                title={t('tabs.shareTitle')}
               >
                 <Users className="w-3.5 h-3.5" />
               </button>
@@ -205,10 +207,10 @@ export function TaskListTabs({
             className={`h-8 px-2.5 flex items-center gap-1.5 text-xs transition-colors border-r border-border ${
               viewMode === 'list' ? 'bg-panel text-main font-medium' : 'text-muted hover:text-main'
             }`}
-            title="Listenansicht"
+            title={t('tabs.listView')}
           >
             <LayoutList className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Liste</span>
+            <span className="hidden sm:inline">{t('tabs.list')}</span>
           </button>
           <button
             onClick={() => setViewMode('kanban')}
@@ -217,10 +219,10 @@ export function TaskListTabs({
                 ? 'bg-panel text-main font-medium'
                 : 'text-muted hover:text-main'
             }`}
-            title="Kanban-Board"
+            title={t('tabs.kanbanView')}
           >
             <Columns className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Kanban</span>
+            <span className="hidden sm:inline">{t('tabs.kanban')}</span>
           </button>
         </div>
       </div>
@@ -229,11 +231,9 @@ export function TaskListTabs({
           x={pendingDelete.x}
           y={pendingDelete.y}
           danger
-          confirmLabel="Löschen"
+          confirmLabel={t('common:delete')}
           message={
-            <>
-              Aufgabenliste <strong>„{pendingDelete.list.title}“</strong> löschen? Die Aufgaben bleiben erhalten.
-            </>
+            <Trans t={t} i18nKey="tabs.confirmDelete" values={{ title: pendingDelete.list.title }} components={{ b: <strong /> }} />
           }
           onCancel={() => setPendingDelete(null)}
           onConfirm={() => {

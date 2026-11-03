@@ -1,4 +1,5 @@
 import React from 'react';
+import i18n from '../../i18n';
 import { api, triggerHaptic } from '../../lib/api';
 import { KanbanColumn, Recurrence, SubTask, TaskList, Thought, TrashedTask } from '../../lib/types';
 import { UndoEntry } from './useTaskUndo';
@@ -207,7 +208,7 @@ export function useTaskActions({
     triggerHaptic(20);
     await api.deleteThought(id);
     pushUndo({ kind: 'delete', ids: [id] });
-    showToast('Aufgabe im Papierkorb', true);
+    showToast(i18n.t('tasks:actions.trashed', { count: 1 }), true);
     await loadData();
     onRefreshStats();
   };
@@ -232,15 +233,18 @@ export function useTaskActions({
     await api.clearDoneTasks(selectedListId === 'all' ? '' : selectedListId);
     if (ids.length > 0) {
       pushUndo({ kind: 'delete', ids });
-      showToast(ids.length === 1 ? 'Aufgabe im Papierkorb' : `${ids.length} Aufgaben im Papierkorb`, true);
+      showToast(i18n.t('tasks:actions.trashed', { count: ids.length }), true);
     }
     await loadData();
     onRefreshStats();
   };
 
   const handleEmptyTaskTrash = async () => {
-    const scope = selectedListId === 'all' ? 'aller Listen, die du bearbeiten darfst,' : `von „${currentSelectedList?.title || 'dieser Liste'}“`;
-    if (!window.confirm(`Den Papierkorb ${scope} endgültig leeren?`)) return;
+    const message =
+      selectedListId === 'all'
+        ? i18n.t('tasks:actions.confirmEmptyAll')
+        : i18n.t('tasks:actions.confirmEmptyList', { title: currentSelectedList?.title || i18n.t('tasks:actions.thisList') });
+    if (!window.confirm(message)) return;
     triggerHaptic(20);
     await api.emptyTaskTrash(selectedListId === 'all' ? '' : selectedListId);
     await loadData();

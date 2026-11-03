@@ -1,13 +1,7 @@
 import { Filter, X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { GROUP_LABELS, GroupBy, TaskSort } from './taskViewTypes';
 
-const SORT_LABELS: Record<string, string> = {
-  custom: 'Manuell',
-  created: 'Erstelldatum',
-  due: 'Fälligkeitsdatum',
-  priority: 'Priorität',
-  alpha: 'Alphabetisch',
-};
 
 interface ActiveFilterBannerProps {
   selectedTag: string | null;
@@ -22,6 +16,7 @@ interface ActiveFilterBannerProps {
 // Phone: what filters the task list right now (hashtag, grouping, sorting), each removable, plus "Zurücksetzen";
 // hidden while nothing deviates from the defaults
 export function ActiveFilterBanner({ selectedTag, setSelectedTag, groupBy, defaultGroupBy, setGroupBy, sortBy, setSortBy }: ActiveFilterBannerProps) {
+  const { t } = useTranslation('tasks');
   if (!(selectedTag || groupBy !== defaultGroupBy || sortBy !== 'custom')) return null;
   return (
     <div className="flex sm:hidden items-center justify-between gap-2 p-2 rounded-btn bg-accent/10 border border-accent/20 text-xs">
@@ -41,12 +36,12 @@ export function ActiveFilterBanner({ selectedTag, setSelectedTag, groupBy, defau
         )}
         {groupBy !== defaultGroupBy && (
           <span className="text-muted text-[11px]">
-            Gruppe: <strong className="text-main">{GROUP_LABELS[groupBy]}</strong>
+            {t('banner.group')} <strong className="text-main">{GROUP_LABELS[groupBy]}</strong>
           </span>
         )}
         {sortBy !== 'custom' && (
           <span className="text-muted text-[11px]">
-            Sortiert: <strong className="text-main">{SORT_LABELS[sortBy]}</strong>
+            {t('banner.sorted')} <strong className="text-main">{t(`sortShort.${sortBy}`)}</strong>
           </span>
         )}
       </div>
@@ -59,7 +54,7 @@ export function ActiveFilterBanner({ selectedTag, setSelectedTag, groupBy, defau
         }}
         className="text-accent text-[11px] font-semibold flex-shrink-0 hover:underline cursor-pointer"
       >
-        Zurücksetzen
+        {t('banner.reset')}
       </button>
     </div>
   );

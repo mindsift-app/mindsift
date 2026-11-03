@@ -1,3 +1,4 @@
+import i18n from '../../i18n';
 import { KanbanColumn, TaskList, Thought } from '../../lib/types';
 import { isDueToday, isOverdue, localDay, splitDue } from '../../lib/due';
 import { GroupBy, TaskFilter, TaskSort } from './taskViewTypes';
@@ -78,7 +79,7 @@ export function groupTasks(tasks: Thought[], groupBy: GroupBy, { lists, boardCol
       byList.get(key)!.push(t);
     }
     const without = byList.get('') || [];
-    if (without.length > 0) groups.push({ key: 'list:none', title: 'Ohne Liste', count: without.length, tasks: without });
+    if (without.length > 0) groups.push({ key: 'list:none', title: i18n.t('tasks:listing.noList'), count: without.length, tasks: without });
     for (const tl of lists) {
       const list = byList.get(tl.id);
       if (!list || list.length === 0) continue;
@@ -86,7 +87,7 @@ export function groupTasks(tasks: Thought[], groupBy: GroupBy, { lists, boardCol
       byList.delete(tl.id);
     }
     byList.delete('');
-    byList.forEach((list, id) => groups.push({ key: `list:${id}`, title: 'Andere Liste', count: list.length, tasks: list }));
+    byList.forEach((list, id) => groups.push({ key: `list:${id}`, title: i18n.t('tasks:listing.otherList'), count: list.length, tasks: list }));
   } else if (groupBy === 'tag') {
     const map = new Map<string, Thought[]>();
     const withoutTag: Thought[] = [];
@@ -105,7 +106,7 @@ export function groupTasks(tasks: Thought[], groupBy: GroupBy, { lists, boardCol
       groups.push({ key: `tag:${tg}`, title: `#${tg}`, count: list.length, tasks: list });
     });
     if (withoutTag.length > 0) {
-      groups.push({ key: 'tag:none', title: 'Ohne Hashtag', count: withoutTag.length, tasks: withoutTag });
+      groups.push({ key: 'tag:none', title: i18n.t('tasks:listing.noTag'), count: withoutTag.length, tasks: withoutTag });
     }
   } else if (groupBy === 'status') {
     boardColumns.forEach((col) => {
@@ -116,19 +117,19 @@ export function groupTasks(tasks: Thought[], groupBy: GroupBy, { lists, boardCol
     const urgent = tasks.filter((t) => t.priority === 'urgent');
     const high = tasks.filter((t) => t.priority === 'high');
     const normal = tasks.filter((t) => t.priority !== 'urgent' && t.priority !== 'high');
-    if (urgent.length > 0) groups.push({ key: 'p:urgent', title: '🔥 Dringend', count: urgent.length, tasks: urgent });
-    if (high.length > 0) groups.push({ key: 'p:high', title: '⚠️ Wichtig', count: high.length, tasks: high });
-    if (normal.length > 0) groups.push({ key: 'p:normal', title: 'Normal', count: normal.length, tasks: normal });
+    if (urgent.length > 0) groups.push({ key: 'p:urgent', title: i18n.t('tasks:listing.urgent'), count: urgent.length, tasks: urgent });
+    if (high.length > 0) groups.push({ key: 'p:high', title: i18n.t('tasks:listing.high'), count: high.length, tasks: high });
+    if (normal.length > 0) groups.push({ key: 'p:normal', title: i18n.t('common:priority.normal'), count: normal.length, tasks: normal });
   } else if (groupBy === 'due') {
       const today = localDay(now);
     const overdue = tasks.filter((t) => isOverdue(t.dueDate, now));
     const dueToday = tasks.filter((t) => isDueToday(t.dueDate, now) && !isOverdue(t.dueDate, now));
     const upcoming = tasks.filter((t) => t.dueDate && splitDue(t.dueDate).date > today);
     const noDue = tasks.filter((t) => !t.dueDate);
-    if (overdue.length > 0) groups.push({ key: 'due:overdue', title: '⚠️ Überfällig', count: overdue.length, tasks: overdue });
-    if (dueToday.length > 0) groups.push({ key: 'due:today', title: '📅 Heute fällig', count: dueToday.length, tasks: dueToday });
-    if (upcoming.length > 0) groups.push({ key: 'due:upcoming', title: 'Demnächst', count: upcoming.length, tasks: upcoming });
-    if (noDue.length > 0) groups.push({ key: 'due:none', title: 'Ohne Fälligkeitsdatum', count: noDue.length, tasks: noDue });
+    if (overdue.length > 0) groups.push({ key: 'due:overdue', title: i18n.t('tasks:listing.overdue'), count: overdue.length, tasks: overdue });
+    if (dueToday.length > 0) groups.push({ key: 'due:today', title: i18n.t('tasks:listing.today'), count: dueToday.length, tasks: dueToday });
+    if (upcoming.length > 0) groups.push({ key: 'due:upcoming', title: i18n.t('tasks:listing.upcoming'), count: upcoming.length, tasks: upcoming });
+    if (noDue.length > 0) groups.push({ key: 'due:none', title: i18n.t('tasks:listing.noDue'), count: noDue.length, tasks: noDue });
   }
   return groups;
 }

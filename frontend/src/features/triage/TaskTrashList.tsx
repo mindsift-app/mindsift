@@ -1,4 +1,5 @@
 import { RotateCcw, Trash2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { TaskList, TrashedTask } from '../../lib/types';
 import { formatDeletedAt } from '../../lib/due';
 
@@ -13,10 +14,11 @@ interface TaskTrashListProps {
 
 // Task trash of TasksView: deleted, cleared and automatically cleaned-up tasks with restore and purge
 export function TaskTrashList({ items, lists, showList, onRestore, onPurge }: TaskTrashListProps) {
+  const { t } = useTranslation('tasks');
   return (
     <div className="panel-surface divide-y divide-border">
       {items.length === 0 ? (
-        <div className="px-4 py-6 text-center text-muted text-sm">Der Papierkorb ist leer.</div>
+        <div className="px-4 py-6 text-center text-muted text-sm">{t('trash.empty')}</div>
       ) : (
         items.map((item) => {
           const listOfItem = item.taskListId ? lists.find((l) => l.id === item.taskListId) : undefined;
@@ -29,11 +31,11 @@ export function TaskTrashList({ items, lists, showList, onRestore, onPurge }: Ta
                   <p className="text-[11px] text-faint truncate">
                     {showList && (
                       <>
-                        {listOfItem ? (listOfItem.icon ? `${listOfItem.icon} ${listOfItem.title}` : listOfItem.title) : 'Persönlich'}
+                        {listOfItem ? (listOfItem.icon ? `${listOfItem.icon} ${listOfItem.title}` : listOfItem.title) : t('trash.personal')}
                         {' · '}
                       </>
                     )}
-                    gelöscht {formatDeletedAt(item.trashedAt)}
+                    {t('trash.deletedAt', { date: formatDeletedAt(item.trashedAt) })}
                     {item.trashedBy ? ` von ${item.trashedBy}` : ' (automatisch)'}
                   </p>
                 </div>
@@ -41,13 +43,13 @@ export function TaskTrashList({ items, lists, showList, onRestore, onPurge }: Ta
               {item.canEdit && (
                 <div className="flex items-center gap-2 flex-shrink-0">
                   <button onClick={() => onRestore(item)} className="btn-action min-h-[38px] sm:min-h-0">
-                    <RotateCcw className="w-3 h-3 text-accent" /> Zurück
+                    <RotateCcw className="w-3 h-3 text-accent" /> {t('triage:sheet.back')}
                   </button>
                   <button
                     onClick={() => onPurge(item)}
                     className="btn-icon btn-icon-danger min-h-[38px] min-w-[38px] sm:min-h-0 sm:min-w-0"
-                    title="Endgültig löschen"
-                    aria-label="Endgültig löschen"
+                    title={t('trash.delete')}
+                    aria-label={t('trash.delete')}
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>

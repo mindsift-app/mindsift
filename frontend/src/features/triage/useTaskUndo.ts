@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import i18n from '../../i18n';
 import { api, triggerHaptic } from '../../lib/api';
 import { Thought } from '../../lib/types';
 
@@ -46,7 +47,7 @@ export function useTaskUndo({ tasks, setTasks, selectedListId, loadData, onRefre
     try {
       if (entry.kind === 'delete') {
         for (const id of entry.ids) await api.restoreTrashedTask(id).catch(() => {});
-        showToast(entry.ids.length === 1 ? 'Aufgabe wiederhergestellt' : `${entry.ids.length} Aufgaben wiederhergestellt`);
+        showToast(i18n.t('tasks:undo.restored', { count: entry.ids.length }));
       } else if (entry.kind === 'order') {
         const byId = new Map(entry.snapshot.map((x) => [x.id, x]));
         setTasks((prev) =>
@@ -59,13 +60,13 @@ export function useTaskUndo({ tasks, setTasks, selectedListId, loadData, onRefre
           entry.snapshot.map((x) => ({ id: x.id, sortOrder: x.sortOrder, kanbanStatus: x.kanbanStatus })),
           selectedListId !== 'all' ? selectedListId : undefined
         );
-        showToast('Verschieben rückgängig gemacht');
+        showToast(i18n.t('tasks:undo.moveUndone'));
       } else {
         setTasks((prev) =>
           prev.map((t) => (t.id === entry.id ? { ...t, isCompleted: entry.isCompleted, kanbanStatus: entry.kanbanStatus } : t))
         );
         await api.updateThought(entry.id, { isCompleted: entry.isCompleted, kanbanStatus: entry.kanbanStatus });
-        showToast('Rückgängig gemacht');
+        showToast(i18n.t('tasks:undo.undone'));
       }
     } finally {
       await loadData();

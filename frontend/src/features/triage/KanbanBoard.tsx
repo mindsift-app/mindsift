@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { AnimatePresence } from 'framer-motion';
 import { ArrowLeft, ArrowRight, Calendar, FileText, Plus, Repeat, Trash2 } from 'lucide-react';
 import { formatDue, isOverdue } from '../../lib/due';
@@ -96,6 +97,7 @@ export function KanbanBoard({
   tasks,
   onOpenDocument,
 }: KanbanBoardProps) {
+  const { t } = useTranslation('tasks');
   const {
     dragHeightRef,
     dragOverKanbanCol,
@@ -165,7 +167,7 @@ export function KanbanBoard({
               } ${
                 kanbanColHeight ? '' : 'min-h-[420px]'
               } ${dragOverKanbanCol === col.id ? 'ring-2 ring-accent/60 bg-accent/5' : ''} ${blockedForDrag ? 'opacity-40' : ''}`}
-              title={blockedForDrag ? 'Diese Spalte gibt es in der Liste der Aufgabe nicht' : undefined}
+              title={blockedForDrag ? t('kanban.notInList') : undefined}
             >
               {/* Column Header */}
               <div className="px-3 py-2 bg-panel border-b border-border flex items-center justify-between">
@@ -227,14 +229,14 @@ export function KanbanBoard({
                       <div className="hidden sm:flex items-center gap-1 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
                         <button
                           onClick={() => handleConvertToDoc(task)}
-                          title={task.docId ? 'Verknüpfte Notiz öffnen' : 'Als Notiz vertiefen'}
+                          title={task.docId ? t('row.openNote') : t('detail.toDoc')}
                           className={`${task.docId ? 'text-accent' : 'text-faint'} hover:text-accent p-0.5`}
                         >
                           <FileText className="w-3.5 h-3.5" />
                         </button>
                         <button
                           onClick={() => handleDeletePermanent(task.id)}
-                          title="Aufgabe löschen"
+                          title={t('detail.delete')}
                           className="text-faint hover:text-status-err p-0.5"
                         >
                           <Trash2 className="w-3 h-3" />
@@ -266,10 +268,10 @@ export function KanbanBoard({
                             if (docId) onOpenDocument(docId, blockId);
                           }}
                           className="h-4 px-1.5 text-[9px] rounded-btn border border-accent/40 bg-accent/10 text-accent hover:bg-accent/20 cursor-pointer flex items-center gap-1 font-medium shrink-0"
-                          title="In Notiz an der passenden Stelle öffnen"
+                          title={t('row.openInNote')}
                         >
                           <FileText className="w-2.5 h-2.5" />
-                          <span>In Notiz</span>
+                          <span>{t('row.inNote')}</span>
                         </button>
                       )}
                       {task.priority === 'urgent' && (
@@ -278,7 +280,7 @@ export function KanbanBoard({
                           disabled={readOnly}
                           onClick={() => handleCyclePriority(task)}
                           className="badge-accent text-[9px] cursor-pointer hover:opacity-85 disabled:cursor-default"
-                          title="Klicken zum Ändern der Priorität (Dringend -> Normal)"
+                          title={t('row.urgentToNormal')}
                         >
                           🔥 Dringend
                         </button>
@@ -289,7 +291,7 @@ export function KanbanBoard({
                           disabled={readOnly}
                           onClick={() => handleCyclePriority(task)}
                           className="px-1.5 py-0.2 border border-status-warn text-status-warn rounded-btn text-[9px] font-medium cursor-pointer hover:opacity-85 disabled:cursor-default"
-                          title="Klicken zum Ändern der Priorität (Wichtig -> Dringend)"
+                          title={t('row.highToUrgent')}
                         >
                           ⚠️ Wichtig
                         </button>
@@ -298,7 +300,7 @@ export function KanbanBoard({
                       {task.dueDate && (
                         <span
                           className={`inline-flex items-center gap-0.5 text-[9px] ${!task.isCompleted && isOverdue(task.dueDate) ? 'text-status-err font-semibold' : 'text-muted'}`}
-                          title={`Fällig: ${task.dueDate.replace('T', ' ')}`}
+                          title={t('row.dueTitle', { due: task.dueDate.replace('T', ' ') })}
                         >
                           <Calendar className="w-2.5 h-2.5" />
                           <span>{formatDue(task.dueDate)}</span>
@@ -367,7 +369,7 @@ export function KanbanBoard({
 
                 {colTasks.length === 0 && slotHere < 0 && (
                   <div className="p-4 text-center text-faint text-xs italic">
-                    Keine Aufgaben in dieser Spalte
+                    {t('kanban.emptyColumn')}
                   </div>
                 )}
               </div>
@@ -380,10 +382,12 @@ export function KanbanBoard({
                 title={
                   activeColumns.some((c) => boardIdOf(c) === col.id)
                     ? undefined
-                    : `Neue Aufgaben hier landen ohne Liste, und dort gibt es diese Spalte nicht. Zum Anlegen die Liste öffnen: ${safeTaskLists
-                        .filter((l) => (Array.isArray(l.columns) ? l.columns : []).some((c) => boardIdOf(c) === col.id))
-                        .map((l) => `„${l.title}“`)
-                        .join(', ')}`
+                    : t('kanban.columnElsewhere', {
+                        lists: safeTaskLists
+                          .filter((l) => (Array.isArray(l.columns) ? l.columns : []).some((c) => boardIdOf(c) === col.id))
+                          .map((l) => `„${l.title}“`)
+                          .join(', '),
+                      })
                 }
               >
                 <button
@@ -393,7 +397,7 @@ export function KanbanBoard({
                   className="w-full h-7 px-2 text-xs border border-dashed border-border rounded-btn text-muted hover:text-main hover:bg-canvas flex items-center justify-center gap-1 transition-colors disabled:opacity-40 disabled:pointer-events-none"
                 >
                   <Plus className="w-3 h-3" />
-                  <span>Aufgabe hinzufügen</span>
+                  <span>{t('kanban.addTask')}</span>
                 </button>
               </div>
               )}

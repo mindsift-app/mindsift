@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Layers } from 'lucide-react';
 import { api } from '../../lib/api';
 import { TaskList } from '../../lib/types';
@@ -15,6 +16,7 @@ interface NewTaskListSheetProps {
 // Dialog for a new task list (icon and title); the new list opens right away. Stays mounted while closed,
 // so a started title survives closing like before.
 export function NewTaskListSheet({ showNewListModal, setShowNewListModal, setTaskLists, setSelectedListId }: NewTaskListSheetProps) {
+  const { t } = useTranslation('tasks');
   const [newListTitle, setNewListTitle] = useState('');
   const [newListIcon, setNewListIcon] = useState('📋');
 
@@ -34,27 +36,27 @@ export function NewTaskListSheet({ showNewListModal, setShowNewListModal, setTas
       setNewListTitle('');
       setNewListIcon('📋');
     } catch (err: any) {
-      alert(err.message || 'Fehler beim Erstellen der Aufgabenliste');
+      alert(err.message || t('newList.failed'));
     }
   };
 
   if (!showNewListModal) return null;
   return (
     <FormSheet
-      title="Neue Aufgabenliste erstellen"
+      title={t('newList.title')}
       icon={<Layers className="w-4 h-4 text-accent" />}
       onClose={() => setShowNewListModal(false)}
       onSubmit={handleCreateTaskList}
     >
         <div>
-          <label className="block text-xs text-muted mb-1">Titel der Liste</label>
+          <label className="block text-xs text-muted mb-1">{t('newList.name')}</label>
           <div className="flex items-center gap-1.5">
             <EmojiIconButton value={newListIcon} onChange={setNewListIcon} />
             <input
               type="text"
               value={newListTitle}
               onChange={(e) => setNewListTitle(e.target.value)}
-              placeholder="z.B. Homelab, Einkäufe, Steuern"
+              placeholder={t('newList.placeholder')}
               autoFocus
               required
               className="flex-1 min-w-0 h-11 sm:h-8 input-field px-2.5 text-base sm:text-xs"

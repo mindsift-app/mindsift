@@ -1,0 +1,116 @@
+{
+  "swipe": {
+    "toTask": "Als Aufgabe 👉",
+    "discard": "👈 Wegwerfen"
+  },
+  "action": {
+    "taskTitle": "Direkt zur Aufgabe machen",
+    "task": "Aufgabe",
+    "noteTitle": "Direkt als Workspace-Notiz anlegen",
+    "note": "Notiz",
+    "discard": "Wegwerfen"
+  },
+  "quickDump": "Quick Dump",
+  "empty": {
+    "title": "Triage-Deck ist leer",
+    "capture": "+ Quick Dump erfassen",
+    "text": "Alle Quick Dump Notizen sind einsortiert oder verworfen. Tippe auf das <b>+</b> unten in der Mitte (oder Taste <kbd>C</kbd>), um neue Gedanken reinzurotzen."
+  },
+  "undoLast": "Letzte Aktion rückgängig",
+  "shortcuts": "← Wegwerfen • → Aufgabe • D Notiz • Leertaste Später",
+  "undo": "Rückgängig",
+  "trashTitle": "Papierkorb der Triage",
+  "next": "Nächster Quick Dump…",
+  "moreOptions": "Weitere Optionen (oder Karte gedrückt halten)",
+  "saveText": "Text speichern",
+  "swipeHint": "👈 Wegwerfen · 👉 Aufgabe · Gedrückt halten = Mehr Optionen",
+  "date": {
+    "title": "Aufgabe mit Fälligkeitsdatum anlegen:",
+    "save": "Als Termin-Aufgabe speichern"
+  },
+  "list": {
+    "title": "Quick Dump direkt einer Liste zuordnen:",
+    "none": "Keine Listen vorhanden."
+  },
+  "toList": "Auf Liste",
+  "withDate": "Mit Termin",
+  "chooseDate": "Datum wählen",
+  "asNote": "Als Notiz",
+  "inWorkspace": "Im Workspace",
+  "later": "Später",
+  "laterHint": "Ans Ende schieben",
+  "discardTitle": "Wegwerfen (Taste H oder Pfeil links)",
+  "laterTitle": "Später entscheiden – ans Ende schieben (Leertaste)",
+  "noteTitle": "In eine Workspace-Notiz umwandeln (Taste D)",
+  "dateTitle": "Als Aufgabe mit Fälligkeitsdatum (Taste T)",
+  "taskTitle": "Sofort als Aufgabe übernehmen (Taste L oder Pfeil rechts)",
+  "queue": {
+    "hint": "Tippen = Vorholen · 👈 Wegwerfen · 👉 Aufgabe",
+    "show": "Warteschlange anzeigen ({{count}})",
+    "hide": "Warteschlange ausblenden ({{count}})",
+    "title": "Warteschlange ({{count}})"
+  },
+  "sheet": {
+    "title": "Quick Dump zuordnen",
+    "editText": "Text vor dem Zuordnen bearbeiten",
+    "dateTitle": "Fälligkeitsdatum für die Aufgabe wählen:",
+    "back": "Zurück",
+    "saveDate": "Mit Termin speichern",
+    "listTitle": "Auf welche Liste soll dieser Punkt gesetzt werden?"
+  },
+  "priority": {
+    "urgent": "Dringend",
+    "high": "Wichtig"
+  },
+  "trashCount": "Papierkorb ({{count}})",
+  "openCount_one": "{{count}} Quick Dump offen",
+  "openCount_other": "{{count}} Quick Dumps offen",
+  "noList": "Keine Liste vorhanden",
+  "listHint": "Einkauf / Geteilt",
+  "onList": "Auf {{title}}",
+  "toSharedList": "Auf eine geteilte Liste setzen",
+  "setOnList": "Auf Liste setzen",
+  "trash": {
+    "none": "Keine verworfenen Gedanken.",
+    "confirmDelete": "Wirklich endgültig löschen?",
+    "delete": "Endgültig löschen",
+    "really": "Wirklich?",
+    "confirmEmpty": "Wirklich {{count}} endgültig löschen?",
+    "empty": "Papierkorb leeren"
+  },
+  "capture": {
+    "okTask": "Als Aufgabe!",
+    "okList": "Auf Liste!",
+    "okNote": "Als Notiz!",
+    "okInbox": "In Triage!",
+    "placeholderInbox": "Quick Dump erfassen…",
+    "placeholderTask": "Aufgabe erfassen…",
+    "placeholderNote": "Notiz erfassen…",
+    "placeholder": "Quick Dump…",
+    "targetTitle": "Ziel wählen (Quick Dump, direkt als Aufgabe, auf Liste oder als Notiz) & Optionen",
+    "asTask": "Als Aufgabe",
+    "where": "Wohin damit?",
+    "whereHint": "Standard: Quick Dump für späteres Swipen",
+    "inbox": "Quick Dump (Triage)",
+    "directList": "Direkt auf Liste…",
+    "directNote": "Direkt als Notiz",
+    "taskList": "Aufgabenliste:",
+    "allTasks": "Alle Aufgaben",
+    "listLabel": "Liste:",
+    "priority": "Priorität:",
+    "due": "Fällig am:",
+    "placeholderList": "Zu „{{title}}“ hinzufügen…",
+    "list": "Liste"
+  },
+  "fab": {
+    "nothing": "Nichts erkannt",
+    "saved": "Im Quick Dump gespeichert",
+    "saveFailed": "Fehler beim Speichern",
+    "unsupported": "Spracheingabe wird von diesem Browser nicht unterstützt",
+    "releaseCancel": "🗑️ Zum Abbrechen loslassen",
+    "listening": "Ich höre zu… (loslassen speichert)",
+    "dragCancel": "Nach oben ziehen zum Abbrechen",
+    "title": "Schnell erfassen (+)",
+    "label": "Schnell erfassen – tippen zum Schreiben, gedrückt halten zum Sprechen"
+  }
+}

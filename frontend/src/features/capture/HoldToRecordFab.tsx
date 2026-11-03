@@ -1,4 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import i18n from '../../i18n';
 import { Mic, Plus } from 'lucide-react';
 import { triggerHaptic } from '../../lib/api';
 import { useVoiceInput } from '../../lib/useVoiceInput';
@@ -15,6 +17,7 @@ const STOP_TIMEOUT_MS = 1500;
 const TOAST_DURATION_MS = 2500;
 
 export const HoldToRecordFab: React.FC<HoldToRecordFabProps> = ({ onTap, onTranscript }) => {
+  const { t } = useTranslation('triage');
   const [isRecording, setIsRecording] = useState(false);
   const [isCancelZone, setIsCancelZone] = useState(false);
   const [liveTranscript, setLiveTranscript] = useState('');
@@ -68,15 +71,15 @@ export const HoldToRecordFab: React.FC<HoldToRecordFabProps> = ({ onTap, onTrans
     setLiveTranscript('');
     const trimmed = text.trim();
     if (!trimmed) {
-      showToast('Nichts erkannt');
+      showToast(i18n.t('triage:fab.nothing'));
       return;
     }
     try {
       await onTranscript(trimmed);
       triggerHaptic(25);
-      showToast('Im Quick Dump gespeichert');
+      showToast(i18n.t('triage:fab.saved'));
     } catch {
-      showToast('Fehler beim Speichern');
+      showToast(i18n.t('triage:fab.saveFailed'));
     }
   };
 
@@ -120,13 +123,13 @@ export const HoldToRecordFab: React.FC<HoldToRecordFabProps> = ({ onTap, onTrans
   }, []);
 
   useEffect(() => {
-    if (voice.state === 'transcribing') showToast('Wird erkannt…', true);
+    if (voice.state === 'transcribing') showToast(i18n.t('app:capture.transcribing'), true);
   }, [voice.state]);
 
   const startVoiceRecording = () => {
     if (voice.mode === 'off' || voice.mode === 'unsupported') {
       fallbackHandledRef.current = true;
-      if (voice.mode === 'unsupported') showToast('Spracheingabe wird von diesem Browser nicht unterstützt');
+      if (voice.mode === 'unsupported') showToast(i18n.t('triage:fab.unsupported'));
       onTap();
       return;
     }
@@ -258,19 +261,19 @@ export const HoldToRecordFab: React.FC<HoldToRecordFabProps> = ({ onTap, onTrans
           }
         >
           {isCancelZone ? (
-            <div className="text-xs font-semibold">🗑️ Zum Abbrechen loslassen</div>
+            <div className="text-xs font-semibold">{t('fab.releaseCancel')}</div>
           ) : (
             <div className="space-y-1">
               <div className="text-xs font-semibold text-main flex items-center justify-center gap-2">
                 {voice.mode === 'server' && <VoiceWave getLevel={voice.level} bars={7} className="h-4 text-accent" />}
-                Ich höre zu… (loslassen speichert)
+                {t('fab.listening')}
               </div>
               {displayedTranscript ? (
                 <div className="text-xs text-muted break-words max-w-[calc(100vw-3rem)]">
                   {displayedTranscript}
                 </div>
               ) : (
-                <div className="text-[11px] text-faint">Nach oben ziehen zum Abbrechen</div>
+                <div className="text-[11px] text-faint">{t('fab.dragCancel')}</div>
               )}
             </div>
           )}
@@ -307,8 +310,8 @@ export const HoldToRecordFab: React.FC<HoldToRecordFabProps> = ({ onTap, onTrans
             ? 'w-14 h-14 -mt-6 rounded-full bg-status-err text-on-accent shadow-lg flex items-center justify-center transition-transform border-4 border-panel cursor-pointer touch-none select-none animate-pulse'
             : 'w-14 h-14 -mt-6 rounded-full bg-accent text-on-accent shadow-lg flex items-center justify-center active:scale-90 transition-transform border-4 border-panel cursor-pointer touch-none select-none'
         }
-        title="Schnell erfassen (+)"
-        aria-label="Schnell erfassen – tippen zum Schreiben, gedrückt halten zum Sprechen"
+        title={t('fab.title')}
+        aria-label={t('fab.label')}
       >
         {isRecording ? (
           <Mic className="w-7 h-7 stroke-[2.5]" />

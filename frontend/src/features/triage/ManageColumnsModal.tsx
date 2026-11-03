@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
+import i18n from '../../i18n';
 import {
   X,
   Plus,
@@ -20,24 +22,38 @@ interface ManageColumnsModalProps {
   listTitle?: string;
 }
 
+// Names come from tasks:columns.<id> in the language shown when read (copies keep the name of that moment)
+const defaultColumn = (col: Omit<KanbanColumn, 'name'>): KanbanColumn => ({
+  ...col,
+  get name() {
+    return i18n.t(`tasks:columns.${col.id}`);
+  },
+});
 export const DEFAULT_KANBAN_COLUMNS: KanbanColumn[] = [
-  { id: 'todo', name: 'Zu erledigen' },
-  { id: 'in_progress', name: 'In Bearbeitung', color: 'accent' },
-  { id: 'waiting', name: 'Wartet auf andere', color: 'amber' },
-  { id: 'done', name: 'Erledigt', isDone: true, color: 'emerald' },
+  defaultColumn({ id: 'todo' }),
+  defaultColumn({ id: 'in_progress', color: 'accent' }),
+  defaultColumn({ id: 'waiting', color: 'amber' }),
+  defaultColumn({ id: 'done', isDone: true, color: 'emerald' }),
 ];
 
 // Wrapper and content split so the hooks always run in the same number (see TaskDetailModal)
 // Colours a column can get; all come from the theme (blue and purple via --color-info / --color-purple)
-export const COLUMN_COLORS: { id: string; label: string; cls: string }[] = [
-  { id: 'gray', label: 'Grau', cls: 'bg-faint' },
-  { id: 'slate', label: 'Anthrazit', cls: 'bg-main' },
-  { id: 'green', label: 'Grün', cls: 'bg-status-ok' },
-  { id: 'yellow', label: 'Gelb', cls: 'bg-status-warn' },
-  { id: 'blue', label: 'Blau', cls: 'bg-tone-blue' },
-  { id: 'red', label: 'Rot', cls: 'bg-status-err' },
-  { id: 'purple', label: 'Lila', cls: 'bg-tone-purple' },
-  { id: 'accent', label: 'Akzentfarbe', cls: 'bg-accent' },
+const columnColor = (id: string, cls: string) => ({
+  id,
+  cls,
+  get label() {
+    return i18n.t(`tasks:colors.${id}`);
+  },
+});
+export const COLUMN_COLORS: { id: string; readonly label: string; cls: string }[] = [
+  columnColor('gray', 'bg-faint'),
+  columnColor('slate', 'bg-main'),
+  columnColor('green', 'bg-status-ok'),
+  columnColor('yellow', 'bg-status-warn'),
+  columnColor('blue', 'bg-tone-blue'),
+  columnColor('red', 'bg-status-err'),
+  columnColor('purple', 'bg-tone-purple'),
+  columnColor('accent', 'bg-accent'),
 ];
 // Names the server's default columns use
 const COLOR_ALIASES: Record<string, string> = { emerald: 'green', amber: 'yellow' };
@@ -65,6 +81,7 @@ const ManageColumnsModalContent: React.FC<ManageColumnsModalProps> = ({
   onSave,
   listTitle,
 }) => {
+  const { t } = useTranslation('tasks');
   const [columns, setColumns] = useState<KanbanColumn[]>(() => {
     return initialColumns && initialColumns.length > 0 ? initialColumns : DEFAULT_KANBAN_COLUMNS;
   });
@@ -146,7 +163,7 @@ const ManageColumnsModalContent: React.FC<ManageColumnsModalProps> = ({
 
   const handleDelete = (id: string) => {
     if (columns.length <= 1) {
-      alert('Mindestens eine Spalte muss vorhanden sein.');
+      alert(t('columnsModal.minOne'));
       return;
     }
     triggerHaptic(10);
@@ -173,7 +190,7 @@ const ManageColumnsModalContent: React.FC<ManageColumnsModalProps> = ({
   };
 
   const handleResetToDefault = () => {
-    if (window.confirm('Spalten auf Standard zurücksetzen? (Zu erledigen, In Bearbeitung, Wartet auf andere, Erledigt)')) {
+    if (window.confirm(t('columnsModal.confirmReset'))) {
       triggerHaptic(15);
       setColumns(DEFAULT_KANBAN_COLUMNS);
     }
@@ -181,7 +198,7 @@ const ManageColumnsModalContent: React.FC<ManageColumnsModalProps> = ({
 
   const handleSave = async () => {
     if (columns.length === 0) {
-      alert('Es muss mindestens eine Spalte vorhanden sein.');
+      alert(t('columnsModal.mustHaveOne'));
       return;
     }
     setSaving(true);
@@ -190,7 +207,7 @@ const ManageColumnsModalContent: React.FC<ManageColumnsModalProps> = ({
       await onSave(columns);
       onClose();
     } catch (err: any) {
-      alert(err.message || 'Fehler beim Speichern der Spalten');
+      alert(err.message || t('columnsModal.saveFailed'));
     } finally {
       setSaving(false);
     }
@@ -207,7 +224,7 @@ const ManageColumnsModalContent: React.FC<ManageColumnsModalProps> = ({
           <div className="flex items-center gap-2">
             <Columns className="w-4 h-4 text-accent" />
             <div>
-              <h3 className="text-sm font-semibold text-main">Kanban-Spalten anpassen</h3>
+              <h3 className="text-sm font-semibold text-main">{t('columnsModal.title')}</h3>
               {listTitle && (
                 <p className="text-[10px] text-muted truncate">Liste: {listTitle}</p>
               )}
@@ -225,7 +242,7 @@ const ManageColumnsModalContent: React.FC<ManageColumnsModalProps> = ({
         {/* Content */}
         <div className="p-4 space-y-4 overflow-y-auto flex-1">
           <p className="text-xs text-muted">
-            Passe die Spalten für das Kanban-Board an. Aufgaben können in jede beliebige Spalte verschoben werden.
+            {t('columnsModal.intro')}
           </p>
 
           {/* Columns List */}
@@ -241,7 +258,7 @@ const ManageColumnsModalContent: React.FC<ManageColumnsModalProps> = ({
                         disabled={idx === 0}
                         onClick={() => handleMove(idx, 'up')}
                         className="text-muted hover:text-main disabled:opacity-20 p-0.5"
-                        title="Nach oben"
+                        title={t('columnsModal.up')}
                       >
                         <ArrowUp className="w-3 h-3" />
                       </button>
@@ -250,7 +267,7 @@ const ManageColumnsModalContent: React.FC<ManageColumnsModalProps> = ({
                         disabled={idx === columns.length - 1}
                         onClick={() => handleMove(idx, 'down')}
                         className="text-muted hover:text-main disabled:opacity-20 p-0.5"
-                        title="Nach unten"
+                        title={t('columnsModal.down')}
                       >
                         <ArrowDown className="w-3 h-3" />
                       </button>
@@ -261,8 +278,8 @@ const ManageColumnsModalContent: React.FC<ManageColumnsModalProps> = ({
                       data-color-trigger
                       onClick={(e) => openColorMenu(col.id, e.currentTarget)}
                       className="w-7 h-7 flex items-center justify-center rounded-btn border border-border bg-panel hover:border-strong flex-shrink-0"
-                      title="Farbe der Spalte"
-                      aria-label={`Farbe der Spalte ${col.name}`}
+                      title={t('columnsModal.color')}
+                      aria-label={t('columnsModal.colorOf', { name: col.name })}
                       aria-haspopup="menu"
                       aria-expanded={colorMenu?.id === col.id}
                     >
@@ -274,7 +291,7 @@ const ManageColumnsModalContent: React.FC<ManageColumnsModalProps> = ({
                       value={col.name}
                       onChange={(e) => handleRename(col.id, e.target.value)}
                       className="flex-1 min-w-0 h-7 px-2 text-xs input-field"
-                      placeholder="Spaltenname"
+                      placeholder={t('columnsModal.namePlaceholder')}
                     />
 
                     {/* IsDone Toggle */}
@@ -286,13 +303,13 @@ const ManageColumnsModalContent: React.FC<ManageColumnsModalProps> = ({
                           ? 'bg-status-ok/15 border-status-ok text-status-ok font-semibold'
                           : 'bg-panel border-border text-faint hover:text-muted'
                       }`}
-                      title={col.isDone ? 'Gilt als Erledigt' : 'Gilt als Offen'}
-                      aria-label={col.isDone ? 'Gilt als Erledigt' : 'Gilt als Offen'}
+                      title={col.isDone ? t('columnsModal.countsDone') : t('columnsModal.countsOpen')}
+                      aria-label={col.isDone ? t('columnsModal.countsDone') : t('columnsModal.countsOpen')}
                       aria-pressed={!!col.isDone}
                     >
                       <Check className={`w-2.5 h-2.5 ${col.isDone ? 'stroke-[3]' : 'opacity-40'}`} />
                       {/* Phones: only the tick, so the row keeps room for the bin */}
-                      <span className="hidden sm:inline">Erledigt</span>
+                      <span className="hidden sm:inline">{t('columnsModal.done')}</span>
                     </button>
 
                     <button
@@ -300,7 +317,7 @@ const ManageColumnsModalContent: React.FC<ManageColumnsModalProps> = ({
                       onClick={() => handleDelete(col.id)}
                       disabled={columns.length <= 1}
                       className="text-muted hover:text-status-err disabled:opacity-20 p-1 transition-colors"
-                      title="Spalte löschen"
+                      title={t('columnsModal.delete')}
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -312,14 +329,14 @@ const ManageColumnsModalContent: React.FC<ManageColumnsModalProps> = ({
 
           {/* Add New Column Form */}
           <form onSubmit={handleAddColumn} className="space-y-2 pt-2 border-t border-border">
-            <label className="block text-xs font-semibold text-main">Neue Spalte hinzufügen:</label>
+            <label className="block text-xs font-semibold text-main">{t('columnsModal.add')}</label>
             {/* Phones: the buttons go below the field, so nothing is cut off */}
             <div className="flex flex-col sm:flex-row sm:items-center gap-1.5">
               <input
                 type="text"
                 value={newColName}
                 onChange={(e) => setNewColName(e.target.value)}
-                placeholder="z.B. Wartet auf Feedback, Review…"
+                placeholder={t('columnsModal.addPlaceholder')}
                 className="w-full sm:w-auto sm:flex-1 min-w-0 h-11 sm:h-8 px-2.5 text-base sm:text-xs input-field"
               />
               <div className="flex items-center gap-1.5">
@@ -331,10 +348,10 @@ const ManageColumnsModalContent: React.FC<ManageColumnsModalProps> = ({
                       ? 'bg-status-ok/15 border-status-ok text-status-ok font-semibold'
                       : 'bg-panel border-border text-muted hover:text-main'
                   }`}
-                  title="Sollen Aufgaben in dieser Spalte als erledigt gelten?"
+                  title={t('columnsModal.doneQuestion')}
                 >
                   <Check className="w-3 h-3" />
-                  <span>Erledigt</span>
+                  <span>{t('columnsModal.done')}</span>
                 </button>
                 <button
                   type="submit"
@@ -342,7 +359,7 @@ const ManageColumnsModalContent: React.FC<ManageColumnsModalProps> = ({
                   className="flex-1 sm:flex-none justify-center btn-primary h-11 sm:h-8 px-3 text-xs flex items-center gap-1 disabled:opacity-40"
                 >
                   <Plus className="w-3.5 h-3.5" />
-                  <span>Hinzufügen</span>
+                  <span>{t('common:add')}</span>
                 </button>
               </div>
             </div>
@@ -356,7 +373,7 @@ const ManageColumnsModalContent: React.FC<ManageColumnsModalProps> = ({
               className="text-xs text-muted hover:text-main flex items-center gap-1"
             >
               <RotateCcw className="w-3 h-3 text-accent" />
-              <span>Auf Standard-Spalten zurücksetzen</span>
+              <span>{t('columnsModal.reset')}</span>
             </button>
           </div>
         </div>
@@ -376,7 +393,7 @@ const ManageColumnsModalContent: React.FC<ManageColumnsModalProps> = ({
             disabled={saving}
             className="btn-primary h-7 px-3 text-xs disabled:opacity-50"
           >
-            Spalten speichern
+            {t('columnsModal.save')}
           </button>
         </div>
       </div>
@@ -389,7 +406,7 @@ const ManageColumnsModalContent: React.FC<ManageColumnsModalProps> = ({
             <div
               ref={colorMenuRef}
               role="menu"
-              aria-label={`Farbe der Spalte ${col.name}`}
+              aria-label={t('columnsModal.colorOf', { name: col.name })}
               style={{ left: colorMenu.left, top: colorMenu.top, bottom: colorMenu.bottom }}
               className="fixed z-[60] w-44 p-1 bg-panel border border-border rounded-card shadow-panel"
               onClick={(e) => e.stopPropagation()}

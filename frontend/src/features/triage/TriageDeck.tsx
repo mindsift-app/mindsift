@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 import { motion, useMotionValue, useTransform, AnimatePresence } from 'framer-motion';
 import {
   X,
@@ -62,6 +63,7 @@ const SwipeableQueueItem: React.FC<SwipeableQueueItemProps> = ({
   onOpenActionSheet,
   onAction,
 }) => {
+  const { t } = useTranslation('triage');
   const qx = useMotionValue(0);
   const rightBgOpacity = useTransform(qx, [20, 85], [0, 1]);
   const leftBgOpacity = useTransform(qx, [-85, -20], [1, 0]);
@@ -85,7 +87,7 @@ const SwipeableQueueItem: React.FC<SwipeableQueueItemProps> = ({
       >
         <span className="flex items-center gap-1.5">
           <CheckSquare className="w-4 h-4" />
-          <span>Als Aufgabe 👉</span>
+          <span>{t('swipe.toTask')}</span>
         </span>
       </motion.div>
 
@@ -95,7 +97,7 @@ const SwipeableQueueItem: React.FC<SwipeableQueueItemProps> = ({
         className="pointer-events-none absolute inset-0 bg-status-err-bg flex items-center justify-end px-4 text-status-err font-semibold text-xs uppercase tracking-wide"
       >
         <span className="flex items-center gap-1.5">
-          <span>👈 Wegwerfen</span>
+          <span>{t('swipe.discard')}</span>
           <X className="w-4 h-4" />
         </span>
       </motion.div>
@@ -170,21 +172,21 @@ const SwipeableQueueItem: React.FC<SwipeableQueueItemProps> = ({
           <button
             type="button"
             onClick={() => onAction('keep', { convertTo: 'task', thoughtOverride: item })}
-            title="Direkt zur Aufgabe machen"
+            title={t('action.taskTitle')}
             className="h-7 px-2.5 bg-canvas hover:bg-accent hover:text-on-accent border border-border rounded-btn text-xs text-muted flex items-center gap-1 transition-colors cursor-pointer"
           >
             <Check className="w-3.5 h-3.5" />
-            <span>Aufgabe</span>
+            <span>{t('action.task')}</span>
           </button>
 
           <button
             type="button"
             onClick={() => onAction('keep', { convertTo: 'document', thoughtOverride: item })}
-            title="Direkt als Workspace-Notiz anlegen"
+            title={t('action.noteTitle')}
             className="h-7 px-2.5 bg-canvas hover:bg-panel-elevated border border-border rounded-btn text-xs text-muted hover:text-main flex items-center gap-1 transition-colors cursor-pointer"
           >
             <FileText className="w-3.5 h-3.5 text-accent" />
-            <span>Notiz</span>
+            <span>{t('action.note')}</span>
           </button>
 
           {lists.length > 0 && (
@@ -208,7 +210,7 @@ const SwipeableQueueItem: React.FC<SwipeableQueueItemProps> = ({
           <button
             type="button"
             onClick={() => onAction('discard', { thoughtOverride: item })}
-            title="Wegwerfen"
+            title={t('action.discard')}
             className="h-7 w-7 bg-canvas hover:bg-panel-elevated border border-border rounded-btn text-muted hover:text-main flex items-center justify-center transition-colors cursor-pointer"
           >
             <X className="w-3.5 h-3.5" />
@@ -227,6 +229,7 @@ export const TriageDeck: React.FC<TriageDeckProps> = ({
   discardedCount,
   onOpenTrash,
 }) => {
+  const { t } = useTranslation('triage');
   const writableLists = lists.filter((l) => l.isOwner || l.role !== 'viewer');
   const singleWritableList = writableLists.length === 1 ? writableLists[0] : null;
 
@@ -415,19 +418,19 @@ export const TriageDeck: React.FC<TriageDeckProps> = ({
       case 'urgent':
         return (
           <span className="px-2 py-0.5 text-[11px] font-semibold border border-accent rounded-btn text-accent">
-            Dringend
+            {t('priority.urgent')}
           </span>
         );
       case 'high':
         return (
           <span className="px-2 py-0.5 text-[11px] font-medium border border-strong rounded-btn text-main">
-            Wichtig
+            {t('priority.high')}
           </span>
         );
       default:
         return (
           <span className="px-2 py-0.5 text-[11px] font-medium bg-panel-elevated text-muted border border-border rounded-btn">
-            Quick Dump
+            {t('quickDump')}
           </span>
         );
     }
@@ -451,12 +454,16 @@ export const TriageDeck: React.FC<TriageDeckProps> = ({
         <div className="w-12 h-12 bg-accent text-on-accent rounded-xl flex items-center justify-center mx-auto mb-3 shadow-sm">
           <Sparkles className="w-6 h-6" />
         </div>
-        <h2 className="text-lg font-bold text-main mb-1">Triage-Deck ist leer</h2>
+        <h2 className="text-lg font-bold text-main mb-1">{t('empty.title')}</h2>
         <p className="text-muted text-xs sm:text-sm max-w-md mx-auto mb-4">
-          Alle Quick Dump Notizen sind einsortiert oder verworfen. Tippe auf das{' '}
-          <strong className="text-main">+</strong> unten in der Mitte (oder Taste{' '}
-          <kbd className="px-1.5 py-0.5 bg-canvas border border-border rounded-btn text-main">C</kbd>
-          ), um neue Gedanken reinzurotzen.
+          <Trans
+            t={t}
+            i18nKey="empty.text"
+            components={{
+              b: <strong className="text-main" />,
+              kbd: <kbd className="px-1.5 py-0.5 bg-canvas border border-border rounded-btn text-main" />,
+            }}
+          />
         </p>
 
         <div className="flex flex-wrap items-center justify-center gap-2">
@@ -464,7 +471,7 @@ export const TriageDeck: React.FC<TriageDeckProps> = ({
             onClick={onFocusCapture}
             className="btn-primary h-10 px-5 text-sm"
           >
-            + Quick Dump erfassen
+            {t('empty.capture')}
           </button>
 
           {lastTriaged && (
@@ -473,14 +480,14 @@ export const TriageDeck: React.FC<TriageDeckProps> = ({
               className="btn-action h-10 px-4 text-sm"
             >
               <RotateCcw className="w-4 h-4 text-accent" />
-              Letzte Aktion rückgängig
+              {t('undoLast')}
             </button>
           )}
 
           {discardedCount > 0 && (
             <button onClick={onOpenTrash} className="btn-action h-10 px-4 text-sm">
               <Trash2 className="w-4 h-4" />
-              Papierkorb ({discardedCount})
+              {t('trashCount', { count: discardedCount })}
             </button>
           )}
         </div>
@@ -496,11 +503,11 @@ export const TriageDeck: React.FC<TriageDeckProps> = ({
       <div className="flex items-center justify-between px-1">
         <div className="flex items-center gap-2">
           <span className="badge-accent text-xs py-1 px-2.5">
-            {cards.length} {cards.length === 1 ? 'Quick Dump' : 'Quick Dumps'} offen
+            {t('openCount', { count: cards.length })}
           </span>
           <span className="hidden sm:inline text-xs text-faint">•</span>
           <span className="hidden sm:flex items-center gap-1 text-xs text-muted">
-            <Keyboard className="w-3 h-3" /> ← Wegwerfen • → Aufgabe • D Notiz • Leertaste Später
+            <Keyboard className="w-3 h-3" /> {t('shortcuts')}
           </span>
         </div>
 
@@ -511,12 +518,12 @@ export const TriageDeck: React.FC<TriageDeckProps> = ({
               className="btn-action h-8 px-3 text-xs"
             >
               <RotateCcw className="w-3.5 h-3.5 text-accent" />
-              Rückgängig
+              {t('undo')}
             </button>
           )}
           {/* Phones reach the trash through the menu */}
           {discardedCount > 0 && (
-            <button onClick={onOpenTrash} className="hidden sm:inline-flex btn-action h-8 px-3 text-xs" title="Papierkorb der Triage">
+            <button onClick={onOpenTrash} className="hidden sm:inline-flex btn-action h-8 px-3 text-xs" title={t('trashTitle')}>
               <Trash2 className="w-3.5 h-3.5" />
               {discardedCount}
             </button>
@@ -538,7 +545,7 @@ export const TriageDeck: React.FC<TriageDeckProps> = ({
               <OriginBadge origin={nextCard.origin} createdAt={nextCard.createdAt} size="md" />
             </div>
             <p className="text-sm text-muted line-clamp-2">{nextCard.content}</p>
-            <div className="text-[11px] text-faint">Nächster Quick Dump…</div>
+            <div className="text-[11px] text-faint">{t('next')}</div>
           </div>
         )}
 
@@ -590,14 +597,14 @@ export const TriageDeck: React.FC<TriageDeckProps> = ({
               style={{ opacity: keepOpacity }}
               className="pointer-events-none absolute top-3.5 right-3.5 px-3 py-1.5 bg-accent-dim border border-accent rounded-btn text-accent font-semibold text-xs tracking-wide uppercase"
             >
-              Als Aufgabe 👉
+              {t('swipe.toTask')}
             </motion.div>
 
             <motion.div
               style={{ opacity: discardOpacity }}
               className="pointer-events-none absolute top-3.5 left-3.5 px-3 py-1.5 bg-panel-elevated border border-strong rounded-btn text-main font-semibold text-xs tracking-wide uppercase"
             >
-              👈 Wegwerfen
+              {t('swipe.discard')}
             </motion.div>
 
             {/* Card Header */}
@@ -623,7 +630,7 @@ export const TriageDeck: React.FC<TriageDeckProps> = ({
                 <button
                   type="button"
                   onClick={() => openActionSheetForCard(activeCard)}
-                  title="Weitere Optionen (oder Karte gedrückt halten)"
+                  title={t('moreOptions')}
                   className="h-8 w-8 bg-canvas hover:bg-panel-hover border border-border rounded-btn text-muted hover:text-main flex items-center justify-center cursor-pointer"
                 >
                   <MoreHorizontal className="w-4 h-4" />
@@ -660,7 +667,7 @@ export const TriageDeck: React.FC<TriageDeckProps> = ({
                       onClick={handleSaveInlineEdit}
                       className="btn-primary h-9 px-4 text-xs"
                     >
-                      Text speichern
+                      {t('saveText')}
                     </button>
                   </div>
                 </div>
@@ -682,7 +689,7 @@ export const TriageDeck: React.FC<TriageDeckProps> = ({
                   ))
                 ) : (
                   <span className="text-xs text-faint">
-                    👈 Wegwerfen · 👉 Aufgabe · Gedrückt halten = Mehr Optionen
+                    {t('swipeHint')}
                   </span>
                 )}
               </div>
@@ -702,7 +709,7 @@ export const TriageDeck: React.FC<TriageDeckProps> = ({
         <div className="hidden sm:flex p-3 panel-surface flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2 text-xs text-muted">
             <Calendar className="w-4 h-4 text-accent" />
-            <span>Aufgabe mit Fälligkeitsdatum anlegen:</span>
+            <span>{t('date.title')}</span>
           </div>
           <div className="flex items-center gap-2">
             <input
@@ -715,7 +722,7 @@ export const TriageDeck: React.FC<TriageDeckProps> = ({
               onClick={() => handleAction('keep', { convertTo: 'task', dueDate: taskDueDate })}
               className="btn-primary h-8 px-3 text-xs"
             >
-              Als Termin-Aufgabe speichern
+              {t('date.save')}
             </button>
           </div>
         </div>
@@ -724,7 +731,7 @@ export const TriageDeck: React.FC<TriageDeckProps> = ({
       {showListSelector && (
         <div className="hidden sm:block p-3 panel-surface">
           <p className="text-xs text-muted mb-2">
-            Quick Dump direkt einer Liste zuordnen:
+            {t('list.title')}
           </p>
           <div className="flex flex-wrap gap-1.5">
             {writableLists.length > 0 ? (
@@ -741,7 +748,7 @@ export const TriageDeck: React.FC<TriageDeckProps> = ({
                 </button>
               ))
             ) : (
-              <span className="text-xs text-muted">Keine Listen vorhanden.</span>
+              <span className="text-xs text-muted">{t('list.none')}</span>
             )}
           </div>
         </div>
@@ -756,14 +763,14 @@ export const TriageDeck: React.FC<TriageDeckProps> = ({
             className="min-h-[52px] px-3 py-2 rounded-xl bg-status-err-bg border border-status-err/30 text-status-err text-sm font-semibold flex items-center justify-center gap-2 touch-manipulation cursor-pointer active:scale-98"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span>Wegwerfen</span>
+            <span>{t('action.discard')}</span>
           </button>
           <button
             type="button"
             onClick={() => handleAction('keep', { convertTo: 'task' })}
             className="min-h-[52px] px-3 py-2 rounded-xl bg-accent text-on-accent text-sm font-semibold flex items-center justify-center gap-2 touch-manipulation cursor-pointer active:scale-98"
           >
-            <span>Aufgabe</span>
+            <span>{t('action.task')}</span>
             <ArrowRight className="w-4 h-4" />
           </button>
         </div>
@@ -788,13 +795,13 @@ export const TriageDeck: React.FC<TriageDeckProps> = ({
           >
             <ShoppingCart className="w-5 h-5 text-accent flex-shrink-0" />
             <div className="min-w-0">
-              <div className="text-sm font-semibold text-main">Auf Liste</div>
+              <div className="text-sm font-semibold text-main">{t('toList')}</div>
               <div className="text-[11px] text-muted truncate">
                 {writableLists.length === 0
-                  ? 'Keine Liste vorhanden'
+                  ? t('noList')
                   : singleWritableList
                   ? singleWritableList.title
-                  : 'Einkauf / Geteilt'}
+                  : t('listHint')}
               </div>
             </div>
           </button>
@@ -811,8 +818,8 @@ export const TriageDeck: React.FC<TriageDeckProps> = ({
           >
             <Calendar className="w-5 h-5 text-accent flex-shrink-0" />
             <div>
-              <div className="text-sm font-semibold text-main">Mit Termin</div>
-              <div className="text-[11px] text-muted">Datum wählen</div>
+              <div className="text-sm font-semibold text-main">{t('withDate')}</div>
+              <div className="text-[11px] text-muted">{t('chooseDate')}</div>
             </div>
           </button>
 
@@ -823,8 +830,8 @@ export const TriageDeck: React.FC<TriageDeckProps> = ({
           >
             <FileText className="w-5 h-5 text-accent flex-shrink-0" />
             <div>
-              <div className="text-sm font-semibold text-main">Als Notiz</div>
-              <div className="text-[11px] text-muted">Im Workspace</div>
+              <div className="text-sm font-semibold text-main">{t('asNote')}</div>
+              <div className="text-[11px] text-muted">{t('inWorkspace')}</div>
             </div>
           </button>
 
@@ -836,8 +843,8 @@ export const TriageDeck: React.FC<TriageDeckProps> = ({
           >
             <SkipForward className="w-5 h-5 text-muted flex-shrink-0" />
             <div>
-              <div className="text-sm font-semibold text-main">Später</div>
-              <div className="text-[11px] text-muted">Ans Ende schieben</div>
+              <div className="text-sm font-semibold text-main">{t('later')}</div>
+              <div className="text-[11px] text-muted">{t('laterHint')}</div>
             </div>
           </button>
         </div>
@@ -847,23 +854,23 @@ export const TriageDeck: React.FC<TriageDeckProps> = ({
       <div className="hidden sm:flex items-center gap-1.5">
         <button
           onClick={() => handleAction('discard')}
-          title="Wegwerfen (Taste H oder Pfeil links)"
+          title={t('discardTitle')}
           className="btn-action flex-1 h-9 px-3 justify-center whitespace-nowrap"
         >
           <X className="w-3.5 h-3.5 text-muted flex-shrink-0" />
-          <span>Wegwerfen</span>
+          <span>{t('action.discard')}</span>
         </button>
 
         <button
           onClick={() => handleSkipCard()}
           disabled={cards.length <= 1}
-          title="Später entscheiden – ans Ende schieben (Leertaste)"
+          title={t('laterTitle')}
           className={`btn-action flex-1 h-9 px-3 justify-center whitespace-nowrap ${
             cards.length <= 1 ? 'opacity-40 cursor-not-allowed' : ''
           }`}
         >
           <SkipForward className="w-3.5 h-3.5 text-muted flex-shrink-0" />
-          <span>Später</span>
+          <span>{t('later')}</span>
         </button>
 
         <button
@@ -881,10 +888,10 @@ export const TriageDeck: React.FC<TriageDeckProps> = ({
           }}
           title={
             writableLists.length === 0
-              ? 'Keine Liste vorhanden'
+              ? t('noList')
               : singleWritableList
-              ? `Auf ${singleWritableList.title}`
-              : 'Auf eine geteilte Liste setzen'
+              ? t('onList', { title: singleWritableList.title })
+              : t('toSharedList')
           }
           className={`btn-action flex-1 min-w-0 h-9 px-3 justify-center whitespace-nowrap ${
             writableLists.length === 0
@@ -896,16 +903,16 @@ export const TriageDeck: React.FC<TriageDeckProps> = ({
         >
           <ShoppingCart className="w-3.5 h-3.5 text-accent flex-shrink-0" />
           {/* A long list name is cut off (full name in the tooltip), so the bar never grows wider than the card */}
-          <span className="truncate">{singleWritableList ? `Auf ${singleWritableList.title}` : 'Auf Liste'}</span>
+          <span className="truncate">{singleWritableList ? t('onList', { title: singleWritableList.title }) : t('toList')}</span>
         </button>
 
         <button
           onClick={() => handleAction('keep', { convertTo: 'document' })}
-          title="In eine Workspace-Notiz umwandeln (Taste D)"
+          title={t('noteTitle')}
           className="btn-action flex-1 h-9 px-3 justify-center whitespace-nowrap"
         >
           <FileText className="w-3.5 h-3.5 text-accent flex-shrink-0" />
-          <span>Als Notiz</span>
+          <span>{t('asNote')}</span>
         </button>
 
         <button
@@ -913,22 +920,22 @@ export const TriageDeck: React.FC<TriageDeckProps> = ({
             setShowListSelector(false);
             setShowDateModal((prev) => !prev);
           }}
-          title="Als Aufgabe mit Fälligkeitsdatum (Taste T)"
+          title={t('dateTitle')}
           className={`btn-action flex-1 h-9 px-3 justify-center whitespace-nowrap ${
             showDateModal ? 'border-accent text-accent bg-accent-dim' : ''
           }`}
         >
           <Calendar className="w-3.5 h-3.5 text-accent flex-shrink-0" />
-          <span>Mit Termin</span>
+          <span>{t('withDate')}</span>
         </button>
 
         <button
           onClick={() => handleAction('keep', { convertTo: 'task' })}
-          title="Sofort als Aufgabe übernehmen (Taste L oder Pfeil rechts)"
+          title={t('taskTitle')}
           className="btn-primary flex-[1.25] h-9 px-4 justify-center whitespace-nowrap font-semibold"
         >
           <CheckSquare className="w-3.5 h-3.5 flex-shrink-0" />
-          <span>Aufgabe</span>
+          <span>{t('action.task')}</span>
         </button>
       </div>
 
@@ -950,7 +957,7 @@ export const TriageDeck: React.FC<TriageDeckProps> = ({
           >
             <Layers className="w-4 h-4 text-accent" />
             <span>
-              Warteschlange {showQueueMobile ? 'ausblenden' : 'anzeigen'} ({cards.length - 1})
+              {showQueueMobile ? t('queue.hide', { count: cards.length - 1 }) : t('queue.show', { count: cards.length - 1 })}
             </span>
             <ChevronDown
               className={`w-4 h-4 text-muted transition-transform duration-300 ${showQueueMobile ? 'rotate-180' : ''}`}
@@ -966,10 +973,10 @@ export const TriageDeck: React.FC<TriageDeckProps> = ({
               <div className="flex items-center justify-between mb-2 px-1 pt-2 sm:pt-0">
                 <span className="text-xs font-semibold uppercase tracking-wider text-muted flex items-center gap-1.5">
                   <Layers className="w-3.5 h-3.5 text-accent" />
-                  Warteschlange ({cards.length - 1})
+                  {t('queue.title', { count: cards.length - 1 })}
                 </span>
                 <span className="text-[11px] text-faint">
-                  Tippen = Vorholen · 👈 Wegwerfen · 👉 Aufgabe
+                  {t('queue.hint')}
                 </span>
               </div>
 
@@ -1004,7 +1011,7 @@ export const TriageDeck: React.FC<TriageDeckProps> = ({
             <div className="flex items-start justify-between gap-3 pb-2.5 border-b border-border">
               <div className="min-w-0">
                 <span className="text-[11px] font-semibold uppercase tracking-wider text-accent">
-                  Quick Dump zuordnen
+                  {t('sheet.title')}
                 </span>
                 <p className="text-sm font-medium text-main line-clamp-2 mt-0.5">
                   {actionSheetCard.content}
@@ -1038,10 +1045,10 @@ export const TriageDeck: React.FC<TriageDeckProps> = ({
                     }}
                     title={
                       writableLists.length === 0
-                        ? 'Keine Liste vorhanden'
+                        ? t('noList')
                         : singleWritableList
-                        ? `Auf ${singleWritableList.title}`
-                        : 'Auf Liste setzen'
+                        ? t('onList', { title: singleWritableList.title })
+                        : t('setOnList')
                     }
                     className={`min-h-[52px] px-3.5 py-2.5 rounded-xl bg-canvas hover:bg-panel-elevated border border-border text-left flex items-center gap-3 transition-colors cursor-pointer active:scale-98 ${
                       writableLists.length === 0 ? 'opacity-40 cursor-not-allowed' : ''
@@ -1049,13 +1056,13 @@ export const TriageDeck: React.FC<TriageDeckProps> = ({
                   >
                     <ShoppingCart className="w-5 h-5 text-accent flex-shrink-0" />
                     <div className="min-w-0">
-                      <div className="text-sm font-semibold text-main">Auf Liste</div>
+                      <div className="text-sm font-semibold text-main">{t('toList')}</div>
                       <div className="text-[11px] text-muted truncate">
                         {writableLists.length === 0
-                          ? 'Keine Liste vorhanden'
+                          ? t('noList')
                           : singleWritableList
                           ? singleWritableList.title
-                          : 'Einkauf / Geteilt'}
+                          : t('listHint')}
                       </div>
                     </div>
                   </button>
@@ -1067,8 +1074,8 @@ export const TriageDeck: React.FC<TriageDeckProps> = ({
                   >
                     <Calendar className="w-5 h-5 text-accent flex-shrink-0" />
                     <div>
-                      <div className="text-sm font-semibold text-main">Mit Termin</div>
-                      <div className="text-[11px] text-muted">Datum wählen</div>
+                      <div className="text-sm font-semibold text-main">{t('withDate')}</div>
+                      <div className="text-[11px] text-muted">{t('chooseDate')}</div>
                     </div>
                   </button>
 
@@ -1084,8 +1091,8 @@ export const TriageDeck: React.FC<TriageDeckProps> = ({
                   >
                     <FileText className="w-5 h-5 text-accent flex-shrink-0" />
                     <div>
-                      <div className="text-sm font-semibold text-main">Als Notiz</div>
-                      <div className="text-[11px] text-muted">Im Workspace</div>
+                      <div className="text-sm font-semibold text-main">{t('asNote')}</div>
+                      <div className="text-[11px] text-muted">{t('inWorkspace')}</div>
                     </div>
                   </button>
 
@@ -1099,8 +1106,8 @@ export const TriageDeck: React.FC<TriageDeckProps> = ({
                   >
                     <SkipForward className="w-5 h-5 text-muted flex-shrink-0" />
                     <div>
-                      <div className="text-sm font-semibold text-main">Später</div>
-                      <div className="text-[11px] text-muted">Ans Ende schieben</div>
+                      <div className="text-sm font-semibold text-main">{t('later')}</div>
+                      <div className="text-[11px] text-muted">{t('laterHint')}</div>
                     </div>
                   </button>
                 </div>
@@ -1120,7 +1127,7 @@ export const TriageDeck: React.FC<TriageDeckProps> = ({
                   className="w-full min-h-[46px] px-3.5 py-2 rounded-xl bg-canvas hover:bg-panel-elevated border border-border flex items-center justify-center gap-2 text-sm font-medium text-main transition-colors cursor-pointer"
                 >
                   <Edit3 className="w-4 h-4 text-accent" />
-                  <span>Text vor dem Zuordnen bearbeiten</span>
+                  <span>{t('sheet.editText')}</span>
                 </button>
 
                 {/* Primary Swipe Equivalents */}
@@ -1133,7 +1140,7 @@ export const TriageDeck: React.FC<TriageDeckProps> = ({
                     className="min-h-[46px] px-3 py-2 rounded-xl bg-status-err-bg border border-status-err/30 text-status-err text-sm font-semibold flex items-center justify-center gap-2 cursor-pointer"
                   >
                     <X className="w-4 h-4" />
-                    <span>Wegwerfen</span>
+                    <span>{t('action.discard')}</span>
                   </button>
 
                   <button
@@ -1147,7 +1154,7 @@ export const TriageDeck: React.FC<TriageDeckProps> = ({
                     className="min-h-[46px] px-4 py-2 rounded-xl bg-accent text-on-accent text-sm font-semibold flex items-center justify-center gap-2 whitespace-nowrap cursor-pointer"
                   >
                     <CheckSquare className="w-4 h-4 flex-shrink-0" />
-                    <span>Aufgabe</span>
+                    <span>{t('action.task')}</span>
                   </button>
                 </div>
               </div>
@@ -1156,7 +1163,7 @@ export const TriageDeck: React.FC<TriageDeckProps> = ({
             {sheetMode === 'date' && (
               <div className="space-y-3">
                 <label className="block text-xs font-medium text-muted">
-                  Fälligkeitsdatum für die Aufgabe wählen:
+                  {t('sheet.dateTitle')}
                 </label>
                 <input
                   type="date"
@@ -1170,7 +1177,7 @@ export const TriageDeck: React.FC<TriageDeckProps> = ({
                     onClick={() => setSheetMode('main')}
                     className="btn-action flex-1 h-11 text-sm"
                   >
-                    Zurück
+                    {t('sheet.back')}
                   </button>
                   <button
                     type="button"
@@ -1183,7 +1190,7 @@ export const TriageDeck: React.FC<TriageDeckProps> = ({
                     }
                     className="btn-primary flex-1 h-11 text-sm font-semibold"
                   >
-                    Mit Termin speichern
+                    {t('sheet.saveDate')}
                   </button>
                 </div>
               </div>
@@ -1192,7 +1199,7 @@ export const TriageDeck: React.FC<TriageDeckProps> = ({
             {sheetMode === 'list' && (
               <div className="space-y-3">
                 <p className="text-xs font-medium text-muted">
-                  Auf welche Liste soll dieser Punkt gesetzt werden?
+                  {t('sheet.listTitle')}
                 </p>
                 <div className="max-h-60 overflow-y-auto space-y-1.5">
                   {writableLists.length > 0 ? (
@@ -1215,7 +1222,7 @@ export const TriageDeck: React.FC<TriageDeckProps> = ({
                     ))
                   ) : (
                     <div className="py-4 text-center text-xs text-muted">
-                      Keine Listen vorhanden.
+                      {t('list.none')}
                     </div>
                   )}
                 </div>
@@ -1224,7 +1231,7 @@ export const TriageDeck: React.FC<TriageDeckProps> = ({
                   onClick={() => setSheetMode('main')}
                   className="btn-action w-full h-10 text-xs"
                 >
-                  Zurück
+                  {t('sheet.back')}
                 </button>
               </div>
             )}

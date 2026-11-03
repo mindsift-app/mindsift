@@ -1,4 +1,5 @@
 import { Check, Columns, Filter, Folder, Layers, LayoutList, Plus, Settings, Trash2, Users } from 'lucide-react';
+import i18n from '../../i18n';
 import { TaskList } from '../../lib/types';
 import { MobileMenuGroup } from '../../context/MobileActionContext';
 
@@ -69,7 +70,7 @@ export function buildTasksMenu({
   const primaryItems: any[] = [
     {
       id: 'new-task',
-      label: 'Neue Aufgabe erstellen',
+      label: i18n.t('tasks:menu.newTask'),
       icon: <Plus className="w-4 h-4" />,
       variant: 'accent',
       onClick: () => {
@@ -85,7 +86,7 @@ export function buildTasksMenu({
   const filterItems: any[] = [
     {
       id: 'tasks-filter-modal',
-      label: 'Filter, Hashtags & Sortierung',
+      label: i18n.t('tasks:menu.filter'),
       icon: <Filter className="w-4 h-4 text-accent" />,
       badge: filterSortActiveCount > 0 ? `${filterSortActiveCount} aktiv` : undefined,
       active: filterSortActiveCount > 0,
@@ -96,7 +97,7 @@ export function buildTasksMenu({
   const listManagementItems: any[] = [
     {
       id: 'new-task-list',
-      label: 'Neue Aufgabenliste anlegen',
+      label: i18n.t('tasks:tabs.newListTitle'),
       icon: <Folder className="w-4 h-4" />,
       onClick: () => setShowNewListModal(true),
     },
@@ -105,13 +106,13 @@ export function buildTasksMenu({
   if (currentSelectedList) {
     listManagementItems.push({
       id: 'share-task-list',
-      label: `Liste „${currentSelectedList.title}“ teilen`,
+      label: i18n.t('tasks:menu.shareList', { title: currentSelectedList.title }),
       icon: <Users className="w-4 h-4" />,
       onClick: () => handleOpenShareModal(currentSelectedList),
     });
     listManagementItems.push({
       id: 'delete-task-list',
-      label: `Liste „${currentSelectedList.title}“ löschen`,
+      label: i18n.t('tasks:menu.deleteList', { title: currentSelectedList.title }),
       icon: <Trash2 className="w-4 h-4" />,
       variant: 'danger',
       onClick: () => handleDeleteTaskList(currentSelectedList.id),
@@ -121,7 +122,7 @@ export function buildTasksMenu({
   const viewItems: any[] = [
     {
       id: 'filter-open',
-      label: 'Offene Aufgaben (Liste)',
+      label: i18n.t('tasks:menu.openList'),
       icon: <LayoutList className="w-4 h-4" />,
       badge: openCount,
       active: viewMode === 'list' && filter === 'open',
@@ -132,7 +133,7 @@ export function buildTasksMenu({
     },
     {
       id: 'filter-done',
-      label: 'Erledigte Aufgaben',
+      label: i18n.t('tasks:menu.done'),
       icon: <Check className="w-4 h-4" />,
       badge: doneCount,
       active: viewMode === 'list' && filter === 'done',
@@ -143,7 +144,7 @@ export function buildTasksMenu({
     },
     {
       id: 'filter-discarded',
-      label: 'Papierkorb',
+      label: i18n.t('common:trash'),
       icon: <Trash2 className="w-4 h-4" />,
       badge: trashCount,
       active: viewMode === 'list' && filter === 'discarded',
@@ -154,7 +155,7 @@ export function buildTasksMenu({
     },
     {
       id: 'view-kanban',
-      label: 'Kanban-Board Ansicht',
+      label: i18n.t('tasks:menu.kanban'),
       icon: <Columns className="w-4 h-4" />,
       badge: kanbanCount,
       active: viewMode === 'kanban',
@@ -165,7 +166,7 @@ export function buildTasksMenu({
   if (viewMode === 'kanban' && !isSelectedListReadOnly) {
     viewItems.push({
       id: 'manage-columns',
-      label: 'Kanban-Spalten verwalten',
+      label: i18n.t('tasks:menu.columns'),
       icon: <Settings className="w-4 h-4" />,
       onClick: () => setShowManageColumnsModal(true),
     });
@@ -174,7 +175,7 @@ export function buildTasksMenu({
   const listItems: any[] = [
     {
       id: 'list-all',
-      label: 'Alle Aufgaben',
+      label: i18n.t('tasks:allTasks'),
       icon: <Layers className="w-4 h-4" />,
       badge: openTasksCount || undefined,
       active: selectedListId === 'all',
@@ -196,22 +197,22 @@ export function buildTasksMenu({
     },
     {
       id: 'tasks-filters',
-      title: 'Filter & Sortierung',
+      title: i18n.t('tasks:filter.title'),
       items: filterItems,
     },
     {
       id: 'tasks-list-management',
-      title: 'Listen-Verwaltung',
+      title: i18n.t('tasks:menu.listManagement'),
       items: listManagementItems,
     },
     {
       id: 'tasks-views',
-      title: 'Ansicht & Status',
+      title: i18n.t('tasks:menu.viewStatus'),
       items: viewItems,
     },
     {
       id: 'tasks-lists',
-      title: 'Aufgabenlisten wechseln',
+      title: i18n.t('tasks:menu.switchList'),
       items: listItems,
     },
   ];

@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Mic,
   MicOff,
@@ -42,6 +43,7 @@ export const InstantCaptureBar: React.FC<InstantCaptureBarProps> = ({
   hideTargetPicker = false,
   fixedTarget,
 }) => {
+  const { t } = useTranslation('triage');
   // Read-only shared lists cannot take new items; stable reference for the effect below
   const writableLists = useMemo(() => lists.filter((l) => l.isOwner || l.role !== 'viewer'), [lists]);
   const [content, setContent] = useState('');
@@ -218,12 +220,12 @@ export const InstantCaptureBar: React.FC<InstantCaptureBarProps> = ({
 
     const savedMsg =
       effectiveTarget === 'task'
-        ? 'Als Aufgabe!'
+        ? t('capture.okTask')
         : effectiveTarget === 'list_item'
-        ? 'Auf Liste!'
+        ? t('capture.okList')
         : effectiveTarget === 'document'
-        ? 'Als Notiz!'
-        : 'In Triage!';
+        ? t('capture.okNote')
+        : t('capture.okInbox');
     setJustSavedLabel(savedMsg);
     setTimeout(() => setJustSavedLabel(null), 1600);
     inputRef.current?.focus();
@@ -259,9 +261,9 @@ export const InstantCaptureBar: React.FC<InstantCaptureBarProps> = ({
 
   const getTargetLabel = () => {
     if (target === 'task') return selectedTaskList ? (selectedTaskList.icon ? `${selectedTaskList.icon} ${selectedTaskList.title}` : selectedTaskList.title) : 'Direkt-Aufgabe';
-    if (target === 'list_item') return selectedList ? [selectedList.icon, selectedList.title].filter(Boolean).join(' ') : 'Auf Liste';
+    if (target === 'list_item') return selectedList ? [selectedList.icon, selectedList.title].filter(Boolean).join(' ') : t('toList');
     if (target === 'document') return 'Direkt-Notiz';
-    return 'Quick Dump';
+    return t('quickDump');
   };
 
   return (
@@ -305,18 +307,18 @@ export const InstantCaptureBar: React.FC<InstantCaptureBarProps> = ({
               voiceError
                 ? voiceError
                 : isListening
-                ? 'Ich höre zu…'
+                ? t('app:capture.listening')
                 : isTranscribing
-                ? 'Wird erkannt…'
+                ? t('app:capture.transcribing')
                 : hideTargetPicker || fixedTarget === 'inbox'
-                ? 'Quick Dump erfassen…'
+                ? t('capture.placeholderInbox')
                 : target === 'task'
-                ? 'Aufgabe erfassen…'
+                ? t('capture.placeholderTask')
                 : target === 'list_item'
-                ? `Zu „${selectedList?.title || 'Liste'}“ hinzufügen…`
+                ? t('capture.placeholderList', { title: selectedList?.title || t('capture.list') })
                 : target === 'document'
-                ? 'Notiz erfassen…'
-                : 'Quick Dump…'
+                ? t('capture.placeholderNote')
+                : t('capture.placeholder')
             }
             className={`flex-1 min-w-0 w-full bg-transparent text-main placeholder-faint text-xs sm:text-sm focus:outline-none resize-none leading-5 py-0.5 ${
               isOverMaxHeight ? 'overflow-y-auto' : 'overflow-hidden'
@@ -336,7 +338,7 @@ export const InstantCaptureBar: React.FC<InstantCaptureBarProps> = ({
               <button
                 type="button"
                 onClick={() => setShowOptions((prev) => !prev)}
-                title="Ziel wählen (Quick Dump, direkt als Aufgabe, auf Liste oder als Notiz) & Optionen"
+                title={t('capture.targetTitle')}
                 className={`h-6 px-2.5 capture-pill rounded-full text-[11px] flex items-center gap-1 transition-colors cursor-pointer ${
                   showOptions || target !== 'inbox' || priority !== 'normal' || dueDate
                     ? 'bg-accent-dim text-accent border border-accent-border font-medium'
@@ -370,7 +372,7 @@ export const InstantCaptureBar: React.FC<InstantCaptureBarProps> = ({
                   type="button"
                   onClick={toggleVoiceDictation}
                   disabled={isTranscribing}
-                  title={isListening ? 'Aufnahme beenden' : isTranscribing ? 'Wird erkannt…' : 'Spracheingabe'}
+                  title={isListening ? t('app:capture.stopRecording') : isTranscribing ? t('app:capture.transcribing') : t('app:capture.voiceInput')}
                   className={`w-6 h-6 capture-pill rounded-full flex items-center justify-center transition-colors ${
                     isListening || isTranscribing
                       ? 'bg-accent-dim text-accent'
@@ -408,13 +410,13 @@ export const InstantCaptureBar: React.FC<InstantCaptureBarProps> = ({
                   <ArrowDown className="w-3 h-3" />
                   <span className="inline">
                     {hideTargetPicker || (fixedTarget || target) === 'inbox'
-                      ? 'Quick Dump'
+                      ? t('quickDump')
                       : target === 'task'
-                      ? 'Als Aufgabe'
+                      ? t('capture.asTask')
                       : target === 'list_item'
-                      ? 'Auf Liste'
+                      ? t('toList')
                       : target === 'document'
-                      ? 'Als Notiz'
+                      ? t('asNote')
                       : 'Dump'}
                   </span>
                 </>
@@ -438,10 +440,10 @@ export const InstantCaptureBar: React.FC<InstantCaptureBarProps> = ({
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
                     <span className="text-[11px] font-semibold uppercase tracking-wider text-muted">
-                      Wohin damit?
+                      {t('capture.where')}
                     </span>
                     <span className="text-[11px] text-faint">
-                      Standard: Quick Dump für späteres Swipen
+                      {t('capture.whereHint')}
                     </span>
                   </div>
 
@@ -459,7 +461,7 @@ export const InstantCaptureBar: React.FC<InstantCaptureBarProps> = ({
                       }`}
                     >
                       <Layers className="w-3.5 h-3.5 text-accent flex-shrink-0" />
-                      <span className="truncate">Quick Dump (Triage)</span>
+                      <span className="truncate">{t('capture.inbox')}</span>
                     </button>
 
                     {/* Option 2: Direct Task */}
@@ -494,7 +496,7 @@ export const InstantCaptureBar: React.FC<InstantCaptureBarProps> = ({
                       }`}
                     >
                       <ShoppingCart className="w-3.5 h-3.5 text-accent flex-shrink-0" />
-                      <span className="truncate">Direkt auf Liste…</span>
+                      <span className="truncate">{t('capture.directList')}</span>
                     </button>
 
                     {/* Option 4: Direct Workspace Note */}
@@ -510,7 +512,7 @@ export const InstantCaptureBar: React.FC<InstantCaptureBarProps> = ({
                       }`}
                     >
                       <FileText className="w-3.5 h-3.5 text-accent flex-shrink-0" />
-                      <span className="truncate">Direkt als Notiz</span>
+                      <span className="truncate">{t('capture.directNote')}</span>
                     </button>
                   </div>
                 </div>
@@ -520,9 +522,9 @@ export const InstantCaptureBar: React.FC<InstantCaptureBarProps> = ({
                   <div className="pt-2 border-t border-border flex flex-wrap items-center gap-1.5">
                     <span className="text-muted mr-1 flex items-center gap-1">
                       <CheckSquare className="w-3 h-3 text-accent" />
-                      Aufgabenliste:
+                      {t('capture.taskList')}
                     </span>
-                    {[{ id: '', icon: '📥', title: 'Alle Aufgaben' }, ...writableTaskLists].map((tl) => {
+                    {[{ id: '', icon: '📥', title: t('capture.allTasks') }, ...writableTaskLists].map((tl) => {
                       const isSelected = (selectedTaskList?.id || '') === tl.id;
                       return (
                         <button
@@ -550,7 +552,7 @@ export const InstantCaptureBar: React.FC<InstantCaptureBarProps> = ({
                   <div className="pt-2 border-t border-border flex flex-wrap items-center gap-1.5">
                     <span className="text-muted mr-1 flex items-center gap-1">
                       <ShoppingCart className="w-3 h-3 text-accent" />
-                      Liste:
+                      {t('capture.listLabel')}
                     </span>
                     {writableLists.map((lst) => {
                       const isSelected = targetListId === lst.id;
@@ -581,13 +583,13 @@ export const InstantCaptureBar: React.FC<InstantCaptureBarProps> = ({
             {/* Row 2: Priority & Due Date */}
             <div className={`${!hideTargetPicker ? 'pt-2 border-t border-border' : ''} flex flex-wrap items-center justify-between gap-2.5`}>
               <div className="flex flex-wrap items-center gap-1.5">
-                <span className="text-muted text-[11px] font-semibold mr-1">Priorität:</span>
+                <span className="text-muted text-[11px] font-semibold mr-1">{t('capture.priority')}</span>
                 {(['low', 'normal', 'high', 'urgent'] as PriorityLevel[]).map((p) => {
                   const config: Record<PriorityLevel, { label: string; icon?: React.ReactNode; activeClass: string }> = {
-                    low: { label: 'Niedrig', activeClass: 'bg-canvas border-strong text-main font-semibold shadow-xs' },
-                    normal: { label: 'Normal', activeClass: 'bg-accent/15 border-accent text-accent font-semibold shadow-xs' },
-                    high: { label: 'Wichtig', icon: <AlertTriangle className="w-3 h-3 text-status-warn" />, activeClass: 'bg-status-warn/15 border-status-warn text-status-warn font-semibold shadow-xs' },
-                    urgent: { label: 'Dringend', icon: <Flame className="w-3 h-3 text-status-err" />, activeClass: 'bg-status-err/15 border-status-err text-status-err font-semibold shadow-xs' },
+                    low: { label: t('common:priority.low'), activeClass: 'bg-canvas border-strong text-main font-semibold shadow-xs' },
+                    normal: { label: t('common:priority.normal'), activeClass: 'bg-accent/15 border-accent text-accent font-semibold shadow-xs' },
+                    high: { label: t('common:priority.high'), icon: <AlertTriangle className="w-3 h-3 text-status-warn" />, activeClass: 'bg-status-warn/15 border-status-warn text-status-warn font-semibold shadow-xs' },
+                    urgent: { label: t('common:priority.urgent'), icon: <Flame className="w-3 h-3 text-status-err" />, activeClass: 'bg-status-err/15 border-status-err text-status-err font-semibold shadow-xs' },
                   };
                   const active = priority === p;
                   const item = config[p];
@@ -615,7 +617,7 @@ export const InstantCaptureBar: React.FC<InstantCaptureBarProps> = ({
               <div className="flex items-center gap-1.5">
                 <span className="text-muted text-[11px] font-semibold flex items-center gap-1">
                   <Calendar className="w-3.5 h-3.5 text-accent" />
-                  Fällig am:
+                  {t('capture.due')}
                 </span>
                 <input
                   type="date"

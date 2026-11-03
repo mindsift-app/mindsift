@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Hash } from 'lucide-react';
 import { Thought } from '../../lib/types';
 
@@ -15,6 +16,7 @@ interface TagFilterRowProps {
 // Desktop hashtag filter of TasksView: chips in one line, cut off with "…" when too many; "…" opens them all
 // in lines. Two siblings in the toolbar's flex row (the chips and the "…" button), hence the fragment.
 export function TagFilterRow({ tags, tasks, selected, onSelect, layoutKey }: TagFilterRowProps) {
+  const { t } = useTranslation('tasks');
   const tagRowRef = useRef<HTMLDivElement>(null);
   const [tagsExpanded, setTagsExpanded] = useState(false);
   const [tagsOverflow, setTagsOverflow] = useState(false);
@@ -39,7 +41,7 @@ export function TagFilterRow({ tags, tasks, selected, onSelect, layoutKey }: Tag
       >
         <span className="text-[11px] font-semibold text-muted flex items-center gap-1 flex-shrink-0">
           <Hash className="w-3 h-3 text-accent" />
-          <span>Hashtags:</span>
+          <span>{t('detail.hashtags')}</span>
         </span>
         <button
           onClick={() => onSelect(null)}
@@ -49,7 +51,7 @@ export function TagFilterRow({ tags, tasks, selected, onSelect, layoutKey }: Tag
               : 'bg-canvas border-border text-muted hover:text-main'
           }`}
         >
-          Alle ({tasks.length})
+          {t('tags.all', { count: tasks.length })}
         </button>
         {tags.map((tag) => {
           const count = tasks.filter((t) => t.tags?.includes(tag)).length;
@@ -82,8 +84,8 @@ export function TagFilterRow({ tags, tasks, selected, onSelect, layoutKey }: Tag
         <button
           onClick={() => setTagsExpanded(true)}
           className="h-6 px-2 -ml-1 mb-1 text-xs rounded-pill border border-border bg-canvas text-muted hover:text-main flex-shrink-0"
-          title="Alle Hashtags zeigen"
-          aria-label="Alle Hashtags zeigen"
+          title={t('tags.showAll')}
+          aria-label={t('tags.showAll')}
         >
           …
         </button>
