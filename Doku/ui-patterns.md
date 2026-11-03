@@ -1,129 +1,127 @@
-# UI-Muster
+# UI Patterns
 
-Wiederkehrende Bedienelemente, die überall gleich aussehen und sich gleich verhalten. Wer eines davon neu braucht, nimmt die vorhandene Komponente und baut keine eigene Variante.
+Recurring user interface elements that look and behave consistently everywhere. When a new one is needed, use the existing component instead of building a custom variation.
 
-## Personen suchen (Type-to-Search)
+## Searching People (Type-to-Search)
 
-Komponente: [UserAutocomplete.tsx](../frontend/src/features/UserAutocomplete.tsx)
+Component: [UserAutocomplete.tsx](../frontend/src/features/UserAutocomplete.tsx)
 
-Eingesetzt beim Teilen (`UnifiedShareModal`), beim Hinzufügen zu Gruppen (`GroupsView`) und beim Zuweisen von Aufgaben (`TaskDetailModal`).
+Used in sharing (`UnifiedShareModal`), adding to groups (`GroupsView`), and assigning tasks (`TaskDetailModal`).
 
-- **Keine Liste vorab:** Solange das Feld leer ist, erscheint nichts, auch nicht beim Reinklicken. Kein Dropdown mit allen Personen.
-- **Erst beim Tippen** erscheinen Treffer direkt unter dem Feld, **höchstens 3** (`MAX_RESULTS`). Gesucht wird in Anzeigename, `@Benutzername` und E-Mail.
-- Der **erste Treffer ist vorausgewählt**: Tippen + Enter übernimmt ihn. Pfeiltasten wechseln, Escape schließt.
-- Bereits gewählte oder freigegebene Personen werden über `excludeUserIds` ausgeblendet.
-- **Einzelauswahl** (Teilen, Gruppen): `selectedUser` setzen; das Feld zeigt dann die gewählte Person mit ×.
-- **Mehrfachauswahl** (Aufgaben zuweisen): `selectedUser={null}` lassen und in `onSelectUser` zur Liste hinzufügen. Die Gewählten stehen als Chips (Avatar, Name, ×) über dem Feld, das Feld bleibt für die nächste Suche frei.
-- Am Handy sind Feld, gewählte Person und Trefferzeilen 44 px hoch (Schrift 16 px, kein Zoom unter iOS), ab `sm` wie bisher 32 px.
+- **No list upfront:** As long as the field is empty, nothing appears—even when clicking inside. No dropdown listing all users.
+- **Only when typing** do results appear directly below the field, **at most 3** (`MAX_RESULTS`). Searches across display name, `@username`, and email.
+- The **first result is preselected**: Typing + Enter selects it. Arrow keys navigate, Escape closes.
+- Already selected or shared users are hidden via `excludeUserIds`.
+- **Single selection** (Sharing, Groups): Pass `selectedUser`; the field then displays the selected user with a ×.
+- **Multi-selection** (Assigning tasks): Leave `selectedUser={null}` and add to the list in `onSelectUser`. Selected users appear as chips (avatar, name, ×) above the field; the field remains available for the next search.
+- On mobile, the field, selected user, and result rows are 44 px high (16 px font, preventing iOS auto-zoom); from `sm` breakpoint upward, 32 px as before.
 
-## Profilbilder als Stapel
+## Profile Pictures as Stack
 
-Komponente: [AvatarStack.tsx](../frontend/src/components/AvatarStack.tsx) (nutzt `UserAvatar`)
+Component: [AvatarStack.tsx](../frontend/src/components/AvatarStack.tsx) (uses `UserAvatar`)
 
-- Kleine runde Profilbilder, **leicht überlappend**, **höchstens 3**. Weitere Personen erscheinen als monochromer Kreis „+n“.
-- Ohne Profilbild zeigt `UserAvatar` die Initialen.
-- `ringClass` bekommt die Farbe der Fläche dahinter (meist `ring-[var(--bg-panel)]` oder `ring-[var(--bg-app)]`), damit die Kreise sauber getrennt sind.
-- Größen: `xxs` (16 px) in Tabs, Kanban-Karten und Listeneinträgen, `xs` (20 px) in Aufgabenzeilen und Kopfzeilen.
-- **Kein Hover-Effekt** im Stapel selbst. Einzige Ausnahme ist die Anwesenheit in Notizen ([PresenceAvatars.tsx](../frontend/src/features/workspace/PresenceAvatars.tsx)): Dort zeigt Hover oder Tastaturfokus die Liste „Gerade online“.
+- Small circular profile pictures, **slightly overlapping**, **at most 3**. Additional users appear as a monochrome "+n" circle.
+- Without a profile picture, `UserAvatar` displays the user's initials.
+- `ringClass` receives the color of the surface behind it (typically `ring-[var(--bg-panel)]` or `ring-[var(--bg-app)]`) to cleanly separate the circles.
+- Sizes: `xxs` (16 px) in tabs, Kanban cards, and list items; `xs` (20 px) in task rows and headers.
+- **No hover effect** on the stack itself. The only exception is presence in notes ([PresenceAvatars.tsx](../frontend/src/features/workspace/PresenceAvatars.tsx)): there, hover or keyboard focus displays the "Currently online" list.
 
-| Ort | Wer wird gezeigt |
+| Location | Who is displayed |
 |---|---|
-| Notiz-Kopfzeile | wer die Notiz gerade geöffnet hat (Profilbilder aus `/users/directory`) |
-| Tabs der Aufgabenlisten und Listen | alle mit Zugriff außer mir (`members`) |
-| Aufgabenzeile und Kanban-Karte | zugewiesene Personen (nur in geteilten Listen) |
-| Eintrag einer geteilten Liste | wer ihn hinzugefügt hat (`createdBy`); ältere Einträge ohne Autor zeigen nichts |
+| Note header | Users who currently have the note open (avatars from `/users/directory`) |
+| Tabs of task lists and lists | Everyone with access except yourself (`members`) |
+| Task row and Kanban card | Assigned users (only in shared lists) |
+| Shared list item | The user who added it (`createdBy`); legacy items without an author show nothing |
 
-## Schalter
+## Switches
 
-Komponente: [ToggleSwitch.tsx](../frontend/src/components/ToggleSwitch.tsx)
+Component: [ToggleSwitch.tsx](../frontend/src/components/ToggleSwitch.tsx)
 
-- Ein/Aus-Einstellungen sind immer Schalter, keine Checkbox-Haken und keine „angehakten“ Buttons (Einrichtung, Admin-Bereich, Berechtigungen eines API-Keys, Bereiche beim Import und Wiederherstellen → `SectionPicker`).
-- Text links (Titel, darunter eine kurze Erklärung in `text-muted`), Schalter rechts.
-- Eine Auswahl **einer** Option aus mehreren (Import-Modus, Ecken, Theme-Folgen) bleibt eine Button-Gruppe mit `role="radio"`.
+- On/Off settings are always switches, never checkboxes or "ticked" buttons (setup wizard, admin area, API key permissions, import and restore sections → `SectionPicker`).
+- Text on the left (title, with a brief explanation in `text-muted` below), switch on the right.
+- Choosing **one** option out of multiple choices (import mode, corner radius, theme tracking) remains a button group with `role="radio"`.
 
-## Kleine Dialoge (Anlegen, Umbenennen)
+## Small Dialogs (Create, Rename)
 
-Komponente: [FormSheet.tsx](../frontend/src/components/FormSheet.tsx), Tastatur-Abstand über [useKeyboardInset.ts](../frontend/src/lib/useKeyboardInset.ts)
+Component: [FormSheet.tsx](../frontend/src/components/FormSheet.tsx), keyboard inset handled via [useKeyboardInset.ts](../frontend/src/lib/useKeyboardInset.ts)
 
-- **Handy:** Bottom-Sheet über die volle Breite, das direkt über der Bildschirmtastatur sitzt (der Abstand kommt aus `visualViewport`), Griff oben, Felder und Buttons mindestens 44 px hoch, Eingaben in 16 px (sonst zoomt iOS), Abbrechen/Erstellen nebeneinander über die ganze Breite.
-- **Desktop:** zentriertes Fenster, oder mit `anchor` neben der Klickposition (z. B. „Neuer Ordner“ im Explorer).
-- Escape und Klick auf den Hintergrund schließen. Genutzt für neue Aufgabenliste, neue Einkaufsliste, neue Notiz und neuen Ordner; das Emoji-Sheet nutzt denselben Tastatur-Abstand.
-- **Icon-Feld:** [EmojiIconButton.tsx](../frontend/src/components/EmojiIconButton.tsx) statt eines Textfelds: zeigt das Emoji (ohne Icon ein dezentes „Icon wählen“) und öffnet denselben Emoji-Auswähler wie der Notiz-Kopf, inklusive „Entfernen“. Im Dialog liegt der Auswähler per Portal über der Seite; Escape schließt nur ihn.
+- **Mobile:** Full-width bottom sheet positioned directly above the virtual keyboard (inset calculated via `visualViewport`), grab handle on top, inputs and buttons at least 44 px high, text inputs at 16 px (to prevent iOS auto-zoom), Cancel/Create buttons side-by-side spanning full width.
+- **Desktop:** Centered window, or anchored next to click position via `anchor` (e.g., "New Folder" in explorer).
+- Escape key and clicking the backdrop close the dialog. Used for new task lists, new shopping lists, new notes, and new folders; the emoji sheet uses the same keyboard inset logic.
+- **Icon field:** [EmojiIconButton.tsx](../frontend/src/components/EmojiIconButton.tsx) instead of a text field: displays the emoji (or a subtle "Select icon" when empty) and opens the same emoji picker as the note header, including "Remove". In the dialog, the picker renders above the page via a portal; Escape closes only the picker.
 
-## Bestätigung an der Mausposition
+## Confirmation at Mouse Position
 
-Komponente: [ConfirmPopover.tsx](../frontend/src/components/ConfirmPopover.tsx)
+Component: [ConfirmPopover.tsx](../frontend/src/components/ConfirmPopover.tsx)
 
-- Für Rückfragen zu einer einzelnen Aktion, z. B. Ordner löschen: ein kleines Fenster direkt an der Stelle des Klicks (unten rechts vom Mauszeiger, am Fensterrand nach oben bzw. links geklappt), kein Dialog in der Bildmitte.
-- „Abbrechen“ und die Aktion (gefährliche Aktionen rot mit `danger`); die Aktion hat den Fokus, Enter bestätigt, Escape oder ein Klick daneben schließt. Per Tastatur ausgelöst öffnet es am Knopf. Am Handy sind die Knöpfe 44 px hoch.
+- For confirming a single action (e.g., deleting a folder): a small popover directly at the click location (bottom right of the cursor, flipped upwards or leftwards at window edges), not a modal dialog centered on screen.
+- "Cancel" and the action button (destructive actions in red via `danger`); the action button is focused, Enter confirms, Escape or clicking outside closes. Triggered via keyboard, it opens anchored to the button. On mobile, buttons are 44 px high.
 
-## Hinweis mit „Rückgängig“
+## Notification with "Undo"
 
-- Kurzer Hinweis unten mittig (`role="status"`, Fläche `bg-panel-elevated`), am Handy über der unteren Leiste; mit Aktion bleibt er 8–10 s, sonst 3–4 s.
-- Nach Löschen in den Papierkorb: „… im Papierkorb · Rückgängig“ (Workspace und Aufgaben). In den Aufgaben macht `Strg+Z` dasselbe; eine neue Aktion blendet den alten Hinweis aus, damit „Rückgängig“ nie einen anderen Schritt trifft.
+- Brief toast notification centered at the bottom (`role="status"`, surface `bg-panel-elevated`), placed above the bottom navigation bar on mobile; stays for 8–10 s when an action is present, otherwise 3–4 s.
+- After moving items to trash: "… moved to trash · Undo" (workspace and tasks). In tasks, `Ctrl+Z` does the same; performing a new action hides the previous notification so "Undo" never targets the wrong step.
 
-## Zähler
+## Counters
 
-Komponente: [CountBadge.tsx](../frontend/src/components/CountBadge.tsx), CSS-Klassen `count-badge*` in [index.css](../frontend/src/index.css). Es gibt keine anderen Zähler-Stile mehr.
+Component: [CountBadge.tsx](../frontend/src/components/CountBadge.tsx), CSS classes `count-badge*` in [index.css](../frontend/src/index.css). No other counter styles are used.
 
-- **Form:** runder, gefüllter Kreis mit dünnem Rand, ohne Schatten oder Ring, mindestens 16 px, ab 100 als „99+“ (der Screenreader liest die echte Zahl). Bei 0 ausgeblendet, außer mit `showZero` (z. B. Mitgliederzahl, mobiles Menü).
-- **Farbe (`variant`):**
-  - `accent`: Hier wartet etwas auf dich. Navigationsleiste: Triage (Inbox), Aufgaben (offene Aufgaben), Listen (offene Einträge aller eigenen und geteilten Listen). Workspace hat keinen Zähler.
-  - `muted` (Standard): reine Anzahl. Tabs der Aufgabenlisten und Listen, Organisationen, mobiles Menü.
-  - Beide kommen aus den Theme-Variablen (`--accent-primary`/`--text-on-accent` bzw. `--text-muted`/`--bg-panel`) und passen sich damit jedem Theme an. Der Akzent liegt auf einer deckenden Panel-Fläche, damit am Handy das Icon darunter nicht durchscheint.
+- **Shape:** Solid round circle with a subtle border, no shadow or ring, minimum 16 px, displayed as "99+" from 100 upward (screen readers announce the actual number). Hidden at 0 unless `showZero` is set (e.g., member count, mobile menu).
+- **Color (`variant`):**
+  - `accent`: Something is waiting for you. Navigation bar: Triage (inbox), Tasks (open tasks), Lists (open items across all personal and shared lists). Workspace has no counter.
+  - `muted` (default): Pure item count. Tabs of task lists and lists, organizations, mobile menu.
+  - Both draw from theme variables (`--accent-primary`/`--text-on-accent` or `--text-muted`/`--bg-panel`), adapting seamlessly to any theme. The accent variant sits on an opaque panel surface so underlying icons do not show through on mobile.
 - **Position (`position`):**
-  - `text`: an Beschriftungen (Navigation, Reiter der Aufgabenlisten und Listen, Workspace-Kopf). Der Zähler steht im Textfluss direkt hinter dem Wort, leicht angehoben, und hängt immer 2 px über den letzten Buchstaben, egal wie viele Stellen die Zahl hat; breitere Zahlen machen den Reiter breiter. Der Text steht dafür in einem `inline-flex items-center`-Span.
-  - `corner`: Benachrichtigungs-Badge oben rechts am nächsten `relative` Elternelement; für Icons, z. B. in der mobilen Leiste (`-top-1.5 -right-2.5`).
-  - `inline`: im Textfluss.
-- Zahlen im mobilen Menü (`MobileActionContext`, `badge: number`) werden automatisch als `CountBadge` gezeigt; Text-Badges wie „2 aktiv“ bleiben Textmarken.
-- **Wichtig für neue Klassen:** Tailwind entfernt Klassen aus `@layer components`, die nicht wörtlich im Code stehen. Klassennamen deshalb nie zusammensetzen (`count-badge-${variant}`), sondern ausschreiben.
+  - `text`: Attached to labels (navigation, task list and list tabs, workspace header). The badge sits inline directly after the word, slightly raised, hovering 2 px above the last letters regardless of digit count; wider numbers widen the tab. Text is wrapped in an `inline-flex items-center` span for this.
+  - `corner`: Notification badge placed at the top right of the closest `relative` parent element; used for icons, e.g. in the mobile bottom bar (`-top-1.5 -right-2.5`).
+  - `inline`: In normal text flow.
+- Numbers in the mobile menu (`MobileActionContext`, `badge: number`) are automatically rendered as `CountBadge`; text badges such as "2 active" remain text tags.
+- **Important for new classes:** Tailwind purges classes from `@layer components` that are not present verbatim in the source code. Therefore, never interpolate class names (`count-badge-${variant}`); write them out fully.
 
-## Herkunfts-Badge (API-Schlüssel)
+## Origin Badge (API Keys)
 
-Komponente: [OriginBadge.tsx](../frontend/src/components/OriginBadge.tsx)
+Component: [OriginBadge.tsx](../frontend/src/components/OriginBadge.tsx)
 
-- Eine Badge für alles, was ein API-Schlüssel angelegt oder geändert hat (Feld `origin`): neutraler Rahmen, vorne ein Symbol für den Zugang (Webhook = REST/curl, Roboter = MCP), dahinter der Name des Schlüssels. Ältere Einträge ohne Schlüssel zeigen „API“ bzw. „MCP“.
-- Höchstens eine Badge pro Eintrag: der Schlüssel, der angelegt hat, sonst der, der zuletzt geändert hat. Sie bleibt dauerhaft, auch nach eigenem Bearbeiten und nach der Triage.
-- Details (angelegt / zuletzt geändert, mit Schlüssel und Zeit) per Mouseover und per Tippen (kleines Info-Fenster, am Handy mit vergrößerter Trefferfläche); in der Aufgaben-Detailansicht stehen sie zusätzlich unten (`originDetails`). Ein Tipp auf die Badge öffnet nie den Eintrag.
-- Größen: `sm` in Aufgabenzeilen, Inbox-Liste und Detailansicht, `xs` auf Kanban-Karten und in Listen, `md` auf den Triage-Karten.
-- In der Aufgaben-Detailansicht steht die Badge am Handy nicht im Kopf (kein Platz neben den Knöpfen); dort zeigen nur die Details unten die Herkunft.
+- A badge indicating items created or modified by an API key (field `origin`): neutral border, icon on the left representing access type (webhook = REST/curl, robot = MCP), followed by key name. Legacy items without a key name display "API" or "MCP".
+- At most one badge per item: the key that created it, or alternatively the one that last modified it. It persists permanently, even after manual edits and after triage.
+- Details (created / last modified, key name, and timestamp) via hover and tap (small tooltip popover, with enlarged tap target on mobile); in the task detail view, details are also shown at the bottom (`originDetails`). Tapping the badge never opens the item.
+- Sizes: `sm` in task rows, inbox list, and detail view; `xs` on Kanban cards and in lists; `md` on triage cards.
+- In the task detail view on mobile, the badge is omitted from the header (no room next to buttons); origin is shown only in the bottom details there.
 
-## Liste wechseln (Handy)
+## Switching Lists (Mobile)
 
-Komponente: [ListSwitcher.tsx](../frontend/src/components/ListSwitcher.tsx)
+Component: [ListSwitcher.tsx](../frontend/src/components/ListSwitcher.tsx)
 
-- In der Kopfleiste am Handy (Aufgaben, Listen) ist der Titel der offenen Liste ein Knopf mit Pfeil. Ein Tipp klappt alle Listen auf, mit Icon, Zähler (`CountBadge`, `muted`) und Haken an der offenen; ein Tipp auf eine Liste wechselt dorthin.
-- Schließt bei Tipp daneben und mit Escape. Am Desktop bleiben die Reiter über der Liste.
+- In the mobile top bar (Tasks, Lists), the open list title is a button with an arrow. Tapping it opens a dropdown of all lists with icon, counter (`CountBadge`, `muted`), and checkmark on the currently active list; tapping a list switches to it.
+- Closes on outside tap and on Escape. On desktop, tabs remain visible above the list.
 
-## Kopfzeile: Status | Aktionen
+## Header: Status | Actions
 
-Komponente für den Verbindungsstatus: [LivePill.tsx](../frontend/src/components/LivePill.tsx) (Notizen zeigen ihren eigenen Sync-Weg im selben Aussehen).
+Component for connection status: [LivePill.tsx](../frontend/src/components/LivePill.tsx) (notes display their own sync transport in the same visual style).
 
-- Rechts im Kopf von Notizen, Aufgaben und Listen gilt dieselbe Reihenfolge: links die Statusanzeigen (Live-Pille, „Geteilt“), dann ein senkrechter Trenner (`w-px h-5 bg-border`), rechts die Knöpfe (Teilen, Ansicht, Menü). Am Handy genauso, dort steht in der Pille nur „Live“.
+- On the right side of headers in Notes, Tasks, and Lists, the same layout order applies: status indicators on the left (Live pill, "Shared"), followed by a vertical divider (`w-px h-5 bg-border`), and action buttons on the right (Share, View, Menu). On mobile, the layout is identical, but the pill displays only "Live".
 
-## Mikrofon in Eingabezeilen
+## Microphone in Input Fields
 
-Komponente: [VoiceInputButton.tsx](../frontend/src/components/VoiceInputButton.tsx) (nutzt `useVoiceInput` wie der Quick Dump)
+Component: [VoiceInputButton.tsx](../frontend/src/components/VoiceInputButton.tsx) (uses `useVoiceInput` like Quick Dump)
 
-- Runder Mikrofon-Knopf direkt in der Zeile, rechts im Feld; diktierter Text wird an den Text angehängt, der beim Start im Feld stand. Am Handy 36 px, am PC 28 px.
-- Während der Aufnahme `MicOff` in Akzentfarbe, mit eigenem Whisper-Server zusätzlich die Live-Wellen, danach „Wird erkannt…“ mit Spinner.
-- Ausgeblendet, wenn die Spracheingabe aus ist (`STT_DISABLED`, oder `STT_ALLOW_BROWSER=false` ohne Whisper-Server) oder der Browser sie nicht kann (z. B. Firefox ohne eigenen Whisper-Server). Fehler zeigt das Feld kurz als Platzhalter.
-- Eingesetzt: Quick Dump (eigene Umsetzung), Aufgabe hinzufügen (Zeile am PC, „Neue Aufgabe anlegen“ am Handy), Listeneintrag hinzufügen.
+- Circular microphone button directly inside the input line on the right; dictated text is appended to any existing text in the field. 36 px on mobile, 28 px on desktop.
+- During recording: `MicOff` in accent color, plus live waveform visualization when connected to a dedicated Whisper server, followed by "Recognizing…" with a spinner.
+- Hidden when speech-to-text is disabled (`STT_DISABLED`, or `STT_ALLOW_BROWSER=false` without a Whisper server) or when unsupported by the browser (e.g., Firefox without a custom Whisper server). Errors are briefly indicated via input placeholder text.
+- Used in: Quick Dump (custom implementation), Add Task (input row on PC, "Create new task" sheet on mobile), Add List Item.
 
-## Ladebildschirm & Statusleiste
+## Splash Screen & Status Bar
 
-- `manifest.json`: `name` „MindSift“ (kurz, der Slogan steht in `description`), `background_color` und `theme_color` `#2563eb` – Android baut daraus den Splash-Screen.
-- `index.html` enthält in `#root` einen reinen HTML-Platzhalter (vollflächig Blau, Logo in der Mitte, kein Text). React ersetzt ihn beim ersten Rendern, dazwischen blitzt nichts Weißes auf.
-- `meta theme-color` startet blau und wird von [`theme.ts`](../frontend/src/lib/theme.ts) nach dem Start und bei jedem Theme-Wechsel auf `--bg-app` des aktiven Themes gesetzt, damit die Statusleiste zum Header passt.
+- `manifest.json`: `name` "MindSift" (short name; slogan is placed in `description`), `background_color` and `theme_color` `#2563eb`—Android uses these to generate the splash screen.
+- `index.html` contains a pure HTML placeholder inside `#root` (solid blue background, centered logo, no text). React replaces it during initial render, preventing white flashes.
+- `meta theme-color` starts blue and is set to `--bg-app` of the active theme by [`theme.ts`](../frontend/src/lib/theme.ts) after startup and upon every theme switch, ensuring the browser status bar matches the application header.
 
-## +-Button: Tippen und Halten
+## + Button: Tap and Hold
 
-Komponente: [HoldToRecordFab.tsx](../frontend/src/features/capture/HoldToRecordFab.tsx)
+Component: [HoldToRecordFab.tsx](../frontend/src/features/capture/HoldToRecordFab.tsx)
 
-- **Kurz tippen (< 350 ms):** Führt wie bisher die primäre Aktion der aktuellen Ansicht (`primaryAction`) oder den mobilen Erfassungsdialog (`openMobileTriageCapture`) aus.
-- **Gedrückt halten (≥ 350 ms):** Startet direkt eine Sprachaufnahme über `useVoiceInput` (im Server-Modus per Whisper mit echten Pegel-Wellen, sonst über die Spracherkennung des Browsers). Der Button wird zum pulsierenden Mikrofon (`bg-status-err`), darüber zeigt eine schwebende Pille „Ich höre zu… (loslassen speichert)“ samt Live-Transkript.
-- **Loslassen:** Stoppt die Aufnahme, wartet kurz auf das letzte Wort und speichert den Text unabhängig von der aktiven Ansicht immer als Gedanken in die Inbox (`source: 'voice'`, `target: 'inbox'`).
-- **Nach oben ziehen (> 60 px):** Schaltet die Pille in den Abbruch-Zustand („🗑️ Zum Abbrechen loslassen“); Loslassen dort verwirft die Aufnahme (`abort()`).
-- **Fallback:** Ist die Spracheingabe abgeschaltet (`STT_DISABLED=true`), unterstützt der Browser keine Spracherkennung oder ist das Mikrofon gesperrt (`not-allowed`), öffnet Halten wie beim Tippen den Dialog und blendet eine kurze Statusmeldung über der Bottom-Leiste ein.
-
-
+- **Short tap (< 350 ms):** Executes the primary action of the current view (`primaryAction`) or opens the mobile capture dialog (`openMobileTriageCapture`), as before.
+- **Press and hold (≥ 350 ms):** Immediately starts a voice recording via `useVoiceInput` (in server mode via Whisper with real waveform levels, otherwise via browser speech recognition). The button turns into a pulsing microphone (`bg-status-err`), with a floating pill above displaying "Listening… (release to save)" alongside the live transcript.
+- **Release:** Stops recording, briefly awaits the final word, and saves the text as an idea to the inbox regardless of the active view (`source: 'voice'`, `target: 'inbox'`).
+- **Drag upward (> 60 px):** Switches the pill to cancellation state ("🗑️ Release to cancel"); releasing here discards the recording (`abort()`).
+- **Fallback:** If speech input is disabled (`STT_DISABLED=true`), unsupported by the browser, or microphone permissions are denied (`not-allowed`), holding the button opens the dialog just like tapping and briefly displays a status message above the bottom bar.

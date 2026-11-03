@@ -1,21 +1,21 @@
-# Modul: Geteilte Listen
+# Module: Shared Lists
 
-Einkaufs-, Pack- und Checklisten für gemeinsames Arbeiten. Code: [SharedListsView.tsx](../../frontend/src/features/lists/SharedListsView.tsx); Backend: `*List*`-Handler in [server.go](../../internal/api/server.go), `Store.CreateList` und Verwandte.
+Shopping, packing, and checklists for collaboration. Code: [SharedListsView.tsx](../../frontend/src/features/lists/SharedListsView.tsx); Backend: `*List*` handlers in [server.go](../../internal/api/server.go), `Store.CreateList` and related methods.
 
-## Datenmodell
+## Data Model
 
-- `lists`: Eigentümer, `title`, `icon`, `list_type` (`shopping`, `checklist`, `vacation`).
+- `lists`: Owner, `title`, `icon`, `list_type` (`shopping`, `checklist`, `vacation`).
 - `list_items`: `content`, `category`, `quantity`, `is_completed`, `completed_by(_name)`, `created_by`, `sort_order`.
-- `list_shares`: Ziel (Benutzer oder Gruppe) und Rolle `editor` oder `viewer`.
+- `list_shares`: Target (user or group) and role `editor` or `viewer`.
 
-## Funktionen
+## Features
 
-- **Kategorien per Hashtag:** `Hafermilch #Kühlregal` landet in der Kategorie „Kühlregal“. Kategorien werden alphabetisch als Abschnitte angezeigt; die Eingabe schlägt vorhandene Hashtags vor.
-- **Menge:** Feld `quantity` (z. B. `2x`, `500g`).
-- **Drag & Drop** ordnet Einträge um; in eine andere Kategorie gezogen, wird der Hashtag im Text angepasst (`items/reorder` mit `category` und `content`).
-- **Abhaken** speichert, wer und wann; Erledigte stehen in einem eigenen Bereich und lassen sich per „Erledigte entfernen“ löschen (`clear-completed`). Nach der Frist des Listen-Eigentümers (Kontoeinstellungen → Aufbewahrung, Standard 7 Tage) löscht der Server abgehakte Einträge von selbst ([retention.go](../../internal/storage/retention.go)).
-- **Freigabe** über den Dialog `UnifiedShareModal` (Bearbeiten oder Nur Lesen). Ein Leser sieht Änderungen live, ändert aber nichts.
-- **Live-Sync:** Ereignisse `ITEM_*` und `LIST_*` im Raum der Liste ([websocket.md](../api/websocket.md)). Abhaken erscheint bei allen Beteiligten sofort.
-- **Wer hat's hinzugefügt:** In geteilten Listen zeigt jeder Eintrag ein kleines Profilbild der Person, die ihn angelegt hat (`createdBy`, `createdByName`). Einträge von vor dieser Funktion haben keinen Autor und zeigen nichts.
-- **Tabs** zeigen offene Einträge als runden Zähler und die Personen mit Zugriff als Profilbild-Stapel ([ui-patterns.md](../ui-patterns.md)); die API liefert sie je Liste als `members`.
-- Aus der Triage lassen sich Gedanken direkt als Eintrag in eine Liste übernehmen.
+- **Categories via hashtag:** `Oat milk #Refrigerated` lands in the "Refrigerated" category. Categories are displayed alphabetically as sections; the input suggests existing hashtags.
+- **Quantity:** Field `quantity` (e.g. `2x`, `500g`).
+- **Drag & Drop** reorders items; dragging an item into another category updates the hashtag in the text (`items/reorder` with `category` and `content`).
+- **Checking off items** records who completed them and when; completed items appear in a dedicated section and can be removed via "Clear completed" (`clear-completed`). After the list owner's retention period expires (Account Settings → Data Retention, default 7 days), the server deletes checked-off items automatically ([retention.go](../../internal/storage/retention.go)).
+- **Sharing** via the `UnifiedShareModal` dialog (Editor or Read-Only). A viewer sees updates in real time, but cannot make changes.
+- **Live Sync:** Events `ITEM_*` and `LIST_*` in the list's room ([websocket.md](../api/websocket.md)). Checking off items appears instantly for all participants.
+- **Added by:** In shared lists, each entry displays a small avatar of the person who created it (`createdBy`, `createdByName`). Entries created prior to this feature have no author and display nothing.
+- **Tabs** show open items as a round badge counter and users with access as an avatar stack ([ui-patterns.md](../ui-patterns.md)); the API provides them per list as `members`.
+- Thoughts from Triage can be converted directly into list items.
