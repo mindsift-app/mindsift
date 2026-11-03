@@ -1,9 +1,11 @@
 import type { DocumentBlock } from './types';
 
-// Bullets as Markdown, in the format of the server's Markdown export (BlocksToVaultMarkdown): a nested list
-// with one tab per level, "- [ ]" for to-dos, headings, dividers, callouts and fenced code at the top
-// level as block elements. Used for copying bullets; pasting it back (pasteOutline.ts) gives the same
-// structure. Levels count from the shallowest bullet, so a copied branch starts at the left margin.
+// Bullets as Markdown for copying: the top level reads like a document (plain bullets become paragraphs,
+// headings, dividers, callouts and fenced code are block elements), everything indented below is a list
+// with one tab per level ("-", "1." for numbered, "- [ ]" for to-dos). To-dos and numbered items stay list
+// items on the top level too. Pasting it back (pasteOutline.ts: a list right after a paragraph nests
+// under it) gives the same structure. Levels count from the shallowest bullet, so a copied branch starts
+// at the left margin.
 export function blocksToMarkdown(blocks: DocumentBlock[]): string {
   if (blocks.length === 0) return '';
   const base = Math.min(...blocks.map((b) => Math.max(0, b.level || 0)));
@@ -11,9 +13,14 @@ export function blocksToMarkdown(blocks: DocumentBlock[]): string {
   // Children of a top-level heading/callout/code/divider become a list one level up; otherwise their
   // tab indent would turn them into an indented code block
   let lift = 0;
+  let afterParagraph = false; // a top-level list item right below a paragraph would nest under it
   for (const b of blocks) {
     let lvl = Math.max(0, (b.level || 0) - base);
-    if (lvl === 0) lift = 0;
+    if (lvl === 0) {
+      lift = 0;
+      if (afterParagraph && (b.type === 'todo' || b.type === 'numbered')) out.push('');
+      afterParagraph = false;
+    }
     else lvl = Math.max(0, lvl - lift);
     const indent = '\t'.repeat(lvl);
     const content = (b.content || '').replace(/\r\n/g, '\n');
@@ -41,6 +48,14 @@ export function blocksToMarkdown(blocks: DocumentBlock[]): string {
       if (b.type === 'code') {
         out.push('', `\`\`\`${b.lang || ''}`, content, '```', '');
         lift = 1;
+        continue;
+      }
+      if (b.type !== 'todo' && b.type !== 'numbered') {
+        // A plain bullet on the top level is a paragraph; its children follow right below as a list (no
+        // blank line, so pasting it back nests them under the paragraph again)
+        out.push('', content);
+        lift = 1;
+        afterParagraph = true;
         continue;
       }
     }
