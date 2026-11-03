@@ -36,7 +36,7 @@ export function buildListsMenu({
             {
               id: 'list-new-item',
               label: 'Neuen Eintrag hinzufügen',
-              icon: <Plus className="w-4 h-4 text-accent" />,
+              icon: <Plus className="w-4 h-4" />,
               variant: 'accent',
               onClick: () => {
                 focusNewItemInput();

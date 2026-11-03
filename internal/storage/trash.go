@@ -59,8 +59,9 @@ const trashScope = `is_archived = 1 AND (user_id = ? OR archived_by = ?)`
 
 func trashStmts(userID, docID string) []sqlStmt {
 	return []sqlStmt{
+		// Pins stay: the lists hide trashed notes anyway, and a restored note comes back pinned (deleting it
+		// for good removes them)
 		stmt(`UPDATE documents SET is_archived = 1, archived_at = ?, archived_by = ? WHERE id = ?`, domain.NowISO(), userID, docID),
-		stmt(`DELETE FROM doc_pins WHERE doc_id = ?`, docID),
 	}
 }
 

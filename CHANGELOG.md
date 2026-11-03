@@ -6,6 +6,13 @@ Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), die V
 
 ## [Unreleased]
 
+## [0.70.1] - 2026-11-03
+
+### Fixed
+- A pinned note stays pinned when it goes to the trash and comes back (restore or "Rückgängig").
+- Dragging a shopping list entry into another category keeps the category's spelling ("Obst & Gemüse" instead of "obst & gemüse").
+- Phones: the plus of "Neuen Eintrag hinzufügen" in the shopping list menu is visible again.
+
 ## [0.70.0] - 2026-11-03
 
 ### Changed

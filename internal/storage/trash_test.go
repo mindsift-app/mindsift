@@ -193,3 +193,34 @@ func TestDeletedFolderGoesToTrashAsAWhole(t *testing.T) {
 		t.Errorf("expired folder and its note should be gone: folders %d, notes %d", n, docs)
 	}
 }
+
+func TestRestoredNoteKeepsItsPin(t *testing.T) {
+	store, err := NewStore(filepath.Join(t.TempDir(), "pin.db"))
+	if err != nil {
+		t.Fatalf("NewStore: %v", err)
+	}
+	defer store.Close()
+	anna, _ := store.CreateUser("anna@example.com", "hash", "Anna", "member")
+	doc, _ := store.CreateDocument(anna.ID, "", "Homelab", "🚀", "", []domain.DocumentBlock{{ID: "b1", Type: "text", Content: "x"}}, nil, true)
+	pinned := func() (found, isPinned bool) {
+		docs, _ := store.GetDocuments(anna.ID)
+		for _, d := range docs {
+			if d.ID == doc.ID {
+				return true, d.IsPinned
+			}
+		}
+		return false, false
+	}
+	if err := store.DeleteDocument(anna.ID, doc.ID); err != nil {
+		t.Fatalf("trash: %v", err)
+	}
+	if found, _ := pinned(); found {
+		t.Fatalf("a trashed note must not be listed, also not as pinned")
+	}
+	if err := store.RestoreDocument(anna.ID, doc.ID); err != nil {
+		t.Fatalf("restore: %v", err)
+	}
+	if found, isPinned := pinned(); !found || !isPinned {
+		t.Errorf("restored note must come back pinned: found=%v pinned=%v", found, isPinned)
+	}
+}

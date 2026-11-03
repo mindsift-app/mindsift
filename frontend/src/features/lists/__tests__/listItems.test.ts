@@ -43,11 +43,11 @@ describe('list items', () => {
       item('4', 'Batterien'),
       item('5', 'Äpfel', { category: 'obst' }),
     ]);
-    expect(groups.map((g) => [g.category, g.label, g.items.map((i) => i.id)])).toEqual([
-      ['backwaren', '#Backwaren', ['1', '3']],
-      ['kühlregal', '#Kühlregal', ['2']],
-      ['obst', '#Obst', ['5']],
-      ['', 'Allgemein', ['4']],
+    expect(groups.map((g) => [g.category, g.name, g.label, g.items.map((i) => i.id)])).toEqual([
+      ['backwaren', 'Backwaren', '#Backwaren', ['1', '3']],
+      ['kühlregal', 'Kühlregal', '#Kühlregal', ['2']],
+      ['obst', 'Obst', '#Obst', ['5']],
+      ['', '', 'Allgemein', ['4']],
     ]);
     expect(groupOpenItems([item('4', 'Batterien')]).map((g) => g.label)).toEqual(['']);
   });
