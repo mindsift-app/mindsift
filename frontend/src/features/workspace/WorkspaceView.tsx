@@ -37,7 +37,6 @@ import { WorkspaceTabBar } from './WorkspaceTabBar';
 import { useDocDragDrop } from './useDocDragDrop';
 import { useFocusMode } from './useFocusMode';
 import { useJournal } from './useJournal';
-import { useTabRowSnap } from './useTabRowSnap';
 import { useToast, WorkspaceToast } from './WorkspaceToast';
 import { FocusModeChrome } from './FocusModeChrome';
 import { useShareModal, WorkspaceShareModal } from './WorkspaceShareModal';
@@ -555,7 +554,6 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
     zenSideOpen,
   } = useFocusMode(canFocus, selectedDocId);
 
-  const { workspaceRootRef, tabRowRef, wsBar } = useTabRowSnap(focusMode);
 
   const allFolderPaths = useMemo(() => collectFolderPaths(folders, docs, sharedFolders), [docs, folders, sharedFolders]);
 
@@ -637,15 +635,10 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
   const filteredTags = useMemo(() => filterTags(tagsSummary, tagSearchQuery, tagSortBy), [tagsSummary, tagSearchQuery, tagSortBy]);
 
   return (
-    <div
-      ref={workspaceRootRef}
-      className="w-full h-full min-h-0 flex flex-col gap-3"
-      style={wsBar ? { height: `calc(100% + ${wsBar}px)`, flexShrink: 0 } : undefined}
-    >
+    <div className="w-full h-full min-h-0 flex flex-col gap-3">
       {/* Top Header: Workspace Tabs & Actions */}
       {/* Phones: the views are switched in the menu at the top, so the row is hidden there */}
       <WorkspaceTabBar
-        tabRowRef={tabRowRef}
         subView={subView}
         setSubView={setSubView}
         setMobileShowDetail={setMobileShowDetail}
@@ -1021,10 +1014,6 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
 
       <WorkspaceShareModal share={share} currentUser={currentUser} />
       </div>
-      {/* Room the tab row still takes at the top; shrinks while it slides out (the gap above is cancelled) */}
-      {wsBar > 0 && (
-        <div aria-hidden className="-mt-3 shrink-0" style={{ height: `max(0px, calc(${wsBar}px - var(--ws-scroll, 0px)))` }} />
-      )}
     </div>
   );
 };
