@@ -6,6 +6,11 @@ Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), die V
 
 ## [Unreleased]
 
+## [0.74.4] - 2026-11-03
+
+### Changed
+- The README is now in English, shorter, and points to the live demo and the website for the full tour.
+
 ## [0.74.3] - 2026-11-03
 
 ### Changed
