@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Plus,
   ShoppingCart,
@@ -30,6 +31,7 @@ interface SharedListsViewProps {
 }
 
 export const SharedListsView: React.FC<SharedListsViewProps> = ({ onRefreshGlobal, currentUser, initialListId }) => {
+  const { t } = useTranslation('lists');
   const { setGroups, setPrimaryAction } = useMobileActions();
   const [lists, setLists] = useState<SharedList[]>([]);
   // The open list is remembered on this device (other tabs of the app, new tab, restart)
@@ -154,7 +156,7 @@ export const SharedListsView: React.FC<SharedListsViewProps> = ({ onRefreshGloba
         people={[{ id: item.createdBy, name, avatarUrl: member?.avatarUrl }]}
         size="xxs"
         ringClass="ring-transparent"
-        title={name ? `Hinzugefügt von ${name}` : undefined}
+        title={name ? t('addedBy', { name }) : undefined}
       />
     );
   };
@@ -187,7 +189,7 @@ export const SharedListsView: React.FC<SharedListsViewProps> = ({ onRefreshGloba
       );
       onRefreshGlobal();
     } catch (err: any) {
-      alert(err.message || 'Fehler beim Erstellen des Listeneintrags');
+      alert(err.message || t('createItemFailed'));
     } finally {
       setIsSubmittingItem(false);
     }
@@ -212,13 +214,13 @@ export const SharedListsView: React.FC<SharedListsViewProps> = ({ onRefreshGloba
   };
 
   const handleDeleteList = async (listId: string) => {
-    if (!window.confirm('Diese Liste wirklich löschen?')) return;
+    if (!window.confirm(t('confirmDelete'))) return;
     try {
       await api.deleteList(listId);
       await loadLists();
       onRefreshGlobal();
     } catch (err: any) {
-      alert(err.message || 'Liste konnte nicht gelöscht werden');
+      alert(err.message || t('deleteFailed'));
     }
   };
 
@@ -365,7 +367,7 @@ export const SharedListsView: React.FC<SharedListsViewProps> = ({ onRefreshGloba
             onBlur={() => {
               setTimeout(() => setShowSuggestions(false), 200);
             }}
-            placeholder={itemVoiceError || `Was soll auf „${activeList.title}“? (z. B. Hafermilch #Kühlregal)`}
+            placeholder={itemVoiceError || t('itemPlaceholder', { title: activeList.title })}
             // 16px on phones: iOS zooms into smaller fields and the layout jumps under the keyboard
             className="w-full h-11 sm:h-9 pl-9 pr-11 sm:pr-9 input-field text-base sm:text-sm"
           />
@@ -421,8 +423,8 @@ export const SharedListsView: React.FC<SharedListsViewProps> = ({ onRefreshGloba
             inputMode="decimal"
             value={newItemQty}
             onChange={(e) => setNewItemQty(e.target.value.replace(/[^0-9.,xX]/g, ''))}
-            placeholder="Menge"
-            aria-label="Menge (optional)"
+            placeholder={t('quantity')}
+            aria-label={t('quantityLabel')}
             className="w-24 sm:w-20 h-11 sm:h-9 px-2.5 input-field text-base sm:text-sm"
           />
           {withButton && (
@@ -431,7 +433,7 @@ export const SharedListsView: React.FC<SharedListsViewProps> = ({ onRefreshGloba
               disabled={isSubmittingItem || !newItemText.trim()}
               className="btn-primary flex-1 sm:flex-none h-11 sm:h-9 px-4 text-sm sm:text-xs disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-1 flex-shrink-0"
             >
-              {isSubmittingItem ? 'Wird hinzugefügt…' : 'Hinzufügen'}
+              {isSubmittingItem ? t('adding') : t('common:add')}
             </button>
           )}
         </div>
@@ -459,20 +461,20 @@ export const SharedListsView: React.FC<SharedListsViewProps> = ({ onRefreshGloba
 
       {showNewListModal && (
         <FormSheet
-          title="Neue Einkaufsliste erstellen"
+          title={t('menu.newList')}
           icon={<ShoppingCart className="w-4 h-4 text-accent" />}
           onClose={() => setShowNewListModal(false)}
           onSubmit={handleCreateList}
         >
             <div>
-              <label className="block text-xs text-muted mb-1">Titel der Liste</label>
+              <label className="block text-xs text-muted mb-1">{t('listTitle')}</label>
               <div className="flex items-center gap-1.5">
                 <EmojiIconButton value={newListIcon} onChange={setNewListIcon} />
                 <input
                   type="text"
                   value={newListTitle}
                   onChange={(e) => setNewListTitle(e.target.value)}
-                  placeholder="z.B. Supermarkt, Baumarkt, Drogerie"
+                  placeholder={t('listTitlePlaceholder')}
                   autoFocus
                   required
                   className="flex-1 min-w-0 h-11 sm:h-8 input-field px-2.5 text-base sm:text-xs"
@@ -492,7 +494,7 @@ export const SharedListsView: React.FC<SharedListsViewProps> = ({ onRefreshGloba
               icon={<ShoppingCart className="w-4 h-4 text-accent" />}
               onClose={() => setShowAddSheet(false)}
               onSubmit={handleAddItem}
-              submitLabel="Hinzufügen"
+              submitLabel={t('common:add')}
               busy={isSubmittingItem}
             >
               <div className="flex flex-col gap-2 relative">{renderAddItemFields(false)}</div>

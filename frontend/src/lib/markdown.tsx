@@ -1,6 +1,7 @@
 import React from 'react';
 import { safeHref } from './safeUrl';
 import { parseWikiLink, wikiLinkText } from './wikiLink';
+import i18n from '../i18n';
 
 /**
  * Parses inline markdown:
@@ -69,7 +70,7 @@ function renderInlineTokens(text: string, options?: InlineMarkdownOptions): Reac
               onClick(link.title, link.blockId);
             }}
             className="text-status-info underline decoration-status-info/40 underline-offset-2 hover:decoration-status-info cursor-pointer"
-            title={link.blockId ? `Zum Punkt in „${link.title}“` : `Notiz öffnen: ${link.title}`}
+            title={link.blockId ? i18n.t('common:wikiLink.toBlock', { title: link.title }) : i18n.t('common:wikiLink.openNote', { title: link.title })}
           >
             {wikiLinkText(link)}
           </span>

@@ -1,4 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import i18n from '../i18n';
 import {
   Search,
   FileText,
@@ -29,14 +31,16 @@ interface CommandPaletteProps {
 type Kind = 'all' | 'document' | 'thought' | 'list_item';
 
 // The filter chips, in this order (Tab and Strg+1–4 follow it)
-const KINDS: { kind: Kind; label: string }[] = [
-  { kind: 'all', label: 'Alle' },
-  { kind: 'document', label: 'Notizen' },
-  { kind: 'thought', label: 'Aufgaben' },
-  { kind: 'list_item', label: 'Listen' },
-];
+// Labels from common:palette.kind.<kind> in the language shown when read
+const kind = (k: Kind) => ({
+  kind: k,
+  get label() {
+    return i18n.t(`common:palette.kind.${k}`);
+  },
+});
+const KINDS: { kind: Kind; readonly label: string }[] = [kind('all'), kind('document'), kind('thought'), kind('list_item')];
 
-const PRIORITY_LABELS: Record<string, string> = { urgent: 'Dringend', high: 'Wichtig', normal: 'Normal', low: 'Niedrig' };
+const priorityLabel = (p: string) => i18n.t(`common:priority.${p}`);
 
 // Hits per kind: a few for the overview, more once narrowed to one kind or in the large view
 const LIMIT_ALL = 40;
@@ -51,6 +55,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
   onOpenList,
   lists = [],
 }) => {
+  const { t } = useTranslation();
   const [query, setQuery] = useState('');
   const [hits, setHits] = useState<SearchHit[]>([]);
   const [thoughts, setThoughts] = useState<Thought[]>([]);
@@ -86,9 +91,9 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
     }
 
     return [
-      { key: 'documents', label: 'Notizen', icon: FileText, items: docs },
-      { key: 'tasks', label: 'Aufgaben', icon: CheckSquare, items: tasks },
-      { key: 'lists', label: 'Listen', icon: ShoppingCart, items: listHits },
+      { key: 'documents', label: i18n.t('common:palette.kind.document'), icon: FileText, items: docs },
+      { key: 'tasks', label: i18n.t('common:palette.kind.thought'), icon: CheckSquare, items: tasks },
+      { key: 'lists', label: i18n.t('common:palette.kind.list_item'), icon: ShoppingCart, items: listHits },
     ].filter((g) => g.items.length > 0);
   }, [hits]);
 
@@ -100,7 +105,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
   const thoughtById = useMemo(() => new Map(thoughts.map((t) => [t.id, t])), [thoughts]);
   const itemById = useMemo(() => new Map(listItems.map((li) => [li.id, li])), [listItems]);
   const listTitle = (id?: string) => lists.find((l) => l.id === id)?.title;
-  const taskListTitle = (id?: string) => (id ? taskLists.find((l) => l.id === id)?.title : 'Persönlich');
+  const taskListTitle = (id?: string) => (id ? taskLists.find((l) => l.id === id)?.title : t('tasks:trash.personal'));
 
   // Focus input and reset on open
   useEffect(() => {
@@ -305,7 +310,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Globale Suche in Notizen, Aufgaben und Listen…"
+            placeholder={t('palette.placeholder')}
             className="flex-1 bg-transparent border-0 outline-none text-main placeholder-muted text-base sm:text-sm focus:ring-0 p-0"
           />
           {/* One fixed slot for the spinner or the clear button, so the field keeps its width while typing */}
@@ -321,7 +326,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                   inputRef.current?.focus();
                 }}
                 className="w-6 h-6 flex items-center justify-center text-muted hover:text-main"
-                title="Eingabe leeren"
+                title={t('palette.clear')}
               >
                 <X className="w-4 h-4" />
               </button>
@@ -336,8 +341,8 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
               inputRef.current?.focus();
             }}
             className="hidden sm:flex w-7 h-7 items-center justify-center rounded-btn text-muted hover:text-main hover:bg-panel-elevated shrink-0"
-            title={expanded ? 'Kleine Ansicht' : 'Große Ansicht mit Filtern'}
-            aria-label={expanded ? 'Kleine Ansicht' : 'Große Ansicht mit Filtern'}
+            title={expanded ? t('palette.small') : t('palette.large')}
+            aria-label={expanded ? t('palette.small') : t('palette.large')}
             aria-pressed={expanded}
           >
             {expanded ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
@@ -352,7 +357,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
         </div>
 
         {/* Kinds as chips, with the number of hits */}
-        <div className="flex items-center gap-1.5 px-3 py-2 border-b border-border overflow-x-auto shrink-0" role="tablist" aria-label="Art der Treffer">
+        <div className="flex items-center gap-1.5 px-3 py-2 border-b border-border overflow-x-auto shrink-0" role="tablist" aria-label={t('palette.kindLabel')}>
           {KINDS.map((k) => {
             const active = kind === k.kind;
             const n = countLabel(k.kind);
@@ -382,38 +387,38 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
           <div className="flex flex-wrap items-center gap-2 px-3 py-2 border-b border-border bg-canvas/40 shrink-0 text-xs text-muted">
             {kind === 'thought' && (
               <>
-                <select className={selectClass} value={filter.taskStatus || ''} onChange={(e) => setFilterValue('taskStatus', e.target.value)} aria-label="Status">
-                  <option value="">Offen und erledigt</option>
-                  <option value="open">Nur offene</option>
-                  <option value="done">Nur erledigte</option>
+                <select className={selectClass} value={filter.taskStatus || ''} onChange={(e) => setFilterValue('taskStatus', e.target.value)} aria-label={t('palette.status')}>
+                  <option value="">{t('palette.taskStatusAll')}</option>
+                  <option value="open">{t('palette.onlyOpen')}</option>
+                  <option value="done">{t('palette.onlyDone')}</option>
                 </select>
-                <select className={selectClass} value={filter.taskListId || ''} onChange={(e) => setFilterValue('taskListId', e.target.value)} aria-label="Aufgabenliste">
-                  <option value="">Alle Listen</option>
-                  <option value="personal">Persönlich (ohne Liste)</option>
+                <select className={selectClass} value={filter.taskListId || ''} onChange={(e) => setFilterValue('taskListId', e.target.value)} aria-label={t('palette.taskList')}>
+                  <option value="">{t('palette.allLists')}</option>
+                  <option value="personal">{t('palette.personal')}</option>
                   {taskLists.map((l) => (
                     <option key={l.id} value={l.id}>
                       {[l.icon, l.title].filter(Boolean).join(' ')}
                     </option>
                   ))}
                 </select>
-                <select className={selectClass} value={filter.priority || ''} onChange={(e) => setFilterValue('priority', e.target.value)} aria-label="Priorität">
-                  <option value="">Jede Priorität</option>
-                  <option value="urgent">Dringend</option>
-                  <option value="high">Wichtig</option>
-                  <option value="normal">Normal</option>
-                  <option value="low">Niedrig</option>
+                <select className={selectClass} value={filter.priority || ''} onChange={(e) => setFilterValue('priority', e.target.value)} aria-label={t('palette.priority')}>
+                  <option value="">{t('palette.anyPriority')}</option>
+                  <option value="urgent">{t('priority.urgent')}</option>
+                  <option value="high">{t('priority.high')}</option>
+                  <option value="normal">{t('priority.normal')}</option>
+                  <option value="low">{t('priority.low')}</option>
                 </select>
-                <select className={selectClass} value={filter.due || ''} onChange={(e) => setFilterValue('due', e.target.value)} aria-label="Fälligkeit">
-                  <option value="">Jede Fälligkeit</option>
-                  <option value="overdue">Überfällig</option>
-                  <option value="today">Heute fällig</option>
-                  <option value="week">Fällig in 7 Tagen</option>
+                <select className={selectClass} value={filter.due || ''} onChange={(e) => setFilterValue('due', e.target.value)} aria-label={t('palette.due')}>
+                  <option value="">{t('palette.anyDue')}</option>
+                  <option value="overdue">{t('palette.overdue')}</option>
+                  <option value="today">{t('palette.today')}</option>
+                  <option value="week">{t('palette.week')}</option>
                 </select>
               </>
             )}
             {kind === 'document' && (
-              <select className={selectClass} value={filter.folder || ''} onChange={(e) => setFilterValue('folder', e.target.value)} aria-label="Ordner">
-                <option value="">Alle Ordner</option>
+              <select className={selectClass} value={filter.folder || ''} onChange={(e) => setFilterValue('folder', e.target.value)} aria-label={t('palette.folder')}>
+                <option value="">{t('palette.allFolders')}</option>
                 {folders.map((f) => (
                   <option key={f} value={f}>
                     {f}
@@ -423,18 +428,18 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
             )}
             {kind === 'list_item' && (
               <>
-                <select className={selectClass} value={filter.listId || ''} onChange={(e) => setFilterValue('listId', e.target.value)} aria-label="Liste">
-                  <option value="">Alle Listen</option>
+                <select className={selectClass} value={filter.listId || ''} onChange={(e) => setFilterValue('listId', e.target.value)} aria-label={t('palette.list')}>
+                  <option value="">{t('palette.allLists')}</option>
                   {lists.map((l) => (
                     <option key={l.id} value={l.id}>
                       {[l.icon, l.title].filter(Boolean).join(' ')}
                     </option>
                   ))}
                 </select>
-                <select className={selectClass} value={filter.itemStatus || ''} onChange={(e) => setFilterValue('itemStatus', e.target.value)} aria-label="Status">
-                  <option value="">Offen und abgehakt</option>
-                  <option value="open">Nur offene</option>
-                  <option value="done">Nur abgehakte</option>
+                <select className={selectClass} value={filter.itemStatus || ''} onChange={(e) => setFilterValue('itemStatus', e.target.value)} aria-label={t('palette.status')}>
+                  <option value="">{t('palette.itemStatusAll')}</option>
+                  <option value="open">{t('palette.onlyOpen')}</option>
+                  <option value="done">{t('palette.onlyChecked')}</option>
                 </select>
               </>
             )}
@@ -445,13 +450,13 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
         <div className="flex-1 overflow-y-auto p-2 space-y-4 min-h-[160px]">
           {query.trim() === '' ? (
             <div className="py-12 px-4 text-center text-xs text-muted space-y-1">
-              <p className="font-semibold text-main">MindSift Globale Suche</p>
-              <p>Tippe ein Stichwort ein, um alle Inhalte in Sekundenschnelle zu durchsuchen.</p>
+              <p className="font-semibold text-main">{t('palette.title')}</p>
+              <p>{t('palette.hint')}</p>
             </div>
           ) : flatHits.length === 0 && !loading ? (
             <div className="py-12 px-4 text-center text-xs text-muted space-y-1">
-              <p className="font-semibold text-main">Keine Treffer gefunden</p>
-              <p>Keine Notizen, Aufgaben oder Listen-Einträge stimmen mit „{query}“ überein.</p>
+              <p className="font-semibold text-main">{t('palette.noHits')}</p>
+              <p>{t('palette.noHitsText', { query })}</p>
             </div>
           ) : (
             groupedHits.map((group) => {
@@ -495,8 +500,8 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                               className={`mt-0.5 w-4 h-4 shrink-0 rounded-sm border flex items-center justify-center transition-colors before:absolute before:-inset-3 relative ${
                                 finished ? 'bg-status-ok border-status-ok text-on-accent' : 'border-strong hover:border-accent text-transparent'
                               }`}
-                              title={finished ? 'Wieder öffnen' : 'Abhaken'}
-                              aria-label={finished ? 'Wieder öffnen' : 'Abhaken'}
+                              title={finished ? t('palette.reopen') : t('palette.check')}
+                              aria-label={finished ? t('palette.reopen') : t('palette.check')}
                               aria-pressed={finished}
                             >
                               <Check className="w-3 h-3 stroke-[3]" />
@@ -512,7 +517,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                               </span>
                               {isSelected && (
                                 <span className="hidden sm:inline-flex items-center text-[10px] text-accent gap-0.5 shrink-0">
-                                  <span>Öffnen</span>
+                                  <span>{t('palette.open')}</span>
                                   <CornerDownLeft className="w-3 h-3" />
                                 </span>
                               )}
@@ -530,16 +535,16 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                             {/* Large view: where a task or list item belongs and its state */}
                             {expanded && task && (
                               <p className="text-[11px] text-faint flex flex-wrap gap-x-2">
-                                <span>{taskListTitle(task.taskListId) || 'Aufgabenliste'}</span>
-                                {task.dueDate && <span>fällig {formatDue(task.dueDate)}</span>}
-                                {task.priority && task.priority !== 'normal' && <span>{PRIORITY_LABELS[task.priority]}</span>}
-                                {task.isCompleted && <span>erledigt</span>}
+                                <span>{taskListTitle(task.taskListId) || t('palette.taskList')}</span>
+                                {task.dueDate && <span>{t('palette.dueOn', { due: formatDue(task.dueDate) })}</span>}
+                                {task.priority && task.priority !== 'normal' && <span>{priorityLabel(task.priority)}</span>}
+                                {task.isCompleted && <span>{t('palette.done')}</span>}
                               </p>
                             )}
                             {expanded && listItem && (
                               <p className="text-[11px] text-faint flex flex-wrap gap-x-2">
-                                <span>{listTitle(listItem.listId) || 'Liste'}</span>
-                                {listItem.isCompleted && <span>abgehakt</span>}
+                                <span>{listTitle(listItem.listId) || t('palette.list')}</span>
+                                {listItem.isCompleted && <span>{t('palette.checked')}</span>}
                               </p>
                             )}
                           </div>
@@ -561,13 +566,13 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
               <kbd className="px-1 py-0.5 bg-panel border border-border rounded font-mono text-[10px] text-accent">↓</kbd> Navigieren
             </span>
             <span>
-              <kbd className="px-1 py-0.5 bg-panel border border-border rounded font-mono text-[10px] text-accent">↵</kbd> Auswählen
+              <kbd className="px-1 py-0.5 bg-panel border border-border rounded font-mono text-[10px] text-accent">↵</kbd> {t('palette.select')}
             </span>
             <span>
-              <kbd className="px-1 py-0.5 bg-panel border border-border rounded font-mono text-[10px] text-accent">Tab</kbd> Art wechseln
+              <kbd className="px-1 py-0.5 bg-panel border border-border rounded font-mono text-[10px] text-accent">Tab</kbd> {t('palette.switchKind')}
             </span>
             <span>
-              <kbd className="px-1 py-0.5 bg-panel border border-border rounded font-mono text-[10px] text-accent">Esc</kbd> Schließen
+              <kbd className="px-1 py-0.5 bg-panel border border-border rounded font-mono text-[10px] text-accent">Esc</kbd> {t('close')}
             </span>
           </div>
 

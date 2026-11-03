@@ -1,3 +1,4 @@
+import i18n from '../i18n';
 import { formatDateTime } from './format';
 
 // Due dates come as "YYYY-MM-DD" (all day) or "YYYY-MM-DDTHH:MM" (with time), in the server's time zone.
@@ -34,7 +35,6 @@ export const isOverdue = (due: string | undefined, now: Date = new Date()): bool
 export const isDueToday = (due: string | undefined, now: Date = new Date()): boolean =>
   !!due && splitDue(due).date === localDay(now);
 
-const WEEKDAYS = ['So.', 'Mo.', 'Di.', 'Mi.', 'Do.', 'Fr.', 'Sa.'];
 
 /** Short label: "Heute, 14:30", "Morgen", "Gestern", "Fr., 30.10." or "30.10.2027" in another year. */
 export const formatDue = (due: string | undefined, now: Date = new Date()): string => {
@@ -43,12 +43,17 @@ export const formatDue = (due: string | undefined, now: Date = new Date()): stri
   const [y, m, d] = date.split('-').map(Number);
   if (!y || !m || !d) return due;
   let label: string;
-  if (date === localDay(now)) label = 'Heute';
-  else if (date === addDays(1, now)) label = 'Morgen';
-  else if (date === addDays(-1, now)) label = 'Gestern';
-  else if (y === now.getFullYear()) label = `${WEEKDAYS[new Date(y, m - 1, d).getDay()]}, ${pad(d)}.${pad(m)}.`;
-  else label = `${pad(d)}.${pad(m)}.${y}`;
-  return time ? `${label}, ${time}` : label;
+  if (date === localDay(now)) label = i18n.t('common:date.today');
+  else if (date === addDays(1, now)) label = i18n.t('common:date.tomorrow');
+  else if (date === addDays(-1, now)) label = i18n.t('common:date.yesterday');
+  else if (y === now.getFullYear())
+    label = i18n.t('common:date.dayThisYear', {
+      weekday: i18n.t(`common:date.weekdayShort.${new Date(y, m - 1, d).getDay()}`),
+      day: pad(d),
+      month: pad(m),
+    });
+  else label = i18n.t('common:date.dayOtherYear', { day: pad(d), month: pad(m), year: y });
+  return time ? i18n.t('common:date.withTime', { label, time }) : label;
 };
 
 /** When something went to a trash, e.g. "01.11.2026, 14:05". */

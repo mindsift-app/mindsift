@@ -6,6 +6,11 @@ Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), die V
 
 ## [Unreleased]
 
+## [0.73.4] - 2026-11-03
+
+### Changed
+- Texts of shopping lists, groups, search, sharing, theme names, date labels and shared messages now come from language files (no visible change).
+
 ## [0.73.3] - 2026-11-03
 
 ### Changed

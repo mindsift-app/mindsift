@@ -1,4 +1,5 @@
 import type { UserTheme } from './types';
+import i18n from '../i18n';
 
 // Built-in themes are compiled CSS files (src/themes/); custom themes are user CSS from the server,
 // injected at runtime and addressed as "custom:<id>"
@@ -29,12 +30,24 @@ export interface ThemeFamily {
 }
 
 // Left light, right dark – the settings and the quick switcher show them in this order
+// Names and subtitles come from common:themes.<id> in the language shown when read
+const family = (id: string, light: ThemeId, dark: ThemeId): ThemeFamily => ({
+  id,
+  light,
+  dark,
+  get name() {
+    return i18n.t(`common:themes.families.${id}.name`);
+  },
+  get subtitle() {
+    return i18n.t(`common:themes.families.${id}.subtitle`);
+  },
+});
 export const THEME_FAMILIES: ThemeFamily[] = [
-  { id: 'classic', name: 'Klassik', subtitle: 'Neutral mit Blau, eckig', light: 'light', dark: 'dark' },
-  { id: 'fjord', name: 'Fjord', subtitle: 'Kühles Papier, Gletscherblau', light: 'fjord', dark: 'fjord-night' },
-  { id: 'terracotta', name: 'Terrakotta', subtitle: 'Warmes Papier, gebrannte Erde', light: 'terracotta', dark: 'terracotta-night' },
-  { id: 'polarized', name: 'Polarized', subtitle: 'Petrol und Türkis, eckig', light: 'polarized-light', dark: 'polarized' },
-  { id: 'suri', name: 'Suri', subtitle: 'Lavendel, Pflaume, Orchidee', light: 'suri-light', dark: 'suri' },
+  family('classic', 'light', 'dark'),
+  family('fjord', 'fjord', 'fjord-night'),
+  family('terracotta', 'terracotta', 'terracotta-night'),
+  family('polarized', 'polarized-light', 'polarized'),
+  family('suri', 'suri-light', 'suri'),
 ];
 
 export const THEME_STORAGE_KEY = 'mindsift_active_theme';
@@ -46,8 +59,12 @@ export const CUSTOM_THEME_PREFIX = 'custom:';
 export const AVAILABLE_THEMES: ThemeOption[] = [
   {
     id: 'dark',
-    name: 'MindSift Dark (Standard)',
-    subtitle: 'Monochrom, dunkel & eckig (0px)',
+    get name() {
+      return i18n.t('common:themes.builtin.dark.name');
+    },
+    get subtitle() {
+      return i18n.t('common:themes.builtin.dark.subtitle');
+    },
     file: 'src/themes/theme-dark.css',
     previewBg: '#121316',
     previewPanel: '#1a1c20',
@@ -57,8 +74,12 @@ export const AVAILABLE_THEMES: ThemeOption[] = [
   },
   {
     id: 'light',
-    name: 'MindSift Light (Tagmodus)',
-    subtitle: 'Helles Papier-Design & klare Kontraste',
+    get name() {
+      return i18n.t('common:themes.builtin.light.name');
+    },
+    get subtitle() {
+      return i18n.t('common:themes.builtin.light.subtitle');
+    },
     file: 'src/themes/theme-light.css',
     previewBg: '#f3f4f6',
     previewPanel: '#ffffff',
@@ -68,8 +89,12 @@ export const AVAILABLE_THEMES: ThemeOption[] = [
   },
   {
     id: 'terracotta',
-    name: 'Terrakotta (Warmes Papier)',
-    subtitle: 'Cremepapier, Tinte & gebrannte Terrakotta (12px)',
+    get name() {
+      return i18n.t('common:themes.builtin.terracotta.name');
+    },
+    get subtitle() {
+      return i18n.t('common:themes.builtin.terracotta.subtitle');
+    },
     file: 'src/themes/theme-terracotta.css',
     previewBg: '#efe6d8',
     previewPanel: '#fbf6ee',
@@ -79,8 +104,12 @@ export const AVAILABLE_THEMES: ThemeOption[] = [
   },
   {
     id: 'terracotta-night',
-    name: 'Terrakotta Nacht (Glut)',
-    subtitle: 'Espresso, Creme & glühende Terrakotta (12px)',
+    get name() {
+      return i18n.t('common:themes.builtin.terracotta-night.name');
+    },
+    get subtitle() {
+      return i18n.t('common:themes.builtin.terracotta-night.subtitle');
+    },
     file: 'src/themes/theme-terracotta-night.css',
     previewBg: '#17110d',
     previewPanel: '#211913',
@@ -90,8 +119,12 @@ export const AVAILABLE_THEMES: ThemeOption[] = [
   },
   {
     id: 'polarized',
-    name: 'Polarized (Emerald / Teal)',
-    subtitle: 'Tiefdunkles Obsidian mit elektrischem Türkis/Grün (0px)',
+    get name() {
+      return i18n.t('common:themes.builtin.polarized.name');
+    },
+    get subtitle() {
+      return i18n.t('common:themes.builtin.polarized.subtitle');
+    },
     file: 'src/themes/theme-polarized.css',
     previewBg: '#090e11',
     previewPanel: '#10181c',
@@ -101,8 +134,12 @@ export const AVAILABLE_THEMES: ThemeOption[] = [
   },
   {
     id: 'suri',
-    name: 'Suri (Velvet Dusk)',
-    subtitle: 'Warmes Mitternachts-Pflaume mit samtiger Orchidee (10px)',
+    get name() {
+      return i18n.t('common:themes.builtin.suri.name');
+    },
+    get subtitle() {
+      return i18n.t('common:themes.builtin.suri.subtitle');
+    },
     file: 'src/themes/theme-suri.css',
     previewBg: '#130f1a',
     previewPanel: '#1e1728',
@@ -112,8 +149,12 @@ export const AVAILABLE_THEMES: ThemeOption[] = [
   },
   {
     id: 'fjord',
-    name: 'Fjord (Gletscherblau)',
-    subtitle: 'Kühles Papier, Tintenblau & Fjordblau (12px)',
+    get name() {
+      return i18n.t('common:themes.builtin.fjord.name');
+    },
+    get subtitle() {
+      return i18n.t('common:themes.builtin.fjord.subtitle');
+    },
     file: 'src/themes/theme-fjord.css',
     previewBg: '#e9eef5',
     previewPanel: '#f7f9fc',
@@ -123,8 +164,12 @@ export const AVAILABLE_THEMES: ThemeOption[] = [
   },
   {
     id: 'fjord-night',
-    name: 'Fjord Nacht (Tiefsee)',
-    subtitle: 'Nachtblau, Mondlicht & leuchtendes Gletscherblau (12px)',
+    get name() {
+      return i18n.t('common:themes.builtin.fjord-night.name');
+    },
+    get subtitle() {
+      return i18n.t('common:themes.builtin.fjord-night.subtitle');
+    },
     file: 'src/themes/theme-fjord-night.css',
     previewBg: '#0e1621',
     previewPanel: '#152131',
@@ -134,8 +179,12 @@ export const AVAILABLE_THEMES: ThemeOption[] = [
   },
   {
     id: 'polarized-light',
-    name: 'Polarized Hell (Lagune)',
-    subtitle: 'Kreidiges Mintweiß mit tiefem Petrol (0px)',
+    get name() {
+      return i18n.t('common:themes.builtin.polarized-light.name');
+    },
+    get subtitle() {
+      return i18n.t('common:themes.builtin.polarized-light.subtitle');
+    },
     file: 'src/themes/theme-polarized-light.css',
     previewBg: '#e6f0ef',
     previewPanel: '#f6fbfa',
@@ -145,8 +194,12 @@ export const AVAILABLE_THEMES: ThemeOption[] = [
   },
   {
     id: 'suri-light',
-    name: 'Suri Hell (Lavendel)',
-    subtitle: 'Lavendelpapier, Pflaume & Orchidee (10px)',
+    get name() {
+      return i18n.t('common:themes.builtin.suri-light.name');
+    },
+    get subtitle() {
+      return i18n.t('common:themes.builtin.suri-light.subtitle');
+    },
     file: 'src/themes/theme-suri-light.css',
     previewBg: '#efe9f4',
     previewPanel: '#fbf8fd',
@@ -309,7 +362,9 @@ export function customThemeOption(t: UserTheme): ThemeOption {
   return {
     id: customThemeId(t),
     name: t.name,
-    subtitle: 'Eigenes Theme',
+    get subtitle() {
+      return i18n.t('common:themes.custom');
+    },
     file: 'Eigenes Theme (gespeichert auf dem Server)',
     previewBg: readCssVar(t.css, 'bg-app') || '#121316',
     previewPanel: readCssVar(t.css, 'bg-panel') || '#1a1c20',

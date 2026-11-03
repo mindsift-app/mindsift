@@ -1,4 +1,5 @@
 import { ListItem, SharedList } from '../../lib/types';
+import i18n from '../../i18n';
 import { compareText } from '../../lib/format';
 
 // How the shopping lists read and group their entries. Pure functions.
@@ -119,7 +120,7 @@ export function groupOpenItems(openItems: ListItem[]): ItemGroup[] {
     result.push({
       category: '',
       name: '',
-      label: result.length > 0 ? 'Allgemein' : '',
+      label: result.length > 0 ? i18n.t('lists:general') : '',
       items: uncategorized,
     });
   }

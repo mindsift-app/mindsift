@@ -1,4 +1,5 @@
 import React, { useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Loader2, Mic, MicOff } from 'lucide-react';
 import { useVoiceInput } from '../lib/useVoiceInput';
 import { triggerHaptic } from '../lib/api';
@@ -17,6 +18,7 @@ interface VoiceInputButtonProps {
 // Microphone inside an input row, like the one in Quick Dump (Doku/ui-patterns.md). Hidden when voice
 // input is off or the browser cannot do it (e.g. Firefox without an own Whisper server).
 export const VoiceInputButton: React.FC<VoiceInputButtonProps> = ({ value, onChange, onError, focusRef, className = '' }) => {
+  const { t } = useTranslation();
   const baseRef = useRef('');
   const voice = useVoiceInput({
     onText: (text, final) => {
@@ -44,8 +46,8 @@ export const VoiceInputButton: React.FC<VoiceInputButtonProps> = ({ value, onCha
           voice.toggle();
         }}
         disabled={transcribing}
-        title={listening ? 'Aufnahme beenden' : transcribing ? 'Wird erkannt…' : 'Spracheingabe'}
-        aria-label={listening ? 'Aufnahme beenden' : transcribing ? 'Wird erkannt…' : 'Spracheingabe'}
+        title={listening ? t('voice.stop') : transcribing ? t('voice.transcribing') : t('voice.input')}
+        aria-label={listening ? t('voice.stop') : transcribing ? t('voice.transcribing') : t('voice.input')}
         className={`w-9 h-9 sm:w-7 sm:h-7 rounded-full flex items-center justify-center transition-colors ${
           listening || transcribing ? 'bg-accent-dim text-accent' : 'text-muted hover:text-main hover:bg-panel-elevated'
         }`}

@@ -1,3 +1,4 @@
+import i18n from '../i18n';
 import { formatDate } from './format';
 
 // Journal helpers: dates are local calendar days as YYYY-MM-DD (the server stores them as given).
@@ -35,10 +36,8 @@ export function parseISODate(date: string): Date {
   return new Date(y, (m || 1) - 1, d || 1);
 }
 
-export const MONTHS = [
-  'Januar', 'Februar', 'März', 'April', 'Mai', 'Juni',
-  'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember',
-];
+// Month names in the language shown when called (common:date.months.0–11)
+export const monthNames = (): string[] => Array.from({ length: 12 }, (_, i) => i18n.t(`common:date.months.${i}`));
 
 /** "Fr, 30. Okt. 2026" for compact labels */
 export function shortDateLabel(date: string): string {

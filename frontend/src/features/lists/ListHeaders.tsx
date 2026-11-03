@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Plus, Users, X } from 'lucide-react';
 import { ListItem, SharedList, User } from '../../lib/types';
 import { AvatarPerson, AvatarStack } from '../../components/AvatarStack';
@@ -31,6 +32,7 @@ export function ListTabsHeader({
   openShareModal: () => void;
   setShowNewListModal: React.Dispatch<React.SetStateAction<boolean>>;
 }) {
+  const { t } = useTranslation('lists');
   const { draggingItemId, dragOverListTab, setDragOverListTab, handleDropOnListTab } = drag;
   return (
     <div className="hidden sm:flex flex-wrap items-center justify-between gap-2 border-b border-border pb-2 !mt-0">
@@ -78,7 +80,7 @@ export function ListTabsHeader({
               {isSelected && lists.length > 1 && (
                 <button
                   onClick={() => handleDeleteList(lst.id)}
-                  title="Liste löschen"
+                  title={t('deleteList')}
                   className="h-6 w-6 text-faint hover:text-status-err hover:bg-status-err/10 rounded-btn flex items-center justify-center transition-colors cursor-pointer"
                 >
                   <X className="w-3 h-3" />
@@ -91,10 +93,10 @@ export function ListTabsHeader({
         <button
           onClick={() => setShowNewListModal((prev) => !prev)}
           className="h-8 px-2.5 bg-canvas hover:bg-panel border border-border border-dashed rounded-btn text-xs text-muted hover:text-main flex items-center gap-1 transition-colors"
-          title="Neue Liste anlegen"
+          title={t('newListTitle')}
         >
           <Plus className="w-3.5 h-3.5" />
-          <span>Neue Liste</span>
+          <span>{t('newList')}</span>
         </button>
       </div>
 
@@ -105,7 +107,7 @@ export function ListTabsHeader({
           const isOwner = activeList.isOwner !== false && (activeList.userId === currentUser?.id || !activeList.userId || currentUser?.role === 'admin');
           const sharesCount = activeList.shares?.length || 0;
           const isShared = sharesCount > 0;
-          const ownerDisplayName = activeList.ownerName || 'Eigentümer';
+          const ownerDisplayName = activeList.ownerName || t('tasks:tabs.owner');
 
           return (
             <div className="flex items-center gap-1.5">
@@ -115,20 +117,20 @@ export function ListTabsHeader({
                     type="button"
                     onClick={openShareModal}
                     className="px-2 py-0.5 rounded text-[10px] font-semibold bg-accent/15 text-accent border border-accent/30 flex items-center gap-1 hover:bg-accent/25 hover:border-accent/50 transition-colors cursor-pointer"
-                    title="Teilen-Menü öffnen: Geteilt mit Nutzern/Gruppen anzeigen & verwalten"
+                    title={t('shareMenu')}
                   >
                     <Users className="w-2.5 h-2.5" />
-                    <span>Geteilt ({sharesCount})</span>
+                    <span>{t('tasks:tabs.sharedCount', { count: sharesCount })}</span>
                   </button>
                 ) : (
                   <button
                     type="button"
                     onClick={openShareModal}
                     className="px-2 py-0.5 rounded text-[10px] font-medium border border-border text-muted flex items-center gap-1 bg-surface-subtle hover:bg-panel-elevated hover:text-main transition-colors cursor-pointer"
-                    title="Teilen & Berechtigungen öffnen"
+                    title={t('shareOpen')}
                   >
                     <Users className="w-2.5 h-2.5" />
-                    <span>Geteilt von {ownerDisplayName}</span>
+                    <span>{t('tasks:tabs.sharedBy', { name: ownerDisplayName })}</span>
                   </button>
                 )
               )}
@@ -138,7 +140,7 @@ export function ListTabsHeader({
                 type="button"
                 onClick={openShareModal}
                 className="btn-icon"
-                title="Liste teilen und Berechtigungen"
+                title={t('shareTitle')}
               >
                 <Users className="w-3.5 h-3.5" />
               </button>
@@ -165,6 +167,7 @@ export function MobileListHeader({
   openItems: ListItem[];
   openShareModal: () => void;
 }) {
+  const { t } = useTranslation('lists');
   return (
     <div className="flex sm:hidden items-center justify-between gap-2 px-3 py-2 min-h-[54px] rounded-btn bg-panel border border-border !mt-0">
       <div className="flex items-center gap-2 min-w-0">
@@ -181,7 +184,7 @@ export function MobileListHeader({
             onSelect={setActiveListId}
           />
         ) : (
-          <span className="text-sm font-semibold text-main truncate">🛒 Einkaufsliste</span>
+          <span className="text-sm font-semibold text-main truncate">{t('shoppingList')}</span>
         )}
         {openItems.length > 0 && (
           <span className="badge-neutral text-[11px] flex-shrink-0">
@@ -198,7 +201,7 @@ export function MobileListHeader({
               type="button"
               onClick={openShareModal}
               className="btn-icon min-h-[36px] min-w-[36px] flex items-center justify-center"
-              title="Liste teilen"
+              title={t('share')}
             >
               <Users className="w-4 h-4 text-accent" />
             </button>

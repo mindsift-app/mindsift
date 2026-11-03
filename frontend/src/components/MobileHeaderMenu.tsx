@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Check, X } from 'lucide-react';
 import { useMobileActions } from '../context/MobileActionContext';
 import { triggerHaptic } from '../lib/api';
@@ -9,6 +10,7 @@ interface MobileHeaderMenuProps {
 }
 
 export const MobileHeaderMenu: React.FC<MobileHeaderMenuProps> = ({ activeTabLabel }) => {
+  const { t } = useTranslation();
   const { groups, isMenuOpen, closeMenu } = useMobileActions();
 
   if (!isMenuOpen) return null;
@@ -41,7 +43,7 @@ export const MobileHeaderMenu: React.FC<MobileHeaderMenuProps> = ({ activeTabLab
               closeMenu();
             }}
             className="w-9 h-9 rounded-xl flex items-center justify-center text-muted hover:text-main hover:bg-canvas active:scale-95 transition-all"
-            title="Menü schließen"
+            title={t('menu.close')}
           >
             <X className="w-4 h-4" />
           </button>
@@ -49,7 +51,7 @@ export const MobileHeaderMenu: React.FC<MobileHeaderMenuProps> = ({ activeTabLab
 
         {groups.length === 0 ? (
           <div className="py-6 text-center text-xs text-muted">
-            Keine spezifischen Optionen für diese Ansicht verfügbar.
+            {t('menu.empty')}
           </div>
         ) : (
           <div className="space-y-4">

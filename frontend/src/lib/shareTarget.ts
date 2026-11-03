@@ -1,3 +1,4 @@
+import i18n from '../i18n';
 export interface SharedData {
   id?: number;
   title?: string;
@@ -19,7 +20,7 @@ export function formatSharedThought(share: SharedData): string {
   const title = (share.title || '').trim();
   const text = (share.text || '').trim();
   const url = (share.url || '').trim();
-  const mediaNote = '(Bild geteilt – Bilder im Posteingang werden noch nicht unterstützt)';
+  const mediaNote = i18n.t('common:shareTarget.mediaNote');
 
   let content = '';
 

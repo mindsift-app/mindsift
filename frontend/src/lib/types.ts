@@ -1,3 +1,5 @@
+import i18n from '../i18n';
+
 export type ThoughtStatus = 'inbox' | 'kept' | 'discarded' | 'converted';
 export type PriorityLevel = 'low' | 'normal' | 'high' | 'urgent';
 export type UserRole = 'admin' | 'member';
@@ -158,11 +160,20 @@ export interface SubTask {
 // Repeat rule of a task: completing it creates the next one (due date one interval later)
 export type Recurrence = '' | 'daily' | 'weekly' | 'monthly' | 'yearly';
 
+// Texts in common:recurrence.<rule>, in the language shown when read
 export const RECURRENCE_LABELS: Record<Exclude<Recurrence, ''>, string> = {
-  daily: 'täglich',
-  weekly: 'wöchentlich',
-  monthly: 'monatlich',
-  yearly: 'jährlich',
+  get daily() {
+    return i18n.t('common:recurrence.daily');
+  },
+  get weekly() {
+    return i18n.t('common:recurrence.weekly');
+  },
+  get monthly() {
+    return i18n.t('common:recurrence.monthly');
+  },
+  get yearly() {
+    return i18n.t('common:recurrence.yearly');
+  },
 };
 
 // Which API key created an entry and which one changed it last, over which access (REST "api" or
@@ -323,12 +334,18 @@ export interface BackupFile {
 
 /** Parts of the own data a backup can be restored for. */
 export type DataSection = 'notes' | 'tasks' | 'lists' | 'inbox' | 'themes';
-export const DATA_SECTIONS: { id: DataSection; label: string }[] = [
-  { id: 'notes', label: 'Notizen' },
-  { id: 'tasks', label: 'Aufgaben' },
-  { id: 'lists', label: 'Listen' },
-  { id: 'inbox', label: 'Inbox' },
-  { id: 'themes', label: 'Themes' },
+const dataSection = (id: DataSection) => ({
+  id,
+  get label() {
+    return i18n.t(`common:dataSections.${id}`);
+  },
+});
+export const DATA_SECTIONS: { id: DataSection; readonly label: string }[] = [
+  dataSection('notes'),
+  dataSection('tasks'),
+  dataSection('lists'),
+  dataSection('inbox'),
+  dataSection('themes'),
 ];
 
 export type BlockType = 'h1' | 'h2' | 'h3' | 'paragraph' | 'text' | 'todo' | 'bullet' | 'numbered' | 'code' | 'callout' | 'divider' | 'table' | 'progress' | 'image' | 'audio';

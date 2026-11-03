@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import i18n from '../i18n';
 
 export interface UserAvatarProps {
   user?: {
@@ -125,17 +126,17 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({
 export async function resizeImageToDataUrl(file: File, maxSize = 256): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onerror = () => reject(new Error('Fehler beim Lesen der Datei'));
+    reader.onerror = () => reject(new Error(i18n.t('common:avatar.readFailed')));
     reader.onload = (e) => {
       const img = new Image();
-      img.onerror = () => reject(new Error('Fehler beim Laden des Bildes'));
+      img.onerror = () => reject(new Error(i18n.t('common:avatar.loadFailed')));
       img.onload = () => {
         const canvas = document.createElement('canvas');
         canvas.width = maxSize;
         canvas.height = maxSize;
         const ctx = canvas.getContext('2d');
         if (!ctx) {
-          reject(new Error('Canvas Context konnte nicht erstellt werden'));
+          reject(new Error(i18n.t('common:avatar.canvasFailed')));
           return;
         }
 

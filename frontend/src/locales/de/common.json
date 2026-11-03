@@ -41,5 +41,283 @@
   "save": "Speichern",
   "add": "Hinzufügen",
   "close": "Schließen",
-  "delete": "Löschen"
+  "delete": "Löschen",
+  "palette": {
+    "placeholder": "Globale Suche in Notizen, Aufgaben und Listen…",
+    "clear": "Eingabe leeren",
+    "small": "Kleine Ansicht",
+    "large": "Große Ansicht mit Filtern",
+    "kindLabel": "Art der Treffer",
+    "status": "Status",
+    "taskStatusAll": "Offen und erledigt",
+    "onlyOpen": "Nur offene",
+    "onlyDone": "Nur erledigte",
+    "taskList": "Aufgabenliste",
+    "allLists": "Alle Listen",
+    "personal": "Persönlich (ohne Liste)",
+    "priority": "Priorität",
+    "anyPriority": "Jede Priorität",
+    "due": "Fälligkeit",
+    "anyDue": "Jede Fälligkeit",
+    "overdue": "Überfällig",
+    "today": "Heute fällig",
+    "week": "Fällig in 7 Tagen",
+    "folder": "Ordner",
+    "allFolders": "Alle Ordner",
+    "list": "Liste",
+    "itemStatusAll": "Offen und abgehakt",
+    "onlyChecked": "Nur abgehakte",
+    "title": "MindSift Globale Suche",
+    "hint": "Tippe ein Stichwort ein, um alle Inhalte in Sekundenschnelle zu durchsuchen.",
+    "noHits": "Keine Treffer gefunden",
+    "reopen": "Wieder öffnen",
+    "check": "Abhaken",
+    "open": "Öffnen",
+    "done": "erledigt",
+    "checked": "abgehakt",
+    "kind": {
+      "all": "Alle",
+      "document": "Notizen",
+      "thought": "Aufgaben",
+      "list_item": "Listen"
+    },
+    "noHitsText": "Keine Notizen, Aufgaben oder Listen-Einträge stimmen mit „{{query}}“ überein.",
+    "dueOn": "fällig {{due}}",
+    "select": "Auswählen",
+    "switchKind": "Art wechseln"
+  },
+  "share": {
+    "chooseGroup": "Bitte eine Gruppe auswählen",
+    "chooseUser": "Bitte einen Benutzer auswählen",
+    "addFailed": "Fehler beim Hinzufügen der Freigabe",
+    "confirmRemove": "Möchtest du diese Freigabe wirklich aufheben?",
+    "removeFailed": "Fehler beim Entfernen der Freigabe",
+    "disabled": "Teilen ist auf diesem Server deaktiviert (Sichtbarkeits-Modus „Privat“).",
+    "add": "Freigabe hinzufügen:",
+    "group": "Gruppe",
+    "user": "Benutzer",
+    "pickGroup": "-- Gruppe auswählen --",
+    "edit": "Bearbeiten",
+    "readOnly": "Nur Lesen",
+    "searchUser": "Benutzer suchen (Name oder @Benutzername)…",
+    "saving": "Wird gespeichert…",
+    "shareGroup": "Gruppe freigeben",
+    "addUser": "Benutzer hinzufügen",
+    "ownerOnly": "Nur der Eigentümer kann neue Freigaben einrichten.",
+    "active": "Aktive Freigaben",
+    "private": "Dieses Element ist aktuell privat (nur für dich sichtbar).",
+    "remove": "Freigabe entfernen",
+    "defaultTitle": "Freigeben & Berechtigungen",
+    "object": "Objekt:"
+  },
+  "sharedImport": {
+    "whichList": "Auf welche Liste?",
+    "elsewhere": "Oder gleich woanders hin:",
+    "failed": "Umwandeln hat nicht geklappt – der Eintrag bleibt im Quick Dump.",
+    "list": "Liste",
+    "task": "Aufgabe",
+    "tasksCreated_one": "Als Aufgabe angelegt",
+    "tasksCreated_other": "{{count}} Aufgaben angelegt",
+    "onList_one": "Eintrag auf „{{title}}“",
+    "onList_other": "{{count}} Einträge auf „{{title}}“",
+    "queued_one": "Im Quick Dump abgelegt",
+    "queued_other": "{{count}} Einträge im Quick Dump abgelegt"
+  },
+  "live": {
+    "none": "Keine Live-Verbindung – Änderungen anderer erscheinen nach dem Neuladen",
+    "sse": "Live-Verbindung über Server-Sent Events (WebSocket wird blockiert)",
+    "poll": "Live über Long-Polling (WebSocket und SSE werden blockiert)",
+    "ws": "Live-Verbindung über WebSocket",
+    "longPolling": " (Long-Polling)"
+  },
+  "update": {
+    "title": "Neue Version verfügbar",
+    "subtitle": "Der Server wurde aktualisiert",
+    "later": "Später",
+    "now": "Jetzt aktualisieren"
+  },
+  "theme": {
+    "family": "Farbfamilie",
+    "mode": "Hell oder dunkel",
+    "light": "Hell",
+    "dark": "Dunkel",
+    "system": "Wie System"
+  },
+  "voice": {
+    "stop": "Aufnahme beenden",
+    "transcribing": "Wird erkannt…",
+    "input": "Spracheingabe",
+    "failed": "Spracherkennung fehlgeschlagen",
+    "noMic": "Kein Zugriff auf das Mikrofon (Berechtigung, oder die Seite läuft nicht über HTTPS)",
+    "denied": "Mikrofon nicht freigegeben",
+    "startFailed": "Spracheingabe konnte nicht gestartet werden",
+    "unsupported": "Spracheingabe wird von diesem Browser nicht unterstützt",
+    "off": "Spracheingabe ist ausgeschaltet"
+  },
+  "menu": {
+    "close": "Menü schließen",
+    "empty": "Keine spezifischen Optionen für diese Ansicht verfügbar."
+  },
+  "switchList": "Liste wechseln",
+  "icon": {
+    "change": "Icon ändern",
+    "choose": "Icon wählen"
+  },
+  "aboutTitle": "Über MindSift & Versionsdetails",
+  "avatar": {
+    "readFailed": "Fehler beim Lesen der Datei",
+    "loadFailed": "Fehler beim Laden des Bildes",
+    "canvasFailed": "Canvas Context konnte nicht erstellt werden"
+  },
+  "offline": {
+    "waiting_one": "{{count}} Änderung wartet",
+    "waiting_other": "{{count}} Änderungen warten",
+    "syncing": "Synchronisiere – {{waiting}}…",
+    "pending": "Offline · {{waiting}} auf Verbindung",
+    "idle": "Offline – Änderungen werden bei Verbindung synchronisiert",
+    "noConnection": "Keine Verbindung zum Server"
+  },
+  "origin": {
+    "createdVia": "Angelegt per {{via}}{{key}}",
+    "createdViaAt": "Angelegt per {{via}}{{key}} am {{when}}",
+    "createdInApp": "In der App angelegt",
+    "createdInAppAt": "In der App angelegt am {{when}}",
+    "changedVia": "zuletzt geändert per {{via}}{{key}}",
+    "changedViaAt": "zuletzt geändert per {{via}}{{key}} am {{when}}"
+  },
+  "date": {
+    "today": "Heute",
+    "tomorrow": "Morgen",
+    "yesterday": "Gestern",
+    "dayThisYear": "{{weekday}}, {{day}}.{{month}}.",
+    "dayOtherYear": "{{day}}.{{month}}.{{year}}",
+    "withTime": "{{label}}, {{time}}",
+    "weekdayShort": {
+      "0": "So.",
+      "1": "Mo.",
+      "2": "Di.",
+      "3": "Mi.",
+      "4": "Do.",
+      "5": "Fr.",
+      "6": "Sa."
+    },
+    "months": {
+      "0": "Januar",
+      "1": "Februar",
+      "2": "März",
+      "3": "April",
+      "4": "Mai",
+      "5": "Juni",
+      "6": "Juli",
+      "7": "August",
+      "8": "September",
+      "9": "Oktober",
+      "10": "November",
+      "11": "Dezember"
+    }
+  },
+  "recurrence": {
+    "daily": "täglich",
+    "weekly": "wöchentlich",
+    "monthly": "monatlich",
+    "yearly": "jährlich"
+  },
+  "dataSections": {
+    "notes": "Notizen",
+    "tasks": "Aufgaben",
+    "lists": "Listen",
+    "inbox": "Inbox",
+    "themes": "Themes"
+  },
+  "sync": {
+    "originalLocked": "Der ursprüngliche Punkt wird gerade von {{name}} bearbeitet",
+    "undo": "Rückgängig",
+    "redo": "Wiederholen",
+    "skippedChanged": "{{action}} übersprungen: Der Punkt wurde inzwischen von jemand anderem geändert",
+    "skippedLocked": "{{action}} übersprungen: {{name}} bearbeitet den Punkt gerade"
+  },
+  "wikiLink": {
+    "toBlock": "Zum Punkt in „{{title}}“",
+    "openNote": "Notiz öffnen: {{title}}"
+  },
+  "shareTarget": {
+    "mediaNote": "(Bild geteilt – Bilder im Posteingang werden noch nicht unterstützt)"
+  },
+  "media": {
+    "notFound": "Datei nicht gefunden"
+  },
+  "push": {
+    "unsupported": "Dieser Browser unterstützt keine Push-Benachrichtigungen",
+    "homeScreen": "Auf iPhone und iPad zuerst MindSift „Zum Home-Bildschirm“ hinzufügen und von dort öffnen",
+    "unavailable": "Push ist auf diesem Server nicht verfügbar",
+    "denied": "Benachrichtigungen wurden im Browser nicht erlaubt",
+    "rejected": "Der Browser hat die Anmeldung beim Push-Dienst abgelehnt (Berechtigung blockiert oder Push-Dienst nicht erreichbar)"
+  },
+  "themes": {
+    "families": {
+      "classic": {
+        "name": "Klassik",
+        "subtitle": "Neutral mit Blau, eckig"
+      },
+      "fjord": {
+        "name": "Fjord",
+        "subtitle": "Kühles Papier, Gletscherblau"
+      },
+      "terracotta": {
+        "name": "Terrakotta",
+        "subtitle": "Warmes Papier, gebrannte Erde"
+      },
+      "polarized": {
+        "name": "Polarized",
+        "subtitle": "Petrol und Türkis, eckig"
+      },
+      "suri": {
+        "name": "Suri",
+        "subtitle": "Lavendel, Pflaume, Orchidee"
+      }
+    },
+    "builtin": {
+      "dark": {
+        "name": "MindSift Dark (Standard)",
+        "subtitle": "Monochrom, dunkel & eckig (0px)"
+      },
+      "light": {
+        "name": "MindSift Light (Tagmodus)",
+        "subtitle": "Helles Papier-Design & klare Kontraste"
+      },
+      "terracotta": {
+        "name": "Terrakotta (Warmes Papier)",
+        "subtitle": "Cremepapier, Tinte & gebrannte Terrakotta (12px)"
+      },
+      "terracotta-night": {
+        "name": "Terrakotta Nacht (Glut)",
+        "subtitle": "Espresso, Creme & glühende Terrakotta (12px)"
+      },
+      "polarized": {
+        "name": "Polarized (Emerald / Teal)",
+        "subtitle": "Tiefdunkles Obsidian mit elektrischem Türkis/Grün (0px)"
+      },
+      "suri": {
+        "name": "Suri (Velvet Dusk)",
+        "subtitle": "Warmes Mitternachts-Pflaume mit samtiger Orchidee (10px)"
+      },
+      "fjord": {
+        "name": "Fjord (Gletscherblau)",
+        "subtitle": "Kühles Papier, Tintenblau & Fjordblau (12px)"
+      },
+      "fjord-night": {
+        "name": "Fjord Nacht (Tiefsee)",
+        "subtitle": "Nachtblau, Mondlicht & leuchtendes Gletscherblau (12px)"
+      },
+      "polarized-light": {
+        "name": "Polarized Hell (Lagune)",
+        "subtitle": "Kreidiges Mintweiß mit tiefem Petrol (0px)"
+      },
+      "suri-light": {
+        "name": "Suri Hell (Lavendel)",
+        "subtitle": "Lavendelpapier, Pflaume & Orchidee (10px)"
+      }
+    },
+    "custom": "Eigenes Theme"
+  }
 }

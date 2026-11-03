@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { CloudOff, RefreshCw } from 'lucide-react';
 import { outboxCount } from '../lib/offline';
 
 // Small notice above the bottom navigation: offline (with the number of changes waiting), or
 // "synchronisiere" while queued changes are being sent after the connection came back.
 export const OfflineBanner: React.FC = () => {
+  const { t } = useTranslation();
   const [online, setOnline] = useState(() => (typeof navigator === 'undefined' ? true : navigator.onLine));
   const [pending, setPending] = useState(() => outboxCount());
 
@@ -27,7 +29,7 @@ export const OfflineBanner: React.FC = () => {
 
   if (online && pending === 0) return null;
 
-  const waiting = `${pending} ${pending === 1 ? 'Änderung wartet' : 'Änderungen warten'}`;
+  const waiting = t('offline.waiting', { count: pending });
   return (
     <div
       role="status"
@@ -40,10 +42,10 @@ export const OfflineBanner: React.FC = () => {
       )}
       <span className="truncate">
         {online
-          ? `Synchronisiere – ${waiting}…`
+          ? t('offline.syncing', { waiting })
           : pending > 0
-          ? `Offline · ${waiting} auf Verbindung`
-          : 'Offline – Änderungen werden bei Verbindung synchronisiert'}
+          ? t('offline.pending', { waiting })
+          : t('offline.idle')}
       </span>
     </div>
   );

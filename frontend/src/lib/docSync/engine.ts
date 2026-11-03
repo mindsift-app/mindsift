@@ -9,6 +9,7 @@ import { defaultStorage, SyncStorage } from './persist';
 import { httpTransport, LeaseInfo, Presence, Transport, TransportError } from './transport';
 import { buildStep, failedChecks, touchedBlocks, UndoStep } from './undo';
 import { PushChannel, PushKind, realtimePush } from './push';
+import i18n from '../../i18n';
 
 export type EngineStatus = 'loading' | 'saved' | 'saving' | 'offline' | 'error';
 
@@ -312,12 +313,12 @@ export class DocSyncEngine {
 
   /** Reverts the user's last own change (skipped if someone else changed the blocks since). */
   undo(): ActionResult {
-    return this.replay(this.undoStack, this.redoStack, 'Rückgängig');
+    return this.replay(this.undoStack, this.redoStack, i18n.t('common:sync.undo'));
   }
 
   /** Re-applies the last undone change. */
   redo(): ActionResult {
-    return this.replay(this.redoStack, this.undoStack, 'Wiederholen');
+    return this.replay(this.redoStack, this.undoStack, i18n.t('common:sync.redo'));
   }
 
   /** Accepts (replaces the original with the conflict copy) or discards a conflict copy. */
@@ -339,7 +340,7 @@ export class DocSyncEngine {
       const original = this.local.blocks.get(target);
       if (original && !original.deleted) {
         const holder = this.lockedBy(target);
-        if (holder) return { ok: false, message: `Der ursprüngliche Punkt wird gerade von ${holder} bearbeitet` };
+        if (holder) return { ok: false, message: i18n.t('common:sync.originalLocked', { name: holder }) };
         ops.push({ opId: this.newOpId(), kind: 'set_content', blockId: target, content: copy.content, baseVersion: original.version });
         ops.push({ opId: this.newOpId(), kind: 'delete', blockId: copyId });
       } else {
@@ -447,12 +448,12 @@ export class DocSyncEngine {
     if (!step) return { ok: false };
     if (failedChecks(this.local, step).length > 0) {
       this.emit();
-      return { ok: false, message: `${label} übersprungen: Der Punkt wurde inzwischen von jemand anderem geändert` };
+      return { ok: false, message: i18n.t('common:sync.skippedChanged', { action: label }) };
     }
     const holder = touchedBlocks(step).map((id) => this.lockedBy(id)).find(Boolean);
     if (holder) {
       this.emit();
-      return { ok: false, message: `${label} übersprungen: ${holder} bearbeitet den Punkt gerade` };
+      return { ok: false, message: i18n.t('common:sync.skippedLocked', { action: label, name: holder }) };
     }
     const ops: Op[] = step.inverse.map((o) => {
       const op: Op = { ...o, opId: this.newOpId() } as Op;

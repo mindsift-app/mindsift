@@ -4,6 +4,7 @@
 // so the reference travels with the normal note sync. Files are loaded with the login (fetch) and
 // shown as blob: URLs; there are no public links.
 import { getToken } from './api';
+import i18n from '../i18n';
 
 const MEDIA_RE = /^!?\[((?:[^\]\\]|\\.)*)\]\(media:(med_[0-9a-f]+)\)$/;
 
@@ -39,7 +40,7 @@ export function loadAuthorized(path: string): Promise<{ blob: Blob; url: string 
       const res = await fetch(path, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
-      if (!res.ok) throw new Error(res.status === 404 ? 'Datei nicht gefunden' : `HTTP ${res.status}`);
+      if (!res.ok) throw new Error(res.status === 404 ? i18n.t('common:media.notFound') : `HTTP ${res.status}`);
       const blob = await res.blob();
       return { blob, url: URL.createObjectURL(blob) };
     })();

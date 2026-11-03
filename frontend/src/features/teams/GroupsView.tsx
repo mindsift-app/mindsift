@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import i18n from '../../i18n';
 import {
   Users,
   Plus,
@@ -23,6 +25,7 @@ interface GroupsViewProps {
 }
 
 export const GroupsView: React.FC<GroupsViewProps> = ({ currentUser, onBack }) => {
+  const { t } = useTranslation('groups');
   const [teams, setTeams] = useState<Team[]>([]);
   const [directoryUsers, setDirectoryUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
@@ -52,7 +55,7 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ currentUser, onBack }) =
       setTeams(userTeams);
       setDirectoryUsers(allUsers);
     } catch (err: any) {
-      setStatusMsg({ type: 'err', text: err.message || 'Fehler beim Laden der Gruppen' });
+      setStatusMsg({ type: 'err', text: err.message || i18n.t('groups:loadFailed') });
     } finally {
       setLoading(false);
     }
@@ -77,9 +80,9 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ currentUser, onBack }) =
       setNewGroupDesc('');
       setShowCreateModal(false);
       await loadData();
-      setStatusMsg({ type: 'ok', text: `Gruppe "${created.name}" erfolgreich erstellt.` });
+      setStatusMsg({ type: 'ok', text: i18n.t('groups:created', { name: created.name }) });
     } catch (err: any) {
-      setStatusMsg({ type: 'err', text: err.message || 'Fehler beim Erstellen der Gruppe' });
+      setStatusMsg({ type: 'err', text: err.message || i18n.t('groups:createFailed') });
     } finally {
       setCreating(false);
     }
@@ -101,14 +104,14 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ currentUser, onBack }) =
       await api.updateTeam(teamId, name, editDesc.trim());
       setEditingTeamId(null);
       await loadData();
-      setStatusMsg({ type: 'ok', text: 'Gruppe erfolgreich aktualisiert.' });
+      setStatusMsg({ type: 'ok', text: i18n.t('groups:updated') });
     } catch (err: any) {
-      setStatusMsg({ type: 'err', text: err.message || 'Fehler beim Aktualisieren der Gruppe' });
+      setStatusMsg({ type: 'err', text: err.message || i18n.t('groups:updateFailed') });
     }
   };
 
   const handleDeleteTeam = async (team: Team) => {
-    if (!window.confirm(`Gruppe "${team.name}" wirklich löschen? Alle Freigaben für diese Gruppe werden entfernt.`)) {
+    if (!window.confirm(i18n.t('groups:confirmDelete', { name: team.name }))) {
       return;
     }
     setStatusMsg(null);
@@ -116,9 +119,9 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ currentUser, onBack }) =
     try {
       await api.deleteTeam(team.id);
       await loadData();
-      setStatusMsg({ type: 'ok', text: `Gruppe "${team.name}" gelöscht.` });
+      setStatusMsg({ type: 'ok', text: i18n.t('groups:deleted', { name: team.name }) });
     } catch (err: any) {
-      setStatusMsg({ type: 'err', text: err.message || 'Fehler beim Löschen der Gruppe' });
+      setStatusMsg({ type: 'err', text: err.message || i18n.t('groups:deleteFailed') });
     }
   };
 
@@ -133,9 +136,9 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ currentUser, onBack }) =
       await api.addTeamMember(teamId, { userId: user.id, role });
       setSelectedUserByTeam((prev) => ({ ...prev, [teamId]: null }));
       await loadData();
-      setStatusMsg({ type: 'ok', text: `${user.displayName} wurde zur Gruppe hinzugefügt.` });
+      setStatusMsg({ type: 'ok', text: i18n.t('groups:memberAdded', { name: user.displayName }) });
     } catch (err: any) {
-      setStatusMsg({ type: 'err', text: err.message || 'Fehler beim Hinzufügen des Mitglieds' });
+      setStatusMsg({ type: 'err', text: err.message || i18n.t('groups:addFailed') });
     }
   };
 
@@ -147,18 +150,18 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ currentUser, onBack }) =
       await loadData();
       setStatusMsg({
         type: 'ok',
-        text: `Rolle erfolgreich zu "${newRole === 'admin' ? 'Gruppen-Admin' : 'Mitglied'}" geändert.`,
+        text: i18n.t('groups:roleChanged', { role: newRole === 'admin' ? i18n.t('groups:roleAdmin') : i18n.t('groups:roleMember') }),
       });
     } catch (err: any) {
-      setStatusMsg({ type: 'err', text: err.message || 'Fehler beim Ändern der Rolle' });
+      setStatusMsg({ type: 'err', text: err.message || i18n.t('groups:roleFailed') });
     }
   };
 
   const handleRemoveMember = async (teamId: string, memberUserId: string, memberName: string) => {
     const isSelf = memberUserId === currentUser.id;
     const msg = isSelf
-      ? 'Möchtest du diese Gruppe wirklich verlassen?'
-      : `Mitglied "${memberName}" wirklich aus der Gruppe entfernen?`;
+      ? i18n.t('groups:confirmLeave')
+      : i18n.t('groups:confirmRemove', { name: memberName });
 
     if (!window.confirm(msg)) return;
 
@@ -169,10 +172,10 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ currentUser, onBack }) =
       await loadData();
       setStatusMsg({
         type: 'ok',
-        text: isSelf ? 'Du hast die Gruppe verlassen.' : `Mitglied "${memberName}" wurde entfernt.`,
+        text: isSelf ? i18n.t('groups:left') : i18n.t('groups:removed', { name: memberName }),
       });
     } catch (err: any) {
-      setStatusMsg({ type: 'err', text: err.message || 'Fehler beim Entfernen des Mitglieds' });
+      setStatusMsg({ type: 'err', text: err.message || i18n.t('groups:removeFailed') });
     }
   };
 
@@ -192,9 +195,9 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ currentUser, onBack }) =
       <div className="w-full space-y-3">
         <button onClick={onBack} className="btn-action h-8 px-2.5 text-xs flex items-center gap-1.5 cursor-pointer">
           <ArrowLeft className="w-3.5 h-3.5" />
-          <span>Zurück</span>
+          <span>{t('back')}</span>
         </button>
-        <p className="text-xs text-muted">Gruppen sind auf diesem Server deaktiviert (Sichtbarkeits-Modus „Privat“).</p>
+        <p className="text-xs text-muted">{t('disabled')}</p>
       </div>
     );
   }
@@ -207,21 +210,21 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ currentUser, onBack }) =
           <button
             onClick={onBack}
             className="btn-action h-8 px-2.5 text-xs flex items-center gap-1.5 cursor-pointer"
-            title="Zurück"
+            title={t('back')}
           >
             <ArrowLeft className="w-3.5 h-3.5" />
-            <span>Zurück</span>
+            <span>{t('back')}</span>
           </button>
           <div>
             <h1 className="text-base font-bold text-main tracking-tight flex items-center gap-2">
               <Users className="w-4 h-4 text-accent" />
-              <span>Gruppen</span>
+              <span>{t('title')}</span>
               <span className="text-xs px-2 py-0.5 rounded-full bg-panel-elevated text-muted border border-border">
                 {teams.length}
               </span>
             </h1>
             <p className="text-xs text-muted mt-0.5">
-              Erstelle Gruppen (z. B. Familie, WG oder Projektteam) aus Personen, die du sehen kannst, und teile Notizen, Aufgaben und Listen mit allen auf einmal.
+              {t('intro')}
             </p>
           </div>
         </div>
@@ -234,7 +237,7 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ currentUser, onBack }) =
           className="btn-primary h-8 px-3.5 text-xs flex items-center gap-1.5 self-start sm:self-auto cursor-pointer"
         >
           <Plus className="w-3.5 h-3.5" />
-          <span>Neue Gruppe</span>
+          <span>{t('newGroup')}</span>
         </button>
       </div>
 
@@ -257,7 +260,7 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ currentUser, onBack }) =
             onClick={() => setStatusMsg(null)}
             className="text-muted hover:text-main text-[11px] cursor-pointer"
           >
-            Schließen
+            {t('close')}
           </button>
         </div>
       )}
@@ -277,7 +280,7 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ currentUser, onBack }) =
                 <div className="w-7 h-7 rounded-btn bg-accent/15 text-accent flex items-center justify-center">
                   <Users className="w-4 h-4" />
                 </div>
-                <h3 className="font-bold text-sm text-main">Neue Gruppe erstellen</h3>
+                <h3 className="font-bold text-sm text-main">{t('create.title')}</h3>
               </div>
               <button
                 type="button"
@@ -291,13 +294,13 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ currentUser, onBack }) =
             <form onSubmit={handleCreateGroup} className="space-y-4">
               <div>
                 <label className="block text-muted text-xs mb-1 font-medium">
-                  Name der Gruppe *
+                  {t('create.name')}
                 </label>
                 <input
                   type="text"
                   value={newGroupName}
                   onChange={(e) => setNewGroupName(e.target.value)}
-                  placeholder="z. B. Familie, WG, Arbeit, Projekt X…"
+                  placeholder={t('create.namePlaceholder')}
                   required
                   autoFocus
                   className="w-full h-8 px-2.5 input-field text-xs"
@@ -306,13 +309,13 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ currentUser, onBack }) =
 
               <div>
                 <label className="block text-muted text-xs mb-1 font-medium">
-                  Beschreibung (optional)
+                  {t('create.description')}
                 </label>
                 <input
                   type="text"
                   value={newGroupDesc}
                   onChange={(e) => setNewGroupDesc(e.target.value)}
-                  placeholder="z. B. Gemeinsame Einkaufslisten & Notizen…"
+                  placeholder={t('create.descriptionPlaceholder')}
                   className="w-full h-8 px-2.5 input-field text-xs"
                 />
               </div>
@@ -320,10 +323,10 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ currentUser, onBack }) =
               <div className="p-3 bg-canvas border border-border rounded-btn text-[11px] text-muted space-y-1">
                 <p className="font-semibold text-main flex items-center gap-1.5">
                   <Shield className="w-3.5 h-3.5 text-accent" />
-                  <span>Du wirst Gruppen-Admin</span>
+                  <span>{t('create.youAdmin')}</span>
                 </p>
                 <p>
-                  Als Ersteller kannst du weitere Mitglieder hinzufügen, Rollen zuweisen und die Gruppe verwalten.
+                  {t('create.youAdminHint')}
                 </p>
               </div>
 
@@ -341,7 +344,7 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ currentUser, onBack }) =
                   className="btn-primary h-8 px-4 text-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                 >
                   <Plus className="w-3.5 h-3.5" />
-                  <span>Gruppe anlegen</span>
+                  <span>{t('create.submit')}</span>
                 </button>
               </div>
             </form>
@@ -351,16 +354,16 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ currentUser, onBack }) =
 
       {/* Main Content Area */}
       {loading ? (
-        <div className="p-8 text-center text-muted text-xs">Lade Gruppen…</div>
+        <div className="p-8 text-center text-muted text-xs">{t('loading')}</div>
       ) : teams.length === 0 ? (
         <div className="p-10 bg-canvas border border-border rounded-card text-center space-y-3">
           <div className="w-12 h-12 rounded-full bg-panel-elevated text-muted mx-auto flex items-center justify-center">
             <Users className="w-6 h-6 text-accent opacity-75" />
           </div>
           <div>
-            <h3 className="font-bold text-main text-sm">Noch keine Gruppen vorhanden</h3>
+            <h3 className="font-bold text-main text-sm">{t('empty.title')}</h3>
             <p className="text-muted text-xs mt-1 max-w-md mx-auto">
-              Erstelle deine erste Gruppe, um Aufgaben, Einkaufslisten oder Dokumente gemeinsam mit anderen zu nutzen.
+              {t('empty.text')}
             </p>
           </div>
           <button
@@ -371,7 +374,7 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ currentUser, onBack }) =
             className="btn-primary h-8 px-4 text-xs inline-flex items-center gap-1.5 cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" />
-            <span>Erste Gruppe anlegen</span>
+            <span>{t('empty.create')}</span>
           </button>
         </div>
       ) : (
@@ -387,7 +390,7 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ currentUser, onBack }) =
 
             {managedTeams.length === 0 ? (
               <div className="p-4 bg-canvas border border-border rounded-card text-xs text-muted">
-                Du bist derzeit noch in keiner Gruppe als Admin eingetragen. Klicke oben auf &quot;Neue Gruppe&quot;, um eine eigene Gruppe zu erstellen.
+                {t('noAdmin')}
               </div>
             ) : (
               <div className="space-y-4">
@@ -414,14 +417,14 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ currentUser, onBack }) =
                                 type="text"
                                 value={editName}
                                 onChange={(e) => setEditName(e.target.value)}
-                                placeholder="Gruppenname"
+                                placeholder={t('namePlaceholder')}
                                 className="w-full h-8 px-2.5 input-field text-xs font-bold"
                               />
                               <input
                                 type="text"
                                 value={editDesc}
                                 onChange={(e) => setEditDesc(e.target.value)}
-                                placeholder="Optionale Beschreibung"
+                                placeholder={t('descriptionPlaceholder')}
                                 className="w-full h-7 px-2.5 input-field text-xs"
                               />
                               <div className="flex gap-2">
@@ -448,10 +451,10 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ currentUser, onBack }) =
                                   {team.name}
                                 </span>
                                 <span className="badge-accent text-[10px] py-0.5 px-2">
-                                  Gruppen-Admin
+                                  {t('roleAdmin')}
                                 </span>
                                 <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-panel-elevated text-muted border border-border">
-                                  {members.length} {members.length === 1 ? 'Mitglied' : 'Mitglieder'}
+                                  {members.length} {members.length === 1 ? t('roleMember') : 'Mitglieder'}
                                 </span>
                               </div>
                               {team.description && (
@@ -468,15 +471,15 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ currentUser, onBack }) =
                             <button
                               onClick={() => handleStartEdit(team)}
                               className="btn-action h-7 px-2.5 text-xs flex items-center gap-1 cursor-pointer"
-                              title="Gruppe bearbeiten"
+                              title={t('edit')}
                             >
                               <Pencil className="w-3.5 h-3.5" />
-                              <span className="hidden sm:inline">Bearbeiten</span>
+                              <span className="hidden sm:inline">{t('editShort')}</span>
                             </button>
                             <button
                               onClick={() => handleDeleteTeam(team)}
                               className="btn-icon btn-icon-danger"
-                              title="Gruppe löschen"
+                              title={t('delete')}
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
@@ -487,7 +490,7 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ currentUser, onBack }) =
                       {/* Members List */}
                       <div className="space-y-2">
                         <p className="text-[11px] font-semibold text-muted uppercase tracking-wider">
-                          Mitglieder ({members.length})
+                          {t('membersCount', { count: members.length })}
                         </p>
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                           {members.map((m) => {
@@ -526,16 +529,16 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ currentUser, onBack }) =
                                           ? 'border-accent text-accent font-semibold'
                                           : 'text-muted'
                                       }`}
-                                      title="Rolle ändern"
+                                      title={t('changeRole')}
                                     >
-                                      <option value="member" className="bg-panel text-main">Mitglied</option>
-                                      <option value="admin" className="bg-panel text-main">Gruppen-Admin</option>
+                                      <option value="member" className="bg-panel text-main">{t('roleMember')}</option>
+                                      <option value="admin" className="bg-panel text-main">{t('roleAdmin')}</option>
                                     </select>
 
                                   <button
                                     onClick={() => handleRemoveMember(team.id, m.userId, m.displayName)}
                                     className="p-1 text-faint hover:text-status-err rounded transition-colors cursor-pointer"
-                                    title={isSelf ? 'Gruppe verlassen' : 'Mitglied entfernen'}
+                                    title={isSelf ? t('leave') : t('removeMember')}
                                   >
                                     <X className="w-3.5 h-3.5" />
                                   </button>
@@ -556,7 +559,7 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ currentUser, onBack }) =
                               setSelectedUserByTeam((prev) => ({ ...prev, [team.id]: u }))
                             }
                             excludeUserIds={memberUserIds}
-                            placeholder="Benutzer suchen zum Hinzufügen…"
+                            placeholder={t('searchPlaceholder')}
                           />
                         </div>
 
@@ -570,8 +573,8 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ currentUser, onBack }) =
                           }
                           className="h-8 px-2.5 input-field text-xs bg-panel"
                         >
-                          <option value="member">Mitglied</option>
-                          <option value="admin">Gruppen-Admin</option>
+                          <option value="member">{t('roleMember')}</option>
+                          <option value="admin">{t('roleAdmin')}</option>
                         </select>
 
                         <button
@@ -581,7 +584,7 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ currentUser, onBack }) =
                           className="btn-primary h-8 px-3.5 text-xs flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-40"
                         >
                           <UserPlus className="w-3.5 h-3.5" />
-                          <span>Hinzufügen</span>
+                          <span>{t('add')}</span>
                         </button>
                       </div>
                     </div>
@@ -618,7 +621,7 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ currentUser, onBack }) =
                             <div className="flex items-center gap-2">
                               <span className="font-bold text-sm text-main">{team.name}</span>
                               <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-panel-elevated text-muted border border-border">
-                                {members.length} {members.length === 1 ? 'Mitglied' : 'Mitglieder'}
+                                {members.length} {members.length === 1 ? t('roleMember') : 'Mitglieder'}
                               </span>
                             </div>
                             {team.description && (
@@ -630,23 +633,23 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ currentUser, onBack }) =
                         <button
                           onClick={() => handleRemoveMember(team.id, currentUser.id, currentUser.displayName)}
                           className="btn-action text-status-err hover:bg-status-err-bg h-7 px-2.5 text-xs flex items-center gap-1.5 cursor-pointer"
-                          title="Gruppe verlassen"
+                          title={t('leave')}
                         >
                           <LogOut className="w-3.5 h-3.5" />
-                          <span>Gruppe verlassen</span>
+                          <span>{t('leave')}</span>
                         </button>
                       </div>
 
                       {/* Admins & Members list in read-only mode */}
                       <div className="space-y-1.5">
                         <p className="text-[11px] font-semibold text-muted">
-                          Gruppen-Admins:{' '}
+                          {t('admins')}{' '}
                           <span className="text-main font-normal">
-                            {admins.map((a) => a.displayName).join(', ') || 'Keiner'}
+                            {admins.map((a) => a.displayName).join(', ') || t('nobody')}
                           </span>
                         </p>
                         <p className="text-[11px] font-semibold text-muted">
-                          Alle Mitglieder:{' '}
+                          {t('allMembers')}{' '}
                           <span className="text-faint font-normal">
                             {members.map((m) => m.displayName).join(', ')}
                           </span>

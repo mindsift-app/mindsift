@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { MONTHS, monthGrid, parseISODate, todayISO } from '../../lib/journal';
+import { monthGrid, monthNames, parseISODate, todayISO } from '../../lib/journal';
 import { formatDate } from '../../lib/format';
 
 interface JournalCalendarProps {
@@ -58,7 +58,7 @@ export const JournalCalendar: React.FC<JournalCalendarProps> = ({ activeDate, en
           className="flex-1 min-w-0 h-9 sm:h-7 px-1.5 rounded-btn bg-panel text-main border-0 text-xs font-semibold outline-none focus:ring-1 focus:ring-accent cursor-pointer"
           aria-label="Monat"
         >
-          {MONTHS.map((m, i) => (
+          {monthNames().map((m, i) => (
             <option key={m} value={i}>
               {m}
             </option>

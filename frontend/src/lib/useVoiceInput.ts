@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from './api';
 import { browserRecognition, currentVoiceConfig, EffectiveVoiceMode, joinSpeechResults, loadVoiceConfig, VOICE_CONFIG_EVENT, VoiceRecorder } from './voice';
-import { currentLocale } from '../i18n';
+import i18n, { currentLocale } from '../i18n';
 
 export type VoiceState = 'idle' | 'listening' | 'transcribing';
 
@@ -146,7 +146,7 @@ export function useVoiceInput({ onText, onError, continuous = false, live = fals
         clearAllTimers();
         recorderRef.current?.cancel();
         recorderRef.current = null;
-        fail(err?.message || 'Spracherkennung fehlgeschlagen');
+        fail(err?.message || i18n.t('common:voice.failed'));
       });
   };
 
@@ -189,7 +189,7 @@ export function useVoiceInput({ onText, onError, continuous = false, live = fals
       setStateSafe('idle');
       onTextRef.current(text, true);
     } catch (err: any) {
-      fail(err?.message || 'Spracherkennung fehlgeschlagen');
+      fail(err?.message || i18n.t('common:voice.failed'));
     }
     // fail only touches refs and state setters
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -207,7 +207,7 @@ export function useVoiceInput({ onText, onError, continuous = false, live = fals
       await rec.start();
     } catch {
       recorderRef.current = null;
-      fail('Kein Zugriff auf das Mikrofon (Berechtigung, oder die Seite läuft nicht über HTTPS)');
+      fail(i18n.t('common:voice.noMic'));
       return;
     }
     if (cancelledRef.current || recorderRef.current !== rec) {
@@ -274,7 +274,7 @@ export function useVoiceInput({ onText, onError, continuous = false, live = fals
         cancelledRef.current = true;
         clearAllTimers();
         recognitionRef.current = null;
-        fail('Mikrofon nicht freigegeben');
+        fail(i18n.t('common:voice.denied'));
       }
     };
     recognition.onend = () => {
@@ -316,7 +316,7 @@ export function useVoiceInput({ onText, onError, continuous = false, live = fals
     } catch {
       recognitionRef.current = null;
       if (!isRestart) {
-        fail('Spracheingabe konnte nicht gestartet werden');
+        fail(i18n.t('common:voice.startFailed'));
       } else {
         clearAllTimers();
         setStateSafe('idle');
@@ -328,7 +328,7 @@ export function useVoiceInput({ onText, onError, continuous = false, live = fals
   const startBrowser = () => {
     const Recognition = browserRecognition();
     if (!Recognition) {
-      fail('Spracheingabe wird von diesem Browser nicht unterstützt');
+      fail(i18n.t('common:voice.unsupported'));
       return;
     }
     baseTranscriptRef.current = '';
@@ -346,7 +346,7 @@ export function useVoiceInput({ onText, onError, continuous = false, live = fals
     const current = mode ?? currentVoiceConfig().mode;
     if (current === 'server') await startServer();
     else if (current === 'browser') startBrowser();
-    else fail(current === 'off' ? 'Spracheingabe ist ausgeschaltet' : 'Spracheingabe wird von diesem Browser nicht unterstützt');
+    else fail(current === 'off' ? i18n.t('common:voice.off') : i18n.t('common:voice.unsupported'));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, continuous, live, chunkServer]);
 

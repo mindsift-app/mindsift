@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Monitor, Moon, Sun } from 'lucide-react';
 import {
   AVAILABLE_THEMES,
@@ -21,6 +22,7 @@ interface ThemeQuickPickerProps {
 
 // Compact switcher for the user menu: one dot per colour family plus light/dark; own themes below
 export const ThemeQuickPicker: React.FC<ThemeQuickPickerProps> = ({ activeTheme, themes, onChange, touch = false }) => {
+  const { t } = useTranslation();
   const active = AVAILABLE_THEMES.find((t) => t.id === activeTheme);
   const mode = active?.mode ?? 'dark';
   const customThemes = themes.filter((t) => t.isCustom);
@@ -32,7 +34,7 @@ export const ThemeQuickPicker: React.FC<ThemeQuickPickerProps> = ({ activeTheme,
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between gap-1">
-        <div className="flex w-full items-center justify-between" role="radiogroup" aria-label="Farbfamilie">
+        <div className="flex w-full items-center justify-between" role="radiogroup" aria-label={t('theme.family')}>
           {THEME_FAMILIES.map((f) => {
             const preview = AVAILABLE_THEMES.find((t) => t.id === (mode === 'light' ? f.light : f.dark));
             const selected = active?.family === f.id;
@@ -56,7 +58,7 @@ export const ThemeQuickPicker: React.FC<ThemeQuickPickerProps> = ({ activeTheme,
         </div>
       </div>
       {/* Own row: three labelled segments, so it fits narrow menus */}
-      <div className="grid grid-cols-3 rounded-full bg-panel-elevated p-0.5" role="radiogroup" aria-label="Hell oder dunkel">
+      <div className="grid grid-cols-3 rounded-full bg-panel-elevated p-0.5" role="radiogroup" aria-label={t('theme.mode')}>
           {(['light', 'dark', 'auto'] as const).map((m) => {
             const family = active?.family ? THEME_FAMILIES.find((f) => f.id === active.family) : undefined;
             const selected = m === 'auto' ? followSystem : !followSystem && !!active && mode === m;
@@ -74,8 +76,8 @@ export const ThemeQuickPicker: React.FC<ThemeQuickPickerProps> = ({ activeTheme,
                   setFollow(m === 'auto');
                   onChange(m === 'auto' ? resolveTheme(family.dark) : family[m]);
                 }}
-                title={m === 'light' ? 'Hell' : m === 'dark' ? 'Dunkel' : 'Wie System'}
-                aria-label={m === 'light' ? 'Hell' : m === 'dark' ? 'Dunkel' : 'Wie System'}
+                title={m === 'light' ? t('theme.light') : m === 'dark' ? t('theme.dark') : t('theme.system')}
+                aria-label={m === 'light' ? t('theme.light') : m === 'dark' ? t('theme.dark') : t('theme.system')}
                 className={`${touch ? 'h-9' : 'h-7'} rounded-full flex items-center justify-center gap-1 text-[11px] font-medium transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
                   selected ? 'bg-panel text-accent shadow-sm' : 'text-muted hover:text-main'
                 }`}
@@ -87,7 +89,7 @@ export const ThemeQuickPicker: React.FC<ThemeQuickPickerProps> = ({ activeTheme,
                 ) : (
                   <Monitor className="w-3.5 h-3.5" />
                 )}
-                <span>{m === 'light' ? 'Hell' : m === 'dark' ? 'Dunkel' : 'System'}</span>
+                <span>{m === 'light' ? t('theme.light') : m === 'dark' ? t('theme.dark') : 'System'}</span>
               </button>
             );
           })}
