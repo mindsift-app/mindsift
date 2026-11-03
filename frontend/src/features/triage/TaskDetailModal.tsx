@@ -28,6 +28,7 @@ import { MarkdownViewer } from '../../lib/markdown';
 import { VoiceInputButton } from '../../components/VoiceInputButton';
 import { addDays, joinDue, splitDue } from '../../lib/due';
 import { usePointerSort } from './usePointerSort';
+import { formatDate } from '../../lib/format';
 
 interface TaskDetailModalProps {
   task: Thought | null;
@@ -979,9 +980,9 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
         <div className="flex items-center justify-between px-4 py-2.5 border-t border-border bg-panel">
           <div className="text-[11px] text-faint min-w-0 pr-3">
             <span className="lg:hidden">
-              {originDetails(task.origin, task.createdAt) || `Erstellt: ${new Date(task.createdAt).toLocaleDateString('de-DE')}`}
+              {originDetails(task.origin, task.createdAt) || `Erstellt: ${formatDate(task.createdAt)}`}
             </span>
-            <span className="hidden lg:inline">Erstellt: {new Date(task.createdAt).toLocaleDateString('de-DE')}</span>
+            <span className="hidden lg:inline">Erstellt: {formatDate(task.createdAt)}</span>
           </div>
           {confirmUnsaved ? (
             <div role="alertdialog" aria-label="Ungespeicherte Änderungen" className="flex flex-wrap items-center justify-end gap-1.5">

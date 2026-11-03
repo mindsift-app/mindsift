@@ -6,7 +6,7 @@
 [![Self-Hosted](https://img.shields.io/badge/100%25-Self--Hosted-2563eb?style=flat-square)](#)
 [![Docker](https://img.shields.io/badge/Deployment-Single%20Container-2496ed?style=flat-square&logo=docker&logoColor=white)](#-schnellstart)
 [![SQLite](https://img.shields.io/badge/Daten-SQLite-003b57?style=flat-square&logo=sqlite&logoColor=white)](#-deine-daten-gehören-dir)
-[![Version](https://img.shields.io/badge/Version-v0.72.0-16a34a?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-v0.73.0-16a34a?style=flat-square)](CHANGELOG.md)
 
 **MindSift** ist eine selbst gehostete Schaltstelle für spontane Gedanken, Aufgaben mit Kanban-Board, hierarchische Outliner-Notizen, die mehrere Personen gleichzeitig bearbeiten können, und gemeinsame Listen. Alles läuft als ein einzelner Container mit eingebetteter SQLite-Datenbank, auf deinem eigenen Server.
 
@@ -195,6 +195,7 @@ Rufe `http://localhost:8080` auf. Beim ersten Start führt ein Assistent durch d
 | `JWT_SECRET` | zufällig erzeugt (`/data/jwt.secret`) | Signaturschlüssel der Anmelde-Tokens; Platzhalter werden ignoriert |
 | `BASE_URL` | `http://localhost:8080` | Öffentliche URL. Nur wenn gesetzt (und SMTP eingerichtet ist), gibt es „Passwort vergessen?“ – die Links in den Mails werden ausschließlich daraus gebaut |
 | `TRUSTED_PROXIES` | `private` | Wessen `X-Forwarded-For`/`X-Real-IP` geglaubt wird: `private` (Proxy im Docker-/Heimnetz), `all` (immer, früheres Verhalten), `none` oder eigene CIDR-Bereiche ([Doku/reverse-proxy.md](Doku/reverse-proxy.md#client-ip-und-trusted_proxies)) |
+| `DEFAULT_LANGUAGE` | `de` | Standardsprache des Servers (Login-Bildschirm, neue Konten, Browser in anderen Sprachen), solange der Admin keine in Administration → Server & Isolation gewählt hat. Jede Person kann unter Kontoeinstellungen → Sprache selbst umstellen |
 | `MCP_ENABLED` | leer (Admin-UI entscheidet) | `false` schaltet den MCP-Endpunkt für KI-Agenten ab, damit auch die Connector-Anmeldung (OAuth) für claude.ai und ChatGPT; `true` lässt ihn fest an. API-Schlüssel funktionieren per curl weiter |
 | `OAUTH_IDLE_DAYS` | `90` | Verbindungen von claude.ai, ChatGPT & Co. (OAuth), die so viele Tage nicht benutzt wurden, werden getrennt. `0` = nie. OAuth selbst gibt es nur mit `BASE_URL` |
 | `LOGIN_PROTECTION` | `true` | Sperre nach Fehlversuchen: 3 pro Konto und Adresse, 20 pro Konto, 30 pro Adresse, jeweils 15 Minuten. `false` schaltet sie ab |

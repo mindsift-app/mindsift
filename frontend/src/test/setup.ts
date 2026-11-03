@@ -1,5 +1,7 @@
 import { afterEach } from 'vitest';
 import { cleanup } from '@testing-library/react';
+// Components read their texts through i18next (German, like the app's default)
+import '../i18n';
 
 // jsdom has no layout engine, so scrolling is a no-op here
 Element.prototype.scrollIntoView = () => {};

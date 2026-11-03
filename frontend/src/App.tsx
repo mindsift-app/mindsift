@@ -66,6 +66,7 @@ import { useMobileCapture } from './app/useMobileCapture';
 import { MobileCaptureSheet } from './app/MobileCaptureSheet';
 import { DesktopHeaderBar, DesktopNav, MobileHeaderBar } from './app/AppHeader';
 import { useSessionBootstrap } from './app/useSessionBootstrap';
+import { applyLanguage, resolveLanguage } from './i18n';
 
 
 export const App: React.FC = () => {
@@ -124,6 +125,11 @@ export const App: React.FC = () => {
   );
   // Whisper or the browser for voice input: the account's choice (lib/voice.ts)
   useEffect(() => setVoicePreference(user?.voiceInput), [user?.voiceInput]);
+  // Language: the account's choice, else the browser's, else the server's default (i18n/index.ts)
+  useEffect(
+    () => applyLanguage(resolveLanguage(user?.language, authStatus.defaultLanguage)),
+    [user?.language, authStatus.defaultLanguage]
+  );
   useEffect(() => {
     if (user && user.role !== 'admin' && activeTab === 'admin_settings') setActiveTab('triage');
   }, [user, activeTab]);

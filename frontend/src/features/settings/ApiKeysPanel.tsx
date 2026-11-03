@@ -15,6 +15,7 @@ import { APIKey, ApiKeyScope, PriorityLevel, SharedList, TaskList } from '../../
 import { SCOPES, SCOPE_GROUPS, scopeChip, toggleScopeIn } from '../../lib/apiScopes';
 import { api, triggerHaptic } from '../../lib/api';
 import { ToggleSwitch } from '../../components/ToggleSwitch';
+import { formatDate } from '../../lib/format';
 
 interface ApiKeysPanelProps {
   onIngested?: () => void;
@@ -324,7 +325,7 @@ http_headers = { "X-API-Key" = "${exampleToken}" }`
                     ))}
                   {k.lastUsedAt && (
                     <span className="text-xs text-faint">
-                      Zuletzt genutzt: {new Date(k.lastUsedAt).toLocaleDateString('de-DE')}
+                      Zuletzt genutzt: {formatDate(k.lastUsedAt)}
                     </span>
                   )}
                 </div>

@@ -104,6 +104,7 @@ export const authApi = {
     notificationSettings?: NotificationSettings;
     doneRetentionDays?: number;
     voiceInput?: '' | 'browser';
+    language?: string;
     retention?: Retention;
   }): Promise<User> {
     return request<User>('/api/v1/auth/settings', {

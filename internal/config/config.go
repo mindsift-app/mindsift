@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	"github.com/mindsift-app/mindsift/internal/i18n"
 )
 
 type Config struct {
@@ -63,6 +65,9 @@ type Config struct {
 	// MCPEnabled: MCP_ENABLED=true/false fixes whether the MCP endpoint (and OAuth for connectors) is on;
 	// unset (nil) leaves it to the system settings
 	MCPEnabled *bool
+	// DefaultLanguage: DEFAULT_LANGUAGE gives the server's default language until the admin picks one in
+	// the system settings (unsupported or unset: German)
+	DefaultLanguage string
 	// Speech recognition, configured only by environment (STT_*)
 	Speech SpeechConfig
 
@@ -265,6 +270,7 @@ func Load() *Config {
 		TrustedProxies:          getEnv("TRUSTED_PROXIES", "private"),
 		RetentionAllowNever:     envBoolPtr("RETENTION_ALLOW_NEVER"),
 		MCPEnabled:              envBoolPtr("MCP_ENABLED"),
+		DefaultLanguage:         i18n.Normalize(os.Getenv("DEFAULT_LANGUAGE")),
 		DisableLoginProtection:  strings.ToLower(getEnv("LOGIN_PROTECTION", "true")) == "false",
 		OAuthIdleDays:           envInt("OAUTH_IDLE_DAYS", 90, 0, 36500),
 		SMTPHost:                smtpHost,

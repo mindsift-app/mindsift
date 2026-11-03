@@ -16,6 +16,7 @@ import {
 import { User, UserRole } from '../../../lib/types';
 import { UserAvatar } from '../../../components/UserAvatar';
 import { useAdminSettings } from './useAdminSettings';
+import { formatDate } from '../../../lib/format';
 
 // Administration → Benutzer & Einladungen (state in useAdminSettings)
 export function UsersSection({
@@ -393,7 +394,7 @@ export function UsersSection({
                         {u.emailUnverified && <span className="badge-neutral text-[10px] font-normal">E-Mail unbestätigt</span>}
                       </p>
                       <p className="text-muted text-[11px] truncate">
-                        {u.email} · registriert am {new Date(u.createdAt).toLocaleDateString('de-DE')}
+                        {u.email} · registriert am {formatDate(u.createdAt)}
                       </p>
                     </div>
                   </div>

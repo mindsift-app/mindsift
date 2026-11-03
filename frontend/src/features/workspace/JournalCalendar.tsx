@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { MONTHS, monthGrid, parseISODate, todayISO } from '../../lib/journal';
+import { formatDate } from '../../lib/format';
 
 interface JournalCalendarProps {
   /** Day currently in view; the calendar follows its month */
@@ -99,7 +100,7 @@ export const JournalCalendar: React.FC<JournalCalendarProps> = ({ activeDate, en
               type="button"
               onClick={() => onSelect(date)}
               aria-current={date === activeDate ? 'date' : undefined}
-              title={parseISODate(date).toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+              title={formatDate(parseISODate(date), { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
               className={`relative h-9 sm:h-7 rounded-btn text-xs tabular-nums transition-colors cursor-pointer ${
                 date === activeDate
                   ? 'bg-accent-dim text-accent font-bold'

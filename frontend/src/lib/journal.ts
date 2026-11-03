@@ -1,3 +1,5 @@
+import { formatDate } from './format';
+
 // Journal helpers: dates are local calendar days as YYYY-MM-DD (the server stores them as given).
 
 export const JOURNAL_ENABLED_KEY = 'mindsift_journal_enabled';
@@ -40,7 +42,7 @@ export const MONTHS = [
 
 /** "Fr, 30. Okt. 2026" for compact labels */
 export function shortDateLabel(date: string): string {
-  return parseISODate(date).toLocaleDateString('de-DE', {
+  return formatDate(parseISODate(date), {
     weekday: 'short',
     day: 'numeric',
     month: 'short',

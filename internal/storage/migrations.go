@@ -39,6 +39,7 @@ var migrations = []migration{
 	{16, "Aufbewahrung und Papierkorb für Aufgaben", (*Store).migrateRetention},
 	{17, "OAuth für den MCP-Zugang", (*Store).migrateOAuth},
 	{18, "Ordner im Papierkorb", (*Store).migrateFolderTrash},
+	{19, "Sprache pro Person", (*Store).migrateLanguage},
 }
 
 func (s *Store) migrate() error {

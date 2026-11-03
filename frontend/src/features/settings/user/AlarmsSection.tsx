@@ -4,6 +4,7 @@ import { NotificationEvents, User } from '../../../lib/types';
 import { pushSupported } from '../../../lib/push';
 import { ToggleSwitch } from '../../../components/ToggleSwitch';
 import { useAlarmSettings } from './useAlarmSettings';
+import { formatDate } from '../../../lib/format';
 
 const NOTIFICATION_EVENT_ROWS: { key: keyof NotificationEvents; label: string }[] = [
   { key: 'due', label: 'Fällige Aufgaben (sofort)' },
@@ -502,7 +503,7 @@ export function AlarmsSection({
                       {d.device || 'Gerät'}
                       <span className="text-faint">
                         {' · seit '}
-                        {new Date(d.createdAt).toLocaleDateString('de-DE')}
+                        {formatDate(d.createdAt)}
                         {d.endpoint === pushEndpointHere && ' · dieses Gerät'}
                       </span>
                     </span>

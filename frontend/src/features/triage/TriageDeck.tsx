@@ -26,6 +26,7 @@ import { SharedList, Thought } from '../../lib/types';
 import { addDays, formatDue } from '../../lib/due';
 import { api, triggerHaptic } from '../../lib/api';
 import { OriginBadge } from '../../components/OriginBadge';
+import { formatDateTime } from '../../lib/format';
 
 interface TriageDeckProps {
   deck: Thought[];
@@ -612,7 +613,7 @@ export const TriageDeck: React.FC<TriageDeckProps> = ({
               >
                 <span className="text-xs text-muted flex items-center gap-1">
                   <Clock className="w-3 h-3" />
-                  {new Date(activeCard.createdAt).toLocaleString('de-DE', {
+                  {formatDateTime(activeCard.createdAt, {
                     day: '2-digit',
                     month: '2-digit',
                     hour: '2-digit',

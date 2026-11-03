@@ -1,4 +1,5 @@
 import { ListItem, SharedList } from '../../lib/types';
+import { compareText } from '../../lib/format';
 
 // How the shopping lists read and group their entries. Pure functions.
 
@@ -99,7 +100,7 @@ export function groupOpenItems(openItems: ListItem[]): ItemGroup[] {
   const sortedKeys = Array.from(groupsMap.keys()).sort((a, b) => {
     const labelA = canonicalMap.get(a) || a;
     const labelB = canonicalMap.get(b) || b;
-    return labelA.localeCompare(labelB, 'de', { sensitivity: 'base' });
+    return compareText(labelA, labelB);
   });
 
   const result: ItemGroup[] = [];
@@ -171,9 +172,7 @@ export function collectHashtags(lists: SharedList[], workspaceTags: string[]): s
     }
   }
 
-  return Array.from(tagMap.values()).sort((a, b) =>
-    a.localeCompare(b, 'de', { sensitivity: 'base' })
-  );
+  return Array.from(tagMap.values()).sort(compareText);
 }
 
 // The hashtag being typed right before the cursor ("#Kü"): its text, where its "#" stands, the cursor

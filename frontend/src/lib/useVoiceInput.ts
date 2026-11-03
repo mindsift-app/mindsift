@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from './api';
 import { browserRecognition, currentVoiceConfig, EffectiveVoiceMode, joinSpeechResults, loadVoiceConfig, VOICE_CONFIG_EVENT, VoiceRecorder } from './voice';
+import { currentLocale } from '../i18n';
 
 export type VoiceState = 'idle' | 'listening' | 'transcribing';
 
@@ -243,7 +244,7 @@ export function useVoiceInput({ onText, onError, continuous = false, live = fals
 
   const spawnBrowserRecognition = (Recognition: any, isRestart: boolean) => {
     const recognition = new Recognition();
-    recognition.lang = 'de-DE';
+    recognition.lang = currentLocale();
     recognition.interimResults = true;
     // A tap (neither hold nor dictation) listens through short pauses and ends after 5 s of silence
     const stopOnSilence = !continuous && !live;
