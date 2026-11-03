@@ -37,5 +37,6 @@
     "imprint": "Impressum",
     "privacy": "Datenschutz",
     "loadFailed": "Text konnte nicht geladen werden"
-  }
+  },
+  "save": "Speichern"
 }

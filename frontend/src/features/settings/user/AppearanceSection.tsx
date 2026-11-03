@@ -1,4 +1,5 @@
 import React from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 import { Copy, Download, Pencil, Trash2, Upload } from 'lucide-react';
 import { UserTheme } from '../../../lib/types';
 import {
@@ -35,6 +36,7 @@ export function AppearanceSection({
   customThemes: UserTheme[];
   onThemeChange: (themeId: ThemeId) => void;
 }) {
+  const { t } = useTranslation('settings');
   const {
     linkPreviewsOn,
     journalOn,
@@ -69,32 +71,28 @@ export function AppearanceSection({
     <div className="space-y-5">
       <div className="border-b border-border pb-3">
         <h2 className="text-sm font-bold text-main">
-          Darstellung & Single-File CSS Themes
+          {t('appearance.title')}
         </h2>
         <p className="text-muted mt-0.5">
-          Jedes Theme ist eine einzige, eigenständige CSS-Datei, in der alle Farben,
-          Oberflächen, Kontraste und Ecken-Rundungen in 6 festen Gruppen gebündelt sind.
+          {t('appearance.intro')}
         </p>
       </div>
 
       <div className="p-3.5 rounded-card border border-border bg-canvas flex items-center justify-between gap-4">
         <div className="text-xs">
-          <p className="font-semibold text-main">Link-Vorschauen anzeigen</p>
+          <p className="font-semibold text-main">{t('appearance.linkPreviews')}</p>
           <p className="text-[11px] text-faint">
-            Karte mit Titel, Beschreibung und kleinem Bild über Punkten mit einer Web-Adresse. Die Seite wird
-            dafür vom MindSift-Server abgerufen, nicht von deinem Browser. Gilt für dieses Gerät; einzelne
-            Vorschauen lassen sich mit ✕ ausblenden.
+            {t('appearance.linkPreviewsHint')}
           </p>
         </div>
-        <ToggleSwitch checked={linkPreviewsOn} onChange={setLinkPreviewsEnabled} title="Link-Vorschauen anzeigen" />
+        <ToggleSwitch checked={linkPreviewsOn} onChange={setLinkPreviewsEnabled} title={t('appearance.linkPreviews')} />
       </div>
 
       <div className="p-3.5 rounded-card border border-border bg-canvas flex items-center justify-between gap-4">
         <div className="text-xs">
-          <p className="font-semibold text-main">Journal anzeigen</p>
+          <p className="font-semibold text-main">{t('appearance.journal')}</p>
           <p className="text-[11px] text-faint">
-            Eine Notiz pro Tag, untereinander mit Kalender – ganz oben in der Notizen-Seitenleiste. Ausschalten
-            blendet es nur aus, die Tage bleiben als Notizen erhalten. Gilt für dieses Gerät.
+            {t('appearance.journalHint')}
           </p>
         </div>
         <ToggleSwitch
@@ -103,16 +101,16 @@ export function AppearanceSection({
             setJournalEnabled(v);
             setJournalOn(v);
           }}
-          title="Journal anzeigen"
+          title={t('appearance.journal')}
         />
       </div>
 
       {/* Colour families: left light, right dark */}
       <div className="space-y-2">
         <div className="grid grid-cols-[1fr_minmax(0,9rem)_minmax(0,9rem)] sm:grid-cols-[1fr_12rem_12rem] items-center gap-2 px-1 text-[11px] font-semibold uppercase tracking-wider text-faint">
-          <span>Theme</span>
-          <span className="text-center">Hell</span>
-          <span className="text-center">Dunkel</span>
+          <span>{t('appearance.theme')}</span>
+          <span className="text-center">{t('appearance.light')}</span>
+          <span className="text-center">{t('appearance.dark')}</span>
         </div>
         {THEME_FAMILIES.map((f) => (
           <div
@@ -124,7 +122,7 @@ export function AppearanceSection({
               <p className="text-[11px] text-muted truncate">{f.subtitle}</p>
             </div>
             {[f.light, f.dark].map((id) => {
-              const t = AVAILABLE_THEMES.find((x) => x.id === id)!;
+              const th = AVAILABLE_THEMES.find((x) => x.id === id)!;
               const selected = activeTheme === id;
               return (
                 <button
@@ -132,18 +130,18 @@ export function AppearanceSection({
                   type="button"
                   onClick={() => onThemeChange(resolveTheme(id))}
                   aria-pressed={selected}
-                  title={t.name}
+                  title={th.name}
                   className={`h-14 rounded-card p-2 flex flex-col justify-between text-left transition-all cursor-pointer ${
                     selected ? 'ring-2 ring-accent' : 'hover:scale-[1.02]'
                   }`}
-                  style={{ backgroundColor: t.previewBg, border: '1px solid rgba(127,127,127,0.25)' }}
+                  style={{ backgroundColor: th.previewBg, border: '1px solid rgba(127,127,127,0.25)' }}
                 >
                   <span className="flex items-center gap-1">
-                    <span className="w-6 h-2.5 rounded-full" style={{ backgroundColor: t.previewPanel }} />
-                    <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: t.previewAccent }} />
+                    <span className="w-6 h-2.5 rounded-full" style={{ backgroundColor: th.previewPanel }} />
+                    <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: th.previewAccent }} />
                   </span>
-                  <span className="text-[11px] font-semibold truncate" style={{ color: t.previewText }}>
-                    {selected ? '✓ Aktiv' : t.mode === 'light' ? 'Hell' : 'Dunkel'}
+                  <span className="text-[11px] font-semibold truncate" style={{ color: th.previewText }}>
+                    {selected ? `✓ ${t('appearance.active')}` : th.mode === 'light' ? t('appearance.light') : t('appearance.dark')}
                   </span>
                 </button>
               );
@@ -155,15 +153,15 @@ export function AppearanceSection({
       {/* Corners for every theme (per device) */}
       <div className="p-3.5 rounded-card border border-border bg-canvas flex flex-wrap items-center justify-between gap-3">
         <div className="text-xs">
-          <p className="font-semibold text-main">Ecken</p>
-          <p className="text-[11px] text-faint">Abgerundet oder eckig – unabhängig vom Theme. Gilt für dieses Gerät.</p>
+          <p className="font-semibold text-main">{t('appearance.corners')}</p>
+          <p className="text-[11px] text-faint">{t('appearance.cornersHint')}</p>
         </div>
-        <div className="flex items-center bg-panel-elevated rounded-btn p-0.5 text-xs" role="radiogroup" aria-label="Ecken">
+        <div className="flex items-center bg-panel-elevated rounded-btn p-0.5 text-xs" role="radiogroup" aria-label={t('appearance.corners')}>
           {(
             [
-              ['theme', 'Wie Theme'],
-              ['round', 'Rund'],
-              ['square', 'Eckig'],
+              ['theme', t('appearance.likeTheme')],
+              ['round', t('appearance.round')],
+              ['square', t('appearance.square')],
             ] as [CornerStyle, string][]
           ).map(([value, label]) => (
             <button
@@ -188,14 +186,14 @@ export function AppearanceSection({
       {/* Light/dark: fixed, or following the system inside the family */}
       <div className="p-3.5 rounded-card border border-border bg-canvas flex flex-wrap items-center justify-between gap-3">
         <div className="text-xs">
-          <p className="font-semibold text-main">Hell oder dunkel</p>
-          <p className="text-[11px] text-faint">„Wie System“ wechselt innerhalb der Farbfamilie mit dem Hell-/Dunkelmodus des Geräts.</p>
+          <p className="font-semibold text-main">{t('appearance.mode')}</p>
+          <p className="text-[11px] text-faint">{t('appearance.modeHint')}</p>
         </div>
-        <div className="flex items-center bg-panel-elevated rounded-btn p-0.5 text-xs" role="radiogroup" aria-label="Hell oder dunkel">
+        <div className="flex items-center bg-panel-elevated rounded-btn p-0.5 text-xs" role="radiogroup" aria-label={t('appearance.mode')}>
           {(
             [
-              [false, 'Selbst wählen'],
-              [true, 'Wie System'],
+              [false, t('appearance.modeManual')],
+              [true, t('appearance.modeSystem')],
             ] as [boolean, string][]
           ).map(([value, label]) => (
             <button
@@ -221,14 +219,14 @@ export function AppearanceSection({
       {/* Frames around buttons */}
       <div className="p-3.5 rounded-card border border-border bg-canvas flex flex-wrap items-center justify-between gap-3">
         <div className="text-xs">
-          <p className="font-semibold text-main">Rahmen an Knöpfen</p>
-          <p className="text-[11px] text-faint">Ohne Rahmen sind Knöpfe nur leicht hinterlegt. Gilt für dieses Gerät.</p>
+          <p className="font-semibold text-main">{t('appearance.borders')}</p>
+          <p className="text-[11px] text-faint">{t('appearance.bordersHint')}</p>
         </div>
-        <div className="flex items-center bg-panel-elevated rounded-btn p-0.5 text-xs" role="radiogroup" aria-label="Rahmen an Knöpfen">
+        <div className="flex items-center bg-panel-elevated rounded-btn p-0.5 text-xs" role="radiogroup" aria-label={t('appearance.borders')}>
           {(
             [
-              ['on', 'Mit Rahmen'],
-              ['off', 'Ohne Rahmen'],
+              ['on', t('appearance.bordersOn')],
+              ['off', t('appearance.bordersOff')],
             ] as [ButtonBorders, string][]
           ).map(([value, label]) => (
             <button
@@ -254,8 +252,8 @@ export function AppearanceSection({
       <div className="p-3.5 rounded-card border border-border bg-canvas space-y-2.5">
         <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
           <div>
-            <p className="font-semibold text-main">Akzentfarbe</p>
-            <p className="text-[11px] text-faint">Ersetzt die Akzentfarbe des Themes (Knöpfe, Links, Markierungen). Gilt für dieses Gerät.</p>
+            <p className="font-semibold text-main">{t('appearance.accent')}</p>
+            <p className="text-[11px] text-faint">{t('appearance.accentHint')}</p>
           </div>
           {accent && (
             <button
@@ -266,7 +264,7 @@ export function AppearanceSection({
               }}
               className="btn-action h-9 sm:h-7 px-2.5 text-xs"
             >
-              Wie Theme
+              {t('appearance.likeTheme')}
             </button>
           )}
         </div>
@@ -296,23 +294,23 @@ export function AppearanceSection({
                 setAccent(e.target.value);
               }}
               className="w-9 h-9 sm:w-7 sm:h-7 rounded-full border border-border bg-transparent p-0 cursor-pointer"
-              aria-label="Eigene Akzentfarbe wählen"
+              aria-label={t('appearance.accentPick')}
             />
             Eigene
           </label>
         </div>
       </div>
 
-      {themes.some((t) => t.isCustom) && <p className="font-semibold text-main text-sm pt-1">Eigene Themes</p>}
+      {themes.some((th) => th.isCustom) && <p className="font-semibold text-main text-sm pt-1">{t('appearance.customThemes')}</p>}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {themes.filter((t) => t.isCustom).map((t) => {
-          const isSelected = activeTheme === t.id;
-          const custom = customThemes.find((c) => customThemeId(c) === t.id);
+        {themes.filter((th) => th.isCustom).map((th) => {
+          const isSelected = activeTheme === th.id;
+          const custom = customThemes.find((c) => customThemeId(c) === th.id);
           return (
-            <div key={t.id} className="flex flex-col">
+            <div key={th.id} className="flex flex-col">
             <button
               type="button"
-              onClick={() => onThemeChange(t.id)}
+              onClick={() => onThemeChange(th.id)}
               className={`flex-1 p-4 text-left border transition-all flex flex-col justify-between gap-3 ${
                 isSelected
                   ? 'bg-canvas border-accent shadow-sm'
@@ -322,10 +320,10 @@ export function AppearanceSection({
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <p className="font-bold text-sm text-main flex items-center gap-2">
-                    <span>{t.name}</span>
-                    {isSelected && <span className="badge-accent">Aktiv</span>}
+                    <span>{th.name}</span>
+                    {isSelected && <span className="badge-accent">{t('appearance.active')}</span>}
                   </p>
-                  <p className="text-xs text-muted mt-0.5">{t.subtitle}</p>
+                  <p className="text-xs text-muted mt-0.5">{th.subtitle}</p>
                 </div>
               </div>
 
@@ -335,43 +333,43 @@ export function AppearanceSection({
                   <span
                     className="w-5 h-5 border border-strong inline-block"
                     style={{
-                      backgroundColor: t.previewBg,
-                      borderRadius: t.isRounded ? '6px' : '0px' }}
-                    title="Canvas-Hintergrund"
+                      backgroundColor: th.previewBg,
+                      borderRadius: th.isRounded ? '6px' : '0px' }}
+                    title={t('appearance.previewCanvas')}
                   />
                   <span
                     className="w-5 h-5 border border-strong inline-block"
                     style={{
-                      backgroundColor: t.previewPanel,
-                      borderRadius: t.isRounded ? '6px' : '0px' }}
-                    title="Panel-Oberfläche"
+                      backgroundColor: th.previewPanel,
+                      borderRadius: th.isRounded ? '6px' : '0px' }}
+                    title={t('appearance.previewPanel')}
                   />
                   <span
                     className="w-5 h-5 border border-strong inline-block"
                     style={{
-                      backgroundColor: t.previewAccent,
-                      borderRadius: t.isRounded ? '6px' : '0px' }}
-                    title="Akzentfarbe"
+                      backgroundColor: th.previewAccent,
+                      borderRadius: th.isRounded ? '6px' : '0px' }}
+                    title={t('appearance.accent')}
                   />
                   <span
                     className="w-5 h-5 border border-strong inline-block"
                     style={{
-                      backgroundColor: t.previewText,
-                      borderRadius: t.isRounded ? '6px' : '0px' }}
-                    title="Textfarbe"
+                      backgroundColor: th.previewText,
+                      borderRadius: th.isRounded ? '6px' : '0px' }}
+                    title={t('appearance.previewText')}
                   />
                 </div>
 
-                <code className="text-[10px] font-mono text-faint">{t.file}</code>
+                <code className="text-[10px] font-mono text-faint">{th.file}</code>
               </div>
             </button>
             {custom && (
               <div className="flex items-center justify-end gap-1.5 px-2 py-1.5 border border-t-0 border-border bg-canvas">
                 {deletingThemeId === custom.id ? (
                   <>
-                    <span className="flex-1 text-[11px] text-muted">Theme wirklich löschen?</span>
+                    <span className="flex-1 text-[11px] text-muted">{t('appearance.custom.confirmDelete')}</span>
                     <button onClick={() => handleDeleteTheme(custom)} className="btn-primary h-7 px-2.5 text-[11px]">
-                      Löschen
+                      {t('appearance.custom.delete')}
                     </button>
                     <button onClick={() => setDeletingThemeId(null)} className="btn-action h-7 px-2 text-[11px]">
                       Abbrechen
@@ -379,13 +377,13 @@ export function AppearanceSection({
                   </>
                 ) : (
                   <>
-                    <button onClick={() => handleEditTheme(custom)} className="btn-icon" title="Theme bearbeiten">
+                    <button onClick={() => handleEditTheme(custom)} className="btn-icon" title={t('appearance.custom.editTitle')}>
                       <Pencil className="w-3.5 h-3.5" />
                     </button>
                     <button
                       onClick={() => setDeletingThemeId(custom.id)}
                       className="btn-icon btn-icon-danger"
-                      title="Theme löschen"
+                      title={t('appearance.custom.deleteTitle')}
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -402,32 +400,29 @@ export function AppearanceSection({
       <form onSubmit={handleSaveTheme} className="p-4 bg-canvas border border-border space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="font-semibold text-main">
-            {themeEditId ? 'Eigenes Theme bearbeiten' : 'Eigenes Theme hinzufügen'}
+            {themeEditId ? t('appearance.custom.edit') : t('appearance.custom.add')}
           </p>
           <div className="flex flex-wrap gap-1.5">
             <button type="button" onClick={handleDownloadTemplate} className="btn-action h-7 px-2 text-[11px] flex items-center gap-1">
               <Download className="w-3 h-3" />
-              <span>Vorlage herunterladen</span>
+              <span>{t('appearance.custom.downloadTemplate')}</span>
             </button>
             <button type="button" onClick={handleCopyTemplate} className="btn-action h-7 px-2 text-[11px] flex items-center gap-1">
               <Copy className="w-3 h-3" />
-              <span>Vorlage kopieren</span>
+              <span>{t('appearance.custom.copyTemplate')}</span>
             </button>
             <button
               type="button"
               onClick={() => setThemeCss(themeTemplateCss)}
               className="btn-action h-7 px-2 text-[11px]"
             >
-              Vorlage einfügen
+              {t('appearance.custom.pasteTemplate')}
             </button>
           </div>
         </div>
 
         <p className="text-muted text-[11px] leading-relaxed">
-          Ein Theme ist CSS mit 6 Blöcken: <strong>1. Akzentfarbe</strong>, <strong>2. Oberflächen</strong>,{' '}
-          <strong>3. Textfarben</strong>, <strong>4. Rahmen &amp; Schatten</strong>, <strong>5. Statusfarben</strong> und{' '}
-          <strong>6. Rundungen</strong>. Am einfachsten startest du mit der Vorlage und änderst die Werte. Gespeicherte
-          Themes liegen auf dem Server und stehen dir auf allen Geräten zur Verfügung.
+          <Trans t={t} i18nKey="appearance.custom.blocks" components={{ b: <strong /> }} />
         </p>
 
         <div className="flex flex-col sm:flex-row gap-2">
@@ -435,7 +430,7 @@ export function AppearanceSection({
             type="text"
             value={themeName}
             onChange={(e) => setThemeName(e.target.value)}
-            placeholder="Name, z. B. Wald"
+            placeholder={t('appearance.custom.namePlaceholder')}
             maxLength={60}
             className="flex-1 min-w-0 h-8 px-2.5 input-field"
           />
@@ -445,7 +440,7 @@ export function AppearanceSection({
             className="btn-action h-8 px-3 text-xs flex items-center justify-center gap-1.5"
           >
             <Upload className="w-3.5 h-3.5" />
-            <span>CSS-Datei hochladen</span>
+            <span>{t('appearance.custom.upload')}</span>
           </button>
           <input
             ref={themeFileRef}
@@ -485,7 +480,7 @@ export function AppearanceSection({
             disabled={savingTheme || !themeName.trim() || !themeCss.trim()}
             className="btn-primary h-8 px-4 text-xs font-semibold disabled:opacity-50"
           >
-            {savingTheme ? 'Speichere…' : 'Speichern & aktivieren'}
+            {savingTheme ? t('saving') : t('appearance.custom.saveActivate')}
           </button>
         </div>
       </form>

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { toggleScopeIn } from '../apiScopes';
+import { SCOPES, scopeChip, scopeGroups, toggleScopeIn } from '../apiScopes';
 
 describe('API key rights', () => {
   it('switches the read right on together with a write right', () => {
@@ -13,5 +13,15 @@ describe('API key rights', () => {
   it('switches off single rights but keeps at least one', () => {
     expect(toggleScopeIn(['notes:read', 'notes:write'], 'notes:write')).toEqual(['notes:read']);
     expect(toggleScopeIn(['notes:read'], 'notes:read')).toEqual(['notes:read']);
+  });
+});
+
+describe('API key right texts', () => {
+  it('has a label, chip and hint for every right and a heading for every group', () => {
+    for (const sc of SCOPES) {
+      for (const text of [sc.label, sc.chip, sc.hint]) expect(text).not.toMatch(/^settings:|scopes\./);
+    }
+    for (const [, heading] of scopeGroups()) expect(heading).not.toMatch(/scopes\./);
+    expect(scopeChip('notes:write')).toBe('Notizen ändern');
   });
 });

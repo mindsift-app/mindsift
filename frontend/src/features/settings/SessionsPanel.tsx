@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import i18n from '../../i18n';
 import { LogOut, Monitor, Smartphone } from 'lucide-react';
 import { api } from '../../lib/api';
 import { Session } from '../../lib/types';
@@ -6,7 +8,7 @@ import { formatDateTime } from '../../lib/format';
 
 // Rough device label from the user agent; good enough to tell one's own devices apart
 export function describeDevice(ua: string): { label: string; mobile: boolean } {
-  if (!ua) return { label: 'Unbekanntes Gerät', mobile: false };
+  if (!ua) return { label: i18n.t('settings:sessions.unknownDevice'), mobile: false };
   if (ua.startsWith('MindSift-')) return { label: 'MindSift-Client', mobile: false };
   const mobile = /Android|iPhone|iPad|Mobile/i.test(ua);
   const browser = /Edg\//.test(ua)
@@ -29,18 +31,19 @@ export function describeDevice(ua: string): { label: string; mobile: boolean } {
           : /Linux/.test(ua)
             ? 'Linux'
             : '';
-  return { label: os ? `${browser} auf ${os}` : browser, mobile };
+  return { label: os ? i18n.t('settings:sessions.browserOn', { browser, os }) : browser, mobile };
 }
 
 function formatLastUsed(iso: string): string {
   const d = new Date(iso);
   if (isNaN(d.getTime())) return '';
   const minutes = Math.round((Date.now() - d.getTime()) / 60000);
-  if (minutes < 10) return 'gerade aktiv';
-  return `zuletzt ${formatDateTime(d, { dateStyle: 'medium', timeStyle: 'short' })}`;
+  if (minutes < 10) return i18n.t('settings:sessions.activeNow');
+  return i18n.t('settings:sessions.lastUsed', { date: formatDateTime(d, { dateStyle: 'medium', timeStyle: 'short' }) });
 }
 
 export function SessionsPanel() {
+  const { t } = useTranslation('settings');
   const [sessions, setSessions] = useState<Session[] | null>(null);
   const [error, setError] = useState('');
   const [ending, setEnding] = useState('');
@@ -51,7 +54,7 @@ export function SessionsPanel() {
       setSessions([...list.filter((s) => s.current), ...list.filter((s) => !s.current)]);
       setError('');
     } catch (err: any) {
-      setError(err.message || 'Sitzungen konnten nicht geladen werden');
+      setError(err.message || i18n.t('settings:sessions.loadFailed'));
     }
   };
 
@@ -65,14 +68,14 @@ export function SessionsPanel() {
       await api.endSession(id);
       setSessions((prev) => (prev || []).filter((s) => s.id !== id));
     } catch (err: any) {
-      setError(err.message || 'Sitzung konnte nicht beendet werden');
+      setError(err.message || t('sessions.endFailed'));
     } finally {
       setEnding('');
     }
   };
 
   if (error) return <p className="text-[11px] text-status-err">{error}</p>;
-  if (!sessions) return <p className="text-[11px] text-muted">Lade Sitzungen…</p>;
+  if (!sessions) return <p className="text-[11px] text-muted">{t('sessions.loading')}</p>;
 
   return (
     <ul className="divide-y divide-border rounded-card border border-border bg-canvas">
@@ -85,7 +88,7 @@ export function SessionsPanel() {
             <div className="min-w-0 flex-1">
               <p className="font-semibold text-main truncate">
                 {device.label}
-                {s.current && <span className="ml-2 text-[10px] font-semibold text-accent">Dieses Gerät</span>}
+                {s.current && <span className="ml-2 text-[10px] font-semibold text-accent">{t('sessions.thisDevice')}</span>}
               </p>
               <p className="text-[11px] text-faint truncate">
                 {[formatLastUsed(s.lastUsedAt), s.ip].filter(Boolean).join(' · ')}
@@ -96,11 +99,11 @@ export function SessionsPanel() {
                 type="button"
                 onClick={() => endSession(s.id)}
                 disabled={ending === s.id}
-                title="Dieses Gerät abmelden"
+                title={t('sessions.signOutDevice')}
                 className="btn-secondary min-h-[44px] sm:min-h-0 h-8 px-3 text-xs shrink-0 flex items-center gap-1.5 cursor-pointer"
               >
                 <LogOut size={13} />
-                <span>{ending === s.id ? 'Melde ab…' : 'Abmelden'}</span>
+                <span>{ending === s.id ? t('sessions.signingOut') : t('app:profile.logout')}</span>
               </button>
             )}
           </li>

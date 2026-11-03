@@ -1,4 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
+import i18n from '../../i18n';
 import { AlertCircle, Check, Loader2, Mic, RefreshCw, Square } from 'lucide-react';
 import { api } from '../../lib/api';
 import { VoiceAdminStatus } from '../../lib/types';
@@ -8,6 +10,7 @@ const TEST_SECONDS = 6;
 // Admin: which speech recognition is active. Configured only by environment (STT_*), so this card
 // just shows the state and offers a short test recording through the own Whisper server.
 export const VoiceStatusCard: React.FC = () => {
+  const { t } = useTranslation('settings');
   const [info, setInfo] = useState<VoiceAdminStatus | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -23,7 +26,7 @@ export const VoiceStatusCard: React.FC = () => {
       setInfo(await api.adminVoiceStatus());
       setError(null);
     } catch (err: any) {
-      setError(err.message || 'Status konnte nicht geladen werden');
+      setError(err.message || i18n.t('settings:voiceStatus.loadFailed'));
     } finally {
       setLoading(false);
     }
@@ -50,7 +53,7 @@ export const VoiceStatusCard: React.FC = () => {
     try {
       stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     } catch {
-      setError('Kein Zugriff auf das Mikrofon (Berechtigung, oder die Seite läuft nicht über HTTPS)');
+      setError(t('voiceStatus.noMic'));
       return;
     }
     const recorder = new MediaRecorder(stream);
@@ -67,7 +70,7 @@ export const VoiceStatusCard: React.FC = () => {
         const text = await api.transcribe(new Blob(chunks, { type: recorder.mimeType }));
         setResult({ text, ms: Math.round(performance.now() - started) });
       } catch (err: any) {
-        setError(err.message || 'Spracherkennung fehlgeschlagen');
+        setError(err.message || t('voiceStatus.failed'));
       } finally {
         setTesting(false);
       }
@@ -90,15 +93,14 @@ export const VoiceStatusCard: React.FC = () => {
             Spracherkennung
           </h3>
           <p className="text-muted mt-0.5">
-            Wird nur über Umgebungsvariablen eingestellt (<code className="font-mono">STT_URL</code>,{' '}
-            <code className="font-mono">STT_MODEL</code> …); Fehler stehen im Container-Log.
+            <Trans t={t} i18nKey="voiceStatus.intro" components={{ c: <code className="font-mono" /> }} />
           </p>
         </div>
         <button
           type="button"
           onClick={load}
           disabled={loading}
-          title="Status neu prüfen"
+          title={t('voiceStatus.recheck')}
           className="btn-action h-11 w-11 sm:h-8 sm:w-8 flex items-center justify-center shrink-0 disabled:opacity-40"
         >
           <RefreshCw className="w-3.5 h-3.5" />
@@ -107,46 +109,51 @@ export const VoiceStatusCard: React.FC = () => {
 
       {info && (
         <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-xs">
-          <dt className="text-muted">Aktiv</dt>
+          <dt className="text-muted">{t('voiceStatus.active')}</dt>
           <dd className="text-main font-semibold">
             {info.mode === 'server'
-              ? 'Eigener Server (Whisper)'
+              ? t('voiceStatus.ownServer')
               : info.mode === 'off'
-                ? 'Ausgeschaltet'
+                ? t('voiceStatus.off')
                 : info.demo && info.url
-                  ? 'Browser (in der Demo immer)'
-                  : 'Browser (Spracherkennung des Browsers)'}
+                  ? t('voiceStatus.browserDemo')
+                  : t('voiceStatus.browser')}
           </dd>
           {info.url && (
             <>
-              <dt className="text-muted">Server</dt>
+              <dt className="text-muted">{t('voiceStatus.server')}</dt>
               <dd className="text-main font-mono break-all">{info.url}</dd>
-              <dt className="text-muted">Modell</dt>
+              <dt className="text-muted">{t('voiceStatus.model')}</dt>
               <dd className="text-main font-mono break-all">{info.model}</dd>
-              <dt className="text-muted">Sprache</dt>
-              <dd className="text-main">{info.language || 'automatisch'}</dd>
+              <dt className="text-muted">{t('voiceStatus.language')}</dt>
+              <dd className="text-main">{info.language || t('voiceStatus.auto')}</dd>
             </>
           )}
           {info.mode === 'server' && (
             <>
-              <dt className="text-muted">Zustand</dt>
+              <dt className="text-muted">{t('voiceStatus.state')}</dt>
               <dd className="flex items-center gap-1.5">
                 {serverOk ? (
                   <span className="text-status-ok flex items-center gap-1">
-                    <Check className="w-3.5 h-3.5" /> Erreichbar, Modell geladen
+                    <Check className="w-3.5 h-3.5" /> {t('voiceStatus.ok')}
                   </span>
                 ) : (
                   <span className="text-status-err flex items-center gap-1">
                     <AlertCircle className="w-3.5 h-3.5" />
-                    {status?.reachable ? 'Modell fehlt noch (wird heruntergeladen)' : 'Nicht erreichbar'}
+                    {status?.reachable ? t('voiceStatus.modelMissing') : t('voiceStatus.unreachable')}
                     {status?.error && !status.reachable ? `: ${status.error}` : ''}
                   </span>
                 )}
               </dd>
-              <dt className="text-muted">Grenzen</dt>
+              <dt className="text-muted">{t('voiceStatus.limits')}</dt>
               <dd className="text-main">
-                {Math.round(info.maxSeconds / 60)} Min. bzw. {info.maxUploadMb} MB pro Aufnahme, {info.maxParallel}{' '}
-                gleichzeitig, {info.perUserPerHour} pro Person und Stunde, {info.timeoutSeconds} s Zeitlimit
+                {t('voiceStatus.limitsText', {
+                  minutes: Math.round(info.maxSeconds / 60),
+                  mb: info.maxUploadMb,
+                  parallel: info.maxParallel,
+                  perHour: info.perUserPerHour,
+                  timeout: info.timeoutSeconds,
+                })}
               </dd>
             </>
           )}
@@ -161,7 +168,7 @@ export const VoiceStatusCard: React.FC = () => {
               onClick={stopRecording}
               className="btn-danger h-11 sm:h-8 px-3 text-xs flex items-center justify-center gap-1.5"
             >
-              <Square className="w-3.5 h-3.5" /> Aufnahme beenden
+              <Square className="w-3.5 h-3.5" /> {t('app:capture.stopRecording')}
             </button>
           ) : (
             <button
@@ -171,13 +178,13 @@ export const VoiceStatusCard: React.FC = () => {
               className="btn-secondary h-11 sm:h-8 px-3 text-xs flex items-center justify-center gap-1.5 disabled:opacity-40"
             >
               {testing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Mic className="w-3.5 h-3.5" />}
-              {testing ? 'Wird erkannt…' : `Testaufnahme (${TEST_SECONDS} s)`}
+              {testing ? t('app:capture.transcribing') : t('voiceStatus.test', { seconds: TEST_SECONDS })}
             </button>
           )}
-          {recording && <span className="text-muted">Sprich jetzt …</span>}
+          {recording && <span className="text-muted">{t('voiceStatus.speakNow')}</span>}
           {result && (
             <span className="text-main">
-              „{result.text || '(nichts erkannt)'}“ <span className="text-faint">· {(result.ms / 1000).toFixed(1)} s</span>
+              „{result.text || t('voiceStatus.nothing')}“ <span className="text-faint">· {(result.ms / 1000).toFixed(1)} s</span>
             </span>
           )}
         </div>

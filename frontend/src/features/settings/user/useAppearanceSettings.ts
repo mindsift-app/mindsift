@@ -1,4 +1,5 @@
 import React, { useRef, useState } from 'react';
+import i18n from '../../../i18n';
 import { UserTheme } from '../../../lib/types';
 import { api } from '../../../lib/api';
 import {
@@ -65,9 +66,9 @@ export function useAppearanceSettings(
   const handleCopyTemplate = async () => {
     try {
       await navigator.clipboard.writeText(themeTemplateCss);
-      setThemeMsg({ type: 'ok', text: 'Vorlage in die Zwischenablage kopiert.' });
+      setThemeMsg({ type: 'ok', text: i18n.t('settings:appearance.custom.copied') });
     } catch {
-      setThemeMsg({ type: 'err', text: 'Kopieren nicht möglich – nutze „Vorlage einfügen“ oder den Download.' });
+      setThemeMsg({ type: 'err', text: i18n.t('settings:appearance.custom.copyFailed') });
     }
   };
 
@@ -85,7 +86,7 @@ export function useAppearanceSettings(
       setThemeMsg({ type: 'ok', text: `Theme „${saved.name}“ gespeichert und aktiviert.` });
       resetThemeEditor();
     } catch (err: any) {
-      setThemeMsg({ type: 'err', text: err.message || 'Theme konnte nicht gespeichert werden' });
+      setThemeMsg({ type: 'err', text: err.message || i18n.t('settings:appearance.custom.saveFailed') });
     } finally {
       setSavingTheme(false);
     }
@@ -109,7 +110,7 @@ export function useAppearanceSettings(
         activeTheme === customThemeId(t) ? 'dark' : undefined
       );
     } catch (err: any) {
-      setThemeMsg({ type: 'err', text: err.message || 'Theme konnte nicht gelöscht werden' });
+      setThemeMsg({ type: 'err', text: err.message || i18n.t('settings:appearance.custom.deleteFailed') });
     }
   };
 

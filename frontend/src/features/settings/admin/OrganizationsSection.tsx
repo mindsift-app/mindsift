@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Plus,
   Trash2,
@@ -16,6 +17,7 @@ export function OrganizationsSection({
 }: {
   admin: ReturnType<typeof useAdminSettings>;
 }) {
+  const { t } = useTranslation('settings');
   const {
     users,
     organizations,
@@ -35,15 +37,13 @@ export function OrganizationsSection({
   return (
     <div className="space-y-6">
       <div className="border-b border-border pb-3">
-        <h2 className="text-sm font-bold text-main">Organisationen</h2>
+        <h2 className="text-sm font-bold text-main">{t('orgs.title')}</h2>
         <p className="text-muted mt-0.5">
-          Jeder Benutzer gehört höchstens einer Organisation an. Im Modus „Organisationen“ sehen sich nur
-          Mitglieder derselben Organisation und können nur untereinander teilen und Gruppen bilden.
-          Die Zuordnung änderst du in der Benutzerliste.
+          {t('orgs.intro')}
         </p>
         {settings.sharingMode !== 'organizations' && (
           <p className="mt-2 text-status-warn">
-            Der aktuelle Sichtbarkeits-Modus ist nicht „Organisationen“; die Zuordnung wirkt sich derzeit nicht aus.
+            {t('orgs.notActive')}
           </p>
         )}
       </div>
@@ -53,17 +53,17 @@ export function OrganizationsSection({
           type="text"
           value={newOrgName}
           onChange={(e) => setNewOrgName(e.target.value)}
-          placeholder="Name der neuen Organisation"
+          placeholder={t('orgs.namePlaceholder')}
           className="flex-1 min-w-0 h-8 px-2.5 input-field"
         />
         <button type="submit" className="btn-primary h-8 px-3 text-xs flex items-center gap-1.5">
           <Plus className="w-3.5 h-3.5" />
-          <span>Anlegen</span>
+          <span>{t('orgs.create')}</span>
         </button>
       </form>
 
       {organizations.length === 0 ? (
-        <p className="text-muted">Noch keine Organisation angelegt.</p>
+        <p className="text-muted">{t('orgs.empty')}</p>
       ) : (
         <div className="border border-border divide-y divide-border bg-canvas rounded-card overflow-hidden">
           {organizations.map((o) => {
@@ -84,7 +84,7 @@ export function OrganizationsSection({
                         Speichern
                       </button>
                       <button onClick={() => setRenamingOrgId(null)} className="btn-action h-7 px-2 text-[11px]">
-                        Abbrechen
+                        {t('common:cancel')}
                       </button>
                     </div>
                   ) : (
@@ -102,14 +102,14 @@ export function OrganizationsSection({
                           setRenameOrgVal(o.name);
                         }}
                         className="btn-icon"
-                        title="Umbenennen"
+                        title={t('orgs.rename')}
                       >
                         <Pencil className="w-3.5 h-3.5" />
                       </button>
                       <button
                         onClick={() => setDeletingOrgId(deletingOrgId === o.id ? null : o.id)}
                         className="btn-icon btn-icon-danger"
-                        title="Organisation löschen"
+                        title={t('orgs.delete')}
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -135,14 +135,13 @@ export function OrganizationsSection({
                   <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-border">
                     <AlertCircle className="w-3.5 h-3.5 text-status-warn shrink-0" />
                     <span className="flex-1 min-w-0 text-muted">
-                      Die {o.memberCount} Mitglieder sind danach ohne Organisation und verlieren ihre
-                      Freigaben, Gruppen und Zuweisungen untereinander.
+                      {t('orgs.deleteWarning', { count: o.memberCount })}
                     </span>
                     <button onClick={() => handleDeleteOrganization(o.id)} className="btn-primary h-7 px-3 text-[11px]">
-                      Löschen
+                      {t('orgs.deleteConfirm')}
                     </button>
                     <button onClick={() => setDeletingOrgId(null)} className="btn-action h-7 px-2 text-[11px]">
-                      Abbrechen
+                      {t('common:cancel')}
                     </button>
                   </div>
                 )}

@@ -3,7 +3,7 @@ import { Trans, useTranslation } from 'react-i18next';
 import i18n from '../../i18n';
 import { Brain, Bot, AlertCircle, ExternalLink } from 'lucide-react';
 import { ApiKeyScope, OAuthAuthorizeInfo, User } from '../../lib/types';
-import { SCOPES, SCOPE_GROUPS } from '../../lib/apiScopes';
+import { SCOPES, scopeGroups } from '../../lib/apiScopes';
 import { api, triggerHaptic } from '../../lib/api';
 import { ToggleSwitch } from '../../components/ToggleSwitch';
 
@@ -56,7 +56,7 @@ export const OAuthConsentView: React.FC<OAuthConsentViewProps> = ({ user, instan
   };
 
   const offered = info?.offeredScopes || [];
-  const groups = SCOPE_GROUPS.filter(([group]) => SCOPES.some((sc) => sc.group === group && offered.includes(sc.id)));
+  const groups = scopeGroups().filter(([group]) => SCOPES.some((sc) => sc.group === group && offered.includes(sc.id)));
 
   return (
     <div className="min-h-[100dvh] bg-canvas text-main flex flex-col items-center justify-center p-4 font-sans">

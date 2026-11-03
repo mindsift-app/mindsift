@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { User } from '../../../lib/types';
 import { api } from '../../../lib/api';
 
@@ -20,23 +21,24 @@ export function useVoiceSetting(onUserUpdated: (u: User) => void) {
 
 // Kontoeinstellungen → Spracheingabe
 export function VoiceSection({ voice, currentUser }: { voice: ReturnType<typeof useVoiceSetting>; currentUser: User }) {
+  const { t } = useTranslation('settings');
   const { voiceSaving, handleChangeVoiceInput } = voice;
   return (
     <div className="space-y-5">
       <div className="border-b border-border pb-3">
-        <h2 className="text-sm font-bold text-main">Spracheingabe</h2>
-        <p className="text-muted mt-0.5">Womit das Mikrofon in MindSift deine Sprache in Text umwandelt.</p>
+        <h2 className="text-sm font-bold text-main">{t('voice.title')}</h2>
+        <p className="text-muted mt-0.5">{t('voice.intro')}</p>
       </div>
-      <div className="space-y-2" role="radiogroup" aria-label="Spracheingabe">
+      <div className="space-y-2" role="radiogroup" aria-label={t('voice.title')}>
         {([
           {
             value: '' as const,
-            title: 'Whisper-Server (Standard)',
-            text: 'Die Aufnahme geht nur an den Spracherkennungs-Server dieser MindSift-Installation. Funktioniert in jedem Browser.' },
+            title: t('voice.server'),
+            text: t('voice.serverHint') },
           {
             value: 'browser' as const,
-            title: 'Browser',
-            text: 'Die Spracherkennung des Browsers. Der Text erscheint sofort beim Sprechen; Chrome und Edge schicken die Aufnahme dafür an Google bzw. Microsoft. In Firefox gibt es sie nicht.' },
+            title: t('voice.browser'),
+            text: t('voice.browserHint') },
         ]).map((opt) => {
           const selected = (currentUser.voiceInput || '') === opt.value;
           return (

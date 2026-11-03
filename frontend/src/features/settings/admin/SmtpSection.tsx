@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Send,
 } from 'lucide-react';
@@ -11,6 +12,7 @@ export function SmtpSection({
 }: {
   admin: ReturnType<typeof useAdminSettings>;
 }) {
+  const { t } = useTranslation('settings');
   const {
     settings,
     testSmtpEmail,
@@ -27,17 +29,16 @@ export function SmtpSection({
         <div className="border-b border-border pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
             <h2 className="text-sm font-bold text-main">
-              E-Mail / SMTP-Server für Aufgaben-Alarme
+              {t('smtp.title')}
             </h2>
             <p className="text-muted mt-0.5">
-              Konfiguriere den Postausgangsserver per Docker-Compose Environment-Variablen oder
-              direkt hier über die Oberfläche (wird persistent in der SQLite-Datenbank gespeichert).
+              {t('smtp.intro')}
             </p>
           </div>
 
           {settings.smtpConfiguredViaEnv && (
             <span className="badge-ok text-[11px] flex-shrink-0">
-              Docker Env erkannt
+              {t('smtp.envDetected')}
             </span>
           )}
         </div>
@@ -45,7 +46,7 @@ export function SmtpSection({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-muted font-medium mb-1">
-              SMTP Host (`SMTP_HOST`)
+              {t('smtp.host')}
             </label>
             <input
               type="text"
@@ -53,14 +54,14 @@ export function SmtpSection({
               onChange={(e) =>
                 setSettings((prev) => ({ ...prev, smtpHost: e.target.value }))
               }
-              placeholder="z.B. smtp.example.com oder mail.deinedomain.de"
+              placeholder={t('smtp.hostPlaceholder')}
               className="w-full h-9 px-3 input-field font-mono"
             />
           </div>
 
           <div>
             <label className="block text-muted font-medium mb-1">
-              SMTP Port (`SMTP_PORT`)
+              {t('smtp.port')}
             </label>
             <input
               type="text"
@@ -77,7 +78,7 @@ export function SmtpSection({
 
           <div>
             <label className="block text-muted font-medium mb-1">
-              SMTP Benutzername (`SMTP_USER`)
+              {t('smtp.user')}
             </label>
             <input
               type="text"
@@ -92,7 +93,7 @@ export function SmtpSection({
 
           <div>
             <label className="block text-muted font-medium mb-1">
-              SMTP Passwort (`SMTP_PASS`)
+              {t('smtp.password')}
             </label>
             <input
               type="password"
@@ -100,7 +101,7 @@ export function SmtpSection({
               onChange={(e) =>
                 setSettings((prev) => ({ ...prev, smtpPass: e.target.value }))
               }
-              placeholder={settings.smtpPassSet ? 'Gespeichert – leer lassen für keine Änderung' : '••••••••••••'}
+              placeholder={settings.smtpPassSet ? t('smtp.passwordKept') : '••••••••••••'}
               autoComplete="new-password"
               className="w-full h-9 px-3 input-field font-mono"
             />
@@ -108,7 +109,7 @@ export function SmtpSection({
 
           <div>
             <label className="block text-muted font-medium mb-1">
-              Absender-Adresse (`SMTP_FROM`)
+              {t('smtp.from')}
             </label>
             <input
               type="text"
@@ -123,7 +124,7 @@ export function SmtpSection({
 
           <div>
             <label className="block text-muted font-medium mb-1">
-              Absender-Name (`SMTP_FROM_NAME`)
+              {t('smtp.fromName')}
             </label>
             <input
               type="text"
@@ -135,17 +136,16 @@ export function SmtpSection({
               className="w-full h-9 px-3 input-field"
             />
             <p className="text-[11px] text-faint mt-1">
-              Erscheint beim Empfänger als Absender. Leer = „MindSift“; ein Name direkt in der Adresse
-              („Name &lt;adresse&gt;“) hat Vorrang.
+              {t('smtp.fromNameHint')}
             </p>
           </div>
 
           <div className="sm:col-span-2 space-y-3 pt-1">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <p className="text-main font-medium">Verschlüsselung (`SMTP_TLS`)</p>
+                <p className="text-main font-medium">{t('smtp.tls')}</p>
                 <p className="text-[11px] text-muted">
-                  Port 465: TLS ab Verbindungsbeginn, sonst STARTTLS. Ist es an, wird ohne Verschlüsselung nicht gesendet.
+                  {t('smtp.tlsHint')}
                 </p>
               </div>
               <ToggleSwitch
@@ -155,10 +155,9 @@ export function SmtpSection({
             </div>
             <div className="flex items-center justify-between gap-3">
               <div>
-                <p className="text-main font-medium">Zertifikatsprüfung deaktivieren (`SMTP_SKIP_VERIFY`)</p>
+                <p className="text-main font-medium">{t('smtp.skipVerify')}</p>
                 <p className="text-[11px] text-muted">
-                  Nur für interne Mailserver mit selbstsigniertem Zertifikat oder abweichendem Namen. Die Verbindung
-                  bleibt verschlüsselt, der Server wird aber nicht mehr geprüft.
+                  {t('smtp.skipVerifyHint')}
                 </p>
               </div>
               <ToggleSwitch
@@ -182,16 +181,16 @@ export function SmtpSection({
 
         {/* Test SMTP Delivery */}
         <div className="p-4 bg-canvas border border-border rounded-card space-y-2">
-          <h3 className="font-bold text-main">SMTP-Verbindung testen</h3>
+          <h3 className="font-bold text-main">{t('smtp.test')}</h3>
           <p className="text-[11px] text-muted">
-            Sendet sofort eine Test-E-Mail mit den oben eingetragenen Daten.
+            {t('smtp.testHint')}
           </p>
           <div className="flex flex-col sm:flex-row gap-2">
             <input
               type="email"
               value={testSmtpEmail}
               onChange={(e) => setTestSmtpEmail(e.target.value)}
-              placeholder="empfaenger@beispiel.de"
+              placeholder={t('smtp.testPlaceholder')}
               className="flex-1 h-8 px-3 input-field"
             />
             <button
@@ -201,7 +200,7 @@ export function SmtpSection({
               className="btn-action h-8 px-4 text-xs flex items-center justify-center gap-1.5 disabled:opacity-40"
             >
               <Send className="w-3.5 h-3.5 text-accent" />
-              <span>{testingSmtp ? 'Sende Test-Mail…' : 'Test-E-Mail senden'}</span>
+              <span>{testingSmtp ? t('smtp.testSending') : t('smtp.testSend')}</span>
             </button>
           </div>
         </div>

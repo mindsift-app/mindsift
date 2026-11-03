@@ -6,7 +6,7 @@
 [![Self-Hosted](https://img.shields.io/badge/100%25-Self--Hosted-2563eb?style=flat-square)](#)
 [![Docker](https://img.shields.io/badge/Deployment-Single%20Container-2496ed?style=flat-square&logo=docker&logoColor=white)](#-schnellstart)
 [![SQLite](https://img.shields.io/badge/Daten-SQLite-003b57?style=flat-square&logo=sqlite&logoColor=white)](#-deine-daten-gehören-dir)
-[![Version](https://img.shields.io/badge/Version-v0.73.1-16a34a?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-v0.73.2-16a34a?style=flat-square)](CHANGELOG.md)
 
 **MindSift** ist eine selbst gehostete Schaltstelle für spontane Gedanken, Aufgaben mit Kanban-Board, hierarchische Outliner-Notizen, die mehrere Personen gleichzeitig bearbeiten können, und gemeinsame Listen. Alles läuft als ein einzelner Container mit eingebetteter SQLite-Datenbank, auf deinem eigenen Server.
 

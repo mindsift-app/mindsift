@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Archive, Check, Download, RotateCcw } from 'lucide-react';
 import { BackupFile, DataSection, DATA_SECTIONS, ImportSummary } from '../../lib/types';
 import { api } from '../../lib/api';
@@ -8,6 +9,7 @@ import { formatDateTime } from '../../lib/format';
 
 // The user's own automatic backups on the server: download or restore (all or some sections)
 export const ServerBackupsCard: React.FC = () => {
+  const { t } = useTranslation('settings');
   const [files, setFiles] = useState<BackupFile[]>([]);
   const [open, setOpen] = useState<string | null>(null); // backup being restored
   const [mode, setMode] = useState<'merge' | 'restore'>('restore');
@@ -36,7 +38,7 @@ export const ServerBackupsCard: React.FC = () => {
       setResult(await api.restoreMyBackup(open, mode, sections));
       setConfirm(false);
     } catch (err: any) {
-      setError(err.message || 'Wiederherstellen fehlgeschlagen');
+      setError(err.message || t('backups.restoreFailed'));
     } finally {
       setBusy(false);
     }
@@ -51,15 +53,15 @@ export const ServerBackupsCard: React.FC = () => {
       <div>
         <h3 className="font-bold text-main flex items-center gap-1.5">
           <Archive className="w-3.5 h-3.5 text-accent" />
-          Server-Backups
+          {t('backups.serverTitle')}
         </h3>
         <p className="text-muted text-[11px] mt-0.5">
-          Automatische tägliche Sicherungen deiner Daten auf dem Server (falls die Administration sie eingeschaltet hat).
+          {t('backups.serverHint')}
         </p>
       </div>
       <div className="border border-border divide-y divide-border bg-canvas">
         {files.length === 0 ? (
-          <p className="p-3 text-[11px] text-faint">Noch keine Server-Backups vorhanden.</p>
+          <p className="p-3 text-[11px] text-faint">{t('backups.none')}</p>
         ) : (
           files.map((f) => (
             <div key={f.name} className="p-3 space-y-2">
@@ -91,11 +93,11 @@ export const ServerBackupsCard: React.FC = () => {
 
               {open === f.name && (
                 <div className="p-3 rounded-card border border-border bg-panel space-y-2.5">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2" role="radiogroup" aria-label="Art der Wiederherstellung">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2" role="radiogroup" aria-label={t('backups.restoreMode')}>
                     {(
                       [
-                        ['restore', 'Ersetzen', 'Gewählte Bereiche vorher leeren.'],
-                        ['merge', 'Hinzufügen', 'Bestehendes behalten, Backup daneben anlegen.'],
+                        ['restore', t('backups.replace'), t('import.restoreHint')],
+                        ['merge', t('import.merge'), t('backups.mergeHint')],
                       ] as const
                     ).map(([value, label, text]) => (
                       <button
@@ -132,12 +134,12 @@ export const ServerBackupsCard: React.FC = () => {
                       }`}
                     >
                       {busy
-                        ? 'Stelle wieder her…'
+                        ? t('backups.restoring')
                         : mode === 'restore' && confirm
-                        ? `Wirklich ${sectionNames} ersetzen?`
+                        ? t('backups.confirmReplace', { sections: sectionNames })
                         : mode === 'restore'
-                        ? 'Ersetzen'
-                        : 'Hinzufügen'}
+                        ? t('backups.replace')
+                        : t('import.merge')}
                     </button>
                   )}
                   {error && <p className="text-[11px] text-status-err">{error}</p>}
