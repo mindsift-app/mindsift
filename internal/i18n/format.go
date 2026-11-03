@@ -35,6 +35,27 @@ var dateFormats = map[string]dateFormat{
 		ShortDate: "01/02/2006",
 		Clock:     "3:04 PM",
 	},
+	"es": {
+		Weekdays:  [7]string{"domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"},
+		Months:    [12]string{"enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"},
+		LongDate:  "{weekday}, {day} de {month} de {year}",
+		ShortDate: "02/01/2006",
+		Clock:     "15:04",
+	},
+	"fr": {
+		Weekdays:  [7]string{"dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"},
+		Months:    [12]string{"janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"},
+		LongDate:  "{weekday} {day} {month} {year}",
+		ShortDate: "02/01/2006",
+		Clock:     "15:04",
+	},
+	"it": {
+		Weekdays:  [7]string{"domenica", "lunedì", "martedì", "mercoledì", "giovedì", "venerdì", "sabato"},
+		Months:    [12]string{"gennaio", "febbraio", "marzo", "aprile", "maggio", "giugno", "luglio", "agosto", "settembre", "ottobre", "novembre", "dicembre"},
+		LongDate:  "{weekday} {day} {month} {year}",
+		ShortDate: "02/01/2006",
+		Clock:     "15:04",
+	},
 }
 
 func formatOf(lang string) dateFormat {

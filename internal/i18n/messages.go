@@ -6,10 +6,13 @@ import "strings"
 // catalog (like gettext). {name} marks a placeholder filled by T. A new language adds its catalog here.
 var catalogs = map[string]map[string]string{
 	"en": messagesEN,
+	"es": messagesES,
+	"fr": messagesFR,
+	"it": messagesIT,
 }
 
-// T returns msg in lang with the placeholders filled from name/value pairs. German, an unknown language
-// or a text without translation give msg itself. A text "context: detail" without its own entry is
+// T returns msg in lang with the placeholders filled from name/value pairs. German or an unknown language
+// give msg itself; a text another language lacks comes in English, else German. A text "context: detail" without its own entry is
 // translated part by part, so wrapped errors ("SMTP-Fehler: …") work too.
 func T(lang, msg string, args ...string) string {
 	out := translate(lang, msg)
@@ -26,6 +29,11 @@ func translate(lang, msg string) string {
 	}
 	if tr, ok := catalog[msg]; ok {
 		return tr
+	}
+	if lang != "en" {
+		if tr, ok := catalogs["en"][msg]; ok {
+			return tr
+		}
 	}
 	if i := strings.Index(msg, ": "); i > 0 {
 		return translate(lang, msg[:i]) + ": " + translate(lang, msg[i+2:])
