@@ -86,14 +86,14 @@ const main = async () => {
   // Presence
   // Presence is an avatar stack; its label lists who is online
   const presence = await waitFor(async () => B.page.getByLabel(/^Gerade online:/).getAttribute('aria-label'), 8000);
-  check(!!presence && /Admin/i.test(presence), `Bearbeiter sieht, wer noch in der Notiz ist: ${presence}`);
+  check(!!presence && /Admin/i.test(presence), `Editor sees who else is in the note: ${presence}`);
 
   // Admin clicks into the first bullet -> user sees the lock
   await A.page.getByText('Admin schreibt hier', { exact: true }).first().click();
   const lockBadge = await waitFor(async () => (await B.page.getByTitle(/bearbeitet diesen Punkt gerade/).count()) > 0, 10000);
-  check(!!lockBadge, 'Bearbeiter sieht das Schloss am gesperrten Bullet');
+  check(!!lockBadge, 'Editor sees the lock on the locked bullet');
   const readOnly = await B.page.$$eval('textarea', (els) => els.find((e) => e.value === 'Admin schreibt hier')?.readOnly);
-  check(readOnly === true, 'Gesperrter Bullet ist beim Bearbeiter schreibgeschützt');
+  check(readOnly === true, 'Locked bullet is read-only for the editor');
 
   // User tries to merge "Darunter" into the locked bullet
   await B.page.getByText('Darunter', { exact: true }).first().click();
@@ -103,7 +103,7 @@ const main = async () => {
   check(!!notice && /bearbeitet diesen Punkt gerade/.test(notice), `Hinweis statt halber Aktion: ${notice}`);
   await sleep(1500);
   const afterMerge = (await serverBlocks(admin, doc.id)).map((b) => b.content).sort();
-  check(JSON.stringify(afterMerge) === JSON.stringify(['Admin schreibt hier', 'Darunter']), `Nichts wurde teilweise ausgeführt: ${JSON.stringify(afterMerge)}`);
+  check(JSON.stringify(afterMerge) === JSON.stringify(['Admin schreibt hier', 'Darunter']), `Nothing was done halfway: ${JSON.stringify(afterMerge)}`);
 
   // Undo on the admin side
   await focusField(A.page, 'Admin schreibt hier');
@@ -111,9 +111,9 @@ const main = async () => {
   await waitFor(async () => (await serverBlocks(admin, doc.id)).some((b) => b.content === 'Admin schreibt hier und noch mehr'), 5000);
   await A.page.keyboard.press('Control+z');
   const undone = await waitFor(async () => (await serverBlocks(admin, doc.id)).some((b) => b.content === 'Admin schreibt hier'), 5000);
-  check(!!undone, 'Strg+Z nimmt den getippten Text zurück (auch auf dem Server)');
+  check(!!undone, 'Ctrl+Z undoes the typed text (on the server too)');
   const fieldUndone = await waitFor(async () => (await editorValues(A.page)).includes('Admin schreibt hier'), 3000);
-  check(!!fieldUndone, 'Das fokussierte Feld zeigt den zurückgenommenen Text');
+  check(!!fieldUndone, 'The focused field shows the undone text');
   await A.page.keyboard.press('Control+Shift+z');
   const redone = await waitFor(async () => (await serverBlocks(admin, doc.id)).some((b) => b.content === 'Admin schreibt hier und noch mehr'), 5000);
   check(!!redone, 'Strg+Umschalt+Z stellt ihn wieder her');
@@ -130,11 +130,11 @@ const main = async () => {
   await api(admin, 'POST', `/api/v1/docs/${doc.id}/sync`, { clientId: 'api-1', lastSeq: 0, ops: [{ opId: `${ids.b}-x`, kind: 'set_content', blockId: ids.b, baseVersion: before.version, content: 'Gewinner-Text' }] });
   await api(user, 'POST', `/api/v1/docs/${doc.id}/sync`, { clientId: 'api-2', lastSeq: 0, ops: [{ opId: `${ids.b}-y`, kind: 'set_content', blockId: ids.b, baseVersion: before.version, content: 'Verlierer-Text' }] });
   const conflictShown = await waitFor(async () => (await A.page.getByText(/Version von/).count()) > 0, 8000);
-  check(!!conflictShown, 'Konfliktkopie wird markiert angezeigt');
+  check(!!conflictShown, 'Conflict copy is shown marked');
   // The user's cursor is still in the original bullet (it holds the lock), so the admin may not overwrite it
   await A.page.getByRole('button', { name: 'Übernehmen' }).first().click();
   const refused = await waitFor(async () => A.page.getByRole('status').filter({ hasText: /bearbeitet/ }).first().innerText(), 3000);
-  check(!!refused && /bearbeitet/.test(refused), `Übernehmen in einen fremd gesperrten Punkt wird verweigert: ${refused}`);
+  check(!!refused && /bearbeitet/.test(refused), `Accepting into a bullet locked by someone else is refused: ${refused}`);
   // The user holding the original can accept once the copy's author (here a separate API client that never
   // renews its lease) no longer holds the copy, i.e. after at most 20 s
   await waitFor(async () => (await B.page.getByText(/Version von/).count()) > 0, 8000);
@@ -143,7 +143,7 @@ const main = async () => {
     const probe = await api(admin, 'POST', `/api/v1/docs/${doc.id}/sync`, { clientId: 'probe', lastSeq: 0 });
     return !probe.leases.others.some((l) => l.blockId === copyId);
   }, 25000);
-  check(!!copyFree, 'Sperre der Konfliktkopie läuft ab');
+  check(!!copyFree, 'Lock of the conflict copy expires');
   await sleep(3500); // the user's browser learns about it with its next sync
   // Both API writes became conflict copies (the user's cursor locked the original); accept the first one
   const copiesBefore = (await serverBlocks(admin, doc.id)).filter((b) => b.props?.conflictOf === ids.b);
@@ -158,10 +158,10 @@ const main = async () => {
     const copiesNow = blocks.filter((b) => b.props?.conflictOf === ids.b);
     return blocks.find((b) => b.id === ids.b)?.content === firstCopyText && copiesNow.length === copiesBefore.length - 1;
   }, 6000);
-  check(!!accepted, `„Übernehmen“ ersetzt den ursprünglichen Text durch „${firstCopyText}“ und entfernt diese Kopie`);
+  check(!!accepted, `“Accept” replaces the original text with “${firstCopyText}” and removes this copy`);
 
   await browser.close();
-  console.log(failures ? `${failures} FEHLGESCHLAGEN` : 'ALLE PRÜFUNGEN BESTANDEN');
+  console.log(failures ? `${failures} FAILED` : 'ALL CHECKS PASSED');
   process.exit(failures ? 1 : 0);
 };
 

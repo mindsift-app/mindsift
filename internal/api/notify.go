@@ -55,7 +55,7 @@ func (s *Server) notify(kind, actorID string, recipients []string, payload func(
 			continue
 		}
 		if err := s.store.QueueNotification(uid, kind, payload(s.userLanguage(uid))); err != nil {
-			slog.Warn("Benachrichtigung konnte nicht vorgemerkt werden", "user_id", uid, "error", err)
+			slog.Warn("Queueing a notification failed", "user_id", uid, "error", err)
 		}
 	}
 }
@@ -185,7 +185,7 @@ func (s *Server) flushNotifications(now time.Time) {
 	window := time.Duration(minutes) * time.Minute
 	users, err := s.store.DueNotificationUsers(now.Add(-window))
 	if err != nil {
-		slog.Error("Benachrichtigungen konnten nicht gelesen werden", "error", err)
+		slog.Error("Reading notifications failed", "error", err)
 		return
 	}
 	for _, uid := range users {
@@ -210,7 +210,7 @@ func (s *Server) flushNotifications(now time.Time) {
 		}
 		if err := s.deliver(uid, headingNews, out, false, now); err != nil {
 			if maxAttempts+1 >= notifyMaxAttempts {
-				slog.Warn("Benachrichtigungen nach mehreren Fehlversuchen verworfen", "user_id", uid, "count", len(ids), "error", err)
+				slog.Warn("Notifications dropped after several failed attempts", "user_id", uid, "count", len(ids), "error", err)
 				_ = s.store.DeleteQueuedNotifications(ids)
 			} else {
 				_ = s.store.BumpQueuedNotifications(ids)
@@ -309,7 +309,7 @@ func (s *Server) sendNotifyDiscord(lang, webhookURL, heading string, items []not
 	return s.sendDiscordDigest(lang, webhookURL, heading, items)
 }
 
-// moreLine: the last line of a cut list, "… und 3 weitere"
+// moreLine: the last line of a cut list, "… and 3 more"
 func moreLine(lang string, n int) string {
 	return i18n.T(lang, "… und {count} weitere", "count", strconv.Itoa(n))
 }
@@ -520,7 +520,7 @@ func (s *Server) sendDailySummaries(now time.Time) {
 		var out channelItems
 		out.add(domain.ChannelChoice{Email: ds.Email, Discord: ds.Discord, Webhook: ds.Webhook, Push: ds.Push}, items...)
 		if err := s.deliver(uid, headingSummary, out, true, now); err != nil {
-			slog.Warn("Tageszusammenfassung konnte nicht verschickt werden", "user_id", uid, "error", err)
+			slog.Warn("Sending the daily summary failed", "user_id", uid, "error", err)
 		}
 	}
 }

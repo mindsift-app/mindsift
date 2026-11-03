@@ -71,7 +71,7 @@ const main = async () => {
   await sleep(300);
   await search.press('Enter'); // the first match is preselected
   const roleSelect = A.page.locator('select').filter({ has: A.page.locator('option[value="editor"]') }).last();
-  check((await roleSelect.isEnabled()) && (await roleSelect.isVisible()), 'Rollenauswahl ist im Dialog verfügbar');
+  check((await roleSelect.isEnabled()) && (await roleSelect.isVisible()), 'Role choice is available in the dialog');
   await roleSelect.selectOption('editor');
   await A.page.getByRole('button', { name: /Benutzer hinzufügen/ }).click();
   const shares = await waitFor(async () => {
@@ -85,11 +85,11 @@ const main = async () => {
     .waitFor({ state: 'visible', timeout: 5000 })
     .then(() => true)
     .catch(() => false);
-  check(badge, 'Dialog zeigt die Rolle „Bearbeiter“');
+  check(badge, 'Dialog shows the role “Bearbeiter”');
 
   // The editor can edit
   const snap = await api(user, 'GET', `/api/v1/docs/${doc.id}/snapshot`);
-  check(snap.role === 'editor', `Empfänger hat die Rolle ${snap.role}`);
+  check(snap.role === 'editor', `Recipient has the role ${snap.role}`);
   const B = await openDoc(browser, user, TITLE);
   check(!(await B.page.getByText('schreibgeschützt mit dir geteilt', { exact: false }).first().isVisible().catch(() => false)), 'Kein Nur-Lesen-Hinweis beim Bearbeiter');
   await B.page.getByText('Vom Eigentümer', { exact: true }).first().click();
@@ -99,7 +99,7 @@ const main = async () => {
     const s = await api(admin, 'GET', `/api/v1/docs/${doc.id}/snapshot`);
     return s.blocks.some((b) => b.content === 'Vom Eigentümer und vom Bearbeiter');
   }, 6000);
-  check(!!saved, 'Bearbeiter kann die geteilte Notiz bearbeiten');
+  check(!!saved, 'Editor can edit the shared note');
 
   // Ticking a to-do in the overview goes through the sync endpoint as well
   await A.page.bringToFront();
@@ -111,10 +111,10 @@ const main = async () => {
     const s = await api(admin, 'GET', `/api/v1/docs/${doc.id}/snapshot`);
     return s.blocks.find((b) => b.id === TODO_ID)?.props?.checked === true;
   }, 5000);
-  check(!!ticked, 'Abhaken in der To-Do-Übersicht wird gespeichert');
+  check(!!ticked, 'Ticking off in the to-do overview is saved');
 
   await browser.close();
-  console.log(failures ? `${failures} FEHLGESCHLAGEN` : 'ALLE PRÜFUNGEN BESTANDEN');
+  console.log(failures ? `${failures} FAILED` : 'ALL CHECKS PASSED');
   process.exit(failures ? 1 : 0);
 };
 

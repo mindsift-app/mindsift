@@ -4,8 +4,10 @@ import { Brain, ExternalLink } from 'lucide-react';
 import { APP_VERSION } from '../version';
 import { ReadingModal } from './ReadingModal';
 
-// Project facts shown in "Über MindSift"; change here when the repository or license changes
+// Project facts shown in "About MindSift"; change here when the repository or license changes
 export const PROJECT_REPO_URL = 'https://github.com/mindsift-app/mindsift';
+// What changed in each version, as released on main
+export const CHANGELOG_URL = `${PROJECT_REPO_URL}/blob/main/CHANGELOG.md`;
 // The license text is in the locale files (common:about.license)
 
 export const AboutModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
@@ -29,7 +31,18 @@ export const AboutModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
       <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5">
         <dt className="font-semibold text-main">{t('about.version')}</dt>
-        <dd className="font-mono">{APP_VERSION}</dd>
+        <dd>
+          <a
+            href={CHANGELOG_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            title={t('about.changelog')}
+            className="font-mono text-accent hover:underline inline-flex items-center gap-1"
+          >
+            {APP_VERSION}
+            <ExternalLink className="w-3 h-3" />
+          </a>
+        </dd>
         <dt className="font-semibold text-main">{t('about.licenseLabel')}</dt>
         <dd>{t('about.license')}</dd>
         <dt className="font-semibold text-main">{t('about.source')}</dt>

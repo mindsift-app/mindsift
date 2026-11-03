@@ -1,12 +1,12 @@
 /* ==========================================================================
-   MINDSIFT THEME ENGINE — ZENTRALE EINBINDUNG
-   Jedes Theme ist eine eigenständige CSS-Datei unter src/themes/ mit 6 Gruppen:
-     1. Akzentfarbe
-     2. Oberflächen & Hintergründe
-     3. Text & Kontraste
-     4. Rahmen, Linien & Schatten
-     5. Status- & Signalfarben
-     6. Rundungen (Geometrie)
+   MINDSIFT THEME ENGINE — CENTRAL IMPORTS
+   Every theme is a CSS file of its own under src/themes/ with 6 groups:
+     1. Accent colour
+     2. Surfaces & backgrounds
+     3. Text & contrast
+     4. Borders, lines & shadows
+     5. Status & signal colours
+     6. Corners (geometry)
    ========================================================================== */
 
 @import './themes/theme-dark.css';
@@ -37,7 +37,7 @@ body {
   transition: background-color 140ms ease, color 140ms ease;
 }
 
-/* Scrollbar über Theme-Variablen */
+/* Scrollbar from the theme variables */
 ::-webkit-scrollbar {
   width: 5px;
   height: 5px;
@@ -61,7 +61,7 @@ body {
    ========================================================================== */
 
 @layer components {
-  /* Haupt-Karten, Sidebars und Container */
+  /* Main cards, sidebars and containers */
   .panel-surface {
     background-color: var(--bg-panel);
     border: 1px solid var(--border-color);
@@ -78,7 +78,7 @@ body {
     border-bottom: 1px solid var(--border-color);
   }
 
-  /* Automatische Übernahme von --radius-card auf gerahmten Panels & Boxen */
+  /* Framed panels & boxes take --radius-card automatically */
   .bg-panel.border,
   .bg-canvas.border {
     border-radius: var(--radius-card);
@@ -90,13 +90,13 @@ body {
     border-radius: 9999px;
   }
 
-  /* Quick-Capture-Blase im Header (immer vollständig abgerundet) */
+  /* Quick capture bubble in the header (always fully rounded) */
   .capture-pill,
   .capture-pill.bg-panel.border {
     border-radius: 9999px !important;
   }
 
-  /* Quick-Capture-Blase bei mehrzeiliger Eingabe (Shift+Enter) */
+  /* Quick capture bubble with multi-line input (Shift+Enter) */
   .capture-bar-multiline,
   .capture-bar-multiline.bg-panel.border {
     border-radius: 18px !important;
@@ -107,7 +107,7 @@ body {
     border-radius: var(--radius-checkbox);
   }
 
-  /* Standard-Aktionsbutton */
+  /* Default action button */
   .btn-action {
     display: inline-flex;
     align-items: center;
@@ -130,7 +130,7 @@ body {
     color: var(--text-main);
   }
 
-  /* Primärer Akzent-Button */
+  /* Primary accent button */
   .btn-primary {
     display: inline-flex;
     align-items: center;
@@ -190,7 +190,7 @@ body {
     border-color: var(--border-danger);
   }
 
-  /* Sekundärer Button */
+  /* Secondary button */
   .btn-secondary {
     display: inline-flex;
     align-items: center;
@@ -213,7 +213,7 @@ body {
     border-color: var(--border-strong);
   }
 
-  /* Gefahren-/Löschen-Button */
+  /* Danger/delete button */
   .btn-danger {
     display: inline-flex;
     align-items: center;
@@ -392,7 +392,7 @@ body {
     font-size: 0.75rem;
   }
 
-  /* Code- & Terminal-Blöcke */
+  /* Code & terminal blocks */
   .code-block {
     background-color: var(--bg-code);
     border: 1px solid var(--border-color);
@@ -400,7 +400,7 @@ body {
     color: var(--text-main);
   }
 
-  /* Modal-Hintergrund-Overlay */
+  /* Modal background overlay */
   .modal-overlay {
     margin: 0 !important;
     top: 0 !important;
@@ -411,7 +411,7 @@ body {
     backdrop-filter: blur(4px);
   }
 
-  /* Verhindert, dass Elterncontainer mit space-y-* oder space-x-* feste Overlays nach unten verschieben */
+  /* Keeps parent containers with space-y-* or space-x-* from pushing fixed overlays down */
   .fixed.inset-0,
   [class*="fixed inset-0"] {
     margin: 0 !important;

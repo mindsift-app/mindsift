@@ -36,7 +36,8 @@
     "licenseLabel": "Lizenz",
     "license": "GNU AGPLv3 – freie Software, Änderungen bleiben frei",
     "source": "Quellcode",
-    "operator": "Impressum und Datenschutz dieser Instanz verantwortet ihr Betreiber; die Links stehen in den Kontoeinstellungen und auf der Anmeldeseite."
+    "operator": "Impressum und Datenschutz dieser Instanz verantwortet ihr Betreiber; die Links stehen in den Kontoeinstellungen und auf der Anmeldeseite.",
+    "changelog": "Was sich geändert hat (Changelog)"
   },
   "legal": {
     "imprint": "Impressum",

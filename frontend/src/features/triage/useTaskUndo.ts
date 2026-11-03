@@ -17,15 +17,15 @@ interface TaskUndoOptions {
 }
 
 // Undo in TasksView: a stack of the last steps, Ctrl/Cmd+Z outside text fields, and the short notice
-// (with "Rückgängig" after deleting)
+// (with "Undo" after deleting)
 export function useTaskUndo({ tasks, setTasks, selectedListId, loadData, onRefreshStats }: TaskUndoOptions) {
   // --- UNDO (Strg+Z / Cmd+Z): deleting, moving and ticking off, newest first; deleted tasks come back
-  // from the task trash. Deleting also shows "Rückgängig" for phones.
+  // from the task trash. Deleting also shows "Undo" for phones.
   const undoStackRef = useRef<UndoEntry[]>([]);
   const [toast, setToast] = useState<{ text: string; undo: boolean } | null>(null);
   const pushUndo = (entry: UndoEntry) => {
     undoStackRef.current = [...undoStackRef.current, entry].slice(-20);
-    setToast(null); // its "Rückgängig" would now undo this newer step
+    setToast(null); // its "Undo" would now undo this newer step
   };
   const orderSnapshot = () =>
     tasks.map((t) => ({ id: t.id, sortOrder: t.sortOrder ?? 0, kanbanStatus: t.kanbanStatus, isCompleted: !!t.isCompleted }));

@@ -58,7 +58,7 @@ func parseProxyTrust(spec string) proxyTrust {
 			if _, n, err := net.ParseCIDR(part); err == nil {
 				t.networks = append(t.networks, n)
 			} else {
-				slog.Warn("TRUSTED_PROXIES: Eintrag ignoriert", "entry", part)
+				slog.Warn("TRUSTED_PROXIES: entry ignored", "entry", part)
 			}
 		}
 	}
@@ -128,7 +128,7 @@ func (s *Server) clientIPMiddleware(next http.Handler) http.Handler {
 		info := trust.resolveClientIP(peerIP(r.RemoteAddr), r.Header)
 		if info.viaProxyWithoutHeader {
 			warnProxyHeaderOnce.Do(func() {
-				slog.Warn("Reverse-Proxy übergibt keine Client-IP (X-Forwarded-For/X-Real-IP fehlt); Login-Sperren pro IP sind für diese Anfragen aus", "proxy", info.ip)
+				slog.Warn("Reverse proxy passes no client IP (X-Forwarded-For/X-Real-IP missing); per-IP sign-in locks are off for these requests", "proxy", info.ip)
 			})
 		}
 		r.RemoteAddr = info.ip

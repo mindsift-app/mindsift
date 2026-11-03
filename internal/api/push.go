@@ -120,7 +120,7 @@ func (s *Server) handlePushKey(w http.ResponseWriter, r *http.Request) {
 	}
 	pub, _, err := s.vapidKeys()
 	if err != nil {
-		slog.Error("VAPID-Schlüssel nicht verfügbar", "error", err)
+		slog.Error("VAPID keys not available", "error", err)
 		writeError(w, http.StatusInternalServerError, "Push ist auf diesem Server nicht verfügbar")
 		return
 	}
@@ -206,7 +206,7 @@ func (s *Server) handlePushTest(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusForbidden, err.Error())
 			return
 		}
-		slog.Warn("Test-Push fehlgeschlagen", "user_id", userID, "error", err)
+		slog.Warn("Test push failed", "user_id", userID, "error", err)
 		writeError(w, http.StatusBadGateway, "Push konnte nicht zugestellt werden")
 		return
 	}

@@ -3,7 +3,7 @@ import i18n from '../i18n';
 
 // What a key may do. The rights hold for every access alike: curl/REST and MCP for AI agents. The ids of
 // the delivering rights (webhook:…) stay from the time keys could only deliver data. Notes, reading and
-// sorting the inbox are reachable over MCP only (mcpOnly). Every area has the levels Lesen, Anlegen, Ändern.
+// sorting the inbox are reachable over MCP only (mcpOnly). Every area has the levels read, create, change.
 export type ScopeGroup = 'tasks' | 'lists' | 'notes' | 'inbox';
 export interface ScopeInfo {
   id: ApiKeyScope;
@@ -42,7 +42,7 @@ export const SCOPES: ScopeInfo[] = [
   scope('webhook:triage', 'inboxCreate', 'inbox'),
   scope('inbox:write', 'inboxWrite', 'inbox', true),
 ];
-// "Ändern" works on ids that come from reading: switching it on switches the matching read right on too
+// "Change" works on ids that come from reading: switching it on switches the matching read right on too
 export const READ_FOR_WRITE: Partial<Record<ApiKeyScope, ApiKeyScope>> = {
   'tasks:write': 'tasks:read',
   'lists:write': 'lists:read',

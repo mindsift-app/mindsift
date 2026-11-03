@@ -223,7 +223,7 @@ export class VoiceRecorder {
 
 /**
  * Text of one speech recognition session from its results. Desktop browsers deliver consecutive
- * pieces ("Test 1 2 3", " und weiter"); Chrome on Android also keeps the growing interim states of
+ * pieces ("test 1 2 3", " and on"); Chrome on Android also keeps the growing interim states of
  * the same phrase as results of their own ("Test", "Test", "Test 1 2 3"). A result that only
  * continues the one before it therefore replaces it instead of being appended.
  */

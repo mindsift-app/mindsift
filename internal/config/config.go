@@ -148,11 +148,11 @@ const jwtSecretFile = "jwt.secret"
 func resolveJWTSecret(fromEnv, dataDir string) string {
 	if v := strings.TrimSpace(fromEnv); v != "" && !insecureJWTSecrets[v] {
 		if len(v) < 32 {
-			slog.Warn("JWT_SECRET ist kürzer als 32 Zeichen – bitte einen längeren Zufallswert verwenden")
+			slog.Warn("JWT_SECRET is shorter than 32 characters – please use a longer random value")
 		}
 		return v
 	} else if v != "" {
-		slog.Warn("JWT_SECRET ist ein öffentlich bekannter Platzhalter und wird ignoriert")
+		slog.Warn("JWT_SECRET is a publicly known placeholder and is ignored")
 	}
 	path := filepath.Join(dataDir, jwtSecretFile)
 	if data, err := os.ReadFile(path); err == nil {
@@ -167,9 +167,9 @@ func resolveJWTSecret(fromEnv, dataDir string) string {
 	secret := hex.EncodeToString(buf)
 	_ = os.MkdirAll(dataDir, 0o755)
 	if err := os.WriteFile(path, []byte(secret+"\n"), 0o600); err != nil {
-		slog.Error("Erzeugtes JWT-Secret konnte nicht gespeichert werden – Anmeldungen gelten nur bis zum Neustart", "pfad", path, "error", err)
+		slog.Error("Saving the generated JWT secret failed – sign-ins only last until the next restart", "pfad", path, "error", err)
 	} else {
-		slog.Warn("Kein JWT_SECRET gesetzt: zufälliges Secret erzeugt und im Datenverzeichnis gespeichert. Für Produktion besser JWT_SECRET setzen.", "pfad", path)
+		slog.Warn("No JWT_SECRET set: generated a random secret and saved it in the data directory. Better set JWT_SECRET for production.", "pfad", path)
 	}
 	return secret
 }
@@ -182,7 +182,7 @@ func legalContent(name string) string {
 	if path := strings.TrimSpace(os.Getenv(name + "_FILE")); path != "" {
 		data, err := os.ReadFile(path)
 		if err != nil {
-			slog.Warn("Rechtstext konnte nicht gelesen werden", "variable", name+"_FILE", "error", err)
+			slog.Warn("Reading the legal text failed", "variable", name+"_FILE", "error", err)
 			return ""
 		}
 		return strings.TrimSpace(string(data))
@@ -197,7 +197,7 @@ func legalURL(name string) string {
 		return ""
 	}
 	if !strings.HasPrefix(v, "https://") && !strings.HasPrefix(v, "http://") {
-		slog.Warn("Rechtstext-URL ignoriert: nur http(s) erlaubt", "variable", name)
+		slog.Warn("Legal text URL ignored: only http(s) allowed", "variable", name)
 		return ""
 	}
 	return v
@@ -210,7 +210,7 @@ func legalCustomLink(labelVar, urlVar string) (string, string) {
 		return "", ""
 	}
 	if !strings.HasPrefix(u, "https://") {
-		slog.Warn("Custom-Link-URL ignoriert: nur https erlaubt", "variable", urlVar, "url", u)
+		slog.Warn("Custom link URL ignored: only https allowed", "variable", urlVar, "url", u)
 		return "", ""
 	}
 	label := strings.TrimSpace(os.Getenv(labelVar))
@@ -348,7 +348,7 @@ func envInt(key string, def, min, max int) int {
 	}
 	n, err := strconv.Atoi(raw)
 	if err != nil || n < min || n > max {
-		slog.Warn("Ungültiger Wert, Standard wird verwendet", "variable", key, "value", raw, "default", def)
+		slog.Warn("Invalid value, using the default", "variable", key, "value", raw, "default", def)
 		return def
 	}
 	return n
@@ -369,7 +369,7 @@ func registrationMode(allowReg bool) string {
 		return m
 	case "":
 	default:
-		slog.Warn("REGISTRATION_MODE unbekannt, wird ignoriert", "value", m)
+		slog.Warn("Unknown REGISTRATION_MODE, ignored", "value", m)
 	}
 	if allowReg {
 		return "open"

@@ -90,13 +90,13 @@ const input = d.getByPlaceholder(/^Was soll auf/);
 const row = (text) => d.getByText(text, { exact: true }).first().locator('xpath=ancestor::*[@draggable="true"][1]');
 await record('Ausgangslage');
 
-await step('Eintrag mit Menge und Hashtag', async () => {
+await step('Item with quantity and hashtag', async () => {
   await input.fill('Butter #Kühlregal');
   await d.getByPlaceholder('Menge').first().fill('250 g');
   // Enter would take the open hashtag suggestion first
   await d.getByRole('button', { name: 'Hinzufügen', exact: true }).click();
 });
-await step('Hashtag-Vorschlag übernehmen', async () => {
+await step('Accept a hashtag suggestion', async () => {
   await input.fill('');
   await input.type('Joghurt #Kü');
   await sleep(300);
@@ -104,7 +104,7 @@ await step('Hashtag-Vorschlag übernehmen', async () => {
   await input.press('Tab');
   const value = await input.inputValue();
   await input.press('Enter');
-  return `Vorschläge sichtbar: ${suggestions > 0}, Feld nach Übernahme: „${value}“`;
+  return `Suggestions visible: ${suggestions > 0}, field after accepting: “${value}”`;
 });
 await step('Eintrag abhaken', async () => {
   await row('Spülmaschinentabs').locator('button').first().click();
@@ -115,29 +115,29 @@ await step('Menge bearbeiten', async () => {
   await qty.fill('300 g');
   await qty.press('Enter');
 });
-await step('Eintrag löschen', async () => {
+await step('Delete an item', async () => {
   await row('Avocados').hover();
-  await row('Avocados').getByTitle('Eintrag löschen').click({ force: true });
+  await row('Avocados').getByTitle('Delete an item').click({ force: true });
 });
-await step('Eintrag innerhalb der Kategorie nach oben ziehen', async () => {
+await step('Drag an item up within its category', async () => {
   await drag(d, row('Cherrytomaten'), row('Äpfel (Elstar)'), -10);
 });
 await step('Eintrag in eine andere Kategorie ziehen', async () => {
   await drag(d, row('Bergkäse'), row('Cherrytomaten'), -10);
 });
-await step('Eintrag auf den Reiter einer anderen Liste ziehen', async () => {
+await step('Drag an item onto the tab of another list', async () => {
   await drag(d, row('Espressobohnen (100 % Arabica)'), d.locator('button', { hasText: 'Packliste Südtirol' }).first());
 });
-await step('Erledigten Eintrag wieder öffnen', async () => {
+await step('Reopen a done item', async () => {
   await d.getByText('Bauernbrot', { exact: true }).first().locator('xpath=ancestor::div[.//button[@title="Als offen markieren"]][1]').getByTitle('Als offen markieren').click();
 });
-await step('Erledigte aufräumen', async () => {
-  await d.getByRole('button', { name: 'Erledigte aufräumen' }).click();
+await step('Clear checked items', async () => {
+  await d.getByRole('button', { name: 'Clear checked items' }).click();
   await sleep(300);
   // A confirmation, if there is one
   await d.getByRole('button', { name: /^(Aufräumen|Löschen|Entfernen)$/ }).first().click({ timeout: 1000 }).catch(() => {});
 });
-await step('Neue Liste über den Dialog', async () => {
+await step('New list through the dialog', async () => {
   await d.getByTitle('Neue Liste anlegen').first().click();
   await d.getByPlaceholder('z.B. Supermarkt, Baumarkt, Drogerie').fill('Baumarkt');
   await d.getByPlaceholder('z.B. Supermarkt, Baumarkt, Drogerie').press('Enter');
@@ -149,16 +149,16 @@ const weekly = lists.find((l) => l.title === 'Wocheneinkauf');
 await d.locator('button', { hasText: 'Wocheneinkauf' }).first().click();
 await sleep(600);
 let outsideId = '';
-await step('Echtzeit: Eintrag von außen angelegt', async () => {
+await step('Realtime: item created from outside', async () => {
   outsideId = (await send('POST', `/api/v1/lists/${weekly.id}/items`, { content: 'Von außen', category: '', quantity: '' }))?.id;
   await sleep(1500);
   return `Liste zeigt „Von außen“: ${(await d.getByText('Von außen', { exact: true }).count()) > 0}`;
 });
-await step('Echtzeit: Eintrag von außen abgehakt', async () => {
+await step('Realtime: item ticked from outside', async () => {
   await send('PATCH', `/api/v1/lists/${weekly.id}/items/${outsideId}`, { isCompleted: true });
   await sleep(1500);
   const done = await d.getByText('Von außen', { exact: true }).first().locator('xpath=ancestor::div[.//button[@title="Als offen markieren"]][1]').count();
-  return `„Von außen“ erscheint als erledigt: ${done > 0}`;
+  return `“Von außen” shows as done: ${done > 0}`;
 });
 
 // --- Phone: "+" opens the add sheet ---
@@ -171,7 +171,7 @@ await m.waitForLoadState('networkidle');
 await m.getByText('Später im Browser weiter nutzen').click({ timeout: 3000 }).catch(() => {});
 await m.locator('[data-mobile-nav]').getByRole('button', { name: /Listen/ }).first().click();
 await sleep(1000);
-await step('Handy: Eintrag über das Plus', async () => {
+await step('Phone: item through the plus', async () => {
   await m.getByTitle('Schnell erfassen (+)').tap();
   const field = m.getByPlaceholder(/^Was soll auf/);
   await field.fill('Brötchen');

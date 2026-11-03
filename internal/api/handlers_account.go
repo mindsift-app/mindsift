@@ -103,7 +103,7 @@ func (s *Server) applyImport(w http.ResponseWriter, userID string, plan *storage
 	}
 	sum, err := s.store.ApplyImport(userID, plan)
 	if err != nil {
-		slog.Error("Import abgebrochen", "user_id", userID, "error", err)
+		slog.Error("Import aborted", "user_id", userID, "error", err)
 		writeError(w, http.StatusInternalServerError, "Import abgebrochen: "+err.Error())
 		return
 	}
@@ -148,7 +148,7 @@ func (s *Server) handleExportMarkdown(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="mindsift-vault-%s.zip"`, time.Now().Format("2006-01-02")))
 	if err := s.store.WriteMarkdownVault(userID, w); err != nil {
 		// Headers are already sent; the client gets a truncated archive
-		slog.Error("Markdown-Export fehlgeschlagen", "user_id", userID, "error", err)
+		slog.Error("Markdown export failed", "user_id", userID, "error", err)
 	}
 }
 
@@ -165,7 +165,7 @@ func (s *Server) handleExport(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/zip")
 		w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="mindsift-backup-%s.zip"`, time.Now().Format("2006-01-02")))
 		if err := s.store.WriteBackupZip(userID, exportData, w); err != nil {
-			slog.Error("Backup-Export fehlgeschlagen", "user_id", userID, "error", err)
+			slog.Error("Backup export failed", "user_id", userID, "error", err)
 		}
 		return
 	}

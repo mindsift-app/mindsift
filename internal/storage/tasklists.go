@@ -357,7 +357,7 @@ func (s *Store) PruneTaskAssignees() {
 		 )`,
 	)
 	if err != nil {
-		slog.Error("Zuweisungen bereinigen fehlgeschlagen", "error", err)
+		slog.Error("Cleaning up assignees failed", "error", err)
 	}
 }
 

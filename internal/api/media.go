@@ -75,7 +75,7 @@ func (s *Server) storeMedia(w http.ResponseWriter, userID, docID string, data []
 		if err == nil {
 			return m, true
 		}
-		slog.Error("Mediendatei konnte nicht geschrieben werden", "path", path, "error", err)
+		slog.Error("Writing a media file failed", "path", path, "error", err)
 	}
 	_ = s.store.DeleteMediaRow(m.ID)
 	writeError(w, http.StatusInternalServerError, "Datei konnte nicht gespeichert werden")
@@ -212,20 +212,20 @@ func (s *Server) handleGetMedia(w http.ResponseWriter, r *http.Request) {
 func (s *Server) compactMedia(now time.Time) {
 	orphans, err := s.store.UnreferencedMedia(now.Add(-mediaGrace))
 	if err != nil {
-		slog.Error("Aufräumen der Mediendateien fehlgeschlagen", "error", err)
+		slog.Error("Cleaning up media files failed", "error", err)
 		return
 	}
 	for i := range orphans {
 		m := &orphans[i]
 		if err := os.Remove(s.mediaPath(m)); err != nil && !os.IsNotExist(err) {
-			slog.Warn("Mediendatei konnte nicht gelöscht werden", "id", m.ID, "error", err)
+			slog.Warn("Deleting a media file failed", "id", m.ID, "error", err)
 			continue
 		}
 		_ = s.store.DeleteMediaRow(m.ID)
 		_ = os.Remove(filepath.Dir(s.mediaPath(m))) // only succeeds when the folder is empty
 	}
 	if len(orphans) > 0 {
-		slog.Info("Nicht mehr verwendete Mediendateien gelöscht", "count", len(orphans))
+		slog.Info("Unused media files deleted", "count", len(orphans))
 	}
 }
 

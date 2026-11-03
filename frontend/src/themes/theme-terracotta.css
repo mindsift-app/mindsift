@@ -1,18 +1,18 @@
 /* ==========================================================================
-   MINDSIFT THEME: TERRAKOTTA (Warmes Papier & Tinte)
-   Cremefarbenes Notizpapier, sandfarbene Seitenleiste, tintendunkle Schrift,
-   gebrannter Terrakotta-Akzent mit Salbeigrün und weiche Ecken.
+   MINDSIFT THEME: TERRACOTTA (warm paper & ink)
+   Cream notepaper, sand-coloured sidebar, ink-dark text,
+   burnt terracotta accent with sage green and soft corners.
    ========================================================================== */
 
 :root[data-theme="terracotta"] {
-  /* --- 1. AKZENTFARBE (Gebrannte Terrakotta) --- */
+  /* --- 1. ACCENT COLOUR (burnt terracotta) --- */
   --accent-primary: #c2410c;
   --accent-hover: #9a3412;
   --accent-dim: rgba(194, 65, 12, 0.10);
   --accent-border: rgba(194, 65, 12, 0.34);
   --text-on-accent: #fffaf3;
 
-  /* --- 2. OBERFLÄCHEN & HINTERGRÜNDE (Papier, Sand, Leinen) --- */
+  /* --- 2. SURFACES & BACKGROUNDS (paper, sand, linen) --- */
   --bg-app: #efe6d8;
   --bg-panel: #fbf6ee;
   --bg-panel-elevated: #eadfcd;
@@ -23,12 +23,12 @@
   --bg-editor: #fdf9f2;
   --bg-sidebar: #f2eadc;
 
-  /* --- 3. TEXT & KONTRASTE (Tinte) --- */
+  /* --- 3. TEXT & CONTRAST (ink) --- */
   --text-main: #2b2118;
   --text-muted: #5c4b3c;
   --text-faint: #8a7764;
 
-  /* --- 4. RAHMEN, LINIEN & SCHATTEN --- */
+  /* --- 4. BORDERS, LINES & SHADOWS --- */
   --border-color: rgba(92, 64, 40, 0.18);
   --border-subtle: rgba(92, 64, 40, 0.09);
   --border-strong: rgba(92, 64, 40, 0.32);
@@ -36,7 +36,7 @@
   --scrollbar-thumb: rgba(92, 64, 40, 0.22);
   --scrollbar-thumb-hover: rgba(92, 64, 40, 0.38);
 
-  /* --- 5. STATUS- & SIGNALFARBEN (Salbei, Ziegel, Ocker) --- */
+  /* --- 5. STATUS & SIGNAL COLOURS (sage, brick, ochre) --- */
   --color-success: #4d7c4f;
   --bg-success: rgba(77, 124, 79, 0.12);
   --border-success: rgba(77, 124, 79, 0.36);
@@ -49,14 +49,14 @@
   --bg-warning: rgba(161, 98, 7, 0.11);
   --border-warning: rgba(161, 98, 7, 0.34);
 
-  /* --- 6. RUNDUNGEN (Weich wie Papierkarten) --- */
+  /* --- 6. CORNERS (soft like paper cards) --- */
   --radius-card: 12px;
   --radius-btn: 8px;
   --radius-input: 8px;
   --radius-checkbox: 4px;
   --radius-pill: 9999px;
 
-  /* --- 7. CODE-SYNTAX-HIGHLIGHTING (warme Erdtöne, gut lesbar auf Papier) --- */
+  /* --- 7. CODE SYNTAX HIGHLIGHTING (warm earth tones, easy to read on paper) --- */
   --code-keyword: #9a3412;
   --code-string: #4d7c4f;
   --code-number: #b45309;

@@ -68,7 +68,8 @@
     },
     "demo": "Desactivado en la demo: los ajustes del servidor, el correo y las cuentas solo se pueden consultar aquí.",
     "userCreated": "Se ha creado el usuario «{{name}}».",
-    "inviteSent": "Invitación enviada a {{email}}."
+    "inviteSent": "Invitación enviada a {{email}}.",
+    "userApproved": "{{name}} está aprobado."
   },
   "retention": {
     "areas": {

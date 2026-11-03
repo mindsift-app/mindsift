@@ -43,7 +43,7 @@ type mailItem struct {
 	Tone  string // "" (accent), "danger", "warning", "muted"
 }
 
-// mailSection groups entries under a small heading ("Überfällig", "Heute").
+// mailSection groups entries under a small heading ("Overdue", "Today").
 type mailSection struct {
 	Title string
 	Tone  string

@@ -84,7 +84,7 @@ await sleep(1200);
 const side = d.locator('aside').first();
 await record('Ausgangslage');
 
-await step('Neue Notiz über den Knopf, Titel eingetippt', async () => {
+await step('New note through the button, title typed', async () => {
   await d.getByTitle('Neue Notiz anlegen').locator('visible=true').first().click();
   await sleep(800);
   await d.keyboard.press('Control+a');
@@ -93,7 +93,7 @@ await step('Neue Notiz über den Knopf, Titel eingetippt', async () => {
   await sleep(600); // focus moves into the first bullet
   await d.keyboard.type('Erster Punkt');
 });
-await step('Neuer Ordner über den Knopf', async () => {
+await step('New folder through the button', async () => {
   await d.getByTitle('Neuer Ordner').locator('visible=true').first().click();
   await d.getByPlaceholder('Ordnername').fill('Prüfordner');
   await d.keyboard.press('Enter');
@@ -109,12 +109,12 @@ await step('Notiz in den Papierkorb ziehen', async () => {
   }
   await drag(d, side.getByText('Prüfnotiz', { exact: true }).first(), d.getByTitle(/^Papierkorb – Notizen hierher ziehen/).first());
 });
-await step('Notiz aus dem Papierkorb zurückholen', async () => {
+await step('Restore a note from the trash', async () => {
   await d.getByTitle(/^Papierkorb – Notizen hierher ziehen/).first().click();
   await sleep(600);
   await d.getByRole('button', { name: /Wiederherstellen/ }).locator('visible=true').first().click();
 });
-await step('To-do in der Sammlung abhaken', async () => {
+await step('Tick off a to-do in the collection', async () => {
   await d.getByRole('button', { name: /^To-Dos/ }).locator('visible=true').first().click();
   await sleep(800);
   // The checkbox in front of the to-do
@@ -124,7 +124,7 @@ await step('To-do in der Sammlung abhaken', async () => {
     .locator('xpath=(ancestor::div[contains(@class,"group")][1]//button)[1]')
     .click();
 });
-await step('Ordner nach der Rückfrage löschen', async () => {
+await step('Delete a folder after confirming', async () => {
   await d.getByRole('button', { name: /^Notizen/ }).locator('visible=true').first().click();
   await sleep(600);
   const row = side.getByText('Prüfordner', { exact: true }).first();
@@ -132,17 +132,17 @@ await step('Ordner nach der Rückfrage löschen', async () => {
   await row.locator('xpath=ancestor::div[.//button[@title="Ordner löschen"]][1]').getByTitle('Ordner löschen').click({ force: true });
   await d.getByRole('button', { name: 'In den Papierkorb' }).click();
 });
-await step('Notiz in den Papierkorb ziehen, Rückgängig im Hinweis', async () => {
+await step('Drag a note to the trash, undo in the notice', async () => {
   await drag(d, side.getByText(/^Homelab 2\.0/).first(), d.getByTitle(/^Papierkorb – Notizen hierher ziehen/).first());
   await d.getByRole('status').getByRole('button', { name: 'Rückgängig' }).click();
 });
-await step('Zwei Notizen mit Strg+Klick markieren und zusammen in einen Ordner ziehen', async () => {
+await step('Select two notes with Ctrl+click and drag them into a folder together', async () => {
   await side.getByText('Ideen-Sammlung', { exact: true }).first().click();
   await sleep(400);
   await side.getByText(/^Uptime-Monitoring/).first().click({ modifiers: ['Control'] });
   await drag(d, side.getByText('Ideen-Sammlung', { exact: true }).first(), side.getByText('Privat', { exact: true }).first());
 });
-await step('Notiz auf die Hauptebene ziehen', async () => {
+await step('Drag a note to the top level', async () => {
   // While dragging, a drop target for the top level appears below the tree
   const a = await side.getByText('Ideen-Sammlung', { exact: true }).first().boundingBox();
   await d.mouse.move(a.x + a.width / 2, a.y + a.height / 2);
@@ -166,24 +166,24 @@ const send = async (method, p, body) =>
   (await fetch(BASE + p, { method, headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: body && JSON.stringify(body) })).json().catch(() => null);
 const inSidebar = async (title) => (await side.getByText(title, { exact: true }).count()) > 0;
 let outsideId = '';
-await step('Echtzeit: Notiz von außen angelegt', async () => {
+await step('Realtime: note created from outside', async () => {
   outsideId = (await send('POST', '/api/v1/documents', { title: 'Von außen', folderPath: '' })).id;
   await sleep(1500);
-  return `Seitenleiste zeigt „Von außen“: ${await inSidebar('Von außen')}`;
+  return `Sidebar shows “Von außen”: ${await inSidebar('Von außen')}`;
 });
-await step('Echtzeit: Notiz von außen umbenannt', async () => {
+await step('Realtime: note renamed from outside', async () => {
   await send('PUT', `/api/v1/documents/${outsideId}`, { title: 'Von außen umbenannt' });
   await sleep(1500);
-  return `Seitenleiste zeigt „Von außen umbenannt“: ${await inSidebar('Von außen umbenannt')}`;
+  return `Sidebar shows “Von außen umbenannt”: ${await inSidebar('Von außen umbenannt')}`;
 });
-await step('Echtzeit: Notiz von außen gelöscht', async () => {
+await step('Realtime: note deleted from outside', async () => {
   await send('DELETE', `/api/v1/documents/${outsideId}`);
   await sleep(1500);
-  return `Seitenleiste zeigt „Von außen umbenannt“: ${await inSidebar('Von außen umbenannt')}`;
+  return `Sidebar shows “Von außen umbenannt”: ${await inSidebar('Von außen umbenannt')}`;
 });
 // The counter at the Triage tab follows realtime events (a thought captured elsewhere)
 const triageCount = async () => (await d.locator('nav button.tab-btn').first().innerText()).replace(/\s+/g, ' ');
-await step('Echtzeit: Gedanke von außen erfasst, Triage-Zähler', async () => {
+await step('Realtime: thought captured from outside, triage counter', async () => {
   const before = await triageCount();
   await send('POST', '/api/v1/inbox', { content: 'Von außen erfasst', priority: 'normal', source: 'manual', dueDate: '', target: 'inbox' });
   await sleep(2000);
@@ -200,7 +200,7 @@ await m.waitForLoadState('networkidle');
 await m.getByText('Später im Browser weiter nutzen').click({ timeout: 3000 }).catch(() => {});
 await m.locator('[data-mobile-nav]').getByRole('button', { name: /Workspace/ }).first().click();
 await sleep(1000);
-await step('Handy: neue Notiz mit Name über das Plus', async () => {
+await step('Phone: new note with a name through the plus', async () => {
   await m.getByTitle('Schnell erfassen (+)').tap();
   await m.getByPlaceholder('Name der Notiz').fill('Handynotiz');
   await m.keyboard.press('Enter');

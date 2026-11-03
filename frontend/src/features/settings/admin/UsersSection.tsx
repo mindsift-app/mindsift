@@ -19,7 +19,7 @@ import { UserAvatar } from '../../../components/UserAvatar';
 import { useAdminSettings } from './useAdminSettings';
 import { formatDate } from '../../../lib/format';
 
-// Administration → Benutzer & Einladungen (state in useAdminSettings)
+// Administration → Users & invitations (state in useAdminSettings)
 export function UsersSection({
   admin,
   currentUser,

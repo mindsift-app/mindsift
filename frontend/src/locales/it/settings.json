@@ -575,7 +575,8 @@
     },
     "demo": "Disattivato nella demo: le impostazioni del server, le email e gli account possono essere solo visualizzati qui.",
     "userCreated": "L’utente «{{name}}» è stato creato.",
-    "inviteSent": "Invito inviato a {{email}}."
+    "inviteSent": "Invito inviato a {{email}}.",
+    "userApproved": "{{name}} è stato approvato."
   },
   "orgs": {
     "createFailed": "Creazione dell'organizzazione non riuscita",

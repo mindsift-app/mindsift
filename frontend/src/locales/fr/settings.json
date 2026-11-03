@@ -575,7 +575,8 @@
     },
     "demo": "Désactivé dans la démo : les paramètres du serveur, les e-mails et les comptes ne peuvent être consultés qu'ici.",
     "userCreated": "L’utilisateur « {{name}} » a été créé.",
-    "inviteSent": "Invitation envoyée à {{email}}."
+    "inviteSent": "Invitation envoyée à {{email}}.",
+    "userApproved": "{{name}} est validé."
   },
   "orgs": {
     "createFailed": "Échec de la création de l'organisation",

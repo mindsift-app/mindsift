@@ -575,7 +575,8 @@
     },
     "demo": "Disabled in the demo: server settings, email and accounts can only be viewed here.",
     "userCreated": "User “{{name}}” was created.",
-    "inviteSent": "Invitation sent to {{email}}."
+    "inviteSent": "Invitation sent to {{email}}.",
+    "userApproved": "{{name}} is approved."
   },
   "orgs": {
     "createFailed": "Creating the organization failed",

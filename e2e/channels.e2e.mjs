@@ -75,9 +75,9 @@ const MODES = [
   { name: 'nichts blockiert', block: {}, channel: 'ws', maxMs: 2500 },
   { name: 'WebSocket-Handshake abgelehnt', block: { ws: 'reject' }, channel: 'sse', maxMs: 2500 },
   { name: 'WebSocket angenommen, leitet nichts weiter', block: { ws: 'silent' }, channel: 'sse', maxMs: 2500, switchMs: 60000 },
-  { name: 'WebSocket und SSE blockiert', block: { ws: 'reject', sse: 'abort' }, channel: 'longpoll', maxMs: 2500 },
-  { name: 'SSE-Verbindung hängt', block: { ws: 'reject', sse: 'hang' }, channel: 'longpoll', maxMs: 2500 },
-  { name: 'nur normale Anfragen möglich', block: { ws: 'reject', sse: 'abort', longpoll: true }, channel: 'interval', maxMs: 6000, switchMs: 15000 },
+  { name: 'WebSocket and SSE blocked', block: { ws: 'reject', sse: 'abort' }, channel: 'longpoll', maxMs: 2500 },
+  { name: 'SSE connection hangs', block: { ws: 'reject', sse: 'hang' }, channel: 'longpoll', maxMs: 2500 },
+  { name: 'only plain requests possible', block: { ws: 'reject', sse: 'abort', longpoll: true }, channel: 'interval', maxMs: 6000, switchMs: 15000 },
 ];
 
 const main = async () => {
@@ -104,12 +104,12 @@ const main = async () => {
     await typeAtEnd(A.page, marker);
     const arrived = await waitFor(async () => (await editorValues(B.page)).some((v) => v.endsWith(marker)), mode.maxMs + 4000);
     const ms = Date.now() - start;
-    check(!!arrived && ms <= mode.maxMs, `${mode.name}: Änderung kam nach ${arrived ? ms : '–'} ms an (Ziel ≤ ${mode.maxMs} ms)`);
+    check(!!arrived && ms <= mode.maxMs, `${mode.name}: change arrived after ${arrived ? ms : '–'} ms (target ≤ ${mode.maxMs} ms)`);
     await B.ctx.close();
   }
 
   await browser.close();
-  console.log(failures ? `${failures} FEHLGESCHLAGEN` : 'ALLE PRÜFUNGEN BESTANDEN');
+  console.log(failures ? `${failures} FAILED` : 'ALL CHECKS PASSED');
   process.exit(failures ? 1 : 0);
 };
 

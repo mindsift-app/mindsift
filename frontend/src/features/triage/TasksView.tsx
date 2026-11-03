@@ -511,7 +511,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
     }
   };
 
-  // "Aufgabe hinzufügen" at the foot of a column: a draft "Neue Aufgabe" in that column opens in the task
+  // "Add task" at the foot of a column: a draft "New task" in that column opens in the task
   // dialog with its title ready to be typed over. Closed without a title of its own, the draft goes again.
   const [draftTaskId, setDraftTaskId] = useState<string | null>(null);
   const handleQuickAddTaskToColumn = async (columnId: string) => {

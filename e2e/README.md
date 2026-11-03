@@ -1,43 +1,47 @@
-# Ende-zu-Ende-Tests
+# End-to-end tests
 
-Browser-Tests mit Playwright gegen einen echten MindSift-Server.
+Browser tests with Playwright against a real MindSift server.
 
 ```bash
-e2e/run.sh            # baut das Image, startet es im Demo-Modus und führt die Tests aus
+e2e/run.sh            # builds the image, starts it in demo mode and runs the tests
 ENGINE=docker e2e/run.sh
 ```
 
-Gegen einen bereits laufenden Server (Demo-Modus mit `admin/admin` und `user/user` nötig):
+Against a server that is already running (demo mode with `admin/admin` and `user/user` needed):
 
 ```bash
 cd e2e && npm install && MINDSIFT_URL=http://localhost:8080 node collab.e2e.mjs
 ```
 
+The tests use the German interface and the German sample data, so `run.sh` starts the server with `DEFAULT_LANGUAGE=de` (the demo is English otherwise).
+
 ## collab.e2e.mjs
 
-Zwei Browser (Eigentümer und Bearbeiter) arbeiten in derselben Notiz. Geprüft wird:
+Two browsers (owner and editor) work in the same note. Checked:
 
-- Tippen wird gespeichert und erscheint beim anderen ohne Neuladen
-- neue Bullets per Enter, in beide Richtungen
-- Offline-Phase: Text bleibt lokal und wird nach Rückkehr übertragen
-- beide Browser und der Server zeigen denselben Stand, auch nach Neuladen
-- Sperren eines geschlossenen Browsers laufen nach spätestens 20 s ab
-- Einrücken (Tab) und Zusammenführen (Backspace) bleiben nach Neuladen erhalten
+- typing is saved and shows up for the other one without reloading
+- new bullets with Enter, in both directions
+- offline phase: text stays local and is sent once back online
+- both browsers and the server show the same state, after reloading too
+- locks of a closed browser expire after 20 s at most
+- indenting (Tab) and merging (Backspace) survive a reload
 
 ## share.e2e.mjs
 
-Der Eigentümer teilt eine Notiz über den Freigabe-Dialog mit Rolle „Bearbeiten“; geprüft wird, dass die Freigabe als `write` gespeichert, im Dialog als „Bearbeiter“ angezeigt wird und der Empfänger die Notiz bearbeiten kann. Zum Schluss hakt der Eigentümer ein To-Do in der To-Do-Übersicht ab.
+The owner shares a note through the share dialog with the role "edit"; checked is that the share is stored as `write`, shown as editor in the dialog, and that the recipient can edit the note. At the end the owner ticks off a to-do in the to-do overview.
 
 ## lock.e2e.mjs
 
-Sperren, Präsenz, Rückgängig und Konfliktkopien mit zwei Browsern: Schloss und Schreibschutz am fremd bearbeiteten Bullet, Hinweis statt halb ausgeführter Aktion, `Strg+Z`/`Strg+Umschalt+Z`, Tippen direkt nach Enter, Markierung von Konfliktkopien sowie „Übernehmen“ (verweigert bei fremder Sperre, erfolgreich für den Sperrinhaber).
+Locks, presence, undo and conflict copies with two browsers: lock and read-only state on a bullet someone else is editing, a notice instead of a half-done action, `Ctrl+Z`/`Ctrl+Shift+Z`, typing right after Enter, marking of conflict copies, and "accept" (refused under someone else's lock, successful for the lock holder).
 
 ## channels.e2e.mjs
 
-Der Eigentümer tippt mit normaler Verbindung, der Bearbeiter sitzt hinter einem simulierten Proxy. Für jede Situation wird der gewählte Weg und die Zeit bis zur Anzeige gemessen: nichts blockiert (WebSocket), WebSocket abgelehnt (SSE), WebSocket angenommen aber stumm (SSE nach Herzschlag-Ausfall), WebSocket und SSE blockiert sowie SSE hängend (Long-Polling), nur normale Anfragen (Abfrage alle 3 s).
+The owner types with a normal connection, the editor sits behind a simulated proxy. For each situation the chosen transport and the time until the change shows are measured: nothing blocked (WebSocket), WebSocket refused (SSE), WebSocket accepted but silent (SSE after missed heartbeats), WebSocket and SSE blocked as well as a hanging SSE (long polling), only plain requests (polling every 3 s).
 
-`collab.e2e.mjs`, `lock.e2e.mjs` und `channels.e2e.mjs` dauern je etwa eine Minute. Die Tests laufen nicht in der CI, weil sie Browser-Images brauchen.
+`collab.e2e.mjs`, `lock.e2e.mjs` and `channels.e2e.mjs` take about a minute each. The tests do not run in CI because they need browser images.
 
 ## Screenshots
 
-`e2e/screenshots.sh` baut das Image, startet es im Demo-Modus mit frischer Datenbank und erzeugt die Bilder in `screenshots/` neu (`screenshots.mjs`). Danach werden sie verkleinert (Desktop 1280 px, Handy 480 px breit) und als WebP mit Qualität 90 gespeichert (`cwebp` in einem Alpine-Container). Für die Versionsangabe im Kopf: `APP_VERSION=v0.2 e2e/screenshots.sh`. In der Workspace-Aufnahme bearbeitet der Demo-Benutzer `user` gleichzeitig einen Bullet, damit Sperre und Präsenz zu sehen sind.
+`e2e/screenshots.sh` builds the image, starts it in demo mode (English) with a fresh database and recreates the pictures in `screenshots/` (`screenshots.mjs`). They are then scaled down (desktop 1280 px, phone 480 px wide) and saved as WebP at quality 90 (`cwebp` in an Alpine container). For the version in the header: `APP_VERSION=v0.2 e2e/screenshots.sh`. In the workspace picture the demo user `user` edits a bullet at the same time, so lock and presence show.
+
+`e2e/refshots.sh` takes reference screenshots of the German interface from two images and compares them (used to check refactorings that must not change the look).

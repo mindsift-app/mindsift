@@ -204,7 +204,7 @@ export function OpenItemGroups({
   );
 }
 
-// Done entries at the end, with "Erledigte aufräumen"
+// Done entries at the end, with "Clear checked items"
 export function CompletedItems({
   completedItems,
   editing,

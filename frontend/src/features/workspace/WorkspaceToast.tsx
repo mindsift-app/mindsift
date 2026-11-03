@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 export type ToastMessage = { text: string; actions: { label: string; run: () => void }[] };
 
-// Short message at the bottom of the workspace, optionally with actions such as "Rückgängig"
+// Short message at the bottom of the workspace, optionally with actions such as "Undo"
 // (longer when it has one)
 export function useToast() {
   const [toast, setToast] = useState<ToastMessage | null>(null);

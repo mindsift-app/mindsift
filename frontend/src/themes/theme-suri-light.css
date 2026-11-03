@@ -1,18 +1,18 @@
 /* ==========================================================================
-   MINDSIFT THEME: SURI HELL (Lavendel & Pflaume)
-   Das helle Gegenstück zu Suri: lavendelhelles Papier, pflaumendunkle
-   Schrift, samtiger Orchideen-Akzent und weich gerundete Ecken.
+   MINDSIFT THEME: SURI LIGHT (lavender & plum)
+   The light counterpart of Suri: lavender-light paper, plum-dark
+   text, velvety orchid accent and softly rounded corners.
    ========================================================================== */
 
 :root[data-theme="suri-light"] {
-  /* --- 1. AKZENTFARBE (Orchidee) --- */
+  /* --- 1. ACCENT COLOUR (orchid) --- */
   --accent-primary: #8e44c9;
   --accent-hover: #7431a8;
   --accent-dim: rgba(142, 68, 201, 0.10);
   --accent-border: rgba(142, 68, 201, 0.34);
   --text-on-accent: #ffffff;
 
-  /* --- 2. OBERFLÄCHEN & HINTERGRÜNDE (Lavendel) --- */
+  /* --- 2. SURFACES & BACKGROUNDS (lavender) --- */
   --bg-app: #efe9f4;
   --bg-panel: #fbf8fd;
   --bg-panel-elevated: #e6dcef;
@@ -23,12 +23,12 @@
   --bg-editor: #fdfaff;
   --bg-sidebar: #f2ecf7;
 
-  /* --- 3. TEXT & KONTRASTE (Pflaume) --- */
+  /* --- 3. TEXT & CONTRAST (plum) --- */
   --text-main: #23182e;
   --text-muted: #574a68;
   --text-faint: #8a7c9c;
 
-  /* --- 4. RAHMEN, LINIEN & SCHATTEN --- */
+  /* --- 4. BORDERS, LINES & SHADOWS --- */
   --border-color: rgba(70, 40, 100, 0.16);
   --border-subtle: rgba(70, 40, 100, 0.08);
   --border-strong: rgba(70, 40, 100, 0.30);
@@ -36,7 +36,7 @@
   --scrollbar-thumb: rgba(70, 40, 100, 0.22);
   --scrollbar-thumb-hover: rgba(70, 40, 100, 0.38);
 
-  /* --- 5. STATUS- & SIGNALFARBEN --- */
+  /* --- 5. STATUS & SIGNAL COLOURS --- */
   --color-success: #2f855a;
   --bg-success: rgba(47, 133, 90, 0.11);
   --border-success: rgba(47, 133, 90, 0.34);
@@ -49,7 +49,7 @@
   --bg-warning: rgba(183, 121, 31, 0.11);
   --border-warning: rgba(183, 121, 31, 0.34);
 
-  /* --- 6. RUNDUNGEN (Weich wie Suri) --- */
+  /* --- 6. CORNERS (soft like Suri) --- */
   --radius-card: 10px;
   --radius-btn: 6px;
   --radius-input: 6px;

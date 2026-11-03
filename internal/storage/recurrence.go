@@ -112,11 +112,11 @@ func (s *Store) spawnNextOccurrence(taskID string) {
 	due := NextDueDate(t.DueDate, t.Recurrence, time.Now())
 	next, err := s.CreateThoughtWithDetails(t.UserID, t.Content, t.Priority, t.Source, due, t.TaskListID, column, t.Notes)
 	if err != nil {
-		slog.Error("Folgeaufgabe konnte nicht angelegt werden", "task_id", taskID, "error", err)
+		slog.Error("Creating the next occurrence failed", "task_id", taskID, "error", err)
 		return
 	}
 	if _, err := s.UpdateThoughtTriage(t.UserID, next.ID, "keep", "task", "", due, t.TaskListID); err != nil {
-		slog.Error("Folgeaufgabe konnte nicht als Aufgabe abgelegt werden", "task_id", next.ID, "error", err)
+		slog.Error("Filing the next occurrence as a task failed", "task_id", next.ID, "error", err)
 		return
 	}
 	subs := make([]domain.SubTask, len(t.Subtasks))
@@ -125,14 +125,14 @@ func (s *Store) spawnNextOccurrence(taskID string) {
 	}
 	tags := t.Tags
 	if _, err := s.UpdateThoughtDetails(t.UserID, next.ID, nil, nil, nil, nil, nil, &column, nil, &subs, &tags); err != nil {
-		slog.Error("Folgeaufgabe: Unteraufgaben und Tags fehlen", "task_id", next.ID, "error", err)
+		slog.Error("Next occurrence: subtasks and tags missing", "task_id", next.ID, "error", err)
 	}
 	carry := []sqlStmt{stmt(`UPDATE thoughts SET recurrence = ?, sort_order = ? WHERE id = ?`, t.Recurrence, t.SortOrder, next.ID)}
 	for _, uid := range t.Assignees {
 		carry = append(carry, stmt(`INSERT OR IGNORE INTO task_assignees (task_id, user_id, created_at) VALUES (?, ?, ?)`, next.ID, uid, domain.NowISO()))
 	}
 	if err := s.execInTx(carry...); err != nil {
-		slog.Error("Folgeaufgabe: Wiederholung und Zuweisungen nicht übernommen", "task_id", next.ID, "error", err)
+		slog.Error("Next occurrence: repeat and assignees not carried over", "task_id", next.ID, "error", err)
 	}
 	s.PruneTaskAssignees()
 

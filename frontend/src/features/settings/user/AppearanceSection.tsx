@@ -457,7 +457,7 @@ export function AppearanceSection({
         <textarea
           value={themeCss}
           onChange={(e) => setThemeCss(e.target.value)}
-          placeholder=":root[data-theme=&quot;mein-theme&quot;] { --accent-primary: #15803d; … }"
+          placeholder=":root[data-theme=&quot;my-theme&quot;] { --accent-primary: #15803d; … }"
           rows={10}
           spellCheck={false}
           className="w-full px-2.5 py-2 input-field font-mono text-[11px] leading-relaxed resize-y"

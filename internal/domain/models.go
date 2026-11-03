@@ -414,7 +414,7 @@ type SystemSettings struct {
 }
 
 // UnmarshalJSON accepts smtpPort as text or number: older clients sent a number, which made the whole
-// settings request fail with "Ungültiges JSON".
+// settings request fail with "Invalid JSON".
 func (s *SystemSettings) UnmarshalJSON(data []byte) error {
 	type plain SystemSettings
 	aux := struct {

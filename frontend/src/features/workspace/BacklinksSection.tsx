@@ -27,7 +27,7 @@ const Snippet: React.FC<{ text: string }> = ({ text }) => (
   </>
 );
 
-// "Verlinkt auf diese Notiz" at the end of a note. Hidden while nothing links here; reloads shortly
+// "Linked to this note" at the end of a note. Hidden while nothing links here; reloads shortly
 // after the title changes, since links are matched by title.
 export const BacklinksSection: React.FC<BacklinksSectionProps> = ({ docId, title, onOpen }) => {
   const { t } = useTranslation('workspace');

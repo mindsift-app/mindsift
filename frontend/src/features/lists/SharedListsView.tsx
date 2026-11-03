@@ -539,7 +539,7 @@ export const SharedListsView: React.FC<SharedListsViewProps> = ({ onRefreshGloba
             id: s.id,
             targetType: s.targetType,
             targetId: s.targetId,
-            targetName: s.targetName || (s.targetType === 'team' ? 'Gruppe' : 'Benutzer'),
+            targetName: s.targetName || (s.targetType === 'team' ? t('common:share.group') : t('common:share.user')),
             targetEmail: s.targetEmail,
             permission: s.role === 'viewer' ? ('viewer' as const) : ('editor' as const),
             role: s.role,

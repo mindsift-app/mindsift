@@ -1,18 +1,18 @@
 /* ==========================================================================
-   MINDSIFT THEME: FJORD NACHT (Tiefsee & Mondlicht)
-   Das dunkle Gegenstück zu Fjord: tiefes Nachtblau statt Schwarz,
-   mondhelle Schrift, leuchtendes Gletscherblau, weiche Ecken.
+   MINDSIFT THEME: FJORD NIGHT (deep sea & moonlight)
+   The dark counterpart of Fjord: deep night blue instead of black,
+   moonlit text, glowing glacier blue, soft corners.
    ========================================================================== */
 
 :root[data-theme="fjord-night"] {
-  /* --- 1. AKZENTFARBE (Leuchtendes Gletscherblau) --- */
+  /* --- 1. ACCENT COLOUR (glowing glacier blue) --- */
   --accent-primary: #5b9bdf;
   --accent-hover: #7db2ea;
   --accent-dim: rgba(91, 155, 223, 0.16);
   --accent-border: rgba(91, 155, 223, 0.40);
   --text-on-accent: #0b1622;
 
-  /* --- 2. OBERFLÄCHEN & HINTERGRÜNDE (Tiefsee) --- */
+  /* --- 2. SURFACES & BACKGROUNDS (deep sea) --- */
   --bg-app: #0e1621;
   --bg-panel: #152131;
   --bg-panel-elevated: #1c2b3e;
@@ -23,12 +23,12 @@
   --bg-editor: #121d2a;
   --bg-sidebar: #0e1621;
 
-  /* --- 3. TEXT & KONTRASTE (Mondlicht) --- */
+  /* --- 3. TEXT & CONTRAST (moonlight) --- */
   --text-main: #e6eef8;
   --text-muted: #9fb1c6;
   --text-faint: #6b7d93;
 
-  /* --- 4. RAHMEN, LINIEN & SCHATTEN --- */
+  /* --- 4. BORDERS, LINES & SHADOWS --- */
   --border-color: rgba(180, 205, 235, 0.12);
   --border-subtle: rgba(180, 205, 235, 0.06);
   --border-strong: rgba(180, 205, 235, 0.24);
@@ -36,7 +36,7 @@
   --scrollbar-thumb: rgba(91, 155, 223, 0.22);
   --scrollbar-thumb-hover: rgba(91, 155, 223, 0.38);
 
-  /* --- 5. STATUS- & SIGNALFARBEN --- */
+  /* --- 5. STATUS & SIGNAL COLOURS --- */
   --color-success: #6fcf97;
   --bg-success: rgba(111, 207, 151, 0.14);
   --border-success: rgba(111, 207, 151, 0.36);
@@ -49,7 +49,7 @@
   --bg-warning: rgba(246, 193, 119, 0.14);
   --border-warning: rgba(246, 193, 119, 0.36);
 
-  /* --- 6. RUNDUNGEN (Weich) --- */
+  /* --- 6. CORNERS (soft) --- */
   --radius-card: 12px;
   --radius-btn: 8px;
   --radius-input: 8px;

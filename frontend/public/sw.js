@@ -156,7 +156,7 @@ async function handleShareTarget(event) {
       createdAt: Date.now(),
     });
   } catch (err) {
-    console.error('[SW] Share-Target Fehler:', err);
+    console.error('[SW] share target error:', err);
   }
   return Response.redirect('/?shared=pending', 303);
 }

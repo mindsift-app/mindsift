@@ -428,7 +428,7 @@ export async function connectWebSocket(): Promise<void> {
 
     ws.onerror = () => {
       clearTimeout(wsConnectionWatchdog);
-      switchToSSE('WebSocket Fehler (Handshake/Verbindung verweigert)');
+      switchToSSE('WebSocket error (handshake/connection refused)');
     };
   } catch (e) {
     switchToSSE('WebSocket Exception beim Initialisieren');

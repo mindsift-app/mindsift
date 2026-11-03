@@ -135,7 +135,7 @@ export function ProfileDropdown({
   );
 }
 
-// Phones: the same as a sheet from the bottom, with the app install offer, "Über MindSift" and the version
+// Phones: the same as a sheet from the bottom, with the app install offer, "About MindSift" and the version
 export function MobileProfileSheet({
   user,
   roleLabel,

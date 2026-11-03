@@ -38,10 +38,10 @@ func (s *Server) allowNeverRetention() bool {
 func (s *Server) runDoneCleanup(now time.Time) {
 	res, err := s.store.PurgeExpired(now, s.allowNeverRetention())
 	if err != nil {
-		slog.Error("Aufräumen nach Aufbewahrungsfristen fehlgeschlagen", "error", err)
+		slog.Error("Cleaning up by retention periods failed", "error", err)
 	}
 	if n := len(res.TasksToTrash) + len(res.TrashedTasks) + res.Discarded + len(res.Notes) + len(res.ListItems); n > 0 {
-		slog.Info("Aufbewahrungsfristen angewendet", "erledigte_in_papierkorb", len(res.TasksToTrash), "papierkorb_aufgaben", len(res.TrashedTasks),
+		slog.Info("Retention periods applied", "erledigte_in_papierkorb", len(res.TasksToTrash), "papierkorb_aufgaben", len(res.TrashedTasks),
 			"triage", res.Discarded, "notizen", len(res.Notes), "listeneintraege", len(res.ListItems))
 	}
 	s.broadcastDeletedTasks(res.TasksToTrash)

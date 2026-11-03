@@ -21,7 +21,7 @@ func (s *Store) migrateAnchorTags() {
 	for _, table := range []struct{ name, text string }{{"thoughts", "content"}, {"documents", "content"}} {
 		rows, err := s.db.Query(`SELECT id, ` + table.text + `, tags FROM ` + table.name + ` WHERE ` + table.text + ` LIKE '%#%'`)
 		if err != nil {
-			slog.Error("Bereinigung der Hashtags fehlgeschlagen", "table", table.name, "error", err)
+			slog.Error("Cleaning up hashtags failed", "table", table.name, "error", err)
 			return
 		}
 		type row struct{ id, text, tags string }
@@ -61,11 +61,11 @@ func (s *Store) migrateAnchorTags() {
 		}
 	}
 	if err := s.reindexAllDocBlockTags(); err != nil {
-		slog.Error("Neuaufbau der Block-Hashtags fehlgeschlagen", "error", err)
+		slog.Error("Rebuilding the block hashtags failed", "error", err)
 		return
 	}
 	_, _ = s.db.Exec(`INSERT OR REPLACE INTO system_settings (key, value) VALUES (?, 'done')`, tagsAnchorMigrationKey)
 	if cleaned > 0 {
-		slog.Info("Hashtags aus URL-Ankern entfernt", "entries", cleaned)
+		slog.Info("Hashtags from URL anchors removed", "entries", cleaned)
 	}
 }

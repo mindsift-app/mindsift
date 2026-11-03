@@ -168,7 +168,7 @@ func (s *Store) backfillBlockTree() {
 			_, _ = tx.Exec(`UPDATE blocks SET parent_id = ?, order_key = ? WHERE id = ?`, parent, keys[i], f.id)
 		}
 		if err := tx.Commit(); err != nil {
-			slog.Error("Umwandlung der Blockstruktur fehlgeschlagen", "doc_id", docID, "error", err)
+			slog.Error("Converting the block structure failed", "doc_id", docID, "error", err)
 		}
 	}
 }
@@ -603,7 +603,7 @@ func (s *Store) replaceDocBlocksInDB(docID, userID string, blocks []domain.Docum
 	blocks = s.renameForeignBlockIDs(docID, blocks)
 	a := collab.Actor{UserID: userID, ClientID: legacyClientID}
 	if _, _, err := s.applyDocChange(docID, a, nil, func(d *collab.Doc) []collab.Op { return legacyOps(d, blocks) }); err != nil {
-		slog.Error("Speichern der Notiz fehlgeschlagen", "doc_id", docID, "error", err)
+		slog.Error("Saving the note failed", "doc_id", docID, "error", err)
 	}
 }
 
@@ -639,7 +639,7 @@ func (s *Store) applyLegacyTitle(docID, userID, title string) {
 		}
 		return []collab.Op{{OpID: domain.NewID("op"), Kind: collab.OpSetTitle, BaseVersion: d.TitleVersion, Title: &title}}
 	}); err != nil {
-		slog.Error("Speichern des Notiztitels fehlgeschlagen", "doc_id", docID, "error", err)
+		slog.Error("Saving the note title failed", "doc_id", docID, "error", err)
 	}
 }
 

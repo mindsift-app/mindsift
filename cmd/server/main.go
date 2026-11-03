@@ -47,12 +47,12 @@ func main() {
 	store.ConfiguredLanguage = cfg.DefaultLanguage
 
 	if cfg.DemoMode {
-		slog.Info("🧪 Demo-Modus aktiv: Setze Datenbank zurück und richte Demo-Accounts ein...")
+		slog.Info("🧪 Demo mode: resetting the database and setting up the demo accounts...")
 		_ = os.RemoveAll(filepath.Join(filepath.Dir(cfg.DatabasePath), "media")) // uploads of the last run
 		if err := store.ResetAndSeedDemo(); err != nil {
-			slog.Warn("⚠️ Fehler beim Einrichten des Demo-Modus", "error", err)
+			slog.Warn("⚠️ Setting up demo mode failed", "error", err)
 		} else {
-			slog.Info("✅ Demo-Accounts bereit: admin / admin (Admin-Rolle) und user / user (Standard-Rolle)")
+			slog.Info("✅ Demo accounts ready: admin / admin (admin role) and user / user (member role)")
 		}
 	}
 

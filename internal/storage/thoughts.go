@@ -344,7 +344,8 @@ func (s *Store) UpdateThoughtTriage(userID, thoughtID, action, convertTo, target
 			}
 			blocks := make([]domain.DocumentBlock, 0)
 
-			// 17. Wenn ich eine Aufgabe zu einer Notiz mache, muss die erste Zeile das "To-Do" noch mal als "To-Do" enthalten, auch wenn es schon in der Überschrift steht. Wenn es vorher schon abgehakt war, dann den Zustand natürlich übernehmen.
+			// A task turned into a note starts with the task itself as a checkbox, even though it is the title too,
+			// ticked if the task was done
 			blocks = append(blocks, domain.DocumentBlock{
 				ID:      domain.NewID("blk"),
 				Type:    "todo",
@@ -353,7 +354,7 @@ func (s *Store) UpdateThoughtTriage(userID, thoughtID, action, convertTo, target
 				Level:   0,
 			})
 
-			// 17a. Die anderen Details aus der Aufgabe sollen natürlich ebenfalls übernommen werden (Notizen, Subtasks, Fälligkeit/Priorität).
+			// The task's other details come along as well (notes, subtasks, due date, priority)
 			// Due date and priority right under the checkbox, above the description and the subtasks
 			var metaItems []string
 			lang := s.MessageLanguage(userID)
