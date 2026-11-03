@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   X,
   Check,
@@ -89,6 +90,7 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
   readOnly = false,
   editTitleOnOpen = false,
 }) => {
+  const { t } = useTranslation('tasks');
   const [titleDraft, setTitleDraft] = useState(task.content);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
 
@@ -270,18 +272,18 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
                   ? 'bg-status-ok border-status-ok text-on-accent'
                   : 'border-strong hover:border-accent text-transparent'
               }`}
-              title={task.isCompleted ? 'Als offen markieren' : 'Als erledigt markieren'}
+              title={task.isCompleted ? t('detail.markOpen') : t('detail.markDone')}
             >
               <Check className="w-3.5 h-3.5 stroke-[3]" />
             </button>
             {/* Phones: squeezed to a single letter next to the buttons, so left out */}
             <span className="hidden sm:inline text-xs font-semibold text-main truncate">
-              {readOnly ? 'Aufgabe ansehen' : task.isCompleted ? 'Erledigte Aufgabe' : editTitleOnOpen ? 'Neue Aufgabe' : 'Aufgabe bearbeiten'}
+              {readOnly ? t('detail.view') : task.isCompleted ? t('detail.done') : editTitleOnOpen ? t('detail.new') : t('detail.edit')}
             </span>
             {readOnly && (
               <span className="px-1.5 py-0.5 border border-border bg-canvas text-muted rounded-btn text-[10px] font-medium flex items-center gap-1 flex-shrink-0">
                 <Lock className="w-2.5 h-2.5 text-faint" />
-                <span>Nur Lesen</span>
+                <span>{t('detail.readOnly')}</span>
               </span>
             )}
             {/* Phones: no room next to the buttons; the details stand at the bottom anyway */}
@@ -295,7 +297,7 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
               type="button"
               onClick={handleToggleWatch}
               disabled={watchBusy}
-              title={isWatching ? 'Nicht mehr beobachten' : 'Beobachten'}
+              title={isWatching ? t('detail.unwatch') : t('detail.watch')}
               className={`btn-action min-h-[38px] sm:min-h-0 h-9 sm:h-7 px-2.5 sm:px-2 text-xs flex items-center gap-1.5 ${
                 isWatching ? 'border-accent text-accent' : ''
               }`}
@@ -303,12 +305,12 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
               {isWatching ? (
                 <>
                   <EyeOff className="w-4 h-4 sm:w-3.5 sm:h-3.5 text-accent" />
-                  <span>Nicht mehr beobachten</span>
+                  <span>{t('detail.unwatch')}</span>
                 </>
               ) : (
                 <>
                   <Eye className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
-                  <span>Beobachten</span>
+                  <span>{t('detail.watch')}</span>
                 </>
               )}
             </button>
@@ -321,13 +323,13 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
                   const blockId = task.blockId || (task.convertedRefId ? task.convertedRefId.split(':')[1] : '');
                   if (docId && onOpenDocument) onOpenDocument(docId, blockId);
                 }}
-                title="Zur verlinkten Notiz springen"
+                title={t('detail.gotoNote')}
                 className="btn-primary min-h-[38px] sm:min-h-0 h-9 sm:h-7 px-2.5 sm:px-2 text-xs flex items-center gap-1.5 font-semibold"
               >
                 <FileText className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
                 {/* Short on phones, so the header buttons stay on one line */}
-                <span className="sm:hidden">Notiz</span>
-                <span className="hidden sm:inline">In Notiz öffnen</span>
+                <span className="sm:hidden">{t('detail.note')}</span>
+                <span className="hidden sm:inline">{t('detail.openInNote')}</span>
               </button>
             ) : !readOnly && (
               <button
@@ -336,34 +338,34 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
                   onClose();
                   onConvertToDoc(task);
                 }}
-                title="Als Dokument / Notiz vertiefen"
+                title={t('detail.toDocTitle')}
                 className="btn-action min-h-[38px] sm:min-h-0 h-9 sm:h-7 px-2.5 sm:px-2 text-xs flex items-center gap-1.5"
               >
                 <FileText className="w-4 h-4 sm:w-3.5 sm:h-3.5 text-accent" />
-                <span className="hidden sm:inline">Als Notiz vertiefen</span>
+                <span className="hidden sm:inline">{t('detail.toDoc')}</span>
               </button>
             )}
             {!readOnly && (
             <button
               type="button"
               onClick={() => {
-                if (window.confirm('Möchten Sie diese Aufgabe wirklich löschen?')) {
+                if (window.confirm(t('detail.confirmDelete'))) {
                   onClose();
                   onDeleteTask(task.id);
                 }
               }}
-              title="Aufgabe löschen"
+              title={t('detail.delete')}
               className="btn-action min-h-[38px] sm:min-h-0 h-9 sm:h-7 px-2.5 sm:px-2 text-xs text-status-err border-status-err/30 hover:bg-status-err/10 flex items-center gap-1"
             >
               <Trash2 className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
-              <span className="sm:hidden font-medium">Löschen</span>
+              <span className="sm:hidden font-medium">{t('detail.deleteShort')}</span>
             </button>
             )}
             <button
               type="button"
               onClick={requestClose}
               className="text-muted hover:text-main p-2 sm:p-1.5 min-h-[38px] min-w-[38px] sm:min-h-0 sm:min-w-0 flex items-center justify-center transition-colors"
-              title="Schließen"
+              title={t('common:close')}
             >
               <X className="w-5 h-5 sm:w-4 sm:h-4" />
             </button>
@@ -428,7 +430,7 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
                 className={`group p-2 rounded-card transition-colors border border-transparent ${
                   readOnly ? '' : 'cursor-pointer hover:bg-panel hover:border-border'
                 }`}
-                title={readOnly ? undefined : 'Klicken zum Bearbeiten des Titels'}
+                title={readOnly ? undefined : t('detail.editTitle')}
               >
                 <h2
                   className={`text-base font-semibold break-words leading-snug ${
@@ -439,7 +441,7 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
                 </h2>
                 {!readOnly && (
                   <span className="text-[10px] text-muted opacity-0 group-hover:opacity-100 transition-opacity">
-                    Klicken zum Umbenennen
+                    {t('detail.rename')}
                   </span>
                 )}
               </div>
@@ -451,7 +453,7 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
           {/* Kanban Status Buttons */}
           <div className="space-y-1.5 pt-1 border-t border-border lg:border-t-0 lg:pt-0">
             <label className="block text-xs font-semibold text-main">
-              Zustand / Kanban-Status:
+              {t('detail.status')}
             </label>
             <div className="flex flex-wrap items-center gap-1.5">
               {activeColumns.map((col) => {
@@ -482,7 +484,7 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
           {/* Priority Buttons (4 Buttons) */}
           <div className="space-y-1.5 pt-1 border-t border-border">
             <label className="block text-xs font-semibold text-main">
-              Priorität:
+              {t('detail.priority')}
             </label>
             <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-2 gap-1.5">
               <button
@@ -497,7 +499,7 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
                     : 'bg-canvas border-border text-muted hover:text-main'
                 }`}
               >
-                <span>Niedrig</span>
+                <span>{t('common:priority.low')}</span>
               </button>
               <button
                 type="button"
@@ -511,7 +513,7 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
                     : 'bg-canvas border-border text-muted hover:text-main'
                 }`}
               >
-                <span>Normal</span>
+                <span>{t('common:priority.normal')}</span>
               </button>
               <button
                 type="button"
@@ -526,7 +528,7 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
                 }`}
               >
                 <AlertTriangle className="w-3 h-3 text-status-warn" />
-                <span>Wichtig</span>
+                <span>{t('common:priority.high')}</span>
               </button>
               <button
                 type="button"
@@ -541,7 +543,7 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
                 }`}
               >
                 <Flame className="w-3 h-3 text-status-err" />
-                <span>Dringend</span>
+                <span>{t('common:priority.urgent')}</span>
               </button>
             </div>
           </div>
@@ -552,20 +554,20 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
             <div className="space-y-1.5">
               <label className="block text-xs font-semibold text-main flex items-center gap-1">
                 <Calendar className="w-3.5 h-3.5 text-accent" />
-                <span>Fällig:</span>
+                <span>{t('detail.due')}</span>
               </label>
               <div className="flex items-center gap-1.5">
                 <input
                   type="date"
-                  aria-label="Fälligkeitsdatum"
+                  aria-label={t('detail.dueDate')}
                   value={dueParts.date}
                   onChange={(e) => onUpdateDueDate(task, joinDue(e.target.value, dueParts.time))}
                   className="flex-1 min-w-0 h-11 sm:h-8 input-field px-2 lg:px-1.5 text-base sm:text-xs bg-panel"
                 />
                 <input
                   type="time"
-                  aria-label="Uhrzeit (optional)"
-                  title="Uhrzeit (optional) – ohne Uhrzeit gilt die Aufgabe den ganzen Tag"
+                  aria-label={t('detail.time')}
+                  title={t('detail.timeTitle')}
                   value={dueParts.time}
                   disabled={!dueParts.date}
                   onChange={(e) => onUpdateDueDate(task, joinDue(dueParts.date, e.target.value))}
@@ -576,8 +578,8 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
                     type="button"
                     onClick={() => onUpdateDueDate(task, '')}
                     className="btn-action h-11 w-11 sm:h-8 sm:w-8 flex items-center justify-center text-muted hover:text-status-err shrink-0"
-                    title="Fälligkeit entfernen"
-                    aria-label="Fälligkeit entfernen"
+                    title={t('detail.removeDue')}
+                    aria-label={t('detail.removeDue')}
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
@@ -610,7 +612,7 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
                     type="button"
                     onClick={() => onUpdateDueDate(task, dueParts.date)}
                     className="px-1.5 py-0.5 bg-canvas border border-border rounded-btn text-muted hover:text-main inline-flex items-center gap-1"
-                    title="Uhrzeit entfernen – die Aufgabe gilt dann den ganzen Tag"
+                    title={t('detail.removeTime')}
                   >
                     <X className="w-2.5 h-2.5" />
                     Uhrzeit
@@ -621,7 +623,7 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
                 <div className="pt-1">
                   <label className="flex items-center gap-1 text-[11px] text-muted mb-1">
                     <Repeat className="w-3 h-3 text-accent" />
-                    <span>Wiederholung</span>
+                    <span>{t('detail.recurrence.label')}</span>
                   </label>
                   <select
                     value={task.recurrence || ''}
@@ -629,16 +631,15 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
                     onChange={(e) => onUpdateRecurrence(task, e.target.value as Recurrence)}
                     className="w-full h-11 sm:h-8 input-field px-2 text-base sm:text-xs bg-panel"
                   >
-                    <option value="">Keine Wiederholung</option>
-                    <option value="daily">🔁 Täglich</option>
-                    <option value="weekly">🔁 Wöchentlich</option>
-                    <option value="monthly">🔁 Monatlich</option>
-                    <option value="yearly">🔁 Jährlich</option>
+                    <option value="">{t('detail.recurrence.none')}</option>
+                    <option value="daily">{t('detail.recurrence.daily')}</option>
+                    <option value="weekly">{t('detail.recurrence.weekly')}</option>
+                    <option value="monthly">{t('detail.recurrence.monthly')}</option>
+                    <option value="yearly">{t('detail.recurrence.yearly')}</option>
                   </select>
                   {task.recurrence && (
                     <p className="text-[10px] text-faint mt-1">
-                      Beim Erledigen entsteht automatisch die nächste Aufgabe, fällig{' '}
-                      {task.dueDate ? 'ein Intervall nach diesem Datum' : 'ein Intervall nach dem Erledigen'}.
+                      {task.dueDate ? t('detail.recurrence.hintDate') : t('detail.recurrence.hintDone')}
                     </p>
                   )}
                 </div>
@@ -649,14 +650,14 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
             <div className="space-y-1.5">
               <label className="block text-xs font-semibold text-main flex items-center gap-1">
                 <Folder className="w-3.5 h-3.5 text-accent" />
-                <span>Aufgabenliste:</span>
+                <span>{t('detail.taskList')}</span>
               </label>
               <select
                 value={task.taskListId || ''}
                 onChange={(e) => onUpdateTaskList(task, e.target.value)}
                 className="w-full h-11 sm:h-8 input-field px-2.5 text-base sm:text-xs bg-panel"
               >
-                <option value="">-- Keine Liste (Allgemein) --</option>
+                <option value="">{t('detail.noTaskList')}</option>
                 {taskLists.map((tl) => (
                   <option key={tl.id} value={tl.id}>
                     {[tl.icon, tl.title].filter(Boolean).join(' ')}
@@ -685,7 +686,7 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
               <div className="space-y-1.5 pt-1 border-t border-border">
                 <label className="block text-xs font-semibold text-main flex items-center gap-1">
                   <UserPlus className="w-3.5 h-3.5 text-accent" />
-                  <span>Zugewiesen:</span>
+                  <span>{t('detail.assigned')}</span>
                 </label>
                 {assigned.length > 0 ? (
                   <div className="flex flex-wrap items-center gap-1.5">
@@ -701,7 +702,7 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
                             type="button"
                             onClick={() => onUpdateAssignees(task, assignedIds.filter((id) => id !== m.userId))}
                             className="text-muted hover:text-status-err"
-                            title="Zuweisung entfernen"
+                            title={t('detail.unassign')}
                           >
                             <X className="w-3 h-3" />
                           </button>
@@ -710,7 +711,7 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
                     ))}
                   </div>
                 ) : (
-                  readOnly && <p className="text-xs text-muted">Niemandem zugewiesen</p>
+                  readOnly && <p className="text-xs text-muted">{t('detail.nobody')}</p>
                 )}
                 {!readOnly && onUpdateAssignees && assigned.length < assignableMembers.length && (
                   <UserAutocomplete
@@ -718,7 +719,7 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
                     selectedUser={null}
                     onSelectUser={(u) => u && onUpdateAssignees(task, [...assignedIds, u.id])}
                     excludeUserIds={assignedIds}
-                    placeholder="Person zuweisen (Name tippen)…"
+                    placeholder={t('detail.assignPlaceholder')}
                   />
                 )}
               </div>
@@ -729,7 +730,7 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
           <div className="space-y-1.5 pt-1 border-t border-border">
             <label className="block text-xs font-semibold text-main flex items-center gap-1">
               <Hash className="w-3.5 h-3.5 text-accent" />
-              <span>Hashtags:</span>
+              <span>{t('detail.hashtags')}</span>
             </label>
             <div className="flex flex-wrap items-center gap-1.5">
               {Array.isArray(task.tags) &&
@@ -767,7 +768,7 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
           {/* Origin: in the right column on the desktop (phones show it in the footer) */}
           {originDetails(task.origin, task.createdAt) && (
             <div className="hidden lg:block space-y-1 pt-1 border-t border-border">
-              <label className="block text-xs font-semibold text-main">Herkunft:</label>
+              <label className="block text-xs font-semibold text-main">{t('detail.origin')}</label>
               <p className="text-[11px] text-muted leading-snug">{originDetails(task.origin, task.createdAt)}</p>
             </div>
           )}
@@ -778,7 +779,7 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
             <div className="flex items-center justify-between">
               <label className="block text-xs font-semibold text-main flex items-center gap-1.5">
                 <CheckSquare className="w-3.5 h-3.5 text-accent" />
-                <span>Unteraufgaben ({completedSubtasks}/{subtasks.length}):</span>
+                <span>{t('detail.subtasks', { done: completedSubtasks, total: subtasks.length })}</span>
               </label>
               {subtasks.length > 0 && (
                 <span className="text-[11px] font-mono text-muted">{subtasksPercent}%</span>
@@ -813,7 +814,7 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
                           type="button"
                           {...subtaskSort.handleProps(st.id)}
                           className="-my-2.5 sm:my-0 h-11 w-6 sm:h-5 sm:w-4 flex items-center justify-center flex-shrink-0 text-faint hover:text-main cursor-grab active:cursor-grabbing touch-none"
-                          title="Ziehen zum Umsortieren (oder Pfeiltasten)"
+                          title={t('detail.dragSort')}
                           aria-label={`„${st.title}“ verschieben`}
                         >
                           <GripVertical className="w-3.5 h-3.5" />
@@ -859,7 +860,7 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
                 type="text"
                 value={newSubtaskTitle}
                 onChange={(e) => setNewSubtaskTitle(e.target.value)}
-                placeholder="Neue Unteraufgabe…"
+                placeholder={t('detail.newSubtask')}
                 className="flex-1 min-w-0 h-11 sm:h-7 px-2 text-base sm:text-xs input-field"
               />
               <button
@@ -868,7 +869,7 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
                 className="btn-action h-11 sm:h-7 px-2.5 text-xs disabled:opacity-40"
               >
                 <Plus className="w-3 h-3" />
-                <span>Hinzufügen</span>
+                <span>{t('common:add')}</span>
               </button>
             </form>
             )}
@@ -879,7 +880,7 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
             <div className="flex items-center justify-between">
               <label className="block text-xs font-semibold text-main flex items-center gap-1.5">
                 <FileText className="w-3.5 h-3.5 text-accent" />
-                <span>Detailnotizen:</span>
+                <span>{t('detail.notes')}</span>
               </label>
               <div className="flex items-center gap-2">
                 {!readOnly && !isEditingNotes && task.notes && (
@@ -913,7 +914,7 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
                 <textarea
                   value={notesDraft}
                   onChange={(e) => setNotesDraft(e.target.value)}
-                  placeholder="Detailnotizen eingeben… (Markdown unterstützt)"
+                  placeholder={t('detail.notesPlaceholder')}
                   rows={6}
                   autoFocus
                   ref={(el) => {
@@ -939,7 +940,7 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
                     onClick={handleNotesSubmit}
                     className="btn-primary h-7 px-3 text-xs"
                   >
-                    Notiz speichern
+                    {t('detail.saveNote')}
                   </button>
                 </div>
               </div>
@@ -953,12 +954,12 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
                 className={`p-3 bg-canvas border border-border rounded-card text-xs text-muted leading-relaxed transition-colors ${
                   readOnly ? '' : 'cursor-pointer hover:border-strong'
                 }`}
-                title={readOnly ? undefined : 'Klicken zum Bearbeiten'}
+                title={readOnly ? undefined : t('detail.clickEdit')}
               >
                 <MarkdownViewer content={task.notes} />
               </div>
             ) : readOnly ? (
-              <p className="text-xs text-faint">Keine Detailnotizen.</p>
+              <p className="text-xs text-faint">{t('detail.noNotes')}</p>
             ) : (
               <button
                 type="button"
@@ -969,7 +970,7 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
                 className="w-full py-2.5 px-3 border border-dashed border-border rounded-card text-xs text-muted hover:text-main hover:bg-panel transition-colors text-left flex items-center gap-1.5"
               >
                 <Plus className="w-3.5 h-3.5 text-accent" />
-                <span>Detailnotiz hinzufügen…</span>
+                <span>{t('detail.addNote')}</span>
               </button>
             )}
           </div>
@@ -980,26 +981,26 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
         <div className="flex items-center justify-between px-4 py-2.5 border-t border-border bg-panel">
           <div className="text-[11px] text-faint min-w-0 pr-3">
             <span className="lg:hidden">
-              {originDetails(task.origin, task.createdAt) || `Erstellt: ${formatDate(task.createdAt)}`}
+              {originDetails(task.origin, task.createdAt) || t('detail.created', { date: formatDate(task.createdAt) })}
             </span>
-            <span className="hidden lg:inline">Erstellt: {formatDate(task.createdAt)}</span>
+            <span className="hidden lg:inline">{t('detail.created', { date: formatDate(task.createdAt) })}</span>
           </div>
           {confirmUnsaved ? (
-            <div role="alertdialog" aria-label="Ungespeicherte Änderungen" className="flex flex-wrap items-center justify-end gap-1.5">
-              <span className="text-xs text-main mr-1">Ungespeicherte Änderungen</span>
+            <div role="alertdialog" aria-label={t('detail.unsaved')} className="flex flex-wrap items-center justify-end gap-1.5">
+              <span className="text-xs text-main mr-1">{t('detail.unsaved')}</span>
               <button type="button" onClick={() => setConfirmUnsaved(false)} className="btn-action h-7 px-2.5 text-xs">
-                Weiter bearbeiten
+                {t('detail.keepEditing')}
               </button>
               <button type="button" onClick={onClose} className="btn-action h-7 px-2.5 text-xs text-status-err">
-                Verwerfen
+                {t('detail.discard')}
               </button>
               <button type="button" onClick={() => void saveAndClose()} className="btn-primary h-7 px-3 text-xs" autoFocus>
-                Speichern
+                {t('common:save')}
               </button>
             </div>
           ) : (
             <button type="button" onClick={requestClose} className="btn-primary h-7 px-3 text-xs">
-              Fertig
+              {t('detail.done2')}
             </button>
           )}
         </div>

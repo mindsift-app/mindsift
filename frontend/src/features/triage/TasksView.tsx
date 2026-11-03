@@ -1,4 +1,6 @@
 import React, { useEffect, useState, useRef, useMemo, useCallback } from 'react';
+import i18n from '../../i18n';
+import { useTranslation } from 'react-i18next';
 import {
   Columns,
   Maximize2,
@@ -71,7 +73,8 @@ const DEFAULT_GROUP_ALL: GroupBy = 'list';
 const DEFAULT_GROUP_LIST: GroupBy = 'none';
 
 // Title of a task created from a Kanban column until it gets its own
-const NEW_TASK_TITLE = 'Neue Aufgabe';
+// Placeholder title of a task created from the + button until it gets its own
+const newTaskTitle = () => i18n.t('tasks:detail.new');
 
 export const TasksView: React.FC<TasksViewProps> = ({
   currentUser,
@@ -82,6 +85,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
   onInitialTaskShown,
   openTasksCount,
 }) => {
+  const { t } = useTranslation('tasks');
   // Open list, view per list and grouping are remembered on this device (new tab, restart of the
   // installed app)
   const remembered = useMemo(() => readViewMemory<TasksSession>('tasks'), []);
@@ -517,7 +521,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
     columnId = targetCol.id;
     const isCompleted = !!targetCol.isDone;
     try {
-      const created = await api.captureThought(NEW_TASK_TITLE, 'normal', 'manual', undefined, {
+      const created = await api.captureThought(newTaskTitle(), 'normal', 'manual', undefined, {
         target: 'task',
         taskListId: selectedListId === 'all' ? '' : selectedListId,
       });
@@ -539,7 +543,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
     setDetailTaskId(null);
     const draft = draftTaskId ? tasks.find((t) => t.id === draftTaskId) : undefined;
     setDraftTaskId(null);
-    if (draft && draft.content === NEW_TASK_TITLE) {
+    if (draft && draft.content === newTaskTitle()) {
       setTasks((prev) => prev.filter((t) => t.id !== draft.id));
       void api
         .deleteThought(draft.id)
@@ -576,7 +580,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
     if (
       !confirmed &&
       !window.confirm(
-        'Möchten Sie diese Aufgabenliste wirklich löschen? Die enthaltenen Aufgaben bleiben erhalten.'
+        i18n.t('tasks:view.confirmDeleteList')
       )
     )
       return;
@@ -757,7 +761,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
           <ListSwitcher
             label={currentSelectedList ? [currentSelectedList.icon, currentSelectedList.title].filter(Boolean).join(' ') : '📋 Alle Aufgaben'}
             items={[
-              { id: 'all', title: 'Alle Aufgaben', icon: '📋', count: openTasksCount },
+              { id: 'all', title: t('allTasks'), icon: '📋', count: openTasksCount },
               ...safeTaskLists.map((tl) => ({ id: tl.id, title: tl.title, icon: tl.icon, count: tl.tasksCount })),
             ]}
             activeId={selectedListId}
@@ -782,7 +786,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
                 type="button"
                 onClick={() => handleOpenShareModal(currentSelectedList)}
                 className="btn-icon min-h-[36px] min-w-[36px] flex items-center justify-center"
-                title="Aufgabenliste teilen"
+                title={t('tabs.shareList')}
               >
                 <Users className="w-4 h-4 text-accent" />
               </button>
@@ -795,7 +799,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
         <div className="flex items-center gap-2 p-2.5 rounded-btn bg-panel-elevated border border-border text-xs text-muted">
           <Lock className="w-3.5 h-3.5 text-faint shrink-0" />
           <span>
-            Diese Liste wurde von {currentSelectedList?.ownerName || 'einem anderen Benutzer'} nur zum Lesen freigegeben.
+            {t('view.readOnlyShared', { name: currentSelectedList?.ownerName || t('view.otherUser') })}
           </span>
         </div>
       )}
@@ -833,10 +837,10 @@ export const TasksView: React.FC<TasksViewProps> = ({
                 <button
                   onClick={() => setShowManageColumnsModal(true)}
                   className="btn-action h-7 px-2.5 text-xs flex items-center gap-1.5"
-                  title="Kanban-Spalten hinzufügen, umbenennen oder neu anordnen"
+                  title={t('view.columnsTitle')}
                 >
                   <Columns className="w-3.5 h-3.5 text-accent" />
-                  <span>Spalten anpassen</span>
+                  <span>{t('view.columns')}</span>
                 </button>
               )}
               <button
@@ -844,7 +848,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
                 onClick={toggleKanbanWide}
                 aria-pressed={kanbanWide}
                 className="btn-action h-7 w-7 p-0 hidden lg:inline-flex items-center justify-center"
-                title={kanbanWide ? 'Board wieder normal breit' : 'Board auf volle Breite strecken'}
+                title={kanbanWide ? t('view.boardNormal') : t('view.boardWide')}
               >
                 {kanbanWide ? (
                   <Minimize2 className="w-3.5 h-3.5 text-accent" />
@@ -904,9 +908,9 @@ export const TasksView: React.FC<TasksViewProps> = ({
               type="button"
               onClick={() => void undoLast()}
               className="font-semibold text-accent hover:underline min-h-[44px] sm:min-h-0 shrink-0"
-              title="Rückgängig (Strg+Z)"
+              title={t('view.undoTitle')}
             >
-              Rückgängig
+              {t('triage:undo')}
             </button>
           )}
         </div>
@@ -931,7 +935,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
         onClose={() => setShowManageColumnsModal(false)}
         initialColumns={activeColumns}
         onSave={handleSaveColumns}
-        listTitle={currentSelectedList?.title || 'Alle Aufgaben'}
+        listTitle={currentSelectedList?.title || t('allTasks')}
       />
 
       {/* TASK DETAIL MODAL */}

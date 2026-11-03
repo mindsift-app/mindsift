@@ -1,4 +1,5 @@
 import React, { useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { AlertTriangle, Calendar, CheckSquare, Flame, X } from 'lucide-react';
 import { PriorityLevel, TaskList } from '../../lib/types';
 import { triggerHaptic } from '../../lib/api';
@@ -25,6 +26,7 @@ interface MobileTaskCreateSheetProps {
 // Phone: bottom sheet for a new task (text with voice input, list, priority, due date). Stays mounted while
 // closed, so a draft survives closing and reopening like before.
 export function MobileTaskCreateSheet({ open, onClose, lists, listId, onListIdChange, onCreate }: MobileTaskCreateSheetProps) {
+  const { t } = useTranslation('tasks');
   const [title, setTitle] = useState('');
   const [voiceError, setVoiceError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -58,7 +60,7 @@ export function MobileTaskCreateSheet({ open, onClose, lists, listId, onListIdCh
             <div className="w-7 h-7 rounded-btn bg-accent/15 text-accent flex items-center justify-center">
               <CheckSquare className="w-4 h-4" />
             </div>
-            <h3 className="text-sm font-semibold text-main">Neue Aufgabe anlegen</h3>
+            <h3 className="text-sm font-semibold text-main">{t('create.title')}</h3>
           </div>
           <button
             type="button"
@@ -71,7 +73,7 @@ export function MobileTaskCreateSheet({ open, onClose, lists, listId, onListIdCh
 
         <form onSubmit={submit} className="space-y-3">
           <div>
-            <label className="text-[11px] font-semibold text-muted block mb-1">Aufgabentext</label>
+            <label className="text-[11px] font-semibold text-muted block mb-1">{t('create.text')}</label>
             <div className="relative">
               <input
                 ref={inputRef}
@@ -79,7 +81,7 @@ export function MobileTaskCreateSheet({ open, onClose, lists, listId, onListIdCh
                 autoFocus
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder={voiceError || 'Was ist zu tun?…'}
+                placeholder={voiceError || t('create.placeholder')}
                 className="w-full input-field pl-3 pr-11 py-2 text-sm"
               />
               <VoiceInputButton
@@ -98,13 +100,13 @@ export function MobileTaskCreateSheet({ open, onClose, lists, listId, onListIdCh
           {/* List Selector (if lists exist) */}
           {lists.length > 0 && (
             <div>
-              <label className="text-[11px] font-semibold text-muted block mb-1">Aufgabenliste</label>
+              <label className="text-[11px] font-semibold text-muted block mb-1">{t('create.taskList')}</label>
               <select
                 value={listId}
                 onChange={(e) => onListIdChange(e.target.value)}
                 className="w-full input-field px-2.5 py-2 text-xs bg-panel"
               >
-                <option value="">Standard (Alle Aufgaben)</option>
+                <option value="">{t('create.defaultList')}</option>
                 {lists.map((tl) => (
                   <option key={tl.id} value={tl.id}>
                     {tl.icon ? `${tl.icon} ${tl.title}` : tl.title}
@@ -116,14 +118,14 @@ export function MobileTaskCreateSheet({ open, onClose, lists, listId, onListIdCh
 
           {/* Priority - 4 Buttons */}
           <div className="space-y-1.5 pt-1">
-            <label className="text-[11px] font-semibold text-muted block">Priorität</label>
+            <label className="text-[11px] font-semibold text-muted block">{t('common:priority.label')}</label>
             <div className="grid grid-cols-4 gap-1.5">
               {(['low', 'normal', 'high', 'urgent'] as PriorityLevel[]).map((p) => {
                 const config: Record<PriorityLevel, { label: string; icon?: React.ReactNode; activeClass: string }> = {
-                  low: { label: 'Niedrig', activeClass: 'bg-canvas border-strong text-main font-semibold shadow-xs' },
-                  normal: { label: 'Normal', activeClass: 'bg-accent/15 border-accent text-accent font-semibold shadow-xs' },
-                  high: { label: 'Wichtig', icon: <AlertTriangle className="w-3 h-3 text-status-warn" />, activeClass: 'bg-status-warn/15 border-status-warn text-status-warn font-semibold shadow-xs' },
-                  urgent: { label: 'Dringend', icon: <Flame className="w-3 h-3 text-status-err" />, activeClass: 'bg-status-err/15 border-status-err text-status-err font-semibold shadow-xs' },
+                  low: { label: t('common:priority.low'), activeClass: 'bg-canvas border-strong text-main font-semibold shadow-xs' },
+                  normal: { label: t('common:priority.normal'), activeClass: 'bg-accent/15 border-accent text-accent font-semibold shadow-xs' },
+                  high: { label: t('common:priority.high'), icon: <AlertTriangle className="w-3 h-3 text-status-warn" />, activeClass: 'bg-status-warn/15 border-status-warn text-status-warn font-semibold shadow-xs' },
+                  urgent: { label: t('common:priority.urgent'), icon: <Flame className="w-3 h-3 text-status-err" />, activeClass: 'bg-status-err/15 border-status-err text-status-err font-semibold shadow-xs' },
                 };
                 const active = priority === p;
                 const item = config[p];
@@ -153,7 +155,7 @@ export function MobileTaskCreateSheet({ open, onClose, lists, listId, onListIdCh
           <div className="space-y-1 pt-1">
             <label className="text-[11px] font-semibold text-muted flex items-center gap-1">
               <Calendar className="w-3.5 h-3.5 text-accent" />
-              <span>Fällig am</span>
+              <span>{t('create.due')}</span>
             </label>
             <input
               type="date"
@@ -176,7 +178,7 @@ export function MobileTaskCreateSheet({ open, onClose, lists, listId, onListIdCh
               disabled={!title.trim()}
               className="btn-primary h-10 px-5 text-xs font-semibold disabled:opacity-40 cursor-pointer"
             >
-              Aufgabe erstellen
+              {t('create.submit')}
             </button>
           </div>
         </form>

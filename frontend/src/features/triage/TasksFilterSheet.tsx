@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Filter, Hash, X } from 'lucide-react';
 import { Thought } from '../../lib/types';
 import { GroupBy, TaskSort, ViewMode } from './taskViewTypes';
@@ -36,6 +37,7 @@ export function TasksFilterSheet({
   viewMode,
   showFilterModal,
 }: TasksFilterSheetProps) {
+  const { t } = useTranslation('tasks');
   if (!showFilterModal) return null;
   return (
     <div
@@ -51,7 +53,7 @@ export function TasksFilterSheet({
             <div className="w-7 h-7 rounded-btn bg-accent/15 text-accent flex items-center justify-center">
               <Filter className="w-4 h-4" />
             </div>
-            <h3 className="text-sm font-semibold text-main">Filter & Sortierung</h3>
+            <h3 className="text-sm font-semibold text-main">{t('filter.title')}</h3>
           </div>
           <button
             type="button"
@@ -66,7 +68,7 @@ export function TasksFilterSheet({
         <div className="space-y-2">
           <span className="text-[11px] font-bold uppercase tracking-wider text-muted flex items-center gap-1">
             <Hash className="w-3 h-3 text-accent" />
-            <span>Nach Hashtags filtern</span>
+            <span>{t('filter.byTag')}</span>
           </span>
           <div className="flex flex-wrap gap-1.5">
             <button
@@ -78,7 +80,7 @@ export function TasksFilterSheet({
                   : 'bg-canvas border-border text-muted'
               }`}
             >
-              Alle ({safeTasks.length})
+              {t('tags.all', { count: safeTasks.length })}
             </button>
             {allAvailableTags.map((tag) => {
               const count = safeTasks.filter((t) => t.tags?.includes(tag)).length;
@@ -135,11 +137,11 @@ export function TasksFilterSheet({
             </span>
             <div className="grid grid-cols-2 gap-1.5">
               {[
-                { id: 'custom', label: 'Manuell (Drag & Drop)' },
-                { id: 'created', label: 'Erstelldatum' },
-                { id: 'due', label: 'Fälligkeitsdatum' },
-                { id: 'priority', label: 'Priorität' },
-                { id: 'alpha', label: 'Alphabetisch' },
+                { id: 'custom', label: t('view.sortCustom') },
+                { id: 'created', label: t('view.sortCreated') },
+                { id: 'due', label: t('view.sortDue') },
+                { id: 'priority', label: t('view.sortPriority') },
+                { id: 'alpha', label: t('sortShort.alpha') },
               ].map((s) => (
                 <button
                   key={s.id}
@@ -168,7 +170,7 @@ export function TasksFilterSheet({
             }}
             className="btn-ghost h-9 px-3 text-xs text-muted hover:text-main cursor-pointer"
           >
-            Filter zurücksetzen
+            {t('filter.reset')}
           </button>
           <button
             type="button"

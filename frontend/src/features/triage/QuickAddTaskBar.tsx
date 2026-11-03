@@ -1,4 +1,5 @@
 import React, { useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Plus } from 'lucide-react';
 import { api, triggerHaptic } from '../../lib/api';
 import { TaskList, Thought } from '../../lib/types';
@@ -16,6 +17,7 @@ interface QuickAddTaskBarProps {
 
 // Desktop: input for a new task in the open list, with voice input and due date (phones use the + button)
 export function QuickAddTaskBar({ hidden, currentSelectedList, selectedListId, setTasks, onRefreshStats, loadData }: QuickAddTaskBarProps) {
+  const { t } = useTranslation('tasks');
   const [quickTitle, setQuickTitle] = useState('');
   const [quickVoiceError, setQuickVoiceError] = useState<string | null>(null);
   const [quickDueDate, setQuickDueDate] = useState('');
@@ -57,7 +59,7 @@ export function QuickAddTaskBar({ hidden, currentSelectedList, selectedListId, s
         onChange={(e) => setQuickTitle(e.target.value)}
         placeholder={
           quickVoiceError ||
-          (currentSelectedList ? `Aufgabe zu "${currentSelectedList.title}" hinzufügen…` : 'Neue Aufgabe anlegen…')
+          (currentSelectedList ? t('quickAdd.toList', { title: currentSelectedList.title }) : t('quickAdd.placeholder'))
         }
         className="flex-1 bg-transparent px-2 py-1.5 sm:py-1 text-sm text-main placeholder-faint focus:outline-none min-w-0"
       />
@@ -76,14 +78,14 @@ export function QuickAddTaskBar({ hidden, currentSelectedList, selectedListId, s
           value={quickDueDate}
           onChange={(e) => setQuickDueDate(e.target.value)}
           className="hidden sm:block h-7 px-2 input-field text-xs"
-          title="Fälligkeitsdatum"
+          title={t('detail.dueDate')}
         />
         <button
           type="submit"
           disabled={!quickTitle.trim()}
           className="btn-primary h-9 sm:h-7 px-3.5 sm:px-3 text-xs disabled:opacity-40"
         >
-          Hinzufügen
+          {t('common:add')}
         </button>
       </div>
     </form>

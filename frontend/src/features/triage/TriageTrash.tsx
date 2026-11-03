@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Loader2, RotateCcw, Trash2 } from 'lucide-react';
 import { api, triggerHaptic } from '../../lib/api';
 import { formatDeletedAt } from '../../lib/due';
@@ -15,6 +16,7 @@ interface TriageTrashProps {
 // good (one by one, all at once, or after the delay from Kontoeinstellungen → Aufbewahrung). Deleting
 // for good takes a second tap on the same button, like the notes trash.
 export const TriageTrash: React.FC<TriageTrashProps> = ({ onClose, onChanged }) => {
+  const { t } = useTranslation('triage');
   const [items, setItems] = useState<Thought[] | null>(null);
   const [confirmId, setConfirmId] = useState<string | null>(null);
 
@@ -48,13 +50,13 @@ export const TriageTrash: React.FC<TriageTrashProps> = ({ onClose, onChanged }) 
   };
 
   return (
-    <ReadingModal title="Papierkorb der Triage" onClose={onClose}>
+    <ReadingModal title={t('trashTitle')} onClose={onClose}>
       {items === null ? (
         <div className="py-6 flex justify-center text-muted">
           <Loader2 className="w-5 h-5 animate-spin" />
         </div>
       ) : items.length === 0 ? (
-        <p className="py-6 text-center text-muted">Keine verworfenen Gedanken.</p>
+        <p className="py-6 text-center text-muted">{t('trash.none')}</p>
       ) : (
         <div className="space-y-3">
           <div className="divide-y divide-border border border-border rounded-card overflow-hidden">
@@ -66,16 +68,16 @@ export const TriageTrash: React.FC<TriageTrashProps> = ({ onClose, onChanged }) 
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
                   <button type="button" onClick={() => restore(item)} className="btn-action min-h-[38px] sm:min-h-0">
-                    <RotateCcw className="w-3 h-3 text-accent" /> Zurück
+                    <RotateCcw className="w-3 h-3 text-accent" /> {t('sheet.back')}
                   </button>
                   <button
                     type="button"
                     onClick={() => purge(item.id)}
                     className={`btn-icon btn-icon-danger min-h-[38px] min-w-[38px] sm:min-h-0 sm:min-w-0 ${confirmId === item.id ? 'text-status-err' : ''}`}
-                    title={confirmId === item.id ? 'Wirklich endgültig löschen?' : 'Endgültig löschen'}
-                    aria-label="Endgültig löschen"
+                    title={confirmId === item.id ? t('trash.confirmDelete') : t('trash.delete')}
+                    aria-label={t('trash.delete')}
                   >
-                    {confirmId === item.id ? <span className="text-[11px] font-semibold px-1">Wirklich?</span> : <Trash2 className="w-3.5 h-3.5" />}
+                    {confirmId === item.id ? <span className="text-[11px] font-semibold px-1">{t('trash.really')}</span> : <Trash2 className="w-3.5 h-3.5" />}
                   </button>
                 </div>
               </div>
@@ -84,7 +86,7 @@ export const TriageTrash: React.FC<TriageTrashProps> = ({ onClose, onChanged }) 
           <div className="flex justify-end">
             <button type="button" onClick={() => purge('__all__')} className="btn-action min-h-[38px] sm:min-h-0 text-status-err">
               <Trash2 className="w-3.5 h-3.5" />
-              {confirmId === '__all__' ? `Wirklich ${items.length} endgültig löschen?` : 'Papierkorb leeren'}
+              {confirmId === '__all__' ? t('trash.confirmEmpty', { count: items.length }) : t('trash.empty')}
             </button>
           </div>
         </div>

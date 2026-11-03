@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Trash2 } from 'lucide-react';
 import { TaskTrashList } from './TaskTrashList';
 import { TaskList, Thought, TrashedTask } from '../../lib/types';
@@ -57,6 +58,7 @@ export function TaskListView({
   sortBy,
   taskTrash,
 }: TaskListViewProps) {
+  const { t } = useTranslation('tasks');
   return (
     <div className="space-y-2">
       {/* Subfilter tabs for List View (Desktop; on mobile controlled via MindSift Logo Menu) */}
@@ -68,7 +70,7 @@ export function TaskListView({
               filter === 'open' ? 'bg-panel text-main font-semibold' : 'text-muted hover:text-main'
             }`}
           >
-            Offen ({openTasks.length})
+            {t('view.openCount', { count: openTasks.length })}
           </button>
 
           <button
@@ -77,7 +79,7 @@ export function TaskListView({
               filter === 'done' ? 'bg-panel text-main font-semibold' : 'text-muted hover:text-main'
             }`}
           >
-            Erledigt ({doneTasks.length})
+            {t('view.doneCount', { count: doneTasks.length })}
           </button>
 
           <button
@@ -86,7 +88,7 @@ export function TaskListView({
               filter === 'discarded' ? 'bg-panel text-main font-semibold' : 'text-muted hover:text-main'
             }`}
           >
-            Papierkorb ({taskTrash.length})
+            {t('view.trashCount', { count: taskTrash.length })}
           </button>
         </div>
 
@@ -94,7 +96,7 @@ export function TaskListView({
             use the menu) */}
         <div className="hidden sm:flex items-center gap-2 ml-auto">
           <div className="flex items-center gap-1 text-xs text-muted">
-            <span className="text-[11px]">Gruppe:</span>
+            <span className="text-[11px]">{t('view.group')}</span>
             <select
               value={groupBy}
               onChange={(e) => setGroupBy(e.target.value as GroupBy)}
@@ -108,17 +110,17 @@ export function TaskListView({
             </select>
           </div>
           <div className="flex items-center gap-1 text-xs text-muted">
-            <span className="text-[11px]">Sortierung:</span>
+            <span className="text-[11px]">{t('view.sort')}</span>
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as any)}
               className="h-8 px-2 input-field text-xs bg-panel"
             >
-              <option value="custom">Manuell (Drag & Drop)</option>
-              <option value="created">Erstelldatum</option>
-              <option value="due">Fälligkeitsdatum</option>
-              <option value="priority">Priorität</option>
-              <option value="alpha">Titel (A-Z)</option>
+              <option value="custom">{t('view.sortCustom')}</option>
+              <option value="created">{t('view.sortCreated')}</option>
+              <option value="due">{t('view.sortDue')}</option>
+              <option value="priority">{t('view.sortPriority')}</option>
+              <option value="alpha">{t('view.sortAlpha')}</option>
             </select>
           </div>
         </div>
@@ -126,8 +128,8 @@ export function TaskListView({
           <button
             onClick={handleEmptyTaskTrash}
             className="btn-action h-8 w-8 p-0 justify-center min-h-[38px] min-w-[38px] sm:min-h-0 sm:min-w-0 ml-auto sm:ml-0"
-            title="Papierkorb leeren"
-            aria-label="Papierkorb leeren"
+            title={t('view.emptyTrash')}
+            aria-label={t('view.emptyTrash')}
           >
             <Trash2 className="w-3.5 h-3.5" />
           </button>
@@ -136,8 +138,8 @@ export function TaskListView({
           <button
             onClick={handleClearDone}
             className="btn-action h-8 w-8 p-0 justify-center min-h-[38px] min-w-[38px] sm:min-h-0 sm:min-w-0 ml-auto sm:ml-0"
-            title="Erledigte in den Papierkorb"
-            aria-label="Erledigte in den Papierkorb"
+            title={t('view.doneToTrash')}
+            aria-label={t('view.doneToTrash')}
           >
             <Trash2 className="w-3.5 h-3.5" />
           </button>
@@ -145,7 +147,7 @@ export function TaskListView({
       </div>
 
       {loading ? (
-        <div className="p-6 text-center text-faint text-sm">Lade Aufgaben…</div>
+        <div className="p-6 text-center text-faint text-sm">{t('view.loading')}</div>
       ) : filter === 'discarded' ? (
         <TaskTrashList
           items={taskTrash}
@@ -174,13 +176,13 @@ export function TaskListView({
             <div className="panel-surface divide-y divide-border overflow-hidden">
               {filteredTasks.length === 0 ? (
                 <div className="p-8 text-center text-muted text-sm space-y-1">
-                  <p className="font-medium text-main">Keine Aufgaben gefunden</p>
+                  <p className="font-medium text-main">{t('view.none')}</p>
                   <p className="text-xs text-faint">
                     {selectedTag
-                      ? `Keine Aufgaben mit Hashtag #${selectedTag}.`
+                      ? t('view.noneWithTag', { tag: selectedTag })
                       : filter === 'done'
-                      ? 'Noch keine Aufgaben erledigt.'
-                      : 'Erstelle oben eine neue Aufgabe.'}
+                      ? t('view.noneDone')
+                      : t('view.createHint')}
                   </p>
                 </div>
               ) : (

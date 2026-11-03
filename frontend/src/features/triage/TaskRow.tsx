@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Calendar, Check, Edit3, FileText, Lock, Repeat, Trash2 } from 'lucide-react';
 import { formatDue, isOverdue } from '../../lib/due';
 import { OriginBadge } from '../../components/OriginBadge';
@@ -47,6 +48,7 @@ export function TaskRow({
   setDetailTaskId,
   setShowDetailModal,
 }: TaskRowProps) {
+  const { t } = useTranslation('tasks');
   const {
     dragOverTaskTarget,
     draggingTaskId,
@@ -112,7 +114,7 @@ export function TaskRow({
               ? 'bg-status-ok border-status-ok text-on-accent'
               : 'border-strong hover:border-accent text-transparent'
           }`}
-          title={readOnly ? 'Nur Lesen' : isCompleted ? 'Als offen markieren' : 'Als erledigt abhaken'}
+          title={readOnly ? t('detail.readOnly') : isCompleted ? t('detail.markOpen') : t('row.markDone')}
         >
           <Check className="w-3.5 h-3.5 sm:w-3 sm:h-3 stroke-[3]" />
         </button>
@@ -147,10 +149,10 @@ export function TaskRow({
                   if (docId) onOpenDocument(docId, blockId);
                 }}
                 className="h-5 px-1.5 text-[10px] rounded-btn border border-accent/40 bg-accent/10 text-accent hover:bg-accent/20 cursor-pointer flex items-center gap-1 font-medium"
-                title="In Notiz an der passenden Stelle öffnen"
+                title={t('row.openInNote')}
               >
                 <FileText className="w-2.5 h-2.5" />
-                <span>In Notiz</span>
+                <span>{t('row.inNote')}</span>
               </button>
             )}
 
@@ -169,7 +171,7 @@ export function TaskRow({
                       disabled={readOnly}
                       onChange={(e) => handleSetKanbanStatus(task, e.target.value)}
                       className="h-5 px-1.5 text-[10px] rounded-btn border border-border bg-panel text-muted hover:text-main cursor-pointer"
-                      title="Status / Zustand ändern"
+                      title={t('row.changeStatus')}
                     >
                       {taskColumns.map((c) => (
                         <option key={c.id} value={c.id}>
@@ -179,7 +181,7 @@ export function TaskRow({
                     </select>
                   </span>
                   {statusCol && (
-                    <span className="sm:hidden inline-flex items-center gap-1 text-[10px] text-muted" title="Status">
+                    <span className="sm:hidden inline-flex items-center gap-1 text-[10px] text-muted" title={t('row.status')}>
                       {dot}
                       {statusCol.name}
                     </span>
@@ -195,7 +197,7 @@ export function TaskRow({
                 disabled={readOnly}
                 onClick={() => handleCyclePriority(task)}
                 className="badge-accent text-[10px] cursor-pointer hover:opacity-85 disabled:cursor-default"
-                title="Klicken zum Ändern der Priorität (Dringend -> Normal)"
+                title={t('row.urgentToNormal')}
               >
                 🔥 Dringend
               </button>
@@ -206,7 +208,7 @@ export function TaskRow({
                 disabled={readOnly}
                 onClick={() => handleCyclePriority(task)}
                 className="px-1.5 py-0.5 border border-status-warn text-status-warn rounded-btn text-[10px] font-medium cursor-pointer hover:opacity-85 disabled:cursor-default"
-                title="Klicken zum Ändern der Priorität (Wichtig -> Dringend)"
+                title={t('row.highToUrgent')}
               >
                 ⚠️ Wichtig
               </button>
@@ -223,7 +225,7 @@ export function TaskRow({
                   setShowDetailModal(true);
                 }}
                 className="inline-flex items-center gap-1 text-[10px] text-muted hover:text-main bg-canvas px-1.5 py-0.5 rounded border border-border"
-                title="Notiz anzeigen / bearbeiten"
+                title={t('row.showNote')}
               >
                 <FileText className="w-2.5 h-2.5 text-accent" />
                 <span className="truncate max-w-[120px]">{task.notes}</span>
@@ -234,7 +236,7 @@ export function TaskRow({
             {task.dueDate && (
               <span
                 className={`inline-flex items-center gap-1 text-[10px] ${!task.isCompleted && isOverdue(task.dueDate) ? 'text-status-err font-semibold' : 'text-muted'}`}
-                title={`Fällig: ${task.dueDate.replace('T', ' ')}`}
+                title={t('row.dueTitle', { due: task.dueDate.replace('T', ' ') })}
               >
                 <Calendar className="w-2.5 h-2.5 text-accent" />
                 <span>{formatDue(task.dueDate)}</span>
@@ -278,7 +280,7 @@ export function TaskRow({
             setShowDetailModal(true);
           }}
           className="text-faint hover:text-accent p-1.5 transition-colors"
-          title={readOnly ? 'Aufgabe ansehen' : 'Aufgabe bearbeiten'}
+          title={readOnly ? t('detail.view') : t('detail.edit')}
         >
           {readOnly ? <Lock className="w-3.5 h-3.5" /> : <Edit3 className="w-3.5 h-3.5" />}
         </button>
@@ -288,7 +290,7 @@ export function TaskRow({
           type="button"
           draggable={false}
           onClick={() => handleConvertToDoc(task)}
-          title={task.docId ? 'Verknüpfte Notiz öffnen' : 'Als Notiz vertiefen'}
+          title={task.docId ? t('row.openNote') : t('detail.toDoc')}
           className={`${task.docId ? 'text-accent' : 'text-faint'} hover:text-accent p-1.5 transition-colors hidden sm:block`}
         >
           <FileText className="w-3.5 h-3.5" />
@@ -297,7 +299,7 @@ export function TaskRow({
           type="button"
           draggable={false}
           onClick={() => handleDeletePermanent(task.id)}
-          title="Aufgabe löschen"
+          title={t('detail.delete')}
           className="text-faint hover:text-status-err p-1.5 transition-colors"
         >
           <Trash2 className="w-3.5 h-3.5" />
