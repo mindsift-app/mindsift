@@ -48,7 +48,6 @@ Mit dem Nutzer abgestimmt (2026-11-03): bestehende Nutzer bleiben bei Deutsch; w
 
 Jeder Schritt ist ein eigenes Release. Die Schritte 1 und 2 sind reine Umbauten ohne sichtbare Änderung; als Sicherheitsnetz dient wie beim Aufteilen des Frontends `e2e/refshots.sh`: alle deutschen Screenshots müssen danach gleich aussehen.
 
-0. **Doku auf Englisch** (Patch, unabhängig vom Rest): `Doku/` einschließlich der Pläne übersetzen, Verweise prüfen. Danach gilt für neue Doku Englisch (Regel für Agenten anpassen).
 1. **Grundgerüst** (Patch): i18next einbinden, `lib/format.ts`, Feld `language` am Nutzer (Migration setzt vorhandene Konten auf `de`, `GET/PUT /me`), Standardsprache in den Admin-Einstellungen, Sprachwahl in den Kontoeinstellungen, vorerst nur mit Deutsch. Test, dass jede Sprachdatei dieselben Schlüssel hat wie Deutsch.
 2. **Texte herausziehen** (mehrere Patches, Bereich für Bereich wie die `features/`-Ordner): `app/`, `workspace/`, Aufgaben, Listen, Triage, Einstellungen, Auth, Hilfe. Danach eine ESLint-Regel gegen neue feste Texte in JSX (`i18next/no-literal-string`), damit nichts Neues hart codiert dazukommt.
 3. **Englisch** (Minor): englische Sprachdateien, Auswahl freigeschaltet, zweiter Satz Referenz-Screenshots auf Englisch (vor allem für die Handy-Ansichten: englische Texte sind oft kürzer, deutsche länger; Umbrüche prüfen).
@@ -66,3 +65,4 @@ Jeder Schritt ist ein eigenes Release. Die Schritte 1 und 2 sind reine Umbauten 
 ## Nicht Teil dieses Plans
 
 - `README.md`: wird später gesondert überarbeitet.
+- Übersetzung von `Doku/` ins Englische: läuft getrennt auf einem eigenen Branch und wird danach gemergt; danach gilt für neue Doku Englisch.
