@@ -145,7 +145,7 @@ func (s *Store) GetAuthorizedSharedFolderUsers(folderID string) ([]string, error
 
 func (s *Store) CreateDocument(userID, spaceID, title, icon, folderPath string, blocks []domain.DocumentBlock, tags []string, isPinned bool) (*domain.Document, error) {
 	if strings.TrimSpace(title) == "" {
-		title = "Unbenannte Notiz"
+		title = i18n.T(s.MessageLanguage(userID), "Unbenannte Notiz")
 	}
 	if icon == "" {
 		icon = "🗒️"

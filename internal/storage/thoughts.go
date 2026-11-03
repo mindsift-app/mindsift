@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/mindsift-app/mindsift/internal/domain"
+	"github.com/mindsift-app/mindsift/internal/i18n"
 )
 
 // --- THOUGHTS & TRIAGE ---
@@ -355,11 +356,12 @@ func (s *Store) UpdateThoughtTriage(userID, thoughtID, action, convertTo, target
 			// 17a. Die anderen Details aus der Aufgabe sollen natürlich ebenfalls übernommen werden (Notizen, Subtasks, Fälligkeit/Priorität).
 			// Due date and priority right under the checkbox, above the description and the subtasks
 			var metaItems []string
+			lang := s.MessageLanguage(userID)
 			if thought.DueDate != "" {
-				metaItems = append(metaItems, "Fällig: "+domain.HumanDue(thought.DueDate))
+				metaItems = append(metaItems, i18n.T(lang, "Fällig: {due}", "due", domain.HumanDue(lang, thought.DueDate)))
 			}
 			if thought.Priority != "" && thought.Priority != "normal" {
-				metaItems = append(metaItems, "Priorität: "+domain.PriorityLabel(thought.Priority))
+				metaItems = append(metaItems, i18n.T(lang, "Priorität: {priority}", "priority", domain.PriorityLabel(lang, thought.Priority)))
 			}
 			if len(metaItems) > 0 {
 				blocks = append(blocks, domain.DocumentBlock{

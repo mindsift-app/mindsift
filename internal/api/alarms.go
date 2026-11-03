@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/mindsift-app/mindsift/internal/domain"
+	"github.com/mindsift-app/mindsift/internal/i18n"
 	"github.com/mindsift-app/mindsift/internal/storage"
 )
 
@@ -20,10 +21,13 @@ func (s *Server) sendMailContent(toEmail, subject string, c mailContent) error {
 }
 
 // Footers: why a mail came
-const (
-	mailFooterAlarms  = "Du bekommst diese E-Mail, weil du E-Mail-Benachrichtigungen eingeschaltet hast. Ändern kannst du das in MindSift unter Kontoeinstellungen → Alarme."
-	mailFooterAccount = "Diese E-Mail betrifft dein MindSift-Konto und kommt deshalb unabhängig von deinen Benachrichtigungen."
-)
+func mailFooterAlarms(lang string) string {
+	return i18n.T(lang, "Du bekommst diese E-Mail, weil du E-Mail-Benachrichtigungen eingeschaltet hast. Ändern kannst du das in MindSift unter Kontoeinstellungen → Alarme.")
+}
+
+func mailFooterAccount(lang string) string {
+	return i18n.T(lang, "Diese E-Mail betrifft dein MindSift-Konto und kommt deshalb unabhängig von deinen Benachrichtigungen.")
+}
 
 // priorityTone: how a task's priority is coloured in mails (domain.PriorityLabel gives the text)
 func priorityTone(p string) string {
@@ -37,20 +41,21 @@ func priorityTone(p string) string {
 }
 
 // dueAlarmMail: one task is due now.
-func (s *Server) dueAlarmMail(a storage.DueTaskAlarm, due string) mailContent {
-	meta := "Fällig: " + due
+func (s *Server) dueAlarmMail(lang string, a storage.DueTaskAlarm, due string) mailContent {
+	meta := i18n.T(lang, "Fällig: {due}", "due", due)
 	if a.Priority != "" && a.Priority != "normal" {
-		meta += " · " + domain.PriorityLabel(a.Priority)
+		meta += " · " + domain.PriorityLabel(lang, a.Priority)
 	}
 	c := mailContent{
-		Preheader: "Fällig: " + a.Title,
-		Greeting:  mailGreeting(time.Now(), a.UserName),
-		Intro:     "Eine deiner Aufgaben ist jetzt fällig:",
+		Lang:      lang,
+		Preheader: i18n.T(lang, "Fällig: {due}", "due", a.Title),
+		Greeting:  mailGreeting(lang, time.Now(), a.UserName),
+		Intro:     i18n.T(lang, "Eine deiner Aufgaben ist jetzt fällig:"),
 		Sections:  []mailSection{{Items: []mailItem{{Title: a.Title, Meta: meta, Body: a.Notes, Tone: priorityTone(a.Priority)}}}},
-		Footer:    mailFooterAlarms,
+		Footer:    mailFooterAlarms(lang),
 	}
 	if link := s.notifyLink(); link != "" {
-		c.Button = &mailButton{Label: "In MindSift öffnen", URL: link}
+		c.Button = &mailButton{Label: i18n.T(lang, "In MindSift öffnen"), URL: link}
 	}
 	return c
 }
@@ -78,7 +83,7 @@ func (s *Server) sendEmailHTML(toEmail, subject, bodyText, html string) error {
 	return nil
 }
 
-func (s *Server) sendDiscordNotification(webhookURL, title, description, dueDate, priority string) error {
+func (s *Server) sendDiscordNotification(lang, webhookURL, title, description, dueDate, priority string) error {
 	if s.cfg.DemoMode {
 		return errDemoOutgoing
 	}
@@ -88,14 +93,14 @@ func (s *Server) sendDiscordNotification(webhookURL, title, description, dueDate
 	}
 	httpClient := guardedClient(allowPrivate)
 	payload := map[string]interface{}{
-		"content": "⏰ **MindSift Aufgaben-Alarm**",
+		"content": "⏰ **" + i18n.T(lang, "MindSift Aufgaben-Alarm") + "**",
 		"embeds": []map[string]interface{}{
 			{
 				"title":       title,
-				"description": fmt.Sprintf("%s\n\n**Fällig:** %s | **Priorität:** %s", description, dueDate, priority),
+				"description": description + "\n\n**" + i18n.T(lang, "Fällig") + ":** " + dueDate + " | **" + i18n.T(lang, "Priorität") + ":** " + domain.PriorityLabel(lang, priority),
 				"color":       2450411,
 				"footer": map[string]string{
-					"text": "MindSift Alarm-System",
+					"text": i18n.T(lang, "MindSift Alarm-System"),
 				},
 			},
 		},
@@ -197,22 +202,23 @@ func (s *Server) startAlarmTicker() {
 			}
 
 			sentAny := false
-			due := domain.HumanDue(a.DueDate)
+			lang := s.userLanguage(a.UserID)
+			due := domain.HumanDue(lang, a.DueDate)
 			desc := a.Notes
 			if desc == "" {
-				desc = "Aufgabe ist jetzt fällig."
+				desc = i18n.T(lang, "Aufgabe ist jetzt fällig.")
 			}
 
 			for _, ch := range a.AlarmChannels {
 				switch ch {
 				case "discord":
 					if a.DiscordWebhookURL != "" {
-						if err := s.sendDiscordNotification(a.DiscordWebhookURL, a.Title, desc, due, a.Priority); err == nil {
+						if err := s.sendDiscordNotification(lang, a.DiscordWebhookURL, a.Title, desc, due, a.Priority); err == nil {
 							sentAny = true
 						}
 					}
 				case "push":
-					if err := s.sendPush(a.UserID, pushMessage{Title: "⏰ Aufgabe fällig", Body: a.Title + " – " + due, URL: "/", Tag: "task-" + a.TaskID}); err == nil {
+					if err := s.sendPush(a.UserID, pushMessage{Title: "⏰ " + i18n.T(lang, "Aufgabe fällig"), Body: a.Title + " – " + due, URL: "/", Tag: "task-" + a.TaskID}); err == nil {
 						sentAny = true
 					}
 				case "webhook":
@@ -223,7 +229,7 @@ func (s *Server) startAlarmTicker() {
 					}
 				case "email":
 					if a.AlarmEmail != "" {
-						if err := s.sendMailContent(a.AlarmEmail, "⏰ Fällig: "+a.Title, s.dueAlarmMail(a, due)); err == nil {
+						if err := s.sendMailContent(a.AlarmEmail, "⏰ "+i18n.T(lang, "Fällig: {due}", "due", a.Title), s.dueAlarmMail(lang, a, due)); err == nil {
 							sentAny = true
 						}
 					}

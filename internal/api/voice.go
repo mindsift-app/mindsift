@@ -360,6 +360,7 @@ func (s *Server) handleAdminVoiceStatus(w http.ResponseWriter, r *http.Request) 
 		st := s.checkVoice(ctx)
 		cancel()
 		s.setVoiceStatus(st)
+		st.Error = tr(w, st.Error)
 		out["status"] = st
 	}
 	writeJSON(w, http.StatusOK, out)

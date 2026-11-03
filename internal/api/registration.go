@@ -12,6 +12,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/mindsift-app/mindsift/internal/auth"
 	"github.com/mindsift-app/mindsift/internal/domain"
+	"github.com/mindsift-app/mindsift/internal/i18n"
 	"github.com/mindsift-app/mindsift/internal/storage"
 )
 
@@ -96,14 +97,16 @@ func (s *Server) sendVerificationMail(user *domain.User) {
 		return
 	}
 	link := strings.TrimRight(s.cfg.BaseURL, "/") + "/?verifyToken=" + url.QueryEscape(raw)
-	err = s.sendMailContent(user.Email, "MindSift: Bitte bestätige deine E-Mail-Adresse", mailContent{
-		Preheader: "Ein Klick, dann ist dein Konto bereit",
-		Greeting:  mailGreeting(time.Now(), user.DisplayName),
-		Intro:     "Du hast dich bei MindSift registriert. Bitte bestätige noch deine E-Mail-Adresse.",
-		Button:    &mailButton{Label: "E-Mail-Adresse bestätigen", URL: link},
-		Note: "Der Link gilt 48 Stunden. Hast du dich nicht registriert, ignoriere diese E-Mail – das Konto wird dann automatisch gelöscht.\n" +
-			"Falls der Knopf nicht geht: " + link,
-		Footer: mailFooterAccount,
+	lang := s.userLanguage(user.ID)
+	err = s.sendMailContent(user.Email, i18n.T(lang, "MindSift: Bitte bestätige deine E-Mail-Adresse"), mailContent{
+		Lang:      lang,
+		Preheader: i18n.T(lang, "Ein Klick, dann ist dein Konto bereit"),
+		Greeting:  mailGreeting(lang, time.Now(), user.DisplayName),
+		Intro:     i18n.T(lang, "Du hast dich bei MindSift registriert. Bitte bestätige noch deine E-Mail-Adresse."),
+		Button:    &mailButton{Label: i18n.T(lang, "E-Mail-Adresse bestätigen"), URL: link},
+		Note: i18n.T(lang, "Der Link gilt 48 Stunden. Hast du dich nicht registriert, ignoriere diese E-Mail – das Konto wird dann automatisch gelöscht.") + "\n" +
+			i18n.T(lang, "Falls der Knopf nicht geht: {link}", "link", link),
+		Footer: mailFooterAccount(lang),
 	})
 	if err != nil {
 		slog.Warn("Bestätigungs-E-Mail nicht verschickt", "user_id", user.ID, "error", err)
@@ -204,18 +207,20 @@ func (s *Server) notifyAdminsOfRegistration(user *domain.User) {
 		if a.Role != "admin" || !a.IsActive || a.Email == "" {
 			continue
 		}
+		lang := s.userLanguage(a.ID)
 		c := mailContent{
-			Preheader: user.DisplayName + " wartet auf Freigabe",
-			Greeting:  mailGreeting(time.Now(), a.DisplayName),
-			Intro:     "Jemand hat sich bei MindSift registriert und wartet auf deine Freigabe:",
+			Lang:      lang,
+			Preheader: i18n.T(lang, "{name} wartet auf Freigabe", "name", user.DisplayName),
+			Greeting:  mailGreeting(lang, time.Now(), a.DisplayName),
+			Intro:     i18n.T(lang, "Jemand hat sich bei MindSift registriert und wartet auf deine Freigabe:"),
 			Sections:  []mailSection{{Items: []mailItem{{Title: user.DisplayName, Meta: user.Email}}}},
-			Outro:     "Freigeben oder ablehnen kannst du in den Administrator-Einstellungen unter „Benutzer & Einladungen“.",
-			Footer:    "Du bekommst diese E-Mail als Administrator dieser MindSift-Instanz.",
+			Outro:     i18n.T(lang, "Freigeben oder ablehnen kannst du in den Administrator-Einstellungen unter „Benutzer & Einladungen“."),
+			Footer:    i18n.T(lang, "Du bekommst diese E-Mail als Administrator dieser MindSift-Instanz."),
 		}
 		if link := s.notifyLink(); link != "" {
-			c.Button = &mailButton{Label: "Benutzerverwaltung öffnen", URL: link}
+			c.Button = &mailButton{Label: i18n.T(lang, "Benutzerverwaltung öffnen"), URL: link}
 		}
-		if err := s.sendMailContent(a.Email, "MindSift: Neue Registrierung wartet auf Freigabe", c); err != nil {
+		if err := s.sendMailContent(a.Email, i18n.T(lang, "MindSift: Neue Registrierung wartet auf Freigabe"), c); err != nil {
 			slog.Warn("Hinweis auf neue Registrierung nicht verschickt", "admin", a.ID, "error", err)
 		}
 	}
@@ -241,13 +246,15 @@ func (s *Server) handleAdminApproveUser(w http.ResponseWriter, r *http.Request) 
 	user.IsActive = true
 	s.store.ClearEmailVerification(userID) // the admin vouches for the account
 	link := s.appLink(r)
+	lang := s.userLanguage(user.ID)
 	go func() {
-		_ = s.sendMailContent(user.Email, "MindSift: Dein Konto ist freigeschaltet", mailContent{
-			Preheader: "Du kannst dich jetzt anmelden",
-			Greeting:  mailGreeting(time.Now(), user.DisplayName),
-			Intro:     "Dein MindSift-Konto ist freigeschaltet. Du kannst dich jetzt mit deiner E-Mail-Adresse und deinem Passwort anmelden.",
-			Button:    &mailButton{Label: "Zu MindSift", URL: link},
-			Footer:    mailFooterAccount,
+		_ = s.sendMailContent(user.Email, i18n.T(lang, "MindSift: Dein Konto ist freigeschaltet"), mailContent{
+			Lang:      lang,
+			Preheader: i18n.T(lang, "Du kannst dich jetzt anmelden"),
+			Greeting:  mailGreeting(lang, time.Now(), user.DisplayName),
+			Intro:     i18n.T(lang, "Dein MindSift-Konto ist freigeschaltet. Du kannst dich jetzt mit deiner E-Mail-Adresse und deinem Passwort anmelden."),
+			Button:    &mailButton{Label: i18n.T(lang, "Zu MindSift"), URL: link},
+			Footer:    mailFooterAccount(lang),
 		})
 	}()
 	writeJSON(w, http.StatusOK, user)
@@ -287,25 +294,27 @@ func (s *Server) handleAdminSendInvite(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	inviter := "Jemand"
-	if me, _ := s.store.GetUserByID(auth.GetUserID(r.Context())); me != nil && me.DisplayName != "" {
-		inviter = me.DisplayName
-	}
+	// The invited person has no language yet: the mail is in the language of the one inviting
+	lang := s.requestLanguage(r)
+	inviter := s.actorName(lang, auth.GetUserID(r.Context()))
 	link := s.appLink(r) + "?invite=" + url.QueryEscape(inv.Code)
 	until := inv.ExpiresAt
 	if t, err := time.Parse(time.RFC3339, inv.ExpiresAt); err == nil {
-		until = t.Local().Format("02.01.2006")
+		until = i18n.ShortDate(lang, t.Local())
 	}
-	err = s.sendMailContent(email, inviter+" lädt dich zu MindSift ein", mailContent{
-		Preheader: inviter + " lädt dich zu MindSift ein",
-		Greeting:  "Hallo",
-		Intro:     inviter + " lädt dich zu MindSift ein – Gedanken abladen, Aufgaben, Notizen und gemeinsame Listen an einem Ort.",
-		Button:    &mailButton{Label: "Konto anlegen", URL: link},
-		Note:      "Die Einladung gilt bis " + until + ". Falls der Knopf nicht geht: " + link + "\nEinladungscode: " + inv.Code,
-		Footer:    "Du bekommst diese E-Mail, weil dich jemand zu MindSift eingeladen hat.",
+	invites := i18n.T(lang, "{name} lädt dich zu MindSift ein", "name", inviter)
+	err = s.sendMailContent(email, invites, mailContent{
+		Lang:      lang,
+		Preheader: invites,
+		Greeting:  mailGreeting(lang, time.Now(), ""),
+		Intro:     i18n.T(lang, "{name} lädt dich zu MindSift ein – Gedanken abladen, Aufgaben, Notizen und gemeinsame Listen an einem Ort.", "name", inviter),
+		Button:    &mailButton{Label: i18n.T(lang, "Konto anlegen"), URL: link},
+		Note: i18n.T(lang, "Die Einladung gilt bis {date}.", "date", until) + " " + i18n.T(lang, "Falls der Knopf nicht geht: {link}", "link", link) + "\n" +
+			i18n.T(lang, "Einladungscode: {code}", "code", inv.Code),
+		Footer: i18n.T(lang, "Du bekommst diese E-Mail, weil dich jemand zu MindSift eingeladen hat."),
 	})
 	if err != nil {
-		writeError(w, http.StatusBadGateway, "E-Mail-Versand fehlgeschlagen: "+err.Error())
+		writeError(w, http.StatusBadGateway, tr(w, "E-Mail-Versand fehlgeschlagen")+": "+trErr(w, err))
 		return
 	}
 	writeJSON(w, http.StatusOK, inv)

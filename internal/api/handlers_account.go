@@ -86,7 +86,7 @@ func (s *Server) runImport(w http.ResponseWriter, r *http.Request, plan *storage
 	sections := storage.NormalizeSections(strings.Split(r.URL.Query().Get("sections"), ","))
 	plan = plan.Only(sections)
 	if r.URL.Query().Get("preview") == "1" {
-		writeJSON(w, http.StatusOK, plan.Summary(false))
+		writeJSON(w, http.StatusOK, trSummary(w, plan.Summary(false)))
 		return
 	}
 	s.applyImport(w, auth.GetUserID(r.Context()), plan, sections, r.URL.Query().Get("mode") == "restore" && strings.HasSuffix(r.URL.Path, "/mindsift"))
@@ -107,7 +107,15 @@ func (s *Server) applyImport(w http.ResponseWriter, userID string, plan *storage
 		writeError(w, http.StatusInternalServerError, "Import abgebrochen: "+err.Error())
 		return
 	}
-	writeJSON(w, http.StatusOK, sum)
+	writeJSON(w, http.StatusOK, trSummary(w, sum))
+}
+
+// trSummary translates why files of an import were skipped ("Theme: …" part by part).
+func trSummary(w http.ResponseWriter, sum storage.ImportSummary) storage.ImportSummary {
+	for i := range sum.Skipped {
+		sum.Skipped[i].Reason = tr(w, sum.Skipped[i].Reason)
+	}
+	return sum
 }
 
 // handleImportMindSift restores MindSift's own data: the JSON backup or the Markdown archive (ZIP).

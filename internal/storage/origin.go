@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"database/sql"
 	"strings"
 
 	"github.com/mindsift-app/mindsift/internal/domain"
@@ -45,13 +46,17 @@ func (s *Store) migrateOrigin() error {
 func originColumns(prefix string) string {
 	keyName := func(col string) string {
 		return `CASE WHEN ` + prefix + col + ` = '' THEN '' ELSE COALESCE((SELECT k.name FROM api_keys k WHERE k.id = ` +
-			prefix + col + `), 'Gelöschter Schlüssel') END`
+			prefix + col + `), NULL) END`
 	}
 	return prefix + `created_via, ` + keyName("created_key_id") + `, ` + prefix + `changed_via, ` + keyName("changed_key_id") + `, ` + prefix + `changed_at`
 }
 
-// originDest holds the scanned origin columns; result is nil for entries no key ever touched.
-type originDest struct{ createdVia, createdKey, changedVia, changedKey, changedAt string }
+// originDest holds the scanned origin columns; result is nil for entries no key ever touched. A key
+// name is NULL when the key was deleted since.
+type originDest struct {
+	createdVia, changedVia, changedAt string
+	createdKey, changedKey            sql.NullString
+}
 
 func (o *originDest) targets() []any {
 	return []any{&o.createdVia, &o.createdKey, &o.changedVia, &o.changedKey, &o.changedAt}
@@ -61,7 +66,11 @@ func (o *originDest) result() *domain.Origin {
 	if o.createdVia == "" && o.changedVia == "" {
 		return nil
 	}
-	return &domain.Origin{CreatedVia: o.createdVia, CreatedKey: o.createdKey, ChangedVia: o.changedVia, ChangedKey: o.changedKey, ChangedAt: o.changedAt}
+	return &domain.Origin{
+		CreatedVia: o.createdVia, CreatedKey: o.createdKey.String, CreatedKeyDeleted: !o.createdKey.Valid,
+		ChangedVia: o.changedVia, ChangedKey: o.changedKey.String, ChangedKeyDeleted: !o.changedKey.Valid,
+		ChangedAt: o.changedAt,
+	}
 }
 
 // RecordOrigin notes that an API key created (created) or changed an entry and returns the entry's

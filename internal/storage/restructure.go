@@ -49,7 +49,7 @@ var (
 
 // branchTitle makes a note title from a bullet's text (without hashtags) and returns the hashtags,
 // which stay next to the link in the original bullet.
-func branchTitle(content string) (string, string) {
+func branchTitle(lang, content string) (string, string) {
 	first := titlePrefixRe.ReplaceAllString(strings.SplitN(content, "\n", 2)[0], "")
 	var tags []string
 	for _, m := range titleTagRe.FindAllString(first, -1) {
@@ -61,7 +61,7 @@ func branchTitle(content string) (string, string) {
 		t = strings.TrimSpace(string(r[:119])) + "…"
 	}
 	if t == "" {
-		t = "Unbenannte Notiz"
+		t = i18n.T(lang, "Unbenannte Notiz")
 	}
 	return t, strings.Join(tags, " ")
 }
@@ -137,7 +137,7 @@ func (s *Store) ExtractBranch(userID, docID, blockID string, a collab.Actor, lea
 		return nil, "", ErrBranchLocked
 	}
 
-	base, tags := branchTitle(root.Content)
+	base, tags := branchTitle(s.MessageLanguage(userID), root.Content)
 	title := s.uniqueTitle(userID, base)
 	created, err := s.CreateDocument(userID, "", title, "🗒️", source.FolderPath, children, nil, false)
 	if err != nil {
@@ -312,10 +312,11 @@ func (s *Store) MergeDocuments(userID, sourceID, targetID string, a collab.Actor
 
 	headingID := domain.NewID("blk")
 	heading := strings.TrimSpace(source.Icon + " " + source.Title)
+	lang := s.MessageLanguage(userID)
 	if heading == "" {
-		heading = "Zusammengeführte Notiz"
+		heading = i18n.T(lang, "Zusammengeführte Notiz")
 	}
-	heading += " (" + time.Now().Format("02.01.2006") + ")"
+	heading += " (" + i18n.ShortDate(lang, time.Now()) + ")"
 
 	_, _, err = s.applyDocChange(targetID, a, leases, func(d *collab.Doc) []collab.Op {
 		// After the last top-level block, deleted ones included, so keys never collide

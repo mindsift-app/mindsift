@@ -68,11 +68,11 @@ func TestPushSubscribeKeyAndChannel(t *testing.T) {
 }
 
 func TestPushDigestText(t *testing.T) {
-	one := pushDigest("Neuigkeiten", []notifyItem{{text: "Anna hat „Einkauf“ erledigt"}}, "")
+	one := pushDigest("de", "Neuigkeiten", []notifyItem{{text: "Anna hat „Einkauf“ erledigt"}}, "")
 	if one.Body != "Anna hat „Einkauf“ erledigt" || one.URL != "/" {
 		t.Fatalf("single: %+v", one)
 	}
-	many := pushDigest("Neuigkeiten", []notifyItem{{text: "a"}, {text: "b"}, {text: "c"}, {text: "d"}, {text: "e"}, {text: "f"}}, "https://x/")
+	many := pushDigest("de", "Neuigkeiten", []notifyItem{{text: "a"}, {text: "b"}, {text: "c"}, {text: "d"}, {text: "e"}, {text: "f"}}, "https://x/")
 	if many.Title != "MindSift: Neuigkeiten" || !strings.HasSuffix(many.Body, "… und 2 weitere") {
 		t.Fatalf("many: %+v", many)
 	}

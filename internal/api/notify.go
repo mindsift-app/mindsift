@@ -7,12 +7,14 @@ import (
 	"log/slog"
 	"net/http"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/mindsift-app/mindsift/internal/auth"
 	"github.com/mindsift-app/mindsift/internal/domain"
+	"github.com/mindsift-app/mindsift/internal/i18n"
 )
 
 // Notifications besides task alarms: events go into a queue per recipient and are sent bundled, one
@@ -30,8 +32,9 @@ type notifyItem struct {
 	group, when, list string
 }
 
-// notify queues an event for the recipients that want it (settings, pause, own-change rule).
-func (s *Server) notify(kind, actorID string, recipients []string, payload map[string]string) {
+// notify queues an event for the recipients that want it (settings, pause, own-change rule). payload
+// gives the event's texts in a recipient's language.
+func (s *Server) notify(kind, actorID string, recipients []string, payload func(lang string) map[string]string) {
 	if s.cfg.DemoMode {
 		return
 	}
@@ -51,20 +54,29 @@ func (s *Server) notify(kind, actorID string, recipients []string, payload map[s
 		if !set.Channels(kind).Any() {
 			continue
 		}
-		if err := s.store.QueueNotification(uid, kind, payload); err != nil {
+		if err := s.store.QueueNotification(uid, kind, payload(s.userLanguage(uid))); err != nil {
 			slog.Warn("Benachrichtigung konnte nicht vorgemerkt werden", "user_id", uid, "error", err)
 		}
 	}
 }
 
-func (s *Server) actorName(userID string) string {
+func (s *Server) actorName(lang, userID string) string {
 	if u, err := s.store.GetUserByID(userID); err == nil && u != nil && u.DisplayName != "" {
 		return u.DisplayName
 	}
-	return "Jemand"
+	return i18n.T(lang, "Jemand")
 }
 
-// notifyShared tells the people a note, folder or list was shared with (teams: all members).
+// Texts of shared-with-you events, by what was shared
+var sharedTexts = map[string]string{
+	"note":     "{name} hat die Notiz „{title}“ mit dir geteilt",
+	"folder":   "{name} hat den Ordner „{title}“ mit dir geteilt",
+	"list":     "{name} hat die Liste „{title}“ mit dir geteilt",
+	"tasklist": "{name} hat die Aufgabenliste „{title}“ mit dir geteilt",
+}
+
+// notifyShared tells the people a note, folder or list was shared with (teams: all members). what is
+// a key of sharedTexts.
 func (s *Server) notifyShared(actorID, targetType, targetID, what, title string) {
 	var recipients []string
 	if targetType == "team" {
@@ -75,11 +87,25 @@ func (s *Server) notifyShared(actorID, targetType, targetID, what, title string)
 	} else {
 		recipients = []string{targetID}
 	}
-	s.notify("shared", actorID, recipients, map[string]string{
-		"title": title,
-		"text":  fmt.Sprintf("%s hat %s „%s“ mit dir geteilt", s.actorName(actorID), what, title),
+	s.notify("shared", actorID, recipients, func(lang string) map[string]string {
+		return map[string]string{
+			"title": title,
+			"text":  i18n.T(lang, sharedTexts[what], "name", s.actorName(lang, actorID), "title", title),
+		}
 	})
 }
+
+// Texts of changes to watched tasks
+const (
+	changeDeleted  = "{name} hat „{title}“ gelöscht"
+	changeDone     = "{name} hat „{title}“ erledigt"
+	changeReopened = "{name} hat „{title}“ wieder geöffnet"
+	changeDue      = "{name} hat die Fälligkeit von „{title}“ auf {due} geändert"
+	changeText     = "{name} hat den Text von „{title}“ geändert"
+	changePriority = "{name} hat die Priorität von „{title}“ auf {priority} geändert"
+	changeList     = "{name} hat „{title}“ in eine andere Liste verschoben"
+	changeOther    = "{name} hat „{title}“ geändert"
+)
 
 // notifyTaskChange covers watchers (any change) and list members (task completed).
 func (s *Server) notifyTaskChange(actorID string, before, after *domain.Thought, deleted bool) {
@@ -91,31 +117,37 @@ func (s *Server) notifyTaskChange(actorID string, before, after *domain.Thought,
 		return
 	}
 	title := strings.TrimSpace(strings.SplitN(t.Content, "\n", 2)[0])
-	name := s.actorName(actorID)
 	var change string
 	switch {
 	case deleted:
-		change = "gelöscht"
+		change = changeDeleted
 	case before != nil && after != nil && !before.IsCompleted && after.IsCompleted:
-		change = "erledigt"
+		change = changeDone
 	case before != nil && after != nil && before.IsCompleted && !after.IsCompleted:
-		change = "wieder geöffnet"
+		change = changeReopened
 	case before != nil && after != nil && before.DueDate != after.DueDate:
-		change = "Fälligkeit geändert auf " + domain.HumanDue(after.DueDate)
+		change = changeDue
 	case before != nil && after != nil && before.Content != after.Content:
-		change = "Text geändert"
+		change = changeText
 	case before != nil && after != nil && before.Priority != after.Priority:
-		change = "Priorität geändert auf " + after.Priority
+		change = changePriority
 	case before != nil && after != nil && before.TaskListID != after.TaskListID:
-		change = "in eine andere Liste verschoben"
+		change = changeList
 	default:
-		change = "geändert"
+		change = changeOther
 	}
-	payload := map[string]string{"title": title, "text": fmt.Sprintf("%s hat „%s“ %s", name, title, change)}
+	payload := func(lang string) map[string]string {
+		text := i18n.T(lang, change, "name", s.actorName(lang, actorID), "title", title)
+		if after != nil {
+			text = i18n.T(lang, change, "name", s.actorName(lang, actorID), "title", title,
+				"due", domain.HumanDue(lang, after.DueDate), "priority", domain.PriorityLabel(lang, after.Priority))
+		}
+		return map[string]string{"title": title, "text": text}
+	}
 	watchers := s.store.TaskWatchers(t.ID)
 	s.notify("watched", actorID, watchers, payload)
 
-	if change == "erledigt" && t.TaskListID != "" {
+	if change == changeDone && t.TaskListID != "" {
 		watching := map[string]bool{}
 		for _, w := range watchers {
 			watching[w] = true
@@ -176,7 +208,7 @@ func (s *Server) flushNotifications(now time.Time) {
 			item := notifyItem{kind: q.Kind, title: q.Payload["title"], text: q.Payload["text"]}
 			out.add(set.Channels(q.Kind), item)
 		}
-		if err := s.deliver(uid, "Neuigkeiten", out, false, now); err != nil {
+		if err := s.deliver(uid, headingNews, out, false, now); err != nil {
 			if maxAttempts+1 >= notifyMaxAttempts {
 				slog.Warn("Benachrichtigungen nach mehreren Fehlversuchen verworfen", "user_id", uid, "count", len(ids), "error", err)
 				_ = s.store.DeleteQueuedNotifications(ids)
@@ -209,6 +241,12 @@ func (c *channelItems) add(ch domain.ChannelChoice, items ...notifyItem) {
 	}
 }
 
+// Headings of bundled messages
+const (
+	headingNews    = "Neuigkeiten"
+	headingSummary = "Deine Aufgaben für heute"
+)
+
 // deliver sends the items to the user's mail address, Discord webhook and/or own webhook.
 // now is the time the run is for (greeting "Guten Morgen" follows the summary time, not the clock).
 func (s *Server) deliver(userID, heading string, out channelItems, summary bool, now time.Time) error {
@@ -217,6 +255,8 @@ func (s *Server) deliver(userID, heading string, out channelItems, summary bool,
 	if err != nil || u == nil || !u.IsActive {
 		return nil // account gone: nothing to deliver
 	}
+	lang := s.userLanguage(userID)
+	heading = i18n.T(lang, heading)
 	var firstErr error
 	if len(emailItems) > 0 {
 		to := u.AlarmEmail
@@ -227,9 +267,9 @@ func (s *Server) deliver(userID, heading string, out channelItems, summary bool,
 		if len(emailItems) == 1 {
 			subject = "MindSift: " + emailItems[0].text
 		}
-		c := s.digestMail(u.DisplayName, emailItems, now)
+		c := s.digestMail(lang, u.DisplayName, emailItems, now)
 		if summary {
-			c = s.summaryMail(u.DisplayName, emailItems, now)
+			c = s.summaryMail(lang, u.DisplayName, emailItems, now)
 		}
 		text, htmlBody := renderMail(c)
 		if err := s.sendNotifyEmail(to, subject, text, htmlBody); err != nil {
@@ -237,7 +277,7 @@ func (s *Server) deliver(userID, heading string, out channelItems, summary bool,
 		}
 	}
 	if len(discordItems) > 0 && u.DiscordWebhookURL != "" {
-		if err := s.sendNotifyDiscord(u.DiscordWebhookURL, heading, discordItems); err != nil && firstErr == nil {
+		if err := s.sendNotifyDiscord(lang, u.DiscordWebhookURL, heading, discordItems); err != nil && firstErr == nil {
 			firstErr = err
 		}
 	}
@@ -247,7 +287,7 @@ func (s *Server) deliver(userID, heading string, out channelItems, summary bool,
 		}
 	}
 	if len(out.push) > 0 {
-		if err := s.sendPush(userID, pushDigest(heading, out.push, s.notifyLink())); err != nil && firstErr == nil {
+		if err := s.sendPush(userID, pushDigest(lang, heading, out.push, s.notifyLink())); err != nil && firstErr == nil {
 			firstErr = err
 		}
 	}
@@ -262,15 +302,20 @@ func (s *Server) sendNotifyEmail(to, subject, text, htmlBody string) error {
 	return s.sendEmailHTML(to, subject, text, htmlBody)
 }
 
-func (s *Server) sendNotifyDiscord(webhookURL, heading string, items []notifyItem) error {
+func (s *Server) sendNotifyDiscord(lang, webhookURL, heading string, items []notifyItem) error {
 	if s.notifyDiscordHook != nil {
 		return s.notifyDiscordHook(webhookURL, heading, items)
 	}
-	return s.sendDiscordDigest(webhookURL, heading, items)
+	return s.sendDiscordDigest(lang, webhookURL, heading, items)
+}
+
+// moreLine: the last line of a cut list, "… und 3 weitere"
+func moreLine(lang string, n int) string {
+	return i18n.T(lang, "… und {count} weitere", "count", strconv.Itoa(n))
 }
 
 // pushDigest: one notification per bundle; a single event is its own title
-func pushDigest(heading string, items []notifyItem, link string) pushMessage {
+func pushDigest(lang, heading string, items []notifyItem, link string) pushMessage {
 	if link == "" {
 		link = "/"
 	}
@@ -280,7 +325,7 @@ func pushDigest(heading string, items []notifyItem, link string) pushMessage {
 	lines := make([]string, 0, 5)
 	for i, it := range items {
 		if i == 4 {
-			lines = append(lines, fmt.Sprintf("… und %d weitere", len(items)-4))
+			lines = append(lines, moreLine(lang, len(items)-4))
 			break
 		}
 		lines = append(lines, "• "+it.text)
@@ -334,7 +379,7 @@ func (s *Server) notifyLink() string {
 }
 
 // sendDiscordDigest posts one embed with a line per item (at most 10).
-func (s *Server) sendDiscordDigest(webhookURL, heading string, items []notifyItem) error {
+func (s *Server) sendDiscordDigest(lang, webhookURL, heading string, items []notifyItem) error {
 	if s.cfg.DemoMode {
 		return errDemoOutgoing
 	}
@@ -345,7 +390,7 @@ func (s *Server) sendDiscordDigest(webhookURL, heading string, items []notifyIte
 	lines := make([]string, 0, 11)
 	for i, it := range items {
 		if i == 10 {
-			lines = append(lines, fmt.Sprintf("… und %d weitere", len(items)-10))
+			lines = append(lines, moreLine(lang, len(items)-10))
 			break
 		}
 		lines = append(lines, "• "+it.text)
@@ -369,34 +414,35 @@ func (s *Server) sendDiscordDigest(webhookURL, heading string, items []notifyIte
 }
 
 // digestMail: what happened since the last mail (shares, completed shared tasks, watched tasks).
-func (s *Server) digestMail(name string, items []notifyItem, now time.Time) mailContent {
+func (s *Server) digestMail(lang, name string, items []notifyItem, now time.Time) mailContent {
 	entries := make([]mailItem, 0, len(items))
 	for _, it := range items {
 		entries = append(entries, mailItem{Title: it.text})
 	}
-	intro := "In MindSift ist etwas passiert, das dich betrifft:"
+	intro := i18n.T(lang, "In MindSift ist etwas passiert, das dich betrifft:")
 	if len(items) > 1 {
-		intro = "In MindSift ist seit der letzten Nachricht einiges passiert, das dich betrifft:"
+		intro = i18n.T(lang, "In MindSift ist seit der letzten Nachricht einiges passiert, das dich betrifft:")
 	}
 	c := mailContent{
+		Lang:      lang,
 		Preheader: items[0].text,
-		Greeting:  mailGreeting(now, name),
+		Greeting:  mailGreeting(lang, now, name),
 		Intro:     intro,
 		Sections:  []mailSection{{Items: entries}},
-		Footer:    mailFooterAlarms,
+		Footer:    mailFooterAlarms(lang),
 	}
 	if link := s.notifyLink(); link != "" {
-		c.Button = &mailButton{Label: "In MindSift öffnen", URL: link}
+		c.Button = &mailButton{Label: i18n.T(lang, "In MindSift öffnen"), URL: link}
 	}
 	return c
 }
 
 // summaryMail: the morning overview, grouped into overdue / today / tomorrow.
-func (s *Server) summaryMail(name string, items []notifyItem, now time.Time) mailContent {
+func (s *Server) summaryMail(lang, name string, items []notifyItem, now time.Time) mailContent {
 	groups := []struct{ key, title, tone string }{
-		{"overdue", "Überfällig", "danger"},
-		{"today", "Heute", ""},
-		{"tomorrow", "Morgen", "muted"},
+		{"overdue", i18n.T(lang, "Überfällig"), "danger"},
+		{"today", i18n.T(lang, "Heute"), ""},
+		{"tomorrow", i18n.T(lang, "Morgen"), "muted"},
 	}
 	var sections []mailSection
 	counts := map[string]int{}
@@ -428,24 +474,25 @@ func (s *Server) summaryMail(name string, items []notifyItem, now time.Time) mai
 	}
 	var parts []string
 	if n := counts["overdue"]; n > 0 {
-		parts = append(parts, fmt.Sprintf("%d überfällig", n))
+		parts = append(parts, i18n.T(lang, "{count} überfällig", "count", strconv.Itoa(n)))
 	}
 	if n := counts["today"]; n > 0 {
-		parts = append(parts, fmt.Sprintf("%d heute", n))
+		parts = append(parts, i18n.T(lang, "{count} heute", "count", strconv.Itoa(n)))
 	}
 	if n := counts["tomorrow"]; n > 0 {
-		parts = append(parts, fmt.Sprintf("%d morgen", n))
+		parts = append(parts, i18n.T(lang, "{count} morgen", "count", strconv.Itoa(n)))
 	}
 	c := mailContent{
-		Preheader: "Deine Aufgaben: " + strings.Join(parts, ", "),
-		Greeting:  mailGreeting(now, name),
-		Intro:     "Hier ist dein Überblick für heute – " + strings.Join(parts, ", ") + ".",
+		Lang:      lang,
+		Preheader: i18n.T(lang, "Deine Aufgaben: {counts}", "counts", strings.Join(parts, ", ")),
+		Greeting:  mailGreeting(lang, now, name),
+		Intro:     i18n.T(lang, "Hier ist dein Überblick für heute – {counts}.", "counts", strings.Join(parts, ", ")),
 		Sections:  sections,
 		Outro:     outro,
-		Footer:    "Du bekommst diese Zusammenfassung, weil du sie eingeschaltet hast. Uhrzeit und Kanäle stellst du in MindSift unter Kontoeinstellungen → Alarme ein.",
+		Footer:    i18n.T(lang, "Du bekommst diese Zusammenfassung, weil du sie eingeschaltet hast. Uhrzeit und Kanäle stellst du in MindSift unter Kontoeinstellungen → Alarme ein."),
 	}
 	if link := s.notifyLink(); link != "" {
-		c.Button = &mailButton{Label: "Aufgaben öffnen", URL: link}
+		c.Button = &mailButton{Label: i18n.T(lang, "Aufgaben öffnen"), URL: link}
 	}
 	return c
 }
@@ -472,7 +519,7 @@ func (s *Server) sendDailySummaries(now time.Time) {
 		}
 		var out channelItems
 		out.add(domain.ChannelChoice{Email: ds.Email, Discord: ds.Discord, Webhook: ds.Webhook, Push: ds.Push}, items...)
-		if err := s.deliver(uid, "Deine Aufgaben für heute", out, true, now); err != nil {
+		if err := s.deliver(uid, headingSummary, out, true, now); err != nil {
 			slog.Warn("Tageszusammenfassung konnte nicht verschickt werden", "user_id", uid, "error", err)
 		}
 	}
@@ -487,6 +534,7 @@ func (s *Server) summaryItems(userID string, now time.Time) []notifyItem {
 		return nil
 	}
 	sort.SliceStable(tasks, func(i, j int) bool { return tasks[i].DueDate < tasks[j].DueDate })
+	lang := s.userLanguage(userID)
 	var items []notifyItem
 	later := 0
 	for _, t := range tasks {
@@ -498,25 +546,35 @@ func (s *Server) summaryItems(userID string, now time.Time) []notifyItem {
 		if t.ListTitle != "" {
 			label += " (" + t.ListTitle + ")"
 		}
-		clock := ""
-		if len(t.DueDate) >= 16 {
-			clock = ", " + t.DueDate[11:16] + " Uhr"
+		at := ""
+		if due, hasTime, ok := domain.ParseDue(t.DueDate, now.Location()); ok && hasTime {
+			at = i18n.Clock(lang, due)
 		}
-		at := strings.TrimPrefix(clock, ", ")
+		// "Heute: …" or "Heute, 15:30 Uhr: …"
+		day := func(plain, withTime string) string {
+			if at == "" {
+				return i18n.T(lang, plain, "task", label)
+			}
+			return i18n.T(lang, withTime, "time", at, "task", label)
+		}
 		switch {
 		case d < today:
-			since := "seit " + domain.HumanDue(t.DueDate)
-			items = append(items, notifyItem{kind: "due", title: t.Title, text: "Überfällig " + since + ": " + label, group: "overdue", when: since, list: t.ListTitle})
+			since := i18n.T(lang, "seit {due}", "due", domain.HumanDue(lang, t.DueDate))
+			items = append(items, notifyItem{kind: "due", title: t.Title, text: i18n.T(lang, "Überfällig {since}: {task}", "since", since, "task", label), group: "overdue", when: since, list: t.ListTitle})
 		case d == today:
-			items = append(items, notifyItem{kind: "due", title: t.Title, text: "Heute" + clock + ": " + label, group: "today", when: at, list: t.ListTitle})
+			items = append(items, notifyItem{kind: "due", title: t.Title, text: day("Heute: {task}", "Heute, {time}: {task}"), group: "today", when: at, list: t.ListTitle})
 		case d == tomorrow:
-			items = append(items, notifyItem{kind: "due", title: t.Title, text: "Morgen" + clock + ": " + label, group: "tomorrow", when: at, list: t.ListTitle})
+			items = append(items, notifyItem{kind: "due", title: t.Title, text: day("Morgen: {task}", "Morgen, {time}: {task}"), group: "tomorrow", when: at, list: t.ListTitle})
 		default:
 			later++
 		}
 	}
 	if len(items) > 0 && later > 0 {
-		items = append(items, notifyItem{kind: "due", text: fmt.Sprintf("Außerdem %d weitere Aufgaben in den nächsten 7 Tagen", later), group: "more"})
+		more := i18n.T(lang, "Außerdem {count} weitere Aufgaben in den nächsten 7 Tagen", "count", strconv.Itoa(later))
+		if later == 1 {
+			more = i18n.T(lang, "Außerdem eine weitere Aufgabe in den nächsten 7 Tagen")
+		}
+		items = append(items, notifyItem{kind: "due", text: more, group: "more"})
 	}
 	return items
 }

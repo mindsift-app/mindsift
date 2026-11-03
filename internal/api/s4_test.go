@@ -32,7 +32,7 @@ func TestDemoSendsNothingAndKeepsAccounts(t *testing.T) {
 	if err := srv.sendCustomWebhookNotification("https://example.com/hook", "x", "x", "", "", ""); err != errDemoOutgoing {
 		t.Fatalf("webhook sender must refuse in demo, got %v", err)
 	}
-	if err := srv.sendDiscordNotification("https://discord.com/api/webhooks/1/x", "x", "", "", ""); err != errDemoOutgoing {
+	if err := srv.sendDiscordNotification("de", "https://discord.com/api/webhooks/1/x", "x", "", "", ""); err != errDemoOutgoing {
 		t.Fatalf("discord sender must refuse in demo, got %v", err)
 	}
 	if err := srv.sendMailContent("a@example.com", "x", mailContent{Intro: "x"}); err != errDemoOutgoing {

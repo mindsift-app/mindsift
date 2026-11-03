@@ -8,13 +8,25 @@ import (
 	"strings"
 
 	"github.com/mindsift-app/mindsift/internal/domain"
+	"github.com/mindsift-app/mindsift/internal/i18n"
 )
 
 // --- TASK LISTS ---
 
+// defaultColumns: the board of a new task list, named in lang
+func defaultColumns(lang string) []domain.KanbanColumn {
+	return []domain.KanbanColumn{
+		{ID: "todo", Name: i18n.T(lang, "Zu erledigen")},
+		{ID: "in_progress", Name: i18n.T(lang, "In Bearbeitung"), Color: "accent"},
+		{ID: "waiting", Name: i18n.T(lang, "Wartet auf andere"), Color: "amber"},
+		{ID: "done", Name: i18n.T(lang, "Erledigt"), IsDone: true, Color: "emerald"},
+	}
+}
+
 func (s *Store) CreateTaskList(userID, spaceID, teamID, title, icon, color string, columns ...[]domain.KanbanColumn) (*domain.TaskList, error) {
+	lang := s.MessageLanguage(userID)
 	if strings.TrimSpace(title) == "" {
-		title = "Meine Aufgaben"
+		title = i18n.T(lang, "Meine Aufgaben")
 	}
 	if icon == "" {
 		icon = "📋"
@@ -22,12 +34,7 @@ func (s *Store) CreateTaskList(userID, spaceID, teamID, title, icon, color strin
 	if color == "" {
 		color = "#2563eb"
 	}
-	cols := []domain.KanbanColumn{
-		{ID: "todo", Name: "Zu erledigen"},
-		{ID: "in_progress", Name: "In Bearbeitung", Color: "accent"},
-		{ID: "waiting", Name: "Wartet auf andere", Color: "amber"},
-		{ID: "done", Name: "Erledigt", IsDone: true, Color: "emerald"},
-	}
+	cols := defaultColumns(lang)
 	if len(columns) > 0 && len(columns[0]) > 0 {
 		cols = columns[0]
 	}
@@ -435,12 +442,7 @@ func (s *Store) GetTaskLists(userID string) ([]domain.TaskList, error) {
 		return []domain.TaskList{}, err
 	}
 
-	defaultCols := []domain.KanbanColumn{
-		{ID: "todo", Name: "Zu erledigen"},
-		{ID: "in_progress", Name: "In Bearbeitung", Color: "accent"},
-		{ID: "waiting", Name: "Wartet auf andere", Color: "amber"},
-		{ID: "done", Name: "Erledigt", IsDone: true, Color: "emerald"},
-	}
+	defaultCols := defaultColumns(s.MessageLanguage(userID))
 
 	list := make([]domain.TaskList, 0)
 	for rows.Next() {
@@ -490,12 +492,7 @@ func (s *Store) GetTaskListByID(userID, listID string) (*domain.TaskList, error)
 	tl.IsOwner = (tl.UserID == userID)
 	_ = json.Unmarshal([]byte(colsJSON), &tl.Columns)
 	if len(tl.Columns) == 0 {
-		tl.Columns = []domain.KanbanColumn{
-			{ID: "todo", Name: "Zu erledigen"},
-			{ID: "in_progress", Name: "In Bearbeitung", Color: "accent"},
-			{ID: "waiting", Name: "Wartet auf andere", Color: "amber"},
-			{ID: "done", Name: "Erledigt", IsDone: true, Color: "emerald"},
-		}
+		tl.Columns = defaultColumns(s.MessageLanguage(userID))
 	}
 	_ = s.db.QueryRow(`SELECT COUNT(*) FROM thoughts WHERE task_list_id = ? AND is_completed = 0 AND (status = 'kept' OR (status = 'converted' AND converted_type = 'task'))`, tl.ID).Scan(&tl.TasksCount)
 	_ = s.db.QueryRow(`SELECT display_name FROM users WHERE id = ?`, tl.UserID).Scan(&tl.OwnerName)

@@ -21,19 +21,24 @@ const formatWhen = (iso?: string) => {
   return formatDateTime(d, { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 };
 
+// keyName: the key's name, or a hint when the key was deleted since
+const keyName = (name?: string, deleted?: boolean): string => (deleted ? i18n.t('common:origin.deletedKey') : name || '');
+
 // originDetails: who created and who last changed the entry, as one line for tooltip and detail view
 export const originDetails = (origin: Origin | undefined, createdAt?: string): string => {
   if (!origin || (!origin.createdVia && !origin.changedVia)) return '';
   const parts: string[] = [];
   const created = formatWhen(createdAt);
   if (origin.createdVia) {
-    const key = origin.createdKey ? ` (${origin.createdKey})` : '';
+    const name = keyName(origin.createdKey, origin.createdKeyDeleted);
+    const key = name ? ` (${name})` : '';
     parts.push(i18n.t(created ? 'common:origin.createdViaAt' : 'common:origin.createdVia', { via: VIA_LABEL[origin.createdVia], key, when: created }));
   } else {
     parts.push(i18n.t(created ? 'common:origin.createdInAppAt' : 'common:origin.createdInApp', { when: created }));
   }
   if (origin.changedVia) {
-    const key = origin.changedKey ? ` (${origin.changedKey})` : '';
+    const name = keyName(origin.changedKey, origin.changedKeyDeleted);
+    const key = name ? ` (${name})` : '';
     const when = formatWhen(origin.changedAt);
     parts.push(i18n.t(when ? 'common:origin.changedViaAt' : 'common:origin.changedVia', { via: VIA_LABEL[origin.changedVia], key, when }));
   }
@@ -64,7 +69,7 @@ export const OriginBadge: React.FC<OriginBadgeProps> = ({ origin, createdAt, siz
 
   const via = origin?.createdVia || origin?.changedVia;
   if (!origin || !via) return null;
-  const key = origin.createdVia ? origin.createdKey : origin.changedKey;
+  const key = origin.createdVia ? keyName(origin.createdKey, origin.createdKeyDeleted) : keyName(origin.changedKey, origin.changedKeyDeleted);
   const label = key || VIA_LABEL[via];
   const details = originDetails(origin, createdAt);
   const Icon = via === 'mcp' ? Bot : Webhook;
