@@ -8,6 +8,9 @@ import de from '../locales/de';
 export const LANGUAGES = [
   { id: 'de', name: 'Deutsch', locale: 'de-DE' },
   { id: 'en', name: 'English', locale: 'en-US' },
+  { id: 'es', name: 'Español', locale: 'es-ES' },
+  { id: 'fr', name: 'Français', locale: 'fr-FR' },
+  { id: 'it', name: 'Italiano', locale: 'it-IT' },
 ] as const;
 export type Language = (typeof LANGUAGES)[number]['id'];
 // German is the language of the source texts: whatever is missing elsewhere shows in German
@@ -16,6 +19,9 @@ export const FALLBACK_LANGUAGE: Language = 'de';
 export const resources = { de };
 const loaders: Record<Exclude<Language, 'de'>, () => Promise<{ default: Record<string, object> }>> = {
   en: () => import('../locales/en'),
+  es: () => import('../locales/es'),
+  fr: () => import('../locales/fr'),
+  it: () => import('../locales/it'),
 };
 
 void i18n.use(initReactI18next).init({

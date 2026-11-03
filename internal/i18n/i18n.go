@@ -12,7 +12,7 @@ const Fallback = "de"
 
 // Supported lists the languages with complete texts, in the order the app offers them. Keep it in step
 // with LANGUAGES in frontend/src/i18n/index.ts.
-var Supported = []string{"de", "en"}
+var Supported = []string{"de", "en", "es", "fr", "it"}
 
 // Valid reports whether lang is a supported language code.
 func Valid(lang string) bool {

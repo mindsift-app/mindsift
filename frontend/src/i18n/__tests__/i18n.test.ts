@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { LANGUAGES, resolveLanguage, resources } from '..';
 import en from '../../locales/en';
+import es from '../../locales/es';
+import fr from '../../locales/fr';
+import itLocale from '../../locales/it';
 
 // Every language's texts, loaded directly (the app loads all but German on demand)
-const ALL: Record<string, unknown> = { de: resources.de, en };
+const ALL: Record<string, unknown> = { de: resources.de, en, es, fr, it: itLocale };
 
 // All keys of a namespace as "a.b.c", so languages can be compared
 function keysOf(obj: unknown, prefix = ''): string[] {
@@ -83,8 +86,9 @@ describe('resolveLanguage', () => {
   });
 
   it('falls back to the browser, then the server default, then German', () => {
-    expect(resolveLanguage('', 'de', ['fr-FR', 'de-AT'])).toBe('de');
-    expect(resolveLanguage(undefined, 'de', ['fr-FR'])).toBe('de');
+    expect(resolveLanguage('', 'de', ['it-IT'])).toBe('it');
+    expect(resolveLanguage('', 'de', ['nl-NL', 'de-AT'])).toBe('de');
+    expect(resolveLanguage(undefined, 'de', ['nl-NL'])).toBe('de');
     expect(resolveLanguage('xx', 'yy', [])).toBe('de');
   });
 });

@@ -3,7 +3,7 @@ package i18n
 import "testing"
 
 func TestNormalize(t *testing.T) {
-	for tag, want := range map[string]string{"de": "de", "de-AT": "de", " DE_ch ": "de", "fr": "", "": ""} {
+	for tag, want := range map[string]string{"de": "de", "de-AT": "de", " DE_ch ": "de", "xx": "", "": ""} {
 		if got := Normalize(tag); got != want {
 			t.Errorf("Normalize(%q) = %q, want %q", tag, got, want)
 		}
