@@ -252,7 +252,7 @@ export function DesktopHeaderBar({
           title={t('header.openUserMenu')}
         >
           <UserAvatar user={user} size="sm" />
-          {/* Wide enough for the longest status ("eingeschränkt"), so switching status moves nothing */}
+          {/* Wide enough for the longest status (German "eingeschränkt"), so switching status moves nothing */}
           <span className="flex flex-col items-start leading-tight min-w-[5.5rem]">
             <span className="max-w-[130px] truncate hidden sm:inline text-main font-medium">
               {user.displayName}

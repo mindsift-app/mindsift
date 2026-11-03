@@ -23,23 +23,23 @@ type migration struct {
 }
 
 var migrations = []migration{
-	{3, "Basis-Schema v0.4.1", (*Store).migrateBaseline},
-	{4, "Sitzungen", (*Store).migrateSessions},
-	{5, "Medien", (*Store).migrateMedia},
-	{6, "Link-Vorschauen", (*Store).migrateLinkPreviews},
-	{7, "Benachrichtigungen", (*Store).migrateNotifications},
+	{3, "Base schema v0.4.1", (*Store).migrateBaseline},
+	{4, "Sessions", (*Store).migrateSessions},
+	{5, "Media", (*Store).migrateMedia},
+	{6, "Link previews", (*Store).migrateLinkPreviews},
+	{7, "Notifications", (*Store).migrateNotifications},
 	{8, "Journal", (*Store).migrateJournal},
 	{9, "Web-Push", (*Store).migratePush},
-	{10, "Registrierung und Einladungslinks", (*Store).migrateRegistration},
-	{11, "E-Mail-Bestätigung", (*Store).migrateEmailVerification},
-	{12, "Markierung für Einträge von KI-Agenten", (*Store).migrateAgentMark},
-	{13, "Herkunft von Einträgen (API-Schlüssel)", (*Store).migrateOrigin},
-	{14, "Erledigte Aufgaben aufräumen", (*Store).migrateDoneCleanup},
-	{15, "Spracheingabe pro Person", (*Store).migrateVoiceInput},
-	{16, "Aufbewahrung und Papierkorb für Aufgaben", (*Store).migrateRetention},
-	{17, "OAuth für den MCP-Zugang", (*Store).migrateOAuth},
-	{18, "Ordner im Papierkorb", (*Store).migrateFolderTrash},
-	{19, "Sprache pro Person", (*Store).migrateLanguage},
+	{10, "Registration and invite links", (*Store).migrateRegistration},
+	{11, "Email confirmation", (*Store).migrateEmailVerification},
+	{12, "Marker for entries from AI agents", (*Store).migrateAgentMark},
+	{13, "Origin of entries (API keys)", (*Store).migrateOrigin},
+	{14, "Clean up completed tasks", (*Store).migrateDoneCleanup},
+	{15, "Voice input per person", (*Store).migrateVoiceInput},
+	{16, "Retention and trash for tasks", (*Store).migrateRetention},
+	{17, "OAuth for MCP access", (*Store).migrateOAuth},
+	{18, "Folders in the trash", (*Store).migrateFolderTrash},
+	{19, "Language per person", (*Store).migrateLanguage},
 }
 
 func (s *Store) migrate() error {
@@ -69,7 +69,7 @@ func (s *Store) migrate() error {
 		if applied[m.id] {
 			continue
 		}
-		slog.Info("Datenbank-Migration", "id", m.id, "name", m.name)
+		slog.Info("Database migration", "id", m.id, "name", m.name)
 		if err := m.run(s); err != nil {
 			return fmt.Errorf("Migration %d (%s): %w", m.id, m.name, err)
 		}

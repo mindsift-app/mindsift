@@ -24,13 +24,13 @@ cleanup() {
 }
 trap cleanup EXIT
 
-echo "Baue Image …"
+echo "Building the image …"
 "$ENGINE" build -q -t "$IMAGE" "$ROOT" >/dev/null
 "$ENGINE" run -d --name "$NAME" --network host -e PORT="$PORT" -e MINDA_DEMO=true -e DEFAULT_LANGUAGE=de \
   -e JWT_SECRET=e2e-only-secret -v "$WORK":/data:Z "$IMAGE" >/dev/null
 for _ in $(seq 1 60); do curl -s -m 1 "http://localhost:$PORT/api/v1/health" >/dev/null && break; sleep 0.5; done
 
-echo "Starte Browser-Tests (Port $PORT) …"
+echo "Starting the browser tests (port $PORT) …"
 "$ENGINE" run --rm --network host -e MINDSIFT_URL="http://localhost:$PORT" -v "$ROOT/e2e":/e2e:Z -w /e2e \
   mcr.microsoft.com/playwright:v1.48.2-jammy \
   sh -c 'npm install --no-audit --no-fund >/dev/null 2>&1 && node collab.e2e.mjs && node share.e2e.mjs && node lock.e2e.mjs && node channels.e2e.mjs'

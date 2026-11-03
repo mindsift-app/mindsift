@@ -16,7 +16,7 @@ interface TrashViewProps {
 
 // Deleted notes and folders: open a note read-only, restore, or delete for good. A folder is one entry
 // with its notes and comes back as a whole. Deleting for good always takes a second tap on the same
-// button ("Wirklich löschen?"), which works the same with mouse and touch.
+// button ("Really delete?"), which works the same with mouse and touch.
 export const TrashView: React.FC<TrashViewProps> = ({ items, onOpen, onRestore, onPurge, onEmpty, onBackMobile }) => {
   const { t } = useTranslation('workspace');
   const [confirmId, setConfirmId] = useState<string | null>(null);

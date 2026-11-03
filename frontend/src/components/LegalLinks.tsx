@@ -11,7 +11,7 @@ type LegalType = 'imprint' | 'privacy';
 interface LegalLinksProps {
   legal?: AuthStatus['legal'];
   className?: string;
-  children?: React.ReactNode; // further footer links, e.g. "Über MindSift"
+  children?: React.ReactNode; // further footer links, e.g. "About MindSift"
 }
 
 // Impressum / Datenschutz links: an external URL opens in a new tab, Markdown in a reading modal.

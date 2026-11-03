@@ -70,17 +70,17 @@ const main = async () => {
   const browser = await chromium.launch();
   const A = await openDoc(browser, admin, TITLE);
   const B = await openDoc(browser, user, TITLE);
-  check((await editorValues(A.page)).includes('Erster Punkt'), 'Admin sieht die Notiz');
-  check((await editorValues(B.page)).includes('Erster Punkt'), 'Bearbeiter sieht die Notiz');
+  check((await editorValues(A.page)).includes('Erster Punkt'), 'Admin sees the note');
+  check((await editorValues(B.page)).includes('Erster Punkt'), 'Editor sees the note');
 
   // 1. Admin types at the end of the first bullet
   await A.page.getByText('Erster Punkt', { exact: true }).first().click();
   await A.page.keyboard.press('End');
   await A.page.keyboard.type(' + A');
   const saved = await waitFor(async () => (await serverBlocks(admin, doc.id)).includes('Erster Punkt + A'), 5000);
-  check(!!saved, 'Getippter Text liegt auf dem Server');
+  check(!!saved, 'Typed text is on the server');
   const seenByB = await waitFor(async () => (await editorValues(B.page)).includes('Erster Punkt + A'), 8000);
-  check(!!seenByB, 'Bearbeiter sieht die Änderung ohne Neuladen');
+  check(!!seenByB, 'Editor sees the change without reloading');
 
   // 2. Admin creates a new bullet with Enter
   await A.page.keyboard.press('Enter');
@@ -104,11 +104,11 @@ const main = async () => {
   await A.page.keyboard.press('End');
   await A.page.keyboard.type(' offline');
   await sleep(1500);
-  check(!(await serverBlocks(admin, doc.id)).includes('Erster Punkt + A offline'), 'Offline getippt: noch nicht auf dem Server');
+  check(!(await serverBlocks(admin, doc.id)).includes('Erster Punkt + A offline'), 'Typed offline: not on the server yet');
   await A.ctx.setOffline(false);
   await A.page.evaluate(() => window.dispatchEvent(new Event('online')));
   const afterOnline = await waitFor(async () => (await serverBlocks(admin, doc.id)).includes('Erster Punkt + A offline'), 8000);
-  check(!!afterOnline, 'Nach Rückkehr online wird der Offline-Text übertragen');
+  check(!!afterOnline, 'Back online, the offline text is sent');
 
   // 5. Both converge and a reload shows the same state
   await sleep(4000);
@@ -116,7 +116,7 @@ const main = async () => {
   const a = await editorValues(A.page);
   const b = await editorValues(B.page);
   check(JSON.stringify(a) === JSON.stringify(b), `Beide Browser zeigen dasselbe: ${JSON.stringify(a)}`);
-  check(final.every((c) => a.includes(c)), `Server-Stand ist sichtbar: ${JSON.stringify(final)}`);
+  check(final.every((c) => a.includes(c)), `Server state is visible: ${JSON.stringify(final)}`);
   await A.page.reload();
   await A.page.getByRole('button', { name: /Workspace/ }).first().click();
   await A.page.getByText(TITLE, { exact: true }).first().click();
@@ -124,7 +124,7 @@ const main = async () => {
     const v = await editorValues(A.page);
     return JSON.stringify(v) === JSON.stringify(a) ? v : null;
   }, 8000);
-  check(!!reloaded, 'Nach Neuladen ist alles noch da');
+  check(!!reloaded, 'Everything is still there after reloading');
 
   // 6. Structure: indent with Tab, merge with Backspace, both survive a reload. B leaves first, so none of
   // its block leases are active (with B's cursor in a block the server rightly rejects moving it).
@@ -134,7 +134,7 @@ const main = async () => {
     const probe = await api(admin, 'POST', `/api/v1/docs/${doc.id}/sync`, { clientId: 'probe', lastSeq: 0 });
     return probe.leases.others.length === 0;
   }, 25000);
-  check(!!freed, 'Sperren eines geschlossenen Browsers laufen nach spätestens 20 s ab');
+  check(!!freed, 'Locks of a closed browser expire after 20 s at most');
   await sleep(3500); // the admin's browser learns about it with its next sync (every 3 s in shared notes)
   await A.page.getByText('Von B', { exact: true }).first().click();
   await A.page.keyboard.press('Home');
@@ -142,12 +142,12 @@ const main = async () => {
   await sleep(1500);
   const legacy = await api(admin, 'GET', `/api/v1/documents/${doc.id}`);
   const vonB = legacy.blocks.find((b) => b.content === 'Von B');
-  check(vonB && vonB.level === 1, `Tab rückt ein (Ebene ${vonB?.level})`);
+  check(vonB && vonB.level === 1, `Tab indents (level ${vonB?.level})`);
   await A.page.getByText('Zweiter von A', { exact: true }).first().click();
   await A.page.keyboard.press('Home');
   await A.page.keyboard.press('Backspace');
   const merged = await waitFor(async () => (await serverBlocks(admin, doc.id)).includes('Erster Punkt + A offlineZweiter von A'), 5000);
-  check(!!merged, 'Backspace am Zeilenanfang führt mit dem Bullet darüber zusammen');
+  check(!!merged, 'Backspace at the start of a line merges with the bullet above');
   await A.page.reload();
   await A.page.getByRole('button', { name: /Workspace/ }).first().click();
   await A.page.getByText(TITLE, { exact: true }).first().click();
@@ -161,14 +161,14 @@ const main = async () => {
     const v = await editorValues(B2.page);
     return v.includes('Erster Punkt + A offlineZweiter von A') && !v.includes('Zweiter von A') ? v : null;
   }, 8000);
-  check(!!bSees, `Bearbeiter sieht nach erneutem Öffnen denselben Stand: ${JSON.stringify(bSees)}`);
+  check(!!bSees, `Editor sees the same state after opening again: ${JSON.stringify(bSees)}`);
 
   const log = await api(admin, 'POST', `/api/v1/docs/${doc.id}/sync`, { clientId: 'e2e-check', lastSeq: 0 });
   const conflicts = log.ops.filter((e) => e.effect.kind === 'insert' && e.effect.props?.conflictOf).length;
-  console.log(`Log: ${log.headSeq} Einträge, ${conflicts} Konfliktkopien`);
+  console.log(`Log: ${log.headSeq} entries, ${conflicts} conflict copies`);
 
   await browser.close();
-  console.log(failures ? `${failures} FEHLGESCHLAGEN` : 'ALLE PRÜFUNGEN BESTANDEN');
+  console.log(failures ? `${failures} FAILED` : 'ALL CHECKS PASSED');
   process.exit(failures ? 1 : 0);
 };
 

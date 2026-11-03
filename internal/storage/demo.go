@@ -22,7 +22,7 @@ func (s *Store) ResetAndSeedDemo() error {
 		_, _ = s.db.Exec(`INSERT OR IGNORE INTO sessions (id, user_id, created_at, last_used_at, user_agent, ip) VALUES (?, ?, ?, ?, ?, ?)`,
 			k.id, k.userID, k.created, k.lastUsed, k.agent, k.ip)
 	}
-	slog.Info("🧹 Demo-Modus: Datenbank für Testumgebung zurückgesetzt und neu befüllt")
+	slog.Info("🧹 Demo mode: database reset and filled with sample data")
 	return nil
 }
 

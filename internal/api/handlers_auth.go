@@ -283,7 +283,7 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 
 	if validInvite != nil {
 		if err := s.store.FinishUserInvite(validInvite.ID, claim, user.ID); err != nil {
-			slog.Error("Einladungscode konnte nicht als benutzt markiert werden", "invite", validInvite.ID, "error", err)
+			slog.Error("Marking the invite code as used failed", "invite", validInvite.ID, "error", err)
 		}
 		if validInvite.OrganizationID != "" {
 			_ = s.store.SetUserOrganization(user.ID, validInvite.OrganizationID)
@@ -315,7 +315,7 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 		} else {
 			go s.notifyAdminsOfRegistration(user)
 		}
-		slog.Info("Registrierung wartet", "user_id", user.ID, "email", user.Email, "approval", pending, "verify", verify)
+		slog.Info("Registration waiting", "user_id", user.ID, "email", user.Email, "approval", pending, "verify", verify)
 		writeJSON(w, http.StatusAccepted, map[string]interface{}{
 			"pending": true,
 			"verify":  verify,
@@ -369,19 +369,19 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 	}
 	ip := clientIPFrom(r)
 	if wait := s.loginGuard.lockedFor(account, ip); wait > 0 {
-		slog.Warn("Login gesperrt nach Fehlversuchen", "login", identifier, "remote_addr", r.RemoteAddr, "wait", wait.Round(time.Second))
+		slog.Warn("Sign-in locked after failed attempts", "login", identifier, "remote_addr", r.RemoteAddr, "wait", wait.Round(time.Second))
 		writeLoginLocked(w, wait)
 		return
 	}
 	if err != nil {
 		s.loginGuard.recordFailure(account, ip)
-		slog.Warn("Login fehlgeschlagen: Benutzer existiert nicht", "login", identifier, "remote_addr", r.RemoteAddr)
+		slog.Warn("Sign-in failed: user does not exist", "login", identifier, "remote_addr", r.RemoteAddr)
 		writeError(w, http.StatusUnauthorized, "Benutzername/E-Mail oder Passwort ungültig")
 		return
 	}
 	if !auth.CheckPassword(req.Password, user.PasswordHash) {
 		s.loginGuard.recordFailure(account, ip)
-		slog.Warn("Login fehlgeschlagen: Falsches Passwort", "login", identifier, "user_id", user.ID, "display_name", user.DisplayName, "remote_addr", r.RemoteAddr)
+		slog.Warn("Sign-in failed: wrong password", "login", identifier, "user_id", user.ID, "display_name", user.DisplayName, "remote_addr", r.RemoteAddr)
 		writeError(w, http.StatusUnauthorized, "Benutzername/E-Mail oder Passwort ungültig")
 		return
 	}
@@ -395,19 +395,19 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !user.IsActive {
-		slog.Warn("Login verweigert: Benutzerkonto ist deaktiviert", "login", identifier, "user_id", user.ID, "display_name", user.DisplayName, "remote_addr", r.RemoteAddr)
+		slog.Warn("Sign-in refused: user account is disabled", "login", identifier, "user_id", user.ID, "display_name", user.DisplayName, "remote_addr", r.RemoteAddr)
 		writeError(w, http.StatusForbidden, "Dieses Benutzerkonto ist deaktiviert")
 		return
 	}
 
 	token, err := s.startSession(r, user)
 	if err != nil {
-		slog.Error("Login-Token konnte nicht erstellt werden", "login", identifier, "user_id", user.ID, "error", err)
+		slog.Error("Creating the sign-in token failed", "login", identifier, "user_id", user.ID, "error", err)
 		writeError(w, http.StatusInternalServerError, "Token konnte nicht erstellt werden")
 		return
 	}
 
-	slog.Info("Login erfolgreich", "login", identifier, "user_id", user.ID, "display_name", user.DisplayName, "role", user.Role, "remote_addr", r.RemoteAddr)
+	slog.Info("Sign-in successful", "login", identifier, "user_id", user.ID, "display_name", user.DisplayName, "role", user.Role, "remote_addr", r.RemoteAddr)
 
 	writeJSON(w, http.StatusOK, map[string]interface{}{
 		"token": token,
@@ -433,7 +433,7 @@ func (s *Server) handleMe(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]interface{}{
 		"user":  user,
 		"stats": stats,
-		// The settings disable "Konto löschen" for the last administrator
+		// The settings disable "Delete account" for the last administrator
 		"isLastAdmin": s.store.IsLastAdmin(userID),
 	})
 }
@@ -458,7 +458,7 @@ func (s *Server) handlePurgeOwnData(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	slog.Info("Benutzer hat alle eigenen Daten gelöscht", "user_id", user.ID)
+	slog.Info("User deleted all their own data", "user_id", user.ID)
 	writeJSON(w, http.StatusOK, map[string]bool{"deleted": true})
 }
 
@@ -477,7 +477,7 @@ func (s *Server) handleDeleteOwnAccount(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	s.removeUserBackups(user.ID)
-	slog.Info("Benutzer hat sein Konto gelöscht", "user_id", user.ID)
+	slog.Info("User deleted their account", "user_id", user.ID)
 	writeJSON(w, http.StatusOK, map[string]bool{"deleted": true})
 }
 

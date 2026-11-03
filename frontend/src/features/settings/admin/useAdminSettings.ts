@@ -228,7 +228,7 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
     try {
       const updated = await api.adminApproveUser(u.id);
       setUsers((prev) => prev.map((item) => (item.id === u.id ? { ...updated, pendingApproval: false } : item)));
-      setStatusMsg({ type: 'ok', text: `${u.displayName} ist freigeschaltet.` });
+      setStatusMsg({ type: 'ok', text: i18n.t('settings:admin.userApproved', { name: u.displayName }) });
     } catch (err: any) {
       setStatusMsg({ type: 'err', text: err.message });
     }

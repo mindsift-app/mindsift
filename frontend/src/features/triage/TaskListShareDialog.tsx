@@ -45,7 +45,7 @@ export function TaskListShareDialog({
         id: sh.id,
         targetType: sh.targetType,
         targetId: sh.targetId,
-        targetName: sh.targetName || (sh.targetType === 'team' ? 'Gruppe' : sh.email || 'Benutzer'),
+        targetName: sh.targetName || (sh.targetType === 'team' ? i18n.t('common:share.group') : sh.email || i18n.t('common:share.user')),
         targetEmail: sh.email,
         avatarUrl: sh.avatarUrl,
         permission: sh.permission === 'viewer' ? 'viewer' as const : 'editor' as const,

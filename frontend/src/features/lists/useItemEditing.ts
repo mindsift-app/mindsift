@@ -30,7 +30,7 @@ export function useItemEditing({ activeList, setLists, onRefreshGlobal }: UseIte
         })
       );
     } catch (err: any) {
-      console.error('Fehler beim Aktualisieren der Menge', err);
+      console.error('Updating the quantity failed', err);
     }
   };
 

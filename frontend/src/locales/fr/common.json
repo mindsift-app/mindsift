@@ -36,7 +36,8 @@
     "licenseLabel": "Licence",
     "license": "GNU AGPLv3 – logiciel libre, les modifications restent libres",
     "source": "Code source",
-    "operator": "L'exploitant de cette instance est responsable de ses mentions légales et de sa politique de confidentialité ; les liens se trouvent dans les paramètres du compte et sur la page de connexion."
+    "operator": "L'exploitant de cette instance est responsable de ses mentions légales et de sa politique de confidentialité ; les liens se trouvent dans les paramètres du compte et sur la page de connexion.",
+    "changelog": "Ce qui a changé (journal des modifications)"
   },
   "legal": {
     "imprint": "Mentions légales",

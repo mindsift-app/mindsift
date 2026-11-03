@@ -64,7 +64,7 @@ func (s *Server) resetDemo() {
 	_ = os.RemoveAll(s.mediaRoot())
 	s.demo.gate.Unlock()
 	if err != nil {
-		slog.Error("Demo-Reset fehlgeschlagen", "error", err)
+		slog.Error("Demo reset failed", "error", err)
 		return
 	}
 	s.wsHub.BroadcastSystem("DEMO_RESET")

@@ -1,17 +1,17 @@
 /* ==========================================================================
-   MINDSIFT THEME: POLARIZED (Emerald / Teal)
-   Tiefdunkles Obsidian mit elektrischem Grün/Türkis-Akzent & scharfen Kanten.
+   MINDSIFT THEME: POLARIZED (emerald / teal)
+   Deep dark obsidian with an electric green/turquoise accent & sharp edges.
    ========================================================================== */
 
 :root[data-theme="polarized"] {
-  /* --- 1. AKZENTFARBE (Elektrisches Grün / Türkis) --- */
+  /* --- 1. ACCENT COLOUR (electric green / turquoise) --- */
   --accent-primary: #14b8a6;
   --accent-hover: #2dd4bf;
   --accent-dim: rgba(20, 184, 166, 0.16);
   --accent-border: rgba(45, 212, 191, 0.45);
-  --text-on-accent: #042f2e; /* dunkel: Weiß auf Türkis erreicht nur 2,5:1 */
+  --text-on-accent: #042f2e; /* dark: white on turquoise only reaches 2.5:1 */
 
-  /* --- 2. OBERFLÄCHEN & HINTERGRÜNDE --- */
+  /* --- 2. SURFACES & BACKGROUNDS --- */
   --bg-app: #090e11;
   --bg-panel: #10181c;
   --bg-panel-elevated: #162127;
@@ -20,12 +20,12 @@
   --bg-overlay: rgba(4, 7, 9, 0.78);
   --bg-code: #070b0e;
 
-  /* --- 3. TEXT & KONTRASTE --- */
+  /* --- 3. TEXT & CONTRAST --- */
   --text-main: #f0fdfa;
   --text-muted: #8da6a9;
   --text-faint: #5a7074;
 
-  /* --- 4. RAHMEN, LINIEN & SCHATTEN --- */
+  /* --- 4. BORDERS, LINES & SHADOWS --- */
   --border-color: rgba(20, 184, 166, 0.16);
   --border-subtle: rgba(20, 184, 166, 0.08);
   --border-strong: rgba(45, 212, 191, 0.32);
@@ -33,7 +33,7 @@
   --scrollbar-thumb: rgba(20, 184, 166, 0.22);
   --scrollbar-thumb-hover: rgba(45, 212, 191, 0.42);
 
-  /* --- 5. STATUS- & SIGNALFARBEN --- */
+  /* --- 5. STATUS & SIGNAL COLOURS --- */
   --color-success: #10b981;
   --bg-success: rgba(16, 185, 129, 0.14);
   --border-success: rgba(16, 185, 129, 0.38);
@@ -46,7 +46,7 @@
   --bg-warning: rgba(245, 158, 11, 0.14);
   --border-warning: rgba(245, 158, 11, 0.38);
 
-  /* --- 6. RUNDUNGEN (Geometrie: Klar & eckig) --- */
+  /* --- 6. CORNERS (geometry: clear & square) --- */
   --radius-card: 0px;
   --radius-btn: 2px;
   --radius-input: 2px;

@@ -379,7 +379,7 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ currentUser, onBack }) =
         </div>
       ) : (
         <div className="space-y-6">
-          {/* SECTION 1: Gruppen, die ich verwalte */}
+          {/* SECTION 1: groups I manage */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <h2 className="text-xs font-bold text-main uppercase tracking-wider text-muted flex items-center gap-2">

@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-// Backlinks ("Verlinkt auf diese Notiz") lists the notes whose blocks contain a wiki link [[Title]]
+// Backlinks ("Linked to this note") lists the notes whose blocks contain a wiki link [[Title]]
 // to a note. Matching ignores case and surrounding spaces like the link click in the editor;
 // [[Title|Text]] and [[Title#Abschnitt]] count as well. Only notes the user can open are listed,
 // never the note itself or notes in the trash.

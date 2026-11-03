@@ -280,19 +280,19 @@ func (s *Server) startCompaction() {
 func (s *Server) compactOnce() {
 	s.leases.Sweep()
 	if n := s.store.PurgeUnverifiedAccounts(time.Now()); n > 0 {
-		slog.Info("Unbestätigte Registrierungen gelöscht", "count", n)
+		slog.Info("Unconfirmed registrations deleted", "count", n)
 	}
 	s.compactMedia(time.Now())
 	_ = s.store.PruneLinkPreviews(time.Now().Add(-30 * 24 * time.Hour))
 	st, err := s.store.CompactDocs(time.Now())
 	if err != nil {
-		slog.Error("Verdichtung des Änderungsprotokolls fehlgeschlagen", "error", err)
+		slog.Error("Compacting the change log failed", "error", err)
 	}
 	// Open editors drop the purged tombstones with their next sync
 	for docID, head := range st.Purged {
 		s.notifyDocChanged(docID, head)
 	}
 	if st.Docs > 0 || st.OpResults > 0 {
-		slog.Info("Änderungsprotokoll verdichtet", "notes", st.Docs, "logEntries", st.LogEntries, "tombstones", st.Tombstones, "opResults", st.OpResults)
+		slog.Info("Change log compacted", "notes", st.Docs, "logEntries", st.LogEntries, "tombstones", st.Tombstones, "opResults", st.OpResults)
 	}
 }

@@ -1637,7 +1637,7 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
         </span>
       )}
 
-      {/* Floating Actions Overlay Bubble (Zoom, Auslagern, Löschen, TODO-Menü, Text-Umwandlung) */}
+      {/* Floating Actions Overlay Bubble (zoom, extract, delete, to-do menu, block type) */}
       <div
         onMouseEnter={() => setPointerOnBubble(true)}
         onMouseLeave={() => setPointerOnBubble(false)}

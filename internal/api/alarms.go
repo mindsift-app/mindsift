@@ -77,7 +77,7 @@ func (s *Server) sendEmailHTML(toEmail, subject, bodyText, html string) error {
 		if se, ok := err.(*smtpStepError); ok {
 			step = se.Step
 		}
-		slog.Warn("E-Mail-Versand fehlgeschlagen", "smtp_step", step, "host", cfg.Host, "port", cfg.Port, "to", toEmail, "error", err)
+		slog.Warn("Sending email failed", "smtp_step", step, "host", cfg.Host, "port", cfg.Port, "to", toEmail, "error", err)
 		return err
 	}
 	return nil
@@ -238,10 +238,10 @@ func (s *Server) startAlarmTicker() {
 
 			if sentAny {
 				if err := s.store.MarkTaskAlarmSent(a.TaskID); err != nil {
-					slog.Error("Alarm als gesendet markieren fehlgeschlagen (wird erneut gesendet)", "task_id", a.TaskID, "error", err)
+					slog.Error("Marking the alarm as sent failed (it will be sent again)", "task_id", a.TaskID, "error", err)
 				}
 			} else if gaveUp, _ := s.store.RecordTaskAlarmFailure(a.TaskID); gaveUp {
-				slog.Warn("Aufgaben-Alarm nach 3 Fehlversuchen aufgegeben", "task_id", a.TaskID, "title", a.Title)
+				slog.Warn("Task alarm given up after 3 failed attempts", "task_id", a.TaskID, "title", a.Title)
 			}
 		}
 	}

@@ -950,7 +950,7 @@ func parseTaskFile(body string) []importTask {
 
 var quantityRe = regexp.MustCompile(`[ \t]*\(([^()]+)\)[ \t]*$`)
 
-// parseListFile reads list entries "- [ ] Milch (2L) #Kühlregal".
+// parseListFile reads list entries "- [ ] Milk (2L) #fridge".
 func parseListFile(body string) []importItem {
 	var items []importItem
 	for _, line := range strings.Split(body, "\n") {

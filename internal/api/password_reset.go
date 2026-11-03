@@ -50,7 +50,7 @@ func (s *Server) handleForgotPassword(w http.ResponseWriter, r *http.Request) {
 		token, err := s.store.CreatePasswordResetToken(user.ID)
 		if err != nil {
 			if !errors.Is(err, storage.ErrResetTooSoon) {
-				slog.Warn("Passwort-Reset: Token konnte nicht erzeugt werden", "error", err)
+				slog.Warn("Password reset: creating the token failed", "error", err)
 			}
 			return
 		}
@@ -99,6 +99,6 @@ func (s *Server) handleResetPassword(w http.ResponseWriter, r *http.Request) {
 	}
 	s.loginGuard.unlockAccount(userID)
 	s.wsHub.DisconnectUser(userID)
-	slog.Info("Passwort per E-Mail-Link zurückgesetzt", "user_id", userID)
+	slog.Info("Password reset by email link", "user_id", userID)
 	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
 }

@@ -55,12 +55,12 @@ func (s *Server) runBackups() (string, error) {
 		dir := storage.UserBackupDir(root, u.ID)
 		if _, err := s.store.WriteUserBackup(u.ID, dir, now); err != nil {
 			failed++
-			slog.Error("Benutzer-Backup fehlgeschlagen", "user_id", u.ID, "error", err)
+			slog.Error("User backup failed", "user_id", u.ID, "error", err)
 			continue
 		}
 		_ = storage.PruneBackups(dir, keep, now)
 	}
-	slog.Info("Backups erstellt", "system", name, "users", len(users), "failed", failed)
+	slog.Info("Backups created", "system", name, "users", len(users), "failed", failed)
 	if failed > 0 {
 		return name, fmt.Errorf("%d Benutzer-Backups fehlgeschlagen (siehe Server-Log)", failed)
 	}
@@ -88,7 +88,7 @@ func (s *Server) startBackupScheduler() {
 		}
 		lastRun = today
 		if _, err := s.runBackups(); err != nil {
-			slog.Error("Automatisches Backup fehlgeschlagen", "error", err)
+			slog.Error("Automatic backup failed", "error", err)
 		}
 	}
 }
@@ -187,6 +187,6 @@ func (s *Server) removeUserBackups(userID string) {
 		return
 	}
 	if err := os.RemoveAll(dir); err != nil {
-		slog.Warn("Backups des gelöschten Kontos konnten nicht entfernt werden", "user_id", userID, "error", err)
+		slog.Warn("Backups of the deleted account could not be removed", "user_id", userID, "error", err)
 	}
 }

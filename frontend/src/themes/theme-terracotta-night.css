@@ -1,18 +1,18 @@
 /* ==========================================================================
-   MINDSIFT THEME: TERRAKOTTA NACHT (Espresso & Glut)
-   Das dunkle Gegenstück zu Terrakotta: Espresso-Braun statt Schwarz,
-   warme Creme-Schrift, glühender Terrakotta-Akzent, Salbeigrün, weiche Ecken.
+   MINDSIFT THEME: TERRACOTTA NIGHT (espresso & embers)
+   The dark counterpart of Terracotta: espresso brown instead of black,
+   warm cream text, glowing terracotta accent, sage green, soft corners.
    ========================================================================== */
 
 :root[data-theme="terracotta-night"] {
-  /* --- 1. AKZENTFARBE (Glühende Terrakotta) --- */
+  /* --- 1. ACCENT COLOUR (glowing terracotta) --- */
   --accent-primary: #e8794a;
   --accent-hover: #f39669;
   --accent-dim: rgba(232, 121, 74, 0.15);
   --accent-border: rgba(232, 121, 74, 0.40);
   --text-on-accent: #1c1410;
 
-  /* --- 2. OBERFLÄCHEN & HINTERGRÜNDE (Espresso, Mokka, Leder) --- */
+  /* --- 2. SURFACES & BACKGROUNDS (espresso, mocha, leather) --- */
   --bg-app: #17110d;
   --bg-panel: #211913;
   --bg-panel-elevated: #2c2219;
@@ -23,12 +23,12 @@
   --bg-editor: #1c1510;
   --bg-sidebar: #17110d;
 
-  /* --- 3. TEXT & KONTRASTE (Creme auf Espresso) --- */
+  /* --- 3. TEXT & CONTRAST (cream on espresso) --- */
   --text-main: #f3e8da;
   --text-muted: #c4b19c;
   --text-faint: #8d7a66;
 
-  /* --- 4. RAHMEN, LINIEN & SCHATTEN --- */
+  /* --- 4. BORDERS, LINES & SHADOWS --- */
   --border-color: rgba(243, 214, 184, 0.12);
   --border-subtle: rgba(243, 214, 184, 0.06);
   --border-strong: rgba(243, 214, 184, 0.24);
@@ -36,7 +36,7 @@
   --scrollbar-thumb: rgba(232, 121, 74, 0.22);
   --scrollbar-thumb-hover: rgba(232, 121, 74, 0.38);
 
-  /* --- 5. STATUS- & SIGNALFARBEN (Salbei, Ziegel, Honig) --- */
+  /* --- 5. STATUS & SIGNAL COLOURS (sage, brick, honey) --- */
   --color-success: #8fbf8a;
   --bg-success: rgba(143, 191, 138, 0.14);
   --border-success: rgba(143, 191, 138, 0.36);
@@ -49,14 +49,14 @@
   --bg-warning: rgba(230, 180, 80, 0.14);
   --border-warning: rgba(230, 180, 80, 0.36);
 
-  /* --- 6. RUNDUNGEN (Weich wie Papierkarten) --- */
+  /* --- 6. CORNERS (soft like paper cards) --- */
   --radius-card: 12px;
   --radius-btn: 8px;
   --radius-input: 8px;
   --radius-checkbox: 4px;
   --radius-pill: 9999px;
 
-  /* --- 7. CODE-SYNTAX-HIGHLIGHTING (warme Erdtöne auf Espresso) --- */
+  /* --- 7. CODE SYNTAX HIGHLIGHTING (warm earth tones on espresso) --- */
   --code-keyword: #f39669;
   --code-string: #a9cf9c;
   --code-number: #e6b450;

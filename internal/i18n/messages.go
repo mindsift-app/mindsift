@@ -13,7 +13,7 @@ var catalogs = map[string]map[string]string{
 
 // T returns msg in lang with the placeholders filled from name/value pairs. German or an unknown language
 // give msg itself; a text another language lacks comes in English, else German. A text "context: detail" without its own entry is
-// translated part by part, so wrapped errors ("SMTP-Fehler: …") work too.
+// translated part by part, so wrapped errors ("SMTP-Fehler: …", i.e. "SMTP error: …") work too.
 func T(lang, msg string, args ...string) string {
 	out := translate(lang, msg)
 	for i := 0; i+1 < len(args); i += 2 {

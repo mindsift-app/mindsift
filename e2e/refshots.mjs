@@ -443,7 +443,7 @@ async function compare() {
       [fs.readFileSync(path.join(A, name)).toString('base64'), fs.readFileSync(fb).toString('base64')]
     );
     if (res.size) {
-      console.log(`SIZE ${name} (andere Bildgröße)`);
+      console.log(`SIZE ${name} (different image size)`);
       changed++;
       continue;
     }

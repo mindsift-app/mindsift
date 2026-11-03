@@ -92,7 +92,7 @@ func (s *Server) sendVerificationMail(user *domain.User) {
 	raw, err := s.store.CreateEmailVerification(user.ID)
 	if err != nil {
 		if !errors.Is(err, storage.ErrResetTooSoon) {
-			slog.Warn("Bestätigungslink konnte nicht erzeugt werden", "user_id", user.ID, "error", err)
+			slog.Warn("Creating the confirmation link failed", "user_id", user.ID, "error", err)
 		}
 		return
 	}
@@ -109,7 +109,7 @@ func (s *Server) sendVerificationMail(user *domain.User) {
 		Footer: mailFooterAccount(lang),
 	})
 	if err != nil {
-		slog.Warn("Bestätigungs-E-Mail nicht verschickt", "user_id", user.ID, "error", err)
+		slog.Warn("Confirmation email not sent", "user_id", user.ID, "error", err)
 	}
 }
 
@@ -221,7 +221,7 @@ func (s *Server) notifyAdminsOfRegistration(user *domain.User) {
 			c.Button = &mailButton{Label: i18n.T(lang, "Benutzerverwaltung öffnen"), URL: link}
 		}
 		if err := s.sendMailContent(a.Email, i18n.T(lang, "MindSift: Neue Registrierung wartet auf Freigabe"), c); err != nil {
-			slog.Warn("Hinweis auf neue Registrierung nicht verschickt", "admin", a.ID, "error", err)
+			slog.Warn("Notice about a new registration not sent", "admin", a.ID, "error", err)
 		}
 	}
 }

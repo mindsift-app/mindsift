@@ -363,10 +363,10 @@ func (s *Server) handleOAuthRevoke(w http.ResponseWriter, r *http.Request) {
 func (s *Server) runOAuthCleanup(now time.Time) {
 	n, err := s.store.PurgeOAuth(now, s.cfg.OAuthIdleDays)
 	if err != nil {
-		slog.Error("Aufräumen der OAuth-Zugänge fehlgeschlagen", "error", err)
+		slog.Error("Cleaning up OAuth grants failed", "error", err)
 		return
 	}
 	if n > 0 {
-		slog.Info("Unbenutzte OAuth-Zugänge entfernt", "anzahl", n, "tage", s.cfg.OAuthIdleDays)
+		slog.Info("Unused OAuth grants removed", "anzahl", n, "tage", s.cfg.OAuthIdleDays)
 	}
 }

@@ -1,18 +1,18 @@
 /* ==========================================================================
-   MINDSIFT THEME: DARK MONOCHROME (Standard)
-   Alle Farben, Kontraste und Rundungen zentral in einer einzigen Datei.
+   MINDSIFT THEME: DARK MONOCHROME (default)
+   All colours, contrasts and corner radii in one single file.
    ========================================================================== */
 
 :root,
 :root[data-theme="dark"] {
-  /* --- 1. AKZENTFARBE --- */
+  /* --- 1. ACCENT COLOUR --- */
   --accent-primary: #2563eb;
   --accent-hover: #3b82f6;
   --accent-dim: rgba(37, 99, 235, 0.14);
   --accent-border: rgba(59, 130, 246, 0.45);
   --text-on-accent: #ffffff;
 
-  /* --- 2. OBERFLÄCHEN & HINTERGRÜNDE --- */
+  /* --- 2. SURFACES & BACKGROUNDS --- */
   --bg-app: #121316;
   --bg-panel: #1a1c20;
   --bg-panel-elevated: #22252a;
@@ -21,12 +21,12 @@
   --bg-overlay: rgba(0, 0, 0, 0.72);
   --bg-code: #0d0e11;
 
-  /* --- 3. TEXT & KONTRASTE --- */
+  /* --- 3. TEXT & CONTRAST --- */
   --text-main: #f4f4f5;
   --text-muted: #a1a1aa;
   --text-faint: #71717a;
 
-  /* --- 4. RAHMEN, LINIEN & SCHATTEN --- */
+  /* --- 4. BORDERS, LINES & SHADOWS --- */
   --border-color: rgba(255, 255, 255, 0.09);
   --border-subtle: rgba(255, 255, 255, 0.05);
   --border-strong: rgba(255, 255, 255, 0.22);
@@ -34,7 +34,7 @@
   --scrollbar-thumb: rgba(255, 255, 255, 0.14);
   --scrollbar-thumb-hover: rgba(255, 255, 255, 0.26);
 
-  /* --- 5. STATUS- & SIGNALFARBEN --- */
+  /* --- 5. STATUS & SIGNAL COLOURS --- */
   --color-success: #22c55e;
   --bg-success: rgba(34, 197, 94, 0.12);
   --border-success: rgba(34, 197, 94, 0.38);
@@ -47,7 +47,7 @@
   --bg-warning: rgba(245, 158, 11, 0.12);
   --border-warning: rgba(245, 158, 11, 0.38);
 
-  /* --- 6. RUNDUNGEN (Geometrie) --- */
+  /* --- 6. CORNERS (geometry) --- */
   --radius-card: 0px;
   --radius-btn: 2px;
   --radius-input: 2px;

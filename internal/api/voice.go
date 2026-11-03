@@ -129,7 +129,7 @@ func (s *Server) handleVoiceTranscribe(w http.ResponseWriter, r *http.Request) {
 	case s.voice.slots <- struct{}{}:
 		defer func() { <-s.voice.slots }()
 	case <-ctx.Done():
-		slog.Warn("Spracherkennung: keine freie Kapazität innerhalb der Zeitgrenze", "user_id", userID, "parallel", cfg.MaxParallel)
+		slog.Warn("Speech recognition: no free capacity within the time limit", "user_id", userID, "parallel", cfg.MaxParallel)
 		writeError(w, http.StatusServiceUnavailable, "Die Spracherkennung ist gerade ausgelastet. Bitte gleich noch einmal versuchen.")
 		return
 	}
@@ -137,7 +137,7 @@ func (s *Server) handleVoiceTranscribe(w http.ResponseWriter, r *http.Request) {
 	started := time.Now()
 	text, err := s.transcribe(ctx, audio, header.Filename, header.Header.Get("Content-Type"))
 	if err != nil {
-		slog.Warn("Spracherkennung fehlgeschlagen", "url", s.sttEndpoint("/v1/audio/transcriptions"), "model", cfg.Model,
+		slog.Warn("Speech recognition failed", "url", s.sttEndpoint("/v1/audio/transcriptions"), "model", cfg.Model,
 			"bytes", len(audio), "duration_ms", time.Since(started).Milliseconds(), "error", err)
 		msg := "Spracherkennung fehlgeschlagen"
 		if errors.Is(err, context.DeadlineExceeded) {
@@ -146,7 +146,7 @@ func (s *Server) handleVoiceTranscribe(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadGateway, msg)
 		return
 	}
-	slog.Debug("Spracherkennung", "user_id", userID, "bytes", len(audio), "duration_ms", time.Since(started).Milliseconds())
+	slog.Debug("Speech recognition", "user_id", userID, "bytes", len(audio), "duration_ms", time.Since(started).Milliseconds())
 	writeJSON(w, http.StatusOK, map[string]string{"text": text})
 }
 
@@ -297,7 +297,7 @@ func (s *Server) setVoiceStatus(st voiceStatus) {
 // asks it to download the model if it does not have it yet, so the first recording works.
 func (s *Server) startVoiceCheck() {
 	cfg := s.cfg.Speech
-	slog.Info("Spracherkennung: Server-Modus", "url", cfg.URL, "model", cfg.Model, "language", cfg.Language,
+	slog.Info("Speech recognition: server mode", "url", cfg.URL, "model", cfg.Model, "language", cfg.Language,
 		"max_parallel", cfg.MaxParallel, "per_user_per_hour", cfg.PerUserPerHour, "max_upload_mb", cfg.MaxUploadMB)
 	downloadRequested := false
 	for attempt := 0; ; attempt++ {
@@ -307,14 +307,14 @@ func (s *Server) startVoiceCheck() {
 		s.setVoiceStatus(st)
 		switch {
 		case st.ModelReady:
-			slog.Info("Spracherkennung bereit", "url", cfg.URL, "model", cfg.Model)
+			slog.Info("Speech recognition ready", "url", cfg.URL, "model", cfg.Model)
 			return
 		case st.Reachable && !downloadRequested:
 			downloadRequested = true
-			slog.Info("Spracherkennung: Modell wird heruntergeladen (kann einige Minuten dauern)", "model", cfg.Model)
+			slog.Info("Speech recognition: downloading the model (can take a few minutes)", "model", cfg.Model)
 			go s.requestModelDownload()
 		case !st.Reachable && attempt%6 == 0:
-			slog.Warn("Spracherkennung: Whisper-Server nicht erreichbar, neuer Versuch folgt", "url", cfg.URL, "error", st.Error)
+			slog.Warn("Speech recognition: Whisper server not reachable, will retry", "url", cfg.URL, "error", st.Error)
 		}
 		time.Sleep(10 * time.Second)
 	}
@@ -326,13 +326,13 @@ func (s *Server) requestModelDownload() {
 	defer cancel()
 	resp, err := s.sttRequest(ctx, http.MethodPost, "/v1/models/"+s.cfg.Speech.Model, nil, "")
 	if err != nil {
-		slog.Warn("Spracherkennung: Modell-Download fehlgeschlagen", "model", s.cfg.Speech.Model, "error", err)
+		slog.Warn("Speech recognition: model download failed", "model", s.cfg.Speech.Model, "error", err)
 		return
 	}
 	defer resp.Body.Close()
 	raw, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
 	if resp.StatusCode >= 300 {
-		slog.Warn("Spracherkennung: Modell-Download abgelehnt", "model", s.cfg.Speech.Model, "status", resp.StatusCode, "body", strings.TrimSpace(string(raw)))
+		slog.Warn("Speech recognition: model download refused", "model", s.cfg.Speech.Model, "status", resp.StatusCode, "body", strings.TrimSpace(string(raw)))
 	}
 }
 

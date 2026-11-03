@@ -675,7 +675,7 @@ func (s *Store) migrateWorkspaceToPureDB() {
 		_ = sfRows.Close()
 		for _, info := range sfs {
 			if err := s.syncSharedFolderContents(info.ownerID, info.id, info.mountPath); err != nil {
-				slog.Error("Geteilte Ordner abgleichen fehlgeschlagen", "folder", info.id, "error", err)
+				slog.Error("Syncing shared folders failed", "folder", info.id, "error", err)
 			}
 		}
 	}

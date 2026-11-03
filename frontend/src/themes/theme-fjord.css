@@ -1,18 +1,18 @@
 /* ==========================================================================
-   MINDSIFT THEME: FJORD (Kühles Papier & Gletscherblau)
-   Bläulich-weißes Papier, nebelgraue Seitenleiste, tintenblaue Schrift,
-   klares Fjordblau als Akzent und weiche Ecken.
+   MINDSIFT THEME: FJORD (cool paper & glacier blue)
+   Bluish-white paper, mist-grey sidebar, ink-blue text,
+   clear fjord blue as the accent and soft corners.
    ========================================================================== */
 
 :root[data-theme="fjord"] {
-  /* --- 1. AKZENTFARBE (Fjordblau) --- */
+  /* --- 1. ACCENT COLOUR (fjord blue) --- */
   --accent-primary: #2b6cb0;
   --accent-hover: #1f5590;
   --accent-dim: rgba(43, 108, 176, 0.10);
   --accent-border: rgba(43, 108, 176, 0.34);
   --text-on-accent: #ffffff;
 
-  /* --- 2. OBERFLÄCHEN & HINTERGRÜNDE (Papier, Nebel, Eis) --- */
+  /* --- 2. SURFACES & BACKGROUNDS (paper, mist, ice) --- */
   --bg-app: #e9eef5;
   --bg-panel: #f7f9fc;
   --bg-panel-elevated: #dde5ef;
@@ -23,12 +23,12 @@
   --bg-editor: #fafcff;
   --bg-sidebar: #edf2f8;
 
-  /* --- 3. TEXT & KONTRASTE (Tintenblau) --- */
+  /* --- 3. TEXT & CONTRAST (ink blue) --- */
   --text-main: #14202e;
   --text-muted: #45556a;
   --text-faint: #7a8798;
 
-  /* --- 4. RAHMEN, LINIEN & SCHATTEN --- */
+  /* --- 4. BORDERS, LINES & SHADOWS --- */
   --border-color: rgba(30, 55, 90, 0.16);
   --border-subtle: rgba(30, 55, 90, 0.08);
   --border-strong: rgba(30, 55, 90, 0.30);
@@ -36,7 +36,7 @@
   --scrollbar-thumb: rgba(30, 55, 90, 0.22);
   --scrollbar-thumb-hover: rgba(30, 55, 90, 0.38);
 
-  /* --- 5. STATUS- & SIGNALFARBEN --- */
+  /* --- 5. STATUS & SIGNAL COLOURS --- */
   --color-success: #2f855a;
   --bg-success: rgba(47, 133, 90, 0.11);
   --border-success: rgba(47, 133, 90, 0.34);
@@ -49,14 +49,14 @@
   --bg-warning: rgba(183, 121, 31, 0.11);
   --border-warning: rgba(183, 121, 31, 0.34);
 
-  /* --- 6. RUNDUNGEN (Weich) --- */
+  /* --- 6. CORNERS (soft) --- */
   --radius-card: 12px;
   --radius-btn: 8px;
   --radius-input: 8px;
   --radius-checkbox: 4px;
   --radius-pill: 9999px;
 
-  /* --- 7. CODE-SYNTAX-HIGHLIGHTING (kühle Töne auf Papier) --- */
+  /* --- 7. CODE SYNTAX HIGHLIGHTING (cool tones on paper) --- */
   --code-keyword: #2b6cb0;
   --code-string: #2f855a;
   --code-number: #b7791f;

@@ -27,7 +27,7 @@ async function record(step) {
   const [tasks, lists] = await Promise.all(
     ['/api/v1/tasks', '/api/v1/task-lists'].map(async (p) => (await fetch(BASE + p, { headers: { Authorization: `Bearer ${token}` } })).json())
   );
-  const listName = (id) => (id ? lists.find((l) => l.id === id)?.title || id : 'persönlich');
+  const listName = (id) => (id ? lists.find((l) => l.id === id)?.title || id : 'personal');
   const rows = tasks
     .map((t) => ({ list: listName(t.taskListId), order: t.sortOrder ?? 0, line: `${t.content.slice(0, 40).padEnd(40)} | ${String(t.kanbanStatus || '-').padEnd(12)} | ${t.isCompleted ? 'erledigt' : 'offen   '}` }))
     .sort((a, b) => a.list.localeCompare(b.list) || a.order - b.order);
@@ -89,29 +89,29 @@ await d.getByRole('button', { name: /^Alle Aufgaben/ }).first().click();
 await d.getByRole('button', { name: 'Kanban', exact: true }).locator('visible=true').first().click();
 await sleep(800);
 
-await step('Kanban: Karte vor die zweite Karte einer anderen Spalte', async () => {
+await step('Kanban: card before the second card of another column', async () => {
   const target = column('In Bearbeitung').locator('[data-kanban-task]').nth(1);
   const box = await target.boundingBox();
   await drag(d, card('USV-Batterie'), target, { x: box.width / 2, y: 6 });
 });
-await step('Kanban: Karte in den leeren Teil der Erledigt-Spalte', async () => {
+await step('Kanban: card into the empty part of the done column', async () => {
   const col = column('Erledigt');
   const box = await col.boundingBox();
   await drag(d, card('Wartet auf Lieferung'), col, { x: box.width / 2, y: box.height - 120 });
 });
-await step('Kanban: Karte innerhalb der Spalte nach unten', async () => {
+await step('Kanban: card down within the column', async () => {
   const col = column('Zu erledigen');
   const last = col.locator('[data-kanban-task]').last();
   const box = await last.boundingBox();
   await drag(d, col.locator('[data-kanban-task]').first(), last, { x: box.width / 2, y: box.height - 4 });
 });
 
-await step('Kanban: Strg+Z nimmt den letzten Zug zurück', async () => {
+await step('Kanban: Ctrl+Z undoes the last move', async () => {
   await d.mouse.click(5, 5); // focus on the page, not in a text field
   await d.keyboard.press('Control+z');
 });
 
-await step('Kanban: „Aufgabe hinzufügen“ öffnet das Aufgabenfenster, Titel eingetippt', async () => {
+await step('Kanban: “add task” opens the task window, title typed', async () => {
   await column('Zu erledigen').getByRole('button', { name: /Aufgabe hinzufügen/ }).click();
   await sleep(800);
   await d.keyboard.type('Aus der Spalte angelegt'); // the placeholder title is selected
@@ -119,7 +119,7 @@ await step('Kanban: „Aufgabe hinzufügen“ öffnet das Aufgabenfenster, Titel
   await sleep(500);
   await d.keyboard.press('Escape'); // close the dialog
 });
-await step('Kanban: „Aufgabe hinzufügen“ ohne Titel geschlossen – der Entwurf verschwindet', async () => {
+await step('Kanban: “add task” closed without a title – the draft disappears', async () => {
   await column('Zu erledigen').getByRole('button', { name: /Aufgabe hinzufügen/ }).click();
   await sleep(800);
   await d.keyboard.press('Escape'); // leave title editing
@@ -127,7 +127,7 @@ await step('Kanban: „Aufgabe hinzufügen“ ohne Titel geschlossen – der Ent
 });
 {
   const trash = await (await fetch(`${BASE}/api/v1/tasks/trash`, { headers: { Authorization: `Bearer ${token}` } })).json();
-  lines.push(`Papierkorb enthält „Neue Aufgabe“: ${trash.some((t) => t.content === 'Neue Aufgabe') ? 'ja' : 'nein'}\n`);
+  lines.push(`Trash contains “Neue Aufgabe”: ${trash.some((t) => t.content === 'Neue Aufgabe') ? 'yes' : 'no'}\n`);
 }
 
 await d.getByRole('button', { name: 'Liste', exact: true }).locator('visible=true').first().click();
@@ -136,7 +136,7 @@ const row = (text) => d.locator('[draggable="true"]', { hasText: text }).first()
 await step('Liste: Zeile ganz nach oben ziehen', async () => {
   await drag(d, row('Uptime-Monitoring'), d.locator('[draggable="true"]').first(), { x: 40, y: 3 });
 });
-await step('Liste: Homelab-Zeile auf den Reiter „Haus & Garten“', async () => {
+await step('List: Homelab row onto the “Haus & Garten” tab', async () => {
   const tab = d.locator('div.group', { hasText: 'Haus & Garten' }).first();
   await drag(d, row('Reverse-Proxy'), tab);
 });
@@ -144,14 +144,14 @@ await step('Liste: Homelab-Zeile auf den Reiter „Haus & Garten“', async () =
 // --- Actions by click in the list view ---
 await step('Liste: Aufgabe per Klick abhaken', () => row('Heizungswartung').getByTitle('Als erledigt abhaken').click());
 await step('Liste: Aufgabe per Knopf löschen', () => row('Steuerunterlagen').getByTitle('Aufgabe löschen').click());
-await step('Papierkorb: Aufgabe zurückholen', async () => {
+await step('Trash: restore a task', async () => {
   await d.getByRole('button', { name: /^Papierkorb \(/ }).locator('visible=true').first().click();
   await d.getByRole('button', { name: /Zurück/ }).locator('visible=true').first().click();
   await sleep(600);
   await d.getByRole('button', { name: /^Offen \(/ }).locator('visible=true').first().click();
 });
 
-await step('Schnelleingabe: neue Aufgabe mit Enter', async () => {
+await step('Quick add: new task with Enter', async () => {
   await d.getByPlaceholder('Neue Aufgabe anlegen…').fill('Per Schnelleingabe angelegt');
   await d.keyboard.press('Enter');
 });
@@ -172,14 +172,14 @@ async function live(name, change, text, expectVisible) {
 const api = (method, path, body) =>
   fetch(BASE + path, { method, headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: body && JSON.stringify(body) }).then((r) => r.json().catch(() => ({})));
 const backup = (await api('GET', '/api/v1/tasks')).find((t) => t.content.startsWith('Backup-Konzept'));
-await live('Echtzeit: Aufgabe von außen umbenannt', () => api('PATCH', `/api/v1/thoughts/${backup.id}`, { content: 'Backup-Konzept live geändert #backup' }), 'Backup-Konzept live geändert', true);
+await live('Realtime: task renamed from outside', () => api('PATCH', `/api/v1/thoughts/${backup.id}`, { content: 'Backup-Konzept live geändert #backup' }), 'Backup-Konzept live geändert', true);
 let created;
-await live('Echtzeit: Aufgabe von außen angelegt', async () => {
+await live('Realtime: task created from outside', async () => {
   created = await api('POST', '/api/v1/inbox', { content: 'Von außen angelegt', target: 'task' });
 }, 'Von außen angelegt', true);
-await live('Echtzeit: Aufgabe von außen gelöscht', () => api('DELETE', `/api/v1/thoughts/${created.id}`), 'Von außen angelegt', false);
+await live('Realtime: task deleted from outside', () => api('DELETE', `/api/v1/thoughts/${created.id}`), 'Von außen angelegt', false);
 await record('nach den Echtzeit-Schritten');
-await step('Neue Aufgabenliste über den Dialog', async () => {
+await step('New task list through the dialog', async () => {
   await d.getByRole('button', { name: /Neue Liste/ }).locator('visible=true').first().click();
   await d.getByPlaceholder('z.B. Homelab, Einkäufe, Steuern').fill('Testliste');
   await d.keyboard.press('Enter');
@@ -193,7 +193,7 @@ await m.getByRole('button', { name: /Kanban-Board Ansicht/ }).locator('visible=t
 await sleep(900);
 const cdp = await m.context().newCDPSession(m);
 const touch = (type, x, y) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: type === 'touchEnd' ? [] : [{ x, y }] });
-await step('Handy: Karte mit dem Finger in der Spalte nach unten', async () => {
+await step('Phone: card down the column with a finger', async () => {
   const cards = m.locator('[data-kanban-col]').first().locator('[data-kanban-task]');
   const a = await cards.nth(0).boundingBox();
   const b = await cards.nth(2).boundingBox();

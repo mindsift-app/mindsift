@@ -4,7 +4,7 @@ import { compareText } from '../../lib/format';
 
 // How the shopping lists read and group their entries. Pure functions.
 
-// "Hafermilch #Kühlregal" → content "Hafermilch", category "Kühlregal" (the first hashtag); only a hashtag
+// "oat milk #fridge" → content "oat milk", category "fridge" (the first hashtag); only a hashtag
 // becomes the content itself
 export function parseListItemInput(rawText: string, defaultQty?: string): {
   content: string;
@@ -176,7 +176,7 @@ export function collectHashtags(lists: SharedList[], workspaceTags: string[]): s
   return Array.from(tagMap.values()).sort(compareText);
 }
 
-// The hashtag being typed right before the cursor ("#Kü"): its text, where its "#" stands, the cursor
+// The hashtag being typed right before the cursor ("#fri"): its text, where its "#" stands, the cursor
 export function findHashtagQuery(text: string, pos: number): { query: string; matchIndex: number; cursorPos: number } | null {
   const textBefore = text.slice(0, pos);
   const match = textBefore.match(/(?:^|\s)#([\p{L}\p{N}_-]*)$/u);

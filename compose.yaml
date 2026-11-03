@@ -27,7 +27,7 @@ services:
       - SMTP_FROM=${SMTP_FROM:-}
       - SMTP_TLS=${SMTP_TLS:-true}
       - SMTP_SKIP_VERIFY=${SMTP_SKIP_VERIFY:-false}
-      # Optional: Impressum / Datenschutz (URL oder Markdown-Datei, z. B. per Volume eingebunden)
+      # Optional: legal notice / privacy policy (URL or Markdown file, e.g. mounted as a volume)
       - LEGAL_IMPRINT_URL=${LEGAL_IMPRINT_URL:-}
       - LEGAL_PRIVACY_URL=${LEGAL_PRIVACY_URL:-}
       - LEGAL_IMPRINT_CONTENT_FILE=${LEGAL_IMPRINT_CONTENT_FILE:-}

@@ -13,7 +13,7 @@ interface ActiveFilterBannerProps {
   setSortBy: (sort: TaskSort) => void;
 }
 
-// Phone: what filters the task list right now (hashtag, grouping, sorting), each removable, plus "Zurücksetzen";
+// Phone: what filters the task list right now (hashtag, grouping, sorting), each removable, plus "Reset";
 // hidden while nothing deviates from the defaults
 export function ActiveFilterBanner({ selectedTag, setSelectedTag, groupBy, defaultGroupBy, setGroupBy, sortBy, setSortBy }: ActiveFilterBannerProps) {
   const { t } = useTranslation('tasks');

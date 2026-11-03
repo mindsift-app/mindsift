@@ -10,7 +10,7 @@ export interface AvailableUpdate {
 
 // Notices when the server runs a newer build than this page (version.json, written at build time and
 // never cached): when the tab or the installed app comes back to the foreground, every 15 minutes and
-// when the realtime connection is back after a server restart. "Später" hides it until the next build.
+// when the realtime connection is back after a server restart. "Later" hides it until the next build.
 export function useUpdateCheck() {
   const [update, setUpdate] = useState<AvailableUpdate | null>(null);
   const dismissedRef = useRef('');

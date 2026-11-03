@@ -1,17 +1,17 @@
 /* ==========================================================================
-   MINDSIFT THEME: SURI (Velvet Dusk / Orchid)
-   Warmes Mitternachts-Pflaume mit samtigem Orchidee-Akzent & weichen Ecken.
+   MINDSIFT THEME: SURI (velvet dusk / orchid)
+   Warm midnight plum with a velvety orchid accent & soft corners.
    ========================================================================== */
 
 :root[data-theme="suri"] {
-  /* --- 1. AKZENTFARBE (Samtige Orchidee & Magenta-Violett) --- */
+  /* --- 1. ACCENT COLOUR (velvety orchid & magenta violet) --- */
   --accent-primary: #b86bf8;
   --accent-hover: #cf94fd;
   --accent-dim: rgba(184, 107, 248, 0.16);
   --accent-border: rgba(207, 148, 253, 0.42);
   --text-on-accent: #ffffff;
 
-  /* --- 2. OBERFLÄCHEN & HINTERGRÜNDE --- */
+  /* --- 2. SURFACES & BACKGROUNDS --- */
   --bg-app: #130f1a;
   --bg-panel: #1e1728;
   --bg-panel-elevated: #282036;
@@ -20,12 +20,12 @@
   --bg-overlay: rgba(11, 8, 16, 0.76);
   --bg-code: #0d0a13;
 
-  /* --- 3. TEXT & KONTRASTE --- */
+  /* --- 3. TEXT & CONTRAST --- */
   --text-main: #fbf7ff;
   --text-muted: #b5a8cb;
   --text-faint: #776b8d;
 
-  /* --- 4. RAHMEN, LINIEN & SCHATTEN --- */
+  /* --- 4. BORDERS, LINES & SHADOWS --- */
   --border-color: rgba(207, 148, 253, 0.14);
   --border-subtle: rgba(207, 148, 253, 0.07);
   --border-strong: rgba(207, 148, 253, 0.28);
@@ -33,7 +33,7 @@
   --scrollbar-thumb: rgba(184, 107, 248, 0.20);
   --scrollbar-thumb-hover: rgba(207, 148, 253, 0.36);
 
-  /* --- 5. STATUS- & SIGNALFARBEN --- */
+  /* --- 5. STATUS & SIGNAL COLOURS --- */
   --color-success: #34d399;
   --bg-success: rgba(52, 211, 153, 0.14);
   --border-success: rgba(52, 211, 153, 0.38);
@@ -46,7 +46,7 @@
   --bg-warning: rgba(251, 191, 36, 0.14);
   --border-warning: rgba(251, 191, 36, 0.38);
 
-  /* --- 6. RUNDUNGEN (Weich gerundete Ecken) --- */
+  /* --- 6. CORNERS (softly rounded) --- */
   --radius-card: 10px;
   --radius-btn: 6px;
   --radius-input: 6px;

@@ -575,7 +575,8 @@
     },
     "demo": "In der Demo deaktiviert: Server-Einstellungen, E-Mail und Konten lassen sich hier nur ansehen.",
     "userCreated": "Benutzer „{{name}}“ wurde angelegt.",
-    "inviteSent": "Einladung an {{email}} verschickt."
+    "inviteSent": "Einladung an {{email}} verschickt.",
+    "userApproved": "{{name}} ist freigeschaltet."
   },
   "orgs": {
     "createFailed": "Fehler beim Anlegen der Organisation",

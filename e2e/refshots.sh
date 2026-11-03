@@ -1,13 +1,13 @@
 #!/bin/sh
 # Reference screenshots for refactors (Doku/plans/frontend-aufteilen.md).
 #
-#   e2e/refshots.sh capture vorher     # image from the working tree, fresh server, pictures to .refshots/shots/vorher
-#   … umbauen …
-#   e2e/refshots.sh capture nachher
-#   e2e/refshots.sh compare vorher nachher   # differing pictures as red masks in .refshots/shots/diff-vorher-nachher
-#   e2e/refshots.sh drag vorher        # drag & drop steps (refdrag.mjs), task state to .refshots/shots/vorher.drag.txt
-#   e2e/refshots.sh ws vorher          # workspace steps (refworkspace.mjs), notes/folders/trash to .refshots/shots/vorher.ws.txt
-#   e2e/refshots.sh lists vorher       # shopping list steps (reflists.mjs), lists and entries to .refshots/shots/vorher.lists.txt
+#   e2e/refshots.sh capture before     # image from the working tree, fresh server, pictures to .refshots/shots/before
+#   … refactor …
+#   e2e/refshots.sh capture after
+#   e2e/refshots.sh compare before after   # differing pictures as red masks in .refshots/shots/diff-before-after
+#   e2e/refshots.sh drag before        # drag & drop steps (refdrag.mjs), task state to .refshots/shots/before.drag.txt
+#   e2e/refshots.sh ws before          # workspace steps (refworkspace.mjs), notes/folders/trash to .refshots/shots/before.ws.txt
+#   e2e/refshots.sh lists before       # shopping list steps (reflists.mjs), lists and entries to .refshots/shots/before.lists.txt
 #
 # Requires podman (or docker via ENGINE=docker). SKIP_BUILD=1 reuses the last image.
 set -eu
@@ -32,7 +32,7 @@ run_pw() {
 
 wait_healthy() {
   for _ in $(seq 1 60); do curl -s -m 1 "http://localhost:$PORT/api/v1/health" >/dev/null && return 0; sleep 0.5; done
-  echo "Server antwortet nicht" >&2
+  echo "Server does not answer" >&2
   return 1
 }
 
@@ -40,9 +40,9 @@ mkdir -p "$SHOTS" "$DATA"
 case "${1:-}" in
 capture|drag|ws|lists)
   mode="$1"
-  set_name="${2:?Name der Aufnahme fehlt}"
+  set_name="${2:?name of the run is missing}"
   if [ "${SKIP_BUILD:-}" != 1 ]; then
-    echo "Baue Image …"
+    echo "Building the image …"
     # No layer cache (package.json changes with every version anyway) and the previous image removed, so
     # repeated runs do not fill the disk with intermediate images
     old_id="$("$ENGINE" image inspect -f '{{.Id}}' "$IMAGE" 2>/dev/null || true)"

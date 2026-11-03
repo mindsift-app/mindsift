@@ -1,18 +1,18 @@
 /* ==========================================================================
-   MINDSIFT THEME: POLARIZED HELL (Lagune & Kreide)
-   Das helle Gegenstück zu Polarized: kreidiges Mintweiß, tiefes Petrol als
-   Akzent, dunkle Schiefer-Schrift, klar und eckig wie das Original.
+   MINDSIFT THEME: POLARIZED LIGHT (lagoon & chalk)
+   The light counterpart of Polarized: chalky mint white, deep petrol as the
+   accent, dark slate text, clear and square like the original.
    ========================================================================== */
 
 :root[data-theme="polarized-light"] {
-  /* --- 1. AKZENTFARBE (Tiefes Petrol) --- */
+  /* --- 1. ACCENT COLOUR (deep petrol) --- */
   --accent-primary: #0f766e;
   --accent-hover: #115e59;
   --accent-dim: rgba(15, 118, 110, 0.10);
   --accent-border: rgba(15, 118, 110, 0.34);
   --text-on-accent: #ffffff;
 
-  /* --- 2. OBERFLÄCHEN & HINTERGRÜNDE (Kreide, Lagune) --- */
+  /* --- 2. SURFACES & BACKGROUNDS (chalk, lagoon) --- */
   --bg-app: #e6f0ef;
   --bg-panel: #f6fbfa;
   --bg-panel-elevated: #d8e8e6;
@@ -23,12 +23,12 @@
   --bg-editor: #f9fdfc;
   --bg-sidebar: #ebf4f3;
 
-  /* --- 3. TEXT & KONTRASTE --- */
+  /* --- 3. TEXT & CONTRAST --- */
   --text-main: #0f2422;
   --text-muted: #3f5c59;
   --text-faint: #728a87;
 
-  /* --- 4. RAHMEN, LINIEN & SCHATTEN --- */
+  /* --- 4. BORDERS, LINES & SHADOWS --- */
   --border-color: rgba(15, 80, 75, 0.17);
   --border-subtle: rgba(15, 80, 75, 0.08);
   --border-strong: rgba(15, 80, 75, 0.32);
@@ -36,7 +36,7 @@
   --scrollbar-thumb: rgba(15, 80, 75, 0.22);
   --scrollbar-thumb-hover: rgba(15, 80, 75, 0.38);
 
-  /* --- 5. STATUS- & SIGNALFARBEN --- */
+  /* --- 5. STATUS & SIGNAL COLOURS --- */
   --color-success: #15803d;
   --bg-success: rgba(21, 128, 61, 0.10);
   --border-success: rgba(21, 128, 61, 0.34);
@@ -49,7 +49,7 @@
   --bg-warning: rgba(180, 83, 9, 0.10);
   --border-warning: rgba(180, 83, 9, 0.34);
 
-  /* --- 6. RUNDUNGEN (Klar & eckig wie Polarized) --- */
+  /* --- 6. CORNERS (clear & square like Polarized) --- */
   --radius-card: 0px;
   --radius-btn: 2px;
   --radius-input: 2px;

@@ -448,7 +448,7 @@ func (h *Hub) enforceUserConnLimit(userID string) {
 		}
 	}
 	h.mu.Unlock()
-	slog.Warn("Verbindungslimit erreicht: älteste Verbindung(en) geschlossen",
+	slog.Warn("Connection limit reached: oldest connection(s) closed",
 		"user_id", userID, "closed", len(evicted), "limit", MaxConnectionsPerUser)
 }
 
