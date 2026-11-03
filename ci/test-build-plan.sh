@@ -39,10 +39,10 @@ expect "dev builds with tests" refs/heads/dev "build 0 dev"
 expect "main after a tested dev" refs/heads/main "build 1 latest" DEV_TREE="$TREE"
 expect "main with different code" refs/heads/main "build 0 latest" DEV_TREE=0000
 expect "tag on the latest commit" refs/tags/v0.10.0 "retag 1 v0.10.0 stable" LATEST_SHA="$SHA" LATEST_TREE="$TREE"
-expect "Tag, latest fehlt, dev getestet" refs/tags/v0.10.0 "build 1 v0.10.0 stable" DEV_TREE="$TREE"
+expect "tag, latest missing, dev tested" refs/tags/v0.10.0 "build 1 v0.10.0 stable" DEV_TREE="$TREE"
 expect "tag on unknown code" refs/tags/v0.10.0 "build 0 v0.10.0 stable"
-expect "Vorabversion ohne stable" refs/tags/v0.11.0-rc.1 "retag 1 v0.11.0-rc.1" LATEST_SHA="$SHA"
-expect "Feature-Branch" refs/heads/feat/x "build 0 feat-x"
+expect "pre-release without stable" refs/tags/v0.11.0-rc.1 "retag 1 v0.11.0-rc.1" LATEST_SHA="$SHA"
+expect "feature branch" refs/heads/feat/x "build 0 feat-x"
 
 if [ "$fails" -gt 0 ]; then
   echo "$fails FEHLGESCHLAGEN"
