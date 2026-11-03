@@ -22,7 +22,12 @@
   },
   "errors": {
     "saveFailed": "Salvataggio non riuscito: {{message}}",
-    "unknown": "Errore sconosciuto"
+    "unknown": "Errore sconosciuto",
+    "downloadFailed": "Download non riuscito (HTTP {{status}})",
+    "importFailed": "Importazione non riuscita (HTTP {{status}})",
+    "uploadFailed": "Caricamento non riuscito (HTTP {{status}})",
+    "transcribeFailed": "Riconoscimento vocale non riuscito (HTTP {{status}})",
+    "network": "Errore di rete"
   },
   "about": {
     "tagline": "Mente libera in tre secondi.",
@@ -191,7 +196,8 @@
     "createdInApp": "Creata nell'app",
     "createdInAppAt": "Creata nell'app il {{when}}",
     "changedVia": "ultima modifica tramite {{via}}{{key}}",
-    "changedViaAt": "ultima modifica tramite {{via}}{{key}} il {{when}}"
+    "changedViaAt": "ultima modifica tramite {{via}}{{key}} il {{when}}",
+    "deletedKey": "Chiave eliminata"
   },
   "date": {
     "today": "Oggi",

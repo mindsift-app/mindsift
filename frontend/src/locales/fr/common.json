@@ -22,7 +22,12 @@
   },
   "errors": {
     "saveFailed": "Échec de l'enregistrement : {{message}}",
-    "unknown": "Erreur inconnue"
+    "unknown": "Erreur inconnue",
+    "downloadFailed": "Le téléchargement a échoué (HTTP {{status}})",
+    "importFailed": "L’importation a échoué (HTTP {{status}})",
+    "uploadFailed": "L’envoi a échoué (HTTP {{status}})",
+    "transcribeFailed": "La reconnaissance vocale a échoué (HTTP {{status}})",
+    "network": "Erreur réseau"
   },
   "about": {
     "tagline": "L'esprit libre en trois secondes.",
@@ -191,7 +196,8 @@
     "createdInApp": "Créé dans l'application",
     "createdInAppAt": "Créé dans l'application le {{when}}",
     "changedVia": "dernière modification via {{via}}{{key}}",
-    "changedViaAt": "dernière modification via {{via}}{{key}} le {{when}}"
+    "changedViaAt": "dernière modification via {{via}}{{key}} le {{when}}",
+    "deletedKey": "Clé supprimée"
   },
   "date": {
     "today": "Aujourd'hui",

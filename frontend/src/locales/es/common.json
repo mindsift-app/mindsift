@@ -22,7 +22,12 @@
   },
   "errors": {
     "saveFailed": "Error al guardar: {{message}}",
-    "unknown": "Error desconocido"
+    "unknown": "Error desconocido",
+    "downloadFailed": "La descarga ha fallado (HTTP {{status}})",
+    "importFailed": "La importación ha fallado (HTTP {{status}})",
+    "uploadFailed": "La subida ha fallado (HTTP {{status}})",
+    "transcribeFailed": "El reconocimiento de voz ha fallado (HTTP {{status}})",
+    "network": "Error de red"
   },
   "about": {
     "tagline": "La mente despejada en tres segundos.",
@@ -171,8 +176,8 @@
     "change": "Cambiar icono",
     "choose": "Elegir icono"
   },
-  "aboutTitle": "Acerca de MindSift y detalles de versión"
-  ,"avatar": {
+  "aboutTitle": "Acerca de MindSift y detalles de versión",
+  "avatar": {
     "readFailed": "Error al leer el archivo",
     "loadFailed": "Error al cargar la imagen",
     "canvasFailed": "No se pudo crear un contexto canvas"
@@ -191,7 +196,8 @@
     "createdInApp": "Creado en la app",
     "createdInAppAt": "Creado en la app el {{when}}",
     "changedVia": "última modificación mediante {{via}}{{key}}",
-    "changedViaAt": "última modificación mediante {{via}}{{key}} el {{when}}"
+    "changedViaAt": "última modificación mediante {{via}}{{key}} el {{when}}",
+    "deletedKey": "Clave eliminada"
   },
   "date": {
     "today": "Hoy",
