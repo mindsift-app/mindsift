@@ -60,4 +60,18 @@ describe('InstantCaptureBar', () => {
     expect(screen.getAllByRole('button', { name: /Wocheneinkauf/ }).length).toBe(2);
     expect(screen.queryByText('Homelab')).toBeNull();
   });
+
+  it('takes the focus on a bare "c", not on Ctrl/Cmd+C (that copies)', async () => {
+    await act(async () => {
+      render(<InstantCaptureBar onCaptured={() => {}} lists={lists} />);
+    });
+    const input = screen.getByPlaceholderText(/Quick Dump/);
+    input.blur();
+    const ctrlC = new KeyboardEvent('keydown', { key: 'c', ctrlKey: true, bubbles: true, cancelable: true });
+    document.body.dispatchEvent(ctrlC);
+    expect(document.activeElement).not.toBe(input);
+    expect(ctrlC.defaultPrevented).toBe(false);
+    fireEvent.keyDown(document.body, { key: 'c' });
+    expect(document.activeElement).toBe(input);
+  });
 });
