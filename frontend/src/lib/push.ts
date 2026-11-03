@@ -20,7 +20,7 @@ export function needsHomeScreenInstall(): boolean {
 export function deviceName(ua = typeof navigator !== 'undefined' ? navigator.userAgent : ''): string {
   const browser = /Edg\//.test(ua) ? 'Edge' : /Firefox\//.test(ua) ? 'Firefox' : /Chrome\//.test(ua) ? 'Chrome' : /Safari\//.test(ua) ? 'Safari' : 'Browser';
   const os = /Android/.test(ua) ? 'Android' : /iPhone|iPad|iPod/.test(ua) ? 'iOS' : /Windows/.test(ua) ? 'Windows' : /Mac OS X/.test(ua) ? 'macOS' : /Linux/.test(ua) ? 'Linux' : '';
-  return os ? `${browser} auf ${os}` : browser;
+  return os ? i18n.t('common:deviceName', { browser, os }) : browser;
 }
 
 export function urlBase64ToUint8Array(base64: string): Uint8Array {

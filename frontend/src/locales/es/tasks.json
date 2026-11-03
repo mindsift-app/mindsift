@@ -123,8 +123,8 @@
     "confirmDeleteList": "¿De verdad quieres eliminar esta lista de tareas? Sus tareas se conservarán.",
     "readOnlyShared": "{{name}} ha compartido esta lista contigo solo para lectura.",
     "otherUser": "Otro usuario",
-    "columnsTitle": "Añadir, renombrar o reordenar columnas de Kanban"
-    ,"columns": "Personalizar columnas",
+    "columnsTitle": "Añadir, renombrar o reordenar columnas de Kanban",
+    "columns": "Personalizar columnas",
     "boardNormal": "Tablero al ancho normal",
     "boardWide": "Expandir tablero a ancho completo",
     "undoTitle": "Deshacer (Ctrl+Z)",
@@ -261,5 +261,14 @@
     "today": "📅 Vence hoy",
     "upcoming": "Próximas",
     "noDue": "Sin fecha de vencimiento"
+  },
+  "repeats": "Se repite: {{rule}}",
+  "moveSubtask": "Mover «{{title}}»",
+  "shareDialogTitle": "Compartir lista de tareas: {{title}}",
+  "assignedTo": "Asignada a: {{names}}",
+  "tabCount": {
+    "open": "Abiertas ({{count}})",
+    "done": "Hechas ({{count}})",
+    "trash": "Papelera ({{count}})"
   }
 }

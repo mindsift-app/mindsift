@@ -353,5 +353,7 @@
   "edit": "Edit",
   "restore": "Restore",
   "discard": "Discard",
-  "download": "Download"
+  "download": "Download",
+  "filterTag": "Filter by #{{tag}}",
+  "deviceName": "{{browser}} on {{os}}"
 }

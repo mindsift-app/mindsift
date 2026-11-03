@@ -351,5 +351,7 @@
   "edit": "Bearbeiten",
   "restore": "Wiederherstellen",
   "discard": "Verwerfen",
-  "download": "Download"
+  "download": "Download",
+  "filterTag": "Nach #{{tag}} filtern",
+  "deviceName": "{{browser}} auf {{os}}"
 }

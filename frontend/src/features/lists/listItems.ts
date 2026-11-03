@@ -12,7 +12,7 @@ export function parseListItemInput(rawText: string, defaultQty?: string): {
   category?: string;
 } {
   let text = rawText.trim();
-  const hashtagRegex = /#([a-zA-Z0-9äöüÄÖÜß_-]+)/g;
+  const hashtagRegex = /#([\p{L}\p{N}_-]+)/gu;
   const matches = Array.from(text.matchAll(hashtagRegex));
 
   let category: string | undefined = undefined;
@@ -36,7 +36,7 @@ export function getItemCategory(item: ListItem): string {
   if (item.category && item.category.trim()) {
     return item.category.trim().replace(/^#/, '');
   }
-  const match = item.content.match(/#([a-zA-Z0-9äöüÄÖÜß_-]+)/);
+  const match = item.content.match(/#([\p{L}\p{N}_-]+)/u);
   if (match) {
     return match[1];
   }
@@ -45,7 +45,7 @@ export function getItemCategory(item: ListItem): string {
 
 export function getItemDisplayContent(item: ListItem): string {
   if (item.content.includes('#')) {
-    const cleaned = item.content.replace(/#([a-zA-Z0-9äöüÄÖÜß_-]+)/g, '').replace(/\s+/g, ' ').trim();
+    const cleaned = item.content.replace(/#([\p{L}\p{N}_-]+)/gu, '').replace(/\s+/g, ' ').trim();
     if (cleaned) return cleaned;
   }
   return item.content;
@@ -148,7 +148,7 @@ export function collectHashtags(lists: SharedList[], workspaceTags: string[]): s
         }
       }
       if (item.content && item.content.includes('#')) {
-        const matches = item.content.matchAll(/#([a-zA-Z0-9äöüÄÖÜß_-]+)/g);
+        const matches = item.content.matchAll(/#([\p{L}\p{N}_-]+)/gu);
         for (const m of matches) {
           const raw = m[1];
           const lower = raw.toLowerCase();
@@ -179,7 +179,7 @@ export function collectHashtags(lists: SharedList[], workspaceTags: string[]): s
 // The hashtag being typed right before the cursor ("#Kü"): its text, where its "#" stands, the cursor
 export function findHashtagQuery(text: string, pos: number): { query: string; matchIndex: number; cursorPos: number } | null {
   const textBefore = text.slice(0, pos);
-  const match = textBefore.match(/(?:^|\s)#([a-zA-Z0-9äöüÄÖÜß_-]*)$/);
+  const match = textBefore.match(/(?:^|\s)#([\p{L}\p{N}_-]*)$/u);
   if (!match) return null;
   return {
     query: match[1],

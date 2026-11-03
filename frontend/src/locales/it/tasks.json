@@ -261,5 +261,14 @@
     "today": "📅 In scadenza oggi",
     "upcoming": "In arrivo",
     "noDue": "Senza data di scadenza"
+  },
+  "repeats": "Si ripete: {{rule}}",
+  "moveSubtask": "Sposta «{{title}}»",
+  "shareDialogTitle": "Condividi lista di attività: {{title}}",
+  "assignedTo": "Assegnata a: {{names}}",
+  "tabCount": {
+    "open": "Aperte ({{count}})",
+    "done": "Fatte ({{count}})",
+    "trash": "Cestino ({{count}})"
   }
 }

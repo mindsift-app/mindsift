@@ -337,7 +337,7 @@ func (s *Store) CreateListItem(listID, content, category, quantity string, sortO
 	category = strings.TrimSpace(category)
 	// Auto-extract hashtag if category is empty
 	if category == "" && strings.Contains(content, "#") {
-		re := regexp.MustCompile(`#([a-zA-Z0-9äöüÄÖÜß_-]+)`)
+		re := regexp.MustCompile(`#([\p{L}\p{N}_-]+)`)
 		if m := re.FindStringSubmatch(content); len(m) > 1 {
 			category = m[1]
 			cleaned := strings.TrimSpace(re.ReplaceAllString(content, ""))

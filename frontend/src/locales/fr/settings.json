@@ -573,7 +573,9 @@
       "smtp": "E-mail / Serveur SMTP",
       "smtpHint": "Envoi d'e-mails pour les alarmes"
     },
-    "demo": "Désactivé dans la démo : les paramètres du serveur, les e-mails et les comptes ne peuvent être consultés qu'ici."
+    "demo": "Désactivé dans la démo : les paramètres du serveur, les e-mails et les comptes ne peuvent être consultés qu'ici.",
+    "userCreated": "L’utilisateur « {{name}} » a été créé.",
+    "inviteSent": "Invitation envoyée à {{email}}."
   },
   "orgs": {
     "createFailed": "Échec de la création de l'organisation",
@@ -718,5 +720,9 @@
     "nothing": "(rien n'a été reconnu)",
     "seconds": "{{value}} s",
     "title": "Reconnaissance vocale"
+  },
+  "appearanceExtra": {
+    "accentColor": "Couleur d’accent {{color}}",
+    "themeSaved": "Thème « {{name}} » enregistré et activé."
   }
 }

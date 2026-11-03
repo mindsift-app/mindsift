@@ -573,7 +573,9 @@
       "smtp": "E-Mail / SMTP-Server",
       "smtpHint": "Mailversand für Alarme"
     },
-    "demo": "In der Demo deaktiviert: Server-Einstellungen, E-Mail und Konten lassen sich hier nur ansehen."
+    "demo": "In der Demo deaktiviert: Server-Einstellungen, E-Mail und Konten lassen sich hier nur ansehen.",
+    "userCreated": "Benutzer „{{name}}“ wurde angelegt.",
+    "inviteSent": "Einladung an {{email}} verschickt."
   },
   "orgs": {
     "createFailed": "Fehler beim Anlegen der Organisation",
@@ -717,5 +719,9 @@
     "nothing": "(nichts erkannt)",
     "seconds": "{{value}} s",
     "title": "Spracherkennung"
+  },
+  "appearanceExtra": {
+    "accentColor": "Akzentfarbe {{color}}",
+    "themeSaved": "Theme „{{name}}“ gespeichert und aktiviert."
   }
 }

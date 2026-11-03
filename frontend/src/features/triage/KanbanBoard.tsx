@@ -307,7 +307,7 @@ export function KanbanBoard({
                         </span>
                       )}
                       {task.recurrence && (
-                        <span className="inline-flex items-center text-muted" title={`Wiederholt sich ${RECURRENCE_LABELS[task.recurrence]}`}>
+                        <span className="inline-flex items-center text-muted" title={t('repeats', { rule: RECURRENCE_LABELS[task.recurrence] })}>
                           <Repeat className="w-2.5 h-2.5" />
                         </span>
                       )}

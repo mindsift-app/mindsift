@@ -53,7 +53,7 @@ export function buildListsMenu({
               ? [
                   {
                     id: 'list-share',
-                    label: `Liste "${activeList.title}" teilen`,
+                    label: i18n.t('lists:shareMenuLabel', { title: activeList.title }),
                     icon: <Users className="w-4 h-4" />,
                     onClick: () => openShareModal(),
                   },

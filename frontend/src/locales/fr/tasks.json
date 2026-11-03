@@ -261,5 +261,14 @@
     "today": "📅 Pour aujourd'hui",
     "upcoming": "À venir",
     "noDue": "Sans échéance"
+  },
+  "repeats": "Se répète : {{rule}}",
+  "moveSubtask": "Déplacer « {{title}} »",
+  "shareDialogTitle": "Partager la liste de tâches : {{title}}",
+  "assignedTo": "Attribuée à : {{names}}",
+  "tabCount": {
+    "open": "Ouvertes ({{count}})",
+    "done": "Terminées ({{count}})",
+    "trash": "Corbeille ({{count}})"
   }
 }

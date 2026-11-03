@@ -329,7 +329,7 @@ export class DocSyncEngine {
     const target = copy.props.conflictOf;
     // The author of the conflicting text holds the copy for a moment; deleting it now would fail half-way
     const copyHolder = this.lockedBy(copyId);
-    if (copyHolder) return { ok: false, message: `${copyHolder} bearbeitet diese Version gerade – bitte kurz warten` };
+    if (copyHolder) return { ok: false, message: i18n.t('workspace:lock.copy', { name: copyHolder }) };
     const ops: Op[] = [];
     if (!accept) {
       ops.push({ opId: this.newOpId(), kind: 'delete', blockId: copyId });

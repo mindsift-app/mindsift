@@ -58,7 +58,7 @@ capture|drag|ws|lists)
   if [ ! -f "$DATA/seed/mindsift.db" ] || [ "${RESEED:-}" = 1 ]; then
     echo "Lege Demo-Daten als Vorlage an …"
     rm -rf "$DATA/seed" && mkdir -p "$DATA/seed"
-    "$ENGINE" run -d --rm --name "$NAME" --network host -e PORT="$PORT" -e MINDA_DEMO=true -e DEMO_RESET_MINUTES=0 \
+    "$ENGINE" run -d --rm --name "$NAME" --network host -e PORT="$PORT" -e MINDA_DEMO=true -e DEFAULT_LANGUAGE=de -e DEMO_RESET_MINUTES=0 \
       -e JWT_SECRET=refshots-only -v "$DATA/seed":/data:Z "$IMAGE" >/dev/null
     wait_healthy
     "$ENGINE" stop "$NAME" >/dev/null

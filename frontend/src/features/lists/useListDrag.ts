@@ -109,9 +109,9 @@ export function useListDrag({ activeList, setLists, loadLists, onRefreshGlobal }
     if (isCategoryChanged) {
       newCategory = targetCatNormalized;
       if (!targetCatNormalized) {
-        newContent = newContent.replace(/#([a-zA-Z0-9äöüÄÖÜß_-]+)/g, '').replace(/\s+/g, ' ').trim();
+        newContent = newContent.replace(/#([\p{L}\p{N}_-]+)/gu, '').replace(/\s+/g, ' ').trim();
       } else if (newContent.includes('#')) {
-        newContent = newContent.replace(/#([a-zA-Z0-9äöüÄÖÜß_-]+)/g, `#${targetCatNormalized}`).trim();
+        newContent = newContent.replace(/#([\p{L}\p{N}_-]+)/gu, `#${targetCatNormalized}`).trim();
       }
     }
 
@@ -182,9 +182,9 @@ export function useListDrag({ activeList, setLists, loadLists, onRefreshGlobal }
     let newContent = sourceItem.content;
 
     if (!targetCatNormalized) {
-      newContent = newContent.replace(/#([a-zA-Z0-9äöüÄÖÜß_-]+)/g, '').replace(/\s+/g, ' ').trim();
+      newContent = newContent.replace(/#([\p{L}\p{N}_-]+)/gu, '').replace(/\s+/g, ' ').trim();
     } else if (newContent.includes('#')) {
-      newContent = newContent.replace(/#([a-zA-Z0-9äöüÄÖÜß_-]+)/g, `#${targetCatNormalized}`).trim();
+      newContent = newContent.replace(/#([\p{L}\p{N}_-]+)/gu, `#${targetCatNormalized}`).trim();
     }
 
     const updatedSourceItem: ListItem = {

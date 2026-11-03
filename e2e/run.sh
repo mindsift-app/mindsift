@@ -26,7 +26,7 @@ trap cleanup EXIT
 
 echo "Baue Image …"
 "$ENGINE" build -q -t "$IMAGE" "$ROOT" >/dev/null
-"$ENGINE" run -d --name "$NAME" --network host -e PORT="$PORT" -e MINDA_DEMO=true \
+"$ENGINE" run -d --name "$NAME" --network host -e PORT="$PORT" -e MINDA_DEMO=true -e DEFAULT_LANGUAGE=de \
   -e JWT_SECRET=e2e-only-secret -v "$WORK":/data:Z "$IMAGE" >/dev/null
 for _ in $(seq 1 60); do curl -s -m 1 "http://localhost:$PORT/api/v1/health" >/dev/null && break; sleep 0.5; done
 

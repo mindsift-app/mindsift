@@ -66,7 +66,9 @@
       "smtp": "Correo / Servidor SMTP",
       "smtpHint": "Envío de correos para avisos"
     },
-    "demo": "Desactivado en la demo: los ajustes del servidor, el correo y las cuentas solo se pueden consultar aquí."
+    "demo": "Desactivado en la demo: los ajustes del servidor, el correo y las cuentas solo se pueden consultar aquí.",
+    "userCreated": "Se ha creado el usuario «{{name}}».",
+    "inviteSent": "Invitación enviada a {{email}}."
   },
   "retention": {
     "areas": {
@@ -718,5 +720,9 @@
     "nothing": "(no se reconoció nada)",
     "seconds": "{{value}} s",
     "title": "Reconocimiento de voz"
+  },
+  "appearanceExtra": {
+    "accentColor": "Color de acento {{color}}",
+    "themeSaved": "Tema «{{name}}» guardado y activado."
   }
 }

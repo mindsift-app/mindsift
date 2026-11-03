@@ -115,5 +115,6 @@
     "title": "Registrazione rapida (+)",
     "label": "Registrazione rapida – tocca per scrivere, tieni premuto per parlare"
   },
-  "dictation": "Dettatura"
+  "dictation": "Dettatura",
+  "putOnList": "Metti direttamente nella lista «{{title}}»"
 }

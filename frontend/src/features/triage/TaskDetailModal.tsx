@@ -815,7 +815,7 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
                           {...subtaskSort.handleProps(st.id)}
                           className="-my-2.5 sm:my-0 h-11 w-6 sm:h-5 sm:w-4 flex items-center justify-center flex-shrink-0 text-faint hover:text-main cursor-grab active:cursor-grabbing touch-none"
                           title={t('detail.dragSort')}
-                          aria-label={`„${st.title}“ verschieben`}
+                          aria-label={t('moveSubtask', { title: st.title })}
                         >
                           <GripVertical className="w-3.5 h-3.5" />
                         </button>

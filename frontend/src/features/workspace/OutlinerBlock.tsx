@@ -1630,7 +1630,7 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
       {lockedBy && (
         <span
           className="shrink-0 self-start mt-1 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-btn text-[10px] text-muted bg-panel border border-border select-none"
-          title={`${lockedBy} bearbeitet diesen Punkt gerade`}
+          title={t('lock.title', { name: lockedBy })}
         >
           <Lock className="w-2.5 h-2.5" />
           {lockedBy}

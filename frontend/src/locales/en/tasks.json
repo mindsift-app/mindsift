@@ -261,5 +261,14 @@
     "today": "📅 Due today",
     "upcoming": "Upcoming",
     "noDue": "No due date"
+  },
+  "repeats": "Repeats {{rule}}",
+  "moveSubtask": "Move “{{title}}”",
+  "shareDialogTitle": "Share task list: {{title}}",
+  "assignedTo": "Assigned: {{names}}",
+  "tabCount": {
+    "open": "Open ({{count}})",
+    "done": "Done ({{count}})",
+    "trash": "Trash ({{count}})"
   }
 }

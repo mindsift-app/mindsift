@@ -36,5 +36,7 @@
   "itemPlaceholder": "¿Qué va en «{{title}}»? (p. ej. leche de avena #nevera)",
   "adding": "Añadiendo…",
   "general": "General",
-  "openCount": "{{count}} pendientes"
+  "openCount": "{{count}} pendientes",
+  "shareDialogTitle": "Compartir lista: {{title}}",
+  "shareMenuLabel": "Compartir la lista «{{title}}»"
 }

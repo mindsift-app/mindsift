@@ -181,7 +181,7 @@ export const JournalView: React.FC<JournalViewProps> = ({
           disabled={!activeDoc || !activeDoc.isOwner}
           onClick={() => activeDoc && onOpenShareModal(activeDoc)}
           className="btn-icon shrink-0 h-11 w-11 sm:h-7 sm:w-auto sm:px-2 gap-1 disabled:opacity-40"
-          title={activeDoc ? `${activeDoc.title} teilen` : 'Teilen'}
+          title={activeDoc ? t('journal.shareDay', { title: activeDoc.title }) : t('journal.share')}
         >
           <Users className="w-3.5 h-3.5" />
           <span className="hidden sm:inline text-xs">{sharedCount > 0 ? t('tasks:tabs.sharedCount', { count: sharedCount }) : t('journal.share')}</span>

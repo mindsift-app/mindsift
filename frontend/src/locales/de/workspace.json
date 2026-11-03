@@ -321,7 +321,8 @@
     "title": "Journal",
     "calendarTitle": "Kalender",
     "share": "Teilen",
-    "header": "Journal · {{date}}"
+    "header": "Journal · {{date}}",
+    "shareDay": "{{title}} teilen"
   },
   "dnd": {
     "trashed_one": "Notiz im Papierkorb",
@@ -379,5 +380,10 @@
   "dictation": {
     "stop": "Diktat beenden",
     "stopShort": "Stopp"
+  },
+  "lock": {
+    "notice": "{{name}} bearbeitet diesen Punkt gerade – bitte kurz warten",
+    "title": "{{name}} bearbeitet diesen Punkt gerade",
+    "copy": "{{name}} bearbeitet diese Version gerade – bitte kurz warten"
   }
 }

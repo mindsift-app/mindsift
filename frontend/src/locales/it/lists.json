@@ -36,5 +36,7 @@
   "itemPlaceholder": "Cosa vuoi aggiungere a «{{title}}»? (es. latte d'avena #frigo)",
   "adding": "Aggiunta in corso…",
   "general": "Generale",
-  "openCount": "{{count}} da fare"
+  "openCount": "{{count}} da fare",
+  "shareDialogTitle": "Condividi lista: {{title}}",
+  "shareMenuLabel": "Condividi la lista «{{title}}»"
 }

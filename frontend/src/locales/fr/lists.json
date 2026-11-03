@@ -36,5 +36,7 @@
   "itemPlaceholder": "Que mettre sur « {{title}} » ? (par ex. lait d'avoine #frais)",
   "adding": "Ajout en cours…",
   "general": "Général",
-  "openCount": "{{count}} à faire"
+  "openCount": "{{count}} à faire",
+  "shareDialogTitle": "Partager la liste : {{title}}",
+  "shareMenuLabel": "Partager la liste « {{title}} »"
 }

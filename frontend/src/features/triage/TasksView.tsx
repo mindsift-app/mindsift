@@ -346,7 +346,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
         people={people}
         size={size}
         ringClass="ring-[var(--bg-panel)]"
-        title={`Zugewiesen: ${people.map((p) => p.name).join(', ')}`}
+        title={i18n.t('tasks:assignedTo', { names: people.map((p) => p.name).join(', ') })}
       />
     );
   };
@@ -771,10 +771,10 @@ export const TasksView: React.FC<TasksViewProps> = ({
             {viewMode === 'kanban'
               ? 'Kanban'
               : filter === 'open'
-              ? `Offen (${openTasks.length})`
+              ? t('tabCount.open', { count: openTasks.length })
               : filter === 'done'
-              ? `Erledigt (${doneTasks.length})`
-              : `Papierkorb (${taskTrash.length})`}
+              ? t('tabCount.done', { count: doneTasks.length })
+              : t('tabCount.trash', { count: taskTrash.length })}
           </span>
         </div>
         <div className="flex items-center gap-1.5 flex-shrink-0">

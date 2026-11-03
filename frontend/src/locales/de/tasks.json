@@ -261,5 +261,14 @@
     "today": "📅 Heute fällig",
     "upcoming": "Demnächst",
     "noDue": "Ohne Fälligkeitsdatum"
+  },
+  "repeats": "Wiederholt sich {{rule}}",
+  "moveSubtask": "„{{title}}“ verschieben",
+  "shareDialogTitle": "Aufgabenliste teilen: {{title}}",
+  "assignedTo": "Zugewiesen: {{names}}",
+  "tabCount": {
+    "open": "Offen ({{count}})",
+    "done": "Erledigt ({{count}})",
+    "trash": "Papierkorb ({{count}})"
   }
 }

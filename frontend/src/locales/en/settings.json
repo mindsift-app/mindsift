@@ -573,7 +573,9 @@
       "smtp": "Email / SMTP server",
       "smtpHint": "Mail delivery for alarms"
     },
-    "demo": "Disabled in the demo: server settings, email and accounts can only be viewed here."
+    "demo": "Disabled in the demo: server settings, email and accounts can only be viewed here.",
+    "userCreated": "User “{{name}}” was created.",
+    "inviteSent": "Invitation sent to {{email}}."
   },
   "orgs": {
     "createFailed": "Creating the organization failed",
@@ -718,5 +720,9 @@
     "nothing": "(nothing recognized)",
     "seconds": "{{value}} s",
     "title": "Speech recognition"
+  },
+  "appearanceExtra": {
+    "accentColor": "Accent colour {{color}}",
+    "themeSaved": "Theme “{{name}}” saved and activated."
   }
 }
