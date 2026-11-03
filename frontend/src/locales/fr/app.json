@@ -1,0 +1,84 @@
+{
+  "connection": {
+    "online": "en ligne",
+    "onlineTitle": "En ligne – les modifications sont transmises immédiatement",
+    "limited": "limité",
+    "limitedTitle": "Limité – pas de connexion directe en temps réel (ex. proxy d'entreprise) ; les modifications des autres arrivent par long polling, légèrement différées",
+    "offline": "hors ligne",
+    "offlineTitle": "Hors ligne – pas de connexion au serveur ; les modifications seront synchronisées ultérieurement"
+  },
+  "header": {
+    "openMenu": "Ouvrir le menu et les options d'affichage",
+    "installApp": "Installer comme application web sur ton smartphone",
+    "app": "App",
+    "search": "Recherche globale",
+    "openSearch": "Ouvrir la recherche globale",
+    "searchShortcut": "Recherche globale (Ctrl+K / ⌘K ou /)",
+    "profileAndSettings": "Profil et paramètres",
+    "openUserMenu": "Ouvrir le menu utilisateur",
+    "help": "Aide et documentation"
+  },
+  "viewError": {
+    "unknown": "Erreur d'affichage inconnue",
+    "title": "Impossible de charger cette vue",
+    "reset": "Réinitialiser la vue"
+  },
+  "pwa": {
+    "title": "Installer {{name}} comme application",
+    "intro": "Plein écran sans barre de navigateur, démarrage plus rapide et accès direct depuis l'écran d'accueil.",
+    "installNow": "Installer comme application web dès maintenant",
+    "later": "Continuer plus tard dans le navigateur",
+    "install": "Installer maintenant",
+    "guideTitle": "Ajouter à l'écran d'accueil en 2 secondes :",
+    "guideStep1": "Dans le navigateur, appuie sur <share><icon></icon> Partager</share> (iPhone/Safari) ou le <b>menu du navigateur (⋮)</b>.",
+    "guideStep2": "Choisis <b>« Sur l'écran d'accueil »</b> ou <b>« Installer l'application »</b>.",
+    "understood": "Compris"
+  },
+  "profile": {
+    "theme": "Thème visuel",
+    "accountSettings": "Paramètres du compte",
+    "groups": "Groupes",
+    "help": "Aide et guide",
+    "admin": "Administration",
+    "logout": "Se déconnecter",
+    "installApp": "Installer l'application web sur ton smartphone"
+  },
+  "capture": {
+    "title": "Saisir un Quick Dump",
+    "listening": "J'écoute…",
+    "transcribing": "Transcription en cours…",
+    "placeholder": "Qu'as-tu en tête ?…",
+    "stopRecording": "Arrêter l'enregistrement",
+    "voiceInput": "Saisie vocale",
+    "dueOptional": "Échéance (optionnel)",
+    "submit": "Enregistrer la pensée",
+    "textLabel": "Pensée / Quick Dump"
+  },
+  "demoReset": "L'instance de démonstration a été réinitialisée",
+  "sharedQueued": "Enregistré dans le Quick Dump",
+  "menu": {
+    "quickActions": "Actions rapides",
+    "newThought": "Saisir une nouvelle pensée",
+    "refreshInbox": "Actualiser la boîte de réception",
+    "switchArea": "Changer d'espace",
+    "gotoWorkspace": "Notes et Workspace",
+    "gotoTasks": "Tâches et Kanban",
+    "gotoLists": "Listes de courses",
+    "navigation": "Navigation",
+    "backToTriage": "Retour au Triage (page d'accueil)",
+    "toWorkspace": "Vers le Workspace",
+    "toTasks": "Vers les tâches",
+    "toLists": "Vers les listes"
+  },
+  "tabs": {
+    "settings": "Paramètres",
+    "help": "Aide"
+  },
+  "demo": {
+    "resetEvery": "Cette instance de test est réinitialisée automatiquement à son état initial toutes les {{count}} minutes.",
+    "resetIn": "Réinitialisation dans {{time}}",
+    "resetting": "réinitialisation…",
+    "label": "✨ Démo ·"
+  },
+  "connecting": "Connexion à MindSift…"
+}

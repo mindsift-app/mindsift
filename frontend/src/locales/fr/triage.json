@@ -1,0 +1,119 @@
+{
+  "swipe": {
+    "toTask": "Vers tâche 👉",
+    "discard": "👈 Jeter"
+  },
+  "action": {
+    "taskTitle": "Transformer directement en tâche",
+    "task": "Tâche",
+    "noteTitle": "Créer directement une note de Workspace",
+    "note": "Note",
+    "discard": "Jeter"
+  },
+  "quickDump": "Quick Dump",
+  "empty": {
+    "title": "Le deck de triage est vide",
+    "capture": "+ Saisir un Quick Dump",
+    "text": "Toutes les notes du Quick Dump ont été triées ou jetées. Appuie sur le <b>+</b> en bas au centre (ou appuie sur <kbd>C</kbd>) pour capturer de nouvelles pensées."
+  },
+  "undoLast": "Annuler la dernière action",
+  "shortcuts": "← Jeter • → Tâche • D Note • Espace Plus tard",
+  "undo": "Annuler",
+  "trashTitle": "Corbeille du triage",
+  "next": "Quick Dump suivant…",
+  "moreOptions": "Plus d'options (ou maintenir la carte appuyée)",
+  "saveText": "Enregistrer le texte",
+  "swipeHint": "👈 Jeter · 👉 Tâche · Maintenir appuyé = Plus d'options",
+  "date": {
+    "title": "Créer une tâche avec une date d'échéance :",
+    "save": "Enregistrer comme tâche planifiée"
+  },
+  "list": {
+    "title": "Attribuer le Quick Dump à une liste :",
+    "none": "Aucune liste pour le moment."
+  },
+  "toList": "Sur une liste",
+  "withDate": "Avec échéance",
+  "chooseDate": "Choisir une date",
+  "asNote": "En note",
+  "inWorkspace": "Dans le Workspace",
+  "later": "Plus tard",
+  "laterHint": "Déplacer à la fin",
+  "discardTitle": "Jeter (touche H ou flèche gauche)",
+  "laterTitle": "Décider plus tard – déplacer à la fin (Espace)",
+  "noteTitle": "Transformer en note de Workspace (touche D)",
+  "dateTitle": "Comme tâche avec date d'échéance (touche T)",
+  "taskTitle": "Prendre en charge comme tâche maintenant (touche L ou flèche droite)",
+  "queue": {
+    "hint": "Appuyer = Faire passer devant · 👈 Jeter · 👉 Tâche",
+    "show": "Afficher la file ({{count}})",
+    "hide": "Masquer la file ({{count}})",
+    "title": "File d'attente ({{count}})"
+  },
+  "sheet": {
+    "title": "Classer le Quick Dump",
+    "editText": "Modifier le texte avant de classer",
+    "dateTitle": "Choisir la date d'échéance de la tâche :",
+    "back": "Retour",
+    "saveDate": "Enregistrer avec une date",
+    "listTitle": "Sur quelle liste placer cet élément ?"
+  },
+  "priority": {
+    "urgent": "Urgente",
+    "high": "Importante"
+  },
+  "trashCount": "Corbeille ({{count}})",
+  "openCount_one": "{{count}} Quick Dump ouvert",
+  "openCount_other": "{{count}} Quick Dumps ouverts",
+  "noList": "Pas encore de liste",
+  "listHint": "Courses / partagées",
+  "onList": "Vers {{title}}",
+  "toSharedList": "Placer sur une liste partagée",
+  "setOnList": "Placer sur une liste",
+  "trash": {
+    "none": "Aucune pensée jetée.",
+    "confirmDelete": "Supprimer définitivement ?",
+    "delete": "Supprimer définitivement",
+    "really": "Vraiment ?",
+    "confirmEmpty": "Supprimer définitivement {{count}} éléments ?",
+    "empty": "Vider la corbeille",
+    "discardedAt": "jeté le {{date}}"
+  },
+  "capture": {
+    "okTask": "Tâche !",
+    "okList": "Sur la liste !",
+    "okNote": "Note !",
+    "okInbox": "Au triage !",
+    "placeholderInbox": "Saisir un Quick Dump…",
+    "placeholderTask": "Saisir une tâche…",
+    "placeholderNote": "Saisir une note…",
+    "placeholder": "Quick Dump…",
+    "targetTitle": "Choisir la destination (Quick Dump, tâche, liste ou note) & options",
+    "asTask": "Comme tâche",
+    "where": "Où l'enregistrer ?",
+    "whereHint": "Par défaut : Quick Dump pour trier plus tard",
+    "inbox": "Quick Dump (triage)",
+    "directList": "Directement sur une liste…",
+    "directNote": "Directement comme note",
+    "taskList": "Liste de tâches :",
+    "allTasks": "Toutes les tâches",
+    "listLabel": "Liste :",
+    "priority": "Priorité :",
+    "due": "Échéance le :",
+    "placeholderList": "Ajouter à « {{title}} »…",
+    "list": "Liste",
+    "directTask": "Directement comme tâche"
+  },
+  "fab": {
+    "nothing": "Rien n'a été reconnu",
+    "saved": "Enregistré dans le Quick Dump",
+    "saveFailed": "Échec de l'enregistrement",
+    "unsupported": "Ce navigateur ne prend pas en charge la saisie vocale",
+    "releaseCancel": "🗑️ Relâcher pour annuler",
+    "listening": "J'écoute… (relâcher pour enregistrer)",
+    "dragCancel": "Glisser vers le haut pour annuler",
+    "title": "Capture rapide (+)",
+    "label": "Capture rapide – appuyer pour taper, maintenir appuyé pour parler"
+  },
+  "dictation": "Dictée"
+}

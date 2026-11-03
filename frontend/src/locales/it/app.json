@@ -1,0 +1,84 @@
+{
+  "connection": {
+    "online": "online",
+    "onlineTitle": "Online – le modifiche arrivano subito",
+    "limited": "limitato",
+    "limitedTitle": "Limitato – nessuna connessione live diretta (es. proxy aziendale); le modifiche altrui arrivano tramite long polling, con un leggero ritardo",
+    "offline": "offline",
+    "offlineTitle": "Offline – nessuna connessione al server; le modifiche verranno sincronizzate in seguito"
+  },
+  "header": {
+    "openMenu": "Apri menu e opzioni di visualizzazione",
+    "installApp": "Installa come web app sullo smartphone",
+    "app": "App",
+    "search": "Ricerca globale",
+    "openSearch": "Apri ricerca globale",
+    "searchShortcut": "Ricerca globale (Ctrl+K / ⌘K o /)",
+    "profileAndSettings": "Profilo e impostazioni",
+    "openUserMenu": "Apri menu utente",
+    "help": "Aiuto e documentazione"
+  },
+  "viewError": {
+    "unknown": "Errore di visualizzazione sconosciuto",
+    "title": "Impossibile caricare la vista",
+    "reset": "Ripristina vista"
+  },
+  "pwa": {
+    "title": "Installa {{name}} come app",
+    "intro": "Schermo intero senza barra del browser, avvio più rapido e accesso diretto dalla schermata iniziale.",
+    "installNow": "Installa subito come web app",
+    "later": "Continua a usare nel browser",
+    "install": "Installa ora",
+    "guideTitle": "Aggiungi alla schermata iniziale in 2 secondi:",
+    "guideStep1": "Nel browser tocca <share><icon></icon> Condividi</share> (iPhone/Safari) o il <b>menu del browser (⋮)</b>.",
+    "guideStep2": "Scegli <b>«Aggiungi a schermata Home»</b> o <b>«Installa app»</b>.",
+    "understood": "Ho capito"
+  },
+  "profile": {
+    "theme": "Tema grafico",
+    "accountSettings": "Impostazioni account",
+    "groups": "Gruppi",
+    "help": "Guida e aiuto",
+    "admin": "Amministrazione",
+    "logout": "Disconnetti",
+    "installApp": "Installa web app sullo smartphone"
+  },
+  "capture": {
+    "title": "Registra Quick Dump",
+    "listening": "Ti ascolto…",
+    "transcribing": "Trascrizione in corso…",
+    "placeholder": "A cosa stai pensando?…",
+    "stopRecording": "Interrompi registrazione",
+    "voiceInput": "Inserimento vocale",
+    "dueOptional": "Scadenza (opzionale)",
+    "submit": "Salva pensiero",
+    "textLabel": "Pensiero / Quick Dump"
+  },
+  "demoReset": "L'istanza demo è stata ripristinata",
+  "sharedQueued": "Salvato nel Quick Dump",
+  "menu": {
+    "quickActions": "Azioni rapide",
+    "newThought": "Registra un nuovo pensiero",
+    "refreshInbox": "Aggiorna posta in arrivo",
+    "switchArea": "Cambia area",
+    "gotoWorkspace": "Note e Workspace",
+    "gotoTasks": "Attività e Kanban",
+    "gotoLists": "Liste della spesa",
+    "navigation": "Navigazione",
+    "backToTriage": "Torna a Triage (pagina iniziale)",
+    "toWorkspace": "Vai al Workspace",
+    "toTasks": "Vai alle attività",
+    "toLists": "Vai alle liste"
+  },
+  "tabs": {
+    "settings": "Impostazioni",
+    "help": "Aiuto"
+  },
+  "demo": {
+    "resetEvery": "Questa istanza di test viene ripristinata automaticamente allo stato iniziale ogni {{count}} minuti.",
+    "resetIn": "Ripristino tra {{time}}",
+    "resetting": "ripristino in corso…",
+    "label": "✨ Demo ·"
+  },
+  "connecting": "Connessione a MindSift in corso…"
+}

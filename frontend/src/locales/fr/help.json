@@ -1,0 +1,30 @@
+{
+  "back": "Retour",
+  "title": "Aide & documentation",
+  "subtitle": "Utilisation du clavier, notes outliner, triage, tableau Kanban et collaboration",
+  "search": "Rechercher dans l'aide & les raccourcis…",
+  "clearSearch": "Effacer la recherche",
+  "cat": {
+    "all": "Tous les thèmes",
+    "workspace": "Workspace & notes",
+    "triage": "Saisie rapide & triage",
+    "tasks": "Tâches & Kanban",
+    "lists": "Listes partagées",
+    "collaboration": "Groupes & partages",
+    "shortcuts": "Raccourcis clavier & gestes"
+  },
+  "reset": "Réinitialiser le filtre",
+  "none": "Aucun thème d'aide correspondant",
+  "noneHint": "Essaie un autre terme de recherche ou bascule vers la catégorie « Tous les thèmes ».",
+  "shortcutsTitle": "Vue d'ensemble des raccourcis clavier & gestes",
+  "shortcutsIntro": "Travailler plus vite sans souris : tous les raccourcis et gestes tactiles d'un coup d'œil.",
+  "col": {
+    "key": "Touche / Geste",
+    "scope": "Espace",
+    "desc": "Fonction"
+  },
+  "results_one": "Résultats pour <b>« {{query}} »</b> : {{count}} carte d'aide",
+  "results_other": "Résultats pour <b>« {{query}} »</b> : {{count}} cartes d'aide",
+  "shortcutCount_one": "{{count}} raccourci",
+  "shortcutCount_other": "{{count}} raccourcis"
+}
