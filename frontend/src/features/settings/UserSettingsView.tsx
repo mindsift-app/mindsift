@@ -8,7 +8,9 @@ import {
   Archive,
   Mic,
   Clock,
+  Languages,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { AuthStatus, User, UserTheme } from '../../lib/types';
 import { ApiKeysPanel } from './ApiKeysPanel';
 import { api } from '../../lib/api';
@@ -27,6 +29,7 @@ import { useProfileSettings } from './user/useProfileSettings';
 import { DangerConfirmSheet, ProfileSection } from './user/ProfileSection';
 import { RetentionSection, useRetentionSettings } from './user/RetentionSection';
 import { useVoiceSetting, VoiceSection } from './user/VoiceSection';
+import { LanguageSection, useLanguageSetting } from './user/LanguageSection';
 import { DataSection, useDataExport } from './user/DataSection';
 
 interface UserSettingsViewProps {
@@ -40,7 +43,7 @@ interface UserSettingsViewProps {
   onBack: () => void;
 }
 
-type UserSettingsSection = 'profile' | 'appearance' | 'alarms' | 'voice' | 'retention' | 'webhooks' | 'data';
+type UserSettingsSection = 'profile' | 'appearance' | 'language' | 'alarms' | 'voice' | 'retention' | 'webhooks' | 'data';
 
 export const UserSettingsView: React.FC<UserSettingsViewProps> = ({
   currentUser,
@@ -61,6 +64,10 @@ export const UserSettingsView: React.FC<UserSettingsViewProps> = ({
   const retention = useRetentionSettings(currentUser, onUserUpdated);
   const voice = useVoiceSetting(onUserUpdated);
   const dataExport = useDataExport();
+  // Sprache (user/LanguageSection.tsx)
+  const { t } = useTranslation('settings');
+  const language = useLanguageSetting(onUserUpdated);
+  const [serverLanguage, setServerLanguage] = useState<string>();
 
   const [legal, setLegal] = useState<AuthStatus['legal']>();
 
@@ -78,6 +85,7 @@ export const UserSettingsView: React.FC<UserSettingsViewProps> = ({
       .then((st) => {
         setLegal(st.legal);
         setDemoMode(Boolean(st.demoMode));
+        setServerLanguage(st.defaultLanguage);
       })
       .catch(() => {});
   }, []);
@@ -148,6 +156,21 @@ export const UserSettingsView: React.FC<UserSettingsViewProps> = ({
             <div>
               <p className="font-semibold">Darstellung & Themes</p>
               <p className="text-[10px] text-faint">Farben, Kontraste & Rundungen</p>
+            </div>
+          </button>
+
+          <button
+            onClick={() => setSection('language')}
+            className={`w-full px-3.5 py-3 text-left text-xs font-medium flex items-center gap-2.5 transition-colors ${
+              section === 'language'
+                ? 'bg-panel-elevated text-main border-l-2 border-l-accent'
+                : 'text-muted hover:text-main hover:bg-panel-hover'
+            }`}
+          >
+            <Languages className="w-4 h-4 text-accent flex-shrink-0" />
+            <div>
+              <p className="font-semibold">{t('language.nav')}</p>
+              <p className="text-[10px] text-faint">{t('language.navHint')}</p>
             </div>
           </button>
 
@@ -247,6 +270,10 @@ export const UserSettingsView: React.FC<UserSettingsViewProps> = ({
               customThemes={customThemes}
               onThemeChange={onThemeChange}
             />
+          )}
+
+          {section === 'language' && (
+            <LanguageSection language={language} currentUser={currentUser} serverDefault={serverLanguage} />
           )}
 
           {/* ================================================================= */}

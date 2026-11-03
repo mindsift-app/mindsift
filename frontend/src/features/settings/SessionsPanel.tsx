@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { LogOut, Monitor, Smartphone } from 'lucide-react';
 import { api } from '../../lib/api';
 import { Session } from '../../lib/types';
+import { formatDateTime } from '../../lib/format';
 
 // Rough device label from the user agent; good enough to tell one's own devices apart
 export function describeDevice(ua: string): { label: string; mobile: boolean } {
@@ -36,7 +37,7 @@ function formatLastUsed(iso: string): string {
   if (isNaN(d.getTime())) return '';
   const minutes = Math.round((Date.now() - d.getTime()) / 60000);
   if (minutes < 10) return 'gerade aktiv';
-  return `zuletzt ${d.toLocaleString('de-DE', { dateStyle: 'medium', timeStyle: 'short' })}`;
+  return `zuletzt ${formatDateTime(d, { dateStyle: 'medium', timeStyle: 'short' })}`;
 }
 
 export function SessionsPanel() {

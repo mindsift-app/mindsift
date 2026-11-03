@@ -50,6 +50,8 @@ func (s *Server) handleAuthStatus(w http.ResponseWriter, r *http.Request) {
 		"passwordReset":       s.passwordResetAvailable(),
 		// AI agents may connect over MCP (MCP_ENABLED or the admin's switch)
 		"mcpEnabled": s.mcpEnabled(),
+		// Language of the login screen when MindSift does not speak the browser's language
+		"defaultLanguage": s.defaultLanguage(),
 		// Address to enter as connector in claude.ai / ChatGPT (OAuth); empty while OAuth is off
 		"mcpConnectorUrl": func() string {
 			if s.oauthEnabled() {
@@ -138,6 +140,7 @@ func (s *Server) handleFirstBootSetup(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
+	_ = s.store.SetLanguage(user.ID, s.requestLanguage(r))
 
 	sys, _ := s.store.GetSystemSettings()
 	if sys != nil {
@@ -264,6 +267,7 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusConflict, "E-Mail-Adresse existiert bereits")
 		return
 	}
+	_ = s.store.SetLanguage(user.ID, s.requestLanguage(r))
 
 	if validInvite != nil {
 		if err := s.store.FinishUserInvite(validInvite.ID, claim, user.ID); err != nil {
@@ -527,6 +531,8 @@ func (s *Server) handleUpdateUserSettings(w http.ResponseWriter, r *http.Request
 		DoneRetentionDays *int `json:"doneRetentionDays"`
 		// Voice input: "" (Whisper server, the default) or "browser"
 		VoiceInput *string `json:"voiceInput"`
+		// Language of the app: a supported code or "" (browser, then the server's default)
+		Language *string `json:"language"`
 		// All retention delays at once (storage/retention.go)
 		Retention *domain.Retention `json:"retention"`
 	}
@@ -627,6 +633,12 @@ func (s *Server) handleUpdateUserSettings(w http.ResponseWriter, r *http.Request
 	}
 	if req.VoiceInput != nil {
 		if err := s.store.SetVoiceInput(userID, *req.VoiceInput); err != nil {
+			writeError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+	}
+	if req.Language != nil {
+		if err := s.store.SetLanguage(userID, *req.Language); err != nil {
 			writeError(w, http.StatusBadRequest, err.Error())
 			return
 		}
@@ -785,4 +797,5 @@ func (s *Server) fillUserPreferences(u *domain.User) {
 	u.RetentionNeverAllowed = allowNever
 	u.DoneRetentionDays = r.DoneTasks
 	u.VoiceInput = s.store.VoiceInput(u.ID)
+	u.Language = s.store.Language(u.ID)
 }

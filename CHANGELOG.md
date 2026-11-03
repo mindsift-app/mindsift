@@ -6,6 +6,15 @@ Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), die V
 
 ## [Unreleased]
 
+## [0.73.0] - 2026-11-03
+
+### Added
+- Language setting: under Kontoeinstellungen → Sprache everyone picks the language of the app, or follows the browser. For now German is the only language; more follow. Existing accounts stay on German.
+- Admins set the server's default language under Administration → Server & Isolation. It applies to new accounts and everyone whose browser language MindSift does not speak, including the login screen. `DEFAULT_LANGUAGE` gives the start value.
+
+### Changed
+- Dates and times follow the chosen language instead of being fixed to German (no visible change yet).
+
 ## [0.72.0] - 2026-11-03
 
 ### Added

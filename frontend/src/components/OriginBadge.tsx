@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Bot, Webhook } from 'lucide-react';
 import { Origin } from '../lib/types';
+import { formatDateTime } from '../lib/format';
 
 interface OriginBadgeProps {
   origin: Origin | undefined;
@@ -16,7 +17,7 @@ const formatWhen = (iso?: string) => {
   if (!iso) return '';
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return '';
-  return d.toLocaleString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+  return formatDateTime(d, { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 };
 
 // originDetails: who created and who last changed the entry, as one line for tooltip and detail view

@@ -4,6 +4,7 @@ import { BackupFile, SystemSettings } from '../../lib/types';
 import { api } from '../../lib/api';
 import { ToggleSwitch } from '../../components/ToggleSwitch';
 import { formatBytes, saveBlob } from '../../lib/download';
+import { formatDateTime } from '../../lib/format';
 
 interface BackupAdminCardProps {
   settings: SystemSettings;
@@ -116,7 +117,7 @@ export const BackupAdminCard: React.FC<BackupAdminCardProps> = ({ settings, onSa
               <div className="min-w-0">
                 <p className="text-xs font-mono text-main truncate">{f.name}</p>
                 <p className="text-[11px] text-faint">
-                  {new Date(f.createdAt).toLocaleString('de-DE')} · {formatBytes(f.size)}
+                  {formatDateTime(f.createdAt)} · {formatBytes(f.size)}
                 </p>
               </div>
               <div className="flex items-center gap-1.5 shrink-0">

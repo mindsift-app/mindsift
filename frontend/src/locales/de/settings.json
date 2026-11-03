@@ -1,0 +1,14 @@
+{
+  "language": {
+    "nav": "Sprache",
+    "navHint": "Sprache der Oberfläche",
+    "title": "Sprache",
+    "intro": "In welcher Sprache MindSift Menüs und Hinweise zeigt.",
+    "autoHint": "Die Sprache deines Browsers, wenn MindSift sie kann, sonst die Standardsprache dieses Servers ({{fallback}}).",
+    "more": "Weitere Sprachen folgen."
+  },
+  "defaultLanguage": {
+    "title": "Standardsprache",
+    "hint": "Für neue Konten und alle, deren Browsersprache MindSift nicht kann, auch auf dem Login-Bildschirm und in der Demo. Jede Person kann unter Kontoeinstellungen → Sprache selbst umstellen."
+  }
+}

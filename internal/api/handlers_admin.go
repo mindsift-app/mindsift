@@ -8,6 +8,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/mindsift-app/mindsift/internal/auth"
 	"github.com/mindsift-app/mindsift/internal/domain"
+	"github.com/mindsift-app/mindsift/internal/i18n"
 	"github.com/mindsift-app/mindsift/internal/storage"
 )
 
@@ -351,6 +352,7 @@ func (s *Server) settingsForBrowser(settings *domain.SystemSettings) *domain.Sys
 		out.MCPViaEnv = true
 	}
 	out.EmailLinksAvailable = s.emailLinksAvailable()
+	out.DefaultLanguage = s.defaultLanguage()
 	return &out
 }
 
@@ -390,6 +392,10 @@ func (s *Server) handleAdminUpdateSettings(w http.ResponseWriter, r *http.Reques
 		settings.MCPEnabled = nil // fixed by MCP_ENABLED, the stored value stays
 	}
 	settings.MCPViaEnv = false
+	if settings.DefaultLanguage != "" && !i18n.Valid(settings.DefaultLanguage) {
+		writeError(w, http.StatusBadRequest, storage.ErrInvalidLanguage.Error())
+		return
+	}
 	previousMode := s.store.SharingMode()
 	if err := s.store.UpdateSystemSettings(&settings); err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())

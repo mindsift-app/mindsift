@@ -4,6 +4,7 @@ import { BackupFile, DataSection, DATA_SECTIONS, ImportSummary } from '../../lib
 import { api } from '../../lib/api';
 import { formatBytes, saveBlob } from '../../lib/download';
 import { SectionPicker } from './SectionPicker';
+import { formatDateTime } from '../../lib/format';
 
 // The user's own automatic backups on the server: download or restore (all or some sections)
 export const ServerBackupsCard: React.FC = () => {
@@ -64,7 +65,7 @@ export const ServerBackupsCard: React.FC = () => {
             <div key={f.name} className="p-3 space-y-2">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="min-w-0">
-                  <p className="text-xs font-semibold text-main">{new Date(f.createdAt).toLocaleString('de-DE')}</p>
+                  <p className="text-xs font-semibold text-main">{formatDateTime(f.createdAt)}</p>
                   <p className="text-[11px] text-faint">{formatBytes(f.size)}</p>
                 </div>
                 <div className="flex gap-2">

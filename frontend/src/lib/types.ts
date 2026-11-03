@@ -21,6 +21,8 @@ export interface AuthStatus {
   mcpEnabled?: boolean;
   // MCP address for claude.ai / ChatGPT connectors (OAuth); empty when the server has no BASE_URL
   mcpConnectorUrl?: string;
+  // The server's default language (login screen, people without own choice and unknown browser language)
+  defaultLanguage?: string;
   // Demo mode with periodic reset: next reset (ISO) and seconds until then
   demoNextReset?: string;
   demoResetInSeconds?: number;
@@ -119,6 +121,8 @@ export interface User {
   doneRetentionDays?: number;
   // Voice input: '' = the server's Whisper (default), 'browser' = the browser's recognition
   voiceInput?: '' | 'browser';
+  // Language of the app: a code from LANGUAGES (i18n/index.ts), or '' to follow the browser
+  language?: string;
   // How long finished and deleted things are kept, in days (0 = for good; only when allowed)
   retention?: Retention;
   retentionNeverAllowed?: boolean;
@@ -306,6 +310,8 @@ export interface SystemSettings {
   // AI agents may connect over MCP (and claude.ai / ChatGPT over OAuth); fixed when set via MCP_ENABLED
   mcpEnabled?: boolean;
   mcpConfiguredViaEnv?: boolean;
+  // Language for new accounts and everyone whose browser language the app does not speak
+  defaultLanguage?: string;
 }
 
 /** One file of a server backup listing. */

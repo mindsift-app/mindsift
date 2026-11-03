@@ -8,6 +8,8 @@ import { ToggleSwitch } from '../../../components/ToggleSwitch';
 import { BackupAdminCard } from '../BackupAdminCard';
 import { VoiceStatusCard } from '../VoiceStatusCard';
 import { SHARING_MODES, useAdminSettings } from './useAdminSettings';
+import { useTranslation } from 'react-i18next';
+import { FALLBACK_LANGUAGE, LANGUAGES } from '../../../i18n';
 
 // Administration → Server & Isolation (state in useAdminSettings)
 export function ServerSection({
@@ -15,6 +17,7 @@ export function ServerSection({
 }: {
   admin: ReturnType<typeof useAdminSettings>;
 }) {
+  const { t } = useTranslation('settings');
   const {
     pendingMode,
     settings,
@@ -59,6 +62,26 @@ export function ServerSection({
                 Speichern
               </button>
             </div>
+          </div>
+
+          {/* Default language: login screen, new accounts and browsers in other languages */}
+          <div>
+            <label htmlFor="admin-default-language" className="block text-muted font-semibold mb-1">
+              {t('defaultLanguage.title')}
+            </label>
+            <select
+              id="admin-default-language"
+              value={settings.defaultLanguage || FALLBACK_LANGUAGE}
+              onChange={(e) => handleSaveSystemSettings({ defaultLanguage: e.target.value })}
+              className="w-full max-w-md h-11 sm:h-8 px-2.5 input-field text-base sm:text-xs"
+            >
+              {LANGUAGES.map((l) => (
+                <option key={l.id} value={l.id}>
+                  {l.name}
+                </option>
+              ))}
+            </select>
+            <p className="text-[11px] text-muted mt-1 max-w-md">{t('defaultLanguage.hint')}</p>
           </div>
 
           {/* Sharing Isolation Cards */}

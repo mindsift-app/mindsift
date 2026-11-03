@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/mindsift-app/mindsift/internal/domain"
+	"github.com/mindsift-app/mindsift/internal/i18n"
 )
 
 // --- STATS, SEARCH & EXPORT ---
@@ -182,6 +183,10 @@ func (s *Store) GetSystemSettings() (*domain.SystemSettings, error) {
 			case "mcp_enabled":
 				on := v != "false"
 				settings.MCPEnabled = &on
+			case "default_language":
+				if i18n.Valid(v) {
+					settings.DefaultLanguage = v
+				}
 			}
 		}
 	}
@@ -290,6 +295,13 @@ func (s *Store) UpdateSystemSettings(settings *domain.SystemSettings) error {
 	if err == nil && settings.MCPEnabled != nil {
 		_, err = s.db.Exec(`INSERT INTO system_settings (key, value) VALUES ('mcp_enabled', ?)
 			ON CONFLICT(key) DO UPDATE SET value = excluded.value`, strconv.FormatBool(*settings.MCPEnabled))
+	}
+	if err == nil && settings.DefaultLanguage != "" {
+		if !i18n.Valid(settings.DefaultLanguage) {
+			return ErrInvalidLanguage
+		}
+		_, err = s.db.Exec(`INSERT INTO system_settings (key, value) VALUES ('default_language', ?)
+			ON CONFLICT(key) DO UPDATE SET value = excluded.value`, settings.DefaultLanguage)
 	}
 	return err
 }

@@ -145,6 +145,8 @@ type User struct {
 	DoneRetentionDays int `json:"doneRetentionDays"`
 	// VoiceInput: "" uses the server's Whisper (when set up), "browser" the browser's recognition
 	VoiceInput string `json:"voiceInput"`
+	// Language of the app: a supported code, or "" to follow the browser and then the server's default
+	Language string `json:"language"`
 	// Retention: how long finished and deleted things are kept (storage/retention.go);
 	// RetentionNeverAllowed: whether "nie" may be chosen on this server
 	Retention             *Retention `json:"retention,omitempty"`
@@ -455,6 +457,9 @@ type SystemSettings struct {
 	// leaves it unchanged. MCPViaEnv: fixed by MCP_ENABLED, not editable.
 	MCPEnabled *bool `json:"mcpEnabled,omitempty"`
 	MCPViaEnv  bool  `json:"mcpConfiguredViaEnv,omitempty"`
+	// DefaultLanguage: language for people without their own choice whose browser language MindSift does
+	// not speak, and for the demo; empty in an update leaves it unchanged
+	DefaultLanguage string `json:"defaultLanguage,omitempty"`
 }
 
 // UnmarshalJSON accepts smtpPort as text or number: older clients sent a number, which made the whole

@@ -1,3 +1,5 @@
+import { formatDateTime } from './format';
+
 // Due dates come as "YYYY-MM-DD" (all day) or "YYYY-MM-DDTHH:MM" (with time), in the server's time zone.
 // Both sort correctly as plain strings.
 
@@ -53,5 +55,5 @@ export const formatDue = (due: string | undefined, now: Date = new Date()): stri
 export const formatDeletedAt = (iso: string) => {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return '';
-  return d.toLocaleString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  return formatDateTime(d, { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 };
