@@ -11,6 +11,7 @@ import (
 
 	"github.com/mindsift-app/mindsift/internal/auth"
 	"github.com/mindsift-app/mindsift/internal/domain"
+	"github.com/mindsift-app/mindsift/internal/i18n"
 	"github.com/mindsift-app/mindsift/internal/storage"
 )
 
@@ -171,7 +172,7 @@ func (s *Server) handleMCP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if !mcpToolAllowed(scopes, isKey, tool) {
-			writeRPC(w, req.ID, toolError("Der API-Key hat keine Berechtigung für "+tool.Name+" (Scope "+tool.Scope+" fehlt)"), nil)
+			writeRPC(w, req.ID, toolError(i18n.T("en", "Der API-Key hat keine Berechtigung für {tool} (Scope {scope} fehlt)", "tool", tool.Name, "scope", tool.Scope)), nil)
 			return
 		}
 		if len(p.Arguments) == 0 {
@@ -179,7 +180,7 @@ func (s *Server) handleMCP(w http.ResponseWriter, r *http.Request) {
 		}
 		result, err := tool.run(s, userID, actor, p.Arguments)
 		if err != nil {
-			writeRPC(w, req.ID, toolError(err.Error()), nil)
+			writeRPC(w, req.ID, toolError(i18n.Text("en", err)), nil)
 			return
 		}
 		if tool.Name == "search" && isKey {
@@ -206,7 +207,11 @@ func handleMCPNoStream(w http.ResponseWriter, _ *http.Request) {
 	writeError(w, http.StatusMethodNotAllowed, "Der MCP-Endpunkt nimmt nur POST an (kein Server-Stream)")
 }
 
+// MCP speaks English to agents whatever the user's language (Doku/plans/mehrsprachigkeit.md)
 func writeRPC(w http.ResponseWriter, id json.RawMessage, result interface{}, rpcErr *jsonrpcError) {
+	if rpcErr != nil {
+		rpcErr.Message = i18n.T("en", rpcErr.Message)
+	}
 	if len(id) == 0 {
 		id = json.RawMessage("null")
 	}
@@ -234,7 +239,7 @@ func wrapStructured(data interface{}) interface{} {
 
 func toolError(msg string) map[string]interface{} {
 	return map[string]interface{}{
-		"content": []map[string]string{{"type": "text", "text": msg}},
+		"content": []map[string]string{{"type": "text", "text": i18n.T("en", msg)}},
 		"isError": true,
 	}
 }

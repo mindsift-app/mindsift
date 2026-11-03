@@ -1,7 +1,10 @@
 package api
 
 import (
+	"encoding/json"
 	"net/http"
+	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/mindsift-app/mindsift/internal/auth"
@@ -57,5 +60,32 @@ func TestLanguageSettings(t *testing.T) {
 	}
 	if store.DefaultLanguageSetting() != "en" {
 		t.Fatalf("stored default language: %q", store.DefaultLanguageSetting())
+	}
+}
+
+// Error answers follow Accept-Language, else the default language.
+func TestErrorLanguage(t *testing.T) {
+	srv, _, _ := setupTestServer(t)
+	router := srv.Router()
+	login := func(lang string) (string, string) {
+		req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/login", strings.NewReader(`{"login":"","password":""}`))
+		if lang != "" {
+			req.Header.Set("Accept-Language", lang)
+		}
+		rec := httptest.NewRecorder()
+		router.ServeHTTP(rec, req)
+		var body map[string]string
+		_ = json.Unmarshal(rec.Body.Bytes(), &body)
+		return body["error"], rec.Header().Get("Content-Language")
+	}
+	if msg, lang := login("en-US,en;q=0.9"); msg != "Username/email and password required" || lang != "en" {
+		t.Fatalf("English: %q (%s)", msg, lang)
+	}
+	if msg, lang := login(""); msg != "Benutzername/E-Mail und Passwort erforderlich" || lang != "de" {
+		t.Fatalf("default: %q (%s)", msg, lang)
+	}
+	srv.cfg.DefaultLanguage = "en"
+	if msg, _ := login("ja"); msg != "Username/email and password required" {
+		t.Fatalf("unsupported language falls back to the default: %q", msg)
 	}
 }

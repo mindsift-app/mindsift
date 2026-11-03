@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/mindsift-app/mindsift/internal/domain"
+	"github.com/mindsift-app/mindsift/internal/i18n"
 )
 
 func (s *Store) loadDocBlocks(docID string, fallbackJSON string) []domain.DocumentBlock {
@@ -271,7 +272,7 @@ func (s *Store) CheckCreateInFolder(userID, folderPath string) error {
 		return err
 	}
 	if sf.Permission != "owner" && sf.Permission != "write" && !sf.IsOwner {
-		return fmt.Errorf("im geteilten Ordner „%s“ darfst du nur lesen", sf.Name)
+		return i18n.NewError("Im geteilten Ordner „{folder}“ darfst du nur lesen", "folder", sf.Name)
 	}
 	return nil
 }

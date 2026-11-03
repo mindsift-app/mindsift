@@ -495,7 +495,7 @@ func TestMCPNotes(t *testing.T) {
 		t.Fatal(err)
 	}
 	_, res := rpc(t, router, writer.RawKey, `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"create_note","arguments":{"title":"Rein","folderPath":"Team"}}}`)
-	if result, isErr := callResult(t, res); !isErr || !strings.Contains(fmt.Sprint(result["content"]), "nur lesen") {
+	if result, isErr := callResult(t, res); !isErr || !strings.Contains(fmt.Sprint(result["content"]), "only read in the shared folder “Team”") {
 		t.Fatalf("read-only shared folder must refuse new notes: %v", result)
 	}
 }

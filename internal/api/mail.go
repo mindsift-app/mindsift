@@ -98,7 +98,7 @@ func ehloName(from string) string {
 func splitAddress(raw string) (envelope, header string, err error) {
 	addr, err := mail.ParseAddress(strings.TrimSpace(raw))
 	if err != nil {
-		return "", "", fmt.Errorf("ungültige E-Mail-Adresse %q", raw)
+		return "", "", errors.New("ungültige E-Mail-Adresse: " + raw)
 	}
 	return addr.Address, addr.String(), nil
 }
@@ -108,7 +108,7 @@ func splitAddress(raw string) (envelope, header string, err error) {
 func senderAddress(raw, name string) (envelope, header string, err error) {
 	addr, err := mail.ParseAddress(strings.TrimSpace(raw))
 	if err != nil {
-		return "", "", fmt.Errorf("ungültige E-Mail-Adresse %q", raw)
+		return "", "", errors.New("ungültige E-Mail-Adresse: " + raw)
 	}
 	if addr.Name == "" {
 		addr.Name = strings.TrimSpace(name)
@@ -248,7 +248,7 @@ func sendMail(cfg smtpSettings, to, subject, body, html string) error {
 	}
 	combined := fmt.Errorf("%v; %v", first, second)
 	if strings.Contains(first.err.Error(), "451") && strings.Contains(second.err.Error(), "451") {
-		combined = fmt.Errorf("%w (der Mailserver meldet einen internen Fehler bei der Anmeldung – bitte dessen SASL/Dovecot-Logs prüfen)", combined)
+		combined = fmt.Errorf("der Mailserver meldet einen internen Fehler bei der Anmeldung, bitte dessen SASL/Dovecot-Logs prüfen: %w", combined)
 	}
 	return &smtpStepError{"AUTH", combined}
 }

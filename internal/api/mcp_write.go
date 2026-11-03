@@ -83,7 +83,7 @@ func (s *Server) applyNoteOps(userID string, actor *apiActor, docID string, ops 
 	}
 	for _, res := range results {
 		if res.Status == collab.StatusRejected {
-			return fmt.Errorf("Änderung abgelehnt (%s)", res.Reason)
+			return errors.New("Änderung abgelehnt: " + res.Reason)
 		}
 	}
 	s.afterDocChange(docID, ops, results)

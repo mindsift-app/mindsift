@@ -13,6 +13,7 @@ import (
 	"net/textproto"
 	"path"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -108,7 +109,7 @@ func (s *Server) handleVoiceTranscribe(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		var tooBig *http.MaxBytesError
 		if errors.As(err, &tooBig) {
-			writeError(w, http.StatusRequestEntityTooLarge, fmt.Sprintf("Aufnahme zu groß (höchstens %d MB)", cfg.MaxUploadMB))
+			writeError(w, http.StatusRequestEntityTooLarge, tr(w, "Aufnahme zu groß (höchstens {mb} MB)", "mb", strconv.Itoa(cfg.MaxUploadMB)))
 			return
 		}
 		writeError(w, http.StatusBadRequest, "Keine Aufnahme im Feld \"file\"")

@@ -3,7 +3,7 @@
 //   audio  [Beschriftung](media:med_…)
 // so the reference travels with the normal note sync. Files are loaded with the login (fetch) and
 // shown as blob: URLs; there are no public links.
-import { getToken } from './api';
+import { authHeaders } from './api';
 import i18n from '../i18n';
 
 const MEDIA_RE = /^!?\[((?:[^\]\\]|\\.)*)\]\(media:(med_[0-9a-f]+)\)$/;
@@ -36,10 +36,7 @@ export function loadAuthorized(path: string): Promise<{ blob: Blob; url: string 
   let p = loaded.get(path);
   if (!p) {
     p = (async () => {
-      const token = getToken();
-      const res = await fetch(path, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
+      const res = await fetch(path, { headers: authHeaders() });
       if (!res.ok) throw new Error(res.status === 404 ? i18n.t('common:media.notFound') : `HTTP ${res.status}`);
       const blob = await res.blob();
       return { blob, url: URL.createObjectURL(blob) };
@@ -69,13 +66,12 @@ export interface UploadedMedia {
 }
 
 async function mediaRequest(path: string, init: RequestInit): Promise<UploadedMedia> {
-  const token = getToken();
   const res = await fetch(path, {
     ...init,
-    headers: { ...(init.headers as Record<string, string>), ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+    headers: { ...(init.headers as Record<string, string>), ...authHeaders() },
   });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error || `Hochladen fehlgeschlagen (HTTP ${res.status})`);
+  if (!res.ok) throw new Error(data.error || i18n.t('common:errors.uploadFailed', { status: res.status }));
   return data as UploadedMedia;
 }
 

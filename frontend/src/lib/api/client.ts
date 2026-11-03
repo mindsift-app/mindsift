@@ -1,6 +1,7 @@
 // Token, request() with offline cache and session renewal, and small helpers shared by the REST modules
 import { SharingMode } from '../types';
 import { OfflineError, isOffline, isCacheablePath, readCached, writeCached, clearOfflineData } from '../offline';
+import i18n from '../../i18n';
 
 const TOKEN_STORAGE_KEY = 'mindsift_jwt_token';
 
@@ -31,6 +32,24 @@ export function clearToken(): void {
   void clearOfflineData();
 }
 
+// Authorization and the app's language: the server answers errors in it
+export function authHeaders(): Record<string, string> {
+  const token = getToken();
+  return { 'Accept-Language': i18n.language || 'de', ...(token ? { Authorization: `Bearer ${token}` } : {}) };
+}
+
+// An error answer of the server; code is a stable name for errors the app reacts to (e.g. email_unverified)
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+    readonly code?: string,
+  ) {
+    super(message);
+    this.name = 'ApiError';
+  }
+}
+
 export function triggerHaptic(pattern: number | number[] = 15): void {
   try {
     if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
@@ -46,7 +65,6 @@ export function ensureArray<T>(val: T[] | null | undefined): T[] {
 }
 
 export async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const token = getToken();
   const method = (options.method || 'GET').toUpperCase();
   const cacheable = method === 'GET' && isCacheablePath(path);
   const userKey = getCurrentUserId() || 'anon';
@@ -60,11 +78,8 @@ export async function request<T>(path: string, options: RequestInit = {}): Promi
     'Content-Type': 'application/json',
     'Cache-Control': 'no-cache',
     ...(options.headers as Record<string, string>),
+    ...authHeaders(),
   };
-
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
 
   const controller = new AbortController();
   const timeoutId = window.setTimeout(() => controller.abort(), 12000);
@@ -105,13 +120,15 @@ export async function request<T>(path: string, options: RequestInit = {}): Promi
 
   if (!res.ok) {
     let errMsg = `HTTP ${res.status}`;
+    let code: string | undefined;
     try {
       const errData = await res.json();
       if (errData.error) errMsg = errData.error;
+      if (typeof errData.code === 'string') code = errData.code;
     } catch {
       // ignore
     }
-    throw new Error(errMsg);
+    throw new ApiError(errMsg, res.status, code);
   }
 
   const data = await res.json();
@@ -121,10 +138,9 @@ export async function request<T>(path: string, options: RequestInit = {}): Promi
 
 // Sends a queued outbox entry with the current token (no timeout, no cache)
 export function sendOutboxEntry(entry: { method: string; path: string; body: Record<string, unknown> }): Promise<Response> {
-  const token = getToken();
   return fetch(entry.path, {
     method: entry.method,
-    headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
     body: JSON.stringify(entry.body),
     cache: 'no-store',
   });
@@ -139,8 +155,7 @@ export const isSharingDisabled = () => currentSharingMode === 'private';
 
 // Authenticated binary download (archives); no JSON parsing and no request timeout
 export async function downloadBlob(path: string): Promise<Blob> {
-  const token = getToken();
-  const res = await fetch(path, { headers: token ? { Authorization: `Bearer ${token}` } : {}, cache: 'no-store' });
-  if (!res.ok) throw new Error(`Download fehlgeschlagen (HTTP ${res.status})`);
+  const res = await fetch(path, { headers: authHeaders(), cache: 'no-store' });
+  if (!res.ok) throw new ApiError(i18n.t('common:errors.downloadFailed', { status: res.status }), res.status);
   return res.blob();
 }

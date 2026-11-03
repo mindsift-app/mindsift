@@ -1,6 +1,6 @@
 // Realtime transport: WebSocket, with SSE and long polling as fallbacks behind proxies
 import { WSMessage } from '../types';
-import { getToken, request } from './client';
+import { authHeaders, getToken, request } from './client';
 import { api } from './rest';
 
 // poll: long polling, when a proxy lets neither WebSocket nor event streams through
@@ -275,7 +275,7 @@ async function connectPoll(): Promise<void> {
         }
         const started = Date.now();
         const res = await fetch(`/api/v1/events/poll/${encodeURIComponent(pollId)}?wait=${POLL_WAIT_S}`, {
-          headers: { Authorization: `Bearer ${getToken()}` },
+          headers: authHeaders(),
           cache: 'no-store',
           signal: ctrl.signal,
         });

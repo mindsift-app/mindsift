@@ -1,6 +1,7 @@
 // REST calls: Administration: users, invites, server settings, voice, organizations
 import { Organization, SystemSettings, SharingMode, User, UserInvite, VoiceAdminStatus } from '../types';
-import { getToken, ensureArray, request } from './client';
+import { authHeaders, ensureArray, request } from './client';
+import i18n from '../../i18n';
 
 export const adminApi = {
   // --- ADMIN & STAFF PANEL ---
@@ -92,17 +93,16 @@ export const adminApi = {
 
   // Sends a recording to the own Whisper server (voice mode "server") and returns the text
   async transcribe(audio: Blob): Promise<string> {
-    const token = getToken();
     const ext = audio.type.includes('mp4') ? 'm4a' : audio.type.includes('ogg') ? 'ogg' : 'webm';
     const form = new FormData();
     form.append('file', audio, `aufnahme.${ext}`);
     const res = await fetch('/api/v1/voice/transcribe', {
       method: 'POST',
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      headers: authHeaders(),
       body: form,
     });
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.error || `Spracherkennung fehlgeschlagen (HTTP ${res.status})`);
+    if (!res.ok) throw new Error(data.error || i18n.t('common:errors.transcribeFailed', { status: res.status }));
     return data.text || '';
   },
 

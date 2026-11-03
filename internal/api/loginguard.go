@@ -1,7 +1,6 @@
 package api
 
 import (
-	"fmt"
 	"math"
 	"net/http"
 	"strconv"
@@ -172,16 +171,15 @@ func (g *loginGuard) throttle(kind string, ip clientIPInfo, limit int) time.Dura
 func writeThrottled(w http.ResponseWriter, wait time.Duration) {
 	w.Header().Set("Retry-After", strconv.Itoa(int(math.Ceil(wait.Seconds()))))
 	writeError(w, http.StatusTooManyRequests,
-		fmt.Sprintf("Zu viele Anfragen von dieser Adresse. Bitte versuche es in %d Minuten erneut.", int(math.Ceil(wait.Minutes()))))
+		tr(w, "Zu viele Anfragen von dieser Adresse. Bitte versuche es in {minutes} Minuten erneut.", "minutes", strconv.Itoa(int(math.Ceil(wait.Minutes())))))
 }
 
 func writeLoginLocked(w http.ResponseWriter, wait time.Duration) {
 	minutes := int(math.Ceil(wait.Minutes()))
 	w.Header().Set("Retry-After", strconv.Itoa(int(math.Ceil(wait.Seconds()))))
-	unit := "Minuten"
+	msg := "Zu viele fehlgeschlagene Anmeldeversuche. Die Anmeldung ist für noch {minutes} Minuten gesperrt."
 	if minutes == 1 {
-		unit = "Minute"
+		msg = "Zu viele fehlgeschlagene Anmeldeversuche. Die Anmeldung ist für noch eine Minute gesperrt."
 	}
-	writeError(w, http.StatusTooManyRequests,
-		fmt.Sprintf("Zu viele fehlgeschlagene Anmeldeversuche. Die Anmeldung ist für noch %d %s gesperrt.", minutes, unit))
+	writeError(w, http.StatusTooManyRequests, tr(w, msg, "minutes", strconv.Itoa(minutes)))
 }

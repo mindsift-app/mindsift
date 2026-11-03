@@ -100,7 +100,7 @@ func TestMCPNoteWrite(t *testing.T) {
 
 	// A bullet someone is editing stays untouched
 	srv.leases.Hold(doc.ID, collab.Actor{UserID: claims.UserID, ClientID: "browser"}, []string{"blk_mw1"})
-	if _, isErr, msg := call(key, "update_note_bullet", `{"noteId":"`+doc.ID+`","bulletId":"blk_mw1","text":"x"}`); !isErr || !strings.Contains(msg, "gerade bearbeitet") {
+	if _, isErr, msg := call(key, "update_note_bullet", `{"noteId":"`+doc.ID+`","bulletId":"blk_mw1","text":"x"}`); !isErr || !strings.Contains(msg, "editing this bullet") {
 		t.Fatalf("leased bullet must be refused: %s", msg)
 	}
 
@@ -119,7 +119,7 @@ func TestMCPNoteWrite(t *testing.T) {
 	if trash, _ := store.GetTrash(claims.UserID); len(trash) != 1 {
 		t.Fatalf("note should be in the trash: %+v", trash)
 	}
-	if _, isErr, msg := call(key, "delete_note", `{"id":"`+doc.ID+`"}`); !isErr || !strings.Contains(msg, "Papierkorb") {
+	if _, isErr, msg := call(key, "delete_note", `{"id":"`+doc.ID+`"}`); !isErr || !strings.Contains(msg, "trash") {
 		t.Fatalf("second delete must not purge: %s", msg)
 	}
 	if _, isErr, _ := call(key, "add_note_bullet", `{"noteId":"`+doc.ID+`","text":"x"}`); !isErr {
@@ -135,7 +135,7 @@ func TestMCPNoteWrite(t *testing.T) {
 	if _, isErr, msg := call(key, "add_note_bullet", `{"noteId":"`+shared.ID+`","text":"B"}`); isErr {
 		t.Fatalf("shared for editing: %s", msg)
 	}
-	if _, isErr, msg := call(key, "delete_note", `{"id":"`+shared.ID+`"}`); !isErr || !strings.Contains(msg, "eigene") {
+	if _, isErr, msg := call(key, "delete_note", `{"id":"`+shared.ID+`"}`); !isErr || !strings.Contains(msg, "own notes") {
 		t.Fatalf("shared note must not be deleted: %s", msg)
 	}
 }
@@ -194,7 +194,7 @@ func TestMCPInbox(t *testing.T) {
 	}
 
 	// Tasks stay out of reach of the inbox rights
-	if _, isErr, msg := call(writer.RawKey, "discard_inbox_item", `{"id":"`+task.ID+`"}`); !isErr || !strings.Contains(msg, "Inbox-Eintrag") {
+	if _, isErr, msg := call(writer.RawKey, "discard_inbox_item", `{"id":"`+task.ID+`"}`); !isErr || !strings.Contains(msg, "inbox item") {
 		t.Fatalf("a task must not be discarded through the inbox: %s", msg)
 	}
 	if _, isErr, _ := call(writer.RawKey, "convert_inbox_item", `{"id":"`+d.ID+`","to":"task"}`); !isErr {

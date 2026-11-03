@@ -14,7 +14,7 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { AuthStatus, SharingMode, User } from '../../lib/types';
-import { api, triggerHaptic } from '../../lib/api';
+import { api, ApiError, triggerHaptic } from '../../lib/api';
 import { ToggleSwitch } from '../../components/ToggleSwitch';
 import { LegalLinks } from '../../components/LegalLinks';
 import { passwordProblem } from '../../lib/password';
@@ -114,6 +114,8 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Message of a login refused because the email address is not confirmed yet: while it shows, the link can be sent again
+  const [unverifiedError, setUnverifiedError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [newPassword, setNewPassword] = useState('');
   const [newPasswordConfirm, setNewPasswordConfirm] = useState('');
@@ -208,7 +210,9 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
       const res = await api.login(email.trim(), password);
       onAuthenticated(res.user);
     } catch (err: any) {
-      setError(err.message || t('login.failed'));
+      const msg = err.message || t('login.failed');
+      setUnverifiedError(err instanceof ApiError && err.code === 'email_unverified' ? msg : null);
+      setError(msg);
     } finally {
       setSubmitting(false);
     }
@@ -544,8 +548,7 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
             <div className="mb-4 alert-err flex items-center gap-2">
               <AlertCircle className="w-4 h-4 text-status-err flex-shrink-0" />
               <span className="flex-1">{error}</span>
-              {/* The server's German message until API errors carry codes (Doku/plans/mehrsprachigkeit.md, step 4) */}
-              {/bestätige zuerst deine E-Mail/i.test(error) && email.trim() && (
+              {error === unverifiedError && email.trim() && (
                 <button
                   type="button"
                   onClick={() => void resendVerification()}

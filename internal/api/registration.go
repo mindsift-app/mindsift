@@ -134,7 +134,7 @@ func (s *Server) handleVerifyEmail(w http.ResponseWriter, r *http.Request) {
 		go s.notifyAdminsOfRegistration(user)
 		writeJSON(w, http.StatusOK, map[string]interface{}{
 			"verified": true, "pending": true,
-			"message": "Deine E-Mail-Adresse ist bestätigt. Ein Administrator schaltet dein Konto noch frei – du bekommst dann eine E-Mail.",
+			"message": tr(w, "Deine E-Mail-Adresse ist bestätigt. Ein Administrator schaltet dein Konto noch frei – du bekommst dann eine E-Mail."),
 		})
 		return
 	}
@@ -145,7 +145,7 @@ func (s *Server) handleVerifyEmail(w http.ResponseWriter, r *http.Request) {
 	}
 	writeJSON(w, http.StatusOK, map[string]interface{}{
 		"verified": true, "pending": false,
-		"message": "Deine E-Mail-Adresse ist bestätigt. Du kannst dich jetzt anmelden.",
+		"message": tr(w, "Deine E-Mail-Adresse ist bestätigt. Du kannst dich jetzt anmelden."),
 	})
 }
 
@@ -275,7 +275,7 @@ func (s *Server) handleAdminSendInvite(w http.ResponseWriter, r *http.Request) {
 	}
 	if inv.MaxUses == 1 {
 		if inv.Email != "" && !strings.EqualFold(inv.Email, email) {
-			writeError(w, http.StatusConflict, "Diese Einladung ist an "+inv.Email+" gebunden")
+			writeError(w, http.StatusConflict, tr(w, "Diese Einladung ist an {email} gebunden", "email", inv.Email))
 			return
 		}
 		if inv.Email == "" {
