@@ -33,7 +33,7 @@ for _ in $(seq 1 60); do curl -s -m 1 "http://localhost:$PORT/api/v1/health" >/d
 
 echo "Erstelle Screenshots …"
 "$ENGINE" run --rm --network host -e MINDSIFT_URL="http://localhost:$PORT" -e SHOTS_DIR=/shots \
-  -e SHOT_LIGHT="${SHOT_LIGHT:-light}" -e SHOT_DARK="${SHOT_DARK:-dark}" -e LANG=de_DE.UTF-8 -e TZ=Europe/Berlin \
+  -e SHOT_LIGHT="${SHOT_LIGHT:-light}" -e SHOT_DARK="${SHOT_DARK:-dark}" -e LANG=en_US.UTF-8 -e TZ=Europe/Berlin \
   -v "$ROOT/e2e":/e2e:Z -v "$WORK/png":/shots:Z -w /e2e mcr.microsoft.com/playwright:v1.48.2-jammy \
   sh -c 'npm install --no-audit --no-fund >/dev/null 2>&1 && node screenshots.mjs'
 
