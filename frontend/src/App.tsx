@@ -129,7 +129,9 @@ export const App: React.FC = () => {
   useEffect(() => setVoicePreference(user?.voiceInput), [user?.voiceInput]);
   // Language: the account's choice, else the browser's, else the server's default (i18n/index.ts)
   useEffect(
-    () => applyLanguage(resolveLanguage(user?.language, authStatus.defaultLanguage)),
+    () => {
+      void applyLanguage(resolveLanguage(user?.language, authStatus.defaultLanguage));
+    },
     [user?.language, authStatus.defaultLanguage]
   );
   useEffect(() => {

@@ -1,0 +1,84 @@
+{
+  "connection": {
+    "online": "online",
+    "onlineTitle": "Online – changes arrive right away",
+    "limited": "limited",
+    "limitedTitle": "Limited – no direct live connection (e.g. a company proxy); changes by others arrive via long polling, a little delayed",
+    "offline": "offline",
+    "offlineTitle": "Offline – no connection to the server; changes are synced later"
+  },
+  "header": {
+    "openMenu": "Open menu & view options",
+    "installApp": "Install as a web app on your phone",
+    "app": "App",
+    "search": "Global search",
+    "openSearch": "Open global search",
+    "searchShortcut": "Global search (Ctrl+K / ⌘K or /)",
+    "profileAndSettings": "Profile & settings",
+    "openUserMenu": "Open user menu",
+    "help": "Help & documentation"
+  },
+  "viewError": {
+    "unknown": "Unknown display error",
+    "title": "This view could not be loaded",
+    "reset": "Reset view"
+  },
+  "pwa": {
+    "title": "Install {{name}} as an app",
+    "intro": "Full screen without the browser bar, faster start & direct access from the home screen.",
+    "installNow": "Install as a web app now",
+    "later": "Keep using it in the browser",
+    "install": "Install now",
+    "guideTitle": "Add it to your home screen in 2 seconds:",
+    "guideStep1": "In the browser, tap <share><icon></icon> Share</share> (iPhone/Safari) or the <b>browser menu (⋮)</b>.",
+    "guideStep2": "Choose <b>“Add to Home Screen”</b> or <b>“Install app”</b>.",
+    "understood": "Got it"
+  },
+  "profile": {
+    "theme": "Design theme",
+    "accountSettings": "Account settings",
+    "groups": "Groups",
+    "help": "Help & guide",
+    "admin": "Administration",
+    "logout": "Sign out",
+    "installApp": "Install web app on your phone"
+  },
+  "capture": {
+    "title": "Capture a quick dump",
+    "listening": "Listening…",
+    "transcribing": "Transcribing…",
+    "placeholder": "What's on your mind?…",
+    "stopRecording": "Stop recording",
+    "voiceInput": "Voice input",
+    "dueOptional": "Due on (optional)",
+    "submit": "Capture thought",
+    "textLabel": "Thought / quick dump"
+  },
+  "demoReset": "The demo instance was reset",
+  "sharedQueued": "Saved to the quick dump",
+  "menu": {
+    "quickActions": "Quick actions",
+    "newThought": "Capture a new thought",
+    "refreshInbox": "Refresh inbox",
+    "switchArea": "Switch area",
+    "gotoWorkspace": "Notes & workspace",
+    "gotoTasks": "Tasks & Kanban",
+    "gotoLists": "Shopping lists",
+    "navigation": "Navigation",
+    "backToTriage": "Back to triage (start page)",
+    "toWorkspace": "To the workspace",
+    "toTasks": "To the tasks",
+    "toLists": "To the lists"
+  },
+  "tabs": {
+    "settings": "Settings",
+    "help": "Help"
+  },
+  "demo": {
+    "resetEvery": "This test instance is reset to its initial state automatically every {{count}} minutes.",
+    "resetIn": "Reset in {{time}}",
+    "resetting": "resetting…",
+    "label": "✨ Demo ·"
+  },
+  "connecting": "Connecting to MindSift…"
+}
