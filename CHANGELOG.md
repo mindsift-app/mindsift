@@ -6,14 +6,21 @@ Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), die V
 
 ## [Unreleased]
 
+## [0.74.1] - 2026-11-03
+
+### Changed
+- The developer documentation in `Doku/` is now in English.
+
+### Fixed
+- Settings → API → AI agents listed only part of the MCP tools; the tools for notes and the inbox are shown too.
+- The help no longer says that API keys cannot reach notes (possible over MCP since 0.72.0).
+
 ## [0.74.0] - 2026-11-03
 
 ### Added
 - MindSift speaks English: choose it under Account settings → Language, or let the app follow an English browser. Admins can make English the server's default language. The help is available in English too. English loads only when used, so the app stays as light as before for German.
 - New accounts start in the browser's language when MindSift speaks it.
-
-### Known limitations
-- Emails, push notifications, the daily summary, journal titles, the default columns of new task lists, server error messages and the demo content are still German; they follow in the next releases.
+- Still German for now (they follow in the next releases): emails, push notifications, the daily summary, journal titles, the default columns of new task lists, server error messages and the demo content.
 
 ## [0.73.6] - 2026-11-03
 

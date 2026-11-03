@@ -24,6 +24,39 @@ interface ApiKeysPanelProps {
 }
 
 type SimTarget = 'triage' | 'task' | 'list_item';
+// The tools of the MCP endpoint (internal/api/mcp.go, mcp_write.go), in that order
+const MCP_TOOLS = [
+  'list_task_lists',
+  'create_task_list',
+  'list_tasks',
+  'get_task',
+  'create_task',
+  'update_task',
+  'complete_task',
+  'add_subtask',
+  'update_subtask',
+  'delete_task',
+  'list_lists',
+  'create_list',
+  'get_list',
+  'add_list_item',
+  'check_list_item',
+  'update_list_item',
+  'list_notes',
+  'get_note',
+  'create_note',
+  'update_note',
+  'add_note_bullet',
+  'update_note_bullet',
+  'delete_note_bullet',
+  'delete_note',
+  'search',
+  'capture_to_inbox',
+  'list_inbox',
+  'convert_inbox_item',
+  'discard_inbox_item',
+];
+
 type McpClient = 'connector' | 'claude' | 'codex' | 'json';
 type Access = 'rest' | 'mcp';
 
@@ -612,17 +645,14 @@ http_headers = { "X-API-Key" = "${exampleToken}" }`
               <pre className="p-3 bg-canvas border border-border font-mono text-xs text-main overflow-x-auto">{mcpSnippet}</pre>
             )}
             <p className="mt-2 text-[11px] text-faint">
-              {t('api.mcp.tools')} <code className="font-mono">list_task_lists</code>, <code className="font-mono">create_task_list</code>,{' '}
-              <code className="font-mono">list_tasks</code>, <code className="font-mono">get_task</code>,{' '}
-              <code className="font-mono">create_task</code>, <code className="font-mono">update_task</code>,{' '}
-              <code className="font-mono">complete_task</code>, <code className="font-mono">add_subtask</code>,{' '}
-              <code className="font-mono">update_subtask</code>, <code className="font-mono">delete_task</code>,{' '}
-              <code className="font-mono">list_lists</code>, <code className="font-mono">create_list</code>,{' '}
-              <code className="font-mono">get_list</code>, <code className="font-mono">add_list_item</code>,{' '}
-              <code className="font-mono">check_list_item</code>, <code className="font-mono">update_list_item</code>,{' '}
-              <code className="font-mono">list_notes</code>, <code className="font-mono">get_note</code>,{' '}
-              <code className="font-mono">create_note</code>, <code className="font-mono">search</code>,{' '}
-              <code className="font-mono">capture_to_inbox</code>. {t('api.mcp.toolsHint')}
+              {t('api.mcp.tools')}{' '}
+              {MCP_TOOLS.map((name, i) => (
+                <React.Fragment key={name}>
+                  {i > 0 && ', '}
+                  <code className="font-mono">{name}</code>
+                </React.Fragment>
+              ))}
+              . {t('api.mcp.toolsHint')}
             </p>
           </div>
         )}

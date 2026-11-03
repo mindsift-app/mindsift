@@ -1,66 +1,66 @@
-# Echtzeit: WebSocket, SSE und Long-Polling
+# Real-Time: WebSocket, SSE, and Long Polling
 
-Der Server verteilt Änderungen als JSON-Ereignisse an verbundene Clients. Die Ereignisse entstehen **nach** einer REST-Änderung; es gibt keinen Schreibkanal über die Verbindung. Implementierung: [hub.go](../../internal/ws/hub.go), Client: [realtime.ts](../../frontend/src/lib/api/realtime.ts).
+The server distributes changes as JSON events to connected clients. Events are generated **after** a REST mutation; there is no write channel over the connection. Implementation: [hub.go](../../internal/ws/hub.go), Client: [realtime.ts](../../frontend/src/lib/api/realtime.ts).
 
-> Keine CRDTs, keine Sperren, keine Cursor-Presence. Frühere Fassungen dieser Doku beschrieben DocRooms, `clientId`-Echo-Schutz und Yjs; das existiert nicht (mehr).
+> No CRDTs, no locks, no cursor presence. Earlier versions of this documentation described DocRooms, `clientId` echo suppression, and Yjs; these no longer exist.
 
-## Transporte
+## Transports
 
-| Transport | Endpunkt | Hinweise |
+| Transport | Endpoint | Notes |
 |---|---|---|
-| WebSocket | `GET /api/v1/ws` (auch `/ws/lists/{id}`, `/ws/spaces/{id}`) | Ping alle 30 s, Lesefrist 60 s, Nachrichten bis 4 MB |
-| SSE | `GET /api/v1/events` | Kommentar-Ping alle 15 s, Header `X-Accel-Buffering: no` |
-| Long-Polling | `POST /api/v1/events/poll` → `{pollId}`, dann `GET /api/v1/events/poll/{pollId}?wait=25` | Antwort `{events: [...]}`, sobald Ereignisse da sind, spätestens nach `wait` s leer; `404` = abgelaufen, neu öffnen |
+| WebSocket | `GET /api/v1/ws` (also `/ws/lists/{id}`, `/ws/spaces/{id}`) | Ping every 30 s, read deadline 60 s, messages up to 4 MB |
+| SSE | `GET /api/v1/events` | Comment ping every 15 s, header `X-Accel-Buffering: no` |
+| Long Polling | `POST /api/v1/events/poll` → `{pollId}`, then `GET /api/v1/events/poll/{pollId}?wait=25` | Response `{events: [...]}`, as soon as events are available, returns empty after at most `wait` s; `404` = expired, reopen |
 
-Der Client versucht zuerst WebSocket und wechselt in folgenden Fällen für die Sitzung des Tabs auf SSE:
+The client first attempts WebSocket and falls back to SSE for the tab's session in the following cases:
 
-- Aufbau gelingt nicht innerhalb von 2,5 s, oder die Verbindung bricht unsauber ab (z. B. Code 1006/1008).
-- **Herzschlag:** Alle 15 s schickt der Client `{"event":"PING"}`, der Server antwortet `PONG`. Kommt 35 s lang keine Nachricht, gilt der WebSocket als stumm (Proxy nimmt das Upgrade an, leitet aber nichts weiter).
+- Connection cannot be established within 2.5 s, or terminates uncleanly (e.g. code 1006/1008).
+- **Heartbeat:** Every 15 s, the client sends `{"event":"PING"}` and the server responds with `PONG`. If no message is received for 35 s, the WebSocket is considered dead (e.g. proxy accepted the upgrade but forwards nothing).
 
-Über SSE liefert der Server zuerst `SSE_CONNECTED` mit einer `sseId`; erst dann gilt SSE als verbunden. Bleibt dieses erste Ereignis 5 s nach dem Öffnen aus, puffert ein Proxy den Stream: SSE wird für den Tab abgeschaltet. Räume werden über `POST /api/v1/events/rooms` (`sseId`, `room`, `action`: `join`/`leave`) abonniert.
+Over SSE, the server first sends `SSE_CONNECTED` with an `sseId`; only then is SSE considered connected. If this initial event does not arrive within 5 s of opening, a proxy is buffering the stream: SSE is disabled for the tab. Rooms are subscribed to via `POST /api/v1/events/rooms` (`sseId`, `room`, `action`: `join`/`leave`).
 
-Ohne WebSocket und SSE holt der Client die Ereignisse per **Long-Polling**: Er öffnet eine Poll-Verbindung (Räume als `rooms` gleich mitgeben oder später wie bei SSE über `POST /events/rooms` mit der `pollId` als `sseId`), der Server puffert ihre Ereignisse (bis 256), und jede Abfrage wartet bis zu 25 s. Wird eine Poll-Verbindung 2 Minuten nicht abgefragt, schließt der Server sie. Nur mit Sitzung, nicht mit API-Schlüssel. So kommen auch Aufgaben- und Listenänderungen hinter Proxys live an. Die Notiz-Synchronisation nutzt dann dieselbe Verbindung als Weckruf; ohne sie fällt sie auf ihr eigenes Long-Polling (`GET /docs/{id}/changes`) und zuletzt auf eine Abfrage alle 3 s zurück (siehe [modules/collaboration.md](../modules/collaboration.md)).
+Without WebSocket and SSE, the client retrieves events via **long polling**: It opens a polling connection (passing initial rooms in `rooms` or subscribing later as with SSE via `POST /events/rooms` using the `pollId` as `sseId`), the server buffers its events (up to 256), and each poll request waits up to 25 s. If a polling connection is not polled for 2 minutes, the server closes it. Requires an active session; API keys are not accepted. This allows task and list updates to arrive live even behind restrictive proxies. Note synchronization then uses the same connection as a wake-up signal; without it, note sync falls back to its own long polling (`GET /docs/{id}/changes`) and ultimately to polling every 3 s (see [modules/collaboration.md](../modules/collaboration.md)).
 
-**Authentifizierung:** Browser holen sich direkt vor dem Verbinden ein Einmal-Ticket (`POST /auth/stream-ticket` mit dem normalen `Authorization`-Header → `{ticket, expiresIn: 60}`) und hängen es als `?ticket=` an; es gilt 60 Sekunden und einmal und wird ungültig, sobald alle Sitzungen beendet werden. Andere Clients dürfen stattdessen den `Authorization`-Header schicken. Sitzungs-Tokens in der URL und API-Keys werden nicht angenommen (`401`). Bei Logout, „Alle Sitzungen beenden“, neuem Passwort und Deaktivierung trennt der Server alle Streams des Kontos; Clients mit gültiger Sitzung verbinden sich mit neuem Ticket neu. Mit gesetzter `BASE_URL` nimmt der WebSocket nur Verbindungen von dieser Adresse oder vom angefragten Host an.
+**Authentication:** Browsers obtain a one-time ticket right before connecting (`POST /auth/stream-ticket` with standard `Authorization` header → `{ticket, expiresIn: 60}`) and append it as `?ticket=`; it is single-use and valid for 60 seconds, and is immediately invalidated if all sessions are revoked. Other clients may send the `Authorization` header instead. Session tokens in the URL and API keys are rejected (`401`). Upon logout, "revoke all sessions", password changes, or account deactivation, the server terminates all streams for that account; clients with a valid session reconnect using a new ticket. When `BASE_URL` is set, the WebSocket only accepts connections from this address or the requested host.
 
-**Räume:** Jeder Beitritt (Raum in der URL, `JOIN_ROOM`, SSE-Startparameter `rooms`/`docId`, `POST /events/rooms`) wird geprüft: `doc:<id>` nur mit Lesezugriff auf die Notiz, sonst muss die ID eine lesbare geteilte Liste sein. Nicht erlaubte Räume werden ignoriert, `POST /events/rooms` antwortet dann mit `403`. SSE-Räume kann nur der Besitzer der jeweiligen `sseId` ändern.
+**Rooms:** Every room join (room in URL, `JOIN_ROOM`, SSE query parameters `rooms`/`docId`, `POST /events/rooms`) is validated: `doc:<id>` requires read access to the note; otherwise the ID must be a readable shared list. Unauthorized rooms are ignored; `POST /events/rooms` responds with `403` in such cases. SSE rooms can only be modified by the owner of the respective `sseId`.
 
-## Nachrichtenformat
+## Message Format
 
 ```json
 { "event": "TASK_UPDATED", "listId": "", "payload": { … }, "timestamp": "2026-10-27T12:00:00Z" }
 ```
 
-Client → Server versteht der Server nur: `{"event":"JOIN_ROOM","room":"<id>"}`, `{"event":"LEAVE_ROOM","room":"<id>"}` und `{"event":"PING"}` (Antwort `PONG`). Räume heißen `doc:<docId>` für Notizen oder `<listId>` für geteilte Listen.
+Client → Server: The server only processes `{"event":"JOIN_ROOM","room":"<id>"}`, `{"event":"LEAVE_ROOM","room":"<id>"}`, and `{"event":"PING"}` (replies with `PONG`). Rooms are named `doc:<docId>` for notes or `<listId>` for shared lists.
 
-## Zustellung
+## Delivery
 
-| Kanal | Wer erhält es |
+| Channel | Recipients |
 |---|---|
-| Benutzer-Kanal (`BroadcastToUser`) | alle Verbindungen eines Benutzers |
-| Raum (`BroadcastRoom`, `Broadcast`) | Verbindungen im Raum |
-| Mehrere Benutzer (`BroadcastToUsers`) | alle Verbindungen einer berechneten Benutzergruppe, z. B. Eigentümer und Mitglieder einer Aufgabenliste |
+| User channel (`BroadcastToUser`) | All connections belonging to a user |
+| Room (`BroadcastRoom`, `Broadcast`) | Connections in the room |
+| Multiple users (`BroadcastToUsers`) | All connections of a computed user group, e.g. owners and members of a task list |
 
-## Ereignisse
+## Events
 
-| Ereignis | Auslöser | Kanal |
+| Event | Trigger | Channel |
 |---|---|---|
-| `TASK_CREATED` | `POST /inbox`, Webhook | Eigentümer und Benutzer der Liste |
-| `TASK_UPDATED` | `PATCH /thoughts/{id}`, Triage | Eigentümer und Benutzer der alten und neuen Liste |
-| `TASK_DELETED` | `DELETE /thoughts/{id}` | Eigentümer und Benutzer der Liste |
-| `TASK_REORDERED` | Aufgaben umsortieren | Benutzer aller betroffenen Listen |
-| `TASK_LIST_UPDATED` / `TASK_LIST_DELETED` | Liste ändern, (un)teilen, löschen; Payload nur `{id}`, Clients laden ihre Listen neu | Benutzer vor und nach der Änderung |
-| `DOC_CREATED`, `DOC_UPDATED`, `DOC_DELETED` | Notiz anlegen/ändern/löschen, Freigaben | berechtigte Benutzer |
-| `DOC_SEQ` | Änderung an Notiz, Leases oder Präsenz (`docId`, `headSeq`); Clients holen die Daten per `/docs/{id}/sync` | Raum `doc:<id>` |
-| `WORKSPACE_FOLDERS_UPDATED` | Ordner/Mounts ändern | Benutzer selbst; bei geteilten Ordnern Eigentümer und alle Beteiligten |
-| `LIST_CREATED`, `LIST_UPDATED`, `LIST_DELETED`, `LIST_SHARED`, `LIST_UNSHARED`, `LIST_CLEARED` | Listenverwaltung | Benutzer bzw. Raum der Liste |
-| `ITEM_CREATED`, `ITEM_UPDATED`, `ITEM_TOGGLED`, `ITEM_DELETED`, `ITEM_REORDERED` | Listeneinträge | Raum der Liste |
-| `USER_PRESENCE` | Verbindung auf-/abgebaut (`onlineCount`) | Raum |
-| `DEMO_RESET` | Periodischer Reset im Demo-Modus; Clients verwerfen lokale Caches und laden Daten neu | Alle aktiven Verbindungen |
-| `SSE_CONNECTED` | Nur SSE, direkt nach Verbindung | Verbindung |
+| `TASK_CREATED` | `POST /inbox`, webhook | Owner and list members |
+| `TASK_UPDATED` | `PATCH /thoughts/{id}`, triage | Owner and members of old and new list |
+| `TASK_DELETED` | `DELETE /thoughts/{id}` | Owner and list members |
+| `TASK_REORDERED` | Reordering tasks | Members of all affected lists |
+| `TASK_LIST_UPDATED` / `TASK_LIST_DELETED` | Update, (un)share, or delete list; payload only `{id}`, clients reload their lists | Members before and after modification |
+| `DOC_CREATED`, `DOC_UPDATED`, `DOC_DELETED` | Create/update/delete note, note shares | Authorized users |
+| `DOC_SEQ` | Note change, leases, or presence (`docId`, `headSeq`); clients fetch data via `/docs/{id}/sync` | Room `doc:<id>` |
+| `WORKSPACE_FOLDERS_UPDATED` | Folders/mounts modified | User; for shared folders, owner and all collaborators |
+| `LIST_CREATED`, `LIST_UPDATED`, `LIST_DELETED`, `LIST_SHARED`, `LIST_UNSHARED`, `LIST_CLEARED` | List administration | User or list room |
+| `ITEM_CREATED`, `ITEM_UPDATED`, `ITEM_TOGGLED`, `ITEM_DELETED`, `ITEM_REORDERED` | List items | List room |
+| `USER_PRESENCE` | Connection connected/disconnected (`onlineCount`) | Room |
+| `DEMO_RESET` | Periodic reset in demo mode; clients invalidate local caches and reload data | All active connections |
+| `SSE_CONNECTED` | SSE only, sent immediately after connecting | Connection |
 
-## Verhalten im Frontend
+## Frontend Behavior
 
-- Die globale Verbindung (ein Singleton) leitet jede Nachricht als Browser-Ereignis `mindsift:ws` weiter; Ansichten (`TasksView`, `WorkspaceView`, `SharedListsView`) hören darauf und laden bzw. patchen ihren Zustand.
-- Nach einem Abbruch verbindet sich der Client mit Verzögerung neu.
-- Notiz-Inhalte kommen nie per Push, sondern immer über `POST /docs/{id}/sync`; `DOC_SEQ` ist nur der Weckruf. Konflikte entscheidet der Server (Versionen und Sperren, siehe [modules/collaboration.md](../modules/collaboration.md)).
+- The global connection (a singleton) forwards every message as a browser event `mindsift:ws`; views (`TasksView`, `WorkspaceView`, `SharedListsView`) listen for it and reload or patch their state.
+- After a disconnect, the client reconnects with a backoff delay.
+- Note contents are never pushed; they are always fetched via `POST /docs/{id}/sync`; `DOC_SEQ` serves purely as a wake-up signal. Conflicts are resolved authoritatively by the server (versions and leases, see [modules/collaboration.md](../modules/collaboration.md)).

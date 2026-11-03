@@ -1,94 +1,93 @@
-# Modul: Workspace (Outliner-Notizen)
+# Module: Workspace (Outliner Notes)
 
-Code: [WorkspaceView.tsx](../../frontend/src/features/workspace/WorkspaceView.tsx) (Explorer, Tags, To-Do-Rollup), [DocumentEditor.tsx](../../frontend/src/features/workspace/DocumentEditor.tsx), [OutlinerTree.tsx](../../frontend/src/features/workspace/OutlinerTree.tsx), [OutlinerBlock.tsx](../../frontend/src/features/workspace/OutlinerBlock.tsx), [CodeBlockEditor.tsx](../../frontend/src/features/workspace/CodeBlockEditor.tsx), [LinkModal.tsx](../../frontend/src/features/workspace/LinkModal.tsx); Backend: Dokument-, Ordner- und Tag-Handler, Sync-Handler in `internal/api/docsync.go`, `internal/collab`, `internal/storage/docsync.go`.
+Code: [WorkspaceView.tsx](../../frontend/src/features/workspace/WorkspaceView.tsx) (explorer, tags, to-do rollup), [DocumentEditor.tsx](../../frontend/src/features/workspace/DocumentEditor.tsx), [OutlinerTree.tsx](../../frontend/src/features/workspace/OutlinerTree.tsx), [OutlinerBlock.tsx](../../frontend/src/features/workspace/OutlinerBlock.tsx), [CodeBlockEditor.tsx](../../frontend/src/features/workspace/CodeBlockEditor.tsx), [LinkModal.tsx](../../frontend/src/features/workspace/LinkModal.tsx); Backend: document, folder, and tag handlers, sync handler in `internal/api/docsync.go`, `internal/collab`, `internal/storage/docsync.go`.
 
-## Datenhaltung
+## Data Storage
 
-- Eine Notiz ist ein Datensatz in `documents` plus ein Baum von Blöcken in `blocks` (`parent_id`, Sortierschlüssel `order_key`). Jede Änderung läuft über `internal/collab` und wird im Log `doc_ops` festgehalten. Ebene und Position für die Oberfläche berechnet der Server beim Lesen. Das Log und gelöschte Blöcke werden regelmäßig verdichtet ([database.md](../database.md#verdichtung-des-notiz-logs)). Alles liegt in SQLite; es gibt keine Dateien auf der Platte.
-- Bei jeder Änderung wird `documents.markdown_cache` neu erzeugt; `block_tags` wird aus `#Hashtags` der Blöcke neu aufgebaut.
-- **Hashtag-Regel:** `#wort` zählt nur am Textanfang oder nach Leerzeichen bzw. `(`. Anker in Links (`example.com/blog#ueberschrift`) und Wörter wie `C#` sind keine Tags. Gleiche Regel im Server (`domain.ExtractTags`) und im Browser (`lib/hashtags.ts`). Beim ersten Start nach der Umstellung entfernt `migrateAnchorTags` einmalig gespeicherte Tags, die nur aus Ankern stammten.
-- Der Export als `.md` erfolgt im Browser (Button im Editor, Blob-Download).
-- Blocktypen: Überschriften `h1`–`h3`, `paragraph`/`text`, `bullet`, `todo`, `code`, `callout`, `divider`, `table`, `progress`.
+- A note is a record in `documents` plus a tree of blocks in `blocks` (`parent_id`, sort key `order_key`). Every change goes through `internal/collab` and is recorded in the `doc_ops` log. Depth level and position for the UI are calculated by the server on read. The log and deleted blocks are compacted regularly ([database.md](../database.md#verdichtung-des-notiz-logs)). Everything resides in SQLite; there are no files on disk.
+- On every change, `documents.markdown_cache` is regenerated; `block_tags` is rebuilt from `#hashtags` in the blocks.
+- **Hashtag rule:** `#word` only counts at the start of text or after whitespace or `(`. Anchors in links (`example.com/blog#heading`) and words like `C#` are not tags. The same rule applies on the server (`domain.ExtractTags`) and in the browser (`lib/hashtags.ts`). On first start after migration, `migrateAnchorTags` runs a one-time cleanup of stored tags that originated solely from anchors.
+- Export as `.md` is handled in the browser (button in editor, blob download).
+- Block types: Headings `h1`–`h3`, `paragraph`/`text`, `bullet`, `todo`, `code`, `callout`, `divider`, `table`, `progress`.
 
 ## Editor
 
-- **Outliner:** `Enter` neuer Block, `Tab`/`Shift+Tab` ein-/ausrücken, `Shift+Enter` weicher Umbruch, Blöcke ein-/ausklappen.
-- **Zoom (Hoisting):** Klick auf den Bullet fokussiert den Ast; die Breadcrumb-Leiste führt zurück.
-- **Drag & Drop** verschiebt Blöcke samt Unterästen; auf einen anderen Block gezogen, wird der Block zum Unterpunkt.
-- **Slash-Befehle:** `/todo`, `/link`, `/h1`, `/h2`, `/h3`, `/code` (mit Syntax-Highlighting im VS-Code-Stil), `/callout`, `/divider`, `/extract` (Ast als eigene Notiz auslagern), `/image` (Bilder einfügen/hochladen, Aliase `/bild`, `/foto`), `/audio` (Sprachnotiz/Audiodatei, Alias `/sprachnotiz`), `/diktat` (Spracheingabe mit Live-Mitschreiben, Alias `/dictate`) (Liste in `OutlinerBlock.tsx`). Das Menü öffnet sich nur am Textanfang oder nach einem Leerzeichen und schließt mit `Esc` oder `Backspace`.
-- **Link-Vorschau:** Besteht ein Bulletpoint ausschließlich aus einer einzelnen `https`-Adresse (oder wurde über `/link` in einem leeren Punkt eingefügt), zeigt MindSift darüber eine interaktive Vorschaukarte (`LinkPreviewCard`, serverseitig via `/link-preview`). ✕ blendet die Karte aus und wandelt die Adresse synchronisiert in `[Titel](url)` um.
-- **Ast auslagern (`/extract`):** Wandelt den aktuellen Punkt samt Unterpunkten in eine eigenständige Notiz im selben Ordner um. Der Server legt die Notiz an und liefert den Link zurück; der Editor ersetzt den Ast lokal über die Sync-Engine als eigene Operation (Strg+Z nimmt die Auslagerung zurück und legt die neue Notiz via `POST /documents/{id}/extract/undo` in den Papierkorb).
-- **Notiz zurückholen:** Besteht ein Punkt nur aus einem Link auf eine Notiz (wie nach `/extract`), zeigt seine Knopfleiste „Notiz zurückholen“. `POST /documents/{id}/inline` liefert die Punkte der verlinkten Notiz und legt sie in den Papierkorb; der Editor setzt den Titel (mit den Hashtags des Links) wieder als Text ein und fügt die Punkte als Unterpunkte ein, vor eventuell schon vorhandenen. Strg+Z oder „Rückgängig“ stellt den Link wieder her und holt die Notiz aus dem Papierkorb. Nur mit eigenen Notizen, und nicht, solange andere Notizen sie noch verlinken.
-- **Notizen zusammenführen (Merge):** Per Drag & Drop einer Notiz auf eine andere in der Seitenleiste oder über das Drei-Punkte-Menü im Notizkopf („Mit anderer Notiz zusammenführen…“). Die eigene Quellnotiz wird als `h2`-Abschnitt angehängt und in den Papierkorb verschoben; der Hinweis bietet vollständiges Rückgängigmachen (`POST /documents/{id}/merge/undo`).
-- **Rückverweise:** Unter jeder Notiz listet „Verlinkt auf diese Notiz (n)“ alle Notizen mit `[[Titel]]` (auch `[[Titel|Text]]`, `[[Titel#Abschnitt]]`, Groß-/Kleinschreibung egal) samt Fundstelle; ein Klick springt direkt zum Bullet. Ohne Rückverweise bleibt der Bereich unsichtbar, eingeklappt merkt er sich im Browser ([BacklinksSection.tsx](../../frontend/src/features/workspace/BacklinksSection.tsx), `GET /documents/{id}/backlinks`).
-- **Links:** `[[Notiztitel]]`, Markdown-Links `[Titel](url)` und reine URLs werden als Token dargestellt; `LinkModal` hilft beim Verknüpfen von Notizen.
-- **Einfügen:** Mehrzeiliger Text wird anhand von Markdown-Präfixen und Einrückung in Blöcke zerlegt; Überschriften gruppieren darunterliegenden Text und Code.
-- **Speichern:** Jede Notiz hat im Browser eine `DocSyncEngine` ([lib/docSync/](../../frontend/src/lib/docSync/)). Der Editor meldet jede Änderung der Block-Liste; die Engine übersetzt sie in Operationen, speichert sie zuerst in IndexedDB und sendet sie dann gesammelt (300 ms) an `POST /docs/{id}/sync`. Beim Öffnen zeigt sie sofort den gespeicherten Stand, auch offline.
-- **Abgleich bei geteilten oder mehrfach geöffneten Notizen**, nach Verfügbarkeit:
-  1. **Push** über WebSocket oder SSE: Der Server meldet `DOC_SEQ`, die Engine gleicht sofort ab (im Test 0,2–0,3 s).
-  2. **Long-Polling** (`/docs/{id}/changes`), wenn ein Proxy WebSocket und SSE blockiert oder SSE puffert: ebenso schnell.
-  3. **Abfrage alle 3 s**, wenn auch Long-Polling dreimal scheitert (bei `online` wird Long-Polling erneut versucht).
+- **Outliner:** `Enter` new block, `Tab`/`Shift+Tab` indent/outdent, `Shift+Enter` soft line break, collapse/expand blocks.
+- **Zoom (Hoisting):** Clicking a bullet focuses the branch; the breadcrumb bar navigates back.
+- **Drag & Drop** moves blocks including sub-branches; dragging onto another block turns it into a child item.
+- **Slash commands:** `/todo`, `/link`, `/h1`, `/h2`, `/h3`, `/code` (with VS Code style syntax highlighting), `/callout`, `/divider`, `/extract` (extract branch into a separate note), `/image` (insert/upload images, aliases `/bild`, `/foto`), `/audio` (voice note/audio file, alias `/sprachnotiz`), `/diktat` (voice input with live transcription, alias `/dictate`) (list in `OutlinerBlock.tsx`). The menu opens only at the start of text or after a space and closes with `Esc` or `Backspace`.
+- **Link preview:** If a bullet point consists solely of a single `https` URL (or was inserted into an empty bullet via `/link`), MindSift displays an interactive preview card above it (`LinkPreviewCard`, fetched server-side via `/link-preview`). ✕ dismisses the card and synchronously converts the URL to `[Title](url)`.
+- **Extract branch (`/extract`):** Converts the current bullet and all its children into an independent note in the same folder. The server creates the note and returns the link; the editor locally replaces the branch via the sync engine as a separate operation (Ctrl+Z reverts the extraction and moves the newly created note to the trash via `POST /documents/{id}/extract/undo`).
+- **Inline note:** If a bullet contains only a link to a note (such as after `/extract`), its toolbar displays "Inline note". `POST /documents/{id}/inline` fetches the items of the linked note and moves it to the trash; the editor restores the title (including any hashtags from the link) as text and inserts the items as children, preceding any already existing items. Ctrl+Z or "Undo" restores the link and recovers the note from trash. Only works with own notes, and only as long as no other notes still link to it.
+- **Merge notes:** Via drag & drop of one note onto another in the sidebar or via the three-dots menu in the note header ("Merge with another note…"). The source note owned by the user is appended as an `h2` section and moved to the trash; a toast offers full undo (`POST /documents/{id}/merge/undo`).
+- **Backlinks:** Under each note, "Linked to this note (n)" lists all notes containing `[[Title]]` (including `[[Title|Text]]`, `[[Title#Section]]`, case-insensitive) along with match locations; clicking jumps directly to the bullet. Without backlinks, the section remains hidden; when collapsed, its state is remembered in the browser ([BacklinksSection.tsx](../../frontend/src/features/workspace/BacklinksSection.tsx), `GET /documents/{id}/backlinks`).
+- **Links:** `[[Note Title]]`, Markdown links `[Title](url)`, and plain URLs are rendered as tokens; `LinkModal` assists with linking notes.
+- **Pasting:** Multiline text is split into blocks based on Markdown prefixes and indentation; headings group subsequent text and code underneath.
+- **Saving:** Every note in the browser runs a `DocSyncEngine` ([lib/docSync/](../../frontend/src/lib/docSync/)). The editor reports any change to the block list; the engine converts them into operations, writes them first to IndexedDB, and sends them batched (300 ms) to `POST /docs/{id}/sync`. When opened, it immediately displays the stored state, even offline.
+- **Synchronization for shared or multi-tab notes**, by availability:
+  1. **Push** via WebSocket or SSE: The server broadcasts `DOC_SEQ`, the engine syncs immediately (0.2–0.3 s in tests).
+  2. **Long-polling** (`/docs/{id}/changes`), when a proxy blocks WebSocket and SSE or buffers SSE: equally fast.
+  3. **Polling every 3 s**, if long-polling fails three times in a row (on `online`, long-polling is re-attempted).
 
-  Solange 1. oder 2. läuft, gleicht die Engine zusätzlich alle 7 s ab, wenn sie Sperren hält (Verlängerung), sonst alle 30 s zur Sicherheit. Ein Fokuswechsel meldet die Sperre sofort an. Der Editor zeigt den Weg an („Live“, „Live (Long-Polling)“, „Abgleich alle 3 s“).
-- **Private Notizen**, die nur einmal geöffnet sind, gleichen alle 30 s ab, außerdem sofort bei Rückkehr ins Netz oder in den Tab. Beim Verlassen sendet die Engine Ausstehendes mit `keepalive` und gibt ihre Sperren frei.
-- **Textkonflikte:** Jede Textänderung trägt die Version, die der Nutzer beim Tippen vor sich hatte. Hat jemand anderes den Bullet inzwischen geändert oder gesperrt, legt der Server eine Konfliktkopie an; es wird nie still überschrieben.
-- **Sperren:** Der Bullet mit dem Cursor, verlassene Bullets für 20 s und neu angelegte Bullets werden gehalten. Bullets, die jemand anderes hält, zeigen ein Schloss mit Namen und sind schreibgeschützt; Enter darin legt einen neuen Bullet darunter an. Löschen, Zusammenführen, Ein-/Ausrücken und Ziehen werden bei gesperrten Bullets nicht ausgeführt (Hinweis unten im Editor).
-- **Präsenz:** Im Kopf der Notiz steht, wer sie gerade sonst noch geöffnet hat.
-- **Konfliktkopien** sind farbig markiert („Konflikt – Version von …“) mit „Übernehmen“ (Text ersetzt den ursprünglichen Punkt bzw. den Titel, die Kopie verschwindet) und „Verwerfen“.
-- **Rückgängig:** `Strg+Z`/`Cmd+Z` nimmt die eigene letzte Änderung zurück, `Strg+Umschalt+Z` oder `Strg+Y` wiederholt (auch im Titel und über das Kontextmenü/mobile Tastaturen). Tippen im selben Punkt bis 1 s Pause ist ein Schritt; bis zu 200 Schritte je Tab. Hat jemand anderes den Punkt inzwischen geändert oder hält ihn gesperrt, wird der Schritt mit Hinweis übersprungen.
-- `PUT /documents/{id}` ändert nur noch Symbol, Anheften und Ordner (Titel wird ins Log übernommen); Inhalte laufen ausschließlich über die Engine. Das To-Do-Rollup hakt per einzelner Operation über denselben Sync-Endpunkt ab.
-- **Notiz-Icon (Emoji-Picker):** Vollständiger Emoji-Katalog mit Kategoriereitern, Suche, Verlauf zuletzt verwendeter Symbole (`localStorage`) und Farben aus dem Theme. Am PC kompakt wie ein Kontextmenü auf eigener Fläche, ohne Titelleiste; auf Mobilgeräten (< 640 px) als Bottom-Sheet mit touch-freundlichen Zielen (≥ 44 px) und `text-base`-Suchfeld (verhindert iOS-Zoom). Derselbe Auswähler dient beim Anlegen von Notizen, Aufgabenlisten und Listen (`EmojiIconButton`). „Entfernen“ lässt das Icon ganz weg; ohne Icon steht nur der Titel. Neue Notizen starten mit 🗒️.
-- **Markieren über mehrere Punkte** ([OutlinerTree.tsx](../../frontend/src/features/workspace/OutlinerTree.tsx)): Mit der Maus von einem Punkt in einen anderen ziehen markiert Text über Punktgrenzen (CSS Highlight API, sonst eingefärbte Zeilen). Entf/Backspace löscht wie ein Texteditor (Rest des ersten und letzten Punkts werden ein Punkt, Punkte dazwischen samt Unterpunkten gehen, Unterpunkte des letzten wandern unter den ersten) in einem Schritt (`onReplaceRange`, ein `Strg+Z` holt alles zurück); ein Zeichen ersetzt die Markierung, `Strg+C`/`Strg+X` kopieren bzw. schneiden aus.
+  As long as 1 or 2 is running, the engine additionally syncs every 7 s when holding leases (renewal), otherwise every 30 s as a safeguard. Focusing a bullet acquires a lease immediately. The editor indicates the connection mode ("Live", "Live (Long-Polling)", "Syncing every 3 s").
+- **Private notes** opened in only one tab sync every 30 s, plus immediately upon returning online or switching back to the tab. When leaving, the engine sends pending changes using `keepalive` and releases its leases.
+- **Text conflicts:** Each text edit carries the version the user saw while typing. If someone else modified or locked the bullet in the meantime, the server creates a conflict copy; changes are never silently overwritten.
+- **Locks (Leases):** The bullet with the cursor, recently left bullets for 20 s, and newly created bullets are held with a lease. Bullets held by someone else show a lock with their name and are read-only; pressing Enter inside creates a new bullet below. Deleting, merging, indenting/outdenting, and dragging are blocked on locked bullets (notice displayed at the bottom of the editor).
+- **Presence:** The note header shows who else currently has the note open.
+- **Conflict copies** are highlighted in color ("Conflict – version by …") with "Keep" (text replaces the original bullet or title, and the copy is removed) and "Discard".
+- **Undo:** `Ctrl+Z`/`Cmd+Z` reverts the user's last change, `Ctrl+Shift+Z` or `Ctrl+Y` redoes it (also in the title and via context menu/mobile keyboards). Typing in the same bullet up to a 1 s pause counts as one step; up to 200 steps per tab. If someone else modified or locked the bullet in the meantime, the step is skipped with a notice.
+- `PUT /documents/{id}` only changes icon, pin status, and folder (title is synced via the log); content changes exclusively run through the engine. The to-do rollup checks off items via a single operation through the same sync endpoint.
+- **Note icon (Emoji picker):** Comprehensive emoji catalog with category tabs, search, recently used icons history (`localStorage`), and theme colors. On desktop, compact like a context menu in its own popover without a title bar; on mobile (< 640 px) as a bottom sheet with touch-friendly targets (≥ 44 px) and a `text-base` search input (preventing iOS auto-zoom). The same picker is used when creating notes, task lists, and lists (`EmojiIconButton`). "Remove" clears the icon entirely; without an icon, only the title is shown. New notes start with 🗒️.
+- **Multi-bullet selection** ([OutlinerTree.tsx](../../frontend/src/features/workspace/OutlinerTree.tsx)): Dragging with the mouse across bullets selects text across bullet boundaries (CSS Highlight API, falling back to colored lines). Del/Backspace deletes just like a text editor (the remainder of the first and last bullets merge into one, bullets in between including sub-items are removed, sub-items of the last move under the first) in a single step (`onReplaceRange`, a single `Ctrl+Z` recovers everything); typing a character replaces the selection, `Ctrl+C`/`Ctrl+X` copy or cut.
 
 ## Explorer, Tags, To-Dos
 
-- Ordnerbaum mit Favoriten (`doc_pins`), Verschieben per Drag & Drop (`/documents/{id}/move`, `/folders/move`). Ordner zeigen ihren Zustand am offenen bzw. geschlossenen Ordnersymbol (kein Pfeil).
-- **Mehrere Notizen** (PC): Strg/Cmd+Klick markiert einzeln, Shift+Klick einen Bereich in der angezeigten Reihenfolge (eine angeheftete Notiz steht zweimal im Baum; der Bereich beginnt an der Stelle, die angeklickt wurde); ein normaler Klick, Escape oder ein Klick ins Leere hebt die Markierung auf. Wer eine markierte Notiz zieht, nimmt alle markierten mit, in einen Ordner oder auf den Papierkorb (Zusammenführen gibt es dabei nicht).
-- **Auf den Papierkorb ziehen** (auch eine einzelne Notiz, am Handy per langem Drücken wie beim Verschieben in Ordner) verschiebt in den Papierkorb; der Hinweis bietet „Rückgängig“.
-- **Tags:** Alle `#Hashtags` werden aggregiert (`/workspace/tags`). Eine Tag-Seite trägt eine eigene Freitext-Notiz (`tag_pages`) und zeigt darunter jede Notiz mit Fundstellen als feste Überschrift und darunter den echten Outliner der Punkte mit dem Hashtag samt Unterpunkten (`DocumentEditor` mit `variant="tag"`, je Notiz eine eigene Sync-Verbindung, erst beim Hineinscrollen geladen). Bearbeiten wirkt direkt in der Notiz; ein Punkt ohne Hashtag (entfernt oder neu per Enter) bleibt sichtbar, solange der Cursor darin steht, und verschwindet, sobald er ihn verlässt. Die Reihenfolge der Notizen bleibt, solange die Seite offen ist.
-- **To-Do-Rollup:** Die Ansicht „To-Dos“ sammelt alle `todo`-Blöcke aller Notizen, filterbar nach Ordner. Abhaken im Rollup ändert den Block in der Notiz.
-- **Enhanced Tasks:** Ein `todo`-Block lässt sich als verknüpfte Aufgabe führen (`/documents/{id}/blocks/{blockId}/enhanced-task`); Erledigt-Status bleibt zwischen Notiz und Aufgabenansicht synchron.
+- Folder tree with favorites (`doc_pins`), moving via drag & drop (`/documents/{id}/move`, `/folders/move`). Folders indicate their state via open or closed folder icons (no arrow).
+- **Multiple notes** (desktop): Ctrl/Cmd+click selects individual items, Shift+click selects a range in display order (a pinned note appears twice in the tree; the range begins at the clicked location); a normal click, Escape, or clicking into empty space clears the selection. Dragging a selected note moves all selected notes together into a folder or onto the trash (merging is not available in multi-select).
+- **Dragging to trash** (including single notes, on mobile via long press like moving into folders) moves items to the trash; a toast offers "Undo".
+- **Tags:** All `#hashtags` are aggregated (`/workspace/tags`). A tag page contains its own freeform note (`tag_pages`) and displays below it each note containing matches as a fixed heading, followed by the actual outliner of bullets containing the hashtag along with their children (`DocumentEditor` with `variant="tag"`, separate sync connection per note, loaded only when scrolled into view). Edits apply directly inside the note; a bullet without a hashtag (removed or newly created via Enter) remains visible as long as the cursor is inside it, and disappears once the cursor leaves. Note order is preserved while the page remains open.
+- **To-Do Rollup:** The "To-Dos" view aggregates all `todo` blocks across all notes, filterable by folder. Checking off items in the rollup updates the block in the note.
+- **Enhanced Tasks:** A `todo` block can be tracked as a linked task (`/documents/{id}/blocks/{blockId}/enhanced-task`); completion status stays synchronized between note and task view.
 
-## Papierkorb
+## Trash
 
-- Löschen (einzeln oder mit dem Ordner) verschiebt eigene Notizen in den Papierkorb (`is_archived = 1`). Wer eine geteilte Notiz löscht, die ihm nicht gehört, verlässt nur die Freigabe.
-- Notizen im Papierkorb fehlen im Baum, in Suche, Export und Statistik und sind für alle Empfänger unsichtbar (`DocRole` = keine Rolle). Eigentümer und Löschende sehen sie schreibgeschützt mit Hinweisleiste und „Wiederherstellen“; Umbenennen, Verschieben und Teilen werden abgelehnt.
-- Eintrag „Papierkorb“ mit Zähler unten in der Ordnerleiste und im mobilen Menü. Die Liste zeigt Ordner und Löschzeitpunkt; „Endgültig löschen“ und „Papierkorb leeren“ brauchen einen zweiten Tipp.
-- Wiederherstellen legt einen inzwischen gelöschten Ordner neu an; existiert ein geteilter Ordner nicht mehr, landet die Notiz auf der Hauptebene. Freigaben bleiben erhalten. Nach der Frist der Eigentümerin bzw. des Eigentümers (Kontoeinstellungen → Aufbewahrung, Standard 30 Tage ab dem Löschen) löscht der Server die Notiz endgültig ([retention.go](../../internal/storage/retention.go)).
+- Deleting (individually or with a folder) moves user-owned notes to the trash (`is_archived = 1`). Deleting a shared note not owned by the user merely removes their share.
+- Notes in the trash are excluded from the tree, search, export, and stats, and are invisible to all recipients (`DocRole` = no role). Owners and deleting users see them read-only with an info banner and "Restore"; rename, move, and share actions are rejected.
+- A "Trash" entry with a counter sits at the bottom of the folder sidebar and in the mobile menu. The list displays folder and deletion timestamp; "Delete permanently" and "Empty trash" require a second confirmation tap.
+- Restoring recreates a previously deleted folder; if a shared folder no longer exists, the note is placed at the root level. Shares remain intact. After the owner's retention period expires (Account Settings → Data Retention, default 30 days after deletion), the server permanently deletes the note ([retention.go](../../internal/storage/retention.go)).
 
-## Freigabe
+## Sharing
 
-- Einzelne Notizen und ganze **geteilte Ordner** lassen sich an Benutzer oder Gruppen freigeben – wahlweise mit der Rolle **Bearbeiter** (`write`) oder **Leser** (`read`) ([sharing-and-permissions.md](../sharing-and-permissions.md)). Bearbeiter ändern Inhalt und Struktur über die Sync-Engine; Leser sehen Änderungen live.
-- Empfänger ordnen geteilte Notizen und Ordner in ihrem eigenen Baum ein (`doc_user_folders`, `workspace_folder_mounts`), ohne dass der Eigentümer etwas davon merkt.
-- Änderungen erreichen offene Fenster über den Weckruf `DOC_SEQ` und anschließenden Sync; Notizlisten über `DOC_UPDATED` ([websocket.md](../api/websocket.md)).
+- Individual notes and entire **shared folders** can be shared with users or groups – with either the **Editor** (`write`) or **Viewer** (`read`) role ([sharing-and-permissions.md](../sharing-and-permissions.md)). Editors modify content and structure via the sync engine; viewers see changes live.
+- Recipients organize shared notes and folders within their own folder tree (`doc_user_folders`, `workspace_folder_mounts`) without affecting the owner's hierarchy.
+- Changes reach open windows via the `DOC_SEQ` wake-up call followed by sync; note lists update via `DOC_UPDATED` ([websocket.md](../api/websocket.md)).
 
-## Grenzen
+## Limitations
 
-- Keine gleichzeitige Bearbeitung im selben einzelnen Bullet (Sperren pro Bullet und Konfliktkopie statt Zeichen-für-Zeichen-Zusammenführung), keine Cursor-Anzeige fremder Eingaben, keine Versionshistorie.
-- Keine Virtualisierung langer Dokumente; sehr große Notizen können auf Mobilgeräten träge werden *(nicht gemessen)*.
-- ~~Suche (`/search`) erfasst nur Titel und Inhalt eigener Notizen~~: Mit der globalen FTS5-Suche (`Cmd+K` / `Ctrl+K` / `/`) werden sowohl Titel als auch Block-Inhalte aller zugänglichen Notizen (eigene und freigegebene) durchsucht.
+- No concurrent editing within the same individual bullet (per-bullet leases and conflict copies instead of character-by-character merging), no remote cursor display, no version history.
+- No virtualization for long documents; very large notes may become sluggish on mobile devices *(unmeasured)*.
+- ~~Search (`/search`) only covers titles and contents of personal notes~~: With global FTS5 search (`Cmd+K` / `Ctrl+K` / `/`), both titles and block contents of all accessible notes (personal and shared) are searchable.
 
-## Export als Markdown-Archiv
+## Export as Markdown Archive
 
-Kontoeinstellungen → Export & Import → „Markdown-Archiv herunterladen“ (`GET /export/markdown`, Code: [export_markdown.go](../../internal/storage/export_markdown.go)).
+Account Settings → Export & Import → "Download Markdown archive" (`GET /export/markdown`, code: [export_markdown.go](../../internal/storage/export_markdown.go)).
 
-- Ordner und Notizen so, wie der Nutzer sie sieht (eigene Ordner, eingehängte geteilte Ordner, mit ihm geteilte Notizen); leere Ordner bleiben erhalten.
-- Jede Notiz: YAML-Frontmatter (`title`, `icon`, `tags`, `created_at`, `updated_at`) und Markdown, das Obsidian direkt darstellt: Überschriften, Trenner, Hinweisboxen (`> [!note]`) und Codeblöcke der obersten Ebene als echte Blöcke, ihre Kinder rücken eine Ebene nach vorn; alles andere als Liste mit einem Tab pro Ebene, To-dos als `- [ ]`.
-- Dateinamen werden für alle Betriebssysteme bereinigt (keine `/ \ : * ? " < > |`, nie `.`/`..`); doppelte Titel bekommen „ (2)“.
-- Das ZIP wird beim Lesen der Daten direkt in die Antwort geschrieben, ohne temporäre Dateien.
+- Folders and notes reflect the user's view (own folders, mounted shared folders, notes shared with them); empty folders are preserved.
+- Each note: YAML frontmatter (`title`, `icon`, `tags`, `created_at`, `updated_at`) and Markdown formatted for immediate rendering in Obsidian: top-level headings, dividers, callout boxes (`> [!note]`), and code blocks as top-level blocks with their children shifted forward one level; everything else as a list indented with one tab per level, to-dos formatted as `- [ ]`.
+- Filenames are sanitized across operating systems (no `/ \ : * ? " < > |`, never `.`/`..`); duplicate titles receive " (2)".
+- The ZIP is streamed directly to the response while reading data, without temporary files.
 
 ## Import
 
-Kontoeinstellungen → Export & Import → „Daten importieren“, mit **zwei getrennten Wegen** (Code: [import_markdown.go](../../internal/storage/import_markdown.go), [ImportCard.tsx](../../frontend/src/features/settings/ImportCard.tsx)):
+Account Settings → Export & Import → "Import Data", with **two separate paths** (code: [import_markdown.go](../../internal/storage/import_markdown.go), [ImportCard.tsx](../../frontend/src/features/settings/ImportCard.tsx)):
 
-| Weg | Endpunkt | Dateien | Ergebnis |
+| Method | Endpoint | Files | Result |
 |---|---|---|---|
-| MindSift-Daten | `POST /import/mindsift` | Backup-ZIP oder JSON (`/export`) oder Markdown-Archiv (`/export/markdown`), das Format wird erkannt | Notizen in ihre Ordner, Aufgabenlisten mit Unteraufgaben, Fälligkeit, Priorität und Notizen, Listen mit Menge, Kategorie und Erledigt-Status, beim JSON-Backup auch die Gedanken der Triage. Fremde, nur mit dem Exporteur geteilte Inhalte im JSON werden übersprungen. |
-| Obsidian-Vault | `POST /import/obsidian` | ZIP eines Vaults | Alles in einen neuen Ordner mit dem Namen des Vaults, Unterordner bleiben. Checkboxen bleiben Checkboxen, Frontmatter-Tags werden zu `#Hashtags`, Callouts zu Hinweisboxen, Wikilinks bleiben `[[…]]`. Versteckte Ordner (`.obsidian`, `.trash`) werden ignoriert, Anhänge übersprungen. |
+| MindSift Data | `POST /import/mindsift` | Backup ZIP or JSON (`/export`) or Markdown archive (`/export/markdown`), format is auto-detected | Notes placed in their folders, task lists with subtasks, due dates, priorities, and notes, lists with quantities, categories, and completion status, plus Triage thoughts for JSON backups. Third-party content merely shared with the exporter in JSON is skipped. |
+| Obsidian Vault | `POST /import/obsidian` | ZIP of a vault | Everything imported into a new folder named after the vault, preserving subfolders. Checkboxes remain checkboxes, frontmatter tags become `#hashtags`, callouts become callout boxes, wikilinks remain `[[…]]`. Hidden folders (`.obsidian`, `.trash`) are ignored, attachments skipped. |
 
-- **Vorschau:** Die Oberfläche lädt die Datei zuerst mit `?preview=1` hoch. Der Server liest und prüft alles und meldet, was angelegt würde (inkl. übersprungener Dateien mit Grund), schreibt aber nichts. Erst „Jetzt importieren“ legt an.
-- **Hinzufügen oder Wiederherstellen** (nur MindSift-Daten): „Hinzufügen“ legt nur neu an, Bestehendes bleibt unverändert. „Wiederherstellen“ (`?mode=restore`, in der Oberfläche nur nach bestätigtem Warnhinweis) löscht vorher alle eigenen Notizen, Ordner, Aufgaben, Gedanken und Listen – erst nachdem die Datei vollständig gelesen und geprüft ist, eine kaputte Datei löscht also nichts. Mit dem Nutzer geteilte Inhalte anderer bleiben. Ein Obsidian-Import fügt immer hinzu.
-- **Markdown → Notiz:** Listen behalten ihre Verschachtelung (Tabs oder Leerzeichen), Inhalte unter einer Überschrift werden darunter eingerückt (Gegenstück zum Export), Absätze werden zu Punkten, Codeblöcke zu Codeblöcken.
-- **Grenzen:** Upload max. 100 MB, eine Notiz max. 10 MB, entpackt zusammen max. 500 MB, höchstens 20 000 Dateien. Pfade mit `..` oder absolute Pfade werden entschärft und bleiben im Zielordner.
-- Bricht ein Import wegen eines Fehlers ab, bleibt das bis dahin Angelegte erhalten; die Meldung nennt das Element, an dem es scheiterte.
-
+- **Preview:** The UI first uploads the file with `?preview=1`. The server reads and validates everything, reporting what would be created (including skipped files with reasons), but writes nothing. Only clicking "Import now" creates the data.
+- **Append or Restore** (MindSift data only): "Append" only adds new items; existing items remain unchanged. "Restore" (`?mode=restore`, in the UI only after confirming a warning dialog) wipes all existing personal notes, folders, tasks, thoughts, and lists beforehand – only after the file has been fully read and validated, so a corrupted file will not erase anything. Third-party content shared with the user is retained. Obsidian import always appends.
+- **Markdown → Note:** Lists preserve their nesting (tabs or spaces), content under a heading is indented beneath it (counterpart to export), paragraphs become bullets, code blocks become code blocks.
+- **Limits:** Upload max 100 MB, single note max 10 MB, uncompressed total max 500 MB, at most 20,000 files. Paths containing `..` or absolute paths are sanitized and contained within the target folder.
+- If an import aborts due to an error, items created up to that point are retained; the error message identifies the element that failed.

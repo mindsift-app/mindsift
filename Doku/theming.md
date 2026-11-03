@@ -1,136 +1,136 @@
-# 🎨 Single-File CSS Theming Engine & Design-System
+# 🎨 Single-File CSS Theming Engine & Design System
 
-MindSift implementiert ein radikal einfaches, modulares Theming-System. Anstatt Farb- und Geometriewerte in Dutzenden Tailwind-Klassen über hunderte Komponenten zu verstreuen, wird das komplette Erscheinungsbild der Plattform über **eine einzige CSS-Datei pro Theme** gesteuert.
-
----
-
-## 💡 1. Philosophie: 1 Datei = 1 komplettes Theme
-
-Jedes Theme liegt im Verzeichnis [`frontend/src/themes/`](../frontend/src/themes/) und definiert alle visuellen Eigenschaften über standardisierte CSS-Variablen. 
-
-### Trennung von Struktur und Design
-- **React-Komponenten** definieren ausschließlich semantische Klassen (wie `.panel-surface`, `.input-field`, `.btn-primary`, `text-main`, `bg-canvas`).
-- **Die aktive Theme-CSS-Datei** bestimmt, welche konkreten Farben, Kontraste, Rahmenbreiten und Ecken-Rundungen diesen Klassen zugewiesen werden.
+MindSift implements a radically simple, modular theming system. Instead of scattering color and geometry values across dozens of Tailwind classes throughout hundreds of components, the platform's entire appearance is controlled via **a single CSS file per theme**.
 
 ---
 
-## 🧱 2. Die 6 standardisierten Variablen-Blöcke
+## 💡 1. Philosophy: 1 File = 1 Complete Theme
 
-Jede Theme-Datei gliedert sich in sechs exakt definierte Bereiche:
+Every theme resides in the [`frontend/src/themes/`](../frontend/src/themes/) directory and defines all visual properties using standardized CSS variables.
+
+### Separation of Structure and Design
+- **React components** define exclusively semantic classes (such as `.panel-surface`, `.input-field`, `.btn-primary`, `text-main`, `bg-canvas`).
+- **The active theme CSS file** determines the specific colors, contrasts, border widths, and corner radii assigned to these classes.
+
+---
+
+## 🧱 2. The 6 Standardized Variable Blocks
+
+Each theme file is structured into six strictly defined sections:
 
 ```css
-:root[data-theme="dein-theme"] {
+:root[data-theme="your-theme"] {
   /* ==========================================================================
-     1. AKZENTFARBE (Fokus, Primäraktionen, Highlights)
+     1. ACCENT COLOR (Focus, Primary Actions, Highlights)
      ========================================================================== */
-  --accent: #2563eb;                    /* Primäre Schaltflächen & aktive Tabs */
-  --accent-hover: #3b82f6;              /* Hover-Zustand */
-  --accent-dim: rgba(37, 99, 235, 0.15);/* Transparenter Hintergrund für Badges */
-  --accent-contrast: #ffffff;           /* Textfarbe auf Akzentflächen */
+  --accent: #2563eb;                    /* Primary buttons & active tabs */
+  --accent-hover: #3b82f6;              /* Hover state */
+  --accent-dim: rgba(37, 99, 235, 0.15);/* Transparent background for badges */
+  --accent-contrast: #ffffff;           /* Text color on accent surfaces */
 
   /* ==========================================================================
-     2. OBERFLÄCHEN & HINTERGRÜNDE
+     2. SURFACES & BACKGROUNDS
      ========================================================================== */
-  --bg-canvas: #0e1013;                 /* Grundhintergrund der gesamten Seite */
-  --bg-panel: #16181d;                  /* Panels, Karten, Modals & Seitenleisten */
-  --bg-panel-elevated: #1f2229;         /* Hervorgehobene Elemente & Hover-Panels */
-  --bg-input: #121418;                  /* Hintergrund von Textfeldern */
-  --bg-code: #0b0c0f;                   /* Codeblöcke & Tastatur-Badges */
-  --bg-overlay: rgba(0, 0, 0, 0.75);    /* Modal-Hintergrund Backdrop */
+  --bg-canvas: #0e1013;                 /* Base background of the entire page */
+  --bg-panel: #16181d;                  /* Panels, cards, modals & sidebars */
+  --bg-panel-elevated: #1f2229;         /* Elevated elements & hover panels */
+  --bg-input: #121418;                  /* Background of text input fields */
+  --bg-code: #0b0c0f;                   /* Code blocks & keyboard badges */
+  --bg-overlay: rgba(0, 0, 0, 0.75);    /* Modal backdrop overlay */
 
   /* ==========================================================================
-     3. TEXT & KONTRASTE
+     3. TEXT & CONTRAST
      ========================================================================== */
-  --text-main: #f4f4f5;                 /* Haupttext, Überschriften, Labels */
-  --text-muted: #a1a1aa;                /* Sekundärtext, Beschreibungen */
-  --text-faint: #71717a;                /* Dezentester Text, Tastaturhinweise */
-  --text-on-accent: #ffffff;            /* Lesbarer Text auf --accent */
+  --text-main: #f4f4f5;                 /* Main text, headings, labels */
+  --text-muted: #a1a1aa;                /* Secondary text, descriptions */
+  --text-faint: #71717a;                /* Subtlest text, keyboard hints */
+  --text-on-accent: #ffffff;            /* Readable text on --accent */
 
   /* ==========================================================================
-     4. RAHMEN, LINIEN & SCHATTEN
+     4. BORDERS, DIVIDERS & SHADOWS
      ========================================================================== */
-  --border-color: rgba(255, 255, 255, 0.08); /* Standard-Trennlinien */
-  --border-strong: rgba(255, 255, 255, 0.18);/* Fokussierte Rahmen, Tabs */
-  --shadow-panel: 0 4px 20px -2px rgba(0, 0, 0, 0.45); /* Box-Shadows */
+  --border-color: rgba(255, 255, 255, 0.08); /* Default divider lines */
+  --border-strong: rgba(255, 255, 255, 0.18);/* Focused borders, tabs */
+  --shadow-panel: 0 4px 20px -2px rgba(0, 0, 0, 0.45); /* Box shadows */
 
   /* ==========================================================================
-     5. STATUS- & SIGNALFARBEN
+     5. STATUS & SIGNAL COLORS
      ========================================================================== */
-  --status-ok: #22c55e;                 /* Erledigt, Online, Aktiv (Grün) */
-  --status-err: #ef4444;                /* Fehler, Löschen, Dringend (Rot) */
-  --status-warn: #eab308;               /* Wichtig, Warnung, Gesperrt (Gelb) */
-  --status-info: #3b82f6;               /* Hinweise, Information (Blau) */
+  --status-ok: #22c55e;                 /* Done, Online, Active (Green) */
+  --status-err: #ef4444;                /* Error, Delete, Urgent (Red) */
+  --status-warn: #eab308;               /* Important, Warning, Locked (Yellow) */
+  --status-info: #3b82f6;               /* Hints, Information (Blue) */
 
   /* ==========================================================================
-     6. RUNDUNGEN / GEOMETRIE
+     6. CORNER RADII / GEOMETRY
      ========================================================================== */
-  --radius-card: 0px;                   /* Eckenrundung von Panels & Karten */
-  --radius-btn: 2px;                    /* Eckenrundung von Schaltflächen */
-  --radius-input: 2px;                  /* Eckenrundung von Eingabefeldern */
-  --radius-checkbox: 2px;               /* Checkboxen */
-  --radius-pill: 9999px;                /* Pillen & Status-Badges */
+  --radius-card: 0px;                   /* Corner radius of panels & cards */
+  --radius-btn: 2px;                    /* Corner radius of buttons */
+  --radius-input: 2px;                  /* Corner radius of input fields */
+  --radius-checkbox: 2px;               /* Checkboxes */
+  --radius-pill: 9999px;                /* Pills & status badges */
 }
 ```
 
 ---
 
-## 🎭 3. Verfügbare Standard-Themes
+## 🎭 3. Available Default Themes
 
-| Theme-ID | Datei | Stil & Charakter | Standard-Geometrie |
+| Theme ID | File | Style & Character | Default Geometry |
 | :--- | :--- | :--- | :--- |
-| `dark` | [`theme-dark.css`](../frontend/src/themes/theme-dark.css) | Standard Dark Slate / Monochrom | Streng eckig (`0px` Cards, `2px` Buttons) |
-| `light` | [`theme-light.css`](../frontend/src/themes/theme-light.css) | Daylight Clean White / Minimalistisch | Modern dezent (`4px` Cards, `4px` Buttons) |
-| `terracotta` | [`theme-terracotta.css`](../frontend/src/themes/theme-terracotta.css) | Warmes Cremepapier, Tinte, Terrakotta-Akzent, eigene Code-Farben in Erdtönen | Weich (`12px`) |
-| `terracotta-night` | [`theme-terracotta-night.css`](../frontend/src/themes/theme-terracotta-night.css) | Espresso-Braun, Creme-Schrift, glühender Terrakotta-Akzent | Weich (`12px`) |
-| `fjord` / `fjord-night` | [`theme-fjord.css`](../frontend/src/themes/theme-fjord.css), [`theme-fjord-night.css`](../frontend/src/themes/theme-fjord-night.css) | Kühles Papier und Gletscherblau / Nachtblau | Weich (`12px`) |
-| `polarized-light` | [`theme-polarized-light.css`](../frontend/src/themes/theme-polarized-light.css) | Helles Gegenstück zu Polarized: Mintweiß, Petrol | Eckig (`0px`) |
-| `suri-light` | [`theme-suri-light.css`](../frontend/src/themes/theme-suri-light.css) | Helles Gegenstück zu Suri: Lavendel, Pflaume | Weich (`10px`) |
+| `dark` | [`theme-dark.css`](../frontend/src/themes/theme-dark.css) | Standard Dark Slate / Monochrome | Strictly square (`0px` cards, `2px` buttons) |
+| `light` | [`theme-light.css`](../frontend/src/themes/theme-light.css) | Daylight Clean White / Minimalist | Modern subtle (`4px` cards, `4px` buttons) |
+| `terracotta` | [`theme-terracotta.css`](../frontend/src/themes/theme-terracotta.css) | Warm cream paper, ink, terracotta accent, custom code colors in earth tones | Soft (`12px`) |
+| `terracotta-night` | [`theme-terracotta-night.css`](../frontend/src/themes/theme-terracotta-night.css) | Espresso brown, cream text, glowing terracotta accent | Soft (`12px`) |
+| `fjord` / `fjord-night` | [`theme-fjord.css`](../frontend/src/themes/theme-fjord.css), [`theme-fjord-night.css`](../frontend/src/themes/theme-fjord-night.css) | Cool paper and glacier blue / night blue | Soft (`12px`) |
+| `polarized-light` | [`theme-polarized-light.css`](../frontend/src/themes/theme-polarized-light.css) | Light counterpart to Polarized: mint white, petrol | Square (`0px`) |
+| `suri-light` | [`theme-suri-light.css`](../frontend/src/themes/theme-suri-light.css) | Light counterpart to Suri: lavender, plum | Soft (`10px`) |
 
-Die eingebauten Themes sind in Farbfamilien mit je einer hellen und dunklen Variante gruppiert (`THEME_FAMILIES` in [`theme.ts`](../frontend/src/lib/theme.ts)). Pro Gerät lassen sich unter Darstellung zusätzlich einstellen: Hell/Dunkel „Wie System“ (wechselt innerhalb der Familie), Ecken (`data-corners="round|square"` überschreibt die `--radius-*`-Werte), Rahmen an Knöpfen (`data-button-borders="off"`) und eine eigene Akzentfarbe (setzt `--accent-*` direkt am Wurzelelement). Code-Farben in `index.css` sind nur Rückfallwerte (`:where(...)`), die `--code-*`-Werte eines Themes gewinnen immer.
-| `polarized` | [`theme-polarized.css`](../frontend/src/themes/theme-polarized.css) | Tiefdunkles Obsidian mit elektrischem Grün/Türkis | Streng eckig (`0px` Cards, `2px` Buttons) |
-| `suri` | [`theme-suri.css`](../frontend/src/themes/theme-suri.css) | Warmes Mitternachts-Pflaume mit samtiger Orchidee | Weich gerundet (`10px` Cards, `6px` Buttons) |
-| *Template* | [`theme-template.css`](../frontend/src/themes/theme-template.css) | Vollständig dokumentierte Kopiervorlage | Frei anpassbar |
-
----
-
-## 🔌 4. Tailwind-Bridge & Semantische Klassen
-
-In [`frontend/src/index.css`](../frontend/src/index.css) und `tailwind.config.js` sind die semantischen Utility-Klassen definiert, die sich automatisch an das gewählte Theme anpassen:
-
-- `.panel-surface`: Wendet `--bg-panel`, `--border-color` und `--radius-card` an.
-- `.input-field`: Wendet `--bg-input`, `--border-color`, `--radius-input` und `--text-main` an.
-- `.btn-primary`: Akzent-Schaltfläche mit `--accent`, `--accent-hover`, `--text-on-accent` und `--radius-btn`.
-- `.btn-action`: Sekundär-Aktion mit dezentem Rahmen und Hover-Zustand.
-- `.checkbox-square`: Kontrollkästchen mit `--radius-checkbox`.
-- `.capture-pill`: Spezial-Pille für die Desktop-Schnelleingabeleiste mit `--radius-pill`.
-
-### 🏷️ App-Icon & Branding
-Das standardmäßige Marken-Icon von MindSift (`frontend/public/icon.svg`, PWA-Icons und Social-Preview-Bilder) folgt der primären Akzentfarbe `--accent: #2563eb` und `--text-on-accent: #ffffff` mit den typischen leichten Eckenrundungen (`rounded-xl` bzw. `rx=108`). Details zur Asset-Matrix und den Icon-Formaten siehe [architecture.md](architecture.md#app-icons-pwa--social-preview-open-graph).
+The built-in themes are grouped into color families, each containing a light and dark variant (`THEME_FAMILIES` in [`theme.ts`](../frontend/src/lib/theme.ts)). Additionally, per device under Appearance, users can configure: Light/Dark "System default" (switches within the family), Corners (`data-corners="round|square"` overrides `--radius-*` values), Button borders (`data-button-borders="off"`), and a custom accent color (sets `--accent-*` directly on the root element). Code colors in `index.css` are fallback values only (`:where(...)`); the `--code-*` values of a theme always take precedence.
+| `polarized` | [`theme-polarized.css`](../frontend/src/themes/theme-polarized.css) | Deep dark obsidian with electric green/teal | Strictly square (`0px` cards, `2px` buttons) |
+| `suri` | [`theme-suri.css`](../frontend/src/themes/theme-suri.css) | Warm midnight plum with velvety orchid | Softly rounded (`10px` cards, `6px` buttons) |
+| *Template* | [`theme-template.css`](../frontend/src/themes/theme-template.css) | Fully documented boilerplate template | Fully customizable |
 
 ---
 
-## 🛠️ 5. Ein eigenes Theme erstellen
+## 🔌 4. Tailwind Bridge & Semantic Classes
 
-### Ohne Rebuild: Theme-Manager in den Kontoeinstellungen
+In [`frontend/src/index.css`](../frontend/src/index.css) and `tailwind.config.js`, semantic utility classes are defined that automatically adapt to the selected theme:
 
-Unter **Kontoeinstellungen → Darstellung & Themes** kann jeder Benutzer eigene Themes anlegen:
+- `.panel-surface`: Applies `--bg-panel`, `--border-color`, and `--radius-card`.
+- `.input-field`: Applies `--bg-input`, `--border-color`, `--radius-input`, and `--text-main`.
+- `.btn-primary`: Accent button with `--accent`, `--accent-hover`, `--text-on-accent`, and `--radius-btn`.
+- `.btn-action`: Secondary action with subtle border and hover state.
+- `.checkbox-square`: Checkbox with `--radius-checkbox`.
+- `.capture-pill`: Special pill for the desktop quick-capture bar with `--radius-pill`.
 
-- **Vorlage** herunterladen, kopieren oder direkt ins Eingabefeld einfügen (`theme-template.css`).
-- CSS als **`.css`-Datei hochladen** oder **einfügen**, Namen vergeben, „Speichern & aktivieren“.
-- Eigene Themes erscheinen als Kacheln in der Galerie und im Profil-Dropdown, mit **Bearbeiten** und **Löschen**.
+### 🏷️ App Icon & Branding
+The standard MindSift brand icon (`frontend/public/icon.svg`, PWA icons, and social preview images) uses the primary accent color `--accent: #2563eb` and `--text-on-accent: #ffffff` with characteristic slight corner roundings (`rounded-xl` or `rx=108`). For details on the asset matrix and icon formats, see [architecture.md](architecture.md#app-icons-pwa--social-preview-open-graph).
 
-Technik:
+---
 
-- Gespeichert pro Benutzer in der Tabelle `user_themes` (API `GET/POST /themes`, `DELETE /themes/{id}`, max. 200 KB), also im Daten-Volume und auf allen Geräten verfügbar.
-- Aktiv gesetzt wird ein eigenes Theme als `custom:<id>`. [`theme.ts`](../frontend/src/lib/theme.ts) setzt das CSS live als `<style id="mindsift-custom-theme">` ans Ende von `<head>` (gewinnt damit gegen die eingebauten Themes) und übernimmt den Wert aus dem Selektor `[data-theme="…"]` des CSS für `<html data-theme>`. Ohne solchen Selektor gilt das CSS für `:root`. Kommentare werden dabei ignoriert.
-- Ob die Tailwind-Klasse `dark` gesetzt wird, entscheidet die Helligkeit von `--bg-app`.
-- Das CSS des aktiven Themes liegt zusätzlich im `localStorage`, damit es beim Start sofort greift; nach dem Login wird es mit dem Server abgeglichen. Wird es gelöscht, fällt die Ansicht auf „Dark“ zurück.
+## 🛠️ 5. Creating a Custom Theme
 
-### Eingebautes Theme (mit Rebuild)
+### Without Rebuild: Theme Manager in Account Settings
 
-Um ein neues Theme (z.B. „Nordic Blue" oder „Cyberpunk") fest in MindSift einzubauen:
-1. Kopiere `frontend/src/themes/theme-template.css` nach `frontend/src/themes/theme-meintheme.css`.
-2. Ändere den Selektor `:root[data-theme="template"]` in `:root[data-theme="meintheme"]`.
-3. Passe Farben und Rundungen nach Belieben an.
-4. Importiere die CSS-Datei in [`frontend/src/lib/theme.ts`](../frontend/src/lib/theme.ts) und trage das Theme im `AVAILABLE_THEMES`-Array ein.
-5. Das neue Theme steht sofort in den Kontoeinstellungen und im Profil-Dropdown zur Verfügung!
+Under **Account Settings → Appearance & Themes**, every user can create custom themes:
+
+- Download the **template**, copy it, or paste it directly into the input field (`theme-template.css`).
+- **Upload** CSS as a `.css` file or **paste** it, assign a name, "Save & activate".
+- Custom themes appear as tiles in the gallery and in the profile dropdown, complete with **Edit** and **Delete** options.
+
+Technical details:
+
+- Stored per user in the `user_themes` table (API `GET/POST /themes`, `DELETE /themes/{id}`, max 200 KB), meaning they are saved in the data volume and accessible across all devices.
+- A custom theme is activated as `custom:<id>`. [`theme.ts`](../frontend/src/lib/theme.ts) injects the CSS live as `<style id="mindsift-custom-theme">` at the end of `<head>` (thus overriding built-in themes) and applies the value from the selector `[data-theme="…"]` of the CSS to `<html data-theme>`. Without such a selector, the CSS applies to `:root`. Comments are ignored.
+- Whether the Tailwind `dark` class is set depends on the luminance of `--bg-app`.
+- The CSS of the active theme is additionally stored in `localStorage` so that it applies immediately on startup; after login, it is synchronized with the server. If deleted, the appearance falls back to "Dark".
+
+### Built-in Theme (With Rebuild)
+
+To permanently integrate a new theme (e.g., "Nordic Blue" or "Cyberpunk") into MindSift:
+1. Copy `frontend/src/themes/theme-template.css` to `frontend/src/themes/theme-mytheme.css`.
+2. Change the selector `:root[data-theme="template"]` to `:root[data-theme="mytheme"]`.
+3. Adjust colors and corner radii as desired.
+4. Import the CSS file in [`frontend/src/lib/theme.ts`](../frontend/src/lib/theme.ts) and add the theme to the `AVAILABLE_THEMES` array.
+5. The new theme is immediately available in the account settings and profile dropdown!

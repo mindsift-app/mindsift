@@ -1,65 +1,65 @@
-# Plan: MCP-Berechtigungen in drei Stufen (umgesetzt in v0.72.0)
+# Plan: Three-Tier MCP Permissions (Implemented in v0.72.0)
 
-Stand 2026-11-03. Ziel: Ein API-Schlüssel bekommt pro Bereich (Aufgaben, Listen, Notizen, Inbox) dieselben drei Stufen, und über MCP lässt sich alles, was die Stufe erlaubt, auch wirklich tun. Heute fehlen vor allem: Notizen ändern und löschen, Listeneinträge löschen, die Inbox lesen und bearbeiten.
+As of 2026-11-03. Goal: An API key receives the same three permission tiers per domain (Tasks, Lists, Notes, Inbox), and everything permitted by the tier can actually be executed via MCP. Currently missing most of all: modifying and deleting notes, deleting list items, reading and managing the inbox.
 
-## Die drei Stufen
+## The Three Tiers
 
-| Stufe | Darf | Darf nicht |
+| Tier | Allowed | Not Allowed |
 |---|---|---|
-| **Lesen** | auflisten, lesen, suchen | irgendetwas ändern |
-| **Anlegen** | neue Einträge erstellen (Aufgabe, Listeneintrag, Notiz, Inbox) | Bestehendes ändern oder löschen |
-| **Ändern** | Bestehendes bearbeiten **und löschen** | – (mächtigste Stufe) |
+| **Read** | list, read, search | change anything |
+| **Create** | create new items (task, list item, note, inbox) | modify or delete existing items |
+| **Write** | modify **and delete** existing items | – (most powerful tier) |
 
-Die Stufen sind technisch unabhängige Rechte (wie heute). In der Oberfläche schaltet „Ändern“ „Lesen“ automatisch mit ein, weil man zum Ändern die IDs aus dem Lesen braucht; „Anlegen“ bleibt allein wählbar (Webhooks, Smart Home: nur reinwerfen).
+The tiers are technically independent permissions (as is currently the case). In the UI, "Write" automatically enables "Read" as well, because modifying items requires IDs obtained from reading; "Create" remains independently selectable (webhooks, smart home: ingestion only).
 
-## Rechte (Scopes)
+## Scopes
 
-Bestehende IDs bleiben, damit vorhandene Schlüssel weiter funktionieren. Neu sind nur die markierten.
+Existing IDs remain so that existing keys continue to work. Only marked items are new.
 
-| Bereich | Lesen | Anlegen | Ändern |
+| Domain | Read | Create | Write |
 |---|---|---|---|
-| Aufgaben | `tasks:read` | `webhook:task` | `tasks:write` |
-| Listen | `lists:read` | `webhook:list` | `lists:write` |
-| Notizen | `notes:read` | `notes:create` | **`notes:write`** (neu) |
-| Inbox | **`inbox:read`** (neu) | `webhook:triage` | **`inbox:write`** (neu) |
+| Tasks | `tasks:read` | `webhook:task` | `tasks:write` |
+| Lists | `lists:read` | `webhook:list` | `lists:write` |
+| Notes | `notes:read` | `notes:create` | **`notes:write`** (new) |
+| Inbox | **`inbox:read`** (new) | `webhook:triage` | **`inbox:write`** (new) |
 
-Hinweis zu `tasks:write` und `lists:write`: Sie erlauben heute auch das Anlegen. Das bleibt so (wer ändern darf, darf auch anlegen); „Anlegen“ ist die schmalere Stufe für Schlüssel, die nur Neues reinwerfen sollen.
+Note on `tasks:write` and `lists:write`: They currently also allow creation. This remains the case (anyone allowed to write is also allowed to create); "Create" is the narrower tier for keys intended purely for ingesting new items.
 
-## Neue und geänderte MCP-Werkzeuge
+## New and Modified MCP Tools
 
-**Notizen** (`notes:write`)
-- `get_note` liefert zusätzlich die Punkte mit ihren IDs (bisher nur Markdown), damit einzelne Punkte gezielt geändert werden können.
-- `update_note`: Titel, Icon, Ordner ändern.
-- `add_note_bullet`: neuer Punkt nach einem bestehenden (oder am Ende), mit Ebene, Typ (Text, To-do, Überschrift) und Text.
-- `update_note_bullet`: Text eines Punkts ändern, To-do abhaken/öffnen.
-- `delete_note_bullet`: Punkt (mit seinen Unterpunkten) entfernen.
-- `delete_note`: Notiz in den Papierkorb (wiederherstellbar).
+**Notes** (`notes:write`)
+- `get_note` additionally returns bullet points with their IDs (previously markdown only) so individual bullets can be targeted for modification.
+- `update_note`: change title, icon, folder.
+- `add_note_bullet`: add a new bullet after an existing one (or at the end), with level, type (text, to-do, heading), and text.
+- `update_note_bullet`: change text of a bullet, check/uncheck to-do.
+- `delete_note_bullet`: remove bullet (along with its sub-bullets).
+- `delete_note`: move note to trash bin (restorable).
 
-Alle Änderungen an Punkten laufen über dieselben Operationen wie der Editor (Notiz-Synchronisation, `internal/collab`): Wer die Notiz gerade offen hat, sieht sie live, und gleichzeitiges Tippen erzeugt keinen Konflikt mit dem ganzen Text. Ganze Notizen per Markdown zu ersetzen ist bewusst **nicht** vorgesehen (würde parallele Änderungen überschreiben).
+All bullet modifications run through the same operations as the editor (note synchronization, `internal/collab`): Anyone who currently has the note open sees updates live, and concurrent typing does not cause a conflict with the entire text. Replacing entire notes via markdown is deliberately **not** supported (as it would overwrite concurrent changes).
 
-**Listen** (`lists:write`)
-- Kein Löschen per MCP: Listeneinträge haben keinen Papierkorb, ein gelöschter Eintrag wäre endgültig weg. Agenten haken Einträge ab (`check_list_item`, gibt es schon); aufräumen bleibt beim Nutzer.
+**Lists** (`lists:write`)
+- No deletion via MCP: List items do not have a trash bin; a deleted item would be permanently gone. Agents check off items (`check_list_item`, already exists); cleanup remains the responsibility of the user.
 
 **Inbox** (`inbox:read` / `inbox:write`)
-- `list_inbox` (Lesen): offene Inbox-Einträge mit Text, Priorität, Fälligkeit, Hashtags; durchsuchbar.
-- `convert_inbox_item` (Ändern): in eine Aufgabe (mit Aufgabenliste), eine Notiz oder einen Listeneintrag umwandeln – wie die Triage.
-- `discard_inbox_item` (Ändern): verwerfen (landet im Papierkorb der Triage, wiederherstellbar).
-- Suchen in der Inbox über `list_inbox` mit `query` (die allgemeine Suche bleibt bei Aufgaben, Listen und Notizen).
+- `list_inbox` (Read): open inbox items with text, priority, due date, hashtags; searchable.
+- `convert_inbox_item` (Write): convert into a task (with task list), a note, or a list item – just like Triage.
+- `discard_inbox_item` (Write): discard (lands in the Triage trash bin, restorable).
+- Searching the inbox via `list_inbox` with `query` (general search remains scoped to tasks, lists, and notes).
 
-## Oberfläche
+## User Interface
 
-Kontoeinstellungen → API: statt der heutigen Liste von Schaltern ein Raster **Bereich × Stufe** (4 Zeilen, 3 Spalten) mit kurzer Erklärung der Stufen. Die Chips an bestehenden Schlüsseln zeigen die Stufen je Bereich. Am Handy untereinander.
+Account Settings → API: instead of the current list of toggles, a **Domain × Tier** grid (4 rows, 3 columns) with a brief explanation of each tier. Chips on existing keys display the tiers per domain. Stacked vertically on mobile.
 
-## Umsetzung
+## Implementation
 
-1. Backend: Scopes `notes:write`, `inbox:read`, `inbox:write` (`storage/apikeys.go`), Prüfung in `mcpToolAllowed`, neue Werkzeuge in `internal/api/mcp.go` mit Tests (je Werkzeug: erlaubt mit Recht, abgelehnt ohne; Notiz-Änderung erscheint im offenen Editor).
-2. Frontend: Raster in `ApiKeysPanel`, Bezeichnungen in `lib/apiScopes.ts`.
-3. Doku: `Doku/api/` (MCP-Werkzeuge, Rechte), Hilfe-Text.
+1. Backend: Scopes `notes:write`, `inbox:read`, `inbox:write` (`storage/apikeys.go`), permission checks in `mcpToolAllowed`, new tools in `internal/api/mcp.go` with tests (per tool: allowed with permission, rejected without; note edits appear in the open editor).
+2. Frontend: Grid in `ApiKeysPanel`, labels in `lib/apiScopes.ts`.
+3. Documentation: `Doku/api/` (MCP tools, permissions), help text.
 
-Aufwand: mittel (Backend ~2/3, davon das meiste bei den Notiz-Werkzeugen).
+Effort: medium (backend ~2/3, mostly for the note tools).
 
-## Entschieden (2026-11-03)
+## Decided (2026-11-03)
 
-- Inbox „Ändern“: umwandeln und verwerfen, wie die Triage; kein „Später“.
-- Listen: kein Löschen von Einträgen per MCP, nur abhaken.
-- Notizen: punktweise bearbeiten über die Notiz-Synchronisation; kein Ersetzen der ganzen Notiz.
+- Inbox "Write": convert and discard, like Triage; no "Later".
+- Lists: no deletion of items via MCP, checking off only.
+- Notes: bullet-level editing via note synchronization; no full-note replacement.

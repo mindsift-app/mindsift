@@ -1,36 +1,36 @@
-# MindSift Technische Dokumentation
+# MindSift Technical Documentation
 
-Referenz für Entwickler und Administratoren. Alle Angaben wurden gegen den Code im Branch `dev` geprüft (Stand Oktober 2026). Abweichungen zwischen Doku und Code melde bitte als Fehler in [flaws.md](flaws.md).
+Reference for developers and administrators. All information has been verified against the code in the `dev` branch (as of October 2026). Please report discrepancies between the documentation and code as issues in [flaws.md](flaws.md).
 
-## Inhalt
+## Contents
 
-| Dokument | Inhalt |
+| Document | Description |
 |---|---|
-| [architecture.md](architecture.md) | Aufbau, Technologie-Stack, Start, Konfiguration, Build |
-| [database.md](database.md) | SQLite-Schema, Migrationen, Datenmodell |
-| [api/rest.md](api/rest.md) | Alle REST-Endpunkte |
-| [api/websocket.md](api/websocket.md) | Echtzeit über WebSocket und SSE, Ereignisse |
-| [modules/triage.md](modules/triage.md) | Schnellerfassung und Triage |
-| [modules/tasks.md](modules/tasks.md) | Aufgaben, Kanban, Alarme |
-| [modules/workspace.md](modules/workspace.md) | Outliner-Notizen, Ordner, Tags |
-| [modules/collaboration.md](modules/collaboration.md) | Gemeinsames Bearbeiten von Notizen: Log, Sperren, Konflikte, Offline, Transport-Stufen |
-| [modules/lists.md](modules/lists.md) | Geteilte Listen |
-| [sharing-and-permissions.md](sharing-and-permissions.md) | Rollen, Gruppen, Freigaben |
+| [architecture.md](architecture.md) | Structure, technology stack, startup, configuration, build |
+| [database.md](database.md) | SQLite schema, migrations, data model |
+| [api/rest.md](api/rest.md) | All REST endpoints |
+| [api/websocket.md](api/websocket.md) | Real-time communication via WebSocket and SSE, events |
+| [modules/triage.md](modules/triage.md) | Quick capture and triage |
+| [modules/tasks.md](modules/tasks.md) | Tasks, Kanban, reminders |
+| [modules/workspace.md](modules/workspace.md) | Outliner notes, folders, tags |
+| [modules/collaboration.md](modules/collaboration.md) | Collaborative note editing: log, locks, conflicts, offline, transport tiers |
+| [modules/lists.md](modules/lists.md) | Shared lists |
+| [sharing-and-permissions.md](sharing-and-permissions.md) | Roles, groups, sharing permissions |
 | [reverse-proxy.md](reverse-proxy.md) | Nginx, Traefik, Caddy, Cloudflare |
-| [theming.md](theming.md) | Themes und Design-Variablen |
-| [ui-patterns.md](ui-patterns.md) | Einheitliche Bedienelemente: Personensuche, Profilbild-Stapel, Zähler |
-| [flaws.md](flaws.md) | Bekannte Schwachstellen und technische Schulden |
+| [theming.md](theming.md) | Themes and design variables |
+| [ui-patterns.md](ui-patterns.md) | Standard UI elements: user search, avatar stack, counters |
+| [flaws.md](flaws.md) | Known flaws and technical debt |
 
-## Überblick in 60 Sekunden
+## 60-Second Overview
 
-- **Ein Go-Binary** liefert REST-API, WebSocket/SSE und das eingebettete React-Frontend (`go:embed`). Es gibt genau einen Container und eine SQLite-Datei (`/data/mindsift.db`).
-- **Datenhaltung:** vollständig in SQLite. Es gibt keine `.md`-Dateien auf der Platte; Markdown wird bei Bedarf aus den Blöcken erzeugt (`documents.markdown_cache`, Export als `.md`).
-- **Echtzeit:** ein Hub mit Räumen und Benutzer-Kanälen (WebSocket, SSE als Ersatz). Verteilt werden Ereignisse nach Änderungen.
-- **Notizen gemeinsam bearbeiten:** server-autoritatives Operations-Log mit Versionen und Sperren pro Bullet, Konfliktkopien statt Überschreiben, Offline-Warteschlange in IndexedDB, Abgleich auch hinter restriktiven Proxys ([modules/collaboration.md](modules/collaboration.md)).
-- **Auth:** JWT (HS256) mit serverseitiger Sitzung (`sessions`, gleitend 30 Tage) und `token_version`, dazu API-Keys (`mindsift_sec_…`) für Webhooks.
-- **Freigaben:** Aufgabenlisten, geteilte Listen, Notizen und Ordner jeweils mit Rolle Bearbeiter oder Leser.
+- **Single Go binary** serves the REST API, WebSocket/SSE, and the embedded React frontend (`go:embed`). There is exactly one container and one SQLite file (`/data/mindsift.db`).
+- **Data storage:** Entirely in SQLite. There are no `.md` files on disk; Markdown is generated on demand from blocks (`documents.markdown_cache`, export as `.md`).
+- **Real-time:** A hub with rooms and user channels (WebSocket, SSE as fallback). Broadcasts events following changes.
+- **Collaborative note editing:** Server-authoritative operation log with versions and per-bullet locks, conflict copies instead of overwrites, offline queue in IndexedDB, synchronization even behind restrictive proxies ([modules/collaboration.md](modules/collaboration.md)).
+- **Auth:** JWT (HS256) with server-side sessions (`sessions`, sliding 30-day expiry) and `token_version`, plus API keys (`mindsift_sec_…`) for webhooks.
+- **Sharing:** Task lists, shared lists, notes, and folders each with Editor or Viewer roles.
 
-## Entwickeln
+## Development
 
 ```bash
 # Backend (Go 1.23)
@@ -40,4 +40,4 @@ go vet ./... && go test ./...
 cd frontend && npm ci && npx tsc --noEmit && npm run test:run && npm run build
 ```
 
-Das Frontend wird für das Binary nach `cmd/server/dist` gebaut (siehe `Dockerfile`). Die CI läuft zweimal mit demselben Build-Plan (`ci/build-plan.sh`): im privaten Gitea (`.gitea/workflows/`, Tests und Images vor der Veröffentlichung) und auf GitHub (`.github/workflows/`, öffentliche Images unter `ghcr.io/mindsift-app/mindsift`).
+The frontend is built to `cmd/server/dist` for inclusion in the binary (see `Dockerfile`). CI runs twice using the same build plan (`ci/build-plan.sh`): on private Gitea (`.gitea/workflows/`, tests and pre-release images) and on GitHub (`.github/workflows/`, public images at `ghcr.io/mindsift-app/mindsift`).

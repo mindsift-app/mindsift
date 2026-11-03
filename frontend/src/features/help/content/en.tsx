@@ -354,7 +354,7 @@ const en: HelpContent = {
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
           <p>
-            MindSift has an API. Under <em className="text-main">Account settings → API</em> you create personal keys and use switches to decide what each may do: read, create or change tasks, read, add to or change lists, and deliver thoughts to the inbox. These permissions apply to both kinds of access alike. A key never reaches notes or settings.
+            MindSift has an API. Under <em className="text-main">Account settings → API</em> you create personal keys and use switches to decide what each may do: read, create or change tasks, lists, notes and the inbox. These permissions apply to both kinds of access alike; notes as well as reading and sorting the inbox are available over MCP only. A key never reaches settings.
           </p>
           <p>
             <strong className="text-main">curl and smart home:</strong> with read access, <code className="text-accent bg-panel px-1 py-0.5 rounded font-mono">GET /api/v1/tasks?due=today&amp;status=open</code> returns everything due today, e.g. for a Home Assistant sensor. More filters: <code className="font-mono">due=overdue</code>, a date, <code className="font-mono">taskListId</code>. Lists come via <code className="font-mono">GET /api/v1/lists</code>. With change access you check things off via <code className="font-mono">PATCH /api/v1/thoughts/ID</code>. The settings show ready-made examples.
@@ -363,7 +363,7 @@ const en: HelpContent = {
             <strong className="text-main">Delivering:</strong> <code className="text-accent bg-panel px-1 py-0.5 rounded font-mono">POST /api/v1/webhooks/ingest</code> accepts thoughts from iOS Shortcuts, Home Assistant or n8n. The field <code className="font-mono">"target"</code> chooses the target: <code className="font-mono">triage</code> (default), <code className="font-mono">task</code> (optionally with <code className="font-mono">taskListId</code>) or <code className="font-mono">list_item</code> (with <code className="font-mono">listId</code>).
           </p>
           <p>
-            <strong className="text-main">AI agents:</strong> over MCP (<code className="text-accent bg-panel px-1 py-0.5 rounded font-mono">POST /api/v1/mcp</code>), Claude Code, OpenAI Codex, Claude Desktop, Cursor and your own agents read, create, change, check off and delete your tasks and lists. The settings show the ready command for every agent; an agent only sees the tools the key allows.
+            <strong className="text-main">AI agents:</strong> over MCP (<code className="text-accent bg-panel px-1 py-0.5 rounded font-mono">POST /api/v1/mcp</code>), Claude Code, OpenAI Codex, Claude Desktop, Cursor and your own agents read, create, change, check off and delete your tasks, lists and notes and sort the inbox. The settings show the ready command for every agent; an agent only sees the tools the key allows.
           </p>
           <p>
             <strong className="text-main">Origin:</strong> whatever a key creates or changes carries a badge with its name for good, starting with a webhook icon (API) or a robot (MCP). Hover or tap it to see who created it and last changed it, and when.

@@ -1,40 +1,40 @@
-# 🛡️ Reverse-Proxy & WebServer-Konfigurationshandbuch
+# 🛡️ Reverse Proxy & Web Server Configuration Guide
 
-Dieses Dokument beschreibt die empfohlene Konfiguration von Reverse-Proxies und Ingress-Controllern für MindSift. MindSift nutzt eine **hybride Realtime-Architektur** bestehend aus bidirektionalen **WebSockets** und einem automatischen **Server-Sent Events (SSE) Fallback**, um selbst in restriktivsten Firmennetzwerken, hinter strikten Firewalls oder bei Deep-Packet-Inspection unterbrechungsfreie Live-Synchronisation zu gewährleisten.
+This document describes the recommended configuration of reverse proxies and ingress controllers for MindSift. MindSift uses a **hybrid real-time architecture** consisting of bidirectional **WebSockets** and an automatic **Server-Sent Events (SSE) fallback** to ensure uninterrupted live synchronization even in the most restrictive corporate networks, behind strict firewalls, or with deep packet inspection.
 
 ---
 
-## ⚡ Wichtige Anforderungen auf einen Blick
+## ⚡ Key Requirements at a Glance
 
-| Protokoll | Standard-Port | Benötigte Header & Einstellungen | Zweck |
+| Protocol | Default Port | Required Headers & Settings | Purpose |
 | :--- | :--- | :--- | :--- |
-| **WebSockets** | 443 (WSS) / 80 (WS) | `Upgrade $http_upgrade`<br>`Connection "Upgrade"`<br>`proxy_read_timeout 3600s` | Bidirektionale Live-Updates (Aufgaben, Listen, Notizen) |
-| **Server-Sent Events (SSE)** | 443 (HTTPS) / 80 (HTTP) | `X-Accel-Buffering: no`<br>`proxy_buffering off`<br>`proxy_cache off` | Fallback bei blockiertem WebSocket-Upgrade |
-| **REST API & Uploads** | 443 (HTTPS) / 80 (HTTP) | `client_max_body_size 64M` | Notizen, Import/Export (JSON) |
-| **Client-IP** | – | `X-Real-IP` / `X-Forwarded-For` | Login-Sperre nach Fehlversuchen trifft den richtigen Absender |
-| **OAuth (MCP)** | 443 (HTTPS) | `/.well-known/oauth-*` und `/oauth/*` an MindSift durchreichen (mit `location /` automatisch), `BASE_URL` gesetzt | claude.ai und ChatGPT als Connector |
+| **WebSockets** | 443 (WSS) / 80 (WS) | `Upgrade $http_upgrade`<br>`Connection "Upgrade"`<br>`proxy_read_timeout 3600s` | Bidirectional live updates (tasks, lists, notes) |
+| **Server-Sent Events (SSE)** | 443 (HTTPS) / 80 (HTTP) | `X-Accel-Buffering: no`<br>`proxy_buffering off`<br>`proxy_cache off` | Fallback when WebSocket upgrade is blocked |
+| **REST API & Uploads** | 443 (HTTPS) / 80 (HTTP) | `client_max_body_size 64M` | Notes, import/export (JSON) |
+| **Client IP** | – | `X-Real-IP` / `X-Forwarded-For` | Login lockouts after failed attempts target the correct sender |
+| **OAuth (MCP)** | 443 (HTTPS) | Pass `/.well-known/oauth-*` and `/oauth/*` through to MindSift (automatic with `location /`), `BASE_URL` set | claude.ai and ChatGPT as connectors |
 
-### Client-IP und `TRUSTED_PROXIES`
+### Client IP and `TRUSTED_PROXIES`
 
-MindSift sperrt Anmeldungen nach Fehlversuchen auch pro IP-Adresse. Hinter einem Proxy kommt jede Verbindung vom Proxy; die echte Adresse steht in `X-Forwarded-For` bzw. `X-Real-IP`. MindSift glaubt diesen Kopfzeilen nur, wenn die Verbindung von einem vertrauenswürdigen Proxy kommt, sonst könnte jeder, der den Port direkt erreicht, eine beliebige Adresse vortäuschen.
+MindSift also locks logins after failed attempts on a per-IP address basis. Behind a proxy, every connection originates from the proxy; the real address is contained in `X-Forwarded-For` or `X-Real-IP`. MindSift only trusts these headers if the connection comes from a trusted proxy, otherwise anyone who directly reaches the port could spoof an arbitrary address.
 
-| `TRUSTED_PROXIES` | Wirkung |
+| `TRUSTED_PROXIES` | Effect |
 |---|---|
-| `private` (Standard) | Proxys aus localhost, Docker- und Heimnetzen (`10.x`, `172.16–31.x`, `192.168.x`, `fd…`, `100.64.x`). Passt für Proxy im selben Docker-Netz oder auf demselben Host – nichts einzustellen. |
-| `private,198.51.100.0/24` | zusätzlich eigene Bereiche, z. B. ein externer Proxy-Server oder die [IP-Bereiche von Cloudflare](https://www.cloudflare.com/ips/) |
-| `all` | Kopfzeilen immer glauben (früheres Verhalten) – Notausgang, wenn die Erkennung Probleme macht |
-| `none` | Kopfzeilen nie glauben |
+| `private` (default) | Proxies from localhost, Docker, and private/home networks (`10.x`, `172.16–31.x`, `192.168.x`, `fd…`, `100.64.x`). Suitable for a proxy in the same Docker network or on the same host — nothing to configure. |
+| `private,198.51.100.0/24` | Additional custom ranges, e.g., an external proxy server or [Cloudflare IP ranges](https://www.cloudflare.com/ips/) |
+| `all` | Always trust headers (former behavior) — escape hatch if detection causes issues |
+| `none` | Never trust headers |
 
-Schickt ein vertrauenswürdiger Proxy gar keine Client-IP mit, steht einmal eine Warnung im Log, und für diese Anfragen gilt nur noch die Sperre pro Konto. Die ganze Login-Sperre lässt sich mit `LOGIN_PROTECTION=false` abschalten.
+If a trusted proxy does not send any client IP, a warning is logged once, and only account-level lockout applies to these requests. The entire login lockout mechanism can be disabled with `LOGIN_PROTECTION=false`.
 
 ---
 
 ## 1. Nginx
 
-Eine typische `nginx.conf` bzw. Site-Konfiguration unter `/etc/nginx/sites-available/mindsift`:
+A typical `nginx.conf` or site configuration under `/etc/nginx/sites-available/mindsift`:
 
 ```nginx
-# Map für sauberes Connection-Handling bei WebSocket-Upgrades
+# Map for clean connection handling during WebSocket upgrades
 map $http_upgrade $connection_upgrade {
     default upgrade;
     ''      close;
@@ -53,10 +53,10 @@ server {
     ssl_certificate /etc/letsencrypt/live/mindsift.example.com/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/mindsift.example.com/privkey.pem;
 
-    # Maximale Payload-Größe für große Notizen und Exporte
+    # Maximum payload size for large notes and exports
     client_max_body_size 64M;
 
-    # MindSift Frontend & REST API
+    # MindSift frontend & REST API
     location / {
         proxy_pass http://127.0.0.1:8080;
         proxy_http_version 1.1;
@@ -67,12 +67,12 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
     }
 
-    # 1. WebSocket Endpunkte (/api/v1/ws)
+    # 1. WebSocket endpoints (/api/v1/ws)
     location /api/v1/ws {
         proxy_pass http://127.0.0.1:8080;
         proxy_http_version 1.1;
 
-        # Upgrade-Header zwingend erforderlich
+        # Upgrade header strictly required
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection $connection_upgrade;
 
@@ -81,17 +81,17 @@ server {
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
 
-        # Verhindert vorzeitigen Verbindungsabbruch durch Proxy-Inaktivitäts-Timeout
+        # Prevents premature disconnection due to proxy inactivity timeout
         proxy_read_timeout 3600s;
         proxy_send_timeout 3600s;
     }
 
-    # 2. Server-Sent Events Fallback (/api/v1/events & /api/v1/sync/)
+    # 2. Server-Sent Events fallback (/api/v1/events & /api/v1/sync/)
     location ~ ^/api/v1/(events|sync/) {
         proxy_pass http://127.0.0.1:8080;
         proxy_http_version 1.1;
 
-        # Pufferung zwingend deaktivieren für sofortiges Event-Streaming
+        # Disabling buffering is mandatory for immediate event streaming
         proxy_buffering off;
         proxy_cache off;
         proxy_set_header X-Accel-Buffering no;
@@ -111,7 +111,7 @@ server {
 
 ## 2. Traefik (Docker Compose / Ingress)
 
-Bei Verwendung von Traefik Version 2/3 müssen keine expliziten WebSocket-Upgrades deklariert werden, da Traefik diese transparent durchleitet. Für Server-Sent Events und Timeouts empfehlen sich Middleware-Definitionen:
+When using Traefik version 2/3, no explicit WebSocket upgrades need to be declared, as Traefik passes them through transparently. For Server-Sent Events and timeouts, middleware definitions are recommended:
 
 ```yaml
 version: '3.8'
@@ -132,7 +132,7 @@ services:
       - "traefik.http.routers.mindsift.tls.certresolver=letsencrypt"
       - "traefik.http.services.mindsift.loadbalancer.server.port=8080"
 
-      # Verhindert Pufferung und hält persistente SSE-Streams am Leben
+      # Prevents buffering and keeps persistent SSE streams alive
       - "traefik.http.middlewares.mindsift-buffering.buffering.maxRequestBodyBytes=67108864"
       - "traefik.http.routers.mindsift.middlewares=mindsift-buffering"
 ```
@@ -141,15 +141,15 @@ services:
 
 ## 3. Caddy Server (Caddyfile)
 
-Caddy unterstützt WebSockets und HTTP/2 Server-Sent Events von Haus aus vollständig ("out-of-the-box"):
+Caddy supports WebSockets and HTTP/2 Server-Sent Events fully out of the box:
 
 ```caddyfile
 mindsift.example.com {
     encode gzip zstd
 
-    # Event-Stream (SSE) ohne Pufferung weiterleiten
+    # Forward event stream (SSE) without buffering
     reverse_proxy 127.0.0.1:8080 {
-        # Streaming für SSE optimieren
+        # Optimize streaming for SSE
         flush_interval -1
     }
 }
@@ -159,28 +159,28 @@ mindsift.example.com {
 
 ## 4. Cloudflare Proxy (Orange Cloud)
 
-Wird MindSift hinter dem Cloudflare CDN betrieben:
-1. **WebSockets aktivieren:**
-   - Navigiere in das Cloudflare Dashboard: **Network** > **WebSockets** > Schalter auf **ON** stellen.
+When running MindSift behind the Cloudflare CDN:
+1. **Enable WebSockets:**
+   - Navigate to the Cloudflare Dashboard: **Network** > **WebSockets** > toggle switch to **ON**.
 2. **Cloudflare Rocket Loader / Auto Minify:**
-   - Deaktiviere "Rocket Loader" für MindSift, da asynchrone Skripteingriffe den Start der Single-Page-App stören können.
+   - Disable "Rocket Loader" for MindSift, as asynchronous script injections can interfere with single-page app initialization.
 3. **Cloudflare WAF / Bot Fight Mode:**
-   - Stelle sicher, dass `GET /api/v1/events` und `GET /api/v1/ws*` nicht von "Challenge"-Seiten blockiert werden.
-4. **Client-IP:** Cloudflare liefert die Besucheradresse in `CF-Connecting-IP`/`X-Forwarded-For`. Spricht Cloudflare MindSift direkt an (ohne eigenen Proxy dazwischen), die Cloudflare-Bereiche in `TRUSTED_PROXIES` ergänzen.
-5. **SSE-Unterstützung:**
-   - Cloudflare unterstützt Server-Sent Events nativ über HTTP/2 und HTTP/3. Dank der vom MindSift-Backend gesetzten Header `X-Accel-Buffering: no` und `Cache-Control: no-cache` streamt Cloudflare Echtzeit-Events verzögerungsfrei an die Clients.
+   - Ensure that `GET /api/v1/events` and `GET /api/v1/ws*` are not blocked by challenge pages.
+4. **Client IP:** Cloudflare provides the visitor's IP address in `CF-Connecting-IP`/`X-Forwarded-For`. If Cloudflare communicates directly with MindSift (without an intermediary proxy of your own), add Cloudflare IP ranges to `TRUSTED_PROXIES`.
+5. **SSE Support:**
+   - Cloudflare natively supports Server-Sent Events over HTTP/2 and HTTP/3. Thanks to the `X-Accel-Buffering: no` and `Cache-Control: no-cache` headers set by the MindSift backend, Cloudflare streams real-time events to clients without delay.
 
 ---
 
 ## 5. Apache 2.4 (`mod_proxy_wstunnel`)
 
-Unter Debian/Ubuntu:
+On Debian/Ubuntu:
 ```bash
 sudo a2enmod proxy proxy_http proxy_wstunnel headers
 sudo systemctl restart apache2
 ```
 
-VirtualHost-Konfiguration (`/etc/apache2/sites-available/mindsift.conf`):
+VirtualHost configuration (`/etc/apache2/sites-available/mindsift.conf`):
 
 ```apache
 <VirtualHost *:443>
@@ -209,19 +209,19 @@ VirtualHost-Konfiguration (`/etc/apache2/sites-available/mindsift.conf`):
 
 ---
 
-## Wenn der Proxy nicht angepasst werden kann
+## When the Proxy Cannot Be Adjusted
 
-MindSift funktioniert auch hinter Proxys, die WebSocket blocken, Streams puffern oder nur kurze Anfragen erlauben. Die Notiz-Synchronisation wählt automatisch den besten verfügbaren Weg (WebSocket → SSE → Long-Polling → Abfrage alle 3 s); der Editor zeigt ihn an. Long-Polling-Anfragen dauern höchstens 25 s und bleiben damit unter üblichen Proxy-Grenzen. Details: [api/websocket.md](api/websocket.md).
+MindSift also works behind proxies that block WebSockets, buffer streams, or only allow short requests. Note synchronization automatically selects the best available transport (WebSocket → SSE → long polling → polling every 3 s); the editor displays the active transport. Long polling requests last at most 25 s, staying within typical proxy timeout limits. Details: [api/websocket.md](api/websocket.md).
 
-## 🔍 Diagnose & Verifikation
+## 🔍 Diagnostics & Verification
 
-Mit den folgenden Befehlen lässt sich die Erreichbarkeit und Streaming-Funktion prüfen:
+The following commands can be used to verify connectivity and streaming functionality:
 
-### 1. Server-Sent Events Test (Standard-HTTPS)
+### 1. Server-Sent Events Test (Standard HTTPS)
 ```bash
-curl -N -H "Accept: text/event-stream" -H "Authorization: Bearer <DEIN_TOKEN>" https://mindsift.example.com/api/v1/events
+curl -N -H "Accept: text/event-stream" -H "Authorization: Bearer <YOUR_TOKEN>" https://mindsift.example.com/api/v1/events
 ```
-*Erwartete Ausgabe:*
+*Expected output:*
 ```text
 : connected (transport: sse, id: sse_...)
 data: {"event":"SSE_CONNECTED","payload":{"sseId":"sse_...","transport":"sse"},"timestamp":"..."}
@@ -237,14 +237,14 @@ curl -i -N \
   -H "Origin: https://mindsift.example.com" \
   -H "Sec-WebSocket-Key: SGVsbG8sIHdvcmxkIQ==" \
   -H "Sec-WebSocket-Version: 13" \
-  -H "Authorization: Bearer <DEIN_TOKEN>" \
+  -H "Authorization: Bearer <YOUR_TOKEN>" \
   https://mindsift.example.com/api/v1/ws
 ```
-*Erwartete Antwort:* `101 Switching Protocols`
+*Expected response:* `101 Switching Protocols`
 
 ---
 
-## 🧭 Verwandte Dokumente
-- 🔌 [WebSocket & Live-Protokoll](api/websocket.md)
-- 🏗️ [Gesamtarchitektur](architecture.md)
-- 🚨 [Bekannte Schwachstellen & Flaws](flaws.md)
+## 🧭 Related Documents
+- 🔌 [WebSocket & Live Protocol](api/websocket.md)
+- 🏗️ [Overall Architecture](architecture.md)
+- 🚨 [Known Vulnerabilities & Flaws](flaws.md)

@@ -1,38 +1,38 @@
-# Modul: Schnellerfassung & Triage
+# Module: Quick Capture & Triage
 
-Ziel: Gedanken in Sekunden festhalten und später in Ruhe sortieren. Code: [InstantCaptureBar.tsx](../../frontend/src/features/capture/InstantCaptureBar.tsx), [TriageDeck.tsx](../../frontend/src/features/triage/TriageDeck.tsx), Backend `handleCaptureInbox`, `handleTriageAction` und `Store.UpdateThoughtTriage`.
+Goal: Capture thoughts in seconds and sort them later at peace. Code: [InstantCaptureBar.tsx](../../frontend/src/features/capture/InstantCaptureBar.tsx), [TriageDeck.tsx](../../frontend/src/features/triage/TriageDeck.tsx), backend `handleCaptureInbox`, `handleTriageAction`, and `Store.UpdateThoughtTriage`.
 
-## Erfassung
+## Capture
 
-- Die Eingabeleiste sitzt im Header; `C` oder `/` fokussiert sie (außer beim Tippen in einem Feld).
-- Ziel (`target`): **Posteingang** (`inbox`, Standard), **Direkt-Aufgabe** (`task`, mit Aufgabenliste), **Listeneintrag** (`list_item`, mit Zielliste) oder **Direkt-Notiz** (`document`). Im aufgeklappten Bereich wählen Ziel und Liste nur aus; gespeichert wird mit Enter bzw. dem Knopf. Ziel und Liste bleiben nach dem Abschicken eingestellt (je Browser-Tab).
-- Mehrzeilige Eingabe wird unterstützt. Spracheingabe nutzt `useVoiceInput` (Whisper-Server oder Spracherkennung des Browsers, je nach Kontoeinstellung): Mit Whisper geht die Aufnahme schon beim Sprechen in Stücken zur Erkennung (`chunked`), die Browser-Erkennung endet nach 5 s Stille. Quelle `voice` fügt den Tag `#diktat` an.
-- Quelle `webhook` (per API-Key/Webhook) fügt den Tag `#webhook` an. Hashtags im Text werden als Tags extrahiert (`domain.ExtractTags`).
-- Per API: `POST /inbox` und `POST /webhooks/ingest` (siehe [rest.md](../api/rest.md)).
+- The capture bar is located in the header; `C` or `/` focuses it (unless typing inside an input field).
+- Target (`target`): **Inbox** (`inbox`, default), **Direct Task** (`task`, with task list), **List Item** (`list_item`, with target list), or **Direct Note** (`document`). In the expanded area, target and list are selected; saving is triggered with Enter or the submit button. Target and list persist across submissions (per browser tab).
+- Multiline input is supported. Voice input uses `useVoiceInput` (Whisper server or browser speech recognition, depending on account settings): With Whisper, the recording streams in chunks for recognition while speaking (`chunked`); browser recognition stops after 5 s of silence. Source `voice` appends the `#diktat` tag.
+- Source `webhook` (via API key/webhook) appends the `#webhook` tag. Hashtags in text are extracted as tags (`domain.ExtractTags`).
+- Via API: `POST /inbox` and `POST /webhooks/ingest` (see [rest.md](../api/rest.md)).
 
-## Triage-Deck
+## Triage Deck
 
-Der Posteingang (`status = inbox`) wird Karte für Karte abgearbeitet.
+The inbox (`status = inbox`) is processed card by card.
 
-| Aktion | Desktop | Mobil | Ergebnis |
+| Action | Desktop | Mobile | Result |
 |---|---|---|---|
-| Verwerfen | `H` oder `←` | Wischen links | `status = discarded` (Papierkorb) |
-| Zur Aufgabe | `L` oder `→` | Wischen rechts | `kept`/`converted` als Aufgabe |
-| Aufgabe mit Termin | `T` | Aktionsmenü | wie oben, mit Fälligkeit |
-| In Notiz wandeln | `D` | Aktionsmenü | neues Dokument, Gedanke wird `converted` (`document`) |
-| Später | Leertaste | Aktionsmenü | Karte ans Stapelende |
-| Menü schließen | `Esc` | – | – |
+| Discard | `H` or `←` | Swipe left | `status = discarded` (trash) |
+| Convert to Task | `L` or `→` | Swipe right | `kept`/`converted` as task |
+| Task with Due Date | `T` | Action menu | Same as above, with due date |
+| Convert to Note | `D` | Action menu | New document, thought becomes `converted` (`document`) |
+| Later | Space | Action menu | Move card to end of deck |
+| Close menu | `Esc` | – | – |
 
-Die Umwandlung in eine Notiz übernimmt Titel, Erledigt-Status, Notizen, Unteraufgaben sowie Fälligkeit und Priorität als eingerückte Blöcke. Eine Umwandlung in einen Listeneintrag legt einen Eintrag in der gewählten Liste an und benachrichtigt deren Teilnehmer.
+Converting to a note carries over title, completion status, notes, subtasks, as well as due date and priority as indented blocks. Converting to a list item creates an entry in the chosen list and notifies its participants.
 
-## Zustände eines Gedankens
+## States of a Thought
 
 ```
 inbox ──keep──▶ kept ──convert──▶ converted (task | document | list_item)
   │                │
-  └─discard─▶ discarded ──restore──▶ inbox        (Papierkorb leeren: DELETE /thoughts/discarded/purge)
+  └─discard─▶ discarded ──restore──▶ inbox        (Empty trash: DELETE /thoughts/discarded/purge)
 ```
 
-Verworfene Gedanken liegen im eigenen **Papierkorb der Triage** ([TriageTrash.tsx](../../frontend/src/features/triage/TriageTrash.tsx)): Knopf oben in der Triage, am Handy im Menü. Dort lassen sie sich zurückholen, einzeln oder alle endgültig löschen. Nach der Frist aus Kontoeinstellungen → Aufbewahrung (Standard 14 Tage, gezählt ab dem Verwerfen, `triaged_at`) löscht der Server sie.
+Discarded thoughts reside in a dedicated **Triage trash** ([TriageTrash.tsx](../../frontend/src/features/triage/TriageTrash.tsx)): button at the top in Triage, on mobile in the menu. There they can be restored, individually deleted, or permanently cleared all at once. After the retention period configured in Account Settings → Data Retention (default 14 days, counted from discard time, `triaged_at`), the server deletes them automatically.
 
-Ein Gedanke mit `status = kept` zählt bereits als Aufgabe und erscheint in der Aufgabenansicht.
+A thought with `status = kept` already counts as a task and appears in the tasks view.

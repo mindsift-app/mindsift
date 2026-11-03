@@ -1,74 +1,74 @@
-# Plan: OAuth für den MCP-Zugang (Entwurf)
+# Plan: OAuth for MCP Access (Draft)
 
-Stand 2026-11-01, **umgesetzt in v0.51.0**. Ziel: MindSift lässt sich in **claude.ai**, der Claude-App am Handy und **ChatGPT im Browser** als Connector eintragen. Diese Clients können keinen `X-API-Key`-Header setzen, sondern verlangen den OAuth-Ablauf aus der MCP-Spezifikation (Autorisierung, Stand 2025-06-18). MindSift wird dafür selbst zum OAuth-Server für seinen eigenen MCP-Endpunkt.
+As of 2026-11-01, **implemented in v0.51.0**. Goal: MindSift can be added as a connector in **claude.ai**, the mobile Claude app, and **ChatGPT in the browser**. These clients cannot set an `X-API-Key` header; instead, they require the OAuth flow defined in the MCP specification (authorization, as of 2025-06-18). To support this, MindSift becomes an OAuth server for its own MCP endpoint.
 
-Nicht Teil dieses Plans: Anmelden **bei** MindSift über fremde Anbieter (OIDC), siehe [registrierung-und-login.md](registrierung-und-login.md), Abschnitt 4.
+Not part of this plan: Logging in **to** MindSift via third-party providers (OIDC), see [registrierung-und-login.md](registrierung-und-login.md), Section 4.
 
-## Heute
+## Current State
 
-- MCP-Endpunkt `POST /api/v1/mcp`, Anmeldung über `authMiddleware`: API-Schlüssel (`mindsift_sec_…`) als `X-API-Key` oder `Authorization: Bearer`, alternativ eine Sitzung.
-- Ein Schlüssel hat Rechte (`tasks:read`, `lists:write` …), `mcpToolAllowed` zeigt nur die erlaubten Werkzeuge, Änderungen bekommen die Herkunft `mcp` mit dem Namen des Schlüssels.
-- Die Sitzung liegt im Frontend im `localStorage`, nicht in einem Cookie. Der Server sieht beim reinen Aufruf einer Seite also nicht, wer angemeldet ist.
+- MCP endpoint `POST /api/v1/mcp`, authenticated via `authMiddleware`: API key (`mindsift_sec_…`) as `X-API-Key` or `Authorization: Bearer`, alternatively an active session.
+- A key has permissions (`tasks:read`, `lists:write` …), `mcpToolAllowed` exposes only permitted tools, changes are attributed with origin `mcp` alongside the key name.
+- The session is stored in frontend `localStorage`, not in a cookie. Therefore, the server cannot determine who is logged in from a simple page load request.
 
-## So sieht es für Nutzer aus
+## User Experience
 
-1. In claude.ai: *Einstellungen → Connectors → Eigenen Connector hinzufügen*, Adresse `https://<instanz>/api/v1/mcp`.
-2. Der Browser öffnet MindSift. Wer nicht angemeldet ist, meldet sich wie gewohnt an.
-3. Eine Zustimmungsseite: **„Claude möchte auf dein MindSift zugreifen“**, darunter die Rechte als Häkchen (Aufgaben lesen, Aufgaben ändern, Listen lesen, Listen ändern, in die Inbox schreiben), vorbelegt mit dem, was der Client anfragt. Knöpfe **Erlauben** / **Ablehnen**.
-4. Zurück in claude.ai sind die Werkzeuge da.
-5. In *Einstellungen → API-Schlüssel* steht der Zugang als eigener Eintrag „Claude (OAuth)“ mit Rechten, „zuletzt benutzt“ und **Widerrufen**. Rechte ändern geht dort wie bei jedem Schlüssel.
+1. In claude.ai: *Settings → Connectors → Add Custom Connector*, URL `https://<instance>/api/v1/mcp`.
+2. The browser opens MindSift. Users who are not logged in log in as usual.
+3. A consent page: **"Claude would like to access your MindSift"**, with permission checkboxes below (read tasks, modify tasks, read lists, modify lists, write to inbox), pre-selected according to what the client requests. **Allow** / **Deny** buttons.
+4. Back in claude.ai, the tools are available.
+5. In *Settings → API Keys*, the connection appears as a dedicated entry "Claude (OAuth)" with permissions, "last used" timestamp, and **Revoke**. Modifying permissions works just like for any API key.
 
-Was der Agent anlegt, trägt wie heute das Abzeichen mit dem Namen des Eintrags.
+Entities created by the agent bear a badge with the entry name, as is standard today.
 
-## Grundidee: ein OAuth-Zugang ist ein API-Schlüssel
+## Core Idea: An OAuth Access Grant is an API Key
 
-Die Zustimmung legt einen normalen Eintrag in `api_keys` an (neue Spalte `kind = 'oauth'`, dazu `oauth_client_id`). Ein Schlüssel-Geheimnis zum Abtippen gibt es dafür nicht: `key_hash` bekommt einen zufälligen Wert, den niemand kennt. Die Tokens hängen an diesem Eintrag.
+Consent creates a standard entry in `api_keys` (new column `kind = 'oauth'`, plus `oauth_client_id`). There is no key secret to copy or type: `key_hash` is assigned a random value known to no one. Tokens are associated with this entry.
 
-Damit bleiben Rechteprüfung (`mcpToolAllowed`, `apiKeyRouteDenied`), Herkunft (`origin`), „zuletzt benutzt“, Umbenennen, Rechte ändern und Widerrufen unverändert. Wird der Eintrag gelöscht, fallen die Tokens per Fremdschlüssel mit.
+This preserves permission checks (`mcpToolAllowed`, `apiKeyRouteDenied`), origin tracking (`origin`), "last used" timestamps, renaming, modifying permissions, and revocation without changes. If the entry is deleted, cascading foreign keys automatically remove the tokens.
 
-## Endpunkte
+## Endpoints
 
-Alle ohne Anmeldung erreichbar, außer der Zustimmung.
+All accessible without authentication, except for consent.
 
-| Endpunkt | Zweck |
+| Endpoint | Purpose |
 |---|---|
-| `GET /.well-known/oauth-protected-resource` (auch mit Pfad-Anhang `/api/v1/mcp`) | Beschreibung der Ressource (RFC 9728): `resource`, `authorization_servers`, `scopes_supported` |
-| `GET /.well-known/oauth-authorization-server` | Beschreibung des OAuth-Servers (RFC 8414): Endpunkte, `code_challenge_methods_supported: ["S256"]`, `grant_types_supported`, `token_endpoint_auth_methods_supported: ["none"]` |
-| `POST /oauth/register` | Dynamische Client-Registrierung (RFC 7591), wie sie claude.ai und ChatGPT benutzen |
-| `GET /oauth/authorize` | Liefert die App aus (wie jede Seite); die App zeigt die Zustimmung |
-| `GET /api/v1/oauth/authorize` | Prüft die Parameter und liefert Client-Name, Rücksprungadresse und angefragte Rechte für die Zustimmungsseite (angemeldet) |
-| `POST /api/v1/oauth/authorize` | Erlauben oder Ablehnen; gibt die Rücksprung-URL mit `code` und `state` (bzw. `error=access_denied`) zurück, die App leitet weiter (angemeldet) |
-| `POST /oauth/token` | `authorization_code` gegen Tokens tauschen, `refresh_token` erneuern |
-| `POST /oauth/revoke` | Token widerrufen (RFC 7009), optional, schadet nicht |
+| `GET /.well-known/oauth-protected-resource` (also with path suffix `/api/v1/mcp`) | Protected resource metadata (RFC 9728): `resource`, `authorization_servers`, `scopes_supported` |
+| `GET /.well-known/oauth-authorization-server` | OAuth authorization server metadata (RFC 8414): endpoints, `code_challenge_methods_supported: ["S256"]`, `grant_types_supported`, `token_endpoint_auth_methods_supported: ["none"]` |
+| `POST /oauth/register` | Dynamic client registration (RFC 7591), as used by claude.ai and ChatGPT |
+| `GET /oauth/authorize` | Serves the frontend app (like any page); the app renders the consent UI |
+| `GET /api/v1/oauth/authorize` | Validates parameters and returns client name, redirect URI, and requested scopes for the consent page (authenticated) |
+| `POST /api/v1/oauth/authorize` | Approve or deny; returns redirect URL with `code` and `state` (or `error=access_denied`), app redirects (authenticated) |
+| `POST /oauth/token` | Exchange `authorization_code` for tokens, refresh `refresh_token` |
+| `POST /oauth/revoke` | Revoke token (RFC 7009), optional, good practice |
 
-Am MCP-Endpunkt antwortet MindSift ohne gültiges Token mit `401` und
-`WWW-Authenticate: Bearer resource_metadata="https://<instanz>/.well-known/oauth-protected-resource"`. Daran erkennen die Clients, dass sie den Ablauf starten müssen. Heute fehlt dieser Header.
+At the MCP endpoint, MindSift responds without a valid token with `401` and
+`WWW-Authenticate: Bearer resource_metadata="https://<instance>/.well-known/oauth-protected-resource"`. This signals to clients that they must initiate the OAuth flow. Currently, this header is missing.
 
-Kein eigenes CORS für diese Endpunkte: claude.ai und ChatGPT rufen sie vom Server aus auf. Browser-Clients wie der MCP Inspector erreichen ohnehin auch den MCP-Endpunkt nicht, solange `BASE_URL` die erlaubten Ursprünge festlegt.
+No dedicated CORS needed for these endpoints: claude.ai and ChatGPT invoke them server-side. Browser clients like the MCP Inspector cannot reach the MCP endpoint anyway as long as `BASE_URL` restricts allowed origins.
 
-## Ablauf im Detail
+## Detailed Flow
 
-**Registrierung:** Der Client schickt `client_name` und `redirect_uris`. MindSift speichert ihn in `oauth_clients` und gibt eine `client_id` zurück. Es gibt nur öffentliche Clients (kein Client-Geheimnis); die Sicherheit kommt aus PKCE und den festen Rücksprungadressen.
-- Rücksprungadressen nur `https://…` oder `http://localhost`/`127.0.0.1` (Desktop-Clients), keine Fragmente.
-- Bremse pro IP wie beim Login. Clients, die 24 Stunden nach der Registrierung noch keine Zustimmung bekommen haben, werden beim Aufräumen gelöscht.
+**Registration:** The client sends `client_name` and `redirect_uris`. MindSift stores it in `oauth_clients` and returns a `client_id`. Only public clients are supported (no client secret); security is provided by PKCE and strict redirect URIs.
+- Redirect URIs must be `https://…` or `http://localhost`/`127.0.0.1` (desktop clients), no URI fragments allowed.
+- Rate limiting per IP similar to login. Clients that receive no authorization consent within 24 hours of registration are purged during cleanup.
 
-**Zustimmung:** `response_type=code`, `client_id`, `redirect_uri` (muss exakt registriert sein), `code_challenge` mit `code_challenge_method=S256` (Pflicht), `state`, `scope` (optional), `resource` (RFC 8707, falls angegeben gleich `<BASE_URL>/api/v1/mcp`).
-- Passen `client_id` oder `redirect_uri` nicht, zeigt die App einen Fehler und leitet **nicht** weiter. Alle anderen Fehler gehen als `error=…` an die Rücksprungadresse.
-- Bei **Erlauben** legt MindSift den Eintrag in `api_keys` an (Name = `client_name` + „ (OAuth)“, Rechte = gewählte Häkchen). Hat dieselbe Person demselben Client schon zugestimmt, wird der vorhandene Eintrag weiterverwendet, und die Rechte werden aktualisiert, damit keine Doppelten entstehen.
-- Der Code ist 10 Minuten gültig, nur einmal verwendbar und wird nur als Hash gespeichert.
+**Consent:** `response_type=code`, `client_id`, `redirect_uri` (must match registered URIs exactly), `code_challenge` with `code_challenge_method=S256` (required), `state`, `scope` (optional), `resource` (RFC 8707, if specified must match `<BASE_URL>/api/v1/mcp`).
+- If `client_id` or `redirect_uri` do not match, the app displays an error and does **not** redirect. All other errors are redirected back as `error=…` to the redirect URI.
+- Upon **Allow**, MindSift creates the entry in `api_keys` (Name = `client_name` + " (OAuth)", permissions = checked boxes). If the same user has already authorized the same client, the existing entry is reused and its permissions are updated to prevent duplicates.
+- The authorization code is valid for 10 minutes, single-use only, and stored exclusively as a hash.
 
-**Token:** Der Tausch prüft Code, `client_id`, `redirect_uri` und `code_verifier`. Ergebnis:
-- `access_token` `mindsift_oat_…`, 1 Stunde gültig
-- `refresh_token` `mindsift_ort_…`, 90 Tage gültig, wird bei jeder Erneuerung ausgetauscht. Wird ein bereits ersetzter Refresh-Token noch einmal benutzt, verfallen alle Tokens dieses Eintrags (Schutz bei Diebstahl).
-- `scope` mit den tatsächlich erteilten Rechten
+**Token:** The exchange validates code, `client_id`, `redirect_uri`, and `code_verifier`. Result:
+- `access_token` `mindsift_oat_…`, valid for 1 hour
+- `refresh_token` `mindsift_ort_…`, valid for 90 days, rotated on each refresh. If an already replaced refresh token is reused, all tokens for this entry are invalidated (theft detection/revocation).
+- `scope` reflecting the actually granted permissions
 
-**Nutzung:** `authenticateToken` erkennt `mindsift_oat_` und liefert Nutzer und `apiKeyAuth` des zugehörigen Eintrags. Ab da läuft alles wie bei einem Schlüssel. OAuth-Tokens gelten **nur für den MCP-Endpunkt** (dafür wurden sie ausgestellt), nicht für die REST-Endpunkte.
+**Usage:** `authenticateToken` detects `mindsift_oat_` and returns the user and `apiKeyAuth` of the associated entry. From there, everything proceeds like standard API key authentication. OAuth tokens are valid **only for the MCP endpoint** (for which they were issued), not for REST endpoints.
 
-## Rechte (Scopes)
+## Scopes
 
-Die vorhandenen Rechte werden unverändert als OAuth-Scopes verwendet (`tasks:read`, `tasks:write`, `lists:read`, `lists:write`, `webhook:triage`; die schmalen `webhook:task`/`webhook:list` erscheinen auf der Zustimmungsseite nicht). Fragt ein Client kein `scope` an (claude.ai tut das meist nicht), sind auf der Zustimmungsseite **Lesen und Ändern für Aufgaben und Listen** vorbelegt; Inbox bleibt aus. Notizen bleiben wie heute unerreichbar.
+Existing permissions are reused directly as OAuth scopes (`tasks:read`, `tasks:write`, `lists:read`, `lists:write`, `webhook:triage`; granular `webhook:task`/`webhook:list` are not shown on the consent page). If a client requests no `scope` (as claude.ai often does), **Read and Write for Tasks and Lists** are pre-selected by default on the consent page; Inbox remains disabled. Notes remain inaccessible as they are today.
 
-## Datenbank
+## Database
 
 ```sql
 ALTER TABLE api_keys ADD COLUMN kind TEXT NOT NULL DEFAULT 'key';   -- key | oauth
@@ -77,7 +77,7 @@ ALTER TABLE api_keys ADD COLUMN oauth_client_id TEXT NOT NULL DEFAULT '';
 CREATE TABLE oauth_clients (
   id TEXT PRIMARY KEY,               -- client_id
   name TEXT NOT NULL,
-  redirect_uris TEXT NOT NULL,       -- JSON-Array
+  redirect_uris TEXT NOT NULL,       -- JSON array
   created_at TEXT NOT NULL
 );
 
@@ -95,51 +95,51 @@ CREATE TABLE oauth_tokens (
   kind TEXT NOT NULL,                -- access | refresh
   key_id TEXT NOT NULL REFERENCES api_keys(id) ON DELETE CASCADE,
   expires_at TEXT NOT NULL,
-  replaced_at TEXT NOT NULL DEFAULT ''  -- refresh: wann ausgetauscht (Wiederverwendung erkennen)
+  replaced_at TEXT NOT NULL DEFAULT ''  -- refresh: timestamp when rotated (to detect reuse)
 );
 ```
 
-Abgelaufene Codes und Tokens räumt der vorhandene Aufräum-Lauf weg. Als Migration über `schema_migrations`.
+Expired codes and tokens are purged by the existing cleanup job. Applied as a migration via `schema_migrations`.
 
-## Voraussetzungen und Grenzen
+## Prerequisites and Limitations
 
-- **`BASE_URL` muss gesetzt sein.** Sie ist `issuer` und Ressource; aus dem `Host`-Header gebaut wäre sie fälschbar. Ohne `BASE_URL` ist OAuth aus: kein `WWW-Authenticate`-Hinweis, und die Endpunkte antworten mit 404. Die Einstellungen sagen dann „OAuth braucht `BASE_URL`“.
-- **Reverse-Proxy:** `/.well-known/` und `/oauth/` müssen bei MindSift ankommen. Mit der Beispielkonfiguration in [reverse-proxy.md](../reverse-proxy.md) (`location /`) ist das so; dort ergänze ich einen Hinweis.
-- **Demo-Modus:** OAuth aus (Demo-Daten werden zurückgesetzt, Einträge wären sinnlos).
-- **CSP:** Die Zustimmungsseite leitet per `window.location` weiter, nicht per Formular, also kein `form-action` nötig.
-- **Kein eigener Admin-Schalter** für OAuth. Ein Schalter für den ganzen MCP-Zugang ist eine eigene Aufgabe; ist MCP aus, ist auch OAuth aus.
-- **Unbenutzte Zugänge verfallen:** Ein OAuth-Eintrag, der 90 Tage nicht benutzt wurde, wird beim Aufräumen gelöscht (samt Tokens). Einstellbar mit `OAUTH_IDLE_DAYS` (Standard `90`, `0` = nie).
+- **`BASE_URL` must be configured.** It serves as `issuer` and resource identifier; constructing it from the `Host` header would be vulnerable to spoofing. Without `BASE_URL`, OAuth is disabled: no `WWW-Authenticate` challenge header, and endpoints respond with 404. Settings will indicate "OAuth requires `BASE_URL`".
+- **Reverse proxy:** `/.well-known/` and `/oauth/` must reach MindSift. With the example configuration in [reverse-proxy.md](../reverse-proxy.md) (`location /`), this is already satisfied; a note will be added there.
+- **Demo mode:** OAuth disabled (demo data is reset periodically, access grants would be meaningless).
+- **CSP:** The consent page redirects via `window.location`, not via form submission, so no `form-action` changes needed.
+- **No dedicated admin toggle** for OAuth. A toggle for MCP access as a whole is a separate task; if MCP is disabled, OAuth is also disabled.
+- **Inactive grants expire:** An OAuth entry unused for 90 days is deleted during cleanup (along with its tokens). Configurable via `OAUTH_IDLE_DAYS` (default `90`, `0` = never).
 
-## Oberfläche
+## User Interface
 
-- Neue Ansicht **Zustimmung** (`/oauth/authorize`), Handy-tauglich: Logo, Client-Name, Rücksprung-Domain gut sichtbar („Weiterleitung zu claude.ai“), Rechte-Häkchen mit den vorhandenen Bezeichnungen aus `ApiKeysPanel`, Erlauben/Ablehnen (44 px). Nicht angemeldet → Anmeldung, danach zurück zur Zustimmung (Parameter bleiben erhalten).
-- **API-Schlüssel-Liste:** OAuth-Einträge mit Kennzeichen „OAuth“ und Client-Name; „Schlüssel anzeigen/kopieren“ entfällt bei ihnen.
-- **Hilfe-Text** in `ApiKeysPanel` ersetzen: statt „claude.ai … wird noch nicht unterstützt“ eine kurze Anleitung „In claude.ai als Connector eintragen: `<BASE_URL>/api/v1/mcp`“ mit Kopier-Knopf.
+- New **Consent** view (`/oauth/authorize`), mobile-friendly: logo, client name, clearly visible redirect domain ("Redirecting to claude.ai"), permission checkboxes with existing labels from `ApiKeysPanel`, Allow/Deny buttons (44 px). Not logged in → redirect to login, then back to consent (query parameters preserved).
+- **API key list:** OAuth entries flagged with badge "OAuth" and client name; "Show/copy key" is omitted for them.
+- Replace **help text** in `ApiKeysPanel`: instead of "claude.ai … is not yet supported", provide brief instructions "Add as connector in claude.ai: `<BASE_URL>/api/v1/mcp`" with a copy button.
 
 ## Tests
 
-- Go: kompletter Ablauf (registrieren → zustimmen → Code tauschen → MCP aufrufen → erneuern), falsche `redirect_uri`, falscher `code_verifier`, Code doppelt benutzt, abgelaufene Tokens, Refresh-Wiederverwendung, Widerruf des Eintrags, OAuth-Token an REST-Endpunkt (abgelehnt), ohne `BASE_URL` (aus), Demo (aus). Ablaufzeiten mit übergebener Zeit, Tests unter mehreren `TZ`.
-- Frontend: Zustimmungsseite (Vorbelegung der Rechte, Ablehnen).
-- Von Hand: Verbindung aus claude.ai gegen die `dev`-Instanz bzw. mit dem MCP Inspector.
+- Go: full flow (register → consent → code exchange → invoke MCP → refresh), invalid `redirect_uri`, invalid `code_verifier`, code reuse, expired tokens, refresh token reuse detection, entry revocation, OAuth token rejected at REST endpoints, disabled without `BASE_URL`, disabled in demo mode. Expiry tested using injected clocks across multiple `TZ`.
+- Frontend: Consent page (pre-selected permissions, denial).
+- Manual: Connection from claude.ai against `dev` instance and via MCP Inspector.
 
-## Doku und Release
+## Documentation and Release
 
-- `Doku/api/rest.md` (Abschnitt MCP, neue OAuth-Endpunkte), `Doku/architecture.md`, `README.md` (Funktionsliste), `Doku/reverse-proxy.md`.
-- Neue Funktion → Minor-Version, CHANGELOG „Added: MindSift lässt sich in claude.ai und ChatGPT als Connector verbinden“.
-- Die Website erwähnt evtl. „claude.ai noch nicht unterstützt“; das melde ich, statt es zu ändern.
+- `Doku/api/rest.md` (MCP section, new OAuth endpoints), `Doku/architecture.md`, `README.md` (feature list), `Doku/reverse-proxy.md`.
+- New feature → minor version bump, CHANGELOG "Added: MindSift can be connected as a connector in claude.ai and ChatGPT".
+- The website may mention "claude.ai not yet supported"; flag this for update rather than changing directly.
 
-## Reihenfolge und Aufwand (grob)
+## Execution Order and Effort (Rough Estimate)
 
-1. Datenbank, Token-Speicher, `authenticateToken` für `mindsift_oat_`, `WWW-Authenticate` – klein.
-2. Metadaten, Registrierung, Token-Endpunkt mit PKCE und Refresh – mittel.
-3. Zustimmungsseite und API-Schlüssel-Liste – mittel.
-4. Tests, Doku, Ausprobieren mit claude.ai – klein bis mittel.
+1. Database, token storage, `authenticateToken` for `mindsift_oat_`, `WWW-Authenticate` – small.
+2. Metadata endpoints, registration, token endpoint with PKCE and refresh – medium.
+3. Consent page and API key list – medium.
+4. Tests, documentation, verification with claude.ai – small to medium.
 
-Keine neue Go-Abhängigkeit nötig: Für den Server-Teil reicht die Standardbibliothek (SHA-256 für PKCE, `crypto/rand`), `golang.org/x/oauth2` ist eine Client-Bibliothek und hilft hier kaum.
+No new Go dependency required: Standard library suffices for server-side implementation (SHA-256 for PKCE, `crypto/rand`); `golang.org/x/oauth2` is a client library and offers little benefit here.
 
-## Entscheidungen (2026-11-01)
+## Decisions (2026-11-01)
 
-- Ohne `scope` sind Lesen und Ändern für Aufgaben und Listen vorbelegt.
-- Kein OAuth-Schalter; MCP insgesamt abschaltbar kommt separat.
-- Refresh-Token 90 Tage, bei jeder Erneuerung neu.
-- Unbenutzte OAuth-Einträge verfallen nach 90 Tagen, `OAUTH_IDLE_DAYS`.
+- If `scope` is omitted, Read and Write for Tasks and Lists are pre-selected by default.
+- No dedicated OAuth toggle; disabling MCP entirely will be handled separately.
+- Refresh token validity: 90 days, rotated on every refresh.
+- Inactive OAuth entries expire after 90 days, configurable via `OAUTH_IDLE_DAYS`.
