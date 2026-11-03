@@ -1,0 +1,68 @@
+/* ==========================================================================
+   MINDSIFT THEME: LIGHT (Tagmodus / Hell & Klar)
+   Alle Farben, Kontraste und Rundungen zentral in einer einzigen Datei.
+   ========================================================================== */
+
+:root[data-theme="light"] {
+  /* --- 1. AKZENTFARBE --- */
+  --accent-primary: #2563eb;
+  --accent-hover: #1d4ed8;
+  --accent-dim: rgba(37, 99, 235, 0.10);
+  --accent-border: rgba(37, 99, 235, 0.38);
+  --text-on-accent: #ffffff;
+
+  /* --- 2. OBERFLÄCHEN & HINTERGRÜNDE --- */
+  --bg-app: #f3f4f6;
+  --bg-panel: #ffffff;
+  --bg-panel-elevated: #e2e8f0;
+  --bg-panel-hover: #cbd5e1;
+  --bg-input: #ffffff;
+  --bg-overlay: rgba(15, 23, 42, 0.45);
+  --bg-code: #e2e8f0;
+  --bg-editor: #ffffff;
+  --bg-sidebar: #f3f4f6;
+
+  /* --- 3. TEXT & KONTRASTE --- */
+  --text-main: #111827;
+  --text-muted: #374151;
+  --text-faint: #6b7280;
+
+  /* --- 4. RAHMEN, LINIEN & SCHATTEN --- */
+  --border-color: rgba(17, 24, 39, 0.18);
+  --border-subtle: rgba(17, 24, 39, 0.08);
+  --border-strong: rgba(17, 24, 39, 0.32);
+  --shadow-panel: 0 8px 24px rgba(15, 23, 42, 0.08);
+  --scrollbar-thumb: rgba(17, 24, 39, 0.22);
+  --scrollbar-thumb-hover: rgba(17, 24, 39, 0.38);
+
+  /* --- 5. STATUS- & SIGNALFARBEN --- */
+  --color-success: #15803d;
+  --bg-success: rgba(22, 163, 74, 0.10);
+  --border-success: rgba(22, 163, 74, 0.35);
+
+  --color-danger: #b91c1c;
+  --bg-danger: rgba(220, 38, 38, 0.09);
+  --border-danger: rgba(220, 38, 38, 0.35);
+
+  --color-warning: #b45309;
+  --bg-warning: rgba(217, 119, 6, 0.10);
+  --border-warning: rgba(217, 119, 6, 0.35);
+
+  /* --- 6. RUNDUNGEN (Geometrie) --- */
+  --radius-card: 0px;
+  --radius-btn: 2px;
+  --radius-input: 2px;
+  --radius-checkbox: 0px;
+  --radius-pill: 9999px;
+
+  /* --- 7. CODE-SYNTAX-HIGHLIGHTING (VS Code Light+) --- */
+  --code-keyword: #0000ff;
+  --code-string: #a31515;
+  --code-number: #098658;
+  --code-comment: #007000;
+  --code-property: #0451a5;
+  --code-function: #795e26;
+  --code-type: #267f99;
+  --code-punctuation: #2e2e2e;
+  --code-variable: #001080;
+}

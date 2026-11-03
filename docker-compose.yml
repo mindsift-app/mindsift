@@ -1,0 +1,86 @@
+# MindSift – Docker Compose
+# Eingestellt wird alles in der Datei .env neben dieser Datei. Was jede Variable bewirkt, steht in
+# .env.example (kopieren: cp .env.example .env). Hier stehen nur die Zuordnungen mit Standardwerten.
+services:
+  mindsift:
+    image: ghcr.io/mindsift-app/mindsift:latest
+    container_name: mindsift
+    restart: unless-stopped
+    ports:
+      - "${PORT:-8080}:8080"
+    volumes:
+      - ./data:/data
+    environment:
+      - PORT=8080
+      - DATA_DIR=/data
+      - TZ=${TZ:-Europe/Berlin}
+      - JWT_SECRET=${JWT_SECRET:-change_this_to_a_secure_random_key_min_32_chars}
+      - BASE_URL=${BASE_URL:-http://localhost:8080}
+      - ALLOW_REGISTRATION=${ALLOW_REGISTRATION:-false}
+      - TRUSTED_PROXIES=${TRUSTED_PROXIES:-private}
+      - RETENTION_ALLOW_NEVER=${RETENTION_ALLOW_NEVER:-}
+      - LOGIN_PROTECTION=${LOGIN_PROTECTION:-true}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - DEBUG=${DEBUG:-false}
+      - MINDA_DEMO=${MINDA_DEMO:-false}
+      - DEMO_RESET_MINUTES=${DEMO_RESET_MINUTES:-20}
+      # E-Mail
+      - SMTP_HOST=${SMTP_HOST:-}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USER=${SMTP_USER:-}
+      - SMTP_PASS=${SMTP_PASS:-}
+      - SMTP_FROM=${SMTP_FROM:-}
+      - SMTP_FROM_NAME=${SMTP_FROM_NAME:-MindSift}
+      - NOTIFY_DIGEST_MINUTES=${NOTIFY_DIGEST_MINUTES:-5}
+      - SMTP_TLS=${SMTP_TLS:-true}
+      - SMTP_SKIP_VERIFY=${SMTP_SKIP_VERIFY:-false}
+      # Web-Push: ohne Angabe erzeugt MindSift die Schlüssel selbst
+      # - VAPID_SUBJECT=${VAPID_SUBJECT:-mailto:admin@example.com}
+      # Impressum / Datenschutz
+      - LEGAL_IMPRINT_URL=${LEGAL_IMPRINT_URL:-}
+      - LEGAL_PRIVACY_URL=${LEGAL_PRIVACY_URL:-}
+      - LEGAL_IMPRINT_CONTENT=${LEGAL_IMPRINT_CONTENT:-}
+      - LEGAL_PRIVACY_CONTENT=${LEGAL_PRIVACY_CONTENT:-}
+      - LEGAL_IMPRINT_CONTENT_FILE=${LEGAL_IMPRINT_CONTENT_FILE:-}
+      - LEGAL_PRIVACY_CONTENT_FILE=${LEGAL_PRIVACY_CONTENT_FILE:-}
+      # Eigener Link im Footer (nur https://)
+      # - LEGAL_CUSTOM_LINK_LABEL=${LEGAL_CUSTOM_LINK_LABEL:-}
+      # - LEGAL_CUSTOM_LINK_URL=${LEGAL_CUSTOM_LINK_URL:-}
+      # Bilder und Audio in Notizen
+      - MEDIA_MAX_IMAGE_MB=${MEDIA_MAX_IMAGE_MB:-15}
+      - MEDIA_MAX_AUDIO_MB=${MEDIA_MAX_AUDIO_MB:-50}
+      - MEDIA_QUOTA_MB=${MEDIA_QUOTA_MB:-0}
+      - MEDIA_DEMO_MAX_MB=${MEDIA_DEMO_MAX_MB:-3}
+      # Spracherkennung
+      - STT_URL=${STT_URL:-}
+      - STT_MODEL=${STT_MODEL:-deepdml/faster-whisper-large-v3-turbo-ct2}
+      - STT_LANGUAGE=${STT_LANGUAGE:-de}
+      - STT_API_KEY=${STT_API_KEY:-}
+      - STT_DISABLED=${STT_DISABLED:-false}
+      - STT_ALLOW_BROWSER=${STT_ALLOW_BROWSER:-true}
+      - STT_MAX_SECONDS=${STT_MAX_SECONDS:-600}
+      - STT_MAX_UPLOAD_MB=${STT_MAX_UPLOAD_MB:-25}
+      - STT_MAX_PARALLEL=${STT_MAX_PARALLEL:-1}
+      - STT_PER_USER_PER_HOUR=${STT_PER_USER_PER_HOUR:-60}
+      - STT_TIMEOUT_SECONDS=${STT_TIMEOUT_SECONDS:-120}
+      - STT_VAD_FILTER=${STT_VAD_FILTER:-true}
+
+  # Optional: eigene Spracherkennung (Whisper). Zum Einschalten:
+  #   1. die Rauten vor dem Block "whisper" unten entfernen
+  #   2. in .env setzen:  STT_URL=http://whisper:8000
+  #   3. mkdir -p whisper && sudo chown 1000:1000 whisper   (der Container läuft als UID 1000)
+  #   4. docker compose up -d
+  # Das Modell lädt MindSift beim ersten Start selbst nach ./whisper (large-v3-turbo ca. 1,6 GB).
+  # RAM: large-v3-turbo ca. 2 GB, small ca. 1 GB. Kein Port nach außen nötig.
+  #
+  # whisper:
+  #   image: ghcr.io/speaches-ai/speaches:0.8.3-cpu
+  #   container_name: mindsift-whisper
+  #   restart: unless-stopped
+  #   volumes:
+  #     - ./whisper:/home/ubuntu/.cache/huggingface/hub
+  #   environment:
+  #     - WHISPER__COMPUTE_TYPE=int8   # schneller auf der CPU, kaum Qualitätsverlust
+  #     - WHISPER__TTL=-1              # Modell im Speicher halten statt nach 5 Min. zu entladen
+  #     - ENABLE_UI=false              # ohne die Weboberfläche von speaches
+  #     - LOG_LEVEL=info

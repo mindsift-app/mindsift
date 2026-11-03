@@ -1,0 +1,69 @@
+name: MindSift CI & Docker Release
+
+# Public images in GitHub's container registry (ghcr.io/mindsift-app/mindsift):
+#   push to dev      -> :dev
+#   push/merge main  -> :latest
+#   git tag v1.2.0   -> :v1.2.0 and :stable
+#   git tag v1.2.0-rc.1 (pre-release) -> :v1.2.0-rc.1 only, :stable stays
+# Same build plan as the private Gitea pipeline (ci/build-plan.sh): tests run once per code state, main
+# skips them when :dev was built from the same code, a tag on the commit of :latest only retags it.
+on:
+  push:
+    branches:
+      - dev
+      - main
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build-test-push:
+    name: Build, Test in Container & Push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Determine Image
+        id: prep
+        run: echo "image=$(echo "ghcr.io/${GITHUB_REPOSITORY}" | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build Plan
+        id: plan
+        run: REF="${GITHUB_REF}" COMMIT="${GITHUB_SHA}" IMAGE="${{ steps.prep.outputs.image }}" ci/build-plan.sh
+
+      - name: Build (with or without tests) or Retag, then Push
+        run: |
+          IMAGE="${{ steps.prep.outputs.image }}"
+          TAGS="${{ steps.plan.outputs.tags }}"
+          echo "ℹ️ ${{ steps.plan.outputs.reason }}"
+          if [ "${{ steps.plan.outputs.action }}" = "retag" ]; then
+            SOURCE="${{ steps.plan.outputs.source_image }}"
+            docker pull "${SOURCE}"
+            for t in ${TAGS}; do
+              docker tag "${SOURCE}" "${IMAGE}:${t}"
+              docker push "${IMAGE}:${t}"
+            done
+          else
+            TAG_ARGS=""
+            for t in ${TAGS}; do TAG_ARGS="${TAG_ARGS} -t ${IMAGE}:${t}"; done
+            # The source label links the package on GitHub to this repository
+            DOCKER_BUILDKIT=1 docker build --progress=plain \
+              --build-arg APP_VERSION="${{ steps.plan.outputs.app_version }}" \
+              --build-arg SKIP_TESTS="${{ steps.plan.outputs.skip_tests }}" \
+              --build-arg GIT_SHA="${{ steps.plan.outputs.sha }}" \
+              --build-arg GIT_TREE="${{ steps.plan.outputs.tree }}" \
+              --label "org.opencontainers.image.source=https://github.com/${GITHUB_REPOSITORY}" \
+              ${TAG_ARGS} .
+            for t in ${TAGS}; do docker push "${IMAGE}:${t}"; done
+          fi

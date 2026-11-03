@@ -1,0 +1,72 @@
+name: MindSift CI & Docker Release (Gitea)
+
+# The private Gitea runs this for every push: tests and images in its own registry. The public images on
+# GitHub come from .github/workflows/build-and-publish.yaml with the same build plan (ci/build-plan.sh).
+
+# Image tags:
+#   push to dev      -> :dev
+#   push/merge main  -> :latest
+#   git tag v1.2.0   -> :v1.2.0 and :stable
+#   git tag v1.2.0-rc.1 (pre-release) -> :v1.2.0-rc.1 only, :stable stays
+# Tests run once per code state (ci/build-plan.sh): main skips them when :dev was built
+# from the same code, a tag on the commit of :latest only retags it. The images carry commit and git
+# tree as labels for this, so no extra tags end up in the registry.
+on:
+  push:
+    branches:
+      - dev
+      - main
+    tags:
+      - 'v*'
+
+jobs:
+  build-test-push:
+    name: Build, Test in Container & Push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Determine Registry & Image
+        id: prep
+        # Registry and image come from the server this runs on (its container registry), no fixed host
+        run: |
+          REGISTRY_HOST=$(echo "${GITHUB_SERVER_URL}" | sed -E 's#^https?://##' | sed 's#/$##')
+          echo "registry=${REGISTRY_HOST}" >> "$GITHUB_OUTPUT"
+          echo "image=$(echo "${REGISTRY_HOST}/${GITHUB_REPOSITORY}" | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
+          echo "actor=${GITHUB_ACTOR}" >> "$GITHUB_OUTPUT"
+
+      - name: Login to Gitea Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ steps.prep.outputs.registry }}
+          username: ${{ steps.prep.outputs.actor }}
+          password: ${{ secrets.PUSH_TOKEN || secrets.GITEA_TOKEN || github.token }}
+
+      - name: Build Plan
+        id: plan
+        run: REF="${GITHUB_REF:-}" COMMIT="${GITHUB_SHA:-HEAD}" IMAGE="${{ steps.prep.outputs.image }}" ci/build-plan.sh
+
+      - name: Build (with or without tests) or Retag, then Push
+        run: |
+          IMAGE="${{ steps.prep.outputs.image }}"
+          TAGS="${{ steps.plan.outputs.tags }}"
+          echo "ℹ️ ${{ steps.plan.outputs.reason }}"
+          if [ "${{ steps.plan.outputs.action }}" = "retag" ]; then
+            SOURCE="${{ steps.plan.outputs.source_image }}"
+            docker pull "${SOURCE}"
+            for t in ${TAGS}; do
+              docker tag "${SOURCE}" "${IMAGE}:${t}"
+              docker push "${IMAGE}:${t}"
+            done
+          else
+            TAG_ARGS=""
+            for t in ${TAGS}; do TAG_ARGS="${TAG_ARGS} -t ${IMAGE}:${t}"; done
+            DOCKER_BUILDKIT=1 docker build --progress=plain \
+              --build-arg APP_VERSION="${{ steps.plan.outputs.app_version }}" \
+              --build-arg SKIP_TESTS="${{ steps.plan.outputs.skip_tests }}" \
+              --build-arg GIT_SHA="${{ steps.plan.outputs.sha }}" \
+              --build-arg GIT_TREE="${{ steps.plan.outputs.tree }}" \
+              ${TAG_ARGS} .
+            for t in ${TAGS}; do docker push "${IMAGE}:${t}"; done
+          fi

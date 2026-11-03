@@ -1,0 +1,650 @@
+import React, { useEffect, useState } from 'react';
+import {
+  Key,
+  Plus,
+  Trash2,
+  Pencil,
+  Copy,
+  Check,
+  Webhook,
+  Zap,
+  Terminal,
+  Bot,
+} from 'lucide-react';
+import { APIKey, ApiKeyScope, PriorityLevel, SharedList, TaskList } from '../../lib/types';
+import { SCOPES, SCOPE_GROUPS, scopeChip } from '../../lib/apiScopes';
+import { api, triggerHaptic } from '../../lib/api';
+import { ToggleSwitch } from '../../components/ToggleSwitch';
+
+interface ApiKeysPanelProps {
+  onIngested?: () => void;
+}
+
+type SimTarget = 'triage' | 'task' | 'list_item';
+type McpClient = 'connector' | 'claude' | 'codex' | 'json';
+type Access = 'rest' | 'mcp';
+
+// Personal API keys with rights (switches) and how to connect: curl / smart home (read examples,
+// delivery simulator) or AI agents over MCP (settings → API)
+export const ApiKeysPanel: React.FC<ApiKeysPanelProps> = ({ onIngested }) => {
+  const [keys, setKeys] = useState<APIKey[]>([]);
+  const [newKeyName, setNewKeyName] = useState('');
+  const [newKeyScopes, setNewKeyScopes] = useState<ApiKeyScope[]>(['webhook:triage']);
+  const [newlyCreatedKey, setNewlyCreatedKey] = useState<string | null>(null);
+  const [copiedKey, setCopiedKey] = useState(false);
+  const [mcpClient, setMcpClient] = useState<McpClient>('connector');
+  // Address for claude.ai / ChatGPT connectors; empty while the server has no OAuth (no BASE_URL)
+  const [connectorUrl, setConnectorUrl] = useState('');
+  const [copiedConnector, setCopiedConnector] = useState(false);
+  const [access, setAccess] = useState<Access>('rest');
+  // The operator can switch MCP off; then only the curl / smart home access is shown
+  const [mcpEnabled, setMcpEnabled] = useState(true);
+
+  // Live Webhook Simulator State
+  const [simTitle, setSimTitle] = useState('Waschmaschine im Keller ist fertig!');
+  const [simPriority, setSimPriority] = useState<PriorityLevel>('high');
+  const [simTarget, setSimTarget] = useState<SimTarget>('triage');
+  const [simListId, setSimListId] = useState('');
+  const [simTaskListId, setSimTaskListId] = useState('');
+  const [simStatus, setSimStatus] = useState<string | null>(null);
+  const [lists, setLists] = useState<SharedList[]>([]);
+  const [taskLists, setTaskLists] = useState<TaskList[]>([]);
+
+  const loadKeys = async () => {
+    const k = await api.getAPIKeys();
+    setKeys(k);
+  };
+
+  useEffect(() => {
+    loadKeys();
+    api.getAllLists().then(setLists).catch(() => {});
+    api.getTaskLists().then(setTaskLists).catch(() => {});
+    api
+      .getAuthStatus()
+      .then((st) => {
+        setConnectorUrl(st.mcpConnectorUrl || '');
+        setMcpEnabled(st.mcpEnabled !== false);
+      })
+      .catch(() => {});
+  }, []);
+
+  // Editing an existing key: name and rights (the secret stays the same)
+  const [editKeyId, setEditKeyId] = useState<string | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editScopes, setEditScopes] = useState<ApiKeyScope[]>([]);
+  const [editError, setEditError] = useState<string | null>(null);
+
+  const startEdit = (k: APIKey) => {
+    setEditKeyId(k.id);
+    setEditName(k.name);
+    setEditScopes(k.scopes.split(',').filter(Boolean) as ApiKeyScope[]);
+    setEditError(null);
+  };
+
+  const toggleEditScope = (id: ApiKeyScope) => {
+    setEditScopes((prev) => {
+      const next = prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id];
+      return next.length > 0 ? next : prev; // at least one
+    });
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editKeyId) return;
+    try {
+      await api.updateAPIKey(editKeyId, { name: editName.trim(), scopes: editScopes });
+      triggerHaptic(15);
+      setEditKeyId(null);
+      await loadKeys();
+    } catch (err: any) {
+      setEditError(err?.message || 'Speichern fehlgeschlagen');
+    }
+  };
+
+  // Switches grouped by tasks, lists, notes and inbox (same layout for a new and an existing key)
+  const renderScopeSwitches = (selected: ApiKeyScope[], toggle: (id: ApiKeyScope) => void, label: string) => (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-3" role="group" aria-label={label}>
+      {SCOPE_GROUPS.filter(([group]) => mcpEnabled || group !== 'notes').map(([group, heading]) => (
+        <div key={group} className="border border-border rounded-card bg-panel px-3 py-1.5">
+          <p className="text-[11px] text-muted pt-1 pb-0.5 font-semibold">{heading}</p>
+          {SCOPES.filter((sc) => sc.group === group).map((sc) => (
+            <div key={sc.id} className="flex items-center justify-between gap-3 min-h-[44px] sm:min-h-[36px]">
+              <div className="min-w-0">
+                <span className="block text-xs text-main">{sc.label}</span>
+                <span className="block text-[11px] text-muted">{sc.hint}</span>
+              </div>
+              <ToggleSwitch checked={selected.includes(sc.id)} onChange={() => toggle(sc.id)} title={sc.chip} />
+            </div>
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+
+  const toggleScope = (id: ApiKeyScope) => {
+    setNewKeyScopes((prev) => {
+      const next = prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id];
+      return next.length > 0 ? next : prev; // at least one
+    });
+  };
+
+  const handleCreateKey = async (e: React.FormEvent) => {
+    e.preventDefault();
+    triggerHaptic(15);
+    const created = await api.createAPIKey(newKeyName.trim() || 'Home Assistant', newKeyScopes);
+    if (created.rawKey) {
+      setNewlyCreatedKey(created.rawKey);
+    }
+    setNewKeyName('');
+    setNewKeyScopes(['webhook:triage']);
+    await loadKeys();
+  };
+
+  const handleDeleteKey = async (k: APIKey) => {
+    if (!window.confirm(k.kind === 'oauth' ? `Die Verbindung „${k.name}“ wirklich trennen?` : 'Diesen API-Schlüssel wirklich widerrufen?')) return;
+    triggerHaptic(20);
+    await api.deleteAPIKey(k.id);
+    await loadKeys();
+  };
+
+  const handleCopy = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedKey(true);
+    setTimeout(() => setCopiedKey(false), 2000);
+  };
+
+  const handleSimulateWebhook = async () => {
+    triggerHaptic(20);
+    if (simTarget === 'list_item' && !simListId) {
+      setSimStatus('❌ Bitte eine Liste wählen.');
+      return;
+    }
+    try {
+      // With a freshly created key the simulator tests exactly that key (and its scopes)
+      await api.testWebhookIngest(newlyCreatedKey, {
+        title: simTitle,
+        priority: simPriority,
+        tags: simTarget === 'list_item' ? [] : ['smarthome', 'automation'],
+        target: simTarget,
+        taskListId: simTarget === 'task' ? simTaskListId || undefined : undefined,
+        listId: simTarget === 'list_item' ? simListId : undefined,
+      });
+      setSimStatus(
+        simTarget === 'task'
+          ? '✅ Webhook erfolgreich ausgelöst! Die Aufgabe ist angelegt.'
+          : simTarget === 'list_item'
+          ? '✅ Webhook erfolgreich ausgelöst! Der Eintrag steht in der Liste.'
+          : '✅ Webhook erfolgreich ausgelöst! Neue Karte liegt in deiner Inbox.'
+      );
+      onIngested?.();
+      setTimeout(() => setSimStatus(null), 4000);
+    } catch (err: any) {
+      setSimStatus(`❌ Fehler: ${err.message}`);
+    }
+  };
+
+  const exampleToken = newlyCreatedKey || 'mindsift_sec_dein_api_key';
+  const baseUrl = window.location.origin;
+  const examplePayload =
+    simTarget === 'task'
+      ? `{
+    "target": "task",
+    "title": "Filter der Lüftungsanlage wechseln",
+    "priority": "high",
+    "dueDate": "2026-11-15T09:00"${simTaskListId ? `,\n    "taskListId": "${simTaskListId}"` : ''}
+  }`
+      : simTarget === 'list_item'
+      ? `{
+    "target": "list_item",
+    "listId": "${simListId || 'ID_DER_LISTE'}",
+    "content": "Hafermilch",
+    "quantity": "2"
+  }`
+      : `{
+    "title": "Kellerfeuchtigkeit über 70%",
+    "priority": "urgent",
+    "tags": ["smarthome", "keller"]
+  }`;
+
+  const mcpUrl = `${baseUrl}/api/v1/mcp`;
+  const mcpSnippet =
+    mcpClient === 'claude'
+      ? `claude mcp add --transport http mindsift ${mcpUrl} \\
+  --header "X-API-Key: ${exampleToken}"`
+      : mcpClient === 'codex'
+      ? `# ~/.codex/config.toml
+[mcp_servers.mindsift]
+url = "${mcpUrl}"
+http_headers = { "X-API-Key" = "${exampleToken}" }`
+      : `{
+  "mcpServers": {
+    "mindsift": {
+      "type": "http",
+      "url": "${mcpUrl}",
+      "headers": { "X-API-Key": "${exampleToken}" }
+    }
+  }
+}`;
+
+  return (
+    <div className="space-y-6">
+      {/* API keys */}
+      <div>
+        <div className="flex items-center gap-3 mb-2">
+          <div className="w-8 h-8 bg-accent text-on-accent flex items-center justify-center flex-shrink-0">
+            <Key className="w-4 h-4" />
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-main">API-Schlüssel</h3>
+            <p className="text-xs text-muted">
+              Ein Schlüssel verbindet Home Assistant, n8n, eigene Skripte oder KI-Agenten (Claude Code, Codex …) mit
+              MindSift. Was er darf, legst du mit den Schaltern fest; das gilt per curl und per MCP gleich, nur Notizen
+              gibt es ausschließlich über MCP. Einstellungen bleiben für Schlüssel gesperrt. Was ein Schlüssel bei Aufgaben
+              und Listen anlegt oder ändert, trägt seinen Namen als Badge.
+            </p>
+          </div>
+        </div>
+
+        <form onSubmit={handleCreateKey} className="mt-3 space-y-2">
+          <div className="flex flex-col sm:flex-row gap-2">
+            <input
+              type="text"
+              value={newKeyName}
+              onChange={(e) => setNewKeyName(e.target.value)}
+              placeholder="Bezeichnung (z. B. Home Assistant, Proxmox Backup, Rauchmelder)…"
+              className="w-full sm:flex-1 min-w-0 h-11 sm:h-9 px-3 input-field text-base sm:text-sm"
+            />
+            <button type="submit" className="btn-primary h-11 sm:h-9 px-4 text-sm flex items-center justify-center gap-1.5">
+              <Plus className="w-4 h-4" />
+              <span>API-Key erzeugen</span>
+            </button>
+          </div>
+          {renderScopeSwitches(newKeyScopes, toggleScope, 'Berechtigungen des Schlüssels')}
+        </form>
+
+        {newlyCreatedKey && (
+          <div className="mt-3 p-3 bg-accent/15 border border-accent/30 flex flex-wrap items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-xs font-semibold text-accent mb-1">Neuer API-Schlüssel erstellt (bitte jetzt kopieren):</p>
+              <code className="text-xs sm:text-sm font-mono text-main break-all">{newlyCreatedKey}</code>
+            </div>
+            <button onClick={() => handleCopy(newlyCreatedKey)} className="btn-primary h-8 px-3 text-xs">
+              {copiedKey ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+              <span>{copiedKey ? 'Kopiert!' : 'Key kopieren'}</span>
+            </button>
+          </div>
+        )}
+
+        {/* Active Keys List */}
+        <div className="mt-3 border border-border divide-y divide-border">
+          {keys.length === 0 ? (
+            <p className="text-xs text-faint px-3 py-2">Noch keine dedizierten API-Schlüssel hinterlegt.</p>
+          ) : (
+            keys.map((k) =>
+              editKeyId === k.id ? (
+                <div key={k.id} className="px-3 py-3 bg-canvas space-y-2">
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <input
+                      type="text"
+                      value={editName}
+                      onChange={(e) => setEditName(e.target.value)}
+                      aria-label="Name des Schlüssels"
+                      className="w-full sm:flex-1 min-w-0 h-11 sm:h-9 px-3 input-field text-base sm:text-sm"
+                    />
+                    <div className="flex gap-2">
+                      <button type="button" onClick={() => setEditKeyId(null)} className="btn-action h-11 sm:h-9 px-3 text-xs flex-1 sm:flex-none">
+                        Abbrechen
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleSaveEdit}
+                        disabled={!editName.trim()}
+                        className="btn-primary h-11 sm:h-9 px-4 text-xs flex-1 sm:flex-none disabled:opacity-40"
+                      >
+                        Speichern
+                      </button>
+                    </div>
+                  </div>
+                  {renderScopeSwitches(editScopes, toggleEditScope, `Berechtigungen von ${k.name}`)}
+                  <p className="text-[11px] text-faint">
+                    {k.kind === 'oauth'
+                      ? 'Die Verbindung bleibt bestehen; die neuen Rechte gelten ab sofort.'
+                      : 'Der Schlüssel selbst bleibt gleich; Geräte und Agenten, die ihn nutzen, müssen nichts ändern. Die neuen Rechte gelten ab sofort.'}
+                  </p>
+                  {editError && <p className="text-[11px] text-status-err">{editError}</p>}
+                </div>
+              ) : (
+              <div key={k.id} className="px-3 py-2 bg-canvas flex items-center justify-between gap-3">
+                <div className="min-w-0 flex flex-wrap items-center gap-x-3 gap-y-1">
+                  <span className="text-sm font-medium text-main">{k.name}</span>
+                  {k.kind === 'oauth' ? (
+                    <span className="px-1.5 py-0.5 rounded-btn bg-accent/15 text-accent text-[10px] font-semibold" title="Verbunden über OAuth (claude.ai, ChatGPT …)">
+                      OAuth
+                    </span>
+                  ) : (
+                    <span className="text-xs font-mono text-accent">{k.keyPrefix}</span>
+                  )}
+                  {k.scopes
+                    .split(',')
+                    .filter(Boolean)
+                    .map((sc) => (
+                      <span key={sc} className="px-1.5 py-0.5 rounded-btn border border-border text-muted text-[10px]">
+                        {scopeChip(sc)}
+                      </span>
+                    ))}
+                  {k.lastUsedAt && (
+                    <span className="text-xs text-faint">
+                      Zuletzt genutzt: {new Date(k.lastUsedAt).toLocaleDateString('de-DE')}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-1 shrink-0">
+                  <button
+                    onClick={() => startEdit(k)}
+                    className="btn-icon w-7 h-7"
+                    aria-label={`API-Key ${k.name} bearbeiten`}
+                    title="Name und Rechte ändern"
+                  >
+                    <Pencil className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={() => handleDeleteKey(k)}
+                    className="btn-icon btn-icon-danger w-7 h-7"
+                    aria-label={`API-Key ${k.name} löschen`}
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+              )
+            )
+          )}
+        </div>
+      </div>
+
+      {/* How to connect: one API, two accesses */}
+      <div className="pt-4 border-t border-border space-y-4">
+        {mcpEnabled && (
+          <div className="flex flex-wrap gap-1.5" role="tablist" aria-label="Zugang">
+            {(
+              [
+                ['rest', 'curl / Smart Home', Terminal],
+                ['mcp', 'KI-Agenten (MCP)', Bot],
+              ] as const
+            ).map(([value, label, Icon]) => (
+              <button
+                key={value}
+                type="button"
+                role="tab"
+                aria-selected={access === value}
+                onClick={() => setAccess(value)}
+                className={`h-11 sm:h-8 px-3 rounded-btn border text-xs flex items-center gap-1.5 transition-colors ${
+                  access === value ? 'border-accent bg-accent/10 text-main' : 'border-border text-muted hover:text-main'
+                }`}
+              >
+                <Icon className="w-3.5 h-3.5 text-accent" />
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {(access === 'rest' || !mcpEnabled) && (
+          <div className="space-y-5">
+            {/* Reading: e.g. a smart home sensor for what is due today */}
+            <div>
+              <div className="flex items-center gap-2 text-xs font-medium text-muted mb-2">
+                <Terminal className="w-3.5 h-3.5 text-accent" />
+                <span>Lesen, z. B. was heute fällig ist (Recht „Aufgaben lesen“):</span>
+              </div>
+              <pre className="p-3 bg-canvas border border-border font-mono text-xs text-main overflow-x-auto">
+{`curl "${baseUrl}/api/v1/tasks?due=today&status=open" \\
+  -H "X-API-Key: ${exampleToken}"`}
+              </pre>
+              <p className="mt-2 text-[11px] text-faint">
+                Filter: <code className="font-mono">due=today</code>, <code className="font-mono">due=overdue</code> oder ein
+                Datum (<code className="font-mono">JJJJ-MM-TT</code>, fällig bis einschließlich), <code className="font-mono">status=open|done</code>,{' '}
+                <code className="font-mono">taskListId</code>. Listen: <code className="font-mono">GET /api/v1/lists</code> und{' '}
+                <code className="font-mono">/lists/ID</code>. Mit „Ändern“ auch <code className="font-mono">PATCH /api/v1/thoughts/ID</code>{' '}
+                (z. B. <code className="font-mono">{'{"isCompleted": true}'}</code>).
+              </p>
+              <div className="flex items-center gap-2 text-xs font-medium text-muted mt-3 mb-2">
+                <Terminal className="w-3.5 h-3.5 text-accent" />
+                <span>Home Assistant: Sensor „Heute fällig“ (configuration.yaml)</span>
+              </div>
+              <pre className="p-3 bg-canvas border border-border font-mono text-xs text-main overflow-x-auto">
+{`rest:
+  - resource: "${baseUrl}/api/v1/tasks?due=today&status=open"
+    headers:
+      X-API-Key: "${exampleToken}"
+    scan_interval: 900
+    sensor:
+      - name: "MindSift heute fällig"
+        value_template: "{{ value_json | length }}"`}
+              </pre>
+            </div>
+
+            <div className="pt-4 border-t border-border">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-7 h-7 bg-accent text-on-accent flex items-center justify-center flex-shrink-0">
+                  <Webhook className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-main">Einliefern testen (Webhook)</h3>
+                  <p className="text-xs text-muted">
+                    Teste das Einliefern per <code className="font-mono">POST /api/v1/webhooks/ingest</code> direkt hier
+                    {newlyCreatedKey ? ' – mit dem eben erzeugten Key und seinen Berechtigungen.' : ' – mit deiner Anmeldung.'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-1.5 mb-3" role="radiogroup" aria-label="Ziel">
+                {(
+                  [
+                    ['triage', '📥 Inbox'],
+                    ['task', '📋 Aufgabe'],
+                    ['list_item', '📝 Listeneintrag'],
+                  ] as const
+                ).map(([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    role="radio"
+                    aria-checked={simTarget === value}
+                    onClick={() => setSimTarget(value)}
+                    className={`h-11 sm:h-8 px-3 rounded-btn border text-xs transition-colors ${
+                    simTarget === value ? 'border-accent bg-accent/10 text-main' : 'border-border text-muted hover:text-main'
+                  }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+                {simTarget === 'list_item' && (
+                  <select
+                    value={simListId}
+                    onChange={(e) => setSimListId(e.target.value)}
+                    className="h-11 sm:h-8 px-2 input-field text-base sm:text-xs bg-panel"
+                    aria-label="Liste"
+                  >
+                    <option value="">Liste wählen…</option>
+                    {lists.map((l) => (
+                      <option key={l.id} value={l.id}>
+                        {l.icon} {l.title}
+                      </option>
+                    ))}
+                  </select>
+              )}
+                {simTarget === 'task' && (
+                  <select
+                    value={simTaskListId}
+                    onChange={(e) => setSimTaskListId(e.target.value)}
+                    className="h-11 sm:h-8 px-2 input-field text-base sm:text-xs bg-panel"
+                    aria-label="Aufgabenliste"
+                  >
+                    <option value="">Ohne Aufgabenliste</option>
+                    {taskLists.map((tl) => (
+                      <option key={tl.id} value={tl.id}>
+                        {tl.icon} {tl.title}
+                      </option>
+                    ))}
+                  </select>
+              )}
+              </div>
+
+              {simTarget === 'triage' && (
+                <div className="flex flex-wrap gap-1.5 mb-3">
+                  {[
+                    { label: '🧺 Waschmaschine fertig', text: 'Waschmaschine im Keller ist fertig – Wäsche aufhängen!', prio: 'high' as PriorityLevel },
+                    { label: '🚨 Rauchmelder Batterie', text: 'Rauchmelder Dachgeschoss meldet niedrige Batterie (12%)', prio: 'urgent' as PriorityLevel },
+                    { label: '💧 Luftfeuchtigkeit Keller', text: 'Kellerfeuchtigkeit über 70% – Lüften oder Entfeuchter starten', prio: 'urgent' as PriorityLevel },
+                  ].map((preset) => (
+                    <button
+                      key={preset.label}
+                      type="button"
+                      onClick={() => {
+                        setSimTitle(preset.text);
+                        setSimPriority(preset.prio);
+                      }}
+                      className="btn-action text-xs"
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
+                </div>
+            )}
+
+              <div className="flex flex-col sm:flex-row gap-2">
+                <input
+                  type="text"
+                  value={simTitle}
+                  onChange={(e) => setSimTitle(e.target.value)}
+                  className="flex-1 h-11 sm:h-9 px-3 input-field text-base sm:text-sm"
+                />
+                <button
+                  type="button"
+                  onClick={handleSimulateWebhook}
+                  className="btn-primary h-11 sm:h-9 px-4 text-xs sm:text-sm flex items-center justify-center gap-1.5"
+                >
+                  <Zap className="w-4 h-4" />
+                  <span>Webhook jetzt abfeuern</span>
+                </button>
+              </div>
+
+              {simStatus && (
+                <p className={`mt-3 text-xs font-medium ${simStatus.startsWith('❌') ? 'text-status-err' : 'text-status-ok'}`}>{simStatus}</p>
+            )}
+
+              {/* Code Example Snippets */}
+              <div className="mt-4 space-y-2">
+                <div className="flex items-center gap-2 text-xs font-medium text-muted">
+                  <Terminal className="w-3.5 h-3.5 text-accent" />
+                  <span>cURL / Home Assistant REST Command:</span>
+                </div>
+                <pre className="p-3 bg-canvas border border-border font-mono text-xs text-main overflow-x-auto">
+{`curl -X POST "${baseUrl}/api/v1/webhooks/ingest" \\
+  -H "X-API-Key: ${exampleToken}" \\
+  -H "Content-Type: application/json" \\
+  -d '${examplePayload}'`}
+                </pre>
+                <p className="text-[11px] text-faint">
+                  Der Key gehört in den Header <code className="font-mono">X-API-Key</code>, nicht in die URL, damit er nicht in
+                  Proxy-Logs landet. Fehlt dem Key die Berechtigung für das Ziel, antwortet der Server mit 403.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {access === 'mcp' && mcpEnabled && (
+          <div>
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-7 h-7 bg-accent text-on-accent flex items-center justify-center flex-shrink-0">
+                <Bot className="w-4 h-4" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-main">KI-Agenten anbinden (MCP)</h3>
+                <p className="text-xs text-muted">
+                  MindSift ist ein MCP-Server: Claude Code, Codex, Claude Desktop, Cursor und eigene Agenten nutzen dieselben
+                  Schlüssel und Rechte wie curl, nur in der Form, die Agenten erwarten. claude.ai und ChatGPT verbinden sich ohne
+                  Schlüssel: MindSift fragt beim Verbinden, was der Agent darf.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-1.5 mb-2" role="radiogroup" aria-label="Agent">
+              {(
+                [
+                  ['connector', 'claude.ai / ChatGPT'],
+                  ['claude', 'Claude Code'],
+                  ['codex', 'OpenAI Codex'],
+                  ['json', 'Claude Desktop / Cursor'],
+                ] as const
+              ).map(([value, label]) => (
+                <button
+                  key={value}
+                  type="button"
+                  role="radio"
+                  aria-checked={mcpClient === value}
+                  onClick={() => setMcpClient(value)}
+                  className={`h-11 sm:h-8 px-3 rounded-btn border text-xs transition-colors ${
+                    mcpClient === value ? 'border-accent bg-accent/10 text-main' : 'border-border text-muted hover:text-main'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            {mcpClient === 'connector' ? (
+              connectorUrl ? (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <code className="flex-1 min-w-0 p-3 bg-canvas border border-border font-mono text-xs text-main break-all">{connectorUrl}</code>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText(connectorUrl);
+                        setCopiedConnector(true);
+                        setTimeout(() => setCopiedConnector(false), 2000);
+                      }}
+                      className="btn-icon w-11 h-11 sm:w-9 sm:h-9 flex-shrink-0"
+                      aria-label="Adresse kopieren"
+                      title="Adresse kopieren"
+                    >
+                      {copiedConnector ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                    </button>
+                  </div>
+                  <p className="text-xs text-muted">
+                    In claude.ai unter <span className="text-main">Einstellungen → Connectors → Eigenen Connector hinzufügen</span>{' '}
+                    diese Adresse eintragen (in ChatGPT entsprechend als Connector bzw. App). Beim Verbinden öffnet sich MindSift:
+                    anmelden, Rechte wählen, erlauben. Die Verbindung erscheint oben in der Liste und lässt sich dort ändern oder
+                    trennen; unbenutzt endet sie nach einiger Zeit von selbst.
+                  </p>
+                </div>
+              ) : (
+                <p className="p-3 bg-canvas border border-border text-xs text-muted">
+                  Verbinden über claude.ai und ChatGPT braucht OAuth, und das setzt <code className="font-mono">BASE_URL</code> in
+                  der Server-Konfiguration voraus. Bitte die Person, die MindSift betreibt, sie zu setzen.
+                </p>
+              )
+            ) : (
+              <pre className="p-3 bg-canvas border border-border font-mono text-xs text-main overflow-x-auto">{mcpSnippet}</pre>
+            )}
+            <p className="mt-2 text-[11px] text-faint">
+              Werkzeuge: <code className="font-mono">list_task_lists</code>, <code className="font-mono">create_task_list</code>,{' '}
+              <code className="font-mono">list_tasks</code>, <code className="font-mono">get_task</code>,{' '}
+              <code className="font-mono">create_task</code>, <code className="font-mono">update_task</code>,{' '}
+              <code className="font-mono">complete_task</code>, <code className="font-mono">add_subtask</code>,{' '}
+              <code className="font-mono">update_subtask</code>, <code className="font-mono">delete_task</code>,{' '}
+              <code className="font-mono">list_lists</code>, <code className="font-mono">create_list</code>,{' '}
+              <code className="font-mono">get_list</code>, <code className="font-mono">add_list_item</code>,{' '}
+              <code className="font-mono">check_list_item</code>, <code className="font-mono">update_list_item</code>,{' '}
+              <code className="font-mono">list_notes</code>, <code className="font-mono">get_note</code>,{' '}
+              <code className="font-mono">create_note</code>, <code className="font-mono">search</code>,{' '}
+              <code className="font-mono">capture_to_inbox</code>. Der Agent sieht
+              nur die Werkzeuge, für die der Schlüssel bzw. die Verbindung berechtigt ist; Freigaben gelten wie für dich selbst.
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};

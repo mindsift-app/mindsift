@@ -1,0 +1,381 @@
+package storage
+
+import (
+	"errors"
+	"fmt"
+	"regexp"
+	"strings"
+	"time"
+
+	"github.com/mindsift-app/mindsift/internal/collab"
+	"github.com/mindsift-app/mindsift/internal/domain"
+)
+
+// Restructuring notes: turn a bullet with its children into a note of its own, and merge one note into
+// another. Both change the affected notes through the normal operation log, so open editors follow
+// live, and nothing is lost: an extracted branch lives on in the new note, a merged note goes to the
+// trash and the merge can be undone.
+
+var (
+	ErrBlockNotFound = errors.New("Punkt nicht gefunden")
+	ErrBranchLocked  = errors.New("Jemand anderes bearbeitet gerade einen Punkt in diesem Ast. Bitte kurz warten.")
+	ErrMergeSelf     = errors.New("Eine Notiz kann nicht mit sich selbst zusammengeführt werden")
+	ErrAlreadyNote   = errors.New("Dieser Punkt verweist schon auf eine eigene Notiz")
+	ErrMergeNotOwner = errors.New("Zusammenführen geht nur mit eigenen Notizen als Quelle")
+	ErrNotNoteLink   = errors.New("Dieser Punkt ist kein Link auf eine Notiz")
+	ErrLinkedMissing = errors.New("Die verlinkte Notiz gibt es nicht (mehr)")
+	ErrInlineOwner   = errors.New("Zurückholen geht nur mit eigenen Notizen")
+)
+
+// readCollabDoc loads the current state of a note outside of a change.
+func (s *Store) readCollabDoc(docID string) (*collab.Doc, error) {
+	tx, err := s.db.Begin()
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+	doc, _, err := loadCollabDoc(tx, docID)
+	return doc, err
+}
+
+var (
+	titlePrefixRe = regexp.MustCompile(`^(\s*(-|\*|#{1,6}|\[[ xX]?\])\s+)+`)
+	titleTagRe    = regexp.MustCompile(`(^|\s)#[\p{L}0-9_-]+`)
+	// A bullet that is only a link to a note (with hashtags), as left behind by ExtractBranch
+	noteLinkOnlyRe = regexp.MustCompile(`^\s*\[\[[^\]]+\]\](\s+#[\p{L}0-9_-]+)*\s*$`)
+)
+
+// branchTitle makes a note title from a bullet's text (without hashtags) and returns the hashtags,
+// which stay next to the link in the original bullet.
+func branchTitle(content string) (string, string) {
+	first := titlePrefixRe.ReplaceAllString(strings.SplitN(content, "\n", 2)[0], "")
+	var tags []string
+	for _, m := range titleTagRe.FindAllString(first, -1) {
+		tags = append(tags, strings.TrimSpace(m))
+	}
+	t := strings.TrimSpace(titleTagRe.ReplaceAllString(first, ""))
+	t = strings.NewReplacer("[[", "", "]]", "").Replace(t)
+	if r := []rune(t); len(r) > 120 {
+		t = strings.TrimSpace(string(r[:119])) + "…"
+	}
+	if t == "" {
+		t = "Unbenannte Notiz"
+	}
+	return t, strings.Join(tags, " ")
+}
+
+// uniqueTitle appends " (2)", " (3)" … when the user already has a note of that name, so the wiki link
+// points to exactly one note.
+func (s *Store) uniqueTitle(userID, title string) string {
+	docs, _ := s.GetDocuments(userID)
+	taken := map[string]bool{}
+	for _, d := range docs {
+		taken[strings.ToLower(d.Title)] = true
+	}
+	candidate := title
+	for n := 2; taken[strings.ToLower(candidate)]; n++ {
+		candidate = fmt.Sprintf("%s (%d)", title, n)
+	}
+	return candidate
+}
+
+func toDocumentBlock(b collab.FlatBlock, level int, pos int) domain.DocumentBlock {
+	return domain.DocumentBlock{
+		ID: domain.NewID("blk"), Type: b.Type, Content: b.Content, Level: level, Position: float64(pos + 1),
+		Checked: b.Props.Checked, Collapsed: b.Props.Collapsed, Lang: b.Props.Lang,
+	}
+}
+
+func foreignLeaseIn(ids []string, a collab.Actor, leases collab.LeaseView) bool {
+	if leases == nil {
+		return false
+	}
+	for _, id := range ids {
+		if holder, ok := leases.HolderOf(id); ok && holder != a.ClientID {
+			return true
+		}
+	}
+	return false
+}
+
+// ExtractBranch creates a new note from a bullet's children, named after the bullet, in the same folder
+// and shared like the original. The original note is not changed here: the editor replaces the branch
+// by the returned link itself, as an ordinary own edit (no clash with unsent typing, undo works).
+func (s *Store) ExtractBranch(userID, docID, blockID string, a collab.Actor, leases collab.LeaseView) (*domain.Document, string, error) {
+	source, err := s.GetDocumentByID(userID, docID)
+	if err != nil {
+		return nil, "", err
+	}
+	state, err := s.readCollabDoc(docID)
+	if err != nil {
+		return nil, "", err
+	}
+	flat := state.Flatten()
+	start := -1
+	for i, b := range flat {
+		if b.ID == blockID {
+			start = i
+			break
+		}
+	}
+	if start < 0 {
+		return nil, "", ErrBlockNotFound
+	}
+	root := flat[start]
+	if noteLinkOnlyRe.MatchString(root.Content) {
+		return nil, "", ErrAlreadyNote
+	}
+	var children []domain.DocumentBlock
+	ids := []string{root.ID}
+	for i := start + 1; i < len(flat) && flat[i].Level > root.Level; i++ {
+		children = append(children, toDocumentBlock(flat[i], flat[i].Level-root.Level-1, len(children)))
+		ids = append(ids, flat[i].ID)
+	}
+	if foreignLeaseIn(ids, a, leases) {
+		return nil, "", ErrBranchLocked
+	}
+
+	base, tags := branchTitle(root.Content)
+	title := s.uniqueTitle(userID, base)
+	created, err := s.CreateDocument(userID, "", title, "🗒️", source.FolderPath, children, nil, false)
+	if err != nil {
+		return nil, "", err
+	}
+	s.copyShares(userID, source, created.ID)
+	link := "[[" + title + "]]"
+	if tags != "" {
+		link += " " + tags
+	}
+	return created, link, nil
+}
+
+// UndoExtract puts a note created by ExtractBranch into the trash (only its creator may).
+func (s *Store) UndoExtract(userID, docID string) error {
+	doc, err := s.GetDocumentByID(userID, docID)
+	if err != nil {
+		return err
+	}
+	if !doc.IsOwner {
+		return ErrMergeNotOwner
+	}
+	if doc.IsArchived {
+		return nil
+	}
+	return s.trashDocument(userID, docID)
+}
+
+// StillLinkedError: the note to bring back is linked from other notes as well
+type StillLinkedError struct {
+	Title string
+	Count int
+}
+
+func (e *StillLinkedError) Error() string {
+	return fmt.Sprintf("„%s“ ist noch in %d weiteren Notiz(en) verlinkt; diese Links würden ins Leere zeigen. Bitte dort zuerst entfernen.", e.Title, e.Count)
+}
+
+// InlineResult: what the editor puts back in place of the link bullet
+type InlineResult struct {
+	SourceID string `json:"sourceId"`
+	// Text of the bullet: the note's title, hashtags of the link kept
+	Content string `json:"content"`
+	// The note's blocks with fresh ids; level 0 = directly below the bullet
+	Blocks []domain.DocumentBlock `json:"blocks"`
+}
+
+// InlineNote is the way back from ExtractBranch: for a bullet that is only a link to an own note, it
+// returns that note's blocks and puts the note into the trash. Like ExtractBranch it does not change
+// the note with the bullet; the editor inserts the blocks itself as an own edit (undo works). Refused
+// while other notes link to the note as well, since those links would point to nothing.
+func (s *Store) InlineNote(userID, docID, blockID string) (*InlineResult, error) {
+	state, err := s.readCollabDoc(docID)
+	if err != nil {
+		return nil, err
+	}
+	var content string
+	found := false
+	for _, b := range state.Flatten() {
+		if b.ID == blockID {
+			content, found = b.Content, true
+			break
+		}
+	}
+	if !found {
+		return nil, ErrBlockNotFound
+	}
+	m := wikiLinkRe.FindStringSubmatch(content)
+	if !noteLinkOnlyRe.MatchString(content) || m == nil {
+		return nil, ErrNotNoteLink
+	}
+	title := strings.TrimSpace(m[1])
+	docs, err := s.GetDocuments(userID)
+	if err != nil {
+		return nil, err
+	}
+	var linked *domain.Document
+	for i := range docs {
+		d := &docs[i]
+		if d.ID == docID || !strings.EqualFold(strings.TrimSpace(d.Title), title) {
+			continue
+		}
+		// An own note wins over one shared with the user under the same title
+		if linked == nil || (d.IsOwner && !linked.IsOwner) {
+			linked = d
+		}
+	}
+	if linked == nil {
+		return nil, ErrLinkedMissing
+	}
+	if !linked.IsOwner {
+		return nil, ErrInlineOwner
+	}
+	backlinks, err := s.GetBacklinks(userID, linked.ID)
+	if err != nil {
+		return nil, err
+	}
+	others := 0
+	for _, bl := range backlinks {
+		if bl.DocID != docID {
+			others++
+		}
+	}
+	if others > 0 {
+		return nil, &StillLinkedError{Title: linked.Title, Count: others}
+	}
+	source, err := s.readCollabDoc(linked.ID)
+	if err != nil {
+		return nil, err
+	}
+	blocks := []domain.DocumentBlock{}
+	for _, b := range source.Flatten() {
+		blocks = append(blocks, toDocumentBlock(b, b.Level, len(blocks)))
+	}
+	rest := strings.TrimSpace(wikiLinkRe.ReplaceAllString(content, ""))
+	text := strings.TrimSpace(linked.Title + " " + rest)
+	if err := s.trashDocument(userID, linked.ID); err != nil {
+		return nil, err
+	}
+	return &InlineResult{SourceID: linked.ID, Content: text, Blocks: blocks}, nil
+}
+
+// copyShares gives the new note the direct and team shares of the source; when someone else owns the
+// source, that owner may edit the new note as well (the branch was theirs to read before).
+func (s *Store) copyShares(userID string, source *domain.Document, newDocID string) {
+	shares, _ := s.GetDocShares(source.ID)
+	for _, sh := range shares {
+		switch {
+		case sh.TargetType == "team":
+			_, _ = s.CreateDocTeamShare(userID, newDocID, sh.TargetID, sh.Permission)
+		case sh.UserID != "" && sh.UserID != userID:
+			_, _ = s.CreateDocShare(userID, newDocID, sh.UserID, sh.Permission)
+		}
+	}
+	if source.UserID != "" && source.UserID != userID {
+		_, _ = s.CreateDocShare(userID, newDocID, source.UserID, "write")
+	}
+}
+
+// MergeResult tells the client what to undo.
+type MergeResult struct {
+	TargetID    string `json:"targetId"`
+	SourceID    string `json:"sourceId"`
+	SourceTitle string `json:"sourceTitle"`
+	HeadingID   string `json:"headingId"`
+}
+
+// MergeDocuments appends the source note to the end of the target: a heading with the source's title,
+// its blocks below it. The source goes to the trash (it must belong to the user; the caller checks
+// write access to the target).
+func (s *Store) MergeDocuments(userID, sourceID, targetID string, a collab.Actor, leases collab.LeaseView) (*MergeResult, error) {
+	if sourceID == targetID {
+		return nil, ErrMergeSelf
+	}
+	source, err := s.GetDocumentByID(userID, sourceID)
+	if err != nil {
+		return nil, err
+	}
+	if !source.IsOwner {
+		return nil, ErrMergeNotOwner
+	}
+	if source.IsArchived {
+		return nil, ErrDocInTrash
+	}
+	state, err := s.readCollabDoc(sourceID)
+	if err != nil {
+		return nil, err
+	}
+	flat := state.Flatten()
+
+	headingID := domain.NewID("blk")
+	heading := strings.TrimSpace(source.Icon + " " + source.Title)
+	if heading == "" {
+		heading = "Zusammengeführte Notiz"
+	}
+	heading += " (" + time.Now().Format("02.01.2006") + ")"
+
+	_, _, err = s.applyDocChange(targetID, a, leases, func(d *collab.Doc) []collab.Op {
+		// After the last top-level block, deleted ones included, so keys never collide
+		last := ""
+		for _, b := range d.Blocks {
+			if b.ParentID == "" && b.OrderKey > last {
+				last = b.OrderKey
+			}
+		}
+		key, err := collab.KeyBetween(last, "")
+		if err != nil {
+			return nil
+		}
+		root := ""
+		ops := []collab.Op{{OpID: domain.NewID("op"), Kind: collab.OpInsert, BlockID: headingID, ParentID: &root, OrderKey: key, Type: "h2", Content: &heading}}
+		// Parents by level: the heading holds the source's top level
+		parents := []string{headingID}
+		lastKey := map[string]string{}
+		for _, b := range flat {
+			if b.Level+1 > len(parents) {
+				continue // cannot happen with a flattened tree; guards against gaps
+			}
+			parents = parents[:b.Level+1]
+			parent := parents[b.Level]
+			k, err := collab.KeyBetween(lastKey[parent], "")
+			if err != nil {
+				return nil
+			}
+			lastKey[parent] = k
+			id := domain.NewID("blk")
+			content := b.Content
+			props := collab.Props{Checked: b.Props.Checked, Collapsed: b.Props.Collapsed, Lang: b.Props.Lang}
+			p := parent
+			ops = append(ops, collab.Op{OpID: domain.NewID("op"), Kind: collab.OpInsert, BlockID: id, ParentID: &p, OrderKey: k, Type: b.Type, Content: &content, Props: &props})
+			parents = append(parents, id)
+		}
+		return ops
+	})
+	if err != nil {
+		return nil, err
+	}
+	if err := s.trashDocument(userID, sourceID); err != nil {
+		return nil, err
+	}
+	return &MergeResult{TargetID: targetID, SourceID: sourceID, SourceTitle: source.Title, HeadingID: headingID}, nil
+}
+
+// UndoMerge removes the appended section from the target and brings the source back from the trash.
+func (s *Store) UndoMerge(userID string, m MergeResult, a collab.Actor, leases collab.LeaseView) error {
+	if err := s.RestoreDocument(userID, m.SourceID); err != nil {
+		return err
+	}
+	_, _, err := s.applyDocChange(m.TargetID, a, leases, func(d *collab.Doc) []collab.Op {
+		if b, ok := d.Blocks[m.HeadingID]; !ok || b.Deleted {
+			return nil
+		}
+		return []collab.Op{{OpID: domain.NewID("op"), Kind: collab.OpDelete, BlockID: m.HeadingID}}
+	})
+	return err
+}
+
+// DocHead is the newest log position of a note (to tell open editors to sync).
+func (s *Store) DocHead(docID string) int64 {
+	var head int64
+	_ = s.db.QueryRow(`SELECT head_seq FROM documents WHERE id = ?`, docID).Scan(&head)
+	return head
+}

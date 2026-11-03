@@ -1,0 +1,66 @@
+/* ==========================================================================
+   MINDSIFT THEME: SURI (Velvet Dusk / Orchid)
+   Warmes Mitternachts-Pflaume mit samtigem Orchidee-Akzent & weichen Ecken.
+   ========================================================================== */
+
+:root[data-theme="suri"] {
+  /* --- 1. AKZENTFARBE (Samtige Orchidee & Magenta-Violett) --- */
+  --accent-primary: #b86bf8;
+  --accent-hover: #cf94fd;
+  --accent-dim: rgba(184, 107, 248, 0.16);
+  --accent-border: rgba(207, 148, 253, 0.42);
+  --text-on-accent: #ffffff;
+
+  /* --- 2. OBERFLÄCHEN & HINTERGRÜNDE --- */
+  --bg-app: #130f1a;
+  --bg-panel: #1e1728;
+  --bg-panel-elevated: #282036;
+  --bg-panel-hover: #332944;
+  --bg-input: #15101d;
+  --bg-overlay: rgba(11, 8, 16, 0.76);
+  --bg-code: #0d0a13;
+
+  /* --- 3. TEXT & KONTRASTE --- */
+  --text-main: #fbf7ff;
+  --text-muted: #b5a8cb;
+  --text-faint: #776b8d;
+
+  /* --- 4. RAHMEN, LINIEN & SCHATTEN --- */
+  --border-color: rgba(207, 148, 253, 0.14);
+  --border-subtle: rgba(207, 148, 253, 0.07);
+  --border-strong: rgba(207, 148, 253, 0.28);
+  --shadow-panel: 0 12px 32px rgba(8, 5, 12, 0.50);
+  --scrollbar-thumb: rgba(184, 107, 248, 0.20);
+  --scrollbar-thumb-hover: rgba(207, 148, 253, 0.36);
+
+  /* --- 5. STATUS- & SIGNALFARBEN --- */
+  --color-success: #34d399;
+  --bg-success: rgba(52, 211, 153, 0.14);
+  --border-success: rgba(52, 211, 153, 0.38);
+
+  --color-danger: #fb7185;
+  --bg-danger: rgba(251, 113, 133, 0.14);
+  --border-danger: rgba(251, 113, 133, 0.38);
+
+  --color-warning: #fbbf24;
+  --bg-warning: rgba(251, 191, 36, 0.14);
+  --border-warning: rgba(251, 191, 36, 0.38);
+
+  /* --- 6. RUNDUNGEN (Weich gerundete Ecken) --- */
+  --radius-card: 10px;
+  --radius-btn: 6px;
+  --radius-input: 6px;
+  --radius-checkbox: 4px;
+  --radius-pill: 9999px;
+
+  /* --- 7. CODE-SYNTAX-HIGHLIGHTING (VS Code Dark+) --- */
+  --code-keyword: #569cd6;
+  --code-string: #ce9178;
+  --code-number: #b5cea8;
+  --code-comment: #6a9955;
+  --code-property: #9cdcfe;
+  --code-function: #dcdcaa;
+  --code-type: #4ec9b0;
+  --code-punctuation: #d4d4d4;
+  --code-variable: #9cdcfe;
+}

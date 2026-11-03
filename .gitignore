@@ -1,0 +1,28 @@
+# Binaries & Build Outputs
+mindsift
+*.exe
+*.out
+frontend/node_modules/
+frontend/dist/
+
+# Local SQLite Data
+data/
+dev-data/
+*.db
+*.db-shm
+*.db-wal
+
+# Environment & IDE
+.env
+.DS_Store
+.idea/
+.vscode/
+e2e/node_modules/
+
+# Whisper models (docker compose service "whisper")
+whisper/
+.refshots/
+
+# Local instructions for coding agents (not part of the public repo)
+AGENTS.md
+CLAUDE.md

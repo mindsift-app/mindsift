@@ -1,0 +1,73 @@
+/* ==========================================================================
+   MINDSIFT THEME-VORLAGE (TEMPLATE)
+   Kopiere diese Datei, benenne [data-theme="mein-theme"] um und passe
+   die 6 Gruppen nach deinen Wünschen an.
+   ========================================================================== */
+
+:root[data-theme="custom-template"] {
+  /* --- 1. AKZENTFARBE (Buttons, aktive Tabs, Fokus-Ränder, Badges) --- */
+  --accent-primary: #2563eb;
+  --accent-hover: #3b82f6;
+  /* Tints follow --accent-primary automatically; set fixed values only if you want different ones */
+  --accent-dim: color-mix(in srgb, var(--accent-primary) 14%, transparent);
+  --accent-border: color-mix(in srgb, var(--accent-hover) 45%, transparent);
+  --text-on-accent: #ffffff;
+
+  /* --- 2. OBERFLÄCHEN & HINTERGRÜNDE --- */
+  --bg-app: #121316;              /* Seiten-Hintergrund (Canvas) */
+  --bg-panel: #1a1c20;            /* Karten, Header, Sidebar, Dropdowns */
+  --bg-panel-elevated: #22252a;   /* Hervorgehobene Elemente & aktive Zeilen */
+  --bg-panel-hover: #2a2e35;      /* Hover-Effekt auf Oberflächen */
+  --bg-input: #121316;            /* Textfelder, Selects, Textareas */
+  --bg-overlay: rgba(0, 0, 0, 0.72); /* Hintergrund bei Modals/Dialogen */
+  --bg-code: #0d0e11;             /* Code-Blöcke & Terminal-Boxen */
+  /* Optional: --bg-editor (Notiz-Editor, Standard --bg-app) und --bg-sidebar (Ordnerleiste, Standard --bg-panel) */
+
+  /* --- 3. TEXT & KONTRASTE --- */
+  --text-main: #f4f4f5;           /* Haupttext & Überschriften */
+  --text-muted: #a1a1aa;          /* Sekundärtext & Beschreibungen */
+  --text-faint: #71717a;          /* Platzhalter & dezente Hinweise */
+
+  /* --- 4. RAHMEN, LINIEN & SCHATTEN --- */
+  --border-color: rgba(255, 255, 255, 0.09);
+  --border-subtle: rgba(255, 255, 255, 0.05);
+  --border-strong: rgba(255, 255, 255, 0.22);
+  --shadow-panel: 0 10px 30px rgba(0, 0, 0, 0.45);
+  --scrollbar-thumb: rgba(255, 255, 255, 0.14);
+  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.26);
+
+  /* --- 5. STATUS- & SIGNALFARBEN --- */
+  --color-success: #22c55e;
+  --bg-success: rgba(34, 197, 94, 0.12);
+  --border-success: rgba(34, 197, 94, 0.38);
+
+  --color-danger: #ef4444;
+  --bg-danger: rgba(239, 68, 68, 0.12);
+  --border-danger: rgba(239, 68, 68, 0.38);
+
+  --color-warning: #f59e0b;
+  --bg-warning: rgba(245, 158, 11, 0.12);
+  --border-warning: rgba(245, 158, 11, 0.38);
+
+  /* Optional: Blau und Lila für Kanban-Spalten (ohne Angabe gelten Standardwerte) */
+  --color-info: #60a5fa;
+  --color-purple: #a78bfa;
+
+  /* --- 6. RUNDUNGEN (Geometrie) --- */
+  --radius-card: 0px;             /* Karten, Panels, Container (0px = eckig) */
+  --radius-btn: 2px;              /* Buttons & Badges */
+  --radius-input: 2px;            /* Eingabefelder & Dropdowns */
+  --radius-checkbox: 0px;         /* Aufgaben-Checkboxen */
+  --radius-pill: 9999px;          /* Quick-Capture-Blase & Profil-Pill */
+
+  /* --- 7. CODE-SYNTAX-HIGHLIGHTING (VS Code Dark+ Standardwerte) --- */
+  --code-keyword: #569cd6;        /* Schlüsselwörter & Booleans */
+  --code-string: #ce9178;         /* Zeichenketten (Strings) */
+  --code-number: #b5cea8;         /* Zahlen & Konstanten */
+  --code-comment: #6a9955;        /* Kommentare */
+  --code-property: #9cdcfe;       /* Schlüssel (YAML/JSON Keys) & Attribute */
+  --code-function: #dcdcaa;       /* Funktionen & Methoden */
+  --code-type: #4ec9b0;           /* Typen & Klassen */
+  --code-punctuation: #d4d4d4;    /* Klammern, Operatoren & Satzzeichen */
+  --code-variable: #9cdcfe;       /* Variablen & Regex */
+}

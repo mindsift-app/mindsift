@@ -1,0 +1,69 @@
+/* ==========================================================================
+   MINDSIFT THEME: POLARIZED HELL (Lagune & Kreide)
+   Das helle Gegenstück zu Polarized: kreidiges Mintweiß, tiefes Petrol als
+   Akzent, dunkle Schiefer-Schrift, klar und eckig wie das Original.
+   ========================================================================== */
+
+:root[data-theme="polarized-light"] {
+  /* --- 1. AKZENTFARBE (Tiefes Petrol) --- */
+  --accent-primary: #0f766e;
+  --accent-hover: #115e59;
+  --accent-dim: rgba(15, 118, 110, 0.10);
+  --accent-border: rgba(15, 118, 110, 0.34);
+  --text-on-accent: #ffffff;
+
+  /* --- 2. OBERFLÄCHEN & HINTERGRÜNDE (Kreide, Lagune) --- */
+  --bg-app: #e6f0ef;
+  --bg-panel: #f6fbfa;
+  --bg-panel-elevated: #d8e8e6;
+  --bg-panel-hover: #c7dcd9;
+  --bg-input: #fbfefd;
+  --bg-overlay: rgba(8, 30, 28, 0.45);
+  --bg-code: #eaf3f2;
+  --bg-editor: #f9fdfc;
+  --bg-sidebar: #ebf4f3;
+
+  /* --- 3. TEXT & KONTRASTE --- */
+  --text-main: #0f2422;
+  --text-muted: #3f5c59;
+  --text-faint: #728a87;
+
+  /* --- 4. RAHMEN, LINIEN & SCHATTEN --- */
+  --border-color: rgba(15, 80, 75, 0.17);
+  --border-subtle: rgba(15, 80, 75, 0.08);
+  --border-strong: rgba(15, 80, 75, 0.32);
+  --shadow-panel: 0 8px 24px rgba(10, 45, 42, 0.09);
+  --scrollbar-thumb: rgba(15, 80, 75, 0.22);
+  --scrollbar-thumb-hover: rgba(15, 80, 75, 0.38);
+
+  /* --- 5. STATUS- & SIGNALFARBEN --- */
+  --color-success: #15803d;
+  --bg-success: rgba(21, 128, 61, 0.10);
+  --border-success: rgba(21, 128, 61, 0.34);
+
+  --color-danger: #be123c;
+  --bg-danger: rgba(190, 18, 60, 0.09);
+  --border-danger: rgba(190, 18, 60, 0.34);
+
+  --color-warning: #b45309;
+  --bg-warning: rgba(180, 83, 9, 0.10);
+  --border-warning: rgba(180, 83, 9, 0.34);
+
+  /* --- 6. RUNDUNGEN (Klar & eckig wie Polarized) --- */
+  --radius-card: 0px;
+  --radius-btn: 2px;
+  --radius-input: 2px;
+  --radius-checkbox: 0px;
+  --radius-pill: 9999px;
+
+  /* --- 7. CODE-SYNTAX-HIGHLIGHTING --- */
+  --code-keyword: #0f766e;
+  --code-string: #9a3412;
+  --code-number: #b45309;
+  --code-comment: #728a87;
+  --code-property: #155e75;
+  --code-function: #7e22ce;
+  --code-type: #0e7490;
+  --code-punctuation: #3f5c59;
+  --code-variable: #155e75;
+}

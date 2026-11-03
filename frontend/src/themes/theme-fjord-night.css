@@ -1,0 +1,69 @@
+/* ==========================================================================
+   MINDSIFT THEME: FJORD NACHT (Tiefsee & Mondlicht)
+   Das dunkle Gegenstück zu Fjord: tiefes Nachtblau statt Schwarz,
+   mondhelle Schrift, leuchtendes Gletscherblau, weiche Ecken.
+   ========================================================================== */
+
+:root[data-theme="fjord-night"] {
+  /* --- 1. AKZENTFARBE (Leuchtendes Gletscherblau) --- */
+  --accent-primary: #5b9bdf;
+  --accent-hover: #7db2ea;
+  --accent-dim: rgba(91, 155, 223, 0.16);
+  --accent-border: rgba(91, 155, 223, 0.40);
+  --text-on-accent: #0b1622;
+
+  /* --- 2. OBERFLÄCHEN & HINTERGRÜNDE (Tiefsee) --- */
+  --bg-app: #0e1621;
+  --bg-panel: #152131;
+  --bg-panel-elevated: #1c2b3e;
+  --bg-panel-hover: #24364c;
+  --bg-input: #101a26;
+  --bg-overlay: rgba(5, 10, 16, 0.72);
+  --bg-code: #0b121b;
+  --bg-editor: #121d2a;
+  --bg-sidebar: #0e1621;
+
+  /* --- 3. TEXT & KONTRASTE (Mondlicht) --- */
+  --text-main: #e6eef8;
+  --text-muted: #9fb1c6;
+  --text-faint: #6b7d93;
+
+  /* --- 4. RAHMEN, LINIEN & SCHATTEN --- */
+  --border-color: rgba(180, 205, 235, 0.12);
+  --border-subtle: rgba(180, 205, 235, 0.06);
+  --border-strong: rgba(180, 205, 235, 0.24);
+  --shadow-panel: 0 12px 32px rgba(2, 6, 12, 0.55);
+  --scrollbar-thumb: rgba(91, 155, 223, 0.22);
+  --scrollbar-thumb-hover: rgba(91, 155, 223, 0.38);
+
+  /* --- 5. STATUS- & SIGNALFARBEN --- */
+  --color-success: #6fcf97;
+  --bg-success: rgba(111, 207, 151, 0.14);
+  --border-success: rgba(111, 207, 151, 0.36);
+
+  --color-danger: #f28b82;
+  --bg-danger: rgba(242, 139, 130, 0.14);
+  --border-danger: rgba(242, 139, 130, 0.36);
+
+  --color-warning: #f6c177;
+  --bg-warning: rgba(246, 193, 119, 0.14);
+  --border-warning: rgba(246, 193, 119, 0.36);
+
+  /* --- 6. RUNDUNGEN (Weich) --- */
+  --radius-card: 12px;
+  --radius-btn: 8px;
+  --radius-input: 8px;
+  --radius-checkbox: 4px;
+  --radius-pill: 9999px;
+
+  /* --- 7. CODE-SYNTAX-HIGHLIGHTING --- */
+  --code-keyword: #7db2ea;
+  --code-string: #9fd4a3;
+  --code-number: #f6c177;
+  --code-comment: #6b7d93;
+  --code-property: #c3d8f0;
+  --code-function: #c4a7f5;
+  --code-type: #6fd3c8;
+  --code-punctuation: #9fb1c6;
+  --code-variable: #c3d8f0;
+}

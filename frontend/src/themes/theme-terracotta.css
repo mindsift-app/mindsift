@@ -1,0 +1,69 @@
+/* ==========================================================================
+   MINDSIFT THEME: TERRAKOTTA (Warmes Papier & Tinte)
+   Cremefarbenes Notizpapier, sandfarbene Seitenleiste, tintendunkle Schrift,
+   gebrannter Terrakotta-Akzent mit Salbeigrün und weiche Ecken.
+   ========================================================================== */
+
+:root[data-theme="terracotta"] {
+  /* --- 1. AKZENTFARBE (Gebrannte Terrakotta) --- */
+  --accent-primary: #c2410c;
+  --accent-hover: #9a3412;
+  --accent-dim: rgba(194, 65, 12, 0.10);
+  --accent-border: rgba(194, 65, 12, 0.34);
+  --text-on-accent: #fffaf3;
+
+  /* --- 2. OBERFLÄCHEN & HINTERGRÜNDE (Papier, Sand, Leinen) --- */
+  --bg-app: #efe6d8;
+  --bg-panel: #fbf6ee;
+  --bg-panel-elevated: #eadfcd;
+  --bg-panel-hover: #e0d2bb;
+  --bg-input: #fffbf5;
+  --bg-overlay: rgba(46, 33, 22, 0.45);
+  --bg-code: #f1e8da;
+  --bg-editor: #fdf9f2;
+  --bg-sidebar: #f2eadc;
+
+  /* --- 3. TEXT & KONTRASTE (Tinte) --- */
+  --text-main: #2b2118;
+  --text-muted: #5c4b3c;
+  --text-faint: #8a7764;
+
+  /* --- 4. RAHMEN, LINIEN & SCHATTEN --- */
+  --border-color: rgba(92, 64, 40, 0.18);
+  --border-subtle: rgba(92, 64, 40, 0.09);
+  --border-strong: rgba(92, 64, 40, 0.32);
+  --shadow-panel: 0 10px 28px rgba(74, 50, 28, 0.10);
+  --scrollbar-thumb: rgba(92, 64, 40, 0.22);
+  --scrollbar-thumb-hover: rgba(92, 64, 40, 0.38);
+
+  /* --- 5. STATUS- & SIGNALFARBEN (Salbei, Ziegel, Ocker) --- */
+  --color-success: #4d7c4f;
+  --bg-success: rgba(77, 124, 79, 0.12);
+  --border-success: rgba(77, 124, 79, 0.36);
+
+  --color-danger: #b42318;
+  --bg-danger: rgba(180, 35, 24, 0.09);
+  --border-danger: rgba(180, 35, 24, 0.34);
+
+  --color-warning: #a16207;
+  --bg-warning: rgba(161, 98, 7, 0.11);
+  --border-warning: rgba(161, 98, 7, 0.34);
+
+  /* --- 6. RUNDUNGEN (Weich wie Papierkarten) --- */
+  --radius-card: 12px;
+  --radius-btn: 8px;
+  --radius-input: 8px;
+  --radius-checkbox: 4px;
+  --radius-pill: 9999px;
+
+  /* --- 7. CODE-SYNTAX-HIGHLIGHTING (warme Erdtöne, gut lesbar auf Papier) --- */
+  --code-keyword: #9a3412;
+  --code-string: #4d7c4f;
+  --code-number: #b45309;
+  --code-comment: #8a7764;
+  --code-property: #7c2d12;
+  --code-function: #6b4f9e;
+  --code-type: #0f766e;
+  --code-punctuation: #5c4b3c;
+  --code-variable: #7c2d12;
+}

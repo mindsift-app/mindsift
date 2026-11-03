@@ -1,0 +1,707 @@
+/* ==========================================================================
+   MINDSIFT THEME ENGINE — ZENTRALE EINBINDUNG
+   Jedes Theme ist eine eigenständige CSS-Datei unter src/themes/ mit 6 Gruppen:
+     1. Akzentfarbe
+     2. Oberflächen & Hintergründe
+     3. Text & Kontraste
+     4. Rahmen, Linien & Schatten
+     5. Status- & Signalfarben
+     6. Rundungen (Geometrie)
+   ========================================================================== */
+
+@import './themes/theme-dark.css';
+@import './themes/theme-light.css';
+@import './themes/theme-terracotta.css';
+@import './themes/theme-terracotta-night.css';
+@import './themes/theme-polarized.css';
+@import './themes/theme-suri.css';
+@import './themes/theme-fjord.css';
+@import './themes/theme-fjord-night.css';
+@import './themes/theme-polarized-light.css';
+@import './themes/theme-suri-light.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  background-color: var(--bg-app);
+  color: var(--text-main);
+  font-family: 'Inter Variable', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  overflow-x: hidden;
+  transition: background-color 140ms ease, color 140ms ease;
+}
+
+/* Scrollbar über Theme-Variablen */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: var(--radius-btn);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+}
+
+/* ==========================================================================
+   SEMANTISCHE KOMPONENTEN-KLASSEN (100% Theme-gesteuert)
+   ========================================================================== */
+
+@layer components {
+  /* Haupt-Karten, Sidebars und Container */
+  .panel-surface {
+    background-color: var(--bg-panel);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-card);
+  }
+
+  .panel-elevated {
+    background-color: var(--bg-panel-elevated);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-card);
+  }
+
+  .panel-header {
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  /* Automatische Übernahme von --radius-card auf gerahmten Panels & Boxen */
+  .bg-panel.border,
+  .bg-canvas.border {
+    border-radius: var(--radius-card);
+  }
+
+  /* An explicit rounded-full (round icon buttons, avatars) wins over the theme radius above */
+  .bg-panel.border.rounded-full,
+  .bg-canvas.border.rounded-full {
+    border-radius: 9999px;
+  }
+
+  /* Quick-Capture-Blase im Header (immer vollständig abgerundet) */
+  .capture-pill,
+  .capture-pill.bg-panel.border {
+    border-radius: 9999px !important;
+  }
+
+  /* Quick-Capture-Blase bei mehrzeiliger Eingabe (Shift+Enter) */
+  .capture-bar-multiline,
+  .capture-bar-multiline.bg-panel.border {
+    border-radius: 18px !important;
+  }
+
+  /* Aufgaben-Checkboxen */
+  .checkbox-square {
+    border-radius: var(--radius-checkbox);
+  }
+
+  /* Standard-Aktionsbutton */
+  .btn-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    height: 1.75rem;
+    padding-left: 0.625rem;
+    padding-right: 0.625rem;
+    background-color: var(--bg-input);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-btn);
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    font-weight: 500;
+    transition: all 120ms ease;
+    cursor: pointer;
+  }
+  .btn-action:hover {
+    background-color: var(--bg-panel-elevated);
+    color: var(--text-main);
+  }
+
+  /* Primärer Akzent-Button */
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    height: 1.75rem;
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+    background-color: var(--accent-primary);
+    border: 1px solid var(--accent-border);
+    border-radius: var(--radius-btn);
+    color: var(--text-on-accent);
+    font-size: 0.75rem;
+    font-weight: 500;
+    transition: all 120ms ease;
+    cursor: pointer;
+  }
+  .btn-primary:hover {
+    background-color: var(--accent-hover);
+  }
+
+  /* Kleiner Icon-Button */
+  .btn-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    background-color: var(--bg-input);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-btn);
+    color: var(--text-muted);
+    transition: all 120ms ease;
+    cursor: pointer;
+  }
+  .btn-icon:hover {
+    background-color: var(--bg-panel-elevated);
+    color: var(--text-main);
+  }
+
+  .btn-icon-danger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    background-color: var(--bg-input);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-btn);
+    color: var(--text-muted);
+    transition: all 120ms ease;
+    cursor: pointer;
+  }
+  .btn-icon-danger:hover {
+    background-color: var(--bg-danger);
+    color: var(--color-danger);
+    border-color: var(--border-danger);
+  }
+
+  /* Sekundärer Button */
+  .btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    height: 1.75rem;
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+    background-color: var(--bg-panel-elevated);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-btn);
+    color: var(--text-main);
+    font-size: 0.75rem;
+    font-weight: 500;
+    transition: all 120ms ease;
+    cursor: pointer;
+  }
+  .btn-secondary:hover {
+    background-color: var(--bg-panel-hover);
+    border-color: var(--border-strong);
+  }
+
+  /* Gefahren-/Löschen-Button */
+  .btn-danger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    height: 1.75rem;
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+    background-color: var(--bg-danger);
+    border: 1px solid var(--border-danger);
+    border-radius: var(--radius-btn);
+    color: var(--color-danger);
+    font-size: 0.75rem;
+    font-weight: 500;
+    transition: all 120ms ease;
+    cursor: pointer;
+  }
+  .btn-danger:hover {
+    filter: brightness(1.15);
+  }
+
+  /* Zentrales Texteingabefeld & Aliasse */
+  .input-field,
+  .input-base {
+    background-color: var(--bg-input);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-input);
+    color: var(--text-main);
+    font-size: 0.75rem;
+    transition: border-color 120ms ease;
+  }
+  .input-field:focus,
+  .input-base:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+  }
+  .input-field::placeholder,
+  .input-base::placeholder {
+    color: var(--text-faint);
+  }
+
+  /* Header Tabs */
+  .tab-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.875rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    border-bottom: 2px solid transparent;
+    transition: all 120ms ease;
+    cursor: pointer;
+  }
+  .tab-btn:hover {
+    color: var(--text-main);
+    background-color: var(--bg-panel-elevated);
+  }
+  .tab-btn-active {
+    color: var(--accent-primary);
+    border-bottom-color: var(--accent-primary);
+    background-color: var(--bg-panel-elevated);
+  }
+
+  /* Status Badges */
+  .badge-accent {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.125rem 0.5rem;
+    background-color: var(--accent-dim);
+    border: 1px solid var(--accent-border);
+    border-radius: var(--radius-btn);
+    color: var(--accent-primary);
+    font-size: 0.75rem;
+    font-weight: 500;
+  }
+
+  .badge-neutral {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.125rem 0.375rem;
+    background-color: var(--bg-input);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-btn);
+    color: var(--text-muted);
+    font-size: 0.65rem;
+    font-weight: 500;
+  }
+
+  /* Round counter, rendered by <CountBadge> (Doku/ui-patterns.md). Accent = needs attention (nav bar),
+     muted = plain amount (tabs, lists). Corner = notification badge on the top right of a relative parent. */
+  .count-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 0.25rem;
+    border-radius: 9999px;
+    font-size: 9px;
+    font-weight: 700;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    pointer-events: none;
+  }
+  .count-badge-accent {
+    /* The tint on an opaque panel: the badge stays solid on top of icons (phone nav bar) */
+    background: linear-gradient(var(--accent-dim), var(--accent-dim)), var(--bg-panel);
+    color: var(--accent-primary);
+    border: 1px solid var(--accent-border);
+  }
+  .count-badge-muted {
+    background-color: var(--bg-panel-elevated);
+    color: var(--text-muted);
+    border: 1px solid var(--border-color);
+  }
+  .count-badge-corner {
+    position: absolute;
+    top: -0.5rem;
+    right: -0.5rem;
+    z-index: 1;
+  }
+  /* In the text flow right after a label: hangs 2 px over the last letter, however many digits; wider
+     numbers make the tab wider instead of covering more of the word */
+  .count-badge-text {
+    position: relative;
+    top: -0.375rem;
+    margin-left: -2px;
+    z-index: 1;
+  }
+
+  .badge-ok {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.125rem 0.375rem;
+    background-color: var(--bg-success);
+    border: 1px solid var(--border-success);
+    border-radius: var(--radius-btn);
+    color: var(--color-success);
+    font-size: 0.65rem;
+    font-weight: 500;
+  }
+
+  .badge-err {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.125rem 0.375rem;
+    background-color: var(--bg-danger);
+    border: 1px solid var(--border-danger);
+    border-radius: var(--radius-btn);
+    color: var(--color-danger);
+    font-size: 0.65rem;
+    font-weight: 500;
+  }
+
+  /* Status Alert Boxen */
+  .alert-ok {
+    padding: 0.75rem;
+    background-color: var(--bg-success);
+    border: 1px solid var(--border-success);
+    border-radius: var(--radius-card);
+    color: var(--text-main);
+    font-size: 0.75rem;
+  }
+
+  .alert-err {
+    padding: 0.75rem;
+    background-color: var(--bg-danger);
+    border: 1px solid var(--border-danger);
+    border-radius: var(--radius-card);
+    color: var(--color-danger);
+    font-size: 0.75rem;
+  }
+
+  /* Code- & Terminal-Blöcke */
+  .code-block {
+    background-color: var(--bg-code);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-card);
+    color: var(--text-main);
+  }
+
+  /* Modal-Hintergrund-Overlay */
+  .modal-overlay {
+    margin: 0 !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    background-color: var(--bg-overlay);
+    backdrop-filter: blur(4px);
+  }
+
+  /* Verhindert, dass Elterncontainer mit space-y-* oder space-x-* feste Overlays nach unten verschieben */
+  .fixed.inset-0,
+  [class*="fixed inset-0"] {
+    margin: 0 !important;
+  }
+
+  /* File Tree Item */
+  .tree-node-active {
+    background-color: var(--bg-panel-elevated);
+    border-left: 2px solid var(--accent-primary);
+    color: var(--text-main);
+  }
+
+  /* Prism Syntax Highlighting Tokens (VS Code Dark+ / Light+ via Theme Variables).
+     Fallbacks only (:where has no specificity): a theme's own --code-* values always win. */
+  :where(:root) {
+    --code-keyword: #569cd6;
+    --code-string: #ce9178;
+    --code-number: #b5cea8;
+    --code-comment: #6a9955;
+    --code-property: #9cdcfe;
+    --code-function: #dcdcaa;
+    --code-type: #4ec9b0;
+    --code-punctuation: #d4d4d4;
+    --code-variable: #9cdcfe;
+  }
+
+  /* Extra tones (Kanban column colours). Fallbacks like the code tokens: a theme's own values win. */
+  :where(:root) {
+    --color-info: #60a5fa;
+    --color-purple: #a78bfa;
+  }
+
+  :where(:root:not(.dark)) {
+    --color-info: #2563eb;
+    --color-purple: #7c3aed;
+  }
+
+  :where(:root:not(.dark)) {
+    --code-keyword: #0000ff;
+    --code-string: #a31515;
+    --code-number: #098658;
+    --code-comment: #007000;
+    --code-property: #0451a5;
+    --code-function: #795e26;
+    --code-type: #267f99;
+    --code-punctuation: #2e2e2e;
+    --code-variable: #001080;
+  }
+
+  .token.comment,
+  .token.prolog,
+  .token.doctype,
+  .token.cdata {
+    color: var(--code-comment);
+    font-style: italic;
+  }
+
+  .token.punctuation,
+  .token.operator {
+    color: var(--code-punctuation);
+  }
+
+  .token.property,
+  .token.key,
+  .token.attr-name {
+    color: var(--code-property);
+  }
+
+  .token.string,
+  .token.char,
+  .token.attr-value,
+  .token.scalar,
+  .token.inserted,
+  .language-css .token.string,
+  .style .token.string {
+    color: var(--code-string);
+  }
+
+  .token.number,
+  .token.constant,
+  .token.symbol,
+  .token.datetime {
+    color: var(--code-number);
+  }
+
+  .token.keyword,
+  .token.boolean,
+  .token.null,
+  .token.atrule,
+  .token.directive,
+  .token.tag,
+  .token.deleted {
+    color: var(--code-keyword);
+  }
+
+  .token.key.atrule {
+    color: var(--code-property);
+  }
+
+  .token.function,
+  .token.function-variable {
+    color: var(--code-function);
+  }
+
+  .token.class-name,
+  .token.type,
+  .token.builtin,
+  .token.namespace {
+    color: var(--code-type);
+  }
+
+  .token.variable,
+  .token.regex,
+  .token.important,
+  .token.selector,
+  .token.entity,
+  .token.url {
+    color: var(--code-variable);
+  }
+
+  .token.boolean.important,
+  .token.null.important {
+    color: var(--code-keyword);
+  }
+}
+
+/* ==========================================================================
+   EMOJI PICKER (emoji-picker-react Integration & Mobile Touch Tuning)
+   ========================================================================== */
+
+.mindsift-emoji-picker .EmojiPickerReact {
+  border: none !important;
+  font-family: inherit !important;
+  /* Theme colours. The library sets its own (dark: #222 …) on this element, so they are overridden here,
+     for the light and the dark variant; --pick-surface / --pick-hover come from EmojiPickerModal. */
+  --epr-bg-color: var(--pick-surface);
+  --epr-dark-bg-color: var(--pick-surface);
+  --epr-category-label-bg-color: var(--pick-surface);
+  --epr-dark-category-label-bg-color: var(--pick-surface);
+  --epr-picker-border-color: var(--border-color);
+  --epr-dark-picker-border-color: var(--border-color);
+  --epr-text-color: var(--text-main);
+  --epr-dark-text-color: var(--text-main);
+  --epr-search-input-text-color: var(--text-main);
+  --epr-search-input-bg-color: var(--bg-input);
+  --epr-dark-search-input-bg-color: var(--bg-input);
+  --epr-search-input-bg-color-active: var(--bg-input);
+  --epr-dark-search-input-bg-color-active: var(--bg-input);
+  --epr-hover-bg-color: var(--pick-hover);
+  --epr-dark-hover-bg-color: var(--pick-hover);
+  --epr-focus-bg-color: var(--pick-hover);
+  --epr-dark-focus-bg-color: var(--pick-hover);
+  --epr-highlight-color: var(--accent-primary);
+  --epr-dark-highlight-color: var(--accent-primary);
+  --epr-category-icon-active-color: var(--accent-primary);
+  --epr-dark-category-icon-active-color: var(--accent-primary);
+}
+
+@media (max-width: 767px) {
+  /* Prevent iOS auto-zoom on input focus */
+  .mindsift-emoji-picker .EmojiPickerReact input.epr-search-input {
+    font-size: 1rem !important;
+    min-height: 44px !important;
+  }
+
+  /* Min 44px touch targets on mobile */
+  .mindsift-emoji-picker .EmojiPickerReact button.epr-emoji {
+    min-width: 44px !important;
+    min-height: 44px !important;
+  }
+
+  /* Category icons are sprite cut-outs: they must keep the library's square size (stretching them showed
+     two icons and an oval highlight). More breathing room comes from the nav row instead. */
+  .mindsift-emoji-picker .EmojiPickerReact .epr-category-nav {
+    padding-top: 6px !important;
+    padding-bottom: 6px !important;
+  }
+}
+
+@media (min-width: 768px) {
+  /* Desktop: compact like a context menu, in step with the app's small type (the sprite of the category
+     icons scales with its size variable) */
+  .mindsift-emoji-picker .EmojiPickerReact {
+    --epr-emoji-size: 22px;
+    --epr-emoji-padding: 4px;
+    --epr-horizontal-padding: 8px;
+    --epr-header-padding: 8px 8px 6px;
+    --epr-search-input-height: 30px;
+    --epr-search-input-border-radius: var(--radius-btn, 6px);
+    --epr-category-navigation-button-size: 22px;
+    --epr-category-label-height: 24px;
+    --epr-category-label-padding: 0 8px;
+  }
+  .mindsift-emoji-picker .EmojiPickerReact input[type='text'] {
+    font-size: 12px !important;
+  }
+  .mindsift-emoji-picker .EmojiPickerReact .epr-emoji-category-label {
+    font-size: 11px !important;
+  }
+}
+
+/* Selection over several bullets in a note (OutlinerTree, CSS Highlight API) */
+::highlight(outline-range) {
+  background-color: color-mix(in srgb, var(--accent-primary) 30%, transparent);
+}
+
+/* Read-only sections (e.g. server settings in the demo): everything inside looks switched off */
+fieldset:disabled :is(button, input, select, textarea) {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Workspace surfaces: the note editor and the folder sidebar. Themes may override them (the light theme
+   uses a white sheet next to a grey sidebar); by default they follow the page and panel colours. */
+:root {
+  --bg-editor: var(--bg-app);
+  --bg-sidebar: var(--bg-panel);
+}
+
+/* Outliner: indent per level and the width a row keeps for its text. Phones indent less and let very
+   deep rows run wider than the screen (the note then scrolls sideways) instead of squeezing the text. */
+:root {
+  --outline-indent: 14px;
+  --outline-min-text: 14rem;
+}
+@media (min-width: 768px) {
+  :root {
+    --outline-indent: 22px;
+    --outline-min-text: 0px;
+  }
+}
+
+/* Focus mode: the note fades in over the app */
+@keyframes focus-mode-in {
+  from { opacity: 0; transform: scale(0.99); }
+  to { opacity: 1; transform: none; }
+}
+.focus-mode-enter {
+  animation: focus-mode-in 300ms ease-in-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .focus-mode-enter { animation: none; }
+}
+
+/* Views that replace each other (journal ↔ note) fade in instead of jumping */
+@keyframes view-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+.view-enter {
+  animation: view-in 280ms ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .view-enter { animation: none; }
+}
+
+/* No sliding or zooming for people who asked their system for less motion */
+@media (prefers-reduced-motion: reduce) {
+  .animate-in,
+  .animate-out {
+    animation: none !important;
+  }
+}
+
+/* Corner switch (Darstellung): overrides the theme's radii on every theme */
+:root[data-corners='square'] {
+  --radius-card: 0px !important;
+  --radius-btn: 2px !important;
+  --radius-input: 2px !important;
+  --radius-checkbox: 0px !important;
+}
+:root[data-corners='round'] {
+  --radius-card: 12px !important;
+  --radius-btn: 8px !important;
+  --radius-input: 8px !important;
+  --radius-checkbox: 4px !important;
+}
+
+/* Button frames switch (Darstellung): without frames, regular buttons are a soft tint instead */
+:root[data-button-borders='off'] :is(.btn-action, .btn-icon, .btn-secondary, .tab-btn, .chip-btn) {
+  border-color: transparent !important;
+}
+:root[data-button-borders='off'] :is(.btn-action, .btn-icon, .btn-secondary, .chip-btn):not(:disabled) {
+  background-color: color-mix(in srgb, var(--text-main) 6%, transparent);
+}
+:root[data-button-borders='off'] :is(.btn-action, .btn-icon, .btn-secondary, .chip-btn):not(:disabled):hover {
+  background-color: color-mix(in srgb, var(--text-main) 11%, transparent);
+}
+/* … the selected tab keeps a visible accent tint */
+:root[data-button-borders='off'] .chip-btn.border-accent {
+  background-color: var(--accent-dim) !important;
+  color: var(--accent-primary);
+}

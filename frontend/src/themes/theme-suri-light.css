@@ -1,0 +1,69 @@
+/* ==========================================================================
+   MINDSIFT THEME: SURI HELL (Lavendel & Pflaume)
+   Das helle Gegenstück zu Suri: lavendelhelles Papier, pflaumendunkle
+   Schrift, samtiger Orchideen-Akzent und weich gerundete Ecken.
+   ========================================================================== */
+
+:root[data-theme="suri-light"] {
+  /* --- 1. AKZENTFARBE (Orchidee) --- */
+  --accent-primary: #8e44c9;
+  --accent-hover: #7431a8;
+  --accent-dim: rgba(142, 68, 201, 0.10);
+  --accent-border: rgba(142, 68, 201, 0.34);
+  --text-on-accent: #ffffff;
+
+  /* --- 2. OBERFLÄCHEN & HINTERGRÜNDE (Lavendel) --- */
+  --bg-app: #efe9f4;
+  --bg-panel: #fbf8fd;
+  --bg-panel-elevated: #e6dcef;
+  --bg-panel-hover: #d9cce6;
+  --bg-input: #fdfbfe;
+  --bg-overlay: rgba(30, 18, 40, 0.45);
+  --bg-code: #f2ecf7;
+  --bg-editor: #fdfaff;
+  --bg-sidebar: #f2ecf7;
+
+  /* --- 3. TEXT & KONTRASTE (Pflaume) --- */
+  --text-main: #23182e;
+  --text-muted: #574a68;
+  --text-faint: #8a7c9c;
+
+  /* --- 4. RAHMEN, LINIEN & SCHATTEN --- */
+  --border-color: rgba(70, 40, 100, 0.16);
+  --border-subtle: rgba(70, 40, 100, 0.08);
+  --border-strong: rgba(70, 40, 100, 0.30);
+  --shadow-panel: 0 10px 28px rgba(50, 25, 75, 0.10);
+  --scrollbar-thumb: rgba(70, 40, 100, 0.22);
+  --scrollbar-thumb-hover: rgba(70, 40, 100, 0.38);
+
+  /* --- 5. STATUS- & SIGNALFARBEN --- */
+  --color-success: #2f855a;
+  --bg-success: rgba(47, 133, 90, 0.11);
+  --border-success: rgba(47, 133, 90, 0.34);
+
+  --color-danger: #c2185b;
+  --bg-danger: rgba(194, 24, 91, 0.09);
+  --border-danger: rgba(194, 24, 91, 0.34);
+
+  --color-warning: #b7791f;
+  --bg-warning: rgba(183, 121, 31, 0.11);
+  --border-warning: rgba(183, 121, 31, 0.34);
+
+  /* --- 6. RUNDUNGEN (Weich wie Suri) --- */
+  --radius-card: 10px;
+  --radius-btn: 6px;
+  --radius-input: 6px;
+  --radius-checkbox: 4px;
+  --radius-pill: 9999px;
+
+  /* --- 7. CODE-SYNTAX-HIGHLIGHTING --- */
+  --code-keyword: #7431a8;
+  --code-string: #2f855a;
+  --code-number: #b7791f;
+  --code-comment: #8a7c9c;
+  --code-property: #5b2a86;
+  --code-function: #b4235f;
+  --code-type: #0e7490;
+  --code-punctuation: #574a68;
+  --code-variable: #5b2a86;
+}

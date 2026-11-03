@@ -1,0 +1,66 @@
+/* ==========================================================================
+   MINDSIFT THEME: POLARIZED (Emerald / Teal)
+   Tiefdunkles Obsidian mit elektrischem Grün/Türkis-Akzent & scharfen Kanten.
+   ========================================================================== */
+
+:root[data-theme="polarized"] {
+  /* --- 1. AKZENTFARBE (Elektrisches Grün / Türkis) --- */
+  --accent-primary: #14b8a6;
+  --accent-hover: #2dd4bf;
+  --accent-dim: rgba(20, 184, 166, 0.16);
+  --accent-border: rgba(45, 212, 191, 0.45);
+  --text-on-accent: #042f2e; /* dunkel: Weiß auf Türkis erreicht nur 2,5:1 */
+
+  /* --- 2. OBERFLÄCHEN & HINTERGRÜNDE --- */
+  --bg-app: #090e11;
+  --bg-panel: #10181c;
+  --bg-panel-elevated: #162127;
+  --bg-panel-hover: #1e2c34;
+  --bg-input: #0c1317;
+  --bg-overlay: rgba(4, 7, 9, 0.78);
+  --bg-code: #070b0e;
+
+  /* --- 3. TEXT & KONTRASTE --- */
+  --text-main: #f0fdfa;
+  --text-muted: #8da6a9;
+  --text-faint: #5a7074;
+
+  /* --- 4. RAHMEN, LINIEN & SCHATTEN --- */
+  --border-color: rgba(20, 184, 166, 0.16);
+  --border-subtle: rgba(20, 184, 166, 0.08);
+  --border-strong: rgba(45, 212, 191, 0.32);
+  --shadow-panel: 0 10px 30px rgba(3, 8, 10, 0.55);
+  --scrollbar-thumb: rgba(20, 184, 166, 0.22);
+  --scrollbar-thumb-hover: rgba(45, 212, 191, 0.42);
+
+  /* --- 5. STATUS- & SIGNALFARBEN --- */
+  --color-success: #10b981;
+  --bg-success: rgba(16, 185, 129, 0.14);
+  --border-success: rgba(16, 185, 129, 0.38);
+
+  --color-danger: #f43f5e;
+  --bg-danger: rgba(244, 63, 94, 0.14);
+  --border-danger: rgba(244, 63, 94, 0.38);
+
+  --color-warning: #f59e0b;
+  --bg-warning: rgba(245, 158, 11, 0.14);
+  --border-warning: rgba(245, 158, 11, 0.38);
+
+  /* --- 6. RUNDUNGEN (Geometrie: Klar & eckig) --- */
+  --radius-card: 0px;
+  --radius-btn: 2px;
+  --radius-input: 2px;
+  --radius-checkbox: 0px;
+  --radius-pill: 9999px;
+
+  /* --- 7. CODE-SYNTAX-HIGHLIGHTING (VS Code Dark+) --- */
+  --code-keyword: #569cd6;
+  --code-string: #ce9178;
+  --code-number: #b5cea8;
+  --code-comment: #6a9955;
+  --code-property: #9cdcfe;
+  --code-function: #dcdcaa;
+  --code-type: #4ec9b0;
+  --code-punctuation: #d4d4d4;
+  --code-variable: #9cdcfe;
+}

@@ -1,0 +1,1635 @@
+import React, { useState, useEffect, useRef, useCallback, useMemo, useSyncExternalStore } from 'react';
+import { createPortal } from 'react-dom';
+import { buildBlockLink } from '../../lib/wikiLink';
+import {
+  Pin,
+  Users,
+  Trash2,
+  RotateCcw,
+  Download,
+  Maximize2,
+  FileText,
+  Loader2,
+  ArrowLeft,
+  Lock,
+  Home,
+  ChevronRight,
+  Minimize2,
+  Sparkles,
+  Plus,
+  Check,
+  CloudOff,
+  AlertTriangle,
+  GitMerge,
+  Undo2,
+  Redo2,
+  MoreHorizontal,
+  CalendarDays,
+  SmilePlus,
+} from 'lucide-react';
+import { Document, DocumentBlock, User } from '../../lib/types';
+import { api } from '../../lib/api';
+import { DocSyncEngine, EngineState } from '../../lib/docSync/engine';
+import { Presence } from '../../lib/docSync/transport';
+import { OutlinerTree, OutlinerTreeHandle } from './OutlinerTree';
+import { extractHashtags } from '../../lib/hashtags';
+import { moveSibling } from '../../lib/outlineList';
+import { reportNav, onNavStep, restoringNavPlace } from '../../lib/navHistory';
+
+export type DocSaveStatus = 'saved' | 'saving' | 'unsaved' | 'error';
+
+export interface DocHeaderStatus {
+  showLive: boolean;
+  channel: 'ws' | 'sse' | 'longpoll' | 'interval';
+  otherPeople: Presence[];
+  avatarsById: Map<string, string>;
+}
+
+export interface DocumentEditorProps {
+  docId: string;
+  currentUser?: User | null;
+  initialDoc?: Document | null;
+  availableFolders: string[];
+  autoFocusTitle?: boolean;
+  initialFocusedBlockId?: string | null;
+  onDocMetadataChange: (updated: Document) => void;
+  onDeleteDoc: (docId: string) => void;
+  onRestoreDoc?: (docId: string) => void;
+  onOpenShareModal: (doc: Document) => void;
+  onSelectTag: (tag: string) => void;
+  onWikiLinkClick?: (pageTitle: string, blockId?: string) => void;
+  onOpenDocBlock?: (docId: string, blockId?: string) => void;
+  onBackMobile?: () => void;
+  onOpenTask?: (taskId: string) => void;
+  onSaveStatusChange?: (status: DocSaveStatus, errorMsg?: string) => void;
+  onHeaderStatusChange?: (status: DocHeaderStatus | null) => void;
+  /** Opens the dialog to merge this note into another one (own notes only) */
+  onRequestMerge?: (doc: Document) => void;
+  /** A note was created from this one (extract) or removed again (undo); keeps the sidebar current */
+  onDocCreated?: (doc: Document) => void;
+  onDocRemoved?: (docId: string) => void;
+  /** 'journal': one day inside the journal list – no own scrolling, header or backlinks, fixed title.
+   *  'tag': inside a hashtag page – the title as a fixed heading, below only the branches with tagFilter */
+  variant?: 'page' | 'journal' | 'tag';
+  /** variant 'tag': the hashtag (without #) whose bullets are shown */
+  tagFilter?: string;
+  /** Large screens: the action buttons render into this element (the workspace tab bar) */
+  actionsTarget?: HTMLElement | null;
+  /** Distraction-free mode: reading width, menu entry to leave it */
+  focusMode?: boolean;
+  onToggleFocusMode?: () => void;
+}
+
+// Large screens (lg) put the note's actions into the workspace tab bar and drop the editor header
+const LARGE_QUERY = '(min-width: 1024px)';
+function subscribeLarge(onChange: () => void) {
+  if (typeof window === 'undefined' || !window.matchMedia) return () => {};
+  const mq = window.matchMedia(LARGE_QUERY);
+  mq.addEventListener('change', onChange);
+  return () => mq.removeEventListener('change', onChange);
+}
+function isLargeScreen() {
+  return typeof window !== 'undefined' && !!window.matchMedia && window.matchMedia(LARGE_QUERY).matches;
+}
+
+import { EmojiPickerModal } from './EmojiPickerModal';
+import { BacklinksSection } from './BacklinksSection';
+
+function ensureNonEmptyBlocks(docId: string, blocks?: DocumentBlock[]): DocumentBlock[] {
+  if (!blocks || blocks.length === 0) {
+    return [
+      {
+        id: `${docId}-b0`,
+        documentId: docId,
+        type: 'text',
+        content: '',
+        level: 0,
+        position: 1000,
+      },
+    ];
+  }
+  return blocks.map((b, idx) => ({
+    ...b,
+    id: b.id || `${docId}-b${idx}`,
+    documentId: docId,
+    type: b.type || 'text',
+    level: Math.max(0, b.level || 0),
+    position: b.position || (idx + 1) * 1000,
+  }));
+}
+
+// True if both lists show the same blocks; avoids re-rendering when the sync engine echoes a local change.
+function sameBlocks(a: DocumentBlock[], b: DocumentBlock[]): boolean {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    const x = a[i];
+    const y = b[i];
+    if (
+      x.id !== y.id ||
+      x.content !== y.content ||
+      (x.level || 0) !== (y.level || 0) ||
+      x.type !== y.type ||
+      !!x.checked !== !!y.checked ||
+      !!x.collapsed !== !!y.collapsed ||
+      (x.lang || '') !== (y.lang || '') ||
+      (x.taskId || '') !== (y.taskId || '') ||
+      (x.subtaskOf || '') !== (y.subtaskOf || '') ||
+      (x.conflictOf || '') !== (y.conflictOf || '')
+    ) {
+      return false;
+    }
+  }
+  return true;
+}
+
+export interface BreadcrumbNode {
+  id: string | null;
+  title: string;
+}
+
+export function computeBreadcrumbs(
+  docTitle: string,
+  blocks: DocumentBlock[],
+  zoomedBlockId: string | null
+): BreadcrumbNode[] {
+  if (!zoomedBlockId) return [];
+
+  const zoomedIdx = blocks.findIndex((b) => b.id === zoomedBlockId);
+  if (zoomedIdx === -1) return [];
+
+  const trail: BreadcrumbNode[] = [];
+  const zoomedBlock = blocks[zoomedIdx];
+
+  let currentLevel = zoomedBlock.level;
+  for (let i = zoomedIdx - 1; i >= 0; i--) {
+    if (blocks[i].level < currentLevel) {
+      trail.unshift({
+        id: blocks[i].id,
+        title: blocks[i].content?.trim() || 'Punkt',
+      });
+      currentLevel = blocks[i].level;
+      if (currentLevel === 0) break;
+    }
+  }
+
+  trail.unshift({
+    id: null,
+    title: docTitle || 'Dokument',
+  });
+
+  trail.push({
+    id: zoomedBlock.id,
+    title: zoomedBlock.content?.trim() || 'Punkt',
+  });
+
+  return trail;
+}
+
+export function getZoomedSubtree(
+  blocks: DocumentBlock[],
+  zoomedBlockId: string | null
+): {
+  zoomedBlock: DocumentBlock | null;
+  childBlocks: DocumentBlock[];
+  levelOffset: number;
+} {
+  if (!zoomedBlockId) {
+    return { zoomedBlock: null, childBlocks: blocks, levelOffset: 0 };
+  }
+
+  const idx = blocks.findIndex((b) => b.id === zoomedBlockId);
+  if (idx === -1) {
+    return { zoomedBlock: null, childBlocks: blocks, levelOffset: 0 };
+  }
+
+  const zoomedBlock = blocks[idx];
+  const zLevel = zoomedBlock.level;
+  const childBlocks: DocumentBlock[] = [];
+
+  for (let i = idx + 1; i < blocks.length; i++) {
+    if (blocks[i].level > zLevel) {
+      childBlocks.push(blocks[i]);
+    } else {
+      break;
+    }
+  }
+
+  return {
+    zoomedBlock,
+    childBlocks,
+    levelOffset: zLevel + 1,
+  };
+}
+
+export const DocumentEditor: React.FC<DocumentEditorProps> = ({
+  docId,
+  currentUser,
+  initialDoc,
+  autoFocusTitle,
+  initialFocusedBlockId,
+  onDocMetadataChange,
+  onDeleteDoc,
+  onRestoreDoc,
+  onOpenDocBlock,
+  onOpenShareModal,
+  onSelectTag,
+  onWikiLinkClick,
+  onBackMobile,
+  onOpenTask,
+  onSaveStatusChange,
+  onHeaderStatusChange,
+  onRequestMerge,
+  onDocCreated,
+  onDocRemoved,
+  variant = 'page',
+  tagFilter,
+  actionsTarget,
+  focusMode = false,
+  onToggleFocusMode,
+}) => {
+  const inJournal = variant === 'journal';
+  const inTagPage = variant === 'tag';
+  // Embedded in a list of notes (journal, hashtag page): no own scrolling, action bar or backlinks
+  const embedded = inJournal || inTagPage;
+  const large = useSyncExternalStore(subscribeLarge, isLargeScreen, () => false);
+  const desktopBar = !embedded && large && Boolean(actionsTarget);
+  const [doc, setDoc] = useState<Document | null>(initialDoc || null);
+  const [title, setTitle] = useState<string>(initialDoc?.title || '');
+  const [blocks, setBlocks] = useState<DocumentBlock[]>(() =>
+    ensureNonEmptyBlocks(docId, initialDoc?.blocks)
+  );
+  const [loading, setLoading] = useState<boolean>(!initialDoc);
+  const [error, setError] = useState<string | null>(null);
+  const [showEmojiPicker, setShowEmojiPicker] = useState<boolean>(false);
+  // Zoomed bullet; coming here by the browser's back/forward it is the zoom of that step
+  const [zoomedBlockId, setZoomedBlockId] = useState<string | null>(() => {
+    const place = restoringNavPlace();
+    return !inJournal && !inTagPage && place?.docId === docId ? place.zoom ?? null : null;
+  });
+  const [showActionsMenu, setShowActionsMenu] = useState<boolean>(false);
+  const actionsMenuRef = useRef<HTMLDivElement | null>(null);
+
+  // Sync engine (operation log): stores every change locally and syncs it with the server
+  const engineRef = useRef<DocSyncEngine | null>(null);
+  const [engineState, setEngineState] = useState<EngineState | null>(null);
+
+
+  const titleInputRef = useRef<HTMLTextAreaElement | HTMLInputElement | null>(null);
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  // The header repeats the title only once the big title has scrolled out of view
+  const [titleScrolledAway, setTitleScrolledAway] = useState(false);
+  const outlinerTreeRef = useRef<OutlinerTreeHandle | null>(null);
+  const docRef = useRef<Document | null>(doc);
+  docRef.current = doc;
+
+  const currentTitleRef = useRef<string>(title);
+  currentTitleRef.current = title;
+  const currentBlocksRef = useRef<DocumentBlock[]>(blocks);
+  currentBlocksRef.current = blocks;
+
+  useEffect(() => {
+    const root = scrollRef.current;
+    const el = titleInputRef.current;
+    if (embedded || !root || !el || typeof IntersectionObserver === 'undefined') {
+      setTitleScrolledAway(false);
+      return;
+    }
+    const observer = new IntersectionObserver(
+      ([entry]) => setTitleScrolledAway(!entry.isIntersecting),
+      // the sticky header covers the top of the scroll area
+      { root, rootMargin: '-56px 0px 0px 0px' }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [zoomedBlockId, doc?.id, embedded]);
+
+  useEffect(() => {
+    if (!loading && (autoFocusTitle || (doc?.title === 'Neue Notiz' && (!doc?.blocks || doc?.blocks.length <= 1)))) {
+      const focusTitle = () => {
+        if (titleInputRef.current) {
+          titleInputRef.current.focus();
+          titleInputRef.current.select();
+        }
+      };
+      focusTitle();
+      const t1 = setTimeout(focusTitle, 50);
+      const t2 = setTimeout(focusTitle, 150);
+      return () => {
+        clearTimeout(t1);
+        clearTimeout(t2);
+      };
+    }
+  }, [loading, autoFocusTitle, doc?.id]);
+
+  useEffect(() => {
+    if (!loading && zoomedBlockId && !blocks.some((b) => b.id === zoomedBlockId)) {
+      setZoomedBlockId(null);
+    }
+  }, [blocks, zoomedBlockId, loading]);
+
+  // Zooming in and out are steps of the browser history: back zooms out again (lib/navHistory.ts)
+  useEffect(() => {
+    if (!embedded) reportNav({ zoom: zoomedBlockId });
+  }, [zoomedBlockId, embedded]);
+  useEffect(
+    () =>
+      onNavStep((place) => {
+        if (!embedded && place.docId === docId) setZoomedBlockId(place.zoom ?? null);
+      }),
+    [embedded, docId]
+  );
+
+  const { zoomedBlock, childBlocks, levelOffset } = useMemo(() => {
+    return getZoomedSubtree(blocks, zoomedBlockId);
+  }, [blocks, zoomedBlockId]);
+
+  const breadcrumbs = useMemo(() => {
+    return computeBreadcrumbs(title || doc?.title || 'Dokument', blocks, zoomedBlockId);
+  }, [title, doc?.title, blocks, zoomedBlockId]);
+
+  // Owner and editors may edit; the role comes from the server via the sync engine
+  const inTrash = Boolean(doc?.isArchived);
+  const canEdit = useMemo(() => {
+    if (doc?.isArchived) return false;
+    if (engineState?.role) return engineState.role === 'owner' || engineState.role === 'editor';
+    if (!doc) return false;
+    return Boolean(doc.isOwner || doc.permission === 'owner' || doc.permission === 'write');
+  }, [doc, engineState?.role]);
+
+  // Extract all #tags present across the current blocks
+  const extractedTags = useMemo(() => {
+    const tagSet = new Set<string>();
+    for (const b of blocks) {
+      for (const tag of extractHashtags(b.content)) tagSet.add(tag);
+    }
+    return Array.from(tagSet);
+  }, [blocks]);
+
+
+  // Fetch document on mount
+  useEffect(() => {
+    let isCancelled = false;
+    if (!initialDoc) {
+      setLoading(true);
+    }
+    setError(null);
+
+    api
+      .getDocument(docId)
+      .then((fetched) => {
+        if (isCancelled) return;
+        const normalized = ensureNonEmptyBlocks(docId, fetched.blocks);
+        setDoc(fetched);
+        if (!engineRef.current?.getState().ready) {
+          setTitle(fetched.title || 'Unbenannte Notiz');
+          currentBlocksRef.current = normalized;
+          setBlocks(normalized);
+        }
+        const links = new Map<string, string>();
+        const subtaskLinks = new Map<string, string>();
+        for (const b of fetched.blocks || []) {
+          if (b.taskId) links.set(b.id, b.taskId);
+          if (b.subtaskOf) subtaskLinks.set(b.id, b.subtaskOf);
+        }
+        engineRef.current?.setTaskLinks(links, subtaskLinks);
+        setLoading(false);
+        onDocMetadataChange(fetched);
+
+      })
+      .catch((err: any) => {
+        if (isCancelled) return;
+        setError(err?.message || 'Dokument konnte nicht geladen werden');
+        setLoading(false);
+      });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [docId]);
+
+  // Start the sync engine for this note: shows stored state immediately (also offline), then syncs
+  useEffect(() => {
+    const engine = new DocSyncEngine(docId);
+    engineRef.current = engine;
+    const unsubscribe = engine.subscribe((state) => {
+      setEngineState(state);
+      if (!state.ready) return;
+      const next = ensureNonEmptyBlocks(docId, state.blocks);
+      if (!sameBlocks(currentBlocksRef.current, next)) {
+        currentBlocksRef.current = next;
+        setBlocks(next);
+      }
+      if (state.title && state.title !== currentTitleRef.current) {
+        setTitle(state.title);
+      }
+    });
+    void engine.start();
+    return () => {
+      unsubscribe();
+      engine.stop();
+      if (engineRef.current === engine) engineRef.current = null;
+    };
+  }, [docId]);
+
+  useEffect(() => {
+    if (!engineState) return;
+    switch (engineState.status) {
+      case 'saving':
+        onSaveStatusChange?.('saving');
+        break;
+      case 'offline':
+        onSaveStatusChange?.('unsaved', 'Offline – Änderungen sind lokal gesichert und werden gesendet, sobald die Verbindung zurück ist');
+        break;
+      case 'error':
+        onSaveStatusChange?.('error', engineState.errorMessage);
+        break;
+      default:
+        onSaveStatusChange?.('saved');
+    }
+  }, [engineState?.status, engineState?.errorMessage]);
+
+  // Blocks other users are editing right now (blockId -> name)
+  const lockedBlocks = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const l of engineState?.lockedByOthers || []) m.set(l.blockId, l.name || 'Jemand');
+    return m;
+  }, [engineState?.lockedByOthers]);
+
+  const otherPeople = useMemo(
+    () => (engineState?.presence || []).filter((p) => p.userId !== currentUser?.id),
+    [engineState?.presence, currentUser?.id]
+  );
+
+  // Presence only carries names; profile pictures come from the user directory, loaded once
+  // the first time someone else shows up (avatars can be data URLs, too big for every sync)
+  const [avatarsById, setAvatarsById] = useState<Map<string, string>>(new Map());
+  const avatarsRequestedRef = useRef(false);
+  useEffect(() => {
+    if (otherPeople.length === 0 || avatarsRequestedRef.current) return;
+    avatarsRequestedRef.current = true;
+    api.getUsersDirectory()
+      .then((users) => {
+        const m = new Map<string, string>();
+        for (const u of users) if (u.avatarUrl) m.set(u.id, u.avatarUrl);
+        setAvatarsById(m);
+      })
+      .catch(() => {});
+  }, [otherPeople.length]);
+
+  useEffect(() => {
+    onHeaderStatusChange?.({
+      showLive: Boolean(engineState && (engineState.shared || engineState.sessions > 1)),
+      channel: engineState?.channel || 'ws',
+      otherPeople,
+      avatarsById,
+    });
+  }, [
+    engineState?.shared,
+    engineState?.sessions,
+    engineState?.channel,
+    otherPeople,
+    avatarsById,
+    onHeaderStatusChange,
+  ]);
+
+  useEffect(() => {
+    return () => {
+      onHeaderStatusChange?.(null);
+    };
+  }, [onHeaderStatusChange]);
+
+  useEffect(() => {
+    if (!showActionsMenu) return;
+    const handleMouseDown = (e: MouseEvent) => {
+      if (actionsMenuRef.current && !actionsMenuRef.current.contains(e.target as Node)) {
+        setShowActionsMenu(false);
+      }
+    };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setShowActionsMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleMouseDown);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleMouseDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [showActionsMenu]);
+
+  // Short hint at the bottom of the editor (blocked actions, skipped undo), optionally with one action
+  const [notice, setNotice] = useState<string | null>(null);
+  const [noticeActions, setNoticeActions] = useState<{ label: string; run: () => void }[]>([]);
+  const noticeTimerRef = useRef<number | null>(null);
+  const showNotice = useCallback((message: string, actions: { label: string; run: () => void }[] = []) => {
+    setNotice(message);
+    setNoticeActions(actions);
+    if (noticeTimerRef.current !== null) window.clearTimeout(noticeTimerRef.current);
+    noticeTimerRef.current = window.setTimeout(() => {
+      setNotice(null);
+      setNoticeActions([]);
+    }, actions.length ? 8000 : 3500);
+  }, []);
+
+  // Link to a single bullet: [[Titel#^id|Titel › Auszug]] into the clipboard
+  const handleCopyBlockLink = useCallback(
+    (blockId: string) => {
+      const block = blocks.find((b) => b.id === blockId);
+      const link = buildBlockLink(title || doc?.title || 'Notiz', blockId, block?.content || '');
+      const done = () => showNotice('Link zum Punkt kopiert – mit Strg+V in eine Notiz einfügen');
+      if (navigator.clipboard?.writeText) {
+        navigator.clipboard.writeText(link).then(done, () => showNotice(`Kopieren nicht möglich: ${link}`));
+      } else {
+        showNotice(`Kopieren nicht möglich: ${link}`);
+      }
+    },
+    [blocks, title, doc?.title, showNotice]
+  );
+
+  // A link pointed to a bullet that is gone (moved, extracted, deleted): the note opens with a hint
+  const blocksForTargetRef = useRef(blocks);
+  blocksForTargetRef.current = blocks;
+  useEffect(() => {
+    if (!initialFocusedBlockId || !doc?.id) return;
+    const timer = window.setTimeout(() => {
+      if (!blocksForTargetRef.current.some((b) => b.id === initialFocusedBlockId)) {
+        showNotice('Der verlinkte Punkt ist in dieser Notiz nicht mehr vorhanden');
+      }
+    }, 1500);
+    return () => window.clearTimeout(timer);
+  }, [initialFocusedBlockId, doc?.id, showNotice]);
+
+  // The last extraction, so undoing it (toast or Strg+Z) also puts the new note into the trash
+  const lastExtractRef = useRef<{ newDocId: string; blockId: string; link: string } | null>(null);
+  // The last note brought back, so undoing it also takes the note out of the trash again
+  const lastInlineRef = useRef<{ sourceId: string; blockId: string; content: string } | null>(null);
+  const finishUndoExtract = useCallback(() => {
+    const inlined = lastInlineRef.current;
+    if (inlined) {
+      const block = currentBlocksRef.current.find((b) => b.id === inlined.blockId);
+      if (!block || block.content !== inlined.content) {
+        lastInlineRef.current = null;
+        api
+          .restoreDocument(inlined.sourceId)
+          .then(() => api.getDocument(inlined.sourceId))
+          .then((restored) => onDocCreated?.(restored))
+          .catch((err: any) => showNotice(err?.message || 'Notiz konnte nicht wiederhergestellt werden'));
+      }
+    }
+    const info = lastExtractRef.current;
+    if (!info) return;
+    const block = currentBlocksRef.current.find((b) => b.id === info.blockId);
+    if (block && block.content === info.link) return; // the undone step was something else
+    lastExtractRef.current = null;
+    api
+      .undoExtract(info.newDocId)
+      .then(() => onDocRemoved?.(info.newDocId))
+      .catch((err: any) => showNotice(err?.message || 'Ausgelagerte Notiz konnte nicht entfernt werden'));
+  }, [onDocCreated, onDocRemoved, showNotice]);
+  useEffect(() => () => {
+    if (noticeTimerRef.current !== null) window.clearTimeout(noticeTimerRef.current);
+  }, []);
+
+  const handleLockedAction = useCallback(
+    (holder: string) => showNotice(`${holder} bearbeitet diesen Punkt gerade – bitte kurz warten`),
+    [showNotice]
+  );
+  const handleUndo = useCallback(() => {
+    const res = engineRef.current?.undo();
+    if (res?.message) showNotice(res.message);
+    if (res?.ok) finishUndoExtract();
+  }, [showNotice, finishUndoExtract]);
+
+  const handleRedo = useCallback(() => {
+    const res = engineRef.current?.redo();
+    if (res?.message) showNotice(res.message);
+  }, [showNotice]);
+  const handleResolveConflict = useCallback(
+    (blockId: string, accept: boolean) => {
+      const res = engineRef.current?.resolveConflict(blockId, accept);
+      if (res?.message) showNotice(res.message);
+    },
+    [showNotice]
+  );
+
+  // Every local block change goes to the engine, which turns it into operations
+  const applyLocalBlocks = useCallback(
+    (update: DocumentBlock[] | ((prev: DocumentBlock[]) => DocumentBlock[])) => {
+      const prev = currentBlocksRef.current;
+      const next = typeof update === 'function' ? update(prev) : update;
+      if (next === prev) return;
+      currentBlocksRef.current = next;
+      setBlocks(next);
+      engineRef.current?.applyFlat(next);
+    },
+    []
+  );
+
+  // A bullet with its children becomes a note of its own. The server only creates the note; the branch
+  // is replaced here as an ordinary own edit, so it shows at once, syncs like typing and Strg+Z works.
+  const handleExtractBlock = useCallback(
+    async (blockId: string) => {
+      const engine = engineRef.current;
+      if (!engine) return;
+      try {
+        await engine.syncNow(); // the server reads the branch as typed so far
+        const { document: created, link } = await api.extractBranch(docId, blockId, engine.clientId);
+        // The focused field keeps its own text while typing; leave it so it shows the link
+        (document.activeElement as HTMLElement | null)?.blur?.();
+        const prev = currentBlocksRef.current;
+        const i = prev.findIndex((b) => b.id === blockId);
+        if (i >= 0) {
+          const level = prev[i].level || 0;
+          let end = i + 1;
+          while (end < prev.length && (prev[end].level || 0) > level) end++;
+          applyLocalBlocks([...prev.slice(0, i), { ...prev[i], content: link }, ...prev.slice(end)]);
+        }
+        lastInlineRef.current = null;
+        lastExtractRef.current = { newDocId: created.id, blockId, link };
+        onDocCreated?.(created);
+        showNotice(`In eigene Notiz „${created.title}“ umgewandelt`, [
+          { label: 'Öffnen', run: () => onOpenDocBlock?.(created.id) },
+          { label: 'Rückgängig', run: () => handleUndo() },
+        ]);
+      } catch (err: any) {
+        showNotice(err?.message || 'Umwandeln fehlgeschlagen');
+      }
+    },
+    [docId, onOpenDocBlock, onDocCreated, showNotice, handleUndo, applyLocalBlocks]
+  );
+
+  // The way back: a bullet that only links to a note gets that note's bullets below it again, the note
+  // goes to the trash. Inserted here as an own edit like extracting, so Strg+Z brings the link back.
+  const handleInlineBlock = useCallback(
+    async (blockId: string) => {
+      const engine = engineRef.current;
+      if (!engine) return;
+      try {
+        await engine.syncNow();
+        const res = await api.inlineNote(docId, blockId);
+        (document.activeElement as HTMLElement | null)?.blur?.();
+        const prev = currentBlocksRef.current;
+        const i = prev.findIndex((b) => b.id === blockId);
+        if (i >= 0) {
+          const level = prev[i].level || 0;
+          const inserted = res.blocks.map((b) => ({ ...b, level: level + 1 + (b.level || 0) }));
+          // Above any bullets added below the link meanwhile
+          applyLocalBlocks([...prev.slice(0, i), { ...prev[i], content: res.content }, ...inserted, ...prev.slice(i + 1)]);
+        }
+        lastExtractRef.current = null;
+        lastInlineRef.current = { sourceId: res.sourceId, blockId, content: res.content };
+        onDocRemoved?.(res.sourceId);
+        showNotice('Notiz zurückgeholt, sie liegt jetzt im Papierkorb', [{ label: 'Rückgängig', run: () => handleUndo() }]);
+      } catch (err: any) {
+        showNotice(err?.message || 'Zurückholen fehlgeschlagen');
+      }
+    },
+    [docId, onDocRemoved, showNotice, handleUndo, applyLocalBlocks]
+  );
+
+  // Keep parent sidebar metadata in sync when blocks/tags change
+  useEffect(() => {
+    if (!docRef.current) return;
+    const updatedDoc: Document = {
+      ...docRef.current,
+      title,
+      blocks,
+      tags: extractedTags,
+      updatedAt: new Date().toISOString(),
+    };
+    docRef.current = updatedDoc;
+    onDocMetadataChange(updatedDoc);
+  }, [blocks, extractedTags, title]);
+
+  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    if (!canEdit) return;
+    setTitle(e.target.value);
+    engineRef.current?.setTitle(e.target.value);
+  };
+
+  const handleTitleBlur = () => {
+    void engineRef.current?.syncNow();
+  };
+
+  const handleUpdateBlock = useCallback(
+    (updatedBlock: DocumentBlock) => {
+      if (!canEdit) return;
+      applyLocalBlocks((prev) => prev.map((b) => (b.id === updatedBlock.id ? updatedBlock : b)));
+    },
+    [canEdit, applyLocalBlocks]
+  );
+
+  const handleUpdateBlocks = useCallback(
+    (updatedBlocks: DocumentBlock[]) => {
+      if (!canEdit || updatedBlocks.length === 0) return;
+      const map = new Map<string, DocumentBlock>();
+      for (const b of updatedBlocks) {
+        map.set(b.id, b);
+      }
+      applyLocalBlocks((prev) => prev.map((b) => map.get(b.id) || b));
+    },
+    [canEdit, applyLocalBlocks]
+  );
+
+  const handleCreateBlock = useCallback(
+    (newBlock: DocumentBlock, afterBlockId?: string) => {
+      if (!canEdit) return;
+      applyLocalBlocks((prev) => {
+        const next = [...prev];
+        if (afterBlockId) {
+          const idx = next.findIndex((b) => b.id === afterBlockId);
+          if (idx >= 0) {
+            next.splice(idx + 1, 0, newBlock);
+            return ensureNonEmptyBlocks(docId, next);
+          }
+        }
+        next.push(newBlock);
+        return ensureNonEmptyBlocks(docId, next);
+      });
+    },
+    [docId, canEdit, applyLocalBlocks]
+  );
+
+  const handleInsertBlocks = useCallback(
+    (afterBlockId: string, updatedCurrentBlock: DocumentBlock, newBlocks: DocumentBlock[]) => {
+      if (!canEdit) return;
+      applyLocalBlocks((prev) => {
+        const next = [...prev];
+        const idx = next.findIndex((b) => b.id === afterBlockId);
+        if (idx >= 0) {
+          next[idx] = updatedCurrentBlock;
+          next.splice(idx + 1, 0, ...newBlocks);
+        } else {
+          next.push(updatedCurrentBlock, ...newBlocks);
+        }
+        return ensureNonEmptyBlocks(docId, next);
+      });
+    },
+    [docId, canEdit, applyLocalBlocks]
+  );
+
+  const handleDeleteBlock = useCallback(
+    (blockId: string) => {
+      if (!canEdit) return;
+      applyLocalBlocks((prev) => ensureNonEmptyBlocks(docId, prev.filter((b) => b.id !== blockId)));
+    },
+    [docId, canEdit, applyLocalBlocks]
+  );
+
+  // A selection over several bullets was deleted (OutlinerTree): one change, so Strg+Z undoes it at once
+  const handleReplaceRange = useCallback(
+    (first: DocumentBlock, deleteIds: string[], movedChildren: DocumentBlock[]) => {
+      if (!canEdit) return;
+      const changed = new Map([first, ...movedChildren].map((b) => [b.id, b]));
+      const gone = new Set(deleteIds);
+      applyLocalBlocks((prev) =>
+        ensureNonEmptyBlocks(docId, prev.filter((b) => !gone.has(b.id)).map((b) => changed.get(b.id) || b))
+      );
+    },
+    [docId, canEdit, applyLocalBlocks]
+  );
+
+  // Swaps a bullet (with its children) with the previous or next one on the same level, within the same
+  // parent. By id, not by index, so it also works while zoomed into a branch (the tree then sees a slice).
+  const handleMoveSibling = useCallback(
+    (blockId: string, direction: -1 | 1) => {
+      if (!canEdit) return;
+      applyLocalBlocks((prev) => moveSibling(prev, blockId, direction));
+    },
+    [canEdit, applyLocalBlocks]
+  );
+
+  const handleMoveBlock = useCallback(
+    (blockId: string, targetIndex: number, newLevel?: number) => {
+      if (!canEdit) return;
+      applyLocalBlocks((prev) => {
+        const fromIdx = prev.findIndex((b) => b.id === blockId);
+        if (fromIdx === -1) return prev;
+
+        const parentBlock = prev[fromIdx];
+        const parentLevel = Math.max(0, parentBlock.level || 0);
+
+        // Calculate full subtree count (dragged block + all contiguous descendants)
+        let count = 1;
+        for (let i = fromIdx + 1; i < prev.length; i++) {
+          if (Math.max(0, prev[i].level || 0) > parentLevel) {
+            count++;
+          } else {
+            break;
+          }
+        }
+
+        // Prevent dropping inside its own subtree
+        if (targetIndex >= fromIdx && targetIndex < fromIdx + count) {
+          return prev;
+        }
+
+        const copy = [...prev];
+        const subtree = copy.splice(fromIdx, count);
+
+        // Adjust insertion index because removing elements from before shifts target index
+        let insertIndex = targetIndex;
+        if (fromIdx < targetIndex) {
+          insertIndex = targetIndex - count;
+        }
+        insertIndex = Math.max(0, Math.min(insertIndex, copy.length));
+
+        // Calculate level adjustments if moving to a constrained position
+        const prevBlockInPosition = insertIndex > 0 ? copy[insertIndex - 1] : null;
+        const maxAllowed = prevBlockInPosition
+          ? Math.max(0, prevBlockInPosition.level || 0) + 1
+          : 0;
+
+        const targetLevel = newLevel !== undefined ? newLevel : parentLevel;
+        const clampedLevel = Math.min(targetLevel, maxAllowed);
+        const levelDelta = clampedLevel - parentLevel;
+
+        const updatedSubtree = subtree.map((b) => ({
+          ...b,
+          level: Math.max(0, (b.level || 0) + levelDelta),
+        }));
+
+        copy.splice(insertIndex, 0, ...updatedSubtree);
+        return ensureNonEmptyBlocks(docId, copy);
+      });
+    },
+    [docId, canEdit, applyLocalBlocks]
+  );
+
+  // --- Hashtag page (variant 'tag') ---
+  // Shown are the bullets carrying the hashtag with all their children. The bullet with the cursor (and
+  // the bullets above it) and bullets just created here stay even without the hashtag, so typing never
+  // pulls the text away; once the cursor leaves, a bullet without the hashtag disappears.
+  const [tagFocusId, setTagFocusId] = useState<string | null>(null);
+  const [tagFreshIds, setTagFreshIds] = useState<Set<string>>(() => new Set());
+  const tagBlurTimerRef = useRef<number | null>(null);
+  const handleTagFocusChange = useCallback((id: string | null) => {
+    engineRef.current?.focusBlock(id);
+    if (tagBlurTimerRef.current !== null) window.clearTimeout(tagBlurTimerRef.current);
+    tagBlurTimerRef.current = null;
+    if (id === null) {
+      // Moving from one bullet to the next blurs first; only a real leave counts
+      tagBlurTimerRef.current = window.setTimeout(() => {
+        setTagFocusId(null);
+        setTagFreshIds((prev) => (prev.size === 0 ? prev : new Set()));
+      }, 150);
+      return;
+    }
+    setTagFocusId(id);
+    setTagFreshIds((prev) => (prev.size === 0 || prev.has(id) ? prev : new Set()));
+  }, []);
+  useEffect(() => () => {
+    if (tagBlurTimerRef.current !== null) window.clearTimeout(tagBlurTimerRef.current);
+  }, []);
+  // What was shown last time: of the bullets above the cursor only those stay that were already shown
+  // (adding a heading above would start the branch anew and lose the cursor)
+  const tagShownRef = useRef<Set<string>>(new Set());
+  const tagGroups = useMemo(() => {
+    if (!inTagPage || !tagFilter) return [] as DocumentBlock[][];
+    const tag = tagFilter.replace(/^#/, '').toLowerCase();
+    const keep = new Set<string>(tagFreshIds);
+    const fIdx = tagFocusId ? blocks.findIndex((b) => b.id === tagFocusId) : -1;
+    if (fIdx >= 0) {
+      keep.add(blocks[fIdx].id);
+      let lvl = Math.max(0, blocks[fIdx].level || 0);
+      for (let i = fIdx - 1; i >= 0 && lvl > 0; i--) {
+        const l = Math.max(0, blocks[i].level || 0);
+        if (l < lvl) {
+          if (!tagShownRef.current.has(blocks[i].id)) break;
+          keep.add(blocks[i].id);
+          lvl = l;
+        }
+      }
+    }
+    // Runs of shown bullets: a shown bullet brings its children; gaps start a new run
+    const groups: DocumentBlock[][] = [];
+    let current: DocumentBlock[] | null = null;
+    let insideLevel: number | null = null;
+    for (const b of blocks) {
+      const lvl = Math.max(0, b.level || 0);
+      if (insideLevel !== null && lvl <= insideLevel) insideLevel = null;
+      const shown = insideLevel !== null || keep.has(b.id) || extractHashtags(b.content).includes(tag);
+      if (!shown) {
+        current = null;
+        continue;
+      }
+      if (!current) {
+        current = [];
+        groups.push(current);
+      }
+      current.push(b);
+      if (insideLevel === null) insideLevel = lvl;
+    }
+    tagShownRef.current = new Set(groups.flat().map((b) => b.id));
+    return groups;
+  }, [inTagPage, tagFilter, blocks, tagFocusId, tagFreshIds]);
+  const handleTagCreateBlock = useCallback(
+    (newBlock: DocumentBlock, afterBlockId?: string) => {
+      setTagFreshIds((prev) => new Set(prev).add(newBlock.id));
+      handleCreateBlock(newBlock, afterBlockId);
+    },
+    [handleCreateBlock]
+  );
+  const handleTagInsertBlocks = useCallback(
+    (afterBlockId: string, updatedCurrent: DocumentBlock, newBlocks: DocumentBlock[]) => {
+      setTagFreshIds((prev) => {
+        const next = new Set(prev);
+        newBlocks.forEach((b) => next.add(b.id));
+        return next;
+      });
+      handleInsertBlocks(afterBlockId, updatedCurrent, newBlocks);
+    },
+    [handleInsertBlocks]
+  );
+  // Dragging inside one run: its positions are positions in the whole note
+  const tagMoveBlock = (group: DocumentBlock[]) => (blockId: string, targetIndex: number, newLevel?: number) => {
+    const anchor = targetIndex < group.length ? group[targetIndex] : group[group.length - 1];
+    const idx = currentBlocksRef.current.findIndex((b) => b.id === anchor.id);
+    if (idx < 0) return;
+    handleMoveBlock(blockId, targetIndex < group.length ? idx : idx + 1, newLevel);
+  };
+
+  const handleTogglePin = async () => {
+    if (!doc) return;
+    try {
+      const updated = await api.updateDocument(doc.id, { isPinned: !doc.isPinned });
+      setDoc(updated);
+      onDocMetadataChange(updated);
+    } catch {
+      // ignore
+    }
+  };
+
+  const handleSelectIcon = async (icon: string) => {
+    setShowEmojiPicker(false);
+    if (!doc || !canEdit) return;
+    try {
+      const updated = await api.updateDocument(doc.id, { icon });
+      setDoc(updated);
+      onDocMetadataChange(updated);
+    } catch {
+      // ignore
+    }
+  };
+
+  const handleExportMarkdown = () => {
+    const lines: string[] = [`# ${title || 'Unbenannte Notiz'}`, ''];
+    for (const b of blocks) {
+      const indent = '  '.repeat(Math.max(0, b.level || 0));
+      if (b.type === 'todo') {
+        lines.push(`${indent}- [${b.checked ? 'x' : ' '}] ${b.content}`);
+      } else if (b.type === 'h1') {
+        lines.push(`${indent}- # ${b.content}`);
+      } else if (b.type === 'h2') {
+        lines.push(`${indent}- ## ${b.content}`);
+      } else if (b.type === 'h3') {
+        lines.push(`${indent}- ### ${b.content}`);
+      } else if (b.type === 'code') {
+        lines.push(`${indent}- \`\`\`${b.lang || ''}\n${b.content}\n${indent}  \`\`\``);
+      } else if (b.type === 'divider') {
+        lines.push(`${indent}- ---`);
+      } else if (b.type === 'numbered') {
+        lines.push(`${indent}1. ${b.content}`);
+      } else {
+        lines.push(`${indent}- ${b.content}`);
+      }
+    }
+    const blob = new Blob([lines.join('\n')], { type: 'text/markdown;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${(title || 'notiz').toLowerCase().replace(/[^a-z0-9äöüß_-]+/gi, '-')}.md`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  if (loading) {
+    return (
+      <div className="flex-1 flex items-center justify-center p-12 text-muted">
+        <Loader2 className="w-5 h-5 animate-spin mr-2 text-accent" />
+        <span className="text-xs">Notiz wird geladen…</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center p-12 text-center">
+        <p className="text-xs text-status-err font-medium mb-2">{error}</p>
+        {onBackMobile && (
+          <button
+            type="button"
+            onClick={onBackMobile}
+            className="btn-action px-3 py-1.5 text-xs text-main"
+          >
+            Zurück zur Übersicht
+          </button>
+        )}
+      </div>
+    );
+  }
+
+  const breadcrumbNav = (
+    <nav
+      aria-label="Breadcrumb Navigation"
+      className="flex items-center flex-wrap gap-1 text-xs text-muted"
+    >
+      <button
+        type="button"
+        onClick={() => setZoomedBlockId(null)}
+        className="hover:text-accent inline-flex items-center gap-1 font-medium transition-colors cursor-pointer"
+        title="Zurück zum Hauptdokument"
+      >
+        <Home className="w-3.5 h-3.5 text-accent shrink-0" />
+        <span className="truncate max-w-[130px]">
+          {title || doc?.title || 'Dokument'}
+        </span>
+      </button>
+
+      {breadcrumbs.slice(1).map((crumb, idx) => {
+        const isCurrent = idx === breadcrumbs.length - 2;
+        return (
+          <React.Fragment key={crumb.id || idx}>
+            <ChevronRight className="w-3 h-3 text-faint shrink-0" />
+            {isCurrent ? (
+              <span
+                className="font-bold text-accent truncate max-w-[160px]"
+                title={crumb.title}
+              >
+                {crumb.title || 'Punkt'}
+              </span>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setZoomedBlockId(crumb.id)}
+                className="hover:text-main truncate max-w-[120px] transition-colors cursor-pointer"
+                title={`Zoom zu "${crumb.title}"`}
+              >
+                {crumb.title || 'Punkt'}
+              </button>
+            )}
+          </React.Fragment>
+        );
+      })}
+    </nav>
+  );
+
+  // Undo/redo, share and the menu; on large screens they sit in the workspace tab bar instead
+  const actionsBlock = (
+    <div className="flex shrink-0 items-center gap-1.5">
+      {!inTrash && (
+        <>
+          <button
+            type="button"
+            onClick={handleUndo}
+            disabled={!canEdit || !engineState?.canUndo}
+            className="btn-icon h-11 w-11 sm:h-7 sm:w-7 disabled:opacity-40 disabled:cursor-not-allowed"
+            title="Rückgängig (Strg+Z)"
+            aria-label="Rückgängig (Strg+Z)"
+          >
+            <Undo2 className="w-3.5 h-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={handleRedo}
+            disabled={!canEdit || !engineState?.canRedo}
+            className="btn-icon h-11 w-11 sm:h-7 sm:w-7 disabled:opacity-40 disabled:cursor-not-allowed"
+            title="Wiederholen (Strg+Y)"
+            aria-label="Wiederholen (Strg+Y)"
+          >
+            <Redo2 className="w-3.5 h-3.5" />
+          </button>
+        </>
+      )}
+
+      {doc && !inTrash && (
+        <button
+          type="button"
+          onClick={() => onOpenShareModal(doc)}
+          className="btn-icon h-11 w-11 sm:h-7 sm:w-7"
+          title="Notiz teilen und Berechtigungen"
+          aria-label="Notiz teilen und Berechtigungen"
+        >
+          <Users className="w-3.5 h-3.5" />
+        </button>
+      )}
+
+      <div className="relative" ref={actionsMenuRef}>
+        <button
+          type="button"
+          onClick={() => setShowActionsMenu((prev) => !prev)}
+          aria-expanded={showActionsMenu}
+          aria-haspopup="menu"
+          aria-label="Weitere Aktionen"
+          title="Weitere Aktionen"
+          className="btn-icon h-11 w-11 sm:h-7 sm:w-7"
+        >
+          <MoreHorizontal className="w-3.5 h-3.5" />
+        </button>
+
+        {showActionsMenu && (
+          <div
+            role="menu"
+            className="absolute right-0 top-full mt-1.5 w-60 rounded-card bg-panel border border-border shadow-lg p-1 z-30 text-xs origin-top-right animate-in fade-in zoom-in-95 slide-in-from-top-1 duration-150"
+          >
+            {!inTrash && (
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setShowActionsMenu(false);
+                  void handleTogglePin();
+                }}
+                className="w-full min-h-[44px] sm:min-h-0 px-2.5 py-2 sm:py-1.5 rounded-btn hover:bg-panel-elevated text-left text-main font-medium flex items-center gap-2 transition-colors cursor-pointer"
+              >
+                <Pin
+                  className={`w-3.5 h-3.5 shrink-0 ${
+                    doc?.isPinned ? 'text-status-warn' : 'text-accent'
+                  }`}
+                />
+                <span>{doc?.isPinned ? 'Anheftung lösen' : 'Notiz anheften'}</span>
+              </button>
+            )}
+
+            {onRequestMerge && doc?.isOwner && !inTrash && (
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setShowActionsMenu(false);
+                  onRequestMerge(doc);
+                }}
+                className="w-full min-h-[44px] sm:min-h-0 px-2.5 py-2 sm:py-1.5 rounded-btn hover:bg-panel-elevated text-left text-main font-medium flex items-center gap-2 transition-colors cursor-pointer"
+              >
+                <GitMerge className="w-3.5 h-3.5 text-accent shrink-0" />
+                <span>Mit anderer Notiz zusammenführen…</span>
+              </button>
+            )}
+
+            {onToggleFocusMode && (
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setShowActionsMenu(false);
+                  onToggleFocusMode();
+                }}
+                className="w-full min-h-[44px] sm:min-h-0 px-2.5 py-2 sm:py-1.5 rounded-btn hover:bg-panel-elevated text-left text-main font-medium flex items-center gap-2 transition-colors cursor-pointer"
+              >
+                {focusMode ? (
+                  <Minimize2 className="w-3.5 h-3.5 text-accent shrink-0" />
+                ) : (
+                  <Maximize2 className="w-3.5 h-3.5 text-accent shrink-0" />
+                )}
+                <span className="flex-1">{focusMode ? 'Fokus-Modus beenden' : 'Fokus-Modus starten'}</span>
+                <kbd className="hidden sm:inline text-[10px] text-faint font-mono">Strg+⇧+F</kbd>
+              </button>
+            )}
+
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                setShowActionsMenu(false);
+                handleExportMarkdown();
+              }}
+              className="w-full min-h-[44px] sm:min-h-0 px-2.5 py-2 sm:py-1.5 rounded-btn hover:bg-panel-elevated text-left text-main font-medium flex items-center gap-2 transition-colors cursor-pointer"
+            >
+              <Download className="w-3.5 h-3.5 text-accent shrink-0" />
+              <span>Als Markdown (.md) exportieren</span>
+            </button>
+
+            {canEdit && (doc?.isOwner || doc?.permission === 'owner') && (
+              <>
+                <div className="my-1 border-t border-border" />
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    setShowActionsMenu(false);
+                    onDeleteDoc(docId);
+                  }}
+                  className="w-full min-h-[44px] sm:min-h-0 px-2.5 py-2 sm:py-1.5 rounded-btn hover:bg-status-err/10 text-left text-status-err font-medium flex items-center gap-2 transition-colors cursor-pointer"
+                >
+                  <Trash2 className="w-3.5 h-3.5 text-status-err shrink-0" />
+                  <span>Notiz löschen</span>
+                </button>
+              </>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  return (
+    <div
+      ref={scrollRef}
+      className={embedded ? 'flex flex-col bg-editor' : 'flex-1 flex flex-col h-full min-h-0 bg-editor overflow-y-auto'}
+      data-sync-channel={engineState?.channel}
+    >
+      {desktopBar && actionsTarget && createPortal(actionsBlock, actionsTarget)}
+
+      {/* Top Document Action Bar (the journal has one for all days; large screens use the tab bar) */}
+      {!embedded && !desktopBar && (
+      <div className="sticky top-0 z-20 flex items-center justify-between gap-2 px-4 sm:px-6 py-2 bg-editor border-b border-border">
+        <div className="flex flex-1 items-center gap-2 min-w-0">
+          {onBackMobile && (
+            <button
+              type="button"
+              onClick={onBackMobile}
+              className="lg:hidden btn-icon shrink-0 h-11 w-11 sm:h-7 sm:w-7"
+              title="Zurück zur Seitenleiste"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+            </button>
+          )}
+
+          {/* Breadcrumbs Navigation (Fokus-Modus) or Doc Indicator */}
+          {zoomedBlock && breadcrumbs.length > 0 ? (
+            breadcrumbNav
+          ) : (
+            <div
+              className={`flex min-w-0 items-center gap-1.5 text-xs text-muted transition-opacity duration-200 ${
+                titleScrolledAway ? 'opacity-100' : 'opacity-0 pointer-events-none'
+              }`}
+              aria-hidden={!titleScrolledAway}
+            >
+              <FileText className="w-3.5 h-3.5 text-accent shrink-0" />
+              <span className="truncate max-w-[180px] font-medium text-main">
+                {title || doc?.title || 'Dokument'}
+              </span>
+            </div>
+          )}
+
+          {/* Save status on phones (the desktop shows it above the workspace) */}
+          {engineState && (
+            <span
+              className="sm:hidden inline-flex items-center shrink-0"
+              title={
+                engineState.status === 'saving'
+                  ? 'Speichert…'
+                  : engineState.status === 'offline'
+                  ? 'Offline – Änderungen sind lokal gesichert'
+                  : engineState.status === 'error'
+                  ? engineState.errorMessage || 'Fehler beim Speichern'
+                  : 'Gespeichert'
+              }
+              aria-label="Speicherstatus"
+            >
+              {engineState.status === 'saving' ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-accent" />
+              ) : engineState.status === 'offline' ? (
+                <CloudOff className="w-3.5 h-3.5 text-status-warn" />
+              ) : engineState.status === 'error' ? (
+                <AlertTriangle className="w-3.5 h-3.5 text-status-err" />
+              ) : (
+                <Check className="w-3.5 h-3.5 text-status-ok" />
+              )}
+            </span>
+          )}
+
+          {/* Read-only indicator */}
+          {!canEdit && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-btn text-[11px] font-medium bg-status-warn/10 text-status-warn border border-status-warn/30">
+              <Lock className="w-3 h-3" />
+              Nur Lesen
+            </span>
+          )}
+        </div>
+
+        {!desktopBar && actionsBlock}
+      </div>
+      )}
+
+      {/* In the trash: read-only with a way back */}
+      {inTrash && (
+        <div className="flex flex-wrap items-center gap-2 px-4 sm:px-6 py-2 bg-status-err/10 border-b border-status-err/25 text-status-err text-xs">
+          <Trash2 className="w-3.5 h-3.5 shrink-0" />
+          <span className="flex-1 min-w-0">Diese Notiz liegt im Papierkorb und ist schreibgeschützt.</span>
+          {onRestoreDoc && (
+            <button
+              type="button"
+              onClick={() => onRestoreDoc(docId)}
+              className="btn-action h-11 sm:h-7 px-3 text-xs text-main inline-flex items-center gap-1.5"
+            >
+              <RotateCcw className="w-3.5 h-3.5 text-accent" />
+              Wiederherstellen
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Read-only notification banner */}
+      {!canEdit && !inTrash && (
+        <div className="flex items-center gap-2 px-4 sm:px-6 py-2 bg-status-warn/10 border-b border-status-warn/25 text-status-warn text-xs">
+          <Lock className="w-3.5 h-3.5 shrink-0" />
+          <span>Dieses Dokument wurde schreibgeschützt mit dir geteilt (Nur Lesen).</span>
+        </div>
+      )}
+
+      {/* Main Content Area */}
+      {/* Phones: almost no side margin; very deep outlines scroll sideways (rows keep a minimum width) */}
+      {/* shrink-0: the sideways scroll area must keep its full height, so only the editor scrolls vertically */}
+      <div
+        className={`w-full pl-2 pr-1 sm:px-8 flex-auto shrink-0 overflow-x-auto sm:overflow-x-visible [-webkit-overflow-scrolling:touch] ${
+          inTagPage ? 'py-2' : inJournal ? 'py-3' : 'py-5'
+        } ${focusMode ? 'max-w-3xl mx-auto' : ''}`}
+      >
+        {desktopBar && zoomedBlock && breadcrumbs.length > 0 && <div className="mb-3">{breadcrumbNav}</div>}
+        {zoomedBlock ? (
+          /* =========================================================================
+             FOKUS-MODUS & ZOOM-IN (HOISTED SUBTREE VIEW)
+             ========================================================================= */
+          <div className="space-y-3">
+            <div className="flex items-start justify-between gap-3 pb-4 mb-2 border-b border-border">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1.5">
+                  <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-accent bg-accent-dim px-2 py-0.5 rounded-btn border border-accent/30">
+                    <Sparkles className="w-2.5 h-2.5 text-accent animate-pulse" />
+                    Fokus-Modus
+                  </span>
+                  <span className="text-[11px] text-faint hidden sm:inline">
+                    Isolierter Ast • Zoom aktiv
+                  </span>
+                </div>
+                <input
+                  type="text"
+                  value={zoomedBlock.content}
+                  onChange={(e) => {
+                    handleUpdateBlock({ ...zoomedBlock, content: e.target.value });
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      const firstChild: DocumentBlock = {
+                        id: `blk_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`,
+                        documentId: docId,
+                        type: 'text',
+                        content: '',
+                        level: levelOffset,
+                        position: (zoomedBlock.position || 1000) + 10,
+                      };
+                      handleCreateBlock(firstChild, zoomedBlock.id);
+                    }
+                  }}
+                  placeholder="Ast-Titel…"
+                  readOnly={!canEdit}
+                  className="w-full text-2xl sm:text-3xl font-light text-main bg-transparent border-0 focus:outline-none focus:ring-0 tracking-tight leading-tight"
+                />
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setZoomedBlockId(null)}
+                className="btn-action inline-flex items-center gap-1.5 px-2.5 py-1 text-xs text-muted hover:text-main shrink-0 mt-1"
+                title="Fokus-Modus beenden"
+              >
+                <Minimize2 className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Fokus beenden</span>
+              </button>
+            </div>
+
+            {childBlocks.length === 0 ? (
+              <div className="py-8 text-center text-xs text-faint border border-dashed border-border rounded-card my-2">
+                <p className="mb-2">Dieser Ast hat noch keine Unterpunkte.</p>
+                {canEdit && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const firstChild: DocumentBlock = {
+                        id: `blk_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`,
+                        documentId: docId,
+                        type: 'text',
+                        content: '',
+                        level: levelOffset,
+                        position: (zoomedBlock.position || 1000) + 10,
+                      };
+                      handleCreateBlock(firstChild, zoomedBlock.id);
+                    }}
+                    className="btn-action inline-flex items-center gap-1.5 px-3 py-1.5 text-xs text-accent font-medium hover:bg-accent/10"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Ersten Unterpunkt anlegen (oder Enter drücken)</span>
+                  </button>
+                )}
+              </div>
+            ) : (
+              <OutlinerTree
+                compact={inJournal}
+                docId={docId}
+                blocks={childBlocks}
+                canEdit={canEdit}
+                levelOffset={levelOffset}
+                onZoomBlock={setZoomedBlockId}
+                onExtractBlock={canEdit ? handleExtractBlock : undefined}
+              onInlineBlock={canEdit ? handleInlineBlock : undefined}
+                onUpdateBlock={handleUpdateBlock}
+                onUpdateBlocks={handleUpdateBlocks}
+                onCreateBlock={handleCreateBlock}
+                onInsertBlocks={handleInsertBlocks}
+                onDeleteBlock={handleDeleteBlock}
+                onReplaceRange={handleReplaceRange}
+                onMoveBlock={handleMoveBlock}
+                onMoveSibling={handleMoveSibling}
+                onOpenTask={onOpenTask}
+                onTagClick={onSelectTag}
+                onWikiLinkClick={onWikiLinkClick}
+                onCopyBlockLink={handleCopyBlockLink}
+                initialFocusedBlockId={initialFocusedBlockId}
+                onFocusedBlockChange={(id) => engineRef.current?.focusBlock(id)}
+                lockedBlocks={lockedBlocks}
+                onLockedAction={handleLockedAction}
+                onResolveConflict={handleResolveConflict}
+                onUndo={handleUndo}
+                onRedo={handleRedo}
+              />
+            )}
+          </div>
+        ) : (
+          /* =========================================================================
+             STANDARD GESAMTDOKUMENT-ANSICHT
+             ========================================================================= */
+          inTagPage ? (
+            /* Hashtag page: the note's title as a fixed heading, below the branches with the hashtag,
+               edited right in this note */
+            tagGroups.length > 0 ? (
+              <div className="space-y-1">
+                <button
+                  type="button"
+                  onClick={() => onOpenDocBlock?.(docId)}
+                  className="flex items-center gap-2 min-w-0 max-w-full text-left text-lg font-semibold text-main hover:text-accent transition-colors cursor-pointer"
+                  title="Notiz öffnen"
+                >
+                  {doc?.icon && <span className="shrink-0">{doc.icon}</span>}
+                  <span className="truncate">{title || 'Unbenannte Notiz'}</span>
+                  {doc?.folderPath && <span className="shrink-0 text-[11px] font-normal text-faint">{doc.folderPath}</span>}
+                </button>
+                {tagGroups.map((group) => (
+                  <OutlinerTree
+                    key={group[0].id}
+                    compact
+                    trailingArea={false}
+                    docId={docId}
+                    blocks={group}
+                    canEdit={canEdit}
+                    levelOffset={Math.min(...group.map((b) => Math.max(0, b.level || 0)))}
+                    onZoomBlock={(id) => onOpenDocBlock?.(docId, id)}
+                    onUpdateBlock={handleUpdateBlock}
+                    onUpdateBlocks={handleUpdateBlocks}
+                    onCreateBlock={handleTagCreateBlock}
+                    onInsertBlocks={handleTagInsertBlocks}
+                    onDeleteBlock={handleDeleteBlock}
+                    onReplaceRange={handleReplaceRange}
+                    onMoveBlock={tagMoveBlock(group)}
+                    onMoveSibling={handleMoveSibling}
+                    onOpenTask={onOpenTask}
+                    onTagClick={onSelectTag}
+                    onWikiLinkClick={onWikiLinkClick}
+                    onCopyBlockLink={handleCopyBlockLink}
+                    onFocusedBlockChange={handleTagFocusChange}
+                    lockedBlocks={lockedBlocks}
+                    onLockedAction={handleLockedAction}
+                    onResolveConflict={handleResolveConflict}
+                    onUndo={handleUndo}
+                    onRedo={handleRedo}
+                  />
+                ))}
+              </div>
+            ) : null
+          ) : (
+          <>
+            {/* Document Icon + Title Header */}
+            <div className="flex items-center gap-3 mb-4 relative">
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => canEdit && !inJournal && setShowEmojiPicker((prev) => !prev)}
+                  className={`text-2xl sm:text-3xl transition-opacity select-none leading-none bg-transparent border-0 outline-none p-0 focus:outline-none focus:ring-0 shadow-none ${
+                    inJournal ? 'cursor-default' : 'hover:opacity-80 cursor-pointer'
+                  }`}
+                  title={inJournal ? undefined : 'Icon ändern'}
+                >
+                  {/* Journal days: a quiet calendar in the theme's text colour instead of the colourful emoji;
+                      a note without an icon shows a faint "choose icon" to editors only */}
+                  {inJournal ? (
+                    <CalendarDays className="w-6 h-6 sm:w-7 sm:h-7 text-muted" strokeWidth={1.75} />
+                  ) : doc?.icon ? (
+                    doc.icon
+                  ) : canEdit ? (
+                    <SmilePlus className="w-6 h-6 sm:w-7 sm:h-7 text-faint" strokeWidth={1.5} aria-label="Icon wählen" />
+                  ) : null}
+                </button>
+                {showEmojiPicker && canEdit && (
+                  <EmojiPickerModal
+                    currentIcon={doc?.icon}
+                    onSelectEmoji={handleSelectIcon}
+                    onClose={() => setShowEmojiPicker(false)}
+                  />
+                )}
+              </div>
+
+              <textarea
+                ref={(el) => {
+                  titleInputRef.current = el;
+                  if (el) {
+                    el.style.height = 'auto';
+                    el.style.height = `${el.scrollHeight}px`;
+                  }
+                }}
+                rows={1}
+                value={title}
+                readOnly={!canEdit || inJournal}
+                autoFocus={autoFocusTitle}
+                onChange={(e) => {
+                  handleTitleChange(e);
+                  e.target.style.height = 'auto';
+                  e.target.style.height = `${e.target.scrollHeight}px`;
+                }}
+                onKeyDown={(e) => {
+                  if ((e.ctrlKey || e.metaKey) && !e.altKey && ['z', 'y'].includes(e.key.toLowerCase())) {
+                    e.preventDefault();
+                    if (e.key.toLowerCase() === 'y' || e.shiftKey) handleRedo();
+                    else handleUndo();
+                    return;
+                  }
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    outlinerTreeRef.current?.focusFirstBlock();
+                  }
+                }}
+                onBlur={handleTitleBlur}
+                placeholder="Titel der Notiz…"
+                className="flex-1 min-w-0 text-2xl sm:text-3xl font-light text-main bg-transparent border-0 focus:outline-none focus:ring-0 tracking-tight resize-none leading-snug whitespace-pre-wrap break-words [overflow-wrap:anywhere]"
+              />
+            </div>
+
+            {/* Logseq Outliner Tree */}
+            <OutlinerTree
+                compact={inJournal}
+              ref={outlinerTreeRef}
+              docId={docId}
+              blocks={blocks}
+              canEdit={canEdit}
+              levelOffset={0}
+              onZoomBlock={setZoomedBlockId}
+              onExtractBlock={canEdit ? handleExtractBlock : undefined}
+              onInlineBlock={canEdit ? handleInlineBlock : undefined}
+              onUpdateBlock={handleUpdateBlock}
+              onUpdateBlocks={handleUpdateBlocks}
+              onCreateBlock={handleCreateBlock}
+              onInsertBlocks={handleInsertBlocks}
+              onDeleteBlock={handleDeleteBlock}
+                onReplaceRange={handleReplaceRange}
+              onMoveBlock={handleMoveBlock}
+                onMoveSibling={handleMoveSibling}
+              onOpenTask={onOpenTask}
+              onTagClick={onSelectTag}
+              onWikiLinkClick={onWikiLinkClick}
+              onCopyBlockLink={handleCopyBlockLink}
+              initialFocusedBlockId={initialFocusedBlockId}
+              onFocusedBlockChange={(id) => engineRef.current?.focusBlock(id)}
+              lockedBlocks={lockedBlocks}
+              onLockedAction={handleLockedAction}
+              onResolveConflict={handleResolveConflict}
+              onUndo={handleUndo}
+              onRedo={handleRedo}
+            />
+
+            {onOpenDocBlock && !inTrash && !embedded && <BacklinksSection docId={docId} title={title} onOpen={onOpenDocBlock} />}
+          </>
+          )
+        )}
+      </div>
+
+      {notice && (
+        <div
+          role="status"
+          className="fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] sm:bottom-6 left-1/2 -translate-x-1/2 z-50 w-[calc(100vw-1.5rem)] sm:w-auto sm:max-w-[90vw] flex flex-col sm:block pl-4 pr-1 pt-3 pb-1 sm:px-3 sm:py-2 rounded-card text-sm sm:text-xs text-main bg-panel-elevated border border-border shadow-panel"
+        >
+          {/* Phones: text on top (two lines at most), buttons below; desktop: one line */}
+          <span className="max-sm:pr-3 max-sm:line-clamp-2">{notice}</span>
+          {noticeActions.length > 0 && (
+            <span className="flex justify-end sm:inline">
+              {noticeActions.map((a) => (
+                <button
+                  key={a.label}
+                  type="button"
+                  onClick={() => {
+                    setNotice(null);
+                    setNoticeActions([]);
+                    a.run();
+                  }}
+                  className="h-11 px-3 sm:h-auto sm:px-0 sm:ml-3 font-semibold text-accent hover:underline"
+                >
+                  {a.label}
+                </button>
+              ))}
+            </span>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};

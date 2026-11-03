@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="de" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <!-- Black like the system bars of the installed app; boot-theme.js and then the app switch it to the
+         theme background -->
+    <meta name="theme-color" content="#000000" />
+    <script src="/boot-theme.js"></script>
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="MindSift" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="description" content="MindSift — Der Kopf frei in drei Sekunden. Instant Capture, Tinder-Style Triage, Workspace & Echtzeit-Listen." />
+    
+    <!-- Favicon & Touch Icons -->
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+    <link rel="shortcut icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+
+    <!-- Open Graph / WhatsApp / Discord / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="MindSift" />
+    <meta property="og:url" content="/" />
+    <meta property="og:title" content="MindSift — Der Kopf frei in drei Sekunden" />
+    <meta property="og:description" content="Instant Brain-Dump, Tinder-Style Triage, Workspace & Echtzeit-Listen." />
+    <meta property="og:image" content="/og-image.png" />
+    <meta property="og:image:secure_url" content="/og-image.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="MindSift App Logo & Vorschau" />
+
+    <!-- Twitter / X -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="MindSift — Der Kopf frei in drei Sekunden" />
+    <meta name="twitter:description" content="Instant Brain-Dump, Tinder-Style Triage, Workspace & Echtzeit-Listen." />
+    <meta name="twitter:image" content="/og-image.png" />
+    <meta name="twitter:image:alt" content="MindSift App Logo & Vorschau" />
+
+    <link rel="manifest" href="/manifest.json" />
+    <title>MindSift</title>
+    <script src="/pwa-install.js"></script>
+  </head>
+  <body class="bg-[#0b0f19] text-[#e3e3e3] antialiased selection:bg-[#8ab4f8]/30 selection:text-[#8ab4f8]">
+    <!-- Shown until React mounts and replaces it: the logo on the background of the theme used last on
+         this device (boot-theme.js), full blue on the first visit; no text, no white flash -->
+    <div id="root">
+      <div style="position:fixed;inset:0;background:var(--boot-bg,#2563eb);display:flex;align-items:center;justify-content:center">
+        <!-- icon.svg inline, so its square takes the theme's accent (on blue it disappears in the background) -->
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="128" height="128" style="display:block">
+          <rect width="512" height="512" rx="108" style="fill:var(--boot-accent,#2563eb)" />
+          <g transform="translate(256, 256) scale(12.5) translate(-12, -12)" fill="none" style="stroke:var(--boot-on-accent,#ffffff)" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z"/>
+            <path d="M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z"/>
+            <path d="M15 13a4.5 4.5 0 0 1-3-4 4.5 4.5 0 0 1-3 4"/>
+            <path d="M17.599 6.5a3 3 0 0 0 .399-1.375"/>
+            <path d="M6.003 5.125A3 3 0 0 0 6.401 6.5"/>
+            <path d="M3.477 10.896a4 4 0 0 1 .585-.396"/>
+            <path d="M19.938 10.5a4 4 0 0 1 .585.396"/>
+            <path d="M6 18a4 4 0 0 1-1.967-.516"/>
+            <path d="M19.967 17.484A4 4 0 0 1 18 18"/>
+          </g>
+        </svg>
+      </div>
+    </div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

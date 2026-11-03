@@ -1,0 +1,23 @@
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import App from './App';
+import { MobileActionProvider } from './context/MobileActionContext';
+// Inter ships with the app (no external font service); the variable font covers all weights
+import '@fontsource-variable/inter';
+import './index.css';
+
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <React.StrictMode>
+    <MobileActionProvider>
+      <App />
+    </MobileActionProvider>
+  </React.StrictMode>
+);
+
+
+// Service worker for the app shell (offline start, see public/sw.js)
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  });
+}

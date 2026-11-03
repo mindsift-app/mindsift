@@ -1,0 +1,34 @@
+services:
+  mindsift:
+    image: ghcr.io/mindsift-app/mindsift:latest
+    container_name: mindsift
+    restart: unless-stopped
+    ports:
+      - "${PORT:-8080}:8080"
+    volumes:
+      - ./data:/data
+    environment:
+      - PORT=8080
+      - DATA_DIR=/data
+      - JWT_SECRET=${JWT_SECRET:-change_this_to_a_secure_random_key_min_32_chars}
+      - BASE_URL=${BASE_URL:-http://localhost:8080}
+      - ALLOW_REGISTRATION=${ALLOW_REGISTRATION:-false}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      # Set LOG_LEVEL=debug or DEBUG=true for detailed request and sync logging
+      # - LOG_LEVEL=debug
+      # - DEBUG=true
+      # Demo mode: if true, automatically seeds demo accounts admin/admin and user/user
+      - MINDA_DEMO=${MINDA_DEMO:-false}
+      # Optional SMTP / Mail Configuration (can also be configured in Admin UI)
+      - SMTP_HOST=${SMTP_HOST:-}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USER=${SMTP_USER:-}
+      - SMTP_PASS=${SMTP_PASS:-}
+      - SMTP_FROM=${SMTP_FROM:-}
+      - SMTP_TLS=${SMTP_TLS:-true}
+      - SMTP_SKIP_VERIFY=${SMTP_SKIP_VERIFY:-false}
+      # Optional: Impressum / Datenschutz (URL oder Markdown-Datei, z. B. per Volume eingebunden)
+      - LEGAL_IMPRINT_URL=${LEGAL_IMPRINT_URL:-}
+      - LEGAL_PRIVACY_URL=${LEGAL_PRIVACY_URL:-}
+      - LEGAL_IMPRINT_CONTENT_FILE=${LEGAL_IMPRINT_CONTENT_FILE:-}
+      - LEGAL_PRIVACY_CONTENT_FILE=${LEGAL_PRIVACY_CONTENT_FILE:-}
