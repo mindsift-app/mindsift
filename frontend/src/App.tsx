@@ -66,10 +66,12 @@ import { useMobileCapture } from './app/useMobileCapture';
 import { MobileCaptureSheet } from './app/MobileCaptureSheet';
 import { DesktopHeaderBar, DesktopNav, MobileHeaderBar } from './app/AppHeader';
 import { useSessionBootstrap } from './app/useSessionBootstrap';
-import { applyLanguage, resolveLanguage } from './i18n';
+import i18n, { applyLanguage, resolveLanguage } from './i18n';
+import { useTranslation } from 'react-i18next';
 
 
 export const App: React.FC = () => {
+  const { t } = useTranslation('app');
   const [activeTheme, setActiveThemeState] = useState<ThemeId>(() => initThemeOnBoot());
   // Profile Dropdown State
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -191,25 +193,25 @@ export const App: React.FC = () => {
       setGroups([
         {
           id: 'triage-actions',
-          title: 'Schnellaktionen',
+          title: t('menu.quickActions'),
           items: [
             {
               id: 'new-thought',
-              label: 'Neuen Gedanken erfassen',
+              label: t('menu.newThought'),
               icon: <Plus className="w-4 h-4" />,
               variant: 'accent',
               onClick: () => openMobileTriageCapture(),
             },
             {
               id: 'refresh-deck',
-              label: 'Inbox aktualisieren',
+              label: t('menu.refreshInbox'),
               icon: <RotateCcw className="w-4 h-4" />,
               badge: stats.inboxCount,
               onClick: () => refreshAll(),
             },
             {
               id: 'triage-trash',
-              label: 'Papierkorb',
+              label: t('common:trash'),
               icon: <Trash2 className="w-4 h-4" />,
               badge: stats.discardedCount,
               onClick: () => setShowTriageTrash(true),
@@ -218,25 +220,25 @@ export const App: React.FC = () => {
         },
         {
           id: 'triage-nav',
-          title: 'Bereiche wechseln',
+          title: t('menu.switchArea'),
           items: [
             {
               id: 'goto-workspace',
-              label: 'Notizen & Workspace',
+              label: t('menu.gotoWorkspace'),
               icon: <FileText className="w-4 h-4" />,
               badge: stats.docsCount,
               onClick: () => setActiveTab('workspace'),
             },
             {
               id: 'goto-tasks',
-              label: 'Aufgaben & Kanban',
+              label: t('menu.gotoTasks'),
               icon: <CheckSquare className="w-4 h-4" />,
               badge: stats.tasksOpenCount,
               onClick: () => setActiveTab('tasks'),
             },
             {
               id: 'goto-lists',
-              label: 'Einkaufslisten',
+              label: t('menu.gotoLists'),
               icon: <ShoppingCart className="w-4 h-4" />,
               badge: stats.listsCount,
               onClick: () => setActiveTab('lists'),
@@ -246,7 +248,7 @@ export const App: React.FC = () => {
               : [
                   {
                     id: 'goto-groups',
-                    label: 'Gruppen',
+                    label: t('profile.groups'),
                     icon: <Users className="w-4 h-4" />,
                     onClick: () => setActiveTab('groups'),
                   },
@@ -263,30 +265,30 @@ export const App: React.FC = () => {
       setGroups([
         {
           id: 'subview-nav',
-          title: 'Navigation',
+          title: t('menu.navigation'),
           items: [
             {
               id: 'back-triage',
-              label: 'Zurück zur Triage (Startseite)',
+              label: t('menu.backToTriage'),
               icon: <Layers className="w-4 h-4" />,
               variant: 'accent',
               onClick: () => setActiveTab('triage'),
             },
             {
               id: 'goto-workspace',
-              label: 'Zum Workspace',
+              label: t('menu.toWorkspace'),
               icon: <FileText className="w-4 h-4" />,
               onClick: () => setActiveTab('workspace'),
             },
             {
               id: 'goto-tasks',
-              label: 'Zu den Aufgaben',
+              label: t('menu.toTasks'),
               icon: <CheckSquare className="w-4 h-4" />,
               onClick: () => setActiveTab('tasks'),
             },
             {
               id: 'goto-lists',
-              label: 'Zu den Listen',
+              label: t('menu.toLists'),
               icon: <ShoppingCart className="w-4 h-4" />,
               onClick: () => setActiveTab('lists'),
             },
@@ -294,7 +296,7 @@ export const App: React.FC = () => {
         },
       ]);
     }
-  }, [activeTab, stats.inboxCount, stats.tasksOpenCount, stats.docsCount, stats.listsCount, stats.discardedCount]);
+  }, [activeTab, stats.inboxCount, stats.tasksOpenCount, stats.docsCount, stats.listsCount, stats.discardedCount, t]);
 
   // Mobile Web-App (PWA) installation: offered once per session on phones, and from the header and profile
   const pwa = usePwaInstall(user?.id);
@@ -371,13 +373,13 @@ export const App: React.FC = () => {
             setSharedImportIds(ids);
           } else {
             // Offline: kept for later, nothing to convert yet
-            setDemoNotice('Im Quick Dump abgelegt');
+            setDemoNotice(i18n.t('app:sharedQueued'));
             setTimeout(() => setDemoNotice(null), 4000);
           }
           refreshAll();
         }
       } catch (err) {
-        console.error('Fehler beim Import geteilter Daten:', err);
+        console.error('Importing shared data failed:', err);
       } finally {
         if (hasPendingShare) {
           const url = new URL(window.location.href);
@@ -510,17 +512,17 @@ export const App: React.FC = () => {
   }
 
   const isServerAdmin = user.role === 'admin';
-  const roleLabel = isServerAdmin ? 'Server-Admin' : 'Mitglied';
+  const roleLabel = isServerAdmin ? t('common:role.admin') : t('common:role.member');
 
   const activeTabLabelMap: Record<ActiveTab, string> = {
-    triage: 'Triage',
-    tasks: 'Aufgaben',
-    workspace: 'Workspace',
-    lists: 'Listen',
-    groups: 'Gruppen',
-    user_settings: 'Einstellungen',
-    admin_settings: 'Administration',
-    help: 'Hilfe',
+    triage: t('common:nav.triage'),
+    tasks: t('common:nav.tasks'),
+    workspace: t('common:nav.workspace'),
+    lists: t('common:nav.lists'),
+    groups: t('profile.groups'),
+    user_settings: t('tabs.settings'),
+    admin_settings: t('profile.admin'),
+    help: t('tabs.help'),
   };
 
   return (

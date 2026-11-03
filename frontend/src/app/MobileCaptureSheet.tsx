@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { AlertTriangle, Calendar, Flame, Layers, Loader2, Mic, MicOff, X } from 'lucide-react';
 import { PriorityLevel } from '../lib/types';
 import { triggerHaptic } from '../lib/api';
@@ -7,6 +8,7 @@ import { useMobileCapture } from './useMobileCapture';
 
 // Phones: the Quick Dump sheet (thought with voice input, priority, optional due date)
 export function MobileCaptureSheet({ capture }: { capture: ReturnType<typeof useMobileCapture> }) {
+  const { t } = useTranslation('app');
   const {
     showMobileCapture,
     setShowMobileCapture,
@@ -38,7 +40,7 @@ export function MobileCaptureSheet({ capture }: { capture: ReturnType<typeof use
             <div className="w-7 h-7 rounded-btn bg-accent/15 text-accent flex items-center justify-center">
               <Layers className="w-4 h-4" />
             </div>
-            <h3 className="text-sm font-semibold text-main">Quick Dump erfassen</h3>
+            <h3 className="text-sm font-semibold text-main">{t('capture.title')}</h3>
           </div>
           <button
             type="button"
@@ -65,10 +67,10 @@ export function MobileCaptureSheet({ capture }: { capture: ReturnType<typeof use
                   mobileVoiceError
                     ? mobileVoiceError
                     : mobileVoiceActive
-                      ? 'Ich höre zu…'
+                      ? t('capture.listening')
                       : mobileVoice.state === 'transcribing'
-                        ? 'Wird erkannt…'
-                        : 'Was geht dir durch den Kopf?…'
+                        ? t('capture.transcribing')
+                        : t('capture.placeholder')
                 }
                 className={
                   mobileVoiceActive && mobileVoice.mode === 'server'
@@ -92,7 +94,7 @@ export function MobileCaptureSheet({ capture }: { capture: ReturnType<typeof use
                           : 'bg-accent text-on-accent animate-pulse'
                         : 'text-muted hover:text-main hover:bg-panel-elevated'
                     }`}
-                    title={mobileVoiceActive ? 'Aufnahme beenden' : 'Spracheingabe'}
+                    title={mobileVoiceActive ? t('capture.stopRecording') : t('capture.voiceInput')}
                   >
                     {mobileVoice.state === 'transcribing' ? (
                       <Loader2 className="w-4 h-4 animate-spin" />
@@ -109,7 +111,7 @@ export function MobileCaptureSheet({ capture }: { capture: ReturnType<typeof use
 
           {/* Priority - 4 Buttons (Identical to TasksView) */}
           <div className="space-y-1.5 pt-1">
-            <label className="text-[11px] font-semibold text-muted block">Priorität</label>
+            <label className="text-[11px] font-semibold text-muted block">{t('common:priority.label')}</label>
             <div className="grid grid-cols-4 gap-1.5">
               {(['low', 'normal', 'high', 'urgent'] as PriorityLevel[]).map((p) => {
                 const config: Record<
@@ -117,21 +119,21 @@ export function MobileCaptureSheet({ capture }: { capture: ReturnType<typeof use
                   { label: string; icon?: React.ReactNode; activeClass: string }
                 > = {
                   low: {
-                    label: 'Niedrig',
+                    label: t('common:priority.low'),
                     activeClass: 'bg-canvas border-strong text-main font-semibold shadow-xs',
                   },
                   normal: {
-                    label: 'Normal',
+                    label: t('common:priority.normal'),
                     activeClass: 'bg-accent/15 border-accent text-accent font-semibold shadow-xs',
                   },
                   high: {
-                    label: 'Wichtig',
+                    label: t('common:priority.high'),
                     icon: <AlertTriangle className="w-3 h-3 text-status-warn" />,
                     activeClass:
                       'bg-status-warn/15 border-status-warn text-status-warn font-semibold shadow-xs',
                   },
                   urgent: {
-                    label: 'Dringend',
+                    label: t('common:priority.urgent'),
                     icon: <Flame className="w-3 h-3 text-status-err" />,
                     activeClass:
                       'bg-status-err/15 border-status-err text-status-err font-semibold shadow-xs',
@@ -165,7 +167,7 @@ export function MobileCaptureSheet({ capture }: { capture: ReturnType<typeof use
           <div className="space-y-1 pt-1">
             <label className="text-[11px] font-semibold text-muted flex items-center gap-1">
               <Calendar className="w-3.5 h-3.5 text-accent" />
-              <span>Fällig am (optional)</span>
+              <span>{t('capture.dueOptional')}</span>
             </label>
             <input
               type="date"
@@ -182,14 +184,14 @@ export function MobileCaptureSheet({ capture }: { capture: ReturnType<typeof use
               onClick={() => setShowMobileCapture(false)}
               className="btn-ghost h-10 px-4 text-xs cursor-pointer"
             >
-              Abbrechen
+              {t('common:cancel')}
             </button>
             <button
               type="submit"
               disabled={!mobileTriageContent.trim()}
               className="btn-primary h-10 px-5 text-xs font-semibold disabled:opacity-40 cursor-pointer"
             >
-              Gedanke erfassen
+              {t('capture.submit')}
             </button>
           </div>
         </form>

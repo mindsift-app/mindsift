@@ -1,0 +1,81 @@
+{
+  "connection": {
+    "online": "online",
+    "onlineTitle": "Online – Änderungen kommen sofort an",
+    "limited": "eingeschränkt",
+    "limitedTitle": "Eingeschränkt – keine direkte Live-Verbindung (z. B. Firmen-Proxy); Änderungen anderer kommen über Long Polling, etwas verzögert",
+    "offline": "offline",
+    "offlineTitle": "Offline – keine Verbindung zum Server; Änderungen werden später synchronisiert"
+  },
+  "header": {
+    "openMenu": "Menü & Ansichts-Optionen öffnen",
+    "installApp": "Als Web-App auf dem Smartphone installieren",
+    "app": "App",
+    "search": "Globale Suche",
+    "openSearch": "Globale Suche öffnen",
+    "searchShortcut": "Globale Suche (Strg+K / ⌘K oder /)",
+    "profileAndSettings": "Profil & Einstellungen",
+    "openUserMenu": "Benutzermenü öffnen",
+    "help": "Hilfe & Dokumentation"
+  },
+  "viewError": {
+    "unknown": "Unbekannter Darstellungsfehler",
+    "title": "Ansicht konnte nicht geladen werden",
+    "reset": "Ansicht zurücksetzen"
+  },
+  "pwa": {
+    "title": "{{name}} als App installieren",
+    "intro": "Vollbild ohne Browser-Leiste, schnellerer Start & Direktzugriff vom Home-Bildschirm.",
+    "installNow": "Jetzt als Web-App installieren",
+    "later": "Später im Browser weiter nutzen",
+    "install": "Jetzt installieren",
+    "guideTitle": "In 2 Sekunden zum Home-Bildschirm hinzufügen:",
+    "guideStep1": "Tippe im Browser auf <share><icon></icon> Teilen</share> (iPhone/Safari) oder das <b>Browser-Menü (⋮)</b>.",
+    "guideStep2": "Wähle <b>„Zum Home-Bildschirm“</b> bzw. <b>„App installieren“</b>.",
+    "understood": "Verstanden"
+  },
+  "profile": {
+    "theme": "Design-Theme",
+    "accountSettings": "Kontoeinstellungen",
+    "groups": "Gruppen",
+    "help": "Hilfe & Anleitung",
+    "admin": "Administration",
+    "logout": "Abmelden",
+    "installApp": "Web-App auf Smartphone installieren"
+  },
+  "capture": {
+    "title": "Quick Dump erfassen",
+    "listening": "Ich höre zu…",
+    "transcribing": "Wird erkannt…",
+    "placeholder": "Was geht dir durch den Kopf?…",
+    "stopRecording": "Aufnahme beenden",
+    "voiceInput": "Spracheingabe",
+    "dueOptional": "Fällig am (optional)",
+    "submit": "Gedanke erfassen"
+  },
+  "demoReset": "Demo-Instanz wurde zurückgesetzt",
+  "sharedQueued": "Im Quick Dump abgelegt",
+  "menu": {
+    "quickActions": "Schnellaktionen",
+    "newThought": "Neuen Gedanken erfassen",
+    "refreshInbox": "Inbox aktualisieren",
+    "switchArea": "Bereiche wechseln",
+    "gotoWorkspace": "Notizen & Workspace",
+    "gotoTasks": "Aufgaben & Kanban",
+    "gotoLists": "Einkaufslisten",
+    "navigation": "Navigation",
+    "backToTriage": "Zurück zur Triage (Startseite)",
+    "toWorkspace": "Zum Workspace",
+    "toTasks": "Zu den Aufgaben",
+    "toLists": "Zu den Listen"
+  },
+  "tabs": {
+    "settings": "Einstellungen",
+    "help": "Hilfe"
+  },
+  "demo": {
+    "resetEvery": "Diese Test-Instanz wird alle {{count}} Minuten automatisch auf den Ausgangszustand zurückgesetzt.",
+    "resetIn": "Reset in {{time}}",
+    "resetting": "wird zurückgesetzt…"
+  }
+}

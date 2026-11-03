@@ -6,6 +6,11 @@ Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), die V
 
 ## [Unreleased]
 
+## [0.73.1] - 2026-11-03
+
+### Changed
+- Texts of the header, navigation, profile menus, app install offer, sign-in, registration and first-time setup now come from language files, the groundwork for more languages (no visible change).
+
 ## [0.73.0] - 2026-11-03
 
 ### Added

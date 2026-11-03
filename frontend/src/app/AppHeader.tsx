@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Brain, CheckSquare, ChevronDown, Download, FileText, HelpCircle, Layers, Search, ShoppingCart } from 'lucide-react';
 import { AuthStatus, DashboardStats, SharedList, Thought, User } from '../lib/types';
 import { triggerHaptic } from '../lib/api';
@@ -12,15 +13,15 @@ import { ActiveTab } from './appTabs';
 import { usePwaInstall } from './usePwaInstall';
 
 // Connection status at the profile (useConnectionState); full class names for Tailwind
-const CONNECTION_STATUS = {
-  online: { label: 'online', dot: 'bg-status-ok', title: 'Online – Änderungen kommen sofort an' },
-  limited: {
-    label: 'eingeschränkt',
-    dot: 'bg-status-warn',
-    title: 'Eingeschränkt – keine direkte Live-Verbindung (z. B. Firmen-Proxy); Änderungen anderer kommen über Long Polling, etwas verzögert',
-  },
-  offline: { label: 'offline', dot: 'bg-status-err', title: 'Offline – keine Verbindung zum Server; Änderungen werden später synchronisiert' },
-} as const;
+function useConnectionStatus(connection: ConnectionState) {
+  const { t } = useTranslation('app');
+  const all = {
+    online: { label: t('connection.online'), dot: 'bg-status-ok', title: t('connection.onlineTitle') },
+    limited: { label: t('connection.limited'), dot: 'bg-status-warn', title: t('connection.limitedTitle') },
+    offline: { label: t('connection.offline'), dot: 'bg-status-err', title: t('connection.offlineTitle') },
+  };
+  return all[connection];
+}
 
 // Phones: floating bar with the logo (opens the menu of the open view), the app install button, search and
 // the profile avatar with the connection status
@@ -49,6 +50,8 @@ export function MobileHeaderBar({
   user: User;
   connection: ConnectionState;
 }) {
+  const { t } = useTranslation('app');
+  const status = useConnectionStatus(connection);
   const { isStandaloneApp, setShowManualPwaGuide, setShowPwaInstallModal } = pwa;
   return (
     <div className="sm:hidden flex items-center justify-between h-14 px-4 pt-1">
@@ -61,7 +64,7 @@ export function MobileHeaderBar({
         className={`min-h-[44px] px-2.5 -ml-2 rounded-xl flex items-center gap-2.5 cursor-pointer select-none active:scale-95 transition-all ${
           isMenuOpen ? 'bg-panel border border-accent/40 shadow-sm' : 'hover:bg-panel/60'
         }`}
-        title="Menü & Ansichts-Optionen öffnen"
+        title={t('header.openMenu')}
       >
         <div className="w-8 h-8 bg-accent text-on-accent rounded-xl shadow-sm flex items-center justify-center flex-shrink-0">
           <Brain className="w-4 h-4" />
@@ -100,10 +103,10 @@ export function MobileHeaderBar({
               setShowPwaInstallModal(true);
             }}
             className="h-9 px-2.5 rounded-xl bg-accent/15 border border-accent/40 text-accent text-xs font-semibold flex items-center gap-1.5 active:scale-95 transition-transform cursor-pointer"
-            title="Als Web-App auf dem Smartphone installieren"
+            title={t('header.installApp')}
           >
             <Download className="w-3.5 h-3.5" />
-            <span>App</span>
+            <span>{t('header.app')}</span>
           </button>
         )}
 
@@ -114,8 +117,8 @@ export function MobileHeaderBar({
             setShowCommandPalette(true);
           }}
           className="w-11 h-11 rounded-full flex items-center justify-center text-muted hover:text-main transition-transform active:scale-95 cursor-pointer"
-          title="Globale Suche"
-          aria-label="Globale Suche öffnen"
+          title={t('header.search')}
+          aria-label={t('header.openSearch')}
         >
           {/* Same visible size as the avatar next to it; the 44px button stays the touch target */}
           <span className="w-9 h-9 rounded-full flex items-center justify-center bg-panel border border-border">
@@ -134,15 +137,15 @@ export function MobileHeaderBar({
               ? 'ring-2 ring-accent'
               : ''
           }`}
-          title="Profil & Einstellungen"
+          title={t('header.profileAndSettings')}
         >
           <span className="relative">
             <UserAvatar user={user} size="md" className="shadow-sm" />
             {/* Connection status like in a chat app: green online, yellow limited, red without server */}
             <span
               role="status"
-              aria-label={CONNECTION_STATUS[connection].title}
-              className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full ring-2 ring-canvas ${CONNECTION_STATUS[connection].dot}`}
+              aria-label={status.title}
+              className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full ring-2 ring-canvas ${status.dot}`}
             />
           </span>
         </button>
@@ -186,6 +189,8 @@ export function DesktopHeaderBar({
   connection: ConnectionState;
   profileMenu: React.ReactNode;
 }) {
+  const { t } = useTranslation('app');
+  const status = useConnectionStatus(connection);
   return (
     <div className="hidden sm:grid grid-cols-[minmax(12rem,1fr)_minmax(0,36rem)_minmax(12rem,1fr)] max-w-6xl mx-auto px-4 py-2 items-start gap-6">
       {/* Logo & Headline */}
@@ -229,8 +234,8 @@ export function DesktopHeaderBar({
           type="button"
           onClick={() => setShowCommandPalette(true)}
           className="w-8 h-8 rounded-full bg-panel border border-border text-muted hover:text-main flex items-center justify-center transition-colors cursor-pointer shrink-0"
-          title="Globale Suche (Strg+K / ⌘K oder /)"
-          aria-label="Globale Suche (Strg+K / ⌘K oder /)"
+          title={t('header.searchShortcut')}
+          aria-label={t('header.searchShortcut')}
         >
           <Search className="w-3.5 h-3.5" />
         </button>
@@ -244,7 +249,7 @@ export function DesktopHeaderBar({
             setShowProfileMenu((prev) => !prev);
           }}
           className="h-8 flex items-center gap-2 text-xs font-medium text-main hover:opacity-85 transition-opacity cursor-pointer group"
-          title="Benutzermenü öffnen"
+          title={t('header.openUserMenu')}
         >
           <UserAvatar user={user} size="sm" />
           {/* Wide enough for the longest status ("eingeschränkt"), so switching status moves nothing */}
@@ -254,11 +259,11 @@ export function DesktopHeaderBar({
             </span>
             <span
               role="status"
-              title={CONNECTION_STATUS[connection].title}
+              title={status.title}
               className="hidden sm:inline-flex items-center gap-1 text-[10px] font-normal text-muted"
             >
-              <span className={`w-1.5 h-1.5 rounded-full ${CONNECTION_STATUS[connection].dot}`} />
-              {CONNECTION_STATUS[connection].label}
+              <span className={`w-1.5 h-1.5 rounded-full ${status.dot}`} />
+              {status.label}
             </span>
           </span>
           <ChevronDown className="w-3.5 h-3.5 text-muted group-hover:text-main transition-colors" />
@@ -282,6 +287,7 @@ export function DesktopNav({
   stats: DashboardStats;
   handleOpenHelp: () => void;
 }) {
+  const { t } = useTranslation('app');
   return (
     <nav className="hidden sm:flex max-w-6xl mx-auto px-2 border-t border-border items-stretch justify-between">
       <div className="flex items-stretch overflow-x-auto no-scrollbar">
@@ -294,7 +300,7 @@ export function DesktopNav({
         >
           <Layers className="w-4 h-4" />
           <span className="inline-flex items-center">
-            <span>Triage</span>
+            <span>{t('common:nav.triage')}</span>
             <CountBadge count={stats.inboxCount} variant="accent" position="text" />
           </span>
         </button>
@@ -307,7 +313,7 @@ export function DesktopNav({
           className={`tab-btn ${activeTab === 'workspace' ? 'tab-btn-active' : ''}`}
         >
           <FileText className="w-4 h-4" />
-          <span>Workspace</span>
+          <span>{t('common:nav.workspace')}</span>
         </button>
 
         <button
@@ -319,7 +325,7 @@ export function DesktopNav({
         >
           <CheckSquare className="w-4 h-4" />
           <span className="inline-flex items-center">
-            <span>Aufgaben</span>
+            <span>{t('common:nav.tasks')}</span>
             <CountBadge count={stats.tasksOpenCount} variant="accent" position="text" />
           </span>
         </button>
@@ -333,7 +339,7 @@ export function DesktopNav({
         >
           <ShoppingCart className="w-4 h-4" />
           <span className="inline-flex items-center">
-            <span>Listen</span>
+            <span>{t('common:nav.lists')}</span>
             <CountBadge count={stats.listItemsOpenCount} variant="accent" position="text" />
           </span>
         </button>
@@ -349,7 +355,7 @@ export function DesktopNav({
               ? 'text-accent'
               : 'text-muted hover:text-main'
           }`}
-          title="Hilfe & Dokumentation"
+          title={t('header.help')}
         >
           <HelpCircle className="w-4 h-4" />
         </button>

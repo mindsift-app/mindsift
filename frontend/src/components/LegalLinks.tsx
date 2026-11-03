@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { AuthStatus } from '../lib/types';
 import { api } from '../lib/api';
 import { MarkdownViewer } from '../lib/markdown';
@@ -6,7 +7,6 @@ import { ReadingModal } from './ReadingModal';
 import { safeHref } from '../lib/safeUrl';
 
 type LegalType = 'imprint' | 'privacy';
-const TITLES: Record<LegalType, string> = { imprint: 'Impressum', privacy: 'Datenschutz' };
 
 interface LegalLinksProps {
   legal?: AuthStatus['legal'];
@@ -17,6 +17,8 @@ interface LegalLinksProps {
 // Impressum / Datenschutz links: an external URL opens in a new tab, Markdown in a reading modal.
 // Links without URL or text are not shown at all.
 export const LegalLinks: React.FC<LegalLinksProps> = ({ legal, className = '', children }) => {
+  const { t } = useTranslation();
+  const TITLES: Record<LegalType, string> = { imprint: t('legal.imprint'), privacy: t('legal.privacy') };
   const [open, setOpen] = useState<{ type: LegalType; content: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -37,7 +39,7 @@ export const LegalLinks: React.FC<LegalLinksProps> = ({ legal, className = '', c
     try {
       setOpen({ type, content: await api.getLegalText(type) });
     } catch (err: any) {
-      setError(err.message || 'Text konnte nicht geladen werden');
+      setError(err.message || t('legal.loadFailed'));
     }
   };
 
