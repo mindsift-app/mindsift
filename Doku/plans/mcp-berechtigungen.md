@@ -1,4 +1,4 @@
-# Plan: MCP-Berechtigungen in drei Stufen (Entwurf)
+# Plan: MCP-Berechtigungen in drei Stufen (umgesetzt in v0.72.0)
 
 Stand 2026-11-03. Ziel: Ein API-Schlüssel bekommt pro Bereich (Aufgaben, Listen, Notizen, Inbox) dieselben drei Stufen, und über MCP lässt sich alles, was die Stufe erlaubt, auch wirklich tun. Heute fehlen vor allem: Notizen ändern und löschen, Listeneinträge löschen, die Inbox lesen und bearbeiten.
 
@@ -19,7 +19,7 @@ Bestehende IDs bleiben, damit vorhandene Schlüssel weiter funktionieren. Neu si
 | Bereich | Lesen | Anlegen | Ändern |
 |---|---|---|---|
 | Aufgaben | `tasks:read` | `webhook:task` | `tasks:write` |
-| Listen | `lists:read` | `webhook:list` | `lists:write` (künftig inkl. Löschen) |
+| Listen | `lists:read` | `webhook:list` | `lists:write` |
 | Notizen | `notes:read` | `notes:create` | **`notes:write`** (neu) |
 | Inbox | **`inbox:read`** (neu) | `webhook:triage` | **`inbox:write`** (neu) |
 
@@ -38,13 +38,13 @@ Hinweis zu `tasks:write` und `lists:write`: Sie erlauben heute auch das Anlegen.
 Alle Änderungen an Punkten laufen über dieselben Operationen wie der Editor (Notiz-Synchronisation, `internal/collab`): Wer die Notiz gerade offen hat, sieht sie live, und gleichzeitiges Tippen erzeugt keinen Konflikt mit dem ganzen Text. Ganze Notizen per Markdown zu ersetzen ist bewusst **nicht** vorgesehen (würde parallele Änderungen überschreiben).
 
 **Listen** (`lists:write`)
-- `delete_list_item`: Eintrag löschen.
+- Kein Löschen per MCP: Listeneinträge haben keinen Papierkorb, ein gelöschter Eintrag wäre endgültig weg. Agenten haken Einträge ab (`check_list_item`, gibt es schon); aufräumen bleibt beim Nutzer.
 
 **Inbox** (`inbox:read` / `inbox:write`)
 - `list_inbox` (Lesen): offene Inbox-Einträge mit Text, Priorität, Fälligkeit, Hashtags; durchsuchbar.
 - `convert_inbox_item` (Ändern): in eine Aufgabe (mit Aufgabenliste), eine Notiz oder einen Listeneintrag umwandeln – wie die Triage.
 - `discard_inbox_item` (Ändern): verwerfen (landet im Papierkorb der Triage, wiederherstellbar).
-- `search` findet Inbox-Einträge mit `inbox:read`.
+- Suchen in der Inbox über `list_inbox` mit `query` (die allgemeine Suche bleibt bei Aufgaben, Listen und Notizen).
 
 ## Oberfläche
 
@@ -58,7 +58,8 @@ Kontoeinstellungen → API: statt der heutigen Liste von Schaltern ein Raster **
 
 Aufwand: mittel (Backend ~2/3, davon das meiste bei den Notiz-Werkzeugen).
 
-## Offene Fragen
+## Entschieden (2026-11-03)
 
-- Inbox: Gibt es neben Umwandeln und Verwerfen ein „als verarbeitet markieren“ ohne Umwandlung (z. B. „Später“ = ans Ende schieben)?
-- Listen: Gelöschte Listeneinträge sind endgültig weg (Listen haben keinen Papierkorb für einzelne Einträge). Reicht das, oder sollen sie über MCP nur abgehakt statt gelöscht werden können?
+- Inbox „Ändern“: umwandeln und verwerfen, wie die Triage; kein „Später“.
+- Listen: kein Löschen von Einträgen per MCP, nur abhaken.
+- Notizen: punktweise bearbeiten über die Notiz-Synchronisation; kein Ersetzen der ganzen Notiz.

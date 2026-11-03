@@ -6,6 +6,15 @@ Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), die V
 
 ## [Unreleased]
 
+## [0.72.0] - 2026-11-03
+
+### Added
+- MCP: AI agents can change existing notes with the new right "Notizen ändern" (`notes:write`): rename or move a note, add, change, tick and remove single bullets, and move own notes to the trash. Changes reach open editors live; a bullet someone is editing right now is left alone. `get_note` lists the bullets with their ids.
+- MCP: the inbox gets the rights "Inbox lesen" (`inbox:read`, tool `list_inbox`) and "Inbox sortieren" (`inbox:write`): agents turn inbox entries into tasks, notes or list items, or discard them into the triage trash.
+
+### Changed
+- API keys: every area (tasks, lists, notes, inbox) offers the same three levels Lesen, Anlegen and Ändern; switching "Ändern" on also switches "Lesen" on. List items cannot be deleted over MCP (only ticked), as they have no trash.
+
 ## [0.71.1] - 2026-11-03
 
 ### Changed

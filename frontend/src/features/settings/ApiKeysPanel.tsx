@@ -12,7 +12,7 @@ import {
   Bot,
 } from 'lucide-react';
 import { APIKey, ApiKeyScope, PriorityLevel, SharedList, TaskList } from '../../lib/types';
-import { SCOPES, SCOPE_GROUPS, scopeChip } from '../../lib/apiScopes';
+import { SCOPES, SCOPE_GROUPS, scopeChip, toggleScopeIn } from '../../lib/apiScopes';
 import { api, triggerHaptic } from '../../lib/api';
 import { ToggleSwitch } from '../../components/ToggleSwitch';
 
@@ -81,12 +81,7 @@ export const ApiKeysPanel: React.FC<ApiKeysPanelProps> = ({ onIngested }) => {
     setEditError(null);
   };
 
-  const toggleEditScope = (id: ApiKeyScope) => {
-    setEditScopes((prev) => {
-      const next = prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id];
-      return next.length > 0 ? next : prev; // at least one
-    });
-  };
+  const toggleEditScope = (id: ApiKeyScope) => setEditScopes((prev) => toggleScopeIn(prev, id));
 
   const handleSaveEdit = async () => {
     if (!editKeyId) return;
@@ -103,10 +98,10 @@ export const ApiKeysPanel: React.FC<ApiKeysPanelProps> = ({ onIngested }) => {
   // Switches grouped by tasks, lists, notes and inbox (same layout for a new and an existing key)
   const renderScopeSwitches = (selected: ApiKeyScope[], toggle: (id: ApiKeyScope) => void, label: string) => (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-3" role="group" aria-label={label}>
-      {SCOPE_GROUPS.filter(([group]) => mcpEnabled || group !== 'notes').map(([group, heading]) => (
+      {SCOPE_GROUPS.filter(([group]) => mcpEnabled || SCOPES.some((sc) => sc.group === group && !sc.mcpOnly)).map(([group, heading]) => (
         <div key={group} className="border border-border rounded-card bg-panel px-3 py-1.5">
           <p className="text-[11px] text-muted pt-1 pb-0.5 font-semibold">{heading}</p>
-          {SCOPES.filter((sc) => sc.group === group).map((sc) => (
+          {SCOPES.filter((sc) => sc.group === group && (mcpEnabled || !sc.mcpOnly)).map((sc) => (
             <div key={sc.id} className="flex items-center justify-between gap-3 min-h-[44px] sm:min-h-[36px]">
               <div className="min-w-0">
                 <span className="block text-xs text-main">{sc.label}</span>
@@ -120,12 +115,7 @@ export const ApiKeysPanel: React.FC<ApiKeysPanelProps> = ({ onIngested }) => {
     </div>
   );
 
-  const toggleScope = (id: ApiKeyScope) => {
-    setNewKeyScopes((prev) => {
-      const next = prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id];
-      return next.length > 0 ? next : prev; // at least one
-    });
-  };
+  const toggleScope = (id: ApiKeyScope) => setNewKeyScopes((prev) => toggleScopeIn(prev, id));
 
   const handleCreateKey = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -237,8 +227,9 @@ http_headers = { "X-API-Key" = "${exampleToken}" }`
             <h3 className="text-sm font-bold text-main">API-Schlüssel</h3>
             <p className="text-xs text-muted">
               Ein Schlüssel verbindet Home Assistant, n8n, eigene Skripte oder KI-Agenten (Claude Code, Codex …) mit
-              MindSift. Was er darf, legst du mit den Schaltern fest; das gilt per curl und per MCP gleich, nur Notizen
-              gibt es ausschließlich über MCP. Einstellungen bleiben für Schlüssel gesperrt. Was ein Schlüssel bei Aufgaben
+              MindSift. Was er darf, legst du je Bereich mit Lesen, Anlegen und Ändern fest („Ändern“ schaltet „Lesen“
+              mit ein); das gilt per curl und per MCP gleich, nur Notizen sowie Lesen und Sortieren der Inbox gibt es
+              ausschließlich über MCP. Einstellungen bleiben für Schlüssel gesperrt. Was ein Schlüssel bei Aufgaben
               und Listen anlegt oder ändert, trägt seinen Namen als Badge.
             </p>
           </div>

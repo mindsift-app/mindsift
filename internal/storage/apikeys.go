@@ -25,11 +25,15 @@ const (
 
 	ScopeNotesRead   = "notes:read"   // notes and their bullets (MCP only)
 	ScopeNotesCreate = "notes:create" // create new notes (MCP only); existing ones stay untouched
+	ScopeNotesWrite  = "notes:write"  // change bullets, rename, move to the trash (MCP only)
+
+	ScopeInboxRead  = "inbox:read"  // open inbox entries (MCP only)
+	ScopeInboxWrite = "inbox:write" // convert or discard inbox entries (MCP only)
 )
 
 // AllScopes in display order.
 var AllScopes = []string{ScopeTriage, ScopeTask, ScopeList, ScopeTasksRead, ScopeTasksWrite, ScopeListsRead, ScopeListsWrite,
-	ScopeNotesRead, ScopeNotesCreate}
+	ScopeNotesRead, ScopeNotesCreate, ScopeNotesWrite, ScopeInboxRead, ScopeInboxWrite}
 
 // NormalizeScopes keeps the known scopes in a fixed order; none at all means triage only.
 func NormalizeScopes(scopes []string) []string {

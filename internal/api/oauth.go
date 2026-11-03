@@ -30,7 +30,8 @@ const (
 
 // Rights offered on the consent page; the narrow "create only" ones stay with ordinary keys.
 var oauthOfferedScopes = []string{storage.ScopeTasksRead, storage.ScopeTasksWrite, storage.ScopeListsRead, storage.ScopeListsWrite,
-	storage.ScopeNotesRead, storage.ScopeNotesCreate, storage.ScopeTriage}
+	storage.ScopeNotesRead, storage.ScopeNotesCreate, storage.ScopeNotesWrite, storage.ScopeTriage, storage.ScopeInboxRead,
+	storage.ScopeInboxWrite}
 
 // Preselected when the client asks for nothing in particular (claude.ai usually does not)
 var oauthDefaultScopes = []string{storage.ScopeTasksRead, storage.ScopeTasksWrite, storage.ScopeListsRead, storage.ScopeListsWrite}
