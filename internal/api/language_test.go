@@ -8,6 +8,9 @@ import (
 	"testing"
 
 	"github.com/mindsift-app/mindsift/internal/auth"
+	"github.com/mindsift-app/mindsift/internal/domain"
+	"github.com/mindsift-app/mindsift/internal/i18n"
+	"github.com/mindsift-app/mindsift/internal/storage"
 )
 
 // The language of a person and the server's default language, as the app reads and changes them.
@@ -87,5 +90,39 @@ func TestErrorLanguage(t *testing.T) {
 	srv.cfg.DefaultLanguage = "en"
 	if msg, _ := login("ja"); msg != "Username/email and password required" {
 		t.Fatalf("unsupported language falls back to the default: %q", msg)
+	}
+}
+
+// Message texts chosen through variables, which the catalog test cannot find in the code.
+func TestMessageTextsTranslated(t *testing.T) {
+	keys := []string{headingNews, headingSummary, changeDeleted, changeDone, changeReopened, changeDue, changeText,
+		changePriority, changeList, changeOther, "Jemand", "Dringend", "Wichtig", "Niedrig", "Normal",
+		"Heute: {task}", "Heute, {time}: {task}", "Morgen: {task}", "Morgen, {time}: {task}"}
+	for _, g := range []string{"Hallo", "Guten Morgen", "Guten Abend"} {
+		keys = append(keys, g, g+", {name}")
+	}
+	for _, k := range sharedTexts {
+		keys = append(keys, k)
+	}
+	for _, lang := range i18n.CatalogLanguages() {
+		for _, k := range keys {
+			if !i18n.Has(lang, k) {
+				t.Errorf("%s lacks %q", lang, k)
+			}
+		}
+	}
+	// A mail in English: greeting, texts and dates
+	srv, store, token := setupTestServer(t)
+	claims, _ := auth.ValidateToken(testJWTSecret, token)
+	_ = store.SetLanguage(claims.UserID, "en")
+	c := srv.dueAlarmMail(srv.userLanguage(claims.UserID), storage.DueTaskAlarm{Title: "Dentist", UserName: "Ada", Priority: "high"}, domain.HumanDue("en", "2026-10-30T15:30"))
+	text, html := renderMail(c)
+	for _, want := range []string{"Ada", "One of your tasks is due now:", "Due: 10/30/2026, 3:30 PM · Important", "a clear head in three seconds"} {
+		if !strings.Contains(text+html, want) {
+			t.Errorf("English alarm mail lacks %q:\n%s", want, text)
+		}
+	}
+	if !strings.Contains(html, `<html lang="en">`) {
+		t.Error("English mail must say lang=en")
 	}
 }

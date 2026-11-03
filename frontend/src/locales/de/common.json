@@ -194,7 +194,8 @@
     "createdInApp": "In der App angelegt",
     "createdInAppAt": "In der App angelegt am {{when}}",
     "changedVia": "zuletzt geändert per {{via}}{{key}}",
-    "changedViaAt": "zuletzt geändert per {{via}}{{key}} am {{when}}"
+    "changedViaAt": "zuletzt geändert per {{via}}{{key}} am {{when}}",
+    "deletedKey": "Gelöschter Schlüssel"
   },
   "date": {
     "today": "Heute",

@@ -51,6 +51,7 @@ type Server struct {
 }
 
 func NewServer(cfg *config.Config, store *storage.Store, wsHub *ws.Hub, staticFS fs.FS) *Server {
+	store.ConfiguredLanguage = cfg.DefaultLanguage
 	srv := &Server{
 		cfg:      cfg,
 		store:    store,

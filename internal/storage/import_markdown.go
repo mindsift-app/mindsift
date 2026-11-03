@@ -18,6 +18,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/mindsift-app/mindsift/internal/domain"
+	"github.com/mindsift-app/mindsift/internal/i18n"
 )
 
 // Import limits: they keep a crafted archive (zip bomb, millions of files) from exhausting the server.
@@ -315,7 +316,7 @@ func PlanMindSiftArchiveImport(r io.ReaderAt, size int64) (*ImportPlan, error) {
 	}
 	folders := map[string]bool{}
 	for _, d := range dirs {
-		if top := strings.SplitN(d, "/", 2)[0]; top != "Aufgaben" && top != "Listen" {
+		if top := strings.SplitN(d, "/", 2)[0]; !isVaultDir(top, vaultTasks) && !isVaultDir(top, vaultLists) {
 			folders[folderPathOf(d+"/x")] = true
 		}
 	}
@@ -325,14 +326,14 @@ func PlanMindSiftArchiveImport(r io.ReaderAt, size int64) (*ImportPlan, error) {
 		if title == "" {
 			title = strings.TrimSuffix(path.Base(n.path), path.Ext(n.path))
 		}
-		switch folderPathOf(n.path) {
-		case "Aufgaben":
+		switch dir := folderPathOf(n.path); {
+		case isVaultDir(dir, vaultTasks):
 			tl := importTaskList{title: title, icon: fm.icon, tasks: parseTaskFile(body)}
-			if title == "Ohne Liste" {
+			if isVaultDir(title, vaultNoList) {
 				tl.title = ""
 			}
 			plan.TaskLists = append(plan.TaskLists, tl)
-		case "Listen":
+		case isVaultDir(dir, vaultLists):
 			plan.Lists = append(plan.Lists, importList{title: title, icon: fm.icon, items: parseListFile(body)})
 		default:
 			folder := folderPathOf(n.path)
@@ -532,7 +533,7 @@ func (s *Store) ApplyImport(userID string, plan *ImportPlan) (ImportSummary, err
 	for _, d := range plan.Docs {
 		title := strings.TrimSpace(d.title)
 		if title == "" {
-			title = "Unbenannte Notiz"
+			title = i18n.T(s.MessageLanguage(userID), "Unbenannte Notiz")
 		}
 		icon := d.icon
 		if icon == "" {

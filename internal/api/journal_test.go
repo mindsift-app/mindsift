@@ -72,7 +72,10 @@ func TestJournalDayIsCreatedOnceAndListed(t *testing.T) {
 
 func TestJournalTitle(t *testing.T) {
 	day := time.Date(2026, 3, 1, 0, 0, 0, 0, time.UTC)
-	if got := journalTitle(day); got != "Sonntag, 1. März 2026" {
+	if got := journalTitle("en", day); got != "Sunday, March 1, 2026" {
+		t.Fatalf("English title: %q", got)
+	}
+	if got := journalTitle("de", day); got != "Sonntag, 1. März 2026" {
 		t.Fatalf("got %q", got)
 	}
 }

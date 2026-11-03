@@ -16,6 +16,8 @@ import (
 	"os"
 	"strings"
 	"time"
+
+	"github.com/mindsift-app/mindsift/internal/i18n"
 )
 
 // smtpSettings is the effective mail server configuration (admin settings, else environment).
@@ -34,8 +36,10 @@ type smtpStepError struct {
 	Err  error
 }
 
-func (e *smtpStepError) Error() string {
-	return fmt.Sprintf("SMTP-Schritt %s fehlgeschlagen: %v", e.Step, e.Err)
+func (e *smtpStepError) Error() string { return e.Localize(i18n.Fallback) }
+
+func (e *smtpStepError) Localize(lang string) string {
+	return i18n.T(lang, "SMTP-Schritt {step} fehlgeschlagen", "step", i18n.T(lang, e.Step)) + ": " + i18n.Text(lang, e.Err)
 }
 
 func (e *smtpStepError) Unwrap() error { return e.Err }

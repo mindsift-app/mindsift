@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/mindsift-app/mindsift/internal/auth"
+	"github.com/mindsift-app/mindsift/internal/i18n"
 	"github.com/mindsift-app/mindsift/internal/storage"
 )
 
@@ -57,9 +58,9 @@ func (s *Server) oauthOnly(next http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-// writeOAuthError: error body of the OAuth endpoints (RFC 6749 5.2)
+// writeOAuthError: error body of the OAuth endpoints (RFC 6749 5.2), in English like MCP
 func writeOAuthError(w http.ResponseWriter, status int, code, description string) {
-	writeJSON(w, status, map[string]string{"error": code, "error_description": description})
+	writeJSON(w, status, map[string]string{"error": code, "error_description": i18n.T("en", description)})
 }
 
 func (s *Server) handleOAuthProtectedResource(w http.ResponseWriter, r *http.Request) {
@@ -194,7 +195,7 @@ func (s *Server) checkAuthorize(p oauthAuthorizeParams) (client *storage.OAuthCl
 	case p.ResponseType != "code":
 		return client, s.oauthRedirect(p, url.Values{"error": {"unsupported_response_type"}}), nil
 	case p.CodeChallenge == "" || p.CodeChallengeMethod != "S256":
-		return client, s.oauthRedirect(p, url.Values{"error": {"invalid_request"}, "error_description": {"PKCE (S256) ist erforderlich"}}), nil
+		return client, s.oauthRedirect(p, url.Values{"error": {"invalid_request"}, "error_description": {i18n.T("en", "PKCE (S256) ist erforderlich")}}), nil
 	case p.Resource != "" && strings.TrimRight(p.Resource, "/") != s.oauthResource() && strings.TrimRight(p.Resource, "/") != s.oauthIssuer():
 		return client, s.oauthRedirect(p, url.Values{"error": {"invalid_target"}}), nil
 	}

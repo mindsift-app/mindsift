@@ -25,6 +25,9 @@ type Store struct {
 	// OnTaskCreated is told about tasks the store creates by itself (next occurrence of a repeating
 	// task), so the server can push them to connected clients.
 	OnTaskCreated func(*domain.Thought)
+
+	// ConfiguredLanguage is DEFAULT_LANGUAGE, the default language until an admin picks one
+	ConfiguredLanguage string
 }
 
 func NewStore(dbPath string) (*Store, error) {

@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/mindsift-app/mindsift/internal/domain"
+	"github.com/mindsift-app/mindsift/internal/i18n"
 )
 
 // WriteMarkdownVault streams the user's workspace as an Obsidian-compatible ZIP straight into w:
@@ -19,6 +20,7 @@ import (
 func (s *Store) WriteMarkdownVault(userID string, w io.Writer) error {
 	zw := zip.NewWriter(w)
 	names := newVaultNames()
+	names.lang = s.MessageLanguage(userID)
 	now := time.Now()
 
 	// Folders first, so empty ones survive the round trip
@@ -49,7 +51,7 @@ func (s *Store) WriteMarkdownVault(userID string, w io.Writer) error {
 	}
 	for _, d := range docs {
 		dir := names.dir(d.FolderPath)
-		name := names.file(dir, d.Title, "Unbenannte Notiz")
+		name := names.file(dir, d.Title, i18n.T(names.lang, "Unbenannte Notiz"))
 		up := ""
 		if dir != "" {
 			up = strings.Repeat("../", strings.Count(dir, "/")+1)
@@ -97,7 +99,7 @@ func (s *Store) writeVaultTasks(zw *zip.Writer, userID string, names *vaultNames
 		for _, t := range items {
 			sb.WriteString(taskMarkdownLine(t))
 		}
-		return writeZipFile(zw, names.file("Aufgaben", title, "Aufgaben"), sb.String(), now)
+		return writeZipFile(zw, names.file(i18n.T(names.lang, vaultTasks), title, i18n.T(names.lang, vaultTasks)), sb.String(), now)
 	}
 	for i := range lists {
 		if err := write(lists[i].Title, &lists[i], byList[lists[i].ID]); err != nil {
@@ -105,7 +107,7 @@ func (s *Store) writeVaultTasks(zw *zip.Writer, userID string, names *vaultNames
 		}
 	}
 	if items := byList[""]; len(items) > 0 {
-		return write("Ohne Liste", nil, items)
+		return write(i18n.T(names.lang, vaultNoList), nil, items)
 	}
 	return nil
 }
@@ -132,7 +134,7 @@ func (s *Store) writeVaultLists(zw *zip.Writer, userID string, names *vaultNames
 			}
 			sb.WriteString(line + "\n")
 		}
-		if err := writeZipFile(zw, names.file("Listen", l.Title, "Liste"), sb.String(), parseISO(l.UpdatedAt, now)); err != nil {
+		if err := writeZipFile(zw, names.file(i18n.T(names.lang, vaultLists), l.Title, i18n.T(names.lang, "Liste")), sb.String(), parseISO(l.UpdatedAt, now)); err != nil {
 			return err
 		}
 	}
@@ -324,7 +326,27 @@ func parseISO(v string, fallback time.Time) time.Time {
 }
 
 // vaultNames builds safe, unique file and folder names inside the archive.
-type vaultNames struct{ used map[string]bool }
+type vaultNames struct {
+	used map[string]bool
+	lang string // language of folder names and fallbacks
+}
+
+// Folders of the archive for tasks and lists and the file of tasks without a list, in the language of
+// the one exporting; the import knows them in every language.
+const (
+	vaultTasks  = "Aufgaben"
+	vaultLists  = "Listen"
+	vaultNoList = "Ohne Liste"
+)
+
+func isVaultDir(name, german string) bool {
+	for _, lang := range i18n.Supported {
+		if name == i18n.T(lang, german) {
+			return true
+		}
+	}
+	return false
+}
 
 func newVaultNames() *vaultNames { return &vaultNames{used: make(map[string]bool)} }
 

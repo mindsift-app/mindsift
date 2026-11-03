@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/mindsift-app/mindsift/internal/auth"
+	"github.com/mindsift-app/mindsift/internal/i18n"
 	"github.com/mindsift-app/mindsift/internal/storage"
 )
 
@@ -54,14 +55,16 @@ func (s *Server) handleForgotPassword(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		link := strings.TrimRight(s.cfg.BaseURL, "/") + "/?resetToken=" + url.QueryEscape(token)
-		_ = s.sendMailContent(user.Email, "MindSift: Passwort zurücksetzen", mailContent{
-			Preheader: "Lege ein neues Passwort für dein MindSift-Konto fest",
-			Greeting:  mailGreeting(time.Now(), user.DisplayName),
-			Intro:     "Für dein MindSift-Konto wurde ein neues Passwort angefordert. Über den Knopf kannst du es innerhalb der nächsten Stunde festlegen.",
-			Button:    &mailButton{Label: "Neues Passwort festlegen", URL: link},
-			Note: "Der Link funktioniert nur einmal. Hast du das nicht angefordert, ignoriere diese E-Mail – dein Passwort bleibt unverändert.\n" +
-				"Falls der Knopf nicht geht: " + link,
-			Footer: mailFooterAccount,
+		lang := s.userLanguage(user.ID)
+		_ = s.sendMailContent(user.Email, i18n.T(lang, "MindSift: Passwort zurücksetzen"), mailContent{
+			Lang:      lang,
+			Preheader: i18n.T(lang, "Lege ein neues Passwort für dein MindSift-Konto fest"),
+			Greeting:  mailGreeting(lang, time.Now(), user.DisplayName),
+			Intro:     i18n.T(lang, "Für dein MindSift-Konto wurde ein neues Passwort angefordert. Über den Knopf kannst du es innerhalb der nächsten Stunde festlegen."),
+			Button:    &mailButton{Label: i18n.T(lang, "Neues Passwort festlegen"), URL: link},
+			Note: i18n.T(lang, "Der Link funktioniert nur einmal. Hast du das nicht angefordert, ignoriere diese E-Mail – dein Passwort bleibt unverändert.") + "\n" +
+				i18n.T(lang, "Falls der Knopf nicht geht: {link}", "link", link),
+			Footer: mailFooterAccount(lang),
 		})
 	}()
 	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})

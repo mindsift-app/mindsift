@@ -3,6 +3,8 @@ package domain
 import (
 	"strings"
 	"time"
+
+	"github.com/mindsift-app/mindsift/internal/i18n"
 )
 
 // Due dates are stored as "2006-01-02" (all day) or "2006-01-02T15:04" (with time), always in the
@@ -64,27 +66,27 @@ func DueAlarmAt(raw string, notifyBeforeMinutes int, loc *time.Location) (time.T
 	return t, true
 }
 
-// HumanDue renders a due date for messages: "30.10.2026" or "30.10.2026, 14:30 Uhr".
-func HumanDue(raw string) string {
+// HumanDue renders a due date for messages in lang: "30.10.2026" or "30.10.2026, 14:30 Uhr".
+func HumanDue(lang, raw string) string {
 	t, hasTime, ok := ParseDue(raw, time.Local)
 	if !ok {
 		return raw
 	}
 	if hasTime {
-		return t.Format("02.01.2006, 15:04") + " Uhr"
+		return i18n.ShortDate(lang, t) + ", " + i18n.Clock(lang, t)
 	}
-	return t.Format("02.01.2006")
+	return i18n.ShortDate(lang, t)
 }
 
 // PriorityLabel: how a task's priority reads in mails and notes.
-func PriorityLabel(p string) string {
+func PriorityLabel(lang, p string) string {
 	switch p {
 	case "urgent":
-		return "Dringend"
+		return i18n.T(lang, "Dringend")
 	case "high":
-		return "Wichtig"
+		return i18n.T(lang, "Wichtig")
 	case "low":
-		return "Niedrig"
+		return i18n.T(lang, "Niedrig")
 	}
-	return "Normal"
+	return i18n.T(lang, "Normal")
 }

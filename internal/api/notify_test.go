@@ -72,7 +72,7 @@ func TestWatchedTaskChangesAreBundled(t *testing.T) {
 			mails = append(mails, n)
 		}
 	}
-	if len(mails) != 1 || mails[0].to != "watcher@example.com" || !strings.Contains(mails[0].text, "Text geändert") ||
+	if len(mails) != 1 || mails[0].to != "watcher@example.com" || !strings.Contains(mails[0].text, "den Text von") ||
 		!strings.Contains(mails[0].text, "erledigt") || !strings.Contains(mails[0].html, "<html") {
 		t.Fatalf("expected one bundled HTML mail to the watcher, got %+v", *sent)
 	}
@@ -169,7 +169,7 @@ func TestDailySummary(t *testing.T) {
 	}
 	// Grouped into sections, the same in text and HTML; the logo travels inside the mail
 	text, htmlBody := (*sent)[0].text, (*sent)[0].html
-	for _, want := range []string{"Guten Morgen", "ÜBERFÄLLIG\n• Altlast (seit ", "HEUTE\n• Zahnarzt (15:30 Uhr)", "MORGEN\n• Müll raus", "1 weitere"} {
+	for _, want := range []string{"Guten Morgen", "ÜBERFÄLLIG\n• Altlast (seit ", "HEUTE\n• Zahnarzt (15:30 Uhr)", "MORGEN\n• Müll raus", "eine weitere Aufgabe"} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("summary lacks %q:\n%s", want, text)
 		}

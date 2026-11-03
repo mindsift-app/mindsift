@@ -196,7 +196,8 @@
     "createdInApp": "Created in the app",
     "createdInAppAt": "Created in the app on {{when}}",
     "changedVia": "last changed via {{via}}{{key}}",
-    "changedViaAt": "last changed via {{via}}{{key}} on {{when}}"
+    "changedViaAt": "last changed via {{via}}{{key}} on {{when}}",
+    "deletedKey": "Deleted key"
   },
   "date": {
     "today": "Today",

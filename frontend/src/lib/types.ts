@@ -184,6 +184,9 @@ export interface Origin {
   changedVia?: 'api' | 'mcp';
   changedKey?: string;
   changedAt?: string;
+  // The key was deleted since
+  createdKeyDeleted?: boolean;
+  changedKeyDeleted?: boolean;
 }
 
 export interface Thought {

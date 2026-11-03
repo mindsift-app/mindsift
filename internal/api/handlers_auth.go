@@ -13,6 +13,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/mindsift-app/mindsift/internal/auth"
 	"github.com/mindsift-app/mindsift/internal/domain"
+	"github.com/mindsift-app/mindsift/internal/i18n"
 	"github.com/mindsift-app/mindsift/internal/storage"
 )
 
@@ -680,25 +681,29 @@ func (s *Server) notifyAccountChange(before *domain.User, password, email bool, 
 	if _, err := s.smtpSettings(); err != nil || before.Email == "" {
 		return
 	}
-	var what []string
-	if password {
-		what = append(what, "dein Passwort wurde geändert")
-	}
-	if email {
-		what = append(what, "die E-Mail-Adresse deines Kontos wurde auf "+newEmail+" geändert")
+	lang := s.userLanguage(before.ID)
+	var intro string
+	switch {
+	case password && email:
+		intro = i18n.T(lang, "In MindSift wurden dein Passwort und die E-Mail-Adresse deines Kontos geändert, die neue Adresse ist {email}.", "email", newEmail)
+	case email:
+		intro = i18n.T(lang, "In MindSift wurde die E-Mail-Adresse deines Kontos auf {email} geändert.", "email", newEmail)
+	default:
+		intro = i18n.T(lang, "In MindSift wurde dein Passwort geändert.")
 	}
 	c := mailContent{
-		Preheader: "Änderung an deinem MindSift-Konto",
-		Greeting:  mailGreeting(time.Now(), before.DisplayName),
-		Intro:     "In MindSift " + strings.Join(what, " und ") + ".",
-		Notice:    "Warst du das nicht? Setze bitte sofort dein Passwort zurück und beende alle Sitzungen in den Kontoeinstellungen, oder wende dich an die Administration.",
-		Footer:    mailFooterAccount,
+		Lang:      lang,
+		Preheader: i18n.T(lang, "Änderung an deinem MindSift-Konto"),
+		Greeting:  mailGreeting(lang, time.Now(), before.DisplayName),
+		Intro:     intro,
+		Notice:    i18n.T(lang, "Warst du das nicht? Setze bitte sofort dein Passwort zurück und beende alle Sitzungen in den Kontoeinstellungen, oder wende dich an die Administration."),
+		Footer:    mailFooterAccount(lang),
 	}
 	if link := s.notifyLink(); link != "" {
-		c.Button = &mailButton{Label: "MindSift öffnen", URL: link}
+		c.Button = &mailButton{Label: i18n.T(lang, "MindSift öffnen"), URL: link}
 	}
 	go func() {
-		_ = s.sendMailContent(before.Email, "MindSift: Änderung an deinem Konto", c)
+		_ = s.sendMailContent(before.Email, i18n.T(lang, "MindSift: Änderung an deinem Konto"), c)
 	}()
 }
 
@@ -721,6 +726,9 @@ func (s *Server) handleTestUserAlarm(w http.ResponseWriter, r *http.Request) {
 
 	channel := strings.ToLower(strings.TrimSpace(req.Channel))
 	target := strings.TrimSpace(req.Target)
+	// The test looks like the real alarms, so it is in the language they come in
+	lang := s.userLanguage(userID)
+	testTitle := i18n.T(lang, "Test-Alarm von MindSift")
 
 	switch channel {
 	case "discord":
@@ -732,7 +740,7 @@ func (s *Server) handleTestUserAlarm(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusBadRequest, "Bitte eine Discord Webhook URL angeben")
 			return
 		}
-		if err := s.sendDiscordNotification(url, "Test-Alarm von MindSift", "Dein Discord-Alarmkanal funktioniert einwandfrei!", domain.NowISO()[:10], "normal"); err != nil {
+		if err := s.sendDiscordNotification(lang, url, testTitle, i18n.T(lang, "Dein Discord-Alarmkanal funktioniert einwandfrei!"), domain.HumanDue(lang, domain.NowISO()[:10]), "normal"); err != nil {
 			writeError(w, http.StatusBadGateway, "Discord-Fehler: "+err.Error())
 			return
 		}
@@ -745,7 +753,7 @@ func (s *Server) handleTestUserAlarm(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusBadRequest, "Bitte eine Webhook-URL angeben")
 			return
 		}
-		if err := s.sendCustomWebhookNotification(url, "test_alarm", "Test-Alarm von MindSift", "Dein eigener Webhook empfängt MindSift-Alarme!", domain.NowISO()[:10], "normal"); err != nil {
+		if err := s.sendCustomWebhookNotification(url, "test_alarm", testTitle, i18n.T(lang, "Dein eigener Webhook empfängt MindSift-Alarme!"), domain.NowISO()[:10], "normal"); err != nil {
 			writeError(w, http.StatusBadGateway, "Webhook-Fehler: "+err.Error())
 			return
 		}
@@ -757,14 +765,20 @@ func (s *Server) handleTestUserAlarm(w http.ResponseWriter, r *http.Request) {
 		if toEmail == "" {
 			toEmail = user.Email
 		}
-		if err := s.sendMailContent(toEmail, "⏰ MindSift Test-Alarm", mailContent{
-			Preheader: "Dein E-Mail-Alarmkanal funktioniert",
-			Greeting:  mailGreeting(time.Now(), user.DisplayName),
-			Intro:     "Dein E-Mail-Alarmkanal in MindSift ist eingerichtet und einsatzbereit. So sehen deine Alarme aus:",
-			Sections:  []mailSection{{Items: []mailItem{{Title: "Beispiel: Heizung entlüften", Meta: "Fällig: heute, 18:00 Uhr · Wichtig", Tone: "warning"}}}},
-			Footer:    mailFooterAlarms,
+		sample := time.Date(2026, 1, 1, 18, 0, 0, 0, time.Local)
+		if err := s.sendMailContent(toEmail, "⏰ "+i18n.T(lang, "MindSift Test-Alarm"), mailContent{
+			Lang:      lang,
+			Preheader: i18n.T(lang, "Dein E-Mail-Alarmkanal funktioniert"),
+			Greeting:  mailGreeting(lang, time.Now(), user.DisplayName),
+			Intro:     i18n.T(lang, "Dein E-Mail-Alarmkanal in MindSift ist eingerichtet und einsatzbereit. So sehen deine Alarme aus:"),
+			Sections: []mailSection{{Items: []mailItem{{
+				Title: i18n.T(lang, "Beispiel: Heizung entlüften"),
+				Meta:  i18n.T(lang, "Fällig: heute, {time}", "time", i18n.Clock(lang, sample)) + " · " + domain.PriorityLabel(lang, "high"),
+				Tone:  "warning",
+			}}}},
+			Footer: mailFooterAlarms(lang),
 		}); err != nil {
-			writeError(w, http.StatusBadGateway, "E-Mail-Versand fehlgeschlagen: "+err.Error())
+			writeError(w, http.StatusBadGateway, tr(w, "E-Mail-Versand fehlgeschlagen")+": "+trErr(w, err))
 			return
 		}
 	default:

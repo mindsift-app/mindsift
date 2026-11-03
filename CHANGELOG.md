@@ -6,6 +6,13 @@ Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), die V
 
 ## [Unreleased]
 
+## [0.74.3] - 2026-11-03
+
+### Changed
+- Emails, push notifications, Discord and webhook alarms, the daily summary and notifications about shared items and watched tasks come in the recipient's language, with dates and times written the way that language does. Invitations go out in the language of the one inviting.
+- In English, new journal days, the columns of new task lists, untitled notes and the folders of the Markdown export (`Tasks/`, `Lists/`) are English too. The import reads exports in every language.
+- API: the origin of an entry no longer names a deleted API key "Gelöschter Schlüssel"; it sets `createdKeyDeleted`/`changedKeyDeleted` instead, and the app shows the hint in its language.
+
 ## [0.74.2] - 2026-11-03
 
 ### Changed

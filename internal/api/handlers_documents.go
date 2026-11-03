@@ -8,6 +8,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/mindsift-app/mindsift/internal/auth"
 	"github.com/mindsift-app/mindsift/internal/domain"
+	"github.com/mindsift-app/mindsift/internal/i18n"
 	"github.com/mindsift-app/mindsift/internal/storage"
 )
 
@@ -280,7 +281,7 @@ func (s *Server) handleCreateDocShare(w http.ResponseWriter, r *http.Request) {
 	if req.TeamID != "" {
 		share, err := s.store.CreateDocTeamShare(userID, docID, req.TeamID, req.Permission)
 		if err == nil {
-			defer s.notifyShared(userID, "team", req.TeamID, "die Notiz", s.docTitle(userID, docID))
+			defer s.notifyShared(userID, "team", req.TeamID, "note", s.docTitle(userID, docID))
 		}
 		if err != nil {
 			writeError(w, http.StatusBadRequest, err.Error())
@@ -306,7 +307,7 @@ func (s *Server) handleCreateDocShare(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	s.notifyShared(userID, "user", share.UserID, "die Notiz", s.docTitle(userID, docID))
+	s.notifyShared(userID, "user", share.UserID, "note", s.docTitle(userID, docID))
 	s.broadcastDocToAuthorizedUsers(docID, "DOC_CREATED")
 	s.broadcastDocToAuthorizedUsers(docID, "DOC_UPDATED")
 	writeJSON(w, http.StatusCreated, share)
@@ -340,7 +341,7 @@ func (s *Server) docTitle(userID, docID string) string {
 	if d, err := s.store.GetDocumentByID(userID, docID); err == nil && d.Title != "" {
 		return d.Title
 	}
-	return "Unbenannte Notiz"
+	return i18n.T(s.userLanguage(userID), "Unbenannte Notiz")
 }
 
 // derefIcon: the icon of a create request; a missing one lets the store pick the default.

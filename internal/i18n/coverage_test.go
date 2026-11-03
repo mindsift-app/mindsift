@@ -11,7 +11,7 @@ import (
 )
 
 // Server texts that reach people: error answers, translated texts and errors of the storage layer
-var textCall = regexp.MustCompile(`(?:writeError\(w, [^,]+, |writeErrorCode\(w, [^,]+, "[a-z_]+", |\btr\(w, |i18n\.T\("?[\w.()]*"?, |i18n\.NewError\(|errors\.New\(|fmt\.Errorf\(|toolError\(|jsonrpcError\{\w+, )"((?:[^"\\]|\\.)*)"(\s*\+)?`)
+var textCall = regexp.MustCompile(`(?:writeError\(w, [^,]+, |writeErrorCode\(w, [^,]+, "[a-z_]+", |\btr\(w, |i18n\.T\("?[\w.()]*"?, |i18n\.NewError\(|errors\.New\(|fmt\.Errorf\(|toolError\(|writeOAuthError\(w, [^,]+, "[a-z_]+", |jsonrpcError\{\w+, |\.skip\([^,]+, )"((?:[^"\\]|\\.)*)"(\s*\+)?`)
 
 // German texts are recognised by umlauts or common German words; English internal errors stay as they are
 var germanWords = regexp.MustCompile(`(?i)[äöüß]|\b(der|die|das|dem|den|des|ein|eine|einen|nicht|kein|keine|ist|und|oder|für|mit|zu|bitte|Bitte|wurde|konnte|nur|Nur|fehlt|erforderlich|Ungültig\w*|ungültig\w*|gefunden|Fehler|Benutzer|Liste|Aufgabe|Notiz|Datei|Gruppe|Sitzung|Zugriff|Berechtigung|Anfrage|Passwort|fehlgeschlagen|abgebrochen|unbekannt\w*|existiert|bereits|erlaubt|Aufgaben|Notizen|Rechte|Fehler\w*)\b`)

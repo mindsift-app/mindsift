@@ -250,7 +250,7 @@ func (s *Server) handleCreateFolderShare(w http.ResponseWriter, r *http.Request)
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	s.notifyShared(userID, share.TargetType, share.TargetID, "den Ordner", s.store.SharedFolderName(folderID))
+	s.notifyShared(userID, share.TargetType, share.TargetID, "folder", s.store.SharedFolderName(folderID))
 	s.wsHub.BroadcastToUsers(s.store.GetSharedFolderUserIDs(folderID), "WORKSPACE_FOLDERS_UPDATED", map[string]string{"folderId": folderID})
 	if docIDs, err := s.store.GetSharedFolderDocIDs(folderID); err == nil {
 		for _, docID := range docIDs {

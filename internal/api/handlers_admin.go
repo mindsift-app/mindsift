@@ -432,13 +432,15 @@ func (s *Server) handleAdminTestSMTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := s.sendMailContent(toEmail, "MindSift: SMTP-Test", mailContent{
-		Preheader: "Die SMTP-Konfiguration funktioniert",
-		Greeting:  "Es funktioniert!",
-		Intro:     "Die SMTP-Konfiguration deiner MindSift-Instanz ist richtig eingerichtet: Alarme, Tageszusammenfassungen und Passwort-Links kommen an.",
-		Footer:    "Diese Test-E-Mail wurde in den Administratoreinstellungen ausgelöst.",
+	lang := s.requestLanguage(r)
+	if err := s.sendMailContent(toEmail, i18n.T(lang, "MindSift: SMTP-Test"), mailContent{
+		Lang:      lang,
+		Preheader: i18n.T(lang, "Die SMTP-Konfiguration funktioniert"),
+		Greeting:  i18n.T(lang, "Es funktioniert!"),
+		Intro:     i18n.T(lang, "Die SMTP-Konfiguration deiner MindSift-Instanz ist richtig eingerichtet: Alarme, Tageszusammenfassungen und Passwort-Links kommen an."),
+		Footer:    i18n.T(lang, "Diese Test-E-Mail wurde in den Administratoreinstellungen ausgelöst."),
 	}); err != nil {
-		writeError(w, http.StatusBadGateway, "SMTP-Fehler: "+err.Error())
+		writeError(w, http.StatusBadGateway, tr(w, "SMTP-Fehler")+": "+trErr(w, err))
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]interface{}{

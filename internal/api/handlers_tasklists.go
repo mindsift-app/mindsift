@@ -131,7 +131,7 @@ func (s *Server) handleCreateTaskListShare(w http.ResponseWriter, r *http.Reques
 	}
 	s.broadcastTaskListChange(listID, nil, "TASK_LIST_UPDATED")
 	if tl, err := s.store.GetTaskListByID(userID, listID); err == nil {
-		s.notifyShared(userID, req.TargetType, req.TargetID, "die Aufgabenliste", tl.Title)
+		s.notifyShared(userID, req.TargetType, req.TargetID, "tasklist", tl.Title)
 	}
 	writeJSON(w, http.StatusCreated, share)
 }

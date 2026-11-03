@@ -35,6 +35,17 @@ func (s *Store) SetLanguage(userID, lang string) error {
 	return err
 }
 
+// MessageLanguage: the language texts the store writes for a person are in (e.g. a task turned into a
+// note): their own choice, else the admin's default language, else DEFAULT_LANGUAGE, else German.
+func (s *Store) MessageLanguage(userID string) string {
+	for _, v := range []string{s.Language(userID), s.DefaultLanguageSetting(), s.ConfiguredLanguage} {
+		if i18n.Valid(v) {
+			return v
+		}
+	}
+	return i18n.Fallback
+}
+
 // DefaultLanguageSetting: the admin's default language, "" while none was stored.
 func (s *Store) DefaultLanguageSetting() string {
 	var v string

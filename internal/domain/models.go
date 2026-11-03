@@ -66,58 +66,6 @@ func ExtractTags(content string) []string {
 	return tags
 }
 
-// FormatGermanDateTime formats an ISO-8601 string into "25. Okt. 2026 - 15:40 Uhr"
-func FormatGermanDateTime(isoStr string) string {
-	if isoStr == "" {
-		return ""
-	}
-	var t time.Time
-	var err error
-	formats := []string{
-		time.RFC3339Nano,
-		time.RFC3339,
-		"2006-01-02T15:04:05Z07:00",
-		"2006-01-02T15:04:05",
-		"2006-01-02 15:04:05",
-		"2006-01-02",
-	}
-	for _, f := range formats {
-		if parsed, parseErr := time.Parse(f, isoStr); parseErr == nil {
-			t = parsed
-			err = nil
-			break
-		} else {
-			err = parseErr
-		}
-	}
-	if err != nil {
-		return isoStr
-	}
-
-	t = t.Local()
-
-	germanMonths := map[time.Month]string{
-		time.January:   "Jan.",
-		time.February:  "Feb.",
-		time.March:     "März",
-		time.April:     "Apr.",
-		time.May:       "Mai",
-		time.June:      "Juni",
-		time.July:      "Juli",
-		time.August:    "Aug.",
-		time.September: "Sept.",
-		time.October:   "Okt.",
-		time.November:  "Nov.",
-		time.December:  "Dez.",
-	}
-	mStr := germanMonths[t.Month()]
-	if mStr == "" {
-		mStr = t.Format("Jan")
-	}
-
-	return fmt.Sprintf("%d. %s %d - %02d:%02d Uhr", t.Day(), mStr, t.Year(), t.Hour(), t.Minute())
-}
-
 type User struct {
 	ID                  string   `json:"id"`
 	Email               string   `json:"email"`
@@ -324,6 +272,9 @@ type Origin struct {
 	ChangedVia string `json:"changedVia,omitempty"`
 	ChangedKey string `json:"changedKey,omitempty"`
 	ChangedAt  string `json:"changedAt,omitempty"`
+	// The key was deleted since (its name is gone)
+	CreatedKeyDeleted bool `json:"createdKeyDeleted,omitempty"`
+	ChangedKeyDeleted bool `json:"changedKeyDeleted,omitempty"`
 }
 
 type ThoughtReorderItem struct {

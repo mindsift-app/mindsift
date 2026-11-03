@@ -5,6 +5,8 @@ import (
 	"html"
 	"strings"
 	"time"
+
+	"github.com/mindsift-app/mindsift/internal/i18n"
 )
 
 // One look for every mail MindSift sends: logo centred on top, a white card with greeting, intro and
@@ -51,6 +53,7 @@ type mailSection struct {
 type mailButton struct{ Label, URL string }
 
 type mailContent struct {
+	Lang      string // language of the recipient (html lang, tagline); the texts come translated
 	Preheader string // preview line in the inbox
 	Greeting  string // "Guten Morgen, Anna"
 	Intro     string
@@ -63,7 +66,7 @@ type mailContent struct {
 }
 
 // greeting for the time of day: the daily summary in the morning says "Guten Morgen".
-func mailGreeting(now time.Time, name string) string {
+func mailGreeting(lang string, now time.Time, name string) string {
 	g := "Hallo"
 	switch h := now.Hour(); {
 	case h >= 4 && h < 11:
@@ -72,9 +75,16 @@ func mailGreeting(now time.Time, name string) string {
 		g = "Guten Abend"
 	}
 	if name = strings.TrimSpace(name); name != "" {
-		return g + ", " + name
+		return i18n.T(lang, g+", {name}", "name", name)
 	}
-	return g
+	return i18n.T(lang, g)
+}
+
+func mailLang(lang string) string {
+	if lang == "" {
+		return i18n.Fallback
+	}
+	return lang
 }
 
 func toneColor(tone string) string {
@@ -147,7 +157,7 @@ func renderMailHTML(c mailContent) string {
 	var b strings.Builder
 	p := func(s string) { b.WriteString(s) }
 
-	p(`<!doctype html><html lang="de"><head><meta charset="utf-8">`)
+	p(`<!doctype html><html lang="` + html.EscapeString(mailLang(c.Lang)) + `"><head><meta charset="utf-8">`)
 	p(`<meta name="viewport" content="width=device-width,initial-scale=1">`)
 	// Light only: clients that invert colours on their own would otherwise turn the card grey
 	p(`<meta name="color-scheme" content="light"><meta name="supported-color-schemes" content="light">`)
@@ -215,7 +225,7 @@ func renderMailHTML(c mailContent) string {
 	if c.Footer != "" {
 		p(esc(c.Footer) + `<br>`)
 	}
-	p(`MindSift – Der Kopf frei in drei Sekunden.`)
+	p(esc(i18n.T(c.Lang, "MindSift – Der Kopf frei in drei Sekunden.")))
 	p(`</td></tr>`)
 
 	p(`</table></td></tr></table></body></html>`)

@@ -246,7 +246,7 @@ func TestMCPCreateDeleteAndOrigin(t *testing.T) {
 	}
 	// Renamed or deleted keys show up as such
 	_ = store.DeleteAPIKey(claims.UserID, key.ID)
-	if th, _ = store.GetThoughtByID(claims.UserID, own.ID); th.Origin.ChangedKey != "Gelöschter Schlüssel" {
+	if th, _ = store.GetThoughtByID(claims.UserID, own.ID); !th.Origin.ChangedKeyDeleted || th.Origin.ChangedKey != "" {
 		t.Fatalf("deleted key name: %q", th.Origin.ChangedKey)
 	}
 	key, _ = store.CreateAPIKey(claims.UserID, "Claude Code", []string{"tasks:read", "tasks:write", "lists:read", "lists:write"})
