@@ -6,6 +6,11 @@ Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), die V
 
 ## [Unreleased]
 
+## [0.71.1] - 2026-11-03
+
+### Changed
+- Notes: bullets copied with Ctrl+C read like a Markdown document: plain bullets on the top level become paragraphs, headings stay headings, and only the indented bullets form a list (bullet or numbered list, to-dos as `- [ ]`). Pasted back into a note they give the same structure.
+
 ## [0.71.0] - 2026-11-03
 
 ### Added

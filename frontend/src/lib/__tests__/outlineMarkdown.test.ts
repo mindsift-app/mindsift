@@ -27,7 +27,23 @@ describe('blocksToMarkdown', () => {
   });
 
   it('starts a copied branch at the left margin', () => {
-    expect(blocksToMarkdown([b('bullet', 'Ast', 3), b('bullet', 'Kind', 4)])).toBe('- Ast\n\t- Kind');
+    expect(blocksToMarkdown([b('bullet', 'Ast', 3), b('bullet', 'Kind', 4), b('bullet', 'Enkel', 5)])).toBe('Ast\n- Kind\n\t- Enkel');
+  });
+
+  it('writes the top level as paragraphs and headings, the indented bullets as lists', () => {
+    const md = blocksToMarkdown([
+      b('h1', 'Projekt', 0),
+      b('text', 'Ziel des Projekts', 0),
+      b('text', 'Teil A', 1),
+      b('numbered', 'Schritt eins', 2),
+      b('numbered', 'Schritt zwei', 2),
+      b('text', 'Zweiter Absatz', 0),
+      b('todo', 'Offen', 0),
+      b('text', 'Detail', 1),
+    ]);
+    expect(md).toBe(
+      ['# Projekt', '', 'Ziel des Projekts', '- Teil A', '\t1. Schritt eins', '\t1. Schritt zwei', '', 'Zweiter Absatz', '', '- [ ] Offen', '\t- Detail'].join('\n')
+    );
   });
 
   it('pasted back, it gives the same bullets', () => {
@@ -39,6 +55,36 @@ describe('blocksToMarkdown', () => {
       ['text', 'Zwei', 1, false],
       ['todo', 'Drei', 2, true],
       ['text', 'Vier', 0, false],
+    ]);
+  });
+
+  it('pasted back, paragraphs and their lists keep their levels', () => {
+    const blocks = [
+      b('text', 'Ziel', 0),
+      b('text', 'Teil A', 1),
+      b('numbered', 'Schritt', 2),
+      b('text', 'Zweiter Absatz', 0),
+      b('h2', 'Abschnitt', 0),
+      b('text', 'Punkt', 1),
+      b('text', 'Schluss', 0),
+    ];
+    const items = parsePastedLines(blocksToMarkdown(blocks).split('\n'));
+    expect(items.map((i) => [i.type, i.content, i.indent])).toEqual([
+      ['text', 'Ziel', 0],
+      ['text', 'Teil A', 1],
+      ['numbered', 'Schritt', 2],
+      ['text', 'Zweiter Absatz', 0],
+      ['h2', 'Abschnitt', 0],
+      ['text', 'Punkt', 1],
+      ['text', 'Schluss', 1],
+    ]);
+  });
+
+  it('a top-level to-do right after a paragraph pastes back under it (like any list after an intro)', () => {
+    const items = parsePastedLines(blocksToMarkdown([b('text', 'Einleitung', 0), b('todo', 'Offen', 0)]).split('\n'));
+    expect(items.map((i) => [i.type, i.indent])).toEqual([
+      ['text', 0],
+      ['todo', 1],
     ]);
   });
 });
