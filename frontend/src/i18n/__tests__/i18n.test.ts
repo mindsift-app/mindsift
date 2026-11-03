@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { LANGUAGES, resolveLanguage, resources } from '..';
+import en from '../../locales/en';
+
+// Every language's texts, loaded directly (the app loads all but German on demand)
+const ALL: Record<string, unknown> = { de: resources.de, en };
 
 // All keys of a namespace as "a.b.c", so languages can be compared
 function keysOf(obj: unknown, prefix = ''): string[] {
@@ -7,18 +11,40 @@ function keysOf(obj: unknown, prefix = ''): string[] {
   return Object.entries(obj).flatMap(([k, v]) => keysOf(v, prefix ? `${prefix}.${k}` : k));
 }
 
-describe('locales', () => {
-  const german = keysOf(resources.de).sort();
+// Plural forms differ by language (key_one, key_other, key_few …); keys are compared without them
+const PLURAL = /_(zero|one|two|few|many|other)$/;
+const baseKey = (k: string) => k.replace(PLURAL, '');
+const get = (obj: unknown, path: string) => path.split('.').reduce((o: any, k) => o?.[k], obj);
+// Placeholders of a key over all its plural forms
+function placeholdersByBase(texts: unknown): Map<string, Set<string>> {
+  const out = new Map<string, Set<string>>();
+  for (const k of keysOf(texts)) {
+    const set = out.get(baseKey(k)) ?? new Set<string>();
+    for (const p of String(get(texts, k)).match(/{{\w+}}/g) || []) set.add(p);
+    out.set(baseKey(k), set);
+  }
+  return out;
+}
 
-  it.each(LANGUAGES.map((l) => l.id))('%s has exactly the keys of the German texts', (id) => {
-    expect(keysOf(resources[id]).sort()).toEqual(german);
+describe('locales', () => {
+  const german = placeholdersByBase(resources.de);
+
+  it('loads every language of the list', () => {
+    expect(Object.keys(ALL).sort()).toEqual(LANGUAGES.map((l) => l.id).sort());
   });
 
-  it('keeps the placeholders of the German texts', () => {
-    const placeholders = (s: unknown) => (String(s).match(/{{\w+}}/g) || []).sort();
-    const get = (obj: unknown, path: string) => path.split('.').reduce((o: any, k) => o?.[k], obj);
-    for (const { id } of LANGUAGES) {
-      for (const key of german) expect(placeholders(get(resources[id], key)), `${id}: ${key}`).toEqual(placeholders(get(resources.de, key)));
+  it.each(LANGUAGES.map((l) => l.id))('%s has exactly the keys of the German texts', (id) => {
+    expect([...placeholdersByBase(ALL[id]).keys()].sort()).toEqual([...german.keys()].sort());
+  });
+
+  it.each(LANGUAGES.map((l) => l.id))('%s keeps the placeholders of the German texts', (id) => {
+    const own = placeholdersByBase(ALL[id]);
+    for (const [key, de] of german) {
+      const mine = own.get(key) ?? new Set<string>();
+      // {{count}} may be left out where the language says "one task" instead of "1 task"
+      const required = [...de].filter((p) => p !== '{{count}}');
+      for (const p of required) expect(mine.has(p), `${id}: ${key} lacks ${p}`).toBe(true);
+      for (const p of mine) expect(de.has(p) || p === '{{count}}', `${id}: ${key} has unknown ${p}`).toBe(true);
     }
   });
 });
@@ -31,8 +57,6 @@ describe('keys in the code', () => {
     import: 'default',
     eager: true,
   }) as Record<string, string>;
-  const get = (obj: unknown, path: string) => path.split('.').reduce((o: any, k) => o?.[k], obj);
-
   it('finds every key in the German texts', () => {
     const missing: string[] = [];
     let checked = 0;

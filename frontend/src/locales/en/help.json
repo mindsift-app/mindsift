@@ -1,0 +1,30 @@
+{
+  "back": "Back",
+  "title": "Help & documentation",
+  "subtitle": "Keyboard use, outliner notes, triage, Kanban board and collaboration",
+  "search": "Search help & shortcuts…",
+  "clearSearch": "Clear search",
+  "cat": {
+    "all": "All topics",
+    "workspace": "Workspace & notes",
+    "triage": "Quick capture & triage",
+    "tasks": "Tasks & Kanban",
+    "lists": "Shared lists",
+    "collaboration": "Groups & sharing",
+    "shortcuts": "Keyboard shortcuts & gestures"
+  },
+  "reset": "Reset filter",
+  "none": "No matching help topics",
+  "noneHint": "Try another search term or switch to the category “All topics”.",
+  "shortcutsTitle": "All keyboard shortcuts & gestures",
+  "shortcutsIntro": "Work faster without a mouse: all hotkeys and mobile gestures at a glance.",
+  "col": {
+    "key": "Key / gesture",
+    "scope": "Area",
+    "desc": "What it does"
+  },
+  "results_one": "Results for <b>“{{query}}”</b>: {{count}} help card",
+  "results_other": "Results for <b>“{{query}}”</b>: {{count}} help cards",
+  "shortcutCount_one": "{{count}} shortcut",
+  "shortcutCount_other": "{{count}} shortcuts"
+}

@@ -1,0 +1,119 @@
+{
+  "swipe": {
+    "toTask": "To task 👉",
+    "discard": "👈 Discard"
+  },
+  "action": {
+    "taskTitle": "Make it a task right away",
+    "task": "Task",
+    "noteTitle": "Create a workspace note right away",
+    "note": "Note",
+    "discard": "Discard"
+  },
+  "quickDump": "Quick Dump",
+  "empty": {
+    "title": "The triage deck is empty",
+    "capture": "+ Capture a quick dump",
+    "text": "All quick dump notes are sorted or discarded. Tap the <b>+</b> at the bottom center (or press <kbd>C</kbd>) to dump new thoughts."
+  },
+  "undoLast": "Undo last action",
+  "shortcuts": "← Discard • → Task • D Note • Space Later",
+  "undo": "Undo",
+  "trashTitle": "Triage trash",
+  "next": "Next quick dump…",
+  "moreOptions": "More options (or press and hold the card)",
+  "saveText": "Save text",
+  "swipeHint": "👈 Discard · 👉 Task · Press and hold = more options",
+  "date": {
+    "title": "Create a task with a due date:",
+    "save": "Save as a dated task"
+  },
+  "list": {
+    "title": "Put the quick dump on a list:",
+    "none": "No lists yet."
+  },
+  "toList": "To list",
+  "withDate": "With date",
+  "chooseDate": "Choose date",
+  "asNote": "As note",
+  "inWorkspace": "In the workspace",
+  "later": "Later",
+  "laterHint": "Move to the end",
+  "discardTitle": "Discard (key H or left arrow)",
+  "laterTitle": "Decide later – move to the end (space)",
+  "noteTitle": "Turn into a workspace note (key D)",
+  "dateTitle": "As a task with a due date (key T)",
+  "taskTitle": "Take over as a task now (key L or right arrow)",
+  "queue": {
+    "hint": "Tap = bring forward · 👈 Discard · 👉 Task",
+    "show": "Show queue ({{count}})",
+    "hide": "Hide queue ({{count}})",
+    "title": "Queue ({{count}})"
+  },
+  "sheet": {
+    "title": "Sort the quick dump",
+    "editText": "Edit the text before sorting",
+    "dateTitle": "Choose the task's due date:",
+    "back": "Back",
+    "saveDate": "Save with date",
+    "listTitle": "Which list should this item go on?"
+  },
+  "priority": {
+    "urgent": "Urgent",
+    "high": "Important"
+  },
+  "trashCount": "Trash ({{count}})",
+  "openCount_one": "{{count}} quick dump open",
+  "openCount_other": "{{count}} quick dumps open",
+  "noList": "No list yet",
+  "listHint": "Shopping / shared",
+  "onList": "To {{title}}",
+  "toSharedList": "Put on a shared list",
+  "setOnList": "Put on a list",
+  "trash": {
+    "none": "No discarded thoughts.",
+    "confirmDelete": "Really delete for good?",
+    "delete": "Delete for good",
+    "really": "Really?",
+    "confirmEmpty": "Really delete {{count}} for good?",
+    "empty": "Empty trash",
+    "discardedAt": "discarded {{date}}"
+  },
+  "capture": {
+    "okTask": "Task!",
+    "okList": "On the list!",
+    "okNote": "Note!",
+    "okInbox": "To triage!",
+    "placeholderInbox": "Capture a quick dump…",
+    "placeholderTask": "Capture a task…",
+    "placeholderNote": "Capture a note…",
+    "placeholder": "Quick dump…",
+    "targetTitle": "Choose where it goes (quick dump, task, list or note) & options",
+    "asTask": "As task",
+    "where": "Where to?",
+    "whereHint": "Default: quick dump to swipe later",
+    "inbox": "Quick dump (triage)",
+    "directList": "Straight to a list…",
+    "directNote": "Straight as a note",
+    "taskList": "Task list:",
+    "allTasks": "All tasks",
+    "listLabel": "List:",
+    "priority": "Priority:",
+    "due": "Due on:",
+    "placeholderList": "Add to “{{title}}”…",
+    "list": "List",
+    "directTask": "Straight as a task"
+  },
+  "fab": {
+    "nothing": "Nothing recognized",
+    "saved": "Saved to the quick dump",
+    "saveFailed": "Saving failed",
+    "unsupported": "This browser does not support voice input",
+    "releaseCancel": "🗑️ Release to cancel",
+    "listening": "Listening… (release to save)",
+    "dragCancel": "Drag up to cancel",
+    "title": "Quick capture (+)",
+    "label": "Quick capture – tap to type, press and hold to speak"
+  },
+  "dictation": "Dictation"
+}

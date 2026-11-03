@@ -3,12 +3,20 @@ import { initReactI18next } from 'react-i18next';
 import de from '../locales/de';
 
 // The languages of the app, each named in itself. Keep in step with Supported in internal/i18n/i18n.go;
-// a new language needs its files in locales/<code>/, an entry in resources and one here.
-export const LANGUAGES = [{ id: 'de', name: 'Deutsch', locale: 'de-DE' }] as const;
+// a new language needs its files in locales/<code>/, a loader below, an entry here and its help
+// (features/help/content).
+export const LANGUAGES = [
+  { id: 'de', name: 'Deutsch', locale: 'de-DE' },
+  { id: 'en', name: 'English', locale: 'en-US' },
+] as const;
 export type Language = (typeof LANGUAGES)[number]['id'];
 // German is the language of the source texts: whatever is missing elsewhere shows in German
 export const FALLBACK_LANGUAGE: Language = 'de';
-export const resources: Record<Language, typeof de> = { de };
+// German ships with the app; the others load the first time someone uses them
+export const resources = { de };
+const loaders: Record<Exclude<Language, 'de'>, () => Promise<{ default: Record<string, object> }>> = {
+  en: () => import('../locales/en'),
+};
 
 void i18n.use(initReactI18next).init({
   resources,
@@ -38,8 +46,16 @@ export function resolveLanguage(own?: string, serverDefault?: string, tags?: rea
   return isLanguage(serverDefault) ? serverDefault : FALLBACK_LANGUAGE;
 }
 
-export function applyLanguage(lang: Language) {
-  if (i18n.language !== lang) void i18n.changeLanguage(lang);
+// Loads the texts of a language once (German is always there)
+export async function loadLanguage(lang: Language): Promise<void> {
+  if (lang === FALLBACK_LANGUAGE || i18n.hasResourceBundle(lang, 'common')) return;
+  const texts = (await loaders[lang]()).default;
+  for (const [ns, bundle] of Object.entries(texts)) i18n.addResourceBundle(lang, ns, bundle, true, true);
+}
+
+export async function applyLanguage(lang: Language): Promise<void> {
+  await loadLanguage(lang).catch(() => {});
+  if (i18n.language !== lang) await i18n.changeLanguage(lang);
   document.documentElement.lang = lang;
 }
 
