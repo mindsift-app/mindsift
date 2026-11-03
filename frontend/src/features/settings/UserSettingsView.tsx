@@ -263,8 +263,8 @@ export const UserSettingsView: React.FC<UserSettingsViewProps> = ({
                 <h2 className="text-sm font-bold text-main">API</h2>
                 <p className="text-muted mt-0.5">
                   Mit persönlichen API-Schlüsseln lesen und ändern Skripte, dein Smart Home oder KI-Agenten wie Claude Code
-                  und Codex deine Aufgaben, Listen und die Inbox: per curl oder über MCP, mit denselben Rechten. Notizen
-                  lesen und anlegen geht nur über MCP.
+                  und Codex deine Aufgaben, Listen, Notizen und die Inbox: per curl oder über MCP, mit denselben Rechten.
+                  Notizen sowie Lesen und Sortieren der Inbox gehen nur über MCP.
                 </p>
               </div>
 

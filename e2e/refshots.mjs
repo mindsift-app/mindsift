@@ -192,7 +192,8 @@ async function capture() {
     ['api', 'API'],
     ['data', 'Export & Import'],
   ]) {
-    const button = d.locator('aside button', { hasText: label }).locator('visible=true').first();
+    // By the start of its name: hasText matches parts in any case ("API" would hit "Papierkörbe")
+    const button = d.locator('aside').getByRole('button', { name: new RegExp(`^${label.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&')}`) }).locator('visible=true').first();
     if (!(await button.count())) continue; // voice input only with a Whisper server
     await step(d, `d14_us_${key}`, () => button.click());
   }

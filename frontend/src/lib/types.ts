@@ -676,7 +676,10 @@ export type ApiKeyScope =
   | 'lists:read'
   | 'lists:write'
   | 'notes:read'
-  | 'notes:create';
+  | 'notes:create'
+  | 'notes:write'
+  | 'inbox:read'
+  | 'inbox:write';
 
 export interface APIKey {
   id: string;

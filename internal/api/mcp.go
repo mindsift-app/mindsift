@@ -332,6 +332,8 @@ type noteView struct {
 	Tags       []string `json:"tags,omitempty"`
 	UpdatedAt  string   `json:"updatedAt"`
 	Content    string   `json:"content,omitempty"`
+	// Bullets with their ids (get_note), for changing single bullets (notes:write)
+	Bullets []noteBullet `json:"bullets,omitempty"`
 }
 
 func toNoteView(d *domain.Document) noteView {
@@ -912,7 +914,7 @@ var mcpTools = []mcpTool{
 	},
 	{
 		Name:        "get_note",
-		Description: "One note with its bullets as an indented Markdown list (one tab per level; - [ ] / - [x] are to-dos).",
+		Description: "One note: content is its bullets as an indented Markdown list (one tab per level; - [ ] / - [x] are to-dos); bullets lists them with their ids, level and type, for add_note_bullet / update_note_bullet / delete_note_bullet.",
 		Scope:       storage.ScopeNotesRead,
 		Schema:      schema([]string{"id"}, map[string]interface{}{"id": prop("string", "Note id")}),
 		run: func(s *Server, userID string, _ *apiActor, args json.RawMessage) (interface{}, error) {
@@ -926,12 +928,15 @@ var mcpTools = []mcpTool{
 			}
 			v := toNoteView(d)
 			v.Content = noteMarkdown(d.Blocks)
+			if doc, err := s.noteDoc(a.ID); err == nil {
+				v.Bullets = noteBullets(doc)
+			}
 			return v, nil
 		},
 	},
 	{
 		Name:        "create_note",
-		Description: "Create a new note. content is Markdown: a nested list (tab or 2+ spaces per level) becomes nested bullets, - [ ] a to-do, # a heading with the following bullets below it, plain lines become bullets. Existing notes cannot be changed.",
+		Description: "Create a new note. content is Markdown: a nested list (tab or 2+ spaces per level) becomes nested bullets, - [ ] a to-do, # a heading with the following bullets below it, plain lines become bullets. Changing existing notes needs notes:write (update_note, add_note_bullet, …).",
 		Scope:       storage.ScopeNotesCreate,
 		Schema: schema([]string{"title"}, map[string]interface{}{
 			"title":      prop("string", "Title of the note"),

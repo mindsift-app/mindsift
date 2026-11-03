@@ -51,7 +51,7 @@ Basis: `/api/v1`. Antworten sind JSON; Fehler haben die Form `{"error": "Text"}`
 | DELETE | `/user/account` | Eigenes Konto mit allen Daten löschen (`{"password"}` nötig); `403` für den letzten Server-Admin. `/auth/me` liefert dafür `isLastAdmin` |
 | GET | `/backups`, `/backups/{name}` | Eigene automatische Server-Backups auflisten bzw. herunterladen |
 | POST | `/backups/{name}/restore` | Server-Backup einspielen: `mode=merge` oder `restore` (gewählte Bereiche vorher leeren), `sections=notes,tasks,lists,inbox,themes`, `preview=1` |
-| GET/POST | `/keys` | API-Keys auflisten bzw. anlegen (Klartext nur bei Erstellung); `POST` mit `name` und `scopes` (`webhook:triage`, `webhook:task`, `webhook:list`, `tasks:read`, `tasks:write`, `lists:read`, `lists:write`, `notes:read`, `notes:create`; Standard `["webhook:triage"]`) |
+| GET/POST | `/keys` | API-Keys auflisten bzw. anlegen (Klartext nur bei Erstellung); `POST` mit `name` und `scopes` (`webhook:triage`, `webhook:task`, `webhook:list`, `tasks:read`, `tasks:write`, `lists:read`, `lists:write`, `notes:read`, `notes:create`, `notes:write`, `inbox:read`, `inbox:write`; Standard `["webhook:triage"]`) |
 | POST | `/mcp` | MCP-Endpunkt für KI-Agenten, siehe unten |
 | PATCH | `/keys/{id}` | Name (`name`) und/oder Rechte (`scopes`) ändern; der Schlüssel selbst bleibt gleich |
 | DELETE | `/keys/{id}` | API-Key löschen |
@@ -106,10 +106,20 @@ Betreiber können MCP abschalten (`MCP_ENABLED=false` oder Schalter in der Admin
 | `check_list_item` | `lists:write` | Eintrag abhaken (`completed` false = zurück) |
 | `update_list_item` | `lists:write` | Text, Kategorie, Menge ändern |
 | `list_notes` | `notes:read` | Notizen ohne Inhalt, zuletzt geänderte zuerst (`folder` samt Unterordnern, `query` im Titel, `limit`) |
-| `get_note` | `notes:read` | Eine Notiz; `content` sind die Punkte als eingerückte Markdown-Liste (Tab je Ebene, `- [ ]` für To-dos, Bilder und Aufnahmen als Platzhalter) |
-| `create_note` | `notes:create` | Neue Notiz (`title`, `content` als Markdown wie beim Import, `folderPath`, `icon`); in geteilte Ordner nur mit Schreibrecht. Bestehende Notizen ändert kein Werkzeug |
+| `get_note` | `notes:read` | Eine Notiz; `content` sind die Punkte als eingerückte Markdown-Liste (Tab je Ebene, `- [ ]` für To-dos, Bilder und Aufnahmen als Platzhalter), `bullets` dieselben Punkte mit `id`, `level`, `type`, `text`, `checked` |
+| `create_note` | `notes:create` | Neue Notiz (`title`, `content` als Markdown wie beim Import, `folderPath`, `icon`); in geteilte Ordner nur mit Schreibrecht |
+| `update_note` | `notes:write` | Titel, Icon oder Ordner einer Notiz ändern |
+| `add_note_bullet` | `notes:write` | Punkt hinzufügen: nach einem Punkt (`afterId`), als letztes Kind (`parentId`) oder am Ende; `type` text/todo/h1–h3/numbered/callout, `checked` |
+| `update_note_bullet` | `notes:write` | Text, Haken oder Typ eines Punkts ändern (`bulletId` aus `get_note`) |
+| `delete_note_bullet` | `notes:write` | Punkt samt Unterpunkten entfernen |
+| `delete_note` | `notes:write` | Eigene Notiz in den Papierkorb (wiederherstellbar); geteilte Notizen und Notizen im Papierkorb nicht |
 | `search` | ein Lese-Scope | Volltextsuche in Aufgaben, Listeneinträgen und Notizen (nur die Teile der eigenen Scopes); Notizen als `notes` mit `noteId`, `title`, `snippet` |
 | `capture_to_inbox` | `webhook:triage` | Gedanken in die Inbox |
+| `list_inbox` | `inbox:read` | Offene Inbox-Einträge, neueste zuerst (`query` im Text, `limit`) |
+| `convert_inbox_item` | `inbox:write` | Inbox-Eintrag umwandeln wie in der Triage: `to` task (mit `taskListId`, `dueDate`), note oder list_item (mit `listId`) |
+| `discard_inbox_item` | `inbox:write` | Inbox-Eintrag verwerfen (Papierkorb der Triage, wiederherstellbar) |
+
+Punkte einer Notiz ändern die Werkzeuge über dieselben Operationen wie der Editor (Notiz-Synchronisation): Wer die Notiz offen hat, sieht die Änderung sofort; ein Punkt, den gerade jemand bearbeitet, wird nicht angefasst (Fehlermeldung, später noch einmal versuchen). Die Inbox-Werkzeuge nehmen nur offene Inbox-Einträge an, Aufgaben bleiben für sie unerreichbar. Listeneinträge lassen sich per MCP nicht löschen, nur abhaken (sie haben keinen Papierkorb).
 
 Was ein Agent anlegt oder ändert, bekommt eine dauerhafte Herkunft (`origin`, siehe [API-Schlüssel](#api-schlüssel-rechte-und-herkunft)). `create_task` geht auch mit `webhook:task`, `add_list_item` auch mit `webhook:list`.
 
@@ -130,7 +140,7 @@ Clients, die keinen `X-API-Key` setzen können, verbinden sich per OAuth 2.1 nac
 
 Die Zustimmungsseite nutzt `GET`/`POST /api/v1/oauth/authorize` (nur mit Anmeldung, nicht mit Schlüsseln).
 
-- **Rechte:** dieselben wie bei Schlüsseln, angeboten werden `tasks:read`, `tasks:write`, `lists:read`, `lists:write`, `notes:read`, `notes:create` und `webhook:triage`. Fragt der Client nichts Bestimmtes an, sind Lesen und Ändern für Aufgaben und Listen vorbelegt.
+- **Rechte:** dieselben wie bei Schlüsseln, angeboten werden `tasks:read`, `tasks:write`, `lists:read`, `lists:write`, `notes:read`, `notes:create`, `notes:write`, `webhook:triage`, `inbox:read` und `inbox:write`. Fragt der Client nichts Bestimmtes an, sind Lesen und Ändern für Aufgaben und Listen vorbelegt.
 - **Verbindung = Eintrag unter `/keys`** mit `kind: "oauth"` und dem Namen „<Client> (OAuth)“. Rechte ändern, umbenennen und löschen wie bei jedem Schlüssel; Herkunft (`origin`) mit diesem Namen. Erneutes Zustimmen desselben Clients verwendet den Eintrag weiter.
 - **Tokens:** Code 10 Minuten und einmal gültig, Zugangs-Token (`mindsift_oat_…`) 1 Stunde, Refresh-Token (`mindsift_ort_…`) 90 Tage und bei jeder Erneuerung neu. Wird ein bereits ersetzter Refresh-Token noch einmal benutzt, enden alle Tokens der Verbindung. Zugangs-Tokens gelten nur für `POST /mcp`, nicht für REST oder Webhooks.
 - **Verfall:** Eine Verbindung, die `OAUTH_IDLE_DAYS` (Standard 90, `0` = nie) nicht benutzt wurde, wird gelöscht.
@@ -151,8 +161,11 @@ Ein Schlüssel darf nur diese Endpunkte und braucht dafür eines der genannten R
 | `lists:write` | Listen ändern (schließt Hinzufügen ein) | dazu `PATCH`/`PUT /lists/{id}/items/{itemId}` | dazu `check_list_item`, `update_list_item`, `create_list` |
 | `notes:read` | Notizen lesen | – | `list_notes`, `get_note`, `search` |
 | `notes:create` | Notizen anlegen | – | `create_note` |
+| `notes:write` | Notizen ändern | – | `update_note`, `add_note_bullet`, `update_note_bullet`, `delete_note_bullet`, `delete_note` |
+| `inbox:read` | Inbox lesen | – | `list_inbox` |
+| `inbox:write` | Inbox sortieren | – | `convert_inbox_item`, `discard_inbox_item` |
 
-Notizen gibt es nur über MCP; per REST bleiben sie für Schlüssel gesperrt. Notizen tragen keine Herkunft (`origin`).
+Je Bereich gibt es die Stufen Lesen, Anlegen und Ändern; in den Einstellungen schaltet „Ändern“ das passende „Lesen“ mit ein. Notizen sowie Lesen und Sortieren der Inbox gibt es nur über MCP; per REST bleiben sie für Schlüssel gesperrt. Notizen tragen keine Herkunft (`origin`).
 
 Die Ids `webhook:…` stammen aus der Zeit, als Schlüssel nur einliefern konnten, und bleiben für bestehende Schlüssel gleich.
 
