@@ -7,7 +7,7 @@
 //   would hand it the old values), the cache only offline.
 // - API requests are never touched; offline data comes from the app's own cache (lib/offline.ts).
 // Raise VERSION when this file changes in a way that needs fresh caches.
-const VERSION = 'v6';
+const VERSION = 'v7';
 const SHELL_CACHE = `mindsift-shell-${VERSION}`;
 const ASSET_CACHE = `mindsift-assets-${VERSION}`;
 const MAX_ASSETS = 80;

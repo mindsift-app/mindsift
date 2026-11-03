@@ -107,6 +107,7 @@ func TestMessageTextsTranslated(t *testing.T) {
 	for _, k := range sharedTexts {
 		keys = append(keys, k)
 	}
+	keys = append(keys, staticTexts...)
 	for _, lang := range i18n.CatalogLanguages() {
 		for _, k := range keys {
 			if !i18n.Has(lang, k) {
@@ -165,5 +166,18 @@ func TestSetupLanguage(t *testing.T) {
 	}
 	if !found {
 		t.Fatal("French admin should get the English sample data")
+	}
+}
+
+// index.html and manifest.json come in the browser's language.
+func TestStaticFilesLocalized(t *testing.T) {
+	html := `<html lang="de" class="dark"><meta name="description" content="MindSift — Der Kopf frei in drei Sekunden. Instant Capture, Tinder-Style Triage, Workspace & Echtzeit-Listen." />`
+	got := string(localizeStatic([]byte(html), "it"))
+	if !strings.Contains(got, `<html lang="it"`) || !strings.Contains(got, "La mente libera in tre secondi") {
+		t.Fatalf("Italian index.html: %s", got)
+	}
+	manifest := `{"shortcuts":[{"name": "Neue Aufgabe", "short_name": "Aufgabe"}]}`
+	if got := string(localizeStatic([]byte(manifest), "en")); got != `{"shortcuts":[{"name": "New task", "short_name": "Task"}]}` {
+		t.Fatalf("English manifest: %s", got)
 	}
 }
