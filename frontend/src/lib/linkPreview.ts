@@ -3,7 +3,7 @@
 // MindSift. Hiding the card for one link turns the address into a named link [Titel](url), so the
 // choice syncs with the note; a global switch (this device) turns all previews off.
 import { useEffect, useState } from 'react';
-import { getToken } from './api';
+import { authHeaders } from './api';
 
 export interface LinkPreview {
   key: string;
@@ -47,10 +47,7 @@ export function loadLinkPreview(url: string): Promise<LinkPreview | null> {
   let p = cache.get(url);
   if (!p) {
     p = (async () => {
-      const token = getToken();
-      const res = await fetch(`/api/v1/link-preview?url=${encodeURIComponent(url)}`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
+      const res = await fetch(`/api/v1/link-preview?url=${encodeURIComponent(url)}`, { headers: authHeaders() });
       if (!res.ok) return null; // demo, http link, offline: just no card
       const data = (await res.json()) as LinkPreview;
       return data.ok ? data : null;

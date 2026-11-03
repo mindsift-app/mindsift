@@ -3,12 +3,12 @@ package api
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -54,13 +54,13 @@ func (s *Server) storeMedia(w http.ResponseWriter, userID, docID string, data []
 		return nil, false
 	}
 	if limit := s.mediaLimit(kind); int64(len(data)) > limit {
-		writeError(w, http.StatusRequestEntityTooLarge, fmt.Sprintf("Datei zu groß (höchstens %d MB)", limit>>20))
+		writeError(w, http.StatusRequestEntityTooLarge, tr(w, "Datei zu groß (höchstens {mb} MB)", "mb", strconv.FormatInt(limit>>20, 10)))
 		return nil, false
 	}
 	if quota := int64(s.cfg.Media.QuotaMB) << 20; quota > 0 {
 		used, _ := s.store.MediaUsage(userID)
 		if used+int64(len(data)) > quota {
-			writeError(w, http.StatusRequestEntityTooLarge, fmt.Sprintf("Speicherplatz für Medien aufgebraucht (%d MB)", s.cfg.Media.QuotaMB))
+			writeError(w, http.StatusRequestEntityTooLarge, tr(w, "Speicherplatz für Medien aufgebraucht ({mb} MB)", "mb", strconv.Itoa(s.cfg.Media.QuotaMB)))
 			return nil, false
 		}
 	}
@@ -149,7 +149,7 @@ func (s *Server) handleFetchMedia(w http.ResponseWriter, r *http.Request) {
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		writeError(w, http.StatusBadGateway, fmt.Sprintf("Bild konnte nicht geladen werden (HTTP %d)", resp.StatusCode))
+		writeError(w, http.StatusBadGateway, tr(w, "Bild konnte nicht geladen werden (HTTP {status})", "status", strconv.Itoa(resp.StatusCode)))
 		return
 	}
 	data, err := io.ReadAll(io.LimitReader(resp.Body, limit+1))
@@ -158,7 +158,7 @@ func (s *Server) handleFetchMedia(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if int64(len(data)) > limit {
-		writeError(w, http.StatusRequestEntityTooLarge, fmt.Sprintf("Bild zu groß (höchstens %d MB)", limit>>20))
+		writeError(w, http.StatusRequestEntityTooLarge, tr(w, "Bild zu groß (höchstens {mb} MB)", "mb", strconv.FormatInt(limit>>20, 10)))
 		return
 	}
 	if _, kind, ok := detectMedia(data, ""); !ok || kind != "image" {

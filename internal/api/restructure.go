@@ -57,7 +57,7 @@ func (s *Server) handleExtractBranch(w http.ResponseWriter, r *http.Request) {
 	}
 	created, link, err := s.store.ExtractBranch(userID, docID, req.BlockID, s.restructureActor(r, req.ClientID), s.leases.View(docID))
 	if err != nil {
-		writeError(w, restructureStatus(err), err.Error())
+		writeError(w, restructureStatus(err), trErr(w, err))
 		return
 	}
 	if full, err := s.store.GetDocumentByID(userID, created.ID); err == nil {
@@ -73,7 +73,7 @@ func (s *Server) handleUndoExtract(w http.ResponseWriter, r *http.Request) {
 	docID := chi.URLParam(r, "id")
 	users, _ := s.store.GetAuthorizedDocUsers(docID)
 	if err := s.store.UndoExtract(userID, docID); err != nil {
-		writeError(w, restructureStatus(err), err.Error())
+		writeError(w, restructureStatus(err), trErr(w, err))
 		return
 	}
 	for _, uid := range users {
@@ -100,7 +100,7 @@ func (s *Server) handleInlineNote(w http.ResponseWriter, r *http.Request) {
 	}
 	res, err := s.store.InlineNote(userID, docID, req.BlockID)
 	if err != nil {
-		writeError(w, restructureStatus(err), err.Error())
+		writeError(w, restructureStatus(err), trErr(w, err))
 		return
 	}
 	users, _ := s.store.GetAuthorizedDocUsers(res.SourceID)
@@ -129,7 +129,7 @@ func (s *Server) handleMergeDocuments(w http.ResponseWriter, r *http.Request) {
 	sourceUsers, _ := s.store.GetAuthorizedDocUsers(req.SourceID)
 	res, err := s.store.MergeDocuments(userID, req.SourceID, targetID, s.restructureActor(r, req.ClientID), s.leases.View(targetID))
 	if err != nil {
-		writeError(w, restructureStatus(err), err.Error())
+		writeError(w, restructureStatus(err), trErr(w, err))
 		return
 	}
 	s.notifyDocChanged(targetID, s.store.DocHead(targetID))
@@ -158,7 +158,7 @@ func (s *Server) handleUndoMerge(w http.ResponseWriter, r *http.Request) {
 	}
 	m := storage.MergeResult{TargetID: targetID, SourceID: req.SourceID, HeadingID: req.HeadingID}
 	if err := s.store.UndoMerge(userID, m, s.restructureActor(r, req.ClientID), s.leases.View(targetID)); err != nil {
-		writeError(w, restructureStatus(err), err.Error())
+		writeError(w, restructureStatus(err), trErr(w, err))
 		return
 	}
 	s.notifyDocChanged(targetID, s.store.DocHead(targetID))

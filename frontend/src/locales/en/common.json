@@ -22,7 +22,12 @@
   },
   "errors": {
     "saveFailed": "Saving failed: {{message}}",
-    "unknown": "Unknown error"
+    "unknown": "Unknown error",
+    "downloadFailed": "Download failed (HTTP {{status}})",
+    "importFailed": "Import failed (HTTP {{status}})",
+    "uploadFailed": "Upload failed (HTTP {{status}})",
+    "transcribeFailed": "Speech recognition failed (HTTP {{status}})",
+    "network": "Network error"
   },
   "about": {
     "tagline": "A clear head in three seconds.",

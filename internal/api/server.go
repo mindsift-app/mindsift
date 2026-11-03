@@ -113,6 +113,7 @@ func (s *Server) Router() http.Handler {
 	r := chi.NewRouter()
 
 	r.Use(s.clientIPMiddleware)
+	r.Use(s.languageMiddleware)
 	r.Use(s.securityHeaders)
 	r.Use(s.bodyLimit)
 	r.Use(s.demoResetGate)
@@ -430,8 +431,14 @@ func writeJSON(w http.ResponseWriter, status int, data interface{}) {
 	_ = json.NewEncoder(w).Encode(data)
 }
 
+// writeError answers with the message in the language of the request (languageMiddleware); the code
+// lets the app react to one specific error regardless of the language
 func writeError(w http.ResponseWriter, status int, message string) {
-	writeJSON(w, status, map[string]string{"error": message})
+	writeJSON(w, status, map[string]string{"error": tr(w, message)})
+}
+
+func writeErrorCode(w http.ResponseWriter, status int, code, message string) {
+	writeJSON(w, status, map[string]string{"error": tr(w, message), "code": code})
 }
 
 // writeStoreError maps read-only task list violations to 403, a missing row (no access or gone) to 404,

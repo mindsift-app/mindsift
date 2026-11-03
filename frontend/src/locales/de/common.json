@@ -22,7 +22,12 @@
   },
   "errors": {
     "saveFailed": "Fehler beim Speichern: {{message}}",
-    "unknown": "Unbekannter Fehler"
+    "unknown": "Unbekannter Fehler",
+    "downloadFailed": "Download fehlgeschlagen (HTTP {{status}})",
+    "importFailed": "Import fehlgeschlagen (HTTP {{status}})",
+    "uploadFailed": "Hochladen fehlgeschlagen (HTTP {{status}})",
+    "transcribeFailed": "Spracherkennung fehlgeschlagen (HTTP {{status}})",
+    "network": "Netzwerkfehler"
   },
   "about": {
     "tagline": "Der Kopf frei in drei Sekunden.",

@@ -4,11 +4,13 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/mindsift-app/mindsift/internal/collab"
 	"github.com/mindsift-app/mindsift/internal/domain"
+	"github.com/mindsift-app/mindsift/internal/i18n"
 )
 
 // Restructuring notes: turn a bullet with its children into a note of its own, and merge one note into
@@ -170,8 +172,10 @@ type StillLinkedError struct {
 	Count int
 }
 
-func (e *StillLinkedError) Error() string {
-	return fmt.Sprintf("„%s“ ist noch in %d weiteren Notiz(en) verlinkt; diese Links würden ins Leere zeigen. Bitte dort zuerst entfernen.", e.Title, e.Count)
+func (e *StillLinkedError) Error() string { return e.Localize(i18n.Fallback) }
+
+func (e *StillLinkedError) Localize(lang string) string {
+	return i18n.T(lang, "„{title}“ ist noch in {count} weiteren Notiz(en) verlinkt; diese Links würden ins Leere zeigen. Bitte dort zuerst entfernen.", "title", e.Title, "count", strconv.Itoa(e.Count))
 }
 
 // InlineResult: what the editor puts back in place of the link bullet

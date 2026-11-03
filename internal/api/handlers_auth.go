@@ -292,13 +292,13 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		}
-		message := "Dein Konto wurde angelegt und wartet auf die Freigabe durch einen Administrator. Du bekommst eine E-Mail, sobald du dich anmelden kannst."
+		message := tr(w, "Dein Konto wurde angelegt und wartet auf die Freigabe durch einen Administrator. Du bekommst eine E-Mail, sobald du dich anmelden kannst.")
 		if verify {
 			// Admins hear about it only once the address is confirmed
 			go s.sendVerificationMail(user)
-			message = "Fast geschafft: Wir haben dir eine E-Mail an " + user.Email + " geschickt. Bestätige deine Adresse über den Link darin."
+			message = tr(w, "Fast geschafft: Wir haben dir eine E-Mail an {email} geschickt. Bestätige deine Adresse über den Link darin.", "email", user.Email)
 			if pending {
-				message += " Danach schaltet ein Administrator dein Konto frei."
+				message += " " + tr(w, "Danach schaltet ein Administrator dein Konto frei.")
 			}
 		} else {
 			go s.notifyAdminsOfRegistration(user)
@@ -375,7 +375,7 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 	}
 	s.loginGuard.recordSuccess(account, ip)
 	if !user.IsActive && s.store.IsEmailUnverified(user.ID) {
-		writeError(w, http.StatusForbidden, "Bitte bestätige zuerst deine E-Mail-Adresse über den Link, den wir dir geschickt haben")
+		writeErrorCode(w, http.StatusForbidden, "email_unverified", "Bitte bestätige zuerst deine E-Mail-Adresse über den Link, den wir dir geschickt haben")
 		return
 	}
 	if !user.IsActive && s.store.IsPendingRegistration(user.ID) {

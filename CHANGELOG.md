@@ -6,6 +6,11 @@ Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), die V
 
 ## [Unreleased]
 
+## [0.74.2] - 2026-11-03
+
+### Changed
+- Server error messages follow the app's language: in English, the app shows them in English, and so do other clients that ask for English (`Accept-Language`). Messages to AI agents over MCP are always English.
+
 ## [0.74.1] - 2026-11-03
 
 ### Changed

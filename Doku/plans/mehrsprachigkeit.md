@@ -9,7 +9,7 @@ As of 2026-11-03. Goal: everyone picks their language, and the whole interface p
 | 1 | Groundwork: i18next, `users.language`, admin default language | done (v0.73.0) |
 | 2 | Move all interface texts into language files | done (v0.73.1–v0.73.6) |
 | 3 | English in the interface | done (v0.74.0) |
-| 4 | Backend in English: emails, push, daily summary, journal, due dates, default columns, error codes, MCP in English | next (Claude) |
+| 4 | Backend in English: emails, push, daily summary, journal, due dates, default columns, error codes, MCP in English | in progress (Claude): error messages, error codes and MCP done in v0.74.2; emails, push, summary, journal, due dates, columns next |
 | 5 | Demo and help notes per language, `manifest.json` per language, guide "adding a language" | mechanism by Claude, content by Gemini |
 | 6 | Spanish, French, Italian (interface, help, backend catalog, demo content) | Gemini, after step 4 |
 

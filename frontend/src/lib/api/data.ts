@@ -11,7 +11,8 @@ import {
   SearchResults,
   SearchFilter,
 } from '../types';
-import { getToken, ensureArray, request, downloadBlob } from './client';
+import { authHeaders, ensureArray, request, downloadBlob } from './client';
+import i18n from '../../i18n';
 
 export const dataApi = {
   // --- CUSTOM THEMES ---
@@ -119,7 +120,6 @@ export const dataApi = {
     mode: 'merge' | 'restore' = 'merge',
     sections?: DataSection[]
   ): Promise<ImportSummary> {
-    const token = getToken();
     const form = new FormData();
     form.append('file', file);
     const params = new URLSearchParams();
@@ -128,11 +128,11 @@ export const dataApi = {
     if (sections && sections.length > 0) params.set('sections', sections.join(','));
     const res = await fetch(`/api/v1/import/${source}${params.toString() ? `?${params}` : ''}`, {
       method: 'POST',
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      headers: authHeaders(),
       body: form,
     });
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.error || `Import fehlgeschlagen (HTTP ${res.status})`);
+    if (!res.ok) throw new Error(data.error || i18n.t('common:errors.importFailed', { status: res.status }));
     return data as ImportSummary;
   },
 

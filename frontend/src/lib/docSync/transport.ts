@@ -1,6 +1,7 @@
 // HTTP transport of the note sync protocol (see Doku/api/rest.md). Every data exchange is a plain request,
 // so it works behind proxies that block WebSockets.
-import { getToken } from '../api';
+import { authHeaders } from '../api';
+import i18n from '../../i18n';
 import type { Block, Effect, Op, Result } from './model';
 
 export interface LeaseInfo {
@@ -79,9 +80,7 @@ export interface Transport {
 const TIMEOUT_MS = 15000;
 
 async function call<T>(path: string, init: RequestInit & { keepalive?: boolean } = {}, timeoutMs = TIMEOUT_MS): Promise<T> {
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-  const token = getToken();
-  if (token) headers.Authorization = `Bearer ${token}`;
+  const headers: Record<string, string> = { 'Content-Type': 'application/json', ...authHeaders() };
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   init.signal?.addEventListener('abort', () => controller.abort());
@@ -89,7 +88,7 @@ async function call<T>(path: string, init: RequestInit & { keepalive?: boolean }
   try {
     res = await fetch(path, { ...init, headers, cache: 'no-store', signal: init.keepalive ? undefined : controller.signal });
   } catch (err: any) {
-    throw new TransportError(err?.message || 'Netzwerkfehler', 0);
+    throw new TransportError(err?.message || i18n.t('common:errors.network'), 0);
   } finally {
     clearTimeout(timer);
   }
