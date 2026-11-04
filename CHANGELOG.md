@@ -6,6 +6,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.76.1] - 2026-11-04
+
+### Fixed
+- API documentation: `PATCH /auth/settings` accepts all five language codes (`de`, `en`, `es`, `fr`, `it`) for `language`, not only `de` and `en`.
+
 ## [0.76.0] - 2026-11-04
 
 ### Added
