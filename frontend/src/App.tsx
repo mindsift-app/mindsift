@@ -21,8 +21,6 @@ import {
   AVAILABLE_THEMES,
   customThemeOption,
   initThemeOnBoot,
-  hasChosenTheme,
-  DEMO_THEME,
   watchSystemScheme,
   isCustomThemeId,
   setActiveTheme as applyTheme,
@@ -341,13 +339,6 @@ export const App: React.FC = () => {
       .catch(() => {});
      
   }, [user?.id]);
-
-  // Demo: first visit on this device starts with a round theme instead of the square default
-  useEffect(() => {
-    if (!authStatus.demoMode || hasChosenTheme()) return;
-    applyTheme(DEMO_THEME);
-    setActiveThemeState(DEMO_THEME);
-  }, [authStatus.demoMode]);
 
   // Web Share Target: import shared thoughts from external apps
   useEffect(() => {

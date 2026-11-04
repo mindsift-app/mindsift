@@ -6,6 +6,13 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.78.0] - 2026-11-04
+
+### Changed
+- The default theme "Classic" (MindSift Dark and MindSift Light) now uses the colours and rounded corners of mindsift.app. If you use it, the app changes its look with this update; under Appearance → Corners you can switch back to square corners.
+- MindSift Light shows code blocks dark, like the website.
+- The demo starts in the default theme again instead of Fjord Night.
+
 ## [0.77.3] - 2026-11-04
 
 ### Changed

@@ -36,6 +36,7 @@ Each theme file is structured into six strictly defined sections:
   --bg-panel-elevated: #1f2229;         /* Elevated elements & hover panels */
   --bg-input: #121418;                  /* Background of text input fields */
   --bg-code: #0b0c0f;                   /* Code blocks & keyboard badges */
+                                        /* Optional: --text-code, plain text in code blocks (default --text-main) */
   --bg-overlay: rgba(0, 0, 0, 0.75);    /* Modal backdrop overlay */
 
   /* ==========================================================================
@@ -78,8 +79,8 @@ Each theme file is structured into six strictly defined sections:
 
 | Theme ID | File | Style & Character | Default Geometry |
 | :--- | :--- | :--- | :--- |
-| `dark` | [`theme-dark.css`](../frontend/src/themes/theme-dark.css) | Standard Dark Slate / Monochrome | Strictly square (`0px` cards, `2px` buttons) |
-| `light` | [`theme-light.css`](../frontend/src/themes/theme-light.css) | Daylight Clean White / Minimalist | Modern subtle (`4px` cards, `4px` buttons) |
+| `dark` | [`theme-dark.css`](../frontend/src/themes/theme-dark.css) | Default; colours of mindsift.app, dark | Rounded (`14px` cards, `8px` buttons) |
+| `light` | [`theme-light.css`](../frontend/src/themes/theme-light.css) | Colours of mindsift.app, light, with dark code blocks (`--text-code`) | Rounded (`14px` cards, `8px` buttons) |
 | `terracotta` | [`theme-terracotta.css`](../frontend/src/themes/theme-terracotta.css) | Warm cream paper, ink, terracotta accent, custom code colors in earth tones | Soft (`12px`) |
 | `terracotta-night` | [`theme-terracotta-night.css`](../frontend/src/themes/theme-terracotta-night.css) | Espresso brown, cream text, glowing terracotta accent | Soft (`12px`) |
 | `fjord` / `fjord-night` | [`theme-fjord.css`](../frontend/src/themes/theme-fjord.css), [`theme-fjord-night.css`](../frontend/src/themes/theme-fjord-night.css) | Cool paper and glacier blue / night blue | Soft (`12px`) |

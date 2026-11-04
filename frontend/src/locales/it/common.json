@@ -280,7 +280,7 @@
     "families": {
       "classic": {
         "name": "Classic",
-        "subtitle": "Neutro con blu, squadrato"
+        "subtitle": "Colori del sito web, blu, arrotondato"
       },
       "fjord": {
         "name": "Fjord",
@@ -302,11 +302,11 @@
     "builtin": {
       "dark": {
         "name": "MindSift Dark (predefinito)",
-        "subtitle": "Monocromatico, scuro e squadrato (0px)"
+        "subtitle": "Colori del sito web, scuro e arrotondato"
       },
       "light": {
         "name": "MindSift Light (modalità giorno)",
-        "subtitle": "Design effetto carta chiara e contrasto netto"
+        "subtitle": "Colori del sito web, chiaro e arrotondato"
       },
       "terracotta": {
         "name": "Terracotta (carta calda)",

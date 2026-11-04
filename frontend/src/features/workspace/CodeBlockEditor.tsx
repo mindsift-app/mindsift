@@ -624,7 +624,7 @@ export const CodeBlockEditor: React.FC<CodeBlockEditorProps> = ({
           <pre
             ref={preRef}
             aria-hidden="true"
-            className="absolute inset-0 m-0 p-2 font-mono text-xs text-main leading-relaxed whitespace-pre pointer-events-none select-none overflow-hidden"
+            className="absolute inset-0 m-0 p-2 font-mono text-xs text-code-fg leading-relaxed whitespace-pre pointer-events-none select-none overflow-hidden"
           >
             <code
               className={prismLang ? `language-${prismLang}` : 'language-none'}
@@ -651,8 +651,8 @@ export const CodeBlockEditor: React.FC<CodeBlockEditorProps> = ({
             onChange={onTextareaChange}
             onKeyDown={onTextareaKeyDown}
             onScroll={handleScroll}
-            style={{ caretColor: 'var(--text-main)' }}
-            className="relative block w-full m-0 p-2 font-mono text-xs leading-relaxed whitespace-pre bg-transparent text-transparent caret-main selection:bg-accent/25 selection:text-transparent border-0 focus:outline-none focus:ring-0 resize-none overflow-x-auto"
+            style={{ caretColor: 'var(--text-code)' }}
+            className="relative block w-full m-0 p-2 font-mono text-xs leading-relaxed whitespace-pre bg-transparent text-transparent caret-code-fg selection:bg-accent/25 selection:text-transparent border-0 focus:outline-none focus:ring-0 resize-none overflow-x-auto"
           />
         </div>
       </div>
