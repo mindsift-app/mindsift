@@ -6,6 +6,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.75.2] - 2026-11-04
+
+### Fixed
+- Header: the app name and the version (or the demo countdown) are left-aligned next to the logo again; on phones they were centered when the countdown was wider than the name.
+- Shared notes: a bullet someone else is editing no longer shows the action buttons, which covered the lock badge and could not be used anyway.
+
 ## [0.75.1] - 2026-11-04
 
 ### Added

@@ -1642,7 +1642,10 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
         onMouseEnter={() => setPointerOnBubble(true)}
         onMouseLeave={() => setPointerOnBubble(false)}
         className={`absolute right-1 sm:right-2 top-0.5 sm:top-1 z-20 bg-panel/90 backdrop-blur-sm border border-border shadow-xs rounded-pill px-1 sm:px-1.5 py-0.5 flex items-center gap-0.5 sm:gap-1 transition-opacity ${
-          showBubble
+          lockedBy
+            ? // Someone else is editing the block: no actions, and the lock badge stays visible
+              'hidden'
+            : showBubble
             ? 'opacity-100 pointer-events-auto'
             : // Hidden buttons must not take clicks; keyboard focus inside still shows it
               'opacity-0 pointer-events-none focus-within:opacity-100 focus-within:pointer-events-auto'
