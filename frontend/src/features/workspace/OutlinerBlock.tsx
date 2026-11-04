@@ -74,6 +74,8 @@ function slashRank(c: SlashCommand, q: string): number {
 
 // How long the action bubble stays after the last mouse move over a bullet
 const BUBBLE_IDLE_MS = 1000;
+// On touch devices the bubble shows when a bullet gets the focus or is tapped, then hides again
+const BUBBLE_TOUCH_MS = 3000;
 
 const SLASH_COMMANDS: SlashCommand[] = [
   { type: 'todo', label: '/todo', get desc() { return i18n.t('workspace:slash.todo'); }, icon: <ListTodo className="w-3.5 h-3.5" /> },
@@ -227,7 +229,7 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
 
   // Action bubble with a real pointer: shown only while the mouse moves over the row (until a moment after
   // the last move), while it rests on the bubble or a menu of it is open; a resting mouse must not leave it
-  // over the text. Touch devices keep showing it at the focused bullet.
+  // over the text. Touch devices show it at the focused bullet for a few seconds after the focus or a tap.
   const hasHover = useMemo(() => typeof window !== 'undefined' && !!window.matchMedia?.('(hover: hover)').matches, []);
   const [pointerMoving, setPointerMoving] = useState(false);
   const [pointerOnBubble, setPointerOnBubble] = useState(false);
@@ -243,8 +245,18 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
     pointerIdleTimerRef.current = null;
     setPointerMoving(false);
   };
+  // Own timer: a tap also sends emulated mouse events, and the mouse leaving must not cancel it
+  const [touchShown, setTouchShown] = useState(false);
+  const touchTimerRef = useRef<number | null>(null);
+  const showBubbleForTouch = () => {
+    if (hasHover) return;
+    setTouchShown(true);
+    if (touchTimerRef.current !== null) window.clearTimeout(touchTimerRef.current);
+    touchTimerRef.current = window.setTimeout(() => setTouchShown(false), BUBBLE_TOUCH_MS);
+  };
   useEffect(() => () => {
     if (pointerIdleTimerRef.current !== null) window.clearTimeout(pointerIdleTimerRef.current);
+    if (touchTimerRef.current !== null) window.clearTimeout(touchTimerRef.current);
   }, []);
 
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -1139,13 +1151,21 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
   // Lock by someone else: the whole row gets a faint tint and a stripe in that person's color
   const lockColor = lockedBy ? userColorStyles(lockedBy.userId) : null;
 
-  const showBubble = hasHover ? pointerMoving || pointerOnBubble || showTodoMenu : activeFocus;
+  // Touch: the focus shows the bubble (timer started in the effect below)
+  useEffect(() => {
+    if (activeFocus) showBubbleForTouch();
+    else setTouchShown(false);
+    // showBubbleForTouch only sets state and the timer
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeFocus]);
+  const showBubble = hasHover ? pointerMoving || pointerOnBubble || showTodoMenu : activeFocus && (touchShown || showTodoMenu);
 
   return (
     <div
       data-outline-block={block.id}
       onMouseMove={handleRowMouseMove}
       onMouseLeave={handleRowMouseLeave}
+      onTouchStart={showBubbleForTouch}
       className={`group relative flex items-start gap-1 py-1 px-0.5 sm:px-1.5 rounded-card transition-all duration-300 ${
         inRangeSelection ? 'bg-accent/15' : ''
       } ${
@@ -1650,7 +1670,7 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
       {/* Someone else is editing this block */}
       {lockedBy && (
         <span
-          className="shrink-0 self-start mt-0.5 inline-flex items-center gap-1 pl-0.5 pr-1.5 py-0.5 rounded-pill text-[10px] font-semibold bg-panel select-none max-w-[45%]"
+          className="shrink-0 self-start mt-0.5 h-5 inline-flex items-center gap-1 pl-0.5 pr-1.5 rounded-pill text-[10px] font-semibold bg-panel select-none max-w-[45%]"
           style={{ color: lockColor!.text, border: `1px solid ${lockColor!.border}` }}
           title={t('lock.title', { name: lockedBy.name })}
         >
@@ -1658,7 +1678,7 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
             userId={lockedBy.userId}
             name={lockedBy.name}
             avatarUrl={lockedBy.avatarUrl || ''}
-            size="xs"
+            size="xxs"
             colorRing
             showTitle={false}
           />
