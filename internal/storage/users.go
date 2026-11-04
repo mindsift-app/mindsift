@@ -63,9 +63,14 @@ func (s *Store) CountUsers() (int, error) {
 	return count, err
 }
 
+// CreateUser gives the new account a username from its display name ("Sandro Dach" -> "sandro.dach"),
+// else from the email address; with a number appended when it is taken.
 func (s *Store) CreateUser(email, passwordHash, displayName, role string) (*domain.User, error) {
 	cleanEmail := strings.ToLower(strings.TrimSpace(email))
-	username := strings.Split(cleanEmail, "@")[0]
+	username := UsernameFromName(displayName)
+	if len(username) < 2 {
+		username = UsernameFromName(strings.Split(cleanEmail, "@")[0])
+	}
 	return s.CreateUserWithUsername(cleanEmail, username, passwordHash, displayName, role)
 }
 
@@ -78,9 +83,13 @@ func (s *Store) createUserWithID(id, email, username, passwordHash, displayName,
 		role = "member"
 	}
 	cleanEmail := strings.ToLower(strings.TrimSpace(email))
-	cleanUsername := strings.ToLower(strings.TrimSpace(username))
-	if cleanUsername == "" {
-		cleanUsername = strings.Split(cleanEmail, "@")[0]
+	cleanUsername := UsernameFromName(username)
+	if len(cleanUsername) < 2 {
+		cleanUsername = UsernameFromName(strings.Split(cleanEmail, "@")[0])
+	}
+	cleanUsername, err := s.uniqueUsername(cleanUsername, id)
+	if err != nil {
+		return nil, err
 	}
 	u := &domain.User{
 		ID:                  id,
@@ -99,7 +108,7 @@ func (s *Store) createUserWithID(id, email, username, passwordHash, displayName,
 		AvatarURL:           "",
 		CreatedAt:           domain.NowISO(),
 	}
-	_, err := s.db.Exec(
+	_, err = s.db.Exec(
 		`INSERT INTO users (id, email, username, password_hash, display_name, role, is_active, token_version, alarm_channels, alarm_email, discord_webhook_url, custom_webhook_url, notify_before_minutes, avatar_url, created_at)
 		 VALUES (?, ?, ?, ?, ?, ?, 1, 1, '', ?, '', '', 30, '', ?)`,
 		u.ID, u.Email, u.Username, u.PasswordHash, u.DisplayName, u.Role, u.AlarmEmail, u.CreatedAt,
@@ -119,14 +128,18 @@ func (s *Store) GetUserByLogin(login string) (*domain.User, error) {
 	if cleanLogin == "" {
 		return nil, errors.New("benutzername oder e-mail darf nicht leer sein")
 	}
+	// Email or username; a login typed like a display name ("Sandro Dach") finds its username
+	// ("sandro.dach"). The display name itself no longer signs in: two people may share it. The part of
+	// the email before the @ still does, as before (last, for accounts that got used to it).
+	asUsername := UsernameFromName(cleanLogin)
 	row := s.db.QueryRow(
-		`SELECT `+userSelectCols+` FROM users 
-		 WHERE LOWER(email) = ? 
-		    OR (username != '' AND LOWER(username) = ?) 
-		    OR LOWER(display_name) = ?
+		`SELECT `+userSelectCols+` FROM users
+		 WHERE LOWER(email) = ?
+		    OR (username != '' AND (LOWER(username) = ? OR LOWER(username) = ?))
 		    OR (INSTR(email, '@') > 0 AND LOWER(SUBSTR(email, 1, INSTR(email, '@') - 1)) = ?)
+		 ORDER BY LOWER(email) = ? DESC, LOWER(username) = ? DESC, LOWER(username) = ? DESC
 		 LIMIT 1`,
-		cleanLogin, cleanLogin, cleanLogin, cleanLogin,
+		cleanLogin, cleanLogin, asUsername, cleanLogin, cleanLogin, cleanLogin, asUsername,
 	)
 	return scanUser(row)
 }

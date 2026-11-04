@@ -249,6 +249,21 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
     }
   };
 
+  // Username for signing in, set by an admin (the person can change it in the profile, too)
+  const [usernameEdit, setUsernameEdit] = useState<{ id: string; value: string } | null>(null);
+  const handleSaveUsername = async (u: User) => {
+    if (!usernameEdit || usernameEdit.id !== u.id) return;
+    setStatusMsg(null);
+    try {
+      const updated = await api.adminUpdateUser(u.id, { username: usernameEdit.value.trim().toLowerCase() });
+      setUsers((prev) => prev.map((item) => (item.id === u.id ? updated : item)));
+      setUsernameEdit(null);
+      setStatusMsg({ type: 'ok', text: i18n.t('settings:users.usernameChanged', { name: updated.displayName, username: updated.username }) });
+    } catch (err: any) {
+      setStatusMsg({ type: 'err', text: err.message });
+    }
+  };
+
   const handleToggleUserActive = async (u: User) => {
     setStatusMsg(null);
     try {
@@ -441,6 +456,9 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
     pendingMode,
     copiedInviteId,
     resetPwdUserId,
+    usernameEdit,
+    setUsernameEdit,
+    handleSaveUsername,
     resetPwdVal,
     settings,
     testSmtpEmail,

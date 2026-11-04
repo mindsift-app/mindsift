@@ -17,6 +17,7 @@ export function ProfileSection({
   const { t } = useTranslation('settings');
   const {
     displayName,
+    username,
     email,
     avatarUrl,
     newPassword,
@@ -36,6 +37,7 @@ export function ProfileSection({
     isLastAdmin,
     openDanger,
     setDisplayName,
+    setUsername,
     setEmail,
     setNewPassword,
     setCurrentPassword,
@@ -156,6 +158,26 @@ export function ProfileSection({
               required
               className="w-full h-9 px-3 input-field"
             />
+          </div>
+
+          <div>
+            <label className="block text-muted font-medium mb-1">{t('profile.username')}</label>
+            <input
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value.toLowerCase())}
+              required
+              minLength={2}
+              maxLength={32}
+              pattern="[a-z0-9][a-z0-9._\-]*[a-z0-9]"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              disabled={demoMode}
+              title={demoMode ? t('profile.demoDisabled') : t('profile.usernameRules')}
+              className="w-full h-9 px-3 input-field font-mono disabled:opacity-60"
+            />
+            <p className="mt-1 text-[10px] text-faint">{t('profile.usernameHint')}</p>
           </div>
 
           <div>

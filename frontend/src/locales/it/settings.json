@@ -409,6 +409,9 @@
     "remove": "Rimuovi",
     "emoji": "Oppure scegli un emoji rapido:",
     "displayName": "Nome visualizzato",
+    "username": "Nome utente",
+    "usernameHint": "Lo usi per accedere, in alternativa al tuo indirizzo e-mail.",
+    "usernameRules": "Lettere minuscole, cifre, punto, trattino e trattino basso, da 2 a 32 caratteri",
     "demoDisabled": "Disattivato nella demo",
     "newPassword": "Nuova password (opzionale — lascia vuoto per non modificarla)",
     "minChars": "Almeno 8 caratteri",
@@ -511,7 +514,9 @@
     "deleted": "Utente eliminato.",
     "roleChanged": "Ruolo di {{name}} modificato in \"{{role}}\".",
     "confirmReject": "Rifiutare la registrazione di \"{{name}}\" ({{email}})? L'account verrà eliminato.",
-    "confirmDelete": "Vuoi davvero eliminare definitivamente l'utente \"{{name}}\" ({{email}})?"
+    "confirmDelete": "Vuoi davvero eliminare definitivamente l'utente \"{{name}}\" ({{email}})?",
+    "username": "Nome utente",
+    "usernameChanged": "Il nome utente di {{name}} ora è «{{username}}»."
   },
   "sharing": {
     "private": {

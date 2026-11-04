@@ -473,6 +473,18 @@ func writeError(w http.ResponseWriter, status int, message string) {
 	writeJSON(w, status, map[string]string{"error": tr(w, message)})
 }
 
+// writeUsernameError answers a refused username: taken is 409 (code username_taken), the rest 400
+func writeUsernameError(w http.ResponseWriter, err error) {
+	switch {
+	case errors.Is(err, storage.ErrUsernameTaken):
+		writeErrorCode(w, http.StatusConflict, "username_taken", storage.ErrUsernameTaken.Msg)
+	case errors.Is(err, storage.ErrInvalidUsername):
+		writeErrorCode(w, http.StatusBadRequest, "username_invalid", storage.ErrInvalidUsername.Msg)
+	default:
+		writeError(w, http.StatusBadRequest, err.Error())
+	}
+}
+
 func writeErrorCode(w http.ResponseWriter, status int, code, message string) {
 	writeJSON(w, status, map[string]string{"error": tr(w, message), "code": code})
 }

@@ -11,6 +11,7 @@ import { askConfirm } from '../../../components/askConfirm';
 // switching sections.
 export function useProfileSettings(currentUser: User, onUserUpdated: (u: User) => void) {
   const [displayName, setDisplayName] = useState(currentUser.displayName || '');
+  const [username, setUsername] = useState(currentUser.username || '');
   const [email, setEmail] = useState(currentUser.email || '');
   const [avatarUrl, setAvatarUrl] = useState(currentUser.avatarUrl || '');
   const [newPassword, setNewPassword] = useState('');
@@ -25,6 +26,7 @@ export function useProfileSettings(currentUser: User, onUserUpdated: (u: User) =
   // The form follows the account when it changes (saved here or on another device)
   useEffect(() => {
     setDisplayName(currentUser.displayName || '');
+    setUsername(currentUser.username || '');
     setEmail(currentUser.email || '');
     setAvatarUrl(currentUser.avatarUrl || '');
   }, [currentUser]);
@@ -72,6 +74,9 @@ export function useProfileSettings(currentUser: User, onUserUpdated: (u: User) =
         displayName: displayName.trim(),
         email: email.trim(),
         avatarUrl: avatarUrl.trim() };
+      // Only when changed: the shared demo accounts refuse any change of their username
+      const cleanUsername = username.trim().toLowerCase();
+      if (cleanUsername !== (currentUser.username || '')) patch.username = cleanUsername;
       if (newPassword.trim()) {
         const problem = passwordProblem(newPassword);
         if (problem) {
@@ -153,6 +158,7 @@ export function useProfileSettings(currentUser: User, onUserUpdated: (u: User) =
 
   return {
     displayName,
+    username,
     email,
     avatarUrl,
     newPassword,
@@ -177,6 +183,7 @@ export function useProfileSettings(currentUser: User, onUserUpdated: (u: User) =
     openDanger,
     handleDangerSubmit,
     setDisplayName,
+    setUsername,
     setEmail,
     setNewPassword,
     setCurrentPassword,

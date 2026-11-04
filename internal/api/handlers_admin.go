@@ -171,6 +171,7 @@ func (s *Server) handleAdminUpdateUser(w http.ResponseWriter, r *http.Request) {
 
 	var req struct {
 		DisplayName       *string `json:"displayName"`
+		Username          *string `json:"username"`
 		Email             *string `json:"email"`
 		Role              *string `json:"role"`
 		IsActive          *bool   `json:"isActive"`
@@ -188,6 +189,16 @@ func (s *Server) handleAdminUpdateUser(w http.ResponseWriter, r *http.Request) {
 	if req.DiscordWebhookURL != nil {
 		if err := validateWebhookURL(*req.DiscordWebhookURL, true, s.allowPrivateWebhooks()); err != nil {
 			writeError(w, http.StatusBadRequest, "Discord-Webhook: "+err.Error())
+			return
+		}
+	}
+	if req.Username != nil && strings.ToLower(strings.TrimSpace(*req.Username)) != targetUser.Username {
+		if s.cfg.DemoMode {
+			writeError(w, http.StatusForbidden, "In der Demo deaktiviert")
+			return
+		}
+		if err := s.store.SetUsername(targetUserID, *req.Username); err != nil {
+			writeUsernameError(w, err)
 			return
 		}
 	}
