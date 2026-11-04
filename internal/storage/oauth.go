@@ -16,7 +16,7 @@ import (
 	"github.com/mindsift-app/mindsift/internal/domain"
 )
 
-// OAuth for the MCP endpoint (Doku/plans/oauth-fuer-mcp.md). MindSift is its own authorization
+// OAuth for the MCP endpoint. MindSift is its own authorization
 // server: clients register themselves (public clients, PKCE), a person agrees on the consent page,
 // and the grant becomes an entry in api_keys (kind 'oauth'). Rights, origin, "last used" and revoking
 // therefore work as for every key; the tokens hang on that entry and disappear with it. Codes and

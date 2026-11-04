@@ -207,7 +207,7 @@ func handleMCPNoStream(w http.ResponseWriter, _ *http.Request) {
 	writeError(w, http.StatusMethodNotAllowed, "Der MCP-Endpunkt nimmt nur POST an (kein Server-Stream)")
 }
 
-// MCP speaks English to agents whatever the user's language (Doku/plans/mehrsprachigkeit.md)
+// MCP speaks English to agents whatever the user's language
 func writeRPC(w http.ResponseWriter, id json.RawMessage, result interface{}, rpcErr *jsonrpcError) {
 	if rpcErr != nil {
 		rpcErr.Message = i18n.T("en", rpcErr.Message)

@@ -1,4 +1,4 @@
-// Workspace check for refactors (Doku/plans/frontend-aufteilen.md): notes, folders, trash and the to-do
+// Workspace check for refactors: notes, folders, trash and the to-do
 // collection by click and drag on the desktop, the resulting state from the server after each step.
 // Two runs of the same code give the same file; e2e/refshots.sh ws <name> runs it on a fresh copy of the
 // reference data.

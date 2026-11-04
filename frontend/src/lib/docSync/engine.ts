@@ -1,7 +1,7 @@
 // DocSyncEngine keeps one note in sync with the server: confirmed state from the server log, plus the
 // user's own unconfirmed operations on top. Every change is stored in IndexedDB before it is sent, sent
 // with a unique op ID (safe to resend), and the server decides about conflicts. See
-// Doku/plans/kollaboration-notizen.md.
+// Doku/modules/collaboration.md.
 import type { DocumentBlock } from '../types';
 import { diffFlat, toDocumentBlocks } from './diff';
 import { applyEffect, applyOp, cloneDoc, Doc, docFromSnapshot, emptyDoc, Op, Result } from './model';

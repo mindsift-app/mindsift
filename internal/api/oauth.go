@@ -14,7 +14,7 @@ import (
 	"github.com/mindsift-app/mindsift/internal/storage"
 )
 
-// OAuth for the MCP endpoint (Doku/plans/oauth-fuer-mcp.md), so that claude.ai, ChatGPT and other
+// OAuth for the MCP endpoint, so that claude.ai, ChatGPT and other
 // clients that cannot send an API key header can connect. MindSift is the authorization server for
 // its own MCP endpoint: discovery (RFC 9728, RFC 8414), dynamic client registration (RFC 7591),
 // authorization code with PKCE (S256 only, public clients) and rotating refresh tokens. The consent
