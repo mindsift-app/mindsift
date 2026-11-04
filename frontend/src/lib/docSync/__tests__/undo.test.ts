@@ -110,6 +110,19 @@ describe('undo/redo', () => {
     expect(server.doc.blocks.get('n')!.deleted).toBe(true);
   });
 
+  it('undoes deleting a selection whose last bullet had children (they moved up)', async () => {
+    const server = new Server([['a', 'Alpha'], ['b', 'Beta'], ['c', 'Gamma'], ['e', 'Ende']]);
+    server.apply({ opId: 'kid', kind: 'insert', blockId: 'd', parentId: 'c', orderKey: 'a0', content: 'Kind' }, 'seed');
+    const e = await engineFor(server);
+    // As OutlinerTree does: the first bullet gets the merged text, the last goes, its child moves along
+    edit(e, (b) => b.filter((x) => x.id !== 'c').map((x) => (x.id === 'b' ? { ...x, content: 'Betma' } : x)));
+    expect(texts(e)).toEqual(['Alpha', 'Betma', 'Kind', 'Ende']);
+    const res = e.undo();
+    expect(res.message).toBeUndefined();
+    expect(res.ok).toBe(true);
+    expect(texts(e)).toEqual(['Alpha', 'Beta', 'Gamma', 'Kind', 'Ende']);
+  });
+
   it('skips undo when someone else changed the block in between', async () => {
     const server = new Server([['a', 'Start']]);
     const e = await engineFor(server);

@@ -97,6 +97,10 @@ function isLargeScreen() {
 
 import { EmojiPickerModal } from './EmojiPickerModal';
 import { BacklinksSection } from './BacklinksSection';
+import { useKeyboardInset } from '../../lib/useKeyboardInset';
+
+// Height of the outline bar that sits on the keyboard (MobileOutlineBar), with a little air
+const KEYBOARD_BAR_SPACE = 64;
 
 function ensureNonEmptyBlocks(docId: string, blocks?: DocumentBlock[]): DocumentBlock[] {
   if (!blocks || blocks.length === 0) {
@@ -280,6 +284,31 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
 
   const titleInputRef = useRef<HTMLTextAreaElement | HTMLInputElement | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
+
+  // Keeps the bullet being typed in above the keyboard (and the outline bar on it): the browser only
+  // scrolls it into the visible part if the note can scroll that far, hence also the room at the end
+  const { inset: keyboardInset, keyboardOpen, visibleHeight } = useKeyboardInset();
+  useEffect(() => {
+    // Without visualViewport the keyboard is unknown (counts as open): nothing to measure against
+    if (!keyboardOpen || embedded || !window.visualViewport) return;
+    const root = scrollRef.current;
+    if (!root) return;
+    const reveal = () => {
+      const el = document.activeElement as HTMLElement | null;
+      if (!el || !root.contains(el) || el.tagName !== 'TEXTAREA') return;
+      const vv = window.visualViewport;
+      const visibleBottom = (vv ? vv.offsetTop : 0) + visibleHeight - KEYBOARD_BAR_SPACE;
+      const over = el.getBoundingClientRect().bottom + 12 - visibleBottom;
+      if (over > 0) root.scrollBy({ top: over });
+    };
+    reveal();
+    root.addEventListener('focusin', reveal);
+    root.addEventListener('input', reveal);
+    return () => {
+      root.removeEventListener('focusin', reveal);
+      root.removeEventListener('input', reveal);
+    };
+  }, [keyboardOpen, visibleHeight, embedded]);
   // The header repeats the title only once the big title has scrolled out of view
   const [titleScrolledAway, setTitleScrolledAway] = useState(false);
   const outlinerTreeRef = useRef<OutlinerTreeHandle | null>(null);
@@ -1610,6 +1639,10 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
           )
         )}
       </div>
+
+      {/* On-screen keyboard open: room below the last bullet, so it can scroll above the keyboard and the
+          bar on top of it (the note itself keeps its height, the keyboard only covers it) */}
+      {keyboardOpen && keyboardInset > 0 && !embedded && <div aria-hidden style={{ height: keyboardInset + KEYBOARD_BAR_SPACE, flexShrink: 0 }} />}
 
       {notice && (
         <div

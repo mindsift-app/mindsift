@@ -139,13 +139,32 @@ export function useKanbanLayout({ isKanban, isKanbanWide, columnCount, listId, l
       lockedUntil = Date.now() + 450;
       area.scrollTo({ top: next, behavior: 'smooth' });
     };
-    // The first row grows while the bar above the board scrolls away
+    // The first row grows while the bar above the board scrolls away. Every new value lays out the whole
+    // board, so at most once per frame and not at all once the bar is gone (the row is full height then).
+    // Scroll anchoring stays off here: it answered the growing row by moving the scroll position, which
+    // fired the next scroll event, and the page juddered (worst in installed apps)
     const vars = board.parentElement ?? board;
-    const onScroll = () => vars.style.setProperty('--kb-scroll', `${area.scrollTop}px`);
-    onScroll();
+    let frame = 0;
+    let last = -1;
+    const update = () => {
+      frame = 0;
+      const top = parseFloat(vars.style.getPropertyValue('--kb-top')) || 0;
+      const value = Math.min(Math.round(area.scrollTop), Math.round(top));
+      if (value === last) return;
+      last = value;
+      vars.style.setProperty('--kb-scroll', `${value}px`);
+    };
+    const onScroll = () => {
+      if (!frame) frame = requestAnimationFrame(update);
+    };
+    update();
+    const anchorBefore = area.style.overflowAnchor;
+    area.style.overflowAnchor = 'none';
     area.addEventListener('wheel', onWheel, { passive: false });
     area.addEventListener('scroll', onScroll, { passive: true });
     return () => {
+      if (frame) cancelAnimationFrame(frame);
+      area.style.overflowAnchor = anchorBefore;
       area.removeEventListener('wheel', onWheel);
       area.removeEventListener('scroll', onScroll);
     };

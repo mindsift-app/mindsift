@@ -6,6 +6,17 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.76.9] - 2026-11-04
+
+### Changed
+- Task dialog: back (browser, mouse button, Android) closes the dialog first instead of leaving the page; with unsaved changes it asks first.
+- Task dialog: the fields for a new sub-task and a hashtag have the same height as the other fields.
+
+### Fixed
+- Notes: Ctrl+Z after deleting a selection whose last bullet had sub-bullets was refused with "changed by someone else", although nobody else had touched it.
+- Phones: with the keyboard open, a note can scroll far enough that the bullet being typed in stays above the keyboard and the bar on it, also for a new last bullet.
+- Kanban: smoother scrolling. The first row no longer makes the page lay out anew on every scroll step once the bar above the board is gone, and the browser's scroll anchoring no longer works against it (noticeable as judder in installed apps).
+
 ## [0.76.8] - 2026-11-04
 
 ### Changed

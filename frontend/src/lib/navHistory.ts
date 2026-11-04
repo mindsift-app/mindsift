@@ -71,8 +71,54 @@ export function onNavStep(fn: (place: NavPlace) => void): () => void {
   return () => listeners.delete(fn);
 }
 
+// Dialogs on top of a place (e.g. the task dialog): opening one adds a history entry, so back closes the
+// dialog first instead of leaving the page. onBack returns false to stay open (e.g. to ask about unsaved
+// changes); the entry is then added again. Closed another way, the dialog takes its entry back.
+interface ModalLayer {
+  id: number;
+  onBack: () => boolean;
+}
+const modals: ModalLayer[] = [];
+let nextModalId = 1;
+let ignorePops = 0;
+
+export function pushModal(onBack: () => boolean): () => void {
+  const layer: ModalLayer = { id: nextModalId++, onBack };
+  modals.push(layer);
+  try {
+    window.history.pushState({ ...(window.history.state || {}), mindsiftModal: layer.id }, '');
+  } catch {
+    // history unavailable: back keeps its old behaviour
+  }
+  return () => {
+    const i = modals.indexOf(layer);
+    if (i < 0) return; // already closed by back
+    modals.splice(i, 1);
+    if ((window.history.state as { mindsiftModal?: number } | null)?.mindsiftModal === layer.id) {
+      ignorePops++;
+      window.history.back();
+    }
+  };
+}
+
 if (typeof window !== 'undefined') {
   window.addEventListener('popstate', (e) => {
+    if (ignorePops > 0) {
+      ignorePops--;
+      return;
+    }
+    const top = modals[modals.length - 1];
+    if (top) {
+      // Back while a dialog is open: it handles the step, the page stays where it is
+      if (top.onBack()) {
+        modals.pop();
+      } else {
+        try {
+          window.history.pushState({ ...(window.history.state || {}), mindsiftModal: top.id }, '');
+        } catch {}
+      }
+      return;
+    }
     const place = (e.state as { mindsiftNav?: NavPlace } | null)?.mindsiftNav;
     if (!place) return;
     current = place;
