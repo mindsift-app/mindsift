@@ -6,6 +6,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.76.6] - 2026-11-04
+
+### Added
+- README: a short section on how MindSift is tested before every release (frontend, backend and browser tests).
+
 ## [0.76.5] - 2026-11-04
 
 ### Changed
