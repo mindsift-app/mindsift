@@ -6,6 +6,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.78.1] - 2026-11-04
+
+### Changed
+- The screenshots in the README show the new default theme.
+
 ## [0.78.0] - 2026-11-04
 
 ### Changed
