@@ -76,6 +76,8 @@
     "h3": "Subsección",
     "code": "Bloque de código con resaltado de sintaxis",
     "callout": "Cuadro destacado (callout)",
+    "warning": "Advertencia en amarillo",
+    "error": "Error en rojo",
     "divider": "Separador",
     "extract": "Convertir rama en nota propia",
     "image": "Subir o enlazar imágenes",

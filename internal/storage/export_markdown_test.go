@@ -124,3 +124,34 @@ func keys(m map[string]string) []string {
 	}
 	return out
 }
+
+// Warnings and errors go out as Obsidian callouts and come back as the same block types
+func TestWarningAndErrorBlocksRoundTrip(t *testing.T) {
+	blocks := []domain.DocumentBlock{
+		{Type: "warning", Content: "Strom vorher abschalten", Level: 0},
+		{Type: "bullet", Content: "Server", Level: 0},
+		{Type: "error", Content: "Backup fehlgeschlagen", Level: 1},
+		{Type: "callout", Content: "Nur ein Hinweis", Level: 0},
+	}
+	md := BlocksToVaultMarkdown(blocks)
+	for _, w := range []string{"> [!warning]\n> Strom vorher abschalten\n", "\t- > [!failure] Backup fehlgeschlagen\n", "> [!note]\n> Nur ein Hinweis\n"} {
+		if !strings.Contains(md, w) {
+			t.Errorf("missing %q in:\n%s", w, md)
+		}
+	}
+	back := MarkdownToBlocks(md)
+	var got []string
+	for _, b := range back {
+		got = append(got, b.Type+":"+b.Content)
+	}
+	want := []string{"warning:Strom vorher abschalten", "bullet:Server", "error:Backup fehlgeschlagen", "callout:Nur ein Hinweis"}
+	if strings.Join(got, "|") != strings.Join(want, "|") {
+		t.Fatalf("round trip: got %v, want %v", got, want)
+	}
+	// Other Obsidian kinds: caution is a warning, danger an error, tip a plain callout
+	for md, typ := range map[string]string{"> [!caution] A": "warning", "> [!danger]\n> B": "error", "> [!tip] C": "callout"} {
+		if b := MarkdownToBlocks(md); len(b) != 1 || b[0].Type != typ {
+			t.Errorf("%q: got %+v, want type %s", md, b, typ)
+		}
+	}
+}

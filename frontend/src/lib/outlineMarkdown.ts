@@ -1,5 +1,8 @@
 import type { DocumentBlock } from './types';
 
+// Warnings and errors as Obsidian callouts, like the Markdown export of the server
+const CALLOUT_KIND = { warning: 'warning', error: 'failure' } as const;
+
 // Bullets as Markdown for copying: the top level reads like a document (plain bullets become paragraphs,
 // headings, dividers, callouts and fenced code are block elements), everything indented below is a list
 // with one tab per level ("-", "1." for numbered, "- [ ]" for to-dos). To-dos and numbered items stay list
@@ -45,6 +48,11 @@ export function blocksToMarkdown(blocks: DocumentBlock[]): string {
         lift = 1;
         continue;
       }
+      if (b.type === 'warning' || b.type === 'error') {
+        out.push('', `> [!${CALLOUT_KIND[b.type]}]`, `> ${content.replace(/\n/g, '\n> ')}`, '');
+        lift = 1;
+        continue;
+      }
       if (b.type === 'code') {
         out.push('', `\`\`\`${b.lang || ''}`, content, '```', '');
         lift = 1;
@@ -76,6 +84,10 @@ export function blocksToMarkdown(blocks: DocumentBlock[]): string {
         break;
       case 'callout':
         out.push(`${indent}- > ${cont('  > ')}`);
+        break;
+      case 'warning':
+      case 'error':
+        out.push(`${indent}- > [!${CALLOUT_KIND[b.type]}] ${cont('  > ')}`);
         break;
       case 'numbered':
         out.push(`${indent}1. ${cont('   ')}`);

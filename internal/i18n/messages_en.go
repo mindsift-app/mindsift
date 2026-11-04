@@ -6,7 +6,7 @@ var messagesEN = map[string]string{
 	"'listId' fehlt (Ids liefert list_lists)":                                                "'listId' is missing (list_lists returns the ids)",
 	"'title' darf nicht leer sein":                                                           "'title' must not be empty",
 	"'to': task, note oder list_item":                                                        "'to': task, note or list_item",
-	"'type': text, todo, h1, h2, h3, numbered oder callout":                                  "'type': text, todo, h1, h2, h3, numbered or callout",
+	"'type': text, todo, h1, h2, h3, numbered, callout, warning oder error":                  "'type': text, todo, h1, h2, h3, numbered, callout, warning or error",
 	"API-Key besitzt keine Berechtigung für diese Aktion":                                    "The API key lacks the permission for this action",
 	"API-Schlüssel nicht gefunden":                                                           "API key not found",
 	"Abmelden fehlgeschlagen":                                                                "Signing out failed",

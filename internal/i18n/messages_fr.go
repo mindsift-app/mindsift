@@ -6,7 +6,7 @@ var messagesFR = map[string]string{
 	"'listId' fehlt (Ids liefert list_lists)":                                                "'listId' manque (list_lists renvoie les ids)",
 	"'title' darf nicht leer sein":                                                           "'title' ne doit pas être vide",
 	"'to': task, note oder list_item":                                                        "'to' : task, note ou list_item",
-	"'type': text, todo, h1, h2, h3, numbered oder callout":                                  "'type' : text, todo, h1, h2, h3, numbered ou callout",
+	"'type': text, todo, h1, h2, h3, numbered, callout, warning oder error":                  "'type' : text, todo, h1, h2, h3, numbered, callout, warning ou error",
 	"API-Key besitzt keine Berechtigung für diese Aktion":                                    "La clé API n’a pas l’autorisation pour cette action",
 	"API-Schlüssel nicht gefunden":                                                           "Clé API introuvable",
 	"Abmelden fehlgeschlagen":                                                                "La déconnexion a échoué",

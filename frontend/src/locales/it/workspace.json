@@ -76,6 +76,8 @@
     "h3": "Sottosezione",
     "code": "Blocco di codice con evidenziazione",
     "callout": "Riquadro informativo",
+    "warning": "Avviso in giallo",
+    "error": "Errore in rosso",
     "divider": "Separatore orizzontale",
     "extract": "Ramo come nota indipendente",
     "image": "Carica o collega immagini",

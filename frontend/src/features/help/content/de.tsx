@@ -128,6 +128,8 @@ const de: HelpContent = {
         'h3',
         'code',
         'callout',
+        'warn',
+        'fail',
         'divider',
         'bild',
         'extract',
@@ -166,6 +168,10 @@ const de: HelpContent = {
               <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main">
                 <span className="text-accent font-bold">💬</span>
                 <span>/callout (Hinweis-Box)</span>
+              </div>
+              <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main">
+                <span className="text-status-warn font-bold">⚠</span>
+                <span>/warn, /fail (Warnung, Fehler)</span>
               </div>
               <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main">
                 <span className="text-accent font-bold">—</span>

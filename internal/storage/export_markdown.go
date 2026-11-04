@@ -190,6 +190,9 @@ func taskMarkdownLine(t domain.Thought) string {
 // vaultAttachmentDir holds images and recordings in the Markdown archive.
 const vaultAttachmentDir = "attachments"
 
+// vaultCalloutKind: the Obsidian callout for each callout-like block type
+var vaultCalloutKind = map[string]string{"callout": "note", "warning": "warning", "error": "failure"}
+
 func BlocksToVaultMarkdown(blocks []domain.DocumentBlock) string {
 	return blocksToVaultMarkdown(blocks, nil)
 }
@@ -233,8 +236,8 @@ func blocksToVaultMarkdown(blocks []domain.DocumentBlock, attachment func(id str
 				sb.WriteString("\n---\n\n")
 				lift = 1
 				continue
-			case "callout":
-				sb.WriteString("\n> [!note]\n> " + strings.ReplaceAll(content, "\n", "\n> ") + "\n\n")
+			case "callout", "warning", "error":
+				sb.WriteString("\n> [!" + vaultCalloutKind[b.Type] + "]\n> " + strings.ReplaceAll(content, "\n", "\n> ") + "\n\n")
 				lift = 1
 				continue
 			case "code":
@@ -260,6 +263,8 @@ func blocksToVaultMarkdown(blocks []domain.DocumentBlock, attachment func(id str
 			sb.WriteString(indent + "- ---\n")
 		case "callout":
 			sb.WriteString(indent + "- > " + cont(content, "  > ") + "\n")
+		case "warning", "error":
+			sb.WriteString(indent + "- > [!" + vaultCalloutKind[b.Type] + "] " + cont(content, "  > ") + "\n")
 		case "numbered":
 			// Markdown renumbers the items itself
 			sb.WriteString(indent + "1. " + cont(content, "   ") + "\n")

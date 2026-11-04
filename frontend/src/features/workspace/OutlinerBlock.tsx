@@ -20,6 +20,7 @@ import {
   Link as LinkIcon,
   Lock,
   AlertTriangle,
+  XCircle,
   Image as ImageIcon,
   Mic,
   AudioLines,
@@ -88,6 +89,8 @@ const SLASH_COMMANDS: SlashCommand[] = [
   { type: 'h3', label: '/h3', get desc() { return i18n.t('workspace:slash.h3'); }, icon: <Heading3 className="w-3.5 h-3.5" /> },
   { type: 'code', label: '/code', get desc() { return i18n.t('workspace:slash.code'); }, icon: <Code className="w-3.5 h-3.5" /> },
   { type: 'callout', label: '/callout', get desc() { return i18n.t('workspace:slash.callout'); }, icon: <MessageSquare className="w-3.5 h-3.5" /> },
+  { type: 'warning', label: '/warn', get desc() { return i18n.t('workspace:slash.warning'); }, icon: <AlertTriangle className="w-3.5 h-3.5 text-status-warn" />, aliases: ['warnung', 'warning', 'achtung'] },
+  { type: 'error', label: '/fail', get desc() { return i18n.t('workspace:slash.error'); }, icon: <XCircle className="w-3.5 h-3.5 text-status-err" />, aliases: ['fehler', 'error', 'danger'] },
   { type: 'divider', label: '/divider', get desc() { return i18n.t('workspace:slash.divider'); }, icon: <Minus className="w-3.5 h-3.5" /> },
   { type: 'extract', label: '/extract', get desc() { return i18n.t('workspace:slash.extract'); }, icon: <FileOutput className="w-3.5 h-3.5" />, aliases: ['notiz', 'auslagern'] },
   { type: 'image', label: '/image', get desc() { return i18n.t('workspace:slash.image'); }, icon: <ImageIcon className="w-3.5 h-3.5" />, media: true, aliases: ['bild', 'foto'] },
@@ -537,7 +540,7 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
         return !isRestEmpty && isAtStartOrEnd && !!onExtractBlock && !isNoteLinkOnly(restOfBlock);
       }
 
-      // /h1, /h2, /h3, /todo, /callout, /text (type 'bullet') at start or at end
+      // /h1, /h2, /h3, /todo, /callout, /warn, /fail, /text (type 'bullet') at start or at end
       if (
         c.type === 'h1' ||
         c.type === 'h2' ||
@@ -545,6 +548,8 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
         c.type === 'todo' ||
         c.type === 'numbered' ||
         c.type === 'callout' ||
+        c.type === 'warning' ||
+        c.type === 'error' ||
         c.type === 'bullet'
       ) {
         return isAtStartOrEnd;
@@ -1255,6 +1260,10 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
             >
               {listMarker}
             </span>
+          ) : block.type === 'warning' ? (
+            <AlertTriangle className="w-3.5 h-3.5 shrink-0 text-status-warn transition-transform group-hover/bullet:scale-110" />
+          ) : block.type === 'error' ? (
+            <XCircle className="w-3.5 h-3.5 shrink-0 text-status-err transition-transform group-hover/bullet:scale-110" />
           ) : (
           <span
             className={`w-1.5 h-1.5 rounded-full transition-all duration-150 ${
@@ -1463,6 +1472,16 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
             />
           </div>
         ) : (
+          // Warnings and errors: normal text in a tinted box with a coloured edge, like a callout
+          <div
+            className={
+              block.type === 'warning'
+                ? 'bg-status-warn-bg border-l-2 border-status-warn rounded-r-btn px-2 py-0.5 my-0.5'
+                : block.type === 'error'
+                ? 'bg-status-err-bg border-l-2 border-status-err rounded-r-btn px-2 py-0.5 my-0.5'
+                : 'contents'
+            }
+          >
           <div className="relative w-full min-h-[1.5rem]">
             {/* View Layer with Inline Markdown */}
             <div
@@ -1591,6 +1610,7 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
               }`}
             />
           </div>
+          </div>
         )}
 
         {/* Conflict copy: text that lost against someone else's change */}
@@ -1702,8 +1722,8 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
               'opacity-0 pointer-events-none focus-within:opacity-100 focus-within:pointer-events-auto'
         }`}
       >
-        {/* Convert back to bullet for headings, callouts, dividers, code and numbered items */}
-        {canEdit && ['callout', 'h1', 'h2', 'h3', 'divider', 'code', 'numbered'].includes(block.type) && (
+        {/* Convert back to bullet for headings, callouts, warnings, dividers, code and numbered items */}
+        {canEdit && ['callout', 'warning', 'error', 'h1', 'h2', 'h3', 'divider', 'code', 'numbered'].includes(block.type) && (
           <button
             type="button"
             onClick={() => {
