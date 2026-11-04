@@ -495,7 +495,8 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
                 }}
                 className={`h-8 px-2 text-xs rounded-btn font-medium transition-colors border flex items-center justify-center gap-1 cursor-pointer ${
                   task.priority === 'low'
-                    ? 'bg-canvas border-strong text-main font-semibold shadow-xs'
+                    ? // No colour of its own: a faint tint and frame in the text colour, light in dark themes
+                      'bg-[color-mix(in_srgb,var(--text-main)_10%,transparent)] border-[color-mix(in_srgb,var(--text-main)_55%,transparent)] text-main font-semibold shadow-xs'
                     : 'bg-canvas border-border text-muted hover:text-main'
                 }`}
               >

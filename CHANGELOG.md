@@ -6,6 +6,14 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.76.5] - 2026-11-04
+
+### Changed
+- "New version available" shows up sooner: the app looks for a new version every 5 minutes instead of every 15 and also as soon as the browser is online again. Behind proxies a server restart can go unnoticed by the live connection, so a tab that stayed in front waited up to 15 minutes before.
+
+### Fixed
+- Task dialog: the selected priority "Low" is clearly visible now, with a light tint and frame in the text colour of the theme.
+
 ## [0.76.4] - 2026-11-04
 
 ### Changed
