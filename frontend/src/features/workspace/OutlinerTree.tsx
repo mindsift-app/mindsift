@@ -852,6 +852,8 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
     setRangeSel(null);
     const target = e.target as HTMLElement;
     const row = target.closest<HTMLElement>('[data-outline-block]');
+    // Not on a bullet (e.g. the empty area below the last one): the press below the note handles it
+    if (!row) return;
     // Buttons (e.g. the action bubble that shows on hover at the row's right) may start a selection too;
     // a plain click on them still works, only a drag into another bullet turns into a selection
     if (!row || target.closest('a, input, select, [contenteditable="true"]')) {
@@ -868,6 +870,31 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
       }
     });
   };
+
+  // A press in the empty space below the last bullet (inside the note or just below it) starts at the end
+  // of that bullet, so dragging upwards from "nothing" selects like in a text editor
+  useEffect(() => {
+    const onDown = (e: MouseEvent) => {
+      if (e.button !== 0) return;
+      const root = treeRootRef.current;
+      const target = e.target as HTMLElement | null;
+      if (!root || !target || target.closest('[data-outline-block], a, input, select, textarea, button, [contenteditable="true"]')) return;
+      const area = root.closest<HTMLElement>('[data-sync-channel]') ?? root.parentElement;
+      if (!area?.contains(target)) return;
+      const rows = root.querySelectorAll<HTMLElement>('[data-outline-block]');
+      const last = rows[rows.length - 1];
+      if (!last) return;
+      const rowRect = last.getBoundingClientRect();
+      const rootRect = root.getBoundingClientRect();
+      if (e.clientY <= rowRect.bottom || e.clientX < rootRect.left || e.clientX > rootRect.right) return;
+      const id = last.dataset.outlineBlock!;
+      const raw = textareaMapRef.current.get(id)?.value ?? blocks.find((b) => b.id === id)?.content ?? '';
+      dragAnchorRef.current = { id, offset: raw.length };
+      setRangeSel(null);
+    };
+    document.addEventListener('mousedown', onDown, true);
+    return () => document.removeEventListener('mousedown', onDown, true);
+  }, [blocks]);
 
   // The selection in text order: first bullet + offset, last bullet + offset, bullets in between
   const resolveRangeSel = (sel: RangeSel) => {

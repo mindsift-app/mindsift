@@ -6,6 +6,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.77.1] - 2026-11-04
+
+### Fixed
+- Notes: a selection started in the empty space below the last bullet and dragged upwards spans the bullets again, so Ctrl+C copies Markdown and Backspace deletes it; before, only the browser's own selection appeared and Backspace did nothing.
+
 ## [0.77.0] - 2026-11-04
 
 ### Added
