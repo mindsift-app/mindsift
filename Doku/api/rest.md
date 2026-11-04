@@ -47,7 +47,7 @@ Base: `/api/v1`. Responses are JSON; errors take the form `{"error": "Text"}`, s
 | DELETE | `/themes/{id}` | Delete custom theme |
 | POST | `/import/mindsift`, `/import/obsidian` | Import (multipart field `file`, max 100 MB): MindSift JSON/archive or Obsidian vault ZIP; `?preview=1` returns only the summary (`folders`, `notes`, `taskLists`, `tasks`, `lists`, `listItems`, `inbox`, `skipped`) |
 | — | `/import/mindsift?mode=restore` | Restore: deletes all own notes, folders, tasks, thoughts, and lists prior to import (only after the file has been completely read and validated) |
-| DELETE | `/user/data` | Delete all personal user data, account remains (`{"password"}` required) |
+| DELETE | `/user/data` | Delete all personal user data, account remains (`{"password"}` required; 403 in demo mode) |
 | DELETE | `/user/account` | Delete user account along with all data (`{"password"}` required); `403` for the last server admin. `/auth/me` provides `isLastAdmin` for this purpose |
 | GET | `/backups`, `/backups/{name}` | List or download own automatic server backups |
 | POST | `/backups/{name}/restore` | Restore server backup: `mode=merge` or `restore` (clears selected sections beforehand), `sections=notes,tasks,lists,inbox,themes`, `preview=1` |

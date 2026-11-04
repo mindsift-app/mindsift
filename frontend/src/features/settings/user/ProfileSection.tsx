@@ -282,7 +282,9 @@ export function ProfileSection({
           <button
             type="button"
             onClick={() => openDanger('data')}
-            className="btn-danger h-11 sm:h-8 px-3 text-xs shrink-0"
+            disabled={demoMode}
+            title={demoMode ? t('profile.demoDisabled') : undefined}
+            className="btn-danger h-11 sm:h-8 px-3 text-xs shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {t('profile.deleteDataButton')}
           </button>

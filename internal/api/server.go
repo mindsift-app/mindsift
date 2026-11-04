@@ -200,7 +200,7 @@ func (s *Server) Router() http.Handler {
 		r.Post("/api/v1/backups/{name}/restore", s.handleRestoreMyBackup)
 		r.Get("/api/v1/export/markdown", s.handleExportMarkdown)
 		r.Post("/api/v1/import/mindsift", s.handleImportMindSift)
-		r.Delete("/api/v1/user/data", s.handlePurgeOwnData)
+		r.Delete("/api/v1/user/data", s.notInDemo(s.handlePurgeOwnData))
 		r.Delete("/api/v1/user/account", s.notInDemo(s.handleDeleteOwnAccount))
 		r.Post("/api/v1/import/obsidian", s.handleImportObsidian)
 		r.Get("/api/v1/themes", s.handleGetThemes)
