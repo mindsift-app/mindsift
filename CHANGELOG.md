@@ -6,6 +6,27 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.76.7] - 2026-11-04
+
+### Changed
+- Task dialog: the trash button deletes right away, like on the card, instead of asking in a browser dialog; the notice at the bottom offers to undo it and the task waits in the trash.
+
+### Fixed
+- Behind proxies that refuse or hold the live connection (SSE), tasks and shopping lists now switch to long polling and update live. Before, changes from other devices only showed up after switching tabs or reloading.
+
+## [0.76.6] - 2026-11-04
+
+### Added
+- README: a short section on how MindSift is tested before every release (frontend, backend and browser tests).
+
+## [0.76.5] - 2026-11-04
+
+### Changed
+- "New version available" shows up sooner: the app looks for a new version every 5 minutes instead of every 15 and also as soon as the browser is online again. Behind proxies a server restart can go unnoticed by the live connection, so a tab that stayed in front waited up to 15 minutes before.
+
+### Fixed
+- Task dialog: the selected priority "Low" is clearly visible now, with a light tint and frame in the text colour of the theme.
+
 ## [0.76.4] - 2026-11-04
 
 ### Changed

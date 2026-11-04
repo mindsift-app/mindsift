@@ -6,7 +6,7 @@
 [![Self-Hosted](https://img.shields.io/badge/100%25-Self--Hosted-2563eb?style=flat-square)](#-quick-start)
 [![Docker](https://img.shields.io/badge/Deployment-Single%20Container-2496ed?style=flat-square&logo=docker&logoColor=white)](#-quick-start)
 [![License](https://img.shields.io/badge/License-AGPLv3-6b7280?style=flat-square)](LICENSE)
-[![Version](https://img.shields.io/badge/Version-v0.76.4-16a34a?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-v0.76.7-16a34a?style=flat-square)](CHANGELOG.md)
 
 **Dump a thought, sort it later, turn it into a task, a note or a shopping list, alone or together.**
 Self-hosted, one container, one SQLite file, your server.
@@ -30,6 +30,14 @@ Self-hosted, one container, one SQLite file, your server.
 > Credit where it's due: none of this came out of thin air. The idea is a remix of every outliner, kanban board and shopping list app I've ever loved (and a few I rage-quit), and the code stands on the shoulders of thousands of open-source developers whose work taught the models how to write it. So really, this is a big thank-you note with a login screen. 🙏
 >
 > It's free, and it stays free. Use it, fork it, host it for your family. If something's broken, open an issue. If you like it, a ⭐ makes my day. And if you hate it… please don't. Just close the tab. 😅
+
+---
+
+## 🧪 Tested before every release
+
+Every build runs through **over 300 frontend tests** and **over 250 backend tests** before an image is published, and a build with a single failing test never ships. On top of that, **five browser test runs with over 80 checks** cover what is hard to unit-test: two people editing the same note at once, offline and back online, sharing, locks and conflict copies, copy & paste as Markdown in Chromium and Firefox, and connections behind proxies that block WebSockets. They run before every change to these areas ([e2e/](e2e/README.md)).
+
+All of this to keep your data safe and make sure everything runs smoothly for you.
 
 ---
 

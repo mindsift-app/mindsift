@@ -56,7 +56,6 @@
     "done": "Attività completata",
     "new": "Nuova attività",
     "edit": "Modifica attività",
-    "confirmDelete": "Vuoi davvero eliminare questa attività?",
     "subtasks": "Sottoattività ({{done}}/{{total}}):",
     "created": "Creata il: {{date}}",
     "plusWeek": "+1 settimana",

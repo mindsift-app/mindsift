@@ -56,7 +56,6 @@
     "done": "Tâche terminée",
     "new": "Nouvelle tâche",
     "edit": "Modifier la tâche",
-    "confirmDelete": "Veux-tu vraiment supprimer cette tâche ?",
     "subtasks": "Sous-tâches ({{done}}/{{total}}) :",
     "created": "Créée le : {{date}}",
     "plusWeek": "+1 semaine",

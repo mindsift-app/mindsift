@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { APP_BUILD } from '../version';
 
-const CHECK_EVERY_MS = 15 * 60 * 1000;
+// Short enough for a tab that stays in front behind a proxy, where a server restart can go unnoticed by
+// the realtime connection for a long time; version.json is a few bytes
+const CHECK_EVERY_MS = 5 * 60 * 1000;
 
 export interface AvailableUpdate {
   version: string;
@@ -9,8 +11,8 @@ export interface AvailableUpdate {
 }
 
 // Notices when the server runs a newer build than this page (version.json, written at build time and
-// never cached): when the tab or the installed app comes back to the foreground, every 15 minutes and
-// when the realtime connection is back after a server restart. "Later" hides it until the next build.
+// never cached): when the tab or the installed app comes back to the foreground, every 5 minutes, when
+// the browser is online again and when the realtime connection is back after a server restart. "Later" hides it until the next build.
 export function useUpdateCheck() {
   const [update, setUpdate] = useState<AvailableUpdate | null>(null);
   const dismissedRef = useRef('');
@@ -38,12 +40,14 @@ export function useUpdateCheck() {
     const timer = window.setInterval(() => void check(), CHECK_EVERY_MS);
     document.addEventListener('visibilitychange', onVisible);
     window.addEventListener('focus', onVisible);
+    window.addEventListener('online', onVisible);
     window.addEventListener('mindsift:ws:status', onWsStatus);
     void check();
     return () => {
       window.clearInterval(timer);
       document.removeEventListener('visibilitychange', onVisible);
       window.removeEventListener('focus', onVisible);
+      window.removeEventListener('online', onVisible);
       window.removeEventListener('mindsift:ws:status', onWsStatus);
     };
   }, []);

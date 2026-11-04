@@ -56,7 +56,6 @@
     "done": "Completed task",
     "new": "New task",
     "edit": "Edit task",
-    "confirmDelete": "Do you really want to delete this task?",
     "subtasks": "Subtasks ({{done}}/{{total}}):",
     "created": "Created: {{date}}",
     "plusWeek": "+1 week",

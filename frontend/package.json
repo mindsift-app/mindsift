@@ -1,7 +1,7 @@
 {
   "name": "mindsift-frontend",
   "private": true,
-  "version": "0.76.4",
+  "version": "0.76.7",
   "license": "AGPL-3.0-only",
   "type": "module",
   "scripts": {
