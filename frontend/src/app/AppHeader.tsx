@@ -70,7 +70,7 @@ export function MobileHeaderBar({
           <Brain className="w-4 h-4" />
         </div>
         <div className="flex items-center gap-1.5">
-          <div className="flex flex-col">
+          <div className="flex flex-col items-start text-left">
             <span className="font-bold text-base text-main tracking-tight leading-none">
               {authStatus.instanceName || 'MindSift'}
             </span>
@@ -204,7 +204,7 @@ export function DesktopHeaderBar({
         <div className="w-7 h-7 bg-accent text-on-accent rounded-btn flex items-center justify-center">
           <Brain className="w-4 h-4" />
         </div>
-        <div className="flex flex-col">
+        <div className="flex flex-col items-start text-left">
           <span className="font-bold text-sm sm:text-base text-main tracking-tight leading-none">
             {authStatus.instanceName || 'MindSift'}
           </span>
