@@ -110,6 +110,8 @@ export function useKanbanLayout({ isKanban, isKanbanWide, columnCount, listId, l
       return Array.from(rows).sort((a, b) => a - b);
     };
     const onWheel = (e: WheelEvent) => {
+      // Dialogs over the board (e.g. the task dialog) scroll themselves
+      if ((e.target as HTMLElement).closest?.('.modal-overlay, [aria-modal="true"]')) return;
       const dy = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY;
       if (e.ctrlKey) {
         if (!board.contains(e.target as Node)) return; // zooming elsewhere stays as it is

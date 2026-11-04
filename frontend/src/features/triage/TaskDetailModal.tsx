@@ -31,6 +31,7 @@ import { addDays, joinDue, splitDue } from '../../lib/due';
 import { usePointerSort } from './usePointerSort';
 import { formatDate } from '../../lib/format';
 import { pushModal } from '../../lib/navHistory';
+import { useScrollLock } from '../../lib/useScrollLock';
 
 interface TaskDetailModalProps {
   task: Thought | null;
@@ -147,6 +148,9 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
     if (notesDirty || titleDirty) setConfirmUnsaved(true);
     else onClose();
   }, [notesDirty, titleDirty, onClose]);
+
+  // The page behind the dialog stays where it is; wheel and finger scroll the dialog
+  useScrollLock();
 
   // Back (browser, mouse button, Android) closes the dialog first, or asks about unsaved changes
   const backRef = useRef<() => boolean>(() => true);

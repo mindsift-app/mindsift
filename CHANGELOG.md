@@ -6,6 +6,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.77.2] - 2026-11-04
+
+### Fixed
+- Task dialog: the mouse wheel scrolls the dialog (e.g. long notes) instead of the board behind it, and the page behind an open dialog stays where it is.
+
 ## [0.77.1] - 2026-11-04
 
 ### Fixed
