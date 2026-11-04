@@ -516,7 +516,8 @@
     "confirmReject": "Refuser l'inscription de \"{{name}}\" ({{email}}) ? Le compte sera supprimé.",
     "confirmDelete": "Supprimer définitivement l'utilisateur \"{{name}}\" ({{email}}) ?",
     "username": "Nom d’utilisateur",
-    "usernameChanged": "Le nom d’utilisateur de {{name}} est maintenant « {{username}} »."
+    "usernameChanged": "Le nom d’utilisateur de {{name}} est maintenant « {{username}} ».",
+    "notSelf": "Impossible pour ton propre compte"
   },
   "sharing": {
     "private": {

@@ -516,7 +516,8 @@
     "confirmReject": "Reject the registration of \"{{name}}\" ({{email}})? The account will be deleted.",
     "confirmDelete": "Really delete the user \"{{name}}\" ({{email}}) for good?",
     "username": "Username",
-    "usernameChanged": "{{name}} now signs in as “{{username}}”."
+    "usernameChanged": "{{name}} now signs in as “{{username}}”.",
+    "notSelf": "Not for your own account"
   },
   "sharing": {
     "private": {

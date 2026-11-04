@@ -516,7 +516,8 @@
     "confirmReject": "Rifiutare la registrazione di \"{{name}}\" ({{email}})? L'account verrà eliminato.",
     "confirmDelete": "Vuoi davvero eliminare definitivamente l'utente \"{{name}}\" ({{email}})?",
     "username": "Nome utente",
-    "usernameChanged": "Il nome utente di {{name}} ora è «{{username}}»."
+    "usernameChanged": "Il nome utente di {{name}} ora è «{{username}}».",
+    "notSelf": "Non disponibile per il tuo account"
   },
   "sharing": {
     "private": {

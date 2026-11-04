@@ -6,6 +6,14 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.77.3] - 2026-11-04
+
+### Changed
+- Administration → users: username, password, lock/unlock and delete are compact icon buttons with a tooltip, so every row lines up. On your own account, lock and delete stay visible but greyed out.
+
+### Fixed
+- Administration → users: long names, usernames and email addresses are cut off with "…" (full text on hover) instead of wrapping to a second line.
+
 ## [0.77.2] - 2026-11-04
 
 ### Fixed
