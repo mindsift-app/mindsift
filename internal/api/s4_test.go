@@ -45,6 +45,7 @@ func TestDemoSendsNothingAndKeepsAccounts(t *testing.T) {
 		{"POST", "/api/v1/admin/backups", ``},
 		{"POST", "/api/v1/auth/revoke-all", ``},
 		{"DELETE", "/api/v1/user/account", `{"password":"admin"}`},
+		{"DELETE", "/api/v1/user/data", `{"password":"admin"}`},
 		{"DELETE", "/api/v1/admin/users/" + storage.DemoUserID, ``},
 		{"PATCH", "/api/v1/auth/settings", `{"password":"neuesPasswort1","currentPassword":"admin"}`},
 	}

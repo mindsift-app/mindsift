@@ -6,6 +6,14 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.78.2] - 2026-11-04
+
+### Changed
+- Default theme: code blocks are a little lighter in MindSift Dark and MindSift Light.
+
+### Fixed
+- Demo: "Delete data" in the profile is switched off, so visitors can no longer empty the shared demo accounts.
+
 ## [0.78.1] - 2026-11-04
 
 ### Changed
