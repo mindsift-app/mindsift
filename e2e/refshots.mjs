@@ -1,4 +1,4 @@
-// Reference screenshots for refactors (Doku/plans/frontend-aufteilen.md): takes the same set of views
+// Reference screenshots for refactors: takes the same set of views
 // on desktop and phone from a fresh demo server, and compares two such sets pixel by pixel.
 // Client clock fixed, animations and the caret off, and every run starts from the same database (see
 // refshots.sh), so two runs of the same code give the same pictures. Known exceptions, real server times:

@@ -1,5 +1,5 @@
 #!/bin/sh
-# Reference screenshots for refactors (Doku/plans/frontend-aufteilen.md).
+# Reference screenshots for refactors.
 #
 #   e2e/refshots.sh capture before     # image from the working tree, fresh server, pictures to .refshots/shots/before
 #   … refactor …

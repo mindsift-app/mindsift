@@ -11,7 +11,7 @@ import (
 	"github.com/mindsift-app/mindsift/internal/storage"
 )
 
-// MCP tools that change existing notes and work on the inbox (Doku/plans/mcp-berechtigungen.md). Bullets
+// MCP tools that change existing notes and work on the inbox. Bullets
 // change through the same operations as the editor (internal/collab), so whoever has the note open sees
 // the change live and nothing overwrites parallel typing; a bullet someone is editing right now is left
 // alone. Deleting a note puts it into the trash. Inbox entries are converted or discarded like in the

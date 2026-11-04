@@ -1229,10 +1229,12 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
     </div>
   );
 
+  // The note scrolls on its own; at its end the scroll must not pass on to the page, where phones would show
+  // and hide the address bar, resize the app (100dvh) and make the bars at the bottom flicker
   return (
     <div
       ref={scrollRef}
-      className={embedded ? 'flex flex-col bg-editor' : 'flex-1 flex flex-col h-full min-h-0 bg-editor overflow-y-auto'}
+      className={embedded ? 'flex flex-col bg-editor' : 'flex-1 flex flex-col h-full min-h-0 bg-editor overflow-y-auto overscroll-y-contain'}
       data-sync-channel={engineState?.channel}
     >
       {desktopBar && actionsTarget && createPortal(actionsBlock, actionsTarget)}

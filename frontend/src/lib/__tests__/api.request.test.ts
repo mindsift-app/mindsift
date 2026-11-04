@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { api, getToken, setToken, clearToken, buildWebSocketURL, buildSSEURL } from '../api';
 import { OfflineError } from '../offline';
 
-// Safety net for splitting lib/api.ts (Doku/plans/frontend-aufteilen.md): the behaviour of request()
+// Safety net for splitting lib/api.ts: the behaviour of request()
 // as seen through public calls.
 
 function jsonResponse(status: number, body: unknown, headers: Record<string, string> = {}) {

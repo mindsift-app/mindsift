@@ -1,4 +1,4 @@
-// Shopping list check for refactors (Doku/plans/frontend-aufteilen.md): adding, hashtag suggestions,
+// Shopping list check for refactors: adding, hashtag suggestions,
 // ticking, quantities, deleting, dragging within and between categories and onto another list's tab,
 // clearing done entries, a new list, realtime from outside and the add sheet on a phone. After each step
 // the lists as the server has them. Two runs of the same code give the same file; e2e/refshots.sh lists

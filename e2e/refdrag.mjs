@@ -1,4 +1,4 @@
-// Drag & drop check for refactors (Doku/plans/frontend-aufteilen.md): screenshots do not show dragging.
+// Drag & drop check for refactors: screenshots do not show dragging.
 // Moves tasks with the mouse (Kanban columns, list order, onto a list tab) and with a finger on the phone
 // board, and writes the resulting task state from the server, one step at a time. Two runs of the same
 // code give the same file; e2e/refshots.sh drag <name> runs it on a fresh copy of the reference data.

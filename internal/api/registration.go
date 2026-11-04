@@ -17,7 +17,7 @@ import (
 )
 
 // Registration without an invite (mode and e-mail domains), approval of waiting accounts, and sending
-// invite links by mail. See Doku/plans/registrierung-und-login.md.
+// invite links by mail.
 
 type registrationPolicy struct {
 	Mode    string

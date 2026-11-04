@@ -514,6 +514,10 @@ export const TasksView: React.FC<TasksViewProps> = ({
   // "Add task" at the foot of a column: a draft "New task" in that column opens in the task
   // dialog with its title ready to be typed over. Closed without a title of its own, the draft goes again.
   const [draftTaskId, setDraftTaskId] = useState<string | null>(null);
+  // Latest tasks for closing the dialog: "Save" in its unsaved-changes question renames the draft and closes
+  // right after, before a render would bring the new title into this closure
+  const tasksRef = useRef(tasks);
+  tasksRef.current = tasks;
   const handleQuickAddTaskToColumn = async (columnId: string) => {
     triggerHaptic(10);
     const targetCol = activeColumns.find((c) => boardIdOf(c) === columnId);
@@ -541,7 +545,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
   const closeTaskDetail = () => {
     setShowDetailModal(false);
     setDetailTaskId(null);
-    const draft = draftTaskId ? tasks.find((t) => t.id === draftTaskId) : undefined;
+    const draft = draftTaskId ? tasksRef.current.find((t) => t.id === draftTaskId) : undefined;
     setDraftTaskId(null);
     if (draft && draft.content === newTaskTitle()) {
       setTasks((prev) => prev.filter((t) => t.id !== draft.id));

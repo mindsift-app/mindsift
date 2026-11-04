@@ -6,6 +6,17 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.76.4] - 2026-11-04
+
+### Changed
+- Phones: the action buttons above a bullet show for three seconds after tapping into it and then hide again, instead of covering the text the whole time; another tap brings them back.
+- The old planning documents are no longer part of the repository.
+
+### Fixed
+- Tasks: a new task from "Add task" was deleted when the dialog was closed with "Done" and the unsaved-changes question answered with "Save".
+- Phones: scrolling a note to its end no longer passes on to the page, which made the browser bar and the bottom tab bar jump and flicker.
+- Shared notes: the lock badge is no taller than a line of text, so rows no longer grow and shift when someone starts or stops editing.
+
 ## [0.76.3] - 2026-11-04
 
 ### Fixed
