@@ -96,6 +96,9 @@ export function buildStep(before: Doc, ops: Op[], at: number): UndoStep | null {
 /** Returns the IDs of blocks the step touches whose state no longer matches, or [] if undo is safe. */
 export function failedChecks(d: Doc, step: UndoStep): string[] {
   const failed: string[] = [];
+  // Blocks the step deleted itself: undoing it restores them, so they may serve as the old parent of a
+  // moved block (deleting a selection moves the last bullet's children up and deletes that bullet)
+  const restoredByStep = new Set(step.checks.flatMap((c) => (c.kind === 'deleted' ? c.ids : [])));
   for (const c of step.checks) {
     switch (c.kind) {
       case 'content': {
@@ -114,7 +117,8 @@ export function failedChecks(d: Doc, step: UndoStep): string[] {
       case 'place': {
         const b = d.blocks.get(c.blockId);
         const parent = c.restoreParent ? d.blocks.get(c.restoreParent) : null;
-        if (!b || b.deleted || b.parentId !== c.parentId || b.orderKey !== c.orderKey || (c.restoreParent && (!parent || parent.deleted))) {
+        const parentGone = c.restoreParent && (!parent || (parent.deleted && !restoredByStep.has(c.restoreParent)));
+        if (!b || b.deleted || b.parentId !== c.parentId || b.orderKey !== c.orderKey || parentGone) {
           failed.push(c.blockId);
         }
         break;

@@ -30,6 +30,7 @@ import { VoiceInputButton } from '../../components/VoiceInputButton';
 import { addDays, joinDue, splitDue } from '../../lib/due';
 import { usePointerSort } from './usePointerSort';
 import { formatDate } from '../../lib/format';
+import { pushModal } from '../../lib/navHistory';
 
 interface TaskDetailModalProps {
   task: Thought | null;
@@ -146,6 +147,24 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
     if (notesDirty || titleDirty) setConfirmUnsaved(true);
     else onClose();
   }, [notesDirty, titleDirty, onClose]);
+
+  // Back (browser, mouse button, Android) closes the dialog first, or asks about unsaved changes
+  const backRef = useRef<() => boolean>(() => true);
+  backRef.current = () => {
+    if (confirmUnsaved) {
+      setConfirmUnsaved(false);
+      return false;
+    }
+    if (notesDirty || titleDirty) {
+      setConfirmUnsaved(true);
+      return false;
+    }
+    onCloseRef.current();
+    return true;
+  };
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+  useEffect(() => pushModal(() => backRef.current()), []);
 
   // Handle escape key to close
   useEffect(() => {
@@ -758,7 +777,7 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
                   value={newTagDraft}
                   onChange={(e) => setNewTagDraft(e.target.value)}
                   placeholder="+ #hashtag"
-                  className="h-11 sm:h-6 w-32 sm:w-24 px-2 sm:px-1.5 text-base sm:text-xs input-field"
+                  className="h-11 sm:h-8 w-32 sm:w-24 px-2 sm:px-1.5 text-base sm:text-xs input-field"
                 />
               </form>
               )}
@@ -861,12 +880,12 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
                 value={newSubtaskTitle}
                 onChange={(e) => setNewSubtaskTitle(e.target.value)}
                 placeholder={t('detail.newSubtask')}
-                className="flex-1 min-w-0 h-11 sm:h-7 px-2 text-base sm:text-xs input-field"
+                className="flex-1 min-w-0 h-11 sm:h-8 px-2 text-base sm:text-xs input-field"
               />
               <button
                 type="submit"
                 disabled={!newSubtaskTitle.trim()}
-                className="btn-action h-11 sm:h-7 px-2.5 text-xs disabled:opacity-40"
+                className="btn-action h-11 sm:h-8 px-2.5 text-xs disabled:opacity-40"
               >
                 <Plus className="w-3 h-3" />
                 <span>{t('common:add')}</span>
