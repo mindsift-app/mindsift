@@ -446,7 +446,7 @@ func (s *SystemSettings) UnmarshalJSON(data []byte) error {
 type DocumentBlock struct {
 	ID         string  `json:"id"`
 	DocumentID string  `json:"documentId,omitempty"`
-	Type       string  `json:"type"` // h1 | h2 | h3 | paragraph | todo | bullet | code | callout | divider | table | progress
+	Type       string  `json:"type"` // h1 | h2 | h3 | paragraph | todo | bullet | code | callout | warning | error | divider | table | progress
 	Content    string  `json:"content"`
 	Checked    bool    `json:"checked,omitempty"`
 	Lang       string  `json:"lang,omitempty"`

@@ -6,6 +6,13 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.79.0] - 2026-11-04
+
+### Added
+- Notes: `/warn` turns a bullet into a warning (yellow box with a warning triangle), `/fail` into an error (red box with an X). The text stays normal text with bold, links and hashtags; the button on the right turns it back into plain text.
+- Copying as Markdown and the Markdown export write them as Obsidian callouts (`[!warning]`, `[!failure]`); importing an Obsidian vault turns warning, caution, failure, danger and similar callouts back into warnings and errors.
+- MCP: `add_note_bullet` and `update_note_bullet` accept the types `warning` and `error`.
+
 ## [0.78.2] - 2026-11-04
 
 ### Changed

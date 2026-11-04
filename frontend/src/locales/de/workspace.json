@@ -76,6 +76,8 @@
     "h3": "Unterabschnitt",
     "code": "Code-Block mit Syntax",
     "callout": "Hinweisbox",
+    "warning": "Warnung in Gelb",
+    "error": "Fehler in Rot",
     "divider": "Trennlinie",
     "extract": "Ast als eigene Notiz",
     "image": "Bilder hochladen oder verlinken",

@@ -79,7 +79,7 @@ func (s *Store) seedHelpNotesDE(user *domain.User) {
 		{level: 1, text: "Klick auf den Punkt (•) **zoomt** in den Ast – probier es in [[Zoom ausprobieren]]"},
 		{typ: "h2", text: "Formatieren"},
 		{level: 1, text: "Am Zeilenanfang: `- ` Punkt, `1. ` Nummer, `[] ` Häkchen, `# ` Überschrift"},
-		{level: 1, text: "`/` öffnet das Menü: /todo, /h1, /code, /callout, /image, /audio, /diktat, /extract …"},
+		{level: 1, text: "`/` öffnet das Menü: /todo, /h1, /code, /callout, /warn, /fail, /image, /audio, /diktat, /extract …"},
 		{level: 1, text: "**fett** mit `Strg+B`, *kursiv* mit `Strg+I`, Link mit `Strg+K`"},
 		{typ: "h2", text: "Verlinken"},
 		{level: 1, text: "`[[Notiztitel]]` verlinkt eine Notiz, z. B. [[Erste Schritte]]"},

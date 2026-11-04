@@ -76,6 +76,8 @@
     "h3": "Sous-titre",
     "code": "Bloc de code avec coloration",
     "callout": "Encadré mis en valeur",
+    "warning": "Avertissement en jaune",
+    "error": "Erreur en rouge",
     "divider": "Séparateur",
     "extract": "Branche comme note autonome",
     "image": "Téléverser ou lier des images",

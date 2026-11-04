@@ -95,7 +95,7 @@ const it: HelpContent = {
       title: 'Comandi slash (/) e formattazione automatica',
       subtitle: 'Cambia tipo di blocco e formatta in Markdown durante la digitazione',
       icon: Command,
-      keywords: ['slash', 'comandi', 'todo', 'link', 'h1', 'h2', 'h3', 'codice', 'callout', 'separatore', 'immagine', 'estrai', 'unisci', 'audio', 'nota vocale', 'dettatura', 'foto', 'formattazione automatica'],
+      keywords: ['slash', 'comandi', 'todo', 'link', 'h1', 'h2', 'h3', 'codice', 'callout', 'warn', 'fail', 'separatore', 'immagine', 'estrai', 'unisci', 'audio', 'nota vocale', 'dettatura', 'foto', 'formattazione automatica'],
       content: (
         <div className="space-y-3 text-muted leading-relaxed">
           <div>
@@ -122,6 +122,10 @@ const it: HelpContent = {
               <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main">
                 <span className="text-accent font-bold">💬</span>
                 <span>/callout (riquadro informativo)</span>
+              </div>
+              <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main">
+                <span className="text-status-warn font-bold">⚠</span>
+                <span>/warn, /fail (avviso, errore)</span>
               </div>
               <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main">
                 <span className="text-accent font-bold">—</span>

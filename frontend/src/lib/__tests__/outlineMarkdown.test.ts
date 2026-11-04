@@ -12,6 +12,11 @@ const b = (type: DocumentBlock['type'], content: string, level = 0, extra: Parti
 });
 
 describe('blocksToMarkdown', () => {
+  it('writes warnings and errors as Obsidian callouts', () => {
+    const md = blocksToMarkdown([b('warning', 'Strom vorher abschalten', 0), b('text', 'Server', 0), b('error', 'Backup fehlgeschlagen', 1)]);
+    expect(md).toBe(['> [!warning]', '> Strom vorher abschalten', '', 'Server', '- > [!failure] Backup fehlgeschlagen'].join('\n'));
+  });
+
   it('writes a nested list with to-dos, headings and code', () => {
     const md = blocksToMarkdown([
       b('h2', 'Umzug', 0),

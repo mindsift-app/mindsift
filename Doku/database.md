@@ -54,7 +54,7 @@ A task is a `thought` with `status='kept'` or `status='converted' AND converted_
 | `workspace_folder_mounts` | Personal mount path per recipient and shared folder |
 | `doc_user_folders` | Personal filing location for shared individual notes per recipient |
 
-Block types: `h1`, `h2`, `h3`, `paragraph`, `text`, `todo`, `bullet`, `code`, `callout`, `divider`, `table`, `progress`.
+Block types: `h1`, `h2`, `h3`, `paragraph`, `text`, `todo`, `bullet`, `code`, `callout`, `warning`, `error`, `divider`, `table`, `progress`.
 
 ### Lists
 | Table | Purpose |

@@ -76,6 +76,8 @@
     "h3": "Subsection",
     "code": "Code block with syntax",
     "callout": "Callout box",
+    "warning": "Warning in yellow",
+    "error": "Error in red",
     "divider": "Divider",
     "extract": "Branch as its own note",
     "image": "Upload or link images",

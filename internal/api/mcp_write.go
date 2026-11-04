@@ -31,7 +31,7 @@ type noteBullet struct {
 }
 
 // mcpBulletTypes: the types an agent may give a bullet
-var mcpBulletTypes = map[string]bool{"text": true, "todo": true, "h1": true, "h2": true, "h3": true, "numbered": true, "callout": true}
+var mcpBulletTypes = map[string]bool{"text": true, "todo": true, "h1": true, "h2": true, "h3": true, "numbered": true, "callout": true, "warning": true, "error": true}
 
 // noteDoc loads the live block tree of a note
 func (s *Server) noteDoc(docID string) (*collab.Doc, error) {
@@ -177,12 +177,12 @@ var mcpWriteTools = []mcpTool{
 	{
 		Name: "add_note_bullet",
 		Description: "Add a bullet to a note: after a bullet (same level), as the last child of a bullet, or at the end. " +
-			"Bullet ids come from get_note. type: text (default), todo, h1, h2, h3, numbered, callout.",
+			"Bullet ids come from get_note. type: text (default), todo, h1, h2, h3, numbered, callout, warning, error.",
 		Scope: storage.ScopeNotesWrite,
 		Schema: schema([]string{"noteId", "text"}, map[string]interface{}{
 			"noteId":   prop("string", "Note id"),
 			"text":     prop("string", "Text of the new bullet"),
-			"type":     map[string]interface{}{"type": "string", "enum": []string{"text", "todo", "h1", "h2", "h3", "numbered", "callout"}},
+			"type":     map[string]interface{}{"type": "string", "enum": []string{"text", "todo", "h1", "h2", "h3", "numbered", "callout", "warning", "error"}},
 			"afterId":  prop("string", "Insert right after this bullet, on its level (optional)"),
 			"parentId": prop("string", "Insert as the last child of this bullet (optional; ignored with afterId)"),
 			"checked":  map[string]interface{}{"type": "boolean", "description": "For a to-do: already done"},
@@ -202,7 +202,7 @@ var mcpWriteTools = []mcpTool{
 				a.Type = "text"
 			}
 			if !mcpBulletTypes[a.Type] {
-				return nil, errors.New("'type': text, todo, h1, h2, h3, numbered oder callout")
+				return nil, errors.New("'type': text, todo, h1, h2, h3, numbered, callout, warning oder error")
 			}
 			d, err := s.noteDoc(a.NoteID)
 			if err != nil {
@@ -262,7 +262,7 @@ var mcpWriteTools = []mcpTool{
 			"bulletId": prop("string", "Bullet id"),
 			"text":     prop("string", "New text, optional"),
 			"checked":  map[string]interface{}{"type": "boolean", "description": "To-do done (true) or open (false), optional"},
-			"type":     map[string]interface{}{"type": "string", "enum": []string{"text", "todo", "h1", "h2", "h3", "numbered", "callout"}},
+			"type":     map[string]interface{}{"type": "string", "enum": []string{"text", "todo", "h1", "h2", "h3", "numbered", "callout", "warning", "error"}},
 		}),
 		run: func(s *Server, userID string, actor *apiActor, args json.RawMessage) (interface{}, error) {
 			var a struct {
@@ -278,7 +278,7 @@ var mcpWriteTools = []mcpTool{
 				return nil, err
 			}
 			if a.Type != nil && !mcpBulletTypes[*a.Type] {
-				return nil, errors.New("'type': text, todo, h1, h2, h3, numbered oder callout")
+				return nil, errors.New("'type': text, todo, h1, h2, h3, numbered, callout, warning oder error")
 			}
 			d, err := s.noteDoc(a.NoteID)
 			if err != nil {

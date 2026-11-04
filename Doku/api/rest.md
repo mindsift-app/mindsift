@@ -112,7 +112,7 @@ Administrators can disable MCP (`MCP_ENABLED=false` or toggle in administration 
 | `get_note` | `notes:read` | A single note; `content` consists of bullets formatted as an indented Markdown list (tab per level, `- [ ]` for to-dos, images and audio recordings as placeholders), `bullets` contains the same bullets with `id`, `level`, `type`, `text`, `checked` |
 | `create_note` | `notes:create` | New note (`title`, `content` as Markdown like in import, `folderPath`, `icon`); creating in shared folders requires write permission |
 | `update_note` | `notes:write` | Change title, icon, or folder of a note |
-| `add_note_bullet` | `notes:write` | Add bullet: after a bullet (`afterId`), as the last child (`parentId`), or at the end; `type` text/todo/h1–h3/numbered/callout, `checked` |
+| `add_note_bullet` | `notes:write` | Add bullet: after a bullet (`afterId`), as the last child (`parentId`), or at the end; `type` text/todo/h1–h3/numbered/callout/warning/error, `checked` |
 | `update_note_bullet` | `notes:write` | Update text, checked state, or type of a bullet (`bulletId` from `get_note`) |
 | `delete_note_bullet` | `notes:write` | Remove bullet including sub-bullets |
 | `delete_note` | `notes:write` | Move own note to trash (recoverable); shared notes and notes in trash cannot be deleted this way |

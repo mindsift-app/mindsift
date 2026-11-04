@@ -6,7 +6,7 @@ var messagesES = map[string]string{
 	"'listId' fehlt (Ids liefert list_lists)":                                                "Falta 'listId' (list_lists devuelve los ids)",
 	"'title' darf nicht leer sein":                                                           "'title' no puede estar vacío",
 	"'to': task, note oder list_item":                                                        "'to': task, note o list_item",
-	"'type': text, todo, h1, h2, h3, numbered oder callout":                                  "'type': text, todo, h1, h2, h3, numbered o callout",
+	"'type': text, todo, h1, h2, h3, numbered, callout, warning oder error":                  "'type': text, todo, h1, h2, h3, numbered, callout, warning o error",
 	"API-Key besitzt keine Berechtigung für diese Aktion":                                    "La clave API no tiene permiso para esta acción",
 	"API-Schlüssel nicht gefunden":                                                           "Clave API no encontrada",
 	"Abmelden fehlgeschlagen":                                                                "No se pudo cerrar la sesión",

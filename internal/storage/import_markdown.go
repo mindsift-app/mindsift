@@ -715,8 +715,20 @@ var (
 	checkboxRe = regexp.MustCompile(`^\[([ xX])\][ \t]*(.*)$`)
 	headingRe  = regexp.MustCompile(`^(#{1,6})[ \t]+(.*)$`)
 	fenceRe    = regexp.MustCompile("^([ \\t]*)(```|~~~)(.*)$")
-	calloutRe  = regexp.MustCompile(`^\[![\w-]+\][+-]?[ \t]*(.*)$`)
+	calloutRe  = regexp.MustCompile(`^\[!([\w-]+)\][+-]?[ \t]*(.*)$`)
 )
+
+// calloutType maps an Obsidian callout kind to a block type: warnings and failures keep their colour,
+// every other kind (note, tip, quote …) becomes a plain callout.
+func calloutType(kind string) string {
+	switch strings.ToLower(kind) {
+	case "warning", "caution", "attention":
+		return "warning"
+	case "failure", "fail", "missing", "danger", "error", "bug":
+		return "error"
+	}
+	return "callout"
+}
 
 func newBlock(typ, content string, level int) domain.DocumentBlock {
 	return domain.DocumentBlock{ID: domain.NewID("blk"), Type: typ, Content: content, Level: level}
@@ -820,20 +832,25 @@ func MarkdownToBlocks(md string) []domain.DocumentBlock {
 			}
 		}
 
-		// Quotes and Obsidian callouts (> [!note] …): one callout block
+		// Quotes and Obsidian callouts (> [!note] …): one callout block; [!warning] and [!failure] keep
+		// their kind as warning and error blocks
 		if strings.HasPrefix(trimmed, ">") && !strings.HasPrefix(line, " ") && !strings.HasPrefix(line, "\t") {
 			var parts []string
+			typ := "callout"
 			for ; i < len(lines) && strings.HasPrefix(strings.TrimSpace(lines[i]), ">"); i++ {
 				q := strings.TrimSpace(strings.TrimPrefix(strings.TrimSpace(lines[i]), ">"))
 				if m := calloutRe.FindStringSubmatch(q); m != nil {
-					if q = strings.TrimSpace(m[1]); q == "" {
+					if len(parts) == 0 {
+						typ = calloutType(m[1])
+					}
+					if q = strings.TrimSpace(m[2]); q == "" {
 						continue
 					}
 				}
 				parts = append(parts, q)
 			}
 			i--
-			blocks = append(blocks, newBlock("callout", strings.Join(parts, "\n"), base))
+			blocks = append(blocks, newBlock(typ, strings.Join(parts, "\n"), base))
 			indents, inList, afterParagraph = nil, false, false
 			continue
 		}
@@ -858,6 +875,9 @@ func MarkdownToBlocks(md string) []domain.DocumentBlock {
 				typ, content = "divider", ""
 			} else if strings.HasPrefix(content, "> ") {
 				typ, content = "callout", strings.TrimPrefix(content, "> ")
+				if c := calloutRe.FindStringSubmatch(content); c != nil {
+					typ, content = calloutType(c[1]), c[2]
+				}
 			}
 			b := newBlock(typ, content, level)
 			b.Checked = checked

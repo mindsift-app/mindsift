@@ -351,7 +351,7 @@ export const DATA_SECTIONS: { id: DataSection; readonly label: string }[] = [
   dataSection('themes'),
 ];
 
-export type BlockType = 'h1' | 'h2' | 'h3' | 'paragraph' | 'text' | 'todo' | 'bullet' | 'numbered' | 'code' | 'callout' | 'divider' | 'table' | 'progress' | 'image' | 'audio';
+export type BlockType = 'h1' | 'h2' | 'h3' | 'paragraph' | 'text' | 'todo' | 'bullet' | 'numbered' | 'code' | 'callout' | 'warning' | 'error' | 'divider' | 'table' | 'progress' | 'image' | 'audio';
 
 export interface DocumentBlock {
   id: string;

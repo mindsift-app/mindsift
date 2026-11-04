@@ -230,7 +230,7 @@ func (s *Store) seedHelpNotesEN(user *domain.User) {
 		{level: 1, text: "Clicking the bullet (•) **zooms** into the branch – try it in [[Try zooming]]"},
 		{typ: "h2", text: "Formatting"},
 		{level: 1, text: "At the start of a line: `- ` bullet, `1. ` number, `[] ` checkbox, `# ` heading"},
-		{level: 1, text: "`/` opens the menu: /todo, /h1, /code, /callout, /image, /audio, /diktat, /extract …"},
+		{level: 1, text: "`/` opens the menu: /todo, /h1, /code, /callout, /warn, /fail, /image, /audio, /diktat, /extract …"},
 		{level: 1, text: "**bold** with `Ctrl+B`, *italic* with `Ctrl+I`, link with `Ctrl+K`"},
 		{typ: "h2", text: "Linking"},
 		{level: 1, text: "`[[Note title]]` links a note, e.g. [[Getting started]]"},

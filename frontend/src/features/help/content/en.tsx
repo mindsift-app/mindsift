@@ -95,7 +95,7 @@ const en: HelpContent = {
       title: 'Slash commands (/) & auto-formatting',
       subtitle: 'Switch block types and format Markdown while typing',
       icon: Command,
-      keywords: ['slash', 'commands', 'todo', 'link', 'h1', 'h2', 'h3', 'code', 'callout', 'divider', 'image', 'extract', 'merge', 'audio', 'voice note', 'dictation', 'photo', 'auto-formatting'],
+      keywords: ['slash', 'commands', 'todo', 'link', 'h1', 'h2', 'h3', 'code', 'callout', 'warn', 'fail', 'divider', 'image', 'extract', 'merge', 'audio', 'voice note', 'dictation', 'photo', 'auto-formatting'],
       content: (
         <div className="space-y-3 text-muted leading-relaxed">
           <div>
@@ -122,6 +122,10 @@ const en: HelpContent = {
               <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main">
                 <span className="text-accent font-bold">💬</span>
                 <span>/callout (callout box)</span>
+              </div>
+              <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main">
+                <span className="text-status-warn font-bold">⚠</span>
+                <span>/warn, /fail (warning, error)</span>
               </div>
               <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main">
                 <span className="text-accent font-bold">—</span>

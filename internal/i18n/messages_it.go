@@ -6,7 +6,7 @@ var messagesIT = map[string]string{
 	"'listId' fehlt (Ids liefert list_lists)":                                                "Manca 'listId' (list_lists restituisce gli id)",
 	"'title' darf nicht leer sein":                                                           "'title' non può essere vuoto",
 	"'to': task, note oder list_item":                                                        "'to': task, note o list_item",
-	"'type': text, todo, h1, h2, h3, numbered oder callout":                                  "'type': text, todo, h1, h2, h3, numbered o callout",
+	"'type': text, todo, h1, h2, h3, numbered, callout, warning oder error":                  "'type': text, todo, h1, h2, h3, numbered, callout, warning o error",
 	"API-Key besitzt keine Berechtigung für diese Aktion":                                    "La chiave API non ha l’autorizzazione per questa azione",
 	"API-Schlüssel nicht gefunden":                                                           "Chiave API non trovata",
 	"Abmelden fehlgeschlagen":                                                                "Disconnessione non riuscita",

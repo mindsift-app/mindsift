@@ -1,6 +1,6 @@
 // Selection over several bullets with the mouse and Ctrl+A, copied with Ctrl+C as Markdown and deleted with
 // Backspace, in Chromium and Firefox. Covers both directions, different start points in the row (text, empty
-// space, the action bubble on the right), callouts at the top and the bottom, an empty indented last bullet
+// space, the action bubble on the right), callouts at the top and the bottom, warnings and errors, an empty indented last bullet
 // and a drag past the first/last bullet. Needs a server in demo mode (account admin/admin); see e2e/README.md.
 import { chromium, firefox } from 'playwright';
 
@@ -28,9 +28,12 @@ const NOTES = {
     blocks: [['callout', 'Ein Hinweis oben', 0], ['h2', 'Überschrift', 0], ['bullet', 'Erster Punkt mit **fett**', 0], ['bullet', 'Kind', 1], ['todo', 'Aufgabe', 0]],
     markdown: '> Ein Hinweis oben\n\n## Überschrift\n\nErster Punkt mit **fett**\n- Kind\n\n- [ ] Aufgabe',
   },
-  'Callout unten, leerer eingerückter Bullet am Ende': {
-    blocks: [['bullet', 'Erster Punkt', 0], ['bullet', 'Kind', 1], ['callout', 'Ein Hinweis unten', 0], ['bullet', 'Letzter', 0], ['bullet', '', 1]],
-    markdown: 'Erster Punkt\n- Kind\n\n> Ein Hinweis unten\n\nLetzter\n-',
+  'Callout unten, Warnung und Fehler, leerer eingerückter Bullet am Ende': {
+    blocks: [
+      ['bullet', 'Erster Punkt', 0], ['bullet', 'Kind', 1], ['warning', 'Achtung, heiß', 1], ['callout', 'Ein Hinweis unten', 0],
+      ['error', 'Fehlgeschlagen', 0], ['bullet', 'Letzter', 0], ['bullet', '', 1],
+    ],
+    markdown: 'Erster Punkt\n- Kind\n- > [!warning] Achtung, heiß\n\n> Ein Hinweis unten\n\n> [!failure]\n> Fehlgeschlagen\n\nLetzter\n-',
   },
 };
 
