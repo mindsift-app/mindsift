@@ -6,6 +6,13 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.76.3] - 2026-11-04
+
+### Fixed
+- Notes: selecting with the mouse from the bottom up copies Markdown too. A callout at the end of the selection is taken whole instead of being left out, and dragging past the first or last bullet (e.g. onto the title) selects up to its start or end.
+- Notes: a selection started on the action buttons at the right of a bullet now spans several bullets; before, the browser selected the rendered text, and Ctrl+C gave plain text with every line twice.
+- Notes: whatever the browser itself selects over several bullets is copied as Markdown as well, and a click outside the note ends a selection.
+
 ## [0.76.2] - 2026-11-04
 
 ### Fixed

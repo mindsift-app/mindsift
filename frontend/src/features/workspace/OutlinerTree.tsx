@@ -49,7 +49,7 @@ export interface OutlinerTreeProps {
 }
 
 // Blocks that a selection over several bullets copies whole, never cut at the selection's edge
-const WHOLE_IN_SELECTION = ['code', 'divider', 'table', 'progress'];
+const WHOLE_IN_SELECTION = ['code', 'divider', 'table', 'progress', 'callout'];
 
 // Puts text on the clipboard from a key press: through the browser's copy event, which works on plain
 // HTTP too (navigator.clipboard needs HTTPS or localhost); the clipboard API only as a fallback
@@ -724,10 +724,12 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
     return null;
   };
 
-  // Position in the raw text of a bullet for a point in its rendered text (outside it: start or end)
-  const rawOffsetAtPoint = (row: HTMLElement, id: string, x: number, y: number) => {
+  // Position in the raw text of a bullet for a point in its rendered text (outside it: start or end).
+  // Blocks without a text layer (callouts, code …) count whole when `whole` says from which side
+  const rawOffsetAtPoint = (row: HTMLElement, id: string, x: number, y: number, whole?: 'start' | 'end') => {
     const raw = textareaMapRef.current.get(id)?.value ?? blocks.find((b) => b.id === id)?.content ?? '';
     const span = row.querySelector<HTMLElement>('[data-outline-text]');
+    if (!span && whole) return { offset: whole === 'start' ? 0 : raw.length };
     const caret = caretAtPoint(x, y);
     if (span && caret && span.contains(caret.node)) {
       const range = document.createRange();
@@ -797,14 +799,31 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
     const onMove = (e: MouseEvent) => {
       const start = dragAnchorRef.current;
       if (!start || !(e.buttons & 1)) return;
-      const row = (document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null)?.closest<HTMLElement>('[data-outline-block]');
-      if (!row || !treeRootRef.current?.contains(row)) return;
+      const root = treeRootRef.current;
+      if (!root) return;
+      let row = (document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null)?.closest<HTMLElement>('[data-outline-block]');
+      let edge: 'start' | 'end' | null = null;
+      if (!row || !root.contains(row)) {
+        // Above the first bullet (e.g. on the title) the selection reaches its start, below the last its end,
+        // as in a text editor
+        const rows = root.querySelectorAll<HTMLElement>('[data-outline-block]');
+        if (rows.length === 0) return;
+        if (e.clientY < rows[0].getBoundingClientRect().top) [row, edge] = [rows[0], 'start'];
+        else if (e.clientY > rows[rows.length - 1].getBoundingClientRect().bottom) [row, edge] = [rows[rows.length - 1], 'end'];
+        else return;
+      }
       const id = row.dataset.outlineBlock!;
       if (id === start.id) {
         if (rangeSelRef.current) setRangeSel(null);
         return;
       }
-      const at = rawOffsetAtPoint(row, id, e.clientX, e.clientY);
+      // Dragging upwards the bullet under the pointer is the selection's first one, else its last
+      const startRow = root.querySelector(`[data-outline-block="${start.id}"]`);
+      const upwards = !!startRow && !!(row.compareDocumentPosition(startRow) & Node.DOCUMENT_POSITION_FOLLOWING);
+      const raw = textareaMapRef.current.get(id)?.value ?? blocks.find((b) => b.id === id)?.content ?? '';
+      const at = edge
+        ? { offset: edge === 'start' ? 0 : raw.length }
+        : rawOffsetAtPoint(row, id, e.clientX, e.clientY, upwards ? 'start' : 'end');
       setRangeSel({ anchorId: start.id, anchorOffset: start.offset, focusId: id, focusOffset: at.offset, focusNode: at.node, focusNodeOffset: at.nodeOffset });
     };
     const onUp = () => {
@@ -833,7 +852,9 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
     setRangeSel(null);
     const target = e.target as HTMLElement;
     const row = target.closest<HTMLElement>('[data-outline-block]');
-    if (!row || target.closest('button, a, input, select, [contenteditable="true"]')) {
+    // Buttons (e.g. the action bubble that shows on hover at the row's right) may start a selection too;
+    // a plain click on them still works, only a drag into another bullet turns into a selection
+    if (!row || target.closest('a, input, select, [contenteditable="true"]')) {
       dragAnchorRef.current = null;
       return;
     }
@@ -960,9 +981,73 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
       }
       if (!['Shift', 'Control', 'Meta', 'Alt'].includes(e.key)) clearRangeSel();
     };
+    // A press outside the note ends the selection, so Ctrl+C there does not copy it
+    const onDown = (e: MouseEvent) => {
+      if (!treeRootRef.current?.contains(e.target as Node)) clearRangeSel();
+    };
     window.addEventListener('keydown', onKey, true);
-    return () => window.removeEventListener('keydown', onKey, true);
+    window.addEventListener('mousedown', onDown, true);
+    return () => {
+      window.removeEventListener('keydown', onKey, true);
+      window.removeEventListener('mousedown', onDown, true);
+    };
   }, [rangeSel, clearRangeSel]);
+
+  // The browser's own selection over several bullets (e.g. started outside the note or on its title)
+  // as a selection here, so copying it gives Markdown too instead of the rendered text
+  const nativeRangeSel = (root: HTMLElement): RangeSel | null => {
+    const s = document.getSelection();
+    if (!s || s.isCollapsed || s.rangeCount === 0) return null;
+    const range = s.getRangeAt(0); // start and end in document order
+    const rows = Array.from(root.querySelectorAll<HTMLElement>('[data-outline-block]'));
+    if (rows.length < 2 || !range.intersectsNode(root)) return null;
+    // The bullet a boundary lies in; one outside every bullet (on the note itself, its title, the page)
+    // stands for the first bullet at the start and the last at the end
+    const rowOf = (n: Node, side: 'start' | 'end') => {
+      const el = n.nodeType === Node.ELEMENT_NODE ? (n as Element) : n.parentElement;
+      const row = el?.closest<HTMLElement>('[data-outline-block]');
+      if (row && root.contains(row)) return row;
+      return side === 'start' ? rows[0] : rows[rows.length - 1];
+    };
+    const offsetIn = (row: HTMLElement, node: Node, nodeOffset: number, side: 'start' | 'end') => {
+      const id = row.dataset.outlineBlock!;
+      const raw = textareaMapRef.current.get(id)?.value ?? blocks.find((b) => b.id === id)?.content ?? '';
+      const span = row.querySelector<HTMLElement>('[data-outline-text]');
+      if (!span || !span.contains(node)) return side === 'start' ? 0 : raw.length;
+      const r = document.createRange();
+      r.setStart(span, 0);
+      r.setEnd(node, nodeOffset);
+      return mapRenderedOffsetToRaw(raw, span.textContent || '', r.toString().length);
+    };
+    const startRow = rowOf(range.startContainer, 'start');
+    const endRow = rowOf(range.endContainer, 'end');
+    if (startRow === endRow) return null;
+    return {
+      anchorId: startRow.dataset.outlineBlock!,
+      anchorOffset: offsetIn(startRow, range.startContainer, range.startOffset, 'start'),
+      focusId: endRow.dataset.outlineBlock!,
+      focusOffset: offsetIn(endRow, range.endContainer, range.endOffset, 'end'),
+    };
+  };
+  const nativeRangeSelRef = useRef(nativeRangeSel);
+  nativeRangeSelRef.current = nativeRangeSel;
+
+  // Copying through the menu or a native selection: the same Markdown as Ctrl+C on a selection here
+  useEffect(() => {
+    const onCopy = (e: ClipboardEvent) => {
+      const root = treeRootRef.current;
+      if (!root || e.defaultPrevented) return;
+      // A selection here counts while the note has the focus; otherwise only what the browser selected
+      const own = rangeSelRef.current && root.contains(document.activeElement) ? rangeSelRef.current : null;
+      const sel = own ?? nativeRangeSelRef.current(root);
+      const text = sel ? selectedTextRef.current(sel) : '';
+      if (!text) return;
+      e.clipboardData?.setData('text/plain', text);
+      e.preventDefault();
+    };
+    document.addEventListener('copy', onCopy);
+    return () => document.removeEventListener('copy', onCopy);
+  }, []);
 
   const rangeRowIds = useMemo(() => {
     if (!rangeSel || highlightSupported) return null;

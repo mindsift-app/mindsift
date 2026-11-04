@@ -36,7 +36,15 @@ Locks, presence, undo and conflict copies with two browsers: lock and read-only 
 
 ## copy.e2e.mjs
 
-Selection over several bullets in Chromium and Firefox, with a callout in between: dragging from the first to the last bullet, Ctrl+A twice (the callout row is marked too) and a new drag right after it; each time Ctrl+C has to give the same Markdown as a whole-note copy.
+Selection over several bullets in Chromium and Firefox, in two notes (callout at the top; callout at the bottom with an empty indented last bullet). Checked, each time against the Markdown of the whole note:
+
+- dragging from the bottom up past the first bullet, started at the end of the text, in the empty part of the row, on the action bubble and at the far right; dragging from the top down past the last bullet
+- Ctrl+A twice (the callout row is marked too) and a new drag right after it
+- the browser's own selection over several bullets is copied as Markdown too
+- a click outside the note ends the selection
+- Backspace deletes the whole selection
+
+Run it after every change to selecting, copying or deleting in notes.
 
 ## channels.e2e.mjs
 
