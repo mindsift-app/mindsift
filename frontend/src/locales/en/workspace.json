@@ -95,6 +95,7 @@
     "openParentTask": "Subtask of a linked task – open the task",
     "titleConflict": "Title conflict",
     "conflict": "Conflict",
+    "conflictBy": "– version by {{name}}",
     "takeTitle": "Use this text as the title",
     "takeText": "Use this text in the original bullet",
     "take": "Use",
@@ -388,6 +389,7 @@
   "lock": {
     "notice": "{{name}} is editing this bullet right now – please wait a moment",
     "title": "{{name}} is editing this bullet right now",
-    "copy": "{{name}} is editing this version right now – please wait a moment"
+    "copy": "{{name}} is editing this version right now – please wait a moment",
+    "someone": "Someone"
   }
 }

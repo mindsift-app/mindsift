@@ -332,6 +332,7 @@ export const UnifiedShareModal: React.FC<UnifiedShareModalProps> = ({
                         </div>
                       ) : (
                         <UserAvatar
+                          userId={sh.targetId}
                           avatarUrl={sh.avatarUrl || collaborators.find((c) => c.id === sh.targetId)?.avatarUrl}
                           name={sh.targetName || sh.targetEmail}
                           size="sm"

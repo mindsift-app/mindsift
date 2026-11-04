@@ -695,7 +695,7 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
                         key={m.userId}
                         className="inline-flex items-center gap-1.5 pl-0.5 pr-2 py-0.5 rounded-pill bg-panel border border-border text-xs text-main"
                       >
-                        <UserAvatar name={m.displayName || m.email} avatarUrl={m.avatarUrl || ''} size="xxs" showTitle={false} />
+                        <UserAvatar userId={m.userId} name={m.displayName || m.email} avatarUrl={m.avatarUrl || ''} size="xxs" showTitle={false} />
                         <span>{m.displayName || m.email}</span>
                         {!readOnly && onUpdateAssignees && (
                           <button

@@ -95,6 +95,7 @@
     "openParentTask": "Sottoattività di un'attività collegata – apri attività",
     "titleConflict": "Conflitto nel titolo",
     "conflict": "Conflitto",
+    "conflictBy": "– versione di {{name}}",
     "takeTitle": "Usa questo testo come titolo",
     "takeText": "Applica questo testo al punto originale",
     "take": "Applica",
@@ -388,6 +389,7 @@
   "lock": {
     "notice": "{{name}} sta modificando questo punto: attendi un momento",
     "title": "{{name}} sta modificando questo punto",
-    "copy": "{{name}} sta modificando questa versione: attendi un momento"
+    "copy": "{{name}} sta modificando questa versione: attendi un momento",
+    "someone": "Qualcuno"
   }
 }

@@ -503,7 +503,7 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ currentUser, onBack }) =
                                 className="p-2.5 bg-panel border border-border rounded-btn flex items-center justify-between gap-2 text-xs"
                               >
                                 <div className="flex items-center gap-2 min-w-0">
-                                  <UserAvatar user={{ displayName: m.displayName, email: m.email, avatarUrl: m.avatarUrl }} size="xs" />
+                                  <UserAvatar user={{ id: m.userId, displayName: m.displayName, email: m.email, avatarUrl: m.avatarUrl }} size="xs" />
                                   <div className="min-w-0">
                                     <p className="text-main font-medium truncate text-xs">
                                       {m.displayName} {isSelf && <span className="text-faint">{t('you')}</span>}

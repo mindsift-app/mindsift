@@ -41,6 +41,8 @@ export const AvatarStack: React.FC<AvatarStackProps> = ({
       {visible.map((p) => (
         <UserAvatar
           key={p.id}
+          userId={p.id}
+          colorRing
           name={p.name}
           avatarUrl={p.avatarUrl || ''}
           size={size}

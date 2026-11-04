@@ -95,6 +95,7 @@
     "openParentTask": "Sous-tâche d'une tâche liée – ouvrir la tâche",
     "titleConflict": "Conflit de titre",
     "conflict": "Conflit",
+    "conflictBy": "– version de {{name}}",
     "takeTitle": "Utiliser ce texte comme titre",
     "takeText": "Utiliser ce texte dans la puce d'origine",
     "take": "Utiliser",
@@ -388,6 +389,7 @@
   "lock": {
     "notice": "{{name}} modifie ce point en ce moment – patiente un instant",
     "title": "{{name}} modifie ce point en ce moment",
-    "copy": "{{name}} modifie cette version en ce moment – patiente un instant"
+    "copy": "{{name}} modifie cette version en ce moment – patiente un instant",
+    "someone": "Quelqu'un"
   }
 }

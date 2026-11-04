@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo, forwardRef, useImperativeHandle } from 'react';
 import { DocumentBlock, BlockType } from '../../lib/types';
-import { OutlinerBlock, mapRenderedOffsetToRaw } from './OutlinerBlock';
+import { OutlinerBlock, BlockLock, mapRenderedOffsetToRaw } from './OutlinerBlock';
 import { parsePastedLines } from '../../lib/pasteOutline';
 import { blocksToMarkdown } from '../../lib/outlineMarkdown';
 import { numberedLabels } from '../../lib/outlineList';
@@ -36,7 +36,7 @@ export interface OutlinerTreeProps {
   onCopyBlockLink?: (blockId: string) => void;
   initialFocusedBlockId?: string | null;
   onFocusedBlockChange?: (blockId: string | null) => void;
-  lockedBlocks?: Map<string, string>; // blockId -> name of the user editing it (someone else)
+  lockedBlocks?: Map<string, BlockLock>; // blockId -> the user editing it (someone else)
   onLockedAction?: (holderName: string) => void;
   onResolveConflict?: (blockId: string, accept: boolean) => void;
   onUndo?: () => void;
@@ -410,13 +410,13 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
   const lockHolder = useCallback(
     (blockId: string, withBranch = false): string | undefined => {
       if (!lockedBlocks || lockedBlocks.size === 0) return undefined;
-      const direct = lockedBlocks.get(blockId);
+      const direct = lockedBlocks.get(blockId)?.name;
       if (direct || !withBranch) return direct;
       const idx = blocks.findIndex((b) => b.id === blockId);
       if (idx < 0) return undefined;
       const level = blocks[idx].level || 0;
       for (let i = idx + 1; i < blocks.length && (blocks[i].level || 0) > level; i++) {
-        const name = lockedBlocks.get(blocks[i].id);
+        const name = lockedBlocks.get(blocks[i].id)?.name;
         if (name) return name;
       }
       return undefined;

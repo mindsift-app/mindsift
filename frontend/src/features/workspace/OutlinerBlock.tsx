@@ -47,6 +47,8 @@ import { isNoteLinkOnly } from '../../lib/wikiLink';
 import { caretAfterChange } from '../../lib/caret';
 import { useTranslation } from 'react-i18next';
 import i18n from '../../i18n';
+import { UserAvatar } from '../../components/UserAvatar';
+import { userColorStyles } from '../../lib/userColor';
 
 export interface SlashCommand {
   type: BlockType | 'link' | 'dictation' | 'extract';
@@ -90,6 +92,13 @@ const SLASH_COMMANDS: SlashCommand[] = [
   { type: 'dictation', label: '/diktat', get desc() { return i18n.t('workspace:slash.dictation'); }, icon: <AudioLines className="w-3.5 h-3.5" />, media: true, aliases: ['dictate'] },
 ];
 
+// Another user's lock on a block: name for the badge, user id for the person's color
+export interface BlockLock {
+  userId: string;
+  name: string;
+  avatarUrl?: string;
+}
+
 export interface OutlinerBlockProps {
   docId: string;
   block: DocumentBlock;
@@ -128,7 +137,7 @@ export interface OutlinerBlockProps {
   listMarker?: string;
   /** Another bullet on the same level follows: Enter in this empty bullet adds a bullet instead of outdenting */
   siblingFollows?: boolean;
-  lockedBy?: string; // someone else is editing this block
+  lockedBy?: BlockLock; // someone else is editing this block
   canAppendBelow?: boolean; // the user may edit the note, so Enter in a locked block still adds one below
   onResolveConflict?: (blockId: string, accept: boolean) => void;
   onUndo?: () => void;
@@ -1127,6 +1136,9 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
   const isEmpty = (!localContent || localContent.trim() === '') && !hasChildren;
 
 
+  // Lock by someone else: the whole row gets a faint tint and a stripe in that person's color
+  const lockColor = lockedBy ? userColorStyles(lockedBy.userId) : null;
+
   const showBubble = hasHover ? pointerMoving || pointerOnBubble || showTodoMenu : activeFocus;
 
   return (
@@ -1150,6 +1162,15 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
           : ''
       } ${block.conflictOf ? 'border-l-2 border-status-warn bg-status-warn/5' : ''}`}
       style={{
+        // Tint and stripe start at the bullet's indent, not at the edge of the note
+        ...(lockColor && !block.conflictOf
+          ? {
+              backgroundImage: `linear-gradient(${lockColor.ring}, ${lockColor.ring}), linear-gradient(${lockColor.tint}, ${lockColor.tint})`,
+              backgroundSize: '3px 100%, 100% 100%',
+              backgroundPosition: `calc(var(--outline-indent) * ${visualLevel}) 0`,
+              backgroundRepeat: 'no-repeat',
+            }
+          : {}),
         // Indent per level and room kept for text come from CSS (narrower on phones, see index.css);
         // deep rows get wider than the screen and the note scrolls sideways instead of squeezing them
         paddingLeft: `calc(var(--outline-indent) * ${visualLevel} + 4px)`,
@@ -1557,7 +1578,7 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
             <AlertTriangle className="w-3 h-3 shrink-0" />
             <span>
               {block.conflictOf === 'title' ? t('block.titleConflict') : t('block.conflict')}
-              {block.conflictAuthor ? ` – Version von ${block.conflictAuthor}` : ''}
+              {block.conflictAuthor ? ` ${t('block.conflictBy', { name: block.conflictAuthor })}` : ''}
             </span>
             {onResolveConflict && (
               <>
@@ -1629,11 +1650,20 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
       {/* Someone else is editing this block */}
       {lockedBy && (
         <span
-          className="shrink-0 self-start mt-1 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-btn text-[10px] text-muted bg-panel border border-border select-none"
-          title={t('lock.title', { name: lockedBy })}
+          className="shrink-0 self-start mt-0.5 inline-flex items-center gap-1 pl-0.5 pr-1.5 py-0.5 rounded-pill text-[10px] font-semibold bg-panel select-none max-w-[45%]"
+          style={{ color: lockColor!.text, border: `1px solid ${lockColor!.border}` }}
+          title={t('lock.title', { name: lockedBy.name })}
         >
-          <Lock className="w-2.5 h-2.5" />
-          {lockedBy}
+          <UserAvatar
+            userId={lockedBy.userId}
+            name={lockedBy.name}
+            avatarUrl={lockedBy.avatarUrl || ''}
+            size="xs"
+            colorRing
+            showTitle={false}
+          />
+          <span className="truncate">{lockedBy.name}</span>
+          <Lock className="w-2.5 h-2.5 shrink-0 opacity-80" />
         </span>
       )}
 
