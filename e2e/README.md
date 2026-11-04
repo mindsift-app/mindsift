@@ -38,7 +38,7 @@ Locks, presence, undo and conflict copies with two browsers: lock and read-only 
 
 Selection over several bullets in Chromium and Firefox, in two notes (callout at the top; callout at the bottom with an empty indented last bullet). Checked, each time against the Markdown of the whole note:
 
-- dragging from the bottom up past the first bullet, started at the end of the text, in the empty part of the row, on the action bubble and at the far right; dragging from the top down past the last bullet
+- dragging from the bottom up past the first bullet, started at the end of the text, in the empty part of the row, on the action bubble, at the far right and in the empty space below the last bullet; dragging from the top down past the last bullet
 - Ctrl+A twice (the callout row is marked too) and a new drag right after it
 - the browser's own selection over several bullets is copied as Markdown too
 - a click outside the note ends the selection

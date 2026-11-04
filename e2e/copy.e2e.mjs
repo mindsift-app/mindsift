@@ -104,6 +104,7 @@ const main = async () => {
         'in der Zeilenmitte': (r) => ({ x: r.x + r.w / 2, y: r.y + r.h / 2 }),
         'auf der Knopfleiste': (r) => ({ x: r.x + r.w - 40, y: r.y + r.h / 2 }),
         'ganz rechts': (r) => ({ x: r.x + r.w - 5, y: r.y + r.h / 2 }),
+        'im Leeren unter dem letzten Bullet': (r) => ({ x: r.x + r.w / 2, y: r.y + r.h + 30 }),
       };
 
       // Upwards from the start of the last bullet's text leaves that text out, as in a text editor
@@ -153,8 +154,8 @@ const main = async () => {
       const afterOutside = await copy();
       check(afterOutside !== note.markdown, `${tag}: Klick außerhalb hebt die Markierung auf`, afterOutside);
 
-      // Delete everything from the bottom up
-      await drag(starts['in der Zeilenmitte'](last), above);
+      // Delete everything from the bottom up, started in the empty space below the last bullet
+      await drag(starts['im Leeren unter dem letzten Bullet'](last), above);
       await page.keyboard.press('Backspace');
       await page.waitForTimeout(800);
       const left = await page.$$eval('[data-outline-block] textarea', (els) => els.map((e) => e.value));
