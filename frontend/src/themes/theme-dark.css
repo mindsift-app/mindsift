@@ -1,67 +1,72 @@
 /* ==========================================================================
-   MINDSIFT THEME: DARK MONOCHROME (default)
-   All colours, contrasts and corner radii in one single file.
+   MINDSIFT THEME: DARK (default)
+   Colours and corners of mindsift.app (dark mode).
    ========================================================================== */
 
 :root,
 :root[data-theme="dark"] {
   /* --- 1. ACCENT COLOUR --- */
   --accent-primary: #2563eb;
-  --accent-hover: #3b82f6;
-  --accent-dim: rgba(37, 99, 235, 0.14);
-  --accent-border: rgba(59, 130, 246, 0.45);
+  --accent-hover: #6b9dff;
+  --accent-dim: rgba(79, 139, 255, 0.12);
+  --accent-border: rgba(79, 139, 255, 0.35);
   --text-on-accent: #ffffff;
 
   /* --- 2. SURFACES & BACKGROUNDS --- */
-  --bg-app: #121316;
-  --bg-panel: #1a1c20;
-  --bg-panel-elevated: #22252a;
-  --bg-panel-hover: #2a2e35;
-  --bg-input: #121316;
-  --bg-overlay: rgba(0, 0, 0, 0.72);
-  --bg-code: #0d0e11;
+  --bg-app: #0a0c10;
+  --bg-panel: #12161c;
+  --bg-panel-elevated: #181d25;
+  --bg-panel-hover: #202631;
+  --bg-input: #0f1217;
+  --bg-overlay: rgba(5, 7, 10, 0.72);
+  --bg-code: #0b0e13;
+  --bg-editor: #0a0c10;
+  --bg-sidebar: #0f1217;
 
   /* --- 3. TEXT & CONTRAST --- */
-  --text-main: #f4f4f5;
-  --text-muted: #a1a1aa;
-  --text-faint: #71717a;
+  --text-main: #e8ebf1;
+  --text-muted: #b6bdca;
+  --text-faint: #838c9d;
 
   /* --- 4. BORDERS, LINES & SHADOWS --- */
-  --border-color: rgba(255, 255, 255, 0.09);
-  --border-subtle: rgba(255, 255, 255, 0.05);
-  --border-strong: rgba(255, 255, 255, 0.22);
-  --shadow-panel: 0 10px 30px rgba(0, 0, 0, 0.45);
-  --scrollbar-thumb: rgba(255, 255, 255, 0.14);
-  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.26);
+  --border-color: #232935;
+  --border-subtle: #1a1f28;
+  --border-strong: #313847;
+  --shadow-panel: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.3);
+  --scrollbar-thumb: #313847;
+  --scrollbar-thumb-hover: #424b5d;
 
   /* --- 5. STATUS & SIGNAL COLOURS --- */
-  --color-success: #22c55e;
-  --bg-success: rgba(34, 197, 94, 0.12);
-  --border-success: rgba(34, 197, 94, 0.38);
+  --color-success: #16a34a;
+  --bg-success: rgba(22, 163, 74, 0.12);
+  --border-success: rgba(22, 163, 74, 0.38);
 
   --color-danger: #ef4444;
   --bg-danger: rgba(239, 68, 68, 0.12);
   --border-danger: rgba(239, 68, 68, 0.38);
 
-  --color-warning: #f59e0b;
-  --bg-warning: rgba(245, 158, 11, 0.12);
-  --border-warning: rgba(245, 158, 11, 0.38);
+  --color-warning: #d97706;
+  --bg-warning: rgba(217, 119, 6, 0.12);
+  --border-warning: rgba(217, 119, 6, 0.38);
+
+  --color-info: #4f8bff;
+  --color-purple: #a78bfa;
 
   /* --- 6. CORNERS (geometry) --- */
-  --radius-card: 0px;
-  --radius-btn: 2px;
-  --radius-input: 2px;
-  --radius-checkbox: 0px;
+  --radius-card: 14px;
+  --radius-btn: 8px;
+  --radius-input: 8px;
+  --radius-checkbox: 5px;
   --radius-pill: 9999px;
 
-  /* --- 7. CODE-SYNTAX-HIGHLIGHTING (VS Code Dark+) --- */
-  --code-keyword: #569cd6;
-  --code-string: #ce9178;
-  --code-number: #b5cea8;
-  --code-comment: #6a9955;
-  --code-property: #9cdcfe;
-  --code-function: #dcdcaa;
-  --code-type: #4ec9b0;
-  --code-punctuation: #d4d4d4;
-  --code-variable: #9cdcfe;
+  /* --- 7. CODE-SYNTAX-HIGHLIGHTING (code card on the website, Tokyo Night) --- */
+  --code-keyword: #7aa2f7;
+  --code-string: #9ece6a;
+  --code-number: #ff9e64;
+  --code-comment: #6b7385;
+  --code-property: #73daca;
+  --code-function: #7dcfff;
+  --code-type: #2ac3de;
+  --code-punctuation: #c9d1dc;
+  --code-variable: #c0caf5;
 }

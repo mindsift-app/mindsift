@@ -280,7 +280,7 @@
     "families": {
       "classic": {
         "name": "Classic",
-        "subtitle": "Neutral con azul, cuadrado"
+        "subtitle": "Colores del sitio web, azul, redondeado"
       },
       "fjord": {
         "name": "Fjord",
@@ -302,11 +302,11 @@
     "builtin": {
       "dark": {
         "name": "MindSift Oscuro (predeterminado)",
-        "subtitle": "Monocromo, oscuro y cuadrado (0px)"
+        "subtitle": "Colores del sitio web, oscuro y redondeado"
       },
       "light": {
         "name": "MindSift Claro (modo diurno)",
-        "subtitle": "Diseño de papel claro y contraste nítido"
+        "subtitle": "Colores del sitio web, claro y redondeado"
       },
       "terracotta": {
         "name": "Terracotta (papel cálido)",

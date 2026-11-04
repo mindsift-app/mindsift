@@ -1,68 +1,72 @@
 /* ==========================================================================
-   MINDSIFT THEME: LIGHT (day mode / bright & clear)
-   All colours, contrasts and corner radii in one single file.
+   MINDSIFT THEME: LIGHT
+   Colours and corners of mindsift.app (light mode).
    ========================================================================== */
 
 :root[data-theme="light"] {
   /* --- 1. ACCENT COLOUR --- */
   --accent-primary: #2563eb;
   --accent-hover: #1d4ed8;
-  --accent-dim: rgba(37, 99, 235, 0.10);
-  --accent-border: rgba(37, 99, 235, 0.38);
+  --accent-dim: rgba(37, 99, 235, 0.09);
+  --accent-border: rgba(37, 99, 235, 0.28);
   --text-on-accent: #ffffff;
 
   /* --- 2. SURFACES & BACKGROUNDS --- */
-  --bg-app: #f3f4f6;
+  --bg-app: #f6f7f9;
   --bg-panel: #ffffff;
-  --bg-panel-elevated: #e2e8f0;
-  --bg-panel-hover: #cbd5e1;
+  --bg-panel-elevated: #f1f3f6;
+  --bg-panel-hover: #e8ebf0;
   --bg-input: #ffffff;
-  --bg-overlay: rgba(15, 23, 42, 0.45);
-  --bg-code: #e2e8f0;
+  --bg-overlay: rgba(15, 20, 28, 0.45);
+  --bg-code: #0f141c;
+  --text-code: #c9d1dc; /* plain text on the dark code blocks */
   --bg-editor: #ffffff;
-  --bg-sidebar: #f3f4f6;
+  --bg-sidebar: #f6f7f9;
 
   /* --- 3. TEXT & CONTRAST --- */
-  --text-main: #111827;
-  --text-muted: #374151;
-  --text-faint: #6b7280;
+  --text-main: #0e131b;
+  --text-muted: #3d4554;
+  --text-faint: #6a7384;
 
   /* --- 4. BORDERS, LINES & SHADOWS --- */
-  --border-color: rgba(17, 24, 39, 0.18);
-  --border-subtle: rgba(17, 24, 39, 0.08);
-  --border-strong: rgba(17, 24, 39, 0.32);
-  --shadow-panel: 0 8px 24px rgba(15, 23, 42, 0.08);
-  --scrollbar-thumb: rgba(17, 24, 39, 0.22);
-  --scrollbar-thumb-hover: rgba(17, 24, 39, 0.38);
+  --border-color: #e2e5eb;
+  --border-subtle: #eceef2;
+  --border-strong: #cfd4dd;
+  --shadow-panel: 0 1px 2px rgba(15, 20, 28, 0.04), 0 8px 24px rgba(15, 20, 28, 0.06);
+  --scrollbar-thumb: #cfd4dd;
+  --scrollbar-thumb-hover: #b3bac6;
 
   /* --- 5. STATUS & SIGNAL COLOURS --- */
-  --color-success: #15803d;
+  --color-success: #16a34a;
   --bg-success: rgba(22, 163, 74, 0.10);
   --border-success: rgba(22, 163, 74, 0.35);
 
-  --color-danger: #b91c1c;
+  --color-danger: #dc2626;
   --bg-danger: rgba(220, 38, 38, 0.09);
   --border-danger: rgba(220, 38, 38, 0.35);
 
-  --color-warning: #b45309;
+  --color-warning: #d97706;
   --bg-warning: rgba(217, 119, 6, 0.10);
   --border-warning: rgba(217, 119, 6, 0.35);
 
+  --color-info: #2563eb;
+  --color-purple: #7c3aed;
+
   /* --- 6. CORNERS (geometry) --- */
-  --radius-card: 0px;
-  --radius-btn: 2px;
-  --radius-input: 2px;
-  --radius-checkbox: 0px;
+  --radius-card: 14px;
+  --radius-btn: 8px;
+  --radius-input: 8px;
+  --radius-checkbox: 5px;
   --radius-pill: 9999px;
 
-  /* --- 7. CODE-SYNTAX-HIGHLIGHTING (VS Code Light+) --- */
-  --code-keyword: #0000ff;
-  --code-string: #a31515;
-  --code-number: #098658;
-  --code-comment: #007000;
-  --code-property: #0451a5;
-  --code-function: #795e26;
-  --code-type: #267f99;
-  --code-punctuation: #2e2e2e;
-  --code-variable: #001080;
+  /* --- 7. CODE-SYNTAX-HIGHLIGHTING (dark code blocks like on the website) --- */
+  --code-keyword: #7aa2f7;
+  --code-string: #9ece6a;
+  --code-number: #ff9e64;
+  --code-comment: #6b7385;
+  --code-property: #73daca;
+  --code-function: #7dcfff;
+  --code-type: #2ac3de;
+  --code-punctuation: #c9d1dc;
+  --code-variable: #c0caf5;
 }

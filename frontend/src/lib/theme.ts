@@ -66,11 +66,11 @@ export const AVAILABLE_THEMES: ThemeOption[] = [
       return i18n.t('common:themes.builtin.dark.subtitle');
     },
     file: 'src/themes/theme-dark.css',
-    previewBg: '#121316',
-    previewPanel: '#1a1c20',
+    previewBg: '#0a0c10',
+    previewPanel: '#12161c',
     previewAccent: '#2563eb',
-    previewText: '#f4f4f5',
-    isRounded: false,
+    previewText: '#e8ebf1',
+    isRounded: true,
   },
   {
     id: 'light',
@@ -81,11 +81,11 @@ export const AVAILABLE_THEMES: ThemeOption[] = [
       return i18n.t('common:themes.builtin.light.subtitle');
     },
     file: 'src/themes/theme-light.css',
-    previewBg: '#f3f4f6',
+    previewBg: '#f6f7f9',
     previewPanel: '#ffffff',
     previewAccent: '#2563eb',
-    previewText: '#111827',
-    isRounded: false,
+    previewText: '#0e131b',
+    isRounded: true,
   },
   {
     id: 'terracotta',
@@ -453,14 +453,6 @@ export function getActiveTheme(): ThemeId {
   if (saved && isCustomThemeId(saved) && load(CUSTOM_CSS_CACHE_KEY)) return saved;
   return 'dark';
 }
-
-/** True once a theme was chosen on this device (the default 'dark' is not stored until then) */
-export function hasChosenTheme(): boolean {
-  return load(THEME_STORAGE_KEY) !== null;
-}
-
-// The demo starts with a round theme, so visitors see the rounded look; a chosen theme stays
-export const DEMO_THEME: ThemeId = 'fjord-night';
 
 // customCss is required for custom themes and ignored for built-in ones
 export function setActiveTheme(themeId: ThemeId, customCss?: string): void {

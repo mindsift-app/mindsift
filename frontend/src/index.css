@@ -438,6 +438,12 @@ body {
     --code-variable: #9cdcfe;
   }
 
+  /* Plain text in code blocks: the page text unless a theme's code blocks differ from its page (light
+     page with dark code blocks) */
+  :where(:root) {
+    --text-code: var(--text-main);
+  }
+
   /* Extra tones (Kanban column colours). Fallbacks like the code tokens: a theme's own values win. */
   :where(:root) {
     --color-info: #60a5fa;

@@ -27,6 +27,7 @@
   --text-main: #f4f4f5;           /* Main text & headings */
   --text-muted: #a1a1aa;          /* Secondary text & descriptions */
   --text-faint: #71717a;          /* Platzhalter & dezente Hinweise */
+  /* Optional: --text-code (plain text in code blocks, default --text-main) */
 
   /* --- 4. BORDERS, LINES & SHADOWS --- */
   --border-color: rgba(255, 255, 255, 0.09);

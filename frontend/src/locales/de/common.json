@@ -278,7 +278,7 @@
     "families": {
       "classic": {
         "name": "Klassik",
-        "subtitle": "Neutral mit Blau, eckig"
+        "subtitle": "Farben der Website, Blau, abgerundet"
       },
       "fjord": {
         "name": "Fjord",
@@ -300,11 +300,11 @@
     "builtin": {
       "dark": {
         "name": "MindSift Dark (Standard)",
-        "subtitle": "Monochrom, dunkel & eckig (0px)"
+        "subtitle": "Farben der Website, dunkel & abgerundet"
       },
       "light": {
         "name": "MindSift Light (Tagmodus)",
-        "subtitle": "Helles Papier-Design & klare Kontraste"
+        "subtitle": "Farben der Website, hell & abgerundet"
       },
       "terracotta": {
         "name": "Terrakotta (Warmes Papier)",

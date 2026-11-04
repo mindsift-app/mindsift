@@ -41,6 +41,7 @@ export default {
         input: v('--bg-input'),
         overlay: v('--bg-overlay'),
         code: v('--bg-code'),
+        'code-fg': v('--text-code'),
         main: v('--text-main'),
         muted: v('--text-muted'),
         faint: v('--text-faint'),
