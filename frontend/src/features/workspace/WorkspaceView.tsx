@@ -50,6 +50,7 @@ import { FolderDialogs } from './FolderDialogs';
 import { WorkspaceSubView } from './workspaceTypes';
 import { useTranslation } from 'react-i18next';
 import i18n from '../../i18n';
+import { showError } from '../../components/ErrorNotice';
 
 interface WorkspaceViewProps {
   currentUser?: User | null;
@@ -383,7 +384,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
       setNewFolderParentPath('');
       setShowNewFolderModal(false);
     } catch (err: any) {
-      alert(err.message || i18n.t('workspace:folder.createFailed'));
+      showError(err.message || i18n.t('workspace:folder.createFailed'));
     }
   };
 

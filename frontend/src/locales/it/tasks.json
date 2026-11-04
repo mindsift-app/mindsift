@@ -83,7 +83,8 @@
     "save": "Salva colonne",
     "colorOf": "Colore della colonna {{name}}",
     "list": "Lista: {{title}}",
-    "active": "Colonne attive ({{count}}):"
+    "active": "Colonne attive ({{count}}):",
+    "resetConfirm": "Ripristina"
   },
   "columns": {
     "todo": "Da fare",

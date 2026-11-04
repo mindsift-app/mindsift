@@ -83,7 +83,8 @@
     "save": "Spalten speichern",
     "colorOf": "Farbe der Spalte {{name}}",
     "list": "Liste: {{title}}",
-    "active": "Aktive Spalten ({{count}}):"
+    "active": "Aktive Spalten ({{count}}):",
+    "resetConfirm": "Zurücksetzen"
   },
   "columns": {
     "todo": "Zu erledigen",

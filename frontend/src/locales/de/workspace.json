@@ -83,7 +83,6 @@
     "dictation": "Sprechen statt tippen"
   },
   "block": {
-    "confirmDelete": "Bist du sicher? Alle Unterpunkte dieses Asts werden ebenfalls gelöscht.",
     "expand": "Unterpunkte ausklappen",
     "collapse": "Unterpunkte einklappen",
     "dragZoom": "Ziehen zum Verschieben • Klick: Ast hineinzoomen (Fokus-Modus)",

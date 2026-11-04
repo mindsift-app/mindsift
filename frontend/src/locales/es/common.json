@@ -99,7 +99,6 @@
     "chooseGroup": "Por favor, elige un grupo",
     "chooseUser": "Por favor, elige un usuario",
     "addFailed": "Error al añadir el recurso compartido",
-    "confirmRemove": "¿De verdad quieres quitar este recurso compartido?",
     "removeFailed": "Error al quitar el recurso compartido",
     "disabled": "La función de compartir está desactivada en este servidor (modo de visibilidad «Privado»).",
     "add": "Añadir recurso compartido:",

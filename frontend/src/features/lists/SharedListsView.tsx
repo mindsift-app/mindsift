@@ -23,6 +23,8 @@ import { useItemEditing } from './useItemEditing';
 import { CompletedItems, OpenItemGroups } from './ListItemGroups';
 import { ListTabsHeader, MobileListHeader } from './ListHeaders';
 import { buildListsMenu } from './listsMenu';
+import { askConfirm } from '../../components/askConfirm';
+import { showError } from '../../components/ErrorNotice';
 
 interface SharedListsViewProps {
   onRefreshGlobal: () => void;
@@ -189,7 +191,7 @@ export const SharedListsView: React.FC<SharedListsViewProps> = ({ onRefreshGloba
       );
       onRefreshGlobal();
     } catch (err: any) {
-      alert(err.message || t('createItemFailed'));
+      showError(err.message || t('createItemFailed'));
     } finally {
       setIsSubmittingItem(false);
     }
@@ -214,13 +216,13 @@ export const SharedListsView: React.FC<SharedListsViewProps> = ({ onRefreshGloba
   };
 
   const handleDeleteList = async (listId: string) => {
-    if (!window.confirm(t('confirmDelete'))) return;
+    if (!(await askConfirm({ message: t('confirmDelete'), confirmLabel: t('common:delete'), danger: true }))) return;
     try {
       await api.deleteList(listId);
       await loadLists();
       onRefreshGlobal();
     } catch (err: any) {
-      alert(err.message || t('deleteFailed'));
+      showError(err.message || t('deleteFailed'));
     }
   };
 

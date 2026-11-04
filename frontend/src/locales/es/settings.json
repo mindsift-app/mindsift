@@ -206,7 +206,9 @@
       "inbox": "Humedad en el sótano superior al 70%",
       "inboxTag": "sotano",
       "token": "mindsift_sec_tu_clave_api"
-    }
+    },
+    "revoke": "Revocar",
+    "disconnect": "Desconectar"
   },
   "scopes": {
     "groups": {

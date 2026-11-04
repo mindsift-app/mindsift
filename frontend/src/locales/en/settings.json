@@ -110,7 +110,9 @@
       "inbox": "Basement humidity above 70%",
       "inboxTag": "basement",
       "token": "mindsift_sec_your_api_key"
-    }
+    },
+    "revoke": "Revoke",
+    "disconnect": "Disconnect"
   },
   "scopes": {
     "groups": {

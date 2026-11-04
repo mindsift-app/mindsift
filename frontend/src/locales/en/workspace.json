@@ -83,7 +83,6 @@
     "dictation": "Speak instead of typing"
   },
   "block": {
-    "confirmDelete": "Are you sure? All sub-bullets of this branch are deleted too.",
     "expand": "Expand sub-bullets",
     "collapse": "Collapse sub-bullets",
     "dragZoom": "Drag to move • click: zoom into the branch (focus mode)",

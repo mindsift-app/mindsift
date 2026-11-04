@@ -83,7 +83,6 @@ export const UnifiedShareModal: React.FC<UnifiedShareModalProps> = ({
   };
 
   const handleRemove = async (shareId: string) => {
-    if (!window.confirm(t('share.confirmRemove'))) return;
     setError(null);
     setLoading(true);
     try {

@@ -3,6 +3,7 @@ import i18n from '../../i18n';
 import { api, triggerHaptic } from '../../lib/api';
 import { KanbanColumn, Recurrence, SubTask, TaskList, Thought, TrashedTask } from '../../lib/types';
 import { UndoEntry } from './useTaskUndo';
+import { askConfirm } from '../../components/askConfirm';
 
 interface TaskActionsOptions {
   columnsFor: (task: Thought) => KanbanColumn[];
@@ -244,7 +245,7 @@ export function useTaskActions({
       selectedListId === 'all'
         ? i18n.t('tasks:actions.confirmEmptyAll')
         : i18n.t('tasks:actions.confirmEmptyList', { title: currentSelectedList?.title || i18n.t('tasks:actions.thisList') });
-    if (!window.confirm(message)) return;
+    if (!(await askConfirm({ message, confirmLabel: i18n.t('tasks:view.emptyTrash'), danger: true }))) return;
     triggerHaptic(20);
     await api.emptyTaskTrash(selectedListId === 'all' ? '' : selectedListId);
     await loadData();

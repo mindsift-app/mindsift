@@ -110,7 +110,9 @@
       "inbox": "Humidité au sous-sol > 70%",
       "inboxTag": "sous-sol",
       "token": "mindsift_sec_votre_cle_api"
-    }
+    },
+    "revoke": "Révoquer",
+    "disconnect": "Déconnecter"
   },
   "scopes": {
     "groups": {

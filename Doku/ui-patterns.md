@@ -58,6 +58,14 @@ Component: [ConfirmPopover.tsx](../frontend/src/components/ConfirmPopover.tsx)
 
 - For confirming a single action (e.g., deleting a folder): a small popover directly at the click location (bottom right of the cursor, flipped upwards or leftwards at window edges), not a modal dialog centered on screen.
 - "Cancel" and the action button (destructive actions in red via `danger`); the action button is focused, Enter confirms, Escape or clicking outside closes. Triggered via keyboard, it opens anchored to the button. On mobile, buttons are 44 px high.
+- From handlers and hooks without state of their own: `await askConfirm({ message, confirmLabel, danger })` ([askConfirm.tsx](../frontend/src/components/askConfirm.tsx)) opens the same popover at the last click or tap and resolves `true` or `false`.
+- **Never the browser's own dialogs** (`window.confirm`, `alert`, `prompt`). Ask only when an action cannot be undone (deleting a list, a folder, a backup, emptying the trash, revoking keys); actions that go to the trash or can be undone with `Ctrl+Z` run without a question (a task, a bullet with its children, removing a member or a share).
+
+## Error Notice
+
+Component: [ErrorNotice.tsx](../frontend/src/components/ErrorNotice.tsx), `showError(message)` from anywhere.
+
+- Red notice centered at the bottom (frame and text in `status-err`, warning icon), above the bottom navigation bar on mobile, with a short shake (none with reduced motion). Gone after 6 s or on a tap; the same error again shakes again.
 
 ## Notification with "Undo"
 

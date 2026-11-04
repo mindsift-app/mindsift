@@ -99,7 +99,6 @@
     "chooseGroup": "Veuillez choisir un groupe",
     "chooseUser": "Veuillez choisir un utilisateur",
     "addFailed": "Échec de l'ajout du partage",
-    "confirmRemove": "Veux-tu vraiment retirer ce partage ?",
     "removeFailed": "Échec du retrait du partage",
     "disabled": "Le partage est désactivé sur ce serveur (mode de visibilité « Privé »).",
     "add": "Ajouter un partage :",

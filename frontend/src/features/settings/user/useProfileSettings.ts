@@ -4,6 +4,7 @@ import { User } from '../../../lib/types';
 import { api, clearToken, triggerHaptic } from '../../../lib/api';
 import { passwordProblem } from '../../../lib/password';
 import { resizeImageToDataUrl } from '../../../components/UserAvatar';
+import { askConfirm } from '../../../components/askConfirm';
 
 // Kontoeinstellungen → Profil & Sicherheit: name, login address, password, avatar, ending all sessions,
 // and the danger zone (delete own data or the account). Lives in the view, so unsaved input survives
@@ -94,9 +95,12 @@ export function useProfileSettings(currentUser: User, onUserUpdated: (u: User) =
   };
 
   const handleRevokeAllSessions = async () => {
-    if (!window.confirm(i18n.t('settings:profile.confirmRevokeAll'))) {
-      return;
-    }
+    const ok = await askConfirm({
+      message: i18n.t('settings:profile.confirmRevokeAll'),
+      confirmLabel: i18n.t('settings:profile.revokeAllButton'),
+      danger: true,
+    });
+    if (!ok) return;
     setRevokingSessions(true);
     try {
       await api.revokeAllSessions();

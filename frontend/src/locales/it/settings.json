@@ -110,7 +110,9 @@
       "inbox": "Umidità cantina sopra il 70%",
       "inboxTag": "cantina",
       "token": "mindsift_sec_la_tua_chiave_api"
-    }
+    },
+    "revoke": "Revoca",
+    "disconnect": "Disconnetti"
   },
   "scopes": {
     "groups": {

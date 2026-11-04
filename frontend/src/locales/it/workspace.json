@@ -83,7 +83,6 @@
     "dictation": "Parla invece di digitare"
   },
   "block": {
-    "confirmDelete": "Sei sicuro? Verranno eliminati anche tutti i sottopunti di questo ramo.",
     "expand": "Espandi sottopunti",
     "collapse": "Comprimi sottopunti",
     "dragZoom": "Trascina per spostare • Clic: ingrandisci questo ramo (modalità focus)",

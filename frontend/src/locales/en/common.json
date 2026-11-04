@@ -99,7 +99,6 @@
     "chooseGroup": "Please choose a group",
     "chooseUser": "Please choose a user",
     "addFailed": "Adding the share failed",
-    "confirmRemove": "Do you really want to remove this share?",
     "removeFailed": "Removing the share failed",
     "disabled": "Sharing is disabled on this server (visibility mode “Private”).",
     "add": "Add share:",

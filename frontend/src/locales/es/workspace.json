@@ -83,7 +83,6 @@
     "dictation": "Hablar en lugar de escribir"
   },
   "block": {
-    "confirmDelete": "¿Estás seguro? Todos los subpuntos de esta rama también se eliminarán.",
     "expand": "Desplegar subpuntos",
     "collapse": "Plegar subpuntos",
     "dragZoom": "Arrastra para mover • clic: zoom a la rama (modo de enfoque)",

@@ -13,6 +13,8 @@ import {
 } from 'lucide-react';
 import { KanbanColumn } from '../../lib/types';
 import { triggerHaptic } from '../../lib/api';
+import { askConfirm } from '../../components/askConfirm';
+import { showError } from '../../components/ErrorNotice';
 
 interface ManageColumnsModalProps {
   isOpen: boolean;
@@ -163,7 +165,7 @@ const ManageColumnsModalContent: React.FC<ManageColumnsModalProps> = ({
 
   const handleDelete = (id: string) => {
     if (columns.length <= 1) {
-      alert(t('columnsModal.minOne'));
+      showError(t('columnsModal.minOne'));
       return;
     }
     triggerHaptic(10);
@@ -189,8 +191,8 @@ const ManageColumnsModalContent: React.FC<ManageColumnsModalProps> = ({
     setNewColIsDone(false);
   };
 
-  const handleResetToDefault = () => {
-    if (window.confirm(t('columnsModal.confirmReset'))) {
+  const handleResetToDefault = async () => {
+    if (await askConfirm({ message: t('columnsModal.confirmReset'), confirmLabel: t('columnsModal.resetConfirm') })) {
       triggerHaptic(15);
       setColumns(DEFAULT_KANBAN_COLUMNS);
     }
@@ -198,7 +200,7 @@ const ManageColumnsModalContent: React.FC<ManageColumnsModalProps> = ({
 
   const handleSave = async () => {
     if (columns.length === 0) {
-      alert(t('columnsModal.mustHaveOne'));
+      showError(t('columnsModal.mustHaveOne'));
       return;
     }
     setSaving(true);
@@ -207,7 +209,7 @@ const ManageColumnsModalContent: React.FC<ManageColumnsModalProps> = ({
       await onSave(columns);
       onClose();
     } catch (err: any) {
-      alert(err.message || t('columnsModal.saveFailed'));
+      showError(err.message || t('columnsModal.saveFailed'));
     } finally {
       setSaving(false);
     }

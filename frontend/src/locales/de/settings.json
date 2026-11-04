@@ -110,7 +110,9 @@
       "inbox": "Kellerfeuchtigkeit über 70%",
       "inboxTag": "keller",
       "token": "mindsift_sec_dein_api_key"
-    }
+    },
+    "revoke": "Widerrufen",
+    "disconnect": "Trennen"
   },
   "scopes": {
     "groups": {

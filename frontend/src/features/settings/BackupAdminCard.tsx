@@ -6,6 +6,7 @@ import { api } from '../../lib/api';
 import { ToggleSwitch } from '../../components/ToggleSwitch';
 import { formatBytes, saveBlob } from '../../lib/download';
 import { formatDateTime } from '../../lib/format';
+import { askConfirm } from '../../components/askConfirm';
 
 interface BackupAdminCardProps {
   settings: SystemSettings;
@@ -45,7 +46,7 @@ export const BackupAdminCard: React.FC<BackupAdminCardProps> = ({ settings, onSa
   };
 
   const remove = async (name: string) => {
-    if (!window.confirm(t('backups.confirmDelete', { name }))) return;
+    if (!(await askConfirm({ message: t('backups.confirmDelete', { name }), confirmLabel: t('common:delete'), danger: true }))) return;
     setError(null);
     try {
       setFiles(await api.adminDeleteBackup(name));
