@@ -27,6 +27,7 @@ export const adminApi = {
     id: string,
     patch: {
       displayName?: string;
+      username?: string;
       email?: string;
       role?: string;
       isActive?: boolean;

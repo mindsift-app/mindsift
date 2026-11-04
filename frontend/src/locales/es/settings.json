@@ -493,6 +493,9 @@
     "remove": "Quitar",
     "emoji": "O elige un emoji rápido:",
     "displayName": "Nombre visible",
+    "username": "Nombre de usuario",
+    "usernameHint": "Con él inicias sesión, o con tu dirección de correo.",
+    "usernameRules": "Minúsculas, cifras, punto, guion y guion bajo, de 2 a 32 caracteres",
     "demoDisabled": "Desactivado en la demo",
     "newPassword": "Nueva contraseña (opcional — dejar vacío si no se cambia)",
     "minChars": "Al menos 8 caracteres",
@@ -595,7 +598,9 @@
     "deleted": "Usuario eliminado.",
     "roleChanged": "El rol de {{name}} ha cambiado a «{{role}}».",
     "confirmReject": "¿Rechazar el registro de «{{name}}» ({{email}})? La cuenta se eliminará.",
-    "confirmDelete": "¿De verdad quieres eliminar definitivamente al usuario «{{name}}» ({{email}})?"
+    "confirmDelete": "¿De verdad quieres eliminar definitivamente al usuario «{{name}}» ({{email}})?",
+    "username": "Nombre de usuario",
+    "usernameChanged": "El nombre de usuario de {{name}} ahora es «{{username}}»."
   },
   "orgs": {
     "createFailed": "Error al crear la organización",

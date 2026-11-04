@@ -409,6 +409,9 @@
     "remove": "Remove",
     "emoji": "Or pick a quick emoji:",
     "displayName": "Display name",
+    "username": "Username",
+    "usernameHint": "You sign in with it, or with your email address.",
+    "usernameRules": "Lower case letters, digits, dot, dash and underscore, 2 to 32 characters",
     "demoDisabled": "Disabled in the demo",
     "newPassword": "New password (optional — leave empty for no change)",
     "minChars": "At least 8 characters",
@@ -511,7 +514,9 @@
     "deleted": "User deleted.",
     "roleChanged": "Role of {{name}} changed to \"{{role}}\".",
     "confirmReject": "Reject the registration of \"{{name}}\" ({{email}})? The account will be deleted.",
-    "confirmDelete": "Really delete the user \"{{name}}\" ({{email}}) for good?"
+    "confirmDelete": "Really delete the user \"{{name}}\" ({{email}}) for good?",
+    "username": "Username",
+    "usernameChanged": "{{name}} now signs in as “{{username}}”."
   },
   "sharing": {
     "private": {

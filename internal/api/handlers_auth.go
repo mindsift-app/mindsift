@@ -527,6 +527,7 @@ func (s *Server) handleUpdateUserSettings(w http.ResponseWriter, r *http.Request
 	userID := auth.GetUserID(r.Context())
 	var req struct {
 		DisplayName         *string   `json:"displayName"`
+		Username            *string   `json:"username"` // for signing in (storage/username.go)
 		Email               *string   `json:"email"`
 		Password            *string   `json:"password"`
 		AvatarURL           *string   `json:"avatarUrl"`
@@ -559,7 +560,9 @@ func (s *Server) handleUpdateUserSettings(w http.ResponseWriter, r *http.Request
 	}
 	changesPassword := req.Password != nil && strings.TrimSpace(*req.Password) != ""
 	changesEmail := req.Email != nil && !strings.EqualFold(strings.TrimSpace(*req.Email), before.Email)
-	if (changesPassword || changesEmail) && s.cfg.DemoMode {
+	// The shared demo accounts keep the names everybody signs in with
+	changesUsername := req.Username != nil && strings.ToLower(strings.TrimSpace(*req.Username)) != before.Username
+	if (changesPassword || changesEmail || changesUsername) && s.cfg.DemoMode {
 		writeError(w, http.StatusForbidden, "In der Demo deaktiviert")
 		return
 	}
@@ -605,6 +608,12 @@ func (s *Server) handleUpdateUserSettings(w http.ResponseWriter, r *http.Request
 			current := &auth.Claims{}
 			current.ID = sid
 			s.renewSessionToken(w, fresh, current, true)
+		}
+	}
+	if changesUsername {
+		if err := s.store.SetUsername(userID, *req.Username); err != nil {
+			writeUsernameError(w, err)
+			return
 		}
 	}
 	u, err := s.store.UpdateUserFull(

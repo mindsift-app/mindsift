@@ -49,6 +49,9 @@ export function UsersSection({
     pendingMove,
     copiedInviteId,
     resetPwdUserId,
+    usernameEdit,
+    setUsernameEdit,
+    handleSaveUsername,
     resetPwdVal,
     settings,
     handleCreateUser,
@@ -444,6 +447,7 @@ export function UsersSection({
                       )}
                     </div>
                     <p className="text-muted text-[11px]">
+                      {u.username && <span className="font-mono">{u.username} · </span>}
                       {u.email}
                       {isServerAdmin && settings.sharingMode === 'organizations' && !u.organizationId && (
                         <span className="text-status-warn"> {t('users.noOrgWarning')}</span>
@@ -479,6 +483,15 @@ export function UsersSection({
                         </option>
                       ))}
                     </select>
+                  )}
+
+                  {(isServerAdmin || u.role !== 'admin') && (
+                    <button
+                      onClick={() => setUsernameEdit(usernameEdit?.id === u.id ? null : { id: u.id, value: u.username || '' })}
+                      className="btn-action h-7 px-2 text-[11px]"
+                    >
+                      {t('users.username')}
+                    </button>
                   )}
 
                   {isServerAdmin && (
@@ -528,6 +541,28 @@ export function UsersSection({
                     {pendingMove.orgId ? t('users.moveTo', { org: orgName(pendingMove.orgId) }) : t('profile.remove')}
                   </button>
                   <button onClick={() => setPendingMove(null)} className="btn-action h-7 px-2 text-[11px]">
+                    {t('common:cancel')}
+                  </button>
+                </div>
+              )}
+
+              {usernameEdit?.id === u.id && (
+                <div className="flex items-center gap-2 pt-2 border-t border-border">
+                  <input
+                    type="text"
+                    value={usernameEdit.value}
+                    onChange={(e) => setUsernameEdit({ id: u.id, value: e.target.value.toLowerCase() })}
+                    onKeyDown={(e) => e.key === 'Enter' && void handleSaveUsername(u)}
+                    maxLength={32}
+                    autoCapitalize="none"
+                    spellCheck={false}
+                    title={t('profile.usernameRules')}
+                    className="flex-1 h-7 px-2 input-field font-mono"
+                  />
+                  <button onClick={() => void handleSaveUsername(u)} className="btn-primary h-7 px-3 text-[11px]">
+                    {t('common:save')}
+                  </button>
+                  <button onClick={() => setUsernameEdit(null)} className="btn-action h-7 px-2 text-[11px]">
                     {t('common:cancel')}
                   </button>
                 </div>

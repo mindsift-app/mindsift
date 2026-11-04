@@ -6,6 +6,15 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.77.0] - 2026-11-04
+
+### Added
+- Usernames for signing in, independent of the display name. Everybody sees and changes theirs in the profile (lower case letters, digits, dot, dash and underscore, 2 to 32 characters, unique); admins can change it in the user management, which also shows it next to the email address.
+- New accounts get their username from the display name ("Sandro Dach" becomes `sandro.dach`, with a number appended when it is taken).
+
+### Changed
+- **Attention:** signing in works with the email address or the username, no longer with the display name, which two people may share. On the update every existing account gets its current display name as username (spaces and other characters become dots, duplicates get a number), so the usual login keeps working, and a name typed like the display name ("Sandro Dach") is read as the username. Renaming yourself no longer locks you out. The part of the email before the @ still works as before.
+
 ## [0.76.9] - 2026-11-04
 
 ### Changed

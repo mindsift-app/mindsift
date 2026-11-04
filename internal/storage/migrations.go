@@ -40,6 +40,7 @@ var migrations = []migration{
 	{17, "OAuth for MCP access", (*Store).migrateOAuth},
 	{18, "Folders in the trash", (*Store).migrateFolderTrash},
 	{19, "Language per person", (*Store).migrateLanguage},
+	{20, "Usernames from display names", (*Store).migrateUsernames},
 }
 
 func (s *Store) migrate() error {
