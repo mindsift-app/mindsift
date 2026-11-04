@@ -13,6 +13,9 @@ import {
   Link2,
   Clock,
   X,
+  AtSign,
+  Ban,
+  UserCheck,
 } from 'lucide-react';
 import { User, UserRole } from '../../../lib/types';
 import { UserAvatar } from '../../../components/UserAvatar';
@@ -20,6 +23,11 @@ import { useAdminSettings } from './useAdminSettings';
 import { formatDate } from '../../../lib/format';
 
 // Administration → Users & invitations (state in useAdminSettings)
+
+// Row actions: 44 px touch targets on phones, small squares from sm on
+const iconBtnSize = 'w-11 h-11 sm:w-7 sm:h-7 disabled:opacity-40 disabled:pointer-events-none';
+const iconBtn = `btn-icon ${iconBtnSize}`;
+
 export function UsersSection({
   admin,
   currentUser,
@@ -435,18 +443,18 @@ export function UsersSection({
           {users.filter((u) => !u.pendingApproval).map((u) => (
             <div key={u.id} className="p-3 space-y-2">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <div className="flex items-center gap-2.5">
+                <div className="flex items-center gap-2.5 min-w-0 flex-1">
                   <UserAvatar user={u} size="sm" className="border border-border/80" />
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold text-main">{u.displayName}</span>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="font-bold text-main truncate">{u.displayName}</span>
                       {!u.isActive && (
                         <span className={`${u.emailUnverified ? 'badge-neutral' : 'badge-err'} text-[10px]`}>
                           {u.emailUnverified ? t('users.emailUnverified') : t('users.locked')}
                         </span>
                       )}
                     </div>
-                    <p className="text-muted text-[11px]">
+                    <p className="text-muted text-[11px] truncate" title={[u.username, u.email].filter(Boolean).join(' · ')}>
                       {u.username && <span className="font-mono">{u.username} · </span>}
                       {u.email}
                       {isServerAdmin && settings.sharingMode === 'organizations' && !u.organizationId && (
@@ -456,7 +464,7 @@ export function UsersSection({
                   </div>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2 shrink-0">
                   {/* Role selector */}
                   <select
                     value={u.role}
@@ -485,44 +493,51 @@ export function UsersSection({
                     </select>
                   )}
 
-                  {(isServerAdmin || u.role !== 'admin') && (
+                  {/* Icon actions, always all of them so the rows line up; unavailable ones stay greyed out */}
+                  <span title={t('users.username')}>
                     <button
                       onClick={() => setUsernameEdit(usernameEdit?.id === u.id ? null : { id: u.id, value: u.username || '' })}
-                      className="btn-action h-7 px-2 text-[11px]"
+                      disabled={!isServerAdmin && u.role === 'admin'}
+                      className={iconBtn}
+                      aria-label={t('users.username')}
                     >
-                      {t('users.username')}
+                      <AtSign className="w-3.5 h-3.5" />
                     </button>
-                  )}
+                  </span>
 
                   {isServerAdmin && (
                     <>
-                      <button
-                        onClick={() =>
-                          setResetPwdUserId(resetPwdUserId === u.id ? null : u.id)
-                        }
-                        className="btn-action h-7 px-2 text-[11px]"
-                      >
-                        {t('users.password')}
-                      </button>
+                      <span title={t('users.password')}>
+                        <button
+                          onClick={() => setResetPwdUserId(resetPwdUserId === u.id ? null : u.id)}
+                          className={iconBtn}
+                          aria-label={t('users.password')}
+                        >
+                          <KeyRound className="w-3.5 h-3.5" />
+                        </button>
+                      </span>
 
-                      {u.id !== currentUser.id && (
-                        <>
-                          <button
-                            onClick={() => handleToggleUserActive(u)}
-                            className="btn-action h-7 px-2 text-[11px]"
-                          >
-                            {u.isActive ? t('users.lock') : t('users.activate')}
-                          </button>
+                      <span title={u.id === currentUser.id ? t('users.notSelf') : u.isActive ? t('users.lock') : t('users.activate')}>
+                        <button
+                          onClick={() => handleToggleUserActive(u)}
+                          disabled={u.id === currentUser.id}
+                          className={`${iconBtn} ${u.isActive ? 'hover:!text-status-err' : '!text-status-ok'}`}
+                          aria-label={u.isActive ? t('users.lock') : t('users.activate')}
+                        >
+                          {u.isActive ? <Ban className="w-3.5 h-3.5" /> : <UserCheck className="w-3.5 h-3.5" />}
+                        </button>
+                      </span>
 
-                          <button
-                            onClick={() => handleDeleteUser(u)}
-                            className="btn-icon btn-icon-danger"
-                            title={t('users.delete')}
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </>
-                      )}
+                      <span title={u.id === currentUser.id ? t('users.notSelf') : t('users.delete')}>
+                        <button
+                          onClick={() => handleDeleteUser(u)}
+                          disabled={u.id === currentUser.id}
+                          className={`btn-icon-danger ${iconBtnSize}`}
+                          aria-label={t('users.delete')}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </span>
                     </>
                   )}
                 </div>

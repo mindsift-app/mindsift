@@ -516,7 +516,8 @@
     "confirmReject": "Registrierung von \"{{name}}\" ({{email}}) ablehnen? Das Konto wird gelöscht.",
     "confirmDelete": "Benutzer \"{{name}}\" ({{email}}) wirklich unwiderruflich löschen?",
     "username": "Benutzername",
-    "usernameChanged": "Benutzername von {{name}} ist jetzt „{{username}}“."
+    "usernameChanged": "Benutzername von {{name}} ist jetzt „{{username}}“.",
+    "notSelf": "Nicht beim eigenen Konto"
   },
   "sharing": {
     "private": {

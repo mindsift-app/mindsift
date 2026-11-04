@@ -600,7 +600,8 @@
     "confirmReject": "¿Rechazar el registro de «{{name}}» ({{email}})? La cuenta se eliminará.",
     "confirmDelete": "¿De verdad quieres eliminar definitivamente al usuario «{{name}}» ({{email}})?",
     "username": "Nombre de usuario",
-    "usernameChanged": "El nombre de usuario de {{name}} ahora es «{{username}}»."
+    "usernameChanged": "El nombre de usuario de {{name}} ahora es «{{username}}».",
+    "notSelf": "No disponible para tu propia cuenta"
   },
   "orgs": {
     "createFailed": "Error al crear la organización",
