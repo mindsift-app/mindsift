@@ -31,7 +31,7 @@ export const PresenceAvatars: React.FC<PresenceAvatarsProps> = ({ people, avatar
         {people.map((p) => (
           <div key={p.userId} className="flex items-center gap-2 px-1.5 py-1 text-xs text-main">
             <span className="relative">
-              <UserAvatar name={p.name} avatarUrl={avatars.get(p.userId) || ''} size="xs" />
+              <UserAvatar userId={p.userId} name={p.name} avatarUrl={avatars.get(p.userId) || ''} size="xs" />
               <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-status-ok ring-2 ring-[var(--bg-panel)]" />
             </span>
             <span className="truncate">{p.name}</span>

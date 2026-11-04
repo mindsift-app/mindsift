@@ -95,6 +95,7 @@
     "openParentTask": "Unteraufgabe einer verknüpften Aufgabe – Aufgabe öffnen",
     "titleConflict": "Konflikt beim Titel",
     "conflict": "Konflikt",
+    "conflictBy": "– Version von {{name}}",
     "takeTitle": "Diesen Text als Titel übernehmen",
     "takeText": "Diesen Text in den ursprünglichen Punkt übernehmen",
     "take": "Übernehmen",
@@ -384,6 +385,7 @@
   "lock": {
     "notice": "{{name}} bearbeitet diesen Punkt gerade – bitte kurz warten",
     "title": "{{name}} bearbeitet diesen Punkt gerade",
-    "copy": "{{name}} bearbeitet diese Version gerade – bitte kurz warten"
+    "copy": "{{name}} bearbeitet diese Version gerade – bitte kurz warten",
+    "someone": "Jemand"
   }
 }

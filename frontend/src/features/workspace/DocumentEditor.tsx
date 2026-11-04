@@ -32,6 +32,7 @@ import { api } from '../../lib/api';
 import { DocSyncEngine, EngineState } from '../../lib/docSync/engine';
 import { Presence } from '../../lib/docSync/transport';
 import { OutlinerTree, OutlinerTreeHandle } from './OutlinerTree';
+import type { BlockLock } from './OutlinerBlock';
 import { extractHashtags } from '../../lib/hashtags';
 import { moveSibling } from '../../lib/outlineList';
 import { reportNav, onNavStep, restoringNavPlace } from '../../lib/navHistory';
@@ -451,13 +452,6 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
     }
   }, [engineState?.status, engineState?.errorMessage]);
 
-  // Blocks other users are editing right now (blockId -> name)
-  const lockedBlocks = useMemo(() => {
-    const m = new Map<string, string>();
-    for (const l of engineState?.lockedByOthers || []) m.set(l.blockId, l.name || 'Jemand');
-    return m;
-  }, [engineState?.lockedByOthers]);
-
   const otherPeople = useMemo(
     () => (engineState?.presence || []).filter((p) => p.userId !== currentUser?.id),
     [engineState?.presence, currentUser?.id]
@@ -478,6 +472,15 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
       })
       .catch(() => {});
   }, [otherPeople.length]);
+
+  // Blocks other users are editing right now (blockId -> who, with color key and profile picture)
+  const lockedBlocks = useMemo(() => {
+    const m = new Map<string, BlockLock>();
+    for (const l of engineState?.lockedByOthers || []) {
+      m.set(l.blockId, { userId: l.userId, name: l.name || t('lock.someone'), avatarUrl: avatarsById.get(l.userId) });
+    }
+    return m;
+  }, [engineState?.lockedByOthers, avatarsById, t]);
 
   useEffect(() => {
     onHeaderStatusChange?.({

@@ -1,14 +1,18 @@
 import React, { useState } from 'react';
 import i18n from '../i18n';
+import { userColorStyles } from '../lib/userColor';
 
 export interface UserAvatarProps {
   user?: {
+    id?: string;
     displayName?: string;
     email?: string;
     avatarUrl?: string;
   } | null;
   name?: string;
   avatarUrl?: string;
+  userId?: string; // picks the person's color (lib/userColor); falls back to the name
+  colorRing?: boolean; // ring in the person's color, also around a real picture (stacks, lock markers)
   size?: 'xxs' | 'xs' | 'sm' | 'md' | 'lg' | 'xl';
   className?: string;
   alt?: string;
@@ -23,15 +27,6 @@ const SIZE_MAP = {
   lg: 'w-12 h-12 text-base',
   xl: 'w-20 h-20 text-2xl',
 };
-
-const BG_COLORS = [
-  'bg-primary/20 text-primary border-primary/30',
-  'bg-secondary/20 text-secondary border-secondary/30',
-  'bg-accent/20 text-accent border-accent/30',
-  'bg-info/20 text-info border-info/30',
-  'bg-success/20 text-success border-success/30',
-  'bg-warning/20 text-warning border-warning/30',
-];
 
 function getInitials(name?: string, email?: string): string {
   const cleanName = (name || '').trim();
@@ -49,14 +44,6 @@ function getInitials(name?: string, email?: string): string {
   return '?';
 }
 
-function getColorIndex(str: string): number {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    hash = str.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  return Math.abs(hash) % BG_COLORS.length;
-}
-
 export function isEmoji(str?: string): boolean {
   if (!str) return false;
   const trimmed = str.trim();
@@ -68,6 +55,8 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({
   user,
   name,
   avatarUrl,
+  userId,
+  colorRing = false,
   size = 'md',
   className = '',
   alt,
@@ -81,8 +70,8 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({
 
   const sizeClass = SIZE_MAP[size] || SIZE_MAP.md;
   const initials = getInitials(effectiveName, effectiveEmail);
-  const colorIndex = getColorIndex(effectiveName || effectiveEmail || 'user');
-  const colorClass = BG_COLORS[colorIndex];
+  const color = userColorStyles(userId || user?.id || effectiveName || effectiveEmail);
+  const ringStyle = colorRing ? { border: `1.5px solid ${color.ring}` } : undefined;
 
   const hasImage = Boolean(
     effectiveAvatarUrl &&
@@ -106,13 +95,17 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({
           alt={alt || effectiveName || 'Avatar'}
           onError={() => setImageError(true)}
           className="w-full h-full object-cover rounded-full"
+          style={ringStyle}
         />
       ) : isEmojiAvatar ? (
-        <div className="w-full h-full flex items-center justify-center bg-base-300/80 rounded-full">
+        <div className="w-full h-full flex items-center justify-center bg-panel-elevated rounded-full" style={ringStyle}>
           <span className="leading-none">{effectiveAvatarUrl}</span>
         </div>
       ) : (
-        <div className={`w-full h-full flex items-center justify-center rounded-full border ${colorClass}`}>
+        <div
+          className="w-full h-full flex items-center justify-center rounded-full"
+          style={{ background: color.fill, color: color.text, border: colorRing ? `1.5px solid ${color.ring}` : `1px solid ${color.border}` }}
+        >
           <span className="leading-none tracking-tight">{initials}</span>
         </div>
       )}

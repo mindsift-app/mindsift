@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { describe, it, expect } from 'vitest';
 import { render, fireEvent, screen, act } from '@testing-library/react';
 import { OutlinerTree } from '../OutlinerTree';
+import type { BlockLock } from '../OutlinerBlock';
 import { DocumentBlock } from '../../../lib/types';
 
 // Holds the latest block state rendered by the harness
@@ -9,7 +10,7 @@ let live: DocumentBlock[] = [];
 
 let lockedNotices: string[] = [];
 
-const Harness: React.FC<{ initial: DocumentBlock[]; locked?: Map<string, string> }> = ({ initial, locked }) => {
+const Harness: React.FC<{ initial: DocumentBlock[]; locked?: Map<string, BlockLock> }> = ({ initial, locked }) => {
   const [blocks, setBlocks] = useState(initial);
   live = blocks;
   return (
@@ -89,7 +90,7 @@ describe('Backspace at the start of a bullet', () => {
 
 describe('blocks locked by someone else', () => {
   it('are read-only and show who edits them', () => {
-    render(<Harness initial={[mk('a', 'Frei'), mk('b', 'Gesperrt')]} locked={new Map([['b', 'Anna']])} />);
+    render(<Harness initial={[mk('a', 'Frei'), mk('b', 'Gesperrt')]} locked={new Map([['b', { userId: 'u-Anna', name: 'Anna' }]])} />);
     expect(area('Gesperrt').readOnly).toBe(true);
     expect(area('Frei').readOnly).toBe(false);
     expect(screen.getByTitle('Anna bearbeitet diesen Punkt gerade')).toBeTruthy();
@@ -97,7 +98,7 @@ describe('blocks locked by someone else', () => {
 
   it('merging into a locked bullet is not started at all', async () => {
     lockedNotices = [];
-    render(<Harness initial={[mk('a', 'Oben'), mk('b', 'Unten')]} locked={new Map([['a', 'Anna']])} />);
+    render(<Harness initial={[mk('a', 'Oben'), mk('b', 'Unten')]} locked={new Map([['a', { userId: 'u-Anna', name: 'Anna' }]])} />);
     await backspaceAt(area('Unten'));
     expect(live.map((b) => b.content)).toEqual(['Oben', 'Unten']);
     expect(lockedNotices).toEqual(['Anna']);
@@ -105,7 +106,7 @@ describe('blocks locked by someone else', () => {
 
   it('a branch with a locked child cannot be merged away', async () => {
     lockedNotices = [];
-    render(<Harness initial={[mk('a', 'A'), mk('b', 'B'), mk('c', 'C', 1)]} locked={new Map([['c', 'Ben']])} />);
+    render(<Harness initial={[mk('a', 'A'), mk('b', 'B'), mk('c', 'C', 1)]} locked={new Map([['c', { userId: 'u-Ben', name: 'Ben' }]])} />);
     await backspaceAt(area('B'));
     expect(live.map((b) => b.content)).toEqual(['A', 'B', 'C']);
     expect(lockedNotices).toEqual(['Ben']);
@@ -118,7 +119,7 @@ describe('Enter on a locked bullet', () => {
     ['in the middle', 3],
   ] as const) {
     it(`${label} adds a new bullet below and never splits the locked one`, async () => {
-      render(<Harness initial={[mk('a', 'Gesperrt')]} locked={new Map([['a', 'Anna']])} />);
+      render(<Harness initial={[mk('a', 'Gesperrt')]} locked={new Map([['a', { userId: 'u-Anna', name: 'Anna' }]])} />);
       const ta = area('Gesperrt');
       ta.focus();
       ta.setSelectionRange(pos, pos);

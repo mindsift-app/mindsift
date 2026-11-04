@@ -22,6 +22,8 @@ Component: [AvatarStack.tsx](../frontend/src/components/AvatarStack.tsx) (uses `
 
 - Small circular profile pictures, **slightly overlapping**, **at most 3**. Additional users appear as a monochrome "+n" circle.
 - Without a profile picture, `UserAvatar` displays the user's initials.
+- **One color per person:** [userColor.ts](../frontend/src/lib/userColor.ts) derives a fixed color from the user id (12 hues mixed with the theme variables, so they work in every theme). `UserAvatar` uses it for the initials; always pass `userId` (or `user.id`), otherwise the name is used as the key and the color can differ from other places. With `colorRing` the circle gets a ring in that color, also around a real picture; the stack always sets it.
+- Locks in shared notes use the same color: the locked bullet gets a faint tint and a stripe at its indent, the badge shows the profile picture and the name in that color.
 - `ringClass` receives the color of the surface behind it (typically `ring-[var(--bg-panel)]` or `ring-[var(--bg-app)]`) to cleanly separate the circles.
 - Sizes: `xxs` (16 px) in tabs, Kanban cards, and list items; `xs` (20 px) in task rows and headers.
 - **No hover effect** on the stack itself. The only exception is presence in notes ([PresenceAvatars.tsx](../frontend/src/features/workspace/PresenceAvatars.tsx)): there, hover or keyboard focus displays the "Currently online" list.

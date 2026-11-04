@@ -6,6 +6,15 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.76.0] - 2026-11-04
+
+### Added
+- Every person has a fixed color, the same everywhere and on every device: initials, the profile pictures in stacks (tabs, tasks, list items, people in a note) and the lock marker in shared notes. Real profile pictures get a ring in that color in the stacks.
+- Shared notes: a bullet someone else is editing is tinted in that person's color with a stripe on the left, and the badge shows their profile picture and name, so a locked bullet stands out at a glance.
+
+### Fixed
+- The "version by …" hint on conflict copies and the fallback name of a lock holder were still German in other languages.
+
 ## [0.75.2] - 2026-11-04
 
 ### Fixed

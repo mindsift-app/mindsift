@@ -95,6 +95,7 @@
     "openParentTask": "Subtarea de una tarea vinculada – abrir la tarea",
     "titleConflict": "Conflicto de títulos",
     "conflict": "Conflicto",
+    "conflictBy": "– versión de {{name}}",
     "takeTitle": "Usar este texto como título",
     "takeText": "Usar este texto en el punto original",
     "take": "Usar",
@@ -388,6 +389,7 @@
   "lock": {
     "notice": "{{name}} está editando este punto ahora mismo; espera un momento",
     "title": "{{name}} está editando este punto ahora mismo",
-    "copy": "{{name}} está editando esta versión ahora mismo; espera un momento"
+    "copy": "{{name}} está editando esta versión ahora mismo; espera un momento",
+    "someone": "Alguien"
   }
 }
