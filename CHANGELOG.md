@@ -6,6 +6,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.76.2] - 2026-11-04
+
+### Fixed
+- Notes: callouts, code blocks and other blocks without plain text are shown as selected when a selection spans several bullets (e.g. Ctrl+A twice); before, the selection seemed to stop at them.
+- Notes: dragging a new selection right after Ctrl+A twice no longer drags the selected text of the first bullet, so Ctrl+C copies the bullets as Markdown again instead of a single bullet's plain text.
+
 ## [0.76.1] - 2026-11-04
 
 ### Fixed

@@ -34,6 +34,10 @@ The owner shares a note through the share dialog with the role "edit"; checked i
 
 Locks, presence, undo and conflict copies with two browsers: lock and read-only state on a bullet someone else is editing, a notice instead of a half-done action, `Ctrl+Z`/`Ctrl+Shift+Z`, typing right after Enter, marking of conflict copies, and "accept" (refused under someone else's lock, successful for the lock holder).
 
+## copy.e2e.mjs
+
+Selection over several bullets in Chromium and Firefox, with a callout in between: dragging from the first to the last bullet, Ctrl+A twice (the callout row is marked too) and a new drag right after it; each time Ctrl+C has to give the same Markdown as a whole-note copy.
+
 ## channels.e2e.mjs
 
 The owner types with a normal connection, the editor sits behind a simulated proxy. For each situation the chosen transport and the time until the change shows are measured: nothing blocked (WebSocket), WebSocket refused (SSE), WebSocket accepted but silent (SSE after missed heartbeats), WebSocket and SSE blocked as well as a hanging SSE (long polling), only plain requests (polling every 3 s).

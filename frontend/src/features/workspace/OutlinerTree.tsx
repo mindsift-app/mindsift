@@ -745,12 +745,18 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
     setRangeSel(null);
   }, []);
 
+  // Selected blocks without a text layer to highlight (callouts, code, images …): tinted as a whole row
+  const [wholeRowIds, setWholeRowIds] = useState<Set<string> | null>(null);
+
   // Highlight the selected text of the bullets other than the start one
   useEffect(() => {
     if (!highlightSupported) return;
     const registry = (CSS as any).highlights;
+    const setWholeRows = (ids: string[]) =>
+      setWholeRowIds((prev) => (ids.length === 0 ? null : prev && prev.size === ids.length && ids.every((id) => prev.has(id)) ? prev : new Set(ids)));
     if (!rangeSel || !treeRootRef.current) {
       registry.delete('outline-range');
+      setWholeRows([]);
       return;
     }
     const order = visibleEntries.map((e) => e.block.id);
@@ -758,16 +764,21 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
     const f = order.indexOf(rangeSel.focusId);
     if (a < 0 || f < 0) {
       registry.delete('outline-range');
+      setWholeRows([]);
       return;
     }
     const ranges: Range[] = [];
+    const whole: string[] = [];
     const spanOf = (id: string) =>
       treeRootRef.current!.querySelector<HTMLElement>(`[data-outline-block="${id}"] [data-outline-text]`);
     for (let i = Math.min(a, f); i <= Math.max(a, f); i++) {
       const id = order[i];
-      if (id === rangeSel.anchorId) continue; // shown by the browser in its text field
       const span = spanOf(id);
-      if (!span) continue;
+      if (!span) {
+        whole.push(id);
+        continue;
+      }
+      if (id === rangeSel.anchorId) continue; // shown by the browser in its text field
       const r = document.createRange();
       r.selectNodeContents(span);
       if (id === rangeSel.focusId && rangeSel.focusNode && span.contains(rangeSel.focusNode)) {
@@ -777,6 +788,7 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
       ranges.push(r);
     }
     registry.set('outline-range', new (window as any).Highlight(...ranges));
+    setWholeRows(whole);
     return () => registry.delete('outline-range');
   }, [rangeSel, visibleEntries, highlightSupported]);
 
@@ -810,6 +822,14 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
 
   const handleTreeMouseDownCapture = (e: React.MouseEvent) => {
     if (e.button !== 0) return;
+    // After a selection over several bullets (e.g. Ctrl+A twice) the start bullet's text is still selected;
+    // pressing on it would make the browser drag that text instead of starting a new selection
+    if (rangeSelRef.current) {
+      const active = document.activeElement as HTMLTextAreaElement | null;
+      if (active?.tagName === 'TEXTAREA' && active.selectionStart !== active.selectionEnd) {
+        active.setSelectionRange(active.selectionStart, active.selectionStart);
+      }
+    }
     setRangeSel(null);
     const target = e.target as HTMLElement;
     const row = target.closest<HTMLElement>('[data-outline-block]');
@@ -1003,7 +1023,7 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
             isDragTarget={dragOverIndex === index && draggedIndex !== index}
             isTargeted={highlightedBlockId === block.id}
             registerTextareaRef={registerTextareaRef}
-            inRangeSelection={rangeRowIds?.has(block.id)}
+            inRangeSelection={rangeRowIds?.has(block.id) || wholeRowIds?.has(block.id)}
           />
         );
       })}
