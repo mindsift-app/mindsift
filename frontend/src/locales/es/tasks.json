@@ -56,7 +56,6 @@
     "done": "Tarea completada",
     "new": "Nueva tarea",
     "edit": "Editar tarea",
-    "confirmDelete": "¿De verdad quieres eliminar esta tarea?",
     "subtasks": "Subtareas ({{done}}/{{total}}):",
     "created": "Creado: {{date}}",
     "plusWeek": "+1 semana",

@@ -348,11 +348,10 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
             {!readOnly && (
             <button
               type="button"
+              // No question, as on the card: the task goes to the trash and the notice offers to undo it
               onClick={() => {
-                if (window.confirm(t('detail.confirmDelete'))) {
-                  onClose();
-                  onDeleteTask(task.id);
-                }
+                onClose();
+                onDeleteTask(task.id);
               }}
               title={t('detail.delete')}
               className="btn-action min-h-[38px] sm:min-h-0 h-9 sm:h-7 px-2.5 sm:px-2 text-xs text-status-err border-status-err/30 hover:bg-status-err/10 flex items-center gap-1"

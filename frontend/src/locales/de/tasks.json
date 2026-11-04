@@ -56,7 +56,6 @@
     "done": "Erledigte Aufgabe",
     "new": "Neue Aufgabe",
     "edit": "Aufgabe bearbeiten",
-    "confirmDelete": "Möchten Sie diese Aufgabe wirklich löschen?",
     "subtasks": "Unteraufgaben ({{done}}/{{total}}):",
     "created": "Erstellt: {{date}}",
     "plusWeek": "+1 Woche",
