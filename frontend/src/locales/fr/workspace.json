@@ -83,7 +83,6 @@
     "dictation": "Parler au lieu d'écrire"
   },
   "block": {
-    "confirmDelete": "Es-tu sûr(e) ? Toutes les sous-puces de cette branche seront également supprimées.",
     "expand": "Déplier les sous-puces",
     "collapse": "Replier les sous-puces",
     "dragZoom": "Glisser pour déplacer • clic : zoomer sur la branche (mode focus)",

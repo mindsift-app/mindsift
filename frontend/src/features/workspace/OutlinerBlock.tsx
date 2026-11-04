@@ -49,6 +49,7 @@ import { useTranslation } from 'react-i18next';
 import i18n from '../../i18n';
 import { UserAvatar } from '../../components/UserAvatar';
 import { userColorStyles } from '../../lib/userColor';
+import { showError } from '../../components/ErrorNotice';
 
 export interface SlashCommand {
   type: BlockType | 'link' | 'dictation' | 'extract';
@@ -1758,7 +1759,7 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
                         onUpdateBlockRef.current(updatedBlock, true);
                         onOpenTask?.(thought.id);
                       } catch (err: any) {
-                        alert(err.message || t('block.createTaskFailed'));
+                        showError(err.message || t('block.createTaskFailed'));
                       }
                     }}
                     className="w-full text-left px-2 py-1.5 rounded-btn hover:bg-panel-elevated hover:text-accent flex items-center gap-1.5 text-main font-medium cursor-pointer"
@@ -1783,7 +1784,7 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
                         };
                         onUpdateBlockRef.current(updatedBlock, true);
                       } catch (err: any) {
-                        alert(err.message || t('block.unlinkFailed'));
+                        showError(err.message || t('block.unlinkFailed'));
                       }
                     }}
                     className="w-full text-left px-2 py-1.5 rounded-btn hover:bg-panel-elevated hover:text-status-warn flex items-center gap-1.5 text-main font-medium cursor-pointer"
@@ -1864,10 +1865,9 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
           <button
             type="button"
             onClick={() => {
+              // A branch goes with its children and without a question; Ctrl+Z brings it back
               if (hasChildren) {
-                if (window.confirm(t('block.confirmDelete'))) {
-                  onDeleteBlockRef.current(block.id, true);
-                }
+                onDeleteBlockRef.current(block.id, true);
               } else {
                 onDeleteBlockRef.current(block.id, false);
               }

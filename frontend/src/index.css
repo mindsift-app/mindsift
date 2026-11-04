@@ -668,6 +668,19 @@ fieldset:disabled :is(button, input, select, textarea) {
   .view-enter { animation: none; }
 }
 
+/* Error notice: a short shake so it is noticed (components/ErrorNotice.tsx) */
+@keyframes notice-shake {
+  0%, 100% { transform: none; }
+  15%, 55% { transform: translateX(-6px); }
+  35%, 75% { transform: translateX(6px); }
+}
+.notice-shake {
+  animation: notice-shake 420ms ease-in-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .notice-shake { animation: none; }
+}
+
 /* No sliding or zooming for people who asked their system for less motion */
 @media (prefers-reduced-motion: reduce) {
   .animate-in,

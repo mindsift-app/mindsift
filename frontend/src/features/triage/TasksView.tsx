@@ -40,6 +40,8 @@ import { ListSwitcher } from '../../components/ListSwitcher';
 import { reportNav, onNavStep, restoringNavPlace } from '../../lib/navHistory';
 import { LivePill } from '../../components/LivePill';
 import { useMobileActions } from '../../context/MobileActionContext';
+import { askConfirm } from '../../components/askConfirm';
+import { showError } from '../../components/ErrorNotice';
 
 
 
@@ -583,9 +585,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
   const handleDeleteTaskList = async (listId: string, confirmed = false) => {
     if (
       !confirmed &&
-      !window.confirm(
-        i18n.t('tasks:view.confirmDeleteList')
-      )
+      !(await askConfirm({ message: i18n.t('tasks:view.confirmDeleteList'), confirmLabel: i18n.t('common:delete'), danger: true }))
     )
       return;
     try {
@@ -595,7 +595,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
       // this handler out of its dependencies)
       setSelectedListIdState('all');
     } catch (err: any) {
-      alert(err.message);
+      showError(err.message);
     }
   };
 

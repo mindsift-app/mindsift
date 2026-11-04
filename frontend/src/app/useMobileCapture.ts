@@ -3,6 +3,7 @@ import { PriorityLevel, Thought } from '../lib/types';
 import { api, triggerHaptic } from '../lib/api';
 import { useVoiceInput } from '../lib/useVoiceInput';
 import i18n from '../i18n';
+import { showError } from '../components/ErrorNotice';
 
 // State of the Quick Dump sheet on phones: text, priority, due date and voice input; saving puts the
 // thought into the inbox
@@ -61,7 +62,7 @@ export function useMobileCapture(
       setShowMobileCapture(false);
       triggerHaptic(20);
     } catch (err: any) {
-      alert(i18n.t('common:errors.saveFailed', { message: err.message || i18n.t('common:errors.unknown') }));
+      showError(i18n.t('common:errors.saveFailed', { message: err.message || i18n.t('common:errors.unknown') }));
     }
   };
 

@@ -98,7 +98,6 @@
     "chooseGroup": "Bitte eine Gruppe auswählen",
     "chooseUser": "Bitte einen Benutzer auswählen",
     "addFailed": "Fehler beim Hinzufügen der Freigabe",
-    "confirmRemove": "Möchtest du diese Freigabe wirklich aufheben?",
     "removeFailed": "Fehler beim Entfernen der Freigabe",
     "disabled": "Teilen ist auf diesem Server deaktiviert (Sichtbarkeits-Modus „Privat“).",
     "add": "Freigabe hinzufügen:",

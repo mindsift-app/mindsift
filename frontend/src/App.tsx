@@ -47,6 +47,8 @@ import { CommandPalette } from './components/CommandPalette';
 import { AppFooter } from './components/AppFooter';
 import { AboutModal } from './components/AboutModal';
 import { TriageTrash } from './features/triage/TriageTrash';
+import { ConfirmHost } from './components/askConfirm';
+import { ErrorNoticeHost } from './components/ErrorNotice';
 import { UpdateAvailableModal } from './components/UpdateAvailableModal';
 import { useUpdateCheck } from './lib/useUpdateCheck';
 import { consumePendingShares, formatSharedThought } from './lib/shareTarget';
@@ -779,6 +781,8 @@ export const App: React.FC = () => {
       {showAbout && <AboutModal onClose={() => setShowAbout(false)} />}
       {showTriageTrash && <TriageTrash onClose={() => setShowTriageTrash(false)} onChanged={refreshAll} />}
       {availableUpdate && <UpdateAvailableModal update={availableUpdate} onLater={dismissUpdate} />}
+      <ConfirmHost />
+      <ErrorNoticeHost />
     </div>
   );
 };

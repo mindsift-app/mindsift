@@ -18,6 +18,7 @@ import { Team, User } from '../../lib/types';
 import { api, isSharingDisabled, triggerHaptic } from '../../lib/api';
 import { UserAutocomplete } from '../UserAutocomplete';
 import { UserAvatar } from '../../components/UserAvatar';
+import { askConfirm } from '../../components/askConfirm';
 
 interface GroupsViewProps {
   currentUser: User;
@@ -111,9 +112,12 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ currentUser, onBack }) =
   };
 
   const handleDeleteTeam = async (team: Team) => {
-    if (!window.confirm(i18n.t('groups:confirmDelete', { name: team.name }))) {
-      return;
-    }
+    const ok = await askConfirm({
+      message: i18n.t('groups:confirmDelete', { name: team.name }),
+      confirmLabel: i18n.t('common:delete'),
+      danger: true,
+    });
+    if (!ok) return;
     setStatusMsg(null);
     triggerHaptic(15);
     try {
@@ -158,12 +162,8 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ currentUser, onBack }) =
   };
 
   const handleRemoveMember = async (teamId: string, memberUserId: string, memberName: string) => {
+    // No question: a member is quickly added again
     const isSelf = memberUserId === currentUser.id;
-    const msg = isSelf
-      ? i18n.t('groups:confirmLeave')
-      : i18n.t('groups:confirmRemove', { name: memberName });
-
-    if (!window.confirm(msg)) return;
 
     setStatusMsg(null);
     triggerHaptic(10);

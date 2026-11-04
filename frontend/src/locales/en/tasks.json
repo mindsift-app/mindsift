@@ -83,7 +83,8 @@
     "save": "Save columns",
     "colorOf": "Color of the column {{name}}",
     "list": "List: {{title}}",
-    "active": "Active columns ({{count}}):"
+    "active": "Active columns ({{count}}):",
+    "resetConfirm": "Reset"
   },
   "columns": {
     "todo": "To do",

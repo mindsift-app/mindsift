@@ -83,7 +83,8 @@
     "save": "Guardar columnas",
     "colorOf": "Color de la columna {{name}}",
     "list": "Lista: {{title}}",
-    "active": "Columnas activas ({{count}}):"
+    "active": "Columnas activas ({{count}}):",
+    "resetConfirm": "Restablecer"
   },
   "columns": {
     "todo": "Por hacer",

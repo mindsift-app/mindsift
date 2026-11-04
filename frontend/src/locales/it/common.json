@@ -99,7 +99,6 @@
     "chooseGroup": "Scegli un gruppo",
     "chooseUser": "Scegli un utente",
     "addFailed": "Aggiunta della condivisione non riuscita",
-    "confirmRemove": "Vuoi davvero rimuovere questa condivisione?",
     "removeFailed": "Rimozione della condivisione non riuscita",
     "disabled": "Le condivisioni sono disattivate su questo server (modalità di visibilità \"Privato\").",
     "add": "Aggiungi condivisione:",

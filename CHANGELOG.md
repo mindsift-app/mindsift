@@ -6,6 +6,13 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.76.8] - 2026-11-04
+
+### Changed
+- No more browser dialogs. Questions before actions that cannot be undone open as the app's own small confirmation right at the click: deleting a task list, a shopping list, a group, a backup or a user, rejecting a waiting account, resetting the board columns, emptying the task trash, revoking an API key or connection, and signing out all sessions.
+- Actions that can be undone run without a question: deleting a bullet together with its sub-bullets (Ctrl+Z brings it back), removing a group member or leaving a group, and removing a share.
+- Error messages (e.g. "Saving failed") show as a red notice at the bottom with a short shake instead of a browser alert.
+
 ## [0.76.7] - 2026-11-04
 
 ### Changed

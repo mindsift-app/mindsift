@@ -5,6 +5,7 @@ import { api } from '../../lib/api';
 import { TaskList } from '../../lib/types';
 import { FormSheet } from '../../components/FormSheet';
 import { EmojiIconButton } from '../../components/EmojiIconButton';
+import { showError } from '../../components/ErrorNotice';
 
 interface NewTaskListSheetProps {
   showNewListModal: boolean;
@@ -36,7 +37,7 @@ export function NewTaskListSheet({ showNewListModal, setShowNewListModal, setTas
       setNewListTitle('');
       setNewListIcon('📋');
     } catch (err: any) {
-      alert(err.message || t('newList.failed'));
+      showError(err.message || t('newList.failed'));
     }
   };
 

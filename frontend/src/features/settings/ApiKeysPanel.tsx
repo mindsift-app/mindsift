@@ -18,6 +18,7 @@ import { SCOPES, scopeGroups, scopeChip, toggleScopeIn } from '../../lib/apiScop
 import { api, triggerHaptic } from '../../lib/api';
 import { ToggleSwitch } from '../../components/ToggleSwitch';
 import { formatDate } from '../../lib/format';
+import { askConfirm } from '../../components/askConfirm';
 
 interface ApiKeysPanelProps {
   onIngested?: () => void;
@@ -167,7 +168,13 @@ export const ApiKeysPanel: React.FC<ApiKeysPanelProps> = ({ onIngested }) => {
   };
 
   const handleDeleteKey = async (k: APIKey) => {
-    if (!window.confirm(k.kind === 'oauth' ? t('api.confirmDisconnect', { name: k.name }) : t('api.confirmRevoke'))) return;
+    const oauth = k.kind === 'oauth';
+    const ok = await askConfirm({
+      message: oauth ? t('api.confirmDisconnect', { name: k.name }) : t('api.confirmRevoke'),
+      confirmLabel: oauth ? t('api.disconnect') : t('api.revoke'),
+      danger: true,
+    });
+    if (!ok) return;
     triggerHaptic(20);
     await api.deleteAPIKey(k.id);
     await loadKeys();

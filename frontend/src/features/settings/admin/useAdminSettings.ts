@@ -3,6 +3,7 @@ import i18n from '../../../i18n';
 import { Organization, SharingMode, SystemSettings, User, UserInvite, UserRole } from '../../../lib/types';
 import { api, setCurrentSharingMode, triggerHaptic } from '../../../lib/api';
 import { passwordProblem } from '../../../lib/password';
+import { askConfirm } from '../../../components/askConfirm';
 
 // The three sharing modes, stricter first; texts in settings:sharing.<id> in the language shown when read
 const sharingMode = (id: SharingMode) => ({
@@ -278,14 +279,14 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
   };
 
   const handleDeleteUser = async (u: User) => {
-    if (
-      !window.confirm(
-        u.pendingApproval
-          ? i18n.t('settings:users.confirmReject', { name: u.displayName, email: u.email })
-          : i18n.t('settings:users.confirmDelete', { name: u.displayName, email: u.email })
-      )
-    )
-      return;
+    const ok = await askConfirm({
+      message: u.pendingApproval
+        ? i18n.t('settings:users.confirmReject', { name: u.displayName, email: u.email })
+        : i18n.t('settings:users.confirmDelete', { name: u.displayName, email: u.email }),
+      confirmLabel: u.pendingApproval ? i18n.t('settings:users.reject') : i18n.t('common:delete'),
+      danger: true,
+    });
+    if (!ok) return;
     setStatusMsg(null);
     try {
       await api.adminDeleteUser(u.id);
