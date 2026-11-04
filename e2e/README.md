@@ -46,6 +46,10 @@ Selection over several bullets in Chromium and Firefox, in two notes (callout at
 
 Run it after every change to selecting, copying or deleting in notes.
 
+## live.e2e.mjs
+
+Tasks and shopping lists behind simulated proxies (nothing blocked; WebSocket refused and SSE held without an answer; WebSocket refused and SSE refused): another device adds a task, moves it to another column and adds a list item. Each change has to show up in the open browser within 8 s, without reloading or switching tabs.
+
 ## channels.e2e.mjs
 
 The owner types with a normal connection, the editor sits behind a simulated proxy. For each situation the chosen transport and the time until the change shows are measured: nothing blocked (WebSocket), WebSocket refused (SSE), WebSocket accepted but silent (SSE after missed heartbeats), WebSocket and SSE blocked as well as a hanging SSE (long polling), only plain requests (polling every 3 s).

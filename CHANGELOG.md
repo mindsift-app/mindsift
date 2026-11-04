@@ -6,6 +6,14 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.76.7] - 2026-11-04
+
+### Changed
+- Task dialog: the trash button deletes right away, like on the card, instead of asking in a browser dialog; the notice at the bottom offers to undo it and the task waits in the trash.
+
+### Fixed
+- Behind proxies that refuse or hold the live connection (SSE), tasks and shopping lists now switch to long polling and update live. Before, changes from other devices only showed up after switching tabs or reloading.
+
 ## [0.76.6] - 2026-11-04
 
 ### Added

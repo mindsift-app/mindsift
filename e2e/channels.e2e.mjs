@@ -44,7 +44,11 @@ async function openDoc(browser, token, title, block = {}) {
   if (block.ws === 'silent') await ctx.routeWebSocket(/\/api\/v1\/ws/, () => {}); // accepted, nothing forwarded
   if (block.sse === 'abort') await ctx.route('**/api/v1/events**', (r) => r.abort());
   if (block.sse === 'hang') await ctx.route('**/api/v1/events**', () => {}); // never answered
-  if (block.longpoll) await ctx.route('**/changes**', (r) => r.abort());
+  if (block.longpoll) {
+    // Every request the server holds open: the note's own long polling and the app-wide one
+    await ctx.route('**/changes**', (r) => r.abort());
+    await ctx.route(/\/api\/v1\/events\/poll\//, (r) => r.abort());
+  }
   await ctx.addInitScript((t) => localStorage.setItem('mindsift_jwt_token', t), token);
   const page = await ctx.newPage();
   await page.goto(BASE);

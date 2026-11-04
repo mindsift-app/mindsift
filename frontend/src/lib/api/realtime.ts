@@ -85,6 +85,11 @@ let isWsBlockedByProxy = typeof window !== 'undefined' && sessionStorage.getItem
 let isSseBufferedByProxy = typeof window !== 'undefined' && sessionStorage.getItem('mindsift_sse_buffered') === 'true';
 let sseFirstEventWatchdog: any = null;
 const SSE_FIRST_EVENT_TIMEOUT_MS = 5000;
+// SSE attempts that failed although the server answered the ticket request, i.e. something in between
+// refuses the stream; from this many on long polling takes over
+const SSE_FAILED_ATTEMPTS_FOR_POLL = 2;
+let sseFailedAttempts = 0;
+let sseEverConnected = false;
 // Some proxies accept the WebSocket upgrade but then forward nothing. An app-level ping detects that.
 let wsHeartbeatTimer: any = null;
 let wsLastMessageAt = 0;
@@ -165,23 +170,35 @@ export async function connectSSE(rooms?: string[]): Promise<void> {
     const es = new EventSource(url);
     activeGlobalSSE = es;
 
+    // SSE does not get through (a proxy buffers it, holds it without even answering, or refuses it):
+    // long polling for the rest of the session
+    const switchToPoll = (reason: string) => {
+      console.warn(`[MindSift Realtime] ${reason} -> long polling`);
+      clearTimeout(sseFirstEventWatchdog);
+      clearTimeout(sseReconnectTimer);
+      isSseBufferedByProxy = true;
+      try {
+        sessionStorage.setItem('mindsift_sse_buffered', 'true');
+      } catch {}
+      try {
+        es.close();
+      } catch {}
+      if (activeGlobalSSE === es) activeGlobalSSE = null;
+      notifyRealtimeStatusChange(false, 'none');
+      void connectPoll();
+    };
+
+    // Connected only counts once the first event really arrives (see SSE_CONNECTED below). The watchdog
+    // starts right away, not on open: a proxy holding the request never lets it open at all
+    const armFirstEventWatchdog = () => {
+      clearTimeout(sseFirstEventWatchdog);
+      sseFirstEventWatchdog = setTimeout(() => switchToPoll('SSE delivers no events (proxy buffers or holds it)'), SSE_FIRST_EVENT_TIMEOUT_MS);
+    };
+    armFirstEventWatchdog();
+
     es.onopen = () => {
       sseReconnectDelay = 2000;
-      // Connected only counts once the first event really arrives (see SSE_CONNECTED below)
-      clearTimeout(sseFirstEventWatchdog);
-      sseFirstEventWatchdog = setTimeout(() => {
-        console.warn('[MindSift Realtime] SSE liefert keine Ereignisse (Proxy puffert) -> Long-Polling');
-        isSseBufferedByProxy = true;
-        try {
-          sessionStorage.setItem('mindsift_sse_buffered', 'true');
-        } catch {}
-        try {
-          es.close();
-        } catch {}
-        if (activeGlobalSSE === es) activeGlobalSSE = null;
-        notifyRealtimeStatusChange(false, 'none');
-        void connectPoll();
-      }, SSE_FIRST_EVENT_TIMEOUT_MS);
+      armFirstEventWatchdog();
     };
 
     es.onmessage = (event) => {
@@ -189,6 +206,8 @@ export async function connectSSE(rooms?: string[]): Promise<void> {
         const msg = JSON.parse(event.data) as WSMessage;
         if (msg.event === 'SSE_CONNECTED') {
           clearTimeout(sseFirstEventWatchdog);
+          sseEverConnected = true;
+          sseFailedAttempts = 0;
           notifyRealtimeStatusChange(true, 'sse');
           activeSSEId = msg.payload?.sseId || null;
           if (activeSSEId && globalSubscribedRooms.size > 0) {
@@ -212,7 +231,12 @@ export async function connectSSE(rooms?: string[]): Promise<void> {
 
     es.onerror = (e) => {
       clearTimeout(sseFirstEventWatchdog);
-      console.warn('[MindSift Realtime] SSE Verbindungsfehler:', e);
+      console.warn('[MindSift Realtime] SSE connection error:', e);
+      // The server answered the ticket request just before, so the stream itself is refused on the way
+      if (!sseEverConnected && ++sseFailedAttempts >= SSE_FAILED_ATTEMPTS_FOR_POLL) {
+        switchToPoll(`SSE refused ${sseFailedAttempts} times`);
+        return;
+      }
       if (activeTransport === 'sse') {
         notifyRealtimeStatusChange(false, 'none');
       }
