@@ -2,6 +2,7 @@ import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 're
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { FilePlus2, Search } from 'lucide-react';
+import { NO_AUTOFILL } from '../../lib/noAutofill';
 
 export interface ExtractTarget {
   id: string;
@@ -123,6 +124,7 @@ export const ExtractPopover: React.FC<ExtractPopoverProps> = ({ x, y, notes, onN
           ref={inputRef}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
+          {...NO_AUTOFILL}
           placeholder={t('extractMenu.search')}
           className="flex-1 min-w-0 bg-transparent border-0 outline-none text-main placeholder:text-faint text-sm sm:text-xs"
         />

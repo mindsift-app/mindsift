@@ -16,6 +16,7 @@ import { api } from '../../lib/api';
 import { Document, DocumentBlock } from '../../lib/types';
 import { buildBlockLink } from '../../lib/wikiLink';
 import { SnippetRenderer } from '../../components/SnippetRenderer';
+import { NO_AUTOFILL } from '../../lib/noAutofill';
 
 export interface LinkModalProps {
   isOpen: boolean;
@@ -325,6 +326,7 @@ export const LinkModal: React.FC<LinkModalProps> = ({
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 onKeyDown={handleListKeys}
+                {...NO_AUTOFILL}
                 placeholder={t('link.searchNote')}
                 className="input-field bg-panel h-8 pl-8 pr-2.5 text-xs w-full text-main placeholder:text-muted"
               />
@@ -403,6 +405,7 @@ export const LinkModal: React.FC<LinkModalProps> = ({
               value={blockSearch}
               onChange={(e) => setBlockSearch(e.target.value)}
               onKeyDown={handleListKeys}
+              {...NO_AUTOFILL}
               placeholder={t('link.filterBlocks')}
               className="input-field w-full h-11 sm:h-8 px-2.5 text-xs"
               aria-label={t('link.filterBlocksLabel')}

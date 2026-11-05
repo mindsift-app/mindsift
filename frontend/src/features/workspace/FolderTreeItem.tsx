@@ -158,7 +158,14 @@ export const FolderTreeItem: React.FC<FolderTreeItemProps> = ({
       </div>
 
       {isExpanded && (
-        <div className="space-y-0.5">
+        <div className="relative space-y-0.5">
+          {/* Guide line under the folder icon (row padding + 2px border + half the icon), so deep entries
+              still show which folder they belong to */}
+          <div
+            aria-hidden="true"
+            className="absolute top-0 bottom-0 w-px bg-border/70 pointer-events-none"
+            style={{ left: `${depth * 12 + 16.5}px` }}
+          />
           {/* Subfolders in this folder */}
           {node.subfolders.map((childNode) => (
             <FolderTreeItem

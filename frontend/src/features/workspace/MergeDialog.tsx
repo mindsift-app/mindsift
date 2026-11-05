@@ -4,6 +4,7 @@ import { GitMerge, Search } from 'lucide-react';
 import { FormSheet } from '../../components/FormSheet';
 import { api } from '../../lib/api';
 import { Document, MergeResult } from '../../lib/types';
+import { NO_AUTOFILL } from '../../lib/noAutofill';
 
 interface MergeDialogProps {
   docs: Document[];
@@ -82,6 +83,7 @@ export const MergeDialog: React.FC<MergeDialogProps> = ({ docs, sourceId, target
               autoFocus
               value={query}
               onChange={(e) => setQuery(e.target.value)}
+              {...NO_AUTOFILL}
               placeholder={t('merge.search')}
               className="w-full h-11 sm:h-9 pl-8 pr-2 input-field text-sm"
             />

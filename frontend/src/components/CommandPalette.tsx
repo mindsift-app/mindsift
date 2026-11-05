@@ -18,6 +18,7 @@ import { api } from '../lib/api';
 import { formatDue } from '../lib/due';
 import { SnippetRenderer } from './SnippetRenderer';
 import { requestDocFocus } from '../lib/docFocusRequest';
+import { NO_AUTOFILL } from '../lib/noAutofill';
 
 interface CommandPaletteProps {
   isOpen: boolean;
@@ -313,6 +314,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
+            {...NO_AUTOFILL}
             placeholder={t('palette.placeholder')}
             className="flex-1 bg-transparent border-0 outline-none text-main placeholder-muted text-base sm:text-sm focus:ring-0 p-0"
           />

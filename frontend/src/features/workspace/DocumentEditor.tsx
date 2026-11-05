@@ -3,6 +3,8 @@ import { createPortal } from 'react-dom';
 import { buildBlockLink } from '../../lib/wikiLink';
 import { MOVE_BRANCH_EVENT } from './moveBranchEvent';
 import { onDocFocusRequest, takeDocFocus } from '../../lib/docFocusRequest';
+import { bulletGuidesOn, setBulletGuides } from '../../lib/bulletGuides';
+import { ToggleSwitch } from '../../components/ToggleSwitch';
 import {
   Pin,
   Users,
@@ -17,6 +19,8 @@ import {
   Home,
   ChevronRight,
   ChevronsUpDown,
+  ChevronsDownUp,
+  ListTree,
   Minimize2,
   Plus,
   Check,
@@ -780,17 +784,47 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
     []
   );
 
-  // "Expand all bullets" (note menu, Ctrl+Shift+ArrowDown): one edit, so a single Strg+Z folds them back
-  const hasCollapsed = blocks.some((b) => b.collapsed);
-  const handleExpandAll = useCallback(() => {
-    if (!canEdit) return;
-    applyLocalBlocks((prev) => (prev.some((b) => b.collapsed) ? prev.map((b) => (b.collapsed ? { ...b, collapsed: false } : b)) : prev));
-  }, [canEdit, applyLocalBlocks]);
-  const expandAllRef = useRef(handleExpandAll);
-  expandAllRef.current = handleExpandAll;
+  // "Expand / collapse all bullets" (note menu, Ctrl+Shift+ArrowDown / ArrowUp) in what is shown, i.e. only
+  // inside the zoomed branch. One edit, so a single Strg+Z takes it back.
+  const lvl = (b?: DocumentBlock) => Math.max(0, b?.level || 0);
+  const hasCollapsed = childBlocks.some((b) => b.collapsed);
+  const canCollapse = childBlocks.some((b, i) => !b.collapsed && lvl(childBlocks[i + 1]) > lvl(b) && i + 1 < childBlocks.length);
+  const handleSetAllCollapsed = useCallback(
+    (collapse: boolean) => {
+      if (!canEdit) return;
+      const scope = new Set(getZoomedSubtree(currentBlocksRef.current, zoomedBlockId).childBlocks.map((b) => b.id));
+      // The bullet holding the cursor may disappear when collapsing: the cursor goes to its top-level bullet
+      const focusedId = (document.activeElement as HTMLElement | null)?.closest('[data-outline-block]')?.getAttribute('data-outline-block');
+      let changed = false;
+      applyLocalBlocks((prev) => {
+        const next = prev.map((b, i) => {
+          if (!scope.has(b.id)) return b;
+          const want = collapse && i + 1 < prev.length && lvl(prev[i + 1]) > lvl(b);
+          if (!!b.collapsed === want) return b;
+          changed = true;
+          return { ...b, collapsed: want };
+        });
+        return changed ? next : prev;
+      });
+      if (!collapse || !changed || !focusedId) return;
+      const all = currentBlocksRef.current;
+      let i = all.findIndex((b) => b.id === focusedId);
+      const top = Math.min(...childBlocks.map((b) => lvl(b)));
+      while (i > 0 && lvl(all[i]) > top && scope.has(all[i - 1].id)) i--;
+      if (i >= 0 && all[i]) window.setTimeout(() => outlinerTreeRef.current?.focusBlock(all[i].id), 0);
+    },
+    [canEdit, applyLocalBlocks, zoomedBlockId, childBlocks]
+  );
+  const [guidesOn, setGuidesOn] = useState(bulletGuidesOn);
+  const toggleGuides = (on: boolean) => {
+    setBulletGuides(on);
+    setGuidesOn(on);
+  };
+  const setAllCollapsedRef = useRef(handleSetAllCollapsed);
+  setAllCollapsedRef.current = handleSetAllCollapsed;
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (!(e.ctrlKey || e.metaKey) || !e.shiftKey || e.altKey || e.key !== 'ArrowDown') return;
+      if (!(e.ctrlKey || e.metaKey) || !e.shiftKey || e.altKey || (e.key !== 'ArrowDown' && e.key !== 'ArrowUp')) return;
       const el = e.target as HTMLElement | null;
       const root = scrollRef.current;
       if (!root || inTrash) return;
@@ -798,7 +832,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
       const inEditor = !!el && root.contains(el);
       if (!inEditor && (embedded || (el && el !== document.body))) return;
       e.preventDefault();
-      expandAllRef.current();
+      setAllCollapsedRef.current(e.key === 'ArrowUp');
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -1390,7 +1424,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
         {showActionsMenu && (
           <div
             role="menu"
-            className="absolute right-0 top-full mt-1.5 w-60 rounded-card bg-panel border border-border shadow-lg p-1 z-30 text-xs origin-top-right animate-in fade-in zoom-in-95 slide-in-from-top-1 duration-150"
+            className="absolute right-0 top-full mt-1.5 w-max min-w-60 max-w-[calc(100vw-2rem)] rounded-card bg-panel border border-border shadow-lg p-1 z-30 text-xs origin-top-right animate-in fade-in zoom-in-95 slide-in-from-top-1 duration-150"
           >
             {!inTrash && (
               <button
@@ -1446,23 +1480,51 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
               </button>
             )}
 
-            {/* Always shown, so it can be found; greyed out while nothing is collapsed */}
+            {/* Always shown, so they can be found; greyed out while there is nothing to do */}
             {canEdit && !inTrash && (
+              <>
               <button
                 type="button"
                 role="menuitem"
                 disabled={!hasCollapsed}
                 onClick={() => {
                   setShowActionsMenu(false);
-                  handleExpandAll();
+                  handleSetAllCollapsed(false);
                 }}
                 className="w-full min-h-[44px] sm:min-h-0 px-2.5 py-2 sm:py-1.5 rounded-btn enabled:hover:bg-panel-elevated text-left text-main font-medium flex items-center gap-2 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-default"
               >
                 <ChevronsUpDown className="w-3.5 h-3.5 text-accent shrink-0" />
-                <span className="flex-1">{t('editor.expandAll')}</span>
-                <kbd className="hidden sm:inline text-[10px] text-faint font-mono">{t('editor.expandAllShortcut')}</kbd>
+                <span className="flex-1 whitespace-nowrap">{t('editor.expandAll')}</span>
+                <kbd className="hidden sm:inline text-[10px] text-faint font-mono whitespace-nowrap">{t('editor.expandAllShortcut')}</kbd>
               </button>
+              <button
+                type="button"
+                role="menuitem"
+                disabled={!canCollapse}
+                onClick={() => {
+                  setShowActionsMenu(false);
+                  handleSetAllCollapsed(true);
+                }}
+                className="w-full min-h-[44px] sm:min-h-0 px-2.5 py-2 sm:py-1.5 rounded-btn enabled:hover:bg-panel-elevated text-left text-main font-medium flex items-center gap-2 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-default"
+              >
+                <ChevronsDownUp className="w-3.5 h-3.5 text-accent shrink-0" />
+                <span className="flex-1 whitespace-nowrap">{t('editor.collapseAll')}</span>
+                <kbd className="hidden sm:inline text-[10px] text-faint font-mono whitespace-nowrap">{t('editor.collapseAllShortcut')}</kbd>
+              </button>
+              </>
             )}
+
+            {/* Switch for all notes in this browser; the menu stays open so the change can be seen */}
+            <div
+              onClick={() => toggleGuides(!guidesOn)}
+              className="w-full min-h-[44px] sm:min-h-0 px-2.5 py-2 sm:py-1 rounded-btn hover:bg-panel-elevated text-left text-main font-medium flex items-center gap-2 transition-colors cursor-pointer"
+            >
+              <ListTree className="w-3.5 h-3.5 text-accent shrink-0" />
+              <span className="flex-1 whitespace-nowrap">{t('editor.bulletGuides')}</span>
+              <span onClick={(e) => e.stopPropagation()} className="flex">
+                <ToggleSwitch checked={guidesOn} onChange={toggleGuides} title={t('editor.bulletGuides')} />
+              </span>
+            </div>
 
             <button
               type="button"
@@ -1843,7 +1905,8 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
                     else handleUndo();
                     return;
                   }
-                  if (e.key === 'Enter' && !e.shiftKey) {
+                  // Tab after the title goes on into the text, like Enter (not to the first bullet's handle)
+                  if ((e.key === 'Enter' || e.key === 'Tab') && !e.shiftKey) {
                     e.preventDefault();
                     outlinerTreeRef.current?.focusFirstBlock();
                   }

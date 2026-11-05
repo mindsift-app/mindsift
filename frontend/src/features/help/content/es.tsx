@@ -628,6 +628,7 @@ const es: HelpContent = {
     { key: '↑ / ↓', scope: 'Outliner del Workspace', desc: 'Ir al bloque anterior / siguiente' },
     { key: 'Ctrl + L / Cmd + L', scope: 'Outliner del Workspace', desc: 'Insertar un enlace (nota, viñeta o enlace web); el texto seleccionado pasa a ser el texto del enlace' },
     { key: 'Ctrl + Mayús + ↓', scope: 'Outliner del Workspace', desc: 'Desplegar todas las viñetas plegadas de la nota' },
+    { key: 'Ctrl + Mayús + ↑', scope: 'Outliner del Workspace', desc: 'Plegar todas las viñetas de la nota (en el modo de enfoque, solo en la rama)' },
     { key: 'Ctrl + Z / Cmd + Z', scope: 'Outliner del Workspace', desc: 'Deshacer la última acción en notas' },
     { key: 'Ctrl + Y / Ctrl + Shift + Z', scope: 'Outliner del Workspace', desc: 'Rehacer una acción deshecha' },
     { key: 'Arrastrar el ratón sobre varios puntos', scope: 'Outliner del Workspace', desc: 'Seleccionar texto a través de varios puntos; Supr/Retroceso lo elimina, escribir lo reemplaza, Ctrl + C lo copia como Markdown (sangrías, tareas, encabezados)' },

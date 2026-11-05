@@ -213,6 +213,8 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
   const slashSearch = slashMatchInfo ? slashMatchInfo.query : null;
   const linkBeforeRef = useRef<string>('');
   const linkAfterRef = useRef<string>('');
+  // Where the cursor was when the link dialog opened; it goes back there when the dialog is closed
+  const linkCaretRef = useRef(0);
   const dictationBeforeRef = useRef<string>('');
   const dictationAfterRef = useRef<string>('');
   const slashMenuRef = useRef<HTMLDivElement | null>(null);
@@ -564,6 +566,7 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
     if (cmd.type === 'link') {
       linkBeforeRef.current = before;
       linkAfterRef.current = after;
+      linkCaretRef.current = Math.min(before.replace(/\s{2,}/g, ' ').trimStart().length, clean.length);
       setLocalContent(clean);
       localContentRef.current = clean;
       setShowLinkModal(true);
@@ -614,6 +617,21 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
     });
   };
 
+  // Back into the bullet after the dialog, so typing goes on (after the dialog has let go of the focus)
+  const refocusAfterLink = (pos: number) => {
+    window.setTimeout(() => {
+      const ta = textareaRef.current;
+      if (!ta) return;
+      ta.focus();
+      const p = Math.min(pos, ta.value.length);
+      ta.setSelectionRange(p, p);
+    }, 0);
+  };
+  const closeLinkModal = () => {
+    setShowLinkModal(false);
+    refocusAfterLink(linkCaretRef.current);
+  };
+
   const handleInsertLink = (linkMarkdown: string) => {
     setShowLinkModal(false);
     const b = linkBeforeRef.current ?? '';
@@ -625,6 +643,7 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
         setLocalContent(bareUrl);
         localContentRef.current = bareUrl;
         flushDebounce(bareUrl);
+        refocusAfterLink(bareUrl.length);
         return;
       }
     }
@@ -634,6 +653,7 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
     setLocalContent(newContent);
     localContentRef.current = newContent;
     flushDebounce(newContent);
+    refocusAfterLink(`${b}${spaceBefore}${linkMarkdown}${spaceAfter}`.trimStart().length);
   };
 
   const applyFormattingChange = (newVal: string, selStart: number, selEnd: number) => {
@@ -889,6 +909,10 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
 
       if (e.key.toLowerCase() === 'l') {
         if (!hasSelection) {
+          // The link goes in at the cursor (without these it replaced the whole text)
+          linkBeforeRef.current = text.slice(0, start);
+          linkAfterRef.current = text.slice(start);
+          linkCaretRef.current = start;
           setShowLinkModal(true);
           return;
         }
@@ -1198,6 +1222,9 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
         }
       }}
     >
+      {Array.from({ length: visualLevel }, (_, k) => (
+        <span key={k} aria-hidden="true" className="bullet-guide" style={{ left: `calc(var(--outline-indent) * ${k} + 28px)` }} />
+      ))}
       {/* Bullet Controls: Collapse Toggle & Bullet (Drag-Handle & Zoom) / Checkbox */}
       <div className="flex items-center gap-0.5 pt-1 select-none shrink-0">
         {hasChildren ? (
@@ -1846,7 +1873,7 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
       {showLinkModal && (
         <LinkModal
           isOpen={showLinkModal}
-          onClose={() => setShowLinkModal(false)}
+          onClose={closeLinkModal}
           onInsertLink={handleInsertLink}
         />
       )}

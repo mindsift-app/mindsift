@@ -67,7 +67,8 @@ export const FormSheet: React.FC<FormSheetProps> = ({
           }`}
       >
         <div className="w-10 h-1 bg-border rounded-full mx-auto sm:hidden" aria-hidden="true" />
-        <div className="flex items-center justify-between gap-2">
+        {/* The grip is hidden from sm on, but space-y still spaces the header from it */}
+        <div className="flex items-center justify-between gap-2 sm:!mt-0">
           <h3 className="text-sm font-semibold text-main flex items-center gap-1.5 min-w-0">
             {icon}
             <span className="truncate">{title}</span>

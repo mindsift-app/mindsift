@@ -13,6 +13,7 @@ import { User, Team, UnifiedShare } from '../lib/types';
 import { UserAutocomplete } from '../features/UserAutocomplete';
 import { UserAvatar } from './UserAvatar';
 import { isSharingDisabled } from '../lib/api';
+import { NO_AUTOFILL } from '../lib/noAutofill';
 
 export interface UnifiedShareModalProps {
   isOpen: boolean;
@@ -243,6 +244,7 @@ export const UnifiedShareModal: React.FC<UnifiedShareModalProps> = ({
                     onSelectUser={setSelectedUser}
                     excludeUserIds={excludedUserIds}
                     disabled={loading}
+                    {...NO_AUTOFILL}
                     placeholder={t('share.searchUser')}
                   />
                 </div>

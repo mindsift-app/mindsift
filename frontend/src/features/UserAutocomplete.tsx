@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Search, X, Check } from 'lucide-react';
 import { User } from '../lib/types';
 import { UserAvatar } from '../components/UserAvatar';
+import { NO_AUTOFILL } from '../lib/noAutofill';
 
 // Shared type-to-search for picking people (sharing, groups, task assignees). Nothing is listed until
 // something is typed, then at most MAX_RESULTS matches appear below the field. See Doku/ui-patterns.md.
@@ -149,6 +150,7 @@ export const UserAutocomplete: React.FC<UserAutocompleteProps> = ({
             }}
             onFocus={() => setIsOpen(true)}
             onKeyDown={handleKeyDown}
+            {...NO_AUTOFILL}
             placeholder={placeholder ?? t('userSearch.placeholder')}
             className="w-full h-11 sm:h-8 pl-8 pr-2.5 bg-input text-main border border-border rounded-btn focus:outline-none focus:border-accent text-base sm:text-xs placeholder:text-muted transition-colors disabled:opacity-50"
           />

@@ -2,6 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Check, Hash, Search, X } from 'lucide-react';
 import { TagSummary } from '../../lib/types';
+import { NO_AUTOFILL } from '../../lib/noAutofill';
 
 // What the tiles know about a hashtag: notes it occurs in and their open to-dos
 export type TagMeta = {
@@ -61,6 +62,7 @@ export function HashtagOverview({
                 type="text"
                 value={tagSearchQuery}
                 onChange={(e) => setTagSearchQuery(e.target.value)}
+                {...NO_AUTOFILL}
                 placeholder={t('hashtags.search')}
                 className="input-field w-full pl-8 pr-7 py-1.5 text-xs"
               />
