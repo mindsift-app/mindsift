@@ -103,8 +103,6 @@
     "chooseCommand": "Scegli comando",
     "noCommand": "Nessun comando trovato",
     "toText": "Converti in testo normale",
-    "taskOptions": "Opzioni attività",
-    "subtaskOfLinked": "Sottoattività di un'attività collegata",
     "createTaskFailed": "Creazione dell'attività avanzata non riuscita",
     "toTask": "Converti in attività avanzata",
     "unlinkFailed": "Rimozione del collegamento non riuscita",
@@ -113,7 +111,6 @@
     "extract": "Converti in nota indipendente (con tutti i sottopunti)",
     "pullBackTitle": "Recupera nota (i suoi punti torneranno qui, la nota andrà nel cestino)",
     "pullBack": "Recupera nota",
-    "zoom": "Ingrandisci questo ramo (modalità focus)",
     "delete": "Elimina blocco"
   },
   "trash": {

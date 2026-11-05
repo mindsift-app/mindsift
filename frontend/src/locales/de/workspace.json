@@ -103,8 +103,6 @@
     "chooseCommand": "Befehl auswählen",
     "noCommand": "Kein Befehl gefunden",
     "toText": "In normalen Text umwandeln",
-    "taskOptions": "Aufgaben-Optionen",
-    "subtaskOfLinked": "Unteraufgabe einer verknüpften Aufgabe",
     "createTaskFailed": "Fehler beim Erstellen der erweiterten Aufgabe",
     "toTask": "In erweiterte Aufgabe umwandeln",
     "unlinkFailed": "Fehler beim Aufheben der Verknüpfung",
@@ -113,7 +111,6 @@
     "extract": "In eigene Notiz umwandeln (mit allen Unterpunkten)",
     "pullBackTitle": "Notiz zurückholen (ihre Punkte kommen wieder hierher, die Notiz in den Papierkorb)",
     "pullBack": "Notiz zurückholen",
-    "zoom": "In diesen Ast hineinzoomen (Fokus-Modus)",
     "delete": "Block löschen"
   },
   "trash": {

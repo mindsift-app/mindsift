@@ -103,8 +103,6 @@
     "chooseCommand": "Elegir un comando",
     "noCommand": "No se encontró ningún comando",
     "toText": "Convertir en texto plano",
-    "taskOptions": "Opciones de la tarea",
-    "subtaskOfLinked": "Subtarea de una tarea vinculada",
     "createTaskFailed": "Error al crear la tarea ampliada",
     "toTask": "Convertir en tarea ampliada",
     "unlinkFailed": "Error al quitar el enlace",
@@ -113,7 +111,6 @@
     "extract": "Convertir en nota propia (con todos los subpuntos)",
     "pullBackTitle": "Recuperar la nota (sus puntos vuelven aquí y la nota va a la papelera)",
     "pullBack": "Recuperar nota",
-    "zoom": "Zoom a esta rama (modo de enfoque)",
     "delete": "Eliminar bloque"
   },
   "trash": {

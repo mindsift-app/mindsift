@@ -103,8 +103,6 @@
     "chooseCommand": "Choose a command",
     "noCommand": "No command found",
     "toText": "Turn into plain text",
-    "taskOptions": "Task options",
-    "subtaskOfLinked": "Subtask of a linked task",
     "createTaskFailed": "Creating the extended task failed",
     "toTask": "Turn into an extended task",
     "unlinkFailed": "Removing the link failed",
@@ -113,7 +111,6 @@
     "extract": "Turn into its own note (with all sub-bullets)",
     "pullBackTitle": "Pull the note back (its bullets come back here, the note goes to the trash)",
     "pullBack": "Pull note back",
-    "zoom": "Zoom into this branch (focus mode)",
     "delete": "Delete block"
   },
   "trash": {

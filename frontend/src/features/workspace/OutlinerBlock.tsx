@@ -4,9 +4,7 @@ import {
   ChevronDown,
   Check,
   CheckSquare,
-  X,
   Trash2,
-  MoreHorizontal,
   Code,
   Heading1,
   Heading2,
@@ -16,7 +14,6 @@ import {
   Minus,
   MessageSquare,
   ExternalLink,
-  Maximize2,
   Link as LinkIcon,
   Lock,
   AlertTriangle,
@@ -28,6 +25,7 @@ import {
   FileInput,
   Link2,
   Type,
+  Unlink,
 } from 'lucide-react';
 import { DocumentBlock, BlockType } from '../../lib/types';
 import { LinkModal } from './LinkModal';
@@ -216,7 +214,6 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
   const dictationBeforeRef = useRef<string>('');
   const dictationAfterRef = useRef<string>('');
   const slashMenuRef = useRef<HTMLDivElement | null>(null);
-  const todoMenuRef = useRef<HTMLDivElement | null>(null);
   const blurSlashTimerRef = useRef<number | null>(null);
   // Inline picker an empty bullet turns into after /image (local only, nothing synced until done)
   const [mediaPicker, setMediaPicker] = useState<'image' | 'audio' | 'dictation' | null>(null);
@@ -229,7 +226,6 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
   const [slashIndex, setSlashIndex] = useState(0);
   const slashItemRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const [showLinkModal, setShowLinkModal] = useState<boolean>(false);
-  const [showTodoMenu, setShowTodoMenu] = useState<boolean>(false);
 
   // Action bubble with a real pointer: shown only while the mouse moves over the row (until a moment after
   // the last move), while it rests on the bubble or a menu of it is open; a resting mouse must not leave it
@@ -409,20 +405,6 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
     };
   }, [slashMatchInfo]);
 
-  // Close todo menu on click outside
-  useEffect(() => {
-    if (!showTodoMenu) return;
-    const handleOutsideClick = (e: MouseEvent) => {
-      const target = e.target as Node | null;
-      if (todoMenuRef.current && !todoMenuRef.current.contains(target)) {
-        setShowTodoMenu(false);
-      }
-    };
-    document.addEventListener('mousedown', handleOutsideClick);
-    return () => {
-      document.removeEventListener('mousedown', handleOutsideClick);
-    };
-  }, [showTodoMenu]);
 
   const renderedTextRef = useRef<HTMLSpanElement | null>(null);
 
@@ -1164,7 +1146,7 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
     // showBubbleForTouch only sets state and the timer
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeFocus]);
-  const showBubble = hasHover ? pointerMoving || pointerOnBubble || showTodoMenu : activeFocus && (touchShown || showTodoMenu);
+  const showBubble = hasHover ? pointerMoving || pointerOnBubble : activeFocus && touchShown;
 
   return (
     <div
@@ -1273,7 +1255,9 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
                 ? 'bg-main scale-125'
                 : 'bg-faint group-hover/bullet:bg-accent group-hover/bullet:scale-125'
             } ${
-              isEmpty
+              // Empty rows and to-dos (their checkbox marks the row) show the dot only near the pointer;
+              // a collapsed to-do keeps it as the sign of hidden children, the focused one for tapping
+              isEmpty || (block.type === 'todo' && !activeFocus && !(block.collapsed && hasChildren))
                 ? 'opacity-0 group-hover:opacity-100 hover:opacity-100'
                 : 'opacity-100'
             }`}
@@ -1708,7 +1692,7 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
         </span>
       )}
 
-      {/* Floating Actions Overlay Bubble (zoom, extract, delete, to-do menu, block type) */}
+      {/* Floating Actions Overlay Bubble (block type, enhanced task, link, extract, delete) */}
       <div
         onMouseEnter={() => setPointerOnBubble(true)}
         onMouseLeave={() => setPointerOnBubble(false)}
@@ -1722,13 +1706,13 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
               'opacity-0 pointer-events-none focus-within:opacity-100 focus-within:pointer-events-auto'
         }`}
       >
-        {/* Convert back to bullet for headings, callouts, warnings, dividers, code and numbered items */}
-        {canEdit && ['callout', 'warning', 'error', 'h1', 'h2', 'h3', 'divider', 'code', 'numbered'].includes(block.type) && (
+        {/* Convert back to bullet for to-dos, headings, callouts, warnings, dividers, code and numbered items */}
+        {canEdit && ['todo', 'callout', 'warning', 'error', 'h1', 'h2', 'h3', 'divider', 'code', 'numbered'].includes(block.type) && (
           <button
             type="button"
             onClick={() => {
               refocusAfterTypeChangeRef.current = true;
-              flushDebounce(localContent, { type: 'bullet', checked: false });
+              flushDebounce(localContent, block.type === 'todo' ? { type: 'bullet', checked: false, taskId: '' } : { type: 'bullet', checked: false });
             }}
             className="p-1 sm:p-0.5 min-w-[28px] min-h-[28px] sm:min-w-0 sm:min-h-0 flex items-center justify-center text-faint hover:text-accent rounded-btn transition-colors cursor-pointer"
             title={t('block.toText')}
@@ -1737,97 +1721,59 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
           </button>
         )}
 
-        {/* To-Do 3-dots Menu */}
-        {block.type === 'todo' && canEdit && (
-          <div className="relative inline-flex items-center">
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                setShowTodoMenu((prev) => !prev);
-              }}
-              className="p-1 sm:p-0.5 min-w-[28px] min-h-[28px] sm:min-w-0 sm:min-h-0 flex items-center justify-center text-faint hover:text-accent rounded-btn transition-colors cursor-pointer"
-              title={t('block.taskOptions')}
-            >
-              <MoreHorizontal className="w-3.5 h-3.5" />
-            </button>
-            {showTodoMenu && (
-              <div
-                ref={todoMenuRef}
-                className="absolute right-0 top-full mt-1 bg-panel border border-border shadow-lg rounded-card p-1 z-30 w-52 text-xs"
-                onClick={(e) => e.stopPropagation()}
-              >
-                {block.subtaskOf && !block.taskId ? (
-                  <p className="px-2 py-1.5 text-faint">{t('block.subtaskOfLinked')}</p>
-                ) : !block.taskId ? (
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      setShowTodoMenu(false);
-                      try {
-                        const targetDocId = docId || block.documentId || block.docId || '';
-                        const thought = await api.createEnhancedTask(targetDocId, block.id, {
-                          content: localContent || 'Aufgabe',
-                          checked: Boolean(block.checked),
-                        });
-                        const updatedBlock: DocumentBlock = {
-                          ...latestBlockRef.current,
-                          content: localContent,
-                          taskId: thought.id,
-                          type: 'todo',
-                        };
-                        onUpdateBlockRef.current(updatedBlock, true);
-                        onOpenTask?.(thought.id);
-                      } catch (err: any) {
-                        showError(err.message || t('block.createTaskFailed'));
-                      }
-                    }}
-                    className="w-full text-left px-2 py-1.5 rounded-btn hover:bg-panel-elevated hover:text-accent flex items-center gap-1.5 text-main font-medium cursor-pointer"
-                  >
-                    <CheckSquare className="w-3.5 h-3.5 text-accent" />
-                    <span>{t('block.toTask')}</span>
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      setShowTodoMenu(false);
-                      try {
-                        if (block.taskId) {
-                          await api.unlinkEnhancedTask(block.taskId).catch(() => {});
-                        }
-                        const updatedBlock: DocumentBlock = {
-                          ...latestBlockRef.current,
-                          content: localContent,
-                          taskId: '',
-                          type: 'todo',
-                        };
-                        onUpdateBlockRef.current(updatedBlock, true);
-                      } catch (err: any) {
-                        showError(err.message || t('block.unlinkFailed'));
-                      }
-                    }}
-                    className="w-full text-left px-2 py-1.5 rounded-btn hover:bg-panel-elevated hover:text-status-warn flex items-center gap-1.5 text-main font-medium cursor-pointer"
-                  >
-                    <X className="w-3.5 h-3.5 text-status-warn" />
-                    <span>{t('block.unlink')}</span>
-                  </button>
-                )}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowTodoMenu(false);
-                    refocusAfterTypeChangeRef.current = true;
-                    flushDebounce(localContent, { type: 'bullet', checked: false, taskId: '' });
-                  }}
-                  className="w-full text-left px-2 py-1.5 rounded-btn hover:bg-panel-elevated hover:text-accent flex items-center gap-1.5 text-main font-medium cursor-pointer border-t border-border mt-0.5 pt-1.5"
-                >
-                  <Type className="w-3.5 h-3.5 text-accent" />
-                  <span>{t('block.toText')}</span>
-                </button>
-              </div>
-            )}
-          </div>
+        {/* To-do: turn it into an enhanced task, or undo the link of one */}
+        {block.type === 'todo' && canEdit && !block.taskId && !block.subtaskOf && (
+          <button
+            type="button"
+            onClick={async () => {
+              try {
+                const targetDocId = docId || block.documentId || block.docId || '';
+                const thought = await api.createEnhancedTask(targetDocId, block.id, {
+                  content: localContent || 'Aufgabe',
+                  checked: Boolean(block.checked),
+                });
+                const updatedBlock: DocumentBlock = {
+                  ...latestBlockRef.current,
+                  content: localContent,
+                  taskId: thought.id,
+                  type: 'todo',
+                };
+                onUpdateBlockRef.current(updatedBlock, true);
+                onOpenTask?.(thought.id);
+              } catch (err: any) {
+                showError(err.message || t('block.createTaskFailed'));
+              }
+            }}
+            className="p-1 sm:p-0.5 min-w-[28px] min-h-[28px] sm:min-w-0 sm:min-h-0 flex items-center justify-center text-faint hover:text-accent rounded-btn transition-colors cursor-pointer"
+            title={t('block.toTask')}
+            aria-label={t('block.toTask')}
+          >
+            <CheckSquare className="w-3.5 h-3.5" />
+          </button>
+        )}
+        {block.type === 'todo' && canEdit && block.taskId && (
+          <button
+            type="button"
+            onClick={async () => {
+              try {
+                await api.unlinkEnhancedTask(block.taskId!).catch(() => {});
+                const updatedBlock: DocumentBlock = {
+                  ...latestBlockRef.current,
+                  content: localContent,
+                  taskId: '',
+                  type: 'todo',
+                };
+                onUpdateBlockRef.current(updatedBlock, true);
+              } catch (err: any) {
+                showError(err.message || t('block.unlinkFailed'));
+              }
+            }}
+            className="p-1 sm:p-0.5 min-w-[28px] min-h-[28px] sm:min-w-0 sm:min-h-0 flex items-center justify-center text-faint hover:text-status-warn rounded-btn transition-colors cursor-pointer"
+            title={t('block.unlink')}
+            aria-label={t('block.unlink')}
+          >
+            <Unlink className="w-3.5 h-3.5" />
+          </button>
         )}
 
         {/* Link to this bullet */}
@@ -1865,18 +1811,6 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
             aria-label={t('block.pullBack')}
           >
             <FileInput className="w-3.5 h-3.5" />
-          </button>
-        )}
-
-        {/* Zoom / Focus button */}
-        {onZoomBlock && (
-          <button
-            type="button"
-            onClick={() => onZoomBlock(block.id)}
-            className="p-1 sm:p-0.5 min-w-[28px] min-h-[28px] sm:min-w-0 sm:min-h-0 flex items-center justify-center text-faint hover:text-accent rounded-btn transition-colors cursor-pointer"
-            title={t('block.zoom')}
-          >
-            <Maximize2 className="w-3.5 h-3.5" />
           </button>
         )}
 

@@ -103,8 +103,6 @@
     "chooseCommand": "Choisir une commande",
     "noCommand": "Aucune commande trouvée",
     "toText": "Convertir en texte simple",
-    "taskOptions": "Options de tâche",
-    "subtaskOfLinked": "Sous-tâche d'une tâche liée",
     "createTaskFailed": "Échec de la création de la tâche étendue",
     "toTask": "Convertir en tâche étendue",
     "unlinkFailed": "Échec de la dissociation",
@@ -113,7 +111,6 @@
     "extract": "Convertir en note autonome (avec toutes les sous-puces)",
     "pullBackTitle": "Réintégrer la note (ses puces reviennent ici, la note va dans la corbeille)",
     "pullBack": "Réintégrer la note",
-    "zoom": "Zoomer sur cette branche (mode focus)",
     "delete": "Supprimer le bloc"
   },
   "trash": {
