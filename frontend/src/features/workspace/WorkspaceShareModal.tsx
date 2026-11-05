@@ -89,9 +89,12 @@ export function useShareModal() {
 export function WorkspaceShareModal({
   share,
   currentUser,
+  onFolderChanged,
 }: {
   share: ReturnType<typeof useShareModal>;
   currentUser?: User | null;
+  // A share of the folder was added or removed, so the folder tree can show whether it is shared
+  onFolderChanged?: (sf: SharedFolder) => void;
 }) {
   const { shareModalDoc, setShareModalDoc, shareModalFolder, setShareModalFolder, setActiveDocShares, teams, collaborators, unifiedShares } = share;
   if (!shareModalDoc && !shareModalFolder) return null;
@@ -130,6 +133,7 @@ export function WorkspaceShareModal({
           });
           const updatedFolder = await api.getSharedFolder(shareModalFolder.id);
           setShareModalFolder(updatedFolder);
+          onFolderChanged?.(updatedFolder);
         }
       }}
       onRemoveShare={async (shareId) => {
@@ -141,6 +145,7 @@ export function WorkspaceShareModal({
           await api.deleteFolderShare(shareModalFolder.id, shareId);
           const updatedFolder = await api.getSharedFolder(shareModalFolder.id);
           setShareModalFolder(updatedFolder);
+          onFolderChanged?.(updatedFolder);
         }
       }}
     />

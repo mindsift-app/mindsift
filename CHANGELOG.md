@@ -6,6 +6,13 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.79.1] - 2026-11-05
+
+### Fixed
+- Notes: deleting a bullet with its children is one step again, so a single Ctrl+Z (or the undo button) brings the whole branch back instead of one child per press.
+- Notes: Ctrl+Z and Ctrl+Y also work when the cursor is not in a bullet, e.g. right after clicking a bullet's delete button, the undo button or empty space.
+- Notes: opening the sharing dialog of a folder without adding anyone no longer marks the folder, and the notes in it, as shared.
+
 ## [0.79.0] - 2026-11-04
 
 ### Added

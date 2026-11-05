@@ -2,6 +2,7 @@ import React from 'react';
 import { Folder, FolderOpen, FolderPlus, Plus, Trash2, Users } from 'lucide-react';
 import { SharedFolder } from '../../lib/types';
 import { FolderTreeNode, WorkspaceSubView } from './workspaceTypes';
+import { isFolderShared } from './workspaceListing';
 import { useTranslation } from 'react-i18next';
 
 interface FolderTreeItemProps {
@@ -98,7 +99,7 @@ export const FolderTreeItem: React.FC<FolderTreeItemProps> = ({
             <Folder className="w-3.5 h-3.5 text-accent shrink-0" />
           )}
           <span className="truncate">{node.name}</span>
-          {node.sharedFolderObj && (
+          {isFolderShared(node.sharedFolderObj) && (
             <Users className="w-3 h-3 text-status-ok shrink-0" />
           )}
         </button>
@@ -133,7 +134,7 @@ export const FolderTreeItem: React.FC<FolderTreeItemProps> = ({
               handleShareFolderClick(node.fullPath, node.sharedFolderObj);
             }}
             className={`p-1 h-6 w-6 flex items-center justify-center transition-colors cursor-pointer ${
-              node.sharedFolderObj ? 'text-accent' : 'text-faint hover:text-accent'
+              isFolderShared(node.sharedFolderObj) ? 'text-accent' : 'text-faint hover:text-accent'
             }`}
             title={t('folder.share')}
           >
