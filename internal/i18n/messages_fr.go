@@ -143,6 +143,7 @@ var messagesFR = map[string]string{
 	"Konto konnte nicht angelegt werden":                                                         "Le compte n’a pas pu être créé",
 	"Konto konnte nicht freigeschaltet werden":                                                   "Le compte n’a pas pu être validé",
 	"Liste nicht gefunden":                                                                       "Liste introuvable",
+	"Listeneintrag nicht gefunden":                                                               "Élément de liste introuvable",
 	"Liste nicht gefunden oder kein Zugriff":                                                     "Liste introuvable ou accès refusé",
 	"MCP ist auf diesem Server ausgeschaltet":                                                    "MCP est désactivé sur ce serveur",
 	"Methode nicht unterstützt":                                                                  "Méthode non prise en charge",

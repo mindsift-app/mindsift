@@ -150,27 +150,24 @@ export const LinkModal: React.FC<LinkModalProps> = ({
       return;
     }
     let cancelled = false;
+    const abort = new AbortController();
     setBlockHitsLoading(true);
     const timer = window.setTimeout(() => {
       api
-        .searchAll(q)
+        .searchAll(q, { type: 'document' }, abort.signal)
         .then((res) => {
           if (cancelled) return;
-          const docsById = new Map((res.documents || []).map((d) => [d.id, d]));
           const hits = (res.hits || [])
             .filter((h) => h.type === 'document' && h.blockId && h.docId)
             .slice(0, 8)
-            .map((h) => {
-              const block = docsById.get(h.docId!)?.blocks?.find((b) => b.id === h.blockId);
-              return {
-                docId: h.docId!,
-                blockId: h.blockId!,
-                title: h.title,
-                icon: h.icon,
-                snippet: h.snippet,
-                content: block?.content ?? h.snippet.replace(/<\/?mark>/g, ''),
-              };
-            });
+            .map((h) => ({
+              docId: h.docId!,
+              blockId: h.blockId!,
+              title: h.title,
+              icon: h.icon,
+              snippet: h.snippet,
+              content: h.content ?? h.snippet.replace(/<\/?mark>/g, ''),
+            }));
           setBlockHits(hits);
         })
         .catch(() => !cancelled && setBlockHits([]))
@@ -178,6 +175,7 @@ export const LinkModal: React.FC<LinkModalProps> = ({
     }, 250);
     return () => {
       cancelled = true;
+      abort.abort();
       window.clearTimeout(timer);
     };
   }, [search, isOpen, tab, pickDoc]);

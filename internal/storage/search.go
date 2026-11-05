@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -23,9 +24,10 @@ type SearchHit struct {
 	BlockID string  `json:"blockId,omitempty"`
 	ListID  string  `json:"listId,omitempty"`
 	Icon    string  `json:"icon,omitempty"`
-	// Bullets: the text of the bullet before and after, for context in the large search view
-	Before string `json:"before,omitempty"`
-	After  string `json:"after,omitempty"`
+	// Bullets: their raw text, and (with SearchOptions.Context) the text of the bullet before and after
+	Content string `json:"content,omitempty"`
+	Before  string `json:"before,omitempty"`
+	After   string `json:"after,omitempty"`
 }
 
 // SearchOptions narrow the global search; the zero value searches everything like before.
@@ -37,6 +39,9 @@ type SearchOptions struct {
 	Today                                 string // YYYY-MM-DD in the server's time zone, for Due
 	Folder                                string // notes in this folder or below
 	ListID, ItemStatus                    string // list items: list, open|done
+	// Context: text of the bullets before and after a bullet hit (large search view). It needs the note's
+	// block tree, so it is only loaded on request
+	Context bool
 }
 
 // errSkip marks a part of the search that was not asked for.
@@ -224,6 +229,11 @@ func (s *Store) SearchGlobal(userID, query string) (*SearchResults, error) {
 
 // Search is SearchGlobal with options: one kind only, more hits, filters per kind.
 func (s *Store) Search(userID, query string, opts SearchOptions) (*SearchResults, error) {
+	return s.SearchCtx(context.Background(), userID, query, opts)
+}
+
+// SearchCtx is Search with the request's context: a search the client has given up stops at once.
+func (s *Store) SearchCtx(ctx context.Context, userID, query string, opts SearchOptions) (*SearchResults, error) {
 	limit := opts.Limit
 	if limit <= 0 {
 		limit = 40
@@ -255,13 +265,14 @@ func (s *Store) Search(userID, query string, opts SearchOptions) (*SearchResults
 	var docRows *sql.Rows
 	var err error
 	if want("document") {
-		docRows, err = s.db.Query(`
+		docRows, err = s.db.QueryContext(ctx, `
 		SELECT f.doc_id, f.block_id,
 		       snippet(documents_fts, -1, '<mark>', '</mark>', '…', 14) AS snip,
 		       bm25(documents_fts, 10.0, 1.0) AS score,
-		       d.title, d.icon, d.user_id, d.is_archived
+		       d.title, d.icon, d.user_id, d.is_archived, COALESCE(b.content, '')
 		FROM documents_fts f
 		JOIN documents d ON d.id = f.doc_id
+		LEFT JOIN blocks b ON f.block_id != '' AND b.id = f.block_id AND b.document_id = f.doc_id
 		WHERE documents_fts MATCH ? AND d.is_archived = 0`+docWhere+`
 		ORDER BY score ASC
 		LIMIT `+strconv.Itoa(limit), docArgs...)
@@ -270,15 +281,15 @@ func (s *Store) Search(userID, query string, opts SearchOptions) (*SearchResults
 		// Read all rows first and close them: the access check and loading the note need connections of
 		// their own, and holding the rows' one meanwhile can use up the pool (deadlock under load)
 		type docRow struct {
-			docID, blockID, snip, title, icon string
-			score                             float64
+			docID, blockID, snip, title, icon, content string
+			score                                      float64
 		}
 		var found []docRow
 		for docRows.Next() {
 			var r docRow
 			var ownerID string
 			var isArchived int
-			if scanErr := docRows.Scan(&r.docID, &r.blockID, &r.snip, &r.score, &r.title, &r.icon, &ownerID, &isArchived); scanErr == nil {
+			if scanErr := docRows.Scan(&r.docID, &r.blockID, &r.snip, &r.score, &r.title, &r.icon, &ownerID, &isArchived, &r.content); scanErr == nil {
 				found = append(found, r)
 			}
 		}
@@ -312,13 +323,17 @@ func (s *Store) Search(userID, query string, opts SearchOptions) (*SearchResults
 				DocID:   r.docID,
 				BlockID: r.blockID,
 				Icon:    r.icon,
+				Content: r.content,
 			})
 
+			// Only what the results show: loading every hit note in full was most of the search's work
 			if !seenDocIDs[r.docID] {
 				seenDocIDs[r.docID] = true
-				if doc, err := s.GetDocumentByID(userID, r.docID); err == nil && doc != nil {
-					res.Documents = append(res.Documents, *doc)
-					docBlocks[r.docID] = doc.Blocks
+				res.Documents = append(res.Documents, domain.Document{ID: r.docID, Title: r.title, Icon: r.icon})
+				if opts.Context && r.blockID != "" {
+					if d, _, err := loadCollabDoc(connOrDB(ctx, s.db), r.docID); err == nil {
+						docBlocks[r.docID] = flatDocumentBlocks(r.docID, d)
+					}
 				}
 			}
 		}
@@ -379,7 +394,7 @@ func (s *Store) Search(userID, query string, opts SearchOptions) (*SearchResults
 	var thoughtRows *sql.Rows
 	err = errSkip
 	if want("thought") {
-		thoughtRows, err = s.db.Query(`
+		thoughtRows, err = s.db.QueryContext(ctx, `
 		SELECT f.thought_id,
 		       snippet(thoughts_fts, -1, '<mark>', '</mark>', '…', 14) AS snip,
 		       bm25(thoughts_fts, 5.0, 1.0, 1.0) AS score,
@@ -451,7 +466,7 @@ func (s *Store) Search(userID, query string, opts SearchOptions) (*SearchResults
 		itemWhere += ` AND li.is_completed = 1`
 	}
 	if want("list_item") && len(accessibleListIDs) > 0 {
-		itemRows, err := s.db.Query(`
+		itemRows, err := s.db.QueryContext(ctx, `
 			SELECT f.item_id, f.list_id,
 			       snippet(list_items_fts, -1, '<mark>', '</mark>', '…', 14) AS snip,
 			       bm25(list_items_fts, 2.0, 1.0) AS score,

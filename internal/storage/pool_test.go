@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"errors"
 	"path/filepath"
 	"testing"
 	"time"
@@ -78,4 +79,57 @@ func TestQueriesNeedOnlyOneConnection(t *testing.T) {
 			t.Errorf("GetTaskLists: want the list with its columns, got %v, %+v", err, tls)
 		}
 	})
+}
+
+// The search only returns what the results show: bullet text in the hit, light note entries, and the
+// neighbouring bullets only when asked for (loading every hit note in full was most of its work).
+func TestSearchContextOnlyOnRequest(t *testing.T) {
+	store, err := NewStore(filepath.Join(t.TempDir(), "search.db"))
+	if err != nil {
+		t.Fatalf("NewStore: %v", err)
+	}
+	defer store.Close()
+	anna, _ := store.CreateUser("anna@example.com", "hash", "Anna", "member")
+	blocks := []domain.DocumentBlock{
+		{ID: "b1", Type: "bullet", Content: "Davor"},
+		{ID: "b2", Type: "bullet", Content: "Das **Gewürzregal** aufräumen"},
+		{ID: "b3", Type: "bullet", Content: "Danach"},
+	}
+	_, _ = store.CreateDocument(anna.ID, "", "Küche", "🍳", "", blocks, nil, false)
+
+	res, err := store.Search(anna.ID, "Gewürzregal", SearchOptions{})
+	if err != nil || len(res.Hits) == 0 {
+		t.Fatalf("search: %v, %+v", err, res)
+	}
+	h := res.Hits[0]
+	if h.Content != "Das **Gewürzregal** aufräumen" || h.Before != "" || h.After != "" {
+		t.Errorf("without context: want the raw bullet text and no neighbours, got %+v", h)
+	}
+	if len(res.Documents) != 1 || res.Documents[0].Title != "Küche" || res.Documents[0].Icon != "🍳" || len(res.Documents[0].Blocks) != 0 {
+		t.Errorf("documents: want a light entry, got %+v", res.Documents)
+	}
+	res, _ = store.Search(anna.ID, "Gewürzregal", SearchOptions{Context: true})
+	if h := res.Hits[0]; h.Before != "Davor" || h.After != "Danach" {
+		t.Errorf("with context: want the neighbours, got %+v", h)
+	}
+}
+
+// Ticking an item someone else deleted meanwhile: "not found" (404), not the raw SQL error.
+func TestListItemGoneIsNotFound(t *testing.T) {
+	store, err := NewStore(filepath.Join(t.TempDir(), "items.db"))
+	if err != nil {
+		t.Fatalf("NewStore: %v", err)
+	}
+	defer store.Close()
+	anna, _ := store.CreateUser("anna@example.com", "hash", "Anna", "member")
+	list, _ := store.CreateList(anna.ID, "Einkauf", "", "shopping")
+	item, _ := store.CreateListItem(list.ID, "Milch", "", "", 0, anna.ID)
+	_, _ = store.DeleteListItem(item.ID)
+	if _, err := store.ToggleListItem(item.ID, true, anna.ID, "Anna"); !errors.Is(err, ErrListItemNotFound) {
+		t.Errorf("toggle: want ErrListItemNotFound, got %v", err)
+	}
+	text := "Hafermilch"
+	if _, err := store.UpdateListItem(item.ID, &text, nil, nil); !errors.Is(err, ErrListItemNotFound) {
+		t.Errorf("update: want ErrListItemNotFound, got %v", err)
+	}
 }

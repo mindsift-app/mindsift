@@ -83,6 +83,11 @@ export async function request<T>(path: string, options: RequestInit = {}): Promi
 
   const controller = new AbortController();
   const timeoutId = window.setTimeout(() => controller.abort(), 12000);
+  // The caller can abort too (e.g. a newer search makes this one pointless)
+  if (options.signal) {
+    if (options.signal.aborted) controller.abort();
+    else options.signal.addEventListener('abort', () => controller.abort(), { once: true });
+  }
 
   let res: Response;
   try {

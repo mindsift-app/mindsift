@@ -134,6 +134,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
     const out: SearchFilter = { limit };
     if (kind !== 'all') out.type = kind;
     if (!expanded) return out;
+    out.context = 1; // the large view shows the bullets around a hit
     if (kind === 'thought') {
       out.taskStatus = filter.taskStatus;
       out.taskListId = filter.taskListId;
@@ -148,11 +149,15 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
     return out;
   }, [kind, expanded, filter]);
 
-  // 150ms debounce search
+  // Searches after a short pause in typing (250 ms, about the gap between two keystrokes), and a newer
+  // search aborts the one still running: the server stops working on it, and its late answer cannot
+  // replace the newer one
+  const searchAbortRef = useRef<AbortController | null>(null);
   useEffect(() => {
     if (debounceTimerRef.current !== null) {
       window.clearTimeout(debounceTimerRef.current);
     }
+    searchAbortRef.current?.abort();
 
     const trimmed = query.trim();
     if (!trimmed) {
@@ -164,14 +169,17 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
 
     setLoading(true);
     debounceTimerRef.current = window.setTimeout(async () => {
+      const abort = new AbortController();
+      searchAbortRef.current = abort;
       try {
         const countLimit = expanded ? LIMIT_LARGE : LIMIT_ALL;
         // Narrowed to one kind: the chips still need the numbers of all kinds for this text
         const needCounts = kind !== 'all' && (counts.query !== trimmed || counts.limit !== countLimit);
         const [res, all] = await Promise.all([
-          api.searchAll(trimmed, activeFilter),
-          needCounts ? api.searchAll(trimmed, { limit: countLimit }) : Promise.resolve(null),
+          api.searchAll(trimmed, activeFilter, abort.signal),
+          needCounts ? api.searchAll(trimmed, { limit: countLimit }, abort.signal) : Promise.resolve(null),
         ]);
+        if (abort.signal.aborted) return;
         setHits(res.hits || []);
         setThoughts(res.thoughts || []);
         setListItems(res.listItems || []);
@@ -179,11 +187,11 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
         else if (all) setCounts({ query: trimmed, limit: countLimit, values: all.counts || {} });
         setSelectedIndex(0);
       } catch {
-        setHits([]);
+        if (!abort.signal.aborted) setHits([]);
       } finally {
-        setLoading(false);
+        if (!abort.signal.aborted) setLoading(false);
       }
-    }, 150);
+    }, 250);
 
     return () => {
       if (debounceTimerRef.current !== null) {

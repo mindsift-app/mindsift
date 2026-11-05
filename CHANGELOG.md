@@ -6,6 +6,15 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.83.4] - 2026-11-05
+
+### Changed
+- Search is about four times faster on the server: it no longer loads every matching note in full. **Attention** (API): `documents` in `/search` now holds only `id`, `title` and `icon`; bullet matches carry their text in `content`, and `before`/`after` come only with `context=1`.
+- The search waits for a short pause in typing and cancels a search that a newer one has replaced, so the server stops working on it.
+
+### Fixed
+- Ticking or editing a list item that someone else had just deleted answered with the raw database error (400) instead of "List item not found" (404).
+
 ## [0.83.3] - 2026-11-05
 
 ### Fixed

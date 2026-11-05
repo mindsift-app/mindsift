@@ -98,12 +98,13 @@ export const dataApi = {
     });
   },
 
-  async searchAll(q: string, filter: SearchFilter = {}): Promise<SearchResults> {
+  // signal: a newer search aborts this one, so the server stops working on it
+  async searchAll(q: string, filter: SearchFilter = {}, signal?: AbortSignal): Promise<SearchResults> {
     const params = new URLSearchParams({ q });
     for (const [k, v] of Object.entries(filter)) {
       if (v !== undefined && v !== '') params.set(k, String(v));
     }
-    return request<SearchResults>(`/api/v1/search?${params.toString()}`);
+    return request<SearchResults>(`/api/v1/search?${params.toString()}`, { signal });
   },
 
   async exportAll(): Promise<any> {

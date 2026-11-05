@@ -143,6 +143,7 @@ var messagesEN = map[string]string{
 	"Konto konnte nicht angelegt werden":                                                         "The account could not be created",
 	"Konto konnte nicht freigeschaltet werden":                                                   "The account could not be approved",
 	"Liste nicht gefunden":                                                                       "List not found",
+	"Listeneintrag nicht gefunden":                                                               "List item not found",
 	"Liste nicht gefunden oder kein Zugriff":                                                     "List not found or no access",
 	"MCP ist auf diesem Server ausgeschaltet":                                                    "MCP is switched off on this server",
 	"Methode nicht unterstützt":                                                                  "Method not supported",

@@ -143,6 +143,7 @@ var messagesES = map[string]string{
 	"Konto konnte nicht angelegt werden":                                                         "No se pudo crear la cuenta",
 	"Konto konnte nicht freigeschaltet werden":                                                   "No se pudo aprobar la cuenta",
 	"Liste nicht gefunden":                                                                       "Lista no encontrada",
+	"Listeneintrag nicht gefunden":                                                               "Elemento de la lista no encontrado",
 	"Liste nicht gefunden oder kein Zugriff":                                                     "Lista no encontrada o sin acceso",
 	"MCP ist auf diesem Server ausgeschaltet":                                                    "MCP está desactivado en este servidor",
 	"Methode nicht unterstützt":                                                                  "Método no admitido",
