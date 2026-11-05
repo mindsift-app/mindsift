@@ -6,6 +6,13 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.83.3] - 2026-11-05
+
+### Fixed
+- Notes with many people typing at once: opening the note no longer waits until all pending changes are written, and checking for new changes no longer queues behind every write of the whole server (both read a consistent state of the database without its write lock).
+- The server drops sync requests the client has already given up (timeout, page closed) instead of working them off long after; unsent changes are resent by the client and applied once.
+- A note deleted while someone was editing it answered the next sync with a server error (500) instead of "not found" (404).
+
 ## [0.83.2] - 2026-11-05
 
 ### Fixed

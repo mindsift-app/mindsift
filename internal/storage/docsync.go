@@ -1,7 +1,9 @@
 package storage
 
 import (
+	"context"
 	"database/sql"
+	"database/sql/driver"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -57,13 +59,67 @@ type DocSnapshot struct {
 	Blocks       []collab.Block `json:"blocks"`
 }
 
-var docLocks sync.Map // docID -> *sync.Mutex
+// One writer per note at a time. A channel instead of a mutex, so a request whose client has gone can
+// stop waiting (lockDocCtx) instead of queueing up behind everyone else.
+var docLocks sync.Map // docID -> chan struct{} (capacity 1)
+
+func docLock(docID string) chan struct{} {
+	if ch, ok := docLocks.Load(docID); ok {
+		return ch.(chan struct{})
+	}
+	ch, _ := docLocks.LoadOrStore(docID, make(chan struct{}, 1))
+	return ch.(chan struct{})
+}
 
 func lockDoc(docID string) func() {
-	m, _ := docLocks.LoadOrStore(docID, &sync.Mutex{})
-	mu := m.(*sync.Mutex)
-	mu.Lock()
-	return mu.Unlock
+	ch := docLock(docID)
+	ch <- struct{}{}
+	return func() { <-ch }
+}
+
+// lockDocCtx is lockDoc that gives up with ctx.Err() when ctx ends (e.g. the client closed the request).
+func lockDocCtx(ctx context.Context, docID string) (func(), error) {
+	ch := docLock(docID)
+	select {
+	case ch <- struct{}{}:
+		return func() { <-ch }, nil
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	}
+}
+
+// readConsistent runs fn on one connection inside a deferred transaction. In WAL mode that is one
+// consistent view of the database that neither waits for nor blocks writers. s.db.Begin would take the
+// write lock right away (_txlock=immediate), so every reader would queue behind every write.
+func (s *Store) readConsistent(ctx context.Context, fn func(q docQueryer) error) error {
+	conn, err := s.db.Conn(ctx)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+	if _, err := conn.ExecContext(ctx, "BEGIN"); err != nil {
+		return err
+	}
+	fnErr := fn(connQueryer{ctx: ctx, c: conn})
+	if _, err := conn.ExecContext(context.Background(), "ROLLBACK"); err != nil {
+		// Never hand a connection with an open transaction back to the pool
+		_ = conn.Raw(func(any) error { return driver.ErrBadConn })
+	}
+	return fnErr
+}
+
+// connQueryer runs the docQueryer calls on one connection with a context.
+type connQueryer struct {
+	ctx context.Context
+	c   *sql.Conn
+}
+
+func (q connQueryer) QueryRow(query string, args ...interface{}) *sql.Row {
+	return q.c.QueryRowContext(q.ctx, query, args...)
+}
+
+func (q connQueryer) Query(query string, args ...interface{}) (*sql.Rows, error) {
+	return q.c.QueryContext(q.ctx, query, args...)
 }
 
 type docQueryer interface {
@@ -252,15 +308,28 @@ func boolInt(b bool) int {
 // ApplyDocOps applies client operations to a note. Operations whose opId was already processed return
 // the stored result without being applied again, so clients can safely resend after lost responses.
 func (s *Store) ApplyDocOps(docID string, a collab.Actor, ops []collab.Op, leases collab.LeaseView) ([]collab.Result, int64, error) {
-	return s.applyDocChange(docID, a, leases, func(*collab.Doc) []collab.Op { return ops })
+	return s.ApplyDocOpsCtx(context.Background(), docID, a, ops, leases)
+}
+
+// ApplyDocOpsCtx is ApplyDocOps that stops waiting for the note (and the database) when ctx ends; the
+// client resends its operations, and their opIds keep them from being applied twice.
+func (s *Store) ApplyDocOpsCtx(ctx context.Context, docID string, a collab.Actor, ops []collab.Op, leases collab.LeaseView) ([]collab.Result, int64, error) {
+	return s.applyDocChangeCtx(ctx, docID, a, leases, func(*collab.Doc) []collab.Op { return ops })
 }
 
 // applyDocChange builds operations from the current state (under the document lock) and applies them.
 func (s *Store) applyDocChange(docID string, a collab.Actor, leases collab.LeaseView, build func(*collab.Doc) []collab.Op) ([]collab.Result, int64, error) {
-	unlock := lockDoc(docID)
+	return s.applyDocChangeCtx(context.Background(), docID, a, leases, build)
+}
+
+func (s *Store) applyDocChangeCtx(ctx context.Context, docID string, a collab.Actor, leases collab.LeaseView, build func(*collab.Doc) []collab.Op) ([]collab.Result, int64, error) {
+	unlock, err := lockDocCtx(ctx, docID)
+	if err != nil {
+		return nil, 0, err
+	}
 	defer unlock()
 
-	tx, err := s.db.Begin()
+	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -453,46 +522,71 @@ func (s *Store) GetThoughtByIDUnchecked(thoughtID string) (*domain.Thought, erro
 // GetDocOpsSince returns up to limit log entries after seq, plus the current head. If entries after seq
 // were already compacted away it returns ErrLogCompacted (with the head): the client must reload the snapshot.
 func (s *Store) GetDocOpsSince(docID string, since int64, limit int) ([]DocLogEntry, int64, error) {
-	// One read transaction, so a compaction running in between cannot leave an unnoticed gap
-	tx, err := s.db.Begin()
+	return s.GetDocOpsSinceCtx(context.Background(), docID, since, limit)
+}
+
+// GetDocOpsSinceCtx is GetDocOpsSince with a context (the request's: it stops when the client has gone).
+// A missing note gives ErrDocNotFound.
+func (s *Store) GetDocOpsSinceCtx(ctx context.Context, docID string, since int64, limit int) ([]DocLogEntry, int64, error) {
+	var out []DocLogEntry
+	var head int64
+	// One consistent read, so a compaction running in between cannot leave an unnoticed gap
+	err := s.readConsistent(ctx, func(q docQueryer) error {
+		var floor int64
+		if err := q.QueryRow(`SELECT head_seq, log_floor FROM documents WHERE id = ?`, docID).Scan(&head, &floor); err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return ErrDocNotFound
+			}
+			return err
+		}
+		if limit > 0 && since < floor {
+			return ErrLogCompacted
+		}
+		rows, err := q.Query(
+			`SELECT seq, op_id, user_id, client_id, payload FROM doc_ops WHERE doc_id = ? AND seq > ? ORDER BY seq ASC LIMIT ?`,
+			docID, since, limit)
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+		out = make([]DocLogEntry, 0)
+		for rows.Next() {
+			var e DocLogEntry
+			var payload string
+			if err := rows.Scan(&e.Seq, &e.OpID, &e.UserID, &e.ClientID, &payload); err != nil {
+				return err
+			}
+			if err := json.Unmarshal([]byte(payload), &e.Effect); err != nil {
+				return fmt.Errorf("log entry %d unreadable: %w", e.Seq, err)
+			}
+			out = append(out, e)
+		}
+		return rows.Err()
+	})
+	if errors.Is(err, ErrLogCompacted) {
+		return nil, head, err
+	}
 	if err != nil {
 		return nil, 0, err
 	}
-	defer tx.Rollback()
-	var head, floor int64
-	if err := tx.QueryRow(`SELECT head_seq, log_floor FROM documents WHERE id = ?`, docID).Scan(&head, &floor); err != nil {
-		return nil, 0, err
-	}
-	if limit > 0 && since < floor {
-		return nil, head, ErrLogCompacted
-	}
-	rows, err := tx.Query(
-		`SELECT seq, op_id, user_id, client_id, payload FROM doc_ops WHERE doc_id = ? AND seq > ? ORDER BY seq ASC LIMIT ?`,
-		docID, since, limit)
-	if err != nil {
-		return nil, 0, err
-	}
-	defer rows.Close()
-	out := make([]DocLogEntry, 0)
-	for rows.Next() {
-		var e DocLogEntry
-		var payload string
-		if err := rows.Scan(&e.Seq, &e.OpID, &e.UserID, &e.ClientID, &payload); err != nil {
-			return nil, 0, err
-		}
-		if err := json.Unmarshal([]byte(payload), &e.Effect); err != nil {
-			return nil, 0, fmt.Errorf("log entry %d unreadable: %w", e.Seq, err)
-		}
-		out = append(out, e)
-	}
-	return out, head, rows.Err()
+	return out, head, nil
 }
 
 // GetDocSnapshot returns the full block tree (including tombstones) and the log position it corresponds to.
 func (s *Store) GetDocSnapshot(docID string) (*DocSnapshot, error) {
-	unlock := lockDoc(docID)
-	defer unlock()
-	d, head, err := loadCollabDoc(s.db, docID)
+	return s.GetDocSnapshotCtx(context.Background(), docID)
+}
+
+// GetDocSnapshotCtx reads the note in one consistent read, without the note's write lock: opening a note
+// no longer waits behind everyone typing in it.
+func (s *Store) GetDocSnapshotCtx(ctx context.Context, docID string) (*DocSnapshot, error) {
+	var d *collab.Doc
+	var head int64
+	err := s.readConsistent(ctx, func(q docQueryer) error {
+		var err error
+		d, head, err = loadCollabDoc(q, docID)
+		return err
+	})
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrDocNotFound
