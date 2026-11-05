@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback, useMemo, useSyncExtern
 import { createPortal } from 'react-dom';
 import { buildBlockLink } from '../../lib/wikiLink';
 import { MOVE_BRANCH_EVENT } from './moveBranchEvent';
+import { onDocFocusRequest, takeDocFocus } from '../../lib/docFocusRequest';
 import {
   Pin,
   Users,
@@ -15,6 +16,7 @@ import {
   Lock,
   Home,
   ChevronRight,
+  ChevronsUpDown,
   Minimize2,
   Plus,
   Check,
@@ -645,6 +647,23 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
     [blocks, title, doc?.title, showNotice]
   );
 
+  // Opened from the search: cursor at the end of the first bullet, so one ArrowDown goes on to the next
+  // (lib/docFocusRequest.ts). A short delay, so the closing search does not take the focus along.
+  useEffect(() => {
+    if (embedded || loading) return;
+    let timer = 0;
+    const take = () => {
+      if (!takeDocFocus(docId)) return;
+      timer = window.setTimeout(() => outlinerTreeRef.current?.focusFirstBlock(), 30);
+    };
+    take();
+    const off = onDocFocusRequest(take);
+    return () => {
+      off();
+      window.clearTimeout(timer);
+    };
+  }, [docId, embedded, loading]);
+
   // A link pointed to a bullet that is gone (moved, extracted, deleted): the note opens with a hint
   const blocksForTargetRef = useRef(blocks);
   blocksForTargetRef.current = blocks;
@@ -691,7 +710,8 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
     const info = lastExtractRef.current;
     if (!info) return;
     const block = currentBlocksRef.current.find((b) => b.id === info.blockId);
-    if (block && block.content === info.link) return; // the undone step was something else
+    // The undone step was something else: the link (or, without one, the gap of the branch) is still there
+    if (info.link ? block?.content === info.link : !block) return;
     lastExtractRef.current = null;
     api
       .undoExtract(info.newDocId)
@@ -762,8 +782,9 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
 
   // A bullet with its children becomes a note of its own. The server only creates the note; the branch
   // is replaced here as an ordinary own edit, so it shows at once, syncs like typing and Strg+Z works.
+  // withLink false (dragged onto the "new note" button): the branch just leaves, like a move.
   const handleExtractBlock = useCallback(
-    async (blockId: string) => {
+    async (blockId: string, withLink = true) => {
       const engine = engineRef.current;
       if (!engine) return;
       try {
@@ -777,12 +798,16 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
           const level = prev[i].level || 0;
           let end = i + 1;
           while (end < prev.length && (prev[end].level || 0) > level) end++;
-          applyLocalBlocks([...prev.slice(0, i), { ...prev[i], content: link }, ...prev.slice(end)]);
+          applyLocalBlocks(
+            withLink
+              ? [...prev.slice(0, i), { ...prev[i], content: link }, ...prev.slice(end)]
+              : ensureNonEmptyBlocks(docId, [...prev.slice(0, i), ...prev.slice(end)])
+          );
         }
         lastInlineRef.current = null;
-        lastExtractRef.current = { newDocId: created.id, blockId, link };
+        lastExtractRef.current = { newDocId: created.id, blockId, link: withLink ? link : '' };
         onDocCreated?.(created);
-        showNotice(i18n.t('workspace:editor.extracted', { title: created.title }), [
+        showNotice(i18n.t(withLink ? 'workspace:editor.extracted' : 'workspace:editor.moved', { title: created.title }), [
           { label: i18n.t('workspace:editor.open'), run: () => onOpenDocBlock?.(created.id) },
           { label: i18n.t('common:sync.undo'), run: () => handleUndo() },
         ]);
@@ -837,11 +862,14 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
   // A bullet dragged out of this note onto another note in the sidebar (useDocDragDrop)
   const handleMoveBranchRef = useRef(handleMoveBranch);
   handleMoveBranchRef.current = handleMoveBranch;
+  const handleExtractBlockRef = useRef(handleExtractBlock);
+  handleExtractBlockRef.current = handleExtractBlock;
   useEffect(() => {
     const onMove = (e: Event) => {
       const { docId: from, blockId, targetId, targetTitle } = (e as CustomEvent).detail || {};
       if (from !== docId || embedded) return;
-      void handleMoveBranchRef.current(blockId, { id: targetId, title: targetTitle }, false);
+      if (!targetId) void handleExtractBlockRef.current(blockId, false);
+      else void handleMoveBranchRef.current(blockId, { id: targetId, title: targetTitle }, false);
     };
     window.addEventListener(MOVE_BRANCH_EVENT, onMove);
     return () => window.removeEventListener(MOVE_BRANCH_EVENT, onMove);
@@ -1391,6 +1419,22 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
                 )}
                 <span className="flex-1">{focusMode ? t('editor.exitFocusTitle') : t('editor.startFocusTitle')}</span>
                 <kbd className="hidden sm:inline text-[10px] text-faint font-mono">{t('editor.focusShortcut')}</kbd>
+              </button>
+            )}
+
+            {/* One edit for all bullets, so a single Strg+Z folds them back */}
+            {canEdit && !inTrash && blocks.some((b) => b.collapsed) && (
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setShowActionsMenu(false);
+                  applyLocalBlocks((prev) => prev.map((b) => (b.collapsed ? { ...b, collapsed: false } : b)));
+                }}
+                className="w-full min-h-[44px] sm:min-h-0 px-2.5 py-2 sm:py-1.5 rounded-btn hover:bg-panel-elevated text-left text-main font-medium flex items-center gap-2 transition-colors cursor-pointer"
+              >
+                <ChevronsUpDown className="w-3.5 h-3.5 text-accent shrink-0" />
+                <span>{t('editor.expandAll')}</span>
               </button>
             )}
 

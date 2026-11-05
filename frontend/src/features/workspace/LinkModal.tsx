@@ -186,6 +186,60 @@ export const LinkModal: React.FC<LinkModalProps> = ({
     onInsertLink(`[[${noteTitle}]]`);
   };
 
+  // Arrow keys move through the list under the search field, Enter inserts the marked entry. In the list
+  // of notes, ArrowRight (caret at the end) opens the bullets of the marked note; ArrowLeft in an empty
+  // bullet filter goes back.
+  const [active, setActive] = useState(0);
+  const listRef = useRef<HTMLDivElement | null>(null);
+  const blockSearchInputRef = useRef<HTMLInputElement | null>(null);
+  const entryCount = pickDoc ? pickableBlocks.length : filteredDocs.length + blockHits.length;
+  useEffect(() => setActive(0), [search, blockSearch, pickDoc, tab]);
+  useEffect(() => {
+    if (active >= entryCount && entryCount > 0) setActive(entryCount - 1);
+  }, [active, entryCount]);
+  useEffect(() => {
+    listRef.current?.querySelector('[data-link-active="true"]')?.scrollIntoView({ block: 'nearest' });
+  }, [active, pickDoc]);
+  useEffect(() => {
+    if (pickDoc) blockSearchInputRef.current?.focus();
+    else if (isOpen && tab === 'note') searchInputRef.current?.focus();
+  }, [pickDoc, isOpen, tab]);
+
+  const chooseActive = () => {
+    if (pickDoc) {
+      const b = pickableBlocks[active];
+      if (b) onInsertLink(buildBlockLink(pickDoc.title || t('link.note'), b.id, b.content));
+      return;
+    }
+    if (active < filteredDocs.length) {
+      handleSelectNote(filteredDocs[active]);
+      return;
+    }
+    const h = blockHits[active - filteredDocs.length];
+    if (h) onInsertLink(buildBlockLink(h.title || t('link.note'), h.blockId, h.content));
+  };
+
+  const handleListKeys = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.nativeEvent.isComposing) return;
+    const input = e.currentTarget;
+    const caretAtEnd = input.selectionStart === input.value.length && input.selectionEnd === input.value.length;
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (entryCount === 0) return;
+      const step = e.key === 'ArrowDown' ? 1 : -1;
+      setActive((i) => (i + step + entryCount) % entryCount);
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      chooseActive();
+    } else if (e.key === 'ArrowRight' && !pickDoc && caretAtEnd && active < filteredDocs.length) {
+      e.preventDefault();
+      openBlockPicker(filteredDocs[active]);
+    } else if (e.key === 'ArrowLeft' && pickDoc && input.value === '') {
+      e.preventDefault();
+      setPickDoc(null);
+    }
+  };
+
   const handleWebLinkSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     let url = webUrl.trim();
@@ -270,6 +324,7 @@ export const LinkModal: React.FC<LinkModalProps> = ({
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
+                onKeyDown={handleListKeys}
                 placeholder={t('link.searchNote')}
                 className="input-field bg-panel h-8 pl-8 pr-2.5 text-xs w-full text-main placeholder:text-muted"
               />
@@ -343,14 +398,16 @@ export const LinkModal: React.FC<LinkModalProps> = ({
               </span>
             </div>
             <input
+              ref={blockSearchInputRef}
               type="text"
               value={blockSearch}
               onChange={(e) => setBlockSearch(e.target.value)}
+              onKeyDown={handleListKeys}
               placeholder={t('link.filterBlocks')}
               className="input-field w-full h-11 sm:h-8 px-2.5 text-xs"
               aria-label={t('link.filterBlocksLabel')}
             />
-            <div className="space-y-0.5 max-h-64 overflow-y-auto pr-0.5">
+            <div ref={pickDoc ? listRef : undefined} className="space-y-0.5 max-h-64 overflow-y-auto pr-0.5">
               {pickBlocks === null ? (
                 <div className="p-4 text-xs text-muted flex items-center gap-2 justify-center">
                   <Loader2 className="w-4 h-4 animate-spin text-accent" />
@@ -359,12 +416,16 @@ export const LinkModal: React.FC<LinkModalProps> = ({
               ) : pickableBlocks.length === 0 ? (
                 <div className="p-4 text-xs text-muted text-center">{t('link.noBlocks')}</div>
               ) : (
-                pickableBlocks.map((b) => (
+                pickableBlocks.map((b, i) => (
                   <button
                     key={b.id}
                     type="button"
+                    data-link-active={i === active}
+                    onMouseMove={() => i !== active && setActive(i)}
                     onClick={() => onInsertLink(buildBlockLink(pickDoc.title || t('link.note'), b.id, b.content))}
-                    className="w-full text-left min-h-[44px] sm:min-h-0 py-1.5 pr-2 rounded-btn text-xs text-main hover:bg-panel-elevated hover:text-accent flex items-start gap-1.5 cursor-pointer"
+                    className={`w-full text-left min-h-[44px] sm:min-h-0 py-1.5 pr-2 rounded-btn text-xs flex items-start gap-1.5 cursor-pointer ${
+                      i === active ? 'bg-panel-elevated text-accent' : 'text-main'
+                    }`}
                     style={{ paddingLeft: `${0.5 + Math.min(b.level || 0, 5) * 0.875}rem` }}
                   >
                     <span className="text-faint shrink-0">•</span>
@@ -378,7 +439,7 @@ export const LinkModal: React.FC<LinkModalProps> = ({
 
         {/* Note List Section (Matching Active Shares list in UnifiedShareModal) */}
         {tab === 'note' && !pickDoc && (
-          <div className="space-y-2">
+          <div ref={listRef} className="space-y-2">
             <div className="flex items-center justify-between text-xs font-semibold text-muted uppercase tracking-wider px-0.5">
               <span>{t('link.available')}</span>
               <span className="font-mono text-[11px] font-normal lowercase">
@@ -402,16 +463,20 @@ export const LinkModal: React.FC<LinkModalProps> = ({
                   </span>
                 </div>
               ) : (
-                filteredDocs.map((d) => (
+                filteredDocs.map((d, i) => (
                   <div
                     key={d.id}
+                    data-link-active={i === active}
+                    onMouseMove={() => i !== active && setActive(i)}
                     onClick={() => handleSelectNote(d)}
-                    className="flex items-center justify-between p-2.5 bg-canvas border border-border rounded-card hover:border-accent/60 transition-colors group cursor-pointer"
+                    className={`flex items-center justify-between p-2.5 bg-canvas border rounded-card transition-colors group cursor-pointer ${
+                      i === active ? 'border-accent' : 'border-border'
+                    }`}
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
                       {d.icon && <span className="text-base shrink-0">{d.icon}</span>}
                       <div className="min-w-0">
-                        <div className="text-xs font-semibold text-main truncate group-hover:text-accent">
+                        <div className={`text-xs font-semibold truncate ${i === active ? 'text-accent' : 'text-main'}`}>
                           {d.title || t('editor.untitled')}
                         </div>
                         {d.folderPath && (
@@ -436,7 +501,9 @@ export const LinkModal: React.FC<LinkModalProps> = ({
                       </button>
                       <button
                         type="button"
-                        className="btn-action text-xs h-7 px-2.5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 text-accent cursor-pointer"
+                        className={`btn-action text-xs h-7 px-2.5 transition-opacity flex items-center gap-1 text-accent cursor-pointer ${
+                          i === active ? 'opacity-100' : 'opacity-0'
+                        }`}
                       >
                         <span>{t('link.insert')}</span>
                         <ExternalLink className="w-3 h-3" />
@@ -455,12 +522,18 @@ export const LinkModal: React.FC<LinkModalProps> = ({
                   {blockHitsLoading && <Loader2 className="w-3.5 h-3.5 animate-spin text-accent" />}
                 </div>
                 <div className="space-y-1.5 max-h-56 overflow-y-auto pr-0.5">
-                  {blockHits.map((h) => (
+                  {blockHits.map((h, j) => {
+                    const i = filteredDocs.length + j;
+                    return (
                     <button
                       key={`${h.docId}:${h.blockId}`}
                       type="button"
+                      data-link-active={i === active}
+                      onMouseMove={() => i !== active && setActive(i)}
                       onClick={() => onInsertLink(buildBlockLink(h.title || t('link.note'), h.blockId, h.content))}
-                      className="w-full text-left p-2.5 min-h-11 bg-canvas border border-border rounded-card hover:border-accent/60 transition-colors cursor-pointer space-y-0.5"
+                      className={`w-full text-left p-2.5 min-h-11 bg-canvas border rounded-card transition-colors cursor-pointer space-y-0.5 ${
+                        i === active ? 'border-accent' : 'border-border'
+                      }`}
                       title={t('link.linkBlock')}
                     >
                       <SnippetRenderer snippet={h.snippet} />
@@ -469,7 +542,8 @@ export const LinkModal: React.FC<LinkModalProps> = ({
                         {h.title || t('editor.untitled')}
                       </span>
                     </button>
-                  ))}
+                    );
+                  })}
                 </div>
               </>
             )}

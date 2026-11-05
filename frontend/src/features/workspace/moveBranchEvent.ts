@@ -8,6 +8,7 @@ export const BLOCK_DRAG_TYPE = 'application/mindsift-block';
 export interface MoveBranchDetail {
   docId: string;
   blockId: string;
+  // Empty when dropped onto the "new note" button: the branch becomes a note of its own
   targetId: string;
   targetTitle: string;
 }

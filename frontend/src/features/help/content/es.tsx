@@ -252,7 +252,7 @@ const es: HelpContent = {
               <strong className="text-main">Mover bloques:</strong> mantén pulsado el botón del ratón sobre un punto para arrastrarlo con todos sus subpuntos a una nueva ubicación.
             </li>
             <li>
-              <strong className="text-main">A otra nota:</strong> arrastra el punto sobre una nota de la barra lateral y toda la rama pasa al final de esa nota. El aviso posterior ofrece «Abrir» y «Deshacer», Ctrl+Z también funciona; las tareas vinculadas van con ella.
+              <strong className="text-main">A otra nota:</strong> arrastra el punto sobre una nota de la barra lateral y toda la rama pasa al final de esa nota. Si lo sueltas sobre el botón + de nota nueva, arriba en la barra lateral, se convierte en una nota nueva propia. El aviso posterior ofrece «Abrir» y «Deshacer», Ctrl+Z también funciona; las tareas vinculadas van con ella.
             </li>
             <li>
               <strong className="text-main">Extraer:</strong> el botón «Convertir en nota propia» a la derecha del punto pregunta el destino: Intro crea una nota nueva, escribiendo buscas una existente. En el lugar anterior queda un enlace al punto movido.

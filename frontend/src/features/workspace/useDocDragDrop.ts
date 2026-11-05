@@ -247,6 +247,32 @@ export function useDocDragDrop({
     },
   });
 
+  // A bullet dropped onto the "new note" button becomes a note of its own
+  const [newNoteHover, setNewNoteHover] = useState(false);
+  const newNoteDropProps: React.HTMLAttributes<HTMLButtonElement> = {
+    onDragOver: (e) => {
+      if (!e.dataTransfer.types.includes(BLOCK_DRAG_TYPE)) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      if (!newNoteHover) setNewNoteHover(true);
+    },
+    onDragLeave: () => setNewNoteHover(false),
+    onDrop: (e) => {
+      setNewNoteHover(false);
+      if (!e.dataTransfer.types.includes(BLOCK_DRAG_TYPE)) return;
+      e.preventDefault();
+      try {
+        const { docId, blockId } = JSON.parse(e.dataTransfer.getData(BLOCK_DRAG_TYPE) || '{}');
+        if (docId && blockId) {
+          triggerHaptic(15);
+          announceMoveBranch({ docId, blockId, targetId: '', targetTitle: '' });
+        }
+      } catch {
+        // not a bullet of this app
+      }
+    },
+  };
+
   const handleFolderDragStart = (e: React.DragEvent, path: string) => {
     e.stopPropagation();
     e.dataTransfer.setData('application/mindsift-folder-path', path);
@@ -326,6 +352,8 @@ export function useDocDragDrop({
     handleDocDragStart,
     handleDropOnTrash,
     docDropProps,
+    newNoteHover,
+    newNoteDropProps,
     handleFolderDragStart,
     handleDropOnFolder,
   };

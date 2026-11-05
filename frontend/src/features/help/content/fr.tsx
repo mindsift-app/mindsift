@@ -210,7 +210,7 @@ const fr: HelpContent = {
               <strong className="text-main">Déplacer des blocs :</strong> saisis une puce en maintenant le bouton de la souris enfoncé pour la déplacer avec toutes ses sous-puces vers un nouvel emplacement.
             </li>
             <li>
-              <strong className="text-main">Vers une autre note :</strong> fais glisser la puce sur une note de la barre latérale et toute la branche passe à la fin de cette note. Le message qui suit propose « Ouvrir » et « Annuler », Ctrl+Z fonctionne aussi ; les tâches liées suivent.
+              <strong className="text-main">Vers une autre note :</strong> fais glisser la puce sur une note de la barre latérale et toute la branche passe à la fin de cette note. Déposée sur le + de nouvelle note en haut de la barre latérale, elle devient une nouvelle note à part entière. Le message qui suit propose « Ouvrir » et « Annuler », Ctrl+Z fonctionne aussi ; les tâches liées suivent.
             </li>
             <li>
               <strong className="text-main">Extraire :</strong> le bouton « Transformer en note » à droite de la puce demande la destination : Entrée crée une nouvelle note, en tapant tu cherches une note existante. Un lien vers la puce déplacée reste à l’ancien endroit.
