@@ -7,10 +7,6 @@ import './i18n';
 // Inter ships with the app (no external font service); the variable font covers all weights
 import '@fontsource-variable/inter';
 import './index.css';
-import { applyBulletGuides } from './lib/bulletGuides';
-
-// Guide lines in notes, as last chosen in this browser
-applyBulletGuides();
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

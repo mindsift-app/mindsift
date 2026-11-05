@@ -29,7 +29,21 @@ interface FolderTreeItemProps {
   // Several notes marked with Ctrl/Cmd or Shift; a plain click opens the note
   markedDocIds: Set<string>;
   onDocRowClick: (e: React.MouseEvent, id: string, open: () => void) => void;
+  // Inside an opened folder: the last entry ends the parent's guide line at its own row
+  guideLast?: boolean;
 }
+
+// Guide lines of the tree: the line of a folder runs down from the left edge of its icon (row padding
+// depth * 12 + 8, plus the row's 2px left border), and every entry in it gets a short tick at its middle.
+// Each entry draws its own piece, reaching up over the 2px gap (space-y-0.5) to the entry above.
+const guideX = (parentDepth: number) => parentDepth * 12 + 10;
+const GUIDE = 'absolute w-px bg-border/70 pointer-events-none';
+const TICK = 'absolute top-1/2 h-px w-2 bg-border/70 pointer-events-none';
+
+// Icon slot of a note row: as wide as the folder icon, so note and folder names line up
+export const DocRowIcon: React.FC<{ icon?: string }> = ({ icon }) => (
+  <span className="w-3.5 shrink-0 inline-flex justify-center">{icon}</span>
+);
 
 // One folder of the notes sidebar with its subfolders and notes (recursive)
 export const FolderTreeItem: React.FC<FolderTreeItemProps> = ({
@@ -53,14 +67,22 @@ export const FolderTreeItem: React.FC<FolderTreeItemProps> = ({
   mergeHoverId,
   markedDocIds,
   onDocRowClick,
+  guideLast = false,
 }) => {
   const { t } = useTranslation('workspace');
   const hasContent = node.subfolders.length > 0 || node.docs.length > 0;
   const isExpanded = Boolean(hasContent && expandedFolders[node.fullPath]);
   const isDragOver = dragOverFolder === node.fullPath;
 
+  const inFolder = depth > 0;
+  const childCount = node.subfolders.length + node.docs.length;
+
   return (
-    <div className="space-y-0.5">
+    <div className="relative space-y-0.5">
+      {/* Not the last entry: the parent's line runs on past this folder and everything opened below it */}
+      {inFolder && !guideLast && (
+        <span aria-hidden="true" className={GUIDE} style={{ left: guideX(depth - 1), top: -2, bottom: 0 }} />
+      )}
       <div
         draggable
         onDragStart={(e) => handleFolderDragStart(e, node.fullPath)}
@@ -75,12 +97,18 @@ export const FolderTreeItem: React.FC<FolderTreeItemProps> = ({
         }}
         onDrop={(e) => handleDropOnFolder(node.fullPath, e)}
         style={{ paddingLeft: `${depth * 12 + 8}px` }}
-        className={`group flex items-center justify-between pr-1.5 h-11 sm:h-7 rounded-btn text-sm sm:text-xs cursor-pointer border-l-2 transition-colors ${
+        className={`group relative flex items-center justify-between pr-1.5 h-11 sm:h-7 rounded-btn text-sm sm:text-xs cursor-pointer border-l-2 transition-colors ${
           isDragOver
             ? 'bg-accent/20 border-accent text-main font-semibold'
             : 'border-transparent hover:bg-panel-elevated text-muted'
         }`}
       >
+        {inFolder && (
+          <>
+            {guideLast && <span aria-hidden="true" className={GUIDE} style={{ left: guideX(depth - 1) - 2, top: -2, bottom: '50%' }} />}
+            <span aria-hidden="true" className={TICK} style={{ left: guideX(depth - 1) - 2 }} />
+          </>
+        )}
         <button
           type="button"
           onClick={() =>
@@ -158,20 +186,14 @@ export const FolderTreeItem: React.FC<FolderTreeItemProps> = ({
       </div>
 
       {isExpanded && (
-        <div className="relative space-y-0.5">
-          {/* Guide line under the folder icon (row padding + 2px border + half the icon), so deep entries
-              still show which folder they belong to */}
-          <div
-            aria-hidden="true"
-            className="absolute top-0 bottom-0 w-px bg-border/70 pointer-events-none"
-            style={{ left: `${depth * 12 + 16.5}px` }}
-          />
+        <div className="space-y-0.5">
           {/* Subfolders in this folder */}
-          {node.subfolders.map((childNode) => (
+          {node.subfolders.map((childNode, i) => (
             <FolderTreeItem
               key={childNode.fullPath}
               node={childNode}
               depth={depth + 1}
+              guideLast={i === childCount - 1}
               expandedFolders={expandedFolders}
               setExpandedFolders={setExpandedFolders}
               selectedDocId={selectedDocId}
@@ -194,7 +216,7 @@ export const FolderTreeItem: React.FC<FolderTreeItemProps> = ({
           ))}
 
           {/* Notes directly in this folder */}
-          {node.docs.map((d) => (
+          {node.docs.map((d, i) => (
             <div
               key={d.id}
               draggable
@@ -204,7 +226,7 @@ export const FolderTreeItem: React.FC<FolderTreeItemProps> = ({
               onMouseDown={(e) => e.shiftKey && e.preventDefault()}
               onClick={(e) => onDocRowClick(e, d.id, () => onSelectDoc(d.id))}
               style={{ paddingLeft: `${(depth + 1) * 12 + 9}px` }}
-              className={`w-full flex items-center gap-2 pr-2 py-1.5 min-h-11 sm:min-h-0 rounded-btn text-left text-sm sm:text-xs cursor-pointer border transition-colors ${
+              className={`relative w-full flex items-center gap-1.5 pr-2 py-1.5 min-h-11 sm:min-h-0 rounded-btn text-left text-sm sm:text-xs cursor-pointer border transition-colors ${
                 mergeHoverId === d.id
                   ? 'border-accent bg-accent/15 ring-2 ring-accent/30 text-main'
                   : markedDocIds.has(d.id)
@@ -214,7 +236,14 @@ export const FolderTreeItem: React.FC<FolderTreeItemProps> = ({
                   : 'border-transparent text-main hover:bg-panel-elevated'
               }`}
             >
-              {d.icon && <span className="shrink-0">{d.icon}</span>}
+              {/* Guide piece and tick (1px less: this row has a 1px border) */}
+              <span
+                aria-hidden="true"
+                className={GUIDE}
+                style={{ left: guideX(depth) - 1, top: -2, bottom: node.subfolders.length + i === childCount - 1 ? '50%' : 0 }}
+              />
+              <span aria-hidden="true" className={TICK} style={{ left: guideX(depth) - 1 }} />
+              <DocRowIcon icon={d.icon} />
               <span className="truncate flex-1">{d.title || t('editor.untitled')}</span>
             </div>
           ))}

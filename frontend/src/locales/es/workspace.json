@@ -53,7 +53,6 @@
     "expandAllShortcut": "Ctrl+⇧+↓",
     "collapseAll": "Plegar todas las viñetas",
     "collapseAllShortcut": "Ctrl+⇧+↑",
-    "bulletGuides": "Líneas guía en subviñetas",
     "startFocusTitle": "Iniciar modo de enfoque",
     "exitFocus": "Salir del enfoque",
     "noChildren": "Esta rama aún no tiene subpuntos.",

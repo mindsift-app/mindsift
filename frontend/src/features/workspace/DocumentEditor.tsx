@@ -3,8 +3,6 @@ import { createPortal } from 'react-dom';
 import { buildBlockLink } from '../../lib/wikiLink';
 import { MOVE_BRANCH_EVENT } from './moveBranchEvent';
 import { onDocFocusRequest, takeDocFocus } from '../../lib/docFocusRequest';
-import { bulletGuidesOn, setBulletGuides } from '../../lib/bulletGuides';
-import { ToggleSwitch } from '../../components/ToggleSwitch';
 import {
   Pin,
   Users,
@@ -20,7 +18,6 @@ import {
   ChevronRight,
   ChevronsUpDown,
   ChevronsDownUp,
-  ListTree,
   Minimize2,
   Plus,
   Check,
@@ -815,11 +812,6 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
     },
     [canEdit, applyLocalBlocks, zoomedBlockId, childBlocks]
   );
-  const [guidesOn, setGuidesOn] = useState(bulletGuidesOn);
-  const toggleGuides = (on: boolean) => {
-    setBulletGuides(on);
-    setGuidesOn(on);
-  };
   const setAllCollapsedRef = useRef(handleSetAllCollapsed);
   setAllCollapsedRef.current = handleSetAllCollapsed;
   useEffect(() => {
@@ -1514,17 +1506,6 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
               </>
             )}
 
-            {/* Switch for all notes in this browser; the menu stays open so the change can be seen */}
-            <div
-              onClick={() => toggleGuides(!guidesOn)}
-              className="w-full min-h-[44px] sm:min-h-0 px-2.5 py-2 sm:py-1 rounded-btn hover:bg-panel-elevated text-left text-main font-medium flex items-center gap-2 transition-colors cursor-pointer"
-            >
-              <ListTree className="w-3.5 h-3.5 text-accent shrink-0" />
-              <span className="flex-1 whitespace-nowrap">{t('editor.bulletGuides')}</span>
-              <span onClick={(e) => e.stopPropagation()} className="flex">
-                <ToggleSwitch checked={guidesOn} onChange={toggleGuides} title={t('editor.bulletGuides')} />
-              </span>
-            </div>
 
             <button
               type="button"

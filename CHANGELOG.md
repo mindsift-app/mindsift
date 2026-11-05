@@ -6,6 +6,17 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.83.1] - 2026-11-05
+
+### Changed
+- Notes: the guide lines are always shown; the switch in the note menu is gone.
+- Notes: to-dos show their bullet dot again all the time (the guide lines start there).
+- Sidebar: the folder guide lines run from the left edge of the folder icon, with a short tick at each entry; the line ends at the last entry.
+
+### Fixed
+- Sidebar: names of folders and notes on the same level now line up exactly (note icons take the width of the folder icon).
+- Notes: marking text with the mouse in a bullet without the cursor kept only the cursor; the marking now stays.
+
 ## [0.83.0] - 2026-11-05
 
 ### Added

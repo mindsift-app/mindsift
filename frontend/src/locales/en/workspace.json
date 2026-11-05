@@ -53,7 +53,6 @@
     "expandAllShortcut": "Ctrl+⇧+↓",
     "collapseAll": "Collapse all bullets",
     "collapseAllShortcut": "Ctrl+⇧+↑",
-    "bulletGuides": "Guide lines for sub-bullets",
     "startFocusTitle": "Start focus mode",
     "exitFocus": "Exit focus",
     "noChildren": "This branch has no sub-bullets yet.",
