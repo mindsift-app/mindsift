@@ -431,6 +431,9 @@ func (s *Store) getMembersForTaskList(tl *domain.TaskList) []domain.TaskListMemb
 }
 
 func (s *Store) GetTaskLists(userID string) ([]domain.TaskList, error) {
+	// Before the query: looking up the language needs a connection of its own, and holding the rows' one
+	// meanwhile can use up the pool (deadlock under load)
+	defaultCols := defaultColumns(s.MessageLanguage(userID))
 	rows, err := s.db.Query(
 		`SELECT id, user_id, space_id, title, icon, color, COALESCE(columns, '[]'), created_at, updated_at
 		 FROM task_lists
@@ -441,8 +444,6 @@ func (s *Store) GetTaskLists(userID string) ([]domain.TaskList, error) {
 	if err != nil {
 		return []domain.TaskList{}, err
 	}
-
-	defaultCols := defaultColumns(s.MessageLanguage(userID))
 
 	list := make([]domain.TaskList, 0)
 	for rows.Next() {

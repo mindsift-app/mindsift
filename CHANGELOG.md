@@ -6,6 +6,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.83.2] - 2026-11-05
+
+### Fixed
+- Server: under load (many searches, list or folder share views and task list loads at once) the database connection pool could deadlock, after which every request, including sign-in, waited forever and only a restart helped. The affected queries (search, list shares, shared folders, task lists) no longer need a second connection while holding one, and the tests now run with a single connection so such code fails in the build.
+
 ## [0.83.1] - 2026-11-05
 
 ### Changed
