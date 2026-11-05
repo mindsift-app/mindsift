@@ -757,7 +757,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
                 title={t('view.newNoteDrop')}
                 aria-label={t('view.newNote')}
               >
-                <FilePlus className="w-4 h-4" />
+                <FilePlus className="w-4 h-4 pointer-events-none" />
               </button>
               {/* Focus mode: pin the sliding sidebar so it stays beside the note */}
               {focusMode && (

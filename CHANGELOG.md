@@ -6,6 +6,18 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.82.0] - 2026-11-05
+
+### Added
+- Notes: Ctrl+Shift+↓ expands all collapsed bullets of the note.
+
+### Changed
+- Notes: **Attention** the link dialog in a bullet now opens with Ctrl+L (Cmd+L) instead of Ctrl+K; Ctrl+K opens the search everywhere, also while typing in a note.
+- Note menu: "Expand all bullets" is always listed (greyed out while nothing is collapsed) and shows its shortcut.
+
+### Fixed
+- Dragging a bullet onto the "new note" button no longer flickers when the pointer passes over the icon.
+
 ## [0.81.0] - 2026-11-05
 
 ### Added

@@ -364,7 +364,7 @@ describe('formatting shortcuts (Teil C)', () => {
     expect(ta.selectionEnd).toBe(2);
   });
 
-  it('handles Ctrl+K: with selection wraps in [Text](…) and selects placeholder, without selection opens modal', () => {
+  it('handles Ctrl+L: with selection wraps in [Text](…) and selects placeholder, without selection opens modal', () => {
     const block = { id: 'b1', type: 'bullet', content: 'besuche mindsift heute', level: 0 } as DocumentBlock;
     const { container, queryByText } = renderBlock(block);
     const ta = container.querySelector('textarea') as HTMLTextAreaElement;
@@ -372,7 +372,7 @@ describe('formatting shortcuts (Teil C)', () => {
 
     // 1. With selection
     ta.setSelectionRange(8, 16); // "mindsift"
-    const eventWithSel = new KeyboardEvent('keydown', { key: 'k', ctrlKey: true, bubbles: true, cancelable: true });
+    const eventWithSel = new KeyboardEvent('keydown', { key: 'l', ctrlKey: true, bubbles: true, cancelable: true });
     ta.dispatchEvent(eventWithSel);
     expect(eventWithSel.defaultPrevented).toBe(true);
     expect(ta.value).toBe('besuche [mindsift](…) heute');
@@ -384,7 +384,7 @@ describe('formatting shortcuts (Teil C)', () => {
     // 2. Without selection: opens LinkModal
     ta.setSelectionRange(0, 0);
     expect(queryByText('Link einfügen')).toBeNull();
-    fireEvent.keyDown(ta, { key: 'k', ctrlKey: true });
+    fireEvent.keyDown(ta, { key: 'l', ctrlKey: true });
     expect(queryByText('Link einfügen')).toBeTruthy();
   });
 

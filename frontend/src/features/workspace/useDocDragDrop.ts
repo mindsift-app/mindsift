@@ -256,7 +256,10 @@ export function useDocDragDrop({
       e.dataTransfer.dropEffect = 'move';
       if (!newNoteHover) setNewNoteHover(true);
     },
-    onDragLeave: () => setNewNoteHover(false),
+    // Moving onto the icon inside the button is no leaving (it flickered)
+    onDragLeave: (e) => {
+      if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setNewNoteHover(false);
+    },
     onDrop: (e) => {
       setNewNoteHover(false);
       if (!e.dataTransfer.types.includes(BLOCK_DRAG_TYPE)) return;

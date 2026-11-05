@@ -545,6 +545,8 @@ const en: HelpContent = {
     { key: 'Shift + Enter', scope: 'Workspace outliner', desc: 'Soft line break within the block' },
     { key: 'Backspace', scope: 'Workspace outliner', desc: 'On an empty block: delete the block; at the start: merge' },
     { key: '↑ / ↓', scope: 'Workspace outliner', desc: 'Go to the previous / next block' },
+    { key: 'Ctrl + L / Cmd + L', scope: 'Workspace outliner', desc: 'Insert a link (note, bullet or web link); selected text becomes the link text' },
+    { key: 'Ctrl + Shift + ↓', scope: 'Workspace outliner', desc: 'Expand all collapsed bullets of the note' },
     { key: 'Ctrl + Z / Cmd + Z', scope: 'Workspace outliner', desc: 'Undo the last note action' },
     { key: 'Ctrl + Y / Ctrl + Shift + Z', scope: 'Workspace outliner', desc: 'Redo an undone action' },
     { key: 'Drag the mouse over several bullets', scope: 'Workspace outliner', desc: 'Select text across several bullets; Del/Backspace deletes it, typing replaces it, Ctrl + C copies it as Markdown (indentation, to-dos, headings)' },
