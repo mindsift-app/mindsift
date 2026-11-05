@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -51,8 +52,15 @@ func NewStore(dbPath string) (*Store, error) {
 		return nil, fmt.Errorf("failed to open sqlite db: %w", err)
 	}
 
-	db.SetMaxOpenConns(8)
-	db.SetMaxIdleConns(4)
+	// DB_MAX_CONNS=1 is for tests: any code that needs a second connection while it holds one (a query
+	// inside a loop over open rows, s.db inside a transaction) then hangs at once instead of only when the
+	// pool runs dry under load and everything stops for good
+	maxConns := 8
+	if n, err := strconv.Atoi(os.Getenv("DB_MAX_CONNS")); err == nil && n > 0 {
+		maxConns = n
+	}
+	db.SetMaxOpenConns(maxConns)
+	db.SetMaxIdleConns(min(4, maxConns))
 
 	store := &Store{db: db}
 	if dbPath != ":memory:" && !strings.HasPrefix(dbPath, "file:") {

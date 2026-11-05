@@ -627,12 +627,17 @@ func (s *Store) GetSharedFolders(userID string) ([]domain.SharedFolder, error) {
 		var isOwner int
 		if err := rows.Scan(&f.ID, &f.OwnerID, &f.OwnerName, &f.Name, &f.MountPath, &isOwner, &f.Permission, &f.CreatedAt, &f.UpdatedAt); err == nil {
 			f.IsOwner = isOwner != 0
-			if f.IsOwner {
-				if shares, err := s.GetFolderShares(f.ID); err == nil {
-					f.Shares = shares
-				}
-			}
 			folders = append(folders, f)
+		}
+	}
+	// Shares only after the rows are closed: a query per row while they hold their connection can use up
+	// the pool (deadlock under load)
+	_ = rows.Close()
+	for i := range folders {
+		if folders[i].IsOwner {
+			if shares, err := s.GetFolderShares(folders[i].ID); err == nil {
+				folders[i].Shares = shares
+			}
 		}
 	}
 	return folders, nil

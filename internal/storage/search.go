@@ -267,44 +267,61 @@ func (s *Store) Search(userID, query string, opts SearchOptions) (*SearchResults
 		LIMIT `+strconv.Itoa(limit), docArgs...)
 	}
 	if want("document") && err == nil {
-		seenDocIDs := make(map[string]bool)
-		docBlocks := map[string][]domain.DocumentBlock{}
+		// Read all rows first and close them: the access check and loading the note need connections of
+		// their own, and holding the rows' one meanwhile can use up the pool (deadlock under load)
+		type docRow struct {
+			docID, blockID, snip, title, icon string
+			score                             float64
+		}
+		var found []docRow
 		for docRows.Next() {
-			var docID, blockID, snip, title, icon, ownerID string
-			var score float64
+			var r docRow
+			var ownerID string
 			var isArchived int
-			if scanErr := docRows.Scan(&docID, &blockID, &snip, &score, &title, &icon, &ownerID, &isArchived); scanErr == nil {
-				// Access check via DocRole
-				if s.DocRole(userID, docID) == "" {
-					continue
-				}
-
-				hitID := docID
-				if blockID != "" {
-					hitID = docID + ":" + blockID
-				}
-
-				res.Hits = append(res.Hits, SearchHit{
-					Type:    "document",
-					ID:      hitID,
-					Title:   title,
-					Snippet: snip,
-					Score:   score,
-					DocID:   docID,
-					BlockID: blockID,
-					Icon:    icon,
-				})
-
-				if !seenDocIDs[docID] {
-					seenDocIDs[docID] = true
-					if doc, err := s.GetDocumentByID(userID, docID); err == nil && doc != nil {
-						res.Documents = append(res.Documents, *doc)
-						docBlocks[docID] = doc.Blocks
-					}
-				}
+			if scanErr := docRows.Scan(&r.docID, &r.blockID, &r.snip, &r.score, &r.title, &r.icon, &ownerID, &isArchived); scanErr == nil {
+				found = append(found, r)
 			}
 		}
 		_ = docRows.Close()
+
+		seenDocIDs := make(map[string]bool)
+		docBlocks := map[string][]domain.DocumentBlock{}
+		roles := map[string]string{}
+		for _, r := range found {
+			// Access check via DocRole
+			role, checked := roles[r.docID]
+			if !checked {
+				role = s.DocRole(userID, r.docID)
+				roles[r.docID] = role
+			}
+			if role == "" {
+				continue
+			}
+
+			hitID := r.docID
+			if r.blockID != "" {
+				hitID = r.docID + ":" + r.blockID
+			}
+
+			res.Hits = append(res.Hits, SearchHit{
+				Type:    "document",
+				ID:      hitID,
+				Title:   r.title,
+				Snippet: r.snip,
+				Score:   r.score,
+				DocID:   r.docID,
+				BlockID: r.blockID,
+				Icon:    r.icon,
+			})
+
+			if !seenDocIDs[r.docID] {
+				seenDocIDs[r.docID] = true
+				if doc, err := s.GetDocumentByID(userID, r.docID); err == nil && doc != nil {
+					res.Documents = append(res.Documents, *doc)
+					docBlocks[r.docID] = doc.Blocks
+				}
+			}
+		}
 		// Context of a bullet: the bullets before and after it in the note
 		for i := range res.Hits {
 			h := &res.Hits[i]

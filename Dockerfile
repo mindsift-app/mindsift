@@ -46,12 +46,14 @@ COPY internal/ ./internal/
 COPY --from=frontend-builder /app/frontend/dist ./cmd/server/dist
 
 ARG SKIP_TESTS=0
-# Run go mod tidy, static analysis (go vet), unit tests (go test), and compile final binary
+# Run go mod tidy, static analysis (go vet), unit tests (go test), and compile final binary.
+# The tests run with a single database connection: code that needs a second one while holding one hangs
+# here at once (and fails after the timeout) instead of deadlocking the pool under load.
 RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build \
     go mod tidy && \
     if [ "$SKIP_TESTS" != "1" ]; then \
       CGO_ENABLED=0 go vet ./... && \
-      CGO_ENABLED=0 go test -v ./...; \
+      DB_MAX_CONNS=1 CGO_ENABLED=0 go test -v -timeout 5m ./...; \
     else \
       echo "Skipping backend tests (SKIP_TESTS=1)"; \
     fi && \

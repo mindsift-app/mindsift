@@ -140,9 +140,15 @@ func (s *Store) RemoveListShare(currentUserID, listID, shareIDOrTargetID string)
 }
 
 func (s *Store) GetListShares(listID string) ([]domain.ListShare, error) {
+	// Names in the same query: a lookup per row while the rows hold their connection can use up the pool
 	rows, err := s.db.Query(
-		`SELECT id, list_id, target_type, target_id, role, created_by, created_at
-		 FROM list_shares WHERE list_id = ? ORDER BY created_at ASC`,
+		`SELECT ls.id, ls.list_id, ls.target_type, ls.target_id, ls.role, ls.created_by, ls.created_at,
+		        CASE WHEN ls.target_type = 'team' THEN COALESCE(t.name, '') ELSE COALESCE(u.display_name, '') END,
+		        CASE WHEN ls.target_type = 'team' THEN '' ELSE COALESCE(u.email, '') END
+		 FROM list_shares ls
+		 LEFT JOIN teams t ON ls.target_type = 'team' AND t.id = ls.target_id
+		 LEFT JOIN users u ON ls.target_type != 'team' AND u.id = ls.target_id
+		 WHERE ls.list_id = ? ORDER BY ls.created_at ASC`,
 		listID,
 	)
 	if err != nil {
@@ -153,12 +159,7 @@ func (s *Store) GetListShares(listID string) ([]domain.ListShare, error) {
 	shares := make([]domain.ListShare, 0)
 	for rows.Next() {
 		var sh domain.ListShare
-		if err := rows.Scan(&sh.ID, &sh.ListID, &sh.TargetType, &sh.TargetID, &sh.Role, &sh.CreatedBy, &sh.CreatedAt); err == nil {
-			if sh.TargetType == "team" {
-				_ = s.db.QueryRow(`SELECT name FROM teams WHERE id = ?`, sh.TargetID).Scan(&sh.TargetName)
-			} else {
-				_ = s.db.QueryRow(`SELECT display_name, email FROM users WHERE id = ?`, sh.TargetID).Scan(&sh.TargetName, &sh.Email)
-			}
+		if err := rows.Scan(&sh.ID, &sh.ListID, &sh.TargetType, &sh.TargetID, &sh.Role, &sh.CreatedBy, &sh.CreatedAt, &sh.TargetName, &sh.Email); err == nil {
 			shares = append(shares, sh)
 		}
 	}
