@@ -1,67 +1,102 @@
 import type React from 'react';
-import i18n from '../../i18n';
 import { DocumentBlock } from '../../lib/types';
 
 const MAX_ROWS = 8;
-// Transparent margin around the card, so its shadow is part of the drag image and not cut off
-const PAD = 16;
+const STRIPE_H = 9;
+const STRIPE_GAP = 5;
+const INDENT = 14;
+// Ghost sits right of and slightly above the pointer, so the drop line under the pointer stays visible
+const OFFSET_X = 16;
+const OFFSET_Y = -6;
 
-// Plain text of a row: the markdown marks and link syntax would only be noise in the small preview
-function plainText(block: DocumentBlock): string {
-  const firstLine = (block.content || '').split('\n')[0];
-  return firstLine
-    .replace(/!?\[([^\]]*)\]\([^)]*\)/g, '$1')
-    .replace(/\[\[([^\]|]*)(\|[^\]]*)?\]\]/g, '$1')
-    .replace(/(\*\*|__|~~|`|==)/g, '')
-    .trim();
+// Fully transparent image: the browser's own drag image is replaced by the ghost below
+const EMPTY = typeof Image !== 'undefined' ? new Image() : null;
+if (EMPTY) EMPTY.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+
+function stripeWidth(block: DocumentBlock): number {
+  const len = (block.content || '').split('\n')[0].trim().length;
+  return Math.max(28, Math.min(220, len * 5.5));
 }
 
-function marker(block: DocumentBlock): HTMLElement {
-  const el = document.createElement('span');
-  if (block.type === 'todo') {
-    el.className = `w-3 h-3 shrink-0 rounded-checkbox border ${block.checked ? 'bg-accent border-accent' : 'border-muted'}`;
-  } else {
-    el.className = 'w-1.5 h-1.5 mx-[3px] shrink-0 rounded-full bg-muted';
-  }
-  return el;
-}
-
-// The browser's own drag image is just the small bullet under the pointer, easy to miss. Instead the
-// dragged branch is shown as a card with its first rows, indented like in the note. The shadow takes the
-// text colour, so it glows light on dark themes and falls dark on light ones.
-export function setBranchDragImage(e: React.DragEvent, branch: DocumentBlock[]) {
+// The browser's drag image is a static snapshot of the small bullet, easy to miss. Instead the dragged
+// branch follows the pointer as a stack of rounded stripes, one per row and indented like in the note.
+// They take the text colour at low opacity (light on dark themes, dark on light ones), build up one after
+// another, trail the pointer a little and fade out when the drag ends.
+export function startBranchDragGhost(e: React.DragEvent, branch: DocumentBlock[]) {
   if (!branch.length || typeof e.dataTransfer.setDragImage !== 'function') return;
+  if (EMPTY) e.dataTransfer.setDragImage(EMPTY, 0, 0);
+  const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
   const base = Math.max(0, branch[0].level || 0);
 
-  const wrap = document.createElement('div');
-  wrap.style.cssText = `position:fixed;top:-10000px;left:-10000px;padding:${PAD}px;pointer-events:none;z-index:-1`;
-  const card = document.createElement('div');
-  card.className = 'bg-panel text-main border border-border rounded-card px-3 py-2 text-sm';
-  card.style.cssText =
-    'width:max-content;max-width:360px;box-shadow:0 6px 22px color-mix(in srgb, var(--text-main) 30%, transparent),0 0 0 1px color-mix(in srgb, var(--text-main) 12%, transparent)';
-  wrap.appendChild(card);
-
+  const ghost = document.createElement('div');
+  ghost.style.cssText = 'position:fixed;left:0;top:0;pointer-events:none;z-index:9999;will-change:transform;color:var(--text-main)';
+  document.body.appendChild(ghost);
+  // Dark text (light themes) weighs more than light text at the same opacity, so it gets less of it
+  const [r, g, b] = (getComputedStyle(ghost).color.match(/[\d.]+/g) || ['255', '255', '255']).map(Number);
+  const darkText = 0.299 * r + 0.587 * g + 0.114 * b < 128;
   branch.slice(0, MAX_ROWS).forEach((block, i) => {
-    const row = document.createElement('div');
-    row.className = `flex items-center gap-2 leading-6 ${i === 0 ? 'font-medium' : 'text-muted'}`;
-    row.style.paddingLeft = `${Math.max(0, (block.level || 0) - base) * 18}px`;
-    row.appendChild(marker(block));
-    const text = document.createElement('span');
-    text.className = `truncate${block.type === 'todo' && block.checked ? ' line-through' : ''}`;
-    text.textContent = plainText(block) || '…';
-    row.appendChild(text);
-    card.appendChild(row);
+    const stripe = document.createElement('div');
+    const strength = darkText ? (i === 0 ? 14 : 8) : i === 0 ? 22 : 13;
+    stripe.style.cssText =
+      `height:${STRIPE_H}px;margin-top:${i ? STRIPE_GAP : 0}px;border-radius:${STRIPE_H}px;transform-origin:left center;` +
+      `margin-left:${Math.max(0, (block.level || 0) - base) * INDENT}px;width:${stripeWidth(block)}px;` +
+      `background:color-mix(in srgb, var(--text-main) ${strength}%, transparent)`;
+    // Rows past the limit fade out instead of being cut off hard
+    if (branch.length > MAX_ROWS && i >= MAX_ROWS - 2) stripe.style.opacity = i === MAX_ROWS - 1 ? '0.35' : '0.7';
+    ghost.appendChild(stripe);
+    if (!reduce) {
+      stripe.animate(
+        [
+          { opacity: 0, transform: 'translateY(-4px) scaleX(0.4)' },
+          { opacity: stripe.style.opacity || 1, transform: 'none' },
+        ],
+        { duration: 220, delay: i * 28, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)', fill: 'backwards' }
+      );
+    }
   });
-  if (branch.length > MAX_ROWS) {
-    const more = document.createElement('div');
-    more.className = 'text-xs text-faint leading-5 pt-0.5';
-    more.textContent = i18n.t('workspace:block.dragMore', { count: branch.length - MAX_ROWS });
-    card.appendChild(more);
-  }
 
-  document.body.appendChild(wrap);
-  // Pointer sits on the bullet of the first row, as before
-  e.dataTransfer.setDragImage(wrap, PAD + 18, PAD + 20);
-  // The browser takes its snapshot synchronously; the element is not needed afterwards
-  window.setTimeout(() => wrap.remove(), 0);
+  let target = { x: e.clientX + OFFSET_X, y: e.clientY + OFFSET_Y };
+  const pos = { ...target };
+  let frame = 0;
+  const place = () => {
+    ghost.style.transform = `translate3d(${pos.x}px, ${pos.y}px, 0)`;
+  };
+  const step = () => {
+    pos.x += (target.x - pos.x) * 0.35;
+    pos.y += (target.y - pos.y) * 0.35;
+    place();
+    frame = Math.abs(target.x - pos.x) + Math.abs(target.y - pos.y) > 0.3 ? requestAnimationFrame(step) : 0;
+  };
+  place();
+
+  // dragover carries the pointer position in every engine (the drag event itself reports 0/0 in Firefox)
+  const onOver = (ev: DragEvent) => {
+    target = { x: ev.clientX + OFFSET_X, y: ev.clientY + OFFSET_Y };
+    if (reduce) {
+      Object.assign(pos, target);
+      place();
+    } else if (!frame) {
+      frame = requestAnimationFrame(step);
+    }
+  };
+  const onEnd = () => {
+    document.removeEventListener('dragover', onOver, true);
+    document.removeEventListener('dragend', onEnd, true);
+    document.removeEventListener('drop', onEnd, true);
+    cancelAnimationFrame(frame);
+    if (reduce) {
+      ghost.remove();
+      return;
+    }
+    ghost
+      .animate([{ opacity: 1 }, { opacity: 0, transform: `${ghost.style.transform} scale(0.96)` }], {
+        duration: 160,
+        easing: 'ease-out',
+        fill: 'forwards',
+      })
+      .finished.finally(() => ghost.remove());
+  };
+  document.addEventListener('dragover', onOver, true);
+  document.addEventListener('dragend', onEnd, true);
+  document.addEventListener('drop', onEnd, true);
 }
