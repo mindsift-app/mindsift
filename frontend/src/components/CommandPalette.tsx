@@ -17,6 +17,7 @@ import { ListItem, SearchFilter, SearchHit, SearchResults, SharedList, TaskList,
 import { api } from '../lib/api';
 import { formatDue } from '../lib/due';
 import { SnippetRenderer } from './SnippetRenderer';
+import { requestDocFocus } from '../lib/docFocusRequest';
 
 interface CommandPaletteProps {
   isOpen: boolean;
@@ -266,6 +267,8 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
   const executeSelection = (hit: SearchHit) => {
     onClose();
     if (hit.type === 'document') {
+      // A bullet hit puts the cursor into that bullet already; a note hit into its first bullet
+      if (!hit.blockId) requestDocFocus(hit.docId || hit.id);
       onOpenDocument(hit.docId || hit.id, hit.blockId);
     } else if (hit.type === 'thought') {
       onOpenTask(hit.id);

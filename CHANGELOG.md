@@ -6,6 +6,19 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.81.0] - 2026-11-05
+
+### Added
+- Notes: drag a bullet by its dot onto the "new note" button at the top of the sidebar to turn it, with all its children, into a note of its own. A hint offers "Open" and "Undo"; Ctrl+Z works as well.
+- Link dialog (`/link`): the arrow keys move through the notes and matching bullets, Enter inserts the marked link. ArrowRight opens the bullets of the marked note, ArrowLeft in the empty filter goes back.
+- Note menu: "Expand all bullets" opens every collapsed bullet in one step (one Ctrl+Z folds them again).
+
+### Changed
+- Search (Ctrl+K): a note opened from the results gets the cursor in its first bullet, so you can type or move on with the arrow keys right away. A bullet found by the search gets the cursor at its end instead of having its whole text selected, so typing no longer replaces it.
+
+### Fixed
+- Search: opening a note again after picking another one in the sidebar did nothing; a bullet found while the notes were already open was not jumped to.
+
 ## [0.80.3] - 2026-11-05
 
 ### Changed

@@ -9,7 +9,7 @@ import { MobileOutlineBar, isTouchOnly } from './MobileOutlineBar';
 import { startBranchDragGhost } from './branchDragImage';
 
 export interface OutlinerTreeHandle {
-  focusFirstBlock: () => void;
+  focusFirstBlock: (cursor?: 'start' | 'end') => void;
   focusBlock: (blockId: string, cursor?: 'start' | 'end') => void;
 }
 
@@ -162,9 +162,9 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
   useImperativeHandle(
     ref,
     () => ({
-      focusFirstBlock: () => {
+      focusFirstBlock: (cursor: 'start' | 'end' = 'end') => {
         if (blocks.length > 0) {
-          focusBlockInput(blocks[0].id, 'end');
+          focusBlockInput(blocks[0].id, cursor);
         } else {
           const firstBlock: DocumentBlock = {
             id: `blk_${Date.now().toString(36)}_0`,
@@ -226,12 +226,12 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
     if (initialFocusedBlockId && targetLoaded && focusedTargetRef.current !== initialFocusedBlockId) {
       focusedTargetRef.current = initialFocusedBlockId;
       setHighlightedBlockId(initialFocusedBlockId);
-      focusBlockInput(initialFocusedBlockId, 'select');
+      focusBlockInput(initialFocusedBlockId, 'end');
       const timer = setTimeout(() => {
-        focusBlockInput(initialFocusedBlockId, 'select');
+        focusBlockInput(initialFocusedBlockId, 'end');
       }, 70);
       const timer2 = setTimeout(() => {
-        focusBlockInput(initialFocusedBlockId, 'select');
+        focusBlockInput(initialFocusedBlockId, 'end');
       }, 200);
       const fadeTimer = setTimeout(() => {
         setHighlightedBlockId(null);

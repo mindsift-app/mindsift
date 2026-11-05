@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback, useMemo, useSyncExtern
 import { createPortal } from 'react-dom';
 import { buildBlockLink } from '../../lib/wikiLink';
 import { MOVE_BRANCH_EVENT } from './moveBranchEvent';
+import { onDocFocusRequest, takeDocFocus } from '../../lib/docFocusRequest';
 import {
   Pin,
   Users,
@@ -645,6 +646,23 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
     },
     [blocks, title, doc?.title, showNotice]
   );
+
+  // Opened from the search: cursor at the end of the first bullet, so one ArrowDown goes on to the next
+  // (lib/docFocusRequest.ts). A short delay, so the closing search does not take the focus along.
+  useEffect(() => {
+    if (embedded || loading) return;
+    let timer = 0;
+    const take = () => {
+      if (!takeDocFocus(docId)) return;
+      timer = window.setTimeout(() => outlinerTreeRef.current?.focusFirstBlock(), 30);
+    };
+    take();
+    const off = onDocFocusRequest(take);
+    return () => {
+      off();
+      window.clearTimeout(timer);
+    };
+  }, [docId, embedded, loading]);
 
   // A link pointed to a bullet that is gone (moved, extracted, deleted): the note opens with a hint
   const blocksForTargetRef = useRef(blocks);

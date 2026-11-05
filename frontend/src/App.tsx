@@ -140,6 +140,7 @@ export const App: React.FC = () => {
   const [previousTab, setPreviousTab] = useState<ActiveTab>('triage');
   const [selectedDocId, setSelectedDocId] = useState<string | null>(null);
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
+  const [openDocNonce, setOpenDocNonce] = useState(0);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [selectedListId, setSelectedListId] = useState<string | null>(null);
   const [showCommandPalette, setShowCommandPalette] = useState(false);
@@ -429,6 +430,8 @@ export const App: React.FC = () => {
 
   const handleOpenDocument = (docId: string, blockId?: string) => {
     setSelectedDocId(docId);
+    // Counts up, so the same note opens again after another one was picked in the sidebar
+    setOpenDocNonce((n) => n + 1);
     setSelectedBlockId(blockId || null);
     setActiveTab('workspace');
   };
@@ -667,6 +670,7 @@ export const App: React.FC = () => {
                 currentUser={user}
                 initialDocId={selectedDocId}
                 initialBlockId={selectedBlockId}
+                openDocNonce={openDocNonce}
                 onStatsChange={refreshAll}
                 onOpenTask={handleOpenTask}
                 onOpenSearch={() => setShowCommandPalette(true)}

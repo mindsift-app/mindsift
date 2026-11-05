@@ -56,6 +56,8 @@ interface WorkspaceViewProps {
   currentUser?: User | null;
   initialDocId?: string | null;
   initialBlockId?: string | null;
+  // Changes with every opening from outside (search), also of the note already in initialDocId
+  openDocNonce?: number;
   onStatsChange: () => void;
   onOpenTask?: (taskId: string) => void;
   // Opens the global search (command palette); the notes sidebar has no search of its own
@@ -66,6 +68,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
   currentUser,
   initialDocId,
   initialBlockId,
+  openDocNonce,
   onStatsChange,
   onOpenTask,
   onOpenSearch,
@@ -225,10 +228,12 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
   useEffect(() => {
     if (initialDocId) {
       setSelectedDocId(initialDocId);
+      // A bullet hit of the search while the workspace is already open
+      setTargetBlockId(initialBlockId || null);
       setSubView('editor');
       setMobileShowDetail(true);
     }
-  }, [initialDocId]);
+  }, [initialDocId, initialBlockId, openDocNonce]);
 
   const handleCreateDocument = useCallback(
     async (folderPath = '', title = i18n.t('workspace:editor.newNote'), icon = '🗒️') => {
