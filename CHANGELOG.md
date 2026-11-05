@@ -6,6 +6,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.80.1] - 2026-11-05
+
+### Changed
+- Help: describes moving a bullet into another note by dragging it onto the sidebar, and the new choice when turning a bullet into its own note.
+
 ## [0.80.0] - 2026-11-05
 
 ### Added

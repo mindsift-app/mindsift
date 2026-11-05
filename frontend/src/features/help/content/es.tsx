@@ -241,7 +241,7 @@ const es: HelpContent = {
       title: 'Enfoque (zoom hoisting), arrastrar y soltar, y favoritos',
       subtitle: 'Mantén la concentración y organiza notas libremente',
       icon: Pin,
-      keywords: ['hoisting', 'zoom', 'arrastrar', 'soltar', 'carpetas', 'mover', 'fijar', 'migas de pan'],
+      keywords: ['otra nota', 'extraer', 'hoisting', 'zoom', 'arrastrar', 'soltar', 'carpetas', 'mover', 'fijar', 'migas de pan'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
           <ul className="space-y-1.5">
@@ -250,6 +250,12 @@ const es: HelpContent = {
             </li>
             <li>
               <strong className="text-main">Mover bloques:</strong> mantén pulsado el botón del ratón sobre un punto para arrastrarlo con todos sus subpuntos a una nueva ubicación.
+            </li>
+            <li>
+              <strong className="text-main">A otra nota:</strong> arrastra el punto sobre una nota de la barra lateral y toda la rama pasa al final de esa nota. El aviso posterior ofrece «Abrir» y «Deshacer», Ctrl+Z también funciona; las tareas vinculadas van con ella.
+            </li>
+            <li>
+              <strong className="text-main">Extraer:</strong> el botón «Convertir en nota propia» a la derecha del punto pregunta el destino: Intro crea una nota nueva, escribiendo buscas una existente. En el lugar anterior queda un enlace al punto movido.
             </li>
             <li>
               <strong className="text-main">Navegación por carpetas:</strong> las notas del explorador de la izquierda se pueden organizar en subcarpetas arrastrando y soltando.

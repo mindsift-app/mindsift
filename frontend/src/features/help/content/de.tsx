@@ -253,6 +253,8 @@ const de: HelpContent = {
       subtitle: 'Fokus behalten und Notizen flexibel sortieren',
       icon: Pin,
       keywords: [
+        'andere notiz',
+        'auslagern',
         'hoisting',
         'zoom',
         'drag',
@@ -270,6 +272,12 @@ const de: HelpContent = {
             </li>
             <li>
               <strong className="text-main">Blöcke verschieben:</strong> Packe einen Bullet-Punkt mit gedrückter Maustaste, um ihn samt aller untergeordneten Punkte an eine neue Stelle zu ziehen.
+            </li>
+            <li>
+              <strong className="text-main">In eine andere Notiz:</strong> Ziehst du den Bullet-Punkt auf eine Notiz in der Seitenleiste, wandert der ganze Ast ans Ende dieser Notiz. Der Hinweis danach bietet „Öffnen“ und „Rückgängig“, Strg+Z geht auch; verknüpfte Aufgaben ziehen mit.
+            </li>
+            <li>
+              <strong className="text-main">Auslagern:</strong> Der Knopf „In eigene Notiz umwandeln“ rechts am Bullet fragt nach dem Ziel: Enter legt eine neue Notiz an, Tippen sucht eine bestehende. An der alten Stelle bleibt ein Link auf den verschobenen Punkt.
             </li>
             <li>
               <strong className="text-main">Ordner-Navigation:</strong> Notizen im linken Datei-Explorer lassen sich per Drag & Drop bequem in Unterordner einsortieren.

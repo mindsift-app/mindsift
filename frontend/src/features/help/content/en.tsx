@@ -196,7 +196,7 @@ const en: HelpContent = {
       title: 'Zoom hoisting, drag & drop and favorites',
       subtitle: 'Keep focus and sort notes freely',
       icon: Pin,
-      keywords: ['hoisting', 'zoom', 'drag', 'drop', 'folders', 'move', 'pin', 'breadcrumbs'],
+      keywords: ['another note', 'extract', 'hoisting', 'zoom', 'drag', 'drop', 'folders', 'move', 'pin', 'breadcrumbs'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
           <ul className="space-y-1.5">
@@ -205,6 +205,12 @@ const en: HelpContent = {
             </li>
             <li>
               <strong className="text-main">Moving blocks:</strong> grab a bullet with the mouse button held down to drag it with all its sub-bullets to a new spot.
+            </li>
+            <li>
+              <strong className="text-main">Into another note:</strong> drag the bullet onto a note in the sidebar and the whole branch moves to the end of that note. The hint afterwards offers “Open” and “Undo”, Ctrl+Z works as well; linked tasks move along.
+            </li>
+            <li>
+              <strong className="text-main">Moving out:</strong> the “Turn into its own note” button on the right of a bullet asks where to: Enter creates a new note, typing finds an existing one. A link to the moved bullet stays in its old place.
             </li>
             <li>
               <strong className="text-main">Folder navigation:</strong> notes in the file explorer on the left can be sorted into subfolders by drag & drop.

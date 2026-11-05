@@ -199,7 +199,7 @@ const fr: HelpContent = {
       title: 'Zoom hoisting, glisser-déposer et favoris',
       subtitle: 'Garder le focus et organiser les notes en toute liberté',
       icon: Pin,
-      keywords: ['hoisting', 'zoom', 'glisser', 'déposer', 'dossiers', 'déplacer', 'épingler', 'fil d ariane'],
+      keywords: ['autre note', 'extraire', 'hoisting', 'zoom', 'glisser', 'déposer', 'dossiers', 'déplacer', 'épingler', 'fil d ariane'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
           <ul className="space-y-1.5">
@@ -208,6 +208,12 @@ const fr: HelpContent = {
             </li>
             <li>
               <strong className="text-main">Déplacer des blocs :</strong> saisis une puce en maintenant le bouton de la souris enfoncé pour la déplacer avec toutes ses sous-puces vers un nouvel emplacement.
+            </li>
+            <li>
+              <strong className="text-main">Vers une autre note :</strong> fais glisser la puce sur une note de la barre latérale et toute la branche passe à la fin de cette note. Le message qui suit propose « Ouvrir » et « Annuler », Ctrl+Z fonctionne aussi ; les tâches liées suivent.
+            </li>
+            <li>
+              <strong className="text-main">Extraire :</strong> le bouton « Transformer en note » à droite de la puce demande la destination : Entrée crée une nouvelle note, en tapant tu cherches une note existante. Un lien vers la puce déplacée reste à l’ancien endroit.
             </li>
             <li>
               <strong className="text-main">Dossiers et arborescence :</strong> dans la barre latérale, organise tes notes dans des dossiers et sous-dossiers par glisser-déposer.
