@@ -35,6 +35,7 @@ import type { BlockLock } from './OutlinerBlock';
 import { extractHashtags } from '../../lib/hashtags';
 import { moveSibling } from '../../lib/outlineList';
 import { reportNav, onNavStep, restoringNavPlace } from '../../lib/navHistory';
+import { readNotePlace, writeNotePlace } from '../../lib/notePlace';
 import { useTranslation } from 'react-i18next';
 import i18n from '../../i18n';
 
@@ -268,10 +269,17 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
   const [loading, setLoading] = useState<boolean>(!initialDoc);
   const [error, setError] = useState<string | null>(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState<boolean>(false);
-  // Zoomed bullet; coming here by the browser's back/forward it is the zoom of that step
+  // Where the user last was in this note (zoom, scroll), unless a link points to a bullet in it
+  const [savedPlace] = useState(() =>
+    !embedded && !initialFocusedBlockId ? readNotePlace(docId) : null
+  );
+  // Zoomed bullet; coming here by the browser's back/forward it is the zoom of that step, else the one
+  // the note had when the user last left it
   const [zoomedBlockId, setZoomedBlockId] = useState<string | null>(() => {
     const place = restoringNavPlace();
-    return !inJournal && !inTagPage && place?.docId === docId ? place.zoom ?? null : null;
+    if (inJournal || inTagPage) return null;
+    if (place?.docId === docId) return place.zoom ?? null;
+    return savedPlace?.zoom ?? null;
   });
   const [showActionsMenu, setShowActionsMenu] = useState<boolean>(false);
   const actionsMenuRef = useRef<HTMLDivElement | null>(null);
@@ -358,6 +366,57 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
       setZoomedBlockId(null);
     }
   }, [blocks, zoomedBlockId, loading]);
+
+  // Remember zoom and scroll position (lib/notePlace.ts); the scroll position belongs to the zoom it was
+  // taken in, so it is restored only when the note opens in that zoom again
+  const zoomForPlaceRef = useRef(zoomedBlockId);
+  useEffect(() => {
+    if (embedded) return;
+    if (zoomForPlaceRef.current !== zoomedBlockId) {
+      zoomForPlaceRef.current = zoomedBlockId;
+      writeNotePlace(docId, { zoom: zoomedBlockId, scroll: 0 });
+    }
+  }, [zoomedBlockId, docId, embedded]);
+  useEffect(() => {
+    const root = scrollRef.current;
+    if (embedded || !root) return;
+    let timer: number | null = null;
+    const save = () => {
+      timer = null;
+      writeNotePlace(docId, { zoom: zoomForPlaceRef.current, scroll: root.scrollTop });
+    };
+    const onScroll = () => {
+      if (timer === null) timer = window.setTimeout(save, 200);
+    };
+    root.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      root.removeEventListener('scroll', onScroll);
+      if (timer !== null) {
+        window.clearTimeout(timer);
+        save();
+      }
+    };
+    // the note's scroll area exists only once it has loaded
+  }, [docId, embedded, loading]);
+  const scrollRestoredRef = useRef(false);
+  useEffect(() => {
+    if (loading || scrollRestoredRef.current) return;
+    scrollRestoredRef.current = true;
+    const root = scrollRef.current;
+    const target = savedPlace && savedPlace.zoom === zoomedBlockId ? savedPlace.scroll : 0;
+    if (!root || target <= 0) return;
+    // Images and code blocks may still grow the note for a few frames
+    let frames = 0;
+    let raf = 0;
+    const apply = () => {
+      root.scrollTop = target;
+      if (Math.abs(root.scrollTop - target) > 1 && ++frames < 30) raf = requestAnimationFrame(apply);
+    };
+    raf = requestAnimationFrame(apply);
+    return () => cancelAnimationFrame(raf);
+    // only once, when the note's content is first there
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading]);
 
   // Zooming in and out are steps of the browser history: back zooms out again (lib/navHistory.ts)
   useEffect(() => {

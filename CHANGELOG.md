@@ -6,6 +6,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.80.0] - 2026-11-05
+
+### Added
+- Notes remember where you were: after switching to another tab or looking into another note, a note opens again at the same scroll position and, if you had zoomed into a bullet, still zoomed in. Kept in this browser only, for the last 20 notes; a link to a bullet still opens at that bullet.
+
 ## [0.79.1] - 2026-11-05
 
 ### Changed
