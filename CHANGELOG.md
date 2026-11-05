@@ -6,6 +6,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.80.3] - 2026-11-05
+
+### Changed
+- Notes: the dragged branch now follows the pointer as soft, rounded stripes (one per row, indented like the note) instead of a card; they build up when you pick the bullet up, trail the pointer smoothly and fade out when you let go.
+
 ## [0.80.2] - 2026-11-05
 
 ### Changed
