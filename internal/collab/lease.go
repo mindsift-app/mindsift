@@ -172,6 +172,14 @@ func (m *LeaseManager) Leave(docID, clientID string) {
 	}
 }
 
+// Forget drops every session and lease of a document that no longer exists.
+func (m *LeaseManager) Forget(docID string) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	delete(m.sessions, docID)
+	delete(m.leases, docID)
+}
+
 // Sessions returns how many clients have the document open and who they are.
 func (m *LeaseManager) Sessions(docID string) (int, []Presence) {
 	m.mu.Lock()
