@@ -47,9 +47,9 @@
     "readOnly": "Nur Lesen",
     "inTrash": "Diese Notiz liegt im Papierkorb und ist schreibgeschützt.",
     "sharedReadOnly": "Dieses Dokument wurde schreibgeschützt mit dir geteilt (Nur Lesen).",
-    "zoom": "Isolierter Ast • Zoom aktiv",
     "branchTitle": "Ast-Titel…",
     "exitFocusTitle": "Fokus-Modus beenden",
+    "startFocusTitle": "Fokus-Modus starten",
     "exitFocus": "Fokus beenden",
     "noChildren": "Dieser Ast hat noch keine Unterpunkte.",
     "firstChild": "Ersten Unterpunkt anlegen (oder Enter drücken)",
@@ -63,8 +63,7 @@
     "focusShortcut": "Strg+⇧+F",
     "inTrashAction": "Aktion fehlgeschlagen",
     "extracted": "In eigene Notiz „{{title}}“ umgewandelt",
-    "zoomTo": "Zoom zu \"{{title}}\"",
-    "focusMode": "Fokus-Modus"
+    "zoomTo": "Zoom zu \"{{title}}\""
   },
   "slash": {
     "todo": "Aufgabe mit Checkbox",

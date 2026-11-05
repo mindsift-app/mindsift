@@ -7,6 +7,7 @@ import {
   countOpenTodos,
   filterTags,
   groupRollupTodosByFolder,
+  isFolderShared,
   tagGroups,
   tagsMetadata,
 } from '../workspaceListing';
@@ -94,5 +95,14 @@ describe('workspace listing', () => {
     expect(tree[0].subfolders.map((n) => [n.name, n.docs.map((d) => d.id)])).toEqual([['Reisen', ['a']]]);
     expect(tree[1].docs.map((d) => d.id)).toEqual(['b']);
     expect(tree[2].sharedFolderObj?.id).toBe('s');
+  });
+
+  it('counts an own shared folder as shared only once it has a share', () => {
+    const own = { id: 's', name: 'Team', mountPath: 'Team', isOwner: true, shares: [] } as unknown as SharedFolder;
+    expect(isFolderShared(own)).toBe(false);
+    expect(isFolderShared({ ...own, shares: undefined })).toBe(false);
+    expect(isFolderShared({ ...own, shares: [{ id: 'x' }] } as unknown as SharedFolder)).toBe(true);
+    expect(isFolderShared({ ...own, isOwner: false })).toBe(true);
+    expect(isFolderShared(undefined)).toBe(false);
   });
 });

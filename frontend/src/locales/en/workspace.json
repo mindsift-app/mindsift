@@ -47,9 +47,9 @@
     "readOnly": "Read only",
     "inTrash": "This note is in the trash and read-only.",
     "sharedReadOnly": "This document was shared with you read-only.",
-    "zoom": "Isolated branch • zoom active",
     "branchTitle": "Branch title…",
     "exitFocusTitle": "Exit focus mode",
+    "startFocusTitle": "Start focus mode",
     "exitFocus": "Exit focus",
     "noChildren": "This branch has no sub-bullets yet.",
     "firstChild": "Create the first sub-bullet (or press Enter)",
@@ -63,8 +63,7 @@
     "focusShortcut": "Ctrl+⇧+F",
     "inTrashAction": "Action failed",
     "extracted": "Turned into its own note “{{title}}”",
-    "zoomTo": "Zoom to \"{{title}}\"",
-    "focusMode": "Focus mode"
+    "zoomTo": "Zoom to \"{{title}}\""
   },
   "slash": {
     "todo": "To-do with a checkbox",

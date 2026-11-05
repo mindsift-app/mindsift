@@ -22,6 +22,8 @@ interface WorkspaceTabBarProps {
   docSaveError: string | null;
   docHeaderStatus: DocHeaderStatus | null;
   openDocShareModal: (doc: Document) => void;
+  // The open note lies in a folder that is shared with someone
+  inSharedFolder: boolean;
   setDocActionsTarget: (el: HTMLDivElement | null) => void;
 }
 
@@ -43,6 +45,7 @@ export function WorkspaceTabBar({
   docSaveError,
   docHeaderStatus,
   openDocShareModal,
+  inSharedFolder,
   setDocActionsTarget,
 }: WorkspaceTabBarProps) {
   const { t } = useTranslation('workspace');
@@ -185,7 +188,7 @@ export function WorkspaceTabBar({
                     currentUser?.role === 'admin');
                 const sharesCount = selectedDocObj.sharedWith?.length || 0;
                 const isShared =
-                  sharesCount > 0 || !isOwner || Boolean(selectedDocObj.sharedFolderId);
+                  sharesCount > 0 || !isOwner || inSharedFolder;
                 const ownerDisplayName = selectedDocObj.ownerName || t('tasks:tabs.owner');
                 if (!isShared) return null;
                 return isOwner ? (

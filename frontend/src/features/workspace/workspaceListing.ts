@@ -174,6 +174,12 @@ export function filterTags(tagsSummary: TagSummary[], tagSearchQuery: string, ta
   return list;
 }
 
+// Whether a shared folder is really shared: one shared with me, or my own with at least one share. Opening the
+// sharing dialog already creates the shared folder, so without shares it is still private.
+export function isFolderShared(sf: SharedFolder | undefined): boolean {
+  return Boolean(sf && (!sf.isOwner || (sf.shares?.length ?? 0) > 0));
+}
+
 // Every folder path: the folders themselves, the folders of notes and the places of shared folders
 export function collectFolderPaths(folders: string[], docs: Document[], sharedFolders: SharedFolder[]): string[] {
   const set = new Set<string>(folders);

@@ -45,7 +45,7 @@ import { SidebarJournal, SidebarTags, SidebarTrash } from './SidebarSections';
 import { useWorkspaceData } from './useWorkspaceData';
 import { useTrashActions } from './useTrashActions';
 import { buildWorkspaceMenu } from './workspaceMenu';
-import { buildFolderTree, collectFolderPaths, collectRollupTodos, countOpenTodos, filterTags, groupRollupTodosByFolder, tagGroups, tagsMetadata } from './workspaceListing';
+import { buildFolderTree, collectFolderPaths, collectRollupTodos, countOpenTodos, filterTags, groupRollupTodosByFolder, isFolderShared, tagGroups, tagsMetadata } from './workspaceListing';
 import { FolderDialogs } from './FolderDialogs';
 import { WorkspaceSubView } from './workspaceTypes';
 import { useTranslation } from 'react-i18next';
@@ -657,6 +657,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
         docSaveError={docSaveError}
         docHeaderStatus={docHeaderStatus}
         openDocShareModal={openDocShareModal}
+        inSharedFolder={isFolderShared(sharedFolders.find((f) => f.id === selectedDocObj?.sharedFolderId))}
         setDocActionsTarget={setDocActionsTarget}
       />
 
@@ -1016,7 +1017,13 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
 
       <WorkspaceToast toast={toast} setToast={setToast} />
 
-      <WorkspaceShareModal share={share} currentUser={currentUser} />
+      <WorkspaceShareModal
+        share={share}
+        currentUser={currentUser}
+        onFolderChanged={(sf) =>
+          setSharedFolders((prev) => prev.map((f) => (f.id === sf.id ? { ...f, shares: sf.shares } : f)))
+        }
+      />
       </div>
     </div>
   );

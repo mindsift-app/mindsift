@@ -27,6 +27,8 @@ export interface OutlinerTreeProps {
   onCreateBlock: (newBlock: DocumentBlock, afterBlockId?: string) => void;
   onInsertBlocks?: (afterBlockId: string, updatedCurrent: DocumentBlock, newBlocks: DocumentBlock[]) => void;
   onDeleteBlock: (blockId: string) => void;
+  /** Deleting several bullets at once (a bullet with its children): one change, undone in one step */
+  onDeleteBlocks?: (blockIds: string[]) => void;
   onMoveBlock: (blockId: string, newIndex: number, level?: number) => void;
   /** Swap a bullet (with children) with its previous / next sibling (phone bar ↑ ↓) */
   onMoveSibling?: (blockId: string, direction: -1 | 1) => void;
@@ -83,6 +85,7 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
   onCreateBlock,
   onInsertBlocks,
   onDeleteBlock,
+  onDeleteBlocks,
   onMoveBlock,
   onMoveSibling,
   onOpenTask,
@@ -466,14 +469,18 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
             break;
           }
         }
-        for (const id of idsToDelete) {
-          onDeleteBlock(id);
+        if (onDeleteBlocks) {
+          onDeleteBlocks(idsToDelete);
+        } else {
+          for (const id of idsToDelete) {
+            onDeleteBlock(id);
+          }
         }
       } else {
         onDeleteBlock(blockId);
       }
     },
-    [blocks, canEdit, focusBlockInput, levelOffset, onDeleteBlock, onUpdateBlock, lockHolder, onLockedAction]
+    [blocks, canEdit, focusBlockInput, levelOffset, onDeleteBlock, onDeleteBlocks, onUpdateBlock, lockHolder, onLockedAction]
   );
 
   // Backspace at the start of a non-empty block: append its text to the previous visible block

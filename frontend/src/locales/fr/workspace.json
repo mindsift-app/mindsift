@@ -47,9 +47,9 @@
     "readOnly": "Lecture seule",
     "inTrash": "Cette note est dans la corbeille et en lecture seule.",
     "sharedReadOnly": "Ce document a été partagé avec toi en lecture seule.",
-    "zoom": "Branche isolée • zoom actif",
     "branchTitle": "Titre de la branche…",
     "exitFocusTitle": "Quitter le mode focus",
+    "startFocusTitle": "Activer le mode focus",
     "exitFocus": "Quitter le focus",
     "noChildren": "Cette branche n'a pas encore de sous-puces.",
     "firstChild": "Créer la première sous-puce (ou appuyer sur Entrée)",
@@ -63,8 +63,7 @@
     "focusShortcut": "Ctrl+Maj+F",
     "inTrashAction": "Action échouée",
     "extracted": "Transformé en note autonome « {{title}} »",
-    "zoomTo": "Zoomer sur « {{title}} »",
-    "focusMode": "Mode focus"
+    "zoomTo": "Zoomer sur « {{title}} »"
   },
   "slash": {
     "todo": "Tâche avec case à cocher",

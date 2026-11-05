@@ -47,9 +47,9 @@
     "readOnly": "Sola lettura",
     "inTrash": "Questa nota si trova nel cestino ed è protetta da scrittura.",
     "sharedReadOnly": "Questo documento è stato condiviso con te in sola lettura.",
-    "zoom": "Ramo isolato • Zoom attivo",
     "branchTitle": "Titolo del ramo…",
     "exitFocusTitle": "Esci dalla modalità focus",
+    "startFocusTitle": "Avvia modalità focus",
     "exitFocus": "Esci da focus",
     "noChildren": "Questo ramo non ha ancora sottopunti.",
     "firstChild": "Crea il primo sottopunto (o premi Invio)",
@@ -63,8 +63,7 @@
     "focusShortcut": "Ctrl+⇧+F",
     "inTrashAction": "Azione non riuscita",
     "extracted": "Convertito nella nota «{{title}}»",
-    "zoomTo": "Zoom su \"{{title}}\"",
-    "focusMode": "Modalità focus"
+    "zoomTo": "Zoom su \"{{title}}\""
   },
   "slash": {
     "todo": "Attività con casella di controllo",
