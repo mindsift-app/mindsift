@@ -6,6 +6,7 @@ import { blocksToMarkdown } from '../../lib/outlineMarkdown';
 import { numberedLabels } from '../../lib/outlineList';
 import { flushSync } from 'react-dom';
 import { MobileOutlineBar, isTouchOnly } from './MobileOutlineBar';
+import { setBranchDragImage } from './branchDragImage';
 
 export interface OutlinerTreeHandle {
   focusFirstBlock: () => void;
@@ -600,9 +601,13 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
     [focusBlockInput, visibleEntries]
   );
 
-  const handleDragStartBlock = useCallback((index: number) => {
+  const handleDragStartBlock = useCallback((index: number, e: React.DragEvent) => {
     setDraggedIndex(index);
-  }, []);
+    const level = Math.max(0, blocks[index]?.level || 0);
+    let end = index + 1;
+    while (end < blocks.length && Math.max(0, blocks[end].level || 0) > level) end++;
+    setBranchDragImage(e, blocks.slice(index, end));
+  }, [blocks]);
 
   const handleDragOverBlock = useCallback(
     (e: React.DragEvent, index: number) => {

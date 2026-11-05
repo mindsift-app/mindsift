@@ -89,6 +89,8 @@
   "block": {
     "expand": "Espandi sottopunti",
     "collapse": "Comprimi sottopunti",
+    "dragMore_one": "+ {{count}} altro elemento",
+    "dragMore_other": "+ altri {{count}} elementi",
     "dragZoom": "Trascina per spostare • Clic: ingrandisci questo ramo (modalità focus)",
     "clickZoom": "Clic: ingrandisci questo ramo (modalità focus)",
     "markOpen": "Segna come da fare",

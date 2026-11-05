@@ -6,6 +6,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.80.2] - 2026-11-05
+
+### Changed
+- Notes: dragging a bullet by its dot now shows the whole branch under the pointer (its first rows, indented, with a shadow) instead of only the small dot, so it is clear what you are moving.
+
 ## [0.80.1] - 2026-11-05
 
 ### Changed

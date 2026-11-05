@@ -89,6 +89,8 @@
   "block": {
     "expand": "Desplegar subpuntos",
     "collapse": "Plegar subpuntos",
+    "dragMore_one": "+ {{count}} elemento más",
+    "dragMore_other": "+ {{count}} elementos más",
     "dragZoom": "Arrastra para mover • clic: zoom a la rama (modo de enfoque)",
     "clickZoom": "Clic: zoom a esta rama (modo de enfoque)",
     "markOpen": "Marcar como pendiente",
