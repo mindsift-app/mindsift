@@ -15,6 +15,7 @@ import { AboutModal } from '../../components/AboutModal';
 import { Trans, useTranslation } from 'react-i18next';
 import { helpContent } from './content';
 import type { DocCard, HelpCategory } from './content/types';
+import { NO_AUTOFILL } from '../../lib/noAutofill';
 
 interface HelpViewProps {
   onBack?: () => void;
@@ -98,6 +99,7 @@ export const HelpView: React.FC<HelpViewProps> = ({ onBack }) => {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
+            {...NO_AUTOFILL}
             placeholder={t('search')}
             className="w-full h-8 pl-8 pr-8 input-field text-xs bg-canvas"
           />

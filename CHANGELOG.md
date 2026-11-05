@@ -6,6 +6,23 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.83.0] - 2026-11-05
+
+### Added
+- Notes: subtle guide lines run from a bullet down along its children, like in code editors. They can be switched off in the note menu ("Guide lines for sub-bullets"); the choice applies to all notes in this browser.
+- Sidebar: subtle guide lines show which folder deeper folders and notes belong to.
+- Note menu: "Collapse all bullets" (Ctrl+Shift+↑) next to "Expand all bullets" (Ctrl+Shift+↓). In focus mode both work only within the zoomed branch.
+
+### Changed
+- Notes: Tab in the title moves the cursor into the first bullet, like Enter.
+- After inserting a link the cursor stands right behind it; closing the link dialog without a link puts the cursor back where it was.
+
+### Fixed
+- Ctrl+L without selected text replaced the whole text of the bullet with the link; the link now goes in at the cursor.
+- Password managers no longer offer to fill in search and filter fields (link dialog, search, people search and others).
+- The "New folder" window and similar small windows had extra space at the top on larger screens.
+- Note menu entries with a shortcut no longer wrap onto two lines.
+
 ## [0.82.0] - 2026-11-05
 
 ### Added

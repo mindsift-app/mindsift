@@ -19,6 +19,7 @@ import { api, isSharingDisabled, triggerHaptic } from '../../lib/api';
 import { UserAutocomplete } from '../UserAutocomplete';
 import { UserAvatar } from '../../components/UserAvatar';
 import { askConfirm } from '../../components/askConfirm';
+import { NO_AUTOFILL } from '../../lib/noAutofill';
 
 interface GroupsViewProps {
   currentUser: User;
@@ -559,6 +560,7 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ currentUser, onBack }) =
                               setSelectedUserByTeam((prev) => ({ ...prev, [team.id]: u }))
                             }
                             excludeUserIds={memberUserIds}
+                            {...NO_AUTOFILL}
                             placeholder={t('searchPlaceholder')}
                           />
                         </div>
