@@ -416,6 +416,7 @@ func (s *Server) handleSearch(w http.ResponseWriter, r *http.Request) {
 		Folder:     qs.Get("folder"),
 		ListID:     qs.Get("listId"),
 		ItemStatus: qs.Get("itemStatus"),
+		Context:    qs.Get("context") == "1",
 	}
 	if opts.Type != "" && !slices.Contains(storage.SearchTypes, opts.Type) {
 		writeError(w, http.StatusBadRequest, "type: document, thought oder list_item")
@@ -424,7 +425,10 @@ func (s *Server) handleSearch(w http.ResponseWriter, r *http.Request) {
 	if n, err := strconv.Atoi(qs.Get("limit")); err == nil {
 		opts.Limit = n
 	}
-	res, err := s.store.Search(userID, q, opts)
+	res, err := s.store.SearchCtx(r.Context(), userID, q, opts)
+	if r.Context().Err() != nil {
+		return // given up by the client (typed on, search closed)
+	}
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return

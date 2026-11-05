@@ -548,7 +548,8 @@ export interface SearchHit {
   blockId?: string;
   listId?: string;
   icon?: string;
-  // Bullets: the bullet before and after, for context
+  // Bullets: their raw text, and (with context: 1) the bullet before and after
+  content?: string;
   before?: string;
   after?: string;
 }
@@ -564,6 +565,8 @@ export interface SearchFilter {
   folder?: string;
   listId?: string;
   itemStatus?: 'open' | 'done';
+  // Bullets: also the text of the bullet before and after (costs the server more; large view only)
+  context?: 1;
 }
 
 export interface SearchResults {

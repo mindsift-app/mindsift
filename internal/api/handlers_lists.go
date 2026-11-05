@@ -215,6 +215,10 @@ func (s *Server) handleToggleListItem(w http.ResponseWriter, r *http.Request) {
 	}
 
 	item, err := s.setListItemDone(userID, listID, itemID, req.IsCompleted, actorFrom(r.Context()))
+	if errors.Is(err, storage.ErrListItemNotFound) {
+		writeError(w, http.StatusNotFound, err.Error())
+		return
+	}
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
@@ -240,6 +244,10 @@ func (s *Server) handleUpdateListItem(w http.ResponseWriter, r *http.Request) {
 	}
 
 	item, err := s.store.UpdateListItem(itemID, req.Content, req.Category, req.Quantity)
+	if errors.Is(err, storage.ErrListItemNotFound) {
+		writeError(w, http.StatusNotFound, err.Error())
+		return
+	}
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return

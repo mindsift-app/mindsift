@@ -409,6 +409,9 @@ func (s *Store) ToggleListItem(itemID string, isCompleted bool, userID, userName
 		itemID,
 	).Scan(&it.ID, &it.ListID, &it.Content, &it.Category, &it.Quantity, &dInt, &it.CompletedBy, &it.CompletedByName, &it.SortOrder, &it.CreatedAt, &it.CompletedAt,
 		&o.createdVia, &o.createdKey, &o.changedVia, &o.changedKey, &o.changedAt)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, ErrListItemNotFound
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -429,6 +432,9 @@ func (s *Store) UpdateListItem(itemID string, content *string, category *string,
 		itemID,
 	).Scan(&it.ID, &it.ListID, &it.Content, &it.Category, &it.Quantity, &dInt, &it.CompletedBy, &it.CompletedByName, &it.SortOrder, &it.CreatedAt, &it.CompletedAt,
 		&o.createdVia, &o.createdKey, &o.changedVia, &o.changedKey, &o.changedAt)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, ErrListItemNotFound
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -543,6 +549,9 @@ func (s *Store) ReorderListItems(listID string, items []domain.ListItemReorderIt
 
 // ErrListNotFound: the list does not exist or the user has no access to it (deliberately the same).
 var ErrListNotFound = errors.New("Liste nicht gefunden")
+
+// ErrListItemNotFound: the item is gone (e.g. deleted by someone else meanwhile).
+var ErrListItemNotFound = errors.New("Listeneintrag nicht gefunden")
 
 // ErrListReadOnly: the list is shared with the user as viewer.
 var ErrListReadOnly = errors.New("Diese Liste ist für dich nur lesbar")

@@ -108,6 +108,22 @@ func (s *Store) readConsistent(ctx context.Context, fn func(q docQueryer) error)
 	return fnErr
 }
 
+// connOrDB runs the docQueryer calls on the pool with a context.
+func connOrDB(ctx context.Context, db *sql.DB) docQueryer { return dbCtxQueryer{ctx: ctx, db: db} }
+
+type dbCtxQueryer struct {
+	ctx context.Context
+	db  *sql.DB
+}
+
+func (q dbCtxQueryer) QueryRow(query string, args ...interface{}) *sql.Row {
+	return q.db.QueryRowContext(q.ctx, query, args...)
+}
+
+func (q dbCtxQueryer) Query(query string, args ...interface{}) (*sql.Rows, error) {
+	return q.db.QueryContext(q.ctx, query, args...)
+}
+
 // connQueryer runs the docQueryer calls on one connection with a context.
 type connQueryer struct {
 	ctx context.Context

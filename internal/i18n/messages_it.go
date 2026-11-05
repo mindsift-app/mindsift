@@ -143,6 +143,7 @@ var messagesIT = map[string]string{
 	"Konto konnte nicht angelegt werden":                                                         "Non è stato possibile creare l’account",
 	"Konto konnte nicht freigeschaltet werden":                                                   "Non è stato possibile approvare l’account",
 	"Liste nicht gefunden":                                                                       "Lista non trovata",
+	"Listeneintrag nicht gefunden":                                                               "Elemento della lista non trovato",
 	"Liste nicht gefunden oder kein Zugriff":                                                     "Lista non trovata o senza accesso",
 	"MCP ist auf diesem Server ausgeschaltet":                                                    "MCP è disattivato su questo server",
 	"Methode nicht unterstützt":                                                                  "Metodo non supportato",
