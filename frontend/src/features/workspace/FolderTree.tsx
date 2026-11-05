@@ -1,7 +1,7 @@
 import React from 'react';
 import { Pin, Users } from 'lucide-react';
 import { Document, SharedFolder } from '../../lib/types';
-import { FolderTreeItem } from './FolderTreeItem';
+import { DocRowIcon, FolderTreeItem } from './FolderTreeItem';
 import { useDocDragDrop } from './useDocDragDrop';
 import { FolderTreeNode, WorkspaceSubView } from './workspaceTypes';
 import { useTranslation } from 'react-i18next';
@@ -50,7 +50,7 @@ export function FolderTree({
         <div className="px-2 py-2 text-xs text-muted">{t('folder.noNotes')}</div>
       ) : (
         <div>
-          {/* Pinned Notes */}
+          {/* Pinned Notes (icon slot as in the tree: 9px + 1px border = folder row 8px + 2px border) */}
           {pinnedDocs.length > 0 && (
             <div
               className={`space-y-0.5 ${
@@ -70,7 +70,7 @@ export function FolderTree({
                   onClick={(e) =>
                     handleDocRowClick(e, d.id, () => onOpenDoc(d.id))
                   }
-                  className={`w-full flex items-center gap-2 px-2 py-1.5 min-h-11 sm:min-h-0 rounded-btn text-left text-sm sm:text-xs cursor-pointer border transition-colors ${
+                  className={`w-full flex items-center gap-1.5 pl-[9px] pr-2 py-1.5 min-h-11 sm:min-h-0 rounded-btn text-left text-sm sm:text-xs cursor-pointer border transition-colors ${
                     mergeHoverId === d.id
                       ? 'border-accent bg-accent/15 ring-2 ring-accent/30 text-main'
                       : markedDocIds.has(d.id)
@@ -80,7 +80,7 @@ export function FolderTree({
                       : 'border-transparent text-main hover:bg-panel-elevated'
                   }`}
                 >
-                  {d.icon && <span className="shrink-0">{d.icon}</span>}
+                  <DocRowIcon icon={d.icon} />
                   <span className="truncate flex-1">{d.title || t('editor.untitled')}</span>
                   {d.sharedWith && d.sharedWith.length > 0 && (
                     <Users className="w-3 h-3 text-status-ok shrink-0" />
@@ -131,7 +131,7 @@ export function FolderTree({
                   onClick={(e) =>
                     handleDocRowClick(e, d.id, () => onOpenDoc(d.id))
                   }
-                  className={`w-full flex items-center gap-2 px-2 py-1.5 min-h-11 sm:min-h-0 rounded-btn text-left text-sm sm:text-xs cursor-pointer border transition-colors ${
+                  className={`w-full flex items-center gap-1.5 pl-[9px] pr-2 py-1.5 min-h-11 sm:min-h-0 rounded-btn text-left text-sm sm:text-xs cursor-pointer border transition-colors ${
                     mergeHoverId === d.id
                       ? 'border-accent bg-accent/15 ring-2 ring-accent/30 text-main'
                       : markedDocIds.has(d.id)
@@ -141,7 +141,7 @@ export function FolderTree({
                       : 'border-transparent text-main hover:bg-panel-elevated'
                   }`}
                 >
-                  {d.icon && <span className="shrink-0">{d.icon}</span>}
+                  <DocRowIcon icon={d.icon} />
                   <span className="truncate flex-1">{d.title || t('editor.untitled')}</span>
                   {d.sharedWith && d.sharedWith.length > 0 && (
                     <Users className="w-3 h-3 text-status-ok shrink-0" />

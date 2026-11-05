@@ -435,14 +435,36 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
         offset = r.startOffset;
       }
     }
-    if (span && node && span.contains(node)) {
-      const range = document.createRange();
-      range.setStart(span, 0);
-      range.setEnd(node, offset);
-      pos = mapRenderedOffsetToRaw(raw, span.textContent || '', range.toString().length);
-    }
+    if (span && node && span.contains(node)) pos = rawOffsetAt(node, offset);
     ta.focus();
     ta.setSelectionRange(pos, pos);
+  };
+
+  // Offset in the raw text for a point in the rendered text layer
+  const rawOffsetAt = (node: Node, offset: number) => {
+    const span = renderedTextRef.current;
+    const raw = textareaRef.current?.value ?? '';
+    if (!span) return raw.length;
+    const range = document.createRange();
+    range.setStart(span, 0);
+    range.setEnd(node, offset);
+    return mapRenderedOffsetToRaw(raw, span.textContent || '', range.toString().length);
+  };
+
+  // Text marked with the mouse in the rendered layer of a bullet without focus: the text field takes over
+  // the same selection instead of only placing the caret (which dropped the marking)
+  const focusWithRenderedSelection = (): boolean => {
+    const ta = textareaRef.current;
+    const span = renderedTextRef.current;
+    const sel = window.getSelection();
+    if (!ta || !span || !sel || sel.isCollapsed || !sel.anchorNode || !sel.focusNode) return false;
+    if (!span.contains(sel.anchorNode) || !span.contains(sel.focusNode)) return false;
+    const a = rawOffsetAt(sel.anchorNode, sel.anchorOffset);
+    const f = rawOffsetAt(sel.focusNode, sel.focusOffset);
+    if (a === f) return false;
+    ta.focus();
+    ta.setSelectionRange(Math.min(a, f), Math.max(a, f), f < a ? 'backward' : 'forward');
+    return true;
   };
 
   const adjustHeight = useCallback(() => {
@@ -1290,9 +1312,8 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
                 ? 'bg-main scale-125'
                 : 'bg-faint group-hover/bullet:bg-accent group-hover/bullet:scale-125'
             } ${
-              // Empty rows and to-dos (their checkbox marks the row) show the dot only near the pointer;
-              // a collapsed to-do keeps it as the sign of hidden children, the focused one for tapping
-              isEmpty || (block.type === 'todo' && !activeFocus && !(block.collapsed && hasChildren))
+              // Empty rows show the dot only near the pointer (to-dos keep it: the guide lines start there)
+              isEmpty
                 ? 'opacity-0 group-hover:opacity-100 hover:opacity-100'
                 : 'opacity-100'
             }`}
@@ -1508,7 +1529,7 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
                 if (!activeFocus && canFocus && textareaRef.current) {
                   // Keep the row's click handler from moving the caret back to the end
                   e.stopPropagation();
-                  focusAtPoint(e.clientX, e.clientY);
+                  if (!focusWithRenderedSelection()) focusAtPoint(e.clientX, e.clientY);
                 }
               }}
               className={`w-full min-h-[1.5rem] leading-relaxed whitespace-pre-wrap break-words [overflow-wrap:anywhere] ${

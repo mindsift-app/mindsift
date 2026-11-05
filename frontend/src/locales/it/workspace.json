@@ -53,7 +53,6 @@
     "expandAllShortcut": "Ctrl+⇧+↓",
     "collapseAll": "Comprimi tutti i punti",
     "collapseAllShortcut": "Ctrl+⇧+↑",
-    "bulletGuides": "Linee guida per i sottopunti",
     "startFocusTitle": "Avvia modalità focus",
     "exitFocus": "Esci da focus",
     "noChildren": "Questo ramo non ha ancora sottopunti.",

@@ -53,7 +53,6 @@
     "expandAllShortcut": "Ctrl+Maj+↓",
     "collapseAll": "Replier toutes les puces",
     "collapseAllShortcut": "Ctrl+Maj+↑",
-    "bulletGuides": "Lignes de repère des sous-puces",
     "startFocusTitle": "Activer le mode focus",
     "exitFocus": "Quitter le focus",
     "noChildren": "Cette branche n'a pas encore de sous-puces.",

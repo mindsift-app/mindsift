@@ -53,7 +53,6 @@
     "expandAllShortcut": "Strg+⇧+↓",
     "collapseAll": "Alle Punkte zuklappen",
     "collapseAllShortcut": "Strg+⇧+↑",
-    "bulletGuides": "Linien bei Unterpunkten",
     "startFocusTitle": "Fokus-Modus starten",
     "exitFocus": "Fokus beenden",
     "noChildren": "Dieser Ast hat noch keine Unterpunkte.",
