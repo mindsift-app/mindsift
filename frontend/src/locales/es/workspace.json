@@ -63,7 +63,10 @@
     "focusShortcut": "Ctrl+⇧+F",
     "inTrashAction": "Error en la acción",
     "extracted": "Convertida en su propia nota «{{title}}»",
-    "zoomTo": "Hacer zoom a «{{title}}»"
+    "zoomTo": "Hacer zoom a «{{title}}»",
+    "moved": "Movido a «{{title}}»",
+    "extractedInto": "Extraído a «{{title}}»",
+    "moveFailed": "No se pudo mover"
   },
   "slash": {
     "todo": "Tarea con casilla de verificación",
@@ -388,5 +391,11 @@
     "title": "{{name}} está editando este punto ahora mismo",
     "copy": "{{name}} está editando esta versión ahora mismo; espera un momento",
     "someone": "Alguien"
+  },
+  "extractMenu": {
+    "title": "¿Extraer a dónde?",
+    "newNote": "Crear una nota nueva",
+    "search": "En una nota existente …",
+    "none": "Ninguna nota coincide"
   }
 }

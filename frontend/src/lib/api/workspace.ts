@@ -14,6 +14,7 @@ import {
   TagSummary,
   User,
   MergeResult,
+  MoveResult,
 } from '../types';
 import { ensureArray, request } from './client';
 
@@ -249,6 +250,19 @@ export const workspaceApi = {
   /** The way back from extractBranch: the linked note's blocks for the bullet; the note goes to the trash. */
   async inlineNote(docId: string, blockId: string): Promise<{ sourceId: string; content: string; blocks: DocumentBlock[] }> {
     return request(`/api/v1/documents/${docId}/inline`, { method: 'POST', body: JSON.stringify({ blockId }) });
+  },
+
+  /** Copies a bullet with its children to the end of another note; the editor then removes it here itself. */
+  async moveBranch(docId: string, blockId: string, targetId: string, clientId: string): Promise<MoveResult> {
+    return request<MoveResult>(`/api/v1/documents/${docId}/move`, {
+      method: 'POST',
+      body: JSON.stringify({ blockId, targetId, clientId }),
+    });
+  },
+
+  /** Takes a moved branch out of the target note again (the editor brings it back here by its own undo). */
+  async undoMove(docId: string, moved: MoveResult, clientId: string): Promise<void> {
+    await request(`/api/v1/documents/${docId}/move/undo`, { method: 'POST', body: JSON.stringify({ ...moved, clientId }) });
   },
 
   /** Puts a note created by extractBranch into the trash again. */

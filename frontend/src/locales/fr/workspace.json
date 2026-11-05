@@ -63,7 +63,10 @@
     "focusShortcut": "Ctrl+Maj+F",
     "inTrashAction": "Action échouée",
     "extracted": "Transformé en note autonome « {{title}} »",
-    "zoomTo": "Zoomer sur « {{title}} »"
+    "zoomTo": "Zoomer sur « {{title}} »",
+    "moved": "Déplacé dans « {{title}} »",
+    "extractedInto": "Extrait dans « {{title}} »",
+    "moveFailed": "Échec du déplacement"
   },
   "slash": {
     "todo": "Tâche avec case à cocher",
@@ -388,5 +391,11 @@
     "title": "{{name}} modifie ce point en ce moment",
     "copy": "{{name}} modifie cette version en ce moment – patiente un instant",
     "someone": "Quelqu'un"
+  },
+  "extractMenu": {
+    "title": "Extraire vers où ?",
+    "newNote": "Créer une nouvelle note",
+    "search": "Dans une note existante …",
+    "none": "Aucune note correspondante"
   }
 }

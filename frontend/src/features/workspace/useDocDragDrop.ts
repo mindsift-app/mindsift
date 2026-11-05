@@ -2,6 +2,10 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Document } from '../../lib/types';
 import { api, triggerHaptic } from '../../lib/api';
 import i18n from '../../i18n';
+import { announceMoveBranch, BLOCK_DRAG_TYPE } from './moveBranchEvent';
+
+// A note a bullet can be moved into: writable and not in the trash
+export const canTakeBranch = (d: Document) => !d.isArchived && (d.isOwner || d.permission === 'owner' || d.permission === 'write');
 
 interface UseDocDragDropOptions {
   docs: Document[];
@@ -18,7 +22,8 @@ interface UseDocDragDropOptions {
   onStatsChange: () => void;
 }
 
-// Dragging notes and folders in the sidebar (into folders, onto the trash, onto another note to merge)
+// Dragging notes and folders in the sidebar (into folders, onto the trash, onto another note to merge),
+// and bullets out of the open note onto another note (moves the branch there)
 // and marking several notes with Ctrl/Cmd+click or Shift+click
 export function useDocDragDrop({
   docs,
@@ -189,9 +194,24 @@ export function useDocDragDrop({
     setMergeDialog({ sourceId, targetId });
   };
 
-  // Dropping a dragged note onto another note (instead of a folder) offers to merge them
+  // A bullet of the open note dragged onto another note it may be moved into
+  const isBranchDrag = (e: React.DragEvent, targetId: string) => {
+    if (!e.dataTransfer.types.includes(BLOCK_DRAG_TYPE) || targetId === selectedDocId) return false;
+    const target = docs.find((d) => d.id === targetId);
+    return !!target && canTakeBranch(target);
+  };
+
+  // Dropping a dragged note onto another note (instead of a folder) offers to merge them; a dragged bullet
+  // moves there with its children
   const docDropProps = (targetId: string): React.HTMLAttributes<HTMLDivElement> => ({
     onDragOver: (e) => {
+      if (isBranchDrag(e, targetId)) {
+        e.preventDefault();
+        e.stopPropagation();
+        e.dataTransfer.dropEffect = 'move';
+        if (mergeHoverId !== targetId) setMergeHoverId(targetId);
+        return;
+      }
       if (!draggingDocId || draggingDocId === targetId || draggingDocIds.length > 1) return;
       e.preventDefault();
       e.stopPropagation();
@@ -200,6 +220,22 @@ export function useDocDragDrop({
     },
     onDragLeave: () => setMergeHoverId((cur) => (cur === targetId ? null : cur)),
     onDrop: (e) => {
+      if (isBranchDrag(e, targetId)) {
+        e.preventDefault();
+        e.stopPropagation();
+        setMergeHoverId(null);
+        try {
+          const { docId, blockId } = JSON.parse(e.dataTransfer.getData(BLOCK_DRAG_TYPE) || '{}');
+          const target = docs.find((d) => d.id === targetId);
+          if (docId && blockId && target) {
+            triggerHaptic(15);
+            announceMoveBranch({ docId, blockId, targetId, targetTitle: target.title });
+          }
+        } catch {
+          // not a bullet of this app
+        }
+        return;
+      }
       const sourceId = e.dataTransfer.getData('application/mindsift-doc-id') || draggingDocId;
       if (!sourceId || sourceId === targetId || draggedDocIds(e).length > 1) return;
       e.preventDefault();

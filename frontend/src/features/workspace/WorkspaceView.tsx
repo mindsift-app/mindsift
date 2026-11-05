@@ -34,7 +34,7 @@ import { TodoRollupView } from './TodoRollupView';
 import { HashtagOverview } from './HashtagOverview';
 import { TagDetailView } from './TagDetailView';
 import { WorkspaceTabBar } from './WorkspaceTabBar';
-import { useDocDragDrop } from './useDocDragDrop';
+import { canTakeBranch, useDocDragDrop } from './useDocDragDrop';
 import { useFocusMode } from './useFocusMode';
 import { useJournal } from './useJournal';
 import { useToast, WorkspaceToast } from './WorkspaceToast';
@@ -536,6 +536,15 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
     () => (journalDocIds.size ? docs.filter((d) => !(d.isOwner && journalDocIds.has(d.id))) : docs),
     [docs, journalDocIds]
   );
+  // Notes a bullet of the open note can be moved into, recently changed first
+  const moveTargets = useMemo(
+    () =>
+      docs
+        .filter((d) => d.id !== selectedDocId && canTakeBranch(d))
+        .sort((a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || ''))
+        .map((d) => ({ id: d.id, title: d.title, icon: d.icon })),
+    [docs, selectedDocId]
+  );
   const treeDocsRef = useRef(treeDocs);
   treeDocsRef.current = treeDocs;
 
@@ -892,6 +901,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
               reloadTrash();
               onStatsChange();
             }}
+            moveTargets={moveTargets}
             onBackMobile={() => setMobileShowDetail(false)}
             onOpenTask={onOpenTask}
             onSaveStatusChange={(status, err) => {

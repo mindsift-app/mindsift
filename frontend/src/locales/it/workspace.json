@@ -63,7 +63,10 @@
     "focusShortcut": "Ctrl+⇧+F",
     "inTrashAction": "Azione non riuscita",
     "extracted": "Convertito nella nota «{{title}}»",
-    "zoomTo": "Zoom su \"{{title}}\""
+    "zoomTo": "Zoom su \"{{title}}\"",
+    "moved": "Spostato in «{{title}}»",
+    "extractedInto": "Estratto in «{{title}}»",
+    "moveFailed": "Spostamento non riuscito"
   },
   "slash": {
     "todo": "Attività con casella di controllo",
@@ -388,5 +391,11 @@
     "title": "{{name}} sta modificando questo punto",
     "copy": "{{name}} sta modificando questa versione: attendi un momento",
     "someone": "Qualcuno"
+  },
+  "extractMenu": {
+    "title": "Estrarre dove?",
+    "newNote": "Crea una nuova nota",
+    "search": "In una nota esistente …",
+    "none": "Nessuna nota corrispondente"
   }
 }

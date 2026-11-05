@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"regexp"
@@ -27,6 +28,7 @@ var (
 	ErrNotNoteLink   = errors.New("Dieser Punkt ist kein Link auf eine Notiz")
 	ErrLinkedMissing = errors.New("Die verlinkte Notiz gibt es nicht (mehr)")
 	ErrInlineOwner   = errors.New("Zurückholen geht nur mit eigenen Notizen")
+	ErrMoveSelf      = errors.New("Der Punkt ist schon in dieser Notiz")
 )
 
 // readCollabDoc loads the current state of a note outside of a change.
@@ -43,8 +45,9 @@ func (s *Store) readCollabDoc(docID string) (*collab.Doc, error) {
 var (
 	titlePrefixRe = regexp.MustCompile(`^(\s*(-|\*|#{1,6}|\[[ xX]?\])\s+)+`)
 	titleTagRe    = regexp.MustCompile(`(^|\s)#[\p{L}0-9_-]+`)
-	// A bullet that is only a link to a note (with hashtags), as left behind by ExtractBranch
-	noteLinkOnlyRe = regexp.MustCompile(`^\s*\[\[[^\]]+\]\](\s+#[\p{L}0-9_-]+)*\s*$`)
+	// A bullet that is only a link to a note (with hashtags), as left behind by ExtractBranch; a link to
+	// a single bullet ([[Title#^id]], left behind by moving a branch) is not one
+	noteLinkOnlyRe = regexp.MustCompile(`^\s*\[\[[^\]#]+\]\](\s+#[\p{L}0-9_-]+)*\s*$`)
 )
 
 // branchTitle makes a note title from a bullet's text (without hashtags) and returns the hashtags,
@@ -376,6 +379,163 @@ func (s *Store) UndoMerge(userID string, m MergeResult, a collab.Actor, leases c
 		return []collab.Op{{OpID: domain.NewID("op"), Kind: collab.OpDelete, BlockID: m.HeadingID}}
 	})
 	return err
+}
+
+// MoveResult tells the client where the branch went and what to undo.
+type MoveResult struct {
+	TargetID    string `json:"targetId"`
+	TargetTitle string `json:"targetTitle"`
+	// The branch's bullet in the target note
+	RootID string `json:"rootId"`
+	// New block ID in the target → old block ID in the source, for undo
+	Moved map[string]string `json:"moved"`
+}
+
+// MoveBranch copies a bullet with its children to the end of another note (through the target's
+// operation log, so open editors follow live) and moves the links of tasks and subtasks on these
+// checkboxes along. Like ExtractBranch it does not change the source note: the editor removes the
+// branch there itself as an own edit (Strg+Z works). The caller checks write access to both notes.
+func (s *Store) MoveBranch(userID, sourceID, blockID, targetID string, a collab.Actor, sourceLeases, targetLeases collab.LeaseView) (*MoveResult, error) {
+	if sourceID == targetID {
+		return nil, ErrMoveSelf
+	}
+	target, err := s.GetDocumentByID(userID, targetID)
+	if err != nil {
+		return nil, err
+	}
+	if target.IsArchived {
+		return nil, ErrDocInTrash
+	}
+	state, err := s.readCollabDoc(sourceID)
+	if err != nil {
+		return nil, err
+	}
+	flat := state.Flatten()
+	start := -1
+	for i, b := range flat {
+		if b.ID == blockID {
+			start = i
+			break
+		}
+	}
+	if start < 0 {
+		return nil, ErrBlockNotFound
+	}
+	branch := []collab.FlatBlock{flat[start]}
+	for i := start + 1; i < len(flat) && flat[i].Level > flat[start].Level; i++ {
+		branch = append(branch, flat[i])
+	}
+	ids := make([]string, len(branch))
+	for i, b := range branch {
+		ids[i] = b.ID
+	}
+	if foreignLeaseIn(ids, a, sourceLeases) {
+		return nil, ErrBranchLocked
+	}
+
+	moved := map[string]string{}
+	rootID := ""
+	_, _, err = s.applyDocChange(targetID, a, targetLeases, func(d *collab.Doc) []collab.Op {
+		// After the last top-level block, deleted ones included, so keys never collide
+		last := ""
+		for _, b := range d.Blocks {
+			if b.ParentID == "" && b.OrderKey > last {
+				last = b.OrderKey
+			}
+		}
+		lastKey := map[string]string{"": last}
+		base := branch[0].Level
+		parents := []string{""}
+		var ops []collab.Op
+		for _, b := range branch {
+			level := b.Level - base
+			if level+1 > len(parents) {
+				continue // cannot happen with a flattened tree; guards against gaps
+			}
+			parents = parents[:level+1]
+			parent := parents[level]
+			k, err := collab.KeyBetween(lastKey[parent], "")
+			if err != nil {
+				return nil
+			}
+			lastKey[parent] = k
+			id := domain.NewID("blk")
+			content := b.Content
+			props := collab.Props{Checked: b.Props.Checked, Collapsed: b.Props.Collapsed, Lang: b.Props.Lang}
+			p := parent
+			ops = append(ops, collab.Op{OpID: domain.NewID("op"), Kind: collab.OpInsert, BlockID: id, ParentID: &p, OrderKey: k, Type: b.Type, Content: &content, Props: &props})
+			parents = append(parents, id)
+			moved[id] = b.ID
+			if rootID == "" {
+				rootID = id
+			}
+		}
+		return ops
+	})
+	if err != nil {
+		return nil, err
+	}
+	if rootID == "" {
+		return nil, ErrBlockNotFound
+	}
+	s.relinkTaskBlocks(sourceID, targetID, moved)
+	return &MoveResult{TargetID: targetID, TargetTitle: target.Title, RootID: rootID, Moved: moved}, nil
+}
+
+// relinkTaskBlocks points tasks and subtasks linked to checkboxes of note from at the matching
+// checkboxes of note to (ids: block ID in to → block ID in from).
+func (s *Store) relinkTaskBlocks(from, to string, ids map[string]string) {
+	newOf := map[string]string{}
+	for newID, oldID := range ids {
+		newOf[oldID] = newID
+	}
+	for oldID, newID := range newOf {
+		_, _ = s.db.Exec(`UPDATE thoughts SET converted_ref_id = ? WHERE converted_type = 'document_block' AND converted_ref_id = ?`,
+			to+":"+newID, from+":"+oldID)
+	}
+	for blockID, taskID := range s.docTaskLinks(to) {
+		if _, ok := ids[blockID]; !ok {
+			continue
+		}
+		var raw string
+		if s.db.QueryRow(`SELECT subtasks FROM thoughts WHERE id = ?`, taskID).Scan(&raw) != nil {
+			continue
+		}
+		var subs []domain.SubTask
+		if json.Unmarshal([]byte(raw), &subs) != nil {
+			continue
+		}
+		changed := false
+		for i := range subs {
+			if n, ok := newOf[subs[i].BlockID]; ok {
+				subs[i].BlockID, changed = n, true
+			}
+		}
+		if changed {
+			subsJSON, _ := json.Marshal(subs)
+			_, _ = s.db.Exec(`UPDATE thoughts SET subtasks = ? WHERE id = ?`, string(subsJSON), taskID)
+		}
+	}
+}
+
+// UndoMove removes a moved branch from the target note again and gives the task links back to the
+// source note's checkboxes (which the editor brings back itself, as the undo of its own edit).
+func (s *Store) UndoMove(sourceID string, m MoveResult, a collab.Actor, leases collab.LeaseView) error {
+	_, _, err := s.applyDocChange(m.TargetID, a, leases, func(d *collab.Doc) []collab.Op {
+		if b, ok := d.Blocks[m.RootID]; !ok || b.Deleted {
+			return nil
+		}
+		return []collab.Op{{OpID: domain.NewID("op"), Kind: collab.OpDelete, BlockID: m.RootID}}
+	})
+	if err != nil {
+		return err
+	}
+	back := map[string]string{}
+	for newID, oldID := range m.Moved {
+		back[oldID] = newID
+	}
+	s.relinkTaskBlocks(m.TargetID, sourceID, back)
+	return nil
 }
 
 // DocHead is the newest log position of a note (to tell open editors to sync).

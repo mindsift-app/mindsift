@@ -63,7 +63,10 @@
     "focusShortcut": "Ctrl+⇧+F",
     "inTrashAction": "Action failed",
     "extracted": "Turned into its own note “{{title}}”",
-    "zoomTo": "Zoom to \"{{title}}\""
+    "zoomTo": "Zoom to \"{{title}}\"",
+    "moved": "Moved to “{{title}}”",
+    "extractedInto": "Moved out to “{{title}}”",
+    "moveFailed": "Moving failed"
   },
   "slash": {
     "todo": "To-do with a checkbox",
@@ -388,5 +391,11 @@
     "title": "{{name}} is editing this bullet right now",
     "copy": "{{name}} is editing this version right now – please wait a moment",
     "someone": "Someone"
+  },
+  "extractMenu": {
+    "title": "Move out to where?",
+    "newNote": "Create a new note",
+    "search": "Into an existing note …",
+    "none": "No matching note"
   }
 }

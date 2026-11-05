@@ -34,5 +34,6 @@ export function buildBlockLink(title: string, blockId: string, blockContent: str
 
 /** A bullet that is only a link to a note (plus hashtags), as left behind when a branch became a note. */
 export function isNoteLinkOnly(content: string): boolean {
-  return /^\s*\[\[[^\]]+\]\](\s+#[\p{L}\p{N}_-]+)*\s*$/u.test(content);
+  // A link to a single bullet ([[Titel#^id]]) does not count: bringing it back would take the whole note
+  return /^\s*\[\[[^\]#]+\]\](\s+#[\p{L}\p{N}_-]+)*\s*$/u.test(content);
 }

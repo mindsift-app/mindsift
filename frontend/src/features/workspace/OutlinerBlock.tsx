@@ -43,6 +43,7 @@ import { renderInlineMarkdown } from '../../lib/markdown';
 import { api } from '../../lib/api';
 import { safeHref } from '../../lib/safeUrl';
 import { isNoteLinkOnly } from '../../lib/wikiLink';
+import { BLOCK_DRAG_TYPE } from './moveBranchEvent';
 import { caretAfterChange } from '../../lib/caret';
 import { useTranslation } from 'react-i18next';
 import i18n from '../../i18n';
@@ -115,7 +116,8 @@ export interface OutlinerBlockProps {
   levelOffset?: number;
   onZoomBlock?: (blockId: string) => void;
   /** Turns this bullet and its children into a note of its own */
-  onExtractBlock?: (blockId: string) => void;
+  /** at: where the extract button was clicked, to ask there where the branch should go */
+  onExtractBlock?: (blockId: string, at?: { x: number; y: number }) => void;
   onInlineBlock?: (blockId: string) => void;
   onUpdateBlock: (updated: DocumentBlock, immediate?: boolean) => void;
   onCreateBlockBelow: (afterBlockId: string, newContent?: string) => void;
@@ -1221,7 +1223,12 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
         <button
           type="button"
           draggable={canEdit}
-          onDragStart={() => canEdit && onDragStartBlock?.(index)}
+          onDragStart={(e) => {
+            if (!canEdit) return;
+            // Dropped onto another note in the sidebar, the branch moves there (moveBranchEvent.ts)
+            e.dataTransfer.setData(BLOCK_DRAG_TYPE, JSON.stringify({ docId: docId || block.documentId || block.docId || '', blockId: block.id }));
+            onDragStartBlock?.(index);
+          }}
           onClick={() => onZoomBlock?.(block.id)}
           className={`${
             block.type === 'numbered' && listMarker ? 'w-4 h-4 justify-end overflow-visible' : 'w-4 h-4 justify-center'
@@ -1793,7 +1800,7 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
         {canEdit && onExtractBlock && localContent.trim() !== '' && !isNoteLinkOnly(localContent) && !mediaPicker && (
           <button
             type="button"
-            onClick={() => onExtractBlock(block.id)}
+            onClick={(e) => onExtractBlock(block.id, { x: e.clientX, y: e.clientY })}
             className="p-1 sm:p-0.5 min-w-[28px] min-h-[28px] sm:min-w-0 sm:min-h-0 flex items-center justify-center text-faint hover:text-accent rounded-btn transition-colors cursor-pointer"
             title={t('block.extract')}
           >

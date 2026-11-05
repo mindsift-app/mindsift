@@ -10,10 +10,17 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Added
 - Notes remember where you were: after switching to another tab or looking into another note, a note opens again at the same scroll position and, if you had zoomed into a bullet, still zoomed in. Kept in this browser only, for the last 20 notes; a link to a bullet still opens at that bullet.
+- Notes: drag a bullet by its dot onto another note in the sidebar to move it there with all its children (to the end of that note). A hint offers "Open" and "Undo"; Ctrl+Z works as well. Tasks linked to checkboxes in the branch move along.
+- Notes: "Turn into its own note" asks where to: a new note (preselected, so click and Enter work as before) or, by typing its name, an existing note. Moving into an existing note leaves a link to the moved bullet behind.
+- Code blocks: Enter keeps the indentation of the line and goes one step deeper after a line ending in `:` (YAML, Python) or an opening bracket; between a pair of brackets the closing one moves to its own line. Tab and Shift+Tab use the indentation of the code (2 or 4 spaces, tabs), never tabs in YAML.
 
 ### Changed
 - Notes: the buttons on the right of a bullet no longer include "Zoom into this branch" (click the bullet's dot instead). To-dos lose their "⋯" menu: "Turn into an enhanced task" (or "Remove link" for a linked one) and "Turn into plain text" are buttons of their own, like for the other block types.
 - Notes: the dot in front of a to-do only shows when the pointer is near the row (like on empty rows), since the checkbox already marks it; a collapsed to-do keeps it.
+
+### Fixed
+- Code blocks: a key pressed right after Tab could land at the end of the block instead of at the caret.
+- Notes: a bullet that only holds a link to a single bullet of another note no longer offers "Bring back", which would have taken that whole note.
 
 ## [0.79.1] - 2026-11-05
 
