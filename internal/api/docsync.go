@@ -60,7 +60,10 @@ func (s *Server) handleDocSnapshot(w http.ResponseWriter, r *http.Request) {
 	if role == "" {
 		return
 	}
-	snap, err := s.store.GetDocSnapshot(docID)
+	snap, err := s.store.GetDocSnapshotCtx(r.Context(), docID)
+	if r.Context().Err() != nil {
+		return // the client has gone; nobody reads the answer
+	}
 	if err != nil {
 		writeError(w, http.StatusNotFound, err.Error())
 		return
@@ -83,6 +86,9 @@ func (s *Server) handleDocSync(w http.ResponseWriter, r *http.Request) {
 	if role == "" {
 		return
 	}
+	// Requests the client has already given up (timeout, page closed) are dropped instead of worked off:
+	// before the operations are applied, the client resends them anyway (opIds keep them single)
+	ctx := r.Context()
 	var req struct {
 		ClientID string      `json:"clientId"`
 		LastSeq  int64       `json:"lastSeq"`
@@ -111,6 +117,9 @@ func (s *Server) handleDocSync(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if ctx.Err() != nil {
+		return
+	}
 	actor := collab.Actor{UserID: userID, ClientID: req.ClientID}
 	if u, err := s.store.GetUserByID(userID); err == nil {
 		actor.Name = u.DisplayName
@@ -119,6 +128,7 @@ func (s *Server) handleDocSync(w http.ResponseWriter, r *http.Request) {
 
 	resp := syncResponse{Results: []collab.Result{}, Role: role, Leases: syncLeases{Granted: []string{}, Denied: []string{}}}
 	changed := false
+	var appliedHead int64
 	if req.Leases != nil && canEdit {
 		s.leases.ReleaseAllExcept(docID, req.ClientID, req.Leases.Hold)
 		s.leases.Release(docID, req.ClientID, req.Leases.Release)
@@ -127,7 +137,16 @@ func (s *Server) handleDocSync(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if len(req.Ops) > 0 {
-		results, _, err := s.store.ApplyDocOps(docID, actor, req.Ops, s.leases.View(docID))
+		results, head, err := s.store.ApplyDocOpsCtx(ctx, docID, actor, req.Ops, s.leases.View(docID))
+		appliedHead = head
+		if ctx.Err() != nil && err != nil {
+			return
+		}
+		if errors.Is(err, storage.ErrDocNotFound) {
+			// Deleted while the client was still typing in it
+			writeError(w, http.StatusNotFound, err.Error())
+			return
+		}
 		if err != nil {
 			writeError(w, http.StatusInternalServerError, err.Error())
 			return
@@ -159,9 +178,20 @@ func (s *Server) handleDocSync(w http.ResponseWriter, r *http.Request) {
 	if req.SkipLog {
 		logLimit = 0
 	}
-	entries, head, err := s.store.GetDocOpsSince(docID, req.LastSeq, logLimit)
+	entries, head, err := s.store.GetDocOpsSinceCtx(ctx, docID, req.LastSeq, logLimit)
 	compacted := errors.Is(err, storage.ErrLogCompacted)
 	if err != nil && !compacted {
+		// Applied operations still reach the others, even if this client is gone
+		if changed && appliedHead > 0 {
+			s.notifyDocChanged(docID, appliedHead)
+		}
+		if ctx.Err() != nil {
+			return
+		}
+		if errors.Is(err, storage.ErrDocNotFound) {
+			writeError(w, http.StatusNotFound, err.Error())
+			return
+		}
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -224,7 +254,14 @@ func (s *Server) handleDocChanges(w http.ResponseWriter, r *http.Request) {
 	_ = http.NewResponseController(w).SetWriteDeadline(time.Now().Add(wait + 10*time.Second))
 
 	woken := s.notifier.Changed(docID) // subscribe before reading, so no change can slip through
-	_, head, err := s.store.GetDocOpsSince(docID, since, 0)
+	_, head, err := s.store.GetDocOpsSinceCtx(r.Context(), docID, since, 0)
+	if r.Context().Err() != nil {
+		return
+	}
+	if errors.Is(err, storage.ErrDocNotFound) {
+		writeError(w, http.StatusNotFound, err.Error())
+		return
+	}
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -238,7 +275,7 @@ func (s *Server) handleDocChanges(w http.ResponseWriter, r *http.Request) {
 		case <-r.Context().Done():
 			return
 		}
-		_, head, _ = s.store.GetDocOpsSince(docID, since, 0)
+		_, head, _ = s.store.GetDocOpsSinceCtx(r.Context(), docID, since, 0)
 	}
 	writeJSON(w, http.StatusOK, map[string]interface{}{"headSeq": head, "changed": changed})
 }
