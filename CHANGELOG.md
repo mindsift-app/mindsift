@@ -8,7 +8,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [0.79.1] - 2026-11-05
 
+### Changed
+- Focus mode: the "Focus mode" badge and "Isolated branch • zoom active" above the branch title are gone; the breadcrumbs and "Exit focus" already show where you are.
+- Fjord theme: code blocks stand out more clearly from the page, and comments, strings, numbers and types in them are easier to read.
+
 ### Fixed
+- Notes: "Start focus mode" in the note menu was shown in German in every language.
 - Notes: deleting a bullet with its children is one step again, so a single Ctrl+Z (or the undo button) brings the whole branch back instead of one child per press.
 - Notes: Ctrl+Z and Ctrl+Y also work when the cursor is not in a bullet, e.g. right after clicking a bullet's delete button, the undo button or empty space.
 - Notes: opening the sharing dialog of a folder without adding anyone no longer marks the folder, and the notes in it, as shared.

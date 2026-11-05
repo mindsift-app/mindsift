@@ -47,9 +47,9 @@
     "readOnly": "Solo lectura",
     "inTrash": "Esta nota está en la papelera y es de solo lectura.",
     "sharedReadOnly": "Este documento se ha compartido contigo en modo solo lectura.",
-    "zoom": "Rama aislada • zoom activo",
     "branchTitle": "Título de la rama…",
     "exitFocusTitle": "Salir del modo de enfoque",
+    "startFocusTitle": "Iniciar modo de enfoque",
     "exitFocus": "Salir del enfoque",
     "noChildren": "Esta rama aún no tiene subpuntos.",
     "firstChild": "Crear el primer subpunto (o pulsa Enter)",
@@ -63,8 +63,7 @@
     "focusShortcut": "Ctrl+⇧+F",
     "inTrashAction": "Error en la acción",
     "extracted": "Convertida en su propia nota «{{title}}»",
-    "zoomTo": "Hacer zoom a «{{title}}»",
-    "focusMode": "Modo de enfoque"
+    "zoomTo": "Hacer zoom a «{{title}}»"
   },
   "slash": {
     "todo": "Tarea con casilla de verificación",

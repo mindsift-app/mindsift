@@ -15,7 +15,6 @@ import {
   Home,
   ChevronRight,
   Minimize2,
-  Sparkles,
   Plus,
   Check,
   CloudOff,
@@ -1249,7 +1248,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
                 ) : (
                   <Maximize2 className="w-3.5 h-3.5 text-accent shrink-0" />
                 )}
-                <span className="flex-1">{focusMode ? t('editor.exitFocusTitle') : 'Fokus-Modus starten'}</span>
+                <span className="flex-1">{focusMode ? t('editor.exitFocusTitle') : t('editor.startFocusTitle')}</span>
                 <kbd className="hidden sm:inline text-[10px] text-faint font-mono">{t('editor.focusShortcut')}</kbd>
               </button>
             )}
@@ -1414,15 +1413,6 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
           <div className="space-y-3">
             <div className="flex items-start justify-between gap-3 pb-4 mb-2 border-b border-border">
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1.5">
-                  <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-accent bg-accent-dim px-2 py-0.5 rounded-btn border border-accent/30">
-                    <Sparkles className="w-2.5 h-2.5 text-accent animate-pulse" />
-                    {t('workspace:editor.focusMode')}
-                  </span>
-                  <span className="text-[11px] text-faint hidden sm:inline">
-                    {t('editor.zoom')}
-                  </span>
-                </div>
                 <input
                   type="text"
                   value={zoomedBlock.content}

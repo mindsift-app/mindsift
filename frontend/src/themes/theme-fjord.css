@@ -19,7 +19,7 @@
   --bg-panel-hover: #cfd9e6;
   --bg-input: #fbfcfe;
   --bg-overlay: rgba(14, 24, 38, 0.45);
-  --bg-code: #eef2f8;
+  --bg-code: #e3eaf3;
   --bg-editor: #fafcff;
   --bg-sidebar: #edf2f8;
 
@@ -57,13 +57,13 @@
   --radius-pill: 9999px;
 
   /* --- 7. CODE SYNTAX HIGHLIGHTING (cool tones on paper) --- */
-  --code-keyword: #2b6cb0;
-  --code-string: #2f855a;
-  --code-number: #b7791f;
-  --code-comment: #7a8798;
+  --code-keyword: #245c98;
+  --code-string: #276749;
+  --code-number: #9a6416;
+  --code-comment: #667487;
   --code-property: #1a4e7a;
   --code-function: #6b46c1;
-  --code-type: #0e7490;
+  --code-type: #0b6178;
   --code-punctuation: #45556a;
   --code-variable: #1a4e7a;
 }
