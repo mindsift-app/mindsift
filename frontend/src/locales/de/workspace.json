@@ -50,6 +50,7 @@
     "branchTitle": "Ast-Titel…",
     "exitFocusTitle": "Fokus-Modus beenden",
     "expandAll": "Alle Punkte aufklappen",
+    "expandAllShortcut": "Strg+⇧+↓",
     "startFocusTitle": "Fokus-Modus starten",
     "exitFocus": "Fokus beenden",
     "noChildren": "Dieser Ast hat noch keine Unterpunkte.",

@@ -545,6 +545,8 @@ const it: HelpContent = {
     { key: 'Shift + Enter', scope: 'Workspace outliner', desc: 'Interruzione di riga morbida all\'interno del blocco' },
     { key: 'Backspace', scope: 'Workspace outliner', desc: 'Su blocco vuoto: elimina il blocco; all\'inizio: unisci' },
     { key: '↑ / ↓', scope: 'Workspace outliner', desc: 'Passa al blocco precedente o successivo' },
+    { key: 'Ctrl + L / Cmd + L', scope: 'Workspace outliner', desc: 'Inserisci un link (nota, punto o link web); il testo selezionato diventa il testo del link' },
+    { key: 'Ctrl + Maiusc + ↓', scope: 'Workspace outliner', desc: 'Espandi tutti i punti chiusi della nota' },
     { key: 'Ctrl + Z / Cmd + Z', scope: 'Workspace outliner', desc: 'Annulla l\'ultima azione nella nota' },
     { key: 'Ctrl + Y / Ctrl + Shift + Z', scope: 'Workspace outliner', desc: 'Ripeti un\'azione annullata' },
     { key: 'Trascina il mouse su più punti', scope: 'Workspace outliner', desc: 'Seleziona testo attraverso più punti; Canc/Backspace lo elimina, digitando lo sostituisce, Ctrl + C copia in Markdown (rientri, to-do, intestazioni)' },

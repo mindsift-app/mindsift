@@ -50,6 +50,7 @@
     "branchTitle": "Branch title…",
     "exitFocusTitle": "Exit focus mode",
     "expandAll": "Expand all bullets",
+    "expandAllShortcut": "Ctrl+⇧+↓",
     "startFocusTitle": "Start focus mode",
     "exitFocus": "Exit focus",
     "noChildren": "This branch has no sub-bullets yet.",

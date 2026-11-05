@@ -780,6 +780,30 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
     []
   );
 
+  // "Expand all bullets" (note menu, Ctrl+Shift+ArrowDown): one edit, so a single Strg+Z folds them back
+  const hasCollapsed = blocks.some((b) => b.collapsed);
+  const handleExpandAll = useCallback(() => {
+    if (!canEdit) return;
+    applyLocalBlocks((prev) => (prev.some((b) => b.collapsed) ? prev.map((b) => (b.collapsed ? { ...b, collapsed: false } : b)) : prev));
+  }, [canEdit, applyLocalBlocks]);
+  const expandAllRef = useRef(handleExpandAll);
+  expandAllRef.current = handleExpandAll;
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!(e.ctrlKey || e.metaKey) || !e.shiftKey || e.altKey || e.key !== 'ArrowDown') return;
+      const el = e.target as HTMLElement | null;
+      const root = scrollRef.current;
+      if (!root || inTrash) return;
+      // In this note, or nothing focused and this is the note that fills the view (not a journal day)
+      const inEditor = !!el && root.contains(el);
+      if (!inEditor && (embedded || (el && el !== document.body))) return;
+      e.preventDefault();
+      expandAllRef.current();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [embedded, inTrash]);
+
   // A bullet with its children becomes a note of its own. The server only creates the note; the branch
   // is replaced here as an ordinary own edit, so it shows at once, syncs like typing and Strg+Z works.
   // withLink false (dragged onto the "new note" button): the branch just leaves, like a move.
@@ -1422,19 +1446,21 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
               </button>
             )}
 
-            {/* One edit for all bullets, so a single Strg+Z folds them back */}
-            {canEdit && !inTrash && blocks.some((b) => b.collapsed) && (
+            {/* Always shown, so it can be found; greyed out while nothing is collapsed */}
+            {canEdit && !inTrash && (
               <button
                 type="button"
                 role="menuitem"
+                disabled={!hasCollapsed}
                 onClick={() => {
                   setShowActionsMenu(false);
-                  applyLocalBlocks((prev) => prev.map((b) => (b.collapsed ? { ...b, collapsed: false } : b)));
+                  handleExpandAll();
                 }}
-                className="w-full min-h-[44px] sm:min-h-0 px-2.5 py-2 sm:py-1.5 rounded-btn hover:bg-panel-elevated text-left text-main font-medium flex items-center gap-2 transition-colors cursor-pointer"
+                className="w-full min-h-[44px] sm:min-h-0 px-2.5 py-2 sm:py-1.5 rounded-btn enabled:hover:bg-panel-elevated text-left text-main font-medium flex items-center gap-2 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-default"
               >
                 <ChevronsUpDown className="w-3.5 h-3.5 text-accent shrink-0" />
-                <span>{t('editor.expandAll')}</span>
+                <span className="flex-1">{t('editor.expandAll')}</span>
+                <kbd className="hidden sm:inline text-[10px] text-faint font-mono">{t('editor.expandAllShortcut')}</kbd>
               </button>
             )}
 

@@ -540,6 +540,8 @@ const fr: HelpContent = {
     { key: 'Maj + Entrée', scope: 'Outliner Workspace', desc: 'Saut de ligne doux au sein du bloc' },
     { key: 'Retour arrière', scope: 'Outliner Workspace', desc: 'Sur un bloc vide : supprimer le bloc ; au début : fusionner' },
     { key: '↑ / ↓', scope: 'Outliner Workspace', desc: 'Naviguer vers le bloc précédent / suivant' },
+    { key: 'Ctrl + L / Cmd + L', scope: 'Outliner Workspace', desc: 'Insérer un lien (note, puce ou lien web) ; le texte sélectionné devient le texte du lien' },
+    { key: 'Ctrl + Maj + ↓', scope: 'Outliner Workspace', desc: 'Déplier toutes les puces repliées de la note' },
     { key: 'Ctrl + Z / Cmd + Z', scope: 'Outliner Workspace', desc: 'Annuler la dernière action dans la note' },
     { key: 'Ctrl + Y / Ctrl + Maj + Z', scope: 'Outliner Workspace', desc: 'Rétablir une action annulée' },
     { key: 'Glisser la souris sur plusieurs puces', scope: 'Outliner Workspace', desc: 'Sélectionner le texte sur plusieurs puces ; Suppr/Retour arrière le supprime, taper le remplace, Ctrl + C copie en Markdown (indentation, tâches, titres)' },

@@ -874,9 +874,10 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
     }
     if (!canEdit) return;
 
-    // Formatting shortcuts (Ctrl/Cmd+B, Ctrl/Cmd+I, Ctrl/Cmd+K) - not in code blocks
-    const isMod = (e.ctrlKey || e.metaKey) && !e.altKey;
-    if (isMod && canEdit && block.type !== 'code' && ['b', 'i', 'k'].includes(e.key.toLowerCase())) {
+    // Formatting shortcuts (Ctrl/Cmd+B, Ctrl/Cmd+I, Ctrl/Cmd+L for a link) - not in code blocks. Ctrl+K
+    // stays with the global search; Ctrl+L would otherwise go to the browser's address bar.
+    const isMod = (e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey;
+    if (isMod && canEdit && block.type !== 'code' && ['b', 'i', 'l'].includes(e.key.toLowerCase())) {
       e.preventDefault();
       e.stopPropagation();
 
@@ -886,7 +887,7 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
       const text = ta.value;
       const hasSelection = start < end;
 
-      if (e.key.toLowerCase() === 'k') {
+      if (e.key.toLowerCase() === 'l') {
         if (!hasSelection) {
           setShowLinkModal(true);
           return;
