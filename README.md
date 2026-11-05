@@ -177,6 +177,26 @@ The most important settings (all of them, with explanations, are in [`.env.examp
 
 ---
 
+## 📈 Performance
+
+MindSift is load-tested on the public demo, a deliberately small server with **1 CPU core and 1 GB RAM**. Simulated people sign in, open notes and type in them, work with tasks and lists and search, all at the same time:
+
+| People working at once | Typical answer (median) | Slowest 5 % | Errors |
+|---|---|---|---|
+| 200, about 10 per note | ~0.25 s | ~1 s | 0 % |
+| 300, about 10 per note | ~3 s | ~6–9 s | under 1 % |
+| 200, all in the **same** note | ~3 s for an edit | ~7.5 s | 0 % |
+
+* **Around 200 people working at the same moment** run smoothly on that single core. That is far more than are usually active at once on an instance of a few hundred accounts.
+* **Above that, the CPU is the limit**, and everything slows down evenly instead of failing. More cores or a faster CPU help directly.
+* **Many people in one note:** changes to the same note are applied one after another so that nobody's edits get lost. Hundreds typing in a single note at once therefore wait for each other; opening the note stays fast.
+* **It recovers by itself:** even after 1,200 people at once the server answers normally again as soon as the load drops, without a restart.
+* **Search** was the most expensive request in these runs and has become about four times faster on the server since (v0.83.4).
+
+All data lives in one SQLite file, so a single server is the intended setup; there is no cluster mode.
+
+---
+
 ## 🔒 Your data is yours
 
 No telemetry, no third-party services, fonts and icons ship with the app. The server only connects out for what you use: notifications (SMTP, Discord, your webhook, the browsers' push services), link previews (switchable per device) and your own Whisper server. Everything lives in one SQLite file, media next to it in `data/media/`. Export the whole workspace as an Obsidian-compatible Markdown archive, or your data as a backup ZIP, whenever you want.
