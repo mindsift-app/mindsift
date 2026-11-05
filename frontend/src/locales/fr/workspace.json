@@ -89,8 +89,6 @@
   "block": {
     "expand": "Déplier les sous-puces",
     "collapse": "Replier les sous-puces",
-    "dragMore_one": "+ {{count}} élément de plus",
-    "dragMore_other": "+ {{count}} éléments de plus",
     "dragZoom": "Glisser pour déplacer • clic : zoomer sur la branche (mode focus)",
     "clickZoom": "Clic : zoomer sur cette branche (mode focus)",
     "markOpen": "Marquer comme à faire",
@@ -245,6 +243,7 @@
     "search": "Rechercher des notes…",
     "newFolder": "Nouveau dossier",
     "newNote": "Créer une nouvelle note",
+    "newNoteDrop": "Nouvelle note – ou glissez une puce ici pour en faire une note à part",
     "unpinSidebar": "Désépingler la barre latérale",
     "pinSidebar": "Épingler la barre latérale",
     "noneSelected": "Aucune note sélectionnée",

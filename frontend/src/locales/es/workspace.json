@@ -89,8 +89,6 @@
   "block": {
     "expand": "Desplegar subpuntos",
     "collapse": "Plegar subpuntos",
-    "dragMore_one": "+ {{count}} elemento más",
-    "dragMore_other": "+ {{count}} elementos más",
     "dragZoom": "Arrastra para mover • clic: zoom a la rama (modo de enfoque)",
     "clickZoom": "Clic: zoom a esta rama (modo de enfoque)",
     "markOpen": "Marcar como pendiente",
@@ -245,6 +243,7 @@
     "search": "Buscar notas…",
     "newFolder": "Nueva carpeta",
     "newNote": "Crear una nueva nota",
+    "newNoteDrop": "Nueva nota: o arrastra una viñeta aquí para convertirla en una nota propia",
     "unpinSidebar": "Desfijar barra lateral",
     "pinSidebar": "Fijar barra lateral",
     "noneSelected": "Ninguna nota seleccionada",

@@ -207,7 +207,7 @@ const it: HelpContent = {
               <strong className="text-main">Spostamento blocchi:</strong> afferra un punto elenco tenendo premuto il pulsante del mouse per trascinarlo con tutti i suoi sottopunti in una nuova posizione.
             </li>
             <li>
-              <strong className="text-main">In un'altra nota:</strong> trascina il punto elenco su una nota nella barra laterale e l'intero ramo finisce in fondo a quella nota. L'avviso successivo offre «Apri» e «Annulla», anche Ctrl+Z funziona; le attività collegate lo seguono.
+              <strong className="text-main">In un'altra nota:</strong> trascina il punto elenco su una nota nella barra laterale e l'intero ramo finisce in fondo a quella nota. Se lo rilasci sul + per una nuova nota in cima alla barra laterale, diventa una nuova nota a sé. L'avviso successivo offre «Apri» e «Annulla», anche Ctrl+Z funziona; le attività collegate lo seguono.
             </li>
             <li>
               <strong className="text-main">Estrarre:</strong> il pulsante «Trasforma in nota» a destra del punto chiede la destinazione: Invio crea una nuova nota, digitando ne cerchi una esistente. Al vecchio posto resta un link al punto spostato.

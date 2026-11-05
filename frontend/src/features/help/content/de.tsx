@@ -274,7 +274,7 @@ const de: HelpContent = {
               <strong className="text-main">Blöcke verschieben:</strong> Packe einen Bullet-Punkt mit gedrückter Maustaste, um ihn samt aller untergeordneten Punkte an eine neue Stelle zu ziehen.
             </li>
             <li>
-              <strong className="text-main">In eine andere Notiz:</strong> Ziehst du den Bullet-Punkt auf eine Notiz in der Seitenleiste, wandert der ganze Ast ans Ende dieser Notiz. Der Hinweis danach bietet „Öffnen“ und „Rückgängig“, Strg+Z geht auch; verknüpfte Aufgaben ziehen mit.
+              <strong className="text-main">In eine andere Notiz:</strong> Ziehst du den Bullet-Punkt auf eine Notiz in der Seitenleiste, wandert der ganze Ast ans Ende dieser Notiz. Auf dem Plus für eine neue Notiz oben in der Seitenleiste abgelegt, wird er zu einer eigenen neuen Notiz. Der Hinweis danach bietet „Öffnen“ und „Rückgängig“, Strg+Z geht auch; verknüpfte Aufgaben ziehen mit.
             </li>
             <li>
               <strong className="text-main">Auslagern:</strong> Der Knopf „In eigene Notiz umwandeln“ rechts am Bullet fragt nach dem Ziel: Enter legt eine neue Notiz an, Tippen sucht eine bestehende. An der alten Stelle bleibt ein Link auf den verschobenen Punkt.

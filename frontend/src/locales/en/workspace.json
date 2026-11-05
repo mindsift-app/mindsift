@@ -89,8 +89,6 @@
   "block": {
     "expand": "Expand sub-bullets",
     "collapse": "Collapse sub-bullets",
-    "dragMore_one": "+ {{count}} more item",
-    "dragMore_other": "+ {{count}} more items",
     "dragZoom": "Drag to move • click: zoom into the branch (focus mode)",
     "clickZoom": "Click: zoom into this branch (focus mode)",
     "markOpen": "Mark as open",
@@ -245,6 +243,7 @@
     "search": "Search notes…",
     "newFolder": "New folder",
     "newNote": "Create a new note",
+    "newNoteDrop": "New note – or drag a bullet here to turn it into a note of its own",
     "unpinSidebar": "Unpin sidebar",
     "pinSidebar": "Pin sidebar",
     "noneSelected": "No note selected",

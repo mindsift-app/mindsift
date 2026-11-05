@@ -89,8 +89,6 @@
   "block": {
     "expand": "Unterpunkte ausklappen",
     "collapse": "Unterpunkte einklappen",
-    "dragMore_one": "+ {{count}} weiterer Punkt",
-    "dragMore_other": "+ {{count}} weitere Punkte",
     "dragZoom": "Ziehen zum Verschieben • Klick: Ast hineinzoomen (Fokus-Modus)",
     "clickZoom": "Klick: In diesen Ast hineinzoomen (Fokus-Modus)",
     "markOpen": "Als offen markieren",
@@ -245,6 +243,7 @@
     "search": "Notizen durchsuchen…",
     "newFolder": "Neuer Ordner",
     "newNote": "Neue Notiz anlegen",
+    "newNoteDrop": "Neue Notiz anlegen – oder einen Bullet hierher ziehen, um ihn als eigene Notiz auszulagern",
     "unpinSidebar": "Seitenleiste lösen",
     "pinSidebar": "Seitenleiste anpinnen",
     "noneSelected": "Keine Notiz ausgewählt",

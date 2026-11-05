@@ -691,7 +691,8 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
     const info = lastExtractRef.current;
     if (!info) return;
     const block = currentBlocksRef.current.find((b) => b.id === info.blockId);
-    if (block && block.content === info.link) return; // the undone step was something else
+    // The undone step was something else: the link (or, without one, the gap of the branch) is still there
+    if (info.link ? block?.content === info.link : !block) return;
     lastExtractRef.current = null;
     api
       .undoExtract(info.newDocId)
@@ -762,8 +763,9 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
 
   // A bullet with its children becomes a note of its own. The server only creates the note; the branch
   // is replaced here as an ordinary own edit, so it shows at once, syncs like typing and Strg+Z works.
+  // withLink false (dragged onto the "new note" button): the branch just leaves, like a move.
   const handleExtractBlock = useCallback(
-    async (blockId: string) => {
+    async (blockId: string, withLink = true) => {
       const engine = engineRef.current;
       if (!engine) return;
       try {
@@ -777,12 +779,16 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
           const level = prev[i].level || 0;
           let end = i + 1;
           while (end < prev.length && (prev[end].level || 0) > level) end++;
-          applyLocalBlocks([...prev.slice(0, i), { ...prev[i], content: link }, ...prev.slice(end)]);
+          applyLocalBlocks(
+            withLink
+              ? [...prev.slice(0, i), { ...prev[i], content: link }, ...prev.slice(end)]
+              : ensureNonEmptyBlocks(docId, [...prev.slice(0, i), ...prev.slice(end)])
+          );
         }
         lastInlineRef.current = null;
-        lastExtractRef.current = { newDocId: created.id, blockId, link };
+        lastExtractRef.current = { newDocId: created.id, blockId, link: withLink ? link : '' };
         onDocCreated?.(created);
-        showNotice(i18n.t('workspace:editor.extracted', { title: created.title }), [
+        showNotice(i18n.t(withLink ? 'workspace:editor.extracted' : 'workspace:editor.moved', { title: created.title }), [
           { label: i18n.t('workspace:editor.open'), run: () => onOpenDocBlock?.(created.id) },
           { label: i18n.t('common:sync.undo'), run: () => handleUndo() },
         ]);
@@ -837,11 +843,14 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
   // A bullet dragged out of this note onto another note in the sidebar (useDocDragDrop)
   const handleMoveBranchRef = useRef(handleMoveBranch);
   handleMoveBranchRef.current = handleMoveBranch;
+  const handleExtractBlockRef = useRef(handleExtractBlock);
+  handleExtractBlockRef.current = handleExtractBlock;
   useEffect(() => {
     const onMove = (e: Event) => {
       const { docId: from, blockId, targetId, targetTitle } = (e as CustomEvent).detail || {};
       if (from !== docId || embedded) return;
-      void handleMoveBranchRef.current(blockId, { id: targetId, title: targetTitle }, false);
+      if (!targetId) void handleExtractBlockRef.current(blockId, false);
+      else void handleMoveBranchRef.current(blockId, { id: targetId, title: targetTitle }, false);
     };
     window.addEventListener(MOVE_BRANCH_EVENT, onMove);
     return () => window.removeEventListener(MOVE_BRANCH_EVENT, onMove);

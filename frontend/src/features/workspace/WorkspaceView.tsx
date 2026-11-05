@@ -743,11 +743,13 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
               >
                 <FolderPlus className="w-4 h-4" />
               </button>
+              {/* A bullet dragged here becomes a note of its own */}
               <button
                 type="button"
                 onClick={() => handleCreateDocument('')}
-                className="btn-icon h-8 w-8"
-                title={t('view.newNote')}
+                {...drag.newNoteDropProps}
+                className={`btn-icon h-8 w-8 transition-transform ${drag.newNoteHover ? 'scale-110 text-accent ring-2 ring-accent bg-accent/10' : ''}`}
+                title={t('view.newNoteDrop')}
                 aria-label={t('view.newNote')}
               >
                 <FilePlus className="w-4 h-4" />

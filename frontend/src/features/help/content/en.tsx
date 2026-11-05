@@ -207,7 +207,7 @@ const en: HelpContent = {
               <strong className="text-main">Moving blocks:</strong> grab a bullet with the mouse button held down to drag it with all its sub-bullets to a new spot.
             </li>
             <li>
-              <strong className="text-main">Into another note:</strong> drag the bullet onto a note in the sidebar and the whole branch moves to the end of that note. The hint afterwards offers “Open” and “Undo”, Ctrl+Z works as well; linked tasks move along.
+              <strong className="text-main">Into another note:</strong> drag the bullet onto a note in the sidebar and the whole branch moves to the end of that note. Dropped onto the plus for a new note at the top of the sidebar, it becomes a new note of its own. The hint afterwards offers “Open” and “Undo”, Ctrl+Z works as well; linked tasks move along.
             </li>
             <li>
               <strong className="text-main">Moving out:</strong> the “Turn into its own note” button on the right of a bullet asks where to: Enter creates a new note, typing finds an existing one. A link to the moved bullet stays in its old place.
