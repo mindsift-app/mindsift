@@ -196,7 +196,7 @@ const it: HelpContent = {
       title: 'Zoom isolato, trascinamento e preferiti',
       subtitle: 'Mantieni la concentrazione e ordina liberamente le note',
       icon: Pin,
-      keywords: ['hoisting', 'zoom', 'trascina', 'rilascia', 'cartelle', 'sposta', 'fissa', 'breadcrumb'],
+      keywords: ['altra nota', 'estrai', 'hoisting', 'zoom', 'trascina', 'rilascia', 'cartelle', 'sposta', 'fissa', 'breadcrumb'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
           <ul className="space-y-1.5">
@@ -205,6 +205,12 @@ const it: HelpContent = {
             </li>
             <li>
               <strong className="text-main">Spostamento blocchi:</strong> afferra un punto elenco tenendo premuto il pulsante del mouse per trascinarlo con tutti i suoi sottopunti in una nuova posizione.
+            </li>
+            <li>
+              <strong className="text-main">In un'altra nota:</strong> trascina il punto elenco su una nota nella barra laterale e l'intero ramo finisce in fondo a quella nota. L'avviso successivo offre «Apri» e «Annulla», anche Ctrl+Z funziona; le attività collegate lo seguono.
+            </li>
+            <li>
+              <strong className="text-main">Estrarre:</strong> il pulsante «Trasforma in nota» a destra del punto chiede la destinazione: Invio crea una nuova nota, digitando ne cerchi una esistente. Al vecchio posto resta un link al punto spostato.
             </li>
             <li>
               <strong className="text-main">Gestione cartelle:</strong> le note nella barra laterale a sinistra possono essere organizzate in sottocartelle tramite trascinamento.
