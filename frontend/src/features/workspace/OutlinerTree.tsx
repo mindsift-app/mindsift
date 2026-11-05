@@ -20,7 +20,8 @@ export interface OutlinerTreeProps {
   canEdit: boolean;
   levelOffset?: number;
   onZoomBlock?: (blockId: string) => void;
-  onExtractBlock?: (blockId: string) => void;
+  /** at: where the extract button was clicked, to ask there where the branch should go */
+  onExtractBlock?: (blockId: string, at?: { x: number; y: number }) => void;
   onInlineBlock?: (blockId: string) => void;
   onUpdateBlock: (updated: DocumentBlock, immediate?: boolean) => void;
   onUpdateBlocks?: (updated: DocumentBlock[]) => void;

@@ -760,6 +760,14 @@ export interface Session {
 }
 
 // Answer of merging two notes; kept by the client to undo it
+// A branch moved into another note (POST /documents/{id}/move)
+export interface MoveResult {
+  targetId: string;
+  targetTitle: string;
+  rootId: string; // the branch's bullet in the target note
+  moved: Record<string, string>; // new block id in the target → block id here
+}
+
 export interface MergeResult {
   targetId: string;
   sourceId: string;

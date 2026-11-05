@@ -63,7 +63,10 @@
     "focusShortcut": "Ctrl+⇧+F",
     "inTrashAction": "Action failed",
     "extracted": "Turned into its own note “{{title}}”",
-    "zoomTo": "Zoom to \"{{title}}\""
+    "zoomTo": "Zoom to \"{{title}}\"",
+    "moved": "Moved to “{{title}}”",
+    "extractedInto": "Moved out to “{{title}}”",
+    "moveFailed": "Moving failed"
   },
   "slash": {
     "todo": "To-do with a checkbox",
@@ -103,8 +106,6 @@
     "chooseCommand": "Choose a command",
     "noCommand": "No command found",
     "toText": "Turn into plain text",
-    "taskOptions": "Task options",
-    "subtaskOfLinked": "Subtask of a linked task",
     "createTaskFailed": "Creating the extended task failed",
     "toTask": "Turn into an extended task",
     "unlinkFailed": "Removing the link failed",
@@ -113,7 +114,6 @@
     "extract": "Turn into its own note (with all sub-bullets)",
     "pullBackTitle": "Pull the note back (its bullets come back here, the note goes to the trash)",
     "pullBack": "Pull note back",
-    "zoom": "Zoom into this branch (focus mode)",
     "delete": "Delete block"
   },
   "trash": {
@@ -391,5 +391,11 @@
     "title": "{{name}} is editing this bullet right now",
     "copy": "{{name}} is editing this version right now – please wait a moment",
     "someone": "Someone"
+  },
+  "extractMenu": {
+    "title": "Move out to where?",
+    "newNote": "Create a new note",
+    "search": "Into an existing note …",
+    "none": "No matching note"
   }
 }

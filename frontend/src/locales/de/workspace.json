@@ -63,7 +63,10 @@
     "focusShortcut": "Strg+⇧+F",
     "inTrashAction": "Aktion fehlgeschlagen",
     "extracted": "In eigene Notiz „{{title}}“ umgewandelt",
-    "zoomTo": "Zoom zu \"{{title}}\""
+    "zoomTo": "Zoom zu \"{{title}}\"",
+    "moved": "In „{{title}}“ verschoben",
+    "extractedInto": "In „{{title}}“ ausgelagert",
+    "moveFailed": "Verschieben fehlgeschlagen"
   },
   "slash": {
     "todo": "Aufgabe mit Checkbox",
@@ -103,8 +106,6 @@
     "chooseCommand": "Befehl auswählen",
     "noCommand": "Kein Befehl gefunden",
     "toText": "In normalen Text umwandeln",
-    "taskOptions": "Aufgaben-Optionen",
-    "subtaskOfLinked": "Unteraufgabe einer verknüpften Aufgabe",
     "createTaskFailed": "Fehler beim Erstellen der erweiterten Aufgabe",
     "toTask": "In erweiterte Aufgabe umwandeln",
     "unlinkFailed": "Fehler beim Aufheben der Verknüpfung",
@@ -113,7 +114,6 @@
     "extract": "In eigene Notiz umwandeln (mit allen Unterpunkten)",
     "pullBackTitle": "Notiz zurückholen (ihre Punkte kommen wieder hierher, die Notiz in den Papierkorb)",
     "pullBack": "Notiz zurückholen",
-    "zoom": "In diesen Ast hineinzoomen (Fokus-Modus)",
     "delete": "Block löschen"
   },
   "trash": {
@@ -387,5 +387,11 @@
     "title": "{{name}} bearbeitet diesen Punkt gerade",
     "copy": "{{name}} bearbeitet diese Version gerade – bitte kurz warten",
     "someone": "Jemand"
+  },
+  "extractMenu": {
+    "title": "Wohin auslagern?",
+    "newNote": "Neue Notiz anlegen",
+    "search": "In bestehende Notiz …",
+    "none": "Keine passende Notiz"
   }
 }

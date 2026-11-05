@@ -262,3 +262,78 @@ func TestInlineNoteBringsBranchBack(t *testing.T) {
 		t.Fatalf("restore: %d %s", rec.Code, rec.Body.String())
 	}
 }
+
+func TestMoveBranchToOtherNote(t *testing.T) {
+	srv, store, token := setupTestServer(t)
+	router := srv.Router()
+	claims, _ := auth.ValidateToken(testJWTSecret, token)
+	uid := claims.UserID
+	src, _ := store.CreateDocument(uid, "", "Quelle", "", "", []domain.DocumentBlock{
+		{ID: "blk_a", Type: "bullet", Content: "Garten", Level: 0, Position: 1},
+		{ID: "blk_b", Type: "bullet", Content: "Beete", Level: 1, Position: 2},
+		{ID: "blk_c", Type: "todo", Content: "Erde kaufen", Level: 2, Position: 3},
+		{ID: "blk_d", Type: "bullet", Content: "Danach", Level: 0, Position: 4},
+	}, nil, false)
+	dst, _ := store.CreateDocument(uid, "", "Ziel", "", "", []domain.DocumentBlock{
+		{ID: "blk_z", Type: "bullet", Content: "Schon da", Level: 0, Position: 1},
+	}, nil, false)
+	task, err := store.CreateTaskFromDocBlock(uid, src.ID, "blk_c", "Erde kaufen", false)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if rec := sessionCall(router, "POST", "/api/v1/documents/"+src.ID+"/move", token, `{"blockId":"blk_a","targetId":"`+src.ID+`"}`, ""); rec.Code != http.StatusBadRequest {
+		t.Fatalf("move into the same note: %d", rec.Code)
+	}
+	_, strangerToken := newTestUser(t, store, "fremd3@example.com")
+	if rec := sessionCall(router, "POST", "/api/v1/documents/"+src.ID+"/move", strangerToken, `{"blockId":"blk_a","targetId":"`+dst.ID+`"}`, ""); rec.Code != http.StatusForbidden {
+		t.Fatalf("stranger must not move: %d", rec.Code)
+	}
+
+	rec := sessionCall(router, "POST", "/api/v1/documents/"+src.ID+"/move", token, `{"blockId":"blk_a","targetId":"`+dst.ID+`"}`, "")
+	if rec.Code != http.StatusOK {
+		t.Fatalf("move: %d %s", rec.Code, rec.Body.String())
+	}
+	var res storage.MoveResult
+	_ = json.Unmarshal(rec.Body.Bytes(), &res)
+	if res.TargetTitle != "Ziel" || res.RootID == "" || res.Moved[res.RootID] != "blk_a" || len(res.Moved) != 3 {
+		t.Fatalf("result: %+v", res)
+	}
+	if got := strings.Join(flatOf(t, store, uid, dst.ID), "|"); got != "Schon da|Garten|>Beete|>>Erde kaufen" {
+		t.Fatalf("target: %s", got)
+	}
+	// The server leaves the source alone; the editor removes the branch itself
+	if got := strings.Join(flatOf(t, store, uid, src.ID), "|"); got != "Garten|>Beete|>>Erde kaufen|Danach" {
+		t.Fatalf("source must stay unchanged on the server: %s", got)
+	}
+	moved, _ := store.GetThoughtByIDUnchecked(task.ID)
+	if moved.DocID != dst.ID || res.Moved[moved.BlockID] != "blk_c" {
+		t.Fatalf("task must follow the checkbox: %s:%s", moved.DocID, moved.BlockID)
+	}
+
+	body, _ := json.Marshal(res)
+	if rec := sessionCall(router, "POST", "/api/v1/documents/"+src.ID+"/move/undo", token, string(body), ""); rec.Code != http.StatusOK {
+		t.Fatalf("undo: %d %s", rec.Code, rec.Body.String())
+	}
+	if got := strings.Join(flatOf(t, store, uid, dst.ID), "|"); got != "Schon da" {
+		t.Fatalf("target after undo: %s", got)
+	}
+	back, _ := store.GetThoughtByIDUnchecked(task.ID)
+	if back.DocID != src.ID || back.BlockID != "blk_c" {
+		t.Fatalf("task must be linked to the source again: %s:%s", back.DocID, back.BlockID)
+	}
+}
+
+func TestInlineRejectsLinkToSingleBullet(t *testing.T) {
+	srv, store, token := setupTestServer(t)
+	router := srv.Router()
+	claims, _ := auth.ValidateToken(testJWTSecret, token)
+	uid := claims.UserID
+	_, _ = store.CreateDocument(uid, "", "Ziel", "", "", []domain.DocumentBlock{{ID: "blk_z", Type: "bullet", Content: "Garten", Level: 0}}, nil, false)
+	src, _ := store.CreateDocument(uid, "", "Quelle", "", "", []domain.DocumentBlock{
+		{ID: "blk_l", Type: "bullet", Content: "[[Ziel#^blk_z|Ziel › Garten]]", Level: 0},
+	}, nil, false)
+	if rec := sessionCall(router, "POST", "/api/v1/documents/"+src.ID+"/inline", token, `{"blockId":"blk_l"}`, ""); rec.Code != http.StatusBadRequest {
+		t.Fatalf("a link to one bullet must not bring back the whole note: %d %s", rec.Code, rec.Body.String())
+	}
+}

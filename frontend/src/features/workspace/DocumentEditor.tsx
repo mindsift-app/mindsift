@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 import { buildBlockLink } from '../../lib/wikiLink';
+import { MOVE_BRANCH_EVENT } from './moveBranchEvent';
 import {
   Pin,
   Users,
@@ -26,7 +27,7 @@ import {
   CalendarDays,
   SmilePlus,
 } from 'lucide-react';
-import { Document, DocumentBlock, User } from '../../lib/types';
+import { Document, DocumentBlock, MoveResult, User } from '../../lib/types';
 import { api } from '../../lib/api';
 import { DocSyncEngine, EngineState } from '../../lib/docSync/engine';
 import { Presence } from '../../lib/docSync/transport';
@@ -35,6 +36,7 @@ import type { BlockLock } from './OutlinerBlock';
 import { extractHashtags } from '../../lib/hashtags';
 import { moveSibling } from '../../lib/outlineList';
 import { reportNav, onNavStep, restoringNavPlace } from '../../lib/navHistory';
+import { readNotePlace, writeNotePlace } from '../../lib/notePlace';
 import { useTranslation } from 'react-i18next';
 import i18n from '../../i18n';
 
@@ -70,6 +72,8 @@ export interface DocumentEditorProps {
   /** A note was created from this one (extract) or removed again (undo); keeps the sidebar current */
   onDocCreated?: (doc: Document) => void;
   onDocRemoved?: (docId: string) => void;
+  /** Notes a branch can be moved into (writable, not this one): the choice when extracting a bullet */
+  moveTargets?: ExtractTarget[];
   /** 'journal': one day inside the journal list – no own scrolling, header or backlinks, fixed title.
    *  'tag': inside a hashtag page – the title as a fixed heading, below only the branches with tagFilter */
   variant?: 'page' | 'journal' | 'tag';
@@ -95,6 +99,7 @@ function isLargeScreen() {
 }
 
 import { EmojiPickerModal } from './EmojiPickerModal';
+import { ExtractPopover, ExtractTarget } from './ExtractPopover';
 import { BacklinksSection } from './BacklinksSection';
 import { useKeyboardInset } from '../../lib/useKeyboardInset';
 
@@ -247,6 +252,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
   onRequestMerge,
   onDocCreated,
   onDocRemoved,
+  moveTargets,
   variant = 'page',
   tagFilter,
   actionsTarget,
@@ -268,10 +274,17 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
   const [loading, setLoading] = useState<boolean>(!initialDoc);
   const [error, setError] = useState<string | null>(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState<boolean>(false);
-  // Zoomed bullet; coming here by the browser's back/forward it is the zoom of that step
+  // Where the user last was in this note (zoom, scroll), unless a link points to a bullet in it
+  const [savedPlace] = useState(() =>
+    !embedded && !initialFocusedBlockId ? readNotePlace(docId) : null
+  );
+  // Zoomed bullet; coming here by the browser's back/forward it is the zoom of that step, else the one
+  // the note had when the user last left it
   const [zoomedBlockId, setZoomedBlockId] = useState<string | null>(() => {
     const place = restoringNavPlace();
-    return !inJournal && !inTagPage && place?.docId === docId ? place.zoom ?? null : null;
+    if (inJournal || inTagPage) return null;
+    if (place?.docId === docId) return place.zoom ?? null;
+    return savedPlace?.zoom ?? null;
   });
   const [showActionsMenu, setShowActionsMenu] = useState<boolean>(false);
   const actionsMenuRef = useRef<HTMLDivElement | null>(null);
@@ -358,6 +371,57 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
       setZoomedBlockId(null);
     }
   }, [blocks, zoomedBlockId, loading]);
+
+  // Remember zoom and scroll position (lib/notePlace.ts); the scroll position belongs to the zoom it was
+  // taken in, so it is restored only when the note opens in that zoom again
+  const zoomForPlaceRef = useRef(zoomedBlockId);
+  useEffect(() => {
+    if (embedded) return;
+    if (zoomForPlaceRef.current !== zoomedBlockId) {
+      zoomForPlaceRef.current = zoomedBlockId;
+      writeNotePlace(docId, { zoom: zoomedBlockId, scroll: 0 });
+    }
+  }, [zoomedBlockId, docId, embedded]);
+  useEffect(() => {
+    const root = scrollRef.current;
+    if (embedded || !root) return;
+    let timer: number | null = null;
+    const save = () => {
+      timer = null;
+      writeNotePlace(docId, { zoom: zoomForPlaceRef.current, scroll: root.scrollTop });
+    };
+    const onScroll = () => {
+      if (timer === null) timer = window.setTimeout(save, 200);
+    };
+    root.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      root.removeEventListener('scroll', onScroll);
+      if (timer !== null) {
+        window.clearTimeout(timer);
+        save();
+      }
+    };
+    // the note's scroll area exists only once it has loaded
+  }, [docId, embedded, loading]);
+  const scrollRestoredRef = useRef(false);
+  useEffect(() => {
+    if (loading || scrollRestoredRef.current) return;
+    scrollRestoredRef.current = true;
+    const root = scrollRef.current;
+    const target = savedPlace && savedPlace.zoom === zoomedBlockId ? savedPlace.scroll : 0;
+    if (!root || target <= 0) return;
+    // Images and code blocks may still grow the note for a few frames
+    let frames = 0;
+    let raf = 0;
+    const apply = () => {
+      root.scrollTop = target;
+      if (Math.abs(root.scrollTop - target) > 1 && ++frames < 30) raf = requestAnimationFrame(apply);
+    };
+    raf = requestAnimationFrame(apply);
+    return () => cancelAnimationFrame(raf);
+    // only once, when the note's content is first there
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading]);
 
   // Zooming in and out are steps of the browser history: back zooms out again (lib/navHistory.ts)
   useEffect(() => {
@@ -598,7 +662,20 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
   const lastExtractRef = useRef<{ newDocId: string; blockId: string; link: string } | null>(null);
   // The last note brought back, so undoing it also takes the note out of the trash again
   const lastInlineRef = useRef<{ sourceId: string; blockId: string; content: string } | null>(null);
+  // The last branch moved into another note, so undoing it here also takes it out of the target again
+  const lastMoveRef = useRef<{ result: MoveResult; blockId: string; link: string } | null>(null);
   const finishUndoExtract = useCallback(() => {
+    const move = lastMoveRef.current;
+    if (move) {
+      const block = currentBlocksRef.current.find((b) => b.id === move.blockId);
+      // Undone when the bullet is back as it was (without a link, or no longer the link)
+      if (block && (!move.link || block.content !== move.link)) {
+        lastMoveRef.current = null;
+        api
+          .undoMove(docId, move.result, engineRef.current?.clientId || '')
+          .catch((err: any) => showNotice(err?.message || i18n.t('workspace:editor.moveFailed')));
+      }
+    }
     const inlined = lastInlineRef.current;
     if (inlined) {
       const block = currentBlocksRef.current.find((b) => b.id === inlined.blockId);
@@ -620,7 +697,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
       .undoExtract(info.newDocId)
       .then(() => onDocRemoved?.(info.newDocId))
       .catch((err: any) => showNotice(err?.message || i18n.t('workspace:editor.removeExtractedFailed')));
-  }, [onDocCreated, onDocRemoved, showNotice]);
+  }, [docId, onDocCreated, onDocRemoved, showNotice]);
   useEffect(() => () => {
     if (noticeTimerRef.current !== null) window.clearTimeout(noticeTimerRef.current);
   }, []);
@@ -714,6 +791,70 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
       }
     },
     [docId, onOpenDocBlock, onDocCreated, showNotice, handleUndo, applyLocalBlocks]
+  );
+
+  // A bullet with its children goes to the end of another note (dragged onto it in the sidebar, or chosen
+  // when extracting). The server copies it there; here it is removed as an own edit, like extracting, so
+  // Strg+Z brings it back (and takes it out of the target again). withLink: a link to the bullet in the
+  // target note stays behind instead.
+  const handleMoveBranch = useCallback(
+    async (blockId: string, target: ExtractTarget, withLink: boolean) => {
+      const engine = engineRef.current;
+      if (!engine || !canEdit) return;
+      try {
+        await engine.syncNow(); // the server reads the branch as typed so far
+        const result = await api.moveBranch(docId, blockId, target.id, engine.clientId);
+        (document.activeElement as HTMLElement | null)?.blur?.();
+        const prev = currentBlocksRef.current;
+        const i = prev.findIndex((b) => b.id === blockId);
+        let link = '';
+        if (i >= 0) {
+          const level = prev[i].level || 0;
+          let end = i + 1;
+          while (end < prev.length && (prev[end].level || 0) > level) end++;
+          if (withLink) {
+            link = buildBlockLink(result.targetTitle || target.title, result.rootId, prev[i].content || '');
+            applyLocalBlocks([...prev.slice(0, i), { ...prev[i], type: 'bullet', checked: false, taskId: '', content: link }, ...prev.slice(end)]);
+          } else {
+            applyLocalBlocks(ensureNonEmptyBlocks(docId, [...prev.slice(0, i), ...prev.slice(end)]));
+          }
+        }
+        lastExtractRef.current = null;
+        lastInlineRef.current = null;
+        lastMoveRef.current = { result, blockId, link };
+        const name = result.targetTitle || target.title;
+        showNotice(i18n.t(withLink ? 'workspace:editor.extractedInto' : 'workspace:editor.moved', { title: name }), [
+          { label: i18n.t('workspace:editor.open'), run: () => onOpenDocBlock?.(result.targetId, result.rootId) },
+          { label: i18n.t('common:sync.undo'), run: () => handleUndo() },
+        ]);
+      } catch (err: any) {
+        showNotice(err?.message || i18n.t('workspace:editor.moveFailed'));
+      }
+    },
+    [docId, canEdit, onOpenDocBlock, showNotice, handleUndo, applyLocalBlocks]
+  );
+
+  // A bullet dragged out of this note onto another note in the sidebar (useDocDragDrop)
+  const handleMoveBranchRef = useRef(handleMoveBranch);
+  handleMoveBranchRef.current = handleMoveBranch;
+  useEffect(() => {
+    const onMove = (e: Event) => {
+      const { docId: from, blockId, targetId, targetTitle } = (e as CustomEvent).detail || {};
+      if (from !== docId || embedded) return;
+      void handleMoveBranchRef.current(blockId, { id: targetId, title: targetTitle }, false);
+    };
+    window.addEventListener(MOVE_BRANCH_EVENT, onMove);
+    return () => window.removeEventListener(MOVE_BRANCH_EVENT, onMove);
+  }, [docId, embedded]);
+
+  // The extract button asks where to: a new note (as before) or an existing one
+  const [extractAt, setExtractAt] = useState<{ blockId: string; x: number; y: number } | null>(null);
+  const handleExtractRequest = useCallback(
+    (blockId: string, at?: { x: number; y: number }) => {
+      if (at && moveTargets && moveTargets.length > 0) setExtractAt({ blockId, ...at });
+      else void handleExtractBlock(blockId);
+    },
+    [moveTargets, handleExtractBlock]
   );
 
   // The way back: a bullet that only links to a note gets that note's bullets below it again, the note
@@ -1299,6 +1440,23 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
     >
       {desktopBar && actionsTarget && createPortal(actionsBlock, actionsTarget)}
 
+      {extractAt && (
+        <ExtractPopover
+          x={extractAt.x}
+          y={extractAt.y}
+          notes={moveTargets || []}
+          onNewNote={() => {
+            setExtractAt(null);
+            void handleExtractBlock(extractAt.blockId);
+          }}
+          onExisting={(note) => {
+            setExtractAt(null);
+            void handleMoveBranch(extractAt.blockId, note, true);
+          }}
+          onCancel={() => setExtractAt(null)}
+        />
+      )}
+
       {/* Top Document Action Bar (the journal has one for all days; large screens use the tab bar) */}
       {!embedded && !desktopBar && (
       <div className="sticky top-0 z-20 flex items-center justify-between gap-2 px-4 sm:px-6 py-2 bg-editor border-b border-border">
@@ -1482,7 +1640,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
                 canEdit={canEdit}
                 levelOffset={levelOffset}
                 onZoomBlock={setZoomedBlockId}
-                onExtractBlock={canEdit ? handleExtractBlock : undefined}
+                onExtractBlock={canEdit ? handleExtractRequest : undefined}
               onInlineBlock={canEdit ? handleInlineBlock : undefined}
                 onUpdateBlock={handleUpdateBlock}
                 onUpdateBlocks={handleUpdateBlocks}
@@ -1635,7 +1793,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
               canEdit={canEdit}
               levelOffset={0}
               onZoomBlock={setZoomedBlockId}
-              onExtractBlock={canEdit ? handleExtractBlock : undefined}
+              onExtractBlock={canEdit ? handleExtractRequest : undefined}
               onInlineBlock={canEdit ? handleInlineBlock : undefined}
               onUpdateBlock={handleUpdateBlock}
               onUpdateBlocks={handleUpdateBlocks}

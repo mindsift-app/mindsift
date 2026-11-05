@@ -63,7 +63,10 @@
     "focusShortcut": "Ctrl+Maj+F",
     "inTrashAction": "Action échouée",
     "extracted": "Transformé en note autonome « {{title}} »",
-    "zoomTo": "Zoomer sur « {{title}} »"
+    "zoomTo": "Zoomer sur « {{title}} »",
+    "moved": "Déplacé dans « {{title}} »",
+    "extractedInto": "Extrait dans « {{title}} »",
+    "moveFailed": "Échec du déplacement"
   },
   "slash": {
     "todo": "Tâche avec case à cocher",
@@ -103,8 +106,6 @@
     "chooseCommand": "Choisir une commande",
     "noCommand": "Aucune commande trouvée",
     "toText": "Convertir en texte simple",
-    "taskOptions": "Options de tâche",
-    "subtaskOfLinked": "Sous-tâche d'une tâche liée",
     "createTaskFailed": "Échec de la création de la tâche étendue",
     "toTask": "Convertir en tâche étendue",
     "unlinkFailed": "Échec de la dissociation",
@@ -113,7 +114,6 @@
     "extract": "Convertir en note autonome (avec toutes les sous-puces)",
     "pullBackTitle": "Réintégrer la note (ses puces reviennent ici, la note va dans la corbeille)",
     "pullBack": "Réintégrer la note",
-    "zoom": "Zoomer sur cette branche (mode focus)",
     "delete": "Supprimer le bloc"
   },
   "trash": {
@@ -391,5 +391,11 @@
     "title": "{{name}} modifie ce point en ce moment",
     "copy": "{{name}} modifie cette version en ce moment – patiente un instant",
     "someone": "Quelqu'un"
+  },
+  "extractMenu": {
+    "title": "Extraire vers où ?",
+    "newNote": "Créer une nouvelle note",
+    "search": "Dans une note existante …",
+    "none": "Aucune note correspondante"
   }
 }

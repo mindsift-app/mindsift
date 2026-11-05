@@ -179,6 +179,8 @@ func (s *Server) Router() http.Handler {
 		r.Post("/api/v1/tasks/{id}/watch", s.handleWatchTask)
 		r.Delete("/api/v1/tasks/{id}/watch", s.handleWatchTask)
 		r.Post("/api/v1/documents/{id}/extract/undo", s.handleUndoExtract)
+		r.Post("/api/v1/documents/{id}/move", s.handleMoveBranch)
+		r.Post("/api/v1/documents/{id}/move/undo", s.handleUndoMove)
 		r.Post("/api/v1/documents/{id}/inline", s.handleInlineNote)
 		r.Post("/api/v1/documents/{id}/merge", s.handleMergeDocuments)
 		r.Post("/api/v1/documents/{id}/merge/undo", s.handleUndoMerge)

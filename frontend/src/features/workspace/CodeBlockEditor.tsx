@@ -4,6 +4,7 @@ import { Copy, Check } from 'lucide-react';
 import { DocumentBlock } from '../../lib/types';
 import { useTranslation } from 'react-i18next';
 import i18n from '../../i18n';
+import { enterWithIndent, indentUnit } from './codeIndent';
 
 Prism.manual = true;
 if (typeof globalThis !== 'undefined') {
@@ -462,7 +463,35 @@ export const CodeBlockEditor: React.FC<CodeBlockEditorProps> = ({
     }
   };
 
+  // The caret after Enter/Tab: set right away and again once React has rendered the new text (before the
+  // next key, which would otherwise land at the end of the field)
+  const pendingSelectionRef = useRef<[number, number] | null>(null);
+  useLayoutEffect(() => {
+    const sel = pendingSelectionRef.current;
+    if (!sel || !localTextareaRef.current) return;
+    pendingSelectionRef.current = null;
+    localTextareaRef.current.setSelectionRange(sel[0], sel[1]);
+  }, [currentContent]);
+  const setSelectionAfterUpdate = (ta: HTMLTextAreaElement, newStart: number, newEnd: number) => {
+    ta.setSelectionRange(newStart, newEnd);
+    pendingSelectionRef.current = [newStart, newEnd];
+  };
+
   const onTextareaKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // Enter keeps the line's indentation (one step deeper after ":" or an opening bracket)
+    if (canEdit && e.key === 'Enter' && !e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey && !e.nativeEvent.isComposing) {
+      e.preventDefault();
+      e.stopPropagation();
+      const ta = e.currentTarget;
+      const start = ta.selectionStart ?? 0;
+      const end = ta.selectionEnd ?? start;
+      const { value, caret } = enterWithIndent(currentContent, start, end, block.lang);
+      applyContentUpdate(value, ta);
+      ta.value = value;
+      setSelectionAfterUpdate(ta, caret, caret);
+      return;
+    }
+
     if (canEdit && e.key === 'Tab') {
       e.preventDefault();
       e.stopPropagation();
@@ -477,26 +506,22 @@ export const CodeBlockEditor: React.FC<CodeBlockEditorProps> = ({
       const blockEnd = lineEndIdx === -1 ? val.length : lineEndIdx;
       const lines = val.slice(lineStart, blockEnd).split('\n');
 
+      const unit = indentUnit(val, block.lang);
       if (!e.shiftKey) {
-        const updatedLines = lines.map((line) => '  ' + line);
+        const updatedLines = lines.map((line) => unit + line);
         const newVal = val.slice(0, lineStart) + updatedLines.join('\n') + val.slice(blockEnd);
-        const newStart = start + 2;
-        const newEnd = end + updatedLines.length * 2;
+        const newStart = start + unit.length;
+        const newEnd = end + updatedLines.length * unit.length;
         applyContentUpdate(newVal, ta);
         ta.value = newVal;
-        ta.setSelectionRange(newStart, newEnd);
-        setTimeout(() => {
-          if (localTextareaRef.current) {
-            localTextareaRef.current.setSelectionRange(newStart, newEnd);
-          }
-        }, 0);
+        setSelectionAfterUpdate(ta, newStart, newEnd);
       } else {
         let removedFirst = 0;
         let removedTotal = 0;
         const updatedLines = lines.map((line, idx) => {
           let removeCount = 0;
-          if (line.startsWith('  ')) removeCount = 2;
-          else if (line.startsWith(' ') || line.startsWith('\t')) removeCount = 1;
+          if (line.startsWith('\t')) removeCount = 1;
+          else removeCount = Math.min(unit.length, line.length - line.replace(/^ +/, '').length);
           if (idx === 0) removedFirst = removeCount;
           removedTotal += removeCount;
           return line.slice(removeCount);
@@ -507,12 +532,7 @@ export const CodeBlockEditor: React.FC<CodeBlockEditorProps> = ({
           const newEnd = Math.max(newStart, end - removedTotal);
           applyContentUpdate(newVal, ta);
           ta.value = newVal;
-          ta.setSelectionRange(newStart, newEnd);
-          setTimeout(() => {
-            if (localTextareaRef.current) {
-              localTextareaRef.current.setSelectionRange(newStart, newEnd);
-            }
-          }, 0);
+          setSelectionAfterUpdate(ta, newStart, newEnd);
         }
       }
       return;

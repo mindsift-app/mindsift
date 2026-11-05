@@ -63,7 +63,10 @@
     "focusShortcut": "Ctrl+⇧+F",
     "inTrashAction": "Azione non riuscita",
     "extracted": "Convertito nella nota «{{title}}»",
-    "zoomTo": "Zoom su \"{{title}}\""
+    "zoomTo": "Zoom su \"{{title}}\"",
+    "moved": "Spostato in «{{title}}»",
+    "extractedInto": "Estratto in «{{title}}»",
+    "moveFailed": "Spostamento non riuscito"
   },
   "slash": {
     "todo": "Attività con casella di controllo",
@@ -103,8 +106,6 @@
     "chooseCommand": "Scegli comando",
     "noCommand": "Nessun comando trovato",
     "toText": "Converti in testo normale",
-    "taskOptions": "Opzioni attività",
-    "subtaskOfLinked": "Sottoattività di un'attività collegata",
     "createTaskFailed": "Creazione dell'attività avanzata non riuscita",
     "toTask": "Converti in attività avanzata",
     "unlinkFailed": "Rimozione del collegamento non riuscita",
@@ -113,7 +114,6 @@
     "extract": "Converti in nota indipendente (con tutti i sottopunti)",
     "pullBackTitle": "Recupera nota (i suoi punti torneranno qui, la nota andrà nel cestino)",
     "pullBack": "Recupera nota",
-    "zoom": "Ingrandisci questo ramo (modalità focus)",
     "delete": "Elimina blocco"
   },
   "trash": {
@@ -391,5 +391,11 @@
     "title": "{{name}} sta modificando questo punto",
     "copy": "{{name}} sta modificando questa versione: attendi un momento",
     "someone": "Qualcuno"
+  },
+  "extractMenu": {
+    "title": "Estrarre dove?",
+    "newNote": "Crea una nuova nota",
+    "search": "In una nota esistente …",
+    "none": "Nessuna nota corrispondente"
   }
 }

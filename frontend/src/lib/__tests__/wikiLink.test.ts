@@ -22,6 +22,8 @@ describe('wiki links', () => {
   it('recognises a bullet that is only a link to a note', () => {
     expect(isNoteLinkOnly('[[Konzept: Garten]]')).toBe(true);
     expect(isNoteLinkOnly('[[Konzept: Garten]] #draußen #idee')).toBe(true);
+    // A link to one bullet is not a link to the whole note: bringing it back would take the whole note
+    expect(isNoteLinkOnly('[[Konzept: Garten#^blk_1|Konzept: Garten › Beete]]')).toBe(false);
     expect(isNoteLinkOnly('Siehe [[Konzept: Garten]]')).toBe(false);
     expect(isNoteLinkOnly('[[Konzept: Garten]] und mehr')).toBe(false);
     expect(isNoteLinkOnly('Garten')).toBe(false);
