@@ -89,6 +89,8 @@
   "block": {
     "expand": "Déplier les sous-puces",
     "collapse": "Replier les sous-puces",
+    "dragMore_one": "+ {{count}} élément de plus",
+    "dragMore_other": "+ {{count}} éléments de plus",
     "dragZoom": "Glisser pour déplacer • clic : zoomer sur la branche (mode focus)",
     "clickZoom": "Clic : zoomer sur cette branche (mode focus)",
     "markOpen": "Marquer comme à faire",

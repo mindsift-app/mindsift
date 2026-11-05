@@ -132,7 +132,7 @@ export interface OutlinerBlockProps {
   onWikiLinkClick?: (pageTitle: string, blockId?: string) => void;
   /** Copies a link to this bullet ([[Notiz#^id|…]]) */
   onCopyBlockLink?: (blockId: string) => void;
-  onDragStartBlock?: (index: number) => void;
+  onDragStartBlock?: (index: number, e: React.DragEvent) => void;
   onDragOverBlock?: (e: React.DragEvent, index: number) => void;
   onDropBlock?: (index: number) => void;
   isDragTarget?: boolean;
@@ -1227,7 +1227,7 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
             if (!canEdit) return;
             // Dropped onto another note in the sidebar, the branch moves there (moveBranchEvent.ts)
             e.dataTransfer.setData(BLOCK_DRAG_TYPE, JSON.stringify({ docId: docId || block.documentId || block.docId || '', blockId: block.id }));
-            onDragStartBlock?.(index);
+            onDragStartBlock?.(index, e);
           }}
           onClick={() => onZoomBlock?.(block.id)}
           className={`${

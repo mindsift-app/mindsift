@@ -89,6 +89,8 @@
   "block": {
     "expand": "Unterpunkte ausklappen",
     "collapse": "Unterpunkte einklappen",
+    "dragMore_one": "+ {{count}} weiterer Punkt",
+    "dragMore_other": "+ {{count}} weitere Punkte",
     "dragZoom": "Ziehen zum Verschieben • Klick: Ast hineinzoomen (Fokus-Modus)",
     "clickZoom": "Klick: In diesen Ast hineinzoomen (Fokus-Modus)",
     "markOpen": "Als offen markieren",
