@@ -6,6 +6,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.83.5] - 2026-11-05
+
+### Fixed
+- Closing a note that was deleted while it was open no longer answers "not found" (404); the server just forgets that note's sessions.
+
 ## [0.83.4] - 2026-11-05
 
 ### Changed

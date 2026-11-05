@@ -229,3 +229,22 @@ func TestDocSyncAfterCompaction(t *testing.T) {
 		t.Fatalf("stale client: %d resync=%v results=%+v", code, old.Resync, old.Results)
 	}
 }
+
+// Leaving a note that was deleted while open is fine (the client cleans up); a note that exists stays
+// hidden from someone without access.
+func TestDocLeaveOfDeletedNote(t *testing.T) {
+	f := newCollabFixture(t)
+	leave := func(tok, docID string) int {
+		resp := doJSON(t, f.ts, http.MethodPost, "/api/v1/docs/"+docID+"/leave", tok, map[string]string{"clientId": "tab"})
+		return resp.StatusCode
+	}
+	if code := leave(f.outsiderTok, f.docID); code != http.StatusNotFound {
+		t.Errorf("outsider leaving an existing note: want 404, got %d", code)
+	}
+	if code := leave(f.ownerTok, "doc_gone"); code != http.StatusOK {
+		t.Errorf("leaving a note that is gone: want 200, got %d", code)
+	}
+	if code, _ := syncDoc(t, f.ts, f.ownerTok, "doc_gone", map[string]interface{}{"clientId": "tab", "lastSeq": 0}); code != http.StatusNotFound {
+		t.Errorf("sync of a note that is gone: want 404, got %d", code)
+	}
+}

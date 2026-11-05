@@ -282,8 +282,17 @@ func (s *Server) handleDocChanges(w http.ResponseWriter, r *http.Request) {
 
 // handleDocLeave ends a client's session on a note and frees its leases (tab closed, app in background).
 func (s *Server) handleDocLeave(w http.ResponseWriter, r *http.Request) {
-	_, docID, role := s.docAccess(w, r)
-	if role == "" {
+	userID := auth.GetUserID(r.Context())
+	docID := chi.URLParam(r, "id")
+	if s.store.DocRole(userID, docID) == "" {
+		// Leaving a note that is gone meanwhile (deleted while open) is done already; only a note that
+		// exists without access for the caller is "not found"
+		if _, _, err := s.store.GetDocOpsSince(docID, 0, 0); errors.Is(err, storage.ErrDocNotFound) {
+			s.leases.Forget(docID)
+			writeJSON(w, http.StatusOK, map[string]bool{"success": true})
+			return
+		}
+		writeError(w, http.StatusNotFound, storage.ErrDocNotFound.Error())
 		return
 	}
 	var req struct {
