@@ -49,6 +49,7 @@
     "sharedReadOnly": "Dieses Dokument wurde schreibgeschützt mit dir geteilt (Nur Lesen).",
     "branchTitle": "Ast-Titel…",
     "exitFocusTitle": "Fokus-Modus beenden",
+    "expandAll": "Alle Punkte aufklappen",
     "startFocusTitle": "Fokus-Modus starten",
     "exitFocus": "Fokus beenden",
     "noChildren": "Dieser Ast hat noch keine Unterpunkte.",

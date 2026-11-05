@@ -49,6 +49,7 @@
     "sharedReadOnly": "Este documento se ha compartido contigo en modo solo lectura.",
     "branchTitle": "Título de la rama…",
     "exitFocusTitle": "Salir del modo de enfoque",
+    "expandAll": "Desplegar todas las viñetas",
     "startFocusTitle": "Iniciar modo de enfoque",
     "exitFocus": "Salir del enfoque",
     "noChildren": "Esta rama aún no tiene subpuntos.",

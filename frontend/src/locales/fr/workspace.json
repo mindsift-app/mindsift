@@ -49,6 +49,7 @@
     "sharedReadOnly": "Ce document a été partagé avec toi en lecture seule.",
     "branchTitle": "Titre de la branche…",
     "exitFocusTitle": "Quitter le mode focus",
+    "expandAll": "Déplier toutes les puces",
     "startFocusTitle": "Activer le mode focus",
     "exitFocus": "Quitter le focus",
     "noChildren": "Cette branche n'a pas encore de sous-puces.",

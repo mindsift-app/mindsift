@@ -15,6 +15,7 @@ import {
   Lock,
   Home,
   ChevronRight,
+  ChevronsUpDown,
   Minimize2,
   Plus,
   Check,
@@ -1400,6 +1401,22 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
                 )}
                 <span className="flex-1">{focusMode ? t('editor.exitFocusTitle') : t('editor.startFocusTitle')}</span>
                 <kbd className="hidden sm:inline text-[10px] text-faint font-mono">{t('editor.focusShortcut')}</kbd>
+              </button>
+            )}
+
+            {/* One edit for all bullets, so a single Strg+Z folds them back */}
+            {canEdit && !inTrash && blocks.some((b) => b.collapsed) && (
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setShowActionsMenu(false);
+                  applyLocalBlocks((prev) => prev.map((b) => (b.collapsed ? { ...b, collapsed: false } : b)));
+                }}
+                className="w-full min-h-[44px] sm:min-h-0 px-2.5 py-2 sm:py-1.5 rounded-btn hover:bg-panel-elevated text-left text-main font-medium flex items-center gap-2 transition-colors cursor-pointer"
+              >
+                <ChevronsUpDown className="w-3.5 h-3.5 text-accent shrink-0" />
+                <span>{t('editor.expandAll')}</span>
               </button>
             )}
 

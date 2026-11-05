@@ -49,6 +49,7 @@
     "sharedReadOnly": "This document was shared with you read-only.",
     "branchTitle": "Branch title…",
     "exitFocusTitle": "Exit focus mode",
+    "expandAll": "Expand all bullets",
     "startFocusTitle": "Start focus mode",
     "exitFocus": "Exit focus",
     "noChildren": "This branch has no sub-bullets yet.",
