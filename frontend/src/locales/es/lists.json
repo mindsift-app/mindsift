@@ -38,5 +38,8 @@
   "general": "General",
   "openCount": "{{count}} pendientes",
   "shareDialogTitle": "Compartir lista: {{title}}",
-  "shareMenuLabel": "Compartir la lista «{{title}}»"
+  "shareMenuLabel": "Compartir la lista «{{title}}»",
+  "item": {
+    "addQuantity": "+ cantidad"
+  }
 }

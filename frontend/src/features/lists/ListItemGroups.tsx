@@ -166,7 +166,7 @@ export function OpenItemGroups({
                             }`}
                             title={t('editQuantity')}
                           >
-                            {item.quantity || '+ Menge'}
+                            {item.quantity || t('item.addQuantity')}
                           </button>
                         )}
 
@@ -297,7 +297,7 @@ export function CompletedItems({
                         }`}
                         title={t('editQuantity')}
                       >
-                        {item.quantity ? `(${item.quantity})` : '+ Menge'}
+                        {item.quantity ? `(${item.quantity})` : t('item.addQuantity')}
                       </button>
                     )}
                   </div>

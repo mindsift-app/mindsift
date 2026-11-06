@@ -38,5 +38,8 @@
   "general": "Generale",
   "openCount": "{{count}} da fare",
   "shareDialogTitle": "Condividi lista: {{title}}",
-  "shareMenuLabel": "Condividi la lista «{{title}}»"
+  "shareMenuLabel": "Condividi la lista «{{title}}»",
+  "item": {
+    "addQuantity": "+ quantità"
+  }
 }

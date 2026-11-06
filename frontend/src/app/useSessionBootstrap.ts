@@ -161,7 +161,15 @@ export function useSessionBootstrap(onSignedOut: () => void) {
   // Refresh stats on task/doc/list real-time events (counters in the navigation). Task events also
   // reload the triage deck: a note sorted on another device must leave this deck too.
   useEffect(() => {
+    let statsTimer: number | undefined;
     let deckTimer: number | undefined;
+    // Debounced: typing in a shared note sends several events per second to every open tab
+    const reloadStats = () => {
+      window.clearTimeout(statsTimer);
+      statsTimer = window.setTimeout(() => {
+        api.getStats().then(setStats).catch(() => {});
+      }, 300);
+    };
     const reloadDeck = () => {
       window.clearTimeout(deckTimer);
       deckTimer = window.setTimeout(() => {
@@ -179,19 +187,20 @@ export function useSessionBootstrap(onSignedOut: () => void) {
         handleDemoResetRef.current();
         return;
       }
+      // DOC_SEQ only announces new edits inside a note, the counters stay the same
       if (
         typeof msg.event === 'string' &&
+        msg.event !== 'DOC_SEQ' &&
         ['TASK_', 'DOC_', 'SPACE_', 'ITEM_', 'LIST_'].some((prefix) => msg.event.startsWith(prefix))
       ) {
-        api.getMe().then((res) => {
-          setStats(res.stats);
-        }).catch(() => {});
+        reloadStats();
         if (msg.event.startsWith('TASK_')) reloadDeck();
       }
     };
     window.addEventListener('mindsift:ws', handleWs);
     document.addEventListener('visibilitychange', onVisible);
     return () => {
+      window.clearTimeout(statsTimer);
       window.clearTimeout(deckTimer);
       window.removeEventListener('mindsift:ws', handleWs);
       document.removeEventListener('visibilitychange', onVisible);
