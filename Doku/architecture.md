@@ -155,6 +155,8 @@ Stage 3  alpine:3.24      binary only, ca-certificates, tzdata
 
 **Image tags (CI):** Push to `dev` → `:dev`; Push/merge to `main` → `:latest`; Git tag `v*` (e.g. `v1.2.0`) → `:v1.2.0` and `:stable`; pre-releases (`v1.2.0-rc.1`) only `:v1.2.0-rc.1`, `:stable` remains unchanged. Other branches are not built.
 
+**Security scan (CI):** `ci/trivy-scan.sh` runs Trivy on the image before it is pushed and fails on known HIGH/CRITICAL vulnerabilities that have a fix, or on leaked secrets. It runs for every tag, and for branches only when `Dockerfile`, `go.mod` or `go.sum` differ from the image last published under that tag (label `io.mindsift.deps`, decided in `ci/build-plan.sh`). `.github/workflows/security-scan.yaml` scans the published `:stable` and `:latest` every Monday and reports to GitHub's security tab.
+
 **Versioning:** From v0.6.0 onwards following [Semantic Versioning](https://semver.org/spec/v2.0.0.html): `MAJOR.MINOR.PATCH`, three-part tags prefixed with `v` (`v0.6.0`, `v1.0.0-rc.1`). While major version is 0, breaking changes (API, data formats, configuration) increment the minor version, bug fixes increment the patch version. Any user- or operator-facing change is recorded in [CHANGELOG.md](../CHANGELOG.md) under "Unreleased" (following [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)); upon release, the section becomes the version heading with date, and `frontend/package.json` is updated with the version number.
 
 The displayed version (app header) is injected by build arg `APP_VERSION`: CI supplies the tag name on Git tags (`v0.6.0`), otherwise the app displays the version from `frontend/package.json` with `-dev` suffix (`v0.6.0-dev`). Implemented in `frontend/vite.config.ts` and `frontend/src/version.ts`.

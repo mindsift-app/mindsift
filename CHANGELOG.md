@@ -6,6 +6,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.83.9] - 2026-11-06
+
+### Added
+- Every tagged release, and every build that changes the base image, the Go version or the Go modules, is scanned with Trivy before it is published; a known high or critical vulnerability with an available fix stops the release. The published `:stable` and `:latest` images are scanned every week.
+
 ## [0.83.8] - 2026-11-06
 
 ### Changed

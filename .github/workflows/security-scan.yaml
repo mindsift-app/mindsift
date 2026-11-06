@@ -1,0 +1,43 @@
+name: Weekly Security Scan
+
+# Known vulnerabilities appear after a release, so the published :stable (the default install) and
+# :latest are scanned every week with the same check as the release builds (ci/trivy-scan.sh). A finding
+# fails the run (GitHub sends a mail) and shows up in the repository's security tab.
+on:
+  schedule:
+    - cron: '17 5 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  scan:
+    name: Scan :${{ matrix.tag }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        tag: [stable, latest]
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Pull Image
+        id: prep
+        run: |
+          IMAGE="$(echo "ghcr.io/${GITHUB_REPOSITORY}" | tr '[:upper:]' '[:lower:]'):${{ matrix.tag }}"
+          docker pull "${IMAGE}"
+          echo "image=${IMAGE}" >> "$GITHUB_OUTPUT"
+
+      - name: Trivy Scan
+        run: SARIF_DIR=sarif ci/trivy-scan.sh "${{ steps.prep.outputs.image }}"
+
+      - name: Upload to Security Tab
+        if: always() && hashFiles('sarif/trivy.sarif') != ''
+        continue-on-error: true
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: sarif/trivy.sarif
+          category: trivy-${{ matrix.tag }}

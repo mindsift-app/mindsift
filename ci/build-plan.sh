@@ -6,6 +6,9 @@
 #   main  -> build :latest; tests are skipped when :dev was built from the same tree
 #   v*    -> retag :latest when it was built from this commit, else build (tests skipped when
 #            :dev or :latest has the same tree); :stable only for releases without "-"
+# Security scan (ci/trivy-scan.sh): always for tags; for branches only when Dockerfile, go.mod or
+# go.sum differ from the image last published under that tag (label io.mindsift.deps), since
+# everything else in the image does not change its known vulnerabilities.
 # Inputs (environment): REF, COMMIT (default HEAD), IMAGE, PKG_VERSION (default from package.json),
 # LABEL_CMD (prints a label of a remote image: LABEL_CMD <image> <label>; for tests)
 set -euo pipefail
@@ -20,6 +23,8 @@ fi
 
 SHA="$(git rev-parse "${COMMIT}^{commit}")"
 TREE="$(git rev-parse "${COMMIT}^{tree}")"
+# Base image, Go version and modules: the inputs that decide which known vulnerabilities the image has
+DEPS="$(git rev-parse "${COMMIT}:Dockerfile" "${COMMIT}:go.mod" "${COMMIT}:go.sum" | sha256sum | cut -c1-16)"
 
 # Label of an image in the registry ("" when the image or label does not exist)
 image_label() {
@@ -37,6 +42,7 @@ APP_VERSION=""
 TAGS=""
 SOURCE_IMAGE=""
 REASON=""
+SCAN="1"
 
 case "${REF}" in
   refs/heads/dev)
@@ -79,6 +85,16 @@ case "${REF}" in
     ;;
 esac
 
+case "${REF}" in
+  refs/tags/v*) ;;
+  *)
+    PREVIOUS="${TAGS%% *}"
+    if [ -n "${IMAGE}" ] && [ "$(image_label "${IMAGE}:${PREVIOUS}" io.mindsift.deps)" = "${DEPS}" ]; then
+      SCAN="0"
+    fi
+    ;;
+esac
+
 {
   echo "action=${ACTION}"
   echo "skip_tests=${SKIP_TESTS}"
@@ -87,5 +103,7 @@ esac
   echo "source_image=${SOURCE_IMAGE}"
   echo "sha=${SHA}"
   echo "tree=${TREE}"
+  echo "deps=${DEPS}"
+  echo "scan=${SCAN}"
   echo "reason=${REASON}"
 } | tee -a "${GITHUB_OUTPUT:-/dev/null}"
