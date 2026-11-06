@@ -34,6 +34,8 @@
     "guideStep2": "Elige <b>«Añadir a la pantalla de inicio»</b> o <b>«Instalar aplicación»</b>.",
     "understood": "Entendido"
   },
+  "logoutUnsent_one": "{{count}} cambio aún no se ha enviado y solo está en este navegador. Al cerrar sesión se perderá.",
+  "logoutUnsent_other": "{{count}} cambios aún no se han enviado y solo están en este navegador. Al cerrar sesión se perderán.",
   "profile": {
     "theme": "Tema de diseño",
     "accountSettings": "Ajustes de la cuenta",

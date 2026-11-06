@@ -496,6 +496,9 @@ const it: HelpContent = {
               <strong className="text-main">Senza Internet:</strong> installato come app (o nel browser), MindSift si avvia anche offline con l'ultimo stato caricato. Registrare pensieri e spuntare attività e voci di lista continua a funzionare; un avviso in basso mostra quante modifiche sono in attesa, e verranno inviate automaticamente appena torna la connessione.
             </li>
             <li>
+              <strong className="text-main">Dove restano le modifiche offline:</strong> Le note che hai già aperto su questo dispositivo si possono leggere e modificare offline. Ciò che non è ancora stato inviato è salvato solo in questo browser: resiste a chiusura, riavvio e spegnimento, e viene inviato automaticamente al prossimo avvio di MindSift con la connessione. Si perde se ti disconnetti (MindSift chiede prima), cancelli i dati del browser o lavori in una finestra privata. Perciò, dopo aver lavorato offline, torna presto online con lo stesso dispositivo. Se nel frattempo qualcuno ha modificato lo stesso punto, non si perde nulla: la tua versione compare sotto come copia di conflitto.
+            </li>
+            <li>
               <strong className="text-main">Password dimenticata:</strong> se l'amministrazione ha configurato l'invio delle email, la schermata di accesso mostra «Password dimenticata?». Ricevi un link valido per un'ora; impostando la nuova password verrai disconnesso su tutti i dispositivi.
             </li>
           </ul>

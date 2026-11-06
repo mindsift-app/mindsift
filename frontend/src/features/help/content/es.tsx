@@ -566,6 +566,9 @@ const es: HelpContent = {
               <strong className="text-main">Sin internet:</strong> instalada como app (o en el navegador), MindSift también arranca sin conexión con el último estado cargado. Puedes seguir capturando pensamientos y tachando tareas y elementos de listas; un aviso abajo indica cuántos cambios están pendientes, y se enviarán automáticamente en cuanto vuelva la conexión.
             </li>
             <li>
+              <strong className="text-main">Dónde quedan los cambios sin conexión:</strong> Las notas que ya has abierto en este dispositivo se pueden leer y editar sin conexión. Lo que aún no se ha enviado solo está guardado en este navegador: sobrevive a cerrar, reiniciar y apagar, y se envía automáticamente la próxima vez que MindSift arranque con conexión. Se pierde si cierras sesión (MindSift pregunta antes), borras los datos del navegador o trabajas en una ventana privada. Por eso, después de trabajar sin conexión, vuelve a conectarte pronto con el mismo dispositivo. Si alguien cambió el mismo punto mientras tanto, no se pierde nada: tu versión aparece debajo como copia de conflicto.
+            </li>
+            <li>
               <strong className="text-main">Contraseña olvidada:</strong> si la administración ha configurado el envío de correo, la pantalla de inicio de sesión mostrará «¿Has olvidado tu contraseña?». Recibirás un enlace válido durante una hora; al establecer la nueva contraseña se cerrará la sesión en todos tus dispositivos.
             </li>
           </ul>

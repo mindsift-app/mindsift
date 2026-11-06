@@ -45,7 +45,10 @@ import { CommandPalette } from './components/CommandPalette';
 import { AppFooter } from './components/AppFooter';
 import { AboutModal } from './components/AboutModal';
 import { TriageTrash } from './features/triage/TriageTrash';
-import { ConfirmHost } from './components/askConfirm';
+import { ConfirmHost, askConfirm } from './components/askConfirm';
+import { outboxCount } from './lib/offline';
+import { unsentNoteCount } from './lib/docSync/persist';
+import { flushClosedNotes } from './lib/docSync/flushClosed';
 import { ErrorNoticeHost } from './components/ErrorNotice';
 import { UpdateAvailableModal } from './components/UpdateAvailableModal';
 import { useUpdateCheck } from './lib/useUpdateCheck';
@@ -460,6 +463,21 @@ export const App: React.FC = () => {
 
   const handleLogout = async () => {
     triggerHaptic(20);
+    // Unsent changes live only in this browser and are deleted with the session: send what can be sent,
+    // and ask before dropping the rest
+    if (navigator.onLine && outboxCount() + unsentNoteCount() > 0) {
+      await api.flushOfflineQueue();
+      await flushClosedNotes();
+    }
+    const unsent = outboxCount() + unsentNoteCount();
+    if (unsent > 0) {
+      const ok = await askConfirm({
+        message: t('logoutUnsent', { count: unsent }),
+        confirmLabel: t('profile.logout'),
+        danger: true,
+      });
+      if (!ok) return;
+    }
     disconnectWebSocket();
     try {
       await api.logout();

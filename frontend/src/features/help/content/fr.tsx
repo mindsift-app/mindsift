@@ -491,6 +491,9 @@ const fr: HelpContent = {
               <strong className="text-main">Sans connexion Internet :</strong> installée comme application (ou dans le navigateur), MindSift démarre également hors ligne avec le dernier état chargé. La capture de pensées et la validation de tâches ou de listes continuent de fonctionner ; un indicateur en bas affiche le nombre de modifications en attente, qui sont synchronisées dès le rétablissement de la connexion.
             </li>
             <li>
+              <strong className="text-main">Où restent les modifications hors ligne :</strong> Les notes que tu as déjà ouvertes sur cet appareil peuvent être lues et modifiées hors ligne. Ce qui n’est pas encore envoyé n’est enregistré que dans ce navigateur : cela survit à la fermeture, au redémarrage et à l’extinction, et est envoyé automatiquement au prochain démarrage de MindSift avec une connexion. Cela disparaît si tu te déconnectes (MindSift demande avant), effaces les données du navigateur ou travailles dans une fenêtre privée. Après avoir travaillé hors ligne, reconnecte-toi donc bientôt avec le même appareil. Si quelqu’un a modifié la même puce entre-temps, rien n’est perdu : ta version apparaît en dessous comme copie de conflit.
+            </li>
+            <li>
               <strong className="text-main">Mot de passe oublié :</strong> si l'administration a configuré l'envoi d'e-mails, la fenêtre de connexion affiche « Mot de passe oublié ? ». Tu reçois un lien valable une heure ; la définition du nouveau mot de passe te déconnecte de tous les appareils.
             </li>
           </ul>

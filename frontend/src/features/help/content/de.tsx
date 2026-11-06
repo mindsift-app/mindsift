@@ -660,6 +660,9 @@ const de: HelpContent = {
               <strong className="text-main">Ohne Internet:</strong> Als App installiert (oder im Browser) startet MindSift auch offline mit dem zuletzt geladenen Stand. Gedanken erfassen sowie Aufgaben und Listeneinträge abhaken geht weiter; ein Hinweis unten zeigt, wie viele Änderungen warten, und sie werden automatisch übertragen, sobald die Verbindung zurück ist.
             </li>
             <li>
+              <strong className="text-main">Wo Offline-Änderungen liegen:</strong> Notizen, die du auf diesem Gerät schon einmal geöffnet hast, kannst du offline lesen und bearbeiten. Was noch nicht gesendet ist, liegt nur in diesem Browser: Es übersteht Schließen, Neustart und Herunterfahren und wird beim nächsten Start mit Verbindung automatisch gesendet. Verloren geht es, wenn du dich abmeldest (MindSift fragt vorher), die Browserdaten löschst oder in einem privaten Fenster arbeitest. Komm deshalb nach dem Offline-Arbeiten bald mit demselben Gerät wieder online. Hat in der Zwischenzeit jemand denselben Punkt geändert, geht nichts verloren: Deine Fassung erscheint als Konfliktkopie darunter.
+            </li>
+            <li>
               <strong className="text-main">Passwort vergessen:</strong> Hat die Administration den Mailversand eingerichtet, steht im Anmeldefenster „Passwort vergessen?“. Du bekommst einen Link, der eine Stunde gilt; mit dem neuen Passwort bist du auf allen Geräten abgemeldet.
             </li>
           </ul>

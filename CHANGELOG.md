@@ -9,6 +9,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 ### Fixed
 - Opening a note without a connection no longer replaces it with "No connection to the server" after a moment: the copy stored on the device stays open and editable, and the changes are sent once the connection is back. A note never opened on this device says that it is not available offline yet.
 - Changes made offline in a note that was then left are sent as soon as the connection is back (and at app start), not only the next time that note is opened.
+- Signing out deletes the notes stored in the browser, so the next person on the device does not find them. If changes have not been sent yet, MindSift asks first. Notes stored for another account are never shown or sent.
+
+### Changed
+- The offline notice at the bottom also counts notes with unsent text; tap it to see where unsent changes are kept and when they would be lost. The help explains offline work in notes.
+- While changes wait offline, MindSift asks the browser to keep its storage even when disk space runs low.
 
 ## [0.83.5] - 2026-11-05
 

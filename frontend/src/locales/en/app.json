@@ -34,6 +34,8 @@
     "guideStep2": "Choose <b>“Add to Home Screen”</b> or <b>“Install app”</b>.",
     "understood": "Got it"
   },
+  "logoutUnsent_one": "{{count}} change has not been sent yet and exists only in this browser. Signing out deletes it.",
+  "logoutUnsent_other": "{{count}} changes have not been sent yet and exist only in this browser. Signing out deletes them.",
   "profile": {
     "theme": "Design theme",
     "accountSettings": "Account settings",

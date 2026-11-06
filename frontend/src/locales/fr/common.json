@@ -188,6 +188,11 @@
     "syncing": "Synchronisation – {{waiting}}…",
     "pending": "Hors ligne · {{waiting}} pour une connexion",
     "idle": "Hors ligne – les modifications seront synchronisées dès la connexion",
+    "notesPending_one": "Hors ligne · texte dans {{count}} note en attente de connexion",
+    "notesPending_other": "Hors ligne · texte dans {{count}} notes en attente de connexion",
+    "bothPending_one": "Hors ligne · {{waiting}}, plus du texte dans {{count}} note",
+    "bothPending_other": "Hors ligne · {{waiting}}, plus du texte dans {{count}} notes",
+    "localOnly": "Ce qui n’est pas encore envoyé n’est enregistré que dans ce navigateur. Cela survit à la fermeture et au redémarrage, mais disparaît si tu te déconnectes, effaces les données du navigateur ou utilises une fenêtre privée.",
     "noConnection": "Aucune connexion au serveur"
   },
   "origin": {

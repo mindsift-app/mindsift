@@ -496,6 +496,9 @@ const en: HelpContent = {
               <strong className="text-main">Without internet:</strong> installed as an app (or in the browser), MindSift also starts offline with the last loaded state. Capturing thoughts and checking off tasks and list items keeps working; a hint at the bottom shows how many changes are waiting, and they are sent automatically once the connection is back.
             </li>
             <li>
+              <strong className="text-main">Where offline changes are kept:</strong> Notes you have opened on this device before can be read and edited offline. Anything not sent yet is stored only in this browser: it survives closing, restarting and shutting down, and is sent automatically the next time MindSift starts with a connection. It is lost if you sign out (MindSift asks first), clear the browser data or work in a private window. So after working offline, come back online with the same device soon. If someone changed the same bullet in the meantime, nothing is lost: your version appears as a conflict copy below it.
+            </li>
+            <li>
               <strong className="text-main">Forgot your password:</strong> if the administration has set up mail delivery, the sign-in window shows “Forgot your password?”. You get a link valid for one hour; with the new password you are signed out on all devices.
             </li>
           </ul>

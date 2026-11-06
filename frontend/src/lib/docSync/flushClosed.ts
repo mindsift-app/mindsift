@@ -4,7 +4,7 @@
 // rules and storage apply as in the editor.
 import { getCurrentUserId } from '../api/client';
 import { DocSyncEngine, isNoteOpen } from './engine';
-import { defaultStorage, SyncStorage } from './persist';
+import { defaultStorage, markUnsent, SyncStorage } from './persist';
 import type { Transport } from './transport';
 
 let running = false;
@@ -19,11 +19,12 @@ export async function flushClosedNotes(
   const storage = opts.storage || defaultStorage();
   let sent = 0;
   try {
-    const states = await storage.list();
-    for (const s of states) {
-      // Only the signed-in person's own changes; notes in an editor send theirs themselves
-      if (s.userId !== userId || isNoteOpen(s.docId)) continue;
-      if (s.pending.length === 0 && !s.inflight?.length) continue;
+    // Only the signed-in person's own changes; notes in an editor send theirs themselves
+    const waiting = (await storage.list()).filter(
+      (s) => s.userId === userId && !isNoteOpen(s.docId) && (s.pending.length > 0 || (s.inflight?.length || 0) > 0)
+    );
+    waiting.forEach((s) => markUnsent(s.docId, true));
+    for (const s of waiting) {
       const engine = new DocSyncEngine(s.docId, { storage, transport: opts.transport, userId, manual: true });
       await engine.start();
       const done = engine.getState().pendingCount === 0;

@@ -34,6 +34,8 @@
     "guideStep2": "Wähle <b>„Zum Home-Bildschirm“</b> bzw. <b>„App installieren“</b>.",
     "understood": "Verstanden"
   },
+  "logoutUnsent_one": "{{count}} Änderung ist noch nicht gesendet und liegt nur in diesem Browser. Beim Abmelden geht sie verloren.",
+  "logoutUnsent_other": "{{count}} Änderungen sind noch nicht gesendet und liegen nur in diesem Browser. Beim Abmelden gehen sie verloren.",
   "profile": {
     "theme": "Design-Theme",
     "accountSettings": "Kontoeinstellungen",

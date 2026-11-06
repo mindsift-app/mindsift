@@ -188,6 +188,11 @@
     "syncing": "Sincronizzazione in corso – {{waiting}}…",
     "pending": "Offline · {{waiting}} in attesa di connessione",
     "idle": "Offline – le modifiche verranno sincronizzate appena connesso",
+    "notesPending_one": "Offline · testo in {{count}} nota in attesa di connessione",
+    "notesPending_other": "Offline · testo in {{count}} note in attesa di connessione",
+    "bothPending_one": "Offline · {{waiting}}, più testo in {{count}} nota",
+    "bothPending_other": "Offline · {{waiting}}, più testo in {{count}} note",
+    "localOnly": "Ciò che non è ancora stato inviato è salvato solo in questo browser. Resta dopo la chiusura e il riavvio, ma si perde se ti disconnetti, cancelli i dati del browser o usi una finestra privata.",
     "noConnection": "Nessuna connessione al server"
   },
   "origin": {

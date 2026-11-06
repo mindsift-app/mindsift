@@ -188,6 +188,11 @@
     "syncing": "Syncing – {{waiting}}…",
     "pending": "Offline · {{waiting}} for a connection",
     "idle": "Offline – changes sync once connected",
+    "notesPending_one": "Offline · text in {{count}} note waiting for a connection",
+    "notesPending_other": "Offline · text in {{count}} notes waiting for a connection",
+    "bothPending_one": "Offline · {{waiting}}, plus text in {{count}} note",
+    "bothPending_other": "Offline · {{waiting}}, plus text in {{count}} notes",
+    "localOnly": "Anything not sent yet is stored only in this browser. It survives closing and restarting, but is lost when you sign out, clear the browser data or use a private window.",
     "noConnection": "No connection to the server"
   },
   "origin": {

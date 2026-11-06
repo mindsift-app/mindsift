@@ -5,7 +5,7 @@
 import type { DocumentBlock } from '../types';
 import { diffFlat, toDocumentBlocks } from './diff';
 import { applyEffect, applyOp, cloneDoc, Doc, docFromSnapshot, emptyDoc, Op, Result } from './model';
-import { defaultStorage, SyncStorage } from './persist';
+import { defaultStorage, markUnsent, requestPersistentStorage, SyncStorage } from './persist';
 import { httpTransport, LeaseInfo, Presence, Transport, TransportError } from './transport';
 import { buildStep, failedChecks, touchedBlocks, UndoStep } from './undo';
 import { PushChannel, PushKind, realtimePush } from './push';
@@ -189,7 +189,8 @@ export class DocSyncEngine {
     if (!this.manual) openNotes.set(this.docId, (openNotes.get(this.docId) || 0) + 1);
     try {
       const stored = await this.storage.load(this.docId);
-      if (stored) {
+      // A state stored for another account (signed out without clearing) is never shown or sent
+      if (stored && (!stored.userId || stored.userId === this.userId)) {
         this.confirmed = docFromSnapshot(stored.title, stored.titleVersion, stored.blocks);
         this.lastSeq = stored.lastSeq;
         this.role = stored.role || '';
@@ -530,6 +531,11 @@ export class DocSyncEngine {
   }
 
   private async persist(): Promise<void> {
+    // Signed out (or another account signed in) meanwhile: nothing more is stored for this session
+    if (!this.manual && (getCurrentUserId() || '') !== this.userId) return;
+    const waiting = this.pending.length > 0 || (this.inflight?.length || 0) > 0;
+    markUnsent(this.docId, waiting);
+    if (waiting && this.status === 'offline') requestPersistentStorage();
     try {
       await this.storage.save({
         docId: this.docId,

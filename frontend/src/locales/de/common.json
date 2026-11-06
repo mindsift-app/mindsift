@@ -186,6 +186,11 @@
     "syncing": "Synchronisiere – {{waiting}}…",
     "pending": "Offline · {{waiting}} auf Verbindung",
     "idle": "Offline – Änderungen werden bei Verbindung synchronisiert",
+    "notesPending_one": "Offline · Text in {{count}} Notiz wartet auf Verbindung",
+    "notesPending_other": "Offline · Text in {{count}} Notizen wartet auf Verbindung",
+    "bothPending_one": "Offline · {{waiting}}, dazu Text in {{count}} Notiz",
+    "bothPending_other": "Offline · {{waiting}}, dazu Text in {{count}} Notizen",
+    "localOnly": "Was noch nicht gesendet ist, liegt nur in diesem Browser. Es bleibt beim Schließen und Neustarten erhalten, geht aber beim Abmelden, beim Löschen der Browserdaten und in privaten Fenstern verloren.",
     "noConnection": "Keine Verbindung zum Server"
   },
   "origin": {
