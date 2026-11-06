@@ -121,7 +121,9 @@
     "extract": "In eigene Notiz umwandeln (mit allen Unterpunkten)",
     "pullBackTitle": "Notiz zurückholen (ihre Punkte kommen wieder hierher, die Notiz in den Papierkorb)",
     "pullBack": "Notiz zurückholen",
-    "delete": "Block löschen"
+    "delete": "Block löschen",
+    "badgeTask": "Erweitert",
+    "badgeSubtask": "Unteraufgabe"
   },
   "trash": {
     "back": "Zurück zu den Notizen",

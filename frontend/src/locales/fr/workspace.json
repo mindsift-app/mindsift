@@ -121,7 +121,9 @@
     "extract": "Convertir en note autonome (avec toutes les sous-puces)",
     "pullBackTitle": "Réintégrer la note (ses puces reviennent ici, la note va dans la corbeille)",
     "pullBack": "Réintégrer la note",
-    "delete": "Supprimer le bloc"
+    "delete": "Supprimer le bloc",
+    "badgeTask": "Étendue",
+    "badgeSubtask": "Sous-tâche"
   },
   "trash": {
     "back": "Retour aux notes",
