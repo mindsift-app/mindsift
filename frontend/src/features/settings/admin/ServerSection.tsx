@@ -10,6 +10,7 @@ import { VoiceStatusCard } from '../VoiceStatusCard';
 import { SHARING_MODES, useAdminSettings } from './useAdminSettings';
 import { Trans, useTranslation } from 'react-i18next';
 import { FALLBACK_LANGUAGE, LANGUAGES } from '../../../i18n';
+import { NO_AUTOFILL } from '../../../lib/noAutofill';
 
 // Administration → Server & Isolation (state in useAdminSettings)
 export function ServerSection({
@@ -46,6 +47,7 @@ export function ServerSection({
             </label>
             <div className="flex gap-2 max-w-md">
               <input
+                {...NO_AUTOFILL}
                 type="text"
                 value={settings.instanceName}
                 onChange={(e) =>
@@ -267,6 +269,7 @@ export function ServerSection({
                   <label className="block text-[11px] text-muted">
                     <Trans t={t} i18nKey="server.domains" components={{ c: <code className="font-mono" /> }} />
                     <input
+                      {...NO_AUTOFILL}
                       type="text"
                       disabled={locked}
                       value={settings.registrationDomains || ''}

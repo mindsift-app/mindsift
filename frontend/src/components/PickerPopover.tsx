@@ -93,8 +93,10 @@ export const PickerPopover: React.FC<PickerPopoverProps> = ({ anchor, items, pla
     >
       <div className="flex items-center gap-1.5 px-2 h-11 sm:h-8">
         <Search className="w-3.5 h-3.5 text-faint shrink-0" />
+        {/* type="search": password managers leave search fields alone (the attributes alone were not enough) */}
         <input
           ref={inputRef}
+          type="search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           {...NO_AUTOFILL}
