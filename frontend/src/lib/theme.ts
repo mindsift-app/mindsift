@@ -463,23 +463,14 @@ export function setActiveTheme(themeId: ThemeId, customCss?: string): void {
   applyToDocument(effectiveId, css);
 }
 
-/** The family of the active theme ('' for a custom theme), e.g. to show a shared page in it. */
-export function activeThemeFamily(): string {
-  const id = getActiveTheme();
-  return THEME_FAMILIES.find((f) => f.light === id || f.dark === id)?.id || '';
+/** Shows a theme family's light or dark variant on this page only, without storing anything (a public
+ *  note page must not change the visitor's own theme). */
+export function showThemeOnPage(familyId: string, dark: boolean): void {
+  const f = THEME_FAMILIES.find((x) => x.id === familyId) || THEME_FAMILIES[0];
+  applyToDocument(dark ? f.dark : f.light, null, false);
 }
 
-/** Shows a family in the system's light or dark variant on this page only, without storing anything
- *  (a public note page must not change the visitor's own theme); returns the unsubscribe. */
-export function showThemeFamily(familyId: string): () => void {
-  const f = THEME_FAMILIES.find((x) => x.id === familyId) || THEME_FAMILIES[0];
-  const apply = () => applyToDocument(systemPrefersDark() ? f.dark : f.light, null, false);
-  apply();
-  if (typeof window === 'undefined' || !window.matchMedia) return () => {};
-  const mq = window.matchMedia('(prefers-color-scheme: dark)');
-  mq.addEventListener('change', apply);
-  return () => mq.removeEventListener('change', apply);
-}
+export const systemIsDark = systemPrefersDark;
 
 export function initThemeOnBoot(): ThemeId {
   applyCorners(getCornerStyle());

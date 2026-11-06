@@ -6,7 +6,7 @@ import { DocumentBlock } from '../../lib/types';
 import { docFromSnapshot } from '../../lib/docSync/model';
 import { toDocumentBlocks } from '../../lib/docSync/diff';
 import { fetchPublicNote, PublicNote, setPublicAccess, storedPublicKey, unlockPublicNote } from '../../lib/publicNote';
-import { showThemeFamily } from '../../lib/theme';
+import { PublicThemePicker } from './PublicThemePicker';
 import { formatDateTime } from '../../lib/format';
 import { NO_AUTOFILL } from '../../lib/noAutofill';
 
@@ -16,7 +16,7 @@ const POLL_MS = 4000;
 const noop = () => {};
 
 /** A note shared by public link (/p/<token>): read only, looks like the editor in focus mode, in the
- *  owner's theme family (light or dark after the visitor's system), and follows changes live. */
+ *  default theme or the one the visitor picks (PublicThemePicker), and follows changes live. */
 export const PublicNoteView: React.FC<{ token: string }> = ({ token }) => {
   const { t } = useTranslation('public');
   const [key, setKey] = useState(() => storedPublicKey(token));
@@ -57,7 +57,6 @@ export const PublicNoteView: React.FC<{ token: string }> = ({ token }) => {
     };
   }, [load]);
 
-  useEffect(() => showThemeFamily(note?.themeFamily || ''), [note?.themeFamily]);
   useEffect(() => {
     document.title = note ? `${note.icon ? note.icon + ' ' : ''}${note.title || t('untitled')}` : 'MindSift';
   }, [note, t]);
@@ -114,7 +113,10 @@ export const PublicNoteView: React.FC<{ token: string }> = ({ token }) => {
 };
 
 const PublicFrame: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <div className="min-h-[100dvh] bg-editor text-main overflow-x-hidden">{children}</div>
+  <div className="min-h-[100dvh] bg-editor text-main overflow-x-hidden">
+    <PublicThemePicker />
+    {children}
+  </div>
 );
 
 const PasswordGate: React.FC<{ token: string; onUnlocked: (key: string) => void }> = ({ token, onUnlocked }) => {
@@ -122,7 +124,6 @@ const PasswordGate: React.FC<{ token: string; onUnlocked: (key: string) => void 
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
-  useEffect(() => showThemeFamily(''), []);
   return (
     <PublicFrame>
       <form

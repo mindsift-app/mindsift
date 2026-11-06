@@ -71,7 +71,8 @@
     "zoomTo": "Hacer zoom a «{{title}}»",
     "moved": "Movido a «{{title}}»",
     "extractedInto": "Extraído a «{{title}}»",
-    "moveFailed": "No se pudo mover"
+    "moveFailed": "No se pudo mover",
+    "shareMenu": "Compartir…"
   },
   "slash": {
     "todo": "Tarea con casilla de verificación",

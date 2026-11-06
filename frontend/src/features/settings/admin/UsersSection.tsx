@@ -97,258 +97,230 @@ export function UsersSection({
         </p>
       </div>
 
-      {/* Direct User Creation Form */}
-      <div className="p-4 bg-canvas border border-border rounded-card space-y-3">
-        <h3 className="font-bold text-main flex items-center gap-1.5">
-          <UserPlus className="w-3.5 h-3.5 text-accent" />
-          <span>{t('users.create.title')}</span>
-        </h3>
-
-        <form onSubmit={handleCreateUser} className="space-y-3">
-          <div className={`grid grid-cols-1 sm:grid-cols-2 gap-3 ${isServerAdmin ? 'lg:grid-cols-4' : 'lg:grid-cols-3'}`}>
-            <div className="min-w-0">
-              <label className="block text-muted mb-1">{t('profile.displayName')}</label>
-              <input
-                type="text"
-                value={newUserName}
-                onChange={(e) => setNewUserName(e.target.value)}
-                placeholder={t('users.create.namePlaceholder')}
-                required
-                className="w-full min-w-0 h-8 px-2.5 input-field"
-              />
-            </div>
-
-            <div className="min-w-0">
-              <label className="block text-muted mb-1">{t('users.create.email')}</label>
-              <input
-                type="email"
-                value={newUserEmail}
-                onChange={(e) => setNewUserEmail(e.target.value)}
-                placeholder={t('users.create.emailPlaceholder')}
-                required
-                className="w-full min-w-0 h-8 px-2.5 input-field"
-              />
-            </div>
-
-            <div className="min-w-0">
-              <label className="block text-muted mb-1">{t('users.create.password')}</label>
-              <input
-                type="password"
-                value={newUserPassword}
-                onChange={(e) => setNewUserPassword(e.target.value)}
-                placeholder={t('users.create.passwordPlaceholder')}
-                required
-                className="w-full min-w-0 h-8 px-2.5 input-field"
-              />
-            </div>
-
-            {/* Only server admins hand out roles; user managers create members */}
-            {isServerAdmin && (
-              <div className="min-w-0">
-                <label className="block text-muted mb-1">{t('users.create.role')}</label>
-                <select
-                  value={newUserRole}
-                  onChange={(e) => setNewUserRole(e.target.value as UserRole)}
-                  className="w-full min-w-0 h-8 px-2 input-field bg-panel"
-                >
-                  <option value="member">{t('users.create.roleMember')}</option>
-                  <option value="manager">{t('users.create.roleManager')}</option>
-                  <option value="admin">{t('users.create.roleAdmin')}</option>
-                </select>
-              </div>
-            )}
-          </div>
-
-          <div className="min-w-0">
-            <label className="block text-muted mb-1">{t('users.organizations')}</label>
+      {/* Create an account and invite side by side (stacked on smaller screens), fields one below the other */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
+        <form onSubmit={handleCreateUser} className="p-4 bg-canvas border border-border rounded-card space-y-3">
+          <h3 className="font-bold text-main flex items-center gap-1.5">
+            <UserPlus className="w-3.5 h-3.5 text-accent" />
+            <span>{t('users.create.title')}</span>
+          </h3>
+          <label className="block">
+            <span className="block text-muted mb-1">{t('profile.displayName')}</span>
+            <input
+              type="text"
+              value={newUserName}
+              onChange={(e) => setNewUserName(e.target.value)}
+              placeholder={t('users.create.namePlaceholder')}
+              required
+              className="w-full min-w-0 h-11 sm:h-8 px-2.5 input-field text-base sm:text-xs"
+            />
+          </label>
+          <label className="block">
+            <span className="block text-muted mb-1">{t('users.create.email')}</span>
+            <input
+              type="email"
+              value={newUserEmail}
+              onChange={(e) => setNewUserEmail(e.target.value)}
+              placeholder={t('users.create.emailPlaceholder')}
+              required
+              className="w-full min-w-0 h-11 sm:h-8 px-2.5 input-field text-base sm:text-xs"
+            />
+          </label>
+          <label className="block">
+            <span className="block text-muted mb-1">{t('users.create.password')}</span>
+            <input
+              type="password"
+              value={newUserPassword}
+              onChange={(e) => setNewUserPassword(e.target.value)}
+              placeholder={t('users.create.passwordPlaceholder')}
+              required
+              className="w-full min-w-0 h-11 sm:h-8 px-2.5 input-field text-base sm:text-xs"
+            />
+          </label>
+          {/* Only server admins hand out roles; user managers create members */}
+          {isServerAdmin && (
+            <label className="block">
+              <span className="block text-muted mb-1">{t('users.create.role')}</span>
+              <select value={newUserRole} onChange={(e) => setNewUserRole(e.target.value as UserRole)} className="w-full min-w-0 h-11 sm:h-8 px-2.5 input-field text-base sm:text-xs bg-panel">
+                <option value="member">{t('users.create.roleMember')}</option>
+                <option value="manager">{t('users.create.roleManager')}</option>
+                <option value="admin">{t('users.create.roleAdmin')}</option>
+              </select>
+            </label>
+          )}
+          <div>
+            <span className="block text-muted mb-1">{t('users.organizations')}</span>
             <OrganizationPicker organizations={organizations} value={newUserOrgs} onChange={setNewUserOrgs} />
           </div>
-
-          <div className="flex justify-end">
-            <button
-              type="submit"
-              className="btn-primary h-8 px-4 text-xs font-semibold flex items-center gap-1.5"
-            >
+          <div className="flex justify-end pt-1">
+            <button type="submit" className="btn-primary w-full sm:w-auto h-11 sm:h-8 px-4 text-xs font-semibold flex items-center justify-center gap-1.5">
               <Plus className="w-3.5 h-3.5" />
               <span>{t('users.create.submit')}</span>
             </button>
           </div>
         </form>
-      </div>
 
-      {/* Invite Code Generator */}
-      <div className="p-4 bg-canvas border border-border rounded-card space-y-3">
-        <h3 className="font-bold text-main flex items-center gap-1.5">
-          <KeyRound className="w-3.5 h-3.5 text-accent" />
-          <span>{t('users.invite.title')}</span>
-        </h3>
-
-        <form onSubmit={handleCreateInvite} className="space-y-3">
-          {/* E-mail gets the room, "how often" only needs a few digits */}
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_8rem]">
-            <div className="min-w-0">
-              <label className="block text-muted mb-1">
-                {t('users.invite.email')}
-              </label>
-              <input
-                type="email"
-                value={inviteMaxUses > 1 ? '' : inviteEmail}
-                onChange={(e) => setInviteEmail(e.target.value)}
-                disabled={inviteMaxUses > 1}
-                placeholder={inviteMaxUses > 1 ? t('users.invite.emailGroup') : t('users.invite.emailAny')}
-                className="w-full min-w-0 h-8 px-2.5 input-field disabled:opacity-60"
-              />
-            </div>
-
-            <div className="min-w-0">
-              <label className="block text-muted mb-1 whitespace-nowrap">{t('users.invite.uses')}</label>
-              <input
-                type="number"
-                min={1}
-                max={1000}
-                value={inviteMaxUses}
-                onChange={(e) => setInviteMaxUses(Math.max(1, Math.min(1000, parseInt(e.target.value, 10) || 1)))}
-                title={t('users.invite.usesHint')}
-                className="w-full min-w-0 h-8 px-2.5 input-field"
-              />
-            </div>
-
-          </div>
-
+        <form onSubmit={handleCreateInvite} className="p-4 bg-canvas border border-border rounded-card space-y-3">
+          <h3 className="font-bold text-main flex items-center gap-1.5">
+            <KeyRound className="w-3.5 h-3.5 text-accent" />
+            <span>{t('users.invite.title')}</span>
+          </h3>
+          <label className="block">
+            <span className="block text-muted mb-1">{t('users.invite.email')}</span>
+            <input
+              type="email"
+              value={inviteMaxUses > 1 ? '' : inviteEmail}
+              onChange={(e) => setInviteEmail(e.target.value)}
+              disabled={inviteMaxUses > 1}
+              placeholder={inviteMaxUses > 1 ? t('users.invite.emailGroup') : t('users.invite.emailAny')}
+              className="w-full min-w-0 h-11 sm:h-8 px-2.5 input-field text-base sm:text-xs disabled:opacity-60"
+            />
+          </label>
+          <label className="block">
+            <span className="block text-muted mb-1">{t('users.invite.uses')}</span>
+            <input
+              type="number"
+              min={1}
+              max={1000}
+              value={inviteMaxUses}
+              onChange={(e) => setInviteMaxUses(Math.max(1, Math.min(1000, parseInt(e.target.value, 10) || 1)))}
+              className="w-28 h-11 sm:h-8 px-2.5 input-field text-base sm:text-xs"
+            />
+            <span className="block text-[11px] text-faint mt-1">{t('users.invite.usesHint')}</span>
+          </label>
           {/* Invites always make members; who should be an admin becomes one afterwards */}
-          <div className="min-w-0">
-            <label className="block text-muted mb-1">{t('users.organizations')}</label>
+          <div>
+            <span className="block text-muted mb-1">{t('users.organizations')}</span>
             <OrganizationPicker organizations={organizations} value={inviteOrgs} onChange={setInviteOrgs} />
-            <p className="text-[11px] text-faint mt-1">{t('users.invite.alwaysMember')}</p>
+            <p className="text-[11px] text-faint mt-1.5">{t('users.invite.alwaysMember')}</p>
           </div>
-
-          <div className="flex justify-end">
+          <div className="flex justify-end pt-1">
             <button
               type="submit"
-              className="btn-action h-8 px-4 text-xs font-semibold flex items-center gap-1.5 border-accent text-main"
+              className="btn-action w-full sm:w-auto h-11 sm:h-8 px-4 text-xs font-semibold flex items-center justify-center gap-1.5 border-accent text-main"
             >
               <KeyRound className="w-3.5 h-3.5 text-accent" />
               <span>{inviteMaxUses > 1 ? t('users.invite.createLink', { count: inviteMaxUses }) : t('users.invite.createCode')}</span>
             </button>
           </div>
         </form>
-
-        {/* Active Invites List */}
-        {invites.length > 0 && (
-          <div className="pt-2 border-t border-border space-y-1.5">
-            <p className="text-[11px] font-semibold text-muted">
-              {t('users.invite.list')}
-            </p>
-            <div className="divide-y divide-border border border-border bg-panel rounded-card overflow-hidden">
-              {invites.map((inv) => {
-                const maxUses = inv.maxUses || 1;
-                const used = inv.useCount ?? (inv.usedBy ? 1 : 0);
-                const open = used < maxUses && new Date(inv.expiresAt).getTime() > Date.now();
-                const copied = copiedInviteId === inv.id;
-                return (
-                  <div key={inv.id} className="p-2 space-y-2">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <div className="flex flex-wrap items-center gap-2.5 min-w-0">
-                        <code className="px-2 py-0.5 bg-canvas border border-border font-mono font-bold text-accent rounded-card">
-                          {inv.code}
-                        </code>
-                        <span className="text-muted">
-                          {[
-                            inv.email ? t('users.invite.for', { email: inv.email }) : '',
-                            (inv.organizationNames || []).join(', '),
-                            maxUses > 1 ? t('users.invite.used', { used, max: maxUses }) : '',
-                          ]
-                            .filter(Boolean)
-                            .join(' · ')}
-                        </span>
-                        {open ? (
-                          <span className="badge-ok text-[10px]">{t('users.invite.open')}</span>
-                        ) : (
-                          <span className="badge-neutral text-[10px]">{used >= maxUses ? t('users.invite.redeemed') : t('users.invite.expired')}</span>
-                        )}
-                      </div>
-
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        {open && (
-                          <>
-                            <button
-                              type="button"
-                              onClick={() => handleCopyInvite(inv, 'link')}
-                              className="btn-action h-7 px-2 text-[11px] flex items-center gap-1"
-                              title={inviteLink(inv)}
-                            >
-                              <Link2 className="w-3 h-3" />
-                              <span>{copied && copiedWhat === 'link' ? t('api.copied') : t('users.invite.copyLink')}</span>
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleCopyInvite(inv, 'code')}
-                              className="btn-action h-7 px-2 text-[11px] flex items-center gap-1"
-                            >
-                              <Copy className="w-3 h-3" />
-                              <span>{copied && copiedWhat === 'code' ? t('api.copied') : t('users.invite.code')}</span>
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setMailInviteId(mailInviteId === inv.id ? null : inv.id);
-                                setMailInviteTo(inv.email || '');
-                              }}
-                              className="btn-action h-7 px-2 text-[11px] flex items-center gap-1"
-                              title={t('users.invite.mailTitle')}
-                            >
-                              <Mail className="w-3 h-3" />
-                              <span>{t('users.invite.mail')}</span>
-                            </button>
-                          </>
-                        )}
-                        <button
-                          onClick={() => handleDeleteInvite(inv.id)}
-                          className="btn-icon btn-icon-danger"
-                          title={t('users.invite.delete')}
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </div>
-                    {mailInviteId === inv.id && (
-                      <form
-                        onSubmit={(e) => {
-                          e.preventDefault();
-                          void handleSendInvite(inv);
-                        }}
-                        className="flex flex-wrap items-center gap-2"
-                      >
-                        <input
-                          type="email"
-                          value={mailInviteTo}
-                          onChange={(e) => setMailInviteTo(e.target.value)}
-                          readOnly={Boolean(inv.email)}
-                          placeholder={t('auth:emailPlaceholder')}
-                          required
-                          autoFocus
-                          className="flex-1 min-w-[12rem] h-8 px-2.5 input-field"
-                        />
-                        <button
-                          type="submit"
-                          disabled={mailInviteBusy}
-                          className="btn-primary h-8 px-3 text-xs font-semibold flex items-center gap-1.5 disabled:opacity-50"
-                        >
-                          <Send className="w-3.5 h-3.5" />
-                          <span>{mailInviteBusy ? t('sending') : t('users.invite.send')}</span>
-                        </button>
-                        {maxUses === 1 && !inv.email && (
-                          <span className="w-full text-[11px] text-faint">{t('users.invite.mailHint')}</span>
-                        )}
-                      </form>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
       </div>
+
+      {/* Active Invites List */}
+      {invites.length > 0 && (
+        <div className="space-y-1.5">
+          <p className="text-[11px] font-semibold text-muted">
+            {t('users.invite.list')}
+          </p>
+          <div className="divide-y divide-border border border-border bg-panel rounded-card overflow-hidden">
+            {invites.map((inv) => {
+              const maxUses = inv.maxUses || 1;
+              const used = inv.useCount ?? (inv.usedBy ? 1 : 0);
+              const open = used < maxUses && new Date(inv.expiresAt).getTime() > Date.now();
+              const copied = copiedInviteId === inv.id;
+              return (
+                <div key={inv.id} className="p-2 space-y-2">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex flex-wrap items-center gap-2.5 min-w-0">
+                      <code className="px-2 py-0.5 bg-canvas border border-border font-mono font-bold text-accent rounded-card">
+                        {inv.code}
+                      </code>
+                      <span className="text-muted">
+                        {[
+                          inv.email ? t('users.invite.for', { email: inv.email }) : '',
+                          (inv.organizationNames || []).join(', '),
+                          maxUses > 1 ? t('users.invite.used', { used, max: maxUses }) : '',
+                        ]
+                          .filter(Boolean)
+                          .join(' · ')}
+                      </span>
+                      {open ? (
+                        <span className="badge-ok text-[10px]">{t('users.invite.open')}</span>
+                      ) : (
+                        <span className="badge-neutral text-[10px]">{used >= maxUses ? t('users.invite.redeemed') : t('users.invite.expired')}</span>
+                      )}
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      {open && (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => handleCopyInvite(inv, 'link')}
+                            className="btn-action h-7 px-2 text-[11px] flex items-center gap-1"
+                            title={inviteLink(inv)}
+                          >
+                            <Link2 className="w-3 h-3" />
+                            <span>{copied && copiedWhat === 'link' ? t('api.copied') : t('users.invite.copyLink')}</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleCopyInvite(inv, 'code')}
+                            className="btn-action h-7 px-2 text-[11px] flex items-center gap-1"
+                          >
+                            <Copy className="w-3 h-3" />
+                            <span>{copied && copiedWhat === 'code' ? t('api.copied') : t('users.invite.code')}</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setMailInviteId(mailInviteId === inv.id ? null : inv.id);
+                              setMailInviteTo(inv.email || '');
+                            }}
+                            className="btn-action h-7 px-2 text-[11px] flex items-center gap-1"
+                            title={t('users.invite.mailTitle')}
+                          >
+                            <Mail className="w-3 h-3" />
+                            <span>{t('users.invite.mail')}</span>
+                          </button>
+                        </>
+                      )}
+                      <button
+                        onClick={() => handleDeleteInvite(inv.id)}
+                        className="btn-icon btn-icon-danger"
+                        title={t('users.invite.delete')}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                  {mailInviteId === inv.id && (
+                    <form
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        void handleSendInvite(inv);
+                      }}
+                      className="flex flex-wrap items-center gap-2"
+                    >
+                      <input
+                        type="email"
+                        value={mailInviteTo}
+                        onChange={(e) => setMailInviteTo(e.target.value)}
+                        readOnly={Boolean(inv.email)}
+                        placeholder={t('auth:emailPlaceholder')}
+                        required
+                        autoFocus
+                        className="flex-1 min-w-[12rem] h-8 px-2.5 input-field"
+                      />
+                      <button
+                        type="submit"
+                        disabled={mailInviteBusy}
+                        className="btn-primary h-8 px-3 text-xs font-semibold flex items-center gap-1.5 disabled:opacity-50"
+                      >
+                        <Send className="w-3.5 h-3.5" />
+                        <span>{mailInviteBusy ? t('sending') : t('users.invite.send')}</span>
+                      </button>
+                      {maxUses === 1 && !inv.email && (
+                        <span className="w-full text-[11px] text-faint">{t('users.invite.mailHint')}</span>
+                      )}
+                    </form>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Registrations waiting for approval */}
       {users.some((u) => u.pendingApproval) && (

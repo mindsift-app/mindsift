@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next';
 import { Check, Copy, Globe, KeyRound, Link2Off, RefreshCw } from 'lucide-react';
 import { api } from '../../lib/api';
 import { PublicLinkState } from '../../lib/types';
-import { activeThemeFamily } from '../../lib/theme';
 import { formatDateTime } from '../../lib/format';
 import { NO_AUTOFILL } from '../../lib/noAutofill';
 
@@ -58,7 +57,7 @@ export const PublicLinkSection: React.FC<{ docId: string }> = ({ docId }) => {
       onSubmit={(e) => {
         e.preventDefault();
         const h = durations.includes(hours) ? hours : durations[durations.length - 1];
-        void run(() => api.setPublicLink(docId, h, password, activeThemeFamily()));
+        void run(() => api.setPublicLink(docId, h, password));
       }}
       className="space-y-2"
     >
@@ -122,17 +121,20 @@ export const PublicLinkSection: React.FC<{ docId: string }> = ({ docId }) => {
               <span className="hidden sm:inline">{copied ? t('publicLink.copied') : t('publicLink.copy')}</span>
             </button>
           </div>
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <span className="text-[11px] text-muted flex items-center gap-1.5">
-              {t('publicLink.expires', { date: formatDateTime(state.link.expiresAt) })}
+          {/* Expiry (and a key when protected) left, the actions right; narrow, the actions wrap below,
+              still on the right */}
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="min-w-0 text-[11px] text-muted flex items-center gap-1.5">
+              <span className="truncate">
+                {t('publicLink.expires', { date: formatDateTime(state.link.expiresAt, { dateStyle: 'short', timeStyle: 'short' }) })}
+              </span>
               {state.link.hasPassword && (
-                <span className="badge-neutral text-[10px] inline-flex items-center gap-1">
-                  <KeyRound className="w-2.5 h-2.5" />
-                  {t('publicLink.withPassword')}
+                <span title={t('publicLink.withPassword')} aria-label={t('publicLink.withPassword')} className="shrink-0">
+                  <KeyRound className="w-3 h-3 text-accent" />
                 </span>
               )}
             </span>
-            <div className="flex gap-1.5">
+            <div className="flex gap-1.5 ml-auto shrink-0">
               <button type="button" onClick={() => setCreating(true)} className="btn-action h-11 sm:h-7 px-2.5 text-[11px] flex items-center gap-1">
                 <RefreshCw className="w-3 h-3" />
                 {t('publicLink.new')}

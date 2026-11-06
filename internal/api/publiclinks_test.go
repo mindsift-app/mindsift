@@ -52,7 +52,7 @@ func TestPublicLinks(t *testing.T) {
 	if resp := doJSON(t, ts, http.MethodPut, "/api/v1/documents/"+doc.ID+"/public-link", ownerToken, map[string]any{"hours": 24 * 30}); resp.StatusCode != http.StatusBadRequest {
 		t.Errorf("a 30-day link must be refused: status %d", resp.StatusCode)
 	}
-	resp := doJSON(t, ts, http.MethodPut, "/api/v1/documents/"+doc.ID+"/public-link", ownerToken, map[string]any{"hours": 24, "themeFamily": "fjord"})
+	resp := doJSON(t, ts, http.MethodPut, "/api/v1/documents/"+doc.ID+"/public-link", ownerToken, map[string]any{"hours": 24})
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("create link: status %d", resp.StatusCode)
 	}
@@ -80,13 +80,12 @@ func TestPublicLinks(t *testing.T) {
 		}
 	}
 	var note struct {
-		Title       string         `json:"title"`
-		ThemeFamily string         `json:"themeFamily"`
-		HeadSeq     int64          `json:"headSeq"`
-		Blocks      []collab.Block `json:"blocks"`
+		Title   string         `json:"title"`
+		HeadSeq int64          `json:"headSeq"`
+		Blocks  []collab.Block `json:"blocks"`
 	}
 	_ = json.Unmarshal(body, &note)
-	if note.Title != "Anleitung" || note.ThemeFamily != "fjord" || !strings.Contains(string(body), storage.PublicSecretRef) {
+	if note.Title != "Anleitung" || !strings.Contains(string(body), storage.PublicSecretRef) {
 		t.Errorf("unexpected public note: %s", body)
 	}
 

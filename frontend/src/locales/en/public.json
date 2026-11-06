@@ -11,5 +11,10 @@
     "text": "This note is protected by a password.",
     "placeholder": "Password",
     "open": "Open"
+  },
+  "theme": {
+    "pick": "Choose colours",
+    "light": "Light",
+    "dark": "Dark"
   }
 }

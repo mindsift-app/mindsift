@@ -626,11 +626,15 @@
     "removeWarning_one": "{{name}} quitte « {{org}} ». {{count}} partage ou appartenance à un groupe, autorisé uniquement par cette organisation, disparaît.",
     "removeWarning_other": "{{name}} quitte « {{org}} ». {{count}} partages et appartenances à des groupes, autorisés uniquement par cette organisation, disparaissent.",
     "removeConfirm": "Retirer",
-    "addMember": "Ajouter",
-    "addMemberPlaceholder": "Ajouter une personne (nom, @utilisateur ou e-mail)…",
-    "addOrganization": "+ Organisation",
+    "addMember": "Ajouter une personne",
+    "addMemberPlaceholder": "Nom, @utilisateur ou e-mail…",
+    "addOrganization": "Ajouter une organisation",
     "addAnother": "+ une autre",
-    "removeFromSelection": "Retirer {{org}}"
+    "removeFromSelection": "Retirer {{org}}",
+    "searchOrganization": "Rechercher une organisation…",
+    "noMatch": "Aucune organisation correspondante",
+    "noPersonMatch": "Personne ne correspond",
+    "noneChosen": "aucune"
   },
   "smtp": {
     "title": "E-mail / Serveur SMTP pour les alarmes de tâches",

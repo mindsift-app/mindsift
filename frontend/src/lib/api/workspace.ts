@@ -355,10 +355,10 @@ export const workspaceApi = {
   },
 
   // A new link (the previous address stops working): duration in hours, optional password
-  async setPublicLink(docId: string, hours: number, password: string, themeFamily: string): Promise<PublicLinkState> {
+  async setPublicLink(docId: string, hours: number, password: string): Promise<PublicLinkState> {
     return request<PublicLinkState>(`/api/v1/documents/${encodeURIComponent(docId)}/public-link`, {
       method: 'PUT',
-      body: JSON.stringify({ hours, password, themeFamily }),
+      body: JSON.stringify({ hours, password }),
     });
   },
 

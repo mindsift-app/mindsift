@@ -71,7 +71,8 @@
     "zoomTo": "Zoomer sur « {{title}} »",
     "moved": "Déplacé dans « {{title}} »",
     "extractedInto": "Extrait dans « {{title}} »",
-    "moveFailed": "Échec du déplacement"
+    "moveFailed": "Échec du déplacement",
+    "shareMenu": "Partager…"
   },
   "slash": {
     "todo": "Tâche avec case à cocher",

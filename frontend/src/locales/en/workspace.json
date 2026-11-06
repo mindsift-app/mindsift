@@ -71,7 +71,8 @@
     "zoomTo": "Zoom to \"{{title}}\"",
     "moved": "Moved to “{{title}}”",
     "extractedInto": "Moved out to “{{title}}”",
-    "moveFailed": "Moving failed"
+    "moveFailed": "Moving failed",
+    "shareMenu": "Share…"
   },
   "slash": {
     "todo": "To-do with a checkbox",

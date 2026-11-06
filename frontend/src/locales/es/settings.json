@@ -636,11 +636,15 @@
     "removeWarning_one": "{{name}} sale de «{{org}}». Se pierde {{count}} acceso o pertenencia a grupo que solo estaba permitido por esta organización.",
     "removeWarning_other": "{{name}} sale de «{{org}}». Se pierden {{count}} accesos y pertenencias a grupos que solo estaban permitidos por esta organización.",
     "removeConfirm": "Quitar",
-    "addMember": "Añadir",
-    "addMemberPlaceholder": "Añadir persona (nombre, @usuario o correo)…",
-    "addOrganization": "+ Organización",
+    "addMember": "Añadir persona",
+    "addMemberPlaceholder": "Nombre, @usuario o correo…",
+    "addOrganization": "Añadir organización",
     "addAnother": "+ otra",
-    "removeFromSelection": "Quitar {{org}}"
+    "removeFromSelection": "Quitar {{org}}",
+    "searchOrganization": "Buscar organización…",
+    "noMatch": "Ninguna organización coincide",
+    "noPersonMatch": "Nadie coincide",
+    "noneChosen": "ninguna"
   },
   "server": {
     "title": "Ajustes básicos del servidor y compartir",

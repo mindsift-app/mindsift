@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Building2, X } from 'lucide-react';
+import { Building2, Plus, X } from 'lucide-react';
 import { Organization } from '../../../lib/types';
+import { PickerPopover } from '../../../components/PickerPopover';
 
-/** Several organizations as chips (✕ removes one) plus a list to add another; empty is allowed. */
+/** Several organizations as chips (✕ removes one); "+" opens a search to add another. Empty is allowed. */
 export function OrganizationPicker({
   organizations,
   value,
@@ -14,9 +15,10 @@ export function OrganizationPicker({
   onChange: (ids: string[]) => void;
 }) {
   const { t } = useTranslation('settings');
+  const [anchor, setAnchor] = useState<HTMLElement | null>(null);
   const rest = organizations.filter((o) => !value.includes(o.id));
   return (
-    <div className="flex flex-wrap items-center gap-1.5 min-h-8">
+    <div className="flex flex-wrap items-center gap-1.5">
       {value.map((id) => {
         const org = organizations.find((o) => o.id === id);
         if (!org) return null;
@@ -37,21 +39,31 @@ export function OrganizationPicker({
         );
       })}
       {rest.length > 0 && (
-        <select
-          value=""
-          onChange={(e) => e.target.value && onChange([...value, e.target.value])}
-          className="h-11 sm:h-7 px-2 input-field text-base sm:text-[11px] bg-panel max-w-[12rem]"
+        <button
+          type="button"
+          onClick={(e) => setAnchor(anchor ? null : e.currentTarget)}
+          className="btn-icon w-11 h-11 sm:w-7 sm:h-7 rounded-full border border-dashed border-border"
+          title={t('orgs.addOrganization')}
           aria-label={t('orgs.addOrganization')}
+          aria-expanded={Boolean(anchor)}
         >
-          <option value="">{value.length ? t('orgs.addAnother') : t('orgs.addOrganization')}</option>
-          {rest.map((o) => (
-            <option key={o.id} value={o.id}>
-              {o.name}
-            </option>
-          ))}
-        </select>
+          <Plus className="w-3.5 h-3.5" />
+        </button>
       )}
-      {organizations.length === 0 && <span className="text-[11px] text-faint">{t('orgs.empty')}</span>}
+      {value.length === 0 && <span className="text-[11px] text-faint">{organizations.length ? t('orgs.noneChosen') : t('orgs.empty')}</span>}
+      {anchor && (
+        <PickerPopover
+          anchor={anchor}
+          items={rest.map((o) => ({ id: o.id, label: o.name, lead: <Building2 className="w-3.5 h-3.5 text-accent" /> }))}
+          placeholder={t('orgs.searchOrganization')}
+          empty={t('orgs.noMatch')}
+          onPick={(item) => {
+            onChange([...value, item.id]);
+            setAnchor(null);
+          }}
+          onClose={() => setAnchor(null)}
+        />
+      )}
     </div>
   );
 }

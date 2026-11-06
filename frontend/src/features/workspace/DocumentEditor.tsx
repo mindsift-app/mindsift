@@ -1436,16 +1436,35 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
         </>
       )}
 
-      {doc && !inTrash && (
-        <button
-          type="button"
-          onClick={() => onOpenShareModal(doc)}
-          className="btn-icon h-11 w-11 sm:h-7 sm:w-7"
-          title={t('editor.share')}
-          aria-label={t('editor.share')}
-        >
-          <Users className="w-3.5 h-3.5" />
-        </button>
+      {/* Large screens: focus mode one click away; sharing moves into the menu (a shared note also has
+          its share pill in the tab bar). Phones keep the share button. In focus mode its header has the
+          way out already. */}
+      {desktopBar ? (
+        onToggleFocusMode &&
+        !focusMode && (
+          <button
+            type="button"
+            onClick={onToggleFocusMode}
+            className="btn-icon h-11 w-11 sm:h-7 sm:w-7"
+            title={`${t('editor.startFocusTitle')} (${t('editor.focusShortcut')})`}
+            aria-label={t('editor.startFocusTitle')}
+          >
+            <Maximize2 className="w-3.5 h-3.5" />
+          </button>
+        )
+      ) : (
+        doc &&
+        !inTrash && (
+          <button
+            type="button"
+            onClick={() => onOpenShareModal(doc)}
+            className="btn-icon h-11 w-11 sm:h-7 sm:w-7"
+            title={t('editor.share')}
+            aria-label={t('editor.share')}
+          >
+            <Users className="w-3.5 h-3.5" />
+          </button>
+        )
       )}
 
       <div className="relative" ref={actionsMenuRef}>
@@ -1466,6 +1485,21 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
             role="menu"
             className="absolute right-0 top-full mt-1.5 w-max min-w-60 max-w-[calc(100vw-2rem)] rounded-card bg-panel border border-border shadow-lg p-1 z-30 text-xs origin-top-right animate-in fade-in zoom-in-95 slide-in-from-top-1 duration-150"
           >
+            {desktopBar && doc && !inTrash && (
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setShowActionsMenu(false);
+                  onOpenShareModal(doc);
+                }}
+                className="w-full min-h-[44px] sm:min-h-0 px-2.5 py-2 sm:py-1.5 rounded-btn hover:bg-panel-elevated text-left text-main font-medium flex items-center gap-2 transition-colors cursor-pointer"
+              >
+                <Users className="w-3.5 h-3.5 text-accent shrink-0" />
+                <span>{t('editor.shareMenu')}</span>
+              </button>
+            )}
+
             {!inTrash && (
               <button
                 type="button"
@@ -1500,7 +1534,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
               </button>
             )}
 
-            {onToggleFocusMode && (
+            {onToggleFocusMode && !desktopBar && (
               <button
                 type="button"
                 role="menuitem"

@@ -11,5 +11,10 @@
     "text": "Cette note est protégée par un mot de passe.",
     "placeholder": "Mot de passe",
     "open": "Ouvrir"
+  },
+  "theme": {
+    "pick": "Choisir les couleurs",
+    "light": "Clair",
+    "dark": "Sombre"
   }
 }
