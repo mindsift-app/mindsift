@@ -199,10 +199,15 @@ func (s *Server) handleGetMedia(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer f.Close()
-	allowLongTransfer(w)
-	w.Header().Set("Content-Type", m.Mime)
 	// The content of an ID never changes; the login is checked on every request anyway
 	w.Header().Set("Cache-Control", "private, max-age=31536000, immutable")
+	s.serveMediaFile(w, r, m, f)
+}
+
+// serveMediaFile sends an opened file with range requests (seeking in audio) under a strict CSP.
+func (s *Server) serveMediaFile(w http.ResponseWriter, r *http.Request, m *storage.Media, f *os.File) {
+	allowLongTransfer(w)
+	w.Header().Set("Content-Type", m.Mime)
 	w.Header().Set("Content-Security-Policy", "default-src 'none'; sandbox")
 	created, _ := time.Parse(time.RFC3339, m.CreatedAt)
 	http.ServeContent(w, r, "", created, f)

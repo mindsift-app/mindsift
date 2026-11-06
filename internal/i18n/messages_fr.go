@@ -443,4 +443,10 @@ var messagesFR = map[string]string{
 	"Nur Server-Administratoren können Rolle, E-Mail-Adresse und Benutzernamen ändern":                   "Seuls les administrateurs du serveur peuvent modifier le rôle, l’adresse e-mail et le nom d’utilisateur",
 	"Keine Berechtigung zum Löschen dieses Kontos":                                                       "Aucune autorisation pour supprimer ce compte",
 	"Bitte wähle die Organisation der Gruppe":                                                            "Choisis l’organisation du groupe",
+	"Link nicht gefunden oder abgelaufen":                                                                "Lien introuvable ou expiré",
+	"Passwort erforderlich":                                                                              "Mot de passe requis",
+	"Falsches Passwort":                                                                                  "Mot de passe incorrect",
+	"Öffentliche Links sind auf diesem Server abgeschaltet":                                              "Les liens publics sont désactivés sur ce serveur",
+	"Diese Laufzeit ist nicht erlaubt":                                                                   "Cette durée n’est pas autorisée",
+	"Das Passwort ist zu lang":                                                                           "Le mot de passe est trop long",
 }

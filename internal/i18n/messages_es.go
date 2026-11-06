@@ -443,4 +443,10 @@ var messagesES = map[string]string{
 	"Nur Server-Administratoren können Rolle, E-Mail-Adresse und Benutzernamen ändern":                   "Solo los administradores del servidor pueden cambiar el rol, la dirección de correo y el nombre de usuario",
 	"Keine Berechtigung zum Löschen dieses Kontos":                                                       "Sin permiso para eliminar esta cuenta",
 	"Bitte wähle die Organisation der Gruppe":                                                            "Elige la organización del grupo",
+	"Link nicht gefunden oder abgelaufen":                                                                "Enlace no encontrado o caducado",
+	"Passwort erforderlich":                                                                              "Se requiere contraseña",
+	"Falsches Passwort":                                                                                  "Contraseña incorrecta",
+	"Öffentliche Links sind auf diesem Server abgeschaltet":                                              "Los enlaces públicos están desactivados en este servidor",
+	"Diese Laufzeit ist nicht erlaubt":                                                                   "Esta duración no está permitida",
+	"Das Passwort ist zu lang":                                                                           "La contraseña es demasiado larga",
 }

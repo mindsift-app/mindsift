@@ -443,4 +443,10 @@ var messagesIT = map[string]string{
 	"Nur Server-Administratoren können Rolle, E-Mail-Adresse und Benutzernamen ändern":                   "Solo gli amministratori del server possono modificare ruolo, indirizzo e-mail e nome utente",
 	"Keine Berechtigung zum Löschen dieses Kontos":                                                       "Nessuna autorizzazione a eliminare questo account",
 	"Bitte wähle die Organisation der Gruppe":                                                            "Scegli l’organizzazione del gruppo",
+	"Link nicht gefunden oder abgelaufen":                                                                "Link non trovato o scaduto",
+	"Passwort erforderlich":                                                                              "Password richiesta",
+	"Falsches Passwort":                                                                                  "Password errata",
+	"Öffentliche Links sind auf diesem Server abgeschaltet":                                              "I link pubblici sono disattivati su questo server",
+	"Diese Laufzeit ist nicht erlaubt":                                                                   "Questa durata non è consentita",
+	"Das Passwort ist zu lang":                                                                           "La password è troppo lunga",
 }

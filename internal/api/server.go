@@ -149,6 +149,10 @@ func (s *Server) Router() http.Handler {
 	r.Post("/api/v1/auth/forgot-password", s.handleForgotPassword)
 	r.Post("/api/v1/auth/reset-password", s.handleResetPassword)
 	r.Post("/api/v1/webhooks/ingest", s.handleWebhookIngest)
+	// Public links to notes (no login; the token is the access, publiclinks.go)
+	r.Get("/api/v1/public/{token}", s.handlePublicNote)
+	r.Post("/api/v1/public/{token}/unlock", s.handlePublicUnlock)
+	r.Get("/api/v1/public/{token}/media/{mediaId}", s.handlePublicMedia)
 	r.Get("/api/v1/ws", s.handleWebSocket)
 	r.Get("/api/v1/ws/spaces/{spaceId}", s.handleWebSocket)
 	r.Get("/api/v1/ws/lists/{listId}", s.handleWebSocket)
@@ -293,6 +297,9 @@ func (s *Server) Router() http.Handler {
 
 		// Document Sharing & Collaboration
 		r.Get("/api/v1/documents/{id}/shares", s.handleGetDocShares)
+		r.Get("/api/v1/documents/{id}/public-link", s.handleGetPublicLink)
+		r.Put("/api/v1/documents/{id}/public-link", s.handleSetPublicLink)
+		r.Delete("/api/v1/documents/{id}/public-link", s.handleDeletePublicLink)
 		r.Post("/api/v1/documents/{id}/shares", s.handleCreateDocShare)
 		r.Delete("/api/v1/documents/{id}/shares/{userId}", s.handleDeleteDocShare)
 
@@ -384,6 +391,11 @@ func (s *Server) Router() http.Handler {
 	if s.staticFS != nil {
 		fileServer := http.FileServer(http.FS(s.staticFS))
 		r.Get("/*", func(w http.ResponseWriter, req *http.Request) {
+			// Public note pages (/p/<token>): never indexed, the token never leaves as referrer
+			publicPage := strings.HasPrefix(req.URL.Path, "/p/")
+			if publicPage {
+				publicHeaders(w)
+			}
 			path := strings.TrimPrefix(req.URL.Path, "/")
 			if path == "" {
 				path = "index.html"
@@ -426,6 +438,9 @@ func (s *Server) Router() http.Handler {
 						htmlStr = strings.ReplaceAll(htmlStr, `content="/og-image.png"`, `content="`+origin+`/og-image.png"`)
 						htmlStr = strings.ReplaceAll(htmlStr, `property="og:url" content="/"`, `property="og:url" content="`+origin+`/"`)
 						data = []byte(htmlStr)
+					}
+					if publicPage {
+						data = []byte(strings.Replace(string(data), "<head>", `<head><meta name="robots" content="noindex, nofollow, noarchive">`, 1))
 					}
 					w.Header().Set("Content-Type", "text/html; charset=utf-8")
 					w.WriteHeader(http.StatusOK)
