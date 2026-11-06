@@ -156,7 +156,8 @@
     "liveLongPoll": "Live (Long-Polling)",
     "interval": "Abgleich alle 3 s",
     "live": "Live",
-    "shared": "Geteilt"
+    "shared": "Geteilt",
+    "todos": "To-Dos"
   },
   "rollup": {
     "intro": "Alle Aufgaben aus deinen Notizen im gesamten Workspace",
@@ -172,7 +173,8 @@
     "title": "To-Dos aus Notizen ({{count}} offen)",
     "open": "{{count}} offen",
     "grouped": "Gruppiert",
-    "list": "Liste"
+    "list": "Liste",
+    "root": "Hauptebene"
   },
   "emoji": {
     "suggested": "Zuletzt verwendet",

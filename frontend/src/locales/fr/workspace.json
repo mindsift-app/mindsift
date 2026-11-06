@@ -156,7 +156,8 @@
     "liveLongPoll": "En direct (long polling)",
     "interval": "Synchronisation toutes les 3 s",
     "live": "En direct",
-    "shared": "Partagé"
+    "shared": "Partagé",
+    "todos": "À faire"
   },
   "rollup": {
     "intro": "Toutes les tâches de tes notes à travers tout le Workspace",
@@ -172,7 +173,8 @@
     "title": "Tâches issues des notes ({{count}} à faire)",
     "open": "{{count}} à faire",
     "grouped": "Groupé",
-    "list": "Liste"
+    "list": "Liste",
+    "root": "Niveau principal"
   },
   "emoji": {
     "suggested": "Récemment utilisés",

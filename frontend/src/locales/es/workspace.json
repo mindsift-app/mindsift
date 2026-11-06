@@ -156,7 +156,8 @@
     "liveLongPoll": "En vivo (long polling)",
     "interval": "Sincronización cada 3 s",
     "live": "En vivo",
-    "shared": "Compartido"
+    "shared": "Compartido",
+    "todos": "Pendientes"
   },
   "rollup": {
     "intro": "Todas las tareas de tus notas en todo el Workspace",
@@ -172,7 +173,8 @@
     "title": "Tareas de las notas ({{count}} pendientes)",
     "open": "{{count}} pendientes",
     "grouped": "Agrupadas",
-    "list": "Lista"
+    "list": "Lista",
+    "root": "Nivel superior"
   },
   "emoji": {
     "suggested": "Usados recientemente",

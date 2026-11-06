@@ -113,7 +113,7 @@ export const TrashView: React.FC<TrashViewProps> = ({ items, onOpen, onRestore, 
                     <span className="flex flex-wrap items-center gap-x-2 text-[11px] text-muted">
                       <span className="inline-flex items-center gap-1 min-w-0">
                         <Folder className="w-3 h-3 shrink-0" />
-                        <span className="truncate">{item.folderPath || 'Hauptebene'}</span>
+                        <span className="truncate">{item.folderPath || t('rollup.root')}</span>
                       </span>
                       <span>{t('tasks:trash.deletedAt', { date: formatDeletedAt(item.deletedAt) })}</span>
                     </span>
