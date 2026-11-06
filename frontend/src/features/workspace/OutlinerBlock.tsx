@@ -1621,7 +1621,7 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
                   title={block.taskId ? t('block.openTask') : t('block.openParentTask')}
                 >
                   <CheckSquare className="w-2.5 h-2.5 inline-block align-[-1px] mr-0.5" />
-                  {block.taskId ? 'Erweitert' : 'Unteraufgabe'}
+                  {block.taskId ? t('block.badgeTask') : t('block.badgeSubtask')}
                 </button>
               )}
             </div>

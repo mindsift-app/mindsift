@@ -1376,7 +1376,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
       >
         <Home className="w-3.5 h-3.5 text-accent shrink-0" />
         <span className="truncate max-w-[130px]">
-          {title || doc?.title || 'Dokument'}
+          {title || doc?.title || t('editor.untitled')}
         </span>
       </button>
 
@@ -1679,7 +1679,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
             >
               <FileText className="w-3.5 h-3.5 text-accent shrink-0" />
               <span className="truncate max-w-[180px] font-medium text-main">
-                {title || doc?.title || 'Dokument'}
+                {title || doc?.title || t('editor.untitled')}
               </span>
             </div>
           )}

@@ -121,7 +121,9 @@
     "extract": "Convertir en nota propia (con todos los subpuntos)",
     "pullBackTitle": "Recuperar la nota (sus puntos vuelven aquí y la nota va a la papelera)",
     "pullBack": "Recuperar nota",
-    "delete": "Eliminar bloque"
+    "delete": "Eliminar bloque",
+    "badgeTask": "Ampliada",
+    "badgeSubtask": "Subtarea"
   },
   "trash": {
     "back": "Volver a las notas",

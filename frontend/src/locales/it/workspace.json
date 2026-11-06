@@ -121,7 +121,9 @@
     "extract": "Converti in nota indipendente (con tutti i sottopunti)",
     "pullBackTitle": "Recupera nota (i suoi punti torneranno qui, la nota andrà nel cestino)",
     "pullBack": "Recupera nota",
-    "delete": "Elimina blocco"
+    "delete": "Elimina blocco",
+    "badgeTask": "Estesa",
+    "badgeSubtask": "Sottoattività"
   },
   "trash": {
     "back": "Torna alle note",

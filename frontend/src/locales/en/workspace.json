@@ -121,7 +121,9 @@
     "extract": "Turn into its own note (with all sub-bullets)",
     "pullBackTitle": "Pull the note back (its bullets come back here, the note goes to the trash)",
     "pullBack": "Pull note back",
-    "delete": "Delete block"
+    "delete": "Delete block",
+    "badgeTask": "Extended",
+    "badgeSubtask": "Subtask"
   },
   "trash": {
     "back": "Back to the notes",
