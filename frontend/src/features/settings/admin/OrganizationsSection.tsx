@@ -12,8 +12,7 @@ import {
 } from 'lucide-react';
 import { UserAvatar } from '../../../components/UserAvatar';
 import { CountBadge } from '../../../components/CountBadge';
-import { UserAutocomplete } from '../../UserAutocomplete';
-import { User } from '../../../lib/types';
+import { PickerPopover } from '../../../components/PickerPopover';
 import { useAdminSettings } from './useAdminSettings';
 
 // Administration → Organisationen (state in useAdminSettings). An organization opens on click: its
@@ -46,7 +45,8 @@ export function OrganizationsSection({
     setOpenOrgId,
     setPendingRemoval,
   } = admin;
-  const [adding, setAdding] = useState<User | null>(null);
+  // The "+" an organization's add-person search opens from
+  const [addAnchor, setAddAnchor] = useState<HTMLElement | null>(null);
   return (
     <div className="space-y-6">
       <div className="border-b border-border pb-3">
@@ -112,7 +112,7 @@ export function OrganizationsSection({
                       type="button"
                       onClick={() => {
                         setOpenOrgId(open ? null : o.id);
-                        setAdding(null);
+                        setAddAnchor(null);
                         setPendingRemoval(null);
                       }}
                       aria-expanded={open}
@@ -151,9 +151,9 @@ export function OrganizationsSection({
                   )}
                 </div>
 
-                {/* Closed: the members as quiet chips; open: with ✕ and a field to add someone */}
-                {members.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5">
+                {/* Closed: the members as quiet chips; open: with ✕, and "+" to add someone */}
+                {(members.length > 0 || open) && (
+                  <div className="flex flex-wrap items-center gap-1.5">
                     {members.map((m) => (
                       <span
                         key={m.id}
@@ -174,7 +174,40 @@ export function OrganizationsSection({
                         )}
                       </span>
                     ))}
+                    {open && (
+                      <button
+                        type="button"
+                        onClick={(e) => setAddAnchor(addAnchor ? null : e.currentTarget)}
+                        className="btn-icon w-11 h-11 sm:w-7 sm:h-7 rounded-full border border-dashed border-border"
+                        title={t('orgs.addMember')}
+                        aria-label={t('orgs.addMember')}
+                        aria-expanded={Boolean(addAnchor)}
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                   </div>
+                )}
+                {open && addAnchor && (
+                  <PickerPopover
+                    anchor={addAnchor}
+                    items={users
+                      .filter((u) => !u.pendingApproval && !members.some((m) => m.id === u.id))
+                      .map((u) => ({
+                        id: u.id,
+                        label: u.displayName,
+                        hint: [u.username && `@${u.username}`, u.email].filter(Boolean).join(' · '),
+                        lead: <UserAvatar user={u} size="xs" showTitle={false} />,
+                      }))}
+                    placeholder={t('orgs.addMemberPlaceholder')}
+                    empty={t('orgs.noPersonMatch')}
+                    onPick={(item) => {
+                      const u = users.find((x) => x.id === item.id);
+                      if (u) void handleAddOrgMember(o.id, u);
+                      setAddAnchor(null);
+                    }}
+                    onClose={() => setAddAnchor(null)}
+                  />
                 )}
 
                 {open && pendingRemoval?.orgId === o.id && (
@@ -193,32 +226,6 @@ export function OrganizationsSection({
                       {t('common:cancel')}
                     </button>
                   </div>
-                )}
-
-                {open && (
-                  <form
-                    className="flex flex-col sm:flex-row gap-2 max-w-lg"
-                    onSubmit={(e) => {
-                      e.preventDefault();
-                      if (!adding) return;
-                      void handleAddOrgMember(o.id, adding);
-                      setAdding(null);
-                    }}
-                  >
-                    <UserAutocomplete
-                      className="flex-1 min-w-0"
-                      users={users.filter((u) => !u.pendingApproval)}
-                      selectedUser={adding}
-                      onSelectUser={setAdding}
-                      excludeUserIds={members.map((m) => m.id)}
-                      allUsers
-                      placeholder={t('orgs.addMemberPlaceholder')}
-                    />
-                    <button type="submit" disabled={!adding} className="btn-primary h-11 sm:h-8 px-3 text-xs flex items-center justify-center gap-1.5 disabled:opacity-50">
-                      <Plus className="w-3.5 h-3.5" />
-                      {t('orgs.addMember')}
-                    </button>
-                  </form>
                 )}
 
                 {deletingOrgId === o.id && (

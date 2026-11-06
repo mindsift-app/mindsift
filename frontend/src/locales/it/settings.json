@@ -626,11 +626,15 @@
     "removeWarning_one": "{{name}} lascia «{{org}}». Si perde {{count}} condivisione o appartenenza a un gruppo consentita solo tramite questa organizzazione.",
     "removeWarning_other": "{{name}} lascia «{{org}}». Si perdono {{count}} condivisioni e appartenenze a gruppi consentite solo tramite questa organizzazione.",
     "removeConfirm": "Rimuovi",
-    "addMember": "Aggiungi",
-    "addMemberPlaceholder": "Aggiungi persona (nome, @utente o e-mail)…",
-    "addOrganization": "+ Organizzazione",
+    "addMember": "Aggiungi persona",
+    "addMemberPlaceholder": "Nome, @utente o e-mail…",
+    "addOrganization": "Aggiungi organizzazione",
     "addAnother": "+ un’altra",
-    "removeFromSelection": "Rimuovi {{org}}"
+    "removeFromSelection": "Rimuovi {{org}}",
+    "searchOrganization": "Cerca organizzazione…",
+    "noMatch": "Nessuna organizzazione corrispondente",
+    "noPersonMatch": "Nessuno corrisponde",
+    "noneChosen": "nessuna"
   },
   "smtp": {
     "title": "Server email / SMTP per notifiche attività",

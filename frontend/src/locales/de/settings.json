@@ -626,11 +626,15 @@
     "removeWarning_one": "{{name}} verlässt „{{org}}“. Dabei fällt {{count}} Freigabe oder Gruppen-Mitgliedschaft weg, die nur über diese Organisation erlaubt war.",
     "removeWarning_other": "{{name}} verlässt „{{org}}“. Dabei fallen {{count}} Freigaben und Gruppen-Mitgliedschaften weg, die nur über diese Organisation erlaubt waren.",
     "removeConfirm": "Entfernen",
-    "addMember": "Hinzufügen",
-    "addMemberPlaceholder": "Person hinzufügen (Name, @Benutzername oder E-Mail)…",
-    "addOrganization": "+ Organisation",
+    "addMember": "Person hinzufügen",
+    "addMemberPlaceholder": "Name, @Benutzername oder E-Mail…",
+    "addOrganization": "Organisation hinzufügen",
     "addAnother": "+ weitere",
-    "removeFromSelection": "{{org}} entfernen"
+    "removeFromSelection": "{{org}} entfernen",
+    "searchOrganization": "Organisation suchen…",
+    "noMatch": "Keine passende Organisation",
+    "noPersonMatch": "Niemand passt",
+    "noneChosen": "keine"
   },
   "smtp": {
     "title": "E-Mail / SMTP-Server für Aufgaben-Alarme",

@@ -16,6 +16,18 @@ Used in sharing (`UnifiedShareModal`), adding to groups (`GroupsView`), and assi
 - **Multi-selection** (Assigning tasks): Leave `selectedUser={null}` and add to the list in `onSelectUser`. Selected users appear as chips (avatar, name, ×) above the field; the field remains available for the next search.
 - On mobile, the field, selected user, and result rows are 44 px high (16 px font, preventing iOS auto-zoom); from `sm` breakpoint upward, 32 px as before.
 
+- **People search switched off** (`PEOPLE_SEARCH`, admin switch): no suggestions; the field looks up the exact e-mail address or username (`POST /users/lookup`). Only people one may share with (`findable`) are suggested at all. `allUsers` picks from exactly the list given (administration, a list's members).
+
+## Adding to a Set (Search Popover)
+
+Component: [PickerPopover.tsx](../frontend/src/components/PickerPopover.tsx), in the style of "In eigene Notiz umwandeln" (`ExtractPopover`).
+
+Used where items are added to a set shown as chips: organizations of a new account or invite (`OrganizationPicker`), members of an organization (`OrganizationsSection`).
+
+- The chips show what is chosen (✕ removes one); a round **"+" button** after them opens the popover below it.
+- The popover: a search field (focused), up to 8 matching rows (avatar or icon, name, a second line such as the e-mail address), arrows and Enter pick, Escape or a click outside closes. Picking adds the item and closes it.
+- Chips wrap, so many entries just make the block taller; the form around it never needs its own scrolling.
+
 ## Profile Pictures as Stack
 
 Component: [AvatarStack.tsx](../frontend/src/components/AvatarStack.tsx) (uses `UserAvatar`)

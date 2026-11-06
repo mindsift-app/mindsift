@@ -10,6 +10,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Changed
 - Focus mode is one click away: a button above the note takes the place of the share button on large screens. "Share…" moved into the note's menu; a shared note keeps its share pill in the tab bar. Phones stay as they were.
+- Administration: "Create account" and "Invite" sit side by side with their fields one below the other, so long e-mail addresses no longer push the buttons around. Organizations are added with a "+" that opens a small search (as when moving a bullet into its own note); the same search adds people to an organization.
 - Public note pages open in the default theme, light or dark after the visitor's system. A coloured dot at the top right lets visitors pick another theme family, a sun/moon button switches between light and dark; the choice stays in their browser and does not touch their own MindSift theme. The owner's theme is no longer passed on (it did not work with custom themes).
 
 ### Fixed

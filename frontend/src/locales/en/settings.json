@@ -626,11 +626,15 @@
     "removeWarning_one": "{{name}} leaves “{{org}}”. {{count}} share or group membership that was only allowed through this organization goes with it.",
     "removeWarning_other": "{{name}} leaves “{{org}}”. {{count}} shares and group memberships that were only allowed through this organization go with it.",
     "removeConfirm": "Remove",
-    "addMember": "Add",
-    "addMemberPlaceholder": "Add a person (name, @username or e-mail)…",
-    "addOrganization": "+ Organization",
+    "addMember": "Add person",
+    "addMemberPlaceholder": "Name, @username or e-mail…",
+    "addOrganization": "Add organization",
     "addAnother": "+ another",
-    "removeFromSelection": "Remove {{org}}"
+    "removeFromSelection": "Remove {{org}}",
+    "searchOrganization": "Search organization…",
+    "noMatch": "No matching organization",
+    "noPersonMatch": "Nobody matches",
+    "noneChosen": "none"
   },
   "smtp": {
     "title": "Email / SMTP server for task alarms",
