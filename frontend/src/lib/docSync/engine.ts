@@ -9,6 +9,7 @@ import { defaultStorage, SyncStorage } from './persist';
 import { httpTransport, LeaseInfo, Presence, Transport, TransportError } from './transport';
 import { buildStep, failedChecks, touchedBlocks, UndoStep } from './undo';
 import { PushChannel, PushKind, realtimePush } from './push';
+import { getCurrentUserId } from '../api/client';
 import i18n from '../../i18n';
 
 export type EngineStatus = 'loading' | 'saved' | 'saving' | 'offline' | 'error';
@@ -47,7 +48,14 @@ export interface EngineOptions {
   manual?: boolean;
   /** Push notifications; defaults to the app's realtime connection (not used in manual mode). */
   push?: PushChannel;
+  /** Who is signed in; stored with the changes. Defaults to the user of the session token. */
+  userId?: string;
 }
+
+// Notes open in an editor right now (docId -> number of engines); their changes are sent by the editor
+const openNotes = new Map<string, number>();
+
+export const isNoteOpen = (docId: string) => (openNotes.get(docId) || 0) > 0;
 
 const LEASE_GRACE_MS = 20_000; // keep a left block for this long
 const IDLE_RELEASE_MS = 60_000; // release even the focused block after this long without input
@@ -116,6 +124,7 @@ export class DocSyncEngine {
   private storage: SyncStorage;
   private now: () => number;
   private manual: boolean;
+  private userId: string;
 
   private confirmed: Doc = emptyDoc();
   private lastSeq = 0;
@@ -169,6 +178,7 @@ export class DocSyncEngine {
     this.storage = opts.storage || defaultStorage();
     this.now = opts.now || (() => Date.now());
     this.manual = !!opts.manual;
+    this.userId = opts.userId ?? (getCurrentUserId() || '');
     this.push = opts.push || (this.manual ? null : realtimePush);
   }
 
@@ -176,6 +186,7 @@ export class DocSyncEngine {
 
   /** Loads the stored state (instant, works offline), then syncs with the server. */
   async start(): Promise<void> {
+    if (!this.manual) openNotes.set(this.docId, (openNotes.get(this.docId) || 0) + 1);
     try {
       const stored = await this.storage.load(this.docId);
       if (stored) {
@@ -217,6 +228,11 @@ export class DocSyncEngine {
     if (this.stopped) return;
     this.flushOnExit();
     this.stopped = true;
+    if (!this.manual) {
+      const n = (openNotes.get(this.docId) || 0) - 1;
+      if (n > 0) openNotes.set(this.docId, n);
+      else openNotes.delete(this.docId);
+    }
     if (this.timer) clearTimeout(this.timer);
     if (this.pokeTimer) clearTimeout(this.pokeTimer);
     this.longPollAbort?.abort();
@@ -521,6 +537,7 @@ export class DocSyncEngine {
         titleVersion: this.confirmed.titleVersion,
         lastSeq: this.lastSeq,
         role: this.role,
+        userId: this.userId,
         blocks: Array.from(this.confirmed.blocks.values()),
         pending: this.pending,
         inflight: this.inflight,

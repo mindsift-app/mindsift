@@ -8,6 +8,7 @@ export interface StoredDocState {
   titleVersion: number;
   lastSeq: number;
   role: string;
+  userId?: string; // whose changes these are (missing in states stored before v0.83.6)
   blocks: Block[];
   pending: Op[];
   inflight: Op[] | null;
@@ -17,6 +18,8 @@ export interface StoredDocState {
 export interface SyncStorage {
   load(docId: string): Promise<StoredDocState | null>;
   save(state: StoredDocState): Promise<void>;
+  /** All stored notes (to send changes of notes that are no longer open). */
+  list(): Promise<StoredDocState[]>;
 }
 
 const DB_NAME = 'mindsift-sync';
@@ -30,6 +33,9 @@ export class MemoryStorage implements SyncStorage {
   }
   async save(state: StoredDocState) {
     this.data.set(state.docId, JSON.parse(JSON.stringify(state)));
+  }
+  async list() {
+    return Array.from(this.data.values(), (s) => JSON.parse(JSON.stringify(s)) as StoredDocState);
   }
 }
 
@@ -60,6 +66,15 @@ export class IndexedDBStorage implements SyncStorage {
     return new Promise((resolve, reject) => {
       const req = db.transaction(STORE, 'readonly').objectStore(STORE).get(docId);
       req.onsuccess = () => resolve((req.result as StoredDocState) || null);
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  async list(): Promise<StoredDocState[]> {
+    const db = await this.open();
+    return new Promise((resolve, reject) => {
+      const req = db.transaction(STORE, 'readonly').objectStore(STORE).getAll();
+      req.onsuccess = () => resolve((req.result as StoredDocState[]) || []);
       req.onerror = () => reject(req.error);
     });
   }

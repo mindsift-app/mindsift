@@ -18,6 +18,7 @@
     "newNote": "Nueva nota",
     "untitled": "Nota sin título",
     "loadFailed": "No se pudo cargar el documento",
+    "notAvailableOffline": "Esta nota aún no está disponible sin conexión en este dispositivo. Ábrela una vez con conexión y después funcionará también sin conexión.",
     "offlineSaved": "Sin conexión – los cambios se guardan localmente y se enviarán al recuperar la conexión",
     "linkCopied": "Enlace al punto copiado – pégalo en una nota con Ctrl+V",
     "blockGone": "El punto vinculado ya no existe en esta nota",

@@ -6,6 +6,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Fixed
+- Opening a note without a connection no longer replaces it with "No connection to the server" after a moment: the copy stored on the device stays open and editable, and the changes are sent once the connection is back. A note never opened on this device says that it is not available offline yet.
+- Changes made offline in a note that was then left are sent as soon as the connection is back (and at app start), not only the next time that note is opened.
+
 ## [0.83.5] - 2026-11-05
 
 ### Fixed

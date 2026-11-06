@@ -18,6 +18,7 @@
     "newNote": "New note",
     "untitled": "Untitled note",
     "loadFailed": "The document could not be loaded",
+    "notAvailableOffline": "This note is not available offline on this device yet. Open it once while connected, then it works offline too.",
     "offlineSaved": "Offline – changes are saved locally and sent once the connection is back",
     "linkCopied": "Link to the bullet copied – paste it into a note with Ctrl+V",
     "blockGone": "The linked bullet no longer exists in this note",

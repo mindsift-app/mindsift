@@ -18,6 +18,7 @@
     "newNote": "Nouvelle note",
     "untitled": "Note sans titre",
     "loadFailed": "Impossible de charger le document",
+    "notAvailableOffline": "Cette note n’est pas encore disponible hors ligne sur cet appareil. Ouvre-la une fois avec une connexion, ensuite elle fonctionnera aussi hors ligne.",
     "offlineSaved": "Hors ligne – les modifications sont enregistrées localement et transmises une fois reconnecté",
     "linkCopied": "Lien vers la puce copié – colle-le dans une note avec Ctrl+V",
     "blockGone": "La puce liée n'existe plus dans cette note",

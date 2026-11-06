@@ -92,7 +92,7 @@ sequenceDiagram
 
 - **States:** *confirmed state* (from server, with `lastSeq`) and *queue* (own, unconfirmed operations). The UI displays the confirmed state with the local queue overlaid on top; this is handled by `model.ts` following the same rules as the server.
 - **Editor integration:** Editor components work with a flat list (depth level + order). `diff.ts` translates every modification into operations via diffing.
-- **Persistence:** Queue and confirmed state reside in IndexedDB. Opening a note immediately renders the stored state, even offline.
+- **Persistence:** Queue and confirmed state reside in IndexedDB, together with the ID of the signed-in user. Opening a note immediately renders the stored state, even offline; if the note's metadata cannot be fetched without a connection, the editor keeps working on the stored state. Changes waiting in notes that are no longer open (typed offline, then the note was left) are sent at app start and when the connection returns ([flushClosed.ts](../../frontend/src/lib/docSync/flushClosed.ts)), only for the user they were stored for.
 - **Transmission:** Batched after 300 ms, strictly one `/sync` at a time; retries with exponential backoff 1 s, 2 s, 4 s … up to 30 s max. Multiple text edits to a block are merged; the base version remains that of the first edit (what the user saw when typing), ensuring no concurrent remote change is ever overwritten.
 - **Leases:**
   - Typing never blocks waiting for a lease. On focus, a lease request is dispatched immediately.

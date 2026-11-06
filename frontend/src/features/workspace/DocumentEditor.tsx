@@ -32,6 +32,7 @@ import {
 } from 'lucide-react';
 import { Document, DocumentBlock, MoveResult, User } from '../../lib/types';
 import { api } from '../../lib/api';
+import { OfflineError } from '../../lib/offline';
 import { DocSyncEngine, EngineState } from '../../lib/docSync/engine';
 import { Presence } from '../../lib/docSync/transport';
 import { OutlinerTree, OutlinerTreeHandle } from './OutlinerTree';
@@ -276,6 +277,8 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
   );
   const [loading, setLoading] = useState<boolean>(!initialDoc);
   const [error, setError] = useState<string | null>(null);
+  // The note could not be fetched for lack of connection; the sync engine may still have a copy on this device
+  const [loadedOffline, setLoadedOffline] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState<boolean>(false);
   // Where the user last was in this note (zoom, scroll), unless a link points to a bullet in it
   const [savedPlace] = useState(() =>
@@ -472,6 +475,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
       setLoading(true);
     }
     setError(null);
+    setLoadedOffline(false);
 
     api
       .getDocument(docId)
@@ -497,7 +501,12 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
       })
       .catch((err: any) => {
         if (isCancelled) return;
-        setError(err?.message || i18n.t('workspace:editor.loadFailed'));
+        if (err instanceof OfflineError) {
+          setLoadedOffline(true);
+          setError(i18n.t('workspace:editor.notAvailableOffline'));
+        } else {
+          setError(err?.message || i18n.t('workspace:editor.loadFailed'));
+        }
         setLoading(false);
       });
 
@@ -1289,7 +1298,10 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
     URL.revokeObjectURL(url);
   };
 
-  if (loading) {
+  // Offline with a copy on this device: edit it, the sync engine sends the changes later
+  const offlineCopy = loadedOffline && Boolean(engineState?.ready);
+
+  if (loading && !engineState?.ready) {
     return (
       <div className="flex-1 flex items-center justify-center p-12 text-muted">
         <Loader2 className="w-5 h-5 animate-spin mr-2 text-accent" />
@@ -1298,7 +1310,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
     );
   }
 
-  if (error) {
+  if (error && !offlineCopy) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center p-12 text-center">
         <p className="text-xs text-status-err font-medium mb-2">{error}</p>
