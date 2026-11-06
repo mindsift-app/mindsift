@@ -6,7 +6,7 @@
 [![Self-Hosted](https://img.shields.io/badge/100%25-Self--Hosted-2563eb?style=flat-square)](#-quick-start)
 [![Docker](https://img.shields.io/badge/Deployment-Single%20Container-2496ed?style=flat-square&logo=docker&logoColor=white)](#-quick-start)
 [![License](https://img.shields.io/badge/License-AGPLv3-6b7280?style=flat-square)](LICENSE)
-[![Version](https://img.shields.io/badge/Version-v0.83.10-16a34a?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-v0.83.11-16a34a?style=flat-square)](CHANGELOG.md)
 
 **Dump a thought, sort it later, turn it into a task, a note or a shopping list, alone or together.**
 Self-hosted, one container, one SQLite file, your server.
@@ -35,7 +35,7 @@ Self-hosted, one container, one SQLite file, your server.
 
 ## 🧪 Tested before every release
 
-Every build runs through **over 300 frontend tests** and **over 250 backend tests** before an image is published, and a build with a single failing test never ships. On top of that, **five browser test runs with over 80 checks** cover what is hard to unit-test: two people editing the same note at once, offline and back online, sharing, locks and conflict copies, copy & paste as Markdown in Chromium and Firefox, and connections behind proxies that block WebSockets. They run before every change to these areas ([e2e/](e2e/README.md)).
+Every build runs through **over 300 frontend tests** and **over 250 backend tests** before an image is published, and a build with a single failing test never ships. On top of that, **five browser test runs with over 80 checks** cover what is hard to unit-test: two people editing the same note at once, offline and back online, sharing, locks and conflict copies, copy & paste as Markdown in Chromium and Firefox, and connections behind proxies that block WebSockets. They run before every change to these areas ([e2e/](e2e/README.md)). And every tagged release (`:stable`) is **scanned for known vulnerabilities with Trivy** before it is published ([security scan](#%EF%B8%8F-security-scan)).
 
 All of this to keep your data safe and make sure everything runs smoothly for you.
 
@@ -142,7 +142,7 @@ These additions go into `docker-compose.override.yml`, so `docker-compose.yml` c
 ```yaml
 services:
   mindsift:
-    image: ghcr.io/mindsift-app/mindsift:latest   # :latest = every release, :dev = development
+    image: ghcr.io/mindsift-app/mindsift:stable   # :stable = tagged releases, :latest = every release
     restart: unless-stopped
     ports: ["8080:8080"]
     volumes: ["./data:/data"]
@@ -153,7 +153,9 @@ services:
 
 Open `http://localhost:8080` and a wizard creates the admin account. Do that right after the first start, so nobody else grabs it.
 
-All settings are explained in [`.env.example`](.env.example). Optional voice recognition: uncomment the `whisper` block in [`docker-compose.yml`](docker-compose.yml) and set `STT_URL=http://whisper:8000`.
+All settings are explained in [`.env.example`](.env.example). Optional voice recognition: uncomment the `whisper` block in [`docker-compose.yml`](docker-compose.yml) and set `STT_URL=http://whisper:8000` (or let the install script do it).
+
+**Which speech model?** The two the install script offers (large-v3-turbo, small) are OpenAI's multilingual Whisper models and work well in German, English, Spanish, French and Italian. Any Whisper model in CTranslate2 format runs too, for example one fine-tuned for a single language: [list of compatible models on Hugging Face](https://huggingface.co/models?pipeline_tag=automatic-speech-recognition&library=ctranslate2&sort=downloads) (the same list speaches uses), add a language to the search, e.g. [German](https://huggingface.co/models?pipeline_tag=automatic-speech-recognition&library=ctranslate2&sort=downloads&search=german). Put the model's name into `STT_MODEL` in `.env` (e.g. `Systran/faster-whisper-small`) and run `docker compose up -d`; MindSift downloads it by itself. Larger models recognize better but need more RAM and time.
 
 ---
 
@@ -177,7 +179,7 @@ The most important settings (all of them, with explanations, are in [`.env.examp
 * **Reverse proxy:** pass through WebSocket upgrades and unbuffered SSE if you can. If not, MindSift falls back to long polling by itself. Examples for nginx, Traefik, Caddy and Cloudflare: [Doku/reverse-proxy.md](Doku/reverse-proxy.md).
 * **Backups:** switch on daily backups in the admin settings (whole database plus one per user under `data/backups/`). Copy that folder somewhere else too.
 * **Updates:** `docker compose pull && docker compose up -d`. The database schema updates itself; open apps offer to reload.
-* **Image tags:** `:latest` = every release from `main`, `:dev` = development, `:vX.Y.Z` and `:stable` for tagged releases.
+* **Image tags:** `:stable` = the latest tagged release (default in `docker-compose.yml` and the install script), `:vX.Y.Z` = one tagged release, `:latest` = every release from `main`, `:dev` = development.
 * **What changed:** [CHANGELOG.md](CHANGELOG.md).
 
 ---
@@ -222,7 +224,7 @@ Last manual scan: **v0.83.8, 2026-11-06, Trivy 0.76.0**.
 Check it yourself:
 
 ```bash
-docker run --rm aquasec/trivy:0.76.0 image ghcr.io/mindsift-app/mindsift:latest
+docker run --rm aquasec/trivy:0.76.0 image ghcr.io/mindsift-app/mindsift:stable
 ```
 
 ---

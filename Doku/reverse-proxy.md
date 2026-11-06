@@ -118,7 +118,7 @@ version: '3.8'
 
 services:
   mindsift:
-    image: ghcr.io/mindsift-app/mindsift:latest
+    image: ghcr.io/mindsift-app/mindsift:stable
     restart: unless-stopped
     environment:
       - PORT=8080
