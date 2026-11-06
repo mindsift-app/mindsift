@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
-import { motion, useMotionValue, useTransform, AnimatePresence } from 'framer-motion';
+import { motion, useMotionValue, useTransform } from 'framer-motion';
 import {
   X,
   Check,
@@ -252,8 +252,14 @@ export const TriageDeck: React.FC<TriageDeckProps> = ({
   const [isEditingCard, setIsEditingCard] = useState(false);
   const [editDraft, setEditDraft] = useState('');
 
+  // Cards sorted here stay out for a while: a deck loaded before the server had the action (the reload
+  // after a live event can overtake the one after the action) would otherwise bring them back for a moment
+  const sortedOutRef = useRef<Map<string, number>>(new Map());
+  const SORTED_OUT_MS = 10_000;
   useEffect(() => {
-    setCards(deck);
+    const now = Date.now();
+    for (const [id, at] of sortedOutRef.current) if (now - at > SORTED_OUT_MS) sortedOutRef.current.delete(id);
+    setCards(deck.filter((c) => !sortedOutRef.current.has(c.id)));
   }, [deck]);
 
   const activeCard = cards[0];
@@ -301,6 +307,7 @@ export const TriageDeck: React.FC<TriageDeckProps> = ({
     triggerHaptic(action === 'keep' ? [10, 20] : 15);
 
     // Optimistic removal from local deck
+    sortedOutRef.current.set(targetCard.id, Date.now());
     setCards((prev) => prev.filter((c) => c.id !== targetCard.id));
     setLastTriaged(targetCard);
     setShowDateModal(false);
@@ -317,6 +324,7 @@ export const TriageDeck: React.FC<TriageDeckProps> = ({
       });
       onDeckChange();
     } catch {
+      sortedOutRef.current.delete(targetCard.id); // not sorted after all: it comes back with the reload
       onDeckChange();
     }
   };
@@ -371,6 +379,7 @@ export const TriageDeck: React.FC<TriageDeckProps> = ({
     triggerHaptic(15);
     const toRestore = lastTriaged;
     setLastTriaged(null);
+    sortedOutRef.current.delete(toRestore.id);
     await api.triageAction(toRestore.id, 'restore');
     onDeckChange();
   };
@@ -550,7 +559,10 @@ export const TriageDeck: React.FC<TriageDeckProps> = ({
         )}
 
         {/* Active Draggable & Long-Pressable Card */}
-        <AnimatePresence mode="popLayout">
+        {/* No exit animation: the leaving card goes at once and the next one slides in. With framer-motion's
+            exit (popLayout) a re-render right after it (the deck reloading) showed the leaving card again for a
+            frame, which looked like a flicker. */}
+        <>
           <motion.div
             key={activeCard.id}
             style={{ x, rotate, borderColor: cardBorderColor }}
@@ -587,10 +599,9 @@ export const TriageDeck: React.FC<TriageDeckProps> = ({
                 handleAction('discard');
               }
             }}
-            initial={{ scale: 0.97, opacity: 0, y: 10 }}
-            animate={{ scale: 1, opacity: 1, y: 0 }}
-            exit={{ scale: 0.93, opacity: 0 }}
-            className="relative w-full h-full panel-surface p-5 cursor-grab active:cursor-grabbing flex flex-col justify-between overflow-hidden"
+            // Slides in by CSS (once, when the card appears): framer-motion's initial/animate started over for a
+            // frame on every re-render (the deck reloading), which made the card flash
+            className="relative w-full h-full panel-surface p-5 cursor-grab active:cursor-grabbing flex flex-col justify-between overflow-hidden animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-2 duration-200"
           >
             {/* Dynamic Swipe Overlays */}
             <motion.div
@@ -701,7 +712,7 @@ export const TriageDeck: React.FC<TriageDeckProps> = ({
               )}
             </div>
           </motion.div>
-        </AnimatePresence>
+        </>
       </div>
 
       {/* Desktop-only Popovers */}
