@@ -11,5 +11,10 @@
     "text": "Diese Notiz ist mit einem Passwort geschützt.",
     "placeholder": "Passwort",
     "open": "Öffnen"
+  },
+  "theme": {
+    "pick": "Farben wählen",
+    "light": "Hell",
+    "dark": "Dunkel"
   }
 }

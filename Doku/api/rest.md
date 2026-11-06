@@ -352,9 +352,9 @@ The owner of a note shares it read only by link (`/p/<token>` in the app); see [
 | Method | Path | Purpose |
 |---|---|---|
 | GET | `/documents/{id}/public-link` | Owner only: `{enabled, maxDays, link}`; `link` = `{token, expiresAt, hasPassword}` or `null` |
-| PUT | `/documents/{id}/public-link` | Owner only: new link (`hours`: 1, 24, 72, 168 or 336, at most `maxDays`; optional `password`; `themeFamily` of the owner's theme). The previous address stops working. `403` when public links are off |
+| PUT | `/documents/{id}/public-link` | Owner only: new link (`hours`: 1, 24, 72, 168 or 336, at most `maxDays`; optional `password`). The previous address stops working. `403` when public links are off |
 | DELETE | `/documents/{id}/public-link` | Owner only: the address stops working at once |
-| GET | `/public/{token}` | No login. The note for visitors: `title`, `icon`, `themeFamily`, `expiresAt`, `headSeq`, `titleVersion`, `blocks` (as in the snapshot, without hidden values (`{{secret:hidden}}`), conflict copies, authors or the text of deleted bullets). `?since=<headSeq>` answers `204` when nothing changed. Password-protected links need the header `X-Public-Key` (`401` with code `password_required`). Unknown, expired, revoked and switched-off links: `404`. Answers carry `X-Robots-Tag: noindex` and `Referrer-Policy: no-referrer` |
+| GET | `/public/{token}` | No login. The note for visitors: `title`, `icon`, `expiresAt`, `headSeq`, `titleVersion`, `blocks` (as in the snapshot, without hidden values (`{{secret:hidden}}`), conflict copies, authors or the text of deleted bullets). `?since=<headSeq>` answers `204` when nothing changed. Password-protected links need the header `X-Public-Key` (`401` with code `password_required`). Unknown, expired, revoked and switched-off links: `404`. Answers carry `X-Robots-Tag: noindex` and `Referrer-Policy: no-referrer` |
 | POST | `/public/{token}/unlock` | No login. `password` → `{key}` for `X-Public-Key`, valid 12 hours (at most until the link expires); `401` with code `password_wrong`, `429` after 10 wrong tries per link and address |
 | GET | `/public/{token}/media/{mediaId}` | No login. An image or recording a living bullet of the note shows (with `X-Public-Key` when protected) |
 

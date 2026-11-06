@@ -104,7 +104,6 @@ func (s *Server) handlePublicNote(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]interface{}{
 		"title":        snap.Title,
 		"icon":         s.store.DocIcon(l.DocID),
-		"themeFamily":  l.ThemeFamily,
 		"expiresAt":    l.ExpiresAt,
 		"headSeq":      snap.HeadSeq,
 		"titleVersion": snap.TitleVersion,
@@ -206,7 +205,7 @@ func (s *Server) handleGetPublicLink(w http.ResponseWriter, r *http.Request) {
 	s.writePublicLinkState(w, l)
 }
 
-// handleSetPublicLink: PUT /documents/{id}/public-link {hours, password, themeFamily} – a new link (the
+// handleSetPublicLink: PUT /documents/{id}/public-link {hours, password} – a new link (the
 // previous address stops working).
 func (s *Server) handleSetPublicLink(w http.ResponseWriter, r *http.Request) {
 	userID, docID, ok := s.ownPublicLink(w, r)
@@ -218,9 +217,8 @@ func (s *Server) handleSetPublicLink(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var req struct {
-		Hours       int    `json:"hours"`
-		Password    string `json:"password"`
-		ThemeFamily string `json:"themeFamily"`
+		Hours    int    `json:"hours"`
+		Password string `json:"password"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeError(w, http.StatusBadRequest, "Ungültiges JSON")
@@ -260,7 +258,6 @@ func (s *Server) handleSetPublicLink(w http.ResponseWriter, r *http.Request) {
 		CreatedBy:    userID,
 		TokenHash:    hashPublicToken(token),
 		PasswordHash: pwHash,
-		ThemeFamily:  themeFamilyName(req.ThemeFamily),
 		ExpiresAt:    now.Add(time.Duration(req.Hours) * time.Hour).Format(time.RFC3339),
 		CreatedAt:    now.Format(time.RFC3339),
 	}
@@ -288,20 +285,6 @@ func (s *Server) handleDeletePublicLink(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	s.writePublicLinkState(w, nil)
-}
-
-// themeFamilyName keeps a plausible theme family id (the page falls back to the default otherwise).
-func themeFamilyName(s string) string {
-	s = strings.TrimSpace(s)
-	if len(s) > 40 {
-		return ""
-	}
-	for _, c := range s {
-		if !(c >= 'a' && c <= 'z' || c >= '0' && c <= '9' || c == '-') {
-			return ""
-		}
-	}
-	return s
 }
 
 // runPublicLinkCleanup removes expired links (hourly, with the other retention work).

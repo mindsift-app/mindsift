@@ -22,7 +22,7 @@ type PublicLink struct {
 	TokenHash    string
 	TokenSealed  string
 	PasswordHash string // "" = no password
-	ThemeFamily  string // the owner's theme family when the link was made
+	ThemeFamily  string // unused (v0.87.0 kept the owner's theme; visitors now pick their own)
 	ExpiresAt    string // RFC3339, UTC
 	CreatedAt    string
 }

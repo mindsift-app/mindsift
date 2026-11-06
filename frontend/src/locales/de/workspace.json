@@ -71,7 +71,8 @@
     "zoomTo": "Zoom zu \"{{title}}\"",
     "moved": "In „{{title}}“ verschoben",
     "extractedInto": "In „{{title}}“ ausgelagert",
-    "moveFailed": "Verschieben fehlgeschlagen"
+    "moveFailed": "Verschieben fehlgeschlagen",
+    "shareMenu": "Teilen…"
   },
   "slash": {
     "todo": "Aufgabe mit Checkbox",

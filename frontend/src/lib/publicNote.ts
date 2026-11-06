@@ -25,7 +25,6 @@ export function publicMediaRequest(id: string): { path: string; headers: Record<
 export interface PublicNote {
   title: string;
   icon: string;
-  themeFamily: string;
   expiresAt: string;
   headSeq: number;
   titleVersion: number;
