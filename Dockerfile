@@ -58,7 +58,7 @@ RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache
 # ==============================================================================
 # Stage 3: Minimal Production Runtime (< 35 MB)
 # ==============================================================================
-FROM alpine:3.21
+FROM alpine:3.24
 # The code state the image was built from (CI: decides whether a later build may skip the tests)
 ARG GIT_SHA=""
 ARG GIT_TREE=""

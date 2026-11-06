@@ -6,6 +6,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.83.8] - 2026-11-06
+
+### Changed
+- The image is based on Alpine 3.24 instead of 3.21, whose support is ending. The README's security scan is updated (Trivy 0.76.0, no findings beyond the one unused `openpgp` entry).
+
 ## [0.83.7] - 2026-11-06
 
 ### Fixed

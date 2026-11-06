@@ -23,7 +23,7 @@ The frontend is embedded into the binary via `go:embed` ([cmd/server/main.go](..
 | Backend | Go 1.27, `go-chi/chi` v5, `go-chi/cors`, `gorilla/websocket`, `golang-jwt/jwt` v5, `x/crypto/bcrypt` |
 | Database | SQLite via `modernc.org/sqlite` (pure Go, no CGO), WAL, `foreign_keys=ON` |
 | Frontend | React 18, TypeScript, Vite 5, Tailwind 3, framer-motion (triage cards), lucide-react, prismjs (code blocks) |
-| Delivery | Multi-stage Dockerfile (Node 22 → Go 1.27 → Alpine 3.21), image `ghcr.io/mindsift-app/mindsift` |
+| Delivery | Multi-stage Dockerfile (Node 22 → Go 1.27 → Alpine 3.24), image `ghcr.io/mindsift-app/mindsift` |
 
 ## Directories
 
@@ -150,7 +150,7 @@ Admins configure it via environment variables (`STT_*`, see above); Administrati
 ```
 Stage 1  node:22-alpine   tsc, vitest, vite build            → frontend/dist
 Stage 2  golang:1.27      go vet, go test, go build          → /app/mindsift (dist is embedded)
-Stage 3  alpine:3.21      binary only, ca-certificates, tzdata
+Stage 3  alpine:3.24      binary only, ca-certificates, tzdata
 ```
 
 **Image tags (CI):** Push to `dev` → `:dev`; Push/merge to `main` → `:latest`; Git tag `v*` (e.g. `v1.2.0`) → `:v1.2.0` and `:stable`; pre-releases (`v1.2.0-rc.1`) only `:v1.2.0-rc.1`, `:stable` remains unchanged. Other branches are not built.

@@ -6,7 +6,7 @@
 [![Self-Hosted](https://img.shields.io/badge/100%25-Self--Hosted-2563eb?style=flat-square)](#-quick-start)
 [![Docker](https://img.shields.io/badge/Deployment-Single%20Container-2496ed?style=flat-square&logo=docker&logoColor=white)](#-quick-start)
 [![License](https://img.shields.io/badge/License-AGPLv3-6b7280?style=flat-square)](LICENSE)
-[![Version](https://img.shields.io/badge/Version-v0.83.7-16a34a?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-v0.83.8-16a34a?style=flat-square)](CHANGELOG.md)
 
 **Dump a thought, sort it later, turn it into a task, a note or a shopping list, alone or together.**
 Self-hosted, one container, one SQLite file, your server.
@@ -199,11 +199,11 @@ All data lives in one SQLite file, so a single server is the intended setup; the
 
 ## 🛡️ Security scan
 
-The released image is scanned with [Trivy](https://trivy.dev) for known vulnerabilities, leaked secrets and misconfigurations. Last scan: **v0.83.7, 2026-11-06, Trivy 0.58.1**.
+The released image is scanned with [Trivy](https://trivy.dev) for known vulnerabilities, leaked secrets and misconfigurations. Last scan: **v0.83.8, 2026-11-06, Trivy 0.76.0**.
 
 | Part of the image | Critical | High | Medium | Low | Unrated |
 |---|---|---|---|---|---|
-| Alpine 3.21.10 (base system) | 0 | 0 | 0 | 0 | 0 |
+| Alpine 3.24.4 (base system) | 0 | 0 | 0 | 0 | 0 |
 | `/app/mindsift` (Go 1.27.3 binary) | 0 | 0 | 0 | 0 | 1 |
 
 * **No secrets and no misconfigurations** were found.
@@ -212,7 +212,7 @@ The released image is scanned with [Trivy](https://trivy.dev) for known vulnerab
 Check it yourself:
 
 ```bash
-docker run --rm aquasec/trivy:0.58.1 image ghcr.io/mindsift-app/mindsift:latest
+docker run --rm aquasec/trivy:0.76.0 image ghcr.io/mindsift-app/mindsift:latest
 ```
 
 ---
