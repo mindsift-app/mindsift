@@ -6,7 +6,7 @@
 [![Self-Hosted](https://img.shields.io/badge/100%25-Self--Hosted-2563eb?style=flat-square)](#-quick-start)
 [![Docker](https://img.shields.io/badge/Deployment-Single%20Container-2496ed?style=flat-square&logo=docker&logoColor=white)](#-quick-start)
 [![License](https://img.shields.io/badge/License-AGPLv3-6b7280?style=flat-square)](LICENSE)
-[![Version](https://img.shields.io/badge/Version-v0.83.9-16a34a?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-v0.83.10-16a34a?style=flat-square)](CHANGELOG.md)
 
 **Dump a thought, sort it later, turn it into a task, a note or a shopping list, alone or together.**
 Self-hosted, one container, one SQLite file, your server.
@@ -130,7 +130,12 @@ MindSift is a single container with web server, API, database and frontend.
 curl -fsSL https://raw.githubusercontent.com/mindsift-app/mindsift/main/install.sh | bash
 ```
 
-It creates a folder, downloads `docker-compose.yml` and `.env.example`, generates a `JWT_SECRET` and starts the container.
+It creates a folder, downloads `docker-compose.yml` and `.env.example`, generates a `JWT_SECRET`, takes over the server's time zone and starts the container. Two optional questions, both "no" when you just press Enter:
+
+* **Your own speech recognition (Whisper)?** Adds the speaches container with the model you pick (large-v3-turbo or small) and connects MindSift to it; the model downloads by itself on the first start.
+* **Behind a reverse proxy?** Asks for the public address (`BASE_URL`) and the Docker network of your proxy, if it has one.
+
+These additions go into `docker-compose.override.yml`, so `docker-compose.yml` can be replaced on updates. Running the script again updates `docker-compose.yml` and keeps your `.env`.
 
 **Or Docker Compose by hand:**
 
