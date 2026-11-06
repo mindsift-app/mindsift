@@ -41,4 +41,4 @@ go vet ./... && go test ./...
 cd frontend && npm ci && npx tsc --noEmit && npm run test:run && npm run build
 ```
 
-The frontend is built to `cmd/server/dist` for inclusion in the binary (see `Dockerfile`). CI runs twice using the same build plan (`ci/build-plan.sh`): on private Gitea (`.gitea/workflows/`, tests and pre-release images) and on GitHub (`.github/workflows/`, public images at `ghcr.io/mindsift-app/mindsift`).
+The frontend is built to `cmd/server/dist` for inclusion in the binary (see `Dockerfile`). CI runs twice using the same build plan (`ci/build-plan.sh`): on private Gitea (`.gitea/workflows/`, tests and pre-release images) and on GitHub (`.github/workflows/`, public images at `ghcr.io/mindsift-app/mindsift`). On GitHub, a version tag also gets its release page from the matching `CHANGELOG.md` section (`.github/workflows/release.yaml`, `ci/release-notes.sh`).

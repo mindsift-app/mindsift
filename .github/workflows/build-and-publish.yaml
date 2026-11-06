@@ -10,6 +10,7 @@ name: MindSift CI & Docker Release
 # (TEST_REFS). A tag on the commit of :latest only retags it.
 # Trivy (ci/trivy-scan.sh) checks every tag before it is pushed, branches only when Dockerfile, go.mod or
 # go.sum changed; .github/workflows/security-scan.yaml checks :stable and :latest every week.
+# After the images of a tag, release.yaml creates its release page from the CHANGELOG.
 on:
   push:
     branches:
@@ -74,3 +75,14 @@ jobs:
             if [ "${{ steps.plan.outputs.scan }}" = "1" ]; then ci/trivy-scan.sh "${IMAGE}:${TAGS%% *}"; fi
             for t in ${TAGS}; do docker push "${IMAGE}:${t}"; done
           fi
+
+  # A version tag gets its release page once its images are out (release.yaml)
+  release:
+    name: GitHub Release
+    needs: build-test-push
+    if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: write
+    uses: ./.github/workflows/release.yaml
+    with:
+      tag: ${{ github.ref_name }}

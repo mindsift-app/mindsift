@@ -6,6 +6,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Changed
+- Development: GitHub release pages are created by the pipeline after the images of a version tag, with the version's CHANGELOG section as text.
+
 ## [0.87.4] - 2026-11-07
 
 ### Fixed
