@@ -34,11 +34,11 @@ async function waitFor(fn, ms) {
 }
 
 const editorValues = (page) =>
-  page.$$eval('textarea', (els) => els.filter((e) => !e.placeholder?.startsWith('Titel')).map((e) => e.value));
+  page.$$eval('textarea', (els) => els.filter((e) => e.closest('[data-outline-block]')).map((e) => e.value));
 const channelOf = (page) => page.getAttribute('[data-sync-channel]', 'data-sync-channel');
 
 async function openDoc(browser, token, title, block = {}) {
-  const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 }, locale: 'de-DE' });
   // A blocking proxy refuses the connection (policy violation); a clean close would just mean "reconnect"
   if (block.ws === 'reject') await ctx.routeWebSocket(/\/api\/v1\/ws/, (ws) => ws.close({ code: 1008, reason: 'blocked by proxy' }));
   if (block.ws === 'silent') await ctx.routeWebSocket(/\/api\/v1\/ws/, () => {}); // accepted, nothing forwarded

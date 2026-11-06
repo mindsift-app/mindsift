@@ -27,14 +27,16 @@ mkdir -p "$WORK/png"
 echo "Building the image …"
 # Version in the header, e.g. APP_VERSION=v0.2 e2e/screenshots.sh
 "$ENGINE" build -q --build-arg APP_VERSION="${APP_VERSION:-}" -t "$IMAGE" "$ROOT" >/dev/null
-"$ENGINE" run -d --name "$NAME" --network host -e PORT="$PORT" -e MINDA_DEMO=true -e DEMO_RESET_MINUTES=0 \
+# Straight to the app (not the entrypoint that hands /data to uid 1000): the test data stays the host
+# user's, so the script can remove it
+"$ENGINE" run -d --entrypoint /app/mindsift --name "$NAME" --network host -e PORT="$PORT" -e MINDA_DEMO=true -e DEMO_RESET_MINUTES=0 \
   -e JWT_SECRET=screenshots-only-secret -v "$WORK":/data:Z "$IMAGE" >/dev/null
 for _ in $(seq 1 60); do curl -s -m 1 "http://localhost:$PORT/api/v1/health" >/dev/null && break; sleep 0.5; done
 
 echo "Taking screenshots …"
 "$ENGINE" run --rm --network host -e MINDSIFT_URL="http://localhost:$PORT" -e SHOTS_DIR=/shots \
   -e SHOT_LIGHT="${SHOT_LIGHT:-light}" -e SHOT_DARK="${SHOT_DARK:-dark}" -e LANG=en_US.UTF-8 -e TZ=Europe/Berlin \
-  -v "$ROOT/e2e":/e2e:Z -v "$WORK/png":/shots:Z -w /e2e mcr.microsoft.com/playwright:v1.48.2-jammy \
+  -v "$ROOT/e2e":/e2e:Z -v "$WORK/png":/shots:Z -w /e2e mcr.microsoft.com/playwright:v1.65.0-noble \
   sh -c 'npm install --no-audit --no-fund >/dev/null 2>&1 && node screenshots.mjs'
 
 echo "Converting to WebP …"

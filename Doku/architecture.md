@@ -167,6 +167,10 @@ The displayed version (app header) is injected by build arg `APP_VERSION`: CI su
 
 Tests run during image build (frontend: `npm run test:run`, backend: `go test -v ./...`); failures abort the build. Frontend tests are located under `frontend/src/**/__tests__/` (Vitest + jsdom + Testing Library, setup in `frontend/src/test/setup.ts`).
 
+## Container User
+
+The image runs MindSift as the unprivileged user `mindsift` (uid/gid 1000). [ci/entrypoint.sh](../ci/entrypoint.sh) starts as root, hands `DATA_DIR` (and the folder of a database moved with `DATABASE_URL=sqlite://…`) to that user when something there does not belong to it yet (installations from before v0.87.3, whose files belong to root), and then starts the app with `su-exec`. Started with `--user`/`user:`, the entrypoint only starts the app; the data folder must then already belong to that user.
+
 ## Background Job: Backups
 
 [backups.go](../internal/api/backups.go) / [backup.go](../internal/storage/backup.go): When "Automatic Backups" is enabled in admin settings, the job runs once daily at the configured time (`backup_time`, timezone `TZ`; missed runs due to restarts are made up on the same day):

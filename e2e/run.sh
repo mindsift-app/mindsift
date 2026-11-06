@@ -26,11 +26,13 @@ trap cleanup EXIT
 
 echo "Building the image …"
 "$ENGINE" build -q -t "$IMAGE" "$ROOT" >/dev/null
-"$ENGINE" run -d --name "$NAME" --network host -e PORT="$PORT" -e MINDA_DEMO=true -e DEFAULT_LANGUAGE=de \
+# Straight to the app (not the entrypoint that hands /data to uid 1000): the test data stays the host
+# user's, so the script can remove it
+"$ENGINE" run -d --entrypoint /app/mindsift --name "$NAME" --network host -e PORT="$PORT" -e MINDA_DEMO=true -e DEFAULT_LANGUAGE=de \
   -e JWT_SECRET=e2e-only-secret -v "$WORK":/data:Z "$IMAGE" >/dev/null
 for _ in $(seq 1 60); do curl -s -m 1 "http://localhost:$PORT/api/v1/health" >/dev/null && break; sleep 0.5; done
 
 echo "Starting the browser tests (port $PORT) …"
 "$ENGINE" run --rm --network host -e MINDSIFT_URL="http://localhost:$PORT" -v "$ROOT/e2e":/e2e:Z -w /e2e \
-  mcr.microsoft.com/playwright:v1.48.2-jammy \
+  mcr.microsoft.com/playwright:v1.65.0-noble \
   sh -c 'npm install --no-audit --no-fund >/dev/null 2>&1 && node collab.e2e.mjs && node share.e2e.mjs && node lock.e2e.mjs && node copy.e2e.mjs && node live.e2e.mjs && node channels.e2e.mjs && node offline.e2e.mjs'

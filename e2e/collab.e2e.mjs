@@ -5,8 +5,8 @@ import { chromium } from 'playwright';
 const BASE = process.env.MINDSIFT_URL || 'http://localhost:18080';
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 let failures = 0;
-const check = (cond, msg) => {
-  console.log(`${cond ? 'OK  ' : 'FAIL'} ${msg}`);
+const check = (cond, msg, detail) => {
+  console.log(`${cond ? 'OK  ' : 'FAIL'} ${msg}${!cond && detail !== undefined ? `\n     got: ${JSON.stringify(detail)}` : ''}`);
   if (!cond) failures++;
 };
 
@@ -41,10 +41,10 @@ const serverBlocks = async (token, docId) => {
 
 // Outliner text fields of a page (without the title field)
 const editorValues = (page) =>
-  page.$$eval('textarea', (els) => els.filter((e) => !e.placeholder?.startsWith('Titel')).map((e) => e.value));
+  page.$$eval('textarea', (els) => els.filter((e) => e.closest('[data-outline-block]')).map((e) => e.value));
 
 async function openDoc(browser, token, title) {
-  const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 }, locale: 'de-DE' });
   await ctx.addInitScript((t) => localStorage.setItem('mindsift_jwt_token', t), token);
   const page = await ctx.newPage();
   page.on('pageerror', (e) => console.log('PAGEERROR', e.message));
@@ -124,7 +124,7 @@ const main = async () => {
     const v = await editorValues(A.page);
     return JSON.stringify(v) === JSON.stringify(a) ? v : null;
   }, 8000);
-  check(!!reloaded, 'Everything is still there after reloading');
+  check(!!reloaded, 'Everything is still there after reloading', reloaded ? undefined : await editorValues(A.page));
 
   // 6. Structure: indent with Tab, merge with Backspace, both survive a reload. B leaves first, so none of
   // its block leases are active (with B's cursor in a block the server rightly rejects moving it).

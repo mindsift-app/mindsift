@@ -36,7 +36,7 @@ async function waitFor(fn, ms) {
 const serverBlocks = async (token, docId) =>
   (await api(token, 'GET', `/api/v1/docs/${docId}/snapshot`)).blocks.filter((b) => !b.deleted);
 const editorValues = (page) =>
-  page.$$eval('textarea', (els) => els.filter((e) => !e.placeholder?.startsWith('Titel')).map((e) => e.value));
+  page.$$eval('textarea', (els) => els.filter((e) => e.closest('[data-outline-block]')).map((e) => e.value));
 
 // Puts the cursor at the end of the text field showing `text` (works whether or not it is focused already)
 async function focusField(page, text) {
@@ -51,7 +51,7 @@ async function focusField(page, text) {
 }
 
 async function openDoc(browser, token, title) {
-  const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 }, locale: 'de-DE' });
   await ctx.addInitScript((t) => localStorage.setItem('mindsift_jwt_token', t), token);
   const page = await ctx.newPage();
   await page.goto(BASE);
