@@ -5,6 +5,7 @@ import { api, clearToken, triggerHaptic } from '../../../lib/api';
 import { passwordProblem } from '../../../lib/password';
 import { resizeImageToDataUrl } from '../../../components/UserAvatar';
 import { askConfirm } from '../../../components/askConfirm';
+import { clearStoredNotes } from '../../../lib/docSync/persist';
 
 // Kontoeinstellungen → Profil & Sicherheit: name, login address, password, avatar, ending all sessions,
 // and the danger zone (delete own data or the account). Lives in the view, so unsaved input survives
@@ -140,8 +141,9 @@ export function useProfileSettings(currentUser: User, onUserUpdated: (u: User) =
     try {
       if (dangerAction === 'account') {
         await api.deleteOwnAccount(dangerPassword);
-        // The account is gone: drop the session and show the login screen
+        // The account is gone: drop the session and its stored notes, show the login screen
         clearToken();
+        await clearStoredNotes();
         window.location.reload();
         return;
       }

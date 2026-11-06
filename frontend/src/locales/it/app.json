@@ -34,6 +34,8 @@
     "guideStep2": "Scegli <b>«Aggiungi a schermata Home»</b> o <b>«Installa app»</b>.",
     "understood": "Ho capito"
   },
+  "logoutUnsent_one": "{{count}} modifica non è ancora stata inviata ed esiste solo in questo browser. Disconnettendoti andrà persa.",
+  "logoutUnsent_other": "{{count}} modifiche non sono ancora state inviate ed esistono solo in questo browser. Disconnettendoti andranno perse.",
   "profile": {
     "theme": "Tema grafico",
     "accountSettings": "Impostazioni account",

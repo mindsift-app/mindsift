@@ -8,6 +8,7 @@ export interface StoredDocState {
   titleVersion: number;
   lastSeq: number;
   role: string;
+  userId?: string; // whose changes these are (missing in states stored before v0.83.6)
   blocks: Block[];
   pending: Op[];
   inflight: Op[] | null;
@@ -17,6 +18,8 @@ export interface StoredDocState {
 export interface SyncStorage {
   load(docId: string): Promise<StoredDocState | null>;
   save(state: StoredDocState): Promise<void>;
+  /** All stored notes (to send changes of notes that are no longer open). */
+  list(): Promise<StoredDocState[]>;
 }
 
 const DB_NAME = 'mindsift-sync';
@@ -31,6 +34,9 @@ export class MemoryStorage implements SyncStorage {
   async save(state: StoredDocState) {
     this.data.set(state.docId, JSON.parse(JSON.stringify(state)));
   }
+  async list() {
+    return Array.from(this.data.values(), (s) => JSON.parse(JSON.stringify(s)) as StoredDocState);
+  }
 }
 
 export class IndexedDBStorage implements SyncStorage {
@@ -38,7 +44,7 @@ export class IndexedDBStorage implements SyncStorage {
 
   constructor(private factory: IDBFactory = indexedDB) {}
 
-  private open(): Promise<IDBDatabase> {
+  open(): Promise<IDBDatabase> {
     if (!this.dbPromise) {
       this.dbPromise = new Promise((resolve, reject) => {
         const req = this.factory.open(DB_NAME, 1);
@@ -64,6 +70,15 @@ export class IndexedDBStorage implements SyncStorage {
     });
   }
 
+  async list(): Promise<StoredDocState[]> {
+    const db = await this.open();
+    return new Promise((resolve, reject) => {
+      const req = db.transaction(STORE, 'readonly').objectStore(STORE).getAll();
+      req.onsuccess = () => resolve((req.result as StoredDocState[]) || []);
+      req.onerror = () => reject(req.error);
+    });
+  }
+
   async save(state: StoredDocState): Promise<void> {
     const db = await this.open();
     return new Promise((resolve, reject) => {
@@ -73,6 +88,54 @@ export class IndexedDBStorage implements SyncStorage {
       tx.onerror = () => reject(tx.error);
       tx.onabort = () => reject(tx.error);
     });
+  }
+}
+
+/** Deletes every stored note (signing out: the next person on this device must not find them). */
+export async function clearStoredNotes(): Promise<void> {
+  unsent.clear();
+  notifyUnsent();
+  try {
+    if (typeof indexedDB === 'undefined') return;
+    const db = await new IndexedDBStorage(indexedDB).open();
+    await new Promise<void>((resolve) => {
+      const tx = db.transaction(STORE, 'readwrite');
+      tx.objectStore(STORE).clear();
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => resolve();
+      tx.onabort = () => resolve();
+    });
+  } catch {
+    // Storage unavailable: nothing stored
+  }
+}
+
+// Notes with changes the server has not confirmed yet, for the offline notice and the question at sign-out
+const unsent = new Set<string>();
+
+function notifyUnsent() {
+  if (typeof window !== 'undefined') window.dispatchEvent(new Event('mindsift:outbox-changed'));
+}
+
+export function markUnsent(docId: string, has: boolean): void {
+  if (unsent.has(docId) === has) return;
+  if (has) unsent.add(docId);
+  else unsent.delete(docId);
+  notifyUnsent();
+}
+
+export const unsentNoteCount = () => unsent.size;
+
+// Unsent changes live only in this browser. Asks once per page load that the browser does not clear them
+// when disk space runs low (granted silently in Chrome for installed apps, Firefox may ask).
+let persistenceRequested = false;
+export function requestPersistentStorage(): void {
+  if (persistenceRequested) return;
+  persistenceRequested = true;
+  try {
+    void navigator.storage?.persist?.().catch(() => {});
+  } catch {
+    // not supported
   }
 }
 

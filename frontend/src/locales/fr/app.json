@@ -34,6 +34,8 @@
     "guideStep2": "Choisis <b>« Sur l'écran d'accueil »</b> ou <b>« Installer l'application »</b>.",
     "understood": "Compris"
   },
+  "logoutUnsent_one": "{{count}} modification n’a pas encore été envoyée et n’existe que dans ce navigateur. Elle sera perdue à la déconnexion.",
+  "logoutUnsent_other": "{{count}} modifications n’ont pas encore été envoyées et n’existent que dans ce navigateur. Elles seront perdues à la déconnexion.",
   "profile": {
     "theme": "Thème visuel",
     "accountSettings": "Paramètres du compte",

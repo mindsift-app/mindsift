@@ -2,8 +2,9 @@ import 'fake-indexeddb/auto';
 import { describe, it, expect, vi } from 'vitest';
 import type { DocumentBlock } from '../../types';
 import { DocSyncEngine, formBatch } from '../engine';
+import { flushClosedNotes } from '../flushClosed';
 import { applyEffect, applyOp, cloneDoc, Doc, Effect, emptyDoc, Op, Result } from '../model';
-import { IndexedDBStorage, MemoryStorage } from '../persist';
+import { clearStoredNotes, IndexedDBStorage, MemoryStorage, unsentNoteCount } from '../persist';
 import { PushChannel, PushKind } from '../push';
 import { LogEntry, SnapshotResponse, SyncRequest, SyncResponse, Transport, TransportError } from '../transport';
 
@@ -455,12 +456,75 @@ describe('DocSyncEngine', () => {
     ]);
   });
 
+  it('sends changes of a note left while offline once the connection is back', async () => {
+    const server = new FakeServer();
+    const storage = new MemoryStorage();
+    const net = new FakeNet(server);
+    const engine = new DocSyncEngine('doc', { transport: net, storage, manual: true, userId: 'u1' });
+    await engine.start();
+    net.mode = 'down';
+    edit(engine, (b) => [{ ...b[0], content: 'Offline getippt' }]);
+    await engine.syncNow();
+    engine.stop(); // the note is left, the change waits in storage
+    expect(await flushClosedNotes({ storage, transport: net, userId: 'u1' })).toBe(0);
+    net.mode = 'ok';
+    // Changes stored for another account are not sent with this one's session
+    expect(await flushClosedNotes({ storage, transport: net, userId: 'u2' })).toBe(0);
+    expect(serverContents(server)).toEqual(['Start']);
+    expect(await flushClosedNotes({ storage, transport: net, userId: 'u1' })).toBe(1);
+    expect(serverContents(server)).toEqual(['Offline getippt']);
+    expect((await storage.load('doc'))?.pending).toEqual([]);
+    expect(await flushClosedNotes({ storage, transport: net, userId: 'u1' })).toBe(0);
+  });
+
+  it("never shows or sends a state stored for another account", async () => {
+    const server = new FakeServer();
+    const storage = new MemoryStorage();
+    const net = new FakeNet(server);
+    const mine = new DocSyncEngine('doc', { transport: net, storage, manual: true, userId: 'u1' });
+    await mine.start();
+    net.mode = 'down';
+    edit(mine, (b) => [{ ...b[0], content: 'Privat von u1' }]);
+    await mine.syncNow();
+    mine.stop();
+    net.mode = 'ok';
+    const other = new DocSyncEngine('doc', { transport: net, storage, manual: true, userId: 'u2' });
+    await other.start();
+    expect(contents(other)).toEqual(['Start']);
+    expect(other.getState().pendingCount).toBe(0);
+    expect(serverContents(server)).toEqual(['Start']);
+  });
+
+  it('counts notes with unsent changes and forgets them when cleared', async () => {
+    const server = new FakeServer();
+    const net = new FakeNet(server);
+    const engine = new DocSyncEngine('doc', { transport: net, storage: new MemoryStorage(), manual: true, userId: 'u1' });
+    await engine.start();
+    net.mode = 'down';
+    edit(engine, (b) => [{ ...b[0], content: 'Wartet' }]);
+    await engine.syncNow();
+    expect(unsentNoteCount()).toBe(1);
+    net.mode = 'ok';
+    await engine.syncNow();
+    expect(unsentNoteCount()).toBe(0);
+    net.mode = 'down';
+    edit(engine, (b) => [{ ...b[0], content: 'Wartet wieder' }]);
+    await engine.syncNow();
+    expect(unsentNoteCount()).toBe(1);
+    engine.stop();
+    await clearStoredNotes();
+    expect(unsentNoteCount()).toBe(0);
+  });
+
   it('stores state in IndexedDB', async () => {
     const storage = new IndexedDBStorage(indexedDB);
     await storage.save({ docId: 'd', title: 'T', titleVersion: 1, lastSeq: 7, role: 'owner', blocks: [], pending: [], inflight: null, savedAt: 1 });
     const loaded = await storage.load('d');
     expect(loaded?.lastSeq).toBe(7);
     expect(await storage.load('missing')).toBeNull();
+    expect((await storage.list()).map((st) => st.docId)).toEqual(['d']);
+    await clearStoredNotes(); // signing out
+    expect(await storage.list()).toEqual([]);
   });
 });
 

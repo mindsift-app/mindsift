@@ -188,6 +188,11 @@
     "syncing": "Sincronizando – {{waiting}}…",
     "pending": "Sin conexión · {{waiting}} esperando conexión",
     "idle": "Sin conexión – los cambios se sincronizarán al conectar",
+    "notesPending_one": "Sin conexión · texto en {{count}} nota esperando conexión",
+    "notesPending_other": "Sin conexión · texto en {{count}} notas esperando conexión",
+    "bothPending_one": "Sin conexión · {{waiting}}, y texto en {{count}} nota",
+    "bothPending_other": "Sin conexión · {{waiting}}, y texto en {{count}} notas",
+    "localOnly": "Lo que aún no se ha enviado solo está guardado en este navegador. Se conserva al cerrar y reiniciar, pero se pierde al cerrar sesión, al borrar los datos del navegador o en una ventana privada.",
     "noConnection": "Sin conexión con el servidor"
   },
   "origin": {

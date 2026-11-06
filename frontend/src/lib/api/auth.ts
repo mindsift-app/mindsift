@@ -1,6 +1,7 @@
 // REST calls: Login, first-boot setup, sessions and account settings
 import { AuthStatus, DashboardStats, Retention, SharingMode, Session, User, NotificationSettings } from '../types';
 import { setToken, clearToken, ensureArray, request, setCurrentSharingMode } from './client';
+import { clearStoredNotes } from '../docSync/persist';
 
 export const authApi = {
   // --- AUTH, FIRST-BOOT SETUP & SETTINGS ---
@@ -21,6 +22,7 @@ export const authApi = {
       await request<{ success: boolean }>('/api/v1/auth/logout', { method: 'POST' });
     } finally {
       clearToken();
+      await clearStoredNotes();
     }
   },
 

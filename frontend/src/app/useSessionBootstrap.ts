@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { AuthStatus, DashboardStats, SharedList, Thought, User } from '../lib/types';
 import { api, clearToken, connectWebSocket, disconnectWebSocket, getToken } from '../lib/api';
 import { clearOfflineData, outboxCount } from '../lib/offline';
+import { flushClosedNotes } from '../lib/docSync/flushClosed';
 import i18n from '../i18n';
 
 // The session of the app: server status (setup, registration, demo), the signed-in user with counters,
@@ -65,6 +66,7 @@ export function useSessionBootstrap(onSignedOut: () => void) {
 
       if (getToken()) {
         await api.flushOfflineQueue();
+        void flushClosedNotes();
         await refreshAll();
       } else {
         setUser(null);
@@ -92,6 +94,7 @@ export function useSessionBootstrap(onSignedOut: () => void) {
 
     const onOnline = async () => {
       if (getToken()) {
+        void flushClosedNotes();
         const synced = await api.flushOfflineQueue();
         if (synced > 0) refreshAll();
       }

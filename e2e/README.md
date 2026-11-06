@@ -34,6 +34,16 @@ The owner shares a note through the share dialog with the role "edit"; checked i
 
 Locks, presence, undo and conflict copies with two browsers: lock and read-only state on a bullet someone else is editing, a notice instead of a half-done action, `Ctrl+Z`/`Ctrl+Shift+Z`, typing right after Enter, marking of conflict copies, and "accept" (refused under someone else's lock, successful for the lock holder).
 
+## offline.e2e.mjs
+
+Offline work in notes:
+
+- a note opens offline from the copy stored in the browser and stays editable; a note never opened on the device says so
+- changes in a note left while offline are sent once the connection is back, without opening it again
+- conflict: one person edits a bullet offline while another changes it live; both versions are kept, the offline text becomes the conflict copy, both browsers show it marked
+- the notice at the bottom counts notes with unsent text and explains where it is kept; signing out asks first and then deletes the stored notes
+- unsent changes survive closing the browser (persistent profile) and are sent at the next start with a connection
+
 ## copy.e2e.mjs
 
 Selection over several bullets in Chromium and Firefox, in two notes (callout at the top; callout at the bottom with an empty indented last bullet). Checked, each time against the Markdown of the whole note:
