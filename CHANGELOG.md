@@ -6,6 +6,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.87.3] - 2026-11-06
+
+### Changed
+- **Attention:** The container no longer runs MindSift as root but as the user `mindsift` (uid 1000). On the first start after the update it hands `data/` to that user by itself, nothing to do. Whoever sets `user:` in the compose file gives `data/` to that user first (`chown -R 1000:1000 data`).
+- Build and test tools updated (Vite 8, Vitest 5, ESLint 9.39, typescript-eslint 8.72, Playwright 1.65): the security alerts about them are gone. None of them reached the app itself; they only ran while building.
+
 ## [0.87.2] - 2026-11-06
 
 ### Fixed

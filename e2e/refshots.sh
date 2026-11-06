@@ -21,7 +21,7 @@ DATA="$DIR/data"
 IMAGE=mindsift-refshots
 NAME=mindsift-refshots
 PORT="${PORT:-18666}"
-PW=mcr.microsoft.com/playwright:v1.48.2-jammy
+PW=mcr.microsoft.com/playwright:v1.65.0-noble
 
 run_pw() {
   script="${SCRIPT:-refshots.mjs}"
@@ -54,17 +54,18 @@ capture|drag|ws|lists)
   trap '"$ENGINE" stop "$NAME" >/dev/null 2>&1 || true' EXIT
   # The demo resets its database (with fresh time stamps) on every start. So it is set up once and kept
   # as a template; every capture runs on a fresh copy without demo mode, with exactly the same data.
-  # RESEED=1 makes a new template (e.g. after the demo data changed).
+  # RESEED=1 makes a new template (e.g. after the demo data changed). The server starts straight with the
+  # app, not the entrypoint that hands /data to uid 1000, so the host can copy and remove the data.
   if [ ! -f "$DATA/seed/mindsift.db" ] || [ "${RESEED:-}" = 1 ]; then
     echo "Lege Demo-Daten als Vorlage an …"
     rm -rf "$DATA/seed" && mkdir -p "$DATA/seed"
-    "$ENGINE" run -d --rm --name "$NAME" --network host -e PORT="$PORT" -e MINDA_DEMO=true -e DEFAULT_LANGUAGE=de -e DEMO_RESET_MINUTES=0 \
+    "$ENGINE" run -d --entrypoint /app/mindsift --rm --name "$NAME" --network host -e PORT="$PORT" -e MINDA_DEMO=true -e DEFAULT_LANGUAGE=de -e DEMO_RESET_MINUTES=0 \
       -e JWT_SECRET=refshots-only -v "$DATA/seed":/data:Z "$IMAGE" >/dev/null
     wait_healthy
     "$ENGINE" stop "$NAME" >/dev/null
   fi
   rm -rf "$DATA/run" && cp -a "$DATA/seed" "$DATA/run"
-  "$ENGINE" run -d --rm --name "$NAME" --network host -e PORT="$PORT" -e JWT_SECRET=refshots-only \
+  "$ENGINE" run -d --entrypoint /app/mindsift --rm --name "$NAME" --network host -e PORT="$PORT" -e JWT_SECRET=refshots-only \
     -v "$DATA/run":/data:Z "$IMAGE" >/dev/null
   wait_healthy
   if [ "$mode" = drag ]; then

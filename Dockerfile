@@ -65,16 +65,19 @@ ARG GIT_TREE=""
 # Hash of Dockerfile, go.mod and go.sum (CI: decides whether a later build needs a security scan)
 ARG GIT_DEPS=""
 LABEL org.opencontainers.image.revision="${GIT_SHA}" io.mindsift.tree="${GIT_TREE}" io.mindsift.deps="${GIT_DEPS}"
-RUN apk add --no-cache ca-certificates tzdata && \
-    mkdir -p /data /tmp && \
+# MindSift runs as the user mindsift (uid/gid 1000), not as root; the entrypoint hands /data over first
+RUN apk add --no-cache ca-certificates tzdata su-exec && \
+    addgroup -S -g 1000 mindsift && adduser -S -D -H -u 1000 -G mindsift mindsift && \
+    mkdir -p /data /tmp && chown mindsift:mindsift /data && \
     chmod 1777 /tmp
 
 WORKDIR /app
 COPY --from=backend-builder /app/mindsift /app/mindsift
+COPY ci/entrypoint.sh /app/entrypoint.sh
 
 ENV PORT=8080
 ENV DATA_DIR=/data
 VOLUME ["/data"]
 
 EXPOSE 8080
-ENTRYPOINT ["/app/mindsift"]
+ENTRYPOINT ["/app/entrypoint.sh", "/app/mindsift"]

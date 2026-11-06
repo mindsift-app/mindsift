@@ -34,7 +34,7 @@ async function waitFor(fn, ms) {
 }
 
 async function openDoc(browser, token, title) {
-  const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 }, locale: 'de-DE' });
   await ctx.addInitScript((t) => localStorage.setItem('mindsift_jwt_token', t), token);
   const page = await ctx.newPage();
   await page.goto(BASE);
@@ -62,8 +62,9 @@ const main = async () => {
   const browser = await chromium.launch();
   const A = await openDoc(browser, admin, TITLE);
 
-  // Share as editor through the dialog
-  await A.page.getByTitle('Notiz teilen und Berechtigungen').click();
+  // Share as editor through the dialog (on large screens "Teilen…" sits in the note's menu)
+  await A.page.getByTitle('Weitere Aktionen').locator('visible=true').first().click();
+  await A.page.getByRole('menuitem', { name: 'Teilen…' }).click();
   await A.page.getByRole('button', { name: 'Benutzer', exact: true }).click();
   const search = A.page.getByPlaceholder(/Benutzer suchen/);
   await search.click();

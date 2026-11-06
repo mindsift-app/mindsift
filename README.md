@@ -6,7 +6,7 @@
 [![Self-Hosted](https://img.shields.io/badge/100%25-Self--Hosted-2563eb?style=flat-square)](#-quick-start)
 [![Docker](https://img.shields.io/badge/Deployment-Single%20Container-2496ed?style=flat-square&logo=docker&logoColor=white)](#-quick-start)
 [![License](https://img.shields.io/badge/License-AGPLv3-6b7280?style=flat-square)](LICENSE)
-[![Version](https://img.shields.io/badge/Version-v0.87.2-16a34a?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-v0.87.3-16a34a?style=flat-square)](CHANGELOG.md)
 
 **Dump a thought, sort it later, turn it into a task, a note or a shopping list, alone or together.**
 Self-hosted, one container, one SQLite file, your server.
@@ -179,7 +179,7 @@ The most important settings (all of them, with explanations, are in [`.env.examp
 
 * **Reverse proxy:** pass through WebSocket upgrades and unbuffered SSE if you can. If not, MindSift falls back to long polling by itself. Examples for nginx, Traefik, Caddy and Cloudflare: [Doku/reverse-proxy.md](Doku/reverse-proxy.md).
 * **Backups:** switch on daily backups in the admin settings (whole database plus one per user under `data/backups/`). Copy that folder somewhere else too.
-* **Updates:** `docker compose pull && docker compose up -d`. The database schema updates itself; open apps offer to reload.
+* **Updates:** `docker compose pull && docker compose up -d`. The database schema updates itself; open apps offer to reload. From v0.87.3 the container runs as uid 1000 and takes over `data/` on the first start by itself; with `user:` in the compose file, give `data/` to that user first (`chown -R 1000:1000 data`).
 * **Image tags:** `:stable` = the latest tagged release (default in `docker-compose.yml` and the install script), `:vX.Y.Z` = one tagged release, `:latest` = every release from `main`, `:dev` = development.
 * **What changed:** [CHANGELOG.md](CHANGELOG.md).
 
@@ -220,6 +220,7 @@ Last manual scan: **v0.83.8, 2026-11-06, Trivy 0.76.0**.
 | `/app/mindsift` (Go 1.27.3 binary) | 0 | 0 | 0 | 0 | 1 |
 
 * **No secrets and no misconfigurations** were found.
+* **Not as root:** since v0.87.3 MindSift runs as the user `mindsift` (uid 1000). The image starts as root only long enough to hand `data/` to that user (once, for installations from before), then drops the rights. Trivy's misconfiguration check therefore still notes a missing `USER` line; that is intended.
 * **The one unrated entry** (GO-2026-5932) concerns the `openpgp` package of `golang.org/x/crypto`, which MindSift does not use (it only uses `bcrypt` from that module). [govulncheck](https://go.dev/blog/govulncheck), which follows the code that is actually called, reports **0 vulnerabilities** that affect MindSift.
 
 Check it yourself:
