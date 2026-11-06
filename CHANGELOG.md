@@ -6,6 +6,14 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.86.2] - 2026-11-06
+
+### Added
+- `SECURITY.md`: how to report a vulnerability privately and which versions get fixes.
+
+### Fixed
+- Code blocks with long lines: clicking into the block no longer shrinks it, so the horizontal scrollbar no longer covers the last line or brings a vertical one back. The extra gap below the last line is gone again.
+
 ## [0.86.1] - 2026-11-06
 
 ### Fixed

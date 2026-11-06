@@ -418,10 +418,9 @@ export const CodeBlockEditor: React.FC<CodeBlockEditorProps> = ({
     const el = localTextareaRef.current;
     if (!el) return;
     el.style.height = 'auto';
-    // A horizontal scrollbar takes its height from the field (then a vertical one appeared too); room for
-    // it plus a small gap, so it does not sit right on the last line
+    // A horizontal scrollbar takes its height from the field (then a vertical one appeared too)
     const bar = el.offsetHeight - el.clientHeight;
-    el.style.height = `${Math.max(22, el.scrollHeight + (bar > 0 ? bar + 6 : 0))}px`;
+    el.style.height = `${Math.max(22, el.scrollHeight + bar)}px`;
   }, []);
 
   useLayoutEffect(() => {
@@ -713,6 +712,7 @@ export const CodeBlockEditor: React.FC<CodeBlockEditorProps> = ({
               registerTextareaRef?.(block.id, el);
             }}
             rows={1}
+            data-own-height="true"
             value={currentContent}
             readOnly={!canEdit}
             spellCheck={false}
