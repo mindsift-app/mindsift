@@ -1,5 +1,5 @@
 // A walk through the demo for a screen recording (YouTube): triage, tasks, shopping list, notes with zoom,
-// a linked subtask, the to-do overview. Drives the visible Chrome on the desktop over its debugging
+// a linked subtask, the to-do overview. What it types explains what it is doing at that moment. Drives the visible Chrome on the desktop over its debugging
 // port, with a drawn mouse pointer and typing at human speed. See e2e/video-tour.sh.
 //   CDP=http://localhost:9222   connect to that Chrome (else: start a headless Chromium, for testing)
 //   BASE=https://demo.mindsift.app   the instance (demo mode, account admin/admin)
@@ -18,34 +18,40 @@ const TEXTS = {
   de: {
     nav: { triage: 'Triage', tasks: 'Aufgaben', lists: 'Listen', workspace: 'Workspace' },
     triage: { task: 'Aufgabe', toList: 'Auf Liste', packingList: 'Packliste Südtirol', later: 'Später' },
-    tasks: { input: 'Neue Aufgabe anlegen…', newTask: 'Rasenmäher-Messer schleifen #garten', checkOff: 'Als erledigt abhaken', done: 'Reverse-Proxy' },
-    lists: { groceries: 'Wocheneinkauf', input: /Was soll auf/, items: ['Bananen', 'Vollkornbrot', 'Kaffeebohnen'] },
+    tasks: { input: 'Neue Aufgabe anlegen…', newTask: 'Aufgaben direkt hier anlegen – #tags werden zu Filtern', checkOff: 'Als erledigt abhaken', done: 'Reverse-Proxy' },
+    lists: { groceries: 'Wocheneinkauf', input: /Was soll auf/, items: ['Geteilte Listen sind für alle live', 'Beim Einkaufen einfach abhaken', 'Erledigtes rutscht nach unten'] },
     notes: {
       tab: 'Notizen', todosTab: 'To-Dos', markDone: 'Als erledigt markieren', zoom: 'hineinzoomen', back: 'Zurück zum Hauptdokument',
       homelab: 'Homelab 2.0', branch: 'Checkliste Umzug', tick1: 'ZFS-Pool mit zwei SSDs anlegen', tick2: 'Gitea mit Runner',
-      after: 'Home Assistant inklusive Zigbee-Stick', write1: 'Nextcloud mit eigener Datenbank', write2: 'Paperless für die Steuerunterlagen',
+      after: 'Home Assistant inklusive Zigbee-Stick', write1: 'Du bist in diesen Ast hineingezoomt – ein Klick auf einen Punkt fokussiert ihn',
+      write2: 'Slash-Befehle machen To-dos, Überschriften, Warnungen und mehr',
       renovation: 'Hausrenovierung', personal: 'Privat', tick3: 'Gegenangebot vom zweiten Studio', tick4: 'Fußbodenheizung vorher prüfen',
-      after2: 'Musterplatten liegen im Keller', write3: 'Fugenfarbe: hellgrau, passt zu beiden Mustern',
+      after2: 'Musterplatten liegen im Keller', write3: 'Enter macht einen neuen Punkt, Tab rückt ihn ein, alles speichert live',
+      warning: 'Warnungen wie diese fallen in der Notiz sofort auf',
+      secretLine: 'Verborgene Werte halten Codes unter Verschluss, z. B. den Schlüsseltresor: ', secretValue: '4719', secretSave: 'Speichern',
       backup: 'Backup-Konzept', projects: 'Projekte', subtask: 'Nächtlicher Lauf per systemd-Timer', parent: 'Backup-Konzept umsetzen',
       openTask: 'Erweiterte Aufgabe öffnen', lastSubtask: 'Wiederherstellung einmal komplett testen', addNote: 'Detailnotiz hinzufügen…',
-      note: 'Restore auf die Test-VM geklappt, dauert rund 14 Minuten.', saveNote: 'Notiz speichern', openInNote: 'In Notiz öffnen',
+      note: 'Häkchen in Notizen können echte Aufgaben werden – Notiz und Aufgabe bleiben dabei immer gleich.', saveNote: 'Notiz speichern', openInNote: 'In Notiz öffnen',
       todo: 'Angebot Fliesenleger',
     },
   },
   en: {
     nav: { triage: 'Triage', tasks: 'Tasks', lists: 'Lists', workspace: 'Workspace' },
     triage: { task: 'Task', toList: 'To list', packingList: 'Packing list South Tyrol', later: 'Later' },
-    tasks: { input: 'Create a new task…', newTask: 'Sharpen the lawn mower blade #garden', checkOff: 'Check off', done: 'Reverse proxy' },
-    lists: { groceries: 'Weekly groceries', input: /What goes on/, items: ['Bananas', 'Wholegrain bread', 'Coffee beans'] },
+    tasks: { input: 'Create a new task…', newTask: 'Add tasks right here – #tags turn into filters', checkOff: 'Check off', done: 'Reverse proxy' },
+    lists: { groceries: 'Weekly groceries', input: /What goes on/, items: ['Shared lists update live for everyone', 'Tick things off while shopping', 'Done items move to the bottom'] },
     notes: {
       tab: 'Notes', todosTab: 'To-dos', markDone: 'Mark as done', zoom: 'zoom into', back: 'Back to the main document',
       homelab: 'Homelab 2.0', branch: 'Moving checklist', tick1: 'Create a ZFS pool with two SSDs', tick2: 'Gitea with runner',
-      after: 'Home Assistant including the Zigbee stick', write1: 'Nextcloud with its own database', write2: 'Paperless for the tax documents',
+      after: 'Home Assistant including the Zigbee stick', write1: 'You are zoomed into this branch – click any bullet to focus it',
+      write2: 'Slash commands make to-dos, headings, warnings and more',
       renovation: 'House renovation', personal: 'Personal', tick3: 'Get a counter-offer from a second studio', tick4: 'Have the underfloor heating checked',
-      after2: 'Sample tiles are in the basement', write3: 'Grout colour: light grey, goes with both samples',
+      after2: 'Sample tiles are in the basement', write3: 'Enter adds a bullet, Tab indents it, everything saves live',
+      warning: 'Warnings like this one stand out in the note',
+      secretLine: 'Hidden values keep codes out of sight, like the key safe: ', secretValue: '4719', secretSave: 'Save',
       backup: 'Backup plan', projects: 'Projects', subtask: 'Nightly run with a systemd timer', parent: 'Put the backup plan into practice',
       openTask: 'Open the extended task', lastSubtask: 'Test a full restore once', addNote: 'Add details…',
-      note: 'Restore to the test VM worked, takes about 14 minutes.', saveNote: 'Save note', openInNote: 'Open in note',
+      note: 'Checkboxes in notes can become full tasks – note and task always stay in sync.', saveNote: 'Save note', openInNote: 'Open in note',
       todo: 'Quote from the tiler',
     },
   },
@@ -179,6 +185,9 @@ for (const item of T.lists.items) {
   await press('Enter', 900);
 }
 await shot('list-added');
+// Tick the one that says so: it moves down to the done items
+await click(page.getByText(T.lists.items[1], { exact: true }).locator('visible=true'), { leftOf: 18, settle: 1500 });
+await shot('list-ticked');
 
 // --- 4. Notes: zoom into a branch, tick and write, zoom out --------------------------------------------
 const N = T.notes;
@@ -204,10 +213,18 @@ await click(bulletOf(N.branch), { settle: 1400 });
 await shot('zoomed');
 await click(todoOf(N.tick1), { settle: 900 });
 await click(todoOf(N.tick2), { settle: 900 });
+// A slash command turns the new line into a to-do; the next line stays one
+async function slash(command) {
+  await type(`/${command}`, { perChar: 90 });
+  await wait(500);
+  await press('Enter', 400);
+}
 await intoText(N.after);
 await press('Enter', 300);
+await slash('todo');
 await type(N.write1);
 await press('Enter', 300);
+await slash('todo');
 await type(N.write2);
 await wait(900);
 await shot('zoomed-written');
@@ -221,7 +238,24 @@ await click(todoOf(N.tick4), { settle: 900 });
 await intoText(N.after2);
 await press('Enter', 300);
 await type(N.write3);
-await wait(900);
+await press('Enter', 300);
+await slash('warn');
+await type(N.warning);
+await press('Enter', 300);
+await shot('after-warning');
+await slash('text');
+// A code that is only needed for a few days, kept as a hidden value
+await type(N.secretLine);
+await slash('secret');
+await wait(400);
+await type(N.secretValue, { perChar: 140 });
+await wait(400);
+await press('Enter', 1200);
+// Leave the line: the hidden value shows as a chip with a lock
+await page.evaluate(() => (document.activeElement instanceof HTMLElement ? document.activeElement.blur() : undefined));
+await wait(1200);
+// A click shows it for a moment
+await click(row(N.secretLine.trim().slice(0, 20)).locator('[data-secret]'), { settle: 2200 });
 await shot('renovation');
 
 // --- 6. A note checkbox that is a task: tick a subtask, open the task, finish it there ----------------

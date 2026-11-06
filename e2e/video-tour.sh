@@ -2,9 +2,10 @@
 # Plays the demo walk-through (e2e/video-tour.mjs) in a visible Chrome window for a screen recording.
 # Chrome starts as an app window (no tabs, no address bar) with its own profile, so the normal profile is
 # not touched; Playwright drives it from a container over the debugging port.
-#   e2e/video-tour.sh                 against a fresh local demo (built from this checkout)
-#   BASE=https://demo.mindsift.app e2e/video-tour.sh   against the public demo (others may be in it)
-#   TOUR_LANG=de e2e/video-tour.sh    German demo data and labels (default: English, like the public demo)
+#   e2e/video-tour.sh                 against the public demo https://demo.mindsift.app (others may be in it)
+#   LOCAL=1 e2e/video-tour.sh         against a fresh local demo, built from this checkout
+#   BASE=https://… e2e/video-tour.sh  against another instance in demo mode (account admin/admin)
+#   LOCAL=1 TOUR_LANG=de e2e/video-tour.sh   the local demo in German (the tour follows the page's language)
 #   PACE=1.5 e2e/video-tour.sh        slower (0.5 = twice as fast)
 #   SIZE=1920,1080 e2e/video-tour.sh  window size (default 1600,900)
 #   START_DELAY=8 e2e/video-tour.sh   seconds to start the screen recorder before the first click
@@ -19,7 +20,7 @@ PROFILE="${PROFILE:-$HOME/.var/app/com.google.Chrome/mindsift-tour}"
 NAME=mindsift-tour
 PW=mcr.microsoft.com/playwright:v1.65.0-noble
 
-if [ -z "${BASE:-}" ]; then
+if [ "${LOCAL:-}" = 1 ]; then
   echo "Starting a fresh local demo on port $PORT …"
   "$ENGINE" build -q -t mindsift-tour "$ROOT" >/dev/null
   "$ENGINE" rm -f "$NAME" >/dev/null 2>&1 || true
@@ -29,6 +30,8 @@ if [ -z "${BASE:-}" ]; then
   trap '"$ENGINE" stop "$NAME" >/dev/null 2>&1 || true' EXIT
   BASE="http://localhost:$PORT"
   for _ in $(seq 1 60); do curl -s -m 1 "$BASE/api/v1/health" >/dev/null && break; sleep 0.5; done
+else
+  BASE="${BASE:-https://demo.mindsift.app}"
 fi
 
 if command -v google-chrome >/dev/null 2>&1; then

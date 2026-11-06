@@ -7,6 +7,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 ## [Unreleased]
 
 ### Fixed
+- Lists: "+ quantity" on items without a quantity was German in every language.
 - The "To-dos" tab of the workspace and the "Top level" group in the to-do overview and the note trash were German in every language.
 - Triage: sorting a thought no longer makes the card flash. The card that was sorted showed up again for a moment and the next one blinked once when the deck reloaded; now the old card goes at once and the next one slides in.
 - The badges "Extended" and "Subtask" at to-dos in notes and the fallback title in the zoom path were German in every language.
