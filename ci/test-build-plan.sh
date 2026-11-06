@@ -38,17 +38,19 @@ expect() { # name, REF, expected "action skip_tests scan tags", env assignmentsâ
   fi
 }
 
-expect "dev builds with tests" refs/heads/dev "build 0 1 dev"
-expect "dev, dependencies unchanged" refs/heads/dev "build 0 0 dev" DEV_DEPS="$DEPS"
-expect "dev, dependencies changed" refs/heads/dev "build 0 1 dev" DEV_DEPS=0000
-expect "main after a tested dev" refs/heads/main "build 1 1 latest" DEV_TREE="$TREE"
-expect "main, dependencies unchanged" refs/heads/main "build 1 0 latest" DEV_TREE="$TREE" LATEST_DEPS="$DEPS"
-expect "main with different code" refs/heads/main "build 0 1 latest" DEV_TREE=0000
+expect "dev builds without tests" refs/heads/dev "build 1 1 dev"
+expect "dev, dependencies unchanged" refs/heads/dev "build 1 0 dev" DEV_DEPS="$DEPS"
+expect "dev, dependencies changed" refs/heads/dev "build 1 1 dev" DEV_DEPS=0000
+expect "main without tests (Gitea)" refs/heads/main "build 1 1 latest"
+expect "main, dependencies unchanged" refs/heads/main "build 1 0 latest" LATEST_DEPS="$DEPS"
+expect "main with tests (GitHub)" refs/heads/main "build 0 1 latest" TEST_REFS=refs/heads/main
+expect "dev stays untested on GitHub" refs/heads/dev "build 1 1 dev" TEST_REFS=refs/heads/main
 expect "tag on the latest commit" refs/tags/v0.10.0 "retag 1 1 v0.10.0 stable" LATEST_SHA="$SHA" LATEST_TREE="$TREE" LATEST_DEPS="$DEPS"
-expect "tag, latest missing, dev tested" refs/tags/v0.10.0 "build 1 1 v0.10.0 stable" DEV_TREE="$TREE"
+expect "tag, latest has the same code" refs/tags/v0.10.0 "build 1 1 v0.10.0 stable" LATEST_TREE="$TREE"
+expect "tag, only dev has the code" refs/tags/v0.10.0 "build 0 1 v0.10.0 stable" DEV_TREE="$TREE"
 expect "tag on unknown code" refs/tags/v0.10.0 "build 0 1 v0.10.0 stable"
 expect "pre-release without stable" refs/tags/v0.11.0-rc.1 "retag 1 1 v0.11.0-rc.1" LATEST_SHA="$SHA"
-expect "feature branch" refs/heads/feat/x "build 0 1 feat-x"
+expect "feature branch" refs/heads/feat/x "build 1 1 feat-x"
 
 if [ "$fails" -gt 0 ]; then
   echo "$fails FEHLGESCHLAGEN"

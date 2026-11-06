@@ -5,8 +5,9 @@ name: MindSift CI & Docker Release
 #   push/merge main  -> :latest
 #   git tag v1.2.0   -> :v1.2.0 and :stable
 #   git tag v1.2.0-rc.1 (pre-release) -> :v1.2.0-rc.1 only, :stable stays
-# Same build plan as the private Gitea pipeline (ci/build-plan.sh): tests run once per code state, main
-# skips them when :dev was built from the same code, a tag on the commit of :latest only retags it.
+# Same build plan as the private Gitea pipeline (ci/build-plan.sh). Every push is tested beforehand on the
+# developer's machine (ci/local-checks.sh); here only main, the public release, runs the tests once more
+# (TEST_REFS). A tag on the commit of :latest only retags it.
 # Trivy (ci/trivy-scan.sh) checks every tag before it is pushed, branches only when Dockerfile, go.mod or
 # go.sum changed; .github/workflows/security-scan.yaml checks :stable and :latest every week.
 on:
@@ -42,7 +43,7 @@ jobs:
 
       - name: Build Plan
         id: plan
-        run: REF="${GITHUB_REF}" COMMIT="${GITHUB_SHA}" IMAGE="${{ steps.prep.outputs.image }}" ci/build-plan.sh
+        run: REF="${GITHUB_REF}" COMMIT="${GITHUB_SHA}" IMAGE="${{ steps.prep.outputs.image }}" TEST_REFS="refs/heads/main" ci/build-plan.sh
 
       - name: Build (with or without tests) or Retag, then Push
         run: |

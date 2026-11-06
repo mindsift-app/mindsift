@@ -6,6 +6,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Changed
+- Development: the checks of the pipeline run on the developer's machine before every push (`ci/local-checks.sh`); the image builds on GitHub test once more only for `main`, the public release.
+
 ## [0.87.3] - 2026-11-06
 
 ### Changed

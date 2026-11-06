@@ -1,15 +1,17 @@
 #!/usr/bin/env bash
 # Decides per CI run: build with tests, build without tests, or only retag an existing image.
-# Tests run once per code state: the images carry the git tree and commit as labels
-# (io.mindsift.tree, org.opencontainers.image.revision), so no extra image tags are needed.
-#   dev   -> build and test, tag :dev
-#   main  -> build :latest; tests are skipped when :dev was built from the same tree
-#   v*    -> retag :latest when it was built from this commit, else build (tests skipped when
-#            :dev or :latest has the same tree); :stable only for releases without "-"
+# Tests run before every push on the developer's machine (ci/local-checks.sh); the pipeline itself only
+# tests the branches listed in TEST_REFS (GitHub: refs/heads/main, the public release). The images carry
+# the git tree and commit as labels (io.mindsift.tree, org.opencontainers.image.revision).
+#   branch in TEST_REFS -> build and test
+#   other branches      -> build without tests, tag :dev, :latest or the branch name
+#   v*                  -> retag :latest when it was built from this commit, else build (tests skipped
+#                          when :latest has the same tree); :stable only for releases without "-"
 # Security scan (ci/trivy-scan.sh): always for tags; for branches only when Dockerfile, go.mod or
 # go.sum differ from the image last published under that tag (label io.mindsift.deps), since
 # everything else in the image does not change its known vulnerabilities.
 # Inputs (environment): REF, COMMIT (default HEAD), IMAGE, PKG_VERSION (default from package.json),
+# TEST_REFS (space separated refs whose builds run the tests, default none),
 # LABEL_CMD (prints a label of a remote image: LABEL_CMD <image> <label>; for tests)
 set -euo pipefail
 
@@ -44,20 +46,18 @@ SOURCE_IMAGE=""
 REASON=""
 SCAN="1"
 
+TEST_REFS="${TEST_REFS:-}"
+tested_here() { case " ${TEST_REFS} " in *" ${REF} "*) return 0 ;; esac; return 1; }
+
 case "${REF}" in
   refs/heads/dev)
     TAGS="dev"
-    REASON="dev: build with all tests"
+    if tested_here; then REASON="dev: build with all tests"; else SKIP_TESTS="1"; REASON="dev: tested locally, build without tests"; fi
     ;;
   refs/heads/main)
     TAGS="latest"
     APP_VERSION="v${PKG_VERSION}"
-    if [ -n "${IMAGE}" ] && [ "$(image_label "${IMAGE}:dev" io.mindsift.tree)" = "${TREE}" ]; then
-      SKIP_TESTS="1"
-      REASON="main: same code as the tested :dev image, tests skipped"
-    else
-      REASON="main: code not tested as :dev yet, build with all tests"
-    fi
+    if tested_here; then REASON="main: build with all tests"; else SKIP_TESTS="1"; REASON="main: tested locally, build without tests"; fi
     ;;
   refs/tags/v*)
     TAG_NAME="${REF#refs/tags/}"
@@ -70,8 +70,7 @@ case "${REF}" in
       REASON="tag ${TAG_NAME}: :latest was built from this commit, retag without building"
     else
       APP_VERSION="${TAG_NAME}"
-      if [ -n "${IMAGE}" ] && { [ "$(image_label "${IMAGE}:dev" io.mindsift.tree)" = "${TREE}" ] ||
-        [ "$(image_label "${IMAGE}:latest" io.mindsift.tree)" = "${TREE}" ]; }; then
+      if [ -n "${IMAGE}" ] && [ "$(image_label "${IMAGE}:latest" io.mindsift.tree)" = "${TREE}" ]; then
         SKIP_TESTS="1"
         REASON="tag ${TAG_NAME}: code already tested, build without tests"
       else
@@ -81,7 +80,7 @@ case "${REF}" in
     ;;
   *)
     TAGS="$(echo "${REF#refs/heads/}" | sed 's#/#-#g' | tr '[:upper:]' '[:lower:]')"
-    REASON="branch ${REF}: build with all tests"
+    if tested_here; then REASON="branch ${REF}: build with all tests"; else SKIP_TESTS="1"; REASON="branch ${REF}: tested locally, build without tests"; fi
     ;;
 esac
 

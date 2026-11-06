@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+# The checks of the pipeline on this machine, before every push: the pipeline itself only tests GitHub's
+# main (ci/build-plan.sh, TEST_REFS). Same steps as the test stage of the Dockerfile, in containers (no
+# local Node or Go needed): tsc, ESLint and Vitest for the frontend, go vet and go test with a single
+# database connection for the backend, plus the cases of the build plan.
+#   ci/local-checks.sh          frontend, backend, build plan (in parallel)
+#   E2E=1 ci/local-checks.sh    additionally the browser tests (e2e/run.sh, a few minutes)
+# Exits non-zero when anything fails; the log of each part is printed at the end.
+set -uo pipefail
+ENGINE="${ENGINE:-podman}"
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+LOGS="$(mktemp -d)"
+trap 'rm -rf "$LOGS"' EXIT
+cd "$ROOT"
+
+# Named volumes keep npm and Go downloads between runs
+frontend() {
+  "$ENGINE" run --rm -v "$ROOT/frontend":/app:z -v mindsift-npm-cache:/root/.npm -e NO_COLOR=1 -e FORCE_COLOR=0 -w /app docker.io/library/node:22-alpine \
+    sh -c 'npm install --no-audit --no-fund --loglevel=error && npx tsc --noEmit && npm run lint && npm run test:run'
+}
+backend() {
+  "$ENGINE" run --rm -v "$ROOT":/src:z -v mindsift-go-cache:/go/pkg/mod -v mindsift-go-build:/root/.cache/go-build -w /src \
+    -e DB_MAX_CONNS=1 -e CGO_ENABLED=0 docker.io/library/golang:1.27-alpine \
+    sh -c 'test -z "$(gofmt -l internal cmd)" || { echo "gofmt:"; gofmt -l internal cmd; exit 1; }; go vet ./... && go test -timeout 5m ./...'
+}
+plan() { bash ci/test-build-plan.sh; }
+
+start=$(date +%s)
+pids=()
+for part in frontend backend plan; do
+  "$part" >"$LOGS/$part.log" 2>&1 &
+  pids+=("$!:$part")
+done
+failed=()
+for entry in "${pids[@]}"; do
+  wait "${entry%%:*}" || failed+=("${entry#*:}")
+done
+if [ "${E2E:-}" = 1 ] && [ ${#failed[@]} -eq 0 ]; then
+  bash e2e/run.sh >"$LOGS/e2e.log" 2>&1 || failed+=(e2e)
+fi
+
+for log in "$LOGS"/*.log; do
+  part="$(basename "$log" .log)"
+  if printf '%s\n' "${failed[@]}" | grep -qx "$part"; then
+    echo "===== $part: FAILED"
+    tail -n 60 "$log"
+  else
+    echo "===== $part: ok ($(grep -E 'Tests +[0-9]+ passed|^ok |ALL CASES PASSED|All checks passed' "$log" | tail -n 3 | tr -s ' ' | paste -sd ';' -))"
+  fi
+done
+echo "Took $(( $(date +%s) - start )) s"
+[ ${#failed[@]} -eq 0 ]

@@ -1,6 +1,7 @@
 name: MindSift CI & Docker Release (Gitea)
 
-# The private Gitea runs this for every push: tests and images in its own registry. The public images on
+# The private Gitea runs this for every push: images in its own registry, without tests (they run before
+# every push on the developer's machine, ci/local-checks.sh). The public images on
 # GitHub come from .github/workflows/build-and-publish.yaml with the same build plan (ci/build-plan.sh).
 
 # Image tags:
@@ -8,9 +9,9 @@ name: MindSift CI & Docker Release (Gitea)
 #   push/merge main  -> :latest
 #   git tag v1.2.0   -> :v1.2.0 and :stable
 #   git tag v1.2.0-rc.1 (pre-release) -> :v1.2.0-rc.1 only, :stable stays
-# Tests run once per code state (ci/build-plan.sh): main skips them when :dev was built
-# from the same code, a tag on the commit of :latest only retags it. The images carry commit and git
-# tree as labels for this, so no extra tags end up in the registry.
+# Only GitHub's main build tests again (ci/build-plan.sh, TEST_REFS); a tag on the commit of :latest only
+# retags it. The images carry commit and git tree as labels for this, so no extra tags end up in the
+# registry.
 # Trivy (ci/trivy-scan.sh) checks every tag before it is pushed, branches only when Dockerfile, go.mod or
 # go.sum changed.
 on:
