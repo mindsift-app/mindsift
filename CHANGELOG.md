@@ -6,6 +6,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.87.4] - 2026-11-07
+
 ### Fixed
 - Lists: "+ quantity" on items without a quantity was German in every language.
 - The "To-dos" tab of the workspace and the "Top level" group in the to-do overview and the note trash were German in every language.
