@@ -418,12 +418,30 @@ export const CodeBlockEditor: React.FC<CodeBlockEditorProps> = ({
     const el = localTextareaRef.current;
     if (!el) return;
     el.style.height = 'auto';
-    el.style.height = `${Math.max(22, el.scrollHeight)}px`;
+    // A horizontal scrollbar takes its height from the field (then a vertical one appeared too); room for
+    // it plus a small gap, so it does not sit right on the last line
+    const bar = el.offsetHeight - el.clientHeight;
+    el.style.height = `${Math.max(22, el.scrollHeight + (bar > 0 ? bar + 6 : 0))}px`;
   }, []);
 
   useLayoutEffect(() => {
     adjustHeight();
   }, [currentContent, adjustHeight]);
+
+  // Whether the horizontal scrollbar shows depends on the width too (fonts loading, window resized)
+  useEffect(() => {
+    const el = localTextareaRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    let lastWidth = el.offsetWidth;
+    const observer = new ResizeObserver(() => {
+      if (el.offsetWidth === lastWidth) return;
+      lastWidth = el.offsetWidth;
+      adjustHeight();
+    });
+    observer.observe(el);
+    document.fonts?.ready.then(adjustHeight).catch(() => {});
+    return () => observer.disconnect();
+  }, [adjustHeight]);
 
   const handleCopy = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -707,7 +725,7 @@ export const CodeBlockEditor: React.FC<CodeBlockEditorProps> = ({
             onKeyDown={onTextareaKeyDown}
             onScroll={handleScroll}
             style={{ caretColor: 'var(--text-code)' }}
-            className="relative block w-full m-0 p-2 font-mono text-xs leading-relaxed whitespace-pre bg-transparent text-transparent caret-code-fg selection:bg-accent/25 selection:text-transparent border-0 focus:outline-none focus:ring-0 resize-none overflow-x-auto"
+            className="relative block w-full m-0 p-2 font-mono text-xs leading-relaxed whitespace-pre bg-transparent text-transparent caret-code-fg selection:bg-accent/25 selection:text-transparent border-0 focus:outline-none focus:ring-0 resize-none overflow-x-auto overflow-y-hidden code-scroll"
           />
         </div>
       </div>

@@ -6,6 +6,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Fixed
+- Code blocks with long lines: the horizontal scrollbar no longer sits right on the last line, no longer brings an empty vertical scrollbar along and only shows while the pointer is on the block.
+
 ## [0.86.0] - 2026-11-06
 
 ### Added
