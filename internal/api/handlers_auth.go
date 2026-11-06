@@ -51,6 +51,10 @@ func (s *Server) handleAuthStatus(w http.ResponseWriter, r *http.Request) {
 		"passwordReset":       s.passwordResetAvailable(),
 		// AI agents may connect over MCP (MCP_ENABLED or the admin's switch)
 		"mcpEnabled": s.mcpEnabled(),
+		// Sharing: names suggested while typing, notes shareable by public link (and for how long at most)
+		"peopleSearch":      s.peopleSearchEnabled(),
+		"publicLinks":       s.publicLinksEnabled(),
+		"publicLinkMaxDays": s.publicLinkMaxDays(),
 		// Language of the login screen when MindSift does not speak the browser's language
 		"defaultLanguage": s.defaultLanguage(),
 		// Address to enter as connector in claude.ai / ChatGPT (OAuth); empty while OAuth is off
@@ -172,8 +176,7 @@ func (s *Server) handleFirstBootSetup(w http.ResponseWriter, r *http.Request) {
 		// In organization mode the first admin starts in an organization named after the instance
 		if sys.SharingMode == storage.SharingOrganizations {
 			if org, err := s.store.CreateOrganization(sys.InstanceName); err == nil {
-				_ = s.store.SetUserOrganization(user.ID, org.ID)
-				user.OrganizationID = org.ID
+				_ = s.store.AddOrganizationMember(org.ID, user.ID)
 			}
 		}
 	}
@@ -238,7 +241,7 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		validInvite = inv
-		role = inv.Role
+		role = domain.RoleMember // invites never make admins (older codes may still say so)
 	} else if count == 0 {
 		role = "admin"
 	} else {
@@ -285,9 +288,8 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 		if err := s.store.FinishUserInvite(validInvite.ID, claim, user.ID); err != nil {
 			slog.Error("Marking the invite code as used failed", "invite", validInvite.ID, "error", err)
 		}
-		if validInvite.OrganizationID != "" {
-			_ = s.store.SetUserOrganization(user.ID, validInvite.OrganizationID)
-			user.OrganizationID = validInvite.OrganizationID
+		for _, orgID := range validInvite.OrganizationIDs {
+			_ = s.store.AddOrganizationMember(orgID, user.ID)
 		}
 	}
 
@@ -820,17 +822,6 @@ func (s *Server) handleTestUserAlarm(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (s *Server) handleGetUsersDirectory(w http.ResponseWriter, r *http.Request) {
-	userID := auth.GetUserID(r.Context())
-	users, err := s.store.GetDiscoverableUsers(userID)
-	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-	// Only the public view: never other people's webhooks, alarm e-mail or role
-	writeJSON(w, http.StatusOK, domain.ToPublicUsers(users))
-}
-
 // fillUserPreferences adds the settings kept outside the user row's own fields.
 func (s *Server) fillUserPreferences(u *domain.User) {
 	allowNever := s.allowNeverRetention()
@@ -841,4 +832,5 @@ func (s *Server) fillUserPreferences(u *domain.User) {
 	u.VoiceInput = s.store.VoiceInput(u.ID)
 	u.VoiceLanguage = s.store.VoiceLanguage(u.ID)
 	u.Language = s.store.Language(u.ID)
+	u.Organizations = s.store.UserOrganizations(u.ID)
 }

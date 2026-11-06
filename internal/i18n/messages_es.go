@@ -439,4 +439,8 @@ var messagesES = map[string]string{
 	"Geheimnis konnte nicht gelesen werden":       "No se pudo leer el valor oculto",
 	"Geheimnis konnte nicht entschlüsselt werden": "No se pudo descifrar el valor oculto",
 	"Geheimnis nicht gefunden":                    "Valor oculto no encontrado",
+	"Nur Server-Administratoren können Konten von Administratoren und der Benutzerverwaltung bearbeiten": "Solo los administradores del servidor pueden editar las cuentas de administradores y de la gestión de usuarios",
+	"Nur Server-Administratoren können Rolle, E-Mail-Adresse und Benutzernamen ändern":                   "Solo los administradores del servidor pueden cambiar el rol, la dirección de correo y el nombre de usuario",
+	"Keine Berechtigung zum Löschen dieses Kontos":                                                       "Sin permiso para eliminar esta cuenta",
+	"Bitte wähle die Organisation der Gruppe":                                                            "Elige la organización del grupo",
 }

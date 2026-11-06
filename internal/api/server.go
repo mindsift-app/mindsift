@@ -196,6 +196,7 @@ func (s *Server) Router() http.Handler {
 		r.Patch("/api/v1/auth/settings", s.handleUpdateUserSettings)
 		r.Post("/api/v1/auth/alarms/test", s.notInDemo(s.handleTestUserAlarm))
 		r.Get("/api/v1/users/directory", s.handleGetUsersDirectory)
+		r.Post("/api/v1/users/lookup", s.handleLookupUser)
 		r.Get("/api/v1/collaborators", s.handleGetCollaborators)
 		r.Get("/api/v1/stats", s.handleStats)
 		r.Get("/api/v1/search", s.handleSearch)
@@ -335,13 +336,12 @@ func (s *Server) Router() http.Handler {
 		r.Patch("/api/v1/keys/{id}", s.handleUpdateAPIKey)
 		r.Delete("/api/v1/keys/{id}", s.handleDeleteAPIKey)
 
-		// Staff Routes (Server-Admin)
+		// Staff routes: server admins and user managers (members, invites, organizations)
 		r.Group(func(r chi.Router) {
 			r.Use(s.staffMiddleware)
 			r.Get("/api/v1/admin/users", s.handleAdminGetUsers)
 			r.Post("/api/v1/admin/users", s.notInDemo(s.handleAdminCreateUser))
 			r.Patch("/api/v1/admin/users/{id}", s.notInDemo(s.handleAdminUpdateUser))
-			r.Put("/api/v1/admin/users/{id}/password", s.notInDemo(s.handleAdminResetPassword))
 			r.Delete("/api/v1/admin/users/{id}", s.notInDemo(s.handleAdminDeleteUser))
 			r.Post("/api/v1/admin/users/{id}/approve", s.notInDemo(s.handleAdminApproveUser))
 
@@ -349,11 +349,20 @@ func (s *Server) Router() http.Handler {
 			r.Post("/api/v1/admin/invites", s.handleAdminCreateInvite)
 			r.Delete("/api/v1/admin/invites/{id}", s.handleAdminDeleteInvite)
 			r.Post("/api/v1/admin/invites/{id}/send", s.notInDemo(s.handleAdminSendInvite))
+
+			// Organizations decide who may share with whom
+			r.Get("/api/v1/admin/organizations", s.handleAdminGetOrganizations)
+			r.Post("/api/v1/admin/organizations", s.handleAdminCreateOrganization)
+			r.Put("/api/v1/admin/organizations/{id}", s.handleAdminRenameOrganization)
+			r.Delete("/api/v1/admin/organizations/{id}", s.handleAdminDeleteOrganization)
+			r.Post("/api/v1/admin/organizations/{id}/members", s.handleAdminAddOrganizationMember)
+			r.Delete("/api/v1/admin/organizations/{id}/members/{userId}", s.handleAdminRemoveOrganizationMember)
 		})
 
-		// Server-Admin Strictly Protected Routes
+		// Server admins only: settings, backups, voice, mail, passwords
 		r.Group(func(r chi.Router) {
 			r.Use(s.adminMiddleware)
+			r.Put("/api/v1/admin/users/{id}/password", s.notInDemo(s.handleAdminResetPassword))
 			r.Get("/api/v1/admin/settings", s.handleAdminGetSettings)
 			r.Get("/api/v1/admin/backups", s.handleAdminListBackups)
 			r.Post("/api/v1/admin/backups", s.notInDemo(s.handleAdminRunBackup))
@@ -362,13 +371,6 @@ func (s *Server) Router() http.Handler {
 			r.Put("/api/v1/admin/settings", s.notInDemo(s.handleAdminUpdateSettings))
 			r.Get("/api/v1/admin/settings/sharing-impact", s.handleAdminSharingImpact)
 			r.Get("/api/v1/admin/voice", s.handleAdminVoiceStatus)
-
-			// Organizations decide who can see whom; only server admins manage them
-			r.Get("/api/v1/admin/organizations", s.handleAdminGetOrganizations)
-			r.Post("/api/v1/admin/organizations", s.handleAdminCreateOrganization)
-			r.Put("/api/v1/admin/organizations/{id}", s.handleAdminRenameOrganization)
-			r.Delete("/api/v1/admin/organizations/{id}", s.handleAdminDeleteOrganization)
-			r.Put("/api/v1/admin/users/{id}/organization", s.handleAdminSetUserOrganization)
 			r.Post("/api/v1/admin/smtp/test", s.notInDemo(s.handleAdminTestSMTP))
 		})
 	})
@@ -655,7 +657,7 @@ func (s *Server) staffMiddleware(next http.Handler) http.Handler {
 			return
 		}
 		user, err := s.store.GetUserByID(userID)
-		if err != nil || user == nil || user.Role != "admin" {
+		if err != nil || user == nil || (user.Role != domain.RoleAdmin && user.Role != domain.RoleManager) {
 			writeError(w, http.StatusForbidden, "Admin-Berechtigung erforderlich")
 			return
 		}

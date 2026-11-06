@@ -439,4 +439,8 @@ var messagesEN = map[string]string{
 	"Geheimnis konnte nicht gelesen werden":       "Could not read the hidden value",
 	"Geheimnis konnte nicht entschlüsselt werden": "Could not decrypt the hidden value",
 	"Geheimnis nicht gefunden":                    "Hidden value not found",
+	"Nur Server-Administratoren können Konten von Administratoren und der Benutzerverwaltung bearbeiten": "Only server administrators can edit the accounts of administrators and user managers",
+	"Nur Server-Administratoren können Rolle, E-Mail-Adresse und Benutzernamen ändern":                   "Only server administrators can change the role, e-mail address and username",
+	"Keine Berechtigung zum Löschen dieses Kontos":                                                       "No permission to delete this account",
+	"Bitte wähle die Organisation der Gruppe":                                                            "Please choose the group's organization",
 }

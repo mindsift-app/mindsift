@@ -439,4 +439,8 @@ var messagesFR = map[string]string{
 	"Geheimnis konnte nicht gelesen werden":       "Impossible de lire la valeur masquée",
 	"Geheimnis konnte nicht entschlüsselt werden": "Impossible de déchiffrer la valeur masquée",
 	"Geheimnis nicht gefunden":                    "Valeur masquée introuvable",
+	"Nur Server-Administratoren können Konten von Administratoren und der Benutzerverwaltung bearbeiten": "Seuls les administrateurs du serveur peuvent modifier les comptes des administrateurs et de la gestion des utilisateurs",
+	"Nur Server-Administratoren können Rolle, E-Mail-Adresse und Benutzernamen ändern":                   "Seuls les administrateurs du serveur peuvent modifier le rôle, l’adresse e-mail et le nom d’utilisateur",
+	"Keine Berechtigung zum Löschen dieses Kontos":                                                       "Aucune autorisation pour supprimer ce compte",
+	"Bitte wähle die Organisation der Gruppe":                                                            "Choisis l’organisation du groupe",
 }

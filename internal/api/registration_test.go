@@ -61,7 +61,7 @@ func TestRegistrationModes(t *testing.T) {
 
 	// An invite skips mode and domain check
 	setRegistration(t, store, storage.RegistrationClosed, "")
-	inv, _ := store.CreateUserInvite("", "", "member", "", 7, 1)
+	inv, _ := store.CreateUserInvite("", "", nil, 7, 1)
 	if code, _ := register(srv, "f@fremd.de", inv.Code); code != http.StatusCreated {
 		t.Fatalf("invite must work in closed mode, got %d", code)
 	}
@@ -115,10 +115,10 @@ func TestApprovalFlow(t *testing.T) {
 
 func TestInviteLinkForSeveralPeople(t *testing.T) {
 	srv, store, _ := setupTestServer(t)
-	if _, err := store.CreateUserInvite("", "x@example.com", "member", "", 7, 3); err == nil {
+	if _, err := store.CreateUserInvite("", "x@example.com", nil, 7, 3); err == nil {
 		t.Fatal("a link for several people must not be bound to one address")
 	}
-	inv, err := store.CreateUserInvite("", "", "member", "", 7, 2)
+	inv, err := store.CreateUserInvite("", "", nil, 7, 2)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -238,7 +238,7 @@ func TestEmailVerification(t *testing.T) {
 	}
 
 	// Invites need no confirmation
-	inv, _ := store.CreateUserInvite("", "", "member", "", 7, 1)
+	inv, _ := store.CreateUserInvite("", "", nil, 7, 1)
 	if code, out := register(srv, "eingeladen@example.com", inv.Code); code != http.StatusCreated || out["token"] == nil {
 		t.Fatalf("invite: want 201 with session, got %d %v", code, out)
 	}

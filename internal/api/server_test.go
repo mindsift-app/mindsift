@@ -151,7 +151,8 @@ func TestFirstBootSetupAndInviteRegistrationAndNonNullSlices(t *testing.T) {
 		t.Fatalf("expected 403 Forbidden when registration is disabled, got %d", rec.Code)
 	}
 
-	// 5. Create an Invite as Admin and register with that Invite Code
+	// 5. Create an Invite as Admin and register with that Invite Code (asking for the admin role does
+	// nothing: invites always create members)
 	invBody := []byte(`{"role":"admin","validDays":7}`)
 	req = httptest.NewRequest(http.MethodPost, "/api/v1/admin/invites", bytes.NewReader(invBody))
 	req.Header.Set("Authorization", "Bearer "+setupRes.Token)
@@ -184,8 +185,8 @@ func TestFirstBootSetupAndInviteRegistrationAndNonNullSlices(t *testing.T) {
 		User domain.User `json:"user"`
 	}
 	_ = json.Unmarshal(rec.Body.Bytes(), &invitedRes)
-	if invitedRes.User.Role != "admin" {
-		t.Fatalf("expected invited user to receive role 'admin', got %q", invitedRes.User.Role)
+	if invitedRes.User.Role != "member" {
+		t.Fatalf("an invite must never make an admin, got role %q", invitedRes.User.Role)
 	}
 }
 

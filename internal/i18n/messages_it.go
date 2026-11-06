@@ -439,4 +439,8 @@ var messagesIT = map[string]string{
 	"Geheimnis konnte nicht gelesen werden":       "Impossibile leggere il valore nascosto",
 	"Geheimnis konnte nicht entschlüsselt werden": "Impossibile decifrare il valore nascosto",
 	"Geheimnis nicht gefunden":                    "Valore nascosto non trovato",
+	"Nur Server-Administratoren können Konten von Administratoren und der Benutzerverwaltung bearbeiten": "Solo gli amministratori del server possono modificare gli account degli amministratori e della gestione utenti",
+	"Nur Server-Administratoren können Rolle, E-Mail-Adresse und Benutzernamen ändern":                   "Solo gli amministratori del server possono modificare ruolo, indirizzo e-mail e nome utente",
+	"Keine Berechtigung zum Löschen dieses Kontos":                                                       "Nessuna autorizzazione a eliminare questo account",
+	"Bitte wähle die Organisation der Gruppe":                                                            "Scegli l’organizzazione del gruppo",
 }
