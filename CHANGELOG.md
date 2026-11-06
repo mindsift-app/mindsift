@@ -6,6 +6,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.87.2] - 2026-11-06
+
+### Fixed
+- Administration: password managers no longer offer logins in the search popover, the invite and create-account forms or the other admin fields. Passwords set for other accounts and the SMTP password show as dots without being password fields, so no manager saves or fills them.
+
 ## [0.87.1] - 2026-11-06
 
 ### Changed

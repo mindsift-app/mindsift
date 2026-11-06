@@ -5,8 +5,13 @@ import {
 } from 'lucide-react';
 import { ToggleSwitch } from '../../../components/ToggleSwitch';
 import { useAdminSettings } from './useAdminSettings';
+import { NO_AUTOFILL } from '../../../lib/noAutofill';
 
 // Administration → E-Mail / SMTP-Server (state in useAdminSettings)
+// Password fields of other people's accounts or the server: shown as dots without type="password", so
+// password managers neither offer the admin's own login nor save it here
+const MASKED = { WebkitTextSecurity: 'disc' } as React.CSSProperties;
+
 export function SmtpSection({
   admin,
 }: {
@@ -49,6 +54,7 @@ export function SmtpSection({
               {t('smtp.host')}
             </label>
             <input
+              {...NO_AUTOFILL}
               type="text"
               value={settings.smtpHost || ''}
               onChange={(e) =>
@@ -64,6 +70,7 @@ export function SmtpSection({
               {t('smtp.port')}
             </label>
             <input
+              {...NO_AUTOFILL}
               type="text"
               inputMode="numeric"
               value={settings.smtpPort ?? ''}
@@ -81,6 +88,7 @@ export function SmtpSection({
               {t('smtp.user')}
             </label>
             <input
+              {...NO_AUTOFILL}
               type="text"
               value={settings.smtpUser || ''}
               onChange={(e) =>
@@ -96,7 +104,9 @@ export function SmtpSection({
               {t('smtp.password')}
             </label>
             <input
-              type="password"
+              {...NO_AUTOFILL}
+              type="text"
+              style={MASKED}
               value={settings.smtpPass || ''}
               onChange={(e) =>
                 setSettings((prev) => ({ ...prev, smtpPass: e.target.value }))
@@ -112,6 +122,7 @@ export function SmtpSection({
               {t('smtp.from')}
             </label>
             <input
+              {...NO_AUTOFILL}
               type="text"
               value={settings.smtpFrom || ''}
               onChange={(e) =>
@@ -127,6 +138,7 @@ export function SmtpSection({
               {t('smtp.fromName')}
             </label>
             <input
+              {...NO_AUTOFILL}
               type="text"
               value={settings.smtpFromName || ''}
               onChange={(e) =>
@@ -187,6 +199,7 @@ export function SmtpSection({
           </p>
           <div className="flex flex-col sm:flex-row gap-2">
             <input
+              {...NO_AUTOFILL}
               type="email"
               value={testSmtpEmail}
               onChange={(e) => setTestSmtpEmail(e.target.value)}

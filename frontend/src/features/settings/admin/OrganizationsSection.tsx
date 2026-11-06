@@ -14,6 +14,7 @@ import { UserAvatar } from '../../../components/UserAvatar';
 import { CountBadge } from '../../../components/CountBadge';
 import { PickerPopover } from '../../../components/PickerPopover';
 import { useAdminSettings } from './useAdminSettings';
+import { NO_AUTOFILL } from '../../../lib/noAutofill';
 
 // Administration → Organisationen (state in useAdminSettings). An organization opens on click: its
 // members with ✕ to take them out, a field to add someone, rename and delete.
@@ -61,8 +62,9 @@ export function OrganizationsSection({
         )}
       </div>
 
-      <form onSubmit={handleCreateOrganization} className="flex gap-2 max-w-md">
+      <form {...NO_AUTOFILL} onSubmit={handleCreateOrganization} className="flex gap-2 max-w-md">
         <input
+          {...NO_AUTOFILL}
           type="text"
           value={newOrgName}
           onChange={(e) => setNewOrgName(e.target.value)}
@@ -87,6 +89,7 @@ export function OrganizationsSection({
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   {renamingOrgId === o.id ? (
                     <form
+                      {...NO_AUTOFILL}
                       className="flex flex-1 min-w-0 gap-2"
                       onSubmit={(e) => {
                         e.preventDefault();
@@ -94,6 +97,7 @@ export function OrganizationsSection({
                       }}
                     >
                       <input
+                        {...NO_AUTOFILL}
                         type="text"
                         value={renameOrgVal}
                         onChange={(e) => setRenameOrgVal(e.target.value)}

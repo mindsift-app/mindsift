@@ -21,12 +21,17 @@ import { UserAvatar } from '../../../components/UserAvatar';
 import { useAdminSettings } from './useAdminSettings';
 import { formatDate } from '../../../lib/format';
 import { OrganizationPicker } from './OrganizationPicker';
+import { NO_AUTOFILL } from '../../../lib/noAutofill';
 
 // Administration → Users & invitations (state in useAdminSettings)
 
 // Row actions: 44 px touch targets on phones, small squares from sm on
 const iconBtnSize = 'w-11 h-11 sm:w-7 sm:h-7 disabled:opacity-40 disabled:pointer-events-none';
 const iconBtn = `btn-icon ${iconBtnSize}`;
+
+// Password fields of other people's accounts or the server: shown as dots without type="password", so
+// password managers neither offer the admin's own login nor save it here
+const MASKED = { WebkitTextSecurity: 'disc' } as React.CSSProperties;
 
 export function UsersSection({
   admin,
@@ -99,7 +104,7 @@ export function UsersSection({
 
       {/* Create an account and invite side by side (stacked on smaller screens), fields one below the other */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
-        <form onSubmit={handleCreateUser} className="p-4 bg-canvas border border-border rounded-card space-y-3">
+        <form {...NO_AUTOFILL} onSubmit={handleCreateUser} className="p-4 bg-canvas border border-border rounded-card space-y-3">
           <h3 className="font-bold text-main flex items-center gap-1.5">
             <UserPlus className="w-3.5 h-3.5 text-accent" />
             <span>{t('users.create.title')}</span>
@@ -107,6 +112,7 @@ export function UsersSection({
           <label className="block">
             <span className="block text-muted mb-1">{t('profile.displayName')}</span>
             <input
+              {...NO_AUTOFILL}
               type="text"
               value={newUserName}
               onChange={(e) => setNewUserName(e.target.value)}
@@ -118,6 +124,7 @@ export function UsersSection({
           <label className="block">
             <span className="block text-muted mb-1">{t('users.create.email')}</span>
             <input
+              {...NO_AUTOFILL}
               type="email"
               value={newUserEmail}
               onChange={(e) => setNewUserEmail(e.target.value)}
@@ -129,7 +136,9 @@ export function UsersSection({
           <label className="block">
             <span className="block text-muted mb-1">{t('users.create.password')}</span>
             <input
-              type="password"
+              {...NO_AUTOFILL}
+              type="text"
+              style={MASKED}
               value={newUserPassword}
               onChange={(e) => setNewUserPassword(e.target.value)}
               placeholder={t('users.create.passwordPlaceholder')}
@@ -160,7 +169,7 @@ export function UsersSection({
           </div>
         </form>
 
-        <form onSubmit={handleCreateInvite} className="p-4 bg-canvas border border-border rounded-card space-y-3">
+        <form {...NO_AUTOFILL} onSubmit={handleCreateInvite} className="p-4 bg-canvas border border-border rounded-card space-y-3">
           <h3 className="font-bold text-main flex items-center gap-1.5">
             <KeyRound className="w-3.5 h-3.5 text-accent" />
             <span>{t('users.invite.title')}</span>
@@ -168,6 +177,7 @@ export function UsersSection({
           <label className="block">
             <span className="block text-muted mb-1">{t('users.invite.email')}</span>
             <input
+              {...NO_AUTOFILL}
               type="email"
               value={inviteMaxUses > 1 ? '' : inviteEmail}
               onChange={(e) => setInviteEmail(e.target.value)}
@@ -179,6 +189,7 @@ export function UsersSection({
           <label className="block">
             <span className="block text-muted mb-1">{t('users.invite.uses')}</span>
             <input
+              {...NO_AUTOFILL}
               type="number"
               min={1}
               max={1000}
@@ -286,6 +297,7 @@ export function UsersSection({
                   </div>
                   {mailInviteId === inv.id && (
                     <form
+                      {...NO_AUTOFILL}
                       onSubmit={(e) => {
                         e.preventDefault();
                         void handleSendInvite(inv);
@@ -293,6 +305,7 @@ export function UsersSection({
                       className="flex flex-wrap items-center gap-2"
                     >
                       <input
+                        {...NO_AUTOFILL}
                         type="email"
                         value={mailInviteTo}
                         onChange={(e) => setMailInviteTo(e.target.value)}
@@ -478,6 +491,7 @@ export function UsersSection({
               {usernameEdit?.id === u.id && (
                 <div className="flex items-center gap-2 pt-2 border-t border-border">
                   <input
+                    {...NO_AUTOFILL}
                     type="text"
                     value={usernameEdit.value}
                     onChange={(e) => setUsernameEdit({ id: u.id, value: e.target.value.toLowerCase() })}
@@ -500,7 +514,9 @@ export function UsersSection({
               {resetPwdUserId === u.id && (
                 <div className="flex items-center gap-2 pt-2 border-t border-border">
                   <input
-                    type="password"
+                    {...NO_AUTOFILL}
+                    type="text"
+                    style={MASKED}
                     value={resetPwdVal}
                     onChange={(e) => setResetPwdVal(e.target.value)}
                     placeholder={t('users.newPasswordPlaceholder')}
