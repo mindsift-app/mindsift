@@ -314,8 +314,13 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
       const isHeading =
         (currentBlock?.type === 'h1' || currentBlock?.type === 'h2' || currentBlock?.type === 'h3') &&
         !currentBlock.collapsed;
-      // Enter on an open heading starts its section: the new bullet goes below it as a child
-      const level = currentBlock ? Math.max(0, currentBlock.level || 0) + (isHeading ? 1 : 0) : 0;
+      const currentLevel = currentBlock ? Math.max(0, currentBlock.level || 0) : 0;
+      const nextBlock = idx >= 0 ? blocks[idx + 1] : undefined;
+      // Enter on an open bullet with children puts the new one first among them (Tab would take the
+      // other children along); likewise an open heading starts its section
+      const opensChildren =
+        !!currentBlock && !currentBlock.collapsed && !!nextBlock && Math.max(0, nextBlock.level || 0) > currentLevel;
+      const level = currentBlock ? currentLevel + (isHeading || opensChildren ? 1 : 0) : 0;
       // Numbered lists continue on Enter (an empty item ends the list, see OutlinerBlock)
       const inheritedType: BlockType = currentBlock?.type === 'numbered' ? 'numbered' : 'text';
 

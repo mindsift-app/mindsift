@@ -174,6 +174,38 @@ describe('CodeBlockEditor', () => {
     expect(await loadPrismLanguage('scala')).toBe(true);
   });
 
+  it('moves the bullet with the arrows next to the language and greys out the impossible direction', () => {
+    const { indentCalls } = renderOutlinerCodeBlock(makeCodeBlock({ level: 0 }));
+    const outdent = screen.getByRole('button', { name: 'Ausrücken' }) as HTMLButtonElement;
+    const indent = screen.getByRole('button', { name: 'Einrücken' }) as HTMLButtonElement;
+    expect(outdent.disabled).toBe(true);
+    expect(indent.disabled).toBe(false);
+    fireEvent.click(indent);
+    fireEvent.click(outdent);
+    expect(indentCalls).toEqual([['code-1', 1]]);
+  });
+
+  it('cannot indent deeper than one level below the bullet above', () => {
+    const { indentCalls } = renderOutlinerCodeBlock(makeCodeBlock({ level: 1 }));
+    expect((screen.getByRole('button', { name: 'Einrücken' }) as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.click(screen.getByRole('button', { name: 'Ausrücken' }));
+    expect(indentCalls).toEqual([['code-1', -1]]);
+  });
+
+  it('turns a bullet with text into code with /code at the end of the line', () => {
+    const { container, updates } = renderOutlinerCodeBlock({
+      id: 'b-3',
+      type: 'bullet',
+      content: '',
+      level: 0,
+      position: 3000,
+    });
+    const ta = container.querySelector('textarea') as HTMLTextAreaElement;
+    fireEvent.change(ta, { target: { value: 'ls  -la /code' } });
+    fireEvent.keyDown(ta, { key: 'Enter' });
+    expect(updates[updates.length - 1]).toMatchObject({ type: 'code', content: 'ls  -la' });
+  });
+
   it('sets lang directly when typing /code yaml or ```yaml in an empty bullet block', () => {
     const bulletBlock: DocumentBlock = {
       id: 'b-1',

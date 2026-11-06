@@ -171,6 +171,7 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
   hasChildren,
   isFocused,
   canEdit,
+  maxAllowedLevel,
   levelOffset = 0,
   onZoomBlock,
   onExtractBlock,
@@ -538,9 +539,14 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
         return ['server', 'browser'].includes(currentVoiceConfig().mode);
       }
 
-      // /divider, /image, /audio, /code only when rest of block is empty
-      if (c.type === 'divider' || c.type === 'image' || c.type === 'audio' || c.type === 'code') {
+      // /divider, /image, /audio only when rest of block is empty
+      if (c.type === 'divider' || c.type === 'image' || c.type === 'audio') {
         return isRestEmpty;
+      }
+
+      // /code also at the end of a line: the text becomes the code
+      if (c.type === 'code') {
+        return isRestEmpty || textAfterCursor.trim() === '';
       }
 
       // /extract only when note has content and is at start/end
@@ -628,10 +634,12 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
         ? resolveLanguageId(codeLangMatch[1]) || codeLangMatch[1].toLowerCase()
         : undefined;
 
-    setLocalContent(clean);
-    localContentRef.current = clean;
+    // Code keeps its spacing; only the typed command goes
+    const nextContent = cmd.type === 'code' ? `${before}${after}`.trim() : clean;
+    setLocalContent(nextContent);
+    localContentRef.current = nextContent;
     if (cmd.type !== block.type) refocusAfterTypeChangeRef.current = true;
-    flushDebounce(clean, {
+    flushDebounce(nextContent, {
       type: cmd.type as BlockType,
       ...(langOverride !== undefined ? { lang: langOverride } : {}),
       checked: cmd.type === 'todo' ? Boolean(block.checked) : false,
@@ -1493,6 +1501,16 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
             handleBlur={handleBlur}
             handleContentChange={handleContentChange}
             handleKeyDown={handleKeyDown}
+            onIndent={() => {
+              flushDebounce(localContent);
+              onIndentBlockRef.current(block.id, 1);
+            }}
+            onOutdent={() => {
+              flushDebounce(localContent);
+              onIndentBlockRef.current(block.id, -1);
+            }}
+            canIndent={Math.max(0, block.level || 0) < maxAllowedLevel}
+            canOutdent={Math.max(0, block.level || 0) > (levelOffset || 0)}
           />
         ) : block.type === 'callout' ? (
           <div className="bg-panel-elevated border-l-2 border-accent p-2 rounded-r-btn my-0.5">

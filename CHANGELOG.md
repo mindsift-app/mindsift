@@ -6,6 +6,18 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.85.0] - 2026-11-06
+
+### Added
+- Notes: code blocks have two arrows next to the language to indent and outdent them (Tab inside the code indents the code itself). An arrow is greyed out when the block cannot move that way.
+- Notes: `/code` also works at the end of a line that already has text; the text becomes the code.
+
+### Changed
+- Notes: Enter at the end of an expanded bullet that has children adds the new bullet as its first child instead of below the whole branch, so you no longer have to indent it and take the other children along.
+
+### Fixed
+- Classic light theme: hovering the language picker of a code block no longer turns its text dark on the dark code block or shows a bright border.
+
 ## [0.84.0] - 2026-11-06
 
 ### Added
