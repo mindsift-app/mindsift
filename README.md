@@ -6,7 +6,7 @@
 [![Self-Hosted](https://img.shields.io/badge/100%25-Self--Hosted-2563eb?style=flat-square)](#-quick-start)
 [![Docker](https://img.shields.io/badge/Deployment-Single%20Container-2496ed?style=flat-square&logo=docker&logoColor=white)](#-quick-start)
 [![License](https://img.shields.io/badge/License-AGPLv3-6b7280?style=flat-square)](LICENSE)
-[![Version](https://img.shields.io/badge/Version-v0.83.6-16a34a?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-v0.83.7-16a34a?style=flat-square)](CHANGELOG.md)
 
 **Dump a thought, sort it later, turn it into a task, a note or a shopping list, alone or together.**
 Self-hosted, one container, one SQLite file, your server.
@@ -197,6 +197,26 @@ All data lives in one SQLite file, so a single server is the intended setup; the
 
 ---
 
+## 🛡️ Security scan
+
+The released image is scanned with [Trivy](https://trivy.dev) for known vulnerabilities, leaked secrets and misconfigurations. Last scan: **v0.83.7, 2026-11-06, Trivy 0.58.1**.
+
+| Part of the image | Critical | High | Medium | Low | Unrated |
+|---|---|---|---|---|---|
+| Alpine 3.21.10 (base system) | 0 | 0 | 0 | 0 | 0 |
+| `/app/mindsift` (Go 1.27.3 binary) | 0 | 0 | 0 | 0 | 1 |
+
+* **No secrets and no misconfigurations** were found.
+* **The one unrated entry** (GO-2026-5932) concerns the `openpgp` package of `golang.org/x/crypto`, which MindSift does not use (it only uses `bcrypt` from that module). [govulncheck](https://go.dev/blog/govulncheck), which follows the code that is actually called, reports **0 vulnerabilities** that affect MindSift.
+
+Check it yourself:
+
+```bash
+docker run --rm aquasec/trivy:0.58.1 image ghcr.io/mindsift-app/mindsift:latest
+```
+
+---
+
 ## 🔒 Your data is yours
 
 No telemetry, no third-party services, fonts and icons ship with the app. The server only connects out for what you use: notifications (SMTP, Discord, your webhook, the browsers' push services), link previews (switchable per device) and your own Whisper server. Everything lives in one SQLite file, media next to it in `data/media/`. Export the whole workspace as an Obsidian-compatible Markdown archive, or your data as a backup ZIP, whenever you want.
@@ -205,7 +225,7 @@ No telemetry, no third-party services, fonts and icons ship with the app. The se
 
 ## 🛠 Development
 
-Go 1.23 and Node 22.
+Go 1.27 and Node 22.
 
 ```bash
 go vet ./... && go test ./...      # backend

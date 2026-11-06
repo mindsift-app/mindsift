@@ -19,19 +19,15 @@ RUN if [ "$SKIP_TESTS" != "1" ]; then \
 # ==============================================================================
 # Stage 2: Go Backend Lint, Unit Tests & Binary Build (Cached Go module & sqlite layer)
 # ==============================================================================
-FROM golang:1.23-alpine AS backend-builder
+FROM golang:1.27-alpine AS backend-builder
 WORKDIR /app
 RUN apk add --no-cache git ca-certificates
 
-# Cache Go modules & pre-compile heavy dependencies (modernc.org/sqlite) in a dedicated layer
-COPY go.mod ./
+# Cache Go modules & pre-compile heavy dependencies (modernc.org/sqlite) in a dedicated layer.
+# The versions come from go.mod/go.sum only, so an update there is what ends up in the binary.
+COPY go.mod go.sum ./
 RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build \
-    go get github.com/go-chi/chi/v5@v5.2.0 \
-    github.com/go-chi/cors@v1.2.1 \
-    github.com/golang-jwt/jwt/v5@v5.2.1 \
-    github.com/gorilla/websocket@v1.5.3 \
-    golang.org/x/crypto/bcrypt@v0.31.0 \
-    modernc.org/sqlite@v1.34.4 && \
+    go mod download && \
     CGO_ENABLED=0 go build \
       modernc.org/sqlite \
       github.com/go-chi/chi/v5 \
