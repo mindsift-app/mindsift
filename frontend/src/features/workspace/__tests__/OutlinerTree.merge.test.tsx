@@ -130,3 +130,42 @@ describe('Enter on a locked bullet', () => {
     });
   }
 });
+
+describe('Enter at the end of a bullet with children', () => {
+  const enterAtEnd = async (text: string) => {
+    const ta = area(text);
+    ta.focus();
+    ta.setSelectionRange(text.length, text.length);
+    await act(async () => {
+      fireEvent.keyDown(ta, { key: 'Enter' });
+    });
+  };
+
+  it('adds the new bullet as the first child', async () => {
+    render(<Harness initial={[mk('a', 'Eltern'), mk('b', 'Kind 1', 1), mk('c', 'Kind 2', 1), mk('d', 'Danach')]} />);
+    await enterAtEnd('Eltern');
+    expect(live.map((b) => [b.content, b.level])).toEqual([
+      ['Eltern', 0],
+      ['', 1],
+      ['Kind 1', 1],
+      ['Kind 2', 1],
+      ['Danach', 0],
+    ]);
+  });
+
+  it('stays on the same level without children', async () => {
+    render(<Harness initial={[mk('a', 'Eins'), mk('b', 'Zwei')]} />);
+    await enterAtEnd('Eins');
+    expect(live.map((b) => [b.content, b.level])).toEqual([
+      ['Eins', 0],
+      ['', 0],
+      ['Zwei', 0],
+    ]);
+  });
+
+  it('stays on the same level when the bullet is collapsed', async () => {
+    render(<Harness initial={[{ ...mk('a', 'Zu'), collapsed: true }, mk('b', 'Kind', 1)]} />);
+    await enterAtEnd('Zu');
+    expect(live[1]).toMatchObject({ content: '', level: 0 });
+  });
+});

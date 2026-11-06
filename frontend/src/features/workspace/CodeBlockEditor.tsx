@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useLayoutEffect, useMemo, useRef, useCallback } from 'react';
 import Prism from 'prismjs';
-import { Copy, Check } from 'lucide-react';
+import { Copy, Check, ChevronLeft, ChevronRight } from 'lucide-react';
 import { DocumentBlock } from '../../lib/types';
 import { useTranslation } from 'react-i18next';
 import i18n from '../../i18n';
@@ -332,6 +332,11 @@ export interface CodeBlockEditorProps {
   handleBlur?: (e: React.FocusEvent<HTMLTextAreaElement>) => void;
   handleContentChange?: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
   handleKeyDown?: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void;
+  /** Tab inside the code indents the code, so the bullet moves with these arrows next to the language */
+  onIndent?: () => void;
+  onOutdent?: () => void;
+  canIndent?: boolean;
+  canOutdent?: boolean;
 }
 
 export const CodeBlockEditor: React.FC<CodeBlockEditorProps> = ({
@@ -346,6 +351,10 @@ export const CodeBlockEditor: React.FC<CodeBlockEditorProps> = ({
   handleBlur,
   handleContentChange,
   handleKeyDown,
+  onIndent,
+  onOutdent,
+  canIndent = false,
+  canOutdent = false,
 }) => {
   const { t } = useTranslation('workspace');
   const isControlled = content !== undefined;
@@ -575,17 +584,43 @@ export const CodeBlockEditor: React.FC<CodeBlockEditorProps> = ({
   const rawLang = block.lang || '';
   const selectValue = rawLang ? resolveLanguageId(rawLang) || rawLang : '';
   const hasCustomUnknownLang = Boolean(selectValue && !KNOWN_OPTION_IDS.has(selectValue));
+  // Header controls take the code block's own text colour: light themes with dark code blocks (Classic)
+  // would otherwise turn them page-dark on hover
+  const headerControl =
+    'min-h-[44px] sm:min-h-0 bg-transparent text-faint hover:text-code-fg focus:text-code-fg font-mono text-[11px] font-medium border border-transparent hover:border-code-fg/20 focus:border-accent rounded-btn py-0.5 outline-none';
+  const indentButton = (label: string, icon: React.ReactNode, onClick: (() => void) | undefined, enabled: boolean) => (
+    <button
+      type="button"
+      onMouseDown={(e) => e.preventDefault()}
+      onClick={(e) => {
+        e.stopPropagation();
+        if (enabled) onClick?.();
+      }}
+      disabled={!enabled}
+      title={label}
+      aria-label={label}
+      className={`${headerControl} min-w-[44px] sm:min-w-0 px-0.5 flex items-center justify-center cursor-pointer disabled:opacity-40 disabled:cursor-default disabled:hover:text-faint disabled:hover:border-transparent`}
+    >
+      {icon}
+    </button>
+  );
 
   return (
     <div className="group/code relative bg-code rounded-2xl my-0.5 max-w-full overflow-hidden">
       {/* Language at the top left; no header bar */}
-      <div className="flex items-center px-1.5 pt-1 text-[11px] font-mono text-faint">
+      <div className="flex items-center gap-0.5 px-1.5 pt-1 text-[11px] font-mono text-faint">
+        {canEdit && (onIndent || onOutdent) && (
+          <>
+            {indentButton(t('outlineBar.outdent'), <ChevronLeft className="w-3.5 h-3.5" />, onOutdent, canOutdent)}
+            {indentButton(t('outlineBar.indent'), <ChevronRight className="w-3.5 h-3.5" />, onIndent, canIndent)}
+          </>
+        )}
         {canEdit ? (
           <select
             aria-label={t('code.chooseLanguage')}
             value={selectValue}
             onChange={(e) => onChangeLang?.(e.target.value)}
-            className="min-h-[44px] sm:min-h-0 bg-transparent text-faint hover:text-main focus:text-main font-mono text-[11px] font-medium border border-transparent hover:border-border focus:border-accent rounded-btn px-1 py-0.5 outline-none cursor-pointer"
+            className={`${headerControl} px-1 cursor-pointer`}
           >
             <option value="" className="bg-panel text-main">
               {t('workspace:code.plain')}
