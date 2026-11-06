@@ -918,6 +918,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
             onHeaderStatusChange={setDocHeaderStatus}
             actionsTarget={focusMode ? zenActionsTarget : docActionsTarget}
             focusMode={focusMode}
+            focusBarPinned={zenPinTop}
             onToggleFocusMode={() => setFocusMode((v) => !v)}
           />
         ) : subView === 'tags' ? (
