@@ -6,6 +6,14 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.83.10] - 2026-11-06
+
+### Added
+- The install script asks two optional questions (both "no" by default): whether to set up your own speech recognition (Whisper, with the model of your choice), and whether MindSift runs behind a reverse proxy (public address and the proxy's Docker network). It writes these additions to `docker-compose.override.yml` and takes over the server's time zone.
+
+### Fixed
+- Running the install script again no longer replaces `.env` (and with it `JWT_SECRET`, which signed everyone out); it only updates `docker-compose.yml`. The new `.env` is readable only by its owner.
+
 ## [0.83.9] - 2026-11-06
 
 ### Added

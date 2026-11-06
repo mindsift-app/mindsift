@@ -69,7 +69,7 @@ services:
       - STT_TIMEOUT_SECONDS=${STT_TIMEOUT_SECONDS:-120}
       - STT_VAD_FILTER=${STT_VAD_FILTER:-true}
 
-  # Optional: your own speech recognition (Whisper). To switch it on:
+  # Optional: your own speech recognition (Whisper). install.sh sets it up when asked. By hand:
   #   1. remove the hashes in front of the "whisper" block below
   #   2. set in .env:  STT_URL=http://whisper:8000
   #   3. mkdir -p whisper && sudo chown 1000:1000 whisper   (the container runs as UID 1000)
