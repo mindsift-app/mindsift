@@ -93,6 +93,8 @@ type User struct {
 	DoneRetentionDays int `json:"doneRetentionDays"`
 	// VoiceInput: "" uses the server's Whisper (when set up), "browser" the browser's recognition
 	VoiceInput string `json:"voiceInput"`
+	// VoiceLanguage: "" follows the app language, "auto" lets Whisper detect it, else a Whisper language code
+	VoiceLanguage string `json:"voiceLanguage"`
 	// Language of the app: a supported code, or "" to follow the browser and then the server's default
 	Language string `json:"language"`
 	// Retention: how long finished and deleted things are kept (storage/retention.go);

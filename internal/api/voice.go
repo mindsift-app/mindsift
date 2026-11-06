@@ -2,7 +2,6 @@ package api
 
 import (
 	"bytes"
-	"cmp"
 	"context"
 	"encoding/json"
 	"errors"
@@ -151,10 +150,10 @@ func (s *Server) handleVoiceTranscribe(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{"text": text})
 }
 
-// sttLanguage: the language Whisper is told for a recording: STT_LANGUAGE when set ("auto": none, Whisper
-// detects it), otherwise the app language of the person speaking.
+// sttLanguage: the language Whisper is told for a recording ("" = none, Whisper detects it): the person's
+// own choice for voice input, else their app language.
 func (s *Server) sttLanguage(userID string) string {
-	switch lang := s.cfg.Speech.Language; lang {
+	switch lang := s.store.VoiceLanguage(userID); lang {
 	case "auto":
 		return ""
 	case "":
@@ -312,7 +311,7 @@ func (s *Server) setVoiceStatus(st voiceStatus) {
 // asks it to download the model if it does not have it yet, so the first recording works.
 func (s *Server) startVoiceCheck() {
 	cfg := s.cfg.Speech
-	slog.Info("Speech recognition: server mode", "url", cfg.URL, "model", cfg.Model, "language", cmp.Or(cfg.Language, "per person"),
+	slog.Info("Speech recognition: server mode", "url", cfg.URL, "model", cfg.Model,
 		"max_parallel", cfg.MaxParallel, "per_user_per_hour", cfg.PerUserPerHour, "max_upload_mb", cfg.MaxUploadMB)
 	downloadRequested := false
 	for attempt := 0; ; attempt++ {
@@ -367,7 +366,6 @@ func (s *Server) handleAdminVoiceStatus(w http.ResponseWriter, r *http.Request) 
 	if cfg.URL != "" {
 		out["url"] = cfg.URL
 		out["model"] = cfg.Model
-		out["language"] = cfg.Language
 		out["apiKeySet"] = cfg.APIKey != ""
 	}
 	if s.voiceMode() == "server" {

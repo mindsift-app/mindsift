@@ -74,7 +74,7 @@ func TestVoiceTranscribeForwardsToWhisper(t *testing.T) {
 	var got map[string]string
 	var downloads int32
 	whisper := fakeWhisper(t, []string{"Systran/faster-whisper-small"}, &got, &downloads)
-	srv, token := voiceServer(t, config.SpeechConfig{URL: whisper.URL + "/v1", Model: "Systran/faster-whisper-small", Language: "de",
+	srv, token := voiceServer(t, config.SpeechConfig{URL: whisper.URL + "/v1", Model: "Systran/faster-whisper-small",
 		APIKey: "geheim", MaxSeconds: 600, MaxUploadMB: 1, MaxParallel: 1, PerUserPerHour: 2, TimeoutSeconds: 10})
 	router := srv.Router()
 
@@ -105,31 +105,35 @@ func TestVoiceTranscribeForwardsToWhisper(t *testing.T) {
 	}
 }
 
-// Without STT_LANGUAGE Whisper gets the app language of the person speaking; "auto" sends none.
+// Whisper gets the person's own voice language, else their app language; "auto" sends none.
 func TestVoiceLanguagePerPerson(t *testing.T) {
 	var got map[string]string
 	var downloads int32
 	whisper := fakeWhisper(t, []string{"Systran/faster-whisper-small"}, &got, &downloads)
-	for _, tc := range []struct{ env, person, want string }{
-		{"", "en", "en"},
-		{"", "fr", "fr"},
-		{"de", "en", "de"},
-		{"auto", "en", ""},
+	for _, tc := range []struct{ app, voice, want string }{
+		{"en", "", "en"},
+		{"fr", "", "fr"},
+		{"en", "ru", "ru"},
+		{"de", "auto", ""},
+		{"de", "it", "it"},
 	} {
-		srv, token := voiceServer(t, config.SpeechConfig{URL: whisper.URL + "/v1", Model: "Systran/faster-whisper-small", Language: tc.env,
+		srv, token := voiceServer(t, config.SpeechConfig{URL: whisper.URL + "/v1", Model: "Systran/faster-whisper-small",
 			APIKey: "geheim", MaxSeconds: 600, MaxUploadMB: 1, MaxParallel: 1, PerUserPerHour: 5, TimeoutSeconds: 10})
 		user, err := srv.store.EnsureDefaultUser()
 		if err != nil {
 			t.Fatal(err)
 		}
-		if err := srv.store.SetLanguage(user.ID, tc.person); err != nil {
+		if err := srv.store.SetLanguage(user.ID, tc.app); err != nil {
+			t.Fatal(err)
+		}
+		if err := srv.store.SetVoiceLanguage(user.ID, tc.voice); err != nil {
 			t.Fatal(err)
 		}
 		if rec := voiceUpload(t, srv.Router(), token, []byte("RIFF-audio")); rec.Code != http.StatusOK {
-			t.Fatalf("STT_LANGUAGE=%q: %d %s", tc.env, rec.Code, rec.Body.String())
+			t.Fatalf("app %q, voice %q: %d %s", tc.app, tc.voice, rec.Code, rec.Body.String())
 		}
 		if got["language"] != tc.want {
-			t.Fatalf("STT_LANGUAGE=%q, person %q: Whisper got language %q, want %q", tc.env, tc.person, got["language"], tc.want)
+			t.Fatalf("app %q, voice %q: Whisper got language %q, want %q", tc.app, tc.voice, got["language"], tc.want)
 		}
 	}
 }
@@ -158,5 +162,22 @@ func TestVoiceUploadLimitAndModes(t *testing.T) {
 	browserSrv, browserToken := voiceServer(t, config.SpeechConfig{MaxParallel: 1, PerUserPerHour: 10})
 	if rec := voiceUpload(t, browserSrv.Router(), browserToken, []byte("x")); rec.Code != http.StatusNotFound {
 		t.Fatalf("browser mode: want 404, got %d", rec.Code)
+	}
+}
+
+func TestVoiceLanguageSetting(t *testing.T) {
+	srv, _, token := setupTestServer(t)
+	router := srv.Router()
+	for _, tc := range []struct {
+		value string
+		code  int
+	}{{"ru", http.StatusOK}, {"auto", http.StatusOK}, {"", http.StatusOK}, {"xx", http.StatusBadRequest}, {"de-DE", http.StatusBadRequest}} {
+		rec := sessionCall(router, "PATCH", "/api/v1/auth/settings", token, `{"voiceLanguage":"`+tc.value+`"}`, "")
+		if rec.Code != tc.code {
+			t.Fatalf("voiceLanguage %q: want %d, got %d %s", tc.value, tc.code, rec.Code, rec.Body.String())
+		}
+		if tc.code == http.StatusOK && !strings.Contains(rec.Body.String(), `"voiceLanguage":"`+tc.value+`"`) {
+			t.Fatalf("voiceLanguage %q not in the answer: %s", tc.value, rec.Body.String())
+		}
 	}
 }

@@ -107,6 +107,7 @@ export const authApi = {
     notificationSettings?: NotificationSettings;
     doneRetentionDays?: number;
     voiceInput?: '' | 'browser';
+    voiceLanguage?: string;
     language?: string;
     retention?: Retention;
   }): Promise<User> {

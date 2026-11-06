@@ -50,7 +50,6 @@ export interface VoiceAdminStatus {
   demo: boolean;
   url?: string;
   model?: string;
-  language?: string;
   apiKeySet?: boolean;
   maxSeconds: number;
   maxUploadMb: number;
@@ -123,6 +122,9 @@ export interface User {
   doneRetentionDays?: number;
   // Voice input: '' = the server's Whisper (default), 'browser' = the browser's recognition
   voiceInput?: '' | 'browser';
+  // Language spoken into the microphone: '' = app language, 'auto' = Whisper detects it, else a code
+  // from WHISPER_LANGUAGES (lib/voiceLanguages.ts)
+  voiceLanguage?: string;
   // Language of the app: a code from LANGUAGES (i18n/index.ts), or '' to follow the browser
   language?: string;
   // How long finished and deleted things are kept, in days (0 = for good; only when allowed)

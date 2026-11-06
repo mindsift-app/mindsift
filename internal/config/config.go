@@ -97,7 +97,6 @@ type MediaConfig struct {
 type SpeechConfig struct {
 	URL            string // base URL, e.g. http://whisper:8000
 	Model          string
-	Language       string // fixed language code, "auto" = Whisper detects it, empty = each person's app language
 	APIKey         string
 	Disabled       bool // STT_DISABLED=true hides voice input everywhere
 	NoBrowser      bool // STT_ALLOW_BROWSER=false forbids the browser's recognition (it sends audio to Google/Microsoft)
@@ -284,7 +283,6 @@ func Load() *Config {
 		Speech: SpeechConfig{
 			URL:            strings.TrimRight(getEnv("STT_URL", ""), "/"),
 			Model:          getEnv("STT_MODEL", "deepdml/faster-whisper-large-v3-turbo-ct2"),
-			Language:       getEnv("STT_LANGUAGE", ""),
 			APIKey:         getEnv("STT_API_KEY", ""),
 			Disabled:       strings.ToLower(getEnv("STT_DISABLED", "false")) == "true",
 			NoBrowser:      strings.ToLower(getEnv("STT_ALLOW_BROWSER", "true")) == "false",

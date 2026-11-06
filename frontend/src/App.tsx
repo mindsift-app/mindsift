@@ -55,7 +55,7 @@ import { useUpdateCheck } from './lib/useUpdateCheck';
 import { consumePendingShares, formatSharedThought } from './lib/shareTarget';
 import { readViewSession, writeViewSession } from './lib/viewSession';
 import { reportNav, onNavStep } from './lib/navHistory';
-import { setVoicePreference } from './lib/voice';
+import { setVoiceLanguage, setVoicePreference } from './lib/voice';
 import { isPhoneWidth } from './lib/breakpoints';
 import { APP_TABS, ActiveTab } from './app/appTabs';
 import { ViewErrorBoundary } from './app/ViewErrorBoundary';
@@ -130,6 +130,8 @@ export const App: React.FC = () => {
   );
   // Whisper or the browser for voice input: the account's choice (lib/voice.ts)
   useEffect(() => setVoicePreference(user?.voiceInput), [user?.voiceInput]);
+  // Language spoken into the microphone: app language, automatic or a fixed one (lib/voice.ts)
+  useEffect(() => setVoiceLanguage(user?.voiceLanguage), [user?.voiceLanguage]);
   // Language: the account's choice, else the browser's, else the server's default (i18n/index.ts)
   useEffect(
     () => {

@@ -14,7 +14,7 @@ import { useTranslation } from 'react-i18next';
 import { AuthStatus, User, UserTheme } from '../../lib/types';
 import { ApiKeysPanel } from './ApiKeysPanel';
 import { api } from '../../lib/api';
-import { loadVoiceConfig, voiceChoiceAvailable } from '../../lib/voice';
+import { EffectiveVoiceMode, loadVoiceConfig, voiceChoiceAvailable } from '../../lib/voice';
 import {
   ThemeId,
   ThemeOption,
@@ -55,11 +55,17 @@ export const UserSettingsView: React.FC<UserSettingsViewProps> = ({
   onUserUpdated,
   onBack }) => {
   const [section, setSection] = useState<UserSettingsSection>('profile');
-  // Voice input: the choice Whisper/browser only exists with a Whisper server that allows the browser
+  // Voice input: the language whenever there is voice input; the choice Whisper/browser only with a
+  // Whisper server that allows the browser
   const [voiceChoice, setVoiceChoice] = useState(false);
+  const [voiceMode, setVoiceMode] = useState<EffectiveVoiceMode>();
   useEffect(() => {
-    void loadVoiceConfig().then(() => setVoiceChoice(voiceChoiceAvailable()));
+    void loadVoiceConfig().then((cfg) => {
+      setVoiceChoice(voiceChoiceAvailable());
+      setVoiceMode(cfg.mode);
+    });
   }, []);
+  const voiceAvailable = voiceChoice || voiceMode === 'server' || voiceMode === 'browser';
   // Aufbewahrung, Spracheingabe, Export (user/RetentionSection.tsx, VoiceSection.tsx, DataSection.tsx)
   const retention = useRetentionSettings(currentUser, onUserUpdated);
   const voice = useVoiceSetting(onUserUpdated);
@@ -189,7 +195,7 @@ export const UserSettingsView: React.FC<UserSettingsViewProps> = ({
             </div>
           </button>
 
-          {voiceChoice && (
+          {voiceAvailable && (
             <button
               onClick={() => setSection('voice')}
               className={`w-full px-3.5 py-3 text-left text-xs font-medium flex items-center gap-2.5 transition-colors ${
@@ -300,7 +306,9 @@ export const UserSettingsView: React.FC<UserSettingsViewProps> = ({
           {/* ================================================================= */}
           {/* SECTION: SPRACHEINGABE */}
           {/* ================================================================= */}
-          {section === 'voice' && voiceChoice && <VoiceSection voice={voice} currentUser={currentUser} />}
+          {section === 'voice' && voiceAvailable && (
+            <VoiceSection voice={voice} currentUser={currentUser} choice={voiceChoice} mode={voiceMode} />
+          )}
 
           {/* ================================================================= */}
           {/* SECTION: AUFBEWAHRUNG */}
