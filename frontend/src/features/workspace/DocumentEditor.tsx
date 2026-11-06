@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo, useSyncExternalStore } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo, useSyncExternalStore, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { buildBlockLink } from '../../lib/wikiLink';
 import { MOVE_BRANCH_EVENT } from './moveBranchEvent';
@@ -87,6 +87,8 @@ export interface DocumentEditorProps {
   actionsTarget?: HTMLElement | null;
   /** Distraction-free mode: reading width, menu entry to leave it */
   focusMode?: boolean;
+  /** Focus mode: the header at the top edge is pinned (the pane already starts below it) */
+  focusBarPinned?: boolean;
   onToggleFocusMode?: () => void;
 }
 
@@ -261,6 +263,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
   tagFilter,
   actionsTarget,
   focusMode = false,
+  focusBarPinned = false,
   onToggleFocusMode,
 }) => {
   const { t } = useTranslation('workspace');
@@ -302,6 +305,39 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
 
   const titleInputRef = useRef<HTMLTextAreaElement | HTMLInputElement | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
+
+  // Focus mode keeps the note at the height it has in the workspace, so the text does not move when it
+  // starts; the room below lets the end of the note scroll up into the upper third
+  const workspaceTopRef = useRef(0);
+  const [focusTopGap, setFocusTopGap] = useState(0);
+  useLayoutEffect(() => {
+    const root = scrollRef.current;
+    if (!root) return;
+    if (!focusMode) {
+      workspaceTopRef.current = root.getBoundingClientRect().top;
+      return;
+    }
+    // The fixed pane starts at the top edge; offsetTop ignores its zoom-in animation (a transform).
+    // Unpinned, the header slides in over the note: at least its height (45 px) plus 16 px stay free
+    const top = root.offsetTop;
+    setFocusTopGap(Math.max(focusBarPinned ? 0 : 41, workspaceTopRef.current - top));
+  }, [focusMode, focusBarPinned]);
+
+  // Sideways the note moves to the middle in focus mode (and back): it glides there instead of jumping
+  const contentRef = useRef<HTMLDivElement | null>(null);
+  const contentLeftRef = useRef<number | null>(null);
+  useLayoutEffect(() => {
+    const el = contentRef.current;
+    if (!el) return;
+    const left = el.getBoundingClientRect().left;
+    const from = contentLeftRef.current;
+    contentLeftRef.current = left;
+    if (from === null || Math.abs(from - left) < 1 || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    el.animate([{ transform: `translateX(${from - left}px)` }, { transform: 'none' }], {
+      duration: 220,
+      easing: 'cubic-bezier(0.2, 0, 0, 1)',
+    });
+  }, [focusMode]);
 
   // Keeps the bullet being typed in above the keyboard (and the outline bar on it): the browser only
   // scrolls it into the visible part if the note can scroll that far, hence also the room at the end
@@ -1684,9 +1720,11 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
       {/* Phones: almost no side margin; very deep outlines scroll sideways (rows keep a minimum width) */}
       {/* shrink-0: the sideways scroll area must keep its full height, so only the editor scrolls vertically */}
       <div
+        ref={contentRef}
         className={`w-full pl-2 pr-1 sm:px-8 flex-auto shrink-0 overflow-x-auto sm:overflow-x-visible [-webkit-overflow-scrolling:touch] ${
           inTagPage ? 'py-2' : inJournal ? 'py-3' : 'py-5'
         } ${focusMode ? 'max-w-3xl mx-auto' : ''}`}
+        style={focusMode && desktopBar ? { paddingTop: `calc(1.25rem + ${focusTopGap}px)`, paddingBottom: '60vh' } : undefined}
       >
         {desktopBar && zoomedBlock && breadcrumbs.length > 0 && <div className="mb-3">{breadcrumbNav}</div>}
         {zoomedBlock ? (

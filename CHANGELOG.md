@@ -6,6 +6,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.86.3] - 2026-11-06
+
+### Changed
+- Focus mode keeps the note at the height it has in the workspace, so the text no longer jumps when focus mode starts, and the note glides to the middle instead of jumping sideways. Below the note there is room to scroll its end up into the upper third of the screen.
+
 ## [0.86.2] - 2026-11-06
 
 ### Added
