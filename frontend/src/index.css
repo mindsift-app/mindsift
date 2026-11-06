@@ -679,10 +679,10 @@ fieldset:disabled :is(button, input, select, textarea) {
   pointer-events: none;
 }
 
-/* Focus mode: the note fades in over the app */
+/* Focus mode: the note fades in over the app (without zoom: the text keeps its place, see DocumentEditor) */
 @keyframes focus-mode-in {
-  from { opacity: 0; transform: scale(0.99); }
-  to { opacity: 1; transform: none; }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 .focus-mode-enter {
   animation: focus-mode-in 300ms ease-in-out;

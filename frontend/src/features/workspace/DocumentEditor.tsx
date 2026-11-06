@@ -323,6 +323,22 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
     setFocusTopGap(Math.max(focusBarPinned ? 0 : 41, workspaceTopRef.current - top));
   }, [focusMode, focusBarPinned]);
 
+  // Sideways the note moves to the middle in focus mode (and back): it glides there instead of jumping
+  const contentRef = useRef<HTMLDivElement | null>(null);
+  const contentLeftRef = useRef<number | null>(null);
+  useLayoutEffect(() => {
+    const el = contentRef.current;
+    if (!el) return;
+    const left = el.getBoundingClientRect().left;
+    const from = contentLeftRef.current;
+    contentLeftRef.current = left;
+    if (from === null || Math.abs(from - left) < 1 || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    el.animate([{ transform: `translateX(${from - left}px)` }, { transform: 'none' }], {
+      duration: 220,
+      easing: 'cubic-bezier(0.2, 0, 0, 1)',
+    });
+  }, [focusMode]);
+
   // Keeps the bullet being typed in above the keyboard (and the outline bar on it): the browser only
   // scrolls it into the visible part if the note can scroll that far, hence also the room at the end
   const { inset: keyboardInset, keyboardOpen, visibleHeight } = useKeyboardInset();
@@ -1704,6 +1720,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
       {/* Phones: almost no side margin; very deep outlines scroll sideways (rows keep a minimum width) */}
       {/* shrink-0: the sideways scroll area must keep its full height, so only the editor scrolls vertically */}
       <div
+        ref={contentRef}
         className={`w-full pl-2 pr-1 sm:px-8 flex-auto shrink-0 overflow-x-auto sm:overflow-x-visible [-webkit-overflow-scrolling:touch] ${
           inTagPage ? 'py-2' : inJournal ? 'py-3' : 'py-5'
         } ${focusMode ? 'max-w-3xl mx-auto' : ''}`}
