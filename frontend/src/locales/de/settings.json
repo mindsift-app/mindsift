@@ -716,6 +716,7 @@
     "model": "Modell",
     "language": "Sprache",
     "auto": "automatisch",
+    "perPerson": "Sprache der jeweiligen Person",
     "state": "Zustand",
     "limits": "Grenzen",
     "speakNow": "Sprich jetzt …",

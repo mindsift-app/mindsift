@@ -6,6 +6,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.83.12] - 2026-11-06
+
+### Fixed
+- Voice input with your own Whisper server recognizes each person in their own app language (German, English, Spanish, French or Italian) instead of always German. `STT_LANGUAGE` still fixes one language for everyone if set (`auto` lets Whisper detect it); installations that have `STT_LANGUAGE=de` in their `.env` keep it. The install script no longer sets it from the server's locale. The admin's voice status shows "each person's app language" for this.
+
 ## [0.83.11] - 2026-11-06
 
 ### Changed

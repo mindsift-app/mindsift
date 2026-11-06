@@ -105,6 +105,35 @@ func TestVoiceTranscribeForwardsToWhisper(t *testing.T) {
 	}
 }
 
+// Without STT_LANGUAGE Whisper gets the app language of the person speaking; "auto" sends none.
+func TestVoiceLanguagePerPerson(t *testing.T) {
+	var got map[string]string
+	var downloads int32
+	whisper := fakeWhisper(t, []string{"Systran/faster-whisper-small"}, &got, &downloads)
+	for _, tc := range []struct{ env, person, want string }{
+		{"", "en", "en"},
+		{"", "fr", "fr"},
+		{"de", "en", "de"},
+		{"auto", "en", ""},
+	} {
+		srv, token := voiceServer(t, config.SpeechConfig{URL: whisper.URL + "/v1", Model: "Systran/faster-whisper-small", Language: tc.env,
+			APIKey: "geheim", MaxSeconds: 600, MaxUploadMB: 1, MaxParallel: 1, PerUserPerHour: 5, TimeoutSeconds: 10})
+		user, err := srv.store.EnsureDefaultUser()
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := srv.store.SetLanguage(user.ID, tc.person); err != nil {
+			t.Fatal(err)
+		}
+		if rec := voiceUpload(t, srv.Router(), token, []byte("RIFF-audio")); rec.Code != http.StatusOK {
+			t.Fatalf("STT_LANGUAGE=%q: %d %s", tc.env, rec.Code, rec.Body.String())
+		}
+		if got["language"] != tc.want {
+			t.Fatalf("STT_LANGUAGE=%q, person %q: Whisper got language %q, want %q", tc.env, tc.person, got["language"], tc.want)
+		}
+	}
+}
+
 func TestVoiceUploadLimitAndModes(t *testing.T) {
 	var got map[string]string
 	var downloads int32

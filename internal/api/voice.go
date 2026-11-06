@@ -2,6 +2,7 @@ package api
 
 import (
 	"bytes"
+	"cmp"
 	"context"
 	"encoding/json"
 	"errors"
@@ -135,7 +136,7 @@ func (s *Server) handleVoiceTranscribe(w http.ResponseWriter, r *http.Request) {
 	}
 
 	started := time.Now()
-	text, err := s.transcribe(ctx, audio, header.Filename, header.Header.Get("Content-Type"))
+	text, err := s.transcribe(ctx, audio, header.Filename, header.Header.Get("Content-Type"), s.sttLanguage(userID))
 	if err != nil {
 		slog.Warn("Speech recognition failed", "url", s.sttEndpoint("/v1/audio/transcriptions"), "model", cfg.Model,
 			"bytes", len(audio), "duration_ms", time.Since(started).Milliseconds(), "error", err)
@@ -150,8 +151,22 @@ func (s *Server) handleVoiceTranscribe(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{"text": text})
 }
 
-// transcribe sends the audio to the Whisper server (OpenAI API: POST /v1/audio/transcriptions).
-func (s *Server) transcribe(ctx context.Context, audio []byte, filename, contentType string) (string, error) {
+// sttLanguage: the language Whisper is told for a recording: STT_LANGUAGE when set ("auto": none, Whisper
+// detects it), otherwise the app language of the person speaking.
+func (s *Server) sttLanguage(userID string) string {
+	switch lang := s.cfg.Speech.Language; lang {
+	case "auto":
+		return ""
+	case "":
+		return s.userLanguage(userID)
+	default:
+		return lang
+	}
+}
+
+// transcribe sends the audio to the Whisper server (OpenAI API: POST /v1/audio/transcriptions); an empty
+// language lets Whisper detect it.
+func (s *Server) transcribe(ctx context.Context, audio []byte, filename, contentType, language string) (string, error) {
 	var body bytes.Buffer
 	mw := multipart.NewWriter(&body)
 	if filename == "" {
@@ -171,8 +186,8 @@ func (s *Server) transcribe(ctx context.Context, audio []byte, filename, content
 		return "", err
 	}
 	_ = mw.WriteField("model", s.cfg.Speech.Model)
-	if lang := s.cfg.Speech.Language; lang != "" && lang != "auto" {
-		_ = mw.WriteField("language", lang)
+	if language != "" {
+		_ = mw.WriteField("language", language)
 	}
 	_ = mw.WriteField("response_format", "json")
 	if s.cfg.Speech.VADFilter {
@@ -297,7 +312,7 @@ func (s *Server) setVoiceStatus(st voiceStatus) {
 // asks it to download the model if it does not have it yet, so the first recording works.
 func (s *Server) startVoiceCheck() {
 	cfg := s.cfg.Speech
-	slog.Info("Speech recognition: server mode", "url", cfg.URL, "model", cfg.Model, "language", cfg.Language,
+	slog.Info("Speech recognition: server mode", "url", cfg.URL, "model", cfg.Model, "language", cmp.Or(cfg.Language, "per person"),
 		"max_parallel", cfg.MaxParallel, "per_user_per_hour", cfg.PerUserPerHour, "max_upload_mb", cfg.MaxUploadMB)
 	downloadRequested := false
 	for attempt := 0; ; attempt++ {

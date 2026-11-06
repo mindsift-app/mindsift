@@ -717,6 +717,7 @@
     "model": "Model",
     "language": "Language",
     "auto": "automatic",
+    "perPerson": "each person's app language",
     "state": "State",
     "limits": "Limits",
     "speakNow": "Speak now …",
