@@ -249,6 +249,9 @@ Write attempts by viewers on lists or their tasks return `403` ("No write permis
 | POST | `/documents/{id}/merge` | `{sourceId}`: appends (own) source note as a heading with sub-bullets to this note, moves source to trash → `{targetId, sourceId, sourceTitle, headingId}` |
 | POST | `/documents/{id}/merge/undo` | `{sourceId, headingId}`: removes section, restores source note |
 | POST | `/documents/{id}/media` | Upload image or audio for a note (`multipart/form-data`, field `file`; requires write permission) → `{id, kind, mime, size, url}`. `415` invalid format, `413` too large or storage quota exceeded |
+| POST | `/documents/{id}/secrets` | Hide a value (`/secret`): `{value}` (up to 4096 bytes; requires write permission) → `{id, ref}`; only `ref` (`{{secret:<id>}}`) goes into the bullet text |
+| GET | `/documents/{id}/secrets/{secretId}` | Reveal a hidden value → `{value}`. Allowed to everyone who can see the note it belongs to; from another note only if a bullet there holds the reference and the caller can also see the original note (the value then moves along when the caller may edit). `404` with `code: secret_gone` when deleted, `409` `secret_unreadable` when the key changed. Never cached offline |
+| PUT | `/documents/{id}/secrets/{secretId}` | Change a hidden value: `{value}`; requires write permission |
 | POST | `/documents/{id}/media/fetch` | Copy external image: `{url}` (https only, no internal addresses; disabled in demo) → same response as above |
 | GET | `/media/{id}` | Retrieve file (requires read permission on a note referencing it), supports HTTP range requests; otherwise `404` |
 | GET | `/link-preview?url=https://…` | Preview of a webpage (`title`, `description`, `siteName`, `hasImage`, `hasIcon`, `ok`, `key`), fetched by server and cached for 7 days; `422` without https, `403` in demo, `429` rate limit exceeded |

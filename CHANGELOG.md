@@ -6,6 +6,13 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.86.0] - 2026-11-06
+
+### Added
+- Notes: hide a value such as an IP address or a token with `/secret`. The value is stored encrypted on the server; the bullet only holds a reference and shows a lock with dots. A click reveals it for 20 seconds, with buttons to copy it and (with write access) to change it. Everyone who can see the note can reveal it; API keys and AI agents (MCP), search, the Markdown export and copying bullets only ever see it hidden, and a revealed value is never kept in the offline cache.
+- Hidden values that no bullet uses any more are kept for 30 days (for undo and the trash) and then deleted; deleting a note for good deletes its values at once.
+- New optional setting `SECRETS_KEY` for the key of hidden values; without it MindSift creates one in `data/secrets.key`. The install script sets it for new installations. Never change it once values are stored, or they can no longer be read.
+
 ## [0.85.0] - 2026-11-06
 
 ### Added

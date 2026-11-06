@@ -26,9 +26,11 @@ import {
   Link2,
   Type,
   Unlink,
+  KeyRound,
 } from 'lucide-react';
 import { DocumentBlock, BlockType } from '../../lib/types';
 import { LinkModal } from './LinkModal';
+import { SecretChip, NewSecretSheet } from './SecretChip';
 import { CodeBlockEditor, resolveLanguageId, isUnambiguousLanguageShortcut } from './CodeBlockEditor';
 import { ImagePicker } from './ImagePicker';
 import { ImageBlock } from './ImageBlock';
@@ -52,7 +54,7 @@ import { userColorStyles } from '../../lib/userColor';
 import { showError } from '../../components/ErrorNotice';
 
 export interface SlashCommand {
-  type: BlockType | 'link' | 'dictation' | 'extract';
+  type: BlockType | 'link' | 'secret' | 'dictation' | 'extract';
   label: string;
   readonly desc: string;
   icon: React.ReactNode;
@@ -82,6 +84,7 @@ const SLASH_COMMANDS: SlashCommand[] = [
   { type: 'todo', label: '/todo', get desc() { return i18n.t('workspace:slash.todo'); }, icon: <ListTodo className="w-3.5 h-3.5" /> },
   { type: 'numbered', label: '/number', get desc() { return i18n.t('workspace:slash.numbered'); }, icon: <ListOrdered className="w-3.5 h-3.5" />, aliases: ['nummer', 'liste', 'ol'] },
   { type: 'link', label: '/link', get desc() { return i18n.t('workspace:slash.link'); }, icon: <LinkIcon className="w-3.5 h-3.5" /> },
+  { type: 'secret', label: '/secret', get desc() { return i18n.t('workspace:slash.secret'); }, icon: <KeyRound className="w-3.5 h-3.5" />, aliases: ['geheim', 'verdeckt', 'passwort', 'password', 'hidden'] },
   { type: 'bullet', label: '/text', get desc() { return i18n.t('workspace:slash.bullet'); }, icon: <Type className="w-3.5 h-3.5" />, aliases: ['p', 'paragraph', 'bullet', 'standard'] },
   { type: 'h1', label: '/h1', get desc() { return i18n.t('workspace:slash.h1'); }, icon: <Heading1 className="w-3.5 h-3.5" /> },
   { type: 'h2', label: '/h2', get desc() { return i18n.t('workspace:slash.h2'); }, icon: <Heading2 className="w-3.5 h-3.5" /> },
@@ -231,6 +234,7 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
   const [slashIndex, setSlashIndex] = useState(0);
   const slashItemRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const [showLinkModal, setShowLinkModal] = useState<boolean>(false);
+  const [showSecretSheet, setShowSecretSheet] = useState(false);
 
   // Action bubble with a real pointer: shown only while the mouse moves over the row (until a moment after
   // the last move), while it rests on the bubble or a menu of it is open; a resting mouse must not leave it
@@ -533,8 +537,8 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
         (c.aliases || []).some((a) => a.includes(cmdQuery));
       if (!matchesQuery) return false;
 
-      // /link and /dictation everywhere
-      if (c.type === 'link') return true;
+      // /link, /secret and /dictation everywhere
+      if (c.type === 'link' || c.type === 'secret') return true;
       if (c.type === 'dictation') {
         return ['server', 'browser'].includes(currentVoiceConfig().mode);
       }
@@ -598,6 +602,17 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
       setLocalContent(clean);
       localContentRef.current = clean;
       setShowLinkModal(true);
+      return;
+    }
+
+    if (cmd.type === 'secret') {
+      // Goes in at the slash like a link, once the server has stored the value
+      linkBeforeRef.current = before;
+      linkAfterRef.current = after;
+      linkCaretRef.current = Math.min(before.replace(/\s{2,}/g, ' ').trimStart().length, clean.length);
+      setLocalContent(clean);
+      localContentRef.current = clean;
+      setShowSecretSheet(true);
       return;
     }
 
@@ -1580,7 +1595,11 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
                     <span className="truncate max-w-[16rem]">{linkHost(previewUrl)}</span>
                   </a>
                 ) : localContent ? (
-                  renderInlineMarkdown(localContent, { onTagClick, onWikiLinkClick })
+                  renderInlineMarkdown(localContent, {
+                    onTagClick,
+                    onWikiLinkClick,
+                    renderSecret: (secretId, key) => <SecretChip key={key} docId={docId} secretId={secretId} canEdit={canEdit} />,
+                  })
                 ) : (
                   '\u200b'
                 )}
@@ -1907,6 +1926,20 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
           </button>
         )}
       </div>
+
+      {showSecretSheet && (
+        <NewSecretSheet
+          docId={docId}
+          onClose={() => {
+            setShowSecretSheet(false);
+            refocusAfterLink(linkCaretRef.current);
+          }}
+          onCreated={(ref) => {
+            setShowSecretSheet(false);
+            handleInsertLink(ref);
+          }}
+        />
+      )}
 
       {/* Link Insertion Modal */}
       {showLinkModal && (

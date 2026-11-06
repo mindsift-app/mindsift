@@ -45,6 +45,7 @@ describe('outbox', () => {
     expect(isCacheablePath('/api/v1/events')).toBe(false);
     expect(isCacheablePath('/api/v1/docs/d1/changes?since=3')).toBe(false);
     expect(isCacheablePath('/api/v1/export/markdown')).toBe(false);
+    expect(isCacheablePath('/api/v1/documents/d1/secrets/sec1')).toBe(false);
   });
 });
 

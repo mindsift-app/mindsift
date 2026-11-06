@@ -433,4 +433,10 @@ var messagesES = map[string]string{
 	"Direkt eine neue Aufgabe anlegen":           "Crear una tarea nueva directamente",
 	"Einkaufsliste":                              "Lista de la compra",
 	"Einen Eintrag zur Einkaufsliste hinzufügen": "Añadir un artículo a la lista de la compra",
+	// Hidden values in notes
+	"Der Wert ist leer oder zu lang":              "El valor está vacío o es demasiado largo",
+	"Geheimnis konnte nicht gespeichert werden":   "No se pudo guardar el valor oculto",
+	"Geheimnis konnte nicht gelesen werden":       "No se pudo leer el valor oculto",
+	"Geheimnis konnte nicht entschlüsselt werden": "No se pudo descifrar el valor oculto",
+	"Geheimnis nicht gefunden":                    "Valor oculto no encontrado",
 }

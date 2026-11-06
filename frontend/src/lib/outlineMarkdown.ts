@@ -1,4 +1,5 @@
 import type { DocumentBlock } from './types';
+import { maskSecrets } from './secretRef';
 
 // Warnings and errors as Obsidian callouts, like the Markdown export of the server
 const CALLOUT_KIND = { warning: 'warning', error: 'failure' } as const;
@@ -26,7 +27,8 @@ export function blocksToMarkdown(blocks: DocumentBlock[]): string {
     }
     else lvl = Math.max(0, lvl - lift);
     const indent = '\t'.repeat(lvl);
-    const content = (b.content || '').replace(/\r\n/g, '\n');
+    // Hidden values stay hidden on the clipboard
+    const content = maskSecrets((b.content || '').replace(/\r\n/g, '\n'));
     const oneLine = content.replace(/\n/g, ' ');
     // Soft line breaks continue the list item, aligned under its text
     const cont = (prefix: string) => content.replace(/\n/g, `\n${indent}${prefix}`);

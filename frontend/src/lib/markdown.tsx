@@ -2,6 +2,7 @@ import React from 'react';
 import { safeHref } from './safeUrl';
 import { parseWikiLink, wikiLinkText } from './wikiLink';
 import i18n from '../i18n';
+import { SECRET_REF_SOURCE, secretIdOf } from './secretRef';
 
 /**
  * Parses inline markdown:
@@ -12,10 +13,12 @@ import i18n from '../i18n';
  * - [label](url)
  * - #hashtag (only when `options.onTagClick` is given), rendered inline as a clickable chip
  * - [[wiki link]] shown by its label (clickable with `options.onWikiLinkClick`)
+ * - {{secret:id}} as dots (revealable with `options.renderSecret`)
  */
 export interface InlineMarkdownOptions {
   onTagClick?: (tag: string) => void;
   onWikiLinkClick?: (title: string, blockId?: string) => void;
+  renderSecret?: (secretId: string, key: string) => React.ReactNode;
 }
 
 function renderInlineTokens(text: string, options?: InlineMarkdownOptions): React.ReactNode[] {
@@ -23,7 +26,7 @@ function renderInlineTokens(text: string, options?: InlineMarkdownOptions): Reac
 
   const tagAlt = options?.onTagClick ? '|#[\\p{L}\\p{N}_-]+' : '';
   const regex = new RegExp(
-    '(\\[\\[[^\\]]+\\]\\]|https?:\\/\\/[^\\s<>()\\[\\]]+[^\\s<>()\\[\\].,;:!?"\']|`[^`]+`|\\*\\*[^*]+\\*\\*|__[^_]+__|~~[^~]+~~|\\*[^*]+\\*|_[^_]+_|\\[([^\\]]+)\\]\\(([^)]+)\\)' + tagAlt + ')',
+    '(' + SECRET_REF_SOURCE + '|\\[\\[[^\\]]+\\]\\]|https?:\\/\\/[^\\s<>()\\[\\]]+[^\\s<>()\\[\\].,;:!?"\']|`[^`]+`|\\*\\*[^*]+\\*\\*|__[^_]+__|~~[^~]+~~|\\*[^*]+\\*|_[^_]+_|\\[([^\\]]+)\\]\\(([^)]+)\\)' + tagAlt + ')',
     'gu'
   );
 
@@ -38,7 +41,16 @@ function renderInlineTokens(text: string, options?: InlineMarkdownOptions): Reac
     const token = match[0];
     const key = `${match.index}-${token}`;
 
-    if (/^https?:\/\//.test(token)) {
+    const secretId = secretIdOf(token);
+    if (secretId) {
+      elements.push(
+        options?.renderSecret ? (
+          options.renderSecret(secretId, key)
+        ) : (
+          <span key={key} aria-hidden="true" className="before:content-['••••'] font-mono text-muted" />
+        )
+      );
+    } else if (/^https?:\/\//.test(token)) {
       const href = safeHref(token);
       elements.push(
         href ? (

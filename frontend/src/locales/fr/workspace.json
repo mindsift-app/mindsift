@@ -89,7 +89,8 @@
     "extract": "Branche comme note autonome",
     "image": "Téléverser ou lier des images",
     "audio": "Note vocale ou fichier audio",
-    "dictation": "Parler au lieu d'écrire"
+    "dictation": "Parler au lieu d'écrire",
+    "secret": "Masquer une valeur (IP, jeton …)"
   },
   "block": {
     "expand": "Déplier les sous-puces",
@@ -403,5 +404,21 @@
     "newNote": "Créer une nouvelle note",
     "search": "Dans une note existante …",
     "none": "Aucune note correspondante"
+  },
+  "secret": {
+    "newTitle": "Masquer une valeur",
+    "placeholder": "p. ex. adresse IP ou jeton",
+    "hint": "Enregistrée chiffrée et affichée seulement après un appui. Les clés API et MCP ne la voient que masquée.",
+    "create": "Masquer",
+    "label": "Valeur masquée",
+    "reveal": "Afficher",
+    "hide": "Masquer à nouveau",
+    "copy": "Copier",
+    "copied": "Copié !",
+    "edit": "Modifier",
+    "editTitle": "Modifier la valeur masquée",
+    "save": "Enregistrer",
+    "gone": "Secret supprimé",
+    "unreadable": "Illisible"
   }
 }

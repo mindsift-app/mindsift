@@ -433,4 +433,10 @@ var messagesIT = map[string]string{
 	"Direkt eine neue Aufgabe anlegen":           "Crea subito una nuova attività",
 	"Einkaufsliste":                              "Lista della spesa",
 	"Einen Eintrag zur Einkaufsliste hinzufügen": "Aggiungi un articolo alla lista della spesa",
+	// Hidden values in notes
+	"Der Wert ist leer oder zu lang":              "Il valore è vuoto o troppo lungo",
+	"Geheimnis konnte nicht gespeichert werden":   "Impossibile salvare il valore nascosto",
+	"Geheimnis konnte nicht gelesen werden":       "Impossibile leggere il valore nascosto",
+	"Geheimnis konnte nicht entschlüsselt werden": "Impossibile decifrare il valore nascosto",
+	"Geheimnis nicht gefunden":                    "Valore nascosto non trovato",
 }

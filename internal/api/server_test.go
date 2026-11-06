@@ -42,6 +42,7 @@ func setupTestServer(t *testing.T) (*Server, *storage.Store, string) {
 		Port:              "8080",
 		DatabasePath:      dbPath,
 		JWTSecret:         "test-jwt-secret-key",
+		SecretsKey:        []byte("test-secrets-key-32-bytes-long!!"),
 		AllowRegistration: false,
 	}
 	hub := ws.NewHub()

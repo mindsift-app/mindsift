@@ -19,6 +19,7 @@ import {
   ListTodo,
   Code,
   Download,
+  KeyRound,
 } from 'lucide-react';
 import type { HelpContent } from './types';
 
@@ -118,6 +119,10 @@ const en: HelpContent = {
               <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main">
                 <Code className="w-3.5 h-3.5 text-accent" />
                 <span>/code (code block)</span>
+              </div>
+              <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main">
+                <KeyRound className="w-3.5 h-3.5 text-accent" />
+                <span>/secret (hide a value, e.g. an IP or token)</span>
               </div>
               <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main">
                 <span className="text-accent font-bold">💬</span>

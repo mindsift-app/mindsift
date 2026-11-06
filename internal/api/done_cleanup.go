@@ -14,16 +14,19 @@ import (
 
 // startDoneCleanupTicker runs the retention delays (storage/retention.go): completed tasks into the
 // task trash, the trashes and ticked-off list items emptied; once shortly after the start and then
-// every hour. Expired and unused OAuth connections go in the same pass (oauth.go).
+// every hour. Expired and unused OAuth connections go in the same pass (oauth.go), and so do hidden
+// values no note holds any more (secrets.go).
 func (s *Server) startDoneCleanupTicker() {
 	time.Sleep(2 * time.Minute)
 	s.runDoneCleanup(time.Now())
 	s.runOAuthCleanup(time.Now())
+	s.runSecretSweep(time.Now())
 	ticker := time.NewTicker(time.Hour)
 	defer ticker.Stop()
 	for now := range ticker.C {
 		s.runDoneCleanup(now)
 		s.runOAuthCleanup(now)
+		s.runSecretSweep(now)
 	}
 }
 

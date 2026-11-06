@@ -76,6 +76,12 @@ else
     sed -i "s/change_this_to_a_secure_random_key_min_32_chars/${RANDOM_SECRET}/g" .env
   fi
 
+  # Key for hidden values in notes; not when data/ already holds one (the stored values need that key)
+  if grep -q "^SECRETS_KEY=$" .env && [ ! -f data/secrets.key ]; then
+    SECRETS_KEY_VALUE=$(head -c 48 /dev/urandom | base64 | tr -dc 'a-zA-Z0-9' | head -c 48 || openssl rand -hex 24 2>/dev/null)
+    if [ -n "${SECRETS_KEY_VALUE}" ]; then sed -i "s/^SECRETS_KEY=$/SECRETS_KEY=${SECRETS_KEY_VALUE}/" .env; fi
+  fi
+
   # Time zone of this server for due dates and alarms
   HOST_TZ=$(timedatectl show -p Timezone --value 2>/dev/null || true)
   if [ -z "${HOST_TZ}" ] && [ -f /etc/timezone ]; then HOST_TZ=$(head -n1 /etc/timezone); fi

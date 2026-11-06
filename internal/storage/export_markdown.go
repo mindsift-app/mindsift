@@ -212,7 +212,7 @@ func blocksToVaultMarkdown(blocks []domain.DocumentBlock, attachment func(id str
 			lvl = 0
 		}
 		indent := strings.Repeat("\t", lvl)
-		content := strings.ReplaceAll(b.Content, "\r\n", "\n")
+		content := MaskSecretRefs(strings.ReplaceAll(b.Content, "\r\n", "\n"))
 		if (b.Type == "image" || b.Type == "audio") && attachment != nil {
 			if ref, ok := ParseMediaContent(content); ok {
 				if p := attachment(ref.ID); p != "" {

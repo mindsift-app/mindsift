@@ -89,7 +89,8 @@
     "extract": "Branch as its own note",
     "image": "Upload or link images",
     "audio": "Voice note or audio file",
-    "dictation": "Speak instead of typing"
+    "dictation": "Speak instead of typing",
+    "secret": "Hide a value (IP, token …)"
   },
   "block": {
     "expand": "Expand sub-bullets",
@@ -403,5 +404,21 @@
     "newNote": "Create a new note",
     "search": "Into an existing note …",
     "none": "No matching note"
+  },
+  "secret": {
+    "newTitle": "Hide a value",
+    "placeholder": "e.g. IP address or token",
+    "hint": "Stored encrypted and only shown when tapped. API keys and MCP only ever see it hidden.",
+    "create": "Hide",
+    "label": "Hidden value",
+    "reveal": "Show",
+    "hide": "Hide again",
+    "copy": "Copy",
+    "copied": "Copied!",
+    "edit": "Change",
+    "editTitle": "Change hidden value",
+    "save": "Save",
+    "gone": "Secret deleted",
+    "unreadable": "Unreadable"
   }
 }
