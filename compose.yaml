@@ -11,6 +11,7 @@ services:
       - PORT=8080
       - DATA_DIR=/data
       - JWT_SECRET=${JWT_SECRET:-change_this_to_a_secure_random_key_min_32_chars}
+      - SECRETS_KEY=${SECRETS_KEY:-}
       - BASE_URL=${BASE_URL:-http://localhost:8080}
       - ALLOW_REGISTRATION=${ALLOW_REGISTRATION:-false}
       - LOG_LEVEL=${LOG_LEVEL:-info}

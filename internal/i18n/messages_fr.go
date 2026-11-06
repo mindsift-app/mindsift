@@ -433,4 +433,10 @@ var messagesFR = map[string]string{
 	"Direkt eine neue Aufgabe anlegen":           "Créer directement une nouvelle tâche",
 	"Einkaufsliste":                              "Liste de courses",
 	"Einen Eintrag zur Einkaufsliste hinzufügen": "Ajouter un article à la liste de courses",
+	// Hidden values in notes
+	"Der Wert ist leer oder zu lang":              "La valeur est vide ou trop longue",
+	"Geheimnis konnte nicht gespeichert werden":   "Impossible d’enregistrer la valeur masquée",
+	"Geheimnis konnte nicht gelesen werden":       "Impossible de lire la valeur masquée",
+	"Geheimnis konnte nicht entschlüsselt werden": "Impossible de déchiffrer la valeur masquée",
+	"Geheimnis nicht gefunden":                    "Valeur masquée introuvable",
 }

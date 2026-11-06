@@ -2,6 +2,7 @@ package config
 
 import (
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/hex"
 	"log/slog"
 	"os"
@@ -17,7 +18,9 @@ type Config struct {
 	DataDir      string
 	DatabasePath string
 	JWTSecret    string
-	BaseURL      string
+	// SecretsKey encrypts hidden values in notes (SECRETS_KEY or $DATA_DIR/secrets.key), 32 bytes
+	SecretsKey []byte
+	BaseURL    string
 	// BaseURLSet: BASE_URL was configured explicitly. Links in mails (password reset) are only built
 	// from it, never from the request's Host header.
 	BaseURLSet        bool
@@ -173,6 +176,37 @@ func resolveJWTSecret(fromEnv, dataDir string) string {
 	return secret
 }
 
+const secretsKeyFile = "secrets.key"
+
+// resolveSecretsKey: the key for hidden values in notes. SECRETS_KEY (any long random string) keeps it
+// out of the data directory, so a copy of the database alone reveals nothing; otherwise a random key is
+// generated once and kept in the data directory. Its own key and not one derived from JWT_SECRET, so
+// changing JWT_SECRET (signing everyone out) does not lose the values.
+func resolveSecretsKey(fromEnv, dataDir string) []byte {
+	if v := strings.TrimSpace(fromEnv); v != "" {
+		if len(v) < 32 {
+			slog.Warn("SECRETS_KEY is shorter than 32 characters – please use a longer random value")
+		}
+		sum := sha256.Sum256([]byte(v))
+		return sum[:]
+	}
+	path := filepath.Join(dataDir, secretsKeyFile)
+	if data, err := os.ReadFile(path); err == nil {
+		if key, err := hex.DecodeString(strings.TrimSpace(string(data))); err == nil && len(key) == 32 {
+			return key
+		}
+	}
+	key := make([]byte, 32)
+	if _, err := rand.Read(key); err != nil {
+		panic("crypto/rand: " + err.Error())
+	}
+	_ = os.MkdirAll(dataDir, 0o755)
+	if err := os.WriteFile(path, []byte(hex.EncodeToString(key)+"\n"), 0o600); err != nil {
+		slog.Error("Saving the generated key for hidden values failed – they cannot be read after a restart", "pfad", path, "error", err)
+	}
+	return key
+}
+
 // legalContent reads Markdown from NAME or, for longer texts, from the file named in NAME_FILE.
 func legalContent(name string) string {
 	if v := strings.TrimSpace(os.Getenv(name)); v != "" {
@@ -256,6 +290,7 @@ func Load() *Config {
 		DataDir:                 dataDir,
 		DatabasePath:            dbPath,
 		JWTSecret:               jwtSecret,
+		SecretsKey:              resolveSecretsKey(os.Getenv("SECRETS_KEY"), filepath.Dir(dbPath)),
 		BaseURL:                 baseURL,
 		BaseURLSet:              strings.TrimSpace(os.Getenv("BASE_URL")) != "",
 		AllowRegistration:       allowReg,

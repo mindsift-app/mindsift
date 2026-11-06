@@ -89,7 +89,8 @@
     "extract": "Convertir rama en nota propia",
     "image": "Subir o enlazar imágenes",
     "audio": "Nota de voz o archivo de audio",
-    "dictation": "Hablar en lugar de escribir"
+    "dictation": "Hablar en lugar de escribir",
+    "secret": "Ocultar un valor (IP, token …)"
   },
   "block": {
     "expand": "Desplegar subpuntos",
@@ -403,5 +404,21 @@
     "newNote": "Crear una nota nueva",
     "search": "En una nota existente …",
     "none": "Ninguna nota coincide"
+  },
+  "secret": {
+    "newTitle": "Ocultar un valor",
+    "placeholder": "p. ej. dirección IP o token",
+    "hint": "Se guarda cifrado y solo se muestra al tocarlo. Las claves API y MCP solo lo ven oculto.",
+    "create": "Ocultar",
+    "label": "Valor oculto",
+    "reveal": "Mostrar",
+    "hide": "Ocultar de nuevo",
+    "copy": "Copiar",
+    "copied": "¡Copiado!",
+    "edit": "Cambiar",
+    "editTitle": "Cambiar valor oculto",
+    "save": "Guardar",
+    "gone": "Secreto eliminado",
+    "unreadable": "Ilegible"
   }
 }

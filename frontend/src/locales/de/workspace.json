@@ -89,7 +89,8 @@
     "extract": "Ast als eigene Notiz",
     "image": "Bilder hochladen oder verlinken",
     "audio": "Sprachnotiz oder Audiodatei",
-    "dictation": "Sprechen statt tippen"
+    "dictation": "Sprechen statt tippen",
+    "secret": "Wert verdecken (IP, Token …)"
   },
   "block": {
     "expand": "Unterpunkte ausklappen",
@@ -399,5 +400,21 @@
     "newNote": "Neue Notiz anlegen",
     "search": "In bestehende Notiz …",
     "none": "Keine passende Notiz"
+  },
+  "secret": {
+    "newTitle": "Wert verdecken",
+    "placeholder": "z. B. IP-Adresse oder Token",
+    "hint": "Wird verschlüsselt gespeichert und erst nach Antippen angezeigt. Über API-Schlüssel und MCP bleibt er verdeckt.",
+    "create": "Verdecken",
+    "label": "Verdeckter Wert",
+    "reveal": "Anzeigen",
+    "hide": "Wieder verdecken",
+    "copy": "Kopieren",
+    "copied": "Kopiert!",
+    "edit": "Ändern",
+    "editTitle": "Verdeckten Wert ändern",
+    "save": "Speichern",
+    "gone": "Geheimnis gelöscht",
+    "unreadable": "Nicht lesbar"
   }
 }

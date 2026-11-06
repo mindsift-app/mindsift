@@ -89,7 +89,8 @@
     "extract": "Ramo come nota indipendente",
     "image": "Carica o collega immagini",
     "audio": "Nota vocale o file audio",
-    "dictation": "Parla invece di digitare"
+    "dictation": "Parla invece di digitare",
+    "secret": "Nascondi un valore (IP, token …)"
   },
   "block": {
     "expand": "Espandi sottopunti",
@@ -403,5 +404,21 @@
     "newNote": "Crea una nuova nota",
     "search": "In una nota esistente …",
     "none": "Nessuna nota corrispondente"
+  },
+  "secret": {
+    "newTitle": "Nascondi un valore",
+    "placeholder": "ad es. indirizzo IP o token",
+    "hint": "Salvato cifrato e mostrato solo dopo un tocco. Le chiavi API e MCP lo vedono solo nascosto.",
+    "create": "Nascondi",
+    "label": "Valore nascosto",
+    "reveal": "Mostra",
+    "hide": "Nascondi di nuovo",
+    "copy": "Copia",
+    "copied": "Copiato!",
+    "edit": "Modifica",
+    "editTitle": "Modifica valore nascosto",
+    "save": "Salva",
+    "gone": "Segreto eliminato",
+    "unreadable": "Illeggibile"
   }
 }

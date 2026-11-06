@@ -433,4 +433,10 @@ var messagesEN = map[string]string{
 	"Direkt eine neue Aufgabe anlegen":           "Create a new task right away",
 	"Einkaufsliste":                              "Shopping list",
 	"Einen Eintrag zur Einkaufsliste hinzufügen": "Add an item to the shopping list",
+	// Hidden values in notes
+	"Der Wert ist leer oder zu lang":              "The value is empty or too long",
+	"Geheimnis konnte nicht gespeichert werden":   "Could not save the hidden value",
+	"Geheimnis konnte nicht gelesen werden":       "Could not read the hidden value",
+	"Geheimnis konnte nicht entschlüsselt werden": "Could not decrypt the hidden value",
+	"Geheimnis nicht gefunden":                    "Hidden value not found",
 }

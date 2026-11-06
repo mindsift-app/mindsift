@@ -21,9 +21,9 @@ export const isOffline = () => typeof navigator !== 'undefined' && navigator.onL
 const DB_NAME = 'mindsift-offline';
 const STORE = 'responses';
 
-// Endpoints whose answers are worth keeping; streams, long polls, note sync, downloads and the OAuth
-// consent are not
-const NOT_CACHED = [/^\/api\/v1\/(events|ws)/, /\/changes/, /\/sync/, /^\/api\/v1\/export/, /^\/api\/v1\/search/, /^\/api\/v1\/oauth/];
+// Endpoints whose answers are worth keeping; streams, long polls, note sync, downloads, the OAuth
+// consent and revealed hidden values (they must never land on the device) are not
+const NOT_CACHED = [/^\/api\/v1\/(events|ws)/, /\/changes/, /\/sync/, /^\/api\/v1\/export/, /^\/api\/v1\/search/, /^\/api\/v1\/oauth/, /\/secrets(\/|$)/];
 
 export const isCacheablePath = (path: string) => path.startsWith('/api/v1/') && !NOT_CACHED.some((re) => re.test(path));
 

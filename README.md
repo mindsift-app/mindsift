@@ -6,7 +6,7 @@
 [![Self-Hosted](https://img.shields.io/badge/100%25-Self--Hosted-2563eb?style=flat-square)](#-quick-start)
 [![Docker](https://img.shields.io/badge/Deployment-Single%20Container-2496ed?style=flat-square&logo=docker&logoColor=white)](#-quick-start)
 [![License](https://img.shields.io/badge/License-AGPLv3-6b7280?style=flat-square)](LICENSE)
-[![Version](https://img.shields.io/badge/Version-v0.85.0-16a34a?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-v0.86.0-16a34a?style=flat-square)](CHANGELOG.md)
 
 **Dump a thought, sort it later, turn it into a task, a note or a shopping list, alone or together.**
 Self-hosted, one container, one SQLite file, your server.
@@ -72,7 +72,7 @@ List and board view with your own columns, priorities, due dates, subtasks, recu
 </p>
 
 ### 📝 Outliner notes, together, live
-Every thought is a bullet: indent, collapse, zoom in, drag whole branches. Wiki links (even to single bullets), hashtags, slash commands, code blocks, images, voice notes, live dictation and link previews. Several people write in the same note at the same time, without overwriting each other, and it keeps working offline and behind strict proxies.
+Every thought is a bullet: indent, collapse, zoom in, drag whole branches. Wiki links (even to single bullets), hashtags, slash commands, code blocks, images, voice notes, live dictation, link previews and hidden values (`/secret` for an IP or a token: stored encrypted, shown only on a tap, never to API keys or AI agents). Several people write in the same note at the same time, without overwriting each other, and it keeps working offline and behind strict proxies.
 
 <p align="center">
   <img src="screenshots/workspace_desktop.webp" alt="MindSift workspace: two people editing the same note" width="90%" />
@@ -166,6 +166,7 @@ The most important settings (all of them, with explanations, are in [`.env.examp
 | Variable | Default | What for |
 |---|---|---|
 | `JWT_SECRET` | generated (`/data/jwt.secret`) | Signing key for sign-in tokens; better set your own long random value |
+| `SECRETS_KEY` | generated (`/data/secrets.key`) | Key for hidden values in notes (`/secret`); set your own to keep it apart from the database. Never change it once values are stored |
 | `BASE_URL` | `http://localhost:8080` | Public URL; needed for password reset mails, OAuth for claude.ai/ChatGPT and links in mails |
 | `DEFAULT_LANGUAGE` | `de` (demo: `en`) | Default language (`de`, `en`, `es`, `fr`, `it`) until an admin or the setup wizard picks one; everyone can choose their own |
 | `TZ` | `Europe/Berlin` | Time zone for due dates and alarms |

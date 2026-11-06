@@ -199,6 +199,20 @@ export const workspaceApi = {
     await request(`/api/v1/documents/${id}`, { method: 'DELETE' });
   },
 
+  // --- HIDDEN VALUES ({{secret:id}} in a bullet; only a login can reveal them) ---
+  async createSecret(docId: string, value: string): Promise<{ id: string; ref: string }> {
+    return request(`/api/v1/documents/${docId}/secrets`, { method: 'POST', body: JSON.stringify({ value }) });
+  },
+
+  async revealSecret(docId: string, secretId: string): Promise<string> {
+    const res = await request<{ value: string }>(`/api/v1/documents/${docId}/secrets/${secretId}`);
+    return res.value;
+  },
+
+  async updateSecret(docId: string, secretId: string, value: string): Promise<void> {
+    await request(`/api/v1/documents/${docId}/secrets/${secretId}`, { method: 'PUT', body: JSON.stringify({ value }) });
+  },
+
   async getBacklinks(id: string): Promise<Backlink[]> {
     return request<Backlink[]>(`/api/v1/documents/${id}/backlinks`);
   },
