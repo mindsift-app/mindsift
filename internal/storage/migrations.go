@@ -41,6 +41,7 @@ var migrations = []migration{
 	{18, "Folders in the trash", (*Store).migrateFolderTrash},
 	{19, "Language per person", (*Store).migrateLanguage},
 	{20, "Usernames from display names", (*Store).migrateUsernames},
+	{21, "Voice input language per person", (*Store).migrateVoiceLanguage},
 }
 
 func (s *Store) migrate() error {

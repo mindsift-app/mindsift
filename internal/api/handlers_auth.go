@@ -544,6 +544,8 @@ func (s *Server) handleUpdateUserSettings(w http.ResponseWriter, r *http.Request
 		DoneRetentionDays *int `json:"doneRetentionDays"`
 		// Voice input: "" (Whisper server, the default) or "browser"
 		VoiceInput *string `json:"voiceInput"`
+		// Language voice input is recognized in: "", "auto" or a Whisper language (storage/voice_language.go)
+		VoiceLanguage *string `json:"voiceLanguage"`
 		// Language of the app: a supported code or "" (browser, then the server's default)
 		Language *string `json:"language"`
 		// All retention delays at once (storage/retention.go)
@@ -654,6 +656,12 @@ func (s *Server) handleUpdateUserSettings(w http.ResponseWriter, r *http.Request
 	}
 	if req.VoiceInput != nil {
 		if err := s.store.SetVoiceInput(userID, *req.VoiceInput); err != nil {
+			writeError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+	}
+	if req.VoiceLanguage != nil {
+		if err := s.store.SetVoiceLanguage(userID, *req.VoiceLanguage); err != nil {
 			writeError(w, http.StatusBadRequest, err.Error())
 			return
 		}
@@ -831,5 +839,6 @@ func (s *Server) fillUserPreferences(u *domain.User) {
 	u.RetentionNeverAllowed = allowNever
 	u.DoneRetentionDays = r.DoneTasks
 	u.VoiceInput = s.store.VoiceInput(u.ID)
+	u.VoiceLanguage = s.store.VoiceLanguage(u.ID)
 	u.Language = s.store.Language(u.ID)
 }

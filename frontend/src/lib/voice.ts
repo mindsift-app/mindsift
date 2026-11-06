@@ -7,6 +7,7 @@
 // forbids it (STT_ALLOW_BROWSER=false).
 import { api } from './api';
 import type { VoiceMode } from './types';
+import { voiceLanguageTag } from './voiceLanguages';
 
 export type EffectiveVoiceMode = VoiceMode | 'unsupported';
 
@@ -20,6 +21,7 @@ let loadedConfig: VoiceConfig | null = null;
 let serverMode: VoiceMode | undefined;
 let browserAllowed = true;
 let preference: '' | 'browser' = '';
+let spokenLanguage = '';
 
 /** Fired when the effective mode changes (the account setting was loaded or changed). */
 export const VOICE_CONFIG_EVENT = 'mindsift:voice-config';
@@ -38,6 +40,16 @@ export function setVoicePreference(next: '' | 'browser' | undefined): void {
     configPromise = Promise.resolve(loadedConfig);
   }
   if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent(VOICE_CONFIG_EVENT));
+}
+
+/** The account's language for voice input ('' = app language, 'auto' = Whisper detects it, else a code). */
+export function setVoiceLanguage(next: string | undefined): void {
+  spokenLanguage = next || '';
+}
+
+/** Language for the browser's recognition: the chosen one, else the app's (it cannot detect languages). */
+export function browserVoiceLanguage(appLocale: string): string {
+  return spokenLanguage && spokenLanguage !== 'auto' ? voiceLanguageTag(spokenLanguage) : appLocale;
 }
 
 /** Whether the account may choose between the Whisper server and the browser. */
@@ -92,6 +104,7 @@ export function resetVoiceConfig(): void {
   serverMode = undefined;
   browserAllowed = true;
   preference = '';
+  spokenLanguage = '';
 }
 
 // Containers in order of preference; Safari only records MP4/AAC

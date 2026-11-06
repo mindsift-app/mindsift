@@ -6,6 +6,14 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.84.0] - 2026-11-06
+
+### Added
+- Account settings → Voice input: choose the language you speak into the microphone. The app language is the default; you can pick any of Whisper's roughly 100 languages, also ones the app is not translated into, or "detect automatically" for people who switch between languages (with the Whisper server). The browser's speech recognition uses the chosen language too. The section now appears whenever voice input is available, not only when you can choose between Whisper and the browser.
+
+### Removed
+- **Attention:** the environment variable `STT_LANGUAGE` is gone; the language now comes from each person's settings (by default their app language). A value left in `.env` is ignored.
+
 ## [0.83.12] - 2026-11-06
 
 ### Fixed
