@@ -6,7 +6,7 @@
 [![Self-Hosted](https://img.shields.io/badge/100%25-Self--Hosted-2563eb?style=flat-square)](#-quick-start)
 [![Docker](https://img.shields.io/badge/Deployment-Single%20Container-2496ed?style=flat-square&logo=docker&logoColor=white)](#-quick-start)
 [![License](https://img.shields.io/badge/License-AGPLv3-6b7280?style=flat-square)](LICENSE)
-[![Version](https://img.shields.io/badge/Version-v0.83.8-16a34a?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-v0.83.9-16a34a?style=flat-square)](CHANGELOG.md)
 
 **Dump a thought, sort it later, turn it into a task, a note or a shopping list, alone or together.**
 Self-hosted, one container, one SQLite file, your server.
@@ -199,7 +199,12 @@ All data lives in one SQLite file, so a single server is the intended setup; the
 
 ## 🛡️ Security scan
 
-The released image is scanned with [Trivy](https://trivy.dev) for known vulnerabilities, leaked secrets and misconfigurations. Last scan: **v0.83.8, 2026-11-06, Trivy 0.76.0**.
+The image is scanned with [Trivy](https://trivy.dev) for known vulnerabilities, leaked secrets and misconfigurations:
+
+* **every tagged release** (`:stable`, `:vx.y.z`) before it is published, and every build that changes the base image, the Go version or the Go modules: a known high or critical vulnerability that already has a fix, or a leaked secret, stops the release;
+* **the published `:stable` and `:latest` every week**, because new vulnerabilities become known after a release.
+
+Last manual scan: **v0.83.8, 2026-11-06, Trivy 0.76.0**.
 
 | Part of the image | Critical | High | Medium | Low | Unrated |
 |---|---|---|---|---|---|

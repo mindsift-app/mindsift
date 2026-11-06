@@ -62,7 +62,9 @@ FROM alpine:3.24
 # The code state the image was built from (CI: decides whether a later build may skip the tests)
 ARG GIT_SHA=""
 ARG GIT_TREE=""
-LABEL org.opencontainers.image.revision="${GIT_SHA}" io.mindsift.tree="${GIT_TREE}"
+# Hash of Dockerfile, go.mod and go.sum (CI: decides whether a later build needs a security scan)
+ARG GIT_DEPS=""
+LABEL org.opencontainers.image.revision="${GIT_SHA}" io.mindsift.tree="${GIT_TREE}" io.mindsift.deps="${GIT_DEPS}"
 RUN apk add --no-cache ca-certificates tzdata && \
     mkdir -p /data /tmp && \
     chmod 1777 /tmp

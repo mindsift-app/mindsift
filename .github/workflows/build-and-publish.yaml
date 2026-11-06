@@ -7,6 +7,8 @@ name: MindSift CI & Docker Release
 #   git tag v1.2.0-rc.1 (pre-release) -> :v1.2.0-rc.1 only, :stable stays
 # Same build plan as the private Gitea pipeline (ci/build-plan.sh): tests run once per code state, main
 # skips them when :dev was built from the same code, a tag on the commit of :latest only retags it.
+# Trivy (ci/trivy-scan.sh) checks every tag before it is pushed, branches only when Dockerfile, go.mod or
+# go.sum changed; .github/workflows/security-scan.yaml checks :stable and :latest every week.
 on:
   push:
     branches:
@@ -50,6 +52,7 @@ jobs:
           if [ "${{ steps.plan.outputs.action }}" = "retag" ]; then
             SOURCE="${{ steps.plan.outputs.source_image }}"
             docker pull "${SOURCE}"
+            if [ "${{ steps.plan.outputs.scan }}" = "1" ]; then ci/trivy-scan.sh "${SOURCE}"; fi
             for t in ${TAGS}; do
               docker tag "${SOURCE}" "${IMAGE}:${t}"
               docker push "${IMAGE}:${t}"
@@ -63,7 +66,10 @@ jobs:
               --build-arg SKIP_TESTS="${{ steps.plan.outputs.skip_tests }}" \
               --build-arg GIT_SHA="${{ steps.plan.outputs.sha }}" \
               --build-arg GIT_TREE="${{ steps.plan.outputs.tree }}" \
+              --build-arg GIT_DEPS="${{ steps.plan.outputs.deps }}" \
               --label "org.opencontainers.image.source=https://github.com/${GITHUB_REPOSITORY}" \
               ${TAG_ARGS} .
+            # Security scan before anything is pushed (tags always, branches when the dependencies changed)
+            if [ "${{ steps.plan.outputs.scan }}" = "1" ]; then ci/trivy-scan.sh "${IMAGE}:${TAGS%% *}"; fi
             for t in ${TAGS}; do docker push "${IMAGE}:${t}"; done
           fi
