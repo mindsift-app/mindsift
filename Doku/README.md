@@ -34,7 +34,7 @@ Reference for developers and administrators. All information has been verified a
 ## Development
 
 ```bash
-# Backend (Go 1.23)
+# Backend (Go 1.27)
 go vet ./... && go test ./...
 
 # Frontend (Node 22)

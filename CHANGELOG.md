@@ -6,6 +6,14 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.83.7] - 2026-11-06
+
+### Fixed
+- Security: the server is now built with Go 1.27.3 and current versions of `golang.org/x/crypto`, `golang-jwt/jwt`, `go-chi/chi` and `golang.org/x/sys`. This closes all 84 known vulnerabilities Trivy reported in the v0.83.6 image (1 critical, 38 high), most of them in Go's HTTP, HTTP/2 and TLS code. The image build now takes the module versions from `go.mod`/`go.sum` instead of fixed older ones.
+
+### Added
+- The README shows the latest Trivy scan of the image and how to run it yourself.
+
 ## [0.83.6] - 2026-11-06
 
 ### Fixed
