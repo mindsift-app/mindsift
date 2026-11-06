@@ -1,6 +1,6 @@
 services:
   mindsift:
-    image: ghcr.io/mindsift-app/mindsift:latest
+    image: ghcr.io/mindsift-app/mindsift:stable
     container_name: mindsift
     restart: unless-stopped
     ports:

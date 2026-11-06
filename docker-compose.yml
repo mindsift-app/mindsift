@@ -3,7 +3,7 @@
 # .env.example (copy it: cp .env.example .env). This file only maps them, with defaults.
 services:
   mindsift:
-    image: ghcr.io/mindsift-app/mindsift:latest
+    image: ghcr.io/mindsift-app/mindsift:stable
     container_name: mindsift
     restart: unless-stopped
     ports:

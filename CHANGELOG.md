@@ -6,6 +6,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.83.11] - 2026-11-06
+
+### Changed
+- `docker-compose.yml` and the install script use the image `:stable` (the latest tagged release, scanned before it is published) instead of `:latest` (every release from `main`). Existing installations keep their tag; to switch, change `:latest` to `:stable` in `docker-compose.yml` or run the install script again.
+- The README explains which speech models work (any Whisper model in CTranslate2 format, also ones fine-tuned for one language) and links the list of them; it also mentions the Trivy scan of every tagged release at the top.
+
 ## [0.83.10] - 2026-11-06
 
 ### Added
