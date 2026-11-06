@@ -1,0 +1,45 @@
+name: GitHub Release
+
+# Creates the release page of a version tag, with its CHANGELOG section as text (ci/release-notes.sh).
+# Called by build-and-publish.yaml once the images of a tag are pushed; by hand ("Run workflow") for a tag
+# that has no release yet, or to refresh the text of an existing one. It runs with the workflow token, so
+# the release shows github-actions[bot] as author, not a person. Tags with "-" become pre-releases.
+on:
+  workflow_call:
+    inputs:
+      tag:
+        type: string
+        required: true
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing tag, e.g. v1.2.0'
+        type: string
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Release ${{ inputs.tag }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Tag
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag }}
+
+      - name: Create or Update Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          ci/release-notes.sh "${TAG}" > notes.md
+          if gh release view "${TAG}" >/dev/null 2>&1; then
+            gh release edit "${TAG}" --title "MindSift ${TAG}" --notes-file notes.md
+          elif [[ "${TAG}" == *-* ]]; then
+            gh release create "${TAG}" --verify-tag --title "MindSift ${TAG}" --notes-file notes.md --prerelease
+          else
+            gh release create "${TAG}" --verify-tag --title "MindSift ${TAG}" --notes-file notes.md --latest
+          fi
