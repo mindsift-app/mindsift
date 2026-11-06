@@ -15,11 +15,14 @@ export type TagGroup = {
   matchedBlocks: { rootBlock: DocumentBlock; children: DocumentBlock[] }[];
 };
 
-// Every to-do with text of all notes ("Hauptebene" for notes outside folders), optionally of one folder only
+// Group key of notes outside folders (shown as rollup.root in the person's language)
+export const ROOT_FOLDER_KEY = 'Hauptebene';
+
+// Every to-do with text of all notes (ROOT_FOLDER_KEY for notes outside folders), optionally of one folder only
 export function collectRollupTodos(docs: Document[], todoFolderDrilldown: string | null): RollupTodo[] {
   const list: RollupTodo[] = [];
   for (const d of docs) {
-    const fName = d.folderPath || 'Hauptebene';
+    const fName = d.folderPath || ROOT_FOLDER_KEY;
     if (todoFolderDrilldown && fName !== todoFolderDrilldown) continue;
     for (const b of d.blocks || []) {
       if (b.type === 'todo' && b.content.trim() !== '') {
@@ -33,7 +36,7 @@ export function collectRollupTodos(docs: Document[], todoFolderDrilldown: string
 export function groupRollupTodosByFolder(allRollupTodos: RollupTodo[]): Map<string, RollupTodo[]> {
   const map = new Map<string, RollupTodo[]>();
   for (const item of allRollupTodos) {
-    const fName = item.doc.folderPath || 'Hauptebene';
+    const fName = item.doc.folderPath || ROOT_FOLDER_KEY;
     const arr = map.get(fName) || [];
     arr.push(item);
     map.set(fName, arr);

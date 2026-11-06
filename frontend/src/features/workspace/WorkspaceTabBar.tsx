@@ -113,7 +113,7 @@ export function WorkspaceTabBar({
         >
           <Check className="w-3.5 h-3.5 text-status-ok" />
           <span className="inline-flex items-center">
-            To-Dos
+            {t('tabbar.todos')}
             <CountBadge count={totalOpenTodos} position="text" />
           </span>
         </button>

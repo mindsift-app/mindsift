@@ -156,7 +156,8 @@
     "liveLongPoll": "Live (long polling)",
     "interval": "Sync every 3 s",
     "live": "Live",
-    "shared": "Shared"
+    "shared": "Shared",
+    "todos": "To-dos"
   },
   "rollup": {
     "intro": "All to-dos from your notes across the whole workspace",
@@ -172,7 +173,8 @@
     "title": "To-dos from notes ({{count}} open)",
     "open": "{{count}} open",
     "grouped": "Grouped",
-    "list": "List"
+    "list": "List",
+    "root": "Top level"
   },
   "emoji": {
     "suggested": "Recently used",

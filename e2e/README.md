@@ -74,4 +74,4 @@ The owner types with a normal connection, the editor sits behind a simulated pro
 
 ## Demo tour for a screen recording
 
-`e2e/video-tour.sh` clicks through the demo in a visible Chrome app window (triage, tasks, shopping list, zoom into a note, a linked subtask, the to-do overview) with a drawn pointer and typing at human speed, for a YouTube video. Against a fresh local demo by default; `BASE=https://demo.mindsift.app` uses the public one, `PACE=1.5` slows it down, `SIZE=1920,1080` sets the window, `START_DELAY` gives time to start the recorder.
+`e2e/video-tour.sh` clicks through the demo in a visible Chrome app window (triage, tasks, shopping list, zoom into a note, a linked subtask, the to-do overview) with a drawn pointer and typing at human speed, for a YouTube video. Against a fresh local demo by default; `BASE=https://demo.mindsift.app` uses the public one. It speaks the demo's language (English by default, `TOUR_LANG=de` for the German demo data), `PACE=1.5` slows it down, `SIZE=1920,1080` sets the window, `START_DELAY` gives time to start the recorder.

@@ -2,6 +2,7 @@ import React from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import { Check, ChevronDown, ChevronRight, ExternalLink, Folder, Sparkles } from 'lucide-react';
 import { Document } from '../../lib/types';
+import { ROOT_FOLDER_KEY } from './workspaceListing';
 
 // One to-do of a note in the collection
 export type RollupTodo = { doc: Document; blockId: string; content: string; checked: boolean };
@@ -96,7 +97,7 @@ export function TodoRollupView({
         {todoFolderDrilldown && (
           <div className="flex items-center justify-between p-2 rounded-btn bg-accent/10 border border-accent text-xs">
             <span>
-              {t('rollup.filteredBy')} <strong>{todoFolderDrilldown}</strong>
+              {t('rollup.filteredBy')} <strong>{todoFolderDrilldown === ROOT_FOLDER_KEY ? t('rollup.root') : todoFolderDrilldown}</strong>
             </span>
             <button
               type="button"
@@ -214,7 +215,7 @@ export function TodoRollupView({
                         <ChevronDown className="w-3.5 h-3.5 text-accent" />
                       )}
                       <Folder className="w-3.5 h-3.5 text-accent" />
-                      <span className="font-bold text-xs text-main">{folderName}</span>
+                      <span className="font-bold text-xs text-main">{folderName === ROOT_FOLDER_KEY ? t('rollup.root') : folderName}</span>
                       <span className="badge-neutral text-[10px] font-mono">
                         {t('rollup.open', { count: openCount })}
                       </span>

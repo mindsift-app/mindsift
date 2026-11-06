@@ -156,7 +156,8 @@
     "liveLongPoll": "Live (long polling)",
     "interval": "Aggiornamento ogni 3 s",
     "live": "Live",
-    "shared": "Condiviso"
+    "shared": "Condiviso",
+    "todos": "Da fare"
   },
   "rollup": {
     "intro": "Tutte le attività presenti nelle note dell'intero Workspace",
@@ -172,7 +173,8 @@
     "title": "To-do dalle note ({{count}} da fare)",
     "open": "{{count}} da fare",
     "grouped": "Raggruppate",
-    "list": "Elenco"
+    "list": "Elenco",
+    "root": "Livello principale"
   },
   "emoji": {
     "suggested": "Recenti",
