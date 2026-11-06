@@ -474,7 +474,8 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
 
   const adjustHeight = useCallback(() => {
     const el = textareaRef.current;
-    if (!el) return;
+    // The code editor sizes its field itself (room for the horizontal scrollbar)
+    if (!el || el.dataset.ownHeight) return;
     el.style.height = 'auto';
     el.style.height = `${Math.max(22, el.scrollHeight)}px`;
   }, []);
