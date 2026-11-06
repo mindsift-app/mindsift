@@ -133,11 +133,6 @@ else
   if [ "${WHISPER}" = "1" ]; then
     set_env STT_URL "http://whisper:8000"
     set_env STT_MODEL "${STT_MODEL}"
-    # Recognition language from the server's locale; unknown ones are detected automatically
-    case "${LANG:-}" in
-      de* | en* | es* | fr* | it*) set_env STT_LANGUAGE "${LANG:0:2}" ;;
-      *) set_env STT_LANGUAGE "auto" ;;
-    esac
   fi
 
   # Additions to docker-compose.yml; that file is replaced on updates, this one stays

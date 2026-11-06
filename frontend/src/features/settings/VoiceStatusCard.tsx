@@ -126,7 +126,7 @@ export const VoiceStatusCard: React.FC = () => {
               <dt className="text-muted">{t('voiceStatus.model')}</dt>
               <dd className="text-main font-mono break-all">{info.model}</dd>
               <dt className="text-muted">{t('voiceStatus.language')}</dt>
-              <dd className="text-main">{info.language || t('voiceStatus.auto')}</dd>
+              <dd className="text-main">{info.language === 'auto' ? t('voiceStatus.auto') : info.language || t('voiceStatus.perPerson')}</dd>
             </>
           )}
           {info.mode === 'server' && (
