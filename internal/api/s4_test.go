@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/mindsift-app/mindsift/internal/config"
 	"github.com/mindsift-app/mindsift/internal/storage"
@@ -111,5 +112,41 @@ func TestDeletedAccountLosesServerBackups(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(storage.UserBackupDir(root, stays.ID), "backup.zip")); err != nil {
 		t.Fatalf("other accounts' backups must stay: %v", err)
+	}
+}
+
+// An account deleted by an admin keeps its backups for the backup retention period (a mistake can be
+// undone); one its owner deleted loses them at once.
+func TestDeletedAccountBackupsAreKept(t *testing.T) {
+	srv, store, token := setupTestServer(t)
+	root := srv.backupRoot()
+	gone, _ := newTestUser(t, store, "gone@example.com")
+	dir := storage.UserBackupDir(root, gone.ID)
+	_ = os.MkdirAll(dir, 0o755)
+	const name = "mindsift-backup-2026-11-06-0300.zip"
+	_ = os.WriteFile(filepath.Join(dir, name), []byte("x"), 0o600)
+	if rec := sessionCall(srv.Router(), "DELETE", "/api/v1/admin/users/"+gone.ID, token, "", ""); rec.Code != http.StatusOK {
+		t.Fatalf("delete user: %d %s", rec.Code, rec.Body.String())
+	}
+	if _, err := os.Stat(dir); !os.IsNotExist(err) {
+		t.Fatalf("the account's own backup folder should be moved aside: %v", err)
+	}
+	rec := sessionCall(srv.Router(), "GET", "/api/v1/admin/backups/deleted", token, "", "")
+	var kept []deletedAccountBackups
+	_ = json.Unmarshal(rec.Body.Bytes(), &kept)
+	if len(kept) != 1 || kept[0].UserID != gone.ID || kept[0].Email != "gone@example.com" || len(kept[0].Files) != 1 {
+		t.Fatalf("kept backups: %s", rec.Body.String())
+	}
+	if rec := sessionCall(srv.Router(), "GET", "/api/v1/admin/backups/deleted/"+gone.ID+"/"+name, token, "", ""); rec.Code != http.StatusOK {
+		t.Fatalf("download kept backup: %d", rec.Code)
+	}
+	if rec := sessionCall(srv.Router(), "GET", "/api/v1/admin/backups/deleted/"+gone.ID+"/..%2F..%2Fmindsift.db", token, "", ""); rec.Code != http.StatusNotFound {
+		t.Fatalf("only backup files can be downloaded: %d", rec.Code)
+	}
+
+	// Past the retention period the sweep removes them
+	srv.runDeletedBackupSweep(time.Now().Add(time.Duration(srv.backupKeepDays()+1) * 24 * time.Hour))
+	if _, err := os.Stat(srv.deletedBackupDir(gone.ID)); !os.IsNotExist(err) {
+		t.Fatalf("expired backups of the deleted account must be gone: %v", err)
 	}
 }

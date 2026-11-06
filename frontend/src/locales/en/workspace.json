@@ -420,5 +420,26 @@
     "save": "Save",
     "gone": "Secret deleted",
     "unreadable": "Unreadable"
+  },
+  "publicLink": {
+    "title": "Public link",
+    "hint": "Anyone with the link can read the note, even without an account. The link always expires and stays out of search engines.",
+    "duration": "Valid for",
+    "for": {
+      "1": "1 hour",
+      "24": "1 day",
+      "72": "3 days",
+      "168": "7 days",
+      "336": "14 days"
+    },
+    "passwordOptional": "Password (optional)",
+    "create": "Create link",
+    "replace": "Create new link",
+    "copy": "Copy",
+    "copied": "Copied",
+    "expires": "Valid until {{date}}",
+    "withPassword": "with password",
+    "new": "New link",
+    "revoke": "Revoke"
   }
 }

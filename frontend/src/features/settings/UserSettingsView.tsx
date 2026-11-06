@@ -100,10 +100,7 @@ export const UserSettingsView: React.FC<UserSettingsViewProps> = ({
   const alarms = useAlarmSettings(currentUser, onUserUpdated);
 
 
-  const roleBadgeLabel =
-    currentUser.role === 'admin'
-      ? t('common:role.admin')
-      : t('common:role.member');
+  const roleBadgeLabel = t(`common:role.${currentUser.role}`);
 
   return (
     <div className="w-full space-y-4">

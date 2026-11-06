@@ -2,6 +2,8 @@ import { useCallback, useMemo, useState } from 'react';
 import { DocShare, Document, SharedFolder, Team, UnifiedShare, User } from '../../lib/types';
 import { api } from '../../lib/api';
 import { UnifiedShareModal } from '../../components/UnifiedShareModal';
+import { PublicLinkSection } from './PublicLinkSection';
+import i18n from '../../i18n';
 
 // Sharing dialog of the workspace: the note or shared folder being shared, its shares, and the teams and
 // people that can be added
@@ -52,7 +54,7 @@ export function useShareModal() {
         id: s.userId || s.teamId || s.id,
         targetType: s.targetType || (s.teamId ? 'team' : 'user'),
         targetId: s.targetId || s.teamId || s.userId || '',
-        targetName: s.targetName || s.displayName || s.userEmail || 'Mitglied',
+        targetName: s.targetName || s.displayName || s.userEmail || i18n.t('common:role.member'),
         targetEmail: s.userEmail,
         permission: s.permission === 'write' ? 'editor' : 'viewer',
         createdAt: s.createdAt,
@@ -63,7 +65,7 @@ export function useShareModal() {
         id: s.id,
         targetType: s.targetType,
         targetId: s.targetId,
-        targetName: s.targetName || s.email || 'Mitglied',
+        targetName: s.targetName || s.email || i18n.t('common:role.member'),
         targetEmail: s.email,
         permission: s.permission === 'write' ? 'editor' : 'viewer',
         createdAt: s.createdAt,
@@ -98,6 +100,9 @@ export function WorkspaceShareModal({
 }) {
   const { shareModalDoc, setShareModalDoc, shareModalFolder, setShareModalFolder, setActiveDocShares, teams, collaborators, unifiedShares } = share;
   if (!shareModalDoc && !shareModalFolder) return null;
+  const isOwner = shareModalDoc
+    ? Boolean(shareModalDoc.isOwner || shareModalDoc.permission === 'owner')
+    : Boolean(shareModalFolder?.isOwner);
   return (
     <UnifiedShareModal
       isOpen={true}
@@ -107,11 +112,8 @@ export function WorkspaceShareModal({
       }}
       resourceName={shareModalDoc ? shareModalDoc.title : shareModalFolder?.name || ''}
       resourceIcon={shareModalDoc ? shareModalDoc.icon : '📁'}
-      isOwner={
-        shareModalDoc
-          ? (shareModalDoc.isOwner || shareModalDoc.permission === 'owner')
-          : Boolean(shareModalFolder?.isOwner)
-      }
+      isOwner={isOwner}
+      extraSection={shareModalDoc && isOwner ? <PublicLinkSection docId={shareModalDoc.id} /> : undefined}
       currentUserId={currentUser?.id}
       shares={unifiedShares}
       teams={teams}

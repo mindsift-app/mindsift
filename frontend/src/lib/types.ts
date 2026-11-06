@@ -2,7 +2,9 @@ import i18n from '../i18n';
 
 export type ThoughtStatus = 'inbox' | 'kept' | 'discarded' | 'converted';
 export type PriorityLevel = 'low' | 'normal' | 'high' | 'urgent';
-export type UserRole = 'admin' | 'member';
+// Server roles: admin runs everything, manager ("Benutzerverwaltung") looks after members, invites and
+// organizations, member is everyone else
+export type UserRole = 'admin' | 'manager' | 'member';
 
 export type RegistrationMode = 'closed' | 'approval' | 'domain' | 'domain+approval' | 'open';
 
@@ -40,6 +42,11 @@ export interface AuthStatus {
   };
   // Voice input: own Whisper server, the browser's recognition, or switched off (STT_* environment)
   voice?: { mode: VoiceMode; maxSeconds: number; browserAllowed?: boolean };
+  // Sharing: names are suggested while typing (else exact e-mail or username); notes can be shared by
+  // public link, for at most publicLinkMaxDays
+  peopleSearch?: boolean;
+  publicLinks?: boolean;
+  publicLinkMaxDays?: number;
 }
 
 export type VoiceMode = 'server' | 'browser' | 'off';
@@ -130,7 +137,13 @@ export interface User {
   // How long finished and deleted things are kept, in days (0 = for good; only when allowed)
   retention?: Retention;
   retentionNeverAllowed?: boolean;
-  organizationId?: string;
+  // Organizations the person belongs to (admin user list)
+  organizationIds?: string[];
+  // Own organizations with names (own profile, to pick one for a new group)
+  organizations?: { id: string; name: string }[];
+  // In the directory: the viewer may share with this person (others only show by name, because they work
+  // on something together with the viewer)
+  findable?: boolean;
   createdAt: string;
 }
 
@@ -138,9 +151,11 @@ export interface UserInvite {
   id: string;
   code: string;
   email?: string;
+  // Always member: invites never make admins
   role: UserRole;
-  organizationId?: string;
-  organizationName?: string;
+  // Organizations the new account joins
+  organizationIds?: string[];
+  organizationNames?: string[];
   createdBy: string;
   usedBy?: string;
   createdAt: string;
@@ -266,7 +281,7 @@ export interface TaskList {
   updatedAt: string;
 }
 
-// Defined by server admins; every user belongs to at most one
+// Defined by server admins and user managers; a person can belong to several
 export interface Organization {
   id: string;
   name: string;
@@ -326,6 +341,14 @@ export interface SystemSettings {
   // AI agents may connect over MCP (and claude.ai / ChatGPT over OAuth); fixed when set via MCP_ENABLED
   mcpEnabled?: boolean;
   mcpConfiguredViaEnv?: boolean;
+  // Sharing: suggest names while typing; notes by public link and for how long at most (days, 1–14);
+  // *ConfiguredViaEnv: fixed by PEOPLE_SEARCH / PUBLIC_LINKS / PUBLIC_LINKS_MAX_DAYS
+  peopleSearch?: boolean;
+  peopleSearchConfiguredViaEnv?: boolean;
+  publicLinks?: boolean;
+  publicLinksConfiguredViaEnv?: boolean;
+  publicLinkMaxDays?: number;
+  publicLinkMaxDaysConfiguredViaEnv?: boolean;
   // Language for new accounts and everyone whose browser language the app does not speak
   defaultLanguage?: string;
 }
@@ -778,4 +801,21 @@ export interface MergeResult {
   sourceId: string;
   sourceTitle: string;
   headingId: string;
+}
+
+// A note's public link as its owner sees it (GET/PUT /documents/{id}/public-link)
+export interface PublicLinkState {
+  enabled: boolean;
+  maxDays: number;
+  link: { token: string; expiresAt: string; hasPassword: boolean } | null;
+}
+
+// Backups of an account an admin or user manager deleted, kept until removeAt
+export interface DeletedAccountBackups {
+  userId: string;
+  displayName: string;
+  email: string;
+  deletedAt: string;
+  removeAt: string;
+  files: BackupFile[];
 }

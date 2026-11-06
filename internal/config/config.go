@@ -68,6 +68,13 @@ type Config struct {
 	// MCPEnabled: MCP_ENABLED=true/false fixes whether the MCP endpoint (and OAuth for connectors) is on;
 	// unset (nil) leaves it to the system settings
 	MCPEnabled *bool
+	// PeopleSearch: PEOPLE_SEARCH=true/false fixes whether names are suggested when sharing; PublicLinks:
+	// PUBLIC_LINKS=true/false fixes whether notes may be shared by public link (false forbids it outright);
+	// PublicLinkMaxDays: PUBLIC_LINKS_MAX_DAYS (1–14) fixes how long such a link may live. Unset leaves
+	// each to the system settings.
+	PeopleSearch      *bool
+	PublicLinks       *bool
+	PublicLinkMaxDays int
 	// DefaultLanguage: DEFAULT_LANGUAGE gives the server's default language until the admin picks one in
 	// the system settings (unsupported or unset: German; English in demo mode)
 	DefaultLanguage string
@@ -304,6 +311,9 @@ func Load() *Config {
 		TrustedProxies:          getEnv("TRUSTED_PROXIES", "private"),
 		RetentionAllowNever:     envBoolPtr("RETENTION_ALLOW_NEVER"),
 		MCPEnabled:              envBoolPtr("MCP_ENABLED"),
+		PeopleSearch:            envBoolPtr("PEOPLE_SEARCH"),
+		PublicLinks:             envBoolPtr("PUBLIC_LINKS"),
+		PublicLinkMaxDays:       publicLinkMaxDaysFromEnv(),
 		DefaultLanguage:         defaultLanguage(demoMode),
 		DisableLoginProtection:  strings.ToLower(getEnv("LOGIN_PROTECTION", "true")) == "false",
 		OAuthIdleDays:           envInt("OAUTH_IDLE_DAYS", 90, 0, 36500),
@@ -422,6 +432,23 @@ func boolEnvOrEmpty(key string) string {
 }
 
 // envBoolPtr reads true/false; nil when unset or anything else.
+// publicLinkMaxDaysFromEnv reads PUBLIC_LINKS_MAX_DAYS; outside 1–14 (or unset) it is 0, meaning the
+// system settings decide.
+func publicLinkMaxDaysFromEnv() int {
+	n, err := strconv.Atoi(strings.TrimSpace(os.Getenv("PUBLIC_LINKS_MAX_DAYS")))
+	if err != nil || n < 1 {
+		return 0
+	}
+	if n > MaxPublicLinkDays {
+		return MaxPublicLinkDays
+	}
+	return n
+}
+
+// MaxPublicLinkDays is the hard limit for public links (storage.MaxPublicLinkDays): there is no link
+// that lives for good.
+const MaxPublicLinkDays = 14
+
 func envBoolPtr(key string) *bool {
 	switch strings.ToLower(strings.TrimSpace(os.Getenv(key))) {
 	case "true", "1", "yes":

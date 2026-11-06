@@ -516,20 +516,23 @@ const it: HelpContent = {
       id: 'collab-teams-sharing',
       category: 'collaboration',
       title: 'Organizzazioni, gruppi e condivisioni',
-      subtitle: 'Chi vede chi, e condivisione sicura di note, cartelle e liste',
+      subtitle: 'Chi può condividere con chi, e condivisione sicura di note, cartelle e liste',
       icon: Users,
-      keywords: ['team', 'gruppi', 'organizzazione', 'visibilità', 'privato', 'condividi', 'condivisione', 'permessi', 'editor', 'lettore', 'cartelle'],
+      keywords: ['team', 'gruppi', 'organizzazione', 'visibilità', 'privato', 'condividi', 'condivisione', 'permessi', 'editor', 'lettore', 'cartelle', 'pubblico', 'link'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
           <ul className="space-y-1.5">
             <li>
-              <strong className="text-main">Chi vede chi:</strong> lo decide l'amministratore del server. A seconda della configurazione vedi tutti gli utenti, solo i membri della tua <em>organizzazione</em> o nessuno (modalità «Privato»: nessuna condivisione, nessun gruppo). Solo l'amministratore gestisce le organizzazioni; ciascuno appartiene al massimo a una.
+              <strong className="text-main">Chi può condividere con chi:</strong> lo decide l'amministratore del server: con tutti, solo con le persone con cui hai almeno un'<em>organizzazione</em> in comune, o con nessuno (modalità «Privato»: nessuna condivisione, nessun gruppo). Puoi appartenere a più organizzazioni; le gestiscono gli amministratori e la gestione utenti. Se la ricerca persone è disattivata, durante la condivisione inserisci l'indirizzo e-mail o il nome utente esatti. Chi lavora con te a qualcosa compare sempre lì con il nome.
             </li>
             <li>
               <strong className="text-main">Gruppi:</strong> raggruppa le persone visibili in gruppi (es. famiglia, coinquilini, progetto) e condividi con tutti in una volta sola. Chi crea un gruppo ne è amministratore; solo i membri possono condividere con un gruppo.
             </li>
             <li>
-              <strong className="text-main">Solo il proprietario condivide:</strong> gli editor possono modificare i contenuti ma non condividerli ulteriormente. Puoi abbandonare una condivisione ricevuta in qualsiasi momento. Se qualcuno cambia organizzazione o lascia un gruppo, le relative condivisioni terminano automaticamente.
+              <strong className="text-main">Solo il proprietario condivide:</strong> gli editor possono modificare i contenuti ma non condividerli ulteriormente. Puoi abbandonare una condivisione ricevuta in qualsiasi momento. Se qualcuno lascia un'organizzazione o un gruppo, le condivisioni consentite solo tramite essi terminano automaticamente.
+            </li>
+            <li>
+              <strong className="text-main">Link pubblico:</strong> nella finestra di condivisione puoi condividere una tua nota in sola lettura tramite link, anche con persone senza account, eventualmente con password. Il link scade sempre (da 1 ora a 14 giorni), si può revocare in qualsiasi momento e non finisce nei motori di ricerca. I visitatori vedono le modifiche in tempo reale, ma né valori nascosti né nomi. Se è disponibile lo decide l'amministratore del server.
             </li>
             <li>
               <strong className="text-main">Ruoli (editor vs. lettore):</strong> quando condividi note, cartelle o liste puoi scegliere tra <em>Editor</em> (accesso completo ai contenuti e alle caselle di controllo) e <em>Sola lettura</em> (sola visualizzazione con aggiornamenti in tempo reale).

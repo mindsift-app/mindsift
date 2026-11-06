@@ -1,0 +1,15 @@
+{
+  "untitled": "Sin título",
+  "footer": "Compartido públicamente con MindSift · solo lectura · el enlace caduca el {{date}}",
+  "wrongPassword": "Contraseña incorrecta",
+  "gone": {
+    "title": "Este enlace ya no es válido",
+    "text": "Ha caducado o se ha retirado. Pide uno nuevo a la persona que lo compartió."
+  },
+  "locked": {
+    "title": "Nota protegida",
+    "text": "Esta nota está protegida con contraseña.",
+    "placeholder": "Contraseña",
+    "open": "Abrir"
+  }
+}

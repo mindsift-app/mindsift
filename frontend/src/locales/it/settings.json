@@ -465,7 +465,8 @@
       "roleMember": "Membro (predefinito)",
       "roleAdmin": "Amministratore server (accesso completo)",
       "submit": "Crea utente ora",
-      "failed": "Creazione dell'utente non riuscita"
+      "failed": "Creazione dell'utente non riuscita",
+      "roleManager": "Gestione utenti (account e organizzazioni)"
     },
     "organization": "Organizzazione",
     "noOrganization": "Nessuna organizzazione",
@@ -497,7 +498,8 @@
       "mailFailed": "Impossibile inviare l'invito",
       "linkCreated_one": "Link di invito per {{count}} persona creato ({{code}}).",
       "linkCreated_other": "Link di invito per {{count}} persone creato ({{code}}).",
-      "codeCreated": "Codice invito {{code}} creato."
+      "codeCreated": "Codice invito {{code}} creato.",
+      "alwaysMember": "Con un invito tutti entrano come membri; i ruoli si assegnano poi nell’elenco."
     },
     "roleMember": "Membro",
     "roleAdmin": "Amministratore server",
@@ -505,7 +507,7 @@
     "approve": "Approva",
     "reject": "Rifiuta",
     "locked": "Bloccato",
-    "noOrgWarning": "· nessuna organizzazione, non vede nessuno",
+    "noOrgWarning": "senza organizzazione, non può condividere con nessuno",
     "changeRole": "Modifica ruolo utente",
     "password": "Password",
     "delete": "Elimina utente",
@@ -524,27 +526,31 @@
     "confirmDelete": "Vuoi davvero eliminare definitivamente l'utente \"{{name}}\" ({{email}})?",
     "username": "Nome utente",
     "usernameChanged": "Il nome utente di {{name}} ora è «{{username}}».",
-    "notSelf": "Non disponibile per il tuo account"
+    "notSelf": "Non disponibile per il tuo account",
+    "organizations": "Organizzazioni",
+    "roleManager": "Gestione utenti",
+    "passwordAdminOnly": "Solo gli amministratori del server impostano le password (altrimenti «password dimenticata»)",
+    "adminOnly": "Solo gli amministratori del server possono modificare questo account"
   },
   "sharing": {
     "private": {
-      "title": "1. Privato (nessuno vede gli altri)",
-      "text": "Ognuno lavora da solo. Nessuna ricerca utenti, nessuna condivisione, nessun gruppo."
+      "title": "1. Privato",
+      "text": "Nessuno condivide con altri: niente condivisione con persone, niente gruppi."
     },
     "organizations": {
-      "title": "2. Organizzazioni (consigliato)",
-      "text": "Gli utenti vedono solo i membri della propria organizzazione. Chi non appartiene a nessuna organizzazione non vede nessuno."
+      "title": "2. All’interno delle organizzazioni (consigliato)",
+      "text": "Si condivide solo con persone con cui si ha almeno un’organizzazione in comune. Chi non ne fa parte non può condividere con nessuno."
     },
     "open": {
-      "title": "3. Aperto (tutti vedono tutti)",
-      "text": "Tutti gli utenti di questa istanza possono trovarsi e condividere tra loro."
+      "title": "3. Aperto",
+      "text": "Tutti su questo server possono condividere tra loro."
     }
   },
   "server": {
-    "title": "Impostazioni di base del server e visibilità utenti",
-    "intro": "Come amministratore del server decidi in modo centralizzato se gli utenti lavorano completamente isolati, se si vedono solo all'interno della propria organizzazione o se tutti sono visibili a tutti.",
+    "title": "Impostazioni di base del server e condivisione",
+    "intro": "Come amministratore del server decidi chi può condividere con chi, se i nomi vengono suggeriti durante la digitazione e se le note si possono condividere tramite link pubblico.",
     "instanceName": "Nome di questa istanza MindSift",
-    "sharing": "Condivisione globale e isolamento della visibilità",
+    "sharing": "Chi può condividere con chi",
     "switchAnyway": "Cambia comunque",
     "privateWebhooks": "Consenti webhook di notifica nella rete locale",
     "privateWebhooksHint": "Predefinito: le notifiche Discord e webhook vanno solo a indirizzi https pubblici. Se attivo, sono consentite anche destinazioni nella rete locale (es. Home Assistant su 192.168.x.x o via Tailscale), anche tramite http. Il server stesso (localhost) e i metadati cloud restano sempre bloccati.",
@@ -571,20 +577,27 @@
     "verifyFixed": "Impostato da <c>REGISTRATION_VERIFY_EMAIL</c>.",
     "retentionNeverHint": "Se attivo, tutti possono scegliere «mai» in Impostazioni account → Conservazione per conservare elementi completati ed eliminati. Se disattivato, «mai» ricade sul valore predefinito dell'area (es. 30 giorni).",
     "mcpHint": "Se attivo, Claude Code, Codex e altri possono accedere a MindSift con una chiave API, e claude.ai o ChatGPT come connettore. Se disattivato, l'endpoint MCP e l'accesso tramite connettore vengono disattivati; le connessioni connettore esistenti vengono sospese, le chiavi API continuano a funzionare via curl.",
-    "saved": "Impostazioni server salvate."
+    "saved": "Impostazioni server salvate.",
+    "peopleSearch": "Ricerca persone",
+    "peopleSearchHint": "Attiva, durante la condivisione e nei gruppi vengono suggeriti i nomi. Disattiva, bisogna conoscere l’indirizzo e-mail o il nome utente esatti; chi lavora già insieme a qualcosa continua a vedersi lì con il nome.",
+    "publicLinks": "Link pubblici alle note",
+    "publicLinksHint": "I proprietari possono condividere una nota in sola lettura tramite link, anche con persone senza account, eventualmente con password. I link scadono sempre e non finiscono nei motori di ricerca. Disattivato, nessun link esistente funziona più.",
+    "publicLinkMaxDays": "Durata massima di un link",
+    "days_one": "{{count}} giorno",
+    "days_other": "{{count}} giorni"
   },
   "admin": {
     "loadFailed": "Caricamento dei dati di amministrazione non riuscito",
     "title": "Amministrazione del server",
-    "subtitle": "Gestione utenti, codici invito, modalità di isolamento e server email",
+    "subtitle": "Utenti, inviti, organizzazioni, condivisione e server di posta",
     "badge": "Amministratore server",
     "close": "Chiudi",
     "nav": {
       "users": "Utenti e inviti",
       "usersHint": "Account, ruoli e codici invito",
-      "orgsHint": "Chi può vedere chi",
-      "server": "Server e isolamento",
-      "serverHint": "Visibilità e registrazione",
+      "orgsHint": "Chi può condividere con chi",
+      "server": "Server e condivisione",
+      "serverHint": "Condivisione e registrazione",
       "smtp": "Server email / SMTP",
       "smtpHint": "Invio email per le notifiche"
     },
@@ -599,16 +612,25 @@
     "deleteFailed": "Eliminazione non riuscita",
     "assignFailed": "Assegnazione non riuscita",
     "title": "Organizzazioni",
-    "intro": "Ciascun utente appartiene al massimo a un'organizzazione. Nella modalità «Organizzazioni», solo i membri della stessa organizzazione si vedono e possono condividere e formare gruppi tra loro. Puoi modificare l'assegnazione nell'elenco utenti.",
-    "notActive": "La modalità di visibilità attuale non è «Organizzazioni»; l'assegnazione non ha alcun effetto al momento.",
+    "intro": "Una persona può appartenere a più organizzazioni. In modalità «All’interno delle organizzazioni» si condivide solo con chi ne ha almeno una in comune; ogni gruppo appartiene a un’organizzazione. Fai clic su un’organizzazione per aggiungere o rimuovere membri.",
+    "notActive": "La modalità di condivisione attuale non è «All’interno delle organizzazioni»; l’appartenenza al momento non ha effetto.",
     "namePlaceholder": "Nome della nuova organizzazione",
     "create": "Crea",
     "empty": "Ancora nessuna organizzazione.",
     "rename": "Rinomina",
     "delete": "Elimina organizzazione",
     "deleteConfirm": "Elimina",
-    "deleteWarning_one": "Il {{count}} membro non apparterrà più ad alcuna organizzazione e perderà condivisioni, gruppi e assegnazioni con gli altri.",
-    "deleteWarning_other": "I {{count}} membri non apparterranno più ad alcuna organizzazione e perderanno condivisioni, gruppi e assegnazioni reciproche."
+    "deleteWarning_one": "Il {{count}} membro perde le condivisioni, i gruppi e le assegnazioni consentiti solo tramite questa organizzazione.",
+    "deleteWarning_other": "I {{count}} membri perdono le condivisioni, i gruppi e le assegnazioni consentiti solo tramite questa organizzazione.",
+    "removeMember": "Togli {{name}} dall’organizzazione",
+    "removeWarning_one": "{{name}} lascia «{{org}}». Si perde {{count}} condivisione o appartenenza a un gruppo consentita solo tramite questa organizzazione.",
+    "removeWarning_other": "{{name}} lascia «{{org}}». Si perdono {{count}} condivisioni e appartenenze a gruppi consentite solo tramite questa organizzazione.",
+    "removeConfirm": "Rimuovi",
+    "addMember": "Aggiungi",
+    "addMemberPlaceholder": "Aggiungi persona (nome, @utente o e-mail)…",
+    "addOrganization": "+ Organizzazione",
+    "addAnother": "+ un’altra",
+    "removeFromSelection": "Rimuovi {{org}}"
   },
   "smtp": {
     "title": "Server email / SMTP per notifiche attività",
@@ -632,7 +654,9 @@
     "testSending": "Invio email di prova in corso…",
     "testSend": "Invia email di prova",
     "passwordKept": "Salvata — lascia vuoto per non modificarla",
-    "save": "Salva configurazione SMTP nel database"
+    "save": "Salva configurazione SMTP nel database",
+    "testSent": "E-mail di prova inviata a {{email}}.",
+    "testFailed": "Test SMTP non riuscito: {{error}}"
   },
   "import": {
     "readFailed": "Impossibile leggere il file",
@@ -708,7 +732,10 @@
     "deleteNamed": "Elimina backup {{name}}",
     "restoreHint": "Ripristino di un dump del database: arresta il container, sostituisci <c>mindsift.db</c> con il file decompresso (<c>gunzip</c>), avvia il container. I singoli utenti possono ripristinare i propri dati nelle impostazioni dell'account.",
     "time": "Ora",
-    "restored": "Ripristinati: {{notes}} note, {{tasks}} attività, {{lists}} liste, {{inbox}} pensieri, {{themes}} temi."
+    "restored": "Ripristinati: {{notes}} note, {{tasks}} attività, {{lists}} liste, {{inbox}} pensieri, {{themes}} temi.",
+    "deletedTitle": "Backup degli account eliminati",
+    "deletedHint": "Quando un amministratore o la gestione utenti elimina un account, i suoi backup restano qui fino alla fine del periodo di conservazione. Così chi è stato eliminato per errore riavrà i suoi dati: scarica un backup e importalo nel nuovo account in Impostazioni account → Esportazione e importazione. Se qualcuno elimina il proprio account, i suoi backup spariscono subito.",
+    "deletedOn": "Eliminato il {{deleted}} · verrà rimosso il {{remove}}"
   },
   "voiceStatus": {
     "loadFailed": "Impossibile caricare lo stato",

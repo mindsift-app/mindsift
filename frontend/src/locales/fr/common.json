@@ -11,7 +11,8 @@
   "aboutMindSift": "À propos de MindSift",
   "role": {
     "admin": "Admin du serveur",
-    "member": "Membre"
+    "member": "Membre",
+    "manager": "Gestion des utilisateurs"
   },
   "priority": {
     "label": "Priorité",
@@ -100,7 +101,7 @@
     "chooseUser": "Veuillez choisir un utilisateur",
     "addFailed": "Échec de l'ajout du partage",
     "removeFailed": "Échec du retrait du partage",
-    "disabled": "Le partage est désactivé sur ce serveur (mode de visibilité « Privé »).",
+    "disabled": "Le partage avec des personnes est désactivé sur ce serveur (mode « Privé »).",
     "add": "Ajouter un partage :",
     "group": "Groupe",
     "user": "Utilisateur",
@@ -118,7 +119,11 @@
     "defaultTitle": "Partage et autorisations",
     "object": "Élément :",
     "teamOption_one": "{{name}} ({{count}} membre)",
-    "teamOption_other": "{{name}} ({{count}} membres)"
+    "teamOption_other": "{{name}} ({{count}} membres)",
+    "count_one": "{{count}} partage",
+    "count_other": "{{count}} partages",
+    "editorRole": "Éditeur",
+    "viewerRole": "Lecteur"
   },
   "sharedImport": {
     "whichList": "Quelle liste ?",
@@ -352,7 +357,11 @@
   "userSearch": {
     "placeholder": "Rechercher des utilisateurs (nom, @nom d'utilisateur ou e-mail)…",
     "clear": "Effacer la sélection",
-    "none": "Aucun utilisateur correspondant"
+    "none": "Aucun utilisateur correspondant",
+    "exactPlaceholder": "Adresse e-mail ou nom d’utilisateur exacts…",
+    "lookup": "Rechercher « {{login}} »",
+    "notFound": "Personne trouvé avec qui tu peux partager",
+    "alreadyAdded": "Déjà ajouté"
   },
   "done": "Terminé",
   "edit": "Modifier",

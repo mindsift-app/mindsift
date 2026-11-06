@@ -328,13 +328,19 @@ func (s *Server) handleDeleteDocShare(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleGetCollaborators(w http.ResponseWriter, r *http.Request) {
 	userID := auth.GetUserID(r.Context())
-	users, err := s.store.GetCollaborators(userID)
+	users, err := s.store.GetDirectory(userID, s.peopleSearchEnabled())
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	// Only the public view: never other people's webhooks, alarm e-mail or role
-	writeJSON(w, http.StatusOK, domain.ToPublicUsers(users))
+	// The directory without the viewer: only the public view, never webhooks, alarm e-mail or role
+	others := make([]domain.PublicUser, 0, len(users))
+	for _, u := range users {
+		if u.ID != userID {
+			others = append(others, u)
+		}
+	}
+	writeJSON(w, http.StatusOK, others)
 }
 
 func (s *Server) docTitle(userID, docID string) string {

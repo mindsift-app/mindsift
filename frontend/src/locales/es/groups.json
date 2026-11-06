@@ -28,7 +28,9 @@
     "descriptionPlaceholder": "p. ej. listas de la compra y notas compartidas…",
     "youAdmin": "Serás el administrador del grupo",
     "youAdminHint": "Como creador puedes añadir miembros, asignar roles y gestionar el grupo.",
-    "submit": "Crear grupo"
+    "submit": "Crear grupo",
+    "organization": "Organización",
+    "organizationHint": "Los miembros del grupo proceden de esta organización."
   },
   "loading": "Cargando grupos…",
   "empty": {

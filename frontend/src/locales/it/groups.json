@@ -28,7 +28,9 @@
     "descriptionPlaceholder": "es. Liste della spesa e note condivise…",
     "youAdmin": "Diventerai amministratore del gruppo",
     "youAdminHint": "Come creatore potrai aggiungere altri membri, assegnare ruoli e gestire il gruppo.",
-    "submit": "Crea gruppo"
+    "submit": "Crea gruppo",
+    "organization": "Organizzazione",
+    "organizationHint": "I membri del gruppo provengono da questa organizzazione."
   },
   "loading": "Caricamento gruppi…",
   "empty": {

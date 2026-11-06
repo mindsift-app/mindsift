@@ -37,6 +37,9 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ currentUser, onBack }) =
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newGroupName, setNewGroupName] = useState('');
   const [newGroupDesc, setNewGroupDesc] = useState('');
+  // Whoever is in several organizations picks the group's one (its members come from there)
+  const myOrgs = currentUser.organizations || [];
+  const [newGroupOrg, setNewGroupOrg] = useState(myOrgs[0]?.id || '');
   const [creating, setCreating] = useState(false);
 
   // Edit Group State
@@ -77,7 +80,7 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ currentUser, onBack }) =
     triggerHaptic(15);
 
     try {
-      const created = await api.createTeam(name, newGroupDesc.trim());
+      const created = await api.createTeam(name, newGroupDesc.trim(), myOrgs.length > 1 ? newGroupOrg : '');
       setNewGroupName('');
       setNewGroupDesc('');
       setShowCreateModal(false);
@@ -320,6 +323,24 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ currentUser, onBack }) =
                   className="w-full h-8 px-2.5 input-field text-xs"
                 />
               </div>
+
+              {myOrgs.length > 1 && (
+                <div>
+                  <label className="block text-muted text-xs mb-1 font-medium">{t('create.organization')}</label>
+                  <select
+                    value={newGroupOrg}
+                    onChange={(e) => setNewGroupOrg(e.target.value)}
+                    className="w-full h-11 sm:h-8 px-2.5 input-field text-base sm:text-xs bg-panel"
+                  >
+                    {myOrgs.map((o) => (
+                      <option key={o.id} value={o.id}>
+                        {o.name}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-[11px] text-faint mt-1">{t('create.organizationHint')}</p>
+                </div>
+              )}
 
               <div className="p-3 bg-canvas border border-border rounded-btn text-[11px] text-muted space-y-1">
                 <p className="font-semibold text-main flex items-center gap-1.5">

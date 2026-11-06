@@ -586,7 +586,7 @@ const es: HelpContent = {
       id: 'collab-teams-sharing',
       category: 'collaboration',
       title: 'Organizaciones, grupos y opciones de compartir',
-      subtitle: 'Quién ve a quién, y cómo compartir notas, carpetas y listas de forma segura',
+      subtitle: 'Quién puede compartir con quién, y cómo compartir notas, carpetas y listas de forma segura',
       icon: Users,
       keywords: [
         'equipos',
@@ -599,18 +599,23 @@ const es: HelpContent = {
         'editor',
         'lector',
         'carpetas',
+        'público',
+        'enlace',
       ],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
           <ul className="space-y-1.5">
             <li>
-              <strong className="text-main">Quién ve a quién:</strong> lo decide la administración del servidor. Según la configuración, verás a todos los usuarios, solo a los miembros de tu <em>organización</em> o a nadie (modo «Privado»: sin compartir ni grupos). Solo la administración gestiona organizaciones; cada persona pertenece como máximo a una.
+              <strong className="text-main">Quién puede compartir con quién:</strong> lo decide la administración del servidor: con todos, solo con personas con las que tienes al menos una <em>organización</em> en común, o con nadie (modo «Privado»: sin compartir ni grupos). Puedes pertenecer a varias organizaciones; las gestionan la administración y la gestión de usuarios. Si la búsqueda de personas está desactivada, al compartir introduces la dirección de correo o el nombre de usuario exactos. Quien trabaja contigo en algo aparece siempre allí con su nombre.
             </li>
             <li>
               <strong className="text-main">Grupos:</strong> agrupa a personas que puedes ver (p. ej. familia, compañeros de piso, un proyecto) y comparte contenido con todos ellos a la vez. Quien crea un grupo es su administrador; solo los miembros pueden compartir con el grupo.
             </li>
             <li>
-              <strong className="text-main">Solo el propietario comparte:</strong> los editores pueden modificar contenido, pero no volver a compartirlo. Puedes abandonar un recurso compartido en cualquier momento. Si alguien cambia de organización o deja un grupo, sus elementos compartidos allí finalizan automáticamente.
+              <strong className="text-main">Solo el propietario comparte:</strong> los editores pueden modificar contenido, pero no volver a compartirlo. Puedes abandonar un recurso compartido en cualquier momento. Si alguien deja una organización o un grupo, los elementos compartidos que solo estaban permitidos por ellos finalizan automáticamente.
+            </li>
+            <li>
+              <strong className="text-main">Enlace público:</strong> en el diálogo de compartir puedes compartir una nota propia de solo lectura mediante enlace, también con personas sin cuenta y, opcionalmente, con contraseña. El enlace siempre caduca (de 1 hora a 14 días), se puede retirar en cualquier momento y no aparece en buscadores. Las visitas ven los cambios en vivo, pero ni valores ocultos ni nombres. Si está disponible lo decide la administración del servidor.
             </li>
             <li>
               <strong className="text-main">Roles (editor vs. lector):</strong> al compartir notas, carpetas o listas puedes elegir entre <em>Editor</em> (acceso completo a contenidos y listas de tareas) y <em>Solo lectura</em> (solo ver, con actualizaciones en vivo).

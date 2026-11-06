@@ -9,8 +9,7 @@ import {
   UserTheme,
   ImportSummary,
   SearchResults,
-  SearchFilter,
-} from '../types';
+  SearchFilter, DeletedAccountBackups } from '../types';
 import { authHeaders, ensureArray, request, downloadBlob } from './client';
 import i18n from '../../i18n';
 
@@ -152,6 +151,15 @@ export const dataApi = {
 
   async adminDownloadBackup(name: string): Promise<Blob> {
     return downloadBlob(`/api/v1/admin/backups/${encodeURIComponent(name)}`);
+  },
+
+  // Backups of accounts an admin deleted, kept for the backup retention period
+  async adminDeletedBackups(): Promise<DeletedAccountBackups[]> {
+    return ensureArray(await request<DeletedAccountBackups[]>('/api/v1/admin/backups/deleted'));
+  },
+
+  async adminDownloadDeletedBackup(userId: string, name: string): Promise<Blob> {
+    return downloadBlob(`/api/v1/admin/backups/deleted/${encodeURIComponent(userId)}/${encodeURIComponent(name)}`);
   },
 
   async listMyBackups(): Promise<BackupFile[]> {

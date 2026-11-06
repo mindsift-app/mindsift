@@ -516,20 +516,23 @@ const en: HelpContent = {
       id: 'collab-teams-sharing',
       category: 'collaboration',
       title: 'Organizations, groups & sharing',
-      subtitle: 'Who sees whom, and sharing notes, folders and lists safely',
+      subtitle: 'Who may share with whom, and sharing notes, folders and lists safely',
       icon: Users,
-      keywords: ['teams', 'groups', 'organization', 'visibility', 'private', 'share', 'sharing', 'permissions', 'editor', 'reader', 'folders'],
+      keywords: ['teams', 'groups', 'organization', 'visibility', 'private', 'share', 'sharing', 'permissions', 'editor', 'reader', 'folders', 'public', 'link'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
           <ul className="space-y-1.5">
             <li>
-              <strong className="text-main">Who sees whom:</strong> the server admin decides. Depending on the setting you see all users, only the members of your <em>organization</em> or nobody (“Private” mode: no sharing, no groups). Only the server admin manages organizations; everyone belongs to at most one.
+              <strong className="text-main">Who may share with whom:</strong> the server admin decides: with everyone, only with people you have at least one <em>organization</em> in common with, or with nobody (“Private” mode: no sharing, no groups). You can belong to several organizations; server admins and user managers look after them. With people search switched off, you enter the exact e-mail address or username when sharing. Whoever works on something with you always shows there by name.
             </li>
             <li>
               <strong className="text-main">Groups:</strong> combine people you can see into groups (e.g. family, flatmates, a project) and share with all of them at once. Whoever creates a group is its admin; only members can share with a group.
             </li>
             <li>
-              <strong className="text-main">Only the owner shares:</strong> editors can change content but not share it further. You can leave a share given to you at any time. If someone changes organization or leaves a group, their shares there end automatically.
+              <strong className="text-main">Only the owner shares:</strong> editors can change content but not share it further. You can leave a share given to you at any time. If someone leaves an organization or group, shares that were only allowed through it end automatically.
+            </li>
+            <li>
+              <strong className="text-main">Public link:</strong> in the share dialog you can share a note of your own read only by link, also with people without an account, optionally with a password. The link always expires (1 hour to 14 days), can be revoked at any time and stays out of search engines. Visitors see changes live, but no hidden values and no names. Whether this is available is up to the server admin.
             </li>
             <li>
               <strong className="text-main">Roles (editor vs. reader):</strong> when sharing notes, folders or lists you choose between <em>Editor</em> (full access to content and checklists) and <em>Read only</em> (view only, with live updates).

@@ -11,7 +11,8 @@
   "aboutMindSift": "Über MindSift",
   "role": {
     "admin": "Server-Admin",
-    "member": "Mitglied"
+    "member": "Mitglied",
+    "manager": "Benutzerverwaltung"
   },
   "priority": {
     "label": "Priorität",
@@ -99,7 +100,7 @@
     "chooseUser": "Bitte einen Benutzer auswählen",
     "addFailed": "Fehler beim Hinzufügen der Freigabe",
     "removeFailed": "Fehler beim Entfernen der Freigabe",
-    "disabled": "Teilen ist auf diesem Server deaktiviert (Sichtbarkeits-Modus „Privat“).",
+    "disabled": "Teilen mit Personen ist auf diesem Server abgeschaltet (Modus „Privat“).",
     "add": "Freigabe hinzufügen:",
     "group": "Gruppe",
     "user": "Benutzer",
@@ -116,7 +117,11 @@
     "remove": "Freigabe entfernen",
     "defaultTitle": "Freigeben & Berechtigungen",
     "object": "Objekt:",
-    "teamOption": "{{name}} ({{count}} Mitglieder)"
+    "teamOption": "{{name}} ({{count}} Mitglieder)",
+    "count_one": "{{count}} Freigabe",
+    "count_other": "{{count}} Freigaben",
+    "editorRole": "Bearbeiter",
+    "viewerRole": "Leser"
   },
   "sharedImport": {
     "whichList": "Auf welche Liste?",
@@ -350,7 +355,11 @@
   "userSearch": {
     "placeholder": "Benutzer suchen (Name, @Benutzername oder E-Mail)…",
     "clear": "Auswahl aufheben",
-    "none": "Kein passender Benutzer gefunden"
+    "none": "Kein passender Benutzer gefunden",
+    "exactPlaceholder": "Genaue E-Mail-Adresse oder Benutzername…",
+    "lookup": "„{{login}}“ suchen",
+    "notFound": "Niemand gefunden, mit dem du teilen kannst",
+    "alreadyAdded": "Ist schon dabei"
   },
   "done": "Fertig",
   "edit": "Bearbeiten",

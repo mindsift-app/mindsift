@@ -15,6 +15,7 @@ import {
   User,
   MergeResult,
   MoveResult,
+  PublicLinkState,
 } from '../types';
 import { ensureArray, request } from './client';
 
@@ -346,6 +347,23 @@ export const workspaceApi = {
     return request<{ unlinked: boolean }>(`/api/v1/tasks/${encodeURIComponent(taskId)}/unlink`, {
       method: 'POST',
     });
+  },
+
+  // --- PUBLIC LINK (owner only; the visitor side is lib/publicNote.ts) ---
+  async getPublicLink(docId: string): Promise<PublicLinkState> {
+    return request<PublicLinkState>(`/api/v1/documents/${encodeURIComponent(docId)}/public-link`);
+  },
+
+  // A new link (the previous address stops working): duration in hours, optional password
+  async setPublicLink(docId: string, hours: number, password: string, themeFamily: string): Promise<PublicLinkState> {
+    return request<PublicLinkState>(`/api/v1/documents/${encodeURIComponent(docId)}/public-link`, {
+      method: 'PUT',
+      body: JSON.stringify({ hours, password, themeFamily }),
+    });
+  },
+
+  async deletePublicLink(docId: string): Promise<PublicLinkState> {
+    return request<PublicLinkState>(`/api/v1/documents/${encodeURIComponent(docId)}/public-link`, { method: 'DELETE' });
   },
 
   // --- DOCUMENT SHARING ---

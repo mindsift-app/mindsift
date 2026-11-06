@@ -43,6 +43,8 @@ var migrations = []migration{
 	{20, "Usernames from display names", (*Store).migrateUsernames},
 	{21, "Voice input language per person", (*Store).migrateVoiceLanguage},
 	{22, "Hidden values in notes", (*Store).migrateNoteSecrets},
+	{23, "Several organizations per person", (*Store).migrateOrganizationMembers},
+	{24, "Public links to notes", (*Store).migratePublicLinks},
 }
 
 func (s *Store) migrate() error {

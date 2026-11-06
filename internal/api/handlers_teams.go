@@ -24,8 +24,9 @@ func (s *Server) isTeamAdmin(userID, teamID string) bool {
 func (s *Server) handleCreateTeamDirect(w http.ResponseWriter, r *http.Request) {
 	userID := auth.GetUserID(r.Context())
 	var req struct {
-		Name        string `json:"name"`
-		Description string `json:"description"`
+		Name           string `json:"name"`
+		Description    string `json:"description"`
+		OrganizationID string `json:"organizationId"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeError(w, http.StatusBadRequest, "Ungültiges JSON")
@@ -40,11 +41,24 @@ func (s *Server) handleCreateTeamDirect(w http.ResponseWriter, r *http.Request) 
 		writeError(w, http.StatusBadRequest, "Name für die Gruppe ist erforderlich")
 		return
 	}
-	// A group belongs to its creator's organization; members can only come from there
-	creator, _ := s.store.GetUserByID(userID)
+	// A group belongs to one of its creator's organizations; members can only come from there. With
+	// several the creator picks one, with one it is that one.
+	orgs := s.store.UserOrganizationIDs(userID)
 	orgID := ""
-	if creator != nil {
-		orgID = creator.OrganizationID
+	switch {
+	case req.OrganizationID != "":
+		if !s.store.IsOrganizationMember(req.OrganizationID, userID) {
+			writeError(w, http.StatusBadRequest, storage.ErrOrganizationNotFound.Error())
+			return
+		}
+		orgID = req.OrganizationID
+	case len(orgs) == 1:
+		orgID = orgs[0]
+	case len(orgs) > 1 && s.store.SharingMode() == storage.SharingOrganizations:
+		writeError(w, http.StatusBadRequest, "Bitte wähle die Organisation der Gruppe")
+		return
+	case len(orgs) > 1:
+		orgID = orgs[0]
 	}
 	team, err := s.store.CreateTeam(orgID, name, req.Description)
 	if err != nil {
@@ -138,8 +152,9 @@ func (s *Server) handleAddTeamMember(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "Benutzer-ID oder E-Mail erforderlich")
 		return
 	}
-	// Only people the group admin can see; unknown and invisible look the same
-	if targetUserID == "" || !s.store.CanShareWith(userID, "user", targetUserID) {
+	// Only people the group admin can see, and with organizations only from the group's one; unknown
+	// and invisible look the same
+	if targetUserID == "" || !s.store.CanShareWith(userID, "user", targetUserID) || !s.store.FitsTeamOrganization(teamID, targetUserID) {
 		writeError(w, http.StatusNotFound, storage.ErrTargetNotFound.Error())
 		return
 	}

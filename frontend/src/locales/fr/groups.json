@@ -28,7 +28,9 @@
     "descriptionPlaceholder": "par ex. listes de courses et notes partagées…",
     "youAdmin": "Tu deviens administrateur du groupe",
     "youAdminHint": "En tant que créateur, tu peux ajouter d'autres membres, attribuer des rôles et gérer le groupe.",
-    "submit": "Créer le groupe"
+    "submit": "Créer le groupe",
+    "organization": "Organisation",
+    "organizationHint": "Les membres du groupe viennent de cette organisation."
   },
   "loading": "Chargement des groupes…",
   "empty": {

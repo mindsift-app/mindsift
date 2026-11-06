@@ -38,7 +38,8 @@ Base: `/api/v1`. Responses are JSON; errors take the form `{"error": "Text"}`, s
 | POST | `/auth/revoke-all` | Terminate all sessions (`token_version` +1) |
 | PATCH | `/auth/settings` | `displayName`, `username` (2–32 characters, lower case letters, digits, `.`, `-`, `_`; `400` with code `username_invalid`, `409` with `username_taken`; `403` in demo mode), `email`, `password`, `avatarUrl`, `alarmChannels`, `alarmEmail`, `discordWebhookUrl`, `customWebhookUrl`, `notifyBeforeMinutes`, `retention` (`doneTasks`, `taskTrash`, `triageTrash`, `noteTrash`, `listDone`: days selected from 7, 14, 30, 90, 365, 730, or 0 = never; always all five, `400` on other values or for 0 if the server has disabled "never"), `voiceInput` (`""` = Whisper server, `browser`), `voiceLanguage` (language spoken into the microphone: `""` = the app language, `auto` = Whisper detects it, or one of Whisper's language codes such as `ru`; `400` for unknown codes), `language` (`de`, `en`, `es`, `fr`, `it` or `""` = follow the browser, then the server's default; `400` for other codes; `GET /auth/me` returns it as `language`), `doneRetentionDays` (legacy single field for `retention.doneTasks`). `GET /auth/me` includes `retention` and `retentionNeverAllowed`. `notificationSettings` (`paused`, `includeOwnWatched`, `events.{due,shared,taskDone,watched}.{email,discord}`, `dailySummary.{enabled,time,email,discord}`) for notifications. New `email` or `password` requires `currentPassword` (`403` if incorrect, `429` if login locked); after password change, other devices are logged out and the new token is returned in the `X-Session-Token` header |
 | POST | `/auth/alarms/test` | Test alarm (`channel`: `email`/`discord`/`webhook`, optional `target`) |
-| GET | `/users/directory`, `/collaborators` | Users you can see and share with (depending on `sharingMode`, [sharing-and-permissions.md](../sharing-and-permissions.md)). Only public profile per person: `id`, `email`, `username`, `displayName`, `avatarUrl`, `organizationId` – no private details (webhooks, alarm email, role) |
+| GET | `/users/directory`, `/collaborators` | People whose names you may see: everyone you may share with (`findable: true`, only while people search is on) and everyone you work on something together with (`findable: false`); `/collaborators` without yourself ([sharing-and-permissions.md](../sharing-and-permissions.md)). Only public profile per person: `id`, `email`, `username`, `displayName`, `avatarUrl`, `findable` – no private details (webhooks, alarm email, role, organizations) |
+| POST | `/users/lookup` | One person by exact e-mail address or username (`login`), for sharing without people search; `404` alike for unknown people and people you may not share with; 30 lookups per user and address within the lock window |
 | GET | `/stats` | Counters for the dashboard (including `inboxCount`, `tasksOpenCount`, `listItemsOpenCount` = open items across all visible lists) |
 | GET | `/search?q=` | Global FTS5 search across accessible notes (title & blocks), tasks, and lists → `{thoughts, documents, listItems, hits, counts}`. Open tasks and list items appear before completed ones. Optional: `type` (`document`/`thought`/`list_item`), `limit` (matches per type, default 40, max 200), for tasks `taskStatus` (`open`/`done`), `taskListId` (`personal` = without list), `priority`, `due` (`today`/`overdue`/`week`), for notes `folder` (including subfolders), for lists `listId`, `itemStatus` (`open`/`done`). Matches in bullets include `content` (raw text of the bullet), with `context=1` also `before`/`after` (text of adjacent bullets); `documents` holds only `id`, `title` and `icon` of the matched notes; `counts` = matches per type in this response |
 | GET | `/export` | Data export as JSON; with `?format=zip`, the same data as `mindsift-backup.json` inside a ZIP (used by UI for backup downloads) |
@@ -314,32 +315,48 @@ Duplicate operations (same `opId`) are not reapplied; the response returns the p
 
 | Method | Path | Purpose |
 |---|---|---|
-| GET/POST | `/teams` | Own groups; create (`name`, `description`) – creator becomes group admin, group belongs to their organization; blocked in `private` mode |
+| GET/POST | `/teams` | Own groups; create (`name`, `description`, `organizationId`) – creator becomes group admin; the group belongs to one of the creator's organizations (`organizationId` required in `organizations` mode when the creator is in several, `400` otherwise); blocked in `private` mode |
 | PUT/DELETE | `/teams/{id}` | Group admin only |
-| POST | `/teams/{id}/members` | Add member (`userId` or `email`, `role`); only visible users, otherwise `404` |
+| POST | `/teams/{id}/members` | Add member (`userId` or `email`, `role`); only people the group admin may share with and, in `organizations` mode, members of the group's organization, otherwise `404` |
 | PUT/DELETE | `/teams/{id}/members/{userId}` | Change role (`admin`/`member`); remove |
 
-## Administration (`role = admin`)
+## Administration (`role = admin`, partly `manager`)
+
+Routes marked **S** are open to server admins and user managers (`role = manager`); all others to server admins only. User managers look after members only: they cannot edit, lock or delete admins or other managers, cannot change a role, e-mail address or username (`403`), and every account they create is a member.
 
 | Method | Path | Purpose |
 |---|---|---|
-| GET/POST | `/admin/users` | List users; create (`email`, `password`, `displayName`, `role`, optional `organizationId`) |
-| PUT | `/admin/users/{id}/organization` | Assign organization (`organizationId`, empty = none); revokes shares, groups, and assignments from the previous organization |
-| GET/POST | `/admin/organizations` | Organizations with `memberCount`; create (`name`) |
-| PUT/DELETE | `/admin/organizations/{id}` | Rename (`name`); delete (members afterwards have no organization) |
-| PATCH/DELETE | `/admin/users/{id}` | `displayName`, `username` (rules and errors as in `/auth/settings`), `email`, `role`, `isActive`, `discordWebhookUrl`; delete (for pending accounts = reject). `GET /admin/users` flags pending accounts with `pendingApproval` |
-| POST | `/admin/users/{id}/approve` | Approve pending account; the user receives an email (`409` if not pending) |
-| PUT | `/admin/users/{id}/password` | Reset password |
-| GET/POST | `/admin/invites` | List or create invitations (`email`, `role`, `organizationId`, `validDays`, `maxUses` 1–1000; multi-use invites are not bound to an email address). Response includes `maxUses`/`useCount`. As link: `/?invite=<CODE>` opens registration with code pre-filled |
-| POST | `/admin/invites/{id}/send` | Send invitation via email (`email`); binds single-use codes to this address; requires SMTP |
-| DELETE | `/admin/invites/{id}` | Revoke/delete invitation |
-| GET/PUT | `/admin/settings` | `instanceName`, `allowRegistration`, `sharingMode` (`private`/`organizations`/`open`), SMTP fields; changing mode cleans up shares. `smtpPass` is never returned (`smtpPassSet` indicates whether one is stored); empty = unchanged |
+| GET/POST | `/admin/users` | **S** List users (with `organizationIds`); create (`email`, `password`, `displayName`, `role` (`member`/`manager`/`admin`), optional `organizationIds`) |
+| GET/POST | `/admin/organizations` | **S** Organizations with `memberCount`; create (`name`) |
+| PUT/DELETE | `/admin/organizations/{id}` | **S** Rename (`name`); delete (shares only this organization allowed go) |
+| POST | `/admin/organizations/{id}/members` | **S** Add a person (`userId`) |
+| DELETE | `/admin/organizations/{id}/members/{userId}` | **S** Take a person out; removes shares, group memberships and assignments that no other common organization allows. `?dryRun=true` only counts them (`affected`) |
+| PATCH/DELETE | `/admin/users/{id}` | **S** `displayName`, `username` (rules and errors as in `/auth/settings`), `email`, `role`, `isActive`, `discordWebhookUrl`; delete (for pending accounts = reject). `GET /admin/users` flags pending accounts with `pendingApproval` |
+| POST | `/admin/users/{id}/approve` | **S** Approve pending account; the user receives an email (`409` if not pending) |
+| PUT | `/admin/users/{id}/password` | Reset password (server admins only) |
+| GET/POST | `/admin/invites` | **S** List or create invitations (`email`, `organizationIds`, `validDays`, `maxUses` 1–1000; multi-use invites are not bound to an email address). Invites always create members; a `role` field is ignored. Response includes `maxUses`/`useCount`, `organizationIds`/`organizationNames`. As link: `/?invite=<CODE>` opens registration with code pre-filled |
+| POST | `/admin/invites/{id}/send` | **S** Send invitation via email (`email`); binds single-use codes to this address; requires SMTP |
+| DELETE | `/admin/invites/{id}` | **S** Revoke/delete invitation |
+| GET/PUT | `/admin/settings` | `instanceName`, `allowRegistration`, `sharingMode` (`private`/`organizations`/`open`), `peopleSearch`, `publicLinks`, `publicLinkMaxDays` (1–14), SMTP fields; changing mode cleans up shares. Values fixed by the environment come with `…ConfiguredViaEnv` and are not changed by `PUT`. `smtpPass` is never returned (`smtpPassSet` indicates whether one is stored); empty = unchanged |
 | GET | `/admin/settings/sharing-impact?mode=` | Dry run: how many shares and group memberships a mode change would remove (`affected`) |
 | POST | `/admin/smtp/test` | Test email (`toEmail`) |
 | GET | `/admin/voice` | Active voice recognition (`mode`: `server`/`browser`/`off`), settings from `STT_*` without secrets, limits, and in server mode fresh health status (`status.reachable`, `status.modelReady`) |
 | GET/POST | `/admin/backups` | List database dumps or create backup immediately (database dump + all user backups) |
 | GET | `/admin/backups/{name}` | Download database dump |
 | DELETE | `/admin/backups/{name}` | Delete database dump (returns remaining list; disabled in demo) |
+
+## Public links to notes
+
+The owner of a note shares it read only by link (`/p/<token>` in the app); see [sharing-and-permissions.md](../sharing-and-permissions.md). Not reachable with API keys or MCP.
+
+| Method | Path | Purpose |
+|---|---|---|
+| GET | `/documents/{id}/public-link` | Owner only: `{enabled, maxDays, link}`; `link` = `{token, expiresAt, hasPassword}` or `null` |
+| PUT | `/documents/{id}/public-link` | Owner only: new link (`hours`: 1, 24, 72, 168 or 336, at most `maxDays`; optional `password`; `themeFamily` of the owner's theme). The previous address stops working. `403` when public links are off |
+| DELETE | `/documents/{id}/public-link` | Owner only: the address stops working at once |
+| GET | `/public/{token}` | No login. The note for visitors: `title`, `icon`, `themeFamily`, `expiresAt`, `headSeq`, `titleVersion`, `blocks` (as in the snapshot, without hidden values (`{{secret:hidden}}`), conflict copies, authors or the text of deleted bullets). `?since=<headSeq>` answers `204` when nothing changed. Password-protected links need the header `X-Public-Key` (`401` with code `password_required`). Unknown, expired, revoked and switched-off links: `404`. Answers carry `X-Robots-Tag: noindex` and `Referrer-Policy: no-referrer` |
+| POST | `/public/{token}/unlock` | No login. `password` → `{key}` for `X-Public-Key`, valid 12 hours (at most until the link expires); `401` with code `password_wrong`, `429` after 10 wrong tries per link and address |
+| GET | `/public/{token}/media/{mediaId}` | No login. An image or recording a living bullet of the note shows (with `X-Public-Key` when protected) |
 
 ## Examples
 

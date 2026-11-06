@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/mindsift-app/mindsift/internal/auth"
@@ -62,19 +63,39 @@ func (s *Server) handleAdminDeleteOrganization(w http.ResponseWriter, r *http.Re
 	writeJSON(w, http.StatusOK, map[string]bool{"deleted": true})
 }
 
-func (s *Server) handleAdminSetUserOrganization(w http.ResponseWriter, r *http.Request) {
+func (s *Server) handleAdminAddOrganizationMember(w http.ResponseWriter, r *http.Request) {
 	var req struct {
-		OrganizationID string `json:"organizationId"`
+		UserID string `json:"userId"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeError(w, http.StatusBadRequest, "Ungültiges JSON")
 		return
 	}
-	if err := s.store.SetUserOrganization(chi.URLParam(r, "id"), req.OrganizationID); err != nil {
+	if err := s.store.AddOrganizationMember(chi.URLParam(r, "id"), req.UserID); err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]bool{"updated": true})
+	writeJSON(w, http.StatusOK, map[string]bool{"added": true})
+}
+
+// handleAdminRemoveOrganizationMember takes a person out of an organization; ?dryRun=true only counts
+// the shares and group memberships that would go.
+func (s *Server) handleAdminRemoveOrganizationMember(w http.ResponseWriter, r *http.Request) {
+	orgID, userID := chi.URLParam(r, "id"), chi.URLParam(r, "userId")
+	if r.URL.Query().Get("dryRun") == "true" {
+		n, err := s.store.RemoveOrganizationMemberImpact(orgID, userID)
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]int64{"affected": n})
+		return
+	}
+	if err := s.store.RemoveOrganizationMember(orgID, userID); err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]bool{"removed": true})
 }
 
 // handleAdminSharingImpact counts the shares and group memberships a switch to ?mode= would remove.
@@ -89,6 +110,9 @@ func (s *Server) handleAdminSharingImpact(w http.ResponseWriter, r *http.Request
 
 // --- ADMIN & STAFF PANEL ---
 
+// isAdmin: the caller is a server admin (staff routes also let user managers in).
+func isAdmin(u *domain.User) bool { return u != nil && u.Role == domain.RoleAdmin }
+
 func (s *Server) handleAdminGetUsers(w http.ResponseWriter, r *http.Request) {
 	users, err := s.store.GetAllUsers()
 	if err != nil {
@@ -97,9 +121,11 @@ func (s *Server) handleAdminGetUsers(w http.ResponseWriter, r *http.Request) {
 	}
 	pending := s.store.PendingRegistrationIDs()
 	unverified := s.store.UnverifiedEmailIDs()
+	orgs, _ := s.store.OrganizationIDsOf()
 	for i := range users {
 		users[i].PendingApproval = pending[users[i].ID]
 		users[i].EmailUnverified = unverified[users[i].ID]
+		users[i].OrganizationIDs = orgs[users[i].ID]
 	}
 	writeJSON(w, http.StatusOK, users)
 }
@@ -109,11 +135,11 @@ func (s *Server) handleAdminCreateUser(w http.ResponseWriter, r *http.Request) {
 	caller, _ := s.store.GetUserByID(callerID)
 
 	var req struct {
-		Email          string `json:"email"`
-		Password       string `json:"password"`
-		DisplayName    string `json:"displayName"`
-		Role           string `json:"role"`
-		OrganizationID string `json:"organizationId"`
+		Email           string   `json:"email"`
+		Password        string   `json:"password"`
+		DisplayName     string   `json:"displayName"`
+		Role            string   `json:"role"`
+		OrganizationIDs []string `json:"organizationIds"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeError(w, http.StatusBadRequest, "Ungültiges JSON")
@@ -127,9 +153,9 @@ func (s *Server) handleAdminCreateUser(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	// Only full server admin can create another server admin
-	if req.Role == "admin" && (caller == nil || caller.Role != "admin") {
-		req.Role = "member"
+	// Only server admins hand out roles; user managers create members
+	if !isAdmin(caller) {
+		req.Role = domain.RoleMember
 	}
 	if strings.TrimSpace(req.DisplayName) == "" {
 		req.DisplayName = strings.Split(req.Email, "@")[0]
@@ -145,9 +171,9 @@ func (s *Server) handleAdminCreateUser(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	if req.OrganizationID != "" {
-		if err := s.store.SetUserOrganization(u.ID, req.OrganizationID); err == nil {
-			u.OrganizationID = req.OrganizationID
+	for _, orgID := range s.store.ValidOrganizationIDs(req.OrganizationIDs) {
+		if err := s.store.AddOrganizationMember(orgID, u.ID); err == nil {
+			u.OrganizationIDs = append(u.OrganizationIDs, orgID)
 		}
 	}
 	writeJSON(w, http.StatusCreated, u)
@@ -163,9 +189,9 @@ func (s *Server) handleAdminUpdateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Team-Admins cannot modify Server-Admins
-	if caller != nil && caller.Role != "admin" && targetUser.Role == "admin" {
-		writeError(w, http.StatusForbidden, "Nur Server-Administratoren können Server-Admin-Konten bearbeiten")
+	// User managers only look after members
+	if !isAdmin(caller) && targetUser.Role != domain.RoleMember {
+		writeError(w, http.StatusForbidden, "Nur Server-Administratoren können Konten von Administratoren und der Benutzerverwaltung bearbeiten")
 		return
 	}
 
@@ -181,8 +207,10 @@ func (s *Server) handleAdminUpdateUser(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "Ungültiges JSON")
 		return
 	}
-	if req.Role != nil && *req.Role == "admin" && (caller == nil || caller.Role != "admin") {
-		writeError(w, http.StatusForbidden, "Nur Server-Administratoren können die Rolle Server-Admin vergeben")
+	// Roles, e-mail and username stay with server admins: a new address plus "forgot password" would hand
+	// a user manager the account
+	if !isAdmin(caller) && (req.Role != nil || req.Email != nil || req.Username != nil || req.DiscordWebhookURL != nil) {
+		writeError(w, http.StatusForbidden, "Nur Server-Administratoren können Rolle, E-Mail-Adresse und Benutzernamen ändern")
 		return
 	}
 
@@ -218,15 +246,10 @@ func (s *Server) handleAdminUpdateUser(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, u)
 }
 
+// handleAdminResetPassword sets a new password (server admins only: user managers send people to
+// "forgot password" instead).
 func (s *Server) handleAdminResetPassword(w http.ResponseWriter, r *http.Request) {
-	callerID := auth.GetUserID(r.Context())
-	caller, _ := s.store.GetUserByID(callerID)
 	targetUserID := chi.URLParam(r, "id")
-	targetUser, _ := s.store.GetUserByID(targetUserID)
-	if caller != nil && caller.Role != "admin" && targetUser != nil && targetUser.Role == "admin" {
-		writeError(w, http.StatusForbidden, "Keine Berechtigung")
-		return
-	}
 
 	var req struct {
 		Password string `json:"password"`
@@ -262,15 +285,21 @@ func (s *Server) handleAdminDeleteUser(w http.ResponseWriter, r *http.Request) {
 	}
 	caller, _ := s.store.GetUserByID(currUserID)
 	targetUser, _ := s.store.GetUserByID(targetUserID)
-	if caller != nil && caller.Role != "admin" && targetUser != nil && targetUser.Role == "admin" {
-		writeError(w, http.StatusForbidden, "Keine Berechtigung zum Löschen eines Server-Admins")
+	if !isAdmin(caller) && targetUser != nil && targetUser.Role != domain.RoleMember {
+		writeError(w, http.StatusForbidden, "Keine Berechtigung zum Löschen dieses Kontos")
 		return
 	}
 	if err := s.store.DeleteUser(targetUserID); err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	s.removeUserBackups(targetUserID)
+	// Deleted by someone else: the backups stay for the retention period (a mistake can be undone);
+	// a rejected registration has nothing worth keeping
+	if targetUser != nil && !s.store.IsPendingRegistration(targetUserID) {
+		s.keepUserBackups(targetUser, time.Now())
+	} else {
+		s.removeUserBackups(targetUserID)
+	}
 	s.store.ClearPendingRegistration(targetUserID)
 	writeJSON(w, http.StatusOK, map[string]bool{"deleted": true})
 }
@@ -288,23 +317,19 @@ func (s *Server) handleAdminGetInvites(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleAdminCreateInvite(w http.ResponseWriter, r *http.Request) {
 	callerID := auth.GetUserID(r.Context())
-	caller, _ := s.store.GetUserByID(callerID)
 
+	// Invites always create members (a code that makes admins must not exist); roles are given later
 	var req struct {
-		Email          string `json:"email"`
-		Role           string `json:"role"`
-		OrganizationID string `json:"organizationId"`
-		ValidDays      int    `json:"validDays"`
-		MaxUses        int    `json:"maxUses"`
+		Email           string   `json:"email"`
+		OrganizationIDs []string `json:"organizationIds"`
+		ValidDays       int      `json:"validDays"`
+		MaxUses         int      `json:"maxUses"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeError(w, http.StatusBadRequest, "Ungültiges JSON")
 		return
 	}
-	if req.Role == "admin" && (caller == nil || caller.Role != "admin") {
-		req.Role = "member"
-	}
-	inv, err := s.store.CreateUserInvite(callerID, req.Email, req.Role, req.OrganizationID, req.ValidDays, req.MaxUses)
+	inv, err := s.store.CreateUserInvite(callerID, req.Email, req.OrganizationIDs, req.ValidDays, req.MaxUses)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
@@ -362,6 +387,20 @@ func (s *Server) settingsForBrowser(settings *domain.SystemSettings) *domain.Sys
 		out.MCPEnabled = &on
 		out.MCPViaEnv = true
 	}
+	if s.cfg.PeopleSearch != nil {
+		on := *s.cfg.PeopleSearch
+		out.PeopleSearch = &on
+		out.PeopleSearchViaEnv = true
+	}
+	if s.cfg.PublicLinks != nil || s.cfg.DemoMode {
+		on := s.publicLinksEnabled()
+		out.PublicLinks = &on
+		out.PublicLinksViaEnv = true
+	}
+	if s.cfg.PublicLinkMaxDays > 0 {
+		out.PublicLinkMaxDays = s.cfg.PublicLinkMaxDays
+		out.PublicLinkMaxDaysViaEnv = true
+	}
 	out.EmailLinksAvailable = s.emailLinksAvailable()
 	out.DefaultLanguage = s.defaultLanguage()
 	return &out
@@ -403,6 +442,16 @@ func (s *Server) handleAdminUpdateSettings(w http.ResponseWriter, r *http.Reques
 		settings.MCPEnabled = nil // fixed by MCP_ENABLED, the stored value stays
 	}
 	settings.MCPViaEnv = false
+	if s.cfg.PeopleSearch != nil {
+		settings.PeopleSearch = nil // fixed by PEOPLE_SEARCH
+	}
+	if s.cfg.PublicLinks != nil {
+		settings.PublicLinks = nil // fixed by PUBLIC_LINKS
+	}
+	if s.cfg.PublicLinkMaxDays > 0 {
+		settings.PublicLinkMaxDays = 0 // fixed by PUBLIC_LINKS_MAX_DAYS
+	}
+	settings.PeopleSearchViaEnv, settings.PublicLinksViaEnv, settings.PublicLinkMaxDaysViaEnv = false, false, false
 	if settings.DefaultLanguage != "" && !i18n.Valid(settings.DefaultLanguage) {
 		writeError(w, http.StatusBadRequest, storage.ErrInvalidLanguage.Error())
 		return

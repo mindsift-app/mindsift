@@ -33,8 +33,8 @@ func TestTaskAssigneesFollowListAccess(t *testing.T) {
 	// Everyone but the stranger shares the organization, so they can see each other
 	org, _ := store.CreateOrganization("Familie")
 	for _, u := range []string{owner.ID, direct.ID, viaTeam.ID} {
-		if err := store.SetUserOrganization(u, org.ID); err != nil {
-			t.Fatalf("SetUserOrganization failed: %v", err)
+		if err := store.AddOrganizationMember(org.ID, u); err != nil {
+			t.Fatalf("AddOrganizationMember failed: %v", err)
 		}
 	}
 	team, err := store.CreateTeam(org.ID, "WG", "")

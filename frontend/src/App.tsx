@@ -72,6 +72,9 @@ import { useSessionBootstrap } from './app/useSessionBootstrap';
 import i18n, { applyLanguage, resolveLanguage } from './i18n';
 import { useTranslation } from 'react-i18next';
 
+// Server admins and user managers reach the administration
+const canAdminister = (u: User) => u.role === 'admin' || u.role === 'manager';
+
 
 export const App: React.FC = () => {
   const { t } = useTranslation('app');
@@ -140,7 +143,7 @@ export const App: React.FC = () => {
     [user?.language, authStatus.defaultLanguage]
   );
   useEffect(() => {
-    if (user && user.role !== 'admin' && activeTab === 'admin_settings') setActiveTab('triage');
+    if (user && !canAdminister(user) && activeTab === 'admin_settings') setActiveTab('triage');
   }, [user, activeTab]);
   const [previousTab, setPreviousTab] = useState<ActiveTab>('triage');
   const [selectedDocId, setSelectedDocId] = useState<string | null>(null);
@@ -529,8 +532,9 @@ export const App: React.FC = () => {
     return <OAuthConsentView user={user} instanceName={authStatus.instanceName || 'MindSift'} onLogout={handleLogout} />;
   }
 
-  const isServerAdmin = user.role === 'admin';
-  const roleLabel = isServerAdmin ? t('common:role.admin') : t('common:role.member');
+  // Server admins and user managers reach the administration (managers only its people sections)
+  const isServerAdmin = canAdminister(user);
+  const roleLabel = t(`common:role.${user.role}`);
 
   const activeTabLabelMap: Record<ActiveTab, string> = {
     triage: t('common:nav.triage'),

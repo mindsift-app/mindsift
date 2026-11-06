@@ -680,7 +680,7 @@ const de: HelpContent = {
       id: 'collab-teams-sharing',
       category: 'collaboration',
       title: 'Organisationen, Gruppen & Freigaben',
-      subtitle: 'Wer wen sieht, und Notizen, Ordner und Listen sicher teilen',
+      subtitle: 'Wer mit wem teilen darf, und Notizen, Ordner und Listen sicher teilen',
       icon: Users,
       keywords: [
         'teams',
@@ -694,18 +694,23 @@ const de: HelpContent = {
         'bearbeiter',
         'leser',
         'ordner',
+        'öffentlich',
+        'link',
       ],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
           <ul className="space-y-1.5">
             <li>
-              <strong className="text-main">Wer wen sieht:</strong> Das legt der Server-Admin fest. Je nach Einstellung siehst du alle Nutzer, nur die Mitglieder deiner <em>Organisation</em> oder niemanden (Modus „Privat“: kein Teilen, keine Gruppen). Organisationen verwaltet nur der Server-Admin; jeder gehört höchstens einer an.
+              <strong className="text-main">Wer mit wem teilen darf:</strong> Das legt der Server-Admin fest: mit allen, nur mit Personen, mit denen du mindestens eine <em>Organisation</em> gemeinsam hast, oder mit niemandem (Modus „Privat“: kein Teilen, keine Gruppen). Du kannst mehreren Organisationen angehören; sie verwalten Server-Admins und die Benutzerverwaltung. Ist die Personensuche abgeschaltet, gibst du beim Teilen die genaue E-Mail-Adresse oder den Benutzernamen ein. Wer mit dir an etwas arbeitet, siehst du dort immer mit Namen.
             </li>
             <li>
               <strong className="text-main">Gruppen:</strong> Fasse Personen, die du sehen kannst, zu Gruppen zusammen (z. B. Familie, WG, Projekt) und teile mit allen auf einmal. Wer eine Gruppe anlegt, ist ihr Admin; mit einer Gruppe teilen kann nur, wer selbst Mitglied ist.
             </li>
             <li>
-              <strong className="text-main">Nur der Eigentümer teilt:</strong> Bearbeiter können Inhalte ändern, aber nicht weiterteilen. Eine Freigabe an dich kannst du jederzeit selbst verlassen. Wechselt jemand die Organisation oder verlässt eine Gruppe, fallen seine Freigaben dort automatisch weg.
+              <strong className="text-main">Nur der Eigentümer teilt:</strong> Bearbeiter können Inhalte ändern, aber nicht weiterteilen. Eine Freigabe an dich kannst du jederzeit selbst verlassen. Verlässt jemand eine Organisation oder Gruppe, fallen Freigaben, die nur darüber erlaubt waren, automatisch weg.
+            </li>
+            <li>
+              <strong className="text-main">Öffentlicher Link:</strong> Eine eigene Notiz kannst du im Teilen-Dialog per Link zum Lesen freigeben, auch für Leute ohne Konto, wahlweise mit Passwort. Der Link läuft immer ab (1 Stunde bis 14 Tage), lässt sich jederzeit zurückziehen und landet nicht in Suchmaschinen. Besucher sehen Änderungen live, aber keine verborgenen Werte und keine Namen. Ob es das gibt, entscheidet der Server-Admin.
             </li>
             <li>
               <strong className="text-main">Rollen (Bearbeiter vs. Leser):</strong> Beim Teilen von Notizen, Ordnern oder Listen wählst du zwischen <em>Bearbeiter</em> (Vollzugriff auf Inhalte und Checklisten) und <em>Nur Lesen</em> (reine Ansicht mit Live-Updates).

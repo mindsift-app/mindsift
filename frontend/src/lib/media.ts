@@ -2,9 +2,10 @@
 //   image  ![Beschriftung](media:med_…)
 //   audio  [Beschriftung](media:med_…)
 // so the reference travels with the normal note sync. Files are loaded with the login (fetch) and
-// shown as blob: URLs; there are no public links.
+// shown as blob: URLs; on a public note page through its link (lib/publicNote.ts).
 import { authHeaders } from './api';
 import i18n from '../i18n';
+import { publicMediaRequest } from './publicNote';
 
 const MEDIA_RE = /^!?\[((?:[^\]\\]|\\.)*)\]\(media:(med_[0-9a-f]+)\)$/;
 
@@ -28,15 +29,17 @@ export function mediaContent(kind: 'image' | 'audio', id: string, caption = ''):
 const loaded = new Map<string, Promise<{ blob: Blob; url: string }>>();
 
 function loadMedia(id: string): Promise<{ blob: Blob; url: string }> {
+  const pub = publicMediaRequest(id);
+  if (pub) return loadAuthorized(pub.path, pub.headers);
   return loadAuthorized(`/api/v1/media/${encodeURIComponent(id)}`);
 }
 
 /** Any picture of the API (needs the login, so no plain <img src>), as Blob plus blob: URL. */
-export function loadAuthorized(path: string): Promise<{ blob: Blob; url: string }> {
+export function loadAuthorized(path: string, headers: Record<string, string> = authHeaders()): Promise<{ blob: Blob; url: string }> {
   let p = loaded.get(path);
   if (!p) {
     p = (async () => {
-      const res = await fetch(path, { headers: authHeaders() });
+      const res = await fetch(path, { headers });
       if (!res.ok) throw new Error(res.status === 404 ? i18n.t('common:media.notFound') : `HTTP ${res.status}`);
       const blob = await res.blob();
       return { blob, url: URL.createObjectURL(blob) };

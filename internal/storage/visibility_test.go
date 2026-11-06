@@ -33,9 +33,9 @@ func TestVisibilityFollowsOrganizations(t *testing.T) {
 	dora, _ := store.CreateUser("dora@example.com", "hash", "Dora", "member")
 	org1, _ := store.CreateOrganization("Familie")
 	org2, _ := store.CreateOrganization("Firma")
-	_ = store.SetUserOrganization(anna.ID, org1.ID)
-	_ = store.SetUserOrganization(ben.ID, org1.ID)
-	_ = store.SetUserOrganization(carl.ID, org2.ID)
+	_ = store.AddOrganizationMember(org1.ID, anna.ID)
+	_ = store.AddOrganizationMember(org1.ID, ben.ID)
+	_ = store.AddOrganizationMember(org2.ID, carl.ID)
 
 	// Who sees whom (server admins follow the same rule)
 	cases := []struct {
@@ -106,8 +106,11 @@ func TestVisibilityFollowsOrganizations(t *testing.T) {
 	}
 
 	// Ben moves to the other organization: he loses shares, group and assignment
-	if err := store.SetUserOrganization(ben.ID, org2.ID); err != nil {
-		t.Fatalf("SetUserOrganization failed: %v", err)
+	if err := store.AddOrganizationMember(org2.ID, ben.ID); err != nil {
+		t.Fatalf("AddOrganizationMember failed: %v", err)
+	}
+	if err := store.RemoveOrganizationMember(org1.ID, ben.ID); err != nil {
+		t.Fatalf("RemoveOrganizationMember failed: %v", err)
 	}
 	if shares, _ := store.GetDocShares(doc.ID); len(shares) != 0 {
 		t.Errorf("doc share with Ben should be gone, got %+v", shares)
@@ -202,5 +205,81 @@ func TestListItemsNeedWriteAccess(t *testing.T) {
 	th, _ := store.CreateThoughtWithDetails(eve.ID, "Spam", "normal", "manual", "", "", "todo", "")
 	if _, err := store.UpdateThoughtTriage(eve.ID, th.ID, "keep", "list_item", list.ID, "", ""); err == nil {
 		t.Errorf("thought must not become an item of a list without write access")
+	}
+}
+
+func TestSeveralOrganizations(t *testing.T) {
+	store, err := NewStore(filepath.Join(t.TempDir(), "orgs.db"))
+	if err != nil {
+		t.Fatalf("NewStore failed: %v", err)
+	}
+	defer store.Close()
+
+	anna, _ := store.CreateUser("anna@example.com", "hash", "Anna", "member")
+	ben, _ := store.CreateUser("ben@example.com", "hash", "Ben", "member")
+	carl, _ := store.CreateUser("carl@example.com", "hash", "Carl", "member")
+	family, _ := store.CreateOrganization("Familie")
+	work, _ := store.CreateOrganization("Firma")
+	_ = store.AddOrganizationMember(family.ID, anna.ID)
+	_ = store.AddOrganizationMember(family.ID, ben.ID)
+	_ = store.AddOrganizationMember(work.ID, ben.ID)
+	_ = store.AddOrganizationMember(work.ID, carl.ID)
+
+	// Ben is in both: he sees everyone, Anna and Carl do not see each other
+	cases := []struct {
+		a, b *domain.User
+		want bool
+	}{{ben, anna, true}, {ben, carl, true}, {anna, carl, false}, {carl, anna, false}}
+	for _, c := range cases {
+		if got := store.CanSee(c.a.ID, c.b.ID); got != c.want {
+			t.Errorf("CanSee(%s, %s) = %v, want %v", c.a.DisplayName, c.b.DisplayName, got, c.want)
+		}
+	}
+	if ids := store.UserOrganizationIDs(ben.ID); len(ids) != 2 {
+		t.Errorf("Ben should be in two organizations, got %v", ids)
+	}
+
+	// Ben shares one note with both; Anna's group lives in the family
+	doc, _ := store.CreateDocument(ben.ID, "", "Anleitung", "🗒️", "", nil, nil, false)
+	if _, err := store.CreateDocShare(ben.ID, doc.ID, anna.ID, "read"); err != nil {
+		t.Fatalf("share with Anna: %v", err)
+	}
+	if _, err := store.CreateDocShare(ben.ID, doc.ID, carl.ID, "read"); err != nil {
+		t.Fatalf("share with Carl: %v", err)
+	}
+	team, _ := store.CreateTeam(family.ID, "WG", "")
+	_ = store.AddTeamMember(team.ID, anna.ID, "admin")
+	_ = store.AddTeamMember(team.ID, ben.ID, "member")
+	if store.FitsTeamOrganization(team.ID, carl.ID) {
+		t.Errorf("Carl is not in the family and must not join its group")
+	}
+
+	// Preview: leaving the company costs Ben only the share with Carl
+	n, err := store.RemoveOrganizationMemberImpact(work.ID, ben.ID)
+	if err != nil || n != 1 {
+		t.Fatalf("impact of leaving the company = %d (%v), want 1", n, err)
+	}
+	if shares, _ := store.GetDocShares(doc.ID); len(shares) != 2 {
+		t.Fatalf("the preview must not change anything, shares: %+v", shares)
+	}
+
+	// Leaving the family takes the share with Anna and the group, the company keeps Carl
+	if err := store.RemoveOrganizationMember(family.ID, ben.ID); err != nil {
+		t.Fatalf("RemoveOrganizationMember: %v", err)
+	}
+	shares, _ := store.GetDocShares(doc.ID)
+	if len(shares) != 1 || shares[0].UserID != carl.ID {
+		t.Errorf("only the share with Carl should be left, got %+v", shares)
+	}
+	if members, _ := store.GetTeamMembers(team.ID); len(members) != 1 {
+		t.Errorf("Ben should have left the family group, members: %+v", members)
+	}
+
+	// Deleting the organization frees its members
+	if err := store.DeleteOrganization(work.ID); err != nil {
+		t.Fatalf("DeleteOrganization: %v", err)
+	}
+	if store.CanSee(ben.ID, carl.ID) {
+		t.Errorf("without a common organization Ben and Carl must not see each other")
 	}
 }

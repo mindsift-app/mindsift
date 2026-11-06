@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import i18n from '../../../i18n';
 import { Organization, SharingMode, SystemSettings, User, UserInvite, UserRole } from '../../../lib/types';
-import { api, setCurrentSharingMode, triggerHaptic } from '../../../lib/api';
+import { api, setCurrentPeopleSearch, setCurrentSharingMode, triggerHaptic } from '../../../lib/api';
 import { passwordProblem } from '../../../lib/password';
 import { askConfirm } from '../../../components/askConfirm';
 
@@ -28,11 +28,11 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
   const [newUserEmail, setNewUserEmail] = useState('');
   const [newUserPassword, setNewUserPassword] = useState('');
   const [newUserRole, setNewUserRole] = useState<UserRole>('member');
-  const [newUserOrg, setNewUserOrg] = useState('');
+  // Organizations a new account or invite joins (a person can be in several)
+  const [newUserOrgs, setNewUserOrgs] = useState<string[]>([]);
 
   const [inviteEmail, setInviteEmail] = useState('');
-  const [inviteRole, setInviteRole] = useState<UserRole>('member');
-  const [inviteOrg, setInviteOrg] = useState('');
+  const [inviteOrgs, setInviteOrgs] = useState<string[]>([]);
   // A link for several people (1 = classic single-use code)
   const [inviteMaxUses, setInviteMaxUses] = useState(1);
   // "Per E-Mail einladen": which invite the address field is open for
@@ -46,8 +46,12 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
   const [renamingOrgId, setRenamingOrgId] = useState<string | null>(null);
   const [renameOrgVal, setRenameOrgVal] = useState('');
   const [deletingOrgId, setDeletingOrgId] = useState<string | null>(null);
-  // Moving someone out of an organization removes their shares there, so it needs a confirmation
-  const [pendingMove, setPendingMove] = useState<{ user: User; orgId: string } | null>(null);
+  // The organization opened to manage its members
+  const [openOrgId, setOpenOrgId] = useState<string | null>(null);
+  // Taking someone out of an organization that costs shares asks first (affected: what would go)
+  const [pendingRemoval, setPendingRemoval] = useState<{ orgId: string; user: User; affected: number } | null>(null);
+  // The server's sharing mode, also for user managers (they cannot read the server settings)
+  const [sharingMode, setSharingMode] = useState<SharingMode>('organizations');
   const [pendingMode, setPendingMode] = useState<{ mode: SharingMode; affected: number } | null>(null);
   const [copiedInviteId, setCopiedInviteId] = useState<string | null>(null);
 
@@ -76,16 +80,17 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
 
   const loadAll = async () => {
     try {
-      const [uList, invList] = await Promise.all([
+      const [uList, invList, orgs] = await Promise.all([
         api.adminGetUsers(),
         api.adminGetInvites(),
+        api.adminGetOrganizations(),
       ]);
       setUsers(uList);
       setInvites(invList);
+      setOrganizations(orgs);
 
       if (isServerAdmin) {
-        const [sys, orgs] = await Promise.all([api.adminGetSettings(), api.adminGetOrganizations()]);
-        setOrganizations(orgs);
+        const sys = await api.adminGetSettings();
         setSettings({
           sharingMode: sys.sharingMode || 'organizations',
           allowRegistration: Boolean(sys.allowRegistration),
@@ -113,6 +118,12 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
           retentionNeverViaEnv: Boolean(sys.retentionNeverViaEnv),
           mcpEnabled: sys.mcpEnabled ?? true,
           mcpConfiguredViaEnv: Boolean(sys.mcpConfiguredViaEnv),
+          peopleSearch: sys.peopleSearch ?? true,
+          peopleSearchConfiguredViaEnv: Boolean(sys.peopleSearchConfiguredViaEnv),
+          publicLinks: sys.publicLinks ?? true,
+          publicLinksConfiguredViaEnv: Boolean(sys.publicLinksConfiguredViaEnv),
+          publicLinkMaxDays: sys.publicLinkMaxDays || 14,
+          publicLinkMaxDaysConfiguredViaEnv: Boolean(sys.publicLinkMaxDaysConfiguredViaEnv),
         });
       }
     } catch (err: any) {
@@ -126,7 +137,10 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
     loadAll();
     api
       .getAuthStatus()
-      .then((st) => setDemoMode(Boolean(st.demoMode)))
+      .then((st) => {
+        setDemoMode(Boolean(st.demoMode));
+        if (st.sharingMode) setSharingMode(st.sharingMode);
+      })
       .catch(() => {});
   }, []);
 
@@ -147,15 +161,16 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
         email: newUserEmail.trim(),
         password: newUserPassword,
         displayName: newUserName.trim() || newUserEmail.split('@')[0],
-        role: newUserRole,
-        organizationId: newUserOrg || undefined,
+        role: isServerAdmin ? newUserRole : 'member',
+        organizationIds: newUserOrgs,
       });
       setUsers((prev) => [...prev, created]);
-      if (newUserOrg) await reloadOrganizations();
+      if (newUserOrgs.length > 0) await reloadOrganizations();
       setNewUserName('');
       setNewUserEmail('');
       setNewUserPassword('');
       setNewUserRole('member');
+      setNewUserOrgs([]);
       setStatusMsg({ type: 'ok', text: i18n.t('settings:admin.userCreated', { name: created.displayName }) });
     } catch (err: any) {
       setStatusMsg({ type: 'err', text: err.message || i18n.t('settings:users.create.failed') });
@@ -169,8 +184,7 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
     try {
       const inv = await api.adminCreateInvite({
         email: inviteMaxUses > 1 ? '' : inviteEmail.trim(),
-        role: inviteRole,
-        organizationId: inviteOrg || undefined,
+        organizationIds: inviteOrgs,
         maxUses: inviteMaxUses,
       });
       setInvites((prev) => [inv, ...prev]);
@@ -242,7 +256,7 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
       setUsers((prev) => prev.map((item) => (item.id === u.id ? updated : item)));
       setStatusMsg({
         type: 'ok',
-        text: i18n.t('settings:users.roleChanged', { name: updated.displayName, role }),
+        text: i18n.t('settings:users.roleChanged', { name: updated.displayName, role: i18n.t(`common:role.${role}`) }),
       });
     } catch (err: any) {
       setStatusMsg({ type: 'err', text: err.message });
@@ -354,27 +368,43 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
     try {
       await api.adminDeleteOrganization(orgId);
       setDeletingOrgId(null);
-      setUsers((prev) => prev.map((u) => (u.organizationId === orgId ? { ...u, organizationId: '' } : u)));
+      setUsers((prev) => prev.map((u) => ({ ...u, organizationIds: (u.organizationIds || []).filter((id) => id !== orgId) })));
       await reloadOrganizations();
     } catch (err: any) {
       setStatusMsg({ type: 'err', text: err.message || i18n.t('settings:orgs.deleteFailed') });
     }
   };
 
-  const applyUserOrganization = async (u: User, orgId: string) => {
-    setPendingMove(null);
+  const setUserOrgs = (userId: string, change: (ids: string[]) => string[]) =>
+    setUsers((prev) => prev.map((x) => (x.id === userId ? { ...x, organizationIds: change(x.organizationIds || []) } : x)));
+
+  const handleAddOrgMember = async (orgId: string, u: User) => {
     try {
-      await api.adminSetUserOrganization(u.id, orgId);
-      setUsers((prev) => prev.map((x) => (x.id === u.id ? { ...x, organizationId: orgId } : x)));
+      await api.adminAddOrganizationMember(orgId, u.id);
+      setUserOrgs(u.id, (ids) => (ids.includes(orgId) ? ids : [...ids, orgId]));
       await reloadOrganizations();
     } catch (err: any) {
       setStatusMsg({ type: 'err', text: err.message || i18n.t('settings:orgs.assignFailed') });
     }
   };
 
-  const handleChangeUserOrganization = (u: User, orgId: string) => {
-    if (u.organizationId) setPendingMove({ user: u, orgId });
-    else applyUserOrganization(u, orgId);
+  // Removes at once when nothing is lost; otherwise asks first and says how much would go
+  const handleRemoveOrgMember = async (orgId: string, u: User, confirmed = false) => {
+    try {
+      if (!confirmed) {
+        const affected = await api.adminRemoveOrganizationMember(orgId, u.id, true);
+        if (affected > 0) {
+          setPendingRemoval({ orgId, user: u, affected });
+          return;
+        }
+      }
+      setPendingRemoval(null);
+      await api.adminRemoveOrganizationMember(orgId, u.id);
+      setUserOrgs(u.id, (ids) => ids.filter((id) => id !== orgId));
+      await reloadOrganizations();
+    } catch (err: any) {
+      setStatusMsg({ type: 'err', text: err.message || i18n.t('settings:orgs.assignFailed') });
+    }
   };
 
   const orgName = (id?: string) => organizations.find((o) => o.id === id)?.name || '';
@@ -405,6 +435,8 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
       const saved = await api.adminUpdateSettings(next);
       setSettings((prev) => ({ ...prev, ...saved }));
       setCurrentSharingMode(saved.sharingMode);
+      setSharingMode(saved.sharingMode);
+      if (saved.peopleSearch !== undefined) setCurrentPeopleSearch(saved.peopleSearch);
       setStatusMsg({ type: 'ok', text: i18n.t('settings:server.saved') });
     } catch (err: any) {
       setStatusMsg({ type: 'err', text: err.message || i18n.t('settings:profile.saveFailed') });
@@ -418,15 +450,9 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
     try {
       await api.adminUpdateSettings(settings);
       await api.adminTestSMTP(testSmtpEmail.trim());
-      setStatusMsg({
-        type: 'ok',
-        text: `Test-E-Mail erfolgreich an ${testSmtpEmail.trim()} gesendet!`,
-      });
+      setStatusMsg({ type: 'ok', text: i18n.t('settings:smtp.testSent', { email: testSmtpEmail.trim() }) });
     } catch (err: any) {
-      setStatusMsg({
-        type: 'err',
-        text: `SMTP-Test fehlgeschlagen: ${err.message}`,
-      });
+      setStatusMsg({ type: 'err', text: i18n.t('settings:smtp.testFailed', { error: err.message }) });
     } finally {
       setTestingSmtp(false);
     }
@@ -439,10 +465,9 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
     newUserEmail,
     newUserPassword,
     newUserRole,
-    newUserOrg,
+    newUserOrgs,
     inviteEmail,
-    inviteRole,
-    inviteOrg,
+    inviteOrgs,
     inviteMaxUses,
     mailInviteId,
     mailInviteTo,
@@ -452,7 +477,11 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
     renamingOrgId,
     renameOrgVal,
     deletingOrgId,
-    pendingMove,
+    openOrgId,
+    setOpenOrgId,
+    pendingRemoval,
+    setPendingRemoval,
+    sharingMode,
     pendingMode,
     copiedInviteId,
     resetPwdUserId,
@@ -480,8 +509,8 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
     handleCreateOrganization,
     handleRenameOrganization,
     handleDeleteOrganization,
-    applyUserOrganization,
-    handleChangeUserOrganization,
+    handleAddOrgMember,
+    handleRemoveOrgMember,
     orgName,
     handleSelectSharingMode,
     handleSaveSystemSettings,
@@ -490,10 +519,9 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
     setNewUserEmail,
     setNewUserPassword,
     setNewUserRole,
-    setNewUserOrg,
+    setNewUserOrgs,
     setInviteEmail,
-    setInviteRole,
-    setInviteOrg,
+    setInviteOrgs,
     setInviteMaxUses,
     setMailInviteId,
     setMailInviteTo,
@@ -501,7 +529,6 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
     setRenamingOrgId,
     setRenameOrgVal,
     setDeletingOrgId,
-    setPendingMove,
     setPendingMode,
     setResetPwdUserId,
     setResetPwdVal,

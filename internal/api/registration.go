@@ -194,7 +194,7 @@ func (s *Server) appLink(r *http.Request) string {
 	return scheme + "://" + host + "/"
 }
 
-// notifyAdminsOfRegistration mails every active admin that someone waits (only with SMTP).
+// notifyAdminsOfRegistration mails every active admin and user manager that someone waits (only with SMTP).
 func (s *Server) notifyAdminsOfRegistration(user *domain.User) {
 	if _, err := s.smtpSettings(); err != nil {
 		return
@@ -204,7 +204,7 @@ func (s *Server) notifyAdminsOfRegistration(user *domain.User) {
 		return
 	}
 	for _, a := range users {
-		if a.Role != "admin" || !a.IsActive || a.Email == "" {
+		if (a.Role != domain.RoleAdmin && a.Role != domain.RoleManager) || !a.IsActive || a.Email == "" {
 			continue
 		}
 		lang := s.userLanguage(a.ID)

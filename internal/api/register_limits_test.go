@@ -12,7 +12,7 @@ import (
 func TestInviteCodeRedeemedOnlyOnce(t *testing.T) {
 	srv, store, _ := setupTestServer(t)
 	router := srv.Router()
-	inv, err := store.CreateUserInvite("", "", "member", "", 7, 1)
+	inv, err := store.CreateUserInvite("", "", nil, 7, 1)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -46,7 +46,7 @@ func TestInviteCodeRedeemedOnlyOnce(t *testing.T) {
 func TestInviteReleasedWhenAccountFails(t *testing.T) {
 	srv, store, _ := setupTestServer(t)
 	router := srv.Router()
-	inv, _ := store.CreateUserInvite("", "", "member", "", 7, 1)
+	inv, _ := store.CreateUserInvite("", "", nil, 7, 1)
 	_, _ = store.CreateUser("taken@example.com", "hash", "Taken", "member")
 	body := func(email string) string {
 		return `{"email":"` + email + `","password":"password123","inviteCode":"` + inv.Code + `"}`

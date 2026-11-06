@@ -28,7 +28,9 @@
     "descriptionPlaceholder": "e.g. shared shopping lists & notes…",
     "youAdmin": "You become group admin",
     "youAdminHint": "As the creator you can add members, assign roles and manage the group.",
-    "submit": "Create group"
+    "submit": "Create group",
+    "organization": "Organization",
+    "organizationHint": "The group’s members come from this organization."
   },
   "loading": "Loading groups…",
   "empty": {

@@ -4,6 +4,7 @@
 // choice syncs with the note; a global switch (this device) turns all previews off.
 import { useEffect, useState } from 'react';
 import { authHeaders } from './api';
+import { isPublicView } from './publicNote';
 
 export interface LinkPreview {
   key: string;
@@ -61,6 +62,7 @@ const SETTING_KEY = 'mindsift_link_previews';
 const SETTING_EVENT = 'mindsift:link-previews';
 
 export function linkPreviewsEnabled(): boolean {
+  if (isPublicView()) return false; // previews need a login
   try {
     return localStorage.getItem(SETTING_KEY) !== 'off';
   } catch {

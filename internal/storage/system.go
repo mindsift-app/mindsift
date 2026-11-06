@@ -183,6 +183,16 @@ func (s *Store) GetSystemSettings() (*domain.SystemSettings, error) {
 			case "mcp_enabled":
 				on := v != "false"
 				settings.MCPEnabled = &on
+			case "people_search":
+				on := v != "false"
+				settings.PeopleSearch = &on
+			case "public_links":
+				on := v != "false"
+				settings.PublicLinks = &on
+			case "public_link_max_days":
+				if n, err := strconv.Atoi(v); err == nil && n >= 1 && n <= MaxPublicLinkDays {
+					settings.PublicLinkMaxDays = n
+				}
 			case "default_language":
 				if i18n.Valid(v) {
 					settings.DefaultLanguage = v
@@ -205,6 +215,17 @@ func (s *Store) GetSystemSettings() (*domain.SystemSettings, error) {
 	if settings.MCPEnabled == nil {
 		on := true
 		settings.MCPEnabled = &on
+	}
+	if settings.PeopleSearch == nil {
+		on := true
+		settings.PeopleSearch = &on
+	}
+	if settings.PublicLinks == nil {
+		on := true
+		settings.PublicLinks = &on
+	}
+	if settings.PublicLinkMaxDays == 0 {
+		settings.PublicLinkMaxDays = MaxPublicLinkDays
 	}
 	return settings, nil
 }
@@ -296,6 +317,16 @@ func (s *Store) UpdateSystemSettings(settings *domain.SystemSettings) error {
 		_, err = s.db.Exec(`INSERT INTO system_settings (key, value) VALUES ('mcp_enabled', ?)
 			ON CONFLICT(key) DO UPDATE SET value = excluded.value`, strconv.FormatBool(*settings.MCPEnabled))
 	}
+	for key, v := range map[string]*bool{"people_search": settings.PeopleSearch, "public_links": settings.PublicLinks} {
+		if err == nil && v != nil {
+			_, err = s.db.Exec(`INSERT INTO system_settings (key, value) VALUES (?, ?)
+				ON CONFLICT(key) DO UPDATE SET value = excluded.value`, key, strconv.FormatBool(*v))
+		}
+	}
+	if err == nil && settings.PublicLinkMaxDays >= 1 && settings.PublicLinkMaxDays <= MaxPublicLinkDays {
+		_, err = s.db.Exec(`INSERT INTO system_settings (key, value) VALUES ('public_link_max_days', ?)
+			ON CONFLICT(key) DO UPDATE SET value = excluded.value`, strconv.Itoa(settings.PublicLinkMaxDays))
+	}
 	if err == nil && settings.DefaultLanguage != "" {
 		if !i18n.Valid(settings.DefaultLanguage) {
 			return ErrInvalidLanguage
@@ -305,6 +336,9 @@ func (s *Store) UpdateSystemSettings(settings *domain.SystemSettings) error {
 	}
 	return err
 }
+
+// MaxPublicLinkDays: no public link lives longer than this (there is no link for good).
+const MaxPublicLinkDays = 14
 
 // MCPEnabledSetting: the admin's switch for the MCP endpoint in the system settings (default: on).
 func (s *Store) MCPEnabledSetting() bool {

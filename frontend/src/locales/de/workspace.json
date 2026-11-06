@@ -416,5 +416,26 @@
     "save": "Speichern",
     "gone": "Geheimnis gelöscht",
     "unreadable": "Nicht lesbar"
+  },
+  "publicLink": {
+    "title": "Öffentlicher Link",
+    "hint": "Jeder mit dem Link kann die Notiz lesen, auch ohne Konto. Der Link läuft immer ab und landet nicht in Suchmaschinen.",
+    "duration": "Gültig für",
+    "for": {
+      "1": "1 Stunde",
+      "24": "1 Tag",
+      "72": "3 Tage",
+      "168": "7 Tage",
+      "336": "14 Tage"
+    },
+    "passwordOptional": "Passwort (optional)",
+    "create": "Link erstellen",
+    "replace": "Neuen Link erstellen",
+    "copy": "Kopieren",
+    "copied": "Kopiert",
+    "expires": "Gültig bis {{date}}",
+    "withPassword": "mit Passwort",
+    "new": "Neuer Link",
+    "revoke": "Zurückziehen"
   }
 }

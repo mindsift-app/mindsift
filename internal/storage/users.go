@@ -15,7 +15,7 @@ import (
 
 // --- USERS ---
 
-const userSelectCols = `id, email, username, password_hash, display_name, role, is_active, token_version, alarm_channels, alarm_email, discord_webhook_url, custom_webhook_url, notify_before_minutes, avatar_url, organization_id, created_at`
+const userSelectCols = `id, email, username, password_hash, display_name, role, is_active, token_version, alarm_channels, alarm_email, discord_webhook_url, custom_webhook_url, notify_before_minutes, avatar_url, created_at`
 
 func parseAlarmChannels(raw string) []string {
 	parts := strings.Split(raw, ",")
@@ -38,7 +38,7 @@ func scanUser(row interface{ Scan(dest ...any) error }) (*domain.User, error) {
 	err := row.Scan(
 		&u.ID, &u.Email, &u.Username, &u.PasswordHash, &u.DisplayName,
 		&u.Role, &isActiveInt, &u.TokenVersion, &channelsRaw, &u.AlarmEmail,
-		&u.DiscordWebhookURL, &u.CustomWebhookURL, &u.NotifyBeforeMinutes, &u.AvatarURL, &u.OrganizationID, &u.CreatedAt,
+		&u.DiscordWebhookURL, &u.CustomWebhookURL, &u.NotifyBeforeMinutes, &u.AvatarURL, &u.CreatedAt,
 	)
 	if err != nil {
 		return nil, err
@@ -79,8 +79,8 @@ func (s *Store) CreateUserWithUsername(email, username, passwordHash, displayNam
 }
 
 func (s *Store) createUserWithID(id, email, username, passwordHash, displayName, role string) (*domain.User, error) {
-	if role != "admin" && role != "member" {
-		role = "member"
+	if !domain.ValidRole(role) {
+		role = domain.RoleMember
 	}
 	cleanEmail := strings.ToLower(strings.TrimSpace(email))
 	cleanUsername := UsernameFromName(username)
@@ -204,8 +204,8 @@ func (s *Store) EnsureDemoAccounts() error {
 	// share an organization so they can see each other in the default sharing mode.
 	if adminCreated {
 		if org, err := s.CreateOrganization("Demo"); err == nil {
-			_ = s.SetUserOrganization(adminUser.ID, org.ID)
-			_ = s.SetUserOrganization(normalUser.ID, org.ID)
+			_ = s.AddOrganizationMember(org.ID, adminUser.ID)
+			_ = s.AddOrganizationMember(org.ID, normalUser.ID)
 		}
 		_ = s.SeedStarterContent(adminUser)
 		s.seedDemoShares(adminUser, normalUser)
@@ -275,7 +275,7 @@ func (s *Store) UpdateUserFull(
 	if email != nil {
 		u.Email = strings.ToLower(strings.TrimSpace(*email))
 	}
-	if role != nil && (*role == "admin" || *role == "member") {
+	if role != nil && domain.ValidRole(*role) {
 		u.Role = *role
 	}
 	if isActive != nil {
@@ -331,6 +331,7 @@ func (s *Store) DeleteUser(userID string) error {
 		stmt(`DELETE FROM sessions WHERE user_id = ?`, userID),
 		stmt(`DELETE FROM task_assignees WHERE user_id = ?`, userID),
 		stmt(`DELETE FROM password_reset_tokens WHERE user_id = ?`, userID),
+		stmt(`DELETE FROM organization_members WHERE user_id = ?`, userID),
 		stmt(`DELETE FROM users WHERE id = ?`, userID),
 	); err != nil {
 		return err
@@ -353,10 +354,9 @@ func (s *Store) RevokeAllUserTokens(userID string) error {
 // MaxInviteUses caps how many accounts one invite link can create.
 const MaxInviteUses = 1000
 
-func (s *Store) CreateUserInvite(createdBy, email, role, orgID string, validDays, maxUses int) (*domain.UserInvite, error) {
-	if role != "admin" && role != "member" {
-		role = "member"
-	}
+// CreateUserInvite creates an invite code. New accounts from invites are always members; organizations
+// they join are given as orgIDs (unknown ones are dropped).
+func (s *Store) CreateUserInvite(createdBy, email string, orgIDs []string, validDays, maxUses int) (*domain.UserInvite, error) {
 	if validDays <= 0 || validDays > 365 {
 		validDays = 7
 	}
@@ -372,20 +372,20 @@ func (s *Store) CreateUserInvite(createdBy, email, role, orgID string, validDays
 	code := newInviteCode()
 	now := time.Now().UTC()
 	inv := &domain.UserInvite{
-		ID:             domain.NewID("inv"),
-		Code:           code,
-		Email:          strings.ToLower(strings.TrimSpace(email)),
-		Role:           role,
-		OrganizationID: strings.TrimSpace(orgID),
-		CreatedBy:      createdBy,
-		ExpiresAt:      now.AddDate(0, 0, validDays).Format(time.RFC3339),
-		CreatedAt:      now.Format(time.RFC3339),
-		MaxUses:        maxUses,
+		ID:              domain.NewID("inv"),
+		Code:            code,
+		Email:           strings.ToLower(strings.TrimSpace(email)),
+		Role:            "member",
+		OrganizationIDs: s.ValidOrganizationIDs(orgIDs),
+		CreatedBy:       createdBy,
+		ExpiresAt:       now.AddDate(0, 0, validDays).Format(time.RFC3339),
+		CreatedAt:       now.Format(time.RFC3339),
+		MaxUses:         maxUses,
 	}
 	_, err := s.db.Exec(
-		`INSERT INTO user_invites (id, code, email, role, organization_id, created_by, expires_at, used_by, created_at, max_uses, use_count)
+		`INSERT INTO user_invites (id, code, email, role, organization_ids, created_by, expires_at, used_by, created_at, max_uses, use_count)
 		 VALUES (?, ?, ?, ?, ?, ?, ?, '', ?, ?, 0)`,
-		inv.ID, inv.Code, inv.Email, inv.Role, inv.OrganizationID, inv.CreatedBy, inv.ExpiresAt, inv.CreatedAt, inv.MaxUses,
+		inv.ID, inv.Code, inv.Email, inv.Role, strings.Join(inv.OrganizationIDs, ","), inv.CreatedBy, inv.ExpiresAt, inv.CreatedAt, inv.MaxUses,
 	)
 	if err != nil {
 		return nil, err
@@ -395,25 +395,48 @@ func (s *Store) CreateUserInvite(createdBy, email, role, orgID string, validDays
 
 func (s *Store) GetUserInvites() ([]domain.UserInvite, error) {
 	rows, err := s.db.Query(
-		`SELECT i.id, i.code, i.email, i.role, i.organization_id, COALESCE(o.name, ''), i.created_by, i.expires_at, i.used_by, i.created_at,
-		        i.max_uses, i.use_count
-		 FROM user_invites i
-		 LEFT JOIN organizations o ON o.id = i.organization_id
-		 ORDER BY i.created_at DESC`,
+		`SELECT id, code, email, role, organization_ids, created_by, expires_at, used_by, created_at, max_uses, use_count
+		 FROM user_invites ORDER BY created_at DESC`,
 	)
 	if err != nil {
 		return []domain.UserInvite{}, err
 	}
-	defer rows.Close()
-
 	invites := make([]domain.UserInvite, 0)
 	for rows.Next() {
 		var inv domain.UserInvite
-		if err := rows.Scan(&inv.ID, &inv.Code, &inv.Email, &inv.Role, &inv.OrganizationID, &inv.OrganizationName, &inv.CreatedBy, &inv.ExpiresAt, &inv.UsedBy, &inv.CreatedAt, &inv.MaxUses, &inv.UseCount); err == nil {
+		var orgs string
+		if err := rows.Scan(&inv.ID, &inv.Code, &inv.Email, &inv.Role, &orgs, &inv.CreatedBy, &inv.ExpiresAt, &inv.UsedBy, &inv.CreatedAt, &inv.MaxUses, &inv.UseCount); err == nil {
+			inv.OrganizationIDs = splitIDs(orgs)
 			invites = append(invites, inv)
 		}
 	}
+	_ = rows.Close()
+	// Names after the rows are closed (one connection at a time)
+	names := map[string]string{}
+	if orgs, err := s.GetOrganizations(); err == nil {
+		for _, o := range orgs {
+			names[o.ID] = o.Name
+		}
+	}
+	for i := range invites {
+		for _, id := range invites[i].OrganizationIDs {
+			if n, ok := names[id]; ok {
+				invites[i].OrganizationNames = append(invites[i].OrganizationNames, n)
+			}
+		}
+	}
 	return invites, nil
+}
+
+// splitIDs splits a comma-separated id list, dropping empty parts.
+func splitIDs(s string) []string {
+	out := []string{}
+	for _, p := range strings.Split(s, ",") {
+		if p = strings.TrimSpace(p); p != "" {
+			out = append(out, p)
+		}
+	}
+	return out
 }
 
 // newInviteCode returns INV- plus 100 random bits in Base32, grouped for typing:
@@ -436,11 +459,13 @@ func (s *Store) GetUserInviteByID(id string) (*domain.UserInvite, error) {
 
 func (s *Store) getUserInvite(where string, arg string) (*domain.UserInvite, error) {
 	var inv domain.UserInvite
+	var orgs string
 	err := s.db.QueryRow(
-		`SELECT id, code, email, role, organization_id, created_by, expires_at, used_by, created_at, max_uses, use_count
+		`SELECT id, code, email, role, organization_ids, created_by, expires_at, used_by, created_at, max_uses, use_count
 		 FROM user_invites WHERE `+where,
 		arg,
-	).Scan(&inv.ID, &inv.Code, &inv.Email, &inv.Role, &inv.OrganizationID, &inv.CreatedBy, &inv.ExpiresAt, &inv.UsedBy, &inv.CreatedAt, &inv.MaxUses, &inv.UseCount)
+	).Scan(&inv.ID, &inv.Code, &inv.Email, &inv.Role, &orgs, &inv.CreatedBy, &inv.ExpiresAt, &inv.UsedBy, &inv.CreatedAt, &inv.MaxUses, &inv.UseCount)
+	inv.OrganizationIDs = splitIDs(orgs)
 	if err != nil {
 		return nil, errors.New("Ungültiger Einladungscode")
 	}

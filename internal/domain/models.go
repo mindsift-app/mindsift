@@ -73,7 +73,7 @@ type User struct {
 	PasswordHash        string   `json:"-"`
 	DisplayName         string   `json:"displayName"`
 	AvatarURL           string   `json:"avatarUrl,omitempty"`
-	Role                string   `json:"role"` // admin | member
+	Role                string   `json:"role"` // admin | manager | member
 	IsActive            bool     `json:"isActive"`
 	TokenVersion        int      `json:"tokenVersion"`
 	AlarmChannels       []string `json:"alarmChannels"` // email | discord | webhook
@@ -81,8 +81,11 @@ type User struct {
 	DiscordWebhookURL   string   `json:"discordWebhookUrl"`
 	CustomWebhookURL    string   `json:"customWebhookUrl"`
 	NotifyBeforeMinutes int      `json:"notifyBeforeMinutes"`
-	OrganizationID      string   `json:"organizationId,omitempty"`
-	CreatedAt           string   `json:"createdAt"`
+	// OrganizationIDs: the organizations the user belongs to (admin user list only)
+	OrganizationIDs []string `json:"organizationIds,omitempty"`
+	// Organizations: the user's own organizations with names (own profile only, to pick one for a group)
+	Organizations []OrganizationRef `json:"organizations,omitempty"`
+	CreatedAt     string            `json:"createdAt"`
 	// Registered while registration needs approval and not approved yet (admin user list only)
 	PendingApproval bool `json:"pendingApproval,omitempty"`
 	// Registered and the e-mail address is not confirmed yet (admin user list only)
@@ -103,27 +106,41 @@ type User struct {
 	RetentionNeverAllowed bool       `json:"retentionNeverAllowed"`
 }
 
+// Server roles: admins run everything, user managers ("Benutzerverwaltung") look after members,
+// invites and organizations but not the server settings.
+const (
+	RoleAdmin   = "admin"
+	RoleManager = "manager"
+	RoleMember  = "member"
+)
+
+// ValidRole reports whether role is one of the server roles.
+func ValidRole(role string) bool {
+	return role == RoleAdmin || role == RoleManager || role == RoleMember
+}
+
 // PublicUser is the safe view of another person: only what others need to find and recognise them in
 // the directory and when sharing. It never carries private settings (webhooks, alarm e-mail, role,
 // notification settings, token version). An allowlist, so new User fields do not leak by default.
 type PublicUser struct {
-	ID             string `json:"id"`
-	Email          string `json:"email"`
-	Username       string `json:"username,omitempty"`
-	DisplayName    string `json:"displayName"`
-	AvatarURL      string `json:"avatarUrl,omitempty"`
-	OrganizationID string `json:"organizationId,omitempty"`
+	ID          string `json:"id"`
+	Email       string `json:"email"`
+	Username    string `json:"username,omitempty"`
+	DisplayName string `json:"displayName"`
+	AvatarURL   string `json:"avatarUrl,omitempty"`
+	// Findable: the viewer may share with this person; others in the directory are only there because
+	// they work on something together with the viewer (their names show there, nothing more)
+	Findable bool `json:"findable"`
 }
 
 // ToPublicUser reduces a user to the fields others may see.
 func ToPublicUser(u User) PublicUser {
 	return PublicUser{
-		ID:             u.ID,
-		Email:          u.Email,
-		Username:       u.Username,
-		DisplayName:    u.DisplayName,
-		AvatarURL:      u.AvatarURL,
-		OrganizationID: u.OrganizationID,
+		ID:          u.ID,
+		Email:       u.Email,
+		Username:    u.Username,
+		DisplayName: u.DisplayName,
+		AvatarURL:   u.AvatarURL,
 	}
 }
 
@@ -204,15 +221,16 @@ func (n NotificationSettings) Channels(kind string) ChannelChoice {
 }
 
 type UserInvite struct {
-	ID               string `json:"id"`
-	Code             string `json:"code"`
-	Email            string `json:"email,omitempty"`
-	Role             string `json:"role"` // member | admin
-	OrganizationID   string `json:"organizationId,omitempty"`
-	OrganizationName string `json:"organizationName,omitempty"`
-	CreatedBy        string `json:"createdBy"`
-	ExpiresAt        string `json:"expiresAt"`
-	UsedBy           string `json:"usedBy,omitempty"`
+	ID    string `json:"id"`
+	Code  string `json:"code"`
+	Email string `json:"email,omitempty"`
+	Role  string `json:"role"` // always member: invites never make admins
+	// Organizations the new account joins
+	OrganizationIDs   []string `json:"organizationIds,omitempty"`
+	OrganizationNames []string `json:"organizationNames,omitempty"`
+	CreatedBy         string   `json:"createdBy"`
+	ExpiresAt         string   `json:"expiresAt"`
+	UsedBy            string   `json:"usedBy,omitempty"`
 	// A link for several people: how often it may be used and how often it was
 	MaxUses   int    `json:"maxUses"`
 	UseCount  int    `json:"useCount"`
@@ -339,6 +357,12 @@ type TaskList struct {
 }
 
 // Organization is defined by server admins; each user belongs to at most one.
+// OrganizationRef names an organization (what members may know about their own ones).
+type OrganizationRef struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+}
+
 type Organization struct {
 	ID          string `json:"id"`
 	Name        string `json:"name"`
@@ -410,6 +434,18 @@ type SystemSettings struct {
 	// leaves it unchanged. MCPViaEnv: fixed by MCP_ENABLED, not editable.
 	MCPEnabled *bool `json:"mcpEnabled,omitempty"`
 	MCPViaEnv  bool  `json:"mcpConfiguredViaEnv,omitempty"`
+	// PeopleSearch: names are suggested while typing when sharing; off, people are added by their exact
+	// e-mail address or username. nil in an update leaves it unchanged; ViaEnv: fixed by PEOPLE_SEARCH.
+	PeopleSearch       *bool `json:"peopleSearch,omitempty"`
+	PeopleSearchViaEnv bool  `json:"peopleSearchConfiguredViaEnv,omitempty"`
+	// PublicLinks: owners may share a note by a public link (read only, always expiring); nil in an
+	// update leaves it unchanged; ViaEnv: fixed by PUBLIC_LINKS. Always off in demo mode.
+	PublicLinks       *bool `json:"publicLinks,omitempty"`
+	PublicLinksViaEnv bool  `json:"publicLinksConfiguredViaEnv,omitempty"`
+	// PublicLinkMaxDays: the longest a public link may live (1–14 days); 0 in an update leaves it
+	// unchanged; ViaEnv: fixed by PUBLIC_LINKS_MAX_DAYS.
+	PublicLinkMaxDays       int  `json:"publicLinkMaxDays,omitempty"`
+	PublicLinkMaxDaysViaEnv bool `json:"publicLinkMaxDaysConfiguredViaEnv,omitempty"`
 	// DefaultLanguage: language for people without their own choice whose browser language MindSift does
 	// not speak, and for the demo; empty in an update leaves it unchanged
 	DefaultLanguage string `json:"defaultLanguage,omitempty"`
