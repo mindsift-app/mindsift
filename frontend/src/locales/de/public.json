@@ -1,0 +1,15 @@
+{
+  "untitled": "Ohne Titel",
+  "footer": "Öffentlich geteilt mit MindSift · nur lesen · der Link läuft am {{date}} ab",
+  "wrongPassword": "Falsches Passwort",
+  "gone": {
+    "title": "Dieser Link gilt nicht mehr",
+    "text": "Er ist abgelaufen oder wurde zurückgezogen. Frag die Person, die ihn geteilt hat, nach einem neuen."
+  },
+  "locked": {
+    "title": "Geschützte Notiz",
+    "text": "Diese Notiz ist mit einem Passwort geschützt.",
+    "placeholder": "Passwort",
+    "open": "Öffnen"
+  }
+}

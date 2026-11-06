@@ -1,6 +1,6 @@
 // REST calls: Login, first-boot setup, sessions and account settings
 import { AuthStatus, DashboardStats, Retention, SharingMode, Session, User, NotificationSettings } from '../types';
-import { setToken, clearToken, ensureArray, request, setCurrentSharingMode } from './client';
+import { setToken, clearToken, ensureArray, request, setCurrentSharingMode, setCurrentPeopleSearch } from './client';
 import { clearStoredNotes } from '../docSync/persist';
 
 export const authApi = {
@@ -8,6 +8,7 @@ export const authApi = {
   async getAuthStatus(): Promise<AuthStatus> {
     const st = await request<AuthStatus>('/api/v1/auth/status');
     if (st.sharingMode) setCurrentSharingMode(st.sharingMode);
+    setCurrentPeopleSearch(st.peopleSearch !== false);
     return st;
   },
 
@@ -134,5 +135,10 @@ export const authApi = {
   async getUsersDirectory(): Promise<User[]> {
     const res = await request<User[]>('/api/v1/users/directory');
     return ensureArray(res);
+  },
+
+  // One person by exact e-mail address or username (sharing without people search); 404 = not found
+  async lookupUser(login: string): Promise<User> {
+    return request<User>('/api/v1/users/lookup', { method: 'POST', body: JSON.stringify({ login }) });
   },
 };

@@ -1,0 +1,15 @@
+{
+  "untitled": "Untitled",
+  "footer": "Shared publicly with MindSift · read only · the link expires on {{date}}",
+  "wrongPassword": "Wrong password",
+  "gone": {
+    "title": "This link is no longer valid",
+    "text": "It has expired or was revoked. Ask the person who shared it for a new one."
+  },
+  "locked": {
+    "title": "Protected note",
+    "text": "This note is protected by a password.",
+    "placeholder": "Password",
+    "open": "Open"
+  }
+}

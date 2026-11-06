@@ -6,6 +6,25 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.87.0] - 2026-11-06
+
+### Added
+- Public links to notes: the owner shares a note read only with anyone who has the link, also without an account, optionally with a password. Links always expire (1 hour to 14 days, default 3 days), can be revoked or replaced at any time and stay out of search engines. Visitors see the note as it is being written, laid out like focus mode and in the owner's theme family (light or dark after their system), without hidden values, names or links into other notes. Admins can switch public links off and shorten the longest duration (`PUBLIC_LINKS`, `PUBLIC_LINKS_MAX_DAYS`).
+- A person can belong to several organizations. Click an organization in the administration to add or remove members; before someone is taken out, a preview tells how many shares and group memberships would go. Whoever is in several organizations picks one when creating a group.
+- People search can be switched off (`PEOPLE_SEARCH` or Administration → Server & Sharing): then nobody is suggested while typing, people are added by their exact e-mail address or username.
+- New role "user manager": manages members, invitations and organizations, but not admins, roles, e-mail addresses, passwords or the server settings.
+- Backups of accounts an admin deletes stay for the backup retention period and can be downloaded under Server & Sharing → Backups, so an account deleted by mistake gets its data back. Accounts deleted by their owners still lose their backups at once.
+
+### Changed
+- **Attention:** The sharing modes now speak of sharing instead of seeing: "Private", "Within organizations" and "Open". Whoever works on something together with you shows there by name, even without a common organization; this gives no right to find or share with them elsewhere.
+- **Attention:** Invitations always create members, also older codes that still name the admin role. Roles are given afterwards in the user list.
+- Invitations and new accounts can name several organizations; the organization dropdown in the user list is gone (organizations show there as information).
+- User list: long e-mail addresses no longer push the buttons into a new line; on phones the role sits in a row of its own above the buttons.
+- REST API: `organizationId` on users and invites became `organizationIds`; `PUT /admin/users/{id}/organization` was replaced by `POST/DELETE /admin/organizations/{id}/members`.
+
+### Fixed
+- A few texts in the share dialog and the SMTP test were German in every language.
+
 ## [0.86.3] - 2026-11-06
 
 ### Changed

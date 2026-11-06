@@ -393,7 +393,7 @@ function injectCustomCss(css: string | null): void {
   document.head.appendChild(el);
 }
 
-function applyToDocument(themeId: ThemeId, customCss: string | null): void {
+function applyToDocument(themeId: ThemeId, customCss: string | null, rememberColors = true): void {
   if (typeof document === 'undefined') return;
   injectCustomCss(customCss);
   const root = document.documentElement;
@@ -404,14 +404,14 @@ function applyToDocument(themeId: ThemeId, customCss: string | null): void {
       ? isLightColor(readCssVar(customCss, 'bg-app'))
       : isLightColor(AVAILABLE_THEMES.find((t) => t.id === themeId)?.previewBg);
   root.classList.toggle('dark', !light);
-  applyAccent(getAccentColor());
-  syncThemeColorMeta();
+  applyAccent(rememberColors ? getAccentColor() : null); // a shared page shows the theme's own accent
+  syncThemeColorMeta(rememberColors);
 }
 
 // The status bar (theme-color) starts black (like the Android navigation bar of the installed app,
 // which only takes the manifest colour); once the app runs it follows the theme's background.
 // The colours are also kept for the next start: public/boot-theme.js paints the loading screen in them.
-function syncThemeColorMeta(): void {
+function syncThemeColorMeta(remember = true): void {
   const meta = document.querySelector('meta[name="theme-color"]');
   if (!meta || typeof requestAnimationFrame === 'undefined') return;
   requestAnimationFrame(() => {
@@ -420,7 +420,7 @@ function syncThemeColorMeta(): void {
     if (bg) meta.setAttribute('content', bg);
     const accent = css.getPropertyValue('--accent-primary').trim();
     const onAccent = css.getPropertyValue('--text-on-accent').trim();
-    if (bg && accent) store(BOOT_COLORS_KEY, JSON.stringify({ bg, accent, onAccent }));
+    if (remember && bg && accent) store(BOOT_COLORS_KEY, JSON.stringify({ bg, accent, onAccent }));
   });
 }
 
@@ -461,6 +461,24 @@ export function setActiveTheme(themeId: ThemeId, customCss?: string): void {
   store(THEME_STORAGE_KEY, effectiveId);
   store(CUSTOM_CSS_CACHE_KEY, css);
   applyToDocument(effectiveId, css);
+}
+
+/** The family of the active theme ('' for a custom theme), e.g. to show a shared page in it. */
+export function activeThemeFamily(): string {
+  const id = getActiveTheme();
+  return THEME_FAMILIES.find((f) => f.light === id || f.dark === id)?.id || '';
+}
+
+/** Shows a family in the system's light or dark variant on this page only, without storing anything
+ *  (a public note page must not change the visitor's own theme); returns the unsubscribe. */
+export function showThemeFamily(familyId: string): () => void {
+  const f = THEME_FAMILIES.find((x) => x.id === familyId) || THEME_FAMILIES[0];
+  const apply = () => applyToDocument(systemPrefersDark() ? f.dark : f.light, null, false);
+  apply();
+  if (typeof window === 'undefined' || !window.matchMedia) return () => {};
+  const mq = window.matchMedia('(prefers-color-scheme: dark)');
+  mq.addEventListener('change', apply);
+  return () => mq.removeEventListener('change', apply);
 }
 
 export function initThemeOnBoot(): ThemeId {

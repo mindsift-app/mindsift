@@ -465,7 +465,8 @@
       "roleMember": "Mitglied (Standard)",
       "roleAdmin": "Server-Admin (Vollzugriff)",
       "submit": "Benutzer jetzt anlegen",
-      "failed": "Fehler beim Anlegen des Benutzers"
+      "failed": "Fehler beim Anlegen des Benutzers",
+      "roleManager": "Benutzerverwaltung (Konten & Organisationen)"
     },
     "organization": "Organisation",
     "noOrganization": "Keine Organisation",
@@ -497,7 +498,8 @@
       "mailFailed": "Einladung konnte nicht verschickt werden",
       "linkCreated_one": "Einladungslink für {{count}} Person erstellt ({{code}}).",
       "linkCreated_other": "Einladungslink für {{count}} Personen erstellt ({{code}}).",
-      "codeCreated": "Einladungscode {{code}} erfolgreich erstellt."
+      "codeCreated": "Einladungscode {{code}} erfolgreich erstellt.",
+      "alwaysMember": "Über eine Einladung kommen alle als Mitglied dazu; Rollen vergibst du danach in der Liste."
     },
     "roleMember": "Mitglied",
     "roleAdmin": "Server-Admin",
@@ -505,7 +507,7 @@
     "approve": "Freigeben",
     "reject": "Ablehnen",
     "locked": "Gesperrt",
-    "noOrgWarning": "· ohne Organisation, sieht niemanden",
+    "noOrgWarning": "ohne Organisation, kann mit niemandem teilen",
     "changeRole": "Benutzerrolle ändern",
     "password": "Passwort",
     "delete": "Benutzer löschen",
@@ -524,27 +526,31 @@
     "confirmDelete": "Benutzer \"{{name}}\" ({{email}}) wirklich unwiderruflich löschen?",
     "username": "Benutzername",
     "usernameChanged": "Benutzername von {{name}} ist jetzt „{{username}}“.",
-    "notSelf": "Nicht beim eigenen Konto"
+    "notSelf": "Nicht beim eigenen Konto",
+    "organizations": "Organisationen",
+    "roleManager": "Benutzerverwaltung",
+    "passwordAdminOnly": "Passwörter setzen nur Server-Admins (sonst „Passwort vergessen“)",
+    "adminOnly": "Nur Server-Admins können dieses Konto ändern"
   },
   "sharing": {
     "private": {
-      "title": "1. Privat (Keiner sieht andere)",
-      "text": "Jeder arbeitet für sich allein. Keine Benutzersuche, kein Teilen, keine Gruppen."
+      "title": "1. Privat",
+      "text": "Niemand teilt mit anderen: kein Teilen mit Personen, keine Gruppen."
     },
     "organizations": {
-      "title": "2. Organisationen (Empfohlen)",
-      "text": "Benutzer sehen nur Mitglieder ihrer eigenen Organisation. Wer keiner Organisation angehört, sieht niemanden."
+      "title": "2. Innerhalb der Organisationen (empfohlen)",
+      "text": "Teilen nur mit Personen, mit denen man mindestens eine Organisation gemeinsam hat. Wer keiner angehört, kann mit niemandem teilen."
     },
     "open": {
-      "title": "3. Offen (Alle sehen alle)",
-      "text": "Alle Benutzer dieser Instanz können sich gegenseitig finden und miteinander teilen."
+      "title": "3. Offen",
+      "text": "Alle auf diesem Server können miteinander teilen."
     }
   },
   "server": {
-    "title": "Server-Grundeinstellungen & Benutzer-Sichtbarkeit",
-    "intro": "Als Server-Admin bestimmst du zentral, ob Nutzer komplett isoliert arbeiten, sich nur innerhalb ihrer Organisation sehen oder ob alle Nutzer für alle sichtbar sind.",
+    "title": "Server-Grundeinstellungen & Teilen",
+    "intro": "Als Server-Admin legst du fest, wer mit wem teilen darf, ob Namen beim Tippen vorgeschlagen werden und ob Notizen per öffentlichem Link geteilt werden können.",
     "instanceName": "Name der MindSift-Instanz",
-    "sharing": "Globale Sharing- & Sichtbarkeits-Isolation",
+    "sharing": "Wer mit wem teilen darf",
     "switchAnyway": "Trotzdem wechseln",
     "privateWebhooks": "Alarm-Webhooks ins lokale Netz erlauben",
     "privateWebhooksHint": "Standard: Discord- und Webhook-Alarme gehen nur an öffentliche https-Adressen. Eingeschaltet sind auch Ziele im Heimnetz erlaubt (z. B. Home Assistant unter 192.168.x.x oder über Tailscale), dort auch per http. Der Server selbst (localhost) und Cloud-Metadaten bleiben immer gesperrt.",
@@ -571,20 +577,27 @@
     "verifyFixed": "Über <c>REGISTRATION_VERIFY_EMAIL</c> festgelegt.",
     "retentionNeverHint": "Eingeschaltet kann jede Person unter Kontoeinstellungen → Aufbewahrung „nie“ wählen, also Erledigtes und Gelöschtes behalten. Ausgeschaltet gilt dort für „nie“ die Voreinstellung des Bereichs (z. B. 30 Tage).",
     "mcpHint": "Eingeschaltet können Claude Code, Codex & Co. per API-Schlüssel und claude.ai oder ChatGPT als Connector auf MindSift zugreifen. Ausgeschaltet ist der MCP-Endpunkt samt Connector-Anmeldung abgeschaltet; bestehende Connector-Verbindungen ruhen, API-Schlüssel funktionieren per curl weiter.",
-    "saved": "Server-Einstellungen erfolgreich gespeichert."
+    "saved": "Server-Einstellungen erfolgreich gespeichert.",
+    "peopleSearch": "Personensuche",
+    "peopleSearchHint": "Eingeschaltet werden beim Teilen und in Gruppen passende Namen vorgeschlagen. Ausgeschaltet muss man die genaue E-Mail-Adresse oder den Benutzernamen kennen; wer schon gemeinsam an etwas arbeitet, sieht sich dort weiter mit Namen.",
+    "publicLinks": "Öffentliche Links zu Notizen",
+    "publicLinksHint": "Eigentümer können eine Notiz per Link zum Lesen freigeben, auch für Personen ohne Konto, wahlweise mit Passwort. Links laufen immer ab und landen nicht in Suchmaschinen. Ausgeschaltet funktioniert kein bestehender Link mehr.",
+    "publicLinkMaxDays": "Längste Laufzeit eines Links",
+    "days_one": "{{count}} Tag",
+    "days_other": "{{count}} Tage"
   },
   "admin": {
     "loadFailed": "Fehler beim Laden der Administrationsdaten",
     "title": "Server-Administration",
-    "subtitle": "Benutzerverwaltung, Einladungscodes, Isolationsmodus & Mail-Server",
+    "subtitle": "Benutzer, Einladungen, Organisationen, Teilen & Mail-Server",
     "badge": "Server-Administrator",
     "close": "Schließen",
     "nav": {
       "users": "Benutzer & Einladungen",
       "usersHint": "Konten, Rollen & Invite-Codes",
-      "orgsHint": "Wer wen sehen darf",
-      "server": "Server & Isolation",
-      "serverHint": "Sichtbarkeit & Registrierung",
+      "orgsHint": "Wer mit wem teilen darf",
+      "server": "Server & Teilen",
+      "serverHint": "Teilen & Registrierung",
       "smtp": "E-Mail / SMTP-Server",
       "smtpHint": "Mailversand für Alarme"
     },
@@ -599,16 +612,25 @@
     "deleteFailed": "Fehler beim Löschen",
     "assignFailed": "Fehler beim Zuordnen",
     "title": "Organisationen",
-    "intro": "Jeder Benutzer gehört höchstens einer Organisation an. Im Modus „Organisationen“ sehen sich nur Mitglieder derselben Organisation und können nur untereinander teilen und Gruppen bilden. Die Zuordnung änderst du in der Benutzerliste.",
-    "notActive": "Der aktuelle Sichtbarkeits-Modus ist nicht „Organisationen“; die Zuordnung wirkt sich derzeit nicht aus.",
+    "intro": "Eine Person kann mehreren Organisationen angehören. Im Modus „Innerhalb der Organisationen“ teilt man nur mit Personen, mit denen man mindestens eine gemeinsam hat; jede Gruppe gehört zu einer Organisation. Organisation anklicken, um Mitglieder hinzuzufügen oder zu entfernen.",
+    "notActive": "Der aktuelle Teilen-Modus ist nicht „Innerhalb der Organisationen“; die Zuordnung wirkt sich derzeit nicht aus.",
     "namePlaceholder": "Name der neuen Organisation",
     "create": "Anlegen",
     "empty": "Noch keine Organisation angelegt.",
     "rename": "Umbenennen",
     "delete": "Organisation löschen",
     "deleteConfirm": "Löschen",
-    "deleteWarning_one": "Das {{count}} Mitglied ist danach ohne Organisation und verliert seine Freigaben, Gruppen und Zuweisungen untereinander.",
-    "deleteWarning_other": "Die {{count}} Mitglieder sind danach ohne Organisation und verlieren ihre Freigaben, Gruppen und Zuweisungen untereinander."
+    "deleteWarning_one": "Das {{count}} Mitglied verliert die Freigaben, Gruppen und Zuweisungen, die nur über diese Organisation erlaubt waren.",
+    "deleteWarning_other": "Die {{count}} Mitglieder verlieren die Freigaben, Gruppen und Zuweisungen, die nur über diese Organisation erlaubt waren.",
+    "removeMember": "{{name}} aus der Organisation nehmen",
+    "removeWarning_one": "{{name}} verlässt „{{org}}“. Dabei fällt {{count}} Freigabe oder Gruppen-Mitgliedschaft weg, die nur über diese Organisation erlaubt war.",
+    "removeWarning_other": "{{name}} verlässt „{{org}}“. Dabei fallen {{count}} Freigaben und Gruppen-Mitgliedschaften weg, die nur über diese Organisation erlaubt waren.",
+    "removeConfirm": "Entfernen",
+    "addMember": "Hinzufügen",
+    "addMemberPlaceholder": "Person hinzufügen (Name, @Benutzername oder E-Mail)…",
+    "addOrganization": "+ Organisation",
+    "addAnother": "+ weitere",
+    "removeFromSelection": "{{org}} entfernen"
   },
   "smtp": {
     "title": "E-Mail / SMTP-Server für Aufgaben-Alarme",
@@ -632,7 +654,9 @@
     "testSending": "Sende Test-Mail…",
     "testSend": "Test-E-Mail senden",
     "passwordKept": "Gespeichert – leer lassen für keine Änderung",
-    "save": "SMTP-Konfiguration in Datenbank speichern"
+    "save": "SMTP-Konfiguration in Datenbank speichern",
+    "testSent": "Test-E-Mail an {{email}} gesendet.",
+    "testFailed": "SMTP-Test fehlgeschlagen: {{error}}"
   },
   "import": {
     "readFailed": "Datei konnte nicht gelesen werden",
@@ -707,7 +731,10 @@
     "deleteNamed": "Backup {{name}} löschen",
     "restoreHint": "Zurückspielen eines Datenbank-Abzugs: Container stoppen, <c>mindsift.db</c> durch die entpackte Datei ersetzen (<c>gunzip</c>), Container starten. Einzelne Benutzer stellen ihre Daten selbst in den Kontoeinstellungen wieder her.",
     "time": "Uhrzeit",
-    "restored": "Wiederhergestellt: {{notes}} Notizen, {{tasks}} Aufgaben, {{lists}} Listen, {{inbox}} Gedanken, {{themes}} Themes."
+    "restored": "Wiederhergestellt: {{notes}} Notizen, {{tasks}} Aufgaben, {{lists}} Listen, {{inbox}} Gedanken, {{themes}} Themes.",
+    "deletedTitle": "Backups gelöschter Konten",
+    "deletedHint": "Löscht ein Admin oder die Benutzerverwaltung ein Konto, bleiben dessen Backups bis zum Ende der Vorhaltezeit hier. So bekommt jemand, der versehentlich gelöscht wurde, seine Daten zurück: Backup herunterladen und im neuen Konto unter Kontoeinstellungen → Export & Import. Wer sein Konto selbst löscht, dessen Backups sind sofort weg.",
+    "deletedOn": "Gelöscht am {{deleted}} · wird am {{remove}} entfernt"
   },
   "voiceStatus": {
     "loadFailed": "Status konnte nicht geladen werden",

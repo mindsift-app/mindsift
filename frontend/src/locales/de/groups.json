@@ -28,7 +28,9 @@
     "descriptionPlaceholder": "z. B. Gemeinsame Einkaufslisten & Notizen…",
     "youAdmin": "Du wirst Gruppen-Admin",
     "youAdminHint": "Als Ersteller kannst du weitere Mitglieder hinzufügen, Rollen zuweisen und die Gruppe verwalten.",
-    "submit": "Gruppe anlegen"
+    "submit": "Gruppe anlegen",
+    "organization": "Organisation",
+    "organizationHint": "Die Mitglieder der Gruppe kommen aus dieser Organisation."
   },
   "loading": "Lade Gruppen…",
   "empty": {

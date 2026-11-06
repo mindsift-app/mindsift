@@ -420,5 +420,26 @@
     "save": "Guardar",
     "gone": "Secreto eliminado",
     "unreadable": "Ilegible"
+  },
+  "publicLink": {
+    "title": "Enlace público",
+    "hint": "Cualquiera con el enlace puede leer la nota, incluso sin cuenta. El enlace siempre caduca y no aparece en buscadores.",
+    "duration": "Válido durante",
+    "for": {
+      "1": "1 hora",
+      "24": "1 día",
+      "72": "3 días",
+      "168": "7 días",
+      "336": "14 días"
+    },
+    "passwordOptional": "Contraseña (opcional)",
+    "create": "Crear enlace",
+    "replace": "Crear nuevo enlace",
+    "copy": "Copiar",
+    "copied": "Copiado",
+    "expires": "Válido hasta el {{date}}",
+    "withPassword": "con contraseña",
+    "new": "Nuevo enlace",
+    "revoke": "Retirar"
   }
 }

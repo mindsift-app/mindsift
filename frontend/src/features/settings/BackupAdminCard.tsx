@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import { Archive, Download, Loader2, Trash2 } from 'lucide-react';
-import { BackupFile, SystemSettings } from '../../lib/types';
+import { BackupFile, DeletedAccountBackups, SystemSettings } from '../../lib/types';
 import { api } from '../../lib/api';
 import { ToggleSwitch } from '../../components/ToggleSwitch';
 import { formatBytes, saveBlob } from '../../lib/download';
@@ -17,11 +17,13 @@ interface BackupAdminCardProps {
 export const BackupAdminCard: React.FC<BackupAdminCardProps> = ({ settings, onSave }) => {
   const { t } = useTranslation('settings');
   const [files, setFiles] = useState<BackupFile[]>([]);
+  const [deleted, setDeleted] = useState<DeletedAccountBackups[]>([]);
   const [running, setRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     api.adminListBackups().then(setFiles).catch(() => {});
+    api.adminDeletedBackups().then(setDeleted).catch(() => {});
   }, []);
 
   const runNow = async () => {
@@ -40,6 +42,14 @@ export const BackupAdminCard: React.FC<BackupAdminCardProps> = ({ settings, onSa
   const download = async (name: string) => {
     try {
       saveBlob(await api.adminDownloadBackup(name), name);
+    } catch (err: any) {
+      setError(err.message || t('backups.downloadFailed'));
+    }
+  };
+
+  const downloadDeleted = async (userId: string, name: string) => {
+    try {
+      saveBlob(await api.adminDownloadDeletedBackup(userId, name), name);
     } catch (err: any) {
       setError(err.message || t('backups.downloadFailed'));
     }
@@ -148,6 +158,41 @@ export const BackupAdminCard: React.FC<BackupAdminCardProps> = ({ settings, onSa
       <p className="text-[11px] text-faint">
         <Trans t={t} i18nKey="backups.restoreHint" components={{ c: <code className="font-mono" /> }} />
       </p>
+
+      {/* Accounts deleted by an admin: their backups stay until the retention period ends */}
+      {deleted.length > 0 && (
+        <div className="space-y-1.5 pt-2 border-t border-border">
+          <p className="font-semibold text-main">{t('backups.deletedTitle')}</p>
+          <p className="text-[11px] text-muted">{t('backups.deletedHint')}</p>
+          <div className="border border-border divide-y divide-border bg-panel">
+            {deleted.map((d) => (
+              <div key={d.userId} className="px-3 py-2 space-y-1.5">
+                <p className="text-xs text-main truncate">
+                  <span className="font-semibold">{d.displayName || d.userId}</span>
+                  {d.email && <span className="text-muted"> · {d.email}</span>}
+                </p>
+                <p className="text-[11px] text-faint">
+                  {t('backups.deletedOn', { deleted: formatDateTime(d.deletedAt), remove: formatDateTime(d.removeAt) })}
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {d.files.map((f) => (
+                    <button
+                      key={f.name}
+                      type="button"
+                      onClick={() => downloadDeleted(d.userId, f.name)}
+                      className="btn-action h-11 sm:h-7 px-2.5 text-[11px] inline-flex items-center gap-1"
+                      title={f.name}
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      {formatDateTime(f.createdAt)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

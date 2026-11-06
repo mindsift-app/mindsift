@@ -465,7 +465,8 @@
       "roleMember": "Membre (par défaut)",
       "roleAdmin": "Admin du serveur (accès complet)",
       "submit": "Créer l'utilisateur maintenant",
-      "failed": "Échec de la création de l'utilisateur"
+      "failed": "Échec de la création de l'utilisateur",
+      "roleManager": "Gestion des utilisateurs (comptes et organisations)"
     },
     "organization": "Organisation",
     "noOrganization": "Aucune organisation",
@@ -497,7 +498,8 @@
       "mailFailed": "Impossible d'envoyer l'invitation",
       "linkCreated_one": "Lien d'invitation pour {{count}} personne créé ({{code}}).",
       "linkCreated_other": "Lien d'invitation pour {{count}} personnes créé ({{code}}).",
-      "codeCreated": "Code d'invitation {{code}} créé."
+      "codeCreated": "Code d'invitation {{code}} créé.",
+      "alwaysMember": "Avec une invitation, tout le monde arrive comme membre ; les rôles s’attribuent ensuite dans la liste."
     },
     "roleMember": "Membre",
     "roleAdmin": "Admin du serveur",
@@ -505,7 +507,7 @@
     "approve": "Valider",
     "reject": "Refuser",
     "locked": "Verrouillé",
-    "noOrgWarning": "· sans organisation, ne voit personne",
+    "noOrgWarning": "sans organisation, ne peut partager avec personne",
     "changeRole": "Modifier le rôle utilisateur",
     "password": "Mot de passe",
     "delete": "Supprimer l'utilisateur",
@@ -524,27 +526,31 @@
     "confirmDelete": "Supprimer définitivement l'utilisateur \"{{name}}\" ({{email}}) ?",
     "username": "Nom d’utilisateur",
     "usernameChanged": "Le nom d’utilisateur de {{name}} est maintenant « {{username}} ».",
-    "notSelf": "Impossible pour ton propre compte"
+    "notSelf": "Impossible pour ton propre compte",
+    "organizations": "Organisations",
+    "roleManager": "Gestion des utilisateurs",
+    "passwordAdminOnly": "Seuls les administrateurs du serveur définissent les mots de passe (sinon « mot de passe oublié »)",
+    "adminOnly": "Seuls les administrateurs du serveur peuvent modifier ce compte"
   },
   "sharing": {
     "private": {
-      "title": "1. Privé (personne ne voit les autres)",
-      "text": "Chacun travaille seul. Pas de recherche d'utilisateurs, pas de partage, pas de groupes."
+      "title": "1. Privé",
+      "text": "Personne ne partage avec les autres : pas de partage avec des personnes, pas de groupes."
     },
     "organizations": {
-      "title": "2. Organisations (recommandé)",
-      "text": "Les utilisateurs ne voient que les membres de leur propre organisation. Quiconque n'appartient à aucune organisation ne voit personne."
+      "title": "2. Au sein des organisations (recommandé)",
+      "text": "Partage uniquement avec les personnes avec qui on a au moins une organisation en commun. Qui n’appartient à aucune ne peut partager avec personne."
     },
     "open": {
-      "title": "3. Ouvert (tout le monde voit tout le monde)",
-      "text": "Tous les utilisateurs de cette instance peuvent se trouver et partager entre eux."
+      "title": "3. Ouvert",
+      "text": "Tout le monde sur ce serveur peut partager avec tout le monde."
     }
   },
   "server": {
-    "title": "Généralités du serveur & visibilité des utilisateurs",
-    "intro": "En tant qu'administrateur du serveur, tu décides de manière centralisée si les utilisateurs travaillent de façon complètement isolée, ne se voient qu'au sein de leur organisation, ou si tout le monde est visible par tout le monde.",
+    "title": "Réglages de base du serveur et partage",
+    "intro": "En tant qu’administrateur du serveur, tu décides qui peut partager avec qui, si des noms sont suggérés pendant la saisie et si des notes peuvent être partagées par lien public.",
     "instanceName": "Nom de cette instance MindSift",
-    "sharing": "Partage global & isolation de la visibilité",
+    "sharing": "Qui peut partager avec qui",
     "switchAnyway": "Changer quand même",
     "privateWebhooks": "Autoriser les webhooks d'alarme sur le réseau local",
     "privateWebhooksHint": "Par défaut : les alarmes Discord et webhooks ne vont que vers des adresses https publiques. Si activé, les cibles du réseau domestique sont également autorisées (par ex. Home Assistant à 192.168.x.x ou via Tailscale), y compris en http. Le serveur lui-même (localhost) et les métadonnées cloud restent toujours bloqués.",
@@ -571,20 +577,27 @@
     "verifyFixed": "Défini par <c>REGISTRATION_VERIFY_EMAIL</c>.",
     "retentionNeverHint": "Si activé, chacun peut choisir « jamais » sous Paramètres du compte → Rétention et conserver les éléments terminés et supprimés. Si désactivé, « jamais » revient à la valeur par défaut du domaine (par ex. 30 jours).",
     "mcpHint": "Si activé, Claude Code, Codex & Cie peuvent accéder à MindSift avec une clé API, et claude.ai ou ChatGPT comme connecteur. Si désactivé, le point de terminaison MCP et la connexion connecteur sont désactivés ; les connexions existantes sont suspendues, les clés API continuent de fonctionner via curl.",
-    "saved": "Paramètres du serveur enregistrés."
+    "saved": "Paramètres du serveur enregistrés.",
+    "peopleSearch": "Recherche de personnes",
+    "peopleSearchHint": "Activée, des noms correspondants sont suggérés lors du partage et dans les groupes. Désactivée, il faut connaître l’adresse e-mail ou le nom d’utilisateur exacts ; celles et ceux qui travaillent déjà ensemble sur quelque chose continuent d’y voir leurs noms.",
+    "publicLinks": "Liens publics vers les notes",
+    "publicLinksHint": "Les propriétaires peuvent partager une note en lecture seule par lien, y compris avec des personnes sans compte, avec mot de passe en option. Les liens expirent toujours et n’apparaissent pas dans les moteurs de recherche. Désactivé, plus aucun lien existant ne fonctionne.",
+    "publicLinkMaxDays": "Durée maximale d’un lien",
+    "days_one": "{{count}} jour",
+    "days_other": "{{count}} jours"
   },
   "admin": {
     "loadFailed": "Échec du chargement des données d'administration",
     "title": "Administration du serveur",
-    "subtitle": "Gestion des utilisateurs, codes d'invitation, mode d'isolation & serveur de messagerie",
+    "subtitle": "Utilisateurs, invitations, organisations, partage et serveur e-mail",
     "badge": "Administrateur du serveur",
     "close": "Fermer",
     "nav": {
       "users": "Utilisateurs & invitations",
       "usersHint": "Comptes, rôles & codes d'invitation",
-      "orgsHint": "Qui peut voir qui",
-      "server": "Serveur & isolation",
-      "serverHint": "Visibilité & inscription",
+      "orgsHint": "Qui peut partager avec qui",
+      "server": "Serveur & partage",
+      "serverHint": "Partage et inscription",
       "smtp": "E-mail / Serveur SMTP",
       "smtpHint": "Envoi d'e-mails pour les alarmes"
     },
@@ -599,16 +612,25 @@
     "deleteFailed": "Échec de la suppression",
     "assignFailed": "Échec de l'assignation",
     "title": "Organisations",
-    "intro": "Chaque utilisateur appartient au maximum à une organisation. Dans le mode « Organisations », seuls les membres d'une même organisation se voient et peuvent partager et créer des groupes entre eux. Tu modifies l'attribution dans la liste des utilisateurs.",
-    "notActive": "Le mode de visibilité actuel n'est pas « Organisations » ; l'attribution n'a aucun effet pour l'instant.",
+    "intro": "Une personne peut appartenir à plusieurs organisations. En mode « Au sein des organisations », on ne partage qu’avec les personnes avec qui on en a au moins une en commun ; chaque groupe appartient à une organisation. Clique sur une organisation pour ajouter ou retirer des membres.",
+    "notActive": "Le mode de partage actuel n’est pas « Au sein des organisations » ; l’appartenance n’a pas d’effet pour l’instant.",
     "namePlaceholder": "Nom de la nouvelle organisation",
     "create": "Créer",
     "empty": "Aucune organisation pour le moment.",
     "rename": "Renommer",
     "delete": "Supprimer l'organisation",
     "deleteConfirm": "Supprimer",
-    "deleteWarning_one": "Le {{count}} membre ne fera alors partie d'aucune organisation et perdra ses partages, groupes et assignations avec les autres.",
-    "deleteWarning_other": "Les {{count}} membres ne feront alors partie d'aucune organisation et perdront leurs partages, groupes et assignations entre eux."
+    "deleteWarning_one": "Le {{count}} membre perd les partages, groupes et attributions autorisés uniquement par cette organisation.",
+    "deleteWarning_other": "Les {{count}} membres perdent les partages, groupes et attributions autorisés uniquement par cette organisation.",
+    "removeMember": "Retirer {{name}} de l’organisation",
+    "removeWarning_one": "{{name}} quitte « {{org}} ». {{count}} partage ou appartenance à un groupe, autorisé uniquement par cette organisation, disparaît.",
+    "removeWarning_other": "{{name}} quitte « {{org}} ». {{count}} partages et appartenances à des groupes, autorisés uniquement par cette organisation, disparaissent.",
+    "removeConfirm": "Retirer",
+    "addMember": "Ajouter",
+    "addMemberPlaceholder": "Ajouter une personne (nom, @utilisateur ou e-mail)…",
+    "addOrganization": "+ Organisation",
+    "addAnother": "+ une autre",
+    "removeFromSelection": "Retirer {{org}}"
   },
   "smtp": {
     "title": "E-mail / Serveur SMTP pour les alarmes de tâches",
@@ -632,7 +654,9 @@
     "testSending": "Envoi du mail de test en cours…",
     "testSend": "Envoyer l'e-mail de test",
     "passwordKept": "Enregistré – laisser vide pour ne pas changer",
-    "save": "Enregistrer la configuration SMTP dans la base de données"
+    "save": "Enregistrer la configuration SMTP dans la base de données",
+    "testSent": "E-mail de test envoyé à {{email}}.",
+    "testFailed": "Le test SMTP a échoué : {{error}}"
   },
   "import": {
     "readFailed": "Le fichier n'a pas pu être lu",
@@ -708,7 +732,10 @@
     "deleteNamed": "Supprimer la sauvegarde {{name}}",
     "restoreHint": "Restaurer un dump de base de données : arrêter le conteneur, remplacer <c>mindsift.db</c> par le fichier décompressé (<c>gunzip</c>), démarrer le conteneur. Les utilisateurs individuels restaurent leurs propres données dans les paramètres du compte.",
     "time": "Heure",
-    "restored": "Restauré : {{notes}} notes, {{tasks}} tâches, {{lists}} listes, {{inbox}} pensées, {{themes}} thèmes."
+    "restored": "Restauré : {{notes}} notes, {{tasks}} tâches, {{lists}} listes, {{inbox}} pensées, {{themes}} thèmes.",
+    "deletedTitle": "Sauvegardes des comptes supprimés",
+    "deletedHint": "Quand un administrateur ou la gestion des utilisateurs supprime un compte, ses sauvegardes restent ici jusqu’à la fin de la durée de conservation. Ainsi, une personne supprimée par erreur récupère ses données : télécharge une sauvegarde et importe-la dans le nouveau compte sous Paramètres du compte → Export & import. Si quelqu’un supprime son propre compte, ses sauvegardes disparaissent aussitôt.",
+    "deletedOn": "Supprimé le {{deleted}} · retiré le {{remove}}"
   },
   "voiceStatus": {
     "loadFailed": "Impossible de charger le statut",

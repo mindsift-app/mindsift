@@ -8,7 +8,6 @@ import {
   Copy,
   Check,
   Send,
-  AlertCircle,
   UserPlus,
   Link2,
   Clock,
@@ -21,6 +20,7 @@ import { User, UserRole } from '../../../lib/types';
 import { UserAvatar } from '../../../components/UserAvatar';
 import { useAdminSettings } from './useAdminSettings';
 import { formatDate } from '../../../lib/format';
+import { OrganizationPicker } from './OrganizationPicker';
 
 // Administration → Users & invitations (state in useAdminSettings)
 
@@ -45,23 +45,21 @@ export function UsersSection({
     newUserEmail,
     newUserPassword,
     newUserRole,
-    newUserOrg,
+    newUserOrgs,
     inviteEmail,
-    inviteRole,
-    inviteOrg,
+    inviteOrgs,
     inviteMaxUses,
     mailInviteId,
     mailInviteTo,
     mailInviteBusy,
     organizations,
-    pendingMove,
+    sharingMode,
     copiedInviteId,
     resetPwdUserId,
     usernameEdit,
     setUsernameEdit,
     handleSaveUsername,
     resetPwdVal,
-    settings,
     handleCreateUser,
     handleCreateInvite,
     handleDeleteInvite,
@@ -74,24 +72,22 @@ export function UsersSection({
     handleToggleUserActive,
     handleConfirmResetPassword,
     handleDeleteUser,
-    applyUserOrganization,
-    handleChangeUserOrganization,
     orgName,
     setNewUserName,
     setNewUserEmail,
     setNewUserPassword,
     setNewUserRole,
-    setNewUserOrg,
+    setNewUserOrgs,
     setInviteEmail,
-    setInviteRole,
-    setInviteOrg,
+    setInviteOrgs,
     setInviteMaxUses,
     setMailInviteId,
     setMailInviteTo,
-    setPendingMove,
     setResetPwdUserId,
     setResetPwdVal,
   } = admin;
+  // User managers look after members only; admins and other managers stay with server admins
+  const canManage = (u: User) => isServerAdmin || u.role === 'member';
   return (
     <div className="space-y-6">
       <div className="border-b border-border pb-3">
@@ -109,7 +105,7 @@ export function UsersSection({
         </h3>
 
         <form onSubmit={handleCreateUser} className="space-y-3">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+          <div className={`grid grid-cols-1 sm:grid-cols-2 gap-3 ${isServerAdmin ? 'lg:grid-cols-4' : 'lg:grid-cols-3'}`}>
             <div className="min-w-0">
               <label className="block text-muted mb-1">{t('profile.displayName')}</label>
               <input
@@ -146,35 +142,26 @@ export function UsersSection({
               />
             </div>
 
-            <div className="min-w-0">
-              <label className="block text-muted mb-1">{t('users.create.role')}</label>
-              <select
-                value={newUserRole}
-                onChange={(e) => setNewUserRole(e.target.value as UserRole)}
-                className="w-full min-w-0 h-8 px-2 input-field bg-panel"
-              >
-                <option value="member">{t('users.create.roleMember')}</option>
-                <option value="admin">{t('users.create.roleAdmin')}</option>
-              </select>
-            </div>
-
+            {/* Only server admins hand out roles; user managers create members */}
             {isServerAdmin && (
               <div className="min-w-0">
-                <label className="block text-muted mb-1">{t('users.organization')}</label>
+                <label className="block text-muted mb-1">{t('users.create.role')}</label>
                 <select
-                  value={newUserOrg}
-                  onChange={(e) => setNewUserOrg(e.target.value)}
+                  value={newUserRole}
+                  onChange={(e) => setNewUserRole(e.target.value as UserRole)}
                   className="w-full min-w-0 h-8 px-2 input-field bg-panel"
                 >
-                <option value="">{t('users.noOrganization')}</option>
-                {organizations.map((o) => (
-                  <option key={o.id} value={o.id}>
-                    {o.name}
-                  </option>
-                ))}
+                  <option value="member">{t('users.create.roleMember')}</option>
+                  <option value="manager">{t('users.create.roleManager')}</option>
+                  <option value="admin">{t('users.create.roleAdmin')}</option>
                 </select>
               </div>
             )}
+          </div>
+
+          <div className="min-w-0">
+            <label className="block text-muted mb-1">{t('users.organizations')}</label>
+            <OrganizationPicker organizations={organizations} value={newUserOrgs} onChange={setNewUserOrgs} />
           </div>
 
           <div className="flex justify-end">
@@ -198,11 +185,7 @@ export function UsersSection({
 
         <form onSubmit={handleCreateInvite} className="space-y-3">
           {/* E-mail gets the room, "how often" only needs a few digits */}
-          <div
-            className={`grid grid-cols-1 gap-3 ${
-              isServerAdmin ? 'sm:grid-cols-[minmax(0,2fr)_8rem_minmax(0,1fr)_minmax(0,1fr)]' : 'sm:grid-cols-[minmax(0,2fr)_8rem_minmax(0,1fr)]'
-            }`}
-          >
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_8rem]">
             <div className="min-w-0">
               <label className="block text-muted mb-1">
                 {t('users.invite.email')}
@@ -230,35 +213,13 @@ export function UsersSection({
               />
             </div>
 
-            <div className="min-w-0">
-              <label className="block text-muted mb-1">{t('users.invite.role')}</label>
-              <select
-                value={inviteRole}
-                onChange={(e) => setInviteRole(e.target.value as UserRole)}
-                className="w-full min-w-0 h-8 px-2 input-field bg-panel"
-              >
-                <option value="member">{t('users.roleMember')}</option>
-                <option value="admin">{t('users.roleAdmin')}</option>
-              </select>
-            </div>
+          </div>
 
-            {isServerAdmin && (
-              <div className="min-w-0">
-                <label className="block text-muted mb-1">{t('users.organization')}</label>
-                <select
-                  value={inviteOrg}
-                  onChange={(e) => setInviteOrg(e.target.value)}
-                  className="w-full min-w-0 h-8 px-2 input-field bg-panel"
-                >
-                <option value="">{t('users.noOrganization')}</option>
-                {organizations.map((o) => (
-                  <option key={o.id} value={o.id}>
-                    {o.name}
-                  </option>
-                ))}
-                </select>
-              </div>
-            )}
+          {/* Invites always make members; who should be an admin becomes one afterwards */}
+          <div className="min-w-0">
+            <label className="block text-muted mb-1">{t('users.organizations')}</label>
+            <OrganizationPicker organizations={organizations} value={inviteOrgs} onChange={setInviteOrgs} />
+            <p className="text-[11px] text-faint mt-1">{t('users.invite.alwaysMember')}</p>
           </div>
 
           <div className="flex justify-end">
@@ -292,10 +253,13 @@ export function UsersSection({
                           {inv.code}
                         </code>
                         <span className="text-muted">
-                          {t('user.role')} <strong className="text-main">{inv.role}</strong>
-                          {inv.email ? ` · ${t('users.invite.for', { email: inv.email })}` : ''}
-                          {inv.organizationName ? ` · ${inv.organizationName}` : ''}
-                          {maxUses > 1 ? ` · ${t('users.invite.used', { used, max: maxUses })}` : ''}
+                          {[
+                            inv.email ? t('users.invite.for', { email: inv.email }) : '',
+                            (inv.organizationNames || []).join(', '),
+                            maxUses > 1 ? t('users.invite.used', { used, max: maxUses }) : '',
+                          ]
+                            .filter(Boolean)
+                            .join(' · ')}
                         </span>
                         {open ? (
                           <span className="badge-ok text-[10px]">{t('users.invite.open')}</span>
@@ -442,7 +406,9 @@ export function UsersSection({
         <div className="border border-border divide-y divide-border bg-canvas rounded-card overflow-hidden">
           {users.filter((u) => !u.pendingApproval).map((u) => (
             <div key={u.id} className="p-3 space-y-2">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              {/* One row from sm on (the text gets shorter, the buttons keep their place on the right);
+                  on phones the buttons get a row of their own, aligned right */}
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                 <div className="flex items-center gap-2.5 min-w-0 flex-1">
                   <UserAvatar user={u} size="sm" className="border border-border/80" />
                   <div className="min-w-0">
@@ -457,47 +423,43 @@ export function UsersSection({
                     <p className="text-muted text-[11px] truncate" title={[u.username, u.email].filter(Boolean).join(' · ')}>
                       {u.username && <span className="font-mono">{u.username} · </span>}
                       {u.email}
-                      {isServerAdmin && settings.sharingMode === 'organizations' && !u.organizationId && (
-                        <span className="text-status-warn"> {t('users.noOrgWarning')}</span>
+                    </p>
+                    {/* Organizations only as information: who belongs where is set in the organization */}
+                    <p className="text-[11px] truncate">
+                      {(u.organizationIds || []).length > 0 ? (
+                        <span className="text-faint">{(u.organizationIds || []).map(orgName).filter(Boolean).join(', ')}</span>
+                      ) : (
+                        sharingMode === 'organizations' && <span className="text-status-warn">{t('users.noOrgWarning')}</span>
                       )}
                     </p>
                   </div>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2 shrink-0">
-                  {/* Role selector */}
-                  <select
-                    value={u.role}
-                    disabled={!isServerAdmin && u.role === 'admin'}
-                    onChange={(e) => handleChangeUserRole(u, e.target.value as UserRole)}
-                    className="h-7 px-2 input-field text-[11px] bg-panel"
-                    title={t('users.changeRole')}
-                  >
-                    <option value="member">{t('users.roleMember')}</option>
-                    <option value="admin">{t('users.roleAdmin')}</option>
-                  </select>
-
-                  {isServerAdmin && (
+                <div className="flex flex-wrap sm:flex-nowrap items-center justify-end gap-2 sm:shrink-0">
+                  {/* Role: server admins choose (on phones in a row of its own above the buttons), user
+                      managers only see it */}
+                  {isServerAdmin ? (
                     <select
-                      value={u.organizationId || ''}
-                      onChange={(e) => handleChangeUserOrganization(u, e.target.value)}
-                      className="h-7 px-2 input-field text-[11px] bg-panel max-w-[11rem]"
-                      title={t('users.organization')}
+                      value={u.role}
+                      onChange={(e) => handleChangeUserRole(u, e.target.value as UserRole)}
+                      className="w-full sm:w-auto h-11 sm:h-7 px-2 input-field text-base sm:text-[11px] bg-panel"
+                      title={t('users.changeRole')}
                     >
-                      <option value="">{t('users.noOrganization')}</option>
-                      {organizations.map((o) => (
-                        <option key={o.id} value={o.id}>
-                          {o.name}
-                        </option>
-                      ))}
+                      <option value="member">{t('users.roleMember')}</option>
+                      <option value="manager">{t('users.roleManager')}</option>
+                      <option value="admin">{t('users.roleAdmin')}</option>
                     </select>
+                  ) : (
+                    <span className="min-w-0 flex-1 sm:flex-none truncate">
+                      <span className="badge-neutral text-[10px]">{t(`common:role.${u.role}`)}</span>
+                    </span>
                   )}
 
                   {/* Icon actions, always all of them so the rows line up; unavailable ones stay greyed out */}
                   <span title={t('users.username')}>
                     <button
                       onClick={() => setUsernameEdit(usernameEdit?.id === u.id ? null : { id: u.id, value: u.username || '' })}
-                      disabled={!isServerAdmin && u.role === 'admin'}
+                      disabled={!isServerAdmin}
                       className={iconBtn}
                       aria-label={t('users.username')}
                     >
@@ -505,61 +467,41 @@ export function UsersSection({
                     </button>
                   </span>
 
-                  {isServerAdmin && (
-                    <>
-                      <span title={t('users.password')}>
-                        <button
-                          onClick={() => setResetPwdUserId(resetPwdUserId === u.id ? null : u.id)}
-                          className={iconBtn}
-                          aria-label={t('users.password')}
-                        >
-                          <KeyRound className="w-3.5 h-3.5" />
-                        </button>
-                      </span>
+                  {/* Passwords stay with server admins (others use "forgot password") */}
+                  <span title={isServerAdmin ? t('users.password') : t('users.passwordAdminOnly')}>
+                    <button
+                      onClick={() => setResetPwdUserId(resetPwdUserId === u.id ? null : u.id)}
+                      disabled={!isServerAdmin}
+                      className={iconBtn}
+                      aria-label={t('users.password')}
+                    >
+                      <KeyRound className="w-3.5 h-3.5" />
+                    </button>
+                  </span>
 
-                      <span title={u.id === currentUser.id ? t('users.notSelf') : u.isActive ? t('users.lock') : t('users.activate')}>
-                        <button
-                          onClick={() => handleToggleUserActive(u)}
-                          disabled={u.id === currentUser.id}
-                          className={`${iconBtn} ${u.isActive ? 'hover:!text-status-err' : '!text-status-ok'}`}
-                          aria-label={u.isActive ? t('users.lock') : t('users.activate')}
-                        >
-                          {u.isActive ? <Ban className="w-3.5 h-3.5" /> : <UserCheck className="w-3.5 h-3.5" />}
-                        </button>
-                      </span>
+                  <span title={u.id === currentUser.id ? t('users.notSelf') : !canManage(u) ? t('users.adminOnly') : u.isActive ? t('users.lock') : t('users.activate')}>
+                    <button
+                      onClick={() => handleToggleUserActive(u)}
+                      disabled={u.id === currentUser.id || !canManage(u)}
+                      className={`${iconBtn} ${u.isActive ? 'hover:!text-status-err' : '!text-status-ok'}`}
+                      aria-label={u.isActive ? t('users.lock') : t('users.activate')}
+                    >
+                      {u.isActive ? <Ban className="w-3.5 h-3.5" /> : <UserCheck className="w-3.5 h-3.5" />}
+                    </button>
+                  </span>
 
-                      <span title={u.id === currentUser.id ? t('users.notSelf') : t('users.delete')}>
-                        <button
-                          onClick={() => handleDeleteUser(u)}
-                          disabled={u.id === currentUser.id}
-                          className={`btn-icon-danger ${iconBtnSize}`}
-                          aria-label={t('users.delete')}
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </span>
-                    </>
-                  )}
+                  <span title={u.id === currentUser.id ? t('users.notSelf') : !canManage(u) ? t('users.adminOnly') : t('users.delete')}>
+                    <button
+                      onClick={() => handleDeleteUser(u)}
+                      disabled={u.id === currentUser.id || !canManage(u)}
+                      className={`btn-icon-danger ${iconBtnSize}`}
+                      aria-label={t('users.delete')}
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </span>
                 </div>
               </div>
-
-              {pendingMove?.user.id === u.id && (
-                <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-border">
-                  <AlertCircle className="w-3.5 h-3.5 text-status-warn shrink-0" />
-                  <span className="flex-1 min-w-0 text-muted">
-                    {t('users.leaveOrg', { name: u.displayName, org: orgName(u.organizationId) })}
-                  </span>
-                  <button
-                    onClick={() => applyUserOrganization(u, pendingMove.orgId)}
-                    className="btn-primary h-7 px-3 text-[11px]"
-                  >
-                    {pendingMove.orgId ? t('users.moveTo', { org: orgName(pendingMove.orgId) }) : t('profile.remove')}
-                  </button>
-                  <button onClick={() => setPendingMove(null)} className="btn-action h-7 px-2 text-[11px]">
-                    {t('common:cancel')}
-                  </button>
-                </div>
-              )}
 
               {usernameEdit?.id === u.id && (
                 <div className="flex items-center gap-2 pt-2 border-t border-border">

@@ -1,0 +1,15 @@
+{
+  "untitled": "Sans titre",
+  "footer": "Partagé publiquement avec MindSift · lecture seule · le lien expire le {{date}}",
+  "wrongPassword": "Mot de passe incorrect",
+  "gone": {
+    "title": "Ce lien n’est plus valable",
+    "text": "Il a expiré ou a été retiré. Demande-en un nouveau à la personne qui l’a partagé."
+  },
+  "locked": {
+    "title": "Note protégée",
+    "text": "Cette note est protégée par un mot de passe.",
+    "placeholder": "Mot de passe",
+    "open": "Ouvrir"
+  }
+}

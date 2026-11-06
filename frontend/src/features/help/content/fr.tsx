@@ -511,20 +511,23 @@ const fr: HelpContent = {
       id: 'collab-teams-sharing',
       category: 'collaboration',
       title: 'Organisations, groupes & partages',
-      subtitle: 'Qui voit qui, et partager notes, dossiers et listes en toute sécurité',
+      subtitle: 'Qui peut partager avec qui, et partager notes, dossiers et listes en toute sécurité',
       icon: Users,
-      keywords: ['équipes', 'groupes', 'organisation', 'visibilité', 'privé', 'partage', 'partager', 'autorisations', 'éditeur', 'lecteur', 'dossiers'],
+      keywords: ['équipes', 'groupes', 'organisation', 'visibilité', 'privé', 'partage', 'partager', 'autorisations', 'éditeur', 'lecteur', 'dossiers', 'public', 'lien'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
           <ul className="space-y-1.5">
             <li>
-              <strong className="text-main">Qui voit qui :</strong> l'administrateur du serveur décide. Selon la configuration, tu vois tous les utilisateurs, uniquement les membres de ton <em>organisation</em> ou personne (mode « Privé » : pas de partage, pas de groupes). Seul l'administrateur du serveur gère les organisations ; chacun appartient au maximum à une seule.
+              <strong className="text-main">Qui peut partager avec qui :</strong> l'administrateur du serveur décide : avec tout le monde, uniquement avec les personnes avec qui tu as au moins une <em>organisation</em> en commun, ou avec personne (mode « Privé » : pas de partage, pas de groupes). Tu peux appartenir à plusieurs organisations ; les administrateurs et la gestion des utilisateurs s'en occupent. Si la recherche de personnes est désactivée, tu saisis l'adresse e-mail ou le nom d'utilisateur exacts lors du partage. Les personnes qui travaillent avec toi sur quelque chose y apparaissent toujours avec leur nom.
             </li>
             <li>
               <strong className="text-main">Groupes :</strong> regroupe les personnes visibles au sein de groupes (par ex. famille, colocation, projet) et partage avec tous simultanément. Le créateur du groupe en est l'administrateur ; seuls les membres peuvent partager avec un groupe.
             </li>
             <li>
-              <strong className="text-main">Seul le propriétaire partage :</strong> les éditeurs peuvent modifier le contenu mais ne peuvent pas le repartager. Tu peux quitter un partage qui t'a été accordé à tout moment. Si quelqu'un change d'organisation ou quitte un groupe, ses partages associés prennent fin automatiquement.
+              <strong className="text-main">Seul le propriétaire partage :</strong> les éditeurs peuvent modifier le contenu mais ne peuvent pas le repartager. Tu peux quitter un partage qui t'a été accordé à tout moment. Si quelqu'un quitte une organisation ou un groupe, les partages autorisés uniquement par leur biais prennent fin automatiquement.
+            </li>
+            <li>
+              <strong className="text-main">Lien public :</strong> dans la fenêtre de partage, tu peux partager une de tes notes en lecture seule par lien, y compris avec des personnes sans compte, avec mot de passe en option. Le lien expire toujours (d'1 heure à 14 jours), peut être retiré à tout moment et n'apparaît pas dans les moteurs de recherche. Les visiteurs voient les modifications en direct, mais ni valeurs masquées ni noms. C'est l'administrateur du serveur qui décide si c'est disponible.
             </li>
             <li>
               <strong className="text-main">Rôles (éditeur vs lecteur) :</strong> lors du partage de notes, dossiers ou listes, choisis entre <em>Éditeur</em> (accès complet au contenu et aux listes) et <em>Lecture seule</em> (consultation seule avec mises à jour en direct).

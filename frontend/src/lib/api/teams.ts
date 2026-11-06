@@ -4,10 +4,11 @@ import { ensureArray, request } from './client';
 
 export const teamsApi = {
   // --- GROUPS (user-managed) ---
-  async createTeam(name: string, description = ''): Promise<Team> {
+  // organizationId: which of the creator's organizations the group belongs to (needed with several)
+  async createTeam(name: string, description = '', organizationId = ''): Promise<Team> {
     return request<Team>('/api/v1/teams', {
       method: 'POST',
-      body: JSON.stringify({ name, description }),
+      body: JSON.stringify({ name, description, organizationId }),
     });
   },
 

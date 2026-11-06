@@ -4,9 +4,12 @@ import { Search, X, Check } from 'lucide-react';
 import { User } from '../lib/types';
 import { UserAvatar } from '../components/UserAvatar';
 import { NO_AUTOFILL } from '../lib/noAutofill';
+import { api, isPeopleSearchOn } from '../lib/api';
 
 // Shared type-to-search for picking people (sharing, groups, task assignees). Nothing is listed until
-// something is typed, then at most MAX_RESULTS matches appear below the field. See Doku/ui-patterns.md.
+// something is typed, then at most MAX_RESULTS matches appear below the field. Only people one may share
+// with are suggested (findable); with people search switched off by the admin there are no suggestions,
+// the exact e-mail address or username is looked up instead. See Doku/ui-patterns.md.
 const MAX_RESULTS = 3;
 
 interface UserAutocompleteProps {
@@ -17,6 +20,9 @@ interface UserAutocompleteProps {
   disabled?: boolean;
   excludeUserIds?: string[];
   className?: string;
+  /** Pick from exactly the people given (administration, a list's members), regardless of people
+   *  search and findability */
+  allUsers?: boolean;
 }
 
 export const UserAutocomplete: React.FC<UserAutocompleteProps> = ({
@@ -27,9 +33,13 @@ export const UserAutocomplete: React.FC<UserAutocompleteProps> = ({
   disabled = false,
   excludeUserIds = [],
   className = '',
+  allUsers = false,
 }) => {
   const { t } = useTranslation();
+  const searchOn = allUsers || isPeopleSearchOn();
   const [query, setQuery] = useState('');
+  const [lookupMsg, setLookupMsg] = useState('');
+  const [lookingUp, setLookingUp] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState<number>(-1);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -50,7 +60,7 @@ export const UserAutocomplete: React.FC<UserAutocompleteProps> = ({
   const filteredUsers = React.useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return [];
-    const available = users.filter((u) => !excludeUserIds.includes(u.id));
+    const available = users.filter((u) => !excludeUserIds.includes(u.id) && (allUsers || u.findable !== false));
     return available
       .filter((u) => {
         const nameMatch = (u.displayName || '').toLowerCase().includes(q);
@@ -59,8 +69,25 @@ export const UserAutocomplete: React.FC<UserAutocompleteProps> = ({
         return nameMatch || emailMatch || userMatch;
       })
       .slice(0, MAX_RESULTS);
-  }, [users, query, excludeUserIds]);
-  const showResults = isOpen && query.trim() !== '';
+  }, [users, query, excludeUserIds, allUsers]);
+  const showResults = searchOn && isOpen && query.trim() !== '';
+
+  // Without people search: exactly this e-mail address or username, asked of the server
+  const lookup = async () => {
+    const login = query.trim();
+    if (!login || lookingUp) return;
+    setLookingUp(true);
+    setLookupMsg('');
+    try {
+      const found = await api.lookupUser(login);
+      if (excludeUserIds.includes(found.id)) setLookupMsg(t('userSearch.alreadyAdded'));
+      else handleSelect(found);
+    } catch {
+      setLookupMsg(t('userSearch.notFound'));
+    } finally {
+      setLookingUp(false);
+    }
+  };
 
   const handleSelect = (user: User) => {
     onSelectUser(user);
@@ -76,6 +103,13 @@ export const UserAutocomplete: React.FC<UserAutocompleteProps> = ({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!searchOn) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        void lookup();
+      }
+      return;
+    }
     if (!showResults) {
       if (e.key === 'ArrowDown') {
         setIsOpen(true);
@@ -144,6 +178,7 @@ export const UserAutocomplete: React.FC<UserAutocompleteProps> = ({
             disabled={disabled}
             onChange={(e) => {
               setQuery(e.target.value);
+              setLookupMsg('');
               setIsOpen(true);
               // First match is preselected so Enter picks it right away
               setHighlightedIndex(0);
@@ -151,10 +186,22 @@ export const UserAutocomplete: React.FC<UserAutocompleteProps> = ({
             onFocus={() => setIsOpen(true)}
             onKeyDown={handleKeyDown}
             {...NO_AUTOFILL}
-            placeholder={placeholder ?? t('userSearch.placeholder')}
+            placeholder={searchOn ? placeholder ?? t('userSearch.placeholder') : t('userSearch.exactPlaceholder')}
             className="w-full h-11 sm:h-8 pl-8 pr-2.5 bg-input text-main border border-border rounded-btn focus:outline-none focus:border-accent text-base sm:text-xs placeholder:text-muted transition-colors disabled:opacity-50"
           />
 
+          {!searchOn && query.trim() !== '' && (
+            <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-panel border border-border rounded-card shadow-panel p-1">
+              <button
+                type="button"
+                onClick={() => void lookup()}
+                disabled={lookingUp}
+                className="w-full min-h-11 sm:min-h-0 px-2.5 py-1.5 text-left text-xs text-main hover:bg-panel-elevated rounded-btn cursor-pointer disabled:opacity-60"
+              >
+                {lookupMsg || t('userSearch.lookup', { login: query.trim() })}
+              </button>
+            </div>
+          )}
           {showResults && (
             <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-panel border border-border rounded-card shadow-panel py-1 space-y-0.5">
               {filteredUsers.length === 0 ? (

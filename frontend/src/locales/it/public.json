@@ -1,0 +1,15 @@
+{
+  "untitled": "Senza titolo",
+  "footer": "Condiviso pubblicamente con MindSift · sola lettura · il link scade il {{date}}",
+  "wrongPassword": "Password errata",
+  "gone": {
+    "title": "Questo link non è più valido",
+    "text": "È scaduto o è stato revocato. Chiedine uno nuovo a chi l’ha condiviso."
+  },
+  "locked": {
+    "title": "Nota protetta",
+    "text": "Questa nota è protetta da password.",
+    "placeholder": "Password",
+    "open": "Apri"
+  }
+}

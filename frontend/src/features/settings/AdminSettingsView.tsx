@@ -62,7 +62,7 @@ export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
           </div>
         </div>
 
-        <span className="badge-accent">{t('admin.badge')}</span>
+        <span className="badge-accent">{t(`common:role.${currentUser.role}`)}</span>
       </div>
 
       {statusMsg && (
@@ -107,10 +107,8 @@ export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
             </div>
           </button>
 
-          {isServerAdmin && (
-            <>
-              <button
-                onClick={() => setSection('organizations')}
+          <button
+            onClick={() => setSection('organizations')}
                 className={`w-full px-3.5 py-3 text-left text-xs font-medium flex items-center gap-2.5 transition-colors ${
                   section === 'organizations'
                     ? 'bg-panel-elevated text-main border-l-2 border-l-accent'
@@ -124,6 +122,9 @@ export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
                 </div>
               </button>
 
+          {/* Server settings and mail only for server admins (user managers look after people) */}
+          {isServerAdmin && (
+            <>
               <button
                 onClick={() => setSection('server')}
                 className={`w-full px-3.5 py-3 text-left text-xs font-medium flex items-center gap-2.5 transition-colors ${
@@ -173,9 +174,9 @@ export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
           {section === 'users' && <UsersSection admin={admin} currentUser={currentUser} isServerAdmin={isServerAdmin} />}
 
           {/* ================================================================= */}
-          {/* SECTION 2: ORGANISATIONEN (SERVER-ADMIN ONLY) */}
+          {/* SECTION 2: ORGANISATIONEN (SERVER ADMINS AND USER MANAGERS) */}
           {/* ================================================================= */}
-          {section === 'organizations' && isServerAdmin && <OrganizationsSection admin={admin} />}
+          {section === 'organizations' && <OrganizationsSection admin={admin} />}
 
           {/* ================================================================= */}
           {/* SECTION 3: SERVER & SHARING-ISOLATION (SERVER-ADMIN ONLY) */}

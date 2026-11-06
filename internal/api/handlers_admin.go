@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/mindsift-app/mindsift/internal/auth"
@@ -292,7 +293,13 @@ func (s *Server) handleAdminDeleteUser(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	s.removeUserBackups(targetUserID)
+	// Deleted by someone else: the backups stay for the retention period (a mistake can be undone);
+	// a rejected registration has nothing worth keeping
+	if targetUser != nil && !s.store.IsPendingRegistration(targetUserID) {
+		s.keepUserBackups(targetUser, time.Now())
+	} else {
+		s.removeUserBackups(targetUserID)
+	}
 	s.store.ClearPendingRegistration(targetUserID)
 	writeJSON(w, http.StatusOK, map[string]bool{"deleted": true})
 }

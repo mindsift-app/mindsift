@@ -465,7 +465,8 @@
       "roleMember": "Member (default)",
       "roleAdmin": "Server admin (full access)",
       "submit": "Create user now",
-      "failed": "Creating the user failed"
+      "failed": "Creating the user failed",
+      "roleManager": "User manager (accounts & organizations)"
     },
     "organization": "Organization",
     "noOrganization": "No organization",
@@ -497,7 +498,8 @@
       "mailFailed": "The invitation could not be sent",
       "linkCreated_one": "Invite link for {{count}} person created ({{code}}).",
       "linkCreated_other": "Invite link for {{count}} people created ({{code}}).",
-      "codeCreated": "Invite code {{code}} created."
+      "codeCreated": "Invite code {{code}} created.",
+      "alwaysMember": "Everyone joins through an invite as a member; roles are given afterwards in the list."
     },
     "roleMember": "Member",
     "roleAdmin": "Server admin",
@@ -505,7 +507,7 @@
     "approve": "Approve",
     "reject": "Reject",
     "locked": "Locked",
-    "noOrgWarning": "· no organization, sees nobody",
+    "noOrgWarning": "no organization, cannot share with anybody",
     "changeRole": "Change user role",
     "password": "Password",
     "delete": "Delete user",
@@ -524,27 +526,31 @@
     "confirmDelete": "Really delete the user \"{{name}}\" ({{email}}) for good?",
     "username": "Username",
     "usernameChanged": "{{name}} now signs in as “{{username}}”.",
-    "notSelf": "Not for your own account"
+    "notSelf": "Not for your own account",
+    "organizations": "Organizations",
+    "roleManager": "User manager",
+    "passwordAdminOnly": "Only server admins set passwords (otherwise “forgot password”)",
+    "adminOnly": "Only server admins can change this account"
   },
   "sharing": {
     "private": {
-      "title": "1. Private (nobody sees others)",
-      "text": "Everyone works alone. No user search, no sharing, no groups."
+      "title": "1. Private",
+      "text": "Nobody shares with others: no sharing with people, no groups."
     },
     "organizations": {
-      "title": "2. Organizations (recommended)",
-      "text": "Users only see members of their own organization. Anyone in no organization sees nobody."
+      "title": "2. Within organizations (recommended)",
+      "text": "Sharing only with people one has at least one organization in common with. Whoever belongs to none can share with nobody."
     },
     "open": {
-      "title": "3. Open (everyone sees everyone)",
-      "text": "All users of this instance can find each other and share with one another."
+      "title": "3. Open",
+      "text": "Everyone on this server can share with each other."
     }
   },
   "server": {
-    "title": "Server basics & user visibility",
-    "intro": "As server admin you decide centrally whether users work completely isolated, only see each other within their organization, or everyone is visible to everyone.",
+    "title": "Server basics & sharing",
+    "intro": "As server admin you decide who may share with whom, whether names are suggested while typing and whether notes can be shared by public link.",
     "instanceName": "Name of this MindSift instance",
-    "sharing": "Global sharing & visibility isolation",
+    "sharing": "Who may share with whom",
     "switchAnyway": "Switch anyway",
     "privateWebhooks": "Allow alarm webhooks into the local network",
     "privateWebhooksHint": "Default: Discord and webhook alarms only go to public https addresses. When on, targets in the home network are allowed too (e.g. Home Assistant at 192.168.x.x or via Tailscale), there also over http. The server itself (localhost) and cloud metadata always stay blocked.",
@@ -571,20 +577,27 @@
     "verifyFixed": "Set by <c>REGISTRATION_VERIFY_EMAIL</c>.",
     "retentionNeverHint": "When on, everyone can choose “never” under Account settings → Retention and keep done and deleted things. When off, “never” falls back to the area's default (e.g. 30 days).",
     "mcpHint": "When on, Claude Code, Codex & co. can access MindSift with an API key, and claude.ai or ChatGPT as a connector. When off, the MCP endpoint and the connector sign-in are switched off; existing connector connections pause, API keys keep working via curl.",
-    "saved": "Server settings saved."
+    "saved": "Server settings saved.",
+    "peopleSearch": "People search",
+    "peopleSearchHint": "On, matching names are suggested when sharing and in groups. Off, people need the exact e-mail address or username; those already working on something together still see each other’s names there.",
+    "publicLinks": "Public links to notes",
+    "publicLinksHint": "Owners can share a note read only by link, also with people without an account, optionally with a password. Links always expire and stay out of search engines. Off, no existing link works any more.",
+    "publicLinkMaxDays": "Longest a link may live",
+    "days_one": "{{count}} day",
+    "days_other": "{{count}} days"
   },
   "admin": {
     "loadFailed": "Loading the administration data failed",
     "title": "Server administration",
-    "subtitle": "User management, invite codes, isolation mode & mail server",
+    "subtitle": "Users, invites, organizations, sharing & mail server",
     "badge": "Server administrator",
     "close": "Close",
     "nav": {
       "users": "Users & invitations",
       "usersHint": "Accounts, roles & invite codes",
-      "orgsHint": "Who may see whom",
-      "server": "Server & isolation",
-      "serverHint": "Visibility & registration",
+      "orgsHint": "Who may share with whom",
+      "server": "Server & sharing",
+      "serverHint": "Sharing & registration",
       "smtp": "Email / SMTP server",
       "smtpHint": "Mail delivery for alarms"
     },
@@ -599,16 +612,25 @@
     "deleteFailed": "Deleting failed",
     "assignFailed": "Assigning failed",
     "title": "Organizations",
-    "intro": "Every user belongs to at most one organization. In the “Organizations” mode, only members of the same organization see each other and can share and form groups with each other. You change the assignment in the user list.",
-    "notActive": "The current visibility mode is not “Organizations”; the assignment has no effect right now.",
+    "intro": "A person can belong to several organizations. In the “Within organizations” mode people share only with those they have at least one in common with; every group belongs to one organization. Click an organization to add or remove members.",
+    "notActive": "The current sharing mode is not “Within organizations”; memberships have no effect right now.",
     "namePlaceholder": "Name of the new organization",
     "create": "Create",
     "empty": "No organization yet.",
     "rename": "Rename",
     "delete": "Delete organization",
     "deleteConfirm": "Delete",
-    "deleteWarning_one": "The {{count}} member is then in no organization and loses their shares, groups and assignments with others.",
-    "deleteWarning_other": "The {{count}} members are then in no organization and lose their shares, groups and assignments with each other."
+    "deleteWarning_one": "The {{count}} member loses the shares, groups and assignments that were only allowed through this organization.",
+    "deleteWarning_other": "The {{count}} members lose the shares, groups and assignments that were only allowed through this organization.",
+    "removeMember": "Take {{name}} out of the organization",
+    "removeWarning_one": "{{name}} leaves “{{org}}”. {{count}} share or group membership that was only allowed through this organization goes with it.",
+    "removeWarning_other": "{{name}} leaves “{{org}}”. {{count}} shares and group memberships that were only allowed through this organization go with it.",
+    "removeConfirm": "Remove",
+    "addMember": "Add",
+    "addMemberPlaceholder": "Add a person (name, @username or e-mail)…",
+    "addOrganization": "+ Organization",
+    "addAnother": "+ another",
+    "removeFromSelection": "Remove {{org}}"
   },
   "smtp": {
     "title": "Email / SMTP server for task alarms",
@@ -632,7 +654,9 @@
     "testSending": "Sending test mail…",
     "testSend": "Send test email",
     "passwordKept": "Saved – leave empty for no change",
-    "save": "Save SMTP configuration to the database"
+    "save": "Save SMTP configuration to the database",
+    "testSent": "Test e-mail sent to {{email}}.",
+    "testFailed": "SMTP test failed: {{error}}"
   },
   "import": {
     "readFailed": "The file could not be read",
@@ -708,7 +732,10 @@
     "deleteNamed": "Delete backup {{name}}",
     "restoreHint": "Restoring a database dump: stop the container, replace <c>mindsift.db</c> with the unpacked file (<c>gunzip</c>), start the container. Single users restore their own data in the account settings.",
     "time": "Time",
-    "restored": "Restored: {{notes}} notes, {{tasks}} tasks, {{lists}} lists, {{inbox}} thoughts, {{themes}} themes."
+    "restored": "Restored: {{notes}} notes, {{tasks}} tasks, {{lists}} lists, {{inbox}} thoughts, {{themes}} themes.",
+    "deletedTitle": "Backups of deleted accounts",
+    "deletedHint": "When an admin or user manager deletes an account, its backups stay here until the retention period ends. So someone deleted by mistake gets their data back: download a backup and import it in the new account under Account settings → Export & import. Accounts their owners delete lose their backups at once.",
+    "deletedOn": "Deleted on {{deleted}} · removed on {{remove}}"
   },
   "voiceStatus": {
     "loadFailed": "The status could not be loaded",

@@ -7,6 +7,7 @@ import { ApiError } from '../../lib/api/client';
 import { showError } from '../../components/ErrorNotice';
 import { FormSheet } from '../../components/FormSheet';
 import { NO_AUTOFILL } from '../../lib/noAutofill';
+import { isPublicView } from '../../lib/publicNote';
 
 /** What a failed reveal means: the value was deleted, cannot be decrypted, or another error to show. */
 export function revealFailure(err: unknown): 'gone' | 'unreadable' | 'error' {
@@ -27,7 +28,18 @@ const chipButton =
   "relative inline-flex items-center justify-center text-muted hover:text-main cursor-pointer after:absolute after:-inset-2 sm:after:inset-0 after:content-['']";
 
 /** A hidden value in a bullet ({{secret:id}}): dots until clicked, then the value for a short while. */
-export const SecretChip: React.FC<{ docId: string; secretId: string; canEdit: boolean }> = ({ docId, secretId, canEdit }) => {
+export const SecretChip: React.FC<{ docId: string; secretId: string; canEdit: boolean }> = (props) =>
+  // A public page has no id to reveal (the server sends {{secret:hidden}}): only the dots
+  isPublicView() ? (
+    <span className={`${chipClass} gap-1 text-muted`} data-secret>
+      <Lock className="w-3 h-3 shrink-0" />
+      <span aria-hidden="true" className="before:content-['••••'] tracking-wider" />
+    </span>
+  ) : (
+    <RevealableSecret {...props} />
+  );
+
+const RevealableSecret: React.FC<{ docId: string; secretId: string; canEdit: boolean }> = ({ docId, secretId, canEdit }) => {
   const { t } = useTranslation('workspace');
   const [value, setValue] = useState<string | null>(null);
   const [state, setState] = useState<'hidden' | 'loading' | 'gone' | 'unreadable'>('hidden');

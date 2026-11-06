@@ -134,6 +134,60 @@ export function ServerSection({
             )}
           </div>
 
+          {/* Finding people: suggestions while typing, or only by exact e-mail address / username */}
+          <div className="p-4 bg-canvas border border-border rounded-card flex items-center justify-between gap-4">
+            <div className="pr-4">
+              <p className="font-bold text-main">{t('server.peopleSearch')}</p>
+              <p className="text-[11px] text-muted mt-0.5">
+                {t('server.peopleSearchHint')}
+                {settings.peopleSearchConfiguredViaEnv && ` ${t('server.fixedBy', { env: 'PEOPLE_SEARCH' })}`}
+              </p>
+            </div>
+            <ToggleSwitch
+              checked={settings.peopleSearch !== false}
+              disabled={Boolean(settings.peopleSearchConfiguredViaEnv)}
+              onChange={(peopleSearch) => handleSaveSystemSettings({ peopleSearch })}
+            />
+          </div>
+
+          {/* Public links to notes: read only, always expiring */}
+          <div className="p-4 bg-canvas border border-border rounded-card space-y-3">
+            <div className="flex items-center justify-between gap-4">
+              <div className="pr-4">
+                <p className="font-bold text-main">{t('server.publicLinks')}</p>
+                <p className="text-[11px] text-muted mt-0.5">
+                  {t('server.publicLinksHint')}
+                  {settings.publicLinksConfiguredViaEnv && ` ${t('server.fixedBy', { env: demoMode ? 'MINDA_DEMO' : 'PUBLIC_LINKS' })}`}
+                </p>
+              </div>
+              <ToggleSwitch
+                checked={settings.publicLinks !== false}
+                disabled={Boolean(settings.publicLinksConfiguredViaEnv)}
+                onChange={(publicLinks) => handleSaveSystemSettings({ publicLinks })}
+              />
+            </div>
+            {settings.publicLinks !== false && (
+              <label className="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-border">
+                <span className="text-main font-semibold">{t('server.publicLinkMaxDays')}</span>
+                <select
+                  value={settings.publicLinkMaxDays || 14}
+                  disabled={Boolean(settings.publicLinkMaxDaysConfiguredViaEnv)}
+                  onChange={(e) => handleSaveSystemSettings({ publicLinkMaxDays: Number(e.target.value) })}
+                  className="h-11 sm:h-8 px-2.5 input-field text-base sm:text-xs bg-panel disabled:opacity-60"
+                >
+                  {[1, 3, 7, 14].map((d) => (
+                    <option key={d} value={d}>
+                      {t('server.days', { count: d })}
+                    </option>
+                  ))}
+                </select>
+                {settings.publicLinkMaxDaysConfiguredViaEnv && (
+                  <span className="w-full text-[11px] text-muted">{t('server.fixedBy', { env: 'PUBLIC_LINKS_MAX_DAYS' })}</span>
+                )}
+              </label>
+            )}
+          </div>
+
           <BackupAdminCard settings={settings} onSave={(patch) => handleSaveSystemSettings(patch)} />
 
           <VoiceStatusCard />

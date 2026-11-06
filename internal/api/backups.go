@@ -1,17 +1,20 @@
 package api
 
 import (
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/mindsift-app/mindsift/internal/auth"
+	"github.com/mindsift-app/mindsift/internal/domain"
 	"github.com/mindsift-app/mindsift/internal/storage"
 )
 
@@ -178,8 +181,8 @@ func serveBackupFile(w http.ResponseWriter, r *http.Request, dir, name, contentT
 	http.ServeFile(w, r, path)
 }
 
-// removeUserBackups deletes the server backups of a deleted account (FLAW-37). The system snapshots
-// still contain it until they expire (BACKUP retention).
+// removeUserBackups deletes the server backups of an account its owner deleted (FLAW-37). The system
+// snapshots still contain it until they expire (BACKUP retention).
 func (s *Server) removeUserBackups(userID string) {
 	dir := storage.UserBackupDir(s.backupRoot(), userID)
 	// Only ever one user's own folder, never backups/users itself (IDs like "." or "/")
@@ -189,4 +192,110 @@ func (s *Server) removeUserBackups(userID string) {
 	if err := os.RemoveAll(dir); err != nil {
 		slog.Warn("Backups of the deleted account could not be removed", "user_id", userID, "error", err)
 	}
+}
+
+// Backups of accounts an admin or user manager deleted stay for the backup retention period under
+// backups/deleted/<id> (with account.json: who it was, when), so an account deleted by mistake can be
+// given its data back: the admin downloads a backup and the person imports it into a new account.
+
+type deletedAccountBackups struct {
+	UserID      string               `json:"userId"`
+	DisplayName string               `json:"displayName"`
+	Email       string               `json:"email"`
+	DeletedAt   string               `json:"deletedAt"`
+	RemoveAt    string               `json:"removeAt"`
+	Files       []storage.BackupFile `json:"files"`
+}
+
+func (s *Server) deletedBackupDir(userID string) string {
+	return filepath.Join(s.backupRoot(), "deleted", strings.ReplaceAll(filepath.Base(userID), "..", ""))
+}
+
+func (s *Server) backupKeepDays() int {
+	if sys, _ := s.store.GetSystemSettings(); sys != nil && sys.BackupRetentionDays > 0 {
+		return sys.BackupRetentionDays
+	}
+	return storage.DefaultBackupRetentionDays
+}
+
+// keepUserBackups moves the backups of an account deleted by an admin aside instead of deleting them.
+func (s *Server) keepUserBackups(u *domain.User, now time.Time) {
+	src := storage.UserBackupDir(s.backupRoot(), u.ID)
+	if files, err := storage.ListBackups(src); err != nil || len(files) == 0 {
+		s.removeUserBackups(u.ID)
+		return
+	}
+	dst := s.deletedBackupDir(u.ID)
+	if filepath.Dir(dst) != filepath.Join(s.backupRoot(), "deleted") || filepath.Base(dst) != u.ID {
+		s.removeUserBackups(u.ID)
+		return
+	}
+	_ = os.RemoveAll(dst)
+	if err := os.MkdirAll(filepath.Dir(dst), 0o700); err == nil {
+		err = os.Rename(src, dst)
+		if err == nil {
+			meta, _ := json.Marshal(deletedAccountBackups{UserID: u.ID, DisplayName: u.DisplayName, Email: u.Email, DeletedAt: now.UTC().Format(time.RFC3339)})
+			err = os.WriteFile(filepath.Join(dst, "account.json"), meta, 0o600)
+		}
+		if err == nil {
+			return
+		}
+		slog.Warn("Backups of the deleted account could not be kept", "user_id", u.ID, "error", err)
+	}
+	s.removeUserBackups(u.ID)
+}
+
+// deletedAccounts reads backups/deleted; expired ones are removed when sweep is set.
+func (s *Server) deletedAccounts(now time.Time, sweep bool) []deletedAccountBackups {
+	root := filepath.Join(s.backupRoot(), "deleted")
+	entries, _ := os.ReadDir(root)
+	keep := time.Duration(s.backupKeepDays()) * 24 * time.Hour
+	out := []deletedAccountBackups{}
+	for _, e := range entries {
+		if !e.IsDir() {
+			continue
+		}
+		dir := filepath.Join(root, e.Name())
+		var d deletedAccountBackups
+		var deleted time.Time
+		if raw, err := os.ReadFile(filepath.Join(dir, "account.json")); err == nil && json.Unmarshal(raw, &d) == nil {
+			deleted, _ = time.Parse(time.RFC3339, d.DeletedAt)
+		}
+		if deleted.IsZero() { // no readable account.json: the folder's age
+			if info, err := e.Info(); err == nil {
+				deleted = info.ModTime()
+			}
+		}
+		removeAt := deleted.Add(keep)
+		if !now.Before(removeAt) {
+			if sweep {
+				if err := os.RemoveAll(dir); err != nil {
+					slog.Warn("Expired backups of a deleted account could not be removed", "user_id", e.Name(), "error", err)
+				}
+			}
+			continue
+		}
+		d.UserID = e.Name()
+		d.DeletedAt = deleted.UTC().Format(time.RFC3339)
+		d.RemoveAt = removeAt.UTC().Format(time.RFC3339)
+		d.Files, _ = storage.ListBackups(dir)
+		out = append(out, d)
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].DeletedAt > out[j].DeletedAt })
+	return out
+}
+
+// runDeletedBackupSweep removes backups of deleted accounts past the retention period (hourly).
+func (s *Server) runDeletedBackupSweep(now time.Time) {
+	s.deletedAccounts(now, true)
+}
+
+// handleAdminDeletedBackups: GET /admin/backups/deleted – kept backups of deleted accounts.
+func (s *Server) handleAdminDeletedBackups(w http.ResponseWriter, r *http.Request) {
+	writeJSON(w, http.StatusOK, s.deletedAccounts(time.Now(), false))
+}
+
+// handleAdminDownloadDeletedBackup: GET /admin/backups/deleted/{userId}/{name}
+func (s *Server) handleAdminDownloadDeletedBackup(w http.ResponseWriter, r *http.Request) {
+	serveBackupFile(w, r, s.deletedBackupDir(chi.URLParam(r, "userId")), chi.URLParam(r, "name"), "application/zip")
 }

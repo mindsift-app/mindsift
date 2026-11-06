@@ -8,8 +8,10 @@ SQLite file `mindsift.db` (default: `$DATA_DIR/mindsift.db`), opened with `journ
 ### Users and Access
 | Table | Purpose | Key Columns |
 |---|---|---|
-| `users` | User accounts | `email` (unique), `username`, `password_hash`, `display_name`, `role` (`admin`/`member`), `is_active`, `token_version`, `alarm_channels` (comma-separated), `alarm_email`, `discord_webhook_url`, `custom_webhook_url`, `notify_before_minutes`, `avatar_url`, `organization_id` (empty = no organization), `notification_settings` (JSON of channels and events), `last_daily_summary` (date of last dispatch), retention periods in days (`done_retention_days` 30, `task_trash_days` 30, `triage_trash_days` 14, `note_trash_days` 30, `list_done_days` 7; 0 = never), `voice_input` (`''` = Whisper server, `browser`) |
-| `user_invites` | Invitation codes | `code`, `email`, `role`, `organization_id`, `expires_at`, `used_by` |
+| `users` | User accounts | `email` (unique), `username`, `password_hash`, `display_name`, `role` (`admin`/`manager`/`member`), `is_active`, `token_version`, `alarm_channels` (comma-separated), `alarm_email`, `discord_webhook_url`, `custom_webhook_url`, `notify_before_minutes`, `avatar_url`, `organization_id` (unused since Migration 23, always empty), `notification_settings` (JSON of channels and events), `last_daily_summary` (date of last dispatch), retention periods in days (`done_retention_days` 30, `task_trash_days` 30, `triage_trash_days` 14, `note_trash_days` 30, `list_done_days` 7; 0 = never), `voice_input` (`''` = Whisper server, `browser`) |
+| `user_invites` | Invitation codes | `code`, `email`, `role` (always `member`), `organization_ids` (comma-separated, Migration 23), `expires_at`, `used_by` |
+| `organization_members` | Who belongs to which organization (Migration 23); a person can be in several | `org_id`, `user_id`, `created_at`; primary key `(org_id, user_id)` |
+| `public_links` | Public read-only links to notes (Migration 24), at most one per note | `doc_id` (unique), `created_by`, `token_hash` (SHA-256 of the token), `token_sealed` (token encrypted with `SECRETS_KEY`, so the owner can copy it again), `password_hash` (bcrypt, `''` = none), `theme_family`, `expires_at` |
 | `media` | Images and audio in notes (Migration 5); file stored under `$DATA_DIR/media/<doc_id>/<id>.<ext>` | `id`, `doc_id`, `owner_id`, `kind` (`image`/`audio`), `mime`, `size`, `source_url` (fetched external image), `created_at` |
 | `link_previews` | Cached link previews (Migration 6) | `key` (hash of URL), `url`, `title`, `description`, `site_name`, `image`/`icon` (BLOB, with `*_mime`), `ok`, `fetched_at` |
 | `notification_queue` | Queued notifications pending bundled digest dispatch (Migration 7) | `user_id`, `kind` (`shared`/`taskDone`/`watched`), `payload` (JSON), `created_at`, `attempts` |
@@ -69,7 +71,7 @@ Block types: `h1`, `h2`, `h3`, `paragraph`, `text`, `todo`, `bullet`, `code`, `c
 |---|---|
 | `teams` | User groups/teams: `name`, `description`, `org_id` (creator's organization) |
 | `team_members` | `team_id`, `user_id`, `role` (`admin`/`member`) |
-| `organizations` | Created by the server admin: `name`. Members via `users.organization_id` (at most one per user) |
+| `organizations` | Created by server admins and user managers: `name`. Members in `organization_members` (a person can be in several) |
 
 ## Relationships
 

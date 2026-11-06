@@ -420,5 +420,26 @@
     "save": "Enregistrer",
     "gone": "Secret supprimé",
     "unreadable": "Illisible"
+  },
+  "publicLink": {
+    "title": "Lien public",
+    "hint": "Toute personne disposant du lien peut lire la note, même sans compte. Le lien expire toujours et n’apparaît pas dans les moteurs de recherche.",
+    "duration": "Valable pendant",
+    "for": {
+      "1": "1 heure",
+      "24": "1 jour",
+      "72": "3 jours",
+      "168": "7 jours",
+      "336": "14 jours"
+    },
+    "passwordOptional": "Mot de passe (facultatif)",
+    "create": "Créer le lien",
+    "replace": "Créer un nouveau lien",
+    "copy": "Copier",
+    "copied": "Copié",
+    "expires": "Valable jusqu’au {{date}}",
+    "withPassword": "avec mot de passe",
+    "new": "Nouveau lien",
+    "revoke": "Retirer"
   }
 }

@@ -15,7 +15,7 @@ export const adminApi = {
     password: string;
     displayName: string;
     role: string;
-    organizationId?: string;
+    organizationIds?: string[];
   }): Promise<User> {
     return request<User>('/api/v1/admin/users', {
       method: 'POST',
@@ -56,10 +56,10 @@ export const adminApi = {
     return ensureArray(res);
   },
 
+  // Invites always create members
   async adminCreateInvite(payload: {
     email?: string;
-    role: string;
-    organizationId?: string;
+    organizationIds?: string[];
     maxUses?: number;
   }): Promise<UserInvite> {
     return request<UserInvite>('/api/v1/admin/invites', {
@@ -124,7 +124,7 @@ export const adminApi = {
     return res.affected || 0;
   },
 
-  // --- ORGANIZATIONS (server admin only) ---
+  // --- ORGANIZATIONS (server admins and user managers) ---
   async adminGetOrganizations(): Promise<Organization[]> {
     return ensureArray(await request<Organization[]>('/api/v1/admin/organizations'));
   },
@@ -147,11 +147,20 @@ export const adminApi = {
     await request(`/api/v1/admin/organizations/${id}`, { method: 'DELETE' });
   },
 
-  async adminSetUserOrganization(userId: string, organizationId: string): Promise<void> {
-    await request(`/api/v1/admin/users/${userId}/organization`, {
-      method: 'PUT',
-      body: JSON.stringify({ organizationId }),
+  async adminAddOrganizationMember(orgId: string, userId: string): Promise<void> {
+    await request(`/api/v1/admin/organizations/${orgId}/members`, {
+      method: 'POST',
+      body: JSON.stringify({ userId }),
     });
+  },
+
+  // dryRun: only count the shares and group memberships that would go
+  async adminRemoveOrganizationMember(orgId: string, userId: string, dryRun = false): Promise<number> {
+    const res = await request<{ affected?: number }>(
+      `/api/v1/admin/organizations/${orgId}/members/${userId}${dryRun ? '?dryRun=true' : ''}`,
+      { method: 'DELETE' }
+    );
+    return res?.affected || 0;
   },
 
   async adminTestSMTP(toEmail: string): Promise<{ status: string }> {

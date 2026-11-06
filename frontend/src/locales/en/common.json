@@ -11,7 +11,8 @@
   "aboutMindSift": "About MindSift",
   "role": {
     "admin": "Server admin",
-    "member": "Member"
+    "member": "Member",
+    "manager": "User manager"
   },
   "priority": {
     "label": "Priority",
@@ -100,7 +101,7 @@
     "chooseUser": "Please choose a user",
     "addFailed": "Adding the share failed",
     "removeFailed": "Removing the share failed",
-    "disabled": "Sharing is disabled on this server (visibility mode “Private”).",
+    "disabled": "Sharing with people is switched off on this server (“Private” mode).",
     "add": "Add share:",
     "group": "Group",
     "user": "User",
@@ -118,7 +119,11 @@
     "defaultTitle": "Share & permissions",
     "object": "Item:",
     "teamOption_one": "{{name}} ({{count}} member)",
-    "teamOption_other": "{{name}} ({{count}} members)"
+    "teamOption_other": "{{name}} ({{count}} members)",
+    "count_one": "{{count}} share",
+    "count_other": "{{count}} shares",
+    "editorRole": "Editor",
+    "viewerRole": "Reader"
   },
   "sharedImport": {
     "whichList": "Which list?",
@@ -352,7 +357,11 @@
   "userSearch": {
     "placeholder": "Search users (name, @username or email)…",
     "clear": "Clear selection",
-    "none": "No matching user"
+    "none": "No matching user",
+    "exactPlaceholder": "Exact e-mail address or username…",
+    "lookup": "Look up “{{login}}”",
+    "notFound": "Nobody found you can share with",
+    "alreadyAdded": "Already added"
   },
   "done": "Done",
   "edit": "Edit",

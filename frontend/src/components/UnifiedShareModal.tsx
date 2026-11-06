@@ -30,6 +30,8 @@ export interface UnifiedShareModalProps {
   fixedPermission?: 'editor' | 'viewer'; // When allowRoleSelection is false, force fixedPermission (default 'viewer' for documents, 'editor' for tasks/lists)
   onAddShare: (targetType: 'team' | 'user', targetId: string, permission: 'editor' | 'viewer') => Promise<void>;
   onRemoveShare: (shareId: string) => Promise<void>;
+  /** Shown below the shares, e.g. the public link of a note */
+  extraSection?: React.ReactNode;
 }
 
 export const UnifiedShareModal: React.FC<UnifiedShareModalProps> = ({
@@ -47,6 +49,7 @@ export const UnifiedShareModal: React.FC<UnifiedShareModalProps> = ({
   fixedPermission,
   onAddShare,
   onRemoveShare,
+  extraSection,
 }) => {
   const { t } = useTranslation();
   const effectiveFixedPerm = fixedPermission || 'viewer';
@@ -305,7 +308,7 @@ export const UnifiedShareModal: React.FC<UnifiedShareModalProps> = ({
           <div className="flex items-center justify-between text-xs font-semibold text-muted uppercase tracking-wider px-0.5">
             <span>{t('share.active')}</span>
             <span className="font-mono text-[11px] font-normal lowercase">
-              {shares.length} {shares.length === 1 ? 'Freigabe' : 'Freigaben'}
+              {t('share.count', { count: shares.length })}
             </span>
           </div>
 
@@ -318,8 +321,8 @@ export const UnifiedShareModal: React.FC<UnifiedShareModalProps> = ({
             ) : (
               shares.map((sh) => {
                 const isTeam = sh.targetType === 'team';
-                const roleLabel =
-                  sh.permission === 'viewer' || sh.role === 'viewer' ? 'Leser' : 'Bearbeiter';
+                const isEditor = !(sh.permission === 'viewer' || sh.role === 'viewer');
+                const roleLabel = isEditor ? t('share.editorRole') : t('share.viewerRole');
 
                 return (
                   <div
@@ -360,7 +363,7 @@ export const UnifiedShareModal: React.FC<UnifiedShareModalProps> = ({
                     <div className="flex items-center gap-2 shrink-0">
                       <span
                         className={`text-[10px] px-2 py-0.5 rounded font-semibold ${
-                          roleLabel === 'Bearbeiter'
+                          isEditor
                             ? 'bg-accent/15 text-accent border border-accent/30'
                             : 'bg-surface-2 text-muted border border-border'
                         }`}
@@ -385,6 +388,8 @@ export const UnifiedShareModal: React.FC<UnifiedShareModalProps> = ({
             )}
           </div>
         </div>
+
+        {extraSection}
 
         {/* Footer */}
         <div className="pt-2 border-t border-border flex justify-end">

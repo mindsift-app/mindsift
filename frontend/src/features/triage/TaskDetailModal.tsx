@@ -742,6 +742,8 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
                     selectedUser={null}
                     onSelectUser={(u) => u && onUpdateAssignees(task, [...assignedIds, u.id])}
                     excludeUserIds={assignedIds}
+                    // Only people with access to the list: picking among them is not a people search
+                    allUsers
                     placeholder={t('detail.assignPlaceholder')}
                   />
                 )}

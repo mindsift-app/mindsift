@@ -158,6 +158,13 @@ export const setCurrentSharingMode = (mode: SharingMode) => {
 };
 export const isSharingDisabled = () => currentSharingMode === 'private';
 
+// People search (auth status): off, people are added by exact e-mail address or username only
+let currentPeopleSearch = true;
+export const setCurrentPeopleSearch = (on: boolean) => {
+  currentPeopleSearch = on;
+};
+export const isPeopleSearchOn = () => currentPeopleSearch;
+
 // Authenticated binary download (archives); no JSON parsing and no request timeout
 export async function downloadBlob(path: string): Promise<Blob> {
   const res = await fetch(path, { headers: authHeaders(), cache: 'no-store' });
