@@ -113,6 +113,7 @@
     "shareGroup": "Compartir con grupo",
     "addUser": "Añadir usuario",
     "ownerOnly": "Solo el propietario puede añadir nuevos accesos compartidos.",
+    "sharedBy": "Compartido por <b>{{name}}</b>",
     "active": "Accesos compartidos activos",
     "private": "Este elemento es privado actualmente (solo visible para ti).",
     "remove": "Quitar acceso compartido",

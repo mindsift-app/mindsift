@@ -11,6 +11,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Administration: redeemed and expired invites disappear from the list 30 days later; until then the row says when.
 - Tasks in shared lists: the details name the person who created a task ("Created by Anna on …"), not only tasks created through an API key.
 - Profile picture: after picking a picture you can move and zoom it in the round frame before it is used (drag, slider, mouse wheel or two fingers).
+- Sharing dialog: if someone shared a note, folder, list or task list with you, the dialog names them ("Shared by Anna", with their picture).
 
 ### Changed
 - Sharing dialog: "User" comes first and is preselected, "Group" second.

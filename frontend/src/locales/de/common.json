@@ -112,6 +112,7 @@
     "shareGroup": "Gruppe freigeben",
     "addUser": "Benutzer hinzufügen",
     "ownerOnly": "Nur der Eigentümer kann neue Freigaben einrichten.",
+    "sharedBy": "Geteilt von <b>{{name}}</b>",
     "active": "Aktive Freigaben",
     "private": "Dieses Element ist aktuell privat (nur für dich sichtbar).",
     "remove": "Freigabe entfernen",

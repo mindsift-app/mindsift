@@ -541,6 +541,10 @@ export const SharedListsView: React.FC<SharedListsViewProps> = ({ onRefreshGloba
           resourceName={activeList.title}
           resourceIcon={activeList.icon || undefined}
           isOwner={activeList.isOwner !== false && (activeList.userId === currentUser?.id || !activeList.userId || currentUser?.role === 'admin')}
+          sharedBy={(() => {
+            const owner = activeList.members?.find((m) => m.userId === activeList.userId);
+            return { id: activeList.userId, name: activeList.ownerName || owner?.displayName || owner?.email, avatarUrl: owner?.avatarUrl };
+          })()}
           currentUserId={currentUser?.id}
           shares={(activeList.shares || []).map((s) => ({
             id: s.id,

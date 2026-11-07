@@ -103,6 +103,10 @@ export function WorkspaceShareModal({
   const isOwner = shareModalDoc
     ? Boolean(shareModalDoc.isOwner || shareModalDoc.permission === 'owner')
     : Boolean(shareModalFolder?.isOwner);
+  // The owner, named to everyone else (the picture comes from the people directory, where they are)
+  const ownerId = shareModalDoc ? shareModalDoc.userId : shareModalFolder?.ownerId;
+  const ownerName = shareModalDoc ? shareModalDoc.ownerName : shareModalFolder?.ownerName;
+  const ownerEntry = collaborators.find((c) => c.id === ownerId);
   return (
     <UnifiedShareModal
       isOpen={true}
@@ -113,6 +117,7 @@ export function WorkspaceShareModal({
       resourceName={shareModalDoc ? shareModalDoc.title : shareModalFolder?.name || ''}
       resourceIcon={shareModalDoc ? shareModalDoc.icon : '📁'}
       isOwner={isOwner}
+      sharedBy={{ id: ownerId, name: ownerName || ownerEntry?.displayName, avatarUrl: ownerEntry?.avatarUrl }}
       extraSection={shareModalDoc && isOwner ? <PublicLinkSection docId={shareModalDoc.id} /> : undefined}
       currentUserId={currentUser?.id}
       shares={unifiedShares}

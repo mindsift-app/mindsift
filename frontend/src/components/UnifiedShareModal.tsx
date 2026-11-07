@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
 import {
   Users,
   User as UserIcon,
@@ -32,6 +32,8 @@ export interface UnifiedShareModalProps {
   onRemoveShare: (shareId: string) => Promise<void>;
   /** Shown below the shares, e.g. the public link of a note */
   extraSection?: React.ReactNode;
+  /** The owner, named to everyone else ("Shared by …") */
+  sharedBy?: { id?: string; name?: string; avatarUrl?: string };
 }
 
 export const UnifiedShareModal: React.FC<UnifiedShareModalProps> = ({
@@ -50,6 +52,7 @@ export const UnifiedShareModal: React.FC<UnifiedShareModalProps> = ({
   onAddShare,
   onRemoveShare,
   extraSection,
+  sharedBy,
 }) => {
   const { t } = useTranslation();
   const effectiveFixedPerm = fixedPermission || 'viewer';
@@ -149,6 +152,16 @@ export const UnifiedShareModal: React.FC<UnifiedShareModalProps> = ({
         {error && (
           <div className="p-2.5 bg-status-danger/10 border border-status-danger/30 text-status-danger rounded text-xs">
             {error}
+          </div>
+        )}
+
+        {/* Who shared it, for everyone but the owner */}
+        {!isOwner && sharedBy?.name && (
+          <div className="flex items-center gap-2.5 text-xs text-muted">
+            <UserAvatar userId={sharedBy.id} name={sharedBy.name} avatarUrl={sharedBy.avatarUrl} size="sm" className="border border-border/80" />
+            <span className="min-w-0 truncate">
+              <Trans t={t} i18nKey="share.sharedBy" values={{ name: sharedBy.name }} components={{ b: <span className="font-semibold text-main" /> }} />
+            </span>
           </div>
         )}
 
