@@ -336,6 +336,51 @@ describe('DocSyncEngine', () => {
     expect(contents(a)).toEqual(expect.arrayContaining(['B hat geändert', 'Start + A']));
   });
 
+  it('leaving a block someone else typed in without typing there makes no conflict copy', async () => {
+    const server = new FakeServer();
+    const a = await startEngine(new FakeNet(server));
+    const b = await startEngine(new FakeNet(server));
+
+    a.focusBlock('b1'); // A clicks into the bullet B is editing; the field keeps showing 'Start'
+    edit(b, (blocks) => [{ ...blocks[0], content: 'B tippt' }]);
+    await b.syncNow();
+    await a.syncNow();
+
+    // A clicks out; the field hands back the text it showed
+    a.focusBlock(null);
+    a.applyFlat([{ id: 'b1', type: 'bullet', content: 'Start', level: 0 }]);
+    await a.syncNow();
+    await b.syncNow();
+
+    expect(a.getState().conflicts).toEqual([]);
+    expect(serverContents(server)).toEqual(['B tippt']);
+    expect(contents(a)).toEqual(['B tippt']);
+    expect(contents(b)).toEqual(['B tippt']);
+  });
+
+  it('own text handed back after someone else changed the bullet makes no conflict copy', async () => {
+    const server = new FakeServer();
+    const a = await startEngine(new FakeNet(server));
+    const b = await startEngine(new FakeNet(server));
+
+    a.focusBlock('b1');
+    edit(a, (blocks) => [{ ...blocks[0], content: 'Von A' }]);
+    await a.syncNow();
+    await b.syncNow();
+    // A's lease ran out while the cursor rested there; B changes the bullet
+    edit(b, (blocks) => [{ ...blocks[0], content: 'Von A, B ergänzt' }]);
+    await b.syncNow();
+    await a.syncNow();
+
+    a.focusBlock(null);
+    a.applyFlat([{ id: 'b1', type: 'bullet', content: 'Von A', level: 0 }]);
+    await a.syncNow();
+
+    expect(a.getState().conflicts).toEqual([]);
+    expect(serverContents(server)).toEqual(['Von A, B ergänzt']);
+    expect(contents(a)).toEqual(['Von A, B ergänzt']);
+  });
+
   it('typing in a rhythm (several edits per sync) causes no conflict with oneself', async () => {
     const server = new FakeServer();
     const net = new FakeNet(server);

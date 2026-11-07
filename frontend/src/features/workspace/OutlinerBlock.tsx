@@ -208,7 +208,14 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
   inRangeSelection,
 }) => {
   const { t } = useTranslation('workspace');
-  const [localContent, setLocalContent] = useState<string>(block.content || '');
+  const [localContent, setShownContent] = useState<string>(block.content || '');
+  // The user changed the text since the field last took it over from the block. Only then may leaving the
+  // field send it: an unchanged field can hold old text, e.g. while someone else types in this locked bullet.
+  const editedRef = useRef(false);
+  const setLocalContent = useCallback((content: string) => {
+    editedRef.current = true;
+    setShownContent(content);
+  }, []);
   const [isLocallyFocused, setIsLocallyFocused] = useState<boolean>(false);
   const activeFocus = isFocused || isLocallyFocused;
   // A block someone else is editing can still get the cursor (read-only), e.g. to press Enter at its end
@@ -320,7 +327,7 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
   const onRedoRef = useRef(onRedo);
   onRedoRef.current = onRedo;
 
-  // Sync incoming remote changes ONLY when this textarea is NOT actively being edited
+  // Sync incoming remote changes ONLY when this textarea is NOT actively being edited (or not edited at all)
   // Condition: isFocusedRef.current === true && document.hasFocus()
   useEffect(() => {
     const isActivelyEditing =
@@ -334,13 +341,14 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
     // Also when the cursor leaves: after a conflict the field held the user's own text, which now stands
     // in the conflict copy, while the block itself keeps the other version
     if (
-      (!isActivelyEditing || acceptAfterUndo) &&
+      (!isActivelyEditing || acceptAfterUndo || !editedRef.current) &&
       debounceTimerRef.current === null &&
       block.content !== localContentRef.current
     ) {
       if (isActivelyEditing) pendingCaretRef.current = caretAfterChange(localContentRef.current, block.content || '');
-      setLocalContent(block.content || '');
+      setShownContent(block.content || '');
       localContentRef.current = block.content || '';
+      editedRef.current = false;
     }
   }, [block.content, isLocallyFocused]);
 
@@ -359,7 +367,7 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
         window.clearTimeout(debounceTimerRef.current);
         debounceTimerRef.current = null;
         flushDebounce(localContentRef.current);
-      } else if (localContentRef.current !== latestBlockRef.current.content) {
+      } else if (editedRef.current && localContentRef.current !== latestBlockRef.current.content) {
         flushDebounce(localContentRef.current);
       }
       isFocusedRef.current = false;
@@ -870,7 +878,7 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
       window.clearTimeout(debounceTimerRef.current);
       debounceTimerRef.current = null;
       flushDebounce(localContentRef.current);
-    } else if (localContentRef.current !== latestBlockRef.current.content) {
+    } else if (editedRef.current && localContentRef.current !== latestBlockRef.current.content) {
       flushDebounce(localContentRef.current);
     }
   };

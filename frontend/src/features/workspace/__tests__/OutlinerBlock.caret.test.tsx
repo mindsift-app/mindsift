@@ -104,6 +104,57 @@ describe('undo shortcut', () => {
   });
 });
 
+describe('a bullet someone else is editing', () => {
+  const lock = { name: 'Ben', userId: 'u2' };
+  const element = (content: string, props: Record<string, unknown>) => (
+    <OutlinerBlock
+      docId="d"
+      block={{ id: 'b1', type: 'bullet', content, level: 0 } as DocumentBlock}
+      index={0}
+      isLast
+      maxAllowedLevel={1}
+      hasChildren={false}
+      isFocused={false}
+      onCreateBlockBelow={() => {}}
+      onDeleteBlock={() => {}}
+      onIndentBlock={() => {}}
+      onNavigateFocus={() => {}}
+      registerTextareaRef={() => {}}
+      canEdit={false}
+      onUpdateBlock={() => {}}
+      {...props}
+    />
+  );
+
+  it('shows the other text with the cursor inside and sends nothing on leaving', () => {
+    const onUpdate = vi.fn();
+    const props = { lockedBy: lock, canAppendBelow: true, onUpdateBlock: onUpdate };
+    const { container, rerender } = render(element('Start', props));
+    const ta = container.querySelector('textarea') as HTMLTextAreaElement;
+    ta.focus();
+    fireEvent.focus(ta);
+    rerender(element('Ben tippt', props));
+    expect(ta.value).toBe('Ben tippt');
+    fireEvent.blur(ta);
+    ta.blur();
+    expect(onUpdate).not.toHaveBeenCalled();
+  });
+
+  it('keeps and sends text the user typed before the bullet got locked', () => {
+    const onUpdate = vi.fn();
+    const { container, rerender } = render(element('Start', { canEdit: true, onUpdateBlock: onUpdate }));
+    const ta = container.querySelector('textarea') as HTMLTextAreaElement;
+    ta.focus();
+    fireEvent.focus(ta);
+    fireEvent.change(ta, { target: { value: 'Start + eigener Text' } });
+    // Ben's text and lock arrive
+    rerender(element('Ben tippt', { canEdit: false, lockedBy: lock, canAppendBelow: true, onUpdateBlock: onUpdate }));
+    expect(ta.value).toBe('Start + eigener Text');
+    fireEvent.blur(ta);
+    expect(onUpdate).toHaveBeenLastCalledWith(expect.objectContaining({ content: 'Start + eigener Text' }), true);
+  });
+});
+
 describe('conflict copies', () => {
   it('show who lost and offer accept/discard', () => {
     const onResolve = vi.fn();

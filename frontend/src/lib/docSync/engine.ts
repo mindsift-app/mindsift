@@ -4,7 +4,7 @@
 // Doku/modules/collaboration.md.
 import type { DocumentBlock } from '../types';
 import { diffFlat, toDocumentBlocks } from './diff';
-import { applyEffect, applyOp, cloneDoc, Doc, docFromSnapshot, emptyDoc, Op, Result } from './model';
+import { applyEffect, applyOp, Block, cloneDoc, Doc, docFromSnapshot, emptyDoc, Op, Result } from './model';
 import { defaultStorage, markUnsent, requestPersistentStorage, SyncStorage } from './persist';
 import { httpTransport, LeaseInfo, Presence, Transport, TransportError } from './transport';
 import { buildStep, failedChecks, touchedBlocks, UndoStep } from './undo';
@@ -147,9 +147,9 @@ export class DocSyncEngine {
 
   private focused: string | null = null;
   private activity = new Map<string, number>(); // blockId -> last edit/focus time
-  // Version of each block the editor last showed in agreement with the engine. The focused text field does
-  // not take over remote changes while typing, so its edits are based on this version, not the newest one.
-  private uiSeen = new Map<string, number>();
+  // Version and text of each block the editor last showed in agreement with the engine. The focused text field
+  // does not take over remote changes while typing, so its edits are based on this version, not the newest one.
+  private uiSeen = new Map<string, { version: number; content: string }>();
   // Focused block -> its conflict copy: the field still shows the user's losing text, so typing on there
   // goes into that copy instead of making a new copy per keystroke batch. Ends when the field shows the
   // engine's text again or the cursor leaves the block.
@@ -290,16 +290,21 @@ export class DocSyncEngine {
     for (const b of blocks) {
       const cur = this.local.blocks.get(b.id);
       if (cur && !cur.deleted && cur.content === (b.content || '')) {
-        this.uiSeen.set(b.id, cur.version);
+        this.seen(cur);
         this.conflictRedirects.delete(b.id);
       }
     }
-    const ops = diffFlat(this.local, blocks, () => this.newOpId());
-    if (ops.length === 0) return;
+    const all = diffFlat(this.local, blocks, () => this.newOpId());
+    const ops = all.filter((op) => !this.isStaleEcho(op));
+    if (ops.length === 0) {
+      // A field handed back old text: show it the engine's text again
+      if (all.length > 0) this.emit();
+      return;
+    }
     const before = this.local;
     const t = this.now();
     for (const op of ops) {
-      if (op.kind === 'set_content' && this.uiSeen.has(op.blockId!)) op.baseVersion = this.uiSeen.get(op.blockId!);
+      if (op.kind === 'set_content' && this.uiSeen.has(op.blockId!)) op.baseVersion = this.uiSeen.get(op.blockId!)!.version;
       if (op.kind === 'set_content') this.redirectToConflictCopy(op, this.local);
       if ((op.kind === 'insert' || op.kind === 'set_content') && op.blockId) this.activity.set(op.blockId, t);
     }
@@ -309,7 +314,7 @@ export class DocSyncEngine {
     for (const op of ops) {
       if (op.kind === 'set_content' || op.kind === 'insert') {
         const cur = this.local.blocks.get(op.blockId!);
-        if (cur) this.uiSeen.set(op.blockId!, cur.version);
+        if (cur) this.seen(cur);
       }
     }
   }
@@ -381,7 +386,7 @@ export class DocSyncEngine {
     // Entering a block, its field shows the engine's text (unfocused fields take it over), so edits from
     // here on build on that version, not on one an earlier visit of the field saw
     const entered = changed && blockId ? this.local.blocks.get(blockId) : undefined;
-    if (entered && !entered.deleted) this.uiSeen.set(entered.id, entered.version);
+    if (entered && !entered.deleted) this.seen(entered);
     if (blockId) this.activity.set(blockId, t);
     // Announce the lease right away: with push the next regular sync may be up to 30 s away
     if (changed && blockId && this.canEdit && this.collaborative()) {
@@ -487,10 +492,26 @@ export class DocSyncEngine {
     }
     for (const op of ops) {
       const b = op.blockId ? this.local.blocks.get(op.blockId) : undefined;
-      if (b) this.uiSeen.set(b.id, b.version);
+      if (b) this.seen(b);
     }
     this.emit();
     return { ok: true };
+  }
+
+  private seen(b: Block): void {
+    this.uiSeen.set(b.id, { version: b.version, content: b.content });
+  }
+
+  /**
+   * A text change that only repeats what the editor last showed in agreement with the engine is no edit: the
+   * field kept old text while someone else changed the block (e.g. the cursor sat in a locked bullet) and
+   * handed it back on leaving. Sending it would turn the other person's text into a conflict.
+   */
+  private isStaleEcho(op: Op): boolean {
+    if (op.kind !== 'set_content' || this.conflictRedirects.has(op.blockId!)) return false;
+    const seen = this.uiSeen.get(op.blockId!);
+    const cur = this.local.blocks.get(op.blockId!);
+    return !!seen && !!cur && !cur.deleted && seen.content === op.content && cur.content !== seen.content;
   }
 
   /** Sends a text change into the conflict copy of its block (see conflictRedirects). */
@@ -523,7 +544,7 @@ export class DocSyncEngine {
   private emit(): void {
     // Unfocused blocks take over whatever the engine shows; only the focused text field may lag behind
     this.local.blocks.forEach((b, id) => {
-      if (id !== this.focused) this.uiSeen.set(id, b.version);
+      if (id !== this.focused) this.seen(b);
     });
     if (this.listeners.size === 0) return;
     const s = this.getState();
