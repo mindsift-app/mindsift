@@ -395,7 +395,7 @@ func (s *Store) CreateUserInvite(createdBy, email string, orgIDs []string, valid
 
 func (s *Store) GetUserInvites() ([]domain.UserInvite, error) {
 	rows, err := s.db.Query(
-		`SELECT id, code, email, role, organization_ids, created_by, expires_at, used_by, created_at, max_uses, use_count
+		`SELECT id, code, email, role, organization_ids, created_by, expires_at, used_by, created_at, max_uses, use_count, used_up_at
 		 FROM user_invites ORDER BY created_at DESC`,
 	)
 	if err != nil {
@@ -405,8 +405,12 @@ func (s *Store) GetUserInvites() ([]domain.UserInvite, error) {
 	for rows.Next() {
 		var inv domain.UserInvite
 		var orgs string
-		if err := rows.Scan(&inv.ID, &inv.Code, &inv.Email, &inv.Role, &orgs, &inv.CreatedBy, &inv.ExpiresAt, &inv.UsedBy, &inv.CreatedAt, &inv.MaxUses, &inv.UseCount); err == nil {
+		var usedUpAt string
+		if err := rows.Scan(&inv.ID, &inv.Code, &inv.Email, &inv.Role, &orgs, &inv.CreatedBy, &inv.ExpiresAt, &inv.UsedBy, &inv.CreatedAt, &inv.MaxUses, &inv.UseCount, &usedUpAt); err == nil {
 			inv.OrganizationIDs = splitIDs(orgs)
+			if t, ok := inviteRemoveAt(time.Now(), inv.ExpiresAt, usedUpAt, inv.UseCount, inv.MaxUses); ok {
+				inv.RemoveAt = t.Format(time.RFC3339)
+			}
 			invites = append(invites, inv)
 		}
 	}
@@ -485,7 +489,9 @@ func (s *Store) getUserInvite(where string, arg string) (*domain.UserInvite, err
 // the same code can never use it more often than allowed, even at the same moment (FLAW-40). The
 // returned marker goes to FinishUserInvite or ReleaseUserInvite.
 func (s *Store) ClaimUserInvite(inviteID string) (string, error) {
-	res, err := s.db.Exec(`UPDATE user_invites SET use_count = use_count + 1 WHERE id = ? AND use_count < max_uses`, inviteID)
+	res, err := s.db.Exec(`UPDATE user_invites SET use_count = use_count + 1,
+		used_up_at = CASE WHEN use_count + 1 >= max_uses THEN ? ELSE used_up_at END
+		WHERE id = ? AND use_count < max_uses`, time.Now().UTC().Format(time.RFC3339), inviteID)
 	if err != nil {
 		return "", err
 	}
@@ -493,6 +499,49 @@ func (s *Store) ClaimUserInvite(inviteID string) (string, error) {
 		return "", errors.New("Dieser Einladungscode wurde bereits eingelöst")
 	}
 	return domain.NewID("claim"), nil
+}
+
+// InviteKeepDays: a used-up or expired invite stays in the list this long, then it is removed.
+const InviteKeepDays = 30
+
+// inviteRemoveAt: when a used-up or expired invite is removed; false while it can still be used.
+func inviteRemoveAt(now time.Time, expiresAt, usedUpAt string, useCount, maxUses int) (time.Time, bool) {
+	from := time.Time{}
+	if useCount >= maxUses {
+		from, _ = time.Parse(time.RFC3339, usedUpAt)
+	}
+	if exp, err := time.Parse(time.RFC3339, expiresAt); err == nil && (from.IsZero() || exp.Before(from)) && now.After(exp) {
+		from = exp
+	}
+	if from.IsZero() {
+		return time.Time{}, false
+	}
+	return from.AddDate(0, 0, InviteKeepDays), true
+}
+
+// PurgeOldInvites removes invites that were used up or expired more than InviteKeepDays ago.
+func (s *Store) PurgeOldInvites(now time.Time) (int, error) {
+	rows, err := s.db.Query(`SELECT id, expires_at, used_up_at, use_count, max_uses FROM user_invites`)
+	if err != nil {
+		return 0, err
+	}
+	var ids []string
+	for rows.Next() {
+		var id, exp, usedUp string
+		var count, maxUses int
+		if rows.Scan(&id, &exp, &usedUp, &count, &maxUses) == nil {
+			if t, ok := inviteRemoveAt(now, exp, usedUp, count, maxUses); ok && now.After(t) {
+				ids = append(ids, id)
+			}
+		}
+	}
+	_ = rows.Close()
+	for _, id := range ids {
+		if _, err := s.db.Exec(`DELETE FROM user_invites WHERE id = ?`, id); err != nil {
+			return 0, err
+		}
+	}
+	return len(ids), nil
 }
 
 // FinishUserInvite records the new account on a single-use invite (links for several people only count).
@@ -503,7 +552,7 @@ func (s *Store) FinishUserInvite(inviteID, claim, userID string) error {
 
 // ReleaseUserInvite gives the reserved use back when the account could not be created.
 func (s *Store) ReleaseUserInvite(inviteID, claim string) {
-	_, _ = s.db.Exec(`UPDATE user_invites SET use_count = use_count - 1 WHERE id = ? AND use_count > 0`, inviteID)
+	_, _ = s.db.Exec(`UPDATE user_invites SET use_count = use_count - 1, used_up_at = '' WHERE id = ? AND use_count > 0`, inviteID)
 }
 
 // BindUserInviteEmail ties a single-use invite to the address it is sent to.

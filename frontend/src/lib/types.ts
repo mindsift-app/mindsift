@@ -160,6 +160,8 @@ export interface UserInvite {
   usedBy?: string;
   createdAt: string;
   expiresAt: string;
+  // Used up or expired: when the invite disappears from the list
+  removeAt?: string;
   // A link for several people: allowed and used redemptions
   maxUses: number;
   useCount: number;

@@ -189,6 +189,11 @@ export const tasksApi = {
     }));
   },
 
+  // The person's own order of the task list tabs
+  async setTaskListOrder(ids: string[]): Promise<void> {
+    await request('/api/v1/task-lists/order', { method: 'PUT', body: JSON.stringify({ ids }) });
+  },
+
   async createTaskList(payload: {
     title: string;
     icon?: string;

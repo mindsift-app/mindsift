@@ -15,6 +15,7 @@ import { readViewMemory, writeViewMemory } from '../../lib/viewSession';
 import { useKanbanLayout } from './useKanbanLayout';
 import { MobileTaskCreateSheet, MobileTaskDraft } from './MobileTaskCreateSheet';
 import { TagFilterRow } from './TagFilterRow';
+import { inIdOrder } from '../../lib/useTabReorder';
 import { useTaskDrag } from './useTaskDrag';
 import { KanbanBoard } from './KanbanBoard';
 import { TaskRow } from './TaskRow';
@@ -756,6 +757,10 @@ export const TasksView: React.FC<TasksViewProps> = ({
         setViewMode={setViewMode}
         viewMode={viewMode}
         tasks={tasks}
+        onReorderLists={(ids) => {
+          setTaskLists((prev) => inIdOrder(prev, ids));
+          api.setTaskListOrder(ids).catch(() => void loadDataRef.current());
+        }}
       />
 
       {/* Mobile Compact Context Bar (replaces cluttered button rows; options live in MindSift Logo Menu) */}

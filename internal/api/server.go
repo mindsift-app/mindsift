@@ -240,6 +240,7 @@ func (s *Server) Router() http.Handler {
 
 		// Task Lists & Shares
 		r.Get("/api/v1/task-lists", s.handleGetTaskLists)
+		r.Put("/api/v1/task-lists/order", s.handleListOrder(storage.ListOrderTaskLists))
 		r.Post("/api/v1/task-lists", s.handleCreateTaskList)
 		r.Put("/api/v1/task-lists/{id}", s.handleUpdateTaskList)
 		r.Delete("/api/v1/task-lists/{id}", s.handleDeleteTaskList)
@@ -305,6 +306,7 @@ func (s *Server) Router() http.Handler {
 
 		// Shared Lists & Realtime Collaboration
 		r.Get("/api/v1/lists", s.handleGetAllLists)
+		r.Put("/api/v1/lists/order", s.handleListOrder(storage.ListOrderLists))
 		r.Post("/api/v1/lists", s.handleCreateList)
 		r.Get("/api/v1/lists/{id}", s.handleGetListByID)
 		r.Delete("/api/v1/lists/{id}", s.handleDeleteList)

@@ -5,13 +5,9 @@ import {
 } from 'lucide-react';
 import { ToggleSwitch } from '../../../components/ToggleSwitch';
 import { useAdminSettings } from './useAdminSettings';
-import { NO_AUTOFILL } from '../../../lib/noAutofill';
+import { MASKED, NO_AUTOFILL } from '../../../lib/noAutofill';
 
 // Administration → E-Mail / SMTP-Server (state in useAdminSettings)
-// Password fields of other people's accounts or the server: shown as dots without type="password", so
-// password managers neither offer the admin's own login nor save it here
-const MASKED = { WebkitTextSecurity: 'disc' } as React.CSSProperties;
-
 export function SmtpSection({
   admin,
 }: {

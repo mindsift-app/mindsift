@@ -167,6 +167,7 @@ func (s *Store) GetListShares(listID string) ([]domain.ListShare, error) {
 }
 
 func (s *Store) GetAllListsForUser(userID string) ([]domain.SharedList, error) {
+	order := s.listOrder(userID, ListOrderLists)
 	rows, err := s.db.Query(
 		`SELECT DISTINCT l.id, l.user_id, l.title, l.icon, l.list_type, l.updated_at, l.created_at,
 		        u.display_name,
@@ -209,6 +210,7 @@ func (s *Store) GetAllListsForUser(userID string) ([]domain.SharedList, error) {
 		lists[i].Shares, _ = s.GetListShares(lists[i].ID)
 		lists[i].Members = s.getListMembers(lists[i].ID, lists[i].UserID)
 	}
+	sortByListOrder(lists, order, sharedListID)
 	return lists, nil
 }
 

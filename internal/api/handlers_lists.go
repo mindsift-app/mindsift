@@ -363,6 +363,24 @@ func (s *Server) handleReorderListItems(w http.ResponseWriter, r *http.Request) 
 	writeJSON(w, http.StatusOK, map[string]bool{"success": true})
 }
 
+// handleListOrder: PUT /task-lists/order and /lists/order {"ids"} – the person's own order of the tabs.
+func (s *Server) handleListOrder(kind string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var req struct {
+			IDs []string `json:"ids"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil || len(req.IDs) > 1000 {
+			writeError(w, http.StatusBadRequest, "Ungültige Anfrage")
+			return
+		}
+		if err := s.store.SetListOrder(auth.GetUserID(r.Context()), kind, req.IDs); err != nil {
+			writeError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+		w.WriteHeader(http.StatusNoContent)
+	}
+}
+
 // listItemsWriteAllowed answers 404 (no access, or item not in this list) or 403 (viewer) and returns
 // false; every request changing list items goes through it.
 func (s *Server) listItemsWriteAllowed(w http.ResponseWriter, r *http.Request, itemID string) bool {

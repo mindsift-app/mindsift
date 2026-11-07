@@ -21,17 +21,13 @@ import { UserAvatar } from '../../../components/UserAvatar';
 import { useAdminSettings } from './useAdminSettings';
 import { formatDate } from '../../../lib/format';
 import { OrganizationPicker } from './OrganizationPicker';
-import { NO_AUTOFILL } from '../../../lib/noAutofill';
+import { MASKED, NO_AUTOFILL } from '../../../lib/noAutofill';
 
 // Administration → Users & invitations (state in useAdminSettings)
 
 // Row actions: 44 px touch targets on phones, small squares from sm on
 const iconBtnSize = 'w-11 h-11 sm:w-7 sm:h-7 disabled:opacity-40 disabled:pointer-events-none';
 const iconBtn = `btn-icon ${iconBtnSize}`;
-
-// Password fields of other people's accounts or the server: shown as dots without type="password", so
-// password managers neither offer the admin's own login nor save it here
-const MASKED = { WebkitTextSecurity: 'disc' } as React.CSSProperties;
 
 export function UsersSection({
   admin,
@@ -218,59 +214,71 @@ export function UsersSection({
       </div>
 
       {/* Active Invites List */}
-      {invites.length > 0 && (
-        <div className="space-y-1.5">
-          <p className="text-[11px] font-semibold text-muted">
-            {t('users.invite.list')}
-          </p>
+      <div className="space-y-1.5">
+        <p className="text-[11px] font-semibold text-muted" title={t('users.invite.keepHint')}>
+          {t('users.invite.list')}
+        </p>
+        {invites.length === 0 ? (
+          <p className="p-3 border border-dashed border-border rounded-card text-muted text-xs">{t('users.invite.none')}</p>
+        ) : (
           <div className="divide-y divide-border border border-border bg-panel rounded-card overflow-hidden">
             {invites.map((inv) => {
               const maxUses = inv.maxUses || 1;
               const used = inv.useCount ?? (inv.usedBy ? 1 : 0);
               const open = used < maxUses && new Date(inv.expiresAt).getTime() > Date.now();
               const copied = copiedInviteId === inv.id;
+              const details = [
+                inv.email ? t('users.invite.for', { email: inv.email }) : '',
+                (inv.organizationNames || []).join(', '),
+                maxUses > 1 ? t('users.invite.used', { used, max: maxUses }) : '',
+              ]
+                .filter(Boolean)
+                .join(' · ');
               return (
                 <div key={inv.id} className="p-2 space-y-2">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div className="flex flex-wrap items-center gap-2.5 min-w-0">
-                      <code className="px-2 py-0.5 bg-canvas border border-border font-mono font-bold text-accent rounded-card">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                      <code className="shrink-0 px-2 py-0.5 bg-canvas border border-border font-mono font-bold text-accent rounded-card">
                         {inv.code}
                       </code>
-                      <span className="text-muted">
-                        {[
-                          inv.email ? t('users.invite.for', { email: inv.email }) : '',
-                          (inv.organizationNames || []).join(', '),
-                          maxUses > 1 ? t('users.invite.used', { used, max: maxUses }) : '',
-                        ]
-                          .filter(Boolean)
-                          .join(' · ')}
-                      </span>
+                      {details && (
+                        <span className="text-muted truncate min-w-0" title={details}>
+                          {details}
+                        </span>
+                      )}
                       {open ? (
-                        <span className="badge-ok text-[10px]">{t('users.invite.open')}</span>
+                        <span className="badge-ok text-[10px] shrink-0">{t('users.invite.open')}</span>
                       ) : (
-                        <span className="badge-neutral text-[10px]">{used >= maxUses ? t('users.invite.redeemed') : t('users.invite.expired')}</span>
+                        <span className="badge-neutral text-[10px] shrink-0">{used >= maxUses ? t('users.invite.redeemed') : t('users.invite.expired')}</span>
+                      )}
+                      {!open && inv.removeAt && (
+                        <span className="text-[11px] text-faint shrink-0 hidden sm:inline" title={t('users.invite.keepHint')}>
+                          {t('users.invite.removeOn', { date: formatDate(inv.removeAt) })}
+                        </span>
                       )}
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-1.5">
+                    {/* Icon actions like in the user list, so they stay in one row on the right */}
+                    <div className="flex items-center gap-1.5 shrink-0">
                       {open && (
                         <>
                           <button
                             type="button"
                             onClick={() => handleCopyInvite(inv, 'link')}
-                            className="btn-action h-7 px-2 text-[11px] flex items-center gap-1"
-                            title={inviteLink(inv)}
+                            className={`${iconBtn} ${copied && copiedWhat === 'link' ? '!text-status-ok' : ''}`}
+                            title={copied && copiedWhat === 'link' ? t('api.copied') : `${t('users.invite.copyLink')}: ${inviteLink(inv)}`}
+                            aria-label={t('users.invite.copyLink')}
                           >
-                            <Link2 className="w-3 h-3" />
-                            <span>{copied && copiedWhat === 'link' ? t('api.copied') : t('users.invite.copyLink')}</span>
+                            {copied && copiedWhat === 'link' ? <Check className="w-3.5 h-3.5" /> : <Link2 className="w-3.5 h-3.5" />}
                           </button>
                           <button
                             type="button"
                             onClick={() => handleCopyInvite(inv, 'code')}
-                            className="btn-action h-7 px-2 text-[11px] flex items-center gap-1"
+                            className={`${iconBtn} ${copied && copiedWhat === 'code' ? '!text-status-ok' : ''}`}
+                            title={copied && copiedWhat === 'code' ? t('api.copied') : t('users.invite.copyCode')}
+                            aria-label={t('users.invite.copyCode')}
                           >
-                            <Copy className="w-3 h-3" />
-                            <span>{copied && copiedWhat === 'code' ? t('api.copied') : t('users.invite.code')}</span>
+                            {copied && copiedWhat === 'code' ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                           </button>
                           <button
                             type="button"
@@ -278,18 +286,20 @@ export function UsersSection({
                               setMailInviteId(mailInviteId === inv.id ? null : inv.id);
                               setMailInviteTo(inv.email || '');
                             }}
-                            className="btn-action h-7 px-2 text-[11px] flex items-center gap-1"
+                            className={`${iconBtn} ${mailInviteId === inv.id ? '!text-accent' : ''}`}
                             title={t('users.invite.mailTitle')}
+                            aria-label={t('users.invite.mailTitle')}
                           >
-                            <Mail className="w-3 h-3" />
-                            <span>{t('users.invite.mail')}</span>
+                            <Mail className="w-3.5 h-3.5" />
                           </button>
                         </>
                       )}
                       <button
+                        type="button"
                         onClick={() => handleDeleteInvite(inv.id)}
-                        className="btn-icon btn-icon-danger"
+                        className={`btn-icon-danger ${iconBtnSize}`}
                         title={t('users.invite.delete')}
+                        aria-label={t('users.invite.delete')}
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -332,8 +342,8 @@ export function UsersSection({
               );
             })}
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Registrations waiting for approval */}
       {users.some((u) => u.pendingApproval) && (

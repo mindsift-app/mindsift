@@ -434,6 +434,7 @@ func (s *Store) GetTaskLists(userID string) ([]domain.TaskList, error) {
 	// Before the query: looking up the language needs a connection of its own, and holding the rows' one
 	// meanwhile can use up the pool (deadlock under load)
 	defaultCols := defaultColumns(s.MessageLanguage(userID))
+	order := s.listOrder(userID, ListOrderTaskLists)
 	rows, err := s.db.Query(
 		`SELECT id, user_id, space_id, title, icon, color, COALESCE(columns, '[]'), created_at, updated_at
 		 FROM task_lists
@@ -475,6 +476,7 @@ func (s *Store) GetTaskLists(userID string) ([]domain.TaskList, error) {
 		list[i].Permission = s.GetTaskListPermission(userID, list[i].ID)
 		list[i].Members = s.getMembersForTaskList(&list[i])
 	}
+	sortByListOrder(list, order, taskListID)
 	return list, nil
 }
 

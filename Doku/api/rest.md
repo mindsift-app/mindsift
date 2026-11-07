@@ -204,7 +204,8 @@ The `webhook:…` scope IDs originate from the time when keys could only ingest 
 
 | Method | Path | Purpose |
 |---|---|---|
-| GET/POST | `/task-lists` | Lists (`permission` per list: `owner`/`editor`/`viewer`); create (`title`, `icon`, `color`, `teamId`; `icon: ""` = no icon, if omitted: 📋) |
+| GET/POST | `/task-lists` | Lists (`permission` per list: `owner`/`editor`/`viewer`) in the person's own order (see `PUT /task-lists/order`); create (`title`, `icon`, `color`, `teamId`; `icon: ""` = no icon, if omitted: 📋) |
+| PUT | `/task-lists/order` | Own order of the task list tabs (`ids`); per person, also for shared lists. Lists without a position (new ones) follow, most recently changed first. `204` |
 | PUT/DELETE | `/task-lists/{id}` | Update (`title`, `icon`, `color`, `teamId`, `columns`) – not allowed for viewers; delete allowed for owner only |
 | GET | `/task-lists/{id}/shares` | Sharing permissions |
 | POST | `/task-lists/{id}/shares` | Owner only. Body: `targetType` (`team`/`user`), `targetId`, `permission` (`editor`/`viewer`, default `editor`). Re-submitting for the same target updates the permission tier |
@@ -301,7 +302,8 @@ Duplicate operations (same `opId`) are not reapplied; the response returns the p
 
 | Method | Path | Purpose |
 |---|---|---|
-| GET/POST | `/lists` | Lists; create (`title`, `icon`, `listType`; `icon: ""` = no icon, if omitted: 🛒) |
+| GET/POST | `/lists` | Lists in the person's own order (see `PUT /lists/order`); create (`title`, `icon`, `listType`; `icon: ""` = no icon, if omitted: 🛒) |
+| PUT | `/lists/order` | Own order of the list tabs (`ids`), like `/task-lists/order`. `204` |
 | GET/DELETE | `/lists/{id}` | Retrieve with items; delete |
 | GET/POST | `/lists/{id}/shares` | Retrieve or create shares (`targetType`, `targetId`, `role`: `editor`/`viewer`) |
 | DELETE | `/lists/{id}/shares/{shareId}` | Remove share |
@@ -336,7 +338,7 @@ Routes marked **S** are open to server admins and user managers (`role = manager
 | PATCH/DELETE | `/admin/users/{id}` | **S** `displayName`, `username` (rules and errors as in `/auth/settings`), `email`, `role`, `isActive`, `discordWebhookUrl`; delete (for pending accounts = reject). `GET /admin/users` flags pending accounts with `pendingApproval` |
 | POST | `/admin/users/{id}/approve` | **S** Approve pending account; the user receives an email (`409` if not pending) |
 | PUT | `/admin/users/{id}/password` | Reset password (server admins only) |
-| GET/POST | `/admin/invites` | **S** List or create invitations (`email`, `organizationIds`, `validDays`, `maxUses` 1–1000; multi-use invites are not bound to an email address). Invites always create members; a `role` field is ignored. Response includes `maxUses`/`useCount`, `organizationIds`/`organizationNames`. As link: `/?invite=<CODE>` opens registration with code pre-filled |
+| GET/POST | `/admin/invites` | **S** List or create invitations (`email`, `organizationIds`, `validDays`, `maxUses` 1–1000; multi-use invites are not bound to an email address). Invites always create members; a `role` field is ignored. Response includes `maxUses`/`useCount`, `organizationIds`/`organizationNames`, and for used-up or expired invites `removeAt`: 30 days after that, the daily cleanup deletes them. As link: `/?invite=<CODE>` opens registration with code pre-filled |
 | POST | `/admin/invites/{id}/send` | **S** Send invitation via email (`email`); binds single-use codes to this address; requires SMTP |
 | DELETE | `/admin/invites/{id}` | **S** Revoke/delete invitation |
 | GET/PUT | `/admin/settings` | `instanceName`, `allowRegistration`, `sharingMode` (`private`/`organizations`/`open`), `peopleSearch`, `publicLinks`, `publicLinkMaxDays` (1–14), SMTP fields; changing mode cleans up shares. Values fixed by the environment come with `…ConfiguredViaEnv` and are not changed by `PUT`. `smtpPass` is never returned (`smtpPassSet` indicates whether one is stored); empty = unchanged |

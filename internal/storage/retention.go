@@ -149,6 +149,7 @@ type PurgeResult struct {
 	Discarded    int
 	Notes        []string
 	ListItems    []PurgedListItem
+	Invites      int // used-up or expired invites removed
 }
 
 // PurgedListItem: a ticked-off list item deleted after its delay.
@@ -234,6 +235,9 @@ func (s *Store) PurgeExpired(now time.Time, allowNever bool) (PurgeResult, error
 		if _, err := s.db.Exec(`DELETE FROM list_items WHERE id = ?`, it.ID); err != nil {
 			return res, err
 		}
+	}
+	if res.Invites, err = s.PurgeOldInvites(now); err != nil {
+		return res, err
 	}
 	return res, nil
 }

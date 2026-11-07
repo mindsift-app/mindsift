@@ -53,7 +53,7 @@ export const UnifiedShareModal: React.FC<UnifiedShareModalProps> = ({
 }) => {
   const { t } = useTranslation();
   const effectiveFixedPerm = fixedPermission || 'viewer';
-  const [shareType, setShareType] = useState<'team' | 'user'>('team');
+  const [shareType, setShareType] = useState<'team' | 'user'>('user');
   const [selectedTeamId, setSelectedTeamId] = useState('');
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [selectedPermission, setSelectedPermission] = useState<'editor' | 'viewer'>(
@@ -165,22 +165,6 @@ export const UnifiedShareModal: React.FC<UnifiedShareModalProps> = ({
                 <button
                   type="button"
                   onClick={() => {
-                    setShareType('team');
-                    setSelectedUser(null);
-                    setError(null);
-                  }}
-                  className={`h-7 px-2.5 text-xs rounded-btn font-medium flex items-center gap-1.5 border transition-colors cursor-pointer ${
-                    shareType === 'team'
-                      ? 'bg-panel border-accent text-accent font-semibold shadow-xs'
-                      : 'bg-canvas border-border text-muted hover:text-main'
-                  }`}
-                >
-                  <Users className="w-3.5 h-3.5" />
-                  <span>{t('share.group')}</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
                     setShareType('user');
                     setSelectedTeamId('');
                     setError(null);
@@ -193,6 +177,22 @@ export const UnifiedShareModal: React.FC<UnifiedShareModalProps> = ({
                 >
                   <UserIcon className="w-3.5 h-3.5" />
                   <span>{t('share.user')}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShareType('team');
+                    setSelectedUser(null);
+                    setError(null);
+                  }}
+                  className={`h-7 px-2.5 text-xs rounded-btn font-medium flex items-center gap-1.5 border transition-colors cursor-pointer ${
+                    shareType === 'team'
+                      ? 'bg-panel border-accent text-accent font-semibold shadow-xs'
+                      : 'bg-canvas border-border text-muted hover:text-main'
+                  }`}
+                >
+                  <Users className="w-3.5 h-3.5" />
+                  <span>{t('share.group')}</span>
                 </button>
               </div>
             </div>

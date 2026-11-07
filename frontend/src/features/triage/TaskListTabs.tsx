@@ -8,6 +8,8 @@ import { LivePill } from '../../components/LivePill';
 import { TaskList, TaskListMember, Thought, User } from '../../lib/types';
 import { ViewMode } from './taskViewTypes';
 import { useTaskDrag } from './useTaskDrag';
+import { useTabReorder } from '../../lib/useTabReorder';
+import { TabDropMarker } from '../../components/TabDropMarker';
 import { AvatarPerson } from '../../components/AvatarStack';
 
 interface TaskListTabsProps {
@@ -27,6 +29,8 @@ interface TaskListTabsProps {
   setViewMode: (mode: ViewMode) => void;
   viewMode: ViewMode;
   tasks: Thought[];
+  // New order of the task list tabs (drag and drop)
+  onReorderLists: (ids: string[]) => void;
 }
 
 // Desktop header of TasksView: "Alle Aufgaben" and one tab per task list (members, share, delete; a task
@@ -46,10 +50,12 @@ export function TaskListTabs({
   setViewMode,
   viewMode,
   tasks,
+  onReorderLists,
 }: TaskListTabsProps) {
   const { t } = useTranslation('tasks');
   const { dragOverListTab, draggingTaskId, handleDropOnListTab, setDragOverListTab } = drag;
   const [pendingDelete, setPendingDelete] = useState<{ list: TaskList; x: number; y: number } | null>(null);
+  const reorder = useTabReorder(safeTaskLists.map((tl) => tl.id), onReorderLists);
 
   return (
     <div className="hidden sm:flex flex-wrap items-center justify-between gap-2 border-b border-border pb-2 !mt-0">
@@ -73,7 +79,9 @@ export function TaskListTabs({
         {safeTaskLists.map((tl) => (
           <div
             key={tl.id}
+            {...reorder.dragProps(tl.id)}
             onDragOver={(e) => {
+              if (reorder.handleDragOver(e, tl.id)) return;
               const task = draggingTaskId ? tasks.find((t) => t.id === draggingTaskId) : null;
               if (!task || task.taskListId === tl.id || tl.permission === 'viewer') return;
               e.preventDefault();
@@ -83,11 +91,16 @@ export function TaskListTabs({
             onDragLeave={() => {
               if (dragOverListTab === tl.id) setDragOverListTab(null);
             }}
-            onDrop={(e) => handleDropOnListTab(e, tl)}
+            onDrop={(e) => {
+              if (!reorder.handleDrop(e, tl.id)) handleDropOnListTab(e, tl);
+            }}
             className={`relative group h-8 flex items-center border rounded-btn transition-colors ${
               selectedListId === tl.id ? 'bg-panel border-accent text-main pr-1' : 'bg-canvas border-border text-muted hover:text-main'
-            } ${dragOverListTab === tl.id ? 'ring-2 ring-accent/60 bg-accent/10 text-main' : ''}`}
+            } ${dragOverListTab === tl.id ? 'ring-2 ring-accent/60 bg-accent/10 text-main' : ''} ${
+              reorder.draggingId === tl.id ? 'opacity-50' : ''
+            }`}
           >
+            <TabDropMarker side={reorder.dropSide(tl.id)} />
             <button
               onClick={() => setSelectedListId(tl.id)}
               className={`h-full pl-3 text-xs font-medium flex items-center gap-1.5 rounded-btn transition-[padding] duration-200 ${

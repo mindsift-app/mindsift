@@ -8,6 +8,8 @@ import { ListSwitcher } from '../../components/ListSwitcher';
 import { LivePill } from '../../components/LivePill';
 import { canWriteList, deduplicateItems } from './listItems';
 import { useListDrag } from './useListDrag';
+import { useTabReorder } from '../../lib/useTabReorder';
+import { TabDropMarker } from '../../components/TabDropMarker';
 
 // Desktop: the list tabs (an entry dropped on a tab moves into that list), "Neue Liste" and on the right
 // the status (live, shared) and the actions of the open list
@@ -21,6 +23,7 @@ export function ListTabsHeader({
   handleDeleteList,
   openShareModal,
   setShowNewListModal,
+  onReorderLists,
 }: {
   lists: SharedList[];
   activeList: SharedList | null;
@@ -31,9 +34,12 @@ export function ListTabsHeader({
   handleDeleteList: (listId: string) => void;
   openShareModal: () => void;
   setShowNewListModal: React.Dispatch<React.SetStateAction<boolean>>;
+  // New order of the list tabs (drag and drop)
+  onReorderLists: (ids: string[]) => void;
 }) {
   const { t } = useTranslation('lists');
   const { draggingItemId, dragOverListTab, setDragOverListTab, handleDropOnListTab } = drag;
+  const reorder = useTabReorder(lists.map((l) => l.id), onReorderLists);
   return (
     <div className="hidden sm:flex flex-wrap items-center justify-between gap-2 border-b border-border pb-2 !mt-0">
       {/* List Tabs */}
@@ -44,7 +50,9 @@ export function ListTabsHeader({
           return (
             <div
               key={lst.id}
+              {...reorder.dragProps(lst.id)}
               onDragOver={(e) => {
+                if (reorder.handleDragOver(e, lst.id)) return;
                 if (!draggingItemId || isSelected || !canWriteList(lst)) return;
                 e.preventDefault();
                 e.dataTransfer.dropEffect = 'move';
@@ -53,13 +61,16 @@ export function ListTabsHeader({
               onDragLeave={() => {
                 if (dragOverListTab === lst.id) setDragOverListTab(null);
               }}
-              onDrop={(e) => handleDropOnListTab(e, lst)}
+              onDrop={(e) => {
+                if (!reorder.handleDrop(e, lst.id)) handleDropOnListTab(e, lst);
+              }}
               className={`relative group h-8 flex items-center border rounded-btn transition-colors ${
                 isSelected ? 'bg-panel border-accent text-main' : 'bg-canvas border-border text-muted hover:text-main'
               } ${isSelected && lists.length > 1 ? 'pr-1' : ''} ${
                 dragOverListTab === lst.id ? 'ring-2 ring-accent/60 bg-accent/10 text-main' : ''
-              }`}
+              } ${reorder.draggingId === lst.id ? 'opacity-50' : ''}`}
             >
+              <TabDropMarker side={reorder.dropSide(lst.id)} />
               <button
                 onClick={() => setActiveListId(lst.id)}
                 className="h-full px-3 text-xs font-medium flex items-center gap-1.5 rounded-btn"
