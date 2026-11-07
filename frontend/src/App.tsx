@@ -454,6 +454,32 @@ export const App: React.FC = () => {
     setActiveTab('lists');
   };
 
+  // Links from the MCP server (?note=…, ?task=…, ?list=…): open the item once signed in, then drop the
+  // parameter from the address bar
+  const [deepLink] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return { note: params.get('note'), task: params.get('task'), list: params.get('list') };
+  });
+  useEffect(() => {
+    if (!user?.id || !(deepLink.note || deepLink.task || deepLink.list)) return;
+    if (deepLink.note) {
+      setSelectedDocId(deepLink.note);
+      setOpenDocNonce((n) => n + 1);
+      setSelectedBlockId(null);
+      setActiveTab('workspace');
+    } else if (deepLink.task) {
+      setSelectedTaskId(deepLink.task);
+      setActiveTab('tasks');
+    } else if (deepLink.list) {
+      setSelectedListId(deepLink.list);
+      setActiveTab('lists');
+    }
+    deepLink.note = deepLink.task = deepLink.list = null;
+    const url = new URL(window.location.href);
+    ['note', 'task', 'list'].forEach((k) => url.searchParams.delete(k));
+    window.history.replaceState({}, '', url.pathname + url.search + url.hash);
+  }, [user?.id, deepLink]);
+
   useCommandPaletteShortcuts(setShowCommandPalette);
 
   const handleTriggerAddButton = () => {

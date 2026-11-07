@@ -893,11 +893,12 @@ func MarkdownToBlocks(md string) []domain.DocumentBlock {
 			continue
 		}
 
-		// Plain paragraph (consecutive lines form one block)
+		// Plain paragraph (consecutive lines form one block). The first line always belongs to it: an
+		// indented "> …" lands here and must not end the paragraph before it starts (endless loop)
 		var para []string
-		for ; i < len(lines); i++ {
+		for start := i; i < len(lines); i++ {
 			l := strings.TrimSpace(lines[i])
-			if l == "" || headingRe.MatchString(lines[i]) || listItemRe.MatchString(lines[i]) || fenceRe.MatchString(lines[i]) || strings.HasPrefix(l, ">") {
+			if i > start && (l == "" || headingRe.MatchString(lines[i]) || listItemRe.MatchString(lines[i]) || fenceRe.MatchString(lines[i]) || strings.HasPrefix(l, ">")) {
 				break
 			}
 			para = append(para, l)

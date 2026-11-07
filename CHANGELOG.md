@@ -6,6 +6,16 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.88.0] - 2026-11-07
+
+### Added
+- MCP: notes, tasks and lists in tool results carry a `url` that opens them in the app (needs `BASE_URL`), so an assistant can link to what it found. Links of the form `/?note=…`, `/?task=…` and `/?list=…` open the item after signing in.
+
+### Fixed
+- MCP: `create_note` no longer creates an empty note when a model sends plain text. Every line becomes a bullet, content sent as a list of strings or with doubly escaped line breaks works too, and if nothing usable is left the result says so instead of failing silently. Unknown arguments are reported as well.
+- MCP: an icon has to be a single emoji (or empty for the default); a word like "optional" is refused with a clear error instead of being stored as the icon.
+- Importing Markdown or creating a note through MCP no longer hangs on an indented quote line right after a paragraph.
+
 ### Changed
 - Development: GitHub release pages are created by the pipeline after the images of a version tag, with the version's CHANGELOG section as text.
 

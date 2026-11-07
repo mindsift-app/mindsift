@@ -4,7 +4,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
+	"net/url"
+	"regexp"
 	"sort"
 	"strings"
 	"time"
@@ -140,7 +143,9 @@ func (s *Server) handleMCP(w http.ResponseWriter, r *http.Request) {
 				"checklist, list_lists/get_list for shopping and other lists and check_list_item to tick items, " +
 				"list_notes/get_note to read notes and create_note for a " +
 				"new one. IDs come from the list tools; never guess them. Tasks and list items you create or " +
-				"change show the user a badge with the name of your API key.",
+				"change show the user a badge with the name of your API key. Notes, tasks and lists come with a url " +
+				"that opens them in the app: when you tell the user about one, summarize it and add its url so " +
+				"they can look for themselves.",
 		}, nil)
 	case "ping":
 		writeRPC(w, req.ID, map[string]interface{}{}, nil)
@@ -289,13 +294,23 @@ type taskView struct {
 	Recurrence   string           `json:"recurrence,omitempty"`
 	CreatedAt    string           `json:"createdAt"`
 	Origin       *domain.Origin   `json:"origin,omitempty"`
+	URL          string           `json:"url,omitempty"`
 }
 
-func toTaskView(t *domain.Thought) taskView {
+// mcpLink: the address that opens a note, task or list in the app (?note=…, ?task=…, ?list=…), so an
+// agent can hand the user a link; empty without BASE_URL.
+func (s *Server) mcpLink(kind, id string) string {
+	if !s.cfg.BaseURLSet || id == "" {
+		return ""
+	}
+	return strings.TrimRight(s.cfg.BaseURL, "/") + "/?" + kind + "=" + url.QueryEscape(id)
+}
+
+func (s *Server) toTaskView(t *domain.Thought) taskView {
 	return taskView{
 		ID: t.ID, Content: t.Content, IsCompleted: t.IsCompleted, Priority: t.Priority, DueDate: t.DueDate,
 		TaskListID: t.TaskListID, KanbanStatus: t.KanbanStatus, Notes: t.Notes, Tags: t.Tags, Subtasks: t.Subtasks,
-		Recurrence: t.Recurrence, CreatedAt: t.CreatedAt, Origin: t.Origin,
+		Recurrence: t.Recurrence, CreatedAt: t.CreatedAt, Origin: t.Origin, URL: s.mcpLink("task", t.ID),
 	}
 }
 
@@ -315,7 +330,7 @@ type columnView struct {
 	IsDone bool   `json:"isDone,omitempty"`
 }
 
-func toTaskListView(l domain.TaskList) taskListView {
+func (s *Server) toTaskListView(l domain.TaskList) taskListView {
 	cols := make([]columnView, 0, len(l.Columns))
 	for _, c := range l.Columns {
 		cols = append(cols, columnView{ID: c.ID, Name: c.Name, IsDone: c.IsDone})
@@ -336,17 +351,20 @@ type noteView struct {
 	Permission string   `json:"permission"`
 	Tags       []string `json:"tags,omitempty"`
 	UpdatedAt  string   `json:"updatedAt"`
+	URL        string   `json:"url,omitempty"`
 	Content    string   `json:"content,omitempty"`
 	// Bullets with their ids (get_note), for changing single bullets (notes:write)
 	Bullets []noteBullet `json:"bullets,omitempty"`
+	// Warnings (create_note): something in the call did not end up in the note
+	Warnings []string `json:"warnings,omitempty"`
 }
 
-func toNoteView(d *domain.Document) noteView {
+func (s *Server) toNoteView(d *domain.Document) noteView {
 	permission := d.Permission
 	if d.IsOwner || permission == "" {
 		permission = "owner"
 	}
-	return noteView{ID: d.ID, Title: d.Title, Icon: d.Icon, FolderPath: d.FolderPath, Permission: permission, Tags: d.Tags, UpdatedAt: d.UpdatedAt}
+	return noteView{ID: d.ID, Title: d.Title, Icon: d.Icon, FolderPath: d.FolderPath, Permission: permission, Tags: d.Tags, UpdatedAt: d.UpdatedAt, URL: s.mcpLink("note", d.ID)}
 }
 
 // noteMarkdown renders the bullets as an indented Markdown list; images and recordings become a
@@ -371,6 +389,7 @@ type noteHit struct {
 	NoteID  string `json:"noteId"`
 	Title   string `json:"title"`
 	Snippet string `json:"snippet"`
+	URL     string `json:"url,omitempty"`
 }
 
 // markTags strips the highlighting of search snippets
@@ -384,9 +403,10 @@ type listView struct {
 	Role      string `json:"role"`
 	OpenItems int    `json:"openItems"`
 	Items     int    `json:"items"`
+	URL       string `json:"url,omitempty"`
 }
 
-func toListView(l domain.SharedList) listView {
+func (s *Server) toListView(l domain.SharedList) listView {
 	open := 0
 	for _, it := range l.Items {
 		if !it.IsCompleted {
@@ -397,7 +417,7 @@ func toListView(l domain.SharedList) listView {
 	if l.IsOwner {
 		role = "owner"
 	}
-	return listView{ID: l.ID, Title: l.Title, Icon: l.Icon, ListType: l.ListType, Role: role, OpenItems: open, Items: len(l.Items)}
+	return listView{ID: l.ID, Title: l.Title, Icon: l.Icon, ListType: l.ListType, Role: role, OpenItems: open, Items: len(l.Items), URL: s.mcpLink("list", l.ID)}
 }
 
 var mcpTools = []mcpTool{
@@ -413,7 +433,7 @@ var mcpTools = []mcpTool{
 			}
 			out := make([]taskListView, 0, len(lists))
 			for _, l := range lists {
-				out = append(out, toTaskListView(l))
+				out = append(out, s.toTaskListView(l))
 			}
 			return out, nil
 		},
@@ -437,13 +457,16 @@ var mcpTools = []mcpTool{
 			if strings.TrimSpace(a.Title) == "" {
 				return nil, errors.New("'title' darf nicht leer sein")
 			}
+			if err := checkMCPIcon(a.Icon); err != nil {
+				return nil, err
+			}
 			tl, err := s.store.CreateTaskList(userID, "", "", a.Title, a.Icon, "")
 			if err != nil {
 				return nil, err
 			}
 			s.broadcastTaskListChange(tl.ID, nil, "TASK_LIST_CREATED")
 			tl.IsOwner = true
-			return toTaskListView(*tl), nil
+			return s.toTaskListView(*tl), nil
 		},
 	},
 	{
@@ -490,7 +513,7 @@ var mcpTools = []mcpTool{
 				if a.DueBefore != "" && (t.DueDate == "" || t.DueDate[:min(10, len(t.DueDate))] > a.DueBefore) {
 					continue
 				}
-				out = append(out, toTaskView(t))
+				out = append(out, s.toTaskView(t))
 			}
 			// Due dates first (earliest on top), then the rest in list order
 			sort.SliceStable(out, func(i, j int) bool {
@@ -521,7 +544,7 @@ var mcpTools = []mcpTool{
 			if err != nil || t == nil {
 				return nil, errors.New("Aufgabe nicht gefunden")
 			}
-			return toTaskView(t), nil
+			return s.toTaskView(t), nil
 		},
 	},
 	{
@@ -554,7 +577,7 @@ var mcpTools = []mcpTool{
 			if err != nil {
 				return nil, err
 			}
-			return toTaskView(t), nil
+			return s.toTaskView(t), nil
 		},
 	},
 	{
@@ -586,7 +609,7 @@ var mcpTools = []mcpTool{
 			if err != nil {
 				return nil, err
 			}
-			return toTaskView(t), nil
+			return s.toTaskView(t), nil
 		},
 	},
 	{
@@ -610,7 +633,7 @@ var mcpTools = []mcpTool{
 			if err != nil {
 				return nil, err
 			}
-			return toTaskView(t), nil
+			return s.toTaskView(t), nil
 		},
 	},
 	{
@@ -644,7 +667,7 @@ var mcpTools = []mcpTool{
 			if err != nil {
 				return nil, err
 			}
-			return toTaskView(updated), nil
+			return s.toTaskView(updated), nil
 		},
 	},
 	{
@@ -702,7 +725,7 @@ var mcpTools = []mcpTool{
 			if err != nil {
 				return nil, err
 			}
-			return toTaskView(updated), nil
+			return s.toTaskView(updated), nil
 		},
 	},
 	{
@@ -738,7 +761,7 @@ var mcpTools = []mcpTool{
 			}
 			out := make([]listView, 0, len(lists))
 			for _, l := range lists {
-				out = append(out, toListView(l))
+				out = append(out, s.toListView(l))
 			}
 			return out, nil
 		},
@@ -764,12 +787,15 @@ var mcpTools = []mcpTool{
 			if strings.TrimSpace(a.Title) == "" {
 				return nil, errors.New("'title' darf nicht leer sein")
 			}
+			if err := checkMCPIcon(a.Icon); err != nil {
+				return nil, err
+			}
 			l, err := s.store.CreateList(userID, a.Title, a.Icon, a.ListType)
 			if err != nil {
 				return nil, err
 			}
 			s.wsHub.BroadcastListEvent(l.ID, "LIST_CREATED", l)
-			return toListView(*l), nil
+			return s.toListView(*l), nil
 		},
 	},
 	{
@@ -788,7 +814,7 @@ var mcpTools = []mcpTool{
 			if err != nil || l == nil {
 				return nil, errors.New("Liste nicht gefunden")
 			}
-			return map[string]interface{}{"list": toListView(*l), "items": l.Items}, nil
+			return map[string]interface{}{"list": s.toListView(*l), "items": l.Items}, nil
 		},
 	},
 	{
@@ -905,7 +931,7 @@ var mcpTools = []mcpTool{
 				if query != "" && !strings.Contains(strings.ToLower(d.Title), query) {
 					continue
 				}
-				out = append(out, toNoteView(d))
+				out = append(out, s.toNoteView(d))
 			}
 			sort.SliceStable(out, func(i, j int) bool { return out[i].UpdatedAt > out[j].UpdatedAt })
 			if a.Limit <= 0 {
@@ -931,7 +957,7 @@ var mcpTools = []mcpTool{
 			if err != nil || d == nil || d.IsArchived {
 				return nil, errors.New("Notiz nicht gefunden")
 			}
-			v := toNoteView(d)
+			v := s.toNoteView(d)
 			v.Content = noteMarkdown(d.Blocks)
 			if doc, err := s.noteDoc(a.ID); err == nil {
 				v.Bullets = noteBullets(doc)
@@ -940,9 +966,10 @@ var mcpTools = []mcpTool{
 		},
 	},
 	{
-		Name:        "create_note",
-		Description: "Create a new note. content is Markdown: a nested list (tab or 2+ spaces per level) becomes nested bullets, - [ ] a to-do, # a heading with the following bullets below it, plain lines become bullets. Changing existing notes needs notes:write (update_note, add_note_bullet, …).",
-		Scope:       storage.ScopeNotesCreate,
+		Name: "create_note",
+		Description: "Create a new note. content is Markdown: a nested list (tab or 2+ spaces per level) becomes nested bullets, - [ ] a to-do, # a heading with the following bullets below it, plain lines and paragraphs become bullets. " +
+			"Example content: \"# Plan\\n- First step\\n\\t- Detail\\n- [ ] Call Anna\". Changing existing notes needs notes:write (update_note, add_note_bullet, …).",
+		Scope: storage.ScopeNotesCreate,
 		Schema: schema([]string{"title"}, map[string]interface{}{
 			"title":      prop("string", "Title of the note"),
 			"content":    prop("string", "Bullets as Markdown, optional"),
@@ -951,7 +978,8 @@ var mcpTools = []mcpTool{
 		}),
 		run: func(s *Server, userID string, _ *apiActor, args json.RawMessage) (interface{}, error) {
 			var a struct {
-				Title, Content, FolderPath, Icon string
+				Title, FolderPath, Icon string
+				Content                 json.RawMessage
 			}
 			if err := decodeArgs(args, &a); err != nil {
 				return nil, err
@@ -959,21 +987,34 @@ var mcpTools = []mcpTool{
 			if strings.TrimSpace(a.Title) == "" {
 				return nil, errors.New("'title' darf nicht leer sein")
 			}
+			if err := checkMCPIcon(a.Icon); err != nil {
+				return nil, err
+			}
+			content, err := mcpNoteContent(a.Content)
+			if err != nil {
+				return nil, err
+			}
 			folder := strings.Trim(strings.TrimSpace(a.FolderPath), "/")
 			if err := s.store.CheckCreateInFolder(userID, folder); err != nil {
 				return nil, err
 			}
-			var blocks []domain.DocumentBlock
-			if strings.TrimSpace(a.Content) != "" {
-				blocks = storage.MarkdownToBlocks(a.Content)
+			blocks := mcpContentBlocks(content)
+			var warnings []string
+			if strings.TrimSpace(content) != "" && len(blocks) == 0 {
+				slog.Warn("MCP create_note: content gave no bullets", "user_id", userID, "content", content)
+				warnings = append(warnings, i18n.T("en", "Aus 'content' ist kein Punkt entstanden, die Notiz ist leer. Schicke den Inhalt als Markdown-Liste, eine Zeile pro Punkt."))
+			}
+			if ignored := unknownArgs(args, "title", "content", "folderPath", "icon"); len(ignored) > 0 {
+				warnings = append(warnings, i18n.T("en", "Unbekannte Argumente ignoriert:")+" "+strings.Join(ignored, ", "))
 			}
 			d, err := s.store.CreateDocument(userID, "", a.Title, a.Icon, folder, blocks, nil, false)
 			if err != nil {
 				return nil, err
 			}
 			s.broadcastDocToAuthorizedUsers(d.ID, "DOC_CREATED")
-			v := toNoteView(d)
+			v := s.toNoteView(d)
 			v.Content = noteMarkdown(d.Blocks)
+			v.Warnings = warnings
 			return v, nil
 		},
 	},
@@ -995,12 +1036,12 @@ var mcpTools = []mcpTool{
 			}
 			tasks := make([]taskView, 0, len(res.Thoughts))
 			for i := range res.Thoughts {
-				tasks = append(tasks, toTaskView(&res.Thoughts[i]))
+				tasks = append(tasks, s.toTaskView(&res.Thoughts[i]))
 			}
 			notes := []noteHit{}
 			for _, h := range res.Hits {
 				if h.Type == "document" {
-					notes = append(notes, noteHit{NoteID: h.DocID, Title: h.Title, Snippet: markTags.Replace(h.Snippet)})
+					notes = append(notes, noteHit{NoteID: h.DocID, Title: h.Title, Snippet: markTags.Replace(h.Snippet), URL: s.mcpLink("note", h.DocID)})
 				}
 			}
 			return map[string]interface{}{"tasks": tasks, "listItems": res.ListItems, "notes": notes}, nil
@@ -1037,6 +1078,147 @@ var mcpTools = []mcpTool{
 			return map[string]interface{}{"id": t.ID, "content": t.Content, "status": fmt.Sprint(t.Status)}, nil
 		},
 	},
+}
+
+// mcpNoteContent reads create_note's content: Markdown as a string, or a list of strings (one bullet
+// each), as some models send it. A string without line breaks but with literal "\n" was escaped twice.
+func mcpNoteContent(raw json.RawMessage) (string, error) {
+	if len(raw) == 0 || string(raw) == "null" {
+		return "", nil
+	}
+	var text string
+	if err := json.Unmarshal(raw, &text); err != nil {
+		var lines []string
+		if err := json.Unmarshal(raw, &lines); err != nil {
+			return "", errors.New("'content' muss Text sein (Markdown)")
+		}
+		text = strings.Join(lines, "\n\n")
+	}
+	if !strings.Contains(text, "\n") && strings.Contains(text, `\n`) {
+		text = strings.NewReplacer(`\r\n`, "\n", `\n`, "\n", `\t`, "\t").Replace(text)
+	}
+	return text, nil
+}
+
+// mcpPlainLine: a line of plain text, not a list item, heading, quote or code fence
+var mcpPlainLine = regexp.MustCompile("^[ \t]*[^-*+#>`~ \t\\d]|^[ \t]*\\d+[^.)\\d]|^[ \t]*[-*+][^ \t]")
+
+// mcpContentBlocks turns content into bullets. Each line of plain text becomes a bullet of its own
+// (Markdown would join consecutive lines into one paragraph); whatever text the Markdown parser leaves
+// out still becomes bullets, so a note never ends up empty while text was sent.
+func mcpContentBlocks(content string) []domain.DocumentBlock {
+	if strings.TrimSpace(content) == "" {
+		return nil
+	}
+	var lines []string
+	inFence, prevPlain := false, false
+	for _, line := range strings.Split(strings.ReplaceAll(content, "\r\n", "\n"), "\n") {
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, "```") || strings.HasPrefix(trimmed, "~~~") {
+			inFence = !inFence
+		}
+		plain := !inFence && trimmed != "" && mcpPlainLine.MatchString(line)
+		if plain && prevPlain {
+			lines = append(lines, "")
+		}
+		lines = append(lines, line)
+		prevPlain = plain
+	}
+	blocks := storage.MarkdownToBlocks(strings.Join(lines, "\n"))
+	for _, b := range blocks {
+		if strings.TrimSpace(b.Content) != "" {
+			return blocks
+		}
+	}
+	blocks = nil
+	for _, line := range strings.Split(content, "\n") {
+		line = strings.TrimSpace(strings.TrimLeft(strings.TrimSpace(line), "-*+"))
+		if line != "" {
+			blocks = append(blocks, storage.MarkdownToBlocks(line)...)
+		}
+	}
+	return blocks
+}
+
+// unknownArgs: the argument names a call sent that the tool does not know (compared like
+// encoding/json does, ignoring case), so an agent learns a misspelled field was dropped
+func unknownArgs(args json.RawMessage, known ...string) []string {
+	var m map[string]json.RawMessage
+	if json.Unmarshal(args, &m) != nil {
+		return nil
+	}
+	var out []string
+	for k := range m {
+		found := false
+		for _, n := range known {
+			if strings.EqualFold(k, n) {
+				found = true
+			}
+		}
+		if !found {
+			out = append(out, k)
+		}
+	}
+	sort.Strings(out)
+	return out
+}
+
+// checkMCPIcon: an icon from an agent is empty (default icon) or exactly one emoji, so a model cannot
+// store a word like "optional" as the icon
+func checkMCPIcon(icon string) error {
+	if icon == "" || isSingleEmoji(icon) {
+		return nil
+	}
+	return errors.New("'icon' muss ein einzelnes Emoji sein oder leer bleiben")
+}
+
+// isSingleEmoji reports whether s is one emoji, including skin tones, ZWJ sequences (👩‍💻), flags
+// and keycaps (1️⃣)
+func isSingleEmoji(s string) bool {
+	runes := []rune(s)
+	if len(runes) == 0 || len(runes) > 16 {
+		return false
+	}
+	bases := 0
+	for i := 0; i < len(runes); i++ {
+		r := runes[i]
+		switch {
+		case r == 0x200D || r == 0xFE0F || r == 0xFE0E || r == 0x20E3 || (r >= 0x1F3FB && r <= 0x1F3FF) || (r >= 0xE0020 && r <= 0xE007F):
+			// joiner, variation selector, keycap, skin tone, tag: part of the emoji before
+			if i == 0 {
+				return false
+			}
+		case i > 0 && runes[i-1] == 0x200D && isEmojiRune(r):
+			// joined to the emoji before
+		case r >= 0x1F1E6 && r <= 0x1F1FF:
+			// flag: two regional indicators
+			if i+1 >= len(runes) || runes[i+1] < 0x1F1E6 || runes[i+1] > 0x1F1FF {
+				return false
+			}
+			i++
+			bases++
+		case (r >= '0' && r <= '9') || r == '#' || r == '*':
+			// keycap: digit, optional variation selector, U+20E3
+			j := i + 1
+			if j < len(runes) && runes[j] == 0xFE0F {
+				j++
+			}
+			if j >= len(runes) || runes[j] != 0x20E3 {
+				return false
+			}
+			bases++
+		case isEmojiRune(r):
+			bases++
+		default:
+			return false
+		}
+	}
+	return bases == 1
+}
+
+func isEmojiRune(r rune) bool {
+	return r >= 0x1F000 && r <= 0x1FAFF || r >= 0x2190 && r <= 0x2BFF || r == 0x00A9 || r == 0x00AE ||
+		r == 0x203C || r == 0x2049 || r == 0x2122 || r == 0x2139 || r == 0x3030 || r == 0x303D || r == 0x3297 || r == 0x3299
 }
 
 // filterSearchForScopes drops the parts of a search result the key may not read.
