@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import i18n from '../i18n';
 import { userColorStyles } from '../lib/userColor';
 
 export interface UserAvatarProps {
@@ -112,43 +111,3 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({
     </div>
   );
 };
-
-/**
- * Resizes and center-crops an uploaded image file to a compact base64 Data URL.
- */
-export async function resizeImageToDataUrl(file: File, maxSize = 256): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onerror = () => reject(new Error(i18n.t('common:avatar.readFailed')));
-    reader.onload = (e) => {
-      const img = new Image();
-      img.onerror = () => reject(new Error(i18n.t('common:avatar.loadFailed')));
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        canvas.width = maxSize;
-        canvas.height = maxSize;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) {
-          reject(new Error(i18n.t('common:avatar.canvasFailed')));
-          return;
-        }
-
-        // Center crop calculation
-        const minDim = Math.min(img.width, img.height);
-        const sx = (img.width - minDim) / 2;
-        const sy = (img.height - minDim) / 2;
-
-        ctx.drawImage(img, sx, sy, minDim, minDim, 0, 0, maxSize, maxSize);
-
-        // Try webp first, fallback to jpeg
-        let dataUrl = canvas.toDataURL('image/webp', 0.85);
-        if (!dataUrl.startsWith('data:image/webp')) {
-          dataUrl = canvas.toDataURL('image/jpeg', 0.85);
-        }
-        resolve(dataUrl);
-      };
-      img.src = e.target?.result as string;
-    };
-    reader.readAsDataURL(file);
-  });
-}
