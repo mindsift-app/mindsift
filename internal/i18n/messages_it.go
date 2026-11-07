@@ -85,7 +85,7 @@ var messagesIT = map[string]string{
 	"Diese Sprache gibt es nicht":                                                                        "Questa lingua non esiste",
 	"Dieser Benutzername ist schon vergeben":                                                             "Questo nome utente è già in uso",
 	"Dieser Einladungscode ist abgelaufen":                                                               "Questo codice di invito è scaduto",
-	"Dieser Einladungscode ist an eine andere E-Mail-Adresse gebunden":                                   "Questo codice di invito è legato a un altro indirizzo e-mail",
+	"Dieser Einladungscode ist an {email} gebunden":                                                      "Questo codice di invito è legato a {email}",
 	"Dieser Einladungscode wurde bereits eingelöst":                                                      "Questo codice di invito è già stato utilizzato",
 	"Dieser Einladungslink ist bereits voll ausgeschöpft":                                                "Questo link di invito è esaurito",
 	"Dieser Punkt ist kein Link auf eine Notiz":                                                          "Questo punto non è un link a una nota",

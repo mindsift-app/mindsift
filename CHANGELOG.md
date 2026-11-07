@@ -9,14 +9,20 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 ### Added
 - Tasks and shopping lists: sort the list tabs by drag and drop. The order is your own (also for shared lists) and is used in the phone menu as well; new lists go to the end.
 - Administration: redeemed and expired invites disappear from the list 30 days later; until then the row says when.
+- Tasks in shared lists: the details name the person who created a task ("Created by Anna on …"), not only tasks created through an API key.
+- Profile picture: after picking a picture you can move and zoom it in the round frame before it is used (drag, slider, mouse wheel or two fingers).
 
 ### Changed
 - Sharing dialog: "User" comes first and is preselected, "Group" second.
 - Administration: the list of invites stays visible when it is empty and says so.
+- Profile picture: a new picture, an emoji or removing it is saved right away; the save button is only for name, username, address and password.
+- Profile on phones: with unsaved changes the save button floats above the bottom bar and says so, instead of staying far down the page.
 
 ### Fixed
 - Administration: the actions of an invite (copy link, copy code, send by email, delete) no longer wrap onto a new line and to the left when the address is long; they are compact icons on the right like in the user list, and long details are shortened.
 - Sharing dialog: password managers no longer offer to fill in the password of a public link (it was a password field and looked like a login).
+- Registering with an invite bound to an email address failed with "bound to a different email address" although the address looked the same: an address copied from a messenger or a mail can carry invisible characters. Email addresses are now cleaned of them everywhere (invites, registration, accounts, sign-in), and the message shows which address the code belongs to (partly hidden, e.g. `an***@example.com`).
+- Shared shopping lists: the avatar of the person who added an entry no longer disappears when the entry is checked off, unchecked or edited (it only came back after reloading). Changes sent through MCP are affected the same way.
 
 ## [0.88.0] - 2026-11-07
 

@@ -31,6 +31,7 @@ export function ProfileSection({
     handleSelectPresetAvatar,
     handleRemoveAvatar,
     needsCurrentPassword,
+    profileDirty,
     handleSaveProfile,
     handleRevokeAllSessions,
     dangerDone,
@@ -227,11 +228,20 @@ export function ProfileSection({
           </div>
         )}
 
-        <div className="pt-2 border-t border-border flex justify-end">
+        {/* With unsaved input the bar floats above the bottom navigation on phones, where it is
+            otherwise far below (same height as the toasts) */}
+        <div
+          className={`pt-2 border-t border-border flex items-center justify-end gap-3 ${
+            profileDirty
+              ? 'max-sm:sticky max-sm:bottom-[calc(5.5rem+env(safe-area-inset-bottom))] max-sm:z-10 max-sm:p-2 max-sm:pl-3 max-sm:border max-sm:rounded-card max-sm:bg-panel-elevated max-sm:shadow-panel'
+              : ''
+          }`}
+        >
+          {profileDirty && <span className="text-[11px] text-muted mr-auto">{t('profile.unsaved')}</span>}
           <button
             type="submit"
             disabled={savingProfile}
-            className="btn-primary h-9 px-5 text-xs font-semibold"
+            className="btn-primary h-11 sm:h-9 px-5 text-xs font-semibold"
           >
             {savingProfile ? t('saving') : t('profile.save')}
           </button>

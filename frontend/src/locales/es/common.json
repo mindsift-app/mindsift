@@ -205,6 +205,8 @@
     "createdViaAt": "Creado mediante {{via}}{{key}} el {{when}}",
     "createdInApp": "Creado en la app",
     "createdInAppAt": "Creado en la app el {{when}}",
+    "createdBy": "Creado por {{name}}",
+    "createdByAt": "Creado por {{name}} el {{when}}",
     "changedVia": "última modificación mediante {{via}}{{key}}",
     "changedViaAt": "última modificación mediante {{via}}{{key}} el {{when}}",
     "deletedKey": "Clave eliminada"

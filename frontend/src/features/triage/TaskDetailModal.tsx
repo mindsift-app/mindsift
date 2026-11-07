@@ -270,6 +270,9 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
   const sortedSubtasks = subtaskSort.order.map((id) => subtaskById.get(id)).filter((st): st is NonNullable<typeof st> => !!st);
   const completedSubtasks = subtasks.filter((s) => s.isCompleted).length;
   const subtasksPercent = subtasks.length > 0 ? Math.round((completedSubtasks / subtasks.length) * 100) : 0;
+  // In shared lists the origin also names who created the task (assignableMembers is empty otherwise)
+  const creator = assignableMembers.find((m) => m.userId === task.userId);
+  const origin = originDetails(task.origin, task.createdAt, creator ? creator.displayName || creator.email : undefined);
 
   return (
     <div className="fixed inset-0 !m-0 modal-overlay z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
@@ -791,10 +794,10 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
           </div>
 
           {/* Origin: in the right column on the desktop (phones show it in the footer) */}
-          {originDetails(task.origin, task.createdAt) && (
+          {origin && (
             <div className="hidden lg:block space-y-1 pt-1 border-t border-border">
               <label className="block text-xs font-semibold text-main">{t('detail.origin')}</label>
-              <p className="text-[11px] text-muted leading-snug">{originDetails(task.origin, task.createdAt)}</p>
+              <p className="text-[11px] text-muted leading-snug">{origin}</p>
             </div>
           )}
           </div>
@@ -1006,7 +1009,7 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
         <div className="flex items-center justify-between px-4 py-2.5 border-t border-border bg-panel">
           <div className="text-[11px] text-faint min-w-0 pr-3">
             <span className="lg:hidden">
-              {originDetails(task.origin, task.createdAt) || t('detail.created', { date: formatDate(task.createdAt) })}
+              {origin || t('detail.created', { date: formatDate(task.createdAt) })}
             </span>
             <span className="hidden lg:inline">{t('detail.created', { date: formatDate(task.createdAt) })}</span>
           </div>

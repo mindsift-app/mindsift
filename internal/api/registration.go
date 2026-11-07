@@ -270,7 +270,7 @@ func (s *Server) handleAdminSendInvite(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "Bitte eine gültige E-Mail-Adresse angeben")
 		return
 	}
-	email := strings.ToLower(strings.TrimSpace(req.Email))
+	email := domain.NormalizeEmail(req.Email)
 	if _, err := s.smtpSettings(); err != nil {
 		writeError(w, http.StatusBadRequest, "Für Einladungen per E-Mail muss ein Mail-Server eingerichtet sein")
 		return

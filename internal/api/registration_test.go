@@ -279,3 +279,25 @@ func TestEmailVerificationBeforeApproval(t *testing.T) {
 		t.Fatalf("still waiting for approval: want 403, got %d", c)
 	}
 }
+
+// An invite bound to an address takes the same address copied with invisible marks (from a messenger);
+// another address is refused with a hint which one the code belongs to.
+func TestRegisterInviteEmailWithInvisibleCharacters(t *testing.T) {
+	srv, store, _ := setupTestServer(t)
+	setRegistration(t, store, storage.RegistrationClosed, "")
+	other, _ := store.CreateUserInvite("", "anna.beispiel@example.com", nil, 7, 1)
+	if code, out := register(srv, "bert@example.com", other.Code); code != http.StatusForbidden || !strings.Contains(out["error"].(string), "an***@example.com") {
+		t.Fatalf("other address: want 403 naming an***@example.com, got %d %v", code, out)
+	}
+	inv, _ := store.CreateUserInvite("", "\u200eLara21@Gmail.com", nil, 7, 1)
+	if inv.Email != "lara21@gmail.com" {
+		t.Fatalf("invite address not cleaned: %q", inv.Email)
+	}
+	code, out := register(srv, "lara21@gmail.com\u200b", inv.Code)
+	if code != http.StatusCreated {
+		t.Fatalf("same address with invisible marks: want 201, got %d %v", code, out)
+	}
+	if u, _ := store.GetUserByLogin("\u200elara21@gmail.com"); u == nil || u.Email != "lara21@gmail.com" {
+		t.Fatalf("account address stored clean and found: %+v", u)
+	}
+}

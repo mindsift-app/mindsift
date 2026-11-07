@@ -3,7 +3,7 @@ import i18n from '../../../i18n';
 import { User } from '../../../lib/types';
 import { api, clearToken, triggerHaptic } from '../../../lib/api';
 import { passwordProblem } from '../../../lib/password';
-import { resizeImageToDataUrl } from '../../../components/UserAvatar';
+import { AvatarPlacement, cropImageToDataUrl, loadImageFile } from '../../../lib/avatarCrop';
 import { askConfirm } from '../../../components/askConfirm';
 import { clearStoredNotes } from '../../../lib/docSync/persist';
 
@@ -21,44 +21,87 @@ export function useProfileSettings(currentUser: User, onUserUpdated: (u: User) =
   const [savingProfile, setSavingProfile] = useState(false);
   const [revokingSessions, setRevokingSessions] = useState(false);
   const [isProcessingAvatar, setIsProcessingAvatar] = useState(false);
+  // A picked picture waiting to be placed in the frame (AvatarCropSheet)
+  const [cropImage, setCropImage] = useState<HTMLImageElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
 
-  // The form follows the account when it changes (saved here or on another device)
+  // The form follows the account when it changes (saved here or on another device). Only fields whose
+  // saved value changed are replaced, so saving the avatar keeps a name still being typed.
+  const shownUserRef = useRef(currentUser);
   useEffect(() => {
-    setDisplayName(currentUser.displayName || '');
-    setUsername(currentUser.username || '');
-    setEmail(currentUser.email || '');
-    setAvatarUrl(currentUser.avatarUrl || '');
+    const prev = shownUserRef.current;
+    shownUserRef.current = currentUser;
+    if (prev === currentUser) return;
+    if (prev.displayName !== currentUser.displayName) setDisplayName(currentUser.displayName || '');
+    if (prev.username !== currentUser.username) setUsername(currentUser.username || '');
+    if (prev.email !== currentUser.email) setEmail(currentUser.email || '');
+    if (prev.avatarUrl !== currentUser.avatarUrl) setAvatarUrl(currentUser.avatarUrl || '');
   }, [currentUser]);
+
+  // Name, username, address or password typed but not saved yet (the avatar saves on its own)
+  const profileDirty =
+    displayName.trim() !== (currentUser.displayName || '') ||
+    username.trim().toLowerCase() !== (currentUser.username || '') ||
+    email.trim().toLowerCase() !== (currentUser.email || '').toLowerCase() ||
+    newPassword !== '';
 
 
   // --- Handlers: Avatar ---
+  // The avatar is saved right away: the save button is far down on phones and easily missed
+  const saveAvatar = async (value: string) => {
+    const before = avatarUrl;
+    setAvatarUrl(value);
+    setProfileMsg(null);
+    setIsProcessingAvatar(true);
+    try {
+      const updated = await api.updateSettings({ avatarUrl: value });
+      onUserUpdated(updated);
+      setProfileMsg({ type: 'ok', text: i18n.t(value ? 'settings:profile.avatarSaved' : 'settings:profile.avatarRemoved') });
+    } catch (err: any) {
+      setAvatarUrl(before);
+      setProfileMsg({ type: 'err', text: err.message || i18n.t('settings:profile.saveFailed') });
+    } finally {
+      setIsProcessingAvatar(false);
+    }
+  };
+
   const handleAvatarFileSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setIsProcessingAvatar(true);
     setProfileMsg(null);
     try {
-      const dataUrl = await resizeImageToDataUrl(file, 256);
-      setAvatarUrl(dataUrl);
-      triggerHaptic(10);
+      setCropImage(await loadImageFile(file));
     } catch (err: any) {
       setProfileMsg({ type: 'err', text: err.message || i18n.t('settings:profile.imageFailed') });
     } finally {
-      setIsProcessingAvatar(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
-  const handleSelectPresetAvatar = (preset: string) => {
-    setAvatarUrl(preset);
+  const handleApplyCrop = (placement: AvatarPlacement) => {
+    if (!cropImage) return;
+    let dataUrl: string;
+    try {
+      dataUrl = cropImageToDataUrl(cropImage, placement, 256);
+    } catch (err: any) {
+      setProfileMsg({ type: 'err', text: err.message || i18n.t('settings:profile.imageFailed') });
+      setCropImage(null);
+      return;
+    }
+    setCropImage(null);
     triggerHaptic(10);
+    void saveAvatar(dataUrl);
+  };
+
+  const handleSelectPresetAvatar = (preset: string) => {
+    triggerHaptic(10);
+    void saveAvatar(preset);
   };
 
   const handleRemoveAvatar = () => {
-    setAvatarUrl('');
     triggerHaptic(10);
+    void saveAvatar('');
   };
 
   // Changing the password or the login address needs the current password (FLAW-30)
@@ -71,10 +114,10 @@ export function useProfileSettings(currentUser: User, onUserUpdated: (u: User) =
     setProfileMsg(null);
     setSavingProfile(true);
     try {
+      // The avatar is not part of it: it saves on its own (saveAvatar)
       const patch: any = {
         displayName: displayName.trim(),
-        email: email.trim(),
-        avatarUrl: avatarUrl.trim() };
+        email: email.trim() };
       // Only when changed: the shared demo accounts refuse any change of their username
       const cleanUsername = username.trim().toLowerCase();
       if (cleanUsername !== (currentUser.username || '')) patch.username = cleanUsername;
@@ -171,6 +214,10 @@ export function useProfileSettings(currentUser: User, onUserUpdated: (u: User) =
     isProcessingAvatar,
     fileInputRef,
     handleAvatarFileSelected,
+    cropImage,
+    setCropImage,
+    handleApplyCrop,
+    profileDirty,
     handleSelectPresetAvatar,
     handleRemoveAvatar,
     needsCurrentPassword,

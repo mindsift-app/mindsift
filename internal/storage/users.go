@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/mindsift-app/mindsift/internal/auth"
 	"github.com/mindsift-app/mindsift/internal/domain"
@@ -66,7 +67,7 @@ func (s *Store) CountUsers() (int, error) {
 // CreateUser gives the new account a username from its display name ("Sandro Dach" -> "sandro.dach"),
 // else from the email address; with a number appended when it is taken.
 func (s *Store) CreateUser(email, passwordHash, displayName, role string) (*domain.User, error) {
-	cleanEmail := strings.ToLower(strings.TrimSpace(email))
+	cleanEmail := domain.NormalizeEmail(email)
 	username := UsernameFromName(displayName)
 	if len(username) < 2 {
 		username = UsernameFromName(strings.Split(cleanEmail, "@")[0])
@@ -82,7 +83,7 @@ func (s *Store) createUserWithID(id, email, username, passwordHash, displayName,
 	if !domain.ValidRole(role) {
 		role = domain.RoleMember
 	}
-	cleanEmail := strings.ToLower(strings.TrimSpace(email))
+	cleanEmail := domain.NormalizeEmail(email)
 	cleanUsername := UsernameFromName(username)
 	if len(cleanUsername) < 2 {
 		cleanUsername = UsernameFromName(strings.Split(cleanEmail, "@")[0])
@@ -124,7 +125,13 @@ func (s *Store) GetUserByEmail(email string) (*domain.User, error) {
 }
 
 func (s *Store) GetUserByLogin(login string) (*domain.User, error) {
-	cleanLogin := strings.ToLower(strings.TrimSpace(login))
+	// Without invisible characters a copied address may carry (inside a username they are no use either)
+	cleanLogin := strings.TrimSpace(strings.ToLower(strings.Map(func(r rune) rune {
+		if unicode.Is(unicode.Cf, r) {
+			return -1
+		}
+		return r
+	}, login)))
 	if cleanLogin == "" {
 		return nil, errors.New("benutzername oder e-mail darf nicht leer sein")
 	}
@@ -273,7 +280,7 @@ func (s *Store) UpdateUserFull(
 		u.DisplayName = strings.TrimSpace(*displayName)
 	}
 	if email != nil {
-		u.Email = strings.ToLower(strings.TrimSpace(*email))
+		u.Email = domain.NormalizeEmail(*email)
 	}
 	if role != nil && domain.ValidRole(*role) {
 		u.Role = *role
@@ -366,7 +373,7 @@ func (s *Store) CreateUserInvite(createdBy, email string, orgIDs []string, valid
 	if maxUses > MaxInviteUses {
 		maxUses = MaxInviteUses
 	}
-	if maxUses > 1 && strings.TrimSpace(email) != "" {
+	if maxUses > 1 && domain.NormalizeEmail(email) != "" {
 		return nil, errors.New("Ein Einladungslink für mehrere Personen kann nicht an eine E-Mail-Adresse gebunden werden")
 	}
 	code := newInviteCode()
@@ -374,7 +381,7 @@ func (s *Store) CreateUserInvite(createdBy, email string, orgIDs []string, valid
 	inv := &domain.UserInvite{
 		ID:              domain.NewID("inv"),
 		Code:            code,
-		Email:           strings.ToLower(strings.TrimSpace(email)),
+		Email:           domain.NormalizeEmail(email),
 		Role:            "member",
 		OrganizationIDs: s.ValidOrganizationIDs(orgIDs),
 		CreatedBy:       createdBy,
@@ -558,7 +565,7 @@ func (s *Store) ReleaseUserInvite(inviteID, claim string) {
 // BindUserInviteEmail ties a single-use invite to the address it is sent to.
 func (s *Store) BindUserInviteEmail(inviteID, email string) error {
 	_, err := s.db.Exec(`UPDATE user_invites SET email = ? WHERE id = ? AND max_uses = 1 AND email = ''`,
-		strings.ToLower(strings.TrimSpace(email)), inviteID)
+		domain.NormalizeEmail(email), inviteID)
 	return err
 }
 

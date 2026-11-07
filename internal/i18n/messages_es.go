@@ -85,7 +85,7 @@ var messagesES = map[string]string{
 	"Diese Sprache gibt es nicht":                                                                        "Este idioma no existe",
 	"Dieser Benutzername ist schon vergeben":                                                             "Este nombre de usuario ya está en uso",
 	"Dieser Einladungscode ist abgelaufen":                                                               "Este código de invitación ha caducado",
-	"Dieser Einladungscode ist an eine andere E-Mail-Adresse gebunden":                                   "Este código de invitación está vinculado a otra dirección de correo",
+	"Dieser Einladungscode ist an {email} gebunden":                                                      "Este código de invitación está vinculado a {email}",
 	"Dieser Einladungscode wurde bereits eingelöst":                                                      "Este código de invitación ya se ha canjeado",
 	"Dieser Einladungslink ist bereits voll ausgeschöpft":                                                "Este enlace de invitación ya se ha agotado",
 	"Dieser Punkt ist kein Link auf eine Notiz":                                                          "Este punto no es un enlace a una nota",

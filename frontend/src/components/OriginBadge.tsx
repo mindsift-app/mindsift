@@ -24,15 +24,22 @@ const formatWhen = (iso?: string) => {
 // keyName: the key's name, or a hint when the key was deleted since
 const keyName = (name?: string, deleted?: boolean): string => (deleted ? i18n.t('common:origin.deletedKey') : name || '');
 
-// originDetails: who created and who last changed the entry, as one line for tooltip and detail view
-export const originDetails = (origin: Origin | undefined, createdAt?: string): string => {
-  if (!origin || (!origin.createdVia && !origin.changedVia)) return '';
-  const parts: string[] = [];
+// originDetails: who created and who last changed the entry, as one line for tooltip and detail view.
+// creatorName: the person who created it, where that is worth saying (shared lists); without an API
+// key involved the line then names them instead of staying empty.
+export const originDetails = (origin: Origin | undefined, createdAt?: string, creatorName?: string): string => {
   const created = formatWhen(createdAt);
+  if (!origin || (!origin.createdVia && !origin.changedVia)) {
+    if (!creatorName) return '';
+    return i18n.t(created ? 'common:origin.createdByAt' : 'common:origin.createdBy', { name: creatorName, when: created });
+  }
+  const parts: string[] = [];
   if (origin.createdVia) {
     const name = keyName(origin.createdKey, origin.createdKeyDeleted);
     const key = name ? ` (${name})` : '';
     parts.push(i18n.t(created ? 'common:origin.createdViaAt' : 'common:origin.createdVia', { via: VIA_LABEL[origin.createdVia], key, when: created }));
+  } else if (creatorName) {
+    parts.push(i18n.t(created ? 'common:origin.createdByAt' : 'common:origin.createdBy', { name: creatorName, when: created }));
   } else {
     parts.push(i18n.t(created ? 'common:origin.createdInAppAt' : 'common:origin.createdInApp', { when: created }));
   }

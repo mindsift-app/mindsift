@@ -27,6 +27,7 @@ import { useAppearanceSettings } from './user/useAppearanceSettings';
 import { AppearanceSection } from './user/AppearanceSection';
 import { useProfileSettings } from './user/useProfileSettings';
 import { DangerConfirmSheet, ProfileSection } from './user/ProfileSection';
+import { AvatarCropSheet } from './user/AvatarCropSheet';
 import { RetentionSection, useRetentionSettings } from './user/RetentionSection';
 import { useVoiceSetting, VoiceSection } from './user/VoiceSection';
 import { LanguageSection, useLanguageSetting } from './user/LanguageSection';
@@ -327,6 +328,9 @@ export const UserSettingsView: React.FC<UserSettingsViewProps> = ({
       </LegalLinks>
       {showAbout && <AboutModal onClose={() => setShowAbout(false)} />}
       {dangerAction && <DangerConfirmSheet profile={profile} />}
+      {profile.cropImage && (
+        <AvatarCropSheet image={profile.cropImage} onApply={profile.handleApplyCrop} onClose={() => profile.setCropImage(null)} />
+      )}
     </div>
   );
 };
