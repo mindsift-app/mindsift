@@ -402,46 +402,20 @@ func (s *Store) ToggleListItem(itemID string, isCompleted bool, userID, userName
 		return nil, err
 	}
 
-	var it domain.ListItem
-	var dInt int
-	var o originDest
-	err = s.db.QueryRow(
-		`SELECT id, list_id, content, category, quantity, is_completed, completed_by, completed_by_name, sort_order, created_at, completed_at, `+originColumns("")+`
-		 FROM list_items WHERE id = ?`,
-		itemID,
-	).Scan(&it.ID, &it.ListID, &it.Content, &it.Category, &it.Quantity, &dInt, &it.CompletedBy, &it.CompletedByName, &it.SortOrder, &it.CreatedAt, &it.CompletedAt,
-		&o.createdVia, &o.createdKey, &o.changedVia, &o.changedKey, &o.changedAt)
-	if errors.Is(err, sql.ErrNoRows) {
-		return nil, ErrListItemNotFound
-	}
+	it, err := s.getListItem(itemID)
 	if err != nil {
 		return nil, err
 	}
-	it.IsCompleted = dInt != 0
-	it.Origin = o.result()
 	_, _ = s.db.Exec(`UPDATE lists SET updated_at = ? WHERE id = ?`, now, it.ListID)
-	return &it, nil
+	return it, nil
 }
 
 func (s *Store) UpdateListItem(itemID string, content *string, category *string, quantity *string) (*domain.ListItem, error) {
 	now := domain.NowISO()
-	var it domain.ListItem
-	var dInt int
-	var o originDest
-	err := s.db.QueryRow(
-		`SELECT id, list_id, content, category, quantity, is_completed, completed_by, completed_by_name, sort_order, created_at, completed_at, `+originColumns("")+`
-		 FROM list_items WHERE id = ?`,
-		itemID,
-	).Scan(&it.ID, &it.ListID, &it.Content, &it.Category, &it.Quantity, &dInt, &it.CompletedBy, &it.CompletedByName, &it.SortOrder, &it.CreatedAt, &it.CompletedAt,
-		&o.createdVia, &o.createdKey, &o.changedVia, &o.changedKey, &o.changedAt)
-	if errors.Is(err, sql.ErrNoRows) {
-		return nil, ErrListItemNotFound
-	}
+	it, err := s.getListItem(itemID)
 	if err != nil {
 		return nil, err
 	}
-	it.IsCompleted = dInt != 0
-	it.Origin = o.result()
 
 	if content != nil {
 		it.Content = *content
@@ -458,7 +432,7 @@ func (s *Store) UpdateListItem(itemID string, content *string, category *string,
 		return nil, err
 	}
 	_, _ = s.db.Exec(`UPDATE lists SET updated_at = ? WHERE id = ?`, now, it.ListID)
-	return &it, nil
+	return it, nil
 }
 
 // MoveListItem moves an item into another list, where it lands at the top like a new entry
@@ -474,6 +448,12 @@ func (s *Store) MoveListItem(itemID, targetListID string) (*domain.ListItem, err
 	}
 	_, _ = s.db.Exec(`UPDATE lists SET updated_at = ? WHERE id IN (?, ?)`, now, sourceListID, targetListID)
 
+	return s.getListItem(itemID)
+}
+
+// getListItem reads one item with everything GetListItems returns (author included), so a
+// changed item sent to the list's viewers replaces the shown one without losing fields
+func (s *Store) getListItem(itemID string) (*domain.ListItem, error) {
 	var it domain.ListItem
 	var dInt int
 	var o originDest
@@ -484,6 +464,9 @@ func (s *Store) MoveListItem(itemID, targetListID string) (*domain.ListItem, err
 		 WHERE li.id = ?`,
 		itemID,
 	).Scan(&it.ID, &it.ListID, &it.Content, &it.Category, &it.Quantity, &dInt, &it.CompletedBy, &it.CompletedByName, &it.CreatedBy, &it.CreatedByName, &it.SortOrder, &it.CreatedAt, &it.CompletedAt, &o.createdVia, &o.createdKey, &o.changedVia, &o.changedKey, &o.changedAt)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, ErrListItemNotFound
+	}
 	if err != nil {
 		return nil, err
 	}
