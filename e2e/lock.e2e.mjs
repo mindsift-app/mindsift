@@ -50,6 +50,12 @@ async function focusField(page, text) {
   await page.keyboard.press('End');
 }
 
+// Clicks into a bullet without the cursor via its rendered text (the layer lies over the text field)
+async function clickText(page, text) {
+  await page.getByText(text, { exact: true }).first().click();
+  await page.keyboard.press('End');
+}
+
 async function openDoc(browser, token, title) {
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 }, locale: 'de-DE' });
   await ctx.addInitScript((t) => localStorage.setItem('mindsift_jwt_token', t), token);
@@ -69,12 +75,13 @@ const main = async () => {
   const user = (await api(null, 'POST', '/api/v1/auth/login', { login: 'user', password: 'user' })).token;
   const dir = await api(admin, 'GET', '/api/v1/users/directory');
   const userId = dir.find((u) => u.username === 'user' || u.email?.startsWith('user')).id;
-  const ids = { a: id('a'), b: id('b') };
+  const ids = { a: id('a'), b: id('b'), c: id('c') };
   const doc = await api(admin, 'POST', '/api/v1/documents', {
     title: TITLE,
     blocks: [
       { id: ids.a, type: 'bullet', content: 'Admin schreibt hier', level: 0 },
       { id: ids.b, type: 'bullet', content: 'Darunter', level: 0 },
+      { id: ids.c, type: 'bullet', content: 'Gemeinsamer Punkt', level: 0 },
     ],
   });
   await api(admin, 'POST', `/api/v1/documents/${doc.id}/shares`, { userId, permission: 'write' });
@@ -103,10 +110,25 @@ const main = async () => {
   check(!!notice && /bearbeitet diesen Punkt gerade/.test(notice), `Hinweis statt halber Aktion: ${notice}`);
   await sleep(1500);
   const afterMerge = (await serverBlocks(admin, doc.id)).map((b) => b.content).sort();
-  check(JSON.stringify(afterMerge) === JSON.stringify(['Admin schreibt hier', 'Darunter']), `Nothing was done halfway: ${JSON.stringify(afterMerge)}`);
+  check(JSON.stringify(afterMerge) === JSON.stringify(['Admin schreibt hier', 'Darunter', 'Gemeinsamer Punkt']), `Nothing was done halfway: ${JSON.stringify(afterMerge)}`);
+
+  // Clicking into a bullet someone else is typing in and out again changes nothing: no conflict copy
+  await clickText(A.page, 'Gemeinsamer Punkt');
+  await A.page.keyboard.type(' – Admin');
+  await waitFor(async () => (await editorValues(B.page)).includes('Gemeinsamer Punkt – Admin'), 8000);
+  await clickText(B.page, 'Gemeinsamer Punkt – Admin');
+  await A.page.keyboard.type(' tippt weiter');
+  const shownInside = await waitFor(async () => (await editorValues(B.page)).includes('Gemeinsamer Punkt – Admin tippt weiter'), 8000);
+  check(!!shownInside, 'With the cursor in the locked bullet, the editor sees the other person typing');
+  await clickText(B.page, 'Darunter');
+  await A.page.keyboard.type('!');
+  await sleep(2500);
+  const afterVisit = await serverBlocks(admin, doc.id);
+  check(!afterVisit.some((b) => b.props?.conflictOf), `Clicking into the locked bullet and out again makes no conflict copy: ${JSON.stringify(afterVisit.map((b) => b.content))}`);
+  check(afterVisit.find((b) => b.id === ids.c)?.content === 'Gemeinsamer Punkt – Admin tippt weiter!', 'The text of the person typing stays as typed');
 
   // Undo on the admin side
-  await focusField(A.page, 'Admin schreibt hier');
+  await clickText(A.page, 'Admin schreibt hier');
   await A.page.keyboard.type(' und noch mehr');
   await waitFor(async () => (await serverBlocks(admin, doc.id)).some((b) => b.content === 'Admin schreibt hier und noch mehr'), 5000);
   await A.page.keyboard.press('Control+z');

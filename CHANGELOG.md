@@ -20,6 +20,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Profile on phones: with unsaved changes the save button floats above the bottom bar and says so, instead of staying far down the page.
 
 ### Fixed
+- Notes shared with others: clicking into a bullet someone else was typing in (locked, so nothing could be typed) and out again created a conflict copy of their text. Leaving a bullet now only sends text you actually typed there, and while the cursor sits in a locked bullet you see the other person's typing as it arrives.
 - Administration: the actions of an invite (copy link, copy code, send by email, delete) no longer wrap onto a new line and to the left when the address is long; they are compact icons on the right like in the user list, and long details are shortened.
 - Sharing dialog: password managers no longer offer to fill in the password of a public link (it was a password field and looked like a login).
 - Registering with an invite bound to an email address failed with "bound to a different email address" although the address looked the same: an address copied from a messenger or a mail can carry invisible characters. Email addresses are now cleaned of them everywhere (invites, registration, accounts, sign-in), and the message shows which address the code belongs to (partly hidden, e.g. `an***@example.com`).

@@ -99,6 +99,7 @@ sequenceDiagram
   - New bullets (Enter, paste) immediately belong to the creator.
   - Left bullets remain held for 20 s; after 60 s without input, the focused bullet is also released.
   - Remotely locked bullets display a lock with the user's name and are read-only; pressing Enter inside creates a new bullet below. Deleting, merging, indenting/outdenting, and dragging that touch a locked bullet are prevented entirely (notice shown at the bottom of the editor).
+  - A text field sends text on leaving only if the user changed it since it last took over the block's text; an unchanged field takes over remote text even with the cursor inside (so a locked bullet shows the other person typing). As a second guard, the engine drops a text change that only repeats what the editor last showed in agreement with it (`uiSeen`) while the block has moved on: such a field held old text and would otherwise turn the other person's text into a conflict copy.
 - **Conflicts:** Conflict copies are highlighted in color, with "Keep" (replaces the original text) and "Discard" actions. Both check the leases of the original and the copy beforehand.
 - **Background and network:** When hiding the page, the engine sends pending changes using `keepalive` and releases its leases; upon `online` and tab reactivation, it synchronizes immediately.
 - **Permission revocation:** The next `/sync` returns `403` or `404`. The engine does not discard the queue, but stops sending and displays the error.
