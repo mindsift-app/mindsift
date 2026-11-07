@@ -4,7 +4,7 @@ import { Check, Copy, Globe, KeyRound, Link2Off, RefreshCw } from 'lucide-react'
 import { api } from '../../lib/api';
 import { PublicLinkState } from '../../lib/types';
 import { formatDateTime } from '../../lib/format';
-import { NO_AUTOFILL } from '../../lib/noAutofill';
+import { MASKED, NO_AUTOFILL } from '../../lib/noAutofill';
 
 // Durations offered for a public link, in hours; the server's limit cuts the list (there is no "for good")
 const DURATIONS = [1, 24, 72, 168, 336];
@@ -54,6 +54,7 @@ export const PublicLinkSection: React.FC<{ docId: string }> = ({ docId }) => {
 
   const form = (
     <form
+      {...NO_AUTOFILL}
       onSubmit={(e) => {
         e.preventDefault();
         const h = durations.includes(hours) ? hours : durations[durations.length - 1];
@@ -74,8 +75,11 @@ export const PublicLinkSection: React.FC<{ docId: string }> = ({ docId }) => {
             </option>
           ))}
         </select>
+        {/* Masked text field, no password field: else password managers take the share dialog for a login */}
         <input
-          type="password"
+          type="text"
+          spellCheck={false}
+          style={MASKED}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           placeholder={t('publicLink.passwordOptional')}
@@ -112,6 +116,7 @@ export const PublicLinkSection: React.FC<{ docId: string }> = ({ docId }) => {
             <input
               ref={urlRef}
               readOnly
+              {...NO_AUTOFILL}
               value={url}
               onFocus={(e) => e.target.select()}
               className="input-field flex-1 min-w-0 h-11 sm:h-8 px-2.5 text-xs font-mono"

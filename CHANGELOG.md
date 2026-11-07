@@ -6,6 +6,18 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Added
+- Tasks and shopping lists: sort the list tabs by drag and drop. The order is your own (also for shared lists) and is used in the phone menu as well; new lists go to the end.
+- Administration: redeemed and expired invites disappear from the list 30 days later; until then the row says when.
+
+### Changed
+- Sharing dialog: "User" comes first and is preselected, "Group" second.
+- Administration: the list of invites stays visible when it is empty and says so.
+
+### Fixed
+- Administration: the actions of an invite (copy link, copy code, send by email, delete) no longer wrap onto a new line and to the left when the address is long; they are compact icons on the right like in the user list, and long details are shortened.
+- Sharing dialog: password managers no longer offer to fill in the password of a public link (it was a password field and looked like a login).
+
 ## [0.88.0] - 2026-11-07
 
 ### Added

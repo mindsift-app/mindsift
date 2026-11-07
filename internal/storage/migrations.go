@@ -45,6 +45,8 @@ var migrations = []migration{
 	{22, "Hidden values in notes", (*Store).migrateNoteSecrets},
 	{23, "Several organizations per person", (*Store).migrateOrganizationMembers},
 	{24, "Public links to notes", (*Store).migratePublicLinks},
+	{25, "Cleanup of used invites", (*Store).migrateInviteCleanup},
+	{26, "Order of lists per person", (*Store).migrateListOrder},
 }
 
 func (s *Store) migrate() error {

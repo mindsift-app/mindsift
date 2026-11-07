@@ -117,6 +117,14 @@ Component: [ListSwitcher.tsx](../frontend/src/components/ListSwitcher.tsx)
 - In the mobile top bar (Tasks, Lists), the open list title is a button with an arrow. Tapping it opens a dropdown of all lists with icon, counter (`CountBadge`, `muted`), and checkmark on the currently active list; tapping a list switches to it.
 - Closes on outside tap and on Escape. On desktop, tabs remain visible above the list.
 
+## Sorting Tabs (Drag and Drop)
+
+Tab rows that the person can reorder (task lists, shared lists) use `useTabReorder` (`lib/useTabReorder.ts`) and `TabDropMarker` (a line on the side where the tab lands). The tab carries its own drag data type, so dropping tasks or list items onto a tab keeps working; `handleDragOver`/`handleDrop` return `true` when they handled a tab. The order is saved per person (`PUT /task-lists/order`, `/lists/order`) and applied with `inIdOrder` right away.
+
+## Fields That Are Not a Login
+
+Search and filter fields get `NO_AUTOFILL` (`lib/noAutofill.ts`). Passwords that are not the person's own login (other accounts, the mail server, the password of a public link) are text fields with `style={MASKED}` instead of `type="password"`, otherwise password managers offer the person's login there.
+
 ## Header: Status | Actions
 
 Component for connection status: [LivePill.tsx](../frontend/src/components/LivePill.tsx) (notes display their own sync transport in the same visual style).

@@ -82,6 +82,21 @@ func (s *Store) migrateRegistration() error {
 	return nil
 }
 
+// migrateInviteCleanup records when an invite was used up, so it can be removed 30 days later. Invites
+// used up before get the creation time of the account that redeemed them (else their own).
+func (s *Store) migrateInviteCleanup() error {
+	for _, q := range []string{
+		`ALTER TABLE user_invites ADD COLUMN used_up_at TEXT NOT NULL DEFAULT ''`,
+		`UPDATE user_invites SET used_up_at = COALESCE((SELECT u.created_at FROM users u WHERE u.id = user_invites.used_by), created_at)
+		 WHERE use_count >= max_uses AND used_up_at = ''`,
+	} {
+		if err := s.execSchemaStatement(q); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (s *Store) AddPendingRegistration(userID string) error {
 	_, err := s.db.Exec(`INSERT OR IGNORE INTO pending_registrations (user_id, created_at) VALUES (?, ?)`,
 		userID, time.Now().UTC().Format(time.RFC3339))

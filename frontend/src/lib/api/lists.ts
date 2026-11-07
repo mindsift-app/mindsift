@@ -63,6 +63,11 @@ export const listsApi = {
     }));
   },
 
+  // The person's own order of the list tabs
+  async setListOrder(ids: string[]): Promise<void> {
+    await request('/api/v1/lists/order', { method: 'PUT', body: JSON.stringify({ ids }) });
+  },
+
   async getListById(listId: string): Promise<SharedList> {
     const l = await request<SharedList>(`/api/v1/lists/${listId}`);
     return {

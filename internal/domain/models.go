@@ -235,6 +235,8 @@ type UserInvite struct {
 	MaxUses   int    `json:"maxUses"`
 	UseCount  int    `json:"useCount"`
 	CreatedAt string `json:"createdAt"`
+	// Used up or expired: when the invite disappears from the list
+	RemoveAt string `json:"removeAt,omitempty"`
 }
 
 type ThoughtStatus string

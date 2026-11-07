@@ -22,6 +22,7 @@ import { useListRealtime } from './useListRealtime';
 import { useItemEditing } from './useItemEditing';
 import { CompletedItems, OpenItemGroups } from './ListItemGroups';
 import { ListTabsHeader, MobileListHeader } from './ListHeaders';
+import { inIdOrder } from '../../lib/useTabReorder';
 import { buildListsMenu } from './listsMenu';
 import { askConfirm } from '../../components/askConfirm';
 import { showError } from '../../components/ErrorNotice';
@@ -456,6 +457,10 @@ export const SharedListsView: React.FC<SharedListsViewProps> = ({ onRefreshGloba
         handleDeleteList={handleDeleteList}
         openShareModal={openShareModal}
         setShowNewListModal={setShowNewListModal}
+        onReorderLists={(ids) => {
+          setLists((prev) => inIdOrder(prev, ids));
+          api.setListOrder(ids).catch(() => void loadLists());
+        }}
       />
 
       {/* Mobile Compact Header Bar (List switching & actions live in MindSift Logo Menu) */}
