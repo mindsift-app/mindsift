@@ -40,6 +40,11 @@ export function TaskListShareDialog({
       resourceName={sharingTaskList.title}
       resourceIcon={sharingTaskList.icon || undefined}
       isOwner={sharingTaskList.isOwner !== false}
+      sharedBy={(() => {
+        const ownerId = sharingTaskList.ownerId || sharingTaskList.userId;
+        const owner = sharingTaskList.members?.find((m) => m.userId === ownerId || m.role === 'owner');
+        return { id: ownerId, name: sharingTaskList.ownerName || owner?.displayName || owner?.email, avatarUrl: owner?.avatarUrl };
+      })()}
       currentUserId={currentUser?.id}
       shares={(sharingTaskList.shares || []).map((sh) => ({
         id: sh.id,

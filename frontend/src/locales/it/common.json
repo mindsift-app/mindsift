@@ -113,6 +113,7 @@
     "shareGroup": "Condividi con il gruppo",
     "addUser": "Aggiungi utente",
     "ownerOnly": "Solo il proprietario può aggiungere nuove condivisioni.",
+    "sharedBy": "Condiviso da <b>{{name}}</b>",
     "active": "Condivisioni attive",
     "private": "Questo elemento è privato al momento (visibile solo a te).",
     "remove": "Rimuovi condivisione",

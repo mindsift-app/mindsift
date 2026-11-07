@@ -113,6 +113,7 @@
     "shareGroup": "Share with group",
     "addUser": "Add user",
     "ownerOnly": "Only the owner can add new shares.",
+    "sharedBy": "Shared by <b>{{name}}</b>",
     "active": "Active shares",
     "private": "This item is private right now (visible to you only).",
     "remove": "Remove share",
