@@ -6,6 +6,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.88.0] - 2026-11-07
+
 ### Added
 - MCP: notes, tasks and lists in tool results carry a `url` that opens them in the app (needs `BASE_URL`), so an assistant can link to what it found. Links of the form `/?note=…`, `/?task=…` and `/?list=…` open the item after signing in.
 
