@@ -155,6 +155,11 @@ var mcpWriteTools = []mcpTool{
 			if a.Title != nil && strings.TrimSpace(*a.Title) == "" {
 				return nil, errors.New("'title' darf nicht leer sein")
 			}
+			if a.Icon != nil {
+				if err := checkMCPIcon(*a.Icon); err != nil {
+					return nil, err
+				}
+			}
 			if a.FolderPath != nil {
 				folder := strings.Trim(strings.TrimSpace(*a.FolderPath), "/")
 				if err := s.store.CheckCreateInFolder(userID, folder); err != nil {
@@ -171,7 +176,7 @@ var mcpWriteTools = []mcpTool{
 				s.notifyDocChanged(a.ID, head)
 			}
 			s.broadcastDocToAuthorizedUsers(a.ID, "DOC_UPDATED")
-			return toNoteView(d), nil
+			return s.toNoteView(d), nil
 		},
 	},
 	{

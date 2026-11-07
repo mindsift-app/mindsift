@@ -111,7 +111,7 @@ Administrators can disable MCP (`MCP_ENABLED=false` or toggle in administration 
 | `update_list_item` | `lists:write` | Change text, category, quantity |
 | `list_notes` | `notes:read` | Notes without content, most recently modified first (`folder` including subfolders, `query` in title, `limit`) |
 | `get_note` | `notes:read` | A single note; `content` consists of bullets formatted as an indented Markdown list (tab per level, `- [ ]` for to-dos, images and audio recordings as placeholders), `bullets` contains the same bullets with `id`, `level`, `type`, `text`, `checked` |
-| `create_note` | `notes:create` | New note (`title`, `content` as Markdown like in import, `folderPath`, `icon`); creating in shared folders requires write permission |
+| `create_note` | `notes:create` | New note (`title`, `content` as Markdown like in import, `folderPath`, `icon`); creating in shared folders requires write permission. Every line of plain text becomes a bullet of its own; `content` may also be a list of strings (one bullet each), and doubly escaped `\n` is read as line breaks. If `content` yields no bullets or the call has unknown arguments, the result carries `warnings` (the note is still created) |
 | `update_note` | `notes:write` | Change title, icon, or folder of a note |
 | `add_note_bullet` | `notes:write` | Add bullet: after a bullet (`afterId`), as the last child (`parentId`), or at the end; `type` text/todo/h1–h3/numbered/callout/warning/error, `checked` |
 | `update_note_bullet` | `notes:write` | Update text, checked state, or type of a bullet (`bulletId` from `get_note`) |
@@ -122,6 +122,8 @@ Administrators can disable MCP (`MCP_ENABLED=false` or toggle in administration 
 | `list_inbox` | `inbox:read` | Open inbox items, newest first (`query` in text, `limit`) |
 | `convert_inbox_item` | `inbox:write` | Convert inbox item as in triage: `to` task (with `taskListId`, `dueDate`), note, or list_item (with `listId`) |
 | `discard_inbox_item` | `inbox:write` | Discard inbox item (triage trash, recoverable) |
+
+`icon` (`create_note`, `update_note`, `create_task_list`, `create_list`) must be a single emoji or empty (default icon); anything else is an error. With `BASE_URL` set, notes, tasks and lists in results carry a `url` that opens them in the app (`<BASE_URL>/?note=<id>`, `?task=<id>`, `?list=<id>`; search hits for notes as well); the server instructions ask agents to pass it on to the user.
 
 Tools modify note bullets using the same operations as the editor (note synchronization): Anyone with the note open sees the change immediately; a bullet currently being edited by someone else is not touched (error message returned, try again later). Inbox tools accept only open inbox items; tasks remain out of reach for them. List items cannot be deleted via MCP, only checked off (they have no trash).
 
