@@ -20,6 +20,7 @@ import {
   XCircle,
   Image as ImageIcon,
   Mic,
+  Shapes,
   AudioLines,
   FileOutput,
   FileInput,
@@ -34,6 +35,8 @@ import { SecretChip, NewSecretSheet } from './SecretChip';
 import { CodeBlockEditor, resolveLanguageId, isUnambiguousLanguageShortcut } from './CodeBlockEditor';
 import { ImagePicker } from './ImagePicker';
 import { ImageBlock } from './ImageBlock';
+import { DrawingBlock } from './drawing/DrawingBlock';
+import { emptyDrawing, serializeDrawing } from '../../lib/drawing/model';
 import { AudioRecorderPicker } from './AudioRecorderPicker';
 import { AudioBlock } from './AudioBlock';
 import { DictationBlock } from './DictationBlock';
@@ -96,6 +99,7 @@ const SLASH_COMMANDS: SlashCommand[] = [
   { type: 'divider', label: '/divider', get desc() { return i18n.t('workspace:slash.divider'); }, icon: <Minus className="w-3.5 h-3.5" /> },
   { type: 'extract', label: '/extract', get desc() { return i18n.t('workspace:slash.extract'); }, icon: <FileOutput className="w-3.5 h-3.5" />, aliases: ['notiz', 'auslagern'] },
   { type: 'image', label: '/image', get desc() { return i18n.t('workspace:slash.image'); }, icon: <ImageIcon className="w-3.5 h-3.5" />, media: true, aliases: ['bild', 'foto'] },
+  { type: 'drawing', label: '/canvas', get desc() { return i18n.t('workspace:slash.drawing'); }, icon: <Shapes className="w-3.5 h-3.5" />, aliases: ['draw', 'sketch', 'diagram', 'zeichnung', 'skizze'] },
   { type: 'audio', label: '/audio', get desc() { return i18n.t('workspace:slash.audio'); }, icon: <Mic className="w-3.5 h-3.5" />, media: true, aliases: ['sprachnotiz'] },
   { type: 'dictation', label: '/diktat', get desc() { return i18n.t('workspace:slash.dictation'); }, icon: <AudioLines className="w-3.5 h-3.5" />, media: true, aliases: ['dictate'] },
 ];
@@ -232,6 +236,8 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
   const blurSlashTimerRef = useRef<number | null>(null);
   // Inline picker an empty bullet turns into after /image (local only, nothing synced until done)
   const [mediaPicker, setMediaPicker] = useState<'image' | 'audio' | 'dictation' | null>(null);
+  // A drawing just made with /canvas opens its editor right away
+  const [drawingAutoOpen, setDrawingAutoOpen] = useState(false);
   // Card above bullets whose entire content is a plain https address (lib/linkPreview.ts)
   const previewsOn = useLinkPreviewsEnabled();
   const previewUrl =
@@ -553,7 +559,7 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
       }
 
       // /divider, /image, /audio only when rest of block is empty
-      if (c.type === 'divider' || c.type === 'image' || c.type === 'audio') {
+      if (c.type === 'divider' || c.type === 'image' || c.type === 'audio' || c.type === 'drawing') {
         return isRestEmpty;
       }
 
@@ -640,6 +646,16 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
       localContentRef.current = clean;
       flushDebounce(clean);
       onExtractBlock?.(block.id);
+      return;
+    }
+
+    if (cmd.type === 'drawing') {
+      // The editor opens at once; closing it without drawing turns the bullet back into text
+      const content = serializeDrawing(emptyDrawing());
+      setLocalContent(content);
+      localContentRef.current = content;
+      setDrawingAutoOpen(true);
+      flushDebounce(content, { type: 'drawing' });
       return;
     }
 
@@ -1453,6 +1469,26 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
               setLocalContent(content);
               localContentRef.current = content;
               flushDebounce(content);
+            }}
+          />
+        ) : block.type === 'drawing' ? (
+          <DrawingBlock
+            blockId={block.id}
+            content={localContent}
+            canEdit={canEdit}
+            autoOpen={drawingAutoOpen}
+            onChange={(content) => {
+              setDrawingAutoOpen(false);
+              setLocalContent(content);
+              localContentRef.current = content;
+              flushDebounce(content);
+            }}
+            onDiscardNew={() => {
+              setDrawingAutoOpen(false);
+              setLocalContent('');
+              localContentRef.current = '';
+              refocusAfterTypeChangeRef.current = true;
+              flushDebounce('', { type: 'bullet' });
             }}
           />
         ) : block.type === 'image' ? (

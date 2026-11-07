@@ -91,7 +91,8 @@
     "image": "Bilder hochladen oder verlinken",
     "audio": "Sprachnotiz oder Audiodatei",
     "dictation": "Sprechen statt tippen",
-    "secret": "Wert verdecken (IP, Token …)"
+    "secret": "Wert verdecken (IP, Token …)",
+    "drawing": "Zeichnung, Diagramm, Mindmap"
   },
   "block": {
     "expand": "Unterpunkte ausklappen",
@@ -442,5 +443,84 @@
     "withPassword": "mit Passwort",
     "new": "Neuer Link",
     "revoke": "Zurückziehen"
+  },
+  "drawing": {
+    "broken": "Zeichnung ist beschädigt und lässt sich nicht anzeigen.",
+    "aria": "Zeichnung",
+    "ariaWithText": "Zeichnung: {{text}}",
+    "empty": "Leere Zeichnung",
+    "emptyEdit": "Leere Zeichnung – „Bearbeiten“ oder Doppelklick zum Zeichnen",
+    "edit": "Bearbeiten",
+    "editTitle": "Im Vollbild bearbeiten (Doppelklick)",
+    "fullscreen": "Im Vollbild ansehen",
+    "saveView": "Ansicht speichern",
+    "saveViewTitle": "Diesen Ausschnitt, Zoom und Höhe für alle speichern",
+    "resetView": "Ausschnitt zurücksetzen",
+    "autoView": "Automatisch",
+    "autoViewTitle": "Gespeicherte Ansicht entfernen: alles einpassen",
+    "resize": "Ziehen, um die Höhe zu ändern",
+    "editorTitle": "Zeichnung bearbeiten",
+    "done": "Fertig",
+    "close": "Schließen",
+    "doneEsc": "Speichern und schließen (Esc)",
+    "undo": "Rückgängig (Strg+Z)",
+    "redo": "Wiederholen (Strg+Umschalt+Z)",
+    "grid": "Gitter mit Einrasten (Alt: frei)",
+    "zoomIn": "Vergrößern",
+    "zoomOut": "Verkleinern",
+    "fit": "Alles einpassen",
+    "tool": {
+      "select": "Auswählen",
+      "hand": "Verschieben",
+      "rect": "Rechteck (Umschalt: Quadrat)",
+      "ellipse": "Ellipse (Umschalt: Kreis)",
+      "diamond": "Raute",
+      "arrow": "Pfeil",
+      "draw": "Freihand",
+      "text": "Text",
+      "eraser": "Radierer"
+    },
+    "stroke": "Linie",
+    "fill": "Füllung",
+    "color": {
+      "none": "Keine",
+      "main": "Schrift",
+      "muted": "Grau",
+      "accent": "Akzent",
+      "red": "Rot",
+      "orange": "Orange",
+      "green": "Grün",
+      "blue": "Blau",
+      "purple": "Lila"
+    },
+    "width": {
+      "1": "Dünn",
+      "2": "Mittel",
+      "4": "Dick"
+    },
+    "dashed": "Gestrichelt",
+    "rounded": "Abgerundete Ecken",
+    "fontSize": "Schrift",
+    "route": {
+      "straight": "Gerade",
+      "curve": "Gebogen (Mitte ziehen)",
+      "elbow": "Eckig"
+    },
+    "head": {
+      "end": "→",
+      "both": "↔",
+      "none": "—"
+    },
+    "toFront": "Nach vorne",
+    "toBack": "Nach hinten",
+    "duplicate": "Duplizieren (Strg+D)",
+    "delete": "Löschen (Entf)",
+    "textField": "Text",
+    "textPlaceholder": "Text …",
+    "draftFound": "Hier liegt ein ungespeicherter Entwurf dieser Zeichnung.",
+    "draftRestore": "Wiederherstellen",
+    "draftDiscard": "Verwerfen",
+    "nearlyFull": "Die Zeichnung ist zu {{percent}} % voll. Große Freihand-Flächen brauchen am meisten Platz.",
+    "tooLarge": "Die Zeichnung ist zu groß zum Speichern. Bitte etwas entfernen, vor allem Freihand-Striche."
   }
 }
