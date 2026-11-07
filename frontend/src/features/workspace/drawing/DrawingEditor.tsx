@@ -617,6 +617,9 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
   };
 
   const onPointerDown = (e: React.PointerEvent) => {
+    // Otherwise the browser moves the focus to the page after this press, and a text field the press
+    // just opened loses it at once (and with it the empty new text)
+    e.preventDefault();
     if (textEdit) {
       commitText();
       return;
