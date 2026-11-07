@@ -32,4 +32,15 @@ describe('OriginBadge', () => {
     const text = originDetails({ createdVia: 'api', createdKey: 'HA', changedVia: 'mcp', changedKey: 'Claude Code' }, '2026-11-01T08:12:00Z');
     expect(text).toMatch(/^Angelegt per API \(HA\) am .* · zuletzt geändert per MCP \(Claude Code\)$/);
   });
+
+  it('names the person who created it in shared lists', () => {
+    expect(originDetails(undefined, '2026-11-01T08:12:00Z', 'Sandro')).toMatch(/^Erstellt von Sandro am /);
+    expect(originDetails(undefined, '', 'Sandro')).toBe('Erstellt von Sandro');
+    expect(originDetails(undefined, '2026-11-01T08:12:00Z')).toBe('');
+    // Created in the app, changed later through MCP
+    const text = originDetails({ changedVia: 'mcp', changedKey: 'Claude' }, '2026-11-01T08:12:00Z', 'Sandro');
+    expect(text).toMatch(/^Erstellt von Sandro am .* · zuletzt geändert per MCP \(Claude\)$/);
+    // An API key that created it is named instead of its owner
+    expect(originDetails({ createdVia: 'mcp', createdKey: 'Claude' }, '', 'Sandro')).toBe('Angelegt per MCP (Claude)');
+  });
 });

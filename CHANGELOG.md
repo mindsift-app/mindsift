@@ -9,6 +9,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 ### Added
 - Tasks and shopping lists: sort the list tabs by drag and drop. The order is your own (also for shared lists) and is used in the phone menu as well; new lists go to the end.
 - Administration: redeemed and expired invites disappear from the list 30 days later; until then the row says when.
+- Tasks in shared lists: the details name the person who created a task ("Created by Anna on …"), not only tasks created through an API key.
 
 ### Changed
 - Sharing dialog: "User" comes first and is preselected, "Group" second.

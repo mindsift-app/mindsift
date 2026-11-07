@@ -203,6 +203,8 @@
     "createdViaAt": "Angelegt per {{via}}{{key}} am {{when}}",
     "createdInApp": "In der App angelegt",
     "createdInAppAt": "In der App angelegt am {{when}}",
+    "createdBy": "Erstellt von {{name}}",
+    "createdByAt": "Erstellt von {{name}} am {{when}}",
     "changedVia": "zuletzt geändert per {{via}}{{key}}",
     "changedViaAt": "zuletzt geändert per {{via}}{{key}} am {{when}}",
     "deletedKey": "Gelöschter Schlüssel"
