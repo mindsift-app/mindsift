@@ -212,7 +212,8 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 		writeThrottled(w, wait)
 		return
 	}
-	if strings.TrimSpace(req.Email) == "" {
+	req.Email = domain.NormalizeEmail(req.Email)
+	if req.Email == "" {
 		writeError(w, http.StatusBadRequest, "E-Mail-Adresse erforderlich")
 		return
 	}
@@ -236,8 +237,9 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusForbidden, err.Error())
 			return
 		}
-		if inv.Email != "" && !strings.EqualFold(inv.Email, strings.TrimSpace(req.Email)) {
-			writeError(w, http.StatusForbidden, "Dieser Einladungscode ist an eine andere E-Mail-Adresse gebunden")
+		if inv.Email != "" && domain.NormalizeEmail(inv.Email) != req.Email {
+			// The bound address half hidden, so the person sees which one is meant
+			writeError(w, http.StatusForbidden, tr(w, "Dieser Einladungscode ist an {email} gebunden", "email", maskEmail(inv.Email)))
 			return
 		}
 		validInvite = inv
@@ -833,4 +835,22 @@ func (s *Server) fillUserPreferences(u *domain.User) {
 	u.VoiceLanguage = s.store.VoiceLanguage(u.ID)
 	u.Language = s.store.Language(u.ID)
 	u.Organizations = s.store.UserOrganizations(u.ID)
+}
+
+// maskEmail shows an address only in part ("an***@example.com"): enough to tell it apart, without
+// giving it away to whoever holds the code
+func maskEmail(email string) string {
+	at := strings.LastIndex(email, "@")
+	if at < 0 {
+		return "***"
+	}
+	local := []rune(email[:at])
+	keep := 2
+	if len(local) <= 3 {
+		keep = 1
+	}
+	if len(local) < keep {
+		keep = len(local)
+	}
+	return string(local[:keep]) + "***" + email[at:]
 }

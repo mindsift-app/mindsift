@@ -85,7 +85,7 @@ var messagesFR = map[string]string{
 	"Diese Sprache gibt es nicht":                                                                        "Cette langue n’existe pas",
 	"Dieser Benutzername ist schon vergeben":                                                             "Ce nom d’utilisateur est déjà pris",
 	"Dieser Einladungscode ist abgelaufen":                                                               "Ce code d’invitation a expiré",
-	"Dieser Einladungscode ist an eine andere E-Mail-Adresse gebunden":                                   "Ce code d’invitation est lié à une autre adresse e-mail",
+	"Dieser Einladungscode ist an {email} gebunden":                                                      "Ce code d’invitation est lié à {email}",
 	"Dieser Einladungscode wurde bereits eingelöst":                                                      "Ce code d’invitation a déjà été utilisé",
 	"Dieser Einladungslink ist bereits voll ausgeschöpft":                                                "Ce lien d’invitation est épuisé",
 	"Dieser Punkt ist kein Link auf eine Notiz":                                                          "Ce point n’est pas un lien vers une note",

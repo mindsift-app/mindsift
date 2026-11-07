@@ -85,7 +85,7 @@ var messagesEN = map[string]string{
 	"Diese Sprache gibt es nicht":                                                                        "This language does not exist",
 	"Dieser Benutzername ist schon vergeben":                                                             "This username is already taken",
 	"Dieser Einladungscode ist abgelaufen":                                                               "This invite code has expired",
-	"Dieser Einladungscode ist an eine andere E-Mail-Adresse gebunden":                                   "This invite code is bound to a different email address",
+	"Dieser Einladungscode ist an {email} gebunden":                                                      "This invite code is bound to {email}",
 	"Dieser Einladungscode wurde bereits eingelöst":                                                      "This invite code has already been redeemed",
 	"Dieser Einladungslink ist bereits voll ausgeschöpft":                                                "This invite link has been used up",
 	"Dieser Punkt ist kein Link auf eine Notiz":                                                          "This bullet is not a link to a note",
