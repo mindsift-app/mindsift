@@ -26,6 +26,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Notes: clicking a link to a note that does not exist (anymore) asks first instead of creating an untitled note right away: "Create" makes a note with the link's title, "Remove link" keeps the text and drops the link.
 
 ### Fixed
+- Folders: creating "Rancher / Kubernetes" (spaces around the slash) made a parent "Rancher " with a trailing space, and moving a note into "Rancher" then created a second "Rancher" next to it. Folder paths are now cleaned segment by segment ("Rancher/Kubernetes"), and existing folders are cleaned and merged once on update.
 - Notes: turning a drawing into its own note put the drawing's raw data into the note title.
 - Notes shared with others: clicking into a bullet someone else was typing in (locked, so nothing could be typed) and out again created a conflict copy of their text. Leaving a bullet now only sends text you actually typed there, and while the cursor sits in a locked bullet you see the other person's typing as it arrives.
 - Administration: the actions of an invite (copy link, copy code, send by email, delete) no longer wrap onto a new line and to the left when the address is long; they are compact icons on the right like in the user list, and long details are shortened.

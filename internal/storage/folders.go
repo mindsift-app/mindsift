@@ -67,8 +67,21 @@ func (s *Store) GetFolders(userID string) ([]string, error) {
 	return result, nil
 }
 
+// cleanFolderPath normalizes a folder path: forward slashes, every segment trimmed, empty and "."
+// segments dropped. "Rancher / Kubernetes" becomes "Rancher/Kubernetes", so the parent is "Rancher"
+// and not "Rancher " (which looked the same in the tree but was a second folder).
+func cleanFolderPath(p string) string {
+	var parts []string
+	for _, seg := range strings.Split(filepath.ToSlash(p), "/") {
+		if seg = strings.TrimSpace(seg); seg != "" && seg != "." {
+			parts = append(parts, seg)
+		}
+	}
+	return strings.Join(parts, "/")
+}
+
 func addFolderSegments(fp string, set map[string]bool) {
-	clean := filepath.ToSlash(filepath.Clean(strings.TrimSpace(fp)))
+	clean := cleanFolderPath(fp)
 	if clean == "." || clean == "" {
 		return
 	}
@@ -87,7 +100,7 @@ func addFolderSegments(fp string, set map[string]bool) {
 }
 
 func (s *Store) CreateFolder(userID, folderPath string) (string, error) {
-	clean := filepath.ToSlash(filepath.Clean(strings.TrimSpace(folderPath)))
+	clean := cleanFolderPath(folderPath)
 	if clean == "" || clean == "." || strings.HasPrefix(clean, "/") || strings.Contains(clean, "..") {
 		return "", fmt.Errorf("ungültiger Ordnerpfad")
 	}
@@ -125,7 +138,7 @@ func (s *Store) CreateFolder(userID, folderPath string) (string, error) {
 }
 
 func (s *Store) DeleteFolder(userID, folderPath string) ([]string, error) {
-	clean := filepath.ToSlash(filepath.Clean(strings.TrimSpace(folderPath)))
+	clean := cleanFolderPath(folderPath)
 	if clean == "" || clean == "." || strings.HasPrefix(clean, "/") || strings.Contains(clean, "..") {
 		return nil, fmt.Errorf("ungültiger Ordnerpfad")
 	}
@@ -241,7 +254,7 @@ func (s *Store) MoveDocument(userID, docID, targetFolderPath string) (*domain.Do
 		return nil, ErrDocInTrash
 	}
 
-	cleanTarget := filepath.ToSlash(filepath.Clean(strings.TrimSpace(targetFolderPath)))
+	cleanTarget := cleanFolderPath(targetFolderPath)
 	if cleanTarget == "." {
 		cleanTarget = ""
 	}
@@ -330,11 +343,11 @@ func (s *Store) MoveDocument(userID, docID, targetFolderPath string) (*domain.Do
 
 // MoveFolder moves a folder (and all its documents/subfolders) to a new target parent path.
 func (s *Store) MoveFolder(userID, sourcePath, targetParentPath string) (string, []string, error) {
-	cleanSource := filepath.ToSlash(filepath.Clean(strings.TrimSpace(sourcePath)))
+	cleanSource := cleanFolderPath(sourcePath)
 	if cleanSource == "" || cleanSource == "." || strings.HasPrefix(cleanSource, "/") || strings.Contains(cleanSource, "..") {
 		return "", nil, fmt.Errorf("ungültiger Quell-Ordnerpfad")
 	}
-	cleanTarget := filepath.ToSlash(filepath.Clean(strings.TrimSpace(targetParentPath)))
+	cleanTarget := cleanFolderPath(targetParentPath)
 	if cleanTarget == "." {
 		cleanTarget = ""
 	}
@@ -532,7 +545,7 @@ func (s *Store) CreateSharedFolder(userID, folderName, initialMountPath string) 
 	if cleanName == "" {
 		return nil, fmt.Errorf("ordnername darf nicht leer sein")
 	}
-	cleanMount := filepath.ToSlash(filepath.Clean(strings.TrimSpace(initialMountPath)))
+	cleanMount := cleanFolderPath(initialMountPath)
 	if cleanMount == "." || cleanMount == "" {
 		cleanMount = cleanName
 	}
@@ -683,7 +696,7 @@ func (s *Store) GetSharedFolderByID(userID, folderID string) (*domain.SharedFold
 }
 
 func (s *Store) UpdateFolderMount(userID, folderID, mountPath string) error {
-	cleanMount := filepath.ToSlash(filepath.Clean(strings.TrimSpace(mountPath)))
+	cleanMount := cleanFolderPath(mountPath)
 	if cleanMount == "." || cleanMount == "" {
 		return fmt.Errorf("ungültiger Mount-Pfad")
 	}
