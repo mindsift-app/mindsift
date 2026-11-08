@@ -1857,10 +1857,13 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
         )}
       </div>
 
-      {/* Someone else is editing this block */}
+      {/* Someone else is editing this block; over a drawing it floats where the action bubble is (hidden
+          then), so the drawing keeps its width */}
       {lockedBy && (
         <span
-          className="shrink-0 self-start mt-0.5 h-5 inline-flex items-center gap-1 pl-0.5 pr-1.5 rounded-pill text-[10px] font-semibold bg-panel select-none max-w-[45%]"
+          className={`${
+            block.type === 'drawing' ? 'absolute right-1 sm:right-2 top-1 sm:top-1.5 z-20 shadow-xs' : 'shrink-0 self-start mt-0.5'
+          } h-5 inline-flex items-center gap-1 pl-0.5 pr-1.5 rounded-pill text-[10px] font-semibold bg-panel select-none max-w-[45%]`}
           style={{ color: lockColor!.text, border: `1px solid ${lockColor!.border}` }}
           title={t('lock.title', { name: lockedBy.name })}
         >
