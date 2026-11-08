@@ -20,6 +20,8 @@ import {
   Code,
   Download,
   KeyRound,
+  Shapes,
+  CloudOff,
 } from 'lucide-react';
 import type { HelpContent } from './types';
 
@@ -141,6 +143,10 @@ const it: HelpContent = {
                 <span>/image (carica, fotografa, incolla o collega un'immagine; solo in un punto vuoto)</span>
               </div>
               <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main col-span-2">
+                <Shapes className="w-3.5 h-3.5 text-accent shrink-0" />
+                <span>/canvas (disegno con forme, frecce, testo e mano libera)</span>
+              </div>
+              <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main col-span-2">
                 <span className="text-accent font-bold">📤</span>
                 <span>/extract (sposta il punto con tutti i sottopunti in una nota indipendente, lasciando un [[link]] al suo posto; il pulsante «Recupera nota» sul link annulla l'operazione)</span>
               </div>
@@ -162,6 +168,42 @@ const it: HelpContent = {
               <li><code className="text-accent font-mono"># </code>, <code className="text-accent font-mono">## </code> o <code className="text-accent font-mono">### </code> all'inizio della riga formatta subito il blocco come intestazione.</li>
             </ul>
           </div>
+        </div>
+      ),
+    },
+    // WORKSPACE: DRAWINGS
+    {
+      id: 'workspace-drawings',
+      category: 'workspace',
+      title: 'Disegni (/canvas)',
+      subtitle: 'Schizzi, diagrammi di flusso e mappe mentali direttamente nella nota',
+      icon: Shapes,
+      keywords: ['disegno', 'canvas', 'schizzo', 'diagramma', 'diagramma di flusso', 'mappa mentale', 'freccia', 'forme', 'mano libera', 'griglia', 'mermaid'],
+      content: (
+        <div className="space-y-2 text-muted leading-relaxed">
+          <ul className="space-y-1.5">
+            <li>
+              <strong className="text-main">Crearne uno:</strong> Scrivi <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">/canvas</kbd> (o <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">/draw</kbd>, <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">/sketch</kbd>) in un punto vuoto; l’editor si apre a schermo intero. Esc o «Fatto» salva e chiude.
+            </li>
+            <li>
+              <strong className="text-main">Strumenti:</strong> Seleziona <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">V</kbd>, sposta la vista <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">H</kbd> (o tieni premuta la barra spaziatrice), rettangolo <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">R</kbd>, ellisse <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">O</kbd>, rombo <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">D</kbd>, freccia <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">A</kbd>, mano libera <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">P</kbd>, testo <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">T</kbd>, gomma <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">E</kbd>. Con Maiusc rettangoli ed ellissi diventano quadrati e cerchi; <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">G</kbd> attiva e disattiva la griglia magnetica. Colore della linea, riempimento, spessore e tratteggio si impostano sulla forma selezionata.
+            </li>
+            <li>
+              <strong className="text-main">Testo e frecce:</strong> Doppio clic (o Invio) su una forma per scriverci dentro, doppio clic su una freccia per darle un’etichetta come «sì» o «no». Le frecce si agganciano alle forme e le seguono quando si spostano; possono essere dritte, curve o ad angolo.
+            </li>
+            <li>
+              <strong className="text-main">Modificare:</strong> <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Ctrl + Z</kbd> / <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Ctrl + Y</kbd> annullano e ripetono, <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Ctrl + D</kbd> duplica, <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Ctrl + C</kbd> / <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Ctrl + V</kbd> copiano e incollano, <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Canc</kbd> elimina, i tasti freccia spostano la selezione.
+            </li>
+            <li>
+              <strong className="text-main">Nella nota:</strong> Il disegno occupa la larghezza della nota. Fai clic dentro, poi trascinare sposta la vista e la rotellina o due dita zoomano. Trascina il bordo inferiore per cambiare l’altezza. «Salva vista» fissa inquadratura, zoom e altezza per tutti, «Automatico» rimette tutto in vista. Doppio clic o «Modifica» apre l’editor.
+            </li>
+            <li>
+              <strong className="text-main">Insieme e offline:</strong> Nelle note condivise un disegno è bloccato per gli altri mentre qualcuno ci disegna. Ciò che disegni offline viene salvato appena torna la connessione; una bozza non salvata viene proposta per il ripristino alla prossima apertura.
+            </li>
+            <li>
+              <strong className="text-main">Ovunque:</strong> La ricerca trova le parole nei disegni, copia e incolla mantiene il disegno e l’esportazione Markdown lo contiene come immagine SVG (l’importazione lo trasforma di nuovo in disegno). Gli agenti IA (MCP) leggono una descrizione del disegno e possono creare disegni da diagrammi di flusso e mappe mentali Mermaid.
+            </li>
+          </ul>
         </div>
       ),
     },
@@ -480,7 +522,7 @@ const it: HelpContent = {
     // APPEARANCE: CUSTOM THEMES
     {
       id: 'workspace-custom-themes',
-      category: 'workspace',
+      category: 'account',
       title: 'Aspetto e temi personalizzati',
       subtitle: 'Scegli un design pronto o carica il tuo tema CSS',
       icon: Sparkles,
@@ -494,6 +536,22 @@ const it: HelpContent = {
             <li>
               <strong className="text-main">Tema personalizzato:</strong> scarica o incolla il modello, adatta colori e angoli, carica o incolla come file <code className="text-accent bg-panel px-1 py-0.5 rounded font-mono">.css</code> e scegli «Salva e attiva». Il tema si applica subito ed è disponibile su tutti i tuoi dispositivi.
             </li>
+          </ul>
+        </div>
+      ),
+    },
+
+    // ACCOUNT: OFFLINE, BACKUPS & PASSWORD
+    {
+      id: 'account-offline-backups',
+      category: 'account',
+      title: 'Offline, backup e password',
+      subtitle: 'Lavorare senza Internet, ripristinare backup, reimpostare la password',
+      icon: CloudOff,
+      keywords: ['offline', 'internet', 'backup', 'ripristino', 'password', 'dimenticata', 'account'],
+      content: (
+        <div className="space-y-2 text-muted leading-relaxed">
+          <ul className="space-y-1.5">
             <li>
               <strong className="text-main">Backup del server:</strong> se l'amministrazione ha abilitato i backup automatici, trovi i backup giornalieri dei tuoi dati in <em>Impostazioni account → Esportazione e importazione</em>. Puoi scaricarli o ripristinarli, anche per singole aree come liste o attività.
             </li>
@@ -570,6 +628,7 @@ const it: HelpContent = {
     { key: '#, ##, ### all\'inizio', scope: 'Workspace outliner', desc: 'Formatta subito come intestazione H1, H2 o H3' },
     { key: '[[Titolo della nota]]', scope: 'Workspace outliner', desc: 'Incorpora un WikiLink interattivo a una nota' },
     { key: '#nometag', scope: 'Workspace / liste', desc: 'Hashtag inline per collegamenti o categorizzazione' },
+    { key: 'V, H, R, O, D, A, P, T, E · G', scope: 'Disegno', desc: 'Scegli lo strumento (seleziona, sposta, rettangolo, ellisse, rombo, freccia, mano libera, testo, gomma) · griglia sì/no' },
     { key: 'H o ←', scope: 'Mazzo di Triage', desc: 'Scarta il pensiero (nel cestino)' },
     { key: 'L o →', scope: 'Mazzo di Triage', desc: 'Trasforma subito il pensiero in attività' },
     { key: 'T', scope: 'Mazzo di Triage', desc: 'Crea attività con data di scadenza' },

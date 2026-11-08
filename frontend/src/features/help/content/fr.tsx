@@ -20,6 +20,8 @@ import {
   Code,
   Download,
   KeyRound,
+  Shapes,
+  CloudOff,
 } from 'lucide-react';
 import type { HelpContent } from './types';
 
@@ -147,6 +149,10 @@ const fr: HelpContent = {
                 <span>/image (téléverser, photographier, coller ou lier une image ; uniquement dans une puce vide)</span>
               </div>
               <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main col-span-2">
+                <Shapes className="w-3.5 h-3.5 text-accent shrink-0" />
+                <span>/canvas (dessin avec formes, flèches, texte et main levée)</span>
+              </div>
+              <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main col-span-2">
                 <span className="text-accent font-bold">📤</span>
                 <span>/extract (déplacer la puce avec toutes ses sous-puces vers sa propre note, laissant un [[lien]] à sa place ; le bouton « Rappeler la note » sur le lien annule cela)</span>
               </div>
@@ -168,6 +174,42 @@ const fr: HelpContent = {
               <li><code className="text-accent font-mono"># </code>, <code className="text-accent font-mono">## </code> ou <code className="text-accent font-mono">### </code> au début d'une ligne formate immédiatement le bloc en titre.</li>
             </ul>
           </div>
+        </div>
+      ),
+    },
+    // WORKSPACE: DRAWINGS
+    {
+      id: 'workspace-drawings',
+      category: 'workspace',
+      title: 'Dessins (/canvas)',
+      subtitle: 'Croquis, organigrammes et cartes mentales directement dans la note',
+      icon: Shapes,
+      keywords: ['dessin', 'canvas', 'croquis', 'diagramme', 'organigramme', 'carte mentale', 'flèche', 'formes', 'main levée', 'grille', 'mermaid'],
+      content: (
+        <div className="space-y-2 text-muted leading-relaxed">
+          <ul className="space-y-1.5">
+            <li>
+              <strong className="text-main">En créer un :</strong> Tape <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">/canvas</kbd> (ou <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">/draw</kbd>, <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">/sketch</kbd>) dans une puce vide ; l’éditeur s’ouvre en plein écran. Échap ou « Terminé » enregistre et ferme.
+            </li>
+            <li>
+              <strong className="text-main">Outils :</strong> Sélection <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">V</kbd>, déplacer la vue <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">H</kbd> (ou maintenir la barre d’espace), rectangle <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">R</kbd>, ellipse <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">O</kbd>, losange <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">D</kbd>, flèche <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">A</kbd>, main levée <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">P</kbd>, texte <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">T</kbd>, gomme <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">E</kbd>. Avec Maj, rectangles et ellipses deviennent carrés et cercles ; <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">G</kbd> active ou désactive la grille magnétique. Couleur du trait, remplissage, épaisseur et pointillés se règlent sur la forme sélectionnée.
+            </li>
+            <li>
+              <strong className="text-main">Texte et flèches :</strong> Double-clic (ou Entrée) sur une forme pour y écrire, double-clic sur une flèche pour lui donner une étiquette comme « oui » ou « non ». Les flèches s’accrochent aux formes et les suivent quand elles bougent ; elles sont droites, courbes ou à angles droits.
+            </li>
+            <li>
+              <strong className="text-main">Modifier :</strong> <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Ctrl + Z</kbd> / <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Ctrl + Y</kbd> annulent et rétablissent, <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Ctrl + D</kbd> duplique, <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Ctrl + C</kbd> / <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Ctrl + V</kbd> copient et collent, <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Suppr</kbd> supprime, les flèches du clavier déplacent la sélection.
+            </li>
+            <li>
+              <strong className="text-main">Dans la note :</strong> Le dessin occupe la largeur de la note. Clique dedans, puis faire glisser déplace la vue et la molette ou deux doigts zooment. Tire le bord inférieur pour changer la hauteur. « Enregistrer la vue » fixe cadrage, zoom et hauteur pour tout le monde, « Automatique » remet tout dans le cadre. Double-clic ou « Modifier » ouvre l’éditeur.
+            </li>
+            <li>
+              <strong className="text-main">À plusieurs et hors ligne :</strong> Dans les notes partagées, un dessin est verrouillé pour les autres tant que quelqu’un dessine dedans. Ce que tu dessines hors ligne est enregistré dès le retour de la connexion ; un brouillon non enregistré est proposé à la restauration à la prochaine ouverture.
+            </li>
+            <li>
+              <strong className="text-main">Partout :</strong> La recherche trouve les mots des dessins, copier-coller conserve le dessin et l’export Markdown le contient en image SVG (l’import en refait un dessin). Les agents IA (MCP) lisent une description du dessin et peuvent eux-mêmes créer des dessins à partir d’organigrammes et de cartes mentales Mermaid.
+            </li>
+          </ul>
         </div>
       ),
     },
@@ -475,7 +517,7 @@ const fr: HelpContent = {
     // APPEARANCE: CUSTOM THEMES
     {
       id: 'workspace-custom-themes',
-      category: 'workspace',
+      category: 'account',
       title: 'Apparence & thèmes personnalisés',
       subtitle: 'Choisir un design prêt à l\'emploi ou téléverser son propre thème CSS',
       icon: Sparkles,
@@ -489,6 +531,22 @@ const fr: HelpContent = {
             <li>
               <strong className="text-main">Thème personnalisé :</strong> télécharge ou colle le modèle, ajuste les couleurs et les arrondis, téléverse-le ou colle-le sous forme de fichier <code className="text-accent bg-panel px-1 py-0.5 rounded font-mono">.css</code> et choisis « Enregistrer &amp; activer ». Le thème s'applique immédiatement et est disponible sur tous tes appareils.
             </li>
+          </ul>
+        </div>
+      ),
+    },
+
+    // ACCOUNT: OFFLINE, BACKUPS & PASSWORD
+    {
+      id: 'account-offline-backups',
+      category: 'account',
+      title: 'Hors ligne, sauvegardes et mot de passe',
+      subtitle: 'Continuer sans Internet, restaurer des sauvegardes, réinitialiser le mot de passe',
+      icon: CloudOff,
+      keywords: ['hors ligne', 'offline', 'internet', 'sauvegarde', 'restaurer', 'mot de passe', 'oublié', 'compte'],
+      content: (
+        <div className="space-y-2 text-muted leading-relaxed">
+          <ul className="space-y-1.5">
             <li>
               <strong className="text-main">Sauvegardes du serveur :</strong> si l'administration a activé les sauvegardes automatiques, tu trouveras les sauvegardes quotidiennes de tes données sous <em>Paramètres du compte → Export &amp; import</em>. Tu peux les télécharger ou les restaurer, y compris pour des domaines individuels comme les listes ou les tâches.
             </li>
@@ -565,6 +623,7 @@ const fr: HelpContent = {
     { key: '#, ##, ### au début', scope: 'Outliner Workspace', desc: 'Transformer immédiatement en titre H1, H2 ou H3' },
     { key: '[[Titre de la note]]', scope: 'Outliner Workspace', desc: 'Intégrer un WikiLink interactif vers une note' },
     { key: '#nomdutag', scope: 'Workspace / listes', desc: 'Hashtag en ligne pour lier ou catégoriser' },
+    { key: 'V, H, R, O, D, A, P, T, E · G', scope: 'Dessin', desc: 'Choisir un outil (sélection, déplacer, rectangle, ellipse, losange, flèche, main levée, texte, gomme) · grille oui/non' },
     { key: 'H ou ←', scope: 'Deck de triage', desc: 'Jeter la pensée (vers la corbeille)' },
     { key: 'L ou →', scope: 'Deck de triage', desc: 'Transformer la pensée en tâche immédiatement' },
     { key: 'T', scope: 'Deck de triage', desc: 'Créer une tâche avec date d\'échéance' },

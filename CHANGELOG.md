@@ -13,6 +13,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Profile picture: after picking a picture you can move and zoom it in the round frame before it is used (drag, slider, mouse wheel or two fingers).
 - Sharing dialog: if someone shared a note, folder, list or task list with you, the dialog names them ("Shared by Anna", with their picture).
 - Notes: drawings in a bullet with `/canvas`. Rectangles, ellipses, diamonds and text, arrows that dock to shapes (straight, curved or elbowed), freehand and an optional grid, edited full screen. In the note the drawing fills the width; click into it to move and zoom, drag its lower edge to change the height, and "Save view" keeps section and height for everyone. Its buttons sit in the bullet's action bar. In shared notes the drawing is locked for others while someone draws; drawing works offline and is saved once the connection is back. Search finds the words written in drawings, copying a drawing and pasting it into a note keeps it a drawing, and the Markdown export contains drawings as SVG pictures that importing turns back into drawings. AI agents (MCP) read a drawing as a short description of its shapes, texts and arrows. The demo's homelab note has a sample network plan. Arrows can carry a label (double-click the arrow).
+- Help: a card on drawings (`/canvas`) with tools, keys, text and arrows, the view in the note, shared notes and offline, and a row for the drawing keys in the shortcut list.
 - AI agents (MCP) can draw: `add_note_bullet` with type `drawing` takes a Mermaid flowchart or mind map, including its colours, and the server lays it out (layers, few crossing lines, right-angled arrows; mind maps with a colour per branch). `update_note_bullet` replaces a drawing, and a ```` ```mermaid ```` block in `create_note` becomes a drawing too.
 
 ### Changed
@@ -21,6 +22,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Profile picture: a new picture, an emoji or removing it is saved right away; the save button is only for name, username, address and password.
 - Profile on phones: with unsaved changes the save button floats above the bottom bar and says so, instead of staying far down the page.
 - Notes: turning a bullet into its own note keeps the bullet as the new note's first bullet (its sub-bullets below it, its hashtags with it) instead of making its text the title only. The title is taken from the bullet's text, or "New note" when the bullet has no text to name it (a drawing, picture, code or table). Pulling such a note back puts the bullet in place of the link again.
+- Help: the card "Appearance & custom themes" only covers themes now; offline work, server backups and the forgotten password have a card of their own. Both are in the new category "Account & settings".
 - Notes: clicking a link to a note that does not exist (anymore) asks first instead of creating an untitled note right away: "Create" makes a note with the link's title, "Remove link" keeps the text and drops the link.
 
 ### Fixed

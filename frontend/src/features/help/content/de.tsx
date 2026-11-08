@@ -20,6 +20,8 @@ import {
   Code,
   Download,
   KeyRound,
+  Shapes,
+  CloudOff,
 } from 'lucide-react';
 import type { HelpContent } from './types';
 
@@ -187,6 +189,10 @@ const de: HelpContent = {
                 <span>/image oder /bild (Bild hochladen, fotografieren, einfügen oder per Link; nur im leeren Punkt)</span>
               </div>
               <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main col-span-2">
+                <Shapes className="w-3.5 h-3.5 text-accent shrink-0" />
+                <span>/canvas oder /zeichnung (Zeichnung mit Formen, Pfeilen, Text und Freihand)</span>
+              </div>
+              <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main col-span-2">
                 <span className="text-accent font-bold">📤</span>
                 <span>/extract oder /notiz (Punkt mit allen Unterpunkten in eine eigene Notiz auslagern, an seiner Stelle bleibt ein [[Link]]; der Knopf „Notiz zurückholen“ am Link macht das wieder rückgängig)</span>
               </div>
@@ -208,6 +214,42 @@ const de: HelpContent = {
               <li><code className="text-accent font-mono"># </code>, <code className="text-accent font-mono">## </code> oder <code className="text-accent font-mono">### </code> am Zeilenanfang formatiert den Block sofort als Überschrift.</li>
             </ul>
           </div>
+        </div>
+      ),
+    },
+    // WORKSPACE: DRAWINGS
+    {
+      id: 'workspace-drawings',
+      category: 'workspace',
+      title: 'Zeichnungen (/canvas)',
+      subtitle: 'Skizzen, Flussdiagramme und Mindmaps direkt in der Notiz',
+      icon: Shapes,
+      keywords: ['zeichnung', 'canvas', 'skizze', 'diagramm', 'flussdiagramm', 'mindmap', 'pfeil', 'formen', 'freihand', 'gitter', 'mermaid'],
+      content: (
+        <div className="space-y-2 text-muted leading-relaxed">
+          <ul className="space-y-1.5">
+            <li>
+              <strong className="text-main">Anlegen:</strong> Tippe <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">/canvas</kbd> (oder <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">/zeichnung</kbd>, <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">/skizze</kbd>) in einen leeren Punkt; der Editor öffnet sich im Vollbild. Esc oder „Fertig“ speichert und schließt.
+            </li>
+            <li>
+              <strong className="text-main">Werkzeuge:</strong> Auswählen <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">V</kbd>, Verschieben <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">H</kbd> (oder Leertaste gedrückt halten), Rechteck <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">R</kbd>, Ellipse <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">O</kbd>, Raute <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">D</kbd>, Pfeil <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">A</kbd>, Freihand <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">P</kbd>, Text <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">T</kbd>, Radierer <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">E</kbd>. Mit Umschalt werden Rechteck und Ellipse zu Quadrat und Kreis, <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">G</kbd> schaltet das Gitter mit Einrasten ein und aus. Linienfarbe, Füllung, Stärke und gestrichelt stellst du an der ausgewählten Form ein.
+            </li>
+            <li>
+              <strong className="text-main">Text und Pfeile:</strong> Doppelklick (oder Enter) auf eine Form schreibt Text hinein, Doppelklick auf einen Pfeil gibt ihm eine Beschriftung wie „ja“ oder „nein“. Pfeile docken an Formen an und wandern beim Verschieben mit; sie verlaufen gerade, gebogen oder eckig.
+            </li>
+            <li>
+              <strong className="text-main">Bearbeiten:</strong> <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Strg + Z</kbd> / <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Strg + Y</kbd> rückgängig und wiederholen, <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Strg + D</kbd> dupliziert, <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Strg + C</kbd> / <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Strg + V</kbd> kopiert und fügt ein, <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Entf</kbd> löscht, die Pfeiltasten schieben die Auswahl.
+            </li>
+            <li>
+              <strong className="text-main">In der Notiz:</strong> Die Zeichnung füllt die Breite der Notiz. Ein Klick hinein, dann verschiebt Ziehen den Ausschnitt und Mausrad oder zwei Finger zoomen. Die Unterkante ziehen ändert die Höhe. „Ansicht speichern“ hält Ausschnitt, Zoom und Höhe für alle fest, „Automatisch“ passt wieder alles ein. Doppelklick oder „Bearbeiten“ öffnet den Editor.
+            </li>
+            <li>
+              <strong className="text-main">Gemeinsam und offline:</strong> In geteilten Notizen ist eine Zeichnung für die anderen gesperrt, solange jemand darin zeichnet. Offline Gezeichnetes wird gespeichert, sobald die Verbindung zurück ist; einen ungespeicherten Entwurf bietet MindSift beim nächsten Öffnen zum Wiederherstellen an.
+            </li>
+            <li>
+              <strong className="text-main">Überall dabei:</strong> Die Suche findet die Wörter in Zeichnungen, Kopieren und Einfügen behält die Zeichnung, der Markdown-Export enthält sie als SVG-Bild (der Import macht wieder eine Zeichnung daraus). KI-Agenten (MCP) lesen eine Beschreibung der Zeichnung und können aus Mermaid-Flussdiagrammen und Mindmaps selbst Zeichnungen anlegen.
+            </li>
+          </ul>
         </div>
       ),
     },
@@ -644,7 +686,7 @@ const de: HelpContent = {
     // APPEARANCE: CUSTOM THEMES
     {
       id: 'workspace-custom-themes',
-      category: 'workspace',
+      category: 'account',
       title: 'Darstellung & eigene Themes',
       subtitle: 'Fertige Designs wählen oder ein eigenes CSS-Theme hochladen',
       icon: Sparkles,
@@ -658,6 +700,22 @@ const de: HelpContent = {
             <li>
               <strong className="text-main">Eigenes Theme:</strong> Vorlage herunterladen oder einfügen, Farben und Rundungen anpassen, als <code className="text-accent bg-panel px-1 py-0.5 rounded font-mono">.css</code>-Datei hochladen oder einfügen und „Speichern &amp; aktivieren“. Das Theme greift sofort und steht dir auf allen Geräten zur Verfügung.
             </li>
+          </ul>
+        </div>
+      ),
+    },
+
+    // ACCOUNT: OFFLINE, BACKUPS & PASSWORD
+    {
+      id: 'account-offline-backups',
+      category: 'account',
+      title: 'Offline, Backups & Passwort',
+      subtitle: 'Ohne Internet weiterarbeiten, Sicherungen einspielen, Passwort zurücksetzen',
+      icon: CloudOff,
+      keywords: ['offline', 'internet', 'backup', 'sicherung', 'wiederherstellen', 'passwort', 'vergessen', 'konto'],
+      content: (
+        <div className="space-y-2 text-muted leading-relaxed">
+          <ul className="space-y-1.5">
             <li>
               <strong className="text-main">Server-Backups:</strong> Hat die Administration automatische Backups eingeschaltet, findest du unter <em>Kontoeinstellungen → Export &amp; Import</em> die täglichen Sicherungen deiner Daten. Du kannst sie herunterladen oder wieder einspielen, auch nur für einzelne Bereiche wie Listen oder Aufgaben.
             </li>
@@ -748,6 +806,7 @@ const de: HelpContent = {
     { key: '#, ##, ### am Anfang', scope: 'Workspace Outliner', desc: 'Sofort in H1, H2 oder H3 Überschrift wandeln' },
     { key: '[[Notiztitel]]', scope: 'Workspace Outliner', desc: 'Interaktiven WikiLink zu Notiz einbetten' },
     { key: '#Tagname', scope: 'Workspace / Listen', desc: 'Inline-Hashtag für globale Vernetzung oder Kategorisierung' },
+    { key: 'V, H, R, O, D, A, P, T, E · G', scope: 'Zeichnung', desc: 'Werkzeug wählen (Auswahl, Verschieben, Rechteck, Ellipse, Raute, Pfeil, Freihand, Text, Radierer) · Gitter ein/aus' },
     { key: 'H oder ←', scope: 'Triage-Deck', desc: 'Gedanken verwerfen (in den Papierkorb)' },
     { key: 'L oder →', scope: 'Triage-Deck', desc: 'Gedanken sofort zur Aufgabe machen' },
     { key: 'T', scope: 'Triage-Deck', desc: 'Aufgabe mit Fälligkeitsdatum / Termin anlegen' },
