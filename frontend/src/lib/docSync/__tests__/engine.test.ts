@@ -707,6 +707,34 @@ describe('how changes of others arrive', () => {
     }
   });
 
+  it('push: gives a left bullet up right when its 20 s of grace are over, not only with the next renewal', async () => {
+    vi.useFakeTimers();
+    try {
+      const server = new FakeServer();
+      const net = new FakeNet(server);
+      const push = new FakePush();
+      push.kind = 'ws';
+      const engine = await live(push, net);
+      const holds: { at: number; hold: string[] }[] = [];
+      const orig = net.sync.bind(net);
+      net.sync = async (id: string, body: SyncRequest, o?: { keepalive?: boolean }) => {
+        holds.push({ at: Date.now(), hold: body.leases?.hold || [] });
+        return orig(id, body, o);
+      };
+      const start = Date.now();
+      engine.focusBlock('b1');
+      await vi.advanceTimersByTimeAsync(1_000);
+      engine.focusBlock(null);
+      await vi.advanceTimersByTimeAsync(20_500);
+      const released = holds.find((h) => h.at - start > 1_000 && h.hold.length === 0);
+      expect(released).toBeDefined();
+      expect(released!.at - start).toBeLessThan(21_500);
+      engine.stop();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('switches between push and long polling when the connection changes', async () => {
     vi.useFakeTimers();
     try {

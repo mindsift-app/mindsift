@@ -715,8 +715,16 @@ export class DocSyncEngine {
     if (!this.collaborative()) return POLL_SOLO_MS;
     if (this.channel() === 'interval') return POLL_COLLAB_MS;
     // A lock of someone else ends without a notice when it runs out (their browser closed): look again soon
-    if (this.lockedByOthers.length > 0) return POLL_COLLAB_MS;
-    return this.canEdit && this.holds().length > 0 ? HEARTBEAT_MS : SAFETY_POLL_MS;
+    const others = this.lockedByOthers.length > 0 ? POLL_COLLAB_MS : SAFETY_POLL_MS;
+    if (!this.canEdit || this.holds().length === 0) return others;
+    // Holding bullets: renew them, and give a left one up as soon as its grace time is over (the others
+    // see it free right then, not only with the next renewal)
+    const t = this.now();
+    let next = Math.min(HEARTBEAT_MS, others);
+    this.activity.forEach((at, id) => {
+      if (id !== this.focused) next = Math.min(next, Math.max(0, at + LEASE_GRACE_MS - t) + 50);
+    });
+    return next;
   }
 
   private onPoke(): void {
