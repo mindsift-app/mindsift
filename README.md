@@ -35,7 +35,7 @@ Self-hosted, one container, one SQLite file, your server.
 
 ## 🧪 Tested before every release
 
-Every build runs through **over 300 frontend tests** and **over 250 backend tests** before an image is published, and a build with a single failing test never ships. On top of that, **five browser test runs with over 80 checks** cover what is hard to unit-test: two people editing the same note at once, offline and back online, sharing, locks and conflict copies, copy & paste as Markdown in Chromium and Firefox, and connections behind proxies that block WebSockets. They run before every change to these areas ([e2e/](e2e/README.md)). And every tagged release (`:stable`) is **scanned for known vulnerabilities with Trivy** before it is published ([security scan](#%EF%B8%8F-security-scan)).
+Every release runs through **over 350 frontend tests** and **almost 300 backend tests** before an image is published, and a release with a single failing test never ships. On top of that, **seven browser test runs with over 120 checks** cover what is hard to unit-test: two people editing the same note at once, offline and back online, sharing, locks and conflict copies, copy & paste as Markdown in Chromium and Firefox, and connections behind proxies that block WebSockets. They run before every change to these areas ([e2e/](e2e/README.md)). And every tagged release (`:stable`) is **scanned for known vulnerabilities with Trivy** before it is published ([security scan](#%EF%B8%8F-security-scan)).
 
 All of this to keep your data safe and make sure everything runs smoothly for you.
 
@@ -72,7 +72,7 @@ List and board view with your own columns, priorities, due dates, subtasks, recu
 </p>
 
 ### 📝 Outliner notes, together, live
-Every thought is a bullet: indent, collapse, zoom in, drag whole branches. Wiki links (even to single bullets), hashtags, slash commands, code blocks, images, voice notes, live dictation, link previews and hidden values (`/secret` for an IP or a token: stored encrypted, shown only on a tap, never to API keys or AI agents). Several people write in the same note at the same time, without overwriting each other, and it keeps working offline and behind strict proxies. Share a note by public link for a quick look from outside: read only, optionally with a password, always expiring and out of search engines.
+Every thought is a bullet: indent, collapse, zoom in, drag whole branches. Wiki links (even to single bullets, and they survive renaming or moving a note), hashtags, slash commands, code blocks, images, voice notes, live dictation, link previews and hidden values (`/secret` for an IP or a token: stored encrypted, shown only on a tap, never to API keys or AI agents). Several people write in the same note at the same time, without overwriting each other, and it keeps working offline and behind strict proxies. Share a note by public link for a quick look from outside: read only, optionally with a password, always expiring and out of search engines.
 
 <p align="center">
   <img src="screenshots/workspace_desktop.webp" alt="MindSift workspace: two people editing the same note" width="90%" />
@@ -85,7 +85,7 @@ Drawings right in a note (`/canvas`): shapes, arrows that dock to them, text and
 </p>
 
 ### 📅 Journal
-One note per day, all days below each other, with a calendar to jump around.
+One note per day, all days below each other, with a calendar to jump around (a dot marks the days you wrote on) and a "Today" button. Every day is an ordinary note: share it, search it, link to it, write in focus mode. Days you leave empty disappear again by themselves. Don't need it? Switch it off per device.
 
 <p align="center">
   <img src="screenshots/journal_desktop.webp" alt="MindSift journal with calendar" width="90%" />
