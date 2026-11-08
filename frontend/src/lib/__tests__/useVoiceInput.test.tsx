@@ -199,6 +199,31 @@ describe('useVoiceInput', () => {
     expect(result.current.state).toBe('idle');
   });
 
+  it('server mode: every microphone sends the recording in pieces by default, the text arrives while speaking', async () => {
+    getAuthStatus.mockResolvedValue({ voice: { mode: 'server', maxSeconds: 600 } });
+    transcribe.mockResolvedValueOnce('Erster Teil').mockResolvedValueOnce('zweiter Teil');
+    const onText = vi.fn();
+    const { result } = renderHook(() => useVoiceInput({ onText }));
+    await waitFor(() => expect(result.current.mode).toBe('server'));
+
+    vi.useFakeTimers();
+    await act(async () => {
+      await result.current.start();
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(8000);
+    });
+    expect(transcribe).toHaveBeenCalledTimes(1);
+    expect(onText).toHaveBeenLastCalledWith('Erster Teil', false);
+    expect(result.current.state).toBe('listening');
+
+    await act(async () => {
+      await result.current.stop();
+    });
+    vi.useRealTimers();
+    await waitFor(() => expect(onText).toHaveBeenLastCalledWith('Erster Teil zweiter Teil', true));
+  });
+
   it('server mode with live=true: cuts segments onto new MediaRecorders on the same stream, orders out-of-order responses by chunk index, and releases stream at the end', async () => {
     getAuthStatus.mockResolvedValue({ voice: { mode: 'server', maxSeconds: 600 } });
 

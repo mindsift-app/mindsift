@@ -146,6 +146,7 @@ Component for connection status: [LivePill.tsx](../frontend/src/components/LiveP
 Component: [VoiceInputButton.tsx](../frontend/src/components/VoiceInputButton.tsx) (uses `useVoiceInput` like Quick Dump)
 
 - Circular microphone button directly inside the input line on the right; dictated text is appended to any existing text in the field. 36 px on mobile, 28 px on desktop.
+- Multi-line fields (a task's title and notes): the button floats in the field's top right corner (`absolute top-1 right-1`, the field gets `pr-11 sm:pr-9`). It is only there while the field is open, so the text can be watched arriving.
 - During recording: `MicOff` in accent color, plus live waveform visualization when connected to a dedicated Whisper server, followed by "Recognizing…" with a spinner.
 - Hidden when speech-to-text is disabled (`STT_DISABLED`, or `STT_ALLOW_BROWSER=false` without a Whisper server) or when unsupported by the browser (e.g., Firefox without a custom Whisper server). Errors are briefly indicated via input placeholder text.
 - Used in: Quick Dump (custom implementation), Add Task (input row on PC, "Create new task" sheet on mobile), Add List Item.

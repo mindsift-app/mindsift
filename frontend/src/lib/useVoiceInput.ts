@@ -13,7 +13,8 @@ export interface VoiceInputOptions {
   continuous?: boolean;
   /** Live dictation mode (/diktat): auto-restart browser speech recognition on pause, and chunk server recordings every ~8s or ~0.8s of silence. */
   live?: boolean;
-  /** Server mode only: send the recording in chunks like live mode, so the text arrives while speaking (Quick Dump). */
+  /** Server mode only: send the recording in chunks like live mode (every ~8 s or at a short pause), so the
+   *  text arrives while speaking and a long dictation is not transcribed all at once at the end. Default on. */
   chunked?: boolean;
 }
 
@@ -30,7 +31,7 @@ const BROWSER_SILENCE_STOP_MS = 5000;
  * is made depends on the server setting, see lib/voice.ts. mode is null until known, "off" or
  * "unsupported" means: do not show a microphone.
  */
-export function useVoiceInput({ onText, onError, continuous = false, live = false, chunked = false }: VoiceInputOptions) {
+export function useVoiceInput({ onText, onError, continuous = false, live = false, chunked = true }: VoiceInputOptions) {
   const chunkServer = live || chunked;
   const [mode, setMode] = useState<EffectiveVoiceMode | null>(null);
   const [state, setState] = useState<VoiceState>('idle');

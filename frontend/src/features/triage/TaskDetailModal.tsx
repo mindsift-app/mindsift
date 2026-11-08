@@ -95,6 +95,7 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
   const { t } = useTranslation('tasks');
   const [titleDraft, setTitleDraft] = useState(task.content);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const titleRef = useRef<HTMLTextAreaElement>(null);
 
   const [isEditingNotes, setIsEditingNotes] = useState(false);
   const [notesDraft, setNotesDraft] = useState(task.notes || '');
@@ -410,25 +411,29 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
           <div className="lg:col-start-1 lg:row-start-1">
             {isEditingTitle ? (
               <div className="space-y-2">
-                <textarea
-                  value={titleDraft}
-                  onChange={(e) => setTitleDraft(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      handleTitleSubmit();
-                    } else if (e.key === 'Escape') {
-                      setIsEditingTitle(false);
-                      setTitleDraft(task.content);
-                    }
-                  }}
-                  autoFocus
-                  onFocus={(e) => {
-                    if (editTitleOnOpen) e.currentTarget.select();
-                  }}
-                  rows={2}
-                  className="w-full text-base font-semibold input-field p-2.5 resize-none leading-snug"
-                />
+                <div className="relative">
+                  <textarea
+                    ref={titleRef}
+                    value={titleDraft}
+                    onChange={(e) => setTitleDraft(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        handleTitleSubmit();
+                      } else if (e.key === 'Escape') {
+                        setIsEditingTitle(false);
+                        setTitleDraft(task.content);
+                      }
+                    }}
+                    autoFocus
+                    onFocus={(e) => {
+                      if (editTitleOnOpen) e.currentTarget.select();
+                    }}
+                    rows={2}
+                    className="w-full text-base font-semibold input-field p-2.5 pr-11 sm:pr-9 resize-none leading-snug"
+                  />
+                  <VoiceInputButton value={titleDraft} onChange={setTitleDraft} className="absolute top-1 right-1" />
+                </div>
                 <div className="flex justify-end gap-1.5">
                   <button
                     type="button"
@@ -923,35 +928,36 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
                     {t('common:edit')}
                   </button>
                 )}
-                {/* Dictate into the notes: opens the field and appends; saved with "Notiz speichern" */}
-                {!readOnly && (
-                  <VoiceInputButton
-                    value={isEditingNotes ? notesDraft : task.notes || ''}
-                    onChange={(text) => {
-                      setNotesDraft(text);
-                      setIsEditingNotes(true);
-                    }}
-                    focusRef={notesRef}
-                  />
-                )}
               </div>
             </div>
 
             {isEditingNotes ? (
               <div className="space-y-2">
-                <textarea
-                  value={notesDraft}
-                  onChange={(e) => setNotesDraft(e.target.value)}
-                  placeholder={t('detail.notesPlaceholder')}
-                  rows={6}
-                  autoFocus
-                  ref={(el) => {
-                    notesRef.current = el;
-                    growNotes(el);
-                  }}
-                  onInput={(e) => growNotes(e.currentTarget)}
-                  className="w-full input-field p-2.5 text-xs font-mono leading-relaxed resize-none min-h-[100px] lg:min-h-[260px] overflow-hidden"
-                />
+                {/* Dictating appends to the notes, inside the field like in Quick Dump; saved with "Notiz speichern" */}
+                <div className="relative">
+                  <textarea
+                    value={notesDraft}
+                    onChange={(e) => setNotesDraft(e.target.value)}
+                    placeholder={t('detail.notesPlaceholder')}
+                    rows={6}
+                    autoFocus
+                    ref={(el) => {
+                      notesRef.current = el;
+                      growNotes(el);
+                    }}
+                    onInput={(e) => growNotes(e.currentTarget)}
+                    className="w-full input-field p-2.5 pr-11 sm:pr-9 text-xs font-mono leading-relaxed resize-none min-h-[100px] lg:min-h-[260px] overflow-hidden"
+                  />
+                  <VoiceInputButton
+                    value={notesDraft}
+                    onChange={(text) => {
+                      setNotesDraft(text);
+                      requestAnimationFrame(() => growNotes(notesRef.current));
+                    }}
+                    focusRef={notesRef}
+                    className="absolute top-1 right-1"
+                  />
+                </div>
                 <div className="flex justify-end gap-1.5">
                   <button
                     type="button"

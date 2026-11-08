@@ -86,7 +86,6 @@ export const HoldToRecordFab: React.FC<HoldToRecordFabProps> = ({ onTap, onTrans
   // Own Whisper server (text in chunks while speaking) or the browser's recognition (text while speaking)
   const voice = useVoiceInput({
     continuous: true,
-    chunked: true,
     onText: (text, final) => {
       transcriptRef.current = text;
       if (!final) {

@@ -18,6 +18,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - AI agents (MCP) can draw: `add_note_bullet` with type `drawing` takes a Mermaid flowchart or mind map, including its colours, and the server lays it out (layers, few crossing lines, right-angled arrows; mind maps with a colour per branch). `update_note_bullet` replaces a drawing, and a ```` ```mermaid ```` block in `create_note` becomes a drawing too.
 
 ### Changed
+- Voice input with your own Whisper server: every microphone sends the recording in pieces while you speak (every ~8 s or at a short pause), like Quick Dump already did. Dictating a minute into a task's notes no longer means waiting minutes for the whole text at the end; it arrives while you speak.
+- Task details: the microphone sits in the top right corner of the title and notes fields, like in Quick Dump, and is there while the field is open. The microphone above the notes, which could be started with the field closed and then seemed to load forever, is gone.
 - Journal: "Today" is back, at the right of the "Journal" title above the calendar in the sidebar.
 - Journal: the lines between the days run across the text and fade out to both sides, instead of running into the frame (in focus mode across the whole screen).
 - Notes: undo and redo survive switching to another note or view and back (for the last 20 notes, while the app is open; a reload still clears them). Undoing an extract, a move or a pulled-back note works after switching, too.
