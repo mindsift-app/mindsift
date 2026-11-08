@@ -11,7 +11,7 @@ interface ConfirmPopoverProps {
   danger?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
-  // A second way out next to the main one (e.g. "Link entfernen" next to "Anlegen")
+  // A second way out next to the main one (e.g. "Link entfernen" next to "Anlegen"); replaces "Abbrechen"
   altLabel?: string;
   onAlt?: () => void;
 }
@@ -64,9 +64,12 @@ export const ConfirmPopover: React.FC<ConfirmPopoverProps> = ({ x, y, message, c
     >
       <div className="leading-snug">{message}</div>
       <div className="flex flex-wrap justify-end gap-2">
-        <button type="button" onClick={onCancel} className="btn-action h-11 sm:h-8 px-3 text-xs">
-          {t('common:cancel')}
-        </button>
+        {/* With a second way out, two buttons are enough: Escape or a click outside cancels */}
+        {altLabel && onAlt ? null : (
+          <button type="button" onClick={onCancel} className="btn-action h-11 sm:h-8 px-3 text-xs">
+            {t('common:cancel')}
+          </button>
+        )}
         {altLabel && onAlt && (
           <button type="button" onClick={onAlt} className="btn-action h-11 sm:h-8 px-3 text-xs">
             {altLabel}
