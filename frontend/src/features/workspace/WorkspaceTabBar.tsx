@@ -1,8 +1,9 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { AlertTriangle, Check, Clock, FileText, Hash, Loader2, PanelLeftClose, PanelLeftOpen, Users } from 'lucide-react';
+import { AlertTriangle, Check, Clock, FileText, Hash, Loader2, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { PresenceAvatars } from './PresenceAvatars';
 import { CountBadge } from '../../components/CountBadge';
+import { SharedPill } from '../../components/SharedPill';
 import { Document, TagSummary, User } from '../../lib/types';
 import { DocHeaderStatus, DocSaveStatus } from './DocumentEditor';
 import { WorkspaceSubView } from './workspaceTypes';
@@ -28,7 +29,7 @@ interface WorkspaceTabBarProps {
 }
 
 // Desktop row above the workspace: sidebar toggle and the views (notes, to-dos, hashtags); for the open
-// note people online, live connection, sharing and save status, then its actions (rendered into the
+// note (in the journal: the day marked in the calendar) people online, live connection, sharing and save status, then its actions (rendered into the
 // element set via setDocActionsTarget)
 export function WorkspaceTabBar({
   subView,
@@ -140,7 +141,7 @@ export function WorkspaceTabBar({
 
       {/* Right Header Section: Live/Share Status, Avatars & Save Status (on phones it sits compactly in the note's own header) */}
       <div className="hidden sm:flex items-center gap-2">
-        {subView === 'editor' && selectedDocId ? (
+        {(subView === 'editor' || subView === 'journal') && selectedDocId ? (
           <>
             {/* Fixed order: people first (they come and go without moving the buttons), status, actions */}
             {docHeaderStatus && (
@@ -191,26 +192,14 @@ export function WorkspaceTabBar({
                   sharesCount > 0 || !isOwner || inSharedFolder;
                 const ownerDisplayName = selectedDocObj.ownerName || t('tasks:tabs.owner');
                 if (!isShared) return null;
-                return isOwner ? (
-                  <button
-                    type="button"
+                return (
+                  <SharedPill
+                    isOwner={isOwner}
+                    count={sharesCount}
+                    ownerName={ownerDisplayName}
                     onClick={() => openDocShareModal(selectedDocObj)}
-                    className="inline-flex items-center gap-1 h-7 px-2 rounded-btn text-[11px] bg-panel font-semibold text-accent hover:bg-panel-elevated transition-colors cursor-pointer"
-                    title={t('tabbar.shareMenu')}
-                  >
-                    <Users className="w-2.5 h-2.5" />
-                    <span>{sharesCount > 0 ? t('tasks:tabs.sharedCount', { count: sharesCount }) : t('tabbar.shared')}</span>
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => openDocShareModal(selectedDocObj)}
-                    className="inline-flex items-center gap-1 h-7 px-2 rounded-btn text-[11px] bg-panel font-medium text-muted hover:bg-panel-elevated hover:text-main transition-colors cursor-pointer"
-                    title={t('tabbar.shareOpen')}
-                  >
-                    <Users className="w-2.5 h-2.5" />
-                    <span>{t('tasks:tabs.sharedBy', { name: ownerDisplayName })}</span>
-                  </button>
+                    title={isOwner ? t('tabbar.shareMenu') : t('tabbar.shareOpen')}
+                  />
                 );
               })()}
 
@@ -269,7 +258,7 @@ export function WorkspaceTabBar({
           </>
         ) : null}
         {/* The open note renders undo/redo, share and its menu here on large screens */}
-        {subView === 'editor' && selectedDocId && (
+        {(subView === 'editor' || subView === 'journal') && selectedDocId && (
           <span className="hidden lg:block w-px h-5 bg-border mx-0.5" aria-hidden />
         )}
         <div ref={setDocActionsTarget} className="hidden lg:flex items-center" />

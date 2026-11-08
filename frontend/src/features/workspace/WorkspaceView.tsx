@@ -577,7 +577,11 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
     writeWorkspaceSession({ journal: subView === 'journal', docId: selectedDocId });
   }, [subView, selectedDocId]);
 
-  const canFocus = subView === 'editor' && Boolean(selectedDocId);
+  // The journal's day marked in the calendar stands for the open note in the tab bar and focus mode
+  const journalDocId = subView === 'journal' ? journalDays.find((d) => d.date === journalActive)?.docId || null : null;
+  const journalDocObj = journalDocId ? docs.find((d) => d.id === journalDocId) || null : null;
+  const barDocId = subView === 'journal' ? journalDocId : selectedDocId;
+  const canFocus = (subView === 'editor' || (subView === 'journal' && journalEnabled)) && Boolean(barDocId);
   const {
     focusMode,
     setFocusMode,
@@ -590,7 +594,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
     zenPinSide,
     setZenPinSide,
     zenSideOpen,
-  } = useFocusMode(canFocus, selectedDocId);
+  } = useFocusMode(canFocus, barDocId);
 
 
   const allFolderPaths = useMemo(() => collectFolderPaths(folders, docs, sharedFolders), [docs, folders, sharedFolders]);
@@ -673,6 +677,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
     () => docs.find((d) => d.id === selectedDocId) || null,
     [docs, selectedDocId]
   );
+  const barDocObj = subView === 'journal' ? journalDocObj : selectedDocObj;
 
   // Aggregated metadata map for every tag (documents where it occurs, open todos count)
   const tagsMetadataMap = useMemo(() => tagsMetadata(tagsSummary, docs), [tagsSummary, docs]);
@@ -692,14 +697,14 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
         toggleSidebar={toggleSidebar}
         totalOpenTodos={totalOpenTodos}
         tagsSummary={tagsSummary}
-        selectedDocId={selectedDocId}
-        selectedDocObj={selectedDocObj}
+        selectedDocId={barDocId}
+        selectedDocObj={barDocObj}
         currentUser={currentUser}
         docSaveStatus={docSaveStatus}
         docSaveError={docSaveError}
         docHeaderStatus={docHeaderStatus}
         openDocShareModal={openDocShareModal}
-        inSharedFolder={isFolderShared(sharedFolders.find((f) => f.id === selectedDocObj?.sharedFolderId))}
+        inSharedFolder={isFolderShared(sharedFolders.find((f) => f.id === barDocObj?.sharedFolderId))}
         setDocActionsTarget={setDocActionsTarget}
       />
 
@@ -716,7 +721,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
       >
         {focusMode && (
           <FocusModeChrome
-            selectedDocObj={selectedDocObj}
+            selectedDocObj={barDocObj}
             zenSidebar={zenSidebar}
             setZenSidebar={setZenSidebar}
             zenSideOpen={zenSideOpen}
@@ -889,6 +894,15 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
             onOpenTask={onOpenTask}
             onBackMobile={() => setMobileShowDetail(false)}
             onDaySaved={reloadJournalSoon}
+            actionsTarget={focusMode ? zenActionsTarget : docActionsTarget}
+            focusMode={focusMode}
+            focusBarPinned={zenPinTop}
+            onToggleFocusMode={() => setFocusMode((v) => !v)}
+            onActiveSaveStatusChange={(status, err) => {
+              setDocSaveStatus(status);
+              setDocSaveError(err || null);
+            }}
+            onActiveHeaderStatusChange={setDocHeaderStatus}
           />
         ) : subView === 'trash' ? (
           <TrashView

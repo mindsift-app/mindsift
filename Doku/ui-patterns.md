@@ -139,6 +139,7 @@ Search and filter fields get `NO_AUTOFILL` (`lib/noAutofill.ts`). Passwords that
 Component for connection status: [LivePill.tsx](../frontend/src/components/LivePill.tsx) (notes display their own sync transport in the same visual style).
 
 - On the right side of headers in Notes, Tasks, and Lists, the same layout order applies: status indicators on the left (Live pill, "Shared"), followed by a vertical divider (`w-px h-5 bg-border`), and action buttons on the right (Share, View, Menu). On mobile, the layout is identical, but the pill displays only "Live".
+- The "shared" status in these headers is [SharedPill.tsx](../frontend/src/components/SharedPill.tsx): flat (`bg-panel`, 28 px high), "Shared (3)" in the accent colour for own items, "Shared by Anna" muted for someone else's; a click opens the sharing dialog. The journal shows the same header for the day marked in the calendar.
 
 ## Microphone in Input Fields
 

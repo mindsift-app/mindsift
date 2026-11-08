@@ -3,6 +3,7 @@ import { Trans, useTranslation } from 'react-i18next';
 import { Columns, LayoutList, Plus, Trash2, Users } from 'lucide-react';
 import { AvatarStack } from '../../components/AvatarStack';
 import { CountBadge } from '../../components/CountBadge';
+import { SharedPill } from '../../components/SharedPill';
 import { ConfirmPopover } from '../../components/ConfirmPopover';
 import { LivePill } from '../../components/LivePill';
 import { TaskList, TaskListMember, Thought, User } from '../../lib/types';
@@ -176,27 +177,13 @@ export function TaskListTabs({
           return (
             <div className="flex items-center gap-1.5">
               {isShared && (
-                isOwner ? (
-                  <button
-                    type="button"
-                    onClick={() => handleOpenShareModal(currentSelectedList)}
-                    className="px-2 py-0.5 rounded text-[10px] font-semibold bg-accent/15 text-accent border border-accent/30 flex items-center gap-1 hover:bg-accent/25 hover:border-accent/50 transition-colors cursor-pointer"
-                    title={t('tabs.shareMenu')}
-                  >
-                    <Users className="w-2.5 h-2.5" />
-                    <span>{t('tabs.sharedCount', { count: sharesCount > 0 ? sharesCount : currentSelectedList.members?.length || 1 })}</span>
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => handleOpenShareModal(currentSelectedList)}
-                    className="px-2 py-0.5 rounded text-[10px] font-medium border border-border text-muted flex items-center gap-1 bg-surface-subtle hover:bg-panel-elevated hover:text-main transition-colors cursor-pointer"
-                    title={t('tabs.shareOpen')}
-                  >
-                    <Users className="w-2.5 h-2.5" />
-                    <span>{t('tabs.sharedBy', { name: ownerDisplayName })}</span>
-                  </button>
-                )
+                <SharedPill
+                  isOwner={isOwner}
+                  count={sharesCount > 0 ? sharesCount : currentSelectedList.members?.length || 1}
+                  ownerName={ownerDisplayName}
+                  onClick={() => handleOpenShareModal(currentSelectedList)}
+                  title={isOwner ? t('tabs.shareMenu') : t('tabs.shareOpen')}
+                />
               )}
 
               <span className="w-px h-5 bg-border mx-0.5" aria-hidden />
