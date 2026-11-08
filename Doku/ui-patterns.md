@@ -100,6 +100,15 @@ Component: [CountBadge.tsx](../frontend/src/components/CountBadge.tsx), CSS clas
 - Numbers in the mobile menu (`MobileActionContext`, `badge: number`) are automatically rendered as `CountBadge`; text badges such as "2 active" remain text tags.
 - **Important for new classes:** Tailwind purges classes from `@layer components` that are not present verbatim in the source code. Therefore, never interpolate class names (`count-badge-${variant}`); write them out fully.
 
+## View Switch (Segmented Control)
+
+Component: [SegmentedControl.tsx](../frontend/src/components/SegmentedControl.tsx)
+
+- A row of two or three short options in one frame; the chosen one is raised (`bg-panel-elevated`, light shadow). Used wherever a list can be shown in different ways: sorting of the hashtags (frequency / A–Z), the to-dos from notes (open / all, grouped / list).
+- Short labels, the longer explanation goes into `title` (hover). Screen readers get `radiogroup` and `radio` with `aria-checked`.
+- The choice is a per-device convenience and is kept in `localStorage` where it should survive a reload (to-dos: `mindsift_todo_show`, `mindsift_todo_grouping`).
+- Build new switches of this kind with this component instead of copying button classes.
+
 ## Origin Badge (API Keys)
 
 Component: [OriginBadge.tsx](../frontend/src/components/OriginBadge.tsx)

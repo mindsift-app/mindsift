@@ -42,7 +42,8 @@ export function VoiceSection({
   const { voiceSaving, handleChangeVoiceInput, handleChangeVoiceLanguage } = voice;
   // Whisper does the recognition (only then "automatic" works)
   const whisper = choice ? (currentUser.voiceInput || '') === '' : mode === 'server';
-  const spoken = currentUser.voiceLanguage || '';
+  // No choice yet means automatic
+  const spoken = currentUser.voiceLanguage || 'auto';
   const languages = voiceLanguageOptions();
   return (
     <div className="space-y-5">
@@ -100,8 +101,8 @@ export function VoiceSection({
           onChange={(e) => void handleChangeVoiceLanguage(e.target.value)}
           className="w-full sm:max-w-sm h-11 sm:h-9 px-2.5 input-field bg-panel disabled:opacity-60"
         >
-          <option value="">{t('voice.languageApp', { name: languageName(i18n.language) })}</option>
           <option value="auto">{t('voice.languageAuto')}</option>
+          <option value="app">{t('voice.languageApp', { name: languageName(i18n.language) })}</option>
           <optgroup label={t('voice.languageFixed')}>
             {languages.map((l) => (
               <option key={l.code} value={l.code}>

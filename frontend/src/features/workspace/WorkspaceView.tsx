@@ -216,6 +216,17 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
     const saved = localStorage.getItem('mindsift_todo_grouping');
     return saved === 'list' ? 'list' : 'grouped';
   });
+  const [todoShow, setTodoShowState] = useState<'open' | 'all'>(() =>
+    localStorage.getItem('mindsift_todo_show') === 'all' ? 'all' : 'open'
+  );
+  const setTodoShow = useCallback((s: 'open' | 'all') => {
+    setTodoShowState(s);
+    localStorage.setItem('mindsift_todo_show', s);
+  }, []);
+  const setTodoGroupingSaved = useCallback((g: 'grouped' | 'list') => {
+    setTodoGrouping(g);
+    localStorage.setItem('mindsift_todo_grouping', g);
+  }, []);
   const [collapsedTodoFolders, setCollapsedTodoFolders] = useState<Set<string>>(new Set());
   const [collapsedTodoNotes, setCollapsedTodoNotes] = useState<Set<string>>(new Set());
 
@@ -597,7 +608,15 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
   );
 
   // Global To-Dos rollup collections
-  const allRollupTodos = useMemo(() => collectRollupTodos(docs, todoFolderDrilldown), [docs, todoFolderDrilldown]);
+  const allRollupTodos = useMemo(
+    () => collectRollupTodos(docs, todoFolderDrilldown, todoShow === 'open'),
+    [docs, todoFolderDrilldown, todoShow]
+  );
+
+  const hasDoneTodos = useMemo(
+    () => todoShow === 'open' && collectRollupTodos(docs, todoFolderDrilldown).some((i) => i.checked),
+    [docs, todoFolderDrilldown, todoShow]
+  );
 
   const rollupTodosByFolder = useMemo(() => groupRollupTodosByFolder(allRollupTodos), [allRollupTodos]);
 
@@ -972,7 +991,10 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
             todoFolderDrilldown={todoFolderDrilldown}
             setTodoFolderDrilldown={setTodoFolderDrilldown}
             todoGrouping={todoGrouping}
-            setTodoGrouping={setTodoGrouping}
+            setTodoGrouping={setTodoGroupingSaved}
+            todoShow={todoShow}
+            setTodoShow={setTodoShow}
+            hasDoneTodos={hasDoneTodos}
             handleJumpToDocBlock={handleJumpToDocBlock}
             handleToggleRollupTodo={handleToggleRollupTodo}
           />

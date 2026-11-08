@@ -30,6 +30,7 @@ describe('workspace listing', () => {
     expect(all.map((t) => t.blockId)).toEqual(['a1', 'a2', 'b1']);
     expect(collectRollupTodos(docs, 'Privat').map((t) => t.blockId)).toEqual(['b1']);
     expect(collectRollupTodos(docs, 'Hauptebene').map((t) => t.blockId)).toEqual(['a1', 'a2']);
+    expect(collectRollupTodos(docs, null, true).map((t) => t.blockId)).toEqual(['a1', 'b1']);
     const byFolder = groupRollupTodosByFolder(all);
     expect([...byFolder.keys()]).toEqual(['Hauptebene', 'Privat']);
     expect(byFolder.get('Privat')?.[0].checked).toBe(false);

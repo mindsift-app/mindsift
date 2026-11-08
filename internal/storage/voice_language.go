@@ -29,7 +29,7 @@ func (s *Store) migrateVoiceLanguage() error {
 	return s.addColumnIfMissing("users", "voice_language", "TEXT NOT NULL DEFAULT ''")
 }
 
-// VoiceLanguage returns the user's choice: "", "auto" or a Whisper language code.
+// VoiceLanguage returns the user's choice: "", "auto", "app" or a Whisper language code.
 func (s *Store) VoiceLanguage(userID string) string {
 	var v string
 	_ = s.db.QueryRow(`SELECT voice_language FROM users WHERE id = ?`, userID).Scan(&v)
@@ -37,7 +37,7 @@ func (s *Store) VoiceLanguage(userID string) string {
 }
 
 func (s *Store) SetVoiceLanguage(userID, v string) error {
-	if v != "" && v != "auto" && !WhisperLanguages[v] {
+	if v != "" && v != "auto" && v != "app" && !WhisperLanguages[v] {
 		return ErrInvalidVoiceLanguage
 	}
 	_, err := s.db.Exec(`UPDATE users SET voice_language = ? WHERE id = ?`, v, userID)

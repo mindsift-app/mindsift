@@ -42,14 +42,14 @@ export function setVoicePreference(next: '' | 'browser' | undefined): void {
   if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent(VOICE_CONFIG_EVENT));
 }
 
-/** The account's language for voice input ('' = app language, 'auto' = Whisper detects it, else a code). */
+/** The account's language for voice input ('' or 'auto' = Whisper detects it, 'app' = app language, else a code). */
 export function setVoiceLanguage(next: string | undefined): void {
   spokenLanguage = next || '';
 }
 
 /** Language for the browser's recognition: the chosen one, else the app's (it cannot detect languages). */
 export function browserVoiceLanguage(appLocale: string): string {
-  return spokenLanguage && spokenLanguage !== 'auto' ? voiceLanguageTag(spokenLanguage) : appLocale;
+  return spokenLanguage && spokenLanguage !== 'auto' && spokenLanguage !== 'app' ? voiceLanguageTag(spokenLanguage) : appLocale;
 }
 
 /** Whether the account may choose between the Whisper server and the browser. */

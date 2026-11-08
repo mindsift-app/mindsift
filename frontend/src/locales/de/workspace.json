@@ -175,7 +175,12 @@
     "open": "{{count}} offen",
     "grouped": "Gruppiert",
     "list": "Liste",
-    "root": "Hauptebene"
+    "root": "Hauptebene",
+    "showOpen": "Offen",
+    "showOpenTitle": "Nur offene To-Dos zeigen",
+    "showAll": "Alle",
+    "showAllTitle": "Auch erledigte To-Dos zeigen",
+    "allDone": "Alles erledigt – keine offenen To-Dos."
   },
   "emoji": {
     "suggested": "Zuletzt verwendet",

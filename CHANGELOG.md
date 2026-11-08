@@ -17,6 +17,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - AI agents (MCP) can draw: `add_note_bullet` with type `drawing` takes a Mermaid flowchart or mind map, including its colours, and the server lays it out (layers, few crossing lines, right-angled arrows; mind maps with a colour per branch). `update_note_bullet` replaces a drawing, and a ```` ```mermaid ```` block in `create_note` becomes a drawing too.
 
 ### Changed
+- Voice input: without a chosen language, Whisper now detects the spoken language itself ("Automatic"), which copes much better with sentences that mix languages, such as German with English terms. "Like the app language" stays available as an option; a fixed language you chose is kept.
+- To-dos from notes: "Open / All" switch to hide done to-dos (the view starts with the open ones, the choice is remembered on the device). The switches there and the sorting of the hashtags share one look.
 - Sharing dialog: "User" comes first and is preselected, "Group" second.
 - Administration: the list of invites stays visible when it is empty and says so.
 - Profile picture: a new picture, an emoji or removing it is saved right away; the save button is only for name, username, address and password.

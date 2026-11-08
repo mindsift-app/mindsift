@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { SegmentedControl } from '../../components/SegmentedControl';
 import { Check, Hash, Search, X } from 'lucide-react';
 import { TagSummary } from '../../lib/types';
 import { NO_AUTOFILL } from '../../lib/noAutofill';
@@ -78,32 +79,14 @@ export function HashtagOverview({
             </div>
 
             {/* Sort Mode Switcher */}
-            <div className="flex items-center bg-canvas border border-border rounded-btn p-0.5 text-[11px]">
-              <button
-                type="button"
-                onClick={() => setTagSortBy('count')}
-                className={`px-2 py-1 rounded-btn font-semibold transition-colors cursor-pointer ${
-                  tagSortBy === 'count'
-                    ? 'bg-panel-elevated text-main shadow-xs'
-                    : 'text-muted hover:text-main'
-                }`}
-                title={t('hashtags.byCount')}
-              >
-                {t('hashtags.count')}
-              </button>
-              <button
-                type="button"
-                onClick={() => setTagSortBy('name')}
-                className={`px-2 py-1 rounded-btn font-semibold transition-colors cursor-pointer ${
-                  tagSortBy === 'name'
-                    ? 'bg-panel-elevated text-main shadow-xs'
-                    : 'text-muted hover:text-main'
-                }`}
-                title={t('hashtags.byAlpha')}
-              >
-                {t('workspace:hashtags.az')}
-              </button>
-            </div>
+            <SegmentedControl
+              value={tagSortBy}
+              onChange={setTagSortBy}
+              options={[
+                { value: 'count', label: t('hashtags.count'), title: t('hashtags.byCount') },
+                { value: 'name', label: t('hashtags.az'), title: t('hashtags.byAlpha') },
+              ]}
+            />
           </div>
         </div>
 

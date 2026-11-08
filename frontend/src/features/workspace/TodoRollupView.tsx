@@ -3,6 +3,7 @@ import { Trans, useTranslation } from 'react-i18next';
 import { Check, ChevronDown, ChevronRight, ExternalLink, Folder, Sparkles } from 'lucide-react';
 import { Document } from '../../lib/types';
 import { ROOT_FOLDER_KEY } from './workspaceListing';
+import { SegmentedControl } from '../../components/SegmentedControl';
 
 // One to-do of a note in the collection
 export type RollupTodo = { doc: Document; blockId: string; content: string; checked: boolean };
@@ -19,6 +20,10 @@ interface TodoRollupViewProps {
   setTodoFolderDrilldown: (folder: string | null) => void;
   todoGrouping: 'grouped' | 'list';
   setTodoGrouping: (g: 'grouped' | 'list') => void;
+  todoShow: 'open' | 'all';
+  setTodoShow: (s: 'open' | 'all') => void;
+  // Done to-dos exist but are hidden: the empty view says "all done" instead of "no to-dos"
+  hasDoneTodos: boolean;
   handleJumpToDocBlock: (docId: string, blockId?: string) => void;
   handleToggleRollupTodo: (doc: Document, blockId: string, currentChecked: boolean) => void;
 }
@@ -37,6 +42,9 @@ export function TodoRollupView({
   setTodoFolderDrilldown,
   todoGrouping,
   setTodoGrouping,
+  todoShow,
+  setTodoShow,
+  hasDoneTodos,
   handleJumpToDocBlock,
   handleToggleRollupTodo,
 }: TodoRollupViewProps) {
@@ -57,39 +65,23 @@ export function TodoRollupView({
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            {/* View Grouping Selector (matching hashtag switcher style) */}
-            <div className="flex items-center bg-main/[0.04] border border-border rounded-btn p-0.5 text-[11px]">
-              <button
-                type="button"
-                onClick={() => {
-                  setTodoGrouping('grouped');
-                  localStorage.setItem('mindsift_todo_grouping', 'grouped');
-                }}
-                className={`px-2.5 py-1 rounded-btn font-semibold transition-colors cursor-pointer ${
-                  todoGrouping === 'grouped'
-                    ? 'bg-panel-elevated text-main shadow-xs'
-                    : 'text-muted hover:text-main'
-                }`}
-                title={t('rollup.byFolder')}
-              >
-                {t('workspace:rollup.grouped')}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setTodoGrouping('list');
-                  localStorage.setItem('mindsift_todo_grouping', 'list');
-                }}
-                className={`px-2.5 py-1 rounded-btn font-semibold transition-colors cursor-pointer ${
-                  todoGrouping === 'list'
-                    ? 'bg-panel-elevated text-main shadow-xs'
-                    : 'text-muted hover:text-main'
-                }`}
-                title={t('rollup.flat')}
-              >
-                {t('workspace:rollup.list')}
-              </button>
-            </div>
+            {/* Open only or with the done ones, grouped or as one list */}
+            <SegmentedControl
+              value={todoShow}
+              onChange={setTodoShow}
+              options={[
+                { value: 'open', label: t('rollup.showOpen'), title: t('rollup.showOpenTitle') },
+                { value: 'all', label: t('rollup.showAll'), title: t('rollup.showAllTitle') },
+              ]}
+            />
+            <SegmentedControl
+              value={todoGrouping}
+              onChange={setTodoGrouping}
+              options={[
+                { value: 'grouped', label: t('rollup.grouped'), title: t('rollup.byFolder') },
+                { value: 'list', label: t('rollup.list'), title: t('rollup.flat') },
+              ]}
+            />
           </div>
         </div>
 
@@ -113,10 +105,16 @@ export function TodoRollupView({
         {allRollupTodos.length === 0 ? (
           <div className="p-8 text-center text-muted text-xs space-y-1 border border-border rounded-card bg-main/[0.03]">
             <Sparkles className="w-6 h-6 text-accent mx-auto mb-1" />
-            <p className="font-semibold text-main">{t('rollup.empty')}</p>
-            <p className="text-faint">
-              <Trans t={t} i18nKey="rollup.emptyHint" components={{ c: <code /> }} />
-            </p>
+            {todoShow === 'open' && hasDoneTodos ? (
+              <p className="font-semibold text-main">{t('rollup.allDone')}</p>
+            ) : (
+              <>
+                <p className="font-semibold text-main">{t('rollup.empty')}</p>
+                <p className="text-faint">
+                  <Trans t={t} i18nKey="rollup.emptyHint" components={{ c: <code /> }} />
+                </p>
+              </>
+            )}
           </div>
         ) : todoGrouping === 'list' ? (
           /* Flat list of all todos across notes */
