@@ -78,6 +78,12 @@ Every thought is a bullet: indent, collapse, zoom in, drag whole branches. Wiki 
   <img src="screenshots/workspace_desktop.webp" alt="MindSift workspace: two people editing the same note" width="90%" />
 </p>
 
+Drawings right in a note (`/canvas`): shapes, arrows that dock to them, text and freehand, edited full screen; AI agents can draw flowcharts and mind maps from Mermaid. Focus mode hides everything but the note, with the bar and the folders pinned if you like.
+
+<p align="center">
+  <img src="screenshots/Focus_desktop.webp" alt="MindSift focus mode with pinned bar and sidebar, a note with a network plan drawing" width="90%" />
+</p>
+
 ### 📅 Journal
 One note per day, all days below each other, with a calendar to jump around.
 
