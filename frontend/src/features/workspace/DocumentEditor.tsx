@@ -94,6 +94,23 @@ export interface DocumentEditorProps {
   onEmptied?: () => void;
 }
 
+// The bullet of this note the cursor is in, with its position on screen (null: the cursor is elsewhere)
+function cursorAnchor(blocks: DocumentBlock[]): { blockId: string; top: number } | null {
+  const el = document.activeElement?.closest<HTMLElement>('[data-outline-block]');
+  const blockId = el?.dataset.outlineBlock;
+  if (!el || !blockId || !blocks.some((b) => b.id === blockId)) return null;
+  return { blockId, top: el.getBoundingClientRect().top };
+}
+
+// The element that scrolls el (the note, or the journal with its days)
+function scrollParent(el: Element | null): HTMLElement | null {
+  for (let p = el?.parentElement; p; p = p.parentElement) {
+    const { overflowY } = getComputedStyle(p);
+    if ((overflowY === 'auto' || overflowY === 'scroll') && p.scrollHeight > p.clientHeight) return p;
+  }
+  return null;
+}
+
 // What undoing the editor's server actions needs, kept with the note's undo history (lib/docSync/undoHistory.ts)
 interface EditorUndoExtra {
   extract: { newDocId: string; blockId: string; link: string } | null;
@@ -385,6 +402,17 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
   const currentBlocksRef = useRef<DocumentBlock[]>(blocks);
   currentBlocksRef.current = blocks;
 
+  // The bullet with the cursor stays where it is on screen when changes of others arrive above it
+  const cursorAnchorRef = useRef<{ blockId: string; top: number } | null>(null);
+  useLayoutEffect(() => {
+    const anchor = cursorAnchorRef.current;
+    cursorAnchorRef.current = null;
+    if (!anchor) return;
+    const el = document.querySelector(`[data-outline-block="${anchor.blockId}"]`);
+    const shift = el ? el.getBoundingClientRect().top - anchor.top : 0;
+    if (Math.abs(shift) >= 1) scrollParent(el)?.scrollBy({ top: shift, behavior: 'instant' });
+  }, [blocks]);
+
   useEffect(() => {
     const root = scrollRef.current;
     const el = titleInputRef.current;
@@ -576,6 +604,9 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
       if (!state.ready) return;
       const next = ensureNonEmptyBlocks(docId, state.blocks);
       if (!sameBlocks(currentBlocksRef.current, next)) {
+        // Changes of others (own edits are in currentBlocksRef already): remember where the bullet with the
+        // cursor is, so bullets added or removed above it do not move it (layout effect below)
+        cursorAnchorRef.current = cursorAnchor(currentBlocksRef.current);
         currentBlocksRef.current = next;
         setBlocks(next);
       }
