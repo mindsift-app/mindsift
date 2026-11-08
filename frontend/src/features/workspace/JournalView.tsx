@@ -26,7 +26,7 @@ interface JournalViewProps {
   onDocMetadataChange: (updated: Document) => void;
   onDeleteDoc: (docId: string) => void;
   onSelectTag: (tag: string) => void;
-  onWikiLinkClick?: (pageTitle: string, blockId?: string) => void;
+  onWikiLinkClick?: (pageTitle: string, blockId?: string, removeLink?: () => void) => void;
   onOpenDocBlock?: (docId: string, blockId?: string) => void;
   onOpenTask?: (taskId: string) => void;
   onBackMobile: () => void;

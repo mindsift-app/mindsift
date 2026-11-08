@@ -36,6 +36,15 @@ describe('diffFlat', () => {
     expect(ops.map((o) => o.kind)).toEqual(['set_content']);
   });
 
+  it('sends the type before the text when a drawing turns into a bullet, and after it the other way round', () => {
+    const d = build([B('a', 0, '')]);
+    const toDrawing = diffFlat(d, [B('a', 0, '{"v":1,"els":[]}', { type: 'drawing' })], nextOp);
+    expect(toDrawing.map((o) => o.kind)).toEqual(['set_content', 'set_props']);
+    for (const op of toDrawing) applyOp(d, op);
+    const toBullet = diffFlat(d, [B('a', 0, '[[Neue Notiz]]')], nextOp);
+    expect(toBullet.map((o) => o.kind)).toEqual(['set_props', 'set_content']);
+  });
+
   it('inserting in the middle does not move the neighbours', () => {
     const d = build([B('a', 0), B('c', 0)]);
     const ops = diffFlat(d, [B('a', 0), B('b', 0), B('c', 0)], nextOp);

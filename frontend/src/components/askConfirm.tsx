@@ -3,11 +3,14 @@ import { ConfirmPopover } from './ConfirmPopover';
 
 const EVENT = 'mindsift:ask-confirm';
 
+type Answer = 'confirm' | 'alt' | null;
+
 interface ConfirmRequest {
   message: React.ReactNode;
   confirmLabel: string;
   danger?: boolean;
-  resolve: (ok: boolean) => void;
+  altLabel?: string;
+  resolve: (answer: Answer) => void;
 }
 
 // Where the last click or tap was: the question opens right there, like ConfirmPopover elsewhere
@@ -19,6 +22,11 @@ if (typeof window !== 'undefined') {
 // The app's own confirmation instead of the browser's confirm(): resolves true on confirm, false on
 // cancel, Escape or a click outside. Callable from handlers and hooks without state of their own.
 export function askConfirm(opts: { message: React.ReactNode; confirmLabel: string; danger?: boolean }): Promise<boolean> {
+  return askChoice(opts).then((answer) => answer === 'confirm');
+}
+
+// The same with a second way out (altLabel): resolves 'confirm', 'alt', or null on cancel.
+export function askChoice(opts: { message: React.ReactNode; confirmLabel: string; danger?: boolean; altLabel?: string }): Promise<Answer> {
   return new Promise((resolve) => {
     window.dispatchEvent(new CustomEvent<ConfirmRequest>(EVENT, { detail: { ...opts, resolve } }));
   });
@@ -32,7 +40,7 @@ export const ConfirmHost: React.FC = () => {
     const onAsk = (e: Event) => {
       const detail = (e as CustomEvent<ConfirmRequest>).detail;
       setReq((prev) => {
-        prev?.resolve(false); // a new question replaces an open one
+        prev?.resolve(null); // a new question replaces an open one
         return { ...detail, ...lastPointer };
       });
     };
@@ -41,8 +49,8 @@ export const ConfirmHost: React.FC = () => {
   }, []);
 
   if (!req) return null;
-  const close = (ok: boolean) => {
-    req.resolve(ok);
+  const close = (answer: Answer) => {
+    req.resolve(answer);
     setReq(null);
   };
   return (
@@ -52,8 +60,10 @@ export const ConfirmHost: React.FC = () => {
       message={req.message}
       confirmLabel={req.confirmLabel}
       danger={req.danger}
-      onConfirm={() => close(true)}
-      onCancel={() => close(false)}
+      onConfirm={() => close('confirm')}
+      onCancel={() => close(null)}
+      altLabel={req.altLabel}
+      onAlt={() => close('alt')}
     />
   );
 };

@@ -48,9 +48,10 @@ import { buildWorkspaceMenu } from './workspaceMenu';
 import { buildFolderTree, collectFolderPaths, collectRollupTodos, countOpenTodos, filterTags, groupRollupTodosByFolder, isFolderShared, tagGroups, tagsMetadata } from './workspaceListing';
 import { FolderDialogs } from './FolderDialogs';
 import { WorkspaceSubView } from './workspaceTypes';
-import { useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
 import i18n from '../../i18n';
 import { showError } from '../../components/ErrorNotice';
+import { askChoice } from '../../components/askConfirm';
 
 interface WorkspaceViewProps {
   currentUser?: User | null;
@@ -486,7 +487,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
   };
 
   const handleWikiLinkClick = useCallback(
-    (pageTitle: string, blockId?: string) => {
+    (pageTitle: string, blockId?: string, removeLink?: () => void) => {
       const clean = pageTitle.trim().toLowerCase();
       const match = docs.find((d) => d.title.trim().toLowerCase() === clean);
       if (match && blockId) {
@@ -495,8 +496,16 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
         setSelectedDocId(match.id);
         setSubView('editor');
         setMobileShowDetail(true);
-      } else {
-        handleCreateDocument('');
+      } else if (clean) {
+        // Deleted or never created: ask instead of creating a note right away
+        void askChoice({
+          message: <Trans i18nKey="common:wikiLink.missing" values={{ title: pageTitle.trim() }} components={{ b: <strong /> }} />,
+          confirmLabel: i18n.t('common:wikiLink.create'),
+          altLabel: removeLink ? i18n.t('common:wikiLink.removeLink') : undefined,
+        }).then((answer) => {
+          if (answer === 'confirm') void handleCreateDocument('', pageTitle.trim());
+          else if (answer === 'alt') removeLink?.();
+        });
       }
     },
     [docs, handleCreateDocument, handleJumpToDocBlock]

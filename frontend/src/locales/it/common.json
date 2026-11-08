@@ -274,7 +274,10 @@
   },
   "wikiLink": {
     "toBlock": "Al punto in «{{title}}»",
-    "openNote": "Apri nota: {{title}}"
+    "openNote": "Apri nota: {{title}}",
+    "missing": "La nota <b>{{title}}</b> non esiste (più).",
+    "create": "Crea",
+    "removeLink": "Rimuovi link"
   },
   "shareTarget": {
     "mediaNote": "(Immagine condivisa – le immagini nella posta in arrivo non sono ancora supportate)"

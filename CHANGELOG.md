@@ -20,8 +20,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Administration: the list of invites stays visible when it is empty and says so.
 - Profile picture: a new picture, an emoji or removing it is saved right away; the save button is only for name, username, address and password.
 - Profile on phones: with unsaved changes the save button floats above the bottom bar and says so, instead of staying far down the page.
+- Notes: turning a bullet into its own note keeps the bullet as the new note's first bullet (its sub-bullets below it, its hashtags with it) instead of making its text the title only. The title is taken from the bullet's text, or "New note" when the bullet has no text to name it (a drawing, picture, code or table). Pulling such a note back puts the bullet in place of the link again.
+- Notes: clicking a link to a note that does not exist (anymore) asks first instead of creating an untitled note right away: "Create" makes a note with the link's title, "Remove link" keeps the text and drops the link.
 
 ### Fixed
+- Notes: turning a drawing into its own note put the drawing's raw data into the note title.
 - Notes shared with others: clicking into a bullet someone else was typing in (locked, so nothing could be typed) and out again created a conflict copy of their text. Leaving a bullet now only sends text you actually typed there, and while the cursor sits in a locked bullet you see the other person's typing as it arrives.
 - Administration: the actions of an invite (copy link, copy code, send by email, delete) no longer wrap onto a new line and to the left when the address is long; they are compact icons on the right like in the user list, and long details are shortened.
 - Sharing dialog: password managers no longer offer to fill in the password of a public link (it was a password field and looked like a login).

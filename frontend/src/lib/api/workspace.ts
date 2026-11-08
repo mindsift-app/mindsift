@@ -263,7 +263,7 @@ export const workspaceApi = {
   },
 
   /** The way back from extractBranch: the linked note's blocks for the bullet; the note goes to the trash. */
-  async inlineNote(docId: string, blockId: string): Promise<{ sourceId: string; content: string; blocks: DocumentBlock[] }> {
+  async inlineNote(docId: string, blockId: string): Promise<{ sourceId: string; content: string; head?: DocumentBlock; blocks: DocumentBlock[] }> {
     return request(`/api/v1/documents/${docId}/inline`, { method: 'POST', body: JSON.stringify({ blockId }) });
   },
 

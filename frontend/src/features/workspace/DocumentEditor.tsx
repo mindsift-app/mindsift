@@ -65,7 +65,7 @@ export interface DocumentEditorProps {
   onRestoreDoc?: (docId: string) => void;
   onOpenShareModal: (doc: Document) => void;
   onSelectTag: (tag: string) => void;
-  onWikiLinkClick?: (pageTitle: string, blockId?: string) => void;
+  onWikiLinkClick?: (pageTitle: string, blockId?: string, removeLink?: () => void) => void;
   onOpenDocBlock?: (docId: string, blockId?: string) => void;
   onBackMobile?: () => void;
   onOpenTask?: (taskId: string) => void;
@@ -895,7 +895,8 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
           while (end < prev.length && (prev[end].level || 0) > level) end++;
           applyLocalBlocks(
             withLink
-              ? [...prev.slice(0, i), { ...prev[i], content: link }, ...prev.slice(end)]
+              ? // The bullet itself went into the note: a plain bullet with the link stays (not a drawing, to-do …)
+                [...prev.slice(0, i), { ...prev[i], type: 'bullet', checked: false, taskId: '', content: link }, ...prev.slice(end)]
               : ensureNonEmptyBlocks(docId, [...prev.slice(0, i), ...prev.slice(end)])
           );
         }
@@ -995,8 +996,12 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
         if (i >= 0) {
           const level = prev[i].level || 0;
           const inserted = res.blocks.map((b) => ({ ...b, level: level + 1 + (b.level || 0) }));
+          // An extracted note's first bullet takes the link's place again, as a drawing, to-do …
+          const head = res.head
+            ? { ...prev[i], type: res.head.type, checked: res.head.checked, collapsed: res.head.collapsed, lang: res.head.lang }
+            : prev[i];
           // Above any bullets added below the link meanwhile
-          applyLocalBlocks([...prev.slice(0, i), { ...prev[i], content: res.content }, ...inserted, ...prev.slice(i + 1)]);
+          applyLocalBlocks([...prev.slice(0, i), { ...head, content: res.content }, ...inserted, ...prev.slice(i + 1)]);
         }
         lastExtractRef.current = null;
         lastInlineRef.current = { sourceId: res.sourceId, blockId, content: res.content };

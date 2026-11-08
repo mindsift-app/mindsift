@@ -104,13 +104,20 @@ export function diffFlat(d: Doc, blocks: DocumentBlock[], newOpId: () => string)
     if (cur.deleted || cur.parentId !== parent || cur.orderKey !== keys[i]) {
       push({ kind: 'move', blockId: b.id, parentId: parent, orderKey: keys[i] });
     }
-    if (cur.content !== (b.content || '')) {
-      push({ kind: 'set_content', blockId: b.id, baseVersion: cur.version, content: b.content || '' });
-    }
+    const setContent = () => {
+      if (cur.content !== (b.content || '')) {
+        push({ kind: 'set_content', blockId: b.id, baseVersion: cur.version, content: b.content || '' });
+      }
+    };
+    // A drawing only takes drawing content: the drawing's model first, then the type; leaving a drawing,
+    // the type first, then the text (the other way round the server refuses the text)
+    const leavesDrawing = cur.type === 'drawing' && b.type !== 'drawing';
+    if (!leavesDrawing) setContent();
     const curProps = normProps({ checked: cur.props.checked, collapsed: cur.props.collapsed, lang: cur.props.lang });
     if (cur.type !== b.type || !propsEqual(curProps, props)) {
       push({ kind: 'set_props', blockId: b.id, patch: { type: b.type, checked: !!b.checked, collapsed: !!b.collapsed, lang: b.lang || '' } });
     }
+    if (leavesDrawing) setContent();
   });
 
   // Deletes last, after moves have taken wanted children out of deleted branches

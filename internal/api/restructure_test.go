@@ -47,10 +47,11 @@ func TestExtractBranchIntoOwnNote(t *testing.T) {
 	}
 	_ = json.Unmarshal(rec.Body.Bytes(), &out)
 	created := out.Document
-	if created.Title != "Konzept: Garten" || created.FolderPath != "Arbeit" || out.Link != "[[Konzept: Garten]] #draußen" {
-		t.Fatalf("new note: %q in %q", created.Title, created.FolderPath)
+	if created.Title != "Konzept: Garten" || created.FolderPath != "Arbeit" || out.Link != "[[Konzept: Garten]]" {
+		t.Fatalf("new note: %q in %q, link %q", created.Title, created.FolderPath, out.Link)
 	}
-	if got := strings.Join(flatOf(t, store, uid, created.ID), "|"); got != "Beete|>Erde kaufen|Zaun" {
+	// The bullet itself stays the first bullet, its hashtags with it
+	if got := strings.Join(flatOf(t, store, uid, created.ID), "|"); got != "- Konzept: Garten #draußen|>Beete|>>Erde kaufen|>Zaun" {
 		t.Fatalf("new note blocks: %s", got)
 	}
 	// The server leaves the source alone; the editor replaces the branch itself
@@ -81,6 +82,35 @@ func TestExtractBranchIntoOwnNote(t *testing.T) {
 	}
 	if d, _ := store.GetDocumentByID(uid, created.ID); d == nil || !d.IsArchived {
 		t.Fatal("extracted note must be in the trash after undo")
+	}
+}
+
+// A bullet without text to name the note (a drawing) gives "Neue Notiz", never its content as the title
+func TestExtractDrawingGetsDefaultTitle(t *testing.T) {
+	srv, store, token := setupTestServer(t)
+	router := srv.Router()
+	claims, _ := auth.ValidateToken(testJWTSecret, token)
+	uid := claims.UserID
+	drawingJSON := `{"v":1,"els":[{"id":"e1","t":"text","x":0,"y":0,"txt":"Skizze"}]}`
+	src, _ := store.CreateDocument(uid, "", "Plan", "", "", []domain.DocumentBlock{
+		{ID: "blk_dr", Type: "drawing", Content: drawingJSON, Level: 0, Position: 1},
+		{ID: "blk_dc", Type: "bullet", Content: "Erläuterung", Level: 1, Position: 2},
+	}, nil, false)
+	rec := sessionCall(router, "POST", "/api/v1/documents/"+src.ID+"/extract", token, `{"blockId":"blk_dr"}`, "")
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("extract: %d %s", rec.Code, rec.Body.String())
+	}
+	var out struct {
+		Document domain.Document
+		Link     string
+	}
+	_ = json.Unmarshal(rec.Body.Bytes(), &out)
+	if out.Document.Title != "Neue Notiz" || out.Link != "[[Neue Notiz]]" {
+		t.Fatalf("title %q, link %q", out.Document.Title, out.Link)
+	}
+	d, _ := store.GetDocumentByID(uid, out.Document.ID)
+	if len(d.Blocks) != 2 || d.Blocks[0].Type != "drawing" || d.Blocks[0].Content != drawingJSON || d.Blocks[1].Level != 1 {
+		t.Fatalf("new note blocks: %+v", d.Blocks)
 	}
 }
 
@@ -260,6 +290,42 @@ func TestInlineNoteBringsBranchBack(t *testing.T) {
 	// Undo uses the ordinary restore
 	if rec := sessionCall(router, "POST", "/api/v1/documents/"+note.ID+"/restore", token, "", ""); rec.Code != http.StatusOK {
 		t.Fatalf("restore: %d %s", rec.Code, rec.Body.String())
+	}
+}
+
+// Extracting and pulling back gives the branch as it was: the note's first bullet takes the link's
+// place again (type and props included), not the title on top of it
+func TestInlineExtractedNoteRestoresBullet(t *testing.T) {
+	srv, store, token := setupTestServer(t)
+	router := srv.Router()
+	claims, _ := auth.ValidateToken(testJWTSecret, token)
+	uid := claims.UserID
+	src, _ := store.CreateDocument(uid, "", "Projekt", "", "", []domain.DocumentBlock{
+		{ID: "blk_a", Type: "todo", Content: "Garten #draußen", Level: 0, Position: 1, Checked: true},
+		{ID: "blk_b", Type: "bullet", Content: "Beete", Level: 1, Position: 2},
+	}, nil, false)
+	// A note of that name exists already: the extracted one is "Garten (2)"
+	_, _ = store.CreateDocument(uid, "", "Garten", "", "", nil, nil, false)
+	var out struct {
+		Document domain.Document
+		Link     string
+	}
+	_ = json.Unmarshal(sessionCall(router, "POST", "/api/v1/documents/"+src.ID+"/extract", token, `{"blockId":"blk_a"}`, "").Body.Bytes(), &out)
+	if out.Link != "[[Garten (2)]]" {
+		t.Fatalf("link: %q", out.Link)
+	}
+	// What the editor leaves behind (the server does not change the source itself)
+	withLink, _ := store.CreateDocument(uid, "", "Projekt neu", "", "", []domain.DocumentBlock{
+		{ID: "blk_l", Type: "bullet", Content: out.Link + " #neu", Level: 0, Position: 1},
+	}, nil, false)
+	rec := sessionCall(router, "POST", "/api/v1/documents/"+withLink.ID+"/inline", token, `{"blockId":"blk_l"}`, "")
+	var res storage.InlineResult
+	_ = json.Unmarshal(rec.Body.Bytes(), &res)
+	if rec.Code != http.StatusOK || res.Head == nil || res.Head.Type != "todo" || !res.Head.Checked || res.Content != "Garten #draußen #neu" {
+		t.Fatalf("inline: %d %+v head %+v", rec.Code, res, res.Head)
+	}
+	if len(res.Blocks) != 1 || res.Blocks[0].Content != "Beete" || res.Blocks[0].Level != 0 {
+		t.Fatalf("blocks: %+v", res.Blocks)
 	}
 }
 

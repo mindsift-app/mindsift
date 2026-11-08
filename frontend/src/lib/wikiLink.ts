@@ -37,3 +37,12 @@ export function isNoteLinkOnly(content: string): boolean {
   // A link to a single bullet ([[Titel#^id]]) does not count: bringing it back would take the whole note
   return /^\s*\[\[[^\]#]+\]\](\s+#[\p{L}\p{N}_-]+)*\s*$/u.test(content);
 }
+
+/** Turns every link to the note title into its plain text (a link to a note that no longer exists). */
+export function unlinkWikiLinks(content: string, title: string): string {
+  const want = title.trim().toLowerCase();
+  return content.replace(/\[\[([^\]]+)\]\]/g, (token, inner: string) => {
+    const link = parseWikiLink(inner);
+    return link.title.toLowerCase() === want ? link.label || link.title : token;
+  });
+}
