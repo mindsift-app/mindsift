@@ -297,3 +297,61 @@ func TestMarkdownListNestsUnderItsParagraph(t *testing.T) {
 		t.Fatalf("got  %v\nwant %v", got, want)
 	}
 }
+
+func TestDrawingsSurviveExportAndImport(t *testing.T) {
+	store, anna, ben := newImportStore(t)
+	content := `{"v":1,"els":[{"id":"a","ver":1,"t":"ellipse","x":0,"y":0,"w":80,"h":40,"s":"green","f":"none","sw":2,"txt":"Idee"}]}`
+	blocks := []domain.DocumentBlock{{ID: "d1", Type: "bullet", Content: "Davor"}, {ID: "d2", Type: "drawing", Content: content}}
+	if _, err := store.CreateDocument(anna.ID, "", "Skizzen", "", "", blocks, nil, false); err != nil {
+		t.Fatalf("CreateDocument: %v", err)
+	}
+	var buf bytes.Buffer
+	if err := store.WriteMarkdownVault(anna.ID, &buf); err != nil {
+		t.Fatalf("export: %v", err)
+	}
+	zr, _ := zip.NewReader(bytes.NewReader(buf.Bytes()), int64(buf.Len()))
+	var note string
+	svgFound := false
+	for _, f := range zr.File {
+		data, _ := readZipFile(f, 1<<20)
+		if strings.HasSuffix(f.Name, "d2.svg") && strings.Contains(string(data), "<svg") {
+			svgFound = true
+		}
+		if strings.HasSuffix(f.Name, "Skizzen.md") {
+			note = string(data)
+		}
+	}
+	if !svgFound || !strings.Contains(note, "![Idee](attachments/d2.svg)") {
+		t.Fatalf("drawing not exported as picture: svg=%v note=%q", svgFound, note)
+	}
+	plan, err := PlanMindSiftArchiveImport(bytes.NewReader(buf.Bytes()), int64(buf.Len()))
+	if err != nil {
+		t.Fatalf("plan: %v", err)
+	}
+	if _, err := store.ApplyImport(ben.ID, plan); err != nil {
+		t.Fatalf("apply: %v", err)
+	}
+	docs, _ := store.GetDocuments(ben.ID)
+	var got *domain.DocumentBlock
+	for _, d := range docs {
+		for i, b := range d.Blocks {
+			if b.Type == "drawing" {
+				got = &d.Blocks[i]
+			}
+		}
+	}
+	if got == nil || !strings.Contains(got.Content, `"txt":"Idee"`) {
+		t.Fatalf("drawing not restored: %+v", got)
+	}
+}
+
+func TestDrawingFenceBecomesADrawing(t *testing.T) {
+	md := "Davor\n\n```mindsift-canvas\n{\"v\":1,\"els\":[]}\n```\n\n```mindsift-canvas\nkein JSON\n```"
+	blocks := MarkdownToBlocks(md)
+	if len(blocks) != 3 || blocks[1].Type != "drawing" || blocks[2].Type != "code" {
+		t.Fatalf("got %+v", blocks)
+	}
+	if out := BlocksToVaultMarkdown(blocks[1:2]); !strings.Contains(out, "```mindsift-canvas\n{\"v\":1,\"els\":[]}\n```") {
+		t.Fatalf("export without files: %q", out)
+	}
+}

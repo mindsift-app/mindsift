@@ -395,6 +395,11 @@ export class DocSyncEngine {
     }
   }
 
+  /** Work in the focused block that does not change its text yet (drawing): keeps the lease from running idle. */
+  touchBlock(blockId: string): void {
+    if (blockId === this.focused) this.activity.set(blockId, this.now());
+  }
+
   /** Runs one sync round trip now (or right after the running one). */
   async syncNow(): Promise<void> {
     if (this.stopped) return;

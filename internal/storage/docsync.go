@@ -15,6 +15,7 @@ import (
 
 	"github.com/mindsift-app/mindsift/internal/collab"
 	"github.com/mindsift-app/mindsift/internal/domain"
+	"github.com/mindsift-app/mindsift/internal/drawing"
 )
 
 // Collaborative note editing: every change to a note's blocks or title runs through collab.Apply under a
@@ -467,8 +468,12 @@ func persistDocState(tx *sql.Tx, docID string, before, after *collab.Doc, head i
 	flat := flatDocumentBlocks(docID, after)
 	var plain strings.Builder
 	for _, b := range flat {
-		if b.Content != "" {
-			plain.WriteString(b.Content)
+		text := b.Content
+		if b.Type == drawing.BlockType {
+			text = strings.Join(drawing.Texts(b.Content), "\n")
+		}
+		if text != "" {
+			plain.WriteString(text)
 			plain.WriteString("\n")
 		}
 	}

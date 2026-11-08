@@ -2,9 +2,11 @@ package storage
 
 import (
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/mindsift-app/mindsift/internal/auth"
+	"github.com/mindsift-app/mindsift/internal/drawing"
 )
 
 func TestResetAndSeedDemo(t *testing.T) {
@@ -100,5 +102,18 @@ func TestWithoutDemoModeDataIsNotWiped(t *testing.T) {
 	}
 	if len(thoughts) != 1 || thoughts[0].ID != thought1.ID {
 		t.Fatalf("expected thought %s to persist, got: %v", thought1.ID, thoughts)
+	}
+}
+
+// The sample drawing must be a valid model, or the demo note shows a broken block
+func TestSeedDrawingIsValid(t *testing.T) {
+	for _, content := range []string{seedNetworkDrawing("Router / Firewall", "Nur 80 und 443 offen"), seedNetworkDrawing("Router / firewall", "Only 80 and 443 open")} {
+		d, ok := drawing.Parse(content)
+		if !ok || len(d.Els) != 14 {
+			t.Fatalf("sample drawing broken: ok=%v els=%d", ok, len(d.Els))
+		}
+		if desc := drawing.Describe(content); !strings.Contains(desc, "„Nginx“ → „MindSift“") {
+			t.Fatalf("description: %s", desc)
+		}
 	}
 }

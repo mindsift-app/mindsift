@@ -20,6 +20,7 @@ import {
   XCircle,
   Image as ImageIcon,
   Mic,
+  Shapes,
   AudioLines,
   FileOutput,
   FileInput,
@@ -34,6 +35,8 @@ import { SecretChip, NewSecretSheet } from './SecretChip';
 import { CodeBlockEditor, resolveLanguageId, isUnambiguousLanguageShortcut } from './CodeBlockEditor';
 import { ImagePicker } from './ImagePicker';
 import { ImageBlock } from './ImageBlock';
+import { DrawingBlock } from './drawing/DrawingBlock';
+import { emptyDrawing, serializeDrawing } from '../../lib/drawing/model';
 import { AudioRecorderPicker } from './AudioRecorderPicker';
 import { AudioBlock } from './AudioBlock';
 import { DictationBlock } from './DictationBlock';
@@ -96,6 +99,7 @@ const SLASH_COMMANDS: SlashCommand[] = [
   { type: 'divider', label: '/divider', get desc() { return i18n.t('workspace:slash.divider'); }, icon: <Minus className="w-3.5 h-3.5" /> },
   { type: 'extract', label: '/extract', get desc() { return i18n.t('workspace:slash.extract'); }, icon: <FileOutput className="w-3.5 h-3.5" />, aliases: ['notiz', 'auslagern'] },
   { type: 'image', label: '/image', get desc() { return i18n.t('workspace:slash.image'); }, icon: <ImageIcon className="w-3.5 h-3.5" />, media: true, aliases: ['bild', 'foto'] },
+  { type: 'drawing', label: '/canvas', get desc() { return i18n.t('workspace:slash.drawing'); }, icon: <Shapes className="w-3.5 h-3.5" />, aliases: ['draw', 'sketch', 'diagram', 'zeichnung', 'skizze'] },
   { type: 'audio', label: '/audio', get desc() { return i18n.t('workspace:slash.audio'); }, icon: <Mic className="w-3.5 h-3.5" />, media: true, aliases: ['sprachnotiz'] },
   { type: 'dictation', label: '/diktat', get desc() { return i18n.t('workspace:slash.dictation'); }, icon: <AudioLines className="w-3.5 h-3.5" />, media: true, aliases: ['dictate'] },
 ];
@@ -130,6 +134,8 @@ export interface OutlinerBlockProps {
   onNavigateFocus: (blockId: string, direction: 'up' | 'down') => void;
   onFocusBlock?: (blockId: string) => void;
   onBlurBlock?: (blockId: string) => void;
+  /** Work in this block that does not change its text yet (drawing editor open), keeps its lease */
+  onBlockActivity?: (blockId: string) => void;
   onOpenTask?: (taskId: string) => void;
   onTagClick?: (tag: string) => void;
   onWikiLinkClick?: (pageTitle: string, blockId?: string) => void;
@@ -187,6 +193,7 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
   onNavigateFocus,
   onFocusBlock,
   onBlurBlock,
+  onBlockActivity,
   onOpenTask,
   onTagClick,
   onWikiLinkClick,
@@ -232,6 +239,10 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
   const blurSlashTimerRef = useRef<number | null>(null);
   // Inline picker an empty bullet turns into after /image (local only, nothing synced until done)
   const [mediaPicker, setMediaPicker] = useState<'image' | 'audio' | 'dictation' | null>(null);
+  // A drawing just made with /canvas opens its editor right away
+  const [drawingAutoOpen, setDrawingAutoOpen] = useState(false);
+  // Where a drawing puts its buttons: into this bullet's action bubble
+  const [drawingActionsEl, setDrawingActionsEl] = useState<HTMLSpanElement | null>(null);
   // Card above bullets whose entire content is a plain https address (lib/linkPreview.ts)
   const previewsOn = useLinkPreviewsEnabled();
   const previewUrl =
@@ -249,6 +260,21 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
   const hasHover = useMemo(() => typeof window !== 'undefined' && !!window.matchMedia?.('(hover: hover)').matches, []);
   const [pointerMoving, setPointerMoving] = useState(false);
   const [pointerOnBubble, setPointerOnBubble] = useState(false);
+  // Native events: React counts buttons a drawing puts into the bubble through a portal as part of the
+  // drawing, so its own onMouseEnter would not fire over them and the bubble would fade under the mouse
+  const bubbleRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const el = bubbleRef.current;
+    if (!el) return;
+    const enter = () => setPointerOnBubble(true);
+    const leave = () => setPointerOnBubble(false);
+    el.addEventListener('mouseenter', enter);
+    el.addEventListener('mouseleave', leave);
+    return () => {
+      el.removeEventListener('mouseenter', enter);
+      el.removeEventListener('mouseleave', leave);
+    };
+  }, []);
   const pointerIdleTimerRef = useRef<number | null>(null);
   const handleRowMouseMove = () => {
     if (!hasHover) return;
@@ -553,7 +579,7 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
       }
 
       // /divider, /image, /audio only when rest of block is empty
-      if (c.type === 'divider' || c.type === 'image' || c.type === 'audio') {
+      if (c.type === 'divider' || c.type === 'image' || c.type === 'audio' || c.type === 'drawing') {
         return isRestEmpty;
       }
 
@@ -640,6 +666,16 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
       localContentRef.current = clean;
       flushDebounce(clean);
       onExtractBlock?.(block.id);
+      return;
+    }
+
+    if (cmd.type === 'drawing') {
+      // The editor opens at once; closing it without drawing turns the bullet back into text
+      const content = serializeDrawing(emptyDrawing());
+      setLocalContent(content);
+      localContentRef.current = content;
+      setDrawingAutoOpen(true);
+      flushDebounce(content, { type: 'drawing' });
       return;
     }
 
@@ -1455,6 +1491,35 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
               flushDebounce(content);
             }}
           />
+        ) : block.type === 'drawing' ? (
+          <DrawingBlock
+            blockId={block.id}
+            content={localContent}
+            // Someone else drawing holds the block: look only
+            canEdit={canEdit && !lockedBy}
+            autoOpen={drawingAutoOpen}
+            actionsTarget={drawingActionsEl}
+            // Clicked into or open in the editor counts as the cursor in this bullet (action bubble, lease)
+            onFocusChange={(focused) => {
+              setIsLocallyFocused(focused);
+              if (focused) onFocusBlock?.(block.id);
+              else onBlurBlock?.(block.id);
+            }}
+            onActivity={() => onBlockActivity?.(block.id)}
+            onChange={(content) => {
+              setDrawingAutoOpen(false);
+              setLocalContent(content);
+              localContentRef.current = content;
+              flushDebounce(content);
+            }}
+            onDiscardNew={() => {
+              setDrawingAutoOpen(false);
+              setLocalContent('');
+              localContentRef.current = '';
+              refocusAfterTypeChangeRef.current = true;
+              flushDebounce('', { type: 'bullet' });
+            }}
+          />
         ) : block.type === 'image' ? (
           <ImageBlock
             content={localContent}
@@ -1796,8 +1861,7 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
 
       {/* Floating Actions Overlay Bubble (block type, enhanced task, link, extract, delete) */}
       <div
-        onMouseEnter={() => setPointerOnBubble(true)}
-        onMouseLeave={() => setPointerOnBubble(false)}
+        ref={bubbleRef}
         className={`absolute right-1 sm:right-2 top-0.5 sm:top-1 z-20 bg-panel/90 backdrop-blur-sm border border-border shadow-xs rounded-pill px-1 sm:px-1.5 py-0.5 flex items-center gap-0.5 sm:gap-1 transition-opacity ${
           lockedBy
             ? // Someone else is editing the block: no actions, and the lock badge stays visible
@@ -1808,6 +1872,9 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
               'opacity-0 pointer-events-none focus-within:opacity-100 focus-within:pointer-events-auto'
         }`}
       >
+        {/* A drawing's own buttons (edit, save view …) come in here */}
+        {block.type === 'drawing' && <span ref={setDrawingActionsEl} className="contents" />}
+
         {/* Convert back to bullet for to-dos, headings, callouts, warnings, dividers, code and numbered items */}
         {canEdit && ['todo', 'callout', 'warning', 'error', 'h1', 'h2', 'h3', 'divider', 'code', 'numbered'].includes(block.type) && (
           <button

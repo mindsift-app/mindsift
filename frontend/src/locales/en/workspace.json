@@ -91,7 +91,8 @@
     "image": "Upload or link images",
     "audio": "Voice note or audio file",
     "dictation": "Speak instead of typing",
-    "secret": "Hide a value (IP, token …)"
+    "secret": "Hide a value (IP, token …)",
+    "drawing": "Drawing, diagram, mind map"
   },
   "block": {
     "expand": "Expand sub-bullets",
@@ -446,5 +447,85 @@
     "withPassword": "with password",
     "new": "New link",
     "revoke": "Revoke"
+  },
+  "drawing": {
+    "broken": "This drawing is damaged and cannot be shown.",
+    "aria": "Drawing",
+    "ariaWithText": "Drawing: {{text}}",
+    "empty": "Empty drawing",
+    "emptyEdit": "Empty drawing – “Edit” or double-click to draw",
+    "edit": "Edit",
+    "editTitle": "Edit full screen (double-click)",
+    "fullscreen": "View full screen",
+    "saveView": "Save view",
+    "saveViewTitle": "Save this section, zoom and height for everyone",
+    "resetView": "Reset section",
+    "autoView": "Automatic",
+    "autoViewTitle": "Remove the saved view: fit everything",
+    "resize": "Drag to change the height",
+    "editorTitle": "Edit drawing",
+    "done": "Done",
+    "close": "Close",
+    "doneEsc": "Save and close (Esc)",
+    "undo": "Undo (Ctrl+Z)",
+    "redo": "Redo (Ctrl+Shift+Z)",
+    "grid": "Grid with snapping (Alt: free)",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "fit": "Fit everything",
+    "tool": {
+      "select": "Select",
+      "hand": "Pan",
+      "rect": "Rectangle (Shift: square)",
+      "ellipse": "Ellipse (Shift: circle)",
+      "diamond": "Diamond",
+      "arrow": "Arrow",
+      "draw": "Freehand",
+      "text": "Text",
+      "eraser": "Eraser"
+    },
+    "stroke": "Line",
+    "fill": "Fill",
+    "color": {
+      "none": "None",
+      "main": "Text",
+      "muted": "Grey",
+      "accent": "Accent",
+      "red": "Red",
+      "orange": "Orange",
+      "green": "Green",
+      "blue": "Blue",
+      "purple": "Purple"
+    },
+    "width": {
+      "1": "Thin",
+      "2": "Medium",
+      "4": "Bold"
+    },
+    "dashed": "Dashed",
+    "rounded": "Rounded corners",
+    "fontSize": "Font",
+    "route": {
+      "straight": "Straight",
+      "curve": "Curved (drag the middle)",
+      "elbow": "Elbow"
+    },
+    "head": {
+      "end": "→",
+      "both": "↔",
+      "none": "—"
+    },
+    "toFront": "Bring to front",
+    "toBack": "Send to back",
+    "duplicate": "Duplicate (Ctrl+D)",
+    "delete": "Delete (Del)",
+    "textField": "Text",
+    "textPlaceholder": "Text …",
+    "draftFound": "There is an unsaved draft of this drawing.",
+    "draftRestore": "Restore",
+    "draftDiscard": "Discard",
+    "nearlyFull": "This drawing is {{percent}} % full. Large freehand areas take the most room.",
+    "tooLarge": "This drawing is too large to save. Please remove something, freehand strokes above all.",
+    "style": "Line, fill, arrow"
   }
 }

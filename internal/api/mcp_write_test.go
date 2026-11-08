@@ -201,3 +201,95 @@ func TestMCPInbox(t *testing.T) {
 		t.Fatal("a discarded entry is no inbox entry any more")
 	}
 }
+
+// Agents read drawings as a description and cannot overwrite them with text
+func TestMCPDrawings(t *testing.T) {
+	srv, store, token := setupTestServer(t)
+	claims, _ := auth.ValidateToken(testJWTSecret, token)
+	call := mcpCaller(t, srv)
+	agentKey, _ := store.CreateAPIKey(claims.UserID, "Agent", []string{"notes:read", "notes:write"})
+	key := agentKey.RawKey
+	content := `{"v":1,"els":[{"id":"a","ver":1,"t":"rect","x":0,"y":0,"w":100,"h":50,"s":"main","f":"none","sw":2,"txt":"Start"},` +
+		`{"id":"b","ver":1,"t":"ellipse","x":300,"y":0,"w":100,"h":50,"s":"main","f":"none","sw":2,"txt":"Ziel"},` +
+		`{"id":"c","ver":1,"t":"arrow","a":[100,25],"b":[300,25],"from":"a","to":"b","route":"straight","head":2,"s":"main","sw":2}]}`
+	doc, err := store.CreateDocument(claims.UserID, "", "Ablauf", "", "", []domain.DocumentBlock{
+		{ID: "blk_dr1", Type: "drawing", Content: content, Level: 0},
+	}, nil, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, isErr, msg := call(key, "get_note", `{"id":"`+doc.ID+`"}`)
+	if isErr || !strings.Contains(msg, "„Start“ → „Ziel“") || strings.Contains(msg, `"els"`) {
+		t.Fatalf("get_note should describe the drawing: %s", msg)
+	}
+	if s := strings.Join(bulletTexts(got), "|"); s != "0:[Zeichnung: „Start“ → „Ziel“]" {
+		t.Fatalf("bullets: %s", s)
+	}
+	if _, isErr, _ := call(key, "update_note_bullet", `{"noteId":"`+doc.ID+`","bulletId":"blk_dr1","text":"Überschrieben"}`); !isErr {
+		t.Fatal("changing the text of a drawing must fail")
+	}
+	snap, _ := store.GetDocSnapshot(doc.ID)
+	if snap.Blocks[0].Content != content {
+		t.Fatalf("drawing changed: %q", snap.Blocks[0].Content)
+	}
+	if res, isErr, _ := call(key, "delete_note_bullet", `{"noteId":"`+doc.ID+`","bulletId":"blk_dr1"}`); isErr || len(bulletTexts(res)) != 0 {
+		t.Fatalf("deleting a drawing: %v", res)
+	}
+}
+
+// Agents draw with Mermaid (laid out by the server) or with the drawing model
+func TestMCPCreatesDrawings(t *testing.T) {
+	srv, store, token := setupTestServer(t)
+	claims, _ := auth.ValidateToken(testJWTSecret, token)
+	call := mcpCaller(t, srv)
+	agentKey, _ := store.CreateAPIKey(claims.UserID, "Agent", []string{"notes:read", "notes:write", "notes:create"})
+	key := agentKey.RawKey
+	doc, _ := store.CreateDocument(claims.UserID, "", "Ablauf", "", "", []domain.DocumentBlock{{ID: "blk_t1", Type: "text", Content: "Davor"}}, nil, false)
+
+	res, isErr, msg := call(key, "add_note_bullet", `{"noteId":"`+doc.ID+`","type":"drawing","text":"flowchart LR\nA[Start] -->|los| B{Fertig?}\nstyle B fill:#9f9"}`)
+	if isErr {
+		t.Fatalf("add drawing: %s", msg)
+	}
+	if s := strings.Join(bulletTexts(res), "|"); !strings.Contains(s, "[Zeichnung: „Start“ → „Fertig?“ (los)]") {
+		t.Fatalf("bullets: %s", s)
+	}
+	added := res["addedId"].(string)
+	snap, _ := store.GetDocSnapshot(doc.ID)
+	for _, b := range snap.Blocks {
+		if b.ID == added && (b.Type != "drawing" || !strings.Contains(b.Content, `"f":"green"`)) {
+			t.Fatalf("stored drawing: %s %s", b.Type, b.Content)
+		}
+	}
+	// Replace it with a mindmap; a plain bullet becomes a drawing only with one
+	if _, isErr, msg := call(key, "update_note_bullet", `{"noteId":"`+doc.ID+`","bulletId":"`+added+`","text":"mindmap\n  Ziel\n    Weg A\n    Weg B"}`); isErr {
+		t.Fatalf("replace drawing: %s", msg)
+	}
+	if _, isErr, _ := call(key, "update_note_bullet", `{"noteId":"`+doc.ID+`","bulletId":"`+added+`","type":"text"}`); !isErr {
+		t.Fatal("a drawing must not turn into text")
+	}
+	if _, isErr, _ := call(key, "update_note_bullet", `{"noteId":"`+doc.ID+`","bulletId":"blk_t1","type":"drawing"}`); !isErr {
+		t.Fatal("type drawing without a drawing must fail")
+	}
+	if _, isErr, _ := call(key, "add_note_bullet", `{"noteId":"`+doc.ID+`","type":"drawing","text":"sequenceDiagram\nA->>B: Hi"}`); !isErr {
+		t.Fatal("unsupported Mermaid must fail")
+	}
+	got, _, _ := call(key, "get_note", `{"id":"`+doc.ID+`"}`)
+	if s := strings.Join(bulletTexts(got), "|"); !strings.Contains(s, "„Ziel“ — „Weg A“") {
+		t.Fatalf("after replacing: %s", s)
+	}
+
+	// create_note: a fenced mermaid block becomes a drawing
+	res, isErr, msg = call(key, "create_note", `{"title":"Mit Diagramm","content":"Einleitung\n\n`+"```mermaid"+`\ngraph TD\nX --> Y\n`+"```"+`"}`)
+	if isErr {
+		t.Fatalf("create_note: %s", msg)
+	}
+	id, _ := res["id"].(string)
+	stored, _ := store.GetDocumentByID(claims.UserID, id)
+	found := false
+	for _, b := range stored.Blocks {
+		found = found || b.Type == "drawing"
+	}
+	if !found {
+		t.Fatalf("no drawing in %+v", stored.Blocks)
+	}
+}

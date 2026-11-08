@@ -104,6 +104,8 @@ func (s *Store) seedStarterEN(user *domain.User) error {
 		{level: 2, text: "Example: basement humidity above 65 % → a thought with priority “urgent”"},
 		{typ: "h3", text: "Compose snippet"},
 		{level: 1, typ: "code", lang: "yaml", text: "services:\n  mindsift:\n    image: ghcr.io/mindsift-app/mindsift:v0.2\n    restart: unless-stopped\n    volumes: [\"./data:/data\"]\n    environment:\n      - JWT_SECRET=${JWT_SECRET}"},
+		{typ: "h2", text: "Network plan"},
+		{level: 1, typ: "drawing", text: seedNetworkDrawing("Router / firewall", "Only 80 and 443 open")},
 		{typ: "h2", text: "Open questions"},
 		{level: 1, text: "Is one UPS enough for router and server together?"},
 		{level: 1, text: "Offsite backup: Hetzner Storage Box or a hard drive at my parents'? See [[Idea collection]]"},

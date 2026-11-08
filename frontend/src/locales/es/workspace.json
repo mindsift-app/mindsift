@@ -91,7 +91,8 @@
     "image": "Subir o enlazar imágenes",
     "audio": "Nota de voz o archivo de audio",
     "dictation": "Hablar en lugar de escribir",
-    "secret": "Ocultar un valor (IP, token …)"
+    "secret": "Ocultar un valor (IP, token …)",
+    "drawing": "Dibujo, diagrama, mapa mental"
   },
   "block": {
     "expand": "Desplegar subpuntos",
@@ -446,5 +447,85 @@
     "withPassword": "con contraseña",
     "new": "Nuevo enlace",
     "revoke": "Retirar"
+  },
+  "drawing": {
+    "broken": "Este dibujo está dañado y no se puede mostrar.",
+    "aria": "Dibujo",
+    "ariaWithText": "Dibujo: {{text}}",
+    "empty": "Dibujo vacío",
+    "emptyEdit": "Dibujo vacío – «Editar» o doble clic para dibujar",
+    "edit": "Editar",
+    "editTitle": "Editar a pantalla completa (doble clic)",
+    "fullscreen": "Ver a pantalla completa",
+    "saveView": "Guardar vista",
+    "saveViewTitle": "Guardar esta sección, el zoom y la altura para todos",
+    "resetView": "Restablecer sección",
+    "autoView": "Automático",
+    "autoViewTitle": "Quitar la vista guardada: ajustar todo",
+    "resize": "Arrastra para cambiar la altura",
+    "editorTitle": "Editar dibujo",
+    "done": "Listo",
+    "close": "Cerrar",
+    "doneEsc": "Guardar y cerrar (Esc)",
+    "undo": "Deshacer (Ctrl+Z)",
+    "redo": "Rehacer (Ctrl+Mayús+Z)",
+    "grid": "Cuadrícula con ajuste (Alt: libre)",
+    "zoomIn": "Acercar",
+    "zoomOut": "Alejar",
+    "fit": "Ajustar todo",
+    "tool": {
+      "select": "Seleccionar",
+      "hand": "Desplazar",
+      "rect": "Rectángulo (Mayús: cuadrado)",
+      "ellipse": "Elipse (Mayús: círculo)",
+      "diamond": "Rombo",
+      "arrow": "Flecha",
+      "draw": "A mano alzada",
+      "text": "Texto",
+      "eraser": "Borrador"
+    },
+    "stroke": "Línea",
+    "fill": "Relleno",
+    "color": {
+      "none": "Ninguno",
+      "main": "Texto",
+      "muted": "Gris",
+      "accent": "Acento",
+      "red": "Rojo",
+      "orange": "Naranja",
+      "green": "Verde",
+      "blue": "Azul",
+      "purple": "Morado"
+    },
+    "width": {
+      "1": "Fina",
+      "2": "Media",
+      "4": "Gruesa"
+    },
+    "dashed": "Discontinua",
+    "rounded": "Esquinas redondeadas",
+    "fontSize": "Letra",
+    "route": {
+      "straight": "Recta",
+      "curve": "Curva (arrastra el centro)",
+      "elbow": "En ángulo"
+    },
+    "head": {
+      "end": "→",
+      "both": "↔",
+      "none": "—"
+    },
+    "toFront": "Traer al frente",
+    "toBack": "Enviar atrás",
+    "duplicate": "Duplicar (Ctrl+D)",
+    "delete": "Eliminar (Supr)",
+    "textField": "Texto",
+    "textPlaceholder": "Texto …",
+    "draftFound": "Hay un borrador sin guardar de este dibujo.",
+    "draftRestore": "Restaurar",
+    "draftDiscard": "Descartar",
+    "nearlyFull": "El dibujo está lleno al {{percent}} %. Las zonas grandes a mano alzada ocupan más espacio.",
+    "tooLarge": "El dibujo es demasiado grande para guardarlo. Quita algo, sobre todo trazos a mano alzada.",
+    "style": "Línea, relleno, flecha"
   }
 }

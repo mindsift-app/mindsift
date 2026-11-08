@@ -18,6 +18,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/mindsift-app/mindsift/internal/domain"
+	"github.com/mindsift-app/mindsift/internal/drawing"
 	"github.com/mindsift-app/mindsift/internal/i18n"
 )
 
@@ -801,6 +802,12 @@ func MarkdownToBlocks(md string) []domain.DocumentBlock {
 			}
 			b := newBlock("code", strings.Join(code, "\n"), level)
 			b.Lang = lang
+			// A drawing copied or exported without its file comes back as a drawing
+			if lang == drawing.Fence {
+				if _, ok := drawing.Parse(b.Content); ok {
+					b.Type, b.Lang = drawing.BlockType, ""
+				}
+			}
 			blocks = append(blocks, b)
 			inList, afterParagraph = false, false
 			continue
@@ -1030,7 +1037,9 @@ func sortedKeys(m map[string]bool) []string {
 // --- Images and recordings ----------------------------------------------------------------------------
 
 var importMediaExt = map[string]bool{".png": true, ".jpg": true, ".jpeg": true, ".gif": true, ".webp": true,
-	".webm": true, ".ogg": true, ".oga": true, ".mp3": true, ".wav": true, ".m4a": true, ".aac": true}
+	".webm": true, ".ogg": true, ".oga": true, ".mp3": true, ".wav": true, ".m4a": true, ".aac": true,
+	// Only drawings exported by MindSift (the model is inside); other SVG files stay out
+	".svg": true}
 
 // reportUnusedMedia lists files no note shows (or that are no valid image/recording) as skipped in the
 // preview and drops them from the plan.
@@ -1130,6 +1139,13 @@ func linkImportMedia(d importDoc, media map[string][]byte, used map[string]bool)
 		}
 		data, ok := media[key]
 		if key == "" || !ok {
+			continue
+		}
+		if content, ok := drawing.FromSVG(data); ok {
+			if used != nil {
+				used[key] = true
+			}
+			blocks[i].Type, blocks[i].Content = drawing.BlockType, content
 			continue
 		}
 		f, seen := byKey[key]

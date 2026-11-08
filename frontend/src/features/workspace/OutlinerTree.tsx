@@ -40,6 +40,8 @@ export interface OutlinerTreeProps {
   onCopyBlockLink?: (blockId: string) => void;
   initialFocusedBlockId?: string | null;
   onFocusedBlockChange?: (blockId: string | null) => void;
+  /** Work in the focused block that does not change its text yet (drawing editor open) */
+  onBlockActivity?: (blockId: string) => void;
   lockedBlocks?: Map<string, BlockLock>; // blockId -> the user editing it (someone else)
   onLockedAction?: (holderName: string) => void;
   onResolveConflict?: (blockId: string, accept: boolean) => void;
@@ -96,6 +98,7 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
   onCopyBlockLink,
   initialFocusedBlockId,
   onFocusedBlockChange,
+  onBlockActivity,
   lockedBlocks,
   onLockedAction,
   onResolveConflict,
@@ -1143,6 +1146,7 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
             onNavigateFocus={handleNavigateFocus}
             onFocusBlock={setFocusedBlockId}
             onBlurBlock={handleBlurBlock}
+            onBlockActivity={onBlockActivity}
             onOpenTask={onOpenTask}
             onTagClick={onTagClick}
             onWikiLinkClick={onWikiLinkClick}

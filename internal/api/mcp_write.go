@@ -8,6 +8,7 @@ import (
 
 	"github.com/mindsift-app/mindsift/internal/collab"
 	"github.com/mindsift-app/mindsift/internal/domain"
+	"github.com/mindsift-app/mindsift/internal/drawing"
 	"github.com/mindsift-app/mindsift/internal/storage"
 )
 
@@ -31,7 +32,31 @@ type noteBullet struct {
 }
 
 // mcpBulletTypes: the types an agent may give a bullet
-var mcpBulletTypes = map[string]bool{"text": true, "todo": true, "h1": true, "h2": true, "h3": true, "numbered": true, "callout": true, "warning": true, "error": true}
+var mcpBulletTypes = map[string]bool{"text": true, "todo": true, "h1": true, "h2": true, "h3": true, "numbered": true, "callout": true, "warning": true, "error": true, drawing.BlockType: true}
+
+// errMCPDrawing: the text of a drawing bullet was neither Mermaid nor a drawing model
+var errMCPDrawing = errors.New("Für eine Zeichnung erwartet text Mermaid (flowchart/graph oder mindmap) oder ein MindSift-Zeichnungsmodell (JSON)")
+
+// mcpDrawingContent reads what an agent sends for a drawing: Mermaid, laid out by the server, or the
+// drawing model itself (as get_note's bullets never show it, mostly written by the agent from the docs)
+func mcpDrawingContent(text string) (string, error) {
+	if drawing.IsMermaid(text) {
+		return drawing.FromMermaid(text)
+	}
+	text = strings.TrimSpace(text)
+	if _, ok := drawing.Parse(text); ok && len(text) <= 100_000 {
+		return text, nil
+	}
+	return "", errMCPDrawing
+}
+
+// mcpDrawingHelp: how drawings are written, for the tool descriptions
+const mcpDrawingHelp = "type drawing: text is either a Mermaid diagram, laid out automatically — flowchart/graph TD|LR|BT|RL with " +
+	"A[box], B(rounded), C{decision}, D((circle)), arrows -->, --- (no head), -.-> (dashed), ==> (bold), <-->, labels -->|yes|, chains A --> B --> C, " +
+	"colours via style A fill:#9f9 or classDef ok fill:green + class A ok; or a mindmap (one node per line, children indented, first line the root) — " +
+	"or a MindSift drawing model as JSON {\"v\":1,\"els\":[…]}: shapes {\"id\",\"t\":\"rect|ellipse|diamond\",\"x\",\"y\",\"w\",\"h\",\"txt\",\"s\":stroke,\"f\":fill or \"none\",\"sw\":2,\"r\":true for round corners}, " +
+	"text {\"id\",\"t\":\"text\",\"x\",\"y\",\"txt\",\"s\"}, arrows {\"id\",\"t\":\"arrow\",\"from\":shapeId,\"to\":shapeId,\"a\":[x,y],\"b\":[x,y],\"route\":\"straight|curve|elbow\",\"head\":0 none|1 start|2 end|3 both,\"txt\":label,\"s\",\"sw\":2}; " +
+	"colours are main, muted, accent, red, orange, green, blue, purple (they follow the user's theme). Prefer Mermaid."
 
 // noteDoc loads the live block tree of a note
 func (s *Server) noteDoc(docID string) (*collab.Doc, error) {
@@ -51,7 +76,11 @@ func (s *Server) noteDoc(docID string) (*collab.Doc, error) {
 func noteBullets(d *collab.Doc) []noteBullet {
 	out := []noteBullet{}
 	for _, b := range d.Flatten() {
-		out = append(out, noteBullet{ID: b.ID, Level: b.Level, Type: b.Type, Text: b.Content, Checked: b.Props.Checked})
+		text := b.Content
+		if b.Type == drawing.BlockType {
+			text = drawing.Describe(b.Content)
+		}
+		out = append(out, noteBullet{ID: b.ID, Level: b.Level, Type: b.Type, Text: text, Checked: b.Props.Checked})
 	}
 	return out
 }
@@ -182,12 +211,12 @@ var mcpWriteTools = []mcpTool{
 	{
 		Name: "add_note_bullet",
 		Description: "Add a bullet to a note: after a bullet (same level), as the last child of a bullet, or at the end. " +
-			"Bullet ids come from get_note. type: text (default), todo, h1, h2, h3, numbered, callout, warning, error.",
+			"Bullet ids come from get_note. type: text (default), todo, h1, h2, h3, numbered, callout, warning, error, drawing. " + mcpDrawingHelp,
 		Scope: storage.ScopeNotesWrite,
 		Schema: schema([]string{"noteId", "text"}, map[string]interface{}{
 			"noteId":   prop("string", "Note id"),
 			"text":     prop("string", "Text of the new bullet"),
-			"type":     map[string]interface{}{"type": "string", "enum": []string{"text", "todo", "h1", "h2", "h3", "numbered", "callout", "warning", "error"}},
+			"type":     map[string]interface{}{"type": "string", "enum": []string{"text", "todo", "h1", "h2", "h3", "numbered", "callout", "warning", "error", "drawing"}},
 			"afterId":  prop("string", "Insert right after this bullet, on its level (optional)"),
 			"parentId": prop("string", "Insert as the last child of this bullet (optional; ignored with afterId)"),
 			"checked":  map[string]interface{}{"type": "boolean", "description": "For a to-do: already done"},
@@ -207,7 +236,7 @@ var mcpWriteTools = []mcpTool{
 				a.Type = "text"
 			}
 			if !mcpBulletTypes[a.Type] {
-				return nil, errors.New("'type': text, todo, h1, h2, h3, numbered, callout, warning oder error")
+				return nil, errors.New("'type': text, todo, h1, h2, h3, numbered, callout, warning, error oder drawing")
 			}
 			d, err := s.noteDoc(a.NoteID)
 			if err != nil {
@@ -246,6 +275,11 @@ var mcpWriteTools = []mcpTool{
 			}
 			id := domain.NewID("blk")
 			text := a.Text
+			if a.Type == drawing.BlockType {
+				if text, err = mcpDrawingContent(a.Text); err != nil {
+					return nil, err
+				}
+			}
 			props := collab.Props{Checked: a.Type == "todo" && a.Checked}
 			op := collab.Op{OpID: domain.NewID("op"), Kind: collab.OpInsert, BlockID: id, ParentID: &parent, OrderKey: key, Type: a.Type, Content: &text, Props: &props}
 			if err := s.applyNoteOps(userID, actor, a.NoteID, []collab.Op{op}); err != nil {
@@ -259,15 +293,16 @@ var mcpWriteTools = []mcpTool{
 		},
 	},
 	{
-		Name:        "update_note_bullet",
-		Description: "Change one bullet of a note: its text, tick or untick a to-do, or its type. Bullet ids come from get_note.",
-		Scope:       storage.ScopeNotesWrite,
+		Name: "update_note_bullet",
+		Description: "Change one bullet of a note: its text, tick or untick a to-do, or its type. Bullet ids come from get_note. " +
+			"A drawing is replaced as a whole: text is the new drawing (Mermaid or the model, see add_note_bullet); type drawing turns a bullet into one.",
+		Scope: storage.ScopeNotesWrite,
 		Schema: schema([]string{"noteId", "bulletId"}, map[string]interface{}{
 			"noteId":   prop("string", "Note id"),
 			"bulletId": prop("string", "Bullet id"),
 			"text":     prop("string", "New text, optional"),
 			"checked":  map[string]interface{}{"type": "boolean", "description": "To-do done (true) or open (false), optional"},
-			"type":     map[string]interface{}{"type": "string", "enum": []string{"text", "todo", "h1", "h2", "h3", "numbered", "callout", "warning", "error"}},
+			"type":     map[string]interface{}{"type": "string", "enum": []string{"text", "todo", "h1", "h2", "h3", "numbered", "callout", "warning", "error", "drawing"}},
 		}),
 		run: func(s *Server, userID string, actor *apiActor, args json.RawMessage) (interface{}, error) {
 			var a struct {
@@ -283,7 +318,7 @@ var mcpWriteTools = []mcpTool{
 				return nil, err
 			}
 			if a.Type != nil && !mcpBulletTypes[*a.Type] {
-				return nil, errors.New("'type': text, todo, h1, h2, h3, numbered, callout, warning oder error")
+				return nil, errors.New("'type': text, todo, h1, h2, h3, numbered, callout, warning, error oder drawing")
 			}
 			d, err := s.noteDoc(a.NoteID)
 			if err != nil {
@@ -292,6 +327,24 @@ var mcpWriteTools = []mcpTool{
 			b, err := liveBullet(d, a.BulletID)
 			if err != nil {
 				return nil, err
+			}
+			// Drawings are replaced as a whole and stay drawings; a bullet becomes one only with its drawing
+			toDrawing := a.Type != nil && *a.Type == drawing.BlockType
+			if b.Type == drawing.BlockType && a.Type != nil && !toDrawing {
+				return nil, errors.New("Dieser Punkt ist eine Zeichnung und bleibt eine (ersetzen mit text, entfernen mit delete_note_bullet)")
+			}
+			if b.Type == drawing.BlockType || toDrawing {
+				if a.Text == nil {
+					if b.Type != drawing.BlockType {
+						return nil, errMCPDrawing
+					}
+				} else {
+					content, err := mcpDrawingContent(*a.Text)
+					if err != nil {
+						return nil, err
+					}
+					a.Text = &content
+				}
 			}
 			if err := s.bulletFree(a.NoteID, b.ID); err != nil {
 				return nil, err

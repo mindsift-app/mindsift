@@ -92,4 +92,23 @@ describe('blocksToMarkdown', () => {
       ['todo', 1],
     ]);
   });
+
+  // Fenced blocks paste back on the level of their section, nested ones too (same as code)
+  it('a copied drawing pastes back as a drawing', () => {
+    const model = '{"v":1,"els":[{"id":"a","ver":1,"t":"rect","x":0,"y":0,"w":10,"h":10,"s":"main","f":"none","sw":2,"txt":"Box"}]}';
+    const md = blocksToMarkdown([b('drawing', model, 0), b('text', 'Darunter', 0), b('drawing', model, 1)]);
+    expect(md.split('\n')[0]).toBe('```mindsift-canvas');
+    const items = parsePastedLines(md.split('\n'));
+    expect(items.map((i) => [i.type, i.indent])).toEqual([
+      ['drawing', 0],
+      ['text', 0],
+      ['drawing', 0],
+    ]);
+    expect(JSON.parse(items[2].content).els[0].txt).toBe('Box');
+  });
+
+  it('a mindsift-canvas fence without a valid model stays text', () => {
+    const items = parsePastedLines(['```mindsift-canvas', 'kein Modell', '```']);
+    expect(items[0].type).toBe('text');
+  });
 });

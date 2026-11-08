@@ -14,6 +14,7 @@ import (
 
 	"github.com/mindsift-app/mindsift/internal/auth"
 	"github.com/mindsift-app/mindsift/internal/domain"
+	"github.com/mindsift-app/mindsift/internal/drawing"
 	"github.com/mindsift-app/mindsift/internal/i18n"
 	"github.com/mindsift-app/mindsift/internal/storage"
 )
@@ -368,7 +369,7 @@ func (s *Server) toNoteView(d *domain.Document) noteView {
 }
 
 // noteMarkdown renders the bullets as an indented Markdown list; images and recordings become a
-// placeholder with their caption (the agent cannot open the files).
+// placeholder with their caption (the agent cannot open the files), drawings a description in words.
 func noteMarkdown(blocks []domain.DocumentBlock) string {
 	out := make([]domain.DocumentBlock, len(blocks))
 	for i, b := range blocks {
@@ -378,6 +379,9 @@ func noteMarkdown(blocks []domain.DocumentBlock) string {
 				label += ": " + ref.Caption
 			}
 			b.Type, b.Content = "paragraph", "["+label+"]"
+		}
+		if b.Type == drawing.BlockType {
+			b.Type, b.Content = "paragraph", drawing.Describe(b.Content)
 		}
 		out[i] = b
 	}
@@ -945,7 +949,7 @@ var mcpTools = []mcpTool{
 	},
 	{
 		Name:        "get_note",
-		Description: "One note: content is its bullets as an indented Markdown list (one tab per level; - [ ] / - [x] are to-dos); bullets lists them with their ids, level and type, for add_note_bullet / update_note_bullet / delete_note_bullet. {{secret:…}} is a value the user hid; it cannot be read here, keep it unchanged when editing the bullet.",
+		Description: "One note: content is its bullets as an indented Markdown list (one tab per level; - [ ] / - [x] are to-dos); bullets lists them with their ids, level and type, for add_note_bullet / update_note_bullet / delete_note_bullet. {{secret:…}} is a value the user hid; it cannot be read here, keep it unchanged when editing the bullet. Drawings (type drawing) are described in words: shapes with their text, arrows as „A“ → „B“ (label).",
 		Scope:       storage.ScopeNotesRead,
 		Schema:      schema([]string{"id"}, map[string]interface{}{"id": prop("string", "Note id")}),
 		run: func(s *Server, userID string, _ *apiActor, args json.RawMessage) (interface{}, error) {
@@ -968,7 +972,7 @@ var mcpTools = []mcpTool{
 	{
 		Name: "create_note",
 		Description: "Create a new note. content is Markdown: a nested list (tab or 2+ spaces per level) becomes nested bullets, - [ ] a to-do, # a heading with the following bullets below it, plain lines and paragraphs become bullets. " +
-			"Example content: \"# Plan\\n- First step\\n\\t- Detail\\n- [ ] Call Anna\". Changing existing notes needs notes:write (update_note, add_note_bullet, …).",
+			"Example content: \"# Plan\\n- First step\\n\\t- Detail\\n- [ ] Call Anna\". A fenced ```mermaid block (flowchart/graph or mindmap) becomes a drawing, laid out automatically. Changing existing notes needs notes:write (update_note, add_note_bullet, …).",
 		Scope: storage.ScopeNotesCreate,
 		Schema: schema([]string{"title"}, map[string]interface{}{
 			"title":      prop("string", "Title of the note"),
@@ -1125,6 +1129,14 @@ func mcpContentBlocks(content string) []domain.DocumentBlock {
 		prevPlain = plain
 	}
 	blocks := storage.MarkdownToBlocks(strings.Join(lines, "\n"))
+	// Mermaid diagrams become drawings, laid out here
+	for i, b := range blocks {
+		if b.Type == "code" && strings.EqualFold(b.Lang, "mermaid") {
+			if content, err := drawing.FromMermaid(b.Content); err == nil {
+				blocks[i].Type, blocks[i].Content, blocks[i].Lang = drawing.BlockType, content, ""
+			}
+		}
+	}
 	for _, b := range blocks {
 		if strings.TrimSpace(b.Content) != "" {
 			return blocks

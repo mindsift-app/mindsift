@@ -91,7 +91,8 @@
     "image": "Téléverser ou lier des images",
     "audio": "Note vocale ou fichier audio",
     "dictation": "Parler au lieu d'écrire",
-    "secret": "Masquer une valeur (IP, jeton …)"
+    "secret": "Masquer une valeur (IP, jeton …)",
+    "drawing": "Dessin, diagramme, carte mentale"
   },
   "block": {
     "expand": "Déplier les sous-puces",
@@ -446,5 +447,85 @@
     "withPassword": "avec mot de passe",
     "new": "Nouveau lien",
     "revoke": "Retirer"
+  },
+  "drawing": {
+    "broken": "Ce dessin est endommagé et ne peut pas être affiché.",
+    "aria": "Dessin",
+    "ariaWithText": "Dessin : {{text}}",
+    "empty": "Dessin vide",
+    "emptyEdit": "Dessin vide – « Modifier » ou double-clic pour dessiner",
+    "edit": "Modifier",
+    "editTitle": "Modifier en plein écran (double-clic)",
+    "fullscreen": "Voir en plein écran",
+    "saveView": "Enregistrer la vue",
+    "saveViewTitle": "Enregistrer ce cadrage, le zoom et la hauteur pour tout le monde",
+    "resetView": "Réinitialiser le cadrage",
+    "autoView": "Automatique",
+    "autoViewTitle": "Supprimer la vue enregistrée : tout ajuster",
+    "resize": "Faire glisser pour changer la hauteur",
+    "editorTitle": "Modifier le dessin",
+    "done": "Terminé",
+    "close": "Fermer",
+    "doneEsc": "Enregistrer et fermer (Échap)",
+    "undo": "Annuler (Ctrl+Z)",
+    "redo": "Rétablir (Ctrl+Maj+Z)",
+    "grid": "Grille magnétique (Alt : libre)",
+    "zoomIn": "Zoom avant",
+    "zoomOut": "Zoom arrière",
+    "fit": "Tout ajuster",
+    "tool": {
+      "select": "Sélectionner",
+      "hand": "Déplacer",
+      "rect": "Rectangle (Maj : carré)",
+      "ellipse": "Ellipse (Maj : cercle)",
+      "diamond": "Losange",
+      "arrow": "Flèche",
+      "draw": "Main levée",
+      "text": "Texte",
+      "eraser": "Gomme"
+    },
+    "stroke": "Trait",
+    "fill": "Remplissage",
+    "color": {
+      "none": "Aucune",
+      "main": "Texte",
+      "muted": "Gris",
+      "accent": "Accent",
+      "red": "Rouge",
+      "orange": "Orange",
+      "green": "Vert",
+      "blue": "Bleu",
+      "purple": "Violet"
+    },
+    "width": {
+      "1": "Fin",
+      "2": "Moyen",
+      "4": "Épais"
+    },
+    "dashed": "Pointillé",
+    "rounded": "Coins arrondis",
+    "fontSize": "Police",
+    "route": {
+      "straight": "Droite",
+      "curve": "Courbe (faire glisser le milieu)",
+      "elbow": "Coudée"
+    },
+    "head": {
+      "end": "→",
+      "both": "↔",
+      "none": "—"
+    },
+    "toFront": "Mettre au premier plan",
+    "toBack": "Mettre à l’arrière-plan",
+    "duplicate": "Dupliquer (Ctrl+D)",
+    "delete": "Supprimer (Suppr)",
+    "textField": "Texte",
+    "textPlaceholder": "Texte …",
+    "draftFound": "Il existe un brouillon non enregistré de ce dessin.",
+    "draftRestore": "Restaurer",
+    "draftDiscard": "Ignorer",
+    "nearlyFull": "Le dessin est plein à {{percent}} %. Les grandes zones à main levée prennent le plus de place.",
+    "tooLarge": "Le dessin est trop grand pour être enregistré. Retirez quelque chose, surtout des traits à main levée.",
+    "style": "Trait, remplissage, flèche"
   }
 }

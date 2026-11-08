@@ -91,7 +91,8 @@
     "image": "Carica o collega immagini",
     "audio": "Nota vocale o file audio",
     "dictation": "Parla invece di digitare",
-    "secret": "Nascondi un valore (IP, token …)"
+    "secret": "Nascondi un valore (IP, token …)",
+    "drawing": "Disegno, diagramma, mappa mentale"
   },
   "block": {
     "expand": "Espandi sottopunti",
@@ -446,5 +447,85 @@
     "withPassword": "con password",
     "new": "Nuovo link",
     "revoke": "Revoca"
+  },
+  "drawing": {
+    "broken": "Questo disegno è danneggiato e non può essere mostrato.",
+    "aria": "Disegno",
+    "ariaWithText": "Disegno: {{text}}",
+    "empty": "Disegno vuoto",
+    "emptyEdit": "Disegno vuoto – «Modifica» o doppio clic per disegnare",
+    "edit": "Modifica",
+    "editTitle": "Modifica a schermo intero (doppio clic)",
+    "fullscreen": "Vedi a schermo intero",
+    "saveView": "Salva vista",
+    "saveViewTitle": "Salva questa sezione, lo zoom e l’altezza per tutti",
+    "resetView": "Ripristina sezione",
+    "autoView": "Automatico",
+    "autoViewTitle": "Rimuovi la vista salvata: adatta tutto",
+    "resize": "Trascina per cambiare l’altezza",
+    "editorTitle": "Modifica disegno",
+    "done": "Fatto",
+    "close": "Chiudi",
+    "doneEsc": "Salva e chiudi (Esc)",
+    "undo": "Annulla (Ctrl+Z)",
+    "redo": "Ripeti (Ctrl+Maiusc+Z)",
+    "grid": "Griglia con aggancio (Alt: libero)",
+    "zoomIn": "Ingrandisci",
+    "zoomOut": "Riduci",
+    "fit": "Adatta tutto",
+    "tool": {
+      "select": "Seleziona",
+      "hand": "Sposta",
+      "rect": "Rettangolo (Maiusc: quadrato)",
+      "ellipse": "Ellisse (Maiusc: cerchio)",
+      "diamond": "Rombo",
+      "arrow": "Freccia",
+      "draw": "A mano libera",
+      "text": "Testo",
+      "eraser": "Gomma"
+    },
+    "stroke": "Linea",
+    "fill": "Riempimento",
+    "color": {
+      "none": "Nessuno",
+      "main": "Testo",
+      "muted": "Grigio",
+      "accent": "Accento",
+      "red": "Rosso",
+      "orange": "Arancione",
+      "green": "Verde",
+      "blue": "Blu",
+      "purple": "Viola"
+    },
+    "width": {
+      "1": "Sottile",
+      "2": "Media",
+      "4": "Spessa"
+    },
+    "dashed": "Tratteggiata",
+    "rounded": "Angoli arrotondati",
+    "fontSize": "Carattere",
+    "route": {
+      "straight": "Dritta",
+      "curve": "Curva (trascina il centro)",
+      "elbow": "Ad angolo"
+    },
+    "head": {
+      "end": "→",
+      "both": "↔",
+      "none": "—"
+    },
+    "toFront": "Porta in primo piano",
+    "toBack": "Porta sullo sfondo",
+    "duplicate": "Duplica (Ctrl+D)",
+    "delete": "Elimina (Canc)",
+    "textField": "Testo",
+    "textPlaceholder": "Testo …",
+    "draftFound": "C’è una bozza non salvata di questo disegno.",
+    "draftRestore": "Ripristina",
+    "draftDiscard": "Scarta",
+    "nearlyFull": "Il disegno è pieno al {{percent}} %. Le grandi aree a mano libera occupano più spazio.",
+    "tooLarge": "Il disegno è troppo grande per essere salvato. Togli qualcosa, soprattutto tratti a mano libera.",
+    "style": "Linea, riempimento, freccia"
   }
 }

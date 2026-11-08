@@ -4,6 +4,8 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"sort"
+
+	"github.com/mindsift-app/mindsift/internal/drawing"
 )
 
 const (
@@ -218,6 +220,9 @@ func (ap *applier) apply(op Op) Result {
 		if len(content) > maxContentLength {
 			return rejected(op, "too_long")
 		}
+		if typ == drawing.BlockType && !drawing.Valid(content) {
+			return rejected(op, "invalid_drawing")
+		}
 		props := Props{}
 		if op.Props != nil {
 			props = *op.Props
@@ -235,6 +240,10 @@ func (ap *applier) apply(op Op) Result {
 		}
 		if len(*op.Content) > maxContentLength {
 			return rejected(op, "too_long")
+		}
+		// Text written into a drawing (e.g. by an agent) would leave nothing to draw
+		if b.Type == drawing.BlockType && !drawing.Valid(*op.Content) {
+			return rejected(op, "invalid_drawing")
 		}
 		if b.Deleted {
 			// A late edit on a deleted block brings it back instead of losing the text
