@@ -391,7 +391,7 @@
     "title": "Export & Import",
     "intro": "Lade deine Daten als Backup oder Markdown-Archiv herunter, spiele Server-Backups zurück oder importiere MindSift-Daten und Obsidian-Vaults.",
     "backupTitle": "Vollständiges Backup (.zip)",
-    "backupHint": "Alle deine Gedanken, Aufgaben, Notizen und Listen als JSON, mit den Bildern und Sprachnotizen deiner Notizen, gepackt in eine ZIP-Datei. Über „MindSift-Daten importieren“ lässt es sich vollständig zurückspielen.",
+    "backupHint": "Alle deine Gedanken, Aufgaben, Notizen und Listen als JSON, mit den Bildern und Sprachnotizen deiner Notizen, gepackt in eine ZIP-Datei. Über „MindSift-Daten importieren“ lässt es sich vollständig zurückspielen. Im Ordner <c>Obsidian</c> liegt alles zusätzlich als Markdown, das Obsidian oder jeder Texteditor direkt öffnet, auch ohne MindSift.",
     "vaultTitle": "Markdown-Archiv für Obsidian (.zip)",
     "importTitle": "Daten importieren",
     "importHint": "Ein Import legt alles neu an und ändert nichts Bestehendes. Vor dem Import siehst du, was angelegt wird.",
@@ -403,7 +403,7 @@
     "backupDownload": "Backup herunterladen",
     "vaultDownload": "Markdown-Archiv herunterladen",
     "vaultHint": "Alle Notizen als <c>.md</c>-Dateien in deiner Ordnerstruktur (mit Titel, Tags und Datum im Kopf), Aufgaben je Liste unter <c>Aufgaben/</c> im Format des Obsidian-Tasks-Plugins, Listen unter <c>Listen/</c>, Bilder und Sprachnotizen unter <c>attachments/</c>. Mit dir geteilte Notizen sind dabei.",
-    "importMindSiftHint": "Eigenes Backup zurückspielen: JSON-Backup (<c>.json</c>) oder Markdown-Archiv (<c>.zip</c>). Notizen kommen in ihre Ordner, Aufgabenlisten mit Unteraufgaben, Fälligkeiten und Prioritäten sowie Listen werden wiederhergestellt.",
+    "importMindSiftHint": "Eigenes Backup zurückspielen: Backup (<c>.zip</c> oder <c>.json</c>) oder Markdown-Archiv (<c>.zip</c>). Notizen kommen in ihre Ordner, Aufgabenlisten mit Unteraufgaben, Fälligkeiten und Prioritäten sowie Listen werden wiederhergestellt.",
     "importObsidianHint": "Vault als <c>.zip</c>. Alle Notizen landen in einem eigenen Ordner mit dem Namen des Vaults, Unterordner bleiben erhalten. Checkboxen bleiben Checkboxen in der Notiz, Frontmatter-Tags werden zu #Hashtags. Bilder und Audiodateien, die eine Notiz einbettet (<c>![[bild.png]]</c> oder <c>![](bild.png)</c>), werden übernommen; andere Anhänge wie PDFs nicht."
   },
   "profile": {

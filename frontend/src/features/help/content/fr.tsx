@@ -548,7 +548,7 @@ const fr: HelpContent = {
         <div className="space-y-2 text-muted leading-relaxed">
           <ul className="space-y-1.5">
             <li>
-              <strong className="text-main">Sauvegardes du serveur :</strong> si l'administration a activé les sauvegardes automatiques, tu trouveras les sauvegardes quotidiennes de tes données sous <em>Paramètres du compte → Export &amp; import</em>. Tu peux les télécharger ou les restaurer, y compris pour des domaines individuels comme les listes ou les tâches.
+              <strong className="text-main">Sauvegardes du serveur :</strong> si l'administration a activé les sauvegardes automatiques, tu trouveras les sauvegardes quotidiennes de tes données sous <em>Paramètres du compte → Export &amp; import</em>. Tu peux les télécharger ou les restaurer, y compris pour des domaines individuels comme les listes ou les tâches. Chaque sauvegarde contient aussi tes notes, tâches et listes en Markdown dans le dossier <em>Obsidian</em>, lisibles dans Obsidian ou n'importe quel éditeur de texte, même sans MindSift.
             </li>
             <li>
               <strong className="text-main">Sans connexion Internet :</strong> installée comme application (ou dans le navigateur), MindSift démarre également hors ligne avec le dernier état chargé. La capture de pensées et la validation de tâches ou de listes continuent de fonctionner ; un indicateur en bas affiche le nombre de modifications en attente, qui sont synchronisées dès le rétablissement de la connexion.

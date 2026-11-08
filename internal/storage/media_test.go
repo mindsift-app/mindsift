@@ -3,6 +3,7 @@ package storage
 import (
 	"archive/zip"
 	"bytes"
+	"encoding/json"
 	"image"
 	"image/png"
 	"io"
@@ -85,12 +86,17 @@ func TestBackupZipCarriesMedia(t *testing.T) {
 		t.Fatal(err)
 	}
 	zr, _ := zip.NewReader(bytes.NewReader(buf.Bytes()), int64(buf.Len()))
-	found := false
+	// The image once, in the vault next to the JSON; the note as Markdown that embeds it
+	var names []string
 	for _, f := range zr.File {
-		found = found || f.Name == "media/"+m.ID+".png"
+		names = append(names, f.Name)
 	}
-	if !found {
-		t.Fatal("backup ZIP must contain the image")
+	all := strings.Join(names, "|")
+	if !strings.Contains(all, "Obsidian/attachments/"+m.ID+".png") || strings.Contains(all, "media/") {
+		t.Fatalf("backup ZIP must hold the image once in the vault: %v", names)
+	}
+	if !strings.Contains(all, "Obsidian/Reisen/Urlaub.md") {
+		t.Fatalf("backup ZIP must hold the note as Markdown: %v", names)
 	}
 
 	plan, err := PlanMindSiftImport(buf.Bytes(), "backup.zip")
@@ -102,6 +108,37 @@ func TestBackupZipCarriesMedia(t *testing.T) {
 	}
 	got := mediaBlocksOf(t, store, ben.ID)
 	if !bytes.Equal(got["Sonnenuntergang [Süd]"], img) {
+		t.Fatalf("restored image missing or different: %v", keysOf(got))
+	}
+}
+
+// Backups from before the vault carry the images as media/<id><ext> next to the JSON
+func TestOldBackupZipMediaStillRestores(t *testing.T) {
+	store, anna, ben := newImportStore(t)
+	doc, _ := store.CreateDocument(anna.ID, "", "Urlaub", "🏖️", "", nil, nil, false)
+	img := pngBytes(t, 3)
+	m := storeTestMedia(t, store, doc.ID, anna.ID, img)
+	_, _ = store.CreateDocument(anna.ID, "", "Urlaub", "🏖️", "", []domain.DocumentBlock{
+		{ID: "blk_i", Type: "image", Content: MediaContent("image", m.ID, "Alt")},
+	}, nil, false)
+	exp, _ := store.ExportUserData(anna.ID)
+	raw, _ := json.Marshal(exp)
+	var buf bytes.Buffer
+	zw := zip.NewWriter(&buf)
+	for name, data := range map[string][]byte{BackupFileName: raw, "media/" + m.ID + ".png": img} {
+		f, _ := zw.Create(name)
+		_, _ = f.Write(data)
+	}
+	_ = zw.Close()
+
+	plan, err := PlanMindSiftImport(buf.Bytes(), "backup.zip")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.ApplyImport(ben.ID, plan); err != nil {
+		t.Fatal(err)
+	}
+	if got := mediaBlocksOf(t, store, ben.ID); !bytes.Equal(got["Alt"], img) {
 		t.Fatalf("restored image missing or different: %v", keysOf(got))
 	}
 }

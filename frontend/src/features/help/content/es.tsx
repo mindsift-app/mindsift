@@ -623,7 +623,7 @@ const es: HelpContent = {
         <div className="space-y-2 text-muted leading-relaxed">
           <ul className="space-y-1.5">
             <li>
-              <strong className="text-main">Copias de seguridad del servidor:</strong> si la administración ha activado las copias automáticas, encontrarás las copias diarias de tus datos en <em>Ajustes de la cuenta → Exportar e importar</em>. Puedes descargarlas o restaurarlas, incluso para áreas individuales como listas o tareas.
+              <strong className="text-main">Copias de seguridad del servidor:</strong> si la administración ha activado las copias automáticas, encontrarás las copias diarias de tus datos en <em>Ajustes de la cuenta → Exportar e importar</em>. Puedes descargarlas o restaurarlas, incluso para áreas individuales como listas o tareas. Cada copia incluye además tus notas, tareas y listas en Markdown en la carpeta <em>Obsidian</em>, legibles en Obsidian o en cualquier editor de texto, incluso sin MindSift.
             </li>
             <li>
               <strong className="text-main">Sin internet:</strong> instalada como app (o en el navegador), MindSift también arranca sin conexión con el último estado cargado. Puedes seguir capturando pensamientos y tachando tareas y elementos de listas; un aviso abajo indica cuántos cambios están pendientes, y se enviarán automáticamente en cuanto vuelva la conexión.

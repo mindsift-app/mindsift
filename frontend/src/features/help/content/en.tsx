@@ -553,7 +553,7 @@ const en: HelpContent = {
         <div className="space-y-2 text-muted leading-relaxed">
           <ul className="space-y-1.5">
             <li>
-              <strong className="text-main">Server backups:</strong> if the administration has switched on automatic backups, you find the daily backups of your data under <em>Account settings → Export &amp; import</em>. You can download or restore them, also for single areas like lists or tasks.
+              <strong className="text-main">Server backups:</strong> if the administration has switched on automatic backups, you find the daily backups of your data under <em>Account settings → Export &amp; import</em>. You can download or restore them, also for single areas like lists or tasks. Every backup also holds your notes, tasks and lists as Markdown in the <em>Obsidian</em> folder, readable in Obsidian or any text editor, even without MindSift.
             </li>
             <li>
               <strong className="text-main">Without internet:</strong> installed as an app (or in the browser), MindSift also starts offline with the last loaded state. Capturing thoughts and checking off tasks and list items keeps working; a hint at the bottom shows how many changes are waiting, and they are sent automatically once the connection is back.

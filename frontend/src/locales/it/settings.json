@@ -391,7 +391,7 @@
     "title": "Esportazione e importazione",
     "intro": "Scarica i tuoi dati come backup o archivio Markdown, ripristina backup del server o importa dati MindSift e vault di Obsidian.",
     "backupTitle": "Backup completo (.zip)",
-    "backupHint": "Tutti i tuoi pensieri, attività, note e liste in formato JSON, con le immagini e le note vocali delle tue note, inclusi in un file ZIP. «Importa dati MindSift» ripristina tutto completamente.",
+    "backupHint": "Tutti i tuoi pensieri, attività, note e liste in formato JSON, con le immagini e le note vocali delle tue note, inclusi in un file ZIP. «Importa dati MindSift» ripristina tutto completamente. La cartella <c>Obsidian</c> contiene inoltre tutto in Markdown, che Obsidian o qualsiasi editor di testo apre direttamente, anche senza MindSift.",
     "vaultTitle": "Archivio Markdown per Obsidian (.zip)",
     "importTitle": "Importa dati",
     "importHint": "L'importazione crea tutto ex novo senza modificare i dati esistenti. Prima dell'importazione vedrai cosa verrà creato.",
@@ -403,7 +403,7 @@
     "backupDownload": "Scarica backup",
     "vaultDownload": "Scarica archivio Markdown",
     "vaultHint": "Tutte le note come file <c>.md</c> nella tua struttura di cartelle (con titolo, tag e data nell'intestazione), attività per lista in <c>Aufgaben/</c> nel formato del plugin Obsidian Tasks, liste in <c>Listen/</c>, immagini e note vocali in <c>attachments/</c>. Le note condivise con te sono incluse.",
-    "importMindSiftHint": "Ripristina il tuo backup: backup JSON (<c>.json</c>) o archivio Markdown (<c>.zip</c>). Le note tornano nelle rispettive cartelle; vengono ripristinate liste di attività con sottoattività, scadenze e priorità, nonché liste della spesa.",
+    "importMindSiftHint": "Ripristina il tuo backup: backup (<c>.zip</c> o <c>.json</c>) o archivio Markdown (<c>.zip</c>). Le note tornano nelle rispettive cartelle; vengono ripristinate liste di attività con sottoattività, scadenze e priorità, nonché liste della spesa.",
     "importObsidianHint": "Vault come file <c>.zip</c>. Tutte le note finiscono in una cartella dedicata con il nome del vault; le sottocartelle vengono mantenute. Le caselle di controllo restano caselle nella nota, i tag nel frontmatter diventano #hashtag. Le immagini e i file audio incorporati nelle note (<c>![[immagine.png]]</c> o <c>![](immagine.png)</c>) vengono importati; altri allegati come i PDF non vengono inclusi."
   },
   "profile": {

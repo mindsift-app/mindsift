@@ -184,7 +184,7 @@ The most important settings (all of them, with explanations, are in [`.env.examp
 | `MINDA_DEMO` | `false` | Demo accounts `admin/admin` and `user/user` with sample data. **Never on a public server with real data!** |
 
 * **Reverse proxy:** pass through WebSocket upgrades and unbuffered SSE if you can. If not, MindSift falls back to long polling by itself. Examples for nginx, Traefik, Caddy and Cloudflare: [Doku/reverse-proxy.md](Doku/reverse-proxy.md).
-* **Backups:** switch on daily backups in the admin settings (whole database plus one per user under `data/backups/`). Copy that folder somewhere else too.
+* **Backups:** switch on daily backups in the admin settings: the whole database for you, plus one ZIP per person under `data/backups/` that everyone can download or restore in their account settings (kept 3 days by default, adjustable). Every one of these ZIPs also holds the person's notes, tasks and lists as an Obsidian vault in plain Markdown, so the data stays readable even without MindSift. Copy that folder somewhere else too.
 * **Updates:** `docker compose pull && docker compose up -d`. The database schema updates itself; open apps offer to reload. From v0.87.3 the container runs as uid 1000 and takes over `data/` on the first start by itself; with `user:` in the compose file, give `data/` to that user first (`chown -R 1000:1000 data`).
 * **Image tags:** `:stable` = the latest tagged release (default in `docker-compose.yml` and the install script), `:vX.Y.Z` = one tagged release, `:latest` = every release from `main`, `:dev` = development.
 * **What changed:** [CHANGELOG.md](CHANGELOG.md).
@@ -239,7 +239,7 @@ docker run --rm aquasec/trivy:0.76.0 image ghcr.io/mindsift-app/mindsift:stable
 
 ## 🔒 Your data is yours
 
-No telemetry, no third-party services, fonts and icons ship with the app. The server only connects out for what you use: notifications (SMTP, Discord, your webhook, the browsers' push services), link previews (switchable per device) and your own Whisper server. Everything lives in one SQLite file, media next to it in `data/media/`. Export the whole workspace as an Obsidian-compatible Markdown archive, or your data as a backup ZIP, whenever you want.
+No telemetry, no third-party services, fonts and icons ship with the app. The server only connects out for what you use: notifications (SMTP, Discord, your webhook, the browsers' push services), link previews (switchable per device) and your own Whisper server. Everything lives in one SQLite file, media next to it in `data/media/`. Export the whole workspace as an Obsidian-compatible Markdown archive, or your data as a backup ZIP (with that Markdown vault inside), whenever you want. If MindSift ever stops working for you, open the `Obsidian` folder of any backup in Obsidian or a text editor and you have everything.
 
 ---
 

@@ -355,8 +355,13 @@ func PlanMindSiftArchiveImport(r io.ReaderAt, size int64) (*ImportPlan, error) {
 // BackupFileName is the JSON inside the backup ZIP.
 const BackupFileName = "mindsift-backup.json"
 
-// WriteBackupZip streams the JSON backup compressed into a ZIP, plus the images and recordings of the
-// user's notes as media/<id><ext> (blocks point to them as media:<id>).
+// BackupVaultDir holds the Markdown vault inside the backup ZIP: Obsidian (or any editor) opens it as it is,
+// without MindSift. Its attachments/ are also the media of the backup.
+const BackupVaultDir = "Obsidian"
+
+// WriteBackupZip streams the JSON backup compressed into a ZIP, next to it the workspace as a Markdown
+// vault (BackupVaultDir) with the images and recordings of the user's notes as attachments/<id><ext>
+// (blocks point to them as media:<id>).
 func (s *Store) WriteBackupZip(userID string, exp *domain.FullExport, w io.Writer) error {
 	zw := zip.NewWriter(w)
 	modified := parseISO(exp.ExportedAt, time.Now())
@@ -369,7 +374,7 @@ func (s *Store) WriteBackupZip(userID string, exp *domain.FullExport, w io.Write
 	if err := enc.Encode(exp); err != nil {
 		return err
 	}
-	if err := s.writeMediaFiles(zw, userID, func(m Media) string { return "media/" + m.ID + MediaExt(m.Mime) }); err != nil {
+	if err := s.writeVault(prefixedZip{zw: zw, prefix: BackupVaultDir + "/"}, userID); err != nil {
 		return err
 	}
 	return zw.Close()
@@ -377,7 +382,7 @@ func (s *Store) WriteBackupZip(userID string, exp *domain.FullExport, w io.Write
 
 // writeMediaFiles adds the user's media files to an archive (already compressed formats: stored as is).
 // Files missing on disk are left out.
-func (s *Store) writeMediaFiles(zw *zip.Writer, userID string, name func(Media) string) error {
+func (s *Store) writeMediaFiles(zw zipEntries, userID string, name func(Media) string) error {
 	media, err := s.MediaOfUser(userID)
 	if err != nil {
 		return err
@@ -400,7 +405,7 @@ func (s *Store) writeMediaFiles(zw *zip.Writer, userID string, name func(Media) 
 }
 
 // PlanMindSiftImport picks the format of MindSift's own data: plain JSON backup, the backup ZIP
-// (one JSON inside) or the Markdown archive.
+// (one JSON inside, next to it the Markdown vault) or the Markdown archive.
 func PlanMindSiftImport(data []byte, fileName string) (*ImportPlan, error) {
 	if strings.HasSuffix(strings.ToLower(fileName), ".json") || (len(data) > 0 && data[0] == '{') {
 		return PlanMindSiftJSONImport(data)
@@ -411,6 +416,15 @@ func PlanMindSiftImport(data []byte, fileName string) (*ImportPlan, error) {
 	}
 	var backup *zip.File
 	for _, f := range zr.File {
+		if cleanArchivePath(f.Name) == BackupFileName {
+			backup = f
+			break
+		}
+	}
+	for _, f := range zr.File {
+		if backup != nil {
+			break
+		}
 		name := cleanArchivePath(f.Name)
 		if strings.EqualFold(path.Ext(name), ".md") {
 			backup = nil
@@ -423,12 +437,14 @@ func PlanMindSiftImport(data []byte, fileName string) (*ImportPlan, error) {
 	if backup == nil {
 		return PlanMindSiftArchiveImport(bytes.NewReader(data), int64(len(data)))
 	}
-	// Images and recordings next to the JSON: media/<id><ext>
+	// Images and recordings: attachments/<id><ext> of the vault next to the JSON, media/<id><ext> in older backups
+	// (the vault's attachments/ also holds drawings as SVG, those are no media)
 	media := map[string][]byte{}
 	var mediaBytes int64
+	vaultMedia := BackupVaultDir + "/" + vaultAttachmentDir + "/med_"
 	for _, f := range zr.File {
 		name := cleanArchivePath(f.Name)
-		if !strings.HasPrefix(name, "media/") || f.FileInfo().IsDir() || f.UncompressedSize64 > maxImportMediaBytes {
+		if !(strings.HasPrefix(name, "media/") || strings.HasPrefix(name, vaultMedia)) || f.FileInfo().IsDir() || f.UncompressedSize64 > maxImportMediaBytes {
 			continue
 		}
 		if mediaBytes += int64(f.UncompressedSize64); mediaBytes > maxImportUnpackedBytes {
