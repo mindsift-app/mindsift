@@ -14,7 +14,7 @@ Go server (chi)  ── internal/api   Handlers, middleware, alarm ticker
 SQLite (modernc.org/sqlite, WAL)  ── internal/storage
 ```
 
-The frontend is embedded into the binary via `go:embed` ([cmd/server/main.go](../cmd/server/main.go)). Unrecognized paths return `index.html` (SPA routing); `index.html`, `sw.js`, and `manifest.json` are served with `no-store`.
+The frontend is embedded into the binary via `go:embed` ([cmd/server/main.go](../cmd/server/main.go)). Unrecognized paths return `index.html` (SPA routing); `index.html`, `sw.js`, and `manifest.json` are served with `no-store`. Links to items (`?note=`, `?task=`, `?list=`, as the MCP server hands them out) open in the installed app where the platform allows it: the manifest has `handle_links: "preferred"` and `launch_handler.client_mode: ["focus-existing", "auto"]`, so an open app window comes to the front and receives the link via `window.launchQueue` (`App.tsx`) without reloading. Whether a link is captured is up to the browser and system: Chrome and Edge on the desktop ask once (or follow the app's "open supported links" setting), on Android it depends on the app's "Open supported links" setting, and apps that open links in their own in-app browser never hand them over.
 
 ## Stack
 

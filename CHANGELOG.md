@@ -18,6 +18,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - AI agents (MCP) can draw: `add_note_bullet` with type `drawing` takes a Mermaid flowchart or mind map, including its colours, and the server lays it out (layers, few crossing lines, right-angled arrows; mind maps with a colour per branch). `update_note_bullet` replaces a drawing, and a ```` ```mermaid ```` block in `create_note` becomes a drawing too.
 
 ### Changed
+- Installed app: links to notes, tasks and lists (for example from AI agents over MCP) open in the installed MindSift app instead of a browser tab, where the system allows it, and an open app window is reused without reloading. On Android this needs "Open supported links" switched on in the app's system settings; apps that open links in their own built-in browser keep doing so.
+- Lists on the desktop: the field for a new item looks like the one for a new task: one bar with the + in front and microphone, quantity and "Add" inside it.
 - Voice input with your own Whisper server: every microphone sends the recording in pieces while you speak (every ~8 s or at a short pause), like Quick Dump already did. Dictating a minute into a task's notes no longer means waiting minutes for the whole text at the end; it arrives while you speak.
 - Task details: the microphone sits in the top right corner of the title and notes fields, like in Quick Dump, and is there while the field is open. The microphone above the notes, which could be started with the field closed and then seemed to load forever, is gone.
 - Journal: "Today" is back, at the right of the "Journal" title above the calendar in the sidebar.
