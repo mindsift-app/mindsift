@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { WikiLinkClickHandler } from '../../lib/wikiLink';
 import { ArrowLeft, CalendarDays, ChevronDown, Users } from 'lucide-react';
 import { Document, JournalDay, User } from '../../lib/types';
@@ -101,6 +101,28 @@ export const JournalView: React.FC<JournalViewProps> = ({
   }, [shown, docIdByDate, onOpenDay]);
 
   const scrollRef = useRef<HTMLDivElement | null>(null);
+
+  // Focus mode: the text starts where it was in the workspace; unpinned, the header that slides in over
+  // it keeps at least its height (45 px) free (large screens only, the header is not shown below)
+  const workspaceTopRef = useRef(0);
+  const [focusTopGap, setFocusTopGap] = useState(0);
+  useLayoutEffect(() => {
+    const root = scrollRef.current;
+    if (!root) return;
+    // Positions without transforms: the view's fade-in moves it a few pixels while it is measured
+    const pageTop = (el: HTMLElement | null) => {
+      let top = 0;
+      for (let e = el; e; e = e.offsetParent as HTMLElement | null) top += e.offsetTop;
+      return top;
+    };
+    if (!focusMode) {
+      workspaceTopRef.current = pageTop(root);
+      setFocusTopGap(0);
+      return;
+    }
+    if (!window.matchMedia?.('(min-width: 1024px)').matches) return;
+    setFocusTopGap(Math.max(focusBarPinned ? 0 : 41, workspaceTopRef.current - pageTop(root)));
+  }, [focusMode, focusBarPinned]);
   const sectionRefs = useRef(new Map<string, HTMLElement>());
 
   // Jump: make sure the day is rendered, then scroll to it once its note is there
@@ -217,13 +239,14 @@ export const JournalView: React.FC<JournalViewProps> = ({
         </div>
       )}
 
-      {/* Focus mode: room at the top for the header that slides in (pinned, the pane starts below it) */}
+      {/* Focus mode keeps the days at the height they have in the workspace, like a note (DocumentEditor) */}
       <div
         ref={scrollRef}
         onScroll={onScroll}
-        className={`flex-1 min-h-0 overflow-y-auto ${focusMode && !focusBarPinned ? 'lg:pt-12' : ''}`}
+        className="flex-1 min-h-0 overflow-y-auto"
+        style={focusMode && focusTopGap > 0 ? { paddingTop: focusTopGap } : undefined}
       >
-        {shown.map((date) => {
+        {shown.map((date, idx) => {
           const docId = docIdByDate.get(date);
           return (
             <section
@@ -233,7 +256,7 @@ export const JournalView: React.FC<JournalViewProps> = ({
                 if (el) sectionRefs.current.set(date, el);
                 else sectionRefs.current.delete(date);
               }}
-              className="border-b border-border last:border-b-0 min-h-[8rem]"
+              className="min-h-[8rem]"
             >
               {docId ? (
                 <DocumentEditor
@@ -262,6 +285,12 @@ export const JournalView: React.FC<JournalViewProps> = ({
                 />
               ) : (
                 <div className="px-4 sm:px-8 py-6 text-xs text-muted">{t('journal.opening', { date: shortDateLabel(date) })}</div>
+              )}
+              {/* Between the days a line within the text, like a divider (in focus mode the reading width) */}
+              {idx < shown.length - 1 && (
+                <div className={`pl-2 pr-1 sm:px-8 ${focusMode ? 'max-w-3xl mx-auto' : ''}`} aria-hidden>
+                  <div className="journal-day-divider border-t border-border" />
+                </div>
               )}
             </section>
           );

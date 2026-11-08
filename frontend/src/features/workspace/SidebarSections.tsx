@@ -1,5 +1,6 @@
 import { CalendarDays, Trash2 } from 'lucide-react';
 import { JournalDay, TagSummary } from '../../lib/types';
+import { todayISO } from '../../lib/journal';
 import { CountBadge } from '../../components/CountBadge';
 import { JournalCalendar } from './JournalCalendar';
 import { useDocDragDrop } from './useDocDragDrop';
@@ -57,6 +58,7 @@ export function SidebarJournal({
                 activeDate={journalActive}
                 entryDates={new Set(journalDays.filter((d) => !d.empty).map((d) => d.date))}
                 onSelect={jumpToJournalDay}
+                onToday={() => jumpToJournalDay(todayISO())}
               />
             </div>
           </div>
