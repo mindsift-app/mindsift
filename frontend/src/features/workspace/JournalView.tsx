@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ArrowLeft, CalendarDays, ChevronDown, Users } from 'lucide-react';
 import { Document, JournalDay, User } from '../../lib/types';
 import { shortDateLabel, todayISO } from '../../lib/journal';
-import { DocumentEditor } from './DocumentEditor';
+import { DocHeaderStatus, DocSaveStatus, DocumentEditor } from './DocumentEditor';
 import { JournalCalendar } from './JournalCalendar';
 import { useTranslation } from 'react-i18next';
 
@@ -32,6 +32,14 @@ interface JournalViewProps {
   onBackMobile: () => void;
   /** A day was saved (its calendar dot may change) */
   onDaySaved: () => void;
+  /** Large screens: the active day's actions go into the tab bar (or the focus mode header), like a note's */
+  actionsTarget?: HTMLElement | null;
+  focusMode?: boolean;
+  focusBarPinned?: boolean;
+  onToggleFocusMode?: () => void;
+  /** Save and live status of the active day, for the tab bar */
+  onActiveSaveStatusChange?: (status: DocSaveStatus, errorMsg?: string) => void;
+  onActiveHeaderStatusChange?: (status: DocHeaderStatus | null) => void;
 }
 
 // The journal: one note per day below each other, today on top, older days load while scrolling.
@@ -55,6 +63,12 @@ export const JournalView: React.FC<JournalViewProps> = ({
   onOpenTask,
   onBackMobile,
   onDaySaved,
+  actionsTarget,
+  focusMode = false,
+  focusBarPinned = false,
+  onToggleFocusMode,
+  onActiveSaveStatusChange,
+  onActiveHeaderStatusChange,
 }) => {
   const { t } = useTranslation('workspace');
   const today = todayISO();
@@ -146,8 +160,9 @@ export const JournalView: React.FC<JournalViewProps> = ({
 
   return (
     <div className="flex-1 flex flex-col min-h-0 bg-editor view-enter">
-      {/* One header for all days: the day in view and its sharing */}
-      <div className="shrink-0 flex items-center gap-2 px-4 sm:px-6 py-2 border-b border-border">
+      {/* One header for all days: the day in view and its sharing. Large screens have the tab bar for
+          that (and the calendar in the sidebar), like notes */}
+      <div className="lg:hidden shrink-0 flex items-center gap-2 px-4 sm:px-6 py-2 border-b border-border">
         <button
           type="button"
           onClick={onBackMobile}
@@ -201,7 +216,12 @@ export const JournalView: React.FC<JournalViewProps> = ({
         </div>
       )}
 
-      <div ref={scrollRef} onScroll={onScroll} className="flex-1 min-h-0 overflow-y-auto">
+      {/* Focus mode: room at the top for the header that slides in (pinned, the pane starts below it) */}
+      <div
+        ref={scrollRef}
+        onScroll={onScroll}
+        className={`flex-1 min-h-0 overflow-y-auto ${focusMode && !focusBarPinned ? 'lg:pt-12' : ''}`}
+      >
         {shown.map((date) => {
           const docId = docIdByDate.get(date);
           return (
@@ -229,9 +249,15 @@ export const JournalView: React.FC<JournalViewProps> = ({
                   onWikiLinkClick={onWikiLinkClick}
                   onOpenDocBlock={onOpenDocBlock}
                   onOpenTask={onOpenTask}
-                  onSaveStatusChange={(status) => {
+                  onSaveStatusChange={(status, err) => {
                     if (status === 'saved') onDaySaved();
+                    if (date === activeDate) onActiveSaveStatusChange?.(status, err);
                   }}
+                  onHeaderStatusChange={date === activeDate ? onActiveHeaderStatusChange : undefined}
+                  actionsTarget={date === activeDate ? actionsTarget : undefined}
+                  focusMode={focusMode}
+                  focusBarPinned={focusBarPinned}
+                  onToggleFocusMode={date === activeDate ? onToggleFocusMode : undefined}
                 />
               ) : (
                 <div className="px-4 sm:px-8 py-6 text-xs text-muted">{t('journal.opening', { date: shortDateLabel(date) })}</div>

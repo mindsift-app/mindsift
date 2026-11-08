@@ -3,7 +3,6 @@ package storage
 import (
 	"encoding/json"
 	"fmt"
-	"path/filepath"
 	"strings"
 
 	"github.com/mindsift-app/mindsift/internal/domain"
@@ -173,7 +172,7 @@ func (s *Store) CreateDocument(userID, spaceID, title, icon, folderPath string, 
 		pinnedInt = 1
 	}
 
-	cleanFolder := filepath.ToSlash(filepath.Clean(strings.TrimSpace(folderPath)))
+	cleanFolder := cleanFolderPath(folderPath)
 	if cleanFolder == "." {
 		cleanFolder = ""
 	}
@@ -278,7 +277,7 @@ func (s *Store) CheckCreateInFolder(userID, folderPath string) error {
 }
 
 func matchMountPath(folderPath string, mounts map[string]string) (string, string, bool) {
-	clean := filepath.ToSlash(filepath.Clean(strings.TrimSpace(folderPath)))
+	clean := cleanFolderPath(folderPath)
 	if clean == "." {
 		clean = ""
 	}
@@ -291,7 +290,7 @@ func matchMountPath(folderPath string, mounts map[string]string) (string, string
 	var longestMountLen int = -1
 
 	for fID, mPath := range mounts {
-		cleanMount := filepath.ToSlash(filepath.Clean(strings.TrimSpace(mPath)))
+		cleanMount := cleanFolderPath(mPath)
 		if cleanMount == "." {
 			cleanMount = ""
 		}

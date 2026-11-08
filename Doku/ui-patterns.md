@@ -100,6 +100,15 @@ Component: [CountBadge.tsx](../frontend/src/components/CountBadge.tsx), CSS clas
 - Numbers in the mobile menu (`MobileActionContext`, `badge: number`) are automatically rendered as `CountBadge`; text badges such as "2 active" remain text tags.
 - **Important for new classes:** Tailwind purges classes from `@layer components` that are not present verbatim in the source code. Therefore, never interpolate class names (`count-badge-${variant}`); write them out fully.
 
+## View Switch (Segmented Control)
+
+Component: [SegmentedControl.tsx](../frontend/src/components/SegmentedControl.tsx)
+
+- A row of two or three short options in one frame; the chosen one is raised (`bg-panel-elevated`, light shadow). Used wherever a list can be shown in different ways: sorting of the hashtags (frequency / A–Z), the to-dos from notes (open / all, grouped / list).
+- Short labels, the longer explanation goes into `title` (hover). Screen readers get `radiogroup` and `radio` with `aria-checked`.
+- The choice is a per-device convenience and is kept in `localStorage` where it should survive a reload (to-dos: `mindsift_todo_show`, `mindsift_todo_grouping`).
+- Build new switches of this kind with this component instead of copying button classes.
+
 ## Origin Badge (API Keys)
 
 Component: [OriginBadge.tsx](../frontend/src/components/OriginBadge.tsx)
@@ -130,6 +139,7 @@ Search and filter fields get `NO_AUTOFILL` (`lib/noAutofill.ts`). Passwords that
 Component for connection status: [LivePill.tsx](../frontend/src/components/LivePill.tsx) (notes display their own sync transport in the same visual style).
 
 - On the right side of headers in Notes, Tasks, and Lists, the same layout order applies: status indicators on the left (Live pill, "Shared"), followed by a vertical divider (`w-px h-5 bg-border`), and action buttons on the right (Share, View, Menu). On mobile, the layout is identical, but the pill displays only "Live".
+- The "shared" status in these headers is [SharedPill.tsx](../frontend/src/components/SharedPill.tsx): flat (`bg-panel`, 28 px high), "Shared (3)" in the accent colour for own items, "Shared by Anna" muted for someone else's; a click opens the sharing dialog. The journal shows the same header for the day marked in the calendar.
 
 ## Microphone in Input Fields
 

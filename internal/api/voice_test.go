@@ -82,7 +82,8 @@ func TestVoiceTranscribeForwardsToWhisper(t *testing.T) {
 	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), `"text":"Hallo Welt, wie geht's?"`) {
 		t.Fatalf("transcribe: %d %s", rec.Code, rec.Body.String())
 	}
-	if got["model"] != "Systran/faster-whisper-small" || got["language"] != "de" || got["audio"] != "RIFF-audio" {
+	// No language chosen: Whisper detects it
+	if got["model"] != "Systran/faster-whisper-small" || got["language"] != "" || got["audio"] != "RIFF-audio" {
 		t.Fatalf("forwarded wrong data: %+v", got)
 	}
 	// Hourly budget per user
@@ -105,14 +106,16 @@ func TestVoiceTranscribeForwardsToWhisper(t *testing.T) {
 	}
 }
 
-// Whisper gets the person's own voice language, else their app language; "auto" sends none.
+// Whisper gets the person's own voice language or, with "app", their app language; without a choice
+// and with "auto" it gets none and detects the language itself.
 func TestVoiceLanguagePerPerson(t *testing.T) {
 	var got map[string]string
 	var downloads int32
 	whisper := fakeWhisper(t, []string{"Systran/faster-whisper-small"}, &got, &downloads)
 	for _, tc := range []struct{ app, voice, want string }{
-		{"en", "", "en"},
-		{"fr", "", "fr"},
+		{"en", "", ""},
+		{"en", "app", "en"},
+		{"fr", "app", "fr"},
 		{"en", "ru", "ru"},
 		{"de", "auto", ""},
 		{"de", "it", "it"},
@@ -171,7 +174,7 @@ func TestVoiceLanguageSetting(t *testing.T) {
 	for _, tc := range []struct {
 		value string
 		code  int
-	}{{"ru", http.StatusOK}, {"auto", http.StatusOK}, {"", http.StatusOK}, {"xx", http.StatusBadRequest}, {"de-DE", http.StatusBadRequest}} {
+	}{{"ru", http.StatusOK}, {"auto", http.StatusOK}, {"app", http.StatusOK}, {"", http.StatusOK}, {"xx", http.StatusBadRequest}, {"de-DE", http.StatusBadRequest}} {
 		rec := sessionCall(router, "PATCH", "/api/v1/auth/settings", token, `{"voiceLanguage":"`+tc.value+`"}`, "")
 		if rec.Code != tc.code {
 			t.Fatalf("voiceLanguage %q: want %d, got %d %s", tc.value, tc.code, rec.Code, rec.Body.String())

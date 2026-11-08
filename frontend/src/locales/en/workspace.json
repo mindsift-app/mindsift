@@ -175,7 +175,12 @@
     "open": "{{count}} open",
     "grouped": "Grouped",
     "list": "List",
-    "root": "Top level"
+    "root": "Top level",
+    "showOpen": "Open",
+    "showOpenTitle": "Show open to-dos only",
+    "showAll": "All",
+    "showAllTitle": "Show done to-dos as well",
+    "allDone": "All done – no open to-dos."
   },
   "emoji": {
     "suggested": "Recently used",

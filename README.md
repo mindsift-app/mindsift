@@ -78,6 +78,12 @@ Every thought is a bullet: indent, collapse, zoom in, drag whole branches. Wiki 
   <img src="screenshots/workspace_desktop.webp" alt="MindSift workspace: two people editing the same note" width="90%" />
 </p>
 
+Drawings right in a note (`/canvas`): shapes, arrows that dock to them, text and freehand, edited full screen; AI agents can draw flowcharts and mind maps from Mermaid. Focus mode hides everything but the note, with the bar and the folders pinned if you like.
+
+<p align="center">
+  <img src="screenshots/Focus_desktop.webp" alt="MindSift focus mode with pinned bar and sidebar, a note with a network plan drawing" width="90%" />
+</p>
+
 ### 📅 Journal
 One note per day, all days below each other, with a calendar to jump around.
 
@@ -155,7 +161,7 @@ Open `http://localhost:8080` and a wizard creates the admin account. Do that rig
 
 All settings are explained in [`.env.example`](.env.example). Optional voice recognition: uncomment the `whisper` block in [`docker-compose.yml`](docker-compose.yml) and set `STT_URL=http://whisper:8000` (or let the install script do it).
 
-**Which speech model?** The two the install script offers (large-v3-turbo, small) are OpenAI's multilingual Whisper models and work well in German, English, Spanish, French and Italian. Any Whisper model in CTranslate2 format runs too, for example one fine-tuned for a single language: [list of compatible models on Hugging Face](https://huggingface.co/models?pipeline_tag=automatic-speech-recognition&library=ctranslate2&sort=downloads) (the same list speaches uses), add a language to the search, e.g. [German](https://huggingface.co/models?pipeline_tag=automatic-speech-recognition&library=ctranslate2&sort=downloads&search=german). Everyone picks the language they speak under Account settings → Voice input: the app language, any of Whisper's ~100 languages, or automatic detection for people who switch between languages. Put the model's name into `STT_MODEL` in `.env` (e.g. `Systran/faster-whisper-small`) and run `docker compose up -d`; MindSift downloads it by itself. Larger models recognize better but need more RAM and time.
+**Which speech model?** The two the install script offers (large-v3-turbo, small) are OpenAI's multilingual Whisper models and work well in German, English, Spanish, French and Italian. Any Whisper model in CTranslate2 format runs too, for example one fine-tuned for a single language: [list of compatible models on Hugging Face](https://huggingface.co/models?pipeline_tag=automatic-speech-recognition&library=ctranslate2&sort=downloads) (the same list speaches uses), add a language to the search, e.g. [German](https://huggingface.co/models?pipeline_tag=automatic-speech-recognition&library=ctranslate2&sort=downloads&search=german). Everyone picks the language they speak under Account settings → Voice input: automatic detection (the default, also good for sentences that mix languages), the app language, or any of Whisper's ~100 languages. Put the model's name into `STT_MODEL` in `.env` (e.g. `Systran/faster-whisper-small`) and run `docker compose up -d`; MindSift downloads it by itself. Larger models recognize better but need more RAM and time.
 
 ---
 

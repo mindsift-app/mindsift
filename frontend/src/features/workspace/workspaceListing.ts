@@ -19,13 +19,14 @@ export type TagGroup = {
 export const ROOT_FOLDER_KEY = 'Hauptebene';
 
 // Every to-do with text of all notes (ROOT_FOLDER_KEY for notes outside folders), optionally of one folder only
-export function collectRollupTodos(docs: Document[], todoFolderDrilldown: string | null): RollupTodo[] {
+// and optionally only the open ones
+export function collectRollupTodos(docs: Document[], todoFolderDrilldown: string | null, openOnly = false): RollupTodo[] {
   const list: RollupTodo[] = [];
   for (const d of docs) {
     const fName = d.folderPath || ROOT_FOLDER_KEY;
     if (todoFolderDrilldown && fName !== todoFolderDrilldown) continue;
     for (const b of d.blocks || []) {
-      if (b.type === 'todo' && b.content.trim() !== '') {
+      if (b.type === 'todo' && b.content.trim() !== '' && !(openOnly && b.checked)) {
         list.push({ doc: d, blockId: b.id, content: b.content, checked: Boolean(b.checked) });
       }
     }

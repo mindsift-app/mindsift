@@ -175,7 +175,12 @@
     "open": "{{count}} da fare",
     "grouped": "Raggruppate",
     "list": "Elenco",
-    "root": "Livello principale"
+    "root": "Livello principale",
+    "showOpen": "Aperte",
+    "showOpenTitle": "Mostra solo le attività aperte",
+    "showAll": "Tutte",
+    "showAllTitle": "Mostra anche le attività fatte",
+    "allDone": "Tutto fatto: nessuna attività aperta."
   },
   "emoji": {
     "suggested": "Recenti",

@@ -175,7 +175,12 @@
     "open": "{{count}} à faire",
     "grouped": "Groupé",
     "list": "Liste",
-    "root": "Niveau principal"
+    "root": "Niveau principal",
+    "showOpen": "Ouvertes",
+    "showOpenTitle": "N’afficher que les tâches ouvertes",
+    "showAll": "Toutes",
+    "showAllTitle": "Afficher aussi les tâches faites",
+    "allDone": "Tout est fait : aucune tâche ouverte."
   },
   "emoji": {
     "suggested": "Récemment utilisés",

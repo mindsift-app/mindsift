@@ -175,7 +175,12 @@
     "open": "{{count}} pendientes",
     "grouped": "Agrupadas",
     "list": "Lista",
-    "root": "Nivel superior"
+    "root": "Nivel superior",
+    "showOpen": "Pendientes",
+    "showOpenTitle": "Mostrar solo las tareas pendientes",
+    "showAll": "Todas",
+    "showAllTitle": "Mostrar también las tareas hechas",
+    "allDone": "Todo hecho: no hay tareas pendientes."
   },
   "emoji": {
     "suggested": "Usados recientemente",

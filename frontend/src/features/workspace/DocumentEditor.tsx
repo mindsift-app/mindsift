@@ -272,7 +272,8 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
   // Embedded in a list of notes (journal, hashtag page): no own scrolling, action bar or backlinks
   const embedded = inJournal || inTagPage;
   const large = useSyncExternalStore(subscribeLarge, isLargeScreen, () => false);
-  const desktopBar = !embedded && large && Boolean(actionsTarget);
+  // The journal's active day puts its actions into the tab bar as well
+  const desktopBar = (!embedded || inJournal) && large && Boolean(actionsTarget);
   const [doc, setDoc] = useState<Document | null>(initialDoc || null);
   const [title, setTitle] = useState<string>(initialDoc?.title || '');
   const [blocks, setBlocks] = useState<DocumentBlock[]>(() =>
@@ -1763,7 +1764,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
         className={`w-full pl-2 pr-1 sm:px-8 flex-auto shrink-0 overflow-x-auto sm:overflow-x-visible [-webkit-overflow-scrolling:touch] ${
           inTagPage ? 'py-2' : inJournal ? 'py-3' : 'py-5'
         } ${focusMode ? 'max-w-3xl mx-auto' : ''}`}
-        style={focusMode && desktopBar ? { paddingTop: `calc(1.25rem + ${focusTopGap}px)`, paddingBottom: '60vh' } : undefined}
+        style={focusMode && desktopBar && !embedded ? { paddingTop: `calc(1.25rem + ${focusTopGap}px)`, paddingBottom: '60vh' } : undefined}
       >
         {desktopBar && zoomedBlock && breadcrumbs.length > 0 && <div className="mb-3">{breadcrumbNav}</div>}
         {zoomedBlock ? (

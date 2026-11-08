@@ -169,6 +169,29 @@ const main = async () => {
   await sleep(2000);
   await plain(page, 'workspace_desktop.png', 'light');
 
+  // Focus mode with the bar and the sidebar pinned (the settings it keeps in localStorage), scrolled to
+  // the network plan (a drawing)
+  await other.close();
+  await page.evaluate(() => {
+    localStorage.setItem('mindsift_zen_pin_top', '1');
+    localStorage.setItem('mindsift_zen_pin_side', '1');
+  });
+  await page.reload();
+  await tab(page, 'Workspace');
+  await page.getByText(/^Homelab 2\.0/).first().click();
+  await page.waitForFunction(() => document.querySelectorAll('textarea').length > 5, null, { timeout: 10000 });
+  await page.keyboard.press('Control+Shift+F');
+  await sleep(800);
+  await page.locator('[aria-label^="Drawing"]').first().evaluate((el) => el.scrollIntoView({ block: 'center' }));
+  await sleep(1200);
+  await plain(page, 'Focus_desktop.png', 'dark');
+  await page.evaluate(() => {
+    localStorage.setItem('mindsift_zen_pin_top', '0');
+    localStorage.setItem('mindsift_zen_pin_side', '0');
+  });
+  await page.keyboard.press('Escape');
+  await sleep(500);
+
   // Journal: a few days with entries, the calendar in the sidebar
   const H = { Authorization: `Bearer ${admin}`, 'Content-Type': 'application/json' };
   const today = new Date();
@@ -193,7 +216,8 @@ const main = async () => {
     await sleep(1200);
     await write(day(offset), offset === 2 ? ['Mowed the lawn, the hedge still has to wait #garden'] : ['First thoughts on the house renovation #renovation', 'Get quotes by the end of the month']);
   }
-  await page.getByRole('button', { name: 'Today' }).click().catch(() => {});
+  // Back to today in the calendar (large screens have no "Today" button above the days)
+  await page.getByTitle(new RegExp(today.toLocaleDateString('en-US', { day: 'numeric', month: 'long' }))).first().click().catch(() => {});
   await page.mouse.click(1000, 860);
   await sleep(2500);
   // Round corners (setting "Corners: round") for this picture only

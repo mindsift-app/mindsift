@@ -151,12 +151,12 @@ func (s *Server) handleVoiceTranscribe(w http.ResponseWriter, r *http.Request) {
 }
 
 // sttLanguage: the language Whisper is told for a recording ("" = none, Whisper detects it): the person's
-// own choice for voice input, else their app language.
+// own choice for voice input; without one Whisper detects it (better for German with English terms).
 func (s *Server) sttLanguage(userID string) string {
 	switch lang := s.store.VoiceLanguage(userID); lang {
-	case "auto":
+	case "", "auto":
 		return ""
-	case "":
+	case "app":
 		return s.userLanguage(userID)
 	default:
 		return lang
