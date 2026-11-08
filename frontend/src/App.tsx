@@ -76,6 +76,12 @@ import { useTranslation } from 'react-i18next';
 const canAdminister = (u: User) => u.role === 'admin' || u.role === 'manager';
 
 
+// The item a link points to (?note=…, ?task=…, ?list=…)
+function parseDeepLink(search: string) {
+  const params = new URLSearchParams(search);
+  return { note: params.get('note'), task: params.get('task'), list: params.get('list') };
+}
+
 export const App: React.FC = () => {
   const { t } = useTranslation('app');
   const [activeTheme, setActiveThemeState] = useState<ThemeId>(() => initThemeOnBoot());
@@ -455,11 +461,15 @@ export const App: React.FC = () => {
   };
 
   // Links from the MCP server (?note=…, ?task=…, ?list=…): open the item once signed in, then drop the
-  // parameter from the address bar
-  const [deepLink] = useState(() => {
-    const params = new URLSearchParams(window.location.search);
-    return { note: params.get('note'), task: params.get('task'), list: params.get('list') };
-  });
+  // parameter from the address bar. The installed app takes such links over (manifest: handle_links); an
+  // open app window is brought to the front and gets the link through the launch queue, without a reload
+  const [deepLink, setDeepLink] = useState(() => parseDeepLink(window.location.search));
+  useEffect(() => {
+    const queue = (window as { launchQueue?: { setConsumer: (fn: (p: { targetURL?: string }) => void) => void } }).launchQueue;
+    queue?.setConsumer((launch) => {
+      if (launch.targetURL) setDeepLink(parseDeepLink(new URL(launch.targetURL).search));
+    });
+  }, []);
   useEffect(() => {
     if (!user?.id || !(deepLink.note || deepLink.task || deepLink.list)) return;
     if (deepLink.note) {
