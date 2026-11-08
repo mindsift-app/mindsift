@@ -44,7 +44,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 ### Fixed
 - Shared notes: the lock badge of someone else working in a bullet floats over the bullet's top right corner instead of taking room next to it, so text and drawings no longer change width while they type.
 - Shared notes: while your cursor is in a bullet, bullets others add or remove above it no longer push it up or down the screen.
-- Shared notes: a bullet someone left is free for the others right after its 20 s, not up to 7 s later.
+- Shared notes: a bullet someone left is free for the others after 7 s instead of 20 to 27 s.
 - Shared notes: an open note sent many requests per second without anything happening (every sync told all open windows, including the sending one, that the note had changed, and they synced again). The server now only reports real changes; an idle shared note is quiet again. While someone else holds a bullet, the note checks every 3 s, so their lock disappears soon after their browser closed.
 - Journal: deleting the last bullet of a day removes the day from the journal right away, instead of leaving its date behind without bullets (today always stays). The day that moves up becomes the one marked in the calendar and offered for sharing.
 - Journal: the save status in the tab bar could keep spinning after the day in view changed while a day was still saving; it now shows the status of the day in view.

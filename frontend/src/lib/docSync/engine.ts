@@ -58,7 +58,7 @@ const openNotes = new Map<string, number>();
 
 export const isNoteOpen = (docId: string) => (openNotes.get(docId) || 0) > 0;
 
-const LEASE_GRACE_MS = 20_000; // keep a left block for this long
+const LEASE_GRACE_MS = 7_000; // keep a left block for this long (back in at once, e.g. after a tap on the phone bar)
 const IDLE_RELEASE_MS = 60_000; // release even the focused block after this long without input
 const SYNC_DEBOUNCE_MS = 300;
 const POLL_COLLAB_MS = 3_000; // shared note without push or long polling
