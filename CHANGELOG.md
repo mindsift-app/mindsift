@@ -18,6 +18,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - AI agents (MCP) can draw: `add_note_bullet` with type `drawing` takes a Mermaid flowchart or mind map, including its colours, and the server lays it out (layers, few crossing lines, right-angled arrows; mind maps with a colour per branch). `update_note_bullet` replaces a drawing, and a ```` ```mermaid ```` block in `create_note` becomes a drawing too.
 
 ### Changed
+- Voice input with your own Whisper server: every microphone sends the recording in pieces while you speak (every ~8 s or at a short pause), like Quick Dump already did. Dictating a minute into a task's notes no longer means waiting minutes for the whole text at the end; it arrives while you speak.
+- Task details: the microphone sits in the top right corner of the title and notes fields, like in Quick Dump, and is there while the field is open. The microphone above the notes, which could be started with the field closed and then seemed to load forever, is gone.
 - Journal: "Today" is back, at the right of the "Journal" title above the calendar in the sidebar.
 - Journal: the lines between the days run across the text and fade out to both sides, instead of running into the frame (in focus mode across the whole screen).
 - Notes: undo and redo survive switching to another note or view and back (for the last 20 notes, while the app is open; a reload still clears them). Undoing an extract, a move or a pulled-back note works after switching, too.
@@ -40,6 +42,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Notes: clicking a link to a note that does not exist (anymore) asks first instead of creating an untitled note right away: "Create" makes a note with the link's title, "Remove link" keeps the text and drops the link.
 
 ### Fixed
+- Shared notes: when someone else draws in a drawing, the lock badge with their name floats over the drawing's top right corner instead of making the drawing narrower.
 - Shared notes: an open note sent many requests per second without anything happening (every sync told all open windows, including the sending one, that the note had changed, and they synced again). The server now only reports real changes; an idle shared note is quiet again. While someone else holds a bullet, the note checks every 3 s, so their lock disappears soon after their browser closed.
 - Journal: deleting the last bullet of a day removes the day from the journal right away, instead of leaving its date behind without bullets (today always stays). The day that moves up becomes the one marked in the calendar and offered for sharing.
 - Journal: the save status in the tab bar could keep spinning after the day in view changed while a day was still saving; it now shows the status of the day in view.
