@@ -124,16 +124,16 @@ func (s *Server) handleDocSync(w http.ResponseWriter, r *http.Request) {
 	if u, err := s.store.GetUserByID(userID); err == nil {
 		actor.Name = u.DisplayName
 	}
-	s.leases.Touch(docID, actor)
+	// The others hear about a new session (presence) or a block changing hands, not about a sync that
+	// changes nothing: they sync again on every notice, so that would never stop
+	changed := s.leases.Touch(docID, actor)
 
 	resp := syncResponse{Results: []collab.Result{}, Role: role, Leases: syncLeases{Granted: []string{}, Denied: []string{}}}
-	changed := false
 	var appliedHead int64
 	if req.Leases != nil && canEdit {
-		s.leases.ReleaseAllExcept(docID, req.ClientID, req.Leases.Hold)
-		s.leases.Release(docID, req.ClientID, req.Leases.Release)
-		resp.Leases.Granted, resp.Leases.Denied = s.leases.Hold(docID, actor, req.Leases.Hold)
-		changed = true
+		var leasesChanged bool
+		resp.Leases.Granted, resp.Leases.Denied, leasesChanged = s.leases.Exchange(docID, actor, req.Leases.Hold, req.Leases.Release)
+		changed = changed || leasesChanged
 	}
 
 	if len(req.Ops) > 0 {

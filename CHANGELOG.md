@@ -40,6 +40,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Notes: clicking a link to a note that does not exist (anymore) asks first instead of creating an untitled note right away: "Create" makes a note with the link's title, "Remove link" keeps the text and drops the link.
 
 ### Fixed
+- Shared notes: an open note sent many requests per second without anything happening (every sync told all open windows, including the sending one, that the note had changed, and they synced again). The server now only reports real changes; an idle shared note is quiet again. While someone else holds a bullet, the note checks every 3 s, so their lock disappears soon after their browser closed.
 - Journal: deleting the last bullet of a day removes the day from the journal right away, instead of leaving its date behind without bullets (today always stays). The day that moves up becomes the one marked in the calendar and offered for sharing.
 - Journal: the save status in the tab bar could keep spinning after the day in view changed while a day was still saving; it now shows the status of the day in view.
 - Journal: in focus mode the text starts at the same height as in the normal view, like in notes.

@@ -93,6 +93,37 @@ func (m *LeaseManager) Hold(docID string, a Actor, blockIDs []string) (granted, 
 	return granted, denied
 }
 
+// Exchange applies the leases a client sends with a sync: whatever it no longer holds is released, the
+// blocks in hold are acquired or renewed. changed says whether a block changed hands (a renewal does not),
+// so the others are only told then; telling them on every sync made each client sync again right away.
+func (m *LeaseManager) Exchange(docID string, a Actor, hold, release []string) (granted, denied []string, changed bool) {
+	before := m.holders(docID)
+	m.ReleaseAllExcept(docID, a.ClientID, hold)
+	m.Release(docID, a.ClientID, release)
+	granted, denied = m.Hold(docID, a, hold)
+	after := m.holders(docID)
+	if len(before) != len(after) {
+		return granted, denied, true
+	}
+	for id, c := range after {
+		if before[id] != c {
+			return granted, denied, true
+		}
+	}
+	return granted, denied, false
+}
+
+// holders maps the blocks of a document to the client holding them.
+func (m *LeaseManager) holders(docID string) map[string]string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	h := make(map[string]string, len(m.leases[docID]))
+	for id, l := range m.leases[docID] {
+		h[id] = l.clientID
+	}
+	return h
+}
+
 // Release gives up leases held by this client.
 func (m *LeaseManager) Release(docID, clientID string, blockIDs []string) {
 	m.mu.Lock()
@@ -149,7 +180,7 @@ func (m *LeaseManager) Others(docID, clientID string) []LeaseInfo {
 }
 
 // Touch records that a client synced the document; it counts as an open session for SessionTimeout.
-func (m *LeaseManager) Touch(docID string, a Actor) {
+func (m *LeaseManager) Touch(docID string, a Actor) (joined bool) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	s := m.sessions[docID]
@@ -157,7 +188,9 @@ func (m *LeaseManager) Touch(docID string, a Actor) {
 		s = map[string]session{}
 		m.sessions[docID] = s
 	}
+	_, known := s[a.ClientID]
 	s[a.ClientID] = session{userID: a.UserID, name: a.Name, lastSeen: m.now()}
+	return !known
 }
 
 // Leave removes a client's session and all its leases (tab closed, app sent to background).
