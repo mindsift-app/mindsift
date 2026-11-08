@@ -8,6 +8,7 @@ import {
   Sparkles,
   Users,
   ShoppingCart,
+  UserCog,
   ArrowLeft,
   X,
 } from 'lucide-react';
@@ -125,6 +126,7 @@ export const HelpView: React.FC<HelpViewProps> = ({ onBack }) => {
           { id: 'tasks', label: t('cat.tasks'), icon: CheckSquare },
           { id: 'lists', label: t('cat.lists'), icon: ShoppingCart },
           { id: 'collaboration', label: t('cat.collaboration'), icon: Users },
+          { id: 'account', label: t('cat.account'), icon: UserCog },
           { id: 'shortcuts', label: t('cat.shortcuts'), icon: Keyboard },
         ].map((cat) => {
           const Icon = cat.icon;

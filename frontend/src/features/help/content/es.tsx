@@ -20,6 +20,8 @@ import {
   Code,
   Download,
   KeyRound,
+  Shapes,
+  CloudOff,
 } from 'lucide-react';
 import type { HelpContent } from './types';
 
@@ -186,6 +188,10 @@ const es: HelpContent = {
                 <span>/image (subir, fotografiar, pegar o enlazar una imagen; solo en un punto vacío)</span>
               </div>
               <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main col-span-2">
+                <Shapes className="w-3.5 h-3.5 text-accent shrink-0" />
+                <span>/canvas (dibujo con formas, flechas, texto y trazo libre)</span>
+              </div>
+              <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main col-span-2">
                 <span className="text-accent font-bold">📤</span>
                 <span>/extract (mover el punto con todos sus subpuntos a una nota propia, dejando un [[enlace]]; el botón «Recuperar nota» en el enlace lo revierte)</span>
               </div>
@@ -207,6 +213,42 @@ const es: HelpContent = {
               <li><code className="text-accent font-mono"># </code>, <code className="text-accent font-mono">## </code> o <code className="text-accent font-mono">### </code> al inicio de una línea da formato de encabezado al bloque de inmediato.</li>
             </ul>
           </div>
+        </div>
+      ),
+    },
+    // WORKSPACE: DRAWINGS
+    {
+      id: 'workspace-drawings',
+      category: 'workspace',
+      title: 'Dibujos (/canvas)',
+      subtitle: 'Bocetos, diagramas de flujo y mapas mentales directamente en la nota',
+      icon: Shapes,
+      keywords: ['dibujo', 'canvas', 'boceto', 'diagrama', 'diagrama de flujo', 'mapa mental', 'flecha', 'formas', 'trazo libre', 'cuadrícula', 'mermaid'],
+      content: (
+        <div className="space-y-2 text-muted leading-relaxed">
+          <ul className="space-y-1.5">
+            <li>
+              <strong className="text-main">Crear uno:</strong> Escribe <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">/canvas</kbd> (o <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">/draw</kbd>, <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">/sketch</kbd>) en un punto vacío; el editor se abre a pantalla completa. Esc o «Listo» guarda y cierra.
+            </li>
+            <li>
+              <strong className="text-main">Herramientas:</strong> Seleccionar <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">V</kbd>, desplazar <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">H</kbd> (o mantener la barra espaciadora), rectángulo <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">R</kbd>, elipse <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">O</kbd>, rombo <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">D</kbd>, flecha <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">A</kbd>, trazo libre <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">P</kbd>, texto <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">T</kbd>, borrador <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">E</kbd>. Con Mayús, rectángulos y elipses se vuelven cuadrados y círculos; <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">G</kbd> activa y desactiva la cuadrícula con ajuste. Color de línea, relleno, grosor y discontinuo se ajustan en la forma seleccionada.
+            </li>
+            <li>
+              <strong className="text-main">Texto y flechas:</strong> Doble clic (o Intro) en una forma para escribir dentro, doble clic en una flecha para ponerle una etiqueta como «sí» o «no». Las flechas se acoplan a las formas y las siguen al moverlas; pueden ser rectas, curvas o en ángulo.
+            </li>
+            <li>
+              <strong className="text-main">Editar:</strong> <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Ctrl + Z</kbd> / <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Ctrl + Y</kbd> deshacen y rehacen, <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Ctrl + D</kbd> duplica, <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Ctrl + C</kbd> / <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Ctrl + V</kbd> copian y pegan, <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Supr</kbd> borra, las flechas del teclado mueven la selección.
+            </li>
+            <li>
+              <strong className="text-main">En la nota:</strong> El dibujo ocupa el ancho de la nota. Haz clic dentro; luego arrastrar mueve la vista y la rueda del ratón o dos dedos hacen zoom. Arrastra el borde inferior para cambiar la altura. «Guardar vista» fija sección, zoom y altura para todos, «Automático» vuelve a encajarlo todo. Doble clic o «Editar» abre el editor.
+            </li>
+            <li>
+              <strong className="text-main">En equipo y sin conexión:</strong> En notas compartidas, un dibujo queda bloqueado para los demás mientras alguien dibuja en él. Lo dibujado sin conexión se guarda en cuanto vuelve la conexión; un borrador sin guardar se ofrece para restaurar la próxima vez que abras el dibujo.
+            </li>
+            <li>
+              <strong className="text-main">En todas partes:</strong> La búsqueda encuentra las palabras de los dibujos, copiar y pegar conserva el dibujo y la exportación Markdown lo incluye como imagen SVG (al importarlo vuelve a ser un dibujo). Los agentes de IA (MCP) leen una descripción del dibujo y pueden crear dibujos a partir de diagramas de flujo y mapas mentales de Mermaid.
+            </li>
+          </ul>
         </div>
       ),
     },
@@ -550,7 +592,7 @@ const es: HelpContent = {
     // APPEARANCE: CUSTOM THEMES
     {
       id: 'workspace-custom-themes',
-      category: 'workspace',
+      category: 'account',
       title: 'Apariencia y temas personalizados',
       subtitle: 'Elige un diseño listo para usar o sube tu propio tema CSS',
       icon: Sparkles,
@@ -564,6 +606,22 @@ const es: HelpContent = {
             <li>
               <strong className="text-main">Tema personalizado:</strong> descarga o pega la plantilla, ajusta colores y esquinas, súbela o pégala como archivo <code className="text-accent bg-panel px-1 py-0.5 rounded font-mono">.css</code> y selecciona «Guardar y activar». El tema se aplica de inmediato y estará disponible en todos tus dispositivos.
             </li>
+          </ul>
+        </div>
+      ),
+    },
+
+    // ACCOUNT: OFFLINE, BACKUPS & PASSWORD
+    {
+      id: 'account-offline-backups',
+      category: 'account',
+      title: 'Sin conexión, copias de seguridad y contraseña',
+      subtitle: 'Seguir trabajando sin internet, restaurar copias, restablecer la contraseña',
+      icon: CloudOff,
+      keywords: ['sin conexión', 'offline', 'internet', 'copia de seguridad', 'restaurar', 'contraseña', 'olvidada', 'cuenta'],
+      content: (
+        <div className="space-y-2 text-muted leading-relaxed">
+          <ul className="space-y-1.5">
             <li>
               <strong className="text-main">Copias de seguridad del servidor:</strong> si la administración ha activado las copias automáticas, encontrarás las copias diarias de tus datos en <em>Ajustes de la cuenta → Exportar e importar</em>. Puedes descargarlas o restaurarlas, incluso para áreas individuales como listas o tareas.
             </li>
@@ -653,6 +711,7 @@ const es: HelpContent = {
     { key: '#, ##, ### al inicio', scope: 'Outliner del Workspace', desc: 'Convertir en encabezado H1, H2 o H3 de inmediato' },
     { key: '[[Título de la nota]]', scope: 'Outliner del Workspace', desc: 'Incrustar un WikiLink interactivo a una nota' },
     { key: '#etiqueta', scope: 'Workspace / listas', desc: 'Hashtag en línea para enlazar o categorizar' },
+    { key: 'V, H, R, O, D, A, P, T, E · G', scope: 'Dibujo', desc: 'Elegir herramienta (seleccionar, desplazar, rectángulo, elipse, rombo, flecha, trazo libre, texto, borrador) · cuadrícula sí/no' },
     { key: 'H o ←', scope: 'Pila de triage', desc: 'Descartar el pensamiento (a la papelera)' },
     { key: 'L o →', scope: 'Pila de triage', desc: 'Convertir el pensamiento en tarea de inmediato' },
     { key: 'T', scope: 'Pila de triage', desc: 'Crear una tarea con fecha de vencimiento' },

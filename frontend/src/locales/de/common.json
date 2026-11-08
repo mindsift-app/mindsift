@@ -272,7 +272,10 @@
   },
   "wikiLink": {
     "toBlock": "Zum Punkt in „{{title}}“",
-    "openNote": "Notiz öffnen: {{title}}"
+    "openNote": "Notiz öffnen: {{title}}",
+    "missing": "Die Notiz <b>{{title}}</b> gibt es nicht (mehr).",
+    "create": "Anlegen",
+    "removeLink": "Link entfernen"
   },
   "shareTarget": {
     "mediaNote": "(Bild geteilt – Bilder im Posteingang werden noch nicht unterstützt)"

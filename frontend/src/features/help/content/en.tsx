@@ -20,6 +20,8 @@ import {
   Code,
   Download,
   KeyRound,
+  Shapes,
+  CloudOff,
 } from 'lucide-react';
 import type { HelpContent } from './types';
 
@@ -141,6 +143,10 @@ const en: HelpContent = {
                 <span>/image (upload, photograph, paste or link an image; only in an empty bullet)</span>
               </div>
               <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main col-span-2">
+                <Shapes className="w-3.5 h-3.5 text-accent shrink-0" />
+                <span>/canvas (drawing with shapes, arrows, text and freehand)</span>
+              </div>
+              <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main col-span-2">
                 <span className="text-accent font-bold">📤</span>
                 <span>/extract (move the bullet with all sub-bullets into a note of its own, leaving a [[link]] in its place; the “Pull note back” button at the link undoes it)</span>
               </div>
@@ -162,6 +168,42 @@ const en: HelpContent = {
               <li><code className="text-accent font-mono"># </code>, <code className="text-accent font-mono">## </code> or <code className="text-accent font-mono">### </code> at the start of a line formats the block as a heading right away.</li>
             </ul>
           </div>
+        </div>
+      ),
+    },
+    // WORKSPACE: DRAWINGS
+    {
+      id: 'workspace-drawings',
+      category: 'workspace',
+      title: 'Drawings (/canvas)',
+      subtitle: 'Sketches, flowcharts and mind maps right in the note',
+      icon: Shapes,
+      keywords: ['drawing', 'canvas', 'sketch', 'diagram', 'flowchart', 'mind map', 'arrow', 'shapes', 'freehand', 'grid', 'mermaid'],
+      content: (
+        <div className="space-y-2 text-muted leading-relaxed">
+          <ul className="space-y-1.5">
+            <li>
+              <strong className="text-main">Creating one:</strong> Type <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">/canvas</kbd> (or <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">/draw</kbd>, <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">/sketch</kbd>) in an empty bullet; the editor opens full screen. Esc or “Done” saves and closes it.
+            </li>
+            <li>
+              <strong className="text-main">Tools:</strong> Select <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">V</kbd>, pan <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">H</kbd> (or hold the space bar), rectangle <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">R</kbd>, ellipse <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">O</kbd>, diamond <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">D</kbd>, arrow <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">A</kbd>, freehand <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">P</kbd>, text <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">T</kbd>, eraser <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">E</kbd>. With Shift, rectangles and ellipses become squares and circles; <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">G</kbd> turns the snapping grid on and off. Set line colour, fill, width and dashes on the selected shape.
+            </li>
+            <li>
+              <strong className="text-main">Text and arrows:</strong> Double-click (or Enter) a shape to write text into it, double-click an arrow to give it a label such as “yes” or “no”. Arrows dock to shapes and follow them when they move; they run straight, curved or elbowed.
+            </li>
+            <li>
+              <strong className="text-main">Editing:</strong> <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Ctrl + Z</kbd> / <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Ctrl + Y</kbd> undo and redo, <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Ctrl + D</kbd> duplicates, <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Ctrl + C</kbd> / <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Ctrl + V</kbd> copy and paste, <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Del</kbd> deletes, the arrow keys nudge the selection.
+            </li>
+            <li>
+              <strong className="text-main">In the note:</strong> The drawing fills the width of the note. Click into it, then dragging moves the view and the mouse wheel or two fingers zoom. Drag the lower edge to change the height. “Save view” keeps section, zoom and height for everyone, “Automatic” fits everything again. Double-click or “Edit” opens the editor.
+            </li>
+            <li>
+              <strong className="text-main">Together and offline:</strong> In shared notes a drawing is locked for the others while someone is drawing in it. What you draw offline is saved once the connection is back; an unsaved draft is offered for restoring the next time you open the drawing.
+            </li>
+            <li>
+              <strong className="text-main">Everywhere:</strong> Search finds the words in drawings, copy and paste keeps the drawing, and the Markdown export contains it as an SVG picture (importing turns it back into a drawing). AI agents (MCP) read a description of the drawing and can create drawings themselves from Mermaid flowcharts and mind maps.
+            </li>
+          </ul>
         </div>
       ),
     },
@@ -480,7 +522,7 @@ const en: HelpContent = {
     // APPEARANCE: CUSTOM THEMES
     {
       id: 'workspace-custom-themes',
-      category: 'workspace',
+      category: 'account',
       title: 'Appearance & custom themes',
       subtitle: 'Pick a ready design or upload your own CSS theme',
       icon: Sparkles,
@@ -494,6 +536,22 @@ const en: HelpContent = {
             <li>
               <strong className="text-main">Custom theme:</strong> download or paste the template, adjust colors and corners, upload or paste it as a <code className="text-accent bg-panel px-1 py-0.5 rounded font-mono">.css</code> file and choose “Save &amp; activate”. The theme applies right away and is available on all your devices.
             </li>
+          </ul>
+        </div>
+      ),
+    },
+
+    // ACCOUNT: OFFLINE, BACKUPS & PASSWORD
+    {
+      id: 'account-offline-backups',
+      category: 'account',
+      title: 'Offline, backups & password',
+      subtitle: 'Keep working without internet, restore backups, reset your password',
+      icon: CloudOff,
+      keywords: ['offline', 'internet', 'backup', 'restore', 'password', 'forgot', 'account'],
+      content: (
+        <div className="space-y-2 text-muted leading-relaxed">
+          <ul className="space-y-1.5">
             <li>
               <strong className="text-main">Server backups:</strong> if the administration has switched on automatic backups, you find the daily backups of your data under <em>Account settings → Export &amp; import</em>. You can download or restore them, also for single areas like lists or tasks.
             </li>
@@ -570,6 +628,7 @@ const en: HelpContent = {
     { key: '#, ##, ### at the start', scope: 'Workspace outliner', desc: 'Turn into an H1, H2 or H3 heading right away' },
     { key: '[[Note title]]', scope: 'Workspace outliner', desc: 'Embed an interactive WikiLink to a note' },
     { key: '#tagname', scope: 'Workspace / lists', desc: 'Inline hashtag for linking or categorizing' },
+    { key: 'V, H, R, O, D, A, P, T, E · G', scope: 'Drawing', desc: 'Choose a tool (select, pan, rectangle, ellipse, diamond, arrow, freehand, text, eraser) · grid on/off' },
     { key: 'H or ←', scope: 'Triage deck', desc: 'Discard the thought (to the trash)' },
     { key: 'L or →', scope: 'Triage deck', desc: 'Make the thought a task right away' },
     { key: 'T', scope: 'Triage deck', desc: 'Create a task with a due date' },

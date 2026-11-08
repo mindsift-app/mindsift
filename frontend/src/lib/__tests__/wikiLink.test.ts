@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildBlockLink, isNoteLinkOnly, parseWikiLink, wikiLinkText } from '../wikiLink';
+import { buildBlockLink, isNoteLinkOnly, parseWikiLink, unlinkWikiLinks, wikiLinkText } from '../wikiLink';
 
 describe('wiki links', () => {
   it('parses plain, labelled, section and bullet links', () => {
@@ -9,6 +9,13 @@ describe('wiki links', () => {
     expect(parseWikiLink('Homelab#^blk_a_1|Homelab › Backup')).toEqual({
       title: 'Homelab', blockId: 'blk_a_1', label: 'Homelab › Backup',
     });
+  });
+
+  it('turns links to a missing note into plain text', () => {
+    expect(unlinkWikiLinks('[[Garten (2)]] #draußen', 'garten (2)')).toBe('Garten (2) #draußen');
+    expect(unlinkWikiLinks('Siehe [[Garten|hier]] und [[Garten#^blk_a|Garten › Beete]], nicht [[Zaun]]', 'Garten')).toBe(
+      'Siehe hier und Garten › Beete, nicht [[Zaun]]'
+    );
   });
 
   it('builds a bullet link that parses back', () => {

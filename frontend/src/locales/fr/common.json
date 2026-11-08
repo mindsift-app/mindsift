@@ -274,7 +274,10 @@
   },
   "wikiLink": {
     "toBlock": "Vers la puce dans « {{title}} »",
-    "openNote": "Ouvrir la note : {{title}}"
+    "openNote": "Ouvrir la note : {{title}}",
+    "missing": "La note <b>{{title}}</b> n’existe pas (ou plus).",
+    "create": "Créer",
+    "removeLink": "Supprimer le lien"
   },
   "shareTarget": {
     "mediaNote": "(Image partagée – les images dans la boîte de réception ne sont pas encore prises en charge)"

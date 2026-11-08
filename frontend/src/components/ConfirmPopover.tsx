@@ -11,13 +11,16 @@ interface ConfirmPopoverProps {
   danger?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
+  // A second way out next to the main one (e.g. "Link entfernen" next to "Anlegen"); replaces "Abbrechen"
+  altLabel?: string;
+  onAlt?: () => void;
 }
 
 const MARGIN = 8;
 
 // Small confirmation right at the mouse (Doku/ui-patterns.md): Enter or the button confirms, Escape, a
 // click outside or "Abbrechen" closes it.
-export const ConfirmPopover: React.FC<ConfirmPopoverProps> = ({ x, y, message, confirmLabel, danger, onConfirm, onCancel }) => {
+export const ConfirmPopover: React.FC<ConfirmPopoverProps> = ({ x, y, message, confirmLabel, danger, onConfirm, onCancel, altLabel, onAlt }) => {
   const { t } = useTranslation();
   const ref = useRef<HTMLDivElement>(null);
   const confirmRef = useRef<HTMLButtonElement>(null);
@@ -60,10 +63,18 @@ export const ConfirmPopover: React.FC<ConfirmPopoverProps> = ({ x, y, message, c
       className="fixed z-[70] w-72 max-w-[calc(100vw-1rem)] p-3 bg-panel border border-border rounded-card shadow-panel text-xs text-main space-y-3"
     >
       <div className="leading-snug">{message}</div>
-      <div className="flex justify-end gap-2">
-        <button type="button" onClick={onCancel} className="btn-action h-11 sm:h-8 px-3 text-xs">
-          {t('common:cancel')}
-        </button>
+      <div className="flex flex-wrap justify-end gap-2">
+        {/* With a second way out, two buttons are enough: Escape or a click outside cancels */}
+        {altLabel && onAlt ? null : (
+          <button type="button" onClick={onCancel} className="btn-action h-11 sm:h-8 px-3 text-xs">
+            {t('common:cancel')}
+          </button>
+        )}
+        {altLabel && onAlt && (
+          <button type="button" onClick={onAlt} className="btn-action h-11 sm:h-8 px-3 text-xs">
+            {altLabel}
+          </button>
+        )}
         <button
           ref={confirmRef}
           type="button"

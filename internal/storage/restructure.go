@@ -50,23 +50,42 @@ var (
 	noteLinkOnlyRe = regexp.MustCompile(`^\s*\[\[[^\]#]+\]\](\s+#[\p{L}0-9_-]+)*\s*$`)
 )
 
-// branchTitle makes a note title from a bullet's text (without hashtags) and returns the hashtags,
-// which stay next to the link in the original bullet.
-func branchTitle(lang, content string) (string, string) {
-	first := titlePrefixRe.ReplaceAllString(strings.SplitN(content, "\n", 2)[0], "")
-	var tags []string
-	for _, m := range titleTagRe.FindAllString(first, -1) {
-		tags = append(tags, strings.TrimSpace(m))
-	}
-	t := strings.TrimSpace(titleTagRe.ReplaceAllString(first, ""))
-	t = strings.NewReplacer("[[", "", "]]", "").Replace(t)
-	if r := []rune(t); len(r) > 120 {
-		t = strings.TrimSpace(string(r[:119])) + "…"
+// Bullet types whose text can name a note; a drawing, picture, code or table cannot
+var titleBlockTypes = map[string]bool{
+	"": true, "text": true, "paragraph": true, "bullet": true, "numbered": true, "todo": true,
+	"h1": true, "h2": true, "h3": true, "callout": true, "warning": true, "error": true,
+}
+
+// branchTitle makes a note title from a bullet's text (without hashtags and links); bullets without
+// usable text give "Neue Notiz".
+func branchTitle(lang string, b *collab.Block) string {
+	t := ""
+	if titleBlockTypes[b.Type] {
+		first := titlePrefixRe.ReplaceAllString(strings.SplitN(b.Content, "\n", 2)[0], "")
+		t = strings.TrimSpace(titleTagRe.ReplaceAllString(first, ""))
+		t = strings.NewReplacer("[[", "", "]]", "").Replace(t)
+		if r := []rune(t); len(r) > 120 {
+			t = strings.TrimSpace(string(r[:119])) + "…"
+		}
 	}
 	if t == "" {
-		t = i18n.T(lang, "Unbenannte Notiz")
+		t = i18n.T(lang, "Neue Notiz")
 	}
-	return t, strings.Join(tags, " ")
+	return t
+}
+
+// titleFrom: the note title is base or base made unique by uniqueTitle
+func titleFrom(title, base string) bool {
+	title, base = strings.ToLower(strings.TrimSpace(title)), strings.ToLower(base)
+	if title == base {
+		return true
+	}
+	rest, ok := strings.CutPrefix(title, base+" (")
+	if !ok || !strings.HasSuffix(rest, ")") {
+		return false
+	}
+	_, err := strconv.Atoi(strings.TrimSuffix(rest, ")"))
+	return err == nil
 }
 
 // uniqueTitle appends " (2)", " (3)" … when the user already has a note of that name, so the wiki link
@@ -82,6 +101,16 @@ func (s *Store) uniqueTitle(userID, title string) string {
 		candidate = fmt.Sprintf("%s (%d)", title, n)
 	}
 	return candidate
+}
+
+func countTopLevel(flat []collab.FlatBlock) int {
+	n := 0
+	for _, b := range flat {
+		if b.Level == 0 {
+			n++
+		}
+	}
+	return n
 }
 
 func toDocumentBlock(b collab.FlatBlock, level int, pos int) domain.DocumentBlock {
@@ -103,8 +132,8 @@ func foreignLeaseIn(ids []string, a collab.Actor, leases collab.LeaseView) bool 
 	return false
 }
 
-// ExtractBranch creates a new note from a bullet's children, named after the bullet, in the same folder
-// and shared like the original. The original note is not changed here: the editor replaces the branch
+// ExtractBranch creates a new note from a bullet with its children, named after the bullet, in the same
+// folder and shared like the original. The bullet stays the note's first bullet (its hashtags with it). The original note is not changed here: the editor replaces the branch
 // by the returned link itself, as an ordinary own edit (no clash with unsent typing, undo works).
 func (s *Store) ExtractBranch(userID, docID, blockID string, a collab.Actor, leases collab.LeaseView) (*domain.Document, string, error) {
 	source, err := s.GetDocumentByID(userID, docID)
@@ -130,28 +159,23 @@ func (s *Store) ExtractBranch(userID, docID, blockID string, a collab.Actor, lea
 	if noteLinkOnlyRe.MatchString(root.Content) {
 		return nil, "", ErrAlreadyNote
 	}
-	var children []domain.DocumentBlock
+	blocks := []domain.DocumentBlock{toDocumentBlock(root, 0, 0)}
 	ids := []string{root.ID}
 	for i := start + 1; i < len(flat) && flat[i].Level > root.Level; i++ {
-		children = append(children, toDocumentBlock(flat[i], flat[i].Level-root.Level-1, len(children)))
+		blocks = append(blocks, toDocumentBlock(flat[i], flat[i].Level-root.Level, len(blocks)))
 		ids = append(ids, flat[i].ID)
 	}
 	if foreignLeaseIn(ids, a, leases) {
 		return nil, "", ErrBranchLocked
 	}
 
-	base, tags := branchTitle(s.MessageLanguage(userID), root.Content)
-	title := s.uniqueTitle(userID, base)
-	created, err := s.CreateDocument(userID, "", title, "🗒️", source.FolderPath, children, nil, false)
+	title := s.uniqueTitle(userID, branchTitle(s.MessageLanguage(userID), root.Block))
+	created, err := s.CreateDocument(userID, "", title, "🗒️", source.FolderPath, blocks, nil, false)
 	if err != nil {
 		return nil, "", err
 	}
 	s.copyShares(userID, source, created.ID)
-	link := "[[" + title + "]]"
-	if tags != "" {
-		link += " " + tags
-	}
-	return created, link, nil
+	return created, "[[" + title + "]]", nil
 }
 
 // UndoExtract puts a note created by ExtractBranch into the trash (only its creator may).
@@ -186,6 +210,9 @@ type InlineResult struct {
 	SourceID string `json:"sourceId"`
 	// Text of the bullet: the note's title, hashtags of the link kept
 	Content string `json:"content"`
+	// A note made by ExtractBranch: its first bullet, which takes the link bullet's place (type and
+	// props included); Content is then that bullet's text
+	Head *domain.DocumentBlock `json:"head,omitempty"`
 	// The note's blocks with fresh ids; level 0 = directly below the bullet
 	Blocks []domain.DocumentBlock `json:"blocks"`
 }
@@ -253,16 +280,32 @@ func (s *Store) InlineNote(userID, docID, blockID string) (*InlineResult, error)
 	if err != nil {
 		return nil, err
 	}
-	blocks := []domain.DocumentBlock{}
-	for _, b := range source.Flatten() {
-		blocks = append(blocks, toDocumentBlock(b, b.Level, len(blocks)))
-	}
+	flat := source.Flatten()
 	rest := strings.TrimSpace(wikiLinkRe.ReplaceAllString(content, ""))
-	text := strings.TrimSpace(linked.Title + " " + rest)
+	res := &InlineResult{SourceID: linked.ID, Content: strings.TrimSpace(linked.Title + " " + rest), Blocks: []domain.DocumentBlock{}}
+	// Made by ExtractBranch (one top bullet that names the note): that bullet takes the link's place
+	// again instead of the title, so it does not show twice
+	if countTopLevel(flat) == 1 && titleFrom(linked.Title, branchTitle(s.MessageLanguage(userID), flat[0].Block)) {
+		head := toDocumentBlock(flat[0], 0, 0)
+		res.Head = &head
+		res.Content = head.Content
+		for _, tag := range strings.Fields(rest) {
+			if !strings.Contains(head.Content, tag) {
+				res.Content = strings.TrimSpace(res.Content + " " + tag)
+			}
+		}
+		for _, b := range flat[1:] {
+			res.Blocks = append(res.Blocks, toDocumentBlock(b, b.Level-1, len(res.Blocks)))
+		}
+	} else {
+		for _, b := range flat {
+			res.Blocks = append(res.Blocks, toDocumentBlock(b, b.Level, len(res.Blocks)))
+		}
+	}
 	if err := s.trashDocument(userID, linked.ID); err != nil {
 		return nil, err
 	}
-	return &InlineResult{SourceID: linked.ID, Content: text, Blocks: blocks}, nil
+	return res, nil
 }
 
 // copyShares gives the new note the direct and team shares of the source; when someone else owns the

@@ -36,7 +36,7 @@ export interface OutlinerTreeProps {
   onMoveSibling?: (blockId: string, direction: -1 | 1) => void;
   onOpenTask?: (taskId: string) => void;
   onTagClick?: (tag: string) => void;
-  onWikiLinkClick?: (pageTitle: string, blockId?: string) => void;
+  onWikiLinkClick?: (pageTitle: string, blockId?: string, removeLink?: () => void) => void;
   onCopyBlockLink?: (blockId: string) => void;
   initialFocusedBlockId?: string | null;
   onFocusedBlockChange?: (blockId: string | null) => void;

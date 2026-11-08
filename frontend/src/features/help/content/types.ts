@@ -1,6 +1,6 @@
 import React from 'react';
 
-export type HelpCategory = 'all' | 'workspace' | 'triage' | 'tasks' | 'lists' | 'collaboration' | 'shortcuts';
+export type HelpCategory = 'all' | 'workspace' | 'triage' | 'tasks' | 'lists' | 'collaboration' | 'account' | 'shortcuts';
 
 export interface DocCard {
   id: string;

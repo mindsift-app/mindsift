@@ -22,4 +22,17 @@ describe('ConfirmPopover', () => {
     expect(onCancel).toHaveBeenCalledTimes(3);
     expect(onConfirm).not.toHaveBeenCalled();
   });
+
+  it('with a second way out shows just the two buttons; Escape still cancels', () => {
+    const onAlt = vi.fn();
+    const onCancel = vi.fn();
+    render(
+      <ConfirmPopover x={100} y={100} message="Gibt es nicht mehr" confirmLabel="Anlegen" altLabel="Link entfernen" onAlt={onAlt} onConfirm={vi.fn()} onCancel={onCancel} />
+    );
+    expect(screen.getAllByRole('button').map((b) => b.textContent)).toEqual(['Link entfernen', 'Anlegen']);
+    fireEvent.click(screen.getByRole('button', { name: 'Link entfernen' }));
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(onAlt).toHaveBeenCalledTimes(1);
+    expect(onCancel).toHaveBeenCalledTimes(1);
+  });
 });

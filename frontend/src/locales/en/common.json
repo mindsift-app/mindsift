@@ -274,7 +274,10 @@
   },
   "wikiLink": {
     "toBlock": "To the bullet in “{{title}}”",
-    "openNote": "Open note: {{title}}"
+    "openNote": "Open note: {{title}}",
+    "missing": "The note <b>{{title}}</b> does not exist (anymore).",
+    "create": "Create",
+    "removeLink": "Remove link"
   },
   "shareTarget": {
     "mediaNote": "(Image shared – images in the inbox are not supported yet)"
