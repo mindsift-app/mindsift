@@ -201,6 +201,12 @@ export const JournalView: React.FC<JournalViewProps> = ({
     onActiveSaveStatusChangeRef.current?.(s?.status ?? 'saved', s?.err);
   }, [activeDate, activeShown]);
 
+  // The active day left the journal (its last bullet was deleted): the day now at the top becomes active
+  const activeListed = dates.includes(activeDate);
+  useEffect(() => {
+    if (!activeListed) onScroll();
+  }, [activeListed, onScroll]);
+
   const activeDocId = docIdByDate.get(activeDate);
   const activeDoc = activeDocId ? getDoc(activeDocId) : undefined;
   const sharedCount = activeDoc?.sharedWith?.length ?? 0;
