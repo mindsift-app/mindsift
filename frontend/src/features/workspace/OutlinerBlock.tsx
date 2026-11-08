@@ -260,6 +260,21 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
   const hasHover = useMemo(() => typeof window !== 'undefined' && !!window.matchMedia?.('(hover: hover)').matches, []);
   const [pointerMoving, setPointerMoving] = useState(false);
   const [pointerOnBubble, setPointerOnBubble] = useState(false);
+  // Native events: React counts buttons a drawing puts into the bubble through a portal as part of the
+  // drawing, so its own onMouseEnter would not fire over them and the bubble would fade under the mouse
+  const bubbleRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const el = bubbleRef.current;
+    if (!el) return;
+    const enter = () => setPointerOnBubble(true);
+    const leave = () => setPointerOnBubble(false);
+    el.addEventListener('mouseenter', enter);
+    el.addEventListener('mouseleave', leave);
+    return () => {
+      el.removeEventListener('mouseenter', enter);
+      el.removeEventListener('mouseleave', leave);
+    };
+  }, []);
   const pointerIdleTimerRef = useRef<number | null>(null);
   const handleRowMouseMove = () => {
     if (!hasHover) return;
@@ -1846,8 +1861,7 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
 
       {/* Floating Actions Overlay Bubble (block type, enhanced task, link, extract, delete) */}
       <div
-        onMouseEnter={() => setPointerOnBubble(true)}
-        onMouseLeave={() => setPointerOnBubble(false)}
+        ref={bubbleRef}
         className={`absolute right-1 sm:right-2 top-0.5 sm:top-1 z-20 bg-panel/90 backdrop-blur-sm border border-border shadow-xs rounded-pill px-1 sm:px-1.5 py-0.5 flex items-center gap-0.5 sm:gap-1 transition-opacity ${
           lockedBy
             ? // Someone else is editing the block: no actions, and the lock badge stays visible

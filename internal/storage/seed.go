@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"strings"
 	"time"
 
 	"github.com/mindsift-app/mindsift/internal/domain"
@@ -13,6 +14,27 @@ type seedBlock struct {
 	text    string
 	checked bool
 	lang    string
+}
+
+// seedNetworkDrawing: the sample drawing in the homelab note (block type "drawing"), a small network plan
+// with filled boxes, straight, elbowed and one dashed curved arrow, and free text. Docked arrow ends carry
+// their points too, for the SVG of the Markdown export.
+func seedNetworkDrawing(router, note string) string {
+	return strings.NewReplacer("{router}", router, "{note}", note).Replace(`{"v":1,"els":[` +
+		`{"id":"inet","ver":1,"t":"ellipse","x":0,"y":80,"w":140,"h":60,"s":"muted","f":"none","sw":2,"txt":"Internet"},` +
+		`{"id":"rtr","ver":1,"t":"rect","x":200,"y":80,"w":170,"h":60,"s":"main","f":"none","sw":2,"r":true,"txt":"{router}"},` +
+		`{"id":"ngx","ver":1,"t":"rect","x":440,"y":80,"w":140,"h":60,"s":"accent","f":"accent","sw":2,"r":true,"txt":"Nginx"},` +
+		`{"id":"ms","ver":1,"t":"rect","x":660,"y":0,"w":150,"h":56,"s":"blue","f":"blue","sw":2,"r":true,"txt":"MindSift"},` +
+		`{"id":"git","ver":1,"t":"rect","x":660,"y":90,"w":150,"h":56,"s":"purple","f":"purple","sw":2,"r":true,"txt":"Gitea"},` +
+		`{"id":"ha","ver":1,"t":"rect","x":660,"y":180,"w":150,"h":56,"s":"green","f":"green","sw":2,"r":true,"txt":"Home Assistant"},` +
+		`{"id":"a1","ver":1,"t":"arrow","a":[144,110],"b":[196,110],"from":"inet","to":"rtr","route":"straight","head":2,"s":"main","sw":2},` +
+		`{"id":"a2","ver":1,"t":"arrow","a":[374,110],"b":[436,110],"from":"rtr","to":"ngx","route":"straight","head":2,"s":"main","sw":2},` +
+		`{"id":"a3","ver":1,"t":"arrow","a":[584,110],"b":[656,28],"from":"ngx","to":"ms","route":"elbow","head":2,"s":"main","sw":2},` +
+		`{"id":"a4","ver":1,"t":"arrow","a":[584,110],"b":[656,118],"from":"ngx","to":"git","route":"elbow","head":2,"s":"main","sw":2},` +
+		`{"id":"a5","ver":1,"t":"arrow","a":[584,110],"b":[656,208],"from":"ngx","to":"ha","route":"elbow","head":2,"s":"main","sw":2},` +
+		`{"id":"a6","ver":1,"t":"arrow","a":[785,176],"b":[785,60],"from":"ha","to":"ms","route":"curve","head":2,"bend":0.9,"s":"orange","sw":2,"dash":true},` +
+		`{"id":"t1","ver":1,"t":"text","x":850,"y":108,"txt":"Webhook","s":"orange","sw":2,"fs":14},` +
+		`{"id":"t2","ver":1,"t":"text","x":200,"y":160,"txt":"{note}","s":"muted","sw":2,"fs":14}]}`)
 }
 
 func seedBlocks(spec []seedBlock) []domain.DocumentBlock {
@@ -174,6 +196,8 @@ func (s *Store) seedStarterDE(user *domain.User) error {
 		{level: 2, text: "Beispiel: Kellerfeuchtigkeit über 65 % → Gedanke mit Priorität „dringend“"},
 		{typ: "h3", text: "Compose-Ausschnitt"},
 		{level: 1, typ: "code", lang: "yaml", text: "services:\n  mindsift:\n    image: ghcr.io/mindsift-app/mindsift:v0.2\n    restart: unless-stopped\n    volumes: [\"./data:/data\"]\n    environment:\n      - JWT_SECRET=${JWT_SECRET}"},
+		{typ: "h2", text: "Netzplan"},
+		{level: 1, typ: "drawing", text: seedNetworkDrawing("Router / Firewall", "Nur 80 und 443 offen")},
 		{typ: "h2", text: "Offene Fragen"},
 		{level: 1, text: "Reicht eine USV für Router und Server zusammen?"},
 		{level: 1, text: "Offsite-Backup: Hetzner Storage Box oder Festplatte bei den Eltern? Siehe [[Ideen-Sammlung]]"},
