@@ -32,20 +32,32 @@ export function SidebarJournal({
           subView === 'journal' ? 'border-transparent p-0 lg:bg-panel-elevated lg:p-2.5' : 'border-transparent p-0'
         }`}
       >
-        <button
-          type="button"
-          onClick={toggleJournal}
-          aria-expanded={subView === 'journal'}
-          title={subView === 'journal' ? t('journal.close') : t('journal.open')}
-          className={`w-full flex items-center gap-2 text-left cursor-pointer rounded-btn transition-all duration-300 h-11 sm:h-8 px-2 text-sm sm:text-xs text-main hover:bg-panel-elevated ${
-            subView === 'journal' ? 'lg:h-7 lg:px-0.5 lg:text-sm lg:font-bold lg:hover:bg-transparent' : ''
-          }`}
-        >
-          <CalendarDays
-            className={`text-accent transition-all duration-300 w-3.5 h-3.5 ${subView === 'journal' ? 'lg:w-4 lg:h-4' : ''}`}
-          />
-          <span>{t('journal.title')}</span>
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={toggleJournal}
+            aria-expanded={subView === 'journal'}
+            title={subView === 'journal' ? t('journal.close') : t('journal.open')}
+            className={`flex-1 min-w-0 flex items-center gap-2 text-left cursor-pointer rounded-btn transition-all duration-300 h-11 sm:h-8 px-2 text-sm sm:text-xs text-main hover:bg-panel-elevated ${
+              subView === 'journal' ? 'lg:h-7 lg:px-0.5 lg:text-sm lg:font-bold lg:hover:bg-transparent' : ''
+            }`}
+          >
+            <CalendarDays
+              className={`text-accent transition-all duration-300 w-3.5 h-3.5 ${subView === 'journal' ? 'lg:w-4 lg:h-4' : ''}`}
+            />
+            <span>{t('journal.title')}</span>
+          </button>
+          {/* Open journal on large screens: back to today, on the height of the title */}
+          {subView === 'journal' && (
+            <button
+              type="button"
+              onClick={() => jumpToJournalDay(todayISO())}
+              className="hidden lg:inline-flex items-center h-7 px-2 shrink-0 rounded-btn text-xs font-semibold text-accent hover:bg-panel transition-colors cursor-pointer"
+            >
+              {t('common:date.today')}
+            </button>
+          )}
+        </div>
         <div
           className={`hidden lg:grid transition-[grid-template-rows,opacity] duration-300 ease-out ${
             subView === 'journal' ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
@@ -58,7 +70,6 @@ export function SidebarJournal({
                 activeDate={journalActive}
                 entryDates={new Set(journalDays.filter((d) => !d.empty).map((d) => d.date))}
                 onSelect={jumpToJournalDay}
-                onToday={() => jumpToJournalDay(todayISO())}
               />
             </div>
           </div>
