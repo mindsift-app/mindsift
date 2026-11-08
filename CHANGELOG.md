@@ -17,6 +17,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - AI agents (MCP) can draw: `add_note_bullet` with type `drawing` takes a Mermaid flowchart or mind map, including its colours, and the server lays it out (layers, few crossing lines, right-angled arrows; mind maps with a colour per branch). `update_note_bullet` replaces a drawing, and a ```` ```mermaid ```` block in `create_note` becomes a drawing too.
 
 ### Changed
+- Journal: "Today" is back, at the top left of the calendar in the sidebar.
+- Journal: the lines between the days stay within the text, like a divider, instead of running into the frame (in focus mode across the whole screen).
+- Notes: undo and redo survive switching to another note or view and back (for the last 20 notes, while the app is open; a reload still clears them). Undoing an extract, a move or a pulled-back note works after switching, too.
 - Notes: links to notes carry the note's id. Renaming or moving a note no longer breaks links to it, and two notes with the same title are told apart. A link shows the note's current title, or its own text if it has one; links to a single bullet show "title › start of the bullet". Existing links are updated once where the title is unambiguous; the others keep working by title as before.
 - Notes: Ctrl+L with marked text opens the link dialog; the marked text becomes the link text (for notes, bullets and web links).
 - Notes: "Create" in the question about a missing note points the link at the new note.
@@ -35,6 +38,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Notes: clicking a link to a note that does not exist (anymore) asks first instead of creating an untitled note right away: "Create" makes a note with the link's title, "Remove link" keeps the text and drops the link.
 
 ### Fixed
+- Journal: in focus mode the text starts at the same height as in the normal view, like in notes.
 - Folders: creating "Rancher / Kubernetes" (spaces around the slash) made a parent "Rancher " with a trailing space, and moving a note into "Rancher" then created a second "Rancher" next to it. Folder paths are now cleaned segment by segment ("Rancher/Kubernetes"), and existing folders are cleaned and merged once on update.
 - Notes: turning a drawing into its own note put the drawing's raw data into the note title.
 - Notes shared with others: clicking into a bullet someone else was typing in (locked, so nothing could be typed) and out again created a conflict copy of their text. Leaving a bullet now only sends text you actually typed there, and while the cursor sits in a locked bullet you see the other person's typing as it arrives.

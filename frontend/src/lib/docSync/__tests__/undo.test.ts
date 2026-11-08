@@ -3,6 +3,8 @@ import type { DocumentBlock } from '../../types';
 import { DocSyncEngine } from '../engine';
 import { applyOp, Doc, emptyDoc, Op, Result } from '../model';
 import { MemoryStorage } from '../persist';
+import type { PushChannel } from '../push';
+import { clearUndoHistories, keepUndoHistory, takeUndoHistory, UNDO_HISTORY_NOTES } from '../undoHistory';
 import { LogEntry, SyncRequest, Transport, TransportError } from '../transport';
 
 /** Minimal stand-in server (same rules as the Go server, plus configurable leases of others). */
@@ -194,5 +196,52 @@ describe('conflict copies', () => {
     await e.syncNow();
     e.resolveConflict(copy.id, true);
     expect(flat(e).find((b) => b.id === copy.id)?.conflictOf).toBeUndefined();
+  });
+});
+
+describe('undo history across opening and closing a note', () => {
+  const quietPush: PushChannel = { subscribe: () => () => {} };
+  const open = async (server: Server, storage: MemoryStorage, userId: string, docId = 'd') => {
+    const e = new DocSyncEngine(docId, { transport: server.transport(), storage, push: quietPush, userId, now: () => clock });
+    await e.start();
+    return e;
+  };
+
+  it('keeps undo and redo when the note is closed and opened again, for the same person only', async () => {
+    clearUndoHistories();
+    const server = new Server([['a', 'Hallo']]);
+    const storage = new MemoryStorage();
+    const first = await open(server, storage, 'u1');
+    edit(first, (b) => [{ ...b[0], content: 'Hallo Welt' }]);
+    first.undoExtra = { extract: 'merk dir das' };
+    await first.syncNow();
+    first.stop();
+
+    // Someone else in the same browser does not get it
+    const other = await open(server, storage, 'u2');
+    expect(other.getState().canUndo).toBe(false);
+    other.stop();
+
+    const again = await open(server, storage, 'u1');
+    expect(again.getState().canUndo).toBe(true);
+    expect(again.undoExtra).toEqual({ extract: 'merk dir das' });
+    expect(again.undo().ok).toBe(true);
+    expect(texts(again)).toEqual(['Hallo']);
+    expect(again.getState().canRedo).toBe(true);
+    again.stop();
+
+    // Logging out forgets it
+    clearUndoHistories();
+    const afterLogout = await open(server, storage, 'u1');
+    expect(afterLogout.getState().canRedo).toBe(false);
+    afterLogout.stop();
+  });
+
+  it('keeps the last 20 notes', () => {
+    clearUndoHistories();
+    const step = { inverse: [], checks: [], at: 0 };
+    for (let i = 0; i <= UNDO_HISTORY_NOTES; i++) keepUndoHistory('u1', `doc${i}`, { undo: [step], redo: [] });
+    expect(takeUndoHistory('u1', 'doc0')).toBeUndefined();
+    expect(takeUndoHistory('u1', `doc${UNDO_HISTORY_NOTES}`)?.undo).toHaveLength(1);
   });
 });

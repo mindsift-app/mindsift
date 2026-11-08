@@ -8,6 +8,7 @@ import { applyEffect, applyOp, Block, cloneDoc, Doc, docFromSnapshot, emptyDoc, 
 import { defaultStorage, markUnsent, requestPersistentStorage, SyncStorage } from './persist';
 import { httpTransport, LeaseInfo, Presence, Transport, TransportError } from './transport';
 import { buildStep, failedChecks, touchedBlocks, UndoStep } from './undo';
+import { keepUndoHistory, takeUndoHistory } from './undoHistory';
 import { PushChannel, PushKind, realtimePush } from './push';
 import { getCurrentUserId } from '../api/client';
 import i18n from '../../i18n';
@@ -156,6 +157,8 @@ export class DocSyncEngine {
   private conflictRedirects = new Map<string, string>();
   private undoStack: UndoStep[] = [];
   private redoStack: UndoStep[] = [];
+  /** The editor's own part of the undo history (server actions), kept with the steps (undoHistory.ts) */
+  undoExtra: unknown = undefined;
 
   private push: PushChannel | null;
   private pushKind: PushKind = 'none';
@@ -180,6 +183,15 @@ export class DocSyncEngine {
     this.manual = !!opts.manual;
     this.userId = opts.userId ?? (getCurrentUserId() || '');
     this.push = opts.push || (this.manual ? null : realtimePush);
+    // Undo/redo from the last time the note was open in this app session
+    if (!this.manual) {
+      const kept = takeUndoHistory(this.userId, docId);
+      if (kept) {
+        this.undoStack = kept.undo;
+        this.redoStack = kept.redo;
+        this.undoExtra = kept.extra;
+      }
+    }
   }
 
   // --- Public API ---
@@ -230,6 +242,7 @@ export class DocSyncEngine {
     this.flushOnExit();
     this.stopped = true;
     if (!this.manual) {
+      keepUndoHistory(this.userId, this.docId, { undo: this.undoStack, redo: this.redoStack, extra: this.undoExtra });
       const n = (openNotes.get(this.docId) || 0) - 1;
       if (n > 0) openNotes.set(this.docId, n);
       else openNotes.delete(this.docId);

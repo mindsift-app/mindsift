@@ -2,6 +2,7 @@
 import { AuthStatus, DashboardStats, Retention, SharingMode, Session, User, NotificationSettings } from '../types';
 import { setToken, clearToken, ensureArray, request, setCurrentSharingMode, setCurrentPeopleSearch } from './client';
 import { clearStoredNotes } from '../docSync/persist';
+import { clearUndoHistories } from '../docSync/undoHistory';
 
 export const authApi = {
   // --- AUTH, FIRST-BOOT SETUP & SETTINGS ---
@@ -23,6 +24,7 @@ export const authApi = {
       await request<{ success: boolean }>('/api/v1/auth/logout', { method: 'POST' });
     } finally {
       clearToken();
+      clearUndoHistories();
       await clearStoredNotes();
     }
   },

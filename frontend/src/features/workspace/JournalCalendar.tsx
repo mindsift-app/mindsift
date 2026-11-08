@@ -10,12 +10,14 @@ interface JournalCalendarProps {
   /** Days with written entries (get a dot) */
   entryDates: Set<string>;
   onSelect: (date: string) => void;
+  /** Shows "Heute" at the top left (the sidebar; on phones the journal's header has it) */
+  onToday?: () => void;
 }
 
 // Monday first, as the grid (common:date.weekdayMin.1–6, then 0)
 const WEEKDAY_ORDER = [1, 2, 3, 4, 5, 6, 0];
 
-export const JournalCalendar: React.FC<JournalCalendarProps> = ({ activeDate, entryDates, onSelect }) => {
+export const JournalCalendar: React.FC<JournalCalendarProps> = ({ activeDate, entryDates, onSelect, onToday }) => {
   const { t } = useTranslation('workspace');
   const active = parseISODate(activeDate);
   const [view, setView] = useState({ year: active.getFullYear(), month: active.getMonth() });
@@ -45,6 +47,15 @@ export const JournalCalendar: React.FC<JournalCalendarProps> = ({ activeDate, en
 
   return (
     <div className="select-none text-xs" aria-label={t('journal.calendar')}>
+      {onToday && (
+        <button
+          type="button"
+          onClick={onToday}
+          className="h-9 sm:h-6 px-2 mb-1 rounded-btn text-xs font-semibold text-accent hover:bg-panel transition-colors cursor-pointer"
+        >
+          {t('common:date.today')}
+        </button>
+      )}
       <div className="flex items-center gap-1 mb-1.5">
         <button
           type="button"
