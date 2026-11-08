@@ -391,7 +391,7 @@
     "title": "Export & import",
     "intro": "Download your data as a backup or Markdown archive, restore server backups or import MindSift data and Obsidian vaults.",
     "backupTitle": "Full backup (.zip)",
-    "backupHint": "All your thoughts, tasks, notes and lists as JSON, with the images and voice notes of your notes, packed into a ZIP file. “Import MindSift data” restores it completely.",
+    "backupHint": "All your thoughts, tasks, notes and lists as JSON, with the images and voice notes of your notes, packed into a ZIP file. “Import MindSift data” restores it completely. The <c>Obsidian</c> folder holds everything as Markdown as well, which Obsidian or any text editor opens directly, even without MindSift.",
     "vaultTitle": "Markdown archive for Obsidian (.zip)",
     "importTitle": "Import data",
     "importHint": "An import creates everything anew and changes nothing that exists. Before importing you see what will be created.",
@@ -403,7 +403,7 @@
     "backupDownload": "Download backup",
     "vaultDownload": "Download Markdown archive",
     "vaultHint": "All notes as <c>.md</c> files in your folder structure (with title, tags and date in the header), tasks per list under <c>Aufgaben/</c> in the format of the Obsidian Tasks plugin, lists under <c>Listen/</c>, images and voice notes under <c>attachments/</c>. Notes shared with you are included.",
-    "importMindSiftHint": "Restore your own backup: JSON backup (<c>.json</c>) or Markdown archive (<c>.zip</c>). Notes go back to their folders; task lists with subtasks, due dates and priorities as well as lists are restored.",
+    "importMindSiftHint": "Restore your own backup: backup (<c>.zip</c> or <c>.json</c>) or Markdown archive (<c>.zip</c>). Notes go back to their folders; task lists with subtasks, due dates and priorities as well as lists are restored.",
     "importObsidianHint": "Vault as <c>.zip</c>. All notes land in a folder of their own named after the vault; subfolders are kept. Checkboxes stay checkboxes in the note, frontmatter tags become #hashtags. Images and audio files a note embeds (<c>![[image.png]]</c> or <c>![](image.png)</c>) are imported; other attachments like PDFs are not."
   },
   "profile": {

@@ -60,7 +60,7 @@ export function DataSection({ dataExport }: { dataExport: ReturnType<typeof useD
         <div>
           <h3 className="font-bold text-main">{t('data.backupTitle')}</h3>
           <p className="text-muted text-[11px]">
-            {t('data.backupHint')}
+            <Trans t={t} i18nKey="data.backupHint" components={{ c: <code className="font-mono" /> }} />
           </p>
         </div>
         <button

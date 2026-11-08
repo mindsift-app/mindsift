@@ -553,7 +553,7 @@ const it: HelpContent = {
         <div className="space-y-2 text-muted leading-relaxed">
           <ul className="space-y-1.5">
             <li>
-              <strong className="text-main">Backup del server:</strong> se l'amministrazione ha abilitato i backup automatici, trovi i backup giornalieri dei tuoi dati in <em>Impostazioni account → Esportazione e importazione</em>. Puoi scaricarli o ripristinarli, anche per singole aree come liste o attività.
+              <strong className="text-main">Backup del server:</strong> se l'amministrazione ha abilitato i backup automatici, trovi i backup giornalieri dei tuoi dati in <em>Impostazioni account → Esportazione e importazione</em>. Puoi scaricarli o ripristinarli, anche per singole aree come liste o attività. Ogni backup contiene inoltre le tue note, attività e liste in Markdown nella cartella <em>Obsidian</em>, leggibili in Obsidian o in qualsiasi editor di testo, anche senza MindSift.
             </li>
             <li>
               <strong className="text-main">Senza Internet:</strong> installato come app (o nel browser), MindSift si avvia anche offline con l'ultimo stato caricato. Registrare pensieri e spuntare attività e voci di lista continua a funzionare; un avviso in basso mostra quante modifiche sono in attesa, e verranno inviate automaticamente appena torna la connessione.

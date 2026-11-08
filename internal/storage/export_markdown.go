@@ -20,6 +20,29 @@ import (
 // under Aufgaben/, shopping and other lists under Listen/. Nothing is buffered on disk.
 func (s *Store) WriteMarkdownVault(userID string, w io.Writer) error {
 	zw := zip.NewWriter(w)
+	if err := s.writeVault(zw, userID); err != nil {
+		return err
+	}
+	return zw.Close()
+}
+
+// zipEntries is where vault files go: the archive itself, or a folder in it (prefixedZip).
+type zipEntries interface {
+	CreateHeader(fh *zip.FileHeader) (io.Writer, error)
+}
+
+// prefixedZip puts every entry below a folder of the archive (the vault inside the backup ZIP).
+type prefixedZip struct {
+	zw     *zip.Writer
+	prefix string
+}
+
+func (p prefixedZip) CreateHeader(fh *zip.FileHeader) (io.Writer, error) {
+	fh.Name = p.prefix + fh.Name
+	return p.zw.CreateHeader(fh)
+}
+
+func (s *Store) writeVault(zw zipEntries, userID string) error {
 	names := newVaultNames()
 	names.lang = s.MessageLanguage(userID)
 	now := time.Now()
@@ -95,13 +118,10 @@ func (s *Store) WriteMarkdownVault(userID string, w io.Writer) error {
 	if err := s.writeVaultTasks(zw, userID, names, now); err != nil {
 		return err
 	}
-	if err := s.writeVaultLists(zw, userID, names, now); err != nil {
-		return err
-	}
-	return zw.Close()
+	return s.writeVaultLists(zw, userID, names, now)
 }
 
-func (s *Store) writeVaultTasks(zw *zip.Writer, userID string, names *vaultNames, now time.Time) error {
+func (s *Store) writeVaultTasks(zw zipEntries, userID string, names *vaultNames, now time.Time) error {
 	tasks, err := s.GetTasks(userID, "")
 	if err != nil {
 		return err
@@ -135,7 +155,7 @@ func (s *Store) writeVaultTasks(zw *zip.Writer, userID string, names *vaultNames
 	return nil
 }
 
-func (s *Store) writeVaultLists(zw *zip.Writer, userID string, names *vaultNames, now time.Time) error {
+func (s *Store) writeVaultLists(zw zipEntries, userID string, names *vaultNames, now time.Time) error {
 	lists, err := s.GetAllListsForUser(userID)
 	if err != nil {
 		return err
@@ -349,7 +369,7 @@ func markdownFrontmatter(meta map[string]any) string {
 	return sb.String()
 }
 
-func writeZipFile(zw *zip.Writer, name, body string, modified time.Time) error {
+func writeZipFile(zw zipEntries, name, body string, modified time.Time) error {
 	f, err := zw.CreateHeader(&zip.FileHeader{Name: name, Method: zip.Deflate, Modified: modified})
 	if err != nil {
 		return err

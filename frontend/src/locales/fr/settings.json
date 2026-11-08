@@ -391,7 +391,7 @@
     "title": "Export & import",
     "intro": "Télécharge tes données sous forme de sauvegarde ou d'archive Markdown, restaure des sauvegardes du serveur ou importe des données MindSift et des coffres Obsidian.",
     "backupTitle": "Sauvegarde complète (.zip)",
-    "backupHint": "Toutes tes pensées, tâches, notes et listes au format JSON, avec les images et notes vocales de tes notes, compressées dans un fichier ZIP. « Importer des données MindSift » la restaure intégralement.",
+    "backupHint": "Toutes tes pensées, tâches, notes et listes au format JSON, avec les images et notes vocales de tes notes, compressées dans un fichier ZIP. « Importer des données MindSift » la restaure intégralement. Le dossier <c>Obsidian</c> contient en plus tout en Markdown, qu'Obsidian ou n'importe quel éditeur de texte ouvre directement, même sans MindSift.",
     "vaultTitle": "Archive Markdown pour Obsidian (.zip)",
     "importTitle": "Importer des données",
     "importHint": "Un import crée tout à nouveau sans modifier ce qui existe déjà. Avant d'importer, tu vois un aperçu de ce qui sera créé.",
@@ -403,7 +403,7 @@
     "backupDownload": "Télécharger la sauvegarde",
     "vaultDownload": "Télécharger l'archive Markdown",
     "vaultHint": "Toutes les notes sous forme de fichiers <c>.md</c> dans ton arborescence de dossiers (avec titre, tags et date dans l'en-tête), les tâches par liste sous <c>Aufgaben/</c> au format du plugin Obsidian Tasks, les listes sous <c>Listen/</c>, les images et notes vocales sous <c>attachments/</c>. Les notes partagées avec toi sont incluses.",
-    "importMindSiftHint": "Restaurer ta propre sauvegarde : sauvegarde JSON (<c>.json</c>) ou archive Markdown (<c>.zip</c>). Les notes reviennent dans leurs dossiers ; les listes de tâches avec sous-tâches, dates d'échéance et priorités ainsi que les listes sont restaurées.",
+    "importMindSiftHint": "Restaurer ta propre sauvegarde : sauvegarde (<c>.zip</c> ou <c>.json</c>) ou archive Markdown (<c>.zip</c>). Les notes reviennent dans leurs dossiers ; les listes de tâches avec sous-tâches, dates d'échéance et priorités ainsi que les listes sont restaurées.",
     "importObsidianHint": "Coffre au format <c>.zip</c>. Toutes les notes arrivent dans un dossier dédié nommé d'après le coffre ; les sous-dossiers sont conservés. Les cases à cocher restent des cases à cocher dans la note, les tags du frontmatter deviennent des #hashtags. Les images et fichiers audio intégrés à une note (<c>![[image.png]]</c> ou <c>![](image.png)</c>) sont importés ; les autres pièces jointes comme les PDF ne le sont pas."
   },
   "profile": {

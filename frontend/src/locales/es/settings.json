@@ -437,7 +437,7 @@
     "title": "Exportar e importar",
     "intro": "Descarga tus datos como copia de seguridad o archivo Markdown, restaura copias del servidor o importa datos de MindSift y bóvedas de Obsidian.",
     "backupTitle": "Copia de seguridad completa (.zip)",
-    "backupHint": "Todos tus pensamientos, tareas, notas y listas en formato JSON, junto con las imágenes y notas de voz de tus notas, comprimidos en un archivo ZIP. «Importar datos de MindSift» lo restaura por completo.",
+    "backupHint": "Todos tus pensamientos, tareas, notas y listas en formato JSON, junto con las imágenes y notas de voz de tus notas, comprimidos en un archivo ZIP. «Importar datos de MindSift» lo restaura por completo. La carpeta <c>Obsidian</c> contiene además todo en Markdown, que Obsidian o cualquier editor de texto abre directamente, incluso sin MindSift.",
     "vaultTitle": "Archivo Markdown para Obsidian (.zip)",
     "importTitle": "Importar datos",
     "importHint": "Una importación crea todo de nuevo y no modifica nada de lo existente. Antes de importar podrás previsualizar qué se va a crear.",
@@ -449,7 +449,7 @@
     "backupDownload": "Descargar copia de seguridad",
     "vaultDownload": "Descargar archivo Markdown",
     "vaultHint": "Todas las notas como archivos <c>.md</c> en tu estructura de carpetas (con título, etiquetas y fecha en el encabezado), tareas por lista bajo <c>Aufgaben/</c> en el formato del plugin Obsidian Tasks, listas bajo <c>Listen/</c>, imágenes y notas de voz bajo <c>attachments/</c>. Se incluyen las notas compartidas contigo.",
-    "importMindSiftHint": "Restaura tu propia copia de seguridad: copia JSON (<c>.json</c>) o archivo Markdown (<c>.zip</c>). Las notas vuelven a sus carpetas; se restauran las listas de tareas con subtareas, fechas de vencimiento y prioridades, así como las listas.",
+    "importMindSiftHint": "Restaura tu propia copia de seguridad: copia (<c>.zip</c> o <c>.json</c>) o archivo Markdown (<c>.zip</c>). Las notas vuelven a sus carpetas; se restauran las listas de tareas con subtareas, fechas de vencimiento y prioridades, así como las listas.",
     "importObsidianHint": "Bóveda en formato <c>.zip</c>. Todas las notas van a una carpeta propia con el nombre de la bóveda; se conservan las subcarpetas. Las casillas de verificación siguen siendo casillas en la nota; las etiquetas del frontmatter se convierten en #hashtags. Las imágenes y archivos de audio incrustados en las notas (<c>![[imagen.png]]</c> o <c>![](imagen.png)</c>) se importan; otros adjuntos como PDF no."
   },
   "import": {
