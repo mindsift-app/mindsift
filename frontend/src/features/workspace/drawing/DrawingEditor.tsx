@@ -18,6 +18,7 @@ import {
   MoveRight,
   Pencil,
   Redo2,
+  SlidersHorizontal,
   Spline,
   Square,
   Trash2,
@@ -153,12 +154,14 @@ export interface DrawingEditorProps {
   draftKey: string;
   /** Only look: move and zoom, nothing else */
   readOnly?: boolean;
+  /** Called now and then while drawing (keeps the bullet held) */
+  onActivity?: () => void;
   /** null = nothing changed */
   onClose: (content: string | null) => void;
 }
 
 // Full-screen drawing editor. Changes stay local until it closes; meanwhile a draft is kept in this browser.
-export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseContent, draftKey, readOnly = false, onClose }) => {
+export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseContent, draftKey, readOnly = false, onActivity, onClose }) => {
   const { t } = useTranslation('workspace');
   const [doc, setDocState] = useState<Drawing>(initial);
   const docRef = useRef(doc);
@@ -197,10 +200,19 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
   const textRef = useRef<HTMLTextAreaElement | null>(null);
   const draftTimer = useRef<number | null>(null);
   const [size, setSize] = useState({ w: 0, h: 0 });
+  // Phones: line, fill and arrow options only on request, so they do not cover the canvas
+  const [panelOpen, setPanelOpen] = useState(false);
 
+  const onActivityRef = useRef(onActivity);
+  onActivityRef.current = onActivity;
+  const lastActivity = useRef(0);
   const setDoc = useCallback((next: Drawing) => {
     docRef.current = next;
     setDocState(next);
+    if (Date.now() - lastActivity.current > 5000) {
+      lastActivity.current = Date.now();
+      onActivityRef.current?.();
+    }
     if (draftTimer.current !== null) window.clearTimeout(draftTimer.current);
     draftTimer.current = window.setTimeout(saveDraft, 1500);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1179,7 +1191,7 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
 
   const panel =
     kinds.size > 0 && !textEdit ? (
-      <div className="absolute left-2 right-2 sm:right-auto bottom-2 sm:bottom-auto sm:top-2 z-10 sm:w-60 max-h-[45%] sm:max-h-[calc(100%-1rem)] overflow-y-auto p-2.5 bg-panel border border-border rounded-card shadow-panel space-y-2.5 text-xs text-main">
+      <div className={`${panelOpen ? '' : 'hidden'} sm:block absolute left-2 right-2 sm:right-auto bottom-2 sm:bottom-auto sm:top-2 z-10 sm:w-60 max-h-[45%] sm:max-h-[calc(100%-1rem)] overflow-y-auto p-2.5 bg-panel border border-border rounded-card shadow-panel space-y-2.5 text-xs text-main`}>
         <div>
           <div className="text-[11px] text-muted mb-1">{t('drawing.stroke')}</div>
           <div className="flex flex-wrap gap-1">{DRAW_COLORS.map((c) => swatch(c, panelStyle.s === c, () => applyStyle({ s: c }), false))}</div>
@@ -1403,6 +1415,18 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
       {/* Phones: the tools sit at the bottom, within thumb reach */}
       <div className={`${readOnly ? 'hidden' : 'sm:hidden'} shrink-0 overflow-x-auto px-1 pt-1 pb-[calc(0.25rem+env(safe-area-inset-bottom))] bg-panel/95 border-t border-border`}>
         <div className="flex items-center gap-1 w-max">
+          {kinds.size > 0 && !textEdit && (
+            <button
+              type="button"
+              onClick={() => setPanelOpen((v) => !v)}
+              className={`${iconBtn} ${panelOpen ? '!text-accent' : ''}`}
+              title={t('drawing.style')}
+              aria-label={t('drawing.style')}
+              aria-pressed={panelOpen}
+            >
+              <SlidersHorizontal className="w-4 h-4" />
+            </button>
+          )}
           {tools}
           <button type="button" onClick={fitAll} className={iconBtn} title={t('drawing.fit')} aria-label={t('drawing.fit')}>
             <Maximize className="w-4 h-4" />

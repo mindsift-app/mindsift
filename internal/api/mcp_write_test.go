@@ -201,3 +201,38 @@ func TestMCPInbox(t *testing.T) {
 		t.Fatal("a discarded entry is no inbox entry any more")
 	}
 }
+
+// Agents read drawings as a description and cannot overwrite them with text
+func TestMCPDrawings(t *testing.T) {
+	srv, store, token := setupTestServer(t)
+	claims, _ := auth.ValidateToken(testJWTSecret, token)
+	call := mcpCaller(t, srv)
+	agentKey, _ := store.CreateAPIKey(claims.UserID, "Agent", []string{"notes:read", "notes:write"})
+	key := agentKey.RawKey
+	content := `{"v":1,"els":[{"id":"a","ver":1,"t":"rect","x":0,"y":0,"w":100,"h":50,"s":"main","f":"none","sw":2,"txt":"Start"},` +
+		`{"id":"b","ver":1,"t":"ellipse","x":300,"y":0,"w":100,"h":50,"s":"main","f":"none","sw":2,"txt":"Ziel"},` +
+		`{"id":"c","ver":1,"t":"arrow","a":[100,25],"b":[300,25],"from":"a","to":"b","route":"straight","head":2,"s":"main","sw":2}]}`
+	doc, err := store.CreateDocument(claims.UserID, "", "Ablauf", "", "", []domain.DocumentBlock{
+		{ID: "blk_dr1", Type: "drawing", Content: content, Level: 0},
+	}, nil, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, isErr, msg := call(key, "get_note", `{"id":"`+doc.ID+`"}`)
+	if isErr || !strings.Contains(msg, "„Start“ → „Ziel“") || strings.Contains(msg, `"els"`) {
+		t.Fatalf("get_note should describe the drawing: %s", msg)
+	}
+	if s := strings.Join(bulletTexts(got), "|"); s != "0:[Zeichnung: „Start“ → „Ziel“]" {
+		t.Fatalf("bullets: %s", s)
+	}
+	if _, isErr, _ := call(key, "update_note_bullet", `{"noteId":"`+doc.ID+`","bulletId":"blk_dr1","text":"Überschrieben"}`); !isErr {
+		t.Fatal("changing the text of a drawing must fail")
+	}
+	snap, _ := store.GetDocSnapshot(doc.ID)
+	if snap.Blocks[0].Content != content {
+		t.Fatalf("drawing changed: %q", snap.Blocks[0].Content)
+	}
+	if res, isErr, _ := call(key, "delete_note_bullet", `{"noteId":"`+doc.ID+`","bulletId":"blk_dr1"}`); isErr || len(bulletTexts(res)) != 0 {
+		t.Fatalf("deleting a drawing: %v", res)
+	}
+}

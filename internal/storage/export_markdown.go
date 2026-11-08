@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/mindsift-app/mindsift/internal/domain"
+	"github.com/mindsift-app/mindsift/internal/drawing"
 	"github.com/mindsift-app/mindsift/internal/i18n"
 )
 
@@ -50,6 +51,19 @@ func (s *Store) WriteMarkdownVault(userID string, w io.Writer) error {
 		return err
 	}
 	for _, d := range docs {
+		// Drawings as SVG files next to the images
+		for _, b := range d.Blocks {
+			if b.Type != drawing.BlockType {
+				continue
+			}
+			if svg, ok := drawing.SVG(b.Content); ok {
+				p := vaultAttachmentDir + "/" + b.ID + ".svg"
+				if err := writeZipFile(zw, p, string(svg), parseISO(d.UpdatedAt, now)); err != nil {
+					return err
+				}
+				attachments[DrawingAttachmentKey(b.ID)] = p
+			}
+		}
 		dir := names.dir(d.FolderPath)
 		name := names.file(dir, d.Title, i18n.T(names.lang, "Unbenannte Notiz"))
 		up := ""
@@ -193,6 +207,9 @@ const vaultAttachmentDir = "attachments"
 // vaultCalloutKind: the Obsidian callout for each callout-like block type
 var vaultCalloutKind = map[string]string{"callout": "note", "warning": "warning", "error": "failure"}
 
+// DrawingAttachmentKey: how a drawing's SVG file is looked up among the attachments of an export
+func DrawingAttachmentKey(blockID string) string { return "drawing:" + blockID }
+
 func BlocksToVaultMarkdown(blocks []domain.DocumentBlock) string {
 	return blocksToVaultMarkdown(blocks, nil)
 }
@@ -213,6 +230,19 @@ func blocksToVaultMarkdown(blocks []domain.DocumentBlock, attachment func(id str
 		}
 		indent := strings.Repeat("\t", lvl)
 		content := MaskSecretRefs(strings.ReplaceAll(b.Content, "\r\n", "\n"))
+		if b.Type == drawing.BlockType {
+			// In an archive the picture file (with the model inside), otherwise a fenced block that pasting
+			// or importing turns back into a drawing
+			p := ""
+			if attachment != nil {
+				p = attachment(DrawingAttachmentKey(b.ID))
+			}
+			if p != "" {
+				b.Type, content = "image", "!["+oneLine(strings.Join(drawing.Texts(b.Content), " · "))+"]("+strings.ReplaceAll(p, " ", "%20")+")"
+			} else {
+				b.Type, b.Lang, content = "code", drawing.Fence, strings.TrimSpace(b.Content)
+			}
+		}
 		if (b.Type == "image" || b.Type == "audio") && attachment != nil {
 			if ref, ok := ParseMediaContent(content); ok {
 				if p := attachment(ref.ID); p != "" {

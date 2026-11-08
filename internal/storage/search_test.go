@@ -271,3 +271,23 @@ func TestSearchOptions(t *testing.T) {
 		t.Fatalf("counts: %+v", all.Counts)
 	}
 }
+
+func TestSearchFindsDrawingsByTheirWords(t *testing.T) {
+	store, userA, _ := setupTestStore(t)
+	defer store.Close()
+	blocks := []domain.DocumentBlock{{ID: "drw1", Type: "drawing", Content: `{"v":1,"els":[{"id":"a","ver":1,"t":"rect","x":0,"y":0,"w":10,"h":10,"s":"main","f":"none","sw":2,"txt":"Waschmaschine"}]}`}}
+	if _, err := store.CreateDocument(userA.ID, "", "Skizze", "", "", blocks, nil, false); err != nil {
+		t.Fatalf("CreateDocument: %v", err)
+	}
+	res, err := store.SearchGlobal(userA.ID, "Waschmaschine")
+	if err != nil || len(res.Hits) == 0 {
+		t.Fatalf("drawing text not found: %v %+v", err, res)
+	}
+	if res.Hits[0].Content != "Waschmaschine" {
+		t.Fatalf("hit shows %q instead of the words", res.Hits[0].Content)
+	}
+	// The JSON itself is not searchable
+	if res, _ := store.SearchGlobal(userA.ID, "ellipse rect"); len(res.Hits) != 0 {
+		t.Fatalf("JSON keys must not match: %+v", res.Hits)
+	}
+}

@@ -1,11 +1,12 @@
 import type { DocumentBlock } from './types';
 import { maskSecrets } from './secretRef';
+import { DRAWING_FENCE } from './drawing/model';
 
 // Warnings and errors as Obsidian callouts, like the Markdown export of the server
 const CALLOUT_KIND = { warning: 'warning', error: 'failure' } as const;
 
 // Bullets as Markdown for copying: the top level reads like a document (plain bullets become paragraphs,
-// headings, dividers, callouts and fenced code are block elements), everything indented below is a list
+// headings, dividers, callouts and fenced code (drawings too) are block elements), everything indented below is a list
 // with one tab per level ("-", "1." for numbered, "- [ ]" for to-dos). To-dos and numbered items stay list
 // items on the top level too. Pasting it back (pasteOutline.ts: a list right after a paragraph nests
 // under it) gives the same structure. Levels count from the shallowest bullet, so a copied branch starts
@@ -18,7 +19,9 @@ export function blocksToMarkdown(blocks: DocumentBlock[]): string {
   // tab indent would turn them into an indented code block
   let lift = 0;
   let afterParagraph = false; // a top-level list item right below a paragraph would nest under it
-  for (const b of blocks) {
+  for (const raw of blocks) {
+    // A drawing travels as a fenced block with its model; pasting it into a note makes it a drawing again
+    const b: DocumentBlock = raw.type === 'drawing' ? { ...raw, type: 'code', lang: DRAWING_FENCE } : raw;
     let lvl = Math.max(0, (b.level || 0) - base);
     if (lvl === 0) {
       lift = 0;

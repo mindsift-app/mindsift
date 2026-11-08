@@ -525,6 +525,7 @@
     "draftRestore": "Restore",
     "draftDiscard": "Discard",
     "nearlyFull": "This drawing is {{percent}} % full. Large freehand areas take the most room.",
-    "tooLarge": "This drawing is too large to save. Please remove something, freehand strokes above all."
+    "tooLarge": "This drawing is too large to save. Please remove something, freehand strokes above all.",
+    "style": "Line, fill, arrow"
   }
 }

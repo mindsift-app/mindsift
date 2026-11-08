@@ -80,6 +80,8 @@ export const DRAW_COLORS: DrawColor[] = ['main', 'muted', 'accent', 'red', 'oran
 export const FONT_SIZES = [14, 18, 28];
 export const DEFAULT_FONT_SIZE = 18;
 export const GRID_SIZE = 20;
+/** Language of the fenced code block a drawing becomes in Markdown (copying, export without files) */
+export const DRAWING_FENCE = 'mindsift-canvas';
 /** The server takes at most 100 000 bytes per block (internal/collab/ops.go) */
 export const MAX_CONTENT_BYTES = 100_000;
 

@@ -35,6 +35,7 @@ The frontend is embedded into the binary via `go:embed` ([cmd/server/main.go](..
 | `internal/domain/` | Structures (`models.go`), ID generation, tag extraction |
 | `internal/ws/` | `hub.go` |
 | `internal/collab/` | Core note synchronization without database: block tree, operations and conflict rules, order keys, leases, long-polling notification |
+| `internal/drawing/` | Drawing blocks on the server: reading and checking the JSON model, words for search, description for MCP, SVG for the Markdown archive (counterpart of `frontend/src/lib/drawing/model.ts`) |
 | `internal/auth/` | Tokens and passwords |
 | `internal/config/` | Environment variables |
 | `frontend/src/app/` | App shell around `App.tsx`: header and page tabs (`AppHeader.tsx`), mobile navigation, profile menus, Quick Dump sheet, install prompt; hooks for session and counters (`useSessionBootstrap`), scroll position per page, search keyboard shortcuts |

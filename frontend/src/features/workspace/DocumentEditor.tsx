@@ -1854,6 +1854,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
                 onCopyBlockLink={handleCopyBlockLink}
                 initialFocusedBlockId={initialFocusedBlockId}
                 onFocusedBlockChange={(id) => engineRef.current?.focusBlock(id)}
+                onBlockActivity={(id) => engineRef.current?.touchBlock(id)}
                 lockedBlocks={lockedBlocks}
                 onLockedAction={handleLockedAction}
                 onResolveConflict={handleResolveConflict}
@@ -2008,6 +2009,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
               onCopyBlockLink={handleCopyBlockLink}
               initialFocusedBlockId={initialFocusedBlockId}
               onFocusedBlockChange={(id) => engineRef.current?.focusBlock(id)}
+              onBlockActivity={(id) => engineRef.current?.touchBlock(id)}
               lockedBlocks={lockedBlocks}
               onLockedAction={handleLockedAction}
               onResolveConflict={handleResolveConflict}

@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/mindsift-app/mindsift/internal/domain"
+	"github.com/mindsift-app/mindsift/internal/drawing"
 )
 
 // SearchHit represents a single ranked match across documents, tasks/thoughts, and lists.
@@ -77,6 +78,14 @@ func PrepareFTSQuery(raw string) string {
 	return strings.Join(tokens, " ")
 }
 
+// blockSearchText is the SQL for the searchable text of a block row (prefix "new." in triggers): drawings
+// only with the words written in them, not their JSON
+func blockSearchText(row string) string {
+	return `CASE WHEN ` + row + `type = 'drawing' THEN COALESCE((SELECT group_concat(json_extract(e.value, '$.txt'), ' ')
+		FROM json_each(CASE WHEN json_valid(` + row + `content) THEN ` + row + `content ELSE '{}' END, '$.els') e
+		WHERE json_extract(e.value, '$.txt') IS NOT NULL), '') ELSE ` + row + `content END`
+}
+
 // migrateSearchFTS creates the virtual FTS5 tables and synchronization triggers.
 func (s *Store) migrateSearchFTS() {
 	tables := []string{
@@ -138,16 +147,19 @@ func (s *Store) migrateSearchFTS() {
 			DELETE FROM documents_fts WHERE doc_id = old.id;
 		END;`,
 
-		// Blocks triggers (excluding tombstones/deleted blocks)
-		`CREATE TRIGGER IF NOT EXISTS trg_blocks_ai AFTER INSERT ON blocks BEGIN
+		// Blocks triggers (excluding tombstones/deleted blocks). Rebuilt on every start, so a changed
+		// body (e.g. drawings indexed by their words) reaches existing databases.
+		`DROP TRIGGER IF EXISTS trg_blocks_ai;`,
+		`CREATE TRIGGER trg_blocks_ai AFTER INSERT ON blocks BEGIN
 			INSERT INTO documents_fts(doc_id, block_id, title, content)
-			SELECT new.document_id, new.id, '', new.content
+			SELECT new.document_id, new.id, '', ` + blockSearchText("new.") + `
 			WHERE new.deleted = 0 AND (new.deleted_at = '' OR new.deleted_at IS NULL);
 		END;`,
-		`CREATE TRIGGER IF NOT EXISTS trg_blocks_au AFTER UPDATE OF content, deleted, deleted_at, document_id ON blocks BEGIN
+		`DROP TRIGGER IF EXISTS trg_blocks_au;`,
+		`CREATE TRIGGER trg_blocks_au AFTER UPDATE OF content, type, deleted, deleted_at, document_id ON blocks BEGIN
 			DELETE FROM documents_fts WHERE doc_id = old.document_id AND block_id = old.id;
 			INSERT INTO documents_fts(doc_id, block_id, title, content)
-			SELECT new.document_id, new.id, '', new.content
+			SELECT new.document_id, new.id, '', ` + blockSearchText("new.") + `
 			WHERE new.deleted = 0 AND (new.deleted_at = '' OR new.deleted_at IS NULL);
 		END;`,
 		`CREATE TRIGGER IF NOT EXISTS trg_blocks_ad AFTER DELETE ON blocks BEGIN
@@ -200,11 +212,22 @@ func (s *Store) backfillSearchFTS() {
 			SELECT id, '', title, '' FROM documents WHERE is_archived = 0;
 
 			INSERT INTO documents_fts(doc_id, block_id, title, content)
-			SELECT document_id, id, '', content FROM blocks
+			SELECT document_id, id, '', ` + blockSearchText("") + ` FROM blocks
 			WHERE deleted = 0 AND (deleted_at = '' OR deleted_at IS NULL);
 		`)
 		if err != nil {
 			slog.Error("Failed to backfill documents_fts", "error", err)
+		}
+	} else {
+		// Drawings indexed before their words were taken out of the JSON (few rows, cheap on every start)
+		_, err := s.db.Exec(`
+			DELETE FROM documents_fts WHERE block_id IN (SELECT id FROM blocks WHERE type = 'drawing');
+			INSERT INTO documents_fts(doc_id, block_id, title, content)
+			SELECT document_id, id, '', ` + blockSearchText("") + ` FROM blocks
+			WHERE type = 'drawing' AND deleted = 0 AND (deleted_at = '' OR deleted_at IS NULL);
+		`)
+		if err != nil {
+			slog.Error("Failed to reindex drawings in documents_fts", "error", err)
 		}
 	}
 
@@ -269,7 +292,7 @@ func (s *Store) SearchCtx(ctx context.Context, userID, query string, opts Search
 		SELECT f.doc_id, f.block_id,
 		       snippet(documents_fts, -1, '<mark>', '</mark>', '…', 14) AS snip,
 		       bm25(documents_fts, 10.0, 1.0) AS score,
-		       d.title, d.icon, d.user_id, d.is_archived, COALESCE(b.content, '')
+		       d.title, d.icon, d.user_id, d.is_archived, COALESCE(b.content, ''), COALESCE(b.type, '')
 		FROM documents_fts f
 		JOIN documents d ON d.id = f.doc_id
 		LEFT JOIN blocks b ON f.block_id != '' AND b.id = f.block_id AND b.document_id = f.doc_id
@@ -281,15 +304,18 @@ func (s *Store) SearchCtx(ctx context.Context, userID, query string, opts Search
 		// Read all rows first and close them: the access check and loading the note need connections of
 		// their own, and holding the rows' one meanwhile can use up the pool (deadlock under load)
 		type docRow struct {
-			docID, blockID, snip, title, icon, content string
-			score                                      float64
+			docID, blockID, snip, title, icon, content, typ string
+			score                                           float64
 		}
 		var found []docRow
 		for docRows.Next() {
 			var r docRow
 			var ownerID string
 			var isArchived int
-			if scanErr := docRows.Scan(&r.docID, &r.blockID, &r.snip, &r.score, &r.title, &r.icon, &ownerID, &isArchived, &r.content); scanErr == nil {
+			if scanErr := docRows.Scan(&r.docID, &r.blockID, &r.snip, &r.score, &r.title, &r.icon, &ownerID, &isArchived, &r.content, &r.typ); scanErr == nil {
+				if r.typ == drawing.BlockType {
+					r.content = strings.Join(drawing.Texts(r.content), " · ")
+				}
 				found = append(found, r)
 			}
 		}

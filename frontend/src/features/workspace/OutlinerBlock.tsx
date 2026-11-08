@@ -134,6 +134,8 @@ export interface OutlinerBlockProps {
   onNavigateFocus: (blockId: string, direction: 'up' | 'down') => void;
   onFocusBlock?: (blockId: string) => void;
   onBlurBlock?: (blockId: string) => void;
+  /** Work in this block that does not change its text yet (drawing editor open), keeps its lease */
+  onBlockActivity?: (blockId: string) => void;
   onOpenTask?: (taskId: string) => void;
   onTagClick?: (tag: string) => void;
   onWikiLinkClick?: (pageTitle: string, blockId?: string) => void;
@@ -191,6 +193,7 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
   onNavigateFocus,
   onFocusBlock,
   onBlurBlock,
+  onBlockActivity,
   onOpenTask,
   onTagClick,
   onWikiLinkClick,
@@ -238,6 +241,8 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
   const [mediaPicker, setMediaPicker] = useState<'image' | 'audio' | 'dictation' | null>(null);
   // A drawing just made with /canvas opens its editor right away
   const [drawingAutoOpen, setDrawingAutoOpen] = useState(false);
+  // Where a drawing puts its buttons: into this bullet's action bubble
+  const [drawingActionsEl, setDrawingActionsEl] = useState<HTMLSpanElement | null>(null);
   // Card above bullets whose entire content is a plain https address (lib/linkPreview.ts)
   const previewsOn = useLinkPreviewsEnabled();
   const previewUrl =
@@ -1475,8 +1480,17 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
           <DrawingBlock
             blockId={block.id}
             content={localContent}
-            canEdit={canEdit}
+            // Someone else drawing holds the block: look only
+            canEdit={canEdit && !lockedBy}
             autoOpen={drawingAutoOpen}
+            actionsTarget={drawingActionsEl}
+            // Clicked into or open in the editor counts as the cursor in this bullet (action bubble, lease)
+            onFocusChange={(focused) => {
+              setIsLocallyFocused(focused);
+              if (focused) onFocusBlock?.(block.id);
+              else onBlurBlock?.(block.id);
+            }}
+            onActivity={() => onBlockActivity?.(block.id)}
             onChange={(content) => {
               setDrawingAutoOpen(false);
               setLocalContent(content);
@@ -1844,6 +1858,9 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
               'opacity-0 pointer-events-none focus-within:opacity-100 focus-within:pointer-events-auto'
         }`}
       >
+        {/* A drawing's own buttons (edit, save view …) come in here */}
+        {block.type === 'drawing' && <span ref={setDrawingActionsEl} className="contents" />}
+
         {/* Convert back to bullet for to-dos, headings, callouts, warnings, dividers, code and numbered items */}
         {canEdit && ['todo', 'callout', 'warning', 'error', 'h1', 'h2', 'h3', 'divider', 'code', 'numbered'].includes(block.type) && (
           <button

@@ -521,6 +521,7 @@
     "draftRestore": "Wiederherstellen",
     "draftDiscard": "Verwerfen",
     "nearlyFull": "Die Zeichnung ist zu {{percent}} % voll. Große Freihand-Flächen brauchen am meisten Platz.",
-    "tooLarge": "Die Zeichnung ist zu groß zum Speichern. Bitte etwas entfernen, vor allem Freihand-Striche."
+    "tooLarge": "Die Zeichnung ist zu groß zum Speichern. Bitte etwas entfernen, vor allem Freihand-Striche.",
+    "style": "Linie, Füllung, Pfeil"
   }
 }

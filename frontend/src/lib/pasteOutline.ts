@@ -1,7 +1,8 @@
 import type { BlockType } from './types';
+import { DRAWING_FENCE, parseDrawing } from './drawing/model';
 
 // Turns pasted (Markdown) text into outline items: headings, todos, bullets, numbered items, dividers,
-// fenced code and paragraphs. A blank line ends a paragraph; indentation becomes the nesting level.
+// fenced code (drawings among them) and paragraphs. A blank line ends a paragraph; indentation becomes the nesting level.
 // Content below a heading is nested under it (H2 below H1 one level deeper), so sections fold and zoom.
 
 export interface PastedItem {
@@ -53,6 +54,15 @@ export function parsePastedLines(rawLines: string[]): PastedItem[] {
       if (current) (current as PastedItem).content += '\n' + rawLine;
       if (rawLine.trim().startsWith('```')) {
         inCode = false;
+        // A drawing copied from a note (```mindsift-canvas with its model) becomes a drawing again
+        const lines = current ? current.content.split('\n') : [];
+        if (current && lines[0].trim() === '```' + DRAWING_FENCE) {
+          const model = lines.slice(1, -1).join('\n').trim();
+          if (parseDrawing(model)) {
+            current.type = 'drawing';
+            current.content = model;
+          }
+        }
         flush();
       }
       continue;

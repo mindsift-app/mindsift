@@ -8,6 +8,7 @@ import (
 
 	"github.com/mindsift-app/mindsift/internal/collab"
 	"github.com/mindsift-app/mindsift/internal/domain"
+	"github.com/mindsift-app/mindsift/internal/drawing"
 	"github.com/mindsift-app/mindsift/internal/storage"
 )
 
@@ -51,7 +52,11 @@ func (s *Server) noteDoc(docID string) (*collab.Doc, error) {
 func noteBullets(d *collab.Doc) []noteBullet {
 	out := []noteBullet{}
 	for _, b := range d.Flatten() {
-		out = append(out, noteBullet{ID: b.ID, Level: b.Level, Type: b.Type, Text: b.Content, Checked: b.Props.Checked})
+		text := b.Content
+		if b.Type == drawing.BlockType {
+			text = drawing.Describe(b.Content)
+		}
+		out = append(out, noteBullet{ID: b.ID, Level: b.Level, Type: b.Type, Text: text, Checked: b.Props.Checked})
 	}
 	return out
 }
@@ -292,6 +297,9 @@ var mcpWriteTools = []mcpTool{
 			b, err := liveBullet(d, a.BulletID)
 			if err != nil {
 				return nil, err
+			}
+			if b.Type == drawing.BlockType && (a.Text != nil || a.Type != nil) {
+				return nil, errors.New("Dieser Punkt ist eine Zeichnung; Text und Typ lassen sich nur in MindSift ändern (Löschen geht mit delete_note_bullet)")
 			}
 			if err := s.bulletFree(a.NoteID, b.ID); err != nil {
 				return nil, err

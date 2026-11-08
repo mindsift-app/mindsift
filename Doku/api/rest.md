@@ -110,11 +110,11 @@ Administrators can disable MCP (`MCP_ENABLED=false` or toggle in administration 
 | `check_list_item` | `lists:write` | Check off item (`completed` false = revert) |
 | `update_list_item` | `lists:write` | Change text, category, quantity |
 | `list_notes` | `notes:read` | Notes without content, most recently modified first (`folder` including subfolders, `query` in title, `limit`) |
-| `get_note` | `notes:read` | A single note; `content` consists of bullets formatted as an indented Markdown list (tab per level, `- [ ]` for to-dos, images and audio recordings as placeholders), `bullets` contains the same bullets with `id`, `level`, `type`, `text`, `checked` |
+| `get_note` | `notes:read` | A single note; `content` consists of bullets formatted as an indented Markdown list (tab per level, `- [ ]` for to-dos, images and audio recordings as placeholders, drawings described in words), `bullets` contains the same bullets with `id`, `level`, `type`, `text`, `checked` |
 | `create_note` | `notes:create` | New note (`title`, `content` as Markdown like in import, `folderPath`, `icon`); creating in shared folders requires write permission. Every line of plain text becomes a bullet of its own; `content` may also be a list of strings (one bullet each), and doubly escaped `\n` is read as line breaks. If `content` yields no bullets or the call has unknown arguments, the result carries `warnings` (the note is still created) |
 | `update_note` | `notes:write` | Change title, icon, or folder of a note |
 | `add_note_bullet` | `notes:write` | Add bullet: after a bullet (`afterId`), as the last child (`parentId`), or at the end; `type` text/todo/h1–h3/numbered/callout/warning/error, `checked` |
-| `update_note_bullet` | `notes:write` | Update text, checked state, or type of a bullet (`bulletId` from `get_note`) |
+| `update_note_bullet` | `notes:write` | Update text, checked state, or type of a bullet (`bulletId` from `get_note`); refused for drawings (they can only be deleted) |
 | `delete_note_bullet` | `notes:write` | Remove bullet including sub-bullets |
 | `delete_note` | `notes:write` | Move own note to trash (recoverable); shared notes and notes in trash cannot be deleted this way |
 | `search` | a read scope | Full-text search across tasks, list items, and notes (only within the scope of the key); notes returned as `notes` with `noteId`, `title`, `snippet` |

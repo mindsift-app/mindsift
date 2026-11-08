@@ -1,4 +1,5 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { Maximize2, Pencil, RotateCcw, Save, Scan } from 'lucide-react';
 import { Drawing, contentBox, drawingTexts, parseDrawing, serializeDrawing, wheelZoom } from '../../../lib/drawing/model';
@@ -43,11 +44,27 @@ interface DrawingBlockProps {
   onChange: (content: string) => void;
   /** The editor of a fresh drawing was closed without drawing anything */
   onDiscardNew?: () => void;
+  /** Element the buttons go into (the bullet's action bubble); without one they sit on the drawing */
+  actionsTarget?: HTMLElement | null;
+  /** Clicked into or open in the editor, and back */
+  onFocusChange?: (focused: boolean) => void;
+  /** Drawing in the editor (keeps the bullet held for this person) */
+  onActivity?: () => void;
 }
 
 // Drawing in a note: a preview that fills the note's width. Hovering leaves the page scrolling as usual; after
 // a click the drawing takes dragging, the wheel and pinching to move and zoom. Editing happens full screen.
-export const DrawingBlock: React.FC<DrawingBlockProps> = ({ blockId, content, canEdit, autoOpen, onChange, onDiscardNew }) => {
+export const DrawingBlock: React.FC<DrawingBlockProps> = ({
+  blockId,
+  content,
+  canEdit,
+  autoOpen,
+  onChange,
+  onDiscardNew,
+  actionsTarget,
+  onFocusChange,
+  onActivity,
+}) => {
   const { t } = useTranslation('workspace');
   const drawing = useMemo(() => parseDrawing(content), [content]);
   const boxRef = useRef<HTMLDivElement | null>(null);
@@ -89,11 +106,27 @@ export const DrawingBlock: React.FC<DrawingBlockProps> = ({ blockId, content, ca
     setView(v);
   };
 
-  // Clicking elsewhere hands scrolling back to the page
+  // The bullet counts as focused while the drawing takes gestures or its editor is open
+  const onFocusChangeRef = useRef(onFocusChange);
+  onFocusChangeRef.current = onFocusChange;
+  const active = focused || editing;
+  const firstRun = useRef(true);
+  useEffect(() => {
+    if (firstRun.current && !active) {
+      firstRun.current = false;
+      return;
+    }
+    firstRun.current = false;
+    onFocusChangeRef.current?.(active);
+  }, [active]);
+
+  // Clicking elsewhere hands scrolling back to the page (its buttons in the bubble count as the drawing)
   useEffect(() => {
     if (!focused) return;
     const onDown = (e: PointerEvent) => {
-      if (boxRef.current && !boxRef.current.contains(e.target as Node)) setFocused(false);
+      const target = e.target as Node;
+      const inside = boxRef.current?.contains(target) || actionsTarget?.parentElement?.contains(target);
+      if (!inside) setFocused(false);
     };
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -107,7 +140,7 @@ export const DrawingBlock: React.FC<DrawingBlockProps> = ({ blockId, content, ca
       document.removeEventListener('pointerdown', onDown, true);
       document.removeEventListener('keydown', onKey);
     };
-  }, [focused]);
+  }, [focused, actionsTarget]);
 
   const zoomAt = (clientX: number, clientY: number, factor: number, base: View) => {
     const rect = boxRef.current!.getBoundingClientRect();
@@ -214,8 +247,43 @@ export const DrawingBlock: React.FC<DrawingBlockProps> = ({ blockId, content, ca
 
   const empty = drawing.els.length === 0;
   const texts = drawingTexts(drawing);
+  // Same look as the other buttons of the bullet's action bubble
   const btn =
-    'h-9 sm:h-7 px-2 inline-flex items-center gap-1 rounded-btn text-xs text-muted hover:text-main hover:bg-panel-hover transition-colors cursor-pointer';
+    'p-1 sm:p-0.5 min-w-[28px] min-h-[28px] sm:min-w-0 sm:min-h-0 flex items-center justify-center text-faint hover:text-accent rounded-btn transition-colors cursor-pointer';
+  const actions = (
+    <>
+      {view && canEdit && (
+        <button type="button" className={btn} onClick={() => saveFrame(view, height)} title={t('drawing.saveViewTitle')} aria-label={t('drawing.saveView')}>
+          <Save className="w-3.5 h-3.5" />
+        </button>
+      )}
+      {view && (
+        <button type="button" className={btn} onClick={() => updateView(null)} title={t('drawing.resetView')} aria-label={t('drawing.resetView')}>
+          <RotateCcw className="w-3.5 h-3.5" />
+        </button>
+      )}
+      {!view && canEdit && drawing.frame && (
+        <button
+          type="button"
+          className={btn}
+          onClick={() => onChange(serializeDrawing({ ...drawing, frame: undefined }))}
+          title={t('drawing.autoViewTitle')}
+          aria-label={t('drawing.autoView')}
+        >
+          <Scan className="w-3.5 h-3.5" />
+        </button>
+      )}
+      {canEdit ? (
+        <button type="button" className={btn} onClick={() => setEditing(true)} title={t('drawing.editTitle')} aria-label={t('drawing.edit')}>
+          <Pencil className="w-3.5 h-3.5" />
+        </button>
+      ) : (
+        <button type="button" className={btn} onClick={() => setEditing(true)} title={t('drawing.fullscreen')} aria-label={t('drawing.fullscreen')}>
+          <Maximize2 className="w-3.5 h-3.5" />
+        </button>
+      )}
+    </>
+  );
 
   return (
     <div className="my-1 group/drawing">
@@ -244,45 +312,7 @@ export const DrawingBlock: React.FC<DrawingBlockProps> = ({ blockId, content, ca
           </div>
         )}
 
-        <div
-          className={`absolute top-1.5 right-1.5 flex items-center gap-0.5 p-0.5 bg-panel/90 backdrop-blur-sm border border-border rounded-btn shadow-xs transition-opacity ${
-            focused || view ? 'opacity-100' : 'opacity-100 sm:opacity-0 sm:group-hover/drawing:opacity-100 focus-within:opacity-100'
-          }`}
-          onPointerDown={(e) => e.stopPropagation()}
-          onDoubleClick={(e) => e.stopPropagation()}
-        >
-          {view && (
-            <>
-              {canEdit && (
-                <button type="button" className={btn} onClick={() => saveFrame(view, height)} title={t('drawing.saveViewTitle')}>
-                  <Save className="w-3.5 h-3.5" /> {t('drawing.saveView')}
-                </button>
-              )}
-              <button type="button" className={btn} onClick={() => updateView(null)} title={t('drawing.resetView')} aria-label={t('drawing.resetView')}>
-                <RotateCcw className="w-3.5 h-3.5" />
-              </button>
-            </>
-          )}
-          {!view && canEdit && drawing.frame && (
-            <button
-              type="button"
-              className={btn}
-              onClick={() => onChange(serializeDrawing({ ...drawing, frame: undefined }))}
-              title={t('drawing.autoViewTitle')}
-            >
-              <Scan className="w-3.5 h-3.5" /> {t('drawing.autoView')}
-            </button>
-          )}
-          {canEdit ? (
-            <button type="button" className={btn} onClick={() => setEditing(true)} title={t('drawing.editTitle')}>
-              <Pencil className="w-3.5 h-3.5" /> {t('drawing.edit')}
-            </button>
-          ) : (
-            <button type="button" className={btn} onClick={() => setEditing(true)} title={t('drawing.fullscreen')} aria-label={t('drawing.fullscreen')}>
-              <Maximize2 className="w-3.5 h-3.5" />
-            </button>
-          )}
-        </div>
+        {!actionsTarget && <div className="absolute top-1.5 right-1.5 flex items-center gap-0.5 p-0.5 bg-panel/90 backdrop-blur-sm border border-border rounded-btn shadow-xs" onPointerDown={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()}>{actions}</div>}
 
         {canEdit && (
           <div
@@ -297,8 +327,12 @@ export const DrawingBlock: React.FC<DrawingBlockProps> = ({ blockId, content, ca
         )}
       </div>
 
+      {/* Outside the drawing's box, so clicks on them do not reach its gesture handlers */}
+      {actionsTarget && createPortal(actions, actionsTarget)}
+
       {editing && (
         <DrawingEditor
+          onActivity={onActivity}
           initial={drawing}
           baseContent={content}
           draftKey={blockId}

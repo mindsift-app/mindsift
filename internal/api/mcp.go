@@ -14,6 +14,7 @@ import (
 
 	"github.com/mindsift-app/mindsift/internal/auth"
 	"github.com/mindsift-app/mindsift/internal/domain"
+	"github.com/mindsift-app/mindsift/internal/drawing"
 	"github.com/mindsift-app/mindsift/internal/i18n"
 	"github.com/mindsift-app/mindsift/internal/storage"
 )
@@ -368,7 +369,7 @@ func (s *Server) toNoteView(d *domain.Document) noteView {
 }
 
 // noteMarkdown renders the bullets as an indented Markdown list; images and recordings become a
-// placeholder with their caption (the agent cannot open the files).
+// placeholder with their caption (the agent cannot open the files), drawings a description in words.
 func noteMarkdown(blocks []domain.DocumentBlock) string {
 	out := make([]domain.DocumentBlock, len(blocks))
 	for i, b := range blocks {
@@ -378,6 +379,9 @@ func noteMarkdown(blocks []domain.DocumentBlock) string {
 				label += ": " + ref.Caption
 			}
 			b.Type, b.Content = "paragraph", "["+label+"]"
+		}
+		if b.Type == drawing.BlockType {
+			b.Type, b.Content = "paragraph", drawing.Describe(b.Content)
 		}
 		out[i] = b
 	}

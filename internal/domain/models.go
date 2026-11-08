@@ -8,6 +8,8 @@ import (
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/mindsift-app/mindsift/internal/drawing"
 )
 
 // NewID generates a readable prefixed ID (e.g. th_4f1c09e2b7a35d68c0e1f2a3). 96 random bits keep
@@ -522,6 +524,8 @@ func CompileBlocksToMarkdown(blocks []DocumentBlock) string {
 			sb.WriteString(indent + "- ```" + b.Lang + "\n" + b.Content + "\n" + indent + "  ```\n")
 		case "divider":
 			sb.WriteString(indent + "- ---\n")
+		case drawing.BlockType:
+			sb.WriteString(indent + "- " + drawing.Describe(b.Content) + "\n")
 		case "numbered":
 			sb.WriteString(indent + "1. " + b.Content + "\n")
 		default:

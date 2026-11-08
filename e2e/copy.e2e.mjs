@@ -23,10 +23,16 @@ async function api(token, method, path, body) {
 }
 
 // Notes to test with and the Markdown of the whole note
+// A small drawing (block type 'drawing'): copied as a fenced block with its model
+const DRAWING = JSON.stringify({ v: 1, els: [{ id: 'a', ver: 1, t: 'rect', x: 0, y: 0, w: 120, h: 60, s: 'main', f: 'none', sw: 2, txt: 'Kasten' }] });
+
 const NOTES = {
   'Callout oben': {
-    blocks: [['callout', 'Ein Hinweis oben', 0], ['h2', 'Überschrift', 0], ['bullet', 'Erster Punkt mit **fett**', 0], ['bullet', 'Kind', 1], ['todo', 'Aufgabe', 0]],
-    markdown: '> Ein Hinweis oben\n\n## Überschrift\n\nErster Punkt mit **fett**\n- Kind\n\n- [ ] Aufgabe',
+    blocks: [
+      ['callout', 'Ein Hinweis oben', 0], ['h2', 'Überschrift', 0], ['bullet', 'Erster Punkt mit **fett**', 0], ['bullet', 'Kind', 1],
+      ['drawing', DRAWING, 0], ['todo', 'Aufgabe', 0],
+    ],
+    markdown: '> Ein Hinweis oben\n\n## Überschrift\n\nErster Punkt mit **fett**\n- Kind\n\n```mindsift-canvas\n' + DRAWING + '\n```\n\n- [ ] Aufgabe',
   },
   'Callout unten, Warnung und Fehler, leerer eingerückter Bullet am Ende': {
     blocks: [

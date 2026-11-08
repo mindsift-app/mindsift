@@ -302,3 +302,27 @@ func TestTextForPurgedBlockBecomesNewBlock(t *testing.T) {
 	}
 	mustValid(t, d)
 }
+
+func TestDrawingBlocksOnlyTakeDrawings(t *testing.T) {
+	d := NewDoc()
+	k, _ := KeyBetween("", "")
+	empty := `{"v":1,"els":[]}`
+	_, res := Apply(d, Op{OpID: "1", Kind: OpInsert, BlockID: "z", ParentID: str(""), OrderKey: k, Type: "drawing", Content: str(empty)}, anna, Env{})
+	if res.Status != StatusApplied {
+		t.Fatalf("insert: %+v", res)
+	}
+	_, res = Apply(d, Op{OpID: "2", Kind: OpSetContent, BlockID: "z", BaseVersion: 1, Content: str("Einfach Text")}, anna, Env{})
+	if res.Status != StatusRejected || d.Blocks["z"].Content != empty {
+		t.Fatalf("text in a drawing must be rejected: %+v", res)
+	}
+	// Empty is fine: turning the drawing back into a bullet may send the content first
+	_, res = Apply(d, Op{OpID: "3", Kind: OpSetContent, BlockID: "z", BaseVersion: 1, Content: str("")}, anna, Env{})
+	if res.Status != StatusApplied {
+		t.Fatalf("empty content: %+v", res)
+	}
+	k2, _ := KeyBetween(k, "")
+	_, res = Apply(d, Op{OpID: "4", Kind: OpInsert, BlockID: "y", ParentID: str(""), OrderKey: k2, Type: "drawing", Content: str("kaputt")}, anna, Env{})
+	if res.Status != StatusRejected {
+		t.Fatalf("insert of a broken drawing: %+v", res)
+	}
+}
