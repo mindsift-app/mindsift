@@ -33,6 +33,8 @@ interface JournalViewProps {
   onBackMobile: () => void;
   /** A day was saved (its calendar dot may change) */
   onDaySaved: () => void;
+  /** The last bullet of a day was deleted: the day leaves the journal (today stays) */
+  onDayEmptied: (date: string) => void;
   /** Large screens: the active day's actions go into the tab bar (or the focus mode header), like a note's */
   actionsTarget?: HTMLElement | null;
   focusMode?: boolean;
@@ -64,6 +66,7 @@ export const JournalView: React.FC<JournalViewProps> = ({
   onOpenTask,
   onBackMobile,
   onDaySaved,
+  onDayEmptied,
   actionsTarget,
   focusMode = false,
   focusBarPinned = false,
@@ -177,6 +180,27 @@ export const JournalView: React.FC<JournalViewProps> = ({
     return () => observer.disconnect();
   }, [limit, dates.length]);
 
+  // Save status of every day on screen; the tab bar shows the active day's, also right after the active day
+  // changed or left the list (otherwise a "saving" from before would stay there)
+  const saveStatusByDate = useRef(new Map<string, { status: DocSaveStatus; err?: string }>());
+  const activeDateRef = useRef(activeDate);
+  activeDateRef.current = activeDate;
+  const onActiveSaveStatusChangeRef = useRef(onActiveSaveStatusChange);
+  onActiveSaveStatusChangeRef.current = onActiveSaveStatusChange;
+  const handleDaySaveStatus = useCallback(
+    (date: string, status: DocSaveStatus, err?: string) => {
+      saveStatusByDate.current.set(date, { status, err });
+      if (status === 'saved') onDaySaved();
+      if (date === activeDateRef.current) onActiveSaveStatusChangeRef.current?.(status, err);
+    },
+    [onDaySaved]
+  );
+  const activeShown = shown.includes(activeDate);
+  useEffect(() => {
+    const s = activeShown ? saveStatusByDate.current.get(activeDate) : undefined;
+    onActiveSaveStatusChangeRef.current?.(s?.status ?? 'saved', s?.err);
+  }, [activeDate, activeShown]);
+
   const activeDocId = docIdByDate.get(activeDate);
   const activeDoc = activeDocId ? getDoc(activeDocId) : undefined;
   const sharedCount = activeDoc?.sharedWith?.length ?? 0;
@@ -273,15 +297,13 @@ export const JournalView: React.FC<JournalViewProps> = ({
                   onWikiLinkClick={onWikiLinkClick}
                   onOpenDocBlock={onOpenDocBlock}
                   onOpenTask={onOpenTask}
-                  onSaveStatusChange={(status, err) => {
-                    if (status === 'saved') onDaySaved();
-                    if (date === activeDate) onActiveSaveStatusChange?.(status, err);
-                  }}
+                  onSaveStatusChange={(status, err) => handleDaySaveStatus(date, status, err)}
                   onHeaderStatusChange={date === activeDate ? onActiveHeaderStatusChange : undefined}
                   actionsTarget={date === activeDate ? actionsTarget : undefined}
                   focusMode={focusMode}
                   focusBarPinned={focusBarPinned}
                   onToggleFocusMode={date === activeDate ? onToggleFocusMode : undefined}
+                  onEmptied={() => onDayEmptied(date)}
                 />
               ) : (
                 <div className="px-4 sm:px-8 py-6 text-xs text-muted">{t('journal.opening', { date: shortDateLabel(date) })}</div>

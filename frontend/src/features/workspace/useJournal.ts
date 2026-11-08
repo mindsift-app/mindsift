@@ -53,6 +53,12 @@ export function useJournal(setDocs: React.Dispatch<React.SetStateAction<Document
     setJournalJump({ date, nonce: Date.now() });
   }, []);
 
+  // The day's last bullet was deleted: it leaves the journal at once (today stays, it is always shown)
+  const removeJournalDay = useCallback((date: string) => {
+    setJournalExtra((prev) => prev.filter((d) => d !== date));
+    setJournalDays((prev) => prev.map((d) => (d.date === date ? { ...d, empty: true } : d)));
+  }, []);
+
   return {
     journalEnabled,
     journalDays,
@@ -65,5 +71,6 @@ export function useJournal(setDocs: React.Dispatch<React.SetStateAction<Document
     journalDocIds,
     openJournalDay,
     jumpToJournalDay,
+    removeJournalDay,
   };
 }
