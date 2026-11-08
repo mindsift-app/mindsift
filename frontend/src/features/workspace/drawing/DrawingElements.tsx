@@ -11,7 +11,9 @@ import {
   freehandPath,
   lineHeight,
   strokeColor,
+  textWidth,
   wrapText,
+  ARROW_FONT_SIZE,
 } from '../../../lib/drawing/model';
 
 const FONT = '"Inter Variable", Inter, system-ui, sans-serif';
@@ -84,6 +86,20 @@ function Arrow({ el, byId }: { el: ArrowElement; byId: Map<string, DrawElement> 
       <path d={g.d} strokeDasharray={dashFor(el)} />
       {el.head & 1 ? <path d={arrowHeadPath(g.start, g.startAngle, size)} /> : null}
       {el.head & 2 ? <path d={arrowHeadPath(g.end, g.endAngle, size)} /> : null}
+      {el.txt ? <ArrowLabel text={el.txt} at={g.labelAt} fs={el.fs || ARROW_FONT_SIZE} color={stroke} /> : null}
+    </g>
+  );
+}
+
+// Label on a line: on a patch of the surface colour, so the line does not run through the words
+function ArrowLabel({ text, at, fs, color }: { text: string; at: [number, number]; fs: number; color: string }) {
+  const lines = text.split('\n');
+  const w = Math.max(...lines.map((l) => textWidth(l, fs))) + 10;
+  const h = lines.length * lineHeight(fs) + 4;
+  return (
+    <g stroke="none">
+      <rect x={at[0] - w / 2} y={at[1] - h / 2} width={w} height={h} rx={4} fill="var(--bg-panel)" />
+      <TextLines lines={lines} x={at[0]} top={at[1] - h / 2 + 2} fs={fs} anchor="middle" fill={color} />
     </g>
   );
 }

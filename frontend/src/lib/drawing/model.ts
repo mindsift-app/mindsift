@@ -51,6 +51,11 @@ export interface ArrowElement extends ElementBase {
   head: number;
   /** Curves: how far the middle bends away from the straight line, as a share of its length */
   bend?: number;
+  /** Corner points the line runs through (laid out diagrams); dropped when a docked shape moves */
+  via?: Point[];
+  /** Label in the middle of the line ("ja", "nein") */
+  txt?: string;
+  fs?: number;
 }
 
 export interface FreehandElement extends ElementBase {
@@ -79,6 +84,8 @@ export interface Drawing {
 export const DRAW_COLORS: DrawColor[] = ['main', 'muted', 'accent', 'red', 'orange', 'green', 'blue', 'purple'];
 export const FONT_SIZES = [14, 18, 28];
 export const DEFAULT_FONT_SIZE = 18;
+/** Labels on arrows are smaller than text in shapes */
+export const ARROW_FONT_SIZE = 14;
 export const GRID_SIZE = 20;
 /** Language of the fenced code block a drawing becomes in Markdown (copying, export without files) */
 export const DRAWING_FENCE = 'mindsift-canvas';
@@ -156,6 +163,9 @@ function parseElement(raw: any): DrawElement | null {
         route: raw.route === 'curve' || raw.route === 'elbow' ? raw.route : 'straight',
         head: [0, 1, 2, 3].includes(raw.head) ? raw.head : 2,
         ...(typeof raw.bend === 'number' && Number.isFinite(raw.bend) ? { bend: raw.bend } : {}),
+        ...(Array.isArray(raw.via) && raw.via.length ? { via: raw.via.slice(0, 100).map(point) } : {}),
+        ...(txt ? { txt } : {}),
+        ...(fs ? { fs } : {}),
       };
     case 'draw':
       if (!Array.isArray(raw.pts) || raw.pts.length < 2) return null;
@@ -190,7 +200,12 @@ export function serializeDrawing(d: Drawing): string {
     switch (el.t) {
       case 'arrow': {
         const g = arrowGeometry(el, byId);
-        return { ...el, a: [round(g.start[0]), round(g.start[1])], b: [round(g.end[0]), round(g.end[1])] };
+        return {
+          ...el,
+          a: [round(g.start[0]), round(g.start[1])],
+          b: [round(g.end[0]), round(g.end[1])],
+          ...(el.via ? { via: el.via.map((p) => [round(p[0]), round(p[1])]) } : {}),
+        };
       }
       case 'draw':
         return { ...el, pts: el.pts.map(Math.round) };
@@ -365,6 +380,24 @@ export interface ArrowGeometry {
   endAngle: number;
   /** Curves: the point the middle handle sits on */
   mid: Point;
+  /** Where the label sits: halfway along the line */
+  labelAt: Point;
+}
+
+/** Point halfway along a line of points */
+export function halfway(poly: Point[]): Point {
+  let total = 0;
+  for (let i = 1; i < poly.length; i++) total += Math.hypot(poly[i][0] - poly[i - 1][0], poly[i][1] - poly[i - 1][1]);
+  let left = total / 2;
+  for (let i = 1; i < poly.length; i++) {
+    const len = Math.hypot(poly[i][0] - poly[i - 1][0], poly[i][1] - poly[i - 1][1]);
+    if (len >= left && len > 0) {
+      const t = left / len;
+      return [poly[i - 1][0] + (poly[i][0] - poly[i - 1][0]) * t, poly[i - 1][1] + (poly[i][1] - poly[i - 1][1]) * t];
+    }
+    left -= len;
+  }
+  return poly[0] || [0, 0];
 }
 
 export const DEFAULT_BEND = 0.25;
@@ -377,6 +410,25 @@ export function arrowGeometry(el: ArrowElement, byId: Map<string, DrawElement>):
   // Raw ends: centres of docked shapes, otherwise the stored points
   const rawA: Point = from ? center(from) : el.a;
   const rawB: Point = to ? center(to) : el.b;
+
+  if (el.via && el.via.length) {
+    // Laid out line: from the shape's edge towards the first corner, through the corners, into the target
+    const via = el.via;
+    const a = from ? outlinePoint(from, via[0]) : el.a;
+    const b = to ? outlinePoint(to, via[via.length - 1]) : el.b;
+    const poly: Point[] = [a, ...via, b];
+    const n = poly.length;
+    return {
+      start: a,
+      end: b,
+      d: 'M ' + poly.map((p) => `${p[0]} ${p[1]}`).join(' L '),
+      poly,
+      startAngle: Math.atan2(a[1] - poly[1][1], a[0] - poly[1][0]),
+      endAngle: Math.atan2(b[1] - poly[n - 2][1], b[0] - poly[n - 2][0]),
+      mid: halfway(poly),
+      labelAt: halfway(poly),
+    };
+  }
 
   if (el.route === 'elbow') {
     const horizontal = Math.abs(rawB[0] - rawA[0]) >= Math.abs(rawB[1] - rawA[1]);
@@ -399,6 +451,7 @@ export function arrowGeometry(el: ArrowElement, byId: Map<string, DrawElement>):
       startAngle: clean.length > 1 ? angle(clean[1], clean[0]) : 0,
       endAngle: clean.length > 1 ? angle(clean[clean.length - 2], clean[clean.length - 1]) : 0,
       mid: [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2],
+      labelAt: halfway(clean),
     };
   }
 
@@ -431,6 +484,7 @@ export function arrowGeometry(el: ArrowElement, byId: Map<string, DrawElement>):
       startAngle: Math.atan2(a[1] - c[1], a[0] - c[0]),
       endAngle: Math.atan2(b[1] - c[1], b[0] - c[0]),
       mid: m,
+      labelAt: m,
     };
   }
 
@@ -444,6 +498,7 @@ export function arrowGeometry(el: ArrowElement, byId: Map<string, DrawElement>):
     startAngle: Math.atan2(a[1] - b[1], a[0] - b[0]),
     endAngle: Math.atan2(b[1] - a[1], b[0] - a[0]),
     mid: [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2],
+    labelAt: [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2],
   };
 }
 
@@ -572,7 +627,13 @@ export function boxContains(outer: Box, inner: Box): boolean {
 export function moveElement(el: DrawElement, dx: number, dy: number): DrawElement {
   switch (el.t) {
     case 'arrow':
-      return { ...el, a: [el.a[0] + dx, el.a[1] + dy], b: [el.b[0] + dx, el.b[1] + dy], ver: el.ver + 1 };
+      return {
+        ...el,
+        a: [el.a[0] + dx, el.a[1] + dy],
+        b: [el.b[0] + dx, el.b[1] + dy],
+        ...(el.via ? { via: el.via.map((p) => [p[0] + dx, p[1] + dy] as Point) } : {}),
+        ver: el.ver + 1,
+      };
     case 'draw':
       return { ...el, pts: el.pts.map((n, i) => n + (i % 2 === 0 ? dx : dy)), ver: el.ver + 1 };
     default:
@@ -598,6 +659,19 @@ export function removeElements(els: DrawElement[], ids: Set<string>): DrawElemen
 /** Zoom factor for a wheel step: a mouse notch about 20 %, trackpad pinches in small steps */
 export function wheelZoom(deltaY: number): number {
   return Math.exp(-Math.max(-50, Math.min(50, deltaY)) * 0.004);
+}
+
+/** Arrows docked to shapes that moved or changed size lose their corner points (they no longer fit) */
+export function dropStaleVia(els: DrawElement[], changed: Set<string>): DrawElement[] {
+  return els.map((el) => {
+    if (el.t !== 'arrow' || !el.via || changed.has(el.id)) return el;
+    if ((el.from && changed.has(el.from)) || (el.to && changed.has(el.to))) {
+      const next: ArrowElement = { ...el };
+      delete next.via;
+      return next;
+    }
+    return el;
+  });
 }
 
 export const snap = (n: number, on: boolean) => (on ? Math.round(n / GRID_SIZE) * GRID_SIZE : n);

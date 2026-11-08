@@ -67,6 +67,8 @@ import {
   textBox,
   wheelZoom,
   wrapText,
+  dropStaleVia,
+  ARROW_FONT_SIZE,
 } from '../../../lib/drawing/model';
 import { DrawingElements } from './DrawingElements';
 
@@ -420,7 +422,10 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
       }
       if ((isShape(el) || el.t === 'text') && patch.fs !== undefined) next.fs = patch.fs === DEFAULT_FONT_SIZE ? undefined : patch.fs;
       if (el.t === 'arrow') {
-        if (patch.route !== undefined) next.route = patch.route;
+        if (patch.route !== undefined) {
+          next.route = patch.route;
+          delete next.via;
+        }
         if (patch.head !== undefined) next.head = patch.head;
       }
       return next;
@@ -430,9 +435,9 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
   // ------------------------------------------------------------------------------------------------------
   // Text
 
-  const startTextEdit = (el: ShapeElement | TextElement | null, at?: Point) => {
+  const startTextEdit = (el: ShapeElement | TextElement | ArrowElement | null, at?: Point) => {
     if (el) {
-      setTextEdit({ id: el.id, isNew: false, x: el.x, y: el.y, orig: docRef.current });
+      setTextEdit({ id: el.id, isNew: false, x: el.t === 'arrow' ? 0 : el.x, y: el.t === 'arrow' ? 0 : el.y, orig: docRef.current });
       setTextValue(el.txt || '');
       setSelected([el.id]);
     } else if (at) {
@@ -456,11 +461,11 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
       setSelected([el.id]);
     } else {
       const el = prev.els.find((e) => e.id === edit.id);
-      if (!el || !('txt' in el || isShape(el))) return;
+      if (!el || !(isShape(el) || el.t === 'text' || el.t === 'arrow')) return;
       if (el.t === 'text' && value.trim() === '') {
         next = { ...prev, els: removeElements(prev.els, new Set([el.id])) };
         setSelected([]);
-      } else if ((el as ShapeElement | TextElement).txt !== value) {
+      } else if ((el as ShapeElement | TextElement | ArrowElement).txt !== value) {
         next = { ...prev, els: prev.els.map((e) => (e.id === el.id ? ({ ...e, txt: value || undefined, ver: e.ver + 1 } as DrawElement) : e)) };
       }
     }
@@ -558,7 +563,7 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
     if (mod || e.altKey) return;
     if (e.key === 'Enter' && selectedRef.current.length === 1) {
       const el = byId.get(selectedRef.current[0]);
-      if (el && (isShape(el) || el.t === 'text')) {
+      if (el && (isShape(el) || el.t === 'text' || el.t === 'arrow')) {
         handled();
         startTextEdit(el);
       }
@@ -751,7 +756,7 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
 
     if (tool === 'text') {
       const hit = hitTest(doc0.els, p, tol());
-      if (hit && (isShape(hit) || hit.t === 'text')) startTextEdit(hit);
+      if (hit && (isShape(hit) || hit.t === 'text' || hit.t === 'arrow')) startTextEdit(hit);
       else startTextEdit(null, [snap(p[0], snapOn(e)), snap(p[1], snapOn(e))]);
       setTool('select');
     }
@@ -804,7 +809,7 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
         }
         const set = new Set(a.ids);
         const origById = elementMap(a.orig.els);
-        setDoc({
+        const moved: Drawing = {
           ...a.orig,
           els: a.orig.els.map((el) => {
             if (!set.has(el.id)) return el;
@@ -818,7 +823,9 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
             }
             return moveElement(el, dx, dy);
           }),
-        });
+        };
+        moved.els = dropStaleVia(moved.els, set);
+        setDoc(moved);
         break;
       }
       case 'resize': {
@@ -845,7 +852,8 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
             else y1 = y0 + nh;
           }
         }
-        setDoc(replaceEl(a.orig, o.id, (el) => ({ ...el, x: x0, y: y0, w: x1 - x0, h: y1 - y0, ver: el.ver + 1 })));
+        const resized = replaceEl(a.orig, o.id, (el) => ({ ...el, x: x0, y: y0, w: x1 - x0, h: y1 - y0, ver: el.ver + 1 }));
+        setDoc({ ...resized, els: dropStaleVia(resized.els, new Set([o.id])) });
         break;
       }
       case 'create': {
@@ -873,6 +881,7 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
         setDoc(
           replaceEl(docRef.current, a.id, (el: ArrowElement) => {
             const next: ArrowElement = { ...el, [end]: pt, ver: el.ver + 1 };
+            delete next.via;
             const key = end === 'b' ? 'to' : 'from';
             if (target) next[key] = target.id;
             else delete next[key];
@@ -983,7 +992,7 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
     if (readOnly || tool !== 'select') return;
     const p = toWorld(e.clientX, e.clientY);
     const hit = hitTest(docRef.current.els, p, tol());
-    if (hit && (isShape(hit) || hit.t === 'text')) startTextEdit(hit);
+    if (hit && (isShape(hit) || hit.t === 'text' || hit.t === 'arrow')) startTextEdit(hit);
     else if (!hit) startTextEdit(null, [snap(p[0], !!docRef.current.grid), snap(p[1], !!docRef.current.grid)]);
   };
 
@@ -997,9 +1006,13 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
   // While text is being edited, the drawing leaves it out so the text field takes its place
   const shownEls = useMemo(() => {
     if (!textEdit) return doc.els;
-    return doc.els.map((el) => (el.id === textEdit.id && isShape(el) ? { ...el, txt: undefined } : el));
+    return doc.els.map((el) => (el.id === textEdit.id && (isShape(el) || el.t === 'arrow') ? { ...el, txt: undefined } : el));
   }, [doc, textEdit]);
-  const hidden = useMemo(() => (textEdit ? new Set([textEdit.id]) : undefined), [textEdit]);
+  // Free text is left out entirely; shapes and arrows stay, only without their words
+  const hidden = useMemo(
+    () => (textEdit && doc.els.find((el) => el.id === textEdit.id)?.t === 'text' ? new Set([textEdit.id]) : undefined),
+    [doc, textEdit]
+  );
 
   const selectedEls = selected.map((id) => byId.get(id)).filter(Boolean) as DrawElement[];
   const single = selectedEls.length === 1 ? selectedEls[0] : null;
@@ -1067,7 +1080,33 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
       overflow: 'hidden',
       whiteSpace: 'pre',
     };
-    if (el && isShape(el)) {
+    if (el && el.t === 'arrow') {
+      const at = arrowGeometry(el, byId).labelAt;
+      const afs = el.fs || ARROW_FONT_SIZE;
+      const longest = Math.max(...textValue.split('\n').map((l) => l.length), 6);
+      const w = longest * afs * 0.62 + afs;
+      textField = (
+        <textarea
+          ref={textRef}
+          value={textValue}
+          onChange={(e) => setTextValue(e.target.value)}
+          onBlur={commitText}
+          placeholder={t('drawing.textPlaceholder')}
+          style={{
+            ...common,
+            fontSize: afs * z,
+            textAlign: 'center',
+            background: 'var(--bg-panel)',
+            borderRadius: 4,
+            width: w * z,
+            height: lines * lineHeight(afs) * z + 4,
+            left: (at[0] - view.x) * z - (w * z) / 2,
+            top: (at[1] - view.y) * z - (lines * lineHeight(afs) * z + 4) / 2,
+          }}
+          aria-label={t('drawing.textField')}
+        />
+      );
+    } else if (el && isShape(el)) {
       const inner = el.t === 'rect' ? 0.9 : el.t === 'ellipse' ? 0.7 : 0.55;
       const w = Math.max(fs, el.w * inner - 8);
       const wrapped = wrapText(textValue || ' ', fs, w).length;

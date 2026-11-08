@@ -5,6 +5,7 @@ import {
   arrowGeometry,
   bendThrough,
   contentBox,
+  dropStaleVia,
   drawingTexts,
   elementMap,
   hitTest,
@@ -157,5 +158,32 @@ describe('preview layout', () => {
     const framed = { ...d, frame: { x: 0, y: 0, w: 400, h: 200 } };
     expect(previewLayout(framed, 800)).toMatchObject({ z: 2, h: 400 });
     expect(previewLayout(framed, 400)).toMatchObject({ z: 1, h: 200 });
+  });
+});
+
+describe('laid out arrows', () => {
+  it('run through their corners, dock towards the first and last, and carry a label', () => {
+    const a = rect('a', 0, 0);
+    const b = rect('b', 200, 200);
+    const ar = arrow({ from: 'a', to: 'b', via: [[150, 25], [150, 225]], txt: 'ja' });
+    const back = parseDrawing(serializeDrawing({ v: 1, els: [a, b, ar] }))!;
+    const parsed = back.els[2] as ArrowElement;
+    expect(parsed.via).toEqual([[150, 25], [150, 225]]);
+    expect(parsed.txt).toBe('ja');
+    const g = arrowGeometry(parsed, elementMap(back.els));
+    // Right edge of a at its middle, left edge of b at its middle
+    expect(g.start[0]).toBeCloseTo(104);
+    expect(g.start[1]).toBeCloseTo(25);
+    expect(g.end[0]).toBeCloseTo(196);
+    expect(g.end[1]).toBeCloseTo(225);
+    expect(g.poly).toHaveLength(4);
+    expect(g.labelAt[0]).toBeCloseTo(150);
+  });
+
+  it('lose their corners when a docked shape moves, but not when they move along', () => {
+    const ar = arrow({ id: 'x', from: 'a', to: 'b', via: [[1, 1]] });
+    expect((dropStaleVia([ar], new Set(['a']))[0] as ArrowElement).via).toBeUndefined();
+    expect((dropStaleVia([ar], new Set(['a', 'x']))[0] as ArrowElement).via).toEqual([[1, 1]]);
+    expect((dropStaleVia([ar], new Set(['c']))[0] as ArrowElement).via).toEqual([[1, 1]]);
   });
 });

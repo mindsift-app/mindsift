@@ -39,6 +39,8 @@ type Element struct {
 	Head  *int      `json:"head"`
 	Bend  *float64  `json:"bend"`
 	Pts   []float64 `json:"pts"`
+	// Corner points of a laid out arrow
+	Via [][2]float64 `json:"via"`
 }
 
 // Frame is the section a note shows
@@ -97,7 +99,7 @@ func Texts(content string) []string {
 	}
 	var out []string
 	for _, el := range d.Els {
-		if (isShape(el.T) || el.T == "text") && strings.TrimSpace(el.Txt) != "" {
+		if (isShape(el.T) || el.T == "text" || el.T == "arrow") && strings.TrimSpace(el.Txt) != "" {
 			out = append(out, el.Txt)
 		}
 	}
@@ -169,7 +171,11 @@ func Describe(content string) string {
 					sign = "↔"
 				}
 			}
-			parts = append(parts, label(el.From)+" "+sign+" "+label(el.To))
+			part := label(el.From) + " " + sign + " " + label(el.To)
+			if t := oneLine(el.Txt); t != "" {
+				part += " (" + t + ")"
+			}
+			parts = append(parts, part)
 		case el.T == "draw":
 			strokes++
 		}
@@ -360,9 +366,29 @@ func SVG(content string) ([]byte, bool) {
 		case el.T == "arrow":
 			a, b := el.A, el.B
 			var path string
+			labelAt := [2]float64{(a[0] + b[0]) / 2, (a[1] + b[1]) / 2}
 			startAngle, endAngle := math.Atan2(a[1]-b[1], a[0]-b[0]), math.Atan2(b[1]-a[1], b[0]-a[0])
-			switch el.Route {
-			case "curve":
+			switch {
+			case len(el.Via) > 0:
+				pts := append(append([][2]float64{a}, el.Via...), b)
+				var sb strings.Builder
+				for i, p := range pts {
+					if i == 0 {
+						sb.WriteString("M ")
+					} else {
+						sb.WriteString(" L ")
+					}
+					sb.WriteString(f(p[0]) + " " + f(p[1]))
+				}
+				path = sb.String()
+				n := len(pts)
+				startAngle = math.Atan2(pts[0][1]-pts[1][1], pts[0][0]-pts[1][0])
+				endAngle = math.Atan2(pts[n-1][1]-pts[n-2][1], pts[n-1][0]-pts[n-2][0])
+				for _, p := range el.Via {
+					bounds.add(p[0], p[1])
+				}
+				labelAt = halfway(pts)
+			case el.Route == "curve":
 				bend := 0.25
 				if el.Bend != nil {
 					bend = *el.Bend
@@ -371,7 +397,8 @@ func SVG(content string) ([]byte, bool) {
 				path = fmt.Sprintf("M %s %s Q %s %s %s %s", f(a[0]), f(a[1]), f(c[0]), f(c[1]), f(b[0]), f(b[1]))
 				startAngle, endAngle = math.Atan2(a[1]-c[1], a[0]-c[0]), math.Atan2(b[1]-c[1], b[0]-c[0])
 				bounds.add(c[0], c[1])
-			case "elbow":
+				labelAt = [2]float64{(a[0]+b[0])/4 + c[0]/2, (a[1]+b[1])/4 + c[1]/2}
+			case el.Route == "elbow":
 				pts := elbowPoints(a, b)
 				var sb strings.Builder
 				for i, p := range pts {
@@ -385,6 +412,7 @@ func SVG(content string) ([]byte, bool) {
 				path = sb.String()
 				startAngle = math.Atan2(pts[0][1]-pts[1][1], pts[0][0]-pts[1][0])
 				endAngle = math.Atan2(pts[3][1]-pts[2][1], pts[3][0]-pts[2][0])
+				labelAt = halfway(pts)
 			default:
 				path = fmt.Sprintf("M %s %s L %s %s", f(a[0]), f(a[1]), f(b[0]), f(b[1]))
 			}
@@ -401,6 +429,21 @@ func SVG(content string) ([]byte, bool) {
 				fmt.Fprintf(&body, `<path d="%s"/>`, headPath(b, endAngle, size))
 			}
 			body.WriteString(`</g>`)
+			if strings.TrimSpace(el.Txt) != "" {
+				fs := 14.0
+				if el.Fs > 0 && el.Fs <= 64 {
+					fs = el.Fs
+				}
+				lines := strings.Split(el.Txt, "\n")
+				w := 0.0
+				for _, l := range lines {
+					w = math.Max(w, textWidth(l, fs))
+				}
+				w += 10
+				h := float64(len(lines))*fs*1.3 + 4
+				fmt.Fprintf(&body, `<rect x="%s" y="%s" width="%s" height="%s" rx="4" fill="#ffffff"/>`, f(labelAt[0]-w/2), f(labelAt[1]-h/2), f(w), f(h))
+				writeText(&body, lines, labelAt[0], labelAt[1]-h/2+2, fs, stroke, "middle")
+			}
 			bounds.add(a[0], a[1])
 			bounds.add(b[0], b[1])
 		case el.T == "draw":
@@ -439,6 +482,24 @@ func writeText(sb *strings.Builder, lines []string, x, top, fs float64, fill, an
 		fmt.Fprintf(sb, `<tspan x="%s" y="%s">%s</tspan>`, f(x), f(top+float64(i)*fs*1.3+fs*0.95), xmlEscape(line))
 	}
 	sb.WriteString(`</text>`)
+}
+
+// halfway is the point halfway along a line of points
+func halfway(pts [][2]float64) [2]float64 {
+	total := 0.0
+	for i := 1; i < len(pts); i++ {
+		total += math.Hypot(pts[i][0]-pts[i-1][0], pts[i][1]-pts[i-1][1])
+	}
+	left := total / 2
+	for i := 1; i < len(pts); i++ {
+		l := math.Hypot(pts[i][0]-pts[i-1][0], pts[i][1]-pts[i-1][1])
+		if l >= left && l > 0 {
+			t := left / l
+			return [2]float64{pts[i-1][0] + (pts[i][0]-pts[i-1][0])*t, pts[i-1][1] + (pts[i][1]-pts[i-1][1])*t}
+		}
+		left -= l
+	}
+	return pts[0]
 }
 
 // freehandPath: the same smoothing as the browser (midpoints as curve ends)
