@@ -92,6 +92,13 @@ export interface DocumentEditorProps {
   onToggleFocusMode?: () => void;
 }
 
+// What undoing the editor's server actions needs, kept with the note's undo history (lib/docSync/undoHistory.ts)
+interface EditorUndoExtra {
+  extract: { newDocId: string; blockId: string; link: string } | null;
+  inline: { sourceId: string; blockId: string; content: string } | null;
+  move: { result: MoveResult; blockId: string; link: string } | null;
+}
+
 // Large screens (lg) put the note's actions into the workspace tab bar and drop the editor header
 const LARGE_QUERY = '(min-width: 1024px)';
 function subscribeLarge(onChange: () => void) {
@@ -556,6 +563,11 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
   useEffect(() => {
     const engine = new DocSyncEngine(docId);
     engineRef.current = engine;
+    // Undo of the editor's server actions from the last time the note was open (kept with the engine's steps)
+    const kept = engine.undoExtra as EditorUndoExtra | undefined;
+    lastExtractRef.current = kept?.extract ?? null;
+    lastInlineRef.current = kept?.inline ?? null;
+    lastMoveRef.current = kept?.move ?? null;
     const unsubscribe = engine.subscribe((state) => {
       setEngineState(state);
       if (!state.ready) return;
@@ -571,6 +583,8 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
     void engine.start();
     return () => {
       unsubscribe();
+      const extra: EditorUndoExtra = { extract: lastExtractRef.current, inline: lastInlineRef.current, move: lastMoveRef.current };
+      engine.undoExtra = extra.extract || extra.inline || extra.move ? extra : undefined;
       engine.stop();
       if (engineRef.current === engine) engineRef.current = null;
     };
