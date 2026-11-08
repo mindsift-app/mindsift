@@ -63,6 +63,8 @@
     "chooseIcon": "Choose icon",
     "titlePlaceholder": "Note title…",
     "unpin": "Unpin",
+    "copyNoteLink": "Copy link",
+    "noteLinkCopied": "Link to the note copied – opens it straight in MindSift, also for everyone it is shared with",
     "pin": "Pin note",
     "fileName": "note",
     "focusShortcut": "Ctrl+⇧+F",

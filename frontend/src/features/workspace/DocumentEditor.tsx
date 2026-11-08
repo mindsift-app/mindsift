@@ -29,6 +29,7 @@ import {
   MoreHorizontal,
   CalendarDays,
   SmilePlus,
+  Link2,
 } from 'lucide-react';
 import { Document, DocumentBlock, MoveResult, User } from '../../lib/types';
 import { api } from '../../lib/api';
@@ -762,6 +763,18 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
     },
     [docId, title, doc?.title, showNotice]
   );
+
+  // Link to the whole note (?note=…, like the links of the MCP server): opens it in the app, for everyone
+  // who can see it
+  const handleCopyNoteLink = useCallback(() => {
+    const link = `${window.location.origin}/?note=${encodeURIComponent(docId)}`;
+    const done = () => showNotice(i18n.t('workspace:editor.noteLinkCopied'));
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(link).then(done, () => showNotice(i18n.t('workspace:editor.copyFailed', { link })));
+    } else {
+      showNotice(i18n.t('workspace:editor.copyFailed', { link }));
+    }
+  }, [docId, showNotice]);
 
   // Opened from the search: cursor at the end of the first bullet, so one ArrowDown goes on to the next
   // (lib/docFocusRequest.ts). A short delay, so the closing search does not take the focus along.
@@ -1591,6 +1604,21 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
                   }`}
                 />
                 <span>{doc?.isPinned ? t('editor.unpin') : t('editor.pin')}</span>
+              </button>
+            )}
+
+            {!inTrash && (
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setShowActionsMenu(false);
+                  handleCopyNoteLink();
+                }}
+                className="w-full min-h-[44px] sm:min-h-0 px-2.5 py-2 sm:py-1.5 rounded-btn hover:bg-panel-elevated text-left text-main font-medium flex items-center gap-2 transition-colors cursor-pointer"
+              >
+                <Link2 className="w-3.5 h-3.5 text-accent shrink-0" />
+                <span>{t('editor.copyNoteLink')}</span>
               </button>
             )}
 

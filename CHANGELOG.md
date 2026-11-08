@@ -7,6 +7,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 ## [Unreleased]
 
 ### Added
+- Notes: "Copy link" in the note's ⋯ menu copies a link to the note. Clicking it opens the note in MindSift (in the installed app where the system allows it), also for everyone the note is shared with.
 - Tasks and shopping lists: sort the list tabs by drag and drop. The order is your own (also for shared lists) and is used in the phone menu as well; new lists go to the end.
 - Administration: redeemed and expired invites disappear from the list 30 days later; until then the row says when.
 - Tasks in shared lists: the details name the person who created a task ("Created by Anna on …"), not only tasks created through an API key.

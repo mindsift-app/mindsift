@@ -63,6 +63,8 @@
     "chooseIcon": "Icon wählen",
     "titlePlaceholder": "Titel der Notiz…",
     "unpin": "Anheftung lösen",
+    "copyNoteLink": "Link kopieren",
+    "noteLinkCopied": "Link zur Notiz kopiert – öffnet sie direkt in MindSift, auch für alle, mit denen sie geteilt ist",
     "pin": "Notiz anheften",
     "fileName": "notiz",
     "focusShortcut": "Strg+⇧+F",
