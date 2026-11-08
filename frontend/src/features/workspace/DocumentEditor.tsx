@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo, useSyncExternalStore, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { buildBlockLink } from '../../lib/wikiLink';
+import { buildBlockLink, WikiLinkClickHandler } from '../../lib/wikiLink';
 import { MOVE_BRANCH_EVENT } from './moveBranchEvent';
 import { onDocFocusRequest, takeDocFocus } from '../../lib/docFocusRequest';
 import {
@@ -65,7 +65,7 @@ export interface DocumentEditorProps {
   onRestoreDoc?: (docId: string) => void;
   onOpenShareModal: (doc: Document) => void;
   onSelectTag: (tag: string) => void;
-  onWikiLinkClick?: (pageTitle: string, blockId?: string, removeLink?: () => void) => void;
+  onWikiLinkClick?: WikiLinkClickHandler;
   onOpenDocBlock?: (docId: string, blockId?: string) => void;
   onBackMobile?: () => void;
   onOpenTask?: (taskId: string) => void;
@@ -679,11 +679,10 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
     }, actions.length ? 8000 : 3500);
   }, []);
 
-  // Link to a single bullet: [[Titel#^id|Titel › Auszug]] into the clipboard
+  // Link to a single bullet: [[Titel#doc_id^blk_id]] into the clipboard
   const handleCopyBlockLink = useCallback(
     (blockId: string) => {
-      const block = blocks.find((b) => b.id === blockId);
-      const link = buildBlockLink(title || doc?.title || 'Notiz', blockId, block?.content || '');
+      const link = buildBlockLink(title || doc?.title || i18n.t('workspace:link.note'), docId, blockId);
       const done = () => showNotice(i18n.t('workspace:editor.linkCopied'));
       if (navigator.clipboard?.writeText) {
         navigator.clipboard.writeText(link).then(done, () => showNotice(i18n.t('workspace:editor.copyFailed', { link })));
@@ -691,7 +690,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
         showNotice(i18n.t('workspace:editor.copyFailed', { link }));
       }
     },
-    [blocks, title, doc?.title, showNotice]
+    [docId, title, doc?.title, showNotice]
   );
 
   // Opened from the search: cursor at the end of the first bullet, so one ArrowDown goes on to the next
@@ -935,7 +934,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
           let end = i + 1;
           while (end < prev.length && (prev[end].level || 0) > level) end++;
           if (withLink) {
-            link = buildBlockLink(result.targetTitle || target.title, result.rootId, prev[i].content || '');
+            link = buildBlockLink(result.targetTitle || target.title, result.targetId, result.rootId);
             applyLocalBlocks([...prev.slice(0, i), { ...prev[i], type: 'bullet', checked: false, taskId: '', content: link }, ...prev.slice(end)]);
           } else {
             applyLocalBlocks(ensureNonEmptyBlocks(docId, [...prev.slice(0, i), ...prev.slice(end)]));

@@ -47,7 +47,8 @@ import { mediaContent, parseMediaContent } from '../../lib/media';
 import { renderInlineMarkdown } from '../../lib/markdown';
 import { api } from '../../lib/api';
 import { safeHref } from '../../lib/safeUrl';
-import { isNoteLinkOnly, unlinkWikiLinks } from '../../lib/wikiLink';
+import { isNoteLinkOnly, retargetWikiLinks, unlinkWikiLinks, WikiLink, WikiLinkClickHandler } from '../../lib/wikiLink';
+import { useWikiLinkResolver } from '../../lib/wikiLinkResolver';
 import { BLOCK_DRAG_TYPE } from './moveBranchEvent';
 import { caretAfterChange } from '../../lib/caret';
 import { useTranslation } from 'react-i18next';
@@ -138,7 +139,7 @@ export interface OutlinerBlockProps {
   onBlockActivity?: (blockId: string) => void;
   onOpenTask?: (taskId: string) => void;
   onTagClick?: (tag: string) => void;
-  onWikiLinkClick?: (pageTitle: string, blockId?: string, removeLink?: () => void) => void;
+  onWikiLinkClick?: WikiLinkClickHandler;
   /** Copies a link to this bullet ([[Notiz#^id|…]]) */
   onCopyBlockLink?: (blockId: string) => void;
   onDragStartBlock?: (index: number, e: React.DragEvent) => void;
@@ -233,6 +234,8 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
   const linkAfterRef = useRef<string>('');
   // Where the cursor was when the link dialog opened; it goes back there when the dialog is closed
   const linkCaretRef = useRef(0);
+  // Text marked before Strg+L: becomes the link's own text
+  const [linkLabel, setLinkLabel] = useState('');
   const dictationBeforeRef = useRef<string>('');
   const dictationAfterRef = useRef<string>('');
   const slashMenuRef = useRef<HTMLDivElement | null>(null);
@@ -345,13 +348,21 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
   );
 
   // A link to a note that no longer exists becomes plain text (asked when it is clicked)
-  const removeWikiLink = (title: string) => {
-    const next = unlinkWikiLinks(localContentRef.current, title);
+  // A link to a note that no longer exists becomes plain text, or points at the note created for it
+  const changeContent = (next: string) => {
     if (next === localContentRef.current) return;
     setLocalContent(next);
     localContentRef.current = next;
     flushDebounce(next);
   };
+  const linkActions = (link: WikiLink) =>
+    canEdit
+      ? {
+          remove: () => changeContent(unlinkWikiLinks(localContentRef.current, link)),
+          retarget: (newDocId: string, title: string) => changeContent(retargetWikiLinks(localContentRef.current, link, newDocId, title)),
+        }
+      : undefined;
+  const resolveWikiLink = useWikiLinkResolver() || undefined;
 
   // Right after undo/redo the focused field must show the engine's text, not keep its own
   const acceptRemoteUntilRef = useRef<number>(0);
@@ -1015,15 +1026,12 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
           setShowLinkModal(true);
           return;
         }
-        const selected = text.slice(start, end);
-        const placeholder = '…';
-        const before = text.slice(0, start);
-        const after = text.slice(end);
-        const inserted = `[${selected}](${placeholder})`;
-        const newVal = before + inserted + after;
-        const selStart = start + 1 + selected.length + 2;
-        const selEnd = selStart + placeholder.length;
-        applyFormattingChange(newVal, selStart, selEnd);
+        // The marked text becomes the link's own text (note, bullet or web link)
+        linkBeforeRef.current = text.slice(0, start);
+        linkAfterRef.current = text.slice(end);
+        linkCaretRef.current = start;
+        setLinkLabel(text.slice(start, end).trim());
+        setShowLinkModal(true);
         return;
       }
 
@@ -1680,7 +1688,8 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
                 ) : localContent ? (
                   renderInlineMarkdown(localContent, {
                     onTagClick,
-                    onWikiLinkClick: onWikiLinkClick && ((title, targetBlockId) => onWikiLinkClick(title, targetBlockId, canEdit ? () => removeWikiLink(title) : undefined)),
+                    onWikiLinkClick: onWikiLinkClick && ((link) => onWikiLinkClick(link, linkActions(link))),
+                    resolveWikiLink,
                     renderSecret: (secretId, key) => <SecretChip key={key} docId={docId} secretId={secretId} canEdit={canEdit} />,
                   })
                 ) : (
@@ -2030,8 +2039,15 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
       {showLinkModal && (
         <LinkModal
           isOpen={showLinkModal}
-          onClose={closeLinkModal}
-          onInsertLink={handleInsertLink}
+          onClose={() => {
+            setLinkLabel('');
+            closeLinkModal();
+          }}
+          onInsertLink={(md) => {
+            setLinkLabel('');
+            handleInsertLink(md);
+          }}
+          label={linkLabel}
         />
       )}
     </div>

@@ -275,7 +275,7 @@ const de: HelpContent = {
           </p>
           <ul className="space-y-1.5">
             <li>
-              <strong className="text-main">WikiLinks:</strong> Schreibe <code className="text-accent bg-panel px-1 py-0.5 rounded font-mono">[[Name der Notiz]]</code>, um eine direkte Verknüpfung zu einer anderen Notiz herzustellen. Ein Klick darauf öffnet die Zielnotiz unmittelbar.
+              <strong className="text-main">WikiLinks:</strong> Mit <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Strg + L</kbd> oder <code className="text-accent bg-panel px-1 py-0.5 rounded font-mono">/link</code> verknüpfst du eine andere Notiz oder einen einzelnen Punkt; ein Klick öffnet das Ziel. Der Link zeigt immer den aktuellen Titel der Notiz und funktioniert weiter, wenn du sie umbenennst oder verschiebst, auch bei zwei Notizen mit gleichem Namen. Markierst du vorher Text, wird er zum eigenen Linktext. Von Hand geht auch <code className="text-accent bg-panel px-1 py-0.5 rounded font-mono">[[Name der Notiz]]</code>. Gibt es die verlinkte Notiz nicht mehr, fragt MindSift beim Klick, ob sie neu angelegt oder der Link entfernt werden soll.
             </li>
             <li>
               <strong className="text-main">Hashtags:</strong> Tippe <code className="text-accent bg-panel px-1 py-0.5 rounded font-mono">#Projekt</code> oder <code className="text-accent bg-panel px-1 py-0.5 rounded font-mono">#Wichtig</code> an beliebiger Stelle in den Text. Hashtags werden farbig hervorgehoben und indiziert.

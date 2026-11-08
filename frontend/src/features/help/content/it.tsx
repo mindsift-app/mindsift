@@ -219,7 +219,7 @@ const it: HelpContent = {
           <p>Note e pensieri possono essere collegati tra loro in molti modi in MindSift:</p>
           <ul className="space-y-1.5">
             <li>
-              <strong className="text-main">WikiLink:</strong> scrivi <code className="text-accent bg-panel px-1 py-0.5 rounded font-mono">[[Nome della nota]]</code> per collegare direttamente un'altra nota. Facendo clic sul link si apre subito la nota di destinazione.
+              <strong className="text-main">Wiki link:</strong> Con <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Ctrl + L</kbd> o <code className="text-accent bg-panel px-1 py-0.5 rounded font-mono">/link</code> colleghi un’altra nota o un singolo punto; un clic lo apre. Il link mostra sempre il titolo attuale della nota e continua a funzionare se la rinomini o la sposti, anche con due note dallo stesso nome. Il testo selezionato prima diventa il testo del link. A mano funziona anche <code className="text-accent bg-panel px-1 py-0.5 rounded font-mono">[[Nome della nota]]</code>. Se la nota collegata non esiste più, un clic chiede se crearla o rimuovere il link.
             </li>
             <li>
               <strong className="text-main">Hashtag:</strong> digita <code className="text-accent bg-panel px-1 py-0.5 rounded font-mono">#progetto</code> o <code className="text-accent bg-panel px-1 py-0.5 rounded font-mono">#importante</code> in qualsiasi punto del testo. Gli hashtag vengono evidenziati a colori e indicizzati.

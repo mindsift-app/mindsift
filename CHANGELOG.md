@@ -17,6 +17,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - AI agents (MCP) can draw: `add_note_bullet` with type `drawing` takes a Mermaid flowchart or mind map, including its colours, and the server lays it out (layers, few crossing lines, right-angled arrows; mind maps with a colour per branch). `update_note_bullet` replaces a drawing, and a ```` ```mermaid ```` block in `create_note` becomes a drawing too.
 
 ### Changed
+- Notes: links to notes carry the note's id. Renaming or moving a note no longer breaks links to it, and two notes with the same title are told apart. A link shows the note's current title, or its own text if it has one; links to a single bullet show "title › start of the bullet". Existing links are updated once where the title is unambiguous; the others keep working by title as before.
+- Notes: Ctrl+L with marked text opens the link dialog; the marked text becomes the link text (for notes, bullets and web links).
+- Notes: "Create" in the question about a missing note points the link at the new note.
+- AI agents (MCP), the Markdown export and public links see links to notes as `[[current title]]` without ids; `[[Title]]` written by an agent or imported is linked to its note when the title is unambiguous.
 - README: new picture of focus mode with pinned bar and sidebar and the network plan drawing; all pictures renewed.
 - Tasks and lists: the "Shared (3)" button in the header looks like the one of the notes.
 - Journal: on large screens the bar at the top works like for notes, for the day marked in the calendar: live status, sharing, save status, undo/redo, the menu and focus mode (also with Ctrl+Shift+F). The journal's own title row is gone there; phones and tablets keep it with the calendar.

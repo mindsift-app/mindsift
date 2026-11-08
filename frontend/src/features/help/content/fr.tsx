@@ -225,7 +225,7 @@ const fr: HelpContent = {
           <p>Dans MindSift, notes et pensées peuvent être reliées de nombreuses façons :</p>
           <ul className="space-y-1.5">
             <li>
-              <strong className="text-main">WikiLinks :</strong> écris <code className="text-accent bg-panel px-1 py-0.5 rounded font-mono">[[Nom de la note]]</code> pour créer un lien direct vers une autre note. Un clic ouvre immédiatement la note cible.
+              <strong className="text-main">Liens wiki :</strong> Avec <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Ctrl + L</kbd> ou <code className="text-accent bg-panel px-1 py-0.5 rounded font-mono">/link</code>, tu relies une autre note ou une seule puce ; un clic l’ouvre. Le lien affiche toujours le titre actuel de la note et fonctionne encore si tu la renommes ou la déplaces, même avec deux notes du même nom. Le texte sélectionné avant devient le texte du lien. À la main, <code className="text-accent bg-panel px-1 py-0.5 rounded font-mono">[[Nom de la note]]</code> marche aussi. Si la note liée n’existe plus, un clic demande s’il faut la créer ou supprimer le lien.
             </li>
             <li>
               <strong className="text-main">Hashtags :</strong> tape <code className="text-accent bg-panel px-1 py-0.5 rounded font-mono">#tag</code> directement dans le texte. Les hashtags regroupent automatiquement les thèmes dans la vue d'ensemble des tags.

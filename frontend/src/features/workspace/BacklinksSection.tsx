@@ -3,6 +3,8 @@ import { ChevronDown, ChevronRight, Folder, Link2 } from 'lucide-react';
 import { Backlink } from '../../lib/types';
 import { api } from '../../lib/api';
 import { useTranslation } from 'react-i18next';
+import { parseWikiLink, wikiLinkText } from '../../lib/wikiLink';
+import { useWikiLinkResolver } from '../../lib/wikiLinkResolver';
 
 interface BacklinksSectionProps {
   docId: string;
@@ -12,23 +14,27 @@ interface BacklinksSectionProps {
 
 const COLLAPSED_KEY = 'mindsift:backlinks_collapsed';
 
-// Shows the [[Wiki-Link]] parts of a block in the accent color, the rest as plain text
-const Snippet: React.FC<{ text: string }> = ({ text }) => (
-  <>
-    {text.split(/(\[\[[^\]]*\]\])/g).map((part, i) =>
-      part.startsWith('[[') && part.endsWith(']]') ? (
-        <span key={i} className="text-accent font-medium">
-          {part}
-        </span>
-      ) : (
-        <React.Fragment key={i}>{part}</React.Fragment>
-      )
-    )}
-  </>
-);
+// Shows the links of a block by their text (own text or the note's current title) in the accent color,
+// the rest as plain text
+const Snippet: React.FC<{ text: string }> = ({ text }) => {
+  const resolve = useWikiLinkResolver();
+  return (
+    <>
+      {text.split(/(\[\[[^\]]*\]\])/g).map((part, i) => {
+        if (!(part.startsWith('[[') && part.endsWith(']]'))) return <React.Fragment key={i}>{part}</React.Fragment>;
+        const link = parseWikiLink(part.slice(2, -2));
+        return (
+          <span key={i} className="text-accent font-medium">
+            {wikiLinkText(link, resolve?.(link))}
+          </span>
+        );
+      })}
+    </>
+  );
+};
 
 // "Linked to this note" at the end of a note. Hidden while nothing links here; reloads shortly
-// after the title changes, since links are matched by title.
+// after the title changes (older links without id are matched by title).
 export const BacklinksSection: React.FC<BacklinksSectionProps> = ({ docId, title, onOpen }) => {
   const { t } = useTranslation('workspace');
   const [links, setLinks] = useState<Backlink[]>([]);

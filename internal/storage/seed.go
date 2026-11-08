@@ -64,10 +64,15 @@ type seedTask struct {
 // inbox thoughts, two task lists with Kanban states, shopping and packing lists and a few linked notes.
 // German accounts get it in German, all others in English (seed_en.go).
 func (s *Store) SeedStarterContent(user *domain.User) error {
+	var err error
 	if s.MessageLanguage(user.ID) == "de" {
-		return s.seedStarterDE(user)
+		err = s.seedStarterDE(user)
+	} else {
+		err = s.seedStarterEN(user)
 	}
-	return s.seedStarterEN(user)
+	// The sample notes link each other by title; links carry the note's id like ones made in the app
+	s.LinkWikiTitles(user.ID)
+	return err
 }
 
 // seedDay: a due date offset days from today

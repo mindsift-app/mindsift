@@ -219,7 +219,7 @@ const en: HelpContent = {
           <p>Notes and thoughts can be linked with each other in many ways in MindSift:</p>
           <ul className="space-y-1.5">
             <li>
-              <strong className="text-main">WikiLinks:</strong> write <code className="text-accent bg-panel px-1 py-0.5 rounded font-mono">[[Name of the note]]</code> to link directly to another note. Clicking it opens the target note right away.
+              <strong className="text-main">Wiki links:</strong> With <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Ctrl + L</kbd> or <code className="text-accent bg-panel px-1 py-0.5 rounded font-mono">/link</code> you link another note or a single bullet; a click opens it. The link always shows the note's current title and keeps working when you rename or move it, even with two notes of the same name. Text you mark first becomes the link text. By hand, <code className="text-accent bg-panel px-1 py-0.5 rounded font-mono">[[Note name]]</code> works too. If the linked note no longer exists, a click asks whether to create it or remove the link.
             </li>
             <li>
               <strong className="text-main">Hashtags:</strong> type <code className="text-accent bg-panel px-1 py-0.5 rounded font-mono">#project</code> or <code className="text-accent bg-panel px-1 py-0.5 rounded font-mono">#important</code> anywhere in the text. Hashtags are highlighted in color and indexed.

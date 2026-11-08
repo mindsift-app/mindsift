@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo, forwardRef, useImperativeHandle } from 'react';
+import type { WikiLinkClickHandler } from '../../lib/wikiLink';
 import { DocumentBlock, BlockType } from '../../lib/types';
 import { OutlinerBlock, BlockLock, mapRenderedOffsetToRaw } from './OutlinerBlock';
 import { parsePastedLines } from '../../lib/pasteOutline';
@@ -36,7 +37,7 @@ export interface OutlinerTreeProps {
   onMoveSibling?: (blockId: string, direction: -1 | 1) => void;
   onOpenTask?: (taskId: string) => void;
   onTagClick?: (tag: string) => void;
-  onWikiLinkClick?: (pageTitle: string, blockId?: string, removeLink?: () => void) => void;
+  onWikiLinkClick?: WikiLinkClickHandler;
   onCopyBlockLink?: (blockId: string) => void;
   initialFocusedBlockId?: string | null;
   onFocusedBlockChange?: (blockId: string | null) => void;

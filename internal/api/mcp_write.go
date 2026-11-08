@@ -73,10 +73,11 @@ func (s *Server) noteDoc(docID string) (*collab.Doc, error) {
 	return d, nil
 }
 
-func noteBullets(d *collab.Doc) []noteBullet {
+// Links to notes come without ids, with the current titles (titles: storage.DocTitles of the user).
+func noteBullets(d *collab.Doc, titles map[string]string) []noteBullet {
 	out := []noteBullet{}
 	for _, b := range d.Flatten() {
-		text := b.Content
+		text := storage.ReadableWikiLinks(b.Content, titles)
 		if b.Type == drawing.BlockType {
 			text = drawing.Describe(b.Content)
 		}
@@ -137,12 +138,12 @@ func liveBullet(d *collab.Doc, id string) (*collab.Block, error) {
 	return b, nil
 }
 
-func noteResult(s *Server, docID string) (interface{}, error) {
+func noteResult(s *Server, userID, docID string) (interface{}, error) {
 	d, err := s.noteDoc(docID)
 	if err != nil {
 		return nil, err
 	}
-	return map[string]interface{}{"id": docID, "title": d.Title, "bullets": noteBullets(d)}, nil
+	return map[string]interface{}{"id": docID, "title": d.Title, "bullets": noteBullets(d, s.store.DocTitles(userID))}, nil
 }
 
 // inboxEntry: an open inbox entry as an agent sees it
@@ -211,7 +212,8 @@ var mcpWriteTools = []mcpTool{
 	{
 		Name: "add_note_bullet",
 		Description: "Add a bullet to a note: after a bullet (same level), as the last child of a bullet, or at the end. " +
-			"Bullet ids come from get_note. type: text (default), todo, h1, h2, h3, numbered, callout, warning, error, drawing. " + mcpDrawingHelp,
+			"Bullet ids come from get_note. type: text (default), todo, h1, h2, h3, numbered, callout, warning, error, drawing. " +
+			"[[Note title]] links another note (with |text for an own link text); it keeps working when that note is renamed. " + mcpDrawingHelp,
 		Scope: storage.ScopeNotesWrite,
 		Schema: schema([]string{"noteId", "text"}, map[string]interface{}{
 			"noteId":   prop("string", "Note id"),
@@ -274,7 +276,8 @@ var mcpWriteTools = []mcpTool{
 				return nil, err
 			}
 			id := domain.NewID("blk")
-			text := a.Text
+			// [[Titel]] written by the agent points at its note by id where the title is unambiguous
+			text := s.store.WikiLinker(userID)(a.Text)
 			if a.Type == drawing.BlockType {
 				if text, err = mcpDrawingContent(a.Text); err != nil {
 					return nil, err
@@ -285,7 +288,7 @@ var mcpWriteTools = []mcpTool{
 			if err := s.applyNoteOps(userID, actor, a.NoteID, []collab.Op{op}); err != nil {
 				return nil, err
 			}
-			res, err := noteResult(s, a.NoteID)
+			res, err := noteResult(s, userID, a.NoteID)
 			if m, ok := res.(map[string]interface{}); ok {
 				m["addedId"] = id
 			}
@@ -349,6 +352,10 @@ var mcpWriteTools = []mcpTool{
 			if err := s.bulletFree(a.NoteID, b.ID); err != nil {
 				return nil, err
 			}
+			if a.Text != nil && b.Type != drawing.BlockType && !toDrawing {
+				text := s.store.WikiLinker(userID)(storage.KeepWikiLinkIDs(b.Content, *a.Text, s.store.DocTitles(userID)))
+				a.Text = &text
+			}
 			var ops []collab.Op
 			if a.Text != nil && *a.Text != b.Content {
 				ops = append(ops, collab.Op{OpID: domain.NewID("op"), Kind: collab.OpSetContent, BlockID: b.ID, BaseVersion: b.Version, Content: a.Text})
@@ -357,12 +364,12 @@ var mcpWriteTools = []mcpTool{
 				ops = append(ops, collab.Op{OpID: domain.NewID("op"), Kind: collab.OpSetProps, BlockID: b.ID, Patch: &collab.PropsPatch{Checked: a.Checked, Type: a.Type}})
 			}
 			if len(ops) == 0 {
-				return noteResult(s, a.NoteID)
+				return noteResult(s, userID, a.NoteID)
 			}
 			if err := s.applyNoteOps(userID, actor, a.NoteID, ops); err != nil {
 				return nil, err
 			}
-			return noteResult(s, a.NoteID)
+			return noteResult(s, userID, a.NoteID)
 		},
 	},
 	{
@@ -396,7 +403,7 @@ var mcpWriteTools = []mcpTool{
 			if err := s.applyNoteOps(userID, actor, a.NoteID, []collab.Op{op}); err != nil {
 				return nil, err
 			}
-			return noteResult(s, a.NoteID)
+			return noteResult(s, userID, a.NoteID)
 		},
 	},
 	{

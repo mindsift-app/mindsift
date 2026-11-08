@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { api } from '../../lib/api';
 import { Document, DocumentBlock } from '../../lib/types';
-import { buildBlockLink } from '../../lib/wikiLink';
+import { buildBlockLink, buildNoteLink } from '../../lib/wikiLink';
 import { SnippetRenderer } from '../../components/SnippetRenderer';
 import { NO_AUTOFILL } from '../../lib/noAutofill';
 
@@ -23,6 +23,8 @@ export interface LinkModalProps {
   onClose: () => void;
   onInsertLink: (markdown: string) => void;
   availableDocs?: { id: string; title: string; icon?: string; folderPath?: string }[];
+  /** Text marked in the bullet: the link's own text (without it a note link shows the note's title) */
+  label?: string;
 }
 
 export const LinkModal: React.FC<LinkModalProps> = ({
@@ -30,6 +32,7 @@ export const LinkModal: React.FC<LinkModalProps> = ({
   onClose,
   onInsertLink,
   availableDocs,
+  label = '',
 }) => {
   const { t } = useTranslation('workspace');
   const [tab, setTab] = useState<'note' | 'web'>('note');
@@ -37,7 +40,7 @@ export const LinkModal: React.FC<LinkModalProps> = ({
   const [docs, setDocs] = useState<Document[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const [webTitle, setWebTitle] = useState('');
+  const [webTitle, setWebTitle] = useState(label);
   const [webUrl, setWebUrl] = useState('');
 
   const searchInputRef = useRef<HTMLInputElement | null>(null);
@@ -180,9 +183,8 @@ export const LinkModal: React.FC<LinkModalProps> = ({
     };
   }, [search, isOpen, tab, pickDoc]);
 
-  const handleSelectNote = (doc: { title: string }) => {
-    const noteTitle = doc.title.trim() || t('link.note');
-    onInsertLink(`[[${noteTitle}]]`);
+  const handleSelectNote = (doc: { id: string; title: string }) => {
+    onInsertLink(buildNoteLink(doc.title.trim() || t('link.note'), doc.id, label));
   };
 
   // Arrow keys move through the list under the search field, Enter inserts the marked entry. In the list
@@ -207,7 +209,7 @@ export const LinkModal: React.FC<LinkModalProps> = ({
   const chooseActive = () => {
     if (pickDoc) {
       const b = pickableBlocks[active];
-      if (b) onInsertLink(buildBlockLink(pickDoc.title || t('link.note'), b.id, b.content));
+      if (b) onInsertLink(buildBlockLink(pickDoc.title || t('link.note'), pickDoc.id, b.id, label));
       return;
     }
     if (active < filteredDocs.length) {
@@ -215,7 +217,7 @@ export const LinkModal: React.FC<LinkModalProps> = ({
       return;
     }
     const h = blockHits[active - filteredDocs.length];
-    if (h) onInsertLink(buildBlockLink(h.title || t('link.note'), h.blockId, h.content));
+    if (h) onInsertLink(buildBlockLink(h.title || t('link.note'), h.docId, h.blockId, label));
   };
 
   const handleListKeys = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -423,7 +425,7 @@ export const LinkModal: React.FC<LinkModalProps> = ({
                     type="button"
                     data-link-active={i === active}
                     onMouseMove={() => i !== active && setActive(i)}
-                    onClick={() => onInsertLink(buildBlockLink(pickDoc.title || t('link.note'), b.id, b.content))}
+                    onClick={() => onInsertLink(buildBlockLink(pickDoc.title || t('link.note'), pickDoc.id, b.id, label))}
                     className={`w-full text-left min-h-[44px] sm:min-h-0 py-1.5 pr-2 rounded-btn text-xs flex items-start gap-1.5 cursor-pointer ${
                       i === active ? 'bg-panel-elevated text-accent' : 'text-main'
                     }`}
@@ -531,7 +533,7 @@ export const LinkModal: React.FC<LinkModalProps> = ({
                       type="button"
                       data-link-active={i === active}
                       onMouseMove={() => i !== active && setActive(i)}
-                      onClick={() => onInsertLink(buildBlockLink(h.title || t('link.note'), h.blockId, h.content))}
+                      onClick={() => onInsertLink(buildBlockLink(h.title || t('link.note'), h.docId, h.blockId, label))}
                       className={`w-full text-left p-2.5 min-h-11 bg-canvas border rounded-card transition-colors cursor-pointer space-y-0.5 ${
                         i === active ? 'border-accent' : 'border-border'
                       }`}

@@ -52,6 +52,8 @@ import { Trans, useTranslation } from 'react-i18next';
 import i18n from '../../i18n';
 import { showError } from '../../components/ErrorNotice';
 import { askChoice } from '../../components/askConfirm';
+import { WikiLinkClickHandler } from '../../lib/wikiLink';
+import { findLinkedDoc, makeWikiLinkResolver, WikiLinkResolverContext } from '../../lib/wikiLinkResolver';
 
 interface WorkspaceViewProps {
   currentUser?: User | null;
@@ -277,8 +279,9 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
           setExpandedFolders((prev) => ({ ...prev, [folderPath]: true }));
         }
         onStatsChange();
+        return created;
       } catch {
-        // ignore
+        return undefined;
       } finally {
         setTimeout(() => {
           isCreatingRef.current = false;
@@ -497,30 +500,34 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
     }
   };
 
-  const handleWikiLinkClick = useCallback(
-    (pageTitle: string, blockId?: string, removeLink?: () => void) => {
-      const clean = pageTitle.trim().toLowerCase();
-      const match = docs.find((d) => d.title.trim().toLowerCase() === clean);
-      if (match && blockId) {
-        handleJumpToDocBlock(match.id, blockId);
+  // Links carry the id of the note (renaming does not break them); older ones go by the bullet or title
+  const handleWikiLinkClick = useCallback<WikiLinkClickHandler>(
+    (link, actions) => {
+      const match = findLinkedDoc(docs, link);
+      if (match && link.blockId) {
+        handleJumpToDocBlock(match.id, link.blockId);
       } else if (match) {
         setSelectedDocId(match.id);
         setSubView('editor');
         setMobileShowDetail(true);
-      } else if (clean) {
+      } else if (link.title.trim()) {
         // Deleted or never created: ask instead of creating a note right away
+        const title = link.title.trim();
         void askChoice({
-          message: <Trans i18nKey="common:wikiLink.missing" values={{ title: pageTitle.trim() }} components={{ b: <strong /> }} />,
+          message: <Trans i18nKey="common:wikiLink.missing" values={{ title }} components={{ b: <strong /> }} />,
           confirmLabel: i18n.t('common:wikiLink.create'),
-          altLabel: removeLink ? i18n.t('common:wikiLink.removeLink') : undefined,
-        }).then((answer) => {
-          if (answer === 'confirm') void handleCreateDocument('', pageTitle.trim());
-          else if (answer === 'alt') removeLink?.();
+          altLabel: actions ? i18n.t('common:wikiLink.removeLink') : undefined,
+        }).then(async (answer) => {
+          if (answer === 'confirm') {
+            const created = await handleCreateDocument('', title);
+            if (created) actions?.retarget(created.id, created.title);
+          } else if (answer === 'alt') actions?.remove();
         });
       }
     },
     [docs, handleCreateDocument, handleJumpToDocBlock]
   );
+  const resolveWikiLink = useMemo(() => makeWikiLinkResolver(docs), [docs]);
 
   const handleShareFolderClick = useCallback(
     async (folderPath: string, existingSf?: SharedFolder) => {
@@ -686,6 +693,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
   const filteredTags = useMemo(() => filterTags(tagsSummary, tagSearchQuery, tagSortBy), [tagsSummary, tagSearchQuery, tagSortBy]);
 
   return (
+    <WikiLinkResolverContext.Provider value={resolveWikiLink}>
     <div className="w-full h-full min-h-0 flex flex-col gap-3">
       {/* Top Header: Workspace Tabs & Actions */}
       {/* Phones: the views are switched in the menu at the top, so the row is hidden there */}
@@ -1089,5 +1097,6 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
       />
       </div>
     </div>
+    </WikiLinkResolverContext.Provider>
   );
 };

@@ -138,7 +138,8 @@ func PublicBlocks(blocks []collab.Block) []collab.Block {
 		if b.Deleted {
 			b.Content = ""
 		} else {
-			b.Content = secretRefRE.ReplaceAllString(b.Content, PublicSecretRef)
+			// Links without the ids of other notes: visitors see the title stored in the link or its text
+			b.Content = ReadableWikiLinks(secretRefRE.ReplaceAllString(b.Content, PublicSecretRef), nil)
 		}
 		out = append(out, b)
 	}

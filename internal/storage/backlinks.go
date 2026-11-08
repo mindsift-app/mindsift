@@ -2,20 +2,17 @@ package storage
 
 import (
 	"errors"
-	"regexp"
 	"sort"
 	"strings"
 )
 
-// Backlinks ("Linked to this note") lists the notes whose blocks contain a wiki link [[Title]]
-// to a note. Matching ignores case and surrounding spaces like the link click in the editor;
-// [[Title|Text]] and [[Title#Abschnitt]] count as well. Only notes the user can open are listed,
-// never the note itself or notes in the trash.
+// Backlinks ("Linked to this note") lists the notes whose blocks contain a wiki link to a note: by its id
+// ([[Title#doc_id]], also to one of its bullets), or older links without id by title (ignoring case and
+// surrounding spaces like the link click in the editor). Only notes the user can open are listed, never
+// the note itself or notes in the trash.
 
 // ErrNoAccess is returned when the user cannot open the note.
 var ErrNoAccess = errors.New("Kein Zugriff auf diese Notiz")
-
-var wikiLinkRe = regexp.MustCompile(`\[\[([^\]|#]+)(?:[|#][^\]]*)?\]\]`)
 
 const maxBacklinkBlocks = 5
 
@@ -33,9 +30,14 @@ type Backlink struct {
 	More       int             `json:"more,omitempty"` // further matching blocks not listed
 }
 
-func linksTo(content, title string) bool {
-	for _, m := range wikiLinkRe.FindAllStringSubmatch(content, -1) {
-		if strings.EqualFold(strings.TrimSpace(m[1]), title) {
+func linksTo(content, docID, title string) bool {
+	links, _ := wikiLinks(content)
+	for _, l := range links {
+		if l.DocID != "" {
+			if l.DocID == docID {
+				return true
+			}
+		} else if title != "" && strings.EqualFold(l.Title, title) {
 			return true
 		}
 	}
@@ -52,9 +54,6 @@ func (s *Store) GetBacklinks(userID, docID string) ([]Backlink, error) {
 	}
 	title = strings.TrimSpace(title)
 	out := []Backlink{}
-	if title == "" {
-		return out, nil
-	}
 
 	// The tree of the user: what they can open, with their own folder paths
 	docs, err := s.GetDocuments(userID)
@@ -80,7 +79,7 @@ func (s *Store) GetBacklinks(userID, docID string) ([]Backlink, error) {
 			continue
 		}
 		di, visible := byID[sourceID]
-		if !visible || !linksTo(content, title) {
+		if !visible || !linksTo(content, docID, title) {
 			continue
 		}
 		pos, seen := index[sourceID]

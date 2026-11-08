@@ -1,6 +1,6 @@
 import React from 'react';
 import { safeHref } from './safeUrl';
-import { parseWikiLink, wikiLinkText } from './wikiLink';
+import { parseWikiLink, WikiLink, WikiLinkResolver, wikiLinkText } from './wikiLink';
 import i18n from '../i18n';
 import { SECRET_REF_SOURCE, secretIdOf } from './secretRef';
 
@@ -12,12 +12,14 @@ import { SECRET_REF_SOURCE, secretIdOf } from './secretRef';
  * - `code`
  * - [label](url)
  * - #hashtag (only when `options.onTagClick` is given), rendered inline as a clickable chip
- * - [[wiki link]] shown by its label (clickable with `options.onWikiLinkClick`)
+ * - [[wiki link]] shown by its own text or the note's current title (`options.resolveWikiLink`), clickable
+ *   with `options.onWikiLinkClick`
  * - {{secret:id}} as dots (revealable with `options.renderSecret`)
  */
 export interface InlineMarkdownOptions {
   onTagClick?: (tag: string) => void;
-  onWikiLinkClick?: (title: string, blockId?: string) => void;
+  onWikiLinkClick?: (link: WikiLink) => void;
+  resolveWikiLink?: WikiLinkResolver;
   renderSecret?: (secretId: string, key: string) => React.ReactNode;
 }
 
@@ -71,6 +73,8 @@ function renderInlineTokens(text: string, options?: InlineMarkdownOptions): Reac
     } else if (token.startsWith('[[') && token.endsWith(']]')) {
       const link = parseWikiLink(token.slice(2, -2));
       const onClick = options?.onWikiLinkClick;
+      const target = options?.resolveWikiLink?.(link);
+      const shownTitle = target?.title || link.title;
       elements.push(
         onClick ? (
           <span
@@ -79,16 +83,16 @@ function renderInlineTokens(text: string, options?: InlineMarkdownOptions): Reac
             tabIndex={-1}
             onClick={(e) => {
               e.stopPropagation();
-              onClick(link.title, link.blockId);
+              onClick(link);
             }}
             className="text-status-info underline decoration-status-info/40 underline-offset-2 hover:decoration-status-info cursor-pointer"
-            title={link.blockId ? i18n.t('common:wikiLink.toBlock', { title: link.title }) : i18n.t('common:wikiLink.openNote', { title: link.title })}
+            title={link.blockId ? i18n.t('common:wikiLink.toBlock', { title: shownTitle }) : i18n.t('common:wikiLink.openNote', { title: shownTitle })}
           >
-            {wikiLinkText(link)}
+            {wikiLinkText(link, target)}
           </span>
         ) : (
           <span key={key} className="text-status-info">
-            {wikiLinkText(link)}
+            {wikiLinkText(link, target)}
           </span>
         )
       );

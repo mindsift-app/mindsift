@@ -29,10 +29,10 @@ const DRAWING = JSON.stringify({ v: 1, els: [{ id: 'a', ver: 1, t: 'rect', x: 0,
 const NOTES = {
   'Callout oben': {
     blocks: [
-      ['callout', 'Ein Hinweis oben', 0], ['h2', 'Überschrift', 0], ['bullet', 'Erster Punkt mit **fett**', 0], ['bullet', 'Kind', 1],
+      ['callout', 'Ein Hinweis oben', 0], ['h2', 'Überschrift', 0], ['bullet', 'Erster Punkt mit **fett**', 0], ['bullet', 'Kind mit [[Homelab#doc_e2ecopy|Link]]', 1],
       ['drawing', DRAWING, 0], ['todo', 'Aufgabe', 0],
     ],
-    markdown: '> Ein Hinweis oben\n\n## Überschrift\n\nErster Punkt mit **fett**\n- Kind\n\n```mindsift-canvas\n' + DRAWING + '\n```\n\n- [ ] Aufgabe',
+    markdown: '> Ein Hinweis oben\n\n## Überschrift\n\nErster Punkt mit **fett**\n- Kind mit [[Homelab#doc_e2ecopy|Link]]\n\n```mindsift-canvas\n' + DRAWING + '\n```\n\n- [ ] Aufgabe',
   },
   'Callout unten, Warnung und Fehler, leerer eingerückter Bullet am Ende': {
     blocks: [

@@ -264,7 +264,7 @@ const es: HelpContent = {
           <p>En MindSift, las notas y pensamientos pueden conectarse entre sí de múltiples formas:</p>
           <ul className="space-y-1.5">
             <li>
-              <strong className="text-main">WikiLinks:</strong> escribe <code className="text-accent bg-panel px-1 py-0.5 rounded font-mono">[[Nombre de la nota]]</code> para enlazar directamente a otra nota. Al hacer clic se abre la nota de destino de inmediato.
+              <strong className="text-main">Wiki links:</strong> Con <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Ctrl + L</kbd> o <code className="text-accent bg-panel px-1 py-0.5 rounded font-mono">/link</code> enlazas otra nota o un punto concreto; un clic lo abre. El enlace muestra siempre el título actual de la nota y sigue funcionando si la renombras o la mueves, incluso con dos notas del mismo nombre. El texto que marques antes será el texto del enlace. A mano también vale <code className="text-accent bg-panel px-1 py-0.5 rounded font-mono">[[Nombre de la nota]]</code>. Si la nota enlazada ya no existe, al hacer clic se pregunta si crearla o quitar el enlace.
             </li>
             <li>
               <strong className="text-main">Hashtags:</strong> escribe <code className="text-accent bg-panel px-1 py-0.5 rounded font-mono">#proyecto</code> o <code className="text-accent bg-panel px-1 py-0.5 rounded font-mono">#importante</code> en cualquier lugar del texto. Los hashtags se resaltan en color y se indexan.

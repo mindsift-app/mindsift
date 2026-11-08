@@ -369,10 +369,12 @@ func (s *Server) toNoteView(d *domain.Document) noteView {
 }
 
 // noteMarkdown renders the bullets as an indented Markdown list; images and recordings become a
-// placeholder with their caption (the agent cannot open the files), drawings a description in words.
-func noteMarkdown(blocks []domain.DocumentBlock) string {
+// placeholder with their caption (the agent cannot open the files), drawings a description in words,
+// links to notes [[current title]] without ids (titles: storage.DocTitles of the user).
+func noteMarkdown(blocks []domain.DocumentBlock, titles map[string]string) string {
 	out := make([]domain.DocumentBlock, len(blocks))
 	for i, b := range blocks {
+		b.Content = storage.ReadableWikiLinks(b.Content, titles)
 		if b.Type == "image" || b.Type == "audio" {
 			label := map[string]string{"image": "Bild", "audio": "Aufnahme"}[b.Type]
 			if ref, ok := storage.ParseMediaContent(b.Content); ok && ref.Caption != "" {
@@ -962,9 +964,10 @@ var mcpTools = []mcpTool{
 				return nil, errors.New("Notiz nicht gefunden")
 			}
 			v := s.toNoteView(d)
-			v.Content = noteMarkdown(d.Blocks)
+			titles := s.store.DocTitles(userID)
+			v.Content = noteMarkdown(d.Blocks, titles)
 			if doc, err := s.noteDoc(a.ID); err == nil {
-				v.Bullets = noteBullets(doc)
+				v.Bullets = noteBullets(doc, titles)
 			}
 			return v, nil
 		},
@@ -1003,6 +1006,13 @@ var mcpTools = []mcpTool{
 				return nil, err
 			}
 			blocks := mcpContentBlocks(content)
+			// [[Titel]] written by the agent points at its note by id where the title is unambiguous
+			link := s.store.WikiLinker(userID)
+			for i := range blocks {
+				if blocks[i].Type != drawing.BlockType {
+					blocks[i].Content = link(blocks[i].Content)
+				}
+			}
 			var warnings []string
 			if strings.TrimSpace(content) != "" && len(blocks) == 0 {
 				slog.Warn("MCP create_note: content gave no bullets", "user_id", userID, "content", content)
@@ -1017,7 +1027,7 @@ var mcpTools = []mcpTool{
 			}
 			s.broadcastDocToAuthorizedUsers(d.ID, "DOC_CREATED")
 			v := s.toNoteView(d)
-			v.Content = noteMarkdown(d.Blocks)
+			v.Content = noteMarkdown(d.Blocks, s.store.DocTitles(userID))
 			v.Warnings = warnings
 			return v, nil
 		},
@@ -1045,7 +1055,7 @@ var mcpTools = []mcpTool{
 			notes := []noteHit{}
 			for _, h := range res.Hits {
 				if h.Type == "document" {
-					notes = append(notes, noteHit{NoteID: h.DocID, Title: h.Title, Snippet: markTags.Replace(h.Snippet), URL: s.mcpLink("note", h.DocID)})
+					notes = append(notes, noteHit{NoteID: h.DocID, Title: h.Title, Snippet: storage.ReadableWikiLinks(markTags.Replace(h.Snippet), nil), URL: s.mcpLink("note", h.DocID)})
 				}
 			}
 			return map[string]interface{}{"tasks": tasks, "listItems": res.ListItems, "notes": notes}, nil

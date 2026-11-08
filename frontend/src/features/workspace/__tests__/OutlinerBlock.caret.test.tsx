@@ -415,28 +415,27 @@ describe('formatting shortcuts (Teil C)', () => {
     expect(ta.selectionEnd).toBe(2);
   });
 
-  it('handles Ctrl+L: with selection wraps in [Text](…) and selects placeholder, without selection opens modal', () => {
+  it('handles Ctrl+L: opens the link dialog, the marked text becomes the link text', () => {
     const block = { id: 'b1', type: 'bullet', content: 'besuche mindsift heute', level: 0 } as DocumentBlock;
-    const { container, queryByText } = renderBlock(block);
+    const { container, queryByText, getByDisplayValue } = renderBlock(block);
     const ta = container.querySelector('textarea') as HTMLTextAreaElement;
     ta.focus();
 
-    // 1. With selection
-    ta.setSelectionRange(8, 16); // "mindsift"
-    const eventWithSel = new KeyboardEvent('keydown', { key: 'l', ctrlKey: true, bubbles: true, cancelable: true });
-    ta.dispatchEvent(eventWithSel);
-    expect(eventWithSel.defaultPrevented).toBe(true);
-    expect(ta.value).toBe('besuche [mindsift](…) heute');
-    // Placeholder "…" is selected
-    expect(ta.selectionStart).toBe(19);
-    expect(ta.selectionEnd).toBe(20);
-    expect(ta.value.slice(ta.selectionStart, ta.selectionEnd)).toBe('…');
-
-    // 2. Without selection: opens LinkModal
+    // 1. Without selection: opens LinkModal
     ta.setSelectionRange(0, 0);
     expect(queryByText('Link einfügen')).toBeNull();
     fireEvent.keyDown(ta, { key: 'l', ctrlKey: true });
     expect(queryByText('Link einfügen')).toBeTruthy();
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(queryByText('Link einfügen')).toBeNull();
+
+    // 2. With selection: the dialog opens, the marked text is the title of a web link
+    ta.setSelectionRange(8, 16); // "mindsift"
+    // fireEvent returns false when the key was handled (default prevented)
+    expect(fireEvent.keyDown(ta, { key: 'l', ctrlKey: true })).toBe(false);
+    expect(queryByText('Link einfügen')).toBeTruthy();
+    fireEvent.click(queryByText('Web-Link') as HTMLElement);
+    expect(getByDisplayValue('mindsift')).toBeTruthy();
   });
 
   it('does nothing in code blocks or for read-only readers', () => {

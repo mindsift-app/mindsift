@@ -48,6 +48,7 @@ var migrations = []migration{
 	{25, "Cleanup of used invites", (*Store).migrateInviteCleanup},
 	{26, "Order of lists per person", (*Store).migrateListOrder},
 	{27, "Folder paths without spaces around slashes", (*Store).migrateFolderPaths},
+	{28, "Links to notes carry the note's id", (*Store).migrateWikiLinksToIDs},
 }
 
 func (s *Store) migrate() error {
