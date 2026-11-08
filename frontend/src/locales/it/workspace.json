@@ -63,6 +63,8 @@
     "chooseIcon": "Scegli icona",
     "titlePlaceholder": "Titolo della nota…",
     "unpin": "Rimuovi blocco",
+    "copyNoteLink": "Copia link",
+    "noteLinkCopied": "Link alla nota copiato – la apre direttamente in MindSift, anche per tutti quelli con cui è condivisa",
     "pin": "Fissa nota",
     "fileName": "nota",
     "focusShortcut": "Ctrl+⇧+F",

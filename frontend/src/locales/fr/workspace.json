@@ -63,6 +63,8 @@
     "chooseIcon": "Choisir une icône",
     "titlePlaceholder": "Titre de la note…",
     "unpin": "Désépingler",
+    "copyNoteLink": "Copier le lien",
+    "noteLinkCopied": "Lien vers la note copié – l'ouvre directement dans MindSift, aussi pour toutes les personnes avec qui elle est partagée",
     "pin": "Épingler la note",
     "fileName": "note",
     "focusShortcut": "Ctrl+Maj+F",

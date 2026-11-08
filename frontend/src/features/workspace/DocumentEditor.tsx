@@ -29,6 +29,7 @@ import {
   MoreHorizontal,
   CalendarDays,
   SmilePlus,
+  Link2,
 } from 'lucide-react';
 import { Document, DocumentBlock, MoveResult, User } from '../../lib/types';
 import { api } from '../../lib/api';
@@ -94,12 +95,20 @@ export interface DocumentEditorProps {
   onEmptied?: () => void;
 }
 
-// The bullet of this note the cursor is in, with its position on screen (null: the cursor is elsewhere)
-function cursorAnchor(blocks: DocumentBlock[]): { blockId: string; top: number } | null {
+// The bullet of this note the cursor is in, with its position on screen, held for a second after a change
+// of others arrived (null: the cursor is elsewhere)
+interface CursorAnchor {
+  blockId: string;
+  top: number;
+  until: number;
+  observer?: ResizeObserver;
+}
+const CURSOR_HOLD_MS = 1000;
+function cursorAnchor(blocks: DocumentBlock[]): CursorAnchor | null {
   const el = document.activeElement?.closest<HTMLElement>('[data-outline-block]');
   const blockId = el?.dataset.outlineBlock;
   if (!el || !blockId || !blocks.some((b) => b.id === blockId)) return null;
-  return { blockId, top: el.getBoundingClientRect().top };
+  return { blockId, top: el.getBoundingClientRect().top, until: performance.now() + CURSOR_HOLD_MS };
 }
 
 // The element that scrolls el (the note, or the journal with its days)
@@ -402,16 +411,29 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
   const currentBlocksRef = useRef<DocumentBlock[]>(blocks);
   currentBlocksRef.current = blocks;
 
-  // The bullet with the cursor stays where it is on screen when changes of others arrive above it
-  const cursorAnchorRef = useRef<{ blockId: string; top: number } | null>(null);
-  useLayoutEffect(() => {
+  // The bullet with the cursor stays where it is on screen when changes of others arrive above it. New
+  // text of a bullet above reaches its field only in a later render (and only then it wraps onto another
+  // line), so for a moment every change of the list's size is evened out too, before it is painted
+  const cursorAnchorRef = useRef<CursorAnchor | null>(null);
+  const keepCursorInPlace = useCallback(() => {
     const anchor = cursorAnchorRef.current;
-    cursorAnchorRef.current = null;
     if (!anchor) return;
     const el = document.querySelector(`[data-outline-block="${anchor.blockId}"]`);
-    const shift = el ? el.getBoundingClientRect().top - anchor.top : 0;
+    // Time is up, or the cursor went elsewhere: the user moves on, nothing to hold any more
+    if (!el || performance.now() > anchor.until || document.activeElement?.closest('[data-outline-block]') !== el) {
+      cursorAnchorRef.current = null;
+      anchor.observer?.disconnect();
+      return;
+    }
+    const shift = el.getBoundingClientRect().top - anchor.top;
     if (Math.abs(shift) >= 1) scrollParent(el)?.scrollBy({ top: shift, behavior: 'instant' });
-  }, [blocks]);
+    if (!anchor.observer && el.parentElement && typeof ResizeObserver !== 'undefined') {
+      anchor.observer = new ResizeObserver(keepCursorInPlace);
+      anchor.observer.observe(el.parentElement);
+    }
+  }, []);
+  useLayoutEffect(keepCursorInPlace, [blocks, keepCursorInPlace]);
+  useEffect(() => () => cursorAnchorRef.current?.observer?.disconnect(), []);
 
   useEffect(() => {
     const root = scrollRef.current;
@@ -606,6 +628,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
       if (!sameBlocks(currentBlocksRef.current, next)) {
         // Changes of others (own edits are in currentBlocksRef already): remember where the bullet with the
         // cursor is, so bullets added or removed above it do not move it (layout effect below)
+        cursorAnchorRef.current?.observer?.disconnect();
         cursorAnchorRef.current = cursorAnchor(currentBlocksRef.current);
         currentBlocksRef.current = next;
         setBlocks(next);
@@ -740,6 +763,18 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
     },
     [docId, title, doc?.title, showNotice]
   );
+
+  // Link to the whole note (?note=…, like the links of the MCP server): opens it in the app, for everyone
+  // who can see it
+  const handleCopyNoteLink = useCallback(() => {
+    const link = `${window.location.origin}/?note=${encodeURIComponent(docId)}`;
+    const done = () => showNotice(i18n.t('workspace:editor.noteLinkCopied'));
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(link).then(done, () => showNotice(i18n.t('workspace:editor.copyFailed', { link })));
+    } else {
+      showNotice(i18n.t('workspace:editor.copyFailed', { link }));
+    }
+  }, [docId, showNotice]);
 
   // Opened from the search: cursor at the end of the first bullet, so one ArrowDown goes on to the next
   // (lib/docFocusRequest.ts). A short delay, so the closing search does not take the focus along.
@@ -1569,6 +1604,21 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
                   }`}
                 />
                 <span>{doc?.isPinned ? t('editor.unpin') : t('editor.pin')}</span>
+              </button>
+            )}
+
+            {!inTrash && (
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setShowActionsMenu(false);
+                  handleCopyNoteLink();
+                }}
+                className="w-full min-h-[44px] sm:min-h-0 px-2.5 py-2 sm:py-1.5 rounded-btn hover:bg-panel-elevated text-left text-main font-medium flex items-center gap-2 transition-colors cursor-pointer"
+              >
+                <Link2 className="w-3.5 h-3.5 text-accent shrink-0" />
+                <span>{t('editor.copyNoteLink')}</span>
               </button>
             )}
 
