@@ -707,7 +707,7 @@ describe('how changes of others arrive', () => {
     }
   });
 
-  it('push: gives a left bullet up right when its 20 s of grace are over, not only with the next renewal', async () => {
+  it('push: gives a left bullet up right when its 7 s of grace are over, not only with the next renewal', async () => {
     vi.useFakeTimers();
     try {
       const server = new FakeServer();
@@ -725,10 +725,11 @@ describe('how changes of others arrive', () => {
       engine.focusBlock('b1');
       await vi.advanceTimersByTimeAsync(1_000);
       engine.focusBlock(null);
-      await vi.advanceTimersByTimeAsync(20_500);
+      await vi.advanceTimersByTimeAsync(7_500);
       const released = holds.find((h) => h.at - start > 1_000 && h.hold.length === 0);
       expect(released).toBeDefined();
-      expect(released!.at - start).toBeLessThan(21_500);
+      expect(released!.at - start).toBeGreaterThanOrEqual(8_000);
+      expect(released!.at - start).toBeLessThan(8_500);
       engine.stop();
     } finally {
       vi.useRealTimers();
