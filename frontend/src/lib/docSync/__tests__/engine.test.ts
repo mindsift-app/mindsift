@@ -82,9 +82,10 @@ class FakeServer {
       shared: true,
       sessions: 2,
       presence: [],
-      leases: { granted: [], denied: [], others: [] },
+      leases: { granted: [], denied: [], others: this.others },
     };
   }
+  others: { blockId: string; userId: string; name: string }[] = [];
 }
 
 /** Network between one client and the fake server, with switchable failures. */
@@ -623,6 +624,25 @@ describe('how changes of others arrive', () => {
       engine.focusBlock('b1');
       await vi.advanceTimersByTimeAsync(15_000);
       expect(syncs).toBeGreaterThanOrEqual(2);
+      engine.stop();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('push: looks every 3 s while someone else holds a bullet (their lock may run out unannounced)', async () => {
+    vi.useFakeTimers();
+    try {
+      const server = new FakeServer();
+      server.others = [{ blockId: 'b1', userId: 'u_anna', name: 'Anna' }];
+      const net = new FakePush();
+      net.kind = 'ws';
+      const transport = new FakeNet(server);
+      const engine = await live(net, transport);
+      expect(engine.getState().lockedByOthers).toHaveLength(1);
+      server.others = []; // Anna's browser closed, her lock ran out
+      await vi.advanceTimersByTimeAsync(3_500);
+      expect(engine.getState().lockedByOthers).toHaveLength(0);
       engine.stop();
     } finally {
       vi.useRealTimers();

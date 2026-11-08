@@ -714,6 +714,8 @@ export class DocSyncEngine {
   private pollDelay(): number {
     if (!this.collaborative()) return POLL_SOLO_MS;
     if (this.channel() === 'interval') return POLL_COLLAB_MS;
+    // A lock of someone else ends without a notice when it runs out (their browser closed): look again soon
+    if (this.lockedByOthers.length > 0) return POLL_COLLAB_MS;
     return this.canEdit && this.holds().length > 0 ? HEARTBEAT_MS : SAFETY_POLL_MS;
   }
 

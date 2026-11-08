@@ -246,6 +246,32 @@ func TestLeaseManager(t *testing.T) {
 	}
 }
 
+// A sync that only renews what the client already holds changes nothing for the others: telling them
+// made every open client sync again at once, without end
+func TestLeaseExchangeReportsOnlyChanges(t *testing.T) {
+	now := time.Unix(1000, 0)
+	m := NewLeaseManager(func() time.Time { return now })
+	if !m.Touch("d", anna) || m.Touch("d", anna) {
+		t.Fatal("only the first sync of a client is a new session")
+	}
+	if _, _, changed := m.Exchange("d", anna, nil, nil); changed {
+		t.Fatal("holding nothing, again: no change")
+	}
+	if _, _, changed := m.Exchange("d", anna, []string{"a"}, nil); !changed {
+		t.Fatal("a new lease is a change")
+	}
+	now = now.Add(5 * time.Second)
+	if _, _, changed := m.Exchange("d", anna, []string{"a"}, nil); changed {
+		t.Fatal("renewing a lease is no change")
+	}
+	if g, den, changed := m.Exchange("d", ben, []string{"a"}, nil); changed || len(g) != 0 || len(den) != 1 {
+		t.Fatalf("denied lease: granted=%v denied=%v changed=%v", g, den, changed)
+	}
+	if _, _, changed := m.Exchange("d", anna, nil, nil); !changed {
+		t.Fatal("giving a block up is a change")
+	}
+}
+
 func TestNotifier(t *testing.T) {
 	n := NewNotifier()
 	ch := n.Changed("d")

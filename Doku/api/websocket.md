@@ -51,7 +51,7 @@ Client → Server: The server only processes `{"event":"JOIN_ROOM","room":"<id>"
 | `TASK_REORDERED` | Reordering tasks | Members of all affected lists |
 | `TASK_LIST_UPDATED` / `TASK_LIST_DELETED` | Update, (un)share, or delete list; payload only `{id}`, clients reload their lists | Members before and after modification |
 | `DOC_CREATED`, `DOC_UPDATED`, `DOC_DELETED` | Create/update/delete note, note shares | Authorized users |
-| `DOC_SEQ` | Note change, leases, or presence (`docId`, `headSeq`); clients fetch data via `/docs/{id}/sync` | Room `doc:<id>` |
+| `DOC_SEQ` | Note change, a lease changing hands (renewals do not count), or a new session (`docId`, `headSeq`); clients fetch data via `/docs/{id}/sync` | Room `doc:<id>` |
 | `WORKSPACE_FOLDERS_UPDATED` | Folders/mounts modified | User; for shared folders, owner and all collaborators |
 | `LIST_CREATED`, `LIST_UPDATED`, `LIST_DELETED`, `LIST_SHARED`, `LIST_UNSHARED`, `LIST_CLEARED` | List administration | User or list room |
 | `ITEM_CREATED`, `ITEM_UPDATED`, `ITEM_TOGGLED`, `ITEM_DELETED`, `ITEM_REORDERED` | List items | List room |
