@@ -25,6 +25,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Notes: "Create" in the question about a missing note points the link at the new note.
 - AI agents (MCP), the Markdown export and public links see links to notes as `[[current title]]` without ids; `[[Title]]` written by an agent or imported is linked to its note when the title is unambiguous.
 - README: new picture of focus mode with pinned bar and sidebar and the network plan drawing; all pictures renewed.
+- README: the journal section says more (calendar dots, "Today", days as ordinary notes, switching it off), note links surviving renames are mentioned, and the test numbers are current.
 - Tasks and lists: the "Shared (3)" button in the header looks like the one of the notes.
 - Journal: on large screens the bar at the top works like for notes, for the day marked in the calendar: live status, sharing, save status, undo/redo, the menu and focus mode (also with Ctrl+Shift+F). The journal's own title row is gone there; phones and tablets keep it with the calendar.
 - Voice input: without a chosen language, Whisper now detects the spoken language itself ("Automatic"), which copes much better with sentences that mix languages, such as German with English terms. "Like the app language" stays available as an option; a fixed language you chose is kept.
