@@ -340,108 +340,126 @@ export const SharedListsView: React.FC<SharedListsViewProps> = ({ onRefreshGloba
     );
   }, [lists, activeList, completedItems.length, setGroups, setPrimaryAction]);
 
-  // The add form's fields: inline on the desktop, on phones in a sheet that "+" opens (no fixed field
-  // taking room above the list); the sheet brings its own buttons
-  const renderAddItemFields = (withButton: boolean) =>
-    activeList ? (
-      <>
-        {/* The item is the main field: a real input like the quantity next to it, with the + inside */}
-        <div className="relative flex-1 w-full min-w-0">
-          <Plus className="w-4 h-4 text-accent absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-          <input
-            ref={inputRef}
-            type="text"
-            autoFocus={!withButton}
-            value={newItemText}
-            onChange={(e) => {
-              setNewItemText(e.target.value);
-              setCursorPosition(e.target.selectionStart);
-              setShowSuggestions(true);
-              setSuggestionIndex(0);
-            }}
-            onKeyDown={handleInputKeyDown}
-            onSelect={(e) => {
-              setCursorPosition(e.currentTarget.selectionStart);
-            }}
-            onFocus={(e) => {
-              setCursorPosition(e.target.selectionStart);
-              setShowSuggestions(true);
-            }}
-            onBlur={() => {
-              setTimeout(() => setShowSuggestions(false), 200);
-            }}
-            placeholder={itemVoiceError || t('itemPlaceholder', { title: activeList.title })}
-            // 16px on phones: iOS zooms into smaller fields and the layout jumps under the keyboard
-            className="w-full h-11 sm:h-9 pl-9 pr-11 sm:pr-9 input-field text-base sm:text-sm"
-          />
-          <VoiceInputButton
-            value={newItemText}
-            onChange={setNewItemText}
-            focusRef={inputRef}
-            onError={(message) => {
-              setItemVoiceError(message);
-              window.setTimeout(() => setItemVoiceError(null), 4000);
-            }}
-            className="absolute right-1 top-1/2 -translate-y-1/2"
-          />
-
-          {/* Hashtag Autocomplete Suggestions Dropdown */}
-          {showSuggestions && activeHashtagQuery && matchingSuggestions.length > 0 && (
-            <div className="absolute left-6 top-full mt-2 w-64 max-h-56 overflow-y-auto bg-panel-elevated border border-border rounded-btn shadow-xl py-1 z-50 animate-in fade-in zoom-in-95 duration-100">
-              <div className="px-2.5 py-1 text-[10px] uppercase font-semibold text-faint tracking-wider border-b border-border/50">
-                Hashtags
-              </div>
-              {matchingSuggestions.map((tag, idx) => {
-                const isSelected = idx === suggestionIndex;
-                return (
-                  <button
-                    key={tag}
-                    type="button"
-                    onMouseDown={(e) => {
-                      e.preventDefault();
-                      applySuggestion(tag);
-                    }}
-                    className={`w-full text-left px-3 py-2 sm:py-1.5 text-xs flex items-center justify-between transition-colors ${
-                      isSelected
-                        ? 'bg-accent/20 text-accent font-medium'
-                        : 'text-main hover:bg-panel-hover'
-                    }`}
-                  >
-                    <span className="flex items-center gap-1.5">
-                      <span className="text-accent font-mono font-semibold">#</span>
-                      <span>{tag}</span>
-                    </span>
-                    {isSelected && (
-                      <span className="text-[10px] text-faint font-mono">↵</span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          )}
+  // The add form's fields: on the desktop one bar like adding a task (+, the item, then microphone,
+  // quantity and button inside it), on phones in a sheet that "+" opens (no fixed field taking room above
+  // the list) with real fields and the sheet's own buttons
+  const renderItemInput = (desktop: boolean, className: string) => (
+    <>
+      <input
+        ref={inputRef}
+        type="text"
+        autoFocus={!desktop}
+        value={newItemText}
+        onChange={(e) => {
+          setNewItemText(e.target.value);
+          setCursorPosition(e.target.selectionStart);
+          setShowSuggestions(true);
+          setSuggestionIndex(0);
+        }}
+        onKeyDown={handleInputKeyDown}
+        onSelect={(e) => {
+          setCursorPosition(e.currentTarget.selectionStart);
+        }}
+        onFocus={(e) => {
+          setCursorPosition(e.target.selectionStart);
+          setShowSuggestions(true);
+        }}
+        onBlur={() => {
+          setTimeout(() => setShowSuggestions(false), 200);
+        }}
+        placeholder={itemVoiceError || t('itemPlaceholder', { title: activeList?.title })}
+        className={className}
+      />
+      {/* Hashtag Autocomplete Suggestions Dropdown */}
+      {showSuggestions && activeHashtagQuery && matchingSuggestions.length > 0 && (
+        <div className="absolute left-6 top-full mt-2 w-64 max-h-56 overflow-y-auto bg-panel-elevated border border-border rounded-btn shadow-xl py-1 z-50 animate-in fade-in zoom-in-95 duration-100">
+          <div className="px-2.5 py-1 text-[10px] uppercase font-semibold text-faint tracking-wider border-b border-border/50">
+            Hashtags
+          </div>
+          {matchingSuggestions.map((tag, idx) => {
+            const isSelected = idx === suggestionIndex;
+            return (
+              <button
+                key={tag}
+                type="button"
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  applySuggestion(tag);
+                }}
+                className={`w-full text-left px-3 py-2 sm:py-1.5 text-xs flex items-center justify-between transition-colors ${
+                  isSelected
+                    ? 'bg-accent/20 text-accent font-medium'
+                    : 'text-main hover:bg-panel-hover'
+                }`}
+              >
+                <span className="flex items-center gap-1.5">
+                  <span className="text-accent font-mono font-semibold">#</span>
+                  <span>{tag}</span>
+                </span>
+                {isSelected && (
+                  <span className="text-[10px] text-faint font-mono">↵</span>
+                )}
+              </button>
+            );
+          })}
         </div>
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <input
-            type="text"
-            inputMode="decimal"
-            value={newItemQty}
-            onChange={(e) => setNewItemQty(e.target.value.replace(/[^0-9.,xX]/g, ''))}
-            placeholder={t('quantity')}
-            aria-label={t('quantityLabel')}
-            className="w-24 sm:w-20 h-11 sm:h-9 px-2.5 input-field text-base sm:text-sm"
-          />
-          {withButton && (
-            <button
-              type="submit"
-              disabled={isSubmittingItem || !newItemText.trim()}
-              className="btn-primary flex-1 sm:flex-none h-11 sm:h-9 px-4 text-sm sm:text-xs disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-1 flex-shrink-0"
-            >
-              {isSubmittingItem ? t('adding') : t('common:add')}
-            </button>
-          )}
+      )}
+    </>
+  );
+  const itemVoice = (className?: string) => (
+    <VoiceInputButton
+      value={newItemText}
+      onChange={setNewItemText}
+      focusRef={inputRef}
+      onError={(message) => {
+        setItemVoiceError(message);
+        window.setTimeout(() => setItemVoiceError(null), 4000);
+      }}
+      className={className}
+    />
+  );
+  const quantityInput = (className: string) => (
+    <input
+      type="text"
+      inputMode="decimal"
+      value={newItemQty}
+      onChange={(e) => setNewItemQty(e.target.value.replace(/[^0-9.,xX]/g, ''))}
+      placeholder={t('quantity')}
+      aria-label={t('quantityLabel')}
+      className={className}
+    />
+  );
+  const renderAddItemFields = (desktop: boolean) =>
+    !activeList ? null : desktop ? (
+      <>
+        <Plus className="w-4 h-4 text-accent ml-1 flex-shrink-0" />
+        <div className="relative flex-1 min-w-0">
+          {renderItemInput(true, 'w-full bg-transparent px-2 py-1 text-sm text-main placeholder-faint focus:outline-none')}
+        </div>
+        <div className="flex items-center gap-1 flex-shrink-0">
+          {itemVoice()}
+          {quantityInput('w-20 h-7 px-2 input-field text-xs')}
+          <button
+            type="submit"
+            disabled={isSubmittingItem || !newItemText.trim()}
+            className="btn-primary h-7 px-3 text-xs disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            {isSubmittingItem ? t('adding') : t('common:add')}
+          </button>
         </div>
       </>
-    ) : null;
+    ) : (
+      <>
+        {/* The item is the main field: a real input like the quantity below it, with the + inside */}
+        <div className="relative flex-1 w-full min-w-0">
+          <Plus className="w-4 h-4 text-accent absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+          {/* 16px: iOS zooms into smaller fields and the layout jumps under the keyboard */}
+          {renderItemInput(false, 'w-full h-11 pl-9 pr-11 input-field text-base')}
+          {itemVoice('absolute right-1 top-1/2 -translate-y-1/2')}
+        </div>
+        {quantityInput('w-24 h-11 px-2.5 input-field text-base')}
+      </>
+    );
 
 
   return (
@@ -512,7 +530,7 @@ export const SharedListsView: React.FC<SharedListsViewProps> = ({ onRefreshGloba
           {!isPhone && (
             <form
               onSubmit={handleAddItem}
-              className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 panel-surface p-2 relative"
+              className="flex items-center gap-1.5 panel-surface p-1.5 relative"
             >
               {renderAddItemFields(true)}
             </form>
