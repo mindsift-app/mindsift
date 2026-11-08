@@ -323,6 +323,17 @@ func (s *Store) SearchCtx(ctx context.Context, userID, query string, opts Search
 
 		seenDocIDs := make(map[string]bool)
 		docBlocks := map[string][]domain.DocumentBlock{}
+		// Links in the snippets with the current titles instead of ids (loaded once, when needed)
+		var titles map[string]string
+		readable := func(snip string) string {
+			if !strings.Contains(snip, "[[") {
+				return snip
+			}
+			if titles == nil {
+				titles = s.DocTitles(userID)
+			}
+			return ReadableWikiLinks(snip, titles)
+		}
 		roles := map[string]string{}
 		for _, r := range found {
 			// Access check via DocRole
@@ -344,7 +355,7 @@ func (s *Store) SearchCtx(ctx context.Context, userID, query string, opts Search
 				Type:    "document",
 				ID:      hitID,
 				Title:   r.title,
-				Snippet: r.snip,
+				Snippet: readable(r.snip),
 				Score:   r.score,
 				DocID:   r.docID,
 				BlockID: r.blockID,

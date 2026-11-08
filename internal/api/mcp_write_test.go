@@ -293,3 +293,41 @@ func TestMCPCreatesDrawings(t *testing.T) {
 		t.Fatalf("no drawing in %+v", stored.Blocks)
 	}
 }
+
+// Agents read links to notes with the current title and without ids; [[Titel]] they write points at the
+// note by id where the title is unique, links they leave alone keep their id.
+func TestMCPWikiLinks(t *testing.T) {
+	srv, store, token := setupTestServer(t)
+	claims, _ := auth.ValidateToken(testJWTSecret, token)
+	uid := claims.UserID
+	call := mcpCaller(t, srv)
+	agentKey, _ := store.CreateAPIKey(uid, "Agent", []string{"notes:read", "notes:write"})
+	key := agentKey.RawKey
+	target, _ := store.CreateDocument(uid, "", "Homelab 2.0", "", "", nil, nil, false)
+	twinA, _ := store.CreateDocument(uid, "", "Garten", "", "A", nil, nil, false)
+	_, _ = store.CreateDocument(uid, "", "Garten", "", "B", nil, nil, false)
+	doc, _ := store.CreateDocument(uid, "", "Index", "", "", []domain.DocumentBlock{
+		{ID: "blk_w1", Type: "text", Content: "Siehe [[Alter Titel#" + target.ID + "]] und [[Garten#" + twinA.ID + "|den Garten]]", Level: 0},
+	}, nil, false)
+
+	got, _, _ := call(key, "get_note", `{"id":"`+doc.ID+`"}`)
+	if content := fmt.Sprint(got["content"]); !strings.Contains(content, "[[Homelab 2.0]] und [[Garten|den Garten]]") || strings.Contains(content, "doc_") {
+		t.Fatalf("get_note content: %q", content)
+	}
+	// Edited around both links: both keep their id, also the ambiguous "Garten"
+	if _, isErr, msg := call(key, "update_note_bullet", `{"noteId":"`+doc.ID+`","bulletId":"blk_w1","text":"Lies [[Homelab 2.0]] und [[Garten|den Garten]]"}`); isErr {
+		t.Fatal(msg)
+	}
+	d, _ := store.GetDocumentByID(uid, doc.ID)
+	if want := "Lies [[Homelab 2.0#" + target.ID + "]] und [[Garten#" + twinA.ID + "|den Garten]]"; d.Blocks[0].Content != want {
+		t.Fatalf("after update: %q, want %q", d.Blocks[0].Content, want)
+	}
+	// A new bullet: a unique title gets the id, an ambiguous one stays a title link
+	if _, isErr, msg := call(key, "add_note_bullet", `{"noteId":"`+doc.ID+`","text":"Neu: [[homelab 2.0]] und [[Garten]]"}`); isErr {
+		t.Fatal(msg)
+	}
+	d, _ = store.GetDocumentByID(uid, doc.ID)
+	if want := "Neu: [[Homelab 2.0#" + target.ID + "]] und [[Garten]]"; d.Blocks[len(d.Blocks)-1].Content != want {
+		t.Fatalf("added: %q, want %q", d.Blocks[len(d.Blocks)-1].Content, want)
+	}
+}

@@ -47,7 +47,7 @@ func TestExtractBranchIntoOwnNote(t *testing.T) {
 	}
 	_ = json.Unmarshal(rec.Body.Bytes(), &out)
 	created := out.Document
-	if created.Title != "Konzept: Garten" || created.FolderPath != "Arbeit" || out.Link != "[[Konzept: Garten]]" {
+	if created.Title != "Konzept: Garten" || created.FolderPath != "Arbeit" || out.Link != "[[Konzept: Garten#"+created.ID+"]]" {
 		t.Fatalf("new note: %q in %q, link %q", created.Title, created.FolderPath, out.Link)
 	}
 	// The bullet itself stays the first bullet, its hashtags with it
@@ -105,7 +105,7 @@ func TestExtractDrawingGetsDefaultTitle(t *testing.T) {
 		Link     string
 	}
 	_ = json.Unmarshal(rec.Body.Bytes(), &out)
-	if out.Document.Title != "Neue Notiz" || out.Link != "[[Neue Notiz]]" {
+	if out.Document.Title != "Neue Notiz" || out.Link != "[[Neue Notiz#"+out.Document.ID+"]]" {
 		t.Fatalf("title %q, link %q", out.Document.Title, out.Link)
 	}
 	d, _ := store.GetDocumentByID(uid, out.Document.ID)
@@ -311,7 +311,7 @@ func TestInlineExtractedNoteRestoresBullet(t *testing.T) {
 		Link     string
 	}
 	_ = json.Unmarshal(sessionCall(router, "POST", "/api/v1/documents/"+src.ID+"/extract", token, `{"blockId":"blk_a"}`, "").Body.Bytes(), &out)
-	if out.Link != "[[Garten (2)]]" {
+	if out.Link != "[[Garten (2)#"+out.Document.ID+"]]" {
 		t.Fatalf("link: %q", out.Link)
 	}
 	// What the editor leaves behind (the server does not change the source itself)

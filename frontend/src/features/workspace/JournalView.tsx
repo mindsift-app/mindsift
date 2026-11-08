@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { WikiLinkClickHandler } from '../../lib/wikiLink';
 import { ArrowLeft, CalendarDays, ChevronDown, Users } from 'lucide-react';
 import { Document, JournalDay, User } from '../../lib/types';
 import { shortDateLabel, todayISO } from '../../lib/journal';
@@ -26,7 +27,7 @@ interface JournalViewProps {
   onDocMetadataChange: (updated: Document) => void;
   onDeleteDoc: (docId: string) => void;
   onSelectTag: (tag: string) => void;
-  onWikiLinkClick?: (pageTitle: string, blockId?: string, removeLink?: () => void) => void;
+  onWikiLinkClick?: WikiLinkClickHandler;
   onOpenDocBlock?: (docId: string, blockId?: string) => void;
   onOpenTask?: (taskId: string) => void;
   onBackMobile: () => void;

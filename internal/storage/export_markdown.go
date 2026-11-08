@@ -50,7 +50,16 @@ func (s *Store) WriteMarkdownVault(userID string, w io.Writer) error {
 	if err != nil {
 		return err
 	}
-	for _, d := range docs {
+	// File names first: links to a note become [[its file name]], which Obsidian resolves (also for two
+	// notes with the same title)
+	files := make([]string, len(docs))
+	linkNames := make(map[string]string, len(docs))
+	for i, d := range docs {
+		dir := names.dir(d.FolderPath)
+		files[i] = names.file(dir, d.Title, i18n.T(names.lang, "Unbenannte Notiz"))
+		linkNames[d.ID] = strings.TrimSuffix(path.Base(files[i]), ".md")
+	}
+	for i, d := range docs {
 		// Drawings as SVG files next to the images
 		for _, b := range d.Blocks {
 			if b.Type != drawing.BlockType {
@@ -65,14 +74,14 @@ func (s *Store) WriteMarkdownVault(userID string, w io.Writer) error {
 			}
 		}
 		dir := names.dir(d.FolderPath)
-		name := names.file(dir, d.Title, i18n.T(names.lang, "Unbenannte Notiz"))
+		name := files[i]
 		up := ""
 		if dir != "" {
 			up = strings.Repeat("../", strings.Count(dir, "/")+1)
 		}
 		body := markdownFrontmatter(map[string]any{
 			"title": d.Title, "icon": d.Icon, "tags": d.Tags, "created_at": d.CreatedAt, "updated_at": d.UpdatedAt,
-		}) + blocksToVaultMarkdown(d.Blocks, func(id string) string {
+		}) + blocksToVaultMarkdown(readableBlocks(d.Blocks, linkNames), func(id string) string {
 			if p, ok := attachments[id]; ok {
 				return up + p
 			}
@@ -422,4 +431,14 @@ func (n *vaultNames) file(dir, title, fallback string) string {
 	}
 	n.used[strings.ToLower(name)] = true
 	return name
+}
+
+// readableBlocks: the blocks with links written for readers outside the app (ReadableWikiLinks)
+func readableBlocks(blocks []domain.DocumentBlock, titles map[string]string) []domain.DocumentBlock {
+	out := make([]domain.DocumentBlock, len(blocks))
+	for i, b := range blocks {
+		b.Content = ReadableWikiLinks(b.Content, titles)
+		out[i] = b
+	}
+	return out
 }

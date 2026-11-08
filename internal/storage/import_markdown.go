@@ -549,6 +549,10 @@ func (s *Store) ApplyImport(userID string, plan *ImportPlan) (ImportSummary, err
 			return plan.Summary(false), fmt.Errorf("Notiz %q: %w", title, err)
 		}
 	}
+	// [[Titel]] in the imported notes point at their notes by id, now that all of them exist
+	if len(plan.Docs) > 0 {
+		s.LinkWikiTitles(userID)
+	}
 	for _, tl := range plan.TaskLists {
 		listID := "" // tasks without a list
 		if tl.title != "" {

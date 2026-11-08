@@ -45,9 +45,9 @@ func (s *Store) readCollabDoc(docID string) (*collab.Doc, error) {
 var (
 	titlePrefixRe = regexp.MustCompile(`^(\s*(-|\*|#{1,6}|\[[ xX]?\])\s+)+`)
 	titleTagRe    = regexp.MustCompile(`(^|\s)#[\p{L}0-9_-]+`)
-	// A bullet that is only a link to a note (with hashtags), as left behind by ExtractBranch; a link to
-	// a single bullet ([[Title#^id]], left behind by moving a branch) is not one
-	noteLinkOnlyRe = regexp.MustCompile(`^\s*\[\[[^\]#]+\]\](\s+#[\p{L}0-9_-]+)*\s*$`)
+	// A bullet that is only a link (with hashtags); noteLinkOnly checks that it is not one to a single
+	// bullet (left behind by moving a branch)
+	noteLinkOnlyRe = regexp.MustCompile(`^\s*\[\[([^\]]+)\]\](\s+#[\p{L}0-9_-]+)*\s*$`)
 )
 
 // Bullet types whose text can name a note; a drawing, picture, code or table cannot
@@ -156,7 +156,7 @@ func (s *Store) ExtractBranch(userID, docID, blockID string, a collab.Actor, lea
 		return nil, "", ErrBlockNotFound
 	}
 	root := flat[start]
-	if noteLinkOnlyRe.MatchString(root.Content) {
+	if _, ok := noteLinkOnly(root.Content); ok {
 		return nil, "", ErrAlreadyNote
 	}
 	blocks := []domain.DocumentBlock{toDocumentBlock(root, 0, 0)}
@@ -175,7 +175,7 @@ func (s *Store) ExtractBranch(userID, docID, blockID string, a collab.Actor, lea
 		return nil, "", err
 	}
 	s.copyShares(userID, source, created.ID)
-	return created, "[[" + title + "]]", nil
+	return created, noteLink(title, created.ID, ""), nil
 }
 
 // UndoExtract puts a note created by ExtractBranch into the trash (only its creator may).
@@ -237,26 +237,15 @@ func (s *Store) InlineNote(userID, docID, blockID string) (*InlineResult, error)
 	if !found {
 		return nil, ErrBlockNotFound
 	}
-	m := wikiLinkRe.FindStringSubmatch(content)
-	if !noteLinkOnlyRe.MatchString(content) || m == nil {
+	link, ok := noteLinkOnly(content)
+	if !ok {
 		return nil, ErrNotNoteLink
 	}
-	title := strings.TrimSpace(m[1])
 	docs, err := s.GetDocuments(userID)
 	if err != nil {
 		return nil, err
 	}
-	var linked *domain.Document
-	for i := range docs {
-		d := &docs[i]
-		if d.ID == docID || !strings.EqualFold(strings.TrimSpace(d.Title), title) {
-			continue
-		}
-		// An own note wins over one shared with the user under the same title
-		if linked == nil || (d.IsOwner && !linked.IsOwner) {
-			linked = d
-		}
-	}
+	linked := s.resolveWikiLink(link, docs, docID)
 	if linked == nil {
 		return nil, ErrLinkedMissing
 	}
@@ -281,7 +270,7 @@ func (s *Store) InlineNote(userID, docID, blockID string) (*InlineResult, error)
 		return nil, err
 	}
 	flat := source.Flatten()
-	rest := strings.TrimSpace(wikiLinkRe.ReplaceAllString(content, ""))
+	rest := strings.TrimSpace(wikiTokenRe.ReplaceAllString(content, ""))
 	res := &InlineResult{SourceID: linked.ID, Content: strings.TrimSpace(linked.Title + " " + rest), Blocks: []domain.DocumentBlock{}}
 	// Made by ExtractBranch (one top bullet that names the note): that bullet takes the link's place
 	// again instead of the title, so it does not show twice
