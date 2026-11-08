@@ -32,6 +32,8 @@ export interface OutlinerTreeProps {
   onDeleteBlock: (blockId: string) => void;
   /** Deleting several bullets at once (a bullet with its children): one change, undone in one step */
   onDeleteBlocks?: (blockIds: string[]) => void;
+  /** The last bullet of the note was deleted (it stays as an empty bullet); the journal removes the day then */
+  onDeleteLastBlock?: () => void;
   onMoveBlock: (blockId: string, newIndex: number, level?: number) => void;
   /** Swap a bullet (with children) with its previous / next sibling (phone bar ↑ ↓) */
   onMoveSibling?: (blockId: string, direction: -1 | 1) => void;
@@ -91,6 +93,7 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
   onInsertBlocks,
   onDeleteBlock,
   onDeleteBlocks,
+  onDeleteLastBlock,
   onMoveBlock,
   onMoveSibling,
   onOpenTask,
@@ -438,6 +441,8 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
     [blocks, lockedBlocks]
   );
 
+  const onDeleteLastBlockRef = useRef(onDeleteLastBlock);
+  onDeleteLastBlockRef.current = onDeleteLastBlock;
   const handleDeleteBlock = useCallback(
     (blockId: string, deleteSubtree = false) => {
       if (!canEdit) return;
@@ -462,6 +467,7 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
           },
           true
         );
+        onDeleteLastBlockRef.current?.();
         return;
       }
 
@@ -487,6 +493,7 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
             onDeleteBlock(id);
           }
         }
+        if (idsToDelete.length === blocks.length && !levelOffset) onDeleteLastBlockRef.current?.();
       } else {
         onDeleteBlock(blockId);
       }

@@ -90,6 +90,8 @@ export interface DocumentEditorProps {
   /** Focus mode: the header at the top edge is pinned (the pane already starts below it) */
   focusBarPinned?: boolean;
   onToggleFocusMode?: () => void;
+  /** variant 'journal': the day's last bullet was deleted, the day leaves the journal */
+  onEmptied?: () => void;
 }
 
 // What undoing the editor's server actions needs, kept with the note's undo history (lib/docSync/undoHistory.ts)
@@ -272,6 +274,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
   focusMode = false,
   focusBarPinned = false,
   onToggleFocusMode,
+  onEmptied,
 }) => {
   const { t } = useTranslation('workspace');
   const inJournal = variant === 'journal';
@@ -2019,6 +2022,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
               onInsertBlocks={handleInsertBlocks}
               onDeleteBlock={handleDeleteBlock}
               onDeleteBlocks={handleDeleteBlocks}
+              onDeleteLastBlock={inJournal ? onEmptied : undefined}
                 onReplaceRange={handleReplaceRange}
               onMoveBlock={handleMoveBlock}
                 onMoveSibling={handleMoveSibling}

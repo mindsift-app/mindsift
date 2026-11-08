@@ -123,6 +123,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
     journalDocIds,
     openJournalDay,
     jumpToJournalDay,
+    removeJournalDay,
   } = useJournal(setDocs);
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [tagDetails, setTagDetails] = useState<TagDetails | null>(null);
@@ -902,6 +903,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
             onOpenTask={onOpenTask}
             onBackMobile={() => setMobileShowDetail(false)}
             onDaySaved={reloadJournalSoon}
+            onDayEmptied={removeJournalDay}
             actionsTarget={focusMode ? zenActionsTarget : docActionsTarget}
             focusMode={focusMode}
             focusBarPinned={zenPinTop}
