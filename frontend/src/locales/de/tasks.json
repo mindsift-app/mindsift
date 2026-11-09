@@ -148,7 +148,9 @@
     "sharedCount": "Geteilt ({{count}})",
     "sharedBy": "Geteilt von {{name}}",
     "confirmDelete": "Aufgabenliste <b>„{{title}}“</b> löschen? Die Aufgaben bleiben erhalten.",
-    "shareList": "Aufgabenliste teilen"
+    "shareList": "Aufgabenliste teilen",
+    "calendar": "Kalender",
+    "calendarView": "Kalenderansicht"
   },
   "row": {
     "markDone": "Als erledigt abhaken",
@@ -249,7 +251,8 @@
     "viewStatus": "Ansicht & Status",
     "switchList": "Aufgabenlisten wechseln",
     "shareList": "Liste „{{title}}“ teilen",
-    "deleteList": "Liste „{{title}}“ löschen"
+    "deleteList": "Liste „{{title}}“ löschen",
+    "calendar": "Kalender"
   },
   "listing": {
     "noList": "Ohne Liste",
@@ -270,5 +273,26 @@
     "open": "Offen ({{count}})",
     "done": "Erledigt ({{count}})",
     "trash": "Papierkorb ({{count}})"
+  },
+  "calendar": {
+    "label": "Kalender",
+    "month": "Monat",
+    "week": "Woche",
+    "mode": "Ansicht",
+    "today": "Heute",
+    "previous": "Zurück",
+    "next": "Weiter",
+    "unplanned": "Ungeplant",
+    "unplannedEmpty": "Alle offenen Aufgaben haben ein Datum.",
+    "dayEmpty": "An diesem Tag ist nichts geplant.",
+    "newForDay": "Aufgabe für diesen Tag",
+    "add": "Hinzufügen",
+    "repeats": "Wiederholung",
+    "upcomingTitle": "„{{title}}“ – kommender Termin (öffnet die Aufgabe)",
+    "moved": "Datum geändert",
+    "unscheduled": "Datum entfernt",
+    "more_one": "+{{count}} weitere",
+    "more_other": "+{{count}} weitere",
+    "weekNumber": "KW {{n}}"
   }
 }

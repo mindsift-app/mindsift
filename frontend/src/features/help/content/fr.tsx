@@ -490,6 +490,9 @@ const fr: HelpContent = {
               <strong className="text-main">Menu de la liste (⋯) :</strong> À droite au-dessus de la liste : <strong className="text-main">Mettre en sourdine</strong> (listes partagées seulement : aucune notification de cette liste ; attributions, mentions et tâches suivies arrivent toujours), Partager, Renommer et Supprimer. Si toutes les listes ne tiennent pas dans la ligne, les autres sont derrière « ⋯ n ». Dans une liste partagée, une nouvelle tâche t’est d’abord attribuée ; l’alerte d’échéance va aux personnes attribuées, ou à tous les membres si personne ne l’est.
             </li>
             <li>
+              <strong className="text-main">Calendrier :</strong> Une troisième vue à côté de la liste et du Kanban : mois ou semaine sur ordinateur, la semaine sur téléphone. Les tâches sans date sont dans « Non planifiées » ; glisse-en une sur un jour pour lui donner une date (l’heure reste), de retour dans « Non planifiées » pour l’enlever, <strong className="text-main">Ctrl + Z</strong> annule. Les tâches répétées montrent aussi leurs prochaines dates, grisées avec ↻. Un clic sur un jour affiche à gauche ses tâches et un champ pour en ajouter une. ← → pour feuilleter, T revient à aujourd’hui.
+            </li>
+            <li>
               <strong className="text-main">Suivre des tâches :</strong> avec l'icône en forme d'œil dans le détail de la tâche, abonne-toi aux notifications lors de modifications apportées par d'autres personnes.
             </li>
           </ul>

@@ -148,7 +148,9 @@
     "sharedCount": "Partagé ({{count}})",
     "sharedBy": "Partagé par {{name}}",
     "confirmDelete": "Supprimer la liste de tâches <b>« {{title}} »</b> ? Ses tâches seront conservées.",
-    "shareList": "Partager la liste de tâches"
+    "shareList": "Partager la liste de tâches",
+    "calendar": "Calendrier",
+    "calendarView": "Vue calendrier"
   },
   "row": {
     "markDone": "Cocher",
@@ -249,7 +251,8 @@
     "viewStatus": "Vue & statut",
     "switchList": "Changer de liste de tâches",
     "shareList": "Partager la liste « {{title}} »",
-    "deleteList": "Supprimer la liste « {{title}} »"
+    "deleteList": "Supprimer la liste « {{title}} »",
+    "calendar": "Calendrier"
   },
   "listing": {
     "noList": "Sans liste",
@@ -270,5 +273,26 @@
     "open": "Ouvertes ({{count}})",
     "done": "Terminées ({{count}})",
     "trash": "Corbeille ({{count}})"
+  },
+  "calendar": {
+    "label": "Calendrier",
+    "month": "Mois",
+    "week": "Semaine",
+    "mode": "Vue",
+    "today": "Aujourd’hui",
+    "previous": "Précédent",
+    "next": "Suivant",
+    "unplanned": "Non planifiées",
+    "unplannedEmpty": "Toutes les tâches ouvertes ont une date.",
+    "dayEmpty": "Rien de prévu ce jour-là.",
+    "newForDay": "Tâche pour ce jour",
+    "add": "Ajouter",
+    "repeats": "Se répète",
+    "upcomingTitle": "« {{title}} » – date à venir (ouvre la tâche)",
+    "moved": "Date modifiée",
+    "unscheduled": "Date retirée",
+    "more_one": "+{{count}} autre",
+    "more_other": "+{{count}} autres",
+    "weekNumber": "Sem. {{n}}"
   }
 }

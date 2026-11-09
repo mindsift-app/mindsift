@@ -148,7 +148,9 @@
     "sharedCount": "Shared ({{count}})",
     "sharedBy": "Shared by {{name}}",
     "confirmDelete": "Delete the task list <b>“{{title}}”</b>? Its tasks are kept.",
-    "shareList": "Share task list"
+    "shareList": "Share task list",
+    "calendar": "Calendar",
+    "calendarView": "Calendar view"
   },
   "row": {
     "markDone": "Check off",
@@ -249,7 +251,8 @@
     "viewStatus": "View & status",
     "switchList": "Switch task lists",
     "shareList": "Share list “{{title}}”",
-    "deleteList": "Delete list “{{title}}”"
+    "deleteList": "Delete list “{{title}}”",
+    "calendar": "Calendar"
   },
   "listing": {
     "noList": "No list",
@@ -270,5 +273,26 @@
     "open": "Open ({{count}})",
     "done": "Done ({{count}})",
     "trash": "Trash ({{count}})"
+  },
+  "calendar": {
+    "label": "Calendar",
+    "month": "Month",
+    "week": "Week",
+    "mode": "View",
+    "today": "Today",
+    "previous": "Previous",
+    "next": "Next",
+    "unplanned": "Unscheduled",
+    "unplannedEmpty": "All open tasks have a date.",
+    "dayEmpty": "Nothing planned on this day.",
+    "newForDay": "Task for this day",
+    "add": "Add",
+    "repeats": "Repeats",
+    "upcomingTitle": "“{{title}}” – upcoming date (opens the task)",
+    "moved": "Date changed",
+    "unscheduled": "Date removed",
+    "more_one": "+{{count}} more",
+    "more_other": "+{{count}} more",
+    "weekNumber": "Week {{n}}"
   }
 }

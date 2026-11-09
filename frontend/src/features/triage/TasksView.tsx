@@ -30,6 +30,7 @@ import { useTaskActions } from './useTaskActions';
 import { QuickAddTaskBar } from './QuickAddTaskBar';
 import { NewTaskListSheet } from './NewTaskListSheet';
 import { RenameListSheet } from '../../components/RenameListSheet';
+import { TaskCalendar } from './TaskCalendar';
 import { TaskListShareDialog } from './TaskListShareDialog';
 import { ActiveFilterBanner } from './ActiveFilterBanner';
 import { GROUP_LABELS, GroupBy, TaskFilter, TaskSort, ViewMode } from './taskViewTypes';
@@ -97,7 +98,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
     const out: Record<string, ViewMode> = {};
     if (remembered.viewModes && typeof remembered.viewModes === 'object') {
       for (const [id, mode] of Object.entries(remembered.viewModes)) {
-        if (mode === 'kanban') out[id] = 'kanban';
+        if (mode === 'kanban' || mode === 'calendar') out[id] = mode;
       }
     } else if (remembered.viewMode === 'kanban' && remembered.listId) {
       out[remembered.listId] = 'kanban'; // stored before views were kept per list
@@ -140,12 +141,12 @@ export const TasksView: React.FC<TasksViewProps> = ({
     }
   );
   const viewMode: ViewMode = viewModes[selectedListId] || 'list';
-  // Only Kanban is stored; the list view is the default
+  // Only Kanban and calendar are stored; the list view is the default
   const setViewMode = useCallback(
     (mode: ViewMode) =>
       setViewModes((prev) => {
         const next = { ...prev };
-        if (mode === 'kanban') next[selectedListId] = 'kanban';
+        if (mode !== 'list') next[selectedListId] = mode;
         else delete next[selectedListId];
         return next;
       }),
@@ -516,6 +517,15 @@ export const TasksView: React.FC<TasksViewProps> = ({
     }
   };
 
+  // Calendar: a task moved to another day (or out of the calendar with ''), undoable
+  const handleMoveDue = (task: Thought, due: string) => {
+    if ((task.dueDate || '') === due) return;
+    triggerHaptic(12);
+    pushUndo({ kind: 'due', id: task.id, dueDate: task.dueDate || '' });
+    handleUpdateTaskDueDate(task, due).catch(() => loadData());
+    showToast(due ? t('calendar.moved') : t('calendar.unscheduled'), true);
+  };
+
   // "Add task" at the foot of a column: a draft "New task" in that column opens in the task
   // dialog with its title ready to be typed over. Closed without a title of its own, the draft goes again.
   const [draftTaskId, setDraftTaskId] = useState<string | null>(null);
@@ -803,6 +813,8 @@ export const TasksView: React.FC<TasksViewProps> = ({
           <span className="badge-neutral text-[11px] flex-shrink-0">
             {viewMode === 'kanban'
               ? 'Kanban'
+              : viewMode === 'calendar'
+              ? t('calendar.label')
               : filter === 'open'
               ? t('tabCount.open', { count: openTasks.length })
               : filter === 'done'
@@ -1008,8 +1020,27 @@ export const TasksView: React.FC<TasksViewProps> = ({
         readOnly={detailTask ? isTaskReadOnly(detailTask) : false}
       />
 
-      {/* VIEW MODES: LIST OR KANBAN */}
-      {viewMode === 'kanban' ? (
+      {/* VIEW MODES: LIST, KANBAN OR CALENDAR */}
+      {viewMode === 'calendar' ? (
+        <TaskCalendar
+          tasks={kanbanTasks}
+          lists={safeTaskLists}
+          showListIcon={selectedListId === 'all'}
+          isTaskReadOnly={isTaskReadOnly}
+          onOpenTask={(task) => {
+            setDetailTaskId(task.id);
+            setShowDetailModal(true);
+          }}
+          onMoveDue={handleMoveDue}
+          onCreateForDay={
+            isSelectedListReadOnly
+              ? null
+              : (day, title) =>
+                  handleMobileCreateTask({ title, priority: 'normal', dueDate: day, listId: selectedListId === 'all' ? '' : selectedListId })
+          }
+          renderTaskRow={renderTaskRow}
+        />
+      ) : viewMode === 'kanban' ? (
         /* DYNAMIC KANBAN BOARD */
         <KanbanBoard
           drag={taskDrag}

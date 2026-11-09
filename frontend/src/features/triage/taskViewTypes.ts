@@ -1,7 +1,7 @@
 // Types of the task view shared by TasksView and its parts
 import i18n from '../../i18n';
 export type GroupBy = 'none' | 'list' | 'tag' | 'status' | 'priority' | 'due';
-export type ViewMode = 'list' | 'kanban';
+export type ViewMode = 'list' | 'kanban' | 'calendar';
 export type TaskFilter = 'open' | 'done' | 'discarded';
 export type TaskSort = 'custom' | 'created' | 'due' | 'priority' | 'alpha';
 

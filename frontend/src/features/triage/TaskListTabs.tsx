@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
-import { Bell, BellOff, Columns, LayoutList, Pencil, Plus, Trash2, Users } from 'lucide-react';
+import { Bell, BellOff, CalendarDays, Columns, LayoutList, Pencil, Plus, Trash2, Users } from 'lucide-react';
 import { AvatarStack } from '../../components/AvatarStack';
 import { CountBadge } from '../../components/CountBadge';
 import { SharedPill } from '../../components/SharedPill';
@@ -231,7 +231,8 @@ export function TaskListTabs({
                     key: 'mute',
                     icon: currentSelectedList.isMuted ? <Bell className="w-3.5 h-3.5" /> : <BellOff className="w-3.5 h-3.5" />,
                     label: currentSelectedList.isMuted ? t('common:listMenu.unmute') : t('common:listMenu.mute'),
-                    hint: isTaskListShared(currentSelectedList) ? t('common:listMenu.muteHint') : t('common:listMenu.muteOnlyShared'),
+                    hint: isTaskListShared(currentSelectedList) ? undefined : t('common:listMenu.muteOnlyShared'),
+                    tooltip: isTaskListShared(currentSelectedList) ? t('common:listMenu.muteHint') : undefined,
                     disabled: !isTaskListShared(currentSelectedList),
                     onSelect: () => onToggleMute(currentSelectedList),
                   },
@@ -288,6 +289,16 @@ export function TaskListTabs({
           >
             <Columns className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">{t('tabs.kanban')}</span>
+          </button>
+          <button
+            onClick={() => setViewMode('calendar')}
+            className={`h-8 px-2.5 flex items-center gap-1.5 text-xs transition-colors border-l border-border ${
+              viewMode === 'calendar' ? 'bg-panel text-main font-medium' : 'text-muted hover:text-main'
+            }`}
+            title={t('tabs.calendarView')}
+          >
+            <CalendarDays className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">{t('tabs.calendar')}</span>
           </button>
         </div>
       </div>

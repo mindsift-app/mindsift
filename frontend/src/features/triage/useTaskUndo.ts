@@ -6,7 +6,8 @@ import { Thought } from '../../lib/types';
 export type UndoEntry =
   | { kind: 'delete'; ids: string[] }
   | { kind: 'order'; snapshot: { id: string; sortOrder: number; kanbanStatus?: string; isCompleted: boolean }[] }
-  | { kind: 'status'; id: string; isCompleted: boolean; kanbanStatus?: string };
+  | { kind: 'status'; id: string; isCompleted: boolean; kanbanStatus?: string }
+  | { kind: 'due'; id: string; dueDate: string };
 
 interface TaskUndoOptions {
   tasks: Thought[];
@@ -61,6 +62,10 @@ export function useTaskUndo({ tasks, setTasks, selectedListId, loadData, onRefre
           selectedListId !== 'all' ? selectedListId : undefined
         );
         showToast(i18n.t('tasks:undo.moveUndone'));
+      } else if (entry.kind === 'due') {
+        setTasks((prev) => prev.map((t) => (t.id === entry.id ? { ...t, dueDate: entry.dueDate } : t)));
+        await api.updateThought(entry.id, { dueDate: entry.dueDate });
+        showToast(i18n.t('tasks:undo.undone'));
       } else {
         setTasks((prev) =>
           prev.map((t) => (t.id === entry.id ? { ...t, isCompleted: entry.isCompleted, kanbanStatus: entry.kanbanStatus } : t))

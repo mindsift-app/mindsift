@@ -64,11 +64,15 @@ Capture from anywhere: the input bar (`C` or `/`), voice input (in the browser o
   <img src="screenshots/Mobile_Workspace.webp" alt="MindSift note on the phone, dark theme" width="280px" />
 </p>
 
-### ✅ Tasks & kanban
-List and board view with your own columns, priorities, due dates, subtasks, recurring tasks, drag & drop and undo. Share task lists, mention people with @, watch tasks or mute a busy shared list, and get alarms and a daily summary by email, push, Discord or webhook.
+### ✅ Tasks, kanban & calendar
+List, board and calendar view (month or week, with a column of unscheduled tasks to drag onto a day) with your own columns, priorities, due dates, subtasks, recurring tasks, drag & drop and undo. Share task lists, mention people with @, watch tasks or mute a busy shared list, and get alarms and a daily summary by email, push, Discord or webhook.
 
 <p align="center">
   <img src="screenshots/aufgaben_desktop.webp" alt="MindSift tasks and kanban board" width="90%" />
+</p>
+
+<p align="center">
+  <img src="screenshots/calendar_desktop.webp" alt="MindSift tasks in the calendar view: a month with tasks on their days, repeating tasks shown ahead, unscheduled tasks on the right" width="90%" />
 </p>
 
 ### 📝 Outliner notes, together, live

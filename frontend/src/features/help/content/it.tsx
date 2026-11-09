@@ -497,6 +497,9 @@ const it: HelpContent = {
             <li>
               <strong className="text-main">Menu della lista (⋯):</strong> A destra sopra la lista: <strong className="text-main">Silenzia</strong> (solo liste condivise: nessuna notifica da questa lista; assegnazioni, menzioni e attività seguite arrivano comunque), Condividi, Rinomina ed Elimina. Se non tutte le liste entrano nella riga, le altre sono dietro “⋯ n”. In una lista condivisa una nuova attività è assegnata prima a te; l'avviso di scadenza va alle persone assegnate o, se non c'è nessuno, a tutti i membri.
             </li>
+            <li>
+              <strong className="text-main">Calendario:</strong> Una terza vista accanto a lista e Kanban: mese o settimana sul desktop, la settimana sul telefono. Le attività senza data sono in “Senza data”; trascinane una su un giorno per darle una data (l'orario resta) o di nuovo in “Senza data” per toglierla, <strong className="text-main">Ctrl + Z</strong> annulla. Le attività ricorrenti mostrano anche le prossime date, in grigio con ↻. Un clic su un giorno mostra a sinistra le sue attività e un campo per una nuova. ← → per sfogliare, T torna a oggi.
+            </li>
           </ul>
         </div>
       ),
