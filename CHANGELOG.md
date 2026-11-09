@@ -6,6 +6,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.93.1] - 2026-11-09
+
 ### Added
 - Public notes: visitors can zoom into a bullet by clicking its dot, like in the app; a path above leads back.
 - Tasks: click a subtask's title in the task dialog to rename it (Enter saves, Escape cancels; @-mentions work there too).
