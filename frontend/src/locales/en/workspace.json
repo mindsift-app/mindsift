@@ -97,8 +97,8 @@
     "drawing": "Drawing, diagram, mind map"
   },
   "block": {
-    "expand": "Expand sub-bullets",
-    "collapse": "Collapse sub-bullets",
+    "expand": "Expand sub-bullets (Ctrl+click: all levels)",
+    "collapse": "Collapse sub-bullets (Ctrl+click: all levels)",
     "dragZoom": "Drag to move • click: zoom into the branch (focus mode)",
     "clickZoom": "Click: zoom into this branch (focus mode)",
     "markOpen": "Mark as open",

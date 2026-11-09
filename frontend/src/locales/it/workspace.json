@@ -97,8 +97,8 @@
     "drawing": "Disegno, diagramma, mappa mentale"
   },
   "block": {
-    "expand": "Espandi sottopunti",
-    "collapse": "Comprimi sottopunti",
+    "expand": "Espandi sottopunti (Ctrl+clic: tutti i livelli)",
+    "collapse": "Comprimi sottopunti (Ctrl+clic: tutti i livelli)",
     "dragZoom": "Trascina per spostare • Clic: ingrandisci questo ramo (modalità focus)",
     "clickZoom": "Clic: ingrandisci questo ramo (modalità focus)",
     "markOpen": "Segna come da fare",

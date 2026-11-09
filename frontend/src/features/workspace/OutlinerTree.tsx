@@ -601,6 +601,29 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
     [blocks, canEdit, levelOffset, onUpdateBlock, onUpdateBlocks, lockHolder, onLockedAction]
   );
 
+  // Ctrl/Cmd + click on a bullet's arrow: every bullet of the branch that has children folds with it (one edit)
+  const handleToggleBranch = useCallback(
+    (updated: DocumentBlock) => {
+      const idx = blocks.findIndex((b) => b.id === updated.id);
+      if (idx === -1) return;
+      const level = Math.max(0, updated.level || 0);
+      const changed: DocumentBlock[] = [updated];
+      for (let i = idx + 1; i < blocks.length && Math.max(0, blocks[i].level || 0) > level; i++) {
+        const b = blocks[i];
+        const want = !!updated.collapsed && i + 1 < blocks.length && Math.max(0, blocks[i + 1].level || 0) > Math.max(0, b.level || 0);
+        if (!!b.collapsed !== want) changed.push({ ...b, collapsed: want });
+      }
+      if (onUpdateBlocks) {
+        onUpdateBlocks(changed);
+      } else {
+        for (const b of changed) {
+          onUpdateBlock(b, true);
+        }
+      }
+    },
+    [blocks, onUpdateBlock, onUpdateBlocks]
+  );
+
   const handleNavigateFocus = useCallback(
     (blockId: string, direction: 'up' | 'down') => {
       const visIdx = visibleEntries.findIndex((e) => e.block.id === blockId);
@@ -1151,6 +1174,7 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
             onDeleteBlock={handleDeleteBlock}
             onMergeWithPrevious={handleMergeWithPrevious}
             onIndentBlock={handleIndentBlock}
+            onToggleBranch={handleToggleBranch}
             onNavigateFocus={handleNavigateFocus}
             onFocusBlock={setFocusedBlockId}
             onBlurBlock={handleBlurBlock}

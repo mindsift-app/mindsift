@@ -617,6 +617,7 @@ const it: HelpContent = {
     { key: 'Ctrl + L / Cmd + L', scope: 'Workspace outliner', desc: 'Inserisci un link (nota, punto o link web); il testo selezionato diventa il testo del link' },
     { key: 'Ctrl + Maiusc + ↓', scope: 'Workspace outliner', desc: 'Espandi tutti i punti chiusi della nota' },
     { key: 'Ctrl + Maiusc + ↑', scope: 'Workspace outliner', desc: 'Comprimi tutti i punti della nota (in modalità focus solo nel ramo)' },
+    { key: 'Ctrl + clic su ▸ / ▾', scope: 'Workspace outliner', desc: 'Espandi o comprimi un punto insieme a tutti i suoi sottopunti' },
     { key: 'Ctrl + Z / Cmd + Z', scope: 'Workspace outliner', desc: 'Annulla l\'ultima azione nella nota' },
     { key: 'Ctrl + Y / Ctrl + Shift + Z', scope: 'Workspace outliner', desc: 'Ripeti un\'azione annullata' },
     { key: 'Trascina il mouse su più punti', scope: 'Workspace outliner', desc: 'Seleziona testo attraverso più punti; Canc/Backspace lo elimina, digitando lo sostituisce, Ctrl + C copia in Markdown (rientri, to-do, intestazioni)' },

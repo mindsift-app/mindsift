@@ -86,7 +86,7 @@ export interface DocumentEditorProps {
   tagFilter?: string;
   /** Large screens: the action buttons render into this element (the workspace tab bar) */
   actionsTarget?: HTMLElement | null;
-  /** Distraction-free mode: reading width, menu entry to leave it */
+  /** Distraction-free mode: full window, the note as wide as without the sidebar, menu entry to leave it */
   focusMode?: boolean;
   /** Focus mode: the header at the top edge is pinned (the pane already starts below it) */
   focusBarPinned?: boolean;
@@ -360,20 +360,30 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
     setFocusTopGap(Math.max(focusBarPinned ? 0 : 41, workspaceTopRef.current - top));
   }, [focusMode, focusBarPinned]);
 
-  // Sideways the note moves to the middle in focus mode (and back): it glides there instead of jumping
+  // Sideways the note moves to the middle in focus mode and gets wider (and back): it glides and grows
+  // from where it was instead of jumping, the lines rewrap along the way
   const contentRef = useRef<HTMLDivElement | null>(null);
-  const contentLeftRef = useRef<number | null>(null);
+  const contentBoxRef = useRef<{ left: number; width: number } | null>(null);
   useLayoutEffect(() => {
     const el = contentRef.current;
     if (!el) return;
-    const left = el.getBoundingClientRect().left;
-    const from = contentLeftRef.current;
-    contentLeftRef.current = left;
-    if (from === null || Math.abs(from - left) < 1 || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    el.animate([{ transform: `translateX(${from - left}px)` }, { transform: 'none' }], {
-      duration: 220,
-      easing: 'cubic-bezier(0.2, 0, 0, 1)',
-    });
+    const { left, width } = el.getBoundingClientRect();
+    const from = contentBoxRef.current;
+    contentBoxRef.current = { left, width };
+    if (
+      !from ||
+      (Math.abs(from.left - left) < 1 && Math.abs(from.width - width) < 1) ||
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    )
+      return;
+    const parentLeft = el.parentElement?.getBoundingClientRect().left ?? 0;
+    el.animate(
+      [
+        { marginLeft: `${from.left - parentLeft}px`, width: `${from.width}px` },
+        { marginLeft: `${left - parentLeft}px`, width: `${width}px` },
+      ],
+      { duration: 300, easing: 'cubic-bezier(0.2, 0, 0, 1)' }
+    );
   }, [focusMode]);
 
   // Keeps the bullet being typed in above the keyboard (and the outline bar on it): the browser only
@@ -1856,11 +1866,12 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
       {/* Main Content Area */}
       {/* Phones: almost no side margin; very deep outlines scroll sideways (rows keep a minimum width) */}
       {/* shrink-0: the sideways scroll area must keep its full height, so only the editor scrolls vertically */}
+      {/* Focus mode: as wide as the note in the workspace with the sidebar hidden (max-w-6xl less the page padding and the pane border, App.tsx) */}
       <div
         ref={contentRef}
         className={`w-full pl-2 pr-1 sm:px-8 flex-auto shrink-0 overflow-x-auto sm:overflow-x-visible [-webkit-overflow-scrolling:touch] ${
           inTagPage ? 'py-2' : inJournal ? 'py-3' : 'py-5'
-        } ${focusMode ? 'max-w-3xl mx-auto' : ''}`}
+        } ${focusMode ? 'max-w-[calc(theme(maxWidth.6xl)-2rem-2px)] mx-auto' : ''}`}
         style={focusMode && desktopBar && !embedded ? { paddingTop: `calc(1.25rem + ${focusTopGap}px)`, paddingBottom: '60vh' } : undefined}
       >
         {desktopBar && zoomedBlock && breadcrumbs.length > 0 && <div className="mb-3">{breadcrumbNav}</div>}

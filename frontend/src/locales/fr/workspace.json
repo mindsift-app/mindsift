@@ -97,8 +97,8 @@
     "drawing": "Dessin, diagramme, carte mentale"
   },
   "block": {
-    "expand": "Déplier les sous-puces",
-    "collapse": "Replier les sous-puces",
+    "expand": "Déplier les sous-puces (Ctrl+clic : tous les niveaux)",
+    "collapse": "Replier les sous-puces (Ctrl+clic : tous les niveaux)",
     "dragZoom": "Glisser pour déplacer • clic : zoomer sur la branche (mode focus)",
     "clickZoom": "Clic : zoomer sur cette branche (mode focus)",
     "markOpen": "Marquer comme à faire",

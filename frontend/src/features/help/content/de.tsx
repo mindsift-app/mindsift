@@ -795,6 +795,7 @@ const de: HelpContent = {
     { key: 'Strg + L / Cmd + L', scope: 'Workspace Outliner', desc: 'Link einfügen (Notiz, Bullet oder Web-Link); mit markiertem Text wird er zum Linktext' },
     { key: 'Strg + Shift + ↓', scope: 'Workspace Outliner', desc: 'Alle zugeklappten Punkte der Notiz aufklappen' },
     { key: 'Strg + Shift + ↑', scope: 'Workspace Outliner', desc: 'Alle Punkte der Notiz zuklappen (im Fokus-Modus nur im Ast)' },
+    { key: 'Strg + Klick auf ▸ / ▾', scope: 'Workspace Outliner', desc: 'Punkt mit allen Unterpunkten auf- bzw. zuklappen' },
     { key: 'Strg + Z / Cmd + Z', scope: 'Workspace Outliner', desc: 'Letzte Notiz-Aktion rückgängig machen' },
     { key: 'Strg + Y / Strg + Shift + Z', scope: 'Workspace Outliner', desc: 'Rückgängig gemachte Aktion wiederholen' },
     { key: 'Maus über mehrere Punkte ziehen', scope: 'Workspace Outliner', desc: 'Text über mehrere Punkte markieren; Entf/Backspace löscht ihn, Tippen ersetzt ihn, Strg + C kopiert ihn als Markdown (Einrückung, To-dos, Überschriften)' },

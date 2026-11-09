@@ -617,6 +617,7 @@ const en: HelpContent = {
     { key: 'Ctrl + L / Cmd + L', scope: 'Workspace outliner', desc: 'Insert a link (note, bullet or web link); selected text becomes the link text' },
     { key: 'Ctrl + Shift + ↓', scope: 'Workspace outliner', desc: 'Expand all collapsed bullets of the note' },
     { key: 'Ctrl + Shift + ↑', scope: 'Workspace outliner', desc: 'Collapse all bullets of the note (in focus mode only within the branch)' },
+    { key: 'Ctrl + click on ▸ / ▾', scope: 'Workspace outliner', desc: 'Expand or collapse a bullet together with all its sub-bullets' },
     { key: 'Ctrl + Z / Cmd + Z', scope: 'Workspace outliner', desc: 'Undo the last note action' },
     { key: 'Ctrl + Y / Ctrl + Shift + Z', scope: 'Workspace outliner', desc: 'Redo an undone action' },
     { key: 'Drag the mouse over several bullets', scope: 'Workspace outliner', desc: 'Select text across several bullets; Del/Backspace deletes it, typing replaces it, Ctrl + C copies it as Markdown (indentation, to-dos, headings)' },

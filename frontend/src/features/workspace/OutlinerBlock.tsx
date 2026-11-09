@@ -132,6 +132,8 @@ export interface OutlinerBlockProps {
   onDeleteBlock: (blockId: string, deleteSubtree?: boolean) => void;
   onMergeWithPrevious?: (blockId: string, content: string) => boolean;
   onIndentBlock: (blockId: string, delta: 1 | -1) => void;
+  /** Ctrl/Cmd + click on the arrow: this bullet (as given) and all bullets below it fold the same way */
+  onToggleBranch?: (updated: DocumentBlock) => void;
   onNavigateFocus: (blockId: string, direction: 'up' | 'down') => void;
   onFocusBlock?: (blockId: string) => void;
   onBlurBlock?: (blockId: string) => void;
@@ -191,6 +193,7 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
   onDeleteBlock,
   onMergeWithPrevious,
   onIndentBlock,
+  onToggleBranch,
   onNavigateFocus,
   onFocusBlock,
   onBlurBlock,
@@ -1337,9 +1340,17 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
         {hasChildren ? (
           <button
             type="button"
-            onClick={() =>
-              flushDebounce(localContent, { collapsed: !block.collapsed })
-            }
+            onClick={(e) => {
+              if ((e.ctrlKey || e.metaKey) && onToggleBranch) {
+                if (debounceTimerRef.current !== null) {
+                  window.clearTimeout(debounceTimerRef.current);
+                  debounceTimerRef.current = null;
+                }
+                onToggleBranch({ ...latestBlockRef.current, content: localContent, collapsed: !block.collapsed });
+              } else {
+                flushDebounce(localContent, { collapsed: !block.collapsed });
+              }
+            }}
             // Same width as the spacer of rows without children (the padding is taken back), so bullets stay aligned
             className="p-0.5 -m-0.5 text-muted hover:text-accent transition-[color,opacity] opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
             title={block.collapsed ? t('block.expand') : t('block.collapse')}
