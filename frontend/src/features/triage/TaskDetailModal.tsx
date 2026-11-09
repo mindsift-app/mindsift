@@ -54,6 +54,7 @@ interface TaskDetailModalProps {
   onToggleSubtask: (task: Thought, subtaskId: string) => Promise<void>;
   onAddSubtask: (task: Thought, title: string) => Promise<void>;
   onDeleteSubtask: (task: Thought, subtaskId: string) => Promise<void>;
+  onRenameSubtask?: (task: Thought, subtaskId: string, title: string) => Promise<void>;
   // Subtasks dragged by their handle (or moved with the arrow keys) into a new order
   onReorderSubtasks?: (task: Thought, orderedIds: string[]) => Promise<void>;
   onConvertToDoc: (task: Thought) => void;
@@ -87,6 +88,7 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
   onToggleSubtask,
   onAddSubtask,
   onDeleteSubtask,
+  onRenameSubtask,
   onReorderSubtasks,
   onConvertToDoc,
   onOpenDocument,
@@ -120,6 +122,18 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
   const notesMention = useMentionInput(readOnly ? null : { taskId: task.id });
   const subtaskMention = useMentionInput(readOnly ? null : { taskId: task.id });
   const subtaskInputRef = useRef<HTMLInputElement | null>(null);
+  // A subtask's title, edited in place after a click on it
+  const [editingSubtask, setEditingSubtask] = useState<{ id: string; title: string } | null>(null);
+  const editSubtaskRef = useRef<HTMLInputElement | null>(null);
+  const editSubtaskMention = useMentionInput(readOnly ? null : { taskId: task.id });
+  const saveSubtaskTitle = () => {
+    const edit = editingSubtask;
+    setEditingSubtask(null);
+    if (!edit || !onRenameSubtask) return;
+    const title = edit.title.trim();
+    const current = (task.subtasks || []).find((s) => s.id === edit.id);
+    if (title && current && title !== current.title) void onRenameSubtask(task, edit.id, title);
+  };
   const caretTo = (el: HTMLTextAreaElement | HTMLInputElement | null, caret: number) =>
     requestAnimationFrame(() => {
       el?.focus();
@@ -128,6 +142,10 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
   const applyNotesMention = (next: string, caret: number) => {
     setNotesDraft(next);
     caretTo(notesRef.current, caret);
+  };
+  const applyEditSubtaskMention = (next: string, caret: number) => {
+    setEditingSubtask((prev) => (prev ? { ...prev, title: next } : prev));
+    caretTo(editSubtaskRef.current, caret);
   };
   const applySubtaskMention = (next: string, caret: number) => {
     setNewSubtaskTitle(next);
@@ -163,11 +181,16 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
 
   const notesDirty = isEditingNotes && notesDraft !== (task.notes || '');
   const titleDirty = isEditingTitle && titleDraft.trim() !== '' && titleDraft.trim() !== task.content;
-  // "Fertig", the X and Escape: with unsaved changes ask first
+  // "Fertig", the X, Escape and a click beside the dialog: with unsaved changes it shakes and asks first
+  const [shaking, setShaking] = useState(false);
   const requestClose = useCallback(() => {
-    if (notesDirty || titleDirty) setConfirmUnsaved(true);
-    else onClose();
+    if (notesDirty || titleDirty) {
+      setConfirmUnsaved(true);
+      setShaking(true);
+    } else onClose();
   }, [notesDirty, titleDirty, onClose]);
+  // Only a click that also started beside the dialog closes it (not a text selection dragged out of it)
+  const pressedOutsideRef = useRef(false);
 
   // The page behind the dialog stays where it is; wheel and finger scroll the dialog
   useScrollLock();
@@ -181,6 +204,7 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
     }
     if (notesDirty || titleDirty) {
       setConfirmUnsaved(true);
+      setShaking(true);
       return false;
     }
     onCloseRef.current();
@@ -193,11 +217,13 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
   // Handle escape key to close
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
+      // A field that used Escape itself (a subtask being renamed, the mention list) keeps the dialog open
+      if (e.key === 'Escape' && !e.defaultPrevented) {
         if (confirmUnsaved) {
           setConfirmUnsaved(false);
         } else if (notesDirty || titleDirty) {
           setConfirmUnsaved(true);
+          setShaking(true);
         } else if (isEditingNotes) {
           setIsEditingNotes(false);
         } else if (isEditingTitle) {
@@ -295,9 +321,20 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
   const origin = originDetails(task.origin, task.createdAt, creator ? creator.displayName || creator.email : undefined);
 
   return (
-    <div className="fixed inset-0 !m-0 modal-overlay z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+    <div
+      className="fixed inset-0 !m-0 modal-overlay z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
+      onMouseDown={(e) => {
+        pressedOutsideRef.current = e.target === e.currentTarget;
+      }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget && pressedOutsideRef.current) requestClose();
+      }}
+    >
       <div
-        className="w-full max-w-2xl lg:max-w-5xl panel-surface shadow-panel border border-border my-auto flex flex-col max-h-[92vh] max-h-[92dvh] overflow-hidden"
+        className={`w-full max-w-2xl lg:max-w-5xl panel-surface shadow-panel border border-border my-auto flex flex-col max-h-[92vh] max-h-[92dvh] overflow-hidden ${
+          shaking ? 'notice-shake' : ''
+        }`}
+        onAnimationEnd={() => setShaking(false)}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Top Header */}
@@ -883,13 +920,48 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
                       >
                         <Check className="w-2.5 h-2.5 stroke-[3]" />
                       </button>
-                      <span
-                        className={`truncate ${
-                          st.isCompleted ? 'line-through text-faint' : 'text-main'
-                        }`}
-                      >
-                        {renderMentions(st.title)}
-                      </span>
+                      {editingSubtask?.id === st.id ? (
+                        <div className="relative flex-1 min-w-0">
+                          <input
+                            ref={editSubtaskRef}
+                            autoFocus
+                            value={editingSubtask.title}
+                            onChange={(e) => {
+                              setEditingSubtask({ id: st.id, title: e.target.value });
+                              editSubtaskMention.update(e.target.value, e.target.selectionStart ?? e.target.value.length);
+                            }}
+                            onKeyDown={(e) => {
+                              if (editSubtaskMention.handleKeyDown(e, editingSubtask.title, applyEditSubtaskMention)) return;
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                saveSubtaskTitle();
+                              } else if (e.key === 'Escape') {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setEditingSubtask(null);
+                              }
+                            }}
+                            onBlur={() => {
+                              editSubtaskMention.close();
+                              saveSubtaskTitle();
+                            }}
+                            className="w-full h-11 sm:h-6 px-1.5 text-base sm:text-xs input-field"
+                          />
+                          <MentionMenu mention={editSubtaskMention} text={editingSubtask.title} apply={applyEditSubtaskMention} />
+                        </div>
+                      ) : (
+                        <span
+                          onClick={() => {
+                            if (!readOnly && onRenameSubtask) setEditingSubtask({ id: st.id, title: st.title });
+                          }}
+                          title={readOnly || !onRenameSubtask ? undefined : t('detail.renameSubtask')}
+                          className={`truncate ${readOnly || !onRenameSubtask ? '' : 'cursor-text'} ${
+                            st.isCompleted ? 'line-through text-faint' : 'text-main'
+                          }`}
+                        >
+                          {renderMentions(st.title)}
+                        </span>
+                      )}
                     </div>
                     {!readOnly && (
                     <button

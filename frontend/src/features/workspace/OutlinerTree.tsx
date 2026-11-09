@@ -224,8 +224,9 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
     }
   }, []);
 
-  // Jump target (e.g. from a task): focused once, as soon as its block is loaded. Running again on later
-  // block changes would pull the cursor back to it after every Enter in the note.
+  // Jump target (search, a link to a bullet, a mention in the notification center, a task): scrolled to and
+  // lit up once, as soon as its block is loaded. No cursor goes into it: that would lock the bullet for
+  // everyone else although nobody types. Running again on later block changes would pull the view back.
   const focusedTargetRef = useRef<string | null>(null);
   const targetLoaded = !!initialFocusedBlockId && blocks.some((b) => b.id === initialFocusedBlockId);
   useEffect(() => {
@@ -233,13 +234,14 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
     if (initialFocusedBlockId && targetLoaded && focusedTargetRef.current !== initialFocusedBlockId) {
       focusedTargetRef.current = initialFocusedBlockId;
       setHighlightedBlockId(initialFocusedBlockId);
-      focusBlockInput(initialFocusedBlockId, 'end');
-      const timer = setTimeout(() => {
-        focusBlockInput(initialFocusedBlockId, 'end');
-      }, 70);
-      const timer2 = setTimeout(() => {
-        focusBlockInput(initialFocusedBlockId, 'end');
-      }, 200);
+      // Again a little later: images and the layout above it may still move the bullet
+      const scrollTo = () =>
+        document
+          .querySelector(`[data-outline-block="${CSS.escape(initialFocusedBlockId)}"]`)
+          ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      scrollTo();
+      const timer = setTimeout(scrollTo, 70);
+      const timer2 = setTimeout(scrollTo, 200);
       const fadeTimer = setTimeout(() => {
         setHighlightedBlockId(null);
       }, 2800);
@@ -249,7 +251,7 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
         clearTimeout(fadeTimer);
       };
     }
-  }, [initialFocusedBlockId, targetLoaded, focusBlockInput]);
+  }, [initialFocusedBlockId, targetLoaded]);
 
   // Compute visibility based on collapsed ancestor blocks
   const visibleEntries = useMemo(() => {

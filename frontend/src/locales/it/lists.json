@@ -37,7 +37,7 @@
   "adding": "Aggiunta in corso…",
   "general": "Generale",
   "openCount": "{{count}} da fare",
-  "shareDialogTitle": "Condividi lista: {{title}}",
+  "shareDialogTitle": "Condividi lista",
   "shareMenuLabel": "Condividi la lista «{{title}}»",
   "item": {
     "addQuantity": "+ quantità"

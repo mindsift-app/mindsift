@@ -74,7 +74,8 @@
     "moved": "Moved to “{{title}}”",
     "extractedInto": "Moved out to “{{title}}”",
     "moveFailed": "Moving failed",
-    "shareMenu": "Share…"
+    "shareMenu": "Share…",
+    "untitledBullet": "Bullet"
   },
   "slash": {
     "todo": "To-do with a checkbox",

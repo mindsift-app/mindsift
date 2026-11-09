@@ -36,7 +36,7 @@ export function TaskListShareDialog({
         setShowShareListModal(false);
         setSharingTaskList(null);
       }}
-      title={i18n.t('tasks:shareDialogTitle', { title: sharingTaskList.title })}
+      title={i18n.t('tasks:shareDialogTitle')}
       resourceName={sharingTaskList.title}
       resourceIcon={sharingTaskList.icon || undefined}
       isOwner={sharingTaskList.isOwner !== false}

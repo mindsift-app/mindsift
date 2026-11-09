@@ -16,5 +16,7 @@
     "pick": "Scegli i colori",
     "light": "Chiaro",
     "dark": "Scuro"
-  }
+  },
+  "path": "Percorso",
+  "backToNote": "Torna alla nota intera"
 }

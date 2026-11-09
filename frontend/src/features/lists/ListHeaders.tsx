@@ -5,7 +5,7 @@ import { ActionMenu } from '../../components/ActionMenu';
 import { MoreTabsButton } from '../../components/MoreTabsButton';
 import { OVERFLOW_HIDDEN_TAB, useOverflowTabs } from '../../lib/useOverflowTabs';
 import { ListItem, SharedList, User } from '../../lib/types';
-import { AvatarPerson, AvatarStack } from '../../components/AvatarStack';
+import { AvatarPerson } from '../../components/AvatarStack';
 import { CountBadge } from '../../components/CountBadge';
 import { SharedPill } from '../../components/SharedPill';
 import { ListSwitcher } from '../../components/ListSwitcher';
@@ -98,7 +98,7 @@ export function ListTabsHeader({
               <button
                 onClick={() => setActiveListId(lst.id)}
                 tabIndex={hidden ? -1 : undefined}
-                className="h-full px-3 text-xs font-medium flex items-center gap-1.5 rounded-btn"
+                className="h-full pl-3 pr-2 text-xs font-medium flex items-center gap-1.5 rounded-btn"
               >
                 <span>{lst.icon}</span>
                 {/* Counter on the label, like in the nav bar */}
@@ -106,12 +106,12 @@ export function ListTabsHeader({
                   {lst.title}
                   <CountBadge count={openCount} position="text" />
                 </span>
-                <AvatarStack
-                  people={otherMembers(lst)}
-                  size="xxs"
-                  ringClass={isSelected ? 'ring-[var(--bg-panel)]' : 'ring-[var(--bg-app)]'}
-                  className="ml-0.5"
-                />
+                {/* Shared: the same sign as a shared note in the sidebar; who with is in the tooltip */}
+                {((lst.shares?.length || 0) > 0 || otherMembers(lst).length > 0) && (
+                  <span title={[t('tasks:tabs.shared'), ...otherMembers(lst).map((p) => p.name)].filter(Boolean).join(' · ')}>
+                    <Users className="w-3 h-3 text-status-ok shrink-0" aria-label={t('tasks:tabs.shared')} />
+                  </span>
+                )}
               </button>
             </div>
           );

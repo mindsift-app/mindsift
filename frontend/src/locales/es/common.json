@@ -118,13 +118,14 @@
     "private": "Este elemento es privado actualmente (solo visible para ti).",
     "remove": "Quitar acceso compartido",
     "defaultTitle": "Compartir y permisos",
-    "object": "Elemento:",
     "teamOption_one": "{{name}} ({{count}} miembro)",
     "teamOption_other": "{{name}} ({{count}} miembros)",
     "count_one": "{{count}} acceso",
     "count_other": "{{count}} accesos",
     "editorRole": "Editor",
-    "viewerRole": "Lector"
+    "viewerRole": "Lector",
+    "titleNote": "Compartir nota",
+    "titleFolder": "Compartir carpeta"
   },
   "sharedImport": {
     "whichList": "¿En qué lista?",

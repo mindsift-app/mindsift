@@ -114,6 +114,7 @@ export function WorkspaceShareModal({
         setShareModalDoc(null);
         setShareModalFolder(null);
       }}
+      title={shareModalDoc ? i18n.t('common:share.titleNote') : i18n.t('common:share.titleFolder')}
       resourceName={shareModalDoc ? shareModalDoc.title : shareModalFolder?.name || ''}
       resourceIcon={shareModalDoc ? shareModalDoc.icon : '📁'}
       isOwner={isOwner}

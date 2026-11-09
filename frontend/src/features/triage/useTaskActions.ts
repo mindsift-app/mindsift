@@ -175,6 +175,12 @@ export function useTaskActions({
     await api.updateThought(task.id, { subtasks: updatedSubtasks });
   };
 
+  const handleRenameSubtask = async (task: Thought, subtaskId: string, title: string) => {
+    const updatedSubtasks = (task.subtasks || []).map((s) => (s.id === subtaskId ? { ...s, title } : s));
+    setTasks((prev) => prev.map((t) => (t.id === task.id ? { ...t, subtasks: updatedSubtasks } : t)));
+    await api.updateThought(task.id, { subtasks: updatedSubtasks });
+  };
+
   // New order of the subtasks (ids in the wanted order); the server keeps their note links by id
   const handleReorderSubtasks = async (task: Thought, orderedIds: string[]) => {
     const byId = new Map((task.subtasks || []).map((st) => [st.id, st]));
@@ -266,6 +272,7 @@ export function useTaskActions({
     handleToggleSubtask,
     handleAddSubtask,
     handleDeleteSubtask,
+    handleRenameSubtask,
     handleReorderSubtasks,
     handleConvertToDoc,
     handleDeletePermanent,

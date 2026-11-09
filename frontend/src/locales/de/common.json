@@ -117,12 +117,13 @@
     "private": "Dieses Element ist aktuell privat (nur für dich sichtbar).",
     "remove": "Freigabe entfernen",
     "defaultTitle": "Freigeben & Berechtigungen",
-    "object": "Objekt:",
     "teamOption": "{{name}} ({{count}} Mitglieder)",
     "count_one": "{{count}} Freigabe",
     "count_other": "{{count}} Freigaben",
     "editorRole": "Bearbeiter",
-    "viewerRole": "Leser"
+    "viewerRole": "Leser",
+    "titleNote": "Notiz teilen",
+    "titleFolder": "Ordner teilen"
   },
   "sharedImport": {
     "whichList": "Auf welche Liste?",

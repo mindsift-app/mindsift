@@ -59,7 +59,8 @@
     "subtasks": "Subtareas ({{done}}/{{total}}):",
     "created": "Creado: {{date}}",
     "plusWeek": "+1 semana",
-    "timeShort": "Hora"
+    "timeShort": "Hora",
+    "renameSubtask": "Haz clic para cambiar el nombre"
   },
   "columnsModal": {
     "minOne": "Debe haber al menos una columna.",
@@ -88,8 +89,8 @@
   },
   "columns": {
     "todo": "Por hacer",
-    "in_progress": "En progreso",
-    "waiting": "Esperando",
+    "in_progress": "En curso",
+    "waiting": "Esperando a otros",
     "done": "Hecho"
   },
   "colors": {
@@ -267,7 +268,7 @@
   },
   "repeats": "Se repite: {{rule}}",
   "moveSubtask": "Mover «{{title}}»",
-  "shareDialogTitle": "Compartir lista de tareas: {{title}}",
+  "shareDialogTitle": "Compartir lista de tareas",
   "assignedTo": "Asignada a: {{names}}",
   "tabCount": {
     "open": "Abiertas ({{count}})",
