@@ -17,6 +17,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Notes: Enter (or Tab) in the title starts a new empty bullet at the top when the first bullet is not an empty text bullet, so something can still go in front of a drawing or an image.
 - Shared task lists and shopping lists show the same "shared" sign in their tab as shared notes in the sidebar; the tooltip names the people.
 - Sharing dialog: what is shared stands small on top ("Share task list"), its name large below, instead of the name twice.
+- Calendar: "Unscheduled" on the desktop shows the same task rows as the day (tick off, change the status, edit), so unscheduled tasks can be worked through right there. Rows from the day and from "Unscheduled" can be dragged onto a day or onto "Unscheduled".
 
 ### Fixed
 - Notes: jumping to a bullet (search, links to bullets, the notification center, tasks) no longer puts the cursor into it, which locked the bullet for everyone else; it is scrolled to and lit up as before.

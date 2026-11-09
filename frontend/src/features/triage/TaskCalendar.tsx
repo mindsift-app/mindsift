@@ -13,6 +13,8 @@ import { renderMentions } from '../../lib/markdown';
 type Mode = 'month' | 'week';
 const MODE_KEY = 'mindsift:calendar_mode';
 const MONTH_CELL_MAX = 3;
+// Drag data of a full task row (useTaskDrag), so day cells take those as well
+const TASK_DRAG_TYPE = 'application/mindsift-task-id';
 
 const PRIORITY_DOT: Record<string, string> = {
   urgent: 'bg-status-err',
@@ -142,19 +144,24 @@ export function TaskCalendar({ tasks, lists, showListIcon, isTaskReadOnly, onOpe
     },
   });
   // Mouse: HTML5 drag with the half transparent ghost
+  // Mouse: a calendar entry, or a full task row (day panel, "Ungeplant") with its own drag data
+  const rowDrag = (e: React.DragEvent) => e.dataTransfer.types.includes(TASK_DRAG_TYPE);
   const dropProps = (target: string) => ({
     'data-kanban-col': target,
     onDragOver: (e: React.DragEvent) => {
-      if (!draggingId) return;
+      if (!draggingId && !rowDrag(e)) return;
       e.preventDefault();
+      e.stopPropagation();
       if (hoverTarget !== target) setHoverTarget(target);
     },
     onDragLeave: () => {
       if (hoverTarget === target) setHoverTarget(null);
     },
     onDrop: (e: React.DragEvent) => {
+      if (!draggingId && !rowDrag(e)) return;
       e.preventDefault();
-      const id = draggingId;
+      e.stopPropagation();
+      const id = draggingId || e.dataTransfer.getData(TASK_DRAG_TYPE);
       setDraggingId(null);
       setHoverTarget(null);
       if (id) dropOn(id, target);
@@ -427,11 +434,19 @@ export function TaskCalendar({ tasks, lists, showListIcon, isTaskReadOnly, onOpe
                 {dayDetails(sideDay)}
               </>
             ) : (
-              <div {...dropProps('unplanned')} className={`min-h-full space-y-0.5 rounded-btn ${hoverTarget === 'unplanned' ? 'bg-accent/10' : ''}`}>
+              // Captured before the rows: they would only reorder a task dropped on them, not take its date
+              <div
+                data-kanban-col="unplanned"
+                onDragOverCapture={dropProps('unplanned').onDragOver}
+                onDropCapture={dropProps('unplanned').onDrop}
+                onDragLeave={dropProps('unplanned').onDragLeave}
+                className={`min-h-full flex flex-col rounded-btn ${hoverTarget === 'unplanned' ? 'bg-accent/10' : ''}`}
+              >
                 {unplanned.length === 0 ? (
                   <p className="px-1.5 py-2 text-[11px] text-faint">{t('calendar.unplannedEmpty')}</p>
                 ) : (
-                  unplanned.map((task) => chip({ task, time: '', upcoming: false }, task.id, false, true))
+                  // The same rows as the day: tick off, change status, work through them right here
+                  unplanned.map((task) => <React.Fragment key={task.id}>{renderTaskRow(task, true)}</React.Fragment>)
                 )}
               </div>
             )}
