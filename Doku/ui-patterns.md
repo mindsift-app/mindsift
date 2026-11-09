@@ -104,7 +104,7 @@ Component: [CountBadge.tsx](../frontend/src/components/CountBadge.tsx), CSS clas
 
 Component: [SegmentedControl.tsx](../frontend/src/components/SegmentedControl.tsx)
 
-- A row of two or three short options in one frame; the chosen one is raised (`bg-panel-elevated`, light shadow). Used wherever a list can be shown in different ways: sorting of the hashtags (frequency / A–Z), the to-dos from notes (open / all, grouped / list), the task views (list / Kanban / calendar, with icons) and month / week of the calendar.
+- A row of two or three short options in one frame; the chosen one is raised (`bg-panel-elevated`, light shadow), and the raised field slides to a newly chosen option (200 ms, off with reduced motion). Used wherever a list can be shown in different ways: sorting of the hashtags (frequency / A–Z), the to-dos from notes (open / all, grouped / list), the task views (list / Kanban / calendar, with icons) and month / week of the calendar.
 - Short labels, the longer explanation goes into `title` (hover). Screen readers get `radiogroup` and `radio` with `aria-checked`.
 - The choice is a per-device convenience and is kept in `localStorage` where it should survive a reload (to-dos: `mindsift_todo_show`, `mindsift_todo_grouping`).
 - Build new switches of this kind with this component instead of copying button classes.
