@@ -616,7 +616,8 @@ export function TaskCalendar({
           <div
             ref={gridScrollRef}
             onScroll={trackGrid}
-            onDragOver={edgeScroll}
+            // Captured: the day cells stop the event on its way up
+            onDragOverCapture={edgeScroll}
             onDragLeave={(e) => {
               if (!e.currentTarget.contains(e.relatedTarget as Node | null)) stopEdge();
             }}
