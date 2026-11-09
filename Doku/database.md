@@ -18,6 +18,7 @@ SQLite file `mindsift.db` (default: `$DATA_DIR/mindsift.db`), opened with `journ
 | `task_watchers` | Watched tasks (Migration 7) | `task_id`, `user_id`, `created_at` |
 | `task_list_mutes` | Task lists a person muted (Migration 29) | `user_id`, `task_list_id`, `created_at`; removed with the list |
 | `task_alarms_sent` | Due alarm per task and recipient (Migration 29) | `task_id`, `user_id` (`*` = sent to everyone before alarms were per person), `sent`, `failures`; trigger `task_alarm_rearm` clears the rows when `thoughts.alarm_sent` goes from 1 to 0 (new due date, reopened) |
+| `center_entries` | Notification center (Migration 31) | `user_id`, `kind`, `title`, `text`, `target_type`, `target_id`, `block_id`, `group_key` (`watched:<task>` keeps the latest change, `due:<task>:<date>` once), `created_at`, `read`; removed after 14 days |
 | `block_mentions` | @-mentions last seen per bullet (Migration 30) | `document_id`, `block_id`, `user_id`, `count`; only a higher count notifies |
 | `push_subscriptions` | Registered Web Push devices (Migration 9) | `user_id`, `endpoint` (unique), `p256dh`, `auth`, `device`, `created_at` |
 | `push_keys` | VAPID key pair when not configured via environment (Migration 9) | Single row: `public_key`, `private_key` |

@@ -7,6 +7,7 @@ import { listsApi } from './lists';
 import { teamsApi } from './teams';
 import { adminApi } from './admin';
 import { dataApi } from './data';
+import { centerApi } from './center';
 
 export const api = {
   ...authApi,
@@ -16,4 +17,5 @@ export const api = {
   ...teamsApi,
   ...adminApi,
   ...dataApi,
+  ...centerApi,
 };

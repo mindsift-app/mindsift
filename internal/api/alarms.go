@@ -164,85 +164,96 @@ func (s *Server) startAlarmTicker() {
 	defer ticker.Stop()
 
 	for range ticker.C {
-		alarms, err := s.store.GetDueTasksForAlarm()
-		if err != nil || len(alarms) == 0 {
+		s.checkAlarms(time.Now())
+	}
+}
+
+// checkAlarms sends the alarms whose time has come (and puts them into the notification center)
+func (s *Server) checkAlarms(now time.Time) {
+	alarms, err := s.store.GetDueTasksForAlarm()
+	if err != nil || len(alarms) == 0 {
+		return
+	}
+	for _, a := range alarms {
+		if !alarmDue(a.DueDate, a.NotifyBeforeMinutes, now) {
+			continue
+		}
+		// The bell gets every due task once per due date, whatever the channels or a pause
+		centerLang := s.userLanguage(a.UserID)
+		s.storeCenterEntry(a.UserID, storage.CenterEntry{
+			Kind: "due", Title: a.Title, TargetType: "task", TargetID: a.TaskID,
+			Text: i18n.T(centerLang, dueCenterText, "title", a.Title, "due", domain.HumanDue(centerLang, a.DueDate)),
+		}, "due:"+a.TaskID+":"+a.DueDate, storage.CenterOnce, "")
+		if s.cfg.DemoMode {
+			continue
+		}
+		// Channels come from the notification settings (row "due"); a pause holds the alarm back
+		set := s.store.NotificationSettingsOf(a.UserID)
+		if set.Paused {
+			continue
+		}
+		channels := []string{}
+		if set.Events.Due.Email {
+			channels = append(channels, "email")
+		}
+		if set.Events.Due.Discord {
+			channels = append(channels, "discord")
+		}
+		if set.Events.Due.Webhook {
+			channels = append(channels, "webhook")
+		}
+		if set.Events.Due.Push {
+			channels = append(channels, "push")
+		}
+		if a.AlarmEmail == "" {
+			a.AlarmEmail = a.UserEmail
+		}
+		a.AlarmChannels = channels
+		if len(a.AlarmChannels) == 0 {
 			continue
 		}
 
-		now := time.Now()
+		sentAny := false
+		lang := s.userLanguage(a.UserID)
+		due := domain.HumanDue(lang, a.DueDate)
+		desc := a.Notes
+		if desc == "" {
+			desc = i18n.T(lang, "Aufgabe ist jetzt fällig.")
+		}
 
-		for _, a := range alarms {
-			if !alarmDue(a.DueDate, a.NotifyBeforeMinutes, now) {
-				continue
-			}
-			// Channels come from the notification settings (row "due"); a pause holds the alarm back
-			set := s.store.NotificationSettingsOf(a.UserID)
-			if set.Paused {
-				continue
-			}
-			channels := []string{}
-			if set.Events.Due.Email {
-				channels = append(channels, "email")
-			}
-			if set.Events.Due.Discord {
-				channels = append(channels, "discord")
-			}
-			if set.Events.Due.Webhook {
-				channels = append(channels, "webhook")
-			}
-			if set.Events.Due.Push {
-				channels = append(channels, "push")
-			}
-			if a.AlarmEmail == "" {
-				a.AlarmEmail = a.UserEmail
-			}
-			a.AlarmChannels = channels
-			if len(a.AlarmChannels) == 0 {
-				continue
-			}
-
-			sentAny := false
-			lang := s.userLanguage(a.UserID)
-			due := domain.HumanDue(lang, a.DueDate)
-			desc := a.Notes
-			if desc == "" {
-				desc = i18n.T(lang, "Aufgabe ist jetzt fällig.")
-			}
-
-			for _, ch := range a.AlarmChannels {
-				switch ch {
-				case "discord":
-					if a.DiscordWebhookURL != "" {
-						if err := s.sendDiscordNotification(lang, a.DiscordWebhookURL, a.Title, desc, due, a.Priority); err == nil {
-							sentAny = true
-						}
-					}
-				case "push":
-					if err := s.sendPush(a.UserID, pushMessage{Title: "⏰ " + i18n.T(lang, "Aufgabe fällig"), Body: a.Title + " – " + due, URL: "/", Tag: "task-" + a.TaskID}); err == nil {
+		for _, ch := range a.AlarmChannels {
+			switch ch {
+			case "discord":
+				if a.DiscordWebhookURL != "" {
+					if err := s.sendDiscordNotification(lang, a.DiscordWebhookURL, a.Title, desc, due, a.Priority); err == nil {
 						sentAny = true
 					}
-				case "webhook":
-					if a.CustomWebhookURL != "" {
-						if err := s.sendCustomWebhookNotification(a.CustomWebhookURL, "task_due", a.Title, desc, a.DueDate, a.Priority); err == nil {
-							sentAny = true
-						}
+				}
+			case "push":
+				if err := s.sendPush(a.UserID, pushMessage{Title: "⏰ " + i18n.T(lang, "Aufgabe fällig"), Body: a.Title + " – " + due, URL: "/", Tag: "task-" + a.TaskID}); err == nil {
+					sentAny = true
+				}
+			case "webhook":
+				if a.CustomWebhookURL != "" {
+					if err := s.sendCustomWebhookNotification(a.CustomWebhookURL, "task_due", a.Title, desc, a.DueDate, a.Priority); err == nil {
+						sentAny = true
 					}
-				case "email":
-					if a.AlarmEmail != "" {
-						if err := s.sendMailContent(a.AlarmEmail, "⏰ "+i18n.T(lang, "Fällig: {due}", "due", a.Title), s.dueAlarmMail(lang, a, due)); err == nil {
-							sentAny = true
-						}
+				}
+			case "email":
+				if a.AlarmEmail != "" {
+					if err := s.sendMailContent(a.AlarmEmail, "⏰ "+i18n.T(lang, "Fällig: {due}", "due", a.Title), s.dueAlarmMail(lang, a, due)); err == nil {
+						sentAny = true
 					}
 				}
 			}
+		}
 
-			if sentAny {
-				if err := s.store.MarkTaskAlarmSent(a.TaskID, a.UserID); err != nil {
-					slog.Error("Marking the alarm as sent failed (it will be sent again)", "task_id", a.TaskID, "error", err)
-				}
-			} else if gaveUp, _ := s.store.RecordTaskAlarmFailure(a.TaskID, a.UserID); gaveUp {
-				slog.Warn("Task alarm given up after 3 failed attempts", "task_id", a.TaskID, "user_id", a.UserID, "title", a.Title)
+		if sentAny {
+			if err := s.store.MarkTaskAlarmSent(a.TaskID, a.UserID); err != nil {
+				slog.Error("Marking the alarm as sent failed (it will be sent again)", "task_id", a.TaskID, "error", err)
 			}
+		} else if gaveUp, _ := s.store.RecordTaskAlarmFailure(a.TaskID, a.UserID); gaveUp {
+			slog.Warn("Task alarm given up after 3 failed attempts", "task_id", a.TaskID, "user_id", a.UserID, "title", a.Title)
 		}
 	}
 }

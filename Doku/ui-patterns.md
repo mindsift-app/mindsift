@@ -153,6 +153,14 @@ Hook: [useMentionInput.ts](../frontend/src/lib/useMentionInput.ts), list: [Menti
 - The text stores `{{mention:<user id>}}`; it shows as "@Name" with the person's current name (`renderInlineMarkdown`, or `renderMentions` for plain text such as subtasks).
 - Used in bullets of notes, a task's description and new subtasks; not in task titles.
 
+## Notification Center (Bell)
+
+Component: [NotificationBell.tsx](../frontend/src/components/NotificationBell.tsx).
+
+- In the header between search and profile (phones: search, bell, profile side by side; below 380 px the "App" button shows only its icon). The number of unread entries is a `CountBadge` in the corner.
+- A click opens a small list (desktop: dropdown under the bell; phones: full width under the header): icon per kind, short text, relative time, unread ones tinted with a dot. "Mark all as read" and "Delete all" on top. A click on an entry marks it read and opens its target.
+- Quiet: no sound, nothing pops up; open apps update over the WebSocket.
+
 ## Fields That Are Not a Login
 
 Search and filter fields get `NO_AUTOFILL` (`lib/noAutofill.ts`). Passwords that are not the person's own login (other accounts, the mail server, the password of a public link) are text fields with `style={MASKED}` instead of `type="password"`, otherwise password managers offer the person's login there.

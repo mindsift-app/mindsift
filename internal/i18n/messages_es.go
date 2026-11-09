@@ -401,6 +401,7 @@ var messagesES = map[string]string{
 	"{name} hat die Wiederholung von „{title}“ geändert":             "{name} ha cambiado la repetición de «{title}»",
 	"{name} hat „{title}“ geändert: {changes}":                       "{name} ha cambiado «{title}»: {changes}",
 	"{name} hat dir „{title}“ zugewiesen":                            "{name} te ha asignado «{title}»",
+	"„{title}“ ist fällig ({due})":                                   "«{title}» vence ({due})",
 	"{name} hat dich in „{title}“ erwähnt":                           "{name} te ha mencionado en «{title}»",
 	"{name} hat „{title}“ zur Liste „{list}“ hinzugefügt":            "{name} ha añadido «{title}» a la lista «{list}»",
 	"erledigt":            "completada",

@@ -396,5 +396,14 @@
   "mention": {
     "pick": "Mentionner quelqu’un",
     "noAccess": "pas d’accès"
+  },
+  "center": {
+    "title": "Notifications",
+    "titleUnread_one": "Notifications ({{count}} non lue)",
+    "titleUnread_other": "Notifications ({{count}} non lues)",
+    "markAllRead": "Tout marquer comme lu",
+    "clear": "Tout supprimer",
+    "empty": "Rien de nouveau pour l’instant. Ce qui se passe dans tes tâches, listes et notes apparaît ici.",
+    "unread": "Non lue"
   }
 }

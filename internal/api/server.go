@@ -78,8 +78,9 @@ func NewServer(cfg *config.Config, store *storage.Store, wsHub *ws.Hub, staticFS
 	if cfg.DemoMode && cfg.DemoResetMinutes > 0 {
 		go srv.startDemoResetTicker()
 	}
+	// The demo sends nothing (FLAW-33); its alarm ticker only fills the notification center
+	go srv.startAlarmTicker()
 	if !cfg.DemoMode {
-		go srv.startAlarmTicker() // the demo sends nothing (FLAW-33)
 		go srv.startNotificationJobs()
 		go srv.startBackupScheduler()
 		go srv.startDoneCleanupTicker()
@@ -203,6 +204,9 @@ func (s *Server) Router() http.Handler {
 		r.Post("/api/v1/users/lookup", s.handleLookupUser)
 		r.Get("/api/v1/collaborators", s.handleGetCollaborators)
 		r.Get("/api/v1/mentions/candidates", s.handleMentionCandidates)
+		r.Get("/api/v1/notifications", s.handleGetCenter)
+		r.Post("/api/v1/notifications/read", s.handleCenterRead)
+		r.Delete("/api/v1/notifications", s.handleClearCenter)
 		r.Get("/api/v1/stats", s.handleStats)
 		r.Get("/api/v1/search", s.handleSearch)
 		r.Get("/api/v1/export", s.handleExport)

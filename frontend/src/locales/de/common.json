@@ -394,5 +394,14 @@
   "mention": {
     "pick": "Person erwähnen",
     "noAccess": "keine Berechtigung"
+  },
+  "center": {
+    "title": "Benachrichtigungen",
+    "titleUnread_one": "Benachrichtigungen ({{count}} ungelesen)",
+    "titleUnread_other": "Benachrichtigungen ({{count}} ungelesen)",
+    "markAllRead": "Alle als gelesen markieren",
+    "clear": "Alle löschen",
+    "empty": "Noch nichts Neues. Hier erscheint, was in deinen Aufgaben, Listen und Notizen passiert.",
+    "unread": "Ungelesen"
   }
 }

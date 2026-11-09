@@ -15,6 +15,7 @@ import (
 	"github.com/mindsift-app/mindsift/internal/auth"
 	"github.com/mindsift-app/mindsift/internal/domain"
 	"github.com/mindsift-app/mindsift/internal/i18n"
+	"github.com/mindsift-app/mindsift/internal/storage"
 )
 
 // Notifications besides task alarms: events go into a queue per recipient and are sent bundled, one
@@ -32,18 +33,23 @@ type notifyItem struct {
 	group, when, list string
 }
 
-// notify queues an event for the recipients that want it (settings, pause, own-change rule). payload
-// gives the event's texts in a recipient's language.
+// notify puts an event into the notification center of every recipient but the actor, and queues it
+// for those that want it by mail, Discord, webhook or push (settings, pause, own-change rule). payload
+// gives the event's texts in a recipient's language; besides "title" and "text" it may carry what the
+// center needs (see centerFrom).
 func (s *Server) notify(kind, actorID string, recipients []string, payload func(lang string) map[string]string) {
-	if s.cfg.DemoMode {
-		return
-	}
 	seen := map[string]bool{}
 	for _, uid := range recipients {
 		if uid == "" || seen[uid] {
 			continue
 		}
 		seen[uid] = true
+		if uid != actorID {
+			s.addToCenter(uid, kind, payload(s.userLanguage(uid)))
+		}
+		if s.cfg.DemoMode {
+			continue
+		}
 		set := s.store.NotificationSettingsOf(uid)
 		if set.Paused {
 			continue
@@ -58,6 +64,44 @@ func (s *Server) notify(kind, actorID string, recipients []string, payload func(
 			slog.Warn("Queueing a notification failed", "user_id", uid, "error", err)
 		}
 	}
+}
+
+// Payload keys for the notification center
+const (
+	centerTarget  = "targetType" // task | note | list | tasklist | folder
+	centerID      = "targetId"
+	centerBlock   = "blockId"
+	centerText    = "centerText"    // shorter text for the center (otherwise "text")
+	centerGeneric = "centerGeneric" // text when two different changes merge into one entry
+	centerGroupID = "centerGroup"   // one entry per key: a newer one replaces it
+)
+
+// addToCenter stores an event for the person's bell and tells their open apps.
+func (s *Server) addToCenter(userID, kind string, p map[string]string) {
+	text := p[centerText]
+	if text == "" {
+		text = p["text"]
+	}
+	e := storage.CenterEntry{Kind: kind, Title: p["title"], Text: text, TargetType: p[centerTarget], TargetID: p[centerID], BlockID: p[centerBlock]}
+	s.storeCenterEntry(userID, e, p[centerGroupID], storage.CenterReplace, p[centerGeneric])
+}
+
+// storeCenterEntry adds an entry; replacing an unread one with a different text merges them into the
+// generic text (when given).
+func (s *Server) storeCenterEntry(userID string, e storage.CenterEntry, group string, mode storage.CenterGroup, generic string) {
+	added, ok, replaced, err := s.store.AddCenterEntry(userID, e, group, mode)
+	if err != nil {
+		slog.Warn("Storing a notification center entry failed", "user_id", userID, "error", err)
+		return
+	}
+	if !ok {
+		return
+	}
+	if replaced != "" && replaced != added.Text && generic != "" {
+		added.Text = generic
+		_ = s.store.SetCenterEntryText(userID, added.ID, generic)
+	}
+	s.wsHub.BroadcastToUser(userID, "NOTIFICATION", added)
 }
 
 func (s *Server) actorName(lang, userID string) string {
@@ -76,8 +120,8 @@ var sharedTexts = map[string]string{
 }
 
 // notifyShared tells the people a note, folder or list was shared with (teams: all members). what is
-// a key of sharedTexts.
-func (s *Server) notifyShared(actorID, targetType, targetID, what, title string) {
+// a key of sharedTexts, objectID the shared note, folder or list (where the center leads).
+func (s *Server) notifyShared(actorID, targetType, targetID, what, objectID, title string) {
 	var recipients []string
 	if targetType == "team" {
 		members, _ := s.store.GetTeamMembers(targetID)
@@ -89,8 +133,10 @@ func (s *Server) notifyShared(actorID, targetType, targetID, what, title string)
 	}
 	s.notify("shared", actorID, recipients, func(lang string) map[string]string {
 		return map[string]string{
-			"title": title,
-			"text":  i18n.T(lang, sharedTexts[what], "name", s.actorName(lang, actorID), "title", title),
+			"title":      title,
+			"text":       i18n.T(lang, sharedTexts[what], "name", s.actorName(lang, actorID), "title", title),
+			centerTarget: what,
+			centerID:     objectID,
 		}
 	})
 }
@@ -249,13 +295,23 @@ func (s *Server) notifyTaskChange(actorID string, before, after *domain.Thought,
 		sentences = append(sentences, c.sentence)
 	}
 	key := t.ID + "|" + strings.Join(sentences, "|")
+	// The center links to the task (unless it is gone)
+	target := func(p map[string]string) map[string]string {
+		if !deleted {
+			p[centerTarget], p[centerID] = "task", t.ID
+		}
+		return p
+	}
 	payload := func(lang string) map[string]string {
 		var msg string
+		generic := text(lang, changeOther)
+		short := generic
 		switch len(changes) {
 		case 0:
-			msg = text(lang, changeOther)
+			msg = generic
 		case 1:
 			msg = text(lang, changes[0].sentence)
+			short = msg
 		default:
 			parts := make([]string, 0, len(changes))
 			for _, c := range changes {
@@ -263,11 +319,13 @@ func (s *Server) notifyTaskChange(actorID string, before, after *domain.Thought,
 			}
 			msg = i18n.T(lang, changeSeveral, "name", s.actorName(lang, actorID), "title", title, "changes", strings.Join(parts, ", "))
 		}
-		return map[string]string{"title": title, "text": msg, "key": key}
+		// In the center a watched task keeps one short entry, its latest change
+		return target(map[string]string{"title": title, "text": msg, "key": key,
+			centerText: short, centerGeneric: generic, centerGroupID: "watched:" + t.ID})
 	}
 	single := func(msg string) func(lang string) map[string]string {
 		return func(lang string) map[string]string {
-			return map[string]string{"title": title, "text": text(lang, msg)}
+			return target(map[string]string{"title": title, "text": text(lang, msg)})
 		}
 	}
 
@@ -351,8 +409,10 @@ func (s *Server) notifyTaskAdded(actorID string, t *domain.Thought, skip map[str
 	title := taskTitle(t)
 	s.notify("taskCreated", actorID, members, func(lang string) map[string]string {
 		return map[string]string{
-			"title": title,
-			"text":  i18n.T(lang, taskAddedToList, "name", s.actorName(lang, actorID), "title", title, "list", list),
+			"title":      title,
+			"text":       i18n.T(lang, taskAddedToList, "name", s.actorName(lang, actorID), "title", title, "list", list),
+			centerTarget: "task",
+			centerID:     t.ID,
 		}
 	})
 }
@@ -365,6 +425,9 @@ func (s *Server) startNotificationJobs() {
 	for now := range ticker.C {
 		s.flushNotifications(now)
 		s.sendDailySummaries(now)
+		if now.Minute()%30 == 0 {
+			s.store.PruneCenter(now)
+		}
 	}
 }
 

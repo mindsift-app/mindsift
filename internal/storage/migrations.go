@@ -51,6 +51,7 @@ var migrations = []migration{
 	{28, "Links to notes carry the note's id", (*Store).migrateWikiLinksToIDs},
 	{29, "Muted task lists and due alarms per person", (*Store).migrateTaskAlerts},
 	{30, "Mentions in notes", (*Store).migrateMentions},
+	{31, "Notification center", (*Store).migrateCenter},
 }
 
 func (s *Store) migrate() error {
