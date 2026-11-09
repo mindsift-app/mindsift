@@ -12,6 +12,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 ### Changed
 - Notes: focus mode shows the note as wide as the editor with the folder sidebar hidden, instead of a narrow reading column.
 
+### Fixed
+- Notes: right after reloading the page, focus mode started with the note at the very top instead of keeping it at the height it had in the workspace.
+
 ## [0.89.0] - 2026-11-08
 
 ### Added

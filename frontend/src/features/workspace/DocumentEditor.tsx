@@ -359,6 +359,19 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
     const top = root.offsetTop;
     setFocusTopGap(Math.max(focusBarPinned ? 0 : 41, workspaceTopRef.current - top));
   }, [focusMode, focusBarPinned]);
+  // After a page load the note is still loading when that runs (no pane yet), and the bars above it may
+  // appear later: measured once the pane is there and again whenever it changes (otherwise focus mode would
+  // start too high)
+  const showsLoading = loading && !engineState?.ready;
+  useEffect(() => {
+    const root = scrollRef.current;
+    if (!root || focusMode || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(() => {
+      workspaceTopRef.current = root.getBoundingClientRect().top;
+    });
+    ro.observe(root);
+    return () => ro.disconnect();
+  }, [focusMode, showsLoading]);
 
   // Sideways the note moves to the middle in focus mode and gets wider (and back): it glides and grows
   // from where it was instead of jumping, the lines rewrap along the way
@@ -1435,7 +1448,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
   // Offline with a copy on this device: edit it, the sync engine sends the changes later
   const offlineCopy = loadedOffline && Boolean(engineState?.ready);
 
-  if (loading && !engineState?.ready) {
+  if (showsLoading) {
     return (
       <div className="flex-1 flex items-center justify-center p-12 text-muted">
         <Loader2 className="w-5 h-5 animate-spin mr-2 text-accent" />
