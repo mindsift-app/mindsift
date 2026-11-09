@@ -181,46 +181,68 @@ export function TaskCalendar({
     setGridAt(max <= 1 ? 'none' : el.scrollLeft >= max - 1 ? 'end' : el.scrollLeft <= 1 ? 'start' : 'middle');
   };
   useEffect(trackGrid, [dayWidth, mode]);
-  const edgeRef = useRef<{ dir: number; timer: number } | null>(null);
-  const stopEdge = () => {
-    if (edgeRef.current) window.clearTimeout(edgeRef.current.timer);
-    edgeRef.current = null;
-  };
-  const edgeScroll = (e: React.DragEvent) => {
+  // While anything is dragged the grid is not scrollable for the browser (its own edge scrolling ran to the
+  // end at once in Firefox and fought the jumps); the jumps scroll it from here. The scrollbar's room stays.
+  // One listener for the whole page decides about the edge: day cells stop dragover on its way.
+  useEffect(() => {
     const el = gridScrollRef.current;
     if (!el || !dayWidth) return;
-    const r = el.getBoundingClientRect();
-    const zone = Math.min(EDGE_ZONE, dayWidth / 2);
-    const dir =
-      e.clientX < r.left + zone && el.scrollLeft > 1
+    let active = false;
+    let dir = 0;
+    let timer = 0;
+    let idle = 0;
+    const stop = () => {
+      window.clearTimeout(timer);
+      dir = 0;
+    };
+    const end = () => {
+      window.clearTimeout(idle);
+      if (!active) return;
+      active = false;
+      stop();
+      el.style.overflowX = '';
+      el.style.paddingBottom = '';
+    };
+    const jump = (delay: number) => {
+      timer = window.setTimeout(() => {
+        el.scrollBy({ left: dir * dayWidth, behavior: 'smooth' });
+        jump(EDGE_REPEAT);
+      }, delay);
+    };
+    const onOver = (e: DragEvent) => {
+      if (!active) {
+        active = true;
+        el.style.paddingBottom = `${el.offsetHeight - el.clientHeight}px`;
+        el.style.overflowX = 'hidden';
+      }
+      // A drag that ends where nobody hears it (its row was moved away) leaves no dragend
+      window.clearTimeout(idle);
+      idle = window.setTimeout(end, 2000);
+      const r = el.getBoundingClientRect();
+      const zone = Math.min(EDGE_ZONE, dayWidth / 2);
+      const inside = e.clientY >= r.top && e.clientY <= r.bottom && e.clientX >= r.left - 8 && e.clientX <= r.right + 8;
+      const next = !inside
+        ? 0
+        : e.clientX < r.left + zone && el.scrollLeft > 1
         ? -1
         : e.clientX > r.right - zone && el.scrollLeft < el.scrollWidth - el.clientWidth - 1
         ? 1
         : 0;
-    if (dir === (edgeRef.current?.dir ?? 0)) return;
-    stopEdge();
-    if (!dir) return;
-    const jump = (delay: number) => {
-      edgeRef.current = {
-        dir,
-        timer: window.setTimeout(() => {
-          el.scrollBy({ left: dir * dayWidth, behavior: 'smooth' });
-          jump(EDGE_REPEAT);
-        }, delay),
-      };
+      if (next === dir) return;
+      stop();
+      dir = next;
+      if (dir) jump(EDGE_DELAY);
     };
-    jump(EDGE_DELAY);
-  };
-  // Dropped, cancelled or left the grid: no more jumping
-  useEffect(() => {
-    window.addEventListener('dragend', stopEdge);
-    window.addEventListener('drop', stopEdge);
+    window.addEventListener('dragover', onOver, true);
+    window.addEventListener('drop', end, true);
+    window.addEventListener('dragend', end, true);
     return () => {
-      window.removeEventListener('dragend', stopEdge);
-      window.removeEventListener('drop', stopEdge);
-      stopEdge();
+      window.removeEventListener('dragover', onOver, true);
+      window.removeEventListener('drop', end, true);
+      window.removeEventListener('dragend', end, true);
+      end();
     };
-  }, []);
+  }, [dayWidth]);
   const from = weeks[0][0];
   const to = weeks[weeks.length - 1][6];
   const byDay = useMemo(() => entriesByDay(tasks, from, openDay && openDay > to ? openDay : to), [tasks, from, to, openDay]);
@@ -616,11 +638,6 @@ export function TaskCalendar({
           <div
             ref={gridScrollRef}
             onScroll={trackGrid}
-            // Captured: the day cells stop the event on its way up
-            onDragOverCapture={edgeScroll}
-            onDragLeave={(e) => {
-              if (!e.currentTarget.contains(e.relatedTarget as Node | null)) stopEdge();
-            }}
             className="h-full overflow-x-auto overflow-y-hidden snap-x snap-mandatory">
             <div className="h-full flex flex-col" style={dayWidth ? { width: dayWidth * 7 } : undefined}>
               <div className="grid grid-cols-7 border-b border-border bg-canvas" style={dayColumns}>
