@@ -13,6 +13,36 @@ import (
 
 // --- TASK LISTS ---
 
+// defaultColumnNames: the German names of the standard columns (translated through the catalogs)
+var defaultColumnNames = map[string]string{
+	"todo":        "Zu erledigen",
+	"in_progress": "In Bearbeitung",
+	"waiting":     "Wartet auf andere",
+	"done":        "Erledigt",
+}
+
+// LocalizeColumns names the standard columns in lang as long as they still carry their standard name in
+// any language: a list created in English shows "Zu erledigen" to someone using German, and the boards of
+// lists created in different languages share their columns. Renamed columns stay as they are.
+func LocalizeColumns(cols []domain.KanbanColumn, lang string) []domain.KanbanColumn {
+	out := make([]domain.KanbanColumn, len(cols))
+	for i, c := range cols {
+		out[i] = c
+		de, ok := defaultColumnNames[c.ID]
+		if !ok {
+			continue
+		}
+		name := strings.TrimSpace(c.Name)
+		for _, l := range i18n.Supported {
+			if strings.EqualFold(name, i18n.T(l, de)) {
+				out[i].Name = i18n.T(lang, de)
+				break
+			}
+		}
+	}
+	return out
+}
+
 // defaultColumns: the board of a new task list, named in lang
 func defaultColumns(lang string) []domain.KanbanColumn {
 	return []domain.KanbanColumn{

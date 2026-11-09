@@ -74,7 +74,8 @@
     "moved": "Movido a «{{title}}»",
     "extractedInto": "Extraído a «{{title}}»",
     "moveFailed": "No se pudo mover",
-    "shareMenu": "Compartir…"
+    "shareMenu": "Compartir…",
+    "untitledBullet": "Viñeta"
   },
   "slash": {
     "todo": "Tarea con casilla de verificación",

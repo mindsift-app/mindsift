@@ -37,7 +37,7 @@
   "adding": "Wird hinzugefügt…",
   "general": "Allgemein",
   "openCount": "{{count}} offen",
-  "shareDialogTitle": "Liste teilen: {{title}}",
+  "shareDialogTitle": "Liste teilen",
   "shareMenuLabel": "Liste „{{title}}“ teilen",
   "item": {
     "addQuantity": "+ Menge"

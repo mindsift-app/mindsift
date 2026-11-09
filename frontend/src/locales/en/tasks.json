@@ -59,7 +59,8 @@
     "subtasks": "Subtasks ({{done}}/{{total}}):",
     "created": "Created: {{date}}",
     "plusWeek": "+1 week",
-    "timeShort": "Time"
+    "timeShort": "Time",
+    "renameSubtask": "Click to rename"
   },
   "columnsModal": {
     "minOne": "There must be at least one column.",
@@ -267,7 +268,7 @@
   },
   "repeats": "Repeats {{rule}}",
   "moveSubtask": "Move “{{title}}”",
-  "shareDialogTitle": "Share task list: {{title}}",
+  "shareDialogTitle": "Share task list",
   "assignedTo": "Assigned: {{names}}",
   "tabCount": {
     "open": "Open ({{count}})",

@@ -5,6 +5,8 @@ import (
 	"sort"
 	"strings"
 	"testing"
+
+	"github.com/mindsift-app/mindsift/internal/domain"
 )
 
 // Due alarms in a shared list go to the assignees, or to every member who did not mute the list when
@@ -82,5 +84,22 @@ func TestDueAlarmRecipients(t *testing.T) {
 	_, _ = store.SetTaskAssignees(anna.ID, task.ID, []string{ben.ID})
 	if got := pending(task.ID); got != "Ben" {
 		t.Fatalf("new assignee gets the alarm, got %q", got)
+	}
+}
+
+// Standard columns show in the language of whoever looks, as long as nobody renamed them
+func TestLocalizeColumns(t *testing.T) {
+	cols := defaultColumns("en")
+	cols = append(cols, domain.KanbanColumn{ID: "review", Name: "Review"})
+	cols[1].Name = "Doing" // renamed
+	got := LocalizeColumns(cols, "de")
+	want := []string{"Zu erledigen", "Doing", "Wartet auf andere", "Erledigt", "Review"}
+	for i, w := range want {
+		if got[i].Name != w {
+			t.Errorf("column %d: got %q, want %q", i, got[i].Name, w)
+		}
+	}
+	if it := LocalizeColumns(defaultColumns("de"), "it"); it[0].Name != "Da fare" || it[3].Name != "Fatto" {
+		t.Errorf("German names should turn Italian: %+v", it)
 	}
 }

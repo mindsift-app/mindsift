@@ -59,7 +59,8 @@
     "subtasks": "Unteraufgaben ({{done}}/{{total}}):",
     "created": "Erstellt: {{date}}",
     "plusWeek": "+1 Woche",
-    "timeShort": "Uhrzeit"
+    "timeShort": "Uhrzeit",
+    "renameSubtask": "Klicken zum Umbenennen"
   },
   "columnsModal": {
     "minOne": "Mindestens eine Spalte muss vorhanden sein.",
@@ -267,7 +268,7 @@
   },
   "repeats": "Wiederholt sich {{rule}}",
   "moveSubtask": "„{{title}}“ verschieben",
-  "shareDialogTitle": "Aufgabenliste teilen: {{title}}",
+  "shareDialogTitle": "Aufgabenliste teilen",
   "assignedTo": "Zugewiesen: {{names}}",
   "tabCount": {
     "open": "Offen ({{count}})",

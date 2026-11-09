@@ -1908,8 +1908,9 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
       <div
         ref={bubbleRef}
         className={`absolute right-1 sm:right-2 top-0.5 sm:top-1 z-20 bg-panel/90 backdrop-blur-sm border border-border shadow-xs rounded-pill px-1 sm:px-1.5 py-0.5 flex items-center gap-0.5 sm:gap-1 transition-opacity ${
-          lockedBy
-            ? // Someone else is editing the block: no actions, and the lock badge stays visible
+          lockedBy || (!canEdit && !onCopyBlockLink && block.type !== 'drawing')
+            ? // Someone else is editing the block: no actions, and the lock badge stays visible. Read only
+              // without a link to copy (a public page): nothing to show, not even an empty frame
               'hidden'
             : showBubble
             ? 'opacity-100 pointer-events-auto'

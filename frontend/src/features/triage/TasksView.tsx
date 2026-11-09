@@ -474,6 +474,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
     handleToggleSubtask,
     handleAddSubtask,
     handleDeleteSubtask,
+    handleRenameSubtask,
     handleReorderSubtasks,
     handleConvertToDoc,
     handleDeletePermanent,
@@ -1015,6 +1016,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
         onToggleSubtask={handleToggleSubtask}
         onAddSubtask={handleAddSubtask}
         onDeleteSubtask={handleDeleteSubtask}
+        onRenameSubtask={handleRenameSubtask}
         onReorderSubtasks={handleReorderSubtasks}
         onConvertToDoc={handleConvertToDoc}
         onDeleteTask={handleDeletePermanent}

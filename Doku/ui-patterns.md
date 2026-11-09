@@ -172,6 +172,12 @@ Component: [TaskCalendar.tsx](../frontend/src/features/triage/TaskCalendar.tsx),
 - Entries cannot be selected as text (`select-none`), so a long press on phones starts the drag.
 - Weeks start per language (`firstWeekday`); repeating dates follow the server's rule (months fall back to their last day).
 
+## Sharing Dialog
+
+Component: [UnifiedShareModal.tsx](../frontend/src/components/UnifiedShareModal.tsx), for notes, folders, task lists and shopping lists.
+
+- The header names what is shared small on top ("Share task list", `title`) and its name large below (`resourceName`), once.
+
 ## Fields That Are Not a Login
 
 Search and filter fields get `NO_AUTOFILL` (`lib/noAutofill.ts`). Passwords that are not the person's own login (other accounts, the mail server, the password of a public link) are text fields with `style={MASKED}` instead of `type="password"`, otherwise password managers offer the person's login there.

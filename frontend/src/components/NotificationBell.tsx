@@ -161,7 +161,8 @@ export function NotificationBell({ variant, onOpen }: { variant: 'desktop' | 'ph
               <Trash2 className="w-3.5 h-3.5" />
             </button>
           </div>
-          <div className="overflow-y-auto p-1">
+          {/* 2 px between entries, so tinted unread ones do not merge into one */}
+          <div className="overflow-y-auto p-1 space-y-0.5">
             {items.length === 0 ? (
               <p className="px-3 py-6 text-center text-xs text-faint">{t('center.empty')}</p>
             ) : (

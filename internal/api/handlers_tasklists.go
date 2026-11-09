@@ -8,6 +8,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/mindsift-app/mindsift/internal/auth"
 	"github.com/mindsift-app/mindsift/internal/domain"
+	"github.com/mindsift-app/mindsift/internal/storage"
 )
 
 // --- TASK LISTS ---
@@ -20,8 +21,10 @@ func (s *Server) handleGetTaskLists(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	muted := s.store.MutedTaskListIDs(userID)
+	lang := w.Header().Get("Content-Language")
 	for i := range lists {
 		lists[i].IsMuted = muted[lists[i].ID]
+		lists[i].Columns = storage.LocalizeColumns(lists[i].Columns, lang)
 	}
 	writeJSON(w, http.StatusOK, lists)
 }
@@ -62,6 +65,7 @@ func (s *Server) handleCreateTaskList(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
+	tl.Columns = storage.LocalizeColumns(tl.Columns, w.Header().Get("Content-Language"))
 	writeJSON(w, http.StatusCreated, tl)
 }
 
@@ -86,6 +90,7 @@ func (s *Server) handleUpdateTaskList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.broadcastTaskListChange(listID, audienceBefore, "TASK_LIST_UPDATED")
+	tl.Columns = storage.LocalizeColumns(tl.Columns, w.Header().Get("Content-Language"))
 	writeJSON(w, http.StatusOK, tl)
 }
 

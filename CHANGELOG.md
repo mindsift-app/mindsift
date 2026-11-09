@@ -6,6 +6,25 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.93.1] - 2026-11-09
+
+### Added
+- Public notes: visitors can zoom into a bullet by clicking its dot, like in the app; a path above leads back.
+- Tasks: click a subtask's title in the task dialog to rename it (Enter saves, Escape cancels; @-mentions work there too).
+- Tasks: a click beside the task dialog closes it. With unsaved changes the dialog shakes and asks first, also for the close button, Escape and Back.
+
+### Changed
+- Notes: Enter (or Tab) in the title starts a new empty bullet at the top when the first bullet is not an empty text bullet, so something can still go in front of a drawing or an image.
+- Shared task lists and shopping lists show the same "shared" sign in their tab as shared notes in the sidebar; the tooltip names the people.
+- Sharing dialog: what is shared stands small on top ("Share task list"), its name large below, instead of the name twice.
+
+### Fixed
+- Notes: jumping to a bullet (search, links to bullets, the notification center, tasks) no longer puts the cursor into it, which locked the bullet for everyone else; it is scrolled to and lit up as before.
+- Kanban: after switching the language, "All tasks" no longer shows the standard columns twice (once in the language the lists were created in, once in the new one). Standard columns that were not renamed now show in the language of whoever looks; the Spanish, French and Italian names in the app and on the server are the same again.
+- Public notes: hovering a bullet no longer shows an empty frame where the bullet's buttons are in the app.
+- List tabs: the counter no longer leaves too much room on the right since the delete button moved into the ⋯ menu.
+- Notification center: entries have a small gap between them, so unread ones no longer merge into one block.
+
 ## [0.93.0] - 2026-11-09
 
 ### Added

@@ -74,7 +74,8 @@
     "moved": "Déplacé dans « {{title}} »",
     "extractedInto": "Extrait dans « {{title}} »",
     "moveFailed": "Échec du déplacement",
-    "shareMenu": "Partager…"
+    "shareMenu": "Partager…",
+    "untitledBullet": "Puce"
   },
   "slash": {
     "todo": "Tâche avec case à cocher",

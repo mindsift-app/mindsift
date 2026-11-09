@@ -210,7 +210,7 @@ The `webhook:…` scope IDs originate from the time when keys could only ingest 
 |---|---|---|
 | GET/POST | `/task-lists` | Lists (`permission` per list: `owner`/`editor`/`viewer`) in the person's own order (see `PUT /task-lists/order`); create (`title`, `icon`, `color`, `teamId`; `icon: ""` = no icon, if omitted: 📋) |
 | PUT | `/task-lists/order` | Own order of the task list tabs (`ids`); per person, also for shared lists. Lists without a position (new ones) follow, most recently changed first. `204` |
-| PUT/DELETE | `/task-lists/{id}` | Update (`title`, `icon`, `color`, `teamId`, `columns`) – not allowed for viewers; delete allowed for owner only |
+| PUT/DELETE | `/task-lists/{id}` | Update (`title`, `icon`, `color`, `teamId`, `columns`) – not allowed for viewers; delete allowed for owner only. Lists in answers carry their standard columns (`todo`, `in_progress`, `waiting`, `done`) in the request's language as long as they still have a standard name in any language (`storage.LocalizeColumns`) |
 | PUT/DELETE | `/task-lists/{id}/mute` | Mute / unmute the list for the requesting person (`{"muted": bool}`, `404` without access). A muted list sends no list-wide notifications (new task, completed, due date of unassigned tasks); assignments, mentions and watched tasks still come. `GET /task-lists` returns `isMuted` per list |
 | GET | `/task-lists/{id}/shares` | Sharing permissions |
 | POST | `/task-lists/{id}/shares` | Owner only. Body: `targetType` (`team`/`user`), `targetId`, `permission` (`editor`/`viewer`, default `editor`). Re-submitting for the same target updates the permission tier |

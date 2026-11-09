@@ -118,13 +118,14 @@
     "private": "This item is private right now (visible to you only).",
     "remove": "Remove share",
     "defaultTitle": "Share & permissions",
-    "object": "Item:",
     "teamOption_one": "{{name}} ({{count}} member)",
     "teamOption_other": "{{name}} ({{count}} members)",
     "count_one": "{{count}} share",
     "count_other": "{{count}} shares",
     "editorRole": "Editor",
-    "viewerRole": "Reader"
+    "viewerRole": "Reader",
+    "titleNote": "Share note",
+    "titleFolder": "Share folder"
   },
   "sharedImport": {
     "whichList": "Which list?",

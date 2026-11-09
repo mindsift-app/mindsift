@@ -133,10 +133,9 @@ export const UnifiedShareModal: React.FC<UnifiedShareModalProps> = ({
               )}
             </div>
             <div className="min-w-0">
-              <h3 className="text-sm font-bold text-main truncate">{title ?? t('share.defaultTitle')}</h3>
-              <p className="text-[11px] text-muted truncate">
-                {t('share.object')} <span className="font-semibold text-main">{resourceName}</span>
-              </p>
+              {/* What is shared, small; its name large below (the name only once) */}
+              <p className="text-[11px] text-muted truncate">{title ?? t('share.defaultTitle')}</p>
+              <h3 className="text-sm font-bold text-main truncate">{resourceName}</h3>
             </div>
           </div>
           <button

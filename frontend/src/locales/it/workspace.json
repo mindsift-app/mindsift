@@ -74,7 +74,8 @@
     "moved": "Spostato in «{{title}}»",
     "extractedInto": "Estratto in «{{title}}»",
     "moveFailed": "Spostamento non riuscito",
-    "shareMenu": "Condividi…"
+    "shareMenu": "Condividi…",
+    "untitledBullet": "Punto"
   },
   "slash": {
     "todo": "Attività con casella di controllo",

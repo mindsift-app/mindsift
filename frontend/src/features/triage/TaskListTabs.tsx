@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import { Bell, BellOff, CalendarDays, Columns, LayoutList, Pencil, Plus, Trash2, Users } from 'lucide-react';
-import { AvatarStack } from '../../components/AvatarStack';
 import { CountBadge } from '../../components/CountBadge';
 import { SharedPill } from '../../components/SharedPill';
 import { ConfirmPopover } from '../../components/ConfirmPopover';
@@ -94,7 +93,7 @@ export function TaskListTabs({
         <button
           data-tab-fixed
           onClick={() => setSelectedListId('all')}
-          className={`shrink-0 whitespace-nowrap h-8 px-3 text-xs font-medium border rounded-btn transition-colors ${
+          className={`shrink-0 whitespace-nowrap h-8 pl-3 pr-2 text-xs font-medium border rounded-btn transition-colors ${
             selectedListId === 'all'
               ? 'bg-panel border-accent text-main'
               : 'bg-canvas border-border text-muted hover:text-main'
@@ -134,7 +133,7 @@ export function TaskListTabs({
             <button
               onClick={() => setSelectedListId(tl.id)}
               tabIndex={hidden ? -1 : undefined}
-              className="h-full px-3 text-xs font-medium flex items-center gap-1.5 rounded-btn"
+              className="h-full pl-3 pr-2 text-xs font-medium flex items-center gap-1.5 rounded-btn"
             >
               <span>{tl.icon}</span>
               <span className="inline-flex items-center">
@@ -147,26 +146,16 @@ export function TaskListTabs({
                 </span>
               )}
 
-              {(() => {
-                const isShared = (tl.shares && tl.shares.length > 0) || (tl.members && tl.members.length > 1);
-                if (!isShared) return null;
-                const otherMembers = (tl.members || []).filter((m) => m.userId !== currentUser?.id);
-                if (otherMembers.length > 0) {
-                  return (
-                    <AvatarStack
-                      people={otherMembers.map(memberToPerson)}
-                      size="xxs"
-                      ringClass={selectedListId === tl.id ? 'ring-[var(--bg-panel)]' : 'ring-[var(--bg-app)]'}
-                      className="ml-0.5"
-                    />
-                  );
-                }
-                return (
-                  <span title={t('tabs.shared')}>
-                    <Users className="w-2.5 h-2.5 text-accent ml-0.5" />
-                  </span>
-                );
-              })()}
+              {/* Shared: the same sign as a shared note in the sidebar; who with is in the tooltip */}
+              {isTaskListShared(tl) && (
+                <span
+                  title={[t('tabs.shared'), ...(tl.members || []).filter((m) => m.userId !== currentUser?.id).map((m) => memberToPerson(m).name)]
+                    .filter(Boolean)
+                    .join(' · ')}
+                >
+                  <Users className="w-3 h-3 text-status-ok shrink-0" aria-label={t('tabs.shared')} />
+                </span>
+              )}
             </button>
           </div>
           );

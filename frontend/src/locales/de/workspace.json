@@ -74,7 +74,8 @@
     "moved": "In „{{title}}“ verschoben",
     "extractedInto": "In „{{title}}“ ausgelagert",
     "moveFailed": "Verschieben fehlgeschlagen",
-    "shareMenu": "Teilen…"
+    "shareMenu": "Teilen…",
+    "untitledBullet": "Punkt"
   },
   "slash": {
     "todo": "Aufgabe mit Checkbox",

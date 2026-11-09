@@ -37,7 +37,7 @@
   "adding": "Añadiendo…",
   "general": "General",
   "openCount": "{{count}} pendientes",
-  "shareDialogTitle": "Compartir lista: {{title}}",
+  "shareDialogTitle": "Compartir lista",
   "shareMenuLabel": "Compartir la lista «{{title}}»",
   "item": {
     "addQuantity": "+ cantidad"

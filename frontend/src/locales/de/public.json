@@ -16,5 +16,7 @@
     "pick": "Farben wählen",
     "light": "Hell",
     "dark": "Dunkel"
-  }
+  },
+  "path": "Pfad",
+  "backToNote": "Zurück zur ganzen Notiz"
 }

@@ -143,6 +143,7 @@ import { EmojiPickerModal } from './EmojiPickerModal';
 import { ExtractPopover, ExtractTarget } from './ExtractPopover';
 import { BacklinksSection } from './BacklinksSection';
 import { useKeyboardInset } from '../../lib/useKeyboardInset';
+import { computeBreadcrumbs, getZoomedSubtree } from './zoom';
 
 // Height of the outline bar that sits on the keyboard (MobileOutlineBar), with a little air
 const KEYBOARD_BAR_SPACE = 64;
@@ -194,84 +195,6 @@ function sameBlocks(a: DocumentBlock[], b: DocumentBlock[]): boolean {
   return true;
 }
 
-export interface BreadcrumbNode {
-  id: string | null;
-  title: string;
-}
-
-export function computeBreadcrumbs(
-  docTitle: string,
-  blocks: DocumentBlock[],
-  zoomedBlockId: string | null
-): BreadcrumbNode[] {
-  if (!zoomedBlockId) return [];
-
-  const zoomedIdx = blocks.findIndex((b) => b.id === zoomedBlockId);
-  if (zoomedIdx === -1) return [];
-
-  const trail: BreadcrumbNode[] = [];
-  const zoomedBlock = blocks[zoomedIdx];
-
-  let currentLevel = zoomedBlock.level;
-  for (let i = zoomedIdx - 1; i >= 0; i--) {
-    if (blocks[i].level < currentLevel) {
-      trail.unshift({
-        id: blocks[i].id,
-        title: blocks[i].content?.trim() || 'Punkt',
-      });
-      currentLevel = blocks[i].level;
-      if (currentLevel === 0) break;
-    }
-  }
-
-  trail.unshift({
-    id: null,
-    title: docTitle || 'Dokument',
-  });
-
-  trail.push({
-    id: zoomedBlock.id,
-    title: zoomedBlock.content?.trim() || 'Punkt',
-  });
-
-  return trail;
-}
-
-export function getZoomedSubtree(
-  blocks: DocumentBlock[],
-  zoomedBlockId: string | null
-): {
-  zoomedBlock: DocumentBlock | null;
-  childBlocks: DocumentBlock[];
-  levelOffset: number;
-} {
-  if (!zoomedBlockId) {
-    return { zoomedBlock: null, childBlocks: blocks, levelOffset: 0 };
-  }
-
-  const idx = blocks.findIndex((b) => b.id === zoomedBlockId);
-  if (idx === -1) {
-    return { zoomedBlock: null, childBlocks: blocks, levelOffset: 0 };
-  }
-
-  const zoomedBlock = blocks[idx];
-  const zLevel = zoomedBlock.level;
-  const childBlocks: DocumentBlock[] = [];
-
-  for (let i = idx + 1; i < blocks.length; i++) {
-    if (blocks[i].level > zLevel) {
-      childBlocks.push(blocks[i]);
-    } else {
-      break;
-    }
-  }
-
-  return {
-    zoomedBlock,
-    childBlocks,
-    levelOffset: zLevel + 1,
-  };
-}
 
 export const DocumentEditor: React.FC<DocumentEditorProps> = ({
   docId,
@@ -566,8 +489,8 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
   }, [blocks, zoomedBlockId]);
 
   const breadcrumbs = useMemo(() => {
-    return computeBreadcrumbs(title || doc?.title || 'Dokument', blocks, zoomedBlockId);
-  }, [title, doc?.title, blocks, zoomedBlockId]);
+    return computeBreadcrumbs(title || doc?.title || t('editor.untitled'), blocks, zoomedBlockId);
+  }, [title, doc?.title, blocks, zoomedBlockId, t]);
 
   // Owner and editors may edit; the role comes from the server via the sync engine
   const inTrash = Boolean(doc?.isArchived);
@@ -1201,6 +1124,29 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
     [docId, canEdit, applyLocalBlocks]
   );
 
+  // Enter (or Tab) in the title: into the first bullet when that is an empty text bullet, otherwise a new
+  // empty bullet goes first, so a drawing or image at the top can still get something in front of it
+  const enterFromTitle = () => {
+    const first = currentBlocksRef.current[0];
+    const emptyText = !!first && first.type === 'text' && !(first.content || '').trim() && !(first.level || 0);
+    if (!canEdit || !first || emptyText || zoomedBlockId) {
+      outlinerTreeRef.current?.focusFirstBlock();
+      return;
+    }
+    const block: DocumentBlock = {
+      id: `blk_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`,
+      documentId: docId,
+      type: 'text',
+      content: '',
+      level: 0,
+      checked: false,
+      collapsed: false,
+      position: 0,
+    };
+    applyLocalBlocks((prev) => [block, ...prev]);
+    outlinerTreeRef.current?.focusBlock(block.id, 'start');
+  };
+
   const handleDeleteBlock = useCallback(
     (blockId: string) => {
       if (!canEdit) return;
@@ -1501,7 +1447,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
                 className="font-bold text-accent truncate max-w-[160px]"
                 title={crumb.title}
               >
-                {crumb.title || 'Punkt'}
+                {crumb.title || t('editor.untitledBullet')}
               </span>
             ) : (
               <button
@@ -1510,7 +1456,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
                 className="hover:text-main truncate max-w-[120px] transition-colors cursor-pointer"
                 title={t('editor.zoomTo', { title: crumb.title })}
               >
-                {crumb.title || 'Punkt'}
+                {crumb.title || t('editor.untitledBullet')}
               </button>
             )}
           </React.Fragment>
@@ -2101,7 +2047,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
                   // Tab after the title goes on into the text, like Enter (not to the first bullet's handle)
                   if ((e.key === 'Enter' || e.key === 'Tab') && !e.shiftKey) {
                     e.preventDefault();
-                    outlinerTreeRef.current?.focusFirstBlock();
+                    enterFromTitle();
                   }
                 }}
                 onBlur={handleTitleBlur}
