@@ -6,6 +6,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.89.1] - 2026-11-09
+
 ### Added
 - Notes: Ctrl + click (Cmd + click on macOS) on a bullet's arrow expands or collapses it together with all its sub-bullets, on every level. A single Ctrl + Z takes it back.
 
