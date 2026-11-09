@@ -488,6 +488,9 @@ const it: HelpContent = {
             <li>
               <strong className="text-main">Notifiche automatiche:</strong> all'orario di scadenza (per le attività valide tutto il giorno alle 9:00, meno il tuo tempo di preavviso) MindSift ti avvisa via <strong className="text-main">email</strong>, <strong className="text-main">webhook Discord</strong> o il tuo webhook HTTP. Se sposti la data di scadenza o riapri l'attività, l'avviso scatterà di nuovo. Configurabile nelle impostazioni dell'account.
             </li>
+            <li>
+              <strong className="text-main">Altre notifiche:</strong> Quando qualcuno ti assegna un'attività, una nuova attività arriva in una lista condivisa o lì ne viene completata una, MindSift può avvisarti; ogni evento si attiva o disattiva singolarmente nelle impostazioni, alla voce “Notifiche”. Le attività che <strong className="text-main">segui</strong> segnalano ogni modifica (stato, priorità, scadenza, testo, descrizione, sottoattività, assegnazione …), anche se spuntate in una nota. MindSift non ti avvisa mai di ciò che fai tu. Più eventi arrivano raggruppati in un unico messaggio.
+            </li>
           </ul>
         </div>
       ),

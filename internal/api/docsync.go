@@ -171,7 +171,7 @@ func (s *Server) handleDocSync(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if changed {
-		s.afterDocChange(docID, req.Ops, resp.Results)
+		s.afterDocChange(userID, docID, req.Ops, resp.Results)
 	}
 
 	logLimit := syncMaxLog
@@ -216,16 +216,20 @@ func (s *Server) handleDocSync(w http.ResponseWriter, r *http.Request) {
 
 // afterDocChange runs side effects of applied operations: linked tasks follow their blocks, and a new
 // title reaches the note lists of everyone with access.
-func (s *Server) afterDocChange(docID string, ops []collab.Op, results []collab.Result) {
+func (s *Server) afterDocChange(actorID, docID string, ops []collab.Op, results []collab.Result) {
 	titleChanged := false
 	for i, res := range results {
 		if i < len(ops) && ops[i].Kind == collab.OpSetTitle && res.Seq > 0 {
 			titleChanged = true
 		}
 	}
-	for _, taskID := range s.store.ReconcileDocTaskLinks(docID) {
-		if th, err := s.store.GetThoughtByIDUnchecked(taskID); err == nil {
+	for _, before := range s.store.ReconcileDocTaskLinks(docID) {
+		if th, err := s.store.GetThoughtByIDUnchecked(before.ID); err == nil {
 			s.wsHub.BroadcastToUsers(s.taskAudience(th), "TASK_UPDATED", th)
+			// Ticked or retitled in the note: told like a change in the task (unlinking alone changes nothing)
+			if len(taskChanges(before, th)) > 0 {
+				s.notifyTaskChange(actorID, before, th, false)
+			}
 		}
 	}
 	if titleChanged {

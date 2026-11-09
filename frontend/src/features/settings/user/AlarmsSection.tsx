@@ -21,6 +21,8 @@ export function AlarmsSection({
   const NOTIFICATION_EVENT_ROWS: { key: keyof NotificationEvents; label: string }[] = [
     { key: 'due', label: t('alarms.event.due') },
     { key: 'shared', label: t('alarms.event.shared') },
+    { key: 'assigned', label: t('alarms.event.assigned') },
+    { key: 'taskCreated', label: t('alarms.event.taskCreated') },
     { key: 'taskDone', label: t('alarms.event.taskDone') },
     { key: 'watched', label: t('alarms.event.watched') },
   ];

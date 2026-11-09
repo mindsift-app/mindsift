@@ -2,10 +2,12 @@ package api
 
 import (
 	"net/http"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/mindsift-app/mindsift/internal/collab"
 	"github.com/mindsift-app/mindsift/internal/domain"
 )
 
@@ -212,5 +214,179 @@ func TestDailySummaryIncludesGroupSharedLists(t *testing.T) {
 	srv.sendDailySummaries(time.Date(2026, 10, 30, 7, 1, 0, 0, time.Local))
 	if len(*sent) != 1 || !strings.Contains((*sent)[0].text, "Bericht abgeben (10:00 Uhr · Projekt)") {
 		t.Fatalf("group-shared task missing: %+v", *sent)
+	}
+}
+
+// mailsTo returns the texts of the mails sent to an address.
+func mailsTo(sent []sentNote, to string) []string {
+	var out []string
+	for _, n := range sent {
+		if n.channel == "email" && n.to == to {
+			out = append(out, n.text)
+		}
+	}
+	return out
+}
+
+func TestAssignedNotification(t *testing.T) {
+	srv, sent := notifyServer(t)
+	store := srv.store
+	router := srv.Router()
+	owner, ownerToken := newTestUser(t, store, "owner@example.com")
+	bob, bobToken := newTestUser(t, store, "bob@example.com")
+	list, _ := store.CreateTaskList(owner.ID, "", "", "Haushalt", "🏠", "#000000")
+	task, _ := store.CreateThoughtWithDetails(owner.ID, "Keller aufräumen", "normal", "manual", "", list.ID, "todo", "")
+	if _, err := store.AddTaskListShare(list.ID, "user", bob.ID, "editor", owner.ID); err != nil {
+		t.Fatal(err)
+	}
+
+	// Assigning someone else tells them (by default per mail); the one who assigned hears nothing
+	if rec := sessionCall(router, "PATCH", "/api/v1/thoughts/"+task.ID, ownerToken, `{"assignees":["`+bob.ID+`","`+owner.ID+`"]}`, ""); rec.Code != http.StatusOK {
+		t.Fatalf("assign: %d %s", rec.Code, rec.Body.String())
+	}
+	srv.flushNotifications(time.Now().Add(10 * time.Minute))
+	if got := mailsTo(*sent, "bob@example.com"); len(got) != 1 || !strings.Contains(got[0], "hat dir „Keller aufräumen“ zugewiesen") {
+		t.Fatalf("bob should get one assignment mail, got %+v", *sent)
+	}
+	if got := mailsTo(*sent, "owner@example.com"); len(got) != 0 {
+		t.Fatalf("assigning oneself must not notify: %+v", got)
+	}
+
+	// Taking a task oneself: nothing; still assigned: no second mail
+	*sent = nil
+	sessionCall(router, "PATCH", "/api/v1/thoughts/"+task.ID, ownerToken, `{"assignees":["`+bob.ID+`"]}`, "")
+	task2, _ := store.CreateThoughtWithDetails(owner.ID, "Rasen mähen", "normal", "manual", "", list.ID, "todo", "")
+	sessionCall(router, "PATCH", "/api/v1/thoughts/"+task2.ID, bobToken, `{"assignees":["`+bob.ID+`"]}`, "")
+	srv.flushNotifications(time.Now().Add(10 * time.Minute))
+	if len(*sent) != 0 {
+		t.Fatalf("no new assignment, nothing to send: %+v", *sent)
+	}
+
+	// Switched off in the settings: nothing
+	set := store.NotificationSettingsOf(bob.ID)
+	set.Events.Assigned = domain.ChannelChoice{}
+	_ = store.SetNotificationSettings(bob.ID, set)
+	sessionCall(router, "PATCH", "/api/v1/thoughts/"+task.ID, ownerToken, `{"assignees":[]}`, "")
+	sessionCall(router, "PATCH", "/api/v1/thoughts/"+task.ID, ownerToken, `{"assignees":["`+bob.ID+`"]}`, "")
+	srv.flushNotifications(time.Now().Add(10 * time.Minute))
+	if len(*sent) != 0 {
+		t.Fatalf("switched off, nothing to send: %+v", *sent)
+	}
+}
+
+func TestTaskAddedToSharedList(t *testing.T) {
+	srv, sent := notifyServer(t)
+	store := srv.store
+	router := srv.Router()
+	owner, ownerToken := newTestUser(t, store, "owner@example.com")
+	bob, _ := newTestUser(t, store, "bob@example.com")
+	carol, _ := newTestUser(t, store, "carol@example.com")
+	list, _ := store.CreateTaskList(owner.ID, "", "", "Haushalt", "🏠", "#000000")
+	for _, u := range []string{bob.ID, carol.ID} {
+		if _, err := store.AddTaskListShare(list.ID, "user", u, "editor", owner.ID); err != nil {
+			t.Fatal(err)
+		}
+	}
+	// Bob asked for it, Carol keeps the default (off)
+	set := store.NotificationSettingsOf(bob.ID)
+	set.Events.TaskCreated = domain.ChannelChoice{Email: true}
+	_ = store.SetNotificationSettings(bob.ID, set)
+
+	if rec := sessionCall(router, "POST", "/api/v1/inbox", ownerToken, `{"content":"Fenster putzen","target":"task","taskListId":"`+list.ID+`"}`, ""); rec.Code != http.StatusCreated {
+		t.Fatalf("create: %d %s", rec.Code, rec.Body.String())
+	}
+	// Moved from the personal tasks into the list: new there as well
+	own, _ := store.CreateThoughtWithDetails(owner.ID, "Müll rausbringen", "normal", "manual", "", "", "todo", "")
+	own, _ = store.UpdateThoughtTriage(owner.ID, own.ID, "keep", "task", "", "", "")
+	sessionCall(router, "PATCH", "/api/v1/thoughts/"+own.ID, ownerToken, `{"taskListId":"`+list.ID+`"}`, "")
+	srv.flushNotifications(time.Now().Add(10 * time.Minute))
+	got := mailsTo(*sent, "bob@example.com")
+	if len(got) != 1 || !strings.Contains(got[0], "hat „Fenster putzen“ zur Liste „Haushalt“ hinzugefügt") ||
+		!strings.Contains(got[0], "hat „Müll rausbringen“ zur Liste „Haushalt“ hinzugefügt") {
+		t.Fatalf("bob should get one mail with both tasks, got %+v", *sent)
+	}
+	if len(mailsTo(*sent, "carol@example.com")) != 0 || len(mailsTo(*sent, "owner@example.com")) != 0 {
+		t.Fatalf("carol (off) and the owner (own change) get nothing: %+v", *sent)
+	}
+}
+
+func TestWatchedTaskNamesEveryChange(t *testing.T) {
+	srv, sent := notifyServer(t)
+	store := srv.store
+	router := srv.Router()
+	owner, ownerToken := newTestUser(t, store, "owner@example.com")
+	watcher, _ := newTestUser(t, store, "watcher@example.com")
+	list, _ := store.CreateTaskList(owner.ID, "", "", "Haushalt", "🏠", "#000000")
+	task, _ := store.CreateThoughtWithDetails(owner.ID, "Keller aufräumen", "normal", "manual", "", list.ID, "todo", "")
+	task, _ = store.UpdateThoughtTriage(owner.ID, task.ID, "keep", "task", "", "", list.ID)
+	if _, err := store.AddTaskListShare(list.ID, "user", watcher.ID, "editor", owner.ID); err != nil {
+		t.Fatal(err)
+	}
+	_ = store.WatchTask(task.ID, watcher.ID, true)
+
+	sessionCall(router, "PATCH", "/api/v1/thoughts/"+task.ID, ownerToken, `{"priority":"high","kanbanStatus":"in_progress","notes":"Erst die Regale"}`, "")
+	sessionCall(router, "PATCH", "/api/v1/thoughts/"+task.ID, ownerToken, `{"kanbanStatus":"waiting"}`, "")
+	// Completing moves it to the done column too: told as completed only
+	sessionCall(router, "PATCH", "/api/v1/thoughts/"+task.ID, ownerToken, `{"isCompleted":true}`, "")
+	srv.flushNotifications(time.Now().Add(10 * time.Minute))
+	got := mailsTo(*sent, "watcher@example.com")
+	if len(got) != 1 {
+		t.Fatalf("one bundled mail expected, got %+v", *sent)
+	}
+	for _, want := range []string{
+		"hat „Keller aufräumen“ geändert: Priorität: Wichtig, Status: In Bearbeitung, Beschreibung",
+		"hat „Keller aufräumen“ nach „Wartet auf andere“ verschoben",
+		"hat „Keller aufräumen“ erledigt",
+	} {
+		if !strings.Contains(got[0], want) {
+			t.Errorf("mail should contain %q:\n%s", want, got[0])
+		}
+	}
+	if strings.Contains(got[0], "Erledigt") {
+		t.Errorf("completing must not also report the move to the done column:\n%s", got[0])
+	}
+}
+
+func TestTaskTickedInNoteNotifiesWatchers(t *testing.T) {
+	srv, sent := notifyServer(t)
+	store := srv.store
+	owner, _ := newTestUser(t, store, "owner@example.com")
+	watcher, _ := newTestUser(t, store, "watcher@example.com")
+	list, _ := store.CreateTaskList(owner.ID, "", "", "Haushalt", "🏠", "#000000")
+	if _, err := store.AddTaskListShare(list.ID, "user", watcher.ID, "editor", owner.ID); err != nil {
+		t.Fatal(err)
+	}
+	th, _ := store.CreateThoughtWithDetails(owner.ID, "Keller aufräumen", "normal", "manual", "", list.ID, "todo", "")
+	_, _ = store.UpdateThoughtTriage(owner.ID, th.ID, "keep", "task", "", "", list.ID)
+	// The task gets a note of its own, its checkbox is linked to it
+	task, err := store.UpdateThoughtTriage(owner.ID, th.ID, "keep", "document", "", "", "")
+	if err != nil || task.DocID == "" || task.BlockID == "" {
+		t.Fatalf("deepen: %v %+v", err, task)
+	}
+	_ = store.WatchTask(task.ID, watcher.ID, true)
+
+	yes := true
+	if err := srv.applyNoteOps(owner.ID, nil, task.DocID, []collab.Op{{OpID: "tick", Kind: collab.OpSetProps, BlockID: task.BlockID, Patch: &collab.PropsPatch{Checked: &yes}}}); err != nil {
+		t.Fatal(err)
+	}
+	// Typing in the title several times: told once, with the latest title
+	for i, title := range []string{"Keller aufräumen und", "Keller aufräumen und fegen"} {
+		snap, _ := store.GetDocSnapshot(task.DocID)
+		version := 0
+		for _, b := range snap.Blocks {
+			if b.ID == task.BlockID {
+				version = b.Version
+			}
+		}
+		text := title
+		if err := srv.applyNoteOps(owner.ID, nil, task.DocID, []collab.Op{{OpID: "t" + strconv.Itoa(i), Kind: collab.OpSetContent, BlockID: task.BlockID, BaseVersion: version, Content: &text}}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	srv.flushNotifications(time.Now().Add(10 * time.Minute))
+	got := mailsTo(*sent, "watcher@example.com")
+	if len(got) != 1 || !strings.Contains(got[0], "hat „Keller aufräumen“ erledigt") ||
+		strings.Count(got[0], "hat den Text von") != 1 || !strings.Contains(got[0], "„Keller aufräumen und fegen“") {
+		t.Fatalf("watcher should hear about the tick and one text change, got %+v", *sent)
 	}
 }

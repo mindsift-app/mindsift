@@ -95,19 +95,123 @@ func (s *Server) notifyShared(actorID, targetType, targetID, what, title string)
 	})
 }
 
-// Texts of changes to watched tasks
+// Texts of changes to watched tasks: a sentence when it is the only change, otherwise a short part of
+// changeSeveral
 const (
-	changeDeleted  = "{name} hat „{title}“ gelöscht"
-	changeDone     = "{name} hat „{title}“ erledigt"
-	changeReopened = "{name} hat „{title}“ wieder geöffnet"
-	changeDue      = "{name} hat die Fälligkeit von „{title}“ auf {due} geändert"
-	changeText     = "{name} hat den Text von „{title}“ geändert"
-	changePriority = "{name} hat die Priorität von „{title}“ auf {priority} geändert"
-	changeList     = "{name} hat „{title}“ in eine andere Liste verschoben"
-	changeOther    = "{name} hat „{title}“ geändert"
+	changeDeleted    = "{name} hat „{title}“ gelöscht"
+	changeDone       = "{name} hat „{title}“ erledigt"
+	changeReopened   = "{name} hat „{title}“ wieder geöffnet"
+	changeDue        = "{name} hat die Fälligkeit von „{title}“ auf {due} geändert"
+	changeDueRemoved = "{name} hat die Fälligkeit von „{title}“ entfernt"
+	changeText       = "{name} hat den Text von „{title}“ geändert"
+	changePriority   = "{name} hat die Priorität von „{title}“ auf {priority} geändert"
+	changeList       = "{name} hat „{title}“ in eine andere Liste verschoben"
+	changeStatus     = "{name} hat „{title}“ nach „{status}“ verschoben"
+	changeNotes      = "{name} hat die Beschreibung von „{title}“ geändert"
+	changeSubtasks   = "{name} hat die Unteraufgaben von „{title}“ geändert"
+	changeTags       = "{name} hat die Tags von „{title}“ geändert"
+	changeAssignees  = "{name} hat die Zuweisung von „{title}“ geändert"
+	changeRecurrence = "{name} hat die Wiederholung von „{title}“ geändert"
+	changeOther      = "{name} hat „{title}“ geändert"
+	changeSeveral    = "{name} hat „{title}“ geändert: {changes}"
+	taskAssignedText = "{name} hat dir „{title}“ zugewiesen"
+	taskAddedToList  = "{name} hat „{title}“ zur Liste „{list}“ hinzugefügt"
+	partDone         = "erledigt"
+	partReopened     = "wieder geöffnet"
+	partDue          = "Fälligkeit: {due}"
+	partDueRemoved   = "Fälligkeit entfernt"
+	partText         = "Text"
+	partPriority     = "Priorität: {priority}"
+	partList         = "andere Liste"
+	partStatus       = "Status: {status}"
+	partNotes        = "Beschreibung"
+	partSubtasks     = "Unteraufgaben"
+	partTags         = "Tags"
+	partAssignees    = "Zuweisung"
+	partRecurrence   = "Wiederholung"
 )
 
-// notifyTaskChange covers watchers (any change) and list members (task completed).
+// taskChange is one changed field of a task: its sentence and its part of a longer list.
+type taskChange struct{ sentence, part string }
+
+// taskChanges lists what differs between two states of a task, in a fixed order.
+func taskChanges(before, after *domain.Thought) []taskChange {
+	var out []taskChange
+	add := func(cond bool, sentence, part string) {
+		if cond {
+			out = append(out, taskChange{sentence, part})
+		}
+	}
+	completed := before.IsCompleted != after.IsCompleted
+	add(!before.IsCompleted && after.IsCompleted, changeDone, partDone)
+	add(before.IsCompleted && !after.IsCompleted, changeReopened, partReopened)
+	add(before.DueDate != after.DueDate && after.DueDate != "", changeDue, partDue)
+	add(before.DueDate != after.DueDate && after.DueDate == "", changeDueRemoved, partDueRemoved)
+	add(before.Content != after.Content, changeText, partText)
+	add(before.Priority != after.Priority, changePriority, partPriority)
+	add(before.TaskListID != after.TaskListID, changeList, partList)
+	// Completing moves the task to the done column (and back): that is not a change of its own
+	add(!completed && before.TaskListID == after.TaskListID && before.KanbanStatus != after.KanbanStatus, changeStatus, partStatus)
+	add(before.Notes != after.Notes, changeNotes, partNotes)
+	add(!sameSubtasks(before.Subtasks, after.Subtasks), changeSubtasks, partSubtasks)
+	// Tags follow the hashtags of the text
+	add(before.Content == after.Content && !sameSet(before.Tags, after.Tags), changeTags, partTags)
+	add(!sameSet(before.Assignees, after.Assignees), changeAssignees, partAssignees)
+	add(before.Recurrence != after.Recurrence, changeRecurrence, partRecurrence)
+	return out
+}
+
+func sameSubtasks(a, b []domain.SubTask) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i].Title != b[i].Title || a[i].IsCompleted != b[i].IsCompleted {
+			return false
+		}
+	}
+	return true
+}
+
+func sameSet(a, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	in := map[string]bool{}
+	for _, v := range a {
+		in[v] = true
+	}
+	for _, v := range b {
+		if !in[v] {
+			return false
+		}
+	}
+	return true
+}
+
+func taskTitle(t *domain.Thought) string {
+	return strings.TrimSpace(strings.SplitN(t.Content, "\n", 2)[0])
+}
+
+// isTask: kept entries and those converted to a task are tasks (inbox entries and notes are not)
+func isTask(t *domain.Thought) bool {
+	return t != nil && (t.Status == domain.StatusKept || (t.Status == domain.StatusConverted && t.ConvertedType == "task"))
+}
+
+// columnName is the name of a task list's board column as the actor sees it, else its id.
+func (s *Server) columnName(actorID, listID, columnID string) string {
+	if tl, err := s.store.GetTaskListByID(actorID, listID); err == nil && tl != nil {
+		for _, c := range tl.Columns {
+			if c.ID == columnID {
+				return c.Name
+			}
+		}
+	}
+	return columnID
+}
+
+// notifyTaskChange covers watchers (any change), list members (task completed, task added to the list)
+// and people newly assigned to the task.
 func (s *Server) notifyTaskChange(actorID string, before, after *domain.Thought, deleted bool) {
 	t := after
 	if t == nil {
@@ -116,53 +220,129 @@ func (s *Server) notifyTaskChange(actorID string, before, after *domain.Thought,
 	if t == nil {
 		return
 	}
-	title := strings.TrimSpace(strings.SplitN(t.Content, "\n", 2)[0])
-	var change string
+	title := taskTitle(t)
+	var changes []taskChange
 	switch {
 	case deleted:
-		change = changeDeleted
-	case before != nil && after != nil && !before.IsCompleted && after.IsCompleted:
-		change = changeDone
-	case before != nil && after != nil && before.IsCompleted && !after.IsCompleted:
-		change = changeReopened
-	case before != nil && after != nil && before.DueDate != after.DueDate:
-		change = changeDue
-	case before != nil && after != nil && before.Content != after.Content:
-		change = changeText
-	case before != nil && after != nil && before.Priority != after.Priority:
-		change = changePriority
-	case before != nil && after != nil && before.TaskListID != after.TaskListID:
-		change = changeList
-	default:
-		change = changeOther
+		changes = []taskChange{{sentence: changeDeleted}}
+	case before != nil && after != nil:
+		changes = taskChanges(before, after)
 	}
-	payload := func(lang string) map[string]string {
-		text := i18n.T(lang, change, "name", s.actorName(lang, actorID), "title", title)
-		if after != nil {
-			text = i18n.T(lang, change, "name", s.actorName(lang, actorID), "title", title,
-				"due", domain.HumanDue(lang, after.DueDate), "priority", domain.PriorityLabel(lang, after.Priority))
+	status := ""
+	if after != nil && after.KanbanStatus != "" && after.TaskListID != "" {
+		for _, c := range changes {
+			if c.sentence == changeStatus {
+				status = s.columnName(actorID, after.TaskListID, after.KanbanStatus)
+			}
 		}
-		return map[string]string{"title": title, "text": text}
+	}
+	text := func(lang, msg string) string {
+		args := []string{"name", s.actorName(lang, actorID), "title", title}
+		if after != nil {
+			args = append(args, "due", domain.HumanDue(lang, after.DueDate), "priority", domain.PriorityLabel(lang, after.Priority), "status", status)
+		}
+		return i18n.T(lang, msg, args...)
+	}
+	// Typing in a note changes a task many times: the same kind of change to it is sent once, the latest
+	sentences := make([]string, 0, len(changes))
+	for _, c := range changes {
+		sentences = append(sentences, c.sentence)
+	}
+	key := t.ID + "|" + strings.Join(sentences, "|")
+	payload := func(lang string) map[string]string {
+		var msg string
+		switch len(changes) {
+		case 0:
+			msg = text(lang, changeOther)
+		case 1:
+			msg = text(lang, changes[0].sentence)
+		default:
+			parts := make([]string, 0, len(changes))
+			for _, c := range changes {
+				parts = append(parts, text(lang, c.part))
+			}
+			msg = i18n.T(lang, changeSeveral, "name", s.actorName(lang, actorID), "title", title, "changes", strings.Join(parts, ", "))
+		}
+		return map[string]string{"title": title, "text": msg, "key": key}
+	}
+	single := func(msg string) func(lang string) map[string]string {
+		return func(lang string) map[string]string {
+			return map[string]string{"title": title, "text": text(lang, msg)}
+		}
+	}
+
+	// Newly assigned people hear about it as such; a watcher among them needs no second line for it
+	assigned := map[string]bool{}
+	if before != nil && after != nil && !deleted {
+		had := map[string]bool{}
+		for _, id := range before.Assignees {
+			had[id] = true
+		}
+		var added []string
+		for _, id := range after.Assignees {
+			if !had[id] {
+				added = append(added, id)
+				assigned[id] = true
+			}
+		}
+		s.notify("assigned", actorID, added, single(taskAssignedText))
 	}
 	watchers := s.store.TaskWatchers(t.ID)
-	s.notify("watched", actorID, watchers, payload)
-
-	if change == changeDone && t.TaskListID != "" {
-		watching := map[string]bool{}
-		for _, w := range watchers {
-			watching[w] = true
+	watching := map[string]bool{}
+	var tellWatchers []string
+	for _, w := range watchers {
+		watching[w] = true
+		if !(assigned[w] && len(changes) == 1 && changes[0].sentence == changeAssignees) {
+			tellWatchers = append(tellWatchers, w)
 		}
+	}
+	s.notify("watched", actorID, tellWatchers, payload)
+
+	done := false
+	for _, c := range changes {
+		done = done || c.sentence == changeDone
+	}
+	if done && t.TaskListID != "" {
 		var members []string
 		for _, uid := range s.taskAudience(t) {
 			if !watching[uid] { // watchers already hear about it
 				members = append(members, uid)
 			}
 		}
-		s.notify("taskDone", actorID, members, payload)
+		s.notify("taskDone", actorID, members, single(changeDone))
+	}
+	// Moved into a shared list: new there for its members
+	if before != nil && after != nil && !deleted && after.TaskListID != "" && before.TaskListID != after.TaskListID {
+		s.notifyTaskAdded(actorID, after, watching)
 	}
 	if deleted {
 		s.store.ForgetTaskWatchers(t.ID)
 	}
+}
+
+// notifyTaskAdded tells the members of a shared task list that a task was added to it (created there,
+// made from an inbox entry or moved there). skip: people who already hear about it otherwise.
+func (s *Server) notifyTaskAdded(actorID string, t *domain.Thought, skip map[string]bool) {
+	if !isTask(t) || t.TaskListID == "" {
+		return
+	}
+	list := ""
+	if tl, err := s.store.GetTaskListByID(actorID, t.TaskListID); err == nil && tl != nil {
+		list = tl.Title
+	}
+	var members []string
+	for _, uid := range s.taskAudience(t) {
+		if !skip[uid] {
+			members = append(members, uid)
+		}
+	}
+	title := taskTitle(t)
+	s.notify("taskCreated", actorID, members, func(lang string) map[string]string {
+		return map[string]string{
+			"title": title,
+			"text":  i18n.T(lang, taskAddedToList, "name", s.actorName(lang, actorID), "title", title, "list", list),
+		}
+	})
 }
 
 // --- Background jobs ---
@@ -197,12 +377,22 @@ func (s *Server) flushNotifications(now time.Time) {
 		var out channelItems
 		ids := make([]int64, 0, len(queued))
 		maxAttempts := 0
-		for _, q := range queued {
+		// Events with the same key (the same change to the same task) go out once, as the latest
+		last := map[string]int{}
+		for i, q := range queued {
+			if k := q.Payload["key"]; k != "" {
+				last[q.Kind+"|"+k] = i
+			}
+		}
+		for i, q := range queued {
 			ids = append(ids, q.ID)
 			if q.Attempts > maxAttempts {
 				maxAttempts = q.Attempts
 			}
 			if set.Paused {
+				continue
+			}
+			if k := q.Payload["key"]; k != "" && last[q.Kind+"|"+k] != i {
 				continue
 			}
 			item := notifyItem{kind: q.Kind, title: q.Payload["title"], text: q.Payload["text"]}

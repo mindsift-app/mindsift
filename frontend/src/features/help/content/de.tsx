@@ -641,6 +641,9 @@ const de: HelpContent = {
             <li>
               <strong className="text-main">Automatische Alarme:</strong> Zur Fälligkeit (ganztägige Aufgaben um 9:00, abzüglich deiner Vorlaufzeit) benachrichtigt MindSift dich per <strong className="text-main">E-Mail</strong>, <strong className="text-main">Discord-Webhook</strong> oder individuellem HTTP-Webhook. Verschiebst du die Fälligkeit oder öffnest die Aufgabe wieder, kommt der Alarm erneut. Konfigurierbar in deinen Benutzereinstellungen.
             </li>
+            <li>
+              <strong className="text-main">Weitere Benachrichtigungen:</strong> Wenn dir jemand eine Aufgabe zuweist, eine neue Aufgabe in einer geteilten Liste landet oder dort eine erledigt wird, kann MindSift dir Bescheid geben; jedes Ereignis schaltest du in den Einstellungen unter „Alarme“ einzeln ein oder aus. Aufgaben, die du <strong className="text-main">beobachtest</strong>, melden jede Änderung (Status, Priorität, Fälligkeit, Text, Beschreibung, Unteraufgaben, Zuweisung …), auch wenn sie in einer Notiz abgehakt werden. Was du selbst tust, meldet MindSift dir nicht. Mehrere Ereignisse kommen gebündelt in einer Nachricht.
+            </li>
           </ul>
         </div>
       ),

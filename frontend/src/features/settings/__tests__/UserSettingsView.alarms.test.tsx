@@ -54,7 +54,7 @@ describe('UserSettingsView notification matrix', () => {
 
     // Without Discord webhook, Discord switches are disabled and hint is visible
     const discordSwitches = screen.getAllByTitle('Bitte zuerst unten eine Discord Webhook URL eintragen');
-    expect(discordSwitches.length).toBe(5);
+    expect(discordSwitches.length).toBe(7);
     expect((discordSwitches[0] as HTMLButtonElement).disabled).toBe(true);
     expect(screen.getByText(/Discord-Schalter sind deaktiviert/)).toBeTruthy();
 
@@ -70,6 +70,7 @@ describe('UserSettingsView notification matrix', () => {
     // Toggle settings in the matrix, daily summary, and global switches
     fireEvent.click(screen.getByTitle('Fällige Aufgaben (sofort) – Discord'));
     fireEvent.click(screen.getByTitle('Geteilte Aufgabe erledigt – E-Mail'));
+    fireEvent.click(screen.getByTitle('Neue Aufgabe in geteilter Liste – E-Mail'));
     fireEvent.click(screen.getByTitle('Beobachtete Aufgaben – Discord'));
     fireEvent.click(screen.getByTitle('Alle Benachrichtigungen pausieren'));
     fireEvent.click(screen.getByTitle('Auch eigene Änderungen an beobachteten Aufgaben melden'));
@@ -91,6 +92,8 @@ describe('UserSettingsView notification matrix', () => {
           events: {
             due: { email: true, discord: true, webhook: false, push: false },
             shared: { email: true, discord: false, webhook: false, push: false },
+            assigned: { email: true, discord: false, webhook: false, push: false },
+            taskCreated: { email: true, discord: false, webhook: false, push: false },
             taskDone: { email: true, discord: false, webhook: false, push: false },
             watched: { email: true, discord: false, webhook: false, push: false },
           },
@@ -122,7 +125,7 @@ describe('UserSettingsView notification matrix', () => {
     );
     fireEvent.click(screen.getByText('Alarme'));
     const off = screen.getAllByTitle('Bitte zuerst unten eine eigene Webhook URL eintragen');
-    expect(off.length).toBe(5);
+    expect(off.length).toBe(7);
     expect((off[0] as HTMLButtonElement).disabled).toBe(true);
 
     fireEvent.change(screen.getByPlaceholderText(/dein-server\.local/), {

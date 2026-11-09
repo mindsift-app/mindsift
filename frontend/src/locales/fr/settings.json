@@ -262,6 +262,8 @@
     "event": {
       "due": "Tâches échues (immédiatement)",
       "shared": "Élément partagé avec toi",
+      "assigned": "Tâche qui m’est attribuée",
+      "taskCreated": "Nouvelle tâche dans une liste partagée",
       "taskDone": "Tâche partagée terminée",
       "watched": "Tâches suivies"
     },

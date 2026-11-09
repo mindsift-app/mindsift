@@ -481,6 +481,9 @@ const fr: HelpContent = {
               <strong className="text-main">Alertes &amp; notifications :</strong> reçois des alertes par e-mail, webhook Discord ou notifications push sur tes appareils à l'approche d'une échéance (par ex. 15 minutes ou 1 jour avant).
             </li>
             <li>
+              <strong className="text-main">Autres notifications :</strong> Quand quelqu’un t’attribue une tâche, qu’une nouvelle tâche arrive dans une liste partagée ou qu’une tâche y est terminée, MindSift peut te prévenir ; chaque événement s’active ou se désactive séparément dans les paramètres, sous « Alarmes ». Les tâches que tu <strong className="text-main">suis</strong> signalent chaque modification (statut, priorité, échéance, texte, description, sous-tâches, attribution …), même cochées dans une note. MindSift ne te signale jamais ce que tu fais toi-même. Plusieurs événements arrivent regroupés dans un seul message.
+            </li>
+            <li>
               <strong className="text-main">Suivre des tâches :</strong> avec l'icône en forme d'œil dans le détail de la tâche, abonne-toi aux notifications lors de modifications apportées par d'autres personnes.
             </li>
           </ul>

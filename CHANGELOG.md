@@ -6,6 +6,16 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Added
+- Notifications: "Task assigned to me". When someone else assigns a task to you, you hear about it (by email unless you choose otherwise in Settings → Alarms). Assigning a task to yourself sends nothing.
+- Notifications: "New task in a shared list". When someone adds a task to a task list shared with you (creates it there, sorts it there from the inbox or moves it there), you can be told; off by default, switch it on in Settings → Alarms.
+
+### Changed
+- Notifications about watched tasks name what changed: status, priority, due date, text, description, subtasks, tags, assignment or repetition, several changes in one line ("changed “Clean the cellar”: priority: Important, status: In progress"). Before, most changes only said that the task was changed.
+
+### Fixed
+- Notifications: ticking or renaming a task in a note now notifies its watchers and, when completed, the members of its shared list, like a change in the task itself. Typing in the note sends one line with the latest title, not one per pause.
+
 ## [0.89.1] - 2026-11-09
 
 ### Added
