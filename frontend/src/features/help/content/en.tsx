@@ -488,6 +488,9 @@ const en: HelpContent = {
             <li>
               <strong className="text-main">Automatic alarms:</strong> at the due time (all-day tasks at 9:00, minus your advance warning) MindSift notifies you by <strong className="text-main">email</strong>, <strong className="text-main">Discord webhook</strong> or your own HTTP webhook. Move the due date or reopen the task and the alarm comes again. Configurable in your account settings.
             </li>
+            <li>
+              <strong className="text-main">More notifications:</strong> When someone assigns a task to you, a new task lands in a shared list or one there is completed, MindSift can let you know; switch each event on or off in the settings under “Alarms”. Tasks you <strong className="text-main">watch</strong> report every change (status, priority, due date, text, description, subtasks, assignment …), also when they are ticked in a note. MindSift never notifies you about what you did yourself. Several events arrive bundled in one message.
+            </li>
           </ul>
         </div>
       ),

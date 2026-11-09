@@ -79,6 +79,8 @@ export interface NotificationChannelRouting {
 export interface NotificationEvents {
   due: NotificationChannelRouting;
   shared: NotificationChannelRouting;
+  assigned: NotificationChannelRouting;
+  taskCreated: NotificationChannelRouting;
   taskDone: NotificationChannelRouting;
   watched: NotificationChannelRouting;
 }

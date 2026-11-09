@@ -164,10 +164,12 @@ type NotificationSettings struct {
 }
 
 type NotificationEvents struct {
-	Due      ChannelChoice `json:"due"`      // task alarms (sent at once)
-	Shared   ChannelChoice `json:"shared"`   // something was shared with me
-	TaskDone ChannelChoice `json:"taskDone"` // a shared task was completed
-	Watched  ChannelChoice `json:"watched"`  // a watched task changed
+	Due         ChannelChoice `json:"due"`         // task alarms (sent at once)
+	Shared      ChannelChoice `json:"shared"`      // something was shared with me
+	Assigned    ChannelChoice `json:"assigned"`    // someone assigned a task to me
+	TaskCreated ChannelChoice `json:"taskCreated"` // a task was added to a shared task list
+	TaskDone    ChannelChoice `json:"taskDone"`    // a shared task was completed
+	Watched     ChannelChoice `json:"watched"`     // a watched task changed
 }
 
 type ChannelChoice struct {
@@ -199,21 +201,26 @@ func DefaultNotificationSettings(alarmChannels []string) NotificationSettings {
 	}
 	return NotificationSettings{
 		Events: NotificationEvents{
-			Due:     due,
-			Shared:  ChannelChoice{Email: true},
-			Watched: ChannelChoice{Email: true, Discord: true},
+			Due:      due,
+			Shared:   ChannelChoice{Email: true},
+			Assigned: ChannelChoice{Email: true},
+			Watched:  ChannelChoice{Email: true, Discord: true},
 		},
 		DailySummary: DailySummary{Time: "07:00", Email: true},
 	}
 }
 
-// Channels returns the choice for an event kind (due, shared, taskDone, watched).
+// Channels returns the choice for an event kind (due, shared, assigned, taskCreated, taskDone, watched).
 func (n NotificationSettings) Channels(kind string) ChannelChoice {
 	switch kind {
 	case "due":
 		return n.Events.Due
 	case "shared":
 		return n.Events.Shared
+	case "assigned":
+		return n.Events.Assigned
+	case "taskCreated":
+		return n.Events.TaskCreated
 	case "taskDone":
 		return n.Events.TaskDone
 	case "watched":

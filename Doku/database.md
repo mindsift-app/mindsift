@@ -14,7 +14,7 @@ SQLite file `mindsift.db` (default: `$DATA_DIR/mindsift.db`), opened with `journ
 | `public_links` | Public read-only links to notes (Migration 24), at most one per note | `doc_id` (unique), `created_by`, `token_hash` (SHA-256 of the token), `token_sealed` (token encrypted with `SECRETS_KEY`, so the owner can copy it again), `password_hash` (bcrypt, `''` = none), `theme_family` (unused since v0.87.1), `expires_at` |
 | `media` | Images and audio in notes (Migration 5); file stored under `$DATA_DIR/media/<doc_id>/<id>.<ext>` | `id`, `doc_id`, `owner_id`, `kind` (`image`/`audio`), `mime`, `size`, `source_url` (fetched external image), `created_at` |
 | `link_previews` | Cached link previews (Migration 6) | `key` (hash of URL), `url`, `title`, `description`, `site_name`, `image`/`icon` (BLOB, with `*_mime`), `ok`, `fetched_at` |
-| `notification_queue` | Queued notifications pending bundled digest dispatch (Migration 7) | `user_id`, `kind` (`shared`/`taskDone`/`watched`), `payload` (JSON), `created_at`, `attempts` |
+| `notification_queue` | Queued notifications pending bundled digest dispatch (Migration 7) | `user_id`, `kind` (`shared`/`assigned`/`taskCreated`/`taskDone`/`watched`), `payload` (JSON; `title`, `text`, optional `key` to send repeated changes once), `created_at`, `attempts` |
 | `task_watchers` | Watched tasks (Migration 7) | `task_id`, `user_id`, `created_at` |
 | `push_subscriptions` | Registered Web Push devices (Migration 9) | `user_id`, `endpoint` (unique), `p256dh`, `auth`, `device`, `created_at` |
 | `push_keys` | VAPID key pair when not configured via environment (Migration 9) | Single row: `public_key`, `private_key` |

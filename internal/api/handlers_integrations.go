@@ -231,6 +231,7 @@ func (s *Server) createTask(userID, content, priority, source, dueDate, taskList
 	}
 	s.recordThoughtOrigin(task, actor, true)
 	s.wsHub.BroadcastToUsers(s.taskAudience(task), "TASK_CREATED", task)
+	s.notifyTaskAdded(userID, task, nil)
 	return task, nil
 }
 

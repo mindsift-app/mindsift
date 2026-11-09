@@ -98,8 +98,8 @@ func reconcileSubtasks(d *collab.Doc, mainID string, subs []domain.SubTask, take
 
 // ReconcileDocTaskLinks brings tasks linked to blocks in line with the note after it changed: tick,
 // title and subtasks. A deleted main checkbox unlinks the task and its subtasks (all of them stay).
-// Returns the IDs of changed tasks.
-func (s *Store) ReconcileDocTaskLinks(docID string) []string {
+// Returns the changed tasks as they were before (for the notifications about the change).
+func (s *Store) ReconcileDocTaskLinks(docID string) []*domain.Thought {
 	links := s.docTaskLinks(docID)
 	if len(links) == 0 {
 		return nil
@@ -112,7 +112,7 @@ func (s *Store) ReconcileDocTaskLinks(docID string) []string {
 	for blockID := range links {
 		taken[blockID] = true
 	}
-	var changed []string
+	var changed []*domain.Thought
 	for blockID, taskID := range links {
 		t, err := s.GetThoughtByIDUnchecked(taskID)
 		if err != nil || t == nil {
@@ -125,7 +125,7 @@ func (s *Store) ReconcileDocTaskLinks(docID string) []string {
 			}
 			subsJSON, _ := json.Marshal(t.Subtasks)
 			if _, err := s.db.Exec(`UPDATE thoughts SET converted_type = '', converted_ref_id = '', subtasks = ? WHERE id = ?`, string(subsJSON), taskID); err == nil {
-				changed = append(changed, taskID)
+				changed = append(changed, t)
 			}
 			continue
 		}
@@ -162,7 +162,7 @@ func (s *Store) ReconcileDocTaskLinks(docID string) []string {
 		}
 		if _, err := s.db.Exec(`UPDATE thoughts SET content = ?, tags = ?, is_completed = ?, kanban_status = ?, subtasks = ? WHERE id = ?`,
 			content, string(tagsJSON), boolInt(done), kanban, string(subsJSON), taskID); err == nil {
-			changed = append(changed, taskID)
+			changed = append(changed, t)
 		}
 	}
 	return changed

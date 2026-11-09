@@ -89,6 +89,7 @@ func (s *Server) handleCaptureInbox(w http.ResponseWriter, r *http.Request) {
 	}
 
 	s.wsHub.BroadcastToUsers(s.taskAudience(thought), "TASK_CREATED", thought)
+	s.notifyTaskAdded(userID, thought, nil)
 	writeJSON(w, http.StatusCreated, thought)
 }
 
@@ -176,6 +177,7 @@ func (s *Server) handleTriageAction(w http.ResponseWriter, r *http.Request) {
 	}
 
 	s.wsHub.BroadcastToUsers(s.taskAudience(updated), "TASK_UPDATED", updated)
+	s.notifyTaskAdded(userID, updated, nil)
 	writeJSON(w, http.StatusOK, updated)
 }
 

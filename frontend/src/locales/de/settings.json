@@ -262,6 +262,8 @@
     "event": {
       "due": "Fällige Aufgaben (sofort)",
       "shared": "Freigabe erhalten",
+      "assigned": "Aufgabe mir zugewiesen",
+      "taskCreated": "Neue Aufgabe in geteilter Liste",
       "taskDone": "Geteilte Aufgabe erledigt",
       "watched": "Beobachtete Aufgaben"
     },

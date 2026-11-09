@@ -116,7 +116,7 @@ func (s *Server) applyNoteOps(userID string, actor *apiActor, docID string, ops 
 			return errors.New("Änderung abgelehnt: " + res.Reason)
 		}
 	}
-	s.afterDocChange(docID, ops, results)
+	s.afterDocChange(userID, docID, ops, results)
 	_, head, _ := s.store.GetDocOpsSince(docID, 0, 0)
 	s.notifyDocChanged(docID, head)
 	return nil
@@ -516,6 +516,7 @@ var mcpWriteTools = []mcpTool{
 				s.broadcastDocToAuthorizedUsers(updated.ConvertedRefID, "DOC_CREATED")
 			}
 			s.wsHub.BroadcastToUsers(s.taskAudience(updated), "TASK_UPDATED", updated)
+			s.notifyTaskAdded(userID, updated, nil)
 			out := map[string]interface{}{"id": updated.ID, "status": fmt.Sprint(updated.Status), "convertedType": updated.ConvertedType}
 			if updated.ConvertedRefID != "" {
 				out["refId"] = updated.ConvertedRefID

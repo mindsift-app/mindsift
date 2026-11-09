@@ -262,6 +262,8 @@
     "event": {
       "due": "Due tasks (right away)",
       "shared": "Something shared with you",
+      "assigned": "Task assigned to me",
+      "taskCreated": "New task in a shared list",
       "taskDone": "Shared task done",
       "watched": "Watched tasks"
     },
