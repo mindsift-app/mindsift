@@ -15,7 +15,7 @@ interface SegmentedControlProps<T extends string> {
 }
 
 // Small switch between a few views of a list (Doku/ui-patterns.md): sorting of the hashtags, grouping and
-// open/all of the to-dos. The chosen option is raised; one look everywhere.
+// open/all of the to-dos, list/Kanban/calendar of the tasks and month/week of the calendar. The chosen option is raised; one look everywhere.
 export function SegmentedControl<T extends string>({ options, value, onChange, ariaLabel }: SegmentedControlProps<T>) {
   return (
     <div role="radiogroup" aria-label={ariaLabel} className="flex items-center bg-main/[0.04] border border-border rounded-btn p-0.5 text-[11px]">

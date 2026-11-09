@@ -104,7 +104,7 @@ Component: [CountBadge.tsx](../frontend/src/components/CountBadge.tsx), CSS clas
 
 Component: [SegmentedControl.tsx](../frontend/src/components/SegmentedControl.tsx)
 
-- A row of two or three short options in one frame; the chosen one is raised (`bg-panel-elevated`, light shadow). Used wherever a list can be shown in different ways: sorting of the hashtags (frequency / A–Z), the to-dos from notes (open / all, grouped / list).
+- A row of two or three short options in one frame; the chosen one is raised (`bg-panel-elevated`, light shadow). Used wherever a list can be shown in different ways: sorting of the hashtags (frequency / A–Z), the to-dos from notes (open / all, grouped / list), the task views (list / Kanban / calendar, with icons) and month / week of the calendar.
 - Short labels, the longer explanation goes into `title` (hover). Screen readers get `radiogroup` and `radio` with `aria-checked`.
 - The choice is a per-device convenience and is kept in `localStorage` where it should survive a reload (to-dos: `mindsift_todo_show`, `mindsift_todo_grouping`).
 - Build new switches of this kind with this component instead of copying button classes.
@@ -165,7 +165,7 @@ Component: [NotificationBell.tsx](../frontend/src/components/NotificationBell.ts
 
 Component: [TaskCalendar.tsx](../frontend/src/features/triage/TaskCalendar.tsx), logic in [calendar.ts](../frontend/src/lib/calendar.ts).
 
-- Third view next to list and Kanban (remembered per list). Desktop: month or week (segment switch), 7 columns without hours; phones: the week with a date strip on top and the days below.
+- Third view next to list and Kanban (remembered per list). Desktop: month or week (`SegmentedControl`), 7 columns without hours; phones: the week with a date strip on top and the days below.
 - Entries are compact: priority dot, time, title; overdue in red, done struck through, coming dates of repeating tasks greyed with ↻ (they open the task itself). A month day shows three and "+n more".
 - Dragging (mouse: HTML5 with the half transparent ghost; finger: hold, as on the Kanban board) onto a day sets the date and keeps a time; onto "Unscheduled" removes it; undo with Ctrl + Z or the notice.
 - Desktop, like the Kanban board: the month/week switch and the full-width button (the same setting as the board) sit at the right of the hashtag row; the height and scrolling come from `useKanbanLayout` (`isCalendar`): the calendar reaches the bottom of the screen, one wheel step scrolls the bar above away and the calendar grows to the full height (back up with one step; a long week day or the side column scrolls first).
