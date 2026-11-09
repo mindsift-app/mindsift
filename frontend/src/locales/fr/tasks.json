@@ -294,6 +294,7 @@
     "unscheduled": "Date retirée",
     "more_one": "+{{count}} autre",
     "more_other": "+{{count}} autres",
-    "weekNumber": "Sem. {{n}}"
+    "weekNumber": "Sem. {{n}}",
+    "newUnplanned": "Tâche sans date"
   }
 }

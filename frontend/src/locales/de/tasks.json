@@ -294,6 +294,7 @@
     "unscheduled": "Datum entfernt",
     "more_one": "+{{count}} weitere",
     "more_other": "+{{count}} weitere",
-    "weekNumber": "KW {{n}}"
+    "weekNumber": "KW {{n}}",
+    "newUnplanned": "Aufgabe ohne Datum"
   }
 }
