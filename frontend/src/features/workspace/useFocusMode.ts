@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 
 // Distraction-free mode of the workspace: state, pinned header/sidebar and the keyboard shortcuts
 export function useFocusMode(canFocus: boolean, selectedDocId: string | null) {
-  // Distraction-free mode: only the note, full window, reading width
+  // Distraction-free mode: only the note, full window, as wide as the note with the sidebar hidden
   const [focusMode, setFocusMode] = useState(false);
   // Focus mode: the folder sidebar slides in from the left (button, title click or mouse at the edge)
   const [zenSidebar, setZenSidebar] = useState<'closed' | 'click' | 'hover'>('closed');

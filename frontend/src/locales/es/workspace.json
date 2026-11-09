@@ -97,8 +97,8 @@
     "drawing": "Dibujo, diagrama, mapa mental"
   },
   "block": {
-    "expand": "Desplegar subpuntos",
-    "collapse": "Plegar subpuntos",
+    "expand": "Desplegar subpuntos (Ctrl+clic: todos los niveles)",
+    "collapse": "Plegar subpuntos (Ctrl+clic: todos los niveles)",
     "dragZoom": "Arrastra para mover • clic: zoom a la rama (modo de enfoque)",
     "clickZoom": "Clic: zoom a esta rama (modo de enfoque)",
     "markOpen": "Marcar como pendiente",

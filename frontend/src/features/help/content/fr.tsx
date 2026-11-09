@@ -612,6 +612,7 @@ const fr: HelpContent = {
     { key: 'Ctrl + L / Cmd + L', scope: 'Outliner Workspace', desc: 'Insérer un lien (note, puce ou lien web) ; le texte sélectionné devient le texte du lien' },
     { key: 'Ctrl + Maj + ↓', scope: 'Outliner Workspace', desc: 'Déplier toutes les puces repliées de la note' },
     { key: 'Ctrl + Maj + ↑', scope: 'Outliner Workspace', desc: 'Replier toutes les puces de la note (en mode focus, seulement dans la branche)' },
+    { key: 'Ctrl + clic sur ▸ / ▾', scope: 'Outliner Workspace', desc: 'Déplier ou replier une puce avec toutes ses sous-puces' },
     { key: 'Ctrl + Z / Cmd + Z', scope: 'Outliner Workspace', desc: 'Annuler la dernière action dans la note' },
     { key: 'Ctrl + Y / Ctrl + Maj + Z', scope: 'Outliner Workspace', desc: 'Rétablir une action annulée' },
     { key: 'Glisser la souris sur plusieurs puces', scope: 'Outliner Workspace', desc: 'Sélectionner le texte sur plusieurs puces ; Suppr/Retour arrière le supprime, taper le remplace, Ctrl + C copie en Markdown (indentation, tâches, titres)' },
