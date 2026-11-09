@@ -45,9 +45,10 @@ export const isTaskListShared = (tl: TaskList) => (tl.shares?.length || 0) > 0 |
 // Desktop header of TasksView: "Alle Aufgaben" and one tab per task list (members; a task dragged onto a
 // tab moves into that list) in one row, the lists that do not fit behind "⋯ n", "Neue Liste"; on the right
 // the status, the menu of the open list (mute, share, rename, delete) and the switch between list and Kanban
-// A view in the switch: its icon and name
+// A view in the switch: its icon and name; a flex block, so the icon does not sit on the text's baseline
+// and the switch keeps the height of the text-only ones (month/week, hashtag sorting)
 const viewLabel = (icon: React.ReactNode, name: string) => (
-  <span className="inline-flex items-center gap-1.5">
+  <span className="flex items-center gap-1.5">
     {icon}
     {name}
   </span>
