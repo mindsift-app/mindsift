@@ -136,18 +136,11 @@ export function TaskCalendar({ tasks, lists, showListIcon, isTaskReadOnly, onOpe
   const dayColumns = dayWidth ? { gridTemplateColumns: `repeat(7, ${dayWidth}px)` } : undefined;
   // Where the grid is scrolled to: a button leads to the days out of view (scrollbars are often hidden)
   const [gridAt, setGridAt] = useState<'none' | 'start' | 'middle' | 'end'>('none');
-  // How many day columns are (partly) out of view on the left and on the right, named on the button
-  const [gridHidden, setGridHidden] = useState<[number, number]>([0, 0]);
   const trackGrid = () => {
     const el = gridScrollRef.current;
     if (!el) return;
     const max = el.scrollWidth - el.clientWidth;
     setGridAt(max <= 1 ? 'none' : el.scrollLeft >= max - 1 ? 'end' : el.scrollLeft <= 1 ? 'start' : 'middle');
-    if (dayWidth) {
-      const before = Array.from({ length: 7 }, (_, i) => i).filter((i) => i * dayWidth < el.scrollLeft - 1).length;
-      const after = Array.from({ length: 7 }, (_, i) => i).filter((i) => (i + 1) * dayWidth > el.scrollLeft + el.clientWidth + 1).length;
-      setGridHidden((prev) => (prev[0] === before && prev[1] === after ? prev : [before, after]));
-    }
   };
   useEffect(trackGrid, [dayWidth, mode]);
   const from = weeks[0][0];
@@ -257,9 +250,6 @@ export function TaskCalendar({ tasks, lists, showListIcon, isTaskReadOnly, onOpe
       ? dayLabel(anchor, { month: 'long', year: 'numeric' })
       : `${t('calendar.weekNumber', { n: isoWeek(weeks[0][0]) })} · ${dayLabel(weeks[0][0], { day: 'numeric', month: 'short' })} – ${dayLabel(weeks[0][6], { day: 'numeric', month: 'short' })}`;
   const weekdayNames = weeks[0].map((d) => dayLabel(d, { weekday: 'short' }));
-  // "Sa – So", "Mo – Di"; a single day by its name
-  const dayRange = (start: number, end: number) =>
-    end - start > 1 ? `${weekdayNames[start]} – ${weekdayNames[end - 1]}` : weekdayNames[start] || '';
   const isWeekend = (day: string) => [0, 6].includes(new Date(`${day}T12:00:00`).getDay());
 
   // A compact entry: priority dot, time, title (greyed with ↻ for a coming date of a repeating task)
@@ -541,7 +531,8 @@ export function TaskCalendar({ tasks, lists, showListIcon, isTaskReadOnly, onOpe
               className="absolute right-1.5 top-1 z-10 h-6 px-2 rounded-pill bg-panel border border-border shadow-xs text-[11px] font-medium text-muted hover:text-main cursor-pointer"
               title={gridAt === 'end' ? t('calendar.showWeekdays') : t('calendar.showWeekend')}
             >
-              {gridAt === 'end' ? `‹ ${dayRange(0, gridHidden[0])}` : `${dayRange(7 - gridHidden[1], 7)} ›`}
+              {/* Always the same two labels, not the days hidden at each scroll step (flickered while scrolling) */}
+              {gridAt === 'end' ? `‹ ${weekdayNames[0]} – ${weekdayNames[1]}` : `${weekdayNames[5]} – ${weekdayNames[6]} ›`}
             </button>
           )}
           <div ref={gridScrollRef} onScroll={trackGrid} className="h-full overflow-x-auto overflow-y-hidden snap-x snap-mandatory">
