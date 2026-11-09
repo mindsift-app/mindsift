@@ -75,7 +75,14 @@
     "extractedInto": "In „{{title}}“ ausgelagert",
     "moveFailed": "Verschieben fehlgeschlagen",
     "shareMenu": "Teilen…",
-    "untitledBullet": "Punkt"
+    "untitledBullet": "Punkt",
+    "kindTitle": "{{kind}}: {{detail}}",
+    "kind": {
+      "drawing": "Zeichnung",
+      "image": "Bild",
+      "audio": "Audio",
+      "divider": "Trennlinie"
+    }
   },
   "slash": {
     "todo": "Aufgabe mit Checkbox",

@@ -143,7 +143,7 @@ import { EmojiPickerModal } from './EmojiPickerModal';
 import { ExtractPopover, ExtractTarget } from './ExtractPopover';
 import { BacklinksSection } from './BacklinksSection';
 import { useKeyboardInset } from '../../lib/useKeyboardInset';
-import { computeBreadcrumbs, getZoomedSubtree } from './zoom';
+import { blockTitle, computeBreadcrumbs, getZoomedSubtree, isTitleFromKind } from './zoom';
 
 // Height of the outline bar that sits on the keyboard (MobileOutlineBar), with a little air
 const KEYBOARD_BAR_SPACE = 64;
@@ -1843,7 +1843,8 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
               <div className="flex-1 min-w-0">
                 <input
                   type="text"
-                  value={zoomedBlock.content}
+                  // A drawing, image … has no text title: its kind and words, not to be edited here
+                  value={isTitleFromKind(zoomedBlock) ? blockTitle(zoomedBlock) : zoomedBlock.content}
                   onChange={(e) => {
                     handleUpdateBlock({ ...zoomedBlock, content: e.target.value });
                   }}
@@ -1862,8 +1863,10 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
                     }
                   }}
                   placeholder={t('editor.branchTitle')}
-                  readOnly={!canEdit}
-                  className="w-full text-2xl sm:text-3xl font-light text-main bg-transparent border-0 focus:outline-none focus:ring-0 tracking-tight leading-tight"
+                  readOnly={!canEdit || isTitleFromKind(zoomedBlock)}
+                  className={`w-full text-2xl sm:text-3xl font-light text-main bg-transparent border-0 focus:outline-none focus:ring-0 tracking-tight leading-tight ${
+                    isTitleFromKind(zoomedBlock) ? 'text-ellipsis' : ''
+                  }`}
                 />
               </div>
 

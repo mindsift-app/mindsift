@@ -1,8 +1,35 @@
 import i18n from '../../i18n';
 import { DocumentBlock } from '../../lib/types';
+import { drawingTexts, parseDrawing } from '../../lib/drawing/model';
+import { parseMediaContent } from '../../lib/media';
 
 // Zooming into a bullet: the path from the note down to it (breadcrumbs) and the bullets shown inside it.
 // Used by the editor and the public page of a note.
+
+// Bullets whose content is not text (a drawing's model, a file reference): their title is made from the
+// kind and what they say, and cannot be edited in the zoom
+export const isTitleFromKind = (block: DocumentBlock) =>
+  block.type === 'drawing' || block.type === 'image' || block.type === 'audio' || block.type === 'divider';
+
+// The title of a bullet in the zoom and the breadcrumbs: its text, or for a drawing "Zeichnung: Start,
+// Ende" (the words in it), for an image or audio file the kind and its caption
+export function blockTitle(block: DocumentBlock): string {
+  const kind = (key: string, detail: string) =>
+    detail ? i18n.t('workspace:editor.kindTitle', { kind: i18n.t(`workspace:editor.kind.${key}`), detail }) : i18n.t(`workspace:editor.kind.${key}`);
+  switch (block.type) {
+    case 'drawing': {
+      const drawing = parseDrawing(block.content || '');
+      const text = drawing ? drawingTexts(drawing).map((s) => s.replace(/\s+/g, ' ').trim()).join(', ') : '';
+      return kind('drawing', text.length > 80 ? `${text.slice(0, 79)}…` : text);
+    }
+    case 'image':
+    case 'audio':
+      return kind(block.type, parseMediaContent(block.content || '')?.caption.trim() || '');
+    case 'divider':
+      return kind('divider', '');
+  }
+  return block.content?.trim() || i18n.t('workspace:editor.untitledBullet');
+}
 
 export interface BreadcrumbNode {
   id: string | null;
@@ -27,7 +54,7 @@ export function computeBreadcrumbs(
     if (blocks[i].level < currentLevel) {
       trail.unshift({
         id: blocks[i].id,
-        title: blocks[i].content?.trim() || i18n.t('workspace:editor.untitledBullet'),
+        title: blockTitle(blocks[i]),
       });
       currentLevel = blocks[i].level;
       if (currentLevel === 0) break;
@@ -41,7 +68,7 @@ export function computeBreadcrumbs(
 
   trail.push({
     id: zoomedBlock.id,
-    title: zoomedBlock.content?.trim() || i18n.t('workspace:editor.untitledBullet'),
+    title: blockTitle(zoomedBlock),
   });
 
   return trail;

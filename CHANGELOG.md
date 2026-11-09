@@ -26,6 +26,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Public notes: hovering a bullet no longer shows an empty frame where the bullet's buttons are in the app.
 - List tabs: the counter no longer leaves too much room on the right since the delete button moved into the ⋯ menu.
 - Notification center: entries have a small gap between them, so unread ones no longer merge into one block.
+- Notes: zooming into a drawing, an image, an audio file or a divider no longer shows the drawing's data (or the file reference) as the title. The title and the path above name the kind and what it says, e.g. "Drawing: Start, Check, End" with the words from the drawing, or the caption of an image; it cannot be edited there. Bullets can still be added below.
 
 ## [0.93.0] - 2026-11-09
 
