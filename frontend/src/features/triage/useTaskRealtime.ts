@@ -32,7 +32,8 @@ export function tasksAfterUpdate(prev: Thought[], updated: Thought, listId: stri
   ) {
     return prev.filter((t) => t.id !== updated.id);
   }
-  return prev.map((t) => (t.id === updated.id ? updated : t));
+  // Watching is per person and not part of what everyone gets (TASK_UPDATED leaves it out): keep it
+  return prev.map((t) => (t.id === updated.id ? (updated.isWatching === undefined ? { ...updated, isWatching: t.isWatching } : updated) : t));
 }
 
 export function tasksAfterDelete(prev: Thought[], deletedId: string): Thought[] {

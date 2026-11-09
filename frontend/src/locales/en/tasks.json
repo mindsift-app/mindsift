@@ -25,10 +25,10 @@
     "recurrence": {
       "label": "Repeat",
       "none": "No repeat",
-      "daily": "🔁 Daily",
-      "weekly": "🔁 Weekly",
-      "monthly": "🔁 Monthly",
-      "yearly": "🔁 Yearly",
+      "daily": "Daily",
+      "weekly": "Weekly",
+      "monthly": "Monthly",
+      "yearly": "Yearly",
       "hintDate": "Completing it creates the next task automatically, due one interval after this date.",
       "hintDone": "Completing it creates the next task automatically, due one interval after completion."
     },

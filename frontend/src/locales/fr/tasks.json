@@ -25,10 +25,10 @@
     "recurrence": {
       "label": "Répétition",
       "none": "Aucune répétition",
-      "daily": "🔁 Quotidienne",
-      "weekly": "🔁 Hebdomadaire",
-      "monthly": "🔁 Mensuelle",
-      "yearly": "🔁 Annuelle",
+      "daily": "Quotidienne",
+      "weekly": "Hebdomadaire",
+      "monthly": "Mensuelle",
+      "yearly": "Annuelle",
       "hintDate": "En terminant cette tâche, la suivante est créée automatiquement, avec une échéance décalée d'un intervalle après cette date.",
       "hintDone": "En terminant cette tâche, la suivante est créée automatiquement, avec une échéance décalée d'un intervalle après achèvement."
     },

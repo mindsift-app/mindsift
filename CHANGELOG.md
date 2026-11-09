@@ -21,9 +21,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Calendar on the desktop: days get more room. Monday to Friday fill the width and the weekend is one sideways scroll (or the "Sat – Sun ›" button; "‹ Mon – Tue" leads back) away; the columns never get narrower than about 7 rem, so the calendar stays usable in narrow windows. Scrolling stops at the edge of a day, and the weeks there always run Monday to Sunday, so the weekend lies together at the end also in languages whose week starts on Sunday.
 - Calendar on the desktop works like the Kanban board: month/week and a full-width button sit at the right of the hashtag row, the month (or week) and ‹ Today › moved into the side column above its tabs, so the calendar starts higher. One wheel step scrolls the bar above away and the calendar fills the screen; the full-width setting is the same as the board's.
 - Tasks: the switch between list, Kanban and calendar, and month/week of the calendar, look like the other view switches (hashtag sorting, to-dos). In all view switches the raised field slides to the newly chosen option.
+- Task dialog: the repeat options read just "Daily", "Weekly" … without the 🔁 in front.
 - Footer: only the version remains (a click opens "About MindSift"); the separate "About MindSift" link is gone.
 
 ### Fixed
+- Tasks: watching a task no longer seems to end after any change to it (priority, status, …); the eye in the task dialog stays on. The watch itself was kept, the app only forgot it.
 - Notes: jumping to a bullet (search, links to bullets, the notification center, tasks) no longer puts the cursor into it, which locked the bullet for everyone else; it is scrolled to and lit up as before.
 - Kanban: after switching the language, "All tasks" no longer shows the standard columns twice (once in the language the lists were created in, once in the new one). Standard columns that were not renamed now show in the language of whoever looks; the Spanish, French and Italian names in the app and on the server are the same again.
 - Public notes: hovering a bullet no longer shows an empty frame where the bullet's buttons are in the app.

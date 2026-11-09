@@ -27,6 +27,9 @@ describe('task realtime updates', () => {
     expect(ids(tasksAfterUpdate(prev, task('a', { status: 'inbox' }), 'all'))).toEqual(['b']); // back to the Quick Dump
     expect(ids(tasksAfterUpdate(prev, task('c'), 'l1'))).toEqual(['c', 'a', 'b']); // moved in
     expect(tasksAfterUpdate(prev, task('c', { taskListId: 'l2' }), 'l1')).toBe(prev);
+    // A change by anyone does not end watching (the broadcast carries no isWatching)
+    const watched = [task('a', { isWatching: true })];
+    expect(tasksAfterUpdate(watched, task('a', { priority: 'high' }), 'l1')[0].isWatching).toBe(true);
   });
 
   it('removes a deleted task', () => {

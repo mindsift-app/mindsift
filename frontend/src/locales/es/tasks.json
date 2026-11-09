@@ -25,10 +25,10 @@
     "recurrence": {
       "label": "Repetir",
       "none": "Sin repetición",
-      "daily": "🔁 Diariamente",
-      "weekly": "🔁 Semanalmente",
-      "monthly": "🔁 Mensualmente",
-      "yearly": "🔁 Anualmente",
+      "daily": "Diariamente",
+      "weekly": "Semanalmente",
+      "monthly": "Mensualmente",
+      "yearly": "Anualmente",
       "hintDate": "Al completarla se crea automáticamente la siguiente tarea, que vencerá un intervalo después de esta fecha.",
       "hintDone": "Al completarla se crea automáticamente la siguiente tarea, que vencerá un intervalo después de completarse."
     },
