@@ -295,6 +295,8 @@
     "more_one": "+{{count}} más",
     "more_other": "+{{count}} más",
     "weekNumber": "Sem. {{n}}",
-    "newUnplanned": "Tarea sin fecha"
+    "newUnplanned": "Tarea sin fecha",
+    "showWeekend": "Mostrar el fin de semana",
+    "showWeekdays": "Volver al lunes"
   }
 }

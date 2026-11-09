@@ -18,6 +18,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Shared task lists and shopping lists show the same "shared" sign in their tab as shared notes in the sidebar; the tooltip names the people.
 - Sharing dialog: what is shared stands small on top ("Share task list"), its name large below, instead of the name twice.
 - Calendar: "Unscheduled" on the desktop shows the same task rows as the day (tick off, change the status, edit), so unscheduled tasks can be worked through right there. Rows from the day and from "Unscheduled" can be dragged onto a day or onto "Unscheduled". Both tabs now look alike: a counter like the list tabs, no second heading for the day, a centred hint when empty, and a field for a new task (for the day, or without a date).
+- Calendar on the desktop: days get more room. Monday to Friday fill the width and the weekend is one sideways scroll (or the "Sat · Sun ›" button) away; the columns never get narrower than about 7 rem, so the calendar stays usable in narrow windows.
 
 ### Fixed
 - Notes: jumping to a bullet (search, links to bullets, the notification center, tasks) no longer puts the cursor into it, which locked the bullet for everyone else; it is scrolled to and lit up as before.
