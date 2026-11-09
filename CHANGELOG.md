@@ -6,6 +6,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.93.0] - 2026-11-09
+
 ### Added
 - Tasks: a calendar view next to list and Kanban. Month or week on the desktop (7 columns, no hours), the week on phones. Tasks without a date wait in "Unscheduled"; drag a task onto a day to set its date (a time stays) or back to remove it, Ctrl + Z takes it back. Repeating tasks also show their coming dates, greyed with ↻, which open the task itself. On the desktop a column on the left switches between the chosen day (today until you click one) with its tasks and a field for a new one, and the unscheduled tasks; phones open a day as a sheet. ← → leaf through, T jumps to today.
 - Notification center: a bell next to search shows how many notifications you have not read yet. It lists everything that happened for you (assigned, mentioned, new or completed tasks in shared lists, due tasks, changes to watched tasks, things shared with you), whatever channels you chose and even while notifications are paused; your own actions and muted lists stay out. A watched task keeps one entry with its latest change. Click an entry to open the task, note or list; "Mark all as read" and "Delete all" are on top. Entries disappear after 14 days.
