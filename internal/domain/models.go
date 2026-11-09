@@ -167,6 +167,7 @@ type NotificationEvents struct {
 	Due         ChannelChoice `json:"due"`         // task alarms (sent at once)
 	Shared      ChannelChoice `json:"shared"`      // something was shared with me
 	Assigned    ChannelChoice `json:"assigned"`    // someone assigned a task to me
+	Mentioned   ChannelChoice `json:"mentioned"`   // someone @-mentioned me in a task or note
 	TaskCreated ChannelChoice `json:"taskCreated"` // a task was added to a shared task list
 	TaskDone    ChannelChoice `json:"taskDone"`    // a shared task was completed
 	Watched     ChannelChoice `json:"watched"`     // a watched task changed
@@ -201,16 +202,18 @@ func DefaultNotificationSettings(alarmChannels []string) NotificationSettings {
 	}
 	return NotificationSettings{
 		Events: NotificationEvents{
-			Due:      due,
-			Shared:   ChannelChoice{Email: true},
-			Assigned: ChannelChoice{Email: true},
-			Watched:  ChannelChoice{Email: true, Discord: true},
+			Due:       due,
+			Shared:    ChannelChoice{Email: true},
+			Assigned:  ChannelChoice{Email: true},
+			Mentioned: ChannelChoice{Email: true},
+			Watched:   ChannelChoice{Email: true, Discord: true},
 		},
 		DailySummary: DailySummary{Time: "07:00", Email: true},
 	}
 }
 
-// Channels returns the choice for an event kind (due, shared, assigned, taskCreated, taskDone, watched).
+// Channels returns the choice for an event kind (due, shared, assigned, mentioned, taskCreated, taskDone,
+// watched).
 func (n NotificationSettings) Channels(kind string) ChannelChoice {
 	switch kind {
 	case "due":
@@ -219,6 +222,8 @@ func (n NotificationSettings) Channels(kind string) ChannelChoice {
 		return n.Events.Shared
 	case "assigned":
 		return n.Events.Assigned
+	case "mentioned":
+		return n.Events.Mentioned
 	case "taskCreated":
 		return n.Events.TaskCreated
 	case "taskDone":
@@ -349,13 +354,15 @@ type KanbanColumn struct {
 }
 
 type TaskList struct {
-	ID         string           `json:"id"`
-	UserID     string           `json:"userId"`
-	SpaceID    string           `json:"spaceId,omitempty"`
-	SpaceName  string           `json:"spaceName,omitempty"`
-	OwnerName  string           `json:"ownerName,omitempty"`
-	IsOwner    bool             `json:"isOwner"`
-	Permission string           `json:"permission,omitempty"` // owner | editor | viewer
+	ID         string `json:"id"`
+	UserID     string `json:"userId"`
+	SpaceID    string `json:"spaceId,omitempty"`
+	SpaceName  string `json:"spaceName,omitempty"`
+	OwnerName  string `json:"ownerName,omitempty"`
+	IsOwner    bool   `json:"isOwner"`
+	Permission string `json:"permission,omitempty"` // owner | editor | viewer
+	// IsMuted: the requesting person muted this shared list (no list-wide notifications from it)
+	IsMuted    bool             `json:"isMuted,omitempty"`
 	Members    []TaskListMember `json:"members,omitempty"`
 	Shares     []TaskListShare  `json:"shares,omitempty"`
 	Columns    []KanbanColumn   `json:"columns,omitempty"`

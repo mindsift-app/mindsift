@@ -29,6 +29,7 @@ import { useTaskUndo } from './useTaskUndo';
 import { useTaskActions } from './useTaskActions';
 import { QuickAddTaskBar } from './QuickAddTaskBar';
 import { NewTaskListSheet } from './NewTaskListSheet';
+import { RenameListSheet } from '../../components/RenameListSheet';
 import { TaskListShareDialog } from './TaskListShareDialog';
 import { ActiveFilterBanner } from './ActiveFilterBanner';
 import { GROUP_LABELS, GroupBy, TaskFilter, TaskSort, ViewMode } from './taskViewTypes';
@@ -183,6 +184,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
   // Share TaskList modal state
   const [showShareListModal, setShowShareListModal] = useState(false);
   const [sharingTaskList, setSharingTaskList] = useState<TaskList | null>(null);
+  const [renamingList, setRenamingList] = useState<TaskList | null>(null);
 
   // Detail modal state
   const [detailTaskId, setDetailTaskId] = useState<string | null>(null);
@@ -600,6 +602,24 @@ export const TasksView: React.FC<TasksViewProps> = ({
     }
   };
 
+  // Mute: no list-wide notifications from this shared list for me (assignments, mentions and watched
+  // tasks still come)
+  const handleToggleMute = async (tl: TaskList) => {
+    const muted = !tl.isMuted;
+    setTaskLists((prev) => prev.map((l) => (l.id === tl.id ? { ...l, isMuted: muted } : l)));
+    try {
+      await api.muteTaskList(tl.id, muted);
+    } catch (err: any) {
+      setTaskLists((prev) => prev.map((l) => (l.id === tl.id ? { ...l, isMuted: !muted } : l)));
+      showError(err.message);
+    }
+  };
+
+  const handleRenameTaskList = async (tl: TaskList, title: string, icon: string) => {
+    const updated = await api.updateTaskList(tl.id, { title, icon });
+    setTaskLists((prev) => prev.map((l) => (l.id === updated.id ? { ...l, title: updated.title, icon: updated.icon } : l)));
+  };
+
   const handleOpenShareModal = async (tl: TaskList) => {
     setSharingTaskList(tl);
     setShowShareListModal(true);
@@ -638,6 +658,8 @@ export const TasksView: React.FC<TasksViewProps> = ({
       groupBy,
       handleDeleteTaskList,
       handleOpenShareModal,
+      handleRenameList: setRenamingList,
+      handleToggleMute,
       isSelectedListReadOnly,
       kanbanCount: kanbanTasks.length,
       openCount: openTasks.length,
@@ -748,6 +770,8 @@ export const TasksView: React.FC<TasksViewProps> = ({
         currentUser={currentUser}
         deleteTaskList={(listId) => handleDeleteTaskList(listId, true)}
         handleOpenShareModal={handleOpenShareModal}
+        onRenameList={setRenamingList}
+        onToggleMute={handleToggleMute}
         memberToPerson={memberToPerson}
         openTasksCount={openTasksCount}
         safeTaskLists={safeTaskLists}
@@ -904,6 +928,15 @@ export const TasksView: React.FC<TasksViewProps> = ({
         setTaskLists={setTaskLists}
         setSelectedListId={setSelectedListId}
       />
+
+      {renamingList && (
+        <RenameListSheet
+          initialTitle={renamingList.title}
+          initialIcon={renamingList.icon}
+          onSave={(title, icon) => handleRenameTaskList(renamingList, title, icon)}
+          onClose={() => setRenamingList(null)}
+        />
+      )}
 
       {/* Short notice after deleting or undoing (same look as in the workspace) */}
       {toast && (

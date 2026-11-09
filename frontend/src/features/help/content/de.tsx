@@ -644,6 +644,12 @@ const de: HelpContent = {
             <li>
               <strong className="text-main">Weitere Benachrichtigungen:</strong> Wenn dir jemand eine Aufgabe zuweist, eine neue Aufgabe in einer geteilten Liste landet oder dort eine erledigt wird, kann MindSift dir Bescheid geben; jedes Ereignis schaltest du in den Einstellungen unter „Alarme“ einzeln ein oder aus. Aufgaben, die du <strong className="text-main">beobachtest</strong>, melden jede Änderung (Status, Priorität, Fälligkeit, Text, Beschreibung, Unteraufgaben, Zuweisung …), auch wenn sie in einer Notiz abgehakt werden. Was du selbst tust, meldet MindSift dir nicht. Mehrere Ereignisse kommen gebündelt in einer Nachricht.
             </li>
+            <li>
+              <strong className="text-main">@-Erwähnungen:</strong> In der Beschreibung einer Aufgabe, in Unteraufgaben und in Notizen öffnet <strong className="text-main">@</strong> eine Auswahl von Personen (Pfeiltasten, Enter). Wer keinen Zugriff hat, steht ausgegraut darin. Die erwähnte Person bekommt eine Benachrichtigung (Einstellungen → Alarme, „Ich wurde erwähnt“), auch bei einer stummgeschalteten Liste; erneutes Speichern löst keine zweite aus.
+            </li>
+            <li>
+              <strong className="text-main">Listen-Menü (⋯):</strong> Rechts über der Liste: <strong className="text-main">Stummschalten</strong> (nur geteilte Listen: keine Meldungen aus dieser Liste, Zuweisungen, Erwähnungen und beobachtete Aufgaben kommen weiter), Teilen, Umbenennen und Löschen. Passen nicht alle Listen in die Zeile, stehen die übrigen hinter „⋯ n“. In einer geteilten Liste ist eine neue Aufgabe zuerst dir zugewiesen; den Fälligkeits-Alarm bekommen die zugewiesenen Personen, ist niemand zugewiesen, alle Mitglieder.
+            </li>
           </ul>
         </div>
       ),

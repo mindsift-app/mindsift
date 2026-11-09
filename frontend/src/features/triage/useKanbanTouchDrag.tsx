@@ -179,7 +179,7 @@ export function useKanbanTouchDrag({ enabled, onStart, onHover, onDrop, onCancel
   const ghost = drag
     ? createPortal(
         <div
-          className="fixed z-[80] pointer-events-none panel-surface shadow-panel px-3 py-2.5 text-xs font-medium text-main rotate-1 opacity-95 border-accent"
+          className="fixed z-[80] pointer-events-none panel-surface shadow-panel px-3 py-2.5 text-xs font-medium text-main rotate-1 opacity-60 border-accent"
           style={{ left: drag.x - drag.offsetX, top: drag.y - drag.offsetY, width: drag.width }}
         >
           {drag.label}

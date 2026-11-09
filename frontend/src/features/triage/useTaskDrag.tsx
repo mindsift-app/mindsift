@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { api, triggerHaptic } from '../../lib/api';
 import { KanbanColumn, TaskList, Thought } from '../../lib/types';
 import { useKanbanTouchDrag } from './useKanbanTouchDrag';
+import { startElementDragGhost } from '../../lib/dragGhost';
 
 // Drag & drop needs a mouse or pen; on touch-only devices a draggable row can swallow a slightly
 // longer tap, so the row would not open
@@ -102,6 +103,8 @@ export function useTaskDrag({
     e.dataTransfer.setData('application/mindsift-task-id', task.id);
     e.dataTransfer.setData('text/plain', task.id);
     e.dataTransfer.effectAllowed = 'move';
+    // Half transparent, so the list tab or column under the pointer stays visible
+    startElementDragGhost(e, e.currentTarget as HTMLElement);
     setDraggingTaskId(task.id);
   };
 

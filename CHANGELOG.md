@@ -7,10 +7,16 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 ## [Unreleased]
 
 ### Added
+- Notes and tasks: @-mentions. Type @ in a bullet, in a task's description or in a new subtask and pick a person; people without access to the note or list are shown greyed out. The person gets a notification ("I was mentioned" in Settings → Alarms, by email unless you choose otherwise); keeping a mention while editing does not notify again, mentioning them again does. Mentions always show the person's current name; exports, AI agents (MCP) and search snippets show "@Name", and searching a name finds the mentions.
+- Task lists and shopping lists: a ⋯ menu next to the list status with Share, Rename (new), Delete and, for shared task lists, Mute. A muted list sends you no notifications about new or completed tasks or due dates of unassigned tasks; tasks assigned to you, mentions of you and tasks you watch still come.
 - Notifications: "Task assigned to me". When someone else assigns a task to you, you hear about it (by email unless you choose otherwise in Settings → Alarms). Assigning a task to yourself sends nothing.
 - Notifications: "New task in a shared list". When someone adds a task to a task list shared with you (creates it there, sorts it there from the inbox or moves it there), you can be told; off by default, switch it on in Settings → Alarms.
 
 ### Changed
+- Task lists and shopping lists: the list tabs stay in one row. Lists that do not fit are behind "⋯ n" at the end of the row (the open list always stays visible), so the buttons on the right no longer jump into a second line. Dragging a task or entry onto "⋯ n" opens it.
+- Tasks: a dragged task is shown half transparent, so you can see the list tab under it.
+- Tasks in shared lists: a new task starts out assigned to the person who created it. The due alarm goes to the people assigned to the task, or to every member of the list when nobody is assigned (each with their own lead time and channels), no longer only to the creator. The daily summary lists tasks by the same rule.
+- The delete button on the open list tab is gone; deleting is in the ⋯ menu.
 - Notifications about watched tasks name what changed: status, priority, due date, text, description, subtasks, tags, assignment or repetition, several changes in one line ("changed “Clean the cellar”: priority: Important, status: In progress"). Before, most changes only said that the task was changed.
 
 ### Fixed

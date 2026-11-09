@@ -491,6 +491,12 @@ const en: HelpContent = {
             <li>
               <strong className="text-main">More notifications:</strong> When someone assigns a task to you, a new task lands in a shared list or one there is completed, MindSift can let you know; switch each event on or off in the settings under “Alarms”. Tasks you <strong className="text-main">watch</strong> report every change (status, priority, due date, text, description, subtasks, assignment …), also when they are ticked in a note. MindSift never notifies you about what you did yourself. Several events arrive bundled in one message.
             </li>
+            <li>
+              <strong className="text-main">@-mentions:</strong> In a task's description, in subtasks and in notes, <strong className="text-main">@</strong> opens a list of people (arrow keys, Enter). People without access are shown greyed out. The person mentioned gets a notification (Settings → Alarms, “I was mentioned”), even from a muted list; saving again does not send a second one.
+            </li>
+            <li>
+              <strong className="text-main">List menu (⋯):</strong> On the right above the list: <strong className="text-main">Mute</strong> (shared lists only: no notifications from this list, assignments, mentions and watched tasks still come), Share, Rename and Delete. If not all lists fit in the row, the rest are behind “⋯ n”. In a shared list a new task is first assigned to you; the due alarm goes to the people assigned, or to every member if nobody is.
+            </li>
           </ul>
         </div>
       ),

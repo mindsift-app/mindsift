@@ -1,8 +1,8 @@
-import { Plus, Sparkles, Trash2, Users } from 'lucide-react';
+import { Pencil, Plus, Sparkles, Trash2, Users } from 'lucide-react';
 import i18n from '../../i18n';
 import { SharedList } from '../../lib/types';
 import { MobileMenuGroup } from '../../context/MobileActionContext';
-import { deduplicateItems } from './listItems';
+import { canWriteList, deduplicateItems } from './listItems';
 
 interface ListsMenuInput {
   lists: SharedList[];
@@ -13,6 +13,7 @@ interface ListsMenuInput {
   openShareModal: () => void;
   handleClearCompleted: () => void;
   handleDeleteList: (listId: string) => void;
+  handleRenameList: (lst: SharedList) => void;
   setActiveListId: (id: string) => void;
 }
 
@@ -27,6 +28,7 @@ export function buildListsMenu({
   openShareModal,
   handleClearCompleted,
   handleDeleteList,
+  handleRenameList,
   setActiveListId,
 }: ListsMenuInput): MobileMenuGroup[] {
   return [
@@ -57,6 +59,16 @@ export function buildListsMenu({
                     icon: <Users className="w-4 h-4" />,
                     onClick: () => openShareModal(),
                   },
+                  ...(canWriteList(activeList)
+                    ? [
+                        {
+                          id: 'list-rename',
+                          label: i18n.t('common:listMenu.rename'),
+                          icon: <Pencil className="w-4 h-4" />,
+                          onClick: () => handleRenameList(activeList),
+                        },
+                      ]
+                    : []),
                 ]
               : []),
             ...(completedCount > 0

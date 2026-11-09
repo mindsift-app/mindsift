@@ -265,7 +265,7 @@ func (s *Store) SearchCtx(ctx context.Context, userID, query string, opts Search
 		limit = 200
 	}
 	want := func(kind string) bool { return opts.Type == "" || opts.Type == kind }
-	ftsQuery := PrepareFTSQuery(query)
+	ftsQuery := s.prepareSearchQuery(query)
 	res := &SearchResults{
 		Thoughts:  make([]domain.Thought, 0),
 		Documents: make([]domain.Document, 0),
@@ -326,6 +326,7 @@ func (s *Store) SearchCtx(ctx context.Context, userID, query string, opts Search
 		// Links in the snippets with the current titles instead of ids (loaded once, when needed)
 		var titles map[string]string
 		readable := func(snip string) string {
+			snip = s.ReadableMentions(snip)
 			if !strings.Contains(snip, "[[") {
 				return snip
 			}

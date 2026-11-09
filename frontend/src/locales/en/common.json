@@ -375,5 +375,26 @@
   "discard": "Discard",
   "download": "Download",
   "filterTag": "Filter by #{{tag}}",
-  "deviceName": "{{browser}} on {{os}}"
+  "deviceName": "{{browser}} on {{os}}",
+  "listMenu": {
+    "more": "More actions",
+    "moreLists": "More lists",
+    "mute": "Mute",
+    "unmute": "Unmute",
+    "muteHint": "No notifications from this list; assignments, mentions and watched tasks still come",
+    "muteOnlyShared": "Only for shared lists",
+    "muted": "Muted",
+    "share": "Share",
+    "rename": "Rename",
+    "delete": "Delete",
+    "readOnly": "Read only",
+    "ownerOnly": "Only the owner can delete the list",
+    "renameTitle": "Rename list",
+    "name": "Name",
+    "renameFailed": "Renaming failed"
+  },
+  "mention": {
+    "pick": "Mention someone",
+    "noAccess": "no access"
+  }
 }

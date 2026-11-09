@@ -54,7 +54,7 @@ describe('UserSettingsView notification matrix', () => {
 
     // Without Discord webhook, Discord switches are disabled and hint is visible
     const discordSwitches = screen.getAllByTitle('Bitte zuerst unten eine Discord Webhook URL eintragen');
-    expect(discordSwitches.length).toBe(7);
+    expect(discordSwitches.length).toBe(8);
     expect((discordSwitches[0] as HTMLButtonElement).disabled).toBe(true);
     expect(screen.getByText(/Discord-Schalter sind deaktiviert/)).toBeTruthy();
 
@@ -93,6 +93,7 @@ describe('UserSettingsView notification matrix', () => {
             due: { email: true, discord: true, webhook: false, push: false },
             shared: { email: true, discord: false, webhook: false, push: false },
             assigned: { email: true, discord: false, webhook: false, push: false },
+            mentioned: { email: true, discord: false, webhook: false, push: false },
             taskCreated: { email: true, discord: false, webhook: false, push: false },
             taskDone: { email: true, discord: false, webhook: false, push: false },
             watched: { email: true, discord: false, webhook: false, push: false },
@@ -125,7 +126,7 @@ describe('UserSettingsView notification matrix', () => {
     );
     fireEvent.click(screen.getByText('Alarme'));
     const off = screen.getAllByTitle('Bitte zuerst unten eine eigene Webhook URL eintragen');
-    expect(off.length).toBe(7);
+    expect(off.length).toBe(8);
     expect((off[0] as HTMLButtonElement).disabled).toBe(true);
 
     fireEvent.change(screen.getByPlaceholderText(/dein-server\.local/), {

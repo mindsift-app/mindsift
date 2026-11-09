@@ -104,7 +104,7 @@ func (s *Store) writeVault(zw zipEntries, userID string) error {
 		}
 		body := markdownFrontmatter(map[string]any{
 			"title": d.Title, "icon": d.Icon, "tags": d.Tags, "created_at": d.CreatedAt, "updated_at": d.UpdatedAt,
-		}) + blocksToVaultMarkdown(readableBlocks(d.Blocks, linkNames), func(id string) string {
+		}) + blocksToVaultMarkdown(s.readableBlocks(d.Blocks, linkNames), func(id string) string {
 			if p, ok := attachments[id]; ok {
 				return up + p
 			}
@@ -140,7 +140,7 @@ func (s *Store) writeVaultTasks(zw zipEntries, userID string, names *vaultNames,
 		var sb strings.Builder
 		sb.WriteString(markdownFrontmatter(meta))
 		for _, t := range items {
-			sb.WriteString(taskMarkdownLine(t))
+			sb.WriteString(taskMarkdownLine(s.readableTask(t)))
 		}
 		return writeZipFile(zw, names.file(i18n.T(names.lang, vaultTasks), title, i18n.T(names.lang, vaultTasks)), sb.String(), now)
 	}
@@ -453,12 +453,25 @@ func (n *vaultNames) file(dir, title, fallback string) string {
 	return name
 }
 
-// readableBlocks: the blocks with links written for readers outside the app (ReadableWikiLinks)
-func readableBlocks(blocks []domain.DocumentBlock, titles map[string]string) []domain.DocumentBlock {
+// readableBlocks: the blocks with links and mentions written for readers outside the app
+// (ReadableWikiLinks, ReadableMentions)
+func (s *Store) readableBlocks(blocks []domain.DocumentBlock, titles map[string]string) []domain.DocumentBlock {
 	out := make([]domain.DocumentBlock, len(blocks))
 	for i, b := range blocks {
-		b.Content = ReadableWikiLinks(b.Content, titles)
+		b.Content = s.ReadableMentions(ReadableWikiLinks(b.Content, titles))
 		out[i] = b
 	}
 	return out
+}
+
+// readableTask: a task with the mentions in its description and subtasks written as "@Name"
+func (s *Store) readableTask(t domain.Thought) domain.Thought {
+	t.Notes = s.ReadableMentions(t.Notes)
+	subs := make([]domain.SubTask, len(t.Subtasks))
+	for i, st := range t.Subtasks {
+		st.Title = s.ReadableMentions(st.Title)
+		subs[i] = st
+	}
+	t.Subtasks = subs
+	return t
 }

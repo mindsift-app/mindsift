@@ -390,3 +390,94 @@ func TestTaskTickedInNoteNotifiesWatchers(t *testing.T) {
 		t.Fatalf("watcher should hear about the tick and one text change, got %+v", *sent)
 	}
 }
+
+func TestCreatorAssignedAndMutedLists(t *testing.T) {
+	srv, sent := notifyServer(t)
+	store := srv.store
+	router := srv.Router()
+	owner, ownerToken := newTestUser(t, store, "owner@example.com")
+	bob, bobToken := newTestUser(t, store, "bob@example.com")
+	shared, _ := store.CreateTaskList(owner.ID, "", "", "Haushalt", "🏠", "#000000")
+	alone, _ := store.CreateTaskList(owner.ID, "", "", "Privat", "🔒", "#000000")
+	if _, err := store.AddTaskListShare(shared.ID, "user", bob.ID, "editor", owner.ID); err != nil {
+		t.Fatal(err)
+	}
+	set := store.NotificationSettingsOf(bob.ID)
+	set.Events.TaskCreated = domain.ChannelChoice{Email: true}
+	_ = store.SetNotificationSettings(bob.ID, set)
+
+	create := func(listID, content string) string {
+		rec := sessionCall(router, "POST", "/api/v1/inbox", ownerToken, `{"content":"`+content+`","target":"task","taskListId":"`+listID+`"}`, "")
+		if rec.Code != http.StatusCreated {
+			t.Fatalf("create: %d %s", rec.Code, rec.Body.String())
+		}
+		return rec.Body.String()
+	}
+	// In a shared list the creator starts out assigned; in a list nobody else sees, nobody is
+	if body := create(shared.ID, "Fenster putzen"); !strings.Contains(body, `"assignees":["`+owner.ID+`"]`) {
+		t.Fatalf("creator should be assigned: %s", body)
+	}
+	if body := create(alone.ID, "Tagebuch"); !strings.Contains(body, `"assignees":[]`) {
+		t.Fatalf("no assignee in an unshared list: %s", body)
+	}
+
+	// Bob mutes the shared list: it says so in his lists, and new tasks there stay quiet
+	if rec := sessionCall(router, "PUT", "/api/v1/task-lists/"+shared.ID+"/mute", bobToken, "", ""); rec.Code != http.StatusOK {
+		t.Fatalf("mute: %d %s", rec.Code, rec.Body.String())
+	}
+	if rec := sessionCall(router, "GET", "/api/v1/task-lists", bobToken, "", ""); !strings.Contains(rec.Body.String(), `"isMuted":true`) {
+		t.Fatalf("lists should show the mute: %s", rec.Body.String())
+	}
+	*sent = nil
+	srv.flushNotifications(time.Now().Add(10 * time.Minute)) // the first task, from before the mute
+	*sent = nil
+	create(shared.ID, "Rasen mähen")
+	srv.flushNotifications(time.Now().Add(10 * time.Minute))
+	if len(mailsTo(*sent, "bob@example.com")) != 0 {
+		t.Fatalf("muted list must stay quiet: %+v", *sent)
+	}
+	// … but an assignment to Bob still comes through
+	tasks, _ := store.GetThoughts(owner.ID, "", 100)
+	var mow string
+	for _, th := range tasks {
+		if th.Content == "Rasen mähen" {
+			mow = th.ID
+		}
+	}
+	sessionCall(router, "PATCH", "/api/v1/thoughts/"+mow, ownerToken, `{"assignees":["`+bob.ID+`"]}`, "")
+	srv.flushNotifications(time.Now().Add(10 * time.Minute))
+	if got := mailsTo(*sent, "bob@example.com"); len(got) != 1 || !strings.Contains(got[0], "zugewiesen") {
+		t.Fatalf("assignment must come through a muted list: %+v", *sent)
+	}
+	// Unmute; a stranger cannot mute a list they do not see
+	if rec := sessionCall(router, "DELETE", "/api/v1/task-lists/"+shared.ID+"/mute", bobToken, "", ""); rec.Code != http.StatusOK || store.IsTaskListMuted(bob.ID, shared.ID) {
+		t.Fatalf("unmute: %d", rec.Code)
+	}
+	_, strangerToken := newTestUser(t, store, "fremd@example.com")
+	if rec := sessionCall(router, "PUT", "/api/v1/task-lists/"+shared.ID+"/mute", strangerToken, "", ""); rec.Code != http.StatusNotFound {
+		t.Fatalf("stranger mute: want 404, got %d", rec.Code)
+	}
+}
+
+func TestRenameShoppingList(t *testing.T) {
+	srv, _ := notifyServer(t)
+	store := srv.store
+	router := srv.Router()
+	owner, ownerToken := newTestUser(t, store, "owner@example.com")
+	viewer, viewerToken := newTestUser(t, store, "viewer@example.com")
+	list, _ := store.CreateList(owner.ID, "Einkauf", "🛒", "shopping")
+	if _, err := store.AddListShare(owner.ID, list.ID, "user", viewer.ID, "viewer"); err != nil {
+		t.Fatal(err)
+	}
+	rec := sessionCall(router, "PATCH", "/api/v1/lists/"+list.ID, ownerToken, `{"title":"Wocheneinkauf","icon":"🥕"}`, "")
+	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), `"title":"Wocheneinkauf"`) || !strings.Contains(rec.Body.String(), "🥕") {
+		t.Fatalf("rename: %d %s", rec.Code, rec.Body.String())
+	}
+	if rec := sessionCall(router, "PATCH", "/api/v1/lists/"+list.ID, viewerToken, `{"title":"Nein"}`, ""); rec.Code != http.StatusForbidden {
+		t.Fatalf("viewer rename: want 403, got %d", rec.Code)
+	}
+	_, strangerToken := newTestUser(t, store, "fremd@example.com")
+	if rec := sessionCall(router, "PATCH", "/api/v1/lists/"+list.ID, strangerToken, `{"title":"Nein"}`, ""); rec.Code != http.StatusNotFound {
+		t.Fatalf("stranger rename: want 404, got %d", rec.Code)
+	}
+}

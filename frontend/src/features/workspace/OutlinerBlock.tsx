@@ -45,6 +45,8 @@ import { LinkPreviewCard } from './LinkPreviewCard';
 import { linkCardUrl, hidePreviewContent, linkHost, useLinkPreviewsEnabled } from '../../lib/linkPreview';
 import { mediaContent, parseMediaContent } from '../../lib/media';
 import { renderInlineMarkdown } from '../../lib/markdown';
+import { useMentionInput } from '../../lib/useMentionInput';
+import { MentionMenu } from '../../components/MentionMenu';
 import { api } from '../../lib/api';
 import { safeHref } from '../../lib/safeUrl';
 import { isNoteLinkOnly, retargetWikiLinks, unlinkWikiLinks, WikiLink, WikiLinkClickHandler } from '../../lib/wikiLink';
@@ -366,6 +368,12 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
         }
       : undefined;
   const resolveWikiLink = useWikiLinkResolver() || undefined;
+  // "@" opens the picker of people who can see this note
+  const mention = useMentionInput(canEdit ? { docId } : null);
+  const applyMention = (next: string, caret: number) => {
+    pendingCaretRef.current = caret;
+    changeContent(next);
+  };
 
   // Right after undo/redo the focused field must show the engine's text, not keep its own
   const acceptRemoteUntilRef = useRef<number>(0);
@@ -881,6 +889,7 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
       setSlashMatchInfo(null);
     }
 
+    mention.update(val, e.currentTarget.selectionStart ?? val.length);
     setLocalContent(val);
     localContentRef.current = val;
 
@@ -920,6 +929,7 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
   };
 
   const handleBlur = () => {
+    mention.close();
     isFocusedRef.current = false;
     setIsLocallyFocused(false);
     onBlurBlock?.(block.id);
@@ -992,6 +1002,7 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
   });
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (mention.handleKeyDown(e, localContentRef.current, applyMention)) return;
     if ((e.ctrlKey || e.metaKey) && !e.altKey && ['z', 'y'].includes(e.key.toLowerCase())) {
       e.preventDefault();
       e.stopPropagation();
@@ -1744,6 +1755,8 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
               onKeyDown={handleKeyDown}
               onPaste={handlePaste}
               onClick={() => {
+                const ta0 = textareaRef.current;
+                if (ta0) mention.update(ta0.value, ta0.selectionStart);
                 if (slashMatchInfo) {
                   const ta = textareaRef.current;
                   if (ta) {
@@ -1823,6 +1836,8 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
             )}
           </div>
         )}
+
+        {canEdit && <MentionMenu mention={mention} text={localContent} apply={applyMention} className="absolute left-0 top-full mt-1" />}
 
         {/* Floating Slash Commands Menu */}
         {slashSearch !== null && canEdit && (

@@ -263,6 +263,7 @@
       "due": "Attività in scadenza (immediata)",
       "shared": "Elemento condiviso con te",
       "assigned": "Attività assegnata a me",
+      "mentioned": "Sono stato menzionato",
       "taskCreated": "Nuova attività in una lista condivisa",
       "taskDone": "Attività condivisa completata",
       "watched": "Attività seguite"

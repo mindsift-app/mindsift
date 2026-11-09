@@ -401,6 +401,7 @@ var messagesFR = map[string]string{
 	"{name} hat die Wiederholung von „{title}“ geändert":             "{name} a modifié la répétition de « {title} »",
 	"{name} hat „{title}“ geändert: {changes}":                       "{name} a modifié « {title} » : {changes}",
 	"{name} hat dir „{title}“ zugewiesen":                            "{name} vous a attribué « {title} »",
+	"{name} hat dich in „{title}“ erwähnt":                           "{name} vous a mentionné dans « {title} »",
 	"{name} hat „{title}“ zur Liste „{list}“ hinzugefügt":            "{name} a ajouté « {title} » à la liste « {list} »",
 	"erledigt":            "terminée",
 	"wieder geöffnet":     "rouverte",

@@ -69,6 +69,7 @@ import { useMobileCapture } from './app/useMobileCapture';
 import { MobileCaptureSheet } from './app/MobileCaptureSheet';
 import { DesktopHeaderBar, DesktopNav, MobileHeaderBar } from './app/AppHeader';
 import { useSessionBootstrap } from './app/useSessionBootstrap';
+import { rememberMentionNames } from './lib/mentions';
 import i18n, { applyLanguage, resolveLanguage } from './i18n';
 import { useTranslation } from 'react-i18next';
 
@@ -120,6 +121,10 @@ export const App: React.FC = () => {
   useEffect(() => {
     if (resetToken) window.history.replaceState(null, '', window.location.pathname);
   }, [resetToken]);
+  // Mentions of oneself show one's own name (the directory leaves oneself out)
+  useEffect(() => {
+    if (user) rememberMentionNames([user]);
+  }, [user]);
   const [customThemes, setCustomThemes] = useState<UserTheme[]>([]);
   const allThemes = useMemo(() => [...AVAILABLE_THEMES, ...customThemes.map(customThemeOption)], [customThemes]);
   // The open tab survives a reload of this browser tab (lib/viewSession); a new tab starts at the triage

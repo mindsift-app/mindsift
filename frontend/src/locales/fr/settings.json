@@ -263,6 +263,7 @@
       "due": "Tâches échues (immédiatement)",
       "shared": "Élément partagé avec toi",
       "assigned": "Tâche qui m’est attribuée",
+      "mentioned": "On m’a mentionné",
       "taskCreated": "Nouvelle tâche dans une liste partagée",
       "taskDone": "Tâche partagée terminée",
       "watched": "Tâches suivies"

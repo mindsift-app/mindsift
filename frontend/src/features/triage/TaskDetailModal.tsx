@@ -25,7 +25,9 @@ import { OriginBadge, originDetails } from '../../components/OriginBadge';
 import { columnDotClass } from './ManageColumnsModal';
 import { UserAutocomplete } from '../UserAutocomplete';
 import { api, triggerHaptic } from '../../lib/api';
-import { MarkdownViewer } from '../../lib/markdown';
+import { MarkdownViewer, renderMentions } from '../../lib/markdown';
+import { useMentionInput } from '../../lib/useMentionInput';
+import { MentionMenu } from '../../components/MentionMenu';
 import { VoiceInputButton } from '../../components/VoiceInputButton';
 import { addDays, joinDue, splitDue } from '../../lib/due';
 import { usePointerSort } from './usePointerSort';
@@ -114,6 +116,23 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
   }, [notesDraft, isEditingNotes, growNotes]);
 
   const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
+  // "@" in the description or a new subtask: the people who can see this task
+  const notesMention = useMentionInput(readOnly ? null : { taskId: task.id });
+  const subtaskMention = useMentionInput(readOnly ? null : { taskId: task.id });
+  const subtaskInputRef = useRef<HTMLInputElement | null>(null);
+  const caretTo = (el: HTMLTextAreaElement | HTMLInputElement | null, caret: number) =>
+    requestAnimationFrame(() => {
+      el?.focus();
+      el?.setSelectionRange(caret, caret);
+    });
+  const applyNotesMention = (next: string, caret: number) => {
+    setNotesDraft(next);
+    caretTo(notesRef.current, caret);
+  };
+  const applySubtaskMention = (next: string, caret: number) => {
+    setNewSubtaskTitle(next);
+    caretTo(subtaskInputRef.current, caret);
+  };
   const [newTagDraft, setNewTagDraft] = useState('');
   const [isWatching, setIsWatching] = useState<boolean>(Boolean(task.isWatching));
   const [watchBusy, setWatchBusy] = useState(false);
@@ -869,7 +888,7 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
                           st.isCompleted ? 'line-through text-faint' : 'text-main'
                         }`}
                       >
-                        {st.title}
+                        {renderMentions(st.title)}
                       </span>
                     </div>
                     {!readOnly && (
@@ -888,14 +907,23 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
 
             {/* Inline add subtask form */}
             {!readOnly && (
-            <form onSubmit={handleAddSubtaskSubmit} className="flex items-center gap-1.5">
+            <form onSubmit={handleAddSubtaskSubmit} className="relative flex items-center gap-1.5">
               <input
+                ref={subtaskInputRef}
                 type="text"
                 value={newSubtaskTitle}
-                onChange={(e) => setNewSubtaskTitle(e.target.value)}
+                onChange={(e) => {
+                  setNewSubtaskTitle(e.target.value);
+                  subtaskMention.update(e.target.value, e.target.selectionStart ?? e.target.value.length);
+                }}
+                onKeyDown={(e) => {
+                  subtaskMention.handleKeyDown(e, newSubtaskTitle, applySubtaskMention);
+                }}
+                onBlur={subtaskMention.close}
                 placeholder={t('detail.newSubtask')}
                 className="flex-1 min-w-0 h-11 sm:h-8 px-2 text-base sm:text-xs input-field"
               />
+              <MentionMenu mention={subtaskMention} text={newSubtaskTitle} apply={applySubtaskMention} />
               <button
                 type="submit"
                 disabled={!newSubtaskTitle.trim()}
@@ -937,7 +965,15 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
                 <div className="relative">
                   <textarea
                     value={notesDraft}
-                    onChange={(e) => setNotesDraft(e.target.value)}
+                    onChange={(e) => {
+                      setNotesDraft(e.target.value);
+                      notesMention.update(e.target.value, e.target.selectionStart ?? e.target.value.length);
+                    }}
+                    onKeyDown={(e) => {
+                      notesMention.handleKeyDown(e, notesDraft, applyNotesMention);
+                    }}
+                    onClick={(e) => notesMention.update(e.currentTarget.value, e.currentTarget.selectionStart)}
+                    onBlur={notesMention.close}
                     placeholder={t('detail.notesPlaceholder')}
                     rows={6}
                     autoFocus
@@ -957,6 +993,7 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
                     focusRef={notesRef}
                     className="absolute top-1 right-1"
                   />
+                  <MentionMenu mention={notesMention} text={notesDraft} apply={applyNotesMention} />
                 </div>
                 <div className="flex justify-end gap-1.5">
                   <button

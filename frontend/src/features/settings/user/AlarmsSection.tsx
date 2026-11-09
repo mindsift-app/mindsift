@@ -22,6 +22,7 @@ export function AlarmsSection({
     { key: 'due', label: t('alarms.event.due') },
     { key: 'shared', label: t('alarms.event.shared') },
     { key: 'assigned', label: t('alarms.event.assigned') },
+    { key: 'mentioned', label: t('alarms.event.mentioned') },
     { key: 'taskCreated', label: t('alarms.event.taskCreated') },
     { key: 'taskDone', label: t('alarms.event.taskDone') },
     { key: 'watched', label: t('alarms.event.watched') },

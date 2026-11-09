@@ -484,6 +484,12 @@ const fr: HelpContent = {
               <strong className="text-main">Autres notifications :</strong> Quand quelqu’un t’attribue une tâche, qu’une nouvelle tâche arrive dans une liste partagée ou qu’une tâche y est terminée, MindSift peut te prévenir ; chaque événement s’active ou se désactive séparément dans les paramètres, sous « Alarmes ». Les tâches que tu <strong className="text-main">suis</strong> signalent chaque modification (statut, priorité, échéance, texte, description, sous-tâches, attribution …), même cochées dans une note. MindSift ne te signale jamais ce que tu fais toi-même. Plusieurs événements arrivent regroupés dans un seul message.
             </li>
             <li>
+              <strong className="text-main">Mentions avec @ :</strong> Dans la description d’une tâche, dans les sous-tâches et dans les notes, <strong className="text-main">@</strong> ouvre une liste de personnes (flèches, Entrée). Celles sans accès apparaissent grisées. La personne mentionnée reçoit une notification (Paramètres → Alarmes, « On m’a mentionné »), même depuis une liste en sourdine ; enregistrer à nouveau n’en envoie pas une deuxième.
+            </li>
+            <li>
+              <strong className="text-main">Menu de la liste (⋯) :</strong> À droite au-dessus de la liste : <strong className="text-main">Mettre en sourdine</strong> (listes partagées seulement : aucune notification de cette liste ; attributions, mentions et tâches suivies arrivent toujours), Partager, Renommer et Supprimer. Si toutes les listes ne tiennent pas dans la ligne, les autres sont derrière « ⋯ n ». Dans une liste partagée, une nouvelle tâche t’est d’abord attribuée ; l’alerte d’échéance va aux personnes attribuées, ou à tous les membres si personne ne l’est.
+            </li>
+            <li>
               <strong className="text-main">Suivre des tâches :</strong> avec l'icône en forme d'œil dans le détail de la tâche, abonne-toi aux notifications lors de modifications apportées par d'autres personnes.
             </li>
           </ul>

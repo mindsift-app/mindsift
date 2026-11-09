@@ -263,6 +263,7 @@
       "due": "Fällige Aufgaben (sofort)",
       "shared": "Freigabe erhalten",
       "assigned": "Aufgabe mir zugewiesen",
+      "mentioned": "Ich wurde erwähnt",
       "taskCreated": "Neue Aufgabe in geteilter Liste",
       "taskDone": "Geteilte Aufgabe erledigt",
       "watched": "Beobachtete Aufgaben"

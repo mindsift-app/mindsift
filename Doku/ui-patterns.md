@@ -130,6 +130,29 @@ Component: [ListSwitcher.tsx](../frontend/src/components/ListSwitcher.tsx)
 
 Tab rows that the person can reorder (task lists, shared lists) use `useTabReorder` (`lib/useTabReorder.ts`) and `TabDropMarker` (a line on the side where the tab lands). The tab carries its own drag data type, so dropping tasks or list items onto a tab keeps working; `handleDragOver`/`handleDrop` return `true` when they handled a tab. The order is saved per person (`PUT /task-lists/order`, `/lists/order`) and applied with `inIdOrder` right away.
 
+## Tab Row That Never Wraps (Lists)
+
+Hook: [useOverflowTabs.ts](../frontend/src/lib/useOverflowTabs.ts), button: [MoreTabsButton.tsx](../frontend/src/components/MoreTabsButton.tsx). Used for the task lists (`TaskListTabs`) and shopping lists (`ListTabsHeader`).
+
+- The tabs stay in one row; those that do not fit go behind **"⋯ n"** at the end of the row, a dropdown like the list switcher on phones. The open list always keeps its place, the order stays (no smaller tab jumps in after a gap). The actions on the right never move.
+- Hidden tabs remain rendered (`OVERFLOW_HIDDEN_TAB`: absolute, invisible) so their widths can be measured; such a tab must not carry `relative` at the same time. Fixed parts of the row carry `data-tab-fixed`.
+- While a task or entry is dragged, resting on "⋯ n" opens the dropdown; its rows take the drop like the tabs.
+
+## Menu of the Open List (⋯)
+
+Component: [ActionMenu.tsx](../frontend/src/components/ActionMenu.tsx), in the style of the note menu.
+
+- Right of the status in the list header (task lists, shopping lists), instead of separate share and delete buttons: Mute (task lists; greyed out with a hint for lists nobody else sees), Share, Rename ([RenameListSheet.tsx](../frontend/src/components/RenameListSheet.tsx), a `FormSheet` like "Neue Liste"), Delete (asks at the mouse position).
+- An entry someone may not use stays in the menu, greyed out with a short reason below it (read only, only the owner can delete), so the menu looks the same everywhere.
+
+## Mentioning People (@)
+
+Hook: [useMentionInput.ts](../frontend/src/lib/useMentionInput.ts), list: [MentionMenu.tsx](../frontend/src/components/MentionMenu.tsx), chip: [MentionChip.tsx](../frontend/src/components/MentionChip.tsx).
+
+- In a field that knows its place (note, task, task list), "@" right after a space or at the start opens a list of people below the field (at most 8, filtered by name or username); arrows, Enter or Tab pick, Escape closes. People without access to the place are greyed out with "keine Berechtigung" and cannot be picked; there is no shortcut to share from there.
+- The text stores `{{mention:<user id>}}`; it shows as "@Name" with the person's current name (`renderInlineMarkdown`, or `renderMentions` for plain text such as subtasks).
+- Used in bullets of notes, a task's description and new subtasks; not in task titles.
+
 ## Fields That Are Not a Login
 
 Search and filter fields get `NO_AUTOFILL` (`lib/noAutofill.ts`). Passwords that are not the person's own login (other accounts, the mail server, the password of a public link) are text fields with `style={MASKED}` instead of `type="password"`, otherwise password managers offer the person's login there.
@@ -138,7 +161,7 @@ Search and filter fields get `NO_AUTOFILL` (`lib/noAutofill.ts`). Passwords that
 
 Component for connection status: [LivePill.tsx](../frontend/src/components/LivePill.tsx) (notes display their own sync transport in the same visual style).
 
-- On the right side of headers in Notes, Tasks, and Lists, the same layout order applies: status indicators on the left (Live pill, "Shared"), followed by a vertical divider (`w-px h-5 bg-border`), and action buttons on the right (Share, View, Menu). On mobile, the layout is identical, but the pill displays only "Live".
+- On the right side of headers in Notes, Tasks, and Lists, the same layout order applies: status indicators on the left (Live pill, "Shared"), followed by a vertical divider (`w-px h-5 bg-border`), and action buttons on the right (Share or the ⋯ menu, View). On mobile, the layout is identical, but the pill displays only "Live".
 - The "shared" status in these headers is [SharedPill.tsx](../frontend/src/components/SharedPill.tsx): flat (`bg-panel`, 28 px high), "Shared (3)" in the accent colour for own items, "Shared by Anna" muted for someone else's; a click opens the sharing dialog. The journal shows the same header for the day marked in the calendar.
 
 ## Microphone in Input Fields

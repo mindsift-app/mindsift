@@ -401,6 +401,7 @@ var messagesIT = map[string]string{
 	"{name} hat die Wiederholung von „{title}“ geändert":             "{name} ha modificato la ripetizione di «{title}»",
 	"{name} hat „{title}“ geändert: {changes}":                       "{name} ha modificato «{title}»: {changes}",
 	"{name} hat dir „{title}“ zugewiesen":                            "{name} ti ha assegnato «{title}»",
+	"{name} hat dich in „{title}“ erwähnt":                           "{name} ti ha menzionato in «{title}»",
 	"{name} hat „{title}“ zur Liste „{list}“ hinzugefügt":            "{name} ha aggiunto «{title}» alla lista «{list}»",
 	"erledigt":            "completata",
 	"wieder geöffnet":     "riaperta",

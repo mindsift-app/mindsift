@@ -263,6 +263,7 @@
       "due": "Due tasks (right away)",
       "shared": "Something shared with you",
       "assigned": "Task assigned to me",
+      "mentioned": "I was mentioned",
       "taskCreated": "New task in a shared list",
       "taskDone": "Shared task done",
       "watched": "Watched tasks"

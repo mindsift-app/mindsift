@@ -80,6 +80,7 @@ export interface NotificationEvents {
   due: NotificationChannelRouting;
   shared: NotificationChannelRouting;
   assigned: NotificationChannelRouting;
+  mentioned: NotificationChannelRouting;
   taskCreated: NotificationChannelRouting;
   taskDone: NotificationChannelRouting;
   watched: NotificationChannelRouting;
@@ -107,6 +108,15 @@ export interface NotificationSettings {
   includeOwnWatched: boolean;
   events: NotificationEvents;
   dailySummary: DailySummarySettings;
+}
+
+// A person the @-mention picker offers; without access to the place they are shown greyed out
+export interface MentionCandidate {
+  id: string;
+  displayName: string;
+  username?: string;
+  avatarUrl?: string;
+  hasAccess: boolean;
 }
 
 export interface User {
@@ -274,6 +284,8 @@ export interface TaskList {
   ownerName?: string;
   isOwner?: boolean;
   permission?: 'owner' | 'editor' | 'viewer';
+  // I muted this shared list (no list-wide notifications from it)
+  isMuted?: boolean;
   members?: TaskListMember[];
   shares?: TaskListShare[];
   columns?: KanbanColumn[];

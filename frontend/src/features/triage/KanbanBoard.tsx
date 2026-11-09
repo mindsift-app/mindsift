@@ -10,6 +10,7 @@ import { KANBAN_MIN_COL_HEIGHT, useKanbanLayout } from './useKanbanLayout';
 import { useTaskDrag, canDragTasks } from './useTaskDrag';
 import { stopOnControl } from './stopOnControl';
 import { AvatarPerson } from '../../components/AvatarStack';
+import { renderMentions } from '../../lib/markdown';
 
 // First row of a Kanban board with several rows: the full height minus what is still visible of the bar
 // above the board (--kb-top at the start, shrinking with the scroll position --kb-scroll)
@@ -252,7 +253,7 @@ export function KanbanBoard({
                     {task.notes && (
                       <div className="flex items-center gap-1 text-[10px] text-muted bg-canvas p-1 rounded border border-border truncate">
                         <FileText className="w-2.5 h-2.5 text-accent flex-shrink-0" />
-                        <span className="truncate">{task.notes}</span>
+                        <span className="truncate">{renderMentions(task.notes)}</span>
                       </div>
                     )}
 

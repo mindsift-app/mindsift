@@ -232,6 +232,7 @@ func (s *Server) afterDocChange(actorID, docID string, ops []collab.Op, results 
 			}
 		}
 	}
+	s.notifyNoteMentions(actorID, docID, ops, results)
 	if titleChanged {
 		s.broadcastDocToAuthorizedUsers(docID, "DOC_UPDATED")
 	}

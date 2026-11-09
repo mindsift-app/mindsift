@@ -561,6 +561,12 @@ const es: HelpContent = {
             <li>
               <strong className="text-main">Más notificaciones:</strong> Cuando alguien te asigna una tarea, llega una tarea nueva a una lista compartida o se completa una allí, MindSift puede avisarte; cada evento se activa o desactiva por separado en los ajustes, en “Avisos”. Las tareas que <strong className="text-main">sigues</strong> notifican cada cambio (estado, prioridad, vencimiento, texto, descripción, subtareas, asignación …), también si se marcan en una nota. MindSift nunca te avisa de lo que haces tú. Varios eventos llegan juntos en un solo mensaje.
             </li>
+            <li>
+              <strong className="text-main">Menciones con @:</strong> En la descripción de una tarea, en subtareas y en notas, <strong className="text-main">@</strong> abre una lista de personas (flechas, Enter). Quien no tiene acceso aparece en gris. La persona mencionada recibe un aviso (Ajustes → Avisos, “Me han mencionado”), también desde una lista silenciada; guardar de nuevo no envía otro.
+            </li>
+            <li>
+              <strong className="text-main">Menú de la lista (⋯):</strong> A la derecha sobre la lista: <strong className="text-main">Silenciar</strong> (solo listas compartidas: sin avisos de esta lista; asignaciones, menciones y tareas seguidas siguen llegando), Compartir, Cambiar nombre y Eliminar. Si no caben todas las listas en la fila, las demás están tras “⋯ n”. En una lista compartida, una tarea nueva se te asigna primero a ti; el aviso de vencimiento va a las personas asignadas o, si no hay nadie, a todos los miembros.
+            </li>
           </ul>
         </div>
       ),
