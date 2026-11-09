@@ -10,6 +10,8 @@ export interface ActionMenuItem {
   disabled?: boolean;
   // Second line in muted text, e.g. why an entry is disabled
   hint?: string;
+  // Longer explanation on mouse-over
+  tooltip?: string;
   danger?: boolean;
 }
 
@@ -59,6 +61,7 @@ export function ActionMenu({ items, label, buttonClassName = 'btn-icon' }: { ite
               type="button"
               role="menuitem"
               disabled={item.disabled}
+              title={item.tooltip}
               onClick={(e) => {
                 setOpen(false);
                 item.onSelect(e);

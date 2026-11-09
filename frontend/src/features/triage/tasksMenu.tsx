@@ -1,8 +1,9 @@
-import { Bell, BellOff, Check, Columns, Filter, Folder, Layers, LayoutList, Pencil, Plus, Settings, Trash2, Users } from 'lucide-react';
+import { Bell, BellOff, CalendarDays, Check, Columns, Filter, Folder, Layers, LayoutList, Pencil, Plus, Settings, Trash2, Users } from 'lucide-react';
 import { isTaskListShared } from './TaskListTabs';
 import i18n from '../../i18n';
 import { TaskList } from '../../lib/types';
 import { MobileMenuGroup } from '../../context/MobileActionContext';
+import { ViewMode } from './taskViewTypes';
 
 type TaskFilter = 'open' | 'done' | 'discarded';
 
@@ -29,11 +30,11 @@ interface TasksMenuInput {
   setShowManageColumnsModal: (show: boolean) => void;
   setShowMobileCreateModal: (show: boolean) => void;
   setShowNewListModal: (show: boolean) => void;
-  setViewMode: (mode: 'list' | 'kanban') => void;
+  setViewMode: (mode: ViewMode) => void;
   sortBy: string;
   trashCount: number;
   safeTaskLists: TaskList[];
-  viewMode: 'list' | 'kanban';
+  viewMode: ViewMode;
 }
 
 // The phone menu of TasksView (header menu): new task, filter and sorting, list management, views and the
@@ -181,6 +182,13 @@ export function buildTasksMenu({
       badge: kanbanCount,
       active: viewMode === 'kanban',
       onClick: () => setViewMode('kanban'),
+    },
+    {
+      id: 'view-calendar',
+      label: i18n.t('tasks:menu.calendar'),
+      icon: <CalendarDays className="w-4 h-4" />,
+      active: viewMode === 'calendar',
+      onClick: () => setViewMode('calendar'),
     },
   ];
 

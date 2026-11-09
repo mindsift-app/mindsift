@@ -497,6 +497,9 @@ const en: HelpContent = {
             <li>
               <strong className="text-main">List menu (⋯):</strong> On the right above the list: <strong className="text-main">Mute</strong> (shared lists only: no notifications from this list, assignments, mentions and watched tasks still come), Share, Rename and Delete. If not all lists fit in the row, the rest are behind “⋯ n”. In a shared list a new task is first assigned to you; the due alarm goes to the people assigned, or to every member if nobody is.
             </li>
+            <li>
+              <strong className="text-main">Calendar:</strong> A third view next to list and Kanban: month or week on the desktop, the week on phones. Tasks without a date are under “Unscheduled”; drag one onto a day to set its date (a time stays), back to “Unscheduled” to remove it, <strong className="text-main">Ctrl + Z</strong> takes it back. Repeating tasks also show their coming dates, greyed with ↻. Click a day to see its tasks on the left and a field for a new one. ← → leaf through, T jumps to today.
+            </li>
           </ul>
         </div>
       ),

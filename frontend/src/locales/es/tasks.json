@@ -148,7 +148,9 @@
     "sharedCount": "Compartidas ({{count}})",
     "sharedBy": "Compartido por {{name}}",
     "confirmDelete": "¿Eliminar la lista de tareas <b>«{{title}}»</b>? Sus tareas se conservarán.",
-    "shareList": "Compartir lista de tareas"
+    "shareList": "Compartir lista de tareas",
+    "calendar": "Calendario",
+    "calendarView": "Vista de calendario"
   },
   "row": {
     "markDone": "Tachar",
@@ -249,7 +251,8 @@
     "viewStatus": "Vista y estado",
     "switchList": "Cambiar de lista de tareas",
     "shareList": "Compartir lista «{{title}}»",
-    "deleteList": "Eliminar lista «{{title}}»"
+    "deleteList": "Eliminar lista «{{title}}»",
+    "calendar": "Calendario"
   },
   "listing": {
     "noList": "Sin lista",
@@ -270,5 +273,26 @@
     "open": "Abiertas ({{count}})",
     "done": "Hechas ({{count}})",
     "trash": "Papelera ({{count}})"
+  },
+  "calendar": {
+    "label": "Calendario",
+    "month": "Mes",
+    "week": "Semana",
+    "mode": "Vista",
+    "today": "Hoy",
+    "previous": "Anterior",
+    "next": "Siguiente",
+    "unplanned": "Sin fecha",
+    "unplannedEmpty": "Todas las tareas abiertas tienen fecha.",
+    "dayEmpty": "Nada planeado este día.",
+    "newForDay": "Tarea para este día",
+    "add": "Añadir",
+    "repeats": "Se repite",
+    "upcomingTitle": "«{{title}}» – próxima fecha (abre la tarea)",
+    "moved": "Fecha cambiada",
+    "unscheduled": "Fecha quitada",
+    "more_one": "+{{count}} más",
+    "more_other": "+{{count}} más",
+    "weekNumber": "Sem. {{n}}"
   }
 }

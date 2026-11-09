@@ -143,7 +143,7 @@ Hook: [useOverflowTabs.ts](../frontend/src/lib/useOverflowTabs.ts), button: [Mor
 Component: [ActionMenu.tsx](../frontend/src/components/ActionMenu.tsx), in the style of the note menu.
 
 - Right of the status in the list header (task lists, shopping lists), instead of separate share and delete buttons: Mute (task lists; greyed out with a hint for lists nobody else sees), Share, Rename ([RenameListSheet.tsx](../frontend/src/components/RenameListSheet.tsx), a `FormSheet` like "Neue Liste"), Delete (asks at the mouse position).
-- An entry someone may not use stays in the menu, greyed out with a short reason below it (read only, only the owner can delete), so the menu looks the same everywhere.
+- An entry someone may not use stays in the menu, greyed out with a short reason below it (read only, only the owner can delete), so the menu looks the same everywhere. Longer explanations go into the tooltip (`tooltip`), not below the entry.
 
 ## Mentioning People (@)
 
@@ -160,6 +160,16 @@ Component: [NotificationBell.tsx](../frontend/src/components/NotificationBell.ts
 - In the header between search and profile (phones: search, bell, profile side by side; below 380 px the "App" button shows only its icon). The number of unread entries is a `CountBadge` in the corner.
 - A click opens a small list (desktop: dropdown under the bell; phones: full width under the header): icon per kind, short text, relative time, unread ones tinted with a dot. "Mark all as read" and "Delete all" on top. A click on an entry marks it read and opens its target.
 - Quiet: no sound, nothing pops up; open apps update over the WebSocket.
+
+## Calendar of Tasks
+
+Component: [TaskCalendar.tsx](../frontend/src/features/triage/TaskCalendar.tsx), logic in [calendar.ts](../frontend/src/lib/calendar.ts).
+
+- Third view next to list and Kanban (remembered per list). Desktop: month or week (segment switch), 7 columns without hours; phones: the week with a date strip on top and the days below.
+- Entries are compact: priority dot, time, title; overdue in red, done struck through, coming dates of repeating tasks greyed with ↻ (they open the task itself). A month day shows three and "+n more".
+- Dragging (mouse: HTML5 with the half transparent ghost; finger: hold, as on the Kanban board) onto a day sets the date and keeps a time; onto "Unscheduled" removes it; undo with Ctrl + Z or the notice.
+- A day opens on the left in full (task rows and "Task for this day"); meanwhile "Unscheduled" steps aside so the week keeps readable columns. Phones: a sheet from below.
+- Weeks start per language (`firstWeekday`); repeating dates follow the server's rule (months fall back to their last day).
 
 ## Fields That Are Not a Login
 

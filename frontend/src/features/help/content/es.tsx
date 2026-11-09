@@ -567,6 +567,9 @@ const es: HelpContent = {
             <li>
               <strong className="text-main">Menú de la lista (⋯):</strong> A la derecha sobre la lista: <strong className="text-main">Silenciar</strong> (solo listas compartidas: sin avisos de esta lista; asignaciones, menciones y tareas seguidas siguen llegando), Compartir, Cambiar nombre y Eliminar. Si no caben todas las listas en la fila, las demás están tras “⋯ n”. En una lista compartida, una tarea nueva se te asigna primero a ti; el aviso de vencimiento va a las personas asignadas o, si no hay nadie, a todos los miembros.
             </li>
+            <li>
+              <strong className="text-main">Calendario:</strong> Una tercera vista junto a lista y Kanban: mes o semana en el escritorio, la semana en el móvil. Las tareas sin fecha están en “Sin fecha”; arrastra una a un día para ponerle fecha (la hora se mantiene) o de vuelta a “Sin fecha” para quitarla, <strong className="text-main">Ctrl + Z</strong> lo deshace. Las tareas que se repiten muestran también sus próximas fechas, en gris con ↻. Un clic en un día muestra a la izquierda sus tareas y un campo para una nueva. ← → para pasar, T salta a hoy.
+            </li>
           </ul>
         </div>
       ),

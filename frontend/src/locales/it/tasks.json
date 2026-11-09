@@ -148,7 +148,9 @@
     "sharedCount": "Condivise ({{count}})",
     "sharedBy": "Condivisa da {{name}}",
     "confirmDelete": "Eliminare la lista di attività <b>«{{title}}»</b>? Le attività verranno mantenute.",
-    "shareList": "Condividi lista di attività"
+    "shareList": "Condividi lista di attività",
+    "calendar": "Calendario",
+    "calendarView": "Vista calendario"
   },
   "row": {
     "markDone": "Segna come completata",
@@ -249,7 +251,8 @@
     "viewStatus": "Vista e stato",
     "switchList": "Cambia lista di attività",
     "shareList": "Condividi lista «{{title}}»",
-    "deleteList": "Elimina lista «{{title}}»"
+    "deleteList": "Elimina lista «{{title}}»",
+    "calendar": "Calendario"
   },
   "listing": {
     "noList": "Senza lista",
@@ -270,5 +273,26 @@
     "open": "Aperte ({{count}})",
     "done": "Fatte ({{count}})",
     "trash": "Cestino ({{count}})"
+  },
+  "calendar": {
+    "label": "Calendario",
+    "month": "Mese",
+    "week": "Settimana",
+    "mode": "Vista",
+    "today": "Oggi",
+    "previous": "Indietro",
+    "next": "Avanti",
+    "unplanned": "Senza data",
+    "unplannedEmpty": "Tutte le attività aperte hanno una data.",
+    "dayEmpty": "Niente in programma questo giorno.",
+    "newForDay": "Attività per questo giorno",
+    "add": "Aggiungi",
+    "repeats": "Si ripete",
+    "upcomingTitle": "«{{title}}» – prossima data (apre l'attività)",
+    "moved": "Data modificata",
+    "unscheduled": "Data rimossa",
+    "more_one": "+{{count}} altra",
+    "more_other": "+{{count}} altre",
+    "weekNumber": "Sett. {{n}}"
   }
 }
