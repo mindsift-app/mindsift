@@ -375,5 +375,26 @@
   "discard": "Descartar",
   "download": "Descargar",
   "filterTag": "Filtrar por #{{tag}}",
-  "deviceName": "{{browser}} en {{os}}"
+  "deviceName": "{{browser}} en {{os}}",
+  "listMenu": {
+    "more": "Más acciones",
+    "moreLists": "Más listas",
+    "mute": "Silenciar",
+    "unmute": "Quitar silencio",
+    "muteHint": "Sin avisos de esta lista; las asignaciones, menciones y tareas que sigues siguen llegando",
+    "muteOnlyShared": "Solo en listas compartidas",
+    "muted": "Silenciada",
+    "share": "Compartir",
+    "rename": "Cambiar nombre",
+    "delete": "Eliminar",
+    "readOnly": "Solo lectura",
+    "ownerOnly": "Solo el propietario puede eliminar la lista",
+    "renameTitle": "Cambiar nombre de la lista",
+    "name": "Nombre",
+    "renameFailed": "No se pudo cambiar el nombre"
+  },
+  "mention": {
+    "pick": "Mencionar a alguien",
+    "noAccess": "sin permiso"
+  }
 }

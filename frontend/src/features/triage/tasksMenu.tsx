@@ -1,4 +1,5 @@
-import { Check, Columns, Filter, Folder, Layers, LayoutList, Plus, Settings, Trash2, Users } from 'lucide-react';
+import { Bell, BellOff, Check, Columns, Filter, Folder, Layers, LayoutList, Pencil, Plus, Settings, Trash2, Users } from 'lucide-react';
+import { isTaskListShared } from './TaskListTabs';
 import i18n from '../../i18n';
 import { TaskList } from '../../lib/types';
 import { MobileMenuGroup } from '../../context/MobileActionContext';
@@ -13,6 +14,8 @@ interface TasksMenuInput {
   groupBy: string;
   handleDeleteTaskList: (listId: string) => void;
   handleOpenShareModal: (tl: TaskList) => void;
+  handleRenameList: (tl: TaskList) => void;
+  handleToggleMute: (tl: TaskList) => void;
   isSelectedListReadOnly: boolean;
   kanbanCount: number;
   openCount: number;
@@ -43,6 +46,8 @@ export function buildTasksMenu({
   groupBy,
   handleDeleteTaskList,
   handleOpenShareModal,
+  handleRenameList,
+  handleToggleMute,
   isSelectedListReadOnly,
   kanbanCount,
   openCount,
@@ -110,6 +115,22 @@ export function buildTasksMenu({
       icon: <Users className="w-4 h-4" />,
       onClick: () => handleOpenShareModal(currentSelectedList),
     });
+    if (currentSelectedList.permission !== 'viewer') {
+      listManagementItems.push({
+        id: 'rename-task-list',
+        label: i18n.t('common:listMenu.rename'),
+        icon: <Pencil className="w-4 h-4" />,
+        onClick: () => handleRenameList(currentSelectedList),
+      });
+    }
+    if (isTaskListShared(currentSelectedList)) {
+      listManagementItems.push({
+        id: 'mute-task-list',
+        label: currentSelectedList.isMuted ? i18n.t('common:listMenu.unmute') : i18n.t('common:listMenu.mute'),
+        icon: currentSelectedList.isMuted ? <Bell className="w-4 h-4" /> : <BellOff className="w-4 h-4" />,
+        onClick: () => handleToggleMute(currentSelectedList),
+      });
+    }
     listManagementItems.push({
       id: 'delete-task-list',
       label: i18n.t('tasks:menu.deleteList', { title: currentSelectedList.title }),

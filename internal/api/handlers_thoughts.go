@@ -88,6 +88,7 @@ func (s *Server) handleCaptureInbox(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	s.assignCreator(userID, thought)
 	s.wsHub.BroadcastToUsers(s.taskAudience(thought), "TASK_CREATED", thought)
 	s.notifyTaskAdded(userID, thought, nil)
 	writeJSON(w, http.StatusCreated, thought)
@@ -176,6 +177,7 @@ func (s *Server) handleTriageAction(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	s.assignCreator(userID, updated)
 	s.wsHub.BroadcastToUsers(s.taskAudience(updated), "TASK_UPDATED", updated)
 	s.notifyTaskAdded(userID, updated, nil)
 	writeJSON(w, http.StatusOK, updated)
@@ -330,6 +332,7 @@ func (s *Server) updateTask(userID, thoughtID string, req taskPatch) (*domain.Th
 	}
 	s.wsHub.BroadcastToUsers(append(s.taskAudience(before), s.taskAudience(updated)...), "TASK_UPDATED", updated)
 	s.notifyTaskChange(userID, before, updated, false)
+	s.notifyTaskMentions(userID, before, updated)
 	updated.IsWatching = s.store.WatchedTaskIDs(userID)[updated.ID]
 	return updated, nil
 }

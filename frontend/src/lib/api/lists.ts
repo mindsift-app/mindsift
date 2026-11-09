@@ -98,6 +98,13 @@ export const listsApi = {
     };
   },
 
+  async updateList(listId: string, patch: { title?: string; icon?: string }): Promise<SharedList> {
+    return request<SharedList>(`/api/v1/lists/${listId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(patch),
+    });
+  },
+
   async deleteList(listId: string): Promise<void> {
     await request(`/api/v1/lists/${listId}`, { method: 'DELETE' });
   },

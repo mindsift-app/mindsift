@@ -373,5 +373,26 @@
   "discard": "Verwerfen",
   "download": "Download",
   "filterTag": "Nach #{{tag}} filtern",
-  "deviceName": "{{browser}} auf {{os}}"
+  "deviceName": "{{browser}} auf {{os}}",
+  "listMenu": {
+    "more": "Weitere Aktionen",
+    "moreLists": "Weitere Listen",
+    "mute": "Stummschalten",
+    "unmute": "Stummschaltung aufheben",
+    "muteHint": "Keine Meldungen aus dieser Liste; Zuweisungen, Erwähnungen und beobachtete Aufgaben kommen weiter",
+    "muteOnlyShared": "Nur bei geteilten Listen",
+    "muted": "Stummgeschaltet",
+    "share": "Teilen",
+    "rename": "Umbenennen",
+    "delete": "Löschen",
+    "readOnly": "Nur lesbar",
+    "ownerOnly": "Nur der Eigentümer kann die Liste löschen",
+    "renameTitle": "Liste umbenennen",
+    "name": "Name",
+    "renameFailed": "Umbenennen hat nicht geklappt"
+  },
+  "mention": {
+    "pick": "Person erwähnen",
+    "noAccess": "keine Berechtigung"
+  }
 }

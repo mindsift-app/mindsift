@@ -65,7 +65,7 @@ Capture from anywhere: the input bar (`C` or `/`), voice input (in the browser o
 </p>
 
 ### ✅ Tasks & kanban
-List and board view with your own columns, priorities, due dates, subtasks, recurring tasks, drag & drop and undo. Share task lists, watch tasks, and get alarms and a daily summary by email, push, Discord or webhook.
+List and board view with your own columns, priorities, due dates, subtasks, recurring tasks, drag & drop and undo. Share task lists, mention people with @, watch tasks or mute a busy shared list, and get alarms and a daily summary by email, push, Discord or webhook.
 
 <p align="center">
   <img src="screenshots/aufgaben_desktop.webp" alt="MindSift tasks and kanban board" width="90%" />

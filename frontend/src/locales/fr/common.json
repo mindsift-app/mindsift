@@ -375,5 +375,26 @@
   "discard": "Supprimer",
   "download": "Télécharger",
   "filterTag": "Filtrer par #{{tag}}",
-  "deviceName": "{{browser}} sur {{os}}"
+  "deviceName": "{{browser}} sur {{os}}",
+  "listMenu": {
+    "more": "Plus d’actions",
+    "moreLists": "Autres listes",
+    "mute": "Mettre en sourdine",
+    "unmute": "Réactiver les notifications",
+    "muteHint": "Aucune notification de cette liste ; les attributions, mentions et tâches suivies arrivent toujours",
+    "muteOnlyShared": "Seulement pour les listes partagées",
+    "muted": "En sourdine",
+    "share": "Partager",
+    "rename": "Renommer",
+    "delete": "Supprimer",
+    "readOnly": "Lecture seule",
+    "ownerOnly": "Seul le propriétaire peut supprimer la liste",
+    "renameTitle": "Renommer la liste",
+    "name": "Nom",
+    "renameFailed": "Le renommage a échoué"
+  },
+  "mention": {
+    "pick": "Mentionner quelqu’un",
+    "noAccess": "pas d’accès"
+  }
 }

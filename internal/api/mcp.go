@@ -308,9 +308,15 @@ func (s *Server) mcpLink(kind, id string) string {
 }
 
 func (s *Server) toTaskView(t *domain.Thought) taskView {
+	// Mentions as "@Name" (an agent reads them out; it cannot mention anyone itself)
+	subs := make([]domain.SubTask, len(t.Subtasks))
+	for i, st := range t.Subtasks {
+		st.Title = s.store.ReadableMentions(st.Title)
+		subs[i] = st
+	}
 	return taskView{
 		ID: t.ID, Content: t.Content, IsCompleted: t.IsCompleted, Priority: t.Priority, DueDate: t.DueDate,
-		TaskListID: t.TaskListID, KanbanStatus: t.KanbanStatus, Notes: t.Notes, Tags: t.Tags, Subtasks: t.Subtasks,
+		TaskListID: t.TaskListID, KanbanStatus: t.KanbanStatus, Notes: s.store.ReadableMentions(t.Notes), Tags: t.Tags, Subtasks: subs,
 		Recurrence: t.Recurrence, CreatedAt: t.CreatedAt, Origin: t.Origin, URL: s.mcpLink("task", t.ID),
 	}
 }
@@ -371,10 +377,10 @@ func (s *Server) toNoteView(d *domain.Document) noteView {
 // noteMarkdown renders the bullets as an indented Markdown list; images and recordings become a
 // placeholder with their caption (the agent cannot open the files), drawings a description in words,
 // links to notes [[current title]] without ids (titles: storage.DocTitles of the user).
-func noteMarkdown(blocks []domain.DocumentBlock, titles map[string]string) string {
+func (s *Server) noteMarkdown(blocks []domain.DocumentBlock, titles map[string]string) string {
 	out := make([]domain.DocumentBlock, len(blocks))
 	for i, b := range blocks {
-		b.Content = storage.ReadableWikiLinks(b.Content, titles)
+		b.Content = s.store.ReadableMentions(storage.ReadableWikiLinks(b.Content, titles))
 		if b.Type == "image" || b.Type == "audio" {
 			label := map[string]string{"image": "Bild", "audio": "Aufnahme"}[b.Type]
 			if ref, ok := storage.ParseMediaContent(b.Content); ok && ref.Caption != "" {
@@ -951,7 +957,7 @@ var mcpTools = []mcpTool{
 	},
 	{
 		Name:        "get_note",
-		Description: "One note: content is its bullets as an indented Markdown list (one tab per level; - [ ] / - [x] are to-dos); bullets lists them with their ids, level and type, for add_note_bullet / update_note_bullet / delete_note_bullet. {{secret:…}} is a value the user hid; it cannot be read here, keep it unchanged when editing the bullet. Drawings (type drawing) are described in words: shapes with their text, arrows as „A“ → „B“ (label).",
+		Description: "One note: content is its bullets as an indented Markdown list (one tab per level; - [ ] / - [x] are to-dos); bullets lists them with their ids, level and type, for add_note_bullet / update_note_bullet / delete_note_bullet. {{secret:…}} is a value the user hid; it cannot be read here, keep it unchanged when editing the bullet. {{mention:<user id>}} in bullets is an @-mention of a person (content shows it as @Name); keep it unchanged as well. Drawings (type drawing) are described in words: shapes with their text, arrows as „A“ → „B“ (label).",
 		Scope:       storage.ScopeNotesRead,
 		Schema:      schema([]string{"id"}, map[string]interface{}{"id": prop("string", "Note id")}),
 		run: func(s *Server, userID string, _ *apiActor, args json.RawMessage) (interface{}, error) {
@@ -965,7 +971,7 @@ var mcpTools = []mcpTool{
 			}
 			v := s.toNoteView(d)
 			titles := s.store.DocTitles(userID)
-			v.Content = noteMarkdown(d.Blocks, titles)
+			v.Content = s.noteMarkdown(d.Blocks, titles)
 			if doc, err := s.noteDoc(a.ID); err == nil {
 				v.Bullets = noteBullets(doc, titles)
 			}
@@ -1027,7 +1033,7 @@ var mcpTools = []mcpTool{
 			}
 			s.broadcastDocToAuthorizedUsers(d.ID, "DOC_CREATED")
 			v := s.toNoteView(d)
-			v.Content = noteMarkdown(d.Blocks, s.store.DocTitles(userID))
+			v.Content = s.noteMarkdown(d.Blocks, s.store.DocTitles(userID))
 			v.Warnings = warnings
 			return v, nil
 		},

@@ -1,5 +1,6 @@
 import type React from 'react';
 import { DocumentBlock } from '../../lib/types';
+import { followDragPointer, hideBrowserDragImage } from '../../lib/dragGhost';
 
 const MAX_ROWS = 8;
 const STRIPE_H = 9;
@@ -8,10 +9,6 @@ const INDENT = 14;
 // Ghost sits right of and slightly above the pointer, so the drop line under the pointer stays visible
 const OFFSET_X = 16;
 const OFFSET_Y = -6;
-
-// Fully transparent image: the browser's own drag image is replaced by the ghost below
-const EMPTY = typeof Image !== 'undefined' ? new Image() : null;
-if (EMPTY) EMPTY.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
 
 function stripeWidth(block: DocumentBlock): number {
   const len = (block.content || '').split('\n')[0].trim().length;
@@ -23,8 +20,7 @@ function stripeWidth(block: DocumentBlock): number {
 // They take the text colour at low opacity (light on dark themes, dark on light ones), build up one after
 // another, trail the pointer a little and fade out when the drag ends.
 export function startBranchDragGhost(e: React.DragEvent, branch: DocumentBlock[]) {
-  if (!branch.length || typeof e.dataTransfer.setDragImage !== 'function') return;
-  if (EMPTY) e.dataTransfer.setDragImage(EMPTY, 0, 0);
+  if (!branch.length || !hideBrowserDragImage(e)) return;
   const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
   const base = Math.max(0, branch[0].level || 0);
 
@@ -55,48 +51,5 @@ export function startBranchDragGhost(e: React.DragEvent, branch: DocumentBlock[]
     }
   });
 
-  let target = { x: e.clientX + OFFSET_X, y: e.clientY + OFFSET_Y };
-  const pos = { ...target };
-  let frame = 0;
-  const place = () => {
-    ghost.style.transform = `translate3d(${pos.x}px, ${pos.y}px, 0)`;
-  };
-  const step = () => {
-    pos.x += (target.x - pos.x) * 0.35;
-    pos.y += (target.y - pos.y) * 0.35;
-    place();
-    frame = Math.abs(target.x - pos.x) + Math.abs(target.y - pos.y) > 0.3 ? requestAnimationFrame(step) : 0;
-  };
-  place();
-
-  // dragover carries the pointer position in every engine (the drag event itself reports 0/0 in Firefox)
-  const onOver = (ev: DragEvent) => {
-    target = { x: ev.clientX + OFFSET_X, y: ev.clientY + OFFSET_Y };
-    if (reduce) {
-      Object.assign(pos, target);
-      place();
-    } else if (!frame) {
-      frame = requestAnimationFrame(step);
-    }
-  };
-  const onEnd = () => {
-    document.removeEventListener('dragover', onOver, true);
-    document.removeEventListener('dragend', onEnd, true);
-    document.removeEventListener('drop', onEnd, true);
-    cancelAnimationFrame(frame);
-    if (reduce) {
-      ghost.remove();
-      return;
-    }
-    ghost
-      .animate([{ opacity: 1 }, { opacity: 0, transform: `${ghost.style.transform} scale(0.96)` }], {
-        duration: 160,
-        easing: 'ease-out',
-        fill: 'forwards',
-      })
-      .finished.finally(() => ghost.remove());
-  };
-  document.addEventListener('dragover', onOver, true);
-  document.addEventListener('dragend', onEnd, true);
-  document.addEventListener('drop', onEnd, true);
+  followDragPointer(e, ghost, OFFSET_X, OFFSET_Y);
 }

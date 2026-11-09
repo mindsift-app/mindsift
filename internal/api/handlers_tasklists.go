@@ -19,7 +19,24 @@ func (s *Server) handleGetTaskLists(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
+	muted := s.store.MutedTaskListIDs(userID)
+	for i := range lists {
+		lists[i].IsMuted = muted[lists[i].ID]
+	}
 	writeJSON(w, http.StatusOK, lists)
+}
+
+// handleMuteTaskList mutes (PUT) or unmutes (DELETE) a task list for the requesting person.
+func (s *Server) handleMuteTaskList(w http.ResponseWriter, r *http.Request) {
+	userID := auth.GetUserID(r.Context())
+	listID := chi.URLParam(r, "id")
+	muted := r.Method == http.MethodPut
+	if err := s.store.SetTaskListMuted(userID, listID, muted); err != nil {
+		writeError(w, http.StatusNotFound, err.Error())
+		return
+	}
+	s.wsHub.BroadcastToUser(userID, "TASK_LIST_UPDATED", map[string]string{"id": listID})
+	writeJSON(w, http.StatusOK, map[string]bool{"muted": muted})
 }
 
 func (s *Server) handleCreateTaskList(w http.ResponseWriter, r *http.Request) {

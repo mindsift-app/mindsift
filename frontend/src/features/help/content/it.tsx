@@ -491,6 +491,12 @@ const it: HelpContent = {
             <li>
               <strong className="text-main">Altre notifiche:</strong> Quando qualcuno ti assegna un'attività, una nuova attività arriva in una lista condivisa o lì ne viene completata una, MindSift può avvisarti; ogni evento si attiva o disattiva singolarmente nelle impostazioni, alla voce “Notifiche”. Le attività che <strong className="text-main">segui</strong> segnalano ogni modifica (stato, priorità, scadenza, testo, descrizione, sottoattività, assegnazione …), anche se spuntate in una nota. MindSift non ti avvisa mai di ciò che fai tu. Più eventi arrivano raggruppati in un unico messaggio.
             </li>
+            <li>
+              <strong className="text-main">Menzioni con @:</strong> Nella descrizione di un'attività, nelle sottoattività e nelle note, <strong className="text-main">@</strong> apre un elenco di persone (frecce, Invio). Chi non ha accesso appare in grigio. La persona menzionata riceve una notifica (Impostazioni → Notifiche, “Sono stato menzionato”), anche da una lista silenziata; salvare di nuovo non ne invia una seconda.
+            </li>
+            <li>
+              <strong className="text-main">Menu della lista (⋯):</strong> A destra sopra la lista: <strong className="text-main">Silenzia</strong> (solo liste condivise: nessuna notifica da questa lista; assegnazioni, menzioni e attività seguite arrivano comunque), Condividi, Rinomina ed Elimina. Se non tutte le liste entrano nella riga, le altre sono dietro “⋯ n”. In una lista condivisa una nuova attività è assegnata prima a te; l'avviso di scadenza va alle persone assegnate o, se non c'è nessuno, a tutti i membri.
+            </li>
           </ul>
         </div>
       ),

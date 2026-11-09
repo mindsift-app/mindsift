@@ -33,6 +33,12 @@ export function buildNotificationSettings(user: User): NotificationSettings {
         webhook: s?.events?.assigned?.webhook ?? false,
         push: s?.events?.assigned?.push ?? false,
       },
+      mentioned: {
+        email: s?.events?.mentioned?.email ?? true,
+        discord: s?.events?.mentioned?.discord ?? false,
+        webhook: s?.events?.mentioned?.webhook ?? false,
+        push: s?.events?.mentioned?.push ?? false,
+      },
       taskCreated: {
         email: s?.events?.taskCreated?.email ?? false,
         discord: s?.events?.taskCreated?.discord ?? false,

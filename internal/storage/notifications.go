@@ -212,7 +212,7 @@ func (s *Store) ActiveUserIDs() []string {
 // the user directly or through a group) due before
 // the given day (YYYY-MM-DD, exclusive), oldest first.
 func (s *Store) OpenTasksDueBefore(userID, beforeDay string) ([]SummaryTask, error) {
-	rows, err := s.db.Query(`SELECT t.content, t.due_date, COALESCE(l.title, '')
+	rows, err := s.db.Query(`SELECT t.id, t.user_id, t.task_list_id, t.content, t.due_date, COALESCE(l.title, '')
 		FROM thoughts t LEFT JOIN task_lists l ON l.id = t.task_list_id
 		WHERE (t.status = 'kept' OR (t.status = 'converted' AND t.converted_type = 'task'))
 		  AND t.is_completed = 0 AND t.due_date != '' AND substr(t.due_date, 1, 10) < ?
@@ -225,16 +225,32 @@ func (s *Store) OpenTasksDueBefore(userID, beforeDay string) ([]SummaryTask, err
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
-	var out []SummaryTask
+	type candidate struct {
+		task    domain.Thought
+		summary SummaryTask
+	}
+	var found []candidate
 	for rows.Next() {
-		var t SummaryTask
-		if rows.Scan(&t.Title, &t.DueDate, &t.ListTitle) == nil {
-			t.Title = strings.TrimSpace(strings.SplitN(t.Title, "\n", 2)[0])
-			out = append(out, t)
+		var c candidate
+		if rows.Scan(&c.task.ID, &c.task.UserID, &c.task.TaskListID, &c.summary.Title, &c.summary.DueDate, &c.summary.ListTitle) == nil {
+			c.summary.Title = strings.TrimSpace(strings.SplitN(c.summary.Title, "\n", 2)[0])
+			found = append(found, c)
 		}
 	}
-	return out, rows.Err()
+	err = rows.Err()
+	rows.Close()
+	// Same people as the due alarm: in a shared list the assignees, or every member when nobody is assigned
+	var out []SummaryTask
+	for _, c := range found {
+		c.task.Assignees = s.getTaskAssignees(c.task.ID)
+		for _, id := range s.TaskAlarmRecipients(&c.task) {
+			if id == userID {
+				out = append(out, c.summary)
+				break
+			}
+		}
+	}
+	return out, err
 }
 
 // ClaimDailySummary marks today's summary as sent; false when it was already sent today.

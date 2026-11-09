@@ -3,6 +3,8 @@ import { safeHref } from './safeUrl';
 import { parseWikiLink, WikiLink, WikiLinkResolver, wikiLinkText } from './wikiLink';
 import i18n from '../i18n';
 import { SECRET_REF_SOURCE, secretIdOf } from './secretRef';
+import { MENTION_REF_SOURCE, mentionIdOf } from './mentions';
+import { MentionChip } from '../components/MentionChip';
 
 /**
  * Parses inline markdown:
@@ -15,6 +17,7 @@ import { SECRET_REF_SOURCE, secretIdOf } from './secretRef';
  * - [[wiki link]] shown by its own text or the note's current title (`options.resolveWikiLink`), clickable
  *   with `options.onWikiLinkClick`
  * - {{secret:id}} as dots (revealable with `options.renderSecret`)
+ * - {{mention:id}} as "@Name" with the person's current name
  */
 export interface InlineMarkdownOptions {
   onTagClick?: (tag: string) => void;
@@ -28,7 +31,7 @@ function renderInlineTokens(text: string, options?: InlineMarkdownOptions): Reac
 
   const tagAlt = options?.onTagClick ? '|#[\\p{L}\\p{N}_-]+' : '';
   const regex = new RegExp(
-    '(' + SECRET_REF_SOURCE + '|\\[\\[[^\\]]+\\]\\]|https?:\\/\\/[^\\s<>()\\[\\]]+[^\\s<>()\\[\\].,;:!?"\']|`[^`]+`|\\*\\*[^*]+\\*\\*|__[^_]+__|~~[^~]+~~|\\*[^*]+\\*|_[^_]+_|\\[([^\\]]+)\\]\\(([^)]+)\\)' + tagAlt + ')',
+    '(' + SECRET_REF_SOURCE + '|' + MENTION_REF_SOURCE + '|\\[\\[[^\\]]+\\]\\]|https?:\\/\\/[^\\s<>()\\[\\]]+[^\\s<>()\\[\\].,;:!?"\']|`[^`]+`|\\*\\*[^*]+\\*\\*|__[^_]+__|~~[^~]+~~|\\*[^*]+\\*|_[^_]+_|\\[([^\\]]+)\\]\\(([^)]+)\\)' + tagAlt + ')',
     'gu'
   );
 
@@ -44,7 +47,10 @@ function renderInlineTokens(text: string, options?: InlineMarkdownOptions): Reac
     const key = `${match.index}-${token}`;
 
     const secretId = secretIdOf(token);
-    if (secretId) {
+    const mentionId = mentionIdOf(token);
+    if (mentionId) {
+      elements.push(<MentionChip key={key} userId={mentionId} />);
+    } else if (secretId) {
       elements.push(
         options?.renderSecret ? (
           options.renderSecret(secretId, key)
@@ -176,6 +182,20 @@ function renderInlineTokens(text: string, options?: InlineMarkdownOptions): Reac
   }
 
   return elements;
+}
+
+// Plain text with only its @-mentions shown as names (subtasks, which have no other formatting)
+export function renderMentions(text: string): React.ReactNode[] {
+  if (!text || !text.includes('{{mention:')) return [text];
+  const out: React.ReactNode[] = [];
+  let last = 0;
+  for (const m of text.matchAll(new RegExp(MENTION_REF_SOURCE, 'g'))) {
+    if (m.index! > last) out.push(text.slice(last, m.index));
+    out.push(<MentionChip key={`${m.index}`} userId={mentionIdOf(m[0]) || ''} />);
+    last = m.index! + m[0].length;
+  }
+  if (last < text.length) out.push(text.slice(last));
+  return out;
 }
 
 /**

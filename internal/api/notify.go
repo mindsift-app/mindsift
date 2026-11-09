@@ -305,7 +305,8 @@ func (s *Server) notifyTaskChange(actorID string, before, after *domain.Thought,
 	if done && t.TaskListID != "" {
 		var members []string
 		for _, uid := range s.taskAudience(t) {
-			if !watching[uid] { // watchers already hear about it
+			// Watchers already hear about it; a muted list stays quiet
+			if !watching[uid] && !s.store.IsTaskListMuted(uid, t.TaskListID) {
 				members = append(members, uid)
 			}
 		}
@@ -317,6 +318,17 @@ func (s *Server) notifyTaskChange(actorID string, before, after *domain.Thought,
 	}
 	if deleted {
 		s.store.ForgetTaskWatchers(t.ID)
+	}
+}
+
+// assignCreator: a task created in a shared task list starts out assigned to the one who created it (it
+// can be changed). Only for new tasks, not for tasks moved into a list.
+func (s *Server) assignCreator(userID string, t *domain.Thought) {
+	if !isTask(t) || t.TaskListID == "" || len(t.Assignees) > 0 || len(s.store.GetTaskListUserIDs(t.TaskListID)) <= 1 {
+		return
+	}
+	if ids, err := s.store.SetTaskAssignees(userID, t.ID, []string{userID}); err == nil {
+		t.Assignees = ids
 	}
 }
 
@@ -332,7 +344,7 @@ func (s *Server) notifyTaskAdded(actorID string, t *domain.Thought, skip map[str
 	}
 	var members []string
 	for _, uid := range s.taskAudience(t) {
-		if !skip[uid] {
+		if !skip[uid] && !s.store.IsTaskListMuted(uid, t.TaskListID) {
 			members = append(members, uid)
 		}
 	}

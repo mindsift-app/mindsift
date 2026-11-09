@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
-import { Columns, LayoutList, Plus, Trash2, Users } from 'lucide-react';
+import { Bell, BellOff, Columns, LayoutList, Pencil, Plus, Trash2, Users } from 'lucide-react';
 import { AvatarStack } from '../../components/AvatarStack';
 import { CountBadge } from '../../components/CountBadge';
 import { SharedPill } from '../../components/SharedPill';
@@ -12,15 +12,20 @@ import { useTaskDrag } from './useTaskDrag';
 import { useTabReorder } from '../../lib/useTabReorder';
 import { TabDropMarker } from '../../components/TabDropMarker';
 import { AvatarPerson } from '../../components/AvatarStack';
+import { ActionMenu } from '../../components/ActionMenu';
+import { MoreTabsButton } from '../../components/MoreTabsButton';
+import { OVERFLOW_HIDDEN_TAB, useOverflowTabs } from '../../lib/useOverflowTabs';
 
 interface TaskListTabsProps {
   // Result of useTaskDrag in TasksView (tasks can be dropped onto a list tab)
   drag: ReturnType<typeof useTaskDrag>;
   currentSelectedList: TaskList | undefined;
   currentUser: User | null | undefined;
-  // Deletes without asking; the tab asks first, in a small popover at the mouse
+  // Deletes without asking; the menu asks first, in a small popover at the mouse
   deleteTaskList: (listId: string) => void;
   handleOpenShareModal: (tl: TaskList) => void;
+  onRenameList: (tl: TaskList) => void;
+  onToggleMute: (tl: TaskList) => void;
   memberToPerson: (m: TaskListMember) => AvatarPerson;
   openTasksCount: number | undefined;
   safeTaskLists: TaskList[];
@@ -34,14 +39,20 @@ interface TaskListTabsProps {
   onReorderLists: (ids: string[]) => void;
 }
 
-// Desktop header of TasksView: "Alle Aufgaben" and one tab per task list (members, share, delete; a task
-// dragged onto a tab moves into that list), "Neue Liste" and the switch between list and Kanban
+// A list someone besides the owner sees (only those send list-wide notifications, so only those can be muted)
+export const isTaskListShared = (tl: TaskList) => (tl.shares?.length || 0) > 0 || (tl.members?.length || 0) > 1;
+
+// Desktop header of TasksView: "Alle Aufgaben" and one tab per task list (members; a task dragged onto a
+// tab moves into that list) in one row, the lists that do not fit behind "⋯ n", "Neue Liste"; on the right
+// the status, the menu of the open list (mute, share, rename, delete) and the switch between list and Kanban
 export function TaskListTabs({
   drag,
   currentSelectedList,
   currentUser,
   deleteTaskList,
   handleOpenShareModal,
+  onRenameList,
+  onToggleMute,
   memberToPerson,
   openTasksCount,
   safeTaskLists,
@@ -57,14 +68,33 @@ export function TaskListTabs({
   const { dragOverListTab, draggingTaskId, handleDropOnListTab, setDragOverListTab } = drag;
   const [pendingDelete, setPendingDelete] = useState<{ list: TaskList; x: number; y: number } | null>(null);
   const reorder = useTabReorder(safeTaskLists.map((tl) => tl.id), onReorderLists);
+  const overflow = useOverflowTabs(
+    safeTaskLists.map((tl) => tl.id),
+    selectedListId === 'all' ? null : selectedListId
+  );
+  const draggedTask = draggingTaskId ? tasks.find((t) => t.id === draggingTaskId) : null;
+  // A dragged task may drop on this list (its tab or its row in the "more" list)
+  const tabDropProps = (tl: TaskList) => ({
+    onDragOver: (e: React.DragEvent) => {
+      if (!draggedTask || draggedTask.taskListId === tl.id || tl.permission === 'viewer') return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      if (dragOverListTab !== tl.id) setDragOverListTab(tl.id);
+    },
+    onDragLeave: () => {
+      if (dragOverListTab === tl.id) setDragOverListTab(null);
+    },
+    onDrop: (e: React.DragEvent) => handleDropOnListTab(e, tl),
+  });
 
   return (
-    <div className="hidden sm:flex flex-wrap items-center justify-between gap-2 border-b border-border pb-2 !mt-0">
-      {/* Task Lists selector tabs */}
-      <div className="flex flex-wrap items-center gap-1">
+    <div className="hidden sm:flex items-center gap-2 border-b border-border pb-2 !mt-0">
+      {/* Task Lists selector tabs: one row, what does not fit goes behind "⋯ n" */}
+      <div ref={overflow.rowRef} className="relative flex-1 min-w-0 flex items-center gap-1">
         <button
+          data-tab-fixed
           onClick={() => setSelectedListId('all')}
-          className={`h-8 px-3 text-xs font-medium border rounded-btn transition-colors ${
+          className={`shrink-0 whitespace-nowrap h-8 px-3 text-xs font-medium border rounded-btn transition-colors ${
             selectedListId === 'all'
               ? 'bg-panel border-accent text-main'
               : 'bg-canvas border-border text-muted hover:text-main'
@@ -77,42 +107,45 @@ export function TaskListTabs({
           </span>
         </button>
 
-        {safeTaskLists.map((tl) => (
+        {safeTaskLists.map((tl) => {
+          const drop = tabDropProps(tl);
+          const hidden = overflow.isHidden(tl.id);
+          return (
           <div
             key={tl.id}
+            ref={overflow.tabRef(tl.id)}
+            aria-hidden={hidden || undefined}
             {...reorder.dragProps(tl.id)}
             onDragOver={(e) => {
               if (reorder.handleDragOver(e, tl.id)) return;
-              const task = draggingTaskId ? tasks.find((t) => t.id === draggingTaskId) : null;
-              if (!task || task.taskListId === tl.id || tl.permission === 'viewer') return;
-              e.preventDefault();
-              e.dataTransfer.dropEffect = 'move';
-              if (dragOverListTab !== tl.id) setDragOverListTab(tl.id);
+              drop.onDragOver(e);
             }}
-            onDragLeave={() => {
-              if (dragOverListTab === tl.id) setDragOverListTab(null);
-            }}
+            onDragLeave={drop.onDragLeave}
             onDrop={(e) => {
-              if (!reorder.handleDrop(e, tl.id)) handleDropOnListTab(e, tl);
+              if (!reorder.handleDrop(e, tl.id)) drop.onDrop(e);
             }}
-            className={`relative group h-8 flex items-center border rounded-btn transition-colors ${
-              selectedListId === tl.id ? 'bg-panel border-accent text-main pr-1' : 'bg-canvas border-border text-muted hover:text-main'
+            className={`group shrink-0 whitespace-nowrap h-8 flex items-center border rounded-btn transition-colors ${
+              selectedListId === tl.id ? 'bg-panel border-accent text-main' : 'bg-canvas border-border text-muted hover:text-main'
             } ${dragOverListTab === tl.id ? 'ring-2 ring-accent/60 bg-accent/10 text-main' : ''} ${
               reorder.draggingId === tl.id ? 'opacity-50' : ''
-            }`}
+            } ${hidden ? OVERFLOW_HIDDEN_TAB : 'relative'}`}
           >
             <TabDropMarker side={reorder.dropSide(tl.id)} />
             <button
               onClick={() => setSelectedListId(tl.id)}
-              className={`h-full pl-3 text-xs font-medium flex items-center gap-1.5 rounded-btn transition-[padding] duration-200 ${
-                selectedListId === tl.id ? 'pr-1' : 'pr-3'
-              }`}
+              tabIndex={hidden ? -1 : undefined}
+              className="h-full px-3 text-xs font-medium flex items-center gap-1.5 rounded-btn"
             >
               <span>{tl.icon}</span>
               <span className="inline-flex items-center">
                 {tl.title}
                 <CountBadge count={tl.tasksCount} position="text" />
               </span>
+              {tl.isMuted && (
+                <span title={t('common:listMenu.muted')}>
+                  <BellOff className="w-3 h-3 text-faint" aria-label={t('common:listMenu.muted')} />
+                </span>
+              )}
 
               {(() => {
                 const isShared = (tl.shares && tl.shares.length > 0) || (tl.members && tl.members.length > 1);
@@ -135,25 +168,29 @@ export function TaskListTabs({
                 );
               })()}
             </button>
-            {/* Delete: only on the open list; it grows in and out when switching lists */}
-            <button
-              onClick={(e) => setPendingDelete({ list: tl, x: e.clientX, y: e.clientY })}
-              title={t('tabs.deleteList')}
-              aria-label={t('tabs.deleteList')}
-              tabIndex={selectedListId === tl.id ? 0 : -1}
-              aria-hidden={selectedListId !== tl.id}
-              className={`h-6 text-faint hover:text-status-err hover:bg-status-err/10 rounded-btn flex items-center justify-center overflow-hidden cursor-pointer transition-[width,opacity,color,background-color] duration-200 ${
-                selectedListId === tl.id ? 'w-6 opacity-100' : 'w-0 opacity-0 pointer-events-none'
-              }`}
-            >
-              <Trash2 className="w-3 h-3 shrink-0" />
-            </button>
           </div>
-        ))}
+          );
+        })}
+
+        <MoreTabsButton
+          ref={overflow.moreRef}
+          items={safeTaskLists
+            .filter((tl) => overflow.isHidden(tl.id))
+            .map((tl) => ({ id: tl.id, icon: tl.icon, title: tl.title, count: tl.tasksCount, muted: tl.isMuted }))}
+          activeId={selectedListId}
+          onSelect={setSelectedListId}
+          dragActive={!!draggedTask}
+          rowDropProps={(id) => {
+            const tl = safeTaskLists.find((l) => l.id === id);
+            return tl ? tabDropProps(tl) : {};
+          }}
+          highlightId={dragOverListTab}
+        />
 
         <button
+          data-tab-fixed
           onClick={() => setShowNewListModal(true)}
-          className="h-8 px-2.5 bg-canvas hover:bg-panel border border-border border-dashed rounded-btn text-xs text-muted hover:text-main flex items-center gap-1 transition-colors"
+          className="shrink-0 whitespace-nowrap h-8 px-2.5 bg-canvas hover:bg-panel border border-border border-dashed rounded-btn text-xs text-muted hover:text-main flex items-center gap-1 transition-colors"
           title={t('tabs.newListTitle')}
         >
           <Plus className="w-3.5 h-3.5" />
@@ -162,7 +199,7 @@ export function TaskListTabs({
       </div>
 
       {/* Right Header Section like the notes: status (live, shared) | actions (share, view switcher) */}
-      <div className="flex items-center gap-2">
+      <div className="shrink-0 flex items-center gap-2">
         <LivePill />
         {currentSelectedList && (() => {
           const listOwnerId = currentSelectedList.ownerId || currentSelectedList.userId;
@@ -187,14 +224,42 @@ export function TaskListTabs({
               )}
 
               <span className="w-px h-5 bg-border mx-0.5" aria-hidden />
-              <button
-                type="button"
-                onClick={() => handleOpenShareModal(currentSelectedList)}
-                className="btn-icon"
-                title={t('tabs.shareTitle')}
-              >
-                <Users className="w-3.5 h-3.5" />
-              </button>
+              <ActionMenu
+                label={t('common:listMenu.more')}
+                items={[
+                  {
+                    key: 'mute',
+                    icon: currentSelectedList.isMuted ? <Bell className="w-3.5 h-3.5" /> : <BellOff className="w-3.5 h-3.5" />,
+                    label: currentSelectedList.isMuted ? t('common:listMenu.unmute') : t('common:listMenu.mute'),
+                    hint: isTaskListShared(currentSelectedList) ? t('common:listMenu.muteHint') : t('common:listMenu.muteOnlyShared'),
+                    disabled: !isTaskListShared(currentSelectedList),
+                    onSelect: () => onToggleMute(currentSelectedList),
+                  },
+                  {
+                    key: 'share',
+                    icon: <Users className="w-3.5 h-3.5" />,
+                    label: t('common:listMenu.share'),
+                    onSelect: () => handleOpenShareModal(currentSelectedList),
+                  },
+                  {
+                    key: 'rename',
+                    icon: <Pencil className="w-3.5 h-3.5" />,
+                    label: t('common:listMenu.rename'),
+                    disabled: currentSelectedList.permission === 'viewer',
+                    hint: currentSelectedList.permission === 'viewer' ? t('common:listMenu.readOnly') : undefined,
+                    onSelect: () => onRenameList(currentSelectedList),
+                  },
+                  {
+                    key: 'delete',
+                    icon: <Trash2 className="w-3.5 h-3.5" />,
+                    label: t('common:listMenu.delete'),
+                    danger: true,
+                    disabled: !isOwner,
+                    hint: isOwner ? undefined : t('common:listMenu.ownerOnly'),
+                    onSelect: (e) => setPendingDelete({ list: currentSelectedList, x: e.clientX, y: e.clientY }),
+                  },
+                ]}
+              />
             </div>
           );
         })()}

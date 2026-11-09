@@ -72,6 +72,33 @@ func (s *Server) handleDeleteList(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]bool{"deleted": true})
 }
 
+func (s *Server) handleUpdateList(w http.ResponseWriter, r *http.Request) {
+	userID := auth.GetUserID(r.Context())
+	listID := chi.URLParam(r, "id")
+	var req struct {
+		Title *string `json:"title"`
+		Icon  *string `json:"icon"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "Ungültiges JSON")
+		return
+	}
+	l, err := s.store.UpdateList(userID, listID, req.Title, req.Icon)
+	switch {
+	case errors.Is(err, storage.ErrListNotFound):
+		writeError(w, http.StatusNotFound, err.Error())
+		return
+	case errors.Is(err, storage.ErrListReadOnly):
+		writeError(w, http.StatusForbidden, err.Error())
+		return
+	case err != nil:
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	s.wsHub.BroadcastListEvent(listID, "LIST_UPDATED", l)
+	writeJSON(w, http.StatusOK, l)
+}
+
 func (s *Server) handleGetListShares(w http.ResponseWriter, r *http.Request) {
 	userID := auth.GetUserID(r.Context())
 	listID := chi.URLParam(r, "id")

@@ -7,6 +7,7 @@ import { columnDotClass } from './ManageColumnsModal';
 import { KanbanColumn, RECURRENCE_LABELS, Thought } from '../../lib/types';
 import { useTaskDrag, canDragTasks } from './useTaskDrag';
 import { stopOnControl } from './stopOnControl';
+import { renderMentions } from '../../lib/markdown';
 
 interface TaskRowProps {
   task: Thought;
@@ -228,7 +229,7 @@ export function TaskRow({
                 title={t('row.showNote')}
               >
                 <FileText className="w-2.5 h-2.5 text-accent" />
-                <span className="truncate max-w-[120px]">{task.notes}</span>
+                <span className="truncate max-w-[120px]">{renderMentions(task.notes)}</span>
               </button>
             )}
 

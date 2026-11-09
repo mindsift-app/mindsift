@@ -14,8 +14,11 @@ SQLite file `mindsift.db` (default: `$DATA_DIR/mindsift.db`), opened with `journ
 | `public_links` | Public read-only links to notes (Migration 24), at most one per note | `doc_id` (unique), `created_by`, `token_hash` (SHA-256 of the token), `token_sealed` (token encrypted with `SECRETS_KEY`, so the owner can copy it again), `password_hash` (bcrypt, `''` = none), `theme_family` (unused since v0.87.1), `expires_at` |
 | `media` | Images and audio in notes (Migration 5); file stored under `$DATA_DIR/media/<doc_id>/<id>.<ext>` | `id`, `doc_id`, `owner_id`, `kind` (`image`/`audio`), `mime`, `size`, `source_url` (fetched external image), `created_at` |
 | `link_previews` | Cached link previews (Migration 6) | `key` (hash of URL), `url`, `title`, `description`, `site_name`, `image`/`icon` (BLOB, with `*_mime`), `ok`, `fetched_at` |
-| `notification_queue` | Queued notifications pending bundled digest dispatch (Migration 7) | `user_id`, `kind` (`shared`/`assigned`/`taskCreated`/`taskDone`/`watched`), `payload` (JSON; `title`, `text`, optional `key` to send repeated changes once), `created_at`, `attempts` |
+| `notification_queue` | Queued notifications pending bundled digest dispatch (Migration 7) | `user_id`, `kind` (`shared`/`assigned`/`mentioned`/`taskCreated`/`taskDone`/`watched`), `payload` (JSON; `title`, `text`, optional `key` to send repeated changes once), `created_at`, `attempts` |
 | `task_watchers` | Watched tasks (Migration 7) | `task_id`, `user_id`, `created_at` |
+| `task_list_mutes` | Task lists a person muted (Migration 29) | `user_id`, `task_list_id`, `created_at`; removed with the list |
+| `task_alarms_sent` | Due alarm per task and recipient (Migration 29) | `task_id`, `user_id` (`*` = sent to everyone before alarms were per person), `sent`, `failures`; trigger `task_alarm_rearm` clears the rows when `thoughts.alarm_sent` goes from 1 to 0 (new due date, reopened) |
+| `block_mentions` | @-mentions last seen per bullet (Migration 30) | `document_id`, `block_id`, `user_id`, `count`; only a higher count notifies |
 | `push_subscriptions` | Registered Web Push devices (Migration 9) | `user_id`, `endpoint` (unique), `p256dh`, `auth`, `device`, `created_at` |
 | `push_keys` | VAPID key pair when not configured via environment (Migration 9) | Single row: `public_key`, `private_key` |
 | `journal_days` | Daily journal mapping: which note belongs to which day (Migration 8) | `user_id`, `day` (`YYYY-MM-DD`), `doc_id`; primary key `(user_id, day)` |

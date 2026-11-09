@@ -16,6 +16,7 @@ import {
   MergeResult,
   MoveResult,
   PublicLinkState,
+  MentionCandidate,
 } from '../types';
 import { ensureArray, request } from './client';
 
@@ -384,6 +385,13 @@ export const workspaceApi = {
 
   async deleteDocShare(docId: string, userId: string): Promise<void> {
     await request(`/api/v1/documents/${docId}/shares/${userId}`, { method: 'DELETE' });
+  },
+
+  // People for the @-mention picker at a place (a note, a task or a task list), with whether they can see it
+  async getMentionCandidates(place: { docId?: string; taskId?: string; taskListId?: string }): Promise<MentionCandidate[]> {
+    const q = new URLSearchParams(Object.entries(place).filter(([, v]) => !!v) as [string, string][]);
+    const res = await request<MentionCandidate[]>(`/api/v1/mentions/candidates?${q}`);
+    return ensureArray(res);
   },
 
   async getCollaborators(): Promise<User[]> {

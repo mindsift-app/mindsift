@@ -366,6 +366,7 @@
       "due": "Tareas que vencen (inmediato)",
       "shared": "Elemento compartido contigo",
       "assigned": "Tarea asignada a mí",
+      "mentioned": "Me han mencionado",
       "taskCreated": "Nueva tarea en una lista compartida",
       "taskDone": "Tarea compartida completada",
       "watched": "Tareas seguidas"

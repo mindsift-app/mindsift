@@ -237,11 +237,11 @@ func (s *Server) startAlarmTicker() {
 			}
 
 			if sentAny {
-				if err := s.store.MarkTaskAlarmSent(a.TaskID); err != nil {
+				if err := s.store.MarkTaskAlarmSent(a.TaskID, a.UserID); err != nil {
 					slog.Error("Marking the alarm as sent failed (it will be sent again)", "task_id", a.TaskID, "error", err)
 				}
-			} else if gaveUp, _ := s.store.RecordTaskAlarmFailure(a.TaskID); gaveUp {
-				slog.Warn("Task alarm given up after 3 failed attempts", "task_id", a.TaskID, "title", a.Title)
+			} else if gaveUp, _ := s.store.RecordTaskAlarmFailure(a.TaskID, a.UserID); gaveUp {
+				slog.Warn("Task alarm given up after 3 failed attempts", "task_id", a.TaskID, "user_id", a.UserID, "title", a.Title)
 			}
 		}
 	}

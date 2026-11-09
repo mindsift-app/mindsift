@@ -303,6 +303,29 @@ func (s *Store) DeleteList(userID, listID string) error {
 	return err
 }
 
+// UpdateList renames a list or changes its icon (owner and editors; nil leaves a field as it is).
+func (s *Store) UpdateList(userID, listID string, title, icon *string) (*domain.SharedList, error) {
+	switch s.ListRole(userID, listID) {
+	case "":
+		return nil, ErrListNotFound
+	case "viewer":
+		return nil, ErrListReadOnly
+	}
+	if title != nil {
+		if t := strings.TrimSpace(*title); t != "" {
+			if _, err := s.db.Exec(`UPDATE lists SET title = ? WHERE id = ?`, t, listID); err != nil {
+				return nil, err
+			}
+		}
+	}
+	if icon != nil && *icon != "" {
+		if _, err := s.db.Exec(`UPDATE lists SET icon = ? WHERE id = ?`, *icon, listID); err != nil {
+			return nil, err
+		}
+	}
+	return s.GetListByID(userID, listID)
+}
+
 func (s *Store) GetListItems(listID string) ([]domain.ListItem, error) {
 	rows, err := s.db.Query(
 		`SELECT li.id, li.list_id, li.content, li.category, li.quantity, li.is_completed, li.completed_by, li.completed_by_name,

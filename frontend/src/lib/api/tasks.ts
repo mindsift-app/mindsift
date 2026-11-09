@@ -225,6 +225,11 @@ export const tasksApi = {
     });
   },
 
+  // Mutes a shared task list for me (no list-wide notifications) or unmutes it
+  async muteTaskList(id: string, muted: boolean): Promise<void> {
+    await request(`/api/v1/task-lists/${id}/mute`, { method: muted ? 'PUT' : 'DELETE' });
+  },
+
   async deleteTaskList(id: string): Promise<void> {
     await request(`/api/v1/task-lists/${id}`, { method: 'DELETE' });
   },

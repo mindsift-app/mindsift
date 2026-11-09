@@ -115,7 +115,7 @@ func TestAlarmResetsOnNewDueDateOrReopen(t *testing.T) {
 		t.Fatalf("due date not normalized: %q", th.DueDate)
 	}
 
-	_ = store.MarkTaskAlarmSent(task.ID)
+	_ = store.MarkTaskAlarmSent(task.ID, u.ID)
 	same := "2026-10-30T14:30"
 	_, _ = store.UpdateThoughtDetails(u.ID, task.ID, nil, nil, &same, nil, nil, nil, nil, nil, nil)
 	if !sent() {
@@ -127,7 +127,7 @@ func TestAlarmResetsOnNewDueDateOrReopen(t *testing.T) {
 		t.Errorf("new due date must re-arm the alarm")
 	}
 
-	_ = store.MarkTaskAlarmSent(task.ID)
+	_ = store.MarkTaskAlarmSent(task.ID, u.ID)
 	done, open := true, false
 	_, _ = store.UpdateThoughtDetails(u.ID, task.ID, nil, &done, nil, nil, nil, nil, nil, nil, nil)
 	if !sent() {
@@ -161,7 +161,7 @@ func TestKanbanMoveKeepsSentAlarms(t *testing.T) {
 		}
 	}
 
-	_ = store.MarkTaskAlarmSent(task.ID)
+	_ = store.MarkTaskAlarmSent(task.ID, u.ID)
 	move("in_progress")
 	move("todo")
 	if !sent() {
@@ -197,7 +197,7 @@ func TestAlarmGivesUpAfterThreeFailedRuns(t *testing.T) {
 	}
 
 	for run := 1; run <= MaxAlarmFailures; run++ {
-		gaveUp, err := store.RecordTaskAlarmFailure(task.ID)
+		gaveUp, err := store.RecordTaskAlarmFailure(task.ID, u.ID)
 		if err != nil {
 			t.Fatalf("run %d: %v", run, err)
 		}
@@ -212,14 +212,12 @@ func TestAlarmGivesUpAfterThreeFailedRuns(t *testing.T) {
 	if !pending() {
 		t.Fatalf("new due date must re-arm the alarm")
 	}
-	if gaveUp, _ := store.RecordTaskAlarmFailure(task.ID); gaveUp {
+	if gaveUp, _ := store.RecordTaskAlarmFailure(task.ID, u.ID); gaveUp {
 		t.Errorf("failure counter must start over after a new due date")
 	}
 	// Success clears the counter
-	_ = store.MarkTaskAlarmSent(task.ID)
-	var failures int
-	_ = store.db.QueryRow(`SELECT alarm_failures FROM thoughts WHERE id = ?`, task.ID).Scan(&failures)
-	if failures != 0 {
+	_ = store.MarkTaskAlarmSent(task.ID, u.ID)
+	if failures := store.taskAlarmFailures(task.ID, u.ID); failures != 0 {
 		t.Errorf("successful alarm should reset failures, got %d", failures)
 	}
 }

@@ -26,6 +26,7 @@ import { inIdOrder } from '../../lib/useTabReorder';
 import { buildListsMenu } from './listsMenu';
 import { askConfirm } from '../../components/askConfirm';
 import { showError } from '../../components/ErrorNotice';
+import { RenameListSheet } from '../../components/RenameListSheet';
 
 interface SharedListsViewProps {
   onRefreshGlobal: () => void;
@@ -77,6 +78,7 @@ export const SharedListsView: React.FC<SharedListsViewProps> = ({ onRefreshGloba
   const [newListIcon, setNewListIcon] = useState('🛒');
 
   const [showShareModal, setShowShareModal] = useState(false);
+  const [renamingList, setRenamingList] = useState<SharedList | null>(null);
   const [collaborators, setCollaborators] = useState<User[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
 
@@ -335,6 +337,7 @@ export const SharedListsView: React.FC<SharedListsViewProps> = ({ onRefreshGloba
         openShareModal,
         handleClearCompleted,
         handleDeleteList,
+        handleRenameList: setRenamingList,
         setActiveListId,
       })
     );
@@ -474,6 +477,7 @@ export const SharedListsView: React.FC<SharedListsViewProps> = ({ onRefreshGloba
         drag={drag}
         handleDeleteList={handleDeleteList}
         openShareModal={openShareModal}
+        onRenameList={setRenamingList}
         setShowNewListModal={setShowNewListModal}
         onReorderLists={(ids) => {
           setLists((prev) => inIdOrder(prev, ids));
@@ -549,6 +553,18 @@ export const SharedListsView: React.FC<SharedListsViewProps> = ({ onRefreshGloba
           <CompletedItems completedItems={completedItems} editing={editing} renderItemAuthor={renderItemAuthor} />
         </div>
       ) : null}
+
+      {renamingList && (
+        <RenameListSheet
+          initialTitle={renamingList.title}
+          initialIcon={renamingList.icon}
+          onSave={async (title, icon) => {
+            await api.updateList(renamingList.id, { title, icon });
+            await loadLists();
+          }}
+          onClose={() => setRenamingList(null)}
+        />
+      )}
 
       {/* Unified Shopping List Sharing Modal */}
       {showShareModal && activeList && (

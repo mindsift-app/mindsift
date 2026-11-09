@@ -338,6 +338,10 @@ func (s *Store) SetTaskAssignees(userID, taskID string, assignees []string) ([]s
 			return nil, err
 		}
 	}
+	// An alarm sent before alarms were kept per person no longer stands for everyone: new assignees get it
+	if _, err := tx.Exec(`DELETE FROM task_alarms_sent WHERE task_id = ? AND user_id = ?`, taskID, alarmSentToAll); err != nil {
+		return nil, err
+	}
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
@@ -552,6 +556,7 @@ func (s *Store) DeleteTaskList(userID, listID string) error {
 		// Its trashed tasks likewise land in their creators' own trash
 		stmt(`UPDATE trashed_tasks SET task_list_id = '', owner_id = user_id WHERE task_list_id = ?`, listID),
 		stmt(`DELETE FROM task_list_shares WHERE task_list_id = ?`, listID),
+		stmt(`DELETE FROM task_list_mutes WHERE task_list_id = ?`, listID),
 		stmt(`DELETE FROM task_lists WHERE id = ? AND user_id = ?`, listID, userID),
 	); err != nil {
 		return err

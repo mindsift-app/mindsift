@@ -375,5 +375,26 @@
   "discard": "Scarta",
   "download": "Scarica",
   "filterTag": "Filtra per #{{tag}}",
-  "deviceName": "{{browser}} su {{os}}"
+  "deviceName": "{{browser}} su {{os}}",
+  "listMenu": {
+    "more": "Altre azioni",
+    "moreLists": "Altre liste",
+    "mute": "Silenzia",
+    "unmute": "Riattiva notifiche",
+    "muteHint": "Nessuna notifica da questa lista; assegnazioni, menzioni e attività seguite arrivano comunque",
+    "muteOnlyShared": "Solo per liste condivise",
+    "muted": "Silenziata",
+    "share": "Condividi",
+    "rename": "Rinomina",
+    "delete": "Elimina",
+    "readOnly": "Sola lettura",
+    "ownerOnly": "Solo il proprietario può eliminare la lista",
+    "renameTitle": "Rinomina lista",
+    "name": "Nome",
+    "renameFailed": "Rinomina non riuscita"
+  },
+  "mention": {
+    "pick": "Menziona qualcuno",
+    "noAccess": "nessun accesso"
+  }
 }
