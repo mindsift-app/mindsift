@@ -9,6 +9,7 @@ import { startElementDragGhost } from '../../lib/dragGhost';
 import { CalendarEntry, entriesByDay, isoWeek, monthGrid, moveDue, sameMonth, shiftDay, weekOf } from '../../lib/calendar';
 import { useKanbanTouchDrag } from './useKanbanTouchDrag';
 import { renderMentions } from '../../lib/markdown';
+import { CountBadge } from '../../components/CountBadge';
 
 type Mode = 'month' | 'week';
 const MODE_KEY = 'mindsift:calendar_mode';
@@ -266,37 +267,43 @@ export function TaskCalendar({ tasks, lists, showListIcon, isTaskReadOnly, onOpe
   );
 
   // The day's tasks in full, and a field for a new task on that day
+  // A new task on a day ('' = without a date)
+  const newTaskForm = (day: string, placeholder: string) =>
+    onCreateForDay && (
+      <form
+        className="flex items-center gap-1.5 pt-1"
+        onSubmit={async (ev) => {
+          ev.preventDefault();
+          const title = draft.trim();
+          if (!title || busy) return;
+          setBusy(true);
+          if (await onCreateForDay(day, title)) setDraft('');
+          setBusy(false);
+        }}
+      >
+        <input
+          value={draft}
+          onChange={(ev) => setDraft(ev.target.value)}
+          placeholder={placeholder}
+          className="flex-1 min-w-0 h-11 sm:h-8 px-2 text-base sm:text-xs input-field"
+        />
+        <button type="submit" disabled={!draft.trim() || busy} className="btn-action h-11 sm:h-8 px-2.5 text-xs disabled:opacity-40" aria-label={t('calendar.add')}>
+          <Plus className="w-3.5 h-3.5" />
+        </button>
+      </form>
+    );
+  const emptyHint = (text: string) => <p className="py-6 text-center text-xs text-faint">{text}</p>;
+
+  // The day's tasks in full, and a field for a new task on that day
   const dayDetails = (day: string) => {
     const entries = byDay.get(day) || [];
     return (
       <div className="flex flex-col gap-2">
-        {entries.length === 0 && <p className="text-xs text-faint">{t('calendar.dayEmpty')}</p>}
+        {entries.length === 0 && emptyHint(t('calendar.dayEmpty'))}
         {entries.map((e) =>
           e.upcoming ? chip(e, `${e.task.id}-up`, true) : <React.Fragment key={e.task.id}>{renderTaskRow(e.task, true)}</React.Fragment>
         )}
-        {onCreateForDay && (
-          <form
-            className="flex items-center gap-1.5 pt-1"
-            onSubmit={async (ev) => {
-              ev.preventDefault();
-              const title = draft.trim();
-              if (!title || busy) return;
-              setBusy(true);
-              if (await onCreateForDay(day, title)) setDraft('');
-              setBusy(false);
-            }}
-          >
-            <input
-              value={draft}
-              onChange={(ev) => setDraft(ev.target.value)}
-              placeholder={t('calendar.newForDay')}
-              className="flex-1 min-w-0 h-11 sm:h-8 px-2 text-base sm:text-xs input-field"
-            />
-            <button type="submit" disabled={!draft.trim() || busy} className="btn-action h-11 sm:h-8 px-2.5 text-xs disabled:opacity-40" aria-label={t('calendar.add')}>
-              <Plus className="w-3.5 h-3.5" />
-            </button>
-          </form>
-        )}
+        {newTaskForm(day, t('calendar.newForDay'))}
       </div>
     );
   };
@@ -411,7 +418,10 @@ export function TaskCalendar({ tasks, lists, showListIcon, isTaskReadOnly, onOpe
         <aside className="w-80 shrink-0 flex flex-col min-h-0 rounded-card border border-border bg-panel overflow-hidden">
           <div className="flex border-b border-border bg-canvas" role="tablist">
             <button type="button" role="tab" aria-selected={sideTab === 'day'} onClick={() => setSideTab('day')} className={tabClass(sideTab === 'day')}>
-              <span className="truncate capitalize">{dayLabel(sideDay, { weekday: 'short', day: 'numeric', month: 'short' })}</span>
+              <span className="inline-flex items-center min-w-0">
+                <span className="truncate capitalize">{dayLabel(sideDay, { weekday: 'short', day: 'numeric', month: 'short' })}</span>
+                <CountBadge count={(byDay.get(sideDay) || []).filter((e) => !e.upcoming).length} position="text" />
+              </span>
             </button>
             <button
               type="button"
@@ -421,18 +431,16 @@ export function TaskCalendar({ tasks, lists, showListIcon, isTaskReadOnly, onOpe
               {...dropProps('unplanned')}
               className={`${tabClass(sideTab === 'unplanned')} border-l border-border ${hoverTarget === 'unplanned' ? 'ring-2 ring-inset ring-accent/60 bg-accent/10' : ''}`}
             >
-              <span>{t('calendar.unplanned')}</span>
-              <span className="text-faint">{unplanned.length}</span>
+              <span className="inline-flex items-center">
+                {t('calendar.unplanned')}
+                <CountBadge count={unplanned.length} position="text" />
+              </span>
             </button>
           </div>
           <div className="flex-1 min-h-0 overflow-y-auto p-2" role="tabpanel">
+            {/* The tab already names the day */}
             {sideTab === 'day' ? (
-              <>
-                <h3 className="px-1 pb-2 text-xs font-semibold text-main capitalize">
-                  {dayLabel(sideDay, { weekday: 'long', day: 'numeric', month: 'long' })}
-                </h3>
-                {dayDetails(sideDay)}
-              </>
+              dayDetails(sideDay)
             ) : (
               // Captured before the rows: they would only reorder a task dropped on them, not take its date
               <div
@@ -440,14 +448,13 @@ export function TaskCalendar({ tasks, lists, showListIcon, isTaskReadOnly, onOpe
                 onDragOverCapture={dropProps('unplanned').onDragOver}
                 onDropCapture={dropProps('unplanned').onDrop}
                 onDragLeave={dropProps('unplanned').onDragLeave}
-                className={`min-h-full flex flex-col rounded-btn ${hoverTarget === 'unplanned' ? 'bg-accent/10' : ''}`}
+                className={`min-h-full flex flex-col gap-2 rounded-btn ${hoverTarget === 'unplanned' ? 'bg-accent/10' : ''}`}
               >
-                {unplanned.length === 0 ? (
-                  <p className="px-1.5 py-2 text-[11px] text-faint">{t('calendar.unplannedEmpty')}</p>
-                ) : (
-                  // The same rows as the day: tick off, change status, work through them right here
-                  unplanned.map((task) => <React.Fragment key={task.id}>{renderTaskRow(task, true)}</React.Fragment>)
-                )}
+                {unplanned.length === 0
+                  ? emptyHint(t('calendar.unplannedEmpty'))
+                  : // The same rows as the day: tick off, change status, work through them right here
+                    unplanned.map((task) => <React.Fragment key={task.id}>{renderTaskRow(task, true)}</React.Fragment>)}
+                {newTaskForm('', t('calendar.newUnplanned'))}
               </div>
             )}
           </div>
