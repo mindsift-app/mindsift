@@ -749,10 +749,11 @@ export const TasksView: React.FC<TasksViewProps> = ({
 
   // Clean Task Row in List View
   // One row of the list view (TaskRow)
-  const renderTaskRow = (task: Thought) => (
+  const renderTaskRow = (task: Thought, compact = false) => (
     <TaskRow
       key={task.id}
       task={task}
+      compact={compact}
       drag={taskDrag}
       columnsFor={columnsFor}
       handleConvertToDoc={handleConvertToDoc}

@@ -168,7 +168,8 @@ Component: [TaskCalendar.tsx](../frontend/src/features/triage/TaskCalendar.tsx),
 - Third view next to list and Kanban (remembered per list). Desktop: month or week (segment switch), 7 columns without hours; phones: the week with a date strip on top and the days below.
 - Entries are compact: priority dot, time, title; overdue in red, done struck through, coming dates of repeating tasks greyed with ↻ (they open the task itself). A month day shows three and "+n more".
 - Dragging (mouse: HTML5 with the half transparent ghost; finger: hold, as on the Kanban board) onto a day sets the date and keeps a time; onto "Unscheduled" removes it; undo with Ctrl + Z or the notice.
-- A day opens on the left in full (task rows and "Task for this day"); meanwhile "Unscheduled" steps aside so the week keeps readable columns. Phones: a sheet from below.
+- Desktop: on the left a column as tall as the calendar (which fits the window) with two tabs: the day (today until a day is clicked; task rows in `compact` form with their buttons below the title, and "Task for this day") and "Unscheduled" (also a drop target, like its tab). Month and week have the same height. Phones: a sheet from below.
+- Entries cannot be selected as text (`select-none`), so a long press on phones starts the drag.
 - Weeks start per language (`firstWeekday`); repeating dates follow the server's rule (months fall back to their last day).
 
 ## Fields That Are Not a Login

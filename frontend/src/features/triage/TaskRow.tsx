@@ -27,6 +27,8 @@ interface TaskRowProps {
   setSelectedTag: (tag: string | null) => void;
   setDetailTaskId: (id: string | null) => void;
   setShowDetailModal: (show: boolean) => void;
+  // Narrow places (the calendar's day panel): assignees and actions go below the task instead of beside it
+  compact?: boolean;
 }
 
 // One task in the list view of TasksView: drag handle and drop line, tick, title, chips (column,
@@ -48,6 +50,7 @@ export function TaskRow({
   setSelectedTag,
   setDetailTaskId,
   setShowDetailModal,
+  compact = false,
 }: TaskRowProps) {
   const { t } = useTranslation('tasks');
   const {
@@ -66,6 +69,51 @@ export function TaskRow({
   const readOnly = isTaskReadOnly(task);
   const isDragging = draggingTaskId === task.id;
   const isTarget = dragOverTaskTarget?.taskId === task.id;
+
+  // Assignees and the desktop actions: at the end of the row, or (compact) below the task on the right
+  const side = (
+    <>
+      {renderAssignees(task, 'xs')}
+
+      {/* Action Controls (Desktop only - on mobile, tapping the task opens Detail Modal) */}
+      <div className="hidden sm:flex items-center gap-1 flex-shrink-0" onMouseDown={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()}>
+        <button
+          type="button"
+          draggable={false}
+          onClick={() => {
+            setDetailTaskId(task.id);
+            setShowDetailModal(true);
+          }}
+          className="text-faint hover:text-accent p-1.5 transition-colors"
+          title={readOnly ? t('detail.view') : t('detail.edit')}
+        >
+          {readOnly ? <Lock className="w-3.5 h-3.5" /> : <Edit3 className="w-3.5 h-3.5" />}
+        </button>
+        {!readOnly && (
+        <>
+        <button
+          type="button"
+          draggable={false}
+          onClick={() => handleConvertToDoc(task)}
+          title={task.docId ? t('row.openNote') : t('detail.toDoc')}
+          className={`${task.docId ? 'text-accent' : 'text-faint'} hover:text-accent p-1.5 transition-colors hidden sm:block`}
+        >
+          <FileText className="w-3.5 h-3.5" />
+        </button>
+        <button
+          type="button"
+          draggable={false}
+          onClick={() => handleDeletePermanent(task.id)}
+          title={t('detail.delete')}
+          className="text-faint hover:text-status-err p-1.5 transition-colors"
+        >
+          <Trash2 className="w-3.5 h-3.5" />
+        </button>
+        </>
+        )}
+      </div>
+    </>
+  );
 
   return (
     <div
@@ -266,48 +314,11 @@ export function TaskRow({
               </button>
             ))}
           </div>
+          {compact && <div className="flex items-center justify-end gap-1 -mr-1.5">{side}</div>}
         </div>
       </div>
 
-      {renderAssignees(task, 'xs')}
-
-      {/* Action Controls (Desktop only - on mobile, tapping the task opens Detail Modal) */}
-      <div className="hidden sm:flex items-center gap-1 flex-shrink-0" onMouseDown={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()}>
-        <button
-          type="button"
-          draggable={false}
-          onClick={() => {
-            setDetailTaskId(task.id);
-            setShowDetailModal(true);
-          }}
-          className="text-faint hover:text-accent p-1.5 transition-colors"
-          title={readOnly ? t('detail.view') : t('detail.edit')}
-        >
-          {readOnly ? <Lock className="w-3.5 h-3.5" /> : <Edit3 className="w-3.5 h-3.5" />}
-        </button>
-        {!readOnly && (
-        <>
-        <button
-          type="button"
-          draggable={false}
-          onClick={() => handleConvertToDoc(task)}
-          title={task.docId ? t('row.openNote') : t('detail.toDoc')}
-          className={`${task.docId ? 'text-accent' : 'text-faint'} hover:text-accent p-1.5 transition-colors hidden sm:block`}
-        >
-          <FileText className="w-3.5 h-3.5" />
-        </button>
-        <button
-          type="button"
-          draggable={false}
-          onClick={() => handleDeletePermanent(task.id)}
-          title={t('detail.delete')}
-          className="text-faint hover:text-status-err p-1.5 transition-colors"
-        >
-          <Trash2 className="w-3.5 h-3.5" />
-        </button>
-        </>
-        )}
-      </div>
+      {!compact && side}
     </div>
   );
 }

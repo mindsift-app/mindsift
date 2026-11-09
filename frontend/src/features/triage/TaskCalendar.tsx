@@ -33,8 +33,8 @@ interface TaskCalendarProps {
   onMoveDue: (task: Thought, due: string) => void;
   // A new task on that day; null when the list cannot take new tasks
   onCreateForDay: ((day: string, title: string) => Promise<boolean>) | null;
-  // The full task row (as in the list view) for the day panel
-  renderTaskRow: (task: Thought) => React.ReactNode;
+  // The full task row (as in the list view) for the day panel; compact puts its buttons below the task
+  renderTaskRow: (task: Thought, compact?: boolean) => React.ReactNode;
 }
 
 const usePhone = () => {
@@ -72,7 +72,13 @@ export function TaskCalendar({ tasks, lists, showListIcon, isTaskReadOnly, onOpe
       // only a convenience
     }
   };
+  // Phones: the day shown in a sheet; desktop: the day in the side column (null: today)
   const [openDay, setOpenDay] = useState<string | null>(null);
+  const [sideTab, setSideTab] = useState<'day' | 'unplanned'>('day');
+  const openOnSide = (day: string) => {
+    setOpenDay(day);
+    setSideTab('day');
+  };
   const [unplannedOpen, setUnplannedOpen] = useState(true);
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [hoverTarget, setHoverTarget] = useState<string | null>(null);
@@ -200,7 +206,7 @@ export function TaskCalendar({ tasks, lists, showListIcon, isTaskReadOnly, onOpe
           open(task);
         }}
         title={entry.upcoming ? t('calendar.upcomingTitle', { title: task.content }) : task.content}
-        className={`w-full flex ${wrap ? 'items-start' : 'items-center'} gap-1.5 rounded-btn px-1.5 text-left transition-colors cursor-pointer ${
+        className={`w-full flex ${wrap ? 'items-start' : 'items-center'} gap-1.5 rounded-btn px-1.5 text-left transition-colors cursor-pointer select-none ${
           big ? 'min-h-[44px] sm:min-h-0 py-1.5 text-sm sm:text-xs bg-panel border border-border' : 'py-0.5 text-[11px] hover:bg-panel-elevated'
         } ${entry.upcoming ? 'opacity-50' : ''} ${draggingId === task.id ? 'opacity-30' : ''}`}
       >
@@ -259,7 +265,7 @@ export function TaskCalendar({ tasks, lists, showListIcon, isTaskReadOnly, onOpe
       <div className="flex flex-col gap-2">
         {entries.length === 0 && <p className="text-xs text-faint">{t('calendar.dayEmpty')}</p>}
         {entries.map((e) =>
-          e.upcoming ? chip(e, `${e.task.id}-up`, true) : <React.Fragment key={e.task.id}>{renderTaskRow(e.task)}</React.Fragment>
+          e.upcoming ? chip(e, `${e.task.id}-up`, true) : <React.Fragment key={e.task.id}>{renderTaskRow(e.task, true)}</React.Fragment>
         )}
         {onCreateForDay && (
           <form
@@ -383,24 +389,56 @@ export function TaskCalendar({ tasks, lists, showListIcon, isTaskReadOnly, onOpe
     );
   }
 
+  // Desktop: on the left a column as tall as the calendar with two tabs, the chosen day (today until a
+  // day is clicked) and "Ungeplant"; it scrolls on its own. Month and week have the same height.
+  const sideDay = openDay || today;
+  const tabClass = (active: boolean) =>
+    `flex-1 h-8 px-2 text-xs font-medium flex items-center justify-center gap-1.5 transition-colors ${
+      active ? 'bg-panel text-main' : 'text-muted hover:text-main'
+    }`;
   return (
     <div className="space-y-3">
       {header}
-      <div className="flex items-start gap-3">
-        {/* The day's tasks in full on the left */}
-        {openDay && (
-          <aside className="w-80 shrink-0 rounded-card border border-border bg-panel p-3 space-y-3" aria-label={dayLabel(openDay, { weekday: 'long', day: 'numeric', month: 'long' })}>
-            <div className="flex items-center gap-2">
-              <h3 className="flex-1 text-xs font-semibold text-main capitalize">{dayLabel(openDay, { weekday: 'long', day: 'numeric', month: 'long' })}</h3>
-              <button type="button" onClick={() => setOpenDay(null)} className="btn-icon h-7 w-7" aria-label={t('common:close')}>
-                <X className="w-3.5 h-3.5" />
-              </button>
-            </div>
-            {dayDetails(openDay)}
-          </aside>
-        )}
+      {/* As tall as the window allows (at least 30rem); smaller windows scroll the page */}
+      <div className="flex items-stretch gap-3 h-[max(30rem,calc(100dvh-21.5rem))]">
+        <aside className="w-80 shrink-0 flex flex-col min-h-0 rounded-card border border-border bg-panel overflow-hidden">
+          <div className="flex border-b border-border bg-canvas" role="tablist">
+            <button type="button" role="tab" aria-selected={sideTab === 'day'} onClick={() => setSideTab('day')} className={tabClass(sideTab === 'day')}>
+              <span className="truncate capitalize">{dayLabel(sideDay, { weekday: 'short', day: 'numeric', month: 'short' })}</span>
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={sideTab === 'unplanned'}
+              onClick={() => setSideTab('unplanned')}
+              {...dropProps('unplanned')}
+              className={`${tabClass(sideTab === 'unplanned')} border-l border-border ${hoverTarget === 'unplanned' ? 'ring-2 ring-inset ring-accent/60 bg-accent/10' : ''}`}
+            >
+              <span>{t('calendar.unplanned')}</span>
+              <span className="text-faint">{unplanned.length}</span>
+            </button>
+          </div>
+          <div className="flex-1 min-h-0 overflow-y-auto p-2" role="tabpanel">
+            {sideTab === 'day' ? (
+              <>
+                <h3 className="px-1 pb-2 text-xs font-semibold text-main capitalize">
+                  {dayLabel(sideDay, { weekday: 'long', day: 'numeric', month: 'long' })}
+                </h3>
+                {dayDetails(sideDay)}
+              </>
+            ) : (
+              <div {...dropProps('unplanned')} className={`min-h-full space-y-0.5 rounded-btn ${hoverTarget === 'unplanned' ? 'bg-accent/10' : ''}`}>
+                {unplanned.length === 0 ? (
+                  <p className="px-1.5 py-2 text-[11px] text-faint">{t('calendar.unplannedEmpty')}</p>
+                ) : (
+                  unplanned.map((task) => chip({ task, time: '', upcoming: false }, task.id, false, true))
+                )}
+              </div>
+            )}
+          </div>
+        </aside>
 
-        <div className="flex-1 min-w-0 rounded-card border border-border bg-panel overflow-hidden">
+        <div className="flex-1 min-w-0 flex flex-col rounded-card border border-border bg-panel overflow-hidden">
           <div className="grid grid-cols-7 border-b border-border bg-canvas">
             {weekdayNames.map((name, i) => (
               <div key={i} className="px-2 py-1.5 text-[11px] font-semibold text-muted capitalize">
@@ -408,51 +446,59 @@ export function TaskCalendar({ tasks, lists, showListIcon, isTaskReadOnly, onOpe
               </div>
             ))}
           </div>
-          {weeks.map((week) => (
-            <div key={week[0]} className="grid grid-cols-7 border-b border-border last:border-b-0">
-              {week.map((day) => {
-                const entries = byDay.get(day) || [];
-                const shown = mode === 'month' ? entries.slice(0, MONTH_CELL_MAX) : entries;
-                const more = entries.length - shown.length;
-                const outside = mode === 'month' && !sameMonth(day, anchor);
-                return (
-                  <div
-                    key={day}
-                    {...dropProps(`day:${day}`)}
-                    onClick={() => setOpenDay(day)}
-                    className={`${mode === 'month' ? 'min-h-[7rem]' : 'min-h-[24rem]'} p-1 border-r border-border last:border-r-0 flex flex-col gap-0.5 cursor-pointer transition-colors ${
-                      hoverTarget === `day:${day}` ? 'bg-accent/10 ring-2 ring-inset ring-accent/50' : openDay === day ? 'bg-accent-dim/40' : isWeekend(day) ? 'bg-canvas/60' : ''
-                    } ${outside ? 'opacity-50' : ''}`}
-                  >
-                    <span
-                      className={`self-start text-[11px] font-semibold w-6 h-6 flex items-center justify-center rounded-full ${
-                        day === today ? 'bg-accent text-on-accent' : 'text-muted'
-                      }`}
+          <div className="flex-1 min-h-0 flex flex-col">
+            {weeks.map((week) => (
+              <div key={week[0]} className="flex-1 min-h-0 grid grid-cols-7 border-b border-border last:border-b-0">
+                {week.map((day) => {
+                  const entries = byDay.get(day) || [];
+                  // Six weeks leave less room per day
+                  const shown = mode === 'month' ? entries.slice(0, weeks.length > 5 ? MONTH_CELL_MAX - 1 : MONTH_CELL_MAX) : entries;
+                  const more = entries.length - shown.length;
+                  const outside = mode === 'month' && !sameMonth(day, anchor);
+                  return (
+                    <div
+                      key={day}
+                      {...dropProps(`day:${day}`)}
+                      onClick={() => openOnSide(day)}
+                      className={`min-h-0 p-1 border-r border-border last:border-r-0 flex flex-col gap-0.5 cursor-pointer transition-colors ${
+                        mode === 'week' ? 'overflow-y-auto' : 'overflow-hidden'
+                      } ${
+                        hoverTarget === `day:${day}`
+                          ? 'bg-accent/10 ring-2 ring-inset ring-accent/50'
+                          : openDay === day && sideTab === 'day'
+                          ? 'bg-accent-dim/40'
+                          : isWeekend(day)
+                          ? 'bg-canvas/60'
+                          : ''
+                      } ${outside ? 'opacity-50' : ''}`}
                     >
-                      {Number(day.slice(8))}
-                    </span>
-                    {shown.map((e, i) => chip(e, `${e.task.id}-${i}`, false, mode === 'week'))}
-                    {more > 0 && (
-                      <button
-                        type="button"
-                        onClick={(ev) => {
-                          ev.stopPropagation();
-                          setOpenDay(day);
-                        }}
-                        className="self-start px-1.5 text-[11px] text-accent hover:underline cursor-pointer"
+                      <span
+                        className={`self-start shrink-0 text-[11px] font-semibold w-6 h-6 flex items-center justify-center rounded-full ${
+                          day === today ? 'bg-accent text-on-accent' : 'text-muted'
+                        }`}
                       >
-                        {t('calendar.more', { count: more })}
-                      </button>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          ))}
+                        {Number(day.slice(8))}
+                      </span>
+                      {shown.map((e, i) => chip(e, `${e.task.id}-${i}`, false, mode === 'week'))}
+                      {more > 0 && (
+                        <button
+                          type="button"
+                          onClick={(ev) => {
+                            ev.stopPropagation();
+                            openOnSide(day);
+                          }}
+                          className="self-start px-1.5 text-[11px] text-accent hover:underline cursor-pointer"
+                        >
+                          {t('calendar.more', { count: more })}
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
         </div>
-
-        {/* The open day and "Ungeplant" share the room: the week keeps readable columns */}
-        {!openDay && <aside className="w-60 shrink-0">{unplannedBox}</aside>}
       </div>
     </div>
   );
