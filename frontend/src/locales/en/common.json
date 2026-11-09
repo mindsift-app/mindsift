@@ -396,5 +396,14 @@
   "mention": {
     "pick": "Mention someone",
     "noAccess": "no access"
+  },
+  "center": {
+    "title": "Notifications",
+    "titleUnread_one": "Notifications ({{count}} unread)",
+    "titleUnread_other": "Notifications ({{count}} unread)",
+    "markAllRead": "Mark all as read",
+    "clear": "Delete all",
+    "empty": "Nothing new yet. What happens in your tasks, lists and notes shows up here.",
+    "unread": "Unread"
   }
 }

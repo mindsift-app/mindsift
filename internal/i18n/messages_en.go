@@ -401,6 +401,7 @@ var messagesEN = map[string]string{
 	"{name} hat die Wiederholung von „{title}“ geändert":             "{name} changed the repetition of “{title}”",
 	"{name} hat „{title}“ geändert: {changes}":                       "{name} changed “{title}”: {changes}",
 	"{name} hat dir „{title}“ zugewiesen":                            "{name} assigned “{title}” to you",
+	"„{title}“ ist fällig ({due})":                                   "“{title}” is due ({due})",
 	"{name} hat dich in „{title}“ erwähnt":                           "{name} mentioned you in “{title}”",
 	"{name} hat „{title}“ zur Liste „{list}“ hinzugefügt":            "{name} added “{title}” to the list “{list}”",
 	"erledigt":            "completed",

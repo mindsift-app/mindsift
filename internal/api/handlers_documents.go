@@ -281,7 +281,7 @@ func (s *Server) handleCreateDocShare(w http.ResponseWriter, r *http.Request) {
 	if req.TeamID != "" {
 		share, err := s.store.CreateDocTeamShare(userID, docID, req.TeamID, req.Permission)
 		if err == nil {
-			defer s.notifyShared(userID, "team", req.TeamID, "note", s.docTitle(userID, docID))
+			defer s.notifyShared(userID, "team", req.TeamID, "note", docID, s.docTitle(userID, docID))
 		}
 		if err != nil {
 			writeError(w, http.StatusBadRequest, err.Error())
@@ -307,7 +307,7 @@ func (s *Server) handleCreateDocShare(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	s.notifyShared(userID, "user", share.UserID, "note", s.docTitle(userID, docID))
+	s.notifyShared(userID, "user", share.UserID, "note", docID, s.docTitle(userID, docID))
 	s.broadcastDocToAuthorizedUsers(docID, "DOC_CREATED")
 	s.broadcastDocToAuthorizedUsers(docID, "DOC_UPDATED")
 	writeJSON(w, http.StatusCreated, share)

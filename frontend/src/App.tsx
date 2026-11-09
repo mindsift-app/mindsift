@@ -9,7 +9,7 @@ import {
   Plus,
   Users,
 } from 'lucide-react';
-import { Thought, User, UserTheme } from './lib/types';
+import { CenterEntry, Thought, User, UserTheme } from './lib/types';
 import {
   api,
   clearToken,
@@ -70,6 +70,7 @@ import { MobileCaptureSheet } from './app/MobileCaptureSheet';
 import { DesktopHeaderBar, DesktopNav, MobileHeaderBar } from './app/AppHeader';
 import { useSessionBootstrap } from './app/useSessionBootstrap';
 import { rememberMentionNames } from './lib/mentions';
+import { NotificationBell } from './components/NotificationBell';
 import i18n, { applyLanguage, resolveLanguage } from './i18n';
 import { useTranslation } from 'react-i18next';
 
@@ -465,6 +466,16 @@ export const App: React.FC = () => {
     setActiveTab('lists');
   };
 
+  // An entry of the notification center: its task, note (at the bullet) or list
+  const handleOpenCenterEntry = (entry: CenterEntry) => {
+    if (!entry.targetId) return;
+    if (entry.targetType === 'task') handleOpenTask(entry.targetId);
+    else if (entry.targetType === 'note') handleOpenDocument(entry.targetId, entry.blockId || undefined);
+    else if (entry.targetType === 'list') handleOpenList(entry.targetId);
+    else if (entry.targetType === 'tasklist') setActiveTab('tasks');
+    else if (entry.targetType === 'folder') setActiveTab('workspace');
+  };
+
   // Links from the MCP server (?note=…, ?task=…, ?list=…): open the item once signed in, then drop the
   // parameter from the address bar. The installed app takes such links over (manifest: handle_links); an
   // open app window is brought to the front and gets the link through the launch queue, without a reload
@@ -611,6 +622,7 @@ export const App: React.FC = () => {
           activeTab={activeTab}
           user={user}
           connection={connection}
+          bell={<NotificationBell variant="phone" onOpen={handleOpenCenterEntry} />}
         />
 
         {/* Desktop Header: 3-column grid (Logo, InstantCaptureBar, Profile Pill) with equal outer columns, so
@@ -630,6 +642,7 @@ export const App: React.FC = () => {
           showProfileMenu={showProfileMenu}
           user={user}
           connection={connection}
+          bell={<NotificationBell variant="desktop" onOpen={handleOpenCenterEntry} />}
           profileMenu={
             <ProfileDropdown
               user={user}

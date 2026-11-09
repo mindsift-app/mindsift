@@ -110,6 +110,19 @@ export interface NotificationSettings {
   dailySummary: DailySummarySettings;
 }
 
+// An entry of the notification center (bell); a click leads to its target
+export interface CenterEntry {
+  id: number;
+  kind: 'due' | 'shared' | 'assigned' | 'mentioned' | 'taskCreated' | 'taskDone' | 'watched' | string;
+  title: string;
+  text: string;
+  targetType?: 'task' | 'note' | 'list' | 'tasklist' | 'folder';
+  targetId?: string;
+  blockId?: string;
+  createdAt: string;
+  read: boolean;
+}
+
 // A person the @-mention picker offers; without access to the place they are shown greyed out
 export interface MentionCandidate {
   id: string;

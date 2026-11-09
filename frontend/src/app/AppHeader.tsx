@@ -37,6 +37,7 @@ export function MobileHeaderBar({
   activeTab,
   user,
   connection,
+  bell,
 }: {
   isMenuOpen: boolean;
   setIsMenuOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -49,6 +50,8 @@ export function MobileHeaderBar({
   activeTab: ActiveTab;
   user: User;
   connection: ConnectionState;
+  // Notification center (NotificationBell), between search and profile
+  bell?: React.ReactNode;
 }) {
   const { t } = useTranslation('app');
   const status = useConnectionStatus(connection);
@@ -106,7 +109,8 @@ export function MobileHeaderBar({
             title={t('header.installApp')}
           >
             <Download className="w-3.5 h-3.5" />
-            <span>{t('header.app')}</span>
+            {/* Very narrow phones: the icon alone, so search, bell and profile still fit */}
+            <span className="max-[380px]:hidden">{t('header.app')}</span>
           </button>
         )}
 
@@ -125,6 +129,8 @@ export function MobileHeaderBar({
             <Search className="w-4 h-4" />
           </span>
         </button>
+
+        {bell}
 
         <button
           type="button"
@@ -172,6 +178,7 @@ export function DesktopHeaderBar({
   user,
   connection,
   profileMenu,
+  bell,
 }: {
   setActiveTab: (tab: ActiveTab) => void;
   handleTriggerAddButton: () => void;
@@ -188,6 +195,7 @@ export function DesktopHeaderBar({
   user: User;
   connection: ConnectionState;
   profileMenu: React.ReactNode;
+  bell?: React.ReactNode;
 }) {
   const { t } = useTranslation('app');
   const status = useConnectionStatus(connection);
@@ -242,7 +250,9 @@ export function DesktopHeaderBar({
       </div>
 
       {/* User Profile Pill & Dropdown Menu */}
-      <div className="relative h-9 flex items-center gap-2 flex-shrink-0 justify-self-end" ref={dropdownRef}>
+      <div className="relative h-9 flex items-center gap-3 flex-shrink-0 justify-self-end">
+        {bell}
+        <div className="relative h-9 flex items-center" ref={dropdownRef}>
         <button
           onClick={() => {
             triggerHaptic(10);
@@ -270,6 +280,7 @@ export function DesktopHeaderBar({
         </button>
 
         {showProfileMenu && profileMenu}
+        </div>
       </div>
     </div>
   );

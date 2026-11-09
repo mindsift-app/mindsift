@@ -146,7 +146,7 @@ func (s *Server) handleCreateListShare(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if l, err := s.store.GetListByID(currentUserID, listID); err == nil {
-		s.notifyShared(currentUserID, targetType, share.TargetID, "list", l.Title)
+		s.notifyShared(currentUserID, targetType, share.TargetID, "list", listID, l.Title)
 	}
 	if targetType == "team" {
 		members, _ := s.store.GetTeamMembers(share.TargetID)

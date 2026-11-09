@@ -90,8 +90,9 @@ func (s *Server) handleMentionCandidates(w http.ResponseWriter, r *http.Request)
 	writeJSON(w, http.StatusOK, out)
 }
 
-// notifyMentioned tells the newly mentioned people who can see the place.
-func (s *Server) notifyMentioned(actorID string, newly []string, audience []string, title string) {
+// notifyMentioned tells the newly mentioned people who can see the place (the center links to it: a task,
+// or a note and its bullet).
+func (s *Server) notifyMentioned(actorID string, newly []string, audience []string, title, targetType, targetID, blockID string) {
 	if len(newly) == 0 {
 		return
 	}
@@ -107,8 +108,11 @@ func (s *Server) notifyMentioned(actorID string, newly []string, audience []stri
 	}
 	s.notify("mentioned", actorID, to, func(lang string) map[string]string {
 		return map[string]string{
-			"title": title,
-			"text":  i18n.T(lang, mentionedText, "name", s.actorName(lang, actorID), "title", title),
+			"title":      title,
+			"text":       i18n.T(lang, mentionedText, "name", s.actorName(lang, actorID), "title", title),
+			centerTarget: targetType,
+			centerID:     targetID,
+			centerBlock:  blockID,
 		}
 	})
 }
@@ -131,13 +135,14 @@ func (s *Server) notifyTaskMentions(actorID string, before, after *domain.Though
 		return
 	}
 	newly := storage.NewlyMentioned(taskMentionCounts(before), taskMentionCounts(after))
-	s.notifyMentioned(actorID, newly, s.taskAudience(after), taskTitle(after))
+	s.notifyMentioned(actorID, newly, s.taskAudience(after), taskTitle(after), "task", after.ID, "")
 }
 
 // notifyNoteMentions: people newly mentioned in the bullets an edit wrote (each bullet remembers its
 // mentions, so typing around a mention does not notify again).
 func (s *Server) notifyNoteMentions(actorID, docID string, ops []collab.Op, results []collab.Result) {
-	var newly []string
+	var audience []string
+	title := ""
 	for i, op := range ops {
 		if i >= len(results) || results[i].Seq <= 0 || op.Content == nil || op.BlockID == "" {
 			continue
@@ -150,11 +155,14 @@ func (s *Server) notifyNoteMentions(actorID, docID string, ops []collab.Op, resu
 		if err != nil {
 			continue
 		}
-		newly = append(newly, storage.NewlyMentioned(before, now)...)
+		newly := storage.NewlyMentioned(before, now)
+		if len(newly) == 0 {
+			continue
+		}
+		if title == "" {
+			audience, _ = s.store.GetAuthorizedDocUsers(docID)
+			title = s.docTitle(actorID, docID)
+		}
+		s.notifyMentioned(actorID, newly, audience, title, "note", docID, op.BlockID)
 	}
-	if len(newly) == 0 {
-		return
-	}
-	audience, _ := s.store.GetAuthorizedDocUsers(docID)
-	s.notifyMentioned(actorID, newly, audience, s.docTitle(actorID, docID))
 }

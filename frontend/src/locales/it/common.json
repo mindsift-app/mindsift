@@ -396,5 +396,14 @@
   "mention": {
     "pick": "Menziona qualcuno",
     "noAccess": "nessun accesso"
+  },
+  "center": {
+    "title": "Notifiche",
+    "titleUnread_one": "Notifiche ({{count}} non letta)",
+    "titleUnread_other": "Notifiche ({{count}} non lette)",
+    "markAllRead": "Segna tutte come lette",
+    "clear": "Elimina tutte",
+    "empty": "Ancora niente di nuovo. Qui compare ciò che succede nelle tue attività, liste e note.",
+    "unread": "Non letta"
   }
 }
