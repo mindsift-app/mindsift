@@ -75,7 +75,14 @@
     "extractedInto": "Moved out to “{{title}}”",
     "moveFailed": "Moving failed",
     "shareMenu": "Share…",
-    "untitledBullet": "Bullet"
+    "untitledBullet": "Bullet",
+    "kindTitle": "{{kind}}: {{detail}}",
+    "kind": {
+      "drawing": "Drawing",
+      "image": "Image",
+      "audio": "Audio",
+      "divider": "Divider"
+    }
   },
   "slash": {
     "todo": "To-do with a checkbox",

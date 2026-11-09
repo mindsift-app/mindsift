@@ -75,7 +75,14 @@
     "extractedInto": "Extraído a «{{title}}»",
     "moveFailed": "No se pudo mover",
     "shareMenu": "Compartir…",
-    "untitledBullet": "Viñeta"
+    "untitledBullet": "Viñeta",
+    "kindTitle": "{{kind}}: {{detail}}",
+    "kind": {
+      "drawing": "Dibujo",
+      "image": "Imagen",
+      "audio": "Audio",
+      "divider": "Separador"
+    }
   },
   "slash": {
     "todo": "Tarea con casilla de verificación",

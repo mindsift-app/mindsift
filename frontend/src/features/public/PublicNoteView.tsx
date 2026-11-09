@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next';
 import { ChevronRight, Home, Lock, LinkIcon } from 'lucide-react';
 import { OutlinerTree } from '../workspace/OutlinerTree';
-import { computeBreadcrumbs, getZoomedSubtree } from '../workspace/zoom';
+import { blockTitle, computeBreadcrumbs, getZoomedSubtree, isTitleFromKind } from '../workspace/zoom';
 import { readableMentions } from '../../lib/mentions';
 import { DocumentBlock } from '../../lib/types';
 import { docFromSnapshot } from '../../lib/docSync/model';
@@ -100,7 +100,7 @@ export const PublicNoteView: React.FC<{ token: string }> = ({ token }) => {
         <div className="flex items-center gap-3 mb-4">
           {note.icon && !zoom.zoomedBlock && <span className="text-2xl sm:text-3xl leading-none select-none">{note.icon}</span>}
           <h1 className="flex-1 min-w-0 text-2xl sm:text-3xl font-light text-main tracking-tight leading-snug break-words [overflow-wrap:anywhere]">
-            {zoom.zoomedBlock ? readableMentions(zoom.zoomedBlock.content || '') || t('untitled') : note.title || t('untitled')}
+            {zoom.zoomedBlock ? (isTitleFromKind(zoom.zoomedBlock) ? blockTitle(zoom.zoomedBlock) : readableMentions(zoom.zoomedBlock.content || '')) || t('untitled') : note.title || t('untitled')}
           </h1>
         </div>
         {zoom.zoomedBlock && (

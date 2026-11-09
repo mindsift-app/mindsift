@@ -75,7 +75,14 @@
     "extractedInto": "Estratto in «{{title}}»",
     "moveFailed": "Spostamento non riuscito",
     "shareMenu": "Condividi…",
-    "untitledBullet": "Punto"
+    "untitledBullet": "Punto",
+    "kindTitle": "{{kind}}: {{detail}}",
+    "kind": {
+      "drawing": "Disegno",
+      "image": "Immagine",
+      "audio": "Audio",
+      "divider": "Divisore"
+    }
   },
   "slash": {
     "todo": "Attività con casella di controllo",

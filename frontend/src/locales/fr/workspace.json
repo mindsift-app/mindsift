@@ -75,7 +75,14 @@
     "extractedInto": "Extrait dans « {{title}} »",
     "moveFailed": "Échec du déplacement",
     "shareMenu": "Partager…",
-    "untitledBullet": "Puce"
+    "untitledBullet": "Puce",
+    "kindTitle": "{{kind}} : {{detail}}",
+    "kind": {
+      "drawing": "Dessin",
+      "image": "Image",
+      "audio": "Audio",
+      "divider": "Séparateur"
+    }
   },
   "slash": {
     "todo": "Tâche avec case à cocher",
