@@ -92,9 +92,13 @@ export function TaskCalendar({ tasks, lists, showListIcon, isTaskReadOnly, onOpe
   const [draft, setDraft] = useState('');
   const [busy, setBusy] = useState(false);
 
-  const weeks = useMemo(() => (mode === 'month' ? monthGrid(anchor) : [weekOf(anchor)]), [mode, anchor]);
+  // The desktop grid always starts on Monday, so the weekend lies together at the end, one scroll away
+  // (a week from Sunday would put Sunday at the left edge and Saturday at the right one); phones follow
+  // the language's first day
+  const firstDay = phone ? undefined : 1;
+  const weeks = useMemo(() => (mode === 'month' ? monthGrid(anchor, firstDay) : [weekOf(anchor, firstDay)]), [mode, anchor, firstDay]);
 
-  // Desktop: the grid scrolls sideways, five days fill the view and it starts at Monday
+  // Desktop: the grid scrolls sideways, five days fill the view, scrolling stops at a day's edge
   const gridScrollRef = useRef<HTMLDivElement | null>(null);
   const [dayWidth, setDayWidth] = useState(0);
   useEffect(() => {
@@ -106,11 +110,29 @@ export function TaskCalendar({ tasks, lists, showListIcon, isTaskReadOnly, onOpe
     ro.observe(el);
     return () => ro.disconnect();
   }, [phone]);
-  const mondayIndex = weeks[0].findIndex((day) => new Date(`${day}T12:00:00`).getDay() === 1);
   useLayoutEffect(() => {
     const el = gridScrollRef.current;
-    if (el && dayWidth) el.scrollLeft = Math.max(0, mondayIndex) * dayWidth;
-  }, [dayWidth, mondayIndex, mode]);
+    if (el) el.scrollLeft = 0;
+  }, [mode]);
+  // Desktop: the calendar reaches down to the footer like a note does (at least 30rem; smaller windows
+  // scroll the page). Measured, as the rows above it (hashtags, …) differ in height.
+  const fillRef = useRef<HTMLDivElement | null>(null);
+  const [fillHeight, setFillHeight] = useState(0);
+  const measureFill = () => {
+    const el = fillRef.current;
+    const area = el?.closest<HTMLElement>('[data-app-scroll]');
+    if (!el || !area) return;
+    const top = el.getBoundingClientRect().top - area.getBoundingClientRect().top + area.scrollTop;
+    setFillHeight(Math.max(480, Math.floor(area.clientHeight - top)));
+  };
+  useLayoutEffect(measureFill);
+  useEffect(() => {
+    const area = fillRef.current?.closest<HTMLElement>('[data-app-scroll]');
+    if (!area || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(() => measureFill());
+    ro.observe(area);
+    return () => ro.disconnect();
+  }, [phone]);
   const dayColumns = dayWidth ? { gridTemplateColumns: `repeat(7, ${dayWidth}px)` } : undefined;
   // Where the grid is scrolled to: a button leads to the days out of view (scrollbars are often hidden)
   const [gridAt, setGridAt] = useState<'none' | 'start' | 'middle' | 'end'>('none');
@@ -120,7 +142,7 @@ export function TaskCalendar({ tasks, lists, showListIcon, isTaskReadOnly, onOpe
     const max = el.scrollWidth - el.clientWidth;
     setGridAt(max <= 1 ? 'none' : el.scrollLeft >= max - 1 ? 'end' : el.scrollLeft <= 1 ? 'start' : 'middle');
   };
-  useEffect(trackGrid, [dayWidth, mondayIndex, mode]);
+  useEffect(trackGrid, [dayWidth, mode]);
   const from = weeks[0][0];
   const to = weeks[weeks.length - 1][6];
   const byDay = useMemo(() => entriesByDay(tasks, from, openDay && openDay > to ? openDay : to), [tasks, from, to, openDay]);
@@ -444,8 +466,13 @@ export function TaskCalendar({ tasks, lists, showListIcon, isTaskReadOnly, onOpe
   return (
     <div className="space-y-3">
       {header}
-      {/* As tall as the window allows (at least 30rem); smaller windows scroll the page */}
-      <div className="flex items-stretch gap-3 h-[max(30rem,calc(100dvh-21.5rem))]">
+      {/* data-fill-height: the page leaves no room below it (App.tsx) */}
+      <div
+        ref={fillRef}
+        data-fill-height
+        className="flex items-stretch gap-3 h-[max(30rem,calc(100dvh-21.5rem))]"
+        style={fillHeight ? { height: fillHeight } : undefined}
+      >
         <aside className="w-64 lg:w-80 shrink-0 flex flex-col min-h-0 rounded-card border border-border bg-panel overflow-hidden">
           <div className="flex border-b border-border bg-canvas" role="tablist">
             <button type="button" role="tab" aria-selected={sideTab === 'day'} onClick={() => setSideTab('day')} className={tabClass(sideTab === 'day')}>
@@ -492,28 +519,26 @@ export function TaskCalendar({ tasks, lists, showListIcon, isTaskReadOnly, onOpe
         </aside>
 
         <div className="relative flex-1 min-w-0 rounded-card border border-border bg-panel overflow-hidden">
-          {/* The weekend (or the days before Monday) one click away; hidden when everything fits */}
+          {/* The weekend one click away; hidden when everything fits */}
           {gridAt !== 'none' && (
             <button
               type="button"
               onClick={() => {
                 const el = gridScrollRef.current;
                 if (!el) return;
-                el.scrollTo({ left: gridAt === 'end' ? Math.max(0, mondayIndex) * dayWidth : el.scrollWidth, behavior: 'smooth' });
+                el.scrollTo({ left: gridAt === 'end' ? 0 : el.scrollWidth, behavior: 'smooth' });
               }}
               className="absolute right-1.5 top-1 z-10 h-6 px-2 rounded-pill bg-panel border border-border shadow-xs text-[11px] font-medium text-muted hover:text-main cursor-pointer"
               title={gridAt === 'end' ? t('calendar.showWeekdays') : t('calendar.showWeekend')}
             >
-              {gridAt === 'end'
-                ? `‹ ${weekdayNames[Math.max(0, mondayIndex)]}`
-                : `${weekdayNames.filter((_, i) => i < mondayIndex || i > mondayIndex + 4).join(' · ')} ›`}
+              {gridAt === 'end' ? `‹ ${weekdayNames[0]}` : `${weekdayNames.slice(5).join(' · ')} ›`}
             </button>
           )}
-          <div ref={gridScrollRef} onScroll={trackGrid} className="h-full overflow-x-auto overflow-y-hidden">
+          <div ref={gridScrollRef} onScroll={trackGrid} className="h-full overflow-x-auto overflow-y-hidden snap-x snap-mandatory">
             <div className="h-full flex flex-col" style={dayWidth ? { width: dayWidth * 7 } : undefined}>
               <div className="grid grid-cols-7 border-b border-border bg-canvas" style={dayColumns}>
                 {weekdayNames.map((name, i) => (
-                  <div key={i} className="px-2 py-1.5 text-[11px] font-semibold text-muted capitalize">
+                  <div key={i} className={`px-2 py-1.5 text-[11px] font-semibold text-muted capitalize ${i === 6 ? 'snap-end' : 'snap-start'}`}>
                     {name}
                   </div>
                 ))}

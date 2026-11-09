@@ -19,10 +19,6 @@ export const AppFooter: React.FC<AppFooterProps> = ({ legal, onOpenAbout }) => {
         <button type="button" onClick={onOpenAbout} className={item} title={t('aboutTitle')}>
           MindSift {APP_VERSION}
         </button>
-        <span aria-hidden>·</span>
-        <button type="button" onClick={onOpenAbout} className={item}>
-          {t('aboutMindSift')}
-        </button>
       </div>
 
       <LegalLinks legal={legal} className="!text-[10px] !text-faint !gap-x-3 leading-none" />
