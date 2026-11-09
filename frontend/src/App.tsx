@@ -705,7 +705,7 @@ export const App: React.FC = () => {
             ? 'min-h-0 flex flex-col sm:pb-0'
             : activeTab === 'triage'
             ? 'sm:min-h-0 sm:flex sm:flex-col sm:pb-6'
-            : 'sm:pb-6 sm:has-[[data-fill-height]]:pb-0' // a view filling the height (task calendar) ends at the footer
+            : 'sm:pb-6'
         }`}
       >
         <ViewErrorBoundary onReset={() => setActiveTab('triage')}>

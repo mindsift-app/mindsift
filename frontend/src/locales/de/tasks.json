@@ -128,6 +128,8 @@
     "columns": "Spalten anpassen",
     "boardNormal": "Board wieder normal breit",
     "boardWide": "Board auf volle Breite strecken",
+    "calendarNormal": "Kalender wieder normal breit",
+    "calendarWide": "Kalender auf volle Breite strecken",
     "undoTitle": "Rückgängig (Strg+Z)",
     "subtasksTitle": "{{done}} von {{total}} Unteraufgaben erledigt ({{percent}}%)",
     "subtasks": "{{done}}/{{total}} Unteraufgaben"

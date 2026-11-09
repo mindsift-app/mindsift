@@ -7,6 +7,9 @@ const KANBAN_MIN_PHONE_COL_HEIGHT = 280;
 
 interface KanbanLayoutOptions {
   isKanban: boolean;
+  // The task calendar (desktop only) uses the same scrolling: one block that fills the screen and one wheel
+  // step from the page top to its top edge; it has no rows and no phone snapping
+  isCalendar?: boolean;
   isKanbanWide: boolean;
   // Measured again when these change: number of board columns, open list, end of loading
   columnCount: number;
@@ -15,7 +18,7 @@ interface KanbanLayoutOptions {
 }
 
 // Column heights and scrolling of the Kanban board in TasksView (desktop rows, phone snapping)
-export function useKanbanLayout({ isKanban, isKanbanWide, columnCount, listId, loading }: KanbanLayoutOptions) {
+export function useKanbanLayout({ isKanban, isCalendar = false, isKanbanWide, columnCount, listId, loading }: KanbanLayoutOptions) {
   // Desktop Kanban: every column, in every row, is as high as the room from the board's top to the bottom of
   // the scroll area, so the first row fits completely on opening and each further row fills one screen;
   // more cards scroll inside the column. At least room for about three cards (the page scrolls below that).
@@ -33,7 +36,7 @@ export function useKanbanLayout({ isKanban, isKanbanWide, columnCount, listId, l
   // snap point); a swipe then goes on to the second one
   const [kanbanPhoneFirstHeight, setKanbanPhoneFirstHeight] = useState(0);
   useEffect(() => {
-    if (!isKanban) {
+    if (!isKanban && !isCalendar) {
       setKanbanColHeight(null);
       setKanbanMultiRow(false);
       setKanbanPhoneSnap(false);
@@ -42,6 +45,12 @@ export function useKanbanLayout({ isKanban, isKanbanWide, columnCount, listId, l
     const fit = () => {
       const el = kanbanBoardRef.current;
       if (!el) {
+        setKanbanColHeight(null);
+        setKanbanMultiRow(false);
+        setKanbanPhoneSnap(false);
+        return;
+      }
+      if (isPhoneWidth() && isCalendar) {
         setKanbanColHeight(null);
         setKanbanMultiRow(false);
         setKanbanPhoneSnap(false);
@@ -71,6 +80,7 @@ export function useKanbanLayout({ isKanban, isKanbanWide, columnCount, listId, l
       vars.style.setProperty('--kb-full', `${Math.max(KANBAN_MIN_COL_HEIGHT, areaHeight - 24)}px`);
       vars.style.setProperty('--kb-top', `${Math.max(0, top - 12)}px`);
       setKanbanMultiRow(true);
+      if (isCalendar) return;
       requestAnimationFrame(() => {
         const colTops = Array.from(el.querySelectorAll<HTMLElement>('[data-kanban-col]')).map((c) => c.offsetTop);
         setKanbanPerRow(colTops.filter((t) => t === Math.min(...colTops)).length);
@@ -88,7 +98,7 @@ export function useKanbanLayout({ isKanban, isKanbanWide, columnCount, listId, l
       window.removeEventListener('resize', fit);
       board?.removeEventListener('transitionend', onTransitionEnd);
     };
-  }, [isKanban, isKanbanWide, columnCount, listId, loading]);
+  }, [isKanban, isCalendar, isKanbanWide, columnCount, listId, loading]);
 
 
   // Several rows: one wheel step moves to the next row (or back up to the previous row / the page top),
@@ -104,7 +114,9 @@ export function useKanbanLayout({ isKanban, isKanbanWide, columnCount, listId, l
     const snapPoints = () => {
       const areaTop = area.getBoundingClientRect().top - area.scrollTop;
       const rows = new Set<number>([0]);
-      board.querySelectorAll<HTMLElement>('[data-kanban-col]').forEach((c) => {
+      // The calendar's day cells carry data-kanban-col for dragging; only its top edge is a stop
+      const blocks = isCalendar ? [board] : Array.from(board.querySelectorAll<HTMLElement>('[data-kanban-col]'));
+      blocks.forEach((c) => {
         rows.add(Math.max(0, Math.round(c.getBoundingClientRect().top - areaTop - 12)));
       });
       return Array.from(rows).sort((a, b) => a - b);
@@ -170,7 +182,7 @@ export function useKanbanLayout({ isKanban, isKanbanWide, columnCount, listId, l
       area.removeEventListener('wheel', onWheel);
       area.removeEventListener('scroll', onScroll);
     };
-  }, [kanbanMultiRow]);
+  }, [kanbanMultiRow, isCalendar]);
 
   return {
     kanbanBoardRef,

@@ -128,6 +128,8 @@
     "columns": "Personnaliser les colonnes",
     "boardNormal": "Largeur normale du tableau",
     "boardWide": "Étirer le tableau sur toute la largeur",
+    "calendarNormal": "Largeur normale du calendrier",
+    "calendarWide": "Étirer le calendrier sur toute la largeur",
     "undoTitle": "Annuler (Ctrl+Z)",
     "subtasksTitle": "{{done}} sur {{total}} sous-tâches terminées ({{percent}}%)",
     "subtasks": "{{done}}/{{total}} sous-tâches"
