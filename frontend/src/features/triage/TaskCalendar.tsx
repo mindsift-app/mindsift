@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ChevronLeft, ChevronRight, ChevronDown, Plus, Repeat, X } from 'lucide-react';
 import { TaskList, Thought } from '../../lib/types';
@@ -14,6 +14,9 @@ import { CountBadge } from '../../components/CountBadge';
 type Mode = 'month' | 'week';
 const MODE_KEY = 'mindsift:calendar_mode';
 const MONTH_CELL_MAX = 3;
+// Desktop: a day column is a fifth of the visible width (Monday to Friday fill it, the weekend is a scroll
+// away), never narrower than this
+const MIN_DAY_COLUMN = 112;
 // Drag data of a full task row (useTaskDrag), so day cells take those as well
 const TASK_DRAG_TYPE = 'application/mindsift-task-id';
 
@@ -90,6 +93,34 @@ export function TaskCalendar({ tasks, lists, showListIcon, isTaskReadOnly, onOpe
   const [busy, setBusy] = useState(false);
 
   const weeks = useMemo(() => (mode === 'month' ? monthGrid(anchor) : [weekOf(anchor)]), [mode, anchor]);
+
+  // Desktop: the grid scrolls sideways, five days fill the view and it starts at Monday
+  const gridScrollRef = useRef<HTMLDivElement | null>(null);
+  const [dayWidth, setDayWidth] = useState(0);
+  useEffect(() => {
+    const el = gridScrollRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const measure = () => setDayWidth(Math.max(MIN_DAY_COLUMN, Math.floor(el.clientWidth / 5)));
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [phone]);
+  const mondayIndex = weeks[0].findIndex((day) => new Date(`${day}T12:00:00`).getDay() === 1);
+  useLayoutEffect(() => {
+    const el = gridScrollRef.current;
+    if (el && dayWidth) el.scrollLeft = Math.max(0, mondayIndex) * dayWidth;
+  }, [dayWidth, mondayIndex, mode]);
+  const dayColumns = dayWidth ? { gridTemplateColumns: `repeat(7, ${dayWidth}px)` } : undefined;
+  // Where the grid is scrolled to: a button leads to the days out of view (scrollbars are often hidden)
+  const [gridAt, setGridAt] = useState<'none' | 'start' | 'middle' | 'end'>('none');
+  const trackGrid = () => {
+    const el = gridScrollRef.current;
+    if (!el) return;
+    const max = el.scrollWidth - el.clientWidth;
+    setGridAt(max <= 1 ? 'none' : el.scrollLeft >= max - 1 ? 'end' : el.scrollLeft <= 1 ? 'start' : 'middle');
+  };
+  useEffect(trackGrid, [dayWidth, mondayIndex, mode]);
   const from = weeks[0][0];
   const to = weeks[weeks.length - 1][6];
   const byDay = useMemo(() => entriesByDay(tasks, from, openDay && openDay > to ? openDay : to), [tasks, from, to, openDay]);
@@ -415,7 +446,7 @@ export function TaskCalendar({ tasks, lists, showListIcon, isTaskReadOnly, onOpe
       {header}
       {/* As tall as the window allows (at least 30rem); smaller windows scroll the page */}
       <div className="flex items-stretch gap-3 h-[max(30rem,calc(100dvh-21.5rem))]">
-        <aside className="w-80 shrink-0 flex flex-col min-h-0 rounded-card border border-border bg-panel overflow-hidden">
+        <aside className="w-64 lg:w-80 shrink-0 flex flex-col min-h-0 rounded-card border border-border bg-panel overflow-hidden">
           <div className="flex border-b border-border bg-canvas" role="tablist">
             <button type="button" role="tab" aria-selected={sideTab === 'day'} onClick={() => setSideTab('day')} className={tabClass(sideTab === 'day')}>
               <span className="inline-flex items-center min-w-0">
@@ -460,65 +491,86 @@ export function TaskCalendar({ tasks, lists, showListIcon, isTaskReadOnly, onOpe
           </div>
         </aside>
 
-        <div className="flex-1 min-w-0 flex flex-col rounded-card border border-border bg-panel overflow-hidden">
-          <div className="grid grid-cols-7 border-b border-border bg-canvas">
-            {weekdayNames.map((name, i) => (
-              <div key={i} className="px-2 py-1.5 text-[11px] font-semibold text-muted capitalize">
-                {name}
+        <div className="relative flex-1 min-w-0 rounded-card border border-border bg-panel overflow-hidden">
+          {/* The weekend (or the days before Monday) one click away; hidden when everything fits */}
+          {gridAt !== 'none' && (
+            <button
+              type="button"
+              onClick={() => {
+                const el = gridScrollRef.current;
+                if (!el) return;
+                el.scrollTo({ left: gridAt === 'end' ? Math.max(0, mondayIndex) * dayWidth : el.scrollWidth, behavior: 'smooth' });
+              }}
+              className="absolute right-1.5 top-1 z-10 h-6 px-2 rounded-pill bg-panel border border-border shadow-xs text-[11px] font-medium text-muted hover:text-main cursor-pointer"
+              title={gridAt === 'end' ? t('calendar.showWeekdays') : t('calendar.showWeekend')}
+            >
+              {gridAt === 'end'
+                ? `‹ ${weekdayNames[Math.max(0, mondayIndex)]}`
+                : `${weekdayNames.filter((_, i) => i < mondayIndex || i > mondayIndex + 4).join(' · ')} ›`}
+            </button>
+          )}
+          <div ref={gridScrollRef} onScroll={trackGrid} className="h-full overflow-x-auto overflow-y-hidden">
+            <div className="h-full flex flex-col" style={dayWidth ? { width: dayWidth * 7 } : undefined}>
+              <div className="grid grid-cols-7 border-b border-border bg-canvas" style={dayColumns}>
+                {weekdayNames.map((name, i) => (
+                  <div key={i} className="px-2 py-1.5 text-[11px] font-semibold text-muted capitalize">
+                    {name}
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-          <div className="flex-1 min-h-0 flex flex-col">
-            {weeks.map((week) => (
-              <div key={week[0]} className="flex-1 min-h-0 grid grid-cols-7 border-b border-border last:border-b-0">
-                {week.map((day) => {
-                  const entries = byDay.get(day) || [];
-                  // Six weeks leave less room per day
-                  const shown = mode === 'month' ? entries.slice(0, weeks.length > 5 ? MONTH_CELL_MAX - 1 : MONTH_CELL_MAX) : entries;
-                  const more = entries.length - shown.length;
-                  const outside = mode === 'month' && !sameMonth(day, anchor);
-                  return (
-                    <div
-                      key={day}
-                      {...dropProps(`day:${day}`)}
-                      onClick={() => openOnSide(day)}
-                      className={`min-h-0 p-1 border-r border-border last:border-r-0 flex flex-col gap-0.5 cursor-pointer transition-colors ${
-                        mode === 'week' ? 'overflow-y-auto' : 'overflow-hidden'
-                      } ${
-                        hoverTarget === `day:${day}`
-                          ? 'bg-accent/10 ring-2 ring-inset ring-accent/50'
-                          : openDay === day && sideTab === 'day'
-                          ? 'bg-accent-dim/40'
-                          : isWeekend(day)
-                          ? 'bg-canvas/60'
-                          : ''
-                      } ${outside ? 'opacity-50' : ''}`}
-                    >
-                      <span
-                        className={`self-start shrink-0 text-[11px] font-semibold w-6 h-6 flex items-center justify-center rounded-full ${
-                          day === today ? 'bg-accent text-on-accent' : 'text-muted'
-                        }`}
-                      >
-                        {Number(day.slice(8))}
-                      </span>
-                      {shown.map((e, i) => chip(e, `${e.task.id}-${i}`, false, mode === 'week'))}
-                      {more > 0 && (
-                        <button
-                          type="button"
-                          onClick={(ev) => {
-                            ev.stopPropagation();
-                            openOnSide(day);
-                          }}
-                          className="self-start px-1.5 text-[11px] text-accent hover:underline cursor-pointer"
+              <div className="flex-1 min-h-0 flex flex-col">
+                {weeks.map((week) => (
+                  <div key={week[0]} className="flex-1 min-h-0 grid grid-cols-7 border-b border-border last:border-b-0" style={dayColumns}>
+                    {week.map((day) => {
+                      const entries = byDay.get(day) || [];
+                      // Six weeks leave less room per day
+                      const shown = mode === 'month' ? entries.slice(0, weeks.length > 5 ? MONTH_CELL_MAX - 1 : MONTH_CELL_MAX) : entries;
+                      const more = entries.length - shown.length;
+                      const outside = mode === 'month' && !sameMonth(day, anchor);
+                      return (
+                        <div
+                          key={day}
+                          {...dropProps(`day:${day}`)}
+                          onClick={() => openOnSide(day)}
+                          className={`min-h-0 p-1 border-r border-border last:border-r-0 flex flex-col gap-0.5 cursor-pointer transition-colors ${
+                            mode === 'week' ? 'overflow-y-auto' : 'overflow-hidden'
+                          } ${
+                            hoverTarget === `day:${day}`
+                              ? 'bg-accent/10 ring-2 ring-inset ring-accent/50'
+                              : openDay === day && sideTab === 'day'
+                              ? 'bg-accent-dim/40'
+                              : isWeekend(day)
+                              ? 'bg-canvas/60'
+                              : ''
+                          } ${outside ? 'opacity-50' : ''}`}
                         >
-                          {t('calendar.more', { count: more })}
-                        </button>
-                      )}
-                    </div>
-                  );
-                })}
+                          <span
+                            className={`self-start shrink-0 text-[11px] font-semibold w-6 h-6 flex items-center justify-center rounded-full ${
+                              day === today ? 'bg-accent text-on-accent' : 'text-muted'
+                            }`}
+                          >
+                            {Number(day.slice(8))}
+                          </span>
+                          {shown.map((e, i) => chip(e, `${e.task.id}-${i}`, false, mode === 'week'))}
+                          {more > 0 && (
+                            <button
+                              type="button"
+                              onClick={(ev) => {
+                                ev.stopPropagation();
+                                openOnSide(day);
+                              }}
+                              className="self-start px-1.5 text-[11px] text-accent hover:underline cursor-pointer"
+                            >
+                              {t('calendar.more', { count: more })}
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ))}
               </div>
-            ))}
+            </div>
           </div>
         </div>
       </div>
