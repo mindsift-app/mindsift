@@ -27,7 +27,7 @@ interface TaskRowProps {
   setSelectedTag: (tag: string | null) => void;
   setDetailTaskId: (id: string | null) => void;
   setShowDetailModal: (show: boolean) => void;
-  // Narrow places (the calendar's day panel): assignees and actions go below the task instead of beside it
+  // The calendar's day panel: no due date, assignees and actions at the end of the badges instead of beside the task
   compact?: boolean;
 }
 
@@ -70,7 +70,7 @@ export function TaskRow({
   const isDragging = draggingTaskId === task.id;
   const isTarget = dragOverTaskTarget?.taskId === task.id;
 
-  // Assignees and the desktop actions: at the end of the row, or (compact) below the task on the right
+  // Assignees and the desktop actions: at the end of the row, or (compact) at the end of the badges
   const side = (
     <>
       {renderAssignees(task, 'xs')}
@@ -281,8 +281,8 @@ export function TaskRow({
               </button>
             )}
 
-            {/* Due Date */}
-            {task.dueDate && (
+            {/* Due Date (not in the calendar's day panel: the day stands above it) */}
+            {task.dueDate && !compact && (
               <span
                 className={`inline-flex items-center gap-1 text-[10px] ${!task.isCompleted && isOverdue(task.dueDate) ? 'text-status-err font-semibold' : 'text-muted'}`}
                 title={t('row.dueTitle', { due: task.dueDate.replace('T', ' ') })}
@@ -313,8 +313,8 @@ export function TaskRow({
                 #{tag}
               </button>
             ))}
+            {compact && <div className="ml-auto flex items-center gap-1 -my-1 -mr-1.5">{side}</div>}
           </div>
-          {compact && <div className="flex items-center justify-end gap-1 -mr-1.5">{side}</div>}
         </div>
       </div>
 
