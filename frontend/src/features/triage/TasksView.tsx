@@ -30,7 +30,7 @@ import { useTaskActions } from './useTaskActions';
 import { QuickAddTaskBar } from './QuickAddTaskBar';
 import { NewTaskListSheet } from './NewTaskListSheet';
 import { RenameListSheet } from '../../components/RenameListSheet';
-import { TaskCalendar } from './TaskCalendar';
+import { CalendarModeSwitch, TaskCalendar, useCalendarMode } from './TaskCalendar';
 import { TaskListShareDialog } from './TaskListShareDialog';
 import { ActiveFilterBanner } from './ActiveFilterBanner';
 import { GROUP_LABELS, GroupBy, TaskFilter, TaskSort, ViewMode } from './taskViewTypes';
@@ -152,7 +152,9 @@ export const TasksView: React.FC<TasksViewProps> = ({
       }),
     [selectedListId]
   );
-  const isKanbanWide = viewMode === 'kanban' && kanbanWide;
+  // The calendar uses the same full-width setting
+  const isKanbanWide = (viewMode === 'kanban' || viewMode === 'calendar') && kanbanWide;
+  const [calendarMode, setCalendarMode] = useCalendarMode();
   const isAllTasks = selectedListId === 'all';
   const groupBy: GroupBy = isAllTasks ? groupAll : groupList;
   const setGroupBy = (g: GroupBy) => (isAllTasks ? setGroupAll(g) : setGroupList(g));
@@ -393,7 +395,14 @@ export const TasksView: React.FC<TasksViewProps> = ({
 
   // Kanban layout: column heights, rows on desktop, snapping on phones (useKanbanLayout)
   const isKanban = viewMode === 'kanban';
-  const kanbanLayout = useKanbanLayout({ isKanban, isKanbanWide, columnCount: boardColumns.length, listId: selectedListId, loading });
+  const kanbanLayout = useKanbanLayout({
+    isKanban,
+    isCalendar: viewMode === 'calendar',
+    isKanbanWide,
+    columnCount: boardColumns.length,
+    listId: selectedListId,
+    loading,
+  });
   const {
     kanbanBoardRef,
     kanbanPhoneSnap,
@@ -876,8 +885,23 @@ export const TasksView: React.FC<TasksViewProps> = ({
       <div className="hidden sm:flex flex-wrap items-center justify-between gap-2 pt-1 pb-0.5">
         <TagFilterRow tags={allAvailableTags} tasks={safeTasks} selected={selectedTag} onSelect={setSelectedTag} layoutKey={viewMode} />
 
-        {/* Kanban: manage columns and width (the list view has grouping and sorting above the list) */}
+        {/* Kanban: manage columns and width; calendar: month or week and width (the list view has grouping
+            and sorting above the list) */}
         <div className="flex items-center gap-2 flex-shrink-0 ml-auto">
+          {viewMode === 'calendar' && (
+            <>
+              <CalendarModeSwitch mode={calendarMode} onChange={setCalendarMode} />
+              <button
+                type="button"
+                onClick={toggleKanbanWide}
+                aria-pressed={kanbanWide}
+                className="btn-action h-7 w-7 p-0 hidden lg:inline-flex items-center justify-center"
+                title={kanbanWide ? t('view.calendarNormal') : t('view.calendarWide')}
+              >
+                {kanbanWide ? <Minimize2 className="w-3.5 h-3.5 text-accent" /> : <Maximize2 className="w-3.5 h-3.5 text-accent" />}
+              </button>
+            </>
+          )}
           {viewMode === 'kanban' && (
             <>
               {!isSelectedListReadOnly && (
@@ -1042,6 +1066,10 @@ export const TasksView: React.FC<TasksViewProps> = ({
                   handleMobileCreateTask({ title, priority: 'normal', dueDate: day, listId: selectedListId === 'all' ? '' : selectedListId })
           }
           renderTaskRow={renderTaskRow}
+          mode={calendarMode}
+          boardRef={kanbanBoardRef}
+          fillsScreen={kanbanLayout.kanbanMultiRow}
+          wide={isKanbanWide}
         />
       ) : viewMode === 'kanban' ? (
         /* DYNAMIC KANBAN BOARD */

@@ -128,6 +128,8 @@
     "columns": "Personalizar columnas",
     "boardNormal": "Tablero al ancho normal",
     "boardWide": "Expandir tablero a ancho completo",
+    "calendarNormal": "Calendario al ancho normal",
+    "calendarWide": "Expandir calendario a ancho completo",
     "undoTitle": "Deshacer (Ctrl+Z)",
     "subtasksTitle": "{{done}} de {{total}} subtareas completadas ({{percent}}%)",
     "subtasks": "{{done}}/{{total}} subtareas"

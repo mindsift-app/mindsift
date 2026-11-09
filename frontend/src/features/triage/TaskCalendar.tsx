@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { ChevronLeft, ChevronRight, ChevronDown, Plus, Repeat, X } from 'lucide-react';
 import { TaskList, Thought } from '../../lib/types';
 import { localDay } from '../../lib/due';
-import { formatDate } from '../../lib/format';
+import { formatDate, formatDateRange } from '../../lib/format';
 import { isPhoneWidth } from '../../lib/breakpoints';
 import { startElementDragGhost } from '../../lib/dragGhost';
 import { CalendarEntry, entriesByDay, isoWeek, monthGrid, moveDue, sameMonth, shiftDay, weekOf } from '../../lib/calendar';
@@ -11,8 +11,60 @@ import { useKanbanTouchDrag } from './useKanbanTouchDrag';
 import { renderMentions } from '../../lib/markdown';
 import { CountBadge } from '../../components/CountBadge';
 
-type Mode = 'month' | 'week';
+export type CalendarMode = 'month' | 'week';
+type Mode = CalendarMode;
 const MODE_KEY = 'mindsift:calendar_mode';
+// Desktop height while the page scrolls (useKanbanLayout, like the first Kanban row): to the bottom of the
+// screen at first, growing into the room the bar above frees until it fills the whole screen
+const CALENDAR_HEIGHT = 'max(30rem, calc(var(--kb-full) - max(0px, calc(var(--kb-top) - var(--kb-scroll, 0px)))))';
+const CALENDAR_BAR_SPACER = 'max(0px, calc(var(--kb-top) - var(--kb-scroll, 0px)))';
+// Full width: the calendar takes the window (the same button and setting as the Kanban board)
+const calendarWidthStyle = (wide: boolean): React.CSSProperties =>
+  (wide
+    ? { '--kanban-w': 'calc(100vw - 4rem)', '--kanban-ml': 'calc((100% - (100vw - 4rem)) / 2)' }
+    : { '--kanban-w': '100%', '--kanban-ml': '0px' }) as React.CSSProperties;
+
+// Month or week on the desktop, remembered in this browser; the switch sits in the bar above (TasksView)
+export function useCalendarMode(): [CalendarMode, (m: CalendarMode) => void] {
+  const [mode, setModeState] = useState<CalendarMode>(() => {
+    try {
+      return localStorage.getItem(MODE_KEY) === 'week' ? 'week' : 'month';
+    } catch {
+      return 'month';
+    }
+  });
+  const setMode = (m: CalendarMode) => {
+    setModeState(m);
+    try {
+      localStorage.setItem(MODE_KEY, m);
+    } catch {
+      // only a convenience
+    }
+  };
+  return [mode, setMode];
+}
+
+export function CalendarModeSwitch({ mode, onChange }: { mode: CalendarMode; onChange: (m: CalendarMode) => void }) {
+  const { t } = useTranslation('tasks');
+  return (
+    <div className="flex border border-border rounded-btn bg-canvas overflow-hidden" role="radiogroup" aria-label={t('calendar.mode')}>
+      {(['month', 'week'] as CalendarMode[]).map((m) => (
+        <button
+          key={m}
+          type="button"
+          role="radio"
+          aria-checked={mode === m}
+          onClick={() => onChange(m)}
+          className={`h-7 px-2.5 text-xs transition-colors ${m === 'month' ? 'border-r border-border' : ''} ${
+            mode === m ? 'bg-panel text-main font-medium' : 'text-muted hover:text-main'
+          }`}
+        >
+          {t(`calendar.${m}`)}
+        </button>
+      ))}
+    </div>
+  );
+}
 const MONTH_CELL_MAX = 3;
 // Desktop: a day column is a fifth of the visible width (Monday to Friday fill it, the weekend is a scroll
 // away), never narrower than this
@@ -41,6 +93,13 @@ interface TaskCalendarProps {
   onCreateForDay: ((day: string, title: string) => Promise<boolean>) | null;
   // The full task row (as in the list view) for the day panel; compact puts its buttons below the task
   renderTaskRow: (task: Thought, compact?: boolean) => React.ReactNode;
+  // Desktop: month or week (phones always show the week)
+  mode: CalendarMode;
+  // Desktop scrolling and height as on the Kanban board (useKanbanLayout): the measured block, whether its
+  // height follows the scroll position yet, and the full-width setting
+  boardRef: React.RefObject<HTMLDivElement>;
+  fillsScreen: boolean;
+  wide: boolean;
 }
 
 const usePhone = () => {
@@ -57,27 +116,25 @@ const usePhone = () => {
 // Tasks without a date wait in "Ungeplant"; dragging a task onto a day sets its date (the time stays),
 // onto "Ungeplant" removes it. Repeating tasks also show their coming dates, greyed with ↻, which open the
 // task itself. A click on a day opens its tasks in full (desktop: on the left; phones: a sheet).
-export function TaskCalendar({ tasks, lists, showListIcon, isTaskReadOnly, onOpenTask, onMoveDue, onCreateForDay, renderTaskRow }: TaskCalendarProps) {
+export function TaskCalendar({
+  tasks,
+  lists,
+  showListIcon,
+  isTaskReadOnly,
+  onOpenTask,
+  onMoveDue,
+  onCreateForDay,
+  renderTaskRow,
+  mode: desktopMode,
+  boardRef,
+  fillsScreen,
+  wide,
+}: TaskCalendarProps) {
   const { t } = useTranslation('tasks');
   const phone = usePhone();
   const today = localDay();
   const [anchor, setAnchor] = useState(today);
-  const [storedMode, setStoredMode] = useState<Mode>(() => {
-    try {
-      return localStorage.getItem(MODE_KEY) === 'week' ? 'week' : 'month';
-    } catch {
-      return 'month';
-    }
-  });
-  const mode: Mode = phone ? 'week' : storedMode;
-  const setMode = (m: Mode) => {
-    setStoredMode(m);
-    try {
-      localStorage.setItem(MODE_KEY, m);
-    } catch {
-      // only a convenience
-    }
-  };
+  const mode: Mode = phone ? 'week' : desktopMode;
   // Phones: the day shown in a sheet; desktop: the day in the side column (null: today)
   const [openDay, setOpenDay] = useState<string | null>(null);
   const [sideTab, setSideTab] = useState<'day' | 'unplanned'>('day');
@@ -114,25 +171,6 @@ export function TaskCalendar({ tasks, lists, showListIcon, isTaskReadOnly, onOpe
     const el = gridScrollRef.current;
     if (el) el.scrollLeft = 0;
   }, [mode]);
-  // Desktop: the calendar reaches down to the footer like a note does (at least 30rem; smaller windows
-  // scroll the page). Measured, as the rows above it (hashtags, …) differ in height.
-  const fillRef = useRef<HTMLDivElement | null>(null);
-  const [fillHeight, setFillHeight] = useState(0);
-  const measureFill = () => {
-    const el = fillRef.current;
-    const area = el?.closest<HTMLElement>('[data-app-scroll]');
-    if (!el || !area) return;
-    const top = el.getBoundingClientRect().top - area.getBoundingClientRect().top + area.scrollTop;
-    setFillHeight(Math.max(480, Math.floor(area.clientHeight - top)));
-  };
-  useLayoutEffect(measureFill);
-  useEffect(() => {
-    const area = fillRef.current?.closest<HTMLElement>('[data-app-scroll]');
-    if (!area || typeof ResizeObserver === 'undefined') return;
-    const ro = new ResizeObserver(() => measureFill());
-    ro.observe(area);
-    return () => ro.disconnect();
-  }, [phone]);
   const dayColumns = dayWidth ? { gridTemplateColumns: `repeat(7, ${dayWidth}px)` } : undefined;
   // Where the grid is scrolled to: a button leads to the days out of view (scrollbars are often hidden)
   const [gridAt, setGridAt] = useState<'none' | 'start' | 'middle' | 'end'>('none');
@@ -248,7 +286,7 @@ export function TaskCalendar({ tasks, lists, showListIcon, isTaskReadOnly, onOpe
   const title =
     mode === 'month'
       ? dayLabel(anchor, { month: 'long', year: 'numeric' })
-      : `${t('calendar.weekNumber', { n: isoWeek(weeks[0][0]) })} · ${dayLabel(weeks[0][0], { day: 'numeric', month: 'short' })} – ${dayLabel(weeks[0][6], { day: 'numeric', month: 'short' })}`;
+      : `${t('calendar.weekNumber', { n: isoWeek(weeks[0][0]) })} · ${formatDateRange(`${weeks[0][0]}T12:00:00`, `${weeks[0][6]}T12:00:00`, { day: 'numeric', month: 'short' })}`;
   const weekdayNames = weeks[0].map((d) => dayLabel(d, { weekday: 'short' }));
   const isWeekend = (day: string) => [0, 6].includes(new Date(`${day}T12:00:00`).getDay());
 
@@ -298,24 +336,23 @@ export function TaskCalendar({ tasks, lists, showListIcon, isTaskReadOnly, onOpe
         </button>
       </div>
       <h2 className="text-sm font-semibold text-main capitalize">{title}</h2>
-      {!phone && (
-        <div className="ml-auto flex border border-border rounded-btn bg-canvas overflow-hidden" role="radiogroup" aria-label={t('calendar.mode')}>
-          {(['month', 'week'] as Mode[]).map((m) => (
-            <button
-              key={m}
-              type="button"
-              role="radio"
-              aria-checked={mode === m}
-              onClick={() => setMode(m)}
-              className={`h-8 px-3 text-xs transition-colors ${m === 'month' ? 'border-r border-border' : ''} ${
-                mode === m ? 'bg-panel text-main font-medium' : 'text-muted hover:text-main'
-              }`}
-            >
-              {t(`calendar.${m}`)}
-            </button>
-          ))}
-        </div>
-      )}
+    </div>
+  );
+  // Desktop: what the calendar shows and the way to leaf through, on top of the side column
+  const sideNav = (
+    <div className="flex items-center gap-1 px-2 py-1.5 border-b border-border">
+      <h2 className="flex-1 min-w-0 px-1 truncate text-sm font-semibold text-main capitalize" title={title}>
+        {title}
+      </h2>
+      <button type="button" onClick={() => step(-1)} className="btn-icon h-7 w-7 shrink-0" title={t('calendar.previous')} aria-label={t('calendar.previous')}>
+        <ChevronLeft className="w-4 h-4" />
+      </button>
+      <button type="button" onClick={() => setAnchor(localDay())} className="btn-action h-7 px-2.5 text-xs shrink-0">
+        {t('calendar.today')}
+      </button>
+      <button type="button" onClick={() => step(1)} className="btn-icon h-7 w-7 shrink-0" title={t('calendar.next')} aria-label={t('calendar.next')}>
+        <ChevronRight className="w-4 h-4" />
+      </button>
     </div>
   );
 
@@ -464,16 +501,17 @@ export function TaskCalendar({ tasks, lists, showListIcon, isTaskReadOnly, onOpe
       active ? 'bg-panel text-main' : 'text-muted hover:text-main'
     }`;
   return (
-    <div className="space-y-3">
-      {header}
-      {/* data-fill-height: the page leaves no room below it (App.tsx) */}
+    // The block's parent carries the scroll values (--kb-*) of useKanbanLayout
+    <div>
       <div
-        ref={fillRef}
-        data-fill-height
-        className="flex items-stretch gap-3 h-[max(30rem,calc(100dvh-21.5rem))]"
-        style={fillHeight ? { height: fillHeight } : undefined}
+        ref={boardRef}
+        className={`flex items-stretch gap-3 pt-1 lg:w-[var(--kanban-w)] lg:ml-[var(--kanban-ml)] transition-[width,margin] duration-300 ease-out ${
+          fillsScreen ? '' : 'h-[max(30rem,calc(100dvh-19rem))]'
+        }`}
+        style={{ ...calendarWidthStyle(wide), ...(fillsScreen ? { height: CALENDAR_HEIGHT } : {}) }}
       >
         <aside className="w-64 lg:w-80 shrink-0 flex flex-col min-h-0 rounded-card border border-border bg-panel overflow-hidden">
+          {sideNav}
           <div className="flex border-b border-border bg-canvas" role="tablist">
             <button type="button" role="tab" aria-selected={sideTab === 'day'} onClick={() => setSideTab('day')} className={tabClass(sideTab === 'day')}>
               <span className="inline-flex items-center min-w-0">
@@ -495,7 +533,7 @@ export function TaskCalendar({ tasks, lists, showListIcon, isTaskReadOnly, onOpe
               </span>
             </button>
           </div>
-          <div className="flex-1 min-h-0 overflow-y-auto p-2" role="tabpanel">
+          <div data-kanban-list className="flex-1 min-h-0 overflow-y-auto p-2" role="tabpanel">
             {/* The tab already names the day */}
             {sideTab === 'day' ? (
               dayDetails(sideDay)
@@ -557,6 +595,8 @@ export function TaskCalendar({ tasks, lists, showListIcon, isTaskReadOnly, onOpe
                         <div
                           key={day}
                           {...dropProps(`day:${day}`)}
+                          // The wheel scrolls a long week day first, then the page (useKanbanLayout)
+                          data-kanban-list={mode === 'week' ? '' : undefined}
                           onClick={() => openOnSide(day)}
                           className={`min-h-0 p-1 border-r border-border last:border-r-0 flex flex-col gap-0.5 cursor-pointer transition-colors ${
                             mode === 'week' ? 'overflow-y-auto' : 'overflow-hidden'
@@ -600,6 +640,9 @@ export function TaskCalendar({ tasks, lists, showListIcon, isTaskReadOnly, onOpe
           </div>
         </div>
       </div>
+      {/* Room as high as what is still visible of the bar above, so the page can scroll it away while the
+          calendar grows (the page keeps its height), as below the Kanban board */}
+      {fillsScreen && <div aria-hidden style={{ height: CALENDAR_BAR_SPACER }} />}
     </div>
   );
 }

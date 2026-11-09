@@ -10,6 +10,12 @@ export const formatDate = (d: Date | string | number, options?: Intl.DateTimeFor
 export const formatDateTime = (d: Date | string | number, options?: Intl.DateTimeFormatOptions) =>
   asDate(d).toLocaleString(currentLocale(), options);
 
+// "9.–15. Nov." (shared parts once, as the language writes a range)
+export const formatDateRange = (a: Date | string | number, b: Date | string | number, options?: Intl.DateTimeFormatOptions) => {
+  const f = new Intl.DateTimeFormat(currentLocale(), options) as Intl.DateTimeFormat & { formatRange?: (x: Date, y: Date) => string };
+  return f.formatRange ? f.formatRange(asDate(a), asDate(b)) : `${f.format(asDate(a))} – ${f.format(asDate(b))}`;
+};
+
 // Alphabetical order ignoring case and accents
 export const compareText = (a: string, b: string) => a.localeCompare(b, currentLocale(), { sensitivity: 'base' });
 

@@ -128,6 +128,8 @@
     "columns": "Customize columns",
     "boardNormal": "Board back to normal width",
     "boardWide": "Stretch the board to full width",
+    "calendarNormal": "Calendar back to normal width",
+    "calendarWide": "Stretch the calendar to full width",
     "undoTitle": "Undo (Ctrl+Z)",
     "subtasksTitle": "{{done}} of {{total}} subtasks done ({{percent}}%)",
     "subtasks": "{{done}}/{{total}} subtasks"
