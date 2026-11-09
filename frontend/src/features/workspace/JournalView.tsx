@@ -45,6 +45,13 @@ interface JournalViewProps {
   onActiveHeaderStatusChange?: (status: DocHeaderStatus | null) => void;
 }
 
+// Position on the page without transforms: the view's fade-in moves it a few pixels while it is measured
+function pageTop(el: HTMLElement | null) {
+  let top = 0;
+  for (let e = el; e; e = e.offsetParent as HTMLElement | null) top += e.offsetTop;
+  return top;
+}
+
 // The journal: one note per day below each other, today on top, older days load while scrolling.
 export const JournalView: React.FC<JournalViewProps> = ({
   days,
@@ -112,12 +119,6 @@ export const JournalView: React.FC<JournalViewProps> = ({
   useLayoutEffect(() => {
     const root = scrollRef.current;
     if (!root) return;
-    // Positions without transforms: the view's fade-in moves it a few pixels while it is measured
-    const pageTop = (el: HTMLElement | null) => {
-      let top = 0;
-      for (let e = el; e; e = e.offsetParent as HTMLElement | null) top += e.offsetTop;
-      return top;
-    };
     if (!focusMode) {
       workspaceTopRef.current = pageTop(root);
       setFocusTopGap(0);
@@ -126,6 +127,16 @@ export const JournalView: React.FC<JournalViewProps> = ({
     if (!window.matchMedia?.('(min-width: 1024px)').matches) return;
     setFocusTopGap(Math.max(focusBarPinned ? 0 : 41, workspaceTopRef.current - pageTop(root)));
   }, [focusMode, focusBarPinned]);
+  // After a page load the bars above appear later than the journal: measured again whenever its pane changes
+  useEffect(() => {
+    const root = scrollRef.current;
+    if (!root || focusMode || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(() => {
+      workspaceTopRef.current = pageTop(root);
+    });
+    ro.observe(root);
+    return () => ro.disconnect();
+  }, [focusMode]);
   const sectionRefs = useRef(new Map<string, HTMLElement>());
 
   // Jump: make sure the day is rendered, then scroll to it once its note is there
