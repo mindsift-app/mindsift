@@ -25,10 +25,10 @@
     "recurrence": {
       "label": "Ripetizione",
       "none": "Nessuna ripetizione",
-      "daily": "🔁 Giornaliera",
-      "weekly": "🔁 Settimanale",
-      "monthly": "🔁 Mensile",
-      "yearly": "🔁 Annuale",
+      "daily": "Giornaliera",
+      "weekly": "Settimanale",
+      "monthly": "Mensile",
+      "yearly": "Annuale",
       "hintDate": "Al completamento viene creata automaticamente l'attività successiva, con scadenza a un intervallo di distanza da questa data.",
       "hintDone": "Al completamento viene creata automaticamente l'attività successiva, con scadenza a un intervallo di distanza dalla data di completamento."
     },

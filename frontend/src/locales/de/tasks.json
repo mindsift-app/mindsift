@@ -25,10 +25,10 @@
     "recurrence": {
       "label": "Wiederholung",
       "none": "Keine Wiederholung",
-      "daily": "🔁 Täglich",
-      "weekly": "🔁 Wöchentlich",
-      "monthly": "🔁 Monatlich",
-      "yearly": "🔁 Jährlich",
+      "daily": "Täglich",
+      "weekly": "Wöchentlich",
+      "monthly": "Monatlich",
+      "yearly": "Jährlich",
       "hintDate": "Beim Erledigen entsteht automatisch die nächste Aufgabe, fällig ein Intervall nach diesem Datum.",
       "hintDone": "Beim Erledigen entsteht automatisch die nächste Aufgabe, fällig ein Intervall nach dem Erledigen."
     },
