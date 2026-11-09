@@ -10,6 +10,7 @@ import { CalendarEntry, entriesByDay, isoWeek, monthGrid, moveDue, sameMonth, sh
 import { useKanbanTouchDrag } from './useKanbanTouchDrag';
 import { renderMentions } from '../../lib/markdown';
 import { CountBadge } from '../../components/CountBadge';
+import { SegmentedControl } from '../../components/SegmentedControl';
 
 export type CalendarMode = 'month' | 'week';
 type Mode = CalendarMode;
@@ -47,22 +48,15 @@ export function useCalendarMode(): [CalendarMode, (m: CalendarMode) => void] {
 export function CalendarModeSwitch({ mode, onChange }: { mode: CalendarMode; onChange: (m: CalendarMode) => void }) {
   const { t } = useTranslation('tasks');
   return (
-    <div className="flex border border-border rounded-btn bg-canvas overflow-hidden" role="radiogroup" aria-label={t('calendar.mode')}>
-      {(['month', 'week'] as CalendarMode[]).map((m) => (
-        <button
-          key={m}
-          type="button"
-          role="radio"
-          aria-checked={mode === m}
-          onClick={() => onChange(m)}
-          className={`h-7 px-2.5 text-xs transition-colors ${m === 'month' ? 'border-r border-border' : ''} ${
-            mode === m ? 'bg-panel text-main font-medium' : 'text-muted hover:text-main'
-          }`}
-        >
-          {t(`calendar.${m}`)}
-        </button>
-      ))}
-    </div>
+    <SegmentedControl
+      value={mode}
+      onChange={onChange}
+      ariaLabel={t('calendar.mode')}
+      options={[
+        { value: 'month', label: t('calendar.month') },
+        { value: 'week', label: t('calendar.week') },
+      ]}
+    />
   );
 }
 const MONTH_CELL_MAX = 3;

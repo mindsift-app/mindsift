@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import { Bell, BellOff, CalendarDays, Columns, LayoutList, Pencil, Plus, Trash2, Users } from 'lucide-react';
 import { CountBadge } from '../../components/CountBadge';
+import { SegmentedControl } from '../../components/SegmentedControl';
 import { SharedPill } from '../../components/SharedPill';
 import { ConfirmPopover } from '../../components/ConfirmPopover';
 import { LivePill } from '../../components/LivePill';
@@ -44,6 +45,14 @@ export const isTaskListShared = (tl: TaskList) => (tl.shares?.length || 0) > 0 |
 // Desktop header of TasksView: "Alle Aufgaben" and one tab per task list (members; a task dragged onto a
 // tab moves into that list) in one row, the lists that do not fit behind "⋯ n", "Neue Liste"; on the right
 // the status, the menu of the open list (mute, share, rename, delete) and the switch between list and Kanban
+// A view in the switch: its icon and name
+const viewLabel = (icon: React.ReactNode, name: string) => (
+  <span className="inline-flex items-center gap-1.5">
+    {icon}
+    {name}
+  </span>
+);
+
 export function TaskListTabs({
   drag,
   currentSelectedList,
@@ -255,41 +264,16 @@ export function TaskListTabs({
         })()}
         {!currentSelectedList && <span className="w-px h-5 bg-border mx-0.5" aria-hidden />}
 
-        {/* View Switcher: List vs Kanban */}
-        <div className="flex border border-border rounded-btn bg-canvas overflow-hidden">
-          <button
-            onClick={() => setViewMode('list')}
-            className={`h-8 px-2.5 flex items-center gap-1.5 text-xs transition-colors border-r border-border ${
-              viewMode === 'list' ? 'bg-panel text-main font-medium' : 'text-muted hover:text-main'
-            }`}
-            title={t('tabs.listView')}
-          >
-            <LayoutList className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">{t('tabs.list')}</span>
-          </button>
-          <button
-            onClick={() => setViewMode('kanban')}
-            className={`h-8 px-2.5 flex items-center gap-1.5 text-xs transition-colors ${
-              viewMode === 'kanban'
-                ? 'bg-panel text-main font-medium'
-                : 'text-muted hover:text-main'
-            }`}
-            title={t('tabs.kanbanView')}
-          >
-            <Columns className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">{t('tabs.kanban')}</span>
-          </button>
-          <button
-            onClick={() => setViewMode('calendar')}
-            className={`h-8 px-2.5 flex items-center gap-1.5 text-xs transition-colors border-l border-border ${
-              viewMode === 'calendar' ? 'bg-panel text-main font-medium' : 'text-muted hover:text-main'
-            }`}
-            title={t('tabs.calendarView')}
-          >
-            <CalendarDays className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">{t('tabs.calendar')}</span>
-          </button>
-        </div>
+        {/* View switch: list, Kanban or calendar (the same switch as the hashtag sorting) */}
+        <SegmentedControl
+          value={viewMode}
+          onChange={setViewMode}
+          options={[
+            { value: 'list', title: t('tabs.listView'), label: viewLabel(<LayoutList className="w-3.5 h-3.5" />, t('tabs.list')) },
+            { value: 'kanban', title: t('tabs.kanbanView'), label: viewLabel(<Columns className="w-3.5 h-3.5" />, t('tabs.kanban')) },
+            { value: 'calendar', title: t('tabs.calendarView'), label: viewLabel(<CalendarDays className="w-3.5 h-3.5" />, t('tabs.calendar')) },
+          ]}
+        />
       </div>
       {pendingDelete && (
         <ConfirmPopover
