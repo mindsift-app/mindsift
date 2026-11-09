@@ -22,6 +22,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Calendar on the desktop works like the Kanban board: month/week and a full-width button sit at the right of the hashtag row, the month (or week) and ‹ Today › moved into the side column above its tabs, so the calendar starts higher. One wheel step scrolls the bar above away and the calendar fills the screen; the full-width setting is the same as the board's.
 - Tasks: the switch between list, Kanban and calendar, and month/week of the calendar, look like the other view switches (hashtag sorting, to-dos). In all view switches the raised field slides to the newly chosen option.
 - Task dialog: the repeat options read just "Daily", "Weekly" … without the 🔁 in front.
+- Calendar: a task dragged to the left or right edge of the calendar no longer scrolls jerkily with each mouse movement; held there, the calendar jumps one day on after a short moment, and one more day at a time while it stays.
 - Footer: only the version remains (a click opens "About MindSift"); the separate "About MindSift" link is gone.
 
 ### Fixed
