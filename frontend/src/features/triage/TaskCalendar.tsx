@@ -63,6 +63,12 @@ const MONTH_CELL_MAX = 3;
 // Desktop: a day column is a fifth of the visible width (Monday to Friday fill it, the weekend is a scroll
 // away), never narrower than this
 const MIN_DAY_COLUMN = 112;
+// A task held at the left or right edge of the grid while dragging: after a short wait the grid jumps one
+// day on, then one more each interval while it stays there (the browser's own edge scrolling only moved
+// with the mouse and fought the snapping to days)
+const EDGE_ZONE = 64;
+const EDGE_DELAY = 450;
+const EDGE_REPEAT = 650;
 // Drag data of a full task row (useTaskDrag), so day cells take those as well
 const TASK_DRAG_TYPE = 'application/mindsift-task-id';
 
@@ -175,6 +181,46 @@ export function TaskCalendar({
     setGridAt(max <= 1 ? 'none' : el.scrollLeft >= max - 1 ? 'end' : el.scrollLeft <= 1 ? 'start' : 'middle');
   };
   useEffect(trackGrid, [dayWidth, mode]);
+  const edgeRef = useRef<{ dir: number; timer: number } | null>(null);
+  const stopEdge = () => {
+    if (edgeRef.current) window.clearTimeout(edgeRef.current.timer);
+    edgeRef.current = null;
+  };
+  const edgeScroll = (e: React.DragEvent) => {
+    const el = gridScrollRef.current;
+    if (!el || !dayWidth) return;
+    const r = el.getBoundingClientRect();
+    const zone = Math.min(EDGE_ZONE, dayWidth / 2);
+    const dir =
+      e.clientX < r.left + zone && el.scrollLeft > 1
+        ? -1
+        : e.clientX > r.right - zone && el.scrollLeft < el.scrollWidth - el.clientWidth - 1
+        ? 1
+        : 0;
+    if (dir === (edgeRef.current?.dir ?? 0)) return;
+    stopEdge();
+    if (!dir) return;
+    const jump = (delay: number) => {
+      edgeRef.current = {
+        dir,
+        timer: window.setTimeout(() => {
+          el.scrollBy({ left: dir * dayWidth, behavior: 'smooth' });
+          jump(EDGE_REPEAT);
+        }, delay),
+      };
+    };
+    jump(EDGE_DELAY);
+  };
+  // Dropped, cancelled or left the grid: no more jumping
+  useEffect(() => {
+    window.addEventListener('dragend', stopEdge);
+    window.addEventListener('drop', stopEdge);
+    return () => {
+      window.removeEventListener('dragend', stopEdge);
+      window.removeEventListener('drop', stopEdge);
+      stopEdge();
+    };
+  }, []);
   const from = weeks[0][0];
   const to = weeks[weeks.length - 1][6];
   const byDay = useMemo(() => entriesByDay(tasks, from, openDay && openDay > to ? openDay : to), [tasks, from, to, openDay]);
@@ -567,7 +613,14 @@ export function TaskCalendar({
               {gridAt === 'end' ? `‹ ${weekdayNames[0]} – ${weekdayNames[1]}` : `${weekdayNames[5]} – ${weekdayNames[6]} ›`}
             </button>
           )}
-          <div ref={gridScrollRef} onScroll={trackGrid} className="h-full overflow-x-auto overflow-y-hidden snap-x snap-mandatory">
+          <div
+            ref={gridScrollRef}
+            onScroll={trackGrid}
+            onDragOver={edgeScroll}
+            onDragLeave={(e) => {
+              if (!e.currentTarget.contains(e.relatedTarget as Node | null)) stopEdge();
+            }}
+            className="h-full overflow-x-auto overflow-y-hidden snap-x snap-mandatory">
             <div className="h-full flex flex-col" style={dayWidth ? { width: dayWidth * 7 } : undefined}>
               <div className="grid grid-cols-7 border-b border-border bg-canvas" style={dayColumns}>
                 {weekdayNames.map((name, i) => (
