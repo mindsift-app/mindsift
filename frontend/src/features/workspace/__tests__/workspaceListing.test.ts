@@ -6,6 +6,7 @@ import {
   collectRollupTodos,
   countOpenTodos,
   filterTags,
+  folderAncestors,
   groupRollupTodosByFolder,
   isFolderShared,
   tagGroups,
@@ -105,5 +106,10 @@ describe('workspace listing', () => {
     expect(isFolderShared({ ...own, shares: [{ id: 'x' }] } as unknown as SharedFolder)).toBe(true);
     expect(isFolderShared({ ...own, isOwner: false })).toBe(true);
     expect(isFolderShared(undefined)).toBe(false);
+  });
+
+  it('opens a note\'s folder and every folder above it', () => {
+    expect(folderAncestors('Projekte/Homelab/Alt')).toEqual({ Projekte: true, 'Projekte/Homelab': true, 'Projekte/Homelab/Alt': true });
+    expect(folderAncestors('')).toEqual({});
   });
 });

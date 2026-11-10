@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/mindsift-app/mindsift/internal/domain"
+	"github.com/mindsift-app/mindsift/internal/drawing"
 )
 
 // seedBlock describes one outliner bullet of the sample notes: nesting level, block type and text.
@@ -35,6 +36,16 @@ func seedNetworkDrawing(router, note string) string {
 		`{"id":"a6","ver":1,"t":"arrow","a":[785,176],"b":[785,60],"from":"ha","to":"ms","route":"curve","head":2,"bend":0.9,"s":"orange","sw":2,"dash":true},` +
 		`{"id":"t1","ver":1,"t":"text","x":850,"y":108,"txt":"Webhook","s":"orange","sw":2,"fs":14},` +
 		`{"id":"t2","ver":1,"t":"text","x":200,"y":160,"txt":"{note}","s":"muted","sw":2,"fs":14}]}`)
+}
+
+// seedMermaid lays out a Mermaid flowchart the way the MCP server does when an agent sends one, for the
+// note with the agent's diagrams; shown fully in the note ("fit": "all") since the diagrams are tall
+func seedMermaid(src string) string {
+	content, err := drawing.FromMermaid(src)
+	if err != nil {
+		return ""
+	}
+	return strings.Replace(content, "{", `{"fit":"all",`, 1)
 }
 
 func seedBlocks(spec []seedBlock) []domain.DocumentBlock {
@@ -175,6 +186,60 @@ func (s *Store) seedStarterDE(user *domain.User) error {
 
 	_, _ = s.CreateFolder(user.ID, "Projekte")
 	_, _ = s.CreateFolder(user.ID, "Privat")
+	_, _ = s.CreateDocument(user.ID, "", "Diagramme von Claude per MCP", "🤖", "", seedBlocks([]seedBlock{
+		{typ: "h2", text: "Gezeichnet von einem KI-Agenten über MCP"},
+		{typ: "callout", text: "Beide Grafiken auf dieser Seite hat Claude über den MCP-Server von MindSift erstellt: Claude hat sie als Mermaid-Diagramm geschickt, MindSift hat daraus Zeichnungen gemacht, die du wie deine eigenen bearbeitest – Kästen verschieben, Linien umlegen, Farben ändern."},
+		{typ: "h2", text: "MindSift auf einem kleinen Server"},
+		{level: 1, text: "Docker Compose hinter dem Router: Caddy als Reverse-Proxy, Whisper für die Spracheingabe und ein lokales Sprachmodell in Open WebUI, das MindSift per MCP als Werkzeug nutzt"},
+		{level: 1, typ: "drawing", text: seedMermaid(`flowchart TD
+  Internet((Internet)) -->|nur 443| Router[Router / Firewall]
+  Router --> Caddy[Caddy Reverse-Proxy]
+  Caddy -->|notizen.home.example| MindSift[MindSift]
+  Caddy -->|chat.home.example| WebUI[Open WebUI]
+  MindSift -->|Spracheingabe| Whisper[Whisper-Server]
+  MindSift --> Data[(SQLite in /data)]
+  MindSift -.->|MCP-Werkzeuge| WebUI
+  WebUI --> Ollama[Ollama – lokales LLM]
+  Data -.->|nachts| Backup[(Restic-Backup)]
+  classDef edge fill:#cbd5e1,stroke:#64748b
+  classDef proxy fill:#bfdbfe,stroke:#2563eb
+  classDef app fill:#c7d2fe,stroke:#4f46e5
+  classDef ai fill:#e9d5ff,stroke:#9333ea
+  classDef store fill:#bbf7d0,stroke:#16a34a
+  class Router edge
+  class Caddy proxy
+  class MindSift app
+  class WebUI,Ollama,Whisper ai
+  class Data,Backup store`)},
+		{typ: "h2", text: "Ein typischer Homeserver"},
+		{level: 1, text: "TrueNAS für Speicher und Jellyfin, ein kleiner k3s-Cluster für die Apps, Home Assistant fürs Haus"},
+		{level: 1, typ: "drawing", text: seedMermaid(`flowchart TD
+  Router[Router] --> Switch[2,5-GbE-Switch]
+  Switch --> NAS[TrueNAS Scale]
+  Switch --> K3s[k3s-Cluster – 3× Raspberry Pi 5]
+  Switch --> HA[Home Assistant]
+  NAS --> Jellyfin[Jellyfin]
+  NAS --> Pool[(ZFS-Spiegel 2× 8 TB)]
+  K3s --> Immich[Immich Fotos]
+  K3s --> Paperless[Paperless-ngx]
+  HA --> Zigbee[Zigbee-Sensoren]
+  Jellyfin -->|Stream| TV[Fernseher Wohnzimmer]
+  Immich -.-> Pool
+  Paperless -.-> Pool
+  Pool -.->|nächtlicher Snapshot| Offsite[(Offsite-Backup)]
+  classDef net fill:#cbd5e1,stroke:#64748b
+  classDef storage fill:#bbf7d0,stroke:#16a34a
+  classDef media fill:#fed7aa,stroke:#ea580c
+  classDef cluster fill:#bfdbfe,stroke:#2563eb
+  classDef smart fill:#e9d5ff,stroke:#9333ea
+  class Router,Switch net
+  class NAS,Pool,Offsite storage
+  class Jellyfin,TV media
+  class K3s,Immich,Paperless cluster
+  class HA,Zigbee smart`)},
+		{typ: "h2", text: "Selbst ausprobieren"},
+		{level: 1, text: "Unter Kontoeinstellungen → API einen Schlüssel anlegen und den Agenten auf `/api/v1/mcp` zeigen lassen – mehr dazu in [[API & Smart Home]]"},
+	}), []string{"mcp", "homelab"}, true)
 	_, _ = s.CreateDocument(user.ID, "", "Homelab 2.0 – Umzug auf den neuen Server", "🚀", "Projekte", seedBlocks([]seedBlock{
 		{typ: "callout", text: "Ziel: Bis Ende des Monats laufen alle Dienste auf dem neuen Mini-PC – leiser, sparsamer und mit echtem Backup. Aufgaben dazu stehen in der Liste #homelab."},
 		{typ: "h2", text: "Warum überhaupt?"},
@@ -194,19 +259,20 @@ func (s *Store) seedStarterDE(user *domain.User) error {
 		{level: 1, typ: "todo", text: "Alten Server sicher löschen und verkaufen"},
 		{typ: "h2", text: "Dienste & Ports"},
 		{level: 1, text: "**MindSift** – Notizen, Aufgaben und Listen für die ganze Familie #mindsift"},
-		{level: 2, text: "läuft hinter Nginx, WebSocket-Upgrade und Long-Polling sind freigegeben"},
+		{level: 2, text: "zieht von Nginx zu Caddy um, WebSocket-Upgrade und Long-Polling sind freigegeben"},
 		{level: 2, text: "Demo-Konten nur im Testsystem, nie öffentlich"},
 		{level: 1, text: "**Gitea** – Code, CI und Images, z. B. `git.example.com` #devops"},
 		{level: 1, text: "**Home Assistant** – Sensoren melden Alarme per Webhook direkt in die MindSift-Inbox #smarthome"},
 		{level: 2, text: "Beispiel: Kellerfeuchtigkeit über 65 % → Gedanke mit Priorität „dringend“"},
 		{typ: "h3", text: "Compose-Ausschnitt"},
 		{level: 1, typ: "code", lang: "yaml", text: "services:\n  mindsift:\n    image: ghcr.io/mindsift-app/mindsift:v0.2\n    restart: unless-stopped\n    volumes: [\"./data:/data\"]\n    environment:\n      - JWT_SECRET=${JWT_SECRET}"},
-		{typ: "h2", text: "Netzplan"},
+		{typ: "h2", text: "Netzplan vor dem Umzug"},
+		{level: 1, text: "Von Hand gezeichnet. Wie es danach aussehen soll, steht in [[Diagramme von Claude per MCP]]"},
 		{level: 1, typ: "drawing", text: seedNetworkDrawing("Router / Firewall", "Nur 80 und 443 offen")},
 		{typ: "h2", text: "Offene Fragen"},
 		{level: 1, text: "Reicht eine USV für Router und Server zusammen?"},
 		{level: 1, text: "Offsite-Backup: Hetzner Storage Box oder Festplatte bei den Eltern? Siehe [[Ideen-Sammlung]]"},
-	}), []string{"homelab", "projekt"}, true)
+	}), []string{"homelab", "projekt"}, false)
 
 	_, _ = s.CreateDocument(user.ID, "", "Urlaub Südtirol", "🏔️", "Privat", seedBlocks([]seedBlock{
 		{typ: "h2", text: "Reiseplan Oktober"},

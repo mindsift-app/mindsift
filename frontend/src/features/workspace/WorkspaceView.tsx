@@ -45,7 +45,7 @@ import { SidebarJournal, SidebarTags, SidebarTrash } from './SidebarSections';
 import { useWorkspaceData } from './useWorkspaceData';
 import { useTrashActions } from './useTrashActions';
 import { buildWorkspaceMenu } from './workspaceMenu';
-import { buildFolderTree, collectFolderPaths, collectRollupTodos, countOpenTodos, filterTags, groupRollupTodosByFolder, isFolderShared, tagGroups, tagsMetadata } from './workspaceListing';
+import { buildFolderTree, collectFolderPaths, folderAncestors, collectRollupTodos, countOpenTodos, filterTags, groupRollupTodosByFolder, isFolderShared, tagGroups, tagsMetadata } from './workspaceListing';
 import { FolderDialogs } from './FolderDialogs';
 import { WorkspaceSubView } from './workspaceTypes';
 import { Trans, useTranslation } from 'react-i18next';
@@ -58,6 +58,8 @@ import { findLinkedDoc, makeWikiLinkResolver, WikiLinkResolverContext } from '..
 interface WorkspaceViewProps {
   currentUser?: User | null;
   initialDocId?: string | null;
+  // The demo opens its folders on a first visit, so one sees at once that there is more to look at
+  demoMode?: boolean;
   initialBlockId?: string | null;
   // Changes with every opening from outside (search), also of the note already in initialDocId
   openDocNonce?: number;
@@ -70,6 +72,7 @@ interface WorkspaceViewProps {
 export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
   currentUser,
   initialDocId,
+  demoMode,
   initialBlockId,
   openDocNonce,
   onStatsChange,
@@ -131,9 +134,11 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
   const [tagSearchQuery, setTagSearchQuery] = useState<string>('');
   const [tagSortBy, setTagSortBy] = useState<'count' | 'name'>('count');
 
+  const hadSavedFolders = useRef(true);
   const [expandedFolders, setExpandedFolders] = useState<Record<string, boolean>>(() => {
     try {
       const saved = localStorage.getItem('mindsift:workspace_expanded_folders');
+      hadSavedFolders.current = saved !== null;
       return saved ? JSON.parse(saved) : {};
     } catch {
       return {};
@@ -393,14 +398,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
     try {
       const res = await api.createFolder(cleanPath);
       setFolders((prev) => (prev.includes(res.path) ? prev : [...prev, res.path].sort()));
-      const parts = res.path.split('/');
-      let acc = '';
-      const expansions: Record<string, boolean> = {};
-      for (const part of parts) {
-        acc = acc ? `${acc}/${part}` : part;
-        expansions[acc] = true;
-      }
-      setExpandedFolders((prev) => ({ ...prev, ...expansions }));
+      setExpandedFolders((prev) => ({ ...prev, ...folderAncestors(res.path) }));
       setNewFolderName('');
       setNewFolderParentPath('');
       setShowNewFolderModal(false);
@@ -608,6 +606,22 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
   const allFolderPaths = useMemo(() => collectFolderPaths(folders, docs, sharedFolders), [docs, folders, sharedFolders]);
 
   const folderTree = useMemo(() => buildFolderTree(allFolderPaths, treeDocs, sharedFolders), [allFolderPaths, treeDocs, sharedFolders]);
+
+  // Demo, first visit in this browser: all folders open once (folding them up afterwards is kept)
+  useEffect(() => {
+    if (!demoMode || hadSavedFolders.current || allFolderPaths.length === 0) return;
+    hadSavedFolders.current = true;
+    setExpandedFolders(Object.fromEntries(allFolderPaths.map((p) => [p, true])));
+  }, [demoMode, allFolderPaths]);
+
+  // An opened note shows where it lives (link, search, backlinks …): its folders open. Only when another
+  // note opens or it moves, so folding its folder up afterwards stays
+  const selectedFolder = treeDocs.find((d) => d.id === selectedDocId)?.folderPath || '';
+  useEffect(() => {
+    if (!selectedFolder) return;
+    const open = folderAncestors(selectedFolder);
+    setExpandedFolders((prev) => (Object.keys(open).every((k) => prev[k]) ? prev : { ...prev, ...open }));
+  }, [selectedDocId, selectedFolder]);
 
   const pinnedDocs = useMemo(
     () => treeDocs.filter((d) => d.isPinned),
@@ -945,14 +959,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
             onRequestMerge={(d) => setMergeDialog({ sourceId: d.id })}
             onDocCreated={(created) => {
               setDocs((prev) => (prev.some((d) => d.id === created.id) ? prev : [created, ...prev]));
-              if (created.folderPath) {
-                const parts = created.folderPath.split('/');
-                const open: Record<string, boolean> = {};
-                parts.forEach((_, i) => {
-                  open[parts.slice(0, i + 1).join('/')] = true;
-                });
-                setExpandedFolders((prev) => ({ ...prev, ...open }));
-              }
+              if (created.folderPath) setExpandedFolders((prev) => ({ ...prev, ...folderAncestors(created.folderPath) }));
               onStatsChange();
             }}
             onDocRemoved={(id) => {

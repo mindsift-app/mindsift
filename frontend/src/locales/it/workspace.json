@@ -475,8 +475,6 @@
     "saveView": "Salva vista",
     "saveViewTitle": "Salva questa sezione, lo zoom e l’altezza per tutti",
     "resetView": "Ripristina sezione",
-    "autoView": "Automatico",
-    "autoViewTitle": "Rimuovi la vista salvata: adatta tutto",
     "resize": "Trascina per cambiare l’altezza",
     "editorTitle": "Modifica disegno",
     "done": "Fatto",
@@ -541,6 +539,15 @@
     "draftDiscard": "Scarta",
     "nearlyFull": "Il disegno è pieno al {{percent}} %. Le grandi aree a mano libera occupano più spazio.",
     "tooLarge": "Il disegno è troppo grande per essere salvato. Togli qualcosa, soprattutto tratti a mano libera.",
-    "style": "Linea, riempimento, freccia"
+    "style": "Linea, riempimento, freccia",
+    "sizeAll": "Mostra tutto in grande",
+    "sizeAllTitle": "Il disegno intero grande quanto permette la larghezza della nota",
+    "sizeReadable": "Altezza consigliata",
+    "sizeReadableTitle": "Altezza consigliata con testo leggibile; i disegni larghi si spostano di lato",
+    "sizeAuto": "Dimensione consigliata",
+    "sizeAutoTitle": "Torna alla dimensione consigliata (la vista salvata viene rimossa)",
+    "discard": "Scarta",
+    "discardTitle": "Chiudi senza salvare",
+    "discardAsk": "Scartare le modifiche non salvate?"
   }
 }

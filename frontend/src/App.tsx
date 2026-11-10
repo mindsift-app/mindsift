@@ -749,6 +749,7 @@ export const App: React.FC = () => {
                 initialDocId={selectedDocId}
                 initialBlockId={selectedBlockId}
                 openDocNonce={openDocNonce}
+                demoMode={!!authStatus.demoMode}
                 onStatsChange={refreshAll}
                 onOpenTask={handleOpenTask}
                 onOpenSearch={() => setShowCommandPalette(true)}

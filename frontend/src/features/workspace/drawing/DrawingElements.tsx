@@ -1,18 +1,19 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   ArrowElement,
+  Box,
   DEFAULT_FONT_SIZE,
   DrawElement,
   ShapeElement,
   TextElement,
   arrowGeometry,
+  arrowLabelBox,
   arrowHeadPath,
   fillColor,
   freehandPath,
-  levelAt,
   lineHeight,
+  spreadLabels,
   strokeColor,
-  textWidth,
   wrapText,
   ARROW_FONT_SIZE,
 } from '../../../lib/drawing/model';
@@ -78,7 +79,7 @@ function FreeText({ el }: { el: TextElement }) {
   return <TextLines lines={el.txt.split('\n')} x={el.x} top={el.y} fs={fs} anchor="start" fill={strokeColor(el.s)} />;
 }
 
-function Arrow({ el, byId }: { el: ArrowElement; byId: Map<string, DrawElement> }) {
+function Arrow({ el, byId, labelShift }: { el: ArrowElement; byId: Map<string, DrawElement>; labelShift?: [number, number] }) {
   const g = arrowGeometry(el, byId);
   const size = 8 + el.sw * 2;
   const stroke = strokeColor(el.s);
@@ -87,32 +88,30 @@ function Arrow({ el, byId }: { el: ArrowElement; byId: Map<string, DrawElement> 
       <path d={g.d} strokeDasharray={dashFor(el)} />
       {el.head & 1 ? <path d={arrowHeadPath(g.start, g.startAngle, size)} /> : null}
       {el.head & 2 ? <path d={arrowHeadPath(g.end, g.endAngle, size)} /> : null}
-      {el.txt ? <ArrowLabel text={el.txt} at={g.labelAt} above={levelAt(g.poly, g.labelAt)} fs={el.fs || ARROW_FONT_SIZE} color={stroke} /> : null}
+      {el.txt ? <ArrowLabel text={el.txt} box={arrowLabelBox(el, g)} shift={labelShift} fs={el.fs || ARROW_FONT_SIZE} color={stroke} /> : null}
     </g>
   );
 }
 
-// Label on a line: on a level stretch it sits just above the line, else on it; its patch of the surface colour
-// lets the line show through a little, so one still sees where it runs
-function ArrowLabel({ text, at, above, fs, color }: { text: string; at: [number, number]; above: boolean; fs: number; color: string }) {
-  const lines = text.split('\n');
-  const w = Math.max(...lines.map((l) => textWidth(l, fs))) + 10;
-  const h = lines.length * lineHeight(fs) + 4;
-  const cy = above ? at[1] - h / 2 - 2 : at[1];
+// Label on a line: on a level stretch it sits just above the line, else on it (moved aside where it would
+// cover another label); its patch of the surface colour lets the line show through a little
+function ArrowLabel({ text, box, shift, fs, color }: { text: string; box: Box; shift?: [number, number]; fs: number; color: string }) {
+  const x = box.x + (shift?.[0] || 0);
+  const y = box.y + (shift?.[1] || 0);
   return (
     <g stroke="none">
-      <rect x={at[0] - w / 2} y={cy - h / 2} width={w} height={h} rx={4} fill="var(--bg-panel)" fillOpacity={0.85} />
-      <TextLines lines={lines} x={at[0]} top={cy - h / 2 + 2} fs={fs} anchor="middle" fill={color} />
+      <rect x={x} y={y} width={box.w} height={box.h} rx={4} fill="var(--bg-panel)" fillOpacity={0.85} />
+      <TextLines lines={text.split('\n')} x={x + box.w / 2} top={y + 2} fs={fs} anchor="middle" fill={color} />
     </g>
   );
 }
 
-export function DrawingElementView({ el, byId }: { el: DrawElement; byId: Map<string, DrawElement> }) {
+export function DrawingElementView({ el, byId, labelShift }: { el: DrawElement; byId: Map<string, DrawElement>; labelShift?: [number, number] }) {
   switch (el.t) {
     case 'text':
       return <FreeText el={el} />;
     case 'arrow':
-      return <Arrow el={el} byId={byId} />;
+      return <Arrow el={el} byId={byId} labelShift={labelShift} />;
     case 'draw':
       return (
         <path
@@ -135,18 +134,23 @@ export function DrawingElements({
   els,
   hidden,
   faded,
+  labelShifts,
 }: {
   els: DrawElement[];
   hidden?: Set<string>;
   faded?: Set<string>;
+  // Labels moved aside so they do not cover each other; without, worked out here once per drawing
+  labelShifts?: Map<string, [number, number]>;
 }) {
   const byId = new Map(els.map((el) => [el.id, el]));
+  const own = useMemo(() => (labelShifts ? null : spreadLabels(els)), [labelShifts, els]);
+  const shifts = labelShifts || own;
   return (
     <>
       {els.map((el) =>
         hidden?.has(el.id) ? null : (
           <g key={el.id} opacity={faded?.has(el.id) ? 0.25 : 1}>
-            <DrawingElementView el={el} byId={byId} />
+            <DrawingElementView el={el} byId={byId} labelShift={shifts?.get(el.id)} />
           </g>
         )
       )}

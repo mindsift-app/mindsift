@@ -475,8 +475,6 @@
     "saveView": "Guardar vista",
     "saveViewTitle": "Guardar esta sección, el zoom y la altura para todos",
     "resetView": "Restablecer sección",
-    "autoView": "Automático",
-    "autoViewTitle": "Quitar la vista guardada: ajustar todo",
     "resize": "Arrastra para cambiar la altura",
     "editorTitle": "Editar dibujo",
     "done": "Listo",
@@ -541,6 +539,15 @@
     "draftDiscard": "Descartar",
     "nearlyFull": "El dibujo está lleno al {{percent}} %. Las zonas grandes a mano alzada ocupan más espacio.",
     "tooLarge": "El dibujo es demasiado grande para guardarlo. Quita algo, sobre todo trazos a mano alzada.",
-    "style": "Línea, relleno, flecha"
+    "style": "Línea, relleno, flecha",
+    "sizeAll": "Mostrar todo en grande",
+    "sizeAllTitle": "El dibujo entero tan grande como permite el ancho de la nota",
+    "sizeReadable": "Altura recomendada",
+    "sizeReadableTitle": "Altura recomendada con texto legible; los dibujos anchos se desplazan de lado",
+    "sizeAuto": "Tamaño recomendado",
+    "sizeAutoTitle": "Volver al tamaño recomendado (se quita la vista guardada)",
+    "discard": "Descartar",
+    "discardTitle": "Cerrar sin guardar",
+    "discardAsk": "¿Descartar los cambios sin guardar?"
   }
 }

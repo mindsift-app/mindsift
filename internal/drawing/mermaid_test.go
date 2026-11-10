@@ -2,6 +2,7 @@ package drawing
 
 import (
 	"errors"
+	"fmt"
 	"math"
 	"strings"
 	"testing"
@@ -358,5 +359,58 @@ func TestFlowchartLinesDoNotOverlap(t *testing.T) {
 				}
 			}
 		}
+	}
+}
+
+// Lines into the same side of a shape end side by side, not on one point (as if their sources were joined)
+func TestFlowchartEntriesSpread(t *testing.T) {
+	d := mustDrawing(t, `flowchart TD
+		E[Auth] --> H[(Datenbank)]
+		F[Notizen] --> H
+		G[Aufgaben] --> H
+		A[Gateway] --> E
+		A --> F
+		A --> G`)
+	db := byText(d)["Datenbank"]
+	seen := map[float64]bool{}
+	for _, ar := range arrows(d) {
+		if ar.To != db.ID || len(ar.Via) == 0 {
+			continue
+		}
+		x := ar.Via[len(ar.Via)-1][0]
+		if seen[x] {
+			t.Errorf("two lines enter the database at x = %v", x)
+		}
+		if x <= db.X || x >= db.X+db.W {
+			t.Errorf("entry %v outside the shape %v–%v", x, db.X, db.X+db.W)
+		}
+		seen[x] = true
+	}
+	if len(seen) != 3 {
+		t.Fatalf("expected three entries, got %v", seen)
+	}
+}
+
+// Laid out lines carry the side and spot they leave and enter by, like lines docked by hand
+func TestFlowchartPorts(t *testing.T) {
+	d := mustDrawing(t, `flowchart TD
+		A[Start] --> B[Mitte]
+		A --> C[Rechts]
+		B --> D[Ende]
+		C --> D`)
+	content, _ := FromMermaid(`flowchart TD
+		A[Start] --> B[Ende]`)
+	if !strings.Contains(content, `"fromPort":{"at":0.5,"side":"b"}`) || !strings.Contains(content, `"toPort":{"at":0.5,"side":"t"}`) {
+		t.Fatalf("a line straight down leaves the bottom and enters the top in the middle: %s", content)
+	}
+	// Into D from two sources: both from the top, at different spots
+	var spots []string
+	for _, ar := range arrows(d) {
+		if ar.To == byText(d)["Ende"].ID {
+			spots = append(spots, fmt.Sprint(ar.Via[len(ar.Via)-1][0]))
+		}
+	}
+	if len(spots) != 2 || spots[0] == spots[1] {
+		t.Fatalf("two entries side by side expected, got %v", spots)
 	}
 }
