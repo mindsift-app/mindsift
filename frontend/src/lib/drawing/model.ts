@@ -39,6 +39,13 @@ export interface TextElement extends ElementBase {
   fs?: number;
 }
 
+/** Where an elbow arrow meets a shape: a side and how far along it (0 = left or top end, 1 = right or bottom) */
+export interface Port {
+  side: Side;
+  at: number;
+}
+export type Side = 't' | 'r' | 'b' | 'l';
+
 export interface ArrowElement extends ElementBase {
   t: 'arrow';
   /** Start and end; for a docked end the last computed point (the shape decides where it really is) */
@@ -49,14 +56,18 @@ export interface ArrowElement extends ElementBase {
   route: ArrowRoute;
   /** Arrow heads: 0 none, 1 start, 2 end, 3 both */
   head: number;
-  /** Curves: how far the middle bends away from the straight line, as a share of its length. Elbows: where
-   * the middle stretch lies, as a share of the way from start to end (set by dragging it; else it is
-   * placed to go round other shapes) */
+  /** Curves: how far the middle bends away from the straight line, as a share of its length. Elbows (older
+   * drawings only, now via): where the middle stretch lies, as a share of the way from start to end */
   bend?: number;
-  /** Elbows with a middle stretch placed by hand: whether the line leaves sideways ('h') or up and down ('v') */
+  /** Elbows (older drawings only): whether the line leaves sideways ('h') or up and down ('v') */
   axis?: 'h' | 'v';
-  /** Corner points the line runs through (laid out diagrams); dropped when a docked shape moves */
+  /** Corner points the line runs through: laid out from a diagram or moved by hand. Elbows keep them when a
+   * docked shape moves (their ends follow), other lines lose them */
   via?: Point[];
+  /** Elbows: the side and spot where the line leaves its start shape or enters its end shape (set by dragging
+   * the end there); without, it takes the side facing the other end */
+  fromPort?: Port;
+  toPort?: Port;
   /** Label in the middle of the line ("ja", "nein") */
   txt?: string;
   fs?: number;
@@ -81,6 +92,9 @@ export interface Drawing {
   v: 1;
   /** Section the note shows (saved for everyone); missing = fit everything */
   frame?: Frame;
+  /** Without a frame: the other size of the preview chosen with its toggle ('all': everything as large as
+   * the width allows; 'readable': the recommended height, wide drawings moved sideways); missing = automatic */
+  fit?: 'all' | 'readable';
   grid?: boolean;
   els: DrawElement[];
 }
@@ -172,6 +186,8 @@ function parseElement(raw: any): DrawElement | null {
         ...(typeof raw.bend === 'number' && Number.isFinite(raw.bend) ? { bend: raw.bend } : {}),
         ...(raw.axis === 'h' || raw.axis === 'v' ? { axis: raw.axis } : {}),
         ...(Array.isArray(raw.via) && raw.via.length ? { via: raw.via.slice(0, 100).map(point) } : {}),
+        ...(parsePort(raw.fromPort) ? { fromPort: parsePort(raw.fromPort) } : {}),
+        ...(parsePort(raw.toPort) ? { toPort: parsePort(raw.toPort) } : {}),
         ...(txt ? { txt } : {}),
         ...(fs ? { fs } : {}),
       };
@@ -181,6 +197,12 @@ function parseElement(raw: any): DrawElement | null {
     default:
       return null;
   }
+}
+
+function parsePort(raw: any): Port | undefined {
+  if (!raw || !['t', 'r', 'b', 'l'].includes(raw.side)) return undefined;
+  const at = typeof raw.at === 'number' && Number.isFinite(raw.at) ? Math.max(0, Math.min(1, raw.at)) : 0.5;
+  return { side: raw.side, at };
 }
 
 /** Reads a block's content; null if it is not a drawing */
@@ -196,7 +218,8 @@ export function parseDrawing(content: string): Drawing | null {
   const f = raw.frame;
   const frame =
     f && typeof f === 'object' && num(f.w) > 0 && num(f.h) > 0 ? { x: num(f.x), y: num(f.y), w: num(f.w), h: num(f.h) } : undefined;
-  return { v: 1, ...(frame ? { frame } : {}), ...(raw.grid ? { grid: true } : {}), els };
+  const fit = raw.fit === 'all' || raw.fit === 'readable' ? raw.fit : undefined;
+  return { v: 1, ...(frame ? { frame } : {}), ...(fit ? { fit } : {}), ...(raw.grid ? { grid: true } : {}), els };
 }
 
 const round = (n: number) => Math.round(n * 10) / 10;
@@ -224,7 +247,7 @@ export function serializeDrawing(d: Drawing): string {
     }
   });
   const frame = d.frame ? { x: round(d.frame.x), y: round(d.frame.y), w: round(d.frame.w), h: round(d.frame.h) } : undefined;
-  return JSON.stringify({ v: 1, ...(frame ? { frame } : {}), ...(d.grid ? { grid: true } : {}), els });
+  return JSON.stringify({ v: 1, ...(frame ? { frame } : {}), ...(d.fit ? { fit: d.fit } : {}), ...(d.grid ? { grid: true } : {}), els });
 }
 
 export function contentBytes(content: string): number {
@@ -391,13 +414,9 @@ export function elbowHorizontal(from: ShapeElement | undefined, to: ShapeElement
   return Math.abs(b[0] - a[0]) >= Math.abs(b[1] - a[1]);
 }
 
-// Positions of an elbow's middle stretch tried when it would cross a shape (share of the way from start to end)
-const ELBOW_TRIES = [0.5, 0.4, 0.6, 0.3, 0.7, 0.2, 0.8, 0.1, 0.9, 0.03, 0.97];
-
 /**
  * An elbow line in one direction: out of the side of its start shape, along to the middle stretch at share
- * t of the way, across, and into the side of its end shape. handle: middle of the middle stretch (it is
- * dragged there to move it).
+ * t of the way, across, and into the side of its end shape. handle: middle of the middle stretch.
  */
 export function elbowPath(from: ShapeElement | undefined, to: ShapeElement | undefined, rawA: Point, rawB: Point, horizontal: boolean, t: number) {
   const a: Point = from ? sidePoint(from, horizontal ? (rawB[0] >= rawA[0] ? 'r' : 'l') : rawB[1] >= rawA[1] ? 'b' : 't') : rawA;
@@ -407,26 +426,254 @@ export function elbowPath(from: ShapeElement | undefined, to: ShapeElement | und
     : [a, [a[0], a[1] + (b[1] - a[1]) * t], [b[0], a[1] + (b[1] - a[1]) * t], b];
   const clean = poly.filter((p, i) => i === 0 || p[0] !== poly[i - 1][0] || p[1] !== poly[i - 1][1]);
   const handle: Point = [(poly[1][0] + poly[2][0]) / 2, (poly[1][1] + poly[2][1]) / 2];
-  return { a, b, poly: clean, handle, horizontal };
+  return { a, b, poly: clean, handle };
 }
 
-/** Share of the way for an elbow's middle stretch through a point (dragging its handle) */
-export function elbowShareThrough(a: Point, b: Point, horizontal: boolean, p: Point): number {
-  const span = horizontal ? b[0] - a[0] : b[1] - a[1];
-  if (Math.abs(span) < 1) return 0.5;
-  const t = ((horizontal ? p[0] - a[0] : p[1] - a[1]) / span);
-  return Math.max(0, Math.min(1, t));
+/** Half the extent of a shape at an offset from its centre: its half height at dx (axis 'x'), or half width at dy */
+function halfExtentAt(s: ShapeElement, axis: 'x' | 'y', d: number): number {
+  const [half, other] = axis === 'x' ? [s.w / 2, s.h / 2] : [s.h / 2, s.w / 2];
+  const r = Math.min(1, Math.abs(d) / half);
+  if (s.t === 'ellipse') return other * Math.sqrt(1 - r * r);
+  if (s.t === 'diamond') return other * (1 - r);
+  return other;
 }
 
-/** Whether a line of right-angled stretches passes through a shape's box (grown by margin) */
-function polyHitsBox(poly: Point[], s: ShapeElement, margin: number): boolean {
-  const x0 = s.x - margin, x1 = s.x + s.w + margin, y0 = s.y - margin, y1 = s.y + s.h + margin;
-  for (let i = 1; i < poly.length; i++) {
-    const [p, q] = [poly[i - 1], poly[i]];
-    const lx = Math.min(p[0], q[0]), hx = Math.max(p[0], q[0]), ly = Math.min(p[1], q[1]), hy = Math.max(p[1], q[1]);
-    if (hx >= x0 && lx <= x1 && hy >= y0 && ly <= y1) return true;
+/**
+ * Where a right-angled line towards a corner meets a shape (or a free end): straight up or down when the
+ * corner lies above or below the shape, sideways when beside it, else out of the middle of the side facing
+ * the longer way with one more corner. The first point is the end of the line.
+ */
+function orthoDock(s: ShapeElement | undefined, free: Point, toward: Point, gap = 4): Point[] {
+  if (!s) {
+    if (Math.abs(free[0] - toward[0]) < 0.5 || Math.abs(free[1] - toward[1]) < 0.5) return [free];
+    return [free, [free[0], toward[1]]];
   }
-  return false;
+  const [cx, cy] = center(s);
+  const inX = toward[0] > s.x + 1 && toward[0] < s.x + s.w - 1;
+  const inY = toward[1] > s.y + 1 && toward[1] < s.y + s.h - 1;
+  if (inX && inY) return [outlinePoint(s, toward)];
+  if (inX) {
+    const off = halfExtentAt(s, 'x', toward[0] - cx) + gap;
+    return [[toward[0], toward[1] < cy ? cy - off : cy + off]];
+  }
+  if (inY) {
+    const off = halfExtentAt(s, 'y', toward[1] - cy) + gap;
+    return [[toward[0] < cx ? cx - off : cx + off, toward[1]]];
+  }
+  if (Math.abs(toward[1] - cy) - s.h / 2 >= Math.abs(toward[0] - cx) - s.w / 2) {
+    return [[cx, toward[1] < cy ? s.y - gap : s.y + s.h + gap], [cx, toward[1]]];
+  }
+  return [[toward[0] < cx ? s.x - gap : s.x + s.w + gap, cy], [toward[0], cy]];
+}
+
+/** Drops repeated points and corners in the middle of a straight run (the ends stay) */
+function tidyCorners(pts: Point[]): Point[] {
+  const out: Point[] = [];
+  for (const p of pts) {
+    const last = out[out.length - 1];
+    if (last && Math.abs(last[0] - p[0]) < 0.5 && Math.abs(last[1] - p[1]) < 0.5) continue;
+    out.push(p);
+  }
+  for (let i = 1; i + 1 < out.length; ) {
+    const [a, b, c] = [out[i - 1], out[i], out[i + 1]];
+    const straight = (Math.abs(a[0] - b[0]) < 0.5 && Math.abs(b[0] - c[0]) < 0.5) || (Math.abs(a[1] - b[1]) < 0.5 && Math.abs(b[1] - c[1]) < 0.5);
+    if (straight) out.splice(i, 1);
+    else i++;
+  }
+  return out;
+}
+
+const samePoint = (p: Point, q: Point) => Math.abs(p[0] - q[0]) < 0.5 && Math.abs(p[1] - q[1]) < 0.5;
+
+/**
+ * Stretches of an elbow (as in Excalidraw): fixed ones run between two corners of its own (laid out or
+ * dragged), the others are made up to reach the shapes. One flag per stretch of the drawn line.
+ */
+export function fixedStretches(poly: Point[], via: Point[] | undefined): boolean[] {
+  const own = (p: Point) => !!via && via.some((q) => samePoint(p, q));
+  return poly.slice(1).map((q, i) => own(poly[i]) && own(q));
+}
+
+/**
+ * Corners of an elbow that are left after a change: those its drawn line still runs through (a stretch
+ * without length or one running on with its neighbour drops out of the drawing, its corners go here too).
+ * undefined: no change.
+ */
+export function settleCorners(el: ArrowElement, byId: Map<string, DrawElement>): { via?: Point[] } | undefined {
+  if (el.route !== 'elbow' || !el.via) return undefined;
+  const drawn = arrowGeometry(el, byId).poly;
+  const via = el.via.filter((q) => drawn.some((p) => samePoint(p, q)));
+  if (via.length === el.via.length) return undefined;
+  return { via: via.length ? via : undefined };
+}
+
+/**
+ * The corners of an elbow after removing a fixed stretch (double click on its handle): its two corners go,
+ * the corners on both sides are joined at a right angle. undefined: nothing of its own is left, the line
+ * runs by itself again.
+ */
+export function releaseSegment(via: Point[], from: Point, to: Point): Point[] | undefined {
+  const i = via.findIndex((q) => samePoint(q, from));
+  const j = via.findIndex((q) => samePoint(q, to));
+  if (i < 0 || j < 0) return via;
+  const [lo, hi] = i < j ? [i, j] : [j, i];
+  const before = via.slice(0, lo);
+  const after = via.slice(hi + 1);
+  const prev = before[before.length - 1];
+  const next = after[0];
+  const join: Point[] = [];
+  if (prev && next && Math.abs(prev[0] - next[0]) > 0.5 && Math.abs(prev[1] - next[1]) > 0.5) {
+    // Keep the way the stretch before ran: upright on, then across (or the other way round)
+    join.push(Math.abs(prev[0] - via[lo][0]) < 0.5 ? [prev[0], next[1]] : [next[0], prev[1]]);
+  }
+  const out = tidyCorners([...before, ...join, ...after]);
+  return out.length ? out : undefined;
+}
+
+// Length of the short straight piece out of a shape (or an end) before a line turns
+const STUB = 14;
+
+/**
+ * The corners of an elbow after moving stretch k of its drawn line (poly, ends included) across through p.
+ * The moved stretch becomes fixed (both its corners its own). A stretch touching an end leaves a short stub
+ * at that end, so the end stays where it is (as in Excalidraw); a straight line becomes a bracket.
+ */
+export function dragSegment(poly: Point[], k: number, p: Point): Point[] {
+  const n = poly.length;
+  const level = Math.abs(poly[k][1] - poly[k + 1][1]) < 0.5;
+  const axis = level ? 1 : 0;
+  const along = 1 - axis;
+  // A point a stub away from an end, towards the other end of the stretch
+  const stub = (end: Point, toward: Point): Point => {
+    const q: Point = [end[0], end[1]];
+    q[along] += (Math.sign(toward[along] - end[along]) || 1) * STUB;
+    return q;
+  };
+  const moved = (q: Point): Point => {
+    const r: Point = [q[0], q[1]];
+    r[axis] = p[axis];
+    return r;
+  };
+  if (n === 2) {
+    const s = stub(poly[0], poly[1]);
+    const e = stub(poly[1], poly[0]);
+    return [s, moved(s), moved(e), e];
+  }
+  const inner = poly.slice(1, -1).map((q) => [q[0], q[1]] as Point);
+  if (k === 0) {
+    const s = stub(poly[0], poly[1]);
+    return [s, moved(s), moved(inner[0]), ...inner.slice(1)];
+  }
+  if (k === n - 2) {
+    const e = stub(poly[n - 1], poly[n - 2]);
+    return [...inner.slice(0, -1), moved(inner[inner.length - 1]), moved(e), e];
+  }
+  inner[k - 1][axis] = p[axis];
+  inner[k][axis] = p[axis];
+  return inner;
+}
+
+const SIDE_DIR: Record<Side, Point> = { t: [0, -1], r: [1, 0], b: [0, 1], l: [-1, 0] };
+
+/** The point on a shape's outline at a port (a little outside it), and the way out of it */
+export function portPoint(s: ShapeElement, port: Port, gap = 4): { at: Point; dir: Point } {
+  const [cx, cy] = center(s);
+  const dir = SIDE_DIR[port.side];
+  if (port.side === 't' || port.side === 'b') {
+    const x = s.x + s.w * port.at;
+    const off = halfExtentAt(s, 'x', x - cx) + gap;
+    return { at: [x, port.side === 't' ? cy - off : cy + off], dir };
+  }
+  const y = s.y + s.h * port.at;
+  const off = halfExtentAt(s, 'y', y - cy) + gap;
+  return { at: [port.side === 'l' ? cx - off : cx + off, y], dir };
+}
+
+/**
+ * The port an end dragged to p docks to: the nearest side and the spot on it, snapping to the middle of
+ * the side; undefined near the shape's centre (the line takes the side facing the other end).
+ */
+export function portNear(s: ShapeElement, p: Point): Port | undefined {
+  const dl = p[0] - s.x, dr = s.x + s.w - p[0], dt = p[1] - s.y, db = s.y + s.h - p[1];
+  const reach = Math.max(10, Math.min(s.w, s.h) * 0.3);
+  const near = Math.min(Math.abs(dl), Math.abs(dr), Math.abs(dt), Math.abs(db));
+  if (near > reach && dl > 0 && dr > 0 && dt > 0 && db > 0) return undefined;
+  const side: Side = near === Math.abs(dt) ? 't' : near === Math.abs(db) ? 'b' : near === Math.abs(dl) ? 'l' : 'r';
+  let at = side === 't' || side === 'b' ? (p[0] - s.x) / s.w : (p[1] - s.y) / s.h;
+  at = Math.max(0.08, Math.min(0.92, at));
+  if (Math.abs(at - 0.5) < 0.1) at = 0.5;
+  return { side, at: Math.round(at * 100) / 100 };
+}
+
+/**
+ * A plain right-angled line between two ports (or a port and a free end): straight out of each by a short
+ * stub, then the shortest of a few ways with one or two corners that never turns back on itself and stays
+ * out of the two shapes. No searching round other shapes.
+ */
+function connectPorts(a: Point, da: Point, b: Point, db: Point, own: ShapeElement[]): Point[] {
+  const s: Point = [a[0] + da[0] * STUB, a[1] + da[1] * STUB];
+  const e: Point = [b[0] + db[0] * STUB, b[1] + db[1] * STUB];
+  const xs = [(s[0] + e[0]) / 2, Math.min(s[0], e[0]), Math.max(s[0], e[0])];
+  const ys = [(s[1] + e[1]) / 2, Math.min(s[1], e[1]), Math.max(s[1], e[1])];
+  const middles: Point[][] = [[[e[0], s[1]]], [[s[0], e[1]]], ...xs.map((m): Point[] => [[m, s[1]], [m, e[1]]]), ...ys.map((m): Point[] => [[s[0], m], [e[0], m]])];
+  const inside = (p: Point, q: Point) =>
+    own.some((o) => {
+      const [x0, x1, y0, y1] = [Math.min(p[0], q[0]), Math.max(p[0], q[0]), Math.min(p[1], q[1]), Math.max(p[1], q[1])];
+      return x1 > o.x + 1 && x0 < o.x + o.w - 1 && y1 > o.y + 1 && y0 < o.y + o.h - 1;
+    });
+  let best: Point[] = tidyCorners([a, s, [e[0], s[1]], e, b]);
+  let bestCost = Infinity;
+  for (const mid of middles) {
+    const poly = tidyCorners([a, s, ...mid, e, b]);
+    let cost = 0;
+    let ok = true;
+    for (let i = 1; i < poly.length; i++) {
+      const [p, q] = [poly[i - 1], poly[i]];
+      cost += Math.abs(q[0] - p[0]) + Math.abs(q[1] - p[1]) + (i > 1 ? 40 : 0);
+      // Out of a never back against its way out, into b never against its way in
+      if (i === 1 && ((q[0] - p[0]) * da[0] < -0.5 || (q[1] - p[1]) * da[1] < -0.5)) ok = false;
+      if (i === poly.length - 1 && ((p[0] - q[0]) * db[0] < -0.5 || (p[1] - q[1]) * db[1] < -0.5)) ok = false;
+      if (i > 1 && i < poly.length - 1 && inside(p, q)) cost += 1000;
+    }
+    if (ok && cost < bestCost) {
+      best = poly;
+      bestCost = cost;
+    }
+  }
+  return best;
+}
+
+/** Where an arrow's label sits: on the line, or just above it on a level stretch */
+export function arrowLabelBox(el: ArrowElement, g: ArrowGeometry): Box & { level: boolean } {
+  const fs = el.fs || ARROW_FONT_SIZE;
+  const lines = (el.txt || '').split('\n');
+  const w = Math.max(...lines.map((l) => textWidth(l, fs))) + 10;
+  const h = lines.length * lineHeight(fs) + 4;
+  const level = levelAt(g.poly, g.labelAt);
+  const cy = level ? g.labelAt[1] - h / 2 - 2 : g.labelAt[1];
+  return { x: g.labelAt[0] - w / 2, y: cy - h / 2, w, h, level };
+}
+
+/**
+ * Labels of arrows that would cover each other move aside: on a level line below it instead of above, on
+ * an upright one a little up or down. One pass in drawing order, a few tries per label; worked out when a
+ * change is done, not while dragging. Result: shifts by arrow id (none: where it is).
+ */
+export function spreadLabels(els: DrawElement[]): Map<string, Point> {
+  const byId = elementMap(els);
+  const placed: Box[] = [];
+  const out = new Map<string, Point>();
+  const hits = (b: Box) => placed.some((o) => b.x < o.x + o.w + 2 && o.x < b.x + b.w + 2 && b.y < o.y + o.h + 2 && o.y < b.y + b.h + 2);
+  for (const el of els) {
+    if (el.t !== 'arrow' || !el.txt) continue;
+    const box = arrowLabelBox(el, arrowGeometry(el, byId));
+    const step = box.h + 4;
+    const tries: Point[] = box.level ? [[0, 0], [0, step], [0, -step], [0, 2 * step]] : [[0, 0], [0, -step], [0, step], [0, -2 * step], [0, 2 * step]];
+    const shift = tries.find(([dx, dy]) => !hits({ ...box, x: box.x + dx, y: box.y + dy })) || [0, 0];
+    placed.push({ ...box, x: box.x + shift[0], y: box.y + shift[1] });
+    if (shift[0] || shift[1]) out.set(el.id, shift);
+  }
+  return out;
 }
 
 /** Whether the stretch of a line that a point lies on runs level (a label sits above it then) */
@@ -459,8 +706,6 @@ export interface ArrowGeometry {
   mid: Point;
   /** Where the label sits: halfway along the line */
   labelAt: Point;
-  /** Elbows: whether the line leaves sideways */
-  horizontal?: boolean;
 }
 
 /** Point halfway along a line of points */
@@ -490,6 +735,40 @@ export function arrowGeometry(el: ArrowElement, byId: Map<string, DrawElement>):
   const rawA: Point = from ? center(from) : el.a;
   const rawB: Point = to ? center(to) : el.b;
 
+  if (el.route === 'elbow' && el.via && el.via.length) {
+    // Corners of its own (laid out or dragged): the ends meet their shapes at right angles wherever they sit now
+    const via = el.via;
+    const head = (sh: ShapeElement | undefined, port: Port | undefined, free: Point, corner: Point): Point[] => {
+      if (!sh || !port) return orthoDock(sh, free, corner);
+      // Straight out of the port; a corner elsewhere is reached after a short stub
+      const pp = portPoint(sh, port);
+      // A corner straight ahead (within a few pixels: stored spots are rounded) is reached in a straight line
+      const ahead =
+        pp.dir[0] !== 0
+          ? Math.abs(corner[1] - pp.at[1]) < 3 && (corner[0] - pp.at[0]) * pp.dir[0] > 0
+          : Math.abs(corner[0] - pp.at[0]) < 3 && (corner[1] - pp.at[1]) * pp.dir[1] > 0;
+      if (ahead) return [pp.dir[0] !== 0 ? [pp.at[0], corner[1]] : [corner[0], pp.at[1]]];
+      const out: Point = [pp.at[0] + pp.dir[0] * STUB, pp.at[1] + pp.dir[1] * STUB];
+      const turn: Point = pp.dir[0] !== 0 ? [out[0], corner[1]] : [corner[0], out[1]];
+      return [pp.at, out, turn];
+    };
+    const poly = tidyCorners([...head(from, el.fromPort, el.a, via[0]), ...via, ...head(to, el.toPort, el.b, via[via.length - 1]).reverse()]);
+    const n = poly.length;
+    const angle = (p: Point, q: Point) => Math.atan2(q[1] - p[1], q[0] - p[0]);
+    // The label sits on the last stretch: lines of a fork share their first ones
+    const labelAt: Point = n >= 3 ? [(poly[n - 2][0] + poly[n - 1][0]) / 2, (poly[n - 2][1] + poly[n - 1][1]) / 2] : halfway(poly);
+    return {
+      start: poly[0],
+      end: poly[n - 1],
+      d: 'M ' + poly.map((p) => `${p[0]} ${p[1]}`).join(' L '),
+      poly,
+      startAngle: n > 1 ? angle(poly[1], poly[0]) : 0,
+      endAngle: n > 1 ? angle(poly[n - 2], poly[n - 1]) : 0,
+      mid: halfway(poly),
+      labelAt,
+    };
+  }
+
   if (el.via && el.via.length) {
     // Laid out line: from the shape's edge towards the first corner, through the corners, into the target
     const via = el.via;
@@ -509,30 +788,32 @@ export function arrowGeometry(el: ArrowElement, byId: Map<string, DrawElement>):
     };
   }
 
+  if (el.route === 'elbow' && ((from && el.fromPort) || (to && el.toPort))) {
+    // Docked to chosen sides: the other end faces it, a plain way between the two
+    const A = from && el.fromPort ? portPoint(from, el.fromPort) : null;
+    const B = to && el.toPort ? portPoint(to, el.toPort) : null;
+    const facingSide = (p: Point, q: Point): Side => (Math.abs(q[0] - p[0]) >= Math.abs(q[1] - p[1]) ? (q[0] >= p[0] ? 'r' : 'l') : q[1] >= p[1] ? 'b' : 't');
+    const a = A || (from ? portPoint(from, { side: facingSide(rawA, B!.at), at: 0.5 }) : { at: el.a, dir: SIDE_DIR[facingSide(el.a, B!.at)] });
+    const b = B || (to ? portPoint(to, { side: facingSide(rawB, A!.at), at: 0.5 }) : { at: el.b, dir: SIDE_DIR[facingSide(el.b, A!.at)] });
+    const poly = connectPorts(a.at, a.dir, b.at, b.dir, [from, to].filter((x): x is ShapeElement => !!x));
+    const n = poly.length;
+    const angle = (p: Point, q: Point) => Math.atan2(q[1] - p[1], q[0] - p[0]);
+    return {
+      start: poly[0],
+      end: poly[n - 1],
+      d: 'M ' + poly.map((p) => `${p[0]} ${p[1]}`).join(' L '),
+      poly,
+      startAngle: angle(poly[1], poly[0]),
+      endAngle: angle(poly[n - 2], poly[n - 1]),
+      mid: halfway(poly),
+      labelAt: halfway(poly),
+    };
+  }
+
   if (el.route === 'elbow') {
-    // Shapes the line should go round: every shape but its own two
-    const obstacles: ShapeElement[] = [];
-    for (const other of byId.values()) if (isShape(other) && other !== from && other !== to) obstacles.push(other);
-    const build = (horizontal: boolean, t: number) => elbowPath(from, to, rawA, rawB, horizontal, t);
-    const preferred = el.axis ? el.axis === 'h' : elbowHorizontal(from, to, rawA, rawB);
-    let best = build(preferred, el.bend ?? 0.5);
-    if (el.bend === undefined && obstacles.length) {
-      // No middle chosen by hand: the first position of the middle stretch (from the centre outwards) that
-      // crosses no other shape, else the other direction, else the one crossing the fewest
-      let bestHits = Infinity;
-      for (const horizontal of [preferred, !preferred]) {
-        for (const t of ELBOW_TRIES) {
-          const cand = build(horizontal, t);
-          const hits = obstacles.filter((o) => polyHitsBox(cand.poly, o, 6)).length;
-          if (hits < bestHits) {
-            best = cand;
-            bestHits = hits;
-          }
-          if (hits === 0) break;
-        }
-        if (bestHits === 0) break;
-      }
-    }
+    // Middle stretch halfway (older drawings: where it was dragged to); no searching round shapes
+    const horizontal = el.axis ? el.axis === 'h' : elbowHorizontal(from, to, rawA, rawB);
+    const best = elbowPath(from, to, rawA, rawB, horizontal, el.bend ?? 0.5);
     const clean = best.poly;
     const angle = (p: Point, q: Point) => Math.atan2(q[1] - p[1], q[0] - p[0]);
     return {
@@ -544,7 +825,6 @@ export function arrowGeometry(el: ArrowElement, byId: Map<string, DrawElement>):
       endAngle: clean.length > 1 ? angle(clean[clean.length - 2], clean[clean.length - 1]) : 0,
       mid: best.handle,
       labelAt: best.handle,
-      horizontal: best.horizontal,
     };
   }
 
@@ -754,10 +1034,10 @@ export function wheelZoom(deltaY: number): number {
   return Math.exp(-Math.max(-50, Math.min(50, deltaY)) * 0.004);
 }
 
-/** Arrows docked to shapes that moved or changed size lose their corner points (they no longer fit) */
+/** Arrows other than elbows docked to shapes that moved lose their corner points; elbows keep theirs, their ends follow */
 export function dropStaleVia(els: DrawElement[], changed: Set<string>): DrawElement[] {
   return els.map((el) => {
-    if (el.t !== 'arrow' || !el.via || changed.has(el.id)) return el;
+    if (el.t !== 'arrow' || !el.via || el.route === 'elbow' || changed.has(el.id)) return el;
     if ((el.from && changed.has(el.from)) || (el.to && changed.has(el.to))) {
       const next: ArrowElement = { ...el };
       delete next.via;

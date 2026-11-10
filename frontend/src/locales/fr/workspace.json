@@ -475,8 +475,6 @@
     "saveView": "Enregistrer la vue",
     "saveViewTitle": "Enregistrer ce cadrage, le zoom et la hauteur pour tout le monde",
     "resetView": "Réinitialiser le cadrage",
-    "autoView": "Automatique",
-    "autoViewTitle": "Supprimer la vue enregistrée : tout ajuster",
     "resize": "Faire glisser pour changer la hauteur",
     "editorTitle": "Modifier le dessin",
     "done": "Terminé",
@@ -541,6 +539,15 @@
     "draftDiscard": "Ignorer",
     "nearlyFull": "Le dessin est plein à {{percent}} %. Les grandes zones à main levée prennent le plus de place.",
     "tooLarge": "Le dessin est trop grand pour être enregistré. Retirez quelque chose, surtout des traits à main levée.",
-    "style": "Trait, remplissage, flèche"
+    "style": "Trait, remplissage, flèche",
+    "sizeAll": "Tout afficher en grand",
+    "sizeAllTitle": "Le dessin entier aussi grand que la largeur de la note le permet",
+    "sizeReadable": "Hauteur recommandée",
+    "sizeReadableTitle": "Hauteur recommandée avec un texte lisible ; les dessins larges se déplacent sur le côté",
+    "sizeAuto": "Taille recommandée",
+    "sizeAutoTitle": "Revenir à la taille recommandée (la vue enregistrée est supprimée)",
+    "discard": "Abandonner",
+    "discardTitle": "Fermer sans enregistrer",
+    "discardAsk": "Abandonner les modifications non enregistrées ?"
   }
 }

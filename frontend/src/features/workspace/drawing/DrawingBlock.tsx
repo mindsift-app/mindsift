@@ -1,7 +1,7 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
-import { Maximize2, Pencil, RotateCcw, Save, Scan } from 'lucide-react';
+import { Expand, Maximize2, Pencil, RotateCcw, Save, Shrink } from 'lucide-react';
 import { Drawing, contentBox, drawingTexts, parseDrawing, serializeDrawing, wheelZoom } from '../../../lib/drawing/model';
 import { DrawingElements } from './DrawingElements';
 import { DrawingEditor } from './DrawingEditor';
@@ -19,7 +19,12 @@ const EMPTY_HEIGHT = 140;
 const MAX_HEIGHT = 4000;
 const PAD = 24;
 
-/** Section and height of the preview at a width: the saved frame, or everything fitted */
+/**
+ * Section and height of the preview at a width (everything follows the width, so a wider window gives a
+ * taller preview): the saved frame; or the chosen size ('all': the whole drawing as large as the width
+ * allows; 'readable': the recommended height at a readable size, a wide drawing starting at its left and
+ * moved sideways); or automatic: everything at most 1:1 and the recommended height.
+ */
 export function previewLayout(d: Drawing, width: number): View & { h: number } {
   if (d.frame) {
     const z = width / d.frame.w;
@@ -29,10 +34,28 @@ export function previewLayout(d: Drawing, width: number): View & { h: number } {
   if (!box || width <= 0) return { x: 0, y: 0, z: 1, h: EMPTY_HEIGHT };
   const bw = box.w + PAD * 2;
   const bh = box.h + PAD * 2;
-  let z = Math.min(1, width / bw);
-  if (bh * z > AUTO_MAX_HEIGHT) z = AUTO_MAX_HEIGHT / bh;
+  if (d.fit === 'readable') {
+    const z = Math.min(1, AUTO_MAX_HEIGHT / bh);
+    const h = Math.max(MIN_HEIGHT, bh * z);
+    const x = bw * z > width ? box.x - PAD : box.x + box.w / 2 - width / (2 * z);
+    return { x, y: box.y + box.h / 2 - h / (2 * z), z, h };
+  }
+  const z = d.fit === 'all' ? Math.min(3, width / bw, MAX_HEIGHT / bh) : Math.min(1, width / bw, AUTO_MAX_HEIGHT / bh);
   const h = Math.max(MIN_HEIGHT, bh * z);
   return { x: box.x + box.w / 2 - width / (2 * z), y: box.y + box.h / 2 - h / (2 * z), z, h };
+}
+
+/**
+ * What the size toggle does: from a saved view or a chosen size back to the automatic one; from the automatic
+ * size to the other one (a drawing held back by the width gets the readable height, one held back by the
+ * height is shown all large).
+ */
+export function nextSize(d: Drawing, width: number): Drawing['fit'] | 'auto' {
+  if (d.frame || d.fit) return 'auto';
+  const box = contentBox(d);
+  if (!box || width <= 0) return 'all';
+  const byWidth = width / (box.w + PAD * 2) < Math.min(1, AUTO_MAX_HEIGHT / (box.h + PAD * 2));
+  return byWidth ? 'readable' : 'all';
 }
 
 interface DrawingBlockProps {
@@ -79,6 +102,8 @@ export const DrawingBlock: React.FC<DrawingBlockProps> = ({
   const freshRef = useRef(!!autoOpen);
   const pointers = useRef(new Map<number, { x: number; y: number }>());
   const gesture = useRef<{ sx: number; sy: number; view: View; dist?: number; cx?: number; cy?: number } | null>(null);
+  // Where a press on the focused drawing began (a click without moving leaves it)
+  const clickStart = useRef<{ x: number; y: number } | null>(null);
 
   const valid = drawing !== null;
   useLayoutEffect(() => {
@@ -97,14 +122,59 @@ export const DrawingBlock: React.FC<DrawingBlockProps> = ({
     viewRef.current = null;
   }, [content]);
 
+  // A section moved by hand keeps showing the same part when the note gets wider or narrower
+  const lastWidth = useRef(0);
+  useEffect(() => {
+    const before = lastWidth.current;
+    lastWidth.current = width;
+    const v = viewRef.current;
+    if (!v || before <= 0 || width <= 0 || before === width) return;
+    const next = { ...v, z: (v.z * width) / before };
+    viewRef.current = next;
+    setView(next);
+  }, [width]);
+
   const layout = drawing ? previewLayout(drawing, width) : null;
   const shown: View | null = view || layout;
   const height = dragHeight ?? layout?.h ?? EMPTY_HEIGHT;
 
   const updateView = (v: View | null) => {
+    cancelAnimationFrame(glide.current);
     viewRef.current = v;
     setView(v);
   };
+
+  // Leaving the section without saving: it glides back to where it was
+  const glide = useRef(0);
+  const glideBack = () => {
+    const from = viewRef.current;
+    const to = layout;
+    if (!from || !to) return updateView(null);
+    const start = performance.now();
+    const step = (now: number) => {
+      const t = Math.min(1, (now - start) / 250);
+      const e = 1 - (1 - t) ** 3;
+      if (t >= 1) {
+        viewRef.current = null;
+        setView(null);
+        return;
+      }
+      const v = { x: from.x + (to.x - from.x) * e, y: from.y + (to.y - from.y) * e, z: from.z + (to.z - from.z) * e };
+      viewRef.current = v;
+      setView(v);
+      glide.current = requestAnimationFrame(step);
+    };
+    cancelAnimationFrame(glide.current);
+    glide.current = requestAnimationFrame(step);
+  };
+  const glideBackRef = useRef(glideBack);
+  glideBackRef.current = glideBack;
+  const leave = () => {
+    setFocused(false);
+    glideBackRef.current();
+  };
+  const leaveRef = useRef(leave);
+  leaveRef.current = leave;
 
   // The bullet counts as focused while the drawing takes gestures or its editor is open
   const onFocusChangeRef = useRef(onFocusChange);
@@ -126,12 +196,12 @@ export const DrawingBlock: React.FC<DrawingBlockProps> = ({
     const onDown = (e: PointerEvent) => {
       const target = e.target as Node;
       const inside = boxRef.current?.contains(target) || actionsTarget?.parentElement?.contains(target);
-      if (!inside) setFocused(false);
+      if (!inside) leaveRef.current();
     };
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.preventDefault();
-        setFocused(false);
+        leaveRef.current();
       }
     };
     document.addEventListener('pointerdown', onDown, true);
@@ -152,16 +222,16 @@ export const DrawingBlock: React.FC<DrawingBlockProps> = ({
     return { x: wx - sx / z, y: wy - sy / z, z };
   };
 
-  // Wheel only while focused; it needs a non-passive listener to keep the page from scrolling
+  // The wheel keeps scrolling the page; only with Ctrl/Cmd (and trackpad pinching) it zooms the focused drawing.
+  // It needs a non-passive listener to keep the page from zooming then.
   useEffect(() => {
     const el = boxRef.current;
     if (!el || !focused) return;
     const onWheel = (e: WheelEvent) => {
       const base = viewRef.current || (layout as View);
-      if (!base) return;
+      if (!base || !(e.ctrlKey || e.metaKey)) return;
       e.preventDefault();
-      if (e.ctrlKey || e.metaKey) updateView(zoomAt(e.clientX, e.clientY, wheelZoom(e.deltaY), base));
-      else updateView({ ...base, x: base.x + e.deltaX / base.z, y: base.y + e.deltaY / base.z });
+      updateView(zoomAt(e.clientX, e.clientY, wheelZoom(e.deltaY), base));
     };
     el.addEventListener('wheel', onWheel, { passive: false });
     return () => el.removeEventListener('wheel', onWheel);
@@ -176,6 +246,7 @@ export const DrawingBlock: React.FC<DrawingBlockProps> = ({
       setFocused(true);
       return;
     }
+    clickStart.current = pointers.current.size === 0 ? { x: e.clientX, y: e.clientY } : null;
     if (!shown) return;
     (e.currentTarget as Element).setPointerCapture?.(e.pointerId);
     pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
@@ -208,9 +279,13 @@ export const DrawingBlock: React.FC<DrawingBlockProps> = ({
     }
   };
 
+  // A second click without dragging ends moving the section (and an unsaved one glides back)
   const onPointerUp = (e: React.PointerEvent) => {
     pointers.current.delete(e.pointerId);
     if (pointers.current.size === 0) gesture.current = null;
+    const c = clickStart.current;
+    clickStart.current = null;
+    if (c && pointers.current.size === 0 && Math.hypot(e.clientX - c.x, e.clientY - c.y) < 4) leave();
   };
 
   const saveFrame = (v: View, h: number) => {
@@ -250,6 +325,19 @@ export const DrawingBlock: React.FC<DrawingBlockProps> = ({
   // Same look as the other buttons of the bullet's action bubble
   const btn =
     'p-1 sm:p-0.5 min-w-[28px] min-h-[28px] sm:min-w-0 sm:min-h-0 flex items-center justify-center text-faint hover:text-accent rounded-btn transition-colors cursor-pointer';
+  // Toggle between the recommended size and the other one (stays available, saved for everyone)
+  const next = nextSize(drawing, width);
+  const sizeButton = (
+    <button
+      type="button"
+      className={btn}
+      onClick={() => onChange(serializeDrawing({ ...drawing, frame: undefined, fit: next === 'auto' ? undefined : next }))}
+      title={t(next === 'auto' ? 'drawing.sizeAutoTitle' : next === 'all' ? 'drawing.sizeAllTitle' : 'drawing.sizeReadableTitle')}
+      aria-label={t(next === 'auto' ? 'drawing.sizeAuto' : next === 'all' ? 'drawing.sizeAll' : 'drawing.sizeReadable')}
+    >
+      {next === 'auto' ? <Shrink className="w-3.5 h-3.5" /> : <Expand className="w-3.5 h-3.5" />}
+    </button>
+  );
   const actions = (
     <>
       {view && canEdit && (
@@ -258,21 +346,11 @@ export const DrawingBlock: React.FC<DrawingBlockProps> = ({
         </button>
       )}
       {view && (
-        <button type="button" className={btn} onClick={() => updateView(null)} title={t('drawing.resetView')} aria-label={t('drawing.resetView')}>
+        <button type="button" className={btn} onClick={() => glideBack()} title={t('drawing.resetView')} aria-label={t('drawing.resetView')}>
           <RotateCcw className="w-3.5 h-3.5" />
         </button>
       )}
-      {!view && canEdit && drawing.frame && (
-        <button
-          type="button"
-          className={btn}
-          onClick={() => onChange(serializeDrawing({ ...drawing, frame: undefined }))}
-          title={t('drawing.autoViewTitle')}
-          aria-label={t('drawing.autoView')}
-        >
-          <Scan className="w-3.5 h-3.5" />
-        </button>
-      )}
+      {!view && canEdit && !empty && sizeButton}
       {canEdit ? (
         <button type="button" className={btn} onClick={() => setEditing(true)} title={t('drawing.editTitle')} aria-label={t('drawing.edit')}>
           <Pencil className="w-3.5 h-3.5" />

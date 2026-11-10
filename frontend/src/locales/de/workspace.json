@@ -471,8 +471,6 @@
     "saveView": "Ansicht speichern",
     "saveViewTitle": "Diesen Ausschnitt, Zoom und Höhe für alle speichern",
     "resetView": "Ausschnitt zurücksetzen",
-    "autoView": "Automatisch",
-    "autoViewTitle": "Gespeicherte Ansicht entfernen: alles einpassen",
     "resize": "Ziehen, um die Höhe zu ändern",
     "editorTitle": "Zeichnung bearbeiten",
     "done": "Fertig",
@@ -537,6 +535,15 @@
     "draftDiscard": "Verwerfen",
     "nearlyFull": "Die Zeichnung ist zu {{percent}} % voll. Große Freihand-Flächen brauchen am meisten Platz.",
     "tooLarge": "Die Zeichnung ist zu groß zum Speichern. Bitte etwas entfernen, vor allem Freihand-Striche.",
-    "style": "Linie, Füllung, Pfeil"
+    "style": "Linie, Füllung, Pfeil",
+    "sizeAll": "Alles groß zeigen",
+    "sizeAllTitle": "Die ganze Zeichnung so groß, wie die Breite der Notiz erlaubt",
+    "sizeReadable": "Empfohlene Höhe",
+    "sizeReadableTitle": "Empfohlene Höhe mit gut lesbarer Schrift; breite Zeichnungen verschiebst du seitlich",
+    "sizeAuto": "Empfohlene Größe",
+    "sizeAutoTitle": "Zurück zur empfohlenen Größe (die gespeicherte Ansicht entfällt)",
+    "discard": "Verwerfen",
+    "discardTitle": "Schließen ohne zu speichern",
+    "discardAsk": "Ungespeicherte Änderungen verwerfen?"
   }
 }

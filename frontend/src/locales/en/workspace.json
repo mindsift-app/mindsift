@@ -475,8 +475,6 @@
     "saveView": "Save view",
     "saveViewTitle": "Save this section, zoom and height for everyone",
     "resetView": "Reset section",
-    "autoView": "Automatic",
-    "autoViewTitle": "Remove the saved view: fit everything",
     "resize": "Drag to change the height",
     "editorTitle": "Edit drawing",
     "done": "Done",
@@ -541,6 +539,15 @@
     "draftDiscard": "Discard",
     "nearlyFull": "This drawing is {{percent}} % full. Large freehand areas take the most room.",
     "tooLarge": "This drawing is too large to save. Please remove something, freehand strokes above all.",
-    "style": "Line, fill, arrow"
+    "style": "Line, fill, arrow",
+    "sizeAll": "Show it all large",
+    "sizeAllTitle": "The whole drawing as large as the note's width allows",
+    "sizeReadable": "Recommended height",
+    "sizeReadableTitle": "Recommended height with readable text; move wide drawings sideways",
+    "sizeAuto": "Recommended size",
+    "sizeAutoTitle": "Back to the recommended size (the saved view goes)",
+    "discard": "Discard",
+    "discardTitle": "Close without saving",
+    "discardAsk": "Discard unsaved changes?"
   }
 }

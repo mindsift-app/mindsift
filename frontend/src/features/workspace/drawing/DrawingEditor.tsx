@@ -13,6 +13,7 @@ import {
   Grid3x3,
   Hand,
   Maximize,
+  Minimize2,
   Minus,
   MousePointer2,
   MoveRight,
@@ -41,26 +42,33 @@ import {
   GRID_SIZE,
   MAX_CONTENT_BYTES,
   Point,
+  Port,
   ShapeElement,
   ShapeKind,
   TextElement,
   arrowGeometry,
   bendThrough,
-  elbowShareThrough,
   boxContains,
   contentBox,
   contentBytes,
+  dragSegment,
   elementBox,
   elementMap,
+  fixedStretches,
   fillColor,
   hitTest,
   isShape,
   lineHeight,
   moveElement,
+  portNear,
+  portPoint,
+  releaseSegment,
   newElementId,
   parseDrawing,
   removeElements,
   serializeDrawing,
+  settleCorners,
+  spreadLabels,
   shapeAt,
   simplifyPoints,
   snap,
@@ -72,6 +80,7 @@ import {
   ARROW_FONT_SIZE,
 } from '../../../lib/drawing/model';
 import { DrawingElements } from './DrawingElements';
+import { ConfirmPopover } from '../../../components/ConfirmPopover';
 
 type Tool = 'select' | 'hand' | ShapeKind | 'arrow' | 'draw' | 'text' | 'eraser';
 type Handle = 'nw' | 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w';
@@ -100,8 +109,9 @@ type Action =
   | { k: 'band'; start: Point }
   | { k: 'create'; id: string; start: Point; orig: Drawing }
   | { k: 'arrow'; id: string; orig: Drawing }
-  | { k: 'arrowEnd'; id: string; end: 'a' | 'b'; orig: Drawing }
+  | { k: 'arrowEnd'; id: string; end: 'a' | 'b'; orig: Drawing; from: Point; started?: boolean }
   | { k: 'bend'; id: string; orig: Drawing }
+  | { k: 'segment'; id: string; index: number; poly: Point[]; orig: Drawing }
   | { k: 'draw'; id: string; pts: Point[]; orig: Drawing }
   | { k: 'erase'; ids: Set<string> };
 
@@ -111,6 +121,14 @@ interface TextEdit {
   x: number;
   y: number;
   orig: Drawing;
+}
+
+/** An elbow with other corners of its own (none: it runs by itself again) */
+function withCorners(el: ArrowElement, c: { via?: Point[] }): ArrowElement {
+  const next: ArrowElement = { ...el, ver: el.ver + 1 };
+  if (c.via) next.via = c.via;
+  else delete next.via;
+  return next;
 }
 
 const MIN_ZOOM = 0.1;
@@ -170,13 +188,19 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
   const docRef = useRef(doc);
   const [view, setViewState] = useState<View>({ x: -40, y: -40, z: 1 });
   const viewRef = useRef(view);
-  const [tool, setTool] = useState<Tool>(readOnly ? 'hand' : 'select');
+  // Opens with the hand: the view moves, nothing in the drawing moves by accident; an empty drawing starts
+  // with selecting, ready to draw
+  const [tool, setTool] = useState<Tool>(readOnly || initial.els.length > 0 ? 'hand' : 'select');
+  // Closing without saving while there are changes: the question where the close button was clicked
+  const [confirmDiscard, setConfirmDiscard] = useState<{ x: number; y: number } | null>(null);
   const [selected, setSelectedState] = useState<string[]>([]);
   const selectedRef = useRef(selected);
   const [style, setStyle] = useState<Style>({ s: 'main', f: 'none', sw: 2, dash: false, fs: DEFAULT_FONT_SIZE, r: true, route: 'straight', head: 2 });
   const [band, setBand] = useState<Box | null>(null);
   const [faded, setFaded] = useState<Set<string>>(new Set());
   const [dockTarget, setDockTarget] = useState<string | null>(null);
+  // While an elbow's end is dragged onto a shape: the side and spot it will dock to
+  const [dockPort, setDockPort] = useState<{ id: string; port: Port } | null>(null);
   const [textEdit, setTextEditState] = useState<TextEdit | null>(null);
   const [textValue, setTextValueState] = useState('');
   // Refs as well: Esc commits and the field's blur that follows must not commit a second time
@@ -193,7 +217,7 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
   const [spaceHeld, setSpaceHeld] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [draft, setDraft] = useState<{ content: string; at: number } | null>(null);
-  const [, setHistoryTick] = useState(0);
+  const [historyTick, setHistoryTick] = useState(0);
   const past = useRef<Drawing[]>([]);
   const future = useRef<Drawing[]>([]);
   const actionRef = useRef<Action | null>(null);
@@ -511,11 +535,31 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
   const closeRef = useRef(close);
   closeRef.current = close;
 
+  // Close without saving; with changes it asks first (Verwerfen / Abbrechen)
+  const discard = () => {
+    if (draftTimer.current !== null) window.clearTimeout(draftTimer.current);
+    try {
+      localStorage.removeItem(DRAFT_PREFIX + draftKey);
+    } catch {
+      /* ignore */
+    }
+    onClose(null);
+  };
+  // The drawing as it was opened, written the editor's way (the stored text may be written differently)
+  const openedAs = useMemo(() => serializeDrawing(initial), [initial]);
+  const onDiscardClick = (e: React.MouseEvent) => {
+    const changed = !!textEdit || serializeDrawing(docRef.current) !== openedAs;
+    if (changed) setConfirmDiscard({ x: e.clientX, y: e.clientY });
+    else discard();
+  };
+
   // ------------------------------------------------------------------------------------------------------
   // Keyboard: while the editor is open, every key belongs to it (the note behind must not react)
 
   const keyHandler = useRef<(e: KeyboardEvent) => void>(() => {});
   keyHandler.current = (e: KeyboardEvent) => {
+    // The question about discarding takes its own keys (Enter, Escape)
+    if (confirmDiscard) return;
     e.stopPropagation();
     if (textEdit) {
       if (e.key === 'Escape' || (e.key === 'Enter' && (e.ctrlKey || e.metaKey))) {
@@ -612,7 +656,9 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
   const tol = () => 6 / viewRef.current.z;
   const snapOn = (e: { altKey: boolean }) => !!docRef.current.grid && !e.altKey;
 
-  const handleAt = (p: Point): { kind: 'resize'; handle: Handle } | { kind: 'end'; end: 'a' | 'b' } | { kind: 'bend' } | null => {
+  const handleAt = (
+    p: Point
+  ): { kind: 'resize'; handle: Handle } | { kind: 'end'; end: 'a' | 'b' } | { kind: 'bend' } | { kind: 'segment'; index: number; poly: Point[]; fixed: boolean } | null => {
     if (selectedRef.current.length !== 1) return null;
     const el = docRef.current.els.find((e) => e.id === selectedRef.current[0]);
     if (!el) return null;
@@ -620,10 +666,24 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
     const near = (q: Point) => Math.abs(p[0] - q[0]) <= r && Math.abs(p[1] - q[1]) <= r;
     if (el.t === 'arrow') {
       const g = arrowGeometry(el, elementMap(docRef.current.els));
-      if (near(g.start)) return { kind: 'end', end: 'a' };
-      if (near(g.end)) return { kind: 'end', end: 'b' };
-      if ((el.route === 'curve' || el.route === 'elbow') && near(g.mid)) return { kind: 'bend' };
-      return null;
+      // The handle nearest the pointer wins: on a short last stretch its handle sits close to the end
+      type Hit = ReturnType<typeof handleAt>;
+      let best: { d: number; hit: Hit } | null = null;
+      const offer = (q: Point, hit: Hit) => {
+        const d = Math.hypot(p[0] - q[0], p[1] - q[1]);
+        if (near(q) && (!best || d < best.d)) best = { d, hit };
+      };
+      offer(g.start, { kind: 'end', end: 'a' });
+      offer(g.end, { kind: 'end', end: 'b' });
+      if (el.route === 'curve') offer(g.mid, { kind: 'bend' });
+      // Elbows: a handle on every stretch (fixed ones full, made-up ones grey)
+      if (el.route === 'elbow') {
+        const fixed = fixedStretches(g.poly, el.via);
+        for (let i = 0; i + 1 < g.poly.length; i++) {
+          offer([(g.poly[i][0] + g.poly[i + 1][0]) / 2, (g.poly[i][1] + g.poly[i + 1][1]) / 2], { kind: 'segment', index: i, poly: g.poly, fixed: fixed[i] });
+        }
+      }
+      return best ? (best as { d: number; hit: Hit }).hit : null;
     }
     if (!isShape(el)) return null;
     for (const [h, q] of handlePoints(el)) if (near(q)) return { kind: 'resize', handle: h };
@@ -637,6 +697,7 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
     setBand(null);
     setFaded(new Set());
     setDockTarget(null);
+    setDockPort(null);
   };
 
   const onPointerDown = (e: React.PointerEvent) => {
@@ -674,11 +735,15 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
         return;
       }
       if (h?.kind === 'end') {
-        actionRef.current = { k: 'arrowEnd', id, end: h.end, orig: doc0 };
+        actionRef.current = { k: 'arrowEnd', id, end: h.end, orig: doc0, from: [e.clientX, e.clientY] };
         return;
       }
       if (h?.kind === 'bend') {
         actionRef.current = { k: 'bend', id, orig: doc0 };
+        return;
+      }
+      if (h?.kind === 'segment') {
+        actionRef.current = { k: 'segment', id, index: h.index, poly: h.poly, orig: doc0 };
         return;
       }
       const hit = hitTest(doc0.els, p, tol());
@@ -820,12 +885,10 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
           els: a.orig.els.map((el) => {
             if (!set.has(el.id)) return el;
             if (el.t === 'arrow') {
-              // Ends docked to shapes that stay behind come loose and move with the arrow
+              // A line docked to a shape that stays behind stays too: it comes loose only by dragging its end
+              if ((el.from && !set.has(el.from)) || (el.to && !set.has(el.to))) return el;
               const g = arrowGeometry(el, origById);
-              const loose: ArrowElement = { ...el, a: g.start, b: g.end };
-              if (el.from && !set.has(el.from)) delete loose.from;
-              if (el.to && !set.has(el.to)) delete loose.to;
-              return moveElement(loose, dx, dy);
+              return moveElement({ ...el, a: g.start, b: g.end }, dx, dy);
             }
             return moveElement(el, dx, dy);
           }),
@@ -877,20 +940,46 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
       }
       case 'arrow':
       case 'arrowEnd': {
+        // A click on an end with a twitch moves nothing: the end follows only after a few pixels
+        if (a.k === 'arrowEnd' && !a.started) {
+          if (Math.hypot(e.clientX - a.from[0], e.clientY - a.from[1]) < 5) break;
+          a.started = true;
+        }
         const end = a.k === 'arrow' ? 'b' : a.end;
         const cur = docRef.current.els.find((el) => el.id === a.id) as ArrowElement | undefined;
         if (!cur) break;
         const other = end === 'b' ? cur.from : cur.to;
         const target = shapeAt(docRef.current.els, p, 8 / viewRef.current.z, other);
+        // Elbows dock to the side and spot the end is dragged to (snapping to the middle of the side);
+        // near the shape's centre they take the side facing the other end
+        const port = target && cur.route === 'elbow' ? portNear(target, p) : undefined;
         setDockTarget(target?.id || null);
+        setDockPort(port && target ? { id: target.id, port } : null);
         const pt: Point = target ? p : [snap(p[0], sn), snap(p[1], sn)];
         setDoc(
           replaceEl(docRef.current, a.id, (el: ArrowElement) => {
+            // Corners of its own stay: the new end reaches the first (or last) of them over a short stub
             const next: ArrowElement = { ...el, [end]: pt, ver: el.ver + 1 };
-            delete next.via;
             const key = end === 'b' ? 'to' : 'from';
+            const portKey = end === 'b' ? 'toPort' : 'fromPort';
             if (target) next[key] = target.id;
             else delete next[key];
+            if (port) next[portKey] = port;
+            else delete next[portKey];
+            return next;
+          })
+        );
+        break;
+      }
+      case 'segment': {
+        // The stretch moves across and becomes fixed; at an end the line makes the corner it needs
+        const q: Point = [snap(p[0], sn), snap(p[1], sn)];
+        const via = dragSegment(a.poly, a.index, q);
+        setDoc(
+          replaceEl(docRef.current, a.id, (el: ArrowElement) => {
+            const next: ArrowElement = { ...el, route: 'elbow', via, ver: el.ver + 1 };
+            delete next.bend;
+            delete next.axis;
             return next;
           })
         );
@@ -900,18 +989,6 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
         const cur = docRef.current.els.find((el) => el.id === a.id) as ArrowElement | undefined;
         if (!cur) break;
         const g = arrowGeometry(cur, elementMap(docRef.current.els));
-        if (cur.route === 'elbow') {
-          // The middle stretch follows the pointer; laid out corner points give way to it, the direction stays
-          const horizontal = !!g.horizontal;
-          setDoc(
-            replaceEl(docRef.current, a.id, (el: ArrowElement) => {
-              const next: ArrowElement = { ...el, bend: elbowShareThrough(g.start, g.end, horizontal, p), axis: horizontal ? 'h' : 'v' };
-              delete next.via;
-              return next;
-            })
-          );
-          break;
-        }
         const bend = Math.max(-2, Math.min(2, bendThrough(g.start, g.end, p)));
         setDoc(replaceEl(docRef.current, a.id, (el) => ({ ...el, bend: Math.abs(bend) < 0.02 ? 0 : bend })));
         break;
@@ -968,6 +1045,7 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
       }
       case 'arrow': {
         setDockTarget(null);
+        setDockPort(null);
         const el = cur.els.find((x) => x.id === a.id) as ArrowElement | undefined;
         const g = el ? arrowGeometry(el, elementMap(cur.els)) : null;
         if (!el || !g || (!el.to && Math.hypot(g.end[0] - g.start[0], g.end[1] - g.start[1]) < 8)) {
@@ -994,10 +1072,23 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
         }
         break;
       }
-      case 'arrowEnd':
+      case 'arrowEnd': {
         setDockTarget(null);
+        setDockPort(null);
+        const el = cur.els.find((x) => x.id === a.id) as ArrowElement | undefined;
+        const settled = el && settleCorners(el, elementMap(cur.els));
+        if (settled) setDoc(replaceEl(cur, a.id, (x: ArrowElement) => withCorners(x, settled)));
         if (cur !== a.orig) remember(a.orig);
         break;
+      }
+      case 'segment': {
+        // Corners whose stretch lost its length (or runs on with its neighbour) go now
+        const el = cur.els.find((x) => x.id === a.id) as ArrowElement | undefined;
+        const settled = el && settleCorners(el, elementMap(cur.els));
+        if (settled) setDoc(replaceEl(cur, a.id, (x: ArrowElement) => withCorners(x, settled)));
+        if (cur !== a.orig) remember(a.orig);
+        break;
+      }
       case 'move':
       case 'resize':
       case 'bend':
@@ -1009,6 +1100,18 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
   const onDoubleClick = (e: React.MouseEvent) => {
     if (readOnly || tool !== 'select') return;
     const p = toWorld(e.clientX, e.clientY);
+    // Double click on a fixed stretch of an elbow: it goes, the corners around it are joined (elsewhere on
+    // the line a double click edits its label as usual)
+    const h = handleAt(p);
+    const id = selectedRef.current[0];
+    const sel = docRef.current.els.find((x) => x.id === id);
+    if (h?.kind === 'segment' && h.fixed && sel?.t === 'arrow' && sel.via) {
+      const via = releaseSegment(sel.via, h.poly[h.index], h.poly[h.index + 1]);
+      const before = docRef.current;
+      setDoc(replaceEl(before, id, (x: ArrowElement) => withCorners(x, { via })));
+      remember(before);
+      return;
+    }
     const hit = hitTest(docRef.current.els, p, tol());
     if (hit && (isShape(hit) || hit.t === 'text' || hit.t === 'arrow')) startTextEdit(hit);
     else if (!hit) startTextEdit(null, [snap(p[0], !!docRef.current.grid), snap(p[1], !!docRef.current.grid)]);
@@ -1022,6 +1125,11 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
   const z = view.z;
 
   // While text is being edited, the drawing leaves it out so the text field takes its place
+  // Labels that would cover each other move aside; worked out when a change is done (and on opening), not
+  // while something is dragged
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const labelShifts = useMemo(() => spreadLabels(docRef.current.els), [historyTick]);
+
   const shownEls = useMemo(() => {
     if (!textEdit) return doc.els;
     return doc.els.map((el) => (el.id === textEdit.id && (isShape(el) || el.t === 'arrow') ? { ...el, txt: undefined } : el));
@@ -1061,10 +1169,35 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
       {single && single.t === 'arrow' &&
         (() => {
           const g = arrowGeometry(single, byId);
-          const pts: Point[] = [g.start, g.end, ...(single.route === 'curve' || single.route === 'elbow' ? [g.mid] : [])];
-          return pts.map((q, i) => (
-            <circle key={i} cx={q[0]} cy={q[1]} r={5 / z} fill={i === 2 ? 'var(--accent-primary)' : 'var(--bg-panel)'} stroke="var(--accent-primary)" strokeWidth={1.5 / z} />
-          ));
+          const pts: Point[] = [g.start, g.end, ...(single.route === 'curve' ? [g.mid] : [])];
+          const fixed = single.route === 'elbow' ? fixedStretches(g.poly, single.via) : [];
+          return (
+            <>
+              {pts.map((q, i) => (
+                <circle key={i} cx={q[0]} cy={q[1]} r={5 / z} fill={i === 2 ? 'var(--accent-primary)' : 'var(--bg-panel)'} stroke="var(--accent-primary)" strokeWidth={1.5 / z} />
+              ))}
+              {/* Elbows: full handles on fixed stretches, grey ones on the stretches the line makes up */}
+              {fixed.map((own, i) => (
+                <circle
+                  key={`s${i}`}
+                  cx={(g.poly[i][0] + g.poly[i + 1][0]) / 2}
+                  cy={(g.poly[i][1] + g.poly[i + 1][1]) / 2}
+                  r={4 / z}
+                  fill={own ? 'var(--accent-primary)' : 'var(--bg-panel)'}
+                  stroke={own ? 'var(--bg-panel)' : 'var(--text-faint)'}
+                  strokeWidth={1.5 / z}
+                  opacity={own ? 1 : 0.8}
+                />
+              ))}
+            </>
+          );
+        })()}
+      {dockPort &&
+        (() => {
+          const el = byId.get(dockPort.id);
+          if (!isShape(el)) return null;
+          const { at } = portPoint(el, dockPort.port, 0);
+          return <circle cx={at[0]} cy={at[1]} r={6 / z} fill="var(--accent-primary)" stroke="var(--bg-panel)" strokeWidth={2 / z} />;
         })()}
       {dockTarget &&
         (() => {
@@ -1384,6 +1517,32 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
         <button type="button" onClick={close} className="btn-action h-11 sm:h-8 px-3 text-xs inline-flex items-center gap-1.5 ml-1" title={t('drawing.doneEsc')}>
           <Check className="w-3.5 h-3.5" /> {readOnly ? t('drawing.close') : t('drawing.done')}
         </button>
+        {!readOnly && (
+          <button
+            type="button"
+            onClick={onDiscardClick}
+            className="btn-action h-11 w-11 sm:h-8 sm:w-8 p-0 inline-flex items-center justify-center"
+            title={t('drawing.discardTitle')}
+            aria-label={t('drawing.discardTitle')}
+          >
+            {/* Same sign as leaving the full screen of a note */}
+            <Minimize2 className="w-3.5 h-3.5" />
+          </button>
+        )}
+        {confirmDiscard && (
+          <ConfirmPopover
+            x={confirmDiscard.x}
+            y={confirmDiscard.y}
+            message={t('drawing.discardAsk')}
+            confirmLabel={t('drawing.discard')}
+            danger
+            onConfirm={() => {
+              setConfirmDiscard(null);
+              discard();
+            }}
+            onCancel={() => setConfirmDiscard(null)}
+          />
+        )}
       </div>
 
       <div
@@ -1410,7 +1569,7 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
               <rect x={view.x} y={view.y} width={width / z} height={height / z} fill="url(#drawing-grid)" />
             </>
           )}
-          <DrawingElements els={shownEls} hidden={hidden} faded={faded} />
+          <DrawingElements els={shownEls} hidden={hidden} faded={faded} labelShifts={labelShifts} />
           {selectionOverlay}
         </svg>
         {textField}

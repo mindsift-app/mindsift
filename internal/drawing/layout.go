@@ -18,6 +18,7 @@ const (
 	nodeGap        = 40.0  // between neighbours in a layer
 	laneGap        = 18.0  // room for a line passing a layer
 	trackGap       = 14.0  // between lines running across the same gap
+	entryGap       = 22.0  // between lines entering the same side of a shape
 	labelFont      = 14.0
 	mindColumnGap  = 60.0
 	mindSiblingGap = 14.0
@@ -405,7 +406,6 @@ func layoutFlowchart(g *graph) layoutResult {
 		lo, hi       float64
 		tops, bottom []float64
 		above        []int // nets that must run closer to the upper layer
-		track        int
 	}
 	for li := range layers {
 		nets := []*net{}
@@ -489,7 +489,6 @@ func layoutFlowchart(g *graph) layoutResult {
 			}
 			for _, ni := range cur {
 				placed[ni] = true
-				nets[ni].track = tracks
 				for _, m := range members[ni] {
 					segTrack[m.k][m.i] = tracks
 				}
@@ -562,6 +561,35 @@ func layoutFlowchart(g *graph) layoutResult {
 		res.els = append(res.els, shapeEl(ids[i], c[0]-v.size.w/2, c[1]-v.size.h/2, v.size, nd.text, nd.stroke, nd.fill))
 	}
 
+	// 6b. Lines running into the same side of a shape end side by side along its edge instead of on one point,
+	// which would look as if their sources were joined; ordered by where they come from, so they do not cross
+	type entry struct {
+		k    int
+		from float64 // across position of the point before the shape
+	}
+	groups := map[[2]int][]entry{}
+	for k, e := range edges {
+		chain := chains[k]
+		if e.reversed {
+			// The shape the arrow points to is the upper end: the line comes in from below
+			groups[[2]int{e.v, 1}] = append(groups[[2]int{e.v, 1}], entry{k, chain[1].pos})
+		} else {
+			groups[[2]int{e.v, 0}] = append(groups[[2]int{e.v, 0}], entry{k, chain[len(chain)-2].pos})
+		}
+	}
+	entryShift := make([]float64, len(edges))
+	for key, list := range groups {
+		if len(list) < 2 {
+			continue
+		}
+		sort.SliceStable(list, func(i, j int) bool { return list[i].from < list[j].from })
+		span := nodes[key[0]].across * 0.6
+		step := math.Min(entryGap, span/float64(len(list)-1))
+		for i, en := range list {
+			entryShift[en.k] = (float64(i) - float64(len(list)-1)/2) * step
+		}
+	}
+
 	// 7. Lines: right angles on their track in the gap after each layer, along the helper points
 	for k, e := range edges {
 		chain := chains[k]
@@ -569,7 +597,14 @@ func layoutFlowchart(g *graph) layoutResult {
 		for i := 0; i+1 < len(chain); i++ {
 			p, q := chain[i], chain[i+1]
 			gm := trackAt(p.layer, segTrack[k][i])
-			via = append(via, toXY(gm, p.pos), toXY(gm, q.pos))
+			pp, qp := p.pos, q.pos
+			if !e.reversed && i == len(chain)-2 {
+				qp += entryShift[k]
+			}
+			if e.reversed && i == 0 {
+				pp += entryShift[k]
+			}
+			via = append(via, toXY(gm, pp), toXY(gm, qp))
 		}
 		via = simplifyCorners(via)
 		if e.reversed {
@@ -591,12 +626,18 @@ func layoutFlowchart(g *graph) layoutResult {
 		if e.e.label != "" {
 			el["txt"] = e.e.label
 		}
-		// A line straight across (no corner) needs no points; otherwise it docks towards its first corner
+		// A line straight across (no corner) needs no points; otherwise it docks towards its first corner. The
+		// side and spot where it leaves and enters are stored as for lines docked by hand, so the editor can move
+		// the end stretches at once (out of the side, then a corner).
 		su, sv := nodes[u].size, nodes[v].size
 		if len(via) == 0 {
+			el["fromPort"] = portToward(centers[u], su, centers[v])
+			el["toPort"] = portToward(centers[v], sv, centers[u])
 			el["a"] = outline(centers[u][0], centers[u][1], su, centers[v][0], centers[v][1])
 			el["b"] = outline(centers[v][0], centers[v][1], sv, centers[u][0], centers[u][1])
 		} else {
+			el["fromPort"] = portToward(centers[u], su, via[0])
+			el["toPort"] = portToward(centers[v], sv, via[len(via)-1])
 			first, last := via[0], via[len(via)-1]
 			el["a"] = outline(centers[u][0], centers[u][1], su, first[0], first[1])
 			el["b"] = outline(centers[v][0], centers[v][1], sv, last[0], last[1])
@@ -609,6 +650,26 @@ func layoutFlowchart(g *graph) layoutResult {
 		res.els = append(res.els, el)
 	}
 	return res
+}
+
+// portToward: the side of a shape (centre c, size s) facing a point straight above, below or beside it, and
+// where on that side (0 = left or top end, 1 = right or bottom), as {"side": "t|r|b|l", "at": 0.5}
+func portToward(c [2]float64, s sizedNode, p [2]float64) map[string]any {
+	dx, dy := p[0]-c[0], p[1]-c[1]
+	spot := func(d, size float64) float64 { return math.Round(math.Max(0, math.Min(1, d/size+0.5))*1000) / 1000 }
+	// Above or below when the point lies within the shape's width (and further up or down than sideways)
+	if math.Abs(dx) <= s.w/2 && (math.Abs(dy) > s.h/2 || math.Abs(dy) >= math.Abs(dx)) {
+		side := "b"
+		if dy < 0 {
+			side = "t"
+		}
+		return map[string]any{"side": side, "at": spot(dx, s.w)}
+	}
+	side := "r"
+	if dx < 0 {
+		side = "l"
+	}
+	return map[string]any{"side": side, "at": spot(dy, s.h)}
 }
 
 // simplifyCorners drops repeated points and points in the middle of a straight run

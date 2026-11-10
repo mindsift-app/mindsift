@@ -78,6 +78,60 @@ func (s *Store) seedStarterEN(user *domain.User) error {
 
 	_, _ = s.CreateFolder(user.ID, "Projects")
 	_, _ = s.CreateFolder(user.ID, "Personal")
+	_, _ = s.CreateDocument(user.ID, "", "Diagrams by Claude via MCP", "🤖", "", seedBlocks([]seedBlock{
+		{typ: "h2", text: "Drawn by an AI agent over MCP"},
+		{typ: "callout", text: "Claude created both diagrams on this page through MindSift's MCP server: it sent each one as a Mermaid diagram, and MindSift turned them into drawings you edit like your own – move boxes, reroute lines, change colors."},
+		{typ: "h2", text: "MindSift on a small server"},
+		{level: 1, text: "Docker Compose behind the router: Caddy as reverse proxy, Whisper for voice input and a local language model in Open WebUI that uses MindSift as an MCP tool"},
+		{level: 1, typ: "drawing", text: seedMermaid(`flowchart TD
+  Internet((Internet)) -->|only 443| Router[Router / firewall]
+  Router --> Caddy[Caddy reverse proxy]
+  Caddy -->|notes.home.example| MindSift[MindSift]
+  Caddy -->|chat.home.example| WebUI[Open WebUI]
+  MindSift -->|voice input| Whisper[Whisper server]
+  MindSift --> Data[(SQLite in /data)]
+  MindSift -.->|MCP tools| WebUI
+  WebUI --> Ollama[Ollama – local LLM]
+  Data -.->|nightly| Backup[(Restic backup)]
+  classDef edge fill:#cbd5e1,stroke:#64748b
+  classDef proxy fill:#bfdbfe,stroke:#2563eb
+  classDef app fill:#c7d2fe,stroke:#4f46e5
+  classDef ai fill:#e9d5ff,stroke:#9333ea
+  classDef store fill:#bbf7d0,stroke:#16a34a
+  class Router edge
+  class Caddy proxy
+  class MindSift app
+  class WebUI,Ollama,Whisper ai
+  class Data,Backup store`)},
+		{typ: "h2", text: "A typical home server"},
+		{level: 1, text: "TrueNAS for storage and Jellyfin, a small k3s cluster for the apps, Home Assistant for the house"},
+		{level: 1, typ: "drawing", text: seedMermaid(`flowchart TD
+  Router[Router] --> Switch[2.5 GbE switch]
+  Switch --> NAS[TrueNAS Scale]
+  Switch --> K3s[k3s cluster – 3× Raspberry Pi 5]
+  Switch --> HA[Home Assistant]
+  NAS --> Jellyfin[Jellyfin]
+  NAS --> Pool[(ZFS mirror 2× 8 TB)]
+  K3s --> Immich[Immich photos]
+  K3s --> Paperless[Paperless-ngx]
+  HA --> Zigbee[Zigbee sensors]
+  Jellyfin -->|stream| TV[Living-room TV]
+  Immich -.-> Pool
+  Paperless -.-> Pool
+  Pool -.->|nightly snapshot| Offsite[(Offsite backup)]
+  classDef net fill:#cbd5e1,stroke:#64748b
+  classDef storage fill:#bbf7d0,stroke:#16a34a
+  classDef media fill:#fed7aa,stroke:#ea580c
+  classDef cluster fill:#bfdbfe,stroke:#2563eb
+  classDef smart fill:#e9d5ff,stroke:#9333ea
+  class Router,Switch net
+  class NAS,Pool,Offsite storage
+  class Jellyfin,TV media
+  class K3s,Immich,Paperless cluster
+  class HA,Zigbee smart`)},
+		{typ: "h2", text: "Try it yourself"},
+		{level: 1, text: "Create a key under Account settings → API and point your agent at `/api/v1/mcp` – more in [[API & smart home]]"},
+	}), []string{"mcp", "homelab"}, true)
 	_, _ = s.CreateDocument(user.ID, "", "Homelab 2.0 – moving to the new server", "🚀", "Projects", seedBlocks([]seedBlock{
 		{typ: "callout", text: "Goal: by the end of the month all services run on the new mini PC – quieter, more efficient and with a real backup. The tasks for it are in the #homelab list."},
 		{typ: "h2", text: "Why bother?"},
@@ -97,19 +151,20 @@ func (s *Store) seedStarterEN(user *domain.User) error {
 		{level: 1, typ: "todo", text: "Wipe the old server securely and sell it"},
 		{typ: "h2", text: "Services & ports"},
 		{level: 1, text: "**MindSift** – notes, tasks and lists for the whole family #mindsift"},
-		{level: 2, text: "runs behind nginx, WebSocket upgrade and long polling are allowed"},
+		{level: 2, text: "moves from nginx to Caddy, WebSocket upgrade and long polling are allowed"},
 		{level: 2, text: "demo accounts only on the test system, never public"},
 		{level: 1, text: "**Gitea** – code, CI and images, e.g. `git.example.com` #devops"},
 		{level: 1, text: "**Home Assistant** – sensors send alarms by webhook straight into the MindSift inbox #smarthome"},
 		{level: 2, text: "Example: basement humidity above 65 % → a thought with priority “urgent”"},
 		{typ: "h3", text: "Compose snippet"},
 		{level: 1, typ: "code", lang: "yaml", text: "services:\n  mindsift:\n    image: ghcr.io/mindsift-app/mindsift:v0.2\n    restart: unless-stopped\n    volumes: [\"./data:/data\"]\n    environment:\n      - JWT_SECRET=${JWT_SECRET}"},
-		{typ: "h2", text: "Network plan"},
+		{typ: "h2", text: "Network plan before the move"},
+		{level: 1, text: "Drawn by hand. How it should look afterwards is in [[Diagrams by Claude via MCP]]"},
 		{level: 1, typ: "drawing", text: seedNetworkDrawing("Router / firewall", "Only 80 and 443 open")},
 		{typ: "h2", text: "Open questions"},
 		{level: 1, text: "Is one UPS enough for router and server together?"},
 		{level: 1, text: "Offsite backup: Hetzner Storage Box or a hard drive at my parents'? See [[Idea collection]]"},
-	}), []string{"homelab", "project"}, true)
+	}), []string{"homelab", "project"}, false)
 
 	_, _ = s.CreateDocument(user.ID, "", "Holiday in South Tyrol", "🏔️", "Personal", seedBlocks([]seedBlock{
 		{typ: "h2", text: "October travel plan"},

@@ -198,6 +198,12 @@ export function collectFolderPaths(folders: string[], docs: Document[], sharedFo
 
 // The folder tree: parents before children (missing parents are filled in), each folder with its notes and
 // its shared folder; a folder whose parent cannot be found goes to the top level
+// The folder and every folder above it, as keys of the expanded folders ("A/B" → A, A/B)
+export function folderAncestors(path: string): Record<string, boolean> {
+  const parts = path ? path.split('/') : [];
+  return Object.fromEntries(parts.map((_, i) => [parts.slice(0, i + 1).join('/'), true]));
+}
+
 export function buildFolderTree(allFolderPaths: string[], treeDocs: Document[], sharedFolders: SharedFolder[]): FolderTreeNode[] {
   const rootNodes: FolderTreeNode[] = [];
   const nodeMap = new Map<string, FolderTreeNode>();
