@@ -2,6 +2,7 @@ package drawing
 
 import (
 	"errors"
+	"math"
 	"strings"
 	"testing"
 )
@@ -273,6 +274,88 @@ func TestLinesBetweenLayersAreRightAngled(t *testing.T) {
 			dx, dy := pts[i][0]-pts[i-1][0], pts[i][1]-pts[i-1][1]
 			if dx*dx > 1 && dy*dy > 1 {
 				t.Fatalf("diagonal segment in %s: %v", a.ID, pts)
+			}
+		}
+	}
+}
+
+// Lines of different sources never lie on top of each other: in every gap each source runs across on a
+// track of its own (lines of one source may share theirs, as a fork). Laid out arrows are elbows, so the
+// editor keeps right angles when a shape is moved and the corner points are dropped.
+func TestFlowchartLinesDoNotOverlap(t *testing.T) {
+	for name, src := range map[string]string{
+		"fan": `flowchart TD
+			A[Benutzer] --> B[Frontend]
+			A --> C[Mobile App]
+			B --> D[API Gateway]
+			C --> D
+			D --> E[Auth Service]
+			D --> F[Notiz Service]
+			D --> G[Aufgaben Service]
+			E --> H[(Datenbank)]
+			F --> H
+			G --> H
+			F --> I[Suche]
+			G --> J[Benachrichtigungen]`,
+		"skip": `flowchart TD
+			A[Start] --> B{Prüfen}
+			B -->|ja| C[Verarbeiten]
+			B -->|nein| D[Fehler]
+			C --> E[Speichern]
+			E --> F[Fertig]
+			D --> F
+			A --> E
+			B --> F`,
+		"lr": `flowchart LR
+			Internet --> Router --> Nginx
+			Nginx --> MindSift
+			Nginx --> Gitea
+			Nginx --> HA[Home Assistant]
+			HA -.->|Webhook| MindSift
+			Gitea --> Runner
+			Gitea --> Backup
+			MindSift --> Backup`,
+	} {
+		d := mustDrawing(t, src)
+		type seg struct {
+			from, to string
+			a, b     [2]float64
+			vertical bool
+		}
+		var segs []seg
+		for _, ar := range arrows(d) {
+			if ar.Route != "elbow" {
+				t.Errorf("%s: laid out arrows are elbows, got %q", name, ar.Route)
+			}
+			pts := append(append([][2]float64{ar.A}, ar.Via...), ar.B)
+			for i := 1; i < len(pts); i++ {
+				p, q := pts[i-1], pts[i]
+				switch {
+				case math.Abs(p[1]-q[1]) < 0.5:
+					segs = append(segs, seg{ar.From, ar.To, p, q, false})
+				case math.Abs(p[0]-q[0]) < 0.5:
+					segs = append(segs, seg{ar.From, ar.To, p, q, true})
+				}
+			}
+		}
+		span := func(s seg) (float64, float64, float64) {
+			if s.vertical {
+				return s.a[0], math.Min(s.a[1], s.b[1]), math.Max(s.a[1], s.b[1])
+			}
+			return s.a[1], math.Min(s.a[0], s.b[0]), math.Max(s.a[0], s.b[0])
+		}
+		for i := range segs {
+			for j := i + 1; j < len(segs); j++ {
+				s1, s2 := segs[i], segs[j]
+				// A fork (same source) or lines running into the same shape may share their way
+				if s1.from == s2.from || s1.to == s2.to || s1.vertical != s2.vertical {
+					continue
+				}
+				c1, lo1, hi1 := span(s1)
+				c2, lo2, hi2 := span(s2)
+				if math.Abs(c1-c2) < 0.5 && math.Min(hi1, hi2)-math.Max(lo1, lo2) > 1 {
+					t.Errorf("%s: lines %s→%s and %s→%s lie on top of each other (%v-%v, %v-%v)", name, s1.from, s1.to, s2.from, s2.to, s1.a, s1.b, s2.a, s2.b)
+				}
 			}
 		}
 	}

@@ -15,6 +15,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - All dropdowns in the app (task rows, sorting, search filters, code block language, journal, sharing, settings, administration, groups, setup) use the app's own dropdown instead of the browser's: same look in every theme, colour dots and list emojis in the options, typing jumps to an option, long lists such as the code languages get a search field.
 - Dates and times on computers: a calendar of our own instead of the browser's (the week starts as your language has it, today framed, month and year to pick, fully usable with the keyboard), and a list of times in 15-minute steps. Both can be typed as well, e.g. "24.11.", "24112026", "1430" or "2:30 pm". On phones and tablets the system's own date and time pickers stay, they work best with fingers.
 
+### Fixed
+- Drawings from AI agents (Mermaid): lines no longer lie on top of each other where several shapes branch out; in every gap each source runs across on a line of its own, so it stays clear which arrow goes where.
+- Drawings from AI agents: moving a shape in the editor no longer turns the arrows into straight lines; they stay right-angled, and the line style shows "elbow" for them. This also applies to drawings created before.
+- Drawings: elbow arrows between shapes stacked above each other run up and down (out of the bottom, into the top) instead of leaving sideways just because the shapes sit far apart across.
+
 ## [0.93.1] - 2026-11-10
 
 ### Added
