@@ -56,7 +56,7 @@ const main = async () => {
     const page = await ctx.newPage();
     await page.goto(BASE);
     await page.getByRole('button', { name: /^Aufgaben/ }).locator('visible=true').first().click();
-    await page.getByRole('button', { name: /^Kanban/ }).first().click();
+    await page.getByRole('radio', { name: /^Kanban/ }).first().click();
     await sleep(8000); // time for the fallbacks to settle
 
     const stamp = Date.now();
