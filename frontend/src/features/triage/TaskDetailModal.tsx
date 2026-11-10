@@ -28,6 +28,7 @@ import { api, triggerHaptic } from '../../lib/api';
 import { MarkdownViewer, renderMentions } from '../../lib/markdown';
 import { useMentionInput } from '../../lib/useMentionInput';
 import { MentionMenu } from '../../components/MentionMenu';
+import { SelectMenu } from '../../components/SelectMenu';
 import { VoiceInputButton } from '../../components/VoiceInputButton';
 import { addDays, joinDue, splitDue } from '../../lib/due';
 import { usePointerSort } from './usePointerSort';
@@ -536,35 +537,24 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
 
           {/* Settings: right column on the desktop */}
           <div className="space-y-4 lg:col-start-2 lg:row-start-1 lg:row-span-3 lg:border-l lg:border-border lg:pl-5">
-          {/* Kanban Status Buttons */}
+          {/* Kanban status: one dropdown, also for boards with many columns */}
           <div className="space-y-1.5 pt-1 border-t border-border lg:border-t-0 lg:pt-0">
             <label className="block text-xs font-semibold text-main">
               {t('detail.status')}
             </label>
-            <div className="flex flex-wrap items-center gap-1.5">
-              {activeColumns.map((col) => {
-                const isActive = (task.kanbanStatus === col.id) || (!task.kanbanStatus && col.id === 'todo');
-                return (
-                  <button
-                    key={col.id}
-                    type="button"
-                    onClick={() => {
-                      triggerHaptic(10);
-                      onUpdateStatus(task, col.id);
-                    }}
-                    className={`h-8 px-3 text-xs rounded-btn font-medium transition-all flex items-center gap-1.5 border ${
-                      isActive
-                        ? 'bg-panel border-accent text-accent font-semibold shadow-sm'
-                        : 'bg-canvas border-border text-muted hover:text-main hover:border-strong'
-                    }`}
-                  >
-                    <span className={`w-2 h-2 rounded-full ${columnDotClass(col)}`} />
-                    <span>{col.name}</span>
-                    {isActive && <Check className="w-3 h-3 text-accent stroke-[3] ml-0.5" />}
-                  </button>
-                );
-              })}
-            </div>
+            <SelectMenu
+              ariaLabel={t('detail.status')}
+              value={activeColumns.some((c) => c.id === task.kanbanStatus) ? task.kanbanStatus! : 'todo'}
+              options={activeColumns.map((col) => ({
+                value: col.id,
+                label: col.name,
+                lead: <span className={`w-2 h-2 rounded-full ${columnDotClass(col)}`} />,
+              }))}
+              onChange={(id) => {
+                triggerHaptic(10);
+                onUpdateStatus(task, id);
+              }}
+            />
           </div>
 
           {/* Priority Buttons (4 Buttons) */}
@@ -712,18 +702,19 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
                     <Repeat className="w-3 h-3 text-accent" />
                     <span>{t('detail.recurrence.label')}</span>
                   </label>
-                  <select
+                  <SelectMenu<Recurrence>
+                    ariaLabel={t('detail.recurrence.label')}
                     value={task.recurrence || ''}
                     disabled={readOnly}
-                    onChange={(e) => onUpdateRecurrence(task, e.target.value as Recurrence)}
-                    className="w-full h-11 sm:h-8 input-field px-2 text-base sm:text-xs bg-panel"
-                  >
-                    <option value="">{t('detail.recurrence.none')}</option>
-                    <option value="daily">{t('detail.recurrence.daily')}</option>
-                    <option value="weekly">{t('detail.recurrence.weekly')}</option>
-                    <option value="monthly">{t('detail.recurrence.monthly')}</option>
-                    <option value="yearly">{t('detail.recurrence.yearly')}</option>
-                  </select>
+                    onChange={(r) => onUpdateRecurrence(task, r)}
+                    options={[
+                      { value: '', label: t('detail.recurrence.none') },
+                      { value: 'daily', label: t('detail.recurrence.daily') },
+                      { value: 'weekly', label: t('detail.recurrence.weekly') },
+                      { value: 'monthly', label: t('detail.recurrence.monthly') },
+                      { value: 'yearly', label: t('detail.recurrence.yearly') },
+                    ]}
+                  />
                   {task.recurrence && (
                     <p className="text-[10px] text-faint mt-1">
                       {task.dueDate ? t('detail.recurrence.hintDate') : t('detail.recurrence.hintDone')}
@@ -739,18 +730,15 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
                 <Folder className="w-3.5 h-3.5 text-accent" />
                 <span>{t('detail.taskList')}</span>
               </label>
-              <select
+              <SelectMenu
+                ariaLabel={t('detail.taskList')}
                 value={task.taskListId || ''}
-                onChange={(e) => onUpdateTaskList(task, e.target.value)}
-                className="w-full h-11 sm:h-8 input-field px-2.5 text-base sm:text-xs bg-panel"
-              >
-                <option value="">{t('detail.noTaskList')}</option>
-                {taskLists.map((tl) => (
-                  <option key={tl.id} value={tl.id}>
-                    {[tl.icon, tl.title].filter(Boolean).join(' ')}
-                  </option>
-                ))}
-              </select>
+                onChange={(id) => onUpdateTaskList(task, id)}
+                options={[
+                  { value: '', label: t('detail.noTaskList') },
+                  ...taskLists.map((tl) => ({ value: tl.id, label: tl.title, lead: tl.icon ? <span>{tl.icon}</span> : undefined })),
+                ]}
+              />
             </div>
           </div>
 

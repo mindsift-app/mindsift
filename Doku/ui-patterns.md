@@ -109,6 +109,16 @@ Component: [SegmentedControl.tsx](../frontend/src/components/SegmentedControl.ts
 - The choice is a per-device convenience and is kept in `localStorage` where it should survive a reload (to-dos: `mindsift_todo_show`, `mindsift_todo_grouping`).
 - Build new switches of this kind with this component instead of copying button classes.
 
+## Dropdown (Select Menu)
+
+Component: [SelectMenu.tsx](../frontend/src/components/SelectMenu.tsx)
+
+- Instead of the browser's `<select>` where one value is picked from a list: a full-width field (44 px on phones, 32 px from `sm`) with the chosen option and a chevron. A click opens the options right below it, above when there is no room; the chosen one carries a ✓.
+- Each option can have a `lead` in front of its label, on the field and in the list: the colour dot of a Kanban column, the emoji of a task list.
+- Keys as in a `<select>`: arrows, Home, End, Enter or Space pick, Escape closes only the list (`preventDefault`, so a dialog around it stays open), Tab moves on. A click outside closes it.
+- The list is portalled to `<body>` with fixed position, so a scrolling dialog does not cut it off; it follows the field while the page scrolls.
+- Used in the task dialog for the status, the repetition and the task list. Other forms still use `<select>`; move them over when they are touched.
+
 ## Origin Badge (API Keys)
 
 Component: [OriginBadge.tsx](../frontend/src/components/OriginBadge.tsx)
