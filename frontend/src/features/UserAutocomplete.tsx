@@ -71,6 +71,8 @@ export const UserAutocomplete: React.FC<UserAutocompleteProps> = ({
       .slice(0, MAX_RESULTS);
   }, [users, query, excludeUserIds, allUsers]);
   const showResults = searchOn && isOpen && query.trim() !== '';
+  // Others' addresses are not in the list (only names): a full address typed in is asked of the server
+  const offerLookup = showResults && filteredUsers.length === 0 && query.includes('@');
 
   // Without people search: exactly this e-mail address or username, asked of the server
   const lookup = async () => {
@@ -103,7 +105,7 @@ export const UserAutocomplete: React.FC<UserAutocompleteProps> = ({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (!searchOn) {
+    if (!searchOn || offerLookup) {
       if (e.key === 'Enter') {
         e.preventDefault();
         void lookup();
@@ -204,7 +206,18 @@ export const UserAutocomplete: React.FC<UserAutocompleteProps> = ({
           )}
           {showResults && (
             <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-panel border border-border rounded-card shadow-panel py-1 space-y-0.5">
-              {filteredUsers.length === 0 ? (
+              {offerLookup ? (
+                <div className="px-1">
+                  <button
+                    type="button"
+                    onClick={() => void lookup()}
+                    disabled={lookingUp}
+                    className="w-full min-h-11 sm:min-h-0 px-2.5 py-1.5 text-left text-xs text-main hover:bg-panel-elevated rounded-btn cursor-pointer disabled:opacity-60"
+                  >
+                    {lookupMsg || t('userSearch.lookup', { login: query.trim() })}
+                  </button>
+                </div>
+              ) : filteredUsers.length === 0 ? (
                 <div className="p-3 text-xs text-muted text-center">
                   {t('userSearch.none')}
                 </div>

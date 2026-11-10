@@ -384,8 +384,9 @@ func TestNewFullFeatures(t *testing.T) {
 	}
 	var updatedUser domain.User
 	_ = json.Unmarshal(rec.Body.Bytes(), &updatedUser)
-	if len(updatedUser.AlarmChannels) != 3 || updatedUser.AlarmEmail != "alarms@example.com" {
-		t.Fatalf("expected 3 alarm channels and alarmEmail, got %+v", updatedUser)
+	// A new alarm address waits for its confirmation link (email_change.go)
+	if len(updatedUser.AlarmChannels) != 3 || updatedUser.PendingAlarmEmail != "alarms@example.com" {
+		t.Fatalf("expected 3 alarm channels and a waiting alarmEmail, got %+v", updatedUser)
 	}
 
 	// 3. Test Admin routes (default user is admin)

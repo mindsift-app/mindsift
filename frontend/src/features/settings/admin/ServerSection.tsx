@@ -199,6 +199,20 @@ export function ServerSection({
             />
           </div>
 
+          {/* Web push only via the push services of the big browsers */}
+          <div className="p-4 bg-canvas border border-border rounded-card flex items-center justify-between gap-4">
+            <div className="pr-4">
+              <p className="font-bold text-main">{t('server.pushKnownOnly')}</p>
+              <p className="text-[11px] text-muted mt-0.5">
+                {t('server.pushKnownOnlyHint')}
+              </p>
+            </div>
+            <ToggleSwitch
+              checked={Boolean(settings.pushKnownServicesOnly)}
+              onChange={(pushKnownServicesOnly) => handleSaveSystemSettings({ pushKnownServicesOnly })}
+            />
+          </div>
+
           {/* Retention: may people keep finished and deleted things for good? */}
           <div className="p-4 bg-canvas border border-border rounded-card flex items-center justify-between gap-4">
             <div className="pr-4">

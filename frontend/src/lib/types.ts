@@ -146,6 +146,11 @@ export interface User {
   emailUnverified?: boolean;
   alarmChannels?: string[];
   alarmEmail?: string;
+  // New login / alarm address waiting for the click on the link mailed to it (own profile)
+  pendingEmail?: string;
+  pendingAlarmEmail?: string;
+  // The server can mail confirmation links at all (own profile)
+  emailLinks?: boolean;
   discordWebhookUrl?: string;
   customWebhookUrl?: string;
   notifyBeforeMinutes?: number;
@@ -353,6 +358,7 @@ export interface SystemSettings {
   smtpTls?: boolean;
   smtpSkipVerify?: boolean;
   allowPrivateWebhooks?: boolean; // alarm webhooks may reach the LAN (and plain http)
+  pushKnownServicesOnly?: boolean; // web push only via the push services of the big browsers
   smtpConfiguredViaEnv?: boolean;
   registrationMode?: RegistrationMode;
   registrationDomains?: string;
@@ -784,6 +790,8 @@ export interface OAuthAuthorizeInfo {
   redirect?: string;
   clientName?: string;
   redirectHost?: string;
+  // The way back leads to a known AI service or this computer; otherwise the page warns
+  knownHost?: boolean;
   scopes?: ApiKeyScope[];
   offeredScopes?: ApiKeyScope[];
 }

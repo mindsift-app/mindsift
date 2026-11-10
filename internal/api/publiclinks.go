@@ -247,7 +247,7 @@ func (s *Server) handleSetPublicLink(w http.ResponseWriter, r *http.Request) {
 	}
 	raw := make([]byte, 32)
 	if _, err := rand.Read(raw); err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternal(w, err)
 		return
 	}
 	token := base64.RawURLEncoding.EncodeToString(raw)
@@ -263,12 +263,12 @@ func (s *Server) handleSetPublicLink(w http.ResponseWriter, r *http.Request) {
 	}
 	sealed, err := s.sealSecret(l.ID, token)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternal(w, err)
 		return
 	}
 	l.TokenSealed = sealed
 	if err := s.store.SavePublicLink(l); err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternal(w, err)
 		return
 	}
 	s.writePublicLinkState(w, l)
@@ -281,7 +281,7 @@ func (s *Server) handleDeletePublicLink(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	if err := s.store.DeletePublicLink(docID); err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternal(w, err)
 		return
 	}
 	s.writePublicLinkState(w, nil)

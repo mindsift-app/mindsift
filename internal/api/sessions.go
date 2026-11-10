@@ -55,7 +55,7 @@ func withSession(ctx context.Context, sessionID string) context.Context {
 func (s *Server) handleListSessions(w http.ResponseWriter, r *http.Request) {
 	list, err := s.store.ListSessions(auth.GetUserID(r.Context()), sessionIDFrom(r))
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternal(w, err)
 		return
 	}
 	if s.cfg.DemoMode {

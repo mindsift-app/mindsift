@@ -5,6 +5,7 @@ import { UserAvatar } from '../../../components/UserAvatar';
 import { FormSheet } from '../../../components/FormSheet';
 import { SessionsPanel } from '../SessionsPanel';
 import { useProfileSettings } from './useProfileSettings';
+import { PendingEmailNote } from './PendingEmailNote';
 
 // Kontoeinstellungen → Profil & Sicherheit (state in useProfileSettings)
 export function ProfileSection({
@@ -16,6 +17,8 @@ export function ProfileSection({
 }) {
   const { t } = useTranslation('settings');
   const {
+    currentUser,
+    onUserUpdated,
     displayName,
     username,
     email,
@@ -194,6 +197,7 @@ export function ProfileSection({
               title={demoMode ? t('profile.demoDisabled') : undefined}
               className="w-full h-9 px-3 input-field disabled:opacity-60"
             />
+            <PendingEmailNote user={currentUser} kind="account" onUserUpdated={onUserUpdated} />
           </div>
         </div>
 

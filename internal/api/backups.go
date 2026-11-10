@@ -99,7 +99,7 @@ func (s *Server) startBackupScheduler() {
 func (s *Server) handleAdminListBackups(w http.ResponseWriter, r *http.Request) {
 	files, err := storage.ListBackups(filepath.Join(s.backupRoot(), "system"))
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternal(w, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, files)
@@ -107,7 +107,7 @@ func (s *Server) handleAdminListBackups(w http.ResponseWriter, r *http.Request) 
 
 func (s *Server) handleAdminRunBackup(w http.ResponseWriter, r *http.Request) {
 	if _, err := s.runBackups(); err != nil {
-		writeError(w, http.StatusInternalServerError, "Backup fehlgeschlagen: "+err.Error())
+		writeError(w, http.StatusInternalServerError, "Backup fehlgeschlagen: "+clientMessage(err))
 		return
 	}
 	s.handleAdminListBackups(w, r)
@@ -130,7 +130,7 @@ func (s *Server) handleAdminDownloadBackup(w http.ResponseWriter, r *http.Reques
 func (s *Server) handleListMyBackups(w http.ResponseWriter, r *http.Request) {
 	files, err := storage.ListBackups(storage.UserBackupDir(s.backupRoot(), auth.GetUserID(r.Context())))
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternal(w, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, files)
@@ -152,7 +152,7 @@ func (s *Server) handleRestoreMyBackup(w http.ResponseWriter, r *http.Request) {
 	}
 	data, err := os.ReadFile(path)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternal(w, err)
 		return
 	}
 	plan, err := storage.PlanMindSiftImport(data, filepath.Base(path))

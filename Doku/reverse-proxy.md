@@ -27,6 +27,14 @@ MindSift also locks logins after failed attempts on a per-IP address basis. Behi
 
 If a trusted proxy does not send any client IP, a warning is logged once, and only account-level lockout applies to these requests. The entire login lockout mechanism can be disabled with `LOGIN_PROTECTION=false`.
 
+**Without a reverse proxy, set `TRUSTED_PROXIES=none`.** When MindSift's port is published directly (e.g. `ports: "8080:8080"` with nobody in front), Docker may hand connections over through its userland proxy, so every visitor appears to come from the bridge address (`172.17.0.1`). That address is private and therefore trusted by default, and any visitor could then choose their own address via `X-Forwarded-For` and slip past the per-address lockouts. The per-account lockout still applies.
+
+The same trust decides about `X-Forwarded-Proto` and `X-Forwarded-Host`: MindSift only uses them (for the page's own address in link previews, for HSTS and, without `BASE_URL`, for links in invitation mails) when they come from a trusted proxy. Set `BASE_URL` whenever MindSift sends mail; links to people who are not signed in are only ever built from it.
+
+### HTTPS and HSTS
+
+When a visitor comes over https (directly, through a trusted proxy that sends `X-Forwarded-Proto: https`, or `BASE_URL` starts with `https://`), MindSift sends `Strict-Transport-Security: max-age=31536000`. Browsers then use https only for a year. It deliberately leaves out `includeSubDomains`, so other services under the same domain are not affected. If your proxy sets its own HSTS header, keep one of the two; there is nothing else to configure. Redirect plain http to https in the proxy (all examples below do or can).
+
 ---
 
 ## 1. Nginx

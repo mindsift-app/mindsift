@@ -596,7 +596,9 @@
     "publicLinksHint": "Les propriétaires peuvent partager une note en lecture seule par lien, y compris avec des personnes sans compte, avec mot de passe en option. Les liens expirent toujours et n’apparaissent pas dans les moteurs de recherche. Désactivé, plus aucun lien existant ne fonctionne.",
     "publicLinkMaxDays": "Durée maximale d’un lien",
     "days_one": "{{count}} jour",
-    "days_other": "{{count}} jours"
+    "days_other": "{{count}} jours",
+    "pushKnownOnly": "Push uniquement via les services connus",
+    "pushKnownOnlyHint": "Par défaut : les notifications push vont au service push indiqué par le navigateur (n'importe quelle adresse https). Activé, uniquement vers les services de Google (Chrome, Edge, Android), Mozilla (Firefox), Apple (Safari) et Microsoft (Windows). Les appareils utilisant d'autres services ne reçoivent alors plus de notifications push."
   },
   "admin": {
     "loadFailed": "Échec du chargement des données d'administration",
@@ -781,5 +783,13 @@
   "appearanceExtra": {
     "accentColor": "Couleur d’accent {{color}}",
     "themeSaved": "Thème « {{name}} » enregistré et activé."
+  },
+  "pendingEmail": {
+    "waiting": "En attente de confirmation : {{email}}. Nous avons envoyé un lien à cette adresse – tant qu'il n'est pas cliqué, l'ancienne reste valable.",
+    "noMail": "{{email}} attend sa confirmation, mais ce serveur n'envoie pas d'e-mails. Tant qu'un administrateur ne l'a pas configuré, l'ancienne adresse reste valable.",
+    "resend": "Renvoyer le lien",
+    "resent": "Un nouveau lien est en route.",
+    "cancel": "Garder l'ancienne",
+    "failed": "Cela n'a pas fonctionné."
   }
 }

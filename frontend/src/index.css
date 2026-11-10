@@ -753,3 +753,15 @@ fieldset:disabled :is(button, input, select, textarea) {
   background-color: var(--accent-dim) !important;
   color: var(--accent-primary);
 }
+
+/* Zooming the page is allowed (accessibility). Safari on iPhone and iPad zooms in on its own when a field
+   with text smaller than 16 px gets the focus; only there fields get 16 px. Drawings and other surfaces
+   with their own pinch gesture use touch-action: none. */
+@supports (-webkit-touch-callout: none) {
+  input,
+  textarea,
+  select,
+  [contenteditable='true'] {
+    font-size: 16px !important;
+  }
+}

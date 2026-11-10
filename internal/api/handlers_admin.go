@@ -18,7 +18,7 @@ import (
 func (s *Server) handleAdminGetOrganizations(w http.ResponseWriter, r *http.Request) {
 	orgs, err := s.store.GetOrganizations()
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternal(w, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, orgs)
@@ -57,7 +57,7 @@ func (s *Server) handleAdminRenameOrganization(w http.ResponseWriter, r *http.Re
 
 func (s *Server) handleAdminDeleteOrganization(w http.ResponseWriter, r *http.Request) {
 	if err := s.store.DeleteOrganization(chi.URLParam(r, "id")); err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternal(w, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]bool{"deleted": true})
@@ -85,14 +85,14 @@ func (s *Server) handleAdminRemoveOrganizationMember(w http.ResponseWriter, r *h
 	if r.URL.Query().Get("dryRun") == "true" {
 		n, err := s.store.RemoveOrganizationMemberImpact(orgID, userID)
 		if err != nil {
-			writeError(w, http.StatusInternalServerError, err.Error())
+			writeInternal(w, err)
 			return
 		}
 		writeJSON(w, http.StatusOK, map[string]int64{"affected": n})
 		return
 	}
 	if err := s.store.RemoveOrganizationMember(orgID, userID); err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternal(w, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]bool{"removed": true})
@@ -102,7 +102,7 @@ func (s *Server) handleAdminRemoveOrganizationMember(w http.ResponseWriter, r *h
 func (s *Server) handleAdminSharingImpact(w http.ResponseWriter, r *http.Request) {
 	n, err := s.store.PruneSharing(r.URL.Query().Get("mode"), true)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternal(w, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]int64{"affected": n})
@@ -113,21 +113,35 @@ func (s *Server) handleAdminSharingImpact(w http.ResponseWriter, r *http.Request
 // isAdmin: the caller is a server admin (staff routes also let user managers in).
 func isAdmin(u *domain.User) bool { return u != nil && u.Role == domain.RoleAdmin }
 
+// staffUser is a user as the admin user list shows it: without the alarm targets (a Discord webhook
+// URL lets anybody post into that channel, own webhooks can be internal services) and without the
+// token version. The empty fields here hide the embedded ones of the same name when encoded.
+type staffUser struct {
+	domain.User
+	TokenVersion      int      `json:"tokenVersion,omitempty"`
+	AlarmChannels     []string `json:"alarmChannels,omitempty"`
+	AlarmEmail        string   `json:"alarmEmail,omitempty"`
+	DiscordWebhookURL string   `json:"discordWebhookUrl,omitempty"`
+	CustomWebhookURL  string   `json:"customWebhookUrl,omitempty"`
+}
+
 func (s *Server) handleAdminGetUsers(w http.ResponseWriter, r *http.Request) {
 	users, err := s.store.GetAllUsers()
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternal(w, err)
 		return
 	}
 	pending := s.store.PendingRegistrationIDs()
 	unverified := s.store.UnverifiedEmailIDs()
 	orgs, _ := s.store.OrganizationIDsOf()
-	for i := range users {
-		users[i].PendingApproval = pending[users[i].ID]
-		users[i].EmailUnverified = unverified[users[i].ID]
-		users[i].OrganizationIDs = orgs[users[i].ID]
+	out := make([]staffUser, len(users))
+	for i, u := range users {
+		u.PendingApproval = pending[u.ID]
+		u.EmailUnverified = unverified[u.ID]
+		u.OrganizationIDs = orgs[u.ID]
+		out[i] = staffUser{User: u}
 	}
-	writeJSON(w, http.StatusOK, users)
+	writeJSON(w, http.StatusOK, out)
 }
 
 func (s *Server) handleAdminCreateUser(w http.ResponseWriter, r *http.Request) {
@@ -176,7 +190,7 @@ func (s *Server) handleAdminCreateUser(w http.ResponseWriter, r *http.Request) {
 			u.OrganizationIDs = append(u.OrganizationIDs, orgID)
 		}
 	}
-	writeJSON(w, http.StatusCreated, u)
+	writeJSON(w, http.StatusCreated, staffUser{User: *u})
 }
 
 func (s *Server) handleAdminUpdateUser(w http.ResponseWriter, r *http.Request) {
@@ -243,7 +257,7 @@ func (s *Server) handleAdminUpdateUser(w http.ResponseWriter, r *http.Request) {
 		s.store.ClearPendingRegistration(targetUserID)
 		s.store.ClearEmailVerification(targetUserID)
 	}
-	writeJSON(w, http.StatusOK, u)
+	writeJSON(w, http.StatusOK, staffUser{User: *u})
 }
 
 // handleAdminResetPassword sets a new password (server admins only: user managers send people to
@@ -269,7 +283,7 @@ func (s *Server) handleAdminResetPassword(w http.ResponseWriter, r *http.Request
 	}
 	s.loginGuard.unlockAccount(targetUserID)
 	if err := s.store.UpdateUserPassword(targetUserID, hash); err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternal(w, err)
 		return
 	}
 	s.wsHub.DisconnectUser(targetUserID)
@@ -290,7 +304,7 @@ func (s *Server) handleAdminDeleteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := s.store.DeleteUser(targetUserID); err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternal(w, err)
 		return
 	}
 	// Deleted by someone else: the backups stay for the retention period (a mistake can be undone);
@@ -309,7 +323,7 @@ func (s *Server) handleAdminDeleteUser(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleAdminGetInvites(w http.ResponseWriter, r *http.Request) {
 	invites, err := s.store.GetUserInvites()
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternal(w, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, invites)
@@ -340,7 +354,7 @@ func (s *Server) handleAdminCreateInvite(w http.ResponseWriter, r *http.Request)
 func (s *Server) handleAdminDeleteInvite(w http.ResponseWriter, r *http.Request) {
 	inviteID := chi.URLParam(r, "id")
 	if err := s.store.DeleteUserInvite(inviteID); err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternal(w, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]bool{"deleted": true})
@@ -351,7 +365,7 @@ func (s *Server) handleAdminDeleteInvite(w http.ResponseWriter, r *http.Request)
 func (s *Server) handleAdminGetSettings(w http.ResponseWriter, r *http.Request) {
 	settings, err := s.store.GetSystemSettings()
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternal(w, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, s.settingsForBrowser(settings))
@@ -458,13 +472,13 @@ func (s *Server) handleAdminUpdateSettings(w http.ResponseWriter, r *http.Reques
 	}
 	previousMode := s.store.SharingMode()
 	if err := s.store.UpdateSystemSettings(&settings); err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternal(w, err)
 		return
 	}
 	// A stricter mode takes away what is no longer allowed (shares, group memberships, assignments)
 	if settings.SharingMode != previousMode {
 		if _, err := s.store.PruneSharing(settings.SharingMode, false); err != nil {
-			writeError(w, http.StatusInternalServerError, "Freigaben konnten nicht angepasst werden: "+err.Error())
+			writeError(w, http.StatusInternalServerError, "Freigaben konnten nicht angepasst werden: "+clientMessage(err))
 			return
 		}
 	}

@@ -35,6 +35,7 @@ import { OAuthConsentView } from './features/auth/OAuthConsentView';
 import { OfflineBanner } from './components/OfflineBanner';
 import { useConnectionState } from './lib/useConnectionState';
 import { SharedImportToast } from './components/SharedImportToast';
+import { EmailConfirmToast } from './components/EmailConfirmToast';
 import { UserSettingsView } from './features/settings/UserSettingsView';
 import { AdminSettingsView } from './features/settings/AdminSettingsView';
 import { HelpView } from './features/help/HelpView';
@@ -563,6 +564,8 @@ export const App: React.FC = () => {
   // Show Setup Wizard or Login Screen if needsSetup or not logged in
   if (authStatus.needsSetup || !user || resetToken) {
     return (
+      <>
+      <EmailConfirmToast />
       <SetupAndAuthView
         authStatus={authStatus}
         onAuthenticated={handleAuthenticated}
@@ -575,6 +578,7 @@ export const App: React.FC = () => {
         }}
         onResetCancel={() => setResetToken(null)}
       />
+      </>
     );
   }
 
@@ -666,6 +670,7 @@ export const App: React.FC = () => {
 
       <MobileHeaderMenu activeTabLabel={activeTabLabelMap[activeTab]} />
       <OfflineBanner />
+      <EmailConfirmToast onConfirmed={() => api.getMe().then((me) => setUser(me.user)).catch(() => {})} />
       {sharedImportIds && (
         <SharedImportToast
           thoughtIds={sharedImportIds}

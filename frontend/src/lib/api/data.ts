@@ -181,6 +181,19 @@ export const dataApi = {
     await request('/api/v1/user/data', { method: 'DELETE', body: JSON.stringify({ password }) });
   },
 
+  // New login or alarm address (storage/email_change.go): the link from the mail, keep the old one, new link
+  async confirmEmailChange(token: string): Promise<{ confirmed: boolean; kind: 'account' | 'alarm'; message: string }> {
+    return request('/api/v1/auth/confirm-email', { method: 'POST', body: JSON.stringify({ token }) });
+  },
+
+  async cancelEmailChange(kind: 'account' | 'alarm'): Promise<void> {
+    await request(`/api/v1/user/email-change/${kind}`, { method: 'DELETE' });
+  },
+
+  async resendEmailChange(kind: 'account' | 'alarm'): Promise<void> {
+    await request(`/api/v1/user/email-change/${kind}/resend`, { method: 'POST' });
+  },
+
   async deleteOwnAccount(password: string): Promise<void> {
     await request('/api/v1/user/account', { method: 'DELETE', body: JSON.stringify({ password }) });
   },

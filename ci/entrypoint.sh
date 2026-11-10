@@ -4,6 +4,10 @@
 # data/ belongs to root, keep working without manual steps. Started with --user / user: it runs as given.
 set -e
 
+# Database, keys, backups and media only for MindSift itself, not for other accounts on the host:
+# new files 0600, new folders 0700
+umask 077
+
 if [ "$(id -u)" = "0" ]; then
   dirs="${DATA_DIR:-/data}"
   case "${DATABASE_URL:-}" in

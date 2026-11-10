@@ -110,6 +110,7 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
           smtpTls: sys.smtpTls ?? true,
           smtpSkipVerify: Boolean(sys.smtpSkipVerify),
           allowPrivateWebhooks: Boolean(sys.allowPrivateWebhooks),
+          pushKnownServicesOnly: Boolean(sys.pushKnownServicesOnly),
           smtpConfiguredViaEnv: Boolean(sys.smtpConfiguredViaEnv),
           backupEnabled: Boolean(sys.backupEnabled),
           backupTime: sys.backupTime || '03:00',

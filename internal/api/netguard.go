@@ -123,6 +123,10 @@ func guardedClient(allowPrivate bool) *http.Client {
 			if len(via) >= 3 {
 				return errors.New("zu viele Weiterleitungen")
 			}
+			// No step down from https to plain http: what was asked for encrypted stays encrypted
+			if via[len(via)-1].URL.Scheme == "https" && req.URL.Scheme != "https" {
+				return errors.New("Weiterleitung von https auf http abgelehnt")
+			}
 			return nil
 		},
 	}

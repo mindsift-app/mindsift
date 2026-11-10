@@ -138,8 +138,9 @@ func (g *loginGuard) cleanupLocked(now time.Time) {
 // Every request counts here, not only failures: registration (also guessing invite codes) and
 // "forgot password" (mail flood to many addresses).
 const (
-	limitRegisterPerIP = 20
-	limitForgotPerIP   = 10
+	limitRegisterPerIP    = 20
+	limitForgotPerIP      = 10
+	limitTestAlarmPerUser = 5
 )
 
 // throttle counts one request of this kind from the visitor's address and returns how long further
@@ -148,11 +149,18 @@ func (g *loginGuard) throttle(kind string, ip clientIPInfo, limit int) time.Dura
 	if !g.enabled || ip.viaProxyWithoutHeader || ip.ip == "" {
 		return 0
 	}
+	return g.throttleKey(kind+":"+ip.ip, limit)
+}
+
+// throttleKey is throttle for any key, e.g. a person instead of an address.
+func (g *loginGuard) throttleKey(key string, limit int) time.Duration {
+	if !g.enabled {
+		return 0
+	}
 	g.mu.Lock()
 	defer g.mu.Unlock()
 	now := g.now()
 	g.cleanupLocked(now)
-	key := kind + ":" + ip.ip
 	b := g.buckets[key]
 	if b != nil && b.lockedUntil.After(now) {
 		return b.lockedUntil.Sub(now)

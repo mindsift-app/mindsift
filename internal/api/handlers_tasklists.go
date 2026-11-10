@@ -17,7 +17,7 @@ func (s *Server) handleGetTaskLists(w http.ResponseWriter, r *http.Request) {
 	userID := auth.GetUserID(r.Context())
 	lists, err := s.store.GetTaskLists(userID)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternal(w, err)
 		return
 	}
 	muted := s.store.MutedTaskListIDs(userID)
@@ -115,7 +115,7 @@ func (s *Server) handleGetTaskListShares(w http.ResponseWriter, r *http.Request)
 	}
 	shares, err := s.store.GetTaskListShares(listID)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternal(w, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, shares)
@@ -173,7 +173,7 @@ func (s *Server) handleDeleteTaskListShare(w http.ResponseWriter, r *http.Reques
 	}
 	audienceBefore := s.store.GetTaskListUserIDs(listID)
 	if err := s.store.RemoveTaskListShare(listID, shareID); err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternal(w, err)
 		return
 	}
 	s.broadcastTaskListChange(listID, audienceBefore, "TASK_LIST_UPDATED")

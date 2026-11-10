@@ -596,7 +596,9 @@
     "publicLinksHint": "Owners can share a note read only by link, also with people without an account, optionally with a password. Links always expire and stay out of search engines. Off, no existing link works any more.",
     "publicLinkMaxDays": "Longest a link may live",
     "days_one": "{{count}} day",
-    "days_other": "{{count}} days"
+    "days_other": "{{count}} days",
+    "pushKnownOnly": "Push only via known push services",
+    "pushKnownOnlyHint": "Default: push notifications go to the push service the browser names (any https address). Switched on, only to the services of Google (Chrome, Edge, Android), Mozilla (Firefox), Apple (Safari) and Microsoft (Windows). Devices using other services then get no push messages."
   },
   "admin": {
     "loadFailed": "Loading the administration data failed",
@@ -781,5 +783,13 @@
   "appearanceExtra": {
     "accentColor": "Accent colour {{color}}",
     "themeSaved": "Theme “{{name}}” saved and activated."
+  },
+  "pendingEmail": {
+    "waiting": "Waiting for confirmation: {{email}}. We sent a link to this address – until it is clicked, the previous one stays in use.",
+    "noMail": "{{email}} is waiting for confirmation, but this server does not send e-mail. Until an admin sets that up, the previous address stays in use.",
+    "resend": "Send link again",
+    "resent": "A new link is on its way.",
+    "cancel": "Keep the previous one",
+    "failed": "That did not work."
   }
 }

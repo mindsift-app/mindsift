@@ -478,7 +478,7 @@ const fr: HelpContent = {
               <strong className="text-main">Répétition :</strong> sous <em>Répétition</em>, choisis quotidien, hebdomadaire, mensuel ou annuel. Cocher la tâche crée automatiquement la suivante pour la prochaine occurrence.
             </li>
             <li>
-              <strong className="text-main">Alertes &amp; notifications :</strong> reçois des alertes par e-mail, webhook Discord ou notifications push sur tes appareils à l'approche d'une échéance (par ex. 15 minutes ou 1 jour avant).
+              <strong className="text-main">Alertes &amp; notifications :</strong> reçois des alertes par e-mail, webhook Discord ou notifications push sur tes appareils à l'approche d'une échéance (par ex. 15 minutes ou 1 jour avant). Une nouvelle adresse d'alerte (comme une nouvelle adresse de connexion) ne compte qu'après un clic sur le lien de l'e-mail de confirmation qui lui est envoyé ; d'ici là, l'ancienne reste valable.
             </li>
             <li>
               <strong className="text-main">Rappels par tâche :</strong> Dans la fenêtre de détail, coche une ou plusieurs heures sous « Rappel », p. ex. 2 semaines avant et le jour de l’échéance. Pour cette tâche, ils remplacent ton délai et valent pour tous ceux qui reçoivent son alarme d’échéance ; « Par défaut » revient au délai des paramètres. Sans heure, MindSift rappelle des jours entiers avant, à 9 h. Les tâches avec leurs propres rappels portent une petite 🔔.

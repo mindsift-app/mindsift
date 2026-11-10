@@ -65,6 +65,10 @@ Two concepts, do not confuse:
 
 During setup in `organizations` mode, an organization named after the instance is created and the initial admin is assigned to it. Invitations and "Create User" can name any number of organizations. Invitations always create members (also older codes that still say `admin`); roles are given afterwards. In demo mode, `admin` and `user` belong to the "Demo" organization.
 
+## What Others See of a Person
+
+Others see a person's name, username and profile picture, never the e-mail address: not in the people directory, the person picker, @-mentions, or the member and share lists of notes, folders, lists, task lists and groups. Only the person and the admins (Administration → Users) see it. Whoever shares by typing a full address gets that address back from `/users/lookup`; it was theirs to begin with. Alarm targets (webhooks, alarm address) are private, admins do not see them either.
+
 ## Public Links to Notes
 
 The owner of a note can share it read only with anyone who has the link (`/p/<token>`), without an account. Meant for quick sharing (a guide, a problem description); whoever needs it longer gets an account.

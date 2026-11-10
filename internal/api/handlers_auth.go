@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -103,6 +104,9 @@ func (s *Server) handleLegalText(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleFirstBootSetup(w http.ResponseWriter, r *http.Request) {
+	// One setup at a time: two at once must not both see "no users yet" and create two admins
+	s.setupMu.Lock()
+	defer s.setupMu.Unlock()
 	count, err := s.store.CountUsers()
 	if err != nil || count > 0 {
 		writeError(w, http.StatusForbidden, "Ersteinrichtung wurde bereits abgeschlossen")
@@ -170,7 +174,7 @@ func (s *Server) handleFirstBootSetup(w http.ResponseWriter, r *http.Request) {
 		}
 		sys.SharingMode = storage.NormalizeSharingMode(req.SharingMode)
 		if err := s.store.UpdateSystemSettings(sys); err != nil {
-			writeError(w, http.StatusInternalServerError, "Einstellungen konnten nicht gespeichert werden: "+err.Error())
+			writeError(w, http.StatusInternalServerError, "Einstellungen konnten nicht gespeichert werden: "+clientMessage(err))
 			return
 		}
 		// In organization mode the first admin starts in an organization named after the instance
@@ -261,6 +265,18 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// With confirmation by mail, a taken address gets the same answer as a new one (and no mail), so the
+	// form does not tell which addresses have an account
+	if verify && validInvite == nil && s.store.EmailInUse(req.Email) {
+		_, _ = auth.HashPassword(req.Password) // same time as a real sign-up
+		writeJSON(w, http.StatusAccepted, map[string]interface{}{
+			"pending": true,
+			"verify":  true,
+			"message": registrationWaitingMessage(w, req.Email, pending, true),
+		})
+		return
+	}
+
 	hash, err := auth.HashPassword(req.Password)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "Fehler beim Passwort-Hashing")
@@ -276,7 +292,12 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	user, err := s.store.CreateUser(req.Email, hash, req.DisplayName, role)
+	// Waiting for the confirmation or an approval: locked from the first moment on
+	create := s.store.CreateUser
+	if pending || verify {
+		create = s.store.CreateInactiveUser
+	}
+	user, err := create(req.Email, hash, req.DisplayName, role)
 	if err != nil {
 		if validInvite != nil {
 			s.store.ReleaseUserInvite(validInvite.ID, claim)
@@ -297,29 +318,20 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 
 	// Waiting for the e-mail confirmation and/or approval: the account exists but stays locked, no session
 	if pending || verify {
-		inactive := false
-		if _, err := s.store.UpdateUser(user.ID, nil, nil, nil, &inactive, nil, nil); err != nil {
-			writeError(w, http.StatusInternalServerError, "Konto konnte nicht angelegt werden")
-			return
-		}
 		if pending {
 			if err := s.store.AddPendingRegistration(user.ID); err != nil {
 				writeError(w, http.StatusInternalServerError, "Konto konnte nicht angelegt werden")
 				return
 			}
 		}
-		message := tr(w, "Dein Konto wurde angelegt und wartet auf die Freigabe durch einen Administrator. Du bekommst eine E-Mail, sobald du dich anmelden kannst.")
 		if verify {
 			// Admins hear about it only once the address is confirmed
 			go s.sendVerificationMail(user)
-			message = tr(w, "Fast geschafft: Wir haben dir eine E-Mail an {email} geschickt. Bestätige deine Adresse über den Link darin.", "email", user.Email)
-			if pending {
-				message += " " + tr(w, "Danach schaltet ein Administrator dein Konto frei.")
-			}
 		} else {
 			go s.notifyAdminsOfRegistration(user)
 		}
-		slog.Info("Registration waiting", "user_id", user.ID, "email", user.Email, "approval", pending, "verify", verify)
+		message := registrationWaitingMessage(w, user.Email, pending, verify)
+		slog.Info("Registration waiting", "user_id", user.ID, "approval", pending, "verify", verify)
 		writeJSON(w, http.StatusAccepted, map[string]interface{}{
 			"pending": true,
 			"verify":  verify,
@@ -339,6 +351,25 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 		"user":  user,
 	})
 }
+
+// registrationWaitingMessage: what a sign-up waiting for its confirmation and/or approval is told.
+func registrationWaitingMessage(w http.ResponseWriter, email string, pending, verify bool) string {
+	if !verify {
+		return tr(w, "Dein Konto wurde angelegt und wartet auf die Freigabe durch einen Administrator. Du bekommst eine E-Mail, sobald du dich anmelden kannst.")
+	}
+	message := tr(w, "Fast geschafft: Wir haben dir eine E-Mail an {email} geschickt. Bestätige deine Adresse über den Link darin.", "email", email)
+	if pending {
+		message += " " + tr(w, "Danach schaltet ein Administrator dein Konto frei.")
+	}
+	return message
+}
+
+// dummyPasswordHash is compared against for unknown names, so a failed sign-in takes as long whether
+// the account exists or not
+var dummyPasswordHash = sync.OnceValue(func() string {
+	h, _ := auth.HashPassword("mindsift-no-such-account")
+	return h
+})
 
 func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 	var req struct {
@@ -373,19 +404,20 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 	}
 	ip := clientIPFrom(r)
 	if wait := s.loginGuard.lockedFor(account, ip); wait > 0 {
-		slog.Warn("Sign-in locked after failed attempts", "login", identifier, "remote_addr", r.RemoteAddr, "wait", wait.Round(time.Second))
+		slog.Warn("Sign-in locked after failed attempts", "login", maskLogin(identifier), "remote_addr", r.RemoteAddr, "wait", wait.Round(time.Second))
 		writeLoginLocked(w, wait)
 		return
 	}
 	if err != nil {
+		auth.CheckPassword(req.Password, dummyPasswordHash())
 		s.loginGuard.recordFailure(account, ip)
-		slog.Warn("Sign-in failed: user does not exist", "login", identifier, "remote_addr", r.RemoteAddr)
+		slog.Warn("Sign-in failed: user does not exist", "login", maskLogin(identifier), "remote_addr", r.RemoteAddr)
 		writeError(w, http.StatusUnauthorized, "Benutzername/E-Mail oder Passwort ungültig")
 		return
 	}
 	if !auth.CheckPassword(req.Password, user.PasswordHash) {
 		s.loginGuard.recordFailure(account, ip)
-		slog.Warn("Sign-in failed: wrong password", "login", identifier, "user_id", user.ID, "display_name", user.DisplayName, "remote_addr", r.RemoteAddr)
+		slog.Warn("Sign-in failed: wrong password", "user_id", user.ID, "display_name", user.DisplayName, "remote_addr", r.RemoteAddr)
 		writeError(w, http.StatusUnauthorized, "Benutzername/E-Mail oder Passwort ungültig")
 		return
 	}
@@ -399,19 +431,19 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !user.IsActive {
-		slog.Warn("Sign-in refused: user account is disabled", "login", identifier, "user_id", user.ID, "display_name", user.DisplayName, "remote_addr", r.RemoteAddr)
+		slog.Warn("Sign-in refused: user account is disabled", "user_id", user.ID, "display_name", user.DisplayName, "remote_addr", r.RemoteAddr)
 		writeError(w, http.StatusForbidden, "Dieses Benutzerkonto ist deaktiviert")
 		return
 	}
 
 	token, err := s.startSession(r, user)
 	if err != nil {
-		slog.Error("Creating the sign-in token failed", "login", identifier, "user_id", user.ID, "error", err)
+		slog.Error("Creating the sign-in token failed", "user_id", user.ID, "error", err)
 		writeError(w, http.StatusInternalServerError, "Token konnte nicht erstellt werden")
 		return
 	}
 
-	slog.Info("Sign-in successful", "login", identifier, "user_id", user.ID, "display_name", user.DisplayName, "role", user.Role, "remote_addr", r.RemoteAddr)
+	slog.Info("Sign-in successful", "user_id", user.ID, "display_name", user.DisplayName, "role", user.Role, "remote_addr", r.RemoteAddr)
 
 	writeJSON(w, http.StatusOK, map[string]interface{}{
 		"token": token,
@@ -446,7 +478,7 @@ func (s *Server) handleStats(w http.ResponseWriter, r *http.Request) {
 	userID := auth.GetUserID(r.Context())
 	stats, err := s.store.GetDashboardStats(userID)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternal(w, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, stats)
@@ -459,7 +491,7 @@ func (s *Server) handlePurgeOwnData(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := s.store.PurgeUserData(user.ID); err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternal(w, err)
 		return
 	}
 	slog.Info("User deleted all their own data", "user_id", user.ID)
@@ -575,6 +607,36 @@ func (s *Server) handleUpdateUserSettings(w http.ResponseWriter, r *http.Request
 	if (changesPassword || changesEmail) && !s.checkCurrentPassword(w, r, before, req.CurrentPassword) {
 		return
 	}
+	// A new login or alarm address is taken only after the click on the link mailed to it (email_change.go)
+	var newEmail, newAlarmEmail string
+	if changesEmail {
+		newEmail = domain.NormalizeEmail(*req.Email)
+		if !validEmail(newEmail) {
+			writeError(w, http.StatusBadRequest, "Ungültige E-Mail-Adresse")
+			return
+		}
+		if s.store.EmailInUse(newEmail) {
+			writeError(w, http.StatusConflict, "E-Mail-Adresse existiert bereits")
+			return
+		}
+		req.Email = nil
+	}
+	if req.AlarmEmail != nil {
+		alarm := domain.NormalizeEmail(*req.AlarmEmail)
+		switch {
+		case alarm == "" || alarm == before.Email:
+			// The login address is confirmed already; an earlier waiting one is dropped
+			s.store.CancelEmailChange(userID, storage.EmailChangeAlarm)
+		case alarm == domain.NormalizeEmail(before.AlarmEmail):
+			req.AlarmEmail = nil
+		case !validEmail(alarm):
+			writeError(w, http.StatusBadRequest, "Ungültige E-Mail-Adresse")
+			return
+		default:
+			newAlarmEmail = alarm
+			req.AlarmEmail = nil
+		}
+	}
 	// Alarm URLs are checked before they are stored (SSRF protection, see netguard.go)
 	allowPrivate := s.allowPrivateWebhooks()
 	if req.DiscordWebhookURL != nil {
@@ -639,8 +701,14 @@ func (s *Server) handleUpdateUserSettings(w http.ResponseWriter, r *http.Request
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	if changesPassword || changesEmail {
-		s.notifyAccountChange(before, changesPassword, changesEmail, u.Email)
+	if changesPassword {
+		s.notifyAccountChange(before, true, false, "")
+	}
+	if newEmail != "" {
+		s.requestEmailChange(u, storage.EmailChangeAccount, newEmail)
+	}
+	if newAlarmEmail != "" {
+		s.requestEmailChange(u, storage.EmailChangeAlarm, newAlarmEmail)
 	}
 	if req.NotificationSettings != nil {
 		if err := s.store.SetNotificationSettings(userID, *req.NotificationSettings); err != nil {
@@ -756,6 +824,11 @@ func (s *Server) handleTestUserAlarm(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// A test goes out at once on every click: limited per person, so this is no way to flood anybody
+	if wait := s.loginGuard.throttleKey("testalarm:"+userID, limitTestAlarmPerUser); wait > 0 {
+		writeThrottled(w, wait)
+		return
+	}
 	channel := strings.ToLower(strings.TrimSpace(req.Channel))
 	target := strings.TrimSpace(req.Target)
 	// The test looks like the real alarms, so it is in the language they come in
@@ -790,12 +863,14 @@ func (s *Server) handleTestUserAlarm(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	case "email":
-		toEmail := target
-		if toEmail == "" {
-			toEmail = user.AlarmEmail
-		}
-		if toEmail == "" {
-			toEmail = user.Email
+		// Only to one's own confirmed addresses (login or alarm address), never to someone else
+		toEmail := user.AlarmEmail
+		if t := domain.NormalizeEmail(target); t != "" {
+			if t != domain.NormalizeEmail(user.Email) && t != domain.NormalizeEmail(user.AlarmEmail) {
+				writeError(w, http.StatusBadRequest, "Test-Mails gehen nur an deine bestätigten Adressen. Speichere eine neue Alarm-Adresse und bestätige sie über den Link in der E-Mail.")
+				return
+			}
+			toEmail = t
 		}
 		sample := time.Date(2026, 1, 1, 18, 0, 0, 0, time.Local)
 		if err := s.sendMailContent(toEmail, "⏰ "+i18n.T(lang, "MindSift Test-Alarm"), mailContent{
@@ -835,6 +910,23 @@ func (s *Server) fillUserPreferences(u *domain.User) {
 	u.VoiceLanguage = s.store.VoiceLanguage(u.ID)
 	u.Language = s.store.Language(u.ID)
 	u.Organizations = s.store.UserOrganizations(u.ID)
+	pending := s.store.PendingEmailChanges(u.ID)
+	u.PendingEmail = pending[storage.EmailChangeAccount].Email
+	u.PendingAlarmEmail = pending[storage.EmailChangeAlarm].Email
+	u.EmailLinks = s.emailLinksAvailable()
+}
+
+// maskLogin: a typed sign-in name as logged. Only its start, so a password typed into the name field
+// by mistake does not end up in the log.
+func maskLogin(login string) string {
+	if strings.Contains(login, "@") {
+		return maskEmail(login)
+	}
+	r := []rune(login)
+	if len(r) > 2 {
+		r = r[:2]
+	}
+	return string(r) + "***"
 }
 
 // maskEmail shows an address only in part ("an***@example.com"): enough to tell it apart, without

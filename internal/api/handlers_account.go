@@ -20,7 +20,7 @@ import (
 func (s *Server) handleGetThemes(w http.ResponseWriter, r *http.Request) {
 	themes, err := s.store.GetUserThemes(auth.GetUserID(r.Context()))
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternal(w, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, themes)
@@ -58,7 +58,8 @@ func (s *Server) handleDeleteTheme(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]bool{"deleted": true})
 }
 
-// confirmPassword checks the current password sent as {"password": "…"} before destructive actions.
+// confirmPassword checks the current password sent as {"password": "…"} before destructive actions;
+// failed guesses count like failed logins, so a stolen session cannot try passwords endlessly.
 func (s *Server) confirmPassword(w http.ResponseWriter, r *http.Request) (*domain.User, bool) {
 	var req struct {
 		Password string `json:"password"`
@@ -69,8 +70,7 @@ func (s *Server) confirmPassword(w http.ResponseWriter, r *http.Request) (*domai
 		writeError(w, http.StatusUnauthorized, "Nicht autorisiert")
 		return nil, false
 	}
-	if req.Password == "" || !auth.CheckPassword(req.Password, user.PasswordHash) {
-		writeError(w, http.StatusForbidden, "Passwort ist falsch")
+	if !s.checkCurrentPassword(w, r, user, req.Password) {
 		return nil, false
 	}
 	return user, true
@@ -97,14 +97,14 @@ func (s *Server) runImport(w http.ResponseWriter, r *http.Request, plan *storage
 func (s *Server) applyImport(w http.ResponseWriter, userID string, plan *storage.ImportPlan, sections map[string]bool, restore bool) {
 	if restore {
 		if err := s.store.PurgeUserSections(userID, sections); err != nil {
-			writeError(w, http.StatusInternalServerError, "Wiederherstellen abgebrochen: "+err.Error())
+			writeError(w, http.StatusInternalServerError, "Wiederherstellen abgebrochen: "+clientMessage(err))
 			return
 		}
 	}
 	sum, err := s.store.ApplyImport(userID, plan)
 	if err != nil {
 		slog.Error("Import aborted", "user_id", userID, "error", err)
-		writeError(w, http.StatusInternalServerError, "Import abgebrochen: "+err.Error())
+		writeError(w, http.StatusInternalServerError, "Import abgebrochen: "+clientMessage(err))
 		return
 	}
 	writeJSON(w, http.StatusOK, trSummary(w, sum))
@@ -140,6 +140,13 @@ func (s *Server) handleImportObsidian(w http.ResponseWriter, r *http.Request) {
 	s.runImport(w, r, plan, err)
 }
 
+// abortDownload ends a download that failed half way: the status is sent already, so the connection is
+// cut instead. The browser then reports a failed download rather than saving a broken archive.
+func abortDownload(what, userID string, err error) {
+	slog.Error(what, "user_id", userID, "error", err)
+	panic(http.ErrAbortHandler)
+}
+
 // handleExportMarkdown streams an Obsidian-compatible ZIP of the user's workspace (no temp files).
 func (s *Server) handleExportMarkdown(w http.ResponseWriter, r *http.Request) {
 	userID := auth.GetUserID(r.Context())
@@ -147,8 +154,7 @@ func (s *Server) handleExportMarkdown(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/zip")
 	w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="mindsift-vault-%s.zip"`, time.Now().Format("2006-01-02")))
 	if err := s.store.WriteMarkdownVault(userID, w); err != nil {
-		// Headers are already sent; the client gets a truncated archive
-		slog.Error("Markdown export failed", "user_id", userID, "error", err)
+		abortDownload("Markdown export failed", userID, err)
 	}
 }
 
@@ -157,7 +163,7 @@ func (s *Server) handleExport(w http.ResponseWriter, r *http.Request) {
 	allowLongTransfer(w)
 	exportData, err := s.store.ExportUserData(userID)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternal(w, err)
 		return
 	}
 	// ?format=zip: the same JSON compressed (backups grow quickly with notes); plain JSON stays the API default
@@ -165,7 +171,7 @@ func (s *Server) handleExport(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/zip")
 		w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="mindsift-backup-%s.zip"`, time.Now().Format("2006-01-02")))
 		if err := s.store.WriteBackupZip(userID, exportData, w); err != nil {
-			slog.Error("Backup export failed", "user_id", userID, "error", err)
+			abortDownload("Backup export failed", userID, err)
 		}
 		return
 	}

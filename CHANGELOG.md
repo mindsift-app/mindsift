@@ -6,6 +6,34 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+Fixes from the security review of November 2026 (v0.94.0).
+
+### Added
+- Administration → Server: "Push only via known push services" lets the admin limit web push to the services of Google (Chrome, Edge, Android), Mozilla, Apple and Microsoft. Off by default, so any browser keeps working.
+- The OAuth consent page warns when the way back after allowing access does not lead to a known AI service (claude.ai, chatgpt.com) or your own computer: anybody can register a connector under the name "Claude".
+
+### Changed
+- **Attention:** a new login address or a new alarm address (other than the login address) only counts once its owner clicks the link mailed to it; until then the old one stays in use and the settings show the new one as waiting, with "Send link again" and "Keep the previous one". Without a mail server the address keeps waiting. Existing addresses stay as they are.
+- **Attention:** others no longer see e-mail addresses, only names, usernames and profile pictures: in the people picker, @-mentions, and the member and share lists of notes, folders, lists, task lists and groups (also in the API). Admins still see them under Users. To share with someone by address, type the full address; the picker then asks the server.
+- **Attention:** profile pictures are uploaded pictures (up to 300 KB) or emoji. Links to pictures on other servers are no longer accepted and are removed from existing accounts, because those servers learned who looked at the picture.
+- Test mails from Settings → Alarms go only to your own confirmed addresses, at most 5 in 15 minutes.
+- The admin user list no longer contains the people's alarm targets (Discord and own webhooks, alarm address).
+- Pages can be zoomed on phones again (accessibility); on iPhone and iPad fields use 16 px text so Safari does not zoom in by itself.
+- The server sends HSTS when visitors come over https, and only believes `X-Forwarded-Host`/`-Proto` from trusted proxies. Outgoing requests (webhooks, link previews) no longer follow redirects from https to http.
+- Files the server creates in `data/` are readable by MindSift only (files 0600, folders 0700).
+- The image installs the security fixes of its Alpine base system when it is built (zlib, CVE-2026-4738).
+- Unexpected server errors tell browsers and AI agents only "Internal error"; the details are in the server log. Tokens of public links and typed sign-in names no longer appear in the log.
+- Signing in with the part of an e-mail address before the @ only works when exactly one account has it.
+- Unknown API paths answer `404` with JSON instead of the app's page; `POST /keys` with a body that is not valid JSON answers `400` instead of creating a key.
+- The install script no longer falls back to the time of day as `JWT_SECRET` when no random source is available (MindSift then makes its own). `compose.yaml` was removed, it was an outdated copy of `docker-compose.yml` that Docker Compose preferred.
+
+### Fixed
+- Deleting your data or account asked for the password without counting wrong guesses; now it counts them like failed sign-ins and locks the same way.
+- With e-mail confirmation on, the sign-up form no longer tells whether an address already has an account, and a failed sign-in takes as long for unknown names as for known ones.
+- Accounts waiting for confirmation or approval are locked from the first moment, not only right after being created.
+- Two first-time setups at the same moment could create two admins.
+- A Markdown or backup export that fails half way is cut off, so the browser reports an error instead of saving a broken ZIP.
+
 ## [0.94.0] - 2026-11-10
 
 ### Added

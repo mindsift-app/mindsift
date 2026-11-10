@@ -190,6 +190,7 @@ The most important settings (all of them, with explanations, are in [`.env.examp
 * **Reverse proxy:** pass through WebSocket upgrades and unbuffered SSE if you can. If not, MindSift falls back to long polling by itself. Examples for nginx, Traefik, Caddy and Cloudflare: [Doku/reverse-proxy.md](Doku/reverse-proxy.md).
 * **Backups:** switch on daily backups in the admin settings: the whole database for you, plus one ZIP per person under `data/backups/` that everyone can download or restore in their account settings (kept 3 days by default, adjustable). Every one of these ZIPs also holds the person's notes, tasks and lists as an Obsidian vault in plain Markdown, so the data stays readable even without MindSift. Copy that folder somewhere else too.
 * **Updates:** `docker compose pull && docker compose up -d`. The database schema updates itself; open apps offer to reload. From v0.87.3 the container runs as uid 1000 and takes over `data/` on the first start by itself; with `user:` in the compose file, give `data/` to that user first (`chown -R 1000:1000 data`).
+* **File permissions:** MindSift creates everything in `data/` for itself only (files 0600, folders 0700), so other accounts on the host cannot read the database, keys or backups. Files from older versions keep their permissions; `chmod -R go-rwx data` closes them too.
 * **Image tags:** `:stable` = the latest tagged release (default in `docker-compose.yml` and the install script), `:vX.Y.Z` = one tagged release, `:latest` = every release from `main`, `:dev` = development.
 * **What changed:** [CHANGELOG.md](CHANGELOG.md).
 
@@ -215,6 +216,24 @@ All data lives in one SQLite file, so a single server is the intended setup; the
 
 ---
 
+## 🔐 Security
+
+MindSift is meant to be reachable from the internet behind a reverse proxy, and the whole code base was reviewed for security in November 2026 (v0.94.0); its findings are fixed (see the [CHANGELOG](CHANGELOG.md)). What protects your data:
+
+* **Sign-in:** passwords are hashed with bcrypt. Every login is a server-side session tied to a signed token; sessions are listed under Profile → Active sessions, can be ended one by one, end after 30 days without use and end with any password change. Repeated failures lock the account for that address after 3 tries, the account after 20 and the address after 30, each for 15 minutes; registration, "forgot password", the password asked before deleting data and the passwords of public links are limited the same way. A failed sign-in takes as long whether the account exists or not.
+* **Secrets never in plain text:** API keys, OAuth tokens, password-reset and e-mail-confirmation links and the tokens of public links are stored only as SHA-256 hashes. Hidden values in notes are encrypted with AES-256-GCM under a key kept apart from the database (`SECRETS_KEY`). Well-known placeholder values for `JWT_SECRET` are refused and a random one is generated instead.
+* **Rights checked on every request:** notes, folders, lists and task lists resolve the caller's role (owner, editor, viewer) on each call. API keys and MCP connections reach only what their scopes allow, OAuth tokens only the MCP endpoint. Public links are read-only, live at most 14 days, can carry a password and hide names, hidden values and links to other notes.
+* **Addresses stay private:** others see names, usernames and profile pictures, never e-mail addresses. A new login or alarm address only counts once its owner clicks the link mailed to it, and test mails go only to one's own confirmed addresses, so the server cannot be used to mail strangers.
+* **Browser hardening:** HSTS over https, a strict Content Security Policy (scripts only from MindSift itself, no embedding in other sites), links in notes limited to http(s) and mailto, uploads recognised by their content (no SVG, no scripts), media and previews served with a sandboxing policy. Profile pictures are uploaded, never loaded from other servers.
+* **Nothing reaches into your network:** every address the server contacts (webhooks, Discord, push services, link previews, image copies) is checked at connection time against localhost, link-local, cloud-metadata and private ranges, after DNS and after redirects (never from https down to http); private ranges only with an explicit admin switch. `X-Forwarded-*` headers only count from trusted proxies.
+* **Limits everywhere:** request bodies capped per endpoint, realtime connections capped per account, import archives checked for size and file count before anything is written.
+* **Quiet logs and errors:** tokens of public links and typed sign-in names stay out of the log; unexpected errors tell clients and AI agents nothing about the database or files. Everything in `data/` is readable by MindSift only.
+* **Supply chain:** the image runs as an unprivileged user, every release is scanned with Trivy (below), and `govulncheck` and `npm audit` report no vulnerability reachable from the code (November 2026).
+
+Found something? Please follow [SECURITY.md](SECURITY.md).
+
+---
+
 ## 🛡️ Security scan
 
 The image is scanned with [Trivy](https://trivy.dev) for known vulnerabilities, leaked secrets and misconfigurations:
@@ -222,12 +241,12 @@ The image is scanned with [Trivy](https://trivy.dev) for known vulnerabilities, 
 * **every tagged release** (`:stable`, `:vx.y.z`) before it is published, and every build that changes the base image, the Go version or the Go modules: a known high or critical vulnerability that already has a fix, or a leaked secret, stops the release;
 * **the published `:stable` and `:latest` every week**, because new vulnerabilities become known after a release.
 
-Last manual scan: **v0.83.8, 2026-11-06, Trivy 0.76.0**.
+Last manual scan: **v0.94.0 with the fixes of the security review, 2026-11-10, Trivy 0.76.0**.
 
 | Part of the image | Critical | High | Medium | Low | Unrated |
 |---|---|---|---|---|---|
 | Alpine 3.24.4 (base system) | 0 | 0 | 0 | 0 | 0 |
-| `/app/mindsift` (Go 1.27.3 binary) | 0 | 0 | 0 | 0 | 1 |
+| `/app/mindsift` (Go 1.27.4 binary) | 0 | 0 | 0 | 0 | 1 |
 
 * **No secrets and no misconfigurations** were found.
 * **Not as root:** since v0.87.3 MindSift runs as the user `mindsift` (uid 1000). The image starts as root only long enough to hand `data/` to that user (once, for installations from before), then drops the rights. Trivy's misconfiguration check therefore still notes a missing `USER` line; that is intended.

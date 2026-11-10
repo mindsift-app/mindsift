@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"html"
 	"io/fs"
 	"log/slog"
 	"net/http"
@@ -28,6 +29,8 @@ type Server struct {
 	store    *storage.Store
 	wsHub    *ws.Hub
 	staticFS fs.FS
+	// setupMu: the first-boot setup runs once at a time
+	setupMu sync.Mutex
 
 	leases   *collab.LeaseManager // block leases and open sessions of notes
 	notifier *collab.Notifier     // wakes long-poll requests on note changes
@@ -143,6 +146,7 @@ func (s *Server) Router() http.Handler {
 	r.Get("/api/v1/legal/{type}", s.handleLegalText)
 	r.Post("/api/v1/auth/setup", s.handleFirstBootSetup)
 	r.Post("/api/v1/auth/verify-email", s.handleVerifyEmail)
+	r.Post("/api/v1/auth/confirm-email", s.handleConfirmEmailChange)
 	r.Post("/api/v1/auth/resend-verification", s.handleResendVerification)
 	r.Post("/api/v1/auth/register", s.handleRegister)
 	r.Post("/api/v1/auth/login", s.handleLogin)
@@ -217,6 +221,8 @@ func (s *Server) Router() http.Handler {
 		r.Post("/api/v1/import/mindsift", s.handleImportMindSift)
 		r.Delete("/api/v1/user/data", s.notInDemo(s.handlePurgeOwnData))
 		r.Delete("/api/v1/user/account", s.notInDemo(s.handleDeleteOwnAccount))
+		r.Delete("/api/v1/user/email-change/{kind}", s.handleCancelEmailChange)
+		r.Post("/api/v1/user/email-change/{kind}/resend", s.notInDemo(s.handleResendEmailChange))
 		r.Post("/api/v1/import/obsidian", s.handleImportObsidian)
 		r.Get("/api/v1/themes", s.handleGetThemes)
 		r.Post("/api/v1/themes", s.handleSaveTheme)
@@ -408,6 +414,11 @@ func (s *Server) Router() http.Handler {
 			if publicPage {
 				publicHeaders(w)
 			}
+			// An API path that does not exist is an error for API clients and agents, not the app's page
+			if strings.HasPrefix(req.URL.Path, "/api/") {
+				writeError(w, http.StatusNotFound, "Nicht gefunden")
+				return
+			}
 			path := strings.TrimPrefix(req.URL.Path, "/")
 			if path == "" {
 				path = "index.html"
@@ -436,16 +447,12 @@ func (s *Server) Router() http.Handler {
 			if path == "index.html" {
 				if data, err := fs.ReadFile(s.staticFS, "index.html"); err == nil {
 					data = localizeStatic(data, s.requestLanguage(req))
-					scheme := "http"
-					if req.TLS != nil || req.Header.Get("X-Forwarded-Proto") == "https" {
-						scheme = "https"
+					origin := requestOrigin(req)
+					if s.cfg.BaseURLSet {
+						origin = strings.TrimRight(s.cfg.BaseURL, "/")
 					}
-					host := req.Header.Get("X-Forwarded-Host")
-					if host == "" {
-						host = req.Host
-					}
-					if host != "" {
-						origin := scheme + "://" + host
+					if origin != "" {
+						origin = html.EscapeString(origin)
 						htmlStr := string(data)
 						htmlStr = strings.ReplaceAll(htmlStr, `content="/og-image.png"`, `content="`+origin+`/og-image.png"`)
 						htmlStr = strings.ReplaceAll(htmlStr, `property="og:url" content="/"`, `property="og:url" content="`+origin+`/"`)
@@ -523,6 +530,26 @@ func writeErrorCode(w http.ResponseWriter, status int, code, message string) {
 	writeJSON(w, status, map[string]string{"error": tr(w, message), "code": code})
 }
 
+// errInternal is what clients see of an unexpected failure; the details (SQL, paths, driver messages)
+// only go to the server log, not to browsers or AI agents.
+const errInternal = "Interner Fehler – Details stehen im Server-Log"
+
+// clientMessage: err as clients may see it. Texts written for people (from the catalog, or errors that
+// say themselves in every language) pass; anything else is logged and replaced by errInternal.
+func clientMessage(err error) string {
+	var l i18n.Localizer
+	if errors.As(err, &l) || i18n.Has("en", err.Error()) {
+		return err.Error()
+	}
+	slog.Error("Request failed", "error", err)
+	return errInternal
+}
+
+// writeInternal answers an unexpected failure with 500 (see clientMessage).
+func writeInternal(w http.ResponseWriter, err error) {
+	writeError(w, http.StatusInternalServerError, clientMessage(err))
+}
+
 // writeStoreError maps read-only task list violations to 403, a missing row (no access or gone) to 404,
 // and everything else to the given fallback status. A raw sql.ErrNoRows is never shown to the client.
 func writeStoreError(w http.ResponseWriter, fallbackStatus int, err error) {
@@ -534,7 +561,24 @@ func writeStoreError(w http.ResponseWriter, fallbackStatus int, err error) {
 		writeError(w, http.StatusNotFound, "Nicht gefunden oder kein Zugriff")
 		return
 	}
+	if fallbackStatus >= http.StatusInternalServerError {
+		writeInternal(w, err)
+		return
+	}
 	writeError(w, fallbackStatus, err.Error())
+}
+
+// logPath: the request path as logged. The token of a public link is the only key to it and lands in
+// the log exactly when it fails (password missing, expired), so it is left out.
+func logPath(path string) string {
+	const public = "/api/v1/public/"
+	if rest, ok := strings.CutPrefix(path, public); ok && rest != "" {
+		if i := strings.Index(rest, "/"); i >= 0 {
+			return public + "<token>" + rest[i:]
+		}
+		return public + "<token>"
+	}
+	return path
 }
 
 func (s *Server) apiLoggingMiddleware(next http.Handler) http.Handler {
@@ -558,7 +602,7 @@ func (s *Server) apiLoggingMiddleware(next http.Handler) http.Handler {
 		}
 
 		method := r.Method
-		path := r.URL.Path
+		path := logPath(r.URL.Path)
 
 		if status >= 500 {
 			slog.Error("HTTP request failed",
@@ -617,7 +661,8 @@ func (s *Server) authenticateToken(token string) (user *domain.User, key *apiKey
 	if err != nil || u == nil || !u.IsActive {
 		return nil, nil
 	}
-	if claims.TokenVersion != 0 && claims.TokenVersion != u.TokenVersion {
+	// Tokens always carry a version (1 or more); one without is not ours
+	if claims.TokenVersion != u.TokenVersion {
 		return nil, nil
 	}
 	// Logged out, ended from the session list or idle for 30 days

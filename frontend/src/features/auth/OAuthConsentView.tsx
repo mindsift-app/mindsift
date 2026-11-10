@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import i18n from '../../i18n';
-import { Brain, Bot, AlertCircle, ExternalLink } from 'lucide-react';
+import { Brain, Bot, AlertCircle, AlertTriangle, ExternalLink } from 'lucide-react';
 import { ApiKeyScope, OAuthAuthorizeInfo, User } from '../../lib/types';
 import { SCOPES, scopeGroups } from '../../lib/apiScopes';
 import { api, triggerHaptic } from '../../lib/api';
@@ -113,6 +113,20 @@ export const OAuthConsentView: React.FC<OAuthConsentViewProps> = ({ user, instan
                   </div>
                 ))}
               </div>
+
+              {info.knownHost === false && (
+                <div role="alert" className="alert-err flex items-start gap-2 text-xs">
+                  <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                  <span>
+                    <Trans
+                      t={t}
+                      i18nKey="consent.unknownHost"
+                      values={{ host: info.redirectHost, client: info.clientName }}
+                      components={{ b: <span className="font-semibold" /> }}
+                    />
+                  </span>
+                </div>
+              )}
 
               <p className="text-[11px] text-faint flex items-center gap-1.5">
                 <ExternalLink className="w-3.5 h-3.5 flex-shrink-0" />

@@ -183,6 +183,9 @@ func (s *Store) GetSystemSettings() (*domain.SystemSettings, error) {
 			case "mcp_enabled":
 				on := v != "false"
 				settings.MCPEnabled = &on
+			case "push_known_services_only":
+				on := v == "true"
+				settings.PushKnownServicesOnly = &on
 			case "people_search":
 				on := v != "false"
 				settings.PeopleSearch = &on
@@ -219,6 +222,10 @@ func (s *Store) GetSystemSettings() (*domain.SystemSettings, error) {
 	if settings.PeopleSearch == nil {
 		on := true
 		settings.PeopleSearch = &on
+	}
+	if settings.PushKnownServicesOnly == nil {
+		off := false
+		settings.PushKnownServicesOnly = &off
 	}
 	if settings.PublicLinks == nil {
 		on := true
@@ -317,7 +324,7 @@ func (s *Store) UpdateSystemSettings(settings *domain.SystemSettings) error {
 		_, err = s.db.Exec(`INSERT INTO system_settings (key, value) VALUES ('mcp_enabled', ?)
 			ON CONFLICT(key) DO UPDATE SET value = excluded.value`, strconv.FormatBool(*settings.MCPEnabled))
 	}
-	for key, v := range map[string]*bool{"people_search": settings.PeopleSearch, "public_links": settings.PublicLinks} {
+	for key, v := range map[string]*bool{"people_search": settings.PeopleSearch, "public_links": settings.PublicLinks, "push_known_services_only": settings.PushKnownServicesOnly} {
 		if err == nil && v != nil {
 			_, err = s.db.Exec(`INSERT INTO system_settings (key, value) VALUES (?, ?)
 				ON CONFLICT(key) DO UPDATE SET value = excluded.value`, key, strconv.FormatBool(*v))

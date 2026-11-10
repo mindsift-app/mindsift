@@ -2,6 +2,7 @@ package storage
 
 import (
 	"crypto/rand"
+	"database/sql"
 	"encoding/base32"
 	"errors"
 	"fmt"
@@ -79,7 +80,22 @@ func (s *Store) CreateUserWithUsername(email, username, passwordHash, displayNam
 	return s.createUserWithID(domain.NewID("usr"), email, username, passwordHash, displayName, role)
 }
 
+// CreateInactiveUser creates an account that cannot sign in yet (waiting for its confirmation link or
+// an admin's approval), locked from the first moment on.
+func (s *Store) CreateInactiveUser(email, passwordHash, displayName, role string) (*domain.User, error) {
+	cleanEmail := domain.NormalizeEmail(email)
+	username := UsernameFromName(displayName)
+	if len(username) < 2 {
+		username = UsernameFromName(strings.Split(cleanEmail, "@")[0])
+	}
+	return s.createUser(domain.NewID("usr"), cleanEmail, username, passwordHash, displayName, role, false)
+}
+
 func (s *Store) createUserWithID(id, email, username, passwordHash, displayName, role string) (*domain.User, error) {
+	return s.createUser(id, email, username, passwordHash, displayName, role, true)
+}
+
+func (s *Store) createUser(id, email, username, passwordHash, displayName, role string, active bool) (*domain.User, error) {
 	if !domain.ValidRole(role) {
 		role = domain.RoleMember
 	}
@@ -99,7 +115,7 @@ func (s *Store) createUserWithID(id, email, username, passwordHash, displayName,
 		PasswordHash:        passwordHash,
 		DisplayName:         strings.TrimSpace(displayName),
 		Role:                role,
-		IsActive:            true,
+		IsActive:            active,
 		TokenVersion:        1,
 		AlarmChannels:       []string{},
 		AlarmEmail:          cleanEmail,
@@ -111,13 +127,20 @@ func (s *Store) createUserWithID(id, email, username, passwordHash, displayName,
 	}
 	_, err = s.db.Exec(
 		`INSERT INTO users (id, email, username, password_hash, display_name, role, is_active, token_version, alarm_channels, alarm_email, discord_webhook_url, custom_webhook_url, notify_before_minutes, avatar_url, created_at)
-		 VALUES (?, ?, ?, ?, ?, ?, 1, 1, '', ?, '', '', 30, '', ?)`,
-		u.ID, u.Email, u.Username, u.PasswordHash, u.DisplayName, u.Role, u.AlarmEmail, u.CreatedAt,
+		 VALUES (?, ?, ?, ?, ?, ?, ?, 1, '', ?, '', '', 30, '', ?)`,
+		u.ID, u.Email, u.Username, u.PasswordHash, u.DisplayName, u.Role, active, u.AlarmEmail, u.CreatedAt,
 	)
 	if err != nil {
 		return nil, err
 	}
 	return u, nil
+}
+
+// EmailInUse: an account has exactly this login address (other ways of signing in do not count).
+func (s *Store) EmailInUse(email string) bool {
+	var n int
+	_ = s.db.QueryRow(`SELECT COUNT(*) FROM users WHERE LOWER(email) = ?`, domain.NormalizeEmail(email)).Scan(&n)
+	return n > 0
 }
 
 func (s *Store) GetUserByEmail(email string) (*domain.User, error) {
@@ -136,19 +159,40 @@ func (s *Store) GetUserByLogin(login string) (*domain.User, error) {
 		return nil, errors.New("benutzername oder e-mail darf nicht leer sein")
 	}
 	// Email or username; a login typed like a display name ("Sandro Dach") finds its username
-	// ("sandro.dach"). The display name itself no longer signs in: two people may share it. The part of
-	// the email before the @ still does, as before (last, for accounts that got used to it).
+	// ("sandro.dach"). The display name itself no longer signs in: two people may share it.
 	asUsername := UsernameFromName(cleanLogin)
 	row := s.db.QueryRow(
 		`SELECT `+userSelectCols+` FROM users
 		 WHERE LOWER(email) = ?
 		    OR (username != '' AND (LOWER(username) = ? OR LOWER(username) = ?))
-		    OR (INSTR(email, '@') > 0 AND LOWER(SUBSTR(email, 1, INSTR(email, '@') - 1)) = ?)
 		 ORDER BY LOWER(email) = ? DESC, LOWER(username) = ? DESC, LOWER(username) = ? DESC
 		 LIMIT 1`,
-		cleanLogin, cleanLogin, asUsername, cleanLogin, cleanLogin, cleanLogin, asUsername,
+		cleanLogin, cleanLogin, asUsername, cleanLogin, cleanLogin, asUsername,
 	)
-	return scanUser(row)
+	u, err := scanUser(row)
+	if err == nil || strings.Contains(cleanLogin, "@") {
+		return u, err
+	}
+	// The part of the email before the @ still signs in, as before, for accounts used to it – but only
+	// when exactly one account has it ("john" of john@a.de and john@b.de is nobody)
+	rows, err := s.db.Query(
+		`SELECT `+userSelectCols+` FROM users
+		 WHERE INSTR(email, '@') > 0 AND LOWER(SUBSTR(email, 1, INSTR(email, '@') - 1)) = ?
+		 LIMIT 2`, cleanLogin)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var found []*domain.User
+	for rows.Next() {
+		if u, err := scanUser(rows); err == nil {
+			found = append(found, u)
+		}
+	}
+	if len(found) != 1 {
+		return nil, sql.ErrNoRows
+	}
+	return found[0], nil
 }
 
 // EnsureDemoAccounts seeds admin/admin and user/user accounts for demo evaluation
@@ -305,6 +349,9 @@ func (s *Store) UpdateUserFull(
 	}
 	if avatarURL != nil {
 		u.AvatarURL = strings.TrimSpace(*avatarURL)
+		if !ValidAvatar(u.AvatarURL) {
+			return nil, ErrInvalidAvatar
+		}
 	}
 	if (role != nil && *role != u.Role) || (isActive != nil && !*isActive && u.IsActive) {
 		u.TokenVersion++
@@ -338,6 +385,7 @@ func (s *Store) DeleteUser(userID string) error {
 		stmt(`DELETE FROM sessions WHERE user_id = ?`, userID),
 		stmt(`DELETE FROM task_assignees WHERE user_id = ?`, userID),
 		stmt(`DELETE FROM password_reset_tokens WHERE user_id = ?`, userID),
+		stmt(`DELETE FROM email_changes WHERE user_id = ?`, userID),
 		stmt(`DELETE FROM organization_members WHERE user_id = ?`, userID),
 		stmt(`DELETE FROM users WHERE id = ?`, userID),
 	); err != nil {

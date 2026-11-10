@@ -53,6 +53,8 @@ var migrations = []migration{
 	{30, "Mentions in notes", (*Store).migrateMentions},
 	{31, "Notification center", (*Store).migrateCenter},
 	{32, "Reminders per task", (*Store).migrateReminders},
+	{33, "New e-mail addresses wait for confirmation", (*Store).migrateEmailChanges},
+	{34, "Profile pictures only uploaded or emoji", (*Store).migrateAvatars},
 }
 
 func (s *Store) migrate() error {
