@@ -131,6 +131,7 @@ export const tasksApi = {
       tags?: string[];
       assignees?: string[];
       recurrence?: string;
+      reminders?: number[];
     }
   ): Promise<Thought> {
     try {

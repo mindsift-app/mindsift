@@ -482,4 +482,12 @@ var messagesIT = map[string]string{
 	"Öffentliche Links sind auf diesem Server abgeschaltet":                                              "I link pubblici sono disattivati su questo server",
 	"Diese Laufzeit ist nicht erlaubt":                                                                   "Questa durata non è consentita",
 	"Das Passwort ist zu lang":                                                                           "La password è troppo lunga",
+	"Erinnerung: {title}":                                                                                "Promemoria: {title}",
+	"Erinnerung: Diese Aufgabe ist am {due} fällig:":                                                     "Promemoria: questa attività scade il {due}:",
+	"Aufgabe ist am {due} fällig.":                                                                       "L’attività scade il {due}.",
+	"Erinnerung an eine Aufgabe":                                                                         "Promemoria attività",
+	"„{title}“ ist am {due} fällig":                                                                      "«{title}» scade il {due}",
+	"Unbekannte Erinnerung (erlaubt: 0, 15, 30, 60, 120 Minuten, 1, 2, 3, 7, 14 Tage, 1 Monat vorher)": "Promemoria sconosciuto (consentiti: 0, 15, 30, 60, 120 minuti, 1, 2, 3, 7, 14 giorni, 1 mese prima)",
+	"{name} hat die Erinnerungen von „{title}“ geändert":                                               "{name} ha modificato i promemoria di «{title}»",
+	"Erinnerungen": "promemoria",
 }

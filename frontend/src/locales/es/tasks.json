@@ -60,7 +60,26 @@
     "created": "Creado: {{date}}",
     "plusWeek": "+1 semana",
     "timeShort": "Hora",
-    "renameSubtask": "Haz clic para cambiar el nombre"
+    "renameSubtask": "Haz clic para cambiar el nombre",
+    "reminder": {
+      "label": "Recordatorio",
+      "standard": "Predeterminado ({{lead}})",
+      "standardHint": "Como en Ajustes → Alarmas",
+      "title": "Cuándo te recuerda MindSift esta tarea. Las horas propias sustituyen la antelación de los ajustes y valen para todos los que reciben su alarma de vencimiento.",
+      "own": "Recordatorios propios: {{list}}",
+      "m0": "A la hora de vencimiento",
+      "m0AllDay": "El día de vencimiento (9:00)",
+      "m15": "15 min antes",
+      "m30": "30 min antes",
+      "m60": "1 hora antes",
+      "m120": "2 horas antes",
+      "m1440": "1 día antes",
+      "m2880": "2 días antes",
+      "m4320": "3 días antes",
+      "m10080": "1 semana antes",
+      "m20160": "2 semanas antes",
+      "m43200": "1 mes antes"
+    }
   },
   "columnsModal": {
     "minOne": "Debe haber al menos una columna.",

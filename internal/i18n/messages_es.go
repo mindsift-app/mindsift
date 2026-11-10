@@ -482,4 +482,12 @@ var messagesES = map[string]string{
 	"Öffentliche Links sind auf diesem Server abgeschaltet":                                              "Los enlaces públicos están desactivados en este servidor",
 	"Diese Laufzeit ist nicht erlaubt":                                                                   "Esta duración no está permitida",
 	"Das Passwort ist zu lang":                                                                           "La contraseña es demasiado larga",
+	"Erinnerung: {title}":                                                                                "Recordatorio: {title}",
+	"Erinnerung: Diese Aufgabe ist am {due} fällig:":                                                     "Recordatorio: esta tarea vence el {due}:",
+	"Aufgabe ist am {due} fällig.":                                                                       "La tarea vence el {due}.",
+	"Erinnerung an eine Aufgabe":                                                                         "Recordatorio de tarea",
+	"„{title}“ ist am {due} fällig":                                                                      "«{title}» vence el {due}",
+	"Unbekannte Erinnerung (erlaubt: 0, 15, 30, 60, 120 Minuten, 1, 2, 3, 7, 14 Tage, 1 Monat vorher)": "Recordatorio desconocido (permitidos: 0, 15, 30, 60, 120 minutos, 1, 2, 3, 7, 14 días, 1 mes antes)",
+	"{name} hat die Erinnerungen von „{title}“ geändert":                                               "{name} ha cambiado los recordatorios de «{title}»",
+	"Erinnerungen": "recordatorios",
 }

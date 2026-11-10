@@ -785,7 +785,7 @@ func (s *Server) handleTestUserAlarm(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusBadRequest, "Bitte eine Webhook-URL angeben")
 			return
 		}
-		if err := s.sendCustomWebhookNotification(url, "test_alarm", testTitle, i18n.T(lang, "Dein eigener Webhook empfängt MindSift-Alarme!"), domain.NowISO()[:10], "normal"); err != nil {
+		if err := s.sendCustomWebhookNotification(url, "test_alarm", testTitle, i18n.T(lang, "Dein eigener Webhook empfängt MindSift-Alarme!"), domain.NowISO()[:10], "normal", nil); err != nil {
 			writeError(w, http.StatusBadGateway, "Webhook-Fehler: "+err.Error())
 			return
 		}

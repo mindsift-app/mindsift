@@ -123,6 +123,16 @@ export function useTaskActions({
     }
   };
 
+  const handleUpdateTaskReminders = async (task: Thought, reminders: number[]) => {
+    setTasks((prev) => prev.map((t) => (t.id === task.id ? { ...t, reminders } : t)));
+    try {
+      const updated = await api.updateThought(task.id, { reminders });
+      setTasks((prev) => prev.map((t) => (t.id === task.id ? { ...t, reminders: updated.reminders || [] } : t)));
+    } catch {
+      setTasks((prev) => prev.map((t) => (t.id === task.id ? { ...t, reminders: task.reminders } : t)));
+    }
+  };
+
   const handleUpdateTaskAssignees = async (task: Thought, assignees: string[]) => {
     triggerHaptic(10);
     setTasks((prev) => prev.map((t) => (t.id === task.id ? { ...t, assignees } : t)));
@@ -267,6 +277,7 @@ export function useTaskActions({
     handleUpdateTaskTaskList,
     handleUpdateTaskNotes,
     handleUpdateTaskRecurrence,
+    handleUpdateTaskReminders,
     handleUpdateTaskAssignees,
     handleUpdateTaskTags,
     handleToggleSubtask,

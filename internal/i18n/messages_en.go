@@ -482,4 +482,12 @@ var messagesEN = map[string]string{
 	"Öffentliche Links sind auf diesem Server abgeschaltet":                                              "Public links are switched off on this server",
 	"Diese Laufzeit ist nicht erlaubt":                                                                   "This duration is not allowed",
 	"Das Passwort ist zu lang":                                                                           "The password is too long",
+	"Erinnerung: {title}":                                                                                "Reminder: {title}",
+	"Erinnerung: Diese Aufgabe ist am {due} fällig:":                                                     "Reminder: this task is due on {due}:",
+	"Aufgabe ist am {due} fällig.":                                                                       "The task is due on {due}.",
+	"Erinnerung an eine Aufgabe":                                                                         "Task reminder",
+	"„{title}“ ist am {due} fällig":                                                                      "“{title}” is due on {due}",
+	"Unbekannte Erinnerung (erlaubt: 0, 15, 30, 60, 120 Minuten, 1, 2, 3, 7, 14 Tage, 1 Monat vorher)": "Unknown reminder (allowed: 0, 15, 30, 60, 120 minutes, 1, 2, 3, 7, 14 days, 1 month before)",
+	"{name} hat die Erinnerungen von „{title}“ geändert":                                               "{name} changed the reminders of “{title}”",
+	"Erinnerungen": "reminders",
 }

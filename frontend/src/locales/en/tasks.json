@@ -60,7 +60,26 @@
     "created": "Created: {{date}}",
     "plusWeek": "+1 week",
     "timeShort": "Time",
-    "renameSubtask": "Click to rename"
+    "renameSubtask": "Click to rename",
+    "reminder": {
+      "label": "Reminder",
+      "standard": "Default ({{lead}})",
+      "standardHint": "As in Settings → Alarms",
+      "title": "When MindSift reminds you of this task. Own times replace the lead time from the settings and apply to everyone who gets its due alarm.",
+      "own": "Own reminders: {{list}}",
+      "m0": "At the due time",
+      "m0AllDay": "On the due day (9 am)",
+      "m15": "15 min before",
+      "m30": "30 min before",
+      "m60": "1 hour before",
+      "m120": "2 hours before",
+      "m1440": "1 day before",
+      "m2880": "2 days before",
+      "m4320": "3 days before",
+      "m10080": "1 week before",
+      "m20160": "2 weeks before",
+      "m43200": "1 month before"
+    }
   },
   "columnsModal": {
     "minOne": "There must be at least one column.",

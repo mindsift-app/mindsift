@@ -146,4 +146,27 @@ describe('TaskDetailModal', () => {
     expect(onClose).toHaveBeenCalledTimes(2);
     expect(onUpdateNotes).not.toHaveBeenCalled();
   });
+
+  it('picks own reminders; "Standard" with the lead time from the settings stands for none', () => {
+    const onUpdateReminders = vi.fn(async () => {});
+    const { rerender } = render(<TaskDetailModal {...props({ onUpdateReminders, leadMinutes: 1440 })} />);
+    const field = screen.getByRole('button', { name: 'Erinnerung' });
+    expect(field.textContent).toContain('Standard (1 Tag vorher)');
+    fireEvent.click(field);
+    fireEvent.click(screen.getByRole('option', { name: /2 Wochen vorher/ }));
+    expect(onUpdateReminders).toHaveBeenLastCalledWith(task, [20160]);
+
+    const withReminders = { ...task, reminders: [20160, 0] };
+    rerender(<TaskDetailModal {...props({ onUpdateReminders, leadMinutes: 1440, task: withReminders })} />);
+    expect(screen.getByRole('button', { name: 'Erinnerung' }).textContent).toContain('2 Wochen vorher, Zum Fälligkeitszeitpunkt');
+    fireEvent.click(screen.getByRole('option', { name: /Standard/ }));
+    expect(onUpdateReminders).toHaveBeenLastCalledWith(withReminders, []);
+  });
+
+  it('offers only whole days for a task without a time', () => {
+    render(<TaskDetailModal {...props({ onUpdateReminders: vi.fn(async () => {}), task: { ...task, dueDate: '2026-10-30' } })} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Erinnerung' }));
+    expect(screen.queryByRole('option', { name: /Std\. vorher/ })).toBeNull();
+    expect(screen.getByRole('option', { name: /Am Fälligkeitstag \(9 Uhr\)/ })).toBeTruthy();
+  });
 });

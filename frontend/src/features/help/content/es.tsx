@@ -559,6 +559,9 @@ const es: HelpContent = {
               <strong className="text-main">Avisos automáticos:</strong> a la hora de vencimiento (tareas de todo el día a las 9:00, menos tu tiempo de antelación), MindSift te notifica por <strong className="text-main">correo electrónico</strong>, <strong className="text-main">webhook de Discord</strong> o tu propio webhook HTTP. Si pospones la fecha o reabres la tarea, el aviso vuelve a programarse. Configurable en los ajustes de tu cuenta.
             </li>
             <li>
+              <strong className="text-main">Recordatorios por tarea:</strong> En la ventana de detalles, marca una o varias horas en «Recordatorio», p. ej. 2 semanas antes y el día de vencimiento. Para esta tarea sustituyen tu antelación y valen para todos los que reciben su alarma de vencimiento; «Predeterminado» vuelve a la antelación de los ajustes. Sin hora, MindSift recuerda días enteros antes a las 9:00. Las tareas con recordatorios propios llevan una pequeña 🔔.
+            </li>
+            <li>
               <strong className="text-main">Más notificaciones:</strong> Cuando alguien te asigna una tarea, llega una tarea nueva a una lista compartida o se completa una allí, MindSift puede avisarte; cada evento se activa o desactiva por separado en los ajustes, en “Avisos”. Las tareas que <strong className="text-main">sigues</strong> notifican cada cambio (estado, prioridad, vencimiento, texto, descripción, subtareas, asignación …), también si se marcan en una nota. MindSift nunca te avisa de lo que haces tú. Varios eventos llegan juntos en un solo mensaje. La <strong className="text-main">campana</strong> junto a la búsqueda reúne todo lo de los últimos 14 días, aunque no tengas canales activados; un clic en una entrada abre la tarea o la nota.
             </li>
             <li>

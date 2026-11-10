@@ -2,6 +2,7 @@ package storage
 
 import (
 	"errors"
+	"strconv"
 	"time"
 
 	"github.com/mindsift-app/mindsift/internal/domain"
@@ -102,11 +103,12 @@ func (s *Store) TaskAlarmRecipients(t *domain.Thought) []string {
 	return out
 }
 
-// GetDueTasksForAlarm returns one entry per task and recipient whose alarm is still pending; whether its
-// time has come (due date minus the person's lead time) is decided by the caller.
+// GetDueTasksForAlarm returns one entry per task, recipient and reminder whose alarm is still pending: the
+// task's own reminders, or the person's lead time when it has none. Whether its time has come (due date
+// minus NotifyBeforeMinutes) is decided by the caller.
 func (s *Store) GetDueTasksForAlarm() ([]DueTaskAlarm, error) {
 	rows, err := s.db.Query(
-		`SELECT id, user_id, content, notes, due_date, priority, task_list_id
+		`SELECT id, user_id, content, notes, due_date, priority, task_list_id, reminders
 		 FROM thoughts
 		 WHERE (status = 'kept' OR (status = 'converted' AND converted_type = 'task'))
 		   AND is_completed = 0
@@ -118,7 +120,9 @@ func (s *Store) GetDueTasksForAlarm() ([]DueTaskAlarm, error) {
 	var tasks []domain.Thought
 	for rows.Next() {
 		var t domain.Thought
-		if rows.Scan(&t.ID, &t.UserID, &t.Content, &t.Notes, &t.DueDate, &t.Priority, &t.TaskListID) == nil {
+		var reminders string
+		if rows.Scan(&t.ID, &t.UserID, &t.Content, &t.Notes, &t.DueDate, &t.Priority, &t.TaskListID, &reminders) == nil {
+			t.Reminders = domain.ParseReminders(reminders)
 			tasks = append(tasks, t)
 		}
 	}
@@ -128,12 +132,13 @@ func (s *Store) GetDueTasksForAlarm() ([]DueTaskAlarm, error) {
 	}
 
 	done := map[string]bool{}
-	sentRows, err := s.db.Query(`SELECT task_id, user_id FROM task_alarms_sent WHERE sent = 1`)
+	sentRows, err := s.db.Query(`SELECT task_id, user_id, reminder FROM task_alarms_sent WHERE sent = 1`)
 	if err == nil {
 		for sentRows.Next() {
 			var taskID, userID string
-			if sentRows.Scan(&taskID, &userID) == nil {
-				done[taskID+"|"+userID] = true
+			var reminder int
+			if sentRows.Scan(&taskID, &userID, &reminder) == nil {
+				done[sentKey(taskID, userID, reminder)] = true
 			}
 		}
 		sentRows.Close()
@@ -144,10 +149,11 @@ func (s *Store) GetDueTasksForAlarm() ([]DueTaskAlarm, error) {
 	for i := range tasks {
 		t := &tasks[i]
 		t.Assignees = s.getTaskAssignees(t.ID)
+		reminders := t.Reminders
+		if len(reminders) == 0 {
+			reminders = []int{ReminderLeadTime}
+		}
 		for _, uid := range s.TaskAlarmRecipients(t) {
-			if done[t.ID+"|"+uid] {
-				continue
-			}
 			u, ok := users[uid]
 			if !ok {
 				u = s.alarmUser(uid)
@@ -156,12 +162,25 @@ func (s *Store) GetDueTasksForAlarm() ([]DueTaskAlarm, error) {
 			if u == nil {
 				continue
 			}
-			a := *u
-			a.TaskID, a.Title, a.Notes, a.DueDate, a.Priority = t.ID, t.Content, t.Notes, t.DueDate, t.Priority
-			alarms = append(alarms, a)
+			for _, reminder := range reminders {
+				if done[sentKey(t.ID, uid, reminder)] {
+					continue
+				}
+				a := *u
+				a.TaskID, a.Title, a.Notes, a.DueDate, a.Priority = t.ID, t.Content, t.Notes, t.DueDate, t.Priority
+				a.Reminder = reminder
+				if reminder != ReminderLeadTime {
+					a.NotifyBeforeMinutes = reminder
+				}
+				alarms = append(alarms, a)
+			}
 		}
 	}
 	return alarms, nil
+}
+
+func sentKey(taskID, userID string, reminder int) string {
+	return taskID + "|" + userID + "|" + strconv.Itoa(reminder)
 }
 
 // alarmUser: the channels and addresses of an active person, nil for a missing or deactivated account.
@@ -183,11 +202,12 @@ func (s *Store) alarmUser(userID string) *DueTaskAlarm {
 	return &a
 }
 
-// MarkTaskAlarmSent records that the person got the alarm.
-func (s *Store) MarkTaskAlarmSent(taskID, userID string) error {
+// MarkTaskAlarmSent records that the person got the alarm of one reminder (ReminderLeadTime: the
+// alarm at their lead time).
+func (s *Store) MarkTaskAlarmSent(taskID, userID string, reminder int) error {
 	return s.execInTx(
-		stmt(`INSERT INTO task_alarms_sent (task_id, user_id, sent, failures) VALUES (?, ?, 1, 0)
-			ON CONFLICT(task_id, user_id) DO UPDATE SET sent = 1, failures = 0`, taskID, userID),
+		stmt(`INSERT INTO task_alarms_sent (task_id, user_id, reminder, sent, failures) VALUES (?, ?, ?, 1, 0)
+			ON CONFLICT(task_id, user_id, reminder) DO UPDATE SET sent = 1, failures = 0`, taskID, userID, reminder),
 		stmt(`UPDATE thoughts SET alarm_sent = 1 WHERE id = ?`, taskID),
 	)
 }
@@ -198,26 +218,26 @@ const MaxAlarmFailures = 3
 
 // RecordTaskAlarmFailure counts a run in which no channel reached the person and reports whether their
 // alarm was given up now.
-func (s *Store) RecordTaskAlarmFailure(taskID, userID string) (gaveUp bool, err error) {
+func (s *Store) RecordTaskAlarmFailure(taskID, userID string, reminder int) (gaveUp bool, err error) {
 	var failures int
-	err = s.db.QueryRow(`INSERT INTO task_alarms_sent (task_id, user_id, sent, failures) VALUES (?, ?, 0, 1)
-		ON CONFLICT(task_id, user_id) DO UPDATE SET failures = failures + 1
-		RETURNING failures`, taskID, userID).Scan(&failures)
+	err = s.db.QueryRow(`INSERT INTO task_alarms_sent (task_id, user_id, reminder, sent, failures) VALUES (?, ?, ?, 0, 1)
+		ON CONFLICT(task_id, user_id, reminder) DO UPDATE SET failures = failures + 1
+		RETURNING failures`, taskID, userID, reminder).Scan(&failures)
 	if err != nil {
 		return false, err
 	}
 	gaveUp = failures >= MaxAlarmFailures
 	if gaveUp {
-		_, err = s.db.Exec(`UPDATE task_alarms_sent SET sent = 1 WHERE task_id = ? AND user_id = ?`, taskID, userID)
+		_, err = s.db.Exec(`UPDATE task_alarms_sent SET sent = 1 WHERE task_id = ? AND user_id = ? AND reminder = ?`, taskID, userID, reminder)
 	}
 	// Someone has an entry now: a new due date or reopening clears it again
 	_, _ = s.db.Exec(`UPDATE thoughts SET alarm_sent = 1 WHERE id = ?`, taskID)
 	return gaveUp, err
 }
 
-// taskAlarmFailures: failed runs for one person (tests).
+// taskAlarmFailures: failed runs for one person at their lead time (tests).
 func (s *Store) taskAlarmFailures(taskID, userID string) int {
 	var n int
-	_ = s.db.QueryRow(`SELECT failures FROM task_alarms_sent WHERE task_id = ? AND user_id = ?`, taskID, userID).Scan(&n)
+	_ = s.db.QueryRow(`SELECT failures FROM task_alarms_sent WHERE task_id = ? AND user_id = ? AND reminder = -1`, taskID, userID).Scan(&n)
 	return n
 }

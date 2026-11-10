@@ -293,6 +293,7 @@ type taskView struct {
 	Tags         []string         `json:"tags,omitempty"`
 	Subtasks     []domain.SubTask `json:"subtasks,omitempty"`
 	Recurrence   string           `json:"recurrence,omitempty"`
+	Reminders    []int            `json:"reminders,omitempty"`
 	CreatedAt    string           `json:"createdAt"`
 	Origin       *domain.Origin   `json:"origin,omitempty"`
 	URL          string           `json:"url,omitempty"`
@@ -317,7 +318,7 @@ func (s *Server) toTaskView(t *domain.Thought) taskView {
 	return taskView{
 		ID: t.ID, Content: t.Content, IsCompleted: t.IsCompleted, Priority: t.Priority, DueDate: t.DueDate,
 		TaskListID: t.TaskListID, KanbanStatus: t.KanbanStatus, Notes: s.store.ReadableMentions(t.Notes), Tags: t.Tags, Subtasks: subs,
-		Recurrence: t.Recurrence, CreatedAt: t.CreatedAt, Origin: t.Origin, URL: s.mcpLink("task", t.ID),
+		Recurrence: t.Recurrence, Reminders: t.Reminders, CreatedAt: t.CreatedAt, Origin: t.Origin, URL: s.mcpLink("task", t.ID),
 	}
 }
 
@@ -570,6 +571,8 @@ var mcpTools = []mcpTool{
 			"priority":   map[string]interface{}{"type": "string", "enum": []string{"low", "normal", "high", "urgent"}},
 			"dueDate":    prop("string", "YYYY-MM-DD or YYYY-MM-DDTHH:MM"),
 			"notes":      prop("string", "Longer description"),
+			"reminders": map[string]interface{}{"type": "array", "items": map[string]string{"type": "integer"},
+				"description": "Reminders in minutes before the due date, replacing the user's lead time: 0, 15, 30, 60, 120, 1440 (1 day), 2880, 4320, 10080 (1 week), 20160 (2 weeks), 43200 (1 month); [] = the lead time again"},
 		}),
 		run: func(s *Server, userID string, actor *apiActor, args json.RawMessage) (interface{}, error) {
 			var a struct {
@@ -578,6 +581,7 @@ var mcpTools = []mcpTool{
 				Priority   string `json:"priority"`
 				DueDate    string `json:"dueDate"`
 				Notes      string `json:"notes"`
+				Reminders  []int  `json:"reminders"`
 			}
 			if err := decodeArgs(args, &a); err != nil {
 				return nil, err
@@ -585,9 +589,17 @@ var mcpTools = []mcpTool{
 			if strings.TrimSpace(a.Content) == "" {
 				return nil, errors.New("'content' darf nicht leer sein")
 			}
+			if _, ok := domain.NormalizeReminders(a.Reminders); !ok {
+				return nil, storage.ErrInvalidReminders
+			}
 			t, err := s.createTask(userID, a.Content, a.Priority, "agent", a.DueDate, a.TaskListID, a.Notes, actor)
 			if err != nil {
 				return nil, err
+			}
+			if len(a.Reminders) > 0 {
+				if t.Reminders, err = s.store.SetTaskReminders(userID, t.ID, a.Reminders); err != nil {
+					return nil, err
+				}
 			}
 			return s.toTaskView(t), nil
 		},
@@ -606,6 +618,8 @@ var mcpTools = []mcpTool{
 			"kanbanStatus": prop("string", "Column id of the task list's board (e.g. todo, in_progress, done)"),
 			"taskListId":   prop("string", "Move into another task list"),
 			"tags":         map[string]interface{}{"type": "array", "items": map[string]string{"type": "string"}},
+			"reminders": map[string]interface{}{"type": "array", "items": map[string]string{"type": "integer"},
+				"description": "Reminders in minutes before the due date, replacing the user's lead time: 0, 15, 30, 60, 120, 1440 (1 day), 2880, 4320, 10080 (1 week), 20160 (2 weeks), 43200 (1 month); [] = the lead time again"},
 		}),
 		run: func(s *Server, userID string, actor *apiActor, args json.RawMessage) (interface{}, error) {
 			var a struct {
