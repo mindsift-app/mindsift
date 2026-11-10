@@ -37,7 +37,7 @@ func (s *Server) handleGetDocuments(w http.ResponseWriter, r *http.Request) {
 	userID := auth.GetUserID(r.Context())
 	docs, err := s.store.GetDocuments(userID)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternal(w, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, docs)
@@ -146,7 +146,7 @@ func (s *Server) handleDeleteDocument(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleGetTrash(w http.ResponseWriter, r *http.Request) {
 	items, err := s.store.GetTrash(auth.GetUserID(r.Context()))
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternal(w, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, items)
@@ -178,7 +178,7 @@ func (s *Server) handlePurgeDocument(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleEmptyTrash(w http.ResponseWriter, r *http.Request) {
 	ids, err := s.store.EmptyTrash(auth.GetUserID(r.Context()))
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternal(w, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]int{"deleted": len(ids)})
@@ -189,7 +189,7 @@ func writeTrashError(w http.ResponseWriter, err error) {
 		writeError(w, http.StatusNotFound, err.Error())
 		return
 	}
-	writeError(w, http.StatusInternalServerError, err.Error())
+	writeInternal(w, err)
 }
 
 func (s *Server) handleCreateEnhancedTask(w http.ResponseWriter, r *http.Request) {
@@ -258,7 +258,7 @@ func (s *Server) handleGetDocShares(w http.ResponseWriter, r *http.Request) {
 	}
 	shares, err := s.store.GetDocShares(docID)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternal(w, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, shares)
@@ -330,7 +330,7 @@ func (s *Server) handleGetCollaborators(w http.ResponseWriter, r *http.Request) 
 	userID := auth.GetUserID(r.Context())
 	users, err := s.store.GetDirectory(userID, s.peopleSearchEnabled())
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternal(w, err)
 		return
 	}
 	// The directory without the viewer: only the public view, never webhooks, alarm e-mail or role

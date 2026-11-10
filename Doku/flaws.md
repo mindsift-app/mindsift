@@ -30,21 +30,17 @@ Severity levels: **High** (account takeover or data exfiltration possible), **Me
 ## Feature Ideas
 
 ### Capture
-- **App Share Target** (`share_target` in manifest): Share links and text from other mobile apps directly to the inbox.
 - **Natural Language Dates** during capture: "Dentist tomorrow 2pm" automatically sets the due date and time.
 - **Email to Inbox:** A dedicated personal email address whose incoming emails become inbox thoughts.
 
 ### Tasks & Reminders
-- **Web Push Notifications** for alarms directly to mobile and desktop, without requiring Discord or email.
-- **Alarms for Assignees**, not just the task owner.
 - **Per-User Timezone** instead of a single server-wide timezone.
 - **Calendar View & iCal Subscription** for due tasks (e.g. in Google/Apple Calendar).
 - **Flexible Recurrence:** "every 2nd Tuesday", "on the last business day", "3 days after completion".
 
 ### Notes
 - **View & Restore Version History:** The operations log (`doc_ops`) exists, but a dedicated UI is missing.
-- **Templates & Daily Notes** (e.g. "Weekly Review", "Today").
-- **Public Read Link** for individual notes, with expiration dates.
+- **Templates** (e.g. "Weekly Review").
 - **Graph View** based on backlinks.
 
 ### Lists

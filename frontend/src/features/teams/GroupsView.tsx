@@ -526,9 +526,11 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ currentUser, onBack }) =
                                     <p className="text-main font-medium truncate text-xs">
                                       {m.displayName} {isSelf && <span className="text-faint">{t('you')}</span>}
                                     </p>
-                                    <p className="text-[10px] text-muted truncate">
-                                      {m.email}
-                                    </p>
+                                    {m.email && (
+                                      <p className="text-[10px] text-muted truncate">
+                                        {m.email}
+                                      </p>
+                                    )}
                                   </div>
                                 </div>
 

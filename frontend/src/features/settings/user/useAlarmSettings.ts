@@ -242,6 +242,7 @@ export function useAlarmSettings(currentUser: User, onUserUpdated: (u: User) => 
   };
 
   return {
+    onUserUpdated,
     notificationSettings,
     setNotificationSettings,
     alarmEmail,

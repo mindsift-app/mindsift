@@ -14,7 +14,7 @@ func (s *Server) handleGetFolders(w http.ResponseWriter, r *http.Request) {
 	userID := auth.GetUserID(r.Context())
 	folders, err := s.store.GetFolders(userID)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternal(w, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, folders)
@@ -48,7 +48,7 @@ func (s *Server) handleDeleteFolder(w http.ResponseWriter, r *http.Request) {
 
 	deletedDocIDs, err := s.store.DeleteFolder(userID, folderPath)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternal(w, err)
 		return
 	}
 
@@ -132,7 +132,7 @@ func (s *Server) handleGetSharedFolders(w http.ResponseWriter, r *http.Request) 
 	userID := auth.GetUserID(r.Context())
 	folders, err := s.store.GetSharedFolders(userID)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternal(w, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, folders)
@@ -173,7 +173,7 @@ func (s *Server) handleDeleteSharedFolder(w http.ResponseWriter, r *http.Request
 	folderID := chi.URLParam(r, "id")
 	audience := s.store.GetSharedFolderUserIDs(folderID)
 	if err := s.store.DeleteSharedFolder(userID, folderID); err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternal(w, err)
 		return
 	}
 	s.wsHub.BroadcastToUsers(append(audience, userID), "WORKSPACE_FOLDERS_UPDATED", map[string]string{"folderId": folderID})
@@ -208,7 +208,7 @@ func (s *Server) handleGetFolderShares(w http.ResponseWriter, r *http.Request) {
 	}
 	shares, err := s.store.GetFolderShares(folderID)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternal(w, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, shares)
@@ -267,7 +267,7 @@ func (s *Server) handleDeleteFolderShare(w http.ResponseWriter, r *http.Request)
 	docIDs, _ := s.store.GetSharedFolderDocIDs(folderID)
 	audienceBefore := s.store.GetSharedFolderUserIDs(folderID)
 	if err := s.store.DeleteFolderShare(userID, folderID, shareID); err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternal(w, err)
 		return
 	}
 	audienceAfter := s.store.GetSharedFolderUserIDs(folderID)
@@ -294,7 +294,7 @@ func (s *Server) handleGetWorkspaceTags(w http.ResponseWriter, r *http.Request) 
 	userID := auth.GetUserID(r.Context())
 	tags, err := s.store.GetWorkspaceTags(userID)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternal(w, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, tags)
@@ -305,7 +305,7 @@ func (s *Server) handleGetTagDetails(w http.ResponseWriter, r *http.Request) {
 	tag := chi.URLParam(r, "tag")
 	details, err := s.store.GetTagDetails(userID, tag)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternal(w, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, details)
@@ -323,7 +323,7 @@ func (s *Server) handleUpdateTagPageNote(w http.ResponseWriter, r *http.Request)
 	}
 	updatedAt, err := s.store.UpdateTagPageNote(userID, tag, req.Content)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternal(w, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]string{

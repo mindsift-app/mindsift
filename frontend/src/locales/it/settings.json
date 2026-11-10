@@ -596,7 +596,9 @@
     "publicLinksHint": "I proprietari possono condividere una nota in sola lettura tramite link, anche con persone senza account, eventualmente con password. I link scadono sempre e non finiscono nei motori di ricerca. Disattivato, nessun link esistente funziona più.",
     "publicLinkMaxDays": "Durata massima di un link",
     "days_one": "{{count}} giorno",
-    "days_other": "{{count}} giorni"
+    "days_other": "{{count}} giorni",
+    "pushKnownOnly": "Push solo tramite servizi noti",
+    "pushKnownOnlyHint": "Predefinito: le notifiche push vanno al servizio push indicato dal browser (qualsiasi indirizzo https). Se attivo, solo ai servizi di Google (Chrome, Edge, Android), Mozilla (Firefox), Apple (Safari) e Microsoft (Windows). I dispositivi con altri servizi non ricevono più messaggi push."
   },
   "admin": {
     "loadFailed": "Caricamento dei dati di amministrazione non riuscito",
@@ -781,5 +783,13 @@
   "appearanceExtra": {
     "accentColor": "Colore d’accento {{color}}",
     "themeSaved": "Tema «{{name}}» salvato e attivato."
+  },
+  "pendingEmail": {
+    "waiting": "In attesa di conferma: {{email}}. Abbiamo inviato un link a questo indirizzo: finché non viene cliccato resta valido quello precedente.",
+    "noMail": "{{email}} è in attesa di conferma, ma questo server non invia e-mail. Finché un amministratore non lo configura, resta valido l'indirizzo precedente.",
+    "resend": "Invia di nuovo il link",
+    "resent": "Un nuovo link è in arrivo.",
+    "cancel": "Mantieni il precedente",
+    "failed": "Non ha funzionato."
   }
 }

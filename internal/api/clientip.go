@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
+	"regexp"
 	"strings"
 	"sync"
 )
@@ -25,6 +26,8 @@ type clientIPInfo struct {
 	// viaProxyWithoutHeader: the connection came from a trusted proxy that did not say who the
 	// visitor is, so all visitors look the same. Per-IP limits must not apply then.
 	viaProxyWithoutHeader bool
+	// fromProxy: the connection came from a trusted proxy, so its X-Forwarded-* headers count
+	fromProxy bool
 }
 
 type proxyTrust struct {
@@ -90,6 +93,12 @@ func (t proxyTrust) resolveClientIP(peer string, h http.Header) clientIPInfo {
 	if peerAddr == nil || !t.trusts(peerAddr) {
 		return clientIPInfo{ip: peer}
 	}
+	info := t.clientBehindProxy(peer, peerAddr, h)
+	info.fromProxy = true
+	return info
+}
+
+func (t proxyTrust) clientBehindProxy(peer string, peerAddr net.IP, h http.Header) clientIPInfo {
 	// X-Forwarded-For: client, proxy1, proxy2 – the visitor is the right-most address that is not one of
 	// our proxies (everything left of it could be made up by the visitor)
 	if xff := h.Get("X-Forwarded-For"); xff != "" {
@@ -141,4 +150,26 @@ func clientIPFrom(r *http.Request) clientIPInfo {
 		return info
 	}
 	return clientIPInfo{ip: peerIP(r.RemoteAddr)}
+}
+
+// hostPattern: what a host name or address with port may look like in a link
+var hostPattern = regexp.MustCompile(`^[A-Za-z0-9.\-:\[\]]+$`)
+
+// requestOrigin is the address the visitor used ("https://notes.example.com"), for links and page
+// metadata when BASE_URL is not set. X-Forwarded-Proto and -Host only count from a trusted proxy; a host
+// that does not look like one gives "".
+func requestOrigin(r *http.Request) string {
+	fromProxy := clientIPFrom(r).fromProxy
+	scheme := "http"
+	if r.TLS != nil || (fromProxy && r.Header.Get("X-Forwarded-Proto") == "https") {
+		scheme = "https"
+	}
+	host := r.Host
+	if fwd := strings.TrimSpace(r.Header.Get("X-Forwarded-Host")); fromProxy && fwd != "" {
+		host = fwd
+	}
+	if !hostPattern.MatchString(host) {
+		return ""
+	}
+	return scheme + "://" + host
 }

@@ -72,14 +72,8 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({
   const color = userColorStyles(userId || user?.id || effectiveName || effectiveEmail);
   const ringStyle = colorRing ? { border: `1.5px solid ${color.ring}` } : undefined;
 
-  const hasImage = Boolean(
-    effectiveAvatarUrl &&
-    !imageError &&
-    (effectiveAvatarUrl.startsWith('data:image/') ||
-     effectiveAvatarUrl.startsWith('http://') ||
-     effectiveAvatarUrl.startsWith('https://') ||
-     effectiveAvatarUrl.startsWith('/'))
-  );
+  // Only uploaded pictures (stored inline); addresses of other servers are not shown (storage/avatar.go)
+  const hasImage = Boolean(effectiveAvatarUrl && !imageError && effectiveAvatarUrl.startsWith('data:image/'));
 
   const isEmojiAvatar = Boolean(effectiveAvatarUrl && isEmoji(effectiveAvatarUrl));
 

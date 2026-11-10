@@ -81,7 +81,13 @@ func (s *Server) sendPush(userID string, msg pushMessage) error {
 	}
 	var lastErr error
 	sent := 0
+	knownOnly := s.pushKnownServicesOnly()
 	for _, sub := range subs {
+		// Devices registered before the admin narrowed push down get nothing until they register again
+		if err := validPushEndpoint(sub.Endpoint, knownOnly); err != nil {
+			lastErr = err
+			continue
+		}
 		resp, err := webpush.SendNotification(payload, &webpush.Subscription{
 			Endpoint: sub.Endpoint,
 			Keys:     webpush.Keys{P256dh: sub.P256dh, Auth: sub.Auth},
@@ -155,7 +161,7 @@ func (s *Server) handlePushSubscribe(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "Ungültige Anfrage")
 		return
 	}
-	if err := validPushEndpoint(req.Endpoint); err != nil {
+	if err := validPushEndpoint(req.Endpoint, s.pushKnownServicesOnly()); err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -213,11 +219,33 @@ func (s *Server) handlePushTest(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]int{"devices": len(subs)})
 }
 
-// validPushEndpoint: the push services of the browsers are https URLs on the public internet.
-func validPushEndpoint(endpoint string) error {
+// validPushEndpoint: the push services of the browsers are https URLs on the public internet. With
+// knownOnly (admin setting) only those of the big browsers are accepted.
+func validPushEndpoint(endpoint string, knownOnly bool) error {
 	u, err := url.Parse(endpoint)
 	if err != nil || u.Scheme != "https" || u.Host == "" || len(endpoint) > 2048 {
 		return errors.New("Ungültige Push-Adresse")
 	}
+	if knownOnly && !knownPushService(u.Hostname()) {
+		return errors.New("Dieser Server erlaubt Push-Benachrichtigungen nur über die Dienste der großen Browser")
+	}
 	return nil
+}
+
+// knownPushServices: the push services of Chrome/Edge/Android (Google), Firefox, Safari and Windows
+var knownPushServices = []string{"fcm.googleapis.com", "push.services.mozilla.com", "push.apple.com", "notify.windows.com"}
+
+func knownPushService(host string) bool {
+	host = strings.ToLower(strings.TrimSuffix(host, "."))
+	for _, known := range knownPushServices {
+		if host == known || strings.HasSuffix(host, "."+known) {
+			return true
+		}
+	}
+	return false
+}
+
+func (s *Server) pushKnownServicesOnly() bool {
+	sys, _ := s.store.GetSystemSettings()
+	return sys != nil && sys.PushKnownServicesOnly != nil && *sys.PushKnownServicesOnly
 }

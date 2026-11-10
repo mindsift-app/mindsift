@@ -20,7 +20,7 @@ func (s *Server) handleGetAPIKeys(w http.ResponseWriter, r *http.Request) {
 	userID := auth.GetUserID(r.Context())
 	keys, err := s.store.GetAPIKeys(userID)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternal(w, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, keys)
@@ -32,11 +32,16 @@ func (s *Server) handleCreateAPIKey(w http.ResponseWriter, r *http.Request) {
 		Name   string   `json:"name"`
 		Scopes []string `json:"scopes"`
 	}
-	_ = json.NewDecoder(r.Body).Decode(&req)
+	// An empty body gives a key with the default name and rights; a broken one is refused, so a typo
+	// does not quietly create a key with rights nobody asked for
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil && !errors.Is(err, io.EOF) {
+		writeError(w, http.StatusBadRequest, "Ungültiges JSON")
+		return
+	}
 
 	key, err := s.store.CreateAPIKey(userID, req.Name, req.Scopes)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternal(w, err)
 		return
 	}
 	writeJSON(w, http.StatusCreated, key)
@@ -69,7 +74,7 @@ func (s *Server) handleDeleteAPIKey(w http.ResponseWriter, r *http.Request) {
 	userID := auth.GetUserID(r.Context())
 	keyID := chi.URLParam(r, "id")
 	if err := s.store.DeleteAPIKey(userID, keyID); err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternal(w, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]bool{"deleted": true})
@@ -199,7 +204,7 @@ func (s *Server) handleWebhookIngest(w http.ResponseWriter, r *http.Request) {
 	}
 	thought, err := s.store.CreateThought(user.ID, bodyText, req.Priority, source, dueDate)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternal(w, err)
 		return
 	}
 	s.recordThoughtOrigin(thought, actor, true)

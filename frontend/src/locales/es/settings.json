@@ -696,7 +696,9 @@
     "publicLinksHint": "Los propietarios pueden compartir una nota de solo lectura mediante enlace, también con personas sin cuenta y, opcionalmente, con contraseña. Los enlaces siempre caducan y no aparecen en buscadores. Desactivado, ningún enlace existente funciona.",
     "publicLinkMaxDays": "Duración máxima de un enlace",
     "days_one": "{{count}} día",
-    "days_other": "{{count}} días"
+    "days_other": "{{count}} días",
+    "pushKnownOnly": "Push solo mediante servicios conocidos",
+    "pushKnownOnlyHint": "Por defecto: las notificaciones push van al servicio push que indica el navegador (cualquier dirección https). Si se activa, solo a los servicios de Google (Chrome, Edge, Android), Mozilla (Firefox), Apple (Safari) y Microsoft (Windows). Los dispositivos con otros servicios dejan de recibir mensajes push."
   },
   "smtp": {
     "title": "Servidor de correo / SMTP para avisos de tareas",
@@ -781,5 +783,13 @@
   "appearanceExtra": {
     "accentColor": "Color de acento {{color}}",
     "themeSaved": "Tema «{{name}}» guardado y activado."
+  },
+  "pendingEmail": {
+    "waiting": "Pendiente de confirmación: {{email}}. Hemos enviado un enlace a esta dirección; hasta que se pulse, sigue valiendo la anterior.",
+    "noMail": "{{email}} está pendiente de confirmación, pero este servidor no envía correos. Hasta que un administrador lo configure, sigue valiendo la dirección anterior.",
+    "resend": "Enviar el enlace de nuevo",
+    "resent": "Un nuevo enlace está en camino.",
+    "cancel": "Mantener la anterior",
+    "failed": "No ha funcionado."
   }
 }

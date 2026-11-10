@@ -135,7 +135,7 @@ func (s *Server) handleOAuthRegister(w http.ResponseWriter, r *http.Request) {
 	}
 	client, err := s.store.CreateOAuthClient(req.ClientName, req.RedirectURIs, time.Now())
 	if err != nil {
-		writeOAuthError(w, http.StatusInternalServerError, "server_error", err.Error())
+		writeOAuthError(w, http.StatusInternalServerError, "server_error", clientMessage(err))
 		return
 	}
 	writeJSON(w, http.StatusCreated, map[string]interface{}{
@@ -232,6 +232,25 @@ func oauthScopes(requested []string) []string {
 	return out
 }
 
+// knownOAuthHosts: where the AI services MindSift is usually connected to send people back, and the
+// person's own computer (local agents). Anybody may register a client (RFC 7591, needed by claude.ai and
+// ChatGPT) under any name, so the consent page warns when the way back leads somewhere else.
+var knownOAuthHosts = []string{"claude.ai", "claude.com", "anthropic.com", "chatgpt.com", "openai.com", "localhost", "127.0.0.1", "::1"}
+
+func knownRedirectHost(raw string) bool {
+	u, err := url.Parse(raw)
+	if err != nil {
+		return false
+	}
+	host := strings.ToLower(strings.TrimSuffix(u.Hostname(), "."))
+	for _, known := range knownOAuthHosts {
+		if host == known || strings.HasSuffix(host, "."+known) {
+			return true
+		}
+	}
+	return false
+}
+
 func redirectHost(raw string) string {
 	if u, err := url.Parse(raw); err == nil {
 		return u.Host
@@ -259,6 +278,7 @@ func (s *Server) handleOAuthAuthorizeInfo(w http.ResponseWriter, r *http.Request
 	writeJSON(w, http.StatusOK, map[string]interface{}{
 		"clientName":    client.Name,
 		"redirectHost":  redirectHost(p.RedirectURI),
+		"knownHost":     knownRedirectHost(p.RedirectURI),
 		"scopes":        scopes,
 		"offeredScopes": oauthOfferedScopes,
 	})
@@ -297,7 +317,7 @@ func (s *Server) handleOAuthAuthorize(w http.ResponseWriter, r *http.Request) {
 	}
 	code, err := s.store.GrantOAuth(auth.GetUserID(r.Context()), client, scopes, p.RedirectURI, p.CodeChallenge, time.Now())
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternal(w, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]string{"redirect": s.oauthRedirect(p, url.Values{"code": {code}})})
@@ -336,7 +356,7 @@ func (s *Server) handleOAuthToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		writeOAuthError(w, http.StatusInternalServerError, "server_error", err.Error())
+		writeOAuthError(w, http.StatusInternalServerError, "server_error", clientMessage(err))
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]interface{}{

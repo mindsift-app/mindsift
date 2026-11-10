@@ -99,7 +99,7 @@ func (s *Server) handleGetThoughts(w http.ResponseWriter, r *http.Request) {
 	status := r.URL.Query().Get("status")
 	thoughts, err := s.store.GetThoughts(userID, status, 250)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternal(w, err)
 		return
 	}
 	s.markWatching(userID, thoughts)
@@ -121,7 +121,7 @@ func (s *Server) handleGetTriageDeck(w http.ResponseWriter, r *http.Request) {
 	userID := auth.GetUserID(r.Context())
 	thoughts, err := s.store.GetThoughts(userID, "inbox", 100)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternal(w, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, thoughts)
@@ -188,7 +188,7 @@ func (s *Server) handleGetTasks(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	tasks, err := s.store.GetTasks(userID, q.Get("taskListId"))
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternal(w, err)
 		return
 	}
 	tasks, err = filterTasks(tasks, q.Get("status"), q.Get("due"), time.Now())
@@ -274,7 +274,7 @@ func (s *Server) handleReorderTasks(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := s.store.ReorderTasks(taskListID, req.Items); err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternal(w, err)
 		return
 	}
 
@@ -402,7 +402,7 @@ func (s *Server) handlePurgeDiscarded(w http.ResponseWriter, r *http.Request) {
 	userID := auth.GetUserID(r.Context())
 	count, err := s.store.PurgeDiscardedThoughts(userID)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternal(w, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]int64{"purged": count})
@@ -441,7 +441,7 @@ func (s *Server) handleSearch(w http.ResponseWriter, r *http.Request) {
 		return // given up by the client (typed on, search closed)
 	}
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternal(w, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, res)

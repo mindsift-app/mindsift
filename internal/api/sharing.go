@@ -51,7 +51,7 @@ func (s *Server) handleGetUsersDirectory(w http.ResponseWriter, r *http.Request)
 	userID := auth.GetUserID(r.Context())
 	users, err := s.store.GetDirectory(userID, s.peopleSearchEnabled())
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternal(w, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, users)
@@ -80,5 +80,8 @@ func (s *Server) handleLookupUser(w http.ResponseWriter, r *http.Request) {
 	}
 	p := domain.ToPublicUser(*u)
 	p.Findable = true
+	if strings.Contains(login, "@") {
+		p.Email = u.Email // typed by the viewer, so nothing new
+	}
 	writeJSON(w, http.StatusOK, p)
 }

@@ -596,7 +596,9 @@
     "publicLinksHint": "Eigentümer können eine Notiz per Link zum Lesen freigeben, auch für Personen ohne Konto, wahlweise mit Passwort. Links laufen immer ab und landen nicht in Suchmaschinen. Ausgeschaltet funktioniert kein bestehender Link mehr.",
     "publicLinkMaxDays": "Längste Laufzeit eines Links",
     "days_one": "{{count}} Tag",
-    "days_other": "{{count}} Tage"
+    "days_other": "{{count}} Tage",
+    "pushKnownOnly": "Push nur über bekannte Push-Dienste",
+    "pushKnownOnlyHint": "Standard: Push-Benachrichtigungen gehen an den Push-Dienst, den der Browser nennt (jede https-Adresse). Eingeschaltet nur an die Dienste von Google (Chrome, Edge, Android), Mozilla (Firefox), Apple (Safari) und Microsoft (Windows). Geräte mit anderen Diensten bekommen dann keine Push-Nachrichten mehr."
   },
   "admin": {
     "loadFailed": "Fehler beim Laden der Administrationsdaten",
@@ -780,5 +782,13 @@
   "appearanceExtra": {
     "accentColor": "Akzentfarbe {{color}}",
     "themeSaved": "Theme „{{name}}“ gespeichert und aktiviert."
+  },
+  "pendingEmail": {
+    "waiting": "Wartet auf Bestätigung: {{email}}. Wir haben einen Link an diese Adresse geschickt – bis zum Klick darauf gilt die bisherige.",
+    "noMail": "{{email}} wartet auf Bestätigung, aber dieser Server verschickt keine E-Mails. Bis ein Administrator den Versand einrichtet, gilt die bisherige Adresse.",
+    "resend": "Link erneut senden",
+    "resent": "Neuer Link ist unterwegs.",
+    "cancel": "Bisherige behalten",
+    "failed": "Das hat nicht geklappt."
   }
 }

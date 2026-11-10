@@ -183,15 +183,7 @@ func (s *Server) appLink(r *http.Request) string {
 	if s.cfg.BaseURLSet {
 		return strings.TrimRight(s.cfg.BaseURL, "/") + "/"
 	}
-	scheme := "http"
-	if r.TLS != nil || r.Header.Get("X-Forwarded-Proto") == "https" {
-		scheme = "https"
-	}
-	host := r.Header.Get("X-Forwarded-Host")
-	if host == "" {
-		host = r.Host
-	}
-	return scheme + "://" + host + "/"
+	return requestOrigin(r) + "/"
 }
 
 // notifyAdminsOfRegistration mails every active admin and user manager that someone waits (only with SMTP).
@@ -236,7 +228,7 @@ func (s *Server) handleAdminApproveUser(w http.ResponseWriter, r *http.Request) 
 	}
 	ok, err := s.store.ApprovePendingRegistration(userID)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternal(w, err)
 		return
 	}
 	if !ok {
@@ -257,7 +249,7 @@ func (s *Server) handleAdminApproveUser(w http.ResponseWriter, r *http.Request) 
 			Footer:    mailFooterAccount(lang),
 		})
 	}()
-	writeJSON(w, http.StatusOK, user)
+	writeJSON(w, http.StatusOK, staffUser{User: *user})
 }
 
 // handleAdminSendInvite: POST /admin/invites/{id}/send {"email"} – mails the invite link. A single-use
@@ -287,7 +279,7 @@ func (s *Server) handleAdminSendInvite(w http.ResponseWriter, r *http.Request) {
 		}
 		if inv.Email == "" {
 			if err := s.store.BindUserInviteEmail(inv.ID, email); err != nil {
-				writeError(w, http.StatusInternalServerError, err.Error())
+				writeInternal(w, err)
 				return
 			}
 			inv.Email = email

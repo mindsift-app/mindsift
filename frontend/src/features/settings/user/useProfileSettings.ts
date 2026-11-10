@@ -133,6 +133,8 @@ export function useProfileSettings(currentUser: User, onUserUpdated: (u: User) =
       if (needsCurrentPassword) patch.currentPassword = currentPassword;
       const updated = await api.updateSettings(patch);
       onUserUpdated(updated);
+      // A new address waits for its link (shown under the field), the field shows the one in use
+      setEmail(updated.email || '');
       setNewPassword('');
       setCurrentPassword('');
       setProfileMsg({ type: 'ok', text: i18n.t('settings:profile.saved') });
@@ -202,6 +204,8 @@ export function useProfileSettings(currentUser: User, onUserUpdated: (u: User) =
   };
 
   return {
+    currentUser,
+    onUserUpdated,
     displayName,
     username,
     email,

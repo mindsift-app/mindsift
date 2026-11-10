@@ -186,7 +186,11 @@ func (s *Server) handleMCP(w http.ResponseWriter, r *http.Request) {
 		}
 		result, err := tool.run(s, userID, actor, p.Arguments)
 		if err != nil {
-			writeRPC(w, req.ID, toolError(i18n.Text("en", err)), nil)
+			msg := errInternal
+			if clientMessage(err) != errInternal {
+				msg = i18n.Text("en", err)
+			}
+			writeRPC(w, req.ID, toolError(msg), nil)
 			return
 		}
 		if tool.Name == "search" && isKey {

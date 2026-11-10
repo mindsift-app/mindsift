@@ -67,7 +67,7 @@ func (s *Server) handleCreateTeamDirect(w http.ResponseWriter, r *http.Request) 
 	}
 	// Automatically add creator to team as group admin
 	if err := s.store.AddTeamMember(team.ID, userID, "admin"); err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternal(w, err)
 		return
 	}
 	team.Members, _ = s.store.GetTeamMembers(team.ID)
@@ -110,7 +110,7 @@ func (s *Server) handleDeleteTeam(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := s.store.DeleteTeam(teamID); err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternal(w, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]bool{"deleted": true})
@@ -120,7 +120,7 @@ func (s *Server) handleGetUserTeams(w http.ResponseWriter, r *http.Request) {
 	userID := auth.GetUserID(r.Context())
 	teams, err := s.store.GetTeamsForUser(userID)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternal(w, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, teams)

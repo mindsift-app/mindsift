@@ -24,7 +24,7 @@ func (s *Server) handleGetCenter(w http.ResponseWriter, r *http.Request) {
 	}
 	items, unread, err := s.store.CenterEntries(userID, limit)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternal(w, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"items": items, "unread": unread})
@@ -43,7 +43,7 @@ func (s *Server) handleCenterRead(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if err := s.store.MarkCenterRead(userID, req.IDs); err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternal(w, err)
 		return
 	}
 	s.wsHub.BroadcastToUser(userID, "NOTIFICATIONS_READ", map[string]any{"ids": req.IDs})
@@ -53,7 +53,7 @@ func (s *Server) handleCenterRead(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleClearCenter(w http.ResponseWriter, r *http.Request) {
 	userID := auth.GetUserID(r.Context())
 	if err := s.store.ClearCenter(userID); err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternal(w, err)
 		return
 	}
 	s.wsHub.BroadcastToUser(userID, "NOTIFICATIONS_CLEARED", map[string]any{})

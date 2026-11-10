@@ -148,7 +148,7 @@ func (s *Server) handleDocSync(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if err != nil {
-			writeError(w, http.StatusInternalServerError, err.Error())
+			writeInternal(w, err)
 			return
 		}
 		resp.Results = results
@@ -192,7 +192,7 @@ func (s *Server) handleDocSync(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusNotFound, err.Error())
 			return
 		}
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternal(w, err)
 		return
 	}
 	// Client state is ahead of the server, or so far behind that the log entries are compacted away
@@ -268,7 +268,7 @@ func (s *Server) handleDocChanges(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternal(w, err)
 		return
 	}
 	changed := head > since

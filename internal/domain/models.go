@@ -92,6 +92,11 @@ type User struct {
 	PendingApproval bool `json:"pendingApproval,omitempty"`
 	// Registered and the e-mail address is not confirmed yet (admin user list only)
 	EmailUnverified bool `json:"emailUnverified,omitempty"`
+	// New login and alarm addresses waiting for the click on their link (own profile only)
+	PendingEmail      string `json:"pendingEmail,omitempty"`
+	PendingAlarmEmail string `json:"pendingAlarmEmail,omitempty"`
+	// EmailLinks: this server can mail confirmation links (mail server and BASE_URL; own profile only)
+	EmailLinks bool `json:"emailLinks,omitempty"`
 	// Only filled for the user's own profile (GET /auth/me, PATCH /auth/settings)
 	NotificationSettings *NotificationSettings `json:"notificationSettings,omitempty"`
 	// DoneRetentionDays: completed tasks are deleted this many days after ticking them off (0 = never)
@@ -125,8 +130,9 @@ func ValidRole(role string) bool {
 // the directory and when sharing. It never carries private settings (webhooks, alarm e-mail, role,
 // notification settings, token version). An allowlist, so new User fields do not leak by default.
 type PublicUser struct {
-	ID          string `json:"id"`
-	Email       string `json:"email"`
+	ID string `json:"id"`
+	// Email only when the viewer typed it (lookup by exact address); others' addresses are not shown
+	Email       string `json:"email,omitempty"`
 	Username    string `json:"username,omitempty"`
 	DisplayName string `json:"displayName"`
 	AvatarURL   string `json:"avatarUrl,omitempty"`
@@ -139,7 +145,6 @@ type PublicUser struct {
 func ToPublicUser(u User) PublicUser {
 	return PublicUser{
 		ID:          u.ID,
-		Email:       u.Email,
 		Username:    u.Username,
 		DisplayName: u.DisplayName,
 		AvatarURL:   u.AvatarURL,
@@ -333,7 +338,7 @@ type TaskListShare struct {
 	TargetType string `json:"targetType"` // team | user
 	TargetID   string `json:"targetId"`
 	TargetName string `json:"targetName,omitempty"`
-	Email      string `json:"email,omitempty"`
+	Email      string `json:"-"` // others' addresses are not shown (only names), see sharing-and-permissions.md
 	AvatarURL  string `json:"avatarUrl,omitempty"`
 	Permission string `json:"permission"` // editor | viewer
 	CreatedAt  string `json:"createdAt"`
@@ -342,7 +347,7 @@ type TaskListShare struct {
 type TaskListMember struct {
 	UserID      string `json:"userId"`
 	DisplayName string `json:"displayName"`
-	Email       string `json:"email"`
+	Email       string `json:"-"` // others' addresses are not shown (only names), see sharing-and-permissions.md
 	AvatarURL   string `json:"avatarUrl,omitempty"`
 	Role        string `json:"role"` // owner | member
 }
@@ -402,7 +407,7 @@ type TeamMember struct {
 	TeamID      string `json:"teamId"`
 	UserID      string `json:"userId"`
 	DisplayName string `json:"displayName"`
-	Email       string `json:"email"`
+	Email       string `json:"-"` // others' addresses are not shown (only names), see sharing-and-permissions.md
 	AvatarURL   string `json:"avatarUrl,omitempty"`
 	Role        string `json:"role"` // admin | member
 	JoinedAt    string `json:"joinedAt"`
@@ -440,7 +445,10 @@ type SystemSettings struct {
 	// AllowPrivateWebhooks lets alarm webhooks reach LAN addresses (and plain http); localhost and cloud
 	// metadata stay blocked
 	AllowPrivateWebhooks bool `json:"allowPrivateWebhooks"`
-	SMTPConfiguredViaEnv bool `json:"smtpConfiguredViaEnv,omitempty"`
+	// PushKnownServicesOnly: web push only to the push services of the big browsers (Google, Mozilla,
+	// Apple, Microsoft) instead of any https address a browser names. Off by default.
+	PushKnownServicesOnly *bool `json:"pushKnownServicesOnly,omitempty"`
+	SMTPConfiguredViaEnv  bool  `json:"smtpConfiguredViaEnv,omitempty"`
 	// Automatic backups: on/off, daily time (HH:MM, server time zone) and how many days to keep them
 	BackupEnabled       bool   `json:"backupEnabled"`
 	BackupTime          string `json:"backupTime"`
@@ -557,7 +565,7 @@ type DocShare struct {
 	TargetID    string `json:"targetId,omitempty"`
 	TargetName  string `json:"targetName,omitempty"`
 	UserID      string `json:"userId,omitempty"`
-	UserEmail   string `json:"userEmail,omitempty"`
+	UserEmail   string `json:"-"` // not shown to others, see sharing-and-permissions.md
 	DisplayName string `json:"displayName,omitempty"`
 	Permission  string `json:"permission"` // read | write
 	CreatedBy   string `json:"createdBy"`
@@ -628,7 +636,7 @@ type ListShare struct {
 	TargetType string `json:"targetType"` // team | user
 	TargetID   string `json:"targetId"`
 	TargetName string `json:"targetName,omitempty"`
-	Email      string `json:"email,omitempty"`
+	Email      string `json:"-"`    // others' addresses are not shown (only names), see sharing-and-permissions.md
 	Role       string `json:"role"` // editor | viewer
 	CreatedBy  string `json:"createdBy"`
 	CreatedAt  string `json:"createdAt"`
@@ -738,7 +746,7 @@ type FolderShare struct {
 	TargetType string `json:"targetType"` // team | user
 	TargetID   string `json:"targetId"`
 	TargetName string `json:"targetName,omitempty"`
-	Email      string `json:"email,omitempty"`
+	Email      string `json:"-"` // others' addresses are not shown (only names), see sharing-and-permissions.md
 	AvatarURL  string `json:"avatarUrl,omitempty"`
 	Permission string `json:"permission"` // read | write
 	CreatedBy  string `json:"createdBy"`

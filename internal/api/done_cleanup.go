@@ -89,7 +89,7 @@ func (s *Server) handleClearDoneTasks(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleGetTaskTrash(w http.ResponseWriter, r *http.Request) {
 	items, err := s.store.GetTaskTrash(auth.GetUserID(r.Context()), r.URL.Query().Get("taskListId"))
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternal(w, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, items)
@@ -135,6 +135,6 @@ func writeTaskTrashError(w http.ResponseWriter, err error) {
 	case errors.Is(err, storage.ErrTaskListReadOnly):
 		writeError(w, http.StatusForbidden, err.Error())
 	default:
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternal(w, err)
 	}
 }

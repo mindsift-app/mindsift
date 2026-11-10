@@ -8,6 +8,7 @@ import { useAlarmSettings } from './useAlarmSettings';
 import { formatDate } from '../../../lib/format';
 import { TimeField } from '../../../components/TimeField';
 import { SelectMenu } from '../../../components/SelectMenu';
+import { PendingEmailNote } from './PendingEmailNote';
 
 
 // Kontoeinstellungen → Alarme (state in useAlarmSettings)
@@ -30,6 +31,7 @@ export function AlarmsSection({
     { key: 'watched', label: t('alarms.event.watched') },
   ];
   const {
+    onUserUpdated,
     notificationSettings,
     setNotificationSettings,
     alarmEmail,
@@ -376,6 +378,7 @@ export function AlarmsSection({
               placeholder={currentUser.email}
               className="w-full h-8 px-2.5 input-field"
             />
+            <PendingEmailNote user={currentUser} kind="alarm" onUserUpdated={onUserUpdated} />
           </div>
         </div>
 

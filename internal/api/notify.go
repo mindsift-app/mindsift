@@ -859,7 +859,7 @@ func (s *Server) handleWatchTask(w http.ResponseWriter, r *http.Request) {
 	}
 	on := r.Method == http.MethodPost
 	if err := s.store.WatchTask(taskID, userID, on); err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternal(w, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]bool{"watching": on})

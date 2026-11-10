@@ -18,7 +18,7 @@ func (s *Server) handleGetAllLists(w http.ResponseWriter, r *http.Request) {
 	userID := auth.GetUserID(r.Context())
 	lists, err := s.store.GetAllListsForUser(userID)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternal(w, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, lists)
@@ -65,7 +65,7 @@ func (s *Server) handleDeleteList(w http.ResponseWriter, r *http.Request) {
 	userID := auth.GetUserID(r.Context())
 	listID := chi.URLParam(r, "id")
 	if err := s.store.DeleteList(userID, listID); err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternal(w, err)
 		return
 	}
 	s.wsHub.BroadcastListEvent(listID, "LIST_DELETED", map[string]string{"listId": listID})
@@ -109,7 +109,7 @@ func (s *Server) handleGetListShares(w http.ResponseWriter, r *http.Request) {
 	}
 	shares, err := s.store.GetListShares(listID)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternal(w, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, shares)
@@ -294,7 +294,7 @@ func (s *Server) handleDeleteListItem(w http.ResponseWriter, r *http.Request) {
 
 	_, err := s.store.DeleteListItem(itemID)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternal(w, err)
 		return
 	}
 
@@ -335,7 +335,7 @@ func (s *Server) handleMoveListItem(w http.ResponseWriter, r *http.Request) {
 
 	item, err := s.store.MoveListItem(itemID, req.TargetListID)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternal(w, err)
 		return
 	}
 
@@ -354,7 +354,7 @@ func (s *Server) handleClearCompletedItems(w http.ResponseWriter, r *http.Reques
 	}
 	removed, err := s.store.ClearCompletedListItems(listID)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternal(w, err)
 		return
 	}
 
@@ -379,7 +379,7 @@ func (s *Server) handleReorderListItems(w http.ResponseWriter, r *http.Request) 
 	}
 
 	if err := s.store.ReorderListItems(listID, req.Items); err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternal(w, err)
 		return
 	}
 
@@ -401,7 +401,7 @@ func (s *Server) handleListOrder(kind string) http.HandlerFunc {
 			return
 		}
 		if err := s.store.SetListOrder(auth.GetUserID(r.Context()), kind, req.IDs); err != nil {
-			writeError(w, http.StatusInternalServerError, err.Error())
+			writeInternal(w, err)
 			return
 		}
 		w.WriteHeader(http.StatusNoContent)

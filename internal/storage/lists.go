@@ -219,42 +219,33 @@ func (s *Store) GetListByID(userID, listID string) (*domain.SharedList, error) {
 	var ownerName sql.NullString
 	var effectiveRole string
 
-	var query string
-	var args []interface{}
+	// Always for one person: there is no "anybody" who would be the owner
 	if userID == "" {
-		query = `SELECT l.id, l.user_id, l.title, l.icon, l.list_type, l.updated_at, l.created_at,
-		        u.display_name, 'owner' as effective_role
-		 FROM lists l
-		 LEFT JOIN users u ON u.id = l.user_id
-		 WHERE l.id = ?`
-		args = []interface{}{listID}
-	} else {
-		query = `SELECT l.id, l.user_id, l.title, l.icon, l.list_type, l.updated_at, l.created_at,
-		        u.display_name,
-		        CASE 
-		            WHEN l.user_id = ? THEN 'owner'
-		            WHEN ls.role IS NOT NULL THEN ls.role
-		            ELSE 'editor'
-		        END as effective_role
-		 FROM lists l
-		 LEFT JOIN users u ON u.id = l.user_id
-		 LEFT JOIN list_shares ls ON ls.list_id = l.id AND (
-		     (ls.target_type = 'user' AND ls.target_id = ?)
-		     OR (ls.target_type = 'team' AND ls.target_id IN (SELECT team_id FROM team_members WHERE user_id = ?))
-		 )
-		 WHERE l.id = ? AND (
-		     l.user_id = ?
-		     OR ls.id IS NOT NULL
-		 )`
-		args = []interface{}{userID, userID, userID, listID, userID}
+		return nil, sql.ErrNoRows
 	}
-
-	err := s.db.QueryRow(query, args...).Scan(&l.ID, &l.UserID, &l.Title, &l.Icon, &l.ListType, &l.UpdatedAt, &l.CreatedAt, &ownerName, &effectiveRole)
+	query := `SELECT l.id, l.user_id, l.title, l.icon, l.list_type, l.updated_at, l.created_at,
+	        u.display_name,
+	        CASE 
+	            WHEN l.user_id = ? THEN 'owner'
+	            WHEN ls.role IS NOT NULL THEN ls.role
+	            ELSE 'editor'
+	        END as effective_role
+	 FROM lists l
+	 LEFT JOIN users u ON u.id = l.user_id
+	 LEFT JOIN list_shares ls ON ls.list_id = l.id AND (
+	     (ls.target_type = 'user' AND ls.target_id = ?)
+	     OR (ls.target_type = 'team' AND ls.target_id IN (SELECT team_id FROM team_members WHERE user_id = ?))
+	 )
+	 WHERE l.id = ? AND (
+	     l.user_id = ?
+	     OR ls.id IS NOT NULL
+	 )`
+	err := s.db.QueryRow(query, userID, userID, userID, listID, userID).Scan(&l.ID, &l.UserID, &l.Title, &l.Icon, &l.ListType, &l.UpdatedAt, &l.CreatedAt, &ownerName, &effectiveRole)
 	if err != nil {
 		return nil, err
 	}
 	l.OwnerName = ownerName.String
-	l.IsOwner = (userID == "" || l.UserID == userID)
+	l.IsOwner = l.UserID == userID
 	l.Role = effectiveRole
 	l.Items, _ = s.GetListItems(l.ID)
 	l.Shares, _ = s.GetListShares(l.ID)
