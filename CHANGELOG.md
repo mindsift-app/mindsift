@@ -6,6 +6,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.94.0] - 2026-11-10
+
 ### Added
 - Tasks: reminders per task. In the task dialog, tick one or more times under "Reminder" (from the due time up to 1 month before, e.g. 2 weeks before and on the day). They replace the lead time from Settings → Alarms for this task and apply to everyone who gets its due alarm (the assignees, or every member of a shared list); "Default" shows your lead time and goes back to it. Without a time only whole days are offered, reminding at 9:00. Early reminders say when the task is due ("is due on 24.11.2026") instead of "due now", by mail, push, Discord, webhook and in the bell. Repeating tasks keep their reminders; rows and Kanban cards show a small bell. AI agents (MCP) can set them with `create_task` and `update_task`.
 - Drawings: elbow arrows can be shaped by hand. Drag an arrow's end onto a side of a shape to choose where it docks, anywhere along that side (it snaps to the middle). Every stretch of the line has a handle: drag it to move the stretch across (at an end the line adds a short stub, so the end stays), double-click a full handle to remove the stretch. Moved stretches stay when shapes move or an end docks elsewhere. Arrows laid out by an AI agent can be edited the same way.
