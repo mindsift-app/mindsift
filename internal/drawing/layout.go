@@ -17,6 +17,7 @@ const (
 	layerGap       = 80.0  // between layers, along the arrows
 	nodeGap        = 40.0  // between neighbours in a layer
 	laneGap        = 18.0  // room for a line passing a layer
+	trackGap       = 14.0  // between lines running across the same gap
 	labelFont      = 14.0
 	mindColumnGap  = 60.0
 	mindSiblingGap = 14.0
@@ -392,7 +393,114 @@ func layoutFlowchart(g *graph) layoutResult {
 		}
 	}
 
-	// 6. Positions along the arrows: a band per layer, wider gaps where lines carry labels
+	// 5b. Tracks: between two layers every line runs across on a track of its own, so lines of different
+	// sources never lie on top of each other; the lines of one source share a track (a fork). A line that
+	// comes down at a place where another one leaves must cross the gap below it (vertical constraints).
+	segTrack := make([][]int, len(edges)) // per edge and gap it crosses: track, -1 for a line straight across
+	trackCount := make([]int, len(layers))
+	for k := range edges {
+		segTrack[k] = make([]int, len(chains[k])-1)
+	}
+	type net struct {
+		lo, hi       float64
+		tops, bottom []float64
+		above        []int // nets that must run closer to the upper layer
+		track        int
+	}
+	for li := range layers {
+		nets := []*net{}
+		bySource := map[*lnode]int{}
+		type ref struct{ k, i int }
+		members := map[int][]ref{}
+		for k, chain := range chains {
+			for i := 0; i+1 < len(chain); i++ {
+				p, q := chain[i], chain[i+1]
+				if p.layer != li {
+					continue
+				}
+				segTrack[k][i] = -1
+				if math.Abs(p.pos-q.pos) < 0.5 {
+					continue
+				}
+				ni, ok := bySource[p]
+				if !ok {
+					ni = len(nets)
+					bySource[p] = ni
+					nets = append(nets, &net{lo: p.pos, hi: p.pos, tops: []float64{p.pos}})
+				}
+				nt := nets[ni]
+				nt.lo, nt.hi = math.Min(nt.lo, q.pos), math.Max(nt.hi, q.pos)
+				nt.bottom = append(nt.bottom, q.pos)
+				members[ni] = append(members[ni], ref{k, i})
+			}
+		}
+		for a, na := range nets {
+			for b, nb := range nets {
+				if a == b {
+					continue
+				}
+				for _, x := range na.tops {
+					for _, y := range nb.bottom {
+						if math.Abs(x-y) < 1 {
+							nb.above = append(nb.above, a)
+						}
+					}
+				}
+			}
+		}
+		// Left edge: fill one track after the other with nets that fit next to each other and whose upper
+		// neighbours are placed already; a cycle of constraints takes the leftmost net anyway
+		order := make([]int, len(nets))
+		for i := range order {
+			order[i] = i
+		}
+		sort.SliceStable(order, func(i, j int) bool { return nets[order[i]].lo < nets[order[j]].lo })
+		placed := make([]bool, len(nets))
+		left, tracks := len(nets), 0
+		for left > 0 {
+			var cur []int
+			for _, ni := range order {
+				nt := nets[ni]
+				if placed[ni] {
+					continue
+				}
+				ready := true
+				for _, a := range nt.above {
+					if !placed[a] {
+						ready = false
+					}
+				}
+				for _, o := range cur {
+					if nt.lo < nets[o].hi+trackGap && nets[o].lo < nt.hi+trackGap {
+						ready = false
+					}
+				}
+				if ready {
+					cur = append(cur, ni)
+				}
+			}
+			if len(cur) == 0 {
+				for _, ni := range order {
+					if !placed[ni] {
+						cur = []int{ni}
+						break
+					}
+				}
+			}
+			for _, ni := range cur {
+				placed[ni] = true
+				nets[ni].track = tracks
+				for _, m := range members[ni] {
+					segTrack[m.k][m.i] = tracks
+				}
+				left--
+			}
+			tracks++
+		}
+		trackCount[li] = tracks
+	}
+
+	// 6. Positions along the arrows: a band per layer, wider gaps where lines carry labels or need tracks
 	thick := make([]float64, len(layers))
 	for li, l := range layers {
 		for _, v := range l {
@@ -401,7 +509,7 @@ func layoutFlowchart(g *graph) layoutResult {
 	}
 	gapAfter := make([]float64, len(layers))
 	for li := range gapAfter {
-		gapAfter[li] = layerGap
+		gapAfter[li] = math.Max(layerGap, float64(trackCount[li]+1)*trackGap*1.5)
 	}
 	for k, e := range edges {
 		if e.e.label == "" {
@@ -424,6 +532,13 @@ func layoutFlowchart(g *graph) layoutResult {
 	}
 	center := func(v *lnode) float64 { return bandStart[v.layer] + thick[v.layer]/2 }
 	gapMid := func(li int) float64 { return bandStart[li] + thick[li] + gapAfter[li]/2 }
+	// The tracks of a gap spread evenly across it, the first one nearest the upper layer
+	trackAt := func(li, t int) float64 {
+		if t < 0 || trackCount[li] < 2 {
+			return gapMid(li)
+		}
+		return bandStart[li] + thick[li] + gapAfter[li]*float64(t+1)/float64(trackCount[li]+1)
+	}
 	flip := 1.0
 	if g.dir == "BT" || g.dir == "RL" {
 		flip = -1
@@ -447,13 +562,13 @@ func layoutFlowchart(g *graph) layoutResult {
 		res.els = append(res.els, shapeEl(ids[i], c[0]-v.size.w/2, c[1]-v.size.h/2, v.size, nd.text, nd.stroke, nd.fill))
 	}
 
-	// 7. Lines: right angles through the gap after each layer, along the helper points
+	// 7. Lines: right angles on their track in the gap after each layer, along the helper points
 	for k, e := range edges {
 		chain := chains[k]
 		var via [][2]float64
 		for i := 0; i+1 < len(chain); i++ {
 			p, q := chain[i], chain[i+1]
-			gm := gapMid(p.layer)
+			gm := trackAt(p.layer, segTrack[k][i])
 			via = append(via, toXY(gm, p.pos), toXY(gm, q.pos))
 		}
 		via = simplifyCorners(via)
@@ -463,7 +578,7 @@ func layoutFlowchart(g *graph) layoutResult {
 			}
 		}
 		u, v := e.u, e.v
-		el := outEl{"id": fmt.Sprintf("e%d", k+1), "ver": 1, "t": "arrow", "from": ids[u], "to": ids[v], "route": "straight", "head": e.e.head, "s": "main", "sw": 2}
+		el := outEl{"id": fmt.Sprintf("e%d", k+1), "ver": 1, "t": "arrow", "from": ids[u], "to": ids[v], "route": "elbow", "head": e.e.head, "s": "main", "sw": 2}
 		if e.e.stroke != "" {
 			el["s"] = e.e.stroke
 		}

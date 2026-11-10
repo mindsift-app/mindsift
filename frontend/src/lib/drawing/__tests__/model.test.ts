@@ -91,6 +91,32 @@ describe('arrows', () => {
     }
   });
 
+  it('elbowed run up and down between shapes stacked with more room above than beside', () => {
+    // Below and off to the right (a branch in a diagram from top to bottom): out of the bottom, into the top,
+    // although the centres lie further apart across than down
+    const a = rect('a', 0, 0);
+    const b = rect('b', 150, 120);
+    const ar = arrow({ from: 'a', to: 'b', route: 'elbow' });
+    const g = arrowGeometry(ar, elementMap([a, b, ar]));
+    expect(g.start[1]).toBeGreaterThan(50);
+    expect(g.end[1]).toBeLessThan(120);
+    expect(g.poly[1][0]).toBe(g.start[0]);
+    // Side by side with more room across: out of the right side
+    const c = rect('c', 400, 30);
+    const g2 = arrowGeometry({ ...ar, to: 'c' }, elementMap([a, c, ar]));
+    expect(g2.start[0]).toBeGreaterThan(100);
+    expect(g2.poly[1][1]).toBe(g2.start[1]);
+  });
+
+  it('laid out with corner points read as elbows, also from drawings stored as straight', () => {
+    const d = parseDrawing(
+      JSON.stringify({ v: 1, els: [{ id: 'e', ver: 1, t: 'arrow', a: [0, 0], b: [0, 100], route: 'straight', via: [[0, 50], [80, 50]] }] })
+    );
+    expect((d?.els[0] as ArrowElement).route).toBe('elbow');
+    const plain = parseDrawing(JSON.stringify({ v: 1, els: [{ id: 'f', ver: 1, t: 'arrow', a: [0, 0], b: [0, 100], route: 'straight' }] }));
+    expect((plain?.els[0] as ArrowElement).route).toBe('straight');
+  });
+
   it('bend so their middle passes the dragged handle', () => {
     const ar = arrow({ route: 'curve', bend: 0 });
     const bend = bendThrough([0, 0], [100, 0], [50, 30]);

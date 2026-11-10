@@ -160,7 +160,10 @@ function parseElement(raw: any): DrawElement | null {
         b: point(raw.b),
         ...(typeof raw.from === 'string' ? { from: raw.from } : {}),
         ...(typeof raw.to === 'string' ? { to: raw.to } : {}),
-        route: raw.route === 'curve' || raw.route === 'elbow' ? raw.route : 'straight',
+        // Corner points come only from the layout of Mermaid diagrams, which draws right angles; drawings
+        // laid out before arrows were stored as elbows say "straight" there and would turn straight when moved
+        route:
+          raw.route === 'curve' || raw.route === 'elbow' ? raw.route : Array.isArray(raw.via) && raw.via.length ? 'elbow' : 'straight',
         head: [0, 1, 2, 3].includes(raw.head) ? raw.head : 2,
         ...(typeof raw.bend === 'number' && Number.isFinite(raw.bend) ? { bend: raw.bend } : {}),
         ...(Array.isArray(raw.via) && raw.via.length ? { via: raw.via.slice(0, 100).map(point) } : {}),
@@ -368,6 +371,21 @@ function sidePoint(s: ShapeElement, side: 'l' | 'r' | 't' | 'b', gap = 4): Point
   return [cx, s.y + s.h + gap];
 }
 
+/**
+ * Whether an elbow arrow runs sideways (out of the left or right side) or up and down: by the free space
+ * between its shapes, so shapes stacked in a diagram from top to bottom keep vertical lines even when one
+ * sits far to the side (as laid out from Mermaid). Without two shapes, or when they overlap, the longer
+ * distance decides.
+ */
+export function elbowHorizontal(from: ShapeElement | undefined, to: ShapeElement | undefined, a: Point, b: Point): boolean {
+  if (from && to) {
+    const gapX = Math.max(to.x - (from.x + from.w), from.x - (to.x + to.w));
+    const gapY = Math.max(to.y - (from.y + from.h), from.y - (to.y + to.h));
+    if (gapX > 0 || gapY > 0) return gapX > gapY;
+  }
+  return Math.abs(b[0] - a[0]) >= Math.abs(b[1] - a[1]);
+}
+
 export interface ArrowGeometry {
   start: Point;
   end: Point;
@@ -431,7 +449,7 @@ export function arrowGeometry(el: ArrowElement, byId: Map<string, DrawElement>):
   }
 
   if (el.route === 'elbow') {
-    const horizontal = Math.abs(rawB[0] - rawA[0]) >= Math.abs(rawB[1] - rawA[1]);
+    const horizontal = elbowHorizontal(from, to, rawA, rawB);
     const a: Point = from
       ? sidePoint(from, horizontal ? (rawB[0] >= rawA[0] ? 'r' : 'l') : rawB[1] >= rawA[1] ? 'b' : 't')
       : rawA;
