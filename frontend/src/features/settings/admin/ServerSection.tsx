@@ -11,6 +11,7 @@ import { SHARING_MODES, useAdminSettings } from './useAdminSettings';
 import { Trans, useTranslation } from 'react-i18next';
 import { FALLBACK_LANGUAGE, LANGUAGES } from '../../../i18n';
 import { NO_AUTOFILL } from '../../../lib/noAutofill';
+import { SelectMenu } from '../../../components/SelectMenu';
 
 // Administration → Server & Isolation (state in useAdminSettings)
 export function ServerSection({
@@ -67,21 +68,15 @@ export function ServerSection({
 
           {/* Default language: login screen, new accounts and browsers in other languages */}
           <div>
-            <label htmlFor="admin-default-language" className="block text-muted font-semibold mb-1">
-              {t('defaultLanguage.title')}
-            </label>
-            <select
-              id="admin-default-language"
-              value={settings.defaultLanguage || FALLBACK_LANGUAGE}
-              onChange={(e) => handleSaveSystemSettings({ defaultLanguage: e.target.value })}
-              className="w-full max-w-md h-11 sm:h-8 px-2.5 input-field text-base sm:text-xs"
-            >
-              {LANGUAGES.map((l) => (
-                <option key={l.id} value={l.id}>
-                  {l.name}
-                </option>
-              ))}
-            </select>
+            <p className="block text-muted font-semibold mb-1">{t('defaultLanguage.title')}</p>
+            <div className="w-full max-w-md">
+              <SelectMenu
+                ariaLabel={t('defaultLanguage.title')}
+                value={settings.defaultLanguage || FALLBACK_LANGUAGE}
+                onChange={(defaultLanguage) => handleSaveSystemSettings({ defaultLanguage })}
+                options={LANGUAGES.map((l) => ({ value: l.id, label: l.name }))}
+              />
+            </div>
             <p className="text-[11px] text-muted mt-1 max-w-md">{t('defaultLanguage.hint')}</p>
           </div>
 
@@ -169,24 +164,20 @@ export function ServerSection({
               />
             </div>
             {settings.publicLinks !== false && (
-              <label className="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-border">
+              <div className="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-border">
                 <span className="text-main font-semibold">{t('server.publicLinkMaxDays')}</span>
-                <select
-                  value={settings.publicLinkMaxDays || 14}
+                <SelectMenu
+                  size="sm"
+                  ariaLabel={t('server.publicLinkMaxDays')}
+                  value={String(settings.publicLinkMaxDays || 14)}
                   disabled={Boolean(settings.publicLinkMaxDaysConfiguredViaEnv)}
-                  onChange={(e) => handleSaveSystemSettings({ publicLinkMaxDays: Number(e.target.value) })}
-                  className="h-11 sm:h-8 px-2.5 input-field text-base sm:text-xs bg-panel disabled:opacity-60"
-                >
-                  {[1, 3, 7, 14].map((d) => (
-                    <option key={d} value={d}>
-                      {t('server.days', { count: d })}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(d) => handleSaveSystemSettings({ publicLinkMaxDays: Number(d) })}
+                  options={[1, 3, 7, 14].map((d) => ({ value: String(d), label: t('server.days', { count: d }) }))}
+                />
                 {settings.publicLinkMaxDaysConfiguredViaEnv && (
                   <span className="w-full text-[11px] text-muted">{t('server.fixedBy', { env: 'PUBLIC_LINKS_MAX_DAYS' })}</span>
                 )}
-              </label>
+              </div>
             )}
           </div>
 
@@ -253,18 +244,19 @@ export function ServerSection({
                     {t('server.registrationHint')}
                   </p>
                 </div>
-                <select
+                <SelectMenu<RegistrationMode>
+                  ariaLabel={t('server.registration')}
                   value={mode}
                   disabled={locked}
-                  onChange={(e) => handleSaveSystemSettings({ registrationMode: e.target.value as RegistrationMode })}
-                  className="w-full h-11 sm:h-8 px-2.5 input-field text-base sm:text-xs disabled:opacity-60"
-                >
-                  <option value="closed">{t('server.mode.closed')}</option>
-                  <option value="approval">{t('server.mode.approval')}</option>
-                  <option value="domain">{t('server.mode.domain')}</option>
-                  <option value="domain+approval">{t('server.mode.domainApproval')}</option>
-                  <option value="open">{t('server.mode.open')}</option>
-                </select>
+                  onChange={(registrationMode) => handleSaveSystemSettings({ registrationMode })}
+                  options={[
+                    { value: 'closed', label: t('server.mode.closed') },
+                    { value: 'approval', label: t('server.mode.approval') },
+                    { value: 'domain', label: t('server.mode.domain') },
+                    { value: 'domain+approval', label: t('server.mode.domainApproval') },
+                    { value: 'open', label: t('server.mode.open') },
+                  ]}
+                />
                 {needsDomains && (
                   <label className="block text-[11px] text-muted">
                     <Trans t={t} i18nKey="server.domains" components={{ c: <code className="font-mono" /> }} />

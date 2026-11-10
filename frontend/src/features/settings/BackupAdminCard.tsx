@@ -7,6 +7,7 @@ import { ToggleSwitch } from '../../components/ToggleSwitch';
 import { formatBytes, saveBlob } from '../../lib/download';
 import { formatDateTime } from '../../lib/format';
 import { askConfirm } from '../../components/askConfirm';
+import { TimeField } from '../../components/TimeField';
 
 interface BackupAdminCardProps {
   settings: SystemSettings;
@@ -85,15 +86,16 @@ export const BackupAdminCard: React.FC<BackupAdminCardProps> = ({ settings, onSa
       </div>
 
       <div className="flex flex-wrap items-end gap-3">
-        <label className="text-[11px] text-muted">
+        <div className="text-[11px] text-muted">
           {t('backups.time')}
-          <input
-            type="time"
+          <TimeField
+            ariaLabel={t('backups.time')}
             value={settings.backupTime || '03:00'}
-            onChange={(e) => e.target.value && onSave({ backupTime: e.target.value })}
-            className="block mt-1 h-11 sm:h-8 px-2 input-field text-base sm:text-xs w-28"
+            onChange={(time) => time && onSave({ backupTime: time })}
+            className="mt-1 w-28"
+            inputClassName="h-11 sm:h-8 px-2 input-field text-base sm:text-xs"
           />
-        </label>
+        </div>
         <label className="text-[11px] text-muted">
           {t('backups.keepDays')}
           <input

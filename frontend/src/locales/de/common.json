@@ -123,7 +123,8 @@
     "editorRole": "Bearbeiter",
     "viewerRole": "Leser",
     "titleNote": "Notiz teilen",
-    "titleFolder": "Ordner teilen"
+    "titleFolder": "Ordner teilen",
+    "permission": "Berechtigung"
   },
   "sharedImport": {
     "whichList": "Auf welche Liste?",
@@ -404,5 +405,24 @@
     "clear": "Alle löschen",
     "empty": "Noch nichts Neues. Hier erscheint, was in deinen Aufgaben, Listen und Notizen passiert.",
     "unread": "Ungelesen"
+  },
+  "select": {
+    "search": "Suchen …",
+    "noMatch": "Nichts gefunden"
+  },
+  "dateField": {
+    "placeholder": "TT.MM.JJJJ",
+    "open": "Kalender öffnen",
+    "clear": "Datum entfernen",
+    "prevMonth": "Vorheriger Monat",
+    "nextMonth": "Nächster Monat",
+    "prevYear": "Vorheriges Jahr",
+    "nextYear": "Nächstes Jahr",
+    "chooseMonth": "Monat und Jahr wählen"
+  },
+  "timeField": {
+    "placeholder": "HH:MM",
+    "placeholder12": "h:mm AM",
+    "open": "Uhrzeiten zeigen"
   }
 }

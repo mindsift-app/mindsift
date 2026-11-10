@@ -5,6 +5,7 @@ import { DocumentBlock } from '../../lib/types';
 import { useTranslation } from 'react-i18next';
 import i18n from '../../i18n';
 import { enterWithIndent, indentUnit } from './codeIndent';
+import { SelectMenu } from '../../components/SelectMenu';
 
 Prism.manual = true;
 if (typeof globalThis !== 'undefined') {
@@ -633,30 +634,18 @@ export const CodeBlockEditor: React.FC<CodeBlockEditorProps> = ({
           </>
         )}
         {canEdit ? (
-          <select
-            aria-label={t('code.chooseLanguage')}
+          <SelectMenu
+            ariaLabel={t('code.chooseLanguage')}
+            title={t('code.chooseLanguage')}
             value={selectValue}
-            onChange={(e) => onChangeLang?.(e.target.value)}
-            className={`${headerControl} px-1 cursor-pointer`}
-          >
-            <option value="" className="bg-panel text-main">
-              {t('workspace:code.plain')}
-            </option>
-            {hasCustomUnknownLang && (
-              <option value={selectValue} className="bg-panel text-main">
-                {selectValue}
-              </option>
-            )}
-            {CODE_LANGUAGE_GROUPS.map((group) => (
-              <optgroup key={group.label} label={group.label} className="bg-panel text-muted">
-                {group.options.map((opt) => (
-                  <option key={opt.id} value={opt.id} className="bg-panel text-main">
-                    {opt.label}
-                  </option>
-                ))}
-              </optgroup>
-            ))}
-          </select>
+            onChange={(lang) => onChangeLang?.(lang)}
+            buttonClassName={`${headerControl} px-1 gap-1`}
+            options={[
+              { value: '', label: t('workspace:code.plain') },
+              ...(hasCustomUnknownLang ? [{ value: selectValue, label: selectValue }] : []),
+              ...CODE_LANGUAGE_GROUPS.flatMap((group) => group.options.map((opt) => ({ value: opt.id, label: opt.label }))),
+            ]}
+          />
         ) : (
           <span className="font-mono text-[11px] text-faint px-1">{block.lang || 'Text'}</span>
         )}

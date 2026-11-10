@@ -20,6 +20,7 @@ import { UserAutocomplete } from '../UserAutocomplete';
 import { UserAvatar } from '../../components/UserAvatar';
 import { askConfirm } from '../../components/askConfirm';
 import { NO_AUTOFILL } from '../../lib/noAutofill';
+import { SelectMenu } from '../../components/SelectMenu';
 
 interface GroupsViewProps {
   currentUser: User;
@@ -327,17 +328,12 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ currentUser, onBack }) =
               {myOrgs.length > 1 && (
                 <div>
                   <label className="block text-muted text-xs mb-1 font-medium">{t('create.organization')}</label>
-                  <select
+                  <SelectMenu
+                    ariaLabel={t('create.organization')}
                     value={newGroupOrg}
-                    onChange={(e) => setNewGroupOrg(e.target.value)}
-                    className="w-full h-11 sm:h-8 px-2.5 input-field text-base sm:text-xs bg-panel"
-                  >
-                    {myOrgs.map((o) => (
-                      <option key={o.id} value={o.id}>
-                        {o.name}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={setNewGroupOrg}
+                    options={myOrgs.map((o) => ({ value: o.id, label: o.name }))}
+                  />
                   <p className="text-[11px] text-faint mt-1">{t('create.organizationHint')}</p>
                 </div>
               )}
@@ -537,25 +533,19 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ currentUser, onBack }) =
                                 </div>
 
                                   <div className="flex items-center gap-1.5 flex-shrink-0">
-                                    <select
-                                      value={m.role}
-                                      onChange={(e) =>
-                                        handleChangeMemberRole(
-                                          team.id,
-                                          m.userId,
-                                          e.target.value as 'admin' | 'member'
-                                        )
-                                      }
-                                      className={`h-6 px-1.5 text-[10px] rounded input-field bg-panel cursor-pointer ${
-                                        isAdmin
-                                          ? 'border-accent text-accent font-semibold'
-                                          : 'text-muted'
-                                      }`}
+                                    <SelectMenu<'admin' | 'member'>
+                                      ariaLabel={t('changeRole')}
                                       title={t('changeRole')}
-                                    >
-                                      <option value="member" className="bg-panel text-main">{t('roleMember')}</option>
-                                      <option value="admin" className="bg-panel text-main">{t('roleAdmin')}</option>
-                                    </select>
+                                      value={m.role as 'admin' | 'member'}
+                                      onChange={(role) => handleChangeMemberRole(team.id, m.userId, role)}
+                                      buttonClassName={`h-6 px-1.5 gap-1 text-[10px] rounded input-field bg-panel ${
+                                        isAdmin ? 'border-accent text-accent font-semibold' : 'text-muted'
+                                      }`}
+                                      options={[
+                                        { value: 'member', label: t('roleMember') },
+                                        { value: 'admin', label: t('roleAdmin') },
+                                      ]}
+                                    />
 
                                   <button
                                     onClick={() => handleRemoveMember(team.id, m.userId, m.displayName)}
@@ -586,19 +576,16 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ currentUser, onBack }) =
                           />
                         </div>
 
-                        <select
+                        <SelectMenu<'admin' | 'member'>
+                          size="sm"
+                          ariaLabel={t('changeRole')}
                           value={memberRoleByTeam[team.id] || 'member'}
-                          onChange={(e) =>
-                            setMemberRoleByTeam((prev) => ({
-                              ...prev,
-                              [team.id]: e.target.value as 'admin' | 'member',
-                            }))
-                          }
-                          className="h-8 px-2.5 input-field text-xs bg-panel"
-                        >
-                          <option value="member">{t('roleMember')}</option>
-                          <option value="admin">{t('roleAdmin')}</option>
-                        </select>
+                          onChange={(role) => setMemberRoleByTeam((prev) => ({ ...prev, [team.id]: role }))}
+                          options={[
+                            { value: 'member', label: t('roleMember') },
+                            { value: 'admin', label: t('roleAdmin') },
+                          ]}
+                        />
 
                         <button
                           type="button"

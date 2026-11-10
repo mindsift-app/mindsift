@@ -28,6 +28,7 @@ import { addDays, formatDue } from '../../lib/due';
 import { api, triggerHaptic } from '../../lib/api';
 import { OriginBadge } from '../../components/OriginBadge';
 import { formatDateTime } from '../../lib/format';
+import { DateField } from '../../components/DateField';
 
 interface TriageDeckProps {
   deck: Thought[];
@@ -723,11 +724,12 @@ export const TriageDeck: React.FC<TriageDeckProps> = ({
             <span>{t('date.title')}</span>
           </div>
           <div className="flex items-center gap-2">
-            <input
-              type="date"
+            <DateField
+              ariaLabel={t('date.title')}
               value={taskDueDate}
-              onChange={(e) => setTaskDueDate(e.target.value)}
-              className="input-field px-2.5 py-1 text-xs"
+              onChange={setTaskDueDate}
+              className="w-[9rem]"
+              inputClassName="h-8 input-field px-2.5 text-xs"
             />
             <button
               onClick={() => handleAction('keep', { convertTo: 'task', dueDate: taskDueDate })}
@@ -1176,11 +1178,12 @@ export const TriageDeck: React.FC<TriageDeckProps> = ({
                 <label className="block text-xs font-medium text-muted">
                   {t('sheet.dateTitle')}
                 </label>
-                <input
-                  type="date"
+                <DateField
+                  ariaLabel={t('sheet.dateTitle')}
                   value={taskDueDate}
-                  onChange={(e) => setTaskDueDate(e.target.value)}
-                  className="input-field w-full h-11 px-3 text-sm"
+                  onChange={setTaskDueDate}
+                  className="w-full"
+                  inputClassName="input-field w-full h-11 px-3 text-base sm:text-sm"
                 />
                 <div className="flex items-center gap-2 pt-1">
                   <button

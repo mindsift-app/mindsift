@@ -19,6 +19,7 @@ import { formatDue } from '../lib/due';
 import { SnippetRenderer } from './SnippetRenderer';
 import { requestDocFocus } from '../lib/docFocusRequest';
 import { NO_AUTOFILL } from '../lib/noAutofill';
+import { SelectMenu, SelectMenuOption } from './SelectMenu';
 
 interface CommandPaletteProps {
   isOpen: boolean;
@@ -300,7 +301,12 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
 
   const setFilterValue = (key: keyof SearchFilter, value: string) =>
     setFilter((prev) => ({ ...prev, [key]: value || undefined }));
-  const selectClass = 'h-8 px-2 input-field text-xs bg-panel max-w-[12rem]';
+  // One filter of the large view as a small dropdown
+  const filterMenu = (key: keyof typeof filter, label: string, options: SelectMenuOption<string>[]) => (
+    <div className="max-w-[12rem]">
+      <SelectMenu size="sm" ariaLabel={label} title={label} value={(filter[key] as string) || ''} onChange={(v) => setFilterValue(key, v)} options={options} />
+    </div>
+  );
 
   return (
     <div
@@ -400,60 +406,47 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
           <div className="flex flex-wrap items-center gap-2 px-3 py-2 border-b border-border bg-canvas/40 shrink-0 text-xs text-muted">
             {kind === 'thought' && (
               <>
-                <select className={selectClass} value={filter.taskStatus || ''} onChange={(e) => setFilterValue('taskStatus', e.target.value)} aria-label={t('palette.status')}>
-                  <option value="">{t('palette.taskStatusAll')}</option>
-                  <option value="open">{t('palette.onlyOpen')}</option>
-                  <option value="done">{t('palette.onlyDone')}</option>
-                </select>
-                <select className={selectClass} value={filter.taskListId || ''} onChange={(e) => setFilterValue('taskListId', e.target.value)} aria-label={t('palette.taskList')}>
-                  <option value="">{t('palette.allLists')}</option>
-                  <option value="personal">{t('palette.personal')}</option>
-                  {taskLists.map((l) => (
-                    <option key={l.id} value={l.id}>
-                      {[l.icon, l.title].filter(Boolean).join(' ')}
-                    </option>
-                  ))}
-                </select>
-                <select className={selectClass} value={filter.priority || ''} onChange={(e) => setFilterValue('priority', e.target.value)} aria-label={t('palette.priority')}>
-                  <option value="">{t('palette.anyPriority')}</option>
-                  <option value="urgent">{t('priority.urgent')}</option>
-                  <option value="high">{t('priority.high')}</option>
-                  <option value="normal">{t('priority.normal')}</option>
-                  <option value="low">{t('priority.low')}</option>
-                </select>
-                <select className={selectClass} value={filter.due || ''} onChange={(e) => setFilterValue('due', e.target.value)} aria-label={t('palette.due')}>
-                  <option value="">{t('palette.anyDue')}</option>
-                  <option value="overdue">{t('palette.overdue')}</option>
-                  <option value="today">{t('palette.today')}</option>
-                  <option value="week">{t('palette.week')}</option>
-                </select>
+                {filterMenu('taskStatus', t('palette.status'), [
+                  { value: '', label: t('palette.taskStatusAll') },
+                  { value: 'open', label: t('palette.onlyOpen') },
+                  { value: 'done', label: t('palette.onlyDone') },
+                ])}
+                {filterMenu('taskListId', t('palette.taskList'), [
+                  { value: '', label: t('palette.allLists') },
+                  { value: 'personal', label: t('palette.personal') },
+                  ...taskLists.map((l) => ({ value: l.id, label: l.title, lead: l.icon ? <span>{l.icon}</span> : undefined })),
+                ])}
+                {filterMenu('priority', t('palette.priority'), [
+                  { value: '', label: t('palette.anyPriority') },
+                  { value: 'urgent', label: t('priority.urgent') },
+                  { value: 'high', label: t('priority.high') },
+                  { value: 'normal', label: t('priority.normal') },
+                  { value: 'low', label: t('priority.low') },
+                ])}
+                {filterMenu('due', t('palette.due'), [
+                  { value: '', label: t('palette.anyDue') },
+                  { value: 'overdue', label: t('palette.overdue') },
+                  { value: 'today', label: t('palette.today') },
+                  { value: 'week', label: t('palette.week') },
+                ])}
               </>
             )}
-            {kind === 'document' && (
-              <select className={selectClass} value={filter.folder || ''} onChange={(e) => setFilterValue('folder', e.target.value)} aria-label={t('palette.folder')}>
-                <option value="">{t('palette.allFolders')}</option>
-                {folders.map((f) => (
-                  <option key={f} value={f}>
-                    {f}
-                  </option>
-                ))}
-              </select>
-            )}
+            {kind === 'document' &&
+              filterMenu('folder', t('palette.folder'), [
+                { value: '', label: t('palette.allFolders') },
+                ...folders.map((f) => ({ value: f, label: f })),
+              ])}
             {kind === 'list_item' && (
               <>
-                <select className={selectClass} value={filter.listId || ''} onChange={(e) => setFilterValue('listId', e.target.value)} aria-label={t('palette.list')}>
-                  <option value="">{t('palette.allLists')}</option>
-                  {lists.map((l) => (
-                    <option key={l.id} value={l.id}>
-                      {[l.icon, l.title].filter(Boolean).join(' ')}
-                    </option>
-                  ))}
-                </select>
-                <select className={selectClass} value={filter.itemStatus || ''} onChange={(e) => setFilterValue('itemStatus', e.target.value)} aria-label={t('palette.status')}>
-                  <option value="">{t('palette.itemStatusAll')}</option>
-                  <option value="open">{t('palette.onlyOpen')}</option>
-                  <option value="done">{t('palette.onlyChecked')}</option>
-                </select>
+                {filterMenu('listId', t('palette.list'), [
+                  { value: '', label: t('palette.allLists') },
+                  ...lists.map((l) => ({ value: l.id, label: l.title, lead: l.icon ? <span>{l.icon}</span> : undefined })),
+                ])}
+                {filterMenu('itemStatus', t('palette.status'), [
+                  { value: '', label: t('palette.itemStatusAll') },
+                  { value: 'open', label: t('palette.onlyOpen') },
+                  { value: 'done', label: t('palette.onlyChecked') },
+                ])}
               </>
             )}
           </div>

@@ -5,6 +5,7 @@ import { api } from '../../../lib/api';
 import { languageName } from '../../../i18n';
 import type { EffectiveVoiceMode } from '../../../lib/voice';
 import { voiceLanguageOptions } from '../../../lib/voiceLanguages';
+import { SelectMenu } from '../../../components/SelectMenu';
 
 // Voice input: Whisper server or the browser (only offered with a Whisper server that allows the
 // browser), and the language spoken into the microphone
@@ -90,27 +91,23 @@ export function VoiceSection({
         </div>
       )}
       <div className="space-y-1.5">
-        <label htmlFor="voice-language" className="block font-semibold text-main">
+        <p className="block font-semibold text-main">
           {t('voice.languageTitle')}
-        </label>
+        </p>
         <p className="text-muted leading-relaxed">{t('voice.languageIntro')}</p>
-        <select
-          id="voice-language"
-          value={spoken}
-          disabled={voiceSaving}
-          onChange={(e) => void handleChangeVoiceLanguage(e.target.value)}
-          className="w-full sm:max-w-sm h-11 sm:h-9 px-2.5 input-field bg-panel disabled:opacity-60"
-        >
-          <option value="auto">{t('voice.languageAuto')}</option>
-          <option value="app">{t('voice.languageApp', { name: languageName(i18n.language) })}</option>
-          <optgroup label={t('voice.languageFixed')}>
-            {languages.map((l) => (
-              <option key={l.code} value={l.code}>
-                {l.name}
-              </option>
-            ))}
-          </optgroup>
-        </select>
+        <div className="w-full sm:max-w-sm">
+          <SelectMenu
+            ariaLabel={t('voice.languageTitle')}
+            value={spoken}
+            disabled={voiceSaving}
+            onChange={(code) => void handleChangeVoiceLanguage(code)}
+            options={[
+              { value: 'auto', label: t('voice.languageAuto') },
+              { value: 'app', label: t('voice.languageApp', { name: languageName(i18n.language) }) },
+              ...languages.map((l) => ({ value: l.code, label: l.name })),
+            ]}
+          />
+        </div>
         {spoken === 'auto' && (
           <p className="text-muted leading-relaxed">{whisper ? t('voice.languageAutoHint') : t('voice.languageAutoBrowser')}</p>
         )}

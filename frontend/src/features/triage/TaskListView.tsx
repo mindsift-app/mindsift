@@ -2,6 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Trash2 } from 'lucide-react';
 import { TaskTrashList } from './TaskTrashList';
+import { SelectMenu } from '../../components/SelectMenu';
 import { TaskList, Thought, TrashedTask } from '../../lib/types';
 import { GroupBy, TaskFilter, TaskSort } from './taskViewTypes';
 import { TaskGroup } from './taskListing';
@@ -97,31 +98,29 @@ export function TaskListView({
         <div className="hidden sm:flex items-center gap-2 ml-auto">
           <div className="flex items-center gap-1 text-xs text-muted">
             <span className="text-[11px]">{t('view.group')}</span>
-            <select
+            <SelectMenu
+              size="sm"
+              ariaLabel={t('view.group')}
               value={groupBy}
-              onChange={(e) => setGroupBy(e.target.value as GroupBy)}
-              className="h-8 px-2 input-field text-xs bg-panel"
-            >
-              {groupOptions.map((g) => (
-                <option key={g.id} value={g.id}>
-                  {g.label}
-                </option>
-              ))}
-            </select>
+              onChange={setGroupBy}
+              options={groupOptions.map((g) => ({ value: g.id, label: g.label }))}
+            />
           </div>
           <div className="flex items-center gap-1 text-xs text-muted">
             <span className="text-[11px]">{t('view.sort')}</span>
-            <select
+            <SelectMenu
+              size="sm"
+              ariaLabel={t('view.sort')}
               value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as any)}
-              className="h-8 px-2 input-field text-xs bg-panel"
-            >
-              <option value="custom">{t('view.sortCustom')}</option>
-              <option value="created">{t('view.sortCreated')}</option>
-              <option value="due">{t('view.sortDue')}</option>
-              <option value="priority">{t('view.sortPriority')}</option>
-              <option value="alpha">{t('view.sortAlpha')}</option>
-            </select>
+              onChange={setSortBy}
+              options={[
+                { value: 'custom', label: t('view.sortCustom') },
+                { value: 'created', label: t('view.sortCreated') },
+                { value: 'due', label: t('view.sortDue') },
+                { value: 'priority', label: t('view.sortPriority') },
+                { value: 'alpha', label: t('view.sortAlpha') },
+              ]}
+            />
           </div>
         </div>
         {filter === 'discarded' && taskTrash.some((t) => t.canEdit) && (

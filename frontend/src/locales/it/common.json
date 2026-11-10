@@ -125,7 +125,8 @@
     "editorRole": "Editor",
     "viewerRole": "Lettore",
     "titleNote": "Condividi nota",
-    "titleFolder": "Condividi cartella"
+    "titleFolder": "Condividi cartella",
+    "permission": "Permesso"
   },
   "sharedImport": {
     "whichList": "Quale lista?",
@@ -406,5 +407,24 @@
     "clear": "Elimina tutte",
     "empty": "Ancora niente di nuovo. Qui compare ciò che succede nelle tue attività, liste e note.",
     "unread": "Non letta"
+  },
+  "select": {
+    "search": "Cerca …",
+    "noMatch": "Nessun risultato"
+  },
+  "dateField": {
+    "placeholder": "GG/MM/AAAA",
+    "open": "Apri calendario",
+    "clear": "Rimuovi data",
+    "prevMonth": "Mese precedente",
+    "nextMonth": "Mese successivo",
+    "prevYear": "Anno precedente",
+    "nextYear": "Anno successivo",
+    "chooseMonth": "Scegli mese e anno"
+  },
+  "timeField": {
+    "placeholder": "HH:MM",
+    "placeholder12": "h:mm AM",
+    "open": "Mostra orari"
   }
 }

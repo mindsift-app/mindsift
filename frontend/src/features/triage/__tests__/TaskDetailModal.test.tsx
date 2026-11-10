@@ -57,7 +57,7 @@ describe('TaskDetailModal', () => {
   it('shows date and time separately and removes only the time', () => {
     const onUpdateDueDate = vi.fn(async () => {});
     render(<TaskDetailModal {...props({ onUpdateDueDate })} />);
-    expect((screen.getByLabelText('Fälligkeitsdatum') as HTMLInputElement).value).toBe('2026-10-30');
+    expect((screen.getByLabelText('Fälligkeitsdatum') as HTMLInputElement).value).toBe('30.10.2026');
     expect((screen.getByLabelText('Uhrzeit (optional)') as HTMLInputElement).value).toBe('14:30');
     fireEvent.click(screen.getByTitle(/Uhrzeit entfernen/));
     expect(onUpdateDueDate).toHaveBeenCalledWith(task, '2026-10-30');

@@ -19,6 +19,7 @@ import { api, triggerHaptic } from '../../lib/api';
 import { ToggleSwitch } from '../../components/ToggleSwitch';
 import { formatDate } from '../../lib/format';
 import { askConfirm } from '../../components/askConfirm';
+import { SelectMenu } from '../../components/SelectMenu';
 
 interface ApiKeysPanelProps {
   onIngested?: () => void;
@@ -489,34 +490,28 @@ http_headers = { "X-API-Key" = "${exampleToken}" }`
                   </button>
                 ))}
                 {simTarget === 'list_item' && (
-                  <select
+                  <SelectMenu
+                    size="sm"
+                    ariaLabel={t('api.sim.list')}
                     value={simListId}
-                    onChange={(e) => setSimListId(e.target.value)}
-                    className="h-11 sm:h-8 px-2 input-field text-base sm:text-xs bg-panel"
-                    aria-label={t('api.sim.list')}
-                  >
-                    <option value="">{t('api.sim.chooseListOption')}</option>
-                    {lists.map((l) => (
-                      <option key={l.id} value={l.id}>
-                        {l.icon} {l.title}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={setSimListId}
+                    options={[
+                      { value: '', label: t('api.sim.chooseListOption') },
+                      ...lists.map((l) => ({ value: l.id, label: l.title, lead: l.icon ? <span>{l.icon}</span> : undefined })),
+                    ]}
+                  />
               )}
                 {simTarget === 'task' && (
-                  <select
+                  <SelectMenu
+                    size="sm"
+                    ariaLabel={t('api.sim.taskList')}
                     value={simTaskListId}
-                    onChange={(e) => setSimTaskListId(e.target.value)}
-                    className="h-11 sm:h-8 px-2 input-field text-base sm:text-xs bg-panel"
-                    aria-label={t('api.sim.taskList')}
-                  >
-                    <option value="">{t('api.sim.noTaskList')}</option>
-                    {taskLists.map((tl) => (
-                      <option key={tl.id} value={tl.id}>
-                        {tl.icon} {tl.title}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={setSimTaskListId}
+                    options={[
+                      { value: '', label: t('api.sim.noTaskList') },
+                      ...taskLists.map((tl) => ({ value: tl.id, label: tl.title, lead: tl.icon ? <span>{tl.icon}</span> : undefined })),
+                    ]}
+                  />
               )}
               </div>
 

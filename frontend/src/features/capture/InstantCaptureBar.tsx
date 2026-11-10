@@ -21,6 +21,7 @@ import { api, triggerHaptic } from '../../lib/api';
 import { readViewSession, writeViewSession } from '../../lib/viewSession';
 import { useVoiceInput } from '../../lib/useVoiceInput';
 import { VoiceWave } from '../../components/VoiceWave';
+import { DateField } from '../../components/DateField';
 
 export type CaptureTarget = 'inbox' | 'task' | 'list_item' | 'document';
 
@@ -618,11 +619,12 @@ export const InstantCaptureBar: React.FC<InstantCaptureBarProps> = ({
                   <Calendar className="w-3.5 h-3.5 text-accent" />
                   {t('capture.due')}
                 </span>
-                <input
-                  type="date"
+                <DateField
+                  ariaLabel={t('capture.due')}
                   value={dueDate}
-                  onChange={(e) => setDueDate(e.target.value)}
-                  className="input-field px-2.5 py-1 text-xs min-h-[30px]"
+                  onChange={setDueDate}
+                  className="w-[9rem]"
+                  inputClassName="h-[30px] input-field px-2.5 text-xs"
                 />
               </div>
             </div>

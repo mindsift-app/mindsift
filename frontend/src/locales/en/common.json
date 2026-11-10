@@ -125,7 +125,8 @@
     "editorRole": "Editor",
     "viewerRole": "Reader",
     "titleNote": "Share note",
-    "titleFolder": "Share folder"
+    "titleFolder": "Share folder",
+    "permission": "Permission"
   },
   "sharedImport": {
     "whichList": "Which list?",
@@ -406,5 +407,24 @@
     "clear": "Delete all",
     "empty": "Nothing new yet. What happens in your tasks, lists and notes shows up here.",
     "unread": "Unread"
+  },
+  "select": {
+    "search": "Search …",
+    "noMatch": "Nothing found"
+  },
+  "dateField": {
+    "placeholder": "MM/DD/YYYY",
+    "open": "Open calendar",
+    "clear": "Remove date",
+    "prevMonth": "Previous month",
+    "nextMonth": "Next month",
+    "prevYear": "Previous year",
+    "nextYear": "Next year",
+    "chooseMonth": "Choose month and year"
+  },
+  "timeField": {
+    "placeholder": "HH:MM",
+    "placeholder12": "h:mm AM",
+    "open": "Show times"
   }
 }

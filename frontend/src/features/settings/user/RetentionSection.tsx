@@ -4,6 +4,7 @@ import i18n from '../../../i18n';
 import { AlertCircle } from 'lucide-react';
 import { Retention, User } from '../../../lib/types';
 import { api } from '../../../lib/api';
+import { SelectMenu } from '../../../components/SelectMenu';
 
 // Kontoeinstellungen → Aufbewahrung: the areas and the delays offered (storage.RetentionChoices); texts in
 // settings:retention.areas.<key> and settings:retention.options.<days>
@@ -69,22 +70,20 @@ export function RetentionSection({
                 <p className="font-semibold text-main">{area.title}</p>
                 <p className="text-muted">{area.text}</p>
               </div>
-              <label className="flex items-center gap-2 flex-shrink-0">
+              <div className="flex items-center gap-2 flex-shrink-0">
                 <span className="text-muted">{area.verb}</span>
-                <select
-                  value={currentUser.retention![area.key]}
+                <SelectMenu
+                  size="sm"
+                  ariaLabel={`${area.title}: ${area.verb}`}
+                  value={String(currentUser.retention![area.key])}
                   disabled={retentionSaving}
-                  onChange={(e) => handleChangeRetention(area.key, Number(e.target.value))}
-                  className="h-11 sm:h-8 px-2 input-field text-base sm:text-xs bg-panel"
-                  aria-label={`${area.title}: ${area.verb}`}
-                >
-                  {RETENTION_DAYS.filter((days) => days > 0 || currentUser.retentionNeverAllowed !== false).map((days) => (
-                    <option key={days} value={days}>
-                      {t(`retention.options.${days}`)}
-                    </option>
-                  ))}
-                </select>
-              </label>
+                  onChange={(days) => handleChangeRetention(area.key, Number(days))}
+                  options={RETENTION_DAYS.filter((days) => days > 0 || currentUser.retentionNeverAllowed !== false).map((days) => ({
+                    value: String(days),
+                    label: t(`retention.options.${days}`),
+                  }))}
+                />
+              </div>
             </div>
             );
           })}

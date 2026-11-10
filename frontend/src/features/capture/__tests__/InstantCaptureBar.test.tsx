@@ -32,7 +32,8 @@ describe('InstantCaptureBar', () => {
     expect(screen.queryByText('Wocheneinkauf')).toBeNull();
     expect(screen.queryByText('Homelab')).toBeNull();
 
-    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Backup prüfen' } });
+    const box = screen.getByPlaceholderText('Quick Dump…');
+    fireEvent.change(box, { target: { value: 'Backup prüfen' } });
     fireEvent.click(screen.getByRole('button', { name: /Direkt als Aufgabe/ }));
     // With task lists, choosing the target does not save yet; read-only lists are not offered
     expect(captureThought).not.toHaveBeenCalled();
@@ -42,7 +43,7 @@ describe('InstantCaptureBar', () => {
     fireEvent.click(screen.getByRole('button', { name: /Homelab/ }));
     expect(captureThought).not.toHaveBeenCalled();
     await act(async () => {
-      fireEvent.submit(screen.getByRole('textbox').closest('form')!);
+      fireEvent.submit(box.closest('form')!);
     });
     expect(captureThought).toHaveBeenCalledWith('Backup prüfen', 'normal', 'manual', '', {
       target: 'task',

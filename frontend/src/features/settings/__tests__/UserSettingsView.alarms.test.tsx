@@ -78,6 +78,8 @@ describe('UserSettingsView notification matrix', () => {
     fireEvent.change(screen.getByLabelText('Uhrzeit der Tageszusammenfassung'), {
       target: { value: '08:30' },
     });
+    // The time field takes what was typed when it is left
+    fireEvent.blur(screen.getByLabelText('Uhrzeit der Tageszusammenfassung'));
     fireEvent.click(screen.getByTitle('Tageszusammenfassung – Discord'));
 
     fireEvent.click(screen.getByRole('button', { name: 'Alarm-Einstellungen speichern' }));
