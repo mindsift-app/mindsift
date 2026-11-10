@@ -46,6 +46,7 @@ import {
   TextElement,
   arrowGeometry,
   bendThrough,
+  elbowShareThrough,
   boxContains,
   contentBox,
   contentBytes,
@@ -425,6 +426,11 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
         if (patch.route !== undefined) {
           next.route = patch.route;
           delete next.via;
+          // A curve's bend and an elbow's middle mean different things
+          if (patch.route !== el.route) {
+            delete next.bend;
+            delete next.axis;
+          }
         }
         if (patch.head !== undefined) next.head = patch.head;
       }
@@ -616,7 +622,7 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
       const g = arrowGeometry(el, elementMap(docRef.current.els));
       if (near(g.start)) return { kind: 'end', end: 'a' };
       if (near(g.end)) return { kind: 'end', end: 'b' };
-      if (el.route === 'curve' && near(g.mid)) return { kind: 'bend' };
+      if ((el.route === 'curve' || el.route === 'elbow') && near(g.mid)) return { kind: 'bend' };
       return null;
     }
     if (!isShape(el)) return null;
@@ -894,6 +900,18 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
         const cur = docRef.current.els.find((el) => el.id === a.id) as ArrowElement | undefined;
         if (!cur) break;
         const g = arrowGeometry(cur, elementMap(docRef.current.els));
+        if (cur.route === 'elbow') {
+          // The middle stretch follows the pointer; laid out corner points give way to it, the direction stays
+          const horizontal = !!g.horizontal;
+          setDoc(
+            replaceEl(docRef.current, a.id, (el: ArrowElement) => {
+              const next: ArrowElement = { ...el, bend: elbowShareThrough(g.start, g.end, horizontal, p), axis: horizontal ? 'h' : 'v' };
+              delete next.via;
+              return next;
+            })
+          );
+          break;
+        }
         const bend = Math.max(-2, Math.min(2, bendThrough(g.start, g.end, p)));
         setDoc(replaceEl(docRef.current, a.id, (el) => ({ ...el, bend: Math.abs(bend) < 0.02 ? 0 : bend })));
         break;
@@ -1043,7 +1061,7 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
       {single && single.t === 'arrow' &&
         (() => {
           const g = arrowGeometry(single, byId);
-          const pts: Point[] = [g.start, g.end, ...(single.route === 'curve' ? [g.mid] : [])];
+          const pts: Point[] = [g.start, g.end, ...(single.route === 'curve' || single.route === 'elbow' ? [g.mid] : [])];
           return pts.map((q, i) => (
             <circle key={i} cx={q[0]} cy={q[1]} r={5 / z} fill={i === 2 ? 'var(--accent-primary)' : 'var(--bg-panel)'} stroke="var(--accent-primary)" strokeWidth={1.5 / z} />
           ));

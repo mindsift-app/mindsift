@@ -18,6 +18,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 ### Fixed
 - Drawings from AI agents (Mermaid): lines no longer lie on top of each other where several shapes branch out; in every gap each source runs across on a line of its own, so it stays clear which arrow goes where.
 - Drawings from AI agents: moving a shape in the editor no longer turns the arrows into straight lines; they stay right-angled, and the line style shows "elbow" for them. This also applies to drawings created before.
+- Drawings: elbow arrows go round other shapes by themselves, and a selected elbow arrow has a handle in the middle to move its middle stretch (also for arrows laid out by an AI agent). Labels on a level stretch of a line sit just above it, and their background lets the line show through a little.
 - Drawings: elbow arrows between shapes stacked above each other run up and down (out of the bottom, into the top) instead of leaving sideways just because the shapes sit far apart across.
 
 ## [0.93.1] - 2026-11-10

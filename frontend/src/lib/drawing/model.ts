@@ -49,8 +49,12 @@ export interface ArrowElement extends ElementBase {
   route: ArrowRoute;
   /** Arrow heads: 0 none, 1 start, 2 end, 3 both */
   head: number;
-  /** Curves: how far the middle bends away from the straight line, as a share of its length */
+  /** Curves: how far the middle bends away from the straight line, as a share of its length. Elbows: where
+   * the middle stretch lies, as a share of the way from start to end (set by dragging it; else it is
+   * placed to go round other shapes) */
   bend?: number;
+  /** Elbows with a middle stretch placed by hand: whether the line leaves sideways ('h') or up and down ('v') */
+  axis?: 'h' | 'v';
   /** Corner points the line runs through (laid out diagrams); dropped when a docked shape moves */
   via?: Point[];
   /** Label in the middle of the line ("ja", "nein") */
@@ -166,6 +170,7 @@ function parseElement(raw: any): DrawElement | null {
           raw.route === 'curve' || raw.route === 'elbow' ? raw.route : Array.isArray(raw.via) && raw.via.length ? 'elbow' : 'straight',
         head: [0, 1, 2, 3].includes(raw.head) ? raw.head : 2,
         ...(typeof raw.bend === 'number' && Number.isFinite(raw.bend) ? { bend: raw.bend } : {}),
+        ...(raw.axis === 'h' || raw.axis === 'v' ? { axis: raw.axis } : {}),
         ...(Array.isArray(raw.via) && raw.via.length ? { via: raw.via.slice(0, 100).map(point) } : {}),
         ...(txt ? { txt } : {}),
         ...(fs ? { fs } : {}),
@@ -386,6 +391,60 @@ export function elbowHorizontal(from: ShapeElement | undefined, to: ShapeElement
   return Math.abs(b[0] - a[0]) >= Math.abs(b[1] - a[1]);
 }
 
+// Positions of an elbow's middle stretch tried when it would cross a shape (share of the way from start to end)
+const ELBOW_TRIES = [0.5, 0.4, 0.6, 0.3, 0.7, 0.2, 0.8, 0.1, 0.9, 0.03, 0.97];
+
+/**
+ * An elbow line in one direction: out of the side of its start shape, along to the middle stretch at share
+ * t of the way, across, and into the side of its end shape. handle: middle of the middle stretch (it is
+ * dragged there to move it).
+ */
+export function elbowPath(from: ShapeElement | undefined, to: ShapeElement | undefined, rawA: Point, rawB: Point, horizontal: boolean, t: number) {
+  const a: Point = from ? sidePoint(from, horizontal ? (rawB[0] >= rawA[0] ? 'r' : 'l') : rawB[1] >= rawA[1] ? 'b' : 't') : rawA;
+  const b: Point = to ? sidePoint(to, horizontal ? (rawB[0] >= rawA[0] ? 'l' : 'r') : rawB[1] >= rawA[1] ? 't' : 'b') : rawB;
+  const poly: Point[] = horizontal
+    ? [a, [a[0] + (b[0] - a[0]) * t, a[1]], [a[0] + (b[0] - a[0]) * t, b[1]], b]
+    : [a, [a[0], a[1] + (b[1] - a[1]) * t], [b[0], a[1] + (b[1] - a[1]) * t], b];
+  const clean = poly.filter((p, i) => i === 0 || p[0] !== poly[i - 1][0] || p[1] !== poly[i - 1][1]);
+  const handle: Point = [(poly[1][0] + poly[2][0]) / 2, (poly[1][1] + poly[2][1]) / 2];
+  return { a, b, poly: clean, handle, horizontal };
+}
+
+/** Share of the way for an elbow's middle stretch through a point (dragging its handle) */
+export function elbowShareThrough(a: Point, b: Point, horizontal: boolean, p: Point): number {
+  const span = horizontal ? b[0] - a[0] : b[1] - a[1];
+  if (Math.abs(span) < 1) return 0.5;
+  const t = ((horizontal ? p[0] - a[0] : p[1] - a[1]) / span);
+  return Math.max(0, Math.min(1, t));
+}
+
+/** Whether a line of right-angled stretches passes through a shape's box (grown by margin) */
+function polyHitsBox(poly: Point[], s: ShapeElement, margin: number): boolean {
+  const x0 = s.x - margin, x1 = s.x + s.w + margin, y0 = s.y - margin, y1 = s.y + s.h + margin;
+  for (let i = 1; i < poly.length; i++) {
+    const [p, q] = [poly[i - 1], poly[i]];
+    const lx = Math.min(p[0], q[0]), hx = Math.max(p[0], q[0]), ly = Math.min(p[1], q[1]), hy = Math.max(p[1], q[1]);
+    if (hx >= x0 && lx <= x1 && hy >= y0 && ly <= y1) return true;
+  }
+  return false;
+}
+
+/** Whether the stretch of a line that a point lies on runs level (a label sits above it then) */
+export function levelAt(poly: Point[], at: Point): boolean {
+  let best = Infinity;
+  let level = false;
+  for (let i = 1; i < poly.length; i++) {
+    const [p, q] = [poly[i - 1], poly[i]];
+    const lx = Math.min(p[0], q[0]), hx = Math.max(p[0], q[0]), ly = Math.min(p[1], q[1]), hy = Math.max(p[1], q[1]);
+    const d = Math.hypot(at[0] - Math.max(lx, Math.min(hx, at[0])), at[1] - Math.max(ly, Math.min(hy, at[1])));
+    if (d < best) {
+      best = d;
+      level = Math.abs(q[1] - p[1]) < 0.5 && Math.abs(q[0] - p[0]) > 0.5;
+    }
+  }
+  return level;
+}
+
 export interface ArrowGeometry {
   start: Point;
   end: Point;
@@ -400,6 +459,8 @@ export interface ArrowGeometry {
   mid: Point;
   /** Where the label sits: halfway along the line */
   labelAt: Point;
+  /** Elbows: whether the line leaves sideways */
+  horizontal?: boolean;
 }
 
 /** Point halfway along a line of points */
@@ -449,27 +510,41 @@ export function arrowGeometry(el: ArrowElement, byId: Map<string, DrawElement>):
   }
 
   if (el.route === 'elbow') {
-    const horizontal = elbowHorizontal(from, to, rawA, rawB);
-    const a: Point = from
-      ? sidePoint(from, horizontal ? (rawB[0] >= rawA[0] ? 'r' : 'l') : rawB[1] >= rawA[1] ? 'b' : 't')
-      : rawA;
-    const b: Point = to
-      ? sidePoint(to, horizontal ? (rawB[0] >= rawA[0] ? 'l' : 'r') : rawB[1] >= rawA[1] ? 't' : 'b')
-      : rawB;
-    const poly: Point[] = horizontal
-      ? [a, [(a[0] + b[0]) / 2, a[1]], [(a[0] + b[0]) / 2, b[1]], b]
-      : [a, [a[0], (a[1] + b[1]) / 2], [b[0], (a[1] + b[1]) / 2], b];
-    const clean = poly.filter((p, i) => i === 0 || p[0] !== poly[i - 1][0] || p[1] !== poly[i - 1][1]);
+    // Shapes the line should go round: every shape but its own two
+    const obstacles: ShapeElement[] = [];
+    for (const other of byId.values()) if (isShape(other) && other !== from && other !== to) obstacles.push(other);
+    const build = (horizontal: boolean, t: number) => elbowPath(from, to, rawA, rawB, horizontal, t);
+    const preferred = el.axis ? el.axis === 'h' : elbowHorizontal(from, to, rawA, rawB);
+    let best = build(preferred, el.bend ?? 0.5);
+    if (el.bend === undefined && obstacles.length) {
+      // No middle chosen by hand: the first position of the middle stretch (from the centre outwards) that
+      // crosses no other shape, else the other direction, else the one crossing the fewest
+      let bestHits = Infinity;
+      for (const horizontal of [preferred, !preferred]) {
+        for (const t of ELBOW_TRIES) {
+          const cand = build(horizontal, t);
+          const hits = obstacles.filter((o) => polyHitsBox(cand.poly, o, 6)).length;
+          if (hits < bestHits) {
+            best = cand;
+            bestHits = hits;
+          }
+          if (hits === 0) break;
+        }
+        if (bestHits === 0) break;
+      }
+    }
+    const clean = best.poly;
     const angle = (p: Point, q: Point) => Math.atan2(q[1] - p[1], q[0] - p[0]);
     return {
-      start: a,
-      end: b,
+      start: best.a,
+      end: best.b,
       d: 'M ' + clean.map((p) => `${p[0]} ${p[1]}`).join(' L '),
       poly: clean,
       startAngle: clean.length > 1 ? angle(clean[1], clean[0]) : 0,
       endAngle: clean.length > 1 ? angle(clean[clean.length - 2], clean[clean.length - 1]) : 0,
-      mid: [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2],
-      labelAt: halfway(clean),
+      mid: best.handle,
+      labelAt: best.handle,
+      horizontal: best.horizontal,
     };
   }
 
