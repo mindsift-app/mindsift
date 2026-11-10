@@ -60,7 +60,26 @@
     "created": "Creata il: {{date}}",
     "plusWeek": "+1 settimana",
     "timeShort": "Ora",
-    "renameSubtask": "Clicca per rinominare"
+    "renameSubtask": "Clicca per rinominare",
+    "reminder": {
+      "label": "Promemoria",
+      "standard": "Predefinito ({{lead}})",
+      "standardHint": "Come in Impostazioni → Allarmi",
+      "title": "Quando MindSift ti ricorda questa attività. Gli orari propri sostituiscono il preavviso delle impostazioni e valgono per tutti quelli che ricevono il suo allarme di scadenza.",
+      "own": "Promemoria propri: {{list}}",
+      "m0": "Alla scadenza",
+      "m0AllDay": "Il giorno della scadenza (ore 9)",
+      "m15": "15 min prima",
+      "m30": "30 min prima",
+      "m60": "1 ora prima",
+      "m120": "2 ore prima",
+      "m1440": "1 giorno prima",
+      "m2880": "2 giorni prima",
+      "m4320": "3 giorni prima",
+      "m10080": "1 settimana prima",
+      "m20160": "2 settimane prima",
+      "m43200": "1 mese prima"
+    }
   },
   "columnsModal": {
     "minOne": "Deve essere presente almeno una colonna.",

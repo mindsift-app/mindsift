@@ -66,7 +66,7 @@ func TestDueAlarmRecipients(t *testing.T) {
 
 	// Sent to one person: the others still wait; a new due date re-arms everyone
 	_ = store.SetTaskListMuted(cleo.ID, list.ID, false)
-	_ = store.MarkTaskAlarmSent(task.ID, ben.ID)
+	_ = store.MarkTaskAlarmSent(task.ID, ben.ID, ReminderLeadTime)
 	if got := pending(task.ID); got != "Anna,Cleo" {
 		t.Fatalf("after Ben got it, got %q", got)
 	}

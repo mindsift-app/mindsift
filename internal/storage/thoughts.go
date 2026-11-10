@@ -94,20 +94,21 @@ func scanThought(rows interface {
 	Scan(dest ...any) error
 }) (*domain.Thought, error) {
 	t := &domain.Thought{}
-	var tagsStr, subtasksStr, statusStr string
+	var tagsStr, subtasksStr, statusStr, remindersStr string
 	var isCompleted, alarmSent, sortOrder int
 	var origin originDest
 	err := rows.Scan(
 		&t.ID, &t.UserID, &t.Content, &tagsStr, &t.Priority, &t.Source,
 		&statusStr, &isCompleted, &t.ConvertedType, &t.ConvertedRefID,
 		&t.DueDate, &t.TaskListID, &t.KanbanStatus, &t.Notes, &alarmSent,
-		&t.CreatedAt, &t.TriagedAt, &subtasksStr, &sortOrder, &t.Recurrence,
+		&t.CreatedAt, &t.TriagedAt, &subtasksStr, &sortOrder, &t.Recurrence, &remindersStr,
 		&origin.createdVia, &origin.createdKey, &origin.changedVia, &origin.changedKey, &origin.changedAt,
 	)
 	if err != nil {
 		return nil, err
 	}
 	t.SortOrder = sortOrder
+	t.Reminders = domain.ParseReminders(remindersStr)
 	t.Origin = origin.result()
 	t.Status = domain.ThoughtStatus(statusStr)
 	t.IsCompleted = isCompleted != 0
@@ -140,7 +141,7 @@ func (s *Store) accessibleTaskListIDsQuery() string {
 
 func (s *Store) GetThoughtByID(userID, thoughtID string) (*domain.Thought, error) {
 	row := s.db.QueryRow(
-		`SELECT id, user_id, content, tags, priority, source, status, is_completed, converted_type, converted_ref_id, due_date, task_list_id, kanban_status, notes, alarm_sent, created_at, triaged_at, subtasks, sort_order, recurrence, `+originColumns("")+`
+		`SELECT id, user_id, content, tags, priority, source, status, is_completed, converted_type, converted_ref_id, due_date, task_list_id, kanban_status, notes, alarm_sent, created_at, triaged_at, subtasks, sort_order, recurrence, reminders, `+originColumns("")+`
 		 FROM thoughts WHERE id = ? AND (user_id = ? OR task_list_id IN (`+s.accessibleTaskListIDsQuery()+`))`,
 		thoughtID, userID, userID, userID, userID,
 	)
@@ -161,14 +162,14 @@ func (s *Store) GetThoughts(userID, statusFilter string, limit int) ([]domain.Th
 
 	if statusFilter != "" && statusFilter != "all" {
 		rows, err = s.db.Query(
-			`SELECT id, user_id, content, tags, priority, source, status, is_completed, converted_type, converted_ref_id, due_date, task_list_id, kanban_status, notes, alarm_sent, created_at, triaged_at, subtasks, sort_order, recurrence, `+originColumns("")+`
+			`SELECT id, user_id, content, tags, priority, source, status, is_completed, converted_type, converted_ref_id, due_date, task_list_id, kanban_status, notes, alarm_sent, created_at, triaged_at, subtasks, sort_order, recurrence, reminders, `+originColumns("")+`
 			 FROM thoughts WHERE user_id = ? AND status = ?
 			 ORDER BY CASE priority WHEN 'urgent' THEN 1 WHEN 'high' THEN 2 WHEN 'normal' THEN 3 ELSE 4 END, sort_order ASC, created_at DESC LIMIT ?`,
 			userID, statusFilter, limit,
 		)
 	} else {
 		rows, err = s.db.Query(
-			`SELECT id, user_id, content, tags, priority, source, status, is_completed, converted_type, converted_ref_id, due_date, task_list_id, kanban_status, notes, alarm_sent, created_at, triaged_at, subtasks, sort_order, recurrence, `+originColumns("")+`
+			`SELECT id, user_id, content, tags, priority, source, status, is_completed, converted_type, converted_ref_id, due_date, task_list_id, kanban_status, notes, alarm_sent, created_at, triaged_at, subtasks, sort_order, recurrence, reminders, `+originColumns("")+`
 			 FROM thoughts WHERE user_id = ?
 			 ORDER BY sort_order ASC, created_at DESC LIMIT ?`,
 			userID, limit,
@@ -194,7 +195,7 @@ func (s *Store) GetTasks(userID string, taskListID string) ([]domain.Thought, er
 	var err error
 	if taskListID != "" {
 		rows, err = s.db.Query(
-			`SELECT id, user_id, content, tags, priority, source, status, is_completed, converted_type, converted_ref_id, due_date, task_list_id, kanban_status, notes, alarm_sent, created_at, triaged_at, subtasks, sort_order, recurrence, `+originColumns("")+`
+			`SELECT id, user_id, content, tags, priority, source, status, is_completed, converted_type, converted_ref_id, due_date, task_list_id, kanban_status, notes, alarm_sent, created_at, triaged_at, subtasks, sort_order, recurrence, reminders, `+originColumns("")+`
 			 FROM thoughts
 			 WHERE (user_id = ? OR task_list_id IN (`+s.accessibleTaskListIDsQuery()+`))
 			   AND task_list_id = ?
@@ -204,7 +205,7 @@ func (s *Store) GetTasks(userID string, taskListID string) ([]domain.Thought, er
 		)
 	} else {
 		rows, err = s.db.Query(
-			`SELECT id, user_id, content, tags, priority, source, status, is_completed, converted_type, converted_ref_id, due_date, task_list_id, kanban_status, notes, alarm_sent, created_at, triaged_at, subtasks, sort_order, recurrence, `+originColumns("")+`
+			`SELECT id, user_id, content, tags, priority, source, status, is_completed, converted_type, converted_ref_id, due_date, task_list_id, kanban_status, notes, alarm_sent, created_at, triaged_at, subtasks, sort_order, recurrence, reminders, `+originColumns("")+`
 			 FROM thoughts
 			 WHERE (user_id = ? OR task_list_id IN (`+s.accessibleTaskListIDsQuery()+`))
 			   AND (status = 'kept' OR (status = 'converted' AND converted_type = 'task'))
@@ -659,7 +660,10 @@ func (s *Store) SyncTaskFromBlockCheck(userID, taskID string, checked bool) {
 // --- ALARMS ---
 
 type DueTaskAlarm struct {
-	TaskID              string
+	TaskID string
+	// Reminder: the task's own reminder in minutes before the due date, or ReminderLeadTime for the
+	// person's lead time; NotifyBeforeMinutes holds the minutes that apply either way
+	Reminder            int
 	UserID              string
 	Title               string
 	Notes               string

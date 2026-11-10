@@ -481,6 +481,9 @@ const fr: HelpContent = {
               <strong className="text-main">Alertes &amp; notifications :</strong> reçois des alertes par e-mail, webhook Discord ou notifications push sur tes appareils à l'approche d'une échéance (par ex. 15 minutes ou 1 jour avant).
             </li>
             <li>
+              <strong className="text-main">Rappels par tâche :</strong> Dans la fenêtre de détail, coche une ou plusieurs heures sous « Rappel », p. ex. 2 semaines avant et le jour de l’échéance. Pour cette tâche, ils remplacent ton délai et valent pour tous ceux qui reçoivent son alarme d’échéance ; « Par défaut » revient au délai des paramètres. Sans heure, MindSift rappelle des jours entiers avant, à 9 h. Les tâches avec leurs propres rappels portent une petite 🔔.
+            </li>
+            <li>
               <strong className="text-main">Autres notifications :</strong> Quand quelqu’un t’attribue une tâche, qu’une nouvelle tâche arrive dans une liste partagée ou qu’une tâche y est terminée, MindSift peut te prévenir ; chaque événement s’active ou se désactive séparément dans les paramètres, sous « Alarmes ». Les tâches que tu <strong className="text-main">suis</strong> signalent chaque modification (statut, priorité, échéance, texte, description, sous-tâches, attribution …), même cochées dans une note. MindSift ne te signale jamais ce que tu fais toi-même. Plusieurs événements arrivent regroupés dans un seul message. La <strong className="text-main">cloche</strong> à côté de la recherche rassemble tout ce qui s’est passé ces 14 derniers jours, même sans canal activé ; un clic sur une entrée ouvre la tâche ou la note.
             </li>
             <li>

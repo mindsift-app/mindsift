@@ -1,6 +1,8 @@
 package domain
 
 import (
+	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -60,10 +62,77 @@ func DueAlarmAt(raw string, notifyBeforeMinutes int, loc *time.Location) (time.T
 	if !hasTime {
 		t = time.Date(t.Year(), t.Month(), t.Day(), AllDayAlarmHour, 0, 0, 0, loc)
 	}
-	if notifyBeforeMinutes > 0 {
+	switch {
+	case notifyBeforeMinutes == ReminderMonth:
+		t = monthBefore(t)
+	case notifyBeforeMinutes > 0 && notifyBeforeMinutes%minutesPerDay == 0:
+		// Whole days as calendar days: a change of daylight saving time in between moves nothing
+		t = t.AddDate(0, 0, -notifyBeforeMinutes/minutesPerDay)
+	case notifyBeforeMinutes > 0:
 		t = t.Add(-time.Duration(notifyBeforeMinutes) * time.Minute)
 	}
 	return t, true
+}
+
+// monthBefore: the same day and time a month earlier; 31 March gives the last day of February
+func monthBefore(t time.Time) time.Time {
+	y, m, d := t.Date()
+	last := time.Date(y, m, 0, 0, 0, 0, 0, t.Location()).Day()
+	if d > last {
+		d = last
+	}
+	return time.Date(y, m-1, d, t.Hour(), t.Minute(), 0, 0, t.Location())
+}
+
+// Reminders of a task: minutes before its due date, replacing each person's lead time. Whole days count
+// as calendar days, ReminderMonth as one calendar month. Stored in thoughts.reminders as "20160,0".
+const (
+	minutesPerDay = 24 * 60
+	ReminderMonth = 30 * minutesPerDay
+)
+
+// AllowedReminders are the choices in the task dialog (and what the API accepts)
+var AllowedReminders = []int{0, 15, 30, 60, 120, minutesPerDay, 2 * minutesPerDay, 3 * minutesPerDay, 7 * minutesPerDay, 14 * minutesPerDay, ReminderMonth}
+
+// NormalizeReminders keeps the allowed values once each, the earliest first; ok is false for any other.
+func NormalizeReminders(in []int) ([]int, bool) {
+	allowed := map[int]bool{}
+	for _, m := range AllowedReminders {
+		allowed[m] = true
+	}
+	seen := map[int]bool{}
+	out := []int{}
+	for _, m := range in {
+		if !allowed[m] {
+			return nil, false
+		}
+		if !seen[m] {
+			seen[m] = true
+			out = append(out, m)
+		}
+	}
+	sort.Sort(sort.Reverse(sort.IntSlice(out)))
+	return out, true
+}
+
+// ParseReminders reads the stored column; unknown parts are skipped.
+func ParseReminders(raw string) []int {
+	out := []int{}
+	for _, part := range strings.Split(raw, ",") {
+		if m, err := strconv.Atoi(strings.TrimSpace(part)); err == nil && m >= 0 {
+			out = append(out, m)
+		}
+	}
+	return out
+}
+
+// FormatReminders is the stored form of reminders ("" = the lead time of each person).
+func FormatReminders(r []int) string {
+	parts := make([]string, len(r))
+	for i, m := range r {
+		parts[i] = strconv.Itoa(m)
+	}
+	return strings.Join(parts, ",")
 }
 
 // HumanDue renders a due date for messages in lang: "30.10.2026" or "30.10.2026, 14:30 Uhr".

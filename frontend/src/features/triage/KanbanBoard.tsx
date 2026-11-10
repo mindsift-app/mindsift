@@ -1,7 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { AnimatePresence } from 'framer-motion';
-import { ArrowLeft, ArrowRight, Calendar, FileText, Plus, Repeat, Trash2 } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Calendar, FileText, Plus, Repeat, Bell, Trash2 } from 'lucide-react';
 import { formatDue, isOverdue } from '../../lib/due';
 import { OriginBadge } from '../../components/OriginBadge';
 import { columnDotClass } from './ManageColumnsModal';
@@ -11,6 +11,7 @@ import { useTaskDrag, canDragTasks } from './useTaskDrag';
 import { stopOnControl } from './stopOnControl';
 import { AvatarPerson } from '../../components/AvatarStack';
 import { renderMentions } from '../../lib/markdown';
+import { remindersText } from '../../lib/reminders';
 
 // First row of a Kanban board with several rows: the full height minus what is still visible of the bar
 // above the board (--kb-top at the start, shrinking with the scroll position --kb-scroll)
@@ -310,6 +311,14 @@ export function KanbanBoard({
                       {task.recurrence && (
                         <span className="inline-flex items-center text-muted" title={t('repeats', { rule: RECURRENCE_LABELS[task.recurrence] })}>
                           <Repeat className="w-2.5 h-2.5" />
+                        </span>
+                      )}
+                      {task.dueDate && !!task.reminders?.length && (
+                        <span
+                          className="inline-flex items-center text-muted"
+                          title={t('tasks:detail.reminder.own', { list: remindersText(task.reminders, !task.dueDate.includes('T')) })}
+                        >
+                          <Bell className="w-2.5 h-2.5" />
                         </span>
                       )}
                       {task.tags?.map((tag) => (

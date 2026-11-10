@@ -536,7 +536,7 @@ func (s *Store) docTaskLinks(docID string) map[string]string {
 // GetThoughtByIDUnchecked loads a task without access check, for server-internal notifications.
 func (s *Store) GetThoughtByIDUnchecked(thoughtID string) (*domain.Thought, error) {
 	return scanThought(s.db.QueryRow(
-		`SELECT id, user_id, content, tags, priority, source, status, is_completed, converted_type, converted_ref_id, due_date, task_list_id, kanban_status, notes, alarm_sent, created_at, triaged_at, subtasks, sort_order, recurrence, `+originColumns("")+`
+		`SELECT id, user_id, content, tags, priority, source, status, is_completed, converted_type, converted_ref_id, due_date, task_list_id, kanban_status, notes, alarm_sent, created_at, triaged_at, subtasks, sort_order, recurrence, reminders, `+originColumns("")+`
 		 FROM thoughts WHERE id = ?`, thoughtID))
 }
 

@@ -6,7 +6,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Added
+- Tasks: reminders per task. In the task dialog, tick one or more times under "Reminder" (from the due time up to 1 month before, e.g. 2 weeks before and on the day). They replace the lead time from Settings → Alarms for this task and apply to everyone who gets its due alarm (the assignees, or every member of a shared list); "Default" shows your lead time and goes back to it. Without a time only whole days are offered, reminding at 9:00. Early reminders say when the task is due ("is due on 24.11.2026") instead of "due now", by mail, push, Discord, webhook and in the bell. Repeating tasks keep their reminders; rows and Kanban cards show a small bell. AI agents (MCP) can set them with `create_task` and `update_task`.
+
 ### Changed
+- Due alarms with the lead time "1 day before" no longer say the task is due now; they name its due date. A lead time of whole days counts calendar days, so the change of daylight saving time no longer shifts it by an hour.
 - Task dialog: the status is one dropdown instead of a button per column, so boards with many columns stay tidy; the dropdown and its options show each column's colour. The repetition and the task list are picked from the same kind of dropdown instead of the browser's own.
 - All dropdowns in the app (task rows, sorting, search filters, code block language, journal, sharing, settings, administration, groups, setup) use the app's own dropdown instead of the browser's: same look in every theme, colour dots and list emojis in the options, typing jumps to an option, long lists such as the code languages get a search field.
 - Dates and times on computers: a calendar of our own instead of the browser's (the week starts as your language has it, today framed, month and year to pick, fully usable with the keyboard), and a list of times in 15-minute steps. Both can be typed as well, e.g. "24.11.", "24112026", "1430" or "2:30 pm". On phones and tablets the system's own date and time pickers stay, they work best with fingers.

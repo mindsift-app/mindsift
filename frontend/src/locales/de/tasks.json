@@ -60,7 +60,26 @@
     "created": "Erstellt: {{date}}",
     "plusWeek": "+1 Woche",
     "timeShort": "Uhrzeit",
-    "renameSubtask": "Klicken zum Umbenennen"
+    "renameSubtask": "Klicken zum Umbenennen",
+    "reminder": {
+      "label": "Erinnerung",
+      "standard": "Standard ({{lead}})",
+      "standardHint": "Wie in den Einstellungen unter Alarme",
+      "title": "Wann MindSift an diese Aufgabe erinnert. Eigene Zeiten ersetzen die Vorwarnzeit aus den Einstellungen und gelten für alle, die den Fälligkeits-Alarm bekommen.",
+      "own": "Eigene Erinnerungen: {{list}}",
+      "m0": "Zum Fälligkeitszeitpunkt",
+      "m0AllDay": "Am Fälligkeitstag (9 Uhr)",
+      "m15": "15 Min. vorher",
+      "m30": "30 Min. vorher",
+      "m60": "1 Std. vorher",
+      "m120": "2 Std. vorher",
+      "m1440": "1 Tag vorher",
+      "m2880": "2 Tage vorher",
+      "m4320": "3 Tage vorher",
+      "m10080": "1 Woche vorher",
+      "m20160": "2 Wochen vorher",
+      "m43200": "1 Monat vorher"
+    }
   },
   "columnsModal": {
     "minOne": "Mindestens eine Spalte muss vorhanden sein.",

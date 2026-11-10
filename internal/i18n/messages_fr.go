@@ -482,4 +482,12 @@ var messagesFR = map[string]string{
 	"Öffentliche Links sind auf diesem Server abgeschaltet":                                              "Les liens publics sont désactivés sur ce serveur",
 	"Diese Laufzeit ist nicht erlaubt":                                                                   "Cette durée n’est pas autorisée",
 	"Das Passwort ist zu lang":                                                                           "Le mot de passe est trop long",
+	"Erinnerung: {title}":                                                                                "Rappel : {title}",
+	"Erinnerung: Diese Aufgabe ist am {due} fällig:":                                                     "Rappel : cette tâche arrive à échéance le {due} :",
+	"Aufgabe ist am {due} fällig.":                                                                       "La tâche arrive à échéance le {due}.",
+	"Erinnerung an eine Aufgabe":                                                                         "Rappel de tâche",
+	"„{title}“ ist am {due} fällig":                                                                      "« {title} » arrive à échéance le {due}",
+	"Unbekannte Erinnerung (erlaubt: 0, 15, 30, 60, 120 Minuten, 1, 2, 3, 7, 14 Tage, 1 Monat vorher)": "Rappel inconnu (autorisés : 0, 15, 30, 60, 120 minutes, 1, 2, 3, 7, 14 jours, 1 mois avant)",
+	"{name} hat die Erinnerungen von „{title}“ geändert":                                               "{name} a modifié les rappels de « {title} »",
+	"Erinnerungen": "rappels",
 }

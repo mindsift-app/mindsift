@@ -253,6 +253,8 @@ export interface Thought {
   subtasks?: SubTask[];
   assignees?: string[]; // user IDs, only people with access to the task list
   recurrence?: Recurrence;
+  // Minutes before the due date, replacing each person's lead time; empty = the lead time
+  reminders?: number[];
   isWatching?: boolean;
   alarmSent?: boolean;
   sortOrder?: number;

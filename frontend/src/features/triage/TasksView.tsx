@@ -478,6 +478,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
     handleUpdateTaskTaskList,
     handleUpdateTaskNotes,
     handleUpdateTaskRecurrence,
+    handleUpdateTaskReminders,
     handleUpdateTaskAssignees,
     handleUpdateTaskTags,
     handleToggleSubtask,
@@ -1032,6 +1033,8 @@ export const TasksView: React.FC<TasksViewProps> = ({
         onUpdatePriority={handleSetPriority}
         onUpdateDueDate={handleUpdateTaskDueDate}
         onUpdateRecurrence={handleUpdateTaskRecurrence}
+        onUpdateReminders={handleUpdateTaskReminders}
+        leadMinutes={currentUser?.notifyBeforeMinutes ?? 30}
         onUpdateTaskList={handleUpdateTaskTaskList}
         onUpdateNotes={handleUpdateTaskNotes}
         onUpdateTags={handleUpdateTaskTags}

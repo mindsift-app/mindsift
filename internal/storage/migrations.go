@@ -52,6 +52,7 @@ var migrations = []migration{
 	{29, "Muted task lists and due alarms per person", (*Store).migrateTaskAlerts},
 	{30, "Mentions in notes", (*Store).migrateMentions},
 	{31, "Notification center", (*Store).migrateCenter},
+	{32, "Reminders per task", (*Store).migrateReminders},
 }
 
 func (s *Store) migrate() error {

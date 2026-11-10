@@ -72,7 +72,7 @@ func (s *Store) SetTaskRecurrence(userID, taskID, rule string) error {
 
 func (s *Store) getThoughtRaw(id string) (*domain.Thought, error) {
 	t, err := scanThought(s.db.QueryRow(
-		`SELECT id, user_id, content, tags, priority, source, status, is_completed, converted_type, converted_ref_id, due_date, task_list_id, kanban_status, notes, alarm_sent, created_at, triaged_at, subtasks, sort_order, recurrence, `+originColumns("")+`
+		`SELECT id, user_id, content, tags, priority, source, status, is_completed, converted_type, converted_ref_id, due_date, task_list_id, kanban_status, notes, alarm_sent, created_at, triaged_at, subtasks, sort_order, recurrence, reminders, `+originColumns("")+`
 		 FROM thoughts WHERE id = ?`, id))
 	if err != nil {
 		return nil, err
@@ -127,12 +127,12 @@ func (s *Store) spawnNextOccurrence(taskID string) {
 	if _, err := s.UpdateThoughtDetails(t.UserID, next.ID, nil, nil, nil, nil, nil, &column, nil, &subs, &tags); err != nil {
 		slog.Error("Next occurrence: subtasks and tags missing", "task_id", next.ID, "error", err)
 	}
-	carry := []sqlStmt{stmt(`UPDATE thoughts SET recurrence = ?, sort_order = ? WHERE id = ?`, t.Recurrence, t.SortOrder, next.ID)}
+	carry := []sqlStmt{stmt(`UPDATE thoughts SET recurrence = ?, reminders = ?, sort_order = ? WHERE id = ?`, t.Recurrence, domain.FormatReminders(t.Reminders), t.SortOrder, next.ID)}
 	for _, uid := range t.Assignees {
 		carry = append(carry, stmt(`INSERT OR IGNORE INTO task_assignees (task_id, user_id, created_at) VALUES (?, ?, ?)`, next.ID, uid, domain.NowISO()))
 	}
 	if err := s.execInTx(carry...); err != nil {
-		slog.Error("Next occurrence: repeat and assignees not carried over", "task_id", next.ID, "error", err)
+		slog.Error("Next occurrence: repeat, reminders and assignees not carried over", "task_id", next.ID, "error", err)
 	}
 	s.PruneTaskAssignees()
 

@@ -158,6 +158,7 @@ const (
 	changeTags       = "{name} hat die Tags von „{title}“ geändert"
 	changeAssignees  = "{name} hat die Zuweisung von „{title}“ geändert"
 	changeRecurrence = "{name} hat die Wiederholung von „{title}“ geändert"
+	changeReminders  = "{name} hat die Erinnerungen von „{title}“ geändert"
 	changeOther      = "{name} hat „{title}“ geändert"
 	changeSeveral    = "{name} hat „{title}“ geändert: {changes}"
 	taskAssignedText = "{name} hat dir „{title}“ zugewiesen"
@@ -175,6 +176,7 @@ const (
 	partTags         = "Tags"
 	partAssignees    = "Zuweisung"
 	partRecurrence   = "Wiederholung"
+	partReminders    = "Erinnerungen"
 )
 
 // taskChange is one changed field of a task: its sentence and its part of a longer list.
@@ -204,6 +206,7 @@ func taskChanges(before, after *domain.Thought) []taskChange {
 	add(before.Content == after.Content && !sameSet(before.Tags, after.Tags), changeTags, partTags)
 	add(!sameSet(before.Assignees, after.Assignees), changeAssignees, partAssignees)
 	add(before.Recurrence != after.Recurrence, changeRecurrence, partRecurrence)
+	add(domain.FormatReminders(before.Reminders) != domain.FormatReminders(after.Reminders), changeReminders, partReminders)
 	return out
 }
 

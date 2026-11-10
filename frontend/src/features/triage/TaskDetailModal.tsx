@@ -15,6 +15,7 @@ import {
   Lock,
   UserPlus,
   Repeat,
+  Bell,
   Eye,
   EyeOff,
   GripVertical,
@@ -28,7 +29,8 @@ import { api, triggerHaptic } from '../../lib/api';
 import { MarkdownViewer, renderMentions } from '../../lib/markdown';
 import { useMentionInput } from '../../lib/useMentionInput';
 import { MentionMenu } from '../../components/MentionMenu';
-import { SelectMenu } from '../../components/SelectMenu';
+import { MultiSelectMenu, SelectMenu } from '../../components/SelectMenu';
+import { REMINDER_CHOICES, isDayReminder, reminderLabel, remindersText } from '../../lib/reminders';
 import { DateField } from '../../components/DateField';
 import { TimeField } from '../../components/TimeField';
 import { VoiceInputButton } from '../../components/VoiceInputButton';
@@ -49,6 +51,9 @@ interface TaskDetailModalProps {
   onUpdatePriority: (task: Thought, newPriority: string) => Promise<void>;
   onUpdateDueDate: (task: Thought, newDueDate: string) => Promise<void>;
   onUpdateRecurrence?: (task: Thought, recurrence: Recurrence) => Promise<void>;
+  // Own reminders in minutes before the due date ([] = the lead time from the settings, leadMinutes)
+  onUpdateReminders?: (task: Thought, reminders: number[]) => Promise<void>;
+  leadMinutes?: number;
   onUpdateTaskList: (task: Thought, newListId: string) => Promise<void>;
   onUpdateNotes: (task: Thought, newNotes: string) => Promise<void>;
   onUpdateTags?: (task: Thought, newTags: string[]) => Promise<void>;
@@ -83,6 +88,8 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
   onUpdatePriority,
   onUpdateDueDate,
   onUpdateRecurrence,
+  onUpdateReminders,
+  leadMinutes = 30,
   onUpdateTaskList,
   onUpdateNotes,
   onUpdateTags,
@@ -699,6 +706,38 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
                   </button>
                 )}
               </div>
+              {onUpdateReminders && task.dueDate && (() => {
+                // Own reminders replace the lead time; "Standard" stands for none. Without a time only
+                // whole days make sense (all-day tasks remind at 9:00), chosen ones always stay visible.
+                const own = task.reminders || [];
+                const allDay = !dueParts.time;
+                const choices = REMINDER_CHOICES.filter((m) => !allDay || isDayReminder(m) || own.includes(m));
+                const standard = t('detail.reminder.standard', { lead: reminderLabel(leadMinutes, allDay) });
+                return (
+                  <div className="pt-1">
+                    <label className="flex items-center gap-1 text-[11px] text-muted mb-1" title={t('detail.reminder.title')}>
+                      <Bell className="w-3 h-3 text-accent" />
+                      <span>{t('detail.reminder.label')}</span>
+                    </label>
+                    <MultiSelectMenu
+                      ariaLabel={t('detail.reminder.label')}
+                      title={t('detail.reminder.title')}
+                      disabled={readOnly}
+                      values={own.length ? own.map(String) : ['standard']}
+                      summary={own.length ? remindersText(own, allDay) : standard}
+                      onChange={(values) => {
+                        const pickedStandard = values.includes('standard') && own.length > 0;
+                        const next = pickedStandard ? [] : values.filter((v) => v !== 'standard').map(Number);
+                        void onUpdateReminders(task, next);
+                      }}
+                      options={[
+                        { value: 'standard', label: standard, hint: t('detail.reminder.standardHint') },
+                        ...choices.map((m) => ({ value: String(m), label: reminderLabel(m, allDay) })),
+                      ]}
+                    />
+                  </div>
+                );
+              })()}
               {onUpdateRecurrence && (
                 <div className="pt-1">
                   <label className="flex items-center gap-1 text-[11px] text-muted mb-1">

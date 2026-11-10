@@ -60,7 +60,26 @@
     "created": "Créée le : {{date}}",
     "plusWeek": "+1 semaine",
     "timeShort": "Heure",
-    "renameSubtask": "Cliquer pour renommer"
+    "renameSubtask": "Cliquer pour renommer",
+    "reminder": {
+      "label": "Rappel",
+      "standard": "Par défaut ({{lead}})",
+      "standardHint": "Comme dans Paramètres → Alarmes",
+      "title": "Quand MindSift te rappelle cette tâche. Les heures propres remplacent le délai des paramètres et valent pour tous ceux qui reçoivent son alarme d’échéance.",
+      "own": "Rappels propres : {{list}}",
+      "m0": "À l’échéance",
+      "m0AllDay": "Le jour de l’échéance (9 h)",
+      "m15": "15 min avant",
+      "m30": "30 min avant",
+      "m60": "1 heure avant",
+      "m120": "2 heures avant",
+      "m1440": "1 jour avant",
+      "m2880": "2 jours avant",
+      "m4320": "3 jours avant",
+      "m10080": "1 semaine avant",
+      "m20160": "2 semaines avant",
+      "m43200": "1 mois avant"
+    }
   },
   "columnsModal": {
     "minOne": "Il doit y avoir au moins une colonne.",

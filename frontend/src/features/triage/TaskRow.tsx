@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Calendar, Check, Edit3, FileText, Lock, Repeat, Trash2 } from 'lucide-react';
+import { Calendar, Check, Edit3, FileText, Lock, Repeat, Bell, Trash2 } from 'lucide-react';
 import { formatDue, isOverdue } from '../../lib/due';
 import { OriginBadge } from '../../components/OriginBadge';
 import { SelectMenu } from '../../components/SelectMenu';
@@ -9,6 +9,7 @@ import { KanbanColumn, RECURRENCE_LABELS, Thought } from '../../lib/types';
 import { useTaskDrag, canDragTasks } from './useTaskDrag';
 import { stopOnControl } from './stopOnControl';
 import { renderMentions } from '../../lib/markdown';
+import { remindersText } from '../../lib/reminders';
 
 interface TaskRowProps {
   task: Thought;
@@ -294,6 +295,14 @@ export function TaskRow({
             {task.recurrence && (
               <span className="inline-flex items-center text-muted" title={t('repeats', { rule: RECURRENCE_LABELS[task.recurrence] })}>
                 <Repeat className="w-3 h-3" />
+              </span>
+            )}
+            {task.dueDate && !!task.reminders?.length && (
+              <span
+                className="inline-flex items-center text-muted"
+                title={t('tasks:detail.reminder.own', { list: remindersText(task.reminders, !task.dueDate.includes('T')) })}
+              >
+                <Bell className="w-3 h-3" />
               </span>
             )}
 

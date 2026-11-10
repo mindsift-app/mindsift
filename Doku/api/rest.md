@@ -101,8 +101,8 @@ Administrators can disable MCP (`MCP_ENABLED=false` or toggle in administration 
 | `create_task_list` | `tasks:write` | Create own task list with default columns (`title`, `icon`) |
 | `list_tasks` | `tasks:read` | Tasks (`taskListId`, `status` open/done/all, `dueBefore` YYYY-MM-DD, `limit`); due tasks first |
 | `get_task` | `tasks:read` | A single task |
-| `create_task` | `tasks:write` | Create task (`content`, `taskListId`, `priority`, `dueDate`, `notes`); source `agent` |
-| `update_task` | `tasks:write` | Update fields (`content`, `isCompleted`, `dueDate`, `priority`, `notes`, `kanbanStatus`, `taskListId`, `tags`) |
+| `create_task` | `tasks:write` | Create task (`content`, `taskListId`, `priority`, `dueDate`, `notes`, `reminders`); source `agent` |
+| `update_task` | `tasks:write` | Update fields (`content`, `isCompleted`, `dueDate`, `priority`, `notes`, `kanbanStatus`, `taskListId`, `tags`, `reminders`) |
 | `complete_task` | `tasks:write` | Mark completed (`completed` false = reopen) |
 | `add_subtask` | `tasks:write` | Append subtask (`taskId`, `title`) |
 | `update_subtask` | `tasks:write` | Check off subtask (`completed`), rename (`title`), or remove (`delete`) |
@@ -190,7 +190,7 @@ The `webhook:…` scope IDs originate from the time when keys could only ingest 
 |---|---|---|
 | POST | `/inbox` | Quick capture. Body: `content`, `priority`, `source`, `dueDate`, `target` (`inbox`/`task`/`list_item`/`document`), `targetListId`, `taskListId` (snake_case variants are accepted) |
 | GET | `/thoughts?status=` | Thoughts (`inbox`, `kept`, `converted`, `discarded`, `all`) |
-| GET/PATCH/DELETE | `/thoughts/{id}` | Retrieve item; partial update (`content`, `isCompleted`, `dueDate`, `priority`, `taskListId`, `kanbanStatus`, `notes`, `subtasks`, `tags`, `assignees`, `recurrence` = `daily`/`weekly`/`monthly`/`yearly`/empty); delete: a task is moved to the task trash, while a thought from inbox or triage trash is permanently deleted. `assignees` replaces all assignments; only users with access to the list, otherwise `403` |
+| GET/PATCH/DELETE | `/thoughts/{id}` | Retrieve item; partial update (`content`, `isCompleted`, `dueDate`, `priority`, `taskListId`, `kanbanStatus`, `notes`, `subtasks`, `tags`, `assignees`, `recurrence` = `daily`/`weekly`/`monthly`/`yearly`/empty, `reminders` = minutes before the due date that replace each recipient's lead time, from `0`, `15`, `30`, `60`, `120`, `1440`, `2880`, `4320`, `10080`, `20160`, `43200` (one calendar month); whole days count as calendar days, `[]` = the lead time again, other values `400`; tasks return `reminders`); delete: a task is moved to the task trash, while a thought from inbox or triage trash is permanently deleted. `assignees` replaces all assignments; only users with access to the list, otherwise `403` |
 | DELETE | `/thoughts/discarded/purge` | Empty triage trash (discarded thoughts) |
 | GET | `/triage/deck` | Inbox deck (max 100) |
 | PATCH | `/triage/{id}` | `action`: `keep`/`discard`/`restore`; with `convertTo`: `task`/`document`/`list_item` |

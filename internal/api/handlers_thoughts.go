@@ -300,6 +300,7 @@ type taskPatch struct {
 	Tags         *[]string         `json:"tags"`
 	Assignees    *[]string         `json:"assignees"`
 	Recurrence   *string           `json:"recurrence"`
+	Reminders    *[]int            `json:"reminders"`
 	// actor: the API key making the change (recorded as the task's origin); nil for the app
 	actor *apiActor
 }
@@ -311,6 +312,11 @@ func (s *Server) updateTask(userID, thoughtID string, req taskPatch) (*domain.Th
 	// The rule is set first, so completing a task in the same request already repeats it
 	if req.Recurrence != nil {
 		if err := s.store.SetTaskRecurrence(userID, thoughtID, strings.TrimSpace(*req.Recurrence)); err != nil {
+			return nil, err
+		}
+	}
+	if req.Reminders != nil {
+		if _, err := s.store.SetTaskReminders(userID, thoughtID, *req.Reminders); err != nil {
 			return nil, err
 		}
 	}
