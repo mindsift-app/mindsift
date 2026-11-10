@@ -6,6 +6,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Changed
+- Task dialog: the status is one dropdown instead of a button per column, so boards with many columns stay tidy; the dropdown and its options show each column's colour. The repetition and the task list are picked from the same kind of dropdown instead of the browser's own.
+
 ## [0.93.1] - 2026-11-10
 
 ### Added
