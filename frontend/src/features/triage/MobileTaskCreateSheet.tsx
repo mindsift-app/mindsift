@@ -4,6 +4,8 @@ import { AlertTriangle, Calendar, CheckSquare, Flame, X } from 'lucide-react';
 import { PriorityLevel, TaskList } from '../../lib/types';
 import { triggerHaptic } from '../../lib/api';
 import { VoiceInputButton } from '../../components/VoiceInputButton';
+import { DateField } from '../../components/DateField';
+import { SelectMenu } from '../../components/SelectMenu';
 
 export interface MobileTaskDraft {
   title: string;
@@ -101,18 +103,15 @@ export function MobileTaskCreateSheet({ open, onClose, lists, listId, onListIdCh
           {lists.length > 0 && (
             <div>
               <label className="text-[11px] font-semibold text-muted block mb-1">{t('create.taskList')}</label>
-              <select
+              <SelectMenu
+                ariaLabel={t('create.taskList')}
                 value={listId}
-                onChange={(e) => onListIdChange(e.target.value)}
-                className="w-full input-field px-2.5 py-2 text-xs bg-panel"
-              >
-                <option value="">{t('create.defaultList')}</option>
-                {lists.map((tl) => (
-                  <option key={tl.id} value={tl.id}>
-                    {tl.icon ? `${tl.icon} ${tl.title}` : tl.title}
-                  </option>
-                ))}
-              </select>
+                onChange={onListIdChange}
+                options={[
+                  { value: '', label: t('create.defaultList') },
+                  ...lists.map((tl) => ({ value: tl.id, label: tl.title, lead: tl.icon ? <span>{tl.icon}</span> : undefined })),
+                ]}
+              />
             </div>
           )}
 
@@ -157,11 +156,12 @@ export function MobileTaskCreateSheet({ open, onClose, lists, listId, onListIdCh
               <Calendar className="w-3.5 h-3.5 text-accent" />
               <span>{t('create.due')}</span>
             </label>
-            <input
-              type="date"
+            <DateField
+              ariaLabel={t('create.due')}
               value={dueDate}
-              onChange={(e) => setDueDate(e.target.value)}
-              className="w-full input-field px-3 py-2 text-xs"
+              onChange={setDueDate}
+              className="w-full"
+              inputClassName="h-11 input-field px-3 text-base sm:text-xs"
             />
           </div>
 

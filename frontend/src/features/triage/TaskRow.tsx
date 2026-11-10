@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Calendar, Check, Edit3, FileText, Lock, Repeat, Trash2 } from 'lucide-react';
 import { formatDue, isOverdue } from '../../lib/due';
 import { OriginBadge } from '../../components/OriginBadge';
+import { SelectMenu } from '../../components/SelectMenu';
 import { columnDotClass } from './ManageColumnsModal';
 import { KanbanColumn, RECURRENCE_LABELS, Thought } from '../../lib/types';
 import { useTaskDrag, canDragTasks } from './useTaskDrag';
@@ -213,21 +214,20 @@ export function TaskRow({
               const dot = <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${columnDotClass(statusCol)}`} aria-hidden="true" />;
               return (
                 <>
-                  <span className="hidden sm:inline-flex items-center gap-1">
-                    {dot}
-                    <select
+                  <span className="hidden sm:inline-flex">
+                    <SelectMenu
+                      ariaLabel={t('row.changeStatus')}
+                      title={t('row.changeStatus')}
                       value={statusId}
                       disabled={readOnly}
-                      onChange={(e) => handleSetKanbanStatus(task, e.target.value)}
-                      className="h-5 px-1.5 text-[10px] rounded-btn border border-border bg-panel text-muted hover:text-main cursor-pointer"
-                      title={t('row.changeStatus')}
-                    >
-                      {taskColumns.map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.name}
-                        </option>
-                      ))}
-                    </select>
+                      onChange={(id) => handleSetKanbanStatus(task, id)}
+                      buttonClassName="h-5 px-1.5 gap-1 text-[10px] rounded-btn border border-border bg-panel text-muted hover:text-main"
+                      options={taskColumns.map((c) => ({
+                        value: c.id,
+                        label: c.name,
+                        lead: <span className={`w-1.5 h-1.5 rounded-full ${columnDotClass(c)}`} aria-hidden="true" />,
+                      }))}
+                    />
                   </span>
                   {statusCol && (
                     <span className="sm:hidden inline-flex items-center gap-1 text-[10px] text-muted" title={t('row.status')}>

@@ -4,6 +4,7 @@ import { Plus } from 'lucide-react';
 import { api, triggerHaptic } from '../../lib/api';
 import { TaskList, Thought } from '../../lib/types';
 import { VoiceInputButton } from '../../components/VoiceInputButton';
+import { DateField } from '../../components/DateField';
 
 interface QuickAddTaskBarProps {
   // Read-only list: no input (the draft stays for when an editable list is open again)
@@ -73,12 +74,13 @@ export function QuickAddTaskBar({ hidden, currentSelectedList, selectedListId, s
             window.setTimeout(() => setQuickVoiceError(null), 4000);
           }}
         />
-        <input
-          type="date"
-          value={quickDueDate}
-          onChange={(e) => setQuickDueDate(e.target.value)}
-          className="hidden sm:block h-7 px-2 input-field text-xs"
+        <DateField
+          ariaLabel={t('detail.dueDate')}
           title={t('detail.dueDate')}
+          value={quickDueDate}
+          onChange={setQuickDueDate}
+          className="hidden sm:block w-[8.5rem]"
+          inputClassName="h-7 px-2 input-field text-xs"
         />
         <button
           type="submit"

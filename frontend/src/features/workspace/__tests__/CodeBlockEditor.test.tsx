@@ -66,24 +66,24 @@ describe('CodeBlockEditor', () => {
   });
 
   it('calls update with lang when selecting a language and hides the picker for readers', () => {
-    const { container, updates, unmount } = renderOutlinerCodeBlock(makeCodeBlock({ lang: undefined }));
+    const { updates, unmount } = renderOutlinerCodeBlock(makeCodeBlock({ lang: undefined }));
 
-    const select = container.querySelector('select') as HTMLSelectElement;
-    expect(select).toBeTruthy();
-    expect(select.value).toBe('');
+    const picker = screen.getByRole('button', { name: 'Sprache auswählen' });
+    expect(picker.textContent).toContain('Text');
 
-    fireEvent.change(select, { target: { value: 'yaml' } });
+    fireEvent.click(picker);
+    fireEvent.click(screen.getByRole('option', { name: 'YAML' }));
     expect(updates).toHaveLength(1);
     expect(updates[0].lang).toBe('yaml');
-    expect(select.value).toBe('yaml');
+    expect(picker.textContent).toContain('YAML');
 
     unmount();
 
-    // Reader view (!canEdit): shows plain text instead of <select> 
+    // Reader view (!canEdit): shows plain text instead of the picker
     const readerView = render(
       <CodeBlockEditor block={makeCodeBlock({ lang: 'yaml' })} canEdit={false} />
     );
-    expect(readerView.container.querySelector('select')).toBeNull();
+    expect(readerView.queryByRole('button', { name: 'Sprache auswählen' })).toBeNull();
     expect(readerView.getByText('yaml')).toBeTruthy();
   });
 

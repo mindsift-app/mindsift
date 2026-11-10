@@ -5,6 +5,7 @@ import { api } from '../../lib/api';
 import { PublicLinkState } from '../../lib/types';
 import { formatDateTime } from '../../lib/format';
 import { MASKED, NO_AUTOFILL } from '../../lib/noAutofill';
+import { SelectMenu } from '../../components/SelectMenu';
 
 // Durations offered for a public link, in hours; the server's limit cuts the list (there is no "for good")
 const DURATIONS = [1, 24, 72, 168, 336];
@@ -63,18 +64,15 @@ export const PublicLinkSection: React.FC<{ docId: string }> = ({ docId }) => {
       className="space-y-2"
     >
       <div className="flex flex-col sm:flex-row gap-2">
-        <select
-          value={durations.includes(hours) ? hours : durations[durations.length - 1]}
-          onChange={(e) => setHours(Number(e.target.value))}
-          className="input-field bg-panel h-11 sm:h-8 px-2.5 text-xs sm:w-40 cursor-pointer"
-          title={t('publicLink.duration')}
-        >
-          {durations.map((h) => (
-            <option key={h} value={h}>
-              {t(`publicLink.for.${h}`)}
-            </option>
-          ))}
-        </select>
+        <div className="sm:w-40 shrink-0">
+          <SelectMenu
+            ariaLabel={t('publicLink.duration')}
+            title={t('publicLink.duration')}
+            value={String(durations.includes(hours) ? hours : durations[durations.length - 1])}
+            onChange={(h) => setHours(Number(h))}
+            options={durations.map((h) => ({ value: String(h), label: t(`publicLink.for.${h}`) }))}
+          />
+        </div>
         {/* Masked text field, no password field: else password managers take the share dialog for a login */}
         <input
           type="text"

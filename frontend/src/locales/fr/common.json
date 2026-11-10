@@ -125,7 +125,8 @@
     "editorRole": "Éditeur",
     "viewerRole": "Lecteur",
     "titleNote": "Partager la note",
-    "titleFolder": "Partager le dossier"
+    "titleFolder": "Partager le dossier",
+    "permission": "Autorisation"
   },
   "sharedImport": {
     "whichList": "Quelle liste ?",
@@ -406,5 +407,24 @@
     "clear": "Tout supprimer",
     "empty": "Rien de nouveau pour l’instant. Ce qui se passe dans tes tâches, listes et notes apparaît ici.",
     "unread": "Non lue"
+  },
+  "select": {
+    "search": "Rechercher …",
+    "noMatch": "Aucun résultat"
+  },
+  "dateField": {
+    "placeholder": "JJ/MM/AAAA",
+    "open": "Ouvrir le calendrier",
+    "clear": "Supprimer la date",
+    "prevMonth": "Mois précédent",
+    "nextMonth": "Mois suivant",
+    "prevYear": "Année précédente",
+    "nextYear": "Année suivante",
+    "chooseMonth": "Choisir le mois et l’année"
+  },
+  "timeField": {
+    "placeholder": "HH:MM",
+    "placeholder12": "h:mm AM",
+    "open": "Afficher les heures"
   }
 }

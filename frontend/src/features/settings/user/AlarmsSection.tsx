@@ -6,6 +6,8 @@ import { pushSupported } from '../../../lib/push';
 import { ToggleSwitch } from '../../../components/ToggleSwitch';
 import { useAlarmSettings } from './useAlarmSettings';
 import { formatDate } from '../../../lib/format';
+import { TimeField } from '../../../components/TimeField';
+import { SelectMenu } from '../../../components/SelectMenu';
 
 
 // Kontoeinstellungen → Alarme (state in useAlarmSettings)
@@ -235,20 +237,21 @@ export function AlarmsSection({
                 </div>
 
                 <div className="flex flex-wrap items-center justify-between gap-4 pt-2 border-t border-border">
-                  <label className="flex items-center gap-2 text-xs text-main font-medium">
+                  <div className="flex items-center gap-2 text-xs text-main font-medium">
                     <span>{t('alarms.daily.time')}</span>
-                    <input
-                      type="time"
-                      aria-label={t('alarms.daily.timeLabel')}
+                    <TimeField
+                      ariaLabel={t('alarms.daily.timeLabel')}
                       value={notificationSettings.dailySummary.time}
-                      onChange={(e) =>
+                      onChange={(time) =>
+                        time &&
                         setNotificationSettings((prev) => ({
                           ...prev,
-                          dailySummary: { ...prev.dailySummary, time: e.target.value } }))
+                          dailySummary: { ...prev.dailySummary, time } }))
                       }
-                      className="h-11 sm:h-8 px-2.5 input-field font-mono"
+                      className="w-28"
+                      inputClassName="h-11 sm:h-8 px-2.5 input-field font-mono"
                     />
-                  </label>
+                  </div>
 
                   {/* Phones: 2×2 grid, the four switches do not fit in one row */}
                   <div className="grid grid-cols-2 gap-x-6 gap-y-3 w-full sm:w-auto sm:flex sm:items-center sm:gap-5">
@@ -328,18 +331,14 @@ export function AlarmsSection({
               {t('alarms.lead.hint')}
             </p>
           </div>
-          <select
-            value={notifyBeforeMinutes}
-            onChange={(e) => setNotifyBeforeMinutes(Number(e.target.value))}
-            className="h-9 px-3 input-field min-w-[200px]"
-          >
-            <option value={0}>{t('alarms.lead.0')}</option>
-            <option value={15}>{t('alarms.lead.15')}</option>
-            <option value={30}>{t('alarms.lead.30')}</option>
-            <option value={60}>{t('alarms.lead.60')}</option>
-            <option value={120}>{t('alarms.lead.120')}</option>
-            <option value={1440}>{t('alarms.lead.1440')}</option>
-          </select>
+          <div className="w-full sm:w-auto sm:min-w-[200px]">
+            <SelectMenu
+              ariaLabel={t('alarms.lead.title')}
+              value={String(notifyBeforeMinutes)}
+              onChange={(m) => setNotifyBeforeMinutes(Number(m))}
+              options={[0, 15, 30, 60, 120, 1440].map((m) => ({ value: String(m), label: t(`alarms.lead.${m}`) }))}
+            />
+          </div>
         </div>
 
         {/* Channel 1: E-Mail */}

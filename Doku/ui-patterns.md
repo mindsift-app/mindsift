@@ -111,13 +111,24 @@ Component: [SegmentedControl.tsx](../frontend/src/components/SegmentedControl.ts
 
 ## Dropdown (Select Menu)
 
-Component: [SelectMenu.tsx](../frontend/src/components/SelectMenu.tsx)
+Component: [SelectMenu.tsx](../frontend/src/components/SelectMenu.tsx) (`SelectMenu`, `MultiSelectMenu`)
 
-- Instead of the browser's `<select>` where one value is picked from a list: a full-width field (44 px on phones, 32 px from `sm`) with the chosen option and a chevron. A click opens the options right below it, above when there is no room; the chosen one carries a ✓.
-- Each option can have a `lead` in front of its label, on the field and in the list: the colour dot of a Kanban column, the emoji of a task list.
-- Keys as in a `<select>`: arrows, Home, End, Enter or Space pick, Escape closes only the list (`preventDefault`, so a dialog around it stays open), Tab moves on. A click outside closes it.
-- The list is portalled to `<body>` with fixed position, so a scrolling dialog does not cut it off; it follows the field while the page scrolls.
-- Used in the task dialog for the status, the repetition and the task list. Other forms still use `<select>`; move them over when they are touched.
+- Used everywhere instead of the browser's `<select>` (an ESLint rule rejects new ones), on phones too: a field with the chosen option and a chevron. A click opens the options right below it, above when there is no room; the chosen one carries a ✓.
+- Sizes: `md` (default) is a form field in full width, 44 px on phones and 32 px from `sm`; `sm` is as wide as its content (filters, settings rows). `buttonClassName` replaces the look for tiny places such as the status in a task row or a code block's header.
+- Each option can have a `lead` in front of its label, on the field and in the list (the colour dot of a Kanban column, the emoji of a list), be `disabled` and carry a `hint` as a second line.
+- Keys as in a `<select>`: arrows, Home, End, Enter or Space pick, typing the first letters jumps to an option, Escape closes only the list (`preventDefault`, so a dialog around it stays open), Tab moves on. From 13 options the list has a search field on top (code block languages, voice languages).
+- `MultiSelectMenu` ticks several options; the list stays open while ticking, the field shows the chosen labels (or a `summary`).
+- The list is portalled to `<body>` with fixed position ([useAnchoredPopover.ts](../frontend/src/lib/useAnchoredPopover.ts)), so a scrolling dialog does not cut it off; it follows the field while the page scrolls. Events in the list do not reach the parents of the field (a note's bullet, a dialog's backdrop).
+
+## Date and Time Fields
+
+Components: [DateField.tsx](../frontend/src/components/DateField.tsx), [TimeField.tsx](../frontend/src/components/TimeField.tsx); typing and formats in [dateInput.ts](../frontend/src/lib/dateInput.ts)
+
+- Values as everywhere in the app: days `YYYY-MM-DD`, times `HH:MM` (24 h), `''` for empty.
+- **Touch** (`(pointer: coarse)`: phones, tablets): the browser's `<input type="date|time">`, which opens the system's own picker. **Mouse**: our own field and popover. Decided by the pointer, not the width, so a narrow desktop window keeps the calendar.
+- Date with a mouse: shown and typed in the order of the language (`24.11.2026`, `11/24/2026`); `24.11.`, `24.11.26` and `24112026` are understood too, a wrong entry falls back to the old value when the field is left. A click opens a plain month calendar at the chosen day or today: the week starts as the language has it (`lib/calendar.ts`), today is framed, the chosen day filled, weekends faintly set off; the title switches to months of a year. Arrow down from the field goes into the calendar; there arrows move the day, Page Up/Down the month, Enter picks, Escape closes only the calendar. An × empties the field (`clearable={false}` where the form has its own button).
+- Time with a mouse: typed to the minute (`14:30`, `1430`, `930`, `2:30 pm`), arrow up/down moves by 15 minutes; a click opens a list in steps of 15 minutes at the chosen time or now. 24 hours or AM/PM as the language writes it.
+- Both take the typed value when the field is left or on Enter; `className` places the field in its row, `inputClassName` sets its look.
 
 ## Origin Badge (API Keys)
 

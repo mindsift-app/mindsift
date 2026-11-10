@@ -18,6 +18,7 @@ import { api, ApiError, triggerHaptic } from '../../lib/api';
 import { ToggleSwitch } from '../../components/ToggleSwitch';
 import { LegalLinks } from '../../components/LegalLinks';
 import { passwordProblem } from '../../lib/password';
+import { SelectMenu } from '../../components/SelectMenu';
 
 interface SetupAndAuthViewProps {
   authStatus: AuthStatus;
@@ -378,21 +379,13 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
               </div>
 
               <div>
-                <label htmlFor="setup-language" className="block text-muted mb-1">
-                  {t('setup.language')}
-                </label>
-                <select
-                  id="setup-language"
+                <p className="block text-muted mb-1">{t('setup.language')}</p>
+                <SelectMenu
+                  ariaLabel={t('setup.language')}
                   value={defaultLanguage}
-                  onChange={(e) => chooseLanguage(e.target.value)}
-                  className="w-full h-11 sm:h-8 px-2.5 input-field text-base sm:text-xs"
-                >
-                  {LANGUAGES.map((l) => (
-                    <option key={l.id} value={l.id}>
-                      {l.name}
-                    </option>
-                  ))}
-                </select>
+                  onChange={chooseLanguage}
+                  options={LANGUAGES.map((l) => ({ value: l.id, label: l.name }))}
+                />
                 <p className="text-[11px] text-muted mt-1">{t('setup.languageHint')}</p>
               </div>
 

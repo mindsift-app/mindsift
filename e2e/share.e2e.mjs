@@ -71,9 +71,10 @@ const main = async () => {
   await search.type('user');
   await sleep(300);
   await search.press('Enter'); // the first match is preselected
-  const roleSelect = A.page.locator('select').filter({ has: A.page.locator('option[value="editor"]') }).last();
+  const roleSelect = A.page.getByRole('button', { name: 'Berechtigung' }).last();
   check((await roleSelect.isEnabled()) && (await roleSelect.isVisible()), 'Role choice is available in the dialog');
-  await roleSelect.selectOption('editor');
+  await roleSelect.click();
+  await A.page.getByRole('listbox').getByRole('option', { name: 'Bearbeiten' }).click();
   await A.page.getByRole('button', { name: /Benutzer hinzufügen/ }).click();
   const shares = await waitFor(async () => {
     const list = await api(admin, 'GET', `/api/v1/documents/${doc.id}/shares`);

@@ -5,6 +5,7 @@ import { PriorityLevel } from '../lib/types';
 import { triggerHaptic } from '../lib/api';
 import { VoiceWave } from '../components/VoiceWave';
 import { useMobileCapture } from './useMobileCapture';
+import { DateField } from '../components/DateField';
 
 // Phones: the Quick Dump sheet (thought with voice input, priority, optional due date)
 export function MobileCaptureSheet({ capture }: { capture: ReturnType<typeof useMobileCapture> }) {
@@ -169,11 +170,12 @@ export function MobileCaptureSheet({ capture }: { capture: ReturnType<typeof use
               <Calendar className="w-3.5 h-3.5 text-accent" />
               <span>{t('capture.dueOptional')}</span>
             </label>
-            <input
-              type="date"
+            <DateField
+              ariaLabel={t('capture.dueOptional')}
               value={mobileTriageDueDate}
-              onChange={(e) => setMobileTriageDueDate(e.target.value)}
-              className="w-full input-field px-3 py-2 text-xs"
+              onChange={setMobileTriageDueDate}
+              className="w-full"
+              inputClassName="h-11 input-field px-3 text-base sm:text-xs"
             />
           </div>
 

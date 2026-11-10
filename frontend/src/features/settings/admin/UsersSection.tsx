@@ -22,6 +22,7 @@ import { useAdminSettings } from './useAdminSettings';
 import { formatDate } from '../../../lib/format';
 import { OrganizationPicker } from './OrganizationPicker';
 import { MASKED, NO_AUTOFILL } from '../../../lib/noAutofill';
+import { SelectMenu } from '../../../components/SelectMenu';
 
 // Administration → Users & invitations (state in useAdminSettings)
 
@@ -144,14 +145,19 @@ export function UsersSection({
           </label>
           {/* Only server admins hand out roles; user managers create members */}
           {isServerAdmin && (
-            <label className="block">
+            <div>
               <span className="block text-muted mb-1">{t('users.create.role')}</span>
-              <select value={newUserRole} onChange={(e) => setNewUserRole(e.target.value as UserRole)} className="w-full min-w-0 h-11 sm:h-8 px-2.5 input-field text-base sm:text-xs bg-panel">
-                <option value="member">{t('users.create.roleMember')}</option>
-                <option value="manager">{t('users.create.roleManager')}</option>
-                <option value="admin">{t('users.create.roleAdmin')}</option>
-              </select>
-            </label>
+              <SelectMenu<UserRole>
+                ariaLabel={t('users.create.role')}
+                value={newUserRole}
+                onChange={setNewUserRole}
+                options={[
+                  { value: 'member', label: t('users.create.roleMember') },
+                  { value: 'manager', label: t('users.create.roleManager') },
+                  { value: 'admin', label: t('users.create.roleAdmin') },
+                ]}
+              />
+            </div>
           )}
           <div>
             <span className="block text-muted mb-1">{t('users.organizations')}</span>
@@ -434,16 +440,21 @@ export function UsersSection({
                   {/* Role: server admins choose (on phones in a row of its own above the buttons), user
                       managers only see it */}
                   {isServerAdmin ? (
-                    <select
-                      value={u.role}
-                      onChange={(e) => handleChangeUserRole(u, e.target.value as UserRole)}
-                      className="w-full sm:w-auto h-11 sm:h-7 px-2 input-field text-base sm:text-[11px] bg-panel"
-                      title={t('users.changeRole')}
-                    >
-                      <option value="member">{t('users.roleMember')}</option>
-                      <option value="manager">{t('users.roleManager')}</option>
-                      <option value="admin">{t('users.roleAdmin')}</option>
-                    </select>
+                    <div className="w-full sm:w-auto">
+                      <SelectMenu<UserRole>
+                        size="sm"
+                        ariaLabel={t('users.changeRole')}
+                        title={t('users.changeRole')}
+                        value={u.role}
+                        onChange={(role) => handleChangeUserRole(u, role)}
+                        buttonClassName="w-full sm:w-auto h-11 sm:h-7 px-2 gap-1.5 input-field text-base sm:text-[11px] bg-panel"
+                        options={[
+                          { value: 'member', label: t('users.roleMember') },
+                          { value: 'manager', label: t('users.roleManager') },
+                          { value: 'admin', label: t('users.roleAdmin') },
+                        ]}
+                      />
+                    </div>
                   ) : (
                     <span className="min-w-0 flex-1 sm:flex-none truncate">
                       <span className="badge-neutral text-[10px]">{t(`common:role.${u.role}`)}</span>

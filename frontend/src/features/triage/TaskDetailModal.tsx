@@ -29,6 +29,8 @@ import { MarkdownViewer, renderMentions } from '../../lib/markdown';
 import { useMentionInput } from '../../lib/useMentionInput';
 import { MentionMenu } from '../../components/MentionMenu';
 import { SelectMenu } from '../../components/SelectMenu';
+import { DateField } from '../../components/DateField';
+import { TimeField } from '../../components/TimeField';
 import { VoiceInputButton } from '../../components/VoiceInputButton';
 import { addDays, joinDue, splitDue } from '../../lib/due';
 import { usePointerSort } from './usePointerSort';
@@ -634,21 +636,22 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
                 <span>{t('detail.due')}</span>
               </label>
               <div className="flex items-center gap-1.5">
-                <input
-                  type="date"
-                  aria-label={t('detail.dueDate')}
+                <DateField
+                  ariaLabel={t('detail.dueDate')}
                   value={dueParts.date}
-                  onChange={(e) => onUpdateDueDate(task, joinDue(e.target.value, dueParts.time))}
-                  className="flex-1 min-w-0 h-11 sm:h-8 input-field px-2 lg:px-1.5 text-base sm:text-xs bg-panel"
+                  clearable={false}
+                  onChange={(date) => onUpdateDueDate(task, joinDue(date, dueParts.time))}
+                  className="flex-1 min-w-0"
+                  inputClassName="h-11 sm:h-8 input-field px-2 lg:px-1.5 text-base sm:text-xs bg-panel"
                 />
-                <input
-                  type="time"
-                  aria-label={t('detail.time')}
+                <TimeField
+                  ariaLabel={t('detail.time')}
                   title={t('detail.timeTitle')}
                   value={dueParts.time}
                   disabled={!dueParts.date}
-                  onChange={(e) => onUpdateDueDate(task, joinDue(dueParts.date, e.target.value))}
-                  className="w-[7.5rem] lg:w-[5.25rem] shrink-0 h-11 sm:h-8 input-field px-2 lg:px-1.5 text-base sm:text-xs bg-panel disabled:opacity-50"
+                  onChange={(time) => onUpdateDueDate(task, joinDue(dueParts.date, time))}
+                  className="w-[7.5rem] lg:w-[5.75rem] shrink-0"
+                  inputClassName="h-11 sm:h-8 input-field px-2 lg:px-1.5 text-base sm:text-xs bg-panel"
                 />
                 {task.dueDate && (
                   <button

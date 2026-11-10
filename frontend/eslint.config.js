@@ -47,6 +47,22 @@ export default tseslint.config(
       ],
     },
   },
+  // Dropdowns, dates and times in the app's look (Doku/ui-patterns.md); only the fields themselves use the
+  // browser's inputs, for the system pickers on touch screens
+  {
+    files: ['src/**/*.tsx'],
+    ignores: ['src/**/__tests__/**', 'src/components/DateField.tsx', 'src/components/TimeField.tsx'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        { selector: "JSXOpeningElement[name.name='select']", message: 'Use SelectMenu instead of <select> (Doku/ui-patterns.md).' },
+        {
+          selector: "JSXAttribute[name.name='type'][value.value=/^(date|time|datetime-local)$/]",
+          message: 'Use DateField or TimeField instead of the browser picker (Doku/ui-patterns.md).',
+        },
+      ],
+    },
+  },
   {
     files: ['public/sw.js'],
     languageOptions: { globals: globals.serviceworker },

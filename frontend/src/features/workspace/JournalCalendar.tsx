@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { monthGrid, monthNames, parseISODate, todayISO } from '../../lib/journal';
 import { formatDate } from '../../lib/format';
 import { useTranslation } from 'react-i18next';
+import { SelectMenu } from '../../components/SelectMenu';
 
 interface JournalCalendarProps {
   /** Day currently in view; the calendar follows its month */
@@ -55,30 +56,24 @@ export const JournalCalendar: React.FC<JournalCalendarProps> = ({ activeDate, en
         >
           <ChevronLeft className="w-3.5 h-3.5" />
         </button>
-        <select
-          value={view.month}
-          onChange={(e) => setView((v) => ({ ...v, month: Number(e.target.value) }))}
-          className="flex-1 min-w-0 h-9 sm:h-7 px-1.5 rounded-btn bg-panel text-main border-0 text-xs font-semibold outline-none focus:ring-1 focus:ring-accent cursor-pointer"
-          aria-label={t('journal.month')}
-        >
-          {monthNames().map((m, i) => (
-            <option key={m} value={i}>
-              {m}
-            </option>
-          ))}
-        </select>
-        <select
-          value={view.year}
-          onChange={(e) => setView((v) => ({ ...v, year: Number(e.target.value) }))}
-          className="w-[4.5rem] h-9 sm:h-7 px-1.5 rounded-btn bg-panel text-main border-0 text-xs font-semibold outline-none focus:ring-1 focus:ring-accent cursor-pointer"
-          aria-label={t('journal.year')}
-        >
-          {years.map((y) => (
-            <option key={y} value={y}>
-              {y}
-            </option>
-          ))}
-        </select>
+        <div className="flex-1 min-w-0">
+          <SelectMenu
+            ariaLabel={t('journal.month')}
+            value={String(view.month)}
+            onChange={(m) => setView((v) => ({ ...v, month: Number(m) }))}
+            buttonClassName="w-full h-9 sm:h-7 px-1.5 gap-1 rounded-btn bg-panel text-main text-xs font-semibold"
+            options={monthNames().map((m, i) => ({ value: String(i), label: m }))}
+          />
+        </div>
+        <div className="w-[4.5rem] shrink-0">
+          <SelectMenu
+            ariaLabel={t('journal.year')}
+            value={String(view.year)}
+            onChange={(y) => setView((v) => ({ ...v, year: Number(y) }))}
+            buttonClassName="w-full h-9 sm:h-7 px-1.5 gap-1 rounded-btn bg-panel text-main text-xs font-semibold tabular-nums"
+            options={years.map((y) => ({ value: String(y), label: String(y) }))}
+          />
+        </div>
         <button
           type="button"
           onClick={() => shiftMonth(1)}

@@ -14,6 +14,7 @@ import { UserAutocomplete } from '../features/UserAutocomplete';
 import { UserAvatar } from './UserAvatar';
 import { isSharingDisabled } from '../lib/api';
 import { NO_AUTOFILL } from '../lib/noAutofill';
+import { SelectMenu } from './SelectMenu';
 
 export interface UnifiedShareModalProps {
   isOpen: boolean;
@@ -211,29 +212,35 @@ export const UnifiedShareModal: React.FC<UnifiedShareModalProps> = ({
 
             {shareType === 'team' ? (
               <div className="flex flex-col sm:flex-row gap-2">
-                <select
-                  value={selectedTeamId}
-                  onChange={(e) => setSelectedTeamId(e.target.value)}
-                  className="input-field bg-panel h-8 px-2.5 text-xs flex-1 cursor-pointer"
-                  disabled={loading}
-                >
-                  <option value="" className="bg-panel text-muted">{t('share.pickGroup')}</option>
-                  {availableTeams.map((team) => (
-                    <option key={team.id} value={team.id} className="bg-panel text-main">
-                      👥 {t('share.teamOption', { name: team.name, count: team.members?.length || 1 })}
-                    </option>
-                  ))}
-                </select>
-                {allowRoleSelection ? (
-                  <select
-                    value={selectedPermission}
-                    onChange={(e) => setSelectedPermission(e.target.value as 'editor' | 'viewer')}
-                    className="input-field bg-panel h-8 px-2.5 text-xs w-full sm:w-36 cursor-pointer shrink-0"
+                <div className="flex-1 min-w-0">
+                  <SelectMenu
+                    ariaLabel={t('share.group')}
+                    value={selectedTeamId}
+                    onChange={setSelectedTeamId}
                     disabled={loading}
-                  >
-                    <option value="editor" className="bg-panel text-main">{t('share.edit')}</option>
-                    <option value="viewer" className="bg-panel text-main">{t('share.readOnly')}</option>
-                  </select>
+                    options={[
+                      { value: '', label: t('share.pickGroup') },
+                      ...availableTeams.map((team) => ({
+                        value: team.id,
+                        label: t('share.teamOption', { name: team.name, count: team.members?.length || 1 }),
+                        lead: <Users className="w-3.5 h-3.5 text-muted" />,
+                      })),
+                    ]}
+                  />
+                </div>
+                {allowRoleSelection ? (
+                  <div className="w-full sm:w-36 shrink-0">
+                    <SelectMenu<'editor' | 'viewer'>
+                      ariaLabel={t('share.permission')}
+                      value={selectedPermission}
+                      onChange={setSelectedPermission}
+                      disabled={loading}
+                      options={[
+                        { value: 'editor', label: t('share.edit') },
+                        { value: 'viewer', label: t('share.readOnly') },
+                      ]}
+                    />
+                  </div>
                 ) : (
                   <span className="inline-flex items-center gap-1 text-[11px] text-muted px-2 py-1 bg-panel rounded border border-border shrink-0 self-center">
                     {effectiveFixedPerm === 'editor' ? (
@@ -264,15 +271,18 @@ export const UnifiedShareModal: React.FC<UnifiedShareModalProps> = ({
                   />
                 </div>
                 {allowRoleSelection ? (
-                  <select
-                    value={selectedPermission}
-                    onChange={(e) => setSelectedPermission(e.target.value as 'editor' | 'viewer')}
-                    className="input-field bg-panel h-8 px-2.5 text-xs w-full sm:w-36 cursor-pointer shrink-0"
-                    disabled={loading}
-                  >
-                    <option value="editor" className="bg-panel text-main">{t('share.edit')}</option>
-                    <option value="viewer" className="bg-panel text-main">{t('share.readOnly')}</option>
-                  </select>
+                  <div className="w-full sm:w-36 shrink-0">
+                    <SelectMenu<'editor' | 'viewer'>
+                      ariaLabel={t('share.permission')}
+                      value={selectedPermission}
+                      onChange={setSelectedPermission}
+                      disabled={loading}
+                      options={[
+                        { value: 'editor', label: t('share.edit') },
+                        { value: 'viewer', label: t('share.readOnly') },
+                      ]}
+                    />
+                  </div>
                 ) : (
                   <span className="inline-flex items-center gap-1 text-[11px] text-muted px-2 py-1 bg-panel rounded border border-border shrink-0 self-center">
                     {effectiveFixedPerm === 'editor' ? (
