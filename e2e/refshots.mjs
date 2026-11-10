@@ -106,10 +106,10 @@ async function capture() {
     await d.getByRole('button', { name: /^Alle Aufgaben/ }).first().click();
     await exact(d, 'Liste');
   });
-  await step(d, 'd03_tasks_all_kanban', () => exact(d, 'Kanban'));
+  await step(d, 'd03_tasks_all_kanban', () => d.getByRole('radio', { name: 'Kanban', exact: true }).locator('visible=true').first().click());
   await step(d, 'd04_tasks_list_kanban', async () => {
     await d.getByRole('button', { name: /Homelab/ }).locator('visible=true').first().click();
-    await exact(d, 'Kanban');
+    await d.getByRole('radio', { name: 'Kanban', exact: true }).locator('visible=true').first().click();
   });
   await step(d, 'd05_tasks_list_list', () => exact(d, 'Liste'));
   await step(d, 'd06_task_detail', async () => {
@@ -278,7 +278,7 @@ async function capture() {
   await step(d, 'd18_tags_expanded_filtered', async () => {
     // Kanban in a narrower window (the hashtag row is cut off there): open all hashtags, filter by one
     await d.setViewportSize({ width: 900, height: 900 });
-    await exact(d, 'Kanban');
+    await d.getByRole('radio', { name: 'Kanban', exact: true }).locator('visible=true').first().click();
     await sleep(500);
     await d.getByTitle('Alle Hashtags zeigen').click();
     await d.getByRole('button', { name: /^#backup/ }).locator('visible=true').first().click();

@@ -86,7 +86,7 @@ const card = (text) => d.locator('[data-kanban-task]', { hasText: text }).first(
 const column = (name) => d.locator(`[data-kanban-col="name:${name.toLowerCase()}"]`);
 await d.getByRole('button', { name: /^Aufgaben/ }).locator('visible=true').first().click();
 await d.getByRole('button', { name: /^Alle Aufgaben/ }).first().click();
-await d.getByRole('button', { name: 'Kanban', exact: true }).locator('visible=true').first().click();
+await d.getByRole('radio', { name: 'Kanban', exact: true }).locator('visible=true').first().click();
 await sleep(800);
 
 await step('Kanban: card before the second card of another column', async () => {
@@ -130,7 +130,7 @@ await step('Kanban: “add task” closed without a title – the draft disappea
   lines.push(`Trash contains “Neue Aufgabe”: ${trash.some((t) => t.content === 'Neue Aufgabe') ? 'yes' : 'no'}\n`);
 }
 
-await d.getByRole('button', { name: 'Liste', exact: true }).locator('visible=true').first().click();
+await d.getByRole('radio', { name: 'Liste', exact: true }).locator('visible=true').first().click();
 await sleep(800);
 const row = (text) => d.locator('[draggable="true"]', { hasText: text }).first();
 await step('Liste: Zeile ganz nach oben ziehen', async () => {
