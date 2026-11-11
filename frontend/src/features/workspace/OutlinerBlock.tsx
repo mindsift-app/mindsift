@@ -52,6 +52,7 @@ import { api } from '../../lib/api';
 import { safeHref } from '../../lib/safeUrl';
 import { isNoteLinkOnly, retargetWikiLinks, unlinkWikiLinks, WikiLink, WikiLinkClickHandler } from '../../lib/wikiLink';
 import { useWikiLinkResolver } from '../../lib/wikiLinkResolver';
+import { fitFieldHeight, refitOnWidthChange } from '../../lib/fieldHeight';
 import { BLOCK_DRAG_TYPE } from './moveBranchEvent';
 import { caretAfterChange } from '../../lib/caret';
 import { useTranslation } from 'react-i18next';
@@ -540,11 +541,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
   };
 
   const adjustHeight = useCallback(() => {
-    const el = textareaRef.current;
-    // The code editor sizes its field itself (room for the horizontal scrollbar)
-    if (!el || el.dataset.ownHeight) return;
-    el.style.height = 'auto';
-    el.style.height = `${Math.max(22, el.scrollHeight)}px`;
+    if (textareaRef.current) fitFieldHeight(textareaRef.current);
   }, []);
 
   useLayoutEffect(() => {
@@ -565,27 +562,12 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
     }
   }, [block.type]);
 
+  // The field can be measured while hidden (phone layout shows the editor only after selecting a note);
+  // measure again whenever its width changes
   useEffect(() => {
-    window.addEventListener('resize', adjustHeight);
-    // The field can be measured while hidden (phone layout shows the editor only after selecting a note);
-    // measure again whenever its width changes
     const el = textareaRef.current;
-    let lastWidth = el?.clientWidth ?? 0;
-    const observer =
-      el && typeof ResizeObserver !== 'undefined'
-        ? new ResizeObserver(() => {
-            if (el.clientWidth !== lastWidth) {
-              lastWidth = el.clientWidth;
-              adjustHeight();
-            }
-          })
-        : null;
-    if (el) observer?.observe(el);
-    return () => {
-      window.removeEventListener('resize', adjustHeight);
-      observer?.disconnect();
-    };
-  }, [adjustHeight, block.type]);
+    return el ? refitOnWidthChange(el) : undefined;
+  }, [block.type]);
 
   const filteredSlashCommands = useMemo(() => {
     if (!slashMatchInfo) return [];

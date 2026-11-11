@@ -305,8 +305,9 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
     return () => ro.disconnect();
   }, [focusMode, showsLoading]);
 
-  // Sideways the note moves to the middle in focus mode and gets wider (and back): it glides and grows
-  // from where it was instead of jumping, the lines rewrap along the way
+  // Sideways the note moves to the middle in focus mode and gets wider (and back): it glides from where it
+  // was instead of jumping. Only the position glides (transform, on the compositor); the width changes at
+  // once, so the lines rewrap once instead of on every frame
   const contentRef = useRef<HTMLDivElement | null>(null);
   const contentBoxRef = useRef<{ left: number; width: number } | null>(null);
   useLayoutEffect(() => {
@@ -321,14 +322,10 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
       window.matchMedia('(prefers-reduced-motion: reduce)').matches
     )
       return;
-    const parentLeft = el.parentElement?.getBoundingClientRect().left ?? 0;
-    el.animate(
-      [
-        { marginLeft: `${from.left - parentLeft}px`, width: `${from.width}px` },
-        { marginLeft: `${left - parentLeft}px`, width: `${width}px` },
-      ],
-      { duration: 300, easing: 'cubic-bezier(0.2, 0, 0, 1)' }
-    );
+    el.animate([{ transform: `translateX(${from.left - left}px)` }, { transform: 'none' }], {
+      duration: 300,
+      easing: 'cubic-bezier(0.2, 0, 0, 1)',
+    });
   }, [focusMode]);
 
   // Keeps the bullet being typed in above the keyboard (and the outline bar on it): the browser only
