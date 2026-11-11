@@ -40,9 +40,16 @@ func (s *Store) migrateAvatars() error {
 	var drop []string
 	for rows.Next() {
 		var id, v string
-		if rows.Scan(&id, &v) == nil && !ValidAvatar(v) {
+		if err := rows.Scan(&id, &v); err != nil {
+			_ = rows.Close()
+			return err
+		}
+		if !ValidAvatar(v) {
 			drop = append(drop, id)
 		}
+	}
+	if err := rows.Err(); err != nil {
+		return err
 	}
 	_ = rows.Close()
 	stmts := make([]sqlStmt, len(drop))

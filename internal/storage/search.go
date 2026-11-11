@@ -193,7 +193,7 @@ func (s *Store) migrateSearchFTS() {
 // backfillSearchFTS populates empty FTS indices once on startup.
 func (s *Store) backfillSearchFTS() {
 	var thoughtCount int
-	_ = s.db.QueryRow(`SELECT count(*) FROM thoughts_fts`).Scan(&thoughtCount)
+	logDBErr(s.db.QueryRow(`SELECT count(*) FROM thoughts_fts`).Scan(&thoughtCount))
 	if thoughtCount == 0 {
 		_, err := s.db.Exec(`
 			INSERT INTO thoughts_fts(thought_id, content, notes, subtasks)
@@ -205,7 +205,7 @@ func (s *Store) backfillSearchFTS() {
 	}
 
 	var docCount int
-	_ = s.db.QueryRow(`SELECT count(*) FROM documents_fts`).Scan(&docCount)
+	logDBErr(s.db.QueryRow(`SELECT count(*) FROM documents_fts`).Scan(&docCount))
 	if docCount == 0 {
 		_, err := s.db.Exec(`
 			INSERT INTO documents_fts(doc_id, block_id, title, content)
@@ -232,7 +232,7 @@ func (s *Store) backfillSearchFTS() {
 	}
 
 	var listCount int
-	_ = s.db.QueryRow(`SELECT count(*) FROM list_items_fts`).Scan(&listCount)
+	logDBErr(s.db.QueryRow(`SELECT count(*) FROM list_items_fts`).Scan(&listCount))
 	if listCount == 0 {
 		_, err := s.db.Exec(`
 			INSERT INTO list_items_fts(item_id, list_id, content, category)
@@ -312,13 +312,14 @@ func (s *Store) SearchCtx(ctx context.Context, userID, query string, opts Search
 			var r docRow
 			var ownerID string
 			var isArchived int
-			if scanErr := docRows.Scan(&r.docID, &r.blockID, &r.snip, &r.score, &r.title, &r.icon, &ownerID, &isArchived, &r.content, &r.typ); scanErr == nil {
+			if scanErr := docRows.Scan(&r.docID, &r.blockID, &r.snip, &r.score, &r.title, &r.icon, &ownerID, &isArchived, &r.content, &r.typ); !dbFailed(scanErr) {
 				if r.typ == drawing.BlockType {
 					r.content = strings.Join(drawing.Texts(r.content), " · ")
 				}
 				found = append(found, r)
 			}
 		}
+		logDBErr(docRows.Err())
 		_ = docRows.Close()
 
 		seenDocIDs := make(map[string]bool)
@@ -463,7 +464,7 @@ func (s *Store) SearchCtx(ctx context.Context, userID, query string, opts Search
 				&isCompleted, &convertedType, &convertedRefId, &dueDate,
 				&t.TaskListID, &t.KanbanStatus, &t.Notes, &alarmSent, &t.CreatedAt,
 				&triagedAt, &subtasksStr, &t.SortOrder,
-			); scanErr == nil {
+			); !dbFailed(scanErr) {
 				t.IsCompleted = isCompleted != 0
 				t.AlarmSent = alarmSent != 0
 				t.DueDate = dueDate.String
@@ -481,6 +482,7 @@ func (s *Store) SearchCtx(ctx context.Context, userID, query string, opts Search
 				res.Thoughts = append(res.Thoughts, t)
 			}
 		}
+		logDBErr(thoughtRows.Err())
 		_ = thoughtRows.Close()
 	}
 
@@ -527,7 +529,7 @@ func (s *Store) SearchCtx(ctx context.Context, userID, query string, opts Search
 					&li.ID, &li.ListID, &li.Content, &li.Category, &li.Quantity,
 					&isCompleted, &li.CompletedBy, &li.CompletedByName,
 					&li.SortOrder, &li.CreatedAt, &li.CompletedAt,
-				); scanErr == nil {
+				); !dbFailed(scanErr) {
 					if !accessibleListIDs[listID] {
 						continue
 					}
@@ -544,6 +546,7 @@ func (s *Store) SearchCtx(ctx context.Context, userID, query string, opts Search
 					res.ListItems = append(res.ListItems, li)
 				}
 			}
+			logDBErr(itemRows.Err())
 			_ = itemRows.Close()
 		}
 	}

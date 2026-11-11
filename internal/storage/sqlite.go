@@ -92,9 +92,14 @@ func (s *Store) dropAllTables() error {
 	var tables []string
 	for rows.Next() {
 		var name string
-		if rows.Scan(&name) == nil {
-			tables = append(tables, name)
+		if err := rows.Scan(&name); err != nil {
+			_ = rows.Close()
+			return err
 		}
+		tables = append(tables, name)
+	}
+	if err := rows.Err(); err != nil {
+		return err
 	}
 	_ = rows.Close()
 
@@ -556,9 +561,9 @@ func (s *Store) migrateBaseline() error {
 
 	// Reindex block tags if table is newly added or empty
 	var tagCount int
-	_ = s.db.QueryRow(`SELECT COUNT(*) FROM block_tags`).Scan(&tagCount)
+	logDBErr(s.db.QueryRow(`SELECT COUNT(*) FROM block_tags`).Scan(&tagCount))
 	if tagCount == 0 {
-		_ = s.reindexAllDocBlockTags()
+		logDBErr(s.reindexAllDocBlockTags())
 	}
 	s.migrateAnchorTags()
 	s.migrateSearchFTS()
@@ -623,15 +628,16 @@ func (s *Store) migrateWorkspaceToPureDB() {
 		var docsToMigrate []migDoc
 		for rows.Next() {
 			var md migDoc
-			if err := rows.Scan(&md.id, &md.userID, &md.blocksJSON, &md.tagsJSON, &md.folderPath, &md.updatedAt); err == nil {
+			if err := rows.Scan(&md.id, &md.userID, &md.blocksJSON, &md.tagsJSON, &md.folderPath, &md.updatedAt); !dbFailed(err) {
 				docsToMigrate = append(docsToMigrate, md)
 			}
 		}
+		logDBErr(rows.Err())
 		_ = rows.Close()
 
 		for _, md := range docsToMigrate {
 			var count int
-			_ = s.db.QueryRow(`SELECT COUNT(*) FROM blocks WHERE document_id = ?`, md.id).Scan(&count)
+			logDBErr(s.db.QueryRow(`SELECT COUNT(*) FROM blocks WHERE document_id = ?`, md.id).Scan(&count))
 			if count == 0 && md.blocksJSON != "" && md.blocksJSON != "[]" {
 				var blocks []domain.DocumentBlock
 				if err := json.Unmarshal([]byte(md.blocksJSON), &blocks); err == nil && len(blocks) > 0 {
@@ -649,7 +655,7 @@ func (s *Store) migrateWorkspaceToPureDB() {
 				if err := json.Unmarshal([]byte(md.tagsJSON), &tags); err == nil {
 					cleaned := stripFolderTags(tags)
 					cleanedBytes, _ := json.Marshal(cleaned)
-					_, _ = s.db.Exec(`UPDATE documents SET tags = ? WHERE id = ?`, string(cleanedBytes), md.id)
+					s.execLogged(`UPDATE documents SET tags = ? WHERE id = ?`, string(cleanedBytes), md.id)
 				}
 			}
 
@@ -658,7 +664,7 @@ func (s *Store) migrateWorkspaceToPureDB() {
 				var existsID string
 				err := s.db.QueryRow(`SELECT id FROM workspace_folders WHERE user_id = ? AND path = ?`, md.userID, md.folderPath).Scan(&existsID)
 				if err == sql.ErrNoRows {
-					_, _ = s.db.Exec(`INSERT INTO workspace_folders (id, user_id, shared_folder_id, path, sub_path, created_at) VALUES (?, ?, '', ?, '', ?)`,
+					s.execLogged(`INSERT INTO workspace_folders (id, user_id, shared_folder_id, path, sub_path, created_at) VALUES (?, ?, '', ?, '', ?)`,
 						domain.NewID("wfld"), md.userID, md.folderPath, now)
 				}
 			}
@@ -676,10 +682,11 @@ func (s *Store) migrateWorkspaceToPureDB() {
 		var sfs []sfInfo
 		for sfRows.Next() {
 			var info sfInfo
-			if err := sfRows.Scan(&info.id, &info.ownerID, &info.mountPath); err == nil {
+			if err := sfRows.Scan(&info.id, &info.ownerID, &info.mountPath); !dbFailed(err) {
 				sfs = append(sfs, info)
 			}
 		}
+		logDBErr(sfRows.Err())
 		_ = sfRows.Close()
 		for _, info := range sfs {
 			if err := s.syncSharedFolderContents(info.ownerID, info.id, info.mountPath); err != nil {

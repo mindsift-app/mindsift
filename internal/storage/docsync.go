@@ -198,21 +198,22 @@ func (s *Store) migrateDocSync() error {
 // backfillBlockTree converts blocks stored as a flat list (level + position) into parent_id + order_key.
 func (s *Store) backfillBlockTree() {
 	rows, err := s.db.Query(`SELECT DISTINCT document_id FROM blocks WHERE order_key = ''`)
-	if err != nil {
+	if dbFailed(err) {
 		return
 	}
 	var docIDs []string
 	for rows.Next() {
 		var id string
-		if rows.Scan(&id) == nil {
+		if !dbFailed(rows.Scan(&id)) {
 			docIDs = append(docIDs, id)
 		}
 	}
+	logDBErr(rows.Err())
 	_ = rows.Close()
 
 	for _, docID := range docIDs {
 		bRows, err := s.db.Query(`SELECT id, level FROM blocks WHERE document_id = ? ORDER BY position ASC, rowid ASC`, docID)
-		if err != nil {
+		if dbFailed(err) {
 			continue
 		}
 		type flat struct {
@@ -222,15 +223,16 @@ func (s *Store) backfillBlockTree() {
 		var list []flat
 		for bRows.Next() {
 			var f flat
-			if bRows.Scan(&f.id, &f.level) == nil {
+			if !dbFailed(bRows.Scan(&f.id, &f.level)) {
 				list = append(list, f)
 			}
 		}
+		logDBErr(bRows.Err())
 		_ = bRows.Close()
 
 		parents, keys := treeFromLevels(len(list), func(i int) int { return list[i].level })
 		tx, err := s.db.Begin()
-		if err != nil {
+		if dbFailed(err) {
 			continue
 		}
 		for i, f := range list {
@@ -238,9 +240,16 @@ func (s *Store) backfillBlockTree() {
 			if parents[i] >= 0 {
 				parent = list[parents[i]].id
 			}
-			_, _ = tx.Exec(`UPDATE blocks SET parent_id = ?, order_key = ? WHERE id = ?`, parent, keys[i], f.id)
+			if _, err = tx.Exec(`UPDATE blocks SET parent_id = ?, order_key = ? WHERE id = ?`, parent, keys[i], f.id); err != nil {
+				break
+			}
 		}
-		if err := tx.Commit(); err != nil {
+		if err == nil {
+			err = tx.Commit()
+		} else {
+			_ = tx.Rollback()
+		}
+		if err != nil {
 			slog.Error("Converting the block structure failed", "doc_id", docID, "error", err)
 		}
 	}
@@ -365,7 +374,8 @@ func (s *Store) applyDocChangeCtx(ctx context.Context, docID string, a collab.Ac
 		Leases: leases,
 		IDTaken: func(id string) bool {
 			var owner string
-			return tx.QueryRow(`SELECT document_id FROM blocks WHERE id = ?`, id).Scan(&owner) == nil && owner != docID
+			err := tx.QueryRow(`SELECT document_id FROM blocks WHERE id = ?`, id).Scan(&owner)
+			return dbFailed(err) || (err == nil && owner != docID) // an id that cannot be checked counts as taken
 		},
 	}
 	now := domain.NowISO()
@@ -518,18 +528,19 @@ func (s *Store) docTaskLinks(docID string) map[string]string {
 	rows, err := s.db.Query(
 		`SELECT id, converted_ref_id FROM thoughts WHERE converted_type = 'document_block' AND converted_ref_id LIKE ?`,
 		docID+":%")
-	if err != nil {
+	if dbFailed(err) {
 		return links
 	}
 	defer rows.Close()
 	for rows.Next() {
 		var taskID, ref string
-		if rows.Scan(&taskID, &ref) == nil {
+		if !dbFailed(rows.Scan(&taskID, &ref)) {
 			if _, blockID, ok := strings.Cut(ref, ":"); ok {
 				links[blockID] = taskID
 			}
 		}
 	}
+	logDBErr(rows.Err())
 	return links
 }
 
@@ -635,6 +646,7 @@ func (s *Store) DocRole(userID, docID string) string {
 		 FROM documents d LEFT JOIN workspace_shared_folders wsf ON wsf.id = d.shared_folder_id
 		 WHERE d.id = ?`, docID).Scan(&ownerID, &sharedFolderID, &folderOwner, &archived, &archivedBy)
 	if err != nil {
+		logDBErr(err)
 		return ""
 	}
 	if archived {
@@ -659,14 +671,14 @@ func (s *Store) DocRole(userID, docID string) string {
 		                 (wfs.target_type = 'user' AND wfs.target_id = ?)
 		              OR (wfs.target_type = 'team' AND wfs.target_id IN (SELECT team_id FROM team_members WHERE user_id = ?)))`,
 		docID, userID, docID, userID, sharedFolderID, userID, userID)
-	if err != nil {
+	if dbFailed(err) {
 		return ""
 	}
 	defer rows.Close()
 	role := ""
 	for rows.Next() {
 		var p string
-		if rows.Scan(&p) != nil {
+		if dbFailed(rows.Scan(&p)) {
 			continue
 		}
 		if p == "write" {
@@ -674,6 +686,7 @@ func (s *Store) DocRole(userID, docID string) string {
 		}
 		role = DocRoleViewer
 	}
+	logDBErr(rows.Err())
 	return role
 }
 
@@ -682,16 +695,17 @@ func CanEditDoc(role string) bool {
 	return role == DocRoleOwner || role == DocRoleEditor
 }
 
-// IsDocShared reports whether anyone besides the owner can access the note.
+// IsDocShared reports whether anyone besides the owner can access the note. When the database cannot
+// say, the note counts as shared (its log is kept as long as that of a shared one).
 func (s *Store) IsDocShared(docID string) bool {
 	var n int
-	_ = s.db.QueryRow(
+	err := s.db.QueryRow(
 		`SELECT (SELECT COUNT(*) FROM doc_shares WHERE doc_id = ?)
 		      + (SELECT COUNT(*) FROM doc_team_shares WHERE doc_id = ?)
 		      + (SELECT COUNT(*) FROM documents d JOIN workspace_folder_shares wfs ON wfs.folder_id = d.shared_folder_id
 		         WHERE d.id = ? AND d.shared_folder_id != '')`,
 		docID, docID, docID).Scan(&n)
-	return n > 0
+	return dbFailed(err) || n > 0
 }
 
 // SetBlockChecked ticks or unticks a block through the log (server-side change, e.g. a linked task was
@@ -733,7 +747,8 @@ func (s *Store) renameForeignBlockIDs(docID string, blocks []domain.DocumentBloc
 			continue
 		}
 		var owner string
-		if s.db.QueryRow(`SELECT document_id FROM blocks WHERE id = ?`, id).Scan(&owner) != nil || owner == docID {
+		err := s.db.QueryRow(`SELECT document_id FROM blocks WHERE id = ?`, id).Scan(&owner)
+		if !dbFailed(err) && (err != nil || owner == docID) { // free or this note's own; an id that cannot be checked gets a new one
 			continue
 		}
 		if !copied {
@@ -936,9 +951,14 @@ func (s *Store) CompactDocs(now time.Time) (CompactStats, error) {
 	var docIDs []string
 	for rows.Next() {
 		var id string
-		if rows.Scan(&id) == nil {
-			docIDs = append(docIDs, id)
+		if err := rows.Scan(&id); err != nil {
+			_ = rows.Close()
+			return st, err
 		}
+		docIDs = append(docIDs, id)
+	}
+	if err := rows.Err(); err != nil {
+		return st, err
 	}
 	rows.Close()
 
@@ -989,9 +1009,14 @@ func (s *Store) compactDoc(docID, logCutoff, tombCutoff, now string) (removed in
 	}
 	for rows.Next() {
 		var id string
-		if rows.Scan(&id) == nil {
-			candidates = append(candidates, id)
+		if err := rows.Scan(&id); err != nil {
+			_ = rows.Close()
+			return 0, 0, 0, err
 		}
+		candidates = append(candidates, id)
+	}
+	if err := rows.Err(); err != nil {
+		return 0, 0, 0, err
 	}
 	rows.Close()
 	if e := collab.Purge(doc, candidates); e != nil {

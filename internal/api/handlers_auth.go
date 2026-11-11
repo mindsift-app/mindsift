@@ -159,7 +159,7 @@ func (s *Server) handleFirstBootSetup(w http.ResponseWriter, r *http.Request) {
 	if lang == "" {
 		lang = s.requestLanguage(r)
 	}
-	_ = s.store.SetLanguage(user.ID, lang)
+	logFailed("Setting the language", s.store.SetLanguage(user.ID, lang), "user_id", user.ID)
 
 	sys, _ := s.store.GetSystemSettings()
 	if sys != nil {
@@ -179,14 +179,16 @@ func (s *Server) handleFirstBootSetup(w http.ResponseWriter, r *http.Request) {
 		}
 		// In organization mode the first admin starts in an organization named after the instance
 		if sys.SharingMode == storage.SharingOrganizations {
-			if org, err := s.store.CreateOrganization(sys.InstanceName); err == nil {
-				_ = s.store.AddOrganizationMember(org.ID, user.ID)
+			if org, err := s.store.CreateOrganization(sys.InstanceName); err != nil {
+				logFailed("Creating the first organization", err)
+			} else {
+				logFailed("Adding the first admin to the organization", s.store.AddOrganizationMember(org.ID, user.ID), "org_id", org.ID)
 			}
 		}
 	}
 
 	if req.CreateSampleData {
-		_ = s.store.SeedStarterContent(user)
+		logFailed("Creating the sample data", s.store.SeedStarterContent(user), "user_id", user.ID)
 	}
 
 	token, err := s.startSession(r, user)
@@ -305,14 +307,14 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusConflict, "E-Mail-Adresse existiert bereits")
 		return
 	}
-	_ = s.store.SetLanguage(user.ID, s.requestLanguage(r))
+	logFailed("Setting the language", s.store.SetLanguage(user.ID, s.requestLanguage(r)), "user_id", user.ID)
 
 	if validInvite != nil {
 		if err := s.store.FinishUserInvite(validInvite.ID, claim, user.ID); err != nil {
 			slog.Error("Marking the invite code as used failed", "invite", validInvite.ID, "error", err)
 		}
 		for _, orgID := range validInvite.OrganizationIDs {
-			_ = s.store.AddOrganizationMember(orgID, user.ID)
+			logFailed("Adding the invited person to the organization", s.store.AddOrganizationMember(orgID, user.ID), "org_id", orgID, "user_id", user.ID)
 		}
 	}
 
@@ -626,7 +628,10 @@ func (s *Server) handleUpdateUserSettings(w http.ResponseWriter, r *http.Request
 		switch {
 		case alarm == "" || alarm == before.Email:
 			// The login address is confirmed already; an earlier waiting one is dropped
-			s.store.CancelEmailChange(userID, storage.EmailChangeAlarm)
+			if err := s.store.CancelEmailChange(userID, storage.EmailChangeAlarm); err != nil {
+				writeInternal(w, err)
+				return
+			}
 		case alarm == domain.NormalizeEmail(before.AlarmEmail):
 			req.AlarmEmail = nil
 		case !validEmail(alarm):
@@ -803,7 +808,9 @@ func (s *Server) notifyAccountChange(before *domain.User, password, email bool, 
 		c.Button = &mailButton{Label: i18n.T(lang, "MindSift öffnen"), URL: link}
 	}
 	go func() {
-		_ = s.sendMailContent(before.Email, i18n.T(lang, "MindSift: Änderung an deinem Konto"), c)
+		if err := s.sendMailContent(before.Email, i18n.T(lang, "MindSift: Änderung an deinem Konto"), c); err != nil {
+			slog.Warn("Notice about a changed account not sent", "user_id", before.ID, "error", err)
+		}
 	}()
 }
 

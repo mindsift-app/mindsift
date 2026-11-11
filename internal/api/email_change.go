@@ -109,7 +109,10 @@ func (s *Server) handleCancelEmailChange(w http.ResponseWriter, r *http.Request)
 		writeError(w, http.StatusNotFound, "Nicht gefunden")
 		return
 	}
-	s.store.CancelEmailChange(auth.GetUserID(r.Context()), kind)
+	if err := s.store.CancelEmailChange(auth.GetUserID(r.Context()), kind); err != nil {
+		writeInternal(w, err)
+		return
+	}
 	writeJSON(w, http.StatusOK, map[string]bool{"cancelled": true})
 }
 

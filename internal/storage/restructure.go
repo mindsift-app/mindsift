@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"regexp"
 	"strconv"
 	"strings"
@@ -300,17 +301,27 @@ func (s *Store) InlineNote(userID, docID, blockID string) (*InlineResult, error)
 // copyShares gives the new note the direct and team shares of the source; when someone else owns the
 // source, that owner may edit the new note as well (the branch was theirs to read before).
 func (s *Store) copyShares(userID string, source *domain.Document, newDocID string) {
-	shares, _ := s.GetDocShares(source.ID)
+	// A share that cannot be copied leaves the new note with fewer readers, never with more
+	failed := func(err error) {
+		if err != nil {
+			slog.Warn("Copying a share to the new note failed", "doc_id", newDocID, "error", err)
+		}
+	}
+	shares, err := s.GetDocShares(source.ID)
+	failed(err)
 	for _, sh := range shares {
 		switch {
 		case sh.TargetType == "team":
-			_, _ = s.CreateDocTeamShare(userID, newDocID, sh.TargetID, sh.Permission)
+			_, err = s.CreateDocTeamShare(userID, newDocID, sh.TargetID, sh.Permission)
+			failed(err)
 		case sh.UserID != "" && sh.UserID != userID:
-			_, _ = s.CreateDocShare(userID, newDocID, sh.UserID, sh.Permission)
+			_, err = s.CreateDocShare(userID, newDocID, sh.UserID, sh.Permission)
+			failed(err)
 		}
 	}
 	if source.UserID != "" && source.UserID != userID {
-		_, _ = s.CreateDocShare(userID, newDocID, source.UserID, "write")
+		_, err = s.CreateDocShare(userID, newDocID, source.UserID, "write")
+		failed(err)
 	}
 }
 
@@ -522,7 +533,7 @@ func (s *Store) relinkTaskBlocks(from, to string, ids map[string]string) {
 		newOf[oldID] = newID
 	}
 	for oldID, newID := range newOf {
-		_, _ = s.db.Exec(`UPDATE thoughts SET converted_ref_id = ? WHERE converted_type = 'document_block' AND converted_ref_id = ?`,
+		s.execLogged(`UPDATE thoughts SET converted_ref_id = ? WHERE converted_type = 'document_block' AND converted_ref_id = ?`,
 			to+":"+newID, from+":"+oldID)
 	}
 	for blockID, taskID := range s.docTaskLinks(to) {
@@ -530,7 +541,8 @@ func (s *Store) relinkTaskBlocks(from, to string, ids map[string]string) {
 			continue
 		}
 		var raw string
-		if s.db.QueryRow(`SELECT subtasks FROM thoughts WHERE id = ?`, taskID).Scan(&raw) != nil {
+		if err := s.db.QueryRow(`SELECT subtasks FROM thoughts WHERE id = ?`, taskID).Scan(&raw); err != nil {
+			logDBErr(err)
 			continue
 		}
 		var subs []domain.SubTask
@@ -545,7 +557,7 @@ func (s *Store) relinkTaskBlocks(from, to string, ids map[string]string) {
 		}
 		if changed {
 			subsJSON, _ := json.Marshal(subs)
-			_, _ = s.db.Exec(`UPDATE thoughts SET subtasks = ? WHERE id = ?`, string(subsJSON), taskID)
+			s.execLogged(`UPDATE thoughts SET subtasks = ? WHERE id = ?`, string(subsJSON), taskID)
 		}
 	}
 }
@@ -573,6 +585,6 @@ func (s *Store) UndoMove(sourceID string, m MoveResult, a collab.Actor, leases c
 // DocHead is the newest log position of a note (to tell open editors to sync).
 func (s *Store) DocHead(docID string) int64 {
 	var head int64
-	_ = s.db.QueryRow(`SELECT head_seq FROM documents WHERE id = ?`, docID).Scan(&head)
+	logDBErr(s.db.QueryRow(`SELECT head_seq FROM documents WHERE id = ?`, docID).Scan(&head))
 	return head
 }

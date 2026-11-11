@@ -15,7 +15,7 @@ func (s *Store) migrateVoiceInput() error {
 // VoiceInput returns the user's choice: "" or "browser".
 func (s *Store) VoiceInput(userID string) string {
 	var v string
-	_ = s.db.QueryRow(`SELECT voice_input FROM users WHERE id = ?`, userID).Scan(&v)
+	logDBErr(s.db.QueryRow(`SELECT voice_input FROM users WHERE id = ?`, userID).Scan(&v))
 	return v
 }
 

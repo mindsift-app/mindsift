@@ -280,7 +280,11 @@ func (s *Server) handleDocChanges(w http.ResponseWriter, r *http.Request) {
 		case <-r.Context().Done():
 			return
 		}
-		_, head, _ = s.store.GetDocOpsSinceCtx(r.Context(), docID, since, 0)
+		if _, now, err := s.store.GetDocOpsSinceCtx(r.Context(), docID, since, 0); err == nil {
+			head = now
+		} else if r.Context().Err() == nil {
+			logFailed("Reading the state of a note", err, "doc_id", docID) // the client syncs anyway
+		}
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"headSeq": head, "changed": changed})
 }
@@ -334,7 +338,7 @@ func (s *Server) compactOnce() {
 		slog.Info("Unconfirmed registrations deleted", "count", n)
 	}
 	s.compactMedia(time.Now())
-	_ = s.store.PruneLinkPreviews(time.Now().Add(-30 * 24 * time.Hour))
+	logFailed("Removing old link previews", s.store.PruneLinkPreviews(time.Now().Add(-30*24*time.Hour)))
 	st, err := s.store.CompactDocs(time.Now())
 	if err != nil {
 		slog.Error("Compacting the change log failed", "error", err)

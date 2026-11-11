@@ -80,9 +80,9 @@ func (s *Store) RecordOrigin(table, id, via, keyID string, created bool) *domain
 		return nil
 	}
 	if created {
-		_, _ = s.db.Exec(`UPDATE `+table+` SET created_via = ?, created_key_id = ? WHERE id = ?`, via, keyID, id)
+		s.execLogged(`UPDATE `+table+` SET created_via = ?, created_key_id = ? WHERE id = ?`, via, keyID, id)
 	} else {
-		_, _ = s.db.Exec(`UPDATE `+table+` SET changed_via = ?, changed_key_id = ?, changed_at = ? WHERE id = ?`, via, keyID, domain.NowISO(), id)
+		s.execLogged(`UPDATE `+table+` SET changed_via = ?, changed_key_id = ?, changed_at = ? WHERE id = ?`, via, keyID, domain.NowISO(), id)
 	}
 	return s.Origin(table, id)
 }
@@ -94,6 +94,7 @@ func (s *Store) Origin(table, id string) *domain.Origin {
 	}
 	var o originDest
 	if err := s.db.QueryRow(`SELECT `+originColumns("")+` FROM `+table+` WHERE id = ?`, id).Scan(o.targets()...); err != nil {
+		logDBErr(err)
 		return nil
 	}
 	return o.result()
@@ -111,5 +112,5 @@ func (s *Store) copyOriginToListItem(thoughtID, itemID string) {
 		args = append(args, thoughtID)
 	}
 	args = append(args, itemID)
-	_, _ = s.db.Exec(`UPDATE list_items SET `+strings.Join(set, ", ")+` WHERE id = ?`, args...)
+	s.execLogged(`UPDATE list_items SET `+strings.Join(set, ", ")+` WHERE id = ?`, args...)
 }

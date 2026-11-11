@@ -270,9 +270,14 @@ func (s *Store) migrateWikiLinksToIDs() error {
 	var todo []pair
 	for rows.Next() {
 		var p pair
-		if rows.Scan(&p.user, &p.doc) == nil {
-			todo = append(todo, p)
+		if err := rows.Scan(&p.user, &p.doc); err != nil {
+			_ = rows.Close()
+			return err
 		}
+		todo = append(todo, p)
+	}
+	if err := rows.Err(); err != nil {
+		return err
 	}
 	if err := rows.Close(); err != nil {
 		return err
@@ -300,16 +305,17 @@ func (s *Store) migrateWikiLinksToIDs() error {
 func (s *Store) LinkWikiTitles(userID string) []string {
 	rows, err := s.db.Query(`SELECT DISTINCT d.id FROM documents d JOIN blocks b ON b.document_id = d.id
 		WHERE d.user_id = ? AND b.deleted = 0 AND b.content LIKE '%[[%'`, userID)
-	if err != nil {
+	if dbFailed(err) {
 		return nil
 	}
 	var ids []string
 	for rows.Next() {
 		var id string
-		if rows.Scan(&id) == nil {
+		if !dbFailed(rows.Scan(&id)) {
 			ids = append(ids, id)
 		}
 	}
+	logDBErr(rows.Err())
 	_ = rows.Close()
 	linker := s.WikiLinker(userID)
 	var changed []string

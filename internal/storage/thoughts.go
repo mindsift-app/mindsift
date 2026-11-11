@@ -182,11 +182,15 @@ func (s *Store) GetThoughts(userID, statusFilter string, limit int) ([]domain.Th
 	result := make([]domain.Thought, 0)
 	for rows.Next() {
 		t, err := scanThought(rows)
-		if err == nil {
+		if !dbFailed(err) {
 			result = append(result, *t)
 		}
 	}
+	err = rows.Err()
 	_ = rows.Close()
+	if err != nil {
+		return nil, err
+	}
 	return result, nil
 }
 
@@ -220,11 +224,15 @@ func (s *Store) GetTasks(userID string, taskListID string) ([]domain.Thought, er
 	result := make([]domain.Thought, 0)
 	for rows.Next() {
 		t, err := scanThought(rows)
-		if err == nil {
+		if !dbFailed(err) {
 			result = append(result, *t)
 		}
 	}
+	err = rows.Err()
 	_ = rows.Close()
+	if err != nil {
+		return nil, err
+	}
 	s.attachTaskAssignees(result)
 	return result, nil
 }
@@ -243,7 +251,9 @@ func (s *Store) ReorderTasks(taskListID string, items []domain.ThoughtReorderIte
 			if isDoneColumn(tx, it.ID, *it.KanbanStatus) {
 				isCompleted = 1
 				var was int
-				_ = tx.QueryRow(`SELECT is_completed FROM thoughts WHERE id = ?`, it.ID).Scan(&was)
+				if err := rowErr(tx.QueryRow(`SELECT is_completed FROM thoughts WHERE id = ?`, it.ID).Scan(&was)); err != nil {
+					return err
+				}
 				if was == 0 {
 					completed = append(completed, it.ID)
 				}
@@ -283,7 +293,7 @@ func isDoneColumn(q interface {
 	QueryRow(query string, args ...any) *sql.Row
 }, taskID, column string) bool {
 	var raw string
-	_ = q.QueryRow(`SELECT COALESCE(tl.columns, '') FROM thoughts t LEFT JOIN task_lists tl ON tl.id = t.task_list_id WHERE t.id = ?`, taskID).Scan(&raw)
+	logDBErr(q.QueryRow(`SELECT COALESCE(tl.columns, '') FROM thoughts t LEFT JOIN task_lists tl ON tl.id = t.task_list_id WHERE t.id = ?`, taskID).Scan(&raw))
 	var cols []domain.KanbanColumn
 	if raw != "" && json.Unmarshal([]byte(raw), &cols) == nil && len(cols) > 0 {
 		for _, c := range cols {
@@ -415,7 +425,7 @@ func (s *Store) UpdateThoughtTriage(userID, thoughtID, action, convertTo, target
 					convertedType = "document_block"
 					convertedRefID = doc.ID + ":" + blocks[0].ID
 					subsJSON, _ := json.Marshal(thought.Subtasks)
-					_, _ = s.db.Exec(`UPDATE thoughts SET subtasks = ? WHERE id = ?`, string(subsJSON), thought.ID)
+					s.execLogged(`UPDATE thoughts SET subtasks = ? WHERE id = ?`, string(subsJSON), thought.ID)
 				}
 			}
 		} else if convertTo == "list_item" && targetListID != "" {

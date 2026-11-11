@@ -44,7 +44,7 @@ func (s *Server) runBackups() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	_ = storage.PruneBackups(filepath.Join(root, "system"), keep, now)
+	logFailed("Removing old system backups", storage.PruneBackups(filepath.Join(root, "system"), keep, now))
 
 	users, err := s.store.GetAllUsers()
 	if err != nil {
@@ -61,7 +61,7 @@ func (s *Server) runBackups() (string, error) {
 			slog.Error("User backup failed", "user_id", u.ID, "error", err)
 			continue
 		}
-		_ = storage.PruneBackups(dir, keep, now)
+		logFailed("Removing old backups of a person", storage.PruneBackups(dir, keep, now), "user_id", u.ID)
 	}
 	slog.Info("Backups created", "system", name, "users", len(users), "failed", failed)
 	if failed > 0 {

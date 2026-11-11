@@ -91,6 +91,18 @@ teams 1─n team_members n─1 users
 
 `thoughts.task_list_id` is not a foreign key constraint; when a list is deleted, the code updates references to `''`.
 
+## Database Errors
+
+A database error is never an answer ([dberr.go](../internal/storage/dberr.go)):
+
+- Functions that return an `error` pass it on.
+- Functions that answer with a plain value (a bool, a count, a list) log it with the place it happened (`logDBErr`; message `Database query failed`, field `at`). Where they decide something they ask `dbFailed` and answer on the safe side: an account that cannot be checked counts as waiting for approval or confirmation, an address as taken, an administrator as the last one, a note as shared, the MCP switch as off.
+- `sql.ErrNoRows` is an answer ("no such row"; `rowErr` turns it into `nil`). `context.Canceled` is a failure that is not logged: the request went away, nothing is wrong with the database.
+- In list reads a row that cannot be scanned is logged and skipped; a read that breaks off (`rows.Err()`) is returned, or logged where there is no error to return.
+- Statements nothing else depends on (`last_used_at`, cleaning up) run through `execLogged`. In the API, `logFailed` ([server.go](../internal/api/server.go)) does the same for steps the answer does not depend on (a mail on the side, removing a queue entry).
+
+Dropped on purpose (`_ =`) are only best-effort seeding of sample data, `rows.Close()`, and decoding stored JSON columns.
+
 ## Migrations and Startup Cleanup
 
 - Columns/tables/indexes are updated incrementally (`ALTER TABLE … ADD COLUMN`, errors ignored).

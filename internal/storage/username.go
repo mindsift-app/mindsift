@@ -116,6 +116,9 @@ func (s *Store) migrateUsernames() error {
 		}
 		all = append(all, r)
 	}
+	if err := rows.Err(); err != nil {
+		return err
+	}
 	_ = rows.Close()
 	// Clear first, so the new names do not collide with old ones that are about to change
 	if _, err := s.db.Exec(`UPDATE users SET username = ''`); err != nil {

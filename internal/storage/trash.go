@@ -87,6 +87,7 @@ func (s *Store) GetTrash(userID string) ([]TrashedDocument, error) {
 		var t TrashedDocument
 		var sharedFolderID, subPath, ownerID, folderName string
 		if err := rows.Scan(&t.ID, &t.Title, &t.Icon, &t.FolderPath, &sharedFolderID, &subPath, &t.DeletedAt, &ownerID, &folderName); err != nil {
+			logDBErr(err)
 			continue
 		}
 		if sharedFolderID != "" {
@@ -98,6 +99,9 @@ func (s *Store) GetTrash(userID string) ([]TrashedDocument, error) {
 		t.Kind = "note"
 		t.IsOwner = ownerID == userID
 		out = append(out, t)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 	_ = rows.Close()
 
@@ -111,7 +115,7 @@ func (s *Store) GetTrash(userID string) ([]TrashedDocument, error) {
 	for frows.Next() {
 		var t TrashedDocument
 		var p string
-		if frows.Scan(&t.ID, &p, &t.DeletedAt, &t.NoteCount) != nil {
+		if dbFailed(frows.Scan(&t.ID, &p, &t.DeletedAt, &t.NoteCount)) {
 			continue
 		}
 		t.Kind = "folder"
@@ -121,6 +125,9 @@ func (s *Store) GetTrash(userID string) ([]TrashedDocument, error) {
 		}
 		t.IsOwner = true
 		out = append(out, t)
+	}
+	if err := frows.Err(); err != nil {
+		return nil, err
 	}
 	sort.SliceStable(out, func(i, j int) bool { return out[i].DeletedAt > out[j].DeletedAt })
 	return out, nil
@@ -167,11 +174,12 @@ func (s *Store) trashedFolderDocs(id string) ([]string, error) {
 	var ids []string
 	for rows.Next() {
 		var docID string
-		if rows.Scan(&docID) == nil {
-			ids = append(ids, docID)
+		if err := rows.Scan(&docID); err != nil {
+			return nil, err
 		}
+		ids = append(ids, docID)
 	}
-	return ids, nil
+	return ids, rows.Err()
 }
 
 // RestoreFolder brings a trashed folder back: the folder and all of its subfolders (empty ones too),
@@ -234,10 +242,14 @@ func (s *Store) RestoreDocument(userID, docID string) error {
 		return err
 	}
 	var folderPath, sharedFolderID string
-	_ = s.db.QueryRow(`SELECT folder_path, shared_folder_id FROM documents WHERE id = ?`, docID).Scan(&folderPath, &sharedFolderID)
+	if err := s.db.QueryRow(`SELECT folder_path, shared_folder_id FROM documents WHERE id = ?`, docID).Scan(&folderPath, &sharedFolderID); err != nil {
+		return err
+	}
 	if sharedFolderID != "" {
 		var exists int
-		_ = s.db.QueryRow(`SELECT COUNT(*) FROM workspace_shared_folders WHERE id = ?`, sharedFolderID).Scan(&exists)
+		if err := s.db.QueryRow(`SELECT COUNT(*) FROM workspace_shared_folders WHERE id = ?`, sharedFolderID).Scan(&exists); err != nil {
+			return err
+		}
 		if exists == 0 {
 			if _, err := s.db.Exec(`UPDATE documents SET shared_folder_id = '', sub_folder_path = '', folder_path = '' WHERE id = ?`, docID); err != nil {
 				return err

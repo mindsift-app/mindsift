@@ -19,7 +19,7 @@ func (s *Store) ResetAndSeedDemo() error {
 		return fmt.Errorf("reset demo: ensure demo accounts: %w", err)
 	}
 	for _, k := range kept {
-		_, _ = s.db.Exec(`INSERT OR IGNORE INTO sessions (id, user_id, created_at, last_used_at, user_agent, ip) VALUES (?, ?, ?, ?, ?, ?)`,
+		s.execLogged(`INSERT OR IGNORE INTO sessions (id, user_id, created_at, last_used_at, user_agent, ip) VALUES (?, ?, ?, ?, ?, ?)`,
 			k.id, k.userID, k.created, k.lastUsed, k.agent, k.ip)
 	}
 	slog.Info("Demo mode: database reset and filled with sample data")
@@ -38,9 +38,10 @@ func (s *Store) demoSessions() []keptSession {
 	var out []keptSession
 	for rows.Next() {
 		var k keptSession
-		if rows.Scan(&k.id, &k.userID, &k.created, &k.lastUsed, &k.agent, &k.ip) == nil {
+		if !dbFailed(rows.Scan(&k.id, &k.userID, &k.created, &k.lastUsed, &k.agent, &k.ip)) {
 			out = append(out, k)
 		}
 	}
+	logDBErr(rows.Err())
 	return out
 }

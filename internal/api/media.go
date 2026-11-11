@@ -77,7 +77,7 @@ func (s *Server) storeMedia(w http.ResponseWriter, userID, docID string, data []
 		}
 		slog.Error("Writing a media file failed", "path", path, "error", err)
 	}
-	_ = s.store.DeleteMediaRow(m.ID)
+	logFailed("Removing the entry of a media file that was not written", s.store.DeleteMediaRow(m.ID), "id", m.ID)
 	writeError(w, http.StatusInternalServerError, "Datei konnte nicht gespeichert werden")
 	return nil, false
 }
@@ -226,7 +226,7 @@ func (s *Server) compactMedia(now time.Time) {
 			slog.Warn("Deleting a media file failed", "id", m.ID, "error", err)
 			continue
 		}
-		_ = s.store.DeleteMediaRow(m.ID)
+		logFailed("Removing the entry of a deleted media file", s.store.DeleteMediaRow(m.ID), "id", m.ID)
 		_ = os.Remove(filepath.Dir(s.mediaPath(m))) // only succeeds when the folder is empty
 	}
 	if len(orphans) > 0 {

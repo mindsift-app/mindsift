@@ -240,7 +240,7 @@ func (s *Server) handleAdminApproveUser(w http.ResponseWriter, r *http.Request) 
 	link := s.appLink(r)
 	lang := s.userLanguage(user.ID)
 	go func() {
-		_ = s.sendMailContent(user.Email, i18n.T(lang, "MindSift: Dein Konto ist freigeschaltet"), mailContent{
+		err := s.sendMailContent(user.Email, i18n.T(lang, "MindSift: Dein Konto ist freigeschaltet"), mailContent{
 			Lang:      lang,
 			Preheader: i18n.T(lang, "Du kannst dich jetzt anmelden"),
 			Greeting:  mailGreeting(lang, time.Now(), user.DisplayName),
@@ -248,6 +248,9 @@ func (s *Server) handleAdminApproveUser(w http.ResponseWriter, r *http.Request) 
 			Button:    &mailButton{Label: i18n.T(lang, "Zu MindSift"), URL: link},
 			Footer:    mailFooterAccount(lang),
 		})
+		if err != nil {
+			slog.Warn("Email about the activated account not sent", "user_id", user.ID, "error", err)
+		}
 	}()
 	writeJSON(w, http.StatusOK, staffUser{User: *user})
 }

@@ -75,7 +75,7 @@ func (s *Store) GetBacklinks(userID, docID string) ([]Backlink, error) {
 	index := map[string]int{}
 	for rows.Next() {
 		var blockID, sourceID, content string
-		if rows.Scan(&blockID, &sourceID, &content) != nil {
+		if dbFailed(rows.Scan(&blockID, &sourceID, &content)) {
 			continue
 		}
 		di, visible := byID[sourceID]
@@ -94,6 +94,9 @@ func (s *Store) GetBacklinks(userID, docID string) ([]Backlink, error) {
 		} else {
 			out[pos].More++
 		}
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 	sort.SliceStable(out, func(i, j int) bool { return strings.ToLower(out[i].Title) < strings.ToLower(out[j].Title) })
 	return out, nil

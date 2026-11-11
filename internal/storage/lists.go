@@ -43,7 +43,7 @@ func (s *Store) CreateList(userID, title, icon, listType string) (*domain.Shared
 	if err != nil {
 		return nil, err
 	}
-	_ = s.db.QueryRow(`SELECT display_name FROM users WHERE id = ?`, userID).Scan(&lst.OwnerName)
+	logDBErr(s.db.QueryRow(`SELECT display_name FROM users WHERE id = ?`, userID).Scan(&lst.OwnerName))
 	return lst, nil
 }
 
@@ -110,13 +110,13 @@ func (s *Store) AddListShare(currentUserID, listID, targetType, targetID, role s
 		return nil, err
 	}
 
-	_ = s.db.QueryRow(`SELECT id, created_at FROM list_shares WHERE list_id = ? AND target_type = ? AND target_id = ?`,
-		listID, targetType, targetID).Scan(&share.ID, &share.CreatedAt)
+	logDBErr(s.db.QueryRow(`SELECT id, created_at FROM list_shares WHERE list_id = ? AND target_type = ? AND target_id = ?`,
+		listID, targetType, targetID).Scan(&share.ID, &share.CreatedAt))
 
 	if targetType == "team" {
-		_ = s.db.QueryRow(`SELECT name FROM teams WHERE id = ?`, targetID).Scan(&share.TargetName)
+		logDBErr(s.db.QueryRow(`SELECT name FROM teams WHERE id = ?`, targetID).Scan(&share.TargetName))
 	} else {
-		_ = s.db.QueryRow(`SELECT display_name, email FROM users WHERE id = ?`, targetID).Scan(&share.TargetName, &share.Email)
+		logDBErr(s.db.QueryRow(`SELECT display_name, email FROM users WHERE id = ?`, targetID).Scan(&share.TargetName, &share.Email))
 	}
 	return share, nil
 }
@@ -159,9 +159,12 @@ func (s *Store) GetListShares(listID string) ([]domain.ListShare, error) {
 	shares := make([]domain.ListShare, 0)
 	for rows.Next() {
 		var sh domain.ListShare
-		if err := rows.Scan(&sh.ID, &sh.ListID, &sh.TargetType, &sh.TargetID, &sh.Role, &sh.CreatedBy, &sh.CreatedAt, &sh.TargetName, &sh.Email); err == nil {
+		if err := rows.Scan(&sh.ID, &sh.ListID, &sh.TargetType, &sh.TargetID, &sh.Role, &sh.CreatedBy, &sh.CreatedAt, &sh.TargetName, &sh.Email); !dbFailed(err) {
 			shares = append(shares, sh)
 		}
+	}
+	if err := rows.Err(); err != nil {
+		return []domain.ListShare{}, err
 	}
 	return shares, nil
 }
@@ -196,18 +199,25 @@ func (s *Store) GetAllListsForUser(userID string) ([]domain.SharedList, error) {
 		var l domain.SharedList
 		var ownerName sql.NullString
 		var effectiveRole string
-		if err := rows.Scan(&l.ID, &l.UserID, &l.Title, &l.Icon, &l.ListType, &l.UpdatedAt, &l.CreatedAt, &ownerName, &effectiveRole); err == nil {
+		if err := rows.Scan(&l.ID, &l.UserID, &l.Title, &l.Icon, &l.ListType, &l.UpdatedAt, &l.CreatedAt, &ownerName, &effectiveRole); !dbFailed(err) {
 			l.OwnerName = ownerName.String
 			l.IsOwner = (l.UserID == userID)
 			l.Role = effectiveRole
 			lists = append(lists, l)
 		}
 	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 	_ = rows.Close()
 
 	for i := range lists {
-		lists[i].Items, _ = s.GetListItems(lists[i].ID)
-		lists[i].Shares, _ = s.GetListShares(lists[i].ID)
+		if lists[i].Items, err = s.GetListItems(lists[i].ID); err != nil {
+			return nil, err
+		}
+		if lists[i].Shares, err = s.GetListShares(lists[i].ID); err != nil {
+			return nil, err
+		}
 		lists[i].Members = s.getListMembers(lists[i].ID, lists[i].UserID)
 	}
 	sortByListOrder(lists, order, sharedListID)
@@ -247,8 +257,12 @@ func (s *Store) GetListByID(userID, listID string) (*domain.SharedList, error) {
 	l.OwnerName = ownerName.String
 	l.IsOwner = l.UserID == userID
 	l.Role = effectiveRole
-	l.Items, _ = s.GetListItems(l.ID)
-	l.Shares, _ = s.GetListShares(l.ID)
+	if l.Items, err = s.GetListItems(l.ID); err != nil {
+		return nil, err
+	}
+	if l.Shares, err = s.GetListShares(l.ID); err != nil {
+		return nil, err
+	}
 	l.Members = s.getListMembers(l.ID, l.UserID)
 	return &l, nil
 }
@@ -270,7 +284,7 @@ func (s *Store) getListMembers(listID, ownerID string) []domain.TaskListMember {
 	defer rows.Close()
 	for rows.Next() {
 		var m domain.TaskListMember
-		if rows.Scan(&m.UserID, &m.DisplayName, &m.Email, &m.AvatarURL) == nil {
+		if !dbFailed(rows.Scan(&m.UserID, &m.DisplayName, &m.Email, &m.AvatarURL)) {
 			m.Role = "member"
 			if m.UserID == ownerID {
 				m.Role = "owner"
@@ -278,6 +292,7 @@ func (s *Store) getListMembers(listID, ownerID string) []domain.TaskListMember {
 			members = append(members, m)
 		}
 	}
+	logDBErr(rows.Err())
 	return members
 }
 
@@ -336,11 +351,14 @@ func (s *Store) GetListItems(listID string) ([]domain.ListItem, error) {
 		var it domain.ListItem
 		var doneInt int
 		var o originDest
-		if err := rows.Scan(&it.ID, &it.ListID, &it.Content, &it.Category, &it.Quantity, &doneInt, &it.CompletedBy, &it.CompletedByName, &it.CreatedBy, &it.CreatedByName, &it.SortOrder, &it.CreatedAt, &it.CompletedAt, &o.createdVia, &o.createdKey, &o.changedVia, &o.changedKey, &o.changedAt); err == nil {
+		if err := rows.Scan(&it.ID, &it.ListID, &it.Content, &it.Category, &it.Quantity, &doneInt, &it.CompletedBy, &it.CompletedByName, &it.CreatedBy, &it.CreatedByName, &it.SortOrder, &it.CreatedAt, &it.CompletedAt, &o.createdVia, &o.createdKey, &o.changedVia, &o.changedKey, &o.changedAt); !dbFailed(err) {
 			it.IsCompleted = doneInt != 0
 			it.Origin = o.result()
 			items = append(items, it)
 		}
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 	return items, nil
 }
@@ -379,7 +397,7 @@ func (s *Store) CreateListItem(listID, content, category, quantity string, sortO
 		CreatedAt:   now,
 	}
 	if createdBy != "" {
-		_ = s.db.QueryRow(`SELECT display_name FROM users WHERE id = ?`, createdBy).Scan(&it.CreatedByName)
+		logDBErr(s.db.QueryRow(`SELECT display_name FROM users WHERE id = ?`, createdBy).Scan(&it.CreatedByName))
 	}
 
 	_, err := s.db.Exec(
@@ -391,7 +409,7 @@ func (s *Store) CreateListItem(listID, content, category, quantity string, sortO
 		return nil, err
 	}
 
-	_, _ = s.db.Exec(`UPDATE lists SET updated_at = ? WHERE id = ?`, now, listID)
+	s.execLogged(`UPDATE lists SET updated_at = ? WHERE id = ?`, now, listID)
 	return it, nil
 }
 
@@ -420,7 +438,7 @@ func (s *Store) ToggleListItem(itemID string, isCompleted bool, userID, userName
 	if err != nil {
 		return nil, err
 	}
-	_, _ = s.db.Exec(`UPDATE lists SET updated_at = ? WHERE id = ?`, now, it.ListID)
+	s.execLogged(`UPDATE lists SET updated_at = ? WHERE id = ?`, now, it.ListID)
 	return it, nil
 }
 
@@ -445,7 +463,7 @@ func (s *Store) UpdateListItem(itemID string, content *string, category *string,
 	if err != nil {
 		return nil, err
 	}
-	_, _ = s.db.Exec(`UPDATE lists SET updated_at = ? WHERE id = ?`, now, it.ListID)
+	s.execLogged(`UPDATE lists SET updated_at = ? WHERE id = ?`, now, it.ListID)
 	return it, nil
 }
 
@@ -460,7 +478,7 @@ func (s *Store) MoveListItem(itemID, targetListID string) (*domain.ListItem, err
 	if _, err := s.db.Exec(`UPDATE list_items SET list_id = ?, sort_order = 0 WHERE id = ?`, targetListID, itemID); err != nil {
 		return nil, err
 	}
-	_, _ = s.db.Exec(`UPDATE lists SET updated_at = ? WHERE id IN (?, ?)`, now, sourceListID, targetListID)
+	s.execLogged(`UPDATE lists SET updated_at = ? WHERE id IN (?, ?)`, now, sourceListID, targetListID)
 
 	return s.getListItem(itemID)
 }
@@ -491,10 +509,12 @@ func (s *Store) getListItem(itemID string) (*domain.ListItem, error) {
 
 func (s *Store) DeleteListItem(itemID string) (string, error) {
 	var listID string
-	_ = s.db.QueryRow(`SELECT list_id FROM list_items WHERE id = ?`, itemID).Scan(&listID)
+	if err := rowErr(s.db.QueryRow(`SELECT list_id FROM list_items WHERE id = ?`, itemID).Scan(&listID)); err != nil {
+		return "", err
+	}
 	_, err := s.db.Exec(`DELETE FROM list_items WHERE id = ?`, itemID)
 	if listID != "" {
-		_, _ = s.db.Exec(`UPDATE lists SET updated_at = ? WHERE id = ?`, domain.NowISO(), listID)
+		s.execLogged(`UPDATE lists SET updated_at = ? WHERE id = ?`, domain.NowISO(), listID)
 	}
 	return listID, err
 }
@@ -504,7 +524,7 @@ func (s *Store) ClearCompletedListItems(listID string) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	_, _ = s.db.Exec(`UPDATE lists SET updated_at = ? WHERE id = ?`, domain.NowISO(), listID)
+	s.execLogged(`UPDATE lists SET updated_at = ? WHERE id = ?`, domain.NowISO(), listID)
 	return res.RowsAffected()
 }
 
@@ -542,7 +562,9 @@ func (s *Store) ReorderListItems(listID string, items []domain.ListItemReorderIt
 		}
 	}
 
-	_, _ = tx.Exec(`UPDATE lists SET updated_at = ? WHERE id = ?`, domain.NowISO(), listID)
+	if _, err := tx.Exec(`UPDATE lists SET updated_at = ? WHERE id = ?`, domain.NowISO(), listID); err != nil {
+		return err
+	}
 	return tx.Commit()
 }
 
@@ -570,6 +592,7 @@ func (s *Store) ListRole(userID, listID string) string {
 		WHERE l.id = ? AND (l.user_id = ? OR ls.id IS NOT NULL)
 		GROUP BY l.id`, userID, userID, userID, listID, userID).Scan(&role)
 	if err != nil {
+		logDBErr(err)
 		return ""
 	}
 	return role
@@ -586,7 +609,9 @@ func (s *Store) EnsureListItemsWritable(userID, listID, itemID string) error {
 	}
 	if itemID != "" {
 		var n int
-		_ = s.db.QueryRow(`SELECT COUNT(*) FROM list_items WHERE id = ? AND list_id = ?`, itemID, listID).Scan(&n)
+		if err := s.db.QueryRow(`SELECT COUNT(*) FROM list_items WHERE id = ? AND list_id = ?`, itemID, listID).Scan(&n); err != nil {
+			return err
+		}
 		if n == 0 {
 			return ErrListNotFound
 		}

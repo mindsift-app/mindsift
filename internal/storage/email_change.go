@@ -78,23 +78,25 @@ func (s *Store) RequestEmailChange(userID, kind, email string) (string, error) {
 func (s *Store) PendingEmailChanges(userID string) map[string]PendingEmailChange {
 	out := map[string]PendingEmailChange{}
 	rows, err := s.db.Query(`SELECT kind, email, created_at FROM email_changes WHERE user_id = ?`, userID)
-	if err != nil {
+	if dbFailed(err) {
 		return out
 	}
 	defer rows.Close()
 	for rows.Next() {
 		var kind, email, created string
-		if rows.Scan(&kind, &email, &created) == nil {
+		if !dbFailed(rows.Scan(&kind, &email, &created)) {
 			t, _ := time.Parse(time.RFC3339, created)
 			out[kind] = PendingEmailChange{Email: email, CreatedAt: t}
 		}
 	}
+	logDBErr(rows.Err())
 	return out
 }
 
-// CancelEmailChange drops the waiting address of this kind.
-func (s *Store) CancelEmailChange(userID, kind string) {
-	_, _ = s.db.Exec(`DELETE FROM email_changes WHERE user_id = ? AND kind = ?`, userID, kind)
+// CancelEmailChange drops the waiting address of this kind (its link stops working).
+func (s *Store) CancelEmailChange(userID, kind string) error {
+	_, err := s.db.Exec(`DELETE FROM email_changes WHERE user_id = ? AND kind = ?`, userID, kind)
+	return err
 }
 
 // ConfirmEmailChange takes the address of the link: the account's login address (if still free) or
@@ -130,7 +132,9 @@ func (s *Store) ConfirmEmailChange(raw string) (*domain.User, string, error) {
 	}
 	if kind == EmailChangeAccount {
 		var taken int
-		_ = tx.QueryRow(`SELECT COUNT(*) FROM users WHERE LOWER(email) = ? AND id != ?`, email, userID).Scan(&taken)
+		if err := tx.QueryRow(`SELECT COUNT(*) FROM users WHERE LOWER(email) = ? AND id != ?`, email, userID).Scan(&taken); err != nil {
+			return nil, "", err
+		}
 		if taken > 0 {
 			return nil, "", ErrEmailTaken
 		}

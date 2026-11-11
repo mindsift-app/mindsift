@@ -40,7 +40,7 @@ func (s *Store) migrateNotifications() error {
 // NotificationSettingsOf returns the user's settings, defaults filled in for users who never saved any.
 func (s *Store) NotificationSettingsOf(userID string) domain.NotificationSettings {
 	var raw, channels string
-	_ = s.db.QueryRow(`SELECT notification_settings, alarm_channels FROM users WHERE id = ?`, userID).Scan(&raw, &channels)
+	logDBErr(s.db.QueryRow(`SELECT notification_settings, alarm_channels FROM users WHERE id = ?`, userID).Scan(&raw, &channels))
 	out := domain.DefaultNotificationSettings(parseAlarmChannels(channels))
 	if raw != "" {
 		_ = json.Unmarshal([]byte(raw), &out)
@@ -93,9 +93,10 @@ func (s *Store) DueNotificationUsers(olderThan time.Time) ([]string, error) {
 	var out []string
 	for rows.Next() {
 		var id string
-		if rows.Scan(&id) == nil {
-			out = append(out, id)
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
 		}
+		out = append(out, id)
 	}
 	return out, rows.Err()
 }
@@ -110,10 +111,11 @@ func (s *Store) QueuedNotifications(userID string) ([]QueuedNotification, error)
 	for rows.Next() {
 		var q QueuedNotification
 		var raw string
-		if rows.Scan(&q.ID, &q.UserID, &q.Kind, &raw, &q.CreatedAt, &q.Attempts) == nil {
-			_ = json.Unmarshal([]byte(raw), &q.Payload)
-			out = append(out, q)
+		if err := rows.Scan(&q.ID, &q.UserID, &q.Kind, &raw, &q.CreatedAt, &q.Attempts); err != nil {
+			return nil, err
 		}
+		_ = json.Unmarshal([]byte(raw), &q.Payload)
+		out = append(out, q)
 	}
 	return out, rows.Err()
 }
@@ -149,17 +151,18 @@ func (s *Store) WatchTask(taskID, userID string, on bool) error {
 
 func (s *Store) TaskWatchers(taskID string) []string {
 	rows, err := s.db.Query(`SELECT user_id FROM task_watchers WHERE task_id = ?`, taskID)
-	if err != nil {
+	if dbFailed(err) {
 		return nil
 	}
 	defer rows.Close()
 	var out []string
 	for rows.Next() {
 		var id string
-		if rows.Scan(&id) == nil {
+		if !dbFailed(rows.Scan(&id)) {
 			out = append(out, id)
 		}
 	}
+	logDBErr(rows.Err())
 	return out
 }
 
@@ -167,21 +170,22 @@ func (s *Store) TaskWatchers(taskID string) []string {
 func (s *Store) WatchedTaskIDs(userID string) map[string]bool {
 	out := map[string]bool{}
 	rows, err := s.db.Query(`SELECT task_id FROM task_watchers WHERE user_id = ?`, userID)
-	if err != nil {
+	if dbFailed(err) {
 		return out
 	}
 	defer rows.Close()
 	for rows.Next() {
 		var id string
-		if rows.Scan(&id) == nil {
+		if !dbFailed(rows.Scan(&id)) {
 			out[id] = true
 		}
 	}
+	logDBErr(rows.Err())
 	return out
 }
 
 func (s *Store) ForgetTaskWatchers(taskID string) {
-	_, _ = s.db.Exec(`DELETE FROM task_watchers WHERE task_id = ?`, taskID)
+	s.execLogged(`DELETE FROM task_watchers WHERE task_id = ?`, taskID)
 }
 
 // --- Daily summary ---
@@ -194,17 +198,18 @@ type SummaryTask struct {
 // ActiveUserIDs lists all active accounts (the summary job checks their settings).
 func (s *Store) ActiveUserIDs() []string {
 	rows, err := s.db.Query(`SELECT id FROM users WHERE is_active = 1`)
-	if err != nil {
+	if dbFailed(err) {
 		return nil
 	}
 	defer rows.Close()
 	var out []string
 	for rows.Next() {
 		var id string
-		if rows.Scan(&id) == nil {
+		if !dbFailed(rows.Scan(&id)) {
 			out = append(out, id)
 		}
 	}
+	logDBErr(rows.Err())
 	return out
 }
 
@@ -232,10 +237,12 @@ func (s *Store) OpenTasksDueBefore(userID, beforeDay string) ([]SummaryTask, err
 	var found []candidate
 	for rows.Next() {
 		var c candidate
-		if rows.Scan(&c.task.ID, &c.task.UserID, &c.task.TaskListID, &c.summary.Title, &c.summary.DueDate, &c.summary.ListTitle) == nil {
-			c.summary.Title = strings.TrimSpace(strings.SplitN(c.summary.Title, "\n", 2)[0])
-			found = append(found, c)
+		if err := rows.Scan(&c.task.ID, &c.task.UserID, &c.task.TaskListID, &c.summary.Title, &c.summary.DueDate, &c.summary.ListTitle); err != nil {
+			_ = rows.Close()
+			return nil, err
 		}
+		c.summary.Title = strings.TrimSpace(strings.SplitN(c.summary.Title, "\n", 2)[0])
+		found = append(found, c)
 	}
 	err = rows.Err()
 	rows.Close()
@@ -256,7 +263,7 @@ func (s *Store) OpenTasksDueBefore(userID, beforeDay string) ([]SummaryTask, err
 // ClaimDailySummary marks today's summary as sent; false when it was already sent today.
 func (s *Store) ClaimDailySummary(userID, day string) bool {
 	res, err := s.db.Exec(`UPDATE users SET last_daily_summary = ? WHERE id = ? AND last_daily_summary != ?`, day, userID, day)
-	if err != nil {
+	if dbFailed(err) {
 		return false
 	}
 	n, _ := res.RowsAffected()
@@ -266,7 +273,7 @@ func (s *Store) ClaimDailySummary(userID, day string) bool {
 // SharedFolderName is the display name of a shared workspace folder.
 func (s *Store) SharedFolderName(folderID string) string {
 	var name string
-	_ = s.db.QueryRow(`SELECT name FROM workspace_shared_folders WHERE id = ?`, folderID).Scan(&name)
+	logDBErr(s.db.QueryRow(`SELECT name FROM workspace_shared_folders WHERE id = ?`, folderID).Scan(&name))
 	if name == "" {
 		name = "Ordner"
 	}

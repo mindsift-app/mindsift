@@ -36,11 +36,12 @@ func (s *Store) GetFolders(userID string) ([]string, error) {
 				if err == nil {
 					for sRows.Next() {
 						var sp string
-						if err := sRows.Scan(&sp); err == nil && sp != "" {
+						if err := sRows.Scan(&sp); !dbFailed(err) && sp != "" {
 							fullP := mPath + "/" + sp
 							addFolderSegments(fullP, folderSet)
 						}
 					}
+					logDBErr(sRows.Err())
 					_ = sRows.Close()
 				}
 			}
@@ -52,10 +53,11 @@ func (s *Store) GetFolders(userID string) ([]string, error) {
 	if err == nil {
 		for pRows.Next() {
 			var p string
-			if err := pRows.Scan(&p); err == nil && p != "" {
+			if err := pRows.Scan(&p); !dbFailed(err) && p != "" {
 				addFolderSegments(p, folderSet)
 			}
 		}
+		logDBErr(pRows.Err())
 		_ = pRows.Close()
 	}
 
@@ -164,7 +166,7 @@ func (s *Store) DeleteFolder(userID, folderPath string) ([]string, error) {
 				if qErr == nil {
 					for rows.Next() {
 						var id string
-						if err := rows.Scan(&id); err == nil && !seenDocID[id] {
+						if err := rows.Scan(&id); !dbFailed(err) && !seenDocID[id] {
 							seenDocID[id] = true
 							deletedDocIDs = append(deletedDocIDs, id)
 						}
@@ -181,7 +183,7 @@ func (s *Store) DeleteFolder(userID, folderPath string) ([]string, error) {
 				if qErr == nil {
 					for rows.Next() {
 						var id string
-						if err := rows.Scan(&id); err == nil && !seenDocID[id] {
+						if err := rows.Scan(&id); !dbFailed(err) && !seenDocID[id] {
 							seenDocID[id] = true
 							deletedDocIDs = append(deletedDocIDs, id)
 						}
@@ -205,7 +207,7 @@ func (s *Store) DeleteFolder(userID, folderPath string) ([]string, error) {
 	}
 	for rows.Next() {
 		var id string
-		if err := rows.Scan(&id); err == nil && !seenDocID[id] {
+		if err := rows.Scan(&id); !dbFailed(err) && !seenDocID[id] {
 			seenDocID[id] = true
 			deletedDocIDs = append(deletedDocIDs, id)
 		}
@@ -223,10 +225,11 @@ func (s *Store) DeleteFolder(userID, folderPath string) ([]string, error) {
 			AND path LIKE ?`, userID, clean+"/%"); err == nil {
 			for frows.Next() {
 				var p string
-				if frows.Scan(&p) == nil {
+				if !dbFailed(frows.Scan(&p)) {
 					subfolders = append(subfolders, p)
 				}
 			}
+			logDBErr(frows.Err())
 			_ = frows.Close()
 		}
 		_, folderWrites := trashFolderStmts(userID, clean, subfolders, deletedDocIDs)
@@ -420,10 +423,11 @@ func (s *Store) MoveFolder(userID, sourcePath, targetParentPath string) (string,
 		var records []wfRecord
 		for wfRows.Next() {
 			var r wfRecord
-			if err := wfRows.Scan(&r.id, &r.uid, &r.sfID, &r.path, &r.subPath); err == nil {
+			if err := wfRows.Scan(&r.id, &r.uid, &r.sfID, &r.path, &r.subPath); !dbFailed(err) {
 				records = append(records, r)
 			}
 		}
+		logDBErr(wfRows.Err())
 		_ = wfRows.Close()
 
 		for _, r := range records {
@@ -496,10 +500,11 @@ func (s *Store) syncSharedFolderContents(ownerID, folderID, cleanMount string) e
 		var entries []docEntry
 		for rows.Next() {
 			var de docEntry
-			if err := rows.Scan(&de.id, &de.fp); err == nil {
+			if err := rows.Scan(&de.id, &de.fp); !dbFailed(err) {
 				entries = append(entries, de)
 			}
 		}
+		logDBErr(rows.Err())
 		_ = rows.Close()
 
 		for _, de := range entries {
@@ -522,10 +527,11 @@ func (s *Store) syncSharedFolderContents(ownerID, folderID, cleanMount string) e
 		var wfEntries []wfEntry
 		for fRows.Next() {
 			var wfe wfEntry
-			if err := fRows.Scan(&wfe.id, &wfe.path); err == nil {
+			if err := fRows.Scan(&wfe.id, &wfe.path); !dbFailed(err) {
 				wfEntries = append(wfEntries, wfe)
 			}
 		}
+		logDBErr(fRows.Err())
 		_ = fRows.Close()
 
 		for _, wfe := range wfEntries {
@@ -588,7 +594,7 @@ func (s *Store) CreateSharedFolder(userID, folderName, initialMountPath string) 
 	}
 
 	var ownerName string
-	_ = s.db.QueryRow(`SELECT display_name FROM users WHERE id = ?`, userID).Scan(&ownerName)
+	logDBErr(s.db.QueryRow(`SELECT display_name FROM users WHERE id = ?`, userID).Scan(&ownerName))
 
 	return &domain.SharedFolder{
 		ID:         folderID,
@@ -638,10 +644,13 @@ func (s *Store) GetSharedFolders(userID string) ([]domain.SharedFolder, error) {
 	for rows.Next() {
 		var f domain.SharedFolder
 		var isOwner int
-		if err := rows.Scan(&f.ID, &f.OwnerID, &f.OwnerName, &f.Name, &f.MountPath, &isOwner, &f.Permission, &f.CreatedAt, &f.UpdatedAt); err == nil {
+		if err := rows.Scan(&f.ID, &f.OwnerID, &f.OwnerName, &f.Name, &f.MountPath, &isOwner, &f.Permission, &f.CreatedAt, &f.UpdatedAt); !dbFailed(err) {
 			f.IsOwner = isOwner != 0
 			folders = append(folders, f)
 		}
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 	// Shares only after the rows are closed: a query per row while they hold their connection can use up
 	// the pool (deadlock under load)
@@ -734,9 +743,12 @@ func (s *Store) GetFolderShares(folderID string) ([]domain.FolderShare, error) {
 
 	for rows.Next() {
 		var sh domain.FolderShare
-		if err := rows.Scan(&sh.ID, &sh.FolderID, &sh.TargetType, &sh.TargetID, &sh.TargetName, &sh.Email, &sh.AvatarURL, &sh.Permission, &sh.CreatedBy, &sh.CreatedAt); err == nil {
+		if err := rows.Scan(&sh.ID, &sh.FolderID, &sh.TargetType, &sh.TargetID, &sh.TargetName, &sh.Email, &sh.AvatarURL, &sh.Permission, &sh.CreatedBy, &sh.CreatedAt); !dbFailed(err) {
 			shares = append(shares, sh)
 		}
+	}
+	if err := rows.Err(); err != nil {
+		return shares, err
 	}
 	return shares, nil
 }
@@ -813,7 +825,7 @@ func (s *Store) CreateFolderShare(currentUserID, folderID, targetType, targetIde
 	}
 
 	var ownerMount string
-	_ = s.db.QueryRow(`SELECT COALESCE(m.mount_path, f.name) FROM workspace_shared_folders f LEFT JOIN workspace_folder_mounts m ON m.folder_id = f.id AND m.user_id = f.owner_id WHERE f.id = ?`, folderID).Scan(&ownerMount)
+	logDBErr(s.db.QueryRow(`SELECT COALESCE(m.mount_path, f.name) FROM workspace_shared_folders f LEFT JOIN workspace_folder_mounts m ON m.folder_id = f.id AND m.user_id = f.owner_id WHERE f.id = ?`, folderID).Scan(&ownerMount))
 	if ownerMount == "" {
 		ownerMount = f.Name
 	}
@@ -833,10 +845,11 @@ func (s *Store) CreateFolderShare(currentUserID, folderID, targetType, targetIde
 			var memberIDs []string
 			for mRows.Next() {
 				var uid string
-				if err := mRows.Scan(&uid); err == nil && uid != "" {
+				if err := mRows.Scan(&uid); !dbFailed(err) && uid != "" {
 					memberIDs = append(memberIDs, uid)
 				}
 			}
+			logDBErr(mRows.Err())
 			_ = mRows.Close()
 			for _, uid := range memberIDs {
 				mounts = append(mounts, stmt(`
@@ -880,8 +893,10 @@ func (s *Store) DeleteFolderShare(currentUserID, folderID, shareID string) error
 	}
 
 	var targetType, targetID string
-	_ = s.db.QueryRow(`SELECT target_type, target_id FROM workspace_folder_shares WHERE folder_id = ? AND (id = ? OR target_id = ?)`,
-		folderID, cleanID, cleanID).Scan(&targetType, &targetID)
+	if err := rowErr(s.db.QueryRow(`SELECT target_type, target_id FROM workspace_folder_shares WHERE folder_id = ? AND (id = ? OR target_id = ?)`,
+		folderID, cleanID, cleanID).Scan(&targetType, &targetID)); err != nil {
+		return err
+	}
 
 	writes := []sqlStmt{stmt(`DELETE FROM workspace_folder_shares WHERE folder_id = ? AND (id = ? OR target_id = ?)`, folderID, cleanID, cleanID)}
 	if targetType == "user" && targetID != "" {
@@ -918,9 +933,12 @@ func (s *Store) GetSharedFolderDocIDs(folderID string) ([]string, error) {
 	var docIDs []string
 	for rows.Next() {
 		var id string
-		if err := rows.Scan(&id); err == nil && id != "" {
+		if err := rows.Scan(&id); !dbFailed(err) && id != "" {
 			docIDs = append(docIDs, id)
 		}
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 	return docIDs, nil
 }

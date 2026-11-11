@@ -82,7 +82,7 @@ func (s *Store) SessionActive(sessionID, userID string) bool {
 		return false
 	}
 	if time.Since(last) > sessionTouchEvery {
-		_, _ = s.db.Exec(`UPDATE sessions SET last_used_at = ? WHERE id = ?`, nowUTC(), sessionID)
+		s.execLogged(`UPDATE sessions SET last_used_at = ? WHERE id = ?`, nowUTC(), sessionID)
 	}
 	return true
 }

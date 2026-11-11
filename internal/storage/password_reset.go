@@ -44,7 +44,9 @@ func hashResetToken(raw string) string {
 func (s *Store) CreatePasswordResetToken(userID string) (string, error) {
 	now := time.Now().UTC()
 	var last sql.NullString
-	_ = s.db.QueryRow(`SELECT MAX(created_at) FROM password_reset_tokens WHERE user_id = ?`, userID).Scan(&last)
+	if err := s.db.QueryRow(`SELECT MAX(created_at) FROM password_reset_tokens WHERE user_id = ?`, userID).Scan(&last); err != nil {
+		return "", err
+	}
 	if last.Valid {
 		if t, err := time.Parse(time.RFC3339, last.String); err == nil && now.Sub(t) < resetTokenCooldown {
 			return "", ErrResetTooSoon
@@ -56,7 +58,7 @@ func (s *Store) CreatePasswordResetToken(userID string) (string, error) {
 	}
 	raw := hex.EncodeToString(buf)
 	// Expired and used tokens are of no use any more
-	_, _ = s.db.Exec(`DELETE FROM password_reset_tokens WHERE expires_at < ? OR used_at != ''`, now.Format(time.RFC3339))
+	s.execLogged(`DELETE FROM password_reset_tokens WHERE expires_at < ? OR used_at != ''`, now.Format(time.RFC3339))
 	_, err := s.db.Exec(`INSERT INTO password_reset_tokens (token_hash, user_id, created_at, expires_at) VALUES (?, ?, ?, ?)`,
 		hashResetToken(raw), userID, now.Format(time.RFC3339), now.Add(resetTokenTTL).Format(time.RFC3339))
 	return raw, err

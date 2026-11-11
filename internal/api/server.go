@@ -550,6 +550,14 @@ func writeInternal(w http.ResponseWriter, err error) {
 	writeError(w, http.StatusInternalServerError, clientMessage(err))
 }
 
+// logFailed logs the failure of a step the answer does not depend on (cleaning up, something on the
+// side), so it is not lost. what names the step: "Setting the language".
+func logFailed(what string, err error, args ...any) {
+	if err != nil {
+		slog.Warn(what+" failed", append(args, "error", err)...)
+	}
+}
+
 // writeStoreError maps read-only task list violations to 403, a missing row (no access or gone) to 404,
 // and everything else to the given fallback status. A raw sql.ErrNoRows is never shown to the client.
 func writeStoreError(w http.ResponseWriter, fallbackStatus int, err error) {

@@ -135,15 +135,18 @@ func (s *Store) PurgeUserData(userID string) error {
 	return s.PurgeUserSections(userID, map[string]bool{SectionNotes: true, SectionTasks: true, SectionLists: true, SectionInbox: true})
 }
 
-// IsLastAdmin reports whether userID is an administrator and no other one exists.
+// IsLastAdmin reports whether userID is an administrator and no other one exists. When the database
+// cannot say, the answer is yes, so nothing removes an administrator on a guess.
 func (s *Store) IsLastAdmin(userID string) bool {
 	var role string
-	if err := s.db.QueryRow(`SELECT role FROM users WHERE id = ?`, userID).Scan(&role); err != nil || role != "admin" {
+	if err := s.db.QueryRow(`SELECT role FROM users WHERE id = ?`, userID).Scan(&role); dbFailed(err) {
+		return true
+	} else if err != nil || role != "admin" {
 		return false
 	}
 	var others int
-	_ = s.db.QueryRow(`SELECT COUNT(*) FROM users WHERE role = 'admin' AND id != ?`, userID).Scan(&others)
-	return others == 0
+	err := s.db.QueryRow(`SELECT COUNT(*) FROM users WHERE role = 'admin' AND id != ?`, userID).Scan(&others)
+	return dbFailed(err) || others == 0
 }
 
 // DeleteOwnAccount removes the user with all data; refused for the last administrator.

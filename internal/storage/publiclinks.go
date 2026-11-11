@@ -100,22 +100,22 @@ func (s *Store) PurgePublicLinks(now time.Time) (int64, error) {
 // DocOwner returns the owner of a note ("" when unknown).
 func (s *Store) DocOwner(docID string) string {
 	var owner string
-	_ = s.db.QueryRow(`SELECT user_id FROM documents WHERE id = ?`, docID).Scan(&owner)
+	logDBErr(s.db.QueryRow(`SELECT user_id FROM documents WHERE id = ?`, docID).Scan(&owner))
 	return owner
 }
 
 // DocIcon returns a note's icon.
 func (s *Store) DocIcon(docID string) string {
 	var icon string
-	_ = s.db.QueryRow(`SELECT icon FROM documents WHERE id = ?`, docID).Scan(&icon)
+	logDBErr(s.db.QueryRow(`SELECT icon FROM documents WHERE id = ?`, docID).Scan(&icon))
 	return icon
 }
 
 // DocShowsMedia reports whether a living bullet of the note shows the file.
 func (s *Store) DocShowsMedia(docID, mediaID string) bool {
 	var n int
-	_ = s.db.QueryRow(`SELECT COUNT(*) FROM blocks WHERE document_id = ? AND deleted = 0 AND instr(content, ?) > 0`,
-		docID, "media:"+mediaID).Scan(&n)
+	logDBErr(s.db.QueryRow(`SELECT COUNT(*) FROM blocks WHERE document_id = ? AND deleted = 0 AND instr(content, ?) > 0`,
+		docID, "media:"+mediaID).Scan(&n))
 	return n > 0
 }
 

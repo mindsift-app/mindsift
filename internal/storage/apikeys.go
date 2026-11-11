@@ -95,9 +95,12 @@ func (s *Store) GetAPIKeys(userID string) ([]domain.APIKey, error) {
 	keys := make([]domain.APIKey, 0)
 	for rows.Next() {
 		var k domain.APIKey
-		if err := rows.Scan(&k.ID, &k.UserID, &k.Name, &k.KeyPrefix, &k.Scopes, &k.LastUsedAt, &k.CreatedAt, &k.Kind); err == nil {
+		if err := rows.Scan(&k.ID, &k.UserID, &k.Name, &k.KeyPrefix, &k.Scopes, &k.LastUsedAt, &k.CreatedAt, &k.Kind); !dbFailed(err) {
 			keys = append(keys, k)
 		}
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 	return keys, nil
 }
@@ -156,7 +159,7 @@ func (s *Store) ValidateAPIKey(rawKey string) (*domain.User, []string, string, e
 	if err != nil {
 		return nil, nil, "", errors.New("invalid API key")
 	}
-	_, _ = s.db.Exec(`UPDATE api_keys SET last_used_at = ? WHERE id = ?`, domain.NowISO(), keyID)
+	s.execLogged(`UPDATE api_keys SET last_used_at = ? WHERE id = ?`, domain.NowISO(), keyID)
 	u, err := s.GetUserByID(userID)
 	return u, NormalizeScopes(strings.Split(scopes, ",")), keyID, err
 }

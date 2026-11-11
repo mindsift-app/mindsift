@@ -368,13 +368,17 @@ func (s *Server) handleOAuthToken(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// handleOAuthRevoke: POST /oauth/revoke (RFC 7009); answers 200 even for unknown tokens.
+// handleOAuthRevoke: POST /oauth/revoke (RFC 7009); answers 200 even for unknown tokens, and 503 when
+// the token could not be removed (it still works then, the client should try again).
 func (s *Server) handleOAuthRevoke(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseForm(); err != nil {
 		writeOAuthError(w, http.StatusBadRequest, "invalid_request", "Ungültige Anfrage")
 		return
 	}
-	s.store.RevokeOAuthToken(r.PostForm.Get("token"), oauthClientID(r))
+	if err := s.store.RevokeOAuthToken(r.PostForm.Get("token"), oauthClientID(r)); err != nil {
+		writeOAuthError(w, http.StatusServiceUnavailable, "server_error", clientMessage(err))
+		return
+	}
 	w.WriteHeader(http.StatusOK)
 }
 

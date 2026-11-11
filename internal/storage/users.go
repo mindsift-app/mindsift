@@ -136,11 +136,12 @@ func (s *Store) createUser(id, email, username, passwordHash, displayName, role 
 	return u, nil
 }
 
-// EmailInUse: an account has exactly this login address (other ways of signing in do not count).
+// EmailInUse: an account has exactly this login address (other ways of signing in do not count). When
+// the database cannot say, the address counts as taken.
 func (s *Store) EmailInUse(email string) bool {
 	var n int
-	_ = s.db.QueryRow(`SELECT COUNT(*) FROM users WHERE LOWER(email) = ?`, domain.NormalizeEmail(email)).Scan(&n)
-	return n > 0
+	err := s.db.QueryRow(`SELECT COUNT(*) FROM users WHERE LOWER(email) = ?`, domain.NormalizeEmail(email)).Scan(&n)
+	return dbFailed(err) || n > 0
 }
 
 func (s *Store) GetUserByEmail(email string) (*domain.User, error) {
@@ -189,6 +190,9 @@ func (s *Store) GetUserByLogin(login string) (*domain.User, error) {
 			found = append(found, u)
 		}
 	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 	if len(found) != 1 {
 		return nil, sql.ErrNoRows
 	}
@@ -226,8 +230,8 @@ func (s *Store) EnsureDemoAccounts() error {
 		}
 		adminCreated = true
 	} else {
-		_ = s.UpdateUserPassword(adminUser.ID, adminHash)
-		_, _ = s.db.Exec(`UPDATE users SET is_active = 1, role = 'admin' WHERE id = ?`, adminUser.ID)
+		logDBErr(s.UpdateUserPassword(adminUser.ID, adminHash))
+		s.execLogged(`UPDATE users SET is_active = 1, role = 'admin' WHERE id = ?`, adminUser.ID)
 	}
 
 	// 2. Regular user (user / user)
@@ -238,8 +242,8 @@ func (s *Store) EnsureDemoAccounts() error {
 			return fmt.Errorf("failed to create demo user: %w", err)
 		}
 	} else {
-		_ = s.UpdateUserPassword(normalUser.ID, userHash)
-		_, _ = s.db.Exec(`UPDATE users SET is_active = 1 WHERE id = ?`, normalUser.ID)
+		logDBErr(s.UpdateUserPassword(normalUser.ID, userHash))
+		s.execLogged(`UPDATE users SET is_active = 1 WHERE id = ?`, normalUser.ID)
 	}
 
 	// The demo accounts speak the default language, English unless DEFAULT_LANGUAGE says otherwise (the
@@ -248,17 +252,17 @@ func (s *Store) EnsureDemoAccounts() error {
 	if !i18n.Valid(lang) {
 		lang = "en"
 	}
-	_ = s.SetLanguage(adminUser.ID, lang)
-	_ = s.SetLanguage(normalUser.ID, lang)
+	logDBErr(s.SetLanguage(adminUser.ID, lang))
+	logDBErr(s.SetLanguage(normalUser.ID, lang))
 
 	// 3. Sample data for the admin, partly shared with the demo user (only on first start). Both accounts
 	// share an organization so they can see each other in the default sharing mode.
 	if adminCreated {
 		if org, err := s.CreateOrganization("Demo"); err == nil {
-			_ = s.AddOrganizationMember(org.ID, adminUser.ID)
-			_ = s.AddOrganizationMember(org.ID, normalUser.ID)
+			logDBErr(s.AddOrganizationMember(org.ID, adminUser.ID))
+			logDBErr(s.AddOrganizationMember(org.ID, normalUser.ID))
 		}
-		_ = s.SeedStarterContent(adminUser)
+		logDBErr(s.SeedStarterContent(adminUser))
 		s.seedDemoShares(adminUser, normalUser)
 	}
 
@@ -292,6 +296,9 @@ func (s *Store) GetAllUsers() ([]domain.User, error) {
 		if u, err := scanUser(rows); err == nil {
 			users = append(users, *u)
 		}
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 	_ = rows.Close()
 	return users, nil
@@ -461,13 +468,16 @@ func (s *Store) GetUserInvites() ([]domain.UserInvite, error) {
 		var inv domain.UserInvite
 		var orgs string
 		var usedUpAt string
-		if err := rows.Scan(&inv.ID, &inv.Code, &inv.Email, &inv.Role, &orgs, &inv.CreatedBy, &inv.ExpiresAt, &inv.UsedBy, &inv.CreatedAt, &inv.MaxUses, &inv.UseCount, &usedUpAt); err == nil {
+		if err := rows.Scan(&inv.ID, &inv.Code, &inv.Email, &inv.Role, &orgs, &inv.CreatedBy, &inv.ExpiresAt, &inv.UsedBy, &inv.CreatedAt, &inv.MaxUses, &inv.UseCount, &usedUpAt); !dbFailed(err) {
 			inv.OrganizationIDs = splitIDs(orgs)
 			if t, ok := inviteRemoveAt(time.Now(), inv.ExpiresAt, usedUpAt, inv.UseCount, inv.MaxUses); ok {
 				inv.RemoveAt = t.Format(time.RFC3339)
 			}
 			invites = append(invites, inv)
 		}
+	}
+	if err := rows.Err(); err != nil {
+		return []domain.UserInvite{}, err
 	}
 	_ = rows.Close()
 	// Names after the rows are closed (one connection at a time)
@@ -584,11 +594,16 @@ func (s *Store) PurgeOldInvites(now time.Time) (int, error) {
 	for rows.Next() {
 		var id, exp, usedUp string
 		var count, maxUses int
-		if rows.Scan(&id, &exp, &usedUp, &count, &maxUses) == nil {
-			if t, ok := inviteRemoveAt(now, exp, usedUp, count, maxUses); ok && now.After(t) {
-				ids = append(ids, id)
-			}
+		if err := rows.Scan(&id, &exp, &usedUp, &count, &maxUses); err != nil {
+			_ = rows.Close()
+			return 0, err
 		}
+		if t, ok := inviteRemoveAt(now, exp, usedUp, count, maxUses); ok && now.After(t) {
+			ids = append(ids, id)
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return 0, err
 	}
 	_ = rows.Close()
 	for _, id := range ids {
@@ -607,7 +622,7 @@ func (s *Store) FinishUserInvite(inviteID, claim, userID string) error {
 
 // ReleaseUserInvite gives the reserved use back when the account could not be created.
 func (s *Store) ReleaseUserInvite(inviteID, claim string) {
-	_, _ = s.db.Exec(`UPDATE user_invites SET use_count = use_count - 1, used_up_at = '' WHERE id = ? AND use_count > 0`, inviteID)
+	s.execLogged(`UPDATE user_invites SET use_count = use_count - 1, used_up_at = '' WHERE id = ? AND use_count > 0`, inviteID)
 }
 
 // BindUserInviteEmail ties a single-use invite to the address it is sent to.

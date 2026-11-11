@@ -23,7 +23,7 @@ func (s *Store) migrateLanguage() error {
 // Language returns the user's choice: a supported code or "".
 func (s *Store) Language(userID string) string {
 	var v string
-	_ = s.db.QueryRow(`SELECT language FROM users WHERE id = ?`, userID).Scan(&v)
+	logDBErr(s.db.QueryRow(`SELECT language FROM users WHERE id = ?`, userID).Scan(&v))
 	return v
 }
 
@@ -49,7 +49,7 @@ func (s *Store) MessageLanguage(userID string) string {
 // DefaultLanguageSetting: the admin's default language, "" while none was stored.
 func (s *Store) DefaultLanguageSetting() string {
 	var v string
-	_ = s.db.QueryRow(`SELECT value FROM system_settings WHERE key = 'default_language'`).Scan(&v)
+	logDBErr(s.db.QueryRow(`SELECT value FROM system_settings WHERE key = 'default_language'`).Scan(&v))
 	if !i18n.Valid(v) {
 		return ""
 	}

@@ -91,7 +91,7 @@ func (s *Store) spawnNextOccurrence(taskID string) {
 		return
 	}
 	res, err := s.db.Exec(`UPDATE thoughts SET recurrence_spawned = 1 WHERE id = ? AND recurrence_spawned = 0`, taskID)
-	if err != nil {
+	if dbFailed(err) {
 		return
 	}
 	if n, _ := res.RowsAffected(); n == 0 {

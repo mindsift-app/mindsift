@@ -212,7 +212,7 @@ func (s *Store) RefreshOAuth(refresh, clientID string, now time.Time) (*OAuthTok
 		return nil, ErrOAuthInvalidGrant
 	}
 	if replaced != "" {
-		_, _ = s.db.Exec(`DELETE FROM oauth_tokens WHERE key_id = ?`, keyID)
+		s.execLogged(`DELETE FROM oauth_tokens WHERE key_id = ?`, keyID)
 		return nil, ErrOAuthInvalidGrant
 	}
 	res, err := s.db.Exec(`UPDATE oauth_tokens SET replaced_at = ? WHERE token_hash = ? AND replaced_at = ''`,
@@ -259,24 +259,26 @@ func (s *Store) ValidateOAuthAccessToken(raw string, now time.Time) (*domain.Use
 	if err != nil || expires < isoTime(now) {
 		return nil, nil, "", ErrOAuthTokenInvalid
 	}
-	_, _ = s.db.Exec(`UPDATE api_keys SET last_used_at = ? WHERE id = ?`, isoTime(now), keyID)
+	s.execLogged(`UPDATE api_keys SET last_used_at = ? WHERE id = ?`, isoTime(now), keyID)
 	u, err := s.GetUserByID(userID)
 	return u, NormalizeScopes(strings.Split(scopes, ",")), keyID, err
 }
 
 // RevokeOAuthToken ends one token (RFC 7009). Revoking a refresh token ends the access tokens of the
 // grant as well; the entry itself stays until the person removes it.
-func (s *Store) RevokeOAuthToken(raw, clientID string) {
+func (s *Store) RevokeOAuthToken(raw, clientID string) error {
 	var keyID, kind, grantClient string
-	if s.db.QueryRow(`SELECT t.key_id, t.kind, k.oauth_client_id FROM oauth_tokens t JOIN api_keys k ON k.id = t.key_id
-		WHERE t.token_hash = ?`, hashOAuthSecret(raw)).Scan(&keyID, &kind, &grantClient) != nil || grantClient != clientID {
-		return
+	err := s.db.QueryRow(`SELECT t.key_id, t.kind, k.oauth_client_id FROM oauth_tokens t JOIN api_keys k ON k.id = t.key_id
+		WHERE t.token_hash = ?`, hashOAuthSecret(raw)).Scan(&keyID, &kind, &grantClient)
+	if err != nil || grantClient != clientID {
+		return rowErr(err) // an unknown token or one of another client: nothing to do
 	}
 	if kind == "refresh" {
-		_, _ = s.db.Exec(`DELETE FROM oauth_tokens WHERE key_id = ?`, keyID)
-		return
+		_, err = s.db.Exec(`DELETE FROM oauth_tokens WHERE key_id = ?`, keyID)
+		return err
 	}
-	_, _ = s.db.Exec(`DELETE FROM oauth_tokens WHERE token_hash = ?`, hashOAuthSecret(raw))
+	_, err = s.db.Exec(`DELETE FROM oauth_tokens WHERE token_hash = ?`, hashOAuthSecret(raw))
+	return err
 }
 
 // PurgeOAuth removes expired codes and tokens, clients nobody agreed to and – with idleDays > 0 –

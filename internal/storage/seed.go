@@ -351,9 +351,9 @@ func (s *Store) seedStarterDE(user *domain.User) error {
 // out editing a note, a task list and a shopping list together.
 func (s *Store) seedDemoShares(admin, member *domain.User) {
 	var docID, taskListID, listID string
-	_ = s.db.QueryRow(`SELECT id FROM documents WHERE user_id = ? AND title LIKE 'Homelab 2.0%'`, admin.ID).Scan(&docID)
-	_ = s.db.QueryRow(`SELECT id FROM task_lists WHERE user_id = ? AND title = 'Homelab'`, admin.ID).Scan(&taskListID)
-	_ = s.db.QueryRow(`SELECT id FROM lists WHERE user_id = ? AND title IN ('Wocheneinkauf', 'Weekly groceries')`, admin.ID).Scan(&listID)
+	logDBErr(s.db.QueryRow(`SELECT id FROM documents WHERE user_id = ? AND title LIKE 'Homelab 2.0%'`, admin.ID).Scan(&docID))
+	logDBErr(s.db.QueryRow(`SELECT id FROM task_lists WHERE user_id = ? AND title = 'Homelab'`, admin.ID).Scan(&taskListID))
+	logDBErr(s.db.QueryRow(`SELECT id FROM lists WHERE user_id = ? AND title IN ('Wocheneinkauf', 'Weekly groceries')`, admin.ID).Scan(&listID))
 	if docID != "" {
 		_, _ = s.CreateDocShare(admin.ID, docID, member.ID, "write")
 	}

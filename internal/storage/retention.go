@@ -84,8 +84,8 @@ func validRetention(days int) bool {
 // RetentionOf returns the user's delays; without allowNever a stored 0 counts as the default.
 func (s *Store) RetentionOf(userID string, allowNever bool) Retention {
 	r := DefaultRetention
-	_ = s.db.QueryRow(`SELECT done_retention_days, task_trash_days, triage_trash_days, note_trash_days, list_done_days FROM users WHERE id = ?`, userID).
-		Scan(&r.DoneTasks, &r.TaskTrash, &r.TriageTrash, &r.NoteTrash, &r.ListDone)
+	logDBErr(s.db.QueryRow(`SELECT done_retention_days, task_trash_days, triage_trash_days, note_trash_days, list_done_days FROM users WHERE id = ?`, userID).
+		Scan(&r.DoneTasks, &r.TaskTrash, &r.TriageTrash, &r.NoteTrash, &r.ListDone))
 	if !allowNever {
 		def := DefaultRetention
 		for _, f := range retentionFields {
@@ -116,7 +116,7 @@ func (s *Store) SetRetention(userID string, r Retention, allowNever bool) error 
 // retentionSince: when retention started; older items count from then on.
 func (s *Store) retentionSince() string {
 	var v string
-	_ = s.db.QueryRow(`SELECT value FROM system_settings WHERE key = 'retention_since'`).Scan(&v)
+	logDBErr(s.db.QueryRow(`SELECT value FROM system_settings WHERE key = 'retention_since'`).Scan(&v))
 	return v
 }
 
@@ -197,9 +197,14 @@ func (s *Store) PurgeExpired(now time.Time, allowNever bool) (PurgeResult, error
 	var docIDs []string
 	for rows.Next() {
 		var id string
-		if rows.Scan(&id) == nil {
-			docIDs = append(docIDs, id)
+		if err := rows.Scan(&id); err != nil {
+			_ = rows.Close()
+			return res, err
 		}
+		docIDs = append(docIDs, id)
+	}
+	if err := rows.Err(); err != nil {
+		return res, err
 	}
 	_ = rows.Close()
 	for _, id := range docIDs {
@@ -226,9 +231,14 @@ func (s *Store) PurgeExpired(now time.Time, allowNever bool) (PurgeResult, error
 	}
 	for rows.Next() {
 		var it PurgedListItem
-		if rows.Scan(&it.ID, &it.ListID) == nil {
-			res.ListItems = append(res.ListItems, it)
+		if err := rows.Scan(&it.ID, &it.ListID); err != nil {
+			_ = rows.Close()
+			return res, err
 		}
+		res.ListItems = append(res.ListItems, it)
+	}
+	if err := rows.Err(); err != nil {
+		return res, err
 	}
 	_ = rows.Close()
 	for _, it := range res.ListItems {
@@ -245,6 +255,6 @@ func (s *Store) PurgeExpired(now time.Time, allowNever bool) (PurgeResult, error
 // RetentionAllowNeverSetting: the admin's switch in the system settings (default: allowed).
 func (s *Store) RetentionAllowNeverSetting() bool {
 	var v string
-	_ = s.db.QueryRow(`SELECT value FROM system_settings WHERE key = 'retention_allow_never'`).Scan(&v)
+	logDBErr(s.db.QueryRow(`SELECT value FROM system_settings WHERE key = 'retention_allow_never'`).Scan(&v))
 	return v != "false"
 }

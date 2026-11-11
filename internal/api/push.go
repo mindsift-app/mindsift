@@ -179,7 +179,8 @@ func (s *Server) handlePushSubscribe(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if req.Replaces != "" && req.Replaces != req.Endpoint {
-		_ = s.store.DeletePushSubscription(userID, req.Replaces) // only ever one of the own devices
+		// only ever one of the own devices
+		logFailed("Removing the replaced push subscription", s.store.DeletePushSubscription(userID, req.Replaces), "user_id", userID)
 	}
 	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
 }

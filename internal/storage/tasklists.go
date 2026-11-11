@@ -107,6 +107,7 @@ var ErrAssigneeNoAccess = errors.New("Aufgaben können nur Personen mit Zugriff 
 func (s *Store) GetTaskListPermission(userID, listID string) string {
 	var ownerID string
 	if err := s.db.QueryRow(`SELECT user_id FROM task_lists WHERE id = ?`, listID).Scan(&ownerID); err != nil {
+		logDBErr(err)
 		return ""
 	}
 	if ownerID == userID {
@@ -124,7 +125,7 @@ func (s *Store) GetTaskListPermission(userID, listID string) string {
 	if err == nil {
 		for rows.Next() {
 			var p string
-			if rows.Scan(&p) == nil {
+			if !dbFailed(rows.Scan(&p)) {
 				if p == "viewer" {
 					if perm == "" {
 						perm = "viewer"
@@ -134,6 +135,7 @@ func (s *Store) GetTaskListPermission(userID, listID string) string {
 				}
 			}
 		}
+		logDBErr(rows.Err())
 		_ = rows.Close()
 	}
 	return perm
@@ -184,13 +186,13 @@ func (s *Store) AddTaskListShare(taskListID, targetType, targetID, permission, c
 	if err != nil {
 		return nil, err
 	}
-	_ = s.db.QueryRow(`SELECT id, created_at FROM task_list_shares WHERE task_list_id = ? AND target_type = ? AND target_id = ?`,
-		taskListID, targetType, targetID).Scan(&share.ID, &share.CreatedAt)
+	logDBErr(s.db.QueryRow(`SELECT id, created_at FROM task_list_shares WHERE task_list_id = ? AND target_type = ? AND target_id = ?`,
+		taskListID, targetType, targetID).Scan(&share.ID, &share.CreatedAt))
 
 	if targetType == "team" {
-		_ = s.db.QueryRow(`SELECT name FROM teams WHERE id = ?`, targetID).Scan(&share.TargetName)
+		logDBErr(s.db.QueryRow(`SELECT name FROM teams WHERE id = ?`, targetID).Scan(&share.TargetName))
 	} else {
-		_ = s.db.QueryRow(`SELECT display_name, email FROM users WHERE id = ?`, targetID).Scan(&share.TargetName, &share.Email)
+		logDBErr(s.db.QueryRow(`SELECT display_name, email FROM users WHERE id = ?`, targetID).Scan(&share.TargetName, &share.Email))
 	}
 	return share, nil
 }
@@ -218,15 +220,18 @@ func (s *Store) GetTaskListShares(taskListID string) ([]domain.TaskListShare, er
 	shares := make([]domain.TaskListShare, 0)
 	for rows.Next() {
 		var sh domain.TaskListShare
-		if err := rows.Scan(&sh.ID, &sh.TaskListID, &sh.TargetType, &sh.TargetID, &sh.Permission, &sh.CreatedAt); err == nil {
+		if err := rows.Scan(&sh.ID, &sh.TaskListID, &sh.TargetType, &sh.TargetID, &sh.Permission, &sh.CreatedAt); !dbFailed(err) {
 			shares = append(shares, sh)
 		}
 	}
+	if err := rows.Err(); err != nil {
+		return []domain.TaskListShare{}, err
+	}
 	for i := range shares {
 		if shares[i].TargetType == "team" {
-			_ = s.db.QueryRow(`SELECT name FROM teams WHERE id = ?`, shares[i].TargetID).Scan(&shares[i].TargetName)
+			logDBErr(s.db.QueryRow(`SELECT name FROM teams WHERE id = ?`, shares[i].TargetID).Scan(&shares[i].TargetName))
 		} else {
-			_ = s.db.QueryRow(`SELECT display_name, email, avatar_url FROM users WHERE id = ?`, shares[i].TargetID).Scan(&shares[i].TargetName, &shares[i].Email, &shares[i].AvatarURL)
+			logDBErr(s.db.QueryRow(`SELECT display_name, email, avatar_url FROM users WHERE id = ?`, shares[i].TargetID).Scan(&shares[i].TargetName, &shares[i].Email, &shares[i].AvatarURL))
 		}
 	}
 	return shares, nil
@@ -235,7 +240,7 @@ func (s *Store) GetTaskListShares(taskListID string) ([]domain.TaskListShare, er
 // queryUserIDs runs a query returning a single user_id column and collects the distinct IDs.
 func (s *Store) queryUserIDs(query string, args ...any) []string {
 	rows, err := s.db.Query(query, args...)
-	if err != nil {
+	if dbFailed(err) {
 		return []string{}
 	}
 	defer rows.Close()
@@ -243,11 +248,12 @@ func (s *Store) queryUserIDs(query string, args ...any) []string {
 	seen := make(map[string]bool)
 	for rows.Next() {
 		var id string
-		if rows.Scan(&id) == nil && id != "" && !seen[id] {
+		if !dbFailed(rows.Scan(&id)) && id != "" && !seen[id] {
 			seen[id] = true
 			ids = append(ids, id)
 		}
 	}
+	logDBErr(rows.Err())
 	return ids
 }
 
@@ -301,12 +307,13 @@ func (s *Store) attachTaskAssignees(tasks []domain.Thought) {
 	defer rows.Close()
 	for rows.Next() {
 		var taskID, uid string
-		if rows.Scan(&taskID, &uid) == nil {
+		if !dbFailed(rows.Scan(&taskID, &uid)) {
 			if i, ok := idx[taskID]; ok {
 				tasks[i].Assignees = append(tasks[i].Assignees, uid)
 			}
 		}
 	}
+	logDBErr(rows.Err())
 }
 
 // SetTaskAssignees replaces the assignees of a task. Only editors of the task's list may assign, and only
@@ -422,7 +429,7 @@ func (s *Store) getMembersForTaskList(tl *domain.TaskList) []domain.TaskListMemb
 
 	// 1. Owner
 	var ownerName, ownerEmail, ownerAvatar string
-	_ = s.db.QueryRow(`SELECT display_name, email, avatar_url FROM users WHERE id = ?`, tl.UserID).Scan(&ownerName, &ownerEmail, &ownerAvatar)
+	logDBErr(s.db.QueryRow(`SELECT display_name, email, avatar_url FROM users WHERE id = ?`, tl.UserID).Scan(&ownerName, &ownerEmail, &ownerAvatar))
 	memberMap[tl.UserID] = domain.TaskListMember{
 		UserID:      tl.UserID,
 		DisplayName: ownerName,
@@ -441,11 +448,12 @@ func (s *Store) getMembersForTaskList(tl *domain.TaskList) []domain.TaskListMemb
 			if err == nil {
 				for rows.Next() {
 					var m domain.TaskListMember
-					if err := rows.Scan(&m.UserID, &m.DisplayName, &m.Email, &m.AvatarURL); err == nil {
+					if err := rows.Scan(&m.UserID, &m.DisplayName, &m.Email, &m.AvatarURL); !dbFailed(err) {
 						m.Role = "member"
 						memberMap[m.UserID] = m
 					}
 				}
+				logDBErr(rows.Err())
 				_ = rows.Close()
 			}
 		} else if sh.TargetType == "user" {
@@ -484,7 +492,7 @@ func (s *Store) GetTaskLists(userID string) ([]domain.TaskList, error) {
 	for rows.Next() {
 		var tl domain.TaskList
 		var colsJSON string
-		if err := rows.Scan(&tl.ID, &tl.UserID, &tl.SpaceID, &tl.Title, &tl.Icon, &tl.Color, &colsJSON, &tl.CreatedAt, &tl.UpdatedAt); err == nil {
+		if err := rows.Scan(&tl.ID, &tl.UserID, &tl.SpaceID, &tl.Title, &tl.Icon, &tl.Color, &colsJSON, &tl.CreatedAt, &tl.UpdatedAt); !dbFailed(err) {
 			tl.IsOwner = (tl.UserID == userID)
 			_ = json.Unmarshal([]byte(colsJSON), &tl.Columns)
 			if len(tl.Columns) == 0 {
@@ -493,17 +501,20 @@ func (s *Store) GetTaskLists(userID string) ([]domain.TaskList, error) {
 			list = append(list, tl)
 		}
 	}
+	if err := rows.Err(); err != nil {
+		return []domain.TaskList{}, err
+	}
 	_ = rows.Close()
 
 	for i := range list {
 		list[i].Members = make([]domain.TaskListMember, 0)
 		list[i].Shares = make([]domain.TaskListShare, 0)
 
-		_ = s.db.QueryRow(
+		logDBErr(s.db.QueryRow(
 			`SELECT COUNT(*) FROM thoughts WHERE task_list_id = ? AND is_completed = 0 AND (status = 'kept' OR (status = 'converted' AND converted_type = 'task'))`,
 			list[i].ID,
-		).Scan(&list[i].TasksCount)
-		_ = s.db.QueryRow(`SELECT display_name FROM users WHERE id = ?`, list[i].UserID).Scan(&list[i].OwnerName)
+		).Scan(&list[i].TasksCount))
+		logDBErr(s.db.QueryRow(`SELECT display_name FROM users WHERE id = ?`, list[i].UserID).Scan(&list[i].OwnerName))
 
 		shares, _ := s.GetTaskListShares(list[i].ID)
 		list[i].Shares = shares
@@ -531,8 +542,8 @@ func (s *Store) GetTaskListByID(userID, listID string) (*domain.TaskList, error)
 	if len(tl.Columns) == 0 {
 		tl.Columns = defaultColumns(s.MessageLanguage(userID))
 	}
-	_ = s.db.QueryRow(`SELECT COUNT(*) FROM thoughts WHERE task_list_id = ? AND is_completed = 0 AND (status = 'kept' OR (status = 'converted' AND converted_type = 'task'))`, tl.ID).Scan(&tl.TasksCount)
-	_ = s.db.QueryRow(`SELECT display_name FROM users WHERE id = ?`, tl.UserID).Scan(&tl.OwnerName)
+	logDBErr(s.db.QueryRow(`SELECT COUNT(*) FROM thoughts WHERE task_list_id = ? AND is_completed = 0 AND (status = 'kept' OR (status = 'converted' AND converted_type = 'task'))`, tl.ID).Scan(&tl.TasksCount))
+	logDBErr(s.db.QueryRow(`SELECT display_name FROM users WHERE id = ?`, tl.UserID).Scan(&tl.OwnerName))
 	shares, _ := s.GetTaskListShares(tl.ID)
 	tl.Shares = shares
 	tl.Permission = s.GetTaskListPermission(userID, tl.ID)

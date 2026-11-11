@@ -42,7 +42,7 @@ func (s *Store) seedLinkedTodos(user *domain.User, listID, title, folder, tag st
 
 	// A task of the list deepened into a note: the note starts with its checkbox and subtasks
 	var monitoringID string
-	_ = s.db.QueryRow(`SELECT id FROM thoughts WHERE user_id = ? AND content LIKE 'Uptime%'`, user.ID).Scan(&monitoringID)
+	logDBErr(s.db.QueryRow(`SELECT id FROM thoughts WHERE user_id = ? AND content LIKE 'Uptime%'`, user.ID).Scan(&monitoringID))
 	if monitoringID != "" {
 		_, _ = s.UpdateThoughtTriage(user.ID, monitoringID, "keep", "document", "", "", "")
 	}

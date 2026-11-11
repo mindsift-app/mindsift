@@ -30,6 +30,8 @@ Fixes from the security review of November 2026 (v0.94.0).
 - A `DATABASE_URL` that names a Postgres database is no longer ignored silently: MindSift logs a warning at startup that it only supports SQLite and which file it uses instead.
 - Server log: the field names are English throughout (`path`, `count`, `idle_days`, `trashed_tasks` … instead of `pfad`, `anzahl`, `tage` …) and the messages carry no emoji. If you filter the log by field names, adjust the filters.
 - Building the image no longer runs `go mod tidy`; it checks the downloaded modules against `go.sum` (`go mod verify`) and uses `go.mod` as committed.
+- A database error is no longer taken for an answer. Checks that decide something answer on the safe side when the database cannot say: accounts waiting for confirmation or approval stay locked, an address counts as taken, the last administrator is not removed, the MCP endpoint counts as switched off. Elsewhere the request fails with an error instead of showing a shorter list, and steps on the side that fail (cleaning up, a mail that did not go out) appear in the server log.
+- `POST /oauth/revoke` answers `503` when the token could not be revoked, and "Keep the previous one" for a waiting address reports when it failed; both said it worked before.
 
 ### Fixed
 - Deleting your data or account asked for the password without counting wrong guesses; now it counts them like failed sign-ins and locks the same way.
@@ -37,6 +39,7 @@ Fixes from the security review of November 2026 (v0.94.0).
 - Accounts waiting for confirmation or approval are locked from the first moment, not only right after being created.
 - Two first-time setups at the same moment could create two admins.
 - A Markdown or backup export that fails half way is cut off, so the browser reports an error instead of saving a broken ZIP.
+- Task alarms: when the server could not read which alarms had already gone out, it took that for "none" and could send them a second time.
 
 ## [0.94.0] - 2026-11-10
 

@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"database/sql"
 	"strings"
 	"time"
 )
@@ -38,7 +39,7 @@ func (s *Store) migrateDoneCleanup() error {
 // DoneRetentionDays: after how many days the user's completed tasks are deleted (0 = never).
 func (s *Store) DoneRetentionDays(userID string) int {
 	days := DefaultDoneRetentionDays
-	_ = s.db.QueryRow(`SELECT done_retention_days FROM users WHERE id = ?`, userID).Scan(&days)
+	logDBErr(s.db.QueryRow(`SELECT done_retention_days FROM users WHERE id = ?`, userID).Scan(&days))
 	return days
 }
 
@@ -119,17 +120,18 @@ func (s *Store) ClearDoneTasks(userID, taskListID string) ([]DeletedTask, error)
 }
 
 // trashTaskRows moves the tasks the query rows name into the task trash and returns them.
-func (s *Store) trashTaskRows(rows interface {
-	Next() bool
-	Scan(dest ...any) error
-	Close() error
-}, byUserID string) ([]DeletedTask, error) {
+func (s *Store) trashTaskRows(rows *sql.Rows, byUserID string) ([]DeletedTask, error) {
 	var out []DeletedTask
 	for rows.Next() {
 		var d DeletedTask
-		if rows.Scan(&d.ID, &d.UserID, &d.TaskListID) == nil {
-			out = append(out, d)
+		if err := rows.Scan(&d.ID, &d.UserID, &d.TaskListID); err != nil {
+			_ = rows.Close()
+			return nil, err
 		}
+		out = append(out, d)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 	_ = rows.Close()
 	for _, d := range out {

@@ -28,10 +28,11 @@ func (s *Store) migrateAnchorTags() {
 		var list []row
 		for rows.Next() {
 			var r row
-			if rows.Scan(&r.id, &r.text, &r.tags) == nil {
+			if !dbFailed(rows.Scan(&r.id, &r.text, &r.tags)) {
 				list = append(list, r)
 			}
 		}
+		logDBErr(rows.Err())
 		rows.Close()
 		for _, r := range list {
 			stale := domain.StaleAnchorTags(r.text)
@@ -64,7 +65,7 @@ func (s *Store) migrateAnchorTags() {
 		slog.Error("Rebuilding the block hashtags failed", "error", err)
 		return
 	}
-	_, _ = s.db.Exec(`INSERT OR REPLACE INTO system_settings (key, value) VALUES (?, 'done')`, tagsAnchorMigrationKey)
+	s.execLogged(`INSERT OR REPLACE INTO system_settings (key, value) VALUES (?, 'done')`, tagsAnchorMigrationKey)
 	if cleaned > 0 {
 		slog.Info("Hashtags from URL anchors removed", "entries", cleaned)
 	}

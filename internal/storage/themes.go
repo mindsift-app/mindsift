@@ -23,11 +23,12 @@ func (s *Store) GetUserThemes(userID string) ([]domain.UserTheme, error) {
 	themes := make([]domain.UserTheme, 0)
 	for rows.Next() {
 		var t domain.UserTheme
-		if rows.Scan(&t.ID, &t.Name, &t.CSS, &t.CreatedAt, &t.UpdatedAt) == nil {
-			themes = append(themes, t)
+		if err := rows.Scan(&t.ID, &t.Name, &t.CSS, &t.CreatedAt, &t.UpdatedAt); err != nil {
+			return []domain.UserTheme{}, err
 		}
+		themes = append(themes, t)
 	}
-	return themes, nil
+	return themes, rows.Err()
 }
 
 // SaveUserTheme creates a theme (empty themeID) or updates one of the user's themes.
@@ -67,7 +68,7 @@ func (s *Store) SaveUserTheme(userID, themeID, name, css string) (*domain.UserTh
 		return nil, errors.New("Theme nicht gefunden")
 	}
 	t := &domain.UserTheme{ID: themeID, Name: name, CSS: css, UpdatedAt: now}
-	_ = s.db.QueryRow(`SELECT created_at FROM user_themes WHERE id = ?`, themeID).Scan(&t.CreatedAt)
+	logDBErr(s.db.QueryRow(`SELECT created_at FROM user_themes WHERE id = ?`, themeID).Scan(&t.CreatedAt))
 	return t, nil
 }
 

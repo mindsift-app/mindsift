@@ -72,9 +72,14 @@ func (s *Store) migrate() error {
 	}
 	for rows.Next() {
 		var id int
-		if rows.Scan(&id) == nil {
-			applied[id] = true
+		if err := rows.Scan(&id); err != nil {
+			_ = rows.Close()
+			return err
 		}
+		applied[id] = true
+	}
+	if err := rows.Err(); err != nil {
+		return err
 	}
 	_ = rows.Close()
 

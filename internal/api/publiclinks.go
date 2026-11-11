@@ -289,5 +289,6 @@ func (s *Server) handleDeletePublicLink(w http.ResponseWriter, r *http.Request) 
 
 // runPublicLinkCleanup removes expired links (hourly, with the other retention work).
 func (s *Server) runPublicLinkCleanup(now time.Time) {
-	_, _ = s.store.PurgePublicLinks(now)
+	_, err := s.store.PurgePublicLinks(now)
+	logFailed("Removing expired public links", err)
 }

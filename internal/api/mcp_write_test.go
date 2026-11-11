@@ -71,7 +71,9 @@ func TestMCPNoteWrite(t *testing.T) {
 	if isErr || res["addedId"] == "" {
 		t.Fatalf("add after: %v %s", res, msg)
 	}
-	res, _, _ = call(key, "add_note_bullet", `{"noteId":"`+doc.ID+`","text":"Kind","parentId":"blk_mw2","type":"todo"}`)
+	if _, isErr, msg := call(key, "add_note_bullet", `{"noteId":"`+doc.ID+`","text":"Kind","parentId":"blk_mw2","type":"todo"}`); isErr {
+		t.Fatalf("add child: %s", msg)
+	}
 	res, _, _ = call(key, "add_note_bullet", `{"noteId":"`+doc.ID+`","text":"Ende"}`)
 	if s := strings.Join(bulletTexts(res), "|"); s != "0:Eins|0:Eins b|0:Zwei|1:Kind|0:Ende" {
 		t.Fatalf("insert positions: %s", s)

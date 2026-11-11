@@ -104,29 +104,32 @@ func (s *Store) AddPendingRegistration(userID string) error {
 }
 
 func (s *Store) ClearPendingRegistration(userID string) {
-	_, _ = s.db.Exec(`DELETE FROM pending_registrations WHERE user_id = ?`, userID)
+	s.execLogged(`DELETE FROM pending_registrations WHERE user_id = ?`, userID)
 }
 
+// IsPendingRegistration: the account still waits for approval. When the database cannot say, it counts
+// as waiting (no sign-in).
 func (s *Store) IsPendingRegistration(userID string) bool {
 	var n int
-	_ = s.db.QueryRow(`SELECT COUNT(*) FROM pending_registrations WHERE user_id = ?`, userID).Scan(&n)
-	return n > 0
+	err := s.db.QueryRow(`SELECT COUNT(*) FROM pending_registrations WHERE user_id = ?`, userID).Scan(&n)
+	return dbFailed(err) || n > 0
 }
 
 // PendingRegistrationIDs: accounts that still wait for approval (only existing users).
 func (s *Store) PendingRegistrationIDs() map[string]bool {
 	out := map[string]bool{}
 	rows, err := s.db.Query(`SELECT p.user_id FROM pending_registrations p JOIN users u ON u.id = p.user_id`)
-	if err != nil {
+	if dbFailed(err) {
 		return out
 	}
 	defer rows.Close()
 	for rows.Next() {
 		var id string
-		if rows.Scan(&id) == nil {
+		if !dbFailed(rows.Scan(&id)) {
 			out[id] = true
 		}
 	}
+	logDBErr(rows.Err())
 	return out
 }
 
@@ -213,46 +216,50 @@ func (s *Store) ConfirmEmailVerification(raw string) (string, error) {
 	return userID, nil
 }
 
+// IsEmailUnverified: the address still waits for its confirmation link. When the database cannot say,
+// it counts as unconfirmed (no sign-in).
 func (s *Store) IsEmailUnverified(userID string) bool {
 	var n int
-	_ = s.db.QueryRow(`SELECT COUNT(*) FROM email_verifications WHERE user_id = ?`, userID).Scan(&n)
-	return n > 0
+	err := s.db.QueryRow(`SELECT COUNT(*) FROM email_verifications WHERE user_id = ?`, userID).Scan(&n)
+	return dbFailed(err) || n > 0
 }
 
 func (s *Store) ClearEmailVerification(userID string) {
-	_, _ = s.db.Exec(`DELETE FROM email_verifications WHERE user_id = ?`, userID)
+	s.execLogged(`DELETE FROM email_verifications WHERE user_id = ?`, userID)
 }
 
 // UnverifiedEmailIDs: accounts whose address is not confirmed yet.
 func (s *Store) UnverifiedEmailIDs() map[string]bool {
 	out := map[string]bool{}
 	rows, err := s.db.Query(`SELECT user_id FROM email_verifications`)
-	if err != nil {
+	if dbFailed(err) {
 		return out
 	}
 	defer rows.Close()
 	for rows.Next() {
 		var id string
-		if rows.Scan(&id) == nil {
+		if !dbFailed(rows.Scan(&id)) {
 			out[id] = true
 		}
 	}
+	logDBErr(rows.Err())
 	return out
 }
 
 // PurgeUnverifiedAccounts deletes accounts whose confirmation link expired unused; returns how many.
 func (s *Store) PurgeUnverifiedAccounts(now time.Time) int {
 	rows, err := s.db.Query(`SELECT user_id FROM email_verifications WHERE expires_at < ?`, now.UTC().Format(time.RFC3339))
-	if err != nil {
+	if dbFailed(err) {
 		return 0
 	}
 	var ids []string
 	for rows.Next() {
 		var id string
-		if rows.Scan(&id) == nil {
+		if !dbFailed(rows.Scan(&id)) {
 			ids = append(ids, id)
 		}
 	}
+	logDBErr(rows.Err())
 	_ = rows.Close()
 	n := 0
 	for _, id := range ids {
