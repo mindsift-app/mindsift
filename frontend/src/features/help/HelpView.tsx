@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Search,
   Layers,
@@ -11,11 +11,13 @@ import {
   UserCog,
   ArrowLeft,
   X,
+  Loader2,
+  CloudOff,
 } from 'lucide-react';
 import { AboutModal } from '../../components/AboutModal';
 import { Trans, useTranslation } from 'react-i18next';
-import { helpContent } from './content';
-import type { DocCard, HelpCategory } from './content/types';
+import { loadedHelpContent, loadHelpContent } from './content';
+import type { DocCard, HelpCategory, HelpContent } from './content/types';
 import { NO_AUTOFILL } from '../../lib/noAutofill';
 
 interface HelpViewProps {
@@ -27,11 +29,23 @@ export const HelpView: React.FC<HelpViewProps> = ({ onBack }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showAbout, setShowAbout] = useState(false);
 
-  // Documentation sections & cards data
-  // Cards and shortcuts in the language shown (content/<code>.tsx)
+  // Cards and shortcuts in the language shown (content/<code>.tsx), loaded the first time the help opens in it;
+  // until then the header and categories show with a spinner below
   const { t, i18n: i18nInstance } = useTranslation('help');
-  const content = helpContent(i18nInstance.language);
-  const cards: DocCard[] = content.cards;
+  const language = i18nInstance.language;
+  const [content, setContent] = useState<HelpContent | 'failed' | undefined>(() => loadedHelpContent(language));
+  useEffect(() => {
+    let current = true;
+    loadHelpContent(language).then(
+      (loaded) => current && setContent(loaded),
+      () => current && setContent((shown) => shown ?? 'failed')
+    );
+    return () => {
+      current = false;
+    };
+  }, [language]);
+  const help = content === 'failed' ? undefined : content;
+  const cards: DocCard[] = useMemo(() => help?.cards ?? [], [help]);
 
   // Filtered cards based on active category & search query
   const filteredCards = useMemo(() => {
@@ -54,7 +68,7 @@ export const HelpView: React.FC<HelpViewProps> = ({ onBack }) => {
   }, [cards, activeCategory, searchQuery]);
 
   // Keyboard shortcuts table data
-  const shortcuts = content.shortcuts;
+  const shortcuts = useMemo(() => help?.shortcuts ?? [], [help]);
 
   const filteredShortcuts = useMemo(() => {
     if (!searchQuery.trim()) return shortcuts;
@@ -150,7 +164,7 @@ export const HelpView: React.FC<HelpViewProps> = ({ onBack }) => {
       </div>
 
       {/* Active Search Status Banner */}
-      {searchQuery && (
+      {help && searchQuery && (
         <div className="flex items-center justify-between text-xs text-muted px-1">
           <span>
             <Trans
@@ -171,8 +185,24 @@ export const HelpView: React.FC<HelpViewProps> = ({ onBack }) => {
         </div>
       )}
 
+      {!help && (
+        <div className="panel-surface p-8 flex flex-col items-center justify-center gap-2 text-xs text-muted border border-border rounded-card">
+          {content === 'failed' ? (
+            <>
+              <CloudOff className="w-6 h-6 text-muted" />
+              <span>{t('loadFailed')}</span>
+            </>
+          ) : (
+            <>
+              <Loader2 className="w-5 h-5 animate-spin text-accent" />
+              <span>{t('loading')}</span>
+            </>
+          )}
+        </div>
+      )}
+
       {/* Grid of Documentation Cards */}
-      {activeCategory !== 'shortcuts' && (
+      {help && activeCategory !== 'shortcuts' && (
         <div className="space-y-4">
           {filteredCards.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -214,7 +244,7 @@ export const HelpView: React.FC<HelpViewProps> = ({ onBack }) => {
       )}
 
       {/* SHORTCUTS CHEAT SHEET */}
-      {(activeCategory === 'all' || activeCategory === 'shortcuts') && (
+      {help && (activeCategory === 'all' || activeCategory === 'shortcuts') && (
         <div className="panel-surface p-5 space-y-4 rounded-card border border-border">
           <div className="border-b border-border pb-2.5 flex items-center justify-between">
             <div>

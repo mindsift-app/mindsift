@@ -25,5 +25,7 @@
     "desc": "Funktion"
   },
   "results": "Suchergebnisse für <b>„{{query}}“</b>: {{count}} Hilfekarten",
-  "shortcutCount": "{{count}} Tastenkürzel"
+  "shortcutCount": "{{count}} Tastenkürzel",
+  "loading": "Hilfe wird geladen…",
+  "loadFailed": "Die Hilfe konnte nicht geladen werden. Prüfe die Verbindung und öffne sie erneut."
 }

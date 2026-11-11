@@ -27,5 +27,7 @@
   "results_one": "Results for <b>“{{query}}”</b>: {{count}} help card",
   "results_other": "Results for <b>“{{query}}”</b>: {{count}} help cards",
   "shortcutCount_one": "{{count}} shortcut",
-  "shortcutCount_other": "{{count}} shortcuts"
+  "shortcutCount_other": "{{count}} shortcuts",
+  "loading": "Loading help…",
+  "loadFailed": "The help could not be loaded. Check the connection and open it again."
 }

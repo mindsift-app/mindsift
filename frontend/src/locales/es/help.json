@@ -27,5 +27,7 @@
   "results_one": "Resultados para <b>«{{query}}»</b>: {{count}} tarjeta de ayuda",
   "results_other": "Resultados para <b>«{{query}}»</b>: {{count}} tarjetas de ayuda",
   "shortcutCount_one": "{{count}} atajo",
-  "shortcutCount_other": "{{count}} atajos"
+  "shortcutCount_other": "{{count}} atajos",
+  "loading": "Cargando la ayuda…",
+  "loadFailed": "No se pudo cargar la ayuda. Comprueba la conexión y vuelve a abrirla."
 }
