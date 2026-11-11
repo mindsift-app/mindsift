@@ -298,6 +298,8 @@ The image is scanned with [Trivy](https://trivy.dev) for known vulnerabilities, 
 * **every tagged release** (`:stable`, `:vX.Y.Z`) before it is published, and every build that changes the base image, the Go version or the Go modules: a known high or critical vulnerability that already has a fix, or a leaked secret, stops the release;
 * **the published `:stable` and `:latest` every week**, because new vulnerabilities become known after a release. The badge shows the last weekly run, and its log has the result.
 
+The base images (`node:22-alpine`, `golang:1.27-alpine`, `alpine:3.24`) are referenced by tag, not by digest. A digest would pin them bit for bit, but would also keep every build on that state until someone updates it by hand. With the tag, each build gets the security fixes of the base image without extra upkeep; the last stage also runs `apk upgrade`, and the weekly scan shows what is still open. The application's own dependencies are pinned: `npm ci` installs exactly what `package-lock.json` lists, and the Go modules are checked against `go.sum`.
+
 Two things you will notice when you scan the image yourself:
 
 * **Not as root:** since v0.87.3 MindSift runs as the user `mindsift` (uid 1000). The image starts as root only long enough to hand `data/` to that user (once, for installations from before), then drops the rights. Trivy's misconfiguration check therefore still notes a missing `USER` line; that is intended.
