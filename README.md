@@ -168,8 +168,10 @@ services:
     ports: ["8080:8080"]
     volumes: ["./data:/data"]
     environment:
-      - JWT_SECRET=put-a-long-random-value-here
       - BASE_URL=https://mindsift.example.com
+      # Optional signing key for sign-ins, at least 32 characters: the output of `openssl rand -hex 32`.
+      # Without it MindSift generates one in /data/jwt.secret.
+      # - JWT_SECRET=...
 ```
 
 Open `http://localhost:8080` and a wizard creates the admin account. Do that right after the first start, so nobody else grabs it.
@@ -200,7 +202,7 @@ The most important settings (all of them, with explanations, are in [`.env.examp
 
 | Variable | Default | What for |
 |---|---|---|
-| `JWT_SECRET` | generated (`/data/jwt.secret`) | Signing key for sign-in tokens; better set your own long random value |
+| `JWT_SECRET` | generated (`/data/jwt.secret`) | Signing key for sign-in tokens, at least 32 characters (`openssl rand -hex 32`); shorter values and published examples are ignored and the generated one is used. Changing it signs everyone out |
 | `SECRETS_KEY` | generated (`/data/secrets.key`) | Key for hidden values in notes (`/secret`); set your own to keep it apart from the database. Never change it once values are stored |
 | `BASE_URL` | `http://localhost:8080` | Public URL; needed for password reset mails, OAuth for claude.ai/ChatGPT and links in mails |
 | `DEFAULT_LANGUAGE` | `de` (demo: `en`) | Language (`de`, `en`, `es`, `fr`, `it`) where the browser's is none of these, see "Language" below; the setup wizard and the admin UI can change it |
@@ -276,7 +278,7 @@ All data lives in one SQLite file, so a single server is the intended setup; the
 MindSift is meant to be reachable from the internet behind a reverse proxy, and the whole code base was reviewed for security in November 2026 (v0.94.0); its findings are fixed (see the [CHANGELOG](CHANGELOG.md)). What protects your data:
 
 * **Sign-in:** passwords are hashed with bcrypt. Every login is a server-side session tied to a signed token; sessions are listed under Profile → Active sessions, can be ended one by one, end after 30 days without use and end with any password change. Repeated failures lock the account for that address after 3 tries, the account after 20 and the address after 30, each for 15 minutes; registration, "forgot password", the password asked before deleting data and the passwords of public links are limited the same way. A failed sign-in takes as long whether the account exists or not.
-* **Secrets never in plain text:** API keys, OAuth tokens, password-reset and e-mail-confirmation links and the tokens of public links are stored only as SHA-256 hashes. Hidden values in notes are encrypted with AES-256-GCM under a key kept apart from the database (`SECRETS_KEY`). Well-known placeholder values for `JWT_SECRET` are refused and a random one is generated instead.
+* **Secrets never in plain text:** API keys, OAuth tokens, password-reset and e-mail-confirmation links and the tokens of public links are stored only as SHA-256 hashes. Hidden values in notes are encrypted with AES-256-GCM under a key kept apart from the database (`SECRETS_KEY`). Published example values and values shorter than 32 characters for `JWT_SECRET` are refused and a random one is generated instead.
 * **Rights checked on every request:** notes, folders, lists and task lists resolve the caller's role (owner, editor, viewer) on each call. API keys and MCP connections reach only what their scopes allow, OAuth tokens only the MCP endpoint. Public links are read-only, live at most 14 days, can carry a password and hide names, hidden values and links to other notes.
 * **Addresses stay private:** others see names, usernames and profile pictures, never e-mail addresses. A new login address only counts once its owner clicks the link mailed to it, and mail alarms and test mails go only to that confirmed address, so the server cannot be used to mail strangers.
 * **Browser hardening:** HSTS over https, a strict Content Security Policy (scripts only from MindSift itself, no embedding in other sites), links in notes limited to http(s) and mailto, uploads recognised by their content (no SVG, no scripts), media and previews served with a sandboxing policy. Profile pictures are uploaded, never loaded from other servers.

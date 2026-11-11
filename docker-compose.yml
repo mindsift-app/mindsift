@@ -21,7 +21,7 @@ services:
       - PORT=8080
       - DATA_DIR=/data
       - TZ=${TZ:-Europe/Berlin}
-      - JWT_SECRET=${JWT_SECRET:-change_this_to_a_secure_random_key_min_32_chars}
+      - JWT_SECRET=${JWT_SECRET:-}
       - SECRETS_KEY=${SECRETS_KEY:-}
       - BASE_URL=${BASE_URL:-http://localhost:8080}
       - DEFAULT_LANGUAGE=${DEFAULT_LANGUAGE:-}
