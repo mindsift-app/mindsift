@@ -1484,7 +1484,12 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
       ? 'text'
       : 'crosshair';
 
-  const bytes = useMemo(() => contentBytes(serializeDrawing(doc)), [doc]);
+  // Size for the "nearly full" notice: written out again only after a short pause, not on every move of a drag
+  const [bytes, setBytes] = useState(() => contentBytes(serializeDrawing(doc)));
+  useEffect(() => {
+    const timer = window.setTimeout(() => setBytes(contentBytes(serializeDrawing(docRef.current))), 300);
+    return () => window.clearTimeout(timer);
+  }, [doc]);
   const nearlyFull = bytes > MAX_CONTENT_BYTES * 0.8;
 
   return createPortal(
