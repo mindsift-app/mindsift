@@ -22,6 +22,7 @@ import {
   KeyRound,
   Shapes,
   CloudOff,
+  Table as TableIcon,
 } from 'lucide-react';
 import type { HelpContent } from './types';
 
@@ -122,6 +123,10 @@ const en: HelpContent = {
                 <Code className="w-3.5 h-3.5 text-accent" />
                 <span>/code (code block)</span>
               </div>
+              <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main col-span-2">
+                <TableIcon className="w-3.5 h-3.5 text-accent shrink-0" />
+                <span>/table (table with a header row)</span>
+              </div>
               <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main">
                 <KeyRound className="w-3.5 h-3.5 text-accent" />
                 <span>/secret (hide a value, e.g. an IP or token)</span>
@@ -202,6 +207,39 @@ const en: HelpContent = {
             </li>
             <li>
               <strong className="text-main">Everywhere:</strong> Search finds the words in drawings, copy and paste keeps the drawing, and the Markdown export contains it as an SVG picture (importing turns it back into a drawing). AI agents (MCP) read a description of the drawing and can create drawings themselves from Mermaid flowcharts and mind maps.
+            </li>
+          </ul>
+        </div>
+      ),
+    },
+    // WORKSPACE: TABLES
+    {
+      id: 'workspace-tables',
+      category: 'workspace',
+      title: 'Tables (/table)',
+      subtitle: 'Rows and columns right in the note',
+      icon: TableIcon,
+      keywords: ['table', 'rows', 'columns', 'header', 'lines', 'frame', 'markdown'],
+      content: (
+        <div className="space-y-2 text-muted leading-relaxed">
+          <ul className="space-y-1.5">
+            <li>
+              <strong className="text-main">Creating one:</strong> Type <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">/table</kbd> in a bullet: a table with 2 columns and 2 rows appears, text already in the bullet goes into the first cell. The first row is the header (bold).
+            </li>
+            <li>
+              <strong className="text-main">Typing:</strong> <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Enter</kbd> adds a row below the current one, <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Tab</kbd> / <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Shift + Tab</kbd> jump from cell to cell (Tab in the last cell adds a row), the arrow keys change rows and leave the table at the top and bottom. <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Backspace</kbd> in an empty row deletes it, in a completely empty table the table. Bold, italics, links and #hashtags work as in text.
+            </li>
+            <li>
+              <strong className="text-main">Columns:</strong> The <strong className="text-main">+</strong> right of the table adds a column (on a desktop it shows while the mouse is over the table). Below it, the three dots open the menu: insert a column left or right, delete the row or column with the cursor, indent or outdent the bullet.
+            </li>
+            <li>
+              <strong className="text-main">Lines:</strong> In the same menu: <em>Default</em> shows only the inner lines, fading out towards the edge, without a frame; <em>Full frame</em> every line with an outer frame (corners as in the theme); <em>Header row and columns</em> only the line below the header and the column lines.
+            </li>
+            <li>
+              <strong className="text-main">Phone:</strong> Wide tables scroll sideways, the page stays put. Cells, the + and the three dots are big enough to tap.
+            </li>
+            <li>
+              <strong className="text-main">Everywhere:</strong> Copying, pasting, the Markdown export and AI agents (MCP) see the table as a Markdown table; pasted Markdown tables and tables from spreadsheets become a table again.
             </li>
           </ul>
         </div>

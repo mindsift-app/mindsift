@@ -16,9 +16,10 @@ export interface WikiLink {
 
 const DOC_ID_RE = /^doc_[\w-]+$/;
 
-/** Parses the inside of [[…]]. */
+/** Parses the inside of [[…]]. In a table the pipe before the text is written "\|" (lib/markdownTable.ts). */
 export function parseWikiLink(inner: string): WikiLink {
-  const [target, ...rest] = inner.split('|');
+  const [rawTarget, ...rest] = inner.split('|');
+  const target = rawTarget.endsWith('\\') ? rawTarget.slice(0, -1) : rawTarget;
   const label = rest.join('|').trim() || undefined;
   const hash = target.indexOf('#');
   const title = (hash === -1 ? target : target.slice(0, hash)).trim();
@@ -96,7 +97,10 @@ export function retargetWikiLinks(content: string, target: WikiLink, docId: stri
   return content.replace(/\[\[([^\]]+)\]\]/g, (token, inner: string) => {
     const link = parseWikiLink(inner);
     if (!sameNote(link, target)) return token;
-    return link.blockId ? token : buildNoteLink(title, docId, link.label);
+    if (link.blockId) return token;
+    // A link in a table keeps its escaped pipe
+    const next = buildNoteLink(title, docId, link.label);
+    return inner.includes('\\|') ? next.replace(/\|/g, '\\|') : next;
   });
 }
 

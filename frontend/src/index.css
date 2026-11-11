@@ -688,6 +688,112 @@ fieldset:disabled :is(button, input, select, textarea) {
   pointer-events: none;
 }
 
+/* Tables in notes (features/workspace/TableBlock.tsx). Each cell draws its own right and bottom line, so
+   the lines can fade out towards the table's outer edge; data-top/-bottom/-left/-right mark the cells on
+   the edge and data-lines on the table is the line mode: fade (default, inner lines fading out, no frame),
+   grid (every line and a frame with the theme's corners), header (line below the header, column lines). */
+.note-table {
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.875rem;
+  line-height: 1.625;
+  color: var(--text-main);
+}
+/* The table moves up so its first row's text sits next to the bullet's dot (on the scrolling box's
+   parent: the box itself would cut the table off) */
+.note-table-block {
+  margin-top: -10px;
+}
+.note-table-block[data-lines='grid'] {
+  margin-top: -4px;
+}
+.note-table .nt-cell {
+  position: relative;
+  vertical-align: top;
+  text-align: left;
+  font-weight: 400;
+  min-width: 6rem;
+  /* Phones: rows at least 44 px high, easy to tap */
+  padding: 10.5px 10px;
+}
+.note-table th.nt-cell {
+  font-weight: 600;
+}
+@media (min-width: 768px) {
+  .note-table-block {
+    margin-top: -5px;
+  }
+  .note-table-block[data-lines='grid'] {
+    margin-top: -2px;
+  }
+  .note-table .nt-cell {
+    min-width: 5rem;
+    padding: 5px 10px;
+  }
+}
+/* Without a frame the first column starts where the text of the other bullets does */
+.note-table:not([data-lines='grid']) .nt-cell[data-left] {
+  padding-left: 0;
+}
+.note-table .nt-text,
+.note-table .nt-input {
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  min-height: 1.625em;
+}
+.note-table .nt-cell::before,
+.note-table .nt-cell::after {
+  content: none;
+  position: absolute;
+  pointer-events: none;
+  background: var(--border-color);
+}
+/* Right line (between columns) */
+.note-table .nt-cell:not([data-right])::after {
+  content: '';
+  top: 0;
+  bottom: 0;
+  right: 0;
+  width: 1px;
+}
+/* Bottom line (between rows); with "header" only below the header */
+.note-table:not([data-lines='header']) .nt-cell:not([data-bottom])::before,
+.note-table[data-lines='header'] .nt-cell[data-top]:not([data-bottom])::before {
+  content: '';
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+}
+/* fade: column lines fade out towards the top and bottom edge, row lines towards the left and right */
+.note-table[data-lines='fade'] .nt-cell[data-top]:not([data-right])::after {
+  background: linear-gradient(to bottom, transparent, var(--border-color));
+}
+.note-table[data-lines='fade'] .nt-cell[data-bottom]:not([data-right])::after {
+  background: linear-gradient(to top, transparent, var(--border-color));
+}
+.note-table[data-lines='fade'] .nt-cell[data-top][data-bottom]:not([data-right])::after {
+  background: linear-gradient(to bottom, transparent, var(--border-color), transparent);
+}
+.note-table[data-lines='fade'] .nt-cell[data-left]:not([data-bottom])::before {
+  background: linear-gradient(to right, transparent, var(--border-color));
+}
+.note-table[data-lines='fade'] .nt-cell[data-right]:not([data-bottom])::before {
+  background: linear-gradient(to left, transparent, var(--border-color));
+}
+.note-table[data-lines='fade'] .nt-cell[data-left][data-right]:not([data-bottom])::before {
+  background: linear-gradient(to right, transparent, var(--border-color), transparent);
+}
+/* grid: a frame around it all */
+.note-table[data-lines='grid'] {
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-card);
+}
+/* Sideways scrolling of a wide table: a thin scrollbar, the page itself stays put */
+.table-scroll {
+  scrollbar-width: thin;
+}
+
 /* Focus mode: the note fades in over the app (without zoom: the text keeps its place, see DocumentEditor) */
 @keyframes focus-mode-in {
   from { opacity: 0; }

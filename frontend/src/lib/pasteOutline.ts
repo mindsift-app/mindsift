@@ -1,8 +1,9 @@
 import type { BlockType } from './types';
 import { DRAWING_FENCE, parseDrawing } from './drawing/model';
+import { isTableStart, parseMarkdownTable, serializeMarkdownTable } from './markdownTable';
 
 // Turns pasted (Markdown) text into outline items: headings, todos, bullets, numbered items, dividers,
-// fenced code (drawings among them) and paragraphs. A blank line ends a paragraph; indentation becomes the nesting level.
+// fenced code (drawings among them), Markdown tables and paragraphs. A blank line ends a paragraph; indentation becomes the nesting level.
 // Content below a heading is nested under it (H2 below H1 one level deeper), so sections fold and zoom.
 
 export interface PastedItem {
@@ -49,7 +50,8 @@ export function parsePastedLines(rawLines: string[]): PastedItem[] {
     }
   };
 
-  for (const rawLine of rawLines) {
+  for (let li = 0; li < rawLines.length; li++) {
+    const rawLine = rawLines[li];
     if (inCode) {
       if (current) (current as PastedItem).content += '\n' + rawLine;
       if (rawLine.trim().startsWith('```')) {
@@ -84,6 +86,23 @@ export function parsePastedLines(rawLines: string[]): PastedItem[] {
     // A blank line ends the paragraph or list item
     if (line === '') {
       flush();
+      continue;
+    }
+
+    // A Markdown table (header, separator, rows) becomes one table block; indented in a list it belongs
+    // to the item above, like the list items around it
+    if (isTableStart(rawLines, li)) {
+      flush();
+      const tableLines = [line];
+      for (li++; li < rawLines.length && rawLines[li].trim() !== '' && rawLines[li].includes('|'); li++) {
+        tableLines.push(rawLines[li].trim());
+      }
+      li--;
+      const table = serializeMarkdownTable(parseMarkdownTable(tableLines.join('\n')));
+      items.push({ type: 'table', content: table, indent: indent + (inList && width > 0 ? listBoost : 0) });
+      afterHeading = false;
+      paragraphLevel = null;
+      if (width === 0) inList = false;
       continue;
     }
 

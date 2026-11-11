@@ -2,17 +2,18 @@ import i18n from '../../i18n';
 import { DocumentBlock } from '../../lib/types';
 import { drawingTexts, parseDrawing } from '../../lib/drawing/model';
 import { parseMediaContent } from '../../lib/media';
+import { tableSummary } from '../../lib/markdownTable';
 
 // Zooming into a bullet: the path from the note down to it (breadcrumbs) and the bullets shown inside it.
 // Used by the editor and the public page of a note.
 
-// Bullets whose content is not text (a drawing's model, a file reference): their title is made from the
-// kind and what they say, and cannot be edited in the zoom
+// Bullets whose content is not text (a drawing's model, a file reference, a table): their title is made
+// from the kind and what they say, and cannot be edited in the zoom
 export const isTitleFromKind = (block: DocumentBlock) =>
-  block.type === 'drawing' || block.type === 'image' || block.type === 'audio' || block.type === 'divider';
+  block.type === 'drawing' || block.type === 'image' || block.type === 'audio' || block.type === 'divider' || block.type === 'table';
 
 // The title of a bullet in the zoom and the breadcrumbs: its text, or for a drawing "Zeichnung: Start,
-// Ende" (the words in it), for an image or audio file the kind and its caption
+// Ende" (the words in it), for an image or audio file the kind and its caption, for a table its header
 export function blockTitle(block: DocumentBlock): string {
   const kind = (key: string, detail: string) =>
     detail ? i18n.t('workspace:editor.kindTitle', { kind: i18n.t(`workspace:editor.kind.${key}`), detail }) : i18n.t(`workspace:editor.kind.${key}`);
@@ -27,6 +28,10 @@ export function blockTitle(block: DocumentBlock): string {
       return kind(block.type, parseMediaContent(block.content || '')?.caption.trim() || '');
     case 'divider':
       return kind('divider', '');
+    case 'table': {
+      const header = tableSummary(block.content || '');
+      return kind('table', header.length > 80 ? `${header.slice(0, 79)}…` : header);
+    }
   }
   return block.content?.trim() || i18n.t('workspace:editor.untitledBullet');
 }
