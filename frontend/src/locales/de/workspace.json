@@ -82,7 +82,8 @@
       "image": "Bild",
       "audio": "Audio",
       "divider": "Trennlinie"
-    }
+    },
+    "noteFull": "Diese Notiz hat mit {{max}} Punkten ihr Maximum erreicht. Neue Punkte werden nicht gespeichert – lege sie in einer neuen Notiz an."
   },
   "slash": {
     "todo": "Aufgabe mit Checkbox",

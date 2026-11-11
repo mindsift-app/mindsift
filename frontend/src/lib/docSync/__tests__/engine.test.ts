@@ -185,6 +185,22 @@ describe('DocSyncEngine', () => {
     expect(serverContents(server)).toEqual(['Hallo', 'Neu']);
   });
 
+  it('counts bullets the server refuses because the note is full, and drops them', async () => {
+    class FullServer extends FakeServer {
+      apply(op: Op, clientId: string): Result {
+        if (op.kind === 'insert' && !op.opId.startsWith('seed-')) return { opId: op.opId, status: 'rejected', reason: 'note_full' };
+        return super.apply(op, clientId);
+      }
+    }
+    const server = new FullServer();
+    const engine = await startEngine(new FakeNet(server));
+    edit(engine, (b) => [...b, { id: 'b2', type: 'bullet', content: 'Zu viel', level: 0 }]);
+    await engine.syncNow();
+    expect(engine.getState().noteFull).toBe(1);
+    expect(engine.getState().blocks.map((b) => b.content)).toEqual(['Start']);
+    expect(engine.getState().status).toBe('saved');
+  });
+
   it('coalesces fast typing into one text operation', async () => {
     const server = new FakeServer();
     const engine = await startEngine(new FakeNet(server));

@@ -508,4 +508,6 @@ var messagesES = map[string]string{
 	"Das Passwort muss mindestens {min} Zeichen lang sein": "La contraseña debe tener al menos {min} caracteres",
 	"Registrierung nur mit E-Mail-Adressen von {domains}":  "Registro solo con direcciones de correo de {domains}",
 	"Notiz „{title}“ verschieben: {reason}":                "Mover la nota «{title}»: {reason}",
+	"Eine Notiz kann höchstens {max} Punkte haben":         "Una nota puede tener como máximo {max} puntos",
+	"Notiz „{title}“: {reason}":                            "Nota «{title}»: {reason}",
 }

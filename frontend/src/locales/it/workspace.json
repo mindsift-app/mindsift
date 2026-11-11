@@ -82,7 +82,8 @@
       "image": "Immagine",
       "audio": "Audio",
       "divider": "Divisore"
-    }
+    },
+    "noteFull": "Questa nota ha raggiunto il massimo di {{max}} punti. I nuovi punti non vengono salvati: aggiungili in una nuova nota."
   },
   "slash": {
     "todo": "Attività con casella di controllo",

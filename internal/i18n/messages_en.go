@@ -508,4 +508,6 @@ var messagesEN = map[string]string{
 	"Das Passwort muss mindestens {min} Zeichen lang sein": "The password must be at least {min} characters long",
 	"Registrierung nur mit E-Mail-Adressen von {domains}":  "Registration only with email addresses from {domains}",
 	"Notiz „{title}“ verschieben: {reason}":                "Moving the note “{title}”: {reason}",
+	"Eine Notiz kann höchstens {max} Punkte haben":         "A note can have at most {max} bullets",
+	"Notiz „{title}“: {reason}":                            "Note “{title}”: {reason}",
 }

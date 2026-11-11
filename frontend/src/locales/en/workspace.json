@@ -82,7 +82,8 @@
       "image": "Image",
       "audio": "Audio",
       "divider": "Divider"
-    }
+    },
+    "noteFull": "This note has reached its maximum of {{max}} bullets. New bullets are not saved – add them to a new note."
   },
   "slash": {
     "todo": "To-do with a checkbox",

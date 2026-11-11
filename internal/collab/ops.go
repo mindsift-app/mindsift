@@ -25,7 +25,19 @@ const (
 
 	maxContentLength = 100_000
 	maxTypeLength    = 20
+
+	// MaxNoteBlocks: live blocks a note may hold. Every sync and snapshot loads the whole note, so its
+	// size is the cost of each change (about 120 ms per sync at this size; 50,000 blocks took 300 ms and
+	// held the note's write lock that long for everybody else). A new block beyond it is refused with
+	// the reason "note_full".
+	MaxNoteBlocks = 20_000
+	// MaxStoredNoteBlocks: blocks including deleted ones, which stay until compaction purges them after
+	// the retention period. Without it, adding and deleting would grow the note all the same.
+	MaxStoredNoteBlocks = 2 * MaxNoteBlocks
 )
+
+// ReasonNoteFull: an operation was refused because the note holds as many blocks as it may.
+const ReasonNoteFull = "note_full"
 
 // PropsPatch changes selected block settings; nil fields stay as they are.
 type PropsPatch struct {
@@ -169,6 +181,25 @@ func (ap *applier) foreignLease(blockID string) bool {
 	return held && holder != ap.a.ClientID
 }
 
+// roomFor: n more live blocks fit into the note. Counting the live ones only matters near the limit, the
+// number of stored blocks is known at once.
+func (ap *applier) roomFor(n int) bool {
+	stored := len(ap.d.Blocks)
+	if stored+n > MaxStoredNoteBlocks {
+		return false
+	}
+	if stored+n <= MaxNoteBlocks {
+		return true
+	}
+	live := 0
+	for _, b := range ap.d.Blocks {
+		if !b.Deleted {
+			live++
+		}
+	}
+	return live+n <= MaxNoteBlocks
+}
+
 func rejected(op Op, reason string) Result {
 	return Result{OpID: op.OpID, Status: StatusRejected, Reason: reason}
 }
@@ -188,6 +219,9 @@ func (ap *applier) apply(op Op) Result {
 	case OpInsert:
 		if op.BlockID == "" || len(op.BlockID) > 64 {
 			return rejected(op, "invalid_id")
+		}
+		if !ap.roomFor(1) {
+			return rejected(op, ReasonNoteFull)
 		}
 		if _, exists := d.Blocks[op.BlockID]; exists || (ap.env.IDTaken != nil && ap.env.IDTaken(op.BlockID)) {
 			return rejected(op, "exists")
@@ -343,6 +377,9 @@ func (ap *applier) apply(op Op) Result {
 			}
 		}
 		if len(ids) > 0 {
+			if !ap.roomFor(len(ids)) {
+				return rejected(op, ReasonNoteFull)
+			}
 			ap.restore(ids)
 		}
 		return Result{Status: StatusApplied}
@@ -400,6 +437,9 @@ func (ap *applier) reviveAsNewBlock(op Op) Result {
 	if len(*op.Content) > maxContentLength {
 		return rejected(op, "too_long")
 	}
+	if !ap.roomFor(1) {
+		return rejected(op, ReasonNoteFull)
+	}
 	last := ""
 	if roots := ap.d.Children(""); len(roots) > 0 {
 		last = roots[len(roots)-1].OrderKey
@@ -446,6 +486,9 @@ func Purge(d *Doc, candidates []string) *Effect {
 // conflictCopy keeps the losing text as a new block directly below the contested one.
 func (ap *applier) conflictCopy(op Op, b *Block, content string) Result {
 	id := ConflictBlockID(op.OpID)
+	if _, exists := ap.d.Blocks[id]; !exists && !ap.roomFor(1) {
+		return rejected(op, ReasonNoteFull)
+	}
 	if _, exists := ap.d.Blocks[id]; !exists {
 		props := Props{ConflictOf: b.ID, ConflictAuthor: ap.a.Name}
 		ap.emit(Effect{Kind: OpInsert, BlockID: id, ParentID: b.ParentID, OrderKey: ap.d.keyAfter(b), Type: b.Type, Content: content, Props: &props, Version: 1})
@@ -456,6 +499,9 @@ func (ap *applier) conflictCopy(op Op, b *Block, content string) Result {
 // titleConflict keeps a losing title as a conflict block at the very top of the note.
 func (ap *applier) titleConflict(op Op, title string) Result {
 	id := ConflictBlockID(op.OpID)
+	if _, exists := ap.d.Blocks[id]; !exists && !ap.roomFor(1) {
+		return rejected(op, ReasonNoteFull)
+	}
 	if _, exists := ap.d.Blocks[id]; !exists {
 		first := ""
 		if roots := ap.d.Children(""); len(roots) > 0 {

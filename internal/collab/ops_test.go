@@ -1,6 +1,7 @@
 package collab
 
 import (
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -382,4 +383,55 @@ func TestDrawingBlocksOnlyTakeDrawings(t *testing.T) {
 	if res.Status != StatusRejected {
 		t.Fatalf("insert of a broken drawing: %+v", res)
 	}
+}
+
+// fillDoc puts n live and gone deleted blocks into a doc directly (quicker than n operations)
+func fillDoc(n, gone int) *Doc {
+	d := NewDoc()
+	key := ""
+	for i := 0; i < n+gone; i++ {
+		key, _ = KeyBetween(key, "")
+		id := "b" + strconv.Itoa(i)
+		d.Blocks[id] = &Block{ID: id, OrderKey: key, Type: "bullet", Version: 1, Deleted: i >= n}
+	}
+	return d
+}
+
+// A note holds at most MaxNoteBlocks live blocks and MaxStoredNoteBlocks with the deleted ones; whatever
+// would add one more is refused as note_full, and deleting makes room again
+func TestNoteSizeIsLimited(t *testing.T) {
+	d := fillDoc(MaxNoteBlocks, 0)
+	insert := func(id string) Result {
+		_, res := Apply(d, Op{OpID: "i-" + id, Kind: OpInsert, BlockID: id, ParentID: str(""), OrderKey: "a0", Content: str("neu")}, anna, Env{})
+		return res
+	}
+	if res := insert("x1"); res.Status != StatusRejected || res.Reason != ReasonNoteFull {
+		t.Fatalf("insert into a full note: %+v", res)
+	}
+	// A late text change on another's version would add a conflict copy: refused as well
+	Apply(d, Op{OpID: "c1", Kind: OpSetContent, BlockID: "b0", BaseVersion: 1, Content: str("Anna")}, anna, Env{})
+	if _, res := Apply(d, Op{OpID: "c2", Kind: OpSetContent, BlockID: "b0", BaseVersion: 1, Content: str("Ben")}, ben, Env{}); res.Status != StatusRejected || res.Reason != ReasonNoteFull {
+		t.Fatalf("conflict copy in a full note: %+v", res)
+	}
+	Apply(d, Op{OpID: "d1", Kind: OpDelete, BlockID: "b1"}, anna, Env{})
+	if res := insert("x2"); res.Status != StatusApplied {
+		t.Fatalf("insert after deleting one: %+v", res)
+	}
+	// Full again: bringing the deleted one back is refused too
+	Apply(d, Op{OpID: "d2", Kind: OpDelete, BlockID: "b2"}, anna, Env{})
+	insert("x3")
+	if _, res := Apply(d, Op{OpID: "r1", Kind: OpRestore, IDs: []string{"b1"}}, anna, Env{}); res.Status != StatusRejected || res.Reason != ReasonNoteFull {
+		t.Fatalf("restore into a full note: %+v", res)
+	}
+
+	// Adding and deleting cannot grow the stored note past MaxStoredNoteBlocks either
+	d = fillDoc(10, MaxStoredNoteBlocks-10)
+	if res := insert("y1"); res.Status != StatusRejected || res.Reason != ReasonNoteFull {
+		t.Fatalf("insert with the deleted blocks at the limit: %+v", res)
+	}
+	d = fillDoc(MaxNoteBlocks-1, 100)
+	if res := insert("z1"); res.Status != StatusApplied {
+		t.Fatalf("one below the limit with some deleted blocks: %+v", res)
+	}
+	mustValid(t, d)
 }

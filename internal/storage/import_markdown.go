@@ -559,6 +559,10 @@ func (s *Store) ApplyImport(userID string, plan *ImportPlan) (ImportSummary, err
 		}
 		blocks, files := linkImportMedia(d, plan.Media, nil)
 		doc, err := s.CreateDocument(userID, "", title, icon, d.folder, blocks, nil, false)
+		if errors.Is(err, ErrNoteTooLarge) {
+			// Said with the note's name, so the person knows which file to split
+			return plan.Summary(false), i18n.NewError("Notiz „{title}“: {reason}", "title", title, "reason", err.Error())
+		}
 		if err != nil {
 			return plan.Summary(false), fmt.Errorf("Notiz %q: %w", title, err)
 		}

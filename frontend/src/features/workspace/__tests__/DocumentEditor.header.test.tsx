@@ -25,6 +25,7 @@ const baseEngineState: EngineState = {
   canUndo: false,
   canRedo: false,
   channel: 'ws',
+  noteFull: 0,
 };
 
 vi.mock('../../../lib/docSync/engine', () => {

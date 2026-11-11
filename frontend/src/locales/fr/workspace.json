@@ -82,7 +82,8 @@
       "image": "Image",
       "audio": "Audio",
       "divider": "Séparateur"
-    }
+    },
+    "noteFull": "Cette note a atteint son maximum de {{max}} puces. Les nouvelles puces ne sont pas enregistrées – ajoute-les dans une nouvelle note."
   },
   "slash": {
     "todo": "Tâche avec case à cocher",
