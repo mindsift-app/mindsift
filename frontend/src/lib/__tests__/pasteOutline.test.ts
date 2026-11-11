@@ -62,4 +62,16 @@ describe('parsePastedLines', () => {
       { type: 'numbered', content: 'b', indent: 2 },
     ]);
   });
+  it('turns a Markdown table into one table block, also right after a paragraph line', () => {
+    const items = parse('Preise:\n| Ding | Preis |\n|:--|--:|\n| Brot | 3 \\| 4 |\nDanach');
+    expect(items.map((i) => [i.type, i.content, i.indent])).toEqual([
+      ['text', 'Preise:', 0],
+      ['table', '| Ding | Preis |\n| :--- | ---: |\n| Brot | 3 \\| 4 |', 0],
+      ['text', 'Danach', 0],
+    ]);
+  });
+
+  it('does not take a line with a pipe above a divider for a table', () => {
+    expect(parse('a | b\n---').map((i) => i.type)).toEqual(['text', 'divider']);
+  });
 });

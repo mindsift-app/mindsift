@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { MoreHorizontal } from 'lucide-react';
+import { Check, MoreHorizontal } from 'lucide-react';
 
 export interface ActionMenuItem {
   key: string;
@@ -13,11 +13,27 @@ export interface ActionMenuItem {
   // Longer explanation on mouse-over
   tooltip?: string;
   danger?: boolean;
+  // One choice of several (a table's line mode): a ✓ at the end of the chosen one
+  checked?: boolean;
+  // A thin line above the entry, between groups
+  separatorBefore?: boolean;
 }
 
 // "⋯" button with a menu of actions, in the style of the note menu: closes on a click outside, on Escape
-// and after picking an entry.
-export function ActionMenu({ items, label, buttonClassName = 'btn-icon' }: { items: ActionMenuItem[]; label: string; buttonClassName?: string }) {
+// and after picking an entry. keepFocus: pressing the button or an entry does not take the focus from
+// the text field being edited (a table's menu acts on the cell with the cursor).
+export function ActionMenu({
+  items,
+  label,
+  buttonClassName = 'btn-icon',
+  keepFocus = false,
+}: {
+  items: ActionMenuItem[];
+  label: string;
+  buttonClassName?: string;
+  keepFocus?: boolean;
+}) {
+  const holdFocus = keepFocus ? (e: React.MouseEvent) => e.preventDefault() : undefined;
   const [open, setOpen] = useState(false);
   const boxRef = useRef<HTMLDivElement | null>(null);
 
@@ -41,6 +57,7 @@ export function ActionMenu({ items, label, buttonClassName = 'btn-icon' }: { ite
     <div className="relative" ref={boxRef}>
       <button
         type="button"
+        onMouseDown={holdFocus}
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
         aria-haspopup="menu"
@@ -56,12 +73,15 @@ export function ActionMenu({ items, label, buttonClassName = 'btn-icon' }: { ite
           className="absolute right-0 top-full mt-1.5 w-max min-w-56 max-w-[calc(100vw-2rem)] rounded-card bg-panel border border-border shadow-lg p-1 z-30 text-xs origin-top-right animate-in fade-in zoom-in-95 slide-in-from-top-1 duration-150"
         >
           {items.map((item) => (
+            <React.Fragment key={item.key}>
+            {item.separatorBefore && <div role="separator" className="my-1 border-t border-border" />}
             <button
-              key={item.key}
               type="button"
-              role="menuitem"
+              role={item.checked === undefined ? 'menuitem' : 'menuitemradio'}
+              aria-checked={item.checked}
               disabled={item.disabled}
               title={item.tooltip}
+              onMouseDown={holdFocus}
               onClick={(e) => {
                 setOpen(false);
                 item.onSelect(e);
@@ -79,7 +99,11 @@ export function ActionMenu({ items, label, buttonClassName = 'btn-icon' }: { ite
                 <span>{item.label}</span>
                 {item.hint && <span className="text-[10px] font-normal text-muted">{item.hint}</span>}
               </span>
+              {item.checked !== undefined && (
+                <Check className={`ml-auto mt-px w-3.5 h-3.5 shrink-0 text-accent ${item.checked ? '' : 'invisible'}`} />
+              )}
             </button>
+            </React.Fragment>
           ))}
         </div>
       )}

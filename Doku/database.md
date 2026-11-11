@@ -63,6 +63,8 @@ A task is a `thought` with `status='kept'` or `status='converted' AND converted_
 
 Block types: `h1`, `h2`, `h3`, `paragraph`, `text`, `todo`, `bullet`, `code`, `callout`, `warning`, `error`, `divider`, `table`, `progress`.
 
+`lang` is the language of a code block; for a `table` it holds the line mode (`''` inner lines fading out, `grid` all lines with a frame, `header` the line below the header and the column lines). A table's `content` is a Markdown table in GitHub's style (header, separator row, rows; `|` in a cell written `\|`).
+
 ### Lists
 | Table | Purpose |
 |---|---|

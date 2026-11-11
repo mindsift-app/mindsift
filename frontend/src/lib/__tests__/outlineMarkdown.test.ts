@@ -111,4 +111,49 @@ describe('blocksToMarkdown', () => {
     const items = parsePastedLines(['```mindsift-canvas', 'kein Modell', '```']);
     expect(items[0].type).toBe('text');
   });
+  it('writes a table as a block of its own, indented in a list with blank lines around it', () => {
+    const table = '| Name | Wert |\n| --- | --- |\n| a\\|b | 1 |';
+    const md = blocksToMarkdown([b('table', table, 0), b('text', 'Liste', 0), b('text', 'Punkt', 1), b('table', table, 2), b('text', 'Weiter', 1)]);
+    expect(md).toBe(
+      [
+        '| Name | Wert |',
+        '| --- | --- |',
+        '| a\\|b | 1 |',
+        '',
+        'Liste',
+        '- Punkt',
+        '',
+        '\t| Name | Wert |',
+        '\t| --- | --- |',
+        '\t| a\\|b | 1 |',
+        '',
+        '- Weiter',
+      ].join('\n')
+    );
+  });
+
+  it('tables paste back as tables on their levels (round trip)', () => {
+    const table = '| Name | Wert |\n| --- | :---: |\n| [[Notiz#doc_1\\|Text]] | 1 |';
+    const blocks = [
+      b('text', 'Absatz', 0),
+      b('text', 'Punkt', 1),
+      b('table', table, 2),
+      b('text', 'Weiter', 1),
+      b('table', table, 0),
+      b('todo', 'Danach', 0),
+      b('h2', 'Abschnitt', 0),
+      b('table', table, 1),
+    ];
+    const items = parsePastedLines(blocksToMarkdown(blocks).split('\n'));
+    expect(items.map((i) => [i.type, i.content, i.indent])).toEqual([
+      ['text', 'Absatz', 0],
+      ['text', 'Punkt', 1],
+      ['table', table, 2],
+      ['text', 'Weiter', 1],
+      ['table', table, 0],
+      ['todo', 'Danach', 0],
+      ['h2', 'Abschnitt', 0],
+      ['table', table, 1],
+    ]);
+  });
 });

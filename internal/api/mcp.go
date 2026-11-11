@@ -1149,13 +1149,16 @@ func mcpContentBlocks(content string) []domain.DocumentBlock {
 		return nil
 	}
 	var lines []string
-	inFence, prevPlain := false, false
-	for _, line := range strings.Split(strings.ReplaceAll(content, "\r\n", "\n"), "\n") {
+	inFence, inTable, prevPlain := false, false, false
+	all := strings.Split(strings.ReplaceAll(content, "\r\n", "\n"), "\n")
+	for i, line := range all {
 		trimmed := strings.TrimSpace(line)
 		if strings.HasPrefix(trimmed, "```") || strings.HasPrefix(trimmed, "~~~") {
 			inFence = !inFence
 		}
-		plain := !inFence && trimmed != "" && mcpPlainLine.MatchString(line)
+		// The rows of a Markdown table stay together (they are one table bullet)
+		inTable = !inFence && (storage.IsTableStart(all, i) || (inTable && trimmed != "" && strings.Contains(line, "|")))
+		plain := !inFence && !inTable && trimmed != "" && mcpPlainLine.MatchString(line)
 		if plain && prevPlain {
 			lines = append(lines, "")
 		}

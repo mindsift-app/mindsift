@@ -1398,6 +1398,9 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
         lines.push(`${indent}- \`\`\`${b.lang || ''}\n${b.content}\n${indent}  \`\`\``);
       } else if (b.type === 'divider') {
         lines.push(`${indent}- ---`);
+      } else if (b.type === 'table') {
+        // A Markdown table is a block of its own, with blank lines around it
+        lines.push('', ...b.content.split('\n').map((l) => `${indent}${l}`), '');
       } else if (b.type === 'numbered') {
         lines.push(`${indent}1. ${b.content}`);
       } else {

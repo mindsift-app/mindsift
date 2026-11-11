@@ -229,7 +229,7 @@ func taskMarkdownLine(t domain.Thought) string {
 
 // BlocksToVaultMarkdown turns outliner blocks into Markdown that Obsidian renders natively:
 // top-level headings, dividers and callouts as real block elements, everything else as a nested
-// list (one tab per level), code as fenced blocks inside the list.
+// list (one tab per level), code as fenced blocks and tables inside the list.
 // vaultAttachmentDir holds images and recordings in the Markdown archive.
 const vaultAttachmentDir = "attachments"
 
@@ -247,7 +247,7 @@ func BlocksToVaultMarkdown(blocks []domain.DocumentBlock) string {
 // (image and audio blocks become embeds Obsidian shows inline).
 func blocksToVaultMarkdown(blocks []domain.DocumentBlock, attachment func(id string) string) string {
 	var sb strings.Builder
-	// Children of a top-level heading/callout/code/divider become a list one level up; otherwise their
+	// Children of a top-level heading/callout/code/table/divider become a list one level up; otherwise their
 	// tab indent would turn them into an indented code block in Markdown
 	lift := 0
 	for _, b := range blocks {
@@ -303,12 +303,19 @@ func blocksToVaultMarkdown(blocks []domain.DocumentBlock, attachment func(id str
 				sb.WriteString("\n```" + b.Lang + "\n" + content + "\n```\n\n")
 				lift = 1
 				continue
+			case "table":
+				sb.WriteString("\n" + NormalizeTable(content) + "\n\n")
+				lift = 1
+				continue
 			}
 		}
 		switch b.Type {
 		case "code":
 			// Fenced block nested under the previous list item
 			sb.WriteString(indent + "```" + b.Lang + "\n" + indent + strings.ReplaceAll(content, "\n", "\n"+indent) + "\n" + indent + "```\n")
+		case "table":
+			// Indented below the list item it belongs to; Markdown needs the blank lines around a table
+			sb.WriteString("\n" + indent + strings.ReplaceAll(NormalizeTable(content), "\n", "\n"+indent) + "\n\n")
 		case "todo":
 			mark := "[ ]"
 			if b.Checked {

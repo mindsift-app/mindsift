@@ -33,6 +33,8 @@ var (
 
 func parseWikiLink(inner string) wikiLink {
 	target, label, _ := strings.Cut(inner, "|")
+	// In a table the pipe before the text is written "\|" (table_markdown.go)
+	target = strings.TrimSuffix(target, `\`)
 	title, anchor, _ := strings.Cut(target, "#")
 	anchor = strings.TrimSpace(anchor)
 	head, block, hasBlock := strings.Cut(anchor, "^")
@@ -100,10 +102,18 @@ func (l wikiLink) format() string {
 func replaceWikiLinks(content string, fn func(l wikiLink) string) string {
 	return wikiTokenRe.ReplaceAllStringFunc(content, func(token string) string {
 		if out := fn(parseWikiLink(token[2 : len(token)-2])); out != "" {
-			return out
+			return escapedLike(token, out)
 		}
 		return token
 	})
+}
+
+// escapedLike: a link written in a table cell ("[[Titel\|Text]]") keeps its escaped pipe when rewritten
+func escapedLike(token, out string) string {
+	if strings.Contains(token, `\|`) && !strings.Contains(out, `\|`) {
+		return strings.ReplaceAll(out, "|", `\|`)
+	}
+	return out
 }
 
 // noteLinkOnly: the bullet is only a link to a whole note (plus hashtags), as left behind by ExtractBranch.
@@ -346,7 +356,7 @@ func KeepWikiLinkIDs(old, edited string, titles map[string]string) string {
 	}
 	return wikiTokenRe.ReplaceAllStringFunc(edited, func(token string) string {
 		if o, ok := original[token]; ok {
-			return o
+			return escapedLike(token, o)
 		}
 		return token
 	})

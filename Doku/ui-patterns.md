@@ -165,6 +165,15 @@ Component: [ActionMenu.tsx](../frontend/src/components/ActionMenu.tsx), in the s
 
 - Right of the status in the list header (task lists, shopping lists), instead of separate share and delete buttons: Mute (task lists; greyed out with a hint for lists nobody else sees), Share, Rename ([RenameListSheet.tsx](../frontend/src/components/RenameListSheet.tsx), a `FormSheet` like "Neue Liste"), Delete (asks at the mouse position).
 - An entry someone may not use stays in the menu, greyed out with a short reason below it (read only, only the owner can delete), so the menu looks the same everywhere. Longer explanations go into the tooltip (`tooltip`), not below the entry.
+- Groups are set apart by a thin line (`separatorBefore`); one choice of several (a table's line mode) carries `checked` and shows a ✓ at the chosen entry. `keepFocus` keeps the cursor in the text field while the menu is used (the table's menu acts on the cell with the cursor).
+
+## Tables in Notes
+
+Component: [TableBlock.tsx](../frontend/src/features/workspace/TableBlock.tsx), Markdown in [markdownTable.ts](../frontend/src/lib/markdownTable.ts), lines in `index.css` (`.note-table`).
+
+- A table is a bullet (`/table`, 2 × 2); the first row is the header. One text field per cell lies over the formatted cell text, like a bullet's field over its text.
+- **+ right of the table** adds a column: on phones always there and 44 px wide, on a desktop only on hover or with the cursor in the table. The **⋯** below it is an `ActionMenu` with the line modes and row/column actions.
+- Lines come from the theme's `--border-color`, drawn per cell so the default mode can fade them out towards the edge; the frame of `grid` takes `--radius-card`. Wide tables scroll sideways inside the note (`.table-scroll`).
 
 ## Mentioning People (@)
 

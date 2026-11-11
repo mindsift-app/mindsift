@@ -22,6 +22,7 @@ import {
   KeyRound,
   Shapes,
   CloudOff,
+  Table as TableIcon,
 } from 'lucide-react';
 import type { HelpContent } from './types';
 
@@ -168,6 +169,10 @@ const de: HelpContent = {
                 <Code className="w-3.5 h-3.5 text-accent" />
                 <span>/code (Code-Block)</span>
               </div>
+              <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main col-span-2">
+                <TableIcon className="w-3.5 h-3.5 text-accent shrink-0" />
+                <span>/table oder /tabelle (Tabelle mit Kopfzeile)</span>
+              </div>
               <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main">
                 <KeyRound className="w-3.5 h-3.5 text-accent" />
                 <span>/secret (Wert verdecken, z. B. IP oder Token)</span>
@@ -248,6 +253,39 @@ const de: HelpContent = {
             </li>
             <li>
               <strong className="text-main">Überall dabei:</strong> Die Suche findet die Wörter in Zeichnungen, Kopieren und Einfügen behält die Zeichnung, der Markdown-Export enthält sie als SVG-Bild (der Import macht wieder eine Zeichnung daraus). KI-Agenten (MCP) lesen eine Beschreibung der Zeichnung und können aus Mermaid-Flussdiagrammen und Mindmaps selbst Zeichnungen anlegen.
+            </li>
+          </ul>
+        </div>
+      ),
+    },
+    // WORKSPACE: TABLES
+    {
+      id: 'workspace-tables',
+      category: 'workspace',
+      title: 'Tabellen (/table)',
+      subtitle: 'Zeilen und Spalten direkt in der Notiz',
+      icon: TableIcon,
+      keywords: ['tabelle', 'table', 'zeilen', 'spalten', 'kopfzeile', 'linien', 'rahmen', 'markdown'],
+      content: (
+        <div className="space-y-2 text-muted leading-relaxed">
+          <ul className="space-y-1.5">
+            <li>
+              <strong className="text-main">Anlegen:</strong> Tippe <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">/table</kbd> (oder <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">/tabelle</kbd>) in einen Punkt: es entsteht eine Tabelle mit 2 Spalten und 2 Zeilen, Text aus dem Punkt landet in der ersten Zelle. Die erste Zeile ist die Kopfzeile (fett).
+            </li>
+            <li>
+              <strong className="text-main">Tippen:</strong> <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Enter</kbd> fügt unter der aktuellen Zeile eine neue ein, <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Tab</kbd> / <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Shift + Tab</kbd> springen von Zelle zu Zelle (Tab in der letzten Zelle legt eine neue Zeile an), die Pfeiltasten wechseln die Zeile und verlassen die Tabelle oben und unten. <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Backspace</kbd> in einer leeren Zeile löscht sie, in einer ganz leeren Tabelle die Tabelle. Fett, kursiv, Links und #Hashtags gehen wie im Text.
+            </li>
+            <li>
+              <strong className="text-main">Spalten:</strong> Das <strong className="text-main">+</strong> rechts neben der Tabelle fügt eine Spalte hinzu (am Desktop erscheint es, wenn die Maus über der Tabelle ist). Darunter öffnen die drei Punkte das Menü: Spalte links oder rechts einfügen, Zeile oder Spalte mit dem Cursor löschen, den Punkt ein- oder ausrücken.
+            </li>
+            <li>
+              <strong className="text-main">Linien:</strong> Im selben Menü: <em>Standard</em> zeigt nur die Linien innen, zum Rand hin ausgeblendet, ohne Rahmen; <em>Voller Rahmen</em> alle Linien mit Außenrahmen (Ecken wie im Theme); <em>Kopfzeile und Spalten</em> nur die Linie unter der Kopfzeile und die Spaltenlinien.
+            </li>
+            <li>
+              <strong className="text-main">Handy:</strong> Breite Tabellen lassen sich seitlich wischen, die Seite bleibt stehen. Zellen, das + und die drei Punkte sind groß genug zum Antippen.
+            </li>
+            <li>
+              <strong className="text-main">Überall dabei:</strong> Kopieren, Einfügen, der Markdown-Export und KI-Agenten (MCP) sehen die Tabelle als Markdown-Tabelle; eingefügte Markdown-Tabellen und Tabellen aus Tabellenkalkulationen werden wieder zur Tabelle.
             </li>
           </ul>
         </div>

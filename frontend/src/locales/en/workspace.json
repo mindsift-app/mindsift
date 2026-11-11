@@ -14,6 +14,24 @@
     "copy": "Copy",
     "plain": "Text"
   },
+  "table": {
+    "menu": "Table: lines and columns",
+    "addColumn": "Add column",
+    "lines": {
+      "fade": "Default: inner lines",
+      "grid": "Full frame",
+      "header": "Header row and columns"
+    },
+    "insertColumnLeft": "Insert column left",
+    "insertColumnRight": "Insert column right",
+    "deleteRow": "Delete row",
+    "deleteColumn": "Delete column",
+    "needCell": "Tap into a cell first",
+    "onlyRow": "One row always stays",
+    "onlyColumn": "One column always stays",
+    "headerCell": "Header row, column {{col}}",
+    "cell": "Row {{row}}, column {{col}}"
+  },
   "editor": {
     "newNote": "New note",
     "untitled": "Untitled note",
@@ -81,7 +99,8 @@
       "drawing": "Drawing",
       "image": "Image",
       "audio": "Audio",
-      "divider": "Divider"
+      "divider": "Divider",
+      "table": "Table"
     },
     "noteFull": "This note has reached its maximum of {{max}} bullets. New bullets are not saved – add them to a new note."
   },
@@ -94,6 +113,7 @@
     "h2": "Section heading",
     "h3": "Subsection",
     "code": "Code block with syntax",
+    "table": "Table with a header row",
     "callout": "Callout box",
     "warning": "Warning in yellow",
     "error": "Error in red",

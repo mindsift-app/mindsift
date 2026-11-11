@@ -22,6 +22,7 @@ import {
   KeyRound,
   Shapes,
   CloudOff,
+  Table as TableIcon,
 } from 'lucide-react';
 import type { HelpContent } from './types';
 
@@ -122,6 +123,10 @@ const it: HelpContent = {
                 <Code className="w-3.5 h-3.5 text-accent" />
                 <span>/code (blocco di codice)</span>
               </div>
+              <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main col-span-2">
+                <TableIcon className="w-3.5 h-3.5 text-accent shrink-0" />
+                <span>/table o /tabella (tabella con riga di intestazione)</span>
+              </div>
               <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main">
                 <KeyRound className="w-3.5 h-3.5 text-accent" />
                 <span>/secret (nascondi un valore, ad es. un IP o un token)</span>
@@ -202,6 +207,39 @@ const it: HelpContent = {
             </li>
             <li>
               <strong className="text-main">Ovunque:</strong> La ricerca trova le parole nei disegni, copia e incolla mantiene il disegno e l’esportazione Markdown lo contiene come immagine SVG (l’importazione lo trasforma di nuovo in disegno). Gli agenti IA (MCP) leggono una descrizione del disegno e possono creare disegni da diagrammi di flusso e mappe mentali Mermaid.
+            </li>
+          </ul>
+        </div>
+      ),
+    },
+    // WORKSPACE: TABLES
+    {
+      id: 'workspace-tables',
+      category: 'workspace',
+      title: 'Tabelle (/table)',
+      subtitle: 'Righe e colonne direttamente nella nota',
+      icon: TableIcon,
+      keywords: ['tabella', 'table', 'righe', 'colonne', 'intestazione', 'linee', 'cornice', 'markdown'],
+      content: (
+        <div className="space-y-2 text-muted leading-relaxed">
+          <ul className="space-y-1.5">
+            <li>
+              <strong className="text-main">Crearne una:</strong> Scrivi <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">/table</kbd> (o <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">/tabella</kbd>) in un punto: compare una tabella con 2 colonne e 2 righe, il testo già presente nel punto finisce nella prima cella. La prima riga è l’intestazione (in grassetto).
+            </li>
+            <li>
+              <strong className="text-main">Scrivere:</strong> <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Invio</kbd> aggiunge una riga sotto quella attuale, <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Tab</kbd> / <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Maiusc + Tab</kbd> passano da una cella all’altra (Tab nell’ultima cella aggiunge una riga), le frecce cambiano riga ed escono dalla tabella in alto e in basso. <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Backspace</kbd> in una riga vuota la elimina, in una tabella completamente vuota la tabella. Grassetto, corsivo, link e #hashtag funzionano come nel testo.
+            </li>
+            <li>
+              <strong className="text-main">Colonne:</strong> Il <strong className="text-main">+</strong> a destra della tabella aggiunge una colonna (sul desktop compare quando il mouse è sopra la tabella). Sotto, i tre puntini aprono il menu: inserire una colonna a sinistra o a destra, eliminare la riga o la colonna del cursore, aumentare o ridurre il rientro del punto.
+            </li>
+            <li>
+              <strong className="text-main">Linee:</strong> Nello stesso menu: <em>Standard</em> mostra solo le linee interne, sfumate verso il bordo, senza cornice; <em>Cornice completa</em> tutte le linee con la cornice esterna (angoli come nel tema); <em>Intestazione e colonne</em> solo la linea sotto l’intestazione e le linee delle colonne.
+            </li>
+            <li>
+              <strong className="text-main">Telefono:</strong> Le tabelle larghe scorrono di lato, la pagina resta ferma. Le celle, il + e i tre puntini sono abbastanza grandi da toccare.
+            </li>
+            <li>
+              <strong className="text-main">Ovunque:</strong> Copia, incolla, l’esportazione Markdown e gli agenti IA (MCP) vedono la tabella come tabella Markdown; le tabelle Markdown incollate e quelle dei fogli di calcolo tornano a essere una tabella.
             </li>
           </ul>
         </div>

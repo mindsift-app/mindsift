@@ -28,11 +28,15 @@ import {
   Type,
   Unlink,
   KeyRound,
+  Table as TableIcon,
 } from 'lucide-react';
 import { DocumentBlock, BlockType } from '../../lib/types';
 import { LinkModal } from './LinkModal';
 import { SecretChip, NewSecretSheet } from './SecretChip';
 import { CodeBlockEditor, resolveLanguageId, isUnambiguousLanguageShortcut } from './CodeBlockEditor';
+import { TableBlock } from './TableBlock';
+import { emptyTable, serializeMarkdownTable, TableLines } from '../../lib/markdownTable';
+import { useLatestCallback } from '../../lib/useLatestCallback';
 import { ImagePicker } from './ImagePicker';
 import { ImageBlock } from './ImageBlock';
 import { DrawingBlock } from './drawing/DrawingBlock';
@@ -45,7 +49,7 @@ import { currentVoiceConfig } from '../../lib/voice';
 import { LinkPreviewCard } from './LinkPreviewCard';
 import { linkCardUrl, hidePreviewContent, linkHost, useLinkPreviewsEnabled } from '../../lib/linkPreview';
 import { mediaContent, parseMediaContent } from '../../lib/media';
-import { renderInlineMarkdown } from '../../lib/markdown';
+import { InlineMarkdownOptions, renderInlineMarkdown } from '../../lib/markdown';
 import { useMentionInput } from '../../lib/useMentionInput';
 import { MentionMenu } from '../../components/MentionMenu';
 import { api } from '../../lib/api';
@@ -54,7 +58,8 @@ import { isNoteLinkOnly, retargetWikiLinks, unlinkWikiLinks, WikiLink, WikiLinkC
 import { useWikiLinkResolver } from '../../lib/wikiLinkResolver';
 import { fitFieldHeight, refitOnWidthChange } from '../../lib/fieldHeight';
 import { BLOCK_DRAG_TYPE } from './moveBranchEvent';
-import { caretAfterChange } from '../../lib/caret';
+import { caretAfterChange, mapRenderedOffsetToRaw } from '../../lib/caret';
+import { toggleInlineFormat } from '../../lib/inlineFormat';
 import { useTranslation } from 'react-i18next';
 import i18n from '../../i18n';
 import { UserAvatar } from '../../components/UserAvatar';
@@ -101,6 +106,7 @@ const SLASH_COMMANDS: SlashCommand[] = [
   { type: 'h2', label: '/h2', get desc() { return i18n.t('workspace:slash.h2'); }, icon: <Heading2 className="w-3.5 h-3.5" /> },
   { type: 'h3', label: '/h3', get desc() { return i18n.t('workspace:slash.h3'); }, icon: <Heading3 className="w-3.5 h-3.5" /> },
   { type: 'code', label: '/code', get desc() { return i18n.t('workspace:slash.code'); }, icon: <Code className="w-3.5 h-3.5" /> },
+  { type: 'table', label: '/table', get desc() { return i18n.t('workspace:slash.table'); }, icon: <TableIcon className="w-3.5 h-3.5" />, aliases: ['tabelle', 'tabla', 'tableau', 'tabella', 'grid'] },
   { type: 'callout', label: '/callout', get desc() { return i18n.t('workspace:slash.callout'); }, icon: <MessageSquare className="w-3.5 h-3.5" /> },
   { type: 'warning', label: '/warn', get desc() { return i18n.t('workspace:slash.warning'); }, icon: <AlertTriangle className="w-3.5 h-3.5 text-status-warn" />, aliases: ['warnung', 'warning', 'achtung'] },
   { type: 'error', label: '/fail', get desc() { return i18n.t('workspace:slash.error'); }, icon: <XCircle className="w-3.5 h-3.5 text-status-err" />, aliases: ['fehler', 'error', 'danger'] },
@@ -172,17 +178,8 @@ export interface OutlinerBlockProps {
   inRangeSelection?: boolean;
 }
 
-// Rendered markdown only drops syntax characters (**, `, [..](url) …), so its text is a subsequence of the raw
-// text. Walking both strings in parallel maps a caret offset in the rendered text back to the raw text.
-export function mapRenderedOffsetToRaw(raw: string, rendered: string, renderedOffset: number): number {
-  let j = 0;
-  for (let i = 0; i < renderedOffset && i < rendered.length; i++) {
-    const idx = raw.indexOf(rendered[i], j);
-    if (idx === -1) break;
-    j = idx + 1;
-  }
-  return Math.min(j, raw.length);
-}
+// Kept here for the callers that import it with the bullet
+export { mapRenderedOffsetToRaw };
 
 const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
   docId,
@@ -316,6 +313,8 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
   }, []);
 
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  // A table has a text field per cell (textareaRef is its first): the cursor counts as in this bullet in any
+  const tableRootRef = useRef<HTMLDivElement | null>(null);
   const debounceTimerRef = useRef<number | null>(null);
   const latestBlockRef = useRef<DocumentBlock>(block);
   latestBlockRef.current = block;
@@ -393,12 +392,10 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
   // Sync incoming remote changes ONLY when this textarea is NOT actively being edited (or not edited at all)
   // Condition: isFocusedRef.current === true && document.hasFocus()
   useEffect(() => {
-    const isActivelyEditing =
-      isFocusedRef.current === true &&
-      typeof document !== 'undefined' &&
-      document.hasFocus() &&
-      textareaRef.current !== null &&
-      document.activeElement === textareaRef.current;
+    const active = typeof document !== 'undefined' ? document.activeElement : null;
+    const fieldActive =
+      active !== null && ((textareaRef.current !== null && active === textareaRef.current) || !!tableRootRef.current?.contains(active));
+    const isActivelyEditing = isFocusedRef.current === true && document.hasFocus() && fieldActive;
 
     const acceptAfterUndo = Date.now() < acceptRemoteUntilRef.current;
     // Also when the cursor leaves: after a conflict the field held the user's own text, which now stands
@@ -408,7 +405,8 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
       debounceTimerRef.current === null &&
       block.content !== localContentRef.current
     ) {
-      if (isActivelyEditing) pendingCaretRef.current = caretAfterChange(localContentRef.current, block.content || '');
+      // (A table puts its own cursor back: its text is not the field's)
+      if (isActivelyEditing && !tableRootRef.current) pendingCaretRef.current = caretAfterChange(localContentRef.current, block.content || '');
       setShownContent(block.content || '');
       localContentRef.current = block.content || '';
       editedRef.current = false;
@@ -437,9 +435,10 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
     };
 
     const handleWindowFocus = () => {
+      const active = document.activeElement;
       const isThisActive =
-        textareaRef.current !== null &&
-        document.activeElement === textareaRef.current &&
+        active !== null &&
+        ((textareaRef.current !== null && active === textareaRef.current) || !!tableRootRef.current?.contains(active)) &&
         document.hasFocus();
       isFocusedRef.current = isThisActive;
     };
@@ -611,7 +610,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
         return !isRestEmpty && isAtStartOrEnd && !!onExtractBlock && !isNoteLinkOnly(restOfBlock);
       }
 
-      // /h1, /h2, /h3, /todo, /callout, /warn, /fail, /text (type 'bullet') at start or at end
+      // /h1, /h2, /h3, /todo, /callout, /warn, /fail, /text (type 'bullet'), /table at start or at end
       if (
         c.type === 'h1' ||
         c.type === 'h2' ||
@@ -621,7 +620,8 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
         c.type === 'callout' ||
         c.type === 'warning' ||
         c.type === 'error' ||
-        c.type === 'bullet'
+        c.type === 'bullet' ||
+        c.type === 'table'
       ) {
         return isAtStartOrEnd;
       }
@@ -694,6 +694,16 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
       localContentRef.current = content;
       setDrawingAutoOpen(true);
       flushDebounce(content, { type: 'drawing' });
+      return;
+    }
+
+    if (cmd.type === 'table') {
+      // 2 × 2 with the bullet's text in the first cell; the cursor goes there (refocus below)
+      const content = serializeMarkdownTable(emptyTable(2, 2, clean));
+      setLocalContent(content);
+      localContentRef.current = content;
+      refocusAfterTypeChangeRef.current = true;
+      flushDebounce(content, { type: 'table', lang: '', checked: false, taskId: '' });
       return;
     }
 
@@ -976,7 +986,8 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
 
   useEffect(() => {
     const el = textareaRef.current;
-    if (!el) return;
+    // A table listens on all its cells itself
+    if (!el || tableRootRef.current) return;
     // Mobile keyboards and the context menu undo via beforeinput instead of key events
     const onBeforeInput = (e: InputEvent) => {
       if (e.inputType === 'historyUndo' || e.inputType === 'historyRedo') {
@@ -987,6 +998,59 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
     el.addEventListener('beforeinput', onBeforeInput);
     return () => el.removeEventListener('beforeinput', onBeforeInput);
   });
+
+  // Table (TableBlock): its handlers keep their identity, so it renders only when the bullet itself does
+  const changeTableContent = useLatestCallback((next: string, immediate: boolean) => {
+    setLocalContent(next);
+    localContentRef.current = next;
+    if (immediate) {
+      flushDebounce(next);
+      return;
+    }
+    if (debounceTimerRef.current !== null) window.clearTimeout(debounceTimerRef.current);
+    debounceTimerRef.current = window.setTimeout(() => {
+      debounceTimerRef.current = null;
+      onUpdateBlockRef.current({ ...latestBlockRef.current, content: next });
+    }, 150);
+  });
+  const changeTableLines = useLatestCallback((lines: TableLines) => flushDebounce(localContentRef.current, { lang: lines }));
+  const leaveTable = useLatestCallback((direction: 'up' | 'down') => {
+    if (debounceTimerRef.current !== null) flushDebounce(localContentRef.current);
+    onNavigateFocusRef.current(block.id, direction);
+  });
+  const deleteTable = useLatestCallback(() => {
+    if (debounceTimerRef.current !== null) {
+      window.clearTimeout(debounceTimerRef.current);
+      debounceTimerRef.current = null;
+    }
+    onDeleteBlockRef.current(block.id);
+  });
+  const appendBelowTable = useLatestCallback(() => onCreateBlockBelowRef.current(block.id, ''));
+  const tableHistory = useLatestCallback(runHistory);
+  const tableFocusIn = useLatestCallback(handleFocus);
+  const tableFocusOut = useLatestCallback(handleBlur);
+  const indentTable = useLatestCallback(() => {
+    if (debounceTimerRef.current !== null) flushDebounce(localContentRef.current);
+    onIndentBlockRef.current(block.id, 1);
+  });
+  const outdentTable = useLatestCallback(() => {
+    if (debounceTimerRef.current !== null) flushDebounce(localContentRef.current);
+    onIndentBlockRef.current(block.id, -1);
+  });
+  const tableWikiLinkClick = useLatestCallback((link: WikiLink) => onWikiLinkClick?.(link, linkActions(link)));
+  const renderTableSecret = useCallback(
+    (secretId: string, key: string) => <SecretChip key={key} docId={docId} secretId={secretId} canEdit={canEdit} />,
+    [docId, canEdit]
+  );
+  const tableInline = useMemo<InlineMarkdownOptions>(
+    () => ({
+      onTagClick,
+      onWikiLinkClick: onWikiLinkClick ? tableWikiLinkClick : undefined,
+      resolveWikiLink,
+      renderSecret: renderTableSecret,
+    }),
+    [onTagClick, onWikiLinkClick, tableWikiLinkClick, resolveWikiLink, renderTableSecret]
+  );
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (mention.handleKeyDown(e, localContentRef.current, applyMention)) return;
@@ -1036,77 +1100,9 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
         return;
       }
 
-      const isBold = e.key.toLowerCase() === 'b';
-      const delim = isBold ? '**' : '*';
-
-      if (!hasSelection) {
-        const pair = isBold ? '****' : '**';
-        const newVal = text.slice(0, start) + pair + text.slice(start);
-        const newPos = start + delim.length;
-        applyFormattingChange(newVal, newPos, newPos);
-        return;
-      }
-
-      const selected = text.slice(start, end);
-
-      if (isBold) {
-        const isOutside =
-          start >= 2 &&
-          end + 2 <= text.length &&
-          text.slice(start - 2, start) === '**' &&
-          text.slice(end, end + 2) === '**';
-
-        const isInside =
-          selected.length >= 4 &&
-          selected.startsWith('**') &&
-          selected.endsWith('**');
-
-        if (isOutside) {
-          const newVal = text.slice(0, start - 2) + selected + text.slice(end + 2);
-          applyFormattingChange(newVal, start - 2, end - 2);
-          return;
-        }
-        if (isInside) {
-          const unwrapped = selected.slice(2, -2);
-          const newVal = text.slice(0, start) + unwrapped + text.slice(end);
-          applyFormattingChange(newVal, start, start + unwrapped.length);
-          return;
-        }
-
-        const newVal = text.slice(0, start) + '**' + selected + '**' + text.slice(end);
-        applyFormattingChange(newVal, start + 2, end + 2);
-        return;
-      } else {
-        const isOutside =
-          start >= 1 &&
-          end + 1 <= text.length &&
-          text[start - 1] === '*' &&
-          text[end] === '*' &&
-          (start < 2 || text[start - 2] !== '*') &&
-          (end + 1 >= text.length || text[end + 1] !== '*');
-
-        const isInside =
-          selected.length >= 2 &&
-          selected.startsWith('*') &&
-          selected.endsWith('*') &&
-          (!selected.startsWith('**') || !selected.endsWith('**') || selected.length < 4);
-
-        if (isOutside) {
-          const newVal = text.slice(0, start - 1) + selected + text.slice(end + 1);
-          applyFormattingChange(newVal, start - 1, end - 1);
-          return;
-        }
-        if (isInside) {
-          const unwrapped = selected.slice(1, -1);
-          const newVal = text.slice(0, start) + unwrapped + text.slice(end);
-          applyFormattingChange(newVal, start, start + unwrapped.length);
-          return;
-        }
-
-        const newVal = text.slice(0, start) + '*' + selected + '*' + text.slice(end);
-        applyFormattingChange(newVal, start + 1, end + 1);
-        return;
-      }
+      const next = toggleInlineFormat(text, start, end, e.key.toLowerCase() === 'b');
+      applyFormattingChange(next.value, next.start, next.end);
+      return;
     }
 
     // Slash command navigation
@@ -1641,6 +1637,30 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
             canIndent={Math.max(0, block.level || 0) < maxAllowedLevel}
             canOutdent={Math.max(0, block.level || 0) > (levelOffset || 0)}
           />
+        ) : block.type === 'table' ? (
+          <TableBlock
+            blockId={block.id}
+            content={localContent}
+            lang={block.lang}
+            canEdit={canEdit}
+            canFocus={canFocus}
+            rootRef={tableRootRef}
+            textareaRef={textareaRef}
+            registerTextareaRef={registerTextareaRef}
+            inline={tableInline}
+            onChange={changeTableContent}
+            onChangeLines={changeTableLines}
+            onFocusIn={tableFocusIn}
+            onFocusOut={tableFocusOut}
+            onLeave={leaveTable}
+            onDelete={deleteTable}
+            onAppendBelow={lockedBy && canAppendBelow ? appendBelowTable : undefined}
+            onHistory={tableHistory}
+            onIndent={indentTable}
+            onOutdent={outdentTable}
+            canIndent={Math.max(0, block.level || 0) < maxAllowedLevel}
+            canOutdent={Math.max(0, block.level || 0) > (levelOffset || 0)}
+          />
         ) : block.type === 'callout' ? (
           <div className="bg-panel-elevated border-l-2 border-accent p-2 rounded-r-btn my-0.5">
             <textarea
@@ -1928,10 +1948,13 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
         </span>
       )}
 
-      {/* Floating Actions Overlay Bubble (block type, enhanced task, link, extract, delete) */}
+      {/* Floating Actions Overlay Bubble (block type, enhanced task, link, extract, delete). Next to a table
+          that fills the width it stays left of the table's + and ⋯, so a tap on them never hits it */}
       <div
         ref={bubbleRef}
-        className={`absolute right-1 sm:right-2 top-0.5 sm:top-1 z-20 bg-panel/90 backdrop-blur-sm border border-border shadow-xs rounded-pill px-1 sm:px-1.5 py-0.5 flex items-center gap-0.5 sm:gap-1 transition-opacity ${
+        className={`absolute ${
+          block.type === 'table' && canEdit ? 'right-12 sm:right-8' : 'right-1 sm:right-2'
+        } top-0.5 sm:top-1 z-20 bg-panel/90 backdrop-blur-sm border border-border shadow-xs rounded-pill px-1 sm:px-1.5 py-0.5 flex items-center gap-0.5 sm:gap-1 transition-opacity ${
           lockedBy || (!canEdit && !onCopyBlockLink && block.type !== 'drawing')
             ? // Someone else is editing the block: no actions, and the lock badge stays visible. Read only
               // without a link to copy (a public page): nothing to show, not even an empty frame

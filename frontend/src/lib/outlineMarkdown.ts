@@ -1,12 +1,13 @@
 import type { DocumentBlock } from './types';
 import { maskSecrets } from './secretRef';
 import { DRAWING_FENCE } from './drawing/model';
+import { parseMarkdownTable, serializeMarkdownTable } from './markdownTable';
 
 // Warnings and errors as Obsidian callouts, like the Markdown export of the server
 const CALLOUT_KIND = { warning: 'warning', error: 'failure' } as const;
 
 // Bullets as Markdown for copying: the top level reads like a document (plain bullets become paragraphs,
-// headings, dividers, callouts and fenced code (drawings too) are block elements), everything indented below is a list
+// headings, dividers, callouts, tables and fenced code (drawings too) are block elements), everything indented below is a list
 // with one tab per level ("-", "1." for numbered, "- [ ]" for to-dos). To-dos and numbered items stay list
 // items on the top level too. Pasting it back (pasteOutline.ts: a list right after a paragraph nests
 // under it) gives the same structure. Levels count from the shallowest bullet, so a copied branch starts
@@ -15,7 +16,7 @@ export function blocksToMarkdown(blocks: DocumentBlock[]): string {
   if (blocks.length === 0) return '';
   const base = Math.min(...blocks.map((b) => Math.max(0, b.level || 0)));
   const out: string[] = [];
-  // Children of a top-level heading/callout/code/divider become a list one level up; otherwise their
+  // Children of a top-level heading/callout/code/table/divider become a list one level up; otherwise their
   // tab indent would turn them into an indented code block
   let lift = 0;
   let afterParagraph = false; // a top-level list item right below a paragraph would nest under it
@@ -63,6 +64,11 @@ export function blocksToMarkdown(blocks: DocumentBlock[]): string {
         lift = 1;
         continue;
       }
+      if (b.type === 'table') {
+        out.push('', serializeMarkdownTable(parseMarkdownTable(content)), '');
+        lift = 1;
+        continue;
+      }
       if (b.type !== 'todo' && b.type !== 'numbered') {
         // A plain bullet on the top level is a paragraph; its children follow right below as a list (no
         // blank line, so pasting it back nests them under the paragraph again)
@@ -75,6 +81,10 @@ export function blocksToMarkdown(blocks: DocumentBlock[]): string {
     switch (b.type) {
       case 'code':
         out.push(`${indent}\`\`\`${b.lang || ''}`, `${indent}${content.replace(/\n/g, `\n${indent}`)}`, `${indent}\`\`\``);
+        break;
+      case 'table':
+        // Indented below the list item it belongs to; Markdown needs the blank lines around a table
+        out.push('', ...serializeMarkdownTable(parseMarkdownTable(content)).split('\n').map((l) => indent + l), '');
         break;
       case 'todo':
         out.push(`${indent}- [${b.checked ? 'x' : ' '}] ${cont('  ')}`);

@@ -14,6 +14,24 @@
     "copy": "Copia",
     "plain": "Testo"
   },
+  "table": {
+    "menu": "Tabella: linee e colonne",
+    "addColumn": "Aggiungi colonna",
+    "lines": {
+      "fade": "Standard: linee interne",
+      "grid": "Cornice completa",
+      "header": "Intestazione e colonne"
+    },
+    "insertColumnLeft": "Inserisci colonna a sinistra",
+    "insertColumnRight": "Inserisci colonna a destra",
+    "deleteRow": "Elimina riga",
+    "deleteColumn": "Elimina colonna",
+    "needCell": "Prima tocca una cella",
+    "onlyRow": "Resta sempre una riga",
+    "onlyColumn": "Resta sempre una colonna",
+    "headerCell": "Intestazione, colonna {{col}}",
+    "cell": "Riga {{row}}, colonna {{col}}"
+  },
   "editor": {
     "newNote": "Nuova nota",
     "untitled": "Nota senza titolo",
@@ -81,7 +99,8 @@
       "drawing": "Disegno",
       "image": "Immagine",
       "audio": "Audio",
-      "divider": "Divisore"
+      "divider": "Divisore",
+      "table": "Tabella"
     },
     "noteFull": "Questa nota ha raggiunto il massimo di {{max}} punti. I nuovi punti non vengono salvati: aggiungili in una nuova nota."
   },
@@ -94,6 +113,7 @@
     "h2": "Intestazione di sezione",
     "h3": "Sottosezione",
     "code": "Blocco di codice con evidenziazione",
+    "table": "Tabella con riga di intestazione",
     "callout": "Riquadro informativo",
     "warning": "Avviso in giallo",
     "error": "Errore in rosso",

@@ -79,11 +79,13 @@ func PrepareFTSQuery(raw string) string {
 }
 
 // blockSearchText is the SQL for the searchable text of a block row (prefix "new." in triggers): drawings
-// only with the words written in them, not their JSON
+// only with the words written in them, not their JSON; tables without the pipes and the separator row
 func blockSearchText(row string) string {
 	return `CASE WHEN ` + row + `type = 'drawing' THEN COALESCE((SELECT group_concat(json_extract(e.value, '$.txt'), ' ')
 		FROM json_each(CASE WHEN json_valid(` + row + `content) THEN ` + row + `content ELSE '{}' END, '$.els') e
-		WHERE json_extract(e.value, '$.txt') IS NOT NULL), '') ELSE ` + row + `content END`
+		WHERE json_extract(e.value, '$.txt') IS NOT NULL), '')
+		WHEN ` + row + `type = 'table' THEN replace(replace(replace(` + row + `content, '\|', '|'), '|', ' '), '---', ' ')
+		ELSE ` + row + `content END`
 }
 
 // migrateSearchFTS creates the virtual FTS5 tables and synchronization triggers.
@@ -315,6 +317,9 @@ func (s *Store) SearchCtx(ctx context.Context, userID, query string, opts Search
 			if scanErr := docRows.Scan(&r.docID, &r.blockID, &r.snip, &r.score, &r.title, &r.icon, &ownerID, &isArchived, &r.content, &r.typ); !dbFailed(scanErr) {
 				if r.typ == drawing.BlockType {
 					r.content = strings.Join(drawing.Texts(r.content), " · ")
+				}
+				if r.typ == "table" {
+					r.content = TableText(r.content)
 				}
 				found = append(found, r)
 			}
