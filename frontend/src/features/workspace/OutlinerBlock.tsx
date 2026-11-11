@@ -369,7 +369,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
           retarget: (newDocId: string, title: string) => changeContent(retargetWikiLinks(localContentRef.current, link, newDocId, title)),
         }
       : undefined;
-  const resolveWikiLink = useWikiLinkResolver() || undefined;
+  const resolveWikiLink = useWikiLinkResolver(localContent) || undefined;
   // "@" opens the picker of people who can see this note
   const mention = useMentionInput(canEdit ? { docId } : null);
   const applyMention = (next: string, caret: number) => {

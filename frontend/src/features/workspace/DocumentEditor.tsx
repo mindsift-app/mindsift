@@ -162,38 +162,46 @@ function ensureNonEmptyBlocks(docId: string, blocks?: DocumentBlock[]): Document
       },
     ];
   }
-  return blocks.map((b, idx) => ({
-    ...b,
-    id: b.id || `${docId}-b${idx}`,
-    documentId: docId,
-    type: b.type || 'text',
-    level: Math.max(0, b.level || 0),
-    position: b.position || (idx + 1) * 1000,
-  }));
+  // A block that needs nothing keeps its object, so its bullet does not render again (OutlinerBlock is memoized)
+  return blocks.map((b, idx) => {
+    const id = b.id || `${docId}-b${idx}`;
+    const type = b.type || 'text';
+    const level = Math.max(0, b.level || 0);
+    const position = b.position || (idx + 1) * 1000;
+    if (b.id === id && b.documentId === docId && b.type === type && b.level === level && b.position === position) return b;
+    return { ...b, id, documentId: docId, type, level, position };
+  });
+}
+
+function sameBlock(x: DocumentBlock, y: DocumentBlock): boolean {
+  return (
+    x.id === y.id &&
+    x.content === y.content &&
+    (x.level || 0) === (y.level || 0) &&
+    x.type === y.type &&
+    !!x.checked === !!y.checked &&
+    !!x.collapsed === !!y.collapsed &&
+    (x.lang || '') === (y.lang || '') &&
+    (x.taskId || '') === (y.taskId || '') &&
+    (x.subtaskOf || '') === (y.subtaskOf || '') &&
+    (x.conflictOf || '') === (y.conflictOf || '') &&
+    (x.conflictAuthor || '') === (y.conflictAuthor || '')
+  );
 }
 
 // True if both lists show the same blocks; avoids re-rendering when the sync engine echoes a local change.
 function sameBlocks(a: DocumentBlock[], b: DocumentBlock[]): boolean {
-  if (a.length !== b.length) return false;
-  for (let i = 0; i < a.length; i++) {
-    const x = a[i];
-    const y = b[i];
-    if (
-      x.id !== y.id ||
-      x.content !== y.content ||
-      (x.level || 0) !== (y.level || 0) ||
-      x.type !== y.type ||
-      !!x.checked !== !!y.checked ||
-      !!x.collapsed !== !!y.collapsed ||
-      (x.lang || '') !== (y.lang || '') ||
-      (x.taskId || '') !== (y.taskId || '') ||
-      (x.subtaskOf || '') !== (y.subtaskOf || '') ||
-      (x.conflictOf || '') !== (y.conflictOf || '')
-    ) {
-      return false;
-    }
-  }
-  return true;
+  return a.length === b.length && a.every((x, i) => sameBlock(x, b[i]));
+}
+
+// The engine's list with the objects of `prev` for blocks that did not change: a change of someone else
+// renders only the bullets it touches
+function keepUnchanged(prev: DocumentBlock[], next: DocumentBlock[]): DocumentBlock[] {
+  const byId = new Map(prev.map((b) => [b.id, b]));
+  return next.map((b) => {
+    const old = byId.get(b.id);
+    return old && sameBlock(old, b) ? old : b;
+  });
 }
 
 
@@ -583,7 +591,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
     const unsubscribe = engine.subscribe((state) => {
       setEngineState(state);
       if (!state.ready) return;
-      const next = ensureNonEmptyBlocks(docId, state.blocks);
+      const next = keepUnchanged(currentBlocksRef.current, ensureNonEmptyBlocks(docId, state.blocks));
       if (!sameBlocks(currentBlocksRef.current, next)) {
         // Changes of others (own edits are in currentBlocksRef already): remember where the bullet with the
         // cursor is, so bullets added or removed above it do not move it (layout effect below)

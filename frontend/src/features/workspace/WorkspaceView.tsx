@@ -53,7 +53,7 @@ import i18n from '../../i18n';
 import { showError } from '../../components/ErrorNotice';
 import { askChoice } from '../../components/askConfirm';
 import { WikiLinkClickHandler } from '../../lib/wikiLink';
-import { findLinkedDoc, makeWikiLinkResolver, WikiLinkResolverContext } from '../../lib/wikiLinkResolver';
+import { findLinkedDoc, useWikiLinkStore, WikiLinkResolverContext } from '../../lib/wikiLinkResolver';
 
 interface WorkspaceViewProps {
   currentUser?: User | null;
@@ -526,7 +526,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
     },
     [docs, handleCreateDocument, handleJumpToDocBlock]
   );
-  const resolveWikiLink = useMemo(() => makeWikiLinkResolver(docs), [docs]);
+  const wikiLinkStore = useWikiLinkStore(docs);
 
   const handleShareFolderClick = useCallback(
     async (folderPath: string, existingSf?: SharedFolder) => {
@@ -708,7 +708,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
   const filteredTags = useMemo(() => filterTags(tagsSummary, tagSearchQuery, tagSortBy), [tagsSummary, tagSearchQuery, tagSortBy]);
 
   return (
-    <WikiLinkResolverContext.Provider value={resolveWikiLink}>
+    <WikiLinkResolverContext.Provider value={wikiLinkStore}>
     <div className="w-full h-full min-h-0 flex flex-col gap-3">
       {/* Top Header: Workspace Tabs & Actions */}
       {/* Phones: the views are switched in the menu at the top, so the row is hidden there */}
