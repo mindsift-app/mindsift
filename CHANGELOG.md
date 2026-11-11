@@ -34,6 +34,7 @@ Fixes from the security review of November 2026 (v0.94.0).
 - Building the image no longer runs `go mod tidy`; it checks the downloaded modules against `go.sum` (`go mod verify`) and uses `go.mod` as committed.
 - A database error is no longer taken for an answer. Checks that decide something answer on the safe side when the database cannot say: accounts waiting for confirmation or approval stay locked, an address counts as taken, the last administrator is not removed, the MCP endpoint counts as switched off. Elsewhere the request fails with an error instead of showing a shorter list, and steps on the side that fail (cleaning up, a mail that did not go out) appear in the server log.
 - `POST /oauth/revoke` answers `503` when the token could not be revoked, and "Keep the previous one" for a waiting address reports when it failed; both said it worked before.
+- The page description shown by search engines, link previews and the installed app names notes, tasks and shared lists first and the triage last.
 
 ### Fixed
 - Deleting your data or account asked for the password without counting wrong guesses; now it counts them like failed sign-ins and locks the same way.

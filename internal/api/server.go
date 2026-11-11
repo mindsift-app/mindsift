@@ -488,11 +488,10 @@ func writeJSON(w http.ResponseWriter, status int, data any) {
 // staticTexts: the German texts of index.html (description, link preview) and manifest.json (app
 // description, shortcuts), served in the browser's language
 var staticTexts = []string{
-	"MindSift — Der Kopf frei in drei Sekunden. Instant Capture, Tinder-Style Triage, Workspace & Echtzeit-Listen.",
+	"MindSift — Der Kopf frei in drei Sekunden. Verschachtelte Notizen, Aufgaben mit Kanban und Kalender, gemeinsame Listen und eine Triage für alles Unsortierte.",
 	"MindSift — Der Kopf frei in drei Sekunden",
-	"Instant Brain-Dump, Tinder-Style Triage, Workspace & Echtzeit-Listen.",
+	"Verschachtelte Notizen, Aufgaben mit Kanban und Kalender, gemeinsame Listen und eine Triage für alles Unsortierte.",
 	"MindSift App Logo & Vorschau",
-	"MindSift — Der Kopf frei in drei Sekunden. Instant Brain-Dump, Tinder-Style Triage, Workspace & Echtzeit-Familienlisten.",
 	"Gedanken schnell in die Triage werfen",
 	"Neue Aufgabe",
 	"Aufgabe",

@@ -171,7 +171,7 @@ func TestSetupLanguage(t *testing.T) {
 
 // index.html and manifest.json come in the browser's language.
 func TestStaticFilesLocalized(t *testing.T) {
-	html := `<html lang="de" class="dark"><meta name="description" content="MindSift — Der Kopf frei in drei Sekunden. Instant Capture, Tinder-Style Triage, Workspace & Echtzeit-Listen." />`
+	html := `<html lang="de" class="dark"><meta name="description" content="MindSift — Der Kopf frei in drei Sekunden. Verschachtelte Notizen, Aufgaben mit Kanban und Kalender, gemeinsame Listen und eine Triage für alles Unsortierte." />`
 	got := string(localizeStatic([]byte(html), "it"))
 	if !strings.Contains(got, `<html lang="it"`) || !strings.Contains(got, "La mente libera in tre secondi") {
 		t.Fatalf("Italian index.html: %s", got)
