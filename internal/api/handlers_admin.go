@@ -303,6 +303,7 @@ func (s *Server) handleAdminDeleteUser(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusForbidden, "Keine Berechtigung zum Löschen dieses Kontos")
 		return
 	}
+	allowLongWork(w)
 	if err := s.store.DeleteUser(targetUserID); err != nil {
 		writeInternal(w, err)
 		return
@@ -507,6 +508,8 @@ func (s *Server) handleAdminTestSMTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	lang := s.requestLanguage(r)
+	// The answer says what the mail server said, also when that takes it a minute
+	allowLongWork(w)
 	if err := s.sendMailContent(toEmail, i18n.T(lang, "MindSift: SMTP-Test"), mailContent{
 		Lang:      lang,
 		Preheader: i18n.T(lang, "Die SMTP-Konfiguration funktioniert"),

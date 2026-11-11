@@ -298,6 +298,7 @@ func (s *Server) handleAdminSendInvite(w http.ResponseWriter, r *http.Request) {
 		until = i18n.ShortDate(lang, t.Local())
 	}
 	invites := i18n.T(lang, "{name} lädt dich zu MindSift ein", "name", inviter)
+	allowLongWork(w)
 	err = s.sendMailContent(email, invites, mailContent{
 		Lang:      lang,
 		Preheader: invites,

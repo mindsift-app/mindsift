@@ -106,10 +106,6 @@ export const dataApi = {
     return request<SearchResults>(`/api/v1/search?${params.toString()}`, { signal });
   },
 
-  async exportAll(): Promise<any> {
-    return request<any>('/api/v1/export');
-  },
-
   // Import of MindSift data (JSON backup or Markdown archive) or an Obsidian vault (ZIP).
   // preview = true only reports what would be created.
   // mode 'restore' (MindSift data only) deletes the user's notes, tasks and lists before importing
@@ -142,7 +138,7 @@ export const dataApi = {
   },
 
   async adminRunBackup(): Promise<BackupFile[]> {
-    return ensureArray(await request<BackupFile[]>('/api/v1/admin/backups', { method: 'POST' }));
+    return ensureArray(await request<BackupFile[]>('/api/v1/admin/backups', { method: 'POST', timeout: 'slow' }));
   },
 
   async adminDeleteBackup(name: string): Promise<BackupFile[]> {
@@ -173,12 +169,12 @@ export const dataApi = {
   async restoreMyBackup(name: string, mode: 'merge' | 'restore', sections: DataSection[], preview = false): Promise<ImportSummary> {
     const params = new URLSearchParams({ mode, sections: sections.join(',') });
     if (preview) params.set('preview', '1');
-    return request<ImportSummary>(`/api/v1/backups/${encodeURIComponent(name)}/restore?${params}`, { method: 'POST' });
+    return request<ImportSummary>(`/api/v1/backups/${encodeURIComponent(name)}/restore?${params}`, { method: 'POST', timeout: 'slow' });
   },
 
   // Danger zone: both need the current password
   async purgeOwnData(password: string): Promise<void> {
-    await request('/api/v1/user/data', { method: 'DELETE', body: JSON.stringify({ password }) });
+    await request('/api/v1/user/data', { method: 'DELETE', body: JSON.stringify({ password }), timeout: 'slow' });
   },
 
   // New login or alarm address (storage/email_change.go): the link from the mail, keep the old one, new link
@@ -195,7 +191,7 @@ export const dataApi = {
   },
 
   async deleteOwnAccount(password: string): Promise<void> {
-    await request('/api/v1/user/account', { method: 'DELETE', body: JSON.stringify({ password }) });
+    await request('/api/v1/user/account', { method: 'DELETE', body: JSON.stringify({ password }), timeout: 'slow' });
   },
 
   // Full backup (all data as JSON) packed into a ZIP; restorable via importData('mindsift', …)

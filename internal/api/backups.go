@@ -106,6 +106,7 @@ func (s *Server) handleAdminListBackups(w http.ResponseWriter, r *http.Request) 
 }
 
 func (s *Server) handleAdminRunBackup(w http.ResponseWriter, r *http.Request) {
+	allowLongWork(w)
 	if _, err := s.runBackups(); err != nil {
 		writeError(w, http.StatusInternalServerError, "Backup fehlgeschlagen: "+clientMessage(err))
 		return
@@ -144,6 +145,7 @@ func (s *Server) handleDownloadMyBackup(w http.ResponseWriter, r *http.Request) 
 // handleRestoreMyBackup imports one of the user's server backups: mode=merge (add next to the data)
 // or mode=restore (empty the chosen sections first), sections=notes,tasks,lists,inbox,themes.
 func (s *Server) handleRestoreMyBackup(w http.ResponseWriter, r *http.Request) {
+	allowLongWork(w)
 	userID := auth.GetUserID(r.Context())
 	path, err := storage.BackupPath(storage.UserBackupDir(s.backupRoot(), userID), chi.URLParam(r, "name"))
 	if err != nil {

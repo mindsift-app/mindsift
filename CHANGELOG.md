@@ -45,6 +45,8 @@ Fixes from the security review of November 2026 (v0.94.0).
 - Two first-time setups at the same moment could create two admins.
 - A Markdown or backup export that fails half way is cut off, so the browser reports an error instead of saving a broken ZIP.
 - Task alarms: when the server could not read which alarms had already gone out, it took that for "none" and could send them a second time.
+- Restoring a server backup, "Back up now", deleting your data or an account, mailing an invite and the tests for SMTP, alarms and push ended with "No connection to the server" after 12 seconds, even though the server was still at work and finished it. The app now waits up to five minutes for these, and the server keeps their answer open as long.
+- The test push notification comes in your language instead of always in German.
 
 ## [0.94.0] - 2026-11-10
 

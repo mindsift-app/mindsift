@@ -127,6 +127,7 @@ export const authApi = {
     return request<{ status: string }>('/api/v1/auth/alarms/test', {
       method: 'POST',
       body: JSON.stringify({ channel, target: target || '' }),
+      timeout: 'slow',
     });
   },
 

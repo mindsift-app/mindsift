@@ -347,6 +347,7 @@ var messagesFR = map[string]string{
 	"MindSift: Neue Registrierung wartet auf Freigabe": "MindSift : une nouvelle inscription attend une validation",
 	"MindSift: SMTP-Test":                              "MindSift : test SMTP",
 	"MindSift Test-Alarm":                              "Alarme de test MindSift",
+	"Test: Push-Benachrichtigungen kommen an.":         "Test : les notifications push arrivent.",
 	"Test-Alarm von MindSift":                          "Alarme de test de MindSift",
 	"{name} wartet auf Freigabe":                       "{name} attend une validation",
 	"{name} lädt dich zu MindSift ein":                 "{name} t’invite sur MindSift",

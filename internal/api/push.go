@@ -12,6 +12,7 @@ import (
 
 	webpush "github.com/SherClockHolmes/webpush-go"
 	"github.com/mindsift-app/mindsift/internal/auth"
+	"github.com/mindsift-app/mindsift/internal/i18n"
 )
 
 // Web push: browsers and installed apps (Android, iOS from 16.4 as home screen app, desktop) subscribe
@@ -207,7 +208,10 @@ func (s *Server) handlePushTest(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "Auf keinem Gerät sind Push-Benachrichtigungen eingeschaltet")
 		return
 	}
-	err := s.sendPush(userID, pushMessage{Title: "MindSift", Body: "Test: Push-Benachrichtigungen kommen an.", URL: "/", Tag: "test"})
+	// One push service after the other, each with its own timeout
+	allowLongWork(w)
+	body := i18n.T(s.userLanguage(userID), "Test: Push-Benachrichtigungen kommen an.")
+	err := s.sendPush(userID, pushMessage{Title: "MindSift", Body: body, URL: "/", Tag: "test"})
 	if err != nil {
 		if errors.Is(err, errDemoOutgoing) {
 			writeError(w, http.StatusForbidden, err.Error())

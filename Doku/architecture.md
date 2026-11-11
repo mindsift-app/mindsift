@@ -64,7 +64,7 @@ MindSift builds several things itself that other projects take from a library, a
 2. `storage.NewStore()` opens SQLite (`busy_timeout`, WAL, max 8 connections) and executes `migrate()`.
 3. SMTP values from the environment are imported into `system_settings` if none are present.
 4. When the demo flag is set, `EnsureDemoAccounts` creates the `admin/admin` and `user/user` accounts.
-5. `api.NewServer` starts the **alarm ticker** (every minute), the **note log compaction** (on startup, then every 6 hours), the **retention cleanup** (2 minutes after startup, then hourly; disabled in demo mode), and builds the router. Server timeouts: read 15 s, write 30 s, idle 60 s. Graceful shutdown on termination.
+5. `api.NewServer` starts the **alarm ticker** (every minute), the **note log compaction** (on startup, then every 6 hours), the **retention cleanup** (2 minutes after startup, then hourly; disabled in demo mode), and builds the router. Server timeouts: read 15 s, write 30 s, idle 60 s. Handlers that need longer extend them for their own request (`internal/api/bodylimit.go`): uploads and downloads of whole files get 30 minutes, requests on which the server itself works for a while or waits for a mail server or push service (restoring a backup, writing all backups, deleting an account, test mail, test alarm, invite mail, test push) get 5 minutes; streams and long polling have no write timeout. The app waits 12 s for an ordinary answer and 5 minutes for the second group (`REQUEST_TIMEOUT` in `frontend/src/lib/api/client.ts`); file transfers have no timeout in the app. Graceful shutdown on termination.
 
 ## Configuration
 

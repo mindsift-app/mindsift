@@ -492,6 +492,7 @@ func (s *Server) handlePurgeOwnData(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	allowLongWork(w)
 	if err := s.store.PurgeUserData(user.ID); err != nil {
 		writeInternal(w, err)
 		return
@@ -506,6 +507,7 @@ func (s *Server) handleDeleteOwnAccount(w http.ResponseWriter, r *http.Request) 
 	if !ok {
 		return
 	}
+	allowLongWork(w)
 	if err := s.store.DeleteOwnAccount(user.ID); err != nil {
 		status := http.StatusInternalServerError
 		if errors.Is(err, storage.ErrLastAdmin) {
@@ -842,6 +844,8 @@ func (s *Server) handleTestUserAlarm(w http.ResponseWriter, r *http.Request) {
 	lang := s.userLanguage(userID)
 	testTitle := i18n.T(lang, "Test-Alarm von MindSift")
 
+	// The answer says whether the test arrived, also when the other side takes its time
+	allowLongWork(w)
 	switch channel {
 	case "discord":
 		url := target

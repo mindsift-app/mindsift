@@ -347,6 +347,7 @@ var messagesIT = map[string]string{
 	"MindSift: Neue Registrierung wartet auf Freigabe": "MindSift: una nuova registrazione è in attesa di approvazione",
 	"MindSift: SMTP-Test":                              "MindSift: test SMTP",
 	"MindSift Test-Alarm":                              "Allarme di prova di MindSift",
+	"Test: Push-Benachrichtigungen kommen an.":         "Prova: le notifiche push arrivano.",
 	"Test-Alarm von MindSift":                          "Allarme di prova da MindSift",
 	"{name} wartet auf Freigabe":                       "{name} è in attesa di approvazione",
 	"{name} lädt dich zu MindSift ein":                 "{name} ti invita su MindSift",
