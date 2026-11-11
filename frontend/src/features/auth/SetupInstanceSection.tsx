@@ -179,7 +179,8 @@ export const SetupInstanceSection: React.FC<{ state: SetupChoicesState; heading:
                     ariaLabel={t('setup.backupTime')}
                     value={state.backupTime}
                     onChange={state.setBackupTime}
-                    className="mt-1 w-28"
+                    // block: on touch the field is the bare system input, which would sit beside the label
+                    className="block mt-1 w-36 sm:w-28"
                     inputClassName="h-11 sm:h-8 px-2 input-field text-base sm:text-xs"
                   />
                 </div>
