@@ -6,7 +6,7 @@ Reference for developers and administrators. All information has been verified a
 
 | Document | Description |
 |---|---|
-| [architecture.md](architecture.md) | Structure, technology stack, startup, configuration, build |
+| [architecture.md](architecture.md) | Structure, technology stack, design decisions, startup, configuration, build |
 | [database.md](database.md) | SQLite schema, migrations, data model |
 | [api/rest.md](api/rest.md) | All REST endpoints |
 | [api/websocket.md](api/websocket.md) | Real-time communication via WebSocket and SSE, events |
@@ -45,4 +45,4 @@ cd frontend && npm ci && npx tsc --noEmit && npm run test:run && npm run build
 ci/local-checks.sh
 ```
 
-The frontend is built to `cmd/server/dist` for inclusion in the binary (see `Dockerfile`). CI runs twice using the same build plan (`ci/build-plan.sh`): on private Gitea (`.gitea/workflows/`, tests and pre-release images) and on GitHub (`.github/workflows/`, public images at `ghcr.io/mindsift-app/mindsift`). On GitHub, a version tag also gets its release page from the matching `CHANGELOG.md` section (`.github/workflows/release.yaml`, `ci/release-notes.sh`).
+The frontend is built to `cmd/server/dist` for inclusion in the binary (see `Dockerfile`). CI runs twice using the same build plan (`ci/build-plan.sh`): on private Gitea (`.gitea/workflows/`, tests and pre-release images) and on GitHub (`.github/workflows/`, public images at `ghcr.io/mindsift-app/mindsift`). On GitHub, a version tag also gets its release page from the matching `CHANGELOG.md` section (`.github/workflows/release.yaml`, `ci/release-notes.sh`; versions before 0.80.0 are in `CHANGELOG-archive.md`).
