@@ -434,6 +434,20 @@
         }
       }
     },
+    "/api/v1/admin/setup": {
+      "post": {
+        "summary": "Finish the first-time setup after an admin from ADMIN_USER",
+        "description": "The setup wizard's instance settings for an administrator created by ADMIN_USER/ADMIN_PASSWORD (instanceName, allowRegistration, sharingMode, createSampleData, defaultLanguage, as in /auth/setup). Only while GET /auth/me says setupPending, once; afterwards 409",
+        "tags": [
+          "Administration"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
     "/api/v1/admin/settings/sharing-impact": {
       "get": {
         "summary": "Dry run: what a change of the sharing mode would remove",
@@ -797,7 +811,7 @@
     "/api/v1/auth/setup": {
       "post": {
         "summary": "Create the first administrator",
-        "description": "First administrator account (email, password, displayName, instanceName, allowRegistration, sharingMode, createSampleData, defaultLanguage: becomes the server's default language and the admin's own, 400 for unknown codes); only while no accounts exist. Sample data comes in German for German accounts, otherwise in English",
+        "description": "First administrator account (email, password, displayName, instanceName, allowRegistration, sharingMode, createSampleData, defaultLanguage: becomes the server's default language and the admin's own, 400 for unknown codes); only while no accounts exist (403 afterwards, also when ADMIN_USER/ADMIN_PASSWORD created the admin at startup). The body must be sent as Content-Type: application/json (415 otherwise). Sample data comes in German for German accounts, otherwise in English",
         "tags": [
           "Public"
         ],

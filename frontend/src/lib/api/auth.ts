@@ -59,6 +59,20 @@ export const authApi = {
     return res;
   },
 
+  // The wizard's instance settings after an admin from ADMIN_USER (only while getMe says setupPending)
+  async finishSetup(payload: {
+    instanceName?: string;
+    sharingMode?: SharingMode;
+    allowRegistration?: boolean;
+    createSampleData?: boolean;
+    defaultLanguage?: string;
+  }): Promise<void> {
+    await request<{ done: boolean }>('/api/v1/admin/setup', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
   // Public: always the same answer, whether the address exists or not
   async requestPasswordReset(email: string): Promise<void> {
     await request('/api/v1/auth/forgot-password', { method: 'POST', body: JSON.stringify({ email }) });
@@ -92,8 +106,9 @@ export const authApi = {
     return res;
   },
 
-  async getMe(): Promise<{ user: User; stats: DashboardStats; isLastAdmin?: boolean }> {
-    return request<{ user: User; stats: DashboardStats; isLastAdmin?: boolean }>('/api/v1/auth/me');
+  // setupPending: an admin from ADMIN_USER still has the wizard's instance settings to choose
+  async getMe(): Promise<{ user: User; stats: DashboardStats; isLastAdmin?: boolean; setupPending?: boolean }> {
+    return request<{ user: User; stats: DashboardStats; isLastAdmin?: boolean; setupPending?: boolean }>('/api/v1/auth/me');
   },
 
   async updateSettings(patch: {

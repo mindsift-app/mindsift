@@ -24,6 +24,10 @@ services:
       - JWT_SECRET=${JWT_SECRET:-}
       - SECRETS_KEY=${SECRETS_KEY:-}
       - BASE_URL=${BASE_URL:-http://localhost:8080}
+      # First administrator on the first start (ignored once an account exists)
+      - ADMIN_USER=${ADMIN_USER:-}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-}
+      - ADMIN_EMAIL=${ADMIN_EMAIL:-}
       - DEFAULT_LANGUAGE=${DEFAULT_LANGUAGE:-}
       - ALLOW_REGISTRATION=${ALLOW_REGISTRATION:-false}
       - REGISTRATION_MODE=${REGISTRATION_MODE:-}

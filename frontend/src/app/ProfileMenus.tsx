@@ -44,7 +44,7 @@ export function ProfileDropdown({
         <UserAvatar user={user} size="md" className="border border-border/70" />
         <div className="min-w-0 flex-1">
           <p className="font-bold text-main truncate">{user.displayName}</p>
-          <p className="text-[11px] text-muted truncate">{user.email}</p>
+          <p className="text-[11px] text-muted truncate">{user.email || user.username}</p>
           <span className="inline-block mt-1 px-1.5 py-0.5 bg-panel border border-border rounded-btn text-[10px] text-accent font-semibold">
             {roleLabel}
           </span>
@@ -172,7 +172,7 @@ export function MobileProfileSheet({
             <UserAvatar user={user} size="lg" className="border border-border/80 shadow-sm" />
             <div>
               <p className="font-bold text-sm text-main">{user.displayName}</p>
-              <p className="text-xs text-muted">{user.email}</p>
+              <p className="text-xs text-muted">{user.email || user.username}</p>
               <span className="inline-block mt-1 px-1.5 py-0.5 bg-canvas border border-border rounded-btn text-[10px] text-accent font-semibold">
                 {roleLabel}
               </span>

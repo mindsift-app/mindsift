@@ -27,6 +27,7 @@ import {
   ThemeId,
 } from './lib/theme';
 import { SetupAndAuthView } from './features/auth/SetupAndAuthView';
+import { FinishSetupView } from './features/auth/FinishSetupView';
 import { OAuthConsentView } from './features/auth/OAuthConsentView';
 import { OfflineBanner } from './components/OfflineBanner';
 import { DemoHint } from './components/DemoHint';
@@ -90,6 +91,8 @@ export const App: React.FC = () => {
     setAuthStatus,
     user,
     setUser,
+    setupPending,
+    setSetupPending,
     stats,
     setStats,
     deck,
@@ -576,6 +579,22 @@ export const App: React.FC = () => {
         onResetCancel={() => setResetToken(null)}
       />
       </>
+    );
+  }
+
+  // The first admin came from ADMIN_USER / ADMIN_PASSWORD: the wizard's instance settings come first
+  if (setupPending && user.role === 'admin') {
+    return (
+      <FinishSetupView
+        user={user}
+        authStatus={authStatus}
+        onDone={() => {
+          setSetupPending(false);
+          api.getAuthStatus().then(setAuthStatus).catch(() => {});
+          void refreshAll();
+        }}
+        onLogout={handleLogout}
+      />
     );
   }
 

@@ -458,7 +458,8 @@
     "dataDeleted": "All your data was deleted.",
     "actionFailed": "Action failed",
     "confirmRevokeAll": "Do you really want to end all active sessions on all devices? You will be signed out on this device too.",
-    "emailLogin": "Email address (login)"
+    "emailLogin": "Email address (login)",
+    "noEmail": "No email address yet. Without one there is no “forgot password” and no email; a new address counts once you click the confirmation link."
   },
   "users": {
     "title": "Users, roles & invitations",
