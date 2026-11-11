@@ -24,6 +24,7 @@ import (
 var embeddedDist embed.FS
 
 func main() {
+	privateFiles()
 	// Due dates and alarms use the server's local time; without TZ that is Europe/Berlin
 	if os.Getenv("TZ") == "" {
 		if loc, err := time.LoadLocation("Europe/Berlin"); err == nil {
