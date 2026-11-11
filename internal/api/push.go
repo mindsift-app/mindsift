@@ -163,7 +163,7 @@ func (s *Server) handlePushSubscribe(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := validPushEndpoint(req.Endpoint, s.pushKnownServicesOnly()); err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
 	if req.Keys.P256dh == "" || req.Keys.Auth == "" {
@@ -214,7 +214,7 @@ func (s *Server) handlePushTest(w http.ResponseWriter, r *http.Request) {
 	err := s.sendPush(userID, pushMessage{Title: "MindSift", Body: body, URL: "/", Tag: "test"})
 	if err != nil {
 		if errors.Is(err, errDemoOutgoing) {
-			writeError(w, http.StatusForbidden, err.Error())
+			writeErrorFrom(w, http.StatusForbidden, err)
 			return
 		}
 		slog.Warn("Test push failed", "user_id", userID, "error", err)

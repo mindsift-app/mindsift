@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -148,7 +149,7 @@ func readZipNotes(r io.ReaderAt, size int64, plan *ImportPlan) ([]zipNote, []str
 		return nil, nil, "", errors.New("Die Datei ist kein gültiges ZIP-Archiv")
 	}
 	if len(zr.File) > maxImportFiles {
-		return nil, nil, "", fmt.Errorf("Zu viele Dateien im Archiv (max. %d)", maxImportFiles)
+		return nil, nil, "", i18n.NewError("Zu viele Dateien im Archiv (max. {max})", "max", strconv.Itoa(maxImportFiles))
 	}
 
 	names := make([]string, 0, len(zr.File))

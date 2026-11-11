@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -34,7 +35,7 @@ func (s *Server) handleAdminCreateOrganization(w http.ResponseWriter, r *http.Re
 	}
 	org, err := s.store.CreateOrganization(req.Name)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
 	writeJSON(w, http.StatusCreated, org)
@@ -49,7 +50,7 @@ func (s *Server) handleAdminRenameOrganization(w http.ResponseWriter, r *http.Re
 		return
 	}
 	if err := s.store.RenameOrganization(chi.URLParam(r, "id"), req.Name); err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]bool{"updated": true})
@@ -72,7 +73,7 @@ func (s *Server) handleAdminAddOrganizationMember(w http.ResponseWriter, r *http
 		return
 	}
 	if err := s.store.AddOrganizationMember(chi.URLParam(r, "id"), req.UserID); err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]bool{"added": true})
@@ -163,7 +164,7 @@ func (s *Server) handleAdminCreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := auth.ValidatePassword(req.Password); err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
 	// Only server admins hand out roles; user managers create members
@@ -181,7 +182,7 @@ func (s *Server) handleAdminCreateUser(w http.ResponseWriter, r *http.Request) {
 	}
 	u, err := s.store.CreateUser(req.Email, hash, req.DisplayName, req.Role)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
 	for _, orgID := range s.store.ValidOrganizationIDs(req.OrganizationIDs) {
@@ -229,7 +230,7 @@ func (s *Server) handleAdminUpdateUser(w http.ResponseWriter, r *http.Request) {
 
 	if req.DiscordWebhookURL != nil {
 		if err := validateWebhookURL(*req.DiscordWebhookURL, true, s.allowPrivateWebhooks()); err != nil {
-			writeError(w, http.StatusBadRequest, "Discord-Webhook: "+err.Error())
+			writeErrorFrom(w, http.StatusBadRequest, fmt.Errorf("Discord-Webhook: %w", err))
 			return
 		}
 	}
@@ -245,7 +246,7 @@ func (s *Server) handleAdminUpdateUser(w http.ResponseWriter, r *http.Request) {
 	}
 	u, err := s.store.UpdateUser(targetUserID, req.DisplayName, req.Email, req.Role, req.IsActive, req.DiscordWebhookURL, nil)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
 	if req.IsActive != nil && !*req.IsActive {
@@ -272,7 +273,7 @@ func (s *Server) handleAdminResetPassword(w http.ResponseWriter, r *http.Request
 		return
 	}
 	if err := auth.ValidatePassword(req.Password); err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
 	hash, err := auth.HashPassword(req.Password)
@@ -345,7 +346,7 @@ func (s *Server) handleAdminCreateInvite(w http.ResponseWriter, r *http.Request)
 	}
 	inv, err := s.store.CreateUserInvite(callerID, req.Email, req.OrganizationIDs, req.ValidDays, req.MaxUses)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
 	writeJSON(w, http.StatusCreated, inv)

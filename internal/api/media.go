@@ -135,7 +135,7 @@ func (s *Server) handleFetchMedia(w http.ResponseWriter, r *http.Request) {
 	src := strings.TrimSpace(req.URL)
 	// Same protection as alarm webhooks: https only, no addresses in the server's own network
 	if err := validateWebhookURL(src, false, false); err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
 	limit := s.mediaLimit("image")

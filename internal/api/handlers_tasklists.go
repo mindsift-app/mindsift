@@ -35,7 +35,7 @@ func (s *Server) handleMuteTaskList(w http.ResponseWriter, r *http.Request) {
 	listID := chi.URLParam(r, "id")
 	muted := r.Method == http.MethodPut
 	if err := s.store.SetTaskListMuted(userID, listID, muted); err != nil {
-		writeError(w, http.StatusNotFound, err.Error())
+		writeErrorFrom(w, http.StatusNotFound, err)
 		return
 	}
 	s.wsHub.BroadcastToUser(userID, "TASK_LIST_UPDATED", map[string]string{"id": listID})
@@ -62,7 +62,7 @@ func (s *Server) handleCreateTaskList(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
 	tl.Columns = storage.LocalizeColumns(tl.Columns, w.Header().Get("Content-Language"))
@@ -99,7 +99,7 @@ func (s *Server) handleDeleteTaskList(w http.ResponseWriter, r *http.Request) {
 	listID := chi.URLParam(r, "id")
 	audienceBefore := s.store.GetTaskListUserIDs(listID)
 	if err := s.store.DeleteTaskList(userID, listID); err != nil {
-		writeError(w, http.StatusNotFound, err.Error())
+		writeErrorFrom(w, http.StatusNotFound, err)
 		return
 	}
 	s.broadcastTaskListChange(listID, audienceBefore, "TASK_LIST_DELETED")
@@ -148,7 +148,7 @@ func (s *Server) handleCreateTaskListShare(w http.ResponseWriter, r *http.Reques
 	}
 	share, err := s.store.AddTaskListShare(listID, req.TargetType, req.TargetID, permission, userID)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
 	s.broadcastTaskListChange(listID, nil, "TASK_LIST_UPDATED")

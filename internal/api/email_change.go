@@ -71,7 +71,7 @@ func (s *Server) handleConfirmEmailChange(w http.ResponseWriter, r *http.Request
 	before, kind, err := s.store.ConfirmEmailChange(req.Token)
 	switch {
 	case errors.Is(err, storage.ErrEmailTaken):
-		writeError(w, http.StatusConflict, err.Error())
+		writeErrorFrom(w, http.StatusConflict, err)
 		return
 	case err != nil:
 		writeError(w, http.StatusBadRequest, storage.ErrEmailChangeInvalid.Error())

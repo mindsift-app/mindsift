@@ -31,7 +31,7 @@ func (s *Server) handleCreateFolder(w http.ResponseWriter, r *http.Request) {
 	}
 	cleanPath, err := s.store.CreateFolder(userID, req.Path)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
 	s.wsHub.BroadcastToUser(userID, "WORKSPACE_FOLDERS_UPDATED", map[string]string{"path": cleanPath})
@@ -107,7 +107,7 @@ func (s *Server) handleMoveFolder(w http.ResponseWriter, r *http.Request) {
 	}
 	newPath, movedDocIDs, err := s.store.MoveFolder(userID, req.SourcePath, req.TargetParentPath)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
 	for _, id := range movedDocIDs {
@@ -150,7 +150,7 @@ func (s *Server) handleCreateSharedFolder(w http.ResponseWriter, r *http.Request
 	}
 	folder, err := s.store.CreateSharedFolder(userID, req.Name, req.MountPath)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
 	s.wsHub.BroadcastToUser(userID, "WORKSPACE_FOLDERS_UPDATED", folder)
@@ -162,7 +162,7 @@ func (s *Server) handleGetSharedFolderByID(w http.ResponseWriter, r *http.Reques
 	folderID := chi.URLParam(r, "id")
 	folder, err := s.store.GetSharedFolderByID(userID, folderID)
 	if err != nil {
-		writeError(w, http.StatusNotFound, err.Error())
+		writeErrorFrom(w, http.StatusNotFound, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, folder)
@@ -191,7 +191,7 @@ func (s *Server) handleUpdateFolderMount(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	if err := s.store.UpdateFolderMount(userID, folderID, req.MountPath); err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
 	s.wsHub.BroadcastToUser(userID, "WORKSPACE_FOLDERS_UPDATED", map[string]string{"folderId": folderID, "mountPath": req.MountPath})
@@ -247,7 +247,7 @@ func (s *Server) handleCreateFolderShare(w http.ResponseWriter, r *http.Request)
 
 	share, err := s.store.CreateFolderShare(userID, folderID, targetType, targetIdentifier, req.Permission)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
 	s.notifyShared(userID, share.TargetType, share.TargetID, "folder", folderID, s.store.SharedFolderName(folderID))

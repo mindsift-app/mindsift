@@ -131,9 +131,9 @@ func (s *Server) handleEmptyTaskTrash(w http.ResponseWriter, r *http.Request) {
 func writeTaskTrashError(w http.ResponseWriter, err error) {
 	switch {
 	case errors.Is(err, storage.ErrNotInTaskTrash):
-		writeError(w, http.StatusNotFound, err.Error())
+		writeErrorFrom(w, http.StatusNotFound, err)
 	case errors.Is(err, storage.ErrTaskListReadOnly):
-		writeError(w, http.StatusForbidden, err.Error())
+		writeErrorFrom(w, http.StatusForbidden, err)
 	default:
 		writeInternal(w, err)
 	}

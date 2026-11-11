@@ -136,7 +136,7 @@ func (s *Server) handleFirstBootSetup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := auth.ValidatePassword(req.Password); err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
 	if strings.TrimSpace(req.DisplayName) == "" {
@@ -151,7 +151,7 @@ func (s *Server) handleFirstBootSetup(w http.ResponseWriter, r *http.Request) {
 
 	user, err := s.store.CreateUser(req.Email, hash, req.DisplayName, "admin")
 	if err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
 	// The language chosen in the wizard becomes the server's default and the admin's own
@@ -224,7 +224,7 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := auth.ValidatePassword(req.Password); err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
 	if strings.TrimSpace(req.DisplayName) == "" {
@@ -240,7 +240,7 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 	if strings.TrimSpace(req.InviteCode) != "" {
 		inv, err := s.store.GetUserInviteByCode(req.InviteCode)
 		if err != nil {
-			writeError(w, http.StatusForbidden, err.Error())
+			writeErrorFrom(w, http.StatusForbidden, err)
 			return
 		}
 		if inv.Email != "" && domain.NormalizeEmail(inv.Email) != req.Email {
@@ -258,7 +258,7 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 		pending, err = policy.registrationOutcome(req.Email)
 		verify = policy.VerifyEmail
 		if err != nil {
-			writeError(w, http.StatusForbidden, err.Error())
+			writeErrorFrom(w, http.StatusForbidden, err)
 			return
 		}
 		if pending && len(s.store.PendingRegistrationIDs()) >= storage.MaxPendingRegistrations {
@@ -289,7 +289,7 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 	var claim string
 	if validInvite != nil {
 		if claim, err = s.store.ClaimUserInvite(validInvite.ID); err != nil {
-			writeError(w, http.StatusForbidden, err.Error())
+			writeErrorFrom(w, http.StatusForbidden, err)
 			return
 		}
 	}
@@ -509,7 +509,7 @@ func (s *Server) handleDeleteOwnAccount(w http.ResponseWriter, r *http.Request) 
 		if errors.Is(err, storage.ErrLastAdmin) {
 			status = http.StatusForbidden
 		}
-		writeError(w, status, err.Error())
+		writeErrorFrom(w, status, err)
 		return
 	}
 	s.removeUserBackups(user.ID)
@@ -625,19 +625,19 @@ func (s *Server) handleUpdateUserSettings(w http.ResponseWriter, r *http.Request
 	allowPrivate := s.allowPrivateWebhooks()
 	if req.DiscordWebhookURL != nil {
 		if err := validateWebhookURL(*req.DiscordWebhookURL, true, allowPrivate); err != nil {
-			writeError(w, http.StatusBadRequest, "Discord-Webhook: "+err.Error())
+			writeErrorFrom(w, http.StatusBadRequest, fmt.Errorf("Discord-Webhook: %w", err))
 			return
 		}
 	}
 	if req.CustomWebhookURL != nil {
 		if err := validateWebhookURL(*req.CustomWebhookURL, false, allowPrivate); err != nil {
-			writeError(w, http.StatusBadRequest, "Webhook-URL: "+err.Error())
+			writeErrorFrom(w, http.StatusBadRequest, fmt.Errorf("Webhook-URL: %w", err))
 			return
 		}
 	}
 	if req.Password != nil && strings.TrimSpace(*req.Password) != "" {
 		if err := auth.ValidatePassword(*req.Password); err != nil {
-			writeError(w, http.StatusBadRequest, err.Error())
+			writeErrorFrom(w, http.StatusBadRequest, err)
 			return
 		}
 		hash, err := auth.HashPassword(*req.Password)
@@ -681,7 +681,7 @@ func (s *Server) handleUpdateUserSettings(w http.ResponseWriter, r *http.Request
 		req.AvatarURL,
 	)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
 	if changesPassword {
@@ -702,31 +702,31 @@ func (s *Server) handleUpdateUserSettings(w http.ResponseWriter, r *http.Request
 			return
 		}
 		if err := s.store.SetDoneRetentionDays(userID, *req.DoneRetentionDays); err != nil {
-			writeError(w, http.StatusBadRequest, err.Error())
+			writeErrorFrom(w, http.StatusBadRequest, err)
 			return
 		}
 	}
 	if req.VoiceInput != nil {
 		if err := s.store.SetVoiceInput(userID, *req.VoiceInput); err != nil {
-			writeError(w, http.StatusBadRequest, err.Error())
+			writeErrorFrom(w, http.StatusBadRequest, err)
 			return
 		}
 	}
 	if req.VoiceLanguage != nil {
 		if err := s.store.SetVoiceLanguage(userID, *req.VoiceLanguage); err != nil {
-			writeError(w, http.StatusBadRequest, err.Error())
+			writeErrorFrom(w, http.StatusBadRequest, err)
 			return
 		}
 	}
 	if req.Language != nil {
 		if err := s.store.SetLanguage(userID, *req.Language); err != nil {
-			writeError(w, http.StatusBadRequest, err.Error())
+			writeErrorFrom(w, http.StatusBadRequest, err)
 			return
 		}
 	}
 	if req.Retention != nil {
 		if err := s.store.SetRetention(userID, *req.Retention, s.allowNeverRetention()); err != nil {
-			writeError(w, http.StatusBadRequest, err.Error())
+			writeErrorFrom(w, http.StatusBadRequest, err)
 			return
 		}
 	}
@@ -830,7 +830,7 @@ func (s *Server) handleTestUserAlarm(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if err := s.sendDiscordNotification(lang, url, testTitle, i18n.T(lang, "Dein Discord-Alarmkanal funktioniert einwandfrei!"), domain.HumanDue(lang, domain.NowISO()[:10]), "normal"); err != nil {
-			writeError(w, http.StatusBadGateway, "Discord-Fehler: "+err.Error())
+			writeJSON(w, http.StatusBadGateway, map[string]string{"error": tr(w, "Discord-Fehler") + ": " + deliveryProblem(w, err)})
 			return
 		}
 	case "webhook":
@@ -843,7 +843,7 @@ func (s *Server) handleTestUserAlarm(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if err := s.sendCustomWebhookNotification(url, "test_alarm", testTitle, i18n.T(lang, "Dein eigener Webhook empfängt MindSift-Alarme!"), domain.NowISO()[:10], "normal", nil); err != nil {
-			writeError(w, http.StatusBadGateway, "Webhook-Fehler: "+err.Error())
+			writeJSON(w, http.StatusBadGateway, map[string]string{"error": tr(w, "Webhook-Fehler") + ": " + deliveryProblem(w, err)})
 			return
 		}
 	case "email":

@@ -79,7 +79,7 @@ func (s *Server) handleEndSession(w http.ResponseWriter, r *http.Request) {
 		if errors.Is(err, storage.ErrSessionNotFound) {
 			status = http.StatusNotFound
 		}
-		writeError(w, status, err.Error())
+		writeErrorFrom(w, status, err)
 		return
 	}
 	// That device's streams end; the others reconnect with their still valid sessions

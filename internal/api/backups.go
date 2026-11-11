@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -15,6 +16,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/mindsift-app/mindsift/internal/auth"
 	"github.com/mindsift-app/mindsift/internal/domain"
+	"github.com/mindsift-app/mindsift/internal/i18n"
 	"github.com/mindsift-app/mindsift/internal/storage"
 )
 
@@ -65,7 +67,7 @@ func (s *Server) runBackups() (string, error) {
 	}
 	slog.Info("Backups created", "system", name, "users", len(users), "failed", failed)
 	if failed > 0 {
-		return name, fmt.Errorf("%d Benutzer-Backups fehlgeschlagen (siehe Server-Log)", failed)
+		return name, i18n.NewError("{count} Benutzer-Backups fehlgeschlagen (siehe Server-Log)", "count", strconv.Itoa(failed))
 	}
 	return name, nil
 }
@@ -118,7 +120,7 @@ func (s *Server) handleAdminRunBackup(w http.ResponseWriter, r *http.Request) {
 // backups, those expire with the retention period).
 func (s *Server) handleAdminDeleteBackup(w http.ResponseWriter, r *http.Request) {
 	if err := storage.DeleteBackup(filepath.Join(s.backupRoot(), "system"), chi.URLParam(r, "name")); err != nil {
-		writeError(w, http.StatusNotFound, err.Error())
+		writeErrorFrom(w, http.StatusNotFound, err)
 		return
 	}
 	s.handleAdminListBackups(w, r)
@@ -149,7 +151,7 @@ func (s *Server) handleRestoreMyBackup(w http.ResponseWriter, r *http.Request) {
 	userID := auth.GetUserID(r.Context())
 	path, err := storage.BackupPath(storage.UserBackupDir(s.backupRoot(), userID), chi.URLParam(r, "name"))
 	if err != nil {
-		writeError(w, http.StatusNotFound, err.Error())
+		writeErrorFrom(w, http.StatusNotFound, err)
 		return
 	}
 	data, err := os.ReadFile(path)
@@ -159,7 +161,7 @@ func (s *Server) handleRestoreMyBackup(w http.ResponseWriter, r *http.Request) {
 	}
 	plan, err := storage.PlanMindSiftImport(data, filepath.Base(path))
 	if err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
 	sections := storage.NormalizeSections(strings.Split(r.URL.Query().Get("sections"), ","))
@@ -174,7 +176,7 @@ func (s *Server) handleRestoreMyBackup(w http.ResponseWriter, r *http.Request) {
 func serveBackupFile(w http.ResponseWriter, r *http.Request, dir, name, contentType string) {
 	path, err := storage.BackupPath(dir, name)
 	if err != nil {
-		writeError(w, http.StatusNotFound, err.Error())
+		writeErrorFrom(w, http.StatusNotFound, err)
 		return
 	}
 	allowLongTransfer(w)

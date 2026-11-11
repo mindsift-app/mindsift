@@ -62,7 +62,7 @@ func (s *Server) handleCreateTeamDirect(w http.ResponseWriter, r *http.Request) 
 	}
 	team, err := s.store.CreateTeam(orgID, name, req.Description)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
 	// Automatically add creator to team as group admin
@@ -97,7 +97,7 @@ func (s *Server) handleUpdateTeam(w http.ResponseWriter, r *http.Request) {
 	}
 	updated, err := s.store.UpdateTeam(teamID, name, req.Description)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, updated)
@@ -164,7 +164,7 @@ func (s *Server) handleAddTeamMember(w http.ResponseWriter, r *http.Request) {
 		role = "member"
 	}
 	if err := s.store.AddTeamMember(teamID, targetUserID, role); err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
 	members, _ := s.store.GetTeamMembers(teamID)
@@ -192,7 +192,7 @@ func (s *Server) handleUpdateTeamMemberRole(w http.ResponseWriter, r *http.Reque
 		return
 	}
 	if err := s.store.UpdateTeamMemberRole(teamID, memberUserID, role); err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
 	members, _ := s.store.GetTeamMembers(teamID)
@@ -213,7 +213,7 @@ func (s *Server) handleRemoveTeamMember(w http.ResponseWriter, r *http.Request) 
 	}
 
 	if err := s.store.RemoveTeamMember(teamID, memberUserID); err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]bool{"removed": true})

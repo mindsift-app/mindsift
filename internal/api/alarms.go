@@ -3,8 +3,8 @@ package api
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"log/slog"
+	"net/http"
 	"strconv"
 	"time"
 
@@ -71,6 +71,17 @@ func (s *Server) dueAlarmMail(lang string, a storage.DueTaskAlarm, due string) m
 	return c
 }
 
+// deliveryProblem: why a test message did not reach the person's own Discord or webhook target, as far
+// as it may be told (the HTTP status, a refused address); network details such as resolved addresses stay
+// in the server log.
+func deliveryProblem(w http.ResponseWriter, err error) string {
+	if clientSafe(err) {
+		return trErr(w, err)
+	}
+	slog.Warn("Test message not delivered", "error", err)
+	return tr(w, "Ziel nicht erreichbar")
+}
+
 // sendEmailHTML sends text plus an optional HTML version (multipart/alternative).
 func (s *Server) sendEmailHTML(toEmail, subject, bodyText, html string) error {
 	if s.cfg.DemoMode {
@@ -126,7 +137,7 @@ func (s *Server) sendDiscordNotification(lang, webhookURL, title, description, d
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode >= 400 {
-		return fmt.Errorf("HTTP Status %d", resp.StatusCode)
+		return i18n.NewError("HTTP-Status {status}", "status", strconv.Itoa(resp.StatusCode))
 	}
 	return nil
 }
@@ -162,7 +173,7 @@ func (s *Server) sendCustomWebhookNotification(webhookURL, event, title, notes, 
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode >= 400 {
-		return fmt.Errorf("HTTP Status %d", resp.StatusCode)
+		return i18n.NewError("HTTP-Status {status}", "status", strconv.Itoa(resp.StatusCode))
 	}
 	return nil
 }

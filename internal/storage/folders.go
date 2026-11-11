@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/mindsift-app/mindsift/internal/domain"
+	"github.com/mindsift-app/mindsift/internal/i18n"
 )
 
 func (s *Store) GetFolders(userID string) ([]string, error) {
@@ -401,7 +402,11 @@ func (s *Store) MoveFolder(userID, sourcePath, targetParentPath string) (string,
 				nextDocFolder = newFolderPath + suffix
 			}
 			if _, moveErr := s.MoveDocument(userID, doc.ID, nextDocFolder); moveErr != nil {
-				return "", movedDocIDs, fmt.Errorf("Notiz %q verschieben: %w", doc.Title, moveErr)
+				// The reason may be told when it was written for people (a permission), not a database error
+				if i18n.Known(moveErr.Error()) {
+					return "", movedDocIDs, i18n.NewError("Notiz „{title}“ verschieben: {reason}", "title", doc.Title, "reason", moveErr.Error())
+				}
+				return "", movedDocIDs, fmt.Errorf("moving note %q: %w", doc.Title, moveErr)
 			}
 			movedDocIDs = append(movedDocIDs, doc.ID)
 		}
