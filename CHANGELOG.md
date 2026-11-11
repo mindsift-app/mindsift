@@ -38,6 +38,7 @@ Fixes from the security review of November 2026 (v0.94.0).
 - `POST /oauth/revoke` answers `503` when the token could not be revoked, and "Keep the previous one" for a waiting address reports when it failed; both said it worked before.
 - The page description shown by search engines, link previews and the installed app names notes, tasks and shared lists first and the triage last.
 - New tagline "Notes, tasks and a clear head, self-hosted." in the About dialog, the footer of mails, the page description and link previews, in all five languages. It replaces "A clear head in three seconds."
+- The pinned start note of new accounts and the demo is called "Diagrams drawn by an AI agent over MCP"; which agent drew them is said in the note itself.
 
 ### Fixed
 - Deleting your data or account asked for the password without counting wrong guesses; now it counts them like failed sign-ins and locks the same way.
