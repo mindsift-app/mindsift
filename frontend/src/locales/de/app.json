@@ -82,5 +82,9 @@
     "resetting": "wird zurückgesetzt…",
     "label": "✨ Demo ·"
   },
-  "connecting": "Verbinde mit MindSift…"
+  "connecting": "Verbinde mit MindSift…",
+  "appLoad": {
+    "failed": "MindSift konnte nicht vollständig geladen werden. Prüfe die Verbindung und versuche es noch einmal.",
+    "retry": "Erneut versuchen"
+  }
 }

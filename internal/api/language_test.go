@@ -121,7 +121,7 @@ func TestMessageTextsTranslated(t *testing.T) {
 	_ = store.SetLanguage(claims.UserID, "en")
 	c := srv.dueAlarmMail(srv.userLanguage(claims.UserID), storage.DueTaskAlarm{Title: "Dentist", UserName: "Ada", Priority: "high"}, domain.HumanDue("en", "2026-10-30T15:30"))
 	text, html := renderMail(c)
-	for _, want := range []string{"Ada", "One of your tasks is due now:", "Due: 10/30/2026, 3:30 PM · Important", "a clear head in three seconds"} {
+	for _, want := range []string{"Ada", "One of your tasks is due now:", "Due: 10/30/2026, 3:30 PM · Important", "notes, tasks and a clear head, self-hosted"} {
 		if !strings.Contains(text+html, want) {
 			t.Errorf("English alarm mail lacks %q:\n%s", want, text)
 		}
@@ -171,9 +171,9 @@ func TestSetupLanguage(t *testing.T) {
 
 // index.html and manifest.json come in the browser's language.
 func TestStaticFilesLocalized(t *testing.T) {
-	html := `<html lang="de" class="dark"><meta name="description" content="MindSift — Der Kopf frei in drei Sekunden. Verschachtelte Notizen, Aufgaben mit Kanban und Kalender, gemeinsame Listen und eine Triage für alles Unsortierte." />`
+	html := `<html lang="de" class="dark"><meta name="description" content="MindSift — Notizen, Aufgaben und ein freier Kopf, selbst gehostet. Verschachtelte Notizen, Aufgaben mit Kanban und Kalender, gemeinsame Listen und eine Triage für alles Unsortierte." />`
 	got := string(localizeStatic([]byte(html), "it"))
-	if !strings.Contains(got, `<html lang="it"`) || !strings.Contains(got, "La mente libera in tre secondi") {
+	if !strings.Contains(got, `<html lang="it"`) || !strings.Contains(got, "Note, attività e la mente libera, sul tuo server") {
 		t.Fatalf("Italian index.html: %s", got)
 	}
 	manifest := `{"shortcuts":[{"name": "Neue Aufgabe", "short_name": "Aufgabe"}]}`

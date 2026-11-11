@@ -186,8 +186,8 @@ func (s *Store) seedStarterDE(user *domain.User) error {
 
 	_, _ = s.CreateFolder(user.ID, "Projekte")
 	_, _ = s.CreateFolder(user.ID, "Privat")
-	_, _ = s.CreateDocument(user.ID, "", "Diagramme von Claude per MCP", "🤖", "", seedBlocks([]seedBlock{
-		{typ: "h2", text: "Gezeichnet von einem KI-Agenten über MCP"},
+	_, _ = s.CreateDocument(user.ID, "", "Diagramme von einem KI-Agenten über MCP", "🤖", "", seedBlocks([]seedBlock{
+		{typ: "h2", text: "Wie die Grafiken entstanden sind"},
 		{typ: "callout", text: "Beide Grafiken auf dieser Seite hat Claude über den MCP-Server von MindSift erstellt: Claude hat sie als Mermaid-Diagramm geschickt, MindSift hat daraus Zeichnungen gemacht, die du wie deine eigenen bearbeitest – Kästen verschieben, Linien umlegen, Farben ändern."},
 		{typ: "h2", text: "MindSift auf einem kleinen Server"},
 		{level: 1, text: "Docker Compose hinter dem Router: Caddy als Reverse-Proxy, Whisper für die Spracheingabe und ein lokales Sprachmodell in Open WebUI, das MindSift per MCP als Werkzeug nutzt"},
@@ -267,7 +267,7 @@ func (s *Store) seedStarterDE(user *domain.User) error {
 		{typ: "h3", text: "Compose-Ausschnitt"},
 		{level: 1, typ: "code", lang: "yaml", text: "services:\n  mindsift:\n    image: ghcr.io/mindsift-app/mindsift:v0.2\n    restart: unless-stopped\n    volumes: [\"./data:/data\"]\n    environment:\n      - JWT_SECRET=${JWT_SECRET}"},
 		{typ: "h2", text: "Netzplan vor dem Umzug"},
-		{level: 1, text: "Von Hand gezeichnet. Wie es danach aussehen soll, steht in [[Diagramme von Claude per MCP]]"},
+		{level: 1, text: "Von Hand gezeichnet. Wie es danach aussehen soll, steht in [[Diagramme von einem KI-Agenten über MCP]]"},
 		{level: 1, typ: "drawing", text: seedNetworkDrawing("Router / Firewall", "Nur 80 und 443 offen")},
 		{typ: "h2", text: "Offene Fragen"},
 		{level: 1, text: "Reicht eine USV für Router und Server zusammen?"},

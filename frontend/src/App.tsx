@@ -26,26 +26,16 @@ import {
   setActiveTheme as applyTheme,
   ThemeId,
 } from './lib/theme';
-import { TriageDeck } from './features/triage/TriageDeck';
-import { TasksView } from './features/triage/TasksView';
-import { WorkspaceView } from './features/workspace/WorkspaceView';
-import { SharedListsView } from './features/lists/SharedListsView';
 import { SetupAndAuthView } from './features/auth/SetupAndAuthView';
 import { OAuthConsentView } from './features/auth/OAuthConsentView';
 import { OfflineBanner } from './components/OfflineBanner';
 import { useConnectionState } from './lib/useConnectionState';
 import { SharedImportToast } from './components/SharedImportToast';
 import { EmailConfirmToast } from './components/EmailConfirmToast';
-import { UserSettingsView } from './features/settings/UserSettingsView';
-import { AdminSettingsView } from './features/settings/AdminSettingsView';
-import { HelpView } from './features/help/HelpView';
-import { GroupsView } from './features/teams/GroupsView';
 import { useMobileActions } from './context/MobileActionContext';
 import { MobileHeaderMenu } from './components/MobileHeaderMenu';
-import { CommandPalette } from './components/CommandPalette';
 import { AppFooter } from './components/AppFooter';
 import { AboutModal } from './components/AboutModal';
-import { TriageTrash } from './features/triage/TriageTrash';
 import { ConfirmHost, askConfirm } from './components/askConfirm';
 import { outboxCount } from './lib/offline';
 import { unsentNoteCount } from './lib/docSync/persist';
@@ -70,6 +60,8 @@ import { useMobileCapture } from './app/useMobileCapture';
 import { MobileCaptureSheet } from './app/MobileCaptureSheet';
 import { DesktopHeaderBar, DesktopNav, MobileHeaderBar } from './app/AppHeader';
 import { useSessionBootstrap } from './app/useSessionBootstrap';
+import { useMainViews } from './app/useMainViews';
+import { AppLoading } from './app/AppLoading';
 import { rememberMentionNames } from './lib/mentions';
 import { NotificationBell } from './components/NotificationBell';
 import i18n, { applyLanguage, resolveLanguage } from './i18n';
@@ -109,6 +101,8 @@ export const App: React.FC = () => {
     setDemoNotice,
     handleDemoCountdownElapsed,
   } = useSessionBootstrap(() => setShowProfileMenu(false));
+  // The views come as a chunk of their own, loaded once someone is signed in (app/mainViews.ts)
+  const { views, failed: viewsFailed, retry: retryViews } = useMainViews(Boolean(user));
   // Just shared from another app: these Quick Dump entries can still be sent on as task / list item
   const [sharedImportIds, setSharedImportIds] = useState<string[] | null>(null);
   const closeSharedImport = useCallback(() => setSharedImportIds(null), []);
@@ -559,11 +553,7 @@ export const App: React.FC = () => {
   };
 
   if (bootLoading) {
-    return (
-      <div className="min-h-[100dvh] bg-canvas text-muted flex items-center justify-center text-xs font-sans">
-        {t('connecting')}
-      </div>
-    );
+    return <AppLoading />;
   }
 
   // Show Setup Wizard or Login Screen if needsSetup or not logged in
@@ -591,6 +581,10 @@ export const App: React.FC = () => {
   // the address is still /oauth/authorize, so the consent follows the login
   if (window.location.pathname === '/oauth/authorize') {
     return <OAuthConsentView user={user} instanceName={authStatus.instanceName || 'MindSift'} onLogout={handleLogout} />;
+  }
+
+  if (!views) {
+    return <AppLoading onRetry={viewsFailed ? retryViews : undefined} />;
   }
 
   // Server admins and user managers reach the administration (managers only its people sections)
@@ -730,7 +724,7 @@ export const App: React.FC = () => {
             }
           >
             {activeTab === 'triage' && (
-              <TriageDeck
+              <views.TriageDeck
                 deck={deck}
                 lists={lists}
                 onDeckChange={refreshAll}
@@ -742,7 +736,7 @@ export const App: React.FC = () => {
             )}
 
             {activeTab === 'tasks' && (
-              <TasksView
+              <views.TasksView
                 currentUser={user}
                 onRefreshStats={refreshAll}
                 onOpenDocument={handleOpenDocument}
@@ -754,7 +748,7 @@ export const App: React.FC = () => {
             )}
 
             {activeTab === 'workspace' && (
-              <WorkspaceView
+              <views.WorkspaceView
                 currentUser={user}
                 initialDocId={selectedDocId}
                 initialBlockId={selectedBlockId}
@@ -767,11 +761,11 @@ export const App: React.FC = () => {
             )}
 
             {activeTab === 'help' && (
-              <HelpView onBack={() => setActiveTab(previousTab || 'triage')} />
+              <views.HelpView onBack={() => setActiveTab(previousTab || 'triage')} />
             )}
 
             {activeTab === 'lists' && (
-              <SharedListsView
+              <views.SharedListsView
                 onRefreshGlobal={refreshAll}
                 currentUser={user}
                 initialListId={selectedListId}
@@ -780,14 +774,14 @@ export const App: React.FC = () => {
             )}
 
             {activeTab === 'groups' && (
-              <GroupsView
+              <views.GroupsView
                 currentUser={user}
                 onBack={() => setActiveTab(previousTab || 'triage')}
               />
             )}
 
             {activeTab === 'user_settings' && (
-              <UserSettingsView
+              <views.UserSettingsView
                 currentUser={user}
                 activeTheme={activeTheme}
                 themes={allThemes}
@@ -803,7 +797,7 @@ export const App: React.FC = () => {
             )}
 
             {activeTab === 'admin_settings' && isServerAdmin && (
-              <AdminSettingsView
+              <views.AdminSettingsView
                 currentUser={user}
                 onBack={() => setActiveTab('triage')}
               />
@@ -854,7 +848,7 @@ export const App: React.FC = () => {
       <PwaInstallSheet pwa={pwa} instanceName={authStatus.instanceName} />
 
       {/* Global Command Palette (Cmd+K / Ctrl+K / '/') */}
-      <CommandPalette
+      <views.CommandPalette
         isOpen={showCommandPalette}
         onClose={() => setShowCommandPalette(false)}
         onOpenDocument={handleOpenDocument}
@@ -864,7 +858,7 @@ export const App: React.FC = () => {
       />
 
       {showAbout && <AboutModal onClose={() => setShowAbout(false)} />}
-      {showTriageTrash && <TriageTrash onClose={() => setShowTriageTrash(false)} onChanged={refreshAll} />}
+      {showTriageTrash && <views.TriageTrash onClose={() => setShowTriageTrash(false)} onChanged={refreshAll} />}
       {availableUpdate && <UpdateAvailableModal update={availableUpdate} onLater={dismissUpdate} />}
       <ConfirmHost />
       <ErrorNoticeHost />

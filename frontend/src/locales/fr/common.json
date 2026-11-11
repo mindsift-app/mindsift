@@ -31,7 +31,7 @@
     "network": "Erreur réseau"
   },
   "about": {
-    "tagline": "L'esprit libre en trois secondes.",
+    "tagline": "Notes, tâches et l'esprit libre, auto-hébergé.",
     "intro": "La plupart des applications de notes et de tâches demandent de la structure au mauvais moment. MindSift sépare donc la <b>capture</b> de l'<b>organisation</b> : les pensées atterrissent immédiatement dans le Quick Dump et deviennent plus tard une tâche, une note ou un élément de liste d'une simple touche. Tout fonctionne en auto-hébergement dans un seul conteneur avec un fichier SQLite – tes données restent chez toi.",
     "version": "Version",
     "licenseLabel": "Licence",

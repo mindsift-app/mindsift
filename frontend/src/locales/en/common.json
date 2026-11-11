@@ -31,7 +31,7 @@
     "network": "Network error"
   },
   "about": {
-    "tagline": "A clear head in three seconds.",
+    "tagline": "Notes, tasks and a clear head, self-hosted.",
     "intro": "Most note and task apps ask for structure at the wrong moment. So MindSift separates <b>capturing</b> from <b>organizing</b>: thoughts land in the quick dump right away and later become a task, note or list item with one keystroke. Everything runs self-hosted in one container with one SQLite file – your data stays with you.",
     "version": "Version",
     "licenseLabel": "License",

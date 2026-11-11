@@ -31,7 +31,7 @@
     "network": "Errore di rete"
   },
   "about": {
-    "tagline": "Mente libera in tre secondi.",
+    "tagline": "Note, attività e la mente libera, sul tuo server.",
     "intro": "La maggior parte delle app per note e attività richiede una struttura nel momento sbagliato. MindSift separa la <b>registrazione</b> dall'<b>organizzazione</b>: i pensieri finiscono subito nel Quick Dump e diventano in seguito attività, note o elementi di liste con un solo clic o tasto. Tutto funziona in hosting autonomo in un unico container con un solo file SQLite – i tuoi dati restano con te.",
     "version": "Versione",
     "licenseLabel": "Licenza",

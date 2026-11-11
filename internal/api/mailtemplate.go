@@ -225,7 +225,7 @@ func renderMailHTML(c mailContent) string {
 	if c.Footer != "" {
 		p(esc(c.Footer) + `<br>`)
 	}
-	p(esc(i18n.T(c.Lang, "MindSift – Der Kopf frei in drei Sekunden.")))
+	p(esc(i18n.T(c.Lang, "MindSift – Notizen, Aufgaben und ein freier Kopf, selbst gehostet.")))
 	p(`</td></tr>`)
 
 	p(`</table></td></tr></table></body></html>`)
