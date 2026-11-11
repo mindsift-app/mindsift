@@ -471,6 +471,67 @@ const main = async () => {
     }
   }
 
+  // 8. A conflict copy right under its original: I change "Zwei" offline and add a bullet under it while the
+  //    other person has the cursor in "Zwei". Back online my text becomes a copy right under "Zwei" (before
+  //    my new bullet); replacing waits, greyed out with the reason, while "Zwei" is held; "Keep both" keeps it
+  {
+    const title = `Offline Kopie ${stamp}`;
+    const doc = await newNote(admin, title, ['Eins', 'Zwei', 'Drei']);
+    await api(admin, 'POST', `/api/v1/documents/${doc.id}/shares`, { userId, permission: 'write' });
+    const b2 = await chromium.launch();
+    try {
+      const ctxA = await b2.newContext({ viewport: { width: 1280, height: 900 }, locale: 'de-DE' });
+      const ctxB = await b2.newContext({ viewport: { width: 1280, height: 900 }, locale: 'de-DE' });
+      const A = await setup(ctxA, admin);
+      const B = await setup(ctxB, user);
+      await A.goto(BASE);
+      await B.goto(BASE);
+      await openNote(A, title, 'Zwei');
+      await openNote(B, title, 'Zwei');
+      await sleep(1500);
+      await goOffline(ctxA, A);
+      await typeAtEnd(A, 'Zwei', ' – A offline');
+      await A.keyboard.press('Enter');
+      await A.keyboard.type('Neu von A');
+      await A.getByText('Eins', { exact: true }).first().click();
+      await sleep(800);
+      await B.getByText('Zwei', { exact: true }).first().click(); // holds "Zwei" from now on
+      await sleep(2500);
+      await goOnline(ctxA, A);
+      const placed = await waitFor(async () => {
+        const blocks = await serverBlocks(admin, doc.id);
+        return blocks.some((b) => b.props?.conflictOf) && blocks.some((b) => b.content === 'Neu von A') ? blocks : null;
+      }, 12000);
+      const order = (placed || (await serverBlocks(admin, doc.id))).map((b) => (b.props?.conflictOf ? `[Kopie] ${b.content}` : b.content));
+      check(
+        JSON.stringify(order) === JSON.stringify(['Eins', 'Zwei', '[Kopie] Zwei – A offline', 'Neu von A', 'Drei']),
+        `The conflict copy sits right under its original, before the bullet added after it: ${JSON.stringify(order)}`
+      );
+      const take = A.getByRole('button', { name: 'Übernehmen' }).first();
+      const waits = await waitFor(async () => (await take.isDisabled()) && (await A.getByText(/bearbeitet gerade den ursprünglichen Punkt/).count()) > 0, 10000);
+      check(!!waits, 'While the other person holds the original, "Übernehmen" is greyed out and a line says who holds it');
+      check((await take.getAttribute('title'))?.includes('bearbeitet gerade den ursprünglichen Punkt'), 'The greyed-out button says why on hover');
+      check(await A.getByRole('button', { name: 'Beide behalten' }).first().isEnabled(), '"Beide behalten" stays usable while the original is held');
+      if (process.env.SHOT_DIR) await A.screenshot({ path: `${process.env.SHOT_DIR}/conflict-original-locked.png` });
+      await B.getByText('Drei', { exact: true }).first().click(); // leaves "Zwei"
+      const free = await waitFor(async () => !(await take.isDisabled()), 15000);
+      check(!!free, 'Once the original is free, "Übernehmen" can be used');
+      await A.getByRole('button', { name: 'Beide behalten' }).first().click();
+      const kept = await waitFor(async () => {
+        const blocks = await serverBlocks(admin, doc.id);
+        return !blocks.some((b) => b.props?.conflictOf) ? blocks.map((b) => b.content) : null;
+      }, 8000);
+      check(
+        JSON.stringify(kept) === JSON.stringify(['Eins', 'Zwei', 'Zwei – A offline', 'Neu von A', 'Drei']),
+        `"Beide behalten": both texts stay, the copy as a normal bullet under the original: ${JSON.stringify(kept)}`
+      );
+      const unmarked = await waitFor(async () => (await B.getByText(/Version von/).count()) === 0 && (await B.getByText('Zwei – A offline', { exact: true }).count()) > 0, 8000);
+      check(!!unmarked, 'The other browser shows it unmarked too');
+    } finally {
+      await b2.close();
+    }
+  }
+
   console.log(failures === 0 ? '\nAll checks passed' : `\n${failures} check(s) failed`);
   process.exit(failures === 0 ? 0 : 1);
 };

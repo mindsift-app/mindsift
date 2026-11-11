@@ -8,6 +8,7 @@ import { numberedLabels } from '../../lib/outlineList';
 import { flushSync } from 'react-dom';
 import { MobileOutlineBar, isTouchOnly } from './MobileOutlineBar';
 import { startBranchDragGhost } from './branchDragImage';
+import type { ConflictChoice } from '../../lib/docSync/engine';
 
 export interface OutlinerTreeHandle {
   focusFirstBlock: (cursor?: 'start' | 'end') => void;
@@ -47,7 +48,7 @@ export interface OutlinerTreeProps {
   onBlockActivity?: (blockId: string) => void;
   lockedBlocks?: Map<string, BlockLock>; // blockId -> the user editing it (someone else)
   onLockedAction?: (holderName: string) => void;
-  onResolveConflict?: (blockId: string, accept: boolean) => void;
+  onResolveConflict?: (blockId: string, choice: ConflictChoice) => void;
   onUndo?: () => void;
   onRedo?: () => void;
   /** Deleting a selection over several bullets in one step: the first bullet with its new text, the
@@ -1161,6 +1162,7 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
             isFocused={focusedBlockId === block.id}
             canEdit={canEdit && !lockedBlocks?.has(block.id)}
             lockedBy={lockedBlocks?.get(block.id)}
+            originalLockedBy={block.conflictOf && block.conflictOf !== 'title' ? lockedBlocks?.get(block.conflictOf) : undefined}
             canAppendBelow={canEdit}
             onResolveConflict={canEdit ? onResolveConflict : undefined}
             onUndo={onUndo}

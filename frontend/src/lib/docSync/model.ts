@@ -250,6 +250,9 @@ export function applyEffect(d: Doc, e: Effect): void {
   }
 }
 
+// How often the key of a conflict copy halves the gap to its original (internal/collab/doc.go)
+const CONFLICT_KEY_NARROWING = 4;
+
 /**
  * Applies an operation the way the server does (without leases). The client uses it to show its own
  * unconfirmed operations on top of the confirmed state; tests use it as a stand-in server.
@@ -277,20 +280,26 @@ export function applyOp(d: Doc, op: Op, by = '', conflictId: (opId: string) => s
       emit({ kind: 'move', blockId: b.id, parentId: liveAncestor(d, b.parentId), orderKey: b.orderKey });
     }
   };
+  // Same as keyAfter in internal/collab/doc.go: close behind b, before the next sibling (deleted ones too)
   const keyAfter = (b: Block): string => {
-    const sibs = children(d, b.parentId);
     let next = '';
-    for (const s of sibs) {
-      if (s.orderKey > b.orderKey) {
-        next = s.orderKey;
+    d.blocks.forEach((s) => {
+      if (s.parentId === b.parentId && s.orderKey > b.orderKey && (next === '' || s.orderKey < next)) next = s.orderKey;
+    });
+    let k: string;
+    try {
+      k = keyBetween(b.orderKey, next);
+    } catch {
+      k = keyBetween(b.orderKey, '');
+    }
+    for (let i = 0; i < CONFLICT_KEY_NARROWING; i++) {
+      try {
+        k = keyBetween(b.orderKey, k);
+      } catch {
         break;
       }
     }
-    try {
-      return keyBetween(b.orderKey, next);
-    } catch {
-      return keyBetween(b.orderKey, '');
-    }
+    return k;
   };
 
   switch (op.kind) {

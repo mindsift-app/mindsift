@@ -153,10 +153,11 @@ const main = async () => {
   await api(user, 'POST', `/api/v1/docs/${doc.id}/sync`, { clientId: 'api-2', lastSeq: 0, ops: [{ opId: `${ids.b}-y`, kind: 'set_content', blockId: ids.b, baseVersion: before.version, content: 'Verlierer-Text' }] });
   const conflictShown = await waitFor(async () => (await A.page.getByText(/Version von/).count()) > 0, 8000);
   check(!!conflictShown, 'Conflict copy is shown marked');
-  // The user's cursor is still in the original bullet (it holds the lock), so the admin may not overwrite it
-  await A.page.getByRole('button', { name: 'Übernehmen' }).first().click();
-  const refused = await waitFor(async () => A.page.getByRole('status').filter({ hasText: /bearbeitet/ }).first().innerText(), 3000);
-  check(!!refused && /bearbeitet/.test(refused), `Accepting into a bullet locked by someone else is refused: ${refused}`);
+  // The user's cursor is still in the original bullet (it holds the lock), so the admin may not overwrite it:
+  // the button is greyed out and says why
+  const takeA = A.page.getByRole('button', { name: 'Übernehmen' }).first();
+  const refused = await waitFor(async () => ((await takeA.isDisabled()) ? await takeA.getAttribute('title') : null), 5000);
+  check(!!refused && /bearbeitet/.test(refused), `Accepting into a bullet locked by someone else is not offered: ${refused}`);
   // The user holding the original can accept once the copy's author (here a separate API client that never
   // renews its lease) no longer holds the copy, i.e. after at most 20 s
   await waitFor(async () => (await B.page.getByText(/Version von/).count()) > 0, 8000);

@@ -284,7 +284,7 @@ const it: HelpContent = {
               <strong className="text-main">Blocco dei punti:</strong> quando qualcuno modifica un punto elenco, viene mostrata un'icona a lucchetto con il nome dell'utente. Gli altri non possono sovrascrivere quel punto per il momento.
             </li>
             <li>
-              <strong className="text-main">Gestione dei conflitti:</strong> se si verificano modifiche contemporanee o offline, il server non sovrascrive mai i tuoi dati di nascosto. Compare invece un blocco di conflitto evidenziato in giallo con due pulsanti: <em>«Applica»</em> o <em>«Scarta»</em>.
+              <strong className="text-main">Gestione dei conflitti:</strong> se si verificano modifiche contemporanee o offline, il server non sovrascrive mai i tuoi dati di nascosto. Compare invece, subito sotto il punto originale, un blocco di conflitto evidenziato in giallo con tre pulsanti: <em>«Applica»</em> sostituisce il testo originale (Ctrl+Z lo annulla), <em>«Tieni entrambi»</em> toglie solo il segno e lascia entrambi i punti, <em>«Scarta»</em> elimina la copia. Finché qualcuno modifica il punto originale, «Applica» è grigio e sotto compare chi lo sta usando.
             </li>
             <li>
               <strong className="text-main">Indicatore di connessione:</strong> accanto al titolo della nota visualizzi sempre la modalità di connessione (es. <em>Live</em>, <em>long polling</em> o <em>Offline</em>).

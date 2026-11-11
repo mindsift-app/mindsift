@@ -38,6 +38,7 @@ import { ImageBlock } from './ImageBlock';
 import { DrawingBlock } from './drawing/DrawingBlock';
 import { emptyDrawing, serializeDrawing } from '../../lib/drawing/model';
 import { AudioRecorderPicker } from './AudioRecorderPicker';
+import type { ConflictChoice } from '../../lib/docSync/engine';
 import { AudioBlock } from './AudioBlock';
 import { DictationBlock } from './DictationBlock';
 import { currentVoiceConfig } from '../../lib/voice';
@@ -158,8 +159,9 @@ export interface OutlinerBlockProps {
   /** Another bullet on the same level follows: Enter in this empty bullet adds a bullet instead of outdenting */
   siblingFollows?: boolean;
   lockedBy?: BlockLock; // someone else is editing this block
+  originalLockedBy?: BlockLock; // a conflict copy: someone else is editing its original
   canAppendBelow?: boolean; // the user may edit the note, so Enter in a locked block still adds one below
-  onResolveConflict?: (blockId: string, accept: boolean) => void;
+  onResolveConflict?: (blockId: string, choice: ConflictChoice) => void;
   onUndo?: () => void;
   onRedo?: () => void;
   /** Part of a selection over several bullets (browsers without the CSS Highlight API tint the row) */
@@ -214,6 +216,7 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
   listMarker,
   siblingFollows = false,
   lockedBy,
+  originalLockedBy,
   canAppendBelow,
   onResolveConflict,
   onUndo,
@@ -1816,25 +1819,48 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
             </span>
             {onResolveConflict && (
               <>
+                {/* Replacing waits while someone edits the original, replacing and discarding while someone edits
+                    the copy; keeping both only takes the marking off and always works */}
                 <button
                   type="button"
-                  onClick={() => onResolveConflict(block.id, true)}
-                  className="px-1.5 py-0.5 rounded-btn border border-status-warn/40 hover:bg-status-warn/15 cursor-pointer"
-                  title={block.conflictOf === 'title' ? t('block.takeTitle') : t('block.takeText')}
+                  disabled={!!lockedBy || !!originalLockedBy}
+                  onClick={() => onResolveConflict(block.id, 'take')}
+                  className="px-1.5 py-0.5 rounded-btn border border-status-warn/40 hover:bg-status-warn/15 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                  title={
+                    lockedBy
+                      ? t('lock.copy', { name: lockedBy.name })
+                      : originalLockedBy
+                        ? t('block.originalLocked', { name: originalLockedBy.name })
+                        : block.conflictOf === 'title'
+                          ? t('block.takeTitle')
+                          : t('block.takeText')
+                  }
                 >
                   {t('block.take')}
                 </button>
                 <button
                   type="button"
-                  onClick={() => onResolveConflict(block.id, false)}
-                  className="px-1.5 py-0.5 rounded-btn border border-border text-muted hover:text-main hover:bg-panel cursor-pointer"
-                  title={t('block.dropVersion')}
+                  onClick={() => onResolveConflict(block.id, 'keep')}
+                  className="px-1.5 py-0.5 rounded-btn border border-border text-main hover:bg-panel cursor-pointer"
+                  title={t('block.keepBothTitle')}
+                >
+                  {t('block.keepBoth')}
+                </button>
+                <button
+                  type="button"
+                  disabled={!!lockedBy}
+                  onClick={() => onResolveConflict(block.id, 'drop')}
+                  className="px-1.5 py-0.5 rounded-btn border border-border text-muted hover:text-main hover:bg-panel cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                  title={lockedBy ? t('lock.copy', { name: lockedBy.name }) : t('block.dropVersion')}
                 >
                   {t('common:discard')}
                 </button>
               </>
             )}
           </div>
+        )}
+        {block.conflictOf && onResolveConflict && !lockedBy && originalLockedBy && (
+          <p className="mt-0.5 text-[11px] text-status-err select-none">{t('block.originalLocked', { name: originalLockedBy.name })}</p>
         )}
 
         {canEdit && <MentionMenu mention={mention} text={localContent} apply={applyMention} className="absolute left-0 top-full mt-1" />}

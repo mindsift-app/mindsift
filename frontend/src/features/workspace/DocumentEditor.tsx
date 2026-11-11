@@ -34,7 +34,7 @@ import {
 import { Document, DocumentBlock, MoveResult, User } from '../../lib/types';
 import { api } from '../../lib/api';
 import { OfflineError } from '../../lib/offline';
-import { DocSyncEngine, EngineState } from '../../lib/docSync/engine';
+import { ConflictChoice, DocSyncEngine, EngineState } from '../../lib/docSync/engine';
 import { Presence } from '../../lib/docSync/transport';
 import { OutlinerTree, OutlinerTreeHandle } from './OutlinerTree';
 import type { BlockLock } from './OutlinerBlock';
@@ -832,8 +832,8 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
     return () => window.removeEventListener('keydown', onKey);
   }, [embedded, actionsTarget]);
   const handleResolveConflict = useCallback(
-    (blockId: string, accept: boolean) => {
-      const res = engineRef.current?.resolveConflict(blockId, accept);
+    (blockId: string, choice: ConflictChoice) => {
+      const res = engineRef.current?.resolveConflict(blockId, choice);
       if (res?.message) showNotice(res.message);
     },
     [showNotice]

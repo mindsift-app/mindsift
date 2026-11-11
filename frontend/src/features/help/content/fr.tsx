@@ -287,7 +287,7 @@ const fr: HelpContent = {
               <strong className="text-main">Verrous de bloc :</strong> pendant que quelqu'un modifie une puce, une icône de cadenas apparaît avec le nom de l'utilisateur. Les autres utilisateurs ne peuvent pas modifier cette puce à ce moment-là.
             </li>
             <li>
-              <strong className="text-main">Copies de conflit :</strong> si des modifications surviennent simultanément ou hors ligne, le serveur n'écrase jamais silencieusement tes données : une version en conflit est créée pour que tu puisses choisir quelle version conserver.
+              <strong className="text-main">Copies de conflit :</strong> si des modifications surviennent simultanément ou hors ligne, le serveur n'écrase jamais silencieusement tes données : une copie surlignée en jaune apparaît juste sous la puce d'origine, avec trois boutons : <em>« Utiliser »</em> remplace le texte d'origine (Ctrl+Z l'annule), <em>« Garder les deux »</em> retire seulement le marquage et laisse les deux puces, <em>« Ignorer »</em> supprime la copie. Tant que quelqu'un modifie la puce d'origine, « Utiliser » est grisé et une ligne indique qui la tient.
             </li>
             <li>
               <strong className="text-main">Indicateur de présence :</strong> en haut à droite de la note, tu vois qui est actuellement en train de consulter ou modifier le document.

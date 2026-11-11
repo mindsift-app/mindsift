@@ -329,7 +329,7 @@ const es: HelpContent = {
               <strong className="text-main">Bloqueos de bloques:</strong> mientras alguien edita un punto, se muestra un icono de candado y el nombre del usuario. Los demás no pueden sobrescribir ese punto en ese momento.
             </li>
             <li>
-              <strong className="text-main">Copias de conflicto:</strong> si se producen cambios al mismo tiempo o sin conexión, el servidor nunca sobrescribe silenciosamente tus cambios. En su lugar, aparece un bloque de conflicto resaltado en amarillo con dos botones: <em>«Usar»</em> o <em>«Descartar»</em>.
+              <strong className="text-main">Copias de conflicto:</strong> si se producen cambios al mismo tiempo o sin conexión, el servidor nunca sobrescribe silenciosamente tus cambios. En su lugar, justo debajo del punto original aparece un bloque de conflicto resaltado en amarillo con tres botones: <em>«Usar»</em> sustituye el texto original (Ctrl+Z lo deshace), <em>«Conservar ambos»</em> solo quita la marca y deja los dos puntos, <em>«Descartar»</em> borra la copia. Mientras alguien edita el punto original, «Usar» aparece en gris y debajo se indica quién lo tiene.
             </li>
             <li>
               <strong className="text-main">Indicador de conexión:</strong> junto al título de la nota verás siempre el modo de conexión (p. ej. <em>En vivo</em>, <em>long polling</em> o <em>Sin conexión</em>).
