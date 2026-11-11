@@ -99,4 +99,11 @@ ENV DATA_DIR=/data
 VOLUME ["/data"]
 
 EXPOSE 8080
+# State for docker ps, Portainer, Dockge and depends_on (condition: service_healthy). busybox wget is part
+# of Alpine, so this needs no extra package. Shell form: $PORT is read when the check runs, so a port changed
+# for the container is followed. -Y off: an HTTP_PROXY set for outgoing requests must not catch 127.0.0.1.
+# Runs as the container's user (root unless --user is set), needs no files. Podman ignores it in OCI images
+# (its own default build format, and the published images built by buildx); docker-compose.yml repeats it.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD wget -q -Y off -T 4 -O /dev/null "http://127.0.0.1:${PORT:-8080}/api/v1/health" || exit 1
 ENTRYPOINT ["/app/entrypoint.sh", "/app/mindsift"]
