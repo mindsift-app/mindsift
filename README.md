@@ -247,7 +247,7 @@ MindSift builds a few things itself that other projects take from a library, and
 * **Own note sync instead of Yjs or Automerge:** the server has to understand a note (rights, search, backlinks, Markdown), and sync has to survive proxies that cut WebSockets, where Yjs did not hold up. Every change is a plain HTTP request against an operations log. The price: two people cannot type in the same bullet at once.
 * **Own OAuth and MCP server:** claude.ai and ChatGPT only connect through OAuth issued by the MCP server itself (discovery, dynamic client registration, PKCE), and MCP over HTTP is four JSON-RPC methods.
 * **Own drawing layout:** agents hand in Mermaid, and the server turns it into drawings you can keep editing.
-* **Two chunks:** the sign-in page needs about 170 kB compressed, the app itself about 370 kB more after signing in. The service worker loads every part when it installs, so the installed app is complete offline once it has been opened.
+* **Two chunks:** the sign-in page needs about 170 kB compressed, the app itself about 250 kB more after signing in. The service worker loads every part when it installs, so the installed app is complete offline once it has been opened.
 * **Few dependencies:** eight direct Go modules and a handful of npm packages at runtime.
 * **Grown rather than designed:** a session is a signed token plus a database row plus a version counter. A random session ID would do the same with less; it works and is tested, so it stays for now.
 

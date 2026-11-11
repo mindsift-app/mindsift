@@ -27,5 +27,7 @@
   "results_one": "Risultati per <b>«{{query}}»</b>: {{count}} scheda della guida",
   "results_other": "Risultati per <b>«{{query}}»</b>: {{count}} schede della guida",
   "shortcutCount_one": "{{count}} scorciatoia",
-  "shortcutCount_other": "{{count}} scorciatoie"
+  "shortcutCount_other": "{{count}} scorciatoie",
+  "loading": "Caricamento della guida…",
+  "loadFailed": "Impossibile caricare la guida. Controlla la connessione e riaprila."
 }

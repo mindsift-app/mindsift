@@ -27,5 +27,7 @@
   "results_one": "Résultats pour <b>« {{query}} »</b> : {{count}} carte d'aide",
   "results_other": "Résultats pour <b>« {{query}} »</b> : {{count}} cartes d'aide",
   "shortcutCount_one": "{{count}} raccourci",
-  "shortcutCount_other": "{{count}} raccourcis"
+  "shortcutCount_other": "{{count}} raccourcis",
+  "loading": "Chargement de l'aide…",
+  "loadFailed": "L'aide n'a pas pu être chargée. Vérifie la connexion et rouvre-la."
 }
