@@ -79,6 +79,14 @@ func NewStore(dbPath string) (*Store, error) {
 	return store, nil
 }
 
+// SQLiteVersion is the version of the SQLite engine built into the binary (modernc.org/sqlite), logged
+// at startup: scanners such as govulncheck and Trivy do not see it, since the C code is translated to Go.
+func (s *Store) SQLiteVersion() (string, error) {
+	var v string
+	err := s.db.QueryRow(`SELECT sqlite_version()`).Scan(&v)
+	return v, err
+}
+
 func (s *Store) Close() error {
 	s.forgetSystemSettings()
 	return s.db.Close()

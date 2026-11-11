@@ -288,7 +288,7 @@ MindSift is meant to be reachable from the internet behind a reverse proxy, and 
 * **Nothing reaches into your network:** every address the server contacts (webhooks, Discord, push services, link previews, image copies) is checked at connection time against localhost, link-local, cloud-metadata and private ranges, after DNS and after redirects (never from https down to http); private ranges only with an explicit admin switch. `X-Forwarded-*` headers only count from trusted proxies.
 * **Limits everywhere:** request bodies capped per endpoint, realtime connections capped per account, import archives checked for size and file count before anything is written.
 * **Quiet logs and errors:** tokens of public links and typed sign-in names stay out of the log; unexpected errors tell clients and AI agents nothing about the database or files. Everything in `data/` is readable by MindSift only.
-* **Supply chain:** the image runs as an unprivileged user, every release is scanned with Trivy (below), and `govulncheck` and `npm audit` report no vulnerability reachable from the code (November 2026).
+* **Supply chain:** the image runs as an unprivileged user, every release is scanned with Trivy (below), and `govulncheck` and `npm audit` report no vulnerability reachable from the code (November 2026). The SQLite engine built into the binary is kept current by hand, since no scanner sees its version (below).
 
 Found something? Please follow [SECURITY.md](SECURITY.md).
 
@@ -309,6 +309,8 @@ Two things you will notice when you scan the image yourself:
 
 * **Not as root:** since v0.87.3 MindSift runs as the user `mindsift` (uid 1000). The image starts as root only long enough to hand `data/` to that user (once, for installations from before), then drops the rights. Trivy's misconfiguration check therefore still notes a missing `USER` line; that is intended.
 * **Entries for code MindSift does not call:** Trivy lists everything known about a module, used or not, for example the `openpgp` package of `golang.org/x/crypto`, of which MindSift only uses `bcrypt`. [govulncheck](https://go.dev/blog/govulncheck), which follows the code that is actually called, reports no vulnerability that affects MindSift (November 2026).
+
+One thing neither tool can check is **SQLite itself**. It is built into the binary through [modernc.org/sqlite](https://gitlab.com/cznic/sqlite), which translates SQLite's C code to Go, so Trivy and govulncheck only see a Go module and not the SQLite release inside it. That module is therefore updated by hand when SQLite publishes fixes ([release notes](https://sqlite.org/changes.html)). MindSift writes the SQLite version it runs on into the log at startup (`Database opened sqlite=3.54.1`), so you can compare it with SQLite's [list of known vulnerabilities](https://sqlite.org/cves.html).
 
 ```bash
 docker run --rm aquasec/trivy image ghcr.io/mindsift-app/mindsift:stable
