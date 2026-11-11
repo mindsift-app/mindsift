@@ -695,7 +695,7 @@ export function levelAt(poly: Point[], at: Point): boolean {
 export interface ArrowGeometry {
   start: Point;
   end: Point;
-  /** SVG path of the line */
+  /** SVG path of the line (elbows with rounded corners) */
   d: string;
   /** The line as points (hit test, bounds) */
   poly: Point[];
@@ -725,6 +725,39 @@ export function halfway(poly: Point[]): Point {
 }
 
 export const DEFAULT_BEND = 0.25;
+
+/** Radius of the rounded corners of elbow lines (in every theme; short stretches get a smaller one) */
+export const ELBOW_RADIUS = 10;
+
+const pathPoint = (p: Point) => `${p[0]} ${p[1]}`;
+
+/**
+ * SVG path through a line of points with rounded corners: each corner is cut back along both its stretches
+ * by up to the radius (at most half a stretch, so neighbouring corners never overlap) and the two cuts are
+ * joined by a quadratic curve with the corner as its control point. The ends stay where they are and leave
+ * in the direction of their stretch, so arrow heads sit as on the sharp line; the points themselves (hit
+ * tests, stretch handles) are untouched.
+ */
+export function roundedPath(poly: Point[], radius = ELBOW_RADIUS): string {
+  const n = poly.length;
+  if (n === 0) return '';
+  let d = `M ${pathPoint(poly[0])}`;
+  for (let i = 1; i + 1 < n; i++) {
+    const [p, c, q] = [poly[i - 1], poly[i], poly[i + 1]];
+    const l1 = Math.hypot(c[0] - p[0], c[1] - p[1]);
+    const l2 = Math.hypot(q[0] - c[0], q[1] - c[1]);
+    const r = Math.min(radius, l1 / 2, l2 / 2);
+    if (!(r > 0)) {
+      d += ` L ${pathPoint(c)}`;
+      continue;
+    }
+    const s: Point = [c[0] + ((p[0] - c[0]) * r) / l1, c[1] + ((p[1] - c[1]) * r) / l1];
+    const e: Point = [c[0] + ((q[0] - c[0]) * r) / l2, c[1] + ((q[1] - c[1]) * r) / l2];
+    d += ` L ${pathPoint(s)} Q ${pathPoint(c)} ${pathPoint(e)}`;
+  }
+  if (n > 1) d += ` L ${pathPoint(poly[n - 1])}`;
+  return d;
+}
 
 export function arrowGeometry(el: ArrowElement, byId: Map<string, DrawElement>): ArrowGeometry {
   const fromEl = el.from ? byId.get(el.from) : undefined;
@@ -760,7 +793,7 @@ export function arrowGeometry(el: ArrowElement, byId: Map<string, DrawElement>):
     return {
       start: poly[0],
       end: poly[n - 1],
-      d: 'M ' + poly.map((p) => `${p[0]} ${p[1]}`).join(' L '),
+      d: roundedPath(poly),
       poly,
       startAngle: n > 1 ? angle(poly[1], poly[0]) : 0,
       endAngle: n > 1 ? angle(poly[n - 2], poly[n - 1]) : 0,
@@ -801,7 +834,7 @@ export function arrowGeometry(el: ArrowElement, byId: Map<string, DrawElement>):
     return {
       start: poly[0],
       end: poly[n - 1],
-      d: 'M ' + poly.map((p) => `${p[0]} ${p[1]}`).join(' L '),
+      d: roundedPath(poly),
       poly,
       startAngle: angle(poly[1], poly[0]),
       endAngle: angle(poly[n - 2], poly[n - 1]),
@@ -819,7 +852,7 @@ export function arrowGeometry(el: ArrowElement, byId: Map<string, DrawElement>):
     return {
       start: best.a,
       end: best.b,
-      d: 'M ' + clean.map((p) => `${p[0]} ${p[1]}`).join(' L '),
+      d: roundedPath(clean),
       poly: clean,
       startAngle: clean.length > 1 ? angle(clean[1], clean[0]) : 0,
       endAngle: clean.length > 1 ? angle(clean[clean.length - 2], clean[clean.length - 1]) : 0,

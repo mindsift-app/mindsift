@@ -279,6 +279,37 @@ func elbowPoints(a, b [2]float64) [][2]float64 {
 	return [][2]float64{a, {a[0], my}, {b[0], my}, b}
 }
 
+// elbowRadius rounds the corners of elbow lines, as in the app (ELBOW_RADIUS in frontend/src/lib/drawing/model.ts)
+const elbowRadius = 10
+
+// roundedPath is an SVG path through points whose corners are cut back by up to radius on both sides (at most
+// half a stretch) and joined by a quadratic curve with the corner as control point; radius 0 keeps them sharp
+func roundedPath(pts [][2]float64, radius float64) string {
+	if len(pts) == 0 {
+		return ""
+	}
+	pt := func(p [2]float64) string { return f(p[0]) + " " + f(p[1]) }
+	var sb strings.Builder
+	sb.WriteString("M " + pt(pts[0]))
+	for i := 1; i+1 < len(pts); i++ {
+		p, c, q := pts[i-1], pts[i], pts[i+1]
+		l1 := math.Hypot(c[0]-p[0], c[1]-p[1])
+		l2 := math.Hypot(q[0]-c[0], q[1]-c[1])
+		r := math.Min(radius, math.Min(l1/2, l2/2))
+		if !(r > 0) {
+			sb.WriteString(" L " + pt(c))
+			continue
+		}
+		s := [2]float64{c[0] + (p[0]-c[0])*r/l1, c[1] + (p[1]-c[1])*r/l1}
+		e := [2]float64{c[0] + (q[0]-c[0])*r/l2, c[1] + (q[1]-c[1])*r/l2}
+		sb.WriteString(" L " + pt(s) + " Q " + pt(c) + " " + pt(e))
+	}
+	if len(pts) > 1 {
+		sb.WriteString(" L " + pt(pts[len(pts)-1]))
+	}
+	return sb.String()
+}
+
 func f(n float64) string {
 	return strings.TrimRight(strings.TrimRight(fmt.Sprintf("%.1f", n), "0"), ".")
 }
@@ -371,16 +402,12 @@ func SVG(content string) ([]byte, bool) {
 			switch {
 			case len(el.Via) > 0:
 				pts := append(append([][2]float64{a}, el.Via...), b)
-				var sb strings.Builder
-				for i, p := range pts {
-					if i == 0 {
-						sb.WriteString("M ")
-					} else {
-						sb.WriteString(" L ")
-					}
-					sb.WriteString(f(p[0]) + " " + f(p[1]))
+				// Lines with corners are elbows in the app (also when stored as straight), only curves keep sharp ones
+				radius := float64(elbowRadius)
+				if el.Route == "curve" {
+					radius = 0
 				}
-				path = sb.String()
+				path = roundedPath(pts, radius)
 				n := len(pts)
 				startAngle = math.Atan2(pts[0][1]-pts[1][1], pts[0][0]-pts[1][0])
 				endAngle = math.Atan2(pts[n-1][1]-pts[n-2][1], pts[n-1][0]-pts[n-2][0])
@@ -400,16 +427,7 @@ func SVG(content string) ([]byte, bool) {
 				labelAt = [2]float64{(a[0]+b[0])/4 + c[0]/2, (a[1]+b[1])/4 + c[1]/2}
 			case el.Route == "elbow":
 				pts := elbowPoints(a, b)
-				var sb strings.Builder
-				for i, p := range pts {
-					if i == 0 {
-						sb.WriteString("M ")
-					} else {
-						sb.WriteString(" L ")
-					}
-					sb.WriteString(f(p[0]) + " " + f(p[1]))
-				}
-				path = sb.String()
+				path = roundedPath(pts, elbowRadius)
 				startAngle = math.Atan2(pts[0][1]-pts[1][1], pts[0][0]-pts[1][0])
 				endAngle = math.Atan2(pts[3][1]-pts[2][1], pts[3][0]-pts[2][0])
 				labelAt = halfway(pts)

@@ -85,3 +85,27 @@ func TestSVGUsesTheSavedFrame(t *testing.T) {
 		t.Fatalf("frame ignored: %s", svg[:120])
 	}
 }
+
+func TestElbowCornersAreRounded(t *testing.T) {
+	if got := roundedPath([][2]float64{{0, 0}, {0, 40}, {6, 40}, {6, 80}}, elbowRadius); got != "M 0 0 L 0 37 Q 0 40 3 40 L 3 40 Q 6 40 6 43 L 6 80" {
+		t.Errorf("short stretch: %q", got)
+	}
+	if got := roundedPath([][2]float64{{0, 0}, {0, 100}, {100, 100}}, 0); got != "M 0 0 L 0 100 L 100 100" {
+		t.Errorf("radius 0 keeps the corner: %q", got)
+	}
+	svg, _ := SVG(`{"v":1,"els":[
+		{"id":"e","ver":1,"t":"arrow","a":[0,0],"b":[200,100],"route":"elbow","head":2,"s":"main","sw":2},
+		{"id":"v","ver":1,"t":"arrow","a":[0,200],"b":[200,300],"route":"straight","via":[[100,200],[100,300]],"head":2,"s":"main","sw":2},
+		{"id":"s","ver":1,"t":"arrow","a":[0,400],"b":[200,450],"route":"straight","head":2,"s":"main","sw":2}
+	]}`)
+	s := string(svg)
+	for _, want := range []string{
+		`d="M 0 0 L 90 0 Q 100 0 100 10 L 100 90 Q 100 100 110 100 L 200 100"`,
+		`d="M 0 200 L 90 200 Q 100 200 100 210 L 100 290 Q 100 300 110 300 L 200 300"`,
+		`d="M 0 400 L 200 450"`,
+	} {
+		if !strings.Contains(s, want) {
+			t.Errorf("svg lacks %s", want)
+		}
+	}
+}
