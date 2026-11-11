@@ -190,7 +190,8 @@
     "notInList": "Diese Spalte gibt es in der Liste der Aufgabe nicht",
     "emptyColumn": "Keine Aufgaben in dieser Spalte",
     "addTask": "Aufgabe hinzufügen",
-    "columnElsewhere": "Neue Aufgaben hier landen ohne Liste, und dort gibt es diese Spalte nicht. Zum Anlegen die Liste öffnen: {{lists}}"
+    "columnElsewhere": "Neue Aufgaben hier landen ohne Liste, und dort gibt es diese Spalte nicht. Zum Anlegen die Liste öffnen: {{lists}}",
+    "moveTo": "Nach „{{column}}“ verschieben"
   },
   "create": {
     "title": "Neue Aufgabe anlegen",

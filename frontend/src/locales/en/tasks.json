@@ -190,7 +190,8 @@
     "notInList": "This column does not exist in the task's list",
     "emptyColumn": "No tasks in this column",
     "addTask": "Add task",
-    "columnElsewhere": "New tasks here have no list, and there this column does not exist. To add one, open the list: {{lists}}"
+    "columnElsewhere": "New tasks here have no list, and there this column does not exist. To add one, open the list: {{lists}}",
+    "moveTo": "Move to “{{column}}”"
   },
   "create": {
     "title": "Create a new task",
