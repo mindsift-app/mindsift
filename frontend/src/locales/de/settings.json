@@ -458,7 +458,8 @@
     "dataDeleted": "Alle deine Daten wurden gelöscht.",
     "actionFailed": "Aktion fehlgeschlagen",
     "confirmRevokeAll": "Möchtest du wirklich alle aktiven Sitzungen auf allen Geräten beenden? Du wirst dabei auch auf diesem Gerät abgemeldet.",
-    "emailLogin": "E-Mail-Adresse (Login)"
+    "emailLogin": "E-Mail-Adresse (Login)",
+    "noEmail": "Noch keine E-Mail-Adresse hinterlegt. Ohne sie gibt es kein „Passwort vergessen“ und keine E-Mails; eine neue Adresse gilt nach dem Klick auf den Bestätigungslink."
   },
   "users": {
     "title": "Benutzersteuerung, Rollen & Einladungen",

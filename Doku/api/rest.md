@@ -10,7 +10,7 @@ Base: `/api/v1`. Responses are JSON; errors take the form `{"error": "Text"}`, s
 | GET | `/auth/status` | `needsSetup`, `allowRegistration`, `instanceName`, `demoMode`, `sharingMode`, `legal` (`imprintUrl`, `hasImprintContent`, `privacyUrl`, `hasPrivacyContent`, `customLinkLabel`, `customLinkUrl`), `voice` (`mode` = `server`/`browser`/`off`, `maxSeconds`, `browserAllowed`), `mcpEnabled`, `mcpConnectorUrl`, `defaultLanguage` (the server's default language: admin setting, else `DEFAULT_LANGUAGE`, else `de`) |
 | GET | `/legal/{imprint\|privacy}` | Stored Markdown text (`content`), without login; `404` if none set |
 | POST | `/share-target` | PWA Web Share Target fallback: redirects to `/` (`303 See Other`) if service worker is still inactive |
-| POST | `/auth/setup` | First administrator account (`email`, `password`, `displayName`, `instanceName`, `allowRegistration`, `sharingMode`, `createSampleData`, `defaultLanguage`: becomes the server's default language and the admin's own, `400` for unknown codes); only while no accounts exist. Sample data comes in German for German accounts, otherwise in English |
+| POST | `/auth/setup` | First administrator account (`email`, `password`, `displayName`, `instanceName`, `allowRegistration`, `sharingMode`, `createSampleData`, `defaultLanguage`: becomes the server's default language and the admin's own, `400` for unknown codes); only while no accounts exist (`403` afterwards, also when `ADMIN_USER`/`ADMIN_PASSWORD` created the admin at startup). The body must be sent as `Content-Type: application/json` (`415` otherwise). Sample data comes in German for German accounts, otherwise in English |
 | POST | `/auth/verify-email` | Link from verification email (`token`): activates account or forwards it to pending approval (`{"verified","pending","message"}`) |
 | POST | `/auth/confirm-email` | Link from the mail confirming a new login address (`token`, no sign-in needed): takes the address (`{"confirmed","kind":"account","message"}`); `400` for an unknown, used or expired link (48 hours), `409` if the login address got taken meanwhile. A confirmed login address also tells the previous address |
 | POST | `/auth/resend-verification` | Resend verification link (`email`); always responds identically, at most once every 2 minutes per account |
@@ -26,7 +26,7 @@ Base: `/api/v1`. Responses are JSON; errors take the form `{"error": "Text"}`, s
 
 | Method | Path | Purpose |
 |---|---|---|
-| GET | `/auth/me` | User profile and metrics |
+| GET | `/auth/me` | User profile and metrics; `setupPending` (admins only) when the first admin came from `ADMIN_USER` and the wizard's instance settings are still open (`POST /admin/setup`) |
 | POST | `/events/rooms` | Join/leave SSE room (`sseId`, `room`, `action`); own `sseId` only, rooms with read access only |
 | POST | `/events/poll` | Open long-polling connection (`rooms` optional) → `{pollId}`; requires session |
 | GET | `/events/poll/{pollId}?wait=25` | Retrieve buffered events, waits up to `wait` s → `{events}`; `404` = expired |
@@ -356,6 +356,7 @@ Routes marked **S** are open to server admins and user managers (`role = manager
 | POST | `/admin/invites/{id}/send` | **S** Send invitation via email (`email`); binds single-use codes to this address; requires SMTP |
 | DELETE | `/admin/invites/{id}` | **S** Revoke/delete invitation |
 | GET/PUT | `/admin/settings` | `instanceName`, `allowRegistration`, `sharingMode` (`private`/`organizations`/`open`), `peopleSearch`, `publicLinks`, `publicLinkMaxDays` (1–14), `pushKnownServicesOnly` (web push only via the push services of Google, Mozilla, Apple and Microsoft; default `false`), SMTP fields; changing mode cleans up shares. Values fixed by the environment come with `…ConfiguredViaEnv` and are not changed by `PUT`. `smtpPass` is never returned (`smtpPassSet` indicates whether one is stored); empty = unchanged |
+| POST | `/admin/setup` | Rest of the first-time setup after an admin from `ADMIN_USER`: the wizard's instance settings (`instanceName`, `allowRegistration`, `sharingMode`, `createSampleData`, `defaultLanguage`, as in `/auth/setup`). Once, while `/auth/me` says `setupPending`; `409` afterwards |
 | GET | `/admin/settings/sharing-impact?mode=` | Dry run: how many shares and group memberships a mode change would remove (`affected`) |
 | POST | `/admin/smtp/test` | Test email (`toEmail`) |
 | GET | `/admin/voice` | Active voice recognition (`mode`: `server`/`browser`/`off`), settings from `STT_*` without secrets, limits, and in server mode fresh health status (`status.reachable`, `status.modelReady`) |

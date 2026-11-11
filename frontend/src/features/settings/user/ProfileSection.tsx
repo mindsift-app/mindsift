@@ -192,11 +192,15 @@ export function ProfileSection({
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              required
+              // An admin from ADMIN_USER without ADMIN_EMAIL has no address yet and may save the rest
+              required={Boolean(currentUser.email)}
               disabled={demoMode}
               title={demoMode ? t('profile.demoDisabled') : undefined}
               className="w-full h-9 px-3 input-field disabled:opacity-60"
             />
+            {!currentUser.email && !currentUser.pendingEmail && (
+              <p className="mt-1 text-[10px] text-faint">{t('settings:profile.noEmail')}</p>
+            )}
             <PendingEmailNote user={currentUser} onUserUpdated={onUserUpdated} />
           </div>
         </div>
