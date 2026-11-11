@@ -777,7 +777,8 @@ func indentWidth(s string) int {
 
 // MarkdownToBlocks turns Markdown into outliner blocks. Lists keep their nesting, headings start a
 // section whose following content is nested below them (the reverse of the export), callouts and
-// quotes become callout blocks, fenced code becomes a code block, plain paragraphs become bullets.
+// quotes become callout blocks, fenced code becomes a code block, Markdown tables become table blocks,
+// plain paragraphs become bullets.
 func MarkdownToBlocks(md string) []domain.DocumentBlock {
 	lines := strings.Split(md, "\n")
 	var blocks []domain.DocumentBlock
@@ -836,6 +837,23 @@ func MarkdownToBlocks(md string) []domain.DocumentBlock {
 				}
 			}
 			blocks = append(blocks, b)
+			inList, afterParagraph = false, false
+			continue
+		}
+
+		// A Markdown table (header, separator row, rows), also inside lists
+		if IsTableStart(lines, i) {
+			prefix := line[:len(line)-len(strings.TrimLeft(line, " \t"))]
+			var rows []string
+			for ; i < len(lines) && strings.TrimSpace(lines[i]) != "" && strings.Contains(lines[i], "|"); i++ {
+				rows = append(rows, lines[i])
+			}
+			i--
+			level := base
+			if prefix != "" && len(indents) > 0 {
+				level = listLevel(indentWidth(prefix))
+			}
+			blocks = append(blocks, newBlock("table", NormalizeTable(strings.Join(rows, "\n")), level))
 			inList, afterParagraph = false, false
 			continue
 		}
@@ -932,7 +950,7 @@ func MarkdownToBlocks(md string) []domain.DocumentBlock {
 		var para []string
 		for start := i; i < len(lines); i++ {
 			l := strings.TrimSpace(lines[i])
-			if i > start && (l == "" || headingRe.MatchString(lines[i]) || listItemRe.MatchString(lines[i]) || fenceRe.MatchString(lines[i]) || strings.HasPrefix(l, ">")) {
+			if i > start && (l == "" || headingRe.MatchString(lines[i]) || listItemRe.MatchString(lines[i]) || fenceRe.MatchString(lines[i]) || strings.HasPrefix(l, ">") || IsTableStart(lines, i)) {
 				break
 			}
 			para = append(para, l)
