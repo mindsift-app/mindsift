@@ -449,15 +449,20 @@ func (s *Server) Router() http.Handler {
 			}
 			if path == "manifest.json" {
 				if data, err := fs.ReadFile(s.staticFS, path); err == nil {
+					lang := s.requestLanguage(req)
 					w.Header().Set("Content-Type", "application/manifest+json")
+					w.Header().Set("Content-Language", lang)
 					w.WriteHeader(http.StatusOK)
-					_, _ = w.Write(localizeStatic(data, s.requestLanguage(req)))
+					_, _ = w.Write(localizeStatic(data, lang))
 					return
 				}
 			}
 			if path == "index.html" {
 				if data, err := fs.ReadFile(s.staticFS, "index.html"); err == nil {
-					data = localizeStatic(data, s.requestLanguage(req))
+					// The page keeps the default language (German when none is set), unlike API answers
+					lang := s.requestLanguage(req)
+					w.Header().Set("Content-Language", lang)
+					data = localizeStatic(data, lang)
 					origin := requestOrigin(req)
 					if s.cfg.BaseURLSet {
 						origin = strings.TrimRight(s.cfg.BaseURL, "/")

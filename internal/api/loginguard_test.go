@@ -107,6 +107,7 @@ func TestLoginLockedAfterThreeFailures(t *testing.T) {
 	login := func(pw, from string) *httptest.ResponseRecorder {
 		req := httptest.NewRequest("POST", "/api/v1/auth/login", strings.NewReader(`{"login":"lock@example.com","password":"`+pw+`"}`))
 		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Accept-Language", "de")
 		req.RemoteAddr = from + ":4711"
 		rec := httptest.NewRecorder()
 		router.ServeHTTP(rec, req)

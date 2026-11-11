@@ -6,25 +6,43 @@ import (
 	"github.com/mindsift-app/mindsift/internal/i18n"
 )
 
-// defaultLanguage: the admin's choice in the system settings, else DEFAULT_LANGUAGE, else German.
-func (s *Server) defaultLanguage() string {
+// configuredLanguage: the admin's choice in the system settings, else DEFAULT_LANGUAGE, else "".
+func (s *Server) configuredLanguage() string {
 	if v := s.store.DefaultLanguageSetting(); v != "" {
 		return v
 	}
-	if s.cfg.DefaultLanguage != "" {
-		return s.cfg.DefaultLanguage
+	return s.cfg.DefaultLanguage
+}
+
+// defaultLanguage: the configured language (see configuredLanguage), else German.
+func (s *Server) defaultLanguage() string {
+	if v := s.configuredLanguage(); v != "" {
+		return v
 	}
 	return i18n.Fallback
 }
 
 // languageMiddleware decides the language of the answer: the app sends its language as Accept-Language,
-// other clients their browser's or nothing (then the default language). It is passed on as the
-// Content-Language header, where writeError and tr read it.
+// other clients their browser's or nothing (see answerLanguage). It is passed on as the Content-Language
+// header, where writeError and tr read it.
 func (s *Server) languageMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Language", s.requestLanguage(r))
+		w.Header().Set("Content-Language", s.answerLanguage(r))
 		next.ServeHTTP(w, r)
 	})
+}
+
+// answerLanguage: the browser's language when MindSift speaks it, else the configured default language,
+// else English. Unlike requestLanguage it does not fall back to German: a script or curl without
+// Accept-Language on a server nobody set a language for gets English errors.
+func (s *Server) answerLanguage(r *http.Request) string {
+	if v := i18n.Match(r.Header.Get("Accept-Language")); v != "" {
+		return v
+	}
+	if v := s.configuredLanguage(); v != "" {
+		return v
+	}
+	return "en"
 }
 
 // tr translates a text into the language of the answer (see languageMiddleware).
@@ -47,7 +65,7 @@ func (s *Server) userLanguage(userID string) string {
 }
 
 // requestLanguage: the browser's language when MindSift speaks it, else the default language. New
-// accounts start with it.
+// accounts start with it, and index.html and manifest.json come in it.
 func (s *Server) requestLanguage(r *http.Request) string {
 	if v := i18n.Match(r.Header.Get("Accept-Language")); v != "" {
 		return v
