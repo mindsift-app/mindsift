@@ -22,6 +22,11 @@ export const FinishSetupView: React.FC<{
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    if (setupChoices.problem) {
+      setError(setupChoices.problem);
+      triggerHaptic(25);
+      return;
+    }
     setSubmitting(true);
     triggerHaptic(15);
     try {

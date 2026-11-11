@@ -207,6 +207,8 @@ var messagesFR = map[string]string{
 	"Ticket konnte nicht erstellt werden":                                           "Le ticket n’a pas pu être créé",
 	"Token konnte nicht erstellt werden":                                            "Le jeton n’a pas pu être créé",
 	"Unbekannte Sicherung":                                                          "Sauvegarde inconnue",
+	"Ungültige Uhrzeit für die Backups (HH:MM)":                                     "Heure des sauvegardes invalide (HH:MM)",
+	"Ungültige Aufbewahrung der Backups (1 bis 365 Tage)":                           "Durée de conservation des sauvegardes invalide (1 à 365 jours)",
 	"Unbekannte Wiederholung (erlaubt: täglich, wöchentlich, monatlich, jährlich)":  "Répétition inconnue (autorisées : quotidienne, hebdomadaire, mensuelle, annuelle)",
 	"Unbekannter Alarm-Kanal (erlaubt: email, discord, webhook)":                    "Canal d’alarme inconnu (autorisés : email, discord, webhook)",
 	"Unbekanntes Tool":                                                              "Outil inconnu",

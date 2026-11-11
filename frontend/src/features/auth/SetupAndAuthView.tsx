@@ -177,6 +177,11 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
       triggerHaptic(25);
       return;
     }
+    if (setupChoices.problem) {
+      setError(setupChoices.problem);
+      triggerHaptic(25);
+      return;
+    }
 
     setSubmitting(true);
     triggerHaptic(15);

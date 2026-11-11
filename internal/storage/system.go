@@ -218,11 +218,11 @@ func (s *Store) readSystemSettings() (*domain.SystemSettings, error) {
 			case "backup_enabled":
 				settings.BackupEnabled = v == "true"
 			case "backup_time":
-				if validBackupTime(v) {
+				if ValidBackupTime(v) {
 					settings.BackupTime = v
 				}
 			case "backup_retention_days":
-				if n, err := strconv.Atoi(v); err == nil && n > 0 {
+				if n, err := strconv.Atoi(v); err == nil && ValidBackupRetentionDays(n) {
 					settings.BackupRetentionDays = n
 				}
 			case "retention_allow_never":
@@ -323,10 +323,10 @@ func (s *Store) UpdateSystemSettings(settings *domain.SystemSettings) error {
 	if settings.InstanceName == "" {
 		settings.InstanceName = "MindSift"
 	}
-	if !validBackupTime(settings.BackupTime) {
+	if !ValidBackupTime(settings.BackupTime) {
 		settings.BackupTime = DefaultBackupTime
 	}
-	if settings.BackupRetentionDays < 1 || settings.BackupRetentionDays > 365 {
+	if !ValidBackupRetentionDays(settings.BackupRetentionDays) {
 		settings.BackupRetentionDays = DefaultBackupRetentionDays
 	}
 	_, err := s.db.Exec(`INSERT INTO system_settings (key, value) VALUES 

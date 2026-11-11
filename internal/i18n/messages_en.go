@@ -207,6 +207,8 @@ var messagesEN = map[string]string{
 	"Ticket konnte nicht erstellt werden":                                           "The ticket could not be created",
 	"Token konnte nicht erstellt werden":                                            "The token could not be created",
 	"Unbekannte Sicherung":                                                          "Unknown backup",
+	"Ungültige Uhrzeit für die Backups (HH:MM)":                                     "Invalid backup time (HH:MM)",
+	"Ungültige Aufbewahrung der Backups (1 bis 365 Tage)":                           "Invalid backup retention (1 to 365 days)",
 	"Unbekannte Wiederholung (erlaubt: täglich, wöchentlich, monatlich, jährlich)":  "Unknown repeat (allowed: daily, weekly, monthly, yearly)",
 	"Unbekannter Alarm-Kanal (erlaubt: email, discord, webhook)":                    "Unknown alarm channel (allowed: email, discord, webhook)",
 	"Unbekanntes Tool":                                                              "Unknown tool",

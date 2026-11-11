@@ -8,6 +8,12 @@ import { formatBytes, saveBlob } from '../../lib/download';
 import { formatDateTime } from '../../lib/format';
 import { askConfirm } from '../../components/askConfirm';
 import { TimeField } from '../../components/TimeField';
+import {
+  DEFAULT_BACKUP_RETENTION_DAYS,
+  DEFAULT_BACKUP_TIME,
+  MAX_BACKUP_RETENTION_DAYS,
+  validBackupRetentionDays,
+} from '../../lib/backupDefaults';
 
 interface BackupAdminCardProps {
   settings: SystemSettings;
@@ -90,7 +96,7 @@ export const BackupAdminCard: React.FC<BackupAdminCardProps> = ({ settings, onSa
           {t('backups.time')}
           <TimeField
             ariaLabel={t('backups.time')}
-            value={settings.backupTime || '03:00'}
+            value={settings.backupTime || DEFAULT_BACKUP_TIME}
             onChange={(time) => time && onSave({ backupTime: time })}
             className="mt-1 w-28"
             inputClassName="h-11 sm:h-8 px-2 input-field text-base sm:text-xs"
@@ -101,11 +107,11 @@ export const BackupAdminCard: React.FC<BackupAdminCardProps> = ({ settings, onSa
           <input
             type="number"
             min={1}
-            max={365}
-            value={settings.backupRetentionDays || 3}
+            max={MAX_BACKUP_RETENTION_DAYS}
+            value={settings.backupRetentionDays || DEFAULT_BACKUP_RETENTION_DAYS}
             onChange={(e) => {
               const n = parseInt(e.target.value, 10);
-              if (n >= 1 && n <= 365) onSave({ backupRetentionDays: n });
+              if (validBackupRetentionDays(n)) onSave({ backupRetentionDays: n });
             }}
             className="block mt-1 h-11 sm:h-8 px-2 input-field text-base sm:text-xs w-24"
           />
