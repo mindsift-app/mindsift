@@ -106,7 +106,23 @@ function ArrowLabel({ text, box, shift, fs, color }: { text: string; box: Box; s
   );
 }
 
-export function DrawingElementView({ el, byId, labelShift }: { el: DrawElement; byId: Map<string, DrawElement>; labelShift?: [number, number] }) {
+interface ElementViewProps {
+  el: DrawElement;
+  byId: Map<string, DrawElement>;
+  labelShift?: [number, number];
+}
+
+// An arrow also follows the shapes it is docked to; everything else depends on itself only
+const dockedTo = (el: DrawElement, byId: Map<string, DrawElement>, end: 'from' | 'to') =>
+  el.t === 'arrow' && el[end] ? byId.get(el[end] as string) : undefined;
+const sameView = (a: ElementViewProps, b: ElementViewProps) =>
+  a.el === b.el &&
+  a.labelShift === b.labelShift &&
+  dockedTo(b.el, a.byId, 'from') === dockedTo(b.el, b.byId, 'from') &&
+  dockedTo(b.el, a.byId, 'to') === dockedTo(b.el, b.byId, 'to');
+
+// Unchanged elements keep their object, so while one is dragged only it and the arrows docked to it draw again
+export const DrawingElementView = React.memo(function DrawingElementView({ el, byId, labelShift }: ElementViewProps) {
   switch (el.t) {
     case 'text':
       return <FreeText el={el} />;
@@ -127,7 +143,7 @@ export function DrawingElementView({ el, byId, labelShift }: { el: DrawElement; 
     default:
       return <Shape el={el} />;
   }
-}
+}, sameView);
 
 /** All elements in drawing order; hidden ones (being edited as text, about to be erased) are left out or faded */
 export function DrawingElements({
@@ -142,7 +158,7 @@ export function DrawingElements({
   // Labels moved aside so they do not cover each other; without, worked out here once per drawing
   labelShifts?: Map<string, [number, number]>;
 }) {
-  const byId = new Map(els.map((el) => [el.id, el]));
+  const byId = useMemo(() => new Map(els.map((el) => [el.id, el])), [els]);
   const own = useMemo(() => (labelShifts ? null : spreadLabels(els)), [labelShifts, els]);
   const shifts = labelShifts || own;
   return (
