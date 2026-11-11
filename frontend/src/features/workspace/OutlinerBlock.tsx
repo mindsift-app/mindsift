@@ -88,6 +88,9 @@ const BUBBLE_IDLE_MS = 1000;
 // On touch devices the bubble shows when a bullet gets the focus or is tapped, then hides again
 const BUBBLE_TOUCH_MS = 3000;
 
+// Warning and error icons of a collapsed row with children get the ring of a collapsed bullet
+const COLLAPSED_ICON = 'rounded-full bg-accent/15 ring-2 ring-accent/30';
+
 const SLASH_COMMANDS: SlashCommand[] = [
   { type: 'todo', label: '/todo', get desc() { return i18n.t('workspace:slash.todo'); }, icon: <ListTodo className="w-3.5 h-3.5" /> },
   { type: 'numbered', label: '/number', get desc() { return i18n.t('workspace:slash.numbered'); }, icon: <ListOrdered className="w-3.5 h-3.5" />, aliases: ['nummer', 'liste', 'ol'] },
@@ -1386,15 +1389,28 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
           {block.type === 'numbered' && listMarker ? (
             <span
               className={`text-xs tabular-nums font-medium leading-none whitespace-nowrap transition-colors ${
-                activeFocus ? 'text-main' : 'text-muted group-hover/bullet:text-accent'
+                block.collapsed && hasChildren
+                  ? // Like the dot of a collapsed bullet; the margins take the padding back, so the number stays put
+                    'text-accent bg-accent/15 ring-1 ring-accent/30 rounded-btn pl-1 pr-0.5 -mr-0.5 py-0.5 -my-0.5'
+                  : activeFocus
+                  ? 'text-main'
+                  : 'text-muted group-hover/bullet:text-accent'
               }`}
             >
               {listMarker}
             </span>
           ) : block.type === 'warning' ? (
-            <AlertTriangle className="w-3.5 h-3.5 shrink-0 text-status-warn transition-transform group-hover/bullet:scale-110" />
+            <AlertTriangle
+              className={`w-3.5 h-3.5 shrink-0 text-status-warn transition-transform group-hover/bullet:scale-110 ${
+                block.collapsed && hasChildren ? COLLAPSED_ICON : ''
+              }`}
+            />
           ) : block.type === 'error' ? (
-            <XCircle className="w-3.5 h-3.5 shrink-0 text-status-err transition-transform group-hover/bullet:scale-110" />
+            <XCircle
+              className={`w-3.5 h-3.5 shrink-0 text-status-err transition-transform group-hover/bullet:scale-110 ${
+                block.collapsed && hasChildren ? COLLAPSED_ICON : ''
+              }`}
+            />
           ) : (
           <span
             className={`w-1.5 h-1.5 rounded-full transition-all duration-150 ${
