@@ -190,7 +190,8 @@
     "notInList": "Cette colonne n'existe pas dans la liste de la tâche",
     "emptyColumn": "Aucune tâche dans cette colonne",
     "addTask": "Ajouter une tâche",
-    "columnElsewhere": "Les nouvelles tâches créées ici n'ont pas de liste, et cette colonne n'y existe pas. Pour en ajouter une, ouvre la liste : {{lists}}"
+    "columnElsewhere": "Les nouvelles tâches créées ici n'ont pas de liste, et cette colonne n'y existe pas. Pour en ajouter une, ouvre la liste : {{lists}}",
+    "moveTo": "Déplacer vers « {{column}} »"
   },
   "create": {
     "title": "Créer une nouvelle tâche",

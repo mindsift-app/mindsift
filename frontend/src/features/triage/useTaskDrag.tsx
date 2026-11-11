@@ -220,7 +220,7 @@ export function useTaskDrag({
       animate="open"
       exit="gone"
       transition={{ duration: 0.2, ease: 'easeOut' }}
-      className="rounded-card border-2 border-dashed border-accent/50 bg-accent/5 pointer-events-none"
+      className="mt-2 first:mt-0 rounded-card border-2 border-dashed border-accent/50 bg-accent/5 pointer-events-none"
       aria-hidden="true"
     />
   );

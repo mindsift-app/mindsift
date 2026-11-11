@@ -190,7 +190,8 @@
     "notInList": "Questa colonna non è presente nella lista dell'attività",
     "emptyColumn": "Nessuna attività in questa colonna",
     "addTask": "Aggiungi attività",
-    "columnElsewhere": "Le nuove attività qui non hanno una lista, e lì questa colonna non esiste. Per crearne una, apri la lista: {{lists}}"
+    "columnElsewhere": "Le nuove attività qui non hanno una lista, e lì questa colonna non esiste. Per crearne una, apri la lista: {{lists}}",
+    "moveTo": "Sposta in «{{column}}»"
   },
   "create": {
     "title": "Crea una nuova attività",

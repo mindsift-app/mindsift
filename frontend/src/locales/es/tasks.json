@@ -190,7 +190,8 @@
     "notInList": "Esta columna no existe en la lista de la tarea",
     "emptyColumn": "No hay tareas en esta columna",
     "addTask": "Añadir tarea",
-    "columnElsewhere": "Las nuevas tareas aquí no tienen lista, y allí esta columna no existe. Para añadir una, abre la lista: {{lists}}"
+    "columnElsewhere": "Las nuevas tareas aquí no tienen lista, y allí esta columna no existe. Para añadir una, abre la lista: {{lists}}",
+    "moveTo": "Mover a «{{column}}»"
   },
   "create": {
     "title": "Crear una nueva tarea",

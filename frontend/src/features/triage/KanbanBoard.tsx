@@ -1,17 +1,14 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { AnimatePresence } from 'framer-motion';
-import { ArrowLeft, ArrowRight, Calendar, FileText, Plus, Repeat, Bell, Trash2 } from 'lucide-react';
-import { formatDue, isOverdue } from '../../lib/due';
-import { OriginBadge } from '../../components/OriginBadge';
+import { Plus } from 'lucide-react';
 import { columnDotClass } from './ManageColumnsModal';
-import { KanbanColumn, RECURRENCE_LABELS, TaskList, Thought } from '../../lib/types';
+import { KanbanColumn, TaskList, Thought } from '../../lib/types';
 import { KANBAN_MIN_COL_HEIGHT, useKanbanLayout } from './useKanbanLayout';
-import { useTaskDrag, canDragTasks } from './useTaskDrag';
-import { stopOnControl } from './stopOnControl';
+import { useTaskDrag } from './useTaskDrag';
 import { AvatarPerson } from '../../components/AvatarStack';
-import { renderMentions } from '../../lib/markdown';
-import { remindersText } from '../../lib/reminders';
+import { useLatestCallback } from '../../lib/useLatestCallback';
+import { KanbanCard } from './KanbanCard';
 
 // First row of a Kanban board with several rows: the full height minus what is still visible of the bar
 // above the board (--kb-top at the start, shrinking with the scroll position --kb-scroll, which is set on
@@ -127,6 +124,30 @@ export function KanbanBoard({
     kanbanPhoneSnap,
   } = layout;
 
+  // Stable functions for the cards (KanbanCard is memoized): each one runs what this render passed in
+  const cardDragStart = useLatestCallback((e: React.DragEvent<HTMLDivElement>, task: Thought) => {
+    handleTaskDragStart(e, task);
+    setJustDroppedId(null);
+    dragHeightRef.current = e.currentTarget.getBoundingClientRect().height;
+    // Hidden a tick later: hiding the source right away would cancel the drag
+    window.setTimeout(() => setKanbanHiddenId(task.id), 0);
+  });
+  const cardDragEnd = useLatestCallback(() => resetKanbanDrag());
+  const openCard = useLatestCallback((taskId: string) => {
+    if (kanbanTouch.consumeClick()) return;
+    setDetailTaskId(taskId);
+    setShowDetailModal(true);
+  });
+  const toggleTag = useLatestCallback((tag: string) => setSelectedTag(selectedTag === tag ? null : tag));
+  const stableConvertToDoc = useLatestCallback(handleConvertToDoc);
+  const stableDelete = useLatestCallback(handleDeletePermanent);
+  const stableCyclePriority = useLatestCallback(handleCyclePriority);
+  const stableSetStatus = useLatestCallback(handleSetKanbanStatus);
+  const stableOpenDocument = useLatestCallback(onOpenDocument);
+  const stableAssigneePeople = useLatestCallback(getAssigneePeople);
+  const stableRenderAssignees = useLatestCallback(renderAssignees);
+  const stableProgressBar = useLatestCallback(renderTaskProgressBar);
+
   return (
     <div className="space-y-2">
       {kanbanTouch.ghost}
@@ -182,10 +203,10 @@ export function KanbanBoard({
                 <span className="badge-neutral font-mono">{colTasks.length}</span>
               </div>
 
-              {/* Tasks List in Column */}
-              <div data-kanban-list className={`p-2 space-y-2 flex-1 min-h-0 overflow-y-auto ${kanbanColHeight ? '' : 'max-h-[70vh]'}`}>
+              {/* Tasks List in Column. Cards and drop slot space themselves (mt-2 first:mt-0): space-y's
+                  sibling rule made the browser restyle every card below a moving drop slot */}
+              <div data-kanban-list className={`p-2 flex-1 min-h-0 overflow-y-auto ${kanbanColHeight ? '' : 'max-h-[70vh]'}`}>
                 {colTasks.map((task) => {
-                  const isDragging = draggingTaskId === task.id;
                   const readOnly = isTaskReadOnly(task);
                   const visibleIdx = visibleIds.indexOf(task.id);
                   const ownCols = columnsFor(task);
@@ -198,180 +219,30 @@ export function KanbanBoard({
                     <AnimatePresence initial={false} custom={justDroppedId !== null}>
                       {slotHere >= 0 && slotHere === visibleIdx && renderDropSlot(col.id, visibleIdx)}
                     </AnimatePresence>
-                    <div
-                      draggable={canDragTasks && !readOnly}
-                      onDragStart={(e) => {
-                        handleTaskDragStart(e, task);
-                        setJustDroppedId(null);
-                        dragHeightRef.current = e.currentTarget.getBoundingClientRect().height;
-                        // Hidden a tick later: hiding the source right away would cancel the drag
-                        window.setTimeout(() => setKanbanHiddenId(task.id), 0);
-                      }}
-                      onDragEnd={resetKanbanDrag}
-                      data-kanban-task={task.id}
-                      {...kanbanTouch.cardProps(task.id, task.content, !readOnly)}
-                      onClick={() => {
-                        if (kanbanTouch.consumeClick()) return;
-                        setDetailTaskId(task.id);
-                        setShowDetailModal(true);
-                      }}
-                      className={`panel-surface p-2.5 space-y-2 hover:border-strong transition-colors shadow-sm group relative select-none ${
-                        readOnly ? 'cursor-pointer' : 'cursor-grab active:cursor-grabbing'
-                      } ${
-                        kanbanHiddenId === task.id ? 'hidden' : isDragging ? 'opacity-30 border border-dashed border-accent/40' : ''
-                      } ${justDroppedId === task.id ? 'ring-2 ring-accent/60' : ''}`}
-                    >
-                    <div className="flex items-start justify-between gap-2">
-                      <p
-                        className={`text-xs font-medium break-words flex-1 leading-snug ${
-                          task.isCompleted ? 'line-through text-faint' : 'text-main'
-                        }`}
-                      >
-                        {task.content}
-                      </p>
-                      {!readOnly && (
-                      <div className="hidden sm:flex items-center gap-1 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
-                        <button
-                          onClick={() => handleConvertToDoc(task)}
-                          title={task.docId ? t('row.openNote') : t('detail.toDoc')}
-                          className={`${task.docId ? 'text-accent' : 'text-faint'} hover:text-accent p-0.5`}
-                        >
-                          <FileText className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={() => handleDeletePermanent(task.id)}
-                          title={t('detail.delete')}
-                          className="text-faint hover:text-status-err p-0.5"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </button>
-                      </div>
-                      )}
-                    </div>
-
-                    {/* Subtasks progress */}
-                    {renderTaskProgressBar(task)}
-
-                    {/* Notes preview badge */}
-                    {task.notes && (
-                      <div className="flex items-center gap-1 text-[10px] text-muted bg-canvas p-1 rounded border border-border truncate">
-                        <FileText className="w-2.5 h-2.5 text-accent flex-shrink-0" />
-                        <span className="truncate">{renderMentions(task.notes)}</span>
-                      </div>
-                    )}
-
-                    {/* Badges: In Notiz, Priority, Status, Tags */}
-                    <div className="flex flex-wrap items-center gap-1 pt-0.5" onClick={stopOnControl}>
-                      {(task.convertedType === 'document_block' || task.docId) && (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            const docId = task.docId || (task.convertedRefId ? task.convertedRefId.split(':')[0] : '');
-                            const blockId = task.blockId || (task.convertedRefId ? task.convertedRefId.split(':')[1] : '');
-                            if (docId) onOpenDocument(docId, blockId);
-                          }}
-                          className="h-4 px-1.5 text-[9px] rounded-btn border border-accent/40 bg-accent/10 text-accent hover:bg-accent/20 cursor-pointer flex items-center gap-1 font-medium shrink-0"
-                          title={t('row.openInNote')}
-                        >
-                          <FileText className="w-2.5 h-2.5" />
-                          <span>{t('row.inNote')}</span>
-                        </button>
-                      )}
-                      {task.priority === 'urgent' && (
-                        <button
-                          type="button"
-                          disabled={readOnly}
-                          onClick={() => handleCyclePriority(task)}
-                          className="badge-accent text-[9px] cursor-pointer hover:opacity-85 disabled:cursor-default"
-                          title={t('row.urgentToNormal')}
-                        >
-                          {t('tasks:listing.urgent')}
-                        </button>
-                      )}
-                      {task.priority === 'high' && (
-                        <button
-                          type="button"
-                          disabled={readOnly}
-                          onClick={() => handleCyclePriority(task)}
-                          className="px-1.5 py-0.2 border border-status-warn text-status-warn rounded-btn text-[9px] font-medium cursor-pointer hover:opacity-85 disabled:cursor-default"
-                          title={t('row.highToUrgent')}
-                        >
-                          {t('tasks:listing.high')}
-                        </button>
-                      )}
-                      <OriginBadge origin={task.origin} createdAt={task.createdAt} size="xs" />
-                      {task.dueDate && (
-                        <span
-                          className={`inline-flex items-center gap-0.5 text-[9px] ${!task.isCompleted && isOverdue(task.dueDate) ? 'text-status-err font-semibold' : 'text-muted'}`}
-                          title={t('row.dueTitle', { due: task.dueDate.replace('T', ' ') })}
-                        >
-                          <Calendar className="w-2.5 h-2.5" />
-                          <span>{formatDue(task.dueDate)}</span>
-                        </span>
-                      )}
-                      {task.recurrence && (
-                        <span className="inline-flex items-center text-muted" title={t('repeats', { rule: RECURRENCE_LABELS[task.recurrence] })}>
-                          <Repeat className="w-2.5 h-2.5" />
-                        </span>
-                      )}
-                      {task.dueDate && !!task.reminders?.length && (
-                        <span
-                          className="inline-flex items-center text-muted"
-                          title={t('tasks:detail.reminder.own', { list: remindersText(task.reminders, !task.dueDate.includes('T')) })}
-                        >
-                          <Bell className="w-2.5 h-2.5" />
-                        </span>
-                      )}
-                      {task.tags?.map((tag) => (
-                        <button
-                          key={tag}
-                          type="button"
-                          onClick={() => setSelectedTag(selectedTag === tag ? null : tag)}
-                          className={`text-[9px] px-1.5 py-0.2 rounded-pill border transition-colors ${
-                            selectedTag === tag
-                              ? 'bg-accent/15 border-accent text-accent font-semibold'
-                              : 'badge-neutral hover:border-accent'
-                          }`}
-                        >
-                          #{tag}
-                        </button>
-                      ))}
-                      {getAssigneePeople(task).length > 0 && (
-                        <span className="ml-auto">{renderAssignees(task, 'xxs')}</span>
-                      )}
-                    </div>
-
-                    {/* Column Navigation controls: Move Left / Move Right */}
-                    {!readOnly && (
-                    <div
-                      className="flex items-center justify-between pt-1 border-t border-border text-[10px]"
-                      onClick={stopOnControl}
-                    >
-                      <button
-                        type="button"
-                        disabled={!prevCol}
-                        onClick={() => prevCol && handleSetKanbanStatus(task, prevCol.id)}
-                        className="text-faint hover:text-main disabled:opacity-20 flex items-center gap-0.5"
-                        title={prevCol ? `Nach "${prevCol.name}"` : ''}
-                      >
-                        <ArrowLeft className="w-3 h-3" />
-                        <span className="hidden sm:inline">{prevCol?.name ?? ''}</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        disabled={!nextCol}
-                        onClick={() => nextCol && handleSetKanbanStatus(task, nextCol.id)}
-                        className="text-faint hover:text-main disabled:opacity-20 flex items-center gap-0.5"
-                        title={nextCol ? `Nach "${nextCol.name}"` : ''}
-                      >
-                        <span className="hidden sm:inline">{nextCol?.name ?? ''}</span>
-                        <ArrowRight className="w-3 h-3" />
-                      </button>
-                    </div>
-                    )}
-                  </div>
+                    <KanbanCard
+                      task={task}
+                      readOnly={readOnly}
+                      isDragging={draggingTaskId === task.id}
+                      hidden={kanbanHiddenId === task.id}
+                      justDropped={justDroppedId === task.id}
+                      prevCol={prevCol}
+                      nextCol={nextCol}
+                      activeTag={selectedTag && task.tags?.includes(selectedTag) ? selectedTag : null}
+                      lists={safeTaskLists}
+                      onDragStart={cardDragStart}
+                      onDragEnd={cardDragEnd}
+                      touchProps={kanbanTouch.cardProps}
+                      onOpen={openCard}
+                      onConvertToDoc={stableConvertToDoc}
+                      onDelete={stableDelete}
+                      onCyclePriority={stableCyclePriority}
+                      onSetStatus={stableSetStatus}
+                      onTagClick={toggleTag}
+                      onOpenDocument={stableOpenDocument}
+                      getAssigneePeople={stableAssigneePeople}
+                      renderAssignees={stableRenderAssignees}
+                      renderTaskProgressBar={stableProgressBar}
+                    />
                     </React.Fragment>
                 );
               })}
