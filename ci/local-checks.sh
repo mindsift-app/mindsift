@@ -23,10 +23,12 @@ frontend() {
   "$ENGINE" run --rm -v "$ROOT/frontend":/app:z -v mindsift-npm-cache:/root/.npm -e NO_COLOR=1 -e FORCE_COLOR=0 -w /app docker.io/library/node:22-alpine \
     sh -c 'npm ci --no-audit --no-fund --loglevel=error && npx tsc --noEmit && npm run lint && npm run test:run'
 }
+# The Go packages of the image build (cmd/ and internal/), not ./...: that would also walk frontend/node_modules,
+# which has Go files of its own and is deleted and rebuilt by npm ci in the frontend part at the same time
 backend() {
   "$ENGINE" run --rm -v "$ROOT":/src:z -v mindsift-go-cache:/go/pkg/mod -v mindsift-go-build:/root/.cache/go-build -w /src \
     -e DB_MAX_CONNS=1 -e CGO_ENABLED=0 -e STATICCHECK="$STATICCHECK" docker.io/library/golang:1.27-alpine \
-    sh -c 'test -z "$(gofmt -l internal cmd)" || { echo "gofmt:"; gofmt -l internal cmd; exit 1; }; go vet ./... && go run "$STATICCHECK" ./... && go test -timeout 5m ./...'
+    sh -c 'test -z "$(gofmt -l internal cmd)" || { echo "gofmt:"; gofmt -l internal cmd; exit 1; }; go vet ./cmd/... ./internal/... && go run "$STATICCHECK" ./cmd/... ./internal/... && go test -timeout 5m ./cmd/... ./internal/...'
 }
 plan() { bash ci/test-build-plan.sh; }
 
