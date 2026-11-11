@@ -34,7 +34,11 @@ export interface EngineState {
   canUndo: boolean;
   canRedo: boolean;
   channel: SyncChannel;
+  noteFull: number; // operations the server refused because the note holds MAX_NOTE_BLOCKS bullets
 }
+
+// Bullets a note may hold; the server refuses more (internal/collab: MaxNoteBlocks, reason "note_full")
+export const MAX_NOTE_BLOCKS = 20_000;
 
 /** What to do with a conflict copy (resolveConflict). */
 export type ConflictChoice = 'take' | 'keep' | 'drop';
@@ -146,6 +150,7 @@ export class DocSyncEngine {
   private presence: Presence[] = [];
   private lockedByOthers: LeaseInfo[] = [];
   private conflicts: Result[] = [];
+  private noteFull = 0;
   private taskLinks = new Map<string, string>();
   private subtaskLinks = new Map<string, string>();
 
@@ -283,6 +288,7 @@ export class DocSyncEngine {
       canUndo: this.undoStack.length > 0,
       canRedo: this.redoStack.length > 0,
       channel: this.channel(),
+      noteFull: this.noteFull,
     };
   }
 
@@ -651,6 +657,7 @@ export class DocSyncEngine {
         const sent = new Map(batch.map((op) => [op.opId, op]));
         for (const r of res.results) {
           if (r.status === 'conflict') this.conflicts = [...this.conflicts, r];
+          if (r.status === 'rejected' && r.reason === 'note_full') this.noteFull++;
           const conflicted = sent.get(r.opId);
           if (r.status === 'conflict' && r.conflictBlockId && conflicted?.kind === 'set_content') {
             lostTo.set(conflicted.blockId!, r.conflictBlockId);

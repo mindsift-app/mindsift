@@ -508,4 +508,6 @@ var messagesFR = map[string]string{
 	"Das Passwort muss mindestens {min} Zeichen lang sein": "Le mot de passe doit contenir au moins {min} caractères",
 	"Registrierung nur mit E-Mail-Adressen von {domains}":  "Inscription uniquement avec des adresses e-mail de {domains}",
 	"Notiz „{title}“ verschieben: {reason}":                "Déplacer la note « {title} » : {reason}",
+	"Eine Notiz kann höchstens {max} Punkte haben":         "Une note peut avoir au plus {max} puces",
+	"Notiz „{title}“: {reason}":                            "Note « {title} » : {reason}",
 }

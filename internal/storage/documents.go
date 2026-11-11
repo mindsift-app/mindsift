@@ -3,8 +3,10 @@ package storage
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 
+	"github.com/mindsift-app/mindsift/internal/collab"
 	"github.com/mindsift-app/mindsift/internal/domain"
 	"github.com/mindsift-app/mindsift/internal/i18n"
 )
@@ -146,6 +148,9 @@ func (s *Store) GetAuthorizedSharedFolderUsers(folderID string) ([]string, error
 	return users, nil
 }
 
+// ErrNoteTooLarge: a note would hold more bullets than it may (collab.MaxNoteBlocks).
+var ErrNoteTooLarge = i18n.NewError("Eine Notiz kann höchstens {max} Punkte haben", "max", strconv.Itoa(collab.MaxNoteBlocks))
+
 func (s *Store) CreateDocument(userID, spaceID, title, icon, folderPath string, blocks []domain.DocumentBlock, tags []string, isPinned bool) (*domain.Document, error) {
 	if strings.TrimSpace(title) == "" {
 		title = i18n.T(s.MessageLanguage(userID), "Unbenannte Notiz")
@@ -157,6 +162,11 @@ func (s *Store) CreateDocument(userID, spaceID, title, icon, folderPath string, 
 		blocks = []domain.DocumentBlock{
 			{ID: domain.NewID("blk"), Type: "paragraph", Content: ""},
 		}
+	}
+	// The same limit as for bullets added later (collab.MaxNoteBlocks): a note created whole, by the API,
+	// an import or an agent, would otherwise skip it
+	if len(blocks) > collab.MaxNoteBlocks {
+		return nil, ErrNoteTooLarge
 	}
 	tags = stripFolderTags(tags)
 

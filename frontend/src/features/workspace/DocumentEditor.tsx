@@ -34,7 +34,8 @@ import {
 import { Document, DocumentBlock, MoveResult, User } from '../../lib/types';
 import { api } from '../../lib/api';
 import { OfflineError } from '../../lib/offline';
-import { ConflictChoice, DocSyncEngine, EngineState } from '../../lib/docSync/engine';
+import { ConflictChoice, DocSyncEngine, EngineState, MAX_NOTE_BLOCKS } from '../../lib/docSync/engine';
+import { formatNumber } from '../../lib/format';
 import { Presence } from '../../lib/docSync/transport';
 import { OutlinerTree, OutlinerTreeHandle } from './OutlinerTree';
 import type { BlockLock } from './OutlinerBlock';
@@ -839,6 +840,13 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [embedded, actionsTarget]);
+  // The note holds as many bullets as it may: the server refused new ones, which disappear again
+  const noteFull = engineState?.noteFull ?? 0;
+  useEffect(() => {
+    if (noteFull > 0) showNotice(t('editor.noteFull', { max: formatNumber(MAX_NOTE_BLOCKS) }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [noteFull]);
+
   const handleResolveConflict = useCallback(
     (blockId: string, choice: ConflictChoice) => {
       const res = engineRef.current?.resolveConflict(blockId, choice);

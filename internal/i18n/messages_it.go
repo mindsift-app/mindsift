@@ -508,4 +508,6 @@ var messagesIT = map[string]string{
 	"Das Passwort muss mindestens {min} Zeichen lang sein": "La password deve avere almeno {min} caratteri",
 	"Registrierung nur mit E-Mail-Adressen von {domains}":  "Registrazione solo con indirizzi email di {domains}",
 	"Notiz „{title}“ verschieben: {reason}":                "Spostare la nota «{title}»: {reason}",
+	"Eine Notiz kann höchstens {max} Punkte haben":         "Una nota può avere al massimo {max} punti",
+	"Notiz „{title}“: {reason}":                            "Nota «{title}»: {reason}",
 }

@@ -17,6 +17,9 @@ export const formatDateRange = (a: Date | string | number, b: Date | string | nu
 };
 
 // Alphabetical order ignoring case and accents
+// 20000 → "20.000" in German, "20,000" in English
+export const formatNumber = (n: number) => n.toLocaleString(currentLocale());
+
 export const compareText = (a: string, b: string) => a.localeCompare(b, currentLocale(), { sensitivity: 'base' });
 
 // "vor 5 Minuten", "gestern" … for recent times; older than a week: the date

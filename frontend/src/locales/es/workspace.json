@@ -82,7 +82,8 @@
       "image": "Imagen",
       "audio": "Audio",
       "divider": "Separador"
-    }
+    },
+    "noteFull": "Esta nota ha alcanzado su máximo de {{max}} puntos. Los puntos nuevos no se guardan: añádelos en una nota nueva."
   },
   "slash": {
     "todo": "Tarea con casilla de verificación",
