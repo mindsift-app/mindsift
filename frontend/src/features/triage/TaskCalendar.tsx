@@ -567,7 +567,7 @@ export function TaskCalendar({
     <div>
       <div
         ref={boardRef}
-        className={`flex items-stretch gap-3 pt-1 lg:w-[var(--kanban-w)] lg:ml-[var(--kanban-ml)] transition-[width,margin] duration-300 ease-out ${
+        className={`flex items-stretch gap-3 pt-1 lg:w-[var(--kanban-w)] lg:ml-[var(--kanban-ml)] ${
           fillsScreen ? '' : 'h-[max(30rem,calc(100dvh-19rem))]'
         }`}
         data-kb-scroll={fillsScreen ? '' : undefined}
