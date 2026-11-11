@@ -136,6 +136,7 @@ export class DocSyncEngine {
 
   private confirmed: Doc = emptyDoc();
   private lastSeq = 0;
+  private storedNote = ''; // lastSeq|role of the note as last stored in full (see persist)
   private pending: Op[] = [];
   private inflight: Op[] | null = null;
   private local: Doc = emptyDoc();
@@ -214,6 +215,7 @@ export class DocSyncEngine {
         this.confirmed = docFromSnapshot(stored.title, stored.titleVersion, stored.blocks);
         this.lastSeq = stored.lastSeq;
         this.role = stored.role || '';
+        this.storedNote = `${this.lastSeq}|${this.role}`;
         this.pending = stored.pending || [];
         this.inflight = stored.inflight || null;
         this.ready = true;
@@ -584,25 +586,37 @@ export class DocSyncEngine {
     this.listeners.forEach((fn) => fn(s));
   }
 
-  private async persist(): Promise<void> {
+  /**
+   * Stores the queue, and the confirmed note only when it changed since it was last stored (it changes only
+   * with what the server confirms, i.e. with lastSeq): writing all blocks on every typing pause cost several
+   * MB per pause in large notes. `full` stores the note in any case (a snapshot replaced it).
+   */
+  private async persist(full = false): Promise<void> {
     // Signed out (or another account signed in) meanwhile: nothing more is stored for this session
     if (!this.manual && (getCurrentUserId() || '') !== this.userId) return;
     const waiting = this.pending.length > 0 || (this.inflight?.length || 0) > 0;
     markUnsent(this.docId, waiting);
     if (waiting && this.status === 'offline') requestPersistentStorage();
+    const savedAt = this.now();
+    const stored = `${this.lastSeq}|${this.role}`;
     try {
-      await this.storage.save({
-        docId: this.docId,
-        title: this.confirmed.title,
-        titleVersion: this.confirmed.titleVersion,
-        lastSeq: this.lastSeq,
-        role: this.role,
-        userId: this.userId,
-        blocks: Array.from(this.confirmed.blocks.values()),
-        pending: this.pending,
-        inflight: this.inflight,
-        savedAt: this.now(),
-      });
+      if (full || stored !== this.storedNote) {
+        await this.storage.save({
+          docId: this.docId,
+          title: this.confirmed.title,
+          titleVersion: this.confirmed.titleVersion,
+          lastSeq: this.lastSeq,
+          role: this.role,
+          userId: this.userId,
+          blocks: Array.from(this.confirmed.blocks.values()),
+          pending: this.pending,
+          inflight: this.inflight,
+          savedAt,
+        });
+        this.storedNote = stored;
+      } else {
+        await this.storage.saveQueue(this.docId, { pending: this.pending, inflight: this.inflight, savedAt, userId: this.userId });
+      }
     } catch {
       // Storage full or unavailable: changes stay in memory and are still sent
     }
@@ -616,7 +630,7 @@ export class DocSyncEngine {
     this.shared = snap.shared;
     this.ready = true;
     this.recompute();
-    await this.persist();
+    await this.persist(true);
   }
 
   private holds(): string[] {

@@ -15,9 +15,24 @@ export interface StoredDocState {
   savedAt: number;
 }
 
+/** The changes of a note not confirmed by the server yet, stored on their own (see saveQueue). */
+export interface StoredQueue {
+  pending: Op[];
+  inflight: Op[] | null;
+  savedAt: number;
+  userId?: string;
+}
+
 export interface SyncStorage {
+  /** The note with its newest queue. */
   load(docId: string): Promise<StoredDocState | null>;
+  /** The whole note and its queue, together. */
   save(state: StoredDocState): Promise<void>;
+  /**
+   * Only the queue: every edit changes it, while the note itself changes only with what the server confirms.
+   * Writing all blocks on every typing pause took several MB per pause in large notes.
+   */
+  saveQueue(docId: string, queue: StoredQueue): Promise<void>;
   /** All stored notes (to send changes of notes that are no longer open). */
   list(): Promise<StoredDocState[]>;
 }
@@ -25,17 +40,52 @@ export interface SyncStorage {
 const DB_NAME = 'mindsift-sync';
 const STORE = 'docs';
 
+// The queue lies in the same store as the note, under its own key: a new store would need a database
+// upgrade, which waits for every tab still open with an older app version. Its top-level pending/inflight
+// stay empty, so older app versions take the record for a note without changes and pass it by.
+const QUEUE_SUFFIX = '#queue';
+
+interface QueueRecord {
+  docId: string; // note ID + QUEUE_SUFFIX
+  pending: [];
+  inflight: null;
+  queue: StoredQueue;
+}
+
+const queueRecord = (docId: string, queue: StoredQueue): QueueRecord => ({ docId: docId + QUEUE_SUFFIX, pending: [], inflight: null, queue });
+const queueOf = (s: StoredDocState): StoredQueue => ({ pending: s.pending, inflight: s.inflight, savedAt: s.savedAt, userId: s.userId });
+
+/** The note with the newer of its two queues (an older app version stores the queue in the note only). */
+function withQueue(state: StoredDocState, queue: StoredQueue | undefined): StoredDocState {
+  if (!queue || queue.savedAt < state.savedAt || (queue.userId || '') !== (state.userId || '')) return state;
+  return { ...state, pending: queue.pending || [], inflight: queue.inflight || null };
+}
+
+/** Notes and queues of a store's records joined. */
+function joinRecords(records: Array<StoredDocState | QueueRecord>): StoredDocState[] {
+  const queues = new Map<string, StoredQueue>();
+  for (const r of records) if (r.docId.endsWith(QUEUE_SUFFIX)) queues.set(r.docId.slice(0, -QUEUE_SUFFIX.length), (r as QueueRecord).queue);
+  return records
+    .filter((r): r is StoredDocState => !r.docId.endsWith(QUEUE_SUFFIX))
+    .map((s) => withQueue(s, queues.get(s.docId)));
+}
+
 export class MemoryStorage implements SyncStorage {
   private data = new Map<string, StoredDocState>();
+  private queues = new Map<string, StoredQueue>();
   async load(docId: string) {
     const s = this.data.get(docId);
-    return s ? JSON.parse(JSON.stringify(s)) : null;
+    return s ? JSON.parse(JSON.stringify(withQueue(s, this.queues.get(docId)))) : null;
   }
   async save(state: StoredDocState) {
     this.data.set(state.docId, JSON.parse(JSON.stringify(state)));
+    this.queues.set(state.docId, JSON.parse(JSON.stringify(queueOf(state))));
+  }
+  async saveQueue(docId: string, queue: StoredQueue) {
+    this.queues.set(docId, JSON.parse(JSON.stringify(queue)));
   }
   async list() {
-    return Array.from(this.data.values(), (s) => JSON.parse(JSON.stringify(s)) as StoredDocState);
+    return Array.from(this.data.values(), (s) => JSON.parse(JSON.stringify(withQueue(s, this.queues.get(s.docId)))) as StoredDocState);
   }
 }
 
@@ -64,9 +114,15 @@ export class IndexedDBStorage implements SyncStorage {
   async load(docId: string): Promise<StoredDocState | null> {
     const db = await this.open();
     return new Promise((resolve, reject) => {
-      const req = db.transaction(STORE, 'readonly').objectStore(STORE).get(docId);
-      req.onsuccess = () => resolve((req.result as StoredDocState) || null);
-      req.onerror = () => reject(req.error);
+      const store = db.transaction(STORE, 'readonly').objectStore(STORE);
+      const note = store.get(docId);
+      const queue = store.get(docId + QUEUE_SUFFIX);
+      queue.onsuccess = () => {
+        const state = note.result as StoredDocState | undefined;
+        resolve(state ? withQueue(state, (queue.result as QueueRecord | undefined)?.queue) : null);
+      };
+      note.onerror = () => reject(note.error);
+      queue.onerror = () => reject(queue.error);
     });
   }
 
@@ -74,16 +130,27 @@ export class IndexedDBStorage implements SyncStorage {
     const db = await this.open();
     return new Promise((resolve, reject) => {
       const req = db.transaction(STORE, 'readonly').objectStore(STORE).getAll();
-      req.onsuccess = () => resolve((req.result as StoredDocState[]) || []);
+      req.onsuccess = () => resolve(joinRecords(req.result || []));
       req.onerror = () => reject(req.error);
     });
   }
 
   async save(state: StoredDocState): Promise<void> {
+    return this.write((store) => {
+      store.put(state);
+      store.put(queueRecord(state.docId, queueOf(state)));
+    });
+  }
+
+  async saveQueue(docId: string, queue: StoredQueue): Promise<void> {
+    return this.write((store) => store.put(queueRecord(docId, queue)));
+  }
+
+  private async write(fn: (store: IDBObjectStore) => void): Promise<void> {
     const db = await this.open();
     return new Promise((resolve, reject) => {
       const tx = db.transaction(STORE, 'readwrite');
-      tx.objectStore(STORE).put(state);
+      fn(tx.objectStore(STORE));
       tx.oncomplete = () => resolve();
       tx.onerror = () => reject(tx.error);
       tx.onabort = () => reject(tx.error);
