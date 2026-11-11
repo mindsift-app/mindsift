@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strings"
 	"syscall"
 	"time"
 	_ "time/tzdata" // time zones without system tzdata (scratch/alpine images)
@@ -85,7 +86,13 @@ func main() {
 	}
 
 	go func() {
-		slog.Info("MindSift ready", "url", "http://0.0.0.0:"+cfg.Port)
+		// The port it listens on, and the address people reach it at when BASE_URL says so (behind a proxy
+		// that is not the port)
+		ready := []any{"listen", ":" + cfg.Port}
+		if cfg.BaseURLSet {
+			ready = append(ready, "url", strings.TrimRight(cfg.BaseURL, "/"))
+		}
+		slog.Info("MindSift ready", ready...)
 		if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			slog.Error("HTTP server error", "error", err)
 			os.Exit(1)
