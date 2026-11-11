@@ -20,7 +20,8 @@ func (s *Store) docSubtaskLinks(docID string, mainLinks map[string]string) map[s
 	out := map[string]string{}
 	for _, taskID := range mainLinks {
 		var raw string
-		if s.db.QueryRow(`SELECT subtasks FROM thoughts WHERE id = ?`, taskID).Scan(&raw) != nil {
+		if err := s.db.QueryRow(`SELECT subtasks FROM thoughts WHERE id = ?`, taskID).Scan(&raw); err != nil {
+			logDBErr(err)
 			continue
 		}
 		var subs []domain.SubTask
@@ -106,6 +107,7 @@ func (s *Store) ReconcileDocTaskLinks(docID string) []*domain.Thought {
 	}
 	d, _, err := loadCollabDoc(s.db, docID)
 	if err != nil {
+		logDBErr(err)
 		return nil
 	}
 	taken := map[string]bool{}
@@ -245,7 +247,7 @@ func (s *Store) SyncTaskToDoc(userID, taskID string) string {
 	}
 	if subsChanged {
 		subsJSON, _ := json.Marshal(subs)
-		_, _ = s.db.Exec(`UPDATE thoughts SET subtasks = ? WHERE id = ?`, string(subsJSON), taskID)
+		s.execLogged(`UPDATE thoughts SET subtasks = ? WHERE id = ?`, string(subsJSON), taskID)
 	}
 	for _, r := range results {
 		if r.Seq > 0 {

@@ -476,7 +476,7 @@ func (s *Server) Router() http.Handler {
 
 // --- HELPERS & MIDDLEWARE ---
 
-func writeJSON(w http.ResponseWriter, status int, data interface{}) {
+func writeJSON(w http.ResponseWriter, status int, data any) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.Header().Set("Cache-Control", "no-store, no-cache, must-revalidate")
 	w.WriteHeader(status)
@@ -488,11 +488,10 @@ func writeJSON(w http.ResponseWriter, status int, data interface{}) {
 // staticTexts: the German texts of index.html (description, link preview) and manifest.json (app
 // description, shortcuts), served in the browser's language
 var staticTexts = []string{
-	"MindSift — Der Kopf frei in drei Sekunden. Instant Capture, Tinder-Style Triage, Workspace & Echtzeit-Listen.",
+	"MindSift — Der Kopf frei in drei Sekunden. Verschachtelte Notizen, Aufgaben mit Kanban und Kalender, gemeinsame Listen und eine Triage für alles Unsortierte.",
 	"MindSift — Der Kopf frei in drei Sekunden",
-	"Instant Brain-Dump, Tinder-Style Triage, Workspace & Echtzeit-Listen.",
+	"Verschachtelte Notizen, Aufgaben mit Kanban und Kalender, gemeinsame Listen und eine Triage für alles Unsortierte.",
 	"MindSift App Logo & Vorschau",
-	"MindSift — Der Kopf frei in drei Sekunden. Instant Brain-Dump, Tinder-Style Triage, Workspace & Echtzeit-Familienlisten.",
 	"Gedanken schnell in die Triage werfen",
 	"Neue Aufgabe",
 	"Aufgabe",
@@ -548,6 +547,14 @@ func clientMessage(err error) string {
 // writeInternal answers an unexpected failure with 500 (see clientMessage).
 func writeInternal(w http.ResponseWriter, err error) {
 	writeError(w, http.StatusInternalServerError, clientMessage(err))
+}
+
+// logFailed logs the failure of a step the answer does not depend on (cleaning up, something on the
+// side), so it is not lost. what names the step: "Setting the language".
+func logFailed(what string, err error, args ...any) {
+	if err != nil {
+		slog.Warn(what+" failed", append(args, "error", err)...)
+	}
 }
 
 // writeStoreError maps read-only task list violations to 403, a missing row (no access or gone) to 404,

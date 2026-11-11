@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # The checks of the pipeline on this machine, before every push: the pipeline itself only tests GitHub's
-# main (ci/build-plan.sh, TEST_REFS). Same steps as the test stage of the Dockerfile, in containers (no
+# main (ci/build-plan.sh, TEST_REFS). The steps of the test stage of the Dockerfile, in containers (no
 # local Node or Go needed): tsc, ESLint and Vitest for the frontend, go vet and go test with a single
-# database connection for the backend, plus the cases of the build plan.
+# database connection for the backend, plus the cases of the build plan. Only here, not in the image
+# build: gofmt and staticcheck (settings in staticcheck.conf).
 #   ci/local-checks.sh          frontend, backend, build plan (in parallel)
 #   E2E=1 ci/local-checks.sh    additionally the browser tests (e2e/run.sh, a few minutes)
 # Exits non-zero when anything fails; the log of each part is printed at the end.
@@ -13,6 +14,9 @@ LOGS="$(mktemp -d)"
 trap 'rm -rf "$LOGS"' EXIT
 cd "$ROOT"
 
+# staticcheck is no dependency of MindSift (not in go.mod): it runs at this version from the module cache
+STATICCHECK="honnef.co/go/tools/cmd/staticcheck@2026.2.2"
+
 # Named volumes keep npm and Go downloads between runs
 frontend() {
   "$ENGINE" run --rm -v "$ROOT/frontend":/app:z -v mindsift-npm-cache:/root/.npm -e NO_COLOR=1 -e FORCE_COLOR=0 -w /app docker.io/library/node:22-alpine \
@@ -20,8 +24,8 @@ frontend() {
 }
 backend() {
   "$ENGINE" run --rm -v "$ROOT":/src:z -v mindsift-go-cache:/go/pkg/mod -v mindsift-go-build:/root/.cache/go-build -w /src \
-    -e DB_MAX_CONNS=1 -e CGO_ENABLED=0 docker.io/library/golang:1.27-alpine \
-    sh -c 'test -z "$(gofmt -l internal cmd)" || { echo "gofmt:"; gofmt -l internal cmd; exit 1; }; go vet ./... && go test -timeout 5m ./...'
+    -e DB_MAX_CONNS=1 -e CGO_ENABLED=0 -e STATICCHECK="$STATICCHECK" docker.io/library/golang:1.27-alpine \
+    sh -c 'test -z "$(gofmt -l internal cmd)" || { echo "gofmt:"; gofmt -l internal cmd; exit 1; }; go vet ./... && go run "$STATICCHECK" ./... && go test -timeout 5m ./...'
 }
 plan() { bash ci/test-build-plan.sh; }
 

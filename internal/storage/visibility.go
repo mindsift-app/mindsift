@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"log/slog"
 	"sort"
 	"strings"
 
@@ -44,8 +45,8 @@ func (s *Store) SharingMode() string {
 // shareOrganization reports whether two people are members of at least one common organization.
 func (s *Store) shareOrganization(a, b string) bool {
 	var n int
-	_ = s.db.QueryRow(`SELECT COUNT(*) FROM organization_members ma JOIN organization_members mb ON mb.org_id = ma.org_id
-		WHERE ma.user_id = ? AND mb.user_id = ?`, a, b).Scan(&n)
+	logDBErr(s.db.QueryRow(`SELECT COUNT(*) FROM organization_members ma JOIN organization_members mb ON mb.org_id = ma.org_id
+		WHERE ma.user_id = ? AND mb.user_id = ?`, a, b).Scan(&n))
 	return n > 0
 }
 
@@ -61,7 +62,7 @@ func (s *Store) CanSee(viewerID, targetID string) bool {
 	switch s.SharingMode() {
 	case SharingOpen:
 		var n int
-		_ = s.db.QueryRow(`SELECT COUNT(*) FROM users WHERE id = ?`, targetID).Scan(&n)
+		logDBErr(s.db.QueryRow(`SELECT COUNT(*) FROM users WHERE id = ?`, targetID).Scan(&n))
 		return n > 0
 	case SharingPrivate:
 		return false
@@ -77,7 +78,7 @@ func (s *Store) CanShareWith(ownerID, targetType, targetID string) bool {
 	}
 	if targetType == "team" {
 		var n int
-		_ = s.db.QueryRow(`SELECT COUNT(*) FROM team_members WHERE team_id = ? AND user_id = ?`, targetID, ownerID).Scan(&n)
+		logDBErr(s.db.QueryRow(`SELECT COUNT(*) FROM team_members WHERE team_id = ? AND user_id = ?`, targetID, ownerID).Scan(&n))
 		return n > 0
 	}
 	return ownerID != targetID && s.CanSee(ownerID, targetID)
@@ -110,6 +111,9 @@ func (s *Store) GetDiscoverableUsers(viewerID string) ([]domain.User, error) {
 		if u, err := scanUser(rows); err == nil {
 			users = append(users, *u)
 		}
+	}
+	if err := rows.Err(); err != nil {
+		return []domain.User{}, err
 	}
 	return users, nil
 }
@@ -162,10 +166,17 @@ func (s *Store) GetDirectory(viewerID string, search bool) ([]domain.PublicUser,
 	seen := map[string]bool{viewerID: true}
 	for rows.Next() {
 		var id string
-		if rows.Scan(&id) == nil && !seen[id] {
+		if err := rows.Scan(&id); err != nil {
+			_ = rows.Close()
+			return nil, err
+		}
+		if !seen[id] {
 			seen[id] = true
 			ids = append(ids, id)
 		}
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 	_ = rows.Close()
 	for id := range findable {
@@ -288,7 +299,9 @@ func (s *Store) pruneSharingTx(tx *sql.Tx, mode string) (int64, error) {
 
 // pruneSharingNow applies the current mode after a membership or organization change.
 func (s *Store) pruneSharingNow() {
-	_, _ = s.PruneSharing(s.SharingMode(), false)
+	if _, err := s.PruneSharing(s.SharingMode(), false); err != nil {
+		slog.Error("Applying the sharing mode failed", "error", err)
+	}
 }
 
 // --- ORGANIZATIONS (managed by server admins and user managers) ---
@@ -327,11 +340,12 @@ func (s *Store) GetOrganizations() ([]domain.Organization, error) {
 	orgs := make([]domain.Organization, 0)
 	for rows.Next() {
 		var o domain.Organization
-		if rows.Scan(&o.ID, &o.Name, &o.CreatedAt, &o.MemberCount) == nil {
-			orgs = append(orgs, o)
+		if err := rows.Scan(&o.ID, &o.Name, &o.CreatedAt, &o.MemberCount); err != nil {
+			return []domain.Organization{}, err
 		}
+		orgs = append(orgs, o)
 	}
-	return orgs, nil
+	return orgs, rows.Err()
 }
 
 func (s *Store) CreateOrganization(name string) (*domain.Organization, error) {
@@ -379,7 +393,7 @@ func (s *Store) DeleteOrganization(orgID string) error {
 
 func (s *Store) organizationExists(orgID string) bool {
 	var n int
-	_ = s.db.QueryRow(`SELECT COUNT(*) FROM organizations WHERE id = ?`, orgID).Scan(&n)
+	logDBErr(s.db.QueryRow(`SELECT COUNT(*) FROM organizations WHERE id = ?`, orgID).Scan(&n))
 	return n > 0
 }
 
@@ -389,7 +403,9 @@ func (s *Store) AddOrganizationMember(orgID, userID string) error {
 		return ErrOrganizationNotFound
 	}
 	var n int
-	_ = s.db.QueryRow(`SELECT COUNT(*) FROM users WHERE id = ?`, userID).Scan(&n)
+	if err := s.db.QueryRow(`SELECT COUNT(*) FROM users WHERE id = ?`, userID).Scan(&n); err != nil {
+		return err
+	}
 	if n == 0 {
 		return errors.New("Benutzer nicht gefunden")
 	}
@@ -434,28 +450,30 @@ func (s *Store) OrganizationIDsOf() (map[string][]string, error) {
 	out := map[string][]string{}
 	for rows.Next() {
 		var uid, oid string
-		if rows.Scan(&uid, &oid) == nil {
-			out[uid] = append(out[uid], oid)
+		if err := rows.Scan(&uid, &oid); err != nil {
+			return nil, err
 		}
+		out[uid] = append(out[uid], oid)
 	}
-	return out, nil
+	return out, rows.Err()
 }
 
 // UserOrganizationIDs returns the organizations of one user, sorted by name.
 func (s *Store) UserOrganizationIDs(userID string) []string {
 	rows, err := s.db.Query(`SELECT m.org_id FROM organization_members m JOIN organizations o ON o.id = m.org_id
 		WHERE m.user_id = ? ORDER BY o.name COLLATE NOCASE`, userID)
-	if err != nil {
+	if dbFailed(err) {
 		return nil
 	}
 	defer rows.Close()
 	ids := []string{}
 	for rows.Next() {
 		var id string
-		if rows.Scan(&id) == nil {
+		if !dbFailed(rows.Scan(&id)) {
 			ids = append(ids, id)
 		}
 	}
+	logDBErr(rows.Err())
 	return ids
 }
 
@@ -463,24 +481,25 @@ func (s *Store) UserOrganizationIDs(userID string) []string {
 func (s *Store) UserOrganizations(userID string) []domain.OrganizationRef {
 	rows, err := s.db.Query(`SELECT o.id, o.name FROM organization_members m JOIN organizations o ON o.id = m.org_id
 		WHERE m.user_id = ? ORDER BY o.name COLLATE NOCASE`, userID)
-	if err != nil {
+	if dbFailed(err) {
 		return nil
 	}
 	defer rows.Close()
 	out := []domain.OrganizationRef{}
 	for rows.Next() {
 		var o domain.OrganizationRef
-		if rows.Scan(&o.ID, &o.Name) == nil {
+		if !dbFailed(rows.Scan(&o.ID, &o.Name)) {
 			out = append(out, o)
 		}
 	}
+	logDBErr(rows.Err())
 	return out
 }
 
 // IsOrganizationMember reports whether the user belongs to the organization.
 func (s *Store) IsOrganizationMember(orgID, userID string) bool {
 	var n int
-	_ = s.db.QueryRow(`SELECT COUNT(*) FROM organization_members WHERE org_id = ? AND user_id = ?`, orgID, userID).Scan(&n)
+	logDBErr(s.db.QueryRow(`SELECT COUNT(*) FROM organization_members WHERE org_id = ? AND user_id = ?`, orgID, userID).Scan(&n))
 	return n > 0
 }
 
@@ -490,7 +509,7 @@ func (s *Store) FitsTeamOrganization(teamID, userID string) bool {
 		return true
 	}
 	var orgID string
-	_ = s.db.QueryRow(`SELECT org_id FROM teams WHERE id = ?`, teamID).Scan(&orgID)
+	logDBErr(s.db.QueryRow(`SELECT org_id FROM teams WHERE id = ?`, teamID).Scan(&orgID))
 	return orgID != "" && s.IsOrganizationMember(orgID, userID)
 }
 

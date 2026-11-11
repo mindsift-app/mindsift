@@ -56,7 +56,7 @@ func (s *Server) handleForgotPassword(w http.ResponseWriter, r *http.Request) {
 		}
 		link := strings.TrimRight(s.cfg.BaseURL, "/") + "/?resetToken=" + url.QueryEscape(token)
 		lang := s.userLanguage(user.ID)
-		_ = s.sendMailContent(user.Email, i18n.T(lang, "MindSift: Passwort zurücksetzen"), mailContent{
+		err = s.sendMailContent(user.Email, i18n.T(lang, "MindSift: Passwort zurücksetzen"), mailContent{
 			Lang:      lang,
 			Preheader: i18n.T(lang, "Lege ein neues Passwort für dein MindSift-Konto fest"),
 			Greeting:  mailGreeting(lang, time.Now(), user.DisplayName),
@@ -66,6 +66,9 @@ func (s *Server) handleForgotPassword(w http.ResponseWriter, r *http.Request) {
 				i18n.T(lang, "Falls der Knopf nicht geht: {link}", "link", link),
 			Footer: mailFooterAccount(lang),
 		})
+		if err != nil {
+			slog.Warn("Password reset email not sent", "user_id", user.ID, "error", err)
+		}
 	}()
 	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
 }

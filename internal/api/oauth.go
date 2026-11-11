@@ -64,7 +64,7 @@ func writeOAuthError(w http.ResponseWriter, status int, code, description string
 }
 
 func (s *Server) handleOAuthProtectedResource(w http.ResponseWriter, r *http.Request) {
-	writeJSON(w, http.StatusOK, map[string]interface{}{
+	writeJSON(w, http.StatusOK, map[string]any{
 		"resource":                 s.oauthResource(),
 		"authorization_servers":    []string{s.oauthIssuer()},
 		"scopes_supported":         oauthOfferedScopes,
@@ -75,7 +75,7 @@ func (s *Server) handleOAuthProtectedResource(w http.ResponseWriter, r *http.Req
 
 func (s *Server) handleOAuthServerMetadata(w http.ResponseWriter, r *http.Request) {
 	issuer := s.oauthIssuer()
-	writeJSON(w, http.StatusOK, map[string]interface{}{
+	writeJSON(w, http.StatusOK, map[string]any{
 		"issuer":                                         issuer,
 		"authorization_endpoint":                         issuer + "/oauth/authorize",
 		"token_endpoint":                                 issuer + "/oauth/token",
@@ -138,7 +138,7 @@ func (s *Server) handleOAuthRegister(w http.ResponseWriter, r *http.Request) {
 		writeOAuthError(w, http.StatusInternalServerError, "server_error", clientMessage(err))
 		return
 	}
-	writeJSON(w, http.StatusCreated, map[string]interface{}{
+	writeJSON(w, http.StatusCreated, map[string]any{
 		"client_id":                  client.ID,
 		"client_id_issued_at":        time.Now().Unix(),
 		"client_name":                client.Name,
@@ -275,7 +275,7 @@ func (s *Server) handleOAuthAuthorizeInfo(w http.ResponseWriter, r *http.Request
 	if len(scopes) == 0 {
 		scopes = oauthDefaultScopes
 	}
-	writeJSON(w, http.StatusOK, map[string]interface{}{
+	writeJSON(w, http.StatusOK, map[string]any{
 		"clientName":    client.Name,
 		"redirectHost":  redirectHost(p.RedirectURI),
 		"knownHost":     knownRedirectHost(p.RedirectURI),
@@ -359,7 +359,7 @@ func (s *Server) handleOAuthToken(w http.ResponseWriter, r *http.Request) {
 		writeOAuthError(w, http.StatusInternalServerError, "server_error", clientMessage(err))
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]interface{}{
+	writeJSON(w, http.StatusOK, map[string]any{
 		"access_token":  tokens.AccessToken,
 		"token_type":    "Bearer",
 		"expires_in":    tokens.ExpiresIn,
@@ -368,13 +368,17 @@ func (s *Server) handleOAuthToken(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// handleOAuthRevoke: POST /oauth/revoke (RFC 7009); answers 200 even for unknown tokens.
+// handleOAuthRevoke: POST /oauth/revoke (RFC 7009); answers 200 even for unknown tokens, and 503 when
+// the token could not be removed (it still works then, the client should try again).
 func (s *Server) handleOAuthRevoke(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseForm(); err != nil {
 		writeOAuthError(w, http.StatusBadRequest, "invalid_request", "Ungültige Anfrage")
 		return
 	}
-	s.store.RevokeOAuthToken(r.PostForm.Get("token"), oauthClientID(r))
+	if err := s.store.RevokeOAuthToken(r.PostForm.Get("token"), oauthClientID(r)); err != nil {
+		writeOAuthError(w, http.StatusServiceUnavailable, "server_error", clientMessage(err))
+		return
+	}
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -387,6 +391,6 @@ func (s *Server) runOAuthCleanup(now time.Time) {
 		return
 	}
 	if n > 0 {
-		slog.Info("Unused OAuth grants removed", "anzahl", n, "tage", s.cfg.OAuthIdleDays)
+		slog.Info("Unused OAuth grants removed", "count", n, "idle_days", s.cfg.OAuthIdleDays)
 	}
 }

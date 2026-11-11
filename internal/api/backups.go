@@ -44,7 +44,7 @@ func (s *Server) runBackups() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	_ = storage.PruneBackups(filepath.Join(root, "system"), keep, now)
+	logFailed("Removing old system backups", storage.PruneBackups(filepath.Join(root, "system"), keep, now))
 
 	users, err := s.store.GetAllUsers()
 	if err != nil {
@@ -61,7 +61,7 @@ func (s *Server) runBackups() (string, error) {
 			slog.Error("User backup failed", "user_id", u.ID, "error", err)
 			continue
 		}
-		_ = storage.PruneBackups(dir, keep, now)
+		logFailed("Removing old backups of a person", storage.PruneBackups(dir, keep, now), "user_id", u.ID)
 	}
 	slog.Info("Backups created", "system", name, "users", len(users), "failed", failed)
 	if failed > 0 {
@@ -106,6 +106,7 @@ func (s *Server) handleAdminListBackups(w http.ResponseWriter, r *http.Request) 
 }
 
 func (s *Server) handleAdminRunBackup(w http.ResponseWriter, r *http.Request) {
+	allowLongWork(w)
 	if _, err := s.runBackups(); err != nil {
 		writeError(w, http.StatusInternalServerError, "Backup fehlgeschlagen: "+clientMessage(err))
 		return
@@ -144,6 +145,7 @@ func (s *Server) handleDownloadMyBackup(w http.ResponseWriter, r *http.Request) 
 // handleRestoreMyBackup imports one of the user's server backups: mode=merge (add next to the data)
 // or mode=restore (empty the chosen sections first), sections=notes,tasks,lists,inbox,themes.
 func (s *Server) handleRestoreMyBackup(w http.ResponseWriter, r *http.Request) {
+	allowLongWork(w)
 	userID := auth.GetUserID(r.Context())
 	path, err := storage.BackupPath(storage.UserBackupDir(s.backupRoot(), userID), chi.URLParam(r, "name"))
 	if err != nil {

@@ -32,7 +32,7 @@ func (s *Store) migrateVoiceLanguage() error {
 // VoiceLanguage returns the user's choice: "", "auto", "app" or a Whisper language code.
 func (s *Store) VoiceLanguage(userID string) string {
 	var v string
-	_ = s.db.QueryRow(`SELECT voice_language FROM users WHERE id = ?`, userID).Scan(&v)
+	logDBErr(s.db.QueryRow(`SELECT voice_language FROM users WHERE id = ?`, userID).Scan(&v))
 	return v
 }
 

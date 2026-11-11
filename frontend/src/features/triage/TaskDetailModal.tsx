@@ -165,13 +165,18 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
   const [isWatching, setIsWatching] = useState<boolean>(Boolean(task.isWatching));
   const [watchBusy, setWatchBusy] = useState(false);
 
+  // Another task in the dialog: its texts, editors closed. Changes of the same task leave an open editor
+  // and what was typed in it alone; a draft is taken from the task when editing starts.
   useEffect(() => {
     setTitleDraft(task.content);
     setNotesDraft(task.notes || '');
     setIsEditingTitle(editTitleOnOpen);
     setIsEditingNotes(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [task.id, editTitleOnOpen]);
+  useEffect(() => {
     setIsWatching(Boolean(task.isWatching));
-  }, [task.id, task.isWatching, editTitleOnOpen]);
+  }, [task.isWatching]);
 
   const handleToggleWatch = async () => {
     if (watchBusy) return;
@@ -522,7 +527,11 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
               </div>
             ) : (
               <div
-                onClick={() => !readOnly && setIsEditingTitle(true)}
+                onClick={() => {
+                  if (readOnly) return;
+                  setTitleDraft(task.content);
+                  setIsEditingTitle(true);
+                }}
                 className={`group p-2 rounded-card transition-colors border border-transparent ${
                   readOnly ? '' : 'cursor-pointer hover:bg-panel hover:border-border'
                 }`}

@@ -165,9 +165,10 @@ func (s *Store) MediaReferencedIn(id string) ([]string, error) {
 	var docs []string
 	for rows.Next() {
 		var d string
-		if rows.Scan(&d) == nil {
-			docs = append(docs, d)
+		if err := rows.Scan(&d); err != nil {
+			return nil, err
 		}
+		docs = append(docs, d)
 	}
 	return docs, rows.Err()
 }
@@ -185,9 +186,10 @@ func (s *Store) UnreferencedMedia(olderThan time.Time) ([]Media, error) {
 	var out []Media
 	for rows.Next() {
 		var m Media
-		if rows.Scan(&m.ID, &m.DocID, &m.OwnerID, &m.Kind, &m.Mime, &m.Size, &m.SourceURL, &m.CreatedAt) == nil {
-			out = append(out, m)
+		if err := rows.Scan(&m.ID, &m.DocID, &m.OwnerID, &m.Kind, &m.Mime, &m.Size, &m.SourceURL, &m.CreatedAt); err != nil {
+			return nil, err
 		}
+		out = append(out, m)
 	}
 	return out, rows.Err()
 }
@@ -204,9 +206,10 @@ func (s *Store) MediaOfUser(userID string) ([]Media, error) {
 	var out []Media
 	for rows.Next() {
 		var m Media
-		if rows.Scan(&m.ID, &m.DocID, &m.OwnerID, &m.Kind, &m.Mime, &m.Size, &m.SourceURL, &m.CreatedAt) == nil {
-			out = append(out, m)
+		if err := rows.Scan(&m.ID, &m.DocID, &m.OwnerID, &m.Kind, &m.Mime, &m.Size, &m.SourceURL, &m.CreatedAt); err != nil {
+			return nil, err
 		}
+		out = append(out, m)
 	}
 	return out, rows.Err()
 }

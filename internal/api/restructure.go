@@ -64,7 +64,7 @@ func (s *Server) handleExtractBranch(w http.ResponseWriter, r *http.Request) {
 		created = full
 	}
 	s.broadcastDocToAuthorizedUsers(created.ID, "DOC_CREATED")
-	writeJSON(w, http.StatusCreated, map[string]interface{}{"document": created, "link": link})
+	writeJSON(w, http.StatusCreated, map[string]any{"document": created, "link": link})
 }
 
 // handleMoveBranch: POST /documents/{id}/move {blockId, targetId, clientId} copies the branch to the end of

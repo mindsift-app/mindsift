@@ -85,13 +85,13 @@ func (s *Server) handleConfirmEmailChange(w http.ResponseWriter, r *http.Request
 			// The previous address learns about it, so a takeover does not go unnoticed
 			s.notifyAccountChange(before, false, true, after.Email)
 		}
-		writeJSON(w, http.StatusOK, map[string]interface{}{
+		writeJSON(w, http.StatusOK, map[string]any{
 			"confirmed": true, "kind": kind,
 			"message": tr(w, "Deine neue E-Mail-Adresse ist bestätigt. Du meldest dich ab jetzt mit ihr an."),
 		})
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]interface{}{
+	writeJSON(w, http.StatusOK, map[string]any{
 		"confirmed": true, "kind": kind,
 		"message": tr(w, "Deine neue Alarm-Adresse ist bestätigt. Alarme gehen ab jetzt dorthin."),
 	})
@@ -109,7 +109,10 @@ func (s *Server) handleCancelEmailChange(w http.ResponseWriter, r *http.Request)
 		writeError(w, http.StatusNotFound, "Nicht gefunden")
 		return
 	}
-	s.store.CancelEmailChange(auth.GetUserID(r.Context()), kind)
+	if err := s.store.CancelEmailChange(auth.GetUserID(r.Context()), kind); err != nil {
+		writeInternal(w, err)
+		return
+	}
 	writeJSON(w, http.StatusOK, map[string]bool{"cancelled": true})
 }
 

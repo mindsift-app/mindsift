@@ -30,17 +30,18 @@ func (s *Store) migrateListOrder() error {
 func (s *Store) listOrder(userID, kind string) map[string]int {
 	out := map[string]int{}
 	rows, err := s.db.Query(`SELECT list_id, position FROM list_order WHERE user_id = ? AND kind = ?`, userID, kind)
-	if err != nil {
+	if dbFailed(err) {
 		return out
 	}
 	defer rows.Close()
 	for rows.Next() {
 		var id string
 		var pos int
-		if rows.Scan(&id, &pos) == nil {
+		if !dbFailed(rows.Scan(&id, &pos)) {
 			out[id] = pos
 		}
 	}
+	logDBErr(rows.Err())
 	return out
 }
 

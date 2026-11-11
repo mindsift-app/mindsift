@@ -12,6 +12,7 @@ import (
 
 	webpush "github.com/SherClockHolmes/webpush-go"
 	"github.com/mindsift-app/mindsift/internal/auth"
+	"github.com/mindsift-app/mindsift/internal/i18n"
 )
 
 // Web push: browsers and installed apps (Android, iOS from 16.4 as home screen app, desktop) subscribe
@@ -121,7 +122,7 @@ func (s *Server) sendPush(userID string, msg pushMessage) error {
 
 func (s *Server) handlePushKey(w http.ResponseWriter, r *http.Request) {
 	if s.cfg.DemoMode {
-		writeJSON(w, http.StatusOK, map[string]interface{}{"enabled": false})
+		writeJSON(w, http.StatusOK, map[string]any{"enabled": false})
 		return
 	}
 	pub, _, err := s.vapidKeys()
@@ -130,7 +131,7 @@ func (s *Server) handlePushKey(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "Push ist auf diesem Server nicht verfügbar")
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]interface{}{"enabled": true, "publicKey": pub})
+	writeJSON(w, http.StatusOK, map[string]any{"enabled": true, "publicKey": pub})
 }
 
 func (s *Server) handlePushDevices(w http.ResponseWriter, r *http.Request) {
@@ -139,7 +140,7 @@ func (s *Server) handlePushDevices(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "Geräte konnten nicht geladen werden")
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]interface{}{"devices": subs})
+	writeJSON(w, http.StatusOK, map[string]any{"devices": subs})
 }
 
 func (s *Server) handlePushSubscribe(w http.ResponseWriter, r *http.Request) {
@@ -179,7 +180,8 @@ func (s *Server) handlePushSubscribe(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if req.Replaces != "" && req.Replaces != req.Endpoint {
-		_ = s.store.DeletePushSubscription(userID, req.Replaces) // only ever one of the own devices
+		// only ever one of the own devices
+		logFailed("Removing the replaced push subscription", s.store.DeletePushSubscription(userID, req.Replaces), "user_id", userID)
 	}
 	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
 }
@@ -206,7 +208,10 @@ func (s *Server) handlePushTest(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "Auf keinem Gerät sind Push-Benachrichtigungen eingeschaltet")
 		return
 	}
-	err := s.sendPush(userID, pushMessage{Title: "MindSift", Body: "Test: Push-Benachrichtigungen kommen an.", URL: "/", Tag: "test"})
+	// One push service after the other, each with its own timeout
+	allowLongWork(w)
+	body := i18n.T(s.userLanguage(userID), "Test: Push-Benachrichtigungen kommen an.")
+	err := s.sendPush(userID, pushMessage{Title: "MindSift", Body: body, URL: "/", Tag: "test"})
 	if err != nil {
 		if errors.Is(err, errDemoOutgoing) {
 			writeError(w, http.StatusForbidden, err.Error())

@@ -24,10 +24,11 @@ export const DemoCountdown: React.FC<DemoCountdownProps> = ({ deadline, minutes,
   }, []);
 
   const left = deadline - now;
+  // Runs when the deadline passes, not on every tick
+  const elapsed = left <= 0;
   useEffect(() => {
-    if (left <= 0) onElapsed?.();
-    // Runs when the deadline passes, not on every tick
-  }, [left <= 0, deadline]);
+    if (elapsed) onElapsed?.();
+  }, [elapsed, deadline, onElapsed]);
 
   return (
     <span

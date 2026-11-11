@@ -21,7 +21,7 @@ import (
 // --- HANDLERS ---
 
 func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
-	writeJSON(w, http.StatusOK, map[string]interface{}{
+	writeJSON(w, http.StatusOK, map[string]any{
 		"status":  "ok",
 		"service": "mindsift",
 		"time":    domain.NowISO(),
@@ -38,7 +38,7 @@ func (s *Server) handleAuthStatus(w http.ResponseWriter, r *http.Request) {
 			instanceName = sys.InstanceName
 		}
 	}
-	status := map[string]interface{}{
+	status := map[string]any{
 		"needsSetup": count == 0,
 		// Registering without an invite: allowed at all, how (closed | approval | domain | domain+approval |
 		// open) and for which e-mail domains (shown as a hint on the sign-up form)
@@ -67,9 +67,9 @@ func (s *Server) handleAuthStatus(w http.ResponseWriter, r *http.Request) {
 		}(),
 		// How voice input works: "server" (own Whisper), "browser" or "off"; set by STT_* only
 		// browserAllowed: whether people may pick the browser's recognition instead of the Whisper server
-		"voice": map[string]interface{}{"mode": s.voiceMode(), "maxSeconds": s.cfg.Speech.MaxSeconds, "browserAllowed": !s.cfg.Speech.NoBrowser},
+		"voice": map[string]any{"mode": s.voiceMode(), "maxSeconds": s.cfg.Speech.MaxSeconds, "browserAllowed": !s.cfg.Speech.NoBrowser},
 		// Public so the login screen can link Impressum and Datenschutz
-		"legal": map[string]interface{}{
+		"legal": map[string]any{
 			"imprintUrl":        s.cfg.Legal.ImprintURL,
 			"hasImprintContent": s.cfg.Legal.ImprintContent != "",
 			"privacyUrl":        s.cfg.Legal.PrivacyURL,
@@ -159,7 +159,7 @@ func (s *Server) handleFirstBootSetup(w http.ResponseWriter, r *http.Request) {
 	if lang == "" {
 		lang = s.requestLanguage(r)
 	}
-	_ = s.store.SetLanguage(user.ID, lang)
+	logFailed("Setting the language", s.store.SetLanguage(user.ID, lang), "user_id", user.ID)
 
 	sys, _ := s.store.GetSystemSettings()
 	if sys != nil {
@@ -179,14 +179,16 @@ func (s *Server) handleFirstBootSetup(w http.ResponseWriter, r *http.Request) {
 		}
 		// In organization mode the first admin starts in an organization named after the instance
 		if sys.SharingMode == storage.SharingOrganizations {
-			if org, err := s.store.CreateOrganization(sys.InstanceName); err == nil {
-				_ = s.store.AddOrganizationMember(org.ID, user.ID)
+			if org, err := s.store.CreateOrganization(sys.InstanceName); err != nil {
+				logFailed("Creating the first organization", err)
+			} else {
+				logFailed("Adding the first admin to the organization", s.store.AddOrganizationMember(org.ID, user.ID), "org_id", org.ID)
 			}
 		}
 	}
 
 	if req.CreateSampleData {
-		_ = s.store.SeedStarterContent(user)
+		logFailed("Creating the sample data", s.store.SeedStarterContent(user), "user_id", user.ID)
 	}
 
 	token, err := s.startSession(r, user)
@@ -195,7 +197,7 @@ func (s *Server) handleFirstBootSetup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusCreated, map[string]interface{}{
+	writeJSON(w, http.StatusCreated, map[string]any{
 		"token": token,
 		"user":  user,
 	})
@@ -269,7 +271,7 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 	// form does not tell which addresses have an account
 	if verify && validInvite == nil && s.store.EmailInUse(req.Email) {
 		_, _ = auth.HashPassword(req.Password) // same time as a real sign-up
-		writeJSON(w, http.StatusAccepted, map[string]interface{}{
+		writeJSON(w, http.StatusAccepted, map[string]any{
 			"pending": true,
 			"verify":  true,
 			"message": registrationWaitingMessage(w, req.Email, pending, true),
@@ -305,14 +307,14 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusConflict, "E-Mail-Adresse existiert bereits")
 		return
 	}
-	_ = s.store.SetLanguage(user.ID, s.requestLanguage(r))
+	logFailed("Setting the language", s.store.SetLanguage(user.ID, s.requestLanguage(r)), "user_id", user.ID)
 
 	if validInvite != nil {
 		if err := s.store.FinishUserInvite(validInvite.ID, claim, user.ID); err != nil {
 			slog.Error("Marking the invite code as used failed", "invite", validInvite.ID, "error", err)
 		}
 		for _, orgID := range validInvite.OrganizationIDs {
-			_ = s.store.AddOrganizationMember(orgID, user.ID)
+			logFailed("Adding the invited person to the organization", s.store.AddOrganizationMember(orgID, user.ID), "org_id", orgID, "user_id", user.ID)
 		}
 	}
 
@@ -332,7 +334,7 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 		}
 		message := registrationWaitingMessage(w, user.Email, pending, verify)
 		slog.Info("Registration waiting", "user_id", user.ID, "approval", pending, "verify", verify)
-		writeJSON(w, http.StatusAccepted, map[string]interface{}{
+		writeJSON(w, http.StatusAccepted, map[string]any{
 			"pending": true,
 			"verify":  verify,
 			"message": message,
@@ -346,7 +348,7 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusCreated, map[string]interface{}{
+	writeJSON(w, http.StatusCreated, map[string]any{
 		"token": token,
 		"user":  user,
 	})
@@ -445,7 +447,7 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 
 	slog.Info("Sign-in successful", "user_id", user.ID, "display_name", user.DisplayName, "role", user.Role, "remote_addr", r.RemoteAddr)
 
-	writeJSON(w, http.StatusOK, map[string]interface{}{
+	writeJSON(w, http.StatusOK, map[string]any{
 		"token": token,
 		"user":  user,
 	})
@@ -466,7 +468,7 @@ func (s *Server) handleMe(w http.ResponseWriter, r *http.Request) {
 	ns := s.store.NotificationSettingsOf(userID)
 	user.NotificationSettings = &ns
 	s.fillUserPreferences(user)
-	writeJSON(w, http.StatusOK, map[string]interface{}{
+	writeJSON(w, http.StatusOK, map[string]any{
 		"user":  user,
 		"stats": stats,
 		// The settings disable "Delete account" for the last administrator
@@ -490,6 +492,7 @@ func (s *Server) handlePurgeOwnData(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	allowLongWork(w)
 	if err := s.store.PurgeUserData(user.ID); err != nil {
 		writeInternal(w, err)
 		return
@@ -504,6 +507,7 @@ func (s *Server) handleDeleteOwnAccount(w http.ResponseWriter, r *http.Request) 
 	if !ok {
 		return
 	}
+	allowLongWork(w)
 	if err := s.store.DeleteOwnAccount(user.ID); err != nil {
 		status := http.StatusInternalServerError
 		if errors.Is(err, storage.ErrLastAdmin) {
@@ -626,7 +630,10 @@ func (s *Server) handleUpdateUserSettings(w http.ResponseWriter, r *http.Request
 		switch {
 		case alarm == "" || alarm == before.Email:
 			// The login address is confirmed already; an earlier waiting one is dropped
-			s.store.CancelEmailChange(userID, storage.EmailChangeAlarm)
+			if err := s.store.CancelEmailChange(userID, storage.EmailChangeAlarm); err != nil {
+				writeInternal(w, err)
+				return
+			}
 		case alarm == domain.NormalizeEmail(before.AlarmEmail):
 			req.AlarmEmail = nil
 		case !validEmail(alarm):
@@ -803,7 +810,9 @@ func (s *Server) notifyAccountChange(before *domain.User, password, email bool, 
 		c.Button = &mailButton{Label: i18n.T(lang, "MindSift öffnen"), URL: link}
 	}
 	go func() {
-		_ = s.sendMailContent(before.Email, i18n.T(lang, "MindSift: Änderung an deinem Konto"), c)
+		if err := s.sendMailContent(before.Email, i18n.T(lang, "MindSift: Änderung an deinem Konto"), c); err != nil {
+			slog.Warn("Notice about a changed account not sent", "user_id", before.ID, "error", err)
+		}
 	}()
 }
 
@@ -835,6 +844,8 @@ func (s *Server) handleTestUserAlarm(w http.ResponseWriter, r *http.Request) {
 	lang := s.userLanguage(userID)
 	testTitle := i18n.T(lang, "Test-Alarm von MindSift")
 
+	// The answer says whether the test arrived, also when the other side takes its time
+	allowLongWork(w)
 	switch channel {
 	case "discord":
 		url := target
@@ -893,7 +904,7 @@ func (s *Server) handleTestUserAlarm(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusOK, map[string]interface{}{
+	writeJSON(w, http.StatusOK, map[string]any{
 		"sent":    true,
 		"channel": channel,
 	})

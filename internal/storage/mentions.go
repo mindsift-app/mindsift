@@ -62,6 +62,7 @@ func (s *Store) ReadableMentions(content string) string {
 func (s *Store) mentionName(userID string) string {
 	var name, username string
 	if err := s.db.QueryRow(`SELECT display_name, username FROM users WHERE id = ?`, userID).Scan(&name, &username); err != nil {
+		logDBErr(err)
 		return "?"
 	}
 	if strings.TrimSpace(name) == "" {
@@ -139,9 +140,14 @@ func (s *Store) SwapBlockMentions(docID, blockID string, now map[string]int) (ma
 	for rows.Next() {
 		var id string
 		var n int
-		if rows.Scan(&id, &n) == nil {
-			before[id] = n
+		if err := rows.Scan(&id, &n); err != nil {
+			_ = rows.Close()
+			return nil, err
 		}
+		before[id] = n
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 	rows.Close()
 	if len(before) == 0 && len(now) == 0 {

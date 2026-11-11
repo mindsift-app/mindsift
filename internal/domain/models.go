@@ -699,10 +699,10 @@ type APIKey struct {
 }
 
 type WSMessage struct {
-	Event     string      `json:"event"` // ITEM_CREATED | ITEM_UPDATED | ITEM_TOGGLED | ITEM_DELETED | LIST_CLEARED | USER_PRESENCE
-	ListID    string      `json:"list_id"`
-	Payload   interface{} `json:"payload"`
-	Timestamp string      `json:"timestamp"`
+	Event     string `json:"event"` // ITEM_CREATED | ITEM_UPDATED | ITEM_TOGGLED | ITEM_DELETED | LIST_CLEARED | USER_PRESENCE
+	ListID    string `json:"list_id"`
+	Payload   any    `json:"payload"`
+	Timestamp string `json:"timestamp"`
 }
 
 type DashboardStats struct {

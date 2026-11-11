@@ -135,7 +135,7 @@ func (s *Server) handleVerifyEmail(w http.ResponseWriter, r *http.Request) {
 	}
 	if s.store.IsPendingRegistration(userID) {
 		go s.notifyAdminsOfRegistration(user)
-		writeJSON(w, http.StatusOK, map[string]interface{}{
+		writeJSON(w, http.StatusOK, map[string]any{
 			"verified": true, "pending": true,
 			"message": tr(w, "Deine E-Mail-Adresse ist bestätigt. Ein Administrator schaltet dein Konto noch frei – du bekommst dann eine E-Mail."),
 		})
@@ -146,7 +146,7 @@ func (s *Server) handleVerifyEmail(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "Konto konnte nicht freigeschaltet werden")
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]interface{}{
+	writeJSON(w, http.StatusOK, map[string]any{
 		"verified": true, "pending": false,
 		"message": tr(w, "Deine E-Mail-Adresse ist bestätigt. Du kannst dich jetzt anmelden."),
 	})
@@ -240,7 +240,7 @@ func (s *Server) handleAdminApproveUser(w http.ResponseWriter, r *http.Request) 
 	link := s.appLink(r)
 	lang := s.userLanguage(user.ID)
 	go func() {
-		_ = s.sendMailContent(user.Email, i18n.T(lang, "MindSift: Dein Konto ist freigeschaltet"), mailContent{
+		err := s.sendMailContent(user.Email, i18n.T(lang, "MindSift: Dein Konto ist freigeschaltet"), mailContent{
 			Lang:      lang,
 			Preheader: i18n.T(lang, "Du kannst dich jetzt anmelden"),
 			Greeting:  mailGreeting(lang, time.Now(), user.DisplayName),
@@ -248,6 +248,9 @@ func (s *Server) handleAdminApproveUser(w http.ResponseWriter, r *http.Request) 
 			Button:    &mailButton{Label: i18n.T(lang, "Zu MindSift"), URL: link},
 			Footer:    mailFooterAccount(lang),
 		})
+		if err != nil {
+			slog.Warn("Email about the activated account not sent", "user_id", user.ID, "error", err)
+		}
 	}()
 	writeJSON(w, http.StatusOK, staffUser{User: *user})
 }
@@ -295,6 +298,7 @@ func (s *Server) handleAdminSendInvite(w http.ResponseWriter, r *http.Request) {
 		until = i18n.ShortDate(lang, t.Local())
 	}
 	invites := i18n.T(lang, "{name} lädt dich zu MindSift ein", "name", inviter)
+	allowLongWork(w)
 	err = s.sendMailContent(email, invites, mailContent{
 		Lang:      lang,
 		Preheader: invites,

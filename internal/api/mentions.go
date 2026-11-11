@@ -27,7 +27,9 @@ func (s *Server) mentionAudience(userID string, r *http.Request) ([]string, bool
 		if s.store.DocRole(userID, docID) == "" {
 			return nil, false
 		}
-		ids, _ = s.store.GetAuthorizedDocUsers(docID)
+		var err error
+		ids, err = s.store.GetAuthorizedDocUsers(docID)
+		logFailed("Loading the people of a note", err, "doc_id", docID)
 	case q.Get("taskId") != "":
 		t, err := s.store.GetThoughtByID(userID, q.Get("taskId"))
 		if err != nil || t == nil {
@@ -153,6 +155,7 @@ func (s *Server) notifyNoteMentions(actorID, docID string, ops []collab.Op, resu
 		now := storage.MentionCounts(*op.Content)
 		before, err := s.store.SwapBlockMentions(docID, op.BlockID, now)
 		if err != nil {
+			logFailed("Recording the mentions of a bullet", err, "doc_id", docID)
 			continue
 		}
 		newly := storage.NewlyMentioned(before, now)
@@ -160,7 +163,8 @@ func (s *Server) notifyNoteMentions(actorID, docID string, ops []collab.Op, resu
 			continue
 		}
 		if title == "" {
-			audience, _ = s.store.GetAuthorizedDocUsers(docID)
+			audience, err = s.store.GetAuthorizedDocUsers(docID)
+			logFailed("Loading the people of a note", err, "doc_id", docID)
 			title = s.docTitle(actorID, docID)
 		}
 		s.notifyMentioned(actorID, newly, audience, title, "note", docID, op.BlockID)

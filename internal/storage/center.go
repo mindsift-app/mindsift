@@ -101,14 +101,19 @@ func (s *Store) CenterEntries(userID string, limit int) ([]CenterEntry, int, err
 	out := make([]CenterEntry, 0)
 	for rows.Next() {
 		var e CenterEntry
-		if rows.Scan(&e.ID, &e.Kind, &e.Title, &e.Text, &e.TargetType, &e.TargetID, &e.BlockID, &e.CreatedAt, &e.Read) == nil {
-			out = append(out, e)
+		if err := rows.Scan(&e.ID, &e.Kind, &e.Title, &e.Text, &e.TargetType, &e.TargetID, &e.BlockID, &e.CreatedAt, &e.Read); err != nil {
+			_ = rows.Close()
+			return nil, 0, err
 		}
+		out = append(out, e)
 	}
 	err = rows.Err()
 	rows.Close()
+	if err != nil {
+		return nil, 0, err
+	}
 	var unread int
-	_ = s.db.QueryRow(`SELECT COUNT(*) FROM center_entries WHERE user_id = ? AND read = 0`, userID).Scan(&unread)
+	err = s.db.QueryRow(`SELECT COUNT(*) FROM center_entries WHERE user_id = ? AND read = 0`, userID).Scan(&unread)
 	return out, unread, err
 }
 
@@ -133,5 +138,5 @@ func (s *Store) ClearCenter(userID string) error {
 
 // PruneCenter drops entries older than CenterRetention.
 func (s *Store) PruneCenter(now time.Time) {
-	_, _ = s.db.Exec(`DELETE FROM center_entries WHERE created_at < ?`, now.Add(-CenterRetention).UTC().Format(time.RFC3339))
+	s.execLogged(`DELETE FROM center_entries WHERE created_at < ?`, now.Add(-CenterRetention).UTC().Format(time.RFC3339))
 }

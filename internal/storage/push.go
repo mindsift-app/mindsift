@@ -56,7 +56,7 @@ func (s *Store) DeletePushSubscription(userID, endpoint string) error {
 
 // ForgetPushEndpoint removes a device the push service no longer knows (HTTP 404/410).
 func (s *Store) ForgetPushEndpoint(endpoint string) {
-	_, _ = s.db.Exec(`DELETE FROM push_subscriptions WHERE endpoint = ?`, endpoint)
+	s.execLogged(`DELETE FROM push_subscriptions WHERE endpoint = ?`, endpoint)
 }
 
 func (s *Store) PushSubscriptions(userID string) ([]PushSubscription, error) {

@@ -282,7 +282,7 @@ func (h *Hub) Register(c *Client) {
 	h.enforceUserConnLimit(c.userID)
 
 	if c.roomID != "" {
-		h.Broadcast(c.roomID, "", "USER_PRESENCE", map[string]interface{}{
+		h.Broadcast(c.roomID, "", "USER_PRESENCE", map[string]any{
 			"onlineCount": onlineCount,
 		})
 	}
@@ -366,7 +366,7 @@ func (h *Hub) RegisterSSE(c *SSEClient) {
 	h.enforceUserConnLimit(c.userID)
 
 	if c.roomID != "" {
-		h.Broadcast(c.roomID, "", "USER_PRESENCE", map[string]interface{}{
+		h.Broadcast(c.roomID, "", "USER_PRESENCE", map[string]any{
 			"onlineCount": onlineCount,
 		})
 	}
@@ -527,7 +527,7 @@ func (h *Hub) Close() {
 
 // Broadcasting Methods
 
-func (h *Hub) BroadcastToUser(userID, event string, payload interface{}) {
+func (h *Hub) BroadcastToUser(userID, event string, payload any) {
 	msg := domain.WSMessage{
 		Event:     event,
 		Payload:   payload,
@@ -591,7 +591,7 @@ func (h *Hub) BroadcastSystem(event string) {
 }
 
 // BroadcastToUsers sends one event to every connection of the given users (duplicates are ignored).
-func (h *Hub) BroadcastToUsers(userIDs []string, event string, payload interface{}) {
+func (h *Hub) BroadcastToUsers(userIDs []string, event string, payload any) {
 	seen := make(map[string]bool, len(userIDs))
 	for _, uid := range userIDs {
 		if uid == "" || seen[uid] {
@@ -602,13 +602,13 @@ func (h *Hub) BroadcastToUsers(userIDs []string, event string, payload interface
 	}
 }
 
-func (h *Hub) BroadcastDocEvent(docID, event string, payload interface{}) {
+func (h *Hub) BroadcastDocEvent(docID, event string, payload any) {
 	if docID != "" {
 		h.BroadcastRoom("doc:"+docID, event, payload, nil)
 	}
 }
 
-func (h *Hub) Broadcast(spaceID, listID, event string, payload interface{}) {
+func (h *Hub) Broadcast(spaceID, listID, event string, payload any) {
 	msg := domain.WSMessage{
 		Event:     event,
 		ListID:    listID,
@@ -644,7 +644,7 @@ func (h *Hub) Broadcast(spaceID, listID, event string, payload interface{}) {
 	}
 }
 
-func (h *Hub) BroadcastListEvent(listID, event string, payload interface{}) {
+func (h *Hub) BroadcastListEvent(listID, event string, payload any) {
 	h.Broadcast("", listID, event, payload)
 }
 
@@ -679,7 +679,7 @@ func (h *Hub) LeaveRoom(c *Client, roomID string) {
 	}
 }
 
-func (h *Hub) BroadcastRoom(roomID, event string, payload interface{}, excludeClient *Client) {
+func (h *Hub) BroadcastRoom(roomID, event string, payload any, excludeClient *Client) {
 	msg := domain.WSMessage{
 		Event:     event,
 		Payload:   payload,
@@ -712,7 +712,7 @@ func (h *Hub) BroadcastRoom(roomID, event string, payload interface{}, excludeCl
 	}
 }
 
-func (c *Client) SendEvent(event string, payload interface{}) {
+func (c *Client) SendEvent(event string, payload any) {
 	msg := domain.WSMessage{
 		Event:     event,
 		Payload:   payload,
@@ -782,7 +782,7 @@ func (h *Hub) ServeSSE(w http.ResponseWriter, r *http.Request, roomID, userID st
 	fmt.Fprintf(w, ": connected (transport: sse, id: %s)\n\n", client.id)
 	connectedMsg, _ := json.Marshal(domain.WSMessage{
 		Event: "SSE_CONNECTED",
-		Payload: map[string]interface{}{
+		Payload: map[string]any{
 			"sseId":     client.id,
 			"transport": "sse",
 			"userId":    userID,

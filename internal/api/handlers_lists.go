@@ -358,7 +358,7 @@ func (s *Server) handleClearCompletedItems(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	s.wsHub.BroadcastListEvent(listID, "LIST_CLEARED", map[string]interface{}{
+	s.wsHub.BroadcastListEvent(listID, "LIST_CLEARED", map[string]any{
 		"listId":  listID,
 		"removed": removed,
 	})
@@ -383,7 +383,7 @@ func (s *Server) handleReorderListItems(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	s.wsHub.BroadcastListEvent(listID, "ITEM_REORDERED", map[string]interface{}{
+	s.wsHub.BroadcastListEvent(listID, "ITEM_REORDERED", map[string]any{
 		"listId": listID,
 		"items":  req.Items,
 	})

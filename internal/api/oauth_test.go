@@ -17,7 +17,7 @@ import (
 const oauthTestRedirect = "https://claude.ai/api/mcp/auth_callback"
 
 // oauthDo sends one request and returns status, headers and the decoded JSON body.
-func oauthDo(t *testing.T, router http.Handler, method, path, bearer, contentType, body string) (int, http.Header, map[string]interface{}) {
+func oauthDo(t *testing.T, router http.Handler, method, path, bearer, contentType, body string) (int, http.Header, map[string]any) {
 	t.Helper()
 	req := httptest.NewRequest(method, path, strings.NewReader(body))
 	if contentType != "" {
@@ -28,7 +28,7 @@ func oauthDo(t *testing.T, router http.Handler, method, path, bearer, contentTyp
 	}
 	rec := httptest.NewRecorder()
 	router.ServeHTTP(rec, req)
-	var out map[string]interface{}
+	var out map[string]any
 	_ = json.Unmarshal(rec.Body.Bytes(), &out)
 	return rec.Code, rec.Header(), out
 }
@@ -96,7 +96,7 @@ func TestOAuthFlowForMCP(t *testing.T) {
 		t.Fatalf("missing PKCE must go back as invalid_request: %v", info)
 	}
 	_, _, info = oauthDo(t, router, http.MethodGet, "/api/v1/oauth/authorize?"+params(oauthTestRedirect, pkceChallenge(verifier)).Encode(), session, "", "")
-	if info["clientName"] != "Claude" || info["redirectHost"] != "claude.ai" || len(info["scopes"].([]interface{})) != 4 {
+	if info["clientName"] != "Claude" || info["redirectHost"] != "claude.ai" || len(info["scopes"].([]any)) != 4 {
 		t.Fatalf("consent info: %v", info)
 	}
 	// API keys cannot agree on anyone's behalf
@@ -126,7 +126,7 @@ func TestOAuthFlowForMCP(t *testing.T) {
 		}
 		return u.Query().Get("code")
 	}
-	token := func(form url.Values) (int, map[string]interface{}) {
+	token := func(form url.Values) (int, map[string]any) {
 		code, _, out := oauthDo(t, router, http.MethodPost, "/oauth/token", "", formType, form.Encode())
 		return code, out
 	}

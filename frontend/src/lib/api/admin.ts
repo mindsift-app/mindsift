@@ -48,7 +48,7 @@ export const adminApi = {
   },
 
   async adminDeleteUser(id: string): Promise<void> {
-    await request(`/api/v1/admin/users/${id}`, { method: 'DELETE' });
+    await request(`/api/v1/admin/users/${id}`, { method: 'DELETE', timeout: 'slow' });
   },
 
   async adminGetInvites(): Promise<UserInvite[]> {
@@ -77,7 +77,7 @@ export const adminApi = {
   },
 
   async adminSendInvite(id: string, email: string): Promise<UserInvite> {
-    return request<UserInvite>(`/api/v1/admin/invites/${id}/send`, { method: 'POST', body: JSON.stringify({ email }) });
+    return request<UserInvite>(`/api/v1/admin/invites/${id}/send`, { method: 'POST', body: JSON.stringify({ email }), timeout: 'slow' });
   },
 
   async adminApproveUser(id: string): Promise<User> {
@@ -167,6 +167,7 @@ export const adminApi = {
     return request<{ status: string }>('/api/v1/admin/smtp/test', {
       method: 'POST',
       body: JSON.stringify({ toEmail }),
+      timeout: 'slow',
     });
   },
 };

@@ -24,6 +24,7 @@ import (
 var embeddedDist embed.FS
 
 func main() {
+	privateFiles()
 	// Due dates and alarms use the server's local time; without TZ that is Europe/Berlin
 	if os.Getenv("TZ") == "" {
 		if loc, err := time.LoadLocation("Europe/Berlin"); err == nil {
@@ -47,12 +48,12 @@ func main() {
 	store.ConfiguredLanguage = cfg.DefaultLanguage
 
 	if cfg.DemoMode {
-		slog.Info("🧪 Demo mode: resetting the database and setting up the demo accounts...")
+		slog.Info("Demo mode: resetting the database and setting up the demo accounts...")
 		_ = os.RemoveAll(filepath.Join(filepath.Dir(cfg.DatabasePath), "media")) // uploads of the last run
 		if err := store.ResetAndSeedDemo(); err != nil {
-			slog.Warn("⚠️ Setting up demo mode failed", "error", err)
+			slog.Warn("Setting up demo mode failed", "error", err)
 		} else {
-			slog.Info("✅ Demo accounts ready: admin / admin (admin role) and user / user (member role)")
+			slog.Info("Demo accounts ready: admin / admin (admin role) and user / user (member role)")
 		}
 	}
 
@@ -84,7 +85,7 @@ func main() {
 	}
 
 	go func() {
-		slog.Info("✨ MindSift ready", "url", "http://0.0.0.0:"+cfg.Port)
+		slog.Info("MindSift ready", "url", "http://0.0.0.0:"+cfg.Port)
 		if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			slog.Error("HTTP server error", "error", err)
 			os.Exit(1)

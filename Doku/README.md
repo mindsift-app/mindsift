@@ -6,7 +6,7 @@ Reference for developers and administrators. All information has been verified a
 
 | Document | Description |
 |---|---|
-| [architecture.md](architecture.md) | Structure, technology stack, startup, configuration, build |
+| [architecture.md](architecture.md) | Structure, technology stack, design decisions, startup, configuration, build |
 | [database.md](database.md) | SQLite schema, migrations, data model |
 | [api/rest.md](api/rest.md) | All REST endpoints |
 | [api/websocket.md](api/websocket.md) | Real-time communication via WebSocket and SSE, events |
@@ -39,6 +39,10 @@ go vet ./... && go test ./...
 
 # Frontend (Node 22)
 cd frontend && npm ci && npx tsc --noEmit && npm run test:run && npm run build
+
+# Everything at once in containers (podman, no local Go or Node): the checks above plus ESLint,
+# gofmt and staticcheck (staticcheck.conf); E2E=1 adds the browser tests
+ci/local-checks.sh
 ```
 
-The frontend is built to `cmd/server/dist` for inclusion in the binary (see `Dockerfile`). CI runs twice using the same build plan (`ci/build-plan.sh`): on private Gitea (`.gitea/workflows/`, tests and pre-release images) and on GitHub (`.github/workflows/`, public images at `ghcr.io/mindsift-app/mindsift`). On GitHub, a version tag also gets its release page from the matching `CHANGELOG.md` section (`.github/workflows/release.yaml`, `ci/release-notes.sh`).
+The frontend is built to `cmd/server/dist` for inclusion in the binary (see `Dockerfile`). CI runs twice using the same build plan (`ci/build-plan.sh`): on private Gitea (`.gitea/workflows/`, tests and pre-release images) and on GitHub (`.github/workflows/`, public images at `ghcr.io/mindsift-app/mindsift`, for amd64 and arm64). On GitHub, a version tag also gets its release page from the matching `CHANGELOG.md` section (`.github/workflows/release.yaml`, `ci/release-notes.sh`; versions before 0.80.0 are in `CHANGELOG-archive.md`), with the server binaries for Linux attached (`ci/release-binaries.sh`).

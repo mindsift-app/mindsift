@@ -121,7 +121,7 @@ func (st *sseStream) waitFor(t *testing.T, event string, timeout time.Duration) 
 	}
 }
 
-func doJSON(t *testing.T, ts *httptest.Server, method, path, token string, body interface{}) *http.Response {
+func doJSON(t *testing.T, ts *httptest.Server, method, path, token string, body any) *http.Response {
 	t.Helper()
 	var buf bytes.Buffer
 	if body != nil {
@@ -259,7 +259,7 @@ func TestReorderRejectsForeignTasks(t *testing.T) {
 		t.Fatalf("create task: %v", err)
 	}
 	done := "done"
-	resp := doJSON(t, ts, http.MethodPost, "/api/v1/tasks/reorder", attackerToken, map[string]interface{}{
+	resp := doJSON(t, ts, http.MethodPost, "/api/v1/tasks/reorder", attackerToken, map[string]any{
 		"items": []domain.ThoughtReorderItem{{ID: task.ID, SortOrder: 99, KanbanStatus: &done}},
 	})
 	if resp.StatusCode == http.StatusOK {
@@ -326,7 +326,7 @@ func TestDocChangesArePushedToTheNoteRoom(t *testing.T) {
 	time.Sleep(100 * time.Millisecond) // the join is processed asynchronously
 
 	text := "Geändert"
-	resp := doJSON(t, ts, http.MethodPost, "/api/v1/docs/"+doc.ID+"/sync", ownerToken, map[string]interface{}{
+	resp := doJSON(t, ts, http.MethodPost, "/api/v1/docs/"+doc.ID+"/sync", ownerToken, map[string]any{
 		"clientId": "owner-tab",
 		"ops":      []collab.Op{{OpID: "push-1", Kind: collab.OpSetContent, BlockID: "push_b1", BaseVersion: 1, Content: &text}},
 	})
@@ -362,7 +362,7 @@ func TestLongPollDeliversEvents(t *testing.T) {
 	srv, store, ts, owner, token := startRealtimeServer(t)
 	_, strangerToken := newTestUser(t, store, "stranger@example.com")
 
-	resp := doJSON(t, ts, http.MethodPost, "/api/v1/events/poll", token, map[string]interface{}{})
+	resp := doJSON(t, ts, http.MethodPost, "/api/v1/events/poll", token, map[string]any{})
 	var opened struct {
 		PollID string `json:"pollId"`
 	}

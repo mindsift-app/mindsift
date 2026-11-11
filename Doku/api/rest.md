@@ -149,7 +149,7 @@ Clients unable to set an `X-API-Key` header connect via OAuth 2.1 in accordance 
 | POST | `/oauth/register` | Dynamic client registration (RFC 7591), JSON `client_name`, `redirect_uris` (only `https://` or `http://localhost`/`127.0.0.1`, max 10). All clients are public (`token_endpoint_auth_method: none`); rate limited to 20 registrations per address per 15 minutes |
 | GET | `/oauth/authorize` | Consent page in the app (login, select scopes, allow/deny). Required: `response_type=code`, `client_id`, `redirect_uri` (exact match with registration), `code_challenge` with `code_challenge_method=S256`; optional: `state`, `scope` (space-separated scopes), `resource`. The response to the client contains `code`, `state`, and `iss` or `error` |
 | POST | `/oauth/token` | Form: `grant_type=authorization_code` (`code`, `client_id`, `redirect_uri`, `code_verifier`) or `refresh_token` (`refresh_token`, `client_id`). Errors returned as `{"error":"invalid_grant",…}` |
-| POST | `/oauth/revoke` | Revoke token (RFC 7009); revoking a refresh token terminates all tokens associated with the connection |
+| POST | `/oauth/revoke` | Revoke token (RFC 7009); revoking a refresh token terminates all tokens associated with the connection. `503` with `server_error` when the token could not be revoked |
 
 The consent page uses `GET`/`POST /api/v1/oauth/authorize` (requires user login, cannot be accessed with API keys). `GET` also returns `knownHost`: whether the way back leads to a known AI service (claude.ai, claude.com, anthropic.com, chatgpt.com, openai.com) or this computer (localhost); otherwise the page warns, because anybody can register a client under any name.
 

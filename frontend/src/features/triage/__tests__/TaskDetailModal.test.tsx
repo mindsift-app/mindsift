@@ -117,6 +117,24 @@ describe('TaskDetailModal', () => {
     expect(screen.getByRole('button', { name: 'Beobachten' })).toBeTruthy();
   });
 
+  it('keeps the notes being typed when the task is followed meanwhile', async () => {
+    vi.spyOn(api, 'watchTask').mockResolvedValue({ watching: true });
+    render(<TaskDetailModal {...props({ task: { ...task, isWatching: false } })} />);
+    fireEvent.click(screen.getByText('Detailnotiz hinzufügen…'));
+    fireEvent.change(screen.getByPlaceholderText(/Detailnotizen eingeben/), { target: { value: 'Leiter holen' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Beobachten' }));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Nicht mehr beobachten' })).toBeTruthy());
+    expect((screen.getByPlaceholderText(/Detailnotizen eingeben/) as HTMLTextAreaElement).value).toBe('Leiter holen');
+  });
+
+  it('starts editing the title with the title as it is now', () => {
+    const { rerender } = render(<TaskDetailModal {...props()} />);
+    // Renamed on another device while the dialog is open
+    rerender(<TaskDetailModal {...props({ task: { ...task, content: 'Fenster putzen lassen' } })} />);
+    fireEvent.click(screen.getByTitle('Klicken zum Bearbeiten des Titels'));
+    expect((screen.getByDisplayValue('Fenster putzen lassen') as HTMLTextAreaElement).tagName).toBe('TEXTAREA');
+  });
+
   it('asks before closing with unsaved notes and saves on request', async () => {
     const onClose = vi.fn();
     const onUpdateNotes = vi.fn(async () => {});

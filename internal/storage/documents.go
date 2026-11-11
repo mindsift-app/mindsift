@@ -53,10 +53,11 @@ func (s *Store) GetAuthorizedDocUsers(docID string) ([]string, error) {
 	if err == nil {
 		for uRows.Next() {
 			var uid string
-			if err := uRows.Scan(&uid); err == nil && uid != "" {
+			if err := uRows.Scan(&uid); !dbFailed(err) && uid != "" {
 				userSet[uid] = true
 			}
 		}
+		logDBErr(uRows.Err())
 		_ = uRows.Close()
 	}
 
@@ -70,10 +71,11 @@ func (s *Store) GetAuthorizedDocUsers(docID string) ([]string, error) {
 	if err == nil {
 		for tRows.Next() {
 			var uid string
-			if err := tRows.Scan(&uid); err == nil && uid != "" {
+			if err := tRows.Scan(&uid); !dbFailed(err) && uid != "" {
 				userSet[uid] = true
 			}
 		}
+		logDBErr(tRows.Err())
 		_ = tRows.Close()
 	}
 
@@ -111,10 +113,11 @@ func (s *Store) GetAuthorizedSharedFolderUsers(folderID string) ([]string, error
 		var targets []shareTarget
 		for rows.Next() {
 			var st shareTarget
-			if err := rows.Scan(&st.tType, &st.tID); err == nil {
+			if err := rows.Scan(&st.tType, &st.tID); !dbFailed(err) {
 				targets = append(targets, st)
 			}
 		}
+		logDBErr(rows.Err())
 		_ = rows.Close()
 
 		for _, st := range targets {
@@ -125,10 +128,11 @@ func (s *Store) GetAuthorizedSharedFolderUsers(folderID string) ([]string, error
 				if err == nil {
 					for mRows.Next() {
 						var uid string
-						if err := mRows.Scan(&uid); err == nil && uid != "" {
+						if err := mRows.Scan(&uid); !dbFailed(err) && uid != "" {
 							userSet[uid] = true
 						}
 					}
+					logDBErr(mRows.Err())
 					_ = mRows.Close()
 				}
 			}
@@ -213,10 +217,10 @@ func (s *Store) CreateDocument(userID, spaceID, title, icon, folderPath string, 
 		return nil, err
 	}
 	if isPinned {
-		_, _ = s.db.Exec(`INSERT OR IGNORE INTO doc_pins (user_id, doc_id, created_at) VALUES (?, ?, ?)`, userID, doc.ID, doc.CreatedAt)
+		s.execLogged(`INSERT OR IGNORE INTO doc_pins (user_id, doc_id, created_at) VALUES (?, ?, ?)`, userID, doc.ID, doc.CreatedAt)
 	}
 	s.replaceDocBlocksInDB(doc.ID, userID, doc.Blocks, now)
-	_ = s.indexDocBlockTags(doc.ID, doc.UserID, doc.Blocks)
+	logDBErr(s.indexDocBlockTags(doc.ID, doc.UserID, doc.Blocks))
 	return doc, nil
 }
 
@@ -243,13 +247,16 @@ func (s *Store) getUserFolderMounts(userID string) (map[string]string, map[strin
 
 	for rows.Next() {
 		var fID, fName, mPath string
-		if err := rows.Scan(&fID, &fName, &mPath); err == nil {
+		if err := rows.Scan(&fID, &fName, &mPath); !dbFailed(err) {
 			names[fID] = fName
 			if mPath == "" {
 				mPath = fName
 			}
 			mounts[fID] = mPath
 		}
+	}
+	if err := rows.Err(); err != nil {
+		return mounts, names, err
 	}
 	return mounts, names, nil
 }
@@ -344,30 +351,6 @@ func resolveDocumentPath(userID string, doc *domain.Document, mounts map[string]
 	}
 }
 
-func scanDocument(rows interface {
-	Scan(dest ...any) error
-}) (*domain.Document, error) {
-	d := &domain.Document{}
-	var blocksStr, tagsStr string
-	var isPinned, isArchived int
-	err := rows.Scan(
-		&d.ID, &d.UserID, &d.SpaceID, &d.Title, &d.Icon, &d.Content,
-		&blocksStr, &tagsStr, &d.FolderPath, &isPinned, &isArchived, &d.CreatedAt, &d.UpdatedAt,
-		&d.SharedFolderID, &d.SubFolderPath,
-	)
-	if err != nil {
-		return nil, err
-	}
-	d.IsPinned = isPinned != 0
-	d.IsArchived = isArchived != 0
-	d.Blocks = []domain.DocumentBlock{}
-	d.Tags = []string{}
-	_ = json.Unmarshal([]byte(blocksStr), &d.Blocks)
-	_ = json.Unmarshal([]byte(tagsStr), &d.Tags)
-	d.Tags = stripFolderTags(d.Tags)
-	return d, nil
-}
-
 func (s *Store) scanDocumentWithBlocks(rows interface {
 	Scan(dest ...any) error
 }) (*domain.Document, error) {
@@ -401,10 +384,11 @@ func (s *Store) GetDocuments(userID string) ([]domain.Document, error) {
 	if err == nil {
 		for ufRows.Next() {
 			var did, fp string
-			if err := ufRows.Scan(&did, &fp); err == nil {
+			if err := ufRows.Scan(&did, &fp); !dbFailed(err) {
 				userFolders[did] = fp
 			}
 		}
+		logDBErr(ufRows.Err())
 		_ = ufRows.Close()
 	}
 
@@ -437,7 +421,7 @@ func (s *Store) GetDocuments(userID string) ([]domain.Document, error) {
 			&d.ID, &d.UserID, &d.SpaceID, &d.Title, &d.Icon, &d.Content,
 			&blocksStr, &tagsStr, &d.FolderPath, &isPinned, &isArchived, &d.CreatedAt, &d.UpdatedAt,
 			&d.SharedFolderID, &d.SubFolderPath,
-		); err == nil {
+		); !dbFailed(err) {
 			d.IsPinned = isPinned != 0
 			d.IsArchived = isArchived != 0
 			d.Tags = []string{}
@@ -448,6 +432,9 @@ func (s *Store) GetDocuments(userID string) ([]domain.Document, error) {
 			resolveDocumentPath(userID, &d, mounts, names, userFolders)
 			ownRaw = append(ownRaw, rawDocRow{doc: d, blocksStr: blocksStr})
 		}
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 	_ = rows.Close()
 
@@ -505,7 +492,7 @@ func (s *Store) GetDocuments(userID string) ([]domain.Document, error) {
 				&blocksStr, &tagsStr, &d.FolderPath, &isPinned, &isArchived, &d.CreatedAt, &d.UpdatedAt,
 				&d.SharedFolderID, &d.SubFolderPath,
 				&perm, &ownerName,
-			); scanErr == nil {
+			); !dbFailed(scanErr) {
 				d.IsPinned = isPinned != 0
 				d.IsArchived = isArchived != 0
 				d.Tags = []string{}
@@ -518,6 +505,7 @@ func (s *Store) GetDocuments(userID string) ([]domain.Document, error) {
 				sharedRaw = append(sharedRaw, rawDocRow{doc: d, blocksStr: blocksStr})
 			}
 		}
+		logDBErr(sharedRows.Err())
 		_ = sharedRows.Close()
 
 		for _, r := range sharedRaw {
@@ -722,23 +710,30 @@ func (s *Store) reindexAllDocBlockTags() error {
 	var docs []docInfo
 	for rows.Next() {
 		var d docInfo
-		if err := rows.Scan(&d.id, &d.userID, &d.blocksJSON); err == nil {
+		if err := rows.Scan(&d.id, &d.userID, &d.blocksJSON); !dbFailed(err) {
 			docs = append(docs, d)
 		}
+	}
+	if err := rows.Err(); err != nil {
+		return err
 	}
 	_ = rows.Close()
 
 	for _, d := range docs {
 		blocks := s.loadDocBlocks(d.id, d.blocksJSON)
 		if len(blocks) > 0 {
-			_ = s.indexDocBlockTags(d.id, d.userID, blocks)
+			if err := s.indexDocBlockTags(d.id, d.userID, blocks); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
 }
 
 func (s *Store) indexDocBlockTags(docID, _ string, blocks []domain.DocumentBlock) error {
-	_, _ = s.db.Exec(`DELETE FROM block_tags WHERE document_id = ?`, docID)
+	if _, err := s.db.Exec(`DELETE FROM block_tags WHERE document_id = ?`, docID); err != nil {
+		return err
+	}
 	if len(blocks) == 0 {
 		return nil
 	}
@@ -755,7 +750,9 @@ func (s *Store) indexDocBlockTags(docID, _ string, blocks []domain.DocumentBlock
 		}
 		tags := domain.ExtractTags(b.Content)
 		for _, tag := range tags {
-			_, _ = stmt.Exec(tag, docID, b.ID)
+			if _, err := stmt.Exec(tag, docID, b.ID); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -776,13 +773,14 @@ func (s *Store) GetDocShares(docID string) ([]domain.DocShare, error) {
 	if err == nil {
 		for uRows.Next() {
 			var sh domain.DocShare
-			if err := uRows.Scan(&sh.ID, &sh.DocID, &sh.UserID, &sh.UserEmail, &sh.DisplayName, &sh.Permission, &sh.CreatedBy, &sh.CreatedAt); err == nil {
+			if err := uRows.Scan(&sh.ID, &sh.DocID, &sh.UserID, &sh.UserEmail, &sh.DisplayName, &sh.Permission, &sh.CreatedBy, &sh.CreatedAt); !dbFailed(err) {
 				sh.TargetType = "user"
 				sh.TargetID = sh.UserID
 				sh.TargetName = sh.DisplayName
 				shares = append(shares, sh)
 			}
 		}
+		logDBErr(uRows.Err())
 		_ = uRows.Close()
 	}
 
@@ -799,7 +797,7 @@ func (s *Store) GetDocShares(docID string) ([]domain.DocShare, error) {
 		for tRows.Next() {
 			var sh domain.DocShare
 			var teamID, teamName string
-			if err := tRows.Scan(&sh.ID, &sh.DocID, &teamID, &teamName, &sh.Permission, &sh.CreatedBy, &sh.CreatedAt); err == nil {
+			if err := tRows.Scan(&sh.ID, &sh.DocID, &teamID, &teamName, &sh.Permission, &sh.CreatedBy, &sh.CreatedAt); !dbFailed(err) {
 				sh.TargetType = "team"
 				sh.TargetID = teamID
 				sh.TargetName = teamName
@@ -807,6 +805,7 @@ func (s *Store) GetDocShares(docID string) ([]domain.DocShare, error) {
 				shares = append(shares, sh)
 			}
 		}
+		logDBErr(tRows.Err())
 		_ = tRows.Close()
 	}
 

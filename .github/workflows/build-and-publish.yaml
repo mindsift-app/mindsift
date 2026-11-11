@@ -1,6 +1,6 @@
 name: MindSift CI & Docker Release
 
-# Public images in GitHub's container registry (ghcr.io/mindsift-app/mindsift):
+# Public images in GitHub's container registry (ghcr.io/mindsift-app/mindsift), each for amd64 and arm64:
 #   push to dev      -> :dev
 #   push/merge main  -> :latest
 #   git tag v1.2.0   -> :v1.2.0 and :stable
@@ -10,7 +10,8 @@ name: MindSift CI & Docker Release
 # (TEST_REFS). A tag on the commit of :latest only retags it.
 # Trivy (ci/trivy-scan.sh) checks every tag before it is pushed, branches only when Dockerfile, go.mod or
 # go.sum changed; .github/workflows/security-scan.yaml checks :stable and :latest every week.
-# After the images of a tag, release.yaml creates its release page from the CHANGELOG.
+# After the images of a tag, release.yaml creates its release page from the CHANGELOG and attaches the
+# binaries.
 on:
   push:
     branches:
@@ -23,6 +24,11 @@ permissions:
   contents: read
   packages: write
 
+env:
+  # Platforms of every published tag. The Dockerfile checks and builds once on the runner and
+  # cross-compiles the binary; only its last stage runs emulated for arm64.
+  PLATFORMS: linux/amd64,linux/arm64
+
 jobs:
   build-test-push:
     name: Build, Test in Container & Push
@@ -34,6 +40,16 @@ jobs:
       - name: Determine Image
         id: prep
         run: echo "image=$(echo "ghcr.io/${GITHUB_REPOSITORY}" | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
+
+      # arm64 on an amd64 runner: QEMU for the last stage of the Dockerfile, and a builder that can build
+      # and push several platforms as one image (the default one cannot)
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
@@ -51,30 +67,44 @@ jobs:
           IMAGE="${{ steps.prep.outputs.image }}"
           TAGS="${{ steps.plan.outputs.tags }}"
           echo "ℹ️ ${{ steps.plan.outputs.reason }}"
+          TAG_ARGS=""
+          for t in ${TAGS}; do TAG_ARGS="${TAG_ARGS} -t ${IMAGE}:${t}"; done
+          # The scan looks at the image for the runner's platform (amd64): the other platforms get the
+          # same Alpine packages and the same Go modules.
           if [ "${{ steps.plan.outputs.action }}" = "retag" ]; then
             SOURCE="${{ steps.plan.outputs.source_image }}"
-            docker pull "${SOURCE}"
-            if [ "${{ steps.plan.outputs.scan }}" = "1" ]; then ci/trivy-scan.sh "${SOURCE}"; fi
-            for t in ${TAGS}; do
-              docker tag "${SOURCE}" "${IMAGE}:${t}"
-              docker push "${IMAGE}:${t}"
-            done
+            if [ "${{ steps.plan.outputs.scan }}" = "1" ]; then
+              docker pull "${SOURCE}"
+              ci/trivy-scan.sh "${SOURCE}"
+            fi
+            # Copies the image with all its platforms inside the registry (docker tag and push would
+            # keep only the runner's)
+            docker buildx imagetools create ${TAG_ARGS} "${SOURCE}"
           else
-            TAG_ARGS=""
-            for t in ${TAGS}; do TAG_ARGS="${TAG_ARGS} -t ${IMAGE}:${t}"; done
-            # The source label links the package on GitHub to this repository
-            DOCKER_BUILDKIT=1 docker build --progress=plain \
-              --build-arg APP_VERSION="${{ steps.plan.outputs.app_version }}" \
-              --build-arg SKIP_TESTS="${{ steps.plan.outputs.skip_tests }}" \
-              --build-arg GIT_SHA="${{ steps.plan.outputs.sha }}" \
-              --build-arg GIT_TREE="${{ steps.plan.outputs.tree }}" \
-              --build-arg GIT_DEPS="${{ steps.plan.outputs.deps }}" \
-              --label "org.opencontainers.image.source=https://github.com/${GITHUB_REPOSITORY}" \
-              ${TAG_ARGS} .
-            # Security scan before anything is pushed (tags always, branches when the dependencies changed)
-            if [ "${{ steps.plan.outputs.scan }}" = "1" ]; then ci/trivy-scan.sh "${IMAGE}:${TAGS%% *}"; fi
-            for t in ${TAGS}; do docker push "${IMAGE}:${t}"; done
+            # The source label links the package on GitHub to this repository. Without provenance: it
+            # would show up as a third platform "unknown/unknown" in the registry.
+            BUILD_ARGS=(--progress=plain --provenance=false
+              --build-arg "APP_VERSION=${{ steps.plan.outputs.app_version }}"
+              --build-arg "SKIP_TESTS=${{ steps.plan.outputs.skip_tests }}"
+              --build-arg "GIT_SHA=${{ steps.plan.outputs.sha }}"
+              --build-arg "GIT_TREE=${{ steps.plan.outputs.tree }}"
+              --build-arg "GIT_DEPS=${{ steps.plan.outputs.deps }}"
+              --label "org.opencontainers.image.source=https://github.com/${GITHUB_REPOSITORY}")
+            # Security scan before anything is pushed (tags always, branches when the dependencies
+            # changed). What this build does, the build for all platforms below takes from the cache.
+            if [ "${{ steps.plan.outputs.scan }}" = "1" ]; then
+              docker buildx build "${BUILD_ARGS[@]}" --load -t "${IMAGE}:${TAGS%% *}" .
+              ci/trivy-scan.sh "${IMAGE}:${TAGS%% *}"
+            fi
+            docker buildx build "${BUILD_ARGS[@]}" --platform "${PLATFORMS}" --push ${TAG_ARGS} .
           fi
+          # A tag that lost a platform would only be noticed by the people running it
+          for t in ${TAGS}; do
+            PUBLISHED="$(docker buildx imagetools inspect "${IMAGE}:${t}")"
+            for p in ${PLATFORMS//,/ }; do
+              echo "${PUBLISHED}" | grep -Eq "Platform: +${p}\$" || { echo "::error::${IMAGE}:${t} is not published for all of ${PLATFORMS} (not in its list: ${p})"; exit 1; }
+            done
+          done
 
   # A version tag gets its release page once its images are out (release.yaml)
   release:

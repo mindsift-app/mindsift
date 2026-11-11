@@ -99,7 +99,7 @@ func (s *Server) storeCenterEntry(userID string, e storage.CenterEntry, group st
 	}
 	if replaced != "" && replaced != added.Text && generic != "" {
 		added.Text = generic
-		_ = s.store.SetCenterEntryText(userID, added.ID, generic)
+		logFailed("Updating the text of a notification", s.store.SetCenterEntryText(userID, added.ID, generic), "user_id", userID)
 	}
 	s.wsHub.BroadcastToUser(userID, "NOTIFICATION", added)
 }
@@ -479,13 +479,14 @@ func (s *Server) flushNotifications(now time.Time) {
 		if err := s.deliver(uid, headingNews, out, false, now); err != nil {
 			if maxAttempts+1 >= notifyMaxAttempts {
 				slog.Warn("Notifications dropped after several failed attempts", "user_id", uid, "count", len(ids), "error", err)
-				_ = s.store.DeleteQueuedNotifications(ids)
+				logFailed("Removing dropped notifications from the queue", s.store.DeleteQueuedNotifications(ids), "user_id", uid)
 			} else {
-				_ = s.store.BumpQueuedNotifications(ids)
+				logFailed("Counting a failed attempt to notify", s.store.BumpQueuedNotifications(ids), "user_id", uid)
 			}
 			continue
 		}
-		_ = s.store.DeleteQueuedNotifications(ids)
+		// Left in the queue they would go out a second time
+		logFailed("Removing delivered notifications from the queue", s.store.DeleteQueuedNotifications(ids), "user_id", uid)
 	}
 }
 
@@ -621,7 +622,7 @@ func (s *Server) sendWebhookDigest(webhookURL, heading string, items []notifyIte
 	for _, it := range items {
 		list = append(list, map[string]string{"kind": it.kind, "title": it.title, "text": it.text})
 	}
-	body, _ := json.Marshal(map[string]interface{}{
+	body, _ := json.Marshal(map[string]any{
 		"event":     "digest",
 		"heading":   heading,
 		"items":     list,
@@ -663,8 +664,8 @@ func (s *Server) sendDiscordDigest(lang, webhookURL, heading string, items []not
 		}
 		lines = append(lines, "• "+it.text)
 	}
-	body, _ := json.Marshal(map[string]interface{}{
-		"embeds": []map[string]interface{}{{
+	body, _ := json.Marshal(map[string]any{
+		"embeds": []map[string]any{{
 			"title":       "MindSift: " + heading,
 			"description": strings.Join(lines, "\n"),
 			"color":       2450411,

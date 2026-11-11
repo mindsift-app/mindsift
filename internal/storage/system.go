@@ -2,6 +2,7 @@ package storage
 
 import (
 	"encoding/json"
+	"log/slog"
 	"strconv"
 	"strings"
 
@@ -13,13 +14,13 @@ import (
 
 func (s *Store) GetDashboardStats(userID string) (*domain.DashboardStats, error) {
 	st := &domain.DashboardStats{}
-	_ = s.db.QueryRow(`SELECT COUNT(*) FROM thoughts WHERE user_id = ? AND status = 'inbox'`, userID).Scan(&st.InboxCount)
+	logDBErr(s.db.QueryRow(`SELECT COUNT(*) FROM thoughts WHERE user_id = ? AND status = 'inbox'`, userID).Scan(&st.InboxCount))
 	// Same tasks as GetTasks without a list ("Alle Aufgaben"): own ones plus those in shared task lists
 	taskScope := `(user_id = ? OR task_list_id IN (` + s.accessibleTaskListIDsQuery() + `)) AND (status = 'kept' OR (status = 'converted' AND converted_type = 'task'))`
-	_ = s.db.QueryRow(`SELECT COUNT(*) FROM thoughts WHERE `+taskScope+` AND is_completed = 0`, userID, userID, userID, userID).Scan(&st.TasksOpenCount)
-	_ = s.db.QueryRow(`SELECT COUNT(*) FROM thoughts WHERE `+taskScope+` AND is_completed = 1`, userID, userID, userID, userID).Scan(&st.TasksDoneCount)
-	_ = s.db.QueryRow(`SELECT COUNT(*) FROM documents WHERE user_id = ? AND is_archived = 0`, userID).Scan(&st.DocsCount)
-	_ = s.db.QueryRow(`SELECT COUNT(*) FROM thoughts WHERE user_id = ? AND status = 'discarded'`, userID).Scan(&st.DiscardedCount)
+	logDBErr(s.db.QueryRow(`SELECT COUNT(*) FROM thoughts WHERE `+taskScope+` AND is_completed = 0`, userID, userID, userID, userID).Scan(&st.TasksOpenCount))
+	logDBErr(s.db.QueryRow(`SELECT COUNT(*) FROM thoughts WHERE `+taskScope+` AND is_completed = 1`, userID, userID, userID, userID).Scan(&st.TasksDoneCount))
+	logDBErr(s.db.QueryRow(`SELECT COUNT(*) FROM documents WHERE user_id = ? AND is_archived = 0`, userID).Scan(&st.DocsCount))
+	logDBErr(s.db.QueryRow(`SELECT COUNT(*) FROM thoughts WHERE user_id = ? AND status = 'discarded'`, userID).Scan(&st.DiscardedCount))
 	// Own lists and lists shared with the user directly or through a group
 	visibleLists := `
 		SELECT l.id
@@ -29,9 +30,9 @@ func (s *Store) GetDashboardStats(userID string) (*domain.DashboardStats, error)
 		    OR (ls.target_type = 'team' AND ls.target_id IN (SELECT team_id FROM team_members WHERE user_id = ?))
 		)
 		WHERE l.user_id = ? OR ls.id IS NOT NULL`
-	_ = s.db.QueryRow(`SELECT COUNT(DISTINCT id) FROM (`+visibleLists+`)`, userID, userID, userID).Scan(&st.ListsCount)
-	_ = s.db.QueryRow(`SELECT COUNT(*) FROM list_items WHERE is_completed = 0 AND list_id IN (`+visibleLists+`)`,
-		userID, userID, userID).Scan(&st.ListItemsOpenCount)
+	logDBErr(s.db.QueryRow(`SELECT COUNT(DISTINCT id) FROM (`+visibleLists+`)`, userID, userID, userID).Scan(&st.ListsCount))
+	logDBErr(s.db.QueryRow(`SELECT COUNT(*) FROM list_items WHERE is_completed = 0 AND list_id IN (`+visibleLists+`)`,
+		userID, userID, userID).Scan(&st.ListItemsOpenCount))
 
 	// Count open (uncompleted) To-Dos across accessible workspace documents (owned or shared)
 	docRows, err := s.db.Query(`
@@ -43,7 +44,7 @@ func (s *Store) GetDashboardStats(userID string) (*domain.DashboardStats, error)
 	if err == nil {
 		for docRows.Next() {
 			var bj string
-			if err := docRows.Scan(&bj); err == nil && bj != "" {
+			if err := docRows.Scan(&bj); !dbFailed(err) && bj != "" {
 				var blocks []domain.DocumentBlock
 				if err := json.Unmarshal([]byte(bj), &blocks); err == nil {
 					for _, b := range blocks {
@@ -54,6 +55,7 @@ func (s *Store) GetDashboardStats(userID string) (*domain.DashboardStats, error)
 				}
 			}
 		}
+		logDBErr(docRows.Err())
 		_ = docRows.Close()
 	}
 
@@ -110,7 +112,9 @@ func (s *Store) SeedSMTPDefaultsFromEnv(host, port, user, pass, from, fromName s
 		cur.SMTPFromName = strings.TrimSpace(fromName)
 		cur.SMTPTLS = tls
 		cur.SMTPSkipVerify = skipVerify
-		_ = s.UpdateSystemSettings(cur)
+		if err := s.UpdateSystemSettings(cur); err != nil {
+			slog.Warn("Taking the mail settings from the environment failed", "error", err)
+		}
 	}
 }
 
@@ -126,14 +130,14 @@ func (s *Store) GetSystemSettings() (*domain.SystemSettings, error) {
 	}
 
 	rows, err := s.db.Query(`SELECT key, value FROM system_settings`)
-	if err != nil {
-		return settings, nil
+	if dbFailed(err) {
+		return settings, err // with the defaults, for those who only read
 	}
 	defer rows.Close()
 
 	for rows.Next() {
 		var k, v string
-		if err := rows.Scan(&k, &v); err == nil {
+		if err := rows.Scan(&k, &v); !dbFailed(err) {
 			switch k {
 			case "sharing_mode":
 				settings.SharingMode = v
@@ -202,6 +206,9 @@ func (s *Store) GetSystemSettings() (*domain.SystemSettings, error) {
 				}
 			}
 		}
+	}
+	if err := rows.Err(); dbFailed(err) {
+		return settings, err
 	}
 	// Older installations only knew the open/closed switch
 	if settings.RegistrationMode == "" {
@@ -350,6 +357,6 @@ const MaxPublicLinkDays = 14
 // MCPEnabledSetting: the admin's switch for the MCP endpoint in the system settings (default: on).
 func (s *Store) MCPEnabledSetting() bool {
 	var v string
-	_ = s.db.QueryRow(`SELECT value FROM system_settings WHERE key = 'mcp_enabled'`).Scan(&v)
-	return v != "false"
+	err := s.db.QueryRow(`SELECT value FROM system_settings WHERE key = 'mcp_enabled'`).Scan(&v)
+	return !dbFailed(err) && v != "false" // off when the switch cannot be read
 }

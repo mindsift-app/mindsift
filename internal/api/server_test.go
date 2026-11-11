@@ -364,7 +364,7 @@ func TestNewFullFeatures(t *testing.T) {
 	}
 
 	// 2. Test User Settings: Update Multi-Channel Alarms & Profile
-	settingsPayload := map[string]interface{}{
+	settingsPayload := map[string]any{
 		"displayName":         "Admin User",
 		"alarmChannels":       []string{"email", "discord", "webhook"},
 		"alarmEmail":          "alarms@example.com",
@@ -409,7 +409,7 @@ func TestNewFullFeatures(t *testing.T) {
 	}
 
 	// 4. Test Kanban & Task details update
-	taskUpdatePayload := map[string]interface{}{
+	taskUpdatePayload := map[string]any{
 		"kanbanStatus": "in_progress",
 		"notes":        "Detailnotizen für die Aufgabe",
 		"taskListId":   createdTaskList.ID,
@@ -949,7 +949,7 @@ func TestDecoupledFolderSharingAPI(t *testing.T) {
 	_ = json.Unmarshal(rec.Body.Bytes(), &shFolder)
 
 	// 2. User A creates a document inside "TeamProjekt"
-	docPayload := map[string]interface{}{
+	docPayload := map[string]any{
 		"title":      "Spezifikation",
 		"folderPath": "TeamProjekt",
 		"blocks": []domain.DocumentBlock{
@@ -969,7 +969,7 @@ func TestDecoupledFolderSharingAPI(t *testing.T) {
 	_ = json.Unmarshal(rec.Body.Bytes(), &createdDoc)
 
 	// 3. User A shares the folder with User B (write permission)
-	sharePayload := map[string]interface{}{
+	sharePayload := map[string]any{
 		"userId":     userB.ID,
 		"targetType": "user",
 		"permission": "write",
@@ -1279,7 +1279,7 @@ func TestDocumentSharingStrictlyReadOnly(t *testing.T) {
 
 	// 2. User B tries to update document via PUT -> must fail (not owner)
 	newTitle := "Hacked Title"
-	updateBody, _ := json.Marshal(map[string]interface{}{"title": newTitle})
+	updateBody, _ := json.Marshal(map[string]any{"title": newTitle})
 	req = httptest.NewRequest(http.MethodPut, "/api/v1/documents/"+doc.ID, bytes.NewReader(updateBody))
 	req.Header.Set("Authorization", "Bearer "+tokenB)
 	req.Header.Set("Content-Type", "application/json")
@@ -1291,7 +1291,7 @@ func TestDocumentSharingStrictlyReadOnly(t *testing.T) {
 
 	// 3. User B tries to change blocks through the sync API -> must fail (read-only)
 	hacked := "Hacked by User B"
-	syncBody, _ := json.Marshal(map[string]interface{}{
+	syncBody, _ := json.Marshal(map[string]any{
 		"clientId": "tab-b",
 		"ops":      []collab.Op{{OpID: "b-hack", Kind: collab.OpSetContent, BlockID: "b2", BaseVersion: 1, Content: &hacked}},
 	})
@@ -1305,7 +1305,7 @@ func TestDocumentSharingStrictlyReadOnly(t *testing.T) {
 	}
 
 	// The old whole-document save no longer accepts blocks, not even from the owner
-	blocksBody, _ := json.Marshal(map[string]interface{}{"blocks": []domain.DocumentBlock{{ID: "b1", Content: "x"}}})
+	blocksBody, _ := json.Marshal(map[string]any{"blocks": []domain.DocumentBlock{{ID: "b1", Content: "x"}}})
 	req = httptest.NewRequest(http.MethodPut, "/api/v1/documents/"+doc.ID, bytes.NewReader(blocksBody))
 	req.Header.Set("Authorization", "Bearer "+tokenA)
 	req.Header.Set("Content-Type", "application/json")
@@ -1317,7 +1317,7 @@ func TestDocumentSharingStrictlyReadOnly(t *testing.T) {
 
 	// 4. User A (owner) can successfully update document
 	ownerTitle := "Owner Updated Title"
-	ownerBody, _ := json.Marshal(map[string]interface{}{"title": ownerTitle})
+	ownerBody, _ := json.Marshal(map[string]any{"title": ownerTitle})
 	req = httptest.NewRequest(http.MethodPut, "/api/v1/documents/"+doc.ID, bytes.NewReader(ownerBody))
 	req.Header.Set("Authorization", "Bearer "+tokenA)
 	req.Header.Set("Content-Type", "application/json")

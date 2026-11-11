@@ -221,6 +221,8 @@ VirtualHost configuration (`/etc/apache2/sites-available/mindsift.conf`):
 
 MindSift also works behind proxies that block WebSockets, buffer streams, or only allow short requests. Note synchronization automatically selects the best available transport (WebSocket → SSE → long polling → polling every 3 s); the editor displays the active transport. Long polling requests last at most 25 s, staying within typical proxy timeout limits. Details: [api/websocket.md](api/websocket.md).
 
+A few requests can take longer than a minute: restoring a server backup, "Back up now" on a server with many accounts, deleting a large account, a test mail through a mail server that does not answer. MindSift gives them up to 5 minutes. A proxy that cuts answers earlier (Nginx: `proxy_read_timeout`, 60 s by default) answers them with an error of its own, while the server still finishes the work.
+
 ## 🔍 Diagnostics & Verification
 
 The following commands can be used to verify connectivity and streaming functionality:

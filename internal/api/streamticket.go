@@ -76,7 +76,7 @@ func (s *Server) handleStreamTicket(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "Ticket konnte nicht erstellt werden")
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]interface{}{"ticket": ticket, "expiresIn": int(streamTicketTTL.Seconds())})
+	writeJSON(w, http.StatusOK, map[string]any{"ticket": ticket, "expiresIn": int(streamTicketTTL.Seconds())})
 }
 
 // streamOriginAllowed: with BASE_URL set, browsers may open WebSockets only from that address or the

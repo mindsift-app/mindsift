@@ -64,7 +64,17 @@ export function ensureArray<T>(val: T[] | null | undefined): T[] {
   return Array.isArray(val) ? val : [];
 }
 
-export async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+// How long request() waits for the answer; after that the server counts as unreachable.
+// - normal: ordinary calls, answered within a second
+// - slow: the server itself is busy for a while (restoring or writing backups, deleting an account with
+//   all it holds) or waits for somebody else (a test mail through a mail server that does not answer).
+//   The server keeps the connection open as long (allowLongWork in internal/api/bodylimit.go).
+// Uploads and downloads of whole files do not go through request() and have no timeout.
+export const REQUEST_TIMEOUT = { normal: 12_000, slow: 5 * 60_000 } as const;
+
+type RequestOptions = RequestInit & { timeout?: keyof typeof REQUEST_TIMEOUT };
+
+export async function request<T>(path: string, { timeout = 'normal', ...options }: RequestOptions = {}): Promise<T> {
   const method = (options.method || 'GET').toUpperCase();
   const cacheable = method === 'GET' && isCacheablePath(path);
   const userKey = getCurrentUserId() || 'anon';
@@ -82,7 +92,7 @@ export async function request<T>(path: string, options: RequestInit = {}): Promi
   };
 
   const controller = new AbortController();
-  const timeoutId = window.setTimeout(() => controller.abort(), 12000);
+  const timeoutId = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT[timeout]);
   // The caller can abort too (e.g. a newer search makes this one pointless)
   if (options.signal) {
     if (options.signal.aborted) controller.abort();

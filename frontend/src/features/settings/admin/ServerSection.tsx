@@ -154,7 +154,7 @@ export function ServerSection({
                 <p className="font-bold text-main">{t('server.publicLinks')}</p>
                 <p className="text-[11px] text-muted mt-0.5">
                   {t('server.publicLinksHint')}
-                  {settings.publicLinksConfiguredViaEnv && ` ${t('server.fixedBy', { env: demoMode ? 'MINDA_DEMO' : 'PUBLIC_LINKS' })}`}
+                  {settings.publicLinksConfiguredViaEnv && ` ${t('server.fixedBy', { env: demoMode ? 'MINDSIFT_DEMO' : 'PUBLIC_LINKS' })}`}
                 </p>
               </div>
               <ToggleSwitch

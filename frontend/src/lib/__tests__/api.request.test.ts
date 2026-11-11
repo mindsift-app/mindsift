@@ -71,6 +71,65 @@ describe('request()', () => {
   });
 });
 
+describe('request() timeout', () => {
+  let fetchMock: ReturnType<typeof vi.fn>;
+
+  beforeEach(() => {
+    localStorage.clear();
+    setToken('t');
+    vi.useFakeTimers();
+    // A server that never answers: the call only ends when request() gives up
+    fetchMock = vi.fn(
+      (_path: string, init: RequestInit) =>
+        new Promise((_resolve, reject) => {
+          init.signal?.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError')));
+        }),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  // What became of the call: undefined while it is still waiting
+  function watch(call: Promise<unknown>) {
+    const state: { error?: unknown } = {};
+    call.catch((err) => {
+      state.error = err;
+    });
+    return state;
+  }
+
+  it('gives up on an ordinary call after 12 seconds', async () => {
+    const state = watch(api.deleteTaskList('tkl_x'));
+    await vi.advanceTimersByTimeAsync(11_900);
+    expect(state.error).toBeUndefined();
+    await vi.advanceTimersByTimeAsync(200);
+    expect(state.error).toBeInstanceOf(OfflineError);
+  });
+
+  // The server works on these for a while or waits for a mail server or push service
+  const slowCalls: [string, () => Promise<unknown>][] = [
+    ['restoring a backup', () => api.restoreMyBackup('2026-11-10.zip', 'restore', ['notes'])],
+    ['writing the backups', () => api.adminRunBackup()],
+    ['deleting all own data', () => api.purgeOwnData('geheim')],
+    ['deleting the own account', () => api.deleteOwnAccount('geheim')],
+    ['deleting somebody', () => api.adminDeleteUser('usr_1')],
+    ['the test mail', () => api.adminTestSMTP('anna@example.com')],
+    ['the test alarm', () => api.testAlarmChannel('email')],
+    ['the invite mail', () => api.adminSendInvite('inv_1', 'anna@example.com')],
+    ['the test push', () => api.testPush()],
+  ];
+  it.each(slowCalls)('waits five minutes for %s', async (_name, call) => {
+    const state = watch(call());
+    await vi.advanceTimersByTimeAsync(5 * 60_000 - 100);
+    expect(state.error).toBeUndefined();
+    await vi.advanceTimersByTimeAsync(200);
+    expect(state.error).toBeInstanceOf(OfflineError);
+  });
+});
+
 describe('realtime URLs', () => {
   it('builds WebSocket URLs with the ticket', () => {
     expect(buildWebSocketURL('abc')).toBe(`ws://${window.location.host}/api/v1/ws?ticket=abc`);

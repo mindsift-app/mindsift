@@ -70,7 +70,8 @@ func (s *Server) handleCreateTeamDirect(w http.ResponseWriter, r *http.Request) 
 		writeInternal(w, err)
 		return
 	}
-	team.Members, _ = s.store.GetTeamMembers(team.ID)
+	team.Members, err = s.store.GetTeamMembers(team.ID)
+	logFailed("Loading the members of the new group", err, "team_id", team.ID)
 	writeJSON(w, http.StatusCreated, team)
 }
 

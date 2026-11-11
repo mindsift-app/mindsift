@@ -29,16 +29,6 @@ type TrashedTask struct {
 	CanEdit     bool   `json:"canEdit"`
 }
 
-// trashTasks moves tasks into the trash, each with its row and assignees, in one transaction per task.
-func (s *Store) trashTasks(ids []string, byUserID string) error {
-	for _, id := range ids {
-		if err := s.trashTask(id, byUserID); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 func (s *Store) trashTask(id, byUserID string) error {
 	rows, err := s.db.Query(`SELECT * FROM thoughts WHERE id = ?`, id)
 	if err != nil {
@@ -74,7 +64,9 @@ func (s *Store) trashTask(id, byUserID string) error {
 	userID, listID := str("user_id"), str("task_list_id")
 	owner := userID
 	if listID != "" {
-		_ = s.db.QueryRow(`SELECT user_id FROM task_lists WHERE id = ?`, listID).Scan(&owner)
+		if err := rowErr(s.db.QueryRow(`SELECT user_id FROM task_lists WHERE id = ?`, listID).Scan(&owner)); err != nil {
+			return err
+		}
 	}
 	done := false
 	switch v := data["is_completed"].(type) {
@@ -118,10 +110,14 @@ func (s *Store) GetTaskTrash(userID, taskListID string) ([]TrashedTask, error) {
 	for rows.Next() {
 		var t TrashedTask
 		var done int
-		if rows.Scan(&t.ID, &t.Content, &t.TaskListID, &done, &t.TrashedAt, &t.TrashedBy) == nil {
-			t.IsCompleted = done == 1
-			out = append(out, t)
+		if err := rows.Scan(&t.ID, &t.Content, &t.TaskListID, &done, &t.TrashedAt, &t.TrashedBy); err != nil {
+			return nil, err
 		}
+		t.IsCompleted = done == 1
+		out = append(out, t)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 	for i := range out {
 		out[i].CanEdit = out[i].TaskListID == "" || s.CanEditTaskList(userID, out[i].TaskListID)
@@ -169,9 +165,14 @@ func (s *Store) RestoreTrashedTask(userID, id string) (*domain.Thought, error) {
 	}
 	for rows.Next() {
 		var c string
-		if rows.Scan(&c) == nil {
-			cols[c] = true
+		if err := rows.Scan(&c); err != nil {
+			_ = rows.Close()
+			return nil, err
 		}
+		cols[c] = true
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 	_ = rows.Close()
 	if done, ok := data["is_completed"].(int64); ok && done == 1 {
@@ -258,9 +259,14 @@ func (s *Store) purgeExpiredTaskTrash(now time.Time, allowNever bool) ([]string,
 	var ids []string
 	for rows.Next() {
 		var id string
-		if rows.Scan(&id) == nil {
-			ids = append(ids, id)
+		if err := rows.Scan(&id); err != nil {
+			_ = rows.Close()
+			return nil, err
 		}
+		ids = append(ids, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 	_ = rows.Close()
 	return ids, s.purgeTrashedTasks(ids)

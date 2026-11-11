@@ -354,7 +354,7 @@ func (s *Server) requestModelDownload() {
 // environment only) and checks the Whisper server right now.
 func (s *Server) handleAdminVoiceStatus(w http.ResponseWriter, r *http.Request) {
 	cfg := s.cfg.Speech
-	out := map[string]interface{}{
+	out := map[string]any{
 		"mode":           s.voiceMode(),
 		"demo":           s.cfg.DemoMode,
 		"maxSeconds":     cfg.MaxSeconds,

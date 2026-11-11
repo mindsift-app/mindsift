@@ -608,7 +608,8 @@ func (s *Store) ApplyImport(userID string, plan *ImportPlan) (ImportSummary, err
 				continue // empty lines and the like
 			}
 			if it.done {
-				_, _ = s.ToggleListItem(item.ID, true, userID, "")
+				_, err = s.ToggleListItem(item.ID, true, userID, "")
+				logDBErr(err)
 			}
 		}
 	}
@@ -641,7 +642,7 @@ func (s *Store) importTaskInto(userID, listID string, t importTask, asTask bool)
 	}
 	if validRecurrence(t.recurrence) && t.recurrence != "" {
 		// Imported as already handled: completing a restored task must not create a second successor
-		_, _ = s.db.Exec(`UPDATE thoughts SET recurrence = ?, recurrence_spawned = ? WHERE id = ?`, t.recurrence, boolInt(t.done), th.ID)
+		s.execLogged(`UPDATE thoughts SET recurrence = ?, recurrence_spawned = ? WHERE id = ?`, t.recurrence, boolInt(t.done), th.ID)
 	}
 	if t.done || len(t.subtasks) > 0 {
 		var done *bool
@@ -652,7 +653,8 @@ func (s *Store) importTaskInto(userID, listID string, t importTask, asTask bool)
 		if len(t.subtasks) > 0 {
 			subs = &t.subtasks
 		}
-		_, _ = s.UpdateThoughtDetails(userID, th.ID, nil, done, nil, nil, nil, nil, nil, subs, nil)
+		_, err = s.UpdateThoughtDetails(userID, th.ID, nil, done, nil, nil, nil, nil, nil, subs, nil)
+		logDBErr(err)
 	}
 	return nil
 }

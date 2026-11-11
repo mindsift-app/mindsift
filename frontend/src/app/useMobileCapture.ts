@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import { PriorityLevel, Thought } from '../lib/types';
 import { api, triggerHaptic } from '../lib/api';
 import { useVoiceInput } from '../lib/useVoiceInput';
@@ -66,14 +66,17 @@ export function useMobileCapture(
     }
   };
 
-  const openMobileTriageCapture = () => {
+  // Stays the same function: views register it once as their "+", so it reads the voice input as it is now
+  const mobileVoiceRef = useRef(mobileVoice);
+  mobileVoiceRef.current = mobileVoice;
+  const openMobileTriageCapture = useCallback(() => {
     setMobileTriageContent('');
     setMobileTriagePriority('normal');
     setMobileTriageDueDate('');
     setIsVoiceCaptured(false);
-    if (mobileVoice.state !== 'idle') mobileVoice.cancel();
+    if (mobileVoiceRef.current.state !== 'idle') mobileVoiceRef.current.cancel();
     setShowMobileCapture(true);
-  };
+  }, []);
 
   return {
     showMobileCapture,

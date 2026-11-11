@@ -25,7 +25,7 @@ func fakeWhisper(t *testing.T, models []string, got *map[string]string, download
 			for _, m := range models {
 				data = append(data, map[string]string{"id": m})
 			}
-			_ = json.NewEncoder(w).Encode(map[string]interface{}{"data": data})
+			_ = json.NewEncoder(w).Encode(map[string]any{"data": data})
 		case r.Method == http.MethodPost && strings.HasPrefix(r.URL.Path, "/v1/models/"):
 			atomic.AddInt32(downloads, 1)
 			w.WriteHeader(http.StatusCreated)

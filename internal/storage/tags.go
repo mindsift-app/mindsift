@@ -59,10 +59,13 @@ func (s *Store) GetWorkspaceTags(userID string) ([]domain.TagSummary, error) {
 	seen := make(map[string]bool)
 	for rows.Next() {
 		var ts domain.TagSummary
-		if err := rows.Scan(&ts.Tag, &ts.Count); err == nil {
+		if err := rows.Scan(&ts.Tag, &ts.Count); !dbFailed(err) {
 			results = append(results, ts)
 			seen[ts.Tag] = true
 		}
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 	_ = rows.Close()
 
@@ -74,11 +77,12 @@ func (s *Store) GetWorkspaceTags(userID string) ([]domain.TagSummary, error) {
 	if err == nil {
 		for pageRows.Next() {
 			var t string
-			if err := pageRows.Scan(&t); err == nil && t != "" && !seen[t] {
+			if err := pageRows.Scan(&t); !dbFailed(err) && t != "" && !seen[t] {
 				results = append(results, domain.TagSummary{Tag: t, Count: 0})
 				seen[t] = true
 			}
 		}
+		logDBErr(pageRows.Err())
 		_ = pageRows.Close()
 	}
 
@@ -92,10 +96,10 @@ func (s *Store) GetTagDetails(userID, tag string) (*domain.TagDetails, error) {
 	}
 
 	var noteContent, noteUpdatedAt string
-	_ = s.db.QueryRow(
+	logDBErr(s.db.QueryRow(
 		`SELECT content, updated_at FROM tag_pages WHERE user_id = ? AND tag = ?`,
 		userID, cleanTag,
-	).Scan(&noteContent, &noteUpdatedAt)
+	).Scan(&noteContent, &noteUpdatedAt))
 
 	rows, err := s.db.Query(
 		`SELECT t.block_id, d.id, d.title, d.icon, d.folder_path, d.blocks_json, d.updated_at, d.user_id,
@@ -145,9 +149,12 @@ func (s *Store) GetTagDetails(userID, tag string) (*domain.TagDetails, error) {
 	var rawMatches []rawMatch
 	for rows.Next() {
 		var rm rawMatch
-		if err := rows.Scan(&rm.blockID, &rm.docID, &rm.title, &rm.icon, &rm.folderPath, &rm.blocksJSON, &rm.updatedAt, &rm.docUserID, &rm.ownerName, &rm.sharedPermission); err == nil {
+		if err := rows.Scan(&rm.blockID, &rm.docID, &rm.title, &rm.icon, &rm.folderPath, &rm.blocksJSON, &rm.updatedAt, &rm.docUserID, &rm.ownerName, &rm.sharedPermission); !dbFailed(err) {
 			rawMatches = append(rawMatches, rm)
 		}
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 	_ = rows.Close()
 

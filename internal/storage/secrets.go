@@ -101,8 +101,8 @@ func (s *Store) MoveSecret(id, docID string) error {
 // DocReferencesSecret reports whether a live bullet of the note holds the reference.
 func (s *Store) DocReferencesSecret(docID, id string) bool {
 	var n int
-	_ = s.db.QueryRow(`SELECT COUNT(*) FROM blocks WHERE document_id = ? AND deleted = 0 AND instr(content, ?) > 0`,
-		docID, secretRef(id)).Scan(&n)
+	logDBErr(s.db.QueryRow(`SELECT COUNT(*) FROM blocks WHERE document_id = ? AND deleted = 0 AND instr(content, ?) > 0`,
+		docID, secretRef(id)).Scan(&n))
 	return n > 0
 }
 

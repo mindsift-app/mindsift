@@ -44,3 +44,14 @@ func allowLongTransfer(w http.ResponseWriter) {
 	_ = rc.SetWriteDeadline(time.Now().Add(longTransferTime))
 	_ = rc.SetReadDeadline(time.Now().Add(longTransferTime))
 }
+
+// Other requests keep the server itself busy for longer than the 30 s, or it waits for somebody else:
+// restoring a backup, writing the backups of every account, deleting an account with all it holds, a
+// test mail through a mail server that does not answer (two attempts of up to 90 s each). Without this
+// the work would be done and its answer lost. The app waits as long (REQUEST_TIMEOUT.slow in
+// frontend/src/lib/api/client.ts).
+const longWorkTime = 5 * time.Minute
+
+func allowLongWork(w http.ResponseWriter) {
+	_ = http.NewResponseController(w).SetWriteDeadline(time.Now().Add(longWorkTime))
+}

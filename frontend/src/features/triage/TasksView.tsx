@@ -266,6 +266,8 @@ export const TasksView: React.FC<TasksViewProps> = ({
 
   useEffect(() => {
     loadData();
+    // loadData reads the selected list and refs
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [refreshTrigger, selectedListId]);
 
   const selectedListIdRef = useRef(selectedListId);

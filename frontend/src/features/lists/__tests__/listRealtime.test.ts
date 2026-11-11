@@ -1,6 +1,13 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
+import { renderHook } from '@testing-library/react';
 import { ListItem, SharedList, WSMessage } from '../../../lib/types';
-import { LIST_RELOAD_EVENTS, listsAfterMessage } from '../useListRealtime';
+import { createRealtimeConnection } from '../../../lib/api';
+import { LIST_RELOAD_EVENTS, listsAfterMessage, useListRealtime } from '../useListRealtime';
+
+vi.mock('../../../lib/api', async (original) => ({
+  ...(await original<typeof import('../../../lib/api')>()),
+  createRealtimeConnection: vi.fn(() => ({ close: vi.fn() })),
+}));
 
 const item = (id: string, i: Partial<ListItem> = {}) =>
   ({ id, listId: 'l1', content: id, isCompleted: false, sortOrder: 0, createdAt: '', ...i }) as ListItem;
@@ -41,5 +48,38 @@ describe('shopping list realtime updates', () => {
     expect(LIST_RELOAD_EVENTS).toContain('LIST_SHARED');
     expect(LIST_RELOAD_EVENTS).toContain('ITEM_REORDERED');
     expect(LIST_RELOAD_EVENTS).not.toContain('ITEM_CREATED');
+  });
+});
+
+// loadLists decides which list stays open from what the view shows now: one kept from an earlier render
+// would switch back to the list that was open then
+describe('reloading the lists on a list event', () => {
+  const shown = lists();
+  const setLists = vi.fn();
+  const hook = (first: () => Promise<void>) =>
+    renderHook(({ load }) => useListRealtime('l1', shown, setLists, load), { initialProps: { load: first } });
+
+  it('uses the loadLists of the latest render for events of the app connection', () => {
+    const first = vi.fn(async () => {});
+    const latest = vi.fn(async () => {});
+    const { rerender } = hook(first);
+    rerender({ load: latest });
+    window.dispatchEvent(new CustomEvent('mindsift:ws', { detail: { event: 'LIST_UPDATED' } }));
+    expect(latest).toHaveBeenCalledTimes(1);
+    expect(first).not.toHaveBeenCalled();
+    // Entry events are not a reason to reload
+    window.dispatchEvent(new CustomEvent('mindsift:ws', { detail: { event: 'ITEM_CREATED' } }));
+    expect(latest).toHaveBeenCalledTimes(1);
+  });
+
+  it('uses it for events of the open list\'s connection too', () => {
+    const first = vi.fn(async () => {});
+    const latest = vi.fn(async () => {});
+    const { rerender } = hook(first);
+    rerender({ load: latest });
+    const { onMessage } = vi.mocked(createRealtimeConnection).mock.lastCall![0];
+    onMessage?.({ event: 'ITEM_REORDERED', listId: 'l1' } as WSMessage);
+    expect(latest).toHaveBeenCalledTimes(1);
+    expect(first).not.toHaveBeenCalled();
   });
 });

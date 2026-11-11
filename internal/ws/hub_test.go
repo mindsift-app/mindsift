@@ -45,15 +45,14 @@ func TestHubCloseAndGracefulShutdown(t *testing.T) {
 
 	wg.Wait()
 
-	// Verify that all SSE client channels are closed
-	for _, c := range sseClients {
-		select {
-		case _, ok := <-c.send:
-			if ok {
-				// Drained a message, check next
-				_, ok = <-c.send
+	// Verify that all SSE client channels are closed, once what was still in them is read
+	for i, c := range sseClients {
+		for open := true; open; {
+			select {
+			case _, open = <-c.send:
+			case <-time.After(time.Second):
+				t.Fatalf("client %d: channel still open after Close", i)
 			}
-		default:
 		}
 	}
 }

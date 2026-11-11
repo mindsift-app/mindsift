@@ -241,7 +241,7 @@ export const workspaceApi = {
   },
 
   async testPush(): Promise<{ devices: number }> {
-    return request('/api/v1/push/test', { method: 'POST' });
+    return request('/api/v1/push/test', { method: 'POST', timeout: 'slow' });
   },
 
   /** Days of the own journal (newest first) with their notes. */

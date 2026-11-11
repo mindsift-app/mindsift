@@ -183,6 +183,6 @@ func (s *Server) runSecretSweep(now time.Time) {
 		return
 	}
 	if res.Orphaned+res.Restored+res.Moved+res.Deleted > 0 {
-		slog.Info("Hidden values cleaned up", "verwaist", res.Orphaned, "wieder_verwendet", res.Restored, "umgezogen", res.Moved, "geloescht", res.Deleted)
+		slog.Info("Hidden values cleaned up", "orphaned", res.Orphaned, "restored", res.Restored, "moved", res.Moved, "deleted", res.Deleted)
 	}
 }

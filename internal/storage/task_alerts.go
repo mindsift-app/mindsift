@@ -42,7 +42,7 @@ const alarmSentToAll = "*"
 // IsTaskListMuted: the person muted the shared task list (no list-wide notifications from it).
 func (s *Store) IsTaskListMuted(userID, listID string) bool {
 	var n int
-	_ = s.db.QueryRow(`SELECT COUNT(*) FROM task_list_mutes WHERE user_id = ? AND task_list_id = ?`, userID, listID).Scan(&n)
+	logDBErr(s.db.QueryRow(`SELECT COUNT(*) FROM task_list_mutes WHERE user_id = ? AND task_list_id = ?`, userID, listID).Scan(&n))
 	return n > 0
 }
 
@@ -121,10 +121,15 @@ func (s *Store) GetDueTasksForAlarm() ([]DueTaskAlarm, error) {
 	for rows.Next() {
 		var t domain.Thought
 		var reminders string
-		if rows.Scan(&t.ID, &t.UserID, &t.Content, &t.Notes, &t.DueDate, &t.Priority, &t.TaskListID, &reminders) == nil {
-			t.Reminders = domain.ParseReminders(reminders)
-			tasks = append(tasks, t)
+		if err := rows.Scan(&t.ID, &t.UserID, &t.Content, &t.Notes, &t.DueDate, &t.Priority, &t.TaskListID, &reminders); err != nil {
+			_ = rows.Close()
+			return []DueTaskAlarm{}, err
 		}
+		t.Reminders = domain.ParseReminders(reminders)
+		tasks = append(tasks, t)
+	}
+	if err := rows.Err(); err != nil {
+		return []DueTaskAlarm{}, err
 	}
 	rows.Close()
 	if len(tasks) == 0 {
@@ -133,16 +138,22 @@ func (s *Store) GetDueTasksForAlarm() ([]DueTaskAlarm, error) {
 
 	done := map[string]bool{}
 	sentRows, err := s.db.Query(`SELECT task_id, user_id, reminder FROM task_alarms_sent WHERE sent = 1`)
-	if err == nil {
-		for sentRows.Next() {
-			var taskID, userID string
-			var reminder int
-			if sentRows.Scan(&taskID, &userID, &reminder) == nil {
-				done[sentKey(taskID, userID, reminder)] = true
-			}
-		}
-		sentRows.Close()
+	if err != nil {
+		return []DueTaskAlarm{}, err // not knowing what went out already must not send it all again
 	}
+	for sentRows.Next() {
+		var taskID, userID string
+		var reminder int
+		if err := sentRows.Scan(&taskID, &userID, &reminder); err != nil {
+			_ = sentRows.Close()
+			return []DueTaskAlarm{}, err
+		}
+		done[sentKey(taskID, userID, reminder)] = true
+	}
+	if err := sentRows.Err(); err != nil {
+		return []DueTaskAlarm{}, err
+	}
+	sentRows.Close()
 
 	users := map[string]*DueTaskAlarm{}
 	alarms := make([]DueTaskAlarm, 0)
@@ -231,13 +242,13 @@ func (s *Store) RecordTaskAlarmFailure(taskID, userID string, reminder int) (gav
 		_, err = s.db.Exec(`UPDATE task_alarms_sent SET sent = 1 WHERE task_id = ? AND user_id = ? AND reminder = ?`, taskID, userID, reminder)
 	}
 	// Someone has an entry now: a new due date or reopening clears it again
-	_, _ = s.db.Exec(`UPDATE thoughts SET alarm_sent = 1 WHERE id = ?`, taskID)
+	s.execLogged(`UPDATE thoughts SET alarm_sent = 1 WHERE id = ?`, taskID)
 	return gaveUp, err
 }
 
 // taskAlarmFailures: failed runs for one person at their lead time (tests).
 func (s *Store) taskAlarmFailures(taskID, userID string) int {
 	var n int
-	_ = s.db.QueryRow(`SELECT failures FROM task_alarms_sent WHERE task_id = ? AND user_id = ? AND reminder = -1`, taskID, userID).Scan(&n)
+	logDBErr(s.db.QueryRow(`SELECT failures FROM task_alarms_sent WHERE task_id = ? AND user_id = ? AND reminder = -1`, taskID, userID).Scan(&n))
 	return n
 }

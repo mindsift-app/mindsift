@@ -53,10 +53,13 @@ func (s *Store) GetAllTeams() ([]domain.Team, error) {
 	teams := make([]domain.Team, 0)
 	for rows.Next() {
 		var t domain.Team
-		if err := rows.Scan(&t.ID, &t.OrgID, &t.Name, &t.Description, &t.CreatedAt); err == nil {
+		if err := rows.Scan(&t.ID, &t.OrgID, &t.Name, &t.Description, &t.CreatedAt); !dbFailed(err) {
 			t.Members = []domain.TeamMember{}
 			teams = append(teams, t)
 		}
+	}
+	if err := rows.Err(); err != nil {
+		return []domain.Team{}, err
 	}
 	for i := range teams {
 		members, _ := s.GetTeamMembers(teams[i].ID)
@@ -77,10 +80,13 @@ func (s *Store) GetTeamsForOrg(orgID string) ([]domain.Team, error) {
 	teams := make([]domain.Team, 0)
 	for rows.Next() {
 		var t domain.Team
-		if err := rows.Scan(&t.ID, &t.OrgID, &t.Name, &t.Description, &t.CreatedAt); err == nil {
+		if err := rows.Scan(&t.ID, &t.OrgID, &t.Name, &t.Description, &t.CreatedAt); !dbFailed(err) {
 			t.Members = []domain.TeamMember{}
 			teams = append(teams, t)
 		}
+	}
+	if err := rows.Err(); err != nil {
+		return []domain.Team{}, err
 	}
 	_ = rows.Close()
 
@@ -100,7 +106,9 @@ func (s *Store) GetTeamByID(teamID string) (*domain.Team, error) {
 	if err != nil {
 		return nil, err
 	}
-	t.Members, _ = s.GetTeamMembers(t.ID)
+	if t.Members, err = s.GetTeamMembers(t.ID); err != nil {
+		return nil, err
+	}
 	return &t, nil
 }
 
@@ -120,10 +128,13 @@ func (s *Store) GetTeamsForUser(userID string) ([]domain.Team, error) {
 	teams := make([]domain.Team, 0)
 	for rows.Next() {
 		var t domain.Team
-		if err := rows.Scan(&t.ID, &t.OrgID, &t.Name, &t.Description, &t.CreatedAt); err == nil {
+		if err := rows.Scan(&t.ID, &t.OrgID, &t.Name, &t.Description, &t.CreatedAt); !dbFailed(err) {
 			t.Members = []domain.TeamMember{}
 			teams = append(teams, t)
 		}
+	}
+	if err := rows.Err(); err != nil {
+		return []domain.Team{}, err
 	}
 	_ = rows.Close()
 
@@ -239,9 +250,12 @@ func (s *Store) GetTeamMembers(teamID string) ([]domain.TeamMember, error) {
 	members := make([]domain.TeamMember, 0)
 	for rows.Next() {
 		var m domain.TeamMember
-		if err := rows.Scan(&m.TeamID, &m.UserID, &m.DisplayName, &m.Email, &m.AvatarURL, &m.Role, &m.JoinedAt); err == nil {
+		if err := rows.Scan(&m.TeamID, &m.UserID, &m.DisplayName, &m.Email, &m.AvatarURL, &m.Role, &m.JoinedAt); !dbFailed(err) {
 			members = append(members, m)
 		}
+	}
+	if err := rows.Err(); err != nil {
+		return []domain.TeamMember{}, err
 	}
 	return members, nil
 }

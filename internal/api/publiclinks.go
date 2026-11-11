@@ -101,7 +101,7 @@ func (s *Server) handlePublicNote(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNoContent)
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]interface{}{
+	writeJSON(w, http.StatusOK, map[string]any{
 		"title":        snap.Title,
 		"icon":         s.store.DocIcon(l.DocID),
 		"expiresAt":    l.ExpiresAt,
@@ -179,7 +179,7 @@ func (s *Server) ownPublicLink(w http.ResponseWriter, r *http.Request) (userID, 
 }
 
 func (s *Server) writePublicLinkState(w http.ResponseWriter, l *storage.PublicLink) {
-	out := map[string]interface{}{
+	out := map[string]any{
 		"enabled": s.publicLinksEnabled(),
 		"maxDays": s.publicLinkMaxDays(),
 		"link":    nil,
@@ -289,5 +289,6 @@ func (s *Server) handleDeletePublicLink(w http.ResponseWriter, r *http.Request) 
 
 // runPublicLinkCleanup removes expired links (hourly, with the other retention work).
 func (s *Server) runPublicLinkCleanup(now time.Time) {
-	_, _ = s.store.PurgePublicLinks(now)
+	_, err := s.store.PurgePublicLinks(now)
+	logFailed("Removing expired public links", err)
 }

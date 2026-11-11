@@ -315,7 +315,7 @@ func (w *simWorld) sync(c *simClient, reliable bool) {
 
 func runSimulation(t *testing.T, seed int64, steps int) {
 	store, u := newSyncTestStore(t)
-	doc, err := store.CreateDocument(u.ID, "", "Sim", "🗒️", "", flatBlocks([3]interface{}{"root", 0, "Start"}), nil, false)
+	doc, err := store.CreateDocument(u.ID, "", "Sim", "🗒️", "", flatBlocks([3]any{"root", 0, "Start"}), nil, false)
 	if err != nil {
 		t.Fatal(err)
 	}

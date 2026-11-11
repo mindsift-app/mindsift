@@ -1,9 +1,11 @@
 name: GitHub Release
 
-# Creates the release page of a version tag, with its CHANGELOG section as text (ci/release-notes.sh).
+# Creates the release page of a version tag, with its CHANGELOG section as text (ci/release-notes.sh), and
+# attaches the server binaries for Linux, taken out of the images of that tag (ci/release-binaries.sh).
 # Called by build-and-publish.yaml once the images of a tag are pushed; by hand ("Run workflow") for a tag
-# that has no release yet, or to refresh the text of an existing one. It runs with the workflow token, so
-# the release shows github-actions[bot] as author, not a person. Tags with "-" become pre-releases.
+# that has no release yet, or to refresh the text and files of an existing one. It runs with the workflow
+# token, so the release shows github-actions[bot] as author, not a person. Tags with "-" become
+# pre-releases.
 on:
   workflow_call:
     inputs:
@@ -43,3 +45,18 @@ jobs:
           else
             gh release create "${TAG}" --verify-tag --title "MindSift ${TAG}" --notes-file notes.md --latest
           fi
+
+      - name: Attach Binaries
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          # The checkout is the tag's: versions from before the binaries have neither the script nor
+          # an image for arm64
+          if [ ! -x ci/release-binaries.sh ]; then
+            echo "::notice::${TAG} is from before the release binaries, nothing to attach"
+            exit 0
+          fi
+          IMAGE="$(echo "ghcr.io/${GITHUB_REPOSITORY}" | tr '[:upper:]' '[:lower:]'):${TAG}"
+          ci/release-binaries.sh "${IMAGE}" "${TAG}" binaries
+          gh release upload "${TAG}" binaries/* --clobber

@@ -34,6 +34,7 @@ func (s *Store) migrateFolderPaths() error {
 				stmts = append(stmts, stmt(fmt.Sprintf(`UPDATE %s SET %s = ? WHERE %s = ?`, c.table, c.column, c.key), clean, key))
 			}
 		}
+		logDBErr(rows.Err())
 		if err := rows.Close(); err != nil {
 			return err
 		}

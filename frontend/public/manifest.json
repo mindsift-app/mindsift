@@ -2,7 +2,7 @@
   "id": "/",
   "name": "MindSift",
   "short_name": "MindSift",
-  "description": "MindSift — Der Kopf frei in drei Sekunden. Instant Brain-Dump, Tinder-Style Triage, Workspace & Echtzeit-Familienlisten.",
+  "description": "MindSift — Der Kopf frei in drei Sekunden. Verschachtelte Notizen, Aufgaben mit Kanban und Kalender, gemeinsame Listen und eine Triage für alles Unsortierte.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

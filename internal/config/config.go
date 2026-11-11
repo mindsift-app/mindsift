@@ -176,9 +176,9 @@ func resolveJWTSecret(fromEnv, dataDir string) string {
 	secret := hex.EncodeToString(buf)
 	_ = os.MkdirAll(dataDir, 0o755)
 	if err := os.WriteFile(path, []byte(secret+"\n"), 0o600); err != nil {
-		slog.Error("Saving the generated JWT secret failed – sign-ins only last until the next restart", "pfad", path, "error", err)
+		slog.Error("Saving the generated JWT secret failed – sign-ins only last until the next restart", "path", path, "error", err)
 	} else {
-		slog.Warn("No JWT_SECRET set: generated a random secret and saved it in the data directory. Better set JWT_SECRET for production.", "pfad", path)
+		slog.Warn("No JWT_SECRET set: generated a random secret and saved it in the data directory. Better set JWT_SECRET for production.", "path", path)
 	}
 	return secret
 }
@@ -209,7 +209,7 @@ func resolveSecretsKey(fromEnv, dataDir string) []byte {
 	}
 	_ = os.MkdirAll(dataDir, 0o755)
 	if err := os.WriteFile(path, []byte(hex.EncodeToString(key)+"\n"), 0o600); err != nil {
-		slog.Error("Saving the generated key for hidden values failed – they cannot be read after a restart", "pfad", path, "error", err)
+		slog.Error("Saving the generated key for hidden values failed – they cannot be read after a restart", "path", path, "error", err)
 	}
 	return key
 }
@@ -265,7 +265,9 @@ func Load() *Config {
 	dbPath := filepath.Join(dataDir, "mindsift.db")
 	if strings.HasPrefix(dbURL, "sqlite://") {
 		dbPath = strings.TrimPrefix(dbURL, "sqlite://")
-	} else if dbURL != "" && !strings.HasPrefix(dbURL, "postgres") {
+	} else if strings.HasPrefix(dbURL, "postgres") {
+		slog.Warn("DATABASE_URL names a Postgres database, which MindSift does not support – using the SQLite file instead", "path", dbPath)
+	} else if dbURL != "" {
 		dbPath = dbURL
 	}
 
@@ -281,8 +283,14 @@ func Load() *Config {
 		logLevel = "debug"
 	}
 
-	demoVal := strings.ToLower(getEnv("MINDA_DEMO", getEnv("MINDSIFT_DEMO", getEnv("DEMO_MODE", "false"))))
-	demoMode := demoVal == "true" || demoVal == "1" || demoVal == "yes" || demoVal == "on"
+	// MINDSIFT_DEMO is the name; MINDA_DEMO and DEMO_MODE are earlier names that still switch it on
+	demoMode := false
+	for _, name := range []string{"MINDSIFT_DEMO", "MINDA_DEMO", "DEMO_MODE"} {
+		switch strings.ToLower(getEnv(name, "false")) {
+		case "true", "1", "yes", "on":
+			demoMode = true
+		}
+	}
 
 	smtpHost := getEnv("SMTP_HOST", "")
 	smtpPort := getEnv("SMTP_PORT", "587")
