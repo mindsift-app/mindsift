@@ -2,26 +2,30 @@ import React, { Suspense, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { createPortal } from 'react-dom';
 import { X, Trash2, Loader2 } from 'lucide-react';
-import type { EmojiClickData } from 'emoji-picker-react';
-import { Categories, EmojiStyle, Theme, SuggestionMode } from 'emoji-picker-react';
+import type { Categories, EmojiClickData, EmojiStyle, SuggestionMode, Theme } from 'emoji-picker-react';
 import { useKeyboardInset } from '../../lib/useKeyboardInset';
 import { isPhoneWidth } from '../../lib/breakpoints';
 
-// Lazy-load emoji-picker-react so the main bundle size stays small
+// emoji-picker-react is a chunk of its own, loaded when the picker first opens. Only types may be imported
+// from it statically: importing a value (such as its enums) would put the whole library into the app chunk.
 const EmojiPicker = React.lazy(() => import('emoji-picker-react'));
+
+// The value of one of the library's enums, written as its string: `${E}` is the union of the enum's values,
+// so tsc fails here when an update of the library changes one
+const pick = <E extends string>(value: `${E}`) => value as unknown as E;
 
 // The library's own "recently used" category (stored by it) is the only recent list; a second bar
 // would cost height on phones. Category names come from workspace:emoji.<key>.
 const CATEGORIES = [
-  { category: Categories.SUGGESTED, key: 'suggested' },
-  { category: Categories.SMILEYS_PEOPLE, key: 'smileys' },
-  { category: Categories.ANIMALS_NATURE, key: 'animals' },
-  { category: Categories.FOOD_DRINK, key: 'food' },
-  { category: Categories.TRAVEL_PLACES, key: 'travel' },
-  { category: Categories.ACTIVITIES, key: 'activities' },
-  { category: Categories.OBJECTS, key: 'objects' },
-  { category: Categories.SYMBOLS, key: 'symbols' },
-  { category: Categories.FLAGS, key: 'flags' },
+  { category: pick<Categories>('suggested'), key: 'suggested' },
+  { category: pick<Categories>('smileys_people'), key: 'smileys' },
+  { category: pick<Categories>('animals_nature'), key: 'animals' },
+  { category: pick<Categories>('food_drink'), key: 'food' },
+  { category: pick<Categories>('travel_places'), key: 'travel' },
+  { category: pick<Categories>('activities'), key: 'activities' },
+  { category: pick<Categories>('objects'), key: 'objects' },
+  { category: pick<Categories>('symbols'), key: 'symbols' },
+  { category: pick<Categories>('flags'), key: 'flags' },
 ];
 
 interface EmojiPickerModalProps {
@@ -179,7 +183,11 @@ export const EmojiPickerModal: React.FC<EmojiPickerModalProps> = ({
         <div className="flex-1 min-h-0 overflow-hidden rounded mindsift-emoji-picker">
           <Suspense
             fallback={
-              <div className="h-64 flex flex-col items-center justify-center gap-2 text-xs text-muted">
+              // As high as the picker, so nothing moves when it arrives
+              <div
+                className="flex flex-col items-center justify-center gap-2 text-xs text-muted"
+                style={{ height: pickerHeight }}
+              >
                 <Loader2 className="w-5 h-5 animate-spin text-accent" />
                 <span>{t('emojiPicker.loading')}</span>
               </div>
@@ -188,14 +196,14 @@ export const EmojiPickerModal: React.FC<EmojiPickerModalProps> = ({
             <EmojiPicker
               onEmojiClick={handlePickerEmojiClick}
               autoFocusSearch={true}
-              theme={isDark ? Theme.DARK : Theme.LIGHT}
-              emojiStyle={EmojiStyle.NATIVE}
-              suggestedEmojisMode={SuggestionMode.RECENT}
+              theme={pick<Theme>(isDark ? 'dark' : 'light')}
+              emojiStyle={pick<EmojiStyle>('native')}
+              suggestedEmojisMode={pick<SuggestionMode>('recent')}
               searchPlaceholder={t('emojiPicker.search')}
               searchPlaceHolder={t('emojiPicker.search')}
               width="100%"
               height={`${pickerHeight}px`}
-              categories={CATEGORIES.map((c) => ({ category: c.category, name: t(`emoji.${c.key}`) })) as any}
+              categories={CATEGORIES.map((c) => ({ category: c.category, name: t(`emoji.${c.key}`) }))}
               previewConfig={{
                 showPreview: false,
               }}

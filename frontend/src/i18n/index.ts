@@ -4,7 +4,7 @@ import de from '../locales/de';
 
 // The languages of the app, each named in itself. Keep in step with Supported in internal/i18n/i18n.go;
 // a new language needs its files in locales/<code>/, a loader below, an entry here and its help
-// (features/help/content).
+// with its loader (features/help/content).
 export const LANGUAGES = [
   { id: 'de', name: 'Deutsch', locale: 'de-DE' },
   { id: 'en', name: 'English', locale: 'en-US' },

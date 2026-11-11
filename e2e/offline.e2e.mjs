@@ -408,14 +408,19 @@ const main = async () => {
   // 7. After the very first visit the whole app works offline: the service worker loads every file of the
   //    build when it installs. Offline every file of the app that the service worker does not answer is
   //    refused (routing also switches the browser's HTTP cache off), so only what it keeps counts; then
-  //    every view opens
+  //    every view opens, and so do the parts that load on demand and were never opened online: the help
+  //    (one chunk per language) and the emoji picker of a note (the note itself was opened online once)
   {
+    const iconNote = `Offline Icon ${stamp}`;
+    await newNote(admin, iconNote, ['Punkt mit Icon']);
     const profile = mkdtempSync(join(tmpdir(), 'mindsift-offline-'));
     try {
       let ctx = await chromium.launchPersistentContext(profile, { viewport: { width: 1280, height: 900 }, locale: 'de-DE' });
       let page = await setup(ctx, admin);
       await page.goto(BASE);
       await page.getByTitle('Benutzermenü öffnen').first().waitFor({ timeout: 10000 });
+      await openNote(page, iconNote, 'Punkt mit Icon');
+      await sleep(1000);
       const files = ((await (await fetch(`${BASE}/sw.js`)).text()).match(/"\/assets\/[^"]+"/g) || []).length;
       const cached = await waitFor(
         () =>
@@ -455,13 +460,18 @@ const main = async () => {
         if (!(await broken())) opened.push(item);
       }
       await page.getByTitle('Hilfe & Dokumentation').first().click().catch(() => {});
-      await sleep(800);
-      if (!(await broken())) opened.push('Hilfe');
+      const helpShown = await waitFor(async () => (await page.getByText('Tastaturbedienung im Notizen-Editor').count()) > 0, 5000);
+      if (!(await broken()) && helpShown) opened.push('Hilfe');
       await page.keyboard.press('Control+k');
       const palette = await waitFor(async () => (await page.getByPlaceholder('Globale Suche in Notizen, Aufgaben und Listen…').count()) > 0, 3000);
       if (palette) opened.push('Suche');
       await page.keyboard.press('Escape');
       check(opened.length === 9, `Started offline: every view opens (${opened.join(', ')})`);
+      await openNote(page, iconNote, 'Punkt mit Icon').catch(() => {});
+      await page.getByTitle('Icon ändern').first().click().catch(() => {});
+      const picker = await waitFor(async () => (await page.getByPlaceholder('Emoji suchen…').count()) > 0, 5000);
+      check(!!picker, 'Started offline: the emoji picker of a note opens');
+      await page.keyboard.press('Escape');
       const chunkErrors = errors.filter((e) => /dynamically imported module|Importing a module script failed|Failed to fetch/i.test(e));
       check(chunkErrors.length === 0, `No part of the app is missing offline ${chunkErrors.join(' | ')}`);
       if (process.env.SHOT_DIR) await page.screenshot({ path: `${process.env.SHOT_DIR}/offline-first-visit.png` });
