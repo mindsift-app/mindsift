@@ -698,6 +698,12 @@ fieldset:disabled :is(button, input, select, textarea) {
   font-size: 0.875rem;
   line-height: 1.625;
   color: var(--text-main);
+  /* Phones: columns as wide as their text (a cell wraps from 15rem on) and the table scrolls sideways,
+     instead of squeezing every column to its longest word */
+  width: max-content;
+}
+.note-table .nt-cell > div {
+  max-width: 15rem;
 }
 /* The table moves up so its first row's text sits next to the bullet's dot (on the scrolling box's
    parent: the box itself would cut the table off) */
@@ -725,6 +731,12 @@ fieldset:disabled :is(button, input, select, textarea) {
   }
   .note-table-block[data-lines='grid'] {
     margin-top: -2px;
+  }
+  .note-table {
+    width: auto;
+  }
+  .note-table .nt-cell > div {
+    max-width: none;
   }
   .note-table .nt-cell {
     min-width: 5rem;
