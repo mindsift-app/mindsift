@@ -75,7 +75,8 @@ export function useKanbanLayout({ isKanban, isCalendar = false, isKanbanWide, co
       setKanbanColHeight(Math.max(KANBAN_MIN_COL_HEIGHT, areaHeight - top - 16));
       // A row fills the whole area (--kb-full); the first one grows into the room the bar above the board
       // frees while scrolling (--kb-top - --kb-scroll, see the scroll effect). With one row as well, so the
-      // first scroll step hides the bar there too. Set on the board's wrapper: the spacer below needs them.
+      // first scroll step hides the bar there too. --kb-full and --kb-top go on the board's wrapper (the
+      // spacer below needs them); they change only when the board is measured again.
       const vars = el.parentElement ?? el;
       vars.style.setProperty('--kb-full', `${Math.max(KANBAN_MIN_COL_HEIGHT, areaHeight - 24)}px`);
       vars.style.setProperty('--kb-top', `${Math.max(0, top - 12)}px`);
@@ -153,24 +154,28 @@ export function useKanbanLayout({ isKanban, isCalendar = false, isKanbanWide, co
       lockedUntil = Date.now() + 450;
       area.scrollTo({ top: next, behavior: 'smooth' });
     };
-    // The first row grows while the bar above the board scrolls away. Every new value lays out the whole
-    // board, so at most once per frame and not at all once the bar is gone (the row is full height then).
+    // The first row grows while the bar above the board scrolls away: --kb-scroll goes onto the elements
+    // that read it (data-kb-scroll: first-row columns, spacer, calendar), at most once per frame and not
+    // at all once the bar is gone. It is not inherited (index.css): set on the board's wrapper it made
+    // the browser restyle every card on each scroll step (over 100 ms per frame on large boards).
+    // Elements that appear later (another list, a resize changes the first row) get it from the observer.
     // Scroll anchoring stays off here: it answered the growing row by moving the scroll position, which
     // fired the next scroll event, and the page juddered (worst in installed apps)
     const vars = board.parentElement ?? board;
     let frame = 0;
-    let last = -1;
     const update = () => {
       frame = 0;
       const top = parseFloat(vars.style.getPropertyValue('--kb-top')) || 0;
-      const value = Math.min(Math.round(area.scrollTop), Math.round(top));
-      if (value === last) return;
-      last = value;
-      vars.style.setProperty('--kb-scroll', `${value}px`);
+      const value = `${Math.min(Math.round(area.scrollTop), Math.round(top))}px`;
+      vars.querySelectorAll<HTMLElement>('[data-kb-scroll]').forEach((el) => {
+        if (el.style.getPropertyValue('--kb-scroll') !== value) el.style.setProperty('--kb-scroll', value);
+      });
     };
     const onScroll = () => {
       if (!frame) frame = requestAnimationFrame(update);
     };
+    const observer = new MutationObserver(onScroll);
+    observer.observe(vars, { subtree: true, childList: true, attributes: true, attributeFilter: ['data-kb-scroll'] });
     update();
     const anchorBefore = area.style.overflowAnchor;
     area.style.overflowAnchor = 'none';
@@ -178,6 +183,7 @@ export function useKanbanLayout({ isKanban, isCalendar = false, isKanbanWide, co
     area.addEventListener('scroll', onScroll, { passive: true });
     return () => {
       if (frame) cancelAnimationFrame(frame);
+      observer.disconnect();
       area.style.overflowAnchor = anchorBefore;
       area.removeEventListener('wheel', onWheel);
       area.removeEventListener('scroll', onScroll);

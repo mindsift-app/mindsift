@@ -570,6 +570,7 @@ export function TaskCalendar({
         className={`flex items-stretch gap-3 pt-1 lg:w-[var(--kanban-w)] lg:ml-[var(--kanban-ml)] transition-[width,margin] duration-300 ease-out ${
           fillsScreen ? '' : 'h-[max(30rem,calc(100dvh-19rem))]'
         }`}
+        data-kb-scroll={fillsScreen ? '' : undefined}
         style={{ ...calendarWidthStyle(wide), ...(fillsScreen ? { height: CALENDAR_HEIGHT } : {}) }}
       >
         <aside className="w-64 lg:w-80 shrink-0 flex flex-col min-h-0 rounded-card border border-border bg-panel overflow-hidden">
@@ -707,7 +708,7 @@ export function TaskCalendar({
       </div>
       {/* Room as high as what is still visible of the bar above, so the page can scroll it away while the
           calendar grows (the page keeps its height), as below the Kanban board */}
-      {fillsScreen && <div aria-hidden style={{ height: CALENDAR_BAR_SPACER }} />}
+      {fillsScreen && <div aria-hidden data-kb-scroll="" style={{ height: CALENDAR_BAR_SPACER }} />}
     </div>
   );
 }
