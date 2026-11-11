@@ -649,6 +649,15 @@ fieldset:disabled :is(button, input, select, textarea) {
 
 /* Workspace surfaces: the note editor and the folder sidebar. Themes may override them (the light theme
    uses a white sheet next to a grey sidebar); by default they follow the page and panel colours. */
+/* Scroll offset of the Kanban board and the task calendar while the bar above them scrolls away
+   (features/triage/useKanbanLayout.ts). Not inherited: it is set on the few elements that read it, so a
+   change restyles those and not every card on the board. */
+@property --kb-scroll {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+
 :root {
   --bg-editor: var(--bg-app);
   --bg-sidebar: var(--bg-panel);

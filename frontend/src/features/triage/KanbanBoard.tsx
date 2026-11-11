@@ -14,7 +14,8 @@ import { renderMentions } from '../../lib/markdown';
 import { remindersText } from '../../lib/reminders';
 
 // First row of a Kanban board with several rows: the full height minus what is still visible of the bar
-// above the board (--kb-top at the start, shrinking with the scroll position --kb-scroll)
+// above the board (--kb-top at the start, shrinking with the scroll position --kb-scroll, which is set on
+// each element marked data-kb-scroll)
 const KANBAN_FIRST_ROW_HEIGHT = `max(${KANBAN_MIN_COL_HEIGHT}px, calc(var(--kb-full) - max(0px, calc(var(--kb-top) - var(--kb-scroll, 0px)))))`;
 // Below the board: what the first row has not grown into yet, so the page keeps its height while scrolling
 const KANBAN_BAR_SPACER = 'max(0px, calc(var(--kb-top) - var(--kb-scroll, 0px)))';
@@ -153,6 +154,7 @@ export function KanbanBoard({
               onDragLeave={(e) => handleKanbanColDragLeave(e, col.id)}
               onDrop={(e) => handleKanbanDrop(e, col.id, colTasks)}
               data-kanban-col={col.id}
+              data-kb-scroll={kanbanMultiRow && !kanbanPhoneSnap && colIndex < kanbanPerRow ? '' : undefined}
               style={
                 !kanbanColHeight
                   ? undefined
@@ -417,7 +419,7 @@ export function KanbanBoard({
       </div>
       {/* Desktop: room as high as what is still visible of the bar above the board, so the page can
           scroll the bar away even with one row while the first row grows (the page keeps its height) */}
-      {kanbanMultiRow && <div aria-hidden style={{ height: KANBAN_BAR_SPACER }} />}
+      {kanbanMultiRow && <div aria-hidden data-kb-scroll="" style={{ height: KANBAN_BAR_SPACER }} />}
     </div>
   );
 }
