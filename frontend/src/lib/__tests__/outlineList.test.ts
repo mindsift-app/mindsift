@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { listLabel, moveSibling, numberedLabels } from '../outlineList';
+import { branchEnd, insertBelow, listLabel, moveSibling, numberedLabels, unitStart } from '../outlineList';
 import type { DocumentBlock } from '../types';
 
 const blk = (id: string, level: number, type: DocumentBlock['type'] = 'numbered'): DocumentBlock => ({
@@ -53,5 +53,41 @@ describe('moveSibling (phone bar ↑ ↓)', () => {
     expect(moveSibling(tree, 'A', -1)).toBe(tree);
     expect(moveSibling(tree, 'C', 1)).toBe(tree);
     expect(moveSibling(tree, 'missing', 1)).toBe(tree);
+  });
+});
+
+describe('conflict copies stick to their original', () => {
+  // Zwei has a child and a conflict copy (with a child of its own) right under its branch
+  const tree: DocumentBlock[] = [
+    blk('Eins', 0, 'bullet'),
+    blk('Zwei', 0, 'bullet'),
+    blk('z1', 1, 'bullet'),
+    { ...blk('Kopie', 0, 'bullet'), conflictOf: 'Zwei' },
+    blk('k1', 1, 'bullet'),
+    blk('Drei', 0, 'bullet'),
+  ];
+  const ids = (list: DocumentBlock[]) => list.map((b) => b.id).join(' ');
+
+  it('count the copy into the branch of its original', () => {
+    expect(branchEnd(tree, 1)).toBe(5);
+    expect(branchEnd(tree, 0)).toBe(1);
+  });
+
+  it('put a new bullet under the original below the copy', () => {
+    const flat = [blk('A', 0, 'bullet'), { ...blk('A2', 0, 'bullet'), conflictOf: 'A' }, blk('B', 0, 'bullet')];
+    expect(insertBelow(flat, 0)).toBe(2);
+    expect(insertBelow(flat, 2)).toBe(3);
+  });
+
+  it('find the original of a copy', () => {
+    expect(unitStart(tree, 3)).toBe(1);
+    expect(unitStart(tree, 5)).toBe(5);
+  });
+
+  it('move the copy along with its original and never between them', () => {
+    expect(ids(moveSibling(tree, 'Zwei', -1))).toBe('Zwei z1 Kopie k1 Eins Drei');
+    expect(ids(moveSibling(tree, 'Zwei', 1))).toBe('Eins Drei Zwei z1 Kopie k1');
+    expect(ids(moveSibling(tree, 'Drei', -1))).toBe('Eins Drei Zwei z1 Kopie k1');
+    expect(ids(moveSibling(tree, 'Eins', 1))).toBe('Zwei z1 Kopie k1 Eins Drei');
   });
 });

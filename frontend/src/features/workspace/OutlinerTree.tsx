@@ -4,7 +4,7 @@ import { DocumentBlock, BlockType } from '../../lib/types';
 import { OutlinerBlock, BlockLock, mapRenderedOffsetToRaw } from './OutlinerBlock';
 import { parsePastedLines } from '../../lib/pasteOutline';
 import { blocksToMarkdown } from '../../lib/outlineMarkdown';
-import { numberedLabels } from '../../lib/outlineList';
+import { branchEnd, numberedLabels } from '../../lib/outlineList';
 import { flushSync } from 'react-dom';
 import { MobileOutlineBar, isTouchOnly } from './MobileOutlineBar';
 import { startBranchDragGhost } from './branchDragImage';
@@ -572,16 +572,8 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
 
       const actualDelta = nextLevel - currentLevel;
 
-      // Find all contiguous children / descendants:
-      // contiguous blocks with level > currentLevel
-      let count = 1;
-      for (let i = idx + 1; i < blocks.length; i++) {
-        if (Math.max(0, blocks[i].level || 0) > currentLevel) {
-          count++;
-        } else {
-          break;
-        }
-      }
+      // The block with its descendants and its conflict copies, which move along
+      const count = branchEnd(blocks, idx) - idx;
 
       const updatedBlocks: DocumentBlock[] = [];
       for (let i = idx; i < idx + count; i++) {

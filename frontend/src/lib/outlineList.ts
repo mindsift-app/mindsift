@@ -64,15 +64,55 @@ export function numberedLabels(blocks: DocumentBlock[]): Map<string, string> {
   return labels;
 }
 
-// Swaps a bullet (with its children) with the previous (-1) or next (+1) bullet on the same level
-// under the same parent. Returns the same array when there is no such sibling.
-export function moveSibling<T extends Pick<DocumentBlock, 'id' | 'level'>>(blocks: T[], blockId: string, direction: -1 | 1): T[] {
-  const lvl = (b: T) => Math.max(0, b.level || 0);
-  const subtreeEnd = (start: number) => {
-    let end = start + 1;
-    while (end < blocks.length && lvl(blocks[end]) > lvl(blocks[start])) end++;
-    return end;
-  };
+type Outlined = Pick<DocumentBlock, 'id' | 'level' | 'conflictOf'>;
+const lvlOf = (b: Outlined) => Math.max(0, b.level || 0);
+
+// A conflict copy sits right under its original (after the original's children) and belongs to it until it
+// is settled: what is added under the original goes below the copy, and the copy moves along with it.
+
+// Index after the conflict copies (with their children) that follow the bullet at idx on its level; idx + 1
+// … when there are none, or right after idx's own children when there are.
+function afterCopies<T extends Outlined>(blocks: T[], idx: number, from: number): number {
+  const level = lvlOf(blocks[idx]);
+  let end = from;
+  while (end < blocks.length && lvlOf(blocks[end]) === level && blocks[end].conflictOf === blocks[idx].id) {
+    end++;
+    while (end < blocks.length && lvlOf(blocks[end]) > level) end++;
+  }
+  return end;
+}
+
+/** End (exclusive) of the bullet at start with its children and its conflict copies. */
+export function branchEnd<T extends Outlined>(blocks: T[], start: number): number {
+  let end = start + 1;
+  while (end < blocks.length && lvlOf(blocks[end]) > lvlOf(blocks[start])) end++;
+  return afterCopies(blocks, start, end);
+}
+
+/** Where a new bullet on the level of the bullet at idx goes right below it: after its conflict copies. */
+export function insertBelow<T extends Outlined>(blocks: T[], idx: number): number {
+  return afterCopies(blocks, idx, idx + 1);
+}
+
+/** For a conflict copy right under its original, the index of the original (else i itself). */
+export function unitStart<T extends Outlined>(blocks: T[], i: number): number {
+  let s = i;
+  while (blocks[s].conflictOf) {
+    let p = s - 1;
+    while (p >= 0 && lvlOf(blocks[p]) > lvlOf(blocks[s])) p--;
+    if (p < 0 || lvlOf(blocks[p]) !== lvlOf(blocks[s])) break;
+    // Another copy of the same original in between is part of the same unit
+    if (blocks[p].id !== blocks[s].conflictOf && blocks[p].conflictOf !== blocks[s].conflictOf) break;
+    s = p;
+  }
+  return s;
+}
+
+// Swaps a bullet (with its children and conflict copies) with the previous (-1) or next (+1) bullet on the
+// same level under the same parent. Returns the same array when there is no such sibling.
+export function moveSibling<T extends Outlined>(blocks: T[], blockId: string, direction: -1 | 1): T[] {
+  const lvl = lvlOf;
+  const subtreeEnd = (start: number) => branchEnd(blocks, start);
   const idx = blocks.findIndex((b) => b.id === blockId);
   if (idx === -1) return blocks;
   const level = lvl(blocks[idx]);
@@ -81,7 +121,9 @@ export function moveSibling<T extends Pick<DocumentBlock, 'id' | 'level'>>(block
     for (let i = idx - 1; i >= 0; i--) {
       if (lvl(blocks[i]) < level) return blocks; // reached the parent: already the first child
       if (lvl(blocks[i]) === level) {
-        return [...blocks.slice(0, i), ...blocks.slice(idx, end), ...blocks.slice(i, idx), ...blocks.slice(end)];
+        // Past a conflict copy to its original: the two stay together
+        const at = unitStart(blocks, i);
+        return [...blocks.slice(0, at), ...blocks.slice(idx, end), ...blocks.slice(at, idx), ...blocks.slice(end)];
       }
     }
     return blocks;

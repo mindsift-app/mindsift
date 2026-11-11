@@ -516,13 +516,39 @@ const main = async () => {
       await B.getByText('Drei', { exact: true }).first().click(); // leaves "Zwei"
       const free = await waitFor(async () => !(await take.isDisabled()), 15000);
       check(!!free, 'Once the original is free, "Übernehmen" can be used');
+      // The copy sticks to its original: Enter at the end of "Zwei" adds the bullet below the copy, Tab
+      // indents the copy along
+      await typeAtEnd(A, 'Zwei', '');
+      await A.keyboard.press('Enter');
+      await A.keyboard.type('Nach Enter');
+      const entered = await waitFor(async () => {
+        const t = (await serverBlocks(admin, doc.id)).map((b) => (b.props?.conflictOf ? '[Kopie]' : b.content));
+        return t.includes('Nach Enter') ? t : null;
+      }, 8000);
+      check(
+        JSON.stringify(entered) === JSON.stringify(['Eins', 'Zwei', '[Kopie]', 'Nach Enter', 'Neu von A', 'Drei']),
+        `Enter in the original adds the new bullet below its conflict copy: ${JSON.stringify(entered)}`
+      );
+      await A.getByText('Zwei', { exact: true }).first().click();
+      await A.keyboard.press('Home');
+      await A.keyboard.press('Tab');
+      const eins = (await serverBlocks(admin, doc.id)).find((b) => b.content === 'Eins');
+      const indented = await waitFor(async () => {
+        const blocks = await serverBlocks(admin, doc.id);
+        const zwei = blocks.find((b) => b.content === 'Zwei');
+        const copy = blocks.find((b) => b.props?.conflictOf);
+        return zwei?.parentId === eins.id && copy?.parentId === eins.id;
+      }, 8000);
+      check(!!indented, 'Tab on the original indents its conflict copy along');
+      await A.keyboard.press('Shift+Tab');
+      await waitFor(async () => (await serverBlocks(admin, doc.id)).every((b) => !b.parentId), 8000);
       await A.getByRole('button', { name: 'Beide behalten' }).first().click();
       const kept = await waitFor(async () => {
         const blocks = await serverBlocks(admin, doc.id);
         return !blocks.some((b) => b.props?.conflictOf) ? blocks.map((b) => b.content) : null;
       }, 8000);
       check(
-        JSON.stringify(kept) === JSON.stringify(['Eins', 'Zwei', 'Zwei – A offline', 'Neu von A', 'Drei']),
+        JSON.stringify(kept) === JSON.stringify(['Eins', 'Zwei', 'Zwei – A offline', 'Nach Enter', 'Neu von A', 'Drei']),
         `"Beide behalten": both texts stay, the copy as a normal bullet under the original: ${JSON.stringify(kept)}`
       );
       const unmarked = await waitFor(async () => (await B.getByText(/Version von/).count()) === 0 && (await B.getByText('Zwei – A offline', { exact: true }).count()) > 0, 8000);
