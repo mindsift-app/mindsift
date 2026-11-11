@@ -26,7 +26,7 @@ if [ "${LOCAL:-}" = 1 ]; then
   "$ENGINE" rm -f "$NAME" >/dev/null 2>&1 || true
   # Straight to the app (not the entrypoint): the demo keeps its data in the container only
   "$ENGINE" run -d --rm --entrypoint /app/mindsift --name "$NAME" --network host -e PORT="$PORT" -e MINDSIFT_DEMO=true \
-    -e DEFAULT_LANGUAGE="${TOUR_LANG:-en}" -e DEMO_RESET_MINUTES=0 -e JWT_SECRET=tour-only mindsift-tour >/dev/null
+    -e DEFAULT_LANGUAGE="${TOUR_LANG:-en}" -e DEMO_RESET_MINUTES=0 mindsift-tour >/dev/null
   trap '"$ENGINE" stop "$NAME" >/dev/null 2>&1 || true' EXIT
   BASE="http://localhost:$PORT"
   for _ in $(seq 1 60); do curl -s -m 1 "$BASE/api/v1/health" >/dev/null && break; sleep 0.5; done

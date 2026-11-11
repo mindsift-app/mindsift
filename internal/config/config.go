@@ -139,33 +139,54 @@ type LegalTexts struct {
 	CustomLinkLabel, CustomLinkURL string
 }
 
-// Publicly known JWT secrets (old code default and the placeholders from .env.example, compose and
-// README). Signing with one of them would let anyone forge login tokens.
+// Publicly known JWT secrets: the old code default and every example value ever published in
+// .env.example, docker-compose.yml, the README, the docs or on the website. Signing with one of them
+// would let anyone forge login tokens. Values shorter than minJWTSecretLength are refused anyway; the
+// short examples stay listed so the log calls them what they are.
 var insecureJWTSecrets = map[string]bool{
-	"mindsift-default-selfhosted-jwt-secret-key-2026": true,
-	"change_this_to_a_secure_random_key_min_32_chars": true,
-	"hier-ein-langer-zufaelliger-wert":                true,
-	"changeme":                                        true,
-	"secret":                                          true,
+	"mindsift-default-selfhosted-jwt-secret-key-2026":  true,
+	"change_this_to_a_secure_random_key_min_32_chars":  true,
+	"put-a-long-random-value-here":                     true,
+	"hier-ein-langer-zufaelliger-wert":                 true,
+	"hier-einen-langen-geheimen-zufallswert-eintragen": true,
+	"dein-sehr-langer-zufaelliger-geheimer-schluessel": true,
+	"dein-geheimer-schluessel":                         true,
+	"a-long-random-value":                              true,
+	"un-valor-largo-y-aleatorio":                       true,
+	"une-valeur-longue-et-aleatoire":                   true,
+	"un-valore-lungo-e-casuale":                        true,
+	"changeme":                                         true,
+	"secret":                                           true,
 }
+
+// minJWTSecretLength: shorter JWT_SECRET values are ignored like the placeholders.
+const minJWTSecretLength = 32
 
 const jwtSecretFile = "jwt.secret"
 
-// resolveJWTSecret uses JWT_SECRET when it is set to a real value. Otherwise it generates a random
-// secret once and keeps it in the data directory, so logins survive restarts without anybody being
-// able to forge tokens with a known default.
+// jwtSecretHowTo ends the warnings about an ignored JWT_SECRET.
+const jwtSecretHowTo = "To sign with your own secret, set JWT_SECRET to at least 32 random characters (e.g. from: openssl rand -hex 32); to keep the generated one, remove JWT_SECRET."
+
+// resolveJWTSecret uses JWT_SECRET when it is a real value of at least minJWTSecretLength characters.
+// Otherwise (unset, a published placeholder or too short) it takes the random secret kept in the data
+// directory, generating it on the first start, so logins survive restarts without anybody being able
+// to forge tokens with a known or guessable value. The secret itself is never logged.
 func resolveJWTSecret(fromEnv, dataDir string) string {
-	if v := strings.TrimSpace(fromEnv); v != "" && !insecureJWTSecrets[v] {
-		if len(v) < 32 {
-			slog.Warn("JWT_SECRET is shorter than 32 characters – please use a longer random value")
-		}
+	v := strings.TrimSpace(fromEnv)
+	if v != "" && !insecureJWTSecrets[v] && len(v) >= minJWTSecretLength {
 		return v
-	} else if v != "" {
-		slog.Warn("JWT_SECRET is a publicly known placeholder and is ignored")
 	}
 	path := filepath.Join(dataDir, jwtSecretFile)
+	switch {
+	case insecureJWTSecrets[v]:
+		slog.Warn("JWT_SECRET is a publicly known example value and is ignored: sign-ins are signed with the random secret in the data directory instead. "+
+			"Sign-ins made with the example value are no longer valid, so everyone has to sign in again once. "+jwtSecretHowTo, "path", path)
+	case v != "":
+		slog.Warn("JWT_SECRET is shorter than 32 characters and is ignored: sign-ins are signed with the random secret in the data directory instead. "+
+			"Sign-ins made with the short value are no longer valid, so everyone has to sign in again once. "+jwtSecretHowTo, "path", path)
+	}
 	if data, err := os.ReadFile(path); err == nil {
-		if s := strings.TrimSpace(string(data)); len(s) >= 32 {
+		if s := strings.TrimSpace(string(data)); len(s) >= minJWTSecretLength {
 			return s
 		}
 	}
@@ -177,8 +198,10 @@ func resolveJWTSecret(fromEnv, dataDir string) string {
 	_ = os.MkdirAll(dataDir, 0o755)
 	if err := os.WriteFile(path, []byte(secret+"\n"), 0o600); err != nil {
 		slog.Error("Saving the generated JWT secret failed – sign-ins only last until the next restart", "path", path, "error", err)
-	} else {
+	} else if v == "" {
 		slog.Warn("No JWT_SECRET set: generated a random secret and saved it in the data directory. Better set JWT_SECRET for production.", "path", path)
+	} else {
+		slog.Info("Generated a random JWT secret and saved it in the data directory", "path", path)
 	}
 	return secret
 }

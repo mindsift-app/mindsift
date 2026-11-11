@@ -1,9 +1,11 @@
 package config
 
 import (
+	"bytes"
 	"log/slog"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -79,6 +81,72 @@ func TestJWTSecretNeverUsesAKnownDefault(t *testing.T) {
 	}
 	if got := resolveJWTSecret("ein-eigener-sehr-langer-zufaelliger-wert-123456", dir); got != "ein-eigener-sehr-langer-zufaelliger-wert-123456" {
 		t.Fatalf("a real JWT_SECRET must win, got %q", got)
+	}
+}
+
+// captureLog sends slog output to a buffer for the rest of the test.
+func captureLog(t *testing.T) *bytes.Buffer {
+	t.Helper()
+	var buf bytes.Buffer
+	before := slog.Default()
+	slog.SetDefault(slog.New(slog.NewTextHandler(&buf, &slog.HandlerOptions{Level: slog.LevelDebug})))
+	t.Cleanup(func() { slog.SetDefault(before) })
+	return &buf
+}
+
+func TestJWTSecretIgnoresPlaceholdersAndShortValues(t *testing.T) {
+	cases := []struct{ env, warning string }{
+		// The README example: 28 characters and a placeholder
+		{"put-a-long-random-value-here", "publicly known example value"},
+		{"change_this_to_a_secure_random_key_min_32_chars", "publicly known example value"},
+		{"  hier-einen-langen-geheimen-zufallswert-eintragen  ", "publicly known example value"},
+		{"my-own-but-short-secret-1234567", "shorter than 32 characters"}, // 31 characters
+		{"kurz", "shorter than 32 characters"},
+	}
+	for _, c := range cases {
+		dir := t.TempDir()
+		stored := resolveJWTSecret("", dir)
+		log := captureLog(t)
+		got := resolveJWTSecret(c.env, dir)
+		if got != stored {
+			t.Fatalf("env %q: expected the secret from %s, got another value", c.env, jwtSecretFile)
+		}
+		out := log.String()
+		if !strings.Contains(out, c.warning) || !strings.Contains(out, "sign in again") || !strings.Contains(out, "openssl rand -hex 32") {
+			t.Errorf("env %q: missing or unclear warning: %s", c.env, out)
+		}
+		if strings.Contains(out, strings.TrimSpace(c.env)) || strings.Contains(out, stored) {
+			t.Errorf("env %q: the log must not contain a secret: %s", c.env, out)
+		}
+	}
+
+	// Without a stored secret one is generated and kept for the next start
+	dir := t.TempDir()
+	log := captureLog(t)
+	first := resolveJWTSecret("kurz", dir)
+	if len(first) < minJWTSecretLength || first == "kurz" {
+		t.Fatalf("expected a generated secret, got %q", first)
+	}
+	if again := resolveJWTSecret("kurz", dir); again != first {
+		t.Fatal("the generated secret must persist across restarts")
+	}
+	if strings.Contains(log.String(), first) {
+		t.Errorf("the generated secret must not be logged: %s", log.String())
+	}
+}
+
+func TestJWTSecretUsesLongOwnValue(t *testing.T) {
+	dir := t.TempDir()
+	log := captureLog(t)
+	own := "0123456789abcdef0123456789abcdef" // exactly 32 characters
+	if got := resolveJWTSecret(own, dir); got != own {
+		t.Fatalf("a JWT_SECRET of 32 characters must be used, got %q", got)
+	}
+	if log.Len() != 0 {
+		t.Errorf("an accepted JWT_SECRET needs no log line: %s", log.String())
+	}
+	if _, err := os.Stat(filepath.Join(dir, jwtSecretFile)); !os.IsNotExist(err) {
+		t.Errorf("no secret file may be written when JWT_SECRET is used: %v", err)
 	}
 }
 

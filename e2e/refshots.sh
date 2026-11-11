@@ -60,12 +60,12 @@ capture|drag|ws|lists)
     echo "Lege Demo-Daten als Vorlage an …"
     rm -rf "$DATA/seed" && mkdir -p "$DATA/seed"
     "$ENGINE" run -d --entrypoint /app/mindsift --rm --name "$NAME" --network host -e PORT="$PORT" -e MINDSIFT_DEMO=true -e DEFAULT_LANGUAGE=de -e DEMO_RESET_MINUTES=0 \
-      -e JWT_SECRET=refshots-only -v "$DATA/seed":/data:Z "$IMAGE" >/dev/null
+      -v "$DATA/seed":/data:Z "$IMAGE" >/dev/null
     wait_healthy
     "$ENGINE" stop "$NAME" >/dev/null
   fi
   rm -rf "$DATA/run" && cp -a "$DATA/seed" "$DATA/run"
-  "$ENGINE" run -d --entrypoint /app/mindsift --rm --name "$NAME" --network host -e PORT="$PORT" -e JWT_SECRET=refshots-only \
+  "$ENGINE" run -d --entrypoint /app/mindsift --rm --name "$NAME" --network host -e PORT="$PORT" \
     -v "$DATA/run":/data:Z "$IMAGE" >/dev/null
   wait_healthy
   if [ "$mode" = drag ]; then
