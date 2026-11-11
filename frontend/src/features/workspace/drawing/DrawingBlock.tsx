@@ -109,7 +109,8 @@ export const DrawingBlock: React.FC<DrawingBlockProps> = ({
   useLayoutEffect(() => {
     const el = boxRef.current;
     if (!el) return;
-    setWidth(el.getBoundingClientRect().width);
+    // Inside the border, as the observer reports it, so its first report does not render the drawing again
+    setWidth(el.getBoundingClientRect().width - (el.offsetWidth - el.clientWidth));
     if (typeof ResizeObserver === 'undefined') return;
     const ro = new ResizeObserver(([entry]) => setWidth(entry.contentRect.width));
     ro.observe(el);
