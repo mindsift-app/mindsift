@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   ArrowElement,
+  ELBOW_RADIUS,
   ShapeElement,
   arrowGeometry,
   bendThrough,
@@ -17,6 +18,7 @@ import {
   portNear,
   parseDrawing,
   removeElements,
+  roundedPath,
   serializeDrawing,
   simplifyPoints,
   spreadLabels,
@@ -95,6 +97,37 @@ describe('arrows', () => {
       const [p, q] = [g.poly[i - 1], g.poly[i]];
       expect(p[0] === q[0] || p[1] === q[1]).toBe(true);
     }
+  });
+
+  it('elbowed round their corners, while their points, ends and heads stay where they were', () => {
+    const a = rect('a', 0, 0);
+    const b = rect('b', 300, 200);
+    const ar = arrow({ from: 'a', to: 'b', route: 'elbow', via: [[50, 120], [330, 120]] });
+    const g = arrowGeometry(ar, elementMap([a, b, ar]));
+    expect(g.poly).toEqual([[50, 54], [50, 120], [330, 120], [330, 196]]);
+    // Cut back by the radius on both sides of each corner, the corner itself the control point
+    expect(g.d).toBe(
+      `M 50 54 L 50 ${120 - ELBOW_RADIUS} Q 50 120 ${50 + ELBOW_RADIUS} 120 L ${330 - ELBOW_RADIUS} 120 Q 330 120 330 ${120 + ELBOW_RADIUS} L 330 196`
+    );
+    expect(g.end).toEqual([330, 196]);
+    expect(g.endAngle).toBeCloseTo(Math.PI / 2);
+    // Without corners of their own, and docked to chosen sides, the same
+    const plain = arrowGeometry(arrow({ from: 'a', to: 'b', route: 'elbow' }), elementMap([a, b]));
+    expect(plain.d.match(/ Q /g)).toHaveLength(plain.poly.length - 2);
+    const ported = arrowGeometry(arrow({ from: 'a', to: 'b', route: 'elbow', fromPort: { side: 'b', at: 0.5 } }), elementMap([a, b]));
+    expect(ported.d.match(/ Q /g)).toHaveLength(ported.poly.length - 2);
+  });
+
+  it('round short stretches with at most half their length, and leave straight and curved lines alone', () => {
+    // A stretch of 6 between two corners: radius 3 on both, nothing runs past the other corner
+    expect(roundedPath([[0, 0], [0, 40], [6, 40], [6, 80]])).toBe('M 0 0 L 0 37 Q 0 40 3 40 L 3 40 Q 6 40 6 43 L 6 80');
+    // A corner without room (stretch of length 0) stays a plain corner
+    expect(roundedPath([[0, 0], [0, 0], [10, 0]])).toBe('M 0 0 L 0 0 L 10 0');
+    expect(roundedPath([[0, 0], [100, 0]])).toBe('M 0 0 L 100 0');
+    const straight = arrowGeometry(arrow({ a: [0, 0], b: [100, 50] }), new Map());
+    expect(straight.d).toBe('M 0 0 L 100 50');
+    const curve = arrowGeometry(arrow({ a: [0, 0], b: [100, 0], route: 'curve', bend: 0.2 }), new Map());
+    expect(curve.d).toBe('M 0 0 Q 50 20 100 0');
   });
 
   it('elbowed run up and down between shapes stacked with more room above than beside', () => {
