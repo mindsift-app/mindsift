@@ -28,12 +28,14 @@ export function useAnchoredPopover<A extends HTMLElement>(wanted: number, popWid
     const above = r.top - 8;
     const up = below < wanted && above > below;
     const width = Math.max(r.width, popWidth);
-    setPos({
+    const next: PopoverPosition = {
       left: Math.max(8, Math.min(r.left, window.innerWidth - width - 8)),
       width: r.width,
       ...(up ? { bottom: window.innerHeight - r.top + 4 } : { top: r.bottom + 4 }),
       maxHeight: Math.min(wanted, up ? above : below),
-    });
+    };
+    // Scrolling the list inside the popover (or anything else that leaves the field in place) renders nothing
+    setPos((prev) => (prev && samePosition(prev, next) ? prev : next));
   };
   const placeRef = useRef(place);
   placeRef.current = place;
@@ -45,12 +47,21 @@ export function useAnchoredPopover<A extends HTMLElement>(wanted: number, popWid
 
   useLayoutEffect(() => {
     if (!open) return;
-    const follow = () => placeRef.current();
+    // At most once per frame, however many scroll events come in
+    let frame = 0;
+    const follow = () => {
+      if (frame) return;
+      frame = requestAnimationFrame(() => {
+        frame = 0;
+        placeRef.current();
+      });
+    };
     window.addEventListener('scroll', follow, true);
     window.addEventListener('resize', follow);
     return () => {
       window.removeEventListener('scroll', follow, true);
       window.removeEventListener('resize', follow);
+      cancelAnimationFrame(frame);
     };
   }, [open]);
 
@@ -66,6 +77,9 @@ export function useAnchoredPopover<A extends HTMLElement>(wanted: number, popWid
 
   return { open, setOpen, show, pos, anchorRef, popRef };
 }
+
+const samePosition = (a: PopoverPosition, b: PopoverPosition): boolean =>
+  a.left === b.left && a.width === b.width && a.top === b.top && a.bottom === b.bottom && a.maxHeight === b.maxHeight;
 
 // Touch as the main pointer (phones, tablets): date and time use the system's own picker there
 export const isTouchPointer = (): boolean =>
