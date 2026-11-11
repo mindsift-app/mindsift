@@ -639,16 +639,6 @@ export interface SearchResults {
   counts?: Partial<Record<'document' | 'thought' | 'list_item', number>>;
 }
 
-export interface SpaceMember {
-  spaceId: string;
-  userId: string;
-  displayName: string;
-  email: string;
-  avatarUrl?: string;
-  role: 'owner' | 'editor' | 'viewer';
-  joinedAt: string;
-}
-
 export interface UnifiedShare {
   id: string;
   targetType: 'team' | 'user';
@@ -659,32 +649,6 @@ export interface UnifiedShare {
   permission?: 'editor' | 'viewer';
   role?: string;
   createdBy?: string;
-  createdAt: string;
-}
-
-export interface SpaceShare {
-  id: string;
-  spaceId: string;
-  targetType: 'team' | 'user';
-  targetId: string;
-  targetName?: string;
-  role: 'editor' | 'viewer';
-  createdBy?: string;
-  createdAt: string;
-}
-
-export interface Space {
-  id: string;
-  name: string;
-  icon: string;
-  description: string;
-  inviteCode: string;
-  isPersonal: boolean;
-  ownerId: string;
-  ownerName?: string;
-  members?: SpaceMember[];
-  shares?: SpaceShare[];
-  listsCount: number;
   createdAt: string;
 }
 

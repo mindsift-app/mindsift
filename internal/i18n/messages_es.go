@@ -24,7 +24,6 @@ var messagesES = map[string]string{
 	"Aufnahme konnte nicht gelesen werden":                                           "No se pudo leer la grabación",
 	"Aufnahme zu groß (höchstens {mb} MB)":                                           "Grabación demasiado grande (como máximo {mb} MB)",
 	"Aus 'content' ist kein Punkt entstanden, die Notiz ist leer. Schicke den Inhalt als Markdown-Liste, eine Zeile pro Punkt.": "'content' no generó ningún punto, la nota está vacía. Envía el contenido como lista Markdown, una línea por punto.",
-	"Automatischer Gast-Login ist deaktiviert – bitte anmelden":                                                                 "El inicio de sesión automático como invitado está desactivado: inicia sesión",
 	"Backup fehlgeschlagen":                                                                  "La copia de seguridad ha fallado",
 	"Backup im Archiv ist nicht lesbar":                                                      "La copia de seguridad del archivo no se puede leer",
 	"Backup im Archiv ist nicht lesbar oder zu groß":                                         "La copia de seguridad del archivo no se puede leer o es demasiado grande",

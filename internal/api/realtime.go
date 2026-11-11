@@ -51,13 +51,7 @@ func (s *Server) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 
 	roomID := chi.URLParam(r, "listId")
 	if roomID == "" {
-		roomID = chi.URLParam(r, "spaceId")
-	}
-	if roomID == "" {
 		roomID = r.URL.Query().Get("listId")
-	}
-	if roomID == "" {
-		roomID = r.URL.Query().Get("spaceId")
 	}
 
 	userID := s.authenticateUserFromReq(r)
@@ -70,9 +64,6 @@ func (s *Server) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleSSE(w http.ResponseWriter, r *http.Request) {
 	roomID := r.URL.Query().Get("listId")
-	if roomID == "" {
-		roomID = r.URL.Query().Get("spaceId")
-	}
 
 	userID := s.authenticateUserFromReq(r)
 	if userID == "" {

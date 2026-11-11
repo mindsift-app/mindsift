@@ -24,7 +24,6 @@ var messagesFR = map[string]string{
 	"Aufnahme konnte nicht gelesen werden":                                           "L’enregistrement n’a pas pu être lu",
 	"Aufnahme zu groß (höchstens {mb} MB)":                                           "Enregistrement trop volumineux ({mb} Mo au maximum)",
 	"Aus 'content' ist kein Punkt entstanden, die Notiz ist leer. Schicke den Inhalt als Markdown-Liste, eine Zeile pro Punkt.": "'content' n'a produit aucun point, la note est vide. Envoie le contenu sous forme de liste Markdown, une ligne par point.",
-	"Automatischer Gast-Login ist deaktiviert – bitte anmelden":                                                                 "La connexion automatique en invité est désactivée – connecte-toi",
 	"Backup fehlgeschlagen":                                                                  "La sauvegarde a échoué",
 	"Backup im Archiv ist nicht lesbar":                                                      "La sauvegarde de l’archive est illisible",
 	"Backup im Archiv ist nicht lesbar oder zu groß":                                         "La sauvegarde de l’archive est illisible ou trop volumineuse",

@@ -453,10 +453,6 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (s *Server) handleQuickStart(w http.ResponseWriter, r *http.Request) {
-	writeError(w, http.StatusForbidden, "Automatischer Gast-Login ist deaktiviert – bitte anmelden")
-}
-
 func (s *Server) handleMe(w http.ResponseWriter, r *http.Request) {
 	userID := auth.GetUserID(r.Context())
 	user, err := s.store.GetUserByID(userID)

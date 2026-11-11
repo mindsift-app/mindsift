@@ -150,7 +150,6 @@ func (s *Server) Router() http.Handler {
 	r.Post("/api/v1/auth/resend-verification", s.handleResendVerification)
 	r.Post("/api/v1/auth/register", s.handleRegister)
 	r.Post("/api/v1/auth/login", s.handleLogin)
-	r.Post("/api/v1/auth/quickstart", s.handleQuickStart)
 	r.Post("/api/v1/auth/forgot-password", s.handleForgotPassword)
 	r.Post("/api/v1/auth/reset-password", s.handleResetPassword)
 	r.Post("/api/v1/webhooks/ingest", s.handleWebhookIngest)
@@ -159,7 +158,6 @@ func (s *Server) Router() http.Handler {
 	r.Post("/api/v1/public/{token}/unlock", s.handlePublicUnlock)
 	r.Get("/api/v1/public/{token}/media/{mediaId}", s.handlePublicMedia)
 	r.Get("/api/v1/ws", s.handleWebSocket)
-	r.Get("/api/v1/ws/spaces/{spaceId}", s.handleWebSocket)
 	r.Get("/api/v1/ws/lists/{listId}", s.handleWebSocket)
 	r.Get("/api/v1/events", s.handleSSE)
 
@@ -191,6 +189,10 @@ func (s *Server) Router() http.Handler {
 		r.Post("/api/v1/tasks/{id}/watch", s.handleWatchTask)
 		r.Delete("/api/v1/tasks/{id}/watch", s.handleWatchTask)
 		r.Post("/api/v1/documents/{id}/extract/undo", s.handleUndoExtract)
+		r.Post("/api/v1/documents/{id}/branches/move", s.handleMoveBranch)
+		r.Post("/api/v1/documents/{id}/branches/move/undo", s.handleUndoMove)
+		// Earlier address of moving a branch; PUT on it moves the note into a folder. Kept for apps that
+		// are still open or installed with older code
 		r.Post("/api/v1/documents/{id}/move", s.handleMoveBranch)
 		r.Post("/api/v1/documents/{id}/move/undo", s.handleUndoMove)
 		r.Post("/api/v1/documents/{id}/inline", s.handleInlineNote)
@@ -333,7 +335,7 @@ func (s *Server) Router() http.Handler {
 		r.Delete("/api/v1/lists/{id}/items/{itemId}", s.handleDeleteListItem)
 		r.Post("/api/v1/lists/{id}/items/{itemId}/move", s.handleMoveListItem)
 		r.Post("/api/v1/lists/{id}/items/reorder", s.handleReorderListItems)
-		r.Put("/api/v1/lists/{id}/items/reorder", s.handleReorderListItems)
+		r.Put("/api/v1/lists/{id}/items/reorder", s.handleReorderListItems) // same as POST, kept for older clients
 		r.Post("/api/v1/lists/{id}/clear-completed", s.handleClearCompletedItems)
 
 		// Groups (user-managed; stored as teams)

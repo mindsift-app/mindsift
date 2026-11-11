@@ -1,6 +1,6 @@
 # REST API
 
-Base: `/api/v1`. Responses are JSON; errors take the form `{"error": "Text"}`, some with a stable `code` for clients to react to (`email_unverified` on login). Error texts follow `Accept-Language` when MindSift speaks it, else the server's default language; the language used is returned as `Content-Language`. Unexpected failures (`500`) say only "Internal error"; their details (SQL, paths) go to the server log, not to clients or agents. A path under `/api/` that does not exist answers `404` with JSON. MCP always answers in English. Authentication via `Authorization: Bearer <JWT>`. **API keys** (`Bearer mindsift_sec_…` or header `X-API-Key`) have scopes that apply equally to REST and [MCP](#mcp-for-ai-agents-post-apiv1mcp), see [API Keys](#api-keys-scopes-and-origin). Everything else, including notes, settings, and live streams, responds to an API key with `403`. Timestamps are ISO-8601 (UTC). Request bodies are limited to 2 MB (note sync 8 MB, imports 101 MB). In demo mode, endpoints that send messages/emails, modify server settings, or alter shared demo accounts respond with `403` "Disabled in demo". The source of truth is the route definitions in [server.go](../../internal/api/server.go).
+Base: `/api/v1`. Responses are JSON; errors take the form `{"error": "Text"}`, some with a stable `code` for clients to react to (`email_unverified` on login). Error texts follow `Accept-Language` when MindSift speaks it, else the server's default language; the language used is returned as `Content-Language`. Unexpected failures (`500`) say only "Internal error"; their details (SQL, paths) go to the server log, not to clients or agents. A path under `/api/` that does not exist answers `404` with JSON. MCP always answers in English. Authentication via `Authorization: Bearer <JWT>`. **API keys** (`Bearer mindsift_sec_…` or header `X-API-Key`) have scopes that apply equally to REST and [MCP](#mcp-for-ai-agents-post-apiv1mcp), see [API Keys](#api-keys-scopes-and-origin). Everything else, including notes, settings, and live streams, responds to an API key with `403`. Timestamps are ISO-8601 (UTC). Request bodies are limited to 2 MB (note sync 8 MB, imports 101 MB). In demo mode, endpoints that send messages/emails, modify server settings, or alter shared demo accounts respond with `403` "Disabled in demo". The source of truth is the route definitions in [server.go](../../internal/api/server.go); [openapi.json](openapi.json) lists every route with a short description, and a test (`internal/api/openapi_test.go`) fails when a route is missing there or an entry has no route. Request and response schemas are not in it yet.
 
 ## Public
 
@@ -18,9 +18,8 @@ Base: `/api/v1`. Responses are JSON; errors take the form `{"error": "Text"}`, s
 | POST | `/auth/login` | Login (`login`/`email`/`username`, `password`) → `{token, user}`. `login` is the email address or the username; typed like a display name ("Sandro Dach") it is read as the username (`sandro.dach`), and the part of the email before the @ still works. The display name itself does not sign in |
 | POST | `/auth/forgot-password` | `{email}` → always `{ok: true}`; email with link sent only if the account exists. `503` if SMTP or `BASE_URL` is missing; `429` after 10 requests per address in 15 minutes |
 | POST | `/auth/reset-password` | `{token, password}` (min. 8 characters) → new password, terminates all sessions; `400` on invalid or expired link |
-| POST | `/auth/quickstart` | Always `403` (guest access disabled) |
-| POST | `/webhooks/ingest` | Ingest via webhook, key as `X-API-Key` (recommended), Bearer or `?token=` (URL parameter accepts only API keys, no session tokens). Body: `title`/`content`/`text`/`message`, `priority`, `source`, `tags`, `dueDate`; `target` (or `type`): `triage` (default, inbox), `task` (optional `taskListId`), `list_item` (`listId`, `category`, `quantity`). Plain text body is treated as content. `403` without matching scope or without write permission on the list |
-| GET | `/ws`, `/ws/spaces/{id}`, `/ws/lists/{id}` | WebSocket, see [websocket.md](websocket.md); `?ticket=` or `Authorization` header |
+| POST | `/webhooks/ingest` | Ingest via webhook, key as `X-API-Key` (recommended), Bearer or `?token=` (URL parameter accepts only API keys, no session tokens). Body: `title`/`content`/`text`/`message`, `priority`, `source`, `tags`, `dueDate`; `target` (or `type`): `triage` (default, inbox), `task` (optional `taskListId`), `list_item` (`listId`, `category`, `quantity`). Plain text body is treated as content. `403` without matching scope or without write permission on the list. The alternative field names (`title`/`content`/`text`/`message`, `dueDate`/`due_date`, `target`/`type`) are accepted on purpose, so the payloads of different tools work without a mapping |
+| GET | `/ws`, `/ws/lists/{id}` | WebSocket, see [websocket.md](websocket.md); `?ticket=` or `Authorization` header |
 | GET | `/events` | SSE fallback; `?ticket=` or `Authorization` header |
 
 ## Account and General (Authenticated)
@@ -61,6 +60,7 @@ Base: `/api/v1`. Responses are JSON; errors take the form `{"error": "Text"}`, s
 | POST | `/backups/{name}/restore` | Restore server backup: `mode=merge` or `restore` (clears selected sections beforehand), `sections=notes,tasks,lists,inbox,themes`, `preview=1` |
 | GET/POST | `/keys` | List or create API keys (plain text revealed only upon creation); `POST` with `name` and `scopes` (`webhook:triage`, `webhook:task`, `webhook:list`, `tasks:read`, `tasks:write`, `lists:read`, `lists:write`, `notes:read`, `notes:create`, `notes:write`, `inbox:read`, `inbox:write`; default `["webhook:triage"]`; an empty body creates such a key, a body that is not valid JSON gives `400`) |
 | POST | `/mcp` | MCP endpoint for AI agents, see below |
+| GET/DELETE | `/mcp` | `405`: no server stream and no sessions (Streamable HTTP, stateless) |
 | PATCH | `/keys/{id}` | Update name (`name`) and/or permissions (`scopes`); the key itself remains unchanged |
 | DELETE | `/keys/{id}` | Delete API key |
 
@@ -144,11 +144,13 @@ Clients unable to set an `X-API-Key` header connect via OAuth 2.1 in accordance 
 
 | Method | Path (without `/api/v1`) | Purpose |
 |---|---|---|
-| GET | `/.well-known/oauth-protected-resource` (also with `/api/v1/mcp` suffix) | Resource metadata (RFC 9728): `resource`, `authorization_servers`, `scopes_supported` |
+| GET | `/.well-known/oauth-protected-resource`, `/.well-known/oauth-protected-resource/{path}` (e.g. `/api/v1/mcp`) | Resource metadata (RFC 9728): `resource`, `authorization_servers`, `scopes_supported` |
 | GET | `/.well-known/oauth-authorization-server` | Server metadata (RFC 8414) |
 | POST | `/oauth/register` | Dynamic client registration (RFC 7591), JSON `client_name`, `redirect_uris` (only `https://` or `http://localhost`/`127.0.0.1`, max 10). All clients are public (`token_endpoint_auth_method: none`); rate limited to 20 registrations per address per 15 minutes |
 | GET | `/oauth/authorize` | Consent page in the app (login, select scopes, allow/deny). Required: `response_type=code`, `client_id`, `redirect_uri` (exact match with registration), `code_challenge` with `code_challenge_method=S256`; optional: `state`, `scope` (space-separated scopes), `resource`. The response to the client contains `code`, `state`, and `iss` or `error` |
 | POST | `/oauth/token` | Form: `grant_type=authorization_code` (`code`, `client_id`, `redirect_uri`, `code_verifier`) or `refresh_token` (`refresh_token`, `client_id`). Errors returned as `{"error":"invalid_grant",…}` |
+| GET | `/api/v1/oauth/authorize` | For the consent page (signed in, no API keys): client, scopes and `knownHost` of an authorization request |
+| POST | `/api/v1/oauth/authorize` | For the consent page: allow (`approve`, with the chosen scopes) or deny → `{redirect}`, the address to send the browser back to |
 | POST | `/oauth/revoke` | Revoke token (RFC 7009); revoking a refresh token terminates all tokens associated with the connection. `503` with `server_error` when the token could not be revoked |
 
 The consent page uses `GET`/`POST /api/v1/oauth/authorize` (requires user login, cannot be accessed with API keys). `GET` also returns `knownHost`: whether the way back leads to a known AI service (claude.ai, claude.com, anthropic.com, chatgpt.com, openai.com) or this computer (localhost); otherwise the page warns, because anybody can register a client under any name.
@@ -255,8 +257,9 @@ Write attempts by viewers on lists or their tasks return `403` ("No write permis
 | GET | `/journal` | Days in own journal, newest first → `{days: [{date, docId, empty}]}` (`empty`: note has no text yet; days in trash are excluded) |
 | POST | `/journal/{date}` | Open journal note for date (`YYYY-MM-DD`); if none exists yet, it is created (title e.g. "Friday, October 30, 2026", icon 📅) → document, `201` if newly created. Journal notes are standard notes (sharing, search, sync) |
 | POST | `/documents/{id}/extract/undo` | Moves extracted note `{id}` back to trash (creator only) |
-| POST | `/documents/{id}/move` | `{blockId, targetId, clientId}`: copies the bullet with its sub-bullets to the end of note `targetId` (through the target's sync operations, open editors follow live) and moves links of tasks and subtasks on these checkboxes along → `{targetId, targetTitle, rootId, moved}` (`moved`: new block ID in the target → block ID in the source). The server does not modify the source note; the editor removes the branch itself (or leaves a link `[[Title#^rootId]]` when extracting into an existing note), so Ctrl+Z works. Requires write permission on both notes; `400` same note, `404` bullet not found, `409` someone else is typing in the branch |
-| POST | `/documents/{id}/move/undo` | Body: the result of `move` plus `clientId`: removes the branch from the target note again and gives the task links back to the source note's checkboxes (which the editor restores by its own undo) |
+| POST | `/documents/{id}/branches/move` | `{blockId, targetId, clientId}`: copies the bullet with its sub-bullets to the end of note `targetId` (through the target's sync operations, open editors follow live) and moves links of tasks and subtasks on these checkboxes along → `{targetId, targetTitle, rootId, moved}` (`moved`: new block ID in the target → block ID in the source). The server does not modify the source note; the editor removes the branch itself (or leaves a link `[[Title#^rootId]]` when extracting into an existing note), so Ctrl+Z works. Requires write permission on both notes; `400` same note, `404` bullet not found, `409` someone else is typing in the branch. The earlier address `POST /documents/{id}/move` still works |
+| POST | `/documents/{id}/branches/move/undo` | Body: the result of `branches/move` plus `clientId`: removes the branch from the target note again and gives the task links back to the source note's checkboxes (which the editor restores by its own undo) |
+| POST | `/documents/{id}/move`, `/documents/{id}/move/undo` | Earlier addresses of `branches/move` and its undo, kept for apps with older code (`PUT /documents/{id}/move` moves the note into a folder) |
 | POST | `/documents/{id}/inline` | `{blockId}`: counterpart to `extract` for a bullet consisting solely of a link to a note (`[[Note#doc_id]]` or older `[[Note]]`, optionally with hashtags) → `{sourceId, content, head?, blocks}`: text for the bullet (title plus hashtags) and note bullets with new IDs (`level` 0 = directly beneath the bullet). For a note made by `extract` (a single top-level bullet that names the note), `head` is that bullet: it replaces the link bullet (type and props), `content` is its text plus the link's hashtags, and `blocks` are its children. The linked note is moved to trash; undo with `POST /documents/{sourceId}/restore`. The editor modifies the source note locally. `400` not a link bullet (a link to a single bullet, `[[Note#^id]]`, does not count), `404` note not found, `403` another user's note, `409` still referenced by other notes |
 | POST | `/documents/{id}/merge` | `{sourceId}`: appends (own) source note as a heading with sub-bullets to this note, moves source to trash → `{targetId, sourceId, sourceTitle, headingId}` |
 | POST | `/documents/{id}/merge/undo` | `{sourceId, headingId}`: removes section, restores source note |
@@ -267,7 +270,7 @@ Write attempts by viewers on lists or their tasks return `403` ("No write permis
 | POST | `/documents/{id}/media/fetch` | Copy external image: `{url}` (https only, no internal addresses; disabled in demo) → same response as above |
 | GET | `/media/{id}` | Retrieve file (requires read permission on a note referencing it), supports HTTP range requests; otherwise `404` |
 | GET | `/link-preview?url=https://…` | Preview of a webpage (`title`, `description`, `siteName`, `hasImage`, `hasIcon`, `ok`, `key`), fetched by server and cached for 7 days; `422` without https, `403` in demo, `429` rate limit exceeded |
-| GET | `/link-preview/{key}/image` and `/icon` | Image or icon for a preview |
+| GET | `/link-preview/{key}/{kind}` | Image (`kind` = `image`) or icon (`icon`) for a preview |
 
 Note content (blocks) is modified exclusively via `POST /docs/{id}/sync`. `POST /documents` still accepts an initial block list upon creation; this is internally converted into operations.
 
@@ -321,7 +324,8 @@ Duplicate operations (same `opId`) are not reapplied; the response returns the p
 | PUT | `/lists/{id}/items/{itemId}` | Update item (`content`, `category`, `quantity`) |
 | DELETE | `/lists/{id}/items/{itemId}` | Delete item |
 | POST | `/lists/{id}/items/{itemId}/move` | Move to another list (`targetListId`); requires edit permissions on both lists; item is placed at the top |
-| POST/PUT | `/lists/{id}/items/reorder` | Order/category (`items[{id, sortOrder, category, content}]`) |
+| POST | `/lists/{id}/items/reorder` | Order/category (`items[{id, sortOrder, category, content}]`); `PUT` does the same and stays for older clients |
+| PUT | `/lists/{id}/items/reorder` | Same as `POST` (kept for older clients) |
 | POST | `/lists/{id}/clear-completed` | Remove completed items |
 
 ## Groups
@@ -356,6 +360,8 @@ Routes marked **S** are open to server admins and user managers (`role = manager
 | GET | `/admin/voice` | Active voice recognition (`mode`: `server`/`browser`/`off`), settings from `STT_*` without secrets, limits, and in server mode fresh health status (`status.reachable`, `status.modelReady`) |
 | GET/POST | `/admin/backups` | List database dumps or create backup immediately (database dump + all user backups) |
 | GET | `/admin/backups/{name}` | Download database dump |
+| GET | `/admin/backups/deleted` | Kept backups of deleted accounts (`userId`, `displayName`, `email`, `deletedAt`, `removeAt`, `files`) |
+| GET | `/admin/backups/deleted/{userId}/{name}` | Download one backup of a deleted account (ZIP) |
 | DELETE | `/admin/backups/{name}` | Delete database dump (returns remaining list; disabled in demo) |
 
 ## Public links to notes

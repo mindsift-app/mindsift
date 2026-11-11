@@ -348,15 +348,15 @@ func TestMoveBranchToOtherNote(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if rec := sessionCall(router, "POST", "/api/v1/documents/"+src.ID+"/move", token, `{"blockId":"blk_a","targetId":"`+src.ID+`"}`, ""); rec.Code != http.StatusBadRequest {
+	if rec := sessionCall(router, "POST", "/api/v1/documents/"+src.ID+"/branches/move", token, `{"blockId":"blk_a","targetId":"`+src.ID+`"}`, ""); rec.Code != http.StatusBadRequest {
 		t.Fatalf("move into the same note: %d", rec.Code)
 	}
 	_, strangerToken := newTestUser(t, store, "fremd3@example.com")
-	if rec := sessionCall(router, "POST", "/api/v1/documents/"+src.ID+"/move", strangerToken, `{"blockId":"blk_a","targetId":"`+dst.ID+`"}`, ""); rec.Code != http.StatusForbidden {
+	if rec := sessionCall(router, "POST", "/api/v1/documents/"+src.ID+"/branches/move", strangerToken, `{"blockId":"blk_a","targetId":"`+dst.ID+`"}`, ""); rec.Code != http.StatusForbidden {
 		t.Fatalf("stranger must not move: %d", rec.Code)
 	}
 
-	rec := sessionCall(router, "POST", "/api/v1/documents/"+src.ID+"/move", token, `{"blockId":"blk_a","targetId":"`+dst.ID+`"}`, "")
+	rec := sessionCall(router, "POST", "/api/v1/documents/"+src.ID+"/branches/move", token, `{"blockId":"blk_a","targetId":"`+dst.ID+`"}`, "")
 	if rec.Code != http.StatusOK {
 		t.Fatalf("move: %d %s", rec.Code, rec.Body.String())
 	}
@@ -378,7 +378,7 @@ func TestMoveBranchToOtherNote(t *testing.T) {
 	}
 
 	body, _ := json.Marshal(res)
-	if rec := sessionCall(router, "POST", "/api/v1/documents/"+src.ID+"/move/undo", token, string(body), ""); rec.Code != http.StatusOK {
+	if rec := sessionCall(router, "POST", "/api/v1/documents/"+src.ID+"/branches/move/undo", token, string(body), ""); rec.Code != http.StatusOK {
 		t.Fatalf("undo: %d %s", rec.Code, rec.Body.String())
 	}
 	if got := strings.Join(flatOf(t, store, uid, dst.ID), "|"); got != "Schon da" {
@@ -387,6 +387,20 @@ func TestMoveBranchToOtherNote(t *testing.T) {
 	back, _ := store.GetThoughtByIDUnchecked(task.ID)
 	if back.DocID != src.ID || back.BlockID != "blk_c" {
 		t.Fatalf("task must be linked to the source again: %s:%s", back.DocID, back.BlockID)
+	}
+
+	// The earlier address stays for apps with older code
+	rec = sessionCall(router, "POST", "/api/v1/documents/"+src.ID+"/move", token, `{"blockId":"blk_a","targetId":"`+dst.ID+`"}`, "")
+	if rec.Code != http.StatusOK {
+		t.Fatalf("move at the earlier address: %d %s", rec.Code, rec.Body.String())
+	}
+	_ = json.Unmarshal(rec.Body.Bytes(), &res)
+	body, _ = json.Marshal(res)
+	if rec := sessionCall(router, "POST", "/api/v1/documents/"+src.ID+"/move/undo", token, string(body), ""); rec.Code != http.StatusOK {
+		t.Fatalf("undo at the earlier address: %d %s", rec.Code, rec.Body.String())
+	}
+	if got := strings.Join(flatOf(t, store, uid, dst.ID), "|"); got != "Schon da" {
+		t.Fatalf("target after the second undo: %s", got)
 	}
 }
 
