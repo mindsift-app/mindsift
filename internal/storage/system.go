@@ -396,6 +396,21 @@ func (s *Store) UpdateSystemSettings(settings *domain.SystemSettings) error {
 	return err
 }
 
+// SetupPending: the first administrator came from ADMIN_USER / ADMIN_PASSWORD and has not chosen the
+// instance settings of the setup wizard yet (api.handleFinishSetup). Off when it cannot be read.
+func (s *Store) SetupPending() bool {
+	var v string
+	err := s.db.QueryRow(`SELECT value FROM system_settings WHERE key = 'setup_pending'`).Scan(&v)
+	return !dbFailed(err) && v == "true"
+}
+
+// SetSetupPending records whether the rest of the setup wizard is still to come.
+func (s *Store) SetSetupPending(pending bool) error {
+	_, err := s.db.Exec(`INSERT INTO system_settings (key, value) VALUES ('setup_pending', ?)
+		ON CONFLICT(key) DO UPDATE SET value = excluded.value`, strconv.FormatBool(pending))
+	return err
+}
+
 // MaxPublicLinkDays: no public link lives longer than this (there is no link for good).
 const MaxPublicLinkDays = 14
 

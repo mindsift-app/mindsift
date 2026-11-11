@@ -91,6 +91,23 @@ type Config struct {
 	VAPIDPublicKey  string
 	VAPIDPrivateKey string
 	VAPIDSubject    string
+
+	// InitialAdmin: ADMIN_USER / ADMIN_PASSWORD / ADMIN_EMAIL create the first administrator on the first
+	// start, while the database has no account yet (api.CreateInitialAdmin); ignored afterwards
+	InitialAdmin InitialAdmin
+}
+
+// InitialAdmin is the first administrator given by the environment. Password is kept exactly as set
+// (spaces count, as in the setup wizard) and never logged.
+type InitialAdmin struct {
+	User     string
+	Password string
+	Email    string
+}
+
+// Set reports whether any of the three variables is given.
+func (a InitialAdmin) Set() bool {
+	return a.User != "" || strings.TrimSpace(a.Password) != "" || a.Email != ""
 }
 
 // MediaConfig limits uploads of images and audio recordings in notes. Sizes in MB; QuotaMB 0 = no limit
@@ -373,6 +390,11 @@ func Load() *Config {
 		VAPIDPublicKey:      strings.TrimSpace(os.Getenv("VAPID_PUBLIC_KEY")),
 		VAPIDPrivateKey:     strings.TrimSpace(os.Getenv("VAPID_PRIVATE_KEY")),
 		VAPIDSubject:        strings.TrimSpace(os.Getenv("VAPID_SUBJECT")),
+		InitialAdmin: InitialAdmin{
+			User:     strings.TrimSpace(os.Getenv("ADMIN_USER")),
+			Password: os.Getenv("ADMIN_PASSWORD"),
+			Email:    strings.TrimSpace(os.Getenv("ADMIN_EMAIL")),
+		},
 		Media: MediaConfig{
 			MaxImageMB: envInt("MEDIA_MAX_IMAGE_MB", 15, 1, 1000),
 			MaxAudioMB: envInt("MEDIA_MAX_AUDIO_MB", 50, 1, 2000),

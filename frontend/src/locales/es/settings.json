@@ -542,7 +542,8 @@
     "dataDeleted": "Todos tus datos han sido eliminados.",
     "actionFailed": "Error en la acción",
     "confirmRevokeAll": "¿De verdad quieres cerrar todas las sesiones activas en todos los dispositivos? También se cerrará la sesión en este dispositivo.",
-    "emailLogin": "Dirección de correo (inicio de sesión)"
+    "emailLogin": "Dirección de correo (inicio de sesión)",
+    "noEmail": "Todavía no hay dirección de correo. Sin ella no hay «¿Olvidaste la contraseña?» ni correos; una dirección nueva vale tras hacer clic en el enlace de confirmación."
   },
   "users": {
     "title": "Usuarios, roles e invitaciones",

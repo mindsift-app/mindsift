@@ -104,6 +104,12 @@ func (s *Server) handleLegalText(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleFirstBootSetup(w http.ResponseWriter, r *http.Request) {
+	// A form of another site cannot send JSON as such (it would need a CORS preflight): without this a
+	// text/plain POST from any page could create the first admin of a fresh server
+	if !jsonContentType(r) {
+		writeError(w, http.StatusUnsupportedMediaType, "Anfrage muss als JSON (Content-Type: application/json) gesendet werden")
+		return
+	}
 	// One setup at a time: two at once must not both see "no users yet" and create two admins
 	s.setupMu.Lock()
 	defer s.setupMu.Unlock()
@@ -114,14 +120,10 @@ func (s *Server) handleFirstBootSetup(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req struct {
-		Email             string `json:"email"`
-		Password          string `json:"password"`
-		DisplayName       string `json:"displayName"`
-		InstanceName      string `json:"instanceName"`
-		AllowRegistration bool   `json:"allowRegistration"`
-		SharingMode       string `json:"sharingMode"`
-		CreateSampleData  bool   `json:"createSampleData"`
-		DefaultLanguage   string `json:"defaultLanguage"`
+		Email       string `json:"email"`
+		Password    string `json:"password"`
+		DisplayName string `json:"displayName"`
+		setupChoices
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeError(w, http.StatusBadRequest, "Ungültige Anfrage")
@@ -154,41 +156,9 @@ func (s *Server) handleFirstBootSetup(w http.ResponseWriter, r *http.Request) {
 		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
-	// The language chosen in the wizard becomes the server's default and the admin's own
-	lang := req.DefaultLanguage
-	if lang == "" {
-		lang = s.requestLanguage(r)
-	}
-	logFailed("Setting the language", s.store.SetLanguage(user.ID, lang), "user_id", user.ID)
-
-	sys, _ := s.store.GetSystemSettings()
-	if sys != nil {
-		sys.DefaultLanguage = req.DefaultLanguage
-		if strings.TrimSpace(req.InstanceName) != "" {
-			sys.InstanceName = strings.TrimSpace(req.InstanceName)
-		}
-		sys.AllowRegistration = req.AllowRegistration
-		sys.RegistrationMode = storage.RegistrationClosed
-		if req.AllowRegistration {
-			sys.RegistrationMode = storage.RegistrationOpen
-		}
-		sys.SharingMode = storage.NormalizeSharingMode(req.SharingMode)
-		if err := s.store.UpdateSystemSettings(sys); err != nil {
-			writeError(w, http.StatusInternalServerError, "Einstellungen konnten nicht gespeichert werden: "+clientMessage(err))
-			return
-		}
-		// In organization mode the first admin starts in an organization named after the instance
-		if sys.SharingMode == storage.SharingOrganizations {
-			if org, err := s.store.CreateOrganization(sys.InstanceName); err != nil {
-				logFailed("Creating the first organization", err)
-			} else {
-				logFailed("Adding the first admin to the organization", s.store.AddOrganizationMember(org.ID, user.ID), "org_id", org.ID)
-			}
-		}
-	}
-
-	if req.CreateSampleData {
-		logFailed("Creating the sample data", s.store.SeedStarterContent(user), "user_id", user.ID)
+	if err := s.applySetupChoices(r, user, req.setupChoices); err != nil {
+		writeError(w, http.StatusInternalServerError, "Einstellungen konnten nicht gespeichert werden: "+clientMessage(err))
+		return
 	}
 
 	token, err := s.startSession(r, user)
@@ -201,6 +171,57 @@ func (s *Server) handleFirstBootSetup(w http.ResponseWriter, r *http.Request) {
 		"token": token,
 		"user":  user,
 	})
+}
+
+// setupChoices: the instance settings of the setup wizard, beside the admin account. The wizard sends them
+// with the account (/auth/setup); after an admin from ADMIN_USER they come on their own (/admin/setup).
+type setupChoices struct {
+	InstanceName      string `json:"instanceName"`
+	AllowRegistration bool   `json:"allowRegistration"`
+	SharingMode       string `json:"sharingMode"`
+	CreateSampleData  bool   `json:"createSampleData"`
+	DefaultLanguage   string `json:"defaultLanguage"`
+}
+
+// applySetupChoices stores what the wizard asked besides the account: the language (the server's default
+// and the admin's own), instance name, registration, sharing mode with the first organization, and sample
+// data for the admin. The language was checked by the caller.
+func (s *Server) applySetupChoices(r *http.Request, user *domain.User, c setupChoices) error {
+	lang := c.DefaultLanguage
+	if lang == "" {
+		lang = s.requestLanguage(r)
+	}
+	logFailed("Setting the language", s.store.SetLanguage(user.ID, lang), "user_id", user.ID)
+
+	sys, _ := s.store.GetSystemSettings()
+	if sys != nil {
+		sys.DefaultLanguage = c.DefaultLanguage
+		if strings.TrimSpace(c.InstanceName) != "" {
+			sys.InstanceName = strings.TrimSpace(c.InstanceName)
+		}
+		sys.AllowRegistration = c.AllowRegistration
+		sys.RegistrationMode = storage.RegistrationClosed
+		if c.AllowRegistration {
+			sys.RegistrationMode = storage.RegistrationOpen
+		}
+		sys.SharingMode = storage.NormalizeSharingMode(c.SharingMode)
+		if err := s.store.UpdateSystemSettings(sys); err != nil {
+			return err
+		}
+		// In organization mode the first admin starts in an organization named after the instance
+		if sys.SharingMode == storage.SharingOrganizations {
+			if org, err := s.store.CreateOrganization(sys.InstanceName); err != nil {
+				logFailed("Creating the first organization", err)
+			} else {
+				logFailed("Adding the first admin to the organization", s.store.AddOrganizationMember(org.ID, user.ID), "org_id", org.ID)
+			}
+		}
+	}
+
+	if c.CreateSampleData {
+		logFailed("Creating the sample data", s.store.SeedStarterContent(user), "user_id", user.ID)
+	}
+	return nil
 }
 
 func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
@@ -469,6 +490,8 @@ func (s *Server) handleMe(w http.ResponseWriter, r *http.Request) {
 		"stats": stats,
 		// The settings disable "Delete account" for the last administrator
 		"isLastAdmin": s.store.IsLastAdmin(userID),
+		// The admin came from ADMIN_USER and the wizard's instance settings are still to come (POST /admin/setup)
+		"setupPending": user.Role == domain.RoleAdmin && s.store.SetupPending(),
 	})
 }
 
@@ -849,6 +872,10 @@ func (s *Server) handleTestUserAlarm(w http.ResponseWriter, r *http.Request) {
 	case "email":
 		// Only to the confirmed login address, where the alarms go; a target in the request is ignored
 		toEmail := user.Email
+		if toEmail == "" {
+			writeError(w, http.StatusBadRequest, "Dein Konto hat noch keine E-Mail-Adresse – trag sie im Profil ein")
+			return
+		}
 		sample := time.Date(2026, 1, 1, 18, 0, 0, 0, time.Local)
 		if err := s.sendMailContent(toEmail, "⏰ "+i18n.T(lang, "MindSift Test-Alarm"), mailContent{
 			Lang:      lang,

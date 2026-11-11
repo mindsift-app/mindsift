@@ -70,6 +70,12 @@ func main() {
 	}
 
 	srv := api.NewServer(cfg, store, wsHub, staticFS)
+	// ADMIN_USER / ADMIN_PASSWORD: the first admin exists before anyone can reach the setup wizard. Set
+	// but unusable, the server does not start: it would wait for the first visitor to become admin.
+	if err := srv.CreateInitialAdmin(); err != nil {
+		slog.Error("Creating the first administrator from ADMIN_USER / ADMIN_PASSWORD failed; fix or remove the variables. MindSift does not start, so the setup is not left open", "error", err)
+		os.Exit(1)
+	}
 
 	serverCtx, serverCancel := context.WithCancel(context.Background())
 	defer serverCancel()

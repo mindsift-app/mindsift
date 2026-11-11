@@ -458,7 +458,8 @@
     "dataDeleted": "Tutti i tuoi dati sono stati eliminati.",
     "actionFailed": "Azione non riuscita",
     "confirmRevokeAll": "Vuoi davvero terminare tutte le sessioni attive su tutti i dispositivi? Verrai disconnesso anche da questo dispositivo.",
-    "emailLogin": "Indirizzo email (login)"
+    "emailLogin": "Indirizzo email (login)",
+    "noEmail": "Nessun indirizzo e-mail ancora. Senza, niente «password dimenticata» né e-mail; un nuovo indirizzo vale dopo il clic sul link di conferma."
   },
   "users": {
     "title": "Utenti, ruoli e inviti",

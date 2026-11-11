@@ -392,6 +392,8 @@ func (s *Server) Router() http.Handler {
 			r.Use(s.adminMiddleware)
 			r.Put("/api/v1/admin/users/{id}/password", s.notInDemo(s.handleAdminResetPassword))
 			r.Get("/api/v1/admin/settings", s.handleAdminGetSettings)
+			// The wizard's instance settings after an admin from ADMIN_USER (initial_admin.go)
+			r.Post("/api/v1/admin/setup", s.notInDemo(s.handleFinishSetup))
 			r.Get("/api/v1/admin/backups", s.handleAdminListBackups)
 			r.Post("/api/v1/admin/backups", s.notInDemo(s.handleAdminRunBackup))
 			r.Get("/api/v1/admin/backups/{name}", s.handleAdminDownloadBackup)

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
-import i18n, { applyLanguage, isLanguage, LANGUAGES } from '../../i18n';
+import i18n from '../../i18n';
 import {
   Brain,
   Shield,
@@ -8,18 +8,15 @@ import {
   KeyRound,
   UserPlus,
   LogIn,
-  Server,
-  Users,
   Check,
   AlertCircle,
 } from 'lucide-react';
-import { AuthStatus, SharingMode, User } from '../../lib/types';
+import { AuthStatus, User } from '../../lib/types';
 import { api, ApiError, triggerHaptic } from '../../lib/api';
-import { ToggleSwitch } from '../../components/ToggleSwitch';
 import { LegalLinks } from '../../components/LegalLinks';
 import { passwordProblem } from '../../lib/password';
-import { SelectMenu } from '../../components/SelectMenu';
 import { demoHintText } from '../../components/DemoHint';
+import { SetupInstanceSection, useSetupChoices } from './SetupInstanceSection';
 
 interface SetupAndAuthViewProps {
   authStatus: AuthStatus;
@@ -42,16 +39,8 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
   const [setupEmail, setSetupEmail] = useState('');
   const [setupPassword, setSetupPassword] = useState('');
   const [setupPasswordConfirm, setSetupPasswordConfirm] = useState('');
-  const [instanceName, setInstanceName] = useState(authStatus.instanceName || 'MindSift');
-  const [sharingMode, setSharingMode] = useState<SharingMode>('organizations');
-  const [allowRegistration, setAllowRegistration] = useState(false);
-  const [createSampleData, setCreateSampleData] = useState(false);
-  // Default language of the server; the wizard switches to it right away
-  const [defaultLanguage, setDefaultLanguage] = useState(i18n.language);
-  const chooseLanguage = (lang: string) => {
-    setDefaultLanguage(lang);
-    if (isLanguage(lang)) void applyLanguage(lang);
-  };
+  // Instance settings of the wizard (shared with FinishSetupView)
+  const setupChoices = useSetupChoices(authStatus.instanceName);
 
   // --- Login / Invite / Register State ---
   // An invite link (?invite=CODE) opens the invite form with the code filled in
@@ -196,11 +185,7 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
         email: setupEmail.trim(),
         password: setupPassword,
         displayName: setupName.trim(),
-        instanceName: instanceName.trim() || 'MindSift',
-        sharingMode,
-        allowRegistration,
-        createSampleData,
-        defaultLanguage,
+        ...setupChoices.choices,
       });
       onAuthenticated(res.user);
     } catch (err: any) {
@@ -362,113 +347,7 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
             </div>
 
             {/* Section 2: Server & Isolation */}
-            <div className="p-3.5 bg-canvas border border-border space-y-3">
-              <h2 className="text-xs font-bold text-main uppercase tracking-wider flex items-center gap-1.5">
-                <Server className="w-3.5 h-3.5 text-accent" />
-                <span>{t('setup.instanceSection')}</span>
-              </h2>
-
-              <div>
-                <label className="block text-muted mb-1">{t('setup.instanceName')}</label>
-                <input
-                  type="text"
-                  value={instanceName}
-                  onChange={(e) => setInstanceName(e.target.value)}
-                  placeholder="MindSift"
-                  className="w-full h-8 px-2.5 input-field"
-                />
-              </div>
-
-              <div>
-                <p className="block text-muted mb-1">{t('setup.language')}</p>
-                <SelectMenu
-                  ariaLabel={t('setup.language')}
-                  value={defaultLanguage}
-                  onChange={chooseLanguage}
-                  options={LANGUAGES.map((l) => ({ value: l.id, label: l.name }))}
-                />
-                <p className="text-[11px] text-muted mt-1">{t('setup.languageHint')}</p>
-              </div>
-
-              <div>
-                <label className="block text-muted mb-1.5 flex items-center gap-1">
-                  <Users className="w-3 h-3 text-accent" />
-                  <span>{t('setup.sharing')}</span>
-                </label>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setSharingMode('private')}
-                    className={`p-2.5 text-left border transition-colors ${
-                      sharingMode === 'private'
-                        ? 'bg-panel border-accent text-main'
-                        : 'border-border text-muted hover:text-main'
-                    }`}
-                  >
-                    <p className="font-bold text-xs">{t('setup.private')}</p>
-                    <p className="text-[10px] text-muted mt-0.5">
-                      {t('setup.privateHint')}
-                    </p>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setSharingMode('organizations')}
-                    className={`p-2.5 text-left border transition-colors ${
-                      sharingMode === 'organizations'
-                        ? 'bg-panel border-accent text-main'
-                        : 'border-border text-muted hover:text-main'
-                    }`}
-                  >
-                    <p className="font-bold text-xs">{t('setup.organizations')}</p>
-                    <p className="text-[10px] text-muted mt-0.5">
-                      {t('setup.organizationsHint')}
-                    </p>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setSharingMode('open')}
-                    className={`p-2.5 text-left border transition-colors ${
-                      sharingMode === 'open'
-                        ? 'bg-panel border-accent text-main'
-                        : 'border-border text-muted hover:text-main'
-                    }`}
-                  >
-                    <p className="font-bold text-xs">{t('setup.open')}</p>
-                    <p className="text-[10px] text-muted mt-0.5">
-                      {t('setup.openHint')}
-                    </p>
-                  </button>
-                </div>
-              </div>
-
-              <div className="pt-2 border-t border-border space-y-2">
-                <div className="flex items-center justify-between gap-3 select-none">
-                  <div>
-                    <span className="font-medium text-main block">
-                      {t('setup.allowRegistration')}
-                    </span>
-                    <span className="text-[11px] text-muted">
-                      {t('setup.allowRegistrationHint')}
-                    </span>
-                  </div>
-                  <ToggleSwitch checked={allowRegistration} onChange={setAllowRegistration} />
-                </div>
-
-                <div className="flex items-center justify-between gap-3 select-none pt-1">
-                  <div>
-                    <span className="font-medium text-main block">
-                      {t('setup.sampleData')}
-                    </span>
-                    <span className="text-[11px] text-muted">
-                      {t('setup.sampleDataHint')}
-                    </span>
-                  </div>
-                  <ToggleSwitch checked={createSampleData} onChange={setCreateSampleData} />
-                </div>
-              </div>
-            </div>
+            <SetupInstanceSection state={setupChoices} heading={t('setup.instanceSection')} />
 
             <div className="flex items-center justify-end pt-1">
               <button

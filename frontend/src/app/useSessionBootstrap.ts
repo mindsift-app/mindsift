@@ -17,6 +17,8 @@ export function useSessionBootstrap(onSignedOut: () => void) {
     instanceName: 'MindSift',
   });
   const [user, setUser] = useState<User | null>(null);
+  // The admin came from ADMIN_USER and has not chosen the wizard's instance settings yet (FinishSetupView)
+  const [setupPending, setSetupPending] = useState(false);
   // Demo mode: when the next reset happens (local clock), and a counter that remounts all views after it
   const [demoDeadline, setDemoDeadline] = useState<number | null>(null);
   const [dataEpoch, setDataEpoch] = useState(0);
@@ -46,6 +48,7 @@ export function useSessionBootstrap(onSignedOut: () => void) {
         api.getAllLists(),
       ]);
       setUser(meRes.user);
+      setSetupPending(Boolean(meRes.setupPending));
       setStats(meRes.stats);
       setDeck(Array.isArray(deckRes) ? deckRes : []);
       setLists(Array.isArray(listsRes) ? listsRes : []);
@@ -216,6 +219,8 @@ export function useSessionBootstrap(onSignedOut: () => void) {
     setAuthStatus,
     user,
     setUser,
+    setupPending,
+    setSetupPending,
     stats,
     setStats,
     deck,

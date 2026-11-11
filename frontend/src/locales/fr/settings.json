@@ -458,7 +458,8 @@
     "dataDeleted": "Toutes tes données ont été supprimées.",
     "actionFailed": "L'action a échoué",
     "confirmRevokeAll": "Veux-tu vraiment mettre fin à toutes les sessions actives sur tous les appareils ? Tu seras également déconnecté sur cet appareil.",
-    "emailLogin": "Adresse e-mail (connexion)"
+    "emailLogin": "Adresse e-mail (connexion)",
+    "noEmail": "Pas encore d'adresse e-mail. Sans elle, pas de « mot de passe oublié » ni d'e-mails ; une nouvelle adresse est prise en compte après un clic sur le lien de confirmation."
   },
   "users": {
     "title": "Utilisateurs, rôles & invitations",

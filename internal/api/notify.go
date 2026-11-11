@@ -527,7 +527,8 @@ func (s *Server) deliver(userID, heading string, out channelItems, summary bool,
 	lang := s.userLanguage(userID)
 	heading = i18n.T(lang, heading)
 	var firstErr error
-	if len(emailItems) > 0 {
+	// An account without an address (first admin from ADMIN_USER without ADMIN_EMAIL) gets no mails
+	if len(emailItems) > 0 && u.Email != "" {
 		to := u.Email // the confirmed login address
 		subject := "MindSift: " + heading
 		if len(emailItems) == 1 {
