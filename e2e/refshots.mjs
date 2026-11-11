@@ -41,6 +41,7 @@ async function open(browser, token, options) {
     ([t]) => {
       localStorage.setItem('mindsift_jwt_token', t);
       localStorage.setItem('mindsift_active_theme', 'dark');
+      localStorage.setItem('mindsift:demo-hint-closed', '1'); // the demo's public notice is not part of the pictures
     },
     [token]
   );

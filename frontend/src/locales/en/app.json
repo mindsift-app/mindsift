@@ -80,7 +80,11 @@
     "resetEvery": "This test instance is reset to its initial state automatically every {{count}} minutes.",
     "resetIn": "Reset in {{time}}",
     "resetting": "resetting…",
-    "label": "✨ Demo ·"
+    "label": "✨ Demo ·",
+    "publicHint_one": "Public demo: everyone signs in with the same accounts and sees what others enter. It resets every minute – please don't enter anything private.",
+    "publicHint_other": "Public demo: everyone signs in with the same accounts and sees what others enter. It resets every {{count}} minutes – please don't enter anything private.",
+    "publicHintNoReset": "Public demo: everyone signs in with the same accounts and sees what others enter – please don't enter anything private.",
+    "closeHint": "Close notice"
   },
   "connecting": "Connecting to MindSift…",
   "appLoad": {

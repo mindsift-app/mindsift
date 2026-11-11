@@ -80,7 +80,11 @@
     "resetEvery": "Esta instancia de prueba se restablece automáticamente a su estado original cada {{count}} minutos.",
     "resetIn": "Reinicio en {{time}}",
     "resetting": "restableciendo…",
-    "label": "✨ Demo ·"
+    "label": "✨ Demo ·",
+    "publicHint_one": "Demo pública: todos entran con las mismas cuentas y ven lo que escriben los demás. Se restablece cada minuto; no escribas nada privado.",
+    "publicHint_other": "Demo pública: todos entran con las mismas cuentas y ven lo que escriben los demás. Se restablece cada {{count}} minutos; no escribas nada privado.",
+    "publicHintNoReset": "Demo pública: todos entran con las mismas cuentas y ven lo que escriben los demás; no escribas nada privado.",
+    "closeHint": "Cerrar aviso"
   },
   "connecting": "Conectando con MindSift…",
   "appLoad": {

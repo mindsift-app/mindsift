@@ -16,6 +16,7 @@ Fixes from the security review of November 2026 (v0.94.0).
 - The image is built for arm64 as well as amd64: it runs on a Raspberry Pi with a 64-bit system, on Apple Silicon and on ARM cloud servers. `docker pull` picks the right one by itself.
 - Releases have the server attached as a single file for Linux (amd64 and arm64), with the frontend inside, for running MindSift without a container. Started this way it also keeps what it creates in `data/` to itself (files 0600, folders 0700), as the container does.
 - `Doku/api/openapi.json` lists every route of the API with a short description (OpenAPI 3.1); a test fails when the router and the file disagree.
+- The demo says that it is public: a line on the sign-in page and a slim notice under the header (until closed) tell that everyone uses the same accounts, that it resets every `DEMO_RESET_MINUTES` minutes and not to enter anything private.
 
 ### Changed
 - **Attention:** a new login address or a new alarm address (other than the login address) only counts once its owner clicks the link mailed to it; until then the old one stays in use and the settings show the new one as waiting, with "Send link again" and "Keep the previous one". Without a mail server the address keeps waiting. Existing addresses stay as they are.

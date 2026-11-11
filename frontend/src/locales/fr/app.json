@@ -80,7 +80,11 @@
     "resetEvery": "Cette instance de test est réinitialisée automatiquement à son état initial toutes les {{count}} minutes.",
     "resetIn": "Réinitialisation dans {{time}}",
     "resetting": "réinitialisation…",
-    "label": "✨ Démo ·"
+    "label": "✨ Démo ·",
+    "publicHint_one": "Démo publique : tout le monde se connecte avec les mêmes comptes et voit ce que les autres saisissent. Elle est réinitialisée chaque minute – n'y mets rien de privé.",
+    "publicHint_other": "Démo publique : tout le monde se connecte avec les mêmes comptes et voit ce que les autres saisissent. Elle est réinitialisée toutes les {{count}} minutes – n'y mets rien de privé.",
+    "publicHintNoReset": "Démo publique : tout le monde se connecte avec les mêmes comptes et voit ce que les autres saisissent – n'y mets rien de privé.",
+    "closeHint": "Fermer l'avis"
   },
   "connecting": "Connexion à MindSift…",
   "appLoad": {
