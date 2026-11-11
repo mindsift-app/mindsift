@@ -11,6 +11,7 @@ Versions before 0.80.0 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 Fixes from the security review of November 2026 (v0.94.0).
 
 ### Added
+- The image has a health check (`/api/v1/health` every 30 s), so `docker ps`, Portainer and Dockge show whether MindSift is healthy and other services can wait for it with `depends_on: condition: service_healthy`. `docker-compose.yml` repeats it as `healthcheck:`, because Podman ignores the check in the image; with Podman, copy that block into your own compose file.
 - Administration → Server: "Push only via known push services" lets the admin limit web push to the services of Google (Chrome, Edge, Android), Mozilla, Apple and Microsoft. Off by default, so any browser keeps working.
 - The OAuth consent page warns when the way back after allowing access does not lead to a known AI service (claude.ai, chatgpt.com) or your own computer: anybody can register a connector under the name "Claude".
 - The image is built for arm64 as well as amd64: it runs on a Raspberry Pi with a 64-bit system, on Apple Silicon and on ARM cloud servers. `docker pull` picks the right one by itself.
