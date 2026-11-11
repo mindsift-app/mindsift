@@ -1,6 +1,7 @@
 // Offline work in notes with real browsers: opening a note without connection, changes in a note that was
-// left offline, a conflict with someone editing the same bullet live, and unsent changes surviving a
-// browser restart. Needs a server in demo mode (accounts admin/admin and user/user); see e2e/README.md.
+// left offline, a conflict with someone editing the same bullet live, unsent changes surviving a browser
+// restart, the note tree after starting offline, and merging with someone who worked on the note meanwhile.
+// Needs a server in demo mode (accounts admin/admin and user/user); see e2e/README.md.
 import { chromium } from 'playwright';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -39,7 +40,9 @@ async function waitFor(fn, ms) {
 
 const serverBlocks = async (token, docId) => {
   const snap = await api(token, 'GET', `/api/v1/docs/${docId}/snapshot`);
-  return snap.blocks.filter((b) => !b.deleted);
+  // In the order of the note (all test notes are flat)
+  const byOrder = (a, b) => (a.orderKey < b.orderKey ? -1 : a.orderKey > b.orderKey ? 1 : a.id < b.id ? -1 : 1);
+  return snap.blocks.filter((b) => !b.deleted).sort(byOrder);
 };
 const serverTexts = async (token, docId) => (await serverBlocks(token, docId)).map((b) => b.content);
 
@@ -248,6 +251,155 @@ const main = async () => {
       check(!!sent, 'Restarted online: sent at app start without opening the note');
       await ctx.close();
     } finally {
+      rmSync(profile, { recursive: true, force: true });
+    }
+  }
+
+  // 5. The note tree offline: after starting the browser without connection all folders and notes are in the
+  //    tree; the notes opened on this device open with their text, one never opened here says so
+  {
+    const folder = `Offline Baum ${stamp}`;
+    const sub = `Unterordner ${stamp}`;
+    await api(admin, 'POST', '/api/v1/folders', { path: folder });
+    await api(admin, 'POST', '/api/v1/folders', { path: `${folder}/${sub}` });
+    const notes = [
+      { title: `Baum oben ${stamp}`, path: '', bullet: 'Text oben' },
+      { title: `Baum Ordner ${stamp}`, path: folder, bullet: 'Text im Ordner' },
+      { title: `Baum tief ${stamp}`, path: `${folder}/${sub}`, bullet: 'Text im Unterordner' },
+      { title: `Baum nie ${stamp}`, path: `${folder}/${sub}`, bullet: 'Nie hier geöffnet' },
+    ];
+    for (const n of notes) {
+      await api(admin, 'POST', '/api/v1/documents', {
+        title: n.title,
+        folderPath: n.path,
+        blocks: [{ id: `off_${Date.now()}_${n.bullet.length}`, type: 'bullet', content: n.bullet, level: 0 }],
+      });
+    }
+    // Opens the folders on the way (the tree remembers them), then the note
+    const showInTree = async (page, n) => {
+      for (const name of [folder, sub].slice(0, n.path ? n.path.split('/').length : 0)) {
+        if ((await page.getByText(n.title, { exact: true }).count()) === 0) {
+          await page.getByRole('button', { name, exact: true }).first().click();
+          await sleep(300);
+        }
+      }
+      return (await page.getByText(n.title, { exact: true }).count()) > 0;
+    };
+    const profile = mkdtempSync(join(tmpdir(), 'mindsift-offline-'));
+    try {
+      let ctx = await chromium.launchPersistentContext(profile, { viewport: { width: 1280, height: 900 }, locale: 'de-DE' });
+      let page = await setup(ctx, admin);
+      await page.goto(BASE);
+      await page.getByRole('button', { name: /Workspace/ }).first().click();
+      for (const n of notes.slice(0, 3)) {
+        await showInTree(page, n);
+        await page.getByText(n.title, { exact: true }).first().click();
+        await page.getByText(n.bullet, { exact: true }).first().waitFor({ timeout: 10000 });
+        await sleep(800);
+      }
+      await sleep(1500);
+      await ctx.close();
+
+      ctx = await chromium.launchPersistentContext(profile, { viewport: { width: 1280, height: 900 }, locale: 'de-DE', offline: true });
+      page = await setup(ctx, admin);
+      await page.goto(BASE).catch(() => {});
+      await page.getByRole('button', { name: /Workspace/ }).first().click({ timeout: 10000 }).catch(() => {});
+      const inTree = [];
+      for (const n of notes) inTree.push(await showInTree(page, n).catch(() => false));
+      check(inTree.every(Boolean), `Started offline: every note is in the tree, also in folders and subfolders (${inTree})`);
+      for (const n of notes.slice(0, 3)) {
+        await page.getByText(n.title, { exact: true }).first().click().catch(() => {});
+        const opened = await waitFor(async () => (await page.getByText(n.bullet, { exact: true }).count()) > 0, 5000);
+        check(!!opened, `Started offline: "${n.title.replace(` ${stamp}`, '')}", opened here before, opens with its text`);
+      }
+      await page.getByText(notes[3].title, { exact: true }).first().click().catch(() => {});
+      const hint = await waitFor(async () => (await page.locator('body').innerText()).includes('noch nicht offline verfügbar'), 4000);
+      check(!!hint && (await page.getByText(notes[3].bullet, { exact: true }).count()) === 0, 'Started offline: a note never opened here says it is not available offline');
+      if (process.env.SHOT_DIR) await page.screenshot({ path: `${process.env.SHOT_DIR}/offline-tree.png` });
+      await ctx.close();
+    } finally {
+      rmSync(profile, { recursive: true, force: true });
+    }
+  }
+
+  // 6. Someone else works on the note while I am offline: they change another bullet, add one and delete the
+  //    bullet I am typing in. My browser is restarted offline in between (the text is still there). Back
+  //    online everything is merged: no conflict copy, my text brings the deleted bullet back, and both
+  //    browsers show what the server has
+  {
+    const title = `Offline Zusammenführen ${stamp}`;
+    const doc = await newNote(admin, title, ['Eins', 'Zwei', 'Drei', 'Vier']);
+    await api(admin, 'POST', `/api/v1/documents/${doc.id}/shares`, { userId, permission: 'write' });
+    const other = await chromium.launch();
+    const ctxB = await other.newContext({ viewport: { width: 1280, height: 900 }, locale: 'de-DE' });
+    const B = await setup(ctxB, user);
+    const profile = mkdtempSync(join(tmpdir(), 'mindsift-offline-'));
+    try {
+      let ctxA = await chromium.launchPersistentContext(profile, { viewport: { width: 1280, height: 900 }, locale: 'de-DE' });
+      let A = await setup(ctxA, admin);
+      await A.goto(BASE);
+      await B.goto(BASE);
+      await openNote(A, title, 'Eins');
+      await openNote(B, title, 'Eins');
+      await sleep(1500);
+
+      await goOffline(ctxA, A);
+      await typeAtEnd(A, 'Zwei', ' – A offline');
+      await A.keyboard.press('Enter');
+      await A.keyboard.type('Neu von A');
+      await typeAtEnd(A, 'Drei', ' – A offline');
+      await A.getByText('Vier', { exact: true }).first().click();
+      await sleep(1000);
+
+      await typeAtEnd(B, 'Eins', ' – B');
+      await typeAtEnd(B, 'Vier', '');
+      await B.keyboard.press('Enter');
+      await B.keyboard.type('Neu von B');
+      await B.getByText('Eins – B', { exact: true }).first().click();
+      const row = B.getByText('Drei', { exact: true }).first().locator('xpath=ancestor::div[.//button[@title="Block löschen"]][1]');
+      await row.hover();
+      await row.getByTitle('Block löschen').first().click({ force: true });
+      // Deleting puts the cursor into the bullet above (Zwei), which holds it like typing would; leave it and
+      // let its 7 s of grace run out, otherwise my offline text for Zwei rightly becomes a conflict copy
+      await B.getByText('Neu von B', { exact: true }).first().click();
+      const othersDone = await waitFor(async () => {
+        const t = await serverTexts(admin, doc.id);
+        return t.includes('Eins – B') && t.includes('Neu von B') && !t.includes('Drei') ? t : null;
+      }, 8000);
+      check(!!othersDone, `The other person's changes are on the server: ${JSON.stringify(othersDone || (await serverTexts(admin, doc.id)))}`);
+      check(!(await serverTexts(admin, doc.id)).some((t) => t.includes('A offline')), 'Nothing of the offline changes is on the server yet');
+
+      await sleep(9000);
+      await ctxA.close(); // laptop shut down
+      ctxA = await chromium.launchPersistentContext(profile, { viewport: { width: 1280, height: 900 }, locale: 'de-DE', offline: true });
+      A = await setup(ctxA, admin);
+      await A.goto(BASE).catch(() => {});
+      await openNote(A, title, 'Zwei – A offline').catch(() => {});
+      const kept = (await A.locator('body').innerText().catch(() => '')).match(/Zwei – A offline|Neu von A|Drei – A offline/g) || [];
+      check(new Set(kept).size === 3, `Restarted offline: my three changes are still there (${[...new Set(kept)]})`);
+
+      await goOnline(ctxA, A);
+      const want = ['Eins – B', 'Zwei – A offline', 'Neu von A', 'Drei – A offline', 'Vier', 'Neu von B'];
+      const merged = await waitFor(async () => {
+        const t = await serverTexts(admin, doc.id);
+        return want.every((w) => t.includes(w)) ? t : null;
+      }, 15000);
+      const final = merged || (await serverTexts(admin, doc.id));
+      check(JSON.stringify(final) === JSON.stringify(want), `Back online, both sides are merged in order: ${JSON.stringify(final)}`);
+      check(!(await serverBlocks(admin, doc.id)).some((b) => b.props?.conflictOf), 'Different bullets: no conflict copy');
+      const shows = async (page) => {
+        // The bullet with the cursor is a text field, which innerText leaves out
+        const body = await page.evaluate(
+          () => document.body.innerText + '\n' + [...document.querySelectorAll('textarea, input')].map((e) => e.value).join('\n')
+        );
+        return want.every((w) => body.includes(w)) && (await page.getByText('Drei', { exact: true }).count()) === 0;
+      };
+      check(!!(await waitFor(() => shows(A), 10000)), 'My browser shows the merged note');
+      check(!!(await waitFor(() => shows(B), 10000)), "The other person's browser shows the merged note");
+      if (process.env.SHOT_DIR) await B.screenshot({ path: `${process.env.SHOT_DIR}/offline-merge.png` });
+      await ctxA.close();
+    } finally {
+      await other.close();
       rmSync(profile, { recursive: true, force: true });
     }
   }
