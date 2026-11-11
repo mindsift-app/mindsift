@@ -65,6 +65,7 @@ Fixes from the security review of November 2026 (v0.94.0).
 - Long notes no longer stall on the first scroll step: the note's name in the header (phones and narrow windows) is switched on its own instead of rendering every bullet again; on the desktop, where that header does not exist, the same happened for nothing (1000 bullets with a slowed-down CPU: 320 ms to 1 ms).
 - The Kanban board and the task calendar no longer judder on the first scroll step on large boards: while the bar above them scrolls away, only the columns of the first row are restyled instead of every card (400 cards with a slowed-down CPU: 261 ms to 2 ms per scroll step).
 - The startup message in the server log names the port MindSift listens on and, when `BASE_URL` is set, that address, instead of always `http://0.0.0.0:<port>`.
+- The container makes the data folder of older installations private on its first start: the database, keys and media were still readable for group and others, because the stricter permissions only applied to new files. It happens once, only when something there is still open; started with `--user`, only that user's files are changed.
 - The installed app starts offline after its first visit even when the browser has cleared its own cache: the service worker now keeps every file of the app from the moment it installs. Before, the files of the first visit were only in the browser's cache. If a new version replaced the app's files on the server while a page was open, the page reloads once instead of staying blank.
 
 ## [0.94.0] - 2026-11-10
