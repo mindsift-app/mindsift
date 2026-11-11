@@ -1,7 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
-import { PublicNoteView } from './features/public/PublicNoteView';
+import { PublicNote } from './app/PublicNote';
 import { applyLanguage, resolveLanguage } from './i18n';
 import { MobileActionProvider } from './context/MobileActionContext';
 // Texts of the app in the person's language (i18n/index.ts)
@@ -17,10 +17,9 @@ if (publicToken) void applyLanguage(resolveLanguage());
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <MobileActionProvider>{publicToken ? <PublicNoteView token={publicToken} /> : <App />}</MobileActionProvider>
+    <MobileActionProvider>{publicToken ? <PublicNote token={publicToken} /> : <App />}</MobileActionProvider>
   </React.StrictMode>
 );
-
 
 // Service worker for the app shell (offline start, see public/sw.js)
 if ('serviceWorker' in navigator) {

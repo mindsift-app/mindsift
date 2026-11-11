@@ -304,6 +304,7 @@ const main = async () => {
       page = await setup(ctx, admin);
       await page.goto(BASE).catch(() => {});
       await page.getByRole('button', { name: /Workspace/ }).first().click({ timeout: 10000 }).catch(() => {});
+      await waitFor(async () => (await page.getByText(notes[0].title, { exact: true }).count()) > 0, 8000);
       const inTree = [];
       for (const n of notes) inTree.push(await showInTree(page, n).catch(() => false));
       check(inTree.every(Boolean), `Started offline: every note is in the tree, also in folders and subfolders (${inTree})`);
@@ -400,6 +401,72 @@ const main = async () => {
       await ctxA.close();
     } finally {
       await other.close();
+      rmSync(profile, { recursive: true, force: true });
+    }
+  }
+
+  // 7. After the very first visit the whole app works offline: the service worker loads every file of the
+  //    build when it installs. Offline every file of the app that the service worker does not answer is
+  //    refused (routing also switches the browser's HTTP cache off), so only what it keeps counts; then
+  //    every view opens
+  {
+    const profile = mkdtempSync(join(tmpdir(), 'mindsift-offline-'));
+    try {
+      let ctx = await chromium.launchPersistentContext(profile, { viewport: { width: 1280, height: 900 }, locale: 'de-DE' });
+      let page = await setup(ctx, admin);
+      await page.goto(BASE);
+      await page.getByTitle('Benutzermenü öffnen').first().waitFor({ timeout: 10000 });
+      const files = ((await (await fetch(`${BASE}/sw.js`)).text()).match(/"\/assets\/[^"]+"/g) || []).length;
+      const cached = await waitFor(
+        () =>
+          page.evaluate(async (n) => {
+            const keys = await caches.keys();
+            let count = 0;
+            for (const k of keys.filter((k) => k.startsWith('mindsift-assets-'))) count += (await (await caches.open(k)).keys()).length;
+            return count >= n && n > 0 ? count : 0;
+          }, files),
+        20000
+      );
+      check(!!cached, `The service worker keeps every file of the build after the first visit (${cached || 0} of ${files})`);
+      await ctx.close();
+
+      ctx = await chromium.launchPersistentContext(profile, { viewport: { width: 1280, height: 900 }, locale: 'de-DE', offline: true });
+      await ctx.route('**/assets/**', (route) => route.abort());
+      page = await setup(ctx, admin);
+      const errors = [];
+      page.on('pageerror', (e) => errors.push(e.message));
+      await page.goto(BASE).catch(() => {});
+      const started = await waitFor(async () => (await page.getByTitle('Benutzermenü öffnen').count()) > 0, 10000);
+      check(!!started, 'Started offline after one visit: the app opens signed in');
+      const broken = async () => {
+        const body = await page.locator('body').innerText().catch(() => '');
+        return body.includes('Ansicht konnte nicht geladen werden') || body.includes('konnte nicht vollständig geladen werden');
+      };
+      const opened = [];
+      for (const name of ['Workspace', 'Aufgaben', 'Listen', 'Triage']) {
+        await page.getByRole('button', { name: new RegExp(`^${name}`) }).locator('visible=true').first().click().catch(() => {});
+        await sleep(800);
+        if (!(await broken())) opened.push(name);
+      }
+      for (const item of ['Kontoeinstellungen', 'Gruppen', 'Administration']) {
+        await page.getByTitle('Benutzermenü öffnen').first().click().catch(() => {});
+        await page.getByRole('button', { name: item }).first().click({ timeout: 3000 }).catch(() => {});
+        await sleep(800);
+        if (!(await broken())) opened.push(item);
+      }
+      await page.getByTitle('Hilfe & Dokumentation').first().click().catch(() => {});
+      await sleep(800);
+      if (!(await broken())) opened.push('Hilfe');
+      await page.keyboard.press('Control+k');
+      const palette = await waitFor(async () => (await page.getByPlaceholder('Globale Suche in Notizen, Aufgaben und Listen…').count()) > 0, 3000);
+      if (palette) opened.push('Suche');
+      await page.keyboard.press('Escape');
+      check(opened.length === 9, `Started offline: every view opens (${opened.join(', ')})`);
+      const chunkErrors = errors.filter((e) => /dynamically imported module|Importing a module script failed|Failed to fetch/i.test(e));
+      check(chunkErrors.length === 0, `No part of the app is missing offline ${chunkErrors.join(' | ')}`);
+      if (process.env.SHOT_DIR) await page.screenshot({ path: `${process.env.SHOT_DIR}/offline-first-visit.png` });
+      await ctx.close();
+    } finally {
       rmSync(profile, { recursive: true, force: true });
     }
   }

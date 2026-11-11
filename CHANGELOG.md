@@ -39,6 +39,7 @@ Fixes from the security review of November 2026 (v0.94.0).
 - The page description shown by search engines, link previews and the installed app names notes, tasks and shared lists first and the triage last.
 - New tagline "Notes, tasks and a clear head, self-hosted." in the About dialog, the footer of mails, the page description and link previews, in all five languages. It replaces "A clear head in three seconds."
 - The pinned start note of new accounts and the demo is called "Diagrams drawn by an AI agent over MCP"; which agent drew them is said in the note itself.
+- The sign-in page loads about 170 kB (compressed) instead of 530 kB; the rest of the app follows right after signing in, or at once when you are still signed in.
 
 ### Fixed
 - Deleting your data or account asked for the password without counting wrong guesses; now it counts them like failed sign-ins and locks the same way.
@@ -52,6 +53,7 @@ Fixes from the security review of November 2026 (v0.94.0).
 - Lists: after opening a list from the search, a link or a notification, returning to the Lists tab and changes to the lists from elsewhere (a new, renamed or deleted list, an item moved to another list) switched back to that list. Picking the same list a second time from the search did nothing. A list event could also switch to the first list on a device that had no list remembered.
 - Task dialog: following or unfollowing a task while typing its title or notes closed the editor and dropped the text. The title editor started with the title from when the dialog was opened, so saving could write an old title back over a change made elsewhere.
 - The shopping list created for you when you have none is named in your language instead of always "Wocheneinkauf".
+- The installed app starts offline after its first visit even when the browser has cleared its own cache: the service worker now keeps every file of the app from the moment it installs. Before, the files of the first visit were only in the browser's cache. If a new version replaced the app's files on the server while a page was open, the page reloads once instead of staying blank.
 
 ## [0.94.0] - 2026-11-10
 
