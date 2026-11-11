@@ -33,7 +33,6 @@ describe('clicking into an unfocused bullet', () => {
       <OutlinerBlock
         docId="d"
         block={block}
-        index={0}
         isLast
         maxAllowedLevel={1}
         hasChildren={false}
@@ -68,7 +67,6 @@ function renderBlock(block: DocumentBlock, extra: Record<string, unknown> = {}) 
     <OutlinerBlock
       docId="d"
       block={block}
-      index={0}
       isLast
       maxAllowedLevel={1}
       hasChildren={false}
@@ -110,7 +108,6 @@ describe('a bullet someone else is editing', () => {
     <OutlinerBlock
       docId="d"
       block={{ id: 'b1', type: 'bullet', content, level: 0 } as DocumentBlock}
-      index={0}
       isLast
       maxAllowedLevel={1}
       hasChildren={false}
@@ -232,7 +229,6 @@ describe('slash command menu and outliner fixes', () => {
       <OutlinerBlock
         docId="d"
         block={indented}
-        index={0}
         isLast
         maxAllowedLevel={2}
         hasChildren={false}
@@ -255,7 +251,6 @@ describe('slash command menu and outliner fixes', () => {
       <OutlinerBlock
         docId="d"
         block={{ ...indented, level: 0 }}
-        index={0}
         isLast
         maxAllowedLevel={1}
         hasChildren={false}
@@ -290,7 +285,6 @@ describe('slash command menu and outliner fixes', () => {
       <OutlinerBlock
         docId="d"
         block={{ id: 'b1', type: 'bullet', content: '', level: 1 } as DocumentBlock}
-        index={0}
         isLast={false}
         siblingFollows
         maxAllowedLevel={2}
@@ -333,7 +327,6 @@ describe('slash command menu and outliner fixes', () => {
       <OutlinerBlock
         docId="d"
         block={{ ...block, content: 'Siehe' }}
-        index={0}
         isLast
         maxAllowedLevel={1}
         hasChildren={false}

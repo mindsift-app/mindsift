@@ -57,7 +57,6 @@ describe('/secret', () => {
         <OutlinerBlock
           docId="doc1"
           block={blk}
-          index={0}
           isLast
           maxAllowedLevel={0}
           hasChildren={false}
