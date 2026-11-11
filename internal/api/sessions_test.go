@@ -17,6 +17,8 @@ func sessionCall(router http.Handler, method, path, token, body, ua string) *htt
 	req := httptest.NewRequest(method, path, strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("User-Agent", ua)
+	// Like the app, which always sends its language; without it errors come in English
+	req.Header.Set("Accept-Language", "de")
 	if token != "" {
 		req.Header.Set("Authorization", "Bearer "+token)
 	}
