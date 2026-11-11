@@ -310,14 +310,12 @@ export const TasksView: React.FC<TasksViewProps> = ({
     [setSelectedListId]
   );
 
-  const onRefreshStatsRef = useRef(onRefreshStats);
-  onRefreshStatsRef.current = onRefreshStats;
   // The realtime handler is registered once; it must reload with the current list, not the first one
   const loadDataRef = useRef(loadData);
   loadDataRef.current = loadData;
 
   // Live-Sync of tasks and task lists (useTaskRealtime)
-  useTaskRealtime({ setTasks, setTaskLists, listIdRef: selectedListIdRef, onRefreshStatsRef, loadDataRef });
+  useTaskRealtime({ setTasks, setTaskLists, listIdRef: selectedListIdRef, loadDataRef });
 
   const safeTaskLists = useMemo(() => (Array.isArray(taskLists) ? taskLists : []), [taskLists]);
   const currentSelectedList = safeTaskLists.find((l) => l.id === selectedListId);

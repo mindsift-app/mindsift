@@ -96,6 +96,7 @@ export const App: React.FC = () => {
     setDeck,
     lists,
     refreshAll,
+    refreshStats,
     demoDeadline,
     dataEpoch,
     demoNotice,
@@ -740,7 +741,7 @@ export const App: React.FC = () => {
             {activeTab === 'tasks' && (
               <views.TasksView
                 currentUser={user}
-                onRefreshStats={refreshAll}
+                onRefreshStats={refreshStats}
                 onOpenDocument={handleOpenDocument}
                 refreshTrigger={refreshRevision}
                 initialSelectedTaskId={selectedTaskId}
@@ -756,7 +757,7 @@ export const App: React.FC = () => {
                 initialBlockId={selectedBlockId}
                 openDocNonce={openDocNonce}
                 demoMode={!!authStatus.demoMode}
-                onStatsChange={refreshAll}
+                onStatsChange={refreshStats}
                 onOpenTask={handleOpenTask}
                 onOpenSearch={() => setShowCommandPalette(true)}
               />
