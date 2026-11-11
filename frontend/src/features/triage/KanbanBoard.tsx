@@ -132,7 +132,7 @@ export function KanbanBoard({
       {kanbanTouch.ghost}
       <div
         ref={kanbanBoardRef}
-        className={`grid grid-cols-1 md:grid-cols-2 gap-3 pt-1 lg:w-[var(--kanban-w)] lg:ml-[var(--kanban-ml)] transition-[width,margin] duration-300 ease-out ${
+        className={`grid grid-cols-1 md:grid-cols-2 gap-3 pt-1 lg:w-[var(--kanban-w)] lg:ml-[var(--kanban-ml)] ${
           isKanbanWide ? 'lg:grid-cols-[repeat(var(--kanban-cols),minmax(0,1fr))]' : 'lg:grid-cols-4'
         }`}
         style={kanbanBoardStyle(isKanbanWide, boardColumns.length)}

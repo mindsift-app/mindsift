@@ -35,6 +35,14 @@ export function useKanbanLayout({ isKanban, isCalendar = false, isKanbanWide, co
   // The first column is lower by the bar above the board, so it shows completely at the page top (its
   // snap point); a swipe then goes on to the second one
   const [kanbanPhoneFirstHeight, setKanbanPhoneFirstHeight] = useState(0);
+  // Stretching the board to full width or back switches at once (animating width and margin laid out and
+  // painted the whole board on every frame) and fades in: opacity runs on the compositor
+  const wideBefore = useRef(isKanbanWide);
+  useEffect(() => {
+    if (wideBefore.current === isKanbanWide) return;
+    wideBefore.current = isKanbanWide;
+    kanbanBoardRef.current?.animate?.([{ opacity: 0.35 }, { opacity: 1 }], { duration: 200, easing: 'ease-out' });
+  }, [isKanbanWide]);
   useEffect(() => {
     if (!isKanban && !isCalendar) {
       setKanbanColHeight(null);
@@ -88,17 +96,8 @@ export function useKanbanLayout({ isKanban, isCalendar = false, isKanbanWide, co
       });
     };
     fit();
-    // The board's width animates when it is stretched to full width or back: measure again at the end
-    const board = kanbanBoardRef.current;
-    const onTransitionEnd = (e: TransitionEvent) => {
-      if (e.target === board) fit();
-    };
     window.addEventListener('resize', fit);
-    board?.addEventListener('transitionend', onTransitionEnd);
-    return () => {
-      window.removeEventListener('resize', fit);
-      board?.removeEventListener('transitionend', onTransitionEnd);
-    };
+    return () => window.removeEventListener('resize', fit);
   }, [isKanban, isCalendar, isKanbanWide, columnCount, listId, loading]);
 
 
