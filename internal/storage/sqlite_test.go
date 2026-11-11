@@ -2,6 +2,7 @@ package storage
 
 import (
 	"errors"
+	"fmt"
 	"path/filepath"
 	"testing"
 
@@ -774,5 +775,37 @@ func openSharing(t *testing.T, store *Store) {
 	sys.SharingMode = SharingOpen
 	if err := store.UpdateSystemSettings(sys); err != nil {
 		t.Fatalf("UpdateSystemSettings: %v", err)
+	}
+}
+
+// The engine built into the binary: at least the SQLite go.mod pins (an accidental downgrade of
+// modernc.org/sqlite would bring back older SQLite bugs), with FTS5 for the search, and the file opened in
+// WAL mode as the DSN asks.
+func TestSQLiteEngine(t *testing.T) {
+	store, err := NewStore(filepath.Join(t.TempDir(), "engine.db"))
+	if err != nil {
+		t.Fatalf("NewStore: %v", err)
+	}
+	defer store.Close()
+
+	v, err := store.SQLiteVersion()
+	if err != nil {
+		t.Fatalf("SQLiteVersion: %v", err)
+	}
+	var major, minor int
+	if _, err := fmt.Sscanf(v, "%d.%d", &major, &minor); err != nil {
+		t.Fatalf("unexpected version %q: %v", v, err)
+	}
+	if major != 3 || minor < 54 {
+		t.Fatalf("SQLite %s is older than 3.54", v)
+	}
+
+	var fts5 int
+	if err := store.db.QueryRow(`SELECT sqlite_compileoption_used('ENABLE_FTS5')`).Scan(&fts5); err != nil || fts5 != 1 {
+		t.Fatalf("FTS5 not compiled in (%d, %v)", fts5, err)
+	}
+	var mode string
+	if err := store.db.QueryRow(`PRAGMA journal_mode`).Scan(&mode); err != nil || mode != "wal" {
+		t.Fatalf("journal_mode = %q (%v), want wal", mode, err)
 	}
 }

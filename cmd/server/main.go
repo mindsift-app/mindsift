@@ -47,6 +47,9 @@ func main() {
 	}
 	defer store.Close()
 	store.ConfiguredLanguage = cfg.DefaultLanguage
+	if v, err := store.SQLiteVersion(); err == nil {
+		slog.Info("Database opened", "sqlite", v)
+	}
 
 	if cfg.DemoMode {
 		slog.Info("Demo mode: resetting the database and setting up the demo accounts...")
