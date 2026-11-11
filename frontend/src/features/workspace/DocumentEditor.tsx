@@ -347,7 +347,9 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
     };
   }, [keyboardOpen, visibleHeight, embedded]);
   // The header repeats the title only once the big title has scrolled out of view
-  const [titleScrolledAway, setTitleScrolledAway] = useState(false);
+  // The note's name in the sticky header once the title has scrolled away. Switched on the element itself:
+  // as state of the editor it rendered every bullet of the note again on the first scroll step
+  const titleIndicatorRef = useRef<HTMLDivElement>(null);
   const outlinerTreeRef = useRef<OutlinerTreeHandle | null>(null);
   const docRef = useRef<Document | null>(doc);
   docRef.current = doc;
@@ -384,12 +386,18 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
   useEffect(() => {
     const root = scrollRef.current;
     const el = titleInputRef.current;
+    const show = (shown: boolean) => {
+      const indicator = titleIndicatorRef.current;
+      if (!indicator) return;
+      indicator.dataset.shown = String(shown);
+      indicator.setAttribute('aria-hidden', String(!shown));
+    };
     if (embedded || !root || !el || typeof IntersectionObserver === 'undefined') {
-      setTitleScrolledAway(false);
+      show(false);
       return;
     }
     const observer = new IntersectionObserver(
-      ([entry]) => setTitleScrolledAway(!entry.isIntersecting),
+      ([entry]) => show(!entry.isIntersecting),
       // the sticky header covers the top of the scroll area
       { root, rootMargin: '-56px 0px 0px 0px' }
     );
@@ -1745,10 +1753,10 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
             breadcrumbNav
           ) : (
             <div
-              className={`flex min-w-0 items-center gap-1.5 text-xs text-muted transition-opacity duration-200 ${
-                titleScrolledAway ? 'opacity-100' : 'opacity-0 pointer-events-none'
-              }`}
-              aria-hidden={!titleScrolledAway}
+              ref={titleIndicatorRef}
+              data-shown="false"
+              aria-hidden="true"
+              className="flex min-w-0 items-center gap-1.5 text-xs text-muted transition-opacity duration-200 opacity-0 pointer-events-none data-[shown=true]:opacity-100 data-[shown=true]:pointer-events-auto"
             >
               <FileText className="w-3.5 h-3.5 text-accent shrink-0" />
               <span className="truncate max-w-[180px] font-medium text-main">
