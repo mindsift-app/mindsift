@@ -83,19 +83,27 @@ func (s *Server) startBackupScheduler() {
 	}
 	for range ticker.C {
 		sys, err := s.store.GetSystemSettings()
-		if err != nil || sys == nil || !sys.BackupEnabled {
+		if err != nil {
 			continue
 		}
 		now := time.Now()
-		today := now.Format("2006-01-02")
-		if lastRun == today || now.Format("15:04") < sys.BackupTime {
+		if !backupDue(sys, lastRun, now) {
 			continue
 		}
-		lastRun = today
+		lastRun = now.Format("2006-01-02")
 		if _, err := s.runBackups(); err != nil {
 			slog.Error("Automatic backup failed", "error", err)
 		}
 	}
+}
+
+// backupDue: the settings read on this tick ask for a run at now (switched on, the time of day reached,
+// none yet on now's date). lastRun is the date (YYYY-MM-DD) of the last run.
+func backupDue(sys *domain.SystemSettings, lastRun string, now time.Time) bool {
+	if sys == nil || !sys.BackupEnabled {
+		return false
+	}
+	return lastRun != now.Format("2006-01-02") && now.Format("15:04") >= sys.BackupTime
 }
 
 func (s *Server) handleAdminListBackups(w http.ResponseWriter, r *http.Request) {

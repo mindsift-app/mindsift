@@ -129,8 +129,8 @@ func (s *Server) handleFirstBootSetup(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "Ungültige Anfrage")
 		return
 	}
-	if req.DefaultLanguage != "" && !i18n.Valid(req.DefaultLanguage) {
-		writeError(w, http.StatusBadRequest, "Diese Sprache gibt es nicht")
+	if err := req.check(); err != nil {
+		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
 	if strings.TrimSpace(req.Email) == "" {
@@ -181,11 +181,32 @@ type setupChoices struct {
 	SharingMode       string `json:"sharingMode"`
 	CreateSampleData  bool   `json:"createSampleData"`
 	DefaultLanguage   string `json:"defaultLanguage"`
+	// Daily backups: left out, the stored settings stay (off on a new server)
+	BackupEnabled       *bool  `json:"backupEnabled"`
+	BackupTime          string `json:"backupTime"`
+	BackupRetentionDays *int   `json:"backupRetentionDays"`
+}
+
+// check refuses what the setup cannot store: an unknown language, a backup time other than HH:MM, a
+// retention outside 1 to 365 days. The admin settings keep the old value for such input; here the wizard
+// says so before anything is created.
+func (c setupChoices) check() error {
+	if c.DefaultLanguage != "" && !i18n.Valid(c.DefaultLanguage) {
+		return storage.ErrInvalidLanguage
+	}
+	if c.BackupTime != "" && !storage.ValidBackupTime(c.BackupTime) {
+		return storage.ErrBackupTime
+	}
+	if c.BackupRetentionDays != nil && !storage.ValidBackupRetentionDays(*c.BackupRetentionDays) {
+		return storage.ErrBackupRetention
+	}
+	return nil
 }
 
 // applySetupChoices stores what the wizard asked besides the account: the language (the server's default
-// and the admin's own), instance name, registration, sharing mode with the first organization, and sample
-// data for the admin. The language was checked by the caller.
+// and the admin's own), instance name, registration, sharing mode with the first organization, daily
+// backups, and sample data for the admin. The caller has run check. The backup scheduler reads the
+// settings every minute, so switched on here the first run follows without a restart.
 func (s *Server) applySetupChoices(r *http.Request, user *domain.User, c setupChoices) error {
 	lang := c.DefaultLanguage
 	if lang == "" {
@@ -205,6 +226,15 @@ func (s *Server) applySetupChoices(r *http.Request, user *domain.User, c setupCh
 			sys.RegistrationMode = storage.RegistrationOpen
 		}
 		sys.SharingMode = storage.NormalizeSharingMode(c.SharingMode)
+		if c.BackupEnabled != nil {
+			sys.BackupEnabled = *c.BackupEnabled
+		}
+		if c.BackupTime != "" {
+			sys.BackupTime = c.BackupTime
+		}
+		if c.BackupRetentionDays != nil {
+			sys.BackupRetentionDays = *c.BackupRetentionDays
+		}
 		if err := s.store.UpdateSystemSettings(sys); err != nil {
 			return err
 		}

@@ -207,6 +207,8 @@ var messagesIT = map[string]string{
 	"Ticket konnte nicht erstellt werden":                                           "Non è stato possibile creare il ticket",
 	"Token konnte nicht erstellt werden":                                            "Non è stato possibile creare il token",
 	"Unbekannte Sicherung":                                                          "Backup sconosciuto",
+	"Ungültige Uhrzeit für die Backups (HH:MM)":                                     "Orario dei backup non valido (HH:MM)",
+	"Ungültige Aufbewahrung der Backups (1 bis 365 Tage)":                           "Conservazione dei backup non valida (da 1 a 365 giorni)",
 	"Unbekannte Wiederholung (erlaubt: täglich, wöchentlich, monatlich, jährlich)":  "Ripetizione sconosciuta (consentite: giornaliera, settimanale, mensile, annuale)",
 	"Unbekannter Alarm-Kanal (erlaubt: email, discord, webhook)":                    "Canale di allarme sconosciuto (consentiti: email, discord, webhook)",
 	"Unbekanntes Tool":                                                              "Strumento sconosciuto",

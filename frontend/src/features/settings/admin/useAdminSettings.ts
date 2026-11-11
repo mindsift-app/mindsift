@@ -3,6 +3,7 @@ import i18n from '../../../i18n';
 import { Organization, SharingMode, SystemSettings, User, UserInvite, UserRole } from '../../../lib/types';
 import { api, setCurrentPeopleSearch, setCurrentSharingMode, triggerHaptic } from '../../../lib/api';
 import { passwordProblem } from '../../../lib/password';
+import { DEFAULT_BACKUP_RETENTION_DAYS, DEFAULT_BACKUP_TIME } from '../../../lib/backupDefaults';
 import { askConfirm } from '../../../components/askConfirm';
 
 // The three sharing modes, stricter first; texts in settings:sharing.<id> in the language shown when read
@@ -113,8 +114,8 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
           pushKnownServicesOnly: Boolean(sys.pushKnownServicesOnly),
           smtpConfiguredViaEnv: Boolean(sys.smtpConfiguredViaEnv),
           backupEnabled: Boolean(sys.backupEnabled),
-          backupTime: sys.backupTime || '03:00',
-          backupRetentionDays: sys.backupRetentionDays || 3,
+          backupTime: sys.backupTime || DEFAULT_BACKUP_TIME,
+          backupRetentionDays: sys.backupRetentionDays || DEFAULT_BACKUP_RETENTION_DAYS,
           retentionAllowNever: sys.retentionAllowNever ?? true,
           retentionNeverViaEnv: Boolean(sys.retentionNeverViaEnv),
           mcpEnabled: sys.mcpEnabled ?? true,

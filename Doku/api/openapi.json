@@ -437,7 +437,7 @@
     "/api/v1/admin/setup": {
       "post": {
         "summary": "Finish the first-time setup after an admin from ADMIN_USER",
-        "description": "The setup wizard's instance settings for an administrator created by ADMIN_USER/ADMIN_PASSWORD (instanceName, allowRegistration, sharingMode, createSampleData, defaultLanguage, as in /auth/setup). Only while GET /auth/me says setupPending, once; afterwards 409",
+        "description": "The setup wizard's instance settings for an administrator created by ADMIN_USER/ADMIN_PASSWORD (instanceName, allowRegistration, sharingMode, createSampleData, defaultLanguage, backupEnabled, backupTime, backupRetentionDays, as in /auth/setup, with the same 400s). Only while GET /auth/me says setupPending, once; afterwards 409",
         "tags": [
           "Administration"
         ],
@@ -811,7 +811,7 @@
     "/api/v1/auth/setup": {
       "post": {
         "summary": "Create the first administrator",
-        "description": "First administrator account (email, password, displayName, instanceName, allowRegistration, sharingMode, createSampleData, defaultLanguage: becomes the server's default language and the admin's own, 400 for unknown codes); only while no accounts exist (403 afterwards, also when ADMIN_USER/ADMIN_PASSWORD created the admin at startup). The body must be sent as Content-Type: application/json (415 otherwise). Sample data comes in German for German accounts, otherwise in English",
+        "description": "First administrator account (email, password, displayName, instanceName, allowRegistration, sharingMode, createSampleData, defaultLanguage: becomes the server's default language and the admin's own, 400 for unknown codes; backupEnabled, backupTime (HH:MM, server time zone), backupRetentionDays (1–365): daily backups as in the admin settings, left out = unchanged (off, 03:00, 3 days on a new server), 400 for another time format or retention, before the account is created); only while no accounts exist (403 afterwards, also when ADMIN_USER/ADMIN_PASSWORD created the admin at startup). The body must be sent as Content-Type: application/json (415 otherwise). Sample data comes in German for German accounts, otherwise in English",
         "tags": [
           "Public"
         ],

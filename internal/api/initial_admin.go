@@ -11,7 +11,6 @@ import (
 
 	"github.com/mindsift-app/mindsift/internal/auth"
 	"github.com/mindsift-app/mindsift/internal/domain"
-	"github.com/mindsift-app/mindsift/internal/i18n"
 	"github.com/mindsift-app/mindsift/internal/storage"
 )
 
@@ -123,8 +122,8 @@ func (s *Server) handleFinishSetup(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "Ungültige Anfrage")
 		return
 	}
-	if req.DefaultLanguage != "" && !i18n.Valid(req.DefaultLanguage) {
-		writeError(w, http.StatusBadRequest, "Diese Sprache gibt es nicht")
+	if err := req.check(); err != nil {
+		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
 	user, err := s.store.GetUserByID(auth.GetUserID(r.Context()))

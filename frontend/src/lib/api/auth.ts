@@ -50,6 +50,9 @@ export const authApi = {
     allowRegistration?: boolean;
     createSampleData?: boolean;
     defaultLanguage?: string;
+    backupEnabled?: boolean;
+    backupTime?: string;
+    backupRetentionDays?: number;
   }): Promise<{ token: string; user: User }> {
     const res = await request<{ token: string; user: User }>('/api/v1/auth/setup', {
       method: 'POST',
@@ -66,6 +69,9 @@ export const authApi = {
     allowRegistration?: boolean;
     createSampleData?: boolean;
     defaultLanguage?: string;
+    backupEnabled?: boolean;
+    backupTime?: string;
+    backupRetentionDays?: number;
   }): Promise<void> {
     await request<{ done: boolean }>('/api/v1/admin/setup', {
       method: 'POST',
