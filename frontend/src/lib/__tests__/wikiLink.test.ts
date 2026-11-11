@@ -68,4 +68,12 @@ describe('wiki links', () => {
     expect(isNoteLinkOnly('[[Konzept: Garten]] und mehr')).toBe(false);
     expect(isNoteLinkOnly('Garten')).toBe(false);
   });
+
+  it('reads and keeps the escaped pipe of a link in a table', () => {
+    expect(parseWikiLink('Homelab#doc_8f3a\\|Text')).toEqual({ title: 'Homelab', docId: 'doc_8f3a', blockId: undefined, label: 'Text' });
+    expect(parseWikiLink('Garten\\|hier').title).toBe('Garten');
+    const table = '| Link |\n| --- |\n| [[Garten\\|hier]] |';
+    expect(retargetWikiLinks(table, { title: 'Garten' }, 'doc_9', 'Garten')).toBe('| Link |\n| --- |\n| [[Garten#doc_9\\|hier]] |');
+    expect(unlinkWikiLinks(table, { title: 'Garten' })).toBe('| Link |\n| --- |\n| hier |');
+  });
 });

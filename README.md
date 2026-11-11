@@ -47,7 +47,7 @@ MindSift is an outliner and a task manager in one self-hosted app, made for more
 ## What's inside
 
 ### 📝 Outliner notes, together, live
-Every thought is a bullet: indent, collapse, zoom in, drag whole branches. Wiki links (even to single bullets, and they survive renaming or moving a note), hashtags, slash commands, code blocks, images, voice notes, live dictation, link previews and hidden values (`/secret` for an IP or a token: stored encrypted, shown only on a tap, never to API keys or AI agents). Several people write in the same note at the same time, without overwriting each other, and it keeps working offline and behind strict proxies. Share a note by public link for a quick look from outside: read only, optionally with a password, always expiring and out of search engines.
+Every thought is a bullet: indent, collapse, zoom in, drag whole branches. Wiki links (even to single bullets, and they survive renaming or moving a note), hashtags, slash commands, code blocks, tables, images, voice notes, live dictation, link previews and hidden values (`/secret` for an IP or a token: stored encrypted, shown only on a tap, never to API keys or AI agents). Several people write in the same note at the same time, without overwriting each other, and it keeps working offline and behind strict proxies. Share a note by public link for a quick look from outside: read only, optionally with a password, always expiring and out of search engines.
 
 Drawings right in a note (`/canvas`): shapes, arrows that dock to them, text and freehand, edited full screen; AI agents can draw flowcharts and mind maps from Mermaid. Focus mode hides everything but the note, with the bar and the folders pinned if you like.
 

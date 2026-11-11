@@ -14,6 +14,24 @@
     "copy": "Copiar",
     "plain": "Texto"
   },
+  "table": {
+    "menu": "Tabla: líneas y columnas",
+    "addColumn": "Añadir columna",
+    "lines": {
+      "fade": "Estándar: líneas interiores",
+      "grid": "Marco completo",
+      "header": "Encabezado y columnas"
+    },
+    "insertColumnLeft": "Insertar columna a la izquierda",
+    "insertColumnRight": "Insertar columna a la derecha",
+    "deleteRow": "Eliminar fila",
+    "deleteColumn": "Eliminar columna",
+    "needCell": "Primero toca una celda",
+    "onlyRow": "Siempre queda una fila",
+    "onlyColumn": "Siempre queda una columna",
+    "headerCell": "Encabezado, columna {{col}}",
+    "cell": "Fila {{row}}, columna {{col}}"
+  },
   "editor": {
     "newNote": "Nueva nota",
     "untitled": "Nota sin título",
@@ -81,7 +99,8 @@
       "drawing": "Dibujo",
       "image": "Imagen",
       "audio": "Audio",
-      "divider": "Separador"
+      "divider": "Separador",
+      "table": "Tabla"
     },
     "noteFull": "Esta nota ha alcanzado su máximo de {{max}} puntos. Los puntos nuevos no se guardan: añádelos en una nota nueva."
   },
@@ -94,6 +113,7 @@
     "h2": "Encabezado de sección",
     "h3": "Subsección",
     "code": "Bloque de código con resaltado de sintaxis",
+    "table": "Tabla con fila de encabezado",
     "callout": "Cuadro destacado (callout)",
     "warning": "Advertencia en amarillo",
     "error": "Error en rojo",

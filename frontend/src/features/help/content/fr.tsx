@@ -22,6 +22,7 @@ import {
   KeyRound,
   Shapes,
   CloudOff,
+  Table as TableIcon,
 } from 'lucide-react';
 import type { HelpContent } from './types';
 
@@ -128,6 +129,10 @@ const fr: HelpContent = {
                 <Code className="w-3.5 h-3.5 text-accent" />
                 <span>/code (bloc de code)</span>
               </div>
+              <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main col-span-2">
+                <TableIcon className="w-3.5 h-3.5 text-accent shrink-0" />
+                <span>/table ou /tableau (tableau avec ligne d’en-tête)</span>
+              </div>
               <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main">
                 <KeyRound className="w-3.5 h-3.5 text-accent" />
                 <span>/secret (masquer une valeur, p. ex. une IP ou un jeton)</span>
@@ -208,6 +213,39 @@ const fr: HelpContent = {
             </li>
             <li>
               <strong className="text-main">Partout :</strong> La recherche trouve les mots des dessins, copier-coller conserve le dessin et l’export Markdown le contient en image SVG (l’import en refait un dessin). Les agents IA (MCP) lisent une description du dessin et peuvent eux-mêmes créer des dessins à partir d’organigrammes et de cartes mentales Mermaid.
+            </li>
+          </ul>
+        </div>
+      ),
+    },
+    // WORKSPACE: TABLES
+    {
+      id: 'workspace-tables',
+      category: 'workspace',
+      title: 'Tableaux (/table)',
+      subtitle: 'Lignes et colonnes directement dans la note',
+      icon: TableIcon,
+      keywords: ['tableau', 'table', 'lignes', 'colonnes', 'en-tête', 'traits', 'cadre', 'markdown'],
+      content: (
+        <div className="space-y-2 text-muted leading-relaxed">
+          <ul className="space-y-1.5">
+            <li>
+              <strong className="text-main">En créer un :</strong> Tape <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">/table</kbd> (ou <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">/tableau</kbd>) dans une puce : un tableau de 2 colonnes et 2 lignes apparaît, le texte déjà présent dans la puce va dans la première cellule. La première ligne est l’en-tête (en gras).
+            </li>
+            <li>
+              <strong className="text-main">Saisir :</strong> <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Entrée</kbd> ajoute une ligne sous la ligne actuelle, <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Tab</kbd> / <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Maj + Tab</kbd> passent d’une cellule à l’autre (Tab dans la dernière cellule ajoute une ligne), les flèches changent de ligne et quittent le tableau en haut et en bas. <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Retour arrière</kbd> dans une ligne vide la supprime, dans un tableau entièrement vide le tableau. Gras, italique, liens et #hashtags fonctionnent comme dans le texte.
+            </li>
+            <li>
+              <strong className="text-main">Colonnes :</strong> Le <strong className="text-main">+</strong> à droite du tableau ajoute une colonne (sur ordinateur, il apparaît quand la souris survole le tableau). En dessous, les trois points ouvrent le menu : insérer une colonne à gauche ou à droite, supprimer la ligne ou la colonne du curseur, augmenter ou réduire le retrait de la puce.
+            </li>
+            <li>
+              <strong className="text-main">Traits :</strong> Dans le même menu : <em>Standard</em> n’affiche que les traits intérieurs, estompés vers le bord, sans cadre ; <em>Cadre complet</em> tous les traits avec un cadre extérieur (coins selon le thème) ; <em>En-tête et colonnes</em> seulement le trait sous l’en-tête et les traits de colonne.
+            </li>
+            <li>
+              <strong className="text-main">Téléphone :</strong> Les tableaux larges défilent sur le côté, la page ne bouge pas. Les cellules, le + et les trois points sont assez grands pour être touchés.
+            </li>
+            <li>
+              <strong className="text-main">Partout :</strong> La copie, le collage, l’export Markdown et les agents IA (MCP) voient le tableau comme un tableau Markdown ; les tableaux Markdown collés et ceux des tableurs redeviennent un tableau.
             </li>
           </ul>
         </div>

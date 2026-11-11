@@ -32,7 +32,10 @@ type noteBullet struct {
 }
 
 // mcpBulletTypes: the types an agent may give a bullet
-var mcpBulletTypes = map[string]bool{"text": true, "todo": true, "h1": true, "h2": true, "h3": true, "numbered": true, "callout": true, "warning": true, "error": true, drawing.BlockType: true}
+var mcpBulletTypes = map[string]bool{"text": true, "todo": true, "h1": true, "h2": true, "h3": true, "numbered": true, "callout": true, "warning": true, "error": true, "table": true, drawing.BlockType: true}
+
+// errMCPType: an unknown bullet type
+var errMCPType = errors.New("'type': text, todo, h1, h2, h3, numbered, callout, warning, error, table oder drawing")
 
 // errMCPDrawing: the text of a drawing bullet was neither Mermaid nor a drawing model
 var errMCPDrawing = errors.New("Für eine Zeichnung erwartet text Mermaid (flowchart/graph oder mindmap) oder ein MindSift-Zeichnungsmodell (JSON)")
@@ -212,8 +215,9 @@ var mcpWriteTools = []mcpTool{
 	{
 		Name: "add_note_bullet",
 		Description: "Add a bullet to a note: after a bullet (same level), as the last child of a bullet, or at the end. " +
-			"Bullet ids come from get_note. type: text (default), todo, h1, h2, h3, numbered, callout, warning, error, drawing. " +
-			"[[Note title]] links another note (with |text for an own link text); it keeps working when that note is renamed. " + mcpDrawingHelp,
+			"Bullet ids come from get_note. type: text (default), todo, h1, h2, h3, numbered, callout, warning, error, table, drawing. " +
+			"[[Note title]] links another note (with |text for an own link text); it keeps working when that note is renamed. " +
+			"type table: text is a Markdown table (header row, separator row | --- |, rows; a | inside a cell written \\|). " + mcpDrawingHelp,
 		Scope: storage.ScopeNotesWrite,
 		Schema: schema([]string{"noteId", "text"}, map[string]any{
 			"noteId":   prop("string", "Note id"),
@@ -238,7 +242,7 @@ var mcpWriteTools = []mcpTool{
 				a.Type = "text"
 			}
 			if !mcpBulletTypes[a.Type] {
-				return nil, errors.New("'type': text, todo, h1, h2, h3, numbered, callout, warning, error oder drawing")
+				return nil, errMCPType
 			}
 			d, err := s.noteDoc(a.NoteID)
 			if err != nil {
@@ -283,6 +287,9 @@ var mcpWriteTools = []mcpTool{
 					return nil, err
 				}
 			}
+			if a.Type == "table" {
+				text = storage.NormalizeTable(text)
+			}
 			props := collab.Props{Checked: a.Type == "todo" && a.Checked}
 			op := collab.Op{OpID: domain.NewID("op"), Kind: collab.OpInsert, BlockID: id, ParentID: &parent, OrderKey: key, Type: a.Type, Content: &text, Props: &props}
 			if err := s.applyNoteOps(userID, actor, a.NoteID, []collab.Op{op}); err != nil {
@@ -321,7 +328,7 @@ var mcpWriteTools = []mcpTool{
 				return nil, err
 			}
 			if a.Type != nil && !mcpBulletTypes[*a.Type] {
-				return nil, errors.New("'type': text, todo, h1, h2, h3, numbered, callout, warning, error oder drawing")
+				return nil, errMCPType
 			}
 			d, err := s.noteDoc(a.NoteID)
 			if err != nil {
@@ -355,6 +362,16 @@ var mcpWriteTools = []mcpTool{
 			if a.Text != nil && b.Type != drawing.BlockType && !toDrawing {
 				text := s.store.WikiLinker(userID)(storage.KeepWikiLinkIDs(b.Content, *a.Text, s.store.DocTitles(userID)))
 				a.Text = &text
+			}
+			// A table's text is written the way the editor writes it (also when a bullet becomes one)
+			if toTable := a.Type != nil && *a.Type == "table"; toTable || (a.Type == nil && b.Type == "table") {
+				text := b.Content
+				if a.Text != nil {
+					text = *a.Text
+				}
+				if text = storage.NormalizeTable(text); text != b.Content || a.Text != nil {
+					a.Text = &text
+				}
 			}
 			var ops []collab.Op
 			if a.Text != nil && *a.Text != b.Content {

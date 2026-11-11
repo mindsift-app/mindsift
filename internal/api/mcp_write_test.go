@@ -333,3 +333,47 @@ func TestMCPWikiLinks(t *testing.T) {
 		t.Fatalf("added: %q, want %q", d.Blocks[len(d.Blocks)-1].Content, want)
 	}
 }
+
+// Agents write tables as Markdown; they are stored the way the editor writes them and read back in get_note
+func TestMCPNoteTables(t *testing.T) {
+	srv, store, token := setupTestServer(t)
+	claims, _ := auth.ValidateToken(testJWTSecret, token)
+	call := mcpCaller(t, srv)
+	agentKey, _ := store.CreateAPIKey(claims.UserID, "Agent", []string{"notes:read", "notes:write"})
+	key := agentKey.RawKey
+	doc, err := store.CreateDocument(claims.UserID, "", "Preise", "", "", []domain.DocumentBlock{
+		{ID: "blk_mt1", Type: "text", Content: "Ding | Preis", Level: 0},
+	}, nil, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	res, isErr, msg := call(key, "add_note_bullet", `{"noteId":"`+doc.ID+`","type":"table","text":"Ding | Preis\n--- | ---\nBrot | 3"}`)
+	if isErr {
+		t.Fatalf("add table: %s", msg)
+	}
+	if s := strings.Join(bulletTexts(res), "|"); !strings.Contains(s, "0:| Ding | Preis |\n| --- | --- |\n| Brot | 3 |") {
+		t.Fatalf("table not normalized: %q", s)
+	}
+	// A bullet turned into a table gets the table form of its text
+	if _, isErr, msg := call(key, "update_note_bullet", `{"noteId":"`+doc.ID+`","bulletId":"blk_mt1","type":"table"}`); isErr {
+		t.Fatalf("update to table: %s", msg)
+	}
+	got, _, _ := call(key, "get_note", `{"id":"`+doc.ID+`"}`)
+	if s := strings.Join(bulletTexts(got), "|"); !strings.HasPrefix(s, "0:| Ding | Preis |\n| --- | --- |") {
+		t.Fatalf("converted bullet: %q", s)
+	}
+	if content, _ := got["content"].(string); !strings.Contains(content, "| Brot | 3 |\n") || strings.Contains(content, "- | Brot") {
+		t.Fatalf("get_note content: %q", content)
+	}
+
+	// create_note: the rows of a table stay one table bullet (plain lines become bullets of their own)
+	creator, _ := store.CreateAPIKey(claims.UserID, "Schreiber", []string{"notes:read", "notes:create"})
+	created, isErr, msg := call(creator.RawKey, "create_note", `{"title":"Tabelle","content":"Intro\n| A | B |\n| --- | --- |\n| 1 | 2 |\n| 3 | 4 |\nEnde"}`)
+	if isErr {
+		t.Fatalf("create_note: %s", msg)
+	}
+	got, _, _ = call(creator.RawKey, "get_note", `{"id":"`+fmt.Sprint(created["id"])+`"}`)
+	if s := strings.Join(bulletTexts(got), "|"); s != "0:Intro|0:| A | B |\n| --- | --- |\n| 1 | 2 |\n| 3 | 4 ||0:Ende" {
+		t.Fatalf("create_note bullets: %q", s)
+	}
+}

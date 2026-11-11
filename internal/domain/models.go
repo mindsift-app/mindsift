@@ -543,6 +543,8 @@ func CompileBlocksToMarkdown(blocks []DocumentBlock) string {
 			sb.WriteString(indent + "- " + mark + " " + b.Content + "\n")
 		case "code":
 			sb.WriteString(indent + "- ```" + b.Lang + "\n" + b.Content + "\n" + indent + "  ```\n")
+		case "table":
+			sb.WriteString(indent + "- " + strings.ReplaceAll(b.Content, "\n", "\n"+indent+"  ") + "\n")
 		case "divider":
 			sb.WriteString(indent + "- ---\n")
 		case drawing.BlockType:

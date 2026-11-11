@@ -22,6 +22,7 @@ import {
   KeyRound,
   Shapes,
   CloudOff,
+  Table as TableIcon,
 } from 'lucide-react';
 import type { HelpContent } from './types';
 
@@ -167,6 +168,10 @@ const es: HelpContent = {
                 <Code className="w-3.5 h-3.5 text-accent" />
                 <span>/code (bloque de código)</span>
               </div>
+              <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main col-span-2">
+                <TableIcon className="w-3.5 h-3.5 text-accent shrink-0" />
+                <span>/table o /tabla (tabla con fila de encabezado)</span>
+              </div>
               <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main">
                 <KeyRound className="w-3.5 h-3.5 text-accent" />
                 <span>/secret (ocultar un valor, p. ej. una IP o un token)</span>
@@ -247,6 +252,39 @@ const es: HelpContent = {
             </li>
             <li>
               <strong className="text-main">En todas partes:</strong> La búsqueda encuentra las palabras de los dibujos, copiar y pegar conserva el dibujo y la exportación Markdown lo incluye como imagen SVG (al importarlo vuelve a ser un dibujo). Los agentes de IA (MCP) leen una descripción del dibujo y pueden crear dibujos a partir de diagramas de flujo y mapas mentales de Mermaid.
+            </li>
+          </ul>
+        </div>
+      ),
+    },
+    // WORKSPACE: TABLES
+    {
+      id: 'workspace-tables',
+      category: 'workspace',
+      title: 'Tablas (/table)',
+      subtitle: 'Filas y columnas directamente en la nota',
+      icon: TableIcon,
+      keywords: ['tabla', 'table', 'filas', 'columnas', 'encabezado', 'líneas', 'marco', 'markdown'],
+      content: (
+        <div className="space-y-2 text-muted leading-relaxed">
+          <ul className="space-y-1.5">
+            <li>
+              <strong className="text-main">Crear una:</strong> Escribe <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">/table</kbd> (o <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">/tabla</kbd>) en un punto: aparece una tabla de 2 columnas y 2 filas, el texto que ya había en el punto pasa a la primera celda. La primera fila es el encabezado (en negrita).
+            </li>
+            <li>
+              <strong className="text-main">Escribir:</strong> <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Enter</kbd> añade una fila debajo de la actual, <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Tab</kbd> / <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Shift + Tab</kbd> saltan de celda en celda (Tab en la última celda añade una fila), las flechas cambian de fila y salen de la tabla por arriba y por abajo. <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Backspace</kbd> en una fila vacía la elimina; en una tabla totalmente vacía, la tabla. Negrita, cursiva, enlaces y #hashtags funcionan como en el texto.
+            </li>
+            <li>
+              <strong className="text-main">Columnas:</strong> El <strong className="text-main">+</strong> a la derecha de la tabla añade una columna (en el escritorio aparece al pasar el ratón por la tabla). Debajo, los tres puntos abren el menú: insertar una columna a la izquierda o a la derecha, eliminar la fila o la columna del cursor, aumentar o reducir la sangría del punto.
+            </li>
+            <li>
+              <strong className="text-main">Líneas:</strong> En el mismo menú: <em>Estándar</em> muestra solo las líneas interiores, que se desvanecen hacia el borde, sin marco; <em>Marco completo</em> todas las líneas con marco exterior (esquinas como en el tema); <em>Encabezado y columnas</em> solo la línea bajo el encabezado y las líneas de columna.
+            </li>
+            <li>
+              <strong className="text-main">Móvil:</strong> Las tablas anchas se desplazan de lado, la página se queda quieta. Las celdas, el + y los tres puntos son lo bastante grandes para tocarlos.
+            </li>
+            <li>
+              <strong className="text-main">En todas partes:</strong> Copiar, pegar, la exportación Markdown y los agentes de IA (MCP) ven la tabla como tabla Markdown; las tablas Markdown pegadas y las de hojas de cálculo vuelven a ser una tabla.
             </li>
           </ul>
         </div>

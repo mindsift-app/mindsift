@@ -14,6 +14,24 @@
     "copy": "Kopieren",
     "plain": "Text"
   },
+  "table": {
+    "menu": "Tabelle: Linien und Spalten",
+    "addColumn": "Spalte hinzufügen",
+    "lines": {
+      "fade": "Standard: Linien innen",
+      "grid": "Voller Rahmen",
+      "header": "Kopfzeile und Spalten"
+    },
+    "insertColumnLeft": "Spalte links einfügen",
+    "insertColumnRight": "Spalte rechts einfügen",
+    "deleteRow": "Zeile löschen",
+    "deleteColumn": "Spalte löschen",
+    "needCell": "Erst in eine Zelle tippen",
+    "onlyRow": "Eine Zeile bleibt immer",
+    "onlyColumn": "Eine Spalte bleibt immer",
+    "headerCell": "Kopfzeile, Spalte {{col}}",
+    "cell": "Zeile {{row}}, Spalte {{col}}"
+  },
   "editor": {
     "newNote": "Neue Notiz",
     "untitled": "Unbenannte Notiz",
@@ -81,7 +99,8 @@
       "drawing": "Zeichnung",
       "image": "Bild",
       "audio": "Audio",
-      "divider": "Trennlinie"
+      "divider": "Trennlinie",
+      "table": "Tabelle"
     },
     "noteFull": "Diese Notiz hat mit {{max}} Punkten ihr Maximum erreicht. Neue Punkte werden nicht gespeichert – lege sie in einer neuen Notiz an."
   },
@@ -94,6 +113,7 @@
     "h2": "Abschnitts-Überschrift",
     "h3": "Unterabschnitt",
     "code": "Code-Block mit Syntax",
+    "table": "Tabelle mit Kopfzeile",
     "callout": "Hinweisbox",
     "warning": "Warnung in Gelb",
     "error": "Fehler in Rot",

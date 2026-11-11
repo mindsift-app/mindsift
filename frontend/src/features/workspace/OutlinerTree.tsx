@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo, forwardRef, useImperativeHandle } from 'react';
 import type { WikiLinkClickHandler } from '../../lib/wikiLink';
 import { DocumentBlock, BlockType } from '../../lib/types';
-import { OutlinerBlock, BlockLock, mapRenderedOffsetToRaw } from './OutlinerBlock';
+import { OutlinerBlock, BlockLock } from './OutlinerBlock';
+import { caretAtPoint, mapRenderedOffsetToRaw } from '../../lib/caret';
 import { parsePastedLines } from '../../lib/pasteOutline';
 import { blocksToMarkdown } from '../../lib/outlineMarkdown';
 import { branchEnd, numberedLabels } from '../../lib/outlineList';
@@ -80,6 +81,14 @@ function writeClipboardText(text: string) {
   if (!copied) void navigator.clipboard?.writeText(text).catch(() => {});
 }
 
+// A table registers its first cell as its text field; coming from below (cursor at the end) the cursor goes
+// into its last cell instead
+function focusTarget(el: HTMLTextAreaElement, cursor: 'start' | 'end' | 'select' | number): HTMLTextAreaElement {
+  if (cursor !== 'end' || !el.hasAttribute('data-table-cell')) return el;
+  const cells = el.closest('[data-table-block]')?.querySelectorAll<HTMLTextAreaElement>('textarea[data-table-cell]');
+  return cells && cells.length > 0 ? cells[cells.length - 1] : el;
+}
+
 export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
   docId,
   compact = false,
@@ -138,9 +147,10 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
   const focusBlockInput = useCallback(
     (blockId: string, cursor: 'start' | 'end' | 'select' | number = 'end') => {
       setFocusedBlockId(blockId);
-      const el = textareaMapRef.current.get(blockId);
-      if (el) {
+      const registered = textareaMapRef.current.get(blockId);
+      if (registered) {
         const apply = () => {
+          const el = focusTarget(registered, cursor);
           el.focus();
           try {
             if (cursor === 'select') {
@@ -203,23 +213,25 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
         // Focus right away (the element is already in the DOM): keystrokes typed directly after Enter
         // must land in the new block, not in the previous one
         setFocusedBlockId(blockId);
-        el.focus();
+        // (Refs come after the whole table is in the page, so a table's last cell is there too)
+        const field = focusTarget(el, target.cursor);
+        field.focus();
         try {
           if (target.cursor === 'select') {
-            el.select();
+            field.select();
           } else {
             const pos =
               typeof target.cursor === 'number'
-                ? Math.min(target.cursor, el.value.length)
+                ? Math.min(target.cursor, field.value.length)
                 : target.cursor === 'end'
-                ? el.value.length
+                ? field.value.length
                 : 0;
-            el.setSelectionRange(pos, pos);
+            field.setSelectionRange(pos, pos);
           }
         } catch {
           // ignore
         }
-        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        field.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
     } else {
       textareaMapRef.current.delete(blockId);
@@ -365,11 +377,19 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
       const parsed = parsePastedLines(rawLines);
 
       if (parsed.length === 0) return;
+      // A pasted table is a block of its own: text around the cursor stays in a bullet before or after it
+      if (parsed[0].type === 'table' && textBefore.trim() !== '') {
+        parsed.unshift({ type: 'text', content: '', indent: parsed[0].indent });
+      }
+      if (parsed[parsed.length - 1].type === 'table' && textAfter.trim() !== '') {
+        parsed.push({ type: 'text', content: '', indent: parsed[parsed.length - 1].indent });
+      }
+      const around = (item: (typeof parsed)[number], text: string) => (item.type === 'table' ? '' : text);
 
       const line0 = parsed[0];
       const baseIndent = line0.indent;
       const isSingle = parsed.length === 1;
-      const line0Content = textBefore + line0.content + (isSingle ? textAfter : '');
+      const line0Content = around(line0, textBefore) + line0.content + (isSingle ? around(line0, textAfter) : '');
 
       const isCurrentEmpty = (currentBlock.content || '').trim() === '';
       const adoptedType = line0.type !== 'text' ? line0.type : (isCurrentEmpty ? 'text' : currentBlock.type);
@@ -380,6 +400,8 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
         content: line0Content,
         type: adoptedType,
         checked: adoptedChecked,
+        // A table's lang is its line mode (a code language would not be one)
+        ...(adoptedType === 'table' && currentBlock.type !== 'table' ? { lang: '' } : {}),
       };
 
       const newBlocks: DocumentBlock[] = [];
@@ -388,7 +410,7 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
       for (let j = 1; j < parsed.length; j++) {
         const p = parsed[j];
         const isLastLine = j === parsed.length - 1;
-        const lineContent = isLastLine ? (p.content + textAfter) : p.content;
+        const lineContent = isLastLine ? p.content + around(p, textAfter) : p.content;
         const lineLevel = Math.max(0, baseLevel + (p.indent - baseIndent));
 
         newBlocks.push({
@@ -712,10 +734,13 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
       onLockedAction?.(holder);
       return;
     }
-    const before = textareaMapRef.current.get(id);
+    // In a table the cursor may sit in any of its cells: it stays in that one
+    const active = document.activeElement;
+    const cell = active instanceof HTMLTextAreaElement && active.hasAttribute('data-table-cell') ? active : null;
+    const before = cell ?? textareaMapRef.current.get(id);
     const caret = before ? before.selectionStart : null;
     flushSync(() => action(id));
-    const el = textareaMapRef.current.get(id);
+    const el = cell?.isConnected ? cell : textareaMapRef.current.get(id);
     if (!el) return;
     if (document.activeElement !== el) {
       el.focus({ preventScroll: true });
@@ -758,19 +783,6 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
   const treeRootRef = useRef<HTMLDivElement>(null);
   const dragAnchorRef = useRef<{ id: string; offset: number } | null>(null);
   const highlightSupported = typeof CSS !== 'undefined' && 'highlights' in CSS && typeof (window as any).Highlight === 'function';
-
-  const caretAtPoint = (x: number, y: number): { node: Node; offset: number } | null => {
-    const doc = document as any;
-    if (typeof doc.caretPositionFromPoint === 'function') {
-      const p = doc.caretPositionFromPoint(x, y);
-      return p ? { node: p.offsetNode, offset: p.offset } : null;
-    }
-    if (typeof doc.caretRangeFromPoint === 'function') {
-      const r = doc.caretRangeFromPoint(x, y);
-      return r ? { node: r.startContainer, offset: r.startOffset } : null;
-    }
-    return null;
-  };
 
   // Position in the raw text of a bullet for a point in its rendered text (outside it: start or end).
   // Blocks without a text layer (callouts, code …) count whole when `whole` says from which side
