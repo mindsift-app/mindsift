@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { branchEnd, insertBelow, listLabel, moveSibling, numberedLabels, unitStart } from '../outlineList';
+import { branchEnd, insertBelow, listLabel, moveSibling, numberedLabels, outlineRows, sameOutlineShape, unitStart } from '../outlineList';
 import type { DocumentBlock } from '../types';
 
 const blk = (id: string, level: number, type: DocumentBlock['type'] = 'numbered'): DocumentBlock => ({
@@ -89,5 +89,35 @@ describe('conflict copies stick to their original', () => {
     expect(ids(moveSibling(tree, 'Zwei', 1))).toBe('Eins Drei Zwei z1 Kopie k1');
     expect(ids(moveSibling(tree, 'Drei', -1))).toBe('Eins Drei Zwei z1 Kopie k1');
     expect(ids(moveSibling(tree, 'Eins', 1))).toBe('Zwei z1 Kopie k1 Eins Drei');
+  });
+});
+
+describe('outline rows', () => {
+  it('leaves out what is folded and knows children, indent limit, siblings and numbers', () => {
+    const blocks = [
+      blk('a', 0), blk('a1', 1, 'text'), blk('b', 0, 'text'),
+      { ...blk('c', 0, 'text'), collapsed: true }, blk('c1', 1, 'text'), blk('c2', 2, 'text'), blk('d', 0),
+    ];
+    const rows = outlineRows(blocks, 0);
+    expect(rows.map((r) => blocks[r.index].id)).toEqual(['a', 'a1', 'b', 'c', 'd']);
+    expect(rows.map((r) => [r.hasChildren, r.maxAllowedLevel, r.siblingFollows, r.listMarker ?? ''])).toEqual([
+      [true, 0, true, '1.'],
+      [false, 1, false, ''],
+      [false, 2, true, ''],
+      [true, 1, true, ''],
+      [false, 3, false, '1.'],
+    ]);
+    // Inside a zoomed bullet the first one may go no deeper than the zoom level
+    expect(outlineRows([blk('x', 2, 'text')], 2)[0].maxAllowedLevel).toBe(2);
+  });
+
+  it('sees the same shape when only texts change', () => {
+    const blocks = [blk('a', 0), blk('b', 1)];
+    expect(sameOutlineShape(blocks, [blocks[0], { ...blocks[1], content: 'neu' }])).toBe(true);
+    expect(sameOutlineShape(blocks, [blocks[0], { ...blocks[1], level: 0 }])).toBe(false);
+    expect(sameOutlineShape(blocks, [blocks[0], { ...blocks[1], type: 'text' }])).toBe(false);
+    expect(sameOutlineShape(blocks, [blocks[0], { ...blocks[1], collapsed: true }])).toBe(false);
+    expect(sameOutlineShape(blocks, [blocks[0], { ...blocks[1], id: 'c' }])).toBe(false);
+    expect(sameOutlineShape(blocks, [blocks[0]])).toBe(false);
   });
 });

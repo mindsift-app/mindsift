@@ -4,6 +4,7 @@ import {
   buildFolderTree,
   collectFolderPaths,
   collectRollupTodos,
+  countHashtags,
   countOpenTodos,
   filterTags,
   folderAncestors,
@@ -70,6 +71,44 @@ describe('workspace listing', () => {
     const meta = tagsMetadata([{ tag: 'einkauf', count: 1 }, { tag: 'haus', count: 1 }], docs);
     expect(meta.get('einkauf')).toEqual({ tag: 'einkauf', count: 1, docs: [{ id: 'a', title: 'a', icon: undefined, folderPath: undefined }], openTodosCount: 1 });
     expect(meta.get('haus')?.docs.map((d) => d.folderPath)).toEqual(['Privat']);
+  });
+
+  it('counts hashtags over all notes, most frequent first', () => {
+    const notes = [
+      doc('x', [block('x1', '#Haus und #garten'), block('x2', 'kein#tag, #haus #haus')]),
+      doc('y', [block('y1', '(#garten) #Auto')]),
+    ];
+    expect(countHashtags(notes)).toEqual([
+      { tag: 'haus', count: 3 },
+      { tag: 'garten', count: 2 },
+      { tag: 'auto', count: 1 },
+    ]);
+  });
+
+  it('matches hashtags for the tiles like the tag page: whole tags only, each bullet once', () => {
+    const notes = [
+      doc('x', [todo('x1', '#haus #haus offen'), todo('x2', '#haus erledigt', true), block('x3', 'example.com/#haus #hausbau')]),
+      doc('y', [block('y1', 'Link #haus/plan'), todo('y2', 'Am Ende #HAUS')]),
+      doc('z', [block('z1', 'nichts')]),
+    ];
+    const meta = tagsMetadata(countHashtags(notes), notes);
+    expect(meta.get('haus')?.docs.map((d) => d.id)).toEqual(['x', 'y']);
+    expect(meta.get('haus')?.openTodosCount).toBe(2);
+    expect(meta.get('hausbau')?.docs.map((d) => d.id)).toEqual(['x']);
+  });
+
+  it('follows a changed note and keeps the others', () => {
+    const a = doc('a', [todo('a1', 'Kaufen #einkauf')]);
+    const b = doc('b', [todo('b1', 'Streichen #haus')]);
+    expect(countHashtags([a, b]).map((t) => t.tag)).toEqual(['einkauf', 'haus']);
+    expect(countOpenTodos([a, b])).toBe(2);
+    // Typing and ticking off in a: a new note object with new bullets, b stays as it was
+    const a2 = { ...a, blocks: [todo('a1', 'Kaufen #einkauf #heute', true)] };
+    expect(countHashtags([a2, b]).map((t) => t.tag)).toEqual(['einkauf', 'haus', 'heute']);
+    expect(countOpenTodos([a2, b])).toBe(1);
+    expect(collectRollupTodos([a2, b], null).map((t) => [t.doc, t.checked])).toEqual([[a2, true], [b, false]]);
+    expect(collectRollupTodos([a2, b], null, true).map((t) => t.blockId)).toEqual(['b1']);
+    expect(tagsMetadata(countHashtags([a2, b]), [a2, b]).get('einkauf')?.openTodosCount).toBe(0);
   });
 
   it('filters hashtags with or without # and sorts by count or name', () => {

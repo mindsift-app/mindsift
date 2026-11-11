@@ -5,7 +5,7 @@ import { OutlinerBlock, BlockLock } from './OutlinerBlock';
 import { caretAtPoint, mapRenderedOffsetToRaw } from '../../lib/caret';
 import { parsePastedLines } from '../../lib/pasteOutline';
 import { blocksToMarkdown } from '../../lib/outlineMarkdown';
-import { branchEnd, numberedLabels } from '../../lib/outlineList';
+import { branchEnd, OutlineRow, outlineRows, sameOutlineShape } from '../../lib/outlineList';
 import { useLatestCallback } from '../../lib/useLatestCallback';
 import { flushSync } from 'react-dom';
 import { MobileOutlineBar, isTouchOnly } from './MobileOutlineBar';
@@ -88,6 +88,10 @@ function focusTarget(el: HTMLTextAreaElement, cursor: 'start' | 'end' | 'select'
   const cells = el.closest('[data-table-block]')?.querySelectorAll<HTMLTextAreaElement>('textarea[data-table-cell]');
   return cells && cells.length > 0 ? cells[cells.length - 1] : el;
 }
+
+// The bullets' elements with the values each was made from (rowElements in OutlinerTree)
+type RowCache = { treeValues: unknown[]; rows: Map<string, { values: unknown[]; element: React.ReactElement }> };
+const sameValues = (a: unknown[], b: unknown[]) => a.length === b.length && a.every((v, i) => Object.is(v, b[i]));
 
 export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
   docId,
@@ -267,67 +271,20 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
     }
   }, [initialFocusedBlockId, targetLoaded]);
 
-  // Compute visibility based on collapsed ancestor blocks
-  const visibleEntries = useMemo(() => {
-    const result: {
-      block: DocumentBlock;
-      index: number;
-      hasChildren: boolean;
-      maxAllowedLevel: number;
-    }[] = [];
-
-    let collapsedAboveLevel: number | null = null;
-
-    for (let i = 0; i < blocks.length; i++) {
-      const b = blocks[i];
-      const lvl = Math.max(0, b.level || 0);
-
-      if (collapsedAboveLevel !== null) {
-        if (lvl > collapsedAboveLevel) {
-          continue;
-        } else {
-          collapsedAboveLevel = null;
-        }
-      }
-
-      const nextBlock = blocks[i + 1];
-      const nextLvl = nextBlock ? Math.max(0, nextBlock.level || 0) : 0;
-      const hasChildren = Boolean(nextBlock && nextLvl > lvl);
-
-      const prevBlock = i > 0 ? blocks[i - 1] : null;
-      const maxAllowedLevel = prevBlock ? Math.max(0, prevBlock.level || 0) + 1 : (levelOffset || 0);
-
-      result.push({
-        block: b,
-        index: i,
-        hasChildren,
-        maxAllowedLevel,
-      });
-
-      if (b.collapsed && hasChildren) {
-        collapsedAboveLevel = lvl;
-      }
-    }
-
-    return result;
+  // The bullets shown (not below a folded one) with their place in the outline (lib/outlineList.ts). That
+  // depends only on the outline's shape, so a pause in typing (new text in one bullet) keeps the rows of
+  // before instead of walking every bullet of the note again.
+  const shapeRef = useRef<{ blocks: DocumentBlock[]; levelOffset: number; rows: OutlineRow[] } | null>(null);
+  const rows = useMemo(() => {
+    const prev = shapeRef.current;
+    const kept = prev && prev.levelOffset === levelOffset && sameOutlineShape(prev.blocks, blocks) ? prev.rows : null;
+    const next = kept || outlineRows(blocks, levelOffset);
+    shapeRef.current = { blocks, levelOffset, rows: next };
+    return next;
   }, [blocks, levelOffset]);
-
-  const listLabels = useMemo(() => numberedLabels(blocks), [blocks]);
-
-  // Whether another bullet on the same level follows (before the branch ends); an empty bullet
-  // is then not outdented by Enter
-  const siblingFollows = useCallback(
-    (index: number) => {
-      const level = blocks[index]?.level || 0;
-      for (let i = index + 1; i < blocks.length; i++) {
-        const l = blocks[i].level || 0;
-        if (l < level) return false;
-        if (l === level) return true;
-      }
-      return false;
-    },
-    [blocks]
-  );
+  const visibleEntries = useMemo(() => rows.map((row) => ({ ...row, block: blocks[row.index] })), [rows, blocks]);
+  // The bullets' elements of the last render (see rowElements below)
+  const rowCacheRef = useRef<RowCache>({ treeValues: [], rows: new Map() });
 
   const handleCreateBlockBelow = useCallback(
     (afterBlockId: string, newContent: string = '') => {
@@ -1174,6 +1131,93 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
   const stableDragOverBlock = useLatestCallback((e: React.DragEvent, blockId: string) => handleDragOverBlock(e, indexOf(blockId)));
   const stableDropBlock = useLatestCallback((blockId: string) => handleDropBlock(indexOf(blockId)));
 
+  // Each bullet's element is kept with the values it was made from: a bullet whose values are unchanged gets
+  // the same element again, and React passes over it without comparing its props one by one. With thousands
+  // of bullets, making and comparing them all was most of the time after Enter or a pause in typing. Every
+  // value a bullet's props come from is in treeValues (the same for all) or in its row values; the functions
+  // keep their identity (useLatestCallback).
+  const treeValues = [
+    docId,
+    canEdit,
+    levelOffset,
+    Boolean(canEdit && onResolveConflict),
+    Boolean(onUndo),
+    Boolean(onRedo),
+    Boolean(onZoomBlock),
+    Boolean(onExtractBlock),
+    Boolean(onInlineBlock),
+    Boolean(onBlockActivity),
+    Boolean(onOpenTask),
+    Boolean(onTagClick),
+    Boolean(onWikiLinkClick),
+    Boolean(onCopyBlockLink),
+  ];
+  const rowCache = rowCacheRef.current;
+  const prevRows = sameValues(rowCache.treeValues, treeValues) ? rowCache.rows : null;
+  const nextRows: RowCache['rows'] = new Map();
+  const rowElements = visibleEntries.map(({ block, index, hasChildren, maxAllowedLevel, siblingFollows, listMarker }, entryIdx) => {
+    const isLast = entryIdx === visibleEntries.length - 1;
+    const isFocused = focusedBlockId === block.id;
+    const rowCanEdit = canEdit && !lockedBlocks?.has(block.id);
+    const lockedBy = lockedBlocks?.get(block.id);
+    const originalLockedBy = block.conflictOf && block.conflictOf !== 'title' ? lockedBlocks?.get(block.conflictOf) : undefined;
+    const isDragTarget = dragOverIndex === index && draggedIndex !== index;
+    const isTargeted = highlightedBlockId === block.id;
+    const inRangeSelection = rangeRowIds?.has(block.id) || wholeRowIds?.has(block.id);
+    const values = [block, isLast, siblingFollows, maxAllowedLevel, hasChildren, isFocused, rowCanEdit, lockedBy, originalLockedBy, listMarker, isDragTarget, isTargeted, inRangeSelection];
+    const cached = prevRows?.get(block.id);
+    const element =
+      cached && sameValues(cached.values, values) ? cached.element : (
+        <OutlinerBlock
+          key={block.id}
+          docId={docId}
+          block={block}
+          isLast={isLast}
+          siblingFollows={siblingFollows}
+          maxAllowedLevel={maxAllowedLevel}
+          hasChildren={hasChildren}
+          isFocused={isFocused}
+          canEdit={rowCanEdit}
+          lockedBy={lockedBy}
+          originalLockedBy={originalLockedBy}
+          canAppendBelow={canEdit}
+          onResolveConflict={canEdit && onResolveConflict ? stableResolveConflict : undefined}
+          onUndo={onUndo ? stableUndo : undefined}
+          onRedo={onRedo ? stableRedo : undefined}
+          levelOffset={levelOffset}
+          onZoomBlock={onZoomBlock ? stableZoomBlock : undefined}
+          onExtractBlock={onExtractBlock ? stableExtractBlock : undefined}
+          onInlineBlock={onInlineBlock ? stableInlineBlock : undefined}
+          onUpdateBlock={stableUpdateBlock}
+          onCreateBlockBelow={stableCreateBlockBelow}
+          onPasteMultiLines={stablePasteMultiLines}
+          listMarker={listMarker}
+          onDeleteBlock={stableDeleteBlock}
+          onMergeWithPrevious={stableMergeWithPrevious}
+          onIndentBlock={stableIndentBlock}
+          onToggleBranch={stableToggleBranch}
+          onNavigateFocus={stableNavigateFocus}
+          onFocusBlock={setFocusedBlockId}
+          onBlurBlock={handleBlurBlock}
+          onBlockActivity={onBlockActivity ? stableBlockActivity : undefined}
+          onOpenTask={onOpenTask ? stableOpenTask : undefined}
+          onTagClick={onTagClick ? stableTagClick : undefined}
+          onWikiLinkClick={onWikiLinkClick ? stableWikiLinkClick : undefined}
+          onCopyBlockLink={onCopyBlockLink ? stableCopyBlockLink : undefined}
+          onDragStartBlock={stableDragStartBlock}
+          onDragOverBlock={stableDragOverBlock}
+          onDropBlock={stableDropBlock}
+          isDragTarget={isDragTarget}
+          isTargeted={isTargeted}
+          registerTextareaRef={registerTextareaRef}
+          inRangeSelection={inRangeSelection}
+        />
+      );
+    nextRows.set(block.id, { values, element });
+    return element;
+  });
+  rowCacheRef.current = { treeValues, rows: nextRows };
+
   return (
     // The rows space themselves (mt-0.5 first:mt-0): space-y's sibling rule (`> * ~ *`) made Chrome restyle
     // every bullet below an inserted or removed one
@@ -1182,55 +1226,7 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
       onMouseDownCapture={handleTreeMouseDownCapture}
       onKeyDownCapture={handleTreeKeyDownCapture}
     >
-      {visibleEntries.map(({ block, index, hasChildren, maxAllowedLevel }, entryIdx) => {
-        const isLast = entryIdx === visibleEntries.length - 1;
-        return (
-          <OutlinerBlock
-            key={block.id}
-            docId={docId}
-            block={block}
-            isLast={isLast}
-            siblingFollows={siblingFollows(index)}
-            maxAllowedLevel={maxAllowedLevel}
-            hasChildren={hasChildren}
-            isFocused={focusedBlockId === block.id}
-            canEdit={canEdit && !lockedBlocks?.has(block.id)}
-            lockedBy={lockedBlocks?.get(block.id)}
-            originalLockedBy={block.conflictOf && block.conflictOf !== 'title' ? lockedBlocks?.get(block.conflictOf) : undefined}
-            canAppendBelow={canEdit}
-            onResolveConflict={canEdit && onResolveConflict ? stableResolveConflict : undefined}
-            onUndo={onUndo ? stableUndo : undefined}
-            onRedo={onRedo ? stableRedo : undefined}
-            levelOffset={levelOffset}
-            onZoomBlock={onZoomBlock ? stableZoomBlock : undefined}
-            onExtractBlock={onExtractBlock ? stableExtractBlock : undefined}
-            onInlineBlock={onInlineBlock ? stableInlineBlock : undefined}
-            onUpdateBlock={stableUpdateBlock}
-            onCreateBlockBelow={stableCreateBlockBelow}
-            onPasteMultiLines={stablePasteMultiLines}
-            listMarker={listLabels.get(block.id)}
-            onDeleteBlock={stableDeleteBlock}
-            onMergeWithPrevious={stableMergeWithPrevious}
-            onIndentBlock={stableIndentBlock}
-            onToggleBranch={stableToggleBranch}
-            onNavigateFocus={stableNavigateFocus}
-            onFocusBlock={setFocusedBlockId}
-            onBlurBlock={handleBlurBlock}
-            onBlockActivity={onBlockActivity ? stableBlockActivity : undefined}
-            onOpenTask={onOpenTask ? stableOpenTask : undefined}
-            onTagClick={onTagClick ? stableTagClick : undefined}
-            onWikiLinkClick={onWikiLinkClick ? stableWikiLinkClick : undefined}
-            onCopyBlockLink={onCopyBlockLink ? stableCopyBlockLink : undefined}
-            onDragStartBlock={stableDragStartBlock}
-            onDragOverBlock={stableDragOverBlock}
-            onDropBlock={stableDropBlock}
-            isDragTarget={dragOverIndex === index && draggedIndex !== index}
-            isTargeted={highlightedBlockId === block.id}
-            registerTextareaRef={registerTextareaRef}
-            inRangeSelection={rangeRowIds?.has(block.id) || wholeRowIds?.has(block.id)}
-          />
-        );
-      })}
+      {rowElements}
 
       {canEdit && trailingArea && (
         <div

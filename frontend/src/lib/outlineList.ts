@@ -64,6 +64,75 @@ export function numberedLabels(blocks: DocumentBlock[]): Map<string, string> {
   return labels;
 }
 
+/** A bullet the outliner shows, with what its place in the outline says about it. */
+export type OutlineRow = {
+  /** Index in the blocks */
+  index: number;
+  hasChildren: boolean;
+  /** Deepest level it may be indented to: one below the bullet above */
+  maxAllowedLevel: number;
+  /** Another bullet on its level follows before the branch ends (an empty bullet is then not outdented by Enter) */
+  siblingFollows: boolean;
+  /** Its number in a numbered list ("1.", "b.") */
+  listMarker?: string;
+};
+
+/** The bullets shown (none below a folded one), each with its place in the outline. */
+export function outlineRows(blocks: DocumentBlock[], levelOffset = 0): OutlineRow[] {
+  const labels = numberedLabels(blocks);
+  const rows: OutlineRow[] = [];
+  let collapsedAboveLevel: number | null = null;
+
+  for (let i = 0; i < blocks.length; i++) {
+    const b = blocks[i];
+    const lvl = Math.max(0, b.level || 0);
+
+    if (collapsedAboveLevel !== null) {
+      if (lvl > collapsedAboveLevel) continue;
+      collapsedAboveLevel = null;
+    }
+
+    const nextBlock = blocks[i + 1];
+    const nextLvl = nextBlock ? Math.max(0, nextBlock.level || 0) : 0;
+    const hasChildren = Boolean(nextBlock && nextLvl > lvl);
+
+    const prevBlock = i > 0 ? blocks[i - 1] : null;
+    const maxAllowedLevel = prevBlock ? Math.max(0, prevBlock.level || 0) + 1 : (levelOffset || 0);
+
+    let siblingFollows = false;
+    const level = b.level || 0;
+    for (let j = i + 1; j < blocks.length; j++) {
+      const l = blocks[j].level || 0;
+      if (l < level) break;
+      if (l === level) {
+        siblingFollows = true;
+        break;
+      }
+    }
+
+    rows.push({ index: i, hasChildren, maxAllowedLevel, siblingFollows, listMarker: labels.get(b.id) });
+
+    if (b.collapsed && hasChildren) {
+      collapsedAboveLevel = lvl;
+    }
+  }
+
+  return rows;
+}
+
+/** Whether two versions of the blocks have the same outline (ids, levels, types, folding); the texts may differ. */
+export function sameOutlineShape(a: DocumentBlock[], b: DocumentBlock[]): boolean {
+  if (a === b) return true;
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    const x = a[i];
+    const y = b[i];
+    if (x === y) continue;
+    if (x.id !== y.id || x.level !== y.level || x.type !== y.type || x.collapsed !== y.collapsed) return false;
+  }
+  return true;
+}
+
 type Outlined = Pick<DocumentBlock, 'id' | 'level' | 'conflictOf'>;
 const lvlOf = (b: Outlined) => Math.max(0, b.level || 0);
 
