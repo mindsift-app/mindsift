@@ -8,7 +8,8 @@
 FROM --platform=$BUILDPLATFORM node:22-alpine AS frontend-builder
 WORKDIR /app/frontend
 COPY frontend/package*.json ./
-RUN --mount=type=cache,target=/root/.npm npm install --no-audit --no-fund
+# npm ci installs exactly what package-lock.json lists and stops when it does not match package.json
+RUN --mount=type=cache,target=/root/.npm npm ci --no-audit --no-fund
 COPY frontend/ ./
 # Version shown in the header: the git tag for releases (set by CI), otherwise "<package version>-dev"
 ARG APP_VERSION=""
