@@ -34,12 +34,12 @@ import {
 import { Document, DocumentBlock, MoveResult, User } from '../../lib/types';
 import { api } from '../../lib/api';
 import { OfflineError } from '../../lib/offline';
-import { DocSyncEngine, EngineState } from '../../lib/docSync/engine';
+import { ConflictChoice, DocSyncEngine, EngineState } from '../../lib/docSync/engine';
 import { Presence } from '../../lib/docSync/transport';
 import { OutlinerTree, OutlinerTreeHandle } from './OutlinerTree';
 import type { BlockLock } from './OutlinerBlock';
 import { extractHashtags } from '../../lib/hashtags';
-import { moveSibling } from '../../lib/outlineList';
+import { branchEnd, insertBelow, moveSibling, unitStart } from '../../lib/outlineList';
 import { reportNav, onNavStep, restoringNavPlace } from '../../lib/navHistory';
 import { readNotePlace, writeNotePlace } from '../../lib/notePlace';
 import { useTranslation } from 'react-i18next';
@@ -832,8 +832,8 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
     return () => window.removeEventListener('keydown', onKey);
   }, [embedded, actionsTarget]);
   const handleResolveConflict = useCallback(
-    (blockId: string, accept: boolean) => {
-      const res = engineRef.current?.resolveConflict(blockId, accept);
+    (blockId: string, choice: ConflictChoice) => {
+      const res = engineRef.current?.resolveConflict(blockId, choice);
       if (res?.message) showNotice(res.message);
     },
     [showNotice]
@@ -1094,7 +1094,9 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
         if (afterBlockId) {
           const idx = next.findIndex((b) => b.id === afterBlockId);
           if (idx >= 0) {
-            next.splice(idx + 1, 0, newBlock);
+            // A new bullet on the same level comes below the conflict copies of this one (they stick to it)
+            const at = (newBlock.level || 0) <= Math.max(0, next[idx].level || 0) ? insertBelow(next, idx) : idx + 1;
+            next.splice(at, 0, newBlock);
             return ensureNonEmptyBlocks(docId, next);
           }
         }
@@ -1113,7 +1115,8 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
         const idx = next.findIndex((b) => b.id === afterBlockId);
         if (idx >= 0) {
           next[idx] = updatedCurrentBlock;
-          next.splice(idx + 1, 0, ...newBlocks);
+          const sameLevel = newBlocks.length > 0 && (newBlocks[0].level || 0) <= Math.max(0, updatedCurrentBlock.level || 0);
+          next.splice(sameLevel ? insertBelow(next, idx) : idx + 1, 0, ...newBlocks);
         } else {
           next.push(updatedCurrentBlock, ...newBlocks);
         }
@@ -1196,15 +1199,8 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
         const parentBlock = prev[fromIdx];
         const parentLevel = Math.max(0, parentBlock.level || 0);
 
-        // Calculate full subtree count (dragged block + all contiguous descendants)
-        let count = 1;
-        for (let i = fromIdx + 1; i < prev.length; i++) {
-          if (Math.max(0, prev[i].level || 0) > parentLevel) {
-            count++;
-          } else {
-            break;
-          }
-        }
+        // The dragged block with its descendants and its conflict copies
+        const count = branchEnd(prev, fromIdx) - fromIdx;
 
         // Prevent dropping inside its own subtree
         if (targetIndex >= fromIdx && targetIndex < fromIdx + count) {
@@ -1230,6 +1226,12 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
         const targetLevel = newLevel !== undefined ? newLevel : parentLevel;
         const clampedLevel = Math.min(targetLevel, maxAllowed);
         const levelDelta = clampedLevel - parentLevel;
+        // Never between a bullet and its conflict copies: behind them instead
+        const landing = copy[insertIndex];
+        if (landing?.conflictOf && clampedLevel <= Math.max(0, landing.level || 0)) {
+          const start = unitStart(copy, insertIndex);
+          if (start < insertIndex) insertIndex = branchEnd(copy, start);
+        }
 
         const updatedSubtree = subtree.map((b) => ({
           ...b,

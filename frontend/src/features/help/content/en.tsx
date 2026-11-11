@@ -284,7 +284,7 @@ const en: HelpContent = {
               <strong className="text-main">Block locks:</strong> while someone edits a bullet, it shows a lock icon and the user's name. Others cannot overwrite that bullet for the moment.
             </li>
             <li>
-              <strong className="text-main">Conflict copies:</strong> if changes happen at the same time or offline, the server never silently overwrites your input. Instead a conflict block highlighted in yellow appears with two buttons: <em>“Use”</em> or <em>“Discard”</em>.
+              <strong className="text-main">Conflict copies:</strong> if changes happen at the same time or offline, the server never silently overwrites your input. Instead a conflict block highlighted in yellow appears right under the original bullet, with three buttons: <em>“Use”</em> replaces the original text (Ctrl+Z undoes it), <em>“Keep both”</em> only takes the marking off and leaves both bullets, <em>“Discard”</em> deletes the copy. While someone is editing the original bullet, “Use” is greyed out and a line below says who holds it. Until you decide, the copy sticks to its bullet: Enter in the original adds the new bullet below the copy, and indenting or moving takes it along.
             </li>
             <li>
               <strong className="text-main">Connection indicator:</strong> next to the note title you always see the connection mode (e.g. <em>Live</em>, <em>long polling</em> or <em>Offline</em>).

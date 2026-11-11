@@ -361,7 +361,7 @@ const de: HelpContent = {
               <strong className="text-main">Block-Sperren:</strong> Bearbeitet jemand einen Bullet-Point, wird dieser mit einem Schloss-Symbol und dem Benutzernamen gekennzeichnet. Andere Nutzer können diesen Punkt temporär nicht überschreiben.
             </li>
             <li>
-              <strong className="text-main">Konfliktkopien:</strong> Sollten Änderungen zeitgleich oder offline entstehen, überschreibt der Server niemals still deine Eingaben. Stattdessen erscheint ein gelb hervorgehobener Konfliktblock mit zwei Schaltflächen: <em>„Übernehmen“</em> oder <em>„Verwerfen“</em>.
+              <strong className="text-main">Konfliktkopien:</strong> Sollten Änderungen zeitgleich oder offline entstehen, überschreibt der Server niemals still deine Eingaben. Stattdessen erscheint direkt unter dem ursprünglichen Punkt ein gelb hervorgehobener Konfliktblock mit drei Schaltflächen: <em>„Übernehmen“</em> ersetzt den ursprünglichen Text (Strg+Z macht es rückgängig), <em>„Beide behalten“</em> nimmt nur die Markierung weg und lässt beide Punkte stehen, <em>„Verwerfen“</em> löscht die Kopie. Solange jemand den ursprünglichen Punkt bearbeitet, ist „Übernehmen“ ausgegraut, und darunter steht, wer ihn gerade hält. Bis du dich entschieden hast, klebt die Kopie an ihrem Punkt: Enter im ursprünglichen Punkt legt den neuen Punkt unter die Kopie, und Einrücken oder Verschieben nimmt sie mit.
             </li>
             <li>
               <strong className="text-main">Verbindungsanzeige:</strong> Neben dem Notiztitel siehst du immer den Verbindungsmodus (z.B. <em>Live</em>, <em>Long-Polling</em> oder <em>Offline</em>).

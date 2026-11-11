@@ -36,6 +36,9 @@ export interface EngineState {
   channel: SyncChannel;
 }
 
+/** What to do with a conflict copy (resolveConflict). */
+export type ConflictChoice = 'take' | 'keep' | 'drop';
+
 export interface ActionResult {
   ok: boolean;
   message?: string;
@@ -356,18 +359,24 @@ export class DocSyncEngine {
     return this.replay(this.redoStack, this.undoStack, i18n.t('common:sync.redo'));
   }
 
-  /** Accepts (replaces the original with the conflict copy) or discards a conflict copy. */
-  resolveConflict(copyId: string, accept: boolean): ActionResult {
+  /**
+   * Settles a conflict copy: 'take' replaces the original's text with it, 'keep' keeps both (the copy
+   * becomes a normal block right under the original), 'drop' deletes the copy.
+   */
+  resolveConflict(copyId: string, choice: ConflictChoice): ActionResult {
     if (!this.ready || !this.canEdit) return { ok: false };
     const copy = this.local.blocks.get(copyId);
     if (!copy || copy.deleted || !copy.props.conflictOf) return { ok: false };
     const target = copy.props.conflictOf;
     // The author of the conflicting text holds the copy for a moment; deleting it now would fail half-way
-    const copyHolder = this.lockedBy(copyId);
+    // Keeping both only takes the marking off, which is never locked
+    const copyHolder = choice === 'keep' ? undefined : this.lockedBy(copyId);
     if (copyHolder) return { ok: false, message: i18n.t('workspace:lock.copy', { name: copyHolder }) };
     const ops: Op[] = [];
-    if (!accept) {
+    if (choice === 'drop') {
       ops.push({ opId: this.newOpId(), kind: 'delete', blockId: copyId });
+    } else if (choice === 'keep') {
+      ops.push({ opId: this.newOpId(), kind: 'set_props', blockId: copyId, patch: { clearConflict: true } });
     } else if (target === 'title') {
       ops.push({ opId: this.newOpId(), kind: 'set_title', title: copy.content, baseVersion: this.local.titleVersion });
       ops.push({ opId: this.newOpId(), kind: 'delete', blockId: copyId });

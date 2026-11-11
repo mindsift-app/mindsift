@@ -17,6 +17,7 @@ Fixes from the security review of November 2026 (v0.94.0).
 - Releases have the server attached as a single file for Linux (amd64 and arm64), with the frontend inside, for running MindSift without a container. Started this way it also keeps what it creates in `data/` to itself (files 0600, folders 0700), as the container does.
 - `Doku/api/openapi.json` lists every route of the API with a short description (OpenAPI 3.1); a test fails when the router and the file disagree.
 - The demo says that it is public: a line on the sign-in page and a slim notice under the header (until closed) tell that everyone uses the same accounts, that it resets every `DEMO_RESET_MINUTES` minutes and not to enter anything private.
+- Conflict copies in notes have a third choice, "Keep both": the marking goes and both texts stay, the copy as a bullet of its own under the original. While someone edits the original, "Use" is greyed out and a line under the copy says who holds it; before, the click did nothing visible. Until it is settled, a copy sticks to its original: Enter or pasting in the original adds below the copy, and indenting, dragging or moving the original takes the copy along.
 
 ### Changed
 - **Attention:** a new login address or a new alarm address (other than the login address) only counts once its owner clicks the link mailed to it; until then the old one stays in use and the settings show the new one as waiting, with "Send link again" and "Keep the previous one". Without a mail server the address keeps waiting. Existing addresses stay as they are.
@@ -57,6 +58,7 @@ Fixes from the security review of November 2026 (v0.94.0).
 - Lists: after opening a list from the search, a link or a notification, returning to the Lists tab and changes to the lists from elsewhere (a new, renamed or deleted list, an item moved to another list) switched back to that list. Picking the same list a second time from the search did nothing. A list event could also switch to the first list on a device that had no list remembered.
 - Task dialog: following or unfollowing a task while typing its title or notes closed the editor and dropped the text. The title editor started with the title from when the dialog was opened, so saving could write an old title back over a change made elsewhere.
 - The shopping list created for you when you have none is named in your language instead of always "Wocheneinkauf".
+- A conflict copy in a note could end up away from its original bullet, behind bullets added after the original in the meantime (for example offline), or on the same position as a deleted bullet that came back. It now always sits right under its original.
 - The installed app starts offline after its first visit even when the browser has cleared its own cache: the service worker now keeps every file of the app from the moment it installs. Before, the files of the first visit were only in the browser's cache. If a new version replaced the app's files on the server while a page was open, the page reloads once instead of staying blank.
 
 ## [0.94.0] - 2026-11-10

@@ -4,10 +4,11 @@ import { DocumentBlock, BlockType } from '../../lib/types';
 import { OutlinerBlock, BlockLock, mapRenderedOffsetToRaw } from './OutlinerBlock';
 import { parsePastedLines } from '../../lib/pasteOutline';
 import { blocksToMarkdown } from '../../lib/outlineMarkdown';
-import { numberedLabels } from '../../lib/outlineList';
+import { branchEnd, numberedLabels } from '../../lib/outlineList';
 import { flushSync } from 'react-dom';
 import { MobileOutlineBar, isTouchOnly } from './MobileOutlineBar';
 import { startBranchDragGhost } from './branchDragImage';
+import type { ConflictChoice } from '../../lib/docSync/engine';
 
 export interface OutlinerTreeHandle {
   focusFirstBlock: (cursor?: 'start' | 'end') => void;
@@ -47,7 +48,7 @@ export interface OutlinerTreeProps {
   onBlockActivity?: (blockId: string) => void;
   lockedBlocks?: Map<string, BlockLock>; // blockId -> the user editing it (someone else)
   onLockedAction?: (holderName: string) => void;
-  onResolveConflict?: (blockId: string, accept: boolean) => void;
+  onResolveConflict?: (blockId: string, choice: ConflictChoice) => void;
   onUndo?: () => void;
   onRedo?: () => void;
   /** Deleting a selection over several bullets in one step: the first bullet with its new text, the
@@ -571,16 +572,8 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
 
       const actualDelta = nextLevel - currentLevel;
 
-      // Find all contiguous children / descendants:
-      // contiguous blocks with level > currentLevel
-      let count = 1;
-      for (let i = idx + 1; i < blocks.length; i++) {
-        if (Math.max(0, blocks[i].level || 0) > currentLevel) {
-          count++;
-        } else {
-          break;
-        }
-      }
+      // The block with its descendants and its conflict copies, which move along
+      const count = branchEnd(blocks, idx) - idx;
 
       const updatedBlocks: DocumentBlock[] = [];
       for (let i = idx; i < idx + count; i++) {
@@ -1161,6 +1154,7 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
             isFocused={focusedBlockId === block.id}
             canEdit={canEdit && !lockedBlocks?.has(block.id)}
             lockedBy={lockedBlocks?.get(block.id)}
+            originalLockedBy={block.conflictOf && block.conflictOf !== 'title' ? lockedBlocks?.get(block.conflictOf) : undefined}
             canAppendBelow={canEdit}
             onResolveConflict={canEdit ? onResolveConflict : undefined}
             onUndo={onUndo}

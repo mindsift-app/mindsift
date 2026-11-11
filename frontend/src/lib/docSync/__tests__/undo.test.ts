@@ -165,7 +165,7 @@ describe('conflict copies', () => {
 
   it('accepting replaces the original text and removes the copy', async () => {
     const { server, e, copy } = await withConflict();
-    expect(e.resolveConflict(copy.id, true).ok).toBe(true);
+    expect(e.resolveConflict(copy.id, 'take').ok).toBe(true);
     expect(texts(e)).toEqual(['Verlierer']);
     await e.syncNow();
     expect(server.doc.blocks.get('a')!.content).toBe('Verlierer');
@@ -178,15 +178,37 @@ describe('conflict copies', () => {
     const { server, e, copy } = await withConflict();
     server.othersLeases = [{ blockId: copy.id, userId: 'u2', name: 'Ben' }];
     await e.syncNow();
-    const res = e.resolveConflict(copy.id, true);
+    const res = e.resolveConflict(copy.id, 'take');
     expect(res.ok).toBe(false);
     expect(res.message).toMatch(/Ben/);
     expect(texts(e)).toEqual(['Gewinner', 'Verlierer']);
   });
 
+  it('keeping both leaves the original and turns the copy into a normal block right under it', async () => {
+    const { server, e, copy } = await withConflict();
+    expect(e.resolveConflict(copy.id, 'keep').ok).toBe(true);
+    expect(texts(e)).toEqual(['Gewinner', 'Verlierer']);
+    expect(flat(e).find((b) => b.id === copy.id)?.conflictOf).toBeUndefined();
+    await e.syncNow();
+    expect(server.doc.blocks.get('a')!.content).toBe('Gewinner');
+    expect(server.doc.blocks.get(copy.id)!.props.conflictOf).toBeFalsy();
+  });
+
+  it('keeping both works while someone else holds the original or the copy', async () => {
+    const { server, e, copy } = await withConflict();
+    server.othersLeases = [
+      { blockId: 'a', userId: 'u2', name: 'Ben' },
+      { blockId: copy.id, userId: 'u2', name: 'Ben' },
+    ];
+    await e.syncNow();
+    expect(e.resolveConflict(copy.id, 'keep').ok).toBe(true);
+    await e.syncNow();
+    expect(server.doc.blocks.get(copy.id)!.props.conflictOf).toBeFalsy();
+  });
+
   it('discarding removes only the copy', async () => {
     const { e, copy } = await withConflict();
-    e.resolveConflict(copy.id, false);
+    e.resolveConflict(copy.id, 'drop');
     expect(texts(e)).toEqual(['Gewinner']);
   });
 
@@ -194,7 +216,7 @@ describe('conflict copies', () => {
     const { server, e, copy } = await withConflict();
     server.apply({ opId: 'del', kind: 'delete', blockId: 'a' }, 'other');
     await e.syncNow();
-    e.resolveConflict(copy.id, true);
+    e.resolveConflict(copy.id, 'take');
     expect(flat(e).find((b) => b.id === copy.id)?.conflictOf).toBeUndefined();
   });
 });

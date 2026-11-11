@@ -1,6 +1,7 @@
 package collab
 
 import (
+	"strings"
 	"testing"
 	"time"
 )
@@ -37,6 +38,36 @@ func mustValid(t *testing.T, d *Doc) {
 	if err := d.Validate(); err != nil {
 		t.Fatal(err)
 	}
+}
+
+// A conflict copy stays right under its original: a bullet another client placed after the original
+// before it knew of the copy (its key computed between the original and the old next one) comes after
+// the copy, and a deleted next bullet that comes back does not share the copy's key.
+func TestConflictCopyStaysRightUnderItsOriginal(t *testing.T) {
+	d := docWith(t, [3]string{"zwei", "", "Zwei"}, [3]string{"drei", "", "Drei"}, [3]string{"vier", "", "Vier"})
+	zwei, drei := d.Blocks["zwei"].OrderKey, d.Blocks["drei"].OrderKey
+	// Ben, offline: his key for a new bullet after Zwei is the one between Zwei and Drei
+	offlineKey, _ := KeyBetween(zwei, drei)
+	Apply(d, Op{OpID: "del", Kind: OpDelete, BlockID: "drei"}, anna, Env{})
+	Apply(d, Op{OpID: "1", Kind: OpSetContent, BlockID: "zwei", BaseVersion: 1, Content: str("Zwei von Anna")}, anna, Env{})
+	_, res := Apply(d, Op{OpID: "2", Kind: OpSetContent, BlockID: "zwei", BaseVersion: 1, Content: str("Zwei von Ben")}, ben, Env{})
+	if res.Status != StatusConflict {
+		t.Fatalf("want conflict, got %+v", res)
+	}
+	Apply(d, Op{OpID: "3", Kind: OpInsert, BlockID: "neu", ParentID: str(""), OrderKey: offlineKey, Content: str("Neu von Ben")}, ben, Env{})
+	Apply(d, Op{OpID: "4", Kind: OpRestore, IDs: []string{"drei"}}, anna, Env{})
+	var got []string
+	for _, b := range d.Flatten() {
+		got = append(got, b.Content)
+	}
+	want := "Zwei von Anna|Zwei von Ben|Neu von Ben|Drei|Vier"
+	if strings.Join(got, "|") != want {
+		t.Fatalf("order: %s, want %s", strings.Join(got, "|"), want)
+	}
+	if d.Blocks[res.ConflictBlockID].OrderKey == drei {
+		t.Fatal("the copy shares its key with the deleted bullet")
+	}
+	mustValid(t, d)
 }
 
 func TestSetContentAppliesOnMatchingVersion(t *testing.T) {

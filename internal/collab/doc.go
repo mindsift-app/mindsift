@@ -148,31 +148,34 @@ func (d *Doc) isAncestor(ancestorID, id string) bool {
 	return false
 }
 
-// keyAfter returns a key directly after block b among its live siblings.
+// keyAfter returns a key close behind block b, for a conflict copy that belongs right under its original:
+// before the next sibling, deleted ones included (one brought back must not land on the same key), and
+// narrowed towards b, so blocks that others placed after b without knowing the copy (keys between b and
+// its next sibling) come after the copy, not between it and its original. Blocks with b's own key are
+// passed over.
 func (d *Doc) keyAfter(b *Block) string {
 	next := ""
-	for _, s := range d.Children(b.ParentID) {
-		if siblingLess(b, s) {
+	for _, s := range d.Blocks {
+		if s.ParentID == b.ParentID && s.OrderKey > b.OrderKey && (next == "" || s.OrderKey < next) {
 			next = s.OrderKey
-			break
-		}
-	}
-	if next == b.OrderKey {
-		// Equal keys are only ordered by ID; append after the whole run instead
-		next = ""
-		for _, s := range d.Children(b.ParentID) {
-			if s.OrderKey > b.OrderKey {
-				next = s.OrderKey
-				break
-			}
 		}
 	}
 	k, err := KeyBetween(b.OrderKey, next)
 	if err != nil {
 		k, _ = KeyBetween(b.OrderKey, "")
 	}
+	for i := 0; i < conflictKeyNarrowing; i++ {
+		closer, err := KeyBetween(b.OrderKey, k)
+		if err != nil {
+			break
+		}
+		k = closer
+	}
 	return k
 }
+
+// conflictKeyNarrowing: how often keyAfter halves the gap to b (each step adds about a character)
+const conflictKeyNarrowing = 4
 
 // Validate checks the tree invariants: parents exist, live blocks have live parents, no cycles, valid keys.
 func (d *Doc) Validate() error {

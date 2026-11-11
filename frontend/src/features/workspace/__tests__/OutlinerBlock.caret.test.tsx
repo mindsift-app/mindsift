@@ -156,17 +156,32 @@ describe('a bullet someone else is editing', () => {
 });
 
 describe('conflict copies', () => {
-  it('show who lost and offer accept/discard', () => {
+  it('show who lost and offer to replace, keep both or discard', () => {
     const onResolve = vi.fn();
     const block = { id: 'cf', type: 'bullet', content: 'Meine Version', level: 0, conflictOf: 'b1', conflictAuthor: 'Ben' } as DocumentBlock;
     const { getByText } = renderBlock(block, { onResolveConflict: onResolve });
     expect(getByText(/Version von Ben/)).toBeTruthy();
     fireEvent.click(getByText('Übernehmen'));
+    fireEvent.click(getByText('Beide behalten'));
     fireEvent.click(getByText('Verwerfen'));
     expect(onResolve.mock.calls).toEqual([
-      ['cf', true],
-      ['cf', false],
+      ['cf', 'take'],
+      ['cf', 'keep'],
+      ['cf', 'drop'],
     ]);
+  });
+
+  it('say why replacing waits while someone edits the original', () => {
+    const onResolve = vi.fn();
+    const block = { id: 'cf', type: 'bullet', content: 'Meine Version', level: 0, conflictOf: 'b1', conflictAuthor: 'Ben' } as DocumentBlock;
+    const { getByText } = renderBlock(block, { onResolveConflict: onResolve, originalLockedBy: { userId: 'u2', name: 'Anna' } });
+    const take = getByText('Übernehmen').closest('button')!;
+    expect(take.disabled).toBe(true);
+    expect(take.title).toMatch(/Anna bearbeitet gerade den ursprünglichen Punkt/);
+    expect(getByText(/Anna bearbeitet gerade den ursprünglichen Punkt/, { selector: 'p' })).toBeTruthy();
+    fireEvent.click(take);
+    fireEvent.click(getByText('Beide behalten'));
+    expect(onResolve.mock.calls).toEqual([['cf', 'keep']]);
   });
 });
 
