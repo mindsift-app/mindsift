@@ -1,12 +1,12 @@
 name: MindSift CI & Docker Release (Gitea)
 
-# The private Gitea runs this for every push: images in its own registry, without tests (they run before
-# every push on the developer's machine, ci/local-checks.sh). The public images on
+# The private Gitea runs this for main only: images in its own registry, without tests (they run before
+# every push on the developer's machine, ci/local-checks.sh). dev goes to GitHub only, whose :dev image the
+# demo runs; nobody used a :dev image from here. The public images on
 # GitHub come from .github/workflows/build-and-publish.yaml with the same build plan (ci/build-plan.sh);
 # they are built for amd64 and arm64, the ones here for the platform of this runner only.
 
 # Image tags:
-#   push to dev      -> :dev
 #   push/merge main  -> :latest
 #   git tag v1.2.0   -> :v1.2.0 and :stable
 #   git tag v1.2.0-rc.1 (pre-release) -> :v1.2.0-rc.1 only, :stable stays
@@ -18,7 +18,6 @@ name: MindSift CI & Docker Release (Gitea)
 on:
   push:
     branches:
-      - dev
       - main
     tags:
       - 'v*'
