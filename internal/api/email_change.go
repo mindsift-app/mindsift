@@ -17,7 +17,8 @@ import (
 	"github.com/mindsift-app/mindsift/internal/storage"
 )
 
-// New login and alarm addresses wait for the click on a link mailed to them (storage/email_change.go).
+// A new login address waits for the click on a link mailed to it (storage/email_change.go); mail alarms go
+// to the login address, they have none of their own.
 // Without a mail server the link cannot go out and the address keeps waiting; the old one stays in use.
 
 // validEmail: a bare address ("anna@example.com"), no display name, no list.
@@ -41,9 +42,6 @@ func (s *Server) requestEmailChange(user *domain.User, kind, email string) {
 	link := strings.TrimRight(s.cfg.BaseURL, "/") + "/?confirmEmail=" + url.QueryEscape(raw)
 	lang := s.userLanguage(user.ID)
 	intro := i18n.T(lang, "Du möchtest diese Adresse als Anmelde-Adresse deines MindSift-Kontos verwenden. Bitte bestätige sie – bis dahin bleibt die bisherige Adresse gültig.")
-	if kind == storage.EmailChangeAlarm {
-		intro = i18n.T(lang, "Du möchtest an diese Adresse Alarme und Zusammenfassungen von MindSift bekommen. Bitte bestätige sie – bis dahin gehen sie an die bisherige Adresse.")
-	}
 	go func() {
 		err := s.sendMailContent(email, i18n.T(lang, "MindSift: Bitte bestätige deine neue E-Mail-Adresse"), mailContent{
 			Lang:      lang,
@@ -73,33 +71,25 @@ func (s *Server) handleConfirmEmailChange(w http.ResponseWriter, r *http.Request
 	before, kind, err := s.store.ConfirmEmailChange(req.Token)
 	switch {
 	case errors.Is(err, storage.ErrEmailTaken):
-		writeError(w, http.StatusConflict, err.Error())
+		writeErrorFrom(w, http.StatusConflict, err)
 		return
 	case err != nil:
 		writeError(w, http.StatusBadRequest, storage.ErrEmailChangeInvalid.Error())
 		return
 	}
-	if kind == storage.EmailChangeAccount {
-		after, _ := s.store.GetUserByID(before.ID)
-		if after != nil {
-			// The previous address learns about it, so a takeover does not go unnoticed
-			s.notifyAccountChange(before, false, true, after.Email)
-		}
-		writeJSON(w, http.StatusOK, map[string]any{
-			"confirmed": true, "kind": kind,
-			"message": tr(w, "Deine neue E-Mail-Adresse ist bestätigt. Du meldest dich ab jetzt mit ihr an."),
-		})
-		return
+	if after, _ := s.store.GetUserByID(before.ID); after != nil {
+		// The previous address learns about it, so a takeover does not go unnoticed
+		s.notifyAccountChange(before, false, true, after.Email)
 	}
 	writeJSON(w, http.StatusOK, map[string]any{
 		"confirmed": true, "kind": kind,
-		"message": tr(w, "Deine neue Alarm-Adresse ist bestätigt. Alarme gehen ab jetzt dorthin."),
+		"message": tr(w, "Deine neue E-Mail-Adresse ist bestätigt. Du meldest dich ab jetzt mit ihr an."),
 	})
 }
 
 func emailChangeKind(r *http.Request) (string, bool) {
 	kind := chi.URLParam(r, "kind")
-	return kind, kind == storage.EmailChangeAccount || kind == storage.EmailChangeAlarm
+	return kind, kind == storage.EmailChangeAccount
 }
 
 // handleCancelEmailChange: DELETE /user/email-change/{kind} – keep the current address.

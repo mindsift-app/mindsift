@@ -136,7 +136,7 @@ func (s *Server) handleFirstBootSetup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := auth.ValidatePassword(req.Password); err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
 	if strings.TrimSpace(req.DisplayName) == "" {
@@ -151,7 +151,7 @@ func (s *Server) handleFirstBootSetup(w http.ResponseWriter, r *http.Request) {
 
 	user, err := s.store.CreateUser(req.Email, hash, req.DisplayName, "admin")
 	if err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
 	// The language chosen in the wizard becomes the server's default and the admin's own
@@ -224,7 +224,7 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := auth.ValidatePassword(req.Password); err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
 	if strings.TrimSpace(req.DisplayName) == "" {
@@ -240,7 +240,7 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 	if strings.TrimSpace(req.InviteCode) != "" {
 		inv, err := s.store.GetUserInviteByCode(req.InviteCode)
 		if err != nil {
-			writeError(w, http.StatusForbidden, err.Error())
+			writeErrorFrom(w, http.StatusForbidden, err)
 			return
 		}
 		if inv.Email != "" && domain.NormalizeEmail(inv.Email) != req.Email {
@@ -258,7 +258,7 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 		pending, err = policy.registrationOutcome(req.Email)
 		verify = policy.VerifyEmail
 		if err != nil {
-			writeError(w, http.StatusForbidden, err.Error())
+			writeErrorFrom(w, http.StatusForbidden, err)
 			return
 		}
 		if pending && len(s.store.PendingRegistrationIDs()) >= storage.MaxPendingRegistrations {
@@ -289,7 +289,7 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 	var claim string
 	if validInvite != nil {
 		if claim, err = s.store.ClaimUserInvite(validInvite.ID); err != nil {
-			writeError(w, http.StatusForbidden, err.Error())
+			writeErrorFrom(w, http.StatusForbidden, err)
 			return
 		}
 	}
@@ -509,7 +509,7 @@ func (s *Server) handleDeleteOwnAccount(w http.ResponseWriter, r *http.Request) 
 		if errors.Is(err, storage.ErrLastAdmin) {
 			status = http.StatusForbidden
 		}
-		writeError(w, status, err.Error())
+		writeErrorFrom(w, status, err)
 		return
 	}
 	s.removeUserBackups(user.ID)
@@ -568,7 +568,6 @@ func (s *Server) handleUpdateUserSettings(w http.ResponseWriter, r *http.Request
 		Password            *string   `json:"password"`
 		AvatarURL           *string   `json:"avatarUrl"`
 		AlarmChannels       *[]string `json:"alarmChannels"`
-		AlarmEmail          *string   `json:"alarmEmail"`
 		DiscordWebhookURL   *string   `json:"discordWebhookUrl"`
 		CustomWebhookURL    *string   `json:"customWebhookUrl"`
 		NotifyBeforeMinutes *int      `json:"notifyBeforeMinutes"`
@@ -607,8 +606,9 @@ func (s *Server) handleUpdateUserSettings(w http.ResponseWriter, r *http.Request
 	if (changesPassword || changesEmail) && !s.checkCurrentPassword(w, r, before, req.CurrentPassword) {
 		return
 	}
-	// A new login or alarm address is taken only after the click on the link mailed to it (email_change.go)
-	var newEmail, newAlarmEmail string
+	// A new login address is taken only after the click on the link mailed to it (email_change.go). Mail
+	// alarms go to it too; there is no address of their own.
+	var newEmail string
 	if changesEmail {
 		newEmail = domain.NormalizeEmail(*req.Email)
 		if !validEmail(newEmail) {
@@ -621,42 +621,23 @@ func (s *Server) handleUpdateUserSettings(w http.ResponseWriter, r *http.Request
 		}
 		req.Email = nil
 	}
-	if req.AlarmEmail != nil {
-		alarm := domain.NormalizeEmail(*req.AlarmEmail)
-		switch {
-		case alarm == "" || alarm == before.Email:
-			// The login address is confirmed already; an earlier waiting one is dropped
-			if err := s.store.CancelEmailChange(userID, storage.EmailChangeAlarm); err != nil {
-				writeInternal(w, err)
-				return
-			}
-		case alarm == domain.NormalizeEmail(before.AlarmEmail):
-			req.AlarmEmail = nil
-		case !validEmail(alarm):
-			writeError(w, http.StatusBadRequest, "Ungültige E-Mail-Adresse")
-			return
-		default:
-			newAlarmEmail = alarm
-			req.AlarmEmail = nil
-		}
-	}
 	// Alarm URLs are checked before they are stored (SSRF protection, see netguard.go)
 	allowPrivate := s.allowPrivateWebhooks()
 	if req.DiscordWebhookURL != nil {
 		if err := validateWebhookURL(*req.DiscordWebhookURL, true, allowPrivate); err != nil {
-			writeError(w, http.StatusBadRequest, "Discord-Webhook: "+err.Error())
+			writeErrorFrom(w, http.StatusBadRequest, fmt.Errorf("Discord-Webhook: %w", err))
 			return
 		}
 	}
 	if req.CustomWebhookURL != nil {
 		if err := validateWebhookURL(*req.CustomWebhookURL, false, allowPrivate); err != nil {
-			writeError(w, http.StatusBadRequest, "Webhook-URL: "+err.Error())
+			writeErrorFrom(w, http.StatusBadRequest, fmt.Errorf("Webhook-URL: %w", err))
 			return
 		}
 	}
 	if req.Password != nil && strings.TrimSpace(*req.Password) != "" {
 		if err := auth.ValidatePassword(*req.Password); err != nil {
-			writeError(w, http.StatusBadRequest, err.Error())
+			writeErrorFrom(w, http.StatusBadRequest, err)
 			return
 		}
 		hash, err := auth.HashPassword(*req.Password)
@@ -694,14 +675,13 @@ func (s *Server) handleUpdateUserSettings(w http.ResponseWriter, r *http.Request
 		nil,
 		nil,
 		req.AlarmChannels,
-		req.AlarmEmail,
 		req.DiscordWebhookURL,
 		req.CustomWebhookURL,
 		req.NotifyBeforeMinutes,
 		req.AvatarURL,
 	)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
 	if changesPassword {
@@ -709,9 +689,6 @@ func (s *Server) handleUpdateUserSettings(w http.ResponseWriter, r *http.Request
 	}
 	if newEmail != "" {
 		s.requestEmailChange(u, storage.EmailChangeAccount, newEmail)
-	}
-	if newAlarmEmail != "" {
-		s.requestEmailChange(u, storage.EmailChangeAlarm, newAlarmEmail)
 	}
 	if req.NotificationSettings != nil {
 		if err := s.store.SetNotificationSettings(userID, *req.NotificationSettings); err != nil {
@@ -725,31 +702,31 @@ func (s *Server) handleUpdateUserSettings(w http.ResponseWriter, r *http.Request
 			return
 		}
 		if err := s.store.SetDoneRetentionDays(userID, *req.DoneRetentionDays); err != nil {
-			writeError(w, http.StatusBadRequest, err.Error())
+			writeErrorFrom(w, http.StatusBadRequest, err)
 			return
 		}
 	}
 	if req.VoiceInput != nil {
 		if err := s.store.SetVoiceInput(userID, *req.VoiceInput); err != nil {
-			writeError(w, http.StatusBadRequest, err.Error())
+			writeErrorFrom(w, http.StatusBadRequest, err)
 			return
 		}
 	}
 	if req.VoiceLanguage != nil {
 		if err := s.store.SetVoiceLanguage(userID, *req.VoiceLanguage); err != nil {
-			writeError(w, http.StatusBadRequest, err.Error())
+			writeErrorFrom(w, http.StatusBadRequest, err)
 			return
 		}
 	}
 	if req.Language != nil {
 		if err := s.store.SetLanguage(userID, *req.Language); err != nil {
-			writeError(w, http.StatusBadRequest, err.Error())
+			writeErrorFrom(w, http.StatusBadRequest, err)
 			return
 		}
 	}
 	if req.Retention != nil {
 		if err := s.store.SetRetention(userID, *req.Retention, s.allowNeverRetention()); err != nil {
-			writeError(w, http.StatusBadRequest, err.Error())
+			writeErrorFrom(w, http.StatusBadRequest, err)
 			return
 		}
 	}
@@ -853,7 +830,7 @@ func (s *Server) handleTestUserAlarm(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if err := s.sendDiscordNotification(lang, url, testTitle, i18n.T(lang, "Dein Discord-Alarmkanal funktioniert einwandfrei!"), domain.HumanDue(lang, domain.NowISO()[:10]), "normal"); err != nil {
-			writeError(w, http.StatusBadGateway, "Discord-Fehler: "+err.Error())
+			writeJSON(w, http.StatusBadGateway, map[string]string{"error": tr(w, "Discord-Fehler") + ": " + deliveryProblem(w, err)})
 			return
 		}
 	case "webhook":
@@ -866,19 +843,12 @@ func (s *Server) handleTestUserAlarm(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if err := s.sendCustomWebhookNotification(url, "test_alarm", testTitle, i18n.T(lang, "Dein eigener Webhook empfängt MindSift-Alarme!"), domain.NowISO()[:10], "normal", nil); err != nil {
-			writeError(w, http.StatusBadGateway, "Webhook-Fehler: "+err.Error())
+			writeJSON(w, http.StatusBadGateway, map[string]string{"error": tr(w, "Webhook-Fehler") + ": " + deliveryProblem(w, err)})
 			return
 		}
 	case "email":
-		// Only to one's own confirmed addresses (login or alarm address), never to someone else
-		toEmail := user.AlarmEmail
-		if t := domain.NormalizeEmail(target); t != "" {
-			if t != domain.NormalizeEmail(user.Email) && t != domain.NormalizeEmail(user.AlarmEmail) {
-				writeError(w, http.StatusBadRequest, "Test-Mails gehen nur an deine bestätigten Adressen. Speichere eine neue Alarm-Adresse und bestätige sie über den Link in der E-Mail.")
-				return
-			}
-			toEmail = t
-		}
+		// Only to the confirmed login address, where the alarms go; a target in the request is ignored
+		toEmail := user.Email
 		sample := time.Date(2026, 1, 1, 18, 0, 0, 0, time.Local)
 		if err := s.sendMailContent(toEmail, "⏰ "+i18n.T(lang, "MindSift Test-Alarm"), mailContent{
 			Lang:      lang,
@@ -919,7 +889,6 @@ func (s *Server) fillUserPreferences(u *domain.User) {
 	u.Organizations = s.store.UserOrganizations(u.ID)
 	pending := s.store.PendingEmailChanges(u.ID)
 	u.PendingEmail = pending[storage.EmailChangeAccount].Email
-	u.PendingAlarmEmail = pending[storage.EmailChangeAlarm].Email
 	u.EmailLinks = s.emailLinksAvailable()
 }
 

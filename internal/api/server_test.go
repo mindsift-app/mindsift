@@ -367,7 +367,7 @@ func TestNewFullFeatures(t *testing.T) {
 	settingsPayload := map[string]any{
 		"displayName":         "Admin User",
 		"alarmChannels":       []string{"email", "discord", "webhook"},
-		"alarmEmail":          "alarms@example.com",
+		"alarmEmail":          "alarms@example.com", // no longer an own address: ignored
 		"discordWebhookUrl":   "https://discord.com/api/webhooks/test/123",
 		"customWebhookUrl":    "https://ntfy.sh/my-topic",
 		"notifyBeforeMinutes": 15,
@@ -384,9 +384,9 @@ func TestNewFullFeatures(t *testing.T) {
 	}
 	var updatedUser domain.User
 	_ = json.Unmarshal(rec.Body.Bytes(), &updatedUser)
-	// A new alarm address waits for its confirmation link (email_change.go)
-	if len(updatedUser.AlarmChannels) != 3 || updatedUser.PendingAlarmEmail != "alarms@example.com" {
-		t.Fatalf("expected 3 alarm channels and a waiting alarmEmail, got %+v", updatedUser)
+	// Mail alarms go to the login address; an alarm address sent along is ignored
+	if len(updatedUser.AlarmChannels) != 3 || strings.Contains(rec.Body.String(), "alarms@example.com") {
+		t.Fatalf("expected 3 alarm channels and no alarm address, got %s", rec.Body.String())
 	}
 
 	// 3. Test Admin routes (default user is admin)

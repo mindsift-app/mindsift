@@ -79,7 +79,6 @@ type User struct {
 	IsActive            bool     `json:"isActive"`
 	TokenVersion        int      `json:"tokenVersion"`
 	AlarmChannels       []string `json:"alarmChannels"` // email | discord | webhook
-	AlarmEmail          string   `json:"alarmEmail"`
 	DiscordWebhookURL   string   `json:"discordWebhookUrl"`
 	CustomWebhookURL    string   `json:"customWebhookUrl"`
 	NotifyBeforeMinutes int      `json:"notifyBeforeMinutes"`
@@ -93,8 +92,7 @@ type User struct {
 	// Registered and the e-mail address is not confirmed yet (admin user list only)
 	EmailUnverified bool `json:"emailUnverified,omitempty"`
 	// New login and alarm addresses waiting for the click on their link (own profile only)
-	PendingEmail      string `json:"pendingEmail,omitempty"`
-	PendingAlarmEmail string `json:"pendingAlarmEmail,omitempty"`
+	PendingEmail string `json:"pendingEmail,omitempty"`
 	// EmailLinks: this server can mail confirmation links (mail server and BASE_URL; own profile only)
 	EmailLinks bool `json:"emailLinks,omitempty"`
 	// Only filled for the user's own profile (GET /auth/me, PATCH /auth/settings)

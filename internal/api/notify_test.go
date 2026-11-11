@@ -105,7 +105,7 @@ func TestOwnChangesPauseAndChannels(t *testing.T) {
 	set.Events.Watched = domain.ChannelChoice{Discord: true}
 	_ = store.SetNotificationSettings(me.ID, set)
 	hook := "https://discord.com/api/webhooks/1/x"
-	_, _ = store.UpdateUserFull(me.ID, nil, nil, nil, nil, nil, nil, &hook, nil, nil, nil)
+	_, _ = store.UpdateUserFull(me.ID, nil, nil, nil, nil, nil, &hook, nil, nil, nil)
 	sessionCall(router, "PATCH", "/api/v1/thoughts/"+task.ID, myToken, `{"priority":"low"}`, "")
 	srv.flushNotifications(time.Now().Add(10 * time.Minute))
 	if len(*sent) != 1 || (*sent)[0].channel != "discord" {
@@ -117,7 +117,7 @@ func TestOwnChangesPauseAndChannels(t *testing.T) {
 	set.Events.Watched = domain.ChannelChoice{Webhook: true}
 	_ = store.SetNotificationSettings(me.ID, set)
 	own := "https://hooks.example.com/mindsift"
-	_, _ = store.UpdateUserFull(me.ID, nil, nil, nil, nil, nil, nil, nil, &own, nil, nil)
+	_, _ = store.UpdateUserFull(me.ID, nil, nil, nil, nil, nil, nil, &own, nil, nil)
 	sessionCall(router, "PATCH", "/api/v1/thoughts/"+task.ID, myToken, `{"priority":"normal"}`, "")
 	srv.flushNotifications(time.Now().Add(10 * time.Minute))
 	if len(*sent) != 1 || (*sent)[0].channel != "webhook" || (*sent)[0].to != own {

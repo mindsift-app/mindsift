@@ -1,10 +1,15 @@
 package api
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"strings"
 	"testing"
 
+	"github.com/mindsift-app/mindsift/internal/auth"
 	"github.com/mindsift-app/mindsift/internal/i18n"
 	"github.com/mindsift-app/mindsift/internal/storage"
 )
@@ -37,6 +42,47 @@ func TestClientMessageHidesInternals(t *testing.T) {
 	}
 	if got := clientMessage(i18n.NewError("Aufnahme zu groß (höchstens {mb} MB)", "mb", "25")); got == errInternal {
 		t.Errorf("localized error hidden: %q", got)
+	}
+}
+
+// Error answers below 500 show only texts written for people: a database or driver error on a 400 path
+// becomes an internal error (500, fixed text, details in the log), also behind a known context (N-02)
+func TestErrorAnswersHideInternals(t *testing.T) {
+	answer := func(status int, err error) (int, string) {
+		rec := httptest.NewRecorder()
+		rec.Header().Set("Content-Language", "en")
+		writeErrorFrom(rec, status, err)
+		var body map[string]string
+		_ = json.Unmarshal(rec.Body.Bytes(), &body)
+		return rec.Code, body["error"]
+	}
+	sqlErr := errors.New("UNIQUE constraint failed: users.email")
+	for _, err := range []error{sqlErr, fmt.Errorf("Discord-Webhook: %w", sqlErr), fmt.Errorf("moving note %q: %w", "Einkauf", sqlErr)} {
+		if code, msg := answer(http.StatusBadRequest, err); code != http.StatusInternalServerError || strings.Contains(msg, "UNIQUE") || strings.Contains(msg, "Einkauf") {
+			t.Errorf("%v: answered %d %q", err, code, msg)
+		}
+	}
+	cases := []struct {
+		err  error
+		want string
+	}{
+		{storage.ErrEmailTaken, "This email address already exists"},
+		{fmt.Errorf("Discord-Webhook: %w", errors.New("Ungültige URL")), "Discord webhook: Invalid URL"},
+		{auth.ErrPasswordTooShort, "The password must be at least 8 characters long"},
+	}
+	for _, c := range cases {
+		if code, msg := answer(http.StatusBadRequest, c.err); code != http.StatusBadRequest || msg != c.want {
+			t.Errorf("%v: answered %d %q, want 400 %q", c.err, code, msg, c.want)
+		}
+	}
+	// A test message to one's own Discord or webhook: the HTTP status is told, network details are not
+	rec := httptest.NewRecorder()
+	rec.Header().Set("Content-Language", "en")
+	if got := deliveryProblem(rec, errors.New("dial tcp 10.0.0.5:443: connect: connection refused")); got != "Target not reachable" {
+		t.Errorf("network error shown: %q", got)
+	}
+	if got := deliveryProblem(rec, i18n.NewError("HTTP-Status {status}", "status", "404")); got != "HTTP status 404" {
+		t.Errorf("HTTP status: %q", got)
 	}
 }
 

@@ -40,7 +40,7 @@ func (s *Server) handleSaveTheme(w http.ResponseWriter, r *http.Request) {
 	}
 	theme, err := s.store.SaveUserTheme(auth.GetUserID(r.Context()), strings.TrimSpace(req.ID), req.Name, req.CSS)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
 	status := http.StatusCreated
@@ -52,7 +52,7 @@ func (s *Server) handleSaveTheme(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleDeleteTheme(w http.ResponseWriter, r *http.Request) {
 	if err := s.store.DeleteUserTheme(auth.GetUserID(r.Context()), chi.URLParam(r, "id")); err != nil {
-		writeError(w, http.StatusNotFound, err.Error())
+		writeErrorFrom(w, http.StatusNotFound, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]bool{"deleted": true})
@@ -79,7 +79,7 @@ func (s *Server) confirmPassword(w http.ResponseWriter, r *http.Request) (*domai
 // runImport answers a preview (?preview=1) with what would be created, otherwise imports.
 func (s *Server) runImport(w http.ResponseWriter, r *http.Request, plan *storage.ImportPlan, err error) {
 	if err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
 	// sections=notes,tasks,…: only these parts of a MindSift backup (all when not given)
@@ -122,7 +122,7 @@ func trSummary(w http.ResponseWriter, sum storage.ImportSummary) storage.ImportS
 func (s *Server) handleImportMindSift(w http.ResponseWriter, r *http.Request) {
 	data, name, err := importUpload(w, r)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
 	plan, err := storage.PlanMindSiftImport(data, name)
@@ -133,7 +133,7 @@ func (s *Server) handleImportMindSift(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleImportObsidian(w http.ResponseWriter, r *http.Request) {
 	data, name, err := importUpload(w, r)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
 	plan, err := storage.PlanObsidianImport(bytes.NewReader(data), int64(len(data)), name)

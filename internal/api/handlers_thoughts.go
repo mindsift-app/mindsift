@@ -193,7 +193,7 @@ func (s *Server) handleGetTasks(w http.ResponseWriter, r *http.Request) {
 	}
 	tasks, err = filterTasks(tasks, q.Get("status"), q.Get("due"), time.Now())
 	if err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, tasks)

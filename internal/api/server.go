@@ -523,7 +523,7 @@ func writeUsernameError(w http.ResponseWriter, err error) {
 	case errors.Is(err, storage.ErrInvalidUsername):
 		writeErrorCode(w, http.StatusBadRequest, "username_invalid", storage.ErrInvalidUsername.Msg)
 	default:
-		writeError(w, http.StatusBadRequest, err.Error())
+		writeErrorFrom(w, http.StatusBadRequest, err)
 	}
 }
 
@@ -538,12 +538,28 @@ const errInternal = "Interner Fehler – Details stehen im Server-Log"
 // clientMessage: err as clients may see it. Texts written for people (from the catalog, or errors that
 // say themselves in every language) pass; anything else is logged and replaced by errInternal.
 func clientMessage(err error) string {
-	var l i18n.Localizer
-	if errors.As(err, &l) || i18n.Has("en", err.Error()) {
+	if clientSafe(err) {
 		return err.Error()
 	}
 	slog.Error("Request failed", "error", err)
 	return errInternal
+}
+
+// clientSafe: err's text was written for people, a message of the catalog (also "Kontext: Meldung") or one
+// with placeholders (i18n.Localizer). Anything else (SQL, driver, I/O, addresses) stays in the server log.
+func clientSafe(err error) bool {
+	var l i18n.Localizer
+	return errors.As(err, &l) || i18n.Known(err.Error())
+}
+
+// writeErrorFrom answers err with status when its text is meant for people, in the request's language;
+// anything else is an internal failure: logged, 500 with the fixed text (writeInternal).
+func writeErrorFrom(w http.ResponseWriter, status int, err error) {
+	if !clientSafe(err) {
+		writeInternal(w, err)
+		return
+	}
+	writeJSON(w, status, map[string]string{"error": trErr(w, err)})
 }
 
 // writeInternal answers an unexpected failure with 500 (see clientMessage).
@@ -563,18 +579,14 @@ func logFailed(what string, err error, args ...any) {
 // and everything else to the given fallback status. A raw sql.ErrNoRows is never shown to the client.
 func writeStoreError(w http.ResponseWriter, fallbackStatus int, err error) {
 	if errors.Is(err, storage.ErrTaskListReadOnly) || errors.Is(err, storage.ErrAssigneeNoAccess) {
-		writeError(w, http.StatusForbidden, err.Error())
+		writeErrorFrom(w, http.StatusForbidden, err)
 		return
 	}
 	if errors.Is(err, sql.ErrNoRows) {
 		writeError(w, http.StatusNotFound, "Nicht gefunden oder kein Zugriff")
 		return
 	}
-	if fallbackStatus >= http.StatusInternalServerError {
-		writeInternal(w, err)
-		return
-	}
-	writeError(w, fallbackStatus, err.Error())
+	writeErrorFrom(w, fallbackStatus, err)
 }
 
 // logPath: the request path as logged. The token of a public link is the only key to it and lands in

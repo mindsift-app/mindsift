@@ -197,7 +197,7 @@ export function ProfileSection({
               title={demoMode ? t('profile.demoDisabled') : undefined}
               className="w-full h-9 px-3 input-field disabled:opacity-60"
             />
-            <PendingEmailNote user={currentUser} kind="account" onUserUpdated={onUserUpdated} />
+            <PendingEmailNote user={currentUser} onUserUpdated={onUserUpdated} />
           </div>
         </div>
 

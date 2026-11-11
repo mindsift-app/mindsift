@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { MailCheck, X } from 'lucide-react';
 import { api } from '../lib/api';
 
-// Link from the mail confirming a new login or alarm address (?confirmEmail=…): confirmed right away,
+// Link from the mail confirming a new login address (?confirmEmail=…): confirmed right away,
 // signed in or not, and the server's answer shown until closed. The token leaves the address bar at once.
 export function EmailConfirmToast({ onConfirmed }: { onConfirmed?: () => void }) {
   const { t } = useTranslation();

@@ -83,7 +83,7 @@ func (s *Server) handleResetPassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := auth.ValidatePassword(req.Password); err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
 	hash, err := auth.HashPassword(req.Password)
@@ -94,7 +94,7 @@ func (s *Server) handleResetPassword(w http.ResponseWriter, r *http.Request) {
 	userID, err := s.store.ResetPasswordWithToken(req.Token, hash)
 	if err != nil {
 		if errors.Is(err, storage.ErrResetTokenInvalid) {
-			writeError(w, http.StatusBadRequest, err.Error())
+			writeErrorFrom(w, http.StatusBadRequest, err)
 			return
 		}
 		writeError(w, http.StatusInternalServerError, "Passwort konnte nicht gespeichert werden")

@@ -4,19 +4,11 @@ import { MailCheck } from 'lucide-react';
 import { api } from '../../../lib/api';
 import { User } from '../../../lib/types';
 
-// A new login or alarm address waits for the click on the link mailed to it; until then the old one
-// stays in use. Shown under the field, with sending the link again and keeping the old address.
-export function PendingEmailNote({
-  user,
-  kind,
-  onUserUpdated,
-}: {
-  user: User;
-  kind: 'account' | 'alarm';
-  onUserUpdated: (u: User) => void;
-}) {
+// A new login address waits for the click on the link mailed to it; until then the old one stays in use.
+// Shown under the field, with sending the link again and keeping the old address.
+export function PendingEmailNote({ user, onUserUpdated }: { user: User; onUserUpdated: (u: User) => void }) {
   const { t } = useTranslation('settings');
-  const pending = kind === 'account' ? user.pendingEmail : user.pendingAlarmEmail;
+  const pending = user.pendingEmail;
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   if (!pending) return null;
@@ -24,7 +16,7 @@ export function PendingEmailNote({
   const resend = async () => {
     setBusy(true);
     try {
-      await api.resendEmailChange(kind);
+      await api.resendEmailChange('account');
       setMsg(t('pendingEmail.resent'));
     } catch (err: any) {
       setMsg(err.message || t('pendingEmail.failed'));
@@ -35,8 +27,8 @@ export function PendingEmailNote({
   const cancel = async () => {
     setBusy(true);
     try {
-      await api.cancelEmailChange(kind);
-      onUserUpdated(kind === 'account' ? { ...user, pendingEmail: undefined } : { ...user, pendingAlarmEmail: undefined });
+      await api.cancelEmailChange('account');
+      onUserUpdated({ ...user, pendingEmail: undefined });
     } catch (err: any) {
       setMsg(err.message || t('pendingEmail.failed'));
       setBusy(false);

@@ -218,7 +218,7 @@
       "title": "Destination : e-mail",
       "hint": "Envoie un e-mail via le serveur SMTP configuré sur l'instance.",
       "test": "Tester l'e-mail",
-      "recipient": "Autre e-mail de réception (optionnel, par défaut : {{email}})"
+      "recipient": "Est envoyé à ton adresse de connexion {{email}}. Pour une autre adresse, modifie-la dans « Profil & sécurité »."
     },
     "discord": {
       "title": "Destination : webhook Discord",
@@ -272,7 +272,6 @@
     "save": "Enregistrer les paramètres d'alarme",
     "saved": "Canaux d'alarme et préavis enregistrés.",
     "saveFailed": "Échec de l'enregistrement des alarmes",
-    "needEmail": "Saisis d'abord une adresse e-mail de réception.",
     "needDiscordUrl": "Saisis d'abord une URL de webhook Discord.",
     "needWebhookUrl": "Saisis d'abord ta propre URL de webhook.",
     "testSent": "Le serveur a envoyé l'alarme de test via « {{label}} » !",

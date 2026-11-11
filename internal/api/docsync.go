@@ -65,7 +65,7 @@ func (s *Server) handleDocSnapshot(w http.ResponseWriter, r *http.Request) {
 		return // the client has gone; nobody reads the answer
 	}
 	if err != nil {
-		writeError(w, http.StatusNotFound, err.Error())
+		writeErrorFrom(w, http.StatusNotFound, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{
@@ -144,7 +144,7 @@ func (s *Server) handleDocSync(w http.ResponseWriter, r *http.Request) {
 		}
 		if errors.Is(err, storage.ErrDocNotFound) {
 			// Deleted while the client was still typing in it
-			writeError(w, http.StatusNotFound, err.Error())
+			writeErrorFrom(w, http.StatusNotFound, err)
 			return
 		}
 		if err != nil {
@@ -189,7 +189,7 @@ func (s *Server) handleDocSync(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if errors.Is(err, storage.ErrDocNotFound) {
-			writeError(w, http.StatusNotFound, err.Error())
+			writeErrorFrom(w, http.StatusNotFound, err)
 			return
 		}
 		writeInternal(w, err)
@@ -264,7 +264,7 @@ func (s *Server) handleDocChanges(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if errors.Is(err, storage.ErrDocNotFound) {
-		writeError(w, http.StatusNotFound, err.Error())
+		writeErrorFrom(w, http.StatusNotFound, err)
 		return
 	}
 	if err != nil {

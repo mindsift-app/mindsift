@@ -60,11 +60,11 @@ func (s *Server) handleUpdateAPIKey(w http.ResponseWriter, r *http.Request) {
 	}
 	key, err := s.store.UpdateAPIKey(userID, chi.URLParam(r, "id"), req.Name, req.Scopes)
 	if errors.Is(err, storage.ErrAPIKeyNotFound) {
-		writeError(w, http.StatusNotFound, err.Error())
+		writeErrorFrom(w, http.StatusNotFound, err)
 		return
 	}
 	if err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, key)
@@ -245,7 +245,7 @@ func (s *Server) createTask(userID, content, priority, source, dueDate, taskList
 func (s *Server) ingestTask(w http.ResponseWriter, userID, content, priority, source, dueDate, taskListID string, actor *apiActor) {
 	task, err := s.createTask(userID, content, priority, source, dueDate, taskListID, "", actor)
 	if errors.Is(err, storage.ErrTaskListReadOnly) {
-		writeError(w, http.StatusForbidden, err.Error())
+		writeErrorFrom(w, http.StatusForbidden, err)
 		return
 	}
 	if err != nil {
@@ -286,7 +286,7 @@ func (s *Server) ingestListItem(w http.ResponseWriter, userID, listID, content, 
 		case errors.Is(err, errListIDRequired):
 			status = http.StatusBadRequest
 		}
-		writeError(w, status, err.Error())
+		writeErrorFrom(w, status, err)
 		return
 	}
 	writeJSON(w, http.StatusCreated, map[string]any{"status": "ingested", "item": item})

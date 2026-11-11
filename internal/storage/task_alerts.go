@@ -200,16 +200,13 @@ func (s *Store) alarmUser(userID string) *DueTaskAlarm {
 	var channelsRaw string
 	var active bool
 	err := s.db.QueryRow(
-		`SELECT id, email, display_name, alarm_channels, alarm_email, discord_webhook_url, custom_webhook_url, notify_before_minutes, is_active
+		`SELECT id, email, display_name, alarm_channels, discord_webhook_url, custom_webhook_url, notify_before_minutes, is_active
 		 FROM users WHERE id = ?`, userID,
-	).Scan(&a.UserID, &a.UserEmail, &a.UserName, &channelsRaw, &a.AlarmEmail, &a.DiscordWebhookURL, &a.CustomWebhookURL, &a.NotifyBeforeMinutes, &active)
+	).Scan(&a.UserID, &a.UserEmail, &a.UserName, &channelsRaw, &a.DiscordWebhookURL, &a.CustomWebhookURL, &a.NotifyBeforeMinutes, &active)
 	if err != nil || !active {
 		return nil
 	}
 	a.AlarmChannels = parseAlarmChannels(channelsRaw)
-	if a.AlarmEmail == "" {
-		a.AlarmEmail = a.UserEmail
-	}
 	return &a
 }
 

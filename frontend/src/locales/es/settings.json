@@ -321,7 +321,7 @@
       "title": "Destino: correo electrónico",
       "hint": "Envía un correo mediante el servidor SMTP configurado en la instancia.",
       "test": "Correo de prueba",
-      "recipient": "Dirección de correo de destino diferente (opcional, por defecto: {{email}})"
+      "recipient": "Se envía a tu dirección de inicio de sesión {{email}}. Para usar otra, cámbiala en «Perfil y seguridad»."
     },
     "discord": {
       "title": "Destino: webhook de Discord",
@@ -375,7 +375,6 @@
     "save": "Guardar ajustes de avisos",
     "saved": "Canales de aviso y antelación guardados.",
     "saveFailed": "Error al guardar los avisos",
-    "needEmail": "Introduce primero una dirección de correo de destino.",
     "needDiscordUrl": "Introduce primero la URL del webhook de Discord.",
     "needWebhookUrl": "Introduce primero la URL de tu propio webhook.",
     "testSent": "¡El servidor envió el aviso de prueba mediante «{{label}}»!",

@@ -218,7 +218,7 @@
       "title": "Ziel: E-Mail",
       "hint": "Sendet eine E-Mail über den konfigurierten SMTP-Server der Instanz.",
       "test": "E-Mail testen",
-      "recipient": "Abweichende Empfänger-E-Mail (optional, Standard: {{email}})"
+      "recipient": "Geht an deine Anmelde-Adresse {{email}}. Eine andere Adresse stellst du unter „Profil & Sicherheit“ ein."
     },
     "discord": {
       "title": "Ziel: Discord Webhook",
@@ -272,7 +272,6 @@
     "save": "Alarm-Einstellungen speichern",
     "saved": "Alarm-Kanäle und Vorwarnzeit erfolgreich gespeichert.",
     "saveFailed": "Fehler beim Speichern der Alarme",
-    "needEmail": "Bitte gib zuerst eine Empfänger-E-Mail-Adresse an.",
     "needDiscordUrl": "Bitte gib zuerst eine Discord Webhook URL ein.",
     "needWebhookUrl": "Bitte gib zuerst eine eigene Webhook URL ein.",
     "testSent": "Test-Alarm über \"{{label}}\" wurde erfolgreich vom Server versendet!",

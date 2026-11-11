@@ -10,14 +10,14 @@ import (
 	"github.com/mindsift-app/mindsift/internal/domain"
 )
 
-// A new address for the account or for alarms is taken only once its owner clicks the link mailed to
-// it, so nobody can send mail from this instance to a stranger or lose the account to a typo. Until
-// then the old address stays in use and the new one waits here (one per kind and person). Without a
+// A new login address is taken only once its owner clicks the link mailed to it, so nobody can send mail
+// from this instance to a stranger or lose the account to a typo. Mail alarms go to the login address too.
+// Until then the old address stays in use and the new one waits here (one per person; kind is always
+// "account" since alarms lost their own address, migration 35). Without a
 // mail server the link never goes out and the address keeps waiting. Only the token's hash is stored.
 
 const (
 	EmailChangeAccount = "account"
-	EmailChangeAlarm   = "alarm"
 
 	emailChangeTTL      = 48 * time.Hour
 	emailChangeCooldown = 2 * time.Minute // no second mail for the same address within this time
@@ -40,6 +40,15 @@ func (s *Store) migrateEmailChanges() error {
 			PRIMARY KEY (user_id, kind)
 		)`),
 		stmt(`CREATE INDEX IF NOT EXISTS idx_email_changes_token ON email_changes(token_hash)`),
+	)
+}
+
+// migrateAlarmToLoginAddress: mail alarms had an address of their own, which stayed behind when the login
+// address changed. They go to the login address now; addresses kept for them and waiting ones are dropped.
+func (s *Store) migrateAlarmToLoginAddress() error {
+	return s.execInTx(
+		stmt(`DELETE FROM email_changes WHERE kind = 'alarm'`),
+		stmt(`UPDATE users SET alarm_email = ''`),
 	)
 }
 
@@ -99,8 +108,8 @@ func (s *Store) CancelEmailChange(userID, kind string) error {
 	return err
 }
 
-// ConfirmEmailChange takes the address of the link: the account's login address (if still free) or
-// the alarm address. Returns the person as before the change and the kind.
+// ConfirmEmailChange takes the address of the link as the account's login address (if still free).
+// Returns the person as before the change and the kind.
 func (s *Store) ConfirmEmailChange(raw string) (*domain.User, string, error) {
 	raw = strings.TrimSpace(raw)
 	if raw == "" {
@@ -130,19 +139,17 @@ func (s *Store) ConfirmEmailChange(raw string) (*domain.User, string, error) {
 	if n, _ := res.RowsAffected(); n == 0 {
 		return nil, "", ErrEmailChangeInvalid // used in parallel
 	}
-	if kind == EmailChangeAccount {
-		var taken int
-		if err := tx.QueryRow(`SELECT COUNT(*) FROM users WHERE LOWER(email) = ? AND id != ?`, email, userID).Scan(&taken); err != nil {
-			return nil, "", err
-		}
-		if taken > 0 {
-			return nil, "", ErrEmailTaken
-		}
-		_, err = tx.Exec(`UPDATE users SET email = ? WHERE id = ?`, email, userID)
-	} else {
-		_, err = tx.Exec(`UPDATE users SET alarm_email = ? WHERE id = ?`, email, userID)
+	if kind != EmailChangeAccount {
+		return nil, "", ErrEmailChangeInvalid
 	}
-	if err != nil {
+	var taken int
+	if err := tx.QueryRow(`SELECT COUNT(*) FROM users WHERE LOWER(email) = ? AND id != ?`, email, userID).Scan(&taken); err != nil {
+		return nil, "", err
+	}
+	if taken > 0 {
+		return nil, "", ErrEmailTaken
+	}
+	if _, err = tx.Exec(`UPDATE users SET email = ? WHERE id = ?`, email, userID); err != nil {
 		return nil, "", err
 	}
 	if err := tx.Commit(); err != nil {

@@ -50,6 +50,21 @@ func Has(lang, msg string) bool {
 	return ok
 }
 
+// Known: msg is a text of the catalog, as a whole or in parts around ": " ("Webhook-URL: Ungültige URL").
+// A text that is not (SQL, driver, I/O) was not written for people.
+func Known(msg string) bool {
+	if msg == "" {
+		return false
+	}
+	if _, ok := catalogs["en"][msg]; ok {
+		return true
+	}
+	if i := strings.Index(msg, ": "); i > 0 {
+		return Known(msg[:i]) && Known(msg[i+2:])
+	}
+	return false
+}
+
 // Languages with a server catalog besides German.
 func CatalogLanguages() []string {
 	out := make([]string, 0, len(catalogs))

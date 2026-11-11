@@ -66,7 +66,7 @@ func (s *Server) handleCreateDocument(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
 	s.broadcastDocToAuthorizedUsers(doc.ID, "DOC_CREATED")
@@ -115,7 +115,7 @@ func (s *Server) handleUpdateDocument(w http.ResponseWriter, r *http.Request) {
 
 	doc, err := s.store.UpdateDocument(userID, docID, req.Title, req.Icon, req.FolderPath, req.IsPinned)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
 	if req.Title != nil {
@@ -186,7 +186,7 @@ func (s *Server) handleEmptyTrash(w http.ResponseWriter, r *http.Request) {
 
 func writeTrashError(w http.ResponseWriter, err error) {
 	if errors.Is(err, storage.ErrNotInTrash) {
-		writeError(w, http.StatusNotFound, err.Error())
+		writeErrorFrom(w, http.StatusNotFound, err)
 		return
 	}
 	writeInternal(w, err)
@@ -208,7 +208,7 @@ func (s *Server) handleCreateEnhancedTask(w http.ResponseWriter, r *http.Request
 
 	thought, err := s.store.CreateTaskFromDocBlock(userID, docID, blockID, req.Content, req.Checked)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
 	// Checkboxes already right under it become its subtasks (task_doc_sync.go)
@@ -236,7 +236,7 @@ func (s *Server) handleMoveDocument(w http.ResponseWriter, r *http.Request) {
 	}
 	doc, err := s.store.MoveDocument(userID, docID, req.FolderPath)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
 	s.wsHub.BroadcastDocEvent(docID, "DOC_UPDATED", doc)
@@ -284,7 +284,7 @@ func (s *Server) handleCreateDocShare(w http.ResponseWriter, r *http.Request) {
 			defer s.notifyShared(userID, "team", req.TeamID, "note", docID, s.docTitle(userID, docID))
 		}
 		if err != nil {
-			writeError(w, http.StatusBadRequest, err.Error())
+			writeErrorFrom(w, http.StatusBadRequest, err)
 			return
 		}
 		s.broadcastDocToAuthorizedUsers(docID, "DOC_CREATED")
@@ -304,7 +304,7 @@ func (s *Server) handleCreateDocShare(w http.ResponseWriter, r *http.Request) {
 
 	share, err := s.store.CreateDocShare(userID, docID, target, req.Permission)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
 	s.notifyShared(userID, "user", share.UserID, "note", docID, s.docTitle(userID, docID))
@@ -318,7 +318,7 @@ func (s *Server) handleDeleteDocShare(w http.ResponseWriter, r *http.Request) {
 	docID := chi.URLParam(r, "id")
 	targetUserID := chi.URLParam(r, "userId")
 	if err := s.store.DeleteDocShare(userID, docID, targetUserID); err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
 	s.wsHub.BroadcastToUser(targetUserID, "DOC_DELETED", map[string]string{"id": docID})

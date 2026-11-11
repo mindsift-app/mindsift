@@ -32,6 +32,7 @@ type fakeSMTP struct {
 	ehlo     string
 	mailFrom string
 	rcptTo   string
+	rcpts    []string // every RCPT TO, in order
 	data     string
 }
 
@@ -134,6 +135,7 @@ func (f *fakeSMTP) serve(conn net.Conn, tlsCfg *tls.Config) {
 		case strings.HasPrefix(upper, "RCPT TO"):
 			f.mu.Lock()
 			f.rcptTo = strings.TrimSpace(cmd[len("RCPT TO:"):])
+			f.rcpts = append(f.rcpts, f.rcptTo)
 			f.mu.Unlock()
 			if f.rcptCode != "" {
 				reply(f.rcptCode)

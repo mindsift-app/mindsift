@@ -11,7 +11,7 @@ const user: User = {
   role: 'member',
   isActive: true,
   createdAt: '2026-11-10T08:00:00Z',
-  pendingAlarmEmail: 'alarm@example.org',
+  pendingEmail: 'anna.neu@example.org',
   emailLinks: true,
 };
 
@@ -20,22 +20,22 @@ describe('PendingEmailNote', () => {
     const resend = vi.spyOn(api, 'resendEmailChange').mockResolvedValue();
     const cancel = vi.spyOn(api, 'cancelEmailChange').mockResolvedValue();
     const onUserUpdated = vi.fn();
-    render(<PendingEmailNote user={user} kind="alarm" onUserUpdated={onUserUpdated} />);
-    expect(screen.getByText(/Wartet auf Bestätigung: alarm@example.org/)).toBeTruthy();
+    render(<PendingEmailNote user={user} onUserUpdated={onUserUpdated} />);
+    expect(screen.getByText(/Wartet auf Bestätigung: anna.neu@example.org/)).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Link erneut senden' }));
-    await waitFor(() => expect(resend).toHaveBeenCalledWith('alarm'));
+    await waitFor(() => expect(resend).toHaveBeenCalledWith('account'));
     fireEvent.click(screen.getByRole('button', { name: 'Bisherige behalten' }));
-    await waitFor(() => expect(cancel).toHaveBeenCalledWith('alarm'));
-    expect(onUserUpdated).toHaveBeenCalledWith(expect.objectContaining({ pendingAlarmEmail: undefined }));
+    await waitFor(() => expect(cancel).toHaveBeenCalledWith('account'));
+    expect(onUserUpdated).toHaveBeenCalledWith(expect.objectContaining({ pendingEmail: undefined }));
   });
 
   it('says why nothing comes without a mail server, and shows nothing without a waiting address', () => {
     const { rerender, container } = render(
-      <PendingEmailNote user={{ ...user, emailLinks: false }} kind="alarm" onUserUpdated={vi.fn()} />
+      <PendingEmailNote user={{ ...user, emailLinks: false }} onUserUpdated={vi.fn()} />
     );
     expect(screen.getByText(/verschickt keine E-Mails/)).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Link erneut senden' })).toBeNull();
-    rerender(<PendingEmailNote user={user} kind="account" onUserUpdated={vi.fn()} />);
+    rerender(<PendingEmailNote user={{ ...user, pendingEmail: undefined }} onUserUpdated={vi.fn()} />);
     expect(container.firstChild).toBeNull();
   });
 });

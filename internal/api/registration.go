@@ -61,7 +61,7 @@ func (p registrationPolicy) registrationOutcome(email string) (pending bool, err
 		return true, nil
 	case storage.RegistrationDomain:
 		if !inDomains {
-			return false, errors.New("Registrierung nur mit E-Mail-Adressen von " + domainList(p.Domains))
+			return false, i18n.NewError("Registrierung nur mit E-Mail-Adressen von {domains}", "domains", domainList(p.Domains))
 		}
 		return false, nil
 	case storage.RegistrationDomainApproval:
@@ -125,7 +125,7 @@ func (s *Server) handleVerifyEmail(w http.ResponseWriter, r *http.Request) {
 	}
 	userID, err := s.store.ConfirmEmailVerification(strings.TrimSpace(req.Token))
 	if err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
 	user, err := s.store.GetUserByID(userID)
@@ -272,7 +272,7 @@ func (s *Server) handleAdminSendInvite(w http.ResponseWriter, r *http.Request) {
 	}
 	inv, err := s.store.GetUserInviteByID(chi.URLParam(r, "id"))
 	if err != nil {
-		writeError(w, http.StatusNotFound, err.Error())
+		writeErrorFrom(w, http.StatusNotFound, err)
 		return
 	}
 	if inv.MaxUses == 1 {

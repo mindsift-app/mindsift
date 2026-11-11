@@ -218,7 +218,7 @@
       "title": "Destinazione: email",
       "hint": "Invia un'email tramite il server SMTP configurato nell'istanza.",
       "test": "Email di prova",
-      "recipient": "Email destinatario alternativa (opzionale, predefinita: {{email}})"
+      "recipient": "Va al tuo indirizzo di accesso {{email}}. Per usarne un altro, cambialo in «Profilo e sicurezza»."
     },
     "discord": {
       "title": "Destinazione: webhook Discord",
@@ -272,7 +272,6 @@
     "save": "Salva impostazioni notifiche",
     "saved": "Canali di notifica e preavviso salvati.",
     "saveFailed": "Salvataggio delle notifiche non riuscito",
-    "needEmail": "Inserisci prima un indirizzo email per il destinatario.",
     "needDiscordUrl": "Inserisci prima un URL webhook Discord.",
     "needWebhookUrl": "Inserisci prima il tuo URL webhook.",
     "testSent": "Il server ha inviato la notifica di prova tramite \"{{label}}\"!",

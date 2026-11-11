@@ -17,7 +17,7 @@ import (
 
 // --- USERS ---
 
-const userSelectCols = `id, email, username, password_hash, display_name, role, is_active, token_version, alarm_channels, alarm_email, discord_webhook_url, custom_webhook_url, notify_before_minutes, avatar_url, created_at`
+const userSelectCols = `id, email, username, password_hash, display_name, role, is_active, token_version, alarm_channels, discord_webhook_url, custom_webhook_url, notify_before_minutes, avatar_url, created_at`
 
 func parseAlarmChannels(raw string) []string {
 	parts := strings.Split(raw, ",")
@@ -39,7 +39,7 @@ func scanUser(row interface{ Scan(dest ...any) error }) (*domain.User, error) {
 	var channelsRaw string
 	err := row.Scan(
 		&u.ID, &u.Email, &u.Username, &u.PasswordHash, &u.DisplayName,
-		&u.Role, &isActiveInt, &u.TokenVersion, &channelsRaw, &u.AlarmEmail,
+		&u.Role, &isActiveInt, &u.TokenVersion, &channelsRaw,
 		&u.DiscordWebhookURL, &u.CustomWebhookURL, &u.NotifyBeforeMinutes, &u.AvatarURL, &u.CreatedAt,
 	)
 	if err != nil {
@@ -53,9 +53,6 @@ func scanUser(row interface{ Scan(dest ...any) error }) (*domain.User, error) {
 		u.Role = "member"
 	}
 	u.AlarmChannels = parseAlarmChannels(channelsRaw)
-	if u.AlarmEmail == "" {
-		u.AlarmEmail = u.Email
-	}
 	return u, nil
 }
 
@@ -118,7 +115,6 @@ func (s *Store) createUser(id, email, username, passwordHash, displayName, role 
 		IsActive:            active,
 		TokenVersion:        1,
 		AlarmChannels:       []string{},
-		AlarmEmail:          cleanEmail,
 		DiscordWebhookURL:   "",
 		CustomWebhookURL:    "",
 		NotifyBeforeMinutes: 30,
@@ -126,9 +122,9 @@ func (s *Store) createUser(id, email, username, passwordHash, displayName, role 
 		CreatedAt:           domain.NowISO(),
 	}
 	_, err = s.db.Exec(
-		`INSERT INTO users (id, email, username, password_hash, display_name, role, is_active, token_version, alarm_channels, alarm_email, discord_webhook_url, custom_webhook_url, notify_before_minutes, avatar_url, created_at)
-		 VALUES (?, ?, ?, ?, ?, ?, ?, 1, '', ?, '', '', 30, '', ?)`,
-		u.ID, u.Email, u.Username, u.PasswordHash, u.DisplayName, u.Role, active, u.AlarmEmail, u.CreatedAt,
+		`INSERT INTO users (id, email, username, password_hash, display_name, role, is_active, token_version, alarm_channels, discord_webhook_url, custom_webhook_url, notify_before_minutes, avatar_url, created_at)
+		 VALUES (?, ?, ?, ?, ?, ?, ?, 1, '', '', '', 30, '', ?)`,
+		u.ID, u.Email, u.Username, u.PasswordHash, u.DisplayName, u.Role, active, u.CreatedAt,
 	)
 	if err != nil {
 		return nil, err
@@ -311,7 +307,7 @@ func (s *Store) UpdateUser(
 	discordWebhookURL *string,
 	notifyBeforeMinutes *int,
 ) (*domain.User, error) {
-	return s.UpdateUserFull(userID, displayName, email, role, isActive, nil, nil, discordWebhookURL, nil, notifyBeforeMinutes, nil)
+	return s.UpdateUserFull(userID, displayName, email, role, isActive, nil, discordWebhookURL, nil, notifyBeforeMinutes, nil)
 }
 
 func (s *Store) UpdateUserFull(
@@ -319,7 +315,7 @@ func (s *Store) UpdateUserFull(
 	displayName, email, role *string,
 	isActive *bool,
 	alarmChannels *[]string,
-	alarmEmail, discordWebhookURL, customWebhookURL *string,
+	discordWebhookURL, customWebhookURL *string,
 	notifyBeforeMinutes *int,
 	avatarURL *string,
 ) (*domain.User, error) {
@@ -341,9 +337,6 @@ func (s *Store) UpdateUserFull(
 	}
 	if alarmChannels != nil {
 		u.AlarmChannels = parseAlarmChannels(strings.Join(*alarmChannels, ","))
-	}
-	if alarmEmail != nil {
-		u.AlarmEmail = strings.TrimSpace(*alarmEmail)
 	}
 	if discordWebhookURL != nil {
 		u.DiscordWebhookURL = strings.TrimSpace(*discordWebhookURL)
@@ -369,8 +362,8 @@ func (s *Store) UpdateUserFull(
 	}
 	channelsStr := strings.Join(u.AlarmChannels, ",")
 	_, err = s.db.Exec(
-		`UPDATE users SET display_name = ?, email = ?, role = ?, is_active = ?, token_version = ?, alarm_channels = ?, alarm_email = ?, discord_webhook_url = ?, custom_webhook_url = ?, notify_before_minutes = ?, avatar_url = ? WHERE id = ?`,
-		u.DisplayName, u.Email, u.Role, activeInt, u.TokenVersion, channelsStr, u.AlarmEmail, u.DiscordWebhookURL, u.CustomWebhookURL, u.NotifyBeforeMinutes, u.AvatarURL, userID,
+		`UPDATE users SET display_name = ?, email = ?, role = ?, is_active = ?, token_version = ?, alarm_channels = ?, discord_webhook_url = ?, custom_webhook_url = ?, notify_before_minutes = ?, avatar_url = ? WHERE id = ?`,
+		u.DisplayName, u.Email, u.Role, activeInt, u.TokenVersion, channelsStr, u.DiscordWebhookURL, u.CustomWebhookURL, u.NotifyBeforeMinutes, u.AvatarURL, userID,
 	)
 	if err != nil {
 		return nil, err

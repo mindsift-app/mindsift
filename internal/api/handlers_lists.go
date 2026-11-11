@@ -54,7 +54,7 @@ func (s *Server) handleCreateList(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
 	s.wsHub.BroadcastListEvent(lst.ID, "LIST_CREATED", lst)
@@ -86,13 +86,13 @@ func (s *Server) handleUpdateList(w http.ResponseWriter, r *http.Request) {
 	l, err := s.store.UpdateList(userID, listID, req.Title, req.Icon)
 	switch {
 	case errors.Is(err, storage.ErrListNotFound):
-		writeError(w, http.StatusNotFound, err.Error())
+		writeErrorFrom(w, http.StatusNotFound, err)
 		return
 	case errors.Is(err, storage.ErrListReadOnly):
-		writeError(w, http.StatusForbidden, err.Error())
+		writeErrorFrom(w, http.StatusForbidden, err)
 		return
 	case err != nil:
-		writeError(w, http.StatusBadRequest, err.Error())
+		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
 	s.wsHub.BroadcastListEvent(listID, "LIST_UPDATED", l)
@@ -141,7 +141,7 @@ func (s *Server) handleCreateListShare(w http.ResponseWriter, r *http.Request) {
 
 	share, err := s.store.AddListShare(currentUserID, listID, targetType, req.TargetID, role)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -167,7 +167,7 @@ func (s *Server) handleDeleteListShare(w http.ResponseWriter, r *http.Request) {
 	shareID := chi.URLParam(r, "shareId")
 
 	if err := s.store.RemoveListShare(currentUserID, listID, shareID); err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -196,7 +196,7 @@ func (s *Server) handleCreateListItem(w http.ResponseWriter, r *http.Request) {
 
 	item, err := s.store.CreateListItem(listID, req.Content, req.Category, req.Quantity, 0, userID)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
 	s.recordListItemOrigin(item, actorFrom(r.Context()), true)
@@ -243,11 +243,11 @@ func (s *Server) handleToggleListItem(w http.ResponseWriter, r *http.Request) {
 
 	item, err := s.setListItemDone(userID, listID, itemID, req.IsCompleted, actorFrom(r.Context()))
 	if errors.Is(err, storage.ErrListItemNotFound) {
-		writeError(w, http.StatusNotFound, err.Error())
+		writeErrorFrom(w, http.StatusNotFound, err)
 		return
 	}
 	if err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, item)
@@ -272,11 +272,11 @@ func (s *Server) handleUpdateListItem(w http.ResponseWriter, r *http.Request) {
 
 	item, err := s.store.UpdateListItem(itemID, req.Content, req.Category, req.Quantity)
 	if errors.Is(err, storage.ErrListItemNotFound) {
-		writeError(w, http.StatusNotFound, err.Error())
+		writeErrorFrom(w, http.StatusNotFound, err)
 		return
 	}
 	if err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
 	s.recordListItemOrigin(item, actorFrom(r.Context()), false)
@@ -326,9 +326,9 @@ func (s *Server) handleMoveListItem(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := s.store.EnsureListItemsWritable(userID, req.TargetListID, ""); err != nil {
 		if errors.Is(err, storage.ErrListReadOnly) {
-			writeError(w, http.StatusForbidden, err.Error())
+			writeErrorFrom(w, http.StatusForbidden, err)
 		} else {
-			writeError(w, http.StatusNotFound, err.Error())
+			writeErrorFrom(w, http.StatusNotFound, err)
 		}
 		return
 	}
@@ -416,9 +416,9 @@ func (s *Server) listItemsWriteAllowed(w http.ResponseWriter, r *http.Request, i
 	case err == nil:
 		return true
 	case errors.Is(err, storage.ErrListReadOnly):
-		writeError(w, http.StatusForbidden, err.Error())
+		writeErrorFrom(w, http.StatusForbidden, err)
 	default:
-		writeError(w, http.StatusNotFound, err.Error())
+		writeErrorFrom(w, http.StatusNotFound, err)
 	}
 	return false
 }

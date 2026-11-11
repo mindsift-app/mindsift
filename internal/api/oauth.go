@@ -264,7 +264,7 @@ func (s *Server) handleOAuthAuthorizeInfo(w http.ResponseWriter, r *http.Request
 	p := oauthParamsFromQuery(r.URL.Query())
 	client, errRedirect, err := s.checkAuthorize(p)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
 	if errRedirect != "" {
@@ -299,7 +299,7 @@ func (s *Server) handleOAuthAuthorize(w http.ResponseWriter, r *http.Request) {
 	p := req.oauthAuthorizeParams
 	client, errRedirect, err := s.checkAuthorize(p)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
 	if errRedirect != "" {

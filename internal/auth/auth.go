@@ -7,12 +7,15 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 	"unicode/utf8"
 
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
+
+	"github.com/mindsift-app/mindsift/internal/i18n"
 )
 
 type contextKey string
@@ -32,7 +35,7 @@ type Claims struct {
 const MinPasswordLength = 8
 
 var (
-	ErrPasswordTooShort = fmt.Errorf("Das Passwort muss mindestens %d Zeichen lang sein", MinPasswordLength)
+	ErrPasswordTooShort = i18n.NewError("Das Passwort muss mindestens {min} Zeichen lang sein", "min", strconv.Itoa(MinPasswordLength))
 	// bcrypt only uses the first 72 bytes and rejects longer input
 	ErrPasswordTooLong = errors.New("Das Passwort darf höchstens 72 Bytes lang sein")
 )

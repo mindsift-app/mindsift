@@ -3,6 +3,7 @@ package api
 import (
 	"bytes"
 	"encoding/json"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -53,16 +54,41 @@ func TestPasswordConfirmationIsGuarded(t *testing.T) {
 	}
 }
 
-// Test mails go only to one's own confirmed addresses, and only a few at a time (SA-02)
-func TestAlarmTestMailOnlyToOwnAddresses(t *testing.T) {
+// Mail alarms and test mails go to the confirmed login address, never to a target in the request, and
+// follow a confirmed change of that address (SA-02, SA-11); only a few test mails at a time
+func TestAlarmMailsGoToTheLoginAddress(t *testing.T) {
 	srv, store, _ := setupTestServer(t)
 	router := srv.Router()
-	_, tok := userWithPassword(t, srv, store, "anna@example.com", "richtig-geheim", "member")
-	rec := sendWith(t, router, http.MethodPost, "/api/v1/auth/alarms/test", tok, map[string]string{"channel": "email", "target": "fremd@example.org"})
-	if rec.Code != http.StatusBadRequest {
-		t.Fatalf("stranger as target: want 400, got %d: %s", rec.Code, rec.Body)
+	id, tok := userWithPassword(t, srv, store, "anna@example.com", "richtig-geheim", "member")
+	f := startFakeSMTP(t, "")
+	host, port, _ := net.SplitHostPort(f.addr)
+	sys, _ := store.GetSystemSettings()
+	sys.SMTPHost, sys.SMTPPort, sys.SMTPUser, sys.SMTPPass, sys.SMTPFrom = host, port, "alarm@firma.de", "geheim", "alarm@firma.de"
+	sys.SMTPTLS, sys.SMTPSkipVerify = true, true
+	if err := store.UpdateSystemSettings(sys); err != nil {
+		t.Fatal(err)
 	}
-	for i := 1; i < limitTestAlarmPerUser; i++ {
+	rcpts := func() string {
+		f.mu.Lock()
+		defer f.mu.Unlock()
+		return strings.Join(f.rcpts, " ")
+	}
+
+	rec := sendWith(t, router, http.MethodPost, "/api/v1/auth/alarms/test", tok, map[string]string{"channel": "email", "target": "fremd@example.org"})
+	if rec.Code != http.StatusOK || !strings.Contains(rcpts(), "anna@example.com") || strings.Contains(rcpts(), "fremd") {
+		t.Fatalf("test mail with a stranger as target: %d %s, sent to %q", rec.Code, rec.Body, rcpts())
+	}
+	raw, err := store.RequestEmailChange(id, storage.EmailChangeAccount, "anna.neu@example.com")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if rec := sendWith(t, router, http.MethodPost, "/api/v1/auth/confirm-email", "", map[string]string{"token": raw}); rec.Code != http.StatusOK {
+		t.Fatalf("confirm: %d %s", rec.Code, rec.Body)
+	}
+	if rec := sendWith(t, router, http.MethodPost, "/api/v1/auth/alarms/test", tok, map[string]string{"channel": "email"}); rec.Code != http.StatusOK || !strings.Contains(rcpts(), "anna.neu@example.com") {
+		t.Fatalf("after the change of the login address: %d %s, sent to %q", rec.Code, rec.Body, rcpts())
+	}
+	for i := 2; i < limitTestAlarmPerUser; i++ {
 		sendWith(t, router, http.MethodPost, "/api/v1/auth/alarms/test", tok, map[string]string{"channel": "email"})
 	}
 	if rec := sendWith(t, router, http.MethodPost, "/api/v1/auth/alarms/test", tok, map[string]string{"channel": "email"}); rec.Code != http.StatusTooManyRequests {
@@ -70,7 +96,7 @@ func TestAlarmTestMailOnlyToOwnAddresses(t *testing.T) {
 	}
 }
 
-// A new login or alarm address waits for its link; the old one stays in use until then (SA-02, SA-11)
+// A new login address waits for its link; the old one stays in use until then (SA-02, SA-11)
 func TestNewAddressesWaitForConfirmation(t *testing.T) {
 	srv, store, _ := setupTestServer(t)
 	router := srv.Router()
@@ -88,46 +114,24 @@ func TestNewAddressesWaitForConfirmation(t *testing.T) {
 	}
 	var got map[string]any
 	_ = json.Unmarshal(rec.Body.Bytes(), &got)
-	if got["email"] != "anna@example.com" || got["pendingEmail"] != "anna.neu@example.com" ||
-		got["alarmEmail"] != "anna@example.com" || got["pendingAlarmEmail"] != "alarm@example.org" {
-		t.Fatalf("addresses must wait: %v", got)
+	if got["email"] != "anna@example.com" || got["pendingEmail"] != "anna.neu@example.com" || strings.Contains(rec.Body.String(), "alarm@example.org") {
+		t.Fatalf("the login address must wait, an alarm address is ignored: %v", got)
 	}
 
-	// The link of the alarm address (a fresh one, as the mail would carry) takes it
-	raw, err := store.RequestEmailChange(id, storage.EmailChangeAlarm, "alarm2@example.org")
-	if err != nil {
-		t.Fatalf("request: %v", err)
-	}
-	if rec := sendWith(t, router, http.MethodPost, "/api/v1/auth/confirm-email", "", map[string]string{"token": raw}); rec.Code != http.StatusOK {
-		t.Fatalf("confirm: %d %s", rec.Code, rec.Body)
-	}
-	if u, _ := store.GetUserByID(id); u.AlarmEmail != "alarm2@example.org" || u.Email != "anna@example.com" {
-		t.Fatalf("after confirming: alarm=%q email=%q", u.AlarmEmail, u.Email)
-	}
-	if rec := sendWith(t, router, http.MethodPost, "/api/v1/auth/confirm-email", "", map[string]string{"token": raw}); rec.Code != http.StatusBadRequest {
-		t.Fatalf("a link works once: got %d", rec.Code)
-	}
-
-	// The login address: taken once confirmed, unless someone else got it in the meantime
-	raw, _ = store.RequestEmailChange(id, storage.EmailChangeAccount, "anna2@example.com")
+	// The login address: taken once confirmed, a link works once, unless someone else got the address
+	raw, _ := store.RequestEmailChange(id, storage.EmailChangeAccount, "anna2@example.com")
 	if rec := sendWith(t, router, http.MethodPost, "/api/v1/auth/confirm-email", "", map[string]string{"token": raw}); rec.Code != http.StatusOK {
 		t.Fatalf("confirm login address: %d %s", rec.Code, rec.Body)
 	}
 	if u, _ := store.GetUserByID(id); u.Email != "anna2@example.com" {
 		t.Fatalf("login address not taken: %q", u.Email)
 	}
+	if rec := sendWith(t, router, http.MethodPost, "/api/v1/auth/confirm-email", "", map[string]string{"token": raw}); rec.Code != http.StatusBadRequest {
+		t.Fatalf("a link works once: got %d", rec.Code)
+	}
 	raw, _ = store.RequestEmailChange(id, storage.EmailChangeAccount, "ben@example.com")
 	if rec := sendWith(t, router, http.MethodPost, "/api/v1/auth/confirm-email", "", map[string]string{"token": raw}); rec.Code != http.StatusConflict {
 		t.Fatalf("address taken meanwhile: want 409, got %d", rec.Code)
-	}
-
-	// The login address as alarm address needs no link, and drops a waiting one
-	sendWith(t, router, http.MethodPatch, "/api/v1/auth/settings", tok, map[string]string{"alarmEmail": "fremd@example.org"})
-	rec = sendWith(t, router, http.MethodPatch, "/api/v1/auth/settings", tok, map[string]string{"alarmEmail": "anna2@example.com"})
-	got = map[string]any{}
-	_ = json.Unmarshal(rec.Body.Bytes(), &got)
-	if got["alarmEmail"] != "anna2@example.com" || got["pendingAlarmEmail"] != nil {
-		t.Fatalf("own login address as alarm address: %v", got)
 	}
 }
 
@@ -139,8 +143,7 @@ func TestAdminUserListHidesAlarmTargets(t *testing.T) {
 	memberID, _ := userWithPassword(t, srv, store, "anna@example.com", "richtig-geheim", "member")
 	discord := "https://discord.com/api/webhooks/42/SECRET-TOKEN"
 	custom := "https://hook.example.com/secret"
-	alarm := "privat@example.org"
-	if _, err := store.UpdateUserFull(memberID, nil, nil, nil, nil, nil, &alarm, &discord, &custom, nil, nil); err != nil {
+	if _, err := store.UpdateUserFull(memberID, nil, nil, nil, nil, nil, &discord, &custom, nil, nil); err != nil {
 		t.Fatalf("set webhooks: %v", err)
 	}
 	rec := getWith(t, router, "/api/v1/admin/users", adminTok)
