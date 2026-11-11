@@ -65,7 +65,8 @@ export default defineConfig({
     outDir: 'dist',
     emptyOutDir: true,
     sourcemap: false,
-    // The app's chunk is one file on purpose (src/app/mainViews.ts), loaded right after signing in
-    chunkSizeWarningLimit: 1600,
+    // The app's chunk is one file on purpose (src/app/mainViews.ts), loaded right after signing in; about 930 kB,
+    // the limit warns when something large (such as a library meant to load on demand) lands in it again
+    chunkSizeWarningLimit: 1000,
   },
 });
