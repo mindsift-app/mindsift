@@ -17,10 +17,11 @@ cd "$ROOT"
 # staticcheck is no dependency of MindSift (not in go.mod): it runs at this version from the module cache
 STATICCHECK="honnef.co/go/tools/cmd/staticcheck@2026.2.2"
 
-# Named volumes keep npm and Go downloads between runs
+# Named volumes keep npm and Go downloads between runs. npm ci as in the Dockerfile: exactly the versions of
+# package-lock.json, and a lockfile that does not match package.json fails here as it would in the build.
 frontend() {
   "$ENGINE" run --rm -v "$ROOT/frontend":/app:z -v mindsift-npm-cache:/root/.npm -e NO_COLOR=1 -e FORCE_COLOR=0 -w /app docker.io/library/node:22-alpine \
-    sh -c 'npm install --no-audit --no-fund --loglevel=error && npx tsc --noEmit && npm run lint && npm run test:run'
+    sh -c 'npm ci --no-audit --no-fund --loglevel=error && npx tsc --noEmit && npm run lint && npm run test:run'
 }
 backend() {
   "$ENGINE" run --rm -v "$ROOT":/src:z -v mindsift-go-cache:/go/pkg/mod -v mindsift-go-build:/root/.cache/go-build -w /src \
