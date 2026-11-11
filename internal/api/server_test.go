@@ -1359,6 +1359,7 @@ func TestFirstBootSetupWithSampleData(t *testing.T) {
 	// Too short passwords are refused (FLAW-09)
 	short := httptest.NewRequest(http.MethodPost, "/api/v1/auth/setup", strings.NewReader(`{"email":"me@example.com","password":"secret"}`))
 	short.Header.Set("Content-Type", "application/json")
+	short.Header.Set("Accept-Language", "de")
 	shortRec := httptest.NewRecorder()
 	srv.Router().ServeHTTP(shortRec, short)
 	if shortRec.Code != http.StatusBadRequest || !strings.Contains(shortRec.Body.String(), "mindestens 8 Zeichen") {

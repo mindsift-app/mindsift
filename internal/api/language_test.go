@@ -69,9 +69,10 @@ func TestLanguageSettings(t *testing.T) {
 	}
 }
 
-// Error answers follow Accept-Language, else the default language.
+// Error answers follow Accept-Language, else the configured default language, else English (not German,
+// which stays the default language of the interface).
 func TestErrorLanguage(t *testing.T) {
-	srv, _, _ := setupTestServer(t)
+	srv, store, _ := setupTestServer(t)
 	router := srv.Router()
 	login := func(lang string) (string, string) {
 		req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/login", strings.NewReader(`{"login":"","password":""}`))
@@ -87,12 +88,47 @@ func TestErrorLanguage(t *testing.T) {
 	if msg, lang := login("en-US,en;q=0.9"); msg != "Username/email and password required" || lang != "en" {
 		t.Fatalf("English: %q (%s)", msg, lang)
 	}
-	if msg, lang := login(""); msg != "Benutzername/E-Mail und Passwort erforderlich" || lang != "de" {
-		t.Fatalf("default: %q (%s)", msg, lang)
+	if msg, lang := login("de"); msg != "Benutzername/E-Mail und Passwort erforderlich" || lang != "de" {
+		t.Fatalf("German: %q (%s)", msg, lang)
 	}
-	srv.cfg.DefaultLanguage = "en"
-	if msg, _ := login("ja"); msg != "Username/email and password required" {
-		t.Fatalf("unsupported language falls back to the default: %q", msg)
+
+	// Nothing set: English without a header or with one MindSift does not speak, while the login
+	// screen keeps German as its default
+	const english = "Username/email and password required"
+	if msg, lang := login(""); msg != english || lang != "en" {
+		t.Fatalf("no header, nothing set: %q (%s)", msg, lang)
+	}
+	if msg, lang := login("ja"); msg != english || lang != "en" {
+		t.Fatalf("unsupported language, nothing set: %q (%s)", msg, lang)
+	}
+	if _, _, st := oauthDo(t, router, http.MethodGet, "/api/v1/auth/status", "", "", ""); st["defaultLanguage"] != "de" {
+		t.Fatalf("login screen default: %v", st["defaultLanguage"])
+	}
+
+	// DEFAULT_LANGUAGE
+	srv.cfg.DefaultLanguage = "fr"
+	const french = "Nom d’utilisateur/e-mail et mot de passe requis"
+	if msg, lang := login(""); msg != french || lang != "fr" {
+		t.Fatalf("no header, DEFAULT_LANGUAGE=fr: %q (%s)", msg, lang)
+	}
+	if msg, lang := login("ja"); msg != french || lang != "fr" {
+		t.Fatalf("unsupported language, DEFAULT_LANGUAGE=fr: %q (%s)", msg, lang)
+	}
+	if msg, lang := login("de-DE,de;q=0.9"); msg != "Benutzername/E-Mail und Passwort erforderlich" || lang != "de" {
+		t.Fatalf("header wins over DEFAULT_LANGUAGE: %q (%s)", msg, lang)
+	}
+
+	// The admin's choice wins over DEFAULT_LANGUAGE, German included
+	sys, err := store.GetSystemSettings()
+	if err != nil {
+		t.Fatal(err)
+	}
+	sys.DefaultLanguage = "de"
+	if err := store.UpdateSystemSettings(sys); err != nil {
+		t.Fatal(err)
+	}
+	if msg, lang := login(""); msg != "Benutzername/E-Mail und Passwort erforderlich" || lang != "de" {
+		t.Fatalf("no header, admin chose German: %q (%s)", msg, lang)
 	}
 }
 
