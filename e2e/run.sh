@@ -29,7 +29,7 @@ echo "Building the image …"
 # Straight to the app (not the entrypoint that hands /data to uid 1000): the test data stays the host
 # user's, so the script can remove it
 "$ENGINE" run -d --entrypoint /app/mindsift --name "$NAME" --network host -e PORT="$PORT" -e MINDSIFT_DEMO=true -e DEFAULT_LANGUAGE=de \
-  -e JWT_SECRET=e2e-only-secret -v "$WORK":/data:Z "$IMAGE" >/dev/null
+  -v "$WORK":/data:Z "$IMAGE" >/dev/null
 for _ in $(seq 1 60); do curl -s -m 1 "http://localhost:$PORT/api/v1/health" >/dev/null && break; sleep 0.5; done
 
 echo "Starting the browser tests (port $PORT) …"

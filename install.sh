@@ -70,13 +70,11 @@ else
   curl -fsSL "${REPO_RAW_URL}/.env.example" -o .env
   chmod 600 .env
 
-  # Generate a random JWT secret if the default value is still there
-  if grep -q "change_this_to_a_secure_random_key_min_32_chars" .env; then
-    RANDOM_SECRET=$(head -c 32 /dev/urandom | base64 | tr -dc 'a-zA-Z0-9' | head -c 32 || openssl rand -hex 16 2>/dev/null)
-    # Without a good random source the placeholder stays: MindSift refuses it and makes its own secret
-    if [ "${#RANDOM_SECRET}" -ge 32 ]; then
-      sed -i "s/change_this_to_a_secure_random_key_min_32_chars/${RANDOM_SECRET}/g" .env
-    fi
+  # Random JWT secret; not when data/ already holds one (keeps everyone signed in). Without a good
+  # random source it stays empty and MindSift makes its own in data/jwt.secret.
+  if grep -q "^JWT_SECRET=$" .env && [ ! -f data/jwt.secret ]; then
+    RANDOM_SECRET=$(head -c 48 /dev/urandom | base64 | tr -dc 'a-zA-Z0-9' | head -c 48 || openssl rand -hex 24 2>/dev/null)
+    if [ "${#RANDOM_SECRET}" -ge 32 ]; then set_env JWT_SECRET "${RANDOM_SECRET}"; fi
   fi
 
   # Key for hidden values in notes; not when data/ already holds one (the stored values need that key)
