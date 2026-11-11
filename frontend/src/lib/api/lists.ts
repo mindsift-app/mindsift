@@ -1,59 +1,10 @@
-// REST calls: Spaces, shared lists and their items
-import { ListItem, ListShare, SharedList, Space, SpaceShare } from '../types';
+// REST calls: shared lists and their items
+import { ListItem, ListShare, SharedList } from '../types';
 import { OfflineError, enqueue, dropQueued, updateQueued, OFFLINE_ITEM_PREFIX } from '../offline';
 import { ensureArray, request } from './client';
 
 export const listsApi = {
-  // --- SPACES & REALTIME LISTS ---
-  async getSpaces(): Promise<Space[]> {
-    const res = await request<Space[]>('/api/v1/spaces');
-    return ensureArray(res).map((s) => ({
-      ...s,
-      members: ensureArray(s.members),
-      shares: ensureArray(s.shares),
-    }));
-  },
-
-  async getSpaceShares(spaceId: string): Promise<SpaceShare[]> {
-    const res = await request<SpaceShare[]>(`/api/v1/spaces/${spaceId}/shares`);
-    return ensureArray(res);
-  },
-
-  async createSpace(name: string, icon: string, description: string): Promise<Space> {
-    return request<Space>('/api/v1/spaces', {
-      method: 'POST',
-      body: JSON.stringify({ name, icon, description }),
-    });
-  },
-
-  async joinSpace(inviteCode: string): Promise<Space> {
-    return request<Space>('/api/v1/spaces/join', {
-      method: 'POST',
-      body: JSON.stringify({ inviteCode }),
-    });
-  },
-
-  async addSpaceMember(spaceId: string, target: { userId?: string; email?: string; teamId?: string; role?: string }): Promise<any> {
-    return request<any>(`/api/v1/spaces/${spaceId}/members`, {
-      method: 'POST',
-      body: JSON.stringify(target),
-    });
-  },
-
-  async removeSpaceMember(spaceId: string, userId: string): Promise<void> {
-    await request(`/api/v1/spaces/${spaceId}/members/${userId}`, {
-      method: 'DELETE',
-    });
-  },
-
-  async getSpaceLists(spaceId: string): Promise<SharedList[]> {
-    const res = await request<SharedList[]>(`/api/v1/spaces/${spaceId}/lists`);
-    return ensureArray(res).map((l) => ({
-      ...l,
-      items: ensureArray(l.items),
-    }));
-  },
-
+  // --- LISTS ---
   async getAllLists(): Promise<SharedList[]> {
     const res = await request<SharedList[]>('/api/v1/lists');
     return ensureArray(res).map((l) => ({

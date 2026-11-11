@@ -9,6 +9,8 @@ import (
 func (s *Store) ResetAndSeedDemo() error {
 	// Logged-in demo visitors stay logged in: their sessions survive the reset (fixed account IDs)
 	kept := s.demoSessions()
+	// The settings are seeded anew with the tables
+	defer s.forgetSystemSettings()
 	if err := s.dropAllTables(); err != nil {
 		return fmt.Errorf("reset demo: drop all tables: %w", err)
 	}

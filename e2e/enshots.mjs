@@ -39,6 +39,7 @@ for (const [dev, opts] of [
   await c.addInitScript((t) => {
     localStorage.setItem('mindsift_jwt_token', t);
     sessionStorage.setItem('mindsift_pwa_offer_shown', '1');
+    localStorage.setItem('mindsift:demo-hint-closed', '1'); // the demo's public notice is not part of the pictures
   }, token);
   const p = await c.newPage();
   await p.goto(BASE);

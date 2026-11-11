@@ -19,6 +19,7 @@ import { ToggleSwitch } from '../../components/ToggleSwitch';
 import { LegalLinks } from '../../components/LegalLinks';
 import { passwordProblem } from '../../lib/password';
 import { SelectMenu } from '../../components/SelectMenu';
+import { demoHintText } from '../../components/DemoHint';
 
 interface SetupAndAuthViewProps {
   authStatus: AuthStatus;
@@ -688,6 +689,7 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
                     <span>{t('login.demoActive')}</span>
                     <span className="text-[10px] text-muted font-normal">{t('login.demoFill')}</span>
                   </div>
+                  <p className="text-[11px] text-muted leading-snug">{demoHintText(t, authStatus.demoResetMinutes)}</p>
                   <div className="flex gap-2">
                     <button
                       type="button"

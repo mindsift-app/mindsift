@@ -24,7 +24,6 @@ var messagesEN = map[string]string{
 	"Aufnahme konnte nicht gelesen werden":                                           "The recording could not be read",
 	"Aufnahme zu groß (höchstens {mb} MB)":                                           "Recording too large (at most {mb} MB)",
 	"Aus 'content' ist kein Punkt entstanden, die Notiz ist leer. Schicke den Inhalt als Markdown-Liste, eine Zeile pro Punkt.": "'content' gave no bullets, the note is empty. Send the content as a Markdown list, one line per bullet.",
-	"Automatischer Gast-Login ist deaktiviert – bitte anmelden":                                                                 "Automatic guest login is disabled – please sign in",
 	"Backup fehlgeschlagen":                                                                  "Backup failed",
 	"Backup im Archiv ist nicht lesbar":                                                      "The backup in the archive is not readable",
 	"Backup im Archiv ist nicht lesbar oder zu groß":                                         "The backup in the archive is not readable or too large",

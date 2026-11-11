@@ -20,7 +20,7 @@ The frontend is embedded into the binary via `go:embed` ([cmd/server/main.go](..
 
 | Layer | Technology |
 |---|---|
-| Backend | Go 1.27, `go-chi/chi` v5, `go-chi/cors`, `gorilla/websocket`, `golang-jwt/jwt` v5, `x/crypto/bcrypt` |
+| Backend | Go 1.27, `go-chi/chi` v5, `go-chi/cors`, `gorilla/websocket`, `golang-jwt/jwt` v5, `x/crypto/bcrypt`, `x/net/html` |
 | Database | SQLite via `modernc.org/sqlite` (pure Go, no CGO), WAL, `foreign_keys=ON` |
 | Frontend | React 18, TypeScript, Vite 5, Tailwind 3, framer-motion (triage cards), lucide-react, prismjs (code blocks) |
 | Delivery | Multi-stage Dockerfile (Node 22 → Go 1.27 → Alpine 3.24), image `ghcr.io/mindsift-app/mindsift` |
@@ -35,7 +35,7 @@ MindSift builds several things itself that other projects take from a library, a
 - **Own MCP server.** MCP over HTTP is JSON-RPC in a POST request with four methods (`initialize`, `ping`, `tools/list`, `tools/call`); the work is in the tools ([mcp.go](../internal/api/mcp.go)). A library would add more dependency than it saves code.
 - **Own drawing layout and Mermaid reader.** AI agents hand in flowcharts and mind maps as Mermaid, and the server turns them into drawings that stay editable: shapes, and elbow arrows that dock to them. No Go library lays a graph out into that model, so `internal/drawing` reads the two diagram types and places them itself.
 - **Two chunks, all loaded at install.** The app is meant to be installed and to work offline after its first start: the shopping list without reception, synchronised later. The entry chunk holds the shell and everything before signing in (login, registration, setup, password reset, OAuth consent, about 170 kB compressed); the app's views are one more chunk ([app/mainViews.ts](../frontend/src/app/mainViews.ts), about 370 kB compressed), loaded in one place ([app/useMainViews.ts](../frontend/src/app/useMainViews.ts)) as soon as a session exists, with a stored session right at startup. Public note pages use it too (they render with the outliner). It is not split further: the service worker loads every file of the build when it installs (the build writes the list into `sw.js`), so "opened once" still means "all there offline", including language files and code grammars.
-- **Few dependencies.** Seven direct Go modules (router, CORS, JWT, WebSocket, web push, bcrypt, SQLite) and a handful of npm packages at runtime (React, i18next, framer-motion, Prism, the icons, an emoji picker). Markdown, rate limiting, the server's translations, dropdowns and the calendar are own code: less that breaks or needs a security update overnight, more that has to be covered by MindSift's own tests.
+- **Few dependencies.** Eight direct Go modules (router, CORS, JWT, WebSocket, web push, bcrypt, the HTML tokenizer of `x/net` for link previews, SQLite) and a handful of npm packages at runtime (React, i18next, framer-motion, Prism, the icons, an emoji picker). Markdown, rate limiting, the server's translations, dropdowns and the calendar are own code: less that breaks or needs a security update overnight, more that has to be covered by MindSift's own tests.
 - **Grown rather than designed: the session.** A sign-in is a signed JWT, a row in `sessions` and `users.token_version` (see [Authentication](#authentication)). Since every request looks up the session anyway, the signature no longer saves anything; a random session ID would do the same with less. It works and is tested, so it stays until sign-in is touched for another reason.
 
 ## Directories

@@ -24,7 +24,6 @@ var messagesIT = map[string]string{
 	"Aufnahme konnte nicht gelesen werden":                                           "Non è stato possibile leggere la registrazione",
 	"Aufnahme zu groß (höchstens {mb} MB)":                                           "Registrazione troppo grande (al massimo {mb} MB)",
 	"Aus 'content' ist kein Punkt entstanden, die Notiz ist leer. Schicke den Inhalt als Markdown-Liste, eine Zeile pro Punkt.": "'content' non ha prodotto alcun punto, la nota è vuota. Invia il contenuto come elenco Markdown, una riga per punto.",
-	"Automatischer Gast-Login ist deaktiviert – bitte anmelden":                                                                 "L’accesso automatico come ospite è disattivato: accedi",
 	"Backup fehlgeschlagen":                                                                  "Backup non riuscito",
 	"Backup im Archiv ist nicht lesbar":                                                      "Il backup nell’archivio non è leggibile",
 	"Backup im Archiv ist nicht lesbar oder zu groß":                                         "Il backup nell’archivio non è leggibile o è troppo grande",

@@ -29,6 +29,7 @@ import {
 import { SetupAndAuthView } from './features/auth/SetupAndAuthView';
 import { OAuthConsentView } from './features/auth/OAuthConsentView';
 import { OfflineBanner } from './components/OfflineBanner';
+import { DemoHint } from './components/DemoHint';
 import { useConnectionState } from './lib/useConnectionState';
 import { SharedImportToast } from './components/SharedImportToast';
 import { EmailConfirmToast } from './components/EmailConfirmToast';
@@ -666,6 +667,7 @@ export const App: React.FC = () => {
         {/* Desktop Navigation tabs attached to header */}
         <DesktopNav activeTab={activeTab} setActiveTab={setActiveTab} stats={stats} handleOpenHelp={handleOpenHelp} />
       </header>
+      {authStatus.demoMode && <DemoHint minutes={authStatus.demoResetMinutes} />}
 
       <MobileHeaderMenu activeTabLabel={activeTabLabelMap[activeTab]} />
       <OfflineBanner />

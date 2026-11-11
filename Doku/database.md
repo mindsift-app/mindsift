@@ -29,7 +29,7 @@ SQLite file `mindsift.db` (default: `$DATA_DIR/mindsift.db`), opened with `journ
 | `oauth_clients` | Self-registered OAuth clients (Migration 17); purged after 24 hours without connection | `id` (`client_id`), `name`, `redirect_uris` (JSON), `created_at` |
 | `oauth_codes` | One-time authorization codes, valid 10 minutes (Migration 17) | `code_hash` (SHA-256), `client_id`, `key_id` → `api_keys`, `redirect_uri`, `code_challenge`, `expires_at` |
 | `oauth_tokens` | Access and refresh tokens (Migration 17) | `token_hash` (SHA-256), `kind` (`access`/`refresh`), `key_id` → `api_keys` (cascades on delete), `expires_at`, `replaced_at` (timestamp when rotated) |
-| `system_settings` | Key/value pairs for instance settings | `sharing_mode`, `allow_registration`, `instance_name`, `smtp_*` |
+| `system_settings` | Key/value pairs for instance settings; `GetSystemSettings` keeps them in memory after the first read (one process; `UpdateSystemSettings`, the demo reset and closing the store forget the copy, callers get copies of their own). Write only through `UpdateSystemSettings` | `sharing_mode`, `allow_registration`, `instance_name`, `smtp_*` |
 
 ### Thoughts and Tasks
 | Table | Purpose | Key Columns |

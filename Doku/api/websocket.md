@@ -8,7 +8,7 @@ The server distributes changes as JSON events to connected clients. Events are g
 
 | Transport | Endpoint | Notes |
 |---|---|---|
-| WebSocket | `GET /api/v1/ws` (also `/ws/lists/{id}`, `/ws/spaces/{id}`) | Ping every 30 s, read deadline 60 s, messages up to 4 MB |
+| WebSocket | `GET /api/v1/ws` (also `/ws/lists/{id}`) | Ping every 30 s, read deadline 60 s, messages up to 4 MB |
 | SSE | `GET /api/v1/events` | Comment ping every 15 s, header `X-Accel-Buffering: no` |
 | Long Polling | `POST /api/v1/events/poll` → `{pollId}`, then `GET /api/v1/events/poll/{pollId}?wait=25` | Response `{events: [...]}`, as soon as events are available, returns empty after at most `wait` s; `404` = expired, reopen |
 

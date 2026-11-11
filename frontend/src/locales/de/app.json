@@ -80,7 +80,11 @@
     "resetEvery": "Diese Test-Instanz wird alle {{count}} Minuten automatisch auf den Ausgangszustand zurückgesetzt.",
     "resetIn": "Reset in {{time}}",
     "resetting": "wird zurückgesetzt…",
-    "label": "✨ Demo ·"
+    "label": "✨ Demo ·",
+    "publicHint_one": "Öffentliche Demo: Alle melden sich mit denselben Konten an und sehen, was andere eintragen. Sie wird jede Minute zurückgesetzt – bitte nichts Privates eintragen.",
+    "publicHint_other": "Öffentliche Demo: Alle melden sich mit denselben Konten an und sehen, was andere eintragen. Sie wird alle {{count}} Minuten zurückgesetzt – bitte nichts Privates eintragen.",
+    "publicHintNoReset": "Öffentliche Demo: Alle melden sich mit denselben Konten an und sehen, was andere eintragen – bitte nichts Privates eintragen.",
+    "closeHint": "Hinweis schließen"
   },
   "connecting": "Verbinde mit MindSift…",
   "appLoad": {

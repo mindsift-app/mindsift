@@ -29,6 +29,12 @@ type Store struct {
 
 	// ConfiguredLanguage is DEFAULT_LANGUAGE, the default language until an admin picks one
 	ConfiguredLanguage string
+
+	// The system settings as last read (GetSystemSettings); settingsGen counts the changes, so a read that
+	// raced with one does not keep the old state
+	settingsMu    sync.Mutex
+	settingsCache *domain.SystemSettings
+	settingsGen   uint64
 }
 
 func NewStore(dbPath string) (*Store, error) {
@@ -74,6 +80,7 @@ func NewStore(dbPath string) (*Store, error) {
 }
 
 func (s *Store) Close() error {
+	s.forgetSystemSettings()
 	return s.db.Close()
 }
 

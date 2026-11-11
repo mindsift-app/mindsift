@@ -1,0 +1,4167 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "MindSift API",
+    "version": "v1",
+    "description": "Every route of the MindSift server with a short description. The details (fields, limits, errors) are in Doku/api/rest.md; internal/api/openapi_test.go checks that this list and the router agree."
+  },
+  "servers": [
+    {
+      "url": "/"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Session token (JWT), API key (mindsift_sec_…) or OAuth access token"
+      },
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-API-Key"
+      }
+    }
+  },
+  "security": [
+    {
+      "bearer": []
+    },
+    {
+      "apiKey": []
+    }
+  ],
+  "paths": {
+    "/.well-known/oauth-authorization-server": {
+      "get": {
+        "summary": "Server metadata (RFC 8414)",
+        "description": "Server metadata (RFC 8414)",
+        "tags": [
+          "OAuth for claude.ai and ChatGPT"
+        ],
+        "security": [],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/.well-known/oauth-protected-resource": {
+      "get": {
+        "summary": "Resource metadata of the MCP endpoint (RFC 9728)",
+        "description": "Resource metadata (RFC 9728): resource, authorization_servers, scopes_supported",
+        "tags": [
+          "OAuth for claude.ai and ChatGPT"
+        ],
+        "security": [],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/.well-known/oauth-protected-resource/{path}": {
+      "get": {
+        "summary": "Resource metadata for a resource path, e.g. /api/v1/mcp (RFC 9728)",
+        "description": "Resource metadata (RFC 9728): resource, authorization_servers, scopes_supported",
+        "tags": [
+          "OAuth for claude.ai and ChatGPT"
+        ],
+        "parameters": [
+          {
+            "name": "path",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/backups": {
+      "get": {
+        "summary": "List database dumps",
+        "description": "List database dumps or create backup immediately (database dump + all user backups)",
+        "tags": [
+          "Administration"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      },
+      "post": {
+        "summary": "Back up now (database dump and all user backups)",
+        "description": "List database dumps or create backup immediately (database dump + all user backups)",
+        "tags": [
+          "Administration"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/backups/deleted": {
+      "get": {
+        "summary": "Kept backups of deleted accounts",
+        "description": "Kept backups of deleted accounts (userId, displayName, email, deletedAt, removeAt, files)",
+        "tags": [
+          "Administration"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/backups/deleted/{userId}/{name}": {
+      "get": {
+        "summary": "Download one backup of a deleted account (ZIP)",
+        "description": "Download one backup of a deleted account (ZIP)",
+        "tags": [
+          "Administration"
+        ],
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/backups/{name}": {
+      "delete": {
+        "summary": "Delete a database dump",
+        "description": "Delete database dump (returns remaining list; disabled in demo)",
+        "tags": [
+          "Administration"
+        ],
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      },
+      "get": {
+        "summary": "Download database dump",
+        "description": "Download database dump",
+        "tags": [
+          "Administration"
+        ],
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/invites": {
+      "get": {
+        "summary": "List invitations",
+        "description": "List or create invitations (email, organizationIds, validDays, maxUses 1–1000; multi-use invites are not bound to an email address). Invites always create members; a role field is ignored. Response includes maxUses/useCount, organizationIds/organizationNames, and for used-up or expired invites removeAt: 30 days after that, the daily cleanup deletes them. As link: /?invite=<CODE> opens registration with code pre-filled",
+        "tags": [
+          "Administration"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      },
+      "post": {
+        "summary": "Create an invitation",
+        "description": "List or create invitations (email, organizationIds, validDays, maxUses 1–1000; multi-use invites are not bound to an email address). Invites always create members; a role field is ignored. Response includes maxUses/useCount, organizationIds/organizationNames, and for used-up or expired invites removeAt: 30 days after that, the daily cleanup deletes them. As link: /?invite=<CODE> opens registration with code pre-filled",
+        "tags": [
+          "Administration"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/invites/{id}": {
+      "delete": {
+        "summary": "Revoke/delete invitation",
+        "description": "Revoke/delete invitation",
+        "tags": [
+          "Administration"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/invites/{id}/send": {
+      "post": {
+        "summary": "Mail an invitation",
+        "description": "Send invitation via email (email); binds single-use codes to this address; requires SMTP",
+        "tags": [
+          "Administration"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/organizations": {
+      "get": {
+        "summary": "List organizations",
+        "description": "Organizations with memberCount; create (name)",
+        "tags": [
+          "Administration"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      },
+      "post": {
+        "summary": "Create an organization",
+        "description": "Organizations with memberCount; create (name)",
+        "tags": [
+          "Administration"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/organizations/{id}": {
+      "delete": {
+        "summary": "Delete an organization",
+        "description": "Rename (name); delete (shares only this organization allowed go)",
+        "tags": [
+          "Administration"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      },
+      "put": {
+        "summary": "Rename an organization",
+        "description": "Rename (name); delete (shares only this organization allowed go)",
+        "tags": [
+          "Administration"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/organizations/{id}/members": {
+      "post": {
+        "summary": "Add a person to an organization",
+        "description": "Add a person (userId)",
+        "tags": [
+          "Administration"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/organizations/{id}/members/{userId}": {
+      "delete": {
+        "summary": "Take a person out of an organization",
+        "description": "Take a person out; removes shares, group memberships and assignments that no other common organization allows. ?dryRun=true only counts them (affected)",
+        "tags": [
+          "Administration"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/settings": {
+      "get": {
+        "summary": "Server settings",
+        "description": "instanceName, allowRegistration, sharingMode (private/organizations/open), peopleSearch, publicLinks, publicLinkMaxDays (1–14), pushKnownServicesOnly (web push only via the push services of Google, Mozilla, Apple and Microsoft; default false), SMTP fields; changing mode cleans up shares. Values fixed by the environment come with …ConfiguredViaEnv and are not changed by PUT. smtpPass is never returned (smtpPassSet indicates whether one is stored); empty = unchanged",
+        "tags": [
+          "Administration"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      },
+      "put": {
+        "summary": "Change server settings",
+        "description": "instanceName, allowRegistration, sharingMode (private/organizations/open), peopleSearch, publicLinks, publicLinkMaxDays (1–14), pushKnownServicesOnly (web push only via the push services of Google, Mozilla, Apple and Microsoft; default false), SMTP fields; changing mode cleans up shares. Values fixed by the environment come with …ConfiguredViaEnv and are not changed by PUT. smtpPass is never returned (smtpPassSet indicates whether one is stored); empty = unchanged",
+        "tags": [
+          "Administration"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/settings/sharing-impact": {
+      "get": {
+        "summary": "Dry run: what a change of the sharing mode would remove",
+        "description": "Dry run: how many shares and group memberships a mode change would remove (affected)",
+        "tags": [
+          "Administration"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/smtp/test": {
+      "post": {
+        "summary": "Send a test mail",
+        "description": "Test email (toEmail)",
+        "tags": [
+          "Administration"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/users": {
+      "get": {
+        "summary": "List users",
+        "description": "List users (with organizationIds; without alarm targets – webhooks, alarm address, channels – and token version); create (email, password, displayName, role (member/manager/admin), optional organizationIds)",
+        "tags": [
+          "Administration"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      },
+      "post": {
+        "summary": "Create a user",
+        "description": "List users (with organizationIds; without alarm targets – webhooks, alarm address, channels – and token version); create (email, password, displayName, role (member/manager/admin), optional organizationIds)",
+        "tags": [
+          "Administration"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/users/{id}": {
+      "delete": {
+        "summary": "Delete a user (rejects a pending account)",
+        "description": "displayName, username (rules and errors as in /auth/settings), email, role, isActive, discordWebhookUrl; delete (for pending accounts = reject). GET /admin/users flags pending accounts with pendingApproval",
+        "tags": [
+          "Administration"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      },
+      "patch": {
+        "summary": "Change a user (name, username, address, role, active)",
+        "description": "displayName, username (rules and errors as in /auth/settings), email, role, isActive, discordWebhookUrl; delete (for pending accounts = reject). GET /admin/users flags pending accounts with pendingApproval",
+        "tags": [
+          "Administration"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/users/{id}/approve": {
+      "post": {
+        "summary": "Approve pending account",
+        "description": "Approve pending account; the user receives an email (409 if not pending)",
+        "tags": [
+          "Administration"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/users/{id}/password": {
+      "put": {
+        "summary": "Set a new password for a user",
+        "description": "Reset password (server admins only)",
+        "tags": [
+          "Administration"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/voice": {
+      "get": {
+        "summary": "Active voice recognition and its settings",
+        "description": "Active voice recognition (mode: server/browser/off), settings from STT_* without secrets, limits, and in server mode fresh health status (status.reachable, status.modelReady)",
+        "tags": [
+          "Administration"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/alarms/test": {
+      "post": {
+        "summary": "Send a test alarm",
+        "description": "Test alarm (channel: email/discord/webhook, optional target). E-mail tests go only to your confirmed login or alarm address (400 for any other target); 5 tests per person within the lock window (429)",
+        "tags": [
+          "Account and General"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/confirm-email": {
+      "post": {
+        "summary": "Confirm a new login or alarm address (link from the mail)",
+        "description": "Link from the mail confirming a new login or alarm address (token, no sign-in needed): takes the address ({\"confirmed\",\"kind\":\"account\"/\"alarm\",\"message\"}); 400 for an unknown, used or expired link (48 hours), 409 if the login address got taken meanwhile. A confirmed login address also tells the previous address",
+        "tags": [
+          "Public"
+        ],
+        "security": [],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/forgot-password": {
+      "post": {
+        "summary": "Ask for a password reset mail",
+        "description": "{email} → always {ok: true}; email with link sent only if the account exists. 503 if SMTP or BASE_URL is missing; 429 after 10 requests per address in 15 minutes",
+        "tags": [
+          "Public"
+        ],
+        "security": [],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/login": {
+      "post": {
+        "summary": "Sign in",
+        "description": "Login (login/email/username, password) → {token, user}. login is the email address or the username; typed like a display name (\"Sandro Dach\") it is read as the username (sandro.dach), and the part of the email before the @ still works. The display name itself does not sign in",
+        "tags": [
+          "Public"
+        ],
+        "security": [],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/logout": {
+      "post": {
+        "summary": "Terminate session of this device",
+        "description": "Terminate session of this device",
+        "tags": [
+          "Account and General"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/me": {
+      "get": {
+        "summary": "User profile and metrics",
+        "description": "User profile and metrics",
+        "tags": [
+          "Account and General"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/register": {
+      "post": {
+        "summary": "Create an account",
+        "description": "Registration (email, password, displayName, inviteCode); always allowed with code, otherwise depending on registration mode. 201 with token or 202 {\"pending\":true,\"verify\",\"message\"} if email verification (verify) and/or admin approval is required (login returns 403 until then); 429 after 20 attempts per address in 15 minutes or when more than 50 accounts are pending approval",
+        "tags": [
+          "Public"
+        ],
+        "security": [],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/resend-verification": {
+      "post": {
+        "summary": "Resend verification link (email)",
+        "description": "Resend verification link (email); always responds identically, at most once every 2 minutes per account",
+        "tags": [
+          "Public"
+        ],
+        "security": [],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/reset-password": {
+      "post": {
+        "summary": "Set a new password with the link from the mail",
+        "description": "{token, password} (min. 8 characters) → new password, terminates all sessions; 400 on invalid or expired link",
+        "tags": [
+          "Public"
+        ],
+        "security": [],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/revoke-all": {
+      "post": {
+        "summary": "Sign out everywhere",
+        "description": "Terminate all sessions (token_version +1)",
+        "tags": [
+          "Account and General"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/sessions": {
+      "get": {
+        "summary": "Signed-in devices",
+        "description": "Logged-in devices: [{id, createdAt, lastUsedAt, userAgent, ip, current}]",
+        "tags": [
+          "Account and General"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/sessions/{id}": {
+      "delete": {
+        "summary": "Log out a device",
+        "description": "Log out a device; 404 on unknown session or one belonging to another user",
+        "tags": [
+          "Account and General"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/settings": {
+      "patch": {
+        "summary": "Change own profile and settings",
+        "description": "displayName, username (2–32 characters, lower case letters, digits, ., -, _; 400 with code username_invalid, 409 with username_taken; 403 in demo mode), email, password, avatarUrl, alarmChannels, alarmEmail, discordWebhookUrl, customWebhookUrl, notifyBeforeMinutes, retention (doneTasks, taskTrash, triageTrash, noteTrash, listDone: days selected from 7, 14, 30, 90, 365, 730, or 0 = never; always all five, 400 on other values or for 0 if the server has disabled \"never\"), voiceInput (\"\" = Whisper server, browser), voiceLanguage (language spoken into the microphone: \"\" (default) or auto = Whisper detects it, app = the app language, or one of Whisper's language codes such as ru; 400 for unknown codes), language (de, en, es, fr, it or \"\" = follow the browser, then the server's default; 400 for other codes; GET /auth/me returns it as language), doneRetentionDays (legacy single field for retention.doneTasks). GET /auth/me includes retention and retentionNeverAllowed. notificationSettings (paused, includeOwnWatched, events.{due,shared,assigned,mentioned,taskCreated,taskDone,watched}.{email,discord,webhook,push}, dailySummary.{enabled,time,email,discord}) for notifications. New email or password requires currentPassword (403 if incorrect, 429 if login locked; wrong guesses count like failed logins). A new email (login address, 409 if taken) or an alarmEmail other than the login address is not taken at once: it waits for the click on a link mailed to it and shows as pendingEmail / pendingAlarmEmail, the old address stays in use (without a mail server it keeps waiting; emailLinks says whether links can go out). The login address as alarmEmail applies at once. avatarUrl is \"\", an emoji or an uploaded picture as data:image/(png|jpeg|webp);base64,… up to 300 KB (400 otherwise); after password change, other devices are logged out and the new token is returned in the X-Session-Token header",
+        "tags": [
+          "Account and General"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/setup": {
+      "post": {
+        "summary": "Create the first administrator",
+        "description": "First administrator account (email, password, displayName, instanceName, allowRegistration, sharingMode, createSampleData, defaultLanguage: becomes the server's default language and the admin's own, 400 for unknown codes); only while no accounts exist. Sample data comes in German for German accounts, otherwise in English",
+        "tags": [
+          "Public"
+        ],
+        "security": [],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/status": {
+      "get": {
+        "summary": "Server status before signing in (setup, registration, demo, language)",
+        "description": "needsSetup, allowRegistration, instanceName, demoMode, sharingMode, legal (imprintUrl, hasImprintContent, privacyUrl, hasPrivacyContent, customLinkLabel, customLinkUrl), voice (mode = server/browser/off, maxSeconds, browserAllowed), mcpEnabled, mcpConnectorUrl, defaultLanguage (the server's default language: admin setting, else DEFAULT_LANGUAGE, else de)",
+        "tags": [
+          "Public"
+        ],
+        "security": [],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/stream-ticket": {
+      "post": {
+        "summary": "One-time ticket (60 s) for WebSocket/SSE",
+        "description": "One-time ticket (60 s) for WebSocket/SSE",
+        "tags": [
+          "Account and General"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/verify-email": {
+      "post": {
+        "summary": "Confirm the address of a new account (link from the mail)",
+        "description": "Link from verification email (token): activates account or forwards it to pending approval ({\"verified\",\"pending\",\"message\"})",
+        "tags": [
+          "Public"
+        ],
+        "security": [],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/backups": {
+      "get": {
+        "summary": "List own automatic backups",
+        "description": "List or download own automatic server backups",
+        "tags": [
+          "Account and General"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/backups/{name}": {
+      "get": {
+        "summary": "Download an own backup",
+        "description": "List or download own automatic server backups",
+        "tags": [
+          "Account and General"
+        ],
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/backups/{name}/restore": {
+      "post": {
+        "summary": "Restore an own backup (merge or replace)",
+        "description": "Restore server backup: mode=merge or restore (clears selected sections beforehand), sections=notes,tasks,lists,inbox,themes, preview=1",
+        "tags": [
+          "Account and General"
+        ],
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/collaborators": {
+      "get": {
+        "summary": "People whose names you may see: everyone you may share with",
+        "description": "People whose names you may see: everyone you may share with (findable: true, only while people search is on) and everyone you work on something together with (findable: false); /collaborators without yourself (sharing-and-permissions.md). Only public profile per person: id, username, displayName, avatarUrl, findable – no e-mail address and no private details (webhooks, alarm email, role, organizations). Member and share lists of notes, folders, lists, task lists and groups carry names only, no addresses",
+        "tags": [
+          "Account and General"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/docs/{id}/changes": {
+      "get": {
+        "summary": "Long polling for changes of a note",
+        "description": "Long polling: returns immediately if headSeq > N, otherwise on next change (including leases/presence) or after at most 25 s. Response {headSeq, changed}; client then retrieves data via /sync",
+        "tags": [
+          "Collaborative Note Editing"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/docs/{id}/leave": {
+      "post": {
+        "summary": "Leave a note (release leases)",
+        "description": "Terminate session, release all client leases ({clientId})",
+        "tags": [
+          "Collaborative Note Editing"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/docs/{id}/snapshot": {
+      "get": {
+        "summary": "A note as block tree with versions (note sync)",
+        "description": "Complete block tree including tombstones, title, titleVersion, headSeq, role, shared",
+        "tags": [
+          "Collaborative Note Editing"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/docs/{id}/sync": {
+      "post": {
+        "summary": "Send operations, take leases, fetch the log (note sync)",
+        "description": "Single round-trip: submit local operations, acquire/release leases, fetch log starting at lastSeq",
+        "tags": [
+          "Collaborative Note Editing"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/documents": {
+      "get": {
+        "summary": "List notes",
+        "description": "List notes; create (title, icon, folderPath, blocks, tags, isPinned; icon: \"\" = no icon, if omitted: 🗒️)",
+        "tags": [
+          "Workspace"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      },
+      "post": {
+        "summary": "Create a note",
+        "description": "List notes; create (title, icon, folderPath, blocks, tags, isPinned; icon: \"\" = no icon, if omitted: 🗒️)",
+        "tags": [
+          "Workspace"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/documents/trash": {
+      "delete": {
+        "summary": "Empty the notes trash",
+        "description": "List trash (id, kind note/folder, title, icon, folderPath, deletedAt, isOwner, for folders noteCount; notes from a deleted folder are contained within its trash entry) or empty trash (notes and folders)",
+        "tags": [
+          "Workspace"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      },
+      "get": {
+        "summary": "Notes in the trash",
+        "description": "List trash (id, kind note/folder, title, icon, folderPath, deletedAt, isOwner, for folders noteCount; notes from a deleted folder are contained within its trash entry) or empty trash (notes and folders)",
+        "tags": [
+          "Workspace"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/documents/{id}": {
+      "delete": {
+        "summary": "Move a note to the trash (owner) or leave its share (others)",
+        "description": "Retrieve; update title, icon, folderPath, isPinned (updating blocks here returns 400, as they are handled via /docs/{id}/sync); delete = move to trash (owner) or leave share (others)",
+        "tags": [
+          "Workspace"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      },
+      "get": {
+        "summary": "A note",
+        "description": "Retrieve; update title, icon, folderPath, isPinned (updating blocks here returns 400, as they are handled via /docs/{id}/sync); delete = move to trash (owner) or leave share (others)",
+        "tags": [
+          "Workspace"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      },
+      "put": {
+        "summary": "Change a note (title, icon, folder, pinned)",
+        "description": "Retrieve; update title, icon, folderPath, isPinned (updating blocks here returns 400, as they are handled via /docs/{id}/sync); delete = move to trash (owner) or leave share (others)",
+        "tags": [
+          "Workspace"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/documents/{id}/backlinks": {
+      "get": {
+        "summary": "Notes containing a link to this note",
+        "description": "Notes containing a link to this note ([[Title#doc_id…]], older links without id by title) (visible notes only, excluding trash): docId, title, icon, folderPath, up to 5 blocks (id, content), more",
+        "tags": [
+          "Workspace"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/documents/{id}/blocks/{blockId}/enhanced-task": {
+      "post": {
+        "summary": "Turn a block into a linked task (content, checked)",
+        "description": "Turn a block into a linked task (content, checked)",
+        "tags": [
+          "Workspace"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "blockId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/documents/{id}/branches/move": {
+      "post": {
+        "summary": "Move a bullet with its children into another note",
+        "description": "{blockId, targetId, clientId}: copies the bullet with its sub-bullets to the end of note targetId (through the target's sync operations, open editors follow live) and moves links of tasks and subtasks on these checkboxes along → {targetId, targetTitle, rootId, moved} (moved: new block ID in the target → block ID in the source). The server does not modify the source note; the editor removes the branch itself (or leaves a link [[Title#^rootId]] when extracting into an existing note), so Ctrl+Z works. Requires write permission on both notes; 400 same note, 404 bullet not found, 409 someone else is typing in the branch. The earlier address POST /documents/{id}/move still works",
+        "tags": [
+          "Workspace"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/documents/{id}/branches/move/undo": {
+      "post": {
+        "summary": "Undo moving a bullet into another note",
+        "description": "Body: the result of branches/move plus clientId: removes the branch from the target note again and gives the task links back to the source note's checkboxes (which the editor restores by its own undo)",
+        "tags": [
+          "Workspace"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/documents/{id}/extract": {
+      "post": {
+        "summary": "Turn a bullet with its children into a note of its own",
+        "description": "{blockId, clientId}: creates a new note from the bullet and its sub-bullets; the bullet stays the note's first bullet (title = its text without hashtags, \"New note\" for drawings, images, code and other bullets without usable text; same folder, shares inherited, non-owner recipient receives write permission) → {document, link}. The server does not modify the source note; the editor itself replaces the sub-tree with link (standard local change, Ctrl+Z possible). Requires write permission; 409 if someone else is currently typing in the branch; 400 if the bullet is now only a link to a note (optionally with hashtags)",
+        "tags": [
+          "Workspace"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/documents/{id}/extract/undo": {
+      "post": {
+        "summary": "Undo turning a bullet into a note",
+        "description": "Moves extracted note {id} back to trash (creator only)",
+        "tags": [
+          "Workspace"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/documents/{id}/inline": {
+      "post": {
+        "summary": "Bring a linked note back into this one",
+        "description": "{blockId}: counterpart to extract for a bullet consisting solely of a link to a note ([[Note#doc_id]] or older [[Note]], optionally with hashtags) → {sourceId, content, head?, blocks}: text for the bullet (title plus hashtags) and note bullets with new IDs (level 0 = directly beneath the bullet). For a note made by extract (a single top-level bullet that names the note), head is that bullet: it replaces the link bullet (type and props), content is its text plus the link's hashtags, and blocks are its children. The linked note is moved to trash; undo with POST /documents/{sourceId}/restore. The editor modifies the source note locally. 400 not a link bullet (a link to a single bullet, [[Note#^id]], does not count), 404 note not found, 403 another user's note, 409 still referenced by other notes",
+        "tags": [
+          "Workspace"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/documents/{id}/media": {
+      "post": {
+        "summary": "Upload an image or audio file",
+        "description": "Upload image or audio for a note (multipart/form-data, field file; requires write permission) → {id, kind, mime, size, url}. 415 invalid format, 413 too large or storage quota exceeded",
+        "tags": [
+          "Workspace"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/documents/{id}/media/fetch": {
+      "post": {
+        "summary": "Copy an image from the web into the note",
+        "description": "Copy external image: {url} (https only, no internal addresses; disabled in demo) → same response as above",
+        "tags": [
+          "Workspace"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/documents/{id}/merge": {
+      "post": {
+        "summary": "Append another note to this one",
+        "description": "{sourceId}: appends (own) source note as a heading with sub-bullets to this note, moves source to trash → {targetId, sourceId, sourceTitle, headingId}",
+        "tags": [
+          "Workspace"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/documents/{id}/merge/undo": {
+      "post": {
+        "summary": "Undo appending a note",
+        "description": "{sourceId, headingId}: removes section, restores source note",
+        "tags": [
+          "Workspace"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/documents/{id}/move": {
+      "post": {
+        "summary": "Earlier address of branches/move (kept for older apps)",
+        "description": "Earlier addresses of branches/move and its undo, kept for apps with older code (PUT /documents/{id}/move moves the note into a folder)",
+        "tags": [
+          "Workspace"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      },
+      "put": {
+        "summary": "Move a note into another folder",
+        "description": "Move to another folder (folderPath)",
+        "tags": [
+          "Workspace"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/documents/{id}/move/undo": {
+      "post": {
+        "summary": "Earlier address of branches/move/undo (kept for older apps)",
+        "description": "Earlier addresses of branches/move and its undo, kept for apps with older code (PUT /documents/{id}/move moves the note into a folder)",
+        "tags": [
+          "Workspace"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/documents/{id}/permanent": {
+      "delete": {
+        "summary": "Permanently delete note from trash",
+        "description": "Permanently delete note from trash",
+        "tags": [
+          "Workspace"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/documents/{id}/public-link": {
+      "delete": {
+        "summary": "Withdraw the public link (owner)",
+        "description": "Owner only: the address stops working at once",
+        "tags": [
+          "Public links to notes"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      },
+      "get": {
+        "summary": "State of the public link (owner)",
+        "description": "Owner only: {enabled, maxDays, link}; link = {token, expiresAt, hasPassword} or null",
+        "tags": [
+          "Public links to notes"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      },
+      "put": {
+        "summary": "Create a new public link (owner)",
+        "description": "Owner only: new link (hours: 1, 24, 72, 168 or 336, at most maxDays; optional password). The previous address stops working. 403 when public links are off",
+        "tags": [
+          "Public links to notes"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/documents/{id}/restore": {
+      "post": {
+        "summary": "Restore from trash (missing folder is recreated)",
+        "description": "Restore from trash (missing folder is recreated)",
+        "tags": [
+          "Workspace"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/documents/{id}/secrets": {
+      "post": {
+        "summary": "Hide a value",
+        "description": "Hide a value (/secret): {value} (up to 4096 bytes; requires write permission) → {id, ref}; only ref ({{secret:<id>}}) goes into the bullet text",
+        "tags": [
+          "Workspace"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/documents/{id}/secrets/{secretId}": {
+      "get": {
+        "summary": "Reveal a hidden value",
+        "description": "Reveal a hidden value → {value}. Allowed to everyone who can see the note it belongs to; from another note only if a bullet there holds the reference and the caller can also see the original note (the value then moves along when the caller may edit). 404 with code: secret_gone when deleted, 409 secret_unreadable when the key changed. Never cached offline",
+        "tags": [
+          "Workspace"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "secretId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      },
+      "put": {
+        "summary": "Change a hidden value: {value}",
+        "description": "Change a hidden value: {value}; requires write permission",
+        "tags": [
+          "Workspace"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "secretId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/documents/{id}/shares": {
+      "get": {
+        "summary": "Shares of a note",
+        "description": "Note shares (userId/email/teamId, permission: read/write)",
+        "tags": [
+          "Workspace"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      },
+      "post": {
+        "summary": "Share a note",
+        "description": "Note shares (userId/email/teamId, permission: read/write)",
+        "tags": [
+          "Workspace"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/documents/{id}/shares/{userId}": {
+      "delete": {
+        "summary": "Remove note share",
+        "description": "Remove note share",
+        "tags": [
+          "Workspace"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/events": {
+      "get": {
+        "summary": "Server-Sent Events (fallback for the WebSocket)",
+        "description": "SSE fallback; ?ticket= or Authorization header",
+        "tags": [
+          "Public"
+        ],
+        "security": [],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/events/poll": {
+      "post": {
+        "summary": "Open long-polling connection (rooms optional)",
+        "description": "Open long-polling connection (rooms optional) → {pollId}; requires session",
+        "tags": [
+          "Account and General"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/events/poll/{id}": {
+      "get": {
+        "summary": "Fetch events of a long-polling connection",
+        "description": "Retrieve buffered events, waits up to wait s → {events}; 404 = expired",
+        "tags": [
+          "Account and General"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/events/rooms": {
+      "post": {
+        "summary": "Join or leave a room of the event stream",
+        "description": "Join/leave SSE room (sseId, room, action); own sseId only, rooms with read access only",
+        "tags": [
+          "Account and General"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/export": {
+      "get": {
+        "summary": "Data export as JSON",
+        "description": "Data export as JSON; with ?format=zip, the same data as mindsift-backup.json inside a ZIP, next to it the workspace as a Markdown vault in Obsidian/ (same content as /export/markdown, images and audio in Obsidian/attachments/; used by UI for backup downloads)",
+        "tags": [
+          "Account and General"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/export/markdown": {
+      "get": {
+        "summary": "Export as Markdown ZIP (Obsidian-compatible)",
+        "description": "Obsidian-compatible ZIP (mindsift-vault-DATE.zip), streamed directly: notes as .md with YAML frontmatter in user's folder hierarchy (including shared ones), Aufgaben/<List>.md in Tasks plugin format (📅, ⏫/🔺), Listen/<List>.md (folder names in the user's language, e.g. Tasks/, Lists/; the import reads them in every language)",
+        "tags": [
+          "Account and General"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/folders": {
+      "delete": {
+        "summary": "Move a folder with its notes to the trash",
+        "description": "Folder list; create (path); delete (deleting an own folder moves it along with all subfolders and notes as a single entry to trash)",
+        "tags": [
+          "Workspace"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      },
+      "get": {
+        "summary": "List folders",
+        "description": "Folder list; create (path); delete (deleting an own folder moves it along with all subfolders and notes as a single entry to trash)",
+        "tags": [
+          "Workspace"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      },
+      "post": {
+        "summary": "Create a folder",
+        "description": "Folder list; create (path); delete (deleting an own folder moves it along with all subfolders and notes as a single entry to trash)",
+        "tags": [
+          "Workspace"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/folders/move": {
+      "post": {
+        "summary": "Move a folder",
+        "description": "sourcePath, targetParentPath",
+        "tags": [
+          "Workspace"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/folders/trash/{id}": {
+      "delete": {
+        "summary": "Permanently delete folder in trash along with notes",
+        "description": "Permanently delete folder in trash along with notes",
+        "tags": [
+          "Workspace"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/folders/trash/{id}/restore": {
+      "post": {
+        "summary": "Restore folder from trash (with all subfolders, even empty ones, and notes)",
+        "description": "Restore folder from trash (with all subfolders, even empty ones, and notes) → restoredDocIds",
+        "tags": [
+          "Workspace"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/health": {
+      "get": {
+        "summary": "Health check",
+        "description": "Health check",
+        "tags": [
+          "Public"
+        ],
+        "security": [],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/import/mindsift": {
+      "post": {
+        "summary": "Import a MindSift export",
+        "description": "Import (multipart field file, max 100 MB): MindSift JSON/archive or Obsidian vault ZIP; ?preview=1 returns only the summary (folders, notes, taskLists, tasks, lists, listItems, inbox, skipped)",
+        "tags": [
+          "Account and General"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/import/obsidian": {
+      "post": {
+        "summary": "Import an Obsidian vault (ZIP)",
+        "description": "Import (multipart field file, max 100 MB): MindSift JSON/archive or Obsidian vault ZIP; ?preview=1 returns only the summary (folders, notes, taskLists, tasks, lists, listItems, inbox, skipped)",
+        "tags": [
+          "Account and General"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/inbox": {
+      "post": {
+        "summary": "Quick capture",
+        "description": "Quick capture. Body: content, priority, source, dueDate, target (inbox/task/list_item/document), targetListId, taskListId (snake_case variants are accepted)",
+        "tags": [
+          "Thoughts, Triage, Tasks"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/journal": {
+      "get": {
+        "summary": "Days in own journal, newest first",
+        "description": "Days in own journal, newest first → {days: [{date, docId, empty}]} (empty: note has no text yet; days in trash are excluded)",
+        "tags": [
+          "Workspace"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/journal/{date}": {
+      "post": {
+        "summary": "Open the journal note of a day",
+        "description": "Open journal note for date (YYYY-MM-DD); if none exists yet, it is created (title e.g. \"Friday, October 30, 2026\", icon 📅) → document, 201 if newly created. Journal notes are standard notes (sharing, search, sync)",
+        "tags": [
+          "Workspace"
+        ],
+        "parameters": [
+          {
+            "name": "date",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/keys": {
+      "get": {
+        "summary": "List API keys",
+        "description": "List or create API keys (plain text revealed only upon creation); POST with name and scopes (webhook:triage, webhook:task, webhook:list, tasks:read, tasks:write, lists:read, lists:write, notes:read, notes:create, notes:write, inbox:read, inbox:write; default [\"webhook:triage\"]; an empty body creates such a key, a body that is not valid JSON gives 400)",
+        "tags": [
+          "Account and General"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      },
+      "post": {
+        "summary": "Create an API key",
+        "description": "List or create API keys (plain text revealed only upon creation); POST with name and scopes (webhook:triage, webhook:task, webhook:list, tasks:read, tasks:write, lists:read, lists:write, notes:read, notes:create, notes:write, inbox:read, inbox:write; default [\"webhook:triage\"]; an empty body creates such a key, a body that is not valid JSON gives 400)",
+        "tags": [
+          "Account and General"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/keys/{id}": {
+      "delete": {
+        "summary": "Delete API key",
+        "description": "Delete API key",
+        "tags": [
+          "Account and General"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      },
+      "patch": {
+        "summary": "Rename an API key or change its scopes",
+        "description": "Update name (name) and/or permissions (scopes); the key itself remains unchanged",
+        "tags": [
+          "Account and General"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/legal/{type}": {
+      "get": {
+        "summary": "Imprint or privacy text",
+        "description": "Stored Markdown text (content), without login; 404 if none set",
+        "tags": [
+          "Public"
+        ],
+        "parameters": [
+          {
+            "name": "type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/link-preview": {
+      "get": {
+        "summary": "Preview of a web page",
+        "description": "Preview of a webpage (title, description, siteName, hasImage, hasIcon, ok, key), fetched by server and cached for 7 days; 422 without https, 403 in demo, 429 rate limit exceeded",
+        "tags": [
+          "Workspace"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/link-preview/{key}/{kind}": {
+      "get": {
+        "summary": "Image or icon of a link preview",
+        "description": "Image (kind = image) or icon (icon) for a preview",
+        "tags": [
+          "Workspace"
+        ],
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "kind",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/lists": {
+      "get": {
+        "summary": "List shopping and other lists",
+        "description": "Lists in the person's own order (see PUT /lists/order); create (title, icon, listType; icon: \"\" = no icon, if omitted: 🛒)",
+        "tags": [
+          "Shared Lists"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      },
+      "post": {
+        "summary": "Create a list",
+        "description": "Lists in the person's own order (see PUT /lists/order); create (title, icon, listType; icon: \"\" = no icon, if omitted: 🛒)",
+        "tags": [
+          "Shared Lists"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/lists/order": {
+      "put": {
+        "summary": "Own order of the list tabs",
+        "description": "Own order of the list tabs (ids), like /task-lists/order. 204",
+        "tags": [
+          "Shared Lists"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/lists/{id}": {
+      "delete": {
+        "summary": "Delete a list",
+        "description": "Retrieve with items; delete",
+        "tags": [
+          "Shared Lists"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      },
+      "get": {
+        "summary": "A list with its items",
+        "description": "Retrieve with items; delete",
+        "tags": [
+          "Shared Lists"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      },
+      "patch": {
+        "summary": "Rename a list or change its icon",
+        "description": "Rename: title, icon (owner and editors; 403 for viewers, 404 without access); sends LIST_UPDATED",
+        "tags": [
+          "Shared Lists"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/lists/{id}/clear-completed": {
+      "post": {
+        "summary": "Remove completed items",
+        "description": "Remove completed items",
+        "tags": [
+          "Shared Lists"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/lists/{id}/items": {
+      "post": {
+        "summary": "Add an item",
+        "description": "Add item (content, category, quantity)",
+        "tags": [
+          "Shared Lists"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/lists/{id}/items/reorder": {
+      "post": {
+        "summary": "Order items and their categories",
+        "description": "Order/category (items[{id, sortOrder, category, content}]); PUT does the same and stays for older clients",
+        "tags": [
+          "Shared Lists"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      },
+      "put": {
+        "summary": "Same as POST (kept for older clients)",
+        "description": "Same as POST (kept for older clients)",
+        "tags": [
+          "Shared Lists"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/lists/{id}/items/{itemId}": {
+      "delete": {
+        "summary": "Delete item",
+        "description": "Delete item",
+        "tags": [
+          "Shared Lists"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "itemId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      },
+      "patch": {
+        "summary": "Check or uncheck an item",
+        "description": "Check off item (isCompleted)",
+        "tags": [
+          "Shared Lists"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "itemId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      },
+      "put": {
+        "summary": "Change an item",
+        "description": "Update item (content, category, quantity)",
+        "tags": [
+          "Shared Lists"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "itemId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/lists/{id}/items/{itemId}/move": {
+      "post": {
+        "summary": "Move an item to another list",
+        "description": "Move to another list (targetListId); requires edit permissions on both lists; item is placed at the top",
+        "tags": [
+          "Shared Lists"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "itemId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/lists/{id}/shares": {
+      "get": {
+        "summary": "Shares of a list",
+        "description": "Retrieve or create shares (targetType, targetId, role: editor/viewer)",
+        "tags": [
+          "Shared Lists"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      },
+      "post": {
+        "summary": "Share a list",
+        "description": "Retrieve or create shares (targetType, targetId, role: editor/viewer)",
+        "tags": [
+          "Shared Lists"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/lists/{id}/shares/{shareId}": {
+      "delete": {
+        "summary": "Remove share",
+        "description": "Remove share",
+        "tags": [
+          "Shared Lists"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "shareId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/mcp": {
+      "delete": {
+        "summary": "Not supported: 405 (no sessions)",
+        "description": "405: no server stream and no sessions (Streamable HTTP, stateless)",
+        "tags": [
+          "Account and General"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      },
+      "get": {
+        "summary": "Not supported: 405 (no server stream)",
+        "description": "405: no server stream and no sessions (Streamable HTTP, stateless)",
+        "tags": [
+          "Account and General"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      },
+      "post": {
+        "summary": "MCP endpoint for AI agents (JSON-RPC)",
+        "description": "MCP endpoint for AI agents, see below",
+        "tags": [
+          "Account and General"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/media/{id}": {
+      "get": {
+        "summary": "A file of a note",
+        "description": "Retrieve file (requires read permission on a note referencing it), supports HTTP range requests; otherwise 404",
+        "tags": [
+          "Workspace"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/mentions/candidates": {
+      "get": {
+        "summary": "People for the @-mention picker",
+        "description": "People for the @-mention picker at that place: the directory plus everyone with access, without yourself; hasAccess says whether the person can see the place (the others are shown greyed out). 404 without access to the place",
+        "tags": [
+          "Account and General"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/notifications": {
+      "delete": {
+        "summary": "Delete all of one's entries",
+        "description": "Delete all of one's entries. 204; sends NOTIFICATIONS_CLEARED",
+        "tags": [
+          "Account and General"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      },
+      "get": {
+        "summary": "Entries of the notification center",
+        "description": "Notification center: items (newest first: id, kind, title, text, targetType task/note/list/tasklist/folder, targetId, blockId, createdAt, read) and unread. Holds every event regardless of channels and pause; own actions and muted lists stay out; entries are removed after 14 days",
+        "tags": [
+          "Account and General"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/notifications/read": {
+      "post": {
+        "summary": "Mark notifications as read",
+        "description": "Mark as read: ids (none: all). 204; sends NOTIFICATIONS_READ to the person's other apps",
+        "tags": [
+          "Account and General"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/oauth/authorize": {
+      "get": {
+        "summary": "Details of an authorization request (consent page)",
+        "description": "For the consent page (signed in, no API keys): client, scopes and knownHost of an authorization request",
+        "tags": [
+          "OAuth for claude.ai and ChatGPT"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      },
+      "post": {
+        "summary": "Allow or deny an authorization request (consent page)",
+        "description": "For the consent page: allow (approve, with the chosen scopes) or deny → {redirect}, the address to send the browser back to",
+        "tags": [
+          "OAuth for claude.ai and ChatGPT"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/public/{token}": {
+      "get": {
+        "summary": "A note shared by public link",
+        "description": "No login. The note for visitors: title, icon, expiresAt, headSeq, titleVersion, blocks (as in the snapshot, without hidden values ({{secret:hidden}}), conflict copies, authors or the text of deleted bullets). ?since=<headSeq> answers 204 when nothing changed. Password-protected links need the header X-Public-Key (401 with code password_required). Unknown, expired, revoked and switched-off links: 404. Answers carry X-Robots-Tag: noindex and Referrer-Policy: no-referrer",
+        "tags": [
+          "Public links to notes"
+        ],
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/public/{token}/media/{mediaId}": {
+      "get": {
+        "summary": "A file of a publicly shared note",
+        "description": "No login. An image or recording a living bullet of the note shows (with X-Public-Key when protected)",
+        "tags": [
+          "Public links to notes"
+        ],
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "mediaId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/public/{token}/unlock": {
+      "post": {
+        "summary": "Unlock a public link with its password",
+        "description": "No login. password → {key} for X-Public-Key, valid 12 hours (at most until the link expires); 401 with code password_wrong, 429 after 10 wrong tries per link and address",
+        "tags": [
+          "Public links to notes"
+        ],
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/push/devices": {
+      "get": {
+        "summary": "Own registered push devices",
+        "description": "Own registered push devices → {devices: [{id, endpoint, device, createdAt}]}",
+        "tags": [
+          "Workspace"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/push/key": {
+      "get": {
+        "summary": "Public key for web push",
+        "description": "{enabled, publicKey} – public VAPID key for pushManager.subscribe (enabled: false in demo)",
+        "tags": [
+          "Workspace"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/push/subscribe": {
+      "post": {
+        "summary": "Register a device for web push",
+        "description": "{endpoint, keys: {p256dh, auth}, device} – register device (only https endpoints)",
+        "tags": [
+          "Workspace"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/push/test": {
+      "post": {
+        "summary": "Send test notification to all own devices",
+        "description": "Send test notification to all own devices → {devices}; 400 if no devices",
+        "tags": [
+          "Workspace"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/push/unsubscribe": {
+      "post": {
+        "summary": "Remove a device from web push",
+        "description": "{endpoint} – unregister device",
+        "tags": [
+          "Workspace"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/search": {
+      "get": {
+        "summary": "Search notes, tasks and lists",
+        "description": "Global FTS5 search across accessible notes (title & blocks), tasks, and lists → {thoughts, documents, listItems, hits, counts}. Open tasks and list items appear before completed ones. Optional: type (document/thought/list_item), limit (matches per type, default 40, max 200), for tasks taskStatus (open/done), taskListId (personal = without list), priority, due (today/overdue/week), for notes folder (including subfolders), for lists listId, itemStatus (open/done). Matches in bullets include content (raw text of the bullet), with context=1 also before/after (text of adjacent bullets); documents holds only id, title and icon of the matched notes; counts = matches per type in this response",
+        "tags": [
+          "Account and General"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/stats": {
+      "get": {
+        "summary": "Counters for the dashboard",
+        "description": "Counters for the dashboard (including inboxCount, tasksOpenCount, listItemsOpenCount = open items across all visible lists)",
+        "tags": [
+          "Account and General"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/task-lists": {
+      "get": {
+        "summary": "List task lists",
+        "description": "Lists (permission per list: owner/editor/viewer) in the person's own order (see PUT /task-lists/order); create (title, icon, color, teamId; icon: \"\" = no icon, if omitted: 📋)",
+        "tags": [
+          "Task Lists"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      },
+      "post": {
+        "summary": "Create a task list",
+        "description": "Lists (permission per list: owner/editor/viewer) in the person's own order (see PUT /task-lists/order); create (title, icon, color, teamId; icon: \"\" = no icon, if omitted: 📋)",
+        "tags": [
+          "Task Lists"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/task-lists/order": {
+      "put": {
+        "summary": "Own order of the task list tabs (ids)",
+        "description": "Own order of the task list tabs (ids); per person, also for shared lists. Lists without a position (new ones) follow, most recently changed first. 204",
+        "tags": [
+          "Task Lists"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/task-lists/{id}": {
+      "delete": {
+        "summary": "Delete a task list",
+        "description": "Update (title, icon, color, teamId, columns) – not allowed for viewers; delete allowed for owner only. Lists in answers carry their standard columns (todo, in_progress, waiting, done) in the request's language as long as they still have a standard name in any language (storage.LocalizeColumns)",
+        "tags": [
+          "Task Lists"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      },
+      "put": {
+        "summary": "Change a task list (title, icon, color, group, columns)",
+        "description": "Update (title, icon, color, teamId, columns) – not allowed for viewers; delete allowed for owner only. Lists in answers carry their standard columns (todo, in_progress, waiting, done) in the request's language as long as they still have a standard name in any language (storage.LocalizeColumns)",
+        "tags": [
+          "Task Lists"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/task-lists/{id}/mute": {
+      "delete": {
+        "summary": "Unmute a task list for oneself",
+        "description": "Mute / unmute the list for the requesting person ({\"muted\": bool}, 404 without access). A muted list sends no list-wide notifications (new task, completed, due date of unassigned tasks); assignments, mentions and watched tasks still come. GET /task-lists returns isMuted per list",
+        "tags": [
+          "Task Lists"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      },
+      "put": {
+        "summary": "Mute a task list for oneself",
+        "description": "Mute / unmute the list for the requesting person ({\"muted\": bool}, 404 without access). A muted list sends no list-wide notifications (new task, completed, due date of unassigned tasks); assignments, mentions and watched tasks still come. GET /task-lists returns isMuted per list",
+        "tags": [
+          "Task Lists"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/task-lists/{id}/shares": {
+      "get": {
+        "summary": "Shares of a task list",
+        "description": "Sharing permissions",
+        "tags": [
+          "Task Lists"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      },
+      "post": {
+        "summary": "Share a task list (owner)",
+        "description": "Owner only. Body: targetType (team/user), targetId, permission (editor/viewer, default editor). Re-submitting for the same target updates the permission tier",
+        "tags": [
+          "Task Lists"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/task-lists/{id}/shares/{shareId}": {
+      "delete": {
+        "summary": "Remove a share of a task list (owner)",
+        "description": "Owner only",
+        "tags": [
+          "Task Lists"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "shareId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/task-lists/{id}/tasks/reorder": {
+      "post": {
+        "summary": "Order tasks of a task list and their columns",
+        "description": "Update task order/column (items[{id, sortOrder, kanbanStatus}])",
+        "tags": [
+          "Thoughts, Triage, Tasks"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/tasks": {
+      "get": {
+        "summary": "List tasks",
+        "description": "Tasks (optionally filtered by list; filters see API Keys)",
+        "tags": [
+          "Thoughts, Triage, Tasks"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/tasks/clear-done": {
+      "post": {
+        "summary": "Move done tasks to the task trash",
+        "description": "Move completed tasks to task trash (taskListId, empty = all editable) → {deleted}",
+        "tags": [
+          "Thoughts, Triage, Tasks"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/tasks/reorder": {
+      "post": {
+        "summary": "Order tasks and their columns",
+        "description": "Update task order/column (items[{id, sortOrder, kanbanStatus}])",
+        "tags": [
+          "Thoughts, Triage, Tasks"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/tasks/trash": {
+      "get": {
+        "summary": "Tasks in the trash",
+        "description": "Task trash (for a list, otherwise all visible): id, content, taskListId, isCompleted, trashedAt, trashedBy (name, empty = automatic), canEdit",
+        "tags": [
+          "Thoughts, Triage, Tasks"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/tasks/trash/empty": {
+      "post": {
+        "summary": "Empty the task trash",
+        "description": "Empty trash (taskListId, empty = all editable) → {deleted}",
+        "tags": [
+          "Thoughts, Triage, Tasks"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/tasks/trash/{id}": {
+      "delete": {
+        "summary": "Delete a task from the trash for good",
+        "description": "Permanently delete (requires edit permission on the list, otherwise 403)",
+        "tags": [
+          "Thoughts, Triage, Tasks"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/tasks/trash/{id}/restore": {
+      "post": {
+        "summary": "Restore a task from the trash",
+        "description": "Restore task unchanged (with assignees; if the original list was deleted, it becomes a personal task for its creator) → task",
+        "tags": [
+          "Thoughts, Triage, Tasks"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/tasks/{id}/unlink": {
+      "post": {
+        "summary": "Unlink from note block",
+        "description": "Unlink from note block",
+        "tags": [
+          "Thoughts, Triage, Tasks"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/tasks/{id}/watch": {
+      "delete": {
+        "summary": "Stop watching a task",
+        "description": "Watch or unwatch a task → {watching}; 404 without access. Task responses include isWatching",
+        "tags": [
+          "Thoughts, Triage, Tasks"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      },
+      "post": {
+        "summary": "Watch a task",
+        "description": "Watch or unwatch a task → {watching}; 404 without access. Task responses include isWatching",
+        "tags": [
+          "Thoughts, Triage, Tasks"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/teams": {
+      "get": {
+        "summary": "Own groups",
+        "description": "Own groups; create (name, description, organizationId) – creator becomes group admin; the group belongs to one of the creator's organizations (organizationId required in organizations mode when the creator is in several, 400 otherwise); blocked in private mode",
+        "tags": [
+          "Groups"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      },
+      "post": {
+        "summary": "Create a group",
+        "description": "Own groups; create (name, description, organizationId) – creator becomes group admin; the group belongs to one of the creator's organizations (organizationId required in organizations mode when the creator is in several, 400 otherwise); blocked in private mode",
+        "tags": [
+          "Groups"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/teams/{id}": {
+      "delete": {
+        "summary": "Delete a group (group admin)",
+        "description": "Group admin only",
+        "tags": [
+          "Groups"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      },
+      "put": {
+        "summary": "Change a group (group admin)",
+        "description": "Group admin only",
+        "tags": [
+          "Groups"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/teams/{id}/members": {
+      "post": {
+        "summary": "Add a member to a group",
+        "description": "Add member (userId or email, role); only people the group admin may share with and, in organizations mode, members of the group's organization, otherwise 404",
+        "tags": [
+          "Groups"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/teams/{id}/members/{userId}": {
+      "delete": {
+        "summary": "Remove a member from a group",
+        "description": "Change role (admin/member); remove",
+        "tags": [
+          "Groups"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      },
+      "put": {
+        "summary": "Change the role of a group member",
+        "description": "Change role (admin/member); remove",
+        "tags": [
+          "Groups"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/themes": {
+      "get": {
+        "summary": "Own CSS themes",
+        "description": "Custom CSS themes; create or update with id (name, css, max 200 KB)",
+        "tags": [
+          "Account and General"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      },
+      "post": {
+        "summary": "Create or update a CSS theme",
+        "description": "Custom CSS themes; create or update with id (name, css, max 200 KB)",
+        "tags": [
+          "Account and General"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/themes/{id}": {
+      "delete": {
+        "summary": "Delete custom theme",
+        "description": "Delete custom theme",
+        "tags": [
+          "Account and General"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/thoughts": {
+      "get": {
+        "summary": "Quick Dump entries and tasks by status",
+        "description": "Thoughts (inbox, kept, converted, discarded, all)",
+        "tags": [
+          "Thoughts, Triage, Tasks"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/thoughts/discarded/purge": {
+      "delete": {
+        "summary": "Empty triage trash (discarded thoughts)",
+        "description": "Empty triage trash (discarded thoughts)",
+        "tags": [
+          "Thoughts, Triage, Tasks"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/thoughts/{id}": {
+      "delete": {
+        "summary": "Delete a Quick Dump entry or task",
+        "description": "Retrieve item; partial update (content, isCompleted, dueDate, priority, taskListId, kanbanStatus, notes, subtasks, tags, assignees, recurrence = daily/weekly/monthly/yearly/empty, reminders = minutes before the due date that replace each recipient's lead time, from 0, 15, 30, 60, 120, 1440, 2880, 4320, 10080, 20160, 43200 (one calendar month); whole days count as calendar days, [] = the lead time again, other values 400; tasks return reminders); delete: a task is moved to the task trash, while a thought from inbox or triage trash is permanently deleted. assignees replaces all assignments; only users with access to the list, otherwise 403",
+        "tags": [
+          "Thoughts, Triage, Tasks"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      },
+      "get": {
+        "summary": "A Quick Dump entry or task",
+        "description": "Retrieve item; partial update (content, isCompleted, dueDate, priority, taskListId, kanbanStatus, notes, subtasks, tags, assignees, recurrence = daily/weekly/monthly/yearly/empty, reminders = minutes before the due date that replace each recipient's lead time, from 0, 15, 30, 60, 120, 1440, 2880, 4320, 10080, 20160, 43200 (one calendar month); whole days count as calendar days, [] = the lead time again, other values 400; tasks return reminders); delete: a task is moved to the task trash, while a thought from inbox or triage trash is permanently deleted. assignees replaces all assignments; only users with access to the list, otherwise 403",
+        "tags": [
+          "Thoughts, Triage, Tasks"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      },
+      "patch": {
+        "summary": "Change a Quick Dump entry or task",
+        "description": "Retrieve item; partial update (content, isCompleted, dueDate, priority, taskListId, kanbanStatus, notes, subtasks, tags, assignees, recurrence = daily/weekly/monthly/yearly/empty, reminders = minutes before the due date that replace each recipient's lead time, from 0, 15, 30, 60, 120, 1440, 2880, 4320, 10080, 20160, 43200 (one calendar month); whole days count as calendar days, [] = the lead time again, other values 400; tasks return reminders); delete: a task is moved to the task trash, while a thought from inbox or triage trash is permanently deleted. assignees replaces all assignments; only users with access to the list, otherwise 403",
+        "tags": [
+          "Thoughts, Triage, Tasks"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/triage/deck": {
+      "get": {
+        "summary": "The triage deck (open Quick Dump entries)",
+        "description": "Inbox deck (max 100)",
+        "tags": [
+          "Thoughts, Triage, Tasks"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/triage/{id}": {
+      "patch": {
+        "summary": "Sort a Quick Dump entry (keep, discard, restore)",
+        "description": "action: keep/discard/restore; with convertTo: task/document/list_item",
+        "tags": [
+          "Thoughts, Triage, Tasks"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/user/account": {
+      "delete": {
+        "summary": "Delete own account with all data",
+        "description": "Delete user account along with all data ({\"password\"} required); 403 for the last server admin. /auth/me provides isLastAdmin for this purpose",
+        "tags": [
+          "Account and General"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/user/data": {
+      "delete": {
+        "summary": "Delete all own data, keep the account",
+        "description": "Delete all personal user data, account remains ({\"password\"} required, wrong guesses count like failed logins: 403, then 429; 403 in demo mode)",
+        "tags": [
+          "Account and General"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/user/email-change/{kind}": {
+      "delete": {
+        "summary": "Drop the waiting new address (kind: account or alarm)",
+        "description": "Drop the waiting new address (kind: account or alarm); the current one stays",
+        "tags": [
+          "Account and General"
+        ],
+        "parameters": [
+          {
+            "name": "kind",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/user/email-change/{kind}/resend": {
+      "post": {
+        "summary": "Mail the confirmation link for a waiting address again",
+        "description": "Mail the link for the waiting address again (at most every 2 minutes; 503 without mail server; 403 in demo mode)",
+        "tags": [
+          "Account and General"
+        ],
+        "parameters": [
+          {
+            "name": "kind",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/users/directory": {
+      "get": {
+        "summary": "People whose names you may see: everyone you may share with",
+        "description": "People whose names you may see: everyone you may share with (findable: true, only while people search is on) and everyone you work on something together with (findable: false); /collaborators without yourself (sharing-and-permissions.md). Only public profile per person: id, username, displayName, avatarUrl, findable – no e-mail address and no private details (webhooks, alarm email, role, organizations). Member and share lists of notes, folders, lists, task lists and groups carry names only, no addresses",
+        "tags": [
+          "Account and General"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/users/lookup": {
+      "post": {
+        "summary": "Find one person by exact address or username",
+        "description": "One person by exact e-mail address or username (login), for sharing without people search or when the address is typed in (the answer carries email only if login was one); 404 alike for unknown people and people you may not share with; 30 lookups per user and address within the lock window",
+        "tags": [
+          "Account and General"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/voice/transcribe": {
+      "post": {
+        "summary": "Transcribe a recording (server voice recognition)",
+        "description": "Only in server mode for voice recognition: multipart/form-data with file (recording, e.g. WebM/Opus or MP4/AAC) → {text}. 404 without STT_URL, 413 too large, 429 hourly rate limit, 503 busy, 502 Whisper error (details in log)",
+        "tags": [
+          "Account and General"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/webhooks/ingest": {
+      "post": {
+        "summary": "Capture into the Quick Dump, a task list or a list via webhook",
+        "description": "Ingest via webhook, key as X-API-Key (recommended), Bearer or ?token= (URL parameter accepts only API keys, no session tokens). Body: title/content/text/message, priority, source, tags, dueDate; target (or type): triage (default, inbox), task (optional taskListId), list_item (listId, category, quantity). Plain text body is treated as content. 403 without matching scope or without write permission on the list. The alternative field names (title/content/text/message, dueDate/due_date, target/type) are accepted on purpose, so the payloads of different tools work without a mapping",
+        "tags": [
+          "Public"
+        ],
+        "security": [],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/workspace/folders/shared": {
+      "get": {
+        "summary": "Shared folders",
+        "description": "Shared folders; create (name, mountPath)",
+        "tags": [
+          "Workspace"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      },
+      "post": {
+        "summary": "Share a folder",
+        "description": "Shared folders; create (name, mountPath)",
+        "tags": [
+          "Workspace"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/workspace/folders/shared/{id}": {
+      "delete": {
+        "summary": "Stop sharing a folder (owner) or leave it (others)",
+        "description": "Retrieve; delete",
+        "tags": [
+          "Workspace"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      },
+      "get": {
+        "summary": "A shared folder",
+        "description": "Retrieve; delete",
+        "tags": [
+          "Workspace"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/workspace/folders/shared/{id}/mount": {
+      "put": {
+        "summary": "Change own mount path (mountPath)",
+        "description": "Change own mount path (mountPath)",
+        "tags": [
+          "Workspace"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/workspace/folders/shared/{id}/shares": {
+      "get": {
+        "summary": "Who a shared folder is shared with",
+        "description": "Shared folder permissions (permission: read/write)",
+        "tags": [
+          "Workspace"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      },
+      "post": {
+        "summary": "Share a shared folder with someone else",
+        "description": "Shared folder permissions (permission: read/write)",
+        "tags": [
+          "Workspace"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/workspace/folders/shared/{id}/shares/{shareId}": {
+      "delete": {
+        "summary": "Remove share of a shared folder",
+        "description": "Remove share of a shared folder",
+        "tags": [
+          "Workspace"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "shareId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/workspace/tags": {
+      "get": {
+        "summary": "Overview of the hashtags",
+        "description": "Tag overview and details",
+        "tags": [
+          "Workspace"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/workspace/tags/{tag}": {
+      "get": {
+        "summary": "Everything with one hashtag",
+        "description": "Tag overview and details",
+        "tags": [
+          "Workspace"
+        ],
+        "parameters": [
+          {
+            "name": "tag",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/workspace/tags/{tag}/note": {
+      "put": {
+        "summary": "Save the note page of a hashtag",
+        "description": "Save tag note page (content)",
+        "tags": [
+          "Workspace"
+        ],
+        "parameters": [
+          {
+            "name": "tag",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/ws": {
+      "get": {
+        "summary": "WebSocket for live updates",
+        "description": "WebSocket, see websocket.md; ?ticket= or Authorization header",
+        "tags": [
+          "Public"
+        ],
+        "security": [],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/ws/lists/{listId}": {
+      "get": {
+        "summary": "WebSocket for live updates of one list",
+        "description": "WebSocket, see websocket.md; ?ticket= or Authorization header",
+        "tags": [
+          "Public"
+        ],
+        "parameters": [
+          {
+            "name": "listId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/oauth/register": {
+      "post": {
+        "summary": "Register an OAuth client (RFC 7591)",
+        "description": "Dynamic client registration (RFC 7591), JSON client_name, redirect_uris (only https:// or http://localhost/127.0.0.1, max 10). All clients are public (token_endpoint_auth_method: none); rate limited to 20 registrations per address per 15 minutes",
+        "tags": [
+          "OAuth for claude.ai and ChatGPT"
+        ],
+        "security": [],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/oauth/revoke": {
+      "post": {
+        "summary": "Revoke token (RFC 7009)",
+        "description": "Revoke token (RFC 7009); revoking a refresh token terminates all tokens associated with the connection. 503 with server_error when the token could not be revoked",
+        "tags": [
+          "OAuth for claude.ai and ChatGPT"
+        ],
+        "security": [],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/oauth/token": {
+      "post": {
+        "summary": "Exchange a code or refresh token for an access token",
+        "description": "Form: grant_type=authorization_code (code, client_id, redirect_uri, code_verifier) or refresh_token (refresh_token, client_id). Errors returned as {\"error\":\"invalid_grant\",…}",
+        "tags": [
+          "OAuth for claude.ai and ChatGPT"
+        ],
+        "security": [],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/share-target": {
+      "post": {
+        "summary": "Share target of the installed app (fallback without service worker)",
+        "description": "PWA Web Share Target fallback: redirects to / (303 See Other) if service worker is still inactive",
+        "tags": [
+          "Public"
+        ],
+        "security": [],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    }
+  }
+}

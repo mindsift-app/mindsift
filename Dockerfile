@@ -38,11 +38,14 @@ RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache
       github.com/go-chi/cors \
       github.com/golang-jwt/jwt/v5 \
       github.com/gorilla/websocket \
-      golang.org/x/crypto/bcrypt
+      golang.org/x/crypto/bcrypt \
+      golang.org/x/net/html
 
 # Copy application source & compiled frontend SPA assets for go:embed
 COPY cmd/ ./cmd/
 COPY internal/ ./internal/
+# The route list the API test checks the router against (internal/api/openapi_test.go)
+COPY Doku/api/openapi.json ./Doku/api/openapi.json
 COPY --from=frontend-builder /app/frontend/dist ./cmd/server/dist
 
 ARG SKIP_TESTS=0

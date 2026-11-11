@@ -15,6 +15,8 @@ Fixes from the security review of November 2026 (v0.94.0).
 - The OAuth consent page warns when the way back after allowing access does not lead to a known AI service (claude.ai, chatgpt.com) or your own computer: anybody can register a connector under the name "Claude".
 - The image is built for arm64 as well as amd64: it runs on a Raspberry Pi with a 64-bit system, on Apple Silicon and on ARM cloud servers. `docker pull` picks the right one by itself.
 - Releases have the server attached as a single file for Linux (amd64 and arm64), with the frontend inside, for running MindSift without a container. Started this way it also keeps what it creates in `data/` to itself (files 0600, folders 0700), as the container does.
+- `Doku/api/openapi.json` lists every route of the API with a short description (OpenAPI 3.1); a test fails when the router and the file disagree.
+- The demo says that it is public: a line on the sign-in page and a slim notice under the header (until closed) tell that everyone uses the same accounts, that it resets every `DEMO_RESET_MINUTES` minutes and not to enter anything private.
 
 ### Changed
 - **Attention:** a new login address or a new alarm address (other than the login address) only counts once its owner clicks the link mailed to it; until then the old one stays in use and the settings show the new one as waiting, with "Send link again" and "Keep the previous one". Without a mail server the address keeps waiting. Existing addresses stay as they are.
@@ -39,6 +41,8 @@ Fixes from the security review of November 2026 (v0.94.0).
 - The page description shown by search engines, link previews and the installed app names notes, tasks and shared lists first and the triage last.
 - New tagline "Notes, tasks and a clear head, self-hosted." in the About dialog, the footer of mails, the page description and link previews, in all five languages. It replaces "A clear head in three seconds."
 - The pinned start note of new accounts and the demo is called "Diagrams drawn by an AI agent over MCP"; which agent drew them is said in the note itself.
+- Link previews read the page with the HTML tokenizer of `golang.org/x/net` instead of patterns: comments, unquoted attributes and the title of an inline SVG no longer confuse them. The server's settings are read from the database once and kept in memory until they change.
+- **Attention:** moving a bullet with its children into another note is `POST /documents/{id}/branches/move` (and `/branches/move/undo`); the earlier `POST /documents/{id}/move`, whose address `PUT` also used for moving a note into a folder, keeps working. `POST /auth/quickstart` (always `403`) and the WebSocket address `/ws/spaces/{id}`, which no app version used any more, are gone.
 - The sign-in page loads about 170 kB (compressed) instead of 530 kB; the rest of the app follows right after signing in, or at once when you are still signed in.
 
 ### Fixed
