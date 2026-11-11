@@ -300,7 +300,14 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
     const { width, height } = el.getBoundingClientRect();
     setSize({ w: width, h: height });
     setView(fitView(contentBox(initial), width, height));
-    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(([entry]) => setSize({ w: entry.contentRect.width, h: entry.contentRect.height })) : null;
+    // Only a real change renders the editor again (the first report repeats the size measured here)
+    const ro =
+      typeof ResizeObserver !== 'undefined'
+        ? new ResizeObserver(([entry]) => {
+            const { width: w, height: h } = entry.contentRect;
+            setSize((prev) => (prev.w === w && prev.h === h ? prev : { w, h }));
+          })
+        : null;
     ro?.observe(el);
     return () => ro?.disconnect();
     // eslint-disable-next-line react-hooks/exhaustive-deps
