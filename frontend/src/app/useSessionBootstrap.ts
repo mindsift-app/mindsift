@@ -54,6 +54,16 @@ export function useSessionBootstrap(onSignedOut: () => void) {
     }
   }, []);
 
+  // The counters in the navigation only, debounced: an action and the realtime echo of it (and a burst of
+  // events from a shared note) make one request together
+  const statsTimerRef = useRef<number | undefined>(undefined);
+  const refreshStats = useCallback(() => {
+    window.clearTimeout(statsTimerRef.current);
+    statsTimerRef.current = window.setTimeout(() => {
+      api.getStats().then(setStats).catch(() => {});
+    }, 300);
+  }, []);
+
   useEffect(() => {
     const checkBootAndAuth = async () => {
       setBootLoading(true);
@@ -162,15 +172,7 @@ export function useSessionBootstrap(onSignedOut: () => void) {
   // Refresh stats on task/doc/list real-time events (counters in the navigation). Task events also
   // reload the triage deck: a note sorted on another device must leave this deck too.
   useEffect(() => {
-    let statsTimer: number | undefined;
     let deckTimer: number | undefined;
-    // Debounced: typing in a shared note sends several events per second to every open tab
-    const reloadStats = () => {
-      window.clearTimeout(statsTimer);
-      statsTimer = window.setTimeout(() => {
-        api.getStats().then(setStats).catch(() => {});
-      }, 300);
-    };
     const reloadDeck = () => {
       window.clearTimeout(deckTimer);
       deckTimer = window.setTimeout(() => {
@@ -194,19 +196,19 @@ export function useSessionBootstrap(onSignedOut: () => void) {
         msg.event !== 'DOC_SEQ' &&
         ['TASK_', 'DOC_', 'SPACE_', 'ITEM_', 'LIST_'].some((prefix) => msg.event.startsWith(prefix))
       ) {
-        reloadStats();
+        refreshStats();
         if (msg.event.startsWith('TASK_')) reloadDeck();
       }
     };
     window.addEventListener('mindsift:ws', handleWs);
     document.addEventListener('visibilitychange', onVisible);
     return () => {
-      window.clearTimeout(statsTimer);
+      window.clearTimeout(statsTimerRef.current);
       window.clearTimeout(deckTimer);
       window.removeEventListener('mindsift:ws', handleWs);
       document.removeEventListener('visibilitychange', onVisible);
     };
-  }, [refreshAll]);
+  }, [refreshAll, refreshStats]);
 
   return {
     bootLoading,
@@ -221,6 +223,7 @@ export function useSessionBootstrap(onSignedOut: () => void) {
     lists,
     setLists,
     refreshAll,
+    refreshStats,
     demoDeadline,
     dataEpoch,
     demoNotice,

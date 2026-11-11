@@ -45,13 +45,13 @@ interface TaskRealtimeOptions {
   setTaskLists: React.Dispatch<React.SetStateAction<TaskList[]>>;
   // Refs, because the handler is registered once and must see the current list and callbacks
   listIdRef: React.MutableRefObject<string>;
-  onRefreshStatsRef: React.MutableRefObject<() => void>;
   loadDataRef: React.MutableRefObject<() => Promise<void>>;
 }
 
 // Realtime updates of TasksView: created, changed, deleted and reordered tasks and changed task lists
-export function useTaskRealtime({ setTasks, setTaskLists, listIdRef, onRefreshStatsRef, loadDataRef }: TaskRealtimeOptions) {
-  // Live-Sync WebSocket listener for tasks (registered once on mount; all dependencies are stable)
+export function useTaskRealtime({ setTasks, setTaskLists, listIdRef, loadDataRef }: TaskRealtimeOptions) {
+  // Live-Sync WebSocket listener for tasks (registered once on mount; all dependencies are stable). The
+  // counters in the navigation follow these events in app/useSessionBootstrap.ts already.
   useEffect(() => {
     const handleWs = (e: any) => {
       const msg = e.detail;
@@ -61,19 +61,16 @@ export function useTaskRealtime({ setTasks, setTaskLists, listIdRef, onRefreshSt
         const created = msg.payload as Thought;
         if (created && isTaskThought(created)) {
           setTasks((prev) => tasksAfterCreate(prev, created, listIdRef.current));
-          onRefreshStatsRef.current();
         }
       } else if (msg.event === 'TASK_UPDATED') {
         const updated = msg.payload as Thought;
         if (updated && updated.id) {
           setTasks((prev) => tasksAfterUpdate(prev, updated, listIdRef.current));
-          onRefreshStatsRef.current();
         }
       } else if (msg.event === 'TASK_DELETED') {
         const deletedId = typeof msg.payload === 'string' ? msg.payload : msg.payload?.id;
         if (deletedId) {
           setTasks((prev) => tasksAfterDelete(prev, deletedId));
-          onRefreshStatsRef.current();
         }
       } else if (msg.event === 'TASK_REORDERED') {
         loadDataRef.current();
@@ -85,5 +82,5 @@ export function useTaskRealtime({ setTasks, setTaskLists, listIdRef, onRefreshSt
 
     window.addEventListener('mindsift:ws', handleWs);
     return () => window.removeEventListener('mindsift:ws', handleWs);
-  }, [setTasks, setTaskLists, listIdRef, onRefreshStatsRef, loadDataRef]);
+  }, [setTasks, setTaskLists, listIdRef, loadDataRef]);
 }
