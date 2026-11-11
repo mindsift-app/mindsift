@@ -23,16 +23,24 @@ import (
 const (
 	DefaultBackupTime          = "03:00"
 	DefaultBackupRetentionDays = 3
+	MaxBackupRetentionDays     = 365
 )
 
 var (
-	backupTimeRe   = regexp.MustCompile(`^([01]\d|2[0-3]):[0-5]\d$`)
-	backupNameRe   = regexp.MustCompile(`^mindsift-(db|backup)-\d{4}-\d{2}-\d{2}-\d{4}\.(db\.gz|zip)$`)
-	ErrBackupName  = errors.New("Unbekannte Sicherung")
-	backupStampFmt = "2006-01-02-1504"
+	backupTimeRe  = regexp.MustCompile(`^([01]\d|2[0-3]):[0-5]\d$`)
+	backupNameRe  = regexp.MustCompile(`^mindsift-(db|backup)-\d{4}-\d{2}-\d{2}-\d{4}\.(db\.gz|zip)$`)
+	ErrBackupName = errors.New("Unbekannte Sicherung")
+	// The admin settings keep the stored value for these; the setup wizard refuses them
+	ErrBackupTime      = errors.New("Ungültige Uhrzeit für die Backups (HH:MM)")
+	ErrBackupRetention = errors.New("Ungültige Aufbewahrung der Backups (1 bis 365 Tage)")
+	backupStampFmt     = "2006-01-02-1504"
 )
 
-func validBackupTime(v string) bool { return backupTimeRe.MatchString(v) }
+// ValidBackupTime: the daily backup time as HH:MM (24 h).
+func ValidBackupTime(v string) bool { return backupTimeRe.MatchString(v) }
+
+// ValidBackupRetentionDays: how many days backups are kept, 1 to MaxBackupRetentionDays.
+func ValidBackupRetentionDays(n int) bool { return n >= 1 && n <= MaxBackupRetentionDays }
 
 // BackupFile is one entry of a backup listing.
 type BackupFile struct {

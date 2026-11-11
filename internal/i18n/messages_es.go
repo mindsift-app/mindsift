@@ -207,6 +207,8 @@ var messagesES = map[string]string{
 	"Ticket konnte nicht erstellt werden":                                           "No se pudo crear el ticket",
 	"Token konnte nicht erstellt werden":                                            "No se pudo crear el token",
 	"Unbekannte Sicherung":                                                          "Copia de seguridad desconocida",
+	"Ungültige Uhrzeit für die Backups (HH:MM)":                                     "Hora de las copias de seguridad no válida (HH:MM)",
+	"Ungültige Aufbewahrung der Backups (1 bis 365 Tage)":                           "Conservación de las copias de seguridad no válida (de 1 a 365 días)",
 	"Unbekannte Wiederholung (erlaubt: täglich, wöchentlich, monatlich, jährlich)":  "Repetición desconocida (permitidas: diaria, semanal, mensual, anual)",
 	"Unbekannter Alarm-Kanal (erlaubt: email, discord, webhook)":                    "Canal de alarma desconocido (permitidos: email, discord, webhook)",
 	"Unbekanntes Tool":                                                              "Herramienta desconocida",

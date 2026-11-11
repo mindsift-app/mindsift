@@ -1,15 +1,22 @@
 import React, { useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { Server, Users } from 'lucide-react';
+import { Trans, useTranslation } from 'react-i18next';
+import { Archive, Server, Users } from 'lucide-react';
 import i18n, { applyLanguage, isLanguage, LANGUAGES } from '../../i18n';
 import { SharingMode } from '../../lib/types';
 import { ToggleSwitch } from '../../components/ToggleSwitch';
 import { SelectMenu } from '../../components/SelectMenu';
+import { TimeField } from '../../components/TimeField';
+import {
+  DEFAULT_BACKUP_RETENTION_DAYS,
+  DEFAULT_BACKUP_TIME,
+  MAX_BACKUP_RETENTION_DAYS,
+  validBackupRetentionDays,
+} from '../../lib/backupDefaults';
 
 // The setup wizard's questions about the instance, beside the admin account: name, default language,
-// sharing mode, registration and sample data. The first-boot wizard asks them together with the account;
-// after an admin from ADMIN_USER they come on their own (FinishSetupView). Further questions of the setup
-// go here, so both ways ask them.
+// sharing mode, registration, daily backups and sample data. The first-boot wizard asks them together with
+// the account; after an admin from ADMIN_USER they come on their own (FinishSetupView). Further questions
+// of the setup go here, so both ways ask them.
 
 export interface SetupChoices {
   instanceName: string;
@@ -17,6 +24,10 @@ export interface SetupChoices {
   allowRegistration: boolean;
   createSampleData: boolean;
   defaultLanguage: string;
+  backupEnabled: boolean;
+  // Only with backups switched on; otherwise the server keeps its defaults for the admin settings
+  backupTime?: string;
+  backupRetentionDays?: number;
 }
 
 export function useSetupChoices(initialInstanceName?: string) {
@@ -24,19 +35,35 @@ export function useSetupChoices(initialInstanceName?: string) {
   const [sharingMode, setSharingMode] = useState<SharingMode>('organizations');
   const [allowRegistration, setAllowRegistration] = useState(false);
   const [createSampleData, setCreateSampleData] = useState(false);
+  // Daily backups start switched on: a new server should not run without them until someone finds the switch
+  const [backupEnabled, setBackupEnabled] = useState(true);
+  const [backupTime, setBackupTime] = useState(DEFAULT_BACKUP_TIME);
+  // As typed, so the field can be empty for a moment
+  const [backupKeepDays, setBackupKeepDays] = useState(String(DEFAULT_BACKUP_RETENTION_DAYS));
   // Default language of the server; the wizard switches to it right away
   const [defaultLanguage, setDefaultLanguage] = useState(i18n.language);
   const chooseLanguage = (lang: string) => {
     setDefaultLanguage(lang);
     if (isLanguage(lang)) void applyLanguage(lang);
   };
+  const keepDays = Number(backupKeepDays);
   const choices: SetupChoices = {
     instanceName: instanceName.trim() || 'MindSift',
     sharingMode,
     allowRegistration,
     createSampleData,
     defaultLanguage,
+    backupEnabled,
+    ...(backupEnabled ? { backupTime, backupRetentionDays: keepDays } : {}),
   };
+  // What keeps the wizard from sending (the server checks the same), in the current language
+  const problem = !backupEnabled
+    ? null
+    : !backupTime
+      ? i18n.t('auth:setup.backupTimeMissing')
+      : !validBackupRetentionDays(keepDays)
+        ? i18n.t('auth:setup.backupKeepDaysInvalid', { max: MAX_BACKUP_RETENTION_DAYS })
+        : null;
   return {
     instanceName,
     setInstanceName,
@@ -48,7 +75,14 @@ export function useSetupChoices(initialInstanceName?: string) {
     setCreateSampleData,
     defaultLanguage,
     chooseLanguage,
+    backupEnabled,
+    setBackupEnabled,
+    backupTime,
+    setBackupTime,
+    backupKeepDays,
+    setBackupKeepDays,
     choices,
+    problem,
   };
 }
 
@@ -121,6 +155,52 @@ export const SetupInstanceSection: React.FC<{ state: SetupChoicesState; heading:
             <span className="text-[11px] text-muted">{t('setup.allowRegistrationHint')}</span>
           </div>
           <ToggleSwitch checked={state.allowRegistration} onChange={state.setAllowRegistration} />
+        </div>
+
+        <div className="pt-1 space-y-2">
+          <div className="flex items-center justify-between gap-3 select-none">
+            <div>
+              <span className="font-medium text-main flex items-center gap-1">
+                <Archive className="w-3 h-3 text-accent" />
+                <span>{t('setup.backups')}</span>
+              </span>
+              <span className="text-[11px] text-muted">
+                <Trans t={t} i18nKey="setup.backupsHint" components={{ c: <code className="font-mono" /> }} />
+              </span>
+            </div>
+            <ToggleSwitch checked={state.backupEnabled} onChange={state.setBackupEnabled} title={t('setup.backups')} />
+          </div>
+          {state.backupEnabled && (
+            <>
+              <div className="flex flex-wrap items-end gap-3">
+                <div className="text-[11px] text-muted">
+                  {t('setup.backupTime')}
+                  <TimeField
+                    ariaLabel={t('setup.backupTime')}
+                    value={state.backupTime}
+                    onChange={state.setBackupTime}
+                    // block: on touch the field is the bare system input, which would sit beside the label
+                    className="block mt-1 w-36 sm:w-28"
+                    inputClassName="h-11 sm:h-8 px-2 input-field text-base sm:text-xs"
+                  />
+                </div>
+                <label className="text-[11px] text-muted">
+                  {t('setup.backupKeepDays')}
+                  <input
+                    type="number"
+                    min={1}
+                    max={MAX_BACKUP_RETENTION_DAYS}
+                    value={state.backupKeepDays}
+                    onChange={(e) => state.setBackupKeepDays(e.target.value)}
+                    className="block mt-1 h-11 sm:h-8 px-2 input-field text-base sm:text-xs w-24"
+                  />
+                </label>
+              </div>
+              <p className="text-[11px] text-muted">
+                <Trans t={t} i18nKey="setup.backupsCopyHint" components={{ c: <code className="font-mono" /> }} />
+              </p>
+            </>
+          )}
         </div>
 
         <div className="flex items-center justify-between gap-3 select-none pt-1">
