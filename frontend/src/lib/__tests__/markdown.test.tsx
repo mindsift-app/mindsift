@@ -45,6 +45,20 @@ describe('renderInlineMarkdown', () => {
     expect(em?.textContent).toBe('kursiv');
   });
 
+  it('keeps finding tokens after formatting that has tokens inside, with and without hashtags', () => {
+    const text = '__fett mit *kursiv* und `code`__ dann ~~weg mit **fett**~~ und #garten am [Ende](https://example.com)';
+    for (const options of [undefined, { onTagClick: () => {} }]) {
+      const { container, unmount } = render(<div>{renderInlineMarkdown(text, options)}</div>);
+      expect(container.querySelector('strong em')?.textContent).toBe('kursiv');
+      expect(container.querySelector('strong code')?.textContent).toBe('code');
+      expect(container.querySelector('del strong')?.textContent).toBe('fett');
+      expect(container.querySelector('a')?.textContent).toBe('Ende');
+      expect(container.querySelector('[role="button"]')?.textContent).toBe(options ? '#garten' : undefined);
+      expect(container.textContent).toBe('fett mit kursiv und code dann weg mit fett und #garten am Ende');
+      unmount();
+    }
+  });
+
   it('renders links correctly', () => {
     const { container } = render(<div>{renderInlineMarkdown('[Testseite](https://example.com)')}</div>);
     const link = container.querySelector('a');

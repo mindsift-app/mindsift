@@ -26,14 +26,22 @@ export interface InlineMarkdownOptions {
   renderSecret?: (secretId: string, key: string) => React.ReactNode;
 }
 
+// Built once for each of the two variants (with or without hashtags) instead of on every call
+const inlineTokenRegex = (withTags: boolean) =>
+  new RegExp(
+    '(' + SECRET_REF_SOURCE + '|' + MENTION_REF_SOURCE + '|\\[\\[[^\\]]+\\]\\]|https?:\\/\\/[^\\s<>()\\[\\]]+[^\\s<>()\\[\\].,;:!?"\']|`[^`]+`|\\*\\*[^*]+\\*\\*|__[^_]+__|~~[^~]+~~|\\*[^*]+\\*|_[^_]+_|\\[([^\\]]+)\\]\\(([^)]+)\\)' + (withTags ? '|#[\\p{L}\\p{N}_-]+' : '') + ')',
+    'gu'
+  );
+const INLINE_TOKENS = inlineTokenRegex(false);
+const INLINE_TOKENS_WITH_TAGS = inlineTokenRegex(true);
+
 function renderInlineTokens(text: string, options?: InlineMarkdownOptions): React.ReactNode[] {
   if (!text) return [];
 
-  const tagAlt = options?.onTagClick ? '|#[\\p{L}\\p{N}_-]+' : '';
-  const regex = new RegExp(
-    '(' + SECRET_REF_SOURCE + '|' + MENTION_REF_SOURCE + '|\\[\\[[^\\]]+\\]\\]|https?:\\/\\/[^\\s<>()\\[\\]]+[^\\s<>()\\[\\].,;:!?"\']|`[^`]+`|\\*\\*[^*]+\\*\\*|__[^_]+__|~~[^~]+~~|\\*[^*]+\\*|_[^_]+_|\\[([^\\]]+)\\]\\(([^)]+)\\)' + tagAlt + ')',
-    'gu'
-  );
+  // Shared instance: bold, italic and struck-through text call this again for their inside, which moves
+  // lastIndex, so after each token it is put back to where the token ended
+  const regex = options?.onTagClick ? INLINE_TOKENS_WITH_TAGS : INLINE_TOKENS;
+  regex.lastIndex = 0;
 
   const elements: React.ReactNode[] = [];
   let lastIndex = 0;
@@ -44,6 +52,7 @@ function renderInlineTokens(text: string, options?: InlineMarkdownOptions): Reac
       elements.push(text.slice(lastIndex, match.index));
     }
     const token = match[0];
+    const end = match.index + token.length;
     const key = `${match.index}-${token}`;
 
     const secretId = secretIdOf(token);
@@ -174,7 +183,8 @@ function renderInlineTokens(text: string, options?: InlineMarkdownOptions): Reac
       elements.push(token);
     }
 
-    lastIndex = regex.lastIndex;
+    lastIndex = end;
+    regex.lastIndex = end;
   }
 
   if (lastIndex < text.length) {
