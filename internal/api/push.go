@@ -121,7 +121,7 @@ func (s *Server) sendPush(userID string, msg pushMessage) error {
 
 func (s *Server) handlePushKey(w http.ResponseWriter, r *http.Request) {
 	if s.cfg.DemoMode {
-		writeJSON(w, http.StatusOK, map[string]interface{}{"enabled": false})
+		writeJSON(w, http.StatusOK, map[string]any{"enabled": false})
 		return
 	}
 	pub, _, err := s.vapidKeys()
@@ -130,7 +130,7 @@ func (s *Server) handlePushKey(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "Push ist auf diesem Server nicht verfügbar")
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]interface{}{"enabled": true, "publicKey": pub})
+	writeJSON(w, http.StatusOK, map[string]any{"enabled": true, "publicKey": pub})
 }
 
 func (s *Server) handlePushDevices(w http.ResponseWriter, r *http.Request) {
@@ -139,7 +139,7 @@ func (s *Server) handlePushDevices(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "Geräte konnten nicht geladen werden")
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]interface{}{"devices": subs})
+	writeJSON(w, http.StatusOK, map[string]any{"devices": subs})
 }
 
 func (s *Server) handlePushSubscribe(w http.ResponseWriter, r *http.Request) {

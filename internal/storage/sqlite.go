@@ -692,10 +692,10 @@ func (s *Store) migrateWorkspaceToPureDB() {
 // sqlStmt is one statement of a change with several steps (FLAW-14).
 type sqlStmt struct {
 	query string
-	args  []interface{}
+	args  []any
 }
 
-func stmt(query string, args ...interface{}) sqlStmt { return sqlStmt{query, args} }
+func stmt(query string, args ...any) sqlStmt { return sqlStmt{query, args} }
 
 // execInTx runs all statements in one transaction: either every step is stored or none, and the
 // first error is returned instead of being ignored.

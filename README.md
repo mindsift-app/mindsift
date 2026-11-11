@@ -185,7 +185,7 @@ The most important settings (all of them, with explanations, are in [`.env.examp
 | `TRUSTED_PROXIES` | `private` | Whose `X-Forwarded-For` to trust, see [reverse proxy](Doku/reverse-proxy.md) |
 | `MCP_ENABLED` | admin UI decides | `false` switches off the endpoint for AI agents |
 | `STT_*` | empty | Your own Whisper server for voice input, see [architecture](Doku/architecture.md#speech-recognition) |
-| `MINDA_DEMO` | `false` | Demo accounts `admin/admin` and `user/user` with sample data. **Never on a public server with real data!** |
+| `MINDSIFT_DEMO` | `false` | Demo accounts `admin/admin` and `user/user` with sample data. **Never on a public server with real data!** |
 
 * **Reverse proxy:** pass through WebSocket upgrades and unbuffered SSE if you can. If not, MindSift falls back to long polling by itself. Examples for nginx, Traefik, Caddy and Cloudflare: [Doku/reverse-proxy.md](Doku/reverse-proxy.md).
 * **Backups:** switch on daily backups in the admin settings: the whole database for you, plus one ZIP per person under `data/backups/` that everyone can download or restore in their account settings (kept 3 days by default, adjustable). Every one of these ZIPs also holds the person's notes, tasks and lists as an Obsidian vault in plain Markdown, so the data stays readable even without MindSift. Copy that folder somewhere else too.

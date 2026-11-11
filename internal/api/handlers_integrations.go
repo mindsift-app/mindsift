@@ -211,7 +211,7 @@ func (s *Server) handleWebhookIngest(w http.ResponseWriter, r *http.Request) {
 
 	s.wsHub.BroadcastToUsers(s.taskAudience(thought), "TASK_CREATED", thought)
 
-	writeJSON(w, http.StatusCreated, map[string]interface{}{
+	writeJSON(w, http.StatusCreated, map[string]any{
 		"status":  "ingested",
 		"thought": thought,
 	})
@@ -252,7 +252,7 @@ func (s *Server) ingestTask(w http.ResponseWriter, userID, content, priority, so
 		writeStoreError(w, http.StatusBadRequest, err)
 		return
 	}
-	writeJSON(w, http.StatusCreated, map[string]interface{}{"status": "ingested", "task": task})
+	writeJSON(w, http.StatusCreated, map[string]any{"status": "ingested", "task": task})
 }
 
 var errListIDRequired = errors.New("Feld 'listId' ist für Listeneinträge erforderlich")
@@ -289,5 +289,5 @@ func (s *Server) ingestListItem(w http.ResponseWriter, userID, listID, content, 
 		writeError(w, status, err.Error())
 		return
 	}
-	writeJSON(w, http.StatusCreated, map[string]interface{}{"status": "ingested", "item": item})
+	writeJSON(w, http.StatusCreated, map[string]any{"status": "ingested", "item": item})
 }

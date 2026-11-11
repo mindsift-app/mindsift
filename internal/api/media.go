@@ -82,8 +82,8 @@ func (s *Server) storeMedia(w http.ResponseWriter, userID, docID string, data []
 	return nil, false
 }
 
-func mediaResponse(m *storage.Media) map[string]interface{} {
-	return map[string]interface{}{"id": m.ID, "kind": m.Kind, "mime": m.Mime, "size": m.Size, "url": "/api/v1/media/" + m.ID}
+func mediaResponse(m *storage.Media) map[string]any {
+	return map[string]any{"id": m.ID, "kind": m.Kind, "mime": m.Mime, "size": m.Size, "url": "/api/v1/media/" + m.ID}
 }
 
 // handleUploadMedia: POST /documents/{id}/media (multipart, field "file")

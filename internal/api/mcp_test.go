@@ -12,7 +12,7 @@ import (
 )
 
 // rpc posts one JSON-RPC request to the MCP endpoint and returns status and decoded body.
-func rpc(t *testing.T, router http.Handler, token, body string) (int, map[string]interface{}) {
+func rpc(t *testing.T, router http.Handler, token, body string) (int, map[string]any) {
 	t.Helper()
 	req := httptest.NewRequest(http.MethodPost, mcpPath, strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
@@ -24,26 +24,26 @@ func rpc(t *testing.T, router http.Handler, token, body string) (int, map[string
 	}
 	rec := httptest.NewRecorder()
 	router.ServeHTTP(rec, req)
-	var out map[string]interface{}
+	var out map[string]any
 	if rec.Body.Len() > 0 {
 		_ = json.Unmarshal(rec.Body.Bytes(), &out)
 	}
 	return rec.Code, out
 }
 
-func toolNames(res map[string]interface{}) []string {
+func toolNames(res map[string]any) []string {
 	names := []string{}
-	result, _ := res["result"].(map[string]interface{})
-	tools, _ := result["tools"].([]interface{})
+	result, _ := res["result"].(map[string]any)
+	tools, _ := result["tools"].([]any)
 	for _, tl := range tools {
-		names = append(names, tl.(map[string]interface{})["name"].(string))
+		names = append(names, tl.(map[string]any)["name"].(string))
 	}
 	return names
 }
 
-func callResult(t *testing.T, res map[string]interface{}) (map[string]interface{}, bool) {
+func callResult(t *testing.T, res map[string]any) (map[string]any, bool) {
 	t.Helper()
-	result, ok := res["result"].(map[string]interface{})
+	result, ok := res["result"].(map[string]any)
 	if !ok {
 		t.Fatalf("no result in %v", res)
 	}
@@ -61,7 +61,7 @@ func TestMCPToolsFollowScopes(t *testing.T) {
 	if code != http.StatusOK {
 		t.Fatalf("initialize: %d %v", code, res)
 	}
-	if v := res["result"].(map[string]interface{})["protocolVersion"]; v != "2025-03-26" {
+	if v := res["result"].(map[string]any)["protocolVersion"]; v != "2025-03-26" {
 		t.Fatalf("requested protocol version should be echoed, got %v", v)
 	}
 	// Notifications are acknowledged with 202 and no body
@@ -89,7 +89,7 @@ func TestMCPToolsFollowScopes(t *testing.T) {
 
 	// Read-only task key: lists tasks, cannot complete them
 	readKey, _ := store.CreateAPIKey(claims.UserID, "Reader", []string{"tasks:read"})
-	names := strings.Join(toolNames(func() map[string]interface{} {
+	names := strings.Join(toolNames(func() map[string]any {
 		_, r := rpc(t, router, readKey.RawKey, `{"jsonrpc":"2.0","id":5,"method":"tools/list"}`)
 		return r
 	}()), ",")
@@ -114,7 +114,7 @@ func TestMCPTasksAndLists(t *testing.T) {
 	if isErr {
 		t.Fatalf("create_task failed: %v", result)
 	}
-	created := result["structuredContent"].(map[string]interface{})
+	created := result["structuredContent"].(map[string]any)
 	taskID, _ := created["id"].(string)
 	if taskID == "" || created["dueDate"] != "2026-11-15" {
 		t.Fatalf("unexpected task: %v", created)
@@ -126,10 +126,10 @@ func TestMCPTasksAndLists(t *testing.T) {
 
 	_, res = rpc(t, router, key.RawKey, `{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"list_tasks","arguments":{"dueBefore":"2026-11-15"}}}`)
 	result, _ = callResult(t, res)
-	items := result["structuredContent"].(map[string]interface{})["items"].([]interface{})
+	items := result["structuredContent"].(map[string]any)["items"].([]any)
 	found := false
 	for _, it := range items {
-		if it.(map[string]interface{})["id"] == taskID {
+		if it.(map[string]any)["id"] == taskID {
 			found = true
 		}
 	}
@@ -139,14 +139,14 @@ func TestMCPTasksAndLists(t *testing.T) {
 
 	_, res = rpc(t, router, key.RawKey, `{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"complete_task","arguments":{"id":"`+taskID+`"}}}`)
 	result, isErr = callResult(t, res)
-	if isErr || result["structuredContent"].(map[string]interface{})["isCompleted"] != true {
+	if isErr || result["structuredContent"].(map[string]any)["isCompleted"] != true {
 		t.Fatalf("complete_task: %v", result)
 	}
 	// Done tasks drop out of the default listing
 	_, res = rpc(t, router, key.RawKey, `{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"list_tasks","arguments":{}}}`)
 	result, _ = callResult(t, res)
-	for _, it := range result["structuredContent"].(map[string]interface{})["items"].([]interface{}) {
-		if it.(map[string]interface{})["id"] == taskID {
+	for _, it := range result["structuredContent"].(map[string]any)["items"].([]any) {
+		if it.(map[string]any)["id"] == taskID {
 			t.Fatalf("completed task should not be listed as open")
 		}
 	}
@@ -158,15 +158,15 @@ func TestMCPTasksAndLists(t *testing.T) {
 	if isErr {
 		t.Fatalf("add_list_item: %v", result)
 	}
-	itemID := result["structuredContent"].(map[string]interface{})["id"].(string)
+	itemID := result["structuredContent"].(map[string]any)["id"].(string)
 	_, res = rpc(t, router, key.RawKey, `{"jsonrpc":"2.0","id":6,"method":"tools/call","params":{"name":"check_list_item","arguments":{"listId":"`+list.ID+`","itemId":"`+itemID+`"}}}`)
 	result, isErr = callResult(t, res)
-	if isErr || result["structuredContent"].(map[string]interface{})["isCompleted"] != true {
+	if isErr || result["structuredContent"].(map[string]any)["isCompleted"] != true {
 		t.Fatalf("check_list_item: %v", result)
 	}
 	_, res = rpc(t, router, key.RawKey, `{"jsonrpc":"2.0","id":7,"method":"tools/call","params":{"name":"get_list","arguments":{"listId":"`+list.ID+`"}}}`)
 	result, _ = callResult(t, res)
-	lv := result["structuredContent"].(map[string]interface{})["list"].(map[string]interface{})
+	lv := result["structuredContent"].(map[string]any)["list"].(map[string]any)
 	if lv["openItems"].(float64) != 0 || lv["items"].(float64) != 1 {
 		t.Fatalf("get_list counts wrong: %v", lv)
 	}
@@ -204,19 +204,19 @@ func TestMCPCreateDeleteAndOrigin(t *testing.T) {
 	router := srv.Router()
 	claims, _ := auth.ValidateToken(testJWTSecret, token)
 	key, _ := store.CreateAPIKey(claims.UserID, "Claude Code", []string{"tasks:read", "tasks:write", "lists:read", "lists:write"})
-	call := func(id int, name, args string) map[string]interface{} {
+	call := func(id int, name, args string) map[string]any {
 		t.Helper()
 		_, res := rpc(t, router, key.RawKey, fmt.Sprintf(`{"jsonrpc":"2.0","id":%d,"method":"tools/call","params":{"name":%q,"arguments":%s}}`, id, name, args))
 		result, isErr := callResult(t, res)
 		if isErr {
 			t.Fatalf("%s failed: %v", name, result)
 		}
-		return result["structuredContent"].(map[string]interface{})
+		return result["structuredContent"].(map[string]any)
 	}
 
 	tl := call(1, "create_task_list", `{"title":"Agentenliste"}`)
 	tlID, _ := tl["id"].(string)
-	if tlID == "" || tl["permission"] != "owner" || len(tl["columns"].([]interface{})) == 0 {
+	if tlID == "" || tl["permission"] != "owner" || len(tl["columns"].([]any)) == 0 {
 		t.Fatalf("create_task_list: %v", tl)
 	}
 	task := call(2, "create_task", `{"content":"Von Claude","taskListId":"`+tlID+`"}`)
@@ -262,7 +262,7 @@ func TestMCPCreateDeleteAndOrigin(t *testing.T) {
 		t.Fatalf("create_list: %v", l)
 	}
 	item := call(7, "add_list_item", `{"listId":"`+listID+`","content":"Zahnbürste"}`)
-	if o, _ := item["origin"].(map[string]interface{}); o == nil || o["createdVia"] != "mcp" {
+	if o, _ := item["origin"].(map[string]any); o == nil || o["createdVia"] != "mcp" {
 		t.Fatalf("agent item should carry its origin: %v", item)
 	}
 	items, _ := store.GetListItems(listID)
@@ -295,14 +295,14 @@ func TestMCPSubtasks(t *testing.T) {
 	router := srv.Router()
 	claims, _ := auth.ValidateToken(testJWTSecret, token)
 	key, _ := store.CreateAPIKey(claims.UserID, "Claude Code", []string{"tasks:read", "tasks:write"})
-	call := func(id int, name, args string) (map[string]interface{}, bool) {
+	call := func(id int, name, args string) (map[string]any, bool) {
 		t.Helper()
 		_, res := rpc(t, router, key.RawKey, fmt.Sprintf(`{"jsonrpc":"2.0","id":%d,"method":"tools/call","params":{"name":%q,"arguments":%s}}`, id, name, args))
 		result, isErr := callResult(t, res)
 		if isErr {
 			return result, true
 		}
-		return result["structuredContent"].(map[string]interface{}), false
+		return result["structuredContent"].(map[string]any), false
 	}
 
 	task, _ := srv.createTask(claims.UserID, "Umzug", "", "manual", "", "", "", nil)
@@ -311,12 +311,12 @@ func TestMCPSubtasks(t *testing.T) {
 	if isErr {
 		t.Fatalf("add_subtask: %v", res)
 	}
-	subs := res["subtasks"].([]interface{})
-	if len(subs) != 2 || subs[1].(map[string]interface{})["title"] != "Strom ummelden" {
+	subs := res["subtasks"].([]any)
+	if len(subs) != 2 || subs[1].(map[string]any)["title"] != "Strom ummelden" {
 		t.Fatalf("subtasks after adding: %v", subs)
 	}
-	first := subs[0].(map[string]interface{})["id"].(string)
-	second := subs[1].(map[string]interface{})["id"].(string)
+	first := subs[0].(map[string]any)["id"].(string)
+	second := subs[1].(map[string]any)["id"].(string)
 
 	call(3, "update_subtask", `{"taskId":"`+task.ID+`","subtaskId":"`+first+`","completed":true}`)
 	call(4, "update_subtask", `{"taskId":"`+task.ID+`","subtaskId":"`+second+`","title":"Strom und Gas ummelden"}`)
@@ -353,7 +353,7 @@ func TestMCPSwitchOff(t *testing.T) {
 	srv.cfg.BaseURLSet = true
 	router := srv.Router()
 	const list = `{"jsonrpc":"2.0","id":1,"method":"tools/list"}`
-	status := func() map[string]interface{} {
+	status := func() map[string]any {
 		_, _, st := oauthDo(t, router, http.MethodGet, "/api/v1/auth/status", "", "", "")
 		return st
 	}
@@ -418,11 +418,11 @@ func TestMCPNotes(t *testing.T) {
 	srv, store, token := setupTestServer(t)
 	router := srv.Router()
 	claims, _ := auth.ValidateToken(testJWTSecret, token)
-	call := func(key, name, args string) (map[string]interface{}, bool) {
+	call := func(key, name, args string) (map[string]any, bool) {
 		t.Helper()
 		_, res := rpc(t, router, key, `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"`+name+`","arguments":`+args+`}}`)
 		result, isErr := callResult(t, res)
-		sc, _ := result["structuredContent"].(map[string]interface{})
+		sc, _ := result["structuredContent"].(map[string]any)
 		return sc, isErr
 	}
 	names := func(key string) string {
@@ -456,12 +456,12 @@ func TestMCPNotes(t *testing.T) {
 	}
 	_, _ = store.CreateDocument(claims.UserID, "", "Einkauf", "", "", nil, nil, false)
 	list, _ := call(reader.RawKey, "list_notes", `{"folder":"Projekte/KI"}`)
-	if items := list["items"].([]interface{}); len(items) != 1 || items[0].(map[string]interface{})["title"] != "Ideen" {
+	if items := list["items"].([]any); len(items) != 1 || items[0].(map[string]any)["title"] != "Ideen" {
 		t.Fatalf("folder filter: %v", list)
 	}
 	// The folder includes its subfolders; the title filter ignores case
 	list, _ = call(reader.RawKey, "list_notes", `{"folder":"Projekte","query":"IDEE"}`)
-	if items := list["items"].([]interface{}); len(items) != 1 {
+	if items := list["items"].([]any); len(items) != 1 {
 		t.Fatalf("subfolder and title filter: %v", list)
 	}
 	got, isErr := call(reader.RawKey, "get_note", `{"id":"`+doc.ID+`"}`)
@@ -469,12 +469,12 @@ func TestMCPNotes(t *testing.T) {
 		t.Fatalf("get_note: %q", got["content"])
 	}
 	found, _ := call(reader.RawKey, "search", `{"query":"Unterpunkt"}`)
-	if hits := found["notes"].([]interface{}); len(hits) == 0 || hits[0].(map[string]interface{})["noteId"] != doc.ID {
+	if hits := found["notes"].([]any); len(hits) == 0 || hits[0].(map[string]any)["noteId"] != doc.ID {
 		t.Fatalf("search should find the note: %v", found)
 	}
 	// Without notes:read the search leaves notes out
 	taskReader, _ := store.CreateAPIKey(claims.UserID, "Aufgaben", []string{"tasks:read"})
-	if found, _ := call(taskReader.RawKey, "search", `{"query":"Unterpunkt"}`); len(found["notes"].([]interface{})) != 0 {
+	if found, _ := call(taskReader.RawKey, "search", `{"query":"Unterpunkt"}`); len(found["notes"].([]any)) != 0 {
 		t.Fatalf("tasks:read must not find notes: %v", found)
 	}
 	// Notes stay closed over REST

@@ -517,7 +517,7 @@ func (s *Server) handleAdminTestSMTP(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadGateway, tr(w, "SMTP-Fehler")+": "+trErr(w, err))
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]interface{}{
+	writeJSON(w, http.StatusOK, map[string]any{
 		"sent":    true,
 		"toEmail": toEmail,
 	})

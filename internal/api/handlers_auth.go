@@ -21,7 +21,7 @@ import (
 // --- HANDLERS ---
 
 func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
-	writeJSON(w, http.StatusOK, map[string]interface{}{
+	writeJSON(w, http.StatusOK, map[string]any{
 		"status":  "ok",
 		"service": "mindsift",
 		"time":    domain.NowISO(),
@@ -38,7 +38,7 @@ func (s *Server) handleAuthStatus(w http.ResponseWriter, r *http.Request) {
 			instanceName = sys.InstanceName
 		}
 	}
-	status := map[string]interface{}{
+	status := map[string]any{
 		"needsSetup": count == 0,
 		// Registering without an invite: allowed at all, how (closed | approval | domain | domain+approval |
 		// open) and for which e-mail domains (shown as a hint on the sign-up form)
@@ -67,9 +67,9 @@ func (s *Server) handleAuthStatus(w http.ResponseWriter, r *http.Request) {
 		}(),
 		// How voice input works: "server" (own Whisper), "browser" or "off"; set by STT_* only
 		// browserAllowed: whether people may pick the browser's recognition instead of the Whisper server
-		"voice": map[string]interface{}{"mode": s.voiceMode(), "maxSeconds": s.cfg.Speech.MaxSeconds, "browserAllowed": !s.cfg.Speech.NoBrowser},
+		"voice": map[string]any{"mode": s.voiceMode(), "maxSeconds": s.cfg.Speech.MaxSeconds, "browserAllowed": !s.cfg.Speech.NoBrowser},
 		// Public so the login screen can link Impressum and Datenschutz
-		"legal": map[string]interface{}{
+		"legal": map[string]any{
 			"imprintUrl":        s.cfg.Legal.ImprintURL,
 			"hasImprintContent": s.cfg.Legal.ImprintContent != "",
 			"privacyUrl":        s.cfg.Legal.PrivacyURL,
@@ -195,7 +195,7 @@ func (s *Server) handleFirstBootSetup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusCreated, map[string]interface{}{
+	writeJSON(w, http.StatusCreated, map[string]any{
 		"token": token,
 		"user":  user,
 	})
@@ -269,7 +269,7 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 	// form does not tell which addresses have an account
 	if verify && validInvite == nil && s.store.EmailInUse(req.Email) {
 		_, _ = auth.HashPassword(req.Password) // same time as a real sign-up
-		writeJSON(w, http.StatusAccepted, map[string]interface{}{
+		writeJSON(w, http.StatusAccepted, map[string]any{
 			"pending": true,
 			"verify":  true,
 			"message": registrationWaitingMessage(w, req.Email, pending, true),
@@ -332,7 +332,7 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 		}
 		message := registrationWaitingMessage(w, user.Email, pending, verify)
 		slog.Info("Registration waiting", "user_id", user.ID, "approval", pending, "verify", verify)
-		writeJSON(w, http.StatusAccepted, map[string]interface{}{
+		writeJSON(w, http.StatusAccepted, map[string]any{
 			"pending": true,
 			"verify":  verify,
 			"message": message,
@@ -346,7 +346,7 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusCreated, map[string]interface{}{
+	writeJSON(w, http.StatusCreated, map[string]any{
 		"token": token,
 		"user":  user,
 	})
@@ -445,7 +445,7 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 
 	slog.Info("Sign-in successful", "user_id", user.ID, "display_name", user.DisplayName, "role", user.Role, "remote_addr", r.RemoteAddr)
 
-	writeJSON(w, http.StatusOK, map[string]interface{}{
+	writeJSON(w, http.StatusOK, map[string]any{
 		"token": token,
 		"user":  user,
 	})
@@ -466,7 +466,7 @@ func (s *Server) handleMe(w http.ResponseWriter, r *http.Request) {
 	ns := s.store.NotificationSettingsOf(userID)
 	user.NotificationSettings = &ns
 	s.fillUserPreferences(user)
-	writeJSON(w, http.StatusOK, map[string]interface{}{
+	writeJSON(w, http.StatusOK, map[string]any{
 		"user":  user,
 		"stats": stats,
 		// The settings disable "Delete account" for the last administrator
@@ -893,7 +893,7 @@ func (s *Server) handleTestUserAlarm(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusOK, map[string]interface{}{
+	writeJSON(w, http.StatusOK, map[string]any{
 		"sent":    true,
 		"channel": channel,
 	})

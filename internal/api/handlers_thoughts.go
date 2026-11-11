@@ -278,7 +278,7 @@ func (s *Server) handleReorderTasks(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s.wsHub.BroadcastToUsers(audience, "TASK_REORDERED", map[string]interface{}{
+	s.wsHub.BroadcastToUsers(audience, "TASK_REORDERED", map[string]any{
 		"taskListId": taskListID,
 		"items":      req.Items,
 		"userId":     userID,

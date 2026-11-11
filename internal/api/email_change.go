@@ -85,13 +85,13 @@ func (s *Server) handleConfirmEmailChange(w http.ResponseWriter, r *http.Request
 			// The previous address learns about it, so a takeover does not go unnoticed
 			s.notifyAccountChange(before, false, true, after.Email)
 		}
-		writeJSON(w, http.StatusOK, map[string]interface{}{
+		writeJSON(w, http.StatusOK, map[string]any{
 			"confirmed": true, "kind": kind,
 			"message": tr(w, "Deine neue E-Mail-Adresse ist bestätigt. Du meldest dich ab jetzt mit ihr an."),
 		})
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]interface{}{
+	writeJSON(w, http.StatusOK, map[string]any{
 		"confirmed": true, "kind": kind,
 		"message": tr(w, "Deine neue Alarm-Adresse ist bestätigt. Alarme gehen ab jetzt dorthin."),
 	})

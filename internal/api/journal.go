@@ -26,7 +26,7 @@ func (s *Server) handleGetJournal(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "Journal konnte nicht geladen werden")
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]interface{}{"days": days})
+	writeJSON(w, http.StatusOK, map[string]any{"days": days})
 }
 
 // handleOpenJournalDay returns the note of a day and creates it when there is none yet.

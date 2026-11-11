@@ -141,3 +141,38 @@ func TestSpeechModeWithoutBrowser(t *testing.T) {
 		}
 	}
 }
+
+// MINDSIFT_DEMO switches the demo on; the earlier names MINDA_DEMO and DEMO_MODE still do
+func TestDemoModeNames(t *testing.T) {
+	t.Setenv("DATA_DIR", t.TempDir())
+	names := []string{"MINDSIFT_DEMO", "MINDA_DEMO", "DEMO_MODE"}
+	for _, name := range names {
+		t.Setenv(name, "")
+	}
+	if Load().DemoMode {
+		t.Fatal("demo mode must be off by default")
+	}
+	for _, name := range names {
+		t.Setenv(name, "true")
+		if !Load().DemoMode {
+			t.Errorf("%s=true must switch the demo on", name)
+		}
+		t.Setenv(name, "")
+	}
+	// An old .env next to the new compose file: the earlier name counts even when the new one says false
+	t.Setenv("MINDSIFT_DEMO", "false")
+	t.Setenv("MINDA_DEMO", "true")
+	if !Load().DemoMode {
+		t.Error("MINDA_DEMO=true must count next to MINDSIFT_DEMO=false")
+	}
+}
+
+// A Postgres URL is not used as a file path; the SQLite file in DATA_DIR stays
+func TestPostgresURLKeepsSQLitePath(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("DATA_DIR", dir)
+	t.Setenv("DATABASE_URL", "postgres://user:pw@db/mindsift")
+	if got, want := Load().DatabasePath, filepath.Join(dir, "mindsift.db"); got != want {
+		t.Errorf("database path: got %q, want %q", got, want)
+	}
+}

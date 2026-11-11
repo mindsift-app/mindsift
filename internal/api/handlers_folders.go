@@ -57,7 +57,7 @@ func (s *Server) handleDeleteFolder(w http.ResponseWriter, r *http.Request) {
 	}
 	s.wsHub.BroadcastToUser(userID, "WORKSPACE_FOLDERS_UPDATED", map[string]string{"path": folderPath})
 
-	writeJSON(w, http.StatusOK, map[string]interface{}{
+	writeJSON(w, http.StatusOK, map[string]any{
 		"deleted":       true,
 		"deletedDocIds": deletedDocIDs,
 	})
@@ -82,7 +82,7 @@ func (s *Server) handleRestoreFolder(w http.ResponseWriter, r *http.Request) {
 	for uid := range users {
 		s.wsHub.BroadcastToUser(uid, "WORKSPACE_FOLDERS_UPDATED", map[string]string{"restored": "folder"})
 	}
-	writeJSON(w, http.StatusOK, map[string]interface{}{"restored": true, "restoredDocIds": docIDs})
+	writeJSON(w, http.StatusOK, map[string]any{"restored": true, "restoredDocIds": docIDs})
 }
 
 // handlePurgeFolder deletes a folder in the trash with its notes for good.
@@ -92,7 +92,7 @@ func (s *Server) handlePurgeFolder(w http.ResponseWriter, r *http.Request) {
 		writeTrashError(w, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]interface{}{"deleted": true, "deletedDocIds": docIDs})
+	writeJSON(w, http.StatusOK, map[string]any{"deleted": true, "deletedDocIds": docIDs})
 }
 
 func (s *Server) handleMoveFolder(w http.ResponseWriter, r *http.Request) {
@@ -120,7 +120,7 @@ func (s *Server) handleMoveFolder(w http.ResponseWriter, r *http.Request) {
 		"sourcePath": req.SourcePath,
 		"newPath":    newPath,
 	})
-	writeJSON(w, http.StatusOK, map[string]interface{}{
+	writeJSON(w, http.StatusOK, map[string]any{
 		"newPath":     newPath,
 		"movedDocIds": movedDocIDs,
 	})

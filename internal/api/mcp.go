@@ -47,7 +47,7 @@ type jsonrpcError struct {
 type jsonrpcResponse struct {
 	JSONRPC string          `json:"jsonrpc"`
 	ID      json.RawMessage `json:"id"`
-	Result  interface{}     `json:"result,omitempty"`
+	Result  any             `json:"result,omitempty"`
 	Error   *jsonrpcError   `json:"error,omitempty"`
 }
 
@@ -66,8 +66,8 @@ type mcpTool struct {
 	Scope       string
 	// AltScope: a narrower right that allows this tool too (e.g. "create tasks" for create_task)
 	AltScope string
-	Schema   map[string]interface{}
-	run      func(s *Server, userID string, actor *apiActor, args json.RawMessage) (interface{}, error)
+	Schema   map[string]any
+	run      func(s *Server, userID string, actor *apiActor, args json.RawMessage) (any, error)
 }
 
 // mcpToolAllowed: sessions may use every tool, API keys only those of their scopes. search needs any
@@ -135,9 +135,9 @@ func (s *Server) handleMCP(w http.ResponseWriter, r *http.Request) {
 				version = v
 			}
 		}
-		writeRPC(w, req.ID, map[string]interface{}{
+		writeRPC(w, req.ID, map[string]any{
 			"protocolVersion": version,
-			"capabilities":    map[string]interface{}{"tools": map[string]interface{}{}},
+			"capabilities":    map[string]any{"tools": map[string]any{}},
 			"serverInfo":      map[string]string{"name": "MindSift", "version": mcpServerVersion},
 			"instructions": "MindSift is a personal notes, tasks and lists app. Use list_task_lists and list_tasks " +
 				"to see open tasks, complete_task to check one off, add_subtask/update_subtask for a task's " +
@@ -149,20 +149,20 @@ func (s *Server) handleMCP(w http.ResponseWriter, r *http.Request) {
 				"they can look for themselves.",
 		}, nil)
 	case "ping":
-		writeRPC(w, req.ID, map[string]interface{}{}, nil)
+		writeRPC(w, req.ID, map[string]any{}, nil)
 	case "tools/list":
-		tools := []map[string]interface{}{}
+		tools := []map[string]any{}
 		for _, t := range mcpTools {
 			if !mcpToolAllowed(scopes, isKey, t) {
 				continue
 			}
-			tools = append(tools, map[string]interface{}{
+			tools = append(tools, map[string]any{
 				"name":        t.Name,
 				"description": t.Description,
 				"inputSchema": t.Schema,
 			})
 		}
-		writeRPC(w, req.ID, map[string]interface{}{"tools": tools}, nil)
+		writeRPC(w, req.ID, map[string]any{"tools": tools}, nil)
 	case "tools/call":
 		var p struct {
 			Name      string          `json:"name"`
@@ -218,7 +218,7 @@ func handleMCPNoStream(w http.ResponseWriter, _ *http.Request) {
 }
 
 // MCP speaks English to agents whatever the user's language
-func writeRPC(w http.ResponseWriter, id json.RawMessage, result interface{}, rpcErr *jsonrpcError) {
+func writeRPC(w http.ResponseWriter, id json.RawMessage, result any, rpcErr *jsonrpcError) {
 	if rpcErr != nil {
 		rpcErr.Message = i18n.T("en", rpcErr.Message)
 	}
@@ -230,25 +230,25 @@ func writeRPC(w http.ResponseWriter, id json.RawMessage, result interface{}, rpc
 
 // toolResult: the data as structuredContent plus the same JSON as text for clients without
 // structured output.
-func toolResult(data interface{}) map[string]interface{} {
+func toolResult(data any) map[string]any {
 	text, _ := json.MarshalIndent(data, "", "  ")
-	return map[string]interface{}{
+	return map[string]any{
 		"content":           []map[string]string{{"type": "text", "text": string(text)}},
 		"structuredContent": wrapStructured(data),
 	}
 }
 
 // structuredContent must be an object; arrays are wrapped
-func wrapStructured(data interface{}) interface{} {
+func wrapStructured(data any) any {
 	raw, _ := json.Marshal(data)
 	if strings.HasPrefix(strings.TrimSpace(string(raw)), "[") {
-		return map[string]interface{}{"items": data}
+		return map[string]any{"items": data}
 	}
 	return data
 }
 
-func toolError(msg string) map[string]interface{} {
-	return map[string]interface{}{
+func toolError(msg string) map[string]any {
+	return map[string]any{
 		"content": []map[string]string{{"type": "text", "text": i18n.T("en", msg)}},
 		"isError": true,
 	}
@@ -265,19 +265,19 @@ func mcpToolByName(name string) (mcpTool, bool) {
 	return mcpTool{}, false
 }
 
-func schema(required []string, props map[string]interface{}) map[string]interface{} {
-	out := map[string]interface{}{"type": "object", "properties": props}
+func schema(required []string, props map[string]any) map[string]any {
+	out := map[string]any{"type": "object", "properties": props}
 	if len(required) > 0 {
 		out["required"] = required
 	}
 	return out
 }
 
-func prop(typ, desc string) map[string]interface{} {
-	return map[string]interface{}{"type": typ, "description": desc}
+func prop(typ, desc string) map[string]any {
+	return map[string]any{"type": typ, "description": desc}
 }
 
-func decodeArgs(args json.RawMessage, into interface{}) error {
+func decodeArgs(args json.RawMessage, into any) error {
 	if err := json.Unmarshal(args, into); err != nil {
 		return errors.New("Ungültige Argumente: " + err.Error())
 	}
@@ -442,8 +442,8 @@ var mcpTools = []mcpTool{
 		Name:        "list_task_lists",
 		Description: "All task lists the user can see, with permission (owner/editor/viewer), the number of open tasks and the board columns (valid kanbanStatus values). Tasks without a list live in the personal inbox list (taskListId empty).",
 		Scope:       storage.ScopeTasksRead,
-		Schema:      schema(nil, map[string]interface{}{}),
-		run: func(s *Server, userID string, _ *apiActor, _ json.RawMessage) (interface{}, error) {
+		Schema:      schema(nil, map[string]any{}),
+		run: func(s *Server, userID string, _ *apiActor, _ json.RawMessage) (any, error) {
 			lists, err := s.store.GetTaskLists(userID)
 			if err != nil {
 				return nil, err
@@ -459,11 +459,11 @@ var mcpTools = []mcpTool{
 		Name:        "create_task_list",
 		Description: "Create a personal task list (board with the default columns). Returns it with its id and columns.",
 		Scope:       storage.ScopeTasksWrite,
-		Schema: schema([]string{"title"}, map[string]interface{}{
+		Schema: schema([]string{"title"}, map[string]any{
 			"title": prop("string", "Name of the task list"),
 			"icon":  prop("string", "One emoji, optional (default 📋)"),
 		}),
-		run: func(s *Server, userID string, actor *apiActor, args json.RawMessage) (interface{}, error) {
+		run: func(s *Server, userID string, actor *apiActor, args json.RawMessage) (any, error) {
 			var a struct {
 				Title string `json:"title"`
 				Icon  string `json:"icon"`
@@ -490,13 +490,13 @@ var mcpTools = []mcpTool{
 		Name:        "list_tasks",
 		Description: "Tasks the user can see. Defaults to open tasks across all lists; filter by taskListId, status (open|done|all) or dueBefore (YYYY-MM-DD, inclusive). Sorted: overdue and due first.",
 		Scope:       storage.ScopeTasksRead,
-		Schema: schema(nil, map[string]interface{}{
+		Schema: schema(nil, map[string]any{
 			"taskListId": prop("string", "Only tasks of this task list"),
-			"status":     map[string]interface{}{"type": "string", "enum": []string{"open", "done", "all"}, "description": "Default open"},
+			"status":     map[string]any{"type": "string", "enum": []string{"open", "done", "all"}, "description": "Default open"},
 			"dueBefore":  prop("string", "Only tasks due on or before this date (YYYY-MM-DD); tasks without due date are left out"),
 			"limit":      prop("integer", "Maximum number of tasks (default 100)"),
 		}),
-		run: func(s *Server, userID string, actor *apiActor, args json.RawMessage) (interface{}, error) {
+		run: func(s *Server, userID string, actor *apiActor, args json.RawMessage) (any, error) {
 			var a struct {
 				TaskListID string `json:"taskListId"`
 				Status     string `json:"status"`
@@ -549,8 +549,8 @@ var mcpTools = []mcpTool{
 		Name:        "get_task",
 		Description: "One task with all details.",
 		Scope:       storage.ScopeTasksRead,
-		Schema:      schema([]string{"id"}, map[string]interface{}{"id": prop("string", "Task id")}),
-		run: func(s *Server, userID string, actor *apiActor, args json.RawMessage) (interface{}, error) {
+		Schema:      schema([]string{"id"}, map[string]any{"id": prop("string", "Task id")}),
+		run: func(s *Server, userID string, actor *apiActor, args json.RawMessage) (any, error) {
 			var a struct {
 				ID string `json:"id"`
 			}
@@ -569,16 +569,16 @@ var mcpTools = []mcpTool{
 		Description: "Create a task, optionally in a task list the user may edit. dueDate as YYYY-MM-DD or YYYY-MM-DDTHH:MM.",
 		Scope:       storage.ScopeTasksWrite,
 		AltScope:    storage.ScopeTask,
-		Schema: schema([]string{"content"}, map[string]interface{}{
+		Schema: schema([]string{"content"}, map[string]any{
 			"content":    prop("string", "Task text; #hashtags become tags"),
 			"taskListId": prop("string", "Task list id (from list_task_lists); empty = personal tasks"),
-			"priority":   map[string]interface{}{"type": "string", "enum": []string{"low", "normal", "high", "urgent"}},
+			"priority":   map[string]any{"type": "string", "enum": []string{"low", "normal", "high", "urgent"}},
 			"dueDate":    prop("string", "YYYY-MM-DD or YYYY-MM-DDTHH:MM"),
 			"notes":      prop("string", "Longer description"),
-			"reminders": map[string]interface{}{"type": "array", "items": map[string]string{"type": "integer"},
+			"reminders": map[string]any{"type": "array", "items": map[string]string{"type": "integer"},
 				"description": "Reminders in minutes before the due date, replacing the user's lead time: 0, 15, 30, 60, 120, 1440 (1 day), 2880, 4320, 10080 (1 week), 20160 (2 weeks), 43200 (1 month); [] = the lead time again"},
 		}),
-		run: func(s *Server, userID string, actor *apiActor, args json.RawMessage) (interface{}, error) {
+		run: func(s *Server, userID string, actor *apiActor, args json.RawMessage) (any, error) {
 			var a struct {
 				Content    string `json:"content"`
 				TaskListID string `json:"taskListId"`
@@ -612,20 +612,20 @@ var mcpTools = []mcpTool{
 		Name:        "update_task",
 		Description: "Change fields of a task; only the given fields change. Empty dueDate removes the due date.",
 		Scope:       storage.ScopeTasksWrite,
-		Schema: schema([]string{"id"}, map[string]interface{}{
+		Schema: schema([]string{"id"}, map[string]any{
 			"id":           prop("string", "Task id"),
 			"content":      prop("string", "New text"),
 			"isCompleted":  prop("boolean", "true = done"),
 			"dueDate":      prop("string", "YYYY-MM-DD, YYYY-MM-DDTHH:MM or empty"),
-			"priority":     map[string]interface{}{"type": "string", "enum": []string{"low", "normal", "high", "urgent"}},
+			"priority":     map[string]any{"type": "string", "enum": []string{"low", "normal", "high", "urgent"}},
 			"notes":        prop("string", "Description"),
 			"kanbanStatus": prop("string", "Column id of the task list's board (e.g. todo, in_progress, done)"),
 			"taskListId":   prop("string", "Move into another task list"),
-			"tags":         map[string]interface{}{"type": "array", "items": map[string]string{"type": "string"}},
-			"reminders": map[string]interface{}{"type": "array", "items": map[string]string{"type": "integer"},
+			"tags":         map[string]any{"type": "array", "items": map[string]string{"type": "string"}},
+			"reminders": map[string]any{"type": "array", "items": map[string]string{"type": "integer"},
 				"description": "Reminders in minutes before the due date, replacing the user's lead time: 0, 15, 30, 60, 120, 1440 (1 day), 2880, 4320, 10080 (1 week), 20160 (2 weeks), 43200 (1 month); [] = the lead time again"},
 		}),
-		run: func(s *Server, userID string, actor *apiActor, args json.RawMessage) (interface{}, error) {
+		run: func(s *Server, userID string, actor *apiActor, args json.RawMessage) (any, error) {
 			var a struct {
 				ID string `json:"id"`
 				taskPatch
@@ -646,11 +646,11 @@ var mcpTools = []mcpTool{
 		Name:        "complete_task",
 		Description: "Check a task off (or reopen it with completed=false). Recurring tasks move to their next date.",
 		Scope:       storage.ScopeTasksWrite,
-		Schema: schema([]string{"id"}, map[string]interface{}{
+		Schema: schema([]string{"id"}, map[string]any{
 			"id":        prop("string", "Task id"),
 			"completed": prop("boolean", "Default true"),
 		}),
-		run: func(s *Server, userID string, actor *apiActor, args json.RawMessage) (interface{}, error) {
+		run: func(s *Server, userID string, actor *apiActor, args json.RawMessage) (any, error) {
 			var a struct {
 				ID        string `json:"id"`
 				Completed *bool  `json:"completed"`
@@ -670,11 +670,11 @@ var mcpTools = []mcpTool{
 		Name:        "add_subtask",
 		Description: "Add a subtask (checklist item) to a task. Returns the task with all its subtasks.",
 		Scope:       storage.ScopeTasksWrite,
-		Schema: schema([]string{"taskId", "title"}, map[string]interface{}{
+		Schema: schema([]string{"taskId", "title"}, map[string]any{
 			"taskId": prop("string", "Task id"),
 			"title":  prop("string", "Subtask text"),
 		}),
-		run: func(s *Server, userID string, actor *apiActor, args json.RawMessage) (interface{}, error) {
+		run: func(s *Server, userID string, actor *apiActor, args json.RawMessage) (any, error) {
 			var a struct {
 				TaskID string `json:"taskId"`
 				Title  string `json:"title"`
@@ -704,14 +704,14 @@ var mcpTools = []mcpTool{
 		Name:        "update_subtask",
 		Description: "Tick a subtask off (completed), reopen it (completed=false), rename it (title) or remove it (delete=true).",
 		Scope:       storage.ScopeTasksWrite,
-		Schema: schema([]string{"taskId", "subtaskId"}, map[string]interface{}{
+		Schema: schema([]string{"taskId", "subtaskId"}, map[string]any{
 			"taskId":    prop("string", "Task id"),
 			"subtaskId": prop("string", "Subtask id from get_task"),
 			"completed": prop("boolean", "true = done"),
 			"title":     prop("string", "New text"),
 			"delete":    prop("boolean", "true = remove the subtask"),
 		}),
-		run: func(s *Server, userID string, actor *apiActor, args json.RawMessage) (interface{}, error) {
+		run: func(s *Server, userID string, actor *apiActor, args json.RawMessage) (any, error) {
 			var a struct {
 				TaskID    string  `json:"taskId"`
 				SubtaskID string  `json:"subtaskId"`
@@ -762,8 +762,8 @@ var mcpTools = []mcpTool{
 		Name:        "delete_task",
 		Description: "Delete a task, e.g. one created by mistake: it goes to the task trash, where the user can restore it. Prefer complete_task for work that is done.",
 		Scope:       storage.ScopeTasksWrite,
-		Schema:      schema([]string{"id"}, map[string]interface{}{"id": prop("string", "Task id")}),
-		run: func(s *Server, userID string, actor *apiActor, args json.RawMessage) (interface{}, error) {
+		Schema:      schema([]string{"id"}, map[string]any{"id": prop("string", "Task id")}),
+		run: func(s *Server, userID string, actor *apiActor, args json.RawMessage) (any, error) {
 			var a struct {
 				ID string `json:"id"`
 			}
@@ -776,15 +776,15 @@ var mcpTools = []mcpTool{
 			if err := s.deleteTask(userID, a.ID); err != nil {
 				return nil, err
 			}
-			return map[string]interface{}{"id": a.ID, "deleted": true}, nil
+			return map[string]any{"id": a.ID, "deleted": true}, nil
 		},
 	},
 	{
 		Name:        "list_lists",
 		Description: "Shopping lists, checklists and other shared lists the user can see, with open/total item counts.",
 		Scope:       storage.ScopeListsRead,
-		Schema:      schema(nil, map[string]interface{}{}),
-		run: func(s *Server, userID string, _ *apiActor, _ json.RawMessage) (interface{}, error) {
+		Schema:      schema(nil, map[string]any{}),
+		run: func(s *Server, userID string, _ *apiActor, _ json.RawMessage) (any, error) {
 			lists, err := s.store.GetAllListsForUser(userID)
 			if err != nil {
 				return nil, err
@@ -800,12 +800,12 @@ var mcpTools = []mcpTool{
 		Name:        "create_list",
 		Description: "Create a list for the user: shopping (items grouped by category), checklist or vacation (packing list).",
 		Scope:       storage.ScopeListsWrite,
-		Schema: schema([]string{"title"}, map[string]interface{}{
+		Schema: schema([]string{"title"}, map[string]any{
 			"title":    prop("string", "Name of the list"),
 			"icon":     prop("string", "One emoji, optional"),
-			"listType": map[string]interface{}{"type": "string", "enum": []string{"shopping", "checklist", "vacation"}, "description": "Default shopping"},
+			"listType": map[string]any{"type": "string", "enum": []string{"shopping", "checklist", "vacation"}, "description": "Default shopping"},
 		}),
-		run: func(s *Server, userID string, actor *apiActor, args json.RawMessage) (interface{}, error) {
+		run: func(s *Server, userID string, actor *apiActor, args json.RawMessage) (any, error) {
 			var a struct {
 				Title    string `json:"title"`
 				Icon     string `json:"icon"`
@@ -832,8 +832,8 @@ var mcpTools = []mcpTool{
 		Name:        "get_list",
 		Description: "One list with all its items (id, content, category, quantity, isCompleted).",
 		Scope:       storage.ScopeListsRead,
-		Schema:      schema([]string{"listId"}, map[string]interface{}{"listId": prop("string", "List id from list_lists")}),
-		run: func(s *Server, userID string, actor *apiActor, args json.RawMessage) (interface{}, error) {
+		Schema:      schema([]string{"listId"}, map[string]any{"listId": prop("string", "List id from list_lists")}),
+		run: func(s *Server, userID string, actor *apiActor, args json.RawMessage) (any, error) {
 			var a struct {
 				ListID string `json:"listId"`
 			}
@@ -844,7 +844,7 @@ var mcpTools = []mcpTool{
 			if err != nil || l == nil {
 				return nil, errors.New("Liste nicht gefunden")
 			}
-			return map[string]interface{}{"list": s.toListView(*l), "items": l.Items}, nil
+			return map[string]any{"list": s.toListView(*l), "items": l.Items}, nil
 		},
 	},
 	{
@@ -852,13 +852,13 @@ var mcpTools = []mcpTool{
 		Description: "Add an item to a list the user may edit.",
 		Scope:       storage.ScopeListsWrite,
 		AltScope:    storage.ScopeList,
-		Schema: schema([]string{"listId", "content"}, map[string]interface{}{
+		Schema: schema([]string{"listId", "content"}, map[string]any{
 			"listId":   prop("string", "List id"),
 			"content":  prop("string", "Item text"),
 			"category": prop("string", "Category/aisle, e.g. Obst"),
 			"quantity": prop("string", "Amount, e.g. 2 or 500 g"),
 		}),
-		run: func(s *Server, userID string, actor *apiActor, args json.RawMessage) (interface{}, error) {
+		run: func(s *Server, userID string, actor *apiActor, args json.RawMessage) (any, error) {
 			var a struct {
 				ListID, Content, Category, Quantity string
 			}
@@ -875,12 +875,12 @@ var mcpTools = []mcpTool{
 		Name:        "check_list_item",
 		Description: "Tick an item off a list (or untick it with completed=false).",
 		Scope:       storage.ScopeListsWrite,
-		Schema: schema([]string{"listId", "itemId"}, map[string]interface{}{
+		Schema: schema([]string{"listId", "itemId"}, map[string]any{
 			"listId":    prop("string", "List id"),
 			"itemId":    prop("string", "Item id from get_list"),
 			"completed": prop("boolean", "Default true"),
 		}),
-		run: func(s *Server, userID string, actor *apiActor, args json.RawMessage) (interface{}, error) {
+		run: func(s *Server, userID string, actor *apiActor, args json.RawMessage) (any, error) {
 			var a struct {
 				ListID    string `json:"listId"`
 				ItemID    string `json:"itemId"`
@@ -896,14 +896,14 @@ var mcpTools = []mcpTool{
 		Name:        "update_list_item",
 		Description: "Change text, category or quantity of a list item; only the given fields change.",
 		Scope:       storage.ScopeListsWrite,
-		Schema: schema([]string{"listId", "itemId"}, map[string]interface{}{
+		Schema: schema([]string{"listId", "itemId"}, map[string]any{
 			"listId":   prop("string", "List id"),
 			"itemId":   prop("string", "Item id"),
 			"content":  prop("string", "New text"),
 			"category": prop("string", "New category"),
 			"quantity": prop("string", "New amount"),
 		}),
-		run: func(s *Server, userID string, actor *apiActor, args json.RawMessage) (interface{}, error) {
+		run: func(s *Server, userID string, actor *apiActor, args json.RawMessage) (any, error) {
 			var a struct {
 				ListID   string  `json:"listId"`
 				ItemID   string  `json:"itemId"`
@@ -930,12 +930,12 @@ var mcpTools = []mcpTool{
 		Name:        "list_notes",
 		Description: "Notes the user can see (own and shared), newest change first, without their content. Filter by folder (includes subfolders) or words in the title. Use get_note for the bullets.",
 		Scope:       storage.ScopeNotesRead,
-		Schema: schema(nil, map[string]interface{}{
+		Schema: schema(nil, map[string]any{
 			"folder": prop("string", "Only notes in this folder or below (e.g. Projekte/MindSift)"),
 			"query":  prop("string", "Only notes whose title contains this text"),
 			"limit":  prop("integer", "Maximum number of notes (default 100)"),
 		}),
-		run: func(s *Server, userID string, _ *apiActor, args json.RawMessage) (interface{}, error) {
+		run: func(s *Server, userID string, _ *apiActor, args json.RawMessage) (any, error) {
 			var a struct {
 				Folder, Query string
 				Limit         int
@@ -977,8 +977,8 @@ var mcpTools = []mcpTool{
 		Name:        "get_note",
 		Description: "One note: content is its bullets as an indented Markdown list (one tab per level; - [ ] / - [x] are to-dos); bullets lists them with their ids, level and type, for add_note_bullet / update_note_bullet / delete_note_bullet. {{secret:…}} is a value the user hid; it cannot be read here, keep it unchanged when editing the bullet. {{mention:<user id>}} in bullets is an @-mention of a person (content shows it as @Name); keep it unchanged as well. Drawings (type drawing) are described in words: shapes with their text, arrows as „A“ → „B“ (label).",
 		Scope:       storage.ScopeNotesRead,
-		Schema:      schema([]string{"id"}, map[string]interface{}{"id": prop("string", "Note id")}),
-		run: func(s *Server, userID string, _ *apiActor, args json.RawMessage) (interface{}, error) {
+		Schema:      schema([]string{"id"}, map[string]any{"id": prop("string", "Note id")}),
+		run: func(s *Server, userID string, _ *apiActor, args json.RawMessage) (any, error) {
 			var a struct{ ID string }
 			if err := decodeArgs(args, &a); err != nil {
 				return nil, err
@@ -1001,13 +1001,13 @@ var mcpTools = []mcpTool{
 		Description: "Create a new note. content is Markdown: a nested list (tab or 2+ spaces per level) becomes nested bullets, - [ ] a to-do, # a heading with the following bullets below it, plain lines and paragraphs become bullets. " +
 			"Example content: \"# Plan\\n- First step\\n\\t- Detail\\n- [ ] Call Anna\". A fenced ```mermaid block (flowchart/graph or mindmap) becomes a drawing, laid out automatically. Changing existing notes needs notes:write (update_note, add_note_bullet, …).",
 		Scope: storage.ScopeNotesCreate,
-		Schema: schema([]string{"title"}, map[string]interface{}{
+		Schema: schema([]string{"title"}, map[string]any{
 			"title":      prop("string", "Title of the note"),
 			"content":    prop("string", "Bullets as Markdown, optional"),
 			"folderPath": prop("string", "Folder, e.g. Projekte/MindSift; empty = top level. Missing folders are created."),
 			"icon":       prop("string", "One emoji, optional (default 🗒️)"),
 		}),
-		run: func(s *Server, userID string, _ *apiActor, args json.RawMessage) (interface{}, error) {
+		run: func(s *Server, userID string, _ *apiActor, args json.RawMessage) (any, error) {
 			var a struct {
 				Title, FolderPath, Icon string
 				Content                 json.RawMessage
@@ -1060,8 +1060,8 @@ var mcpTools = []mcpTool{
 		Name:        "search",
 		Description: "Full-text search over tasks, list items and notes the user can see (each only with the matching read right). Notes come as matching bullets with the note id for get_note.",
 		Scope:       storage.ScopeTasksRead,
-		Schema:      schema([]string{"query"}, map[string]interface{}{"query": prop("string", "Words to search for")}),
-		run: func(s *Server, userID string, actor *apiActor, args json.RawMessage) (interface{}, error) {
+		Schema:      schema([]string{"query"}, map[string]any{"query": prop("string", "Words to search for")}),
+		run: func(s *Server, userID string, actor *apiActor, args json.RawMessage) (any, error) {
 			var a struct {
 				Query string `json:"query"`
 			}
@@ -1082,19 +1082,19 @@ var mcpTools = []mcpTool{
 					notes = append(notes, noteHit{NoteID: h.DocID, Title: h.Title, Snippet: storage.ReadableWikiLinks(markTags.Replace(h.Snippet), nil), URL: s.mcpLink("note", h.DocID)})
 				}
 			}
-			return map[string]interface{}{"tasks": tasks, "listItems": res.ListItems, "notes": notes}, nil
+			return map[string]any{"tasks": tasks, "listItems": res.ListItems, "notes": notes}, nil
 		},
 	},
 	{
 		Name:        "capture_to_inbox",
 		Description: "Drop a thought into the user's inbox for later triage (not a task yet).",
 		Scope:       storage.ScopeTriage,
-		Schema: schema([]string{"content"}, map[string]interface{}{
+		Schema: schema([]string{"content"}, map[string]any{
 			"content":  prop("string", "The thought"),
-			"priority": map[string]interface{}{"type": "string", "enum": []string{"low", "normal", "high", "urgent"}},
+			"priority": map[string]any{"type": "string", "enum": []string{"low", "normal", "high", "urgent"}},
 			"dueDate":  prop("string", "YYYY-MM-DD, optional"),
 		}),
-		run: func(s *Server, userID string, actor *apiActor, args json.RawMessage) (interface{}, error) {
+		run: func(s *Server, userID string, actor *apiActor, args json.RawMessage) (any, error) {
 			var a struct {
 				Content, Priority, DueDate string
 			}
@@ -1113,7 +1113,7 @@ var mcpTools = []mcpTool{
 			}
 			s.recordThoughtOrigin(t, actor, true)
 			s.wsHub.BroadcastToUsers(s.taskAudience(t), "TASK_CREATED", t)
-			return map[string]interface{}{"id": t.ID, "content": t.Content, "status": fmt.Sprint(t.Status)}, nil
+			return map[string]any{"id": t.ID, "content": t.Content, "status": fmt.Sprint(t.Status)}, nil
 		},
 	},
 }
@@ -1268,8 +1268,8 @@ func isEmojiRune(r rune) bool {
 }
 
 // filterSearchForScopes drops the parts of a search result the key may not read.
-func filterSearchForScopes(result interface{}, scopes []string) interface{} {
-	m, ok := result.(map[string]interface{})
+func filterSearchForScopes(result any, scopes []string) any {
+	m, ok := result.(map[string]any)
 	if !ok {
 		return result
 	}

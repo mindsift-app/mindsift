@@ -11,7 +11,7 @@ import (
 	"github.com/mindsift-app/mindsift/internal/domain"
 )
 
-func syncDoc(t *testing.T, ts *httptest.Server, token, docID string, body map[string]interface{}) (int, syncResponse) {
+func syncDoc(t *testing.T, ts *httptest.Server, token, docID string, body map[string]any) (int, syncResponse) {
 	t.Helper()
 	resp := doJSON(t, ts, http.MethodPost, "/api/v1/docs/"+docID+"/sync", token, body)
 	var out syncResponse
@@ -55,7 +55,7 @@ func TestDocSyncBetweenTwoEditors(t *testing.T) {
 	f := newCollabFixture(t)
 
 	// Owner inserts a block and edits the existing one in one round trip
-	code, a := syncDoc(t, f.ts, f.ownerTok, f.docID, map[string]interface{}{
+	code, a := syncDoc(t, f.ts, f.ownerTok, f.docID, map[string]any{
 		"clientId": "owner-tab", "lastSeq": 0,
 		"ops": []collab.Op{
 			{OpID: "o1", Kind: collab.OpInsert, BlockID: "b2", ParentID: strp(""), OrderKey: "a5", Content: strp("Zweiter Punkt")},
@@ -70,7 +70,7 @@ func TestDocSyncBetweenTwoEditors(t *testing.T) {
 	}
 
 	// Editor pulls everything since 0 and replays it
-	code, b := syncDoc(t, f.ts, f.editorTok, f.docID, map[string]interface{}{"clientId": "editor-tab", "lastSeq": 0})
+	code, b := syncDoc(t, f.ts, f.editorTok, f.docID, map[string]any{"clientId": "editor-tab", "lastSeq": 0})
 	if code != http.StatusOK || b.HeadSeq != a.HeadSeq || b.Role != "editor" || !b.Shared {
 		t.Fatalf("editor pull: %d head=%d role=%s shared=%v", code, b.HeadSeq, b.Role, b.Shared)
 	}
@@ -87,7 +87,7 @@ func TestDocSyncBetweenTwoEditors(t *testing.T) {
 	}
 
 	// Editor writes into the leased block: owner keeps it, editor's text becomes a conflict copy
-	_, c := syncDoc(t, f.ts, f.editorTok, f.docID, map[string]interface{}{
+	_, c := syncDoc(t, f.ts, f.editorTok, f.docID, map[string]any{
 		"clientId": "editor-tab", "lastSeq": b.HeadSeq,
 		"ops": []collab.Op{{OpID: "e1", Kind: collab.OpSetContent, BlockID: "b2", BaseVersion: 1, Content: strp("Editor war hier")}},
 	})
@@ -98,7 +98,7 @@ func TestDocSyncBetweenTwoEditors(t *testing.T) {
 
 func TestDocSyncRetryIsIdempotent(t *testing.T) {
 	f := newCollabFixture(t)
-	body := map[string]interface{}{
+	body := map[string]any{
 		"clientId": "tab", "lastSeq": 0,
 		"ops": []collab.Op{{OpID: "same-op", Kind: collab.OpSetContent, BlockID: "b1", BaseVersion: 1, Content: strp("Einmal")}},
 	}
@@ -111,18 +111,18 @@ func TestDocSyncRetryIsIdempotent(t *testing.T) {
 
 func TestDocSyncPermissions(t *testing.T) {
 	f := newCollabFixture(t)
-	op := map[string]interface{}{
+	op := map[string]any{
 		"clientId": "tab", "lastSeq": 0,
 		"ops": []collab.Op{{OpID: "v1", Kind: collab.OpSetContent, BlockID: "b1", BaseVersion: 1, Content: strp("Leser schreibt")}},
 	}
 	if code, _ := syncDoc(t, f.ts, f.viewerTok, f.docID, op); code != http.StatusForbidden {
 		t.Errorf("viewer sending ops: want 403, got %d", code)
 	}
-	code, pull := syncDoc(t, f.ts, f.viewerTok, f.docID, map[string]interface{}{"clientId": "tab", "lastSeq": 0, "leases": map[string]interface{}{"hold": []string{"b1"}}})
+	code, pull := syncDoc(t, f.ts, f.viewerTok, f.docID, map[string]any{"clientId": "tab", "lastSeq": 0, "leases": map[string]any{"hold": []string{"b1"}}})
 	if code != http.StatusOK || pull.Role != "viewer" || len(pull.Leases.Granted) != 0 {
 		t.Errorf("viewer pull: %d role=%s granted=%v", code, pull.Role, pull.Leases.Granted)
 	}
-	if code, _ := syncDoc(t, f.ts, f.outsiderTok, f.docID, map[string]interface{}{"clientId": "tab"}); code != http.StatusNotFound {
+	if code, _ := syncDoc(t, f.ts, f.outsiderTok, f.docID, map[string]any{"clientId": "tab"}); code != http.StatusNotFound {
 		t.Errorf("outsider: want 404, got %d", code)
 	}
 	for _, path := range []string{"/snapshot", "/changes?wait=0"} {
@@ -134,7 +134,7 @@ func TestDocSyncPermissions(t *testing.T) {
 
 func TestDocSnapshotMatchesLog(t *testing.T) {
 	f := newCollabFixture(t)
-	syncDoc(t, f.ts, f.ownerTok, f.docID, map[string]interface{}{
+	syncDoc(t, f.ts, f.ownerTok, f.docID, map[string]any{
 		"clientId": "tab", "lastSeq": 0,
 		"ops": []collab.Op{{OpID: "t1", Kind: collab.OpSetTitle, BaseVersion: 0, Title: strp("Neuer Titel")}},
 	})
@@ -155,7 +155,7 @@ func TestDocSnapshotMatchesLog(t *testing.T) {
 
 func TestDocChangesLongPollWakesOnChange(t *testing.T) {
 	f := newCollabFixture(t)
-	_, base := syncDoc(t, f.ts, f.editorTok, f.docID, map[string]interface{}{"clientId": "editor-tab", "lastSeq": 0})
+	_, base := syncDoc(t, f.ts, f.editorTok, f.docID, map[string]any{"clientId": "editor-tab", "lastSeq": 0})
 
 	type pollResult struct {
 		Changed bool  `json:"changed"`
@@ -178,7 +178,7 @@ func TestDocChangesLongPollWakesOnChange(t *testing.T) {
 	}()
 
 	time.Sleep(300 * time.Millisecond)
-	syncDoc(t, f.ts, f.ownerTok, f.docID, map[string]interface{}{
+	syncDoc(t, f.ts, f.ownerTok, f.docID, map[string]any{
 		"clientId": "owner-tab", "lastSeq": 0,
 		"ops": []collab.Op{{OpID: "lp1", Kind: collab.OpSetContent, BlockID: "b1", BaseVersion: 1, Content: strp("Weckruf")}},
 	})
@@ -205,7 +205,7 @@ func TestDocSyncAfterCompaction(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, live := syncDoc(t, ts, ownerTok, doc.ID, map[string]interface{}{
+	_, live := syncDoc(t, ts, ownerTok, doc.ID, map[string]any{
 		"clientId": "live", "lastSeq": 0, "ops": []collab.Op{{OpID: "d", Kind: collab.OpDelete, BlockID: "b2"}},
 	})
 
@@ -216,12 +216,12 @@ func TestDocSyncAfterCompaction(t *testing.T) {
 	}
 
 	// A client that was up to date only gets the purge entry
-	_, up := syncDoc(t, ts, ownerTok, doc.ID, map[string]interface{}{"clientId": "live", "lastSeq": live.HeadSeq})
+	_, up := syncDoc(t, ts, ownerTok, doc.ID, map[string]any{"clientId": "live", "lastSeq": live.HeadSeq})
 	if up.Resync || len(up.Ops) != 1 || up.Ops[0].Effect.Kind != collab.OpPurge {
 		t.Fatalf("up-to-date client: resync=%v ops=%+v", up.Resync, up.Ops)
 	}
 	// A client behind the compacted log must reload; its own changes are still applied
-	code, old := syncDoc(t, ts, ownerTok, doc.ID, map[string]interface{}{
+	code, old := syncDoc(t, ts, ownerTok, doc.ID, map[string]any{
 		"clientId": "old", "lastSeq": 1,
 		"ops": []collab.Op{{OpID: "late", Kind: collab.OpSetContent, BlockID: "b1", BaseVersion: 1, Content: strp("Spät")}},
 	})
@@ -244,7 +244,7 @@ func TestDocLeaveOfDeletedNote(t *testing.T) {
 	if code := leave(f.ownerTok, "doc_gone"); code != http.StatusOK {
 		t.Errorf("leaving a note that is gone: want 200, got %d", code)
 	}
-	if code, _ := syncDoc(t, f.ts, f.ownerTok, "doc_gone", map[string]interface{}{"clientId": "tab", "lastSeq": 0}); code != http.StatusNotFound {
+	if code, _ := syncDoc(t, f.ts, f.ownerTok, "doc_gone", map[string]any{"clientId": "tab", "lastSeq": 0}); code != http.StatusNotFound {
 		t.Errorf("sync of a note that is gone: want 404, got %d", code)
 	}
 }

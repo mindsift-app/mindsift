@@ -138,17 +138,17 @@ func liveBullet(d *collab.Doc, id string) (*collab.Block, error) {
 	return b, nil
 }
 
-func noteResult(s *Server, userID, docID string) (interface{}, error) {
+func noteResult(s *Server, userID, docID string) (any, error) {
 	d, err := s.noteDoc(docID)
 	if err != nil {
 		return nil, err
 	}
-	return map[string]interface{}{"id": docID, "title": d.Title, "bullets": noteBullets(d, s.store.DocTitles(userID))}, nil
+	return map[string]any{"id": docID, "title": d.Title, "bullets": noteBullets(d, s.store.DocTitles(userID))}, nil
 }
 
 // inboxEntry: an open inbox entry as an agent sees it
-func inboxView(t domain.Thought) map[string]interface{} {
-	v := map[string]interface{}{"id": t.ID, "content": t.Content, "priority": t.Priority, "createdAt": t.CreatedAt}
+func inboxView(t domain.Thought) map[string]any {
+	v := map[string]any{"id": t.ID, "content": t.Content, "priority": t.Priority, "createdAt": t.CreatedAt}
 	if t.DueDate != "" {
 		v["dueDate"] = t.DueDate
 	}
@@ -163,13 +163,13 @@ var mcpWriteTools = []mcpTool{
 		Name:        "update_note",
 		Description: "Rename a note, change its icon or move it into another folder.",
 		Scope:       storage.ScopeNotesWrite,
-		Schema: schema([]string{"id"}, map[string]interface{}{
+		Schema: schema([]string{"id"}, map[string]any{
 			"id":         prop("string", "Note id"),
 			"title":      prop("string", "New title, optional"),
 			"icon":       prop("string", "One emoji, optional"),
 			"folderPath": prop("string", "Folder, e.g. Projekte/MindSift; empty string = top level; leave out to keep it"),
 		}),
-		run: func(s *Server, userID string, _ *apiActor, args json.RawMessage) (interface{}, error) {
+		run: func(s *Server, userID string, _ *apiActor, args json.RawMessage) (any, error) {
 			var a struct {
 				ID         string
 				Title      *string
@@ -215,15 +215,15 @@ var mcpWriteTools = []mcpTool{
 			"Bullet ids come from get_note. type: text (default), todo, h1, h2, h3, numbered, callout, warning, error, drawing. " +
 			"[[Note title]] links another note (with |text for an own link text); it keeps working when that note is renamed. " + mcpDrawingHelp,
 		Scope: storage.ScopeNotesWrite,
-		Schema: schema([]string{"noteId", "text"}, map[string]interface{}{
+		Schema: schema([]string{"noteId", "text"}, map[string]any{
 			"noteId":   prop("string", "Note id"),
 			"text":     prop("string", "Text of the new bullet"),
-			"type":     map[string]interface{}{"type": "string", "enum": []string{"text", "todo", "h1", "h2", "h3", "numbered", "callout", "warning", "error", "drawing"}},
+			"type":     map[string]any{"type": "string", "enum": []string{"text", "todo", "h1", "h2", "h3", "numbered", "callout", "warning", "error", "drawing"}},
 			"afterId":  prop("string", "Insert right after this bullet, on its level (optional)"),
 			"parentId": prop("string", "Insert as the last child of this bullet (optional; ignored with afterId)"),
-			"checked":  map[string]interface{}{"type": "boolean", "description": "For a to-do: already done"},
+			"checked":  map[string]any{"type": "boolean", "description": "For a to-do: already done"},
 		}),
-		run: func(s *Server, userID string, actor *apiActor, args json.RawMessage) (interface{}, error) {
+		run: func(s *Server, userID string, actor *apiActor, args json.RawMessage) (any, error) {
 			var a struct {
 				NoteID, Text, Type, AfterID, ParentID string
 				Checked                               bool
@@ -289,7 +289,7 @@ var mcpWriteTools = []mcpTool{
 				return nil, err
 			}
 			res, err := noteResult(s, userID, a.NoteID)
-			if m, ok := res.(map[string]interface{}); ok {
+			if m, ok := res.(map[string]any); ok {
 				m["addedId"] = id
 			}
 			return res, err
@@ -300,14 +300,14 @@ var mcpWriteTools = []mcpTool{
 		Description: "Change one bullet of a note: its text, tick or untick a to-do, or its type. Bullet ids come from get_note. " +
 			"A drawing is replaced as a whole: text is the new drawing (Mermaid or the model, see add_note_bullet); type drawing turns a bullet into one.",
 		Scope: storage.ScopeNotesWrite,
-		Schema: schema([]string{"noteId", "bulletId"}, map[string]interface{}{
+		Schema: schema([]string{"noteId", "bulletId"}, map[string]any{
 			"noteId":   prop("string", "Note id"),
 			"bulletId": prop("string", "Bullet id"),
 			"text":     prop("string", "New text, optional"),
-			"checked":  map[string]interface{}{"type": "boolean", "description": "To-do done (true) or open (false), optional"},
-			"type":     map[string]interface{}{"type": "string", "enum": []string{"text", "todo", "h1", "h2", "h3", "numbered", "callout", "warning", "error", "drawing"}},
+			"checked":  map[string]any{"type": "boolean", "description": "To-do done (true) or open (false), optional"},
+			"type":     map[string]any{"type": "string", "enum": []string{"text", "todo", "h1", "h2", "h3", "numbered", "callout", "warning", "error", "drawing"}},
 		}),
-		run: func(s *Server, userID string, actor *apiActor, args json.RawMessage) (interface{}, error) {
+		run: func(s *Server, userID string, actor *apiActor, args json.RawMessage) (any, error) {
 			var a struct {
 				NoteID, BulletID string
 				Text             *string
@@ -376,11 +376,11 @@ var mcpWriteTools = []mcpTool{
 		Name:        "delete_note_bullet",
 		Description: "Remove one bullet of a note together with the bullets below it. Bullet ids come from get_note.",
 		Scope:       storage.ScopeNotesWrite,
-		Schema: schema([]string{"noteId", "bulletId"}, map[string]interface{}{
+		Schema: schema([]string{"noteId", "bulletId"}, map[string]any{
 			"noteId":   prop("string", "Note id"),
 			"bulletId": prop("string", "Bullet id"),
 		}),
-		run: func(s *Server, userID string, actor *apiActor, args json.RawMessage) (interface{}, error) {
+		run: func(s *Server, userID string, actor *apiActor, args json.RawMessage) (any, error) {
 			var a struct{ NoteID, BulletID string }
 			if err := decodeArgs(args, &a); err != nil {
 				return nil, err
@@ -410,8 +410,8 @@ var mcpWriteTools = []mcpTool{
 		Name:        "delete_note",
 		Description: "Move one of the user's own notes into the trash (it can be restored there).",
 		Scope:       storage.ScopeNotesWrite,
-		Schema:      schema([]string{"id"}, map[string]interface{}{"id": prop("string", "Note id")}),
-		run: func(s *Server, userID string, _ *apiActor, args json.RawMessage) (interface{}, error) {
+		Schema:      schema([]string{"id"}, map[string]any{"id": prop("string", "Note id")}),
+		run: func(s *Server, userID string, _ *apiActor, args json.RawMessage) (any, error) {
 			var a struct{ ID string }
 			if err := decodeArgs(args, &a); err != nil {
 				return nil, err
@@ -434,18 +434,18 @@ var mcpWriteTools = []mcpTool{
 			for _, uid := range audience {
 				s.wsHub.BroadcastToUser(uid, "DOC_DELETED", map[string]string{"id": a.ID})
 			}
-			return map[string]interface{}{"id": a.ID, "trashed": true}, nil
+			return map[string]any{"id": a.ID, "trashed": true}, nil
 		},
 	},
 	{
 		Name:        "list_inbox",
 		Description: "Open entries of the user's inbox (thoughts waiting for triage), newest first; optionally only those containing a text.",
 		Scope:       storage.ScopeInboxRead,
-		Schema: schema(nil, map[string]interface{}{
+		Schema: schema(nil, map[string]any{
 			"query": prop("string", "Only entries containing this text (case-insensitive), optional"),
-			"limit": map[string]interface{}{"type": "integer", "description": "Maximum number (default 50)"},
+			"limit": map[string]any{"type": "integer", "description": "Maximum number (default 50)"},
 		}),
-		run: func(s *Server, userID string, _ *apiActor, args json.RawMessage) (interface{}, error) {
+		run: func(s *Server, userID string, _ *apiActor, args json.RawMessage) (any, error) {
 			var a struct {
 				Query string
 				Limit int
@@ -461,7 +461,7 @@ var mcpWriteTools = []mcpTool{
 				return nil, err
 			}
 			q := strings.ToLower(strings.TrimSpace(a.Query))
-			out := []map[string]interface{}{}
+			out := []map[string]any{}
 			for _, t := range thoughts {
 				if q != "" && !strings.Contains(strings.ToLower(t.Content), q) {
 					continue
@@ -471,7 +471,7 @@ var mcpWriteTools = []mcpTool{
 					break
 				}
 			}
-			return map[string]interface{}{"items": out}, nil
+			return map[string]any{"items": out}, nil
 		},
 	},
 	{
@@ -479,14 +479,14 @@ var mcpWriteTools = []mcpTool{
 		Description: "Triage an inbox entry: turn it into a task (optionally in a task list), a note, or an item of a shopping/check list. " +
 			"Ids come from list_inbox, list_task_lists and list_lists.",
 		Scope: storage.ScopeInboxWrite,
-		Schema: schema([]string{"id", "to"}, map[string]interface{}{
+		Schema: schema([]string{"id", "to"}, map[string]any{
 			"id":         prop("string", "Inbox entry id"),
-			"to":         map[string]interface{}{"type": "string", "enum": []string{"task", "note", "list_item"}},
+			"to":         map[string]any{"type": "string", "enum": []string{"task", "note", "list_item"}},
 			"taskListId": prop("string", "For a task: the task list (empty = personal tasks)"),
 			"listId":     prop("string", "For a list item: the list (required)"),
 			"dueDate":    prop("string", "For a task: YYYY-MM-DD or YYYY-MM-DDTHH:MM, optional"),
 		}),
-		run: func(s *Server, userID string, actor *apiActor, args json.RawMessage) (interface{}, error) {
+		run: func(s *Server, userID string, actor *apiActor, args json.RawMessage) (any, error) {
 			var a struct {
 				ID, To, TaskListID, ListID, DueDate string
 			}
@@ -518,7 +518,7 @@ var mcpWriteTools = []mcpTool{
 			s.assignCreator(userID, updated)
 			s.wsHub.BroadcastToUsers(s.taskAudience(updated), "TASK_UPDATED", updated)
 			s.notifyTaskAdded(userID, updated, nil)
-			out := map[string]interface{}{"id": updated.ID, "status": fmt.Sprint(updated.Status), "convertedType": updated.ConvertedType}
+			out := map[string]any{"id": updated.ID, "status": fmt.Sprint(updated.Status), "convertedType": updated.ConvertedType}
 			if updated.ConvertedRefID != "" {
 				out["refId"] = updated.ConvertedRefID
 			}
@@ -529,8 +529,8 @@ var mcpWriteTools = []mcpTool{
 		Name:        "discard_inbox_item",
 		Description: "Discard an inbox entry. It goes to the triage trash, where the user can restore it.",
 		Scope:       storage.ScopeInboxWrite,
-		Schema:      schema([]string{"id"}, map[string]interface{}{"id": prop("string", "Inbox entry id")}),
-		run: func(s *Server, userID string, _ *apiActor, args json.RawMessage) (interface{}, error) {
+		Schema:      schema([]string{"id"}, map[string]any{"id": prop("string", "Inbox entry id")}),
+		run: func(s *Server, userID string, _ *apiActor, args json.RawMessage) (any, error) {
 			var a struct{ ID string }
 			if err := decodeArgs(args, &a); err != nil {
 				return nil, err
@@ -543,7 +543,7 @@ var mcpWriteTools = []mcpTool{
 				return nil, err
 			}
 			s.wsHub.BroadcastToUsers(s.taskAudience(updated), "TASK_UPDATED", updated)
-			return map[string]interface{}{"id": updated.ID, "status": fmt.Sprint(updated.Status)}, nil
+			return map[string]any{"id": updated.ID, "status": fmt.Sprint(updated.Status)}, nil
 		},
 	},
 }

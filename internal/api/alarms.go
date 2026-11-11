@@ -103,9 +103,9 @@ func (s *Server) sendDiscordNotification(lang, webhookURL, title, description, d
 		return err
 	}
 	httpClient := guardedClient(allowPrivate)
-	payload := map[string]interface{}{
+	payload := map[string]any{
 		"content": "⏰ **" + i18n.T(lang, "MindSift Aufgaben-Alarm") + "**",
-		"embeds": []map[string]interface{}{
+		"embeds": []map[string]any{
 			{
 				"title":       title,
 				"description": description + "\n\n**" + i18n.T(lang, "Fällig") + ":** " + dueDate + " | **" + i18n.T(lang, "Priorität") + ":** " + domain.PriorityLabel(lang, priority),
@@ -132,7 +132,7 @@ func (s *Server) sendDiscordNotification(lang, webhookURL, title, description, d
 }
 
 // sendCustomWebhookNotification posts an alarm to the person's own webhook; extra adds fields (nil: none).
-func (s *Server) sendCustomWebhookNotification(webhookURL, event, title, notes, dueDate, priority string, extra map[string]interface{}) error {
+func (s *Server) sendCustomWebhookNotification(webhookURL, event, title, notes, dueDate, priority string, extra map[string]any) error {
 	if s.cfg.DemoMode {
 		return errDemoOutgoing
 	}
@@ -141,7 +141,7 @@ func (s *Server) sendCustomWebhookNotification(webhookURL, event, title, notes, 
 		return err
 	}
 	httpClient := guardedClient(allowPrivate)
-	payload := map[string]interface{}{
+	payload := map[string]any{
 		"event":     event,
 		"title":     title,
 		"notes":     notes,
@@ -264,7 +264,7 @@ func (s *Server) checkAlarms(now time.Time) {
 				}
 			case "webhook":
 				if a.CustomWebhookURL != "" {
-					if err := s.sendCustomWebhookNotification(a.CustomWebhookURL, "task_due", a.Title, desc, a.DueDate, a.Priority, map[string]interface{}{"remindBeforeMinutes": a.NotifyBeforeMinutes}); err == nil {
+					if err := s.sendCustomWebhookNotification(a.CustomWebhookURL, "task_due", a.Title, desc, a.DueDate, a.Priority, map[string]any{"remindBeforeMinutes": a.NotifyBeforeMinutes}); err == nil {
 						sentAny = true
 					}
 				}

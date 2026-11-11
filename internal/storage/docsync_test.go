@@ -26,7 +26,7 @@ func newSyncTestStore(t *testing.T) (*Store, *domain.User) {
 	return store, u
 }
 
-func flatBlocks(spec ...[3]interface{}) []domain.DocumentBlock { // {id, level, content}
+func flatBlocks(spec ...[3]any) []domain.DocumentBlock { // {id, level, content}
 	out := make([]domain.DocumentBlock, len(spec))
 	for i, s := range spec {
 		out[i] = domain.DocumentBlock{ID: s[0].(string), Level: s[1].(int), Content: s[2].(string), Type: "bullet"}
@@ -34,10 +34,10 @@ func flatBlocks(spec ...[3]interface{}) []domain.DocumentBlock { // {id, level, 
 	return out
 }
 
-func outline(blocks []domain.DocumentBlock) [][2]interface{} {
-	out := make([][2]interface{}, len(blocks))
+func outline(blocks []domain.DocumentBlock) [][2]any {
+	out := make([][2]any, len(blocks))
 	for i, b := range blocks {
-		out[i] = [2]interface{}{b.ID, b.Level}
+		out[i] = [2]any{b.ID, b.Level}
 	}
 	return out
 }
@@ -66,11 +66,11 @@ func headSeq(t *testing.T, s *Store, docID string) int64 {
 func TestLegacySaveRoundTripsThroughTheLog(t *testing.T) {
 	s, u := newSyncTestStore(t)
 	initial := flatBlocks(
-		[3]interface{}{"a", 0, "Projekt"},
-		[3]interface{}{"b", 1, "Aufgabe 1"},
-		[3]interface{}{"c", 2, "Detail"},
-		[3]interface{}{"d", 1, "Aufgabe 2"},
-		[3]interface{}{"e", 0, "Anderes"},
+		[3]any{"a", 0, "Projekt"},
+		[3]any{"b", 1, "Aufgabe 1"},
+		[3]any{"c", 2, "Detail"},
+		[3]any{"d", 1, "Aufgabe 2"},
+		[3]any{"e", 0, "Anderes"},
 	)
 	doc, err := s.CreateDocument(u.ID, "", "Notiz", "🗒️", "", initial, nil, false)
 	if err != nil {
@@ -88,11 +88,11 @@ func TestLegacySaveRoundTripsThroughTheLog(t *testing.T) {
 
 	// Reorder, outdent, edit and delete in one save
 	changed := flatBlocks(
-		[3]interface{}{"e", 0, "Anderes"},
-		[3]interface{}{"a", 0, "Projekt (neu)"},
-		[3]interface{}{"d", 1, "Aufgabe 2"},
-		[3]interface{}{"c", 1, "Detail"},
-		[3]interface{}{"n", 2, "Neu"},
+		[3]any{"e", 0, "Anderes"},
+		[3]any{"a", 0, "Projekt (neu)"},
+		[3]any{"d", 1, "Aufgabe 2"},
+		[3]any{"c", 1, "Detail"},
+		[3]any{"n", 2, "Neu"},
 	)
 	s.replaceDocBlocksInDB(doc.ID, u.ID, changed, "")
 	got, _ = s.GetDocumentByID(u.ID, doc.ID)
@@ -112,7 +112,7 @@ func TestLegacySaveRoundTripsThroughTheLog(t *testing.T) {
 
 func TestApplyDocOpsIsIdempotent(t *testing.T) {
 	s, u := newSyncTestStore(t)
-	doc, _ := s.CreateDocument(u.ID, "", "Notiz", "🗒️", "", flatBlocks([3]interface{}{"a", 0, "Start"}), nil, false)
+	doc, _ := s.CreateDocument(u.ID, "", "Notiz", "🗒️", "", flatBlocks([3]any{"a", 0, "Start"}), nil, false)
 	a := collab.Actor{UserID: u.ID, ClientID: "tab1", Name: "Owner"}
 	text := "Geändert"
 	op := collab.Op{OpID: "op-1", Kind: collab.OpSetContent, BlockID: "a", BaseVersion: 1, Content: &text}
@@ -130,7 +130,7 @@ func TestApplyDocOpsIsIdempotent(t *testing.T) {
 
 func TestInsertCannotReuseBlockIDOfAnotherNote(t *testing.T) {
 	s, u := newSyncTestStore(t)
-	other, _ := s.CreateDocument(u.ID, "", "Andere", "🗒️", "", flatBlocks([3]interface{}{"shared_id", 0, "Fremd"}), nil, false)
+	other, _ := s.CreateDocument(u.ID, "", "Andere", "🗒️", "", flatBlocks([3]any{"shared_id", 0, "Fremd"}), nil, false)
 	doc, _ := s.CreateDocument(u.ID, "", "Notiz", "🗒️", "", nil, nil, false)
 	a := collab.Actor{UserID: u.ID, ClientID: "tab1"}
 	content, root := "Übernahme", ""
@@ -173,7 +173,7 @@ func TestBackfillConvertsFlatBlocksToTree(t *testing.T) {
 		t.Fatal(err)
 	}
 	// Rows as written by the old schema: only level and position
-	for i, row := range [][2]interface{}{{"x", 0}, {"y", 1}, {"z", 1}, {"w", 0}} {
+	for i, row := range [][2]any{{"x", 0}, {"y", 1}, {"z", 1}, {"w", 0}} {
 		if _, err := s.db.Exec(`INSERT INTO blocks (id, document_id, content, level, position, type) VALUES (?, ?, ?, ?, ?, 'bullet')`,
 			row[0], doc.ID, row[0], row[1], (i+1)*1000); err != nil {
 			t.Fatal(err)
@@ -181,7 +181,7 @@ func TestBackfillConvertsFlatBlocksToTree(t *testing.T) {
 	}
 	s.backfillBlockTree()
 	got, _ := s.GetDocumentByID(u.ID, doc.ID)
-	want := flatBlocks([3]interface{}{"x", 0, "x"}, [3]interface{}{"y", 1, "y"}, [3]interface{}{"z", 1, "z"}, [3]interface{}{"w", 0, "w"})
+	want := flatBlocks([3]any{"x", 0, "x"}, [3]any{"y", 1, "y"}, [3]any{"z", 1, "z"}, [3]any{"w", 0, "w"})
 	sameOutline(t, got.Blocks, want)
 }
 
@@ -225,7 +225,7 @@ func TestTaskLinksFollowTheirBlock(t *testing.T) {
 func TestFixedBlockIDsWorkInSeveralNotes(t *testing.T) {
 	s, u := newSyncTestStore(t)
 	other, _ := s.CreateUser("second@example.com", "hash", "Second", "member")
-	blocks := flatBlocks([3]interface{}{"blk_1", 0, "Willkommen"}, [3]interface{}{"blk_2", 1, "Unterpunkt"})
+	blocks := flatBlocks([3]any{"blk_1", 0, "Willkommen"}, [3]any{"blk_2", 1, "Unterpunkt"})
 	first, _ := s.CreateDocument(u.ID, "", "Start", "🗒️", "", blocks, nil, false)
 	second, _ := s.CreateDocument(other.ID, "", "Start", "🗒️", "", blocks, nil, false)
 
@@ -256,9 +256,9 @@ func backdate(t *testing.T, s *Store, docID string, age time.Duration) {
 func TestCompactionKeepsStateAndForcesResync(t *testing.T) {
 	s, u := newSyncTestStore(t)
 	doc, _ := s.CreateDocument(u.ID, "", "Notiz", "🗒️", "", flatBlocks(
-		[3]interface{}{"a", 0, "Bleibt"},
-		[3]interface{}{"b", 0, "Gelöscht"},
-		[3]interface{}{"c", 1, "Kind von b"},
+		[3]any{"a", 0, "Bleibt"},
+		[3]any{"b", 0, "Gelöscht"},
+		[3]any{"c", 1, "Kind von b"},
 	), nil, false)
 	a := collab.Actor{UserID: u.ID, ClientID: "tab1"}
 	if res, _, _ := s.ApplyDocOps(doc.ID, a, []collab.Op{{OpID: "del-b", Kind: collab.OpDelete, BlockID: "b"}}, nil); res[0].Status != collab.StatusApplied {
@@ -314,7 +314,7 @@ func TestCompactionKeepsStateAndForcesResync(t *testing.T) {
 		}
 	}
 	got, _ := s.GetDocumentByID(u.ID, doc.ID)
-	sameOutline(t, got.Blocks, flatBlocks([3]interface{}{"a", 0, "Frisch"}))
+	sameOutline(t, got.Blocks, flatBlocks([3]any{"a", 0, "Frisch"}))
 
 	// A second run has nothing left to do
 	if st, _ := s.CompactDocs(time.Now()); st.Docs != 0 || st.OpResults != 0 {
@@ -325,8 +325,8 @@ func TestCompactionKeepsStateAndForcesResync(t *testing.T) {
 func TestCompactionRetentionDependsOnSharing(t *testing.T) {
 	s, u := newSyncTestStore(t)
 	other, _ := s.CreateUser("ben@example.com", "hash", "Ben", "member")
-	private, _ := s.CreateDocument(u.ID, "", "Privat", "🗒️", "", flatBlocks([3]interface{}{"p", 0, "x"}), nil, false)
-	shared, _ := s.CreateDocument(u.ID, "", "Geteilt", "🗒️", "", flatBlocks([3]interface{}{"s", 0, "x"}), nil, false)
+	private, _ := s.CreateDocument(u.ID, "", "Privat", "🗒️", "", flatBlocks([3]any{"p", 0, "x"}), nil, false)
+	shared, _ := s.CreateDocument(u.ID, "", "Geteilt", "🗒️", "", flatBlocks([3]any{"s", 0, "x"}), nil, false)
 	if _, err := s.CreateDocShare(u.ID, shared.ID, other.Email, "write"); err != nil {
 		t.Fatal(err)
 	}
@@ -345,7 +345,7 @@ func TestCompactionRetentionDependsOnSharing(t *testing.T) {
 
 func TestDeletedAtFollowsDeleteAndRestore(t *testing.T) {
 	s, u := newSyncTestStore(t)
-	doc, _ := s.CreateDocument(u.ID, "", "Notiz", "🗒️", "", flatBlocks([3]interface{}{"a", 0, "x"}, [3]interface{}{"b", 0, "y"}), nil, false)
+	doc, _ := s.CreateDocument(u.ID, "", "Notiz", "🗒️", "", flatBlocks([3]any{"a", 0, "x"}, [3]any{"b", 0, "y"}), nil, false)
 	a := collab.Actor{UserID: u.ID, ClientID: "tab1"}
 	deletedAt := func() string {
 		var v string

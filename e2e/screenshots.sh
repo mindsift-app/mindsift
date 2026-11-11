@@ -29,7 +29,7 @@ echo "Building the image …"
 "$ENGINE" build -q --build-arg APP_VERSION="${APP_VERSION:-}" -t "$IMAGE" "$ROOT" >/dev/null
 # Straight to the app (not the entrypoint that hands /data to uid 1000): the test data stays the host
 # user's, so the script can remove it
-"$ENGINE" run -d --entrypoint /app/mindsift --name "$NAME" --network host -e PORT="$PORT" -e MINDA_DEMO=true -e DEMO_RESET_MINUTES=0 \
+"$ENGINE" run -d --entrypoint /app/mindsift --name "$NAME" --network host -e PORT="$PORT" -e MINDSIFT_DEMO=true -e DEMO_RESET_MINUTES=0 \
   -e JWT_SECRET=screenshots-only-secret -v "$WORK":/data:Z "$IMAGE" >/dev/null
 for _ in $(seq 1 60); do curl -s -m 1 "http://localhost:$PORT/api/v1/health" >/dev/null && break; sleep 0.5; done
 

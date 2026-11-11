@@ -70,7 +70,7 @@ The frontend is embedded into the binary via `go:embed` ([cmd/server/main.go](..
 | `REGISTRATION_VERIFY_EMAIL` | empty | Email verification for new accounts created without an invitation (only works with SMTP and `BASE_URL`). Token is stored only as SHA-256 in `email_verifications` (similar to password reset links, Migration 11), valid for 48 hours; afterward, compaction deletes the unverified account. In approval modes, admins are notified only after verification |
 | `ALLOW_REGISTRATION` | `false` | `true` = `REGISTRATION_MODE=open`; `false` (default in templates) delegates the choice to the admin UI |
 | `LOG_LEVEL` / `DEBUG` | `info` / `false` | `debug`, `info`, `warn`, `error`; `DEBUG=true` forces `debug` |
-| `MINDA_DEMO` (also `MINDSIFT_DEMO`, `DEMO_MODE`) | `false` | Create demo accounts. Demo mode sends nothing (no alarms, test or notification emails, webhooks), server settings are read-only, password, email, and accounts of shared demo accounts cannot be changed and their data cannot be deleted in one go (`notInDemo` in `internal/api/demo.go`). |
+| `MINDSIFT_DEMO` (earlier names `MINDA_DEMO` and `DEMO_MODE` still work) | `false` | Create demo accounts. Demo mode sends nothing (no alarms, test or notification emails, webhooks), server settings are read-only, password, email, and accounts of shared demo accounts cannot be changed and their data cannot be deleted in one go (`notInDemo` in `internal/api/demo.go`). |
 | `DEMO_RESET_MINUTES` | `20` | Demo mode: periodic reset to sample data (`0` = disabled). Fixed IDs for demo accounts (`usr_demo_admin`, `usr_demo_user`) keep sessions valid; active requests lock the reset (`internal/api/demo.go`, streams excluded); afterwards `DEMO_RESET` is sent to all connections, `/auth/status` returns `demoNextReset`/`demoResetInSeconds`. |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`, `SMTP_TLS` | empty / `587` / `true` | Email sending, also configurable in the admin UI |
 | `SMTP_FROM_NAME` | `MindSift` | Sender display name when `SMTP_FROM` is only an email address (`From: "MindSift" <address>`, the SMTP envelope remains the bare address); a name in `SMTP_FROM` takes precedence |
@@ -99,7 +99,7 @@ The frontend is embedded into the binary via `go:embed` ([cmd/server/main.go](..
 | `LEGAL_IMPRINT_CONTENT_FILE`, `LEGAL_PRIVACY_CONTENT_FILE` | empty | Path to a file in the container with Markdown content for the legal notice or privacy policy. Without URL or text, the link remains hidden. |
 | `LEGAL_CUSTOM_LINK_LABEL`, `LEGAL_CUSTOM_LINK_URL` | empty | Custom link in the global desktop footer (`https://` only, otherwise ignored) |
 
-Note: `DATABASE_URL` with `postgres…` causes the default path in `DATA_DIR` to be used; Postgres is not implemented.
+Note: Postgres is not implemented. A `DATABASE_URL` starting with `postgres` is not used: MindSift logs a warning at startup and keeps the SQLite file in `DATA_DIR`.
 
 ## Authentication
 

@@ -49,8 +49,8 @@ func (s *Server) runDoneCleanup(now time.Time) {
 		slog.Error("Cleaning up by retention periods failed", "error", err)
 	}
 	if n := len(res.TasksToTrash) + len(res.TrashedTasks) + res.Discarded + len(res.Notes) + len(res.ListItems) + res.Invites; n > 0 {
-		slog.Info("Retention periods applied", "erledigte_in_papierkorb", len(res.TasksToTrash), "papierkorb_aufgaben", len(res.TrashedTasks),
-			"triage", res.Discarded, "notizen", len(res.Notes), "listeneintraege", len(res.ListItems), "einladungen", res.Invites)
+		slog.Info("Retention periods applied", "done_tasks_to_trash", len(res.TasksToTrash), "trashed_tasks", len(res.TrashedTasks),
+			"triage", res.Discarded, "notes", len(res.Notes), "list_items", len(res.ListItems), "invites", res.Invites)
 	}
 	s.broadcastDeletedTasks(res.TasksToTrash)
 	for _, it := range res.ListItems {

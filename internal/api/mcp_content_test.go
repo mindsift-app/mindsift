@@ -85,7 +85,7 @@ func TestMCPCreateNoteContentIconAndLinks(t *testing.T) {
 		t.Fatalf("get_note url: %v", got["url"])
 	}
 	found, _, _ := call(key.RawKey, "search", `{"query":"Milch"}`)
-	if hits := found["notes"].([]interface{}); len(hits) == 0 || !strings.HasPrefix(hits[0].(map[string]interface{})["url"].(string), "https://ms.example/?note=doc") {
+	if hits := found["notes"].([]any); len(hits) == 0 || !strings.HasPrefix(hits[0].(map[string]any)["url"].(string), "https://ms.example/?note=doc") {
 		t.Fatalf("search url: %v", found)
 	}
 	task, _ := store.CreateThoughtWithDetails(claims.UserID, "Milch kaufen", "normal", "manual", "", "", "todo", "")
@@ -100,9 +100,9 @@ func TestMCPCreateNoteContentIconAndLinks(t *testing.T) {
 	}
 }
 
-func toStrings(v interface{}) []string {
+func toStrings(v any) []string {
 	out := []string{}
-	items, _ := v.([]interface{})
+	items, _ := v.([]any)
 	for _, it := range items {
 		out = append(out, it.(string))
 	}

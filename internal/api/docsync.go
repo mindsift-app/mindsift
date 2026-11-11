@@ -68,7 +68,7 @@ func (s *Server) handleDocSnapshot(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err.Error())
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]interface{}{
+	writeJSON(w, http.StatusOK, map[string]any{
 		"docId":        snap.DocID,
 		"title":        snap.Title,
 		"titleVersion": snap.TitleVersion,
@@ -241,7 +241,7 @@ func (s *Server) afterDocChange(actorID, docID string, ops []collab.Op, results 
 // notifyDocChanged wakes long-poll requests and pokes WebSocket/SSE clients in the note's room.
 func (s *Server) notifyDocChanged(docID string, head int64) {
 	s.notifier.Notify(docID)
-	s.wsHub.BroadcastDocEvent(docID, "DOC_SEQ", map[string]interface{}{"docId": docID, "headSeq": head})
+	s.wsHub.BroadcastDocEvent(docID, "DOC_SEQ", map[string]any{"docId": docID, "headSeq": head})
 }
 
 // handleDocChanges is the long-poll fallback: it returns as soon as the note changes (or leases/presence
@@ -282,7 +282,7 @@ func (s *Server) handleDocChanges(w http.ResponseWriter, r *http.Request) {
 		}
 		_, head, _ = s.store.GetDocOpsSinceCtx(r.Context(), docID, since, 0)
 	}
-	writeJSON(w, http.StatusOK, map[string]interface{}{"headSeq": head, "changed": changed})
+	writeJSON(w, http.StatusOK, map[string]any{"headSeq": head, "changed": changed})
 }
 
 // handleDocLeave ends a client's session on a note and frees its leases (tab closed, app in background).
@@ -344,6 +344,6 @@ func (s *Server) compactOnce() {
 		s.notifyDocChanged(docID, head)
 	}
 	if st.Docs > 0 || st.OpResults > 0 {
-		slog.Info("Change log compacted", "notes", st.Docs, "logEntries", st.LogEntries, "tombstones", st.Tombstones, "opResults", st.OpResults)
+		slog.Info("Change log compacted", "notes", st.Docs, "log_entries", st.LogEntries, "tombstones", st.Tombstones, "op_results", st.OpResults)
 	}
 }

@@ -151,5 +151,5 @@ func (s *Server) handlePoll(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "Verbindung abgelaufen")
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]interface{}{"events": events})
+	writeJSON(w, http.StatusOK, map[string]any{"events": events})
 }

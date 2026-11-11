@@ -233,7 +233,7 @@ func (s *Store) GetTaskListShares(taskListID string) ([]domain.TaskListShare, er
 }
 
 // queryUserIDs runs a query returning a single user_id column and collects the distinct IDs.
-func (s *Store) queryUserIDs(query string, args ...interface{}) []string {
+func (s *Store) queryUserIDs(query string, args ...any) []string {
 	rows, err := s.db.Query(query, args...)
 	if err != nil {
 		return []string{}
@@ -262,8 +262,8 @@ const accessibleTaskListsSQL = `SELECT id FROM task_lists
 		           OR (target_type = 'team' AND target_id IN (SELECT team_id FROM team_members WHERE user_id = ?))
 		    )`
 
-func accessibleTaskListArgs(userID string) []interface{} {
-	return []interface{}{userID, userID, userID}
+func accessibleTaskListArgs(userID string) []any {
+	return []any{userID, userID, userID}
 }
 
 // taskListAccessSQL selects every user ID with access to a task list: owner, direct shares and members of
@@ -285,7 +285,7 @@ func (s *Store) attachTaskAssignees(tasks []domain.Thought) {
 	}
 	idx := make(map[string]int, len(tasks))
 	placeholders := make([]string, 0, len(tasks))
-	args := make([]interface{}, 0, len(tasks))
+	args := make([]any, 0, len(tasks))
 	for i := range tasks {
 		idx[tasks[i].ID] = i
 		placeholders = append(placeholders, "?")
@@ -348,7 +348,7 @@ func (s *Store) SetTaskAssignees(userID, taskID string, assignees []string) ([]s
 		return nil, err
 	}
 	defer tx.Rollback()
-	keep := make([]interface{}, 0, len(clean)+1)
+	keep := make([]any, 0, len(clean)+1)
 	keep = append(keep, taskID)
 	ph := make([]string, 0, len(clean))
 	for _, id := range clean {
@@ -521,7 +521,7 @@ func (s *Store) GetTaskListByID(userID, listID string) (*domain.TaskList, error)
 		`SELECT id, user_id, space_id, title, icon, color, COALESCE(columns, '[]'), created_at, updated_at
 		 FROM task_lists
 		 WHERE id = ? AND id IN (`+accessibleTaskListsSQL+`)`,
-		append([]interface{}{listID}, accessibleTaskListArgs(userID)...)...,
+		append([]any{listID}, accessibleTaskListArgs(userID)...)...,
 	).Scan(&tl.ID, &tl.UserID, &tl.SpaceID, &tl.Title, &tl.Icon, &tl.Color, &colsJSON, &tl.CreatedAt, &tl.UpdatedAt)
 	if err != nil {
 		return nil, err

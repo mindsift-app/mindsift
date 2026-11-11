@@ -22,10 +22,10 @@ func setRegistration(t *testing.T, store *storage.Store, mode, domains string) {
 	}
 }
 
-func register(srv *Server, email, invite string) (int, map[string]interface{}) {
+func register(srv *Server, email, invite string) (int, map[string]any) {
 	body := `{"email":"` + email + `","password":"password123","displayName":"` + strings.Split(email, "@")[0] + `","inviteCode":"` + invite + `"}`
 	rec := sessionCall(srv.Router(), "POST", "/api/v1/auth/register", "", body, "")
-	var out map[string]interface{}
+	var out map[string]any
 	_ = json.Unmarshal(rec.Body.Bytes(), &out)
 	return rec.Code, out
 }

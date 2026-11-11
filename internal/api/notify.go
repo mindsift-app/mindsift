@@ -621,7 +621,7 @@ func (s *Server) sendWebhookDigest(webhookURL, heading string, items []notifyIte
 	for _, it := range items {
 		list = append(list, map[string]string{"kind": it.kind, "title": it.title, "text": it.text})
 	}
-	body, _ := json.Marshal(map[string]interface{}{
+	body, _ := json.Marshal(map[string]any{
 		"event":     "digest",
 		"heading":   heading,
 		"items":     list,
@@ -663,8 +663,8 @@ func (s *Server) sendDiscordDigest(lang, webhookURL, heading string, items []not
 		}
 		lines = append(lines, "• "+it.text)
 	}
-	body, _ := json.Marshal(map[string]interface{}{
-		"embeds": []map[string]interface{}{{
+	body, _ := json.Marshal(map[string]any{
+		"embeds": []map[string]any{{
 			"title":       "MindSift: " + heading,
 			"description": strings.Join(lines, "\n"),
 			"color":       2450411,

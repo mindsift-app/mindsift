@@ -44,7 +44,7 @@ func TestLanguageSettings(t *testing.T) {
 		t.Fatalf("unknown language must be refused, got %d", rec.Code)
 	}
 	_, _, me := oauthDo(t, router, http.MethodGet, "/api/v1/auth/me", token, "", "")
-	if u, _ := me["user"].(map[string]interface{}); u == nil || u["language"] != "en" {
+	if u, _ := me["user"].(map[string]any); u == nil || u["language"] != "en" {
 		t.Fatalf("me: %v", me["user"])
 	}
 

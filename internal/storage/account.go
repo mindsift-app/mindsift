@@ -110,7 +110,7 @@ func (s *Store) PurgeUserSections(userID string, sections map[string]bool) error
 			continue
 		}
 		for _, st := range purgeStmts(sec) {
-			args := make([]interface{}, st.args)
+			args := make([]any, st.args)
 			for i := range args {
 				args[i] = userID
 			}

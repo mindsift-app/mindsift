@@ -135,7 +135,7 @@ func (s *Server) handleVerifyEmail(w http.ResponseWriter, r *http.Request) {
 	}
 	if s.store.IsPendingRegistration(userID) {
 		go s.notifyAdminsOfRegistration(user)
-		writeJSON(w, http.StatusOK, map[string]interface{}{
+		writeJSON(w, http.StatusOK, map[string]any{
 			"verified": true, "pending": true,
 			"message": tr(w, "Deine E-Mail-Adresse ist bestätigt. Ein Administrator schaltet dein Konto noch frei – du bekommst dann eine E-Mail."),
 		})
@@ -146,7 +146,7 @@ func (s *Server) handleVerifyEmail(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "Konto konnte nicht freigeschaltet werden")
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]interface{}{
+	writeJSON(w, http.StatusOK, map[string]any{
 		"verified": true, "pending": false,
 		"message": tr(w, "Deine E-Mail-Adresse ist bestätigt. Du kannst dich jetzt anmelden."),
 	})

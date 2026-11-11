@@ -11,32 +11,32 @@ import (
 )
 
 // mcpCaller returns a function that calls one tool with a key and gives its structured result.
-func mcpCaller(t *testing.T, srv *Server) func(key, name, args string) (map[string]interface{}, bool, string) {
+func mcpCaller(t *testing.T, srv *Server) func(key, name, args string) (map[string]any, bool, string) {
 	router := srv.Router()
-	return func(key, name, args string) (map[string]interface{}, bool, string) {
+	return func(key, name, args string) (map[string]any, bool, string) {
 		t.Helper()
 		_, res := rpc(t, router, key, `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"`+name+`","arguments":`+args+`}}`)
 		result, isErr := callResult(t, res)
-		sc, _ := result["structuredContent"].(map[string]interface{})
+		sc, _ := result["structuredContent"].(map[string]any)
 		return sc, isErr, fmt.Sprint(result["content"])
 	}
 }
 
-func bulletTexts(res map[string]interface{}) []string {
+func bulletTexts(res map[string]any) []string {
 	out := []string{}
-	bullets, _ := res["bullets"].([]interface{})
+	bullets, _ := res["bullets"].([]any)
 	for _, b := range bullets {
-		m := b.(map[string]interface{})
+		m := b.(map[string]any)
 		out = append(out, fmt.Sprintf("%v:%v", m["level"], m["text"]))
 	}
 	return out
 }
 
-func bulletID(t *testing.T, res map[string]interface{}, text string) string {
+func bulletID(t *testing.T, res map[string]any, text string) string {
 	t.Helper()
-	bullets, _ := res["bullets"].([]interface{})
+	bullets, _ := res["bullets"].([]any)
 	for _, b := range bullets {
-		m := b.(map[string]interface{})
+		m := b.(map[string]any)
 		if m["text"] == text {
 			return m["id"].(string)
 		}
@@ -150,7 +150,7 @@ func TestMCPInbox(t *testing.T) {
 
 	// The test server starts with a few demo entries in the inbox
 	before, _, _ := call(reader.RawKey, "list_inbox", `{"limit":100}`)
-	base := len(before["items"].([]interface{}))
+	base := len(before["items"].([]any))
 	a, _ := store.CreateThought(claims.UserID, "Milch kaufen", "normal", "manual", "")
 	b, _ := store.CreateThought(claims.UserID, "Zahnarzt anrufen", "high", "manual", "")
 	c, _ := store.CreateThought(claims.UserID, "Idee für Blog", "normal", "manual", "")
@@ -161,11 +161,11 @@ func TestMCPInbox(t *testing.T) {
 	}
 
 	res, isErr, _ := call(reader.RawKey, "list_inbox", `{"limit":100}`)
-	if items, _ := res["items"].([]interface{}); isErr || len(items) != base+4 {
+	if items, _ := res["items"].([]any); isErr || len(items) != base+4 {
 		t.Fatalf("list_inbox: %v", res)
 	}
 	res, _, _ = call(reader.RawKey, "list_inbox", `{"query":"zahn"}`)
-	if items, _ := res["items"].([]interface{}); len(items) != 1 || items[0].(map[string]interface{})["id"] != b.ID {
+	if items, _ := res["items"].([]any); len(items) != 1 || items[0].(map[string]any)["id"] != b.ID {
 		t.Fatalf("query filter: %v", res)
 	}
 	if _, isErr, _ := call(reader.RawKey, "discard_inbox_item", `{"id":"`+a.ID+`"}`); !isErr {
@@ -185,7 +185,7 @@ func TestMCPInbox(t *testing.T) {
 	if res, isErr, _ := call(writer.RawKey, "discard_inbox_item", `{"id":"`+d.ID+`"}`); isErr || res["status"] != "discarded" {
 		t.Fatalf("discard: %v", res)
 	}
-	if res, _, _ := call(reader.RawKey, "list_inbox", `{"limit":100}`); len(res["items"].([]interface{})) != base {
+	if res, _, _ := call(reader.RawKey, "list_inbox", `{"limit":100}`); len(res["items"].([]any)) != base {
 		t.Fatalf("the four entries should have left the inbox: %v", res)
 	}
 	got, _ := store.GetListByID(claims.UserID, lst.ID)

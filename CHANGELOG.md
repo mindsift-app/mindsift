@@ -26,6 +26,10 @@ Fixes from the security review of November 2026 (v0.94.0).
 - Signing in with the part of an e-mail address before the @ only works when exactly one account has it.
 - Unknown API paths answer `404` with JSON instead of the app's page; `POST /keys` with a body that is not valid JSON answers `400` instead of creating a key.
 - The install script no longer falls back to the time of day as `JWT_SECRET` when no random source is available (MindSift then makes its own). `compose.yaml` was removed, it was an outdated copy of `docker-compose.yml` that Docker Compose preferred.
+- The demo switch is called `MINDSIFT_DEMO` in the docs, `.env.example` and `docker-compose.yml`. The earlier names `MINDA_DEMO` and `DEMO_MODE` still switch the demo on, so existing `.env` files keep working.
+- A `DATABASE_URL` that names a Postgres database is no longer ignored silently: MindSift logs a warning at startup that it only supports SQLite and which file it uses instead.
+- Server log: the field names are English throughout (`path`, `count`, `idle_days`, `trashed_tasks` … instead of `pfad`, `anzahl`, `tage` …) and the messages carry no emoji. If you filter the log by field names, adjust the filters.
+- Building the image no longer runs `go mod tidy`; it checks the downloaded modules against `go.sum` (`go mod verify`) and uses `go.mod` as committed.
 
 ### Fixed
 - Deleting your data or account asked for the password without counting wrong guesses; now it counts them like failed sign-ins and locks the same way.

@@ -13,7 +13,7 @@ import (
 // with 800 people typing in it).
 func TestDocSnapshotDoesNotWaitForWriters(t *testing.T) {
 	s, u := newSyncTestStore(t)
-	doc, _ := s.CreateDocument(u.ID, "", "Notiz", "", "", flatBlocks([3]interface{}{"a", 0, "eins"}), nil, false)
+	doc, _ := s.CreateDocument(u.ID, "", "Notiz", "", "", flatBlocks([3]any{"a", 0, "eins"}), nil, false)
 
 	unlock := lockDoc(doc.ID) // a writer holds the note
 	defer unlock()
@@ -31,7 +31,7 @@ func TestDocSnapshotDoesNotWaitForWriters(t *testing.T) {
 // A request whose client has gone stops waiting for the note instead of being worked off later.
 func TestApplyDocOpsGivesUpWhenTheRequestEnds(t *testing.T) {
 	s, u := newSyncTestStore(t)
-	doc, _ := s.CreateDocument(u.ID, "", "Notiz", "", "", flatBlocks([3]interface{}{"a", 0, "eins"}), nil, false)
+	doc, _ := s.CreateDocument(u.ID, "", "Notiz", "", "", flatBlocks([3]any{"a", 0, "eins"}), nil, false)
 	unlock := lockDoc(doc.ID)
 	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 	defer cancel()

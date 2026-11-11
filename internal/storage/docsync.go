@@ -117,11 +117,11 @@ type dbCtxQueryer struct {
 	db  *sql.DB
 }
 
-func (q dbCtxQueryer) QueryRow(query string, args ...interface{}) *sql.Row {
+func (q dbCtxQueryer) QueryRow(query string, args ...any) *sql.Row {
 	return q.db.QueryRowContext(q.ctx, query, args...)
 }
 
-func (q dbCtxQueryer) Query(query string, args ...interface{}) (*sql.Rows, error) {
+func (q dbCtxQueryer) Query(query string, args ...any) (*sql.Rows, error) {
 	return q.db.QueryContext(q.ctx, query, args...)
 }
 
@@ -131,17 +131,17 @@ type connQueryer struct {
 	c   *sql.Conn
 }
 
-func (q connQueryer) QueryRow(query string, args ...interface{}) *sql.Row {
+func (q connQueryer) QueryRow(query string, args ...any) *sql.Row {
 	return q.c.QueryRowContext(q.ctx, query, args...)
 }
 
-func (q connQueryer) Query(query string, args ...interface{}) (*sql.Rows, error) {
+func (q connQueryer) Query(query string, args ...any) (*sql.Rows, error) {
 	return q.c.QueryContext(q.ctx, query, args...)
 }
 
 type docQueryer interface {
-	QueryRow(query string, args ...interface{}) *sql.Row
-	Query(query string, args ...interface{}) (*sql.Rows, error)
+	QueryRow(query string, args ...any) *sql.Row
+	Query(query string, args ...any) (*sql.Rows, error)
 }
 
 // migrateDocSync adds the columns and tables of the collaboration model and converts old flat block lists.
