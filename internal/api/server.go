@@ -133,12 +133,15 @@ func (s *Server) Router() http.Handler {
 	}
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   allowedOrigins,
-		AllowedMethods:   []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+		AllowedMethods:   []string{"GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-API-Key", "Mcp-Session-Id", "MCP-Protocol-Version"},
 		ExposedHeaders:   []string{"Link", "X-Session-Token"},
 		AllowCredentials: false,
 		MaxAge:           300,
 	}))
+	// HEAD answers like GET without a body (curl -I, uptime monitors); the server drops what a handler
+	// writes. There are no HEAD routes of our own, so this covers every GET route.
+	r.Use(middleware.GetHead)
 
 	// Public Health, Setup & Auth Routes
 	r.Get("/api/v1/health", s.handleHealth)
@@ -425,13 +428,17 @@ func (s *Server) Router() http.Handler {
 			if path == "" {
 				path = "index.html"
 			}
-			if _, err := fs.Stat(s.staticFS, path); err != nil {
-				if strings.HasPrefix(path, "assets/") || strings.HasSuffix(path, ".js") || strings.HasSuffix(path, ".css") {
+			if info, err := fs.Stat(s.staticFS, path); err != nil {
+				if notAppPage(path) {
 					http.NotFound(w, req)
 					return
 				}
 				req.URL.Path = "/"
 				path = "index.html"
+			} else if info.IsDir() {
+				// No listing of the build's folders (/assets/)
+				http.NotFound(w, req)
+				return
 			}
 			if path == "index.html" || path == "sw.js" || path == "manifest.json" || path == "version.json" {
 				w.Header().Set("Cache-Control", "no-store, no-cache, must-revalidate")
@@ -474,6 +481,24 @@ func (s *Server) Router() http.Handler {
 	}
 
 	return r
+}
+
+// notAppPage: a path missing from the build that is not one of the app's pages either, so it answers
+// 404 instead of index.html (scanners read a 200 for /.env or /data/mindsift.db as a hit). The app's
+// pages are "/", "/p/<token>" and "/oauth/authorize", with views in the query (?note=…); none has a file
+// extension or a segment starting with a dot. /metrics and /debug/ (pprof) are what scanners look for on
+// a Go server; MindSift has neither.
+func notAppPage(path string) bool {
+	if strings.HasPrefix(path, "assets/") {
+		return true
+	}
+	segs := strings.Split(path, "/")
+	for _, seg := range segs {
+		if strings.HasPrefix(seg, ".") {
+			return true
+		}
+	}
+	return strings.Contains(segs[len(segs)-1], ".") || segs[0] == "metrics" || segs[0] == "debug"
 }
 
 // --- HELPERS & MIDDLEWARE ---
