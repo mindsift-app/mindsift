@@ -275,7 +275,8 @@ go vet ./... && go test ./...      # backend
 cd frontend && npm ci
 npm run dev                        # Vite dev server
 npx tsc --noEmit && npm run test:run
-cd .. && e2e/run.sh                # browser tests (Playwright) against a fresh image
+cd .. && ci/local-checks.sh        # all checks at once in containers (podman), with gofmt and staticcheck
+e2e/run.sh                         # browser tests (Playwright) against a fresh image
 e2e/screenshots.sh                 # recreate the screenshots in this README
 ```
 
