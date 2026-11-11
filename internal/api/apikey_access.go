@@ -89,8 +89,12 @@ var keyRoutes = []keyRoute{
 // apiKeyRouteDenied returns why an API key may not make this request, or "" if it may.
 // /webhooks/ingest is not listed: it authenticates on its own and checks requireDeliveryScope.
 func apiKeyRouteDenied(r *http.Request, scopes []string) string {
+	method := r.Method
+	if method == http.MethodHead { // answered by the GET route (middleware.GetHead)
+		method = http.MethodGet
+	}
 	for _, kr := range keyRoutes {
-		if r.Method != kr.method || !kr.path.MatchString(r.URL.Path) {
+		if method != kr.method || !kr.path.MatchString(r.URL.Path) {
 			continue
 		}
 		if kr.scopes == nil || hasAnyScope(scopes, kr.scopes...) {
