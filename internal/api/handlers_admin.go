@@ -120,7 +120,6 @@ type staffUser struct {
 	domain.User
 	TokenVersion      int      `json:"tokenVersion,omitempty"`
 	AlarmChannels     []string `json:"alarmChannels,omitempty"`
-	AlarmEmail        string   `json:"alarmEmail,omitempty"`
 	DiscordWebhookURL string   `json:"discordWebhookUrl,omitempty"`
 	CustomWebhookURL  string   `json:"customWebhookUrl,omitempty"`
 }

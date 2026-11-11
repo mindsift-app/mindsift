@@ -103,7 +103,6 @@ export const authApi = {
     currentPassword?: string;
     avatarUrl?: string;
     alarmChannels?: string[];
-    alarmEmail?: string;
     discordWebhookUrl?: string;
     customWebhookUrl?: string;
     notifyBeforeMinutes?: number;

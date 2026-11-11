@@ -8,7 +8,6 @@ import { useAlarmSettings } from './useAlarmSettings';
 import { formatDate } from '../../../lib/format';
 import { TimeField } from '../../../components/TimeField';
 import { SelectMenu } from '../../../components/SelectMenu';
-import { PendingEmailNote } from './PendingEmailNote';
 
 
 // Kontoeinstellungen → Alarme (state in useAlarmSettings)
@@ -31,11 +30,8 @@ export function AlarmsSection({
     { key: 'watched', label: t('alarms.event.watched') },
   ];
   const {
-    onUserUpdated,
     notificationSettings,
     setNotificationSettings,
-    alarmEmail,
-    setAlarmEmail,
     discordWebhookUrl,
     setDiscordWebhookUrl,
     customWebhookUrl,
@@ -367,19 +363,7 @@ export function AlarmsSection({
             </button>
           </div>
 
-          <div className="pl-6">
-            <label className="block text-muted mb-1">
-              {t('alarms.email.recipient', { email: currentUser.email })}
-            </label>
-            <input
-              type="email"
-              value={alarmEmail}
-              onChange={(e) => setAlarmEmail(e.target.value)}
-              placeholder={currentUser.email}
-              className="w-full h-8 px-2.5 input-field"
-            />
-            <PendingEmailNote user={currentUser} kind="alarm" onUserUpdated={onUserUpdated} />
-          </div>
+          <p className="pl-6 text-[11px] text-muted break-words">{t('alarms.email.recipient', { email: currentUser.email })}</p>
         </div>
 
         {/* Channel 2: Discord Webhook */}

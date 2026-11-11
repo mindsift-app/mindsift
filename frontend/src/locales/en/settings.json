@@ -218,7 +218,7 @@
       "title": "Target: email",
       "hint": "Sends an email via the instance's configured SMTP server.",
       "test": "Test email",
-      "recipient": "Different recipient email (optional, default: {{email}})"
+      "recipient": "Goes to your login address {{email}}. To use another address, change it under “Profile & security”."
     },
     "discord": {
       "title": "Target: Discord webhook",
@@ -272,7 +272,6 @@
     "save": "Save alarm settings",
     "saved": "Alarm channels and advance warning saved.",
     "saveFailed": "Saving the alarms failed",
-    "needEmail": "Enter a recipient email address first.",
     "needDiscordUrl": "Enter a Discord webhook URL first.",
     "needWebhookUrl": "Enter your own webhook URL first.",
     "testSent": "The server sent the test alarm via \"{{label}}\"!",

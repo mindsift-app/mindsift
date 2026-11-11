@@ -228,9 +228,6 @@ func (s *Server) checkAlarms(now time.Time) {
 		if set.Events.Due.Push {
 			channels = append(channels, "push")
 		}
-		if a.AlarmEmail == "" {
-			a.AlarmEmail = a.UserEmail
-		}
 		a.AlarmChannels = channels
 		if len(a.AlarmChannels) == 0 {
 			continue
@@ -269,8 +266,9 @@ func (s *Server) checkAlarms(now time.Time) {
 					}
 				}
 			case "email":
-				if a.AlarmEmail != "" {
-					if err := s.sendMailContent(a.AlarmEmail, subject, s.dueAlarmMail(lang, a, due)); err == nil {
+				// Always the confirmed login address; there is no address of its own for alarms
+				if a.UserEmail != "" {
+					if err := s.sendMailContent(a.UserEmail, subject, s.dueAlarmMail(lang, a, due)); err == nil {
 						sentAny = true
 					}
 				}

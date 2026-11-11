@@ -682,7 +682,6 @@ type DueTaskAlarm struct {
 	UserEmail           string
 	UserName            string
 	AlarmChannels       []string
-	AlarmEmail          string
 	DiscordWebhookURL   string
 	CustomWebhookURL    string
 	NotifyBeforeMinutes int

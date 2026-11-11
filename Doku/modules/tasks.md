@@ -46,7 +46,7 @@ The ticker runs every minute ([architecture.md](../architecture.md)). For open t
 
 | Channel | Target | Configuration |
 |---|---|---|
-| Email | `alarmEmail` (otherwise account email) | SMTP from admin settings or environment, see below |
+| Email | the confirmed login address (`email`) | SMTP from admin settings or environment, see below |
 | Discord | Webhook URL | User settings |
 | Webhook | Arbitrary URL (JSON: `event`, `title`, `notes`, `dueDate`, `priority`, `timestamp`) | User settings |
 

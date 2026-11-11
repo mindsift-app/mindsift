@@ -67,7 +67,7 @@ During setup in `organizations` mode, an organization named after the instance i
 
 ## What Others See of a Person
 
-Others see a person's name, username and profile picture, never the e-mail address: not in the people directory, the person picker, @-mentions, or the member and share lists of notes, folders, lists, task lists and groups. Only the person and the admins (Administration → Users) see it. Whoever shares by typing a full address gets that address back from `/users/lookup`; it was theirs to begin with. Alarm targets (webhooks, alarm address) are private, admins do not see them either.
+Others see a person's name, username and profile picture, never the e-mail address: not in the people directory, the person picker, @-mentions, or the member and share lists of notes, folders, lists, task lists and groups. Only the person and the admins (Administration → Users) see it. Whoever shares by typing a full address gets that address back from `/users/lookup`; it was theirs to begin with. Alarm targets (webhooks) are private, admins do not see them either.
 
 ## Public Links to Notes
 

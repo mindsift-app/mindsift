@@ -34,11 +34,11 @@ func TestAvatarsOnlyUploadedOrEmoji(t *testing.T) {
 	defer store.Close()
 	u, _ := store.CreateUser("anna@example.com", "hash", "Anna", "member")
 	ext := "https://tracker.example/me.png"
-	if _, err := store.UpdateUserFull(u.ID, nil, nil, nil, nil, nil, nil, nil, nil, nil, &ext); err != ErrInvalidAvatar {
+	if _, err := store.UpdateUserFull(u.ID, nil, nil, nil, nil, nil, nil, nil, nil, &ext); err != ErrInvalidAvatar {
 		t.Fatalf("external picture: want ErrInvalidAvatar, got %v", err)
 	}
 	fox := "🦊"
-	if _, err := store.UpdateUserFull(u.ID, nil, nil, nil, nil, nil, nil, nil, nil, nil, &fox); err != nil {
+	if _, err := store.UpdateUserFull(u.ID, nil, nil, nil, nil, nil, nil, nil, nil, &fox); err != nil {
 		t.Fatalf("emoji: %v", err)
 	}
 	// An older account with a link from before

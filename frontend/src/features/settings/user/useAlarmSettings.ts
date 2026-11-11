@@ -76,7 +76,6 @@ export function useAlarmSettings(currentUser: User, onUserUpdated: (u: User) => 
   const [notificationSettings, setNotificationSettings] = useState<NotificationSettings>(() =>
     buildNotificationSettings(currentUser)
   );
-  const [alarmEmail, setAlarmEmail] = useState(currentUser.alarmEmail || currentUser.email || '');
   const [discordWebhookUrl, setDiscordWebhookUrl] = useState(currentUser.discordWebhookUrl || '');
   const [customWebhookUrl, setCustomWebhookUrl] = useState(currentUser.customWebhookUrl || '');
   const [notifyBeforeMinutes, setNotifyBeforeMinutes] = useState<number>(
@@ -145,7 +144,6 @@ export function useAlarmSettings(currentUser: User, onUserUpdated: (u: User) => 
   // The form follows the account when it changes (saved here or on another device)
   useEffect(() => {
     setNotificationSettings(buildNotificationSettings(currentUser));
-    setAlarmEmail(currentUser.alarmEmail || currentUser.email || '');
     setDiscordWebhookUrl(currentUser.discordWebhookUrl || '');
     setCustomWebhookUrl(currentUser.customWebhookUrl || '');
     setNotifyBeforeMinutes(currentUser.notifyBeforeMinutes ?? 30);
@@ -177,7 +175,6 @@ export function useAlarmSettings(currentUser: User, onUserUpdated: (u: User) => 
       ];
       const updated = await api.updateSettings({
         alarmChannels: nextAlarmChannels,
-        alarmEmail: alarmEmail.trim(),
         discordWebhookUrl: discordWebhookUrl.trim(),
         customWebhookUrl: customWebhookUrl.trim(),
         notifyBeforeMinutes: Number(notifyBeforeMinutes),
@@ -198,13 +195,8 @@ export function useAlarmSettings(currentUser: User, onUserUpdated: (u: User) => 
   const handleTestChannel = async (channel: 'email' | 'discord' | 'webhook') => {
     setAlarmMsg(null);
     let target = '';
-    if (channel === 'email') {
-      target = (alarmEmail || currentUser.email || '').trim();
-      if (!target) {
-        setAlarmMsg({ type: 'err', text: i18n.t('settings:alarms.needEmail') });
-        return;
-      }
-    } else if (channel === 'discord') {
+    // E-mail goes to the login address, the server takes no target for it
+    if (channel === 'discord') {
       target = discordWebhookUrl.trim();
       if (!target) {
         setAlarmMsg({ type: 'err', text: i18n.t('settings:alarms.needDiscordUrl') });
@@ -245,8 +237,6 @@ export function useAlarmSettings(currentUser: User, onUserUpdated: (u: User) => 
     onUserUpdated,
     notificationSettings,
     setNotificationSettings,
-    alarmEmail,
-    setAlarmEmail,
     discordWebhookUrl,
     setDiscordWebhookUrl,
     customWebhookUrl,

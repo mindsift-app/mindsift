@@ -568,7 +568,6 @@ func (s *Server) handleUpdateUserSettings(w http.ResponseWriter, r *http.Request
 		Password            *string   `json:"password"`
 		AvatarURL           *string   `json:"avatarUrl"`
 		AlarmChannels       *[]string `json:"alarmChannels"`
-		AlarmEmail          *string   `json:"alarmEmail"`
 		DiscordWebhookURL   *string   `json:"discordWebhookUrl"`
 		CustomWebhookURL    *string   `json:"customWebhookUrl"`
 		NotifyBeforeMinutes *int      `json:"notifyBeforeMinutes"`
@@ -607,8 +606,9 @@ func (s *Server) handleUpdateUserSettings(w http.ResponseWriter, r *http.Request
 	if (changesPassword || changesEmail) && !s.checkCurrentPassword(w, r, before, req.CurrentPassword) {
 		return
 	}
-	// A new login or alarm address is taken only after the click on the link mailed to it (email_change.go)
-	var newEmail, newAlarmEmail string
+	// A new login address is taken only after the click on the link mailed to it (email_change.go). Mail
+	// alarms go to it too; there is no address of their own.
+	var newEmail string
 	if changesEmail {
 		newEmail = domain.NormalizeEmail(*req.Email)
 		if !validEmail(newEmail) {
@@ -620,25 +620,6 @@ func (s *Server) handleUpdateUserSettings(w http.ResponseWriter, r *http.Request
 			return
 		}
 		req.Email = nil
-	}
-	if req.AlarmEmail != nil {
-		alarm := domain.NormalizeEmail(*req.AlarmEmail)
-		switch {
-		case alarm == "" || alarm == before.Email:
-			// The login address is confirmed already; an earlier waiting one is dropped
-			if err := s.store.CancelEmailChange(userID, storage.EmailChangeAlarm); err != nil {
-				writeInternal(w, err)
-				return
-			}
-		case alarm == domain.NormalizeEmail(before.AlarmEmail):
-			req.AlarmEmail = nil
-		case !validEmail(alarm):
-			writeError(w, http.StatusBadRequest, "Ungültige E-Mail-Adresse")
-			return
-		default:
-			newAlarmEmail = alarm
-			req.AlarmEmail = nil
-		}
 	}
 	// Alarm URLs are checked before they are stored (SSRF protection, see netguard.go)
 	allowPrivate := s.allowPrivateWebhooks()
@@ -694,7 +675,6 @@ func (s *Server) handleUpdateUserSettings(w http.ResponseWriter, r *http.Request
 		nil,
 		nil,
 		req.AlarmChannels,
-		req.AlarmEmail,
 		req.DiscordWebhookURL,
 		req.CustomWebhookURL,
 		req.NotifyBeforeMinutes,
@@ -709,9 +689,6 @@ func (s *Server) handleUpdateUserSettings(w http.ResponseWriter, r *http.Request
 	}
 	if newEmail != "" {
 		s.requestEmailChange(u, storage.EmailChangeAccount, newEmail)
-	}
-	if newAlarmEmail != "" {
-		s.requestEmailChange(u, storage.EmailChangeAlarm, newAlarmEmail)
 	}
 	if req.NotificationSettings != nil {
 		if err := s.store.SetNotificationSettings(userID, *req.NotificationSettings); err != nil {
@@ -870,15 +847,8 @@ func (s *Server) handleTestUserAlarm(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	case "email":
-		// Only to one's own confirmed addresses (login or alarm address), never to someone else
-		toEmail := user.AlarmEmail
-		if t := domain.NormalizeEmail(target); t != "" {
-			if t != domain.NormalizeEmail(user.Email) && t != domain.NormalizeEmail(user.AlarmEmail) {
-				writeError(w, http.StatusBadRequest, "Test-Mails gehen nur an deine bestätigten Adressen. Speichere eine neue Alarm-Adresse und bestätige sie über den Link in der E-Mail.")
-				return
-			}
-			toEmail = t
-		}
+		// Only to the confirmed login address, where the alarms go; a target in the request is ignored
+		toEmail := user.Email
 		sample := time.Date(2026, 1, 1, 18, 0, 0, 0, time.Local)
 		if err := s.sendMailContent(toEmail, "⏰ "+i18n.T(lang, "MindSift Test-Alarm"), mailContent{
 			Lang:      lang,
@@ -919,7 +889,6 @@ func (s *Server) fillUserPreferences(u *domain.User) {
 	u.Organizations = s.store.UserOrganizations(u.ID)
 	pending := s.store.PendingEmailChanges(u.ID)
 	u.PendingEmail = pending[storage.EmailChangeAccount].Email
-	u.PendingAlarmEmail = pending[storage.EmailChangeAlarm].Email
 	u.EmailLinks = s.emailLinksAvailable()
 }
 

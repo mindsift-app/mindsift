@@ -528,10 +528,7 @@ func (s *Server) deliver(userID, heading string, out channelItems, summary bool,
 	heading = i18n.T(lang, heading)
 	var firstErr error
 	if len(emailItems) > 0 {
-		to := u.AlarmEmail
-		if to == "" {
-			to = u.Email
-		}
+		to := u.Email // the confirmed login address
 		subject := "MindSift: " + heading
 		if len(emailItems) == 1 {
 			subject = "MindSift: " + emailItems[0].text

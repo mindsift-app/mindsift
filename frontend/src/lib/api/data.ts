@@ -178,15 +178,15 @@ export const dataApi = {
   },
 
   // New login or alarm address (storage/email_change.go): the link from the mail, keep the old one, new link
-  async confirmEmailChange(token: string): Promise<{ confirmed: boolean; kind: 'account' | 'alarm'; message: string }> {
+  async confirmEmailChange(token: string): Promise<{ confirmed: boolean; kind: 'account'; message: string }> {
     return request('/api/v1/auth/confirm-email', { method: 'POST', body: JSON.stringify({ token }) });
   },
 
-  async cancelEmailChange(kind: 'account' | 'alarm'): Promise<void> {
+  async cancelEmailChange(kind: 'account'): Promise<void> {
     await request(`/api/v1/user/email-change/${kind}`, { method: 'DELETE' });
   },
 
-  async resendEmailChange(kind: 'account' | 'alarm'): Promise<void> {
+  async resendEmailChange(kind: 'account'): Promise<void> {
     await request(`/api/v1/user/email-change/${kind}/resend`, { method: 'POST' });
   },
 

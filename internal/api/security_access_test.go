@@ -37,11 +37,10 @@ func getWith(t *testing.T, router http.Handler, path, token string) *httptest.Re
 func TestDirectoryHidesPrivateUserFields(t *testing.T) {
 	srv, router, aID, _, _, bTok := twoUsers(t)
 
-	// User A gives themselves a secret Discord webhook, a custom webhook and a private alarm address
+	// User A gives themselves a secret Discord webhook and a custom webhook
 	discord := "https://discord.com/api/webhooks/42/SECRET-TOKEN"
 	custom := "https://hook.example.com/secret"
-	alarm := "privat-a@example.com"
-	if _, err := srv.store.UpdateUserFull(aID, nil, nil, nil, nil, nil, &alarm, &discord, &custom, nil, nil); err != nil {
+	if _, err := srv.store.UpdateUserFull(aID, nil, nil, nil, nil, nil, &discord, &custom, nil, nil); err != nil {
 		t.Fatalf("set webhooks: %v", err)
 	}
 

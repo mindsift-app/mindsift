@@ -145,10 +145,8 @@ export interface User {
   // Registered, e-mail address not confirmed yet (admin user list)
   emailUnverified?: boolean;
   alarmChannels?: string[];
-  alarmEmail?: string;
   // New login / alarm address waiting for the click on the link mailed to it (own profile)
   pendingEmail?: string;
-  pendingAlarmEmail?: string;
   // The server can mail confirmation links at all (own profile)
   emailLinks?: boolean;
   discordWebhookUrl?: string;
