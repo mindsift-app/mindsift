@@ -1,7 +1,11 @@
+# The two build stages run on the platform of the building machine ($BUILDPLATFORM), whatever platform
+# the image is for: the frontend is the same everywhere and Go cross-compiles. A build for several
+# platforms therefore checks and builds once; only the binary and the last stage exist per platform.
+
 # ==============================================================================
 # Stage 1: Frontend Check & Build (Cached npm dependencies layer)
 # ==============================================================================
-FROM node:22-alpine AS frontend-builder
+FROM --platform=$BUILDPLATFORM node:22-alpine AS frontend-builder
 WORKDIR /app/frontend
 COPY frontend/package*.json ./
 RUN --mount=type=cache,target=/root/.npm npm install --no-audit --no-fund
@@ -19,7 +23,7 @@ RUN if [ "$SKIP_TESTS" != "1" ]; then \
 # ==============================================================================
 # Stage 2: Go Backend Lint, Unit Tests & Binary Build (Cached Go module & sqlite layer)
 # ==============================================================================
-FROM golang:1.27-alpine AS backend-builder
+FROM --platform=$BUILDPLATFORM golang:1.27-alpine AS backend-builder
 WORKDIR /app
 RUN apk add --no-cache git ca-certificates
 
@@ -42,8 +46,8 @@ COPY internal/ ./internal/
 COPY --from=frontend-builder /app/frontend/dist ./cmd/server/dist
 
 ARG SKIP_TESTS=0
-# Check the downloaded modules against go.sum, run static analysis (go vet) and the unit tests (go test),
-# and compile the final binary. go.mod and go.sum are used as committed.
+# Check the downloaded modules against go.sum, run static analysis (go vet) and the unit tests (go test).
+# go.mod and go.sum are used as committed.
 # The tests run with a single database connection: code that needs a second one while holding one hangs
 # here at once (and fails after the timeout) instead of deadlocking the pool under load.
 RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build \
@@ -53,12 +57,21 @@ RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache
       DB_MAX_CONNS=1 CGO_ENABLED=0 go test -v -timeout 5m ./...; \
     else \
       echo "Skipping backend tests (SKIP_TESTS=1)"; \
-    fi && \
-    CGO_ENABLED=0 go build -ldflags="-s -w" -o /app/mindsift ./cmd/server
+    fi
+
+# Compile the binary for the platform of the image (set by the builder, e.g. linux/arm64). SQLite is pure
+# Go (modernc.org/sqlite), so this needs neither a C toolchain nor emulation. Declared only here, so the
+# steps above are the same for every platform and run once.
+ARG TARGETOS
+ARG TARGETARCH
+RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build \
+    CGO_ENABLED=0 GOOS="${TARGETOS}" GOARCH="${TARGETARCH}" go build -ldflags="-s -w" -o /app/mindsift ./cmd/server
 
 # ==============================================================================
 # Stage 3: Minimal Production Runtime (< 35 MB)
 # ==============================================================================
+# The only stage on the platform of the image: its RUN step needs emulation (QEMU) when that is not the
+# platform of the building machine.
 FROM alpine:3.24
 # The code state the image was built from (CI: decides whether a later build may skip the tests)
 ARG GIT_SHA=""

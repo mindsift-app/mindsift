@@ -2,7 +2,8 @@ name: Weekly Security Scan
 
 # Known vulnerabilities appear after a release, so the published :stable (the default install) and
 # :latest are scanned every week with the same check as the release builds (ci/trivy-scan.sh). A finding
-# fails the run (GitHub sends a mail) and shows up in the repository's security tab.
+# fails the run (GitHub sends a mail) and shows up in the repository's security tab. The runner pulls the
+# amd64 image; the arm64 one has the same Alpine packages and the same Go modules.
 on:
   schedule:
     - cron: '17 5 * * 1'

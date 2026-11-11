@@ -2,7 +2,8 @@ name: MindSift CI & Docker Release (Gitea)
 
 # The private Gitea runs this for every push: images in its own registry, without tests (they run before
 # every push on the developer's machine, ci/local-checks.sh). The public images on
-# GitHub come from .github/workflows/build-and-publish.yaml with the same build plan (ci/build-plan.sh).
+# GitHub come from .github/workflows/build-and-publish.yaml with the same build plan (ci/build-plan.sh);
+# they are built for amd64 and arm64, the ones here for the platform of this runner only.
 
 # Image tags:
 #   push to dev      -> :dev

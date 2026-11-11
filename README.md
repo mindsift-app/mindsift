@@ -149,7 +149,6 @@ What people ask a self-hosted app for first, and what MindSift does not have tod
 * **Prometheus metrics.** A health endpoint says that the server answers, nothing more.
 * **Backups to S3 or WebDAV.** Backups go to `data/backups/`; copying them elsewhere is up to you.
 * **A Helm chart.** Docker Compose only.
-* **ARM images.** The image is built for x86-64 (amd64) only, so it does not run on a Raspberry Pi or other ARM servers yet. Multi-arch builds are planned.
 
 More ideas and the known weak spots: [Doku/flaws.md](Doku/flaws.md).
 
@@ -157,7 +156,7 @@ More ideas and the known weak spots: [Doku/flaws.md](Doku/flaws.md).
 
 ## Quick start
 
-MindSift is a single container with web server, API, database and frontend (x86-64 for now, see above).
+MindSift is a single container with web server, API, database and frontend. The image runs on amd64 and arm64: ordinary servers and PCs, a Raspberry Pi with a 64-bit system, Apple Silicon, ARM cloud servers.
 
 **Docker Compose:**
 
@@ -189,6 +188,8 @@ It creates a folder, downloads `docker-compose.yml` and `.env.example`, generate
 These additions go into `docker-compose.override.yml`, so `docker-compose.yml` can be replaced on updates. Running the script again updates `docker-compose.yml` and keeps your `.env`.
 
 All settings are explained in [`.env.example`](.env.example). Optional voice recognition: uncomment the `whisper` block in [`docker-compose.yml`](docker-compose.yml) and set `STT_URL=http://whisper:8000` (or let the install script do it). Any Whisper model in CTranslate2 format works; which one to pick is in the [docs](Doku/architecture.md#speech-recognition).
+
+**Without a container:** the [releases](https://github.com/mindsift-app/mindsift/releases) also carry the server as a single file for Linux (amd64 and arm64), with the frontend inside. Unpack it and start `./mindsift`: it listens on port 8080 and keeps everything in `./data`. `PORT` and `DATA_DIR` change that; the other settings work as in the container.
 
 
 ---

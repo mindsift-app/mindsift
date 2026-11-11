@@ -13,6 +13,8 @@ Fixes from the security review of November 2026 (v0.94.0).
 ### Added
 - Administration → Server: "Push only via known push services" lets the admin limit web push to the services of Google (Chrome, Edge, Android), Mozilla, Apple and Microsoft. Off by default, so any browser keeps working.
 - The OAuth consent page warns when the way back after allowing access does not lead to a known AI service (claude.ai, chatgpt.com) or your own computer: anybody can register a connector under the name "Claude".
+- The image is built for arm64 as well as amd64: it runs on a Raspberry Pi with a 64-bit system, on Apple Silicon and on ARM cloud servers. `docker pull` picks the right one by itself.
+- Releases have the server attached as a single file for Linux (amd64 and arm64), with the frontend inside, for running MindSift without a container. Started this way it also keeps what it creates in `data/` to itself (files 0600, folders 0700), as the container does.
 
 ### Changed
 - **Attention:** a new login address or a new alarm address (other than the login address) only counts once its owner clicks the link mailed to it; until then the old one stays in use and the settings show the new one as waiting, with "Send link again" and "Keep the previous one". Without a mail server the address keeps waiting. Existing addresses stay as they are.
