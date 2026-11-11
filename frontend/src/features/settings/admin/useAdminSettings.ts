@@ -143,6 +143,8 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
         if (st.sharingMode) setSharingMode(st.sharingMode);
       })
       .catch(() => {});
+    // Loaded once when the administration opens
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ============================================================================

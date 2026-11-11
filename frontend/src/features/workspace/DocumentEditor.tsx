@@ -413,6 +413,8 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
         clearTimeout(t2);
       };
     }
+    // Only when the note opens: a later change of its title or bullets must not pull the cursor into the title
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, autoFocusTitle, doc?.id]);
 
   useEffect(() => {
@@ -556,6 +558,8 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
     return () => {
       isCancelled = true;
     };
+    // Fetched once per note; initialDoc only decides whether the loading state shows
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [docId]);
 
   // Start the sync engine for this note: shows stored state immediately (also offline), then syncs
@@ -608,6 +612,9 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
       default:
         onSaveStatusChange?.('saved');
     }
+    // Reports a change of the save status, not every step of the sync (engineState) or render of the
+    // parent (its callback is new each time)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [engineState?.status, engineState?.errorMessage]);
 
   const otherPeople = useMemo(
@@ -640,21 +647,11 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
     return m;
   }, [engineState?.lockedByOthers, avatarsById, t]);
 
+  const showLive = Boolean(engineState && (engineState.shared || engineState.sessions > 1));
+  const liveChannel = engineState?.channel || 'ws';
   useEffect(() => {
-    onHeaderStatusChange?.({
-      showLive: Boolean(engineState && (engineState.shared || engineState.sessions > 1)),
-      channel: engineState?.channel || 'ws',
-      otherPeople,
-      avatarsById,
-    });
-  }, [
-    engineState?.shared,
-    engineState?.sessions,
-    engineState?.channel,
-    otherPeople,
-    avatarsById,
-    onHeaderStatusChange,
-  ]);
+    onHeaderStatusChange?.({ showLive, channel: liveChannel, otherPeople, avatarsById });
+  }, [showLive, liveChannel, otherPeople, avatarsById, onHeaderStatusChange]);
 
   useEffect(() => {
     return () => {
@@ -1055,6 +1052,8 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
     };
     docRef.current = updatedDoc;
     onDocMetadataChange(updatedDoc);
+    // Runs when title, bullets or tags change, not when the parent hands in another callback
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [blocks, extractedTags, title]);
 
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {

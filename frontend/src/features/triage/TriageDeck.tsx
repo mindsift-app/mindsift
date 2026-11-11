@@ -266,9 +266,9 @@ export const TriageDeck: React.FC<TriageDeckProps> = ({
   const activeCard = cards[0];
   const nextCard = cards[1];
 
+  // Another card in front closes the editor; its draft is taken from the card when editing starts
   useEffect(() => {
     setIsEditingCard(false);
-    setEditDraft(activeCard?.content || '');
   }, [activeCard?.id]);
 
   const clearCardHoldTimer = () => {
@@ -421,6 +421,8 @@ export const TriageDeck: React.FC<TriageDeckProps> = ({
 
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
+    // handleAction and handleSkipCard read the card in front and the number of cards, which are listed
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeCard, cards.length, actionSheetCard]);
 
   const priorityBadge = (priority: string) => {

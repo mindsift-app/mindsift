@@ -47,6 +47,9 @@ Fixes from the security review of November 2026 (v0.94.0).
 - Task alarms: when the server could not read which alarms had already gone out, it took that for "none" and could send them a second time.
 - Restoring a server backup, "Back up now", deleting your data or an account, mailing an invite and the tests for SMTP, alarms and push ended with "No connection to the server" after 12 seconds, even though the server was still at work and finished it. The app now waits up to five minutes for these, and the server keeps their answer open as long.
 - The test push notification comes in your language instead of always in German.
+- Lists: after opening a list from the search, a link or a notification, returning to the Lists tab and changes to the lists from elsewhere (a new, renamed or deleted list, an item moved to another list) switched back to that list. Picking the same list a second time from the search did nothing. A list event could also switch to the first list on a device that had no list remembered.
+- Task dialog: following or unfollowing a task while typing its title or notes closed the editor and dropped the text. The title editor started with the title from when the dialog was opened, so saving could write an old title back over a change made elsewhere.
+- The shopping list created for you when you have none is named in your language instead of always "Wocheneinkauf".
 
 ## [0.94.0] - 2026-11-10
 

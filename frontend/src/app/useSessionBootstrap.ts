@@ -23,6 +23,8 @@ export function useSessionBootstrap(onSignedOut: () => void) {
   const [demoNotice, setDemoNotice] = useState<string | null>(null);
   const lastDemoResetRef = useRef(0);
   const handleDemoResetRef = useRef<() => void>(() => {});
+  const onSignedOutRef = useRef(onSignedOut);
+  onSignedOutRef.current = onSignedOut;
   const [stats, setStats] = useState<DashboardStats>({
     inboxCount: 0,
     tasksOpenCount: 0,
@@ -52,38 +54,37 @@ export function useSessionBootstrap(onSignedOut: () => void) {
     }
   }, []);
 
-  const checkBootAndAuth = async () => {
-    setBootLoading(true);
-    try {
-      const st = await api.getAuthStatus();
-      setAuthStatus(st);
-
-      if (st.needsSetup) {
-        clearToken();
-        setUser(null);
-        return;
-      }
-
-      if (getToken()) {
-        await api.flushOfflineQueue();
-        void flushClosedNotes();
-        await refreshAll();
-      } else {
-        setUser(null);
-      }
-    } catch {
-      // Server temporarily unreachable
-    } finally {
-      setBootLoading(false);
-    }
-  };
-
   useEffect(() => {
+    const checkBootAndAuth = async () => {
+      setBootLoading(true);
+      try {
+        const st = await api.getAuthStatus();
+        setAuthStatus(st);
+
+        if (st.needsSetup) {
+          clearToken();
+          setUser(null);
+          return;
+        }
+
+        if (getToken()) {
+          await api.flushOfflineQueue();
+          void flushClosedNotes();
+          await refreshAll();
+        } else {
+          setUser(null);
+        }
+      } catch {
+        // Server temporarily unreachable
+      } finally {
+        setBootLoading(false);
+      }
+    };
     checkBootAndAuth();
 
     const onUnauthorized = async () => {
       setUser(null);
-      onSignedOut();
+      onSignedOutRef.current();
       try {
         const st = await api.getAuthStatus();
         setAuthStatus(st);
@@ -112,11 +113,11 @@ export function useSessionBootstrap(onSignedOut: () => void) {
       window.removeEventListener('mindsift:unauthorized', onUnauthorized);
       window.removeEventListener('online', onOnline);
     };
-  }, []);
+  }, [refreshAll]);
 
   // WebSocket Connection Management
   useEffect(() => {
-    if (user && getToken()) {
+    if (user?.id && getToken()) {
       connectWebSocket();
     } else {
       disconnectWebSocket();

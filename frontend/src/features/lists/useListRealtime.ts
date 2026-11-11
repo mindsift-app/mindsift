@@ -55,6 +55,10 @@ export function useListRealtime(
   loadLists: () => Promise<void>
 ) {
   const realtimeConnRef = useRef<any>(null);
+  // The listeners below live longer than one render; they call the loadLists of the latest one, which
+  // knows the list that is open now
+  const loadListsRef = useRef(loadLists);
+  loadListsRef.current = loadLists;
 
   useEffect(() => {
     if (!activeListId) return;
@@ -70,7 +74,7 @@ export function useListRealtime(
       listId: activeListId,
       onMessage: (msg: WSMessage) => {
         if (LIST_RELOAD_EVENTS.includes(msg.event)) {
-          loadLists();
+          void loadListsRef.current();
           return;
         }
         setLists((prev) => listsAfterMessage(prev, msg));
@@ -87,14 +91,11 @@ export function useListRealtime(
         realtimeConnRef.current = null;
       }
     };
-    // loadLists is left out on purpose (as before): the connection is only renewed when the open list changes
   }, [activeListId, setLists]);
 
   // Back online: once the outbox has sent the entries added offline, show the server's version
   const listsRef = useRef(lists);
   listsRef.current = lists;
-  const loadListsRef = useRef(loadLists);
-  loadListsRef.current = loadLists;
   useEffect(() => {
     const onOutbox = () => {
       const shown = listsRef.current.some((l) => l.items.some((i) => i.id.startsWith(OFFLINE_ITEM_PREFIX)));
@@ -111,11 +112,10 @@ export function useListRealtime(
       const msg = e.detail;
       if (!msg) return;
       if (LIST_RELOAD_EVENTS.includes(msg.event)) {
-        loadLists();
+        void loadListsRef.current();
       }
     };
     window.addEventListener('mindsift:ws', handleGlobalWs);
     return () => window.removeEventListener('mindsift:ws', handleGlobalWs);
-    // Registered once, as before (loadLists of the first render)
   }, []);
 }

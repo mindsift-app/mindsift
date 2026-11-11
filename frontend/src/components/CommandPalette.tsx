@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import i18n from '../i18n';
 import {
@@ -203,6 +203,24 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query, activeFilter]);
 
+  const executeSelection = useCallback(
+    (hit: SearchHit) => {
+      onClose();
+      if (hit.type === 'document') {
+        // A bullet hit puts the cursor into that bullet already; a note hit into its first bullet
+        if (!hit.blockId) requestDocFocus(hit.docId || hit.id);
+        onOpenDocument(hit.docId || hit.id, hit.blockId);
+      } else if (hit.type === 'thought') {
+        onOpenTask(hit.id);
+      } else if (hit.type === 'list_item') {
+        if (hit.listId) {
+          onOpenList(hit.listId);
+        }
+      }
+    },
+    [onClose, onOpenDocument, onOpenTask, onOpenList]
+  );
+
   // Keyboard navigation: ↑, ↓, Enter, Escape; Tab and Strg+1–4 switch the kind
   useEffect(() => {
     if (!isOpen) return;
@@ -247,7 +265,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, flatHits, selectedIndex]);
+  }, [isOpen, flatHits, selectedIndex, executeSelection, onClose]);
 
   // Tick a task or list item off (or open it again) without leaving the search
   const toggleDone = async (hit: SearchHit) => {
@@ -270,21 +288,6 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
         await api.toggleListItem(li.listId, li.id, next);
       } catch {
         setListItems((prev) => prev.map((x) => (x.id === li.id ? { ...x, isCompleted: !next } : x)));
-      }
-    }
-  };
-
-  const executeSelection = (hit: SearchHit) => {
-    onClose();
-    if (hit.type === 'document') {
-      // A bullet hit puts the cursor into that bullet already; a note hit into its first bullet
-      if (!hit.blockId) requestDocFocus(hit.docId || hit.id);
-      onOpenDocument(hit.docId || hit.id, hit.blockId);
-    } else if (hit.type === 'thought') {
-      onOpenTask(hit.id);
-    } else if (hit.type === 'list_item') {
-      if (hit.listId) {
-        onOpenList(hit.listId);
       }
     }
   };

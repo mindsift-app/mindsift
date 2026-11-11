@@ -32,9 +32,12 @@ interface SharedListsViewProps {
   onRefreshGlobal: () => void;
   currentUser?: User | null;
   initialListId?: string | null;
+  // The list from initialListId was opened; the parent forgets it, so later reloads and returning to the
+  // tab do not switch back to it
+  onInitialListShown?: () => void;
 }
 
-export const SharedListsView: React.FC<SharedListsViewProps> = ({ onRefreshGlobal, currentUser, initialListId }) => {
+export const SharedListsView: React.FC<SharedListsViewProps> = ({ onRefreshGlobal, currentUser, initialListId, onInitialListShown }) => {
   const { t } = useTranslation('lists');
   const { setGroups, setPrimaryAction } = useMobileActions();
   const [lists, setLists] = useState<SharedList[]>([]);
@@ -62,9 +65,12 @@ export const SharedListsView: React.FC<SharedListsViewProps> = ({ onRefreshGloba
     if (activeListId) writeViewMemory('lists', { listId: activeListId });
   }, [activeListId]);
 
+  const onInitialListShownRef = useRef(onInitialListShown);
+  onInitialListShownRef.current = onInitialListShown;
   useEffect(() => {
     if (initialListId) {
       setActiveListId(initialListId);
+      onInitialListShownRef.current?.();
     }
   }, [initialListId]);
 
@@ -103,7 +109,7 @@ export const SharedListsView: React.FC<SharedListsViewProps> = ({ onRefreshGloba
       let all = await api.getAllLists();
       if (all.length === 0) {
         try {
-          const created = await api.createList('Wocheneinkauf', '🛒', 'shopping');
+          const created = await api.createList(t('defaultListName'), '🛒', 'shopping');
           all = [created];
         } catch {
           // fallback
@@ -119,9 +125,8 @@ export const SharedListsView: React.FC<SharedListsViewProps> = ({ onRefreshGloba
         ]),
       }));
       setLists(deduplicated);
-      if (initialListId && deduplicated.some((l) => l.id === initialListId)) {
-        setActiveListId(initialListId);
-      } else if (deduplicated.length > 0 && (!activeListId || !deduplicated.some((l) => l.id === activeListId))) {
+      // A reload keeps the open list; another one is only picked when it is gone or none is open yet
+      if (deduplicated.length > 0 && (!activeListId || !deduplicated.some((l) => l.id === activeListId))) {
         autoSelectedListRef.current = true; // chosen by the app, not a step of its own in the history
         setActiveListId(deduplicated[0].id);
       }
@@ -138,6 +143,8 @@ export const SharedListsView: React.FC<SharedListsViewProps> = ({ onRefreshGloba
         setWorkspaceTags(tags.map((t) => t.tag.replace(/^#/, '')));
       })
       .catch(() => {});
+    // Loaded once when the view opens
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // People shown in tabs: everyone with access except me
@@ -341,6 +348,8 @@ export const SharedListsView: React.FC<SharedListsViewProps> = ({ onRefreshGloba
         setActiveListId,
       })
     );
+    // The handlers passed on read the open list and the lists, which are listed
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lists, activeList, completedItems.length, setGroups, setPrimaryAction]);
 
   // The add form's fields: on the desktop one bar like adding a task (+, the item, then microphone,

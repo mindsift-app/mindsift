@@ -192,7 +192,7 @@ export const App: React.FC = () => {
     return ({ quickdump: 'triage', task: 'tasks', list: 'lists' } as Record<string, ActiveTab>)[target] || null;
   });
   useEffect(() => {
-    if (!pendingShortcut || !user) return;
+    if (!pendingShortcut || !user?.id) return;
     if (activeTab !== pendingShortcut) {
       setActiveTab(pendingShortcut);
       return;
@@ -208,6 +208,8 @@ export const App: React.FC = () => {
       if (target === 'triage') handleTriggerAddButton();
       else if (isPhoneWidth() || target === 'lists') primaryActionRef.current?.();
     }, 400);
+    // handleTriggerAddButton is declared further down; it reads the screen width, a ref and stable functions
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingShortcut, user?.id, activeTab]);
 
   useEffect(() => {
@@ -320,7 +322,9 @@ export const App: React.FC = () => {
         },
       ]);
     }
-  }, [activeTab, stats.inboxCount, stats.tasksOpenCount, stats.docsCount, stats.listsCount, stats.discardedCount, t]);
+    // openMobileTriageCapture is declared further down and stays the same function
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, stats.inboxCount, stats.tasksOpenCount, stats.docsCount, stats.listsCount, stats.discardedCount, t, closeMenu, setGroups, setPrimaryAction, refreshAll]);
 
   // Mobile Web-App (PWA) installation: offered once per session on phones, and from the header and profile
   const pwa = usePwaInstall(user?.id);
@@ -359,7 +363,8 @@ export const App: React.FC = () => {
       .getThemes()
       .then((themes) => handleCustomThemesChange(themes))
       .catch(() => {});
-     
+    // Once per sign-in
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
   // Web Share Target: import shared thoughts from external apps
@@ -770,6 +775,7 @@ export const App: React.FC = () => {
                 onRefreshGlobal={refreshAll}
                 currentUser={user}
                 initialListId={selectedListId}
+                onInitialListShown={() => setSelectedListId(null)}
               />
             )}
 
