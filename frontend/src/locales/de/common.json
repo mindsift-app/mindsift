@@ -31,7 +31,7 @@
     "network": "Netzwerkfehler"
   },
   "about": {
-    "tagline": "Der Kopf frei in drei Sekunden.",
+    "tagline": "Notizen, Aufgaben und ein freier Kopf, selbst gehostet.",
     "intro": "Die meisten Notiz- und Aufgaben-Apps verlangen Struktur im falschen Moment. MindSift trennt deshalb <b>Erfassen</b> und <b>Organisieren</b>: Gedanken landen sofort im Quick Dump und werden später mit einem Tastendruck zu Aufgabe, Notiz oder Listeneintrag. Alles läuft selbst gehostet in einem Container mit einer SQLite-Datei – deine Daten bleiben bei dir.",
     "version": "Version",
     "licenseLabel": "Lizenz",

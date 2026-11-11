@@ -31,7 +31,7 @@
     "network": "Error de red"
   },
   "about": {
-    "tagline": "La mente despejada en tres segundos.",
+    "tagline": "Notas, tareas y la mente despejada, en tu propio servidor.",
     "intro": "La mayoría de apps de notas y tareas piden estructura en el momento equivocado. Por eso MindSift separa <b>capturar</b> de <b>organizar</b>: los pensamientos van directos al Quick Dump y más tarde se convierten en tarea, nota o elemento de lista con una sola pulsación. Todo funciona autoalojado en un contenedor con un único archivo SQLite: tus datos se quedan contigo.",
     "version": "Versión",
     "licenseLabel": "Licencia",
