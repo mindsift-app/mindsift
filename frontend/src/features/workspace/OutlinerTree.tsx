@@ -5,6 +5,7 @@ import { OutlinerBlock, BlockLock, mapRenderedOffsetToRaw } from './OutlinerBloc
 import { parsePastedLines } from '../../lib/pasteOutline';
 import { blocksToMarkdown } from '../../lib/outlineMarkdown';
 import { branchEnd, numberedLabels } from '../../lib/outlineList';
+import { useLatestCallback } from '../../lib/useLatestCallback';
 import { flushSync } from 'react-dom';
 import { MobileOutlineBar, isTouchOnly } from './MobileOutlineBar';
 import { startBranchDragGhost } from './branchDragImage';
@@ -1132,9 +1133,39 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
     return new Set(order.slice(Math.min(a, f), Math.max(a, f) + 1));
   }, [rangeSel, visibleEntries, highlightSupported]);
 
+  // The bullets are memoized (OutlinerBlock): every function they get keeps its identity, so typing or
+  // Enter renders the bullets that changed and not every bullet of the note. Optional handlers stay
+  // undefined when missing (a bullet shows its buttons only for the ones it has).
+  const noop = () => {};
+  const stableResolveConflict = useLatestCallback(onResolveConflict ?? noop);
+  const stableUndo = useLatestCallback(onUndo ?? noop);
+  const stableRedo = useLatestCallback(onRedo ?? noop);
+  const stableZoomBlock = useLatestCallback(onZoomBlock ?? noop);
+  const stableExtractBlock = useLatestCallback(onExtractBlock ?? noop);
+  const stableInlineBlock = useLatestCallback(onInlineBlock ?? noop);
+  const stableUpdateBlock = useLatestCallback(onUpdateBlock);
+  const stableCreateBlockBelow = useLatestCallback(handleCreateBlockBelow);
+  const stablePasteMultiLines = useLatestCallback(handlePasteMultiLines);
+  const stableDeleteBlock = useLatestCallback(handleDeleteBlock);
+  const stableMergeWithPrevious = useLatestCallback(handleMergeWithPrevious);
+  const stableIndentBlock = useLatestCallback(handleIndentBlock);
+  const stableToggleBranch = useLatestCallback(handleToggleBranch);
+  const stableNavigateFocus = useLatestCallback(handleNavigateFocus);
+  const stableBlockActivity = useLatestCallback(onBlockActivity ?? noop);
+  const stableOpenTask = useLatestCallback(onOpenTask ?? noop);
+  const stableTagClick = useLatestCallback(onTagClick ?? noop);
+  const stableWikiLinkClick = useLatestCallback(onWikiLinkClick ?? noop);
+  const stableCopyBlockLink = useLatestCallback(onCopyBlockLink ?? noop);
+  // Dragging: a bullet names itself by its ID; its place in the list changes with every bullet added above
+  const indexOf = (blockId: string) => blocks.findIndex((b) => b.id === blockId);
+  const stableDragStartBlock = useLatestCallback((blockId: string, e: React.DragEvent) => handleDragStartBlock(indexOf(blockId), e));
+  const stableDragOverBlock = useLatestCallback((e: React.DragEvent, blockId: string) => handleDragOverBlock(e, indexOf(blockId)));
+  const stableDropBlock = useLatestCallback((blockId: string) => handleDropBlock(indexOf(blockId)));
+
   return (
+    // The rows space themselves (mt-0.5 first:mt-0): space-y's sibling rule (`> * ~ *`) made Chrome restyle
+    // every bullet below an inserted or removed one
     <div
-      className="space-y-0.5"
       ref={treeRootRef}
       onMouseDownCapture={handleTreeMouseDownCapture}
       onKeyDownCapture={handleTreeKeyDownCapture}
@@ -1146,7 +1177,6 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
             key={block.id}
             docId={docId}
             block={block}
-            index={index}
             isLast={isLast}
             siblingFollows={siblingFollows(index)}
             maxAllowedLevel={maxAllowedLevel}
@@ -1156,32 +1186,32 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
             lockedBy={lockedBlocks?.get(block.id)}
             originalLockedBy={block.conflictOf && block.conflictOf !== 'title' ? lockedBlocks?.get(block.conflictOf) : undefined}
             canAppendBelow={canEdit}
-            onResolveConflict={canEdit ? onResolveConflict : undefined}
-            onUndo={onUndo}
-            onRedo={onRedo}
+            onResolveConflict={canEdit && onResolveConflict ? stableResolveConflict : undefined}
+            onUndo={onUndo ? stableUndo : undefined}
+            onRedo={onRedo ? stableRedo : undefined}
             levelOffset={levelOffset}
-            onZoomBlock={onZoomBlock}
-            onExtractBlock={onExtractBlock}
-            onInlineBlock={onInlineBlock}
-            onUpdateBlock={onUpdateBlock}
-            onCreateBlockBelow={handleCreateBlockBelow}
-            onPasteMultiLines={handlePasteMultiLines}
+            onZoomBlock={onZoomBlock ? stableZoomBlock : undefined}
+            onExtractBlock={onExtractBlock ? stableExtractBlock : undefined}
+            onInlineBlock={onInlineBlock ? stableInlineBlock : undefined}
+            onUpdateBlock={stableUpdateBlock}
+            onCreateBlockBelow={stableCreateBlockBelow}
+            onPasteMultiLines={stablePasteMultiLines}
             listMarker={listLabels.get(block.id)}
-            onDeleteBlock={handleDeleteBlock}
-            onMergeWithPrevious={handleMergeWithPrevious}
-            onIndentBlock={handleIndentBlock}
-            onToggleBranch={handleToggleBranch}
-            onNavigateFocus={handleNavigateFocus}
+            onDeleteBlock={stableDeleteBlock}
+            onMergeWithPrevious={stableMergeWithPrevious}
+            onIndentBlock={stableIndentBlock}
+            onToggleBranch={stableToggleBranch}
+            onNavigateFocus={stableNavigateFocus}
             onFocusBlock={setFocusedBlockId}
             onBlurBlock={handleBlurBlock}
-            onBlockActivity={onBlockActivity}
-            onOpenTask={onOpenTask}
-            onTagClick={onTagClick}
-            onWikiLinkClick={onWikiLinkClick}
-            onCopyBlockLink={onCopyBlockLink}
-            onDragStartBlock={handleDragStartBlock}
-            onDragOverBlock={handleDragOverBlock}
-            onDropBlock={handleDropBlock}
+            onBlockActivity={onBlockActivity ? stableBlockActivity : undefined}
+            onOpenTask={onOpenTask ? stableOpenTask : undefined}
+            onTagClick={onTagClick ? stableTagClick : undefined}
+            onWikiLinkClick={onWikiLinkClick ? stableWikiLinkClick : undefined}
+            onCopyBlockLink={onCopyBlockLink ? stableCopyBlockLink : undefined}
+            onDragStartBlock={stableDragStartBlock}
+            onDragOverBlock={stableDragOverBlock}
+            onDropBlock={stableDropBlock}
             isDragTarget={dragOverIndex === index && draggedIndex !== index}
             isTargeted={highlightedBlockId === block.id}
             registerTextareaRef={registerTextareaRef}
@@ -1192,7 +1222,7 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
 
       {canEdit && trailingArea && (
         <div
-          className={`${compact ? 'min-h-[2.5rem]' : 'min-h-[14rem]'} pt-2 pl-2 transition-colors cursor-text ${
+          className={`${compact ? 'min-h-[2.5rem]' : 'min-h-[14rem]'} mt-0.5 first:mt-0 pt-2 pl-2 transition-colors cursor-text ${
             dragOverIndex === blocks.length ? 'border-t-2 border-accent bg-accent/10 rounded' : ''
           }`}
           onClick={(e) => {

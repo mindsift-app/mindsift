@@ -29,7 +29,6 @@ function renderOutlinerCodeBlock(
       <OutlinerBlock
         docId="doc-1"
         block={blk}
-        index={0}
         isLast
         maxAllowedLevel={1}
         hasChildren={false}

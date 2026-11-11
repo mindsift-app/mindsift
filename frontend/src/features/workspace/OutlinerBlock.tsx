@@ -118,7 +118,6 @@ export interface BlockLock {
 export interface OutlinerBlockProps {
   docId: string;
   block: DocumentBlock;
-  index: number;
   isLast: boolean;
   maxAllowedLevel: number;
   hasChildren: boolean;
@@ -147,9 +146,10 @@ export interface OutlinerBlockProps {
   onWikiLinkClick?: WikiLinkClickHandler;
   /** Copies a link to this bullet ([[Notiz#^id|…]]) */
   onCopyBlockLink?: (blockId: string) => void;
-  onDragStartBlock?: (index: number, e: React.DragEvent) => void;
-  onDragOverBlock?: (e: React.DragEvent, index: number) => void;
-  onDropBlock?: (index: number) => void;
+  // The bullet names itself by its ID (its index changes with every bullet added above it)
+  onDragStartBlock?: (blockId: string, e: React.DragEvent) => void;
+  onDragOverBlock?: (e: React.DragEvent, blockId: string) => void;
+  onDropBlock?: (blockId: string) => void;
   isDragTarget?: boolean;
   isTargeted?: boolean;
   registerTextareaRef: (blockId: string, el: HTMLTextAreaElement | null) => void;
@@ -180,10 +180,9 @@ export function mapRenderedOffsetToRaw(raw: string, rendered: string, renderedOf
   return Math.min(j, raw.length);
 }
 
-export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
+const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
   docId,
   block,
-  index,
   hasChildren,
   isFocused,
   canEdit,
@@ -1308,11 +1307,12 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
       className={`group relative flex items-start gap-1 py-1 px-0.5 sm:px-1.5 rounded-card transition-all duration-300 ${
         inRangeSelection ? 'bg-accent/15' : ''
       } ${
+        // Spacing between the rows (OutlinerTree); headings keep their extra margin only as the first bullet
         block.type === 'h1'
-          ? 'mt-2.5 sm:mt-3'
+          ? 'mt-0.5 first:mt-2.5 sm:first:mt-3'
           : block.type === 'h2'
-          ? 'mt-1.5 sm:mt-2'
-          : ''
+          ? 'mt-0.5 first:mt-1.5 sm:first:mt-2'
+          : 'mt-0.5 first:mt-0'
       } ${
         isDragTarget
           ? 'border-t-2 border-accent bg-accent/10'
@@ -1335,8 +1335,8 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
         paddingLeft: `calc(var(--outline-indent) * ${visualLevel} + 4px)`,
         minWidth: `calc(var(--outline-indent) * ${visualLevel} + var(--outline-min-text))`,
       }}
-      onDragOver={(e) => onDragOverBlock?.(e, index)}
-      onDrop={() => onDropBlock?.(index)}
+      onDragOver={(e) => onDragOverBlock?.(e, block.id)}
+      onDrop={() => onDropBlock?.(block.id)}
       onClick={(e) => {
         if ((e.target as HTMLElement).closest('button, a, input, select')) return;
         if (!activeFocus && canFocus && textareaRef.current) {
@@ -1387,7 +1387,7 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
             if (!canEdit) return;
             // Dropped onto another note in the sidebar, the branch moves there (moveBranchEvent.ts)
             e.dataTransfer.setData(BLOCK_DRAG_TYPE, JSON.stringify({ docId: docId || block.documentId || block.docId || '', blockId: block.id }));
-            onDragStartBlock?.(index, e);
+            onDragStartBlock?.(block.id, e);
           }}
           onClick={() => onZoomBlock?.(block.id)}
           className={`${
@@ -2107,3 +2107,7 @@ export const OutlinerBlock: React.FC<OutlinerBlockProps> = ({
     </div>
   );
 };
+
+// Memoized: a note renders only the bullets whose props changed (OutlinerTree keeps its handlers stable),
+// not all of them on every Enter or after every pause in typing
+export const OutlinerBlock = React.memo(OutlinerBlockView);
