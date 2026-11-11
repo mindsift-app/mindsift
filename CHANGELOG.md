@@ -24,6 +24,8 @@ Fixes from the security review of November 2026 (v0.94.0).
 - Conflict copies in notes have a third choice, "Keep both": the marking goes and both texts stay, the copy as a bullet of its own under the original. While someone edits the original, "Use" is greyed out and a line under the copy says who holds it; before, the click did nothing visible. Until it is settled, a copy sticks to its original: Enter or pasting in the original adds below the copy, and indenting, dragging or moving the original takes the copy along.
 
 ### Changed
+- Drawings: dragging shapes in large drawings is noticeably smoother, and the editor opens faster.
+- Dropdown, date and time lists no longer redraw on every scroll step while you scroll inside them.
 - API error messages for clients that send no `Accept-Language` header (scripts, curl) now come in the server's default language and in English when none is set, instead of always in German. The app itself and the sign-in screen are unchanged.
 - The first-time setup endpoint (`POST /api/v1/auth/setup`) only accepts requests sent as `Content-Type: application/json`.
 - The app loads faster after signing in: the emoji picker and the help (in your language only) now load when you first open them instead of with the app. Both still work offline after the first visit.
