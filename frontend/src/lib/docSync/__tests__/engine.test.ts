@@ -588,6 +588,62 @@ describe('DocSyncEngine', () => {
     await clearStoredNotes(); // signing out
     expect(await storage.list()).toEqual([]);
   });
+
+  it('stores the queue on its own and reads the newer one back, in IndexedDB and in memory', async () => {
+    const op = (n: number): Op => ({ opId: `c.${n}`, kind: 'set_content', blockId: 'b1', content: `Text ${n}`, baseVersion: 1 });
+    for (const storage of [new IndexedDBStorage(indexedDB), new MemoryStorage()]) {
+      await storage.save({ docId: 'q', title: 'T', titleVersion: 1, lastSeq: 3, role: 'owner', userId: 'u1', blocks: [], pending: [op(1)], inflight: null, savedAt: 10 });
+      await storage.saveQueue('q', { pending: [op(1), op(2)], inflight: [op(0)], savedAt: 11, userId: 'u1' });
+      const loaded = await storage.load('q');
+      expect(loaded?.lastSeq).toBe(3);
+      expect(loaded?.pending.map((o) => o.opId)).toEqual(['c.1', 'c.2']);
+      expect(loaded?.inflight?.map((o) => o.opId)).toEqual(['c.0']);
+      // The queue's record is no note of its own
+      expect((await storage.list()).map((st) => [st.docId, st.pending.length])).toEqual([['q', 2]]);
+      // An older app version stores the queue in the note only: then the note's is the newer one
+      await storage.save({ docId: 'q', title: 'T', titleVersion: 1, lastSeq: 4, role: 'owner', userId: 'u1', blocks: [], pending: [], inflight: null, savedAt: 12 });
+      await storage.saveQueue('q', { pending: [op(5)], inflight: null, savedAt: 9, userId: 'u1' });
+      expect((await storage.load('q'))?.pending).toEqual([]);
+    }
+    await clearStoredNotes();
+  });
+
+  it('older app versions read the stored queue record as a note without changes', async () => {
+    const storage = new IndexedDBStorage(indexedDB);
+    await storage.saveQueue('q2', { pending: [{ opId: 'c.1', kind: 'delete', blockId: 'b1' }], inflight: null, savedAt: 1, userId: 'u1' });
+    const raw = await new Promise<Array<{ docId: string; pending: unknown[]; inflight: unknown }>>((resolve) => {
+      void storage.open().then((db) => {
+        const req = db.transaction('docs', 'readonly').objectStore('docs').getAll();
+        req.onsuccess = () => resolve(req.result);
+      });
+    });
+    const rec = raw.find((r) => r.docId.startsWith('q2'));
+    expect(rec?.pending).toEqual([]);
+    expect(rec?.inflight).toBeNull();
+    await clearStoredNotes();
+  });
+
+  it('typing stores only the queue; the whole note only when the server confirmed something', async () => {
+    const server = new FakeServer();
+    const storage = new MemoryStorage();
+    const full = vi.spyOn(storage, 'save');
+    const queue = vi.spyOn(storage, 'saveQueue');
+    const engine = await startEngine(new FakeNet(server), storage);
+    full.mockClear();
+    queue.mockClear();
+
+    for (const text of ['A', 'Ab', 'Abc']) edit(engine, (b) => [{ ...b[0], content: text }]);
+    await new Promise((r) => setTimeout(r, 0));
+    expect(full).not.toHaveBeenCalled();
+    expect(queue).toHaveBeenCalledTimes(3);
+
+    await engine.syncNow();
+    expect(full).toHaveBeenCalledTimes(1); // the answer moved lastSeq on
+    const loaded = await storage.load('doc');
+    expect(loaded?.pending).toEqual([]);
+    expect(loaded?.inflight).toBeNull();
+    expect(loaded?.blocks.find((b) => b.id === 'b1')?.content).toBe('Abc');
+  });
 });
 
 
