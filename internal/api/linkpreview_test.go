@@ -26,6 +26,30 @@ func TestParsePageMeta(t *testing.T) {
 	if m := parsePageMeta(`<head><title> Nur Titel </title></head>`); m.title != "Nur Titel" {
 		t.Fatalf("title fallback: %+v", m)
 	}
+	// What real pages contain: comments, unquoted attributes, upper case, a <title> inside an inline SVG
+	// before the page's own, and tags after the head
+	messy := `<HTML><HEAD>
+	<!-- <meta property="og:title" content="aus einem Kommentar"> -->
+	<svg viewBox="0 0 1 1"><title>Logo</title><path d="M0 0"/></svg>
+	<TITLE>Seite &amp; Titel</TITLE>
+	<meta name=description content=Kurz>
+	<META PROPERTY="og:image" CONTENT="https://example.com/a.png?x=1&amp;y=2">
+	<link rel="shortcut icon" href=/fav.ico>
+	<link rel="apple-touch-icon" href="/touch.png">
+	<script>var s = "<meta property='og:site_name' content='aus Skript'>";</script>
+	</HEAD><BODY><title>im Körper</title></BODY></HTML>`
+	m = parsePageMeta(messy)
+	if m.title != "Seite & Titel" || m.description != "Kurz" || m.image != "https://example.com/a.png?x=1&y=2" ||
+		m.icon != "/touch.png" || m.siteName != "" {
+		t.Fatalf("messy page: %+v", m)
+	}
+	// Entities are decoded once: "&amp;lt;" is the text "&lt;", not "<"
+	if m := parsePageMeta(`<head><meta property="og:title" content="a &amp;lt; b"></head>`); m.title != "a &lt; b" {
+		t.Fatalf("decoded twice: %q", m.title)
+	}
+	if m := parsePageMeta(`<head><title>Ohne Ende`); m.title != "Ohne Ende" {
+		t.Fatalf("cut off page: %+v", m)
+	}
 	if long := cleanText(strings.Repeat("a", 500), 200); len([]rune(long)) != 200 || !strings.HasSuffix(long, "…") {
 		t.Fatalf("long text not shortened: %d", len(long))
 	}

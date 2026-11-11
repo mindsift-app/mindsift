@@ -118,7 +118,51 @@ func (s *Store) SeedSMTPDefaultsFromEnv(host, port, user, pass, from, fromName s
 	}
 }
 
+// GetSystemSettings answers from memory after the first read: there is one process, and every change goes
+// through UpdateSystemSettings (or the demo reset), which forgets the copy. Each caller gets a copy of its
+// own and may change it. A failed read is not kept.
 func (s *Store) GetSystemSettings() (*domain.SystemSettings, error) {
+	s.settingsMu.Lock()
+	if s.settingsCache != nil {
+		out := cloneSystemSettings(s.settingsCache)
+		s.settingsMu.Unlock()
+		return out, nil
+	}
+	gen := s.settingsGen
+	s.settingsMu.Unlock()
+
+	settings, err := s.readSystemSettings()
+	if err != nil {
+		return settings, err
+	}
+	s.settingsMu.Lock()
+	if gen == s.settingsGen {
+		s.settingsCache = cloneSystemSettings(settings)
+	}
+	s.settingsMu.Unlock()
+	return settings, nil
+}
+
+// forgetSystemSettings drops the copy in memory; the next GetSystemSettings reads the table again.
+func (s *Store) forgetSystemSettings() {
+	s.settingsMu.Lock()
+	s.settingsCache = nil
+	s.settingsGen++
+	s.settingsMu.Unlock()
+}
+
+func cloneSystemSettings(in *domain.SystemSettings) *domain.SystemSettings {
+	out := *in
+	for _, p := range []**bool{&out.PushKnownServicesOnly, &out.RetentionAllowNever, &out.MCPEnabled, &out.PeopleSearch, &out.PublicLinks} {
+		if *p != nil {
+			v := **p
+			*p = &v
+		}
+	}
+	return &out
+}
+
+func (s *Store) readSystemSettings() (*domain.SystemSettings, error) {
 	settings := &domain.SystemSettings{
 		SharingMode:         SharingOrganizations,
 		AllowRegistration:   false,
@@ -245,6 +289,7 @@ func (s *Store) GetSystemSettings() (*domain.SystemSettings, error) {
 }
 
 func (s *Store) UpdateSystemSettings(settings *domain.SystemSettings) error {
+	defer s.forgetSystemSettings()
 	// Clients that only send the old switch keep working
 	settings.RegistrationMode = NormalizeRegistrationMode(settings.RegistrationMode)
 	if settings.RegistrationMode == "" {

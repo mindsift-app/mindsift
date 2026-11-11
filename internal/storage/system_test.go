@@ -2,6 +2,7 @@ package storage
 
 import (
 	"path/filepath"
+	"reflect"
 	"testing"
 )
 
@@ -45,5 +46,49 @@ func TestOpenListItemsCountCoversSharedLists(t *testing.T) {
 	st, _ := store.GetDashboardStats(anna.ID)
 	if st.ListItemsOpenCount != 6 || st.ListsCount != 3 {
 		t.Errorf("want 6 open items in 3 lists (own 2 + direct 1 + group 3), got %d in %d", st.ListItemsOpenCount, st.ListsCount)
+	}
+}
+
+// The settings come from memory after the first read; a change, a direct write that went around the store
+// and the copies handed out behave as without the cache
+func TestSystemSettingsCache(t *testing.T) {
+	store, _, _ := setupTestStore(t)
+	first, err := store.GetSystemSettings()
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Writing the table directly is not seen: the copy in memory answers
+	if _, err := store.db.Exec(`INSERT OR REPLACE INTO system_settings (key, value) VALUES ('instance_name', 'Direkt')`); err != nil {
+		t.Fatal(err)
+	}
+	if got, _ := store.GetSystemSettings(); got.InstanceName != first.InstanceName {
+		t.Fatalf("expected the cached name %q, got %q", first.InstanceName, got.InstanceName)
+	}
+	// A change through the store is seen at once
+	first.InstanceName = "Über den Store"
+	off := false
+	first.MCPEnabled = &off
+	if err := store.UpdateSystemSettings(first); err != nil {
+		t.Fatal(err)
+	}
+	got, _ := store.GetSystemSettings()
+	if got.InstanceName != "Über den Store" || got.MCPEnabled == nil || *got.MCPEnabled {
+		t.Fatalf("change not seen: %q %v", got.InstanceName, got.MCPEnabled)
+	}
+	// What a caller changes in its copy stays there, pointer fields included
+	got.InstanceName = "Nur hier"
+	*got.MCPEnabled = true
+	*got.PeopleSearch = false
+	again, _ := store.GetSystemSettings()
+	if again.InstanceName != "Über den Store" || *again.MCPEnabled || !*again.PeopleSearch {
+		t.Fatalf("a caller's change reached the cache: %+v", again)
+	}
+	// Every pointer field of a copy is its own (also for fields added later)
+	v := reflect.ValueOf(cloneSystemSettings(again)).Elem()
+	w := reflect.ValueOf(again).Elem()
+	for i := 0; i < v.NumField(); i++ {
+		if v.Field(i).Kind() == reflect.Pointer && !v.Field(i).IsNil() && v.Field(i).Pointer() == w.Field(i).Pointer() {
+			t.Errorf("cloneSystemSettings shares %s", v.Type().Field(i).Name)
+		}
 	}
 }

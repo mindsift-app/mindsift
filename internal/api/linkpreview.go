@@ -3,7 +3,6 @@ package api
 import (
 	"context"
 	"errors"
-	"html"
 	"io"
 	"net/http"
 	"net/url"
@@ -15,6 +14,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/mindsift-app/mindsift/internal/storage"
+	xhtml "golang.org/x/net/html"
 )
 
 // Link previews for notes: the server fetches the page once (https only, never into its own network,
@@ -32,32 +32,12 @@ const (
 
 var previewLocks sync.Map // URL -> *sync.Mutex, one fetch per page at a time
 
-var (
-	metaTagRe  = regexp.MustCompile(`(?is)<meta\s[^>]*>`)
-	linkTagRe  = regexp.MustCompile(`(?is)<link\s[^>]*>`)
-	titleTagRe = regexp.MustCompile(`(?is)<title[^>]*>(.*?)</title>`)
-	attrRe     = regexp.MustCompile(`(?is)([a-z:_-]+)\s*=\s*("([^"]*)"|'([^']*)'|([^\s>]+))`)
-	headEndRe  = regexp.MustCompile(`(?i)</head>|<body[\s>]`)
-	spacesRe   = regexp.MustCompile(`\s+`)
-)
+var spacesRe = regexp.MustCompile(`\s+`)
 
-func tagAttrs(tag string) map[string]string {
-	out := map[string]string{}
-	for _, m := range attrRe.FindAllStringSubmatch(tag, -1) {
-		v := m[3]
-		if v == "" {
-			v = m[4]
-		}
-		if v == "" {
-			v = m[5]
-		}
-		out[strings.ToLower(m[1])] = html.UnescapeString(v)
-	}
-	return out
-}
-
+// cleanText collapses white space and shortens to max characters. Entities are already decoded by the
+// HTML tokenizer.
 func cleanText(s string, max int) string {
-	s = strings.TrimSpace(spacesRe.ReplaceAllString(html.UnescapeString(s), " "))
+	s = strings.TrimSpace(spacesRe.ReplaceAllString(s, " "))
 	if utf8.RuneCountInString(s) > max {
 		r := []rune(s)
 		s = strings.TrimSpace(string(r[:max-1])) + "…"
@@ -79,53 +59,106 @@ type pageMeta struct {
 	title, description, siteName, image, icon string
 }
 
+// parsePageMeta reads the page with the HTML tokenizer up to the end of its head: comments, unquoted
+// attributes and a <title> inside an inline SVG are what a page may contain, not what a pattern expects.
 func parsePageMeta(doc string) pageMeta {
-	if loc := headEndRe.FindStringIndex(doc); loc != nil {
-		doc = doc[:loc[0]]
-	}
 	var m pageMeta
-	for _, tag := range metaTagRe.FindAllString(doc, -1) {
-		a := tagAttrs(tag)
-		key := strings.ToLower(a["property"])
-		if key == "" {
-			key = strings.ToLower(a["name"])
+	z := xhtml.NewTokenizer(strings.NewReader(doc))
+	inTitle, svgDepth := false, 0
+	var title strings.Builder
+	for {
+		tt := z.Next()
+		if tt == xhtml.ErrorToken {
+			break
 		}
-		v := a["content"]
-		switch key {
-		case "og:title", "twitter:title":
-			if m.title == "" {
-				m.title = v
+		name, _ := z.TagName()
+		tag := string(name)
+		if tt == xhtml.EndTagToken {
+			if tag == "head" {
+				break
 			}
-		case "og:description", "twitter:description", "description":
-			if m.description == "" {
-				m.description = v
+			switch tag {
+			case "svg":
+				svgDepth = max(0, svgDepth-1)
+			case "title":
+				inTitle = false
 			}
-		case "og:site_name", "application-name":
-			if m.siteName == "" {
-				m.siteName = v
+			continue
+		}
+		if tt == xhtml.TextToken {
+			if inTitle {
+				title.Write(z.Text())
 			}
-		case "og:image", "og:image:url", "og:image:secure_url", "twitter:image":
-			if m.image == "" {
-				m.image = v
+			continue
+		}
+		if tt != xhtml.StartTagToken && tt != xhtml.SelfClosingTagToken {
+			continue
+		}
+		if tag == "body" {
+			break
+		}
+		switch tag {
+		case "svg":
+			if tt == xhtml.StartTagToken {
+				svgDepth++
+			}
+		case "title":
+			// The first title of the page, not one of a picture
+			inTitle = tt == xhtml.StartTagToken && svgDepth == 0 && title.Len() == 0
+		case "meta":
+			a := tagAttrs(z)
+			key := strings.ToLower(a["property"])
+			if key == "" {
+				key = strings.ToLower(a["name"])
+			}
+			v := a["content"]
+			switch key {
+			case "og:title", "twitter:title":
+				if m.title == "" {
+					m.title = v
+				}
+			case "og:description", "twitter:description", "description":
+				if m.description == "" {
+					m.description = v
+				}
+			case "og:site_name", "application-name":
+				if m.siteName == "" {
+					m.siteName = v
+				}
+			case "og:image", "og:image:url", "og:image:secure_url", "twitter:image":
+				if m.image == "" {
+					m.image = v
+				}
+			}
+		case "link":
+			a := tagAttrs(z)
+			rel := " " + strings.ToLower(a["rel"]) + " "
+			if (strings.Contains(rel, " icon ") || strings.Contains(rel, "apple-touch-icon")) && a["href"] != "" && !strings.HasSuffix(strings.ToLower(a["href"]), ".svg") {
+				if m.icon == "" || strings.Contains(rel, "apple-touch-icon") {
+					m.icon = a["href"]
+				}
 			}
 		}
 	}
 	if m.title == "" {
-		if t := titleTagRe.FindStringSubmatch(doc); t != nil {
-			m.title = t[1]
-		}
-	}
-	for _, tag := range linkTagRe.FindAllString(doc, -1) {
-		a := tagAttrs(tag)
-		rel := " " + strings.ToLower(a["rel"]) + " "
-		if (strings.Contains(rel, " icon ") || strings.Contains(rel, "apple-touch-icon")) && a["href"] != "" && !strings.HasSuffix(strings.ToLower(a["href"]), ".svg") {
-			if m.icon == "" || strings.Contains(rel, "apple-touch-icon") {
-				m.icon = a["href"]
-			}
-		}
+		m.title = title.String()
 	}
 	m.title, m.description, m.siteName = cleanText(m.title, 200), cleanText(m.description, 300), cleanText(m.siteName, 80)
 	return m
+}
+
+// tagAttrs: the attributes of the current tag, names in lower case, values decoded
+func tagAttrs(z *xhtml.Tokenizer) map[string]string {
+	out := map[string]string{}
+	for {
+		k, v, more := z.TagAttr()
+		if len(k) > 0 {
+			out[strings.ToLower(string(k))] = string(v)
+		}
+		if !more {
+			return out
+		}
+	}
 }
 
 // fetchLimited GETs a public https URL and reads at most limit bytes.
