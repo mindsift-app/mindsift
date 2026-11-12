@@ -217,7 +217,7 @@ var mcpWriteTools = []mcpTool{
 		Description: "Add a bullet to a note: after a bullet (same level), as the last child of a bullet, or at the end. " +
 			"Bullet ids come from get_note. type: text (default), todo, h1, h2, h3, numbered, callout, warning, error, table, drawing. " +
 			"[[Note title]] links another note (with |text for an own link text); it keeps working when that note is renamed. " +
-			"type table: text is a Markdown table (header row, separator row | --- |, rows; a | inside a cell written \\|). " + mcpDrawingHelp,
+			"type table: text is a Markdown table (header row, separator row | --- |, rows; a | inside a cell written \\|; | :---: | centers a column, | ---: | aligns it right). " + mcpDrawingHelp,
 		Scope: storage.ScopeNotesWrite,
 		Schema: schema([]string{"noteId", "text"}, map[string]any{
 			"noteId":   prop("string", "Note id"),

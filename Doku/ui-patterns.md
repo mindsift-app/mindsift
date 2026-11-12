@@ -182,7 +182,7 @@ Component: [ActionMenu.tsx](../frontend/src/components/ActionMenu.tsx), in the s
 Component: [TableBlock.tsx](../frontend/src/features/workspace/TableBlock.tsx), Markdown in [markdownTable.ts](../frontend/src/lib/markdownTable.ts), lines in `index.css` (`.note-table`).
 
 - A table is a bullet (`/table`, 2 × 2); the first row is the header. One text field per cell lies over the formatted cell text, like a bullet's field over its text.
-- **+ right of the table** adds a column: on phones always there and 44 px wide, on a desktop only on hover or with the cursor in the table. The **⋯** below it is an `ActionMenu` with the line modes and row/column actions.
+- **+ right of the table** adds a column: on phones always there and 44 px wide, on a desktop only on hover or with the cursor in the table. The **⋯** below it is an `ActionMenu` with the line modes, the alignment of the column with the cursor (left, centered, right; stored in the Markdown's separator row) and row/column actions; on a desktop + and ⋯ stay visible while the menu is open (a fading box would put the menu behind the bullet below).
 - Lines come from the theme's `--border-color`, drawn per cell so the default mode can fade them out towards the edge; the frame of `grid` takes `--radius-card`. Wide tables scroll sideways inside the note (`.table-scroll`).
 
 ## Mentioning People (@)

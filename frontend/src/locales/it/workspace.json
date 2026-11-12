@@ -22,6 +22,11 @@
       "grid": "Cornice completa",
       "header": "Intestazione e colonne"
     },
+    "align": {
+      "left": "Allinea colonna a sinistra",
+      "center": "Centra colonna",
+      "right": "Allinea colonna a destra"
+    },
     "insertColumnLeft": "Inserisci colonna a sinistra",
     "insertColumnRight": "Inserisci colonna a destra",
     "deleteRow": "Elimina riga",

@@ -22,6 +22,11 @@
       "grid": "Marco completo",
       "header": "Encabezado y columnas"
     },
+    "align": {
+      "left": "Alinear columna a la izquierda",
+      "center": "Centrar columna",
+      "right": "Alinear columna a la derecha"
+    },
     "insertColumnLeft": "Insertar columna a la izquierda",
     "insertColumnRight": "Insertar columna a la derecha",
     "deleteRow": "Eliminar fila",

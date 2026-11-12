@@ -22,6 +22,11 @@
       "grid": "Full frame",
       "header": "Header row and columns"
     },
+    "align": {
+      "left": "Align column left",
+      "center": "Center column",
+      "right": "Align column right"
+    },
     "insertColumnLeft": "Insert column left",
     "insertColumnRight": "Insert column right",
     "deleteRow": "Delete row",

@@ -2,7 +2,8 @@
 // Enter, the + for a column, the line mode from the ⋯ menu, Backspace on an empty row, the arrows into and
 // out of the table; after reloading content and line mode are still there (sync); undo that takes away the
 // row with the cursor moves it to the row above; the ⋯ menu with the cursor in the bullet below stays
-// visible and in front of that bullet. Desktop: a wide table scrolls sideways inside its box. On a phone:
+// visible and in front of that bullet; a column centered from the menu stays so after reloading and moves
+// with its column. Desktop: a wide table scrolls sideways inside its box. On a phone:
 // tapping a cell, the + and the ⋯ (44 px), the page does not scroll sideways. Desktop in Chromium and
 // Firefox, the phone in Chromium.
 // Needs a server in demo mode (admin/admin).
@@ -199,6 +200,55 @@ const main = async () => {
     await page.mouse.up();
     await page.waitForTimeout(300);
     check((await page.locator('table.note-table').getAttribute('data-lines')) === 'fade', tag('Eintrag im ⋯-Menü über dem Punkt darunter lässt sich klicken'));
+
+    // Column alignment from the menu for the column with the cursor: header, cells and the text field follow,
+    // the separator row of the Markdown keeps it, after reloading it is still there
+    const alignOf = () =>
+      page.evaluate(() => {
+        const col = [...document.querySelectorAll('[data-table-block] tr')].map((tr) => tr.children[1]);
+        return {
+          cells: col.map((c) => getComputedStyle(c).textAlign),
+          input: getComputedStyle(col[1].querySelector('textarea')).textAlign,
+          first: getComputedStyle(document.querySelector('[data-table-block] th')).textAlign,
+        };
+      });
+    await page.locator('[data-table-block] td .nt-text').nth(1).click();
+    await page.waitForTimeout(200);
+    await page.getByRole('button', { name: 'Tabelle: Linien und Spalten' }).click();
+    check(
+      (await page.getByRole('menuitemradio', { name: 'Spalte links ausrichten' }).getAttribute('aria-checked')) === 'true',
+      tag('Menü zeigt links als aktuelle Ausrichtung')
+    );
+    await page.getByRole('menuitemradio', { name: 'Spalte zentrieren' }).click();
+    await page.waitForTimeout(200);
+    let al = await alignOf();
+    s = await cellState(page);
+    check(al.cells.every((a) => a === 'center') && al.input === 'center' && al.first !== 'center', tag('Spalte zentriert: Kopf, Zellen und Eingabefeld, andere Spalten nicht'), al);
+    check(s.focus === 4, tag('Cursor bleibt nach dem Zentrieren in der Zelle'), s);
+    await page.waitForTimeout(1200);
+    const alignedSaved = (await api(admin, 'GET', `/api/v1/documents/${doc.id}`)).blocks.find((b) => b.type === 'table');
+    check(alignedSaved?.content.split('\n')[1] === '| --- | :---: | --- |', tag('Server hat die Ausrichtung in der Trennzeile'), alignedSaved?.content);
+    await page.reload();
+    await page.waitForSelector('[data-table-block]');
+    await page.waitForTimeout(800);
+    al = await alignOf();
+    check(al.cells.every((a) => a === 'center'), tag('nach Neuladen bleibt die Spalte zentriert'), al);
+    await page.locator('[data-table-block] td .nt-text').nth(1).click();
+    await page.getByRole('button', { name: 'Tabelle: Linien und Spalten' }).click();
+    check(
+      (await page.getByRole('menuitemradio', { name: 'Spalte zentrieren' }).getAttribute('aria-checked')) === 'true',
+      tag('Menü hakt nach Neuladen „Spalte zentrieren“ an')
+    );
+    // A column inserted to the left: the alignment moves along with its column
+    await page.getByRole('menuitem', { name: 'Spalte links einfügen' }).click();
+    await page.waitForTimeout(1500);
+    const moved = (await api(admin, 'GET', `/api/v1/documents/${doc.id}`)).blocks.find((b) => b.type === 'table');
+    check(moved?.content.split('\n')[1] === '| --- | --- | :---: | --- |', tag('Ausrichtung wandert mit, wenn links eine Spalte dazukommt'), moved?.content);
+    await page.getByRole('button', { name: 'Tabelle: Linien und Spalten' }).click();
+    await page.getByRole('menuitem', { name: 'Spalte löschen' }).click();
+    await page.waitForTimeout(1500);
+    const back = (await api(admin, 'GET', `/api/v1/documents/${doc.id}`)).blocks.find((b) => b.type === 'table');
+    check(back?.content.split('\n')[1] === '| --- | :---: | --- |', tag('Ausrichtung wandert mit, wenn die Spalte links wieder geht'), back?.content);
     await ctx.close();
     await engineBrowser.close();
   }
@@ -286,6 +336,9 @@ const main = async () => {
     await entry.tap();
     await page.waitForTimeout(300);
     check((await page.locator('table.note-table').first().getAttribute('data-lines')) === 'grid', 'Antippen eines Eintrags im ⋯-Menü am Handy wirkt');
+    // The column centered on the desktop is centered here too
+    const phoneAlign = await table.evaluate((el) => [...el.querySelectorAll('tr')].map((tr) => getComputedStyle(tr.children[1]).textAlign));
+    check(phoneAlign.every((a) => a === 'center'), 'zentrierte Spalte auch am Handy zentriert', phoneAlign);
     await ctx.close();
   }
   await browser.close();

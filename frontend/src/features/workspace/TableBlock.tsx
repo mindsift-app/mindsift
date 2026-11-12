@@ -1,5 +1,8 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
+  AlignCenter,
+  AlignLeft,
+  AlignRight,
   BetweenVerticalEnd,
   BetweenVerticalStart,
   Columns3,
@@ -16,6 +19,7 @@ import { InlineMarkdownOptions, renderInlineMarkdown } from '../../lib/markdown'
 import { caretAtPoint, mapRenderedOffsetToRaw } from '../../lib/caret';
 import { toggleInlineFormat } from '../../lib/inlineFormat';
 import {
+  TableAlign,
   TableData,
   TableLines,
   cellAfterOutsideChange,
@@ -28,6 +32,7 @@ import {
   parseMarkdownTable,
   pasteIntoTable,
   serializeMarkdownTable,
+  setTableAlign,
   setTableCell,
   tableLines,
 } from '../../lib/markdownTable';
@@ -417,10 +422,29 @@ const TableBlockView: React.FC<TableBlockProps> = ({
         if (value !== lines) onChangeLines(value);
       },
     });
+    // The alignment of the column with the cursor, in the separator row of the Markdown ('' is left)
+    const colAlign = cell ? data.align[cell.c] || 'left' : null;
+    const align = (value: Exclude<TableAlign, ''>, icon: React.ReactNode, separatorBefore = false): ActionMenuItem => ({
+      key: `align-${value}`,
+      icon,
+      label: t(`table.align.${value}`),
+      checked: colAlign === value,
+      separatorBefore,
+      disabled: !cell,
+      hint: separatorBefore ? needCell : undefined,
+      onSelect: () => {
+        if (!cell) return;
+        const next = setTableAlign(data, cell.c, value);
+        if (next !== data) commit(next, true);
+      },
+    });
     const items: ActionMenuItem[] = [
       mode('fade', '', <Grid2x2 className="w-3.5 h-3.5" />),
       mode('grid', 'grid', <TableIcon className="w-3.5 h-3.5" />),
       mode('header', 'header', <Columns3 className="w-3.5 h-3.5" />),
+      align('left', <AlignLeft className="w-3.5 h-3.5" />, true),
+      align('center', <AlignCenter className="w-3.5 h-3.5" />),
+      align('right', <AlignRight className="w-3.5 h-3.5" />),
       {
         key: 'colLeft',
         icon: <BetweenVerticalStart className="w-3.5 h-3.5" />,

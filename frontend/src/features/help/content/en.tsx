@@ -219,7 +219,7 @@ const en: HelpContent = {
       title: 'Tables (/table)',
       subtitle: 'Rows and columns right in the note',
       icon: TableIcon,
-      keywords: ['table', 'rows', 'columns', 'header', 'lines', 'frame', 'markdown'],
+      keywords: ['table', 'rows', 'columns', 'header', 'lines', 'frame', 'align', 'center', 'markdown'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
           <ul className="space-y-1.5">
@@ -230,7 +230,7 @@ const en: HelpContent = {
               <strong className="text-main">Typing:</strong> <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Enter</kbd> adds a row below the current one, <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Tab</kbd> / <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Shift + Tab</kbd> jump from cell to cell (Tab in the last cell adds a row), the arrow keys change rows and leave the table at the top and bottom. <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Backspace</kbd> in an empty row deletes it, in a completely empty table the table. Bold, italics, links and #hashtags work as in text.
             </li>
             <li>
-              <strong className="text-main">Columns:</strong> The <strong className="text-main">+</strong> right of the table adds a column (on a desktop it shows while the mouse is over the table). Below it, the three dots open the menu: insert a column left or right, delete the row or column with the cursor, indent or outdent the bullet.
+              <strong className="text-main">Columns:</strong> The <strong className="text-main">+</strong> right of the table adds a column (on a desktop it shows while the mouse is over the table). Below it, the three dots open the menu: align the column with the cursor left, centered or right (kept in the Markdown table), insert a column left or right, delete the row or column with the cursor, indent or outdent the bullet.
             </li>
             <li>
               <strong className="text-main">Lines:</strong> In the same menu: <em>Default</em> shows only the inner lines, fading out towards the edge, without a frame; <em>Full frame</em> every line with an outer frame (corners as in the theme); <em>Header row and columns</em> only the line below the header and the column lines.
