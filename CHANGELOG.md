@@ -10,6 +10,7 @@ Versions before 0.80.0 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ### Added
 - **Two-factor sign-in:** under Settings → Security you can connect an authenticator app (TOTP). Signing in then asks for its six-digit code after the password; ten one-time recovery codes help when the phone is missing, and your own devices can be trusted for 30 days. Ending all sessions, a new password or switching it off ends that trust; "Forgot password" leaves two-factor sign-in on. Also asked on the sign-in of the OAuth consent page. Not available in the demo.
+- **Passkeys:** sign in with a fingerprint, face or device PIN instead of a password (button on the sign-in page, or straight from the sign-in field's autofill), or use a passkey as the second factor after the password. Manage them under Settings → Security (add, rename, remove); a passkey also confirms sensitive changes instead of a code. Two-factor sign-in is on as soon as an account has an authenticator app or a passkey; recovery codes come with the first and stay until the last is removed, and adding another needs the existing second factor. Passkeys need `BASE_URL` with https (changing its host later makes existing passkeys stop working); without it the authenticator app keeps working.
 - New settings section **Security** with the password change, two-factor sign-in and the signed-in devices (moved there from Profile).
 
 ### Fixed
