@@ -722,7 +722,29 @@
     "mfaRequiredHint": "Quien esté afectado y aún no tenga app de autenticación ni llave de acceso la configurará justo después de su próximo inicio de sesión y no podrá hacer otra cosa antes. Las claves de API y los accesos de IA siguen funcionando.",
     "mfaRequiredNobody": "Opcional",
     "mfaRequiredAdmins": "Para administradores",
-    "mfaRequiredAll": "Para todos"
+    "mfaRequiredAll": "Para todos",
+    "oidc": {
+      "title": "Inicio de sesión con OIDC",
+      "hint": "Configurado con las variables de entorno OIDC_*; aquí solo se muestra.",
+      "notConfigured": "No configurado. Con OIDC_ISSUER, OIDC_CLIENT_ID y OIDC_CLIENT_SECRET todos inician sesión con un proveedor como Authentik, Authelia o Keycloak (ver README).",
+      "offDemo": "Desactivado en la demo.",
+      "offNoBaseUrl": "Desactivado: falta BASE_URL. El proveedor necesita la dirección a la que redirige.",
+      "reachable": "El proveedor responde.",
+      "unreachable": "El proveedor no responde en este momento: {{error}}",
+      "provider": "Proveedor",
+      "issuer": "Issuer",
+      "clientId": "ID de cliente",
+      "redirectUrl": "URI de redirección",
+      "scopes": "Scopes",
+      "autoCreate": "Crear cuentas automáticamente",
+      "passwordLogin": "Inicio de sesión con contraseña",
+      "on": "Activado",
+      "off": "Desactivado",
+      "passwordAdminsOnly": "Solo acceso de emergencia de la administración",
+      "adminGroup": "Grupo de administración",
+      "none": "–",
+      "linkedUsers": "Cuentas vinculadas"
+    }
   },
   "smtp": {
     "title": "Servidor de correo / SMTP para avisos de tareas",
@@ -836,7 +858,11 @@
       "save": "Cambiar la contraseña",
       "saved": "Contraseña cambiada. Se ha cerrado la sesión en todos los demás dispositivos.",
       "failed": "No se ha podido cambiar la contraseña",
-      "noMatch": "Las dos contraseñas nuevas no coinciden"
+      "noMatch": "Las dos contraseñas nuevas no coinciden",
+      "setTitle": "Establecer una contraseña",
+      "set": "Establecer contraseña",
+      "setHint": "Inicias sesión con {{name}} y no necesitas una contraseña propia. Con una contraseña también puedes iniciar sesión directamente; para confirmarlo, MindSift lo consulta con {{name}}.",
+      "setHintAdmin": "El inicio de sesión con contraseña está desactivado; solo la administración tiene un acceso de emergencia en /?login=password por si {{name}} falla. Aquí estableces la contraseña para ello."
     },
     "nav": "Seguridad",
     "navHint": "Contraseña, dos pasos y sesiones",
@@ -940,6 +966,20 @@
       "intro": "Este cambio también necesita tu segundo factor.",
       "submit": "Confirmar",
       "cancelled": "Sin confirmar, no se ha cambiado nada."
+    },
+    "oidc": {
+      "title": "Inicio de sesión con {{name}}",
+      "linked": "Inicias sesión con {{name}}. Los cambios delicados, como una dirección nueva, una contraseña, claves de API o borrar, los confirmas iniciando sesión de nuevo en {{name}}.",
+      "notLinked": "Vincula tu cuenta con {{name}} para iniciar sesión también allí. Para confirmarlo necesitas tu contraseña.",
+      "link": "Vincular con {{name}}",
+      "linkFailed": "No se ha podido vincular",
+      "confirmTitle": "Confirmar el cambio",
+      "confirmIntro": "Vuelve a iniciar sesión en {{name}} para confirmarlo. Después volverás aquí y podrás hacer el cambio en los próximos cinco minutos.",
+      "confirmButton": "Confirmar con {{name}}",
+      "confirmFirst": "Confirma primero el cambio con {{name}}.",
+      "confirmHint": "Lo confirmas iniciando sesión de nuevo en {{name}}.",
+      "confirmedDone": "Confirmado. Ahora puedes hacer el cambio durante cinco minutos.",
+      "linkedDone": "Tu cuenta ya está vinculada con {{name}}."
     }
   }
 }

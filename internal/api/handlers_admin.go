@@ -450,6 +450,7 @@ func (s *Server) settingsForBrowser(settings *domain.SystemSettings) *domain.Sys
 	}
 	out.EmailLinksAvailable = s.emailLinksAvailable()
 	out.DefaultLanguage = s.defaultLanguage()
+	out.OIDC = s.oidcStatusForAdmin()
 	return &out
 }
 

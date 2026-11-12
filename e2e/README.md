@@ -134,3 +134,16 @@ The guided tour (`frontend/src/features/tour`), started with "Tour starten" on t
 - keys: → on, ← back, Enter on, Tab stays in the card, Esc ends; the × ends too
 - a click on the dimmed page and the triage's own keys (H, L, D, T, C) do nothing
 - no data changes: notes, tasks, the inbox and lists are the same before and after
+
+## oidc.e2e.mjs
+
+Sign-in through an OpenID Connect provider (`internal/api/oidc.go`, `frontend/src/lib/oidc.ts`) against a real [Dex](https://dexidp.io) (`ghcr.io/dexidp/dex:v2.44.0`, configuration `e2e/dex.yaml` with one client and one person, kept in memory). `run.sh` starts Dex and a third MindSift server that signs in through it with the password login switched off (`OIDC_PASSWORD_LOGIN=false`, first admin from `ADMIN_USER`), and removes both afterwards; their ports are `E2E_OIDC_PORT` and `E2E_DEX_PORT`, else `E2E_PORT` + 2 and + 3, else free ones. Desktop in Chromium and Firefox, the phone in Chromium:
+
+- the login shows only "Mit Dex anmelden": no password form, no sign-up, no "forgot password"
+- the button leads to Dex; back in the app there is a new account from Dex (no password of its own, linked), MindSift asks no second factor, and the ticket has left the address bar
+- signing out and in again, and in the other browser, lands in the same account
+- an error of the return (`?oidc_error=cancelled`) is explained on the login screen and leaves the address bar
+- the administrators' emergency access `/?login=password` shows the form with its explanation and signs the admin in
+- on a phone the provider's button is at least 44 px high
+
+Against servers that are already running: `MINDSIFT_OIDC_URL` (with `OIDC_PASSWORD_LOGIN=false` and `OIDC_NAME=Dex`), `MINDSIFT_OIDC_ADMIN`, `MINDSIFT_OIDC_PASSWORD`; the person at Dex is `erika@example.com` / `password` (`DEX_LOGIN`, `DEX_PASSWORD`). `SHOT_DIR=<folder>` saves the login with only the button (desktop and phone) and the error of the return.

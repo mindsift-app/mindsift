@@ -123,7 +123,12 @@ export async function request<T>(path: string, { timeout = 'normal', ...options 
     !path.includes('/auth/login') &&
     !path.includes('/auth/register') &&
     !path.includes('/auth/setup') &&
-    !path.includes('/auth/status')
+    !path.includes('/auth/status') &&
+    // A ticket that ran out is no sign-out of the session that sent it
+    !path.includes('/auth/oidc/') &&
+    // The stream reconnects when the server ends it after a new password, possibly before the answer with the
+    // fresh token is read: the next try uses that one (a session that really ended fails everywhere else)
+    !path.includes('/auth/stream-ticket')
   ) {
     clearToken();
     window.dispatchEvent(new CustomEvent('mindsift:unauthorized'));
@@ -164,6 +169,13 @@ export function sendOutboxEntry(entry: { method: string; path: string; body: Rec
 }
 
 // Server-wide sharing mode from /auth/status; in private mode the UI hides sharing and groups
+// Sign-in through the OIDC provider as /auth/status said (lib/oidc.ts)
+let currentOidc = { enabled: false, name: '', passwordLogin: true };
+export const setCurrentOidc = (oidc: { enabled: boolean; name: string } | undefined, passwordLogin: boolean | undefined) => {
+  currentOidc = { enabled: Boolean(oidc?.enabled), name: oidc?.name || '', passwordLogin: passwordLogin !== false };
+};
+export const getCurrentOidc = () => currentOidc;
+
 let currentSharingMode: SharingMode = 'organizations';
 export const setCurrentSharingMode = (mode: SharingMode) => {
   currentSharingMode = mode;

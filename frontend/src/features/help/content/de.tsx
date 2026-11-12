@@ -768,7 +768,7 @@ const de: HelpContent = {
       title: 'Offline, Backups & Passwort',
       subtitle: 'Ohne Internet weiterarbeiten, Sicherungen einspielen, Passwort zurücksetzen',
       icon: CloudOff,
-      keywords: ['offline', 'internet', 'backup', 'sicherung', 'wiederherstellen', 'passwort', 'vergessen', 'konto', 'zwei-faktor', '2fa', 'authenticator', 'sicherheit', 'passkey', 'fingerabdruck'],
+      keywords: ['offline', 'internet', 'backup', 'sicherung', 'wiederherstellen', 'passwort', 'vergessen', 'konto', 'zwei-faktor', '2fa', 'authenticator', 'sicherheit', 'passkey', 'fingerabdruck', 'sso', 'oidc'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
           <ul className="space-y-1.5">
@@ -789,6 +789,9 @@ const de: HelpContent = {
             </li>
             <li>
               <strong className="text-main">Passkeys:</strong> Unter <em>Kontoeinstellungen → Sicherheit → Passkeys</em> legst du einen Passkey an (Passwort bestätigen, Namen vergeben, Fingerabdruck, Gesicht oder Geräte-PIN). Danach meldest du dich mit „Mit Passkey anmelden“ ganz ohne Passwort an; manche Browser bieten ihn auch direkt im Anmeldefeld an. Wer sich mit Passwort anmeldet, wird danach nach dem Passkey gefragt: Ein Passkey zählt als zweiter Faktor, auch ohne Authenticator-App. Mit dem ersten Passkey erscheinen die Wiederherstellungscodes. Entfernst du den letzten zweiten Faktor, ist die Zwei-Faktor-Anmeldung wieder aus. Passkeys gibt es nur, wenn der Server eine feste https-Adresse hat (BASE_URL).
+            </li>
+            <li>
+              <strong className="text-main">Anmeldung über einen Anbieter (SSO):</strong> Hat die Administration einen Anbieter wie Authentik, Authelia oder Keycloak eingerichtet, steht im Anmeldefenster „Mit … anmelden“. Beim ersten Mal entsteht dein Konto, oder ein vorhandenes mit derselben bestätigten Adresse wird verknüpft; ein Konto mit anderer Adresse verknüpfst du unter <em>Kontoeinstellungen → Sicherheit</em>. Die Zwei-Faktor-Anmeldung übernimmt dann der Anbieter. Heikle Änderungen wie eine neue Adresse, ein Passwort, API-Schlüssel oder das Löschen bestätigst du mit einer erneuten Anmeldung dort; danach hast du fünf Minuten Zeit. Ist die Anmeldung mit Passwort ausgeschaltet, gibt es nur noch diesen Knopf, und die Administration hat unter <em>/?login=password</em> einen Notzugang.
             </li>
           </ul>
         </div>

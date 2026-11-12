@@ -1565,7 +1565,7 @@ func TestShareTargetFallbackRedirects(t *testing.T) {
 // testSession starts a server-side session, as a login would, for tokens made directly in tests.
 func testSession(t *testing.T, store *storage.Store, userID string) string {
 	t.Helper()
-	sid, err := store.CreateSession(userID, "go-test", "192.0.2.1")
+	sid, err := store.CreateSession(userID, "go-test", "192.0.2.1", storage.SessionViaPassword)
 	if err != nil {
 		t.Fatalf("CreateSession: %v", err)
 	}

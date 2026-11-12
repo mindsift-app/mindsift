@@ -101,7 +101,8 @@ export function useProfileSettings(currentUser: User, onUserUpdated: (u: User) =
   };
 
   // Changing the login address needs the current password (FLAW-30)
-  const needsCurrentPassword = email.trim().toLowerCase() !== (currentUser.email || '').toLowerCase();
+  // (an account of the OIDC provider without a password confirms there instead, withSecondFactor)
+  const needsCurrentPassword = email.trim().toLowerCase() !== (currentUser.email || '').toLowerCase() && !currentUser.noPassword;
 
   // --- Handlers: Profile ---
   const handleSaveProfile = async (e: React.FormEvent) => {

@@ -4,6 +4,7 @@ go 1.27
 
 require (
 	github.com/SherClockHolmes/webpush-go v1.4.0
+	github.com/coreos/go-oidc/v3 v3.21.0
 	github.com/go-chi/chi/v5 v5.5.0
 	github.com/go-chi/cors v1.2.2
 	github.com/go-webauthn/webauthn v0.18.2
@@ -11,12 +12,14 @@ require (
 	github.com/gorilla/websocket v1.5.3
 	golang.org/x/crypto v0.58.0
 	golang.org/x/net v0.62.0
+	golang.org/x/oauth2 v0.37.0
 	modernc.org/sqlite v1.61.0
 )
 
 require (
 	github.com/dustin/go-humanize v1.1.0 // indirect
 	github.com/fxamacker/cbor/v2 v2.9.4 // indirect
+	github.com/go-jose/go-jose/v4 v4.1.6 // indirect
 	github.com/go-viper/mapstructure/v2 v2.5.0 // indirect
 	github.com/go-webauthn/x v0.3.1 // indirect
 	github.com/google/go-tpm v0.9.8 // indirect

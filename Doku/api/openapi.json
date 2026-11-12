@@ -4519,6 +4519,65 @@
           }
         }
       }
+    },
+    "/api/v1/auth/oidc/start": {
+      "post": {
+        "summary": "Start the sign-in through the OIDC provider",
+        "description": "{return} → {url, bind, expiresIn}: the provider's authorization address (code flow with PKCE S256, state, nonce) and a value the app keeps (localStorage) until the ticket comes back; return is an own path to come back to (\"/\", \"/oauth/authorize?…\"). 404 while OIDC is off, 503 oidc_unavailable while the provider's discovery fails, 403 before the setup, 429 throttled",
+        "tags": [
+          "Public"
+        ],
+        "security": [],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/oidc/callback": {
+      "get": {
+        "summary": "Return from the OIDC provider",
+        "description": "The provider sends the browser here (redirect URI <BASE_URL>/api/v1/auth/oidc/callback). Exchanges the code, checks the ID token (signature, iss, aud, azp, exp, iat, nonce), finds, links or creates the account and redirects (303) to the return path with ?oidc=<one-time ticket>, or with ?oidc_error=<code>: cancelled, expired, unavailable, failed, no_account, no_email, email_in_use, disabled, pending, unverified, setup; confirmations also wrong_account, not_fresh, linked_elsewhere, already_linked",
+        "tags": [
+          "Public"
+        ],
+        "security": [],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/oidc/exchange": {
+      "post": {
+        "summary": "Trade the OIDC ticket",
+        "description": "{ticket, bind} → {token, user} after a sign-in (the session counts as started through the provider: no second factor of MindSift, also not the one the administration requires). After a confirmation or link, sent with the session that asked: {confirmed, linked, expiresIn}. 401 oidc_expired when the ticket is unknown, used, older than 2 minutes or bind does not match",
+        "tags": [
+          "Public"
+        ],
+        "security": [],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/oidc/confirm": {
+      "post": {
+        "summary": "Confirm with the OIDC provider, or link the account",
+        "description": "{return, link?, password?, code | passkeyToken + passkey} → {url, bind, expiresIn}. Without link: sign in at the provider again (prompt=login, max_age=0) to confirm sensitive changes; after the ticket exchange the session counts as confirmed for 5 minutes (answers oidc_confirm_required of password, address, deleting, API keys, second factor). With link: ties the account to the provider, needs the password (and second factor) first; 409 when already linked",
+        "tags": [
+          "Account and General"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
     }
   }
 }

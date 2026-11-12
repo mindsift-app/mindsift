@@ -313,3 +313,70 @@ func TestInitialAdminPasswordFileRefused(t *testing.T) {
 		})
 	}
 }
+
+func TestOIDCConfigFromEnvironment(t *testing.T) {
+	t.Setenv("DATA_DIR", t.TempDir())
+	secret := filepath.Join(t.TempDir(), "oidc-secret")
+	if err := os.WriteFile(secret, []byte("aus-der-datei\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("OIDC_ISSUER", "https://auth.example.com/application/o/mindsift/")
+	t.Setenv("OIDC_CLIENT_ID", "mindsift")
+	t.Setenv("OIDC_CLIENT_SECRET_FILE", secret)
+	t.Setenv("OIDC_ADMIN_GROUP", "mindsift-admins")
+	t.Setenv("OIDC_PASSWORD_LOGIN", "false")
+	c := Load().OIDC
+	if err := c.Resolve(); err != nil {
+		t.Fatal(err)
+	}
+	if c.ClientSecret != "aus-der-datei" || c.Name != "SSO" || !c.AutoCreate || c.PasswordLogin ||
+		strings.Join(c.Scopes, " ") != "openid email profile groups" {
+		t.Fatalf("OIDC = %+v", c)
+	}
+	t.Setenv("OIDC_SCOPES", "email,profile")
+	t.Setenv("OIDC_NAME", "Authentik")
+	c = Load().OIDC
+	if err := c.Resolve(); err != nil || strings.Join(c.Scopes, " ") != "openid email profile" || c.Name != "Authentik" {
+		t.Fatalf("OIDC_SCOPES: %+v %v", c, err)
+	}
+}
+
+func TestOIDCConfigRefusesHalfASetup(t *testing.T) {
+	secret := filepath.Join(t.TempDir(), "secret")
+	if err := os.WriteFile(secret, []byte("Kr0k0dil\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	ok := OIDCConfig{Issuer: "https://idp.example", ClientID: "a", ClientSecret: "Kr0k0dil"}
+	notBool := ok
+	notBool.rawAutoCreate = "vielleicht"
+	cases := []struct {
+		name string
+		c    OIDCConfig
+		want string
+	}{
+		{"client without issuer", OIDCConfig{ClientID: "a", ClientSecret: "b"}, "without OIDC_ISSUER"},
+		{"password off without provider", OIDCConfig{rawPasswordLogin: "false"}, "OIDC_PASSWORD_LOGIN=false needs a provider"},
+		{"no client id", OIDCConfig{Issuer: "https://idp.example", ClientSecret: "b"}, "OIDC_CLIENT_ID is missing"},
+		{"no secret", OIDCConfig{Issuer: "https://idp.example", ClientID: "a"}, "OIDC_CLIENT_SECRET (or OIDC_CLIENT_SECRET_FILE) is missing"},
+		{"both secrets", OIDCConfig{Issuer: "https://idp.example", ClientID: "a", ClientSecret: "Kr0k0dil", ClientSecretFile: secret}, "both set"},
+		{"missing secret file", OIDCConfig{Issuer: "https://idp.example", ClientID: "a", ClientSecretFile: secret + ".fehlt"}, "reading OIDC_CLIENT_SECRET_FILE failed"},
+		{"no http address", OIDCConfig{Issuer: "idp.example", ClientID: "a", ClientSecret: "b"}, "is not an http(s) address"},
+		{"no boolean", notBool, "OIDC_AUTO_CREATE"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := tc.c.Resolve()
+			if err == nil || !strings.Contains(err.Error(), tc.want) {
+				t.Fatalf("Resolve = %v; want %q", err, tc.want)
+			}
+			if strings.Contains(err.Error(), "Kr0k0dil") {
+				t.Fatalf("the secret is in the error: %v", err)
+			}
+		})
+	}
+	// Nothing set: off, password login on
+	var none OIDCConfig
+	if err := none.Resolve(); err != nil || none.Configured() || !none.PasswordLogin {
+		t.Fatalf("unset: %+v %v", none, err)
+	}
+}

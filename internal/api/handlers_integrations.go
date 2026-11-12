@@ -41,7 +41,15 @@ func (s *Server) handleCreateAPIKey(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	user, ok := s.currentUser(w, r)
-	if !ok || !s.confirmSecondFactor(w, r, user, req.secondFactor) {
+	if !ok {
+		return
+	}
+	// A session from the OIDC provider of an account without a second factor in MindSift confirms there
+	if s.sessionViaOIDC(r) && !s.store.MFAActive(user.ID) && !s.oidcConfirmed(r, user) {
+		s.writeOIDCConfirmRequired(w)
+		return
+	}
+	if !s.confirmSecondFactor(w, r, user, req.secondFactor) {
 		return
 	}
 

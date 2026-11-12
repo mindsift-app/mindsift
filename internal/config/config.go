@@ -7,8 +7,10 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net/url"
 	"os"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -101,6 +103,123 @@ type Config struct {
 	// administrator on the first start, while the database has no account yet (api.CreateInitialAdmin);
 	// ignored afterwards
 	InitialAdmin InitialAdmin
+
+	// OIDC: sign-in through an OpenID Connect provider (OIDC_*); checked by OIDCConfig.Resolve at the start
+	OIDC OIDCConfig
+}
+
+// OIDCConfig: OIDC_ISSUER, OIDC_CLIENT_ID and OIDC_CLIENT_SECRET (or OIDC_CLIENT_SECRET_FILE) switch the
+// sign-in through a provider on (Authentik, Authelia, Keycloak, Dex, Google …). Name is the text on the
+// button (OIDC_NAME); members of AdminGroup at the provider (OIDC_ADMIN_GROUP) are administrators.
+// AutoCreate (OIDC_AUTO_CREATE, default true) creates accounts at the first sign-in; PasswordLogin
+// (OIDC_PASSWORD_LOGIN, default true) false leaves the password only to administrators (emergency access).
+type OIDCConfig struct {
+	Issuer           string
+	ClientID         string
+	ClientSecret     string
+	ClientSecretFile string
+	Name             string
+	AdminGroup       string
+	Scopes           []string
+	AutoCreate       bool
+	PasswordLogin    bool
+	// The values of OIDC_AUTO_CREATE and OIDC_PASSWORD_LOGIN as set, so Resolve can refuse what is no boolean
+	rawAutoCreate, rawPasswordLogin string
+}
+
+// Configured: OIDC_ISSUER is set (whether it can be used is up to Resolve, BASE_URL and the demo).
+func (c OIDCConfig) Configured() bool { return c.Issuer != "" }
+
+// DefaultOIDCScopes are asked for when OIDC_SCOPES is not set; "groups" is added with OIDC_ADMIN_GROUP.
+var DefaultOIDCScopes = []string{"openid", "email", "profile"}
+
+func loadOIDC() OIDCConfig {
+	c := OIDCConfig{
+		Issuer:           strings.TrimSpace(os.Getenv("OIDC_ISSUER")),
+		ClientID:         strings.TrimSpace(os.Getenv("OIDC_CLIENT_ID")),
+		ClientSecret:     strings.TrimSpace(os.Getenv("OIDC_CLIENT_SECRET")),
+		ClientSecretFile: strings.TrimSpace(os.Getenv("OIDC_CLIENT_SECRET_FILE")),
+		Name:             strings.TrimSpace(os.Getenv("OIDC_NAME")),
+		AdminGroup:       strings.TrimSpace(os.Getenv("OIDC_ADMIN_GROUP")),
+		Scopes:           strings.Fields(strings.ReplaceAll(os.Getenv("OIDC_SCOPES"), ",", " ")),
+		rawAutoCreate:    strings.TrimSpace(os.Getenv("OIDC_AUTO_CREATE")),
+		rawPasswordLogin: strings.TrimSpace(os.Getenv("OIDC_PASSWORD_LOGIN")),
+	}
+	return c
+}
+
+// parseBool reads true/false (also 1/0, yes/no, on/off); unset gives def, anything else ok=false.
+func parseBool(raw string, def bool) (value, ok bool) {
+	switch strings.ToLower(raw) {
+	case "":
+		return def, true
+	case "true", "1", "yes", "on":
+		return true, true
+	case "false", "0", "no", "off":
+		return false, true
+	}
+	return def, false
+}
+
+// Resolve checks the OIDC_* variables and fills in what follows from them: the secret from
+// OIDC_CLIENT_SECRET_FILE, the switches, the scopes and the button's name. Half a configuration (an issuer
+// without client, a client without issuer, no secret), an issuer that is no http(s) address, a switch that
+// is no boolean or a password login switched off without a provider is an error: the server does not start,
+// so nobody is surprised by a sign-in that does not work. The errors name variables and paths, never the secret.
+func (c *OIDCConfig) Resolve() error {
+	autoCreate, ok := parseBool(c.rawAutoCreate, true)
+	if !ok {
+		return fmt.Errorf("OIDC_AUTO_CREATE is %q: set true or false", c.rawAutoCreate)
+	}
+	passwordLogin, ok := parseBool(c.rawPasswordLogin, true)
+	if !ok {
+		return fmt.Errorf("OIDC_PASSWORD_LOGIN is %q: set true or false", c.rawPasswordLogin)
+	}
+	c.AutoCreate, c.PasswordLogin = autoCreate, passwordLogin
+	if c.Issuer == "" {
+		switch {
+		case c.ClientID != "" || c.ClientSecret != "" || c.ClientSecretFile != "":
+			return errors.New("OIDC_CLIENT_ID or OIDC_CLIENT_SECRET is set without OIDC_ISSUER: set the issuer address of the provider, or remove the OIDC variables")
+		case !passwordLogin:
+			return errors.New("OIDC_PASSWORD_LOGIN=false needs a provider (OIDC_ISSUER, OIDC_CLIENT_ID, OIDC_CLIENT_SECRET): without one nobody but the administrators could sign in")
+		}
+		return nil
+	}
+	u, err := url.Parse(c.Issuer)
+	if err != nil || (u.Scheme != "https" && u.Scheme != "http") || u.Host == "" || u.RawQuery != "" || u.Fragment != "" {
+		return fmt.Errorf("OIDC_ISSUER %q is not an http(s) address such as https://auth.example.com/application/o/mindsift/", c.Issuer)
+	}
+	if c.ClientID == "" {
+		return errors.New("OIDC_ISSUER is set but OIDC_CLIENT_ID is missing")
+	}
+	if c.ClientSecretFile != "" {
+		if c.ClientSecret != "" {
+			return errors.New("OIDC_CLIENT_SECRET and OIDC_CLIENT_SECRET_FILE are both set: set only one of them")
+		}
+		data, err := os.ReadFile(c.ClientSecretFile)
+		if err != nil {
+			return fmt.Errorf("reading OIDC_CLIENT_SECRET_FILE failed: %w", err)
+		}
+		c.ClientSecret = strings.TrimSpace(string(data))
+		if c.ClientSecret == "" {
+			return fmt.Errorf("OIDC_CLIENT_SECRET_FILE %s is empty", c.ClientSecretFile)
+		}
+	}
+	if c.ClientSecret == "" {
+		return errors.New("OIDC_ISSUER is set but OIDC_CLIENT_SECRET (or OIDC_CLIENT_SECRET_FILE) is missing")
+	}
+	if c.Name == "" {
+		c.Name = "SSO"
+	}
+	if len(c.Scopes) == 0 {
+		c.Scopes = append([]string{}, DefaultOIDCScopes...)
+		if c.AdminGroup != "" {
+			c.Scopes = append(c.Scopes, "groups")
+		}
+	} else if !slices.Contains(c.Scopes, "openid") {
+		c.Scopes = append([]string{"openid"}, c.Scopes...)
+	}
+	return nil
 }
 
 // InitialAdmin is the first administrator given by the environment. Password is kept exactly as set
@@ -449,6 +568,7 @@ func Load() *Config {
 			PasswordFile: strings.TrimSpace(os.Getenv("ADMIN_PASSWORD_FILE")),
 			Email:        strings.TrimSpace(os.Getenv("ADMIN_EMAIL")),
 		},
+		OIDC: loadOIDC(),
 		Media: MediaConfig{
 			MaxImageMB: envInt("MEDIA_MAX_IMAGE_MB", 15, 1, 1000),
 			MaxAudioMB: envInt("MEDIA_MAX_AUDIO_MB", 50, 1, 2000),

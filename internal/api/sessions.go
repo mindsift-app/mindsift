@@ -25,9 +25,10 @@ func sessionIDFrom(r *http.Request) string {
 	return id
 }
 
-// startSession creates the session for a fresh login and returns its token.
-func (s *Server) startSession(r *http.Request, user *domain.User) (string, error) {
-	sid, err := s.store.CreateSession(user.ID, r.UserAgent(), clientIPFrom(r).ip)
+// startSession creates the session for a fresh login and returns its token. via says how the person signed in
+// (storage.SessionVia*): the second factor the administration requires is asked of password sign-ins only.
+func (s *Server) startSession(r *http.Request, user *domain.User, via string) (string, error) {
+	sid, err := s.store.CreateSession(user.ID, r.UserAgent(), clientIPFrom(r).ip, via)
 	if err != nil {
 		return "", err
 	}

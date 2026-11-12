@@ -9,11 +9,14 @@ vi.mock('../../../lib/api', async () => {
     api: {
       getMfaStatus: vi.fn(async () => ({ available: true, enabled: true, totp: { enabled: true }, passkeys: [], recoveryCodesLeft: 10, trustedDevices: [] })),
       passkeyChallenge: vi.fn(),
+      oidcConfirm: vi.fn(async () => ({ url: 'https://auth.example/authorize?prompt=login', bind: 'b' })),
     },
+    getCurrentOidc: () => ({ enabled: true, name: 'Authentik', passwordLogin: true }),
   };
 });
 
 import { SecondFactorHost, withSecondFactor } from '../user/askSecondFactor';
+import { api } from '../../../lib/api';
 
 const needed = () => new ApiError('Bitte gib zur Bestätigung einen Code deiner Authenticator-App ein', 403, 'mfa_required');
 const wrong = () => new ApiError('Der Code ist falsch oder abgelaufen', 403, 'mfa_invalid');
@@ -61,5 +64,26 @@ describe('withSecondFactor', () => {
     await expect(result).rejects.toMatchObject({ code: 'mfa_cancelled' });
     expect(run).toHaveBeenCalledTimes(1);
     await waitFor(() => expect(screen.queryByText('Mit zweitem Faktor bestätigen')).toBeNull());
+  });
+
+  it('sends an account of the OIDC provider to sign in there again', async () => {
+    const assign = vi.fn();
+    const realLocation = window.location;
+    Object.defineProperty(window, 'location', { configurable: true, value: { pathname: '/', search: '?x=1', assign } });
+    const run = vi.fn().mockRejectedValueOnce(new ApiError('Bitte bestätige die Änderung mit einer erneuten Anmeldung bei Authentik', 403, 'oidc_confirm_required'));
+    let result: Promise<unknown> = Promise.resolve();
+    act(() => {
+      result = withSecondFactor(run);
+      result.catch(() => {});
+    });
+    await expect(result).rejects.toMatchObject({ message: 'Bitte bestätige die Änderung zuerst bei Authentik.' });
+    expect(await screen.findByText(/Melde dich zur Bestätigung noch einmal bei Authentik an/)).toBeTruthy();
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Bei Authentik bestätigen' }));
+    });
+    expect(api.oidcConfirm).toHaveBeenCalledWith({ return: '/?x=1' });
+    expect(assign).toHaveBeenCalledWith('https://auth.example/authorize?prompt=login');
+    expect(run).toHaveBeenCalledTimes(1);
+    Object.defineProperty(window, 'location', { configurable: true, value: realLocation });
   });
 });

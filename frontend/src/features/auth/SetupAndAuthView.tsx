@@ -11,6 +11,7 @@ import {
   Check,
   AlertCircle,
   Fingerprint,
+  ShieldCheck,
 } from 'lucide-react';
 import { conditionalPasskeysAvailable, getPasskey, passkeyCancelled, passkeysSupported } from '../../lib/webauthn';
 import { AuthStatus, MfaMethod, User } from '../../lib/types';
@@ -23,6 +24,7 @@ import { SetupInstanceSection, useSetupChoices } from './SetupInstanceSection';
 import { SetupMailSection, useSetupMail } from './SetupMailSection';
 import { SetupSummary } from './SetupSummary';
 import { useKeyboardRoom } from '../../lib/useKeyboardInset';
+import { startOidcLogin, takeOidcResult } from '../../lib/oidc';
 
 interface SetupAndAuthViewProps {
   authStatus: AuthStatus;
@@ -56,7 +58,8 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
   // An invite link (?invite=CODE) opens the invite form with the code filled in
   const [linkInviteCode] = useState(() => new URLSearchParams(window.location.search).get('invite')?.trim().toUpperCase() || '');
   const [authTab, setAuthTab] = useState<'login' | 'invite' | 'register' | 'forgot' | 'reset'>(
-    resetToken ? 'reset' : linkInviteCode ? 'invite' : 'login'
+    // An invite signs up with a password: not while the password login is off (OIDC)
+    resetToken ? 'reset' : linkInviteCode && authStatus.passwordLogin !== false ? 'invite' : 'login'
   );
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -129,6 +132,46 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
   // Password right, the account has a second factor: its code or passkey comes next (MfaStep)
   const [mfa, setMfa] = useState<{ token: string; methods: MfaMethod[] } | null>(null);
 
+  // Sign-in through the OIDC provider ("Mit <name> anmelden"). With the password login off there is only that
+  // button: no form, no sign-up, no "forgot password"; administrators keep the form at /?login=password
+  // (emergency access while the provider is down).
+  const oidcOn = Boolean(authStatus.oidc?.enabled);
+  const oidcName = authStatus.oidc?.name || 'SSO';
+  const passwordLoginOn = authStatus.passwordLogin !== false;
+  const [emergencyAccess] = useState(() => new URLSearchParams(window.location.search).get('login') === 'password');
+  const passwordForm = passwordLoginOn || emergencyAccess;
+  // An error of the return from the provider (cancelled, no account, locked …)
+  useEffect(() => {
+    const result = takeOidcResult();
+    if (result?.kind === 'error') setError(result.message);
+  }, []);
+  const handleOidcLogin = async () => {
+    setError(null);
+    setUnverifiedError(null);
+    setNotice(null);
+    setSubmitting(true);
+    triggerHaptic(15);
+    try {
+      await startOidcLogin();
+      // The browser leaves for the provider; the button stays busy until then
+    } catch (err: any) {
+      setError(err?.message || t('oidc.error.failed', { name: oidcName }));
+      setSubmitting(false);
+    }
+  };
+  const oidcButton = (
+    <button
+      type="button"
+      onClick={() => void handleOidcLogin()}
+      disabled={submitting}
+      className={`w-full ${passwordForm ? 'btn-action' : 'btn-primary'} h-11 sm:h-9 text-xs font-semibold flex items-center justify-center gap-2 disabled:opacity-50`}
+      data-oidc-login
+    >
+      <ShieldCheck className="w-3.5 h-3.5" />
+      <span>{t('oidc.button', { name: oidcName })}</span>
+    </button>
+  );
+
   // Sign-in with a passkey (no password): the button, and the browser's autofill in the login field
   // (mediation "conditional") where the browser offers it. Only one passkey request can wait at a time:
   // the button stops the autofill one first, the autofill starts again afterwards (conditionalRun).
@@ -136,7 +179,7 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
   const conditionalRequest = useRef<AbortController | null>(null);
   const [conditionalRun, setConditionalRun] = useState(0);
   useEffect(() => {
-    if (!passkeysOn || authTab !== 'login' || mfa || authStatus.needsSetup) return;
+    if (!passkeysOn || !passwordForm || authTab !== 'login' || mfa || authStatus.needsSetup) return;
     let stopped = false;
     let renew = 0;
     const run = async () => {
@@ -174,7 +217,7 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
     };
     // onAuthenticated is the app's sign-in callback and stays the same
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [passkeysOn, authTab, mfa, authStatus.needsSetup, conditionalRun]);
+  }, [passkeysOn, passwordForm, authTab, mfa, authStatus.needsSetup, conditionalRun]);
 
   const handlePasskeyLogin = async () => {
     const pending = conditionalRequest.current;
@@ -494,58 +537,60 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
         </div>
 
         {/* Navigation Tabs (not while choosing a new password or entering the second factor) */}
-        <div className={`${authTab === 'reset' || authTab === 'forgot' || mfa ? 'hidden' : 'flex'} border-b border-border bg-canvas text-xs`}>
-          <button
-            type="button"
-            onClick={() => {
-              setAuthTab('login');
-              setError(null);
-              setNotice(null);
-            }}
-            className={`flex-1 h-9 px-3 font-medium flex items-center justify-center gap-1.5 border-r border-border transition-colors ${
-              authTab === 'login'
-                ? 'bg-panel text-main border-b-2 border-b-accent'
-                : 'text-muted hover:text-main'
-            }`}
-          >
-            <LogIn className="w-3.5 h-3.5" />
-            <span>{t('login.tab')}</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              setAuthTab('invite');
-              setError(null);
-            }}
-            className={`flex-1 h-9 px-3 font-medium flex items-center justify-center gap-1.5 border-r border-border transition-colors ${
-              authTab === 'invite'
-                ? 'bg-panel text-main border-b-2 border-b-accent'
-                : 'text-muted hover:text-main'
-            }`}
-          >
-            <KeyRound className="w-3.5 h-3.5" />
-            <span>{t('invite.tab')}</span>
-          </button>
-
-          {authStatus.allowRegistration && (
+        {passwordLoginOn && (
+          <div className={`${authTab === 'reset' || authTab === 'forgot' || mfa ? 'hidden' : 'flex'} border-b border-border bg-canvas text-xs`}>
             <button
               type="button"
               onClick={() => {
-                setAuthTab('register');
+                setAuthTab('login');
                 setError(null);
+                setNotice(null);
               }}
-              className={`flex-1 h-9 px-3 font-medium flex items-center justify-center gap-1.5 transition-colors ${
-                authTab === 'register'
+              className={`flex-1 h-9 px-3 font-medium flex items-center justify-center gap-1.5 border-r border-border transition-colors ${
+                authTab === 'login'
                   ? 'bg-panel text-main border-b-2 border-b-accent'
                   : 'text-muted hover:text-main'
               }`}
             >
-              <UserPlus className="w-3.5 h-3.5" />
-              <span>{t('register.tab')}</span>
+              <LogIn className="w-3.5 h-3.5" />
+              <span>{t('login.tab')}</span>
             </button>
-          )}
-        </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                setAuthTab('invite');
+                setError(null);
+              }}
+              className={`flex-1 h-9 px-3 font-medium flex items-center justify-center gap-1.5 border-r border-border transition-colors ${
+                authTab === 'invite'
+                  ? 'bg-panel text-main border-b-2 border-b-accent'
+                  : 'text-muted hover:text-main'
+              }`}
+            >
+              <KeyRound className="w-3.5 h-3.5" />
+              <span>{t('invite.tab')}</span>
+            </button>
+
+            {authStatus.allowRegistration && (
+              <button
+                type="button"
+                onClick={() => {
+                  setAuthTab('register');
+                  setError(null);
+                }}
+                className={`flex-1 h-9 px-3 font-medium flex items-center justify-center gap-1.5 transition-colors ${
+                  authTab === 'register'
+                    ? 'bg-panel text-main border-b-2 border-b-accent'
+                    : 'text-muted hover:text-main'
+                }`}
+              >
+                <UserPlus className="w-3.5 h-3.5" />
+                <span>{t('register.tab')}</span>
+              </button>
+            )}
+          </div>
+        )}
 
         {/* Form Body */}
         <div className="p-5 text-xs">
@@ -678,8 +723,20 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
             />
           )}
 
-          {authTab === 'login' && !mfa && (
+          {authTab === 'login' && !mfa && !passwordForm && (
+            <div className="space-y-3.5" data-oidc-only>
+              <p className="text-muted">{t('oidc.only', { name: oidcName })}</p>
+              {oidcButton}
+            </div>
+          )}
+
+          {authTab === 'login' && !mfa && passwordForm && (
             <form onSubmit={handleLogin} className="space-y-3.5">
+              {!passwordLoginOn && (
+                <p className="text-[11px] text-muted bg-canvas border border-border rounded-btn px-2.5 py-2" data-emergency-access>
+                  {t('oidc.emergency')}
+                </p>
+              )}
               {authStatus.demoMode && (
                 <div className="p-2.5 rounded border border-accent/30 bg-accent/10 space-y-1.5">
                   <div className="flex items-center justify-between text-[11px] font-semibold text-accent">
@@ -765,13 +822,18 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
                 </button>
               </div>
 
+              {(passkeysOn || oidcOn) && (
+                <div className="flex items-center gap-2 text-[11px] text-faint" aria-hidden="true">
+                  <span className="flex-1 border-t border-border" />
+                  <span>{t('login.or')}</span>
+                  <span className="flex-1 border-t border-border" />
+                </div>
+              )}
+
+              {oidcOn && oidcButton}
+
               {passkeysOn && (
                 <>
-                  <div className="flex items-center gap-2 text-[11px] text-faint" aria-hidden="true">
-                    <span className="flex-1 border-t border-border" />
-                    <span>{t('login.or')}</span>
-                    <span className="flex-1 border-t border-border" />
-                  </div>
                   <button
                     type="button"
                     onClick={() => void handlePasskeyLogin()}
@@ -785,7 +847,7 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
                 </>
               )}
 
-              {!authStatus.allowRegistration && (
+              {!authStatus.allowRegistration && passwordLoginOn && (
                 <p className="text-[11px] text-faint text-center pt-2 border-t border-border">
                   <Trans
                     t={t}
