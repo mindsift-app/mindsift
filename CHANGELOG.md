@@ -20,6 +20,7 @@ Versions before 0.80.0 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - New settings section **Security** with the password change, two-factor sign-in and the signed-in devices (moved there from Profile).
 
 ### Fixed
+- Switching a task list to Kanban (or the calendar) reacts at once: the switch changes right away and the board follows, instead of the click hanging while every card is built (150 tasks, slowed-down CPU: about 0.9 s down to 0.25 s).
 - After a dropped connection (a server update, a phone asleep, a network switch) the app reconnects with its WebSocket instead of falling back to the slower SSE stream for the rest of the visit. That fallback made live drawing impossible after an update ("no WebSocket", the drawing stayed locked). A real fallback behind a proxy is tried again after ten minutes, and opening a drawing tries the WebSocket first.
 - Changing the password no longer signs out the device it was changed on.
 - Callouts show **bold**, *italic*, links and hashtags like any other bullet instead of the raw Markdown; marking several bullets marks the callout's text.
@@ -28,7 +29,7 @@ Versions before 0.80.0 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 ### Changed
 - **Desktop redesign:** the header and the row of page tabs gave way to a navigation rail on the left, so every view starts at the top of the window. It shows icons only and expands to show labels (over the page, remembered per device); notifications, profile, connection status and the demo countdown are at its bottom.
 - Desktop: Quick Dump opens as a window at the top centre over the dimmed page (+ in the rail or the key C) and stays open for the next thought until Escape or a click beside it.
-- Desktop: calmer toolbars in notes, tasks and lists – tabs, view switches and buttons without frames.
+- Desktop: calmer toolbars in notes, tasks and lists – tabs, view switches and buttons without frames; tabs keep a light surface of their own, the open one tinted in the accent colour.
 - `/extract` (`/notiz`) offers the same choice as the button, a new note or an existing one, under the bullet and by keyboard; before, it always made a new note. The help lists numbered lists (`/number`, or `1. ` at the start).
 - The default dark theme is a soft slate grey instead of near black, with slightly calmer text; the light theme shows code blocks light instead of dark.
 - **Attention:** passwords count to the last character, up to 1,024 characters; before, only the first 72 bytes counted. Existing passwords keep working and are stored in the new form at the next sign-in, which older versions cannot read: going back to an older version then needs a password reset for those accounts. Keep `SECRETS_KEY` (or `data/secrets.key`): if it changes, authenticator codes stop working and only recovery codes still sign in.
