@@ -403,7 +403,7 @@ func TestPasskeyAsSecondFactor(t *testing.T) {
 	}
 	// A passkey answer to another challenge counts as wrong, the right one afterwards still works
 	mfaToken = e.challenge()
-	_, res = e.call("POST", "/api/v1/auth/login/mfa/passkey/options", "", map[string]any{"mfaToken": mfaToken})
+	e.call("POST", "/api/v1/auth/login/mfa/passkey/options", "", map[string]any{"mfaToken": mfaToken})
 	if rec, res := e.call("POST", "/api/v1/auth/login/mfa/passkey", "", map[string]any{"mfaToken": mfaToken, "credential": a.get(map[string]any{"challenge": "AAAAAAAAAAAAAAAAAAAAAA"})}); rec.Code != http.StatusUnauthorized || res["code"] != "mfa_invalid" {
 		t.Fatalf("answer to another challenge: %d %v", rec.Code, res)
 	}
