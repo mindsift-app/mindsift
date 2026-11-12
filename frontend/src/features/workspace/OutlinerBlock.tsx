@@ -546,9 +546,16 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
     if (textareaRef.current) fitFieldHeight(textareaRef.current);
   }, []);
 
+  // Text bullets show their rendered text and lay the text field over it; only with the cursor in it does the
+  // field take its place and need the height of its text. Without the cursor it stretches over the rendered
+  // text: measuring it would cost one forced layout of the note per bullet on opening (minutes at 20,000)
+  const fieldOverText = !mediaPicker && !['audio', 'drawing', 'image', 'divider', 'code', 'table', 'callout'].includes(block.type);
   useLayoutEffect(() => {
-    adjustHeight();
-  }, [localContent, block.type, block.level, activeFocus, adjustHeight]);
+    const ta = textareaRef.current;
+    if (!ta) return;
+    if (activeFocus || !fieldOverText) fitFieldHeight(ta);
+    else ta.style.height = '';
+  }, [localContent, block.type, block.level, activeFocus, fieldOverText]);
 
   // Turning the block into another type (slash menu, ``` or markdown shortcut) can swap the text field
   // for a new one (e.g. the code editor); the cursor must stay in the block so typing goes on there
