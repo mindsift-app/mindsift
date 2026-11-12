@@ -3,6 +3,7 @@ import { AuthStatus, DashboardStats, SharedList, Thought, User } from '../lib/ty
 import { api, clearToken, connectWebSocket, disconnectWebSocket, getToken } from '../lib/api';
 import { clearOfflineData, outboxCount } from '../lib/offline';
 import { flushClosedNotes } from '../lib/docSync/flushClosed';
+import { finishOidcReturn } from '../lib/oidc';
 import i18n from '../i18n';
 
 // The session of the app: server status (setup, registration, demo), the signed-in user with counters,
@@ -80,6 +81,9 @@ export function useSessionBootstrap(onSignedOut: () => void) {
           setUser(null);
           return;
         }
+
+        // Back from the OIDC provider: the ticket gives the session (or confirms this one) before anything else
+        await finishOidcReturn();
 
         if (getToken()) {
           await api.flushOfflineQueue();

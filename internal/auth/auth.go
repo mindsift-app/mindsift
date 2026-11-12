@@ -88,7 +88,30 @@ func CheckPassword(password, hash string) bool {
 // PasswordNeedsRehash: the hash is of the earlier form (plain bcrypt) and is replaced by HashPassword
 // after the next successful check.
 func PasswordNeedsRehash(hash string) bool {
-	return hash != "" && !strings.HasPrefix(hash, passwordPrehashPrefix)
+	return hash != "" && !strings.HasPrefix(hash, passwordPrehashPrefix) && HasPassword(hash)
+}
+
+// noPasswordPrefix marks the hash of an account without a password of its own (created at the first sign-in
+// through an OpenID Connect provider): the bcrypt hash of a random value nobody knows, behind a prefix no
+// bcrypt string has, so CheckPassword never matches and HasPassword can tell.
+const noPasswordPrefix = "none:"
+
+// NoPasswordHash gives the hash for an account without a password (see noPasswordPrefix).
+func NoPasswordHash() (string, error) {
+	buf := make([]byte, 32)
+	if _, err := rand.Read(buf); err != nil {
+		return "", err
+	}
+	h, err := HashPassword(hex.EncodeToString(buf))
+	if err != nil {
+		return "", err
+	}
+	return noPasswordPrefix + h, nil
+}
+
+// HasPassword: the account has a password it can sign in with (not one from NoPasswordHash).
+func HasPassword(hash string) bool {
+	return hash != "" && !strings.HasPrefix(hash, noPasswordPrefix)
 }
 
 // TokenLifetime is the absolute lifetime of a session token; while the session is used the token is

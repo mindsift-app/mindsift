@@ -97,6 +97,10 @@ type User struct {
 	PendingEmail string `json:"pendingEmail,omitempty"`
 	// EmailLinks: this server can mail confirmation links (mail server and BASE_URL; own profile only)
 	EmailLinks bool `json:"emailLinks,omitempty"`
+	// NoPassword: the account has no password of its own, it signs in through the OIDC provider; OIDC: it is
+	// linked to the provider (own profile only)
+	NoPassword bool `json:"noPassword,omitempty"`
+	OIDC       bool `json:"oidc,omitempty"`
 	// Only filled for the user's own profile (GET /auth/me, PATCH /auth/settings)
 	NotificationSettings *NotificationSettings `json:"notificationSettings,omitempty"`
 	// DoneRetentionDays: completed tasks are deleted this many days after ticking them off (0 = never)
@@ -455,6 +459,8 @@ type SystemSettings struct {
 	// nil in an update leaves it unchanged.
 	MFARequired          *string `json:"mfaRequired,omitempty"`
 	SMTPConfiguredViaEnv bool    `json:"smtpConfiguredViaEnv,omitempty"`
+	// OIDC: the sign-in through an OpenID Connect provider as the environment sets it (OIDC_*); shown only
+	OIDC *OIDCStatus `json:"oidc,omitempty"`
 	// Automatic backups: on/off, daily time (HH:MM, server time zone) and how many days to keep them
 	BackupEnabled       bool   `json:"backupEnabled"`
 	BackupTime          string `json:"backupTime"`
@@ -769,4 +775,24 @@ type Retention struct {
 	TriageTrash int `json:"triageTrash"`
 	NoteTrash   int `json:"noteTrash"`
 	ListDone    int `json:"listDone"`
+}
+
+// OIDCStatus: what the administration sees of the sign-in through an OpenID Connect provider. Enabled is
+// false while the variables are set but cannot be used (Reason: no_base_url, demo); Reachable and Error tell
+// whether the provider answered its discovery the last time it was asked.
+type OIDCStatus struct {
+	Configured    bool   `json:"configured"`
+	Enabled       bool   `json:"enabled"`
+	Reason        string `json:"reason,omitempty"`
+	Name          string `json:"name,omitempty"`
+	Issuer        string `json:"issuer,omitempty"`
+	ClientID      string `json:"clientId,omitempty"`
+	RedirectURL   string `json:"redirectUrl,omitempty"`
+	Scopes        string `json:"scopes,omitempty"`
+	AdminGroup    string `json:"adminGroup,omitempty"`
+	AutoCreate    bool   `json:"autoCreate"`
+	PasswordLogin bool   `json:"passwordLogin"`
+	Reachable     *bool  `json:"reachable,omitempty"`
+	Error         string `json:"error,omitempty"`
+	LinkedUsers   int    `json:"linkedUsers"`
 }

@@ -5,6 +5,7 @@ import { UserAvatar } from '../../../components/UserAvatar';
 import { FormSheet } from '../../../components/FormSheet';
 import { useProfileSettings } from './useProfileSettings';
 import { PendingEmailNote } from './PendingEmailNote';
+import { getCurrentOidc } from '../../../lib/api';
 
 // Kontoeinstellungen → Profil (state in useProfileSettings); password, two-factor sign-in and sessions
 // are in Sicherheit (SecuritySection)
@@ -316,24 +317,29 @@ export function DangerConfirmSheet({ profile }: { profile: ReturnType<typeof use
       onSubmit={handleDangerSubmit}
       submitLabel={dangerAction === 'account' ? t('profile.deleteAccountButton') : t('profile.deleteDataButton')}
       danger
-      busy={dangerBusy || !dangerPassword}
+      busy={dangerBusy || (!profile.currentUser.noPassword && !dangerPassword)}
     >
       <p className="text-xs text-muted">
         {dangerAction === 'account'
           ? t('profile.confirmAccount')
           : t('profile.confirmData')}
       </p>
-      <label className="block text-xs text-muted">
-        {t('profile.confirmPassword')}
-        <input
-          type="password"
-          autoFocus
-          autoComplete="current-password"
-          value={dangerPassword}
-          onChange={(e) => setDangerPassword(e.target.value)}
-          className="mt-1 input-field w-full h-11 sm:h-8 px-2.5 text-base sm:text-xs"
-        />
-      </label>
+      {/* An account of the OIDC provider without a password confirms there (withSecondFactor) */}
+      {profile.currentUser.noPassword ? (
+        <p className="text-xs text-muted">{t('security.oidc.confirmHint', { name: getCurrentOidc().name })}</p>
+      ) : (
+        <label className="block text-xs text-muted">
+          {t('profile.confirmPassword')}
+          <input
+            type="password"
+            autoFocus
+            autoComplete="current-password"
+            value={dangerPassword}
+            onChange={(e) => setDangerPassword(e.target.value)}
+            className="mt-1 input-field w-full h-11 sm:h-8 px-2.5 text-base sm:text-xs"
+          />
+        </label>
+      )}
       {dangerError && <p className="text-[11px] text-status-err">{dangerError}</p>}
     </FormSheet>
   );

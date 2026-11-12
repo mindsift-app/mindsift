@@ -604,7 +604,7 @@ const en: HelpContent = {
       title: 'Offline, backups & password',
       subtitle: 'Keep working without internet, restore backups, reset your password',
       icon: CloudOff,
-      keywords: ['offline', 'internet', 'backup', 'restore', 'password', 'forgot', 'account', 'two-factor', '2fa', 'authenticator', 'security', 'passkey', 'fingerprint'],
+      keywords: ['offline', 'internet', 'backup', 'restore', 'password', 'forgot', 'account', 'two-factor', '2fa', 'authenticator', 'security', 'passkey', 'fingerprint', 'sso', 'oidc'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
           <ul className="space-y-1.5">
@@ -625,6 +625,9 @@ const en: HelpContent = {
             </li>
             <li>
               <strong className="text-main">Passkeys:</strong> under <em>Account settings → Security → Passkeys</em> you create a passkey (confirm your password, give it a name, fingerprint, face or device PIN). From then on “Sign in with a passkey” signs you in without any password; some browsers also offer it right in the login field. Signing in with the password asks for the passkey afterwards: a passkey counts as second factor, even without an authenticator app. The recovery codes appear with the first passkey. Removing the last second factor switches two-factor sign-in off again. Passkeys are only available when the server has a fixed https address (BASE_URL).
+            </li>
+            <li>
+              <strong className="text-main">Signing in with a provider (SSO):</strong> When the administration has set up a provider such as Authentik, Authelia or Keycloak, the login shows “Sign in with …”. The first time, your account is created, or an existing one with the same verified address is linked; you link an account with a different address under <em>Account settings → Security</em>. Two-factor sign-in is then up to the provider. You confirm sensitive changes such as a new address, a password, API keys or deleting by signing in there again; after that you have five minutes. With the password sign-in switched off there is only this button, and the administration has emergency access at <em>/?login=password</em>.
             </li>
           </ul>
         </div>

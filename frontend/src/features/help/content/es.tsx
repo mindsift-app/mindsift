@@ -674,7 +674,7 @@ const es: HelpContent = {
       title: 'Sin conexión, copias de seguridad y contraseña',
       subtitle: 'Seguir trabajando sin internet, restaurar copias, restablecer la contraseña',
       icon: CloudOff,
-      keywords: ['sin conexión', 'offline', 'internet', 'copia de seguridad', 'restaurar', 'contraseña', 'olvidada', 'cuenta', 'dos pasos', '2fa', 'autenticación', 'seguridad', 'llave de acceso', 'passkey', 'huella'],
+      keywords: ['sin conexión', 'offline', 'internet', 'copia de seguridad', 'restaurar', 'contraseña', 'olvidada', 'cuenta', 'dos pasos', '2fa', 'autenticación', 'seguridad', 'llave de acceso', 'passkey', 'huella', 'sso', 'oidc'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
           <ul className="space-y-1.5">
@@ -695,6 +695,9 @@ const es: HelpContent = {
             </li>
             <li>
               <strong className="text-main">Llaves de acceso:</strong> en <em>Ajustes de la cuenta → Seguridad → Llaves de acceso</em> creas una llave de acceso (confirmar la contraseña, darle un nombre, huella, rostro o PIN del dispositivo). A partir de entonces, «Iniciar sesión con una llave de acceso» te permite entrar sin contraseña; algunos navegadores también la ofrecen directamente en el campo de inicio de sesión. Si inicias sesión con la contraseña, después se pide la llave de acceso: una llave de acceso cuenta como segundo factor, incluso sin app de autenticación. Los códigos de recuperación aparecen con la primera llave de acceso. Si quitas el último segundo factor, el inicio de sesión en dos pasos se desactiva de nuevo. Las llaves de acceso solo están disponibles si el servidor tiene una dirección https fija (BASE_URL).
+            </li>
+            <li>
+              <strong className="text-main">Iniciar sesión con un proveedor (SSO):</strong> Si la administración ha configurado un proveedor como Authentik, Authelia o Keycloak, la pantalla de inicio de sesión muestra «Iniciar sesión con …». La primera vez se crea tu cuenta, o se vincula una existente con la misma dirección verificada; una cuenta con otra dirección la vinculas en <em>Ajustes de la cuenta → Seguridad</em>. El inicio de sesión en dos pasos queda entonces en manos del proveedor. Los cambios delicados, como una dirección nueva, una contraseña, claves de API o borrar, los confirmas iniciando sesión de nuevo allí; después tienes cinco minutos. Si el inicio de sesión con contraseña está desactivado, solo queda este botón, y la administración tiene un acceso de emergencia en <em>/?login=password</em>.
             </li>
           </ul>
         </div>

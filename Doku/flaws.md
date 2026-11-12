@@ -92,7 +92,6 @@ FLAW-31 and FLAW-34 are resolved in part (0.6.0) and stay in the overview above.
 
 ### Account & Security
 - **Two-Factor Authentication** (TOTP) or **Passkeys**.
-- **OIDC Authentication** (Authelia, Authentik, Keycloak) for homelab setups.
 - **Admin Audit Log:** Detailed record of who modified accounts, roles, and settings, and when.
 
 ### Operations

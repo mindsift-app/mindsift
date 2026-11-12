@@ -37,6 +37,10 @@ export interface AuthStatus {
   sharingMode?: SharingMode;
   // "Passwort vergessen?" works (SMTP and BASE_URL configured)
   passwordReset?: boolean;
+  // Sign-in through an OpenID Connect provider ("Mit <name> anmelden"); passwordLogin false: only that button,
+  // the password form stays for administrators at /?login=password (emergency access)
+  oidc?: { enabled: boolean; name: string };
+  passwordLogin?: boolean;
   // Passkeys work on this server (BASE_URL with https, not the demo): "Mit Passkey anmelden"
   passkeys?: boolean;
   // AI agents may connect over MCP (the operator can switch it off)
@@ -68,6 +72,25 @@ export interface AuthStatus {
 }
 
 export type VoiceMode = 'server' | 'browser' | 'off';
+
+// Admin view of the sign-in through an OpenID Connect provider (OIDC_* environment, read only)
+export interface OidcAdminStatus {
+  configured: boolean;
+  enabled: boolean;
+  // Why it is off although configured: no_base_url, demo
+  reason?: string;
+  name?: string;
+  issuer?: string;
+  clientId?: string;
+  redirectUrl?: string;
+  scopes?: string;
+  adminGroup?: string;
+  autoCreate: boolean;
+  passwordLogin: boolean;
+  reachable?: boolean;
+  error?: string;
+  linkedUsers: number;
+}
 
 // Admin view of the speech recognition (read-only, configured by environment)
 export interface VoiceAdminStatus {
@@ -168,6 +191,9 @@ export interface User {
   pendingEmail?: string;
   // The server can mail confirmation links at all (own profile)
   emailLinks?: boolean;
+  // Signs in through the OIDC provider: noPassword has no password of its own, oidc is linked (own profile only)
+  noPassword?: boolean;
+  oidc?: boolean;
   discordWebhookUrl?: string;
   customWebhookUrl?: string;
   notifyBeforeMinutes?: number;
@@ -386,6 +412,8 @@ export interface SystemSettings {
   pushKnownServicesOnly?: boolean; // web push only via the push services of the big browsers
   mfaRequired?: '' | 'admins' | 'all'; // who must sign in with a second factor
   smtpConfiguredViaEnv?: boolean;
+  // The sign-in through an OIDC provider as the environment sets it (read only)
+  oidc?: OidcAdminStatus;
   registrationMode?: RegistrationMode;
   registrationDomains?: string;
   // REGISTRATION_MODE / REGISTRATION_DOMAINS (or ALLOW_REGISTRATION=true) fix it: shown, not editable

@@ -33,6 +33,17 @@ services:
       #   secrets: { admin_password: { file: ./admin_password.txt } }   (readable for UID 1000)
       # - ADMIN_PASSWORD_FILE=/run/secrets/admin_password
       - DEFAULT_LANGUAGE=${DEFAULT_LANGUAGE:-}
+      # Sign-in through an OpenID Connect provider (Authentik, Authelia, Keycloak …), see .env.example
+      - OIDC_ISSUER=${OIDC_ISSUER:-}
+      - OIDC_CLIENT_ID=${OIDC_CLIENT_ID:-}
+      - OIDC_CLIENT_SECRET=${OIDC_CLIENT_SECRET:-}
+      - OIDC_NAME=${OIDC_NAME:-}
+      - OIDC_AUTO_CREATE=${OIDC_AUTO_CREATE:-}
+      - OIDC_PASSWORD_LOGIN=${OIDC_PASSWORD_LOGIN:-}
+      - OIDC_ADMIN_GROUP=${OIDC_ADMIN_GROUP:-}
+      - OIDC_SCOPES=${OIDC_SCOPES:-}
+      # Or the secret from a file (Docker secret) instead of OIDC_CLIENT_SECRET, not both
+      # - OIDC_CLIENT_SECRET_FILE=/run/secrets/oidc_client_secret
       - ALLOW_REGISTRATION=${ALLOW_REGISTRATION:-false}
       - REGISTRATION_MODE=${REGISTRATION_MODE:-}
       - REGISTRATION_DOMAINS=${REGISTRATION_DOMAINS:-}

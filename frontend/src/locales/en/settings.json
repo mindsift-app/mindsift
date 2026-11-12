@@ -622,7 +622,29 @@
     "mfaRequiredHint": "Those affected who have no authenticator app and no passkey yet set one up right after their next sign-in and can do nothing else before. API keys and AI connections keep working.",
     "mfaRequiredNobody": "Optional",
     "mfaRequiredAdmins": "For admins",
-    "mfaRequiredAll": "For everyone"
+    "mfaRequiredAll": "For everyone",
+    "oidc": {
+      "title": "Sign-in with OIDC",
+      "hint": "Set up by the OIDC_* environment variables; shown here only.",
+      "notConfigured": "Not set up. With OIDC_ISSUER, OIDC_CLIENT_ID and OIDC_CLIENT_SECRET everyone signs in with a provider such as Authentik, Authelia or Keycloak (see README).",
+      "offDemo": "Switched off in the demo.",
+      "offNoBaseUrl": "Switched off: BASE_URL is missing. The provider needs the address it sends people back to.",
+      "reachable": "The provider answers.",
+      "unreachable": "The provider does not answer right now: {{error}}",
+      "provider": "Provider",
+      "issuer": "Issuer",
+      "clientId": "Client ID",
+      "redirectUrl": "Redirect URI",
+      "scopes": "Scopes",
+      "autoCreate": "Create accounts automatically",
+      "passwordLogin": "Sign-in with password",
+      "on": "On",
+      "off": "Off",
+      "passwordAdminsOnly": "Emergency access for administrators only",
+      "adminGroup": "Admin group",
+      "none": "–",
+      "linkedUsers": "Linked accounts"
+    }
   },
   "admin": {
     "loadFailed": "Loading the administration data failed",
@@ -836,7 +858,11 @@
       "save": "Change password",
       "saved": "Password changed. All other devices were signed out.",
       "failed": "The password could not be changed",
-      "noMatch": "The two new passwords do not match"
+      "noMatch": "The two new passwords do not match",
+      "setTitle": "Set a password",
+      "set": "Set password",
+      "setHint": "You sign in with {{name}} and need no password of your own. With a password you can also sign in directly; MindSift asks {{name}} to confirm.",
+      "setHintAdmin": "Signing in with a password is switched off; only administrators have emergency access at /?login=password in case {{name}} is down. Set the password for it here."
     },
     "nav": "Security",
     "navHint": "Password, two-factor & sessions",
@@ -940,6 +966,20 @@
       "intro": "This change also needs your second factor.",
       "submit": "Confirm",
       "cancelled": "Not confirmed, nothing was changed."
+    },
+    "oidc": {
+      "title": "Sign-in with {{name}}",
+      "linked": "You sign in with {{name}}. You confirm sensitive changes such as a new address, a password, API keys or deleting by signing in to {{name}} again.",
+      "notLinked": "Link your account to {{name}} to sign in there as well. You need your password to confirm.",
+      "link": "Link to {{name}}",
+      "linkFailed": "Linking failed",
+      "confirmTitle": "Confirm the change",
+      "confirmIntro": "Sign in to {{name}} once more to confirm. You then come back here and can make the change within the next five minutes.",
+      "confirmButton": "Confirm with {{name}}",
+      "confirmFirst": "Please confirm the change with {{name}} first.",
+      "confirmHint": "You confirm by signing in to {{name}} again.",
+      "confirmedDone": "Confirmed. You can make the change within the next five minutes.",
+      "linkedDone": "Your account is now linked to {{name}}."
     }
   }
 }

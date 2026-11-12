@@ -59,6 +59,7 @@ var migrations = []migration{
 	{36, "Guided tour offered once to new accounts", (*Store).migrateTourOffer},
 	{37, "Two-factor sign-in: authenticator app, recovery codes, trusted devices", (*Store).migrateMFA},
 	{38, "Passkeys", (*Store).migratePasskeys},
+	{39, "Sign-in through an OpenID Connect provider", (*Store).migrateOIDC},
 }
 
 func (s *Store) migrate() error {

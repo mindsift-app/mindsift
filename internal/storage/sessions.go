@@ -58,8 +58,9 @@ func (s *Store) ActiveUserCount(since time.Time) int {
 	return n
 }
 
-// CreateSession starts a session for a login; old ended or idle sessions of the user are removed.
-func (s *Store) CreateSession(userID, userAgent, ip string) (string, error) {
+// CreateSession starts a session for a login (via: SessionViaPassword, SessionViaPasskey or SessionViaOIDC);
+// old ended or idle sessions of the user are removed.
+func (s *Store) CreateSession(userID, userAgent, ip, via string) (string, error) {
 	b := make([]byte, 16)
 	if _, err := rand.Read(b); err != nil {
 		return "", err
@@ -71,8 +72,8 @@ func (s *Store) CreateSession(userID, userAgent, ip string) (string, error) {
 	idleCutoff := time.Now().Add(-SessionIdleTimeout).UTC().Format(time.RFC3339)
 	return id, s.execInTx(
 		stmt(`DELETE FROM sessions WHERE user_id = ? AND (revoked_at != '' OR last_used_at < ?)`, userID, idleCutoff),
-		stmt(`INSERT INTO sessions (id, user_id, created_at, last_used_at, user_agent, ip) VALUES (?, ?, ?, ?, ?, ?)`,
-			id, userID, nowUTC(), nowUTC(), userAgent, ip),
+		stmt(`INSERT INTO sessions (id, user_id, created_at, last_used_at, user_agent, ip, via) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+			id, userID, nowUTC(), nowUTC(), userAgent, ip, via),
 	)
 }
 

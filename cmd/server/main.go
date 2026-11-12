@@ -40,6 +40,12 @@ func main() {
 
 	slog.Info("MindSift Server starting", "port", cfg.Port, "log_level", level.String())
 
+	// OIDC_*: half a configuration would leave a sign-in button that cannot work, so the start stops here
+	if err := cfg.OIDC.Resolve(); err != nil {
+		slog.Error("The sign-in through an OIDC provider is not set up correctly; fix or remove the OIDC_* variables. MindSift does not start", "error", err)
+		os.Exit(1)
+	}
+
 	store, err := storage.NewStore(cfg.DatabasePath)
 	if err != nil {
 		slog.Error("Failed to initialize storage", "error", err)

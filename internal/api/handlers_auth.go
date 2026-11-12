@@ -66,6 +66,10 @@ func (s *Server) handleAuthStatus(w http.ResponseWriter, r *http.Request) {
 		"passwordReset":       s.passwordResetAvailable(),
 		// The login offers "Sign in with a passkey" (passkeys.go: BASE_URL with https, not the demo)
 		"passkeys": s.passkeysOn(),
+		// "Sign in with <name>" through the OIDC provider (oidc.go); without passwordLogin only that button,
+		// the password form stays for administrators at /?login=password
+		"oidc":          map[string]any{"enabled": s.oidc != nil, "name": s.oidcName()},
+		"passwordLogin": s.passwordLoginOn(),
 		// AI agents may connect over MCP (MCP_ENABLED or the admin's switch)
 		"mcpEnabled": s.mcpEnabled(),
 		// Sharing: names suggested while typing, notes shareable by public link (and for how long at most)
@@ -182,7 +186,7 @@ func (s *Server) handleFirstBootSetup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := s.startSession(r, user)
+	token, err := s.startSession(r, user, storage.SessionViaPassword)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "Token konnte nicht erstellt werden")
 		return
@@ -296,6 +300,10 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 	}
 	if wait := s.loginGuard.throttle("register", clientIPFrom(r), limitRegisterPerIP); wait > 0 {
 		writeThrottled(w, wait)
+		return
+	}
+	if !s.passwordLoginOn() {
+		writeErrorCode(w, http.StatusForbidden, "password_login_off", tr(w, "Die Registrierung mit Passwort ist ausgeschaltet. Bitte melde dich über {name} an.", "name", s.oidcName()))
 		return
 	}
 	req.Email = domain.NormalizeEmail(req.Email)
@@ -422,7 +430,7 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := s.startSession(r, user)
+	token, err := s.startSession(r, user, storage.SessionViaPassword)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "Token konnte nicht erstellt werden")
 		return
@@ -499,7 +507,11 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusUnauthorized, "Benutzername/E-Mail oder Passwort ungültig")
 		return
 	}
-	if !auth.CheckPassword(req.Password, user.PasswordHash) {
+	// An account without a password of its own (OIDC) takes as long as a wrong password
+	if !auth.HasPassword(user.PasswordHash) {
+		auth.CheckPassword(req.Password, dummyPasswordHash())
+	}
+	if !auth.HasPassword(user.PasswordHash) || !auth.CheckPassword(req.Password, user.PasswordHash) {
 		s.loginGuard.recordFailure(account, ip)
 		slog.Warn("Sign-in failed: wrong password", "user_id", user.ID, "display_name", user.DisplayName, "remote_addr", r.RemoteAddr)
 		writeError(w, http.StatusUnauthorized, "Benutzername/E-Mail oder Passwort ungültig")
@@ -519,13 +531,18 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 	if !s.signInAllowed(w, r, user) {
 		return
 	}
+	if !s.passwordLoginFor(user) {
+		slog.Warn("Sign-in refused: password sign-in is off for everybody but administrators", "user_id", user.ID, "remote_addr", r.RemoteAddr)
+		s.writePasswordLoginOff(w)
+		return
+	}
 	if needsSecondFactor {
 		slog.Info("Sign-in: password right, second factor asked", "user_id", user.ID, "remote_addr", r.RemoteAddr)
 		s.writeMFAChallenge(w, user)
 		return
 	}
 
-	token, err := s.startSession(r, user)
+	token, err := s.startSession(r, user, storage.SessionViaPassword)
 	if err != nil {
 		slog.Error("Creating the sign-in token failed", "user_id", user.ID, "error", err)
 		writeError(w, http.StatusInternalServerError, "Token konnte nicht erstellt werden")
@@ -538,6 +555,11 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 		"token": token,
 		"user":  user,
 	})
+}
+
+// writePasswordLoginOff: the password login is off (OIDC_PASSWORD_LOGIN=false) and this is no administrator.
+func (s *Server) writePasswordLoginOff(w http.ResponseWriter) {
+	writeErrorCode(w, http.StatusForbidden, "password_login_off", tr(w, "Die Anmeldung mit Passwort ist ausgeschaltet. Bitte melde dich über {name} an.", "name", s.oidcName()))
 }
 
 // signInAllowed refuses an account that is waiting for its address confirmation or approval, or is
@@ -577,7 +599,7 @@ func (s *Server) handleMe(w http.ResponseWriter, r *http.Request) {
 		// The admin came from ADMIN_USER and the wizard's instance settings are still to come (POST /admin/setup)
 		"setupPending": user.Role == domain.RoleAdmin && s.store.SetupPending(),
 		// The administration requires a second factor this account has not set up yet (mfa.go)
-		"mfaSetupRequired": s.mfaSetupMissing(user),
+		"mfaSetupRequired": s.mfaSetupMissingFor(user, sessionIDFrom(r)),
 	})
 }
 
@@ -713,6 +735,11 @@ func (s *Server) handleUpdateUserSettings(w http.ResponseWriter, r *http.Request
 	changesUsername := req.Username != nil && strings.ToLower(strings.TrimSpace(*req.Username)) != before.Username
 	if (changesPassword || changesEmail || changesUsername) && s.cfg.DemoMode {
 		writeError(w, http.StatusForbidden, "In der Demo deaktiviert")
+		return
+	}
+	// With the password login off a password is of use to administrators only (emergency access)
+	if changesPassword && !s.passwordLoginFor(before) {
+		s.writePasswordLoginOff(w)
 		return
 	}
 	if (changesPassword || changesEmail) && !s.confirmWithSecondFactor(w, r, before, req.CurrentPassword, req.secondFactor) {
@@ -1018,6 +1045,8 @@ func (s *Server) fillUserPreferences(u *domain.User) {
 	pending := s.store.PendingEmailChanges(u.ID)
 	u.PendingEmail = pending[storage.EmailChangeAccount].Email
 	u.EmailLinks = s.emailLinksAvailable()
+	u.NoPassword = !auth.HasPassword(u.PasswordHash)
+	u.OIDC = s.oidcLinked(u)
 	offered := s.store.TourOffered(u.ID)
 	u.TourOffered = &offered
 }

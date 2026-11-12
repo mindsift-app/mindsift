@@ -622,7 +622,29 @@
     "mfaRequiredHint": "Wer betroffen ist und noch keine Authenticator-App und keinen Passkey hat, richtet sie direkt nach der nächsten Anmeldung ein und kann vorher nichts anderes tun. API-Schlüssel und KI-Zugänge funktionieren weiter.",
     "mfaRequiredNobody": "Freiwillig",
     "mfaRequiredAdmins": "Für Admins",
-    "mfaRequiredAll": "Für alle"
+    "mfaRequiredAll": "Für alle",
+    "oidc": {
+      "title": "Anmeldung über OIDC",
+      "hint": "Eingerichtet über die Umgebungsvariablen OIDC_*; hier nur zur Ansicht.",
+      "notConfigured": "Nicht eingerichtet. Mit OIDC_ISSUER, OIDC_CLIENT_ID und OIDC_CLIENT_SECRET melden sich alle über einen Anbieter wie Authentik, Authelia oder Keycloak an (siehe README).",
+      "offDemo": "In der Demo ausgeschaltet.",
+      "offNoBaseUrl": "Ausgeschaltet: BASE_URL fehlt. Der Anbieter braucht die Adresse, an die er zurückleitet.",
+      "reachable": "Der Anbieter antwortet.",
+      "unreachable": "Der Anbieter antwortet gerade nicht: {{error}}",
+      "provider": "Anbieter",
+      "issuer": "Issuer",
+      "clientId": "Client-ID",
+      "redirectUrl": "Redirect-URI",
+      "scopes": "Scopes",
+      "autoCreate": "Konten automatisch anlegen",
+      "passwordLogin": "Anmeldung mit Passwort",
+      "on": "Ein",
+      "off": "Aus",
+      "passwordAdminsOnly": "Nur Notzugang der Administration",
+      "adminGroup": "Admin-Gruppe",
+      "none": "–",
+      "linkedUsers": "Verknüpfte Konten"
+    }
   },
   "admin": {
     "loadFailed": "Fehler beim Laden der Administrationsdaten",
@@ -835,7 +857,11 @@
       "save": "Passwort ändern",
       "saved": "Passwort geändert. Alle anderen Geräte wurden abgemeldet.",
       "failed": "Passwort konnte nicht geändert werden",
-      "noMatch": "Die beiden neuen Passwörter stimmen nicht überein"
+      "noMatch": "Die beiden neuen Passwörter stimmen nicht überein",
+      "setTitle": "Passwort festlegen",
+      "set": "Passwort festlegen",
+      "setHint": "Du meldest dich über {{name}} an und brauchst kein eigenes Passwort. Mit einem Passwort kannst du dich zusätzlich direkt anmelden; zur Bestätigung fragt MindSift bei {{name}} nach.",
+      "setHintAdmin": "Die Anmeldung mit Passwort ist ausgeschaltet; nur die Administration hat unter /?login=password einen Notzugang, falls {{name}} ausfällt. Dafür legst du hier ein Passwort fest."
     },
     "nav": "Sicherheit",
     "navHint": "Passwort, Zwei-Faktor & Sitzungen",
@@ -939,6 +965,20 @@
       "intro": "Diese Änderung braucht zusätzlich deinen zweiten Faktor.",
       "submit": "Bestätigen",
       "cancelled": "Nicht bestätigt, nichts geändert."
+    },
+    "oidc": {
+      "title": "Anmeldung über {{name}}",
+      "linked": "Du meldest dich über {{name}} an. Heikle Änderungen wie eine neue Adresse, ein Passwort, API-Schlüssel oder das Löschen bestätigst du mit einer erneuten Anmeldung bei {{name}}.",
+      "notLinked": "Verknüpfe dein Konto mit {{name}}, dann meldest du dich auch dort an. Zur Bestätigung brauchst du dein Passwort.",
+      "link": "Mit {{name}} verknüpfen",
+      "linkFailed": "Verknüpfen fehlgeschlagen",
+      "confirmTitle": "Änderung bestätigen",
+      "confirmIntro": "Melde dich zur Bestätigung noch einmal bei {{name}} an. Danach kommst du hierher zurück und kannst die Änderung in den nächsten fünf Minuten vornehmen.",
+      "confirmButton": "Bei {{name}} bestätigen",
+      "confirmFirst": "Bitte bestätige die Änderung zuerst bei {{name}}.",
+      "confirmHint": "Du bestätigst mit einer erneuten Anmeldung bei {{name}}.",
+      "confirmedDone": "Bestätigt. Du kannst die Änderung jetzt fünf Minuten lang vornehmen.",
+      "linkedDone": "Dein Konto ist jetzt mit {{name}} verknüpft."
     }
   }
 }

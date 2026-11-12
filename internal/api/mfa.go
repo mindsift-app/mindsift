@@ -279,7 +279,7 @@ func (s *Server) finishSecondStep(w http.ResponseWriter, r *http.Request, mfaTok
 	}
 	s.loginGuard.recordSuccess(user.ID, ip)
 
-	token, err := s.startSession(r, user)
+	token, err := s.startSession(r, user, storage.SessionViaPassword)
 	if err != nil {
 		slog.Error("Creating the sign-in token failed", "user_id", user.ID, "error", err)
 		writeError(w, http.StatusInternalServerError, "Token konnte nicht erstellt werden")
@@ -314,8 +314,16 @@ type secondFactor struct {
 
 // confirmWithSecondFactor checks the current password and, when the account has a second factor, a
 // code or passkey of it for a sensitive change. Wrong guesses of either count like failed logins. Writes
-// the error itself.
+// the error itself. A session that signed in at the OIDC provider again a moment ago (oidc.go) is confirmed
+// without; an account without a password of its own can only be confirmed that way.
 func (s *Server) confirmWithSecondFactor(w http.ResponseWriter, r *http.Request, user *domain.User, password string, f secondFactor) bool {
+	if s.oidcConfirmed(r, user) {
+		return true
+	}
+	if !auth.HasPassword(user.PasswordHash) && s.oidcLinked(user) {
+		s.writeOIDCConfirmRequired(w)
+		return false
+	}
 	if !s.checkCurrentPassword(w, r, user, password) {
 		return false
 	}
@@ -325,7 +333,7 @@ func (s *Server) confirmWithSecondFactor(w http.ResponseWriter, r *http.Request,
 // confirmSecondFactor: the second factor alone, for a change that needs no password (a new API key, whose
 // requests never ask for a second factor). True right away when the account has none.
 func (s *Server) confirmSecondFactor(w http.ResponseWriter, r *http.Request, user *domain.User, f secondFactor) bool {
-	if !s.store.MFAActive(user.ID) {
+	if !s.store.MFAActive(user.ID) || s.oidcConfirmed(r, user) {
 		return true
 	}
 	ip := clientIPFrom(r)
@@ -378,6 +386,12 @@ func (s *Server) mfaRequiredFor(user *domain.User) bool {
 // mfaSetupPath lets through. Never in the demo, whose accounts cannot set it up.
 func (s *Server) mfaSetupMissing(user *domain.User) bool {
 	return !s.cfg.DemoMode && s.mfaRequiredFor(user) && !s.store.MFAActive(user.ID)
+}
+
+// mfaSetupMissingFor: mfaSetupMissing for the account's session sessionID. A session started through the OIDC
+// provider never is: the provider asks for its own second factor, MindSift's applies to passwords only.
+func (s *Server) mfaSetupMissingFor(user *domain.User, sessionID string) bool {
+	return s.mfaSetupMissing(user) && s.store.SessionVia(sessionID) != storage.SessionViaOIDC
 }
 
 // mfaSetupPath: what a session may do while the required second factor is missing: read itself, set the

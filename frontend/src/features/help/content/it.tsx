@@ -604,7 +604,7 @@ const it: HelpContent = {
       title: 'Offline, backup e password',
       subtitle: 'Lavorare senza Internet, ripristinare backup, reimpostare la password',
       icon: CloudOff,
-      keywords: ['offline', 'internet', 'backup', 'ripristino', 'password', 'dimenticata', 'account', 'due fattori', '2fa', 'authenticator', 'sicurezza', 'passkey', 'impronta'],
+      keywords: ['offline', 'internet', 'backup', 'ripristino', 'password', 'dimenticata', 'account', 'due fattori', '2fa', 'authenticator', 'sicurezza', 'passkey', 'impronta', 'sso', 'oidc'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
           <ul className="space-y-1.5">
@@ -625,6 +625,9 @@ const it: HelpContent = {
             </li>
             <li>
               <strong className="text-main">Passkey:</strong> in <em>Impostazioni account → Sicurezza → Passkey</em> crei una passkey (conferma la password, dalle un nome, impronta digitale, volto o PIN del dispositivo). Da quel momento «Accedi con una passkey» ti fa entrare senza password; alcuni browser la propongono anche direttamente nel campo di accesso. Se accedi con la password, dopo viene chiesta la passkey: una passkey conta come secondo fattore, anche senza app di autenticazione. I codici di recupero compaiono con la prima passkey. Rimuovendo l'ultimo secondo fattore, l'accesso a due fattori si disattiva di nuovo. Le passkey sono disponibili solo se il server ha un indirizzo https fisso (BASE_URL).
+            </li>
+            <li>
+              <strong className="text-main">Accesso tramite un provider (SSO):</strong> Se l'amministrazione ha configurato un provider come Authentik, Authelia o Keycloak, la schermata di accesso mostra «Accedi con …». La prima volta viene creato il tuo account, oppure ne viene collegato uno esistente con lo stesso indirizzo verificato; un account con un indirizzo diverso lo colleghi in <em>Impostazioni account → Sicurezza</em>. L'accesso a due fattori spetta allora al provider. Le modifiche delicate come un nuovo indirizzo, una password, le chiavi API o l'eliminazione le confermi accedendo di nuovo lì; dopo hai cinque minuti. Se l'accesso con password è disattivato resta solo questo pulsante, e l'amministrazione ha un accesso di emergenza su <em>/?login=password</em>.
             </li>
           </ul>
         </div>
