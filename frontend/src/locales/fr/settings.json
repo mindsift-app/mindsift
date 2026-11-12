@@ -555,7 +555,13 @@
       "showMore_one": "Afficher {{count}} de plus",
       "showMore_other": "Afficher {{count}} de plus",
       "orgsHint": "Attribution sous « Organisations »."
-    }
+    },
+    "mfaOn": "Se connecte avec un second facteur",
+    "resetMfa": "Réinitialiser la 2FA",
+    "resetMfaHint": "Retire l'application d'authentification, les clés d'accès et les codes de récupération, p. ex. après la perte du téléphone",
+    "confirmResetMfa": "Réinitialiser la connexion en deux étapes de {{name}} ? L'application d'authentification, les clés d'accès et les codes de récupération sont retirés ; la connexion ne demandera plus que le mot de passe. {{name}} reçoit un e-mail.",
+    "mfaReset": "La connexion en deux étapes de {{name}} a été réinitialisée.",
+    "mfaBadge": "2FA"
   },
   "sharing": {
     "private": {
@@ -611,7 +617,12 @@
     "days_one": "{{count}} jour",
     "days_other": "{{count}} jours",
     "pushKnownOnly": "Push uniquement via les services connus",
-    "pushKnownOnlyHint": "Par défaut : les notifications push vont au service push indiqué par le navigateur (n'importe quelle adresse https). Activé, uniquement vers les services de Google (Chrome, Edge, Android), Mozilla (Firefox), Apple (Safari) et Microsoft (Windows). Les appareils utilisant d'autres services ne reçoivent alors plus de notifications push."
+    "pushKnownOnlyHint": "Par défaut : les notifications push vont au service push indiqué par le navigateur (n'importe quelle adresse https). Activé, uniquement vers les services de Google (Chrome, Edge, Android), Mozilla (Firefox), Apple (Safari) et Microsoft (Windows). Les appareils utilisant d'autres services ne reçoivent alors plus de notifications push.",
+    "mfaRequired": "Exiger la connexion en deux étapes",
+    "mfaRequiredHint": "Les personnes concernées qui n'ont encore ni application d'authentification ni clé d'accès en configurent une juste après leur prochaine connexion et ne peuvent rien faire d'autre avant. Les clés d'API et les accès IA continuent de fonctionner.",
+    "mfaRequiredNobody": "Facultatif",
+    "mfaRequiredAdmins": "Pour les admins",
+    "mfaRequiredAll": "Pour tout le monde"
   },
   "admin": {
     "loadFailed": "Échec du chargement des données d'administration",
@@ -923,6 +934,12 @@
       "off_no_base_url": "Les clés d'accès sont désactivées sur ce serveur : elles ont besoin d'une adresse fixe. L'administrateur doit définir BASE_URL avec https. L'application d'authentification fonctionne sans.",
       "off_not_https": "Les clés d'accès sont désactivées sur ce serveur : elles ne fonctionnent qu'en https. L'administrateur doit définir BASE_URL sur une adresse https. L'application d'authentification fonctionne sans.",
       "off_ip_address": "Les clés d'accès sont désactivées sur ce serveur : elles ont besoin d'un nom d'hôte au lieu d'une adresse IP dans BASE_URL. L'application d'authentification fonctionne sans."
+    },
+    "confirm": {
+      "title": "Confirmer avec le second facteur",
+      "intro": "Cette modification demande aussi ton second facteur.",
+      "submit": "Confirmer",
+      "cancelled": "Non confirmé, rien n'a été modifié."
     }
   }
 }

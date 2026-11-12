@@ -112,6 +112,7 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
           smtpSkipVerify: Boolean(sys.smtpSkipVerify),
           allowPrivateWebhooks: Boolean(sys.allowPrivateWebhooks),
           pushKnownServicesOnly: Boolean(sys.pushKnownServicesOnly),
+          mfaRequired: sys.mfaRequired || '',
           smtpConfiguredViaEnv: Boolean(sys.smtpConfiguredViaEnv),
           backupEnabled: Boolean(sys.backupEnabled),
           backupTime: sys.backupTime || DEFAULT_BACKUP_TIME,
@@ -332,6 +333,24 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
 
 
 
+  // Somebody lost every second factor: they sign in with the password alone again and are told by mail
+  const handleResetMfa = async (u: User) => {
+    const ok = await askConfirm({
+      message: i18n.t('settings:users.confirmResetMfa', { name: u.displayName }),
+      confirmLabel: i18n.t('settings:users.resetMfa'),
+      danger: true,
+    });
+    if (!ok) return;
+    setStatusMsg(null);
+    try {
+      await api.adminResetMfa(u.id);
+      setUsers((prev) => prev.map((item) => (item.id === u.id ? { ...item, mfaEnabled: false } : item)));
+      setStatusMsg({ type: 'ok', text: i18n.t('settings:users.mfaReset', { name: u.displayName }) });
+    } catch (err: any) {
+      setStatusMsg({ type: 'err', text: err.message });
+    }
+  };
+
   // ============================================================================
   // HANDLERS: SERVER & SMTP SETTINGS
   // ============================================================================
@@ -510,6 +529,7 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
     handleToggleUserActive,
     handleConfirmResetPassword,
     handleDeleteUser,
+    handleResetMfa,
     handleCreateOrganization,
     handleRenameOrganization,
     handleDeleteOrganization,

@@ -47,6 +47,11 @@ export const adminApi = {
     });
   },
 
+  // Removes every second factor of the account (app, passkeys, recovery codes, trusted devices)
+  async adminResetMfa(id: string): Promise<void> {
+    await request(`/api/v1/admin/users/${id}/mfa/reset`, { method: 'POST' });
+  },
+
   async adminDeleteUser(id: string): Promise<void> {
     await request(`/api/v1/admin/users/${id}`, { method: 'DELETE', timeout: 'slow' });
   },

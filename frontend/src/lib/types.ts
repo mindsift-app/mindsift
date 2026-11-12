@@ -162,6 +162,7 @@ export interface User {
   pendingApproval?: boolean;
   // Registered, e-mail address not confirmed yet (admin user list)
   emailUnverified?: boolean;
+  mfaEnabled?: boolean; // signs in with a second factor (only in the administration's user list)
   alarmChannels?: string[];
   // New login / alarm address waiting for the click on the link mailed to it (own profile)
   pendingEmail?: string;
@@ -383,6 +384,7 @@ export interface SystemSettings {
   smtpSkipVerify?: boolean;
   allowPrivateWebhooks?: boolean; // alarm webhooks may reach the LAN (and plain http)
   pushKnownServicesOnly?: boolean; // web push only via the push services of the big browsers
+  mfaRequired?: '' | 'admins' | 'all'; // who must sign in with a second factor
   smtpConfiguredViaEnv?: boolean;
   registrationMode?: RegistrationMode;
   registrationDomains?: string;

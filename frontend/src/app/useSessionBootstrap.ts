@@ -19,6 +19,8 @@ export function useSessionBootstrap(onSignedOut: () => void) {
   const [user, setUser] = useState<User | null>(null);
   // The admin came from ADMIN_USER and has not chosen the wizard's instance settings yet (FinishSetupView)
   const [setupPending, setSetupPending] = useState(false);
+  // The administration requires a second factor this account has not set up yet (MfaSetupRequiredView)
+  const [mfaSetupRequired, setMfaSetupRequired] = useState(false);
   // Demo mode: when the next reset happens (local clock), and a counter that remounts all views after it
   const [demoDeadline, setDemoDeadline] = useState<number | null>(null);
   const [dataEpoch, setDataEpoch] = useState(0);
@@ -42,16 +44,15 @@ export function useSessionBootstrap(onSignedOut: () => void) {
 
   const refreshAll = useCallback(async () => {
     try {
-      const [meRes, deckRes, listsRes] = await Promise.all([
-        api.getMe(),
-        api.getTriageDeck(),
-        api.getAllLists(),
-      ]);
-      setUser(meRes.user);
-      setSetupPending(Boolean(meRes.setupPending));
-      setStats(meRes.stats);
-      setDeck(Array.isArray(deckRes) ? deckRes : []);
-      setLists(Array.isArray(listsRes) ? listsRes : []);
+      // Deck and lists are refused while a required second factor is missing; the account itself still loads
+      const [meRes, deckRes, listsRes] = await Promise.allSettled([api.getMe(), api.getTriageDeck(), api.getAllLists()]);
+      if (meRes.status === 'rejected') return;
+      setUser(meRes.value.user);
+      setSetupPending(Boolean(meRes.value.setupPending));
+      setMfaSetupRequired(Boolean(meRes.value.mfaSetupRequired));
+      setStats(meRes.value.stats);
+      if (deckRes.status === 'fulfilled') setDeck(Array.isArray(deckRes.value) ? deckRes.value : []);
+      if (listsRes.status === 'fulfilled') setLists(Array.isArray(listsRes.value) ? listsRes.value : []);
     } catch {
       // If token expired or invalid, api.ts dispatches mindsift:unauthorized
     }
@@ -119,11 +120,16 @@ export function useSessionBootstrap(onSignedOut: () => void) {
       if (navigator.onLine && outboxCount() > 0) onOnline();
     }, 30000);
 
+    // The administration switched the requirement on while this session was open
+    const onMfaSetupRequired = () => setMfaSetupRequired(true);
+
     window.addEventListener('mindsift:unauthorized', onUnauthorized);
+    window.addEventListener('mindsift:mfa-setup-required', onMfaSetupRequired);
     window.addEventListener('online', onOnline);
     return () => {
       window.clearInterval(retry);
       window.removeEventListener('mindsift:unauthorized', onUnauthorized);
+      window.removeEventListener('mindsift:mfa-setup-required', onMfaSetupRequired);
       window.removeEventListener('online', onOnline);
     };
   }, [refreshAll]);
@@ -221,6 +227,8 @@ export function useSessionBootstrap(onSignedOut: () => void) {
     setUser,
     setupPending,
     setSetupPending,
+    mfaSetupRequired,
+    setMfaSetupRequired,
     stats,
     setStats,
     deck,

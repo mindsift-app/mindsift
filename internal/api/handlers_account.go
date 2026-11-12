@@ -58,11 +58,13 @@ func (s *Server) handleDeleteTheme(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]bool{"deleted": true})
 }
 
-// confirmPassword checks the current password sent as {"password": "…"} before destructive actions;
+// confirmPassword checks the current password sent as {"password": "…"} (and a second factor when the
+// account has one: code, or passkeyToken + passkey) before destructive actions;
 // failed guesses count like failed logins, so a stolen session cannot try passwords endlessly.
 func (s *Server) confirmPassword(w http.ResponseWriter, r *http.Request) (*domain.User, bool) {
 	var req struct {
 		Password string `json:"password"`
+		secondFactor
 	}
 	_ = json.NewDecoder(r.Body).Decode(&req)
 	user, err := s.store.GetUserByID(auth.GetUserID(r.Context()))
@@ -70,7 +72,7 @@ func (s *Server) confirmPassword(w http.ResponseWriter, r *http.Request) (*domai
 		writeError(w, http.StatusUnauthorized, "Nicht autorisiert")
 		return nil, false
 	}
-	if !s.checkCurrentPassword(w, r, user, req.Password) {
+	if !s.confirmWithSecondFactor(w, r, user, req.Password, req.secondFactor) {
 		return nil, false
 	}
 	return user, true

@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { AtSign, Ban, ChevronDown, ChevronRight, KeyRound, Search, Trash2, UserCheck, X } from 'lucide-react';
+import { AtSign, Ban, ChevronDown, ChevronRight, KeyRound, Search, ShieldCheck, ShieldOff, Trash2, UserCheck, X } from 'lucide-react';
 import { User, UserRole } from '../../../lib/types';
 import { UserAvatar } from '../../../components/UserAvatar';
 import { SelectMenu } from '../../../components/SelectMenu';
@@ -216,6 +216,12 @@ function UserRow({ u, open, orgNames, showNoOrg, onToggle }: { u: User; open: bo
           <span className="font-semibold text-main truncate">{u.displayName}</span>
           <RoleBadge role={u.role} />
           <StatusBadge u={u} />
+          {u.mfaEnabled && (
+            <span className="badge-neutral text-[10px] shrink-0 inline-flex items-center gap-0.5" title={t('users.mfaOn')}>
+              <ShieldCheck className="w-2.5 h-2.5" />
+              {t('users.mfaBadge')}
+            </span>
+          )}
         </span>
         <span className="block text-muted text-[11px] truncate" title={sub}>
           {sub}
@@ -282,6 +288,7 @@ function UserDetails({ u, admin, currentUser, isServerAdmin }: { u: User; admin:
     handleToggleUserActive,
     handleConfirmResetPassword,
     handleDeleteUser,
+    handleResetMfa,
   } = admin;
   // User managers look after members only; admins and other managers stay with server admins
   const canManage = isServerAdmin || u.role === 'member';
@@ -362,6 +369,20 @@ function UserDetails({ u, admin, currentUser, isServerAdmin }: { u: User; admin:
           {u.isActive ? <Ban className="w-3.5 h-3.5" /> : <UserCheck className="w-3.5 h-3.5" />}
           <span>{u.isActive ? t('users.lock') : t('users.activate')}</span>
         </button>
+        {/* Somebody who lost every second factor signs in with the password alone again */}
+        {u.mfaEnabled && (
+          <button
+            type="button"
+            onClick={() => handleResetMfa(u)}
+            disabled={Boolean(lockReason)}
+            title={lockReason || t('users.resetMfaHint')}
+            className={`${btn} hover:text-status-err`}
+            data-reset-mfa
+          >
+            <ShieldOff className="w-3.5 h-3.5" />
+            <span>{t('users.resetMfa')}</span>
+          </button>
+        )}
         <button type="button" onClick={() => handleDeleteUser(u)} disabled={Boolean(lockReason)} title={lockReason || undefined} className={`${btn} hover:text-status-err`}>
           <Trash2 className="w-3.5 h-3.5" />
           <span>{t('users.delete')}</span>

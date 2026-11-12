@@ -201,11 +201,123 @@ async function run(engine, admin) {
   await browser.close();
 }
 
+// Required by the administration (Administration → Server): an account without a second factor sees only its
+// setup after signing in; then a new password asks for the code in a sheet, and an administrator resets the
+// second factor in the user list. A second admin with the app switches the requirement on and off and resets,
+// as the first admin (without one) would be locked into the setup too.
+async function policy(admin) {
+  const stamp = Date.now();
+  const pw = 'Pflicht-' + stamp;
+  const bossLogin = `chefin.${stamp}@example.com`;
+  await api(admin, 'POST', '/api/v1/admin/users', { email: bossLogin, password: pw, displayName: 'Chefin', role: 'admin' });
+  const boss = (await api(null, 'POST', '/api/v1/auth/login', { login: bossLogin, password: pw })).token;
+  const setup = await api(boss, 'POST', '/api/v1/auth/mfa/totp/setup', { password: pw });
+  const bossNext = codes(base32(setup.secret));
+  await api(boss, 'POST', '/api/v1/auth/mfa/totp/confirm', { code: await bossNext() });
+  const memberLogin = `pflicht.${stamp}@example.com`;
+  await api(admin, 'POST', '/api/v1/admin/users', { email: memberLogin, password: pw, displayName: 'Pflicht Person', role: 'member' });
+  const memberFirst = (await api(null, 'POST', '/api/v1/auth/login', { login: memberLogin, password: pw })).token;
+  await api(memberFirst, 'PATCH', '/api/v1/auth/settings', { tourOffered: true });
+
+  const setRequired = async (mfaRequired) => {
+    const cur = await api(boss, 'GET', '/api/v1/admin/settings');
+    await api(boss, 'PUT', '/api/v1/admin/settings', { ...cur, mfaRequired });
+  };
+  const browser = await chromium.launch();
+  const errors = [];
+  try {
+    await setRequired('all');
+    const ctx = await browser.newContext(DESKTOP);
+    await ctx.addInitScript(() => sessionStorage.setItem('mindsift_pwa_dismissed', '1'));
+    const page = await ctx.newPage();
+    page.on('pageerror', (e) => errors.push(e.message));
+    await page.goto(PLAIN + '/');
+    await signInWithPassword(page, memberLogin, pw);
+    const view = page.locator('[data-mfa-setup-required]');
+    await view.waitFor({ timeout: 15000 });
+    check(true, 'Pflicht: nach der Anmeldung nur die Einrichtung');
+    check(await page.locator('[data-mfa-setup-continue]').isDisabled(), 'Pflicht: „Weiter“ erst nach der Einrichtung');
+    if (SHOTS) await page.screenshot({ path: `${SHOTS}/mfa-required-setup.png` });
+    const card = view.locator('[data-security-card="two-factor"]');
+    await card.getByRole('button', { name: 'Einrichten' }).click();
+    await card.getByLabel('Zur Bestätigung dein Passwort').fill(pw);
+    await card.getByRole('button', { name: 'Weiter' }).click();
+    const secretEl = card.locator('[data-totp-secret]');
+    await secretEl.waitFor({ timeout: 10000 });
+    const next = codes(base32((await secretEl.innerText()).replace(/\s/g, '')));
+    await card.getByLabel('Code', { exact: true }).fill(await next());
+    await card.locator('[data-recovery-codes]').waitFor({ timeout: 10000 });
+    await card.getByRole('button', { name: 'Ich habe die Codes gesichert' }).click();
+    await page.waitForFunction(() => !document.querySelector('[data-mfa-setup-continue]')?.hasAttribute('disabled'), null, { timeout: 10000 });
+    await page.locator('[data-mfa-setup-continue]').click();
+    await appReady(page);
+    check(true, 'Pflicht: nach der Einrichtung geht es in die App');
+
+    // A new password: the code is asked in a sheet
+    await page.getByTitle('Benutzermenü öffnen').locator('visible=true').first().click();
+    await page.getByRole('button', { name: /Kontoeinstellungen/ }).locator('visible=true').first().click();
+    await page.locator('aside').getByRole('button', { name: /^Sicherheit/ }).click();
+    await page.getByLabel('Neues Passwort', { exact: true }).fill(pw + '-neu');
+    await page.getByLabel('Neues Passwort wiederholen').fill(pw + '-neu');
+    await page.getByLabel('Aktuelles Passwort (zur Bestätigung)').fill(pw);
+    await page.getByRole('button', { name: 'Passwort ändern' }).click();
+    const prompt = page.locator('[data-second-factor-prompt]');
+    await prompt.waitFor({ timeout: 10000 });
+    check(true, 'Heikle Änderung: Rückfrage nach dem zweiten Faktor');
+    if (SHOTS) await page.screenshot({ path: `${SHOTS}/mfa-confirm-prompt.png` });
+    await prompt.getByLabel('Code der App oder Wiederherstellungscode').fill(await next());
+    await page.getByRole('button', { name: 'Bestätigen' }).click();
+    await page.getByText('Passwort geändert. Alle anderen Geräte wurden abgemeldet.').waitFor({ timeout: 10000 });
+    check(true, 'Heikle Änderung: mit dem Code durchgeführt');
+    await ctx.close();
+  } finally {
+    await setRequired('');
+  }
+
+  // The administrator (the second admin, with her code) resets the member's second factor in the user list
+  const ctx = await browser.newContext(DESKTOP);
+  await ctx.addInitScript(() => sessionStorage.setItem('mindsift_pwa_dismissed', '1'));
+  const page = await ctx.newPage();
+  page.on('pageerror', (e) => errors.push(e.message));
+  await page.goto(PLAIN + '/');
+  await api(boss, 'PATCH', '/api/v1/auth/settings', { tourOffered: true });
+  // A server started with ADMIN_USER shows every admin the rest of the setup wizard first: closed with what is set
+  if ((await api(boss, 'GET', '/api/v1/auth/me')).setupPending) {
+    const cur = await api(boss, 'GET', '/api/v1/admin/settings');
+    await api(boss, 'POST', '/api/v1/admin/setup', {
+      instanceName: cur.instanceName,
+      allowRegistration: cur.allowRegistration,
+      sharingMode: cur.sharingMode,
+      defaultLanguage: cur.defaultLanguage || '',
+      createSampleData: false,
+    });
+  }
+  await signInWithPassword(page, bossLogin, pw);
+  await secondStep(page).waitFor({ timeout: 10000 });
+  await page.getByLabel('Code', { exact: true }).fill(await bossNext());
+  await appReady(page);
+  await page.getByTitle('Benutzermenü öffnen').locator('visible=true').first().click();
+  await page.getByRole('button', { name: /^Administration/ }).locator('visible=true').first().click();
+  await page.getByLabel('Benutzer suchen').fill(memberLogin);
+  await page.getByRole('button', { name: /Pflicht Person/ }).first().click();
+  const reset = page.locator('[data-reset-mfa]').first();
+  await reset.waitFor({ timeout: 10000 });
+  if (SHOTS) await page.screenshot({ path: `${SHOTS}/mfa-admin-reset.png` });
+  await reset.click();
+  await page.getByRole('button', { name: '2FA zurücksetzen' }).last().click();
+  await page.getByText('Zwei-Faktor-Anmeldung von Pflicht Person zurückgesetzt.').waitFor({ timeout: 10000 });
+  const after = await api(null, 'POST', '/api/v1/auth/login', { login: memberLogin, password: pw + '-neu' });
+  check(Boolean(after.token) && !after.mfaRequired, 'Admin: nach dem Zurücksetzen reicht das Passwort', after);
+  check(errors.length === 0, 'Pflicht: keine Fehler im Browser', errors);
+  await browser.close();
+}
+
 const main = async () => {
   const admin = (await api(null, 'POST', '/api/v1/auth/login', { login: PLAIN_ADMIN, password: PLAIN_PASSWORD })).token;
   for (const engine of [chromium, firefox]) {
     await run(engine, admin);
   }
+  await policy(admin);
   console.log(failures ? `\n${failures} FAILED` : '\nAll checks passed');
   process.exit(failures ? 1 : 0);
 };

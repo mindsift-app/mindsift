@@ -562,6 +562,8 @@ func (s *Server) handleMe(w http.ResponseWriter, r *http.Request) {
 		"isLastAdmin": s.store.IsLastAdmin(userID),
 		// The admin came from ADMIN_USER and the wizard's instance settings are still to come (POST /admin/setup)
 		"setupPending": user.Role == domain.RoleAdmin && s.store.SetupPending(),
+		// The administration requires a second factor this account has not set up yet (mfa.go)
+		"mfaSetupRequired": s.mfaSetupMissing(user),
 	})
 }
 
@@ -664,8 +666,9 @@ func (s *Server) handleUpdateUserSettings(w http.ResponseWriter, r *http.Request
 		DiscordWebhookURL   *string   `json:"discordWebhookUrl"`
 		CustomWebhookURL    *string   `json:"customWebhookUrl"`
 		NotifyBeforeMinutes *int      `json:"notifyBeforeMinutes"`
-		// Needed to change password or e-mail address (FLAW-30)
+		// Needed to change password or e-mail address (FLAW-30), with a second factor when the account has one
 		CurrentPassword string `json:"currentPassword"`
+		secondFactor
 		// Which notifications go where (notify.go)
 		NotificationSettings *domain.NotificationSettings `json:"notificationSettings"`
 		// Days after which completed tasks are deleted (done_cleanup.go)
@@ -698,7 +701,7 @@ func (s *Server) handleUpdateUserSettings(w http.ResponseWriter, r *http.Request
 		writeError(w, http.StatusForbidden, "In der Demo deaktiviert")
 		return
 	}
-	if (changesPassword || changesEmail) && !s.checkCurrentPassword(w, r, before, req.CurrentPassword) {
+	if (changesPassword || changesEmail) && !s.confirmWithSecondFactor(w, r, before, req.CurrentPassword, req.secondFactor) {
 		return
 	}
 	// A new login address is taken only after the click on the link mailed to it (email_change.go). Mail
@@ -872,10 +875,16 @@ func (s *Server) notifyAccountChange(before *domain.User, password, email bool, 
 	default:
 		intro = i18n.T(lang, "In MindSift wurde dein Passwort geändert.")
 	}
+	s.sendAccountNotice(before, lang, intro)
+}
+
+// sendAccountNotice mails the account a change to its sign-in (intro says which), with the advice what to do
+// if it was not the owner. Mail must be set up; errors are logged, never shown.
+func (s *Server) sendAccountNotice(user *domain.User, lang, intro string) {
 	c := mailContent{
 		Lang:      lang,
 		Preheader: i18n.T(lang, "Änderung an deinem MindSift-Konto"),
-		Greeting:  mailGreeting(lang, time.Now(), before.DisplayName),
+		Greeting:  mailGreeting(lang, time.Now(), user.DisplayName),
 		Intro:     intro,
 		Notice:    i18n.T(lang, "Warst du das nicht? Setze bitte sofort dein Passwort zurück und beende alle Sitzungen in den Kontoeinstellungen, oder wende dich an die Administration."),
 		Footer:    mailFooterAccount(lang),
@@ -884,8 +893,8 @@ func (s *Server) notifyAccountChange(before *domain.User, password, email bool, 
 		c.Button = &mailButton{Label: i18n.T(lang, "MindSift öffnen"), URL: link}
 	}
 	go func() {
-		if err := s.sendMailContent(before.Email, i18n.T(lang, "MindSift: Änderung an deinem Konto"), c); err != nil {
-			slog.Warn("Notice about a changed account not sent", "user_id", before.ID, "error", err)
+		if err := s.sendMailContent(user.Email, i18n.T(lang, "MindSift: Änderung an deinem Konto"), c); err != nil {
+			slog.Warn("Notice about a changed account not sent", "user_id", user.ID, "error", err)
 		}
 	}()
 }

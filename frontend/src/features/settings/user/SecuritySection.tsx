@@ -9,6 +9,7 @@ import { askConfirm } from '../../../components/askConfirm';
 import { SessionsPanel } from '../SessionsPanel';
 import { TwoFactorCard } from './TwoFactorCard';
 import { PasskeyCard } from './PasskeyCard';
+import { withSecondFactor } from './askSecondFactor';
 
 // Kontoeinstellungen → Sicherheit: a new password, two-factor sign-in, passkeys and the signed-in devices.
 export function SecuritySection({
@@ -69,7 +70,8 @@ function PasswordCard({ onUserUpdated, demoMode }: { onUserUpdated: (u: User) =>
     setBusy(true);
     try {
       // Not trimmed: login compares the password exactly as typed
-      const updated = await api.updateSettings({ password: next, currentPassword: current });
+      // With a second factor on, the server asks for it as well (withSecondFactor)
+      const updated = await withSecondFactor((proof) => api.updateSettings({ password: next, currentPassword: current, ...proof }));
       onUserUpdated(updated);
       setNext('');
       setRepeat('');

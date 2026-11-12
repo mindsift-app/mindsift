@@ -143,6 +143,8 @@ export async function request<T>(path: string, { timeout = 'normal', ...options 
     } catch {
       // ignore
     }
+    // The administration requires a second factor this account has not set up (yet): the app shows the setup
+    if (code === 'mfa_setup_required') window.dispatchEvent(new CustomEvent('mindsift:mfa-setup-required'));
     throw new ApiError(errMsg, res.status, code);
   }
 

@@ -153,6 +153,10 @@ func (s *Store) forgetSystemSettings() {
 
 func cloneSystemSettings(in *domain.SystemSettings) *domain.SystemSettings {
 	out := *in
+	if out.MFARequired != nil {
+		v := *out.MFARequired
+		out.MFARequired = &v
+	}
 	for _, p := range []**bool{&out.PushKnownServicesOnly, &out.RetentionAllowNever, &out.MCPEnabled, &out.PeopleSearch, &out.PublicLinks} {
 		if *p != nil {
 			v := **p
@@ -234,6 +238,10 @@ func (s *Store) readSystemSettings() (*domain.SystemSettings, error) {
 			case "push_known_services_only":
 				on := v == "true"
 				settings.PushKnownServicesOnly = &on
+			case "mfa_required":
+				if ValidMFARequired(v) {
+					settings.MFARequired = &v
+				}
 			case "people_search":
 				on := v != "false"
 				settings.PeopleSearch = &on
@@ -281,6 +289,10 @@ func (s *Store) readSystemSettings() (*domain.SystemSettings, error) {
 	if settings.PublicLinks == nil {
 		on := true
 		settings.PublicLinks = &on
+	}
+	if settings.MFARequired == nil {
+		nobody := MFARequiredNobody
+		settings.MFARequired = &nobody
 	}
 	if settings.PublicLinkMaxDays == 0 {
 		settings.PublicLinkMaxDays = MaxPublicLinkDays
@@ -382,6 +394,13 @@ func (s *Store) UpdateSystemSettings(settings *domain.SystemSettings) error {
 				ON CONFLICT(key) DO UPDATE SET value = excluded.value`, key, strconv.FormatBool(*v))
 		}
 	}
+	if err == nil && settings.MFARequired != nil {
+		if !ValidMFARequired(*settings.MFARequired) {
+			return ErrInvalidMFARequired
+		}
+		_, err = s.db.Exec(`INSERT INTO system_settings (key, value) VALUES ('mfa_required', ?)
+			ON CONFLICT(key) DO UPDATE SET value = excluded.value`, *settings.MFARequired)
+	}
 	if err == nil && settings.PublicLinkMaxDays >= 1 && settings.PublicLinkMaxDays <= MaxPublicLinkDays {
 		_, err = s.db.Exec(`INSERT INTO system_settings (key, value) VALUES ('public_link_max_days', ?)
 			ON CONFLICT(key) DO UPDATE SET value = excluded.value`, strconv.Itoa(settings.PublicLinkMaxDays))
@@ -409,6 +428,19 @@ func (s *Store) SetSetupPending(pending bool) error {
 	_, err := s.db.Exec(`INSERT INTO system_settings (key, value) VALUES ('setup_pending', ?)
 		ON CONFLICT(key) DO UPDATE SET value = excluded.value`, strconv.FormatBool(pending))
 	return err
+}
+
+// Who must sign in with a second factor (domain.SystemSettings.MFARequired)
+const (
+	MFARequiredNobody = ""
+	MFARequiredAdmins = "admins"
+	MFARequiredAll    = "all"
+)
+
+var ErrInvalidMFARequired = i18n.NewError("Ungültige Einstellung für die Zwei-Faktor-Pflicht")
+
+func ValidMFARequired(v string) bool {
+	return v == MFARequiredNobody || v == MFARequiredAdmins || v == MFARequiredAll
 }
 
 // MaxPublicLinkDays: no public link lives longer than this (there is no link for good).

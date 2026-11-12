@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"strings"
 	"time"
@@ -134,8 +135,10 @@ func (s *Server) handleAdminGetUsers(w http.ResponseWriter, r *http.Request) {
 	pending := s.store.PendingRegistrationIDs()
 	unverified := s.store.UnverifiedEmailIDs()
 	orgs, _ := s.store.OrganizationIDsOf()
+	mfa := s.store.MFAUserIDs()
 	out := make([]staffUser, len(users))
 	for i, u := range users {
+		u.MFAEnabled = mfa[u.ID]
 		u.PendingApproval = pending[u.ID]
 		u.EmailUnverified = unverified[u.ID]
 		u.OrganizationIDs = orgs[u.ID]
@@ -287,6 +290,35 @@ func (s *Server) handleAdminResetPassword(w http.ResponseWriter, r *http.Request
 		return
 	}
 	s.wsHub.DisconnectUser(targetUserID)
+	writeJSON(w, http.StatusOK, map[string]bool{"success": true})
+}
+
+// handleAdminResetMFA: POST /admin/users/{id}/mfa/reset removes every second factor of an account that
+// lost them all (app, passkeys, recovery codes, trusted devices); it signs in with the password alone again.
+// Not for the own account (the security settings are there for it); managers only for members, as with deleting.
+func (s *Server) handleAdminResetMFA(w http.ResponseWriter, r *http.Request) {
+	targetUserID := chi.URLParam(r, "id")
+	callerID := auth.GetUserID(r.Context())
+	if targetUserID == callerID {
+		writeError(w, http.StatusBadRequest, "Deine eigene Zwei-Faktor-Anmeldung änderst du in den Kontoeinstellungen")
+		return
+	}
+	caller, _ := s.store.GetUserByID(callerID)
+	target, err := s.store.GetUserByID(targetUserID)
+	if err != nil || target == nil {
+		writeError(w, http.StatusNotFound, "Benutzer nicht gefunden")
+		return
+	}
+	if !isAdmin(caller) && target.Role != domain.RoleMember {
+		writeError(w, http.StatusForbidden, "Keine Berechtigung")
+		return
+	}
+	if err := s.store.ResetMFA(target.ID); err != nil {
+		writeInternal(w, err)
+		return
+	}
+	slog.Warn("Two-factor sign-in reset by an administrator", "user_id", target.ID, "by", callerID)
+	s.notifySecurityChange(target, securityChangeReset)
 	writeJSON(w, http.StatusOK, map[string]bool{"success": true})
 }
 
@@ -467,6 +499,10 @@ func (s *Server) handleAdminUpdateSettings(w http.ResponseWriter, r *http.Reques
 		settings.PublicLinkMaxDays = 0 // fixed by PUBLIC_LINKS_MAX_DAYS
 	}
 	settings.PeopleSearchViaEnv, settings.PublicLinksViaEnv, settings.PublicLinkMaxDaysViaEnv = false, false, false
+	if settings.MFARequired != nil && !storage.ValidMFARequired(*settings.MFARequired) {
+		writeErrorFrom(w, http.StatusBadRequest, storage.ErrInvalidMFARequired)
+		return
+	}
 	if settings.DefaultLanguage != "" && !i18n.Valid(settings.DefaultLanguage) {
 		writeError(w, http.StatusBadRequest, storage.ErrInvalidLanguage.Error())
 		return

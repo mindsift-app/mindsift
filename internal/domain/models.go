@@ -91,6 +91,8 @@ type User struct {
 	PendingApproval bool `json:"pendingApproval,omitempty"`
 	// Registered and the e-mail address is not confirmed yet (admin user list only)
 	EmailUnverified bool `json:"emailUnverified,omitempty"`
+	// MFAEnabled: signs in with a second factor (only in the administration's user list)
+	MFAEnabled bool `json:"mfaEnabled,omitempty"`
 	// New login and alarm addresses waiting for the click on their link (own profile only)
 	PendingEmail string `json:"pendingEmail,omitempty"`
 	// EmailLinks: this server can mail confirmation links (mail server and BASE_URL; own profile only)
@@ -449,7 +451,10 @@ type SystemSettings struct {
 	// PushKnownServicesOnly: web push only to the push services of the big browsers (Google, Mozilla,
 	// Apple, Microsoft) instead of any https address a browser names. Off by default.
 	PushKnownServicesOnly *bool `json:"pushKnownServicesOnly,omitempty"`
-	SMTPConfiguredViaEnv  bool  `json:"smtpConfiguredViaEnv,omitempty"`
+	// MFARequired: who must sign in with a second factor: "" (nobody, the default), "admins" or "all".
+	// nil in an update leaves it unchanged.
+	MFARequired          *string `json:"mfaRequired,omitempty"`
+	SMTPConfiguredViaEnv bool    `json:"smtpConfiguredViaEnv,omitempty"`
 	// Automatic backups: on/off, daily time (HH:MM, server time zone) and how many days to keep them
 	BackupEnabled       bool   `json:"backupEnabled"`
 	BackupTime          string `json:"backupTime"`

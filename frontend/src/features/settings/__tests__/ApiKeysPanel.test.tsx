@@ -44,7 +44,7 @@ describe('ApiKeysPanel', () => {
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: /API-Key erzeugen/ }));
     });
-    expect(createAPIKey).toHaveBeenCalledWith('Home Assistant', ['webhook:triage', 'webhook:list']);
+    expect(createAPIKey).toHaveBeenCalledWith('Home Assistant', ['webhook:triage', 'webhook:list'], undefined);
   });
 
   it('shows curl for scripts and, in the second tab, how to connect an MCP client', async () => {

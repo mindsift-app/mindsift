@@ -4431,6 +4431,30 @@
           }
         }
       }
+    },
+    "/api/v1/admin/users/{id}/mfa/reset": {
+      "post": {
+        "summary": "Reset a user's two-factor sign-in",
+        "description": "Removes the authenticator app, passkeys, recovery codes and trusted devices of another account (admins; managers for members only). The person is told by mail.",
+        "tags": [
+          "Administration"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
     }
   }
 }

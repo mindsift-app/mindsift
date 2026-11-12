@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"net/http"
 	"regexp"
+	"strings"
 	"sync"
 	"time"
 
@@ -15,6 +16,7 @@ import (
 	"github.com/go-webauthn/webauthn/webauthn"
 	"github.com/mindsift-app/mindsift/internal/auth"
 	"github.com/mindsift-app/mindsift/internal/domain"
+	"github.com/mindsift-app/mindsift/internal/i18n"
 	"github.com/mindsift-app/mindsift/internal/storage"
 )
 
@@ -317,12 +319,23 @@ func (s *Server) confirmWithSecondFactor(w http.ResponseWriter, r *http.Request,
 	if !s.checkCurrentPassword(w, r, user, password) {
 		return false
 	}
+	return s.confirmSecondFactor(w, r, user, f)
+}
+
+// confirmSecondFactor: the second factor alone, for a change that needs no password (a new API key, whose
+// requests never ask for a second factor). True right away when the account has none.
+func (s *Server) confirmSecondFactor(w http.ResponseWriter, r *http.Request, user *domain.User, f secondFactor) bool {
 	if !s.store.MFAActive(user.ID) {
 		return true
 	}
+	ip := clientIPFrom(r)
+	if wait := s.loginGuard.lockedFor(user.ID, ip); wait > 0 {
+		writeLoginLocked(w, wait)
+		return false
+	}
 	if f.PasskeyToken != "" {
 		if !s.confirmPasskey(user, f.PasskeyToken, f.Passkey) {
-			s.loginGuard.recordFailure(user.ID, clientIPFrom(r))
+			s.loginGuard.recordFailure(user.ID, ip)
 			writeErrorCode(w, http.StatusForbidden, "mfa_invalid", "Der Passkey wurde nicht angenommen")
 			return false
 		}
@@ -337,11 +350,89 @@ func (s *Server) confirmWithSecondFactor(w http.ResponseWriter, r *http.Request,
 		return false
 	}
 	if _, ok := s.checkSecondFactor(user.ID, f.Code); !ok {
-		s.loginGuard.recordFailure(user.ID, clientIPFrom(r))
+		s.loginGuard.recordFailure(user.ID, ip)
 		writeErrorCode(w, http.StatusForbidden, "mfa_invalid", "Der Code ist falsch oder abgelaufen")
 		return false
 	}
 	return true
+}
+
+// --- Required by the administration (system setting mfaRequired) ---
+
+// mfaRequiredFor: the administration requires a second factor of this account (all, or the administrators).
+func (s *Server) mfaRequiredFor(user *domain.User) bool {
+	sys, err := s.store.GetSystemSettings()
+	if err != nil || sys == nil || sys.MFARequired == nil {
+		return false
+	}
+	switch *sys.MFARequired {
+	case storage.MFARequiredAll:
+		return true
+	case storage.MFARequiredAdmins:
+		return user.Role == domain.RoleAdmin
+	}
+	return false
+}
+
+// mfaSetupMissing: required but not set up yet. Until it is, the account's sessions reach only what
+// mfaSetupPath lets through. Never in the demo, whose accounts cannot set it up.
+func (s *Server) mfaSetupMissing(user *domain.User) bool {
+	return !s.cfg.DemoMode && s.mfaRequiredFor(user) && !s.store.MFAActive(user.ID)
+}
+
+// mfaSetupPath: what a session may do while the required second factor is missing: read itself, set the
+// factor up and sign out.
+func mfaSetupPath(path string) bool {
+	switch path {
+	case "/api/v1/auth/me", "/api/v1/auth/logout", "/api/v1/auth/mfa":
+		return true
+	}
+	return strings.HasPrefix(path, "/api/v1/auth/mfa/")
+}
+
+// --- Notices to the account ---
+
+// Changes to the second factor the account is told about by mail (notifySecurityChange)
+const (
+	securityChangeOn           = "on"
+	securityChangeOff          = "off"
+	securityChangeAppAdded     = "app-added"
+	securityChangeAppRemoved   = "app-removed"
+	securityChangePasskeyAdded = "passkey-added"
+	securityChangePasskeyGone  = "passkey-removed"
+	securityChangeNewCodes     = "recovery-codes"
+	securityChangeReset        = "reset"
+)
+
+// notifySecurityChange mails the account a change to its second factor, so a takeover that added or removed
+// one does not go unnoticed. Only when mail is set up.
+func (s *Server) notifySecurityChange(user *domain.User, change string) {
+	if _, err := s.smtpSettings(); err != nil || user == nil || user.Email == "" {
+		return
+	}
+	lang := s.userLanguage(user.ID)
+	var intro string
+	switch change {
+	case securityChangeOn:
+		intro = i18n.T(lang, "In MindSift wurde für dein Konto die Zwei-Faktor-Anmeldung eingeschaltet.")
+	case securityChangeOff:
+		intro = i18n.T(lang, "In MindSift wurde die Zwei-Faktor-Anmeldung deines Kontos ausgeschaltet. Die Anmeldung fragt jetzt nur noch nach dem Passwort.")
+	case securityChangeAppAdded:
+		intro = i18n.T(lang, "In MindSift wurde deinem Konto eine Authenticator-App hinzugefügt.")
+	case securityChangeAppRemoved:
+		intro = i18n.T(lang, "In MindSift wurde die Authenticator-App von deinem Konto entfernt. Deine Passkeys gelten weiter.")
+	case securityChangePasskeyAdded:
+		intro = i18n.T(lang, "In MindSift wurde deinem Konto ein Passkey hinzugefügt.")
+	case securityChangePasskeyGone:
+		intro = i18n.T(lang, "In MindSift wurde ein Passkey von deinem Konto entfernt.")
+	case securityChangeNewCodes:
+		intro = i18n.T(lang, "In MindSift wurden für dein Konto neue Wiederherstellungscodes erzeugt. Die bisherigen gelten nicht mehr.")
+	case securityChangeReset:
+		intro = i18n.T(lang, "Die Administration von MindSift hat die Zwei-Faktor-Anmeldung deines Kontos zurückgesetzt. Die Anmeldung fragt jetzt nur noch nach dem Passwort; richte sie in den Kontoeinstellungen neu ein.")
+	default:
+		return
+	}
+	s.sendAccountNotice(user, lang, intro)
 }
 
 // --- The own settings ---
@@ -497,6 +588,11 @@ func (s *Server) handleTOTPConfirm(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	slog.Info("Two-factor sign-in switched on", "user_id", user.ID)
+	if len(codes) > 0 {
+		s.notifySecurityChange(user, securityChangeOn)
+	} else {
+		s.notifySecurityChange(user, securityChangeAppAdded)
+	}
 	writeJSON(w, http.StatusOK, map[string]any{"recoveryCodes": codes, "enabledAt": now.UTC().Format(time.RFC3339)})
 }
 
@@ -538,8 +634,10 @@ func (s *Server) handleTOTPDisable(w http.ResponseWriter, r *http.Request) {
 	}
 	if mfaOff {
 		slog.Info("Two-factor sign-in switched off", "user_id", user.ID)
+		s.notifySecurityChange(user, securityChangeOff)
 	} else {
 		slog.Info("Authenticator app removed, passkeys stay", "user_id", user.ID)
+		s.notifySecurityChange(user, securityChangeAppRemoved)
 	}
 	writeJSON(w, http.StatusOK, map[string]bool{"disabled": true, "mfaOff": mfaOff})
 }
@@ -571,6 +669,7 @@ func (s *Server) handleNewRecoveryCodes(w http.ResponseWriter, r *http.Request) 
 		writeInternal(w, err)
 		return
 	}
+	s.notifySecurityChange(user, securityChangeNewCodes)
 	writeJSON(w, http.StatusOK, map[string]any{"recoveryCodes": codes})
 }
 
