@@ -22,7 +22,7 @@ const CALENDAR_BAR_SPACER = 'max(0px, calc(var(--kb-top) - var(--kb-scroll, 0px)
 // Full width: the calendar takes the window (the same button and setting as the Kanban board)
 const calendarWidthStyle = (wide: boolean): React.CSSProperties =>
   (wide
-    ? { '--kanban-w': 'calc(100vw - 4rem)', '--kanban-ml': 'calc((100% - (100vw - 4rem)) / 2)' }
+    ? { '--kanban-w': 'calc(100vw - var(--app-rail-w, 0px) - 4rem)', '--kanban-ml': 'calc((100% - (100vw - var(--app-rail-w, 0px) - 4rem)) / 2)' }
     : { '--kanban-w': '100%', '--kanban-ml': '0px' }) as React.CSSProperties;
 
 // Month or week on the desktop, remembered in this browser; the switch sits in the bar above (TasksView)

@@ -933,10 +933,10 @@ export const TasksView: React.FC<TasksViewProps> = ({
                 onClick={toggleKanbanWide}
                 data-tour="board-wide"
                 aria-pressed={kanbanWide}
-                className="btn-action h-7 w-7 p-0 hidden lg:inline-flex items-center justify-center"
+                className="tool-icon hidden lg:inline-flex"
                 title={kanbanWide ? t('view.calendarNormal') : t('view.calendarWide')}
               >
-                {kanbanWide ? <Minimize2 className="w-3.5 h-3.5 text-accent" /> : <Maximize2 className="w-3.5 h-3.5 text-accent" />}
+                {kanbanWide ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
               </button>
             </>
           )}
@@ -945,10 +945,10 @@ export const TasksView: React.FC<TasksViewProps> = ({
               {!isSelectedListReadOnly && (
                 <button
                   onClick={() => setShowManageColumnsModal(true)}
-                  className="btn-action h-7 px-2.5 text-xs flex items-center gap-1.5"
+                  className="tool-btn"
                   title={t('view.columnsTitle')}
                 >
-                  <Columns className="w-3.5 h-3.5 text-accent" />
+                  <Columns className="w-3.5 h-3.5" />
                   <span>{t('view.columns')}</span>
                 </button>
               )}
@@ -957,14 +957,10 @@ export const TasksView: React.FC<TasksViewProps> = ({
                 onClick={toggleKanbanWide}
                 data-tour="board-wide"
                 aria-pressed={kanbanWide}
-                className="btn-action h-7 w-7 p-0 hidden lg:inline-flex items-center justify-center"
+                className="tool-icon hidden lg:inline-flex"
                 title={kanbanWide ? t('view.boardNormal') : t('view.boardWide')}
               >
-                {kanbanWide ? (
-                  <Minimize2 className="w-3.5 h-3.5 text-accent" />
-                ) : (
-                  <Maximize2 className="w-3.5 h-3.5 text-accent" />
-                )}
+                {kanbanWide ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
               </button>
             </>
           )}

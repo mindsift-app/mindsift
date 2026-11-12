@@ -15,7 +15,7 @@ export const LivePill: React.FC = () => {
   const { connected, transport } = status;
   return (
     <span
-      className="inline-flex items-center gap-1 h-7 px-2 rounded-btn text-[11px] bg-panel text-muted flex-shrink-0"
+      className="inline-flex items-center gap-1 h-7 px-2 sm:px-1.5 rounded-btn text-[11px] bg-panel sm:bg-transparent text-muted flex-shrink-0"
       title={
         !connected
           ? t('live.none')

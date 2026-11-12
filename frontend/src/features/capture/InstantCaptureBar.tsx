@@ -153,20 +153,10 @@ export const InstantCaptureBar: React.FC<InstantCaptureBarProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [inlineOptions]);
 
-  // Global keyboard shortcut: 'c' or '/' focuses the Instant Capture input immediately
+  // Escape in the field empties it (the bare "c" that opens the Quick Dump lives in app/QuickDumpWindow.tsx)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      const el = e.target as HTMLElement;
-      const isEditing =
-        el.tagName === 'INPUT' ||
-        el.tagName === 'TEXTAREA' ||
-        el.isContentEditable;
-
-      // Only the bare key: Ctrl/Cmd+C copies (e.g. selected bullets or read-only text) and must not land here
-      if (!isEditing && !e.ctrlKey && !e.metaKey && !e.altKey && (e.key === 'c' || e.key === 'C')) {
-        e.preventDefault();
-        inputRef.current?.focus();
-      } else if (e.key === 'Escape' && document.activeElement === inputRef.current) {
+      if (e.key === 'Escape' && document.activeElement === inputRef.current) {
         setContent('');
         setIsMultiline(false);
         setShowOptions(false);

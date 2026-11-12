@@ -443,10 +443,10 @@ const es: HelpContent = {
       keywords: ['captura', 'captura rapida', 'dictado', 'voz', 'microfono', 'inbox', 'c'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
-          <p>La barra de captura rápida en la parte superior garantiza que ningún pensamiento fugaz se pierda:</p>
+          <p>El Quick Dump garantiza que ningún pensamiento fugaz se pierda. En el escritorio, el <strong className="text-main">+</strong> redondo de la barra de la izquierda lo abre como ventana sobre todo lo demás; en el móvil, el <strong className="text-main">+</strong> abajo en el centro:</p>
           <ul className="space-y-1.5">
             <li>
-              <strong className="text-main">Foco instantáneo:</strong> pulsa <kbd className={kbd}>C</kbd> o <kbd className={kbd}>/</kbd> en cualquier parte de la aplicación (salvo si ya estás escribiendo en un campo de texto).
+              <strong className="text-main">Con el teclado:</strong> pulsa <kbd className={kbd}>C</kbd> en cualquier parte de la aplicación (salvo si estás escribiendo en un campo de texto). <kbd className={kbd}>Intro</kbd> guarda y la ventana sigue abierta para la siguiente idea; <kbd className={kbd}>Esc</kbd> o un clic fuera la cierra.
             </li>
             <li>
               <strong className="text-main">Dictado por voz:</strong> haz clic en el icono de micrófono (<Mic className="w-3.5 h-3.5 inline text-accent" />) para entrada continua de voz. Los pensamientos dictados reciben automáticamente la etiqueta <code className="text-accent font-mono">#diktat</code>. En el móvil también puedes mantener pulsado el botón redondo <strong className="text-main">+</strong> en la barra inferior para hablar al instante: al soltar, el texto va al inbox (arrastrar hacia arriba cancela).
@@ -607,7 +607,7 @@ const es: HelpContent = {
               <strong className="text-main">Recordatorios por tarea:</strong> En la ventana de detalles, marca una o varias horas en «Recordatorio», p. ej. 2 semanas antes y el día de vencimiento. Para esta tarea sustituyen tu antelación y valen para todos los que reciben su alarma de vencimiento; «Predeterminado» vuelve a la antelación de los ajustes. Sin hora, MindSift recuerda días enteros antes a las 9:00. Las tareas con recordatorios propios llevan una pequeña 🔔.
             </li>
             <li>
-              <strong className="text-main">Más notificaciones:</strong> Cuando alguien te asigna una tarea, llega una tarea nueva a una lista compartida o se completa una allí, MindSift puede avisarte; cada evento se activa o desactiva por separado en los ajustes, en “Avisos”. Las tareas que <strong className="text-main">sigues</strong> notifican cada cambio (estado, prioridad, vencimiento, texto, descripción, subtareas, asignación …), también si se marcan en una nota. MindSift nunca te avisa de lo que haces tú. Varios eventos llegan juntos en un solo mensaje. La <strong className="text-main">campana</strong> junto a la búsqueda reúne todo lo de los últimos 14 días, aunque no tengas canales activados; un clic en una entrada abre la tarea o la nota.
+              <strong className="text-main">Más notificaciones:</strong> Cuando alguien te asigna una tarea, llega una tarea nueva a una lista compartida o se completa una allí, MindSift puede avisarte; cada evento se activa o desactiva por separado en los ajustes, en “Avisos”. Las tareas que <strong className="text-main">sigues</strong> notifican cada cambio (estado, prioridad, vencimiento, texto, descripción, subtareas, asignación …), también si se marcan en una nota. MindSift nunca te avisa de lo que haces tú. Varios eventos llegan juntos en un solo mensaje. La <strong className="text-main">campana</strong> (escritorio: abajo en la barra de la izquierda; móvil: junto a la búsqueda) reúne todo lo de los últimos 14 días, aunque no tengas canales activados; un clic en una entrada abre la tarea o la nota.
             </li>
             <li>
               <strong className="text-main">Menciones con @:</strong> En la descripción de una tarea, en subtareas y en notas, <strong className="text-main">@</strong> abre una lista de personas (flechas, Enter). Quien no tiene acceso aparece en gris. La persona mencionada recibe un aviso (Ajustes → Avisos, “Me han mencionado”), también desde una lista silenciada; guardar de nuevo no envía otro.
@@ -661,7 +661,7 @@ const es: HelpContent = {
         <div className="space-y-2 text-muted leading-relaxed">
           <ul className="space-y-1.5">
             <li>
-              <strong className="text-main">Cambiar de tema:</strong> en el menú de perfil arriba a la derecha o en <em>Ajustes de la cuenta → Apariencia y temas</em>.
+              <strong className="text-main">Cambiar de tema:</strong> en el menú de perfil (tu foto de perfil; en el escritorio, abajo en la barra de la izquierda) o en <em>Ajustes de la cuenta → Apariencia y temas</em>.
             </li>
             <li>
               <strong className="text-main">Tema personalizado:</strong> descarga o pega la plantilla, ajusta colores y esquinas, súbela o pégala como archivo <code className="text-accent bg-panel px-1 py-0.5 rounded font-mono">.css</code> y selecciona «Guardar y activar». El tema se aplica de inmediato y estará disponible en todos tus dispositivos.
@@ -757,9 +757,9 @@ const es: HelpContent = {
   ],
   shortcuts: [
     { key: 'Cmd + K / Ctrl + K o /', scope: 'Global', desc: 'Abrir la búsqueda global de texto completo (paleta de comandos)' },
-    { key: 'C', scope: 'Global', desc: 'Poner el foco en la barra de captura rápida de inmediato' },
-    { key: 'Enter', scope: 'Captura rápida', desc: 'Guardar el pensamiento en un instante' },
-    { key: 'Esc', scope: 'Captura rápida', desc: 'Borrar la entrada y cerrar las opciones' },
+    { key: 'C', scope: 'Global', desc: 'Abrir el Quick Dump (en el escritorio como ventana sobre todo lo demás)' },
+    { key: 'Enter', scope: 'Quick Dump', desc: 'Guardar el pensamiento; la ventana sigue abierta para el siguiente' },
+    { key: 'Esc', scope: 'Quick Dump', desc: 'Borrar la entrada y cerrar la ventana' },
     { key: 'Enter', scope: 'Outliner del Workspace', desc: 'Crear un nuevo punto (o anular sangría de un bloque vacío)' },
     { key: 'Tab', scope: 'Outliner del Workspace', desc: 'Sangrar el punto hacia la derecha (anidar)' },
     { key: 'Shift + Tab', scope: 'Outliner del Workspace', desc: 'Anular la sangría del punto hacia la izquierda' },

@@ -89,7 +89,7 @@ for (const [dev, opts] of [
     await shot(p, `${dev}12_api`);
   });
   await safe('help', async () => {
-    if (dev === 'd') await p.getByTitle('Help & documentation').first().click();
+    if (dev === 'd') await p.locator('[data-tour="help-entry"]').locator('visible=true').first().click();
     else {
       await p.getByTitle('Profile & settings').first().click();
       await p.getByRole('button', { name: /Help & guide/ }).locator('visible=true').first().click();

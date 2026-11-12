@@ -5,6 +5,7 @@ import { api, triggerHaptic } from '../lib/api';
 import { CenterEntry } from '../lib/types';
 import { formatRelative } from '../lib/format';
 import { CountBadge } from './CountBadge';
+import { RailItemContent } from './RailItemContent';
 
 const KIND_ICON: Record<string, React.ReactNode> = {
   assigned: <UserPlus className="w-3.5 h-3.5" />,
@@ -17,9 +18,18 @@ const KIND_ICON: Record<string, React.ReactNode> = {
 };
 
 // The notification center: a bell with the number of unread entries; it opens a small list (phones: full
-// width under the header) of everything that happened, newest first. A click on an entry marks it read and
+// width under the header; desktop: beside the navigation rail) of everything that happened, newest first. A click on an entry marks it read and
 // opens its task, note or list. Quiet: no sound, nothing pops up; open apps follow over the WebSocket.
-export function NotificationBell({ variant, onOpen }: { variant: 'desktop' | 'phone'; onOpen: (entry: CenterEntry) => void }) {
+export function NotificationBell({
+  variant,
+  onOpen,
+  expanded = false,
+}: {
+  variant: 'desktop' | 'phone';
+  onOpen: (entry: CenterEntry) => void;
+  // Desktop: the navigation rail is expanded (label next to the bell)
+  expanded?: boolean;
+}) {
   const { t } = useTranslation('common');
   const [items, setItems] = useState<CenterEntry[]>([]);
   const [unread, setUnread] = useState(0);
@@ -108,12 +118,12 @@ export function NotificationBell({ variant, onOpen }: { variant: 'desktop' | 'ph
         onClick={toggle}
         aria-expanded={open}
         aria-haspopup="dialog"
-        title={label}
+        title={phone ? label : undefined}
         aria-label={label}
         className={
           phone
             ? 'w-11 h-11 rounded-full flex items-center justify-center text-muted hover:text-main transition-transform active:scale-95 cursor-pointer'
-            : 'relative w-8 h-8 rounded-full bg-panel border border-border text-muted hover:text-main flex items-center justify-center transition-colors cursor-pointer shrink-0'
+            : `rail-item ${open ? 'bg-panel-elevated text-main' : ''}`
         }
       >
         {phone ? (
@@ -122,10 +132,7 @@ export function NotificationBell({ variant, onOpen }: { variant: 'desktop' | 'ph
             <CountBadge count={unread} variant="accent" position="corner" />
           </span>
         ) : (
-          <>
-            <Bell className="w-3.5 h-3.5" />
-            <CountBadge count={unread} variant="accent" position="corner" />
-          </>
+          <RailItemContent icon={<Bell className="w-5 h-5" />} label={t('center.title')} tip={label} count={unread} expanded={expanded} />
         )}
       </button>
 
@@ -135,8 +142,8 @@ export function NotificationBell({ variant, onOpen }: { variant: 'desktop' | 'ph
           aria-label={t('center.title')}
           style={phone ? { top } : undefined}
           className={`${
-            phone ? 'fixed inset-x-2' : 'absolute right-0 top-full mt-2 w-96'
-          } z-50 max-w-[calc(100vw-1rem)] max-h-[70vh] flex flex-col rounded-card bg-panel border border-border shadow-panel overflow-hidden animate-in fade-in zoom-in-95 slide-in-from-top-1 duration-150 origin-top-right`}
+            phone ? 'fixed inset-x-2' : 'absolute left-full bottom-0 ml-3 w-96'
+          } z-50 max-w-[calc(100vw-1rem)] max-h-[70vh] flex flex-col rounded-card bg-panel border border-border shadow-panel overflow-hidden animate-in fade-in zoom-in-95 duration-150 ${phone ? 'slide-in-from-top-1 origin-top-right' : 'slide-in-from-left-1 origin-bottom-left'}`}
         >
           <div className="flex items-center gap-1 px-3 py-2 border-b border-border">
             <span className="flex-1 text-xs font-semibold text-main">{t('center.title')}</span>

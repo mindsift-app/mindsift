@@ -18,7 +18,7 @@
   },
   "triage": {
     "title": "Triage: prima annotare, poi smistare",
-    "capture": "Quello che ti viene in mente lo scrivi senza pensarci in alto nel <b>Quick Dump</b> (tasto <kbd>C</kbd>). Non finisce subito da qualche parte: arriva come scheda qui nel Triage.",
+    "capture": "Quello che ti viene in mente lo butti senza pensarci nel <b>Quick Dump</b>: il <b>+</b> nella barra a sinistra o il tasto <kbd>C</kbd>. Non finisce subito da qualche parte: arriva come scheda qui nel Triage.",
     "capturePhone": "Quello che ti viene in mente lo butti senza pensarci nel <b>Quick Dump</b>: il <b>+</b> in basso al centro, tienilo premuto per dettare. Arriva come scheda qui nel Triage.",
     "decide": "Quando hai tempo, decidi scheda per scheda: <kbd>→</kbd> attività, <kbd>←</kbd> scarta, <kbd>D</kbd> nota, <kbd>T</kbd> con data, <kbd>Spazio</kbd> più tardi – oppure i pulsanti sotto la scheda, anche «Su lista».",
     "decidePhone": "Quando hai tempo, decidi scheda per scheda: scorrere a destra la trasforma in attività, a sinistra la scarta. I pulsanti sotto la mettono su una lista, in una nota o con una data."
@@ -51,7 +51,7 @@
   },
   "end": {
     "title": "Ecco fatto!",
-    "text": "Tutto il resto – scorciatoie, liste, condivisione e altro – è qui nella pagina di aiuto (il <b>?</b> in alto a destra). Con «Avvia il tour» lo rivedi quando vuoi.",
+    "text": "Tutto il resto – scorciatoie, liste, condivisione e altro – è qui nella pagina di aiuto (il <b>?</b> in basso nella barra a sinistra). Con «Avvia il tour» lo rivedi quando vuoi.",
     "textPhone": "Tutto il resto – liste, condivisione e altro – è qui nella pagina di aiuto (dalla tua foto profilo in alto a destra). Con «Avvia il tour» lo rivedi quando vuoi.",
     "share": "A proposito: note, liste di attività e liste si possono condividere con altri e modificare insieme."
   },

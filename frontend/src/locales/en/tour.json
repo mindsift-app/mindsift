@@ -18,7 +18,7 @@
   },
   "triage": {
     "title": "Triage: capture first, sort later",
-    "capture": "Whatever comes to mind, type it without thinking into the <b>Quick Dump</b> at the top (key <kbd>C</kbd>). It doesn't go anywhere yet, it lands as a card here in Triage.",
+    "capture": "Whatever comes to mind, throw it without thinking into the <b>Quick Dump</b>: the <b>+</b> in the bar on the left or the key <kbd>C</kbd>. It doesn't go anywhere yet, it lands as a card here in Triage.",
     "capturePhone": "Whatever comes to mind, throw it into the <b>Quick Dump</b> without thinking: the <b>+</b> at the bottom centre, hold it to speak. It lands as a card here in Triage.",
     "decide": "When you have time, decide card by card: <kbd>→</kbd> task, <kbd>←</kbd> discard, <kbd>D</kbd> note, <kbd>T</kbd> with a date, <kbd>Space</kbd> later – or use the buttons below the card, including “To list”.",
     "decidePhone": "When you have time, decide card by card: swipe right to make it a task, left to discard it. The buttons below put it on a list, into a note or give it a date."
@@ -51,7 +51,7 @@
   },
   "end": {
     "title": "That’s it!",
-    "text": "Everything else – shortcuts, lists, sharing and more – is here on the help page (the <b>?</b> at the top right). “Start tour” shows the tour again any time.",
+    "text": "Everything else – shortcuts, lists, sharing and more – is here on the help page (the <b>?</b> at the bottom of the bar on the left). “Start tour” shows the tour again any time.",
     "textPhone": "Everything else – lists, sharing and more – is here on the help page (through your profile picture at the top right). “Start tour” shows the tour again any time.",
     "share": "By the way, you can share notes, task lists and lists with others and edit them together."
   },

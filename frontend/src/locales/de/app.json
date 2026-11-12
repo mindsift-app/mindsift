@@ -90,5 +90,19 @@
   "appLoad": {
     "failed": "MindSift konnte nicht vollständig geladen werden. Prüfe die Verbindung und versuche es noch einmal.",
     "retry": "Erneut versuchen"
+  },
+  "rail": {
+    "label": "Hauptnavigation",
+    "expand": "Navigation ausklappen",
+    "collapse": "Navigation einklappen",
+    "quickDump": "Quick Dump",
+    "quickDumpTip": "Quick Dump – Gedanken festhalten (C)",
+    "search": "Suche",
+    "searchKey": "Strg K",
+    "help": "Hilfe"
+  },
+  "quickDump": {
+    "title": "Quick Dump",
+    "hint": "<kbd>Enter</kbd> speichert, das Fenster bleibt für den nächsten Gedanken offen · <kbd>Esc</kbd> schließt"
   }
 }
