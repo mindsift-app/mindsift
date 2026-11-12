@@ -1,8 +1,9 @@
 // Tables in notes: /table makes a 2 × 2 table with the bullet's text in the first cell, typing with Tab and
 // Enter, the + for a column, the line mode from the ⋯ menu, Backspace on an empty row, the arrows into and
-// out of the table; after reloading content and line mode are still there (sync). Desktop: a wide table
-// scrolls sideways inside its box. On a phone: tapping a cell and the + (44 px), the page does not scroll
-// sideways. Desktop in Chromium and Firefox, the phone in Chromium.
+// out of the table; after reloading content and line mode are still there (sync); undo that takes away the
+// row with the cursor moves it to the row above. Desktop: a wide table scrolls sideways inside its box. On a
+// phone: tapping a cell and the + (44 px), the page does not scroll sideways. Desktop in Chromium and
+// Firefox, the phone in Chromium.
 // Needs a server in demo mode (admin/admin).
 import { chromium, firefox } from 'playwright';
 
@@ -143,6 +144,17 @@ const main = async () => {
       tag('nach Neuladen sind Inhalt und Modus da'),
       s
     );
+
+    // Undo takes away the row with the cursor: the cursor goes to the row above, the table keeps it
+    await page.locator('[data-table-block] td .nt-text').first().click();
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(300);
+    s = await cellState(page);
+    check(s.values.length === 9 && s.focus === 6, tag('Enter legt vor dem Rückgängig eine Zeile an'), s);
+    await page.keyboard.press('Control+z');
+    await page.waitForTimeout(400);
+    s = await cellState(page);
+    check(s.values.length === 6 && s.focus === 3, tag('Rückgängig nimmt die Zeile weg, Cursor in die Zelle darüber'), s);
     await ctx.close();
     await engineBrowser.close();
   }

@@ -18,6 +18,7 @@ import { toggleInlineFormat } from '../../lib/inlineFormat';
 import {
   TableData,
   TableLines,
+  cellAfterOutsideChange,
   deleteTableColumn,
   deleteTableRow,
   insertTableColumn,
@@ -101,12 +102,16 @@ const TableBlockView: React.FC<TableBlockProps> = ({
   const { t } = useTranslation('workspace');
 
   // The table as cells. Content this table wrote itself is not read back (that would trim a space just
-  // typed at the end of a cell); new content from outside (another person, undo) replaces it.
-  const [own, setOwn] = useState(() => ({ content, data: parseMarkdownTable(content) }));
+  // typed at the end of a cell); new content from outside (another person, undo) replaces it. `before` keeps
+  // the cells it replaced, so the cursor can move on when its row went.
+  const [own, setOwn] = useState<{ content: string; data: TableData; before?: TableData }>(() => ({
+    content,
+    data: parseMarkdownTable(content),
+  }));
   let data = own.data;
   if (content !== own.content) {
     data = parseMarkdownTable(content);
-    setOwn({ content, data });
+    setOwn({ content, data, before: own.data });
   }
   const rows = data.rows;
   const cols = data.align.length;
@@ -156,9 +161,24 @@ const TableBlockView: React.FC<TableBlockProps> = ({
   };
   useLayoutEffect(() => {
     const p = pendingFocusRef.current;
-    if (!p) return;
-    pendingFocusRef.current = null;
-    applyFocus(p);
+    if (p) {
+      pendingFocusRef.current = null;
+      applyFocus(p);
+      return;
+    }
+    // New content from outside while the cursor is in the table (undo took away its row or column): into
+    // the nearest cell, else out of the table upwards like arrow up
+    const cell = lastCellRef.current;
+    if (!own.before || !hasFocusRef.current || !cell) return;
+    const to = cellAfterOutsideChange(own.before, own.data, cell.r, cell.c);
+    if (!to) {
+      onLeave('up');
+      return;
+    }
+    // Its cell is still there (someone typed elsewhere): the cursor stays where it is
+    if (to.row === cell.r && to.col === cell.c) return;
+    applyFocus({ r: to.row, c: to.col, caret: 'end' });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only for new cells; onLeave keeps its identity
   }, [own]);
 
   // Mobile keyboards and the context menu undo via beforeinput instead of key events
