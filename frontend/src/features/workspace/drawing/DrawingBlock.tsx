@@ -5,6 +5,9 @@ import { Expand, Maximize2, Pencil, RotateCcw, Save, Shrink } from 'lucide-react
 import { Drawing, contentBox, drawingTexts, parseDrawing, serializeDrawing, wheelZoom } from '../../../lib/drawing/model';
 import { DrawingElements } from './DrawingElements';
 import { DrawingEditor } from './DrawingEditor';
+import { ConfirmPopover } from '../../../components/ConfirmPopover';
+import { AvatarStack } from '../../../components/AvatarStack';
+import { isWebSocketConnected } from '../../../lib/api';
 
 interface View {
   x: number;
@@ -59,6 +62,7 @@ export function nextSize(d: Drawing, width: number): Drawing['fit'] | 'auto' {
 }
 
 interface DrawingBlockProps {
+  docId?: string;
   blockId: string;
   content: string;
   canEdit: boolean;
@@ -73,11 +77,17 @@ interface DrawingBlockProps {
   onFocusChange?: (focused: boolean) => void;
   /** Drawing in the editor (keeps the bullet held for this person) */
   onActivity?: () => void;
+  /** People drawing in it live right now (host first) */
+  live?: { userId: string; name: string; avatarUrl?: string }[];
 }
+
+/** How the editor is open: alone as before ('solo'), looking only ('view'), or in a live session */
+type EditMode = 'solo' | 'view' | 'draw' | 'watch';
 
 // Drawing in a note: a preview that fills the note's width. Hovering leaves the page scrolling as usual; after
 // a click the drawing takes dragging, the wheel and pinching to move and zoom. Editing happens full screen.
 export const DrawingBlock: React.FC<DrawingBlockProps> = ({
+  docId,
   blockId,
   content,
   canEdit,
@@ -87,6 +97,7 @@ export const DrawingBlock: React.FC<DrawingBlockProps> = ({
   actionsTarget,
   onFocusChange,
   onActivity,
+  live,
 }) => {
   const { t } = useTranslation('workspace');
   const drawing = useMemo(() => parseDrawing(content), [content]);
@@ -97,7 +108,19 @@ export const DrawingBlock: React.FC<DrawingBlockProps> = ({
   const [view, setView] = useState<View | null>(null);
   const viewRef = useRef<View | null>(null);
   const [dragHeight, setDragHeight] = useState<number | null>(null);
-  const [editing, setEditing] = useState(!!autoOpen && canEdit);
+  // With a WebSocket, editing is a live session others can join; without, alone as before
+  const editMode = (): EditMode => (canEdit ? (docId && isWebSocketConnected() ? 'draw' : 'solo') : 'view');
+  const [editing, setEditing] = useState<EditMode | null>(() => (autoOpen && canEdit ? editMode() : null));
+  // Someone draws live: join or watch (asked where the click was)
+  const [ask, setAsk] = useState<{ x: number; y: number } | null>(null);
+  const liveNames = live?.length ? [...new Set(live.map((p) => p.name))] : [];
+  const openEditor = (e?: { clientX: number; clientY: number }) => {
+    if (liveNames.length && docId) {
+      setAsk({ x: e?.clientX ?? window.innerWidth / 2, y: e?.clientY ?? window.innerHeight / 3 });
+      return;
+    }
+    setEditing(editMode());
+  };
   // Only the first editor of a fresh drawing may turn it back into a bullet when nothing was drawn
   const freshRef = useRef(!!autoOpen);
   const pointers = useRef(new Map<number, { x: number; y: number }>());
@@ -180,7 +203,7 @@ export const DrawingBlock: React.FC<DrawingBlockProps> = ({
   // The bullet counts as focused while the drawing takes gestures or its editor is open
   const onFocusChangeRef = useRef(onFocusChange);
   onFocusChangeRef.current = onFocusChange;
-  const active = focused || editing;
+  const active = focused || !!editing;
   const firstRun = useRef(true);
   useEffect(() => {
     if (firstRun.current && !active) {
@@ -353,11 +376,11 @@ export const DrawingBlock: React.FC<DrawingBlockProps> = ({
       )}
       {!view && canEdit && !empty && sizeButton}
       {canEdit ? (
-        <button type="button" className={btn} onClick={() => setEditing(true)} title={t('drawing.editTitle')} aria-label={t('drawing.edit')}>
+        <button type="button" className={btn} onClick={openEditor} title={t('drawing.editTitle')} aria-label={t('drawing.edit')}>
           <Pencil className="w-3.5 h-3.5" />
         </button>
       ) : (
-        <button type="button" className={btn} onClick={() => setEditing(true)} title={t('drawing.fullscreen')} aria-label={t('drawing.fullscreen')}>
+        <button type="button" className={btn} onClick={openEditor} title={t('drawing.fullscreen')} aria-label={t('drawing.fullscreen')}>
           <Maximize2 className="w-3.5 h-3.5" />
         </button>
       )}
@@ -376,7 +399,7 @@ export const DrawingBlock: React.FC<DrawingBlockProps> = ({
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
-        onDoubleClick={() => canEdit && setEditing(true)}
+        onDoubleClick={(e) => (canEdit || liveNames.length > 0) && openEditor(e)}
         role="img"
         aria-label={texts.length ? t('drawing.ariaWithText', { text: texts.join(', ') }) : t('drawing.aria')}
       >
@@ -384,6 +407,16 @@ export const DrawingBlock: React.FC<DrawingBlockProps> = ({
           <svg className="absolute inset-0 w-full h-full" viewBox={`${shown.x} ${shown.y} ${width / shown.z} ${height / shown.z}`}>
             <DrawingElements els={drawing.els} />
           </svg>
+        )}
+        {liveNames.length > 0 && (
+          <div
+            data-live-badge
+            className="absolute top-1.5 left-1.5 max-w-[calc(100%-5rem)] inline-flex items-center gap-1.5 h-6 pl-1.5 pr-2 rounded-pill bg-panel/90 border border-border text-[11px] font-semibold text-main shadow-xs pointer-events-none"
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-status-err animate-pulse shrink-0" />
+            <AvatarStack people={live!.map((p) => ({ id: p.userId, name: p.name, avatarUrl: p.avatarUrl }))} size="xxs" ringClass="ring-[var(--bg-panel)]" />
+            <span className="truncate">{t('drawing.live.badge', { names: liveNames.join(', ') })}</span>
+          </div>
         )}
         {empty && (
           <div className="absolute inset-0 flex items-center justify-center text-xs text-muted pointer-events-none">
@@ -409,15 +442,49 @@ export const DrawingBlock: React.FC<DrawingBlockProps> = ({
       {/* Outside the drawing's box, so clicks on them do not reach its gesture handlers */}
       {actionsTarget && createPortal(actions, actionsTarget)}
 
+      {ask && (
+        <ConfirmPopover
+          x={ask.x}
+          y={ask.y}
+          message={
+            <>
+              <p>{t('drawing.live.ask', { names: liveNames.join(', '), count: liveNames.length })}</p>
+              {canEdit && !isWebSocketConnected() && <p className="mt-1 text-muted">{t('drawing.live.needsWebSocket')}</p>}
+            </>
+          }
+          confirmLabel={canEdit && isWebSocketConnected() ? t('drawing.live.drawAlong') : t('drawing.live.watch')}
+          onConfirm={() => {
+            setAsk(null);
+            setEditing(canEdit && isWebSocketConnected() ? 'draw' : 'watch');
+          }}
+          altLabel={canEdit && isWebSocketConnected() ? t('drawing.live.watch') : undefined}
+          onAlt={
+            canEdit && isWebSocketConnected()
+              ? () => {
+                  setAsk(null);
+                  setEditing('watch');
+                }
+              : undefined
+          }
+          onCancel={() => setAsk(null)}
+        />
+      )}
+
       {editing && (
         <DrawingEditor
-          onActivity={onActivity}
+          // The live session holds the bullet itself
+          onActivity={editing === 'solo' ? onActivity : undefined}
           initial={drawing}
           baseContent={content}
           draftKey={blockId}
-          readOnly={!canEdit}
+          readOnly={editing === 'view'}
+          live={
+            docId && (editing === 'draw' || editing === 'watch')
+              ? { docId, blockId, mode: editing, canDraw: canEdit && isWebSocketConnected() }
+              : undefined
+          }
           onClose={(next) => {
-            setEditing(false);
+            setEditing(null);
             const fresh = freshRef.current;
             freshRef.current = false;
             if (next !== null) onChange(next);

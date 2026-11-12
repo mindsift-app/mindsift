@@ -577,6 +577,39 @@
     "sizeAutoTitle": "Torna alla dimensione consigliata (la vista salvata viene rimossa)",
     "discard": "Scarta",
     "discardTitle": "Chiudi senza salvare",
-    "discardAsk": "Scartare le modifiche non salvate?"
+    "discardAsk": "Scartare le modifiche non salvate?",
+    "live": {
+      "badge": "Disegno dal vivo: {{names}}",
+      "ask_one": "{{names}} sta disegnando adesso.",
+      "ask_other": "{{names}} stanno disegnando adesso.",
+      "needsWebSocket": "Per disegnare insieme serve una connessione WebSocket; qui puoi guardare.",
+      "drawAlong": "Disegna anche tu",
+      "watch": "Guarda",
+      "label": "Dal vivo",
+      "host": "Host: {{name}}",
+      "youHost": "Sei l’host",
+      "you": "Tu",
+      "drawingNow": "Disegnano: {{names}}",
+      "watchingNow": "Guardano: {{names}}",
+      "leave": "Esci",
+      "leaveTitle": "Esci dal disegno dal vivo – gli altri continuano",
+      "doneTitle": "Salva per tutti e termina il disegno dal vivo (Esc)",
+      "discardAsk": "Scartare termina il disegno dal vivo per tutti. Le modifiche di questa sessione vanno perse.",
+      "discardAll": "Scarta per tutti",
+      "endedDone": "{{name}} ha salvato il disegno.",
+      "endedDiscard": "{{name}} ha scartato il disegno dal vivo.",
+      "endedExpired": "Il disegno dal vivo è terminato.",
+      "saving": "Salvataggio …",
+      "offline": "Connessione persa – le tue modifiche partono appena torna.",
+      "offlineWatch": "Connessione persa.",
+      "offlineSave": "Nessuna connessione – si potrà salvare quando torna.",
+      "idle": "Al momento nessuno disegna. Lo stato non è ancora salvato.",
+      "error": {
+        "forbidden": "Non hai accesso per disegnare.",
+        "locked": "Qualcuno sta modificando il disegno senza connessione dal vivo – puoi solo guardare.",
+        "limit": "Il disegno è troppo grande per la sessione dal vivo. Togli qualcosa, soprattutto tratti a mano libera.",
+        "save": "Il salvataggio non è riuscito. Controlla la connessione e riprova."
+      }
+    }
   }
 }

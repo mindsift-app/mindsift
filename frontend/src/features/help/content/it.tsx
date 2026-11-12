@@ -183,7 +183,7 @@ const it: HelpContent = {
       title: 'Disegni (/canvas)',
       subtitle: 'Schizzi, diagrammi di flusso e mappe mentali direttamente nella nota',
       icon: Shapes,
-      keywords: ['disegno', 'canvas', 'schizzo', 'diagramma', 'diagramma di flusso', 'mappa mentale', 'freccia', 'forme', 'mano libera', 'griglia', 'mermaid'],
+      keywords: ['disegno', 'canvas', 'schizzo', 'diagramma', 'diagramma di flusso', 'mappa mentale', 'freccia', 'forme', 'mano libera', 'griglia', 'mermaid', 'dal vivo', 'disegnare insieme'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
           <ul className="space-y-1.5">
@@ -203,7 +203,10 @@ const it: HelpContent = {
               <strong className="text-main">Nella nota:</strong> Il disegno occupa la larghezza della nota. Fai clic dentro, poi trascinare sposta la vista, Ctrl + rotellina o due dita zoomano; la rotellina da sola continua a scorrere la pagina. Un altro clic termina, una vista non salvata torna indietro con dolcezza. Trascina il bordo inferiore per cambiare l’altezza. «Salva vista» fissa inquadratura, zoom e altezza per tutti, Il pulsante della dimensione passa tra la dimensione consigliata e «tutto in grande» (disegni alti) o l’altezza consigliata da spostare di lato (disegni larghi). Doppio clic o «Modifica» apre l’editor; parte con la mano (si muove solo la vista), scegli un altro strumento per modificare. Il pulsante con le frecce accanto a «Fatto» esce senza salvare e chiede prima se ci sono modifiche.
             </li>
             <li>
-              <strong className="text-main">Insieme e offline:</strong> Nelle note condivise un disegno è bloccato per gli altri mentre qualcuno ci disegna. Ciò che disegni offline viene salvato appena torna la connessione; una bozza non salvata viene proposta per il ripristino alla prossima apertura.
+              <strong className="text-main">Disegnare insieme:</strong> Nelle note condivise potete disegnare contemporaneamente nello stesso disegno. Chi lo apre per modificarlo avvia un disegno dal vivo ed è l’host; la nota mostra allora «Disegno dal vivo: …». Chi lo apre dopo sceglie «Disegna anche tu» o «Guarda» e vede forme, puntatori e selezioni degli altri nel loro colore, con tutti i partecipanti in alto nell’editor. L’host salva con «Fatto» per tutti o scarta per tutti; gli altri hanno «Esci». Se l’host se ne va, subentra chi è presente da più tempo. Annulla riprende solo le tue modifiche. Disegnare insieme richiede una connessione WebSocket; senza (alcuni proxy aziendali) puoi guardare dal vivo, e senza un disegno dal vivo in corso modifichi da solo come prima mentre gli altri guardano.
+            </li>
+            <li>
+              <strong className="text-main">Offline e bozze:</strong> Ciò che disegni offline viene salvato appena torna la connessione; una bozza non salvata viene proposta per il ripristino alla prossima apertura. Se tutti escono da un disegno dal vivo senza «Fatto», il server ne conserva lo stato per circa 10 minuti; chi lo riapre in quel tempo continua da lì.
             </li>
             <li>
               <strong className="text-main">Ovunque:</strong> La ricerca trova le parole nei disegni, copia e incolla mantiene il disegno e l’esportazione Markdown lo contiene come immagine SVG (l’importazione lo trasforma di nuovo in disegno). Gli agenti IA (MCP) leggono una descrizione del disegno e possono creare disegni da diagrammi di flusso e mappe mentali Mermaid.

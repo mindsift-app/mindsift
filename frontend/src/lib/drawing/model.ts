@@ -9,7 +9,7 @@ export type Point = [number, number];
 
 interface ElementBase {
   id: string;
-  /** Bumped on every change of the element (groundwork for merging concurrent edits later) */
+  /** Bumped on every change of the element; live sessions merge by it (lib/drawing/live.ts) */
   ver: number;
   s: DrawColor;
   /** Stroke width */
@@ -147,7 +147,8 @@ const color = (v: unknown): DrawColor => (DRAW_COLORS.includes(v as DrawColor) ?
 const fill = (v: unknown): DrawFill => (v === 'none' ? 'none' : DRAW_COLORS.includes(v as DrawColor) ? (v as DrawColor) : 'none');
 const point = (v: unknown): Point => (Array.isArray(v) ? [num(v[0]), num(v[1])] : [0, 0]);
 
-function parseElement(raw: any): DrawElement | null {
+/** Reads one element (as stored, or as another browser sent it in a live session); null if broken */
+export function parseElement(raw: any): DrawElement | null {
   if (!raw || typeof raw !== 'object' || typeof raw.id !== 'string') return null;
   const base = { id: raw.id.slice(0, 40), ver: num(raw.ver, 1), s: color(raw.s), sw: Math.min(12, Math.max(1, num(raw.sw, 2))), ...(raw.dash ? { dash: true } : {}) };
   const txt = typeof raw.txt === 'string' ? raw.txt : undefined;

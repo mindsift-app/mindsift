@@ -8,10 +8,12 @@ import {
   Circle,
   Copy,
   CornerDownRight,
+  Crown,
   Diamond,
   Eraser,
   Grid3x3,
   Hand,
+  LogOut,
   Maximize,
   Minimize2,
   Minus,
@@ -81,6 +83,10 @@ import {
 } from '../../../lib/drawing/model';
 import { DrawingElements } from './DrawingElements';
 import { ConfirmPopover } from '../../../components/ConfirmPopover';
+import { AvatarStack } from '../../../components/AvatarStack';
+import { userColor } from '../../../lib/userColor';
+import { Applied, patchDrawing } from '../../../lib/drawing/live';
+import { LiveCursor, LiveMode, useLiveDrawing } from './useLiveDrawing';
 
 type Tool = 'select' | 'hand' | ShapeKind | 'arrow' | 'draw' | 'text' | 'eraser';
 type Handle = 'nw' | 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w';
@@ -179,10 +185,14 @@ export interface DrawingEditorProps {
   onActivity?: () => void;
   /** null = nothing changed */
   onClose: (content: string | null) => void;
+  /** Live session over WebSocket: drawing along with others ('draw') or watching ('watch'); canDraw: a
+   *  watcher may switch to drawing along */
+  live?: { docId: string; blockId: string; mode: LiveMode; canDraw: boolean };
 }
 
 // Full-screen drawing editor. Changes stay local until it closes; meanwhile a draft is kept in this browser.
-export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseContent, draftKey, readOnly = false, onActivity, onClose }) => {
+// In a live session the changes go to the others right away and the host saves for everyone.
+export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseContent, draftKey, readOnly: readOnlyProp = false, onActivity, onClose, live }) => {
   const { t } = useTranslation('workspace');
   const [doc, setDocState] = useState<Drawing>(initial);
   const docRef = useRef(doc);
@@ -190,7 +200,7 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
   const viewRef = useRef(view);
   // Opens with the hand: the view moves, nothing in the drawing moves by accident; an empty drawing starts
   // with selecting, ready to draw
-  const [tool, setTool] = useState<Tool>(readOnly || initial.els.length > 0 ? 'hand' : 'select');
+  const [tool, setTool] = useState<Tool>(readOnlyProp || live?.mode === 'watch' || initial.els.length > 0 ? 'hand' : 'select');
   // Closing without saving while there are changes: the question where the close button was clicked
   const [confirmDiscard, setConfirmDiscard] = useState<{ x: number; y: number } | null>(null);
   const [selected, setSelectedState] = useState<string[]>([]);
@@ -233,6 +243,11 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
   const onActivityRef = useRef(onActivity);
   onActivityRef.current = onActivity;
   const lastActivity = useRef(0);
+  const scheduleDraft = () => {
+    if (draftTimer.current !== null) window.clearTimeout(draftTimer.current);
+    draftTimer.current = window.setTimeout(saveDraft, 1500);
+  };
+  const liveRef = useRef<ReturnType<typeof useLiveDrawing>>(null);
   const setDoc = useCallback((next: Drawing) => {
     docRef.current = next;
     setDocState(next);
@@ -240,10 +255,89 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
       lastActivity.current = Date.now();
       onActivityRef.current?.();
     }
-    if (draftTimer.current !== null) window.clearTimeout(draftTimer.current);
-    draftTimer.current = window.setTimeout(saveDraft, 1500);
+    scheduleDraft();
+    liveRef.current?.changed();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // ------------------------------------------------------------------------------------------------------
+  // Live session: changes of others come in without disturbing a gesture, and into the undo steps, so
+  // undo only takes back own changes
+
+  const applyRemote = (next: Drawing, applied: Applied[]) => {
+    docRef.current = next;
+    setDocState(next);
+    if (applied.length) {
+      past.current = past.current.map((d) => patchDrawing(d, applied));
+      future.current = future.current.map((d) => patchDrawing(d, applied));
+      const a = actionRef.current;
+      if (a && 'orig' in a) a.orig = patchDrawing(a.orig, applied);
+      const edit = textEditRef.current;
+      if (edit) edit.orig = patchDrawing(edit.orig, applied);
+      const gone = new Set(applied.filter((x) => !x.el).map((x) => x.id));
+      if (gone.size && selectedRef.current.some((id) => gone.has(id))) setSelected(selectedRef.current.filter((id) => !gone.has(id)));
+    }
+    setHistoryTick((n) => n + 1);
+    scheduleDraft();
+  };
+  // Elements in a gesture of this browser: they keep their local state until it ends
+  const heldIds = () => {
+    const ids = new Set<string>();
+    const a = actionRef.current;
+    if (a?.k === 'move') a.ids.forEach((id) => ids.add(id));
+    else if (a?.k === 'resize') ids.add(a.el.id);
+    else if (a && 'id' in a) ids.add(a.id);
+    if (textEditRef.current) ids.add(textEditRef.current.id);
+    return ids;
+  };
+  const dropDraft = () => {
+    if (draftTimer.current !== null) window.clearTimeout(draftTimer.current);
+    try {
+      localStorage.removeItem(DRAFT_PREFIX + draftKey);
+    } catch {
+      /* ignore */
+    }
+  };
+  const liveState = useLiveDrawing(
+    live
+      ? {
+          docId: live.docId,
+          blockId: live.blockId,
+          mode: live.mode,
+          baseContent,
+          initial,
+          getDoc: () => docRef.current,
+          held: heldIds,
+          selected: () => selectedRef.current,
+          apply: (next, applied) => applyRemote(next, applied),
+          onSaved: (final) => {
+            dropDraft();
+            const content = serializeDrawing(final);
+            onClose(content === baseContent ? null : content);
+          },
+          onDiscarded: () => {
+            dropDraft();
+            onClose(null);
+          },
+        }
+      : null
+  );
+  liveRef.current = liveState;
+  // Watching, or the session ended or refused: look only
+  const readOnly =
+    readOnlyProp ||
+    (!!liveState && (liveState.mode === 'watch' || !!liveState.ended || liveState.error === 'forbidden' || liveState.error === 'locked'));
+  const lastPointer = useRef<{ at: [number, number] | null; touch: boolean }>({ at: null, touch: false });
+  const livePointer = (at: [number, number] | null, touch: boolean) => {
+    if (liveState?.mode !== 'draw') return;
+    lastPointer.current = { at, touch };
+    liveState.pointer(at, touch);
+  };
+  // The others see the selection too
+  useEffect(() => {
+    const l = liveRef.current;
+    if (l?.mode === 'draw') l.pointer(lastPointer.current.at, lastPointer.current.touch);
+  }, [selected]);
   const setView = useCallback((v: View) => {
     viewRef.current = v;
     setViewState(v);
@@ -484,7 +578,12 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
     }
   };
 
+  // The text field closes: in a live session its result goes out and waiting changes of others come in
   const commitText = () => {
+    commitTextChange();
+    liveRef.current?.release();
+  };
+  const commitTextChange = () => {
     const edit = textEditRef.current;
     if (!edit) return;
     setTextEdit(null);
@@ -524,6 +623,7 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
   // Closing
 
   const close = () => {
+    if (liveState) return closeLive();
     if (readOnly) return onClose(null);
     if (textEdit) commitText();
     const content = serializeDrawing(docRef.current);
@@ -542,6 +642,34 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
   const closeRef = useRef(close);
   closeRef.current = close;
 
+  // Live: the host saves for everyone ("Fertig"), the others leave (the session goes on); the local draft
+  // stays until the session is saved or discarded
+  function closeLive() {
+    const l = liveState!;
+    if (l.ended || l.mode === 'watch' || readOnly) {
+      if (l.ended && l.ended.reason !== 'expired') dropDraft();
+      if (!l.ended) l.leave();
+      return onClose(null);
+    }
+    if (textEditRef.current) commitText();
+    if (!l.isHost) {
+      saveDraft();
+      l.release();
+      l.leave();
+      return onClose(null);
+    }
+    if (l.status !== 'live') {
+      setError(t('drawing.live.offlineSave'));
+      return;
+    }
+    if (contentBytes(serializeDrawing(docRef.current)) > MAX_CONTENT_BYTES) {
+      setError(t('drawing.tooLarge'));
+      return;
+    }
+    setError(null);
+    l.done();
+  }
+
   // Close without saving; with changes it asks first (Verwerfen / Abbrechen)
   const discard = () => {
     if (draftTimer.current !== null) window.clearTimeout(draftTimer.current);
@@ -556,7 +684,8 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
   const openedAs = useMemo(() => serializeDrawing(initial), [initial]);
   const onDiscardClick = (e: React.MouseEvent) => {
     const changed = !!textEdit || serializeDrawing(docRef.current) !== openedAs;
-    if (changed) setConfirmDiscard({ x: e.clientX, y: e.clientY });
+    // In a live session discarding ends it for everyone: always ask
+    if (changed || liveState) setConfirmDiscard({ x: e.clientX, y: e.clientY });
     else discard();
   };
 
@@ -705,6 +834,7 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
     setFaded(new Set());
     setDockTarget(null);
     setDockPort(null);
+    liveRef.current?.release();
   };
 
   const onPointerDown = (e: React.PointerEvent) => {
@@ -717,6 +847,8 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
     }
     (e.target as Element).setPointerCapture?.(e.pointerId);
     pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    // Touch has no hover: the others see a dot where the finger is
+    if (e.pointerType === 'touch') livePointer(toWorld(e.clientX, e.clientY), true);
     if (pointers.current.size === 2) {
       // Second finger: pinch to zoom and move; whatever the first finger started is undone
       abortAction();
@@ -846,6 +978,7 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
   });
 
   const onPointerMove = (e: React.PointerEvent) => {
+    if (e.pointerType !== 'touch' || pointers.current.has(e.pointerId)) livePointer(toWorld(e.clientX, e.clientY), e.pointerType === 'touch');
     if (!pointers.current.has(e.pointerId)) return;
     pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
     const pinch = pinchRef.current;
@@ -1020,6 +1153,7 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
 
   const onPointerUp = (e: React.PointerEvent) => {
     pointers.current.delete(e.pointerId);
+    if (e.pointerType === 'touch' && pointers.current.size === 0) livePointer(null, true);
     if (pinchRef.current) {
       if (pointers.current.size < 2) pinchRef.current = null;
       return;
@@ -1027,6 +1161,12 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
     const a = actionRef.current;
     actionRef.current = null;
     if (!a) return;
+    finishAction(a, e);
+    // The gesture's result goes out; changes of others to its elements come in now
+    liveRef.current?.release();
+  };
+
+  const finishAction = (a: Action, e: React.PointerEvent) => {
     const cur = docRef.current;
     switch (a.k) {
       case 'band': {
@@ -1492,6 +1632,94 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
   }, [doc]);
   const nearlyFull = bytes > MAX_CONTENT_BYTES * 0.8;
 
+  // Live: pointers of the others with their names, their selections framed in their colour
+  const remote: LiveCursor[] = liveState ? [...liveState.cursors.values()] : [];
+  const liveOverlay = liveState && (
+    <g pointerEvents="none">
+      {remote.flatMap((c) =>
+        c.sel.map((id) => {
+          const el = byId.get(id);
+          if (!el) return null;
+          const b = elementBox(el, byId);
+          const pad = 7 / z;
+          return (
+            <rect
+              key={`${c.id}:${id}`}
+              data-live-selection={c.name}
+              x={b.x - pad}
+              y={b.y - pad}
+              width={b.w + pad * 2}
+              height={b.h + pad * 2}
+              rx={3 / z}
+              fill="none"
+              stroke={userColor(c.userId)}
+              strokeWidth={1.5 / z}
+              strokeDasharray={`${5 / z} ${3 / z}`}
+            />
+          );
+        })
+      )}
+      {remote.map((c) => {
+        if (!c.at) return null;
+        const color = userColor(c.userId);
+        const label = (
+          <g transform={c.touch ? 'translate(10 8)' : 'translate(11 17)'}>
+            <rect width={c.name.length * 6.6 + 12} height={18} rx={4} fill={color} />
+            <text x={6} y={13} fontSize={11} fontWeight={600} fill="#fff" fontFamily='"Inter Variable", Inter, system-ui, sans-serif'>
+              {c.name}
+            </text>
+          </g>
+        );
+        return (
+          <g key={c.id} data-live-cursor={c.name} transform={`translate(${c.at[0]} ${c.at[1]}) scale(${1 / z})`}>
+            {c.touch ? (
+              <circle r={8} fill={color} fillOpacity={0.45} stroke={color} strokeWidth={2} />
+            ) : (
+              <path d="M0 0 L0 16 L4.4 12.2 L7.4 19 L10 17.9 L7.1 11.2 L12.6 11.2 Z" fill={color} stroke="#fff" strokeWidth={1.2} strokeLinejoin="round" />
+            )}
+            {label}
+          </g>
+        );
+      })}
+    </g>
+  );
+  // Everyone in the session, each person once: drawing first, then watching
+  const livePeople = (() => {
+    if (!liveState) return [];
+    const seen = new Set<string>();
+    return [...liveState.participants, ...liveState.watchers]
+      .filter((p) => !seen.has(p.userId) && !!seen.add(p.userId))
+      .map((p) => ({ id: p.userId, name: p.name }));
+  })();
+  const hostName = liveState?.participants.find((p) => p.id === liveState.host)?.name;
+  const liveTitle = liveState
+    ? [
+        t('drawing.live.drawingNow', { names: [...new Set(liveState.participants.map((p) => p.name))].join(', ') }),
+        liveState.watchers.length ? t('drawing.live.watchingNow', { names: [...new Set(liveState.watchers.map((p) => p.name))].join(', ') }) : '',
+      ]
+        .filter(Boolean)
+        .join(' · ')
+    : '';
+  const liveNotice = !liveState
+    ? null
+    : liveState.ended
+    ? liveState.ended.reason === 'done'
+      ? t('drawing.live.endedDone', { name: liveState.ended.by || t('lock.someone') })
+      : liveState.ended.reason === 'discard'
+      ? t('drawing.live.endedDiscard', { name: liveState.ended.by || t('lock.someone') })
+      : t('drawing.live.endedExpired')
+    : liveState.error
+    ? t(`drawing.live.error.${liveState.error}`)
+    : liveState.saving
+    ? t('drawing.live.saving')
+    : liveState.status === 'offline'
+    ? t(liveState.mode === 'draw' ? 'drawing.live.offline' : 'drawing.live.offlineWatch')
+    : liveState.status === 'idle'
+    ? t('drawing.live.idle')
+    : null;
+  // A draft of this drawing only matters when nobody else draws in it
+  const showDraft = !!draft && (!liveState || (liveState.mode === 'draw' && liveState.isHost && liveState.participants.length <= 1));
+
   return createPortal(
     <div className="fixed inset-0 z-[66] flex flex-col bg-canvas text-main" role="dialog"
       aria-modal="true"
@@ -1506,6 +1734,25 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
       <div className="shrink-0 flex items-center gap-1 sm:gap-2 px-2 sm:px-4 pt-[calc(0.375rem+env(safe-area-inset-top))] pb-1.5 bg-panel/95 backdrop-blur-sm border-b border-border">
         {!readOnly && <div className="hidden sm:block">{tools}</div>}
         <div className="flex-1" />
+        {liveState && !liveState.ended && (
+          <div className="min-w-0 flex items-center gap-1.5 text-xs text-muted" title={liveTitle} data-live-people={livePeople.map((p) => p.name).join(',')}>
+            <span className={`w-2 h-2 rounded-full shrink-0 ${liveState.status === 'live' ? 'bg-status-err animate-pulse' : 'bg-muted'}`} />
+            <AvatarStack people={livePeople} ringClass="ring-[var(--bg-panel)]" />
+            {/* Who saves for everyone; phones show the host's name with a crown */}
+            <span className="min-w-0 inline-flex items-center gap-0.5" data-live-host={hostName || ''}>
+              <span className="hidden sm:inline truncate max-w-[14rem]">
+                {liveState.isHost ? t('drawing.live.youHost') : hostName ? t('drawing.live.host', { name: hostName }) : t('drawing.live.label')}
+              </span>
+              {hostName && <Crown className="sm:hidden w-3.5 h-3.5 shrink-0 text-status-warn" aria-label={t('drawing.live.host', { name: hostName })} />}
+              <span className="sm:hidden truncate max-w-[5.5rem]">{liveState.isHost ? t('drawing.live.you') : hostName || t('drawing.live.label')}</span>
+            </span>
+          </div>
+        )}
+        {liveState?.mode === 'watch' && live?.canDraw && !liveState.ended && liveState.status === 'live' && (
+          <button type="button" onClick={liveState.drawAlong} className="btn-action h-11 sm:h-8 px-3 text-xs inline-flex items-center gap-1.5">
+            <Pencil className="w-3.5 h-3.5" /> {t('drawing.live.drawAlong')}
+          </button>
+        )}
         {!readOnly && (
           <>
         <button type="button" onClick={undo} disabled={past.current.length === 0} className={iconBtn} title={t('drawing.undo')} aria-label={t('drawing.undo')}>
@@ -1526,10 +1773,23 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
         </button>
           </>
         )}
-        <button type="button" onClick={close} className="btn-action h-11 sm:h-8 px-3 text-xs inline-flex items-center gap-1.5 ml-1" title={t('drawing.doneEsc')}>
-          <Check className="w-3.5 h-3.5" /> {readOnly ? t('drawing.close') : t('drawing.done')}
-        </button>
-        {!readOnly && (
+        {liveState && !readOnly && !liveState.isHost ? (
+          // Drawing along without being host: leaving lets the others go on
+          <button type="button" onClick={close} className="btn-action h-11 sm:h-8 px-3 text-xs inline-flex items-center gap-1.5 ml-1" title={t('drawing.live.leaveTitle')}>
+            <LogOut className="w-3.5 h-3.5" /> {t('drawing.live.leave')}
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={close}
+            disabled={!!liveState?.saving}
+            className="btn-action h-11 sm:h-8 px-3 text-xs inline-flex items-center gap-1.5 ml-1"
+            title={liveState && !readOnly ? t('drawing.live.doneTitle') : t('drawing.doneEsc')}
+          >
+            <Check className="w-3.5 h-3.5" /> {readOnly ? t('drawing.close') : t('drawing.done')}
+          </button>
+        )}
+        {!readOnly && (!liveState || liveState.isHost) && (
           <button
             type="button"
             onClick={onDiscardClick}
@@ -1545,12 +1805,13 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
           <ConfirmPopover
             x={confirmDiscard.x}
             y={confirmDiscard.y}
-            message={t('drawing.discardAsk')}
-            confirmLabel={t('drawing.discard')}
+            message={liveState ? t('drawing.live.discardAsk') : t('drawing.discardAsk')}
+            confirmLabel={liveState ? t('drawing.live.discardAll') : t('drawing.discard')}
             danger
             onConfirm={() => {
               setConfirmDiscard(null);
-              discard();
+              if (liveState) liveState.discard();
+              else discard();
             }}
             onCancel={() => setConfirmDiscard(null)}
           />
@@ -1570,6 +1831,7 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
           onPointerUp={onPointerUp}
           onPointerCancel={onPointerUp}
           onDoubleClick={onDoubleClick}
+          onPointerLeave={(e) => e.pointerType !== 'touch' && livePointer(null, false)}
         >
           {gridOn && (
             <>
@@ -1583,11 +1845,12 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
           )}
           <DrawingElements els={shownEls} hidden={hidden} faded={faded} labelShifts={labelShifts} />
           {selectionOverlay}
+          {liveOverlay}
         </svg>
         {textField}
         {panel}
 
-        {draft && (
+        {showDraft && (
           <div className="absolute top-2 left-1/2 -translate-x-1/2 z-20 max-w-[calc(100%-1rem)] flex flex-wrap items-center gap-2 px-3 py-2 bg-panel-elevated border border-status-warn/40 rounded-card shadow-panel text-xs">
             <span>{t('drawing.draftFound')}</span>
             <button
@@ -1618,6 +1881,20 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
             >
               {t('drawing.draftDiscard')}
             </button>
+          </div>
+        )}
+        {liveNotice && !showDraft && (
+          <div
+            role="status"
+            data-live-notice
+            className="absolute top-2 left-1/2 -translate-x-1/2 z-20 max-w-[calc(100%-1rem)] flex flex-wrap items-center gap-2 px-3 py-2 bg-panel-elevated border border-border rounded-card shadow-panel text-xs"
+          >
+            <span>{liveNotice}</span>
+            {liveState?.ended && (
+              <button type="button" className="btn-action h-8 px-2.5 text-xs" onClick={close}>
+                {t('drawing.close')}
+              </button>
+            )}
           </div>
         )}
         {(error || nearlyFull) && (

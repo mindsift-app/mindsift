@@ -1246,6 +1246,70 @@
         }
       }
     },
+    "/api/v1/docs/{id}/drawings/{blockId}/live": {
+      "get": {
+        "summary": "State of a live drawing",
+        "description": "Whether people draw in a drawing bullet right now: host, participants, watchers, elements (with versions and tombstones), order, grid, seq. Read access to the note.",
+        "tags": [
+          "Collaborative Note Editing"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "blockId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/docs/{id}/drawings/{blockId}/watch": {
+      "post": {
+        "summary": "Watch a live drawing over SSE or long polling",
+        "description": "{sseId} of the caller's SSE or long-poll connection: joins the room drawing:<docId>:<blockId> and counts as watching (DRAW_OPS, DRAW_PRESENCE, DRAW_PEOPLE, DRAW_END arrive there); returns the state. {sseId, leave: true} stops watching. Drawing along needs a WebSocket (DRAW_JOIN).",
+        "tags": [
+          "Collaborative Note Editing"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "blockId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
     "/api/v1/docs/{id}/snapshot": {
       "get": {
         "summary": "A note as block tree with versions (note sync)",

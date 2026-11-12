@@ -126,6 +126,10 @@ Long-polling stays at 25 s, below standard proxy limits (Nginx 60 s, Cloudflare 
 - Only the owner manages shares and deletes the note. Editors are otherwise permitted all actions: content, structure, title, and icon.
 - Shares are stored in `doc_shares`, `doc_team_shares`, and `workspace_folder_shares` (`read`/`write`). Merging them into a single table was deliberately avoided: `DocRole` already handles resolution centrally, and rewriting around 20 visibility queries would only introduce risk. More details: [sharing-and-permissions.md](../sharing-and-permissions.md).
 
+## Live Drawing
+
+Drawing bullets have a mode of their own on top of this: several people draw at once over WebSocket, merged per element by version; the session holds the bullet's lease and the host saves the result as one normal change. Details: [architecture.md](../architecture.md#collaboration-live-drawing).
+
 ## Private Notes
 
 Same model, but lightweight: As long as a note is not shared (`shared = false`) and only open in a single tab (`sessions = 1`), there are no leases, no heartbeat, and only the 30 s poll interval. If a second device opens the note or it is shared, all open clients switch to the full collaborative flow with the next response. Compared to previously saving the entire document every 800 ms, this model only transmits and writes modified blocks.
