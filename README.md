@@ -33,32 +33,21 @@ One container, one SQLite file, your server.
 
 ---
 
-## What it is
-
-MindSift is an outliner and a task manager in one self-hosted app, made for more than one person:
-
-* **Notes** are trees of bullets that several people edit at the same time and that keep working offline, with drawings, code blocks and links between notes.
-* **Tasks** live in lists, on a kanban board and in a calendar. A to-do inside a note can be a full task there as well, and both stay in sync.
-* **Lists** for shopping and packing change on everyone's phone the moment you tick something off.
-* **An inbox** takes whatever comes to mind in one line. You sort it later, card by card.
-
----
-
 ## What's inside
 
 ### 📝 Outliner notes, together, live
-Every thought is a bullet: indent, collapse, zoom in, drag whole branches. Wiki links (even to single bullets, and they survive renaming or moving a note), hashtags, slash commands, code blocks, tables, images, voice notes, live dictation, link previews and hidden values (`/secret` for an IP or a token: stored encrypted, shown only on a tap, never to API keys or AI agents). Several people write in the same note at the same time, without overwriting each other, and it keeps working offline and behind strict proxies. Share a note by public link for a quick look from outside: read only, optionally with a password, always expiring and out of search engines.
+Every thought is a bullet: indent, collapse, zoom in, drag whole branches. Wiki links (also to single bullets, and they survive renaming or moving a note), hashtags, slash commands, code blocks, tables, images, voice notes, dictation, link previews and hidden values (`/secret` for an IP or a token: stored encrypted, shown only on a tap, never to API keys or AI agents). Several people write in the same note at once without overwriting each other, offline and behind strict proxies too. A public link shows a note to outsiders: read only, optionally with a password, always expiring, kept out of search engines.
 
-Drawings right in a note (`/canvas`): shapes, arrows that dock to them, text and freehand, edited full screen; AI agents can draw flowcharts and mind maps from Mermaid. Focus mode hides everything but the note, with the bar and the folders pinned if you like.
+Drawings in a note (`/canvas`): shapes, arrows that dock to them, text and freehand; AI agents can draw flowcharts and mind maps from Mermaid. Focus mode hides everything but the note.
 
 <p align="center">
   <img src="screenshots/Focus_desktop.webp" alt="MindSift focus mode with pinned bar and sidebar, a note with a network plan drawing" width="90%" />
 </p>
 
 ### ✅ Tasks, kanban & calendar
-List, board and calendar view (month or week, with a column of unscheduled tasks to drag onto a day) with your own columns, priorities, due dates, subtasks, recurring tasks, drag & drop and undo. Share task lists, mention people with @, watch tasks or mute a busy shared list, and get alarms and a daily summary by email, push, Discord or webhook.
+List, board and calendar (month or week, with a column of unscheduled tasks to drag onto a day), with your own columns, priorities, due dates, subtasks, recurring tasks and undo. Share task lists, mention people with @, watch tasks or mute a busy list, and get alarms and a daily summary by email, push, Discord or webhook.
 
-Notes and tasks belong together: a to-do in a note can be kept as a full task with a due date, a column and an alarm, and its checkmark, title and subtasks stay the same in both places. The other way round, "Expand as a note" gives a task a note of its own, and the "To-dos" tab collects the open checkboxes of all your notes.
+A to-do in a note can be kept as a full task with due date, column and alarm; checkmark, title and subtasks stay in sync in both places. "Expand as a note" gives a task a note of its own, and the "To-dos" tab collects the open checkboxes of all your notes.
 
 <p align="center">
   <img src="screenshots/aufgaben_desktop.webp" alt="MindSift tasks and kanban board" width="90%" />
@@ -69,28 +58,28 @@ Notes and tasks belong together: a to-do in a note can be kept as a full task wi
 </p>
 
 ### 📅 Journal
-One note per day, all days below each other, with a calendar to jump around (a dot marks the days you wrote on) and a "Today" button. Every day is an ordinary note: share it, search it, link to it, write in focus mode. Days you leave empty disappear again by themselves. Don't need it? Switch it off per device.
+One note per day, all days below each other, with a calendar to jump around (dots mark the days you wrote on). Every day is an ordinary note you can share, search and link to; empty days disappear by themselves. It can be switched off per device.
 
 <p align="center">
   <img src="screenshots/journal_desktop.webp" alt="MindSift journal with calendar" width="90%" />
 </p>
 
 ### 🛒 Shared lists
-Shopping, packing and checklists with categories by hashtag (`oat milk #fridge`) and quantities. Tick something off at the supermarket and it's gone on everyone's phone right away.
+Shopping, packing and checklists with quantities and categories by hashtag (`oat milk #fridge`). Tick something off at the supermarket and it's gone on everyone's phone right away.
 
 <p align="center">
   <img src="screenshots/Listen_desktop.webp" alt="MindSift shared lists" width="90%" />
 </p>
 
 ### ⚡ Quick capture & triage
-When a thought pops up, you don't want to pick a folder or fill in fields. So capture comes first: the input bar (`C` or `/`), voice input (in the browser or through your own Whisper server, so nothing leaves your network), the share menu of your phone, or the API. Everything lands in an inbox, and the Tinder-style triage empties it later, one card at a time: with a key (`H`/`L`, arrows) or a swipe, a card is discarded or becomes a task, a note or a list item.
+Capture a thought without picking a folder: the input bar (`C` or `/`), voice input (in the browser or through your own Whisper server), your phone's share menu or the API. Everything lands in an inbox, and the Tinder-style triage empties it later, one card at a time: a key (`H`/`L`, arrows) or a swipe discards a card or turns it into a task, a note or a list item.
 
 <p align="center">
   <img src="screenshots/Triage_desktop.webp" alt="MindSift triage on the desktop, light theme on the left, dark on the right" width="85%" />
 </p>
 
 ### 🎨 Looks & app
-Five colour families, each light and dark, your own accent colour, round or square corners, plus a theme manager for your own CSS. Installable as an app (PWA) on phone and desktop, starts offline, with push notifications. Speaks English, German, Spanish, French and Italian, mails and notifications included.
+Five colour families, each light and dark, your own accent colour, round or square corners, and your own CSS in the theme manager. Installable as an app (PWA) on phone and desktop, starts offline, with push notifications. In English, German, Spanish, French and Italian, mails and notifications included.
 
 <p align="center">
   <img src="screenshots/Mobile_Workspace.webp" alt="MindSift note on the phone, dark theme" width="280px" />
@@ -110,16 +99,16 @@ Five colour families, each light and dark, your own accent colour, round or squa
 </table>
 
 ### 🤖 AI agents, API & smart home
-MindSift is an **MCP server**: Claude, ChatGPT, Codex, Cursor and your own agents can read and manage your tasks, lists and notes. claude.ai and ChatGPT connect via OAuth, no key needed. A REST API with scoped keys covers Home Assistant sensors, curl scripts and webhooks. Whatever a key creates or changes carries a badge with its name, so you can always tell what an agent did.
+MindSift is an **MCP server**: Claude, ChatGPT, Codex, Cursor and your own agents can read and manage your tasks, lists and notes. claude.ai and ChatGPT connect via OAuth, no key needed. A REST API with scoped keys serves Home Assistant, scripts and webhooks. Whatever a key creates or changes carries a badge with its name, so you can tell what an agent did.
 
 ```bash
 claude mcp add --transport http mindsift https://your-server/api/v1/mcp --header "X-API-Key: mindsift_sec_…"
 ```
 
 ### 🏢 Users & admin
-Guided first-time setup, invite codes and links, registration modes (closed, approval, email domains, open), organizations (a person can be in several) that decide who may share with whom, people search that can be switched off, a user manager role that looks after accounts without touching the server settings, groups, sharing as editor or read-only, automatic backups and restore.
+Guided setup, invite codes and links, registration modes (closed, approval, email domains, open), organizations that decide who may share with whom (a person can be in several), groups, sharing as editor or read-only, a user manager role for accounts without the server settings, and automatic backups with restore.
 
-**The full feature tour lives on the [website](https://mindsift.app/en/). Or just [open the demo](https://demo.mindsift.app) and poke around.**
+**More on the [website](https://mindsift.app/en/), or [open the demo](https://demo.mindsift.app) and poke around.**
 
 ---
 
@@ -127,10 +116,10 @@ Guided first-time setup, invite codes and links, registration modes (closed, app
 
 MindSift sits between a notes app and a task manager. If one of these fits you better, use it; they are good.
 
-* **[Obsidian](https://obsidian.md):** your notes are Markdown files on your own disk, with native apps and a huge plugin ecosystem. It is an app, not a server: there is no web version, and writing in the same note at the same time is not built in. MindSift is a server with a web app; it keeps notes in a database and hands them out as Markdown (an Obsidian vault) whenever you ask.
-* **[Logseq](https://logseq.com):** the closest relative on the notes side, an open-source, local-first outliner with backlinks, queries, a graph view and plugins. It goes much deeper there than MindSift. MindSift's outliner is simpler, but it runs on your server, is shared with other people and comes with tasks, lists and alarms.
-* **[Vikunja](https://vikunja.io):** the more complete self-hosted task manager, with Gantt and table views, CalDAV, sign-in through OIDC and a choice of databases. It has no notes. MindSift's tasks cover list, board and calendar and are tied to notes, with fewer integrations.
-* **[Joplin](https://joplinapp.org):** a mature notes app with native apps on every platform, end-to-end encryption and a web clipper, synchronised through its own server or a cloud drive. A note is one Markdown document rather than an outline, and two people do not write in it at the same moment. MindSift has none of those three strengths; it has live collaboration and tasks.
+* **[Obsidian](https://obsidian.md):** Markdown files on your own disk, native apps and a huge plugin ecosystem. It is an app, not a server: no web version, and writing in the same note at the same time is not built in. MindSift is a server with a web app; it keeps notes in a database and exports them as Markdown (an Obsidian vault) whenever you ask.
+* **[Logseq](https://logseq.com):** the closest relative on the notes side, a local-first outliner with backlinks, queries, a graph view and plugins, and much deeper there than MindSift. MindSift's outliner is simpler, but it runs on your server, is shared with other people and comes with tasks, lists and alarms.
+* **[Vikunja](https://vikunja.io):** the more complete self-hosted task manager, with Gantt and table views, CalDAV, OIDC sign-in and a choice of databases, but no notes. MindSift's tasks are tied to notes, with fewer integrations.
+* **[Joplin](https://joplinapp.org):** a mature notes app with native apps everywhere, end-to-end encryption and a web clipper. A note is one Markdown document rather than an outline, and two people do not write in it at the same moment. MindSift has none of those three strengths; it has live collaboration and tasks.
 
 If something here is out of date or unfair, please open an issue.
 
@@ -138,17 +127,15 @@ If something here is out of date or unfair, please open an issue.
 
 ## Not (yet) in MindSift
 
-What people ask a self-hosted app for first, and what MindSift does not have today:
-
-* **Single sign-on (OIDC/SSO)** through Authentik, Authelia or Keycloak. MindSift only has its own accounts.
+* **Single sign-on (OIDC/SSO)** through Authentik, Authelia or Keycloak: MindSift only has its own accounts.
 * **Two-factor sign-in and passkeys.** Two-factor is planned.
-* **PostgreSQL or MySQL.** SQLite, on purpose (see [design decisions](#design-decisions)).
-* **CalDAV or an iCal feed.** The calendar exists inside MindSift only.
-* **Native apps.** It is a PWA: installable, offline, with push notifications, but not in the app stores.
-* **End-to-end encryption.** The server reads your data, because search, sharing and AI agents need it to; only hidden values (`/secret`) are encrypted in the database. Protect the server and its disk.
-* **Prometheus metrics.** A health endpoint says that the server answers, nothing more.
-* **Backups to S3 or WebDAV.** Backups go to `data/backups/`; copying them elsewhere is up to you.
-* **A Helm chart.** Docker Compose only.
+* **PostgreSQL or MySQL:** SQLite on purpose (see [design decisions](#design-decisions)).
+* **CalDAV or an iCal feed:** the calendar exists only inside MindSift.
+* **Native apps:** it is a PWA (installable, offline, push), not in the app stores.
+* **End-to-end encryption:** the server reads your data, because search, sharing and AI agents need it; only hidden values (`/secret`) are encrypted in the database. Protect the server and its disk.
+* **Prometheus metrics:** only a health endpoint.
+* **Backups to S3 or WebDAV:** backups go to `data/backups/`; copying them elsewhere is up to you.
+* **A Helm chart:** Docker Compose only.
 
 More ideas and the known weak spots: [Doku/flaws.md](Doku/flaws.md).
 
@@ -156,7 +143,7 @@ More ideas and the known weak spots: [Doku/flaws.md](Doku/flaws.md).
 
 ## Quick start
 
-MindSift is a single container with web server, API, database and frontend. The image runs on amd64 and arm64: ordinary servers and PCs, a Raspberry Pi with a 64-bit system, Apple Silicon, ARM cloud servers.
+One container with web server, API, database and frontend, for amd64 and arm64 (also a Raspberry Pi with a 64-bit system, Apple Silicon and ARM cloud servers).
 
 **Docker Compose:**
 
@@ -169,12 +156,12 @@ services:
     volumes: ["./data:/data"]
     environment:
       - BASE_URL=https://mindsift.example.com
-      # Optional signing key for sign-ins, at least 32 characters: the output of `openssl rand -hex 32`.
-      # Without it MindSift generates one in /data/jwt.secret.
-      # - JWT_SECRET=...
+      # Optional: create the admin on the first start instead of in the setup wizard
+      # - ADMIN_USER=admin
+      # - ADMIN_PASSWORD=...
 ```
 
-Open `http://localhost:8080` and a wizard creates the admin account. Do that right after the first start, so nobody else grabs it.
+Open `http://localhost:8080`. Without `ADMIN_USER` and `ADMIN_PASSWORD`, a setup wizard creates the admin account: do that right after the first start, so nobody else grabs it.
 
 **Or the install script** ([read it first](install.sh)):
 
@@ -182,49 +169,47 @@ Open `http://localhost:8080` and a wizard creates the admin account. Do that rig
 curl -fsSL https://raw.githubusercontent.com/mindsift-app/mindsift/main/install.sh | bash
 ```
 
-It creates a folder, downloads `docker-compose.yml` and `.env.example`, generates a `JWT_SECRET`, takes over the server's time zone and starts the container. Two optional questions, both "no" when you just press Enter:
+It creates a folder, downloads `docker-compose.yml` and `.env.example`, generates `JWT_SECRET` and `SECRETS_KEY`, takes over the server's time zone and starts the container. Two optional questions (Enter means no): your own speech recognition (adds a Whisper container with large-v3-turbo or small), and a reverse proxy (asks for `BASE_URL` and the proxy's Docker network). These additions go into `docker-compose.override.yml`. Running the script again updates `docker-compose.yml` and keeps `.env` and the override.
 
-* **Your own speech recognition (Whisper)?** Adds the speaches container with the model you pick (large-v3-turbo or small) and connects MindSift to it; the model downloads by itself on the first start.
-* **Behind a reverse proxy?** Asks for the public address (`BASE_URL`) and the Docker network of your proxy, if it has one.
+All settings are explained in [`.env.example`](.env.example). For voice recognition by hand, follow the comments on the `whisper` block in [`docker-compose.yml`](docker-compose.yml); which model to pick is in the [docs](Doku/architecture.md#speech-recognition).
 
-These additions go into `docker-compose.override.yml`, so `docker-compose.yml` can be replaced on updates. Running the script again updates `docker-compose.yml` and keeps your `.env`.
-
-All settings are explained in [`.env.example`](.env.example). Optional voice recognition: uncomment the `whisper` block in [`docker-compose.yml`](docker-compose.yml) and set `STT_URL=http://whisper:8000` (or let the install script do it). Any Whisper model in CTranslate2 format works; which one to pick is in the [docs](Doku/architecture.md#speech-recognition).
-
-**Without a container:** the [releases](https://github.com/mindsift-app/mindsift/releases) also carry the server as a single file for Linux (amd64 and arm64), with the frontend inside. Unpack it and start `./mindsift`: it listens on port 8080 and keeps everything in `./data`. `PORT` and `DATA_DIR` change that; the other settings work as in the container.
-
+**Without a container:** the [releases](https://github.com/mindsift-app/mindsift/releases) carry the server as a single file for Linux (amd64 and arm64), frontend included. Unpack it and start `./mindsift`: it listens on port 8080 and keeps everything in `./data` (`PORT` and `DATA_DIR` change that). The other settings work as in the container.
 
 ---
 
 ## Running it
 
-The most important settings (all of them, with explanations, are in [`.env.example`](.env.example)):
+The most important settings (all of them are in [`.env.example`](.env.example)):
 
 | Variable | Default | What for |
 |---|---|---|
-| `JWT_SECRET` | generated (`/data/jwt.secret`) | Signing key for sign-in tokens, at least 32 characters (`openssl rand -hex 32`); shorter values and published examples are ignored and the generated one is used. Changing it signs everyone out |
-| `SECRETS_KEY` | generated (`/data/secrets.key`) | Key for hidden values in notes (`/secret`); set your own to keep it apart from the database. Never change it once values are stored |
-| `BASE_URL` | `http://localhost:8080` | Public URL; needed for password reset mails, OAuth for claude.ai/ChatGPT and links in mails |
-| `DEFAULT_LANGUAGE` | `de` (demo: `en`) | Language (`de`, `en`, `es`, `fr`, `it`) where the browser's is none of these, see "Language" below; the setup wizard and the admin UI can change it |
-| `ADMIN_USER`, `ADMIN_PASSWORD` | empty | Create the first administrator on the first start, so a fresh server is not open to whoever opens the setup wizard first. See "First admin" below |
-| `ADMIN_EMAIL` | empty | Optional email address of that administrator |
+| `BASE_URL` | `http://localhost:8080` | Public URL; needed for links in mails (password reset) and OAuth for claude.ai/ChatGPT |
+| `ADMIN_USER`, `ADMIN_PASSWORD`, `ADMIN_EMAIL` | empty | First administrator, created on the first start (see below) |
+| `JWT_SECRET` | generated (`/data/jwt.secret`) | Signing key for sign-ins, at least 32 characters (`openssl rand -hex 32`). Shorter values and published examples are ignored. Changing it signs everyone out |
+| `SECRETS_KEY` | generated (`/data/secrets.key`) | Key for hidden values (`/secret`); set it to keep it apart from the database. Never change it once values are stored |
+| `DEFAULT_LANGUAGE` | `de` (demo: `en`) | `de`, `en`, `es`, `fr` or `it`, see "Language" below |
 | `TZ` | `Europe/Berlin` | Time zone for due dates and alarms |
 | `REGISTRATION_MODE` | admin UI decides | `closed`, `approval`, `domain`, `domain+approval` or `open` |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` | empty | Mail for alarms, invites and password reset (also in the admin UI) |
 | `TRUSTED_PROXIES` | `private` | Whose `X-Forwarded-For` to trust, see [reverse proxy](Doku/reverse-proxy.md) |
 | `MCP_ENABLED` | admin UI decides | `false` switches off the endpoint for AI agents |
-| `STT_*` | empty | Your own Whisper server for voice input, see [architecture](Doku/architecture.md#speech-recognition) |
-| `MINDSIFT_DEMO` | `false` | Demo accounts `admin/admin` and `user/user` with sample data. **Never on a public server with real data!** |
+| `STT_*` | empty | Your own Whisper server for voice input |
+| `MINDSIFT_DEMO` | `false` | Demo accounts `admin/admin` and `user/user` with sample data. **Never on a server with real data!** |
 
-* **First admin:** without these variables, the first person to open a new instance creates the admin account in the setup wizard. With `ADMIN_USER` (the username, also used to sign in) and `ADMIN_PASSWORD` (at least 8 characters) the admin exists before the server accepts connections; after signing in, the wizard only asks the remaining settings (name, language, sharing, registration, daily backups, sample data). The variables only act on the first start, while the database has no account; after that they are ignored and you can remove them. If they are set but not usable (one missing, password too short, invalid username or email), MindSift does not start and says why in the log. The password never appears in the log. Without `ADMIN_EMAIL` there is no "forgot password" for this account until you add an address in your profile and confirm it. Ignored in demo mode.
-* **Language:** the app follows the browser's language when that is English, German, Spanish, French or Italian, and everyone can pick their own in the settings. `DEFAULT_LANGUAGE` only decides the rest. Unset, it is German, because that is where the project started; for an English instance set `DEFAULT_LANGUAGE=en` or choose it in the setup wizard. API clients that send no `Accept-Language` (scripts, curl) get their errors in the default language, or in English while none is set.
-* **Reverse proxy:** pass through WebSocket upgrades and unbuffered SSE if you can. If not, MindSift falls back to long polling by itself. Examples for nginx, Traefik, Caddy and Cloudflare: [Doku/reverse-proxy.md](Doku/reverse-proxy.md).
-* **Backups:** the setup wizard asks whether to switch on daily backups (preselected: on, at 03:00 server time, kept 3 days); later you change them in the admin settings. Each run saves the whole database for you, plus one ZIP per person under `data/backups/` that everyone can download or restore in their account settings. Every one of these ZIPs also holds the person's notes, tasks and lists as an Obsidian vault in plain Markdown, so the data stays readable even without MindSift. Copy that folder somewhere else too.
-* **Updates:** `docker compose pull && docker compose up -d`. The database schema updates itself; open apps offer to reload. From v0.87.3 the container runs as uid 1000 and takes over `data/` on the first start by itself; with `user:` in the compose file, give `data/` to that user first (`chown -R 1000:1000 data`).
-* **Health check:** the container checks `/api/v1/health` every 30 s, so `docker ps`, Portainer and Dockge show whether it is healthy and other services can wait for it (`depends_on: condition: service_healthy`). Podman ignores the check in the image; `docker-compose.yml` therefore repeats it as `healthcheck:`, copy that block into your own compose file.
-* **File permissions:** MindSift creates everything in `data/` for itself only (files 0600, folders 0700), so other accounts on the host cannot read the database, keys or backups. The container also closes files from older versions on its first start (once, only when something there is still open); without the container, `chmod -R go-rwx data` does it.
-* **Image tags:** `:stable` = the latest tagged release (default in `docker-compose.yml` and the install script), `:vX.Y.Z` = one tagged release, `:latest` = every release from `main`, `:dev` = development. "Stable" is the name of the tag, not a 1.0: the project is 0.x, and a minor version can still change the API or data formats. The changelog marks those changes with **Attention**.
-* **What changed:** [CHANGELOG.md](CHANGELOG.md).
+* **First admin:** with `ADMIN_USER` (username) and `ADMIN_PASSWORD` (at least 8 characters), the admin exists before the server accepts connections; after signing in, the wizard asks only the remaining settings. They act only while the database has no account and can be removed afterwards. If they are unusable (one missing, password too short, invalid name or email), MindSift does not start and says why in the log. Without `ADMIN_EMAIL` there is no "forgot password" for this account until you add and confirm an address in your profile.
+* **Language:** the app uses the browser's language if it is one of the five, and everyone can pick their own in the settings. `DEFAULT_LANGUAGE` covers the rest; unset, it is German (where the project started), so for an English instance set `en` or pick it in the setup wizard. API clients without `Accept-Language` (scripts, curl) get errors in the configured default language, else in English.
+* **Reverse proxy:** pass through WebSocket upgrades and unbuffered SSE if you can; otherwise MindSift falls back to long polling. Examples for nginx, Traefik, Caddy and Cloudflare: [Doku/reverse-proxy.md](Doku/reverse-proxy.md).
+* **Backups:** the setup wizard offers daily backups (preselected: 03:00 server time, kept 3 days); change them later in the admin settings. Each run saves the whole database plus one ZIP per person under `data/backups/`, which people download or restore in their account settings. Copy that folder somewhere else too.
+* **Updates:** `docker compose pull && docker compose up -d`. The database schema updates itself; open apps offer to reload. Since v0.87.3 the container runs as uid 1000 and takes over `data/` by itself; with `user:` in the compose file, run `chown -R 1000:1000 data` first.
+* **Health check:** the image checks `/api/v1/health` every 30 s, shown in `docker ps`, Portainer and Dockge and usable with `depends_on: condition: service_healthy`. Podman ignores checks in images; copy the `healthcheck:` block of `docker-compose.yml` instead.
+* **File permissions:** everything in `data/` is readable by MindSift only (files 0600, folders 0700). The container tightens files from older versions once on its first start; without the container, run `chmod -R go-rwx data`.
+* **Image tags:** `:stable` = the latest tagged release (default in `docker-compose.yml` and the install script), `:vX.Y.Z` = one release, `:latest` = every build of `main`, `:dev` = development. The project is 0.x: a minor version can still change the API or data formats, and the [changelog](CHANGELOG.md) marks those changes with **Attention**.
+
+---
+
+## Your data is yours
+
+No telemetry, no third-party services; fonts and icons ship with the app. The server only connects out for what you use: notifications (SMTP, Discord, your webhook, the browsers' push services), link previews (switchable per device) and your own Whisper server. Everything lives in one SQLite file, media next to it in `data/media/`. Export the whole workspace as Markdown (an Obsidian vault) whenever you want; every backup ZIP has that vault inside too, so your data stays readable in Obsidian or any text editor, even without MindSift.
 
 ---
 
@@ -232,13 +217,12 @@ The most important settings (all of them, with explanations, are in [`.env.examp
 
 MindSift is written with a lot of AI help (see the note at the top). One person decides what goes in and tries it on real devices. What keeps the code honest is that it gets checked:
 
-* **Tests:** more than 430 frontend tests and more than 340 backend tests run before every push and again in the build of every release. If one fails, no image is published.
-* **Browser tests:** seven runs with over 120 checks cover what is hard to unit-test: two people editing the same note at once, offline and back online, sharing, locks and conflict copies, copy & paste as Markdown in Chromium and Firefox, and connections behind proxies that block WebSockets ([e2e/](e2e/README.md)). They run before every release and before every change to these areas.
+* **Tests:** more than 500 frontend tests and more than 370 backend tests run before every push and again in the build of every release. If one fails, no image is published.
+* **Browser tests:** eight runs with over 180 checks cover what is hard to unit-test: two people editing the same note at once, offline and back online, sharing, locks and conflict copies, tables, copy & paste as Markdown in Chromium and Firefox, and connections behind proxies that block WebSockets ([e2e/](e2e/README.md)). They run before every release and every change to these areas.
 * **Static checks:** TypeScript, ESLint, gofmt, `go vet` and staticcheck, in the same run as the tests.
-* **Security:** the whole code base was reviewed for security in November 2026 and the findings are fixed ([Security](#security)). Every tagged release is scanned with Trivy before it is published ([Security scan](#security-scan)).
-* **Weak spots are written down:** [Doku/flaws.md](Doku/flaws.md).
+* **Security:** a review of the whole code base in November 2026, findings fixed ([Security](#security)); every tagged release is scanned with Trivy ([Security scan](#security-scan)).
 
-History starts at v0.70.0, when the project moved from a private repository. The [changelog](CHANGELOG.md) and its [archive](CHANGELOG-archive.md) go back to 0.1.
+History starts at v0.70.0, when the project moved from a private repository; the [changelog](CHANGELOG.md) and its [archive](CHANGELOG-archive.md) go back to 0.1.
 
 ---
 
@@ -250,7 +234,7 @@ MindSift builds a few things itself that other projects take from a library, and
 * **Own note sync instead of Yjs or Automerge:** the server has to understand a note (rights, search, backlinks, Markdown), and sync has to survive proxies that cut WebSockets, where Yjs did not hold up. Every change is a plain HTTP request against an operations log. The price: two people cannot type in the same bullet at once.
 * **Own OAuth and MCP server:** claude.ai and ChatGPT only connect through OAuth issued by the MCP server itself (discovery, dynamic client registration, PKCE), and MCP over HTTP is four JSON-RPC methods.
 * **Own drawing layout:** agents hand in Mermaid, and the server turns it into drawings you can keep editing.
-* **Two chunks:** the sign-in page needs about 170 kB compressed, the app itself about 250 kB more after signing in. The service worker loads every part when it installs, so the installed app is complete offline once it has been opened.
+* **Two chunks:** the sign-in page needs about 170 kB compressed, the app about 250 kB more after signing in. The service worker loads everything when it installs, so the installed app works offline once it has been opened.
 * **Few dependencies:** eight direct Go modules and a handful of npm packages at runtime.
 * **Grown rather than designed:** a session is a signed token plus a database row plus a version counter. A random session ID would do the same with less; it works and is tested, so it stays for now.
 
@@ -258,7 +242,7 @@ MindSift builds a few things itself that other projects take from a library, and
 
 ## Performance
 
-MindSift is load-tested on the public demo, a deliberately small server with **1 CPU core and 1 GB RAM**. Simulated people sign in, open notes and type in them, work with tasks and lists and search, all at the same time:
+Load-tested on the public demo, a deliberately small server with **1 CPU core and 1 GB RAM**. Simulated people sign in, open notes and type in them, work with tasks and lists and search, all at the same time:
 
 | People working at once | Typical answer (median) | Slowest 5 % | Errors |
 |---|---|---|---|
@@ -266,29 +250,27 @@ MindSift is load-tested on the public demo, a deliberately small server with **1
 | 300, about 10 per note | ~3 s | ~6–9 s | under 1 % |
 | 200, all in the **same** note | ~3 s for an edit | ~7.5 s | 0 % |
 
-* **Around 200 people working at the same moment** run smoothly on that single core. That is far more than are usually active at once on an instance of a few hundred accounts.
-* **Above that, the CPU is the limit**, and everything slows down evenly instead of failing. More cores or a faster CPU help directly.
-* **Many people in one note:** changes to the same note are applied one after another so that nobody's edits get lost. Hundreds typing in a single note at once therefore wait for each other; opening the note stays fast.
-* **It recovers by itself:** even after 1,200 people at once the server answers normally again as soon as the load drops, without a restart.
+* **About 200 people at the same moment** run smoothly on that single core, far more than are usually active at once on an instance of a few hundred accounts.
+* **Above that, the CPU is the limit:** everything slows down evenly instead of failing. More or faster cores help directly.
+* **Many people in one note:** changes to one note are applied one after another so that no edit gets lost, so hundreds typing in one note wait for each other. Opening the note stays fast.
+* **It recovers by itself:** even after 1,200 people at once, the server answers normally again as soon as the load drops, without a restart.
 * **Search** was the most expensive request in these runs and has become about four times faster on the server since (v0.83.4).
-
-All data lives in one SQLite file, so a single server is the intended setup; there is no cluster mode.
 
 ---
 
 ## Security
 
-MindSift is meant to be reachable from the internet behind a reverse proxy, and the whole code base was reviewed for security in November 2026 (v0.94.0); its findings are fixed (see the [CHANGELOG](CHANGELOG.md)). What protects your data:
+MindSift is meant to be reachable from the internet behind a reverse proxy. The whole code base was reviewed for security in November 2026 (v0.94.0), and the findings are fixed (see the [changelog](CHANGELOG.md)). What protects your data:
 
-* **Sign-in:** passwords are hashed with bcrypt. Every login is a server-side session tied to a signed token; sessions are listed under Profile → Active sessions, can be ended one by one, end after 30 days without use and end with any password change. Repeated failures lock the account for that address after 3 tries, the account after 20 and the address after 30, each for 15 minutes; registration, "forgot password", the password asked before deleting data and the passwords of public links are limited the same way. A failed sign-in takes as long whether the account exists or not.
-* **Secrets never in plain text:** API keys, OAuth tokens, password-reset and e-mail-confirmation links and the tokens of public links are stored only as SHA-256 hashes. Hidden values in notes are encrypted with AES-256-GCM under a key kept apart from the database (`SECRETS_KEY`). Published example values and values shorter than 32 characters for `JWT_SECRET` are refused and a random one is generated instead.
+* **Sign-in:** passwords are hashed with bcrypt. Every login is a server-side session tied to a signed token; sessions are listed under Profile → Active sessions, can be ended one by one, end after 30 days without use and with any password change. Failed sign-ins lock the account for that address after 3 tries, the account after 20 and the address after 30, each for 15 minutes; registration, "forgot password", the password asked before deleting data and the passwords of public links are limited the same way. A failed sign-in takes as long whether the account exists or not.
+* **Secrets never in plain text:** API keys, OAuth tokens, reset and confirmation links and the tokens of public links are stored only as SHA-256 hashes. Hidden values in notes are encrypted with AES-256-GCM under a key kept apart from the database (`SECRETS_KEY`).
 * **Rights checked on every request:** notes, folders, lists and task lists resolve the caller's role (owner, editor, viewer) on each call. API keys and MCP connections reach only what their scopes allow, OAuth tokens only the MCP endpoint. Public links are read-only, live at most 14 days, can carry a password and hide names, hidden values and links to other notes.
-* **Addresses stay private:** others see names, usernames and profile pictures, never e-mail addresses. A new login address only counts once its owner clicks the link mailed to it, and mail alarms and test mails go only to that confirmed address, so the server cannot be used to mail strangers.
+* **Addresses stay private:** others see names, usernames and profile pictures, never e-mail addresses. A new login address counts only once its owner clicks the link mailed to it, and mail alarms and test mails go only to that confirmed address, so the server cannot be used to mail strangers.
 * **Browser hardening:** HSTS over https, a strict Content Security Policy (scripts only from MindSift itself, no embedding in other sites), links in notes limited to http(s) and mailto, uploads recognised by their content (no SVG, no scripts), media and previews served with a sandboxing policy. Profile pictures are uploaded, never loaded from other servers.
 * **Nothing reaches into your network:** every address the server contacts (webhooks, Discord, push services, link previews, image copies) is checked at connection time against localhost, link-local, cloud-metadata and private ranges, after DNS and after redirects (never from https down to http); private ranges only with an explicit admin switch. `X-Forwarded-*` headers only count from trusted proxies.
 * **Limits everywhere:** request bodies capped per endpoint, realtime connections capped per account, import archives checked for size and file count before anything is written.
-* **Quiet logs and errors:** tokens of public links and typed sign-in names stay out of the log; unexpected errors tell clients and AI agents nothing about the database or files. Everything in `data/` is readable by MindSift only.
-* **Supply chain:** the image runs as an unprivileged user, every release is scanned with Trivy (below), and `govulncheck` and `npm audit` report no vulnerability reachable from the code (November 2026). The SQLite engine built into the binary is kept current by hand, since no scanner sees its version (below).
+* **Quiet logs and errors:** tokens of public links and typed sign-in names stay out of the log; unexpected errors tell clients and AI agents nothing about the database or files.
+* **Supply chain:** the image runs as an unprivileged user and every release is scanned with Trivy (below). `govulncheck` and `npm audit` report no vulnerability reachable from the code (November 2026).
 
 Found something? Please follow [SECURITY.md](SECURITY.md).
 
@@ -300,27 +282,21 @@ Found something? Please follow [SECURITY.md](SECURITY.md).
 
 The image is scanned with [Trivy](https://trivy.dev) for known vulnerabilities, leaked secrets and misconfigurations:
 
-* **every tagged release** (`:stable`, `:vX.Y.Z`) before it is published, and every build that changes the base image, the Go version or the Go modules: a known high or critical vulnerability that already has a fix, or a leaked secret, stops the release;
-* **the published `:stable` and `:latest` every week**, because new vulnerabilities become known after a release. The badge shows the last weekly run, and its log has the result.
+* **every tagged release** (`:stable`, `:vX.Y.Z`) before it is published, and every build that changes the base image, the Go version or the Go modules. A known high or critical vulnerability that already has a fix, or a leaked secret, stops the release;
+* **the published `:stable` and `:latest` every week**, because new vulnerabilities become known after a release. The badge shows the last weekly run, its log the result.
 
-The base images (`node:22-alpine`, `golang:1.27-alpine`, `alpine:3.24`) are referenced by tag, not by digest. A digest would pin them bit for bit, but would also keep every build on that state until someone updates it by hand. With the tag, each build gets the security fixes of the base image without extra upkeep; the last stage also runs `apk upgrade`, and the weekly scan shows what is still open. The application's own dependencies are pinned: `npm ci` installs exactly what `package-lock.json` lists, and the Go modules are checked against `go.sum`.
+The base images (`node:22-alpine`, `golang:1.27-alpine`, `alpine:3.24`) are referenced by tag, not by digest, so each build gets their security fixes without manual updates; the last stage also runs `apk upgrade`. The application's own dependencies are pinned: `npm ci` installs exactly what `package-lock.json` lists, and the Go modules are checked against `go.sum`.
 
-Two things you will notice when you scan the image yourself:
+When you scan the image yourself:
 
-* **Not as root:** since v0.87.3 MindSift runs as the user `mindsift` (uid 1000). The image starts as root only long enough to hand `data/` to that user (once, for installations from before), then drops the rights. Trivy's misconfiguration check therefore still notes a missing `USER` line; that is intended.
-* **Entries for code MindSift does not call:** Trivy lists everything known about a module, used or not, for example the `openpgp` package of `golang.org/x/crypto`, of which MindSift only uses `bcrypt`. [govulncheck](https://go.dev/blog/govulncheck), which follows the code that is actually called, reports no vulnerability that affects MindSift (November 2026).
+* **A missing `USER` line is intended:** MindSift runs as the user `mindsift` (uid 1000) since v0.87.3. The image starts as root only to hand `data/` to that user, then drops the rights.
+* **Entries for code MindSift does not call:** Trivy lists everything known about a module, for example the `openpgp` package of `golang.org/x/crypto`, of which MindSift only uses `bcrypt`. [govulncheck](https://go.dev/blog/govulncheck) follows the code that is actually called and reports nothing that affects MindSift.
 
-One thing neither tool can check is **SQLite itself**. It is built into the binary through [modernc.org/sqlite](https://gitlab.com/cznic/sqlite), which translates SQLite's C code to Go, so Trivy and govulncheck only see a Go module and not the SQLite release inside it. That module is therefore updated by hand when SQLite publishes fixes ([release notes](https://sqlite.org/changes.html)). MindSift writes the SQLite version it runs on into the log at startup (`Database opened sqlite=3.54.1`), so you can compare it with SQLite's [list of known vulnerabilities](https://sqlite.org/cves.html).
+Neither tool sees **SQLite itself**: it is built in through [modernc.org/sqlite](https://gitlab.com/cznic/sqlite), a Go translation of SQLite's C code, so scanners see only a Go module. That module is updated by hand when SQLite publishes fixes ([release notes](https://sqlite.org/changes.html)). The log names the SQLite version at startup (`Database opened sqlite=3.54.1`), so you can compare it with SQLite's [list of known vulnerabilities](https://sqlite.org/cves.html).
 
 ```bash
 docker run --rm aquasec/trivy image ghcr.io/mindsift-app/mindsift:stable
 ```
-
----
-
-## Your data is yours
-
-No telemetry, no third-party services, fonts and icons ship with the app. The server only connects out for what you use: notifications (SMTP, Discord, your webhook, the browsers' push services), link previews (switchable per device) and your own Whisper server. Everything lives in one SQLite file, media next to it in `data/media/`. Export the whole workspace as an Obsidian-compatible Markdown archive, or your data as a backup ZIP (with that Markdown vault inside), whenever you want. If MindSift ever stops working for you, open the `Obsidian` folder of any backup in Obsidian or a text editor and you have everything.
 
 ---
 
@@ -329,7 +305,7 @@ No telemetry, no third-party services, fonts and icons ship with the app. The se
 Go 1.27 and Node 22.
 
 ```bash
-go vet ./... && go test ./...      # backend
+go vet ./cmd/... ./internal/... && go test ./cmd/... ./internal/...   # backend
 cd frontend && npm ci
 npm run dev                        # Vite dev server
 npx tsc --noEmit && npm run test:run
