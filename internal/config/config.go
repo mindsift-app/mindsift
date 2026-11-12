@@ -4,6 +4,8 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
+	"fmt"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -92,22 +94,47 @@ type Config struct {
 	VAPIDPrivateKey string
 	VAPIDSubject    string
 
-	// InitialAdmin: ADMIN_USER / ADMIN_PASSWORD / ADMIN_EMAIL create the first administrator on the first
-	// start, while the database has no account yet (api.CreateInitialAdmin); ignored afterwards
+	// InitialAdmin: ADMIN_USER / ADMIN_PASSWORD (or ADMIN_PASSWORD_FILE) / ADMIN_EMAIL create the first
+	// administrator on the first start, while the database has no account yet (api.CreateInitialAdmin);
+	// ignored afterwards
 	InitialAdmin InitialAdmin
 }
 
 // InitialAdmin is the first administrator given by the environment. Password is kept exactly as set
-// (spaces count, as in the setup wizard) and never logged.
+// (spaces count, as in the setup wizard) and never logged. PasswordFile (ADMIN_PASSWORD_FILE, e.g. a
+// Docker secret, so the password is not in the container's environment) is read only when the account is
+// created (ResolvePassword).
 type InitialAdmin struct {
-	User     string
-	Password string
-	Email    string
+	User         string
+	Password     string
+	PasswordFile string
+	Email        string
 }
 
-// Set reports whether any of the three variables is given.
+// Set reports whether any of the variables is given.
 func (a InitialAdmin) Set() bool {
-	return a.User != "" || strings.TrimSpace(a.Password) != "" || a.Email != ""
+	return a.User != "" || strings.TrimSpace(a.Password) != "" || a.PasswordFile != "" || a.Email != ""
+}
+
+// ResolvePassword gives the password from ADMIN_PASSWORD or, when ADMIN_PASSWORD_FILE is set, from that
+// file (without the line break at its end). Both set, or a file that cannot be read or holds nothing, is
+// an error; the errors name the path but never the file's content.
+func (a InitialAdmin) ResolvePassword() (string, error) {
+	if a.PasswordFile == "" {
+		return a.Password, nil
+	}
+	if a.Password != "" {
+		return "", errors.New("ADMIN_PASSWORD and ADMIN_PASSWORD_FILE are both set: set only one of them")
+	}
+	data, err := os.ReadFile(a.PasswordFile)
+	if err != nil {
+		return "", fmt.Errorf("reading ADMIN_PASSWORD_FILE failed: %w", err)
+	}
+	password := strings.TrimRight(string(data), "\r\n")
+	if strings.TrimSpace(password) == "" {
+		return "", fmt.Errorf("ADMIN_PASSWORD_FILE %s is empty", a.PasswordFile)
+	}
+	return password, nil
 }
 
 // MediaConfig limits uploads of images and audio recordings in notes. Sizes in MB; QuotaMB 0 = no limit
@@ -391,9 +418,10 @@ func Load() *Config {
 		VAPIDPrivateKey:     strings.TrimSpace(os.Getenv("VAPID_PRIVATE_KEY")),
 		VAPIDSubject:        strings.TrimSpace(os.Getenv("VAPID_SUBJECT")),
 		InitialAdmin: InitialAdmin{
-			User:     strings.TrimSpace(os.Getenv("ADMIN_USER")),
-			Password: os.Getenv("ADMIN_PASSWORD"),
-			Email:    strings.TrimSpace(os.Getenv("ADMIN_EMAIL")),
+			User:         strings.TrimSpace(os.Getenv("ADMIN_USER")),
+			Password:     os.Getenv("ADMIN_PASSWORD"),
+			PasswordFile: strings.TrimSpace(os.Getenv("ADMIN_PASSWORD_FILE")),
+			Email:        strings.TrimSpace(os.Getenv("ADMIN_EMAIL")),
 		},
 		Media: MediaConfig{
 			MaxImageMB: envInt("MEDIA_MAX_IMAGE_MB", 15, 1, 1000),

@@ -28,6 +28,10 @@ services:
       - ADMIN_USER=${ADMIN_USER:-}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:-}
       - ADMIN_EMAIL=${ADMIN_EMAIL:-}
+      # Or the password from a file (Docker secret), so it does not show in `docker inspect`: instead of
+      # ADMIN_PASSWORD, not both. Give the service  secrets: [admin_password]  and add at the top level
+      #   secrets: { admin_password: { file: ./admin_password.txt } }   (readable for UID 1000)
+      # - ADMIN_PASSWORD_FILE=/run/secrets/admin_password
       - DEFAULT_LANGUAGE=${DEFAULT_LANGUAGE:-}
       - ALLOW_REGISTRATION=${ALLOW_REGISTRATION:-false}
       - REGISTRATION_MODE=${REGISTRATION_MODE:-}

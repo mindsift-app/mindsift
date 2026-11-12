@@ -14,8 +14,8 @@ import (
 	"github.com/mindsift-app/mindsift/internal/storage"
 )
 
-// The first administrator from the environment: ADMIN_USER and ADMIN_PASSWORD (ADMIN_EMAIL optional)
-// create the account on the first start, before the server listens, so a fresh instance is never open to
+// The first administrator from the environment: ADMIN_USER and ADMIN_PASSWORD (or ADMIN_PASSWORD_FILE for
+// a Docker secret; ADMIN_EMAIL optional) create the account on the first start, before the server listens, so a fresh instance is never open to
 // whoever comes first. They only act while there is no account; afterwards they are ignored. The
 // wizard's other questions (language, registration, sharing …) follow after the admin's first sign-in
 // (setup_pending, handleFinishSetup).
@@ -48,11 +48,16 @@ func (s *Server) CreateInitialAdmin() error {
 		return nil
 	}
 
-	username, email, err := checkInitialAdmin(a.User, a.Password, a.Email)
+	// ADMIN_PASSWORD_FILE is read only now, when the account is really created
+	password, err := a.ResolvePassword()
 	if err != nil {
 		return err
 	}
-	hash, err := auth.HashPassword(a.Password)
+	username, email, err := checkInitialAdmin(a.User, password, a.Email)
+	if err != nil {
+		return err
+	}
+	hash, err := auth.HashPassword(password)
 	if err != nil {
 		return fmt.Errorf("hashing ADMIN_PASSWORD: %w", err)
 	}
