@@ -263,10 +263,31 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
       const fadeTimer = setTimeout(() => {
         setHighlightedBlockId(null);
       }, 2800);
+      // In a long note the bullets passed on the way get their real height only once shown (content-visibility,
+      // index.css), which moves the target while the smooth scroll runs: centred again where the scrolling ends
+      // when it is off, for a few seconds and only until the user scrolls, taps or types
+      let corrections = 0;
+      const userInput = ['wheel', 'touchstart', 'keydown', 'pointerdown'];
+      const stopCorrecting = () => {
+        document.removeEventListener('scrollend', recenter, true);
+        userInput.forEach((type) => window.removeEventListener(type, stopCorrecting, true));
+      };
+      const recenter = () => {
+        const el = document.querySelector(`[data-outline-block="${CSS.escape(initialFocusedBlockId)}"]`);
+        if (!el || ++corrections > 3) return stopCorrecting();
+        const r = el.getBoundingClientRect();
+        const height = window.visualViewport?.height ?? window.innerHeight;
+        if (Math.abs((r.top + r.bottom) / 2 - height / 2) > height * 0.2) scrollTo();
+      };
+      document.addEventListener('scrollend', recenter, true);
+      userInput.forEach((type) => window.addEventListener(type, stopCorrecting, { capture: true, passive: true }));
+      const stopTimer = setTimeout(stopCorrecting, 4000);
       return () => {
         clearTimeout(timer);
         clearTimeout(timer2);
         clearTimeout(fadeTimer);
+        clearTimeout(stopTimer);
+        stopCorrecting();
       };
     }
   }, [initialFocusedBlockId, targetLoaded]);
