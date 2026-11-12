@@ -524,7 +524,7 @@
     "password": "Password",
     "delete": "Elimina utente",
     "newPasswordPlaceholder": "Nuova password (min. 8 caratteri)…",
-    "pending": "In attesa di approvazione ({{count}})",
+    "pending": "In attesa di approvazione",
     "registeredOn": "registrato il {{date}}",
     "registered": "Utenti registrati ({{count}})",
     "leaveOrg": "{{name}} lascia «{{org}}» e perde tutte le condivisioni, i gruppi e le attività assegnate.",
@@ -542,7 +542,29 @@
     "organizations": "Organizzazioni",
     "roleManager": "Gestione utenti",
     "passwordAdminOnly": "Solo gli amministratori del server impostano le password (altrimenti «password dimenticata»)",
-    "adminOnly": "Solo gli amministratori del server possono modificare questo account"
+    "adminOnly": "Solo gli amministratori del server possono modificare questo account",
+    "list": {
+      "search": "Cerca utenti",
+      "searchPlaceholder": "Nome, nome utente o email …",
+      "roleFilter": "Filtra per ruolo",
+      "roleAll": "Tutti i ruoli",
+      "roleAdmins": "Amministratori server",
+      "roleManagers": "Gestione utenti",
+      "roleMembers": "Membri",
+      "orgFilter": "Filtra per organizzazione",
+      "orgAll": "Tutte le organizzazioni",
+      "sort": "Ordine",
+      "sortName": "Nome A–Z",
+      "sortRole": "Prima gli amministratori",
+      "sortNewest": "Più recenti prima",
+      "matches": "{{count}} di {{total}}",
+      "resetFilters": "Azzera filtri",
+      "noMatch": "Nessuno corrisponde a ricerca e filtri.",
+      "shownOf": "{{shown}} di {{total}} mostrati",
+      "showMore_one": "Mostra altri {{count}}",
+      "showMore_other": "Mostra altri {{count}}",
+      "orgsHint": "Si assegna in «Organizzazioni»."
+    }
   },
   "sharing": {
     "private": {

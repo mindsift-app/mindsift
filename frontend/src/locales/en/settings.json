@@ -524,7 +524,7 @@
     "password": "Password",
     "delete": "Delete user",
     "newPasswordPlaceholder": "New password (min. 8 characters)…",
-    "pending": "Waiting for approval ({{count}})",
+    "pending": "Waiting for approval",
     "registeredOn": "registered on {{date}}",
     "registered": "Registered users ({{count}})",
     "leaveOrg": "{{name}} leaves “{{org}}” and loses all shares, groups and task assignments there.",
@@ -542,7 +542,29 @@
     "organizations": "Organizations",
     "roleManager": "User manager",
     "passwordAdminOnly": "Only server admins set passwords (otherwise “forgot password”)",
-    "adminOnly": "Only server admins can change this account"
+    "adminOnly": "Only server admins can change this account",
+    "list": {
+      "search": "Search users",
+      "searchPlaceholder": "Name, username or email …",
+      "roleFilter": "Filter by role",
+      "roleAll": "All roles",
+      "roleAdmins": "Server admins",
+      "roleManagers": "User managers",
+      "roleMembers": "Members",
+      "orgFilter": "Filter by organization",
+      "orgAll": "All organizations",
+      "sort": "Order",
+      "sortName": "Name A–Z",
+      "sortRole": "Admins first",
+      "sortNewest": "Newest first",
+      "matches": "{{count}} of {{total}}",
+      "resetFilters": "Reset filters",
+      "noMatch": "Nobody matches the search and filters.",
+      "shownOf": "Showing {{shown}} of {{total}}",
+      "showMore_one": "Show {{count}} more",
+      "showMore_other": "Show {{count}} more",
+      "orgsHint": "Assigned under “Organizations”."
+    }
   },
   "sharing": {
     "private": {
