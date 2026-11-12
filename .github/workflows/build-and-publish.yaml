@@ -69,6 +69,16 @@ jobs:
           echo "ℹ️ ${{ steps.plan.outputs.reason }}"
           TAG_ARGS=""
           for t in ${TAGS}; do TAG_ARGS="${TAG_ARGS} -t ${IMAGE}:${t}"; done
+          # Version of the image: the release, or the package version with -dev (dev builds have no APP_VERSION).
+          # GitHub shows the description of a multi-platform image only from the index, so it goes there as
+          # an annotation (the labels in the Dockerfile describe each platform's image).
+          IMAGE_VERSION="${{ steps.plan.outputs.app_version }}"
+          [ -n "${IMAGE_VERSION}" ] || IMAGE_VERSION="v$(jq -r .version frontend/package.json)-dev"
+          INDEX_ANNOTATIONS=(
+            --annotation "index:org.opencontainers.image.description=Notes, tasks and a clear head, self-hosted: outliner notes, tasks with a Kanban board, shared lists, works offline."
+            --annotation "index:org.opencontainers.image.version=${IMAGE_VERSION}"
+            --annotation "index:org.opencontainers.image.source=https://github.com/${GITHUB_REPOSITORY}"
+            --annotation "index:org.opencontainers.image.licenses=AGPL-3.0-only")
           # The scan looks at the image for the runner's platform (amd64): the other platforms get the
           # same Alpine packages and the same Go modules.
           if [ "${{ steps.plan.outputs.action }}" = "retag" ]; then
@@ -78,13 +88,14 @@ jobs:
               ci/trivy-scan.sh "${SOURCE}"
             fi
             # Copies the image with all its platforms inside the registry (docker tag and push would
-            # keep only the runner's)
-            docker buildx imagetools create ${TAG_ARGS} "${SOURCE}"
+            # keep only the runner's); the new index gets the description and version again
+            docker buildx imagetools create "${INDEX_ANNOTATIONS[@]}" ${TAG_ARGS} "${SOURCE}"
           else
             # The source label links the package on GitHub to this repository. Without provenance: it
             # would show up as a third platform "unknown/unknown" in the registry.
             BUILD_ARGS=(--progress=plain --provenance=false
               --build-arg "APP_VERSION=${{ steps.plan.outputs.app_version }}"
+              --build-arg "IMAGE_VERSION=${IMAGE_VERSION}"
               --build-arg "SKIP_TESTS=${{ steps.plan.outputs.skip_tests }}"
               --build-arg "GIT_SHA=${{ steps.plan.outputs.sha }}"
               --build-arg "GIT_TREE=${{ steps.plan.outputs.tree }}"
@@ -96,7 +107,7 @@ jobs:
               docker buildx build "${BUILD_ARGS[@]}" --load -t "${IMAGE}:${TAGS%% *}" .
               ci/trivy-scan.sh "${IMAGE}:${TAGS%% *}"
             fi
-            docker buildx build "${BUILD_ARGS[@]}" --platform "${PLATFORMS}" --push ${TAG_ARGS} .
+            docker buildx build "${BUILD_ARGS[@]}" "${INDEX_ANNOTATIONS[@]}" --platform "${PLATFORMS}" --push ${TAG_ARGS} .
           fi
           # A tag that lost a platform would only be noticed by the people running it
           for t in ${TAGS}; do
