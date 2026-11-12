@@ -5,7 +5,7 @@
 import type { DocumentBlock } from '../types';
 import { diffFlat, toDocumentBlocks } from './diff';
 import { applyEffect, applyOp, Block, cloneDoc, Doc, docFromSnapshot, emptyDoc, Op, Result } from './model';
-import { defaultStorage, markUnsent, requestPersistentStorage, SyncStorage } from './persist';
+import { AppliedEntry, defaultStorage, markUnsent, requestPersistentStorage, SyncStorage } from './persist';
 import { httpTransport, LeaseInfo, Presence, Transport, TransportError } from './transport';
 import { buildStep, failedChecks, touchedBlocks, UndoStep } from './undo';
 import { keepUndoHistory, takeUndoHistory } from './undoHistory';
@@ -77,6 +77,11 @@ const LONG_POLL_MAX_FAILURES = 3;
 const BACKOFF_MAX_MS = 30_000;
 const UNDO_LIMIT = 200;
 const UNDO_GROUP_MS = 1_000; // keystrokes in the same block are one undo step until a pause this long
+// What the server confirmed is stored with the queue (persist) and the whole note at most this often, when
+// leaving the note or the page, or once this many log entries wait: storing all blocks after every typing
+// pause cost 15-35 ms in a note with 5000 bullets on a slow phone
+const FULL_SAVE_MS = 10_000;
+const FULL_SAVE_ENTRIES = 200;
 
 function randomHex(bytes: number): string {
   const arr = new Uint8Array(bytes);
@@ -136,7 +141,10 @@ export class DocSyncEngine {
 
   private confirmed: Doc = emptyDoc();
   private lastSeq = 0;
-  private storedNote = ''; // lastSeq|role of the note as last stored in full (see persist)
+  private storedRole = ''; // role of the note as last stored in full
+  // Log entries applied to `confirmed` since the note was last stored in full (stored with the queue, see persist)
+  private tail: AppliedEntry[] = [];
+  private fullSaveTimer: ReturnType<typeof setTimeout> | null = null;
   private pending: Op[] = [];
   private inflight: Op[] | null = null;
   private local: Doc = emptyDoc();
@@ -215,7 +223,15 @@ export class DocSyncEngine {
         this.confirmed = docFromSnapshot(stored.title, stored.titleVersion, stored.blocks);
         this.lastSeq = stored.lastSeq;
         this.role = stored.role || '';
-        this.storedNote = `${this.lastSeq}|${this.role}`;
+        this.storedRole = this.role;
+        // What the server confirmed after the blocks were stored; it stays in the tail until the next full save
+        for (const entry of stored.tail || []) {
+          if (entry.seq <= this.lastSeq) continue;
+          if (entry.seq !== this.lastSeq + 1) break; // never stored this way; the rest comes from the server
+          applyEffect(this.confirmed, entry.effect);
+          this.lastSeq = entry.seq;
+          this.tail.push(entry);
+        }
         this.pending = stored.pending || [];
         this.inflight = stored.inflight || null;
         this.ready = true;
@@ -259,6 +275,7 @@ export class DocSyncEngine {
     }
     if (this.timer) clearTimeout(this.timer);
     if (this.pokeTimer) clearTimeout(this.pokeTimer);
+    if (this.fullSaveTimer) clearTimeout(this.fullSaveTimer);
     this.longPollAbort?.abort();
     this.unsubscribePush?.();
     this.unsubscribePush = null;
@@ -587,9 +604,11 @@ export class DocSyncEngine {
   }
 
   /**
-   * Stores the queue, and the confirmed note only when it changed since it was last stored (it changes only
-   * with what the server confirms, i.e. with lastSeq): writing all blocks on every typing pause cost several
-   * MB per pause in large notes. `full` stores the note in any case (a snapshot replaced it).
+   * Stores the queue together with the log entries the server confirmed since the note was last stored in
+   * full (tail): a change confirmed by the server leaves the queue, and its text is then kept by the tail, so
+   * it is there after a crash or an offline restart. The whole note is stored only with `full` (a snapshot
+   * replaced it, leaving the note or the page), when the role changed, once the tail is long, and at most every
+   * FULL_SAVE_MS otherwise: writing all blocks on every typing pause cost several MB per pause in large notes.
    */
   private async persist(full = false): Promise<void> {
     // Signed out (or another account signed in) meanwhile: nothing more is stored for this session
@@ -598,34 +617,51 @@ export class DocSyncEngine {
     markUnsent(this.docId, waiting);
     if (waiting && this.status === 'offline') requestPersistentStorage();
     const savedAt = this.now();
-    const stored = `${this.lastSeq}|${this.role}`;
     try {
-      if (full || stored !== this.storedNote) {
+      if (full || this.role !== this.storedRole || this.tail.length > FULL_SAVE_ENTRIES) {
+        const seq = this.lastSeq;
+        const role = this.role;
+        const covered = new Set(this.tail);
+        if (this.fullSaveTimer) clearTimeout(this.fullSaveTimer);
+        this.fullSaveTimer = null;
         await this.storage.save({
           docId: this.docId,
           title: this.confirmed.title,
           titleVersion: this.confirmed.titleVersion,
-          lastSeq: this.lastSeq,
-          role: this.role,
+          lastSeq: seq,
+          role,
           userId: this.userId,
           blocks: Array.from(this.confirmed.blocks.values()),
           pending: this.pending,
           inflight: this.inflight,
           savedAt,
         });
-        this.storedNote = stored;
+        this.storedRole = role;
+        // Entries confirmed while it was written stay for the next queue (loading skips those up to lastSeq)
+        this.tail = this.tail.filter((e) => !covered.has(e));
       } else {
-        await this.storage.saveQueue(this.docId, { pending: this.pending, inflight: this.inflight, savedAt, userId: this.userId });
+        const tail = this.tail.length > 0 ? this.tail.slice() : undefined;
+        await this.storage.saveQueue(this.docId, { pending: this.pending, inflight: this.inflight, savedAt, userId: this.userId, tail });
       }
     } catch {
       // Storage full or unavailable: changes stay in memory and are still sent
     }
+    if (this.tail.length > 0) this.scheduleFullSave();
+  }
+
+  private scheduleFullSave(): void {
+    if (this.manual || this.stopped || this.fullSaveTimer) return;
+    this.fullSaveTimer = setTimeout(() => {
+      this.fullSaveTimer = null;
+      void this.persist(true);
+    }, FULL_SAVE_MS);
   }
 
   private async loadSnapshot(): Promise<void> {
     const snap = await this.transport.snapshot(this.docId);
     this.confirmed = docFromSnapshot(snap.title, snap.titleVersion, snap.blocks || []);
     this.lastSeq = snap.headSeq;
+    this.tail = []; // entries of the replaced state
     this.role = snap.role;
     this.shared = snap.shared;
     this.ready = true;
@@ -706,6 +742,7 @@ export class DocSyncEngine {
         }
         applyEffect(this.confirmed, entry.effect);
         this.lastSeq = entry.seq;
+        this.tail.push({ seq: entry.seq, effect: entry.effect });
       }
       if (gap) await this.loadSnapshot();
       // Text typed into the same field while the losing batch was on the wire builds on the losing text
@@ -831,8 +868,12 @@ export class DocSyncEngine {
     }, delay);
   }
 
-  /** Sends what is pending with keepalive (survives page unload) and releases leases. */
+  /**
+   * Sends what is pending with keepalive (survives page unload) and releases leases. Leaving, the note is also
+   * stored in full when the server confirmed something since it last was (see persist).
+   */
   private flushOnExit(): void {
+    let stored = false;
     if (this.canEdit && (this.inflight || this.pending.length > 0)) {
       // The batch becomes the one in flight: the next sync resends exactly these ops (same IDs, applied
       // once), and text typed afterwards starts a new batch on top instead of being folded into this one
@@ -841,7 +882,8 @@ export class DocSyncEngine {
         this.inflight = formBatch(this.pending);
         this.pending = [];
         this.recompute();
-        void this.persist();
+        void this.persist(this.tail.length > 0);
+        stored = true;
       }
       const ops = this.inflight;
       this.transport
@@ -850,6 +892,7 @@ export class DocSyncEngine {
           // Not delivered: the queue is in IndexedDB and is resent on the next visit (same op IDs)
         });
     }
+    if (!stored && this.tail.length > 0) void this.persist(true);
     this.transport.leave(this.docId, this.clientId).catch(() => {});
   }
 
