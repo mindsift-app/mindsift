@@ -92,9 +92,7 @@ export const MoreTabsButton = forwardRef<HTMLDivElement, MoreTabsButtonProps>(fu
         aria-expanded={open}
         aria-haspopup="menu"
         title={t('listMenu.moreLists')}
-        className={`h-8 px-2.5 flex items-center gap-1 border rounded-btn text-xs font-medium transition-colors whitespace-nowrap ${
-          open ? 'bg-panel border-accent text-main' : 'bg-canvas border-border text-muted hover:text-main'
-        }`}
+        className="tool-btn !gap-1"
       >
         <MoreHorizontal className="w-3.5 h-3.5" />
         <span>{items.length}</span>

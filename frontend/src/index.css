@@ -272,27 +272,212 @@ body {
     color: var(--text-faint);
   }
 
-  /* Header Tabs */
-  .tab-btn {
-    display: inline-flex;
+  /* Desktop navigation rail (app/NavRail.tsx): icon rows of the same size, labels only when expanded */
+  .rail-item {
+    position: relative;
+    display: flex;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem 0.875rem;
-    font-size: 0.75rem;
-    font-weight: 500;
+    gap: 0.75rem;
+    width: 100%;
+    height: 2.5rem;
+    padding: 0 0.625rem;
+    border-radius: var(--radius-btn);
     color: var(--text-muted);
-    border-bottom: 2px solid transparent;
-    transition: all 120ms ease;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    white-space: nowrap;
+    transition: background-color 120ms ease, color 120ms ease;
     cursor: pointer;
   }
-  .tab-btn:hover {
+  .rail-item:hover {
     color: var(--text-main);
     background-color: var(--bg-panel-elevated);
   }
-  .tab-btn-active {
+  .rail-item-active,
+  .rail-item-active:hover {
     color: var(--accent-primary);
-    border-bottom-color: var(--accent-primary);
+    background-color: var(--accent-dim);
+    font-weight: 600;
+  }
+  .rail-item.rail-plus:hover {
+    background-color: transparent;
+  }
+  /* Name next to a collapsed rail's icon, on hover or keyboard focus (the button keeps it as its name) */
+  .rail-tip {
+    position: absolute;
+    left: calc(100% + 0.625rem);
+    top: 50%;
+    transform: translateY(-50%);
+    padding: 0.25rem 0.5rem;
+    border-radius: var(--radius-btn);
     background-color: var(--bg-panel-elevated);
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-panel);
+    color: var(--text-main);
+    font-size: 0.6875rem;
+    font-weight: 500;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 100ms ease;
+    z-index: 60;
+  }
+  .rail-item:hover > .rail-tip,
+  .rail-item:focus-visible > .rail-tip {
+    opacity: 1;
+    transition-delay: 250ms;
+  }
+  /* Its menu is open beside it: no tip on top of the menu */
+  .rail-item[aria-expanded='true'] > .rail-tip {
+    opacity: 0;
+  }
+
+  /* Toolbars of the views from sm on (Doku/ui-patterns.md "Toolbars"): no frames. Tabs are plain text, the
+     open one gets a surface and an accent line below; actions are ghost buttons. Phones keep their look:
+     these classes only go on rows that are hidden there, or take effect from 768 px (tool-ghost). */
+  .tool-tab {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    height: 2rem;
+    padding: 0 0.625rem;
+    border-radius: var(--radius-btn);
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    font-weight: 500;
+    white-space: nowrap;
+    transition: background-color 120ms ease, color 120ms ease;
+    cursor: pointer;
+  }
+  .tool-tab:hover {
+    color: var(--text-main);
+    background-color: var(--bg-panel-elevated);
+  }
+  .tool-tab-active,
+  .tool-tab-active:hover {
+    color: var(--text-main);
+    background-color: var(--bg-panel-elevated);
+    font-weight: 600;
+  }
+  .tool-tab-active::after {
+    content: '';
+    position: absolute;
+    left: 0.625rem;
+    right: 0.625rem;
+    bottom: 0;
+    height: 2px;
+    border-radius: 2px;
+    background-color: var(--accent-primary);
+  }
+
+  /* Text button without a frame (e.g. "Neue Liste", "Spalten") */
+  .tool-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    height: 2rem;
+    padding: 0 0.625rem;
+    border-radius: var(--radius-btn);
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    font-weight: 500;
+    white-space: nowrap;
+    transition: background-color 120ms ease, color 120ms ease;
+    cursor: pointer;
+  }
+  .tool-btn:hover {
+    color: var(--text-main);
+    background-color: var(--bg-panel-elevated);
+  }
+  /* Square icon button without a frame */
+  .tool-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: var(--radius-btn);
+    color: var(--text-muted);
+    transition: background-color 120ms ease, color 120ms ease;
+    cursor: pointer;
+  }
+  .tool-icon:hover {
+    color: var(--text-main);
+    background-color: var(--bg-panel-elevated);
+  }
+  .tool-icon[aria-pressed='true'],
+  .tool-btn[aria-pressed='true'],
+  .tool-btn[aria-expanded='true'],
+  .tool-icon[aria-expanded='true'] {
+    color: var(--text-main);
+    background-color: var(--bg-panel-elevated);
+  }
+  .tool-icon:disabled,
+  .tool-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+    background-color: transparent;
+  }
+
+  /* View switch (SegmentedControl and rows like it): one surface, the chosen option raised.
+     Phones keep the framed look of before; from sm the frame goes. */
+  .seg-track {
+    position: relative;
+    display: flex;
+    align-items: center;
+    padding: 0.125rem;
+    border-radius: var(--radius-btn);
+    border: 1px solid var(--border-color);
+    background-color: color-mix(in srgb, var(--text-main) 4%, transparent);
+  }
+  .seg-item {
+    position: relative;
+    padding: 0.25rem 0.625rem;
+    border-radius: var(--radius-btn);
+    color: var(--text-muted);
+    font-weight: 600;
+    transition: color 120ms ease;
+    cursor: pointer;
+  }
+  .seg-item:hover {
+    color: var(--text-main);
+  }
+  .seg-item-active {
+    color: var(--text-main);
+  }
+  .seg-thumb,
+  .seg-item-active.seg-item-raised {
+    background-color: var(--bg-panel-elevated);
+    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  }
+  @media (min-width: 768px) {
+    .seg-track {
+      border-color: transparent;
+      background-color: var(--bg-panel-elevated);
+    }
+    /* Light themes: the raised option is the brighter panel; dark themes: one step lighter than the track */
+    .seg-thumb,
+    .seg-item-active.seg-item-raised {
+      background-color: var(--bg-panel);
+      box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.1), 0 0 0 1px color-mix(in srgb, var(--border-color) 60%, transparent);
+    }
+    .dark .seg-thumb,
+    .dark .seg-item-active.seg-item-raised {
+      background-color: var(--bg-panel-hover);
+      box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+    }
+
+    /* Modifier for framed buttons (btn-icon, btn-action) that phones show too: a ghost button from sm */
+    .tool-ghost {
+      background-color: transparent;
+      border-color: transparent;
+    }
+    .tool-ghost:hover {
+      background-color: var(--bg-panel-elevated);
+      border-color: transparent;
+    }
   }
 
   /* Status Badges */
@@ -661,6 +846,17 @@ fieldset:disabled :is(button, input, select, textarea) {
 :root {
   --bg-editor: var(--bg-app);
   --bg-sidebar: var(--bg-panel);
+}
+
+/* Width of the collapsed navigation rail on the left (app/NavRail.tsx): the page starts beside it, and views
+   that span the window (wide Kanban, wide calendar) leave it out. Phones have no rail. */
+:root {
+  --app-rail-w: 0px;
+}
+@media (min-width: 768px) {
+  :root {
+    --app-rail-w: 3.75rem;
+  }
 }
 
 /* Outliner: indent per level and the width a row keeps for its text. Phones indent less and let very

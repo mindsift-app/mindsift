@@ -90,5 +90,19 @@
   "appLoad": {
     "failed": "MindSift no se pudo cargar por completo. Comprueba la conexión y vuelve a intentarlo.",
     "retry": "Reintentar"
+  },
+  "rail": {
+    "label": "Navegación principal",
+    "expand": "Expandir navegación",
+    "collapse": "Contraer navegación",
+    "quickDump": "Quick Dump",
+    "quickDumpTip": "Quick Dump – anotar una idea (C)",
+    "search": "Buscar",
+    "searchKey": "Ctrl K",
+    "help": "Ayuda"
+  },
+  "quickDump": {
+    "title": "Quick Dump",
+    "hint": "<kbd>Intro</kbd> guarda y la ventana sigue abierta para la siguiente idea · <kbd>Esc</kbd> cierra"
   }
 }

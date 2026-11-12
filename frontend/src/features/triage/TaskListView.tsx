@@ -64,30 +64,27 @@ export function TaskListView({
     <div className="space-y-2">
       {/* Subfilter tabs for List View (Desktop; on mobile controlled via MindSift Logo Menu) */}
       <div className="flex items-center justify-between gap-2">
-        <div className="hidden sm:flex items-center border border-border rounded-btn bg-canvas overflow-hidden">
+        <div className="hidden sm:flex seg-track text-xs">
           <button
             onClick={() => setFilter('open')}
-            className={`h-8 px-3.5 text-xs font-medium border-r border-border transition-colors ${
-              filter === 'open' ? 'bg-panel text-main font-semibold' : 'text-muted hover:text-main'
-            }`}
+            aria-pressed={filter === 'open'}
+            className={`seg-item ${filter === 'open' ? 'seg-item-active seg-item-raised' : ''}`}
           >
             {t('view.openCount', { count: openTasks.length })}
           </button>
 
           <button
             onClick={() => setFilter('done')}
-            className={`h-8 px-3.5 text-xs font-medium border-r border-border transition-colors ${
-              filter === 'done' ? 'bg-panel text-main font-semibold' : 'text-muted hover:text-main'
-            }`}
+            aria-pressed={filter === 'done'}
+            className={`seg-item ${filter === 'done' ? 'seg-item-active seg-item-raised' : ''}`}
           >
             {t('view.doneCount', { count: doneTasks.length })}
           </button>
 
           <button
             onClick={() => setFilter('discarded')}
-            className={`h-8 px-3.5 text-xs font-medium transition-colors ${
-              filter === 'discarded' ? 'bg-panel text-main font-semibold' : 'text-muted hover:text-main'
-            }`}
+            aria-pressed={filter === 'discarded'}
+            className={`seg-item ${filter === 'discarded' ? 'seg-item-active seg-item-raised' : ''}`}
           >
             {t('view.trashCount', { count: taskTrash.length })}
           </button>

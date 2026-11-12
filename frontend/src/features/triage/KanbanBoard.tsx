@@ -25,7 +25,7 @@ const KANBAN_GAP = 12; // gap-3
 // negative one when it is wider than the page column. Width and margin are animated.
 const kanbanBoardStyle = (wide: boolean, columns: number): React.CSSProperties => {
   if (!wide) return { '--kanban-w': '100%', '--kanban-ml': '0px' } as React.CSSProperties;
-  const w = `min(100vw - 4rem, ${columns * KANBAN_COL_MAX + (columns - 1) * KANBAN_GAP}px)`;
+  const w = `min(100vw - var(--app-rail-w, 0px) - 4rem, ${columns * KANBAN_COL_MAX + (columns - 1) * KANBAN_GAP}px)`;
   return {
     '--kanban-cols': columns,
     '--kanban-w': w,

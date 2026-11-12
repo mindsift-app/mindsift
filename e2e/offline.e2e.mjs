@@ -462,7 +462,7 @@ const main = async () => {
         await sleep(800);
         if (!(await broken())) opened.push(item);
       }
-      await page.getByTitle('Hilfe & Dokumentation').first().click().catch(() => {});
+      await page.locator('[data-tour="help-entry"]').locator('visible=true').first().click().catch(() => {});
       const helpShown = await waitFor(async () => (await page.getByText('Tastaturbedienung im Notizen-Editor').count()) > 0, 5000);
       if (!(await broken()) && helpShown) opened.push('Hilfe');
       await page.keyboard.press('Control+k');

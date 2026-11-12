@@ -18,7 +18,7 @@
   },
   "triage": {
     "title": "Triage: erst festhalten, dann sortieren",
-    "capture": "Was dir gerade einfällt, tippst du ohne Nachdenken oben in den <b>Quick Dump</b> (Taste <kbd>C</kbd>). Es landet nicht gleich irgendwo, sondern als Karte hier in der Triage.",
+    "capture": "Was dir gerade einfällt, wirfst du ohne Nachdenken in den <b>Quick Dump</b>: das <b>+</b> links in der Leiste oder die Taste <kbd>C</kbd>. Es landet nicht gleich irgendwo, sondern als Karte hier in der Triage.",
     "capturePhone": "Was dir gerade einfällt, wirfst du ohne Nachdenken in den <b>Quick Dump</b>: das <b>+</b> unten in der Mitte, gedrückt halten zum Einsprechen. Es landet als Karte hier in der Triage.",
     "decide": "Wenn du Zeit hast, entscheidest du Karte für Karte: <kbd>→</kbd> Aufgabe, <kbd>←</kbd> wegwerfen, <kbd>D</kbd> Notiz, <kbd>T</kbd> mit Termin, <kbd>Leertaste</kbd> später – oder die Knöpfe unter der Karte, auch „Auf Liste“.",
     "decidePhone": "Wenn du Zeit hast, entscheidest du Karte für Karte: nach rechts wischen macht eine Aufgabe daraus, nach links wirft sie weg. Die Knöpfe darunter legen sie auf eine Liste, als Notiz oder mit Termin ab."
@@ -51,7 +51,7 @@
   },
   "end": {
     "title": "Das war’s!",
-    "text": "Alles Weitere – Tastenkürzel, Listen, Teilen und mehr – steht hier auf der Hilfeseite (das <b>?</b> oben rechts). Mit „Tour starten“ siehst du die Tour jederzeit wieder.",
+    "text": "Alles Weitere – Tastenkürzel, Listen, Teilen und mehr – steht hier auf der Hilfeseite (das <b>?</b> unten in der Leiste links). Mit „Tour starten“ siehst du die Tour jederzeit wieder.",
     "textPhone": "Alles Weitere – Listen, Teilen und mehr – steht hier auf der Hilfeseite (über dein Profilbild oben rechts). Mit „Tour starten“ siehst du die Tour jederzeit wieder.",
     "share": "Notizen, Aufgabenlisten und Listen kannst du übrigens mit anderen teilen und gemeinsam bearbeiten."
   },

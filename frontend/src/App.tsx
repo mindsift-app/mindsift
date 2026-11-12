@@ -60,7 +60,9 @@ import { PwaInstallSheet } from './app/PwaInstallSheet';
 import { MobileProfileSheet, ProfileDropdown } from './app/ProfileMenus';
 import { useMobileCapture } from './app/useMobileCapture';
 import { MobileCaptureSheet } from './app/MobileCaptureSheet';
-import { DesktopHeaderBar, DesktopNav, MobileHeaderBar } from './app/AppHeader';
+import { MobileHeaderBar } from './app/AppHeader';
+import { NavRail } from './app/NavRail';
+import { QuickDumpWindow, useQuickDumpShortcut } from './app/QuickDumpWindow';
 import { useSessionBootstrap } from './app/useSessionBootstrap';
 import { useMainViews } from './app/useMainViews';
 import { AppLoading } from './app/AppLoading';
@@ -167,6 +169,9 @@ export const App: React.FC = () => {
   const [selectedListId, setSelectedListId] = useState<string | null>(null);
   const [showCommandPalette, setShowCommandPalette] = useState(false);
   const [captureFocusCount, setCaptureFocusCount] = useState(0);
+  // Desktop: the Quick Dump window (app/QuickDumpWindow.tsx)
+  const [showQuickDump, setShowQuickDump] = useState(false);
+  const closeQuickDump = useCallback(() => setShowQuickDump(false), []);
   const [refreshRevision, setRefreshRevision] = useState(0);
 
   const connection = useConnectionState();
@@ -515,13 +520,19 @@ export const App: React.FC = () => {
 
   useCommandPaletteShortcuts(setShowCommandPalette);
 
+  // Desktop: opens the Quick Dump window and puts the cursor into it
+  const openQuickDump = useCallback(() => {
+    setShowQuickDump(true);
+    setCaptureFocusCount((c) => c + 1);
+  }, []);
+  useQuickDumpShortcut(openQuickDump);
+
   const handleTriggerAddButton = () => {
     triggerHaptic(20);
     if (isPhoneWidth()) {
       openMobileTriageCapture();
     } else {
-      scrollAreaRef.current?.scrollTo?.({ top: 0, behavior: 'smooth' });
-      setCaptureFocusCount((c) => c + 1);
+      openQuickDump();
     }
   };
 
@@ -643,14 +654,12 @@ export const App: React.FC = () => {
 
   return (
     <div
-      className={`bg-canvas text-main flex flex-col font-sans selection:bg-accent/30 sm:h-[100dvh] sm:overflow-hidden ${
+      className={`bg-canvas text-main flex flex-col font-sans selection:bg-accent/30 sm:h-[100dvh] sm:overflow-hidden sm:pl-[var(--app-rail-w)] ${
         activeTab === 'workspace' ? 'h-[100dvh] overflow-hidden' : 'min-h-[100dvh]'
       }`}
     >
-      {/* Top Header Bar: Floating on mobile, solid panel on desktop */}
-      <header
-        className="sticky top-0 z-30 bg-canvas/85 backdrop-blur-md sm:bg-panel sm:border-b sm:border-border sm:shadow-sm"
-      >
+      {/* Top Header Bar: floating on phones; desktop has the navigation rail instead */}
+      <header className="sticky top-0 z-30 bg-canvas/85 backdrop-blur-md sm:hidden">
         {/* Mobile Header: Floating Bar with Logo Action Dropdown Left & Profile Avatar Right */}
         <MobileHeaderBar
           isMenuOpen={isMenuOpen}
@@ -666,45 +675,55 @@ export const App: React.FC = () => {
           connection={connection}
           bell={<NotificationBell variant="phone" onOpen={handleOpenCenterEntry} />}
         />
-
-        {/* Desktop Header: 3-column grid (Logo, InstantCaptureBar, Profile Pill) with equal outer columns, so
-            the capture bar stays exactly centred whatever name or status stands on the right */}
-        <DesktopHeaderBar
-          setActiveTab={setActiveTab}
-          handleTriggerAddButton={handleTriggerAddButton}
-          authStatus={authStatus}
-          demoDeadline={demoDeadline}
-          handleDemoCountdownElapsed={handleDemoCountdownElapsed}
-          handleCaptured={handleCaptured}
-          lists={lists}
-          captureFocusCount={captureFocusCount}
-          setShowCommandPalette={setShowCommandPalette}
-          dropdownRef={dropdownRef}
-          setShowProfileMenu={setShowProfileMenu}
-          showProfileMenu={showProfileMenu}
-          user={user}
-          connection={connection}
-          bell={<NotificationBell variant="desktop" onOpen={handleOpenCenterEntry} />}
-          profileMenu={
-            <ProfileDropdown
-              user={user}
-              roleLabel={roleLabel}
-              activeTab={activeTab}
-              setActiveTab={setActiveTab}
-              activeTheme={activeTheme}
-              allThemes={allThemes}
-              handleChangeTheme={handleChangeTheme}
-              isServerAdmin={isServerAdmin}
-              handleOpenHelp={handleOpenHelp}
-              handleLogout={handleLogout}
-              setShowProfileMenu={setShowProfileMenu}
-            />
-          }
-        />
-
-        {/* Desktop Navigation tabs attached to header */}
-        <DesktopNav activeTab={activeTab} setActiveTab={setActiveTab} stats={stats} handleOpenHelp={handleOpenHelp} />
       </header>
+
+      {/* Desktop: navigation rail on the left (fixed; the page keeps its width when it is expanded) */}
+      <NavRail
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        stats={stats}
+        authStatus={authStatus}
+        demoDeadline={demoDeadline}
+        handleDemoCountdownElapsed={handleDemoCountdownElapsed}
+        onQuickDump={() => {
+          triggerHaptic(20);
+          openQuickDump();
+        }}
+        onSearch={() => setShowCommandPalette(true)}
+        handleOpenHelp={handleOpenHelp}
+        user={user}
+        connection={connection}
+        dropdownRef={dropdownRef}
+        showProfileMenu={showProfileMenu}
+        setShowProfileMenu={setShowProfileMenu}
+        renderBell={(expanded) => <NotificationBell variant="desktop" expanded={expanded} onOpen={handleOpenCenterEntry} />}
+        profileMenu={
+          <ProfileDropdown
+            user={user}
+            roleLabel={roleLabel}
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
+            activeTheme={activeTheme}
+            allThemes={allThemes}
+            handleChangeTheme={handleChangeTheme}
+            isServerAdmin={isServerAdmin}
+            handleOpenHelp={handleOpenHelp}
+            handleLogout={handleLogout}
+            setShowProfileMenu={setShowProfileMenu}
+          />
+        }
+      />
+      <QuickDumpWindow
+        open={showQuickDump}
+        onClose={closeQuickDump}
+        lists={lists}
+        focusTrigger={captureFocusCount}
+        onCaptured={(thought, target) => {
+          // A new note opens in the workspace: the window makes way for it
+          if (target === 'document') setShowQuickDump(false);
+          handleCaptured(thought, target);
+        }}
+      />
       {authStatus.demoMode && <DemoHint minutes={authStatus.demoResetMinutes} />}
 
       <MobileHeaderMenu activeTabLabel={activeTabLabelMap[activeTab]} />
@@ -733,8 +752,8 @@ export const App: React.FC = () => {
       )}
 
       {/* Main Container */}
-      {/* Desktop: the window never scrolls, only this area under the header (room for the scrollbar kept on
-          both sides, so the content stays centred under the header and nothing shifts between pages). The
+      {/* Desktop: the window never scrolls, only this area beside the navigation rail (room for the scrollbar
+          kept on both sides, so the content stays centred and nothing shifts between pages). The
           workspace fills it exactly and scrolls only inside the note. Phones scroll the window as before. */}
       <div
         ref={scrollAreaRef}
@@ -744,7 +763,7 @@ export const App: React.FC = () => {
         }`}
       >
       <main
-        className={`flex-1 max-w-6xl w-full mx-auto px-3 sm:px-4 pt-3 pb-24 ${
+        className={`flex-1 max-w-6xl w-full mx-auto px-3 sm:px-4 pt-3 sm:pt-2.5 pb-24 ${
           activeTab === 'workspace'
             ? 'min-h-0 flex flex-col sm:pb-0'
             : activeTab === 'triage'

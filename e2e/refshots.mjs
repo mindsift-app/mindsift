@@ -233,7 +233,7 @@ async function capture() {
     await step(d, `d15_as_${key}`, () => d.locator('aside button', { hasText: label }).first().click());
   }
   await d.setViewportSize({ width: 1440, height: 900 });
-  await step(d, 'd16_help', () => d.getByTitle('Hilfe & Dokumentation').first().click());
+  await step(d, 'd16_help', () => d.locator('[data-tour="help-entry"]').locator('visible=true').first().click());
   await step(d, 'd16b_help_scroll_kept', async () => {
     // Each page keeps its scroll position: scrolled help, another page, back to the help
     await d.evaluate(() => {
@@ -242,7 +242,7 @@ async function capture() {
     await sleep(300);
     await tab(d, 'Listen');
     await sleep(600);
-    await d.getByTitle('Hilfe & Dokumentation').first().click();
+    await d.locator('[data-tour="help-entry"]').locator('visible=true').first().click();
     await sleep(800);
   });
   await step(d, 'd16c_command_palette', async () => {

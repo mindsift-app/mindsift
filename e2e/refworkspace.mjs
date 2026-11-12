@@ -185,7 +185,7 @@ await step('Realtime: note deleted from outside', async () => {
   return `Sidebar shows “Von außen umbenannt”: ${await inSidebar('Von außen umbenannt')}`;
 });
 // The counter at the Triage tab follows realtime events (a thought captured elsewhere)
-const triageCount = async () => (await d.locator('nav button.tab-btn').first().innerText()).replace(/\s+/g, ' ');
+const triageCount = async () => ((await d.locator('[data-nav-rail] button', { hasText: 'Triage' }).first().textContent()) || '').replace(/\s+/g, ' ');
 await step('Realtime: thought captured from outside, triage counter', async () => {
   const before = await triageCount();
   await send('POST', '/api/v1/inbox', { content: 'Von außen erfasst', priority: 'normal', source: 'manual', dueDate: '', target: 'inbox' });

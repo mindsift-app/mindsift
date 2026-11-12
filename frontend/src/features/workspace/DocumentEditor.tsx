@@ -1550,14 +1550,14 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
 
   // Undo/redo, share and the menu; on large screens they sit in the workspace tab bar instead
   const actionsBlock = (
-    <div className="flex shrink-0 items-center gap-1.5">
+    <div className="flex shrink-0 items-center gap-1.5 sm:gap-0.5">
       {!inTrash && (
         <>
           <button
             type="button"
             onClick={handleUndo}
             disabled={!canEdit || !engineState?.canUndo}
-            className="btn-icon h-11 w-11 sm:h-7 sm:w-7 disabled:opacity-40 disabled:cursor-not-allowed"
+            className="btn-icon tool-ghost h-11 w-11 sm:h-8 sm:w-8 disabled:opacity-40 disabled:cursor-not-allowed"
             title={t('editor.undo')}
             aria-label={t('editor.undo')}
           >
@@ -1567,7 +1567,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
             type="button"
             onClick={handleRedo}
             disabled={!canEdit || !engineState?.canRedo}
-            className="btn-icon h-11 w-11 sm:h-7 sm:w-7 disabled:opacity-40 disabled:cursor-not-allowed"
+            className="btn-icon tool-ghost h-11 w-11 sm:h-8 sm:w-8 disabled:opacity-40 disabled:cursor-not-allowed"
             title={t('editor.redo')}
             aria-label={t('editor.redo')}
           >
@@ -1586,7 +1586,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
             type="button"
             onClick={onToggleFocusMode}
             data-tour="focus-mode"
-            className="btn-icon h-11 w-11 sm:h-7 sm:w-7"
+            className="btn-icon tool-ghost h-11 w-11 sm:h-8 sm:w-8"
             title={`${t('editor.startFocusTitle')} (${t('editor.focusShortcut')})`}
             aria-label={t('editor.startFocusTitle')}
           >
@@ -1599,7 +1599,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
           <button
             type="button"
             onClick={() => onOpenShareModal(doc)}
-            className="btn-icon h-11 w-11 sm:h-7 sm:w-7"
+            className="btn-icon tool-ghost h-11 w-11 sm:h-8 sm:w-8"
             title={t('editor.share')}
             aria-label={t('editor.share')}
           >
@@ -1617,7 +1617,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
           aria-label={t('editor.more')}
           title={t('editor.more')}
           data-tour="note-more"
-          className="btn-icon h-11 w-11 sm:h-7 sm:w-7"
+          className="btn-icon tool-ghost h-11 w-11 sm:h-8 sm:w-8"
         >
           <MoreHorizontal className="w-3.5 h-3.5" />
         </button>

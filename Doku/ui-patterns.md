@@ -125,10 +125,39 @@ Component: [CountBadge.tsx](../frontend/src/components/CountBadge.tsx), CSS clas
 
 Component: [SegmentedControl.tsx](../frontend/src/components/SegmentedControl.tsx)
 
-- A row of two or three short options in one frame; the chosen one is raised (`bg-panel-elevated`, light shadow), and the raised field slides to a newly chosen option (200 ms, off with reduced motion). Used wherever a list can be shown in different ways: sorting of the hashtags (frequency / A–Z), the to-dos from notes (open / all, grouped / list), the task views (list / Kanban / calendar, with icons) and month / week of the calendar.
+- A row of two or three short options on one surface (classes `seg-track`, `seg-item`, `seg-thumb` in `index.css`); the chosen one is raised with a light shadow, and the raised field slides to a newly chosen option (200 ms, off with reduced motion). From `sm` the surface is `--bg-panel-elevated` without a frame and the raised option `--bg-panel` (dark themes: `--bg-panel-hover`); phones keep the framed look of before. Used wherever a list can be shown in different ways: sorting of the hashtags (frequency / A–Z), the to-dos from notes (open / all, grouped / list), the task views (list / Kanban / calendar, with icons) and month / week of the calendar.
 - Short labels, the longer explanation goes into `title` (hover). Screen readers get `radiogroup` and `radio` with `aria-checked`.
 - The choice is a per-device convenience and is kept in `localStorage` where it should survive a reload (to-dos: `mindsift_todo_show`, `mindsift_todo_grouping`).
-- Build new switches of this kind with this component instead of copying button classes.
+- Build new switches of this kind with this component instead of copying button classes. Rows that cannot be a radio group (they are buttons other code and tests click: the workspace views notes / to-dos / hashtags, open / done / trash of the task list) use the same classes, the chosen one with `seg-item-active seg-item-raised` and `aria-pressed`.
+
+## Navigation Rail (Desktop)
+
+Component: [NavRail.tsx](../frontend/src/app/NavRail.tsx), rows [RailItemContent.tsx](../frontend/src/components/RailItemContent.tsx), classes `rail-item`, `rail-item-active`, `rail-tip` in `index.css`. Phones keep their header and bottom bar unchanged.
+
+- From `sm` the app has no header and no row of page tabs: a rail on the left holds the navigation, so every view starts at the top of the window. Collapsed it is 60 px wide (`--app-rail-w`, which the page leaves free and wide views such as the wide Kanban subtract), icons only.
+- **Order from the top:** logo (back to the triage; expanded with the instance name and the version, or the demo's countdown, which the collapsed rail shows as `MM:SS` under the logo), the pages Triage, Workspace, Aufgaben, Listen with their `CountBadge` (`accent`; collapsed on the icon's corner, expanded after the label), a line, **Quick Dump** (a round, neutral `+`: `bg-panel-elevated`, frame, `text-main`, deliberately not the accent so it does not read as a second logo) and search. At the bottom: help, notifications (`NotificationBell`, its list opens beside the rail), the profile (avatar with the connection dot; expanded with name and status; the `ProfileDropdown` opens beside it, upwards) and the toggle.
+- The open page is marked with `rail-item-active` (accent tint and accent text) and `aria-current="page"`. Every other row is a ghost button.
+- **Names:** collapsed, a row keeps its label for screen readers (`sr-only`), so the button's name starts with it ("Workspace", "Aufgaben 9") and tests click it by name; a small tip with the name (`rail-tip`) appears beside the icon on hover or keyboard focus.
+- **Expanded (220 px)** it lies over the content with a shadow and never pushes it: the page would have to lay out long notes again. A click beside it (which still reaches its target), Escape or the toggle folds it; navigating keeps it open. The state is kept per device (`localStorage` `mindsift:nav-rail-expanded`).
+
+## Quick Dump Window (Desktop)
+
+Component: [QuickDumpWindow.tsx](../frontend/src/app/QuickDumpWindow.tsx) with the unchanged `InstantCaptureBar` (target, list, priority, due date, voice).
+
+- The `+` of the rail, the key **C** (bare, outside text fields; `useQuickDumpShortcut`) and every desktop "Quick Dump" action (the empty triage, the app icon shortcut) open the capture bar in a window at the top centre over everything, the page dimmed behind it like a spotlight search.
+- **After sending it stays open** for the next thought: a dump rarely comes alone, the bar confirms each entry and keeps the cursor. Escape (empties the field, as in the bar) or a click beside the window closes it; a target "note" closes it too, as the new note opens. The window stays mounted while closed, so the chosen target and a text left by a click beside it are there next time.
+- Phones keep their sheet from the `+` of the bottom bar (`MobileCaptureSheet`).
+
+## Toolbars of the Views (Desktop)
+
+Classes in `index.css`: `tool-tab`, `tool-tab-active`, `tool-btn`, `tool-icon`, `tool-ghost`, plus the segmented classes above. Used in the workspace bar (`WorkspaceTabBar` and the note's actions), the task list tabs (`TaskListTabs`, `TaskListView`, the Kanban and calendar controls in `TasksView`), the shopping list tabs (`ListTabsHeader`) and `MoreTabsButton`.
+
+- **No frames:** tabs, buttons and switches in these rows have no border; the row itself has no rule below it either.
+- **Tabs** (task lists, shopping lists): plain text (`tool-tab`), the open one gets `tool-tab-active`: the elevated surface, `text-main`, semibold and a 2 px accent line at its bottom. Counters stay `CountBadge` `position="text"`.
+- **One of several views** (notes / to-dos / hashtags; list / Kanban / calendar; open / done / trash): a segmented switch.
+- **Actions:** icon buttons are ghost buttons (`tool-icon`, 32 px; text buttons `tool-btn`, e.g. "Neue Liste", "Spalten"): muted icon, the elevated surface only on hover or while pressed / open (`aria-pressed`, `aria-expanded`). A framed button phones show as well (`btn-icon` in the note's header) gets `tool-ghost`, which drops the frame from `sm` only.
+- Status (Live, "Geteilt", save state) stays flat text with a dot or icon; the divider `w-px h-5 bg-border` still separates status from actions.
+- Everything uses theme variables, so all themes follow; rows that phones show keep their look below `sm`.
 
 ## Dropdown (Select Menu)
 
@@ -239,7 +268,7 @@ Search and filter fields get `NO_AUTOFILL` (`lib/noAutofill.ts`). Passwords that
 
 Component for connection status: [LivePill.tsx](../frontend/src/components/LivePill.tsx) (notes display their own sync transport in the same visual style).
 
-- On the right side of headers in Notes, Tasks, and Lists, the same layout order applies: status indicators on the left (Live pill, "Shared"), followed by a vertical divider (`w-px h-5 bg-border`), and action buttons on the right (Share or the ⋯ menu, View). On mobile, the layout is identical, but the pill displays only "Live".
+- On the right side of headers in Notes, Tasks, and Lists (see "Toolbars of the Views" for their look), the same layout order applies: status indicators on the left (Live pill, "Shared"), followed by a vertical divider (`w-px h-5 bg-border`), and action buttons on the right (Share or the ⋯ menu, View). On mobile, the layout is identical, but the pill displays only "Live".
 - The "shared" status in these headers is [SharedPill.tsx](../frontend/src/components/SharedPill.tsx): flat (`bg-panel`, 28 px high), "Shared (3)" in the accent colour for own items, "Shared by Anna" muted for someone else's; a click opens the sharing dialog. The journal shows the same header for the day marked in the calendar.
 
 ## Microphone in Input Fields

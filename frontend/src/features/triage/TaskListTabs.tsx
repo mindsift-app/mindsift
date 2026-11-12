@@ -97,17 +97,13 @@ export function TaskListTabs({
   });
 
   return (
-    <div className="hidden sm:flex items-center gap-2 border-b border-border pb-2 !mt-0">
+    <div className="hidden sm:flex items-center gap-2 !mt-0">
       {/* Task Lists selector tabs: one row, what does not fit goes behind "⋯ n" */}
       <div ref={overflow.rowRef} className="relative flex-1 min-w-0 flex items-center gap-1">
         <button
           data-tab-fixed
           onClick={() => setSelectedListId('all')}
-          className={`shrink-0 whitespace-nowrap h-8 pl-3 pr-2 text-xs font-medium border rounded-btn transition-colors ${
-            selectedListId === 'all'
-              ? 'bg-panel border-accent text-main'
-              : 'bg-canvas border-border text-muted hover:text-main'
-          }`}
+          className={`tool-tab shrink-0 ${selectedListId === 'all' ? 'tool-tab-active' : ''}`}
         >
           {/* Counter on the label, like in the nav bar */}
           <span className="inline-flex items-center">
@@ -133,9 +129,9 @@ export function TaskListTabs({
             onDrop={(e) => {
               if (!reorder.handleDrop(e, tl.id)) drop.onDrop(e);
             }}
-            className={`group shrink-0 whitespace-nowrap h-8 flex items-center border rounded-btn transition-colors ${
-              selectedListId === tl.id ? 'bg-panel border-accent text-main' : 'bg-canvas border-border text-muted hover:text-main'
-            } ${dragOverListTab === tl.id ? 'ring-2 ring-accent/60 bg-accent/10 text-main' : ''} ${
+            className={`group tool-tab !px-0 shrink-0 ${selectedListId === tl.id ? 'tool-tab-active' : ''} ${
+              dragOverListTab === tl.id ? 'ring-2 ring-accent/60 !bg-accent/10 text-main' : ''
+            } ${
               reorder.draggingId === tl.id ? 'opacity-50' : ''
             } ${hidden ? OVERFLOW_HIDDEN_TAB : 'relative'}`}
           >
@@ -143,7 +139,7 @@ export function TaskListTabs({
             <button
               onClick={() => setSelectedListId(tl.id)}
               tabIndex={hidden ? -1 : undefined}
-              className="h-full pl-3 pr-2 text-xs font-medium flex items-center gap-1.5 rounded-btn"
+              className="h-full px-2.5 flex items-center gap-1.5 rounded-btn"
             >
               <span>{tl.icon}</span>
               <span className="inline-flex items-center">
@@ -189,7 +185,7 @@ export function TaskListTabs({
         <button
           data-tab-fixed
           onClick={() => setShowNewListModal(true)}
-          className="shrink-0 whitespace-nowrap h-8 px-2.5 bg-canvas hover:bg-panel border border-border border-dashed rounded-btn text-xs text-muted hover:text-main flex items-center gap-1 transition-colors"
+          className="tool-btn shrink-0 !gap-1"
           title={t('tabs.newListTitle')}
         >
           <Plus className="w-3.5 h-3.5" />
@@ -224,6 +220,7 @@ export function TaskListTabs({
 
               <span className="w-px h-5 bg-border mx-0.5" aria-hidden />
               <ActionMenu
+                buttonClassName="tool-icon"
                 label={t('common:listMenu.more')}
                 items={[
                   {

@@ -21,7 +21,7 @@ export function SharedPill({ isOwner, count, ownerName, onClick, title }: Shared
       type="button"
       onClick={onClick}
       title={title}
-      className={`inline-flex items-center gap-1 h-7 px-2 rounded-btn text-[11px] bg-panel hover:bg-panel-elevated transition-colors cursor-pointer ${
+      className={`inline-flex items-center gap-1 h-7 px-2 rounded-btn text-[11px] bg-panel sm:bg-transparent hover:bg-panel-elevated sm:hover:bg-panel-elevated transition-colors cursor-pointer ${
         isOwner ? 'font-semibold text-accent' : 'font-medium text-muted hover:text-main'
       }`}
     >

@@ -22,7 +22,8 @@ interface ProfileMenuProps {
   handleLogout: () => void;
 }
 
-// Desktop: the dropdown below the profile pill (account, theme, settings, groups, help, admin, logout)
+// Desktop: the menu beside the avatar at the bottom of the navigation rail, opening upwards (account, theme,
+// settings, groups, help, admin, logout)
 export function ProfileDropdown({
   user,
   roleLabel,
@@ -38,7 +39,7 @@ export function ProfileDropdown({
 }: ProfileMenuProps & { setShowProfileMenu: (show: boolean) => void }) {
   const { t } = useTranslation('app');
   return (
-    <div className="absolute right-0 top-full mt-1.5 w-64 panel-surface shadow-panel overflow-hidden z-50 divide-y divide-border text-xs origin-top-right animate-in fade-in zoom-in-95 slide-in-from-top-1 duration-150">
+    <div className="absolute left-full bottom-0 ml-3 w-64 max-h-[calc(100dvh-1.5rem)] overflow-y-auto panel-surface shadow-panel z-50 divide-y divide-border text-xs origin-bottom-left animate-in fade-in zoom-in-95 slide-in-from-left-1 duration-150">
       {/* User Info Header */}
       <div className="p-3 bg-canvas flex items-center gap-2.5">
         <UserAvatar user={user} size="md" className="border border-border/70" />

@@ -51,20 +51,14 @@ export function WorkspaceTabBar({
 }: WorkspaceTabBarProps) {
   const { t } = useTranslation('workspace');
   return (
-    <div className="hidden sm:flex flex-wrap items-center justify-between gap-2 border-b border-border pb-2">
-      {/* Workspace selector tabs & left sidebar toggle */}
-      <div className="grid grid-cols-3 w-full gap-1 sm:flex sm:flex-wrap sm:items-center sm:w-auto">
+    <div className="hidden sm:flex flex-wrap items-center justify-between gap-2">
+      {/* Left sidebar toggle and the views as one switch (Doku/ui-patterns.md "Toolbars") */}
+      <div className="flex flex-wrap items-center gap-1.5">
         <button
           type="button"
           disabled={subView !== 'editor'}
           onClick={subView === 'editor' ? toggleSidebar : undefined}
-          className={`chip-btn hidden sm:inline-flex h-8 w-8 items-center justify-center rounded-btn border transition-colors ${
-            subView !== 'editor'
-              ? 'opacity-35 bg-canvas border-border text-faint cursor-not-allowed pointer-events-none'
-              : isSidebarCollapsed
-              ? 'bg-canvas border-border text-accent hover:bg-panel cursor-pointer'
-              : 'bg-canvas border-border text-muted hover:text-main hover:bg-panel cursor-pointer'
-          }`}
+          className={`tool-icon ${subView === 'editor' && isSidebarCollapsed ? '!text-accent' : ''}`}
           title={
             subView !== 'editor'
               ? t('tabbar.sidebarNotesOnly')
@@ -87,16 +81,14 @@ export function WorkspaceTabBar({
           )}
         </button>
 
+        <div className="seg-track text-xs">
         <button
           type="button"
           onClick={() => setSubView('editor')}
-          className={`chip-btn h-8 px-2 sm:px-3 text-xs font-medium border rounded-btn transition-colors flex items-center justify-center gap-1.5 cursor-pointer min-w-0 ${
-            subView === 'editor'
-              ? 'bg-panel border-accent text-main'
-              : 'bg-canvas border-border text-muted hover:text-main'
-          }`}
+          aria-pressed={subView === 'editor'}
+          className={`seg-item flex items-center gap-1.5 ${subView === 'editor' ? 'seg-item-active seg-item-raised' : ''}`}
         >
-          <FileText className="w-3.5 h-3.5 text-accent" />
+          <FileText className="w-3.5 h-3.5" />
           <span>{t('tabbar.notes')}</span>
         </button>
 
@@ -106,13 +98,10 @@ export function WorkspaceTabBar({
             setSubView('todos');
             setMobileShowDetail(true);
           }}
-          className={`chip-btn h-8 px-2 sm:px-3 text-xs font-medium border rounded-btn transition-colors flex items-center justify-center gap-1.5 cursor-pointer min-w-0 ${
-            subView === 'todos'
-              ? 'bg-panel border-accent text-main'
-              : 'bg-canvas border-border text-muted hover:text-main'
-          }`}
+          aria-pressed={subView === 'todos'}
+          className={`seg-item flex items-center gap-1.5 ${subView === 'todos' ? 'seg-item-active seg-item-raised' : ''}`}
         >
-          <Check className="w-3.5 h-3.5 text-status-ok" />
+          <Check className="w-3.5 h-3.5" />
           <span className="inline-flex items-center">
             {t('tabbar.todos')}
             <CountBadge count={totalOpenTodos} position="text" />
@@ -125,18 +114,18 @@ export function WorkspaceTabBar({
             setSubView('tags');
             setMobileShowDetail(true);
           }}
-          className={`chip-btn h-8 px-2 sm:px-3 text-xs font-medium border rounded-btn transition-colors flex items-center justify-center gap-1.5 cursor-pointer min-w-0 ${
-            subView === 'tags' || subView === 'tag_detail'
-              ? 'bg-panel border-accent text-main'
-              : 'bg-canvas border-border text-muted hover:text-main'
+          aria-pressed={subView === 'tags' || subView === 'tag_detail'}
+          className={`seg-item flex items-center gap-1.5 ${
+            subView === 'tags' || subView === 'tag_detail' ? 'seg-item-active seg-item-raised' : ''
           }`}
         >
-          <Hash className="w-3.5 h-3.5 text-accent" />
+          <Hash className="w-3.5 h-3.5" />
           <span className="inline-flex items-center">
             Hashtags
             <CountBadge count={tagsSummary.length} position="text" />
           </span>
         </button>
+        </div>
       </div>
 
       {/* Right Header Section: Live/Share Status, Avatars & Save Status (on phones it sits compactly in the note's own header) */}
@@ -154,7 +143,7 @@ export function WorkspaceTabBar({
             {/* Live connection pill */}
             {docHeaderStatus?.showLive && (
               <span
-                className="inline-flex items-center gap-1 h-7 px-2 rounded-btn text-[11px] bg-panel text-muted"
+                className="inline-flex items-center gap-1 h-7 px-1.5 rounded-btn text-[11px] text-muted"
                 title={
                   docHeaderStatus.channel === 'ws'
                     ? t('tabbar.ws')
@@ -217,9 +206,9 @@ export function WorkspaceTabBar({
               }
               className={`inline-flex items-center justify-center h-7 w-7 rounded-btn transition-colors ${
                 docSaveStatus === 'saved'
-                  ? 'bg-panel'
+                  ? ''
                   : docSaveStatus === 'saving'
-                  ? 'bg-panel animate-pulse'
+                  ? 'animate-pulse'
                   : docSaveStatus === 'unsaved'
                   ? 'bg-status-warn/10'
                   : 'bg-status-err/10'
