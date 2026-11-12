@@ -9,6 +9,7 @@ import {
   Mic,
   Clock,
   Languages,
+  ShieldCheck,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { AuthStatus, User, UserTheme } from '../../lib/types';
@@ -32,6 +33,7 @@ import { RetentionSection, useRetentionSettings } from './user/RetentionSection'
 import { useVoiceSetting, VoiceSection } from './user/VoiceSection';
 import { LanguageSection, useLanguageSetting } from './user/LanguageSection';
 import { DataSection, useDataExport } from './user/DataSection';
+import { SecuritySection } from './user/SecuritySection';
 
 interface UserSettingsViewProps {
   currentUser: User;
@@ -44,7 +46,7 @@ interface UserSettingsViewProps {
   onBack: () => void;
 }
 
-type UserSettingsSection = 'profile' | 'appearance' | 'language' | 'alarms' | 'voice' | 'retention' | 'webhooks' | 'data';
+type UserSettingsSection = 'profile' | 'security' | 'appearance' | 'language' | 'alarms' | 'voice' | 'retention' | 'webhooks' | 'data';
 
 export const UserSettingsView: React.FC<UserSettingsViewProps> = ({
   currentUser,
@@ -78,7 +80,7 @@ export const UserSettingsView: React.FC<UserSettingsViewProps> = ({
 
   const [legal, setLegal] = useState<AuthStatus['legal']>();
 
-  // Profil & Sicherheit with the danger zone (user/useProfileSettings.ts)
+  // Profil with the danger zone (user/useProfileSettings.ts); Sicherheit keeps its own state (user/SecuritySection.tsx)
   const profile = useProfileSettings(currentUser, onUserUpdated);
   const { dangerAction } = profile;
   const [showAbout, setShowAbout] = useState(false);
@@ -145,6 +147,21 @@ export const UserSettingsView: React.FC<UserSettingsViewProps> = ({
             <div>
               <p className="font-semibold">{t('user.nav.profile')}</p>
               <p className="text-[10px] text-faint">{t('user.nav.profileHint')}</p>
+            </div>
+          </button>
+
+          <button
+            onClick={() => setSection('security')}
+            className={`w-full px-3.5 py-3 text-left text-xs font-medium flex items-center gap-2.5 transition-colors ${
+              section === 'security'
+                ? 'bg-panel-elevated text-main border-l-2 border-l-accent'
+                : 'text-muted hover:text-main hover:bg-panel-hover'
+            }`}
+          >
+            <ShieldCheck className="w-4 h-4 text-accent flex-shrink-0" />
+            <div>
+              <p className="font-semibold">{t('security.nav')}</p>
+              <p className="text-[10px] text-faint">{t('security.navHint')}</p>
             </div>
           </button>
 
@@ -259,9 +276,18 @@ export const UserSettingsView: React.FC<UserSettingsViewProps> = ({
         {/* Right Content Area */}
         <div className="md:col-span-3 panel-surface p-5 text-xs">
           {/* ================================================================= */}
-          {/* SECTION 1: PROFIL & SICHERHEIT */}
+          {/* SECTION 1: PROFIL */}
           {/* ================================================================= */}
-          {section === 'profile' && <ProfileSection profile={profile} demoMode={demoMode} />}
+          {section === 'profile' && (
+            <ProfileSection profile={profile} demoMode={demoMode} onOpenSecurity={() => setSection('security')} />
+          )}
+
+          {/* ================================================================= */}
+          {/* SICHERHEIT: PASSWORT, ZWEI-FAKTOR, SITZUNGEN */}
+          {/* ================================================================= */}
+          {section === 'security' && (
+            <SecuritySection currentUser={currentUser} onUserUpdated={onUserUpdated} demoMode={demoMode} />
+          )}
 
           {/* ================================================================= */}
           {/* SECTION 2: DARSTELLUNG & THEMES (SINGLE-FILE CSS THEMING) */}

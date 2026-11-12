@@ -443,6 +443,8 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 		Username string `json:"username"`
 		Login    string `json:"login"`
 		Password string `json:"password"`
+		// Devices trusted at an earlier sign-in with a second factor (mfa.go); the browser sends all it has
+		TrustTokens []string `json:"trustTokens"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeError(w, http.StatusBadRequest, "Ungültige Anfrage")
@@ -487,7 +489,17 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusUnauthorized, "Benutzername/E-Mail oder Passwort ungültig")
 		return
 	}
-	s.loginGuard.recordSuccess(account, ip)
+	// Hashes of earlier versions take the newer form now that the password is known (auth.HashPassword)
+	if auth.PasswordNeedsRehash(user.PasswordHash) {
+		if h, err := auth.HashPassword(req.Password); err == nil {
+			logFailed("Storing the password hash in the newer form", s.store.SetPasswordHash(user.ID, user.PasswordHash, h), "user_id", user.ID)
+		}
+	}
+	// With a second factor the counters stay until the code is right too (mfa.go)
+	needsSecondFactor := s.store.TOTPActive(user.ID) && !s.trustedDevice(user, req.TrustTokens)
+	if !needsSecondFactor {
+		s.loginGuard.recordSuccess(account, ip)
+	}
 	if !user.IsActive && s.store.IsEmailUnverified(user.ID) {
 		writeErrorCode(w, http.StatusForbidden, "email_unverified", "Bitte bestätige zuerst deine E-Mail-Adresse über den Link, den wir dir geschickt haben")
 		return
@@ -499,6 +511,11 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 	if !user.IsActive {
 		slog.Warn("Sign-in refused: user account is disabled", "user_id", user.ID, "display_name", user.DisplayName, "remote_addr", r.RemoteAddr)
 		writeError(w, http.StatusForbidden, "Dieses Benutzerkonto ist deaktiviert")
+		return
+	}
+	if needsSecondFactor {
+		slog.Info("Sign-in: password right, second factor asked", "user_id", user.ID, "remote_addr", r.RemoteAddr)
+		s.writeMFAChallenge(w, user)
 		return
 	}
 

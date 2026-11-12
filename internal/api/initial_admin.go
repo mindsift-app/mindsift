@@ -100,7 +100,7 @@ func checkInitialAdmin(user, password, email string) (username, cleanEmail strin
 	case errors.Is(err, auth.ErrPasswordTooShort):
 		return "", "", fmt.Errorf("ADMIN_PASSWORD is too short: at least %d characters, not only spaces", auth.MinPasswordLength)
 	case errors.Is(err, auth.ErrPasswordTooLong):
-		return "", "", errors.New("ADMIN_PASSWORD is too long: at most 72 bytes")
+		return "", "", fmt.Errorf("ADMIN_PASSWORD is too long: at most %d characters", auth.MaxPasswordLength)
 	case err != nil:
 		return "", "", errors.New("ADMIN_PASSWORD is not accepted")
 	}

@@ -601,7 +601,7 @@ const it: HelpContent = {
       title: 'Offline, backup e password',
       subtitle: 'Lavorare senza Internet, ripristinare backup, reimpostare la password',
       icon: CloudOff,
-      keywords: ['offline', 'internet', 'backup', 'ripristino', 'password', 'dimenticata', 'account'],
+      keywords: ['offline', 'internet', 'backup', 'ripristino', 'password', 'dimenticata', 'account', 'due fattori', '2fa', 'authenticator', 'sicurezza'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
           <ul className="space-y-1.5">
@@ -616,6 +616,9 @@ const it: HelpContent = {
             </li>
             <li>
               <strong className="text-main">Password dimenticata:</strong> se l'amministrazione ha configurato l'invio delle email, la schermata di accesso mostra «Password dimenticata?». Ricevi un link valido per un'ora; impostando la nuova password verrai disconnesso su tutti i dispositivi.
+            </li>
+            <li>
+              <strong className="text-main">Accesso a due fattori:</strong> in <em>Impostazioni account → Sicurezza</em> colleghi un'app di autenticazione (scansiona il codice QR, inserisci il primo codice); da quel momento l'accesso chiede, dopo la password, il codice di sei cifre dell'app. I dieci codici di recupero mostrati una sola volta aiutano quando manca il telefono: ognuno funziona una volta. Con «Considera attendibile questo dispositivo per 30 giorni» un tuo dispositivo non chiede il codice per un mese. «Password dimenticata» non disattiva l'accesso a due fattori.
             </li>
           </ul>
         </div>

@@ -83,6 +83,15 @@ Component: [ConfirmPopover.tsx](../frontend/src/components/ConfirmPopover.tsx)
 - From handlers and hooks without state of their own: `await askConfirm({ message, confirmLabel, danger })` ([askConfirm.tsx](../frontend/src/components/askConfirm.tsx)) opens the same popover at the last click or tap and resolves `true` or `false`.
 - **Never the browser's own dialogs** (`window.confirm`, `alert`, `prompt`). Ask only when an action cannot be undone (deleting a list, a folder, a backup, emptying the trash, revoking keys); actions that go to the trash or can be undone with `Ctrl+Z` run without a question (a task, a bullet with its children, removing a member or a share).
 
+## One-Time Codes (Two-Factor)
+
+Components: [MfaStep.tsx](../frontend/src/features/auth/MfaStep.tsx) (sign-in), [TwoFactorCard.tsx](../frontend/src/features/settings/user/TwoFactorCard.tsx) (settings).
+
+- The app's code: `type="text"`, `inputMode="numeric"`, `autoComplete="one-time-code"`, `maxLength={6}`, monospaced and spaced out; only digits are kept, and six digits send it at once (no button press needed, a button is still there). Anything that changes how it is sent (the "trust this device" switch) therefore sits **above** the field.
+- A recovery code is a plain text field without auto-correct; one link switches between the two.
+- Confirming a sensitive action asks the password and "Code der App oder Wiederherstellungscode" in one `FormSheet`; the server tells the two apart by their form (`confirmWithSecondFactor`).
+- On phones fields, buttons and the switch row are 44 px high.
+
 ## Error Notice
 
 Component: [ErrorNotice.tsx](../frontend/src/components/ErrorNotice.tsx), `showError(message)` from anywhere.

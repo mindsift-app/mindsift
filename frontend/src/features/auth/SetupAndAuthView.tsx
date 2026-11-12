@@ -11,7 +11,8 @@ import {
   Check,
   AlertCircle,
 } from 'lucide-react';
-import { AuthStatus, User } from '../../lib/types';
+import { AuthStatus, MfaMethod, User } from '../../lib/types';
+import { MfaStep } from './MfaStep';
 import { api, ApiError, triggerHaptic } from '../../lib/api';
 import { LegalLinks } from '../../components/LegalLinks';
 import { passwordProblem } from '../../lib/password';
@@ -123,6 +124,8 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
   const [notice, setNotice] = useState<string | null>(null);
   const [newPassword, setNewPassword] = useState('');
   const [newPasswordConfirm, setNewPasswordConfirm] = useState('');
+  // Password right, the account has an authenticator app: its code comes next (MfaStep)
+  const [mfa, setMfa] = useState<{ token: string; methods: MfaMethod[] } | null>(null);
 
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -216,6 +219,13 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
     triggerHaptic(15);
     try {
       const res = await api.login(email.trim(), password);
+      if ('mfaToken' in res) {
+        // Second step (MfaStep); the password is not needed any more
+        setPassword('');
+        setNotice(null);
+        setMfa({ token: res.mfaToken, methods: res.methods });
+        return;
+      }
       onAuthenticated(res.user);
     } catch (err: any) {
       const msg = err.message || t('login.failed');
@@ -413,8 +423,8 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
           <Lock className="w-4 h-4 text-faint" />
         </div>
 
-        {/* Navigation Tabs (not while choosing a new password) */}
-        <div className={`${authTab === 'reset' || authTab === 'forgot' ? 'hidden' : 'flex'} border-b border-border bg-canvas text-xs`}>
+        {/* Navigation Tabs (not while choosing a new password or entering the second factor) */}
+        <div className={`${authTab === 'reset' || authTab === 'forgot' || mfa ? 'hidden' : 'flex'} border-b border-border bg-canvas text-xs`}>
           <button
             type="button"
             onClick={() => {
@@ -586,7 +596,19 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
             </form>
           )}
 
-          {authTab === 'login' && (
+          {authTab === 'login' && mfa && (
+            <MfaStep
+              mfaToken={mfa.token}
+              methods={mfa.methods}
+              onAuthenticated={onAuthenticated}
+              onBack={(message) => {
+                setMfa(null);
+                setError(message || null);
+              }}
+            />
+          )}
+
+          {authTab === 'login' && !mfa && (
             <form onSubmit={handleLogin} className="space-y-3.5">
               {authStatus.demoMode && (
                 <div className="p-2.5 rounded border border-accent/30 bg-accent/10 space-y-1.5">

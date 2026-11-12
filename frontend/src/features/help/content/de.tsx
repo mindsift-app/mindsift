@@ -765,7 +765,7 @@ const de: HelpContent = {
       title: 'Offline, Backups & Passwort',
       subtitle: 'Ohne Internet weiterarbeiten, Sicherungen einspielen, Passwort zurücksetzen',
       icon: CloudOff,
-      keywords: ['offline', 'internet', 'backup', 'sicherung', 'wiederherstellen', 'passwort', 'vergessen', 'konto'],
+      keywords: ['offline', 'internet', 'backup', 'sicherung', 'wiederherstellen', 'passwort', 'vergessen', 'konto', 'zwei-faktor', '2fa', 'authenticator', 'sicherheit'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
           <ul className="space-y-1.5">
@@ -780,6 +780,9 @@ const de: HelpContent = {
             </li>
             <li>
               <strong className="text-main">Passwort vergessen:</strong> Hat die Administration den Mailversand eingerichtet, steht im Anmeldefenster „Passwort vergessen?“. Du bekommst einen Link, der eine Stunde gilt; mit dem neuen Passwort bist du auf allen Geräten abgemeldet.
+            </li>
+            <li>
+              <strong className="text-main">Zwei-Faktor-Anmeldung:</strong> Unter <em>Kontoeinstellungen → Sicherheit</em> verbindest du eine Authenticator-App (QR-Code scannen, ersten Code eingeben); danach fragt die Anmeldung nach dem Passwort zusätzlich nach dem sechsstelligen Code der App. Die zehn Wiederherstellungscodes, die dabei einmal erscheinen, helfen, wenn das Handy fehlt: Jeder funktioniert einmal. Mit „Diesem Gerät 30 Tage vertrauen“ fragt ein eigenes Gerät einen Monat lang nicht nach dem Code. „Passwort vergessen“ schaltet die Zwei-Faktor-Anmeldung nicht ab.
             </li>
           </ul>
         </div>

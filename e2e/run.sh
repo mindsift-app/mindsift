@@ -4,8 +4,8 @@
 # Every run uses its own container, image tag and port, so runs from several working copies at the
 # same time cannot remove or test each other's server.
 # A second server without the demo (fresh database, first admin from ADMIN_USER) serves the tests that
-# need a real account of their own (tour-offer.e2e.mjs); its port is E2E_PLAIN_PORT, else E2E_PORT + 1,
-# else a free one.
+# need a real account of their own (tour-offer.e2e.mjs; mfa.e2e.mjs, as two-factor sign-in is off in the
+# demo); its port is E2E_PLAIN_PORT, else E2E_PORT + 1, else a free one.
 set -euo pipefail
 ENGINE="${ENGINE:-podman}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -54,4 +54,4 @@ echo "Starting the browser tests (port $PORT, without demo $PLAIN_PORT) …"
   -e MINDSIFT_PLAIN_URL="http://localhost:$PLAIN_PORT" -e MINDSIFT_PLAIN_ADMIN=admin -e MINDSIFT_PLAIN_PASSWORD="$PLAIN_ADMIN_PASSWORD" \
   -v "$ROOT/e2e":/e2e:Z -w /e2e \
   mcr.microsoft.com/playwright:v1.65.0-noble \
-  sh -c 'npm install --no-audit --no-fund >/dev/null 2>&1 && node collab.e2e.mjs && node share.e2e.mjs && node lock.e2e.mjs && node copy.e2e.mjs && node table.e2e.mjs && node live.e2e.mjs && node channels.e2e.mjs && node offline.e2e.mjs && node tour.e2e.mjs && node tour-offer.e2e.mjs'
+  sh -c 'npm install --no-audit --no-fund >/dev/null 2>&1 && node collab.e2e.mjs && node share.e2e.mjs && node lock.e2e.mjs && node copy.e2e.mjs && node table.e2e.mjs && node live.e2e.mjs && node channels.e2e.mjs && node offline.e2e.mjs && node tour.e2e.mjs && node tour-offer.e2e.mjs && node mfa.e2e.mjs'

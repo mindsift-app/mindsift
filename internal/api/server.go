@@ -38,7 +38,10 @@ type Server struct {
 	demo          demoState     // periodic reset in demo mode (demo.go)
 	streamTickets streamTickets // one-time tickets for WebSocket/SSE (streamticket.go)
 	loginGuard    *loginGuard   // brute-force protection (loginguard.go)
+	mfaChallenges mfaChallenges // second step of a sign-in with an authenticator app (mfa.go)
 	voice         *voiceService // self-hosted speech recognition (voice.go)
+	// now: the time codes of authenticator apps and trusted devices are checked against (tests set it)
+	now func() time.Time
 
 	// Replace the delivery of bundled notifications in tests (notify.go)
 	notifyEmailHook   func(to, subject, text, html string) error
@@ -64,6 +67,7 @@ func NewServer(cfg *config.Config, store *storage.Store, wsHub *ws.Hub, staticFS
 		leases:   collab.NewLeaseManager(nil),
 		notifier: collab.NewNotifier(),
 		stop:     make(chan struct{}),
+		now:      time.Now,
 	}
 	srv.loginGuard = newLoginGuard(!cfg.DisableLoginProtection)
 	srv.voice = newVoiceService(cfg.Speech.MaxParallel)
@@ -153,6 +157,7 @@ func (s *Server) Router() http.Handler {
 	r.Post("/api/v1/auth/resend-verification", s.handleResendVerification)
 	r.Post("/api/v1/auth/register", s.handleRegister)
 	r.Post("/api/v1/auth/login", s.handleLogin)
+	r.Post("/api/v1/auth/login/mfa", s.handleLoginMFA)
 	r.Post("/api/v1/auth/forgot-password", s.handleForgotPassword)
 	r.Post("/api/v1/auth/reset-password", s.handleResetPassword)
 	r.Post("/api/v1/webhooks/ingest", s.handleWebhookIngest)
@@ -207,6 +212,14 @@ func (s *Server) Router() http.Handler {
 		r.Delete("/api/v1/auth/sessions/{id}", s.notInDemo(s.handleEndSession))
 		r.Post("/api/v1/auth/logout", s.handleLogout)
 		r.Post("/api/v1/auth/revoke-all", s.notInDemo(s.handleRevokeAllSessions))
+		// Two-factor sign-in of the own account (mfa.go)
+		r.Get("/api/v1/auth/mfa", s.handleMFAStatus)
+		r.Post("/api/v1/auth/mfa/totp/setup", s.notInDemo(s.handleTOTPSetup))
+		r.Post("/api/v1/auth/mfa/totp/confirm", s.notInDemo(s.handleTOTPConfirm))
+		r.Post("/api/v1/auth/mfa/totp/disable", s.notInDemo(s.handleTOTPDisable))
+		r.Post("/api/v1/auth/mfa/recovery-codes", s.notInDemo(s.handleNewRecoveryCodes))
+		r.Delete("/api/v1/auth/mfa/trusted-devices", s.notInDemo(s.handleRemoveTrustedDevices))
+		r.Delete("/api/v1/auth/mfa/trusted-devices/{id}", s.notInDemo(s.handleRemoveTrustedDevice))
 		r.Patch("/api/v1/auth/settings", s.handleUpdateUserSettings)
 		r.Post("/api/v1/auth/alarms/test", s.notInDemo(s.handleTestUserAlarm))
 		r.Get("/api/v1/users/directory", s.handleGetUsersDirectory)

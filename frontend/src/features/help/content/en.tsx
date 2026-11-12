@@ -601,7 +601,7 @@ const en: HelpContent = {
       title: 'Offline, backups & password',
       subtitle: 'Keep working without internet, restore backups, reset your password',
       icon: CloudOff,
-      keywords: ['offline', 'internet', 'backup', 'restore', 'password', 'forgot', 'account'],
+      keywords: ['offline', 'internet', 'backup', 'restore', 'password', 'forgot', 'account', 'two-factor', '2fa', 'authenticator', 'security'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
           <ul className="space-y-1.5">
@@ -616,6 +616,9 @@ const en: HelpContent = {
             </li>
             <li>
               <strong className="text-main">Forgot your password:</strong> if the administration has set up mail delivery, the sign-in window shows “Forgot your password?”. You get a link valid for one hour; with the new password you are signed out on all devices.
+            </li>
+            <li>
+              <strong className="text-main">Two-factor sign-in:</strong> under <em>Account settings → Security</em> you connect an authenticator app (scan the QR code, enter the first code); from then on signing in asks for the app's six-digit code after the password. The ten recovery codes shown once along the way help when the phone is missing: each works once. With “Trust this device for 30 days” a device of your own asks for no code for a month. “Forgot your password” does not switch two-factor sign-in off.
             </li>
           </ul>
         </div>

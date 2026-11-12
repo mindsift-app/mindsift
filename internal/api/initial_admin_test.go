@@ -11,6 +11,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/mindsift-app/mindsift/internal/auth"
 	"github.com/mindsift-app/mindsift/internal/config"
 	"github.com/mindsift-app/mindsift/internal/storage"
 	"github.com/mindsift-app/mindsift/internal/ws"
@@ -179,7 +180,7 @@ func TestInitialAdminRefusesBadValues(t *testing.T) {
 		{"email as user", config.InitialAdmin{User: "admin@example.com", Password: initialAdminPassword}, "ADMIN_USER is not a valid username"},
 		{"user with space", config.InitialAdmin{User: "Sandro Dach", Password: initialAdminPassword}, "ADMIN_USER is not a valid username"},
 		{"bad email", config.InitialAdmin{User: "admin", Password: initialAdminPassword, Email: "Admin <admin@example.com>"}, "ADMIN_EMAIL is not a valid email address"},
-		{"too long", config.InitialAdmin{User: "admin", Password: strings.Repeat("x", 73)}, "ADMIN_PASSWORD is too long"},
+		{"too long", config.InitialAdmin{User: "admin", Password: strings.Repeat("x", auth.MaxPasswordLength+1)}, "ADMIN_PASSWORD is too long"},
 		{"password and file", config.InitialAdmin{User: "admin", Password: initialAdminPassword, PasswordFile: "/run/secrets/admin_password"}, "ADMIN_PASSWORD and ADMIN_PASSWORD_FILE are both set"},
 		{"unreadable file", config.InitialAdmin{User: "admin", PasswordFile: "/nonexistent/admin_password"}, "reading ADMIN_PASSWORD_FILE failed: open /nonexistent/admin_password"},
 	}

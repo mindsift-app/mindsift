@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/sha256"
+	"encoding/base64"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -34,31 +35,60 @@ type Claims struct {
 // Existing shorter passwords keep working for login.
 const MinPasswordLength = 8
 
+// MaxPasswordLength: long passphrases are welcome (the whole password counts, see HashPassword), but
+// not without end.
+const MaxPasswordLength = 1024
+
 var (
 	ErrPasswordTooShort = i18n.NewError("Das Passwort muss mindestens {min} Zeichen lang sein", "min", strconv.Itoa(MinPasswordLength))
-	// bcrypt only uses the first 72 bytes and rejects longer input
-	ErrPasswordTooLong = errors.New("Das Passwort darf höchstens 72 Bytes lang sein")
+	ErrPasswordTooLong  = i18n.NewError("Das Passwort darf höchstens {max} Zeichen lang sein", "max", strconv.Itoa(MaxPasswordLength))
 )
 
-// ValidatePassword checks a new password: at least MinPasswordLength characters, not only whitespace.
+// ValidatePassword checks a new password: at least MinPasswordLength characters, not only whitespace,
+// at most MaxPasswordLength characters.
 func ValidatePassword(password string) error {
-	if strings.TrimSpace(password) == "" || utf8.RuneCountInString(password) < MinPasswordLength {
+	n := utf8.RuneCountInString(password)
+	if strings.TrimSpace(password) == "" || n < MinPasswordLength {
 		return ErrPasswordTooShort
 	}
-	if len(password) > 72 {
+	if n > MaxPasswordLength {
 		return ErrPasswordTooLong
 	}
 	return nil
 }
 
+// Password hashes. bcrypt reads only the first 72 bytes of its input, so a long passphrase used to count
+// only up to there. New hashes therefore run bcrypt over the SHA-256 of the password (base64, 44 bytes,
+// none of the NUL bytes a raw digest may hold) and carry passwordPrehashPrefix in front of the bcrypt
+// string. Hashes without it are the plain bcrypt of earlier versions: they keep working, and
+// PasswordNeedsRehash tells the login to store the new form once the password is known to be right.
+const passwordPrehashPrefix = "sha256-bcrypt:"
+
+func prehashPassword(password string) []byte {
+	sum := sha256.Sum256([]byte(password))
+	return []byte(base64.StdEncoding.EncodeToString(sum[:]))
+}
+
 func HashPassword(password string) (string, error) {
-	bytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-	return string(bytes), err
+	bytes, err := bcrypt.GenerateFromPassword(prehashPassword(password), bcrypt.DefaultCost)
+	if err != nil {
+		return "", err
+	}
+	return passwordPrehashPrefix + string(bytes), nil
 }
 
 func CheckPassword(password, hash string) bool {
-	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
-	return err == nil
+	if rest, ok := strings.CutPrefix(hash, passwordPrehashPrefix); ok {
+		return bcrypt.CompareHashAndPassword([]byte(rest), prehashPassword(password)) == nil
+	}
+	// A hash of an earlier version: bcrypt over the password itself (never longer than 72 bytes then)
+	return bcrypt.CompareHashAndPassword([]byte(hash), []byte(password)) == nil
+}
+
+// PasswordNeedsRehash: the hash is of the earlier form (plain bcrypt) and is replaced by HashPassword
+// after the next successful check.
+func PasswordNeedsRehash(hash string) bool {
+	return hash != "" && !strings.HasPrefix(hash, passwordPrehashPrefix)
 }
 
 // TokenLifetime is the absolute lifetime of a session token; while the session is used the token is
