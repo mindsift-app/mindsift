@@ -26,6 +26,7 @@ Versions before 0.80.0 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - The task dialog opens and closes without delay in long task lists: opening it no longer makes the browser restyle and lay out every row (300 tasks with a slowed-down CPU: about 0.5 s down to 0.07 s).
 
 ### Changed
+- `/extract` (`/notiz`) offers the same choice as the button, a new note or an existing one, under the bullet and by keyboard; before, it always made a new note. The help lists numbered lists (`/number`, or `1. ` at the start).
 - The default dark theme is a soft slate grey instead of near black, with slightly calmer text; the light theme shows code blocks light instead of dark.
 - **Attention:** passwords count to the last character, up to 1,024 characters; before, only the first 72 bytes counted. Existing passwords keep working and are stored in the new form at the next sign-in, which older versions cannot read: going back to an older version then needs a password reset for those accounts. Keep `SECRETS_KEY` (or `data/secrets.key`): if it changes, authenticator codes stop working and only recovery codes still sign in.
 

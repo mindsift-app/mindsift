@@ -170,6 +170,10 @@ const de: HelpContent = {
                 <span>/code (Code-Block)</span>
               </div>
               <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main col-span-2">
+                <span className="text-accent font-bold">1.</span>
+                <span>/number oder „1. “ am Anfang (nummerierte Liste; Enter zählt weiter, ein leerer Punkt beendet sie)</span>
+              </div>
+              <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main col-span-2">
                 <TableIcon className="w-3.5 h-3.5 text-accent shrink-0" />
                 <span>/table oder /tabelle (Tabelle mit Kopfzeile)</span>
               </div>
@@ -199,7 +203,7 @@ const de: HelpContent = {
               </div>
               <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main col-span-2">
                 <span className="text-accent font-bold">📤</span>
-                <span>/extract oder /notiz (Punkt mit allen Unterpunkten in eine eigene Notiz auslagern, an seiner Stelle bleibt ein [[Link]]; der Knopf „Notiz zurückholen“ am Link macht das wieder rückgängig)</span>
+                <span>/extract oder /notiz (Punkt mit allen Unterpunkten in eine neue oder eine bestehende Notiz auslagern, Auswahl wie am Knopf, an seiner Stelle bleibt ein [[Link]]; der Knopf „Notiz zurückholen“ am Link macht das wieder rückgängig)</span>
               </div>
               <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main col-span-2">
                 <span className="text-accent font-bold">🎙️</span>

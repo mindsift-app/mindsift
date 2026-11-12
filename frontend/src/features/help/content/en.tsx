@@ -124,6 +124,10 @@ const en: HelpContent = {
                 <span>/code (code block)</span>
               </div>
               <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main col-span-2">
+                <span className="text-accent font-bold">1.</span>
+                <span>/number or “1. ” at the start (numbered list; Enter counts on, an empty item ends it)</span>
+              </div>
+              <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main col-span-2">
                 <TableIcon className="w-3.5 h-3.5 text-accent shrink-0" />
                 <span>/table (table with a header row)</span>
               </div>
@@ -153,7 +157,7 @@ const en: HelpContent = {
               </div>
               <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main col-span-2">
                 <span className="text-accent font-bold">📤</span>
-                <span>/extract (move the bullet with all sub-bullets into a note of its own, leaving a [[link]] in its place; the “Pull note back” button at the link undoes it)</span>
+                <span>/extract (move the bullet with all sub-bullets into a new or an existing note, chosen as with the button, leaving a [[link]] in its place; the “Pull note back” button at the link undoes it)</span>
               </div>
               <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main col-span-2">
                 <span className="text-accent font-bold">🎙️</span>

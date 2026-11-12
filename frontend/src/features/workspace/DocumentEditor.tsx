@@ -1077,9 +1077,9 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
   }, [docId, embedded]);
 
   // The extract button asks where to: a new note (as before) or an existing one
-  const [extractAt, setExtractAt] = useState<{ blockId: string; x: number; y: number } | null>(null);
+  const [extractAt, setExtractAt] = useState<{ blockId: string; x: number; y: number; align?: 'left' | 'right' } | null>(null);
   const handleExtractRequest = useCallback(
-    (blockId: string, at?: { x: number; y: number }) => {
+    (blockId: string, at?: { x: number; y: number; align?: 'left' | 'right' }) => {
       if (at && moveTargets && moveTargets.length > 0) setExtractAt({ blockId, ...at });
       else void handleExtractBlock(blockId);
     },
@@ -1797,6 +1797,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
         <ExtractPopover
           x={extractAt.x}
           y={extractAt.y}
+          align={extractAt.align}
           notes={moveTargets || []}
           onNewNote={() => {
             setExtractAt(null);

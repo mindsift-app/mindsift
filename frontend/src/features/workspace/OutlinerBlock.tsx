@@ -139,7 +139,7 @@ export interface OutlinerBlockProps {
   onZoomBlock?: (blockId: string) => void;
   /** Turns this bullet and its children into a note of its own */
   /** at: where the extract button was clicked, to ask there where the branch should go */
-  onExtractBlock?: (blockId: string, at?: { x: number; y: number }) => void;
+  onExtractBlock?: (blockId: string, at?: { x: number; y: number; align?: 'left' | 'right' }) => void;
   onInlineBlock?: (blockId: string) => void;
   onUpdateBlock: (updated: DocumentBlock, immediate?: boolean) => void;
   onCreateBlockBelow: (afterBlockId: string, newContent?: string) => void;
@@ -695,7 +695,10 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
       setLocalContent(clean);
       localContentRef.current = clean;
       flushDebounce(clean);
-      onExtractBlock?.(block.id);
+      // The same choice as the button (new note or an existing one), opened under the bullet's text where
+      // the slash menu was, and steered with the keyboard
+      const r = textareaRef.current?.getBoundingClientRect();
+      onExtractBlock?.(block.id, r ? { x: r.left, y: r.bottom, align: 'left' } : undefined);
       return;
     }
 
