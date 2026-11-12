@@ -90,6 +90,18 @@ The offer of the guided tour after the first sign-in (`TourOfferCard`). `run.sh`
 
 All other scripts against the demo set `mindsift:tour-offered` in the browser, so the card stays out of their clicks and pictures.
 
+## mfa.e2e.mjs
+
+Two-factor sign-in, on the server without the demo (the demo cannot set it up), in Chromium and Firefox. The first admin creates a member per browser, who:
+
+- sets the authenticator app up under Kontoeinstellungen → Sicherheit: password, key and QR code shown, the first code (computed in the test from the shown key, RFC 6238) switches it on, ten recovery codes are shown once
+- signs out and in again: the password asks for the code (field for one-time codes), a wrong code is refused, the app's code signs in
+- signs in with a recovery code (typed in capitals; 9 are left afterwards), and the same recovery code is refused the second time
+- signs in with "Diesem Gerät 30 Tage vertrauen" and then again without being asked for a code
+- on a phone (Chromium), another device is still asked; field, buttons and the trust row are at least 44 px high
+
+`SHOT_DIR=<folder>` saves pictures of the QR step, the recovery codes, the settings with the app on and the second step on desktop and phone.
+
 ## tour.e2e.mjs
 
 The guided tour (`frontend/src/features/tour`), started with "Tour starten" on the help page. Desktop in Chromium and Firefox, the phone in Chromium:

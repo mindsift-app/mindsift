@@ -186,7 +186,8 @@ async function capture() {
   // Every section of the account settings, in a tall window (the sections are long)
   await d.setViewportSize({ width: 1440, height: 2600 });
   for (const [key, label] of [
-    ['profile', 'Profil & Sicherheit'],
+    ['profile', 'Profil'],
+    ['security', 'Sicherheit'],
     ['appearance', 'Darstellung & Themes'],
     ['alarms', 'Alarme'],
     ['voice', 'Spracheingabe'],
@@ -201,16 +202,16 @@ async function capture() {
   }
   // Unsaved input survives switching sections (the state lives in the view, not in the section)
   await step(d, 'd14_us_unsaved_kept', async () => {
-    await d.locator('aside button', { hasText: 'Profil & Sicherheit' }).first().click();
+    await d.locator('aside button', { hasText: 'Profil' }).first().click();
     await d.locator('label', { hasText: 'Anzeigename' }).locator('xpath=following-sibling::input').fill('Admin geändert');
     await d.locator('aside button', { hasText: 'Alarme' }).first().click();
     await d.locator('label', { hasText: 'Abweichende Empfänger-E-Mail' }).locator('xpath=following-sibling::input').fill('alarm@example.org');
-    await d.locator('aside button', { hasText: 'Profil & Sicherheit' }).first().click();
+    await d.locator('aside button', { hasText: 'Profil' }).first().click();
   });
   await step(d, 'd14_us_unsaved_kept_alarms', () => d.locator('aside button', { hasText: 'Alarme' }).first().click());
   await step(d, 'd14_us_danger_sheet', async () => {
     // The danger zone asks for the password first
-    await d.locator('aside button', { hasText: 'Profil & Sicherheit' }).first().click();
+    await d.locator('aside button', { hasText: 'Profil' }).first().click();
     await d.getByRole('button', { name: 'Daten löschen', exact: true }).click();
     await sleep(300);
   });

@@ -1,6 +1,19 @@
 // REST calls: Login, first-boot setup, sessions and account settings
-import { AuthStatus, DashboardStats, Retention, SharingMode, Session, SmtpForm, User, NotificationSettings } from '../types';
+import {
+  AuthStatus,
+  DashboardStats,
+  LoginResult,
+  MfaLoginResult,
+  MfaStatus,
+  Retention,
+  SharingMode,
+  Session,
+  SmtpForm,
+  User,
+  NotificationSettings,
+} from '../types';
 import { setToken, clearToken, ensureArray, request, setCurrentSharingMode, setCurrentPeopleSearch } from './client';
+import { forgetTrust, rememberTrust, trustedDeviceId, trustTokens } from '../trustedDevice';
 import { clearStoredNotes } from '../docSync/persist';
 import { clearUndoHistories } from '../docSync/undoHistory';
 
@@ -92,13 +105,56 @@ export const authApi = {
     await request('/api/v1/auth/reset-password', { method: 'POST', body: JSON.stringify({ token, password }) });
   },
 
-  async login(loginOrEmail: string, password: string): Promise<{ token: string; user: User }> {
-    const res = await request<{ token: string; user: User }>('/api/v1/auth/login', {
+  // A session, or the second step when the account has an authenticator app and this device is not
+  // trusted (lib/trustedDevice.ts)
+  async login(loginOrEmail: string, password: string): Promise<LoginResult> {
+    const res = await request<LoginResult>('/api/v1/auth/login', {
       method: 'POST',
-      body: JSON.stringify({ email: loginOrEmail, username: loginOrEmail, login: loginOrEmail, password }),
+      body: JSON.stringify({ email: loginOrEmail, username: loginOrEmail, login: loginOrEmail, password, trustTokens: trustTokens() }),
+    });
+    if (!('mfaToken' in res)) setToken(res.token);
+    return res;
+  },
+
+  // Second step: a code of the app or a recovery code; trustDevice spares the code here for 30 days
+  async loginMfa(mfaToken: string, code: string, trustDevice: boolean): Promise<MfaLoginResult> {
+    const res = await request<MfaLoginResult>('/api/v1/auth/login/mfa', {
+      method: 'POST',
+      body: JSON.stringify({ mfaToken, code, trustDevice }),
     });
     setToken(res.token);
+    if (res.trustToken && res.trustedDeviceId) rememberTrust(res.user.id, res.trustedDeviceId, res.trustToken);
     return res;
+  },
+
+  async getMfaStatus(): Promise<MfaStatus> {
+    return request<MfaStatus>('/api/v1/auth/mfa');
+  },
+
+  // A new secret for the authenticator app; on only after confirmTotp
+  async setupTotp(password: string): Promise<{ secret: string; uri: string }> {
+    return request('/api/v1/auth/mfa/totp/setup', { method: 'POST', body: JSON.stringify({ password }) });
+  },
+
+  async confirmTotp(code: string): Promise<{ recoveryCodes: string[]; enabledAt: string }> {
+    return request('/api/v1/auth/mfa/totp/confirm', { method: 'POST', body: JSON.stringify({ code }) });
+  },
+
+  async disableTotp(userId: string, password: string, code: string): Promise<void> {
+    await request('/api/v1/auth/mfa/totp/disable', { method: 'POST', body: JSON.stringify({ password, code }) });
+    forgetTrust(userId);
+  },
+
+  async newRecoveryCodes(password: string, code: string): Promise<{ recoveryCodes: string[] }> {
+    return request('/api/v1/auth/mfa/recovery-codes', { method: 'POST', body: JSON.stringify({ password, code }) });
+  },
+
+  // id omitted: every trusted device of the account
+  async removeTrustedDevice(userId: string, id?: string): Promise<void> {
+    await request(id ? `/api/v1/auth/mfa/trusted-devices/${encodeURIComponent(id)}` : '/api/v1/auth/mfa/trusted-devices', {
+      method: 'DELETE',
+    });
+    if (!id || id === trustedDeviceId(userId)) forgetTrust(userId);
   },
 
   async register(

@@ -596,7 +596,7 @@ const fr: HelpContent = {
       title: 'Hors ligne, sauvegardes et mot de passe',
       subtitle: 'Continuer sans Internet, restaurer des sauvegardes, réinitialiser le mot de passe',
       icon: CloudOff,
-      keywords: ['hors ligne', 'offline', 'internet', 'sauvegarde', 'restaurer', 'mot de passe', 'oublié', 'compte'],
+      keywords: ['hors ligne', 'offline', 'internet', 'sauvegarde', 'restaurer', 'mot de passe', 'oublié', 'compte', 'deux facteurs', '2fa', 'authentification', 'sécurité'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
           <ul className="space-y-1.5">
@@ -611,6 +611,9 @@ const fr: HelpContent = {
             </li>
             <li>
               <strong className="text-main">Mot de passe oublié :</strong> si l'administration a configuré l'envoi d'e-mails, la fenêtre de connexion affiche « Mot de passe oublié ? ». Tu reçois un lien valable une heure ; la définition du nouveau mot de passe te déconnecte de tous les appareils.
+            </li>
+            <li>
+              <strong className="text-main">Connexion à deux facteurs :</strong> sous <em>Paramètres du compte → Sécurité</em>, tu relies une application d'authentification (scanner le code QR, saisir le premier code) ; ensuite, la connexion demande après le mot de passe le code à six chiffres de l'application. Les dix codes de récupération affichés une seule fois servent si le téléphone manque : chacun fonctionne une fois. Avec « Faire confiance à cet appareil pendant 30 jours », un appareil à toi ne demande pas de code pendant un mois. « Mot de passe oublié » ne désactive pas la connexion à deux facteurs.
             </li>
           </ul>
         </div>

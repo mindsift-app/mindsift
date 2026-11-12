@@ -683,10 +683,123 @@
         }
       }
     },
+    "/api/v1/auth/login/mfa": {
+      "post": {
+        "summary": "Sign in: second step",
+        "description": "{mfaToken, code, trustDevice} → {token, user, method, recoveryCodesLeft, trustToken?, trustedDeviceId?}. code is the authenticator app's six digits or a recovery code; 401 with code mfa_invalid (wrong code, counts like a wrong password) or mfa_expired (sign in with the password again)",
+        "tags": [
+          "Public"
+        ],
+        "security": [],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
     "/api/v1/auth/logout": {
       "post": {
         "summary": "Terminate session of this device",
         "description": "Terminate session of this device",
+        "tags": [
+          "Account and General"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/mfa": {
+      "get": {
+        "summary": "Two-factor status",
+        "description": "{available, totp: {enabled, enabledAt}, recoveryCodesLeft, trustedDevices, trustDays}; available is false in demo mode",
+        "tags": [
+          "Account and General"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/mfa/totp/setup": {
+      "post": {
+        "summary": "Set up the authenticator app",
+        "description": "{password} → {secret, uri}: a new secret waiting for its first code; 409 while the app is on",
+        "tags": [
+          "Account and General"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/mfa/totp/confirm": {
+      "post": {
+        "summary": "Switch the authenticator app on",
+        "description": "{code} → {recoveryCodes, enabledAt}: the first code switches the app on; the ten recovery codes are returned only here",
+        "tags": [
+          "Account and General"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/mfa/totp/disable": {
+      "post": {
+        "summary": "Switch the authenticator app off",
+        "description": "{password, code}: removes the app, the recovery codes and the trusted devices",
+        "tags": [
+          "Account and General"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/mfa/recovery-codes": {
+      "post": {
+        "summary": "New recovery codes",
+        "description": "{password, code} → {recoveryCodes}; the earlier codes stop working",
+        "tags": [
+          "Account and General"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/mfa/trusted-devices": {
+      "delete": {
+        "summary": "Forget all trusted devices",
+        "description": "Every device is asked for a code at its next sign-in",
+        "tags": [
+          "Account and General"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/mfa/trusted-devices/{id}": {
+      "delete": {
+        "summary": "Forget a trusted device",
+        "description": "That device is asked for a code at its next sign-in; 404 for an unknown device",
         "tags": [
           "Account and General"
         ],

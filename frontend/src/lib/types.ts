@@ -802,7 +802,7 @@ export interface WSMessage<T = any> {
   timestamp: string;
 }
 
-// A logged-in device (Profil & Sicherheit)
+// A logged-in device (Einstellungen → Sicherheit)
 export interface Session {
   id: string;
   createdAt: string;
@@ -810,6 +810,46 @@ export interface Session {
   userAgent: string;
   ip: string;
   current: boolean;
+}
+
+// Two-factor sign-in (Einstellungen → Sicherheit, second step of the login)
+export type MfaMethod = 'totp' | 'recovery';
+
+// Answer of POST /auth/login: a session, or the second step when the account has an authenticator app
+// (tell them apart with `'mfaToken' in res`)
+export type LoginResult = { token: string; user: User } | MfaChallenge;
+
+export interface MfaChallenge {
+  mfaRequired: true;
+  mfaToken: string;
+  methods: MfaMethod[];
+  expiresIn: number;
+}
+
+export interface MfaLoginResult {
+  token: string;
+  user: User;
+  method: MfaMethod;
+  recoveryCodesLeft: number;
+  trustToken?: string;
+  trustedDeviceId?: string;
+}
+
+// A device that signs in without a code until expiresAt
+export interface TrustedDevice {
+  id: string;
+  userAgent: string;
+  createdAt: string;
+  expiresAt: string;
+  lastUsedAt: string;
+}
+
+export interface MfaStatus {
+  available: boolean; // false in the demo
+  totp: { enabled: boolean; enabledAt: string };
+  recoveryCodesLeft: number;
+  trustedDevices: TrustedDevice[];
+  trustDays: number;
 }
 
 // Answer of merging two notes; kept by the client to undo it

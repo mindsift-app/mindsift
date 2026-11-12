@@ -1,19 +1,21 @@
 import React from 'react';
-import { useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
 import { AlertCircle, Check, Trash2, Upload } from 'lucide-react';
 import { UserAvatar } from '../../../components/UserAvatar';
 import { FormSheet } from '../../../components/FormSheet';
-import { SessionsPanel } from '../SessionsPanel';
 import { useProfileSettings } from './useProfileSettings';
 import { PendingEmailNote } from './PendingEmailNote';
 
-// Kontoeinstellungen → Profil & Sicherheit (state in useProfileSettings)
+// Kontoeinstellungen → Profil (state in useProfileSettings); password, two-factor sign-in and sessions
+// are in Sicherheit (SecuritySection)
 export function ProfileSection({
   profile,
   demoMode,
+  onOpenSecurity,
 }: {
   profile: ReturnType<typeof useProfileSettings>;
   demoMode: boolean;
+  onOpenSecurity: () => void;
 }) {
   const { t } = useTranslation('settings');
   const {
@@ -23,11 +25,9 @@ export function ProfileSection({
     username,
     email,
     avatarUrl,
-    newPassword,
     currentPassword,
     profileMsg,
     savingProfile,
-    revokingSessions,
     isProcessingAvatar,
     fileInputRef,
     handleAvatarFileSelected,
@@ -36,14 +36,12 @@ export function ProfileSection({
     needsCurrentPassword,
     profileDirty,
     handleSaveProfile,
-    handleRevokeAllSessions,
     dangerDone,
     isLastAdmin,
     openDanger,
     setDisplayName,
     setUsername,
     setEmail,
-    setNewPassword,
     setCurrentPassword,
   } = profile;
   return (
@@ -205,21 +203,6 @@ export function ProfileSection({
           </div>
         </div>
 
-        <div>
-          <label className="block text-muted font-medium mb-1">
-            {t('profile.newPassword')}
-          </label>
-          <input
-            type="password"
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
-            placeholder={demoMode ? t('profile.demoDisabled') : t('profile.minChars')}
-            autoComplete="new-password"
-            disabled={demoMode}
-            className="w-full h-9 px-3 input-field disabled:opacity-60"
-          />
-        </div>
-
         {needsCurrentPassword && (
           <div>
             <label className="block text-muted font-medium mb-1">
@@ -256,33 +239,14 @@ export function ProfileSection({
         </div>
       </form>
 
-      {/* Sessions & Security */}
-      <div className="pt-5 border-t border-border space-y-3">
-        <div>
-          <h3 className="text-xs font-bold text-main">{t('profile.sessions')}</h3>
-          <p className="text-[11px] text-muted">
-            {t('profile.sessionsHint')}
-          </p>
-        </div>
-        <SessionsPanel />
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-card border border-border bg-canvas">
-          <div className="text-xs">
-            <p className="font-semibold text-main">{t('profile.revokeAll')}</p>
-            <p className="text-[11px] text-faint">
-              {t('profile.revokeAllHint')}
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={handleRevokeAllSessions}
-            disabled={demoMode || revokingSessions}
-            title={demoMode ? t('profile.demoDisabled') : undefined}
-            className="btn-danger h-8 px-3 text-xs shrink-0 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            {revokingSessions ? t('profile.revoking') : t('profile.revokeAllButton')}
-          </button>
-        </div>
-      </div>
+      {/* Password, two-factor sign-in and sessions: Sicherheit (SecuritySection) */}
+      <p className="text-[11px] text-muted">
+        <Trans
+          t={t}
+          i18nKey="profile.securityMoved"
+          components={{ link: <button type="button" onClick={onOpenSecurity} className="text-accent hover:underline" /> }}
+        />
+      </p>
 
       {/* Danger zone: delete own data or the whole account (password required) */}
       <div className="p-4 border border-status-err/40 bg-status-err/5 rounded-card space-y-3">

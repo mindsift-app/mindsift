@@ -2,24 +2,20 @@ import React, { useEffect, useRef, useState } from 'react';
 import i18n from '../../../i18n';
 import { User } from '../../../lib/types';
 import { api, clearToken, triggerHaptic } from '../../../lib/api';
-import { passwordProblem } from '../../../lib/password';
 import { AvatarPlacement, cropImageToDataUrl, loadImageFile } from '../../../lib/avatarCrop';
-import { askConfirm } from '../../../components/askConfirm';
 import { clearStoredNotes } from '../../../lib/docSync/persist';
 
-// Kontoeinstellungen → Profil & Sicherheit: name, login address, password, avatar, ending all sessions,
-// and the danger zone (delete own data or the account). Lives in the view, so unsaved input survives
-// switching sections.
+// Kontoeinstellungen → Profil: name, username, login address, avatar, and the danger zone (delete own data
+// or the account). Lives in the view, so unsaved input survives switching sections. Password, two-factor
+// sign-in and sessions are in Sicherheit (SecuritySection).
 export function useProfileSettings(currentUser: User, onUserUpdated: (u: User) => void) {
   const [displayName, setDisplayName] = useState(currentUser.displayName || '');
   const [username, setUsername] = useState(currentUser.username || '');
   const [email, setEmail] = useState(currentUser.email || '');
   const [avatarUrl, setAvatarUrl] = useState(currentUser.avatarUrl || '');
-  const [newPassword, setNewPassword] = useState('');
   const [currentPassword, setCurrentPassword] = useState('');
   const [profileMsg, setProfileMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
   const [savingProfile, setSavingProfile] = useState(false);
-  const [revokingSessions, setRevokingSessions] = useState(false);
   const [isProcessingAvatar, setIsProcessingAvatar] = useState(false);
   // A picked picture waiting to be placed in the frame (AvatarCropSheet)
   const [cropImage, setCropImage] = useState<HTMLImageElement | null>(null);
@@ -39,12 +35,11 @@ export function useProfileSettings(currentUser: User, onUserUpdated: (u: User) =
     if (prev.avatarUrl !== currentUser.avatarUrl) setAvatarUrl(currentUser.avatarUrl || '');
   }, [currentUser]);
 
-  // Name, username, address or password typed but not saved yet (the avatar saves on its own)
+  // Name, username or address typed but not saved yet (the avatar saves on its own)
   const profileDirty =
     displayName.trim() !== (currentUser.displayName || '') ||
     username.trim().toLowerCase() !== (currentUser.username || '') ||
-    email.trim().toLowerCase() !== (currentUser.email || '').toLowerCase() ||
-    newPassword !== '';
+    email.trim().toLowerCase() !== (currentUser.email || '').toLowerCase();
 
 
   // --- Handlers: Avatar ---
@@ -104,9 +99,8 @@ export function useProfileSettings(currentUser: User, onUserUpdated: (u: User) =
     void saveAvatar('');
   };
 
-  // Changing the password or the login address needs the current password (FLAW-30)
-  const needsCurrentPassword =
-    newPassword.trim() !== '' || email.trim().toLowerCase() !== (currentUser.email || '').toLowerCase();
+  // Changing the login address needs the current password (FLAW-30)
+  const needsCurrentPassword = email.trim().toLowerCase() !== (currentUser.email || '').toLowerCase();
 
   // --- Handlers: Profile ---
   const handleSaveProfile = async (e: React.FormEvent) => {
@@ -121,45 +115,17 @@ export function useProfileSettings(currentUser: User, onUserUpdated: (u: User) =
       // Only when changed: the shared demo accounts refuse any change of their username
       const cleanUsername = username.trim().toLowerCase();
       if (cleanUsername !== (currentUser.username || '')) patch.username = cleanUsername;
-      if (newPassword.trim()) {
-        const problem = passwordProblem(newPassword);
-        if (problem) {
-          setProfileMsg({ type: 'err', text: problem });
-          return;
-        }
-        // Not trimmed: login compares the password exactly as typed
-        patch.password = newPassword;
-      }
       if (needsCurrentPassword) patch.currentPassword = currentPassword;
       const updated = await api.updateSettings(patch);
       onUserUpdated(updated);
       // A new address waits for its link (shown under the field), the field shows the one in use
       setEmail(updated.email || '');
-      setNewPassword('');
       setCurrentPassword('');
       setProfileMsg({ type: 'ok', text: i18n.t('settings:profile.saved') });
     } catch (err: any) {
       setProfileMsg({ type: 'err', text: err.message || i18n.t('settings:profile.saveFailed') });
     } finally {
       setSavingProfile(false);
-    }
-  };
-
-  const handleRevokeAllSessions = async () => {
-    const ok = await askConfirm({
-      message: i18n.t('settings:profile.confirmRevokeAll'),
-      confirmLabel: i18n.t('settings:profile.revokeAllButton'),
-      danger: true,
-    });
-    if (!ok) return;
-    setRevokingSessions(true);
-    try {
-      await api.revokeAllSessions();
-      await api.logout();
-      window.location.reload();
-    } catch (err: any) {
-      setProfileMsg({ type: 'err', text: err.message || i18n.t('settings:profile.revokeFailed') });
-      setRevokingSessions(false);
     }
   };
 
@@ -210,11 +176,9 @@ export function useProfileSettings(currentUser: User, onUserUpdated: (u: User) =
     username,
     email,
     avatarUrl,
-    newPassword,
     currentPassword,
     profileMsg,
     savingProfile,
-    revokingSessions,
     isProcessingAvatar,
     fileInputRef,
     handleAvatarFileSelected,
@@ -226,7 +190,6 @@ export function useProfileSettings(currentUser: User, onUserUpdated: (u: User) =
     handleRemoveAvatar,
     needsCurrentPassword,
     handleSaveProfile,
-    handleRevokeAllSessions,
     dangerAction,
     dangerPassword,
     dangerError,
@@ -238,7 +201,6 @@ export function useProfileSettings(currentUser: User, onUserUpdated: (u: User) =
     setDisplayName,
     setUsername,
     setEmail,
-    setNewPassword,
     setCurrentPassword,
     setDangerAction,
     setDangerPassword,

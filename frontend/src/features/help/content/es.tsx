@@ -671,7 +671,7 @@ const es: HelpContent = {
       title: 'Sin conexión, copias de seguridad y contraseña',
       subtitle: 'Seguir trabajando sin internet, restaurar copias, restablecer la contraseña',
       icon: CloudOff,
-      keywords: ['sin conexión', 'offline', 'internet', 'copia de seguridad', 'restaurar', 'contraseña', 'olvidada', 'cuenta'],
+      keywords: ['sin conexión', 'offline', 'internet', 'copia de seguridad', 'restaurar', 'contraseña', 'olvidada', 'cuenta', 'dos pasos', '2fa', 'autenticación', 'seguridad'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
           <ul className="space-y-1.5">
@@ -686,6 +686,9 @@ const es: HelpContent = {
             </li>
             <li>
               <strong className="text-main">Contraseña olvidada:</strong> si la administración ha configurado el envío de correo, la pantalla de inicio de sesión mostrará «¿Has olvidado tu contraseña?». Recibirás un enlace válido durante una hora; al establecer la nueva contraseña se cerrará la sesión en todos tus dispositivos.
+            </li>
+            <li>
+              <strong className="text-main">Inicio de sesión en dos pasos:</strong> en <em>Ajustes de la cuenta → Seguridad</em> conectas una app de autenticación (escanear el código QR, introducir el primer código); a partir de entonces, después de la contraseña se pide el código de seis dígitos de la app. Los diez códigos de recuperación que aparecen una sola vez ayudan si no tienes el móvil: cada uno funciona una vez. Con «Confiar en este dispositivo durante 30 días» un dispositivo propio no pide el código durante un mes. «¿Has olvidado tu contraseña?» no desactiva el inicio de sesión en dos pasos.
             </li>
           </ul>
         </div>
