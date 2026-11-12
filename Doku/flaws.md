@@ -97,5 +97,4 @@ FLAW-31 and FLAW-34 are resolved in part (0.6.0) and stay in the overview above.
 
 ### Operations
 - **Offsite Backup Destinations** (WebDAV, S3, SFTP) to survive local drive failures.
-- **Prometheus `/metrics`**, and a health check that also verifies database connectivity (`/api/v1/health` only says that the server answers).
 - **Update Notifications** in the admin interface when a new release image is available.

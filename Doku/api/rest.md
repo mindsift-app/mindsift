@@ -6,7 +6,7 @@ Base: `/api/v1`. Responses are JSON; errors take the form `{"error": "Text"}`, s
 
 | Method | Path | Purpose |
 |---|---|---|
-| GET | `/health` | Health check |
+| GET | `/health` | Health check; `?db=1` also asks the database (at most 2 s) → `{"database": "ok"}` or `503` with `"unreachable"`. Outside `/api/v1`: `GET /metrics` (Prometheus text format) only with `METRICS_TOKEN`, sent as `Authorization: Bearer …` (`401` otherwise); without the variable `/metrics` is `404` |
 | GET | `/auth/status` | `needsSetup`, `allowRegistration`, `instanceName`, `demoMode`, `sharingMode`, `legal` (`imprintUrl`, `hasImprintContent`, `privacyUrl`, `hasPrivacyContent`, `customLinkLabel`, `customLinkUrl`), `voice` (`mode` = `server`/`browser`/`off`, `maxSeconds`, `browserAllowed`), `mcpEnabled`, `mcpConnectorUrl`, `passkeys` (the login offers "Sign in with a passkey": `BASE_URL` with https or `http://localhost`, not in demo mode), `defaultLanguage` (the server's default language: admin setting, else `DEFAULT_LANGUAGE`, else `de`); `setup` only while no account exists, for the first-boot wizard: `smtpConfigured`, `smtpViaEnv` (`SMTP_HOST`), `baseUrlSet`, `emailLinks` (mails with links can go out), `backupDir` (as `GET /admin/setup/status`, without the host) |
 | GET | `/legal/{imprint\|privacy}` | Stored Markdown text (`content`), without login; `404` if none set |
 | POST | `/share-target` | PWA Web Share Target fallback: redirects to `/` (`303 See Other`) if service worker is still inactive |

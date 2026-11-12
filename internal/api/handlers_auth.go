@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -20,7 +21,20 @@ import (
 
 // --- HANDLERS ---
 
+// handleHealth: GET /api/v1/health. With ?db=1 it also asks the database (at most 2 s) and answers 503 when
+// that fails; the container's health check leaves it out and stays cheap.
 func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Query().Get("db") == "1" {
+		ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
+		defer cancel()
+		if err := s.store.Ping(ctx); err != nil {
+			slog.Warn("Health check: the database does not answer", "error", err)
+			writeJSON(w, http.StatusServiceUnavailable, map[string]any{"status": "error", "service": "mindsift", "database": "unreachable", "time": domain.NowISO()})
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"status": "ok", "service": "mindsift", "database": "ok", "time": domain.NowISO()})
+		return
+	}
 	writeJSON(w, http.StatusOK, map[string]any{
 		"status":  "ok",
 		"service": "mindsift",

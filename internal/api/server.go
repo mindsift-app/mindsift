@@ -42,6 +42,7 @@ type Server struct {
 	// passkeyChallenges: the challenges of passkey ceremonies, registration, confirmation, sign-in (passkeys.go)
 	passkeyChallenges passkeyChallenges
 	voice             *voiceService // self-hosted speech recognition (voice.go)
+	metrics           *apiMetrics   // what /metrics reports (metrics.go)
 	// now: the time codes of authenticator apps and trusted devices are checked against (tests set it)
 	now func() time.Time
 
@@ -72,6 +73,7 @@ func NewServer(cfg *config.Config, store *storage.Store, wsHub *ws.Hub, staticFS
 		now:      time.Now,
 	}
 	srv.loginGuard = newLoginGuard(!cfg.DisableLoginProtection)
+	srv.metrics = newAPIMetrics(srv)
 	srv.voice = newVoiceService(cfg.Speech.MaxParallel)
 	if srv.voiceMode() == "server" {
 		go srv.startVoiceCheck()
@@ -151,6 +153,10 @@ func (s *Server) Router() http.Handler {
 
 	// Public Health, Setup & Auth Routes
 	r.Get("/api/v1/health", s.handleHealth)
+	// Prometheus, only with METRICS_TOKEN (metrics.go); otherwise /metrics stays an unknown path (404)
+	if s.cfg.MetricsToken != "" {
+		r.Get("/metrics", s.handleMetrics)
+	}
 	r.Get("/api/v1/auth/status", s.handleAuthStatus)
 	r.Get("/api/v1/legal/{type}", s.handleLegalText)
 	r.Post("/api/v1/auth/setup", s.handleFirstBootSetup)
@@ -675,6 +681,7 @@ func (s *Server) apiLoggingMiddleware(next http.Handler) http.Handler {
 		next.ServeHTTP(ww, r)
 
 		duration := time.Since(start)
+		s.metrics.observeRequest(r, max(ww.Status(), http.StatusOK), duration)
 		durationMs := float64(duration.Microseconds()) / 1000.0
 		status := ww.Status()
 		if status == 0 {
