@@ -124,6 +124,10 @@ const it: HelpContent = {
                 <span>/code (blocco di codice)</span>
               </div>
               <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main col-span-2">
+                <span className="text-accent font-bold">1.</span>
+                <span>/number o «1. » all'inizio (elenco numerato; Invio continua a contare, un punto vuoto lo chiude)</span>
+              </div>
+              <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main col-span-2">
                 <TableIcon className="w-3.5 h-3.5 text-accent shrink-0" />
                 <span>/table o /tabella (tabella con riga di intestazione)</span>
               </div>
@@ -153,7 +157,7 @@ const it: HelpContent = {
               </div>
               <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main col-span-2">
                 <span className="text-accent font-bold">📤</span>
-                <span>/extract (sposta il punto con tutti i sottopunti in una nota indipendente, lasciando un [[link]] al suo posto; il pulsante «Recupera nota» sul link annulla l'operazione)</span>
+                <span>/extract (sposta il punto con tutti i sottopunti in una nota nuova o esistente, scelta come con il pulsante, lasciando un [[link]] al suo posto; il pulsante «Recupera nota» sul link annulla l'operazione)</span>
               </div>
               <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main col-span-2">
                 <span className="text-accent font-bold">🎙️</span>

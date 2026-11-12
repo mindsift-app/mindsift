@@ -11,9 +11,11 @@ export interface ExtractTarget {
 }
 
 interface ExtractPopoverProps {
-  // Where the click was (clientX/clientY); opens right there, kept inside the window
+  // Where the click was (clientX/clientY); opens right there, kept inside the window. left: x is the
+  // popover's left edge (the slash command, under the bullet's text) instead of the button at the right
   x: number;
   y: number;
+  align?: 'left' | 'right';
   notes: ExtractTarget[];
   onNewNote: () => void;
   onExisting: (note: ExtractTarget) => void;
@@ -25,7 +27,7 @@ const MAX_RESULTS = 8;
 
 // "In eigene Notiz auslagern" at the bullet: a new note (preselected, so click + Enter is the old one-step
 // action) or, by typing, one of the existing notes. Escape or a click outside closes it.
-export const ExtractPopover: React.FC<ExtractPopoverProps> = ({ x, y, notes, onNewNote, onExisting, onCancel }) => {
+export const ExtractPopover: React.FC<ExtractPopoverProps> = ({ x, y, align = 'right', notes, onNewNote, onExisting, onCancel }) => {
   const { t } = useTranslation('workspace');
   const ref = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -48,7 +50,7 @@ export const ExtractPopover: React.FC<ExtractPopoverProps> = ({ x, y, notes, onN
     const el = ref.current;
     if (!el) return;
     const { width, height } = el.getBoundingClientRect();
-    let left = x - width + 12;
+    let left = align === 'left' ? x : x - width + 12;
     let top = y + MARGIN;
     if (left < MARGIN) left = MARGIN;
     if (left + width > window.innerWidth - MARGIN) left = window.innerWidth - width - MARGIN;
@@ -62,7 +64,7 @@ export const ExtractPopover: React.FC<ExtractPopoverProps> = ({ x, y, notes, onN
       cancelAnimationFrame(raf);
       window.clearTimeout(timer);
     };
-  }, [x, y]);
+  }, [x, y, align]);
 
   useEffect(() => {
     const onDown = (e: Event) => {

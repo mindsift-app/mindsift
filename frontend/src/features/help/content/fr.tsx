@@ -130,6 +130,10 @@ const fr: HelpContent = {
                 <span>/code (bloc de code)</span>
               </div>
               <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main col-span-2">
+                <span className="text-accent font-bold">1.</span>
+                <span>/number ou « 1. » au début (liste numérotée ; Entrée continue la numérotation, une puce vide la termine)</span>
+              </div>
+              <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main col-span-2">
                 <TableIcon className="w-3.5 h-3.5 text-accent shrink-0" />
                 <span>/table ou /tableau (tableau avec ligne d’en-tête)</span>
               </div>
@@ -159,7 +163,7 @@ const fr: HelpContent = {
               </div>
               <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main col-span-2">
                 <span className="text-accent font-bold">📤</span>
-                <span>/extract (déplacer la puce avec toutes ses sous-puces vers sa propre note, laissant un [[lien]] à sa place ; le bouton « Rappeler la note » sur le lien annule cela)</span>
+                <span>/extract (déplacer la puce avec toutes ses sous-puces vers une note nouvelle ou existante, choisie comme avec le bouton, laissant un [[lien]] à sa place ; le bouton « Rappeler la note » sur le lien annule cela)</span>
               </div>
               <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main col-span-2">
                 <span className="text-accent font-bold">🎙️</span>

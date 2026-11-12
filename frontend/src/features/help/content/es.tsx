@@ -169,6 +169,10 @@ const es: HelpContent = {
                 <span>/code (bloque de código)</span>
               </div>
               <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main col-span-2">
+                <span className="text-accent font-bold">1.</span>
+                <span>/number o «1. » al principio (lista numerada; Intro sigue contando, un punto vacío la termina)</span>
+              </div>
+              <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main col-span-2">
                 <TableIcon className="w-3.5 h-3.5 text-accent shrink-0" />
                 <span>/table o /tabla (tabla con fila de encabezado)</span>
               </div>
@@ -198,7 +202,7 @@ const es: HelpContent = {
               </div>
               <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main col-span-2">
                 <span className="text-accent font-bold">📤</span>
-                <span>/extract (mover el punto con todos sus subpuntos a una nota propia, dejando un [[enlace]]; el botón «Recuperar nota» en el enlace lo revierte)</span>
+                <span>/extract (mover el punto con todos sus subpuntos a una nota nueva o existente, elegida como con el botón, dejando un [[enlace]]; el botón «Recuperar nota» en el enlace lo revierte)</span>
               </div>
               <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main col-span-2">
                 <span className="text-accent font-bold">🎙️</span>
