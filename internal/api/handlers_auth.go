@@ -50,6 +50,8 @@ func (s *Server) handleAuthStatus(w http.ResponseWriter, r *http.Request) {
 		"demoMode":            s.cfg.DemoMode,
 		"sharingMode":         s.store.SharingMode(),
 		"passwordReset":       s.passwordResetAvailable(),
+		// The login offers "Sign in with a passkey" (passkeys.go: BASE_URL with https, not the demo)
+		"passkeys": s.passkeysOn(),
 		// AI agents may connect over MCP (MCP_ENABLED or the admin's switch)
 		"mcpEnabled": s.mcpEnabled(),
 		// Sharing: names suggested while typing, notes shareable by public link (and for how long at most)
@@ -496,21 +498,11 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	// With a second factor the counters stay until the code is right too (mfa.go)
-	needsSecondFactor := s.store.TOTPActive(user.ID) && !s.trustedDevice(user, req.TrustTokens)
+	needsSecondFactor := s.store.MFAActive(user.ID) && !s.trustedDevice(user, req.TrustTokens)
 	if !needsSecondFactor {
 		s.loginGuard.recordSuccess(account, ip)
 	}
-	if !user.IsActive && s.store.IsEmailUnverified(user.ID) {
-		writeErrorCode(w, http.StatusForbidden, "email_unverified", "Bitte bestätige zuerst deine E-Mail-Adresse über den Link, den wir dir geschickt haben")
-		return
-	}
-	if !user.IsActive && s.store.IsPendingRegistration(user.ID) {
-		writeError(w, http.StatusForbidden, "Dein Konto wartet noch auf die Freigabe durch einen Administrator")
-		return
-	}
-	if !user.IsActive {
-		slog.Warn("Sign-in refused: user account is disabled", "user_id", user.ID, "display_name", user.DisplayName, "remote_addr", r.RemoteAddr)
-		writeError(w, http.StatusForbidden, "Dieses Benutzerkonto ist deaktiviert")
+	if !s.signInAllowed(w, r, user) {
 		return
 	}
 	if needsSecondFactor {
@@ -532,6 +524,24 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 		"token": token,
 		"user":  user,
 	})
+}
+
+// signInAllowed refuses an account that is waiting for its address confirmation or approval, or is
+// disabled; for the password and the passkey alike, only once the credential was right. Writes the error.
+func (s *Server) signInAllowed(w http.ResponseWriter, r *http.Request, user *domain.User) bool {
+	if user.IsActive {
+		return true
+	}
+	switch {
+	case s.store.IsEmailUnverified(user.ID):
+		writeErrorCode(w, http.StatusForbidden, "email_unverified", "Bitte bestätige zuerst deine E-Mail-Adresse über den Link, den wir dir geschickt haben")
+	case s.store.IsPendingRegistration(user.ID):
+		writeError(w, http.StatusForbidden, "Dein Konto wartet noch auf die Freigabe durch einen Administrator")
+	default:
+		slog.Warn("Sign-in refused: user account is disabled", "user_id", user.ID, "display_name", user.DisplayName, "remote_addr", r.RemoteAddr)
+		writeError(w, http.StatusForbidden, "Dieses Benutzerkonto ist deaktiviert")
+	}
+	return false
 }
 
 func (s *Server) handleMe(w http.ResponseWriter, r *http.Request) {

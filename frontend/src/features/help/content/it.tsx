@@ -601,7 +601,7 @@ const it: HelpContent = {
       title: 'Offline, backup e password',
       subtitle: 'Lavorare senza Internet, ripristinare backup, reimpostare la password',
       icon: CloudOff,
-      keywords: ['offline', 'internet', 'backup', 'ripristino', 'password', 'dimenticata', 'account', 'due fattori', '2fa', 'authenticator', 'sicurezza'],
+      keywords: ['offline', 'internet', 'backup', 'ripristino', 'password', 'dimenticata', 'account', 'due fattori', '2fa', 'authenticator', 'sicurezza', 'passkey', 'impronta'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
           <ul className="space-y-1.5">
@@ -619,6 +619,9 @@ const it: HelpContent = {
             </li>
             <li>
               <strong className="text-main">Accesso a due fattori:</strong> in <em>Impostazioni account → Sicurezza</em> colleghi un'app di autenticazione (scansiona il codice QR, inserisci il primo codice); da quel momento l'accesso chiede, dopo la password, il codice di sei cifre dell'app. I dieci codici di recupero mostrati una sola volta aiutano quando manca il telefono: ognuno funziona una volta. Con «Considera attendibile questo dispositivo per 30 giorni» un tuo dispositivo non chiede il codice per un mese. «Password dimenticata» non disattiva l'accesso a due fattori.
+            </li>
+            <li>
+              <strong className="text-main">Passkey:</strong> in <em>Impostazioni account → Sicurezza → Passkey</em> crei una passkey (conferma la password, dalle un nome, impronta digitale, volto o PIN del dispositivo). Da quel momento «Accedi con una passkey» ti fa entrare senza password; alcuni browser la propongono anche direttamente nel campo di accesso. Se accedi con la password, dopo viene chiesta la passkey: una passkey conta come secondo fattore, anche senza app di autenticazione. I codici di recupero compaiono con la prima passkey. Rimuovendo l'ultimo secondo fattore, l'accesso a due fattori si disattiva di nuovo. Le passkey sono disponibili solo se il server ha un indirizzo https fisso (BASE_URL).
             </li>
           </ul>
         </div>

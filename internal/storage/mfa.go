@@ -13,10 +13,12 @@ import (
 )
 
 // Two-factor sign-in (api/mfa.go). Per account: one authenticator app (TOTP) whose secret is stored
-// encrypted with SECRETS_KEY (the api layer seals and opens it), ten recovery codes of which only a hash
-// is kept, each usable once, and the devices that need no code for 30 days. A trusted device is bound to
-// the account's token_version: ending all sessions or a new password (own, by reset link or by an admin)
-// raises it and so ends the trust on every device; switching the app off removes the rows.
+// encrypted with SECRETS_KEY (the api layer seals and opens it), passkeys (passkeys.go), ten recovery codes
+// of which only a hash is kept, each usable once, and the devices that need no code for 30 days. A trusted
+// device is bound to the account's token_version: ending all sessions or a new password (own, by reset link
+// or by an admin) raises it and so ends the trust on every device; switching the last second factor off
+// removes the rows. The recovery codes belong to the account, not to one method: they come with its first
+// second factor and stay while one is left.
 
 const (
 	RecoveryCodeCount = 10
@@ -115,7 +117,8 @@ func (s *Store) StartTOTPSetup(userID, secretSealed string, now time.Time) error
 }
 
 // ConfirmTOTP switches the waiting app on with the step of its first code and stores the hashes of new
-// recovery codes, all at once. False when there was no waiting app (confirmed in parallel, or none).
+// recovery codes, all at once (nil codeHashes: the account keeps the codes it has, as it signs in with a
+// passkey already). False when there was no waiting app (confirmed in parallel, or none).
 func (s *Store) ConfirmTOTP(userID string, step int64, codeHashes []string, now time.Time) (bool, error) {
 	tx, err := s.db.Begin()
 	if err != nil {
@@ -130,8 +133,10 @@ func (s *Store) ConfirmTOTP(userID string, step int64, codeHashes []string, now 
 	if n, _ := res.RowsAffected(); n == 0 {
 		return false, nil
 	}
-	if err := replaceRecoveryCodes(tx, userID, codeHashes, ts); err != nil {
-		return false, err
+	if codeHashes != nil {
+		if err := replaceRecoveryCodes(tx, userID, codeHashes, ts); err != nil {
+			return false, err
+		}
 	}
 	return true, tx.Commit()
 }
@@ -147,14 +152,21 @@ func (s *Store) UseTOTPStep(userID string, step int64) (bool, error) {
 	return n == 1, nil
 }
 
-// DisableTOTP removes the app, the recovery codes and every trusted device of the account. Also for an
-// administrator resetting somebody's second factor.
-func (s *Store) DisableTOTP(userID string) error {
-	return s.execInTx(
-		stmt(`DELETE FROM user_totp WHERE user_id = ?`, userID),
-		stmt(`DELETE FROM user_recovery_codes WHERE user_id = ?`, userID),
-		stmt(`DELETE FROM trusted_devices WHERE user_id = ?`, userID),
-	)
+// DisableTOTP removes the app. Without a passkey left the recovery codes and every trusted device of the
+// account go as well and mfaOff is true; with one they stay, as the passkey still is a second factor.
+func (s *Store) DisableTOTP(userID string) (mfaOff bool, err error) {
+	tx, err := s.db.Begin()
+	if err != nil {
+		return false, err
+	}
+	defer tx.Rollback()
+	if _, err := tx.Exec(`DELETE FROM user_totp WHERE user_id = ?`, userID); err != nil {
+		return false, err
+	}
+	if mfaOff, err = dropFactorlessExtras(tx, userID); err != nil {
+		return false, err
+	}
+	return mfaOff, tx.Commit()
 }
 
 // --- Recovery codes ---

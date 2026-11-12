@@ -12,14 +12,16 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/go-webauthn/webauthn/webauthn"
 	"github.com/mindsift-app/mindsift/internal/auth"
 	"github.com/mindsift-app/mindsift/internal/domain"
 	"github.com/mindsift-app/mindsift/internal/storage"
 )
 
-// Two-factor sign-in. With an authenticator app switched on, the password alone gives no session:
-// POST /auth/login answers {mfaRequired, mfaToken, methods} instead of a token, and POST /auth/login/mfa
-// trades the mfaToken plus a code of the app (or a recovery code) for the session. The mfaToken is no
+// Two-factor sign-in. With an authenticator app or a passkey (passkeys.go), the password alone gives no
+// session: POST /auth/login answers {mfaRequired, mfaToken, methods} instead of a token, and POST
+// /auth/login/mfa trades the mfaToken plus a code of the app (or a recovery code) for the session, POST
+// /auth/login/mfa/passkey the mfaToken plus the answer of a passkey. The mfaToken is no
 // session: it lives in memory, for mfaChallengeTTL, bound to the account and its token_version, and is
 // dropped after mfaMaxAttempts wrong codes. Wrong codes count in the loginGuard like wrong passwords, and
 // the password step clears no counters while the code is still to come, so the lock cannot be dodged by
@@ -28,9 +30,11 @@ import (
 // "Trust this device": the second step can hand out a token that spares the code on this device for 30
 // days (storage.TrustedDeviceLifetime). The app keeps it in localStorage beside the session token and
 // sends it with the password (trustTokens); there are no cookies anywhere in MindSift. Ending all
-// sessions, a new password and switching the app off end the trust (storage/mfa.go).
+// sessions, a new password and switching the last second factor off end the trust (storage/mfa.go).
 //
-// methods lists the ways the second step can be done. Passkeys will join the list later.
+// methods lists the ways the second step can be done: "totp", "passkey" (while passkeys are on), and
+// "recovery". An account with only passkeys is asked for one after the password like one with the app;
+// recovery codes and trusted devices belong to the account and stay while one second factor is left.
 
 const (
 	mfaChallengeTTL = 5 * time.Minute
@@ -46,6 +50,8 @@ type mfaChallenge struct {
 	tokenVersion int
 	expires      time.Time
 	attempts     int
+	// passkey: the challenge of the last POST /auth/login/mfa/passkey/options, used up by the answer
+	passkey *webauthn.SessionData
 }
 
 type mfaChallenges struct {
@@ -108,9 +114,41 @@ func (c *mfaChallenges) consume(id string) bool {
 	return true
 }
 
-// mfaMethods: the ways of the second step for this account.
+// setPasskey keeps the passkey challenge of a waiting sign-in (replacing an earlier one).
+func (c *mfaChallenges) setPasskey(id string, session *webauthn.SessionData) bool {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	ch, ok := c.list[id]
+	if ok {
+		ch.passkey = session
+	}
+	return ok
+}
+
+// takePasskey returns the passkey challenge of a waiting sign-in and forgets it: one answer per challenge.
+func (c *mfaChallenges) takePasskey(id string) *webauthn.SessionData {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	ch, ok := c.list[id]
+	if !ok {
+		return nil
+	}
+	session := ch.passkey
+	ch.passkey = nil
+	return session
+}
+
+// mfaMethods: the ways of the second step for this account. Passkeys only while they are on: without
+// them (BASE_URL changed) an account that has nothing else signs in with a recovery code.
 func (s *Server) mfaMethods(userID string) []string {
-	return []string{mfaMethodTOTP, mfaMethodCode}
+	var methods []string
+	if s.store.TOTPActive(userID) {
+		methods = append(methods, mfaMethodTOTP)
+	}
+	if s.passkeysOn() && s.store.HasPasskeys(userID) {
+		methods = append(methods, mfaMethodPasskey)
+	}
+	return append(methods, mfaMethodCode)
 }
 
 // trustedDevice reports whether one of the tokens the browser sent trusts this device for the account.
@@ -189,17 +227,30 @@ func (s *Server) handleLoginMFA(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "Ungültige Anfrage")
 		return
 	}
+	if req.Code == "" {
+		writeError(w, http.StatusBadRequest, "Bitte gib den Code ein")
+		return
+	}
+	s.finishSecondStep(w, r, req.MFAToken, req.TrustDevice, func(user *domain.User) (string, bool) {
+		return s.checkSecondFactor(user.ID, req.Code)
+	})
+}
+
+// finishSecondStep is the second step of a sign-in with the mfaToken: check says whether the code or
+// passkey of the account was right (and which method it was). Then the session starts, with a trusted
+// device when asked.
+func (s *Server) finishSecondStep(w http.ResponseWriter, r *http.Request, mfaToken string, trustDevice bool, check func(user *domain.User) (method string, ok bool)) {
 	expired := func() {
 		writeErrorCode(w, http.StatusUnauthorized, "mfa_expired", "Die Anmeldung ist abgelaufen. Bitte melde dich erneut an.")
 	}
-	ch, ok := s.mfaChallenges.get(req.MFAToken, s.now())
+	ch, ok := s.mfaChallenges.get(mfaToken, s.now())
 	if !ok {
 		expired()
 		return
 	}
 	user, err := s.store.GetUserByID(ch.userID)
 	if err != nil || user == nil || !user.IsActive || user.TokenVersion != ch.tokenVersion {
-		s.mfaChallenges.consume(req.MFAToken)
+		s.mfaChallenges.consume(mfaToken)
 		expired()
 		return
 	}
@@ -208,19 +259,19 @@ func (s *Server) handleLoginMFA(w http.ResponseWriter, r *http.Request) {
 		writeLoginLocked(w, wait)
 		return
 	}
-	if req.Code == "" {
-		writeError(w, http.StatusBadRequest, "Bitte gib den Code ein")
-		return
-	}
-	method, ok := s.checkSecondFactor(user.ID, req.Code)
+	method, ok := check(user)
 	if !ok {
 		s.loginGuard.recordFailure(user.ID, ip)
-		s.mfaChallenges.failed(req.MFAToken)
+		s.mfaChallenges.failed(mfaToken)
 		slog.Warn("Sign-in failed: wrong second factor", "user_id", user.ID, "method", method, "remote_addr", r.RemoteAddr)
-		writeErrorCode(w, http.StatusUnauthorized, "mfa_invalid", "Der Code ist falsch oder abgelaufen")
+		if method == mfaMethodPasskey {
+			writeErrorCode(w, http.StatusUnauthorized, "mfa_invalid", "Der Passkey wurde nicht angenommen")
+		} else {
+			writeErrorCode(w, http.StatusUnauthorized, "mfa_invalid", "Der Code ist falsch oder abgelaufen")
+		}
 		return
 	}
-	if !s.mfaChallenges.consume(req.MFAToken) {
+	if !s.mfaChallenges.consume(mfaToken) {
 		expired()
 		return
 	}
@@ -238,7 +289,7 @@ func (s *Server) handleLoginMFA(w http.ResponseWriter, r *http.Request) {
 		"method":            method,
 		"recoveryCodesLeft": s.store.RecoveryCodesLeft(user.ID),
 	}
-	if req.TrustDevice {
+	if trustDevice {
 		trust, device, err := s.store.CreateTrustedDevice(user.ID, user.TokenVersion, r.UserAgent(), s.now())
 		if err != nil {
 			logFailed("Trusting the device", err, "user_id", user.ID)
@@ -251,21 +302,41 @@ func (s *Server) handleLoginMFA(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, out)
 }
 
+// secondFactor: what a sensitive change sends beside the password: a code (app or recovery code), or the
+// answer of a passkey to the challenge of POST /auth/mfa/passkeys/challenge.
+type secondFactor struct {
+	Code         string          `json:"code"`
+	PasskeyToken string          `json:"passkeyToken"`
+	Passkey      json.RawMessage `json:"passkey"`
+}
+
 // confirmWithSecondFactor checks the current password and, when the account has a second factor, a
-// code of it (app or recovery code) for a sensitive change. Wrong guesses of either count like failed
-// logins. Writes the error itself.
-func (s *Server) confirmWithSecondFactor(w http.ResponseWriter, r *http.Request, user *domain.User, password, code string) bool {
+// code or passkey of it for a sensitive change. Wrong guesses of either count like failed logins. Writes
+// the error itself.
+func (s *Server) confirmWithSecondFactor(w http.ResponseWriter, r *http.Request, user *domain.User, password string, f secondFactor) bool {
 	if !s.checkCurrentPassword(w, r, user, password) {
 		return false
 	}
-	if !s.store.TOTPActive(user.ID) {
+	if !s.store.MFAActive(user.ID) {
 		return true
 	}
-	if code == "" {
-		writeErrorCode(w, http.StatusForbidden, "mfa_required", "Bitte gib zur Bestätigung einen Code deiner Authenticator-App ein")
+	if f.PasskeyToken != "" {
+		if !s.confirmPasskey(user, f.PasskeyToken, f.Passkey) {
+			s.loginGuard.recordFailure(user.ID, clientIPFrom(r))
+			writeErrorCode(w, http.StatusForbidden, "mfa_invalid", "Der Passkey wurde nicht angenommen")
+			return false
+		}
+		return true
+	}
+	if f.Code == "" {
+		if s.store.TOTPActive(user.ID) {
+			writeErrorCode(w, http.StatusForbidden, "mfa_required", "Bitte gib zur Bestätigung einen Code deiner Authenticator-App ein")
+		} else {
+			writeErrorCode(w, http.StatusForbidden, "mfa_required", "Bitte bestätige mit deinem Passkey oder einem Wiederherstellungscode")
+		}
 		return false
 	}
-	if _, ok := s.checkSecondFactor(user.ID, code); !ok {
+	if _, ok := s.checkSecondFactor(user.ID, f.Code); !ok {
 		s.loginGuard.recordFailure(user.ID, clientIPFrom(r))
 		writeErrorCode(w, http.StatusForbidden, "mfa_invalid", "Der Code ist falsch oder abgelaufen")
 		return false
@@ -300,24 +371,45 @@ func (s *Server) handleMFAStatus(w http.ResponseWriter, r *http.Request) {
 		writeInternal(w, err)
 		return
 	}
+	passkeys, err := s.store.ListPasskeys(user.ID)
+	if err != nil {
+		writeInternal(w, err)
+		return
+	}
+	_, _, passkeysOff := s.passkeyRP()
 	writeJSON(w, http.StatusOK, map[string]any{
-		"available":         !s.cfg.DemoMode,
-		"totp":              totp,
+		"available": !s.cfg.DemoMode,
+		// enabled: the account signs in with a second factor (app or passkey)
+		"enabled":  totp["enabled"] == true || len(passkeys) > 0,
+		"totp":     totp,
+		"passkeys": passkeys,
+		// Why passkeys cannot be used here (demo, no_base_url, not_https, ip_address); empty when they can
+		"passkeysOff":       passkeysOff,
 		"recoveryCodesLeft": s.store.RecoveryCodesLeft(user.ID),
 		"trustedDevices":    devices,
 		"trustDays":         int(storage.TrustedDeviceLifetime.Hours() / 24),
 	})
 }
 
-// handleTOTPSetup: POST /auth/mfa/totp/setup {password} → {secret, uri}. A new secret waiting for its
-// first code; the password guards against somebody at an open session locking the owner out.
+// handleTOTPSetup: POST /auth/mfa/totp/setup {password, code | passkeyToken + passkey} → {secret, uri}. A
+// new secret waiting for its first code; the password guards against somebody at an open session locking
+// the owner out, a passkey of the account (when it has one) against a second factor added with a stolen
+// password.
 func (s *Server) handleTOTPSetup(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Password string `json:"password"`
+		secondFactor
 	}
 	_ = json.NewDecoder(r.Body).Decode(&req)
 	user, ok := s.currentUser(w, r)
-	if !ok || !s.checkCurrentPassword(w, r, user, req.Password) {
+	if !ok {
+		return
+	}
+	if s.store.TOTPActive(user.ID) {
+		writeErrorFrom(w, http.StatusConflict, storage.ErrTOTPAlreadyActive)
+		return
+	}
+	if !s.confirmWithSecondFactor(w, r, user, req.Password, req.secondFactor) {
 		return
 	}
 	secret, err := auth.NewTOTPSecret()
@@ -348,7 +440,8 @@ func (s *Server) handleTOTPSetup(w http.ResponseWriter, r *http.Request) {
 }
 
 // handleTOTPConfirm: POST /auth/mfa/totp/confirm {code} → {recoveryCodes, enabledAt}. The first code of the
-// app switches it on; the recovery codes are shown this once.
+// app switches it on; the recovery codes are shown this once. An account that has passkeys keeps its
+// recovery codes (recoveryCodes is empty then).
 func (s *Server) handleTOTPConfirm(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Code string `json:"code"`
@@ -387,10 +480,12 @@ func (s *Server) handleTOTPConfirm(w http.ResponseWriter, r *http.Request) {
 		writeErrorCode(w, http.StatusBadRequest, "mfa_invalid", "Der Code stimmt nicht. Prüfe, ob die Uhr des Geräts richtig geht, und gib den aktuellen Code ein.")
 		return
 	}
-	codes, hashes, err := newRecoveryCodes(user.ID)
-	if err != nil {
-		writeInternal(w, err)
-		return
+	codes, hashes := []string{}, []string(nil)
+	if !s.store.HasPasskeys(user.ID) {
+		if codes, hashes, err = newRecoveryCodes(user.ID); err != nil {
+			writeInternal(w, err)
+			return
+		}
 	}
 	done, err := s.store.ConfirmTOTP(user.ID, step, hashes, now)
 	if err != nil {
@@ -417,12 +512,12 @@ func newRecoveryCodes(userID string) (codes, hashes []string, err error) {
 	return codes, hashes, nil
 }
 
-// handleTOTPDisable: POST /auth/mfa/totp/disable {password, code}: the app, the recovery codes and the
-// trusted devices go.
+// handleTOTPDisable: POST /auth/mfa/totp/disable {password, code | passkeyToken + passkey} → {disabled,
+// mfaOff}: the app goes; without a passkey the recovery codes and the trusted devices go too (mfaOff).
 func (s *Server) handleTOTPDisable(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Password string `json:"password"`
-		Code     string `json:"code"`
+		secondFactor
 	}
 	_ = json.NewDecoder(r.Body).Decode(&req)
 	user, ok := s.currentUser(w, r)
@@ -433,34 +528,39 @@ func (s *Server) handleTOTPDisable(w http.ResponseWriter, r *http.Request) {
 		writeErrorFrom(w, http.StatusConflict, storage.ErrTOTPNotFound)
 		return
 	}
-	if !s.confirmWithSecondFactor(w, r, user, req.Password, req.Code) {
+	if !s.confirmWithSecondFactor(w, r, user, req.Password, req.secondFactor) {
 		return
 	}
-	if err := s.store.DisableTOTP(user.ID); err != nil {
+	mfaOff, err := s.store.DisableTOTP(user.ID)
+	if err != nil {
 		writeInternal(w, err)
 		return
 	}
-	slog.Info("Two-factor sign-in switched off", "user_id", user.ID)
-	writeJSON(w, http.StatusOK, map[string]bool{"disabled": true})
+	if mfaOff {
+		slog.Info("Two-factor sign-in switched off", "user_id", user.ID)
+	} else {
+		slog.Info("Authenticator app removed, passkeys stay", "user_id", user.ID)
+	}
+	writeJSON(w, http.StatusOK, map[string]bool{"disabled": true, "mfaOff": mfaOff})
 }
 
-// handleNewRecoveryCodes: POST /auth/mfa/recovery-codes {password, code} → {recoveryCodes}; the earlier
-// codes stop working.
+// handleNewRecoveryCodes: POST /auth/mfa/recovery-codes {password, code | passkeyToken + passkey} →
+// {recoveryCodes}; the earlier codes stop working.
 func (s *Server) handleNewRecoveryCodes(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Password string `json:"password"`
-		Code     string `json:"code"`
+		secondFactor
 	}
 	_ = json.NewDecoder(r.Body).Decode(&req)
 	user, ok := s.currentUser(w, r)
 	if !ok {
 		return
 	}
-	if !s.store.TOTPActive(user.ID) {
+	if !s.store.MFAActive(user.ID) {
 		writeErrorFrom(w, http.StatusConflict, storage.ErrTOTPNotFound)
 		return
 	}
-	if !s.confirmWithSecondFactor(w, r, user, req.Password, req.Code) {
+	if !s.confirmWithSecondFactor(w, r, user, req.Password, req.secondFactor) {
 		return
 	}
 	codes, hashes, err := newRecoveryCodes(user.ID)

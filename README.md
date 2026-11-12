@@ -127,8 +127,8 @@ If something here is out of date or unfair, please open an issue.
 
 ## Not (yet) in MindSift
 
-* **Single sign-on (OIDC/SSO)** through Authentik, Authelia or Keycloak: MindSift only has its own accounts.
-* **Passkeys:** planned; two-factor sign-in with an authenticator app is there.
+* **Single sign-on (OIDC/SSO)** through Authentik, Authelia or Keycloak: MindSift only has its own accounts (with passkeys and two-factor sign-in).
+* **Passkeys without a fixed https address:** passkeys need `BASE_URL` with https (or `http://localhost`); on a bare IP address or plain http only the authenticator app works.
 * **PostgreSQL or MySQL:** SQLite on purpose (see [design decisions](#design-decisions)).
 * **CalDAV or an iCal feed:** the calendar exists only inside MindSift.
 * **Native apps:** it is a PWA (installable, offline, push), not in the app stores.
@@ -183,7 +183,7 @@ The most important settings (all of them are in [`.env.example`](.env.example)):
 
 | Variable | Default | What for |
 |---|---|---|
-| `BASE_URL` | `http://localhost:8080` | Public URL; needed for links in mails (password reset) and OAuth for claude.ai/ChatGPT |
+| `BASE_URL` | `http://localhost:8080` | Public URL; needed for links in mails (password reset), OAuth for claude.ai/ChatGPT and passkeys (these need https, or `http://localhost`, and a host name, not an IP address; the passkeys are bound to this host) |
 | `ADMIN_USER`, `ADMIN_PASSWORD`, `ADMIN_EMAIL` | empty | First administrator, created on the first start (see below) |
 | `JWT_SECRET` | generated (`/data/jwt.secret`) | Signing key for sign-ins, at least 32 characters (`openssl rand -hex 32`). Shorter values and published examples are ignored. Changing it signs everyone out |
 | `SECRETS_KEY` | generated (`/data/secrets.key`) | Key for hidden values (`/secret`); set it to keep it apart from the database. Never change it once values are stored |
@@ -265,7 +265,7 @@ Load-tested with v0.95.0 on the public demo, a deliberately small server with **
 
 MindSift is meant to be reachable from the internet behind a reverse proxy. The whole code base was reviewed for security in November 2026 (v0.94.0), and the findings are fixed (see the [changelog](CHANGELOG.md)). What protects your data:
 
-* **Sign-in:** passwords are hashed with bcrypt over a SHA-256 of the whole password, so long passphrases count to the last character. Two-factor sign-in with an authenticator app (TOTP) and ten one-time recovery codes can be switched on per person; a device can be trusted for 30 days. Every login is a server-side session tied to a signed token; sessions are listed under Settings → Security, can be ended one by one, end after 30 days without use and with any password change. Failed sign-ins lock the account for that address after 3 tries, the account after 20 and the address after 30, each for 15 minutes; registration, "forgot password", the password asked before deleting data and the passwords of public links are limited the same way. A failed sign-in takes as long whether the account exists or not.
+* **Sign-in:** passwords are hashed with bcrypt over a SHA-256 of the whole password, so long passphrases count to the last character. Two-factor sign-in with an authenticator app (TOTP), passkeys or both, plus ten one-time recovery codes, can be switched on per person; a device can be trusted for 30 days. Passkeys (WebAuthn, user verification required) also sign in without a password and cannot be phished: they are bound to the host of `BASE_URL` (https only). Every login is a server-side session tied to a signed token; sessions are listed under Settings → Security, can be ended one by one, end after 30 days without use and with any password change. Failed sign-ins lock the account for that address after 3 tries, the account after 20 and the address after 30, each for 15 minutes; registration, "forgot password", the password asked before deleting data and the passwords of public links are limited the same way. A failed sign-in takes as long whether the account exists or not.
 * **Secrets never in plain text:** API keys, OAuth tokens, reset and confirmation links and the tokens of public links are stored only as SHA-256 hashes. Hidden values in notes are encrypted with AES-256-GCM under a key kept apart from the database (`SECRETS_KEY`).
 * **Rights checked on every request:** notes, folders, lists and task lists resolve the caller's role (owner, editor, viewer) on each call. API keys and MCP connections reach only what their scopes allow, OAuth tokens only the MCP endpoint. Public links are read-only, live at most 14 days, can carry a password and hide names, hidden values and links to other notes.
 * **Addresses stay private:** others see names, usernames and profile pictures, never e-mail addresses. A new login address counts only once its owner clicks the link mailed to it, and mail alarms and test mails go only to that confirmed address, so the server cannot be used to mail strangers.

@@ -77,7 +77,7 @@ describe('TwoFactorCard', () => {
     await act(async () => {
       fireEvent.submit(screen.getByLabelText('Passwort').closest('form')!);
     });
-    expect(disableTotp).toHaveBeenCalledWith('u1', 'geheim-1234', '654321');
+    expect(disableTotp).toHaveBeenCalledWith('u1', 'geheim-1234', { code: '654321' });
     expect(await screen.findByText('Zwei-Faktor-Anmeldung ausgeschaltet.')).toBeTruthy();
   });
 

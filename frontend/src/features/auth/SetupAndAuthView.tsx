@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import i18n from '../../i18n';
 import {
@@ -10,7 +10,9 @@ import {
   LogIn,
   Check,
   AlertCircle,
+  Fingerprint,
 } from 'lucide-react';
+import { conditionalPasskeysAvailable, getPasskey, passkeyCancelled, passkeysSupported } from '../../lib/webauthn';
 import { AuthStatus, MfaMethod, User } from '../../lib/types';
 import { MfaStep } from './MfaStep';
 import { api, ApiError, triggerHaptic } from '../../lib/api';
@@ -124,8 +126,76 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
   const [notice, setNotice] = useState<string | null>(null);
   const [newPassword, setNewPassword] = useState('');
   const [newPasswordConfirm, setNewPasswordConfirm] = useState('');
-  // Password right, the account has an authenticator app: its code comes next (MfaStep)
+  // Password right, the account has a second factor: its code or passkey comes next (MfaStep)
   const [mfa, setMfa] = useState<{ token: string; methods: MfaMethod[] } | null>(null);
+
+  // Sign-in with a passkey (no password): the button, and the browser's autofill in the login field
+  // (mediation "conditional") where the browser offers it. Only one passkey request can wait at a time:
+  // the button stops the autofill one first, the autofill starts again afterwards (conditionalRun).
+  const passkeysOn = Boolean(authStatus.passkeys) && passkeysSupported();
+  const conditionalRequest = useRef<AbortController | null>(null);
+  const [conditionalRun, setConditionalRun] = useState(0);
+  useEffect(() => {
+    if (!passkeysOn || authTab !== 'login' || mfa || authStatus.needsSetup) return;
+    let stopped = false;
+    let renew = 0;
+    const run = async () => {
+      if (stopped || !(await conditionalPasskeysAvailable()) || stopped) return;
+      const ctrl = new AbortController();
+      conditionalRequest.current = ctrl;
+      let answered = false;
+      try {
+        const { token, options, expiresIn } = await api.passkeyLoginOptions();
+        // A fresh challenge before this one expires on the server
+        renew = window.setTimeout(() => ctrl.abort(), Math.max(30, (expiresIn || 300) - 30) * 1000);
+        const credential = await getPasskey(options, { conditional: true, signal: ctrl.signal });
+        answered = true;
+        window.clearTimeout(renew);
+        setError(null);
+        setSubmitting(true);
+        const res = await api.loginPasskey(token, credential);
+        onAuthenticated(res.user);
+      } catch (err: any) {
+        window.clearTimeout(renew);
+        // Stopped for the button or the form went away: nothing to say
+        if (stopped || conditionalRequest.current !== ctrl) return;
+        if (answered) setSubmitting(false);
+        if (answered && !passkeyCancelled(err)) setError(err?.message || i18n.t('auth:login.passkeyFailed'));
+        // The timer ran out or the server refused the passkey: offer the autofill again
+        if (answered || ctrl.signal.aborted) void run();
+      }
+    };
+    void run();
+    return () => {
+      stopped = true;
+      window.clearTimeout(renew);
+      conditionalRequest.current?.abort();
+      conditionalRequest.current = null;
+    };
+    // onAuthenticated is the app's sign-in callback and stays the same
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [passkeysOn, authTab, mfa, authStatus.needsSetup, conditionalRun]);
+
+  const handlePasskeyLogin = async () => {
+    const pending = conditionalRequest.current;
+    conditionalRequest.current = null;
+    pending?.abort();
+    setError(null);
+    setUnverifiedError(null);
+    setNotice(null);
+    setSubmitting(true);
+    triggerHaptic(15);
+    try {
+      const { token, options } = await api.passkeyLoginOptions();
+      const credential = await getPasskey(options);
+      const res = await api.loginPasskey(token, credential);
+      onAuthenticated(res.user);
+    } catch (err: any) {
+      if (!passkeyCancelled(err)) setError(err?.message || t('login.passkeyFailed'));
+      setSubmitting(false);
+      setConditionalRun((n) => n + 1);
+    }
+  };
 
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -651,6 +721,8 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
                   placeholder={t('login.loginPlaceholder')}
                   required
                   autoFocus
+                  // "webauthn": the browser offers the passkeys of this site in the autofill
+                  autoComplete={passkeysOn ? 'username webauthn' : 'username'}
                   className="w-full h-8 px-2.5 input-field"
                 />
               </div>
@@ -692,6 +764,26 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
                   <span>{submitting ? t('login.submitting') : t('login.tab')}</span>
                 </button>
               </div>
+
+              {passkeysOn && (
+                <>
+                  <div className="flex items-center gap-2 text-[11px] text-faint" aria-hidden="true">
+                    <span className="flex-1 border-t border-border" />
+                    <span>{t('login.or')}</span>
+                    <span className="flex-1 border-t border-border" />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => void handlePasskeyLogin()}
+                    disabled={submitting}
+                    className="w-full btn-action h-11 sm:h-9 text-xs font-semibold flex items-center justify-center gap-2 disabled:opacity-50"
+                    data-passkey-login
+                  >
+                    <Fingerprint className="w-3.5 h-3.5" />
+                    <span>{t('login.passkey')}</span>
+                  </button>
+                </>
+              )}
 
               {!authStatus.allowRegistration && (
                 <p className="text-[11px] text-faint text-center pt-2 border-t border-border">

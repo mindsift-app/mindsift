@@ -102,6 +102,18 @@ Two-factor sign-in, on the server without the demo (the demo cannot set it up), 
 
 `SHOT_DIR=<folder>` saves pictures of the QR step, the recovery codes, the settings with the app on and the second step on desktop and phone.
 
+## passkey.e2e.mjs
+
+Passkeys, on the same server without the demo; `run.sh` starts it with `BASE_URL=http://localhost:<port>`, the address the browsers open, as passkeys are bound to it. Chromium gets a virtual authenticator over the DevTools protocol (`WebAuthn.addVirtualAuthenticator`: ctap2, resident keys, user verification); a member the admin created:
+
+- adds a passkey under Kontoeinstellungen → Sicherheit → Passkeys: password, name (filled in from browser and system), the browser's dialog; as first second factor it shows ten recovery codes and switches two-factor sign-in on
+- signs in without password, once from the autofill of the login field (`autocomplete="username webauthn"`, the waiting conditional request) and once with "Mit Passkey anmelden"
+- signs in with the password and is asked for the passkey (first, no code field without app)
+- on a phone the passkey button of the login and the buttons of the second step are at least 44 px high
+- removes the passkey, confirmed with password and passkey, after the warning that it is the last second factor; then the password alone signs in
+
+Firefox has no virtual authenticator: it only checks that the login shows the passkey button and the settings the passkey card, without errors. `SHOT_DIR=<folder>` saves the login, the registration, the list (desktop and narrow), the second step (desktop and phone) and the remove sheet.
+
 ## tour.e2e.mjs
 
 The guided tour (`frontend/src/features/tour`), started with "Tour starten" on the help page. Desktop in Chromium and Firefox, the phone in Chromium:

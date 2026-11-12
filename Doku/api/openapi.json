@@ -698,6 +698,66 @@
         }
       }
     },
+    "/api/v1/auth/login/mfa/passkey/options": {
+      "post": {
+        "summary": "Sign in: passkey challenge for the second step",
+        "description": "{mfaToken} → {options}: options for navigator.credentials.get() with the account's passkeys; a new call replaces the challenge",
+        "tags": [
+          "Public"
+        ],
+        "security": [],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/login/mfa/passkey": {
+      "post": {
+        "summary": "Sign in: second step with a passkey",
+        "description": "{mfaToken, credential, trustDevice} → like /auth/login/mfa (method passkey); credential is the browser's answer as JSON",
+        "tags": [
+          "Public"
+        ],
+        "security": [],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/login/passkey/options": {
+      "post": {
+        "summary": "Sign in with a passkey: challenge",
+        "description": "→ {token, options, expiresIn}: options for navigator.credentials.get() without allowCredentials (discoverable passkeys, also for mediation \"conditional\"); says nothing about accounts; 404 (passkeys_off) without an https BASE_URL or in the demo",
+        "tags": [
+          "Public"
+        ],
+        "security": [],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/login/passkey": {
+      "post": {
+        "summary": "Sign in with a passkey",
+        "description": "{token, credential} → {token, user}: the passkey with user verification counts as both factors; the same account checks as the password login (403 email_unverified, waiting for approval, disabled); 401 passkey_invalid (counts like a wrong password) or passkey_expired",
+        "tags": [
+          "Public"
+        ],
+        "security": [],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
     "/api/v1/auth/logout": {
       "post": {
         "summary": "Terminate session of this device",
@@ -715,7 +775,7 @@
     "/api/v1/auth/mfa": {
       "get": {
         "summary": "Two-factor status",
-        "description": "{available, totp: {enabled, enabledAt}, recoveryCodesLeft, trustedDevices, trustDays}; available is false in demo mode",
+        "description": "{available, enabled, totp: {enabled, enabledAt}, passkeys: [{id, name, createdAt, lastUsedAt, synced}], passkeysOff, recoveryCodesLeft, trustedDevices, trustDays}; available is false in demo mode; enabled: app or passkey; passkeysOff says why passkeys cannot be used (demo, no_base_url, not_https, ip_address), empty when they can",
         "tags": [
           "Account and General"
         ],
@@ -729,7 +789,7 @@
     "/api/v1/auth/mfa/totp/setup": {
       "post": {
         "summary": "Set up the authenticator app",
-        "description": "{password} → {secret, uri}: a new secret waiting for its first code; 409 while the app is on",
+        "description": "{password, code | passkeyToken + passkey} → {secret, uri}: a new secret waiting for its first code; the second factor only when the account has passkeys; 409 while the app is on",
         "tags": [
           "Account and General"
         ],
@@ -743,7 +803,7 @@
     "/api/v1/auth/mfa/totp/confirm": {
       "post": {
         "summary": "Switch the authenticator app on",
-        "description": "{code} → {recoveryCodes, enabledAt}: the first code switches the app on; the ten recovery codes are returned only here",
+        "description": "{code} → {recoveryCodes, enabledAt}: the first code switches the app on; the ten recovery codes are returned only here (empty when the account has passkeys and keeps its codes)",
         "tags": [
           "Account and General"
         ],
@@ -757,7 +817,7 @@
     "/api/v1/auth/mfa/totp/disable": {
       "post": {
         "summary": "Switch the authenticator app off",
-        "description": "{password, code}: removes the app, the recovery codes and the trusted devices",
+        "description": "{password, code | passkeyToken + passkey} → {disabled, mfaOff}: removes the app; without passkeys also the recovery codes and the trusted devices (mfaOff)",
         "tags": [
           "Account and General"
         ],
@@ -771,7 +831,7 @@
     "/api/v1/auth/mfa/recovery-codes": {
       "post": {
         "summary": "New recovery codes",
-        "description": "{password, code} → {recoveryCodes}; the earlier codes stop working",
+        "description": "{password, code | passkeyToken + passkey} → {recoveryCodes}; the earlier codes stop working",
         "tags": [
           "Account and General"
         ],
@@ -800,6 +860,74 @@
       "delete": {
         "summary": "Forget a trusted device",
         "description": "That device is asked for a code at its next sign-in; 404 for an unknown device",
+        "tags": [
+          "Account and General"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/mfa/passkeys/challenge": {
+      "post": {
+        "summary": "Passkey challenge for a confirmation",
+        "description": "→ {passkeyToken, options}: options for navigator.credentials.get() with the own passkeys; passkeyToken and the browser's answer (passkey) confirm a sensitive change instead of a code. Valid 5 minutes, once; 404 (passkeys_off) without an https BASE_URL",
+        "tags": [
+          "Account and General"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/mfa/passkeys/register/options": {
+      "post": {
+        "summary": "Start adding a passkey",
+        "description": "{password, code | passkeyToken + passkey} → {token, options}: options for navigator.credentials.create() (discoverable, user verification required, the existing passkeys excluded); the second factor only when the account has one",
+        "tags": [
+          "Account and General"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/mfa/passkeys": {
+      "post": {
+        "summary": "Add a passkey",
+        "description": "{token, name, credential} → 201 {passkey, recoveryCodes?}: credential is the browser's PublicKeyCredential as JSON; the first second factor of the account returns ten recovery codes; 400 passkey_invalid, 409 passkey_expired or already set up",
+        "tags": [
+          "Account and General"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/mfa/passkeys/{id}": {
+      "patch": {
+        "summary": "Rename a passkey",
+        "description": "{name} → {name}; at most 60 characters",
+        "tags": [
+          "Account and General"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Remove a passkey",
+        "description": "{password, code | passkeyToken + passkey} → {removed, mfaOff}: the last second factor (no app, no other passkey) switches two-factor sign-in off and removes the recovery codes and trusted devices",
         "tags": [
           "Account and General"
         ],

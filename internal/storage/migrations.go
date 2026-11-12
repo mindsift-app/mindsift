@@ -58,6 +58,7 @@ var migrations = []migration{
 	{35, "Mail alarms go to the login address", (*Store).migrateAlarmToLoginAddress},
 	{36, "Guided tour offered once to new accounts", (*Store).migrateTourOffer},
 	{37, "Two-factor sign-in: authenticator app, recovery codes, trusted devices", (*Store).migrateMFA},
+	{38, "Passkeys", (*Store).migratePasskeys},
 }
 
 func (s *Store) migrate() error {
