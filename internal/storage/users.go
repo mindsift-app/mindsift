@@ -376,6 +376,14 @@ func (s *Store) UpdateUserPassword(userID, passwordHash string) error {
 	return err
 }
 
+// SetPasswordHash replaces the stored hash without ending any session: the same password in the newer
+// form (auth.PasswordNeedsRehash). Only while the old hash is still stored, so a new password set in the
+// meantime stays. A new password goes through UpdateUserPassword.
+func (s *Store) SetPasswordHash(userID, oldHash, newHash string) error {
+	_, err := s.db.Exec(`UPDATE users SET password_hash = ? WHERE id = ? AND password_hash = ?`, newHash, userID, oldHash)
+	return err
+}
+
 func (s *Store) DeleteUser(userID string) error {
 	// Remove owned data properly first (other people's tasks in the user's lists stay theirs)
 	if err := s.PurgeUserData(userID); err != nil {
@@ -386,6 +394,9 @@ func (s *Store) DeleteUser(userID string) error {
 		stmt(`DELETE FROM task_assignees WHERE user_id = ?`, userID),
 		stmt(`DELETE FROM password_reset_tokens WHERE user_id = ?`, userID),
 		stmt(`DELETE FROM email_changes WHERE user_id = ?`, userID),
+		stmt(`DELETE FROM user_totp WHERE user_id = ?`, userID),
+		stmt(`DELETE FROM user_recovery_codes WHERE user_id = ?`, userID),
+		stmt(`DELETE FROM trusted_devices WHERE user_id = ?`, userID),
 		stmt(`DELETE FROM organization_members WHERE user_id = ?`, userID),
 		stmt(`DELETE FROM users WHERE id = ?`, userID),
 	); err != nil {
