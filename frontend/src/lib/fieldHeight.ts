@@ -5,14 +5,20 @@
 
 const MIN_HEIGHT = 22;
 
+// Width each field was last fitted at
+const lastWidth = new WeakMap<Element, number>();
+
 /** Sets the field's height to its text. A field with data-own-height (code editor) sizes itself. */
 export function fitFieldHeight(el: HTMLTextAreaElement) {
   if (el.dataset.ownHeight) return;
   el.style.height = 'auto';
-  el.style.height = `${Math.max(MIN_HEIGHT, el.scrollHeight)}px`;
+  const height = el.scrollHeight;
+  // Read while the layout is still fresh from measuring: read later (after the height is set), it would force
+  // another layout of the page, as refitOnWidthChange did for every new bullet
+  lastWidth.set(el, el.clientWidth);
+  el.style.height = `${Math.max(MIN_HEIGHT, height)}px`;
 }
 
-const lastWidth = new WeakMap<Element, number>();
 let observer: ResizeObserver | null = null;
 
 function refit(entries: ResizeObserverEntry[]) {
@@ -37,7 +43,7 @@ export function refitOnWidthChange(el: HTMLTextAreaElement): () => void {
     return () => window.removeEventListener('resize', fit);
   }
   observer ??= new ResizeObserver(refit);
-  lastWidth.set(el, el.clientWidth);
+  if (!lastWidth.has(el)) lastWidth.set(el, el.clientWidth);
   observer.observe(el);
   return () => {
     observer?.unobserve(el);
