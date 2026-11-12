@@ -60,6 +60,13 @@ describe('SetupAndAuthView: sign-in through the OIDC provider', () => {
     expect(screen.queryByText('Passwort vergessen?')).toBeNull();
   });
 
+  it('opens no invite form while the password login is off', () => {
+    window.history.replaceState(null, '', '/?invite=MS-ABCDEFGH');
+    render(<SetupAndAuthView authStatus={{ ...status, passwordLogin: false }} onAuthenticated={vi.fn()} />);
+    expect(screen.queryByPlaceholderText('MS-XXXXXXXX')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Mit Authentik anmelden' })).toBeTruthy();
+  });
+
   it('keeps the form for the administrators at /?login=password', () => {
     window.history.replaceState(null, '', '/?login=password');
     render(<SetupAndAuthView authStatus={{ ...status, passwordLogin: false }} onAuthenticated={vi.fn()} />);

@@ -146,4 +146,4 @@ if (failures > 0) {
   console.log(`${failures} OIDC check(s) failed`);
   process.exit(1);
 }
-console.log('All OIDC checks passed');
+console.log('All checks passed (OIDC)');

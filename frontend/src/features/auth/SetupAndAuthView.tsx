@@ -58,7 +58,8 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
   // An invite link (?invite=CODE) opens the invite form with the code filled in
   const [linkInviteCode] = useState(() => new URLSearchParams(window.location.search).get('invite')?.trim().toUpperCase() || '');
   const [authTab, setAuthTab] = useState<'login' | 'invite' | 'register' | 'forgot' | 'reset'>(
-    resetToken ? 'reset' : linkInviteCode ? 'invite' : 'login'
+    // An invite signs up with a password: not while the password login is off (OIDC)
+    resetToken ? 'reset' : linkInviteCode && authStatus.passwordLogin !== false ? 'invite' : 'login'
   );
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
