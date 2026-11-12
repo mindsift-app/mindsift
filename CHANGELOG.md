@@ -11,6 +11,7 @@ Versions before 0.80.0 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 Fixes from the security review of November 2026 (v0.94.0).
 
 ### Added
+- A short guided tour shows in seven steps where to find what: triage with the Quick Dump, notes with slash commands, blocks and drawings, tasks linked to a note, focus mode, tasks (list, Kanban, calendar, details) and search. A card with a small animated example points at the real controls while the rest of the page is dimmed; it switches pages as it goes, works on desktops and phones and with the keyboard (arrows, Enter, Esc), and returns to where it started. It never changes any data. For now it is started only from the help page with "Start tour".
 - Setup: when the admin came from `ADMIN_USER` without `ADMIN_EMAIL`, the rest of the setup asks for an email address; it counts once the link mailed to it is clicked, and the link follows as soon as a mail server is set up.
 - Setup: both ways of the setup wizard offer to set up the mail server when `SMTP_HOST` is not set (with a test mail after `ADMIN_USER`), and end with a summary of what is still open (mail server, `BASE_URL`, email address) and where the backups and the administration are.
 - The first admin's password can come from a file with `ADMIN_PASSWORD_FILE` (e.g. a Docker secret), so it does not show in `docker inspect`.
