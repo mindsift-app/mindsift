@@ -6,7 +6,7 @@
 [![Self-Hosted](https://img.shields.io/badge/100%25-Self--Hosted-2563eb?style=flat-square)](#quick-start)
 [![Docker](https://img.shields.io/badge/Deployment-Single%20Container-2496ed?style=flat-square&logo=docker&logoColor=white)](#quick-start)
 [![License](https://img.shields.io/badge/License-AGPLv3-6b7280?style=flat-square)](LICENSE)
-[![Version](https://img.shields.io/badge/Version-v0.94.0-16a34a?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-v0.95.0-16a34a?style=flat-square)](CHANGELOG.md)
 
 **Nested notes you write together, tasks with a board and a calendar, shared lists, and an inbox for everything that has no place yet.**
 One container, one SQLite file, your server.
