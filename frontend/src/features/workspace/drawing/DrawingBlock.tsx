@@ -7,7 +7,7 @@ import { DrawingElements } from './DrawingElements';
 import { DrawingEditor } from './DrawingEditor';
 import { ConfirmPopover } from '../../../components/ConfirmPopover';
 import { AvatarStack } from '../../../components/AvatarStack';
-import { isWebSocketConnected } from '../../../lib/api';
+import { isWebSocketConnected, tryWebSocket } from '../../../lib/api';
 
 interface View {
   x: number;
@@ -114,9 +114,13 @@ export const DrawingBlock: React.FC<DrawingBlockProps> = ({
   // Someone draws live: join or watch (asked where the click was)
   const [ask, setAsk] = useState<{ x: number; y: number } | null>(null);
   const liveNames = live?.length ? [...new Set(live.map((p) => p.name))] : [];
-  const openEditor = (e?: { clientX: number; clientY: number }) => {
+  const openEditor = async (e?: { clientX: number; clientY: number }) => {
+    const at = { x: e?.clientX ?? window.innerWidth / 2, y: e?.clientY ?? window.innerHeight / 3 };
+    // Fell back to SSE earlier (a dropped connection, a restart): give the WebSocket a fresh try first, so
+    // drawing along does not fail on an old fallback
+    if (canEdit && docId && !isWebSocketConnected()) await tryWebSocket(3000);
     if (liveNames.length && docId) {
-      setAsk({ x: e?.clientX ?? window.innerWidth / 2, y: e?.clientY ?? window.innerHeight / 3 });
+      setAsk(at);
       return;
     }
     setEditing(editMode());

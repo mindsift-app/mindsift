@@ -205,7 +205,9 @@ async function runFirefox(admin) {
   await signInWithPassword(page, login, password);
   await appReady(page);
   const card = await openSecurity(page);
-  check(await card.getByRole('button', { name: 'Passkey hinzufügen' }).isVisible(), 'Firefox: Passkeys in den Einstellungen');
+  // The card loads its state first: wait for the button instead of looking once
+  const addShown = await card.getByRole('button', { name: 'Passkey hinzufügen' }).waitFor({ timeout: 10000 }).then(() => true, () => false);
+  check(addShown, 'Firefox: Passkeys in den Einstellungen');
   check(errors.length === 0, 'Firefox: keine Fehler im Browser', errors);
   await browser.close();
 }

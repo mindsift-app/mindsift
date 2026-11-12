@@ -13,6 +13,8 @@ vi.mock('../../../lib/api', async (importOriginal) => {
   return {
     ...orig,
     isWebSocketConnected: () => realtime.ws,
+    // A fresh attempt before opening a drawing (realtime.tryWebSocket); here it fails without one
+    tryWebSocket: async () => realtime.ws,
     getSSEId: () => null,
     sendWebSocketMessage: (msg: any) => realtime.sent.push(msg),
     onWebSocketMessage: (cb: (msg: any) => void) => {
@@ -58,11 +60,11 @@ describe('Live drawing in the note', () => {
     expect(screen.getByRole('button', { name: 'Zusehen' })).toBeTruthy();
   });
 
-  it('offers only watching without WebSocket, and says why', () => {
+  it('offers only watching without WebSocket, and says why', async () => {
     realtime.ws = false;
     render(<DrawingBlock docId="d1" blockId="b1" content={CONTENT} canEdit live={[live[0]]} onChange={() => {}} />);
     fireEvent.doubleClick(screen.getByRole('img'));
-    expect(screen.getByText('Anna zeichnet gerade.')).toBeTruthy();
+    expect(await screen.findByText('Anna zeichnet gerade.')).toBeTruthy();
     expect(screen.getByText(/Mitzeichnen geht nur mit einer WebSocket-Verbindung/)).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Mitzeichnen' })).toBeNull();
     expect(screen.getByRole('button', { name: 'Zusehen' })).toBeTruthy();

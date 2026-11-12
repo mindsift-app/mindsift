@@ -20,6 +20,7 @@ Versions before 0.80.0 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - New settings section **Security** with the password change, two-factor sign-in and the signed-in devices (moved there from Profile).
 
 ### Fixed
+- After a dropped connection (a server update, a phone asleep, a network switch) the app reconnects with its WebSocket instead of falling back to the slower SSE stream for the rest of the visit. That fallback made live drawing impossible after an update ("no WebSocket", the drawing stayed locked). A real fallback behind a proxy is tried again after ten minutes, and opening a drawing tries the WebSocket first.
 - Changing the password no longer signs out the device it was changed on.
 - Callouts show **bold**, *italic*, links and hashtags like any other bullet instead of the raw Markdown; marking several bullets marks the callout's text.
 - The task dialog opens and closes without delay in long task lists: opening it no longer makes the browser restyle and lay out every row (300 tasks with a slowed-down CPU: about 0.5 s down to 0.07 s).
