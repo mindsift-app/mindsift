@@ -1,0 +1,70 @@
+{
+  "progress": "{{current}} of {{total}}",
+  "next": "Next",
+  "back": "Back",
+  "finish": "Done",
+  "close": "End tour",
+  "keysHint": "← → to step · Esc ends",
+  "start": {
+    "button": "Start tour",
+    "intro": "New here? A short tour shows in seven steps where to find what – it changes nothing in your data."
+  },
+  "triage": {
+    "title": "Triage: capture first, sort later",
+    "capture": "Whatever comes to mind, type it without thinking into the <b>Quick Dump</b> at the top (key <kbd>C</kbd>). It doesn't go anywhere yet, it lands as a card here in Triage.",
+    "capturePhone": "Whatever comes to mind, throw it into the <b>Quick Dump</b> without thinking: the <b>+</b> at the bottom centre, hold it to speak. It lands as a card here in Triage.",
+    "decide": "When you have time, decide card by card: <kbd>→</kbd> task, <kbd>←</kbd> discard, <kbd>D</kbd> note, <kbd>T</kbd> with a date, <kbd>Space</kbd> later – or use the buttons below the card, including “To list”.",
+    "decidePhone": "When you have time, decide card by card: swipe right to make it a task, left to discard it. The buttons below put it on a list, into a note or give it a date."
+  },
+  "notes": {
+    "title": "Notes made of blocks",
+    "text": "Every note is an outline of bullets. Type <kbd>/</kbd> in a bullet and the menu turns it into another block: heading, to-do, numbered list, code, callout, table – or with <kbd>/canvas</kbd> a drawing with shapes, arrows and freehand.",
+    "empty": "No note yet? The plus at the top of the sidebar creates your first one.",
+    "phoneList": "Tap a note to open it; the <b>+</b> at the bottom creates a new one."
+  },
+  "linked": {
+    "title": "Linked tasks",
+    "text": "The check icon to the right of a to-do in a note turns it into a real task. It then also shows up under Tasks – with due date, Kanban and reminder – and stays linked to the bullet: ticking and the title sync both ways, to-dos right below it become subtasks.",
+    "badge": "The “{{badge}}” badge on the bullet opens the task, “{{back}}” on the task jumps back."
+  },
+  "focus": {
+    "title": "Full screen for writing",
+    "button": "This button starts focus mode: just the note, across the whole window (<kbd>Ctrl</kbd>+<kbd>⇧</kbd>+<kbd>F</kbd>). <kbd>Esc</kbd> brings everything back.",
+    "menu": "In the note’s <b>⋯</b> menu, “{{item}}” starts full screen: just the note, across the whole window."
+  },
+  "tasks": {
+    "title": "Tasks",
+    "text": "Switch between list, Kanban and calendar here; in Kanban, <b>⤢</b> makes the board as wide as the window. Clicking a task opens the details with due date, subtasks, notes and reminders.",
+    "textPhone": "Choose list, Kanban or calendar in the menu behind the logo at the top left. Tapping a task opens the details with due date, subtasks, notes and reminders."
+  },
+  "search": {
+    "title": "Search",
+    "text": "<kbd>Ctrl</kbd>+<kbd>K</kbd> (Mac: <kbd>⌘</kbd>+<kbd>K</kbd>) or <kbd>/</kbd> opens the search from anywhere. It finds notes down to a single bullet, tasks and list items.",
+    "textPhone": "The magnifier at the top opens the search. It finds notes down to a single bullet, tasks and list items."
+  },
+  "end": {
+    "title": "That’s it!",
+    "text": "Everything else – shortcuts, lists, sharing and more – is here on the help page (the <b>?</b> at the top right). “Start tour” shows the tour again any time.",
+    "textPhone": "Everything else – lists, sharing and more – is here on the help page (through your profile picture at the top right). “Start tour” shows the tour again any time.",
+    "share": "By the way, you can share notes, task lists and lists with others and edit them together."
+  },
+  "demo": {
+    "thought1": "Call the dentist",
+    "thought2": "Old flyers",
+    "thought3": "Lentil soup recipe",
+    "h1": "Trip to Lisbon",
+    "todo": "Check passport",
+    "numbered1": "Pack suitcase",
+    "numbered2": "Book a taxi",
+    "callout": "Check-in from 3 pm",
+    "tableHead1": "Day",
+    "tableHead2": "Place",
+    "tableCell1": "Mon",
+    "tableCell2": "Alfama",
+    "canvas1": "Idea",
+    "canvas2": "Plan",
+    "task": "Send the offer",
+    "note": "Note",
+    "tasks": "Tasks"
+  }
+}

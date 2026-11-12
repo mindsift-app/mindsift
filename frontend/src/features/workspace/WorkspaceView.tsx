@@ -758,6 +758,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
         )}
         {/* LEFT MASTER SIDEBAR */}
         <aside
+          data-tour="note-list"
           onMouseLeave={() => setZenSidebar((v) => (v === 'hover' ? 'closed' : v))}
           className={
             focusMode
@@ -808,6 +809,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
               <button
                 type="button"
                 onClick={() => handleCreateDocument('')}
+                data-tour="new-note"
                 {...drag.newNoteDropProps}
                 className={`btn-icon h-8 w-8 transition-transform ${drag.newNoteHover ? 'scale-110 text-accent ring-2 ring-accent bg-accent/10' : ''}`}
                 title={t('view.newNoteDrop')}

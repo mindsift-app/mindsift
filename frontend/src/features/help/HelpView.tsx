@@ -19,6 +19,7 @@ import { Trans, useTranslation } from 'react-i18next';
 import { loadedHelpContent, loadHelpContent } from './content';
 import type { DocCard, HelpCategory, HelpContent } from './content/types';
 import { NO_AUTOFILL } from '../../lib/noAutofill';
+import { TourStartCard } from '../tour/TourStartCard';
 
 interface HelpViewProps {
   onBack?: () => void;
@@ -130,6 +131,9 @@ export const HelpView: React.FC<HelpViewProps> = ({ onBack }) => {
           )}
         </div>
       </div>
+
+      {/* The guided tour through the app */}
+      <TourStartCard />
 
       {/* Category Filter Pills */}
       <div className="flex flex-wrap items-center gap-1.5">

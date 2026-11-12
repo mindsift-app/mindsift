@@ -9,7 +9,8 @@ import tasks from './tasks.json';
 import triage from './triage.json';
 import settings from './settings.json';
 import publicPage from './public.json';
+import tour from './tour.json';
 
 // English texts by area (namespace), the same files and keys as the German ones
-const en = { common, app, auth, settings, triage, tasks, lists, groups, workspace, help, public: publicPage };
+const en = { common, app, auth, settings, triage, tasks, lists, groups, workspace, help, public: publicPage, tour };
 export default en;

@@ -256,3 +256,13 @@ Component: [HoldToRecordFab.tsx](../frontend/src/features/capture/HoldToRecordFa
 - **Release:** Stops recording, briefly awaits the final word, and saves the text as an idea to the inbox regardless of the active view (`source: 'voice'`, `target: 'inbox'`).
 - **Drag upward (> 60 px):** Switches the pill to cancellation state ("🗑️ Release to cancel"); releasing here discards the recording (`abort()`).
 - **Fallback:** If speech input is disabled (`STT_DISABLED=true`), unsupported by the browser, or microphone permissions are denied (`not-allowed`), holding the button opens the dialog just like tapping and briefly displays a status message above the bottom bar.
+
+## Guided Tour
+
+Folder: [features/tour/](../frontend/src/features/tour/) (steps in `tourSteps.ts`, step logic in `tourEngine.ts`, card placement in `tourLayout.ts`, overlay in `GuidedTour.tsx`, texts in `locales/<code>/tour.json`).
+
+- **Start:** only the button "Tour starten" on the help page (`TourStartCard`, through `requestTourStart()`); no automatic start. `GuidedTour` is mounted once in `App.tsx` and returns to the page it was started on when it ends (last step, ×, Esc).
+- **Seven steps, no more:** Triage (Quick Dump and the deck), notes (slash commands and blocks, drawing), linked tasks, focus mode, tasks (views, wide board, details), search, the help page. Sharing is one sentence of the last step.
+- **Targets by attribute:** each step names `[data-tour="…"]` selectors in order of preference; the first visible one gets the card, `also` lights more controls with a dashed frame. A control the tour points at keeps its `data-tour` attribute when it is reworked. A step with nothing visible is skipped in the direction of travel (on phones the focus-mode step, as the phone shows the list of notes; with an empty account the "new note" button stands in for the note).
+- **Look:** the page is dimmed with `--bg-overlay`, the controls are cut out with the corners of the control (or the theme's `--radius-card`); the card is `panel-elevated` with an arrow beside the control on desktops, docked at the top or bottom over the full width on phones. Small examples in the card (`TourDemos.tsx`) are static markup that moves (still with reduced motion) and never touch data.
+- **Nothing changes underneath:** `#root` is `inert` while the tour runs, the overlay takes every click, and the keys are caught before the app's shortcuts (→ / Enter next, ← back, Esc ends, Tab stays in the card), so the triage's own keys cannot sort a card. `e2e/tour.e2e.mjs` checks that notes, tasks, inbox and lists are the same afterwards.

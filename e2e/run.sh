@@ -35,4 +35,4 @@ for _ in $(seq 1 60); do curl -s -m 1 "http://localhost:$PORT/api/v1/health" >/d
 echo "Starting the browser tests (port $PORT) …"
 "$ENGINE" run --rm --network host -e MINDSIFT_URL="http://localhost:$PORT" -v "$ROOT/e2e":/e2e:Z -w /e2e \
   mcr.microsoft.com/playwright:v1.65.0-noble \
-  sh -c 'npm install --no-audit --no-fund >/dev/null 2>&1 && node collab.e2e.mjs && node share.e2e.mjs && node lock.e2e.mjs && node copy.e2e.mjs && node table.e2e.mjs && node live.e2e.mjs && node channels.e2e.mjs && node offline.e2e.mjs'
+  sh -c 'npm install --no-audit --no-fund >/dev/null 2>&1 && node collab.e2e.mjs && node share.e2e.mjs && node lock.e2e.mjs && node copy.e2e.mjs && node table.e2e.mjs && node live.e2e.mjs && node channels.e2e.mjs && node offline.e2e.mjs && node tour.e2e.mjs'

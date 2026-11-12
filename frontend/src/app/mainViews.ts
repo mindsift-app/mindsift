@@ -12,3 +12,4 @@ export { HelpView } from '../features/help/HelpView';
 export { GroupsView } from '../features/teams/GroupsView';
 export { CommandPalette } from '../components/CommandPalette';
 export { PublicNoteView } from '../features/public/PublicNoteView';
+export { GuidedTour } from '../features/tour/GuidedTour';

@@ -1551,6 +1551,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
           <button
             type="button"
             onClick={onToggleFocusMode}
+            data-tour="focus-mode"
             className="btn-icon h-11 w-11 sm:h-7 sm:w-7"
             title={`${t('editor.startFocusTitle')} (${t('editor.focusShortcut')})`}
             aria-label={t('editor.startFocusTitle')}
@@ -1581,6 +1582,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
           aria-haspopup="menu"
           aria-label={t('editor.more')}
           title={t('editor.more')}
+          data-tour="note-more"
           className="btn-icon h-11 w-11 sm:h-7 sm:w-7"
         >
           <MoreHorizontal className="w-3.5 h-3.5" />
@@ -1752,6 +1754,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
     <div
       ref={scrollRef}
       className={embedded ? 'flex flex-col bg-editor' : 'flex-1 flex flex-col h-full min-h-0 bg-editor overflow-y-auto overscroll-y-contain'}
+      data-tour="note-editor"
       data-sync-channel={engineState?.channel}
     >
       {desktopBar && actionsTarget && createPortal(actionsBlock, actionsTarget)}
