@@ -11,6 +11,8 @@ Versions before 0.80.0 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 Fixes from the security review of November 2026 (v0.94.0).
 
 ### Added
+- The first admin's password can come from a file with `ADMIN_PASSWORD_FILE` (e.g. a Docker secret), so it does not show in `docker inspect`.
+- The install script asks for the admin account on a new install (or generates a password and shows it once), so the new instance is protected from the start; without a terminal it skips the question with a hint.
 - The image names its version and describes itself (OCI labels and index annotations), so Dozzle and Portainer show the version, e.g. next to an available update, and the package page on GitHub has a description.
 - The setup wizard asks whether to switch on daily backups (preselected on, at 03:00 server time, kept 3 days), with a reminder to copy `data/backups/` to another place. The same question appears after the first sign-in of an admin created with `ADMIN_USER`/`ADMIN_PASSWORD`. An invalid time or a retention outside 1–365 days is refused.
 - Tables in notes: `/table` creates a table with a header row (two columns, two rows; text already in the bullet goes into the first cell). Enter adds a row below, Tab and Shift+Tab move between cells, the + next to the table adds a column, and the ⋯ menu inserts or deletes columns and rows and switches the lines: inner lines fading out towards the edge (default), a full frame, or the header line and column lines. On phones wide tables scroll sideways. Tables are copied, pasted, exported and imported as Markdown tables, are found by search, and AI agents read and write them through MCP.
@@ -68,6 +70,10 @@ Fixes from the security review of November 2026 (v0.94.0).
 - The sign-in page loads about 170 kB (compressed) instead of 530 kB; the rest of the app follows right after signing in, or at once when you are still signed in.
 
 ### Fixed
+- Admin settings on phones: the backup time sits below its label and is wide enough.
+- Wide tables in notes scroll sideways on the desktop too, instead of squeezing long cells into narrow columns.
+- When undo takes away the table row with the cursor, the cursor moves to the nearest cell instead of leaving the table.
+- The install script now keeps `.env` readable only for its owner (it could end up readable for everyone).
 - Notes on phones: zooming into a deep bullet no longer fills the note's header with the whole path; a home button takes you back to the start of the note instead (back still zooms out one level at a time). The extra button next to the zoomed bullet's heading that did the same is gone on phones.
 - Deleting your data or account asked for the password without counting wrong guesses; now it counts them like failed sign-ins and locks the same way.
 - With e-mail confirmation on, the sign-up form no longer tells whether an address already has an account, and a failed sign-in takes as long for unknown names as for known ones.
