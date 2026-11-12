@@ -417,6 +417,17 @@ func TestDemoAccountsGetSampleDataAndShares(t *testing.T) {
 	if pinned != 1 {
 		t.Errorf("the start note should be pinned for the demo user too, %d pinned", pinned)
 	}
+	// Notes made in the same second come in the same order for both (the help notes as written)
+	titles := func(docs []domain.Document) string {
+		var out []string
+		for _, d := range docs {
+			out = append(out, d.Title)
+		}
+		return strings.Join(out, " | ")
+	}
+	if a, m := titles(adminDocs), titles(memberDocs); a != m {
+		t.Errorf("order differs:\nadmin %s\nuser  %s", a, m)
+	}
 	adminTaskLists, _ := s.GetTaskLists(admin.ID)
 	memberTaskLists, _ := s.GetTaskLists(member.ID)
 	adminLists, _ := s.GetAllListsForUser(admin.ID)
