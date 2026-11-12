@@ -34,6 +34,7 @@ type Server struct {
 
 	leases   *collab.LeaseManager // block leases and open sessions of notes
 	notifier *collab.Notifier     // wakes long-poll requests on note changes
+	draw     *drawHub             // live drawing sessions (drawlive.go)
 
 	demo          demoState     // periodic reset in demo mode (demo.go)
 	streamTickets streamTickets // one-time tickets for WebSocket/SSE (streamticket.go)
@@ -78,14 +79,17 @@ func NewServer(cfg *config.Config, store *storage.Store, wsHub *ws.Hub, staticFS
 	if srv.voiceMode() == "server" {
 		go srv.startVoiceCheck()
 	}
+	srv.draw = newDrawHub()
 	wsHub.SetRoomAuthorizer(srv.canJoinRoom)
+	wsHub.SetMessageHandler(drawMessageHandler{srv})
 	wsHub.SetOriginCheck(srv.streamOriginAllowed)
 	// Next occurrences of repeating tasks appear live on every connected client
 	store.OnTaskCreated = func(th *domain.Thought) {
 		srv.wsHub.BroadcastToUsers(srv.taskAudience(th), "TASK_CREATED", th)
 	}
-	srv.bg.Add(1)
+	srv.bg.Add(2)
 	go srv.startCompaction()
+	go srv.startDrawTicker()
 	if cfg.DemoMode && cfg.DemoResetMinutes > 0 {
 		go srv.startDemoResetTicker()
 	}
@@ -102,6 +106,11 @@ func NewServer(cfg *config.Config, store *storage.Store, wsHub *ws.Hub, staticFS
 // canJoinRoom allows realtime rooms only to users with read access: "doc:<id>" for notes, otherwise a shared list ID.
 func (s *Server) canJoinRoom(userID, room string) bool {
 	if docID, ok := strings.CutPrefix(room, "doc:"); ok {
+		return s.store.DocRole(userID, docID) != ""
+	}
+	// Live drawings: "drawing:<docId>:<blockId>", everyone who can read the note may watch
+	if rest, ok := strings.CutPrefix(room, "drawing:"); ok {
+		docID, _, _ := strings.Cut(rest, ":")
 		return s.store.DocRole(userID, docID) != ""
 	}
 	_, err := s.store.GetListByID(userID, room)
@@ -344,6 +353,8 @@ func (s *Server) Router() http.Handler {
 		r.Post("/api/v1/docs/{id}/sync", s.handleDocSync)
 		r.Get("/api/v1/docs/{id}/changes", s.handleDocChanges)
 		r.Post("/api/v1/docs/{id}/leave", s.handleDocLeave)
+		r.Get("/api/v1/docs/{id}/drawings/{blockId}/live", s.handleDrawLive)
+		r.Post("/api/v1/docs/{id}/drawings/{blockId}/watch", s.handleDrawWatch)
 
 		// Document Sharing & Collaboration
 		r.Get("/api/v1/documents/{id}/shares", s.handleGetDocShares)

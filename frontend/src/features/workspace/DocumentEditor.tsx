@@ -35,6 +35,7 @@ import { Document, DocumentBlock, MoveResult, User } from '../../lib/types';
 import { api } from '../../lib/api';
 import { OfflineError } from '../../lib/offline';
 import { ConflictChoice, DocSyncEngine, EngineState, MAX_NOTE_BLOCKS } from '../../lib/docSync/engine';
+import { registerNoteClient } from '../../lib/docSync/noteClients';
 import { formatNumber } from '../../lib/format';
 import { fitFieldHeight, refitOnWidthChange } from '../../lib/fieldHeight';
 import { Presence } from '../../lib/docSync/transport';
@@ -629,6 +630,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
   useEffect(() => {
     const engine = new DocSyncEngine(docId);
     engineRef.current = engine;
+    const unregisterClient = registerNoteClient(docId, engine.clientId);
     // Undo of the editor's server actions from the last time the note was open (kept with the engine's steps)
     const kept = engine.undoExtra as EditorUndoExtra | undefined;
     lastExtractRef.current = kept?.extract ?? null;
@@ -653,6 +655,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
     void engine.start();
     return () => {
       unsubscribe();
+      unregisterClient();
       const extra: EditorUndoExtra = { extract: lastExtractRef.current, inline: lastInlineRef.current, move: lastMoveRef.current };
       engine.undoExtra = extra.extract || extra.inline || extra.move ? extra : undefined;
       engine.stop();
@@ -705,7 +708,13 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
   const lockedBlocks = useMemo(() => {
     const m = new Map<string, BlockLock>();
     for (const l of engineState?.lockedByOthers || []) {
-      m.set(l.blockId, { userId: l.userId, name: l.name || t('lock.someone'), avatarUrl: avatarsById.get(l.userId) });
+      m.set(l.blockId, {
+        userId: l.userId,
+        name: l.name || t('lock.someone'),
+        avatarUrl: avatarsById.get(l.userId),
+        // A live drawing holds the bullet: everyone drawing in it
+        ...(l.live?.length ? { live: l.live.map((p) => ({ userId: p.userId, name: p.name || t('lock.someone'), avatarUrl: avatarsById.get(p.userId) })) } : {}),
+      });
     }
     return m;
   }, [engineState?.lockedByOthers, avatarsById, t]);

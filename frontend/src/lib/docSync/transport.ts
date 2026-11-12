@@ -8,6 +8,8 @@ export interface LeaseInfo {
   blockId: string;
   userId: string;
   name: string;
+  /** A live drawing session holds the block: everyone drawing in it (host first) */
+  live?: Presence[];
 }
 
 export interface Presence {

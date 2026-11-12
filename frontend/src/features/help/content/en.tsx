@@ -183,7 +183,7 @@ const en: HelpContent = {
       title: 'Drawings (/canvas)',
       subtitle: 'Sketches, flowcharts and mind maps right in the note',
       icon: Shapes,
-      keywords: ['drawing', 'canvas', 'sketch', 'diagram', 'flowchart', 'mind map', 'arrow', 'shapes', 'freehand', 'grid', 'mermaid'],
+      keywords: ['drawing', 'canvas', 'sketch', 'diagram', 'flowchart', 'mind map', 'arrow', 'shapes', 'freehand', 'grid', 'mermaid', 'live', 'draw along', 'draw together'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
           <ul className="space-y-1.5">
@@ -203,7 +203,10 @@ const en: HelpContent = {
               <strong className="text-main">In the note:</strong> The drawing fills the width of the note. Click into it, then dragging moves the view and Ctrl + mouse wheel or two fingers zoom; the wheel alone keeps scrolling the page. Another click ends this, a view not saved glides back. Drag the lower edge to change the height. “Save view” keeps section, zoom and height for everyone, The size button switches between the recommended size and “all large” (tall drawings) or the recommended height to move sideways (wide drawings). Double-click or “Edit” opens the editor; it starts with the hand (only the view moves), choose another tool to change things. The button with the arrows next to “Done” leaves without saving and asks first if there are changes.
             </li>
             <li>
-              <strong className="text-main">Together and offline:</strong> In shared notes a drawing is locked for the others while someone is drawing in it. What you draw offline is saved once the connection is back; an unsaved draft is offered for restoring the next time you open the drawing.
+              <strong className="text-main">Drawing together:</strong> In shared notes you can draw in one drawing at the same time. Whoever opens it to edit starts a live drawing and is the host; the note then shows “Live drawing: …”. Whoever opens it afterwards chooses “Draw along” or “Watch” and sees the others' shapes, pointers and selections in their colour, with everyone taking part at the top of the editor. The host saves with “Done” for everyone or discards for everyone; the others have “Leave”. If the host goes, whoever has been there longest takes over. Undo only takes back your own changes. Drawing along needs a WebSocket connection; without one (some company proxies) you can watch live, and without a live drawing running you edit alone as before while the others only look.
+            </li>
+            <li>
+              <strong className="text-main">Offline and drafts:</strong> What you draw offline is saved once the connection is back; an unsaved draft is offered for restoring the next time you open the drawing. If everyone leaves a live drawing without “Done”, the server keeps its state for about 10 minutes; whoever opens it again within that time carries on.
             </li>
             <li>
               <strong className="text-main">Everywhere:</strong> Search finds the words in drawings, copy and paste keeps the drawing, and the Markdown export contains it as an SVG picture (importing turns it back into a drawing). AI agents (MCP) read a description of the drawing and can create drawings themselves from Mermaid flowcharts and mind maps.

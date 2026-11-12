@@ -123,6 +123,8 @@ export interface BlockLock {
   userId: string;
   name: string;
   avatarUrl?: string;
+  /** A live drawing holds the bullet: everyone drawing in it (host first); others may join or watch */
+  live?: { userId: string; name: string; avatarUrl?: string }[];
 }
 
 export interface OutlinerBlockProps {
@@ -215,7 +217,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
   onPasteMultiLines,
   listMarker,
   siblingFollows = false,
-  lockedBy,
+  lockedBy: heldBy,
   originalLockedBy,
   canAppendBelow,
   onResolveConflict,
@@ -224,6 +226,9 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
   inRangeSelection,
 }) => {
   const { t } = useTranslation('workspace');
+  // A live drawing holds its bullet: the drawing itself shows who draws, and others may join or watch
+  const liveDrawing = block.type === 'drawing' && heldBy?.live?.length ? heldBy.live : undefined;
+  const lockedBy = liveDrawing ? undefined : heldBy;
   const [localContent, setShownContent] = useState<string>(block.content || '');
   // The user changed the text since the field last took it over from the block. Only then may leaving the
   // field send it: an unchanged field can hold old text, e.g. while someone else types in this locked bullet.
@@ -1542,10 +1547,13 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
           />
         ) : block.type === 'drawing' ? (
           <DrawingBlock
+            docId={docId}
             blockId={block.id}
             content={localContent}
-            // Someone else drawing holds the block: look only
-            canEdit={canEdit && !lockedBy}
+            live={liveDrawing}
+            // Someone else drawing alone holds the block: look only. A live drawing holds it for everyone
+            // drawing: whoever may edit the note may join (the row itself counts as locked)
+            canEdit={liveDrawing ? !!canAppendBelow : canEdit && !lockedBy}
             autoOpen={drawingAutoOpen}
             actionsTarget={drawingActionsEl}
             // Clicked into or open in the editor counts as the cursor in this bullet (action bubble, lease)

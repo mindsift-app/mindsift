@@ -16,6 +16,7 @@ type lease struct {
 	userID   string
 	name     string
 	expires  time.Time
+	live     []Presence // a live drawing session holds the block: everyone drawing in it
 }
 
 type session struct {
@@ -29,6 +30,8 @@ type LeaseInfo struct {
 	BlockID string `json:"blockId"`
 	UserID  string `json:"userId"`
 	Name    string `json:"name"`
+	// Live: the block is a drawing several people draw in right now ("Live-Zeichnung: Anna, Ben")
+	Live []Presence `json:"live,omitempty"`
 }
 
 // Presence is one client that synced a document recently.
@@ -124,6 +127,48 @@ func (m *LeaseManager) holders(docID string) map[string]string {
 	return h
 }
 
+// HoldLive gives a drawing block to a live drawing session (holder, e.g. "draw:<blockId>") and renews it.
+// The session takes the block over from clients of the people drawing in it (their own editor held it
+// before the session started), never from anyone else: ok is false while someone else holds it.
+func (m *LeaseManager) HoldLive(docID, blockID, holder string, people []Presence) bool {
+	if len(people) == 0 {
+		return false
+	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	now := m.now()
+	m.prune(docID, now)
+	l := m.docLeases(docID)
+	if cur, ok := l[blockID]; ok && cur.clientID != holder {
+		drawing := false
+		for _, p := range people {
+			drawing = drawing || p.UserID == cur.userID
+		}
+		if !drawing {
+			return false
+		}
+	}
+	live := append([]Presence(nil), people...)
+	l[blockID] = lease{clientID: holder, userID: people[0].UserID, name: people[0].Name, expires: now.Add(LeaseTTL), live: live}
+	return true
+}
+
+// HandOver passes a block from one holder to a client (a live drawing session that ended with "Fertig"
+// hands it to the note of the person saving, so the save is no conflict). A block held by someone else
+// stays theirs.
+func (m *LeaseManager) HandOver(docID, blockID, from string, to Actor) bool {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	now := m.now()
+	m.prune(docID, now)
+	l := m.docLeases(docID)
+	if cur, ok := l[blockID]; ok && cur.clientID != from && cur.clientID != to.ClientID {
+		return false
+	}
+	l[blockID] = lease{clientID: to.ClientID, userID: to.UserID, name: to.Name, expires: now.Add(LeaseTTL)}
+	return true
+}
+
 // Release gives up leases held by this client.
 func (m *LeaseManager) Release(docID, clientID string, blockIDs []string) {
 	m.mu.Lock()
@@ -172,7 +217,7 @@ func (m *LeaseManager) Others(docID, clientID string) []LeaseInfo {
 	out := make([]LeaseInfo, 0)
 	for id, l := range m.leases[docID] {
 		if l.clientID != clientID {
-			out = append(out, LeaseInfo{BlockID: id, UserID: l.userID, Name: l.name})
+			out = append(out, LeaseInfo{BlockID: id, UserID: l.userID, Name: l.name, Live: l.live})
 		}
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].BlockID < out[j].BlockID })

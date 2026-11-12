@@ -229,7 +229,7 @@ const de: HelpContent = {
       title: 'Zeichnungen (/canvas)',
       subtitle: 'Skizzen, Flussdiagramme und Mindmaps direkt in der Notiz',
       icon: Shapes,
-      keywords: ['zeichnung', 'canvas', 'skizze', 'diagramm', 'flussdiagramm', 'mindmap', 'pfeil', 'formen', 'freihand', 'gitter', 'mermaid'],
+      keywords: ['zeichnung', 'canvas', 'skizze', 'diagramm', 'flussdiagramm', 'mindmap', 'pfeil', 'formen', 'freihand', 'gitter', 'mermaid', 'live', 'mitzeichnen', 'gemeinsam zeichnen'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
           <ul className="space-y-1.5">
@@ -249,7 +249,10 @@ const de: HelpContent = {
               <strong className="text-main">In der Notiz:</strong> Die Zeichnung füllt die Breite der Notiz. Ein Klick hinein, dann verschiebt Ziehen den Ausschnitt, Strg + Mausrad oder zwei Finger zoomen; das Mausrad allein scrollt weiter die Seite. Ein weiterer Klick beendet das, ein nicht gespeicherter Ausschnitt gleitet zurück. Die Unterkante ziehen ändert die Höhe. „Ansicht speichern“ hält Ausschnitt, Zoom und Höhe für alle fest. Der Größen-Knopf schaltet zwischen der empfohlenen Größe und „alles groß“ (hohe Zeichnungen) bzw. der empfohlenen Höhe zum seitlichen Verschieben (breite Zeichnungen) um. Doppelklick oder „Bearbeiten“ öffnet den Editor; er startet mit der Hand (nur die Ansicht bewegt sich), zum Ändern wählst du ein anderes Werkzeug. Der Knopf mit den Pfeilen neben „Fertig“ verlässt ihn ohne zu speichern und fragt bei Änderungen nach.
             </li>
             <li>
-              <strong className="text-main">Gemeinsam und offline:</strong> In geteilten Notizen ist eine Zeichnung für die anderen gesperrt, solange jemand darin zeichnet. Offline Gezeichnetes wird gespeichert, sobald die Verbindung zurück ist; einen ungespeicherten Entwurf bietet MindSift beim nächsten Öffnen zum Wiederherstellen an.
+              <strong className="text-main">Gemeinsam zeichnen:</strong> In geteilten Notizen könnt ihr gleichzeitig in einer Zeichnung zeichnen. Wer sie zum Bearbeiten öffnet, startet eine Live-Zeichnung und ist Gastgeber; die Notiz zeigt dann „Live-Zeichnung: …“. Wer sie danach öffnet, wählt „Mitzeichnen“ oder „Zusehen“ und sieht die Formen, Mauszeiger und Auswahlen der anderen in ihrer Farbe, oben im Editor alle Beteiligten. Der Gastgeber speichert mit „Fertig“ für alle oder verwirft für alle; die anderen haben „Verlassen“. Geht der Gastgeber, übernimmt, wer am längsten dabei ist. Rückgängig nimmt nur deine eigenen Änderungen zurück. Mitzeichnen braucht eine WebSocket-Verbindung; ohne sie (manche Firmen-Proxys) kannst du live zusehen, und ohne laufende Live-Zeichnung bearbeitest du allein wie bisher, die anderen sehen dann nur zu.
+            </li>
+            <li>
+              <strong className="text-main">Offline und Entwürfe:</strong> Offline Gezeichnetes wird gespeichert, sobald die Verbindung zurück ist; einen ungespeicherten Entwurf bietet MindSift beim nächsten Öffnen zum Wiederherstellen an. Verlassen alle eine Live-Zeichnung ohne „Fertig“, hält der Server den Stand noch etwa 10 Minuten; wer sie in der Zeit wieder öffnet, macht dort weiter.
             </li>
             <li>
               <strong className="text-main">Überall dabei:</strong> Die Suche findet die Wörter in Zeichnungen, Kopieren und Einfügen behält die Zeichnung, der Markdown-Export enthält sie als SVG-Bild (der Import macht wieder eine Zeichnung daraus). KI-Agenten (MCP) lesen eine Beschreibung der Zeichnung und können aus Mermaid-Flussdiagrammen und Mindmaps selbst Zeichnungen anlegen.

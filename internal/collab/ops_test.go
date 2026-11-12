@@ -435,3 +435,41 @@ func TestNoteSizeIsLimited(t *testing.T) {
 	}
 	mustValid(t, d)
 }
+
+// A live drawing session holds its bullet: it takes it over from the people drawing, never from someone
+// else, shows everyone drawing, and hands it to the note of the person saving at the end
+func TestLiveDrawingLease(t *testing.T) {
+	now := time.Unix(1000, 0)
+	m := NewLeaseManager(func() time.Time { return now })
+	m.Hold("d", ben, []string{"draw"}) // Ben edits the drawing alone
+	if m.HoldLive("d", "draw", "draw:draw", []Presence{{UserID: "u_anna", Name: "Anna"}}) {
+		t.Fatal("a session took the bullet from someone editing alone")
+	}
+	m.Release("d", "c_ben", []string{"draw"})
+	m.Hold("d", anna, []string{"draw"}) // Anna's note held it before she started drawing
+	if !m.HoldLive("d", "draw", "draw:draw", []Presence{{UserID: "u_anna", Name: "Anna"}, {UserID: "u_ben", Name: "Ben"}}) {
+		t.Fatal("the session must take the bullet over from the people drawing")
+	}
+	others := m.Others("d", "c_anna")
+	if len(others) != 1 || len(others[0].Live) != 2 || others[0].Name != "Anna" {
+		t.Fatalf("the note shows the live drawing: %+v", others)
+	}
+	if g, _ := m.Hold("d", anna, []string{"draw"}); len(g) != 0 {
+		t.Fatal("nobody's note gets the bullet while the session holds it")
+	}
+	now = now.Add(LeaseTTL - time.Second)
+	m.HoldLive("d", "draw", "draw:draw", []Presence{{UserID: "u_ben", Name: "Ben"}}) // renewed
+	now = now.Add(LeaseTTL - time.Second)
+	if h, _ := m.View("d").HolderOf("draw"); h != "draw:draw" {
+		t.Fatalf("renewed lease ran out: %q", h)
+	}
+	if !m.HandOver("d", "draw", "draw:draw", ben) {
+		t.Fatal("hand over to the note of the person saving")
+	}
+	if h, _ := m.View("d").HolderOf("draw"); h != "c_ben" {
+		t.Fatalf("after Fertig the bullet belongs to %q", h)
+	}
+	if m.HandOver("d", "draw", "draw:draw", anna) {
+		t.Fatal("a second hand over must not take it from Ben")
+	}
+}

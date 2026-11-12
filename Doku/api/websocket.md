@@ -1,8 +1,8 @@
 # Real-Time: WebSocket, SSE, and Long Polling
 
-The server distributes changes as JSON events to connected clients. Events are generated **after** a REST mutation; there is no write channel over the connection. Implementation: [hub.go](../../internal/ws/hub.go), Client: [realtime.ts](../../frontend/src/lib/api/realtime.ts).
+The server distributes changes as JSON events to connected clients. Events are generated **after** a REST mutation; the only write channel over the connection is live drawing (`DRAW_*`, see below). Implementation: [hub.go](../../internal/ws/hub.go), Client: [realtime.ts](../../frontend/src/lib/api/realtime.ts).
 
-> No CRDTs, no locks, no cursor presence. Earlier versions of this documentation described DocRooms, `clientId` echo suppression, and Yjs; these no longer exist.
+> No CRDTs, and cursor presence only in live drawings. Earlier versions of this documentation described DocRooms, `clientId` echo suppression, and Yjs; these no longer exist.
 
 ## Transports
 
@@ -31,7 +31,7 @@ Without WebSocket and SSE, the client retrieves events via **long polling**: It 
 { "event": "TASK_UPDATED", "listId": "", "payload": { … }, "timestamp": "2026-10-27T12:00:00Z" }
 ```
 
-Client → Server: The server only processes `{"event":"JOIN_ROOM","room":"<id>"}`, `{"event":"LEAVE_ROOM","room":"<id>"}`, and `{"event":"PING"}` (replies with `PONG`). Rooms are named `doc:<docId>` for notes or `<listId>` for shared lists.
+Client → Server: The server processes `{"event":"JOIN_ROOM","room":"<id>"}`, `{"event":"LEAVE_ROOM","room":"<id>"}`, `{"event":"PING"}` (replies with `PONG`) and the live drawing messages `DRAW_*` (below). Rooms are named `doc:<docId>` for notes, `drawing:<docId>:<blockId>` for live drawings (read access to the note) or `<listId>` for shared lists.
 
 ## Delivery
 
@@ -58,6 +58,33 @@ Client → Server: The server only processes `{"event":"JOIN_ROOM","room":"<id>"
 | `USER_PRESENCE` | Connection connected/disconnected (`onlineCount`) | Room |
 | `DEMO_RESET` | Periodic reset in demo mode; clients invalidate local caches and reload data | All active connections |
 | `SSE_CONNECTED` | SSE only, sent immediately after connecting | Connection |
+
+## Live Drawing
+
+Several people draw in one drawing bullet at once (concept: [architecture.md](../architecture.md#collaboration-live-drawing)). Messages from the browser go over the WebSocket only, as `{"event": "DRAW_…", "payload": {"docId", "blockId", …}}`, at most 1 MB each. Watching works on every transport: SSE and long-poll connections register with `POST /docs/{id}/drawings/{blockId}/watch` (`{sseId}`) and then receive the room's events.
+
+| Client → Server | Payload (besides `docId`, `blockId`) | Effect |
+|---|---|---|
+| `DRAW_JOIN` | `base` (block content when opened), `els` (own whole state: elements with `ver`, `nonce`, tombstones), `grid` | Draw along (write access). Starts a session without one (host), resumes one everyone left within 10 min if `base` matches, or joins a running one; merges `els` by version. Answer `DRAW_STATE`; joining again after a lost connection or a server restart works the same way |
+| `DRAW_WATCH` | – | Watch (read access); answer `DRAW_STATE` (`active: false` without a session) |
+| `DRAW_OPS` | `els` (changed elements and tombstones), `order` (new order of the ids, optional), `grid` (optional) | Merged by version; the winners go to the room as `DRAW_OPS`, the sender gets `DRAW_ACK` |
+| `DRAW_PRESENCE` | `x`, `y` (drawing coordinates), `gone`, `touch`, `sel` (selected ids) | Pointer and selection, at most 30 a second, the rest dropped |
+| `DRAW_SYNC` | – | The whole state again as `DRAW_STATE` (after a gap in `seq`) |
+| `DRAW_LEAVE` | – | Leave (drawing or watching); the host's leaving hands over to the person drawing longest |
+| `DRAW_DONE` | `clientId` (the note's sync client) | Host only: ends the session; the host gets `DRAW_END` with the final state and saves it via `/docs/{id}/sync`, the bullet's lease goes to `clientId` |
+| `DRAW_DISCARD` | – | Host only: ends the session without saving |
+
+| Event | Payload (besides `docId`, `blockId`) | Recipients |
+|---|---|---|
+| `DRAW_STATE` | `active`, `host`, `participants`, `watchers` (each `{id, userId, name}`, `id` = connection), `els`, `order`, `grid`, `seq`, `you` | The joining or watching connection |
+| `DRAW_OPS` | `from`, `els`, `order`, `grid`, `seq` | Room, without the sender |
+| `DRAW_ACK` | `seq` | Sender of `DRAW_OPS` |
+| `DRAW_PEOPLE` | `active`, `host`, `participants`, `watchers` | Room (joined, left, new host) |
+| `DRAW_PRESENCE` | `from`, `userId`, `name`, `x`, `y`, `gone`, `touch`, `sel` | Room, without the sender |
+| `DRAW_END` | `reason` (`done`, `discard`, `expired`), `by`; for the host also the final `els`, `order`, `grid` | Room |
+| `DRAW_ERROR` | `code`: `forbidden`, `locked` (someone edits alone), `no_session`, `not_host`, `limit`, `rate`, `invalid` | The sender |
+
+`seq` counts the merged changes of a session; a browser that sees a gap (a message was dropped because its connection was too slow) fetches the state again (`DRAW_SYNC`, or `GET …/live` without WebSocket).
 
 ## Frontend Behavior
 

@@ -228,7 +228,7 @@ const es: HelpContent = {
       title: 'Dibujos (/canvas)',
       subtitle: 'Bocetos, diagramas de flujo y mapas mentales directamente en la nota',
       icon: Shapes,
-      keywords: ['dibujo', 'canvas', 'boceto', 'diagrama', 'diagrama de flujo', 'mapa mental', 'flecha', 'formas', 'trazo libre', 'cuadrícula', 'mermaid'],
+      keywords: ['dibujo', 'canvas', 'boceto', 'diagrama', 'diagrama de flujo', 'mapa mental', 'flecha', 'formas', 'trazo libre', 'cuadrícula', 'mermaid', 'en vivo', 'dibujar en equipo'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
           <ul className="space-y-1.5">
@@ -248,7 +248,10 @@ const es: HelpContent = {
               <strong className="text-main">En la nota:</strong> El dibujo ocupa el ancho de la nota. Haz clic dentro; luego arrastrar mueve la vista y Ctrl + rueda o dos dedos hacen zoom; la rueda sola sigue desplazando la página. Otro clic lo termina, una vista sin guardar vuelve suavemente. Arrastra el borde inferior para cambiar la altura. «Guardar vista» fija sección, zoom y altura para todos, El botón de tamaño cambia entre el tamaño recomendado y «todo en grande» (dibujos altos) o la altura recomendada para desplazar de lado (dibujos anchos). Doble clic o «Editar» abre el editor; empieza con la mano (solo se mueve la vista), elige otra herramienta para cambiar algo. El botón de las flechas junto a «Listo» sale sin guardar y pregunta antes si hay cambios.
             </li>
             <li>
-              <strong className="text-main">En equipo y sin conexión:</strong> En notas compartidas, un dibujo queda bloqueado para los demás mientras alguien dibuja en él. Lo dibujado sin conexión se guarda en cuanto vuelve la conexión; un borrador sin guardar se ofrece para restaurar la próxima vez que abras el dibujo.
+              <strong className="text-main">Dibujar en equipo:</strong> En notas compartidas podéis dibujar a la vez en un mismo dibujo. Quien lo abre para editar inicia un dibujo en vivo y es el anfitrión; la nota muestra entonces «Dibujo en vivo: …». Quien lo abre después elige «Dibujar también» o «Mirar» y ve las formas, los punteros y las selecciones de los demás en su color, con todos los participantes arriba en el editor. El anfitrión guarda con «Listo» para todos o descarta para todos; los demás tienen «Salir». Si el anfitrión se va, toma el relevo quien lleva más tiempo. Deshacer solo revierte tus propios cambios. Dibujar a la vez necesita una conexión WebSocket; sin ella (algunos proxys de empresa) puedes mirar en vivo, y sin dibujo en vivo en marcha editas solo como antes mientras los demás solo miran.
+            </li>
+            <li>
+              <strong className="text-main">Sin conexión y borradores:</strong> Lo dibujado sin conexión se guarda en cuanto vuelve la conexión; un borrador sin guardar se ofrece para restaurar la próxima vez que abras el dibujo. Si todos salen de un dibujo en vivo sin «Listo», el servidor guarda su estado unos 10 minutos; quien lo vuelve a abrir en ese tiempo sigue donde estaba.
             </li>
             <li>
               <strong className="text-main">En todas partes:</strong> La búsqueda encuentra las palabras de los dibujos, copiar y pegar conserva el dibujo y la exportación Markdown lo incluye como imagen SVG (al importarlo vuelve a ser un dibujo). Los agentes de IA (MCP) leen una descripción del dibujo y pueden crear dibujos a partir de diagramas de flujo y mapas mentales de Mermaid.

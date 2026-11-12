@@ -302,6 +302,8 @@ Concept and rules: [modules/collaboration.md](../modules/collaboration.md). Acce
 | POST | `/docs/{id}/sync` | Single round-trip: submit local operations, acquire/release leases, fetch log starting at `lastSeq` |
 | GET | `/docs/{id}/changes?since=N&wait=S` | Long polling: returns immediately if `headSeq > N`, otherwise on next change (including leases/presence) or after at most 25 s. Response `{headSeq, changed}`; client then retrieves data via `/sync` |
 | POST | `/docs/{id}/leave` | Terminate session, release all client leases (`{clientId}`) |
+| GET | `/docs/{id}/drawings/{blockId}/live` | State of a live drawing session: `active`, `host`, `participants`, `watchers`, `els` (with `ver`, `nonce`, tombstones), `order`, `grid`, `seq`; read access |
+| POST | `/docs/{id}/drawings/{blockId}/watch` | Watch a live drawing over SSE or long polling: `{sseId}` joins the room `drawing:<docId>:<blockId>` and counts as watching, returns the state with `you`; `{sseId, leave: true}` ends it. Drawing along needs the WebSocket, see [websocket.md](websocket.md#live-drawing) |
 
 `/sync` request:
 
@@ -322,6 +324,8 @@ Concept and rules: [modules/collaboration.md](../modules/collaboration.md). Acce
 - At most 500 operations per request. Viewers cannot submit operations (`403`), but may query.
 - A note holds at most 20,000 live bullets and 40,000 including deleted ones (they are purged after the retention period). An operation that would add one more (insert, restore, a conflict copy) is answered `rejected` with reason `note_full`; creating a note with more bullets (`POST /documents`, import, MCP) answers `400`. Every sync and snapshot loads the whole note, so its size is the cost of each change.
 - `skipLog: true` suppresses returning the operation log; intended for single mutations without an active editor (e.g. checking off items in the to-do overview).
+
+`leases.others[]` carries `live` (everyone drawing, host first) when a live drawing session holds the bullet.
 
 Response: `results` (per operation: `status` `applied`/`conflict`/`rejected`, optionally `conflictBlockId`, `version`, `seq`), `ops` (log entries `{seq, opId, userId, clientId, effect}` from `lastSeq`, at most 1000; `hasMore` if more exist), `headSeq`, `resync` (reload snapshot: the client is ahead of the server, or its `lastSeq` precedes the compacted boundary `log_floor`; submitted operations are applied regardless), `role`, `shared`, `sessions`, `presence`, `leases` (`granted`, `denied`, `others`).
 
