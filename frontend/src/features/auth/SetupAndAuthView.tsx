@@ -17,6 +17,8 @@ import { LegalLinks } from '../../components/LegalLinks';
 import { passwordProblem } from '../../lib/password';
 import { demoHintText } from '../../components/DemoHint';
 import { SetupInstanceSection, useSetupChoices } from './SetupInstanceSection';
+import { SetupMailSection, useSetupMail } from './SetupMailSection';
+import { SetupSummary } from './SetupSummary';
 
 interface SetupAndAuthViewProps {
   authStatus: AuthStatus;
@@ -41,6 +43,8 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
   const [setupPasswordConfirm, setSetupPasswordConfirm] = useState('');
   // Instance settings of the wizard (shared with FinishSetupView)
   const setupChoices = useSetupChoices(authStatus.instanceName);
+  // Mail server when the environment sets none (no test mail before the account exists)
+  const setupMail = useSetupMail();
 
   // --- Login / Invite / Register State ---
   // An invite link (?invite=CODE) opens the invite form with the code filled in
@@ -177,8 +181,9 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
       triggerHaptic(25);
       return;
     }
-    if (setupChoices.problem) {
-      setError(setupChoices.problem);
+    const choicesProblem = setupChoices.problem || setupMail.problem;
+    if (choicesProblem) {
+      setError(choicesProblem);
       triggerHaptic(25);
       return;
     }
@@ -191,6 +196,7 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
         password: setupPassword,
         displayName: setupName.trim(),
         ...setupChoices.choices,
+        ...(setupMail.smtpChoice && !authStatus.setup?.smtpConfigured ? { smtp: setupMail.smtpChoice } : {}),
       });
       onAuthenticated(res.user);
     } catch (err: any) {
@@ -276,13 +282,6 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
               <Trans t={t} i18nKey="setup.welcome" components={{ b: <strong className="text-main" /> }} />
             </p>
 
-            {error && (
-              <div className="alert-err flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 text-status-err flex-shrink-0" />
-                <span>{error}</span>
-              </div>
-            )}
-
             {/* Section 1: Admin Account */}
             <div className="p-3.5 bg-canvas border border-border space-y-3">
               <h2 className="text-xs font-bold text-main uppercase tracking-wider flex items-center gap-1.5">
@@ -300,7 +299,7 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
                     placeholder={t('setup.yourNamePlaceholder')}
                     required
                     autoFocus
-                    className="w-full h-8 px-2.5 input-field"
+                    className="w-full h-11 sm:h-8 px-2.5 text-base sm:text-xs input-field"
                   />
                 </div>
                 <div>
@@ -311,7 +310,7 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
                     onChange={(e) => setSetupEmail(e.target.value)}
                     placeholder={t('setup.emailPlaceholder')}
                     required
-                    className="w-full h-8 px-2.5 input-field"
+                    className="w-full h-11 sm:h-8 px-2.5 text-base sm:text-xs input-field"
                   />
                 </div>
               </div>
@@ -325,7 +324,7 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
                     onChange={(e) => setSetupPassword(e.target.value)}
                     placeholder={t('password.minPlaceholder')}
                     required
-                    className="w-full h-8 px-2.5 input-field"
+                    className="w-full h-11 sm:h-8 px-2.5 text-base sm:text-xs input-field"
                   />
                 </div>
                 <div>
@@ -336,7 +335,7 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
                     onChange={(e) => setSetupPasswordConfirm(e.target.value)}
                     placeholder={t('setup.repeatPlaceholder')}
                     required
-                    className={`w-full h-8 px-2.5 input-field ${
+                    className={`w-full h-11 sm:h-8 px-2.5 text-base sm:text-xs input-field ${
                       setupPasswordConfirm && setupPassword !== setupPasswordConfirm
                         ? 'border-status-err focus:border-status-err'
                         : ''
@@ -354,11 +353,30 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
             {/* Section 2: Server & Isolation */}
             <SetupInstanceSection state={setupChoices} heading={t('setup.instanceSection')} />
 
+            {/* Section 3: Mail server (asked when the environment sets none) */}
+            <SetupMailSection state={setupMail} heading={t('setup.mailSection')} info={authStatus.setup} />
+
+            {/* Section 4: What is still open, where backups and administration are */}
+            <SetupSummary
+              heading={t('setup.summarySection')}
+              info={authStatus.setup}
+              choices={setupChoices.choices}
+              wizardSmtpHost={authStatus.setup?.smtpConfigured ? '' : setupMail.smtpChoice?.smtpHost || ''}
+            />
+
+            {/* Beside the button: the form is long, an error on top would be out of sight */}
+            {error && (
+              <div role="alert" className="alert-err flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-status-err flex-shrink-0" />
+                <span>{error}</span>
+              </div>
+            )}
+
             <div className="flex items-center justify-end pt-1">
               <button
                 type="submit"
                 disabled={submitting}
-                className="btn-primary h-9 px-5 text-xs font-semibold flex items-center gap-2 disabled:opacity-50"
+                className="btn-primary h-11 sm:h-9 px-5 text-xs font-semibold flex items-center gap-2 disabled:opacity-50"
               >
                 <Check className="w-4 h-4" />
                 <span>

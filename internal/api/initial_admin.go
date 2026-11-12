@@ -76,7 +76,7 @@ func (s *Server) CreateInitialAdmin() error {
 	}
 	slog.Info("First administrator created from ADMIN_USER / ADMIN_PASSWORD; the variables are ignored from now on and can be removed", attrs...)
 	if email == "" {
-		slog.Info("No ADMIN_EMAIL: the administrator signs in with the username; add and confirm an email address in the profile for password reset and mail notifications")
+		slog.Info("No ADMIN_EMAIL: the administrator signs in with the username; the setup wizard after the first sign-in (or the profile) asks for an email address, confirmed by a mailed link, for password reset and mail notifications")
 	}
 	return nil
 }
@@ -114,7 +114,9 @@ func checkInitialAdmin(user, password, email string) (username, cleanEmail strin
 }
 
 // handleFinishSetup: POST /admin/setup – the wizard's instance settings for an administrator who came from
-// ADMIN_USER. Only once, while the setup is unfinished; afterwards the admin settings change them.
+// ADMIN_USER. Only once, while the setup is unfinished; afterwards the admin settings change them. Without
+// ADMIN_EMAIL the admin may give an address here: like any new login address it waits for the click on the
+// link mailed to it (email_change.go), which goes out once a mail server and BASE_URL are set.
 func (s *Server) handleFinishSetup(w http.ResponseWriter, r *http.Request) {
 	s.setupMu.Lock()
 	defer s.setupMu.Unlock()
@@ -122,7 +124,10 @@ func (s *Server) handleFinishSetup(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusConflict, "Ersteinrichtung wurde bereits abgeschlossen")
 		return
 	}
-	var req setupChoices
+	var req struct {
+		setupChoices
+		Email string `json:"email"`
+	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeError(w, http.StatusBadRequest, "Ungültige Anfrage")
 		return
@@ -136,7 +141,16 @@ func (s *Server) handleFinishSetup(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "Benutzer nicht gefunden")
 		return
 	}
-	if err := s.applySetupChoices(r, user, req); err != nil {
+	// Only an account without an address gets one here; changing an address stays in the profile
+	var email string
+	if strings.TrimSpace(req.Email) != "" && user.Email == "" {
+		var status int
+		if email, status, err = s.checkSetupEmail(req.Email); err != nil {
+			writeErrorFrom(w, status, err)
+			return
+		}
+	}
+	if err := s.applySetupChoices(r, user, req.setupChoices); err != nil {
 		writeError(w, http.StatusInternalServerError, "Einstellungen konnten nicht gespeichert werden: "+clientMessage(err))
 		return
 	}
@@ -145,7 +159,14 @@ func (s *Server) handleFinishSetup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	slog.Info("Setup finished by the administrator from ADMIN_USER", "user_id", user.ID)
-	writeJSON(w, http.StatusOK, map[string]bool{"done": true})
+	res := map[string]any{"done": true}
+	if email != "" {
+		// After the mail server of the wizard is stored, so the link goes out right away when it can
+		s.requestEmailChange(user, storage.EmailChangeAccount, email)
+		res["pendingEmail"] = email
+		res["confirmationSent"] = s.emailLinksAvailable()
+	}
+	writeJSON(w, http.StatusOK, res)
 }
 
 // jsonContentType: the request says its body is JSON (application/json, parameters such as charset allowed).

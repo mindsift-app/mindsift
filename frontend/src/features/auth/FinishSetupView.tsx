@@ -1,13 +1,17 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import { AlertCircle, Brain, Check, LogOut } from 'lucide-react';
-import { AuthStatus, User } from '../../lib/types';
+import { AuthStatus, SetupInfo, User } from '../../lib/types';
 import { api, triggerHaptic } from '../../lib/api';
 import { LegalLinks } from '../../components/LegalLinks';
 import { SetupInstanceSection, useSetupChoices } from './SetupInstanceSection';
+import { SetupEmailSection, SetupMailSection, useSetupMail } from './SetupMailSection';
+import { SetupSummary } from './SetupSummary';
 
 // The rest of the setup wizard for an admin that ADMIN_USER / ADMIN_PASSWORD created at startup: the
-// account exists, so only the instance settings are asked, once, after the first sign-in.
+// account exists, so only the instance settings are asked, once, after the first sign-in – plus the
+// admin's address when ADMIN_EMAIL was missing, the mail server when the environment sets none, and a
+// summary of what is still open.
 export const FinishSetupView: React.FC<{
   user: User;
   authStatus: AuthStatus;
@@ -16,21 +20,35 @@ export const FinishSetupView: React.FC<{
 }> = ({ user, authStatus, onDone, onLogout }) => {
   const { t } = useTranslation('auth');
   const setupChoices = useSetupChoices(authStatus.instanceName);
+  const setupMail = useSetupMail();
+  // Asked only when the account has no address (ADMIN_EMAIL was not set)
+  const asksEmail = !user.email;
+  const [email, setEmail] = useState('');
+  // Mail server, BASE_URL and backup folder; null while loading or when the server did not answer
+  const [info, setInfo] = useState<SetupInfo | null>(null);
+  useEffect(() => {
+    api.getSetupStatus().then(setInfo).catch(() => setInfo(null));
+  }, []);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    if (setupChoices.problem) {
-      setError(setupChoices.problem);
+    const problem = setupChoices.problem || setupMail.problem;
+    if (problem) {
+      setError(problem);
       triggerHaptic(25);
       return;
     }
     setSubmitting(true);
     triggerHaptic(15);
     try {
-      await api.finishSetup(setupChoices.choices);
+      await api.finishSetup({
+        ...setupChoices.choices,
+        ...(setupMail.smtpChoice && !info?.smtpConfigured ? { smtp: setupMail.smtpChoice } : {}),
+        ...(asksEmail && email.trim() ? { email: email.trim() } : {}),
+      });
       onDone();
     } catch (err: any) {
       setError(err.message || t('setup.failed'));
@@ -65,14 +83,35 @@ export const FinishSetupView: React.FC<{
             />
           </p>
 
+          {asksEmail && <SetupEmailSection email={email} onChange={setEmail} heading={t('setup.finishEmailSection')} />}
+
+          <SetupInstanceSection state={setupChoices} heading={t('setup.finishSection')} />
+
+          <SetupMailSection
+            state={setupMail}
+            heading={t('setup.finishMailSection')}
+            info={info}
+            onTest={async (to, smtp) => {
+              await api.adminTestSMTP(to, smtp);
+            }}
+            testTo={asksEmail ? email : user.email}
+          />
+
+          <SetupSummary
+            heading={t('setup.finishSummarySection')}
+            info={info}
+            choices={setupChoices.choices}
+            wizardSmtpHost={info?.smtpConfigured ? '' : setupMail.smtpChoice?.smtpHost || ''}
+            email={asksEmail ? email : undefined}
+          />
+
+          {/* Beside the button: the form is long, an error on top would be out of sight */}
           {error && (
-            <div className="alert-err flex items-center gap-2">
+            <div role="alert" className="alert-err flex items-center gap-2">
               <AlertCircle className="w-4 h-4 text-status-err flex-shrink-0" />
               <span>{error}</span>
             </div>
           )}
-
-          <SetupInstanceSection state={setupChoices} heading={t('setup.finishSection')} />
 
           <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
             <button

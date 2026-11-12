@@ -394,6 +394,7 @@ func (s *Server) Router() http.Handler {
 			r.Get("/api/v1/admin/settings", s.handleAdminGetSettings)
 			// The wizard's instance settings after an admin from ADMIN_USER (initial_admin.go)
 			r.Post("/api/v1/admin/setup", s.notInDemo(s.handleFinishSetup))
+			r.Get("/api/v1/admin/setup/status", s.handleSetupStatus)
 			r.Get("/api/v1/admin/backups", s.handleAdminListBackups)
 			r.Post("/api/v1/admin/backups", s.notInDemo(s.handleAdminRunBackup))
 			r.Get("/api/v1/admin/backups/{name}", s.handleAdminDownloadBackup)
