@@ -17,7 +17,7 @@ Code: [WorkspaceView.tsx](../../frontend/src/features/workspace/WorkspaceView.ts
 ## Editor
 
 - **Outliner:** `Enter` new block, `Tab`/`Shift+Tab` indent/outdent, `Shift+Enter` soft line break, collapse/expand blocks.
-- **Zoom (Hoisting):** Clicking a bullet focuses the branch; the breadcrumb bar navigates back.
+- **Zoom (Hoisting):** Clicking a bullet focuses the branch; the breadcrumb bar navigates back. On phones (below `sm`) the header shows a home button instead of the path (with the zoomed bullet's name beside it only where it fits), which leaves the zoom and returns to the start of the note. Every zoom step is a step of the browser history, so back zooms out one level.
 - **Drag & Drop** moves blocks including sub-branches; dragging onto another block turns it into a child item.
 - **Slash commands:** `/todo`, `/link`, `/h1`, `/h2`, `/h3`, `/code` (with VS Code style syntax highlighting), `/callout`, `/divider`, `/extract` (extract branch into a separate note), `/image` (insert/upload images, aliases `/bild`, `/foto`), `/audio` (voice note/audio file, alias `/sprachnotiz`), `/diktat` (voice input with live transcription, alias `/dictate`), `/secret` (hidden value, see below), `/canvas` (drawing, aliases `/draw`, `/sketch`, `/diagram`, `/zeichnung`) (list in `OutlinerBlock.tsx`). The menu opens only at the start of text or after a space and closes with `Esc` or `Backspace`.
 - **Link preview:** If a bullet point consists solely of a single `https` URL (or was inserted into an empty bullet via `/link`), MindSift displays an interactive preview card above it (`LinkPreviewCard`, fetched server-side via `/link-preview`). ✕ dismisses the card and synchronously converts the URL to `[Title](url)`.

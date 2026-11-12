@@ -286,7 +286,7 @@ const it: HelpContent = {
         <div className="space-y-2 text-muted leading-relaxed">
           <ul className="space-y-1.5">
             <li>
-              <strong className="text-main">Zoom isolato:</strong> fai clic direttamente sul punto elenco (<code className="text-accent">•</code>) di un blocco per isolare e ingrandire solo quel ramo. La navigazione breadcrumb in alto ti permette di tornare indietro passo dopo passo in qualsiasi momento.
+              <strong className="text-main">Zoom isolato:</strong> fai clic direttamente sul punto elenco (<code className="text-accent">•</code>) di un blocco per isolare e ingrandire solo quel ramo. La navigazione breadcrumb in alto ti permette di tornare indietro passo dopo passo in qualsiasi momento; sullo smartphone l'icona della casa ti riporta all'inizio della nota e il tasto indietro risale di un livello.
             </li>
             <li>
               <strong className="text-main">Spostamento blocchi:</strong> afferra un punto elenco tenendo premuto il pulsante del mouse per trascinarlo con tutti i suoi sottopunti in una nuova posizione.
