@@ -79,7 +79,21 @@ export function onRealtimeStatus(callback: (connected: boolean, transport: Realt
   };
 }
 
-let isWsBlockedByProxy = typeof window !== 'undefined' && sessionStorage.getItem('mindsift_ws_blocked') === 'true';
+// A WebSocket that never opened (or opened but never passed a message) means a proxy in the way: SSE takes over
+// for this tab. Only for a while, though: a network change or a stricter hotspot should not cost the WebSocket for
+// good, so it is tried again after WS_BLOCK_RETRY_MS (and on demand, tryWebSocket). A WebSocket that worked and then
+// dropped (server restart, phone asleep, network switch) is no proxy: it reconnects as a WebSocket.
+const WS_BLOCK_RETRY_MS = 10 * 60 * 1000;
+function wsBlockedSince(): number {
+  try {
+    const v = sessionStorage.getItem('mindsift_ws_blocked');
+    if (!v) return 0;
+    return v === 'true' ? Date.now() : Number(v) || 0;
+  } catch {
+    return 0;
+  }
+}
+let isWsBlockedByProxy = typeof window !== 'undefined' && wsBlockedSince() > Date.now() - WS_BLOCK_RETRY_MS;
 // Some proxies buffer event streams: the connection opens, but events only arrive much later (or never).
 // Then SSE is useless and the note sync engines fall back to long polling.
 let isSseBufferedByProxy = typeof window !== 'undefined' && sessionStorage.getItem('mindsift_sse_buffered') === 'true';
@@ -117,8 +131,13 @@ function switchToSSE(reason: string) {
   clearInterval(wsHeartbeatTimer);
   isWsBlockedByProxy = true;
   try {
-    sessionStorage.setItem('mindsift_ws_blocked', 'true');
+    sessionStorage.setItem('mindsift_ws_blocked', String(Date.now()));
   } catch {}
+  // Back to the WebSocket after a while (connectWebSocket checks the time)
+  clearTimeout(wsBlockRetryTimer);
+  wsBlockRetryTimer = setTimeout(() => {
+    if (!manualDisconnect && getToken() && !isWebSocketConnected()) void tryWebSocket();
+  }, WS_BLOCK_RETRY_MS);
   clearTimeout(wsConnectionWatchdog);
   clearTimeout(wsReconnectTimer);
   if (activeGlobalWS) {
@@ -133,6 +152,56 @@ function switchToSSE(reason: string) {
 }
 
 let sseTicketPending = false;
+let wsBlockRetryTimer: any = null;
+// A WebSocket worked in this tab: a failed attempt afterwards is the server restarting or the network
+// changing, not a proxy, so it tries again (with growing pauses) before falling back to SSE
+let wsWorkedBefore = false;
+let wsFailedAfterWorking = 0;
+const WS_RETRIES_AFTER_WORKING = 6;
+
+// failedAttempt: a WebSocket that did not open (or answer). After it worked in this tab, a few more tries;
+// otherwise SSE.
+function wsAttemptFailed(reason: string) {
+  if (wsWorkedBefore && wsFailedAfterWorking < WS_RETRIES_AFTER_WORKING && !manualDisconnect && getToken()) {
+    wsFailedAfterWorking++;
+    clearInterval(wsHeartbeatTimer);
+    if (activeGlobalWS) {
+      try {
+        activeGlobalWS.onclose = null;
+        activeGlobalWS.onerror = null;
+        activeGlobalWS.close();
+      } catch {}
+      activeGlobalWS = null;
+    }
+    if (activeTransport === 'ws') notifyRealtimeStatusChange(false, 'none');
+    clearTimeout(wsReconnectTimer);
+    const delay = wsReconnectDelay;
+    wsReconnectDelay = Math.min(30000, Math.round(wsReconnectDelay * 1.5));
+    wsReconnectTimer = setTimeout(() => {
+      if (!manualDisconnect && getToken()) void connectWebSocket();
+    }, delay);
+    return;
+  }
+  switchToSSE(reason);
+}
+
+// tryWebSocket attempts a WebSocket now, even after a fallback to SSE (a drawing someone wants to draw along
+// in needs one); the SSE stream stays until it opens. Resolves whether a WebSocket is open within timeoutMs.
+export function tryWebSocket(timeoutMs = 4000): Promise<boolean> {
+  if (isWebSocketConnected()) return Promise.resolve(true);
+  if (!getToken()) return Promise.resolve(false);
+  isWsBlockedByProxy = false;
+  void connectWebSocket();
+  return new Promise((resolve) => {
+    const started = Date.now();
+    const check = () => {
+      if (isWebSocketConnected()) return resolve(true);
+      if (Date.now() - started > timeoutMs) return resolve(false);
+      setTimeout(check, 100);
+    };
+    check();
+  });
+}
 
 export async function connectSSE(rooms?: string[]): Promise<void> {
   if (rooms) {
@@ -338,10 +407,11 @@ export async function connectWebSocket(): Promise<void> {
   if (!token) return;
   manualDisconnect = false;
 
-  // If proxy blocked WebSocket previously, do not attempt failing WebSocket; stay on SSE
-  if (isWsBlockedByProxy) {
+  // If a proxy blocked the WebSocket a short while ago, do not try it again yet; stay on SSE
+  if (isWsBlockedByProxy && wsBlockedSince() > Date.now() - WS_BLOCK_RETRY_MS) {
     return connectSSE();
   }
+  isWsBlockedByProxy = false;
 
   if (activeGlobalWS && (activeGlobalWS.readyState === WebSocket.OPEN || activeGlobalWS.readyState === WebSocket.CONNECTING)) {
     return;
@@ -369,21 +439,33 @@ export async function connectWebSocket(): Promise<void> {
     const url = buildWebSocketURL(ticket);
     const ws = new WebSocket(url);
     activeGlobalWS = ws;
+    // Whether this socket opened and passed a message: then a drop is the network or a restart, not a proxy
+    let opened = false;
+    let answered = false;
 
     // 2.5s watchdog for corporate proxies silently stripping Upgrade header or hanging
     wsConnectionWatchdog = setTimeout(() => {
       if (ws && ws.readyState !== WebSocket.OPEN) {
-        switchToSSE('WebSocket timeout after 2.5 s (proxy blocks the upgrade header)');
+        wsAttemptFailed('WebSocket timeout after 2.5 s (proxy blocks the upgrade header)');
       }
     }, 2500);
 
     ws.onopen = () => {
+      opened = true;
       clearTimeout(wsConnectionWatchdog);
       wsLastMessageAt = Date.now();
       clearInterval(wsHeartbeatTimer);
       wsHeartbeatTimer = setInterval(() => {
         if (Date.now() - wsLastMessageAt > WS_DEAD_AFTER_MS) {
-          switchToSSE('WebSocket stopped answering (proxy passes nothing on)');
+          if (!answered) {
+            wsAttemptFailed('WebSocket stopped answering (proxy passes nothing on)');
+            return;
+          }
+          // It worked before: the connection died (network, sleep); a fresh WebSocket follows on close
+          clearInterval(wsHeartbeatTimer);
+          try {
+            ws.close();
+          } catch {}
           return;
         }
         try {
@@ -407,6 +489,9 @@ export async function connectWebSocket(): Promise<void> {
 
     ws.onmessage = (event) => {
       wsLastMessageAt = Date.now();
+      answered = true;
+      wsWorkedBefore = true;
+      wsFailedAfterWorking = 0;
       try {
         const msg = JSON.parse(event.data) as WSMessage;
         if (msg.event === 'PONG') return;
@@ -428,9 +513,10 @@ export async function connectWebSocket(): Promise<void> {
       clearInterval(wsHeartbeatTimer);
       activeGlobalWS = null;
 
-      // In corporate environments, blocked WebSockets close abruptly without clean handshake
-      if (!evt.wasClean || evt.code === 1006 || evt.code === 1002 || evt.code === 1008 || evt.code === 1005) {
-        switchToSSE(`WebSocket unsauber beendet (Code ${evt.code}, wasClean=${evt.wasClean})`);
+      // In corporate environments, blocked WebSockets close abruptly without clean handshake. A socket that
+      // opened and answered was not blocked: it reconnects below (server restart, phone asleep, network switch)
+      if (!(opened && answered) && (!evt.wasClean || evt.code === 1006 || evt.code === 1002 || evt.code === 1008 || evt.code === 1005)) {
+        wsAttemptFailed(`WebSocket unsauber beendet (Code ${evt.code}, wasClean=${evt.wasClean})`);
         return;
       }
 
@@ -452,7 +538,8 @@ export async function connectWebSocket(): Promise<void> {
 
     ws.onerror = () => {
       clearTimeout(wsConnectionWatchdog);
-      switchToSSE('WebSocket error (handshake/connection refused)');
+      // After it worked, onclose reconnects; an error before that is the handshake being refused
+      if (!opened) wsAttemptFailed('WebSocket error (handshake/connection refused)');
     };
   } catch (e) {
     switchToSSE('WebSocket Exception beim Initialisieren');

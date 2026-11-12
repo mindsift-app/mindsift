@@ -109,6 +109,55 @@ describe('realtime fallback', () => {
     api.disconnectWebSocket();
   });
 
+  it('a WebSocket that worked and dropped (server restart) reconnects as a WebSocket, not SSE', async () => {
+    const api = await loadApi();
+    await api.connectWebSocket();
+    const first = FakeWebSocket.instances[0];
+    first.open();
+    first.onmessage?.({ data: JSON.stringify({ event: 'PONG' }) });
+    first.onclose?.({ wasClean: false, code: 1006 });
+    expect(api.getRealtimeTransport()).toBe('none');
+    // The server is still restarting: the next attempt is refused before it opens
+    await vi.advanceTimersByTimeAsync(2_100);
+    expect(FakeWebSocket.instances).toHaveLength(2);
+    FakeWebSocket.instances[1].onerror?.({});
+    await vi.advanceTimersByTimeAsync(3_100);
+    expect(FakeWebSocket.instances).toHaveLength(3);
+    FakeWebSocket.instances[2].open();
+    FakeWebSocket.instances[2].onmessage?.({ data: JSON.stringify({ event: 'PONG' }) });
+    expect(FakeEventSource.instances).toHaveLength(0);
+    expect(api.isWebSocketConnected()).toBe(true);
+    expect(sessionStorage.getItem('mindsift_ws_blocked')).toBeNull();
+    api.disconnectWebSocket();
+  });
+
+  it('after a fallback, the WebSocket is tried again on demand and after a while', async () => {
+    const api = await loadApi();
+    await api.connectWebSocket();
+    FakeWebSocket.instances[0].onerror?.({}); // refused before it opened: a proxy
+    await vi.advanceTimersByTimeAsync(10);
+    expect(FakeEventSource.instances).toHaveLength(1);
+    expect(Number(sessionStorage.getItem('mindsift_ws_blocked'))).toBeGreaterThan(0);
+
+    const tried = api.tryWebSocket(3000);
+    await vi.advanceTimersByTimeAsync(50);
+    expect(FakeWebSocket.instances).toHaveLength(2);
+    FakeWebSocket.instances[1].open();
+    await vi.advanceTimersByTimeAsync(200);
+    await expect(tried).resolves.toBe(true);
+    expect(api.getRealtimeTransport()).toBe('ws');
+    api.disconnectWebSocket();
+  });
+
+  it('an old fallback from an earlier visit does not keep the WebSocket away', async () => {
+    sessionStorage.setItem('mindsift_ws_blocked', String(Date.now() - 11 * 60 * 1000));
+    const api = await loadApi();
+    await api.connectWebSocket();
+    expect(FakeWebSocket.instances).toHaveLength(1);
+    expect(FakeEventSource.instances).toHaveLength(0);
+    api.disconnectWebSocket();
+  });
+
   it('SSE only counts as connected once the first event arrives', async () => {
     sessionStorage.setItem('mindsift_ws_blocked', 'true');
     const api = await loadApi();
