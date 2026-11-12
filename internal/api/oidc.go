@@ -156,7 +156,7 @@ func (s *Server) logOIDCSetup(reason string) {
 	}
 	slog.Info("Sign-in through an OIDC provider is on", "name", s.oidc.cfg.Name, "issuer", s.oidc.cfg.Issuer,
 		"redirect_uri", s.oidc.redirectURL, "auto_create", s.oidc.cfg.AutoCreate, "password_login", s.oidc.cfg.PasswordLogin,
-		"admin_group", s.oidc.cfg.AdminGroup)
+		"link_by_email", s.oidc.cfg.LinkByEmail, "admin_group", s.oidc.cfg.AdminGroup)
 	go func() {
 		if _, err := s.oidc.discover(time.Now()); err == nil {
 			slog.Info("OIDC provider found", "issuer", s.oidc.cfg.Issuer)
@@ -736,35 +736,26 @@ func (s *Server) oidcSignIn(r *http.Request, id *oidcIdentity) (*domain.User, st
 			logFailed("Removing the OIDC identity of a deleted account", s.store.UnlinkOIDCIdentity(id.issuer, id.subject))
 		}
 	}
-	email := ""
-	if id.emailVerified {
-		email = domain.NormalizeEmail(id.email)
-	}
-	if user == nil && email != "" {
-		if existing, err := s.store.UserByEmailExactly(email); err == nil && existing != nil {
-			if err := s.store.LinkOIDCIdentity(id.issuer, id.subject, existing.ID, email, now); err != nil {
+	address := domain.NormalizeEmail(id.email)
+	if user == nil && s.oidc.cfg.LinkByEmail && id.emailVerified && address != "" {
+		// Only with OIDC_LINK_BY_EMAIL: the provider vouches for the address, the account with it is taken over
+		if existing, err := s.store.UserByEmailExactly(address); err == nil && existing != nil {
+			if err := s.store.LinkOIDCIdentity(id.issuer, id.subject, existing.ID, address, now); err != nil {
 				slog.Warn("OIDC sign-in refused: the account with this address is linked to another identity at the provider", "user_id", existing.ID, "error", err)
 				return nil, "email_in_use"
 			}
-			slog.Info("Account linked to the OIDC provider by its verified e-mail address", "user_id", existing.ID, "provider", name)
+			slog.Info("Account linked to the OIDC provider by its verified e-mail address (OIDC_LINK_BY_EMAIL)", "user_id", existing.ID, "provider", name)
 			user = existing
 		}
 	}
 	if user == nil {
-		// An unverified address of an existing account links nothing: that person links it in the settings
-		if id.email != "" && s.store.EmailInUse(id.email) {
-			slog.Warn("OIDC sign-in refused: an account has this address, but the provider does not call it verified", "remote_addr", r.RemoteAddr)
-			return nil, "email_in_use"
-		}
+		// A new account rests on the identity alone (issuer and subject); an existing account with the same
+		// address is never taken over here, its owner links it in the settings
 		if !s.oidc.cfg.AutoCreate {
 			slog.Warn("OIDC sign-in refused: no account, and OIDC_AUTO_CREATE is off", "remote_addr", r.RemoteAddr)
 			return nil, "no_account"
 		}
-		if email == "" {
-			slog.Warn("OIDC sign-in refused: the provider sent no verified e-mail address for the new account (claims email, email_verified)", "remote_addr", r.RemoteAddr)
-			return nil, "no_email"
-		}
-		if user, err = s.createOIDCAccount(r, id, email); err != nil {
+		if user, err = s.createOIDCAccount(r, id, address); err != nil {
 			logFailed("Creating the account at the first OIDC sign-in", err)
 			return nil, "failed"
 		}
@@ -786,19 +777,29 @@ func (s *Server) oidcSignIn(r *http.Request, id *oidcIdentity) (*domain.User, st
 }
 
 // createOIDCAccount creates the account of a first sign-in: username from preferred_username (made unique by
-// the store), display name from name, no password of its own.
-func (s *Server) createOIDCAccount(r *http.Request, id *oidcIdentity, email string) (*domain.User, error) {
+// the store), display name from name, no password of its own. The address the provider sent: verified and
+// free, it is the login address; not verified, it waits for its confirmation link like a changed address;
+// taken by another account, or none at all, the account has no address (it can add one in the settings).
+func (s *Server) createOIDCAccount(r *http.Request, id *oidcIdentity, address string) (*domain.User, error) {
 	hash, err := auth.NoPasswordHash()
 	if err != nil {
 		return nil, err
 	}
-	local := strings.Split(email, "@")[0]
+	free := address != "" && !s.store.EmailInUse(address)
+	login := ""
+	if free && id.emailVerified {
+		login = address
+	}
+	local := strings.Split(address, "@")[0]
 	display := strings.TrimSpace(id.name)
 	if display == "" {
 		display = strings.TrimSpace(id.username)
 	}
 	if display == "" {
 		display = local
+	}
+	if display == "" {
+		display = s.oidcName()
 	}
 	if r := []rune(display); len(r) > 100 {
 		display = string(r[:100])
@@ -808,18 +809,31 @@ func (s *Server) createOIDCAccount(r *http.Request, id *oidcIdentity, email stri
 		username = storage.UsernameFromName(display)
 	}
 	if len(username) < 2 {
-		username = local
+		username = storage.UsernameFromName(local)
 	}
-	user, err := s.store.CreateUserWithUsername(email, username, hash, display, domain.RoleMember)
+	if len(username) < 2 {
+		username = "user"
+	}
+	user, err := s.store.CreateUserWithUsername(login, username, hash, display, domain.RoleMember)
 	if err != nil {
 		return nil, err
 	}
-	if err := s.store.LinkOIDCIdentity(id.issuer, id.subject, user.ID, email, s.now()); err != nil {
+	if err := s.store.LinkOIDCIdentity(id.issuer, id.subject, user.ID, address, s.now()); err != nil {
 		logFailed("Removing the account that could not be linked", s.store.DeleteUser(user.ID), "user_id", user.ID)
 		return nil, err
 	}
 	logFailed("Setting the language", s.store.SetLanguage(user.ID, s.requestLanguage(r)), "user_id", user.ID)
-	slog.Info("Account created at the first sign-in through OIDC", "user_id", user.ID, "username", user.Username, "provider", s.oidcName())
+	if free && login == "" {
+		s.requestEmailChange(user, storage.EmailChangeAccount, address)
+	}
+	addressState := "none"
+	switch {
+	case login != "":
+		addressState = "verified"
+	case free:
+		addressState = "waiting for confirmation"
+	}
+	slog.Info("Account created at the first sign-in through OIDC", "user_id", user.ID, "username", user.Username, "provider", s.oidcName(), "address", addressState)
 	return user, nil
 }
 

@@ -452,21 +452,42 @@ func TestOIDCReturnPathStaysOnTheSite(t *testing.T) {
 	}
 }
 
-func TestOIDCLinksOnlyVerifiedAddresses(t *testing.T) {
+func TestOIDCNeverLinksByAddressByDefault(t *testing.T) {
 	e := newOIDCEnv(t, nil)
 	existing, err := e.store.CreateUser("erika@example.com", mustHash(t, "eigenes-Passwort"), "Erika", domain.RoleMember)
 	if err != nil {
 		t.Fatal(err)
 	}
-	// Not verified: no link, no second account with the address
+	// Verified and the same address: still a new account, without the address (it belongs to Erika's account)
+	user := e.userOf(e.mustSignIn())
+	if user["id"] == existing.ID || user["email"] != "" {
+		t.Fatalf("new account without address expected: %v", user)
+	}
+	if id, _ := e.store.OIDCIdentityUser(e.idp.srv.URL, "abc-123"); id != user["id"] {
+		t.Fatal("the new account must rest on the identity")
+	}
+	// The next sign-in finds it by sub
+	if e.userOf(e.mustSignIn())["id"] != user["id"] {
+		t.Fatal("the identity must find its account again")
+	}
+	// Erika's own password keeps working
+	if rec, _ := e.call("POST", "/api/v1/auth/login", "", map[string]string{"login": "erika@example.com", "password": "eigenes-Passwort"}); rec.Code != http.StatusOK {
+		t.Fatalf("password of the existing account: %d", rec.Code)
+	}
+}
+
+func TestOIDCLinksByVerifiedAddressWhenSwitchedOn(t *testing.T) {
+	e := newOIDCEnv(t, nil)
+	e.srv.oidc.cfg.LinkByEmail = true
+	existing, _ := e.store.CreateUser("erika@example.com", mustHash(t, "eigenes-Passwort"), "Erika", domain.RoleMember)
+	// Not verified: no link, a new account without the address instead
 	e.idp.person["email_verified"] = false
-	if token, code := e.signIn(); token != "" || code != "email_in_use" {
-		t.Fatalf("unverified address: %q %q", token, code)
+	other := e.userOf(e.mustSignIn())
+	if other["id"] == existing.ID || other["email"] != "" {
+		t.Fatalf("an unverified address must not link: %v", other)
 	}
-	if id, _ := e.store.OIDCIdentityUser(e.idp.srv.URL, "abc-123"); id != "" {
-		t.Fatal("an unverified address must not link")
-	}
-	// Some providers send the flag as text
+	// A second identity with the verified address (some providers send the flag as text) links
+	e.idp.person["sub"] = "zweite-id"
 	e.idp.person["email_verified"] = "true"
 	user := e.userOf(e.mustSignIn())
 	if user["id"] != existing.ID || user["noPassword"] == true || user["oidc"] != true {
@@ -477,28 +498,31 @@ func TestOIDCLinksOnlyVerifiedAddresses(t *testing.T) {
 	if e.userOf(e.mustSignIn())["id"] != existing.ID {
 		t.Fatal("the link must follow sub, not the address")
 	}
-	// The own password keeps working while the password login is on
-	if rec, _ := e.call("POST", "/api/v1/auth/login", "", map[string]string{"login": "erika@example.com", "password": "eigenes-Passwort"}); rec.Code != http.StatusOK {
-		t.Fatalf("password of the linked account: %d", rec.Code)
-	}
 }
 
-func TestOIDCWithoutAutoCreate(t *testing.T) {
+func TestOIDCNewAccountAddresses(t *testing.T) {
 	e := newOIDCEnv(t, nil)
+	// Not verified and free: the account has no login address yet, the address waits for its link
+	e.idp.person = map[string]any{"sub": "unbestaetigt", "name": "Uwe", "email": "uwe@example.com", "email_verified": false}
+	uwe := e.userOf(e.mustSignIn())
+	if uwe["email"] != "" {
+		t.Fatalf("an unverified address must not be the login address: %v", uwe)
+	}
+	if pending := e.store.PendingEmailChanges(uwe["id"].(string))[storage.EmailChangeAccount].Email; pending != "uwe@example.com" {
+		t.Fatalf("the address should wait for confirmation, got %q", pending)
+	}
+	// No address at all, twice: two accounts without address
+	for _, sub := range []string{"ohne-mail-1", "ohne-mail-2"} {
+		e.idp.person = map[string]any{"sub": sub, "name": "Ohne Mail"}
+		if u := e.userOf(e.mustSignIn()); u["email"] != "" {
+			t.Fatalf("no address: %v", u)
+		}
+	}
+	// Without automatic accounts nobody new gets in
 	e.srv.oidc.cfg.AutoCreate = false
+	e.idp.person = map[string]any{"sub": "neu", "name": "Neu", "email": "neu@example.com", "email_verified": true}
 	if token, code := e.signIn(); token != "" || code != "no_account" {
 		t.Fatalf("unknown person: %q %q", token, code)
-	}
-	// Existing accounts are still linked by their verified address
-	existing, _ := e.store.CreateUser("erika@example.com", mustHash(t, "eigenes-Passwort"), "Erika", domain.RoleMember)
-	if e.userOf(e.mustSignIn())["id"] != existing.ID {
-		t.Fatal("existing account not linked")
-	}
-	// Without a verified address nothing is created either way
-	e.srv.oidc.cfg.AutoCreate = true
-	e.idp.person = map[string]any{"sub": "ohne-mail", "name": "Ohne Mail"}
-	if _, code := e.signIn(); code != "no_email" {
-		t.Fatalf("no address: %q", code)
 	}
 }
 
@@ -609,7 +633,8 @@ func TestOIDCLockedAccountsStayLocked(t *testing.T) {
 	if token, code := e.signIn(); token != "" || code != "disabled" {
 		t.Fatalf("disabled account: %q %q", token, code)
 	}
-	// Waiting for approval: linked by its verified address, but not let in
+	// Waiting for approval: linked by its verified address (OIDC_LINK_BY_EMAIL), but not let in
+	e.srv.oidc.cfg.LinkByEmail = true
 	pending, _ := e.store.CreateInactiveUser("wartet@example.com", mustHash(t, "irgendein-Passwort"), "Wartet", domain.RoleMember)
 	if err := e.store.AddPendingRegistration(pending.ID); err != nil {
 		t.Fatal(err)

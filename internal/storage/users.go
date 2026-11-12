@@ -135,6 +135,9 @@ func (s *Store) createUser(id, email, username, passwordHash, displayName, role 
 // EmailInUse: an account has exactly this login address (other ways of signing in do not count). When
 // the database cannot say, the address counts as taken.
 func (s *Store) EmailInUse(email string) bool {
+	if domain.NormalizeEmail(email) == "" {
+		return false // no address: several accounts may have none
+	}
 	var n int
 	err := s.db.QueryRow(`SELECT COUNT(*) FROM users WHERE LOWER(email) = ?`, domain.NormalizeEmail(email)).Scan(&n)
 	return dbFailed(err) || n > 0
