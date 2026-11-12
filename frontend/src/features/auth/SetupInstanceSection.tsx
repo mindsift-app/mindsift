@@ -16,7 +16,7 @@ import {
 // The setup wizard's questions about the instance, beside the admin account: name, default language,
 // sharing mode, registration, daily backups and sample data. The first-boot wizard asks them together with
 // the account; after an admin from ADMIN_USER they come on their own (FinishSetupView). Further questions
-// of the setup go here, so both ways ask them.
+// of the setup go here, so both ways ask them (mail server and summary: SetupMailSection, SetupSummary).
 
 export interface SetupChoices {
   instanceName: string;
@@ -109,7 +109,7 @@ export const SetupInstanceSection: React.FC<{ state: SetupChoicesState; heading:
           value={state.instanceName}
           onChange={(e) => state.setInstanceName(e.target.value)}
           placeholder="MindSift"
-          className="w-full h-8 px-2.5 input-field"
+          className="w-full h-11 sm:h-8 px-2.5 text-base sm:text-xs input-field"
         />
       </div>
 

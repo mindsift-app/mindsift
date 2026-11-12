@@ -8,8 +8,24 @@ export type UserRole = 'admin' | 'manager' | 'member';
 
 export type RegistrationMode = 'closed' | 'approval' | 'domain' | 'domain+approval' | 'open';
 
+// What the setup wizard tells beside its questions (GET /admin/setup/status; in AuthStatus.setup while the
+// server has no account yet)
+export interface SetupInfo {
+  // A mail server is set: by SMTP_HOST (smtpViaEnv) or in the administration
+  smtpConfigured: boolean;
+  smtpViaEnv: boolean;
+  smtpHost?: string; // admins only
+  // BASE_URL is set: mails can carry links (password reset, address confirmation)
+  baseUrlSet: boolean;
+  emailLinks: boolean;
+  // Folder of the daily backups on the server
+  backupDir: string;
+}
+
 export interface AuthStatus {
   needsSetup: boolean;
+  // Only while needsSetup: mail server, BASE_URL and backup folder for the first-boot wizard
+  setup?: SetupInfo;
   allowRegistration: boolean;
   // Registering without an invite and the e-mail domains of the domain modes (hint on the form)
   registrationMode?: RegistrationMode;
@@ -341,6 +357,12 @@ export interface TeamMember {
   role: 'admin' | 'member';
   joinedAt: string;
 }
+
+// The mail server as the administration and the setup wizard edit it (SmtpFields)
+export type SmtpForm = Pick<
+  SystemSettings,
+  'smtpHost' | 'smtpPort' | 'smtpUser' | 'smtpPass' | 'smtpFrom' | 'smtpFromName' | 'smtpTls' | 'smtpSkipVerify'
+>;
 
 export interface SystemSettings {
   sharingMode: SharingMode;

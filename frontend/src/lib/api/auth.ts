@@ -1,5 +1,5 @@
 // REST calls: Login, first-boot setup, sessions and account settings
-import { AuthStatus, DashboardStats, Retention, SharingMode, Session, User, NotificationSettings } from '../types';
+import { AuthStatus, DashboardStats, Retention, SharingMode, Session, SmtpForm, User, NotificationSettings } from '../types';
 import { setToken, clearToken, ensureArray, request, setCurrentSharingMode, setCurrentPeopleSearch } from './client';
 import { clearStoredNotes } from '../docSync/persist';
 import { clearUndoHistories } from '../docSync/undoHistory';
@@ -53,6 +53,7 @@ export const authApi = {
     backupEnabled?: boolean;
     backupTime?: string;
     backupRetentionDays?: number;
+    smtp?: SmtpForm;
   }): Promise<{ token: string; user: User }> {
     const res = await request<{ token: string; user: User }>('/api/v1/auth/setup', {
       method: 'POST',
@@ -62,7 +63,8 @@ export const authApi = {
     return res;
   },
 
-  // The wizard's instance settings after an admin from ADMIN_USER (only while getMe says setupPending)
+  // The wizard's instance settings after an admin from ADMIN_USER (only while getMe says setupPending);
+  // email: the admin's address when ADMIN_EMAIL was missing, taken once the mailed link is clicked
   async finishSetup(payload: {
     instanceName?: string;
     sharingMode?: SharingMode;
@@ -72,6 +74,8 @@ export const authApi = {
     backupEnabled?: boolean;
     backupTime?: string;
     backupRetentionDays?: number;
+    smtp?: SmtpForm;
+    email?: string;
   }): Promise<void> {
     await request<{ done: boolean }>('/api/v1/admin/setup', {
       method: 'POST',

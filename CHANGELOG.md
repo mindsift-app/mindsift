@@ -11,6 +11,8 @@ Versions before 0.80.0 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 Fixes from the security review of November 2026 (v0.94.0).
 
 ### Added
+- Setup: when the admin came from `ADMIN_USER` without `ADMIN_EMAIL`, the rest of the setup asks for an email address; it counts once the link mailed to it is clicked, and the link follows as soon as a mail server is set up.
+- Setup: both ways of the setup wizard offer to set up the mail server when `SMTP_HOST` is not set (with a test mail after `ADMIN_USER`), and end with a summary of what is still open (mail server, `BASE_URL`, email address) and where the backups and the administration are.
 - The first admin's password can come from a file with `ADMIN_PASSWORD_FILE` (e.g. a Docker secret), so it does not show in `docker inspect`.
 - The install script asks for the admin account on a new install (or generates a password and shows it once), so the new instance is protected from the start; without a terminal it skips the question with a hint.
 - The image names its version and describes itself (OCI labels and index annotations), so Dozzle and Portainer show the version, e.g. next to an available update, and the package page on GitHub has a description.
@@ -27,6 +29,7 @@ Fixes from the security review of November 2026 (v0.94.0).
 - Conflict copies in notes have a third choice, "Keep both": the marking goes and both texts stay, the copy as a bullet of its own under the original. While someone edits the original, "Use" is greyed out and a line under the copy says who holds it; before, the click did nothing visible. Until it is settled, a copy sticks to its original: Enter or pasting in the original adds below the copy, and indenting, dragging or moving the original takes the copy along.
 
 ### Changed
+- Setup: fields and buttons of the setup wizard are 44 px high on phones; an error shows next to the finish button.
 - Administration: the user list can be searched (name, username, email) and filtered by role and organization, and sorted by name, role or newest first. Rows are compact; role, password, lock and delete open after a click on a person (on phones in a sheet from below), and only 50 people are shown at a time with "Show more". Registrations waiting for approval are now at the top with a counter.
 - Typing in long notes and in the journal is smoother: the note title no longer measures itself on every change, the journal calendar formats its dates much faster, and a large note is no longer written to the browser's storage in full after every typing pause (what the server confirmed is kept with the unsent changes instead, so it still survives a crash or an offline restart).
 - Typing and pressing Enter in long notes is faster: after a pause in typing, the hashtag and to-do counters only look at the note that changed, and the outline only updates the bullets that changed instead of going over every bullet.

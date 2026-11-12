@@ -45,6 +45,8 @@ var messagesES = map[string]string{
 	"Bitte bestätige zuerst deine E-Mail-Adresse über den Link, den wir dir geschickt haben": "Confirma primero tu dirección de correo con el enlace que te hemos enviado",
 	"Bitte eine Discord Webhook URL angeben":                                                 "Introduce una URL de webhook de Discord",
 	"Bitte eine Webhook-URL angeben":                                                         "Introduce una URL de webhook",
+	"Bitte den SMTP-Server angeben oder den Mailserver überspringen":                         "Indica el servidor SMTP u omite el servidor de correo",
+	"Der SMTP-Port muss eine Zahl von 1 bis 65535 sein":                                      "El puerto SMTP debe ser un número del 1 al 65535",
 	"Bitte eine gültige E-Mail-Adresse angeben":                                              "Introduce una dirección de correo válida",
 	"Bitte gib zur Bestätigung dein aktuelles Passwort richtig ein":                          "Introduce correctamente tu contraseña actual para confirmar",
 	"Blöcke werden über POST /api/v1/docs/{id}/sync gespeichert":                             "Los bloques se guardan mediante POST /api/v1/docs/{id}/sync",

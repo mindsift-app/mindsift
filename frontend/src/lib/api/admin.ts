@@ -1,5 +1,5 @@
 // REST calls: Administration: users, invites, server settings, voice, organizations
-import { Organization, SystemSettings, SharingMode, User, UserInvite, VoiceAdminStatus } from '../types';
+import { Organization, SetupInfo, SmtpForm, SystemSettings, SharingMode, User, UserInvite, VoiceAdminStatus } from '../types';
 import { authHeaders, ensureArray, request } from './client';
 import i18n from '../../i18n';
 
@@ -163,10 +163,16 @@ export const adminApi = {
     return res?.affected || 0;
   },
 
-  async adminTestSMTP(toEmail: string): Promise<{ status: string }> {
+  // Mail server, BASE_URL and backup folder for the summary of the setup wizard
+  async getSetupStatus(): Promise<SetupInfo> {
+    return request<SetupInfo>('/api/v1/admin/setup/status');
+  },
+
+  // smtp: a mail server to try before it is stored (setup wizard); left out, the configured one
+  async adminTestSMTP(toEmail: string, smtp?: SmtpForm): Promise<{ status: string }> {
     return request<{ status: string }>('/api/v1/admin/smtp/test', {
       method: 'POST',
-      body: JSON.stringify({ toEmail }),
+      body: JSON.stringify(smtp ? { toEmail, smtp } : { toEmail }),
       timeout: 'slow',
     });
   },
