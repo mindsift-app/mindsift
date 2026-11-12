@@ -273,8 +273,12 @@ export function PasskeyCard({
           )}
 
           {!off && browserCan && flow.step === 'idle' && (
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-card border border-border bg-canvas">
-              <p className="text-[11px] text-muted">{passkeys.length === 0 ? t('security.passkeys.none') : ''}</p>
+            <div
+              className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+                passkeys.length === 0 ? 'p-3.5 rounded-card border border-border bg-canvas' : 'sm:justify-end'
+              }`}
+            >
+              {passkeys.length === 0 && <p className="text-[11px] text-muted">{t('security.passkeys.none')}</p>}
               <button
                 type="button"
                 onClick={() => {

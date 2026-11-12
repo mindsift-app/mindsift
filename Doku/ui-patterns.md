@@ -83,13 +83,15 @@ Component: [ConfirmPopover.tsx](../frontend/src/components/ConfirmPopover.tsx)
 - From handlers and hooks without state of their own: `await askConfirm({ message, confirmLabel, danger })` ([askConfirm.tsx](../frontend/src/components/askConfirm.tsx)) opens the same popover at the last click or tap and resolves `true` or `false`.
 - **Never the browser's own dialogs** (`window.confirm`, `alert`, `prompt`). Ask only when an action cannot be undone (deleting a list, a folder, a backup, emptying the trash, revoking keys); actions that go to the trash or can be undone with `Ctrl+Z` run without a question (a task, a bullet with its children, removing a member or a share).
 
-## One-Time Codes (Two-Factor)
+## One-Time Codes and Passkeys (Two-Factor)
 
-Components: [MfaStep.tsx](../frontend/src/features/auth/MfaStep.tsx) (sign-in), [TwoFactorCard.tsx](../frontend/src/features/settings/user/TwoFactorCard.tsx) (settings).
+Components: [MfaStep.tsx](../frontend/src/features/auth/MfaStep.tsx) (sign-in), [TwoFactorCard.tsx](../frontend/src/features/settings/user/TwoFactorCard.tsx) and [PasskeyCard.tsx](../frontend/src/features/settings/user/PasskeyCard.tsx) (settings), [SecondFactorFields.tsx](../frontend/src/features/settings/user/SecondFactorFields.tsx) (confirmations), [RecoveryCodesPanel.tsx](../frontend/src/features/settings/user/RecoveryCodesPanel.tsx).
 
 - The app's code: `type="text"`, `inputMode="numeric"`, `autoComplete="one-time-code"`, `maxLength={6}`, monospaced and spaced out; only digits are kept, and six digits send it at once (no button press needed, a button is still there). Anything that changes how it is sent (the "trust this device" switch) therefore sits **above** the field.
 - A recovery code is a plain text field without auto-correct; one link switches between the two.
-- Confirming a sensitive action asks the password and "Code der App oder Wiederherstellungscode" in one `FormSheet`; the server tells the two apart by their form (`confirmWithSecondFactor`).
+- A passkey is a button "Mit Passkey bestätigen" (fingerprint icon). With passkeys and no app it is the primary button of the second step; with the app too it sits below the code's button. Closing the browser's passkey dialog shows no error (`passkeyCancelled`). The options are fetched before the click where possible, so the browser's dialog opens within the click (Safari).
+- Confirming a sensitive action uses `SecondFactorFields` in one `FormSheet`: the password, "Code der App oder Wiederherstellungscode" (only "Wiederherstellungscode" without app), and the passkey button when the account has passkeys; the server tells codes apart by their form (`confirmWithSecondFactor`).
+- Removing the last second factor says so in red in the sheet before (two-factor sign-in goes off, recovery codes and trusted devices are deleted).
 - On phones fields, buttons and the switch row are 44 px high.
 
 ## Error Notice

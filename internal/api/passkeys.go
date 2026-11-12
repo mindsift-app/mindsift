@@ -350,10 +350,17 @@ func (s *Server) handleMFAPasskeyOptions(w http.ResponseWriter, r *http.Request)
 		writeError(w, http.StatusBadRequest, "Ungültige Anfrage")
 		return
 	}
-	ch, ok := s.mfaChallenges.get(req.MFAToken, s.now())
-	user, err := s.store.GetUserByID(ch.userID)
-	if !ok || err != nil || user == nil || !user.IsActive || user.TokenVersion != ch.tokenVersion {
+	expired := func() {
 		writeErrorCode(w, http.StatusUnauthorized, "mfa_expired", "Die Anmeldung ist abgelaufen. Bitte melde dich erneut an.")
+	}
+	ch, ok := s.mfaChallenges.get(req.MFAToken, s.now())
+	if !ok {
+		expired()
+		return
+	}
+	user, err := s.store.GetUserByID(ch.userID)
+	if err != nil || user == nil || !user.IsActive || user.TokenVersion != ch.tokenVersion {
+		expired()
 		return
 	}
 	options, session, err := s.beginPasskeyAssertion(user)
@@ -366,7 +373,7 @@ func (s *Server) handleMFAPasskeyOptions(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	if !s.mfaChallenges.setPasskey(req.MFAToken, session) {
-		writeErrorCode(w, http.StatusUnauthorized, "mfa_expired", "Die Anmeldung ist abgelaufen. Bitte melde dich erneut an.")
+		expired()
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"options": options})
