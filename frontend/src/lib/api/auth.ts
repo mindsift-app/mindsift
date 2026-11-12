@@ -14,7 +14,7 @@ import {
   User,
   NotificationSettings,
 } from '../types';
-import { setToken, clearToken, ensureArray, request, setCurrentSharingMode, setCurrentPeopleSearch } from './client';
+import { setToken, clearToken, ensureArray, request, setCurrentSharingMode, setCurrentPeopleSearch, setCurrentOidc } from './client';
 import { forgetTrust, rememberTrust, trustedDeviceId, trustTokens } from '../trustedDevice';
 import { clearStoredNotes } from '../docSync/persist';
 import type { PasskeyJSON } from '../webauthn';
@@ -26,7 +26,30 @@ export const authApi = {
     const st = await request<AuthStatus>('/api/v1/auth/status');
     if (st.sharingMode) setCurrentSharingMode(st.sharingMode);
     setCurrentPeopleSearch(st.peopleSearch !== false);
+    setCurrentOidc(st.oidc, st.passwordLogin);
     return st;
+  },
+
+  // Sign-in through the OIDC provider (lib/oidc.ts): the provider's address and the value to keep until the
+  // ticket comes back
+  async oidcStart(returnTo: string): Promise<{ url: string; bind: string }> {
+    return request('/api/v1/auth/oidc/start', { method: 'POST', body: JSON.stringify({ return: returnTo }) });
+  },
+
+  // Signed in: sign in at the provider again to confirm a sensitive change, or link the account (link needs the
+  // password and second factor)
+  async oidcConfirm(body: { return: string; link?: boolean; password?: string } & Partial<SecondFactorProof>): Promise<{ url: string; bind: string }> {
+    return request('/api/v1/auth/oidc/confirm', { method: 'POST', body: JSON.stringify(body) });
+  },
+
+  // The ticket of the return: a session after a sign-in, a confirmation of the current session otherwise
+  async oidcExchange(ticket: string, bind: string): Promise<{ token?: string; user?: User; confirmed?: boolean; linked?: boolean; expiresIn?: number }> {
+    const res = await request<{ token?: string; user?: User; confirmed?: boolean; linked?: boolean; expiresIn?: number }>('/api/v1/auth/oidc/exchange', {
+      method: 'POST',
+      body: JSON.stringify({ ticket, bind }),
+    });
+    if (res.token) setToken(res.token);
+    return res;
   },
 
   // Public, works before login

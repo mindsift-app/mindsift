@@ -622,7 +622,29 @@
     "mfaRequiredHint": "Les personnes concernées qui n'ont encore ni application d'authentification ni clé d'accès en configurent une juste après leur prochaine connexion et ne peuvent rien faire d'autre avant. Les clés d'API et les accès IA continuent de fonctionner.",
     "mfaRequiredNobody": "Facultatif",
     "mfaRequiredAdmins": "Pour les admins",
-    "mfaRequiredAll": "Pour tout le monde"
+    "mfaRequiredAll": "Pour tout le monde",
+    "oidc": {
+      "title": "Connexion avec OIDC",
+      "hint": "Configuré par les variables d'environnement OIDC_* ; affiché ici uniquement.",
+      "notConfigured": "Non configuré. Avec OIDC_ISSUER, OIDC_CLIENT_ID et OIDC_CLIENT_SECRET, tout le monde se connecte via un fournisseur comme Authentik, Authelia ou Keycloak (voir README).",
+      "offDemo": "Désactivé dans la démo.",
+      "offNoBaseUrl": "Désactivé : BASE_URL manque. Le fournisseur a besoin de l'adresse vers laquelle il redirige.",
+      "reachable": "Le fournisseur répond.",
+      "unreachable": "Le fournisseur ne répond pas pour le moment : {{error}}",
+      "provider": "Fournisseur",
+      "issuer": "Issuer",
+      "clientId": "ID client",
+      "redirectUrl": "URI de redirection",
+      "scopes": "Scopes",
+      "autoCreate": "Créer les comptes automatiquement",
+      "passwordLogin": "Connexion avec mot de passe",
+      "on": "Activé",
+      "off": "Désactivé",
+      "passwordAdminsOnly": "Accès de secours de l'administration uniquement",
+      "adminGroup": "Groupe d'administration",
+      "none": "–",
+      "linkedUsers": "Comptes liés"
+    }
   },
   "admin": {
     "loadFailed": "Échec du chargement des données d'administration",
@@ -836,7 +858,11 @@
       "save": "Changer le mot de passe",
       "saved": "Mot de passe changé. Tous les autres appareils ont été déconnectés.",
       "failed": "Le mot de passe n'a pas pu être changé",
-      "noMatch": "Les deux nouveaux mots de passe ne correspondent pas"
+      "noMatch": "Les deux nouveaux mots de passe ne correspondent pas",
+      "setTitle": "Définir un mot de passe",
+      "set": "Définir le mot de passe",
+      "setHint": "Tu te connectes avec {{name}} et n'as pas besoin de mot de passe propre. Avec un mot de passe, tu peux aussi te connecter directement ; pour confirmer, MindSift passe par {{name}}.",
+      "setHintAdmin": "La connexion avec mot de passe est désactivée ; seule l'administration dispose d'un accès de secours sous /?login=password si {{name}} est en panne. Définis ici le mot de passe pour cela."
     },
     "nav": "Sécurité",
     "navHint": "Mot de passe, deux facteurs et sessions",
@@ -940,6 +966,20 @@
       "intro": "Cette modification demande aussi ton second facteur.",
       "submit": "Confirmer",
       "cancelled": "Non confirmé, rien n'a été modifié."
+    },
+    "oidc": {
+      "title": "Connexion avec {{name}}",
+      "linked": "Tu te connectes avec {{name}}. Tu confirmes les modifications sensibles comme une nouvelle adresse, un mot de passe, des clés d'API ou la suppression en te reconnectant à {{name}}.",
+      "notLinked": "Lie ton compte à {{name}} pour pouvoir aussi te connecter par ce biais. Pour confirmer, il te faut ton mot de passe.",
+      "link": "Lier à {{name}}",
+      "linkFailed": "La liaison a échoué",
+      "confirmTitle": "Confirmer la modification",
+      "confirmIntro": "Reconnecte-toi à {{name}} pour confirmer. Tu reviens ensuite ici et peux effectuer la modification dans les cinq minutes qui suivent.",
+      "confirmButton": "Confirmer avec {{name}}",
+      "confirmFirst": "Confirme d'abord la modification avec {{name}}.",
+      "confirmHint": "Tu confirmes en te reconnectant à {{name}}.",
+      "confirmedDone": "Confirmé. Tu peux effectuer la modification pendant cinq minutes.",
+      "linkedDone": "Ton compte est maintenant lié à {{name}}."
     }
   }
 }

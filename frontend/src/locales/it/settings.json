@@ -622,7 +622,29 @@
     "mfaRequiredHint": "Chi è interessato e non ha ancora un'app di autenticazione né una passkey ne configura una subito dopo il prossimo accesso e prima non può fare altro. Le chiavi API e gli accessi IA continuano a funzionare.",
     "mfaRequiredNobody": "Facoltativo",
     "mfaRequiredAdmins": "Per gli amministratori",
-    "mfaRequiredAll": "Per tutti"
+    "mfaRequiredAll": "Per tutti",
+    "oidc": {
+      "title": "Accesso con OIDC",
+      "hint": "Configurato con le variabili d'ambiente OIDC_*; qui solo in visualizzazione.",
+      "notConfigured": "Non configurato. Con OIDC_ISSUER, OIDC_CLIENT_ID e OIDC_CLIENT_SECRET tutti accedono tramite un provider come Authentik, Authelia o Keycloak (vedi README).",
+      "offDemo": "Disattivato nella demo.",
+      "offNoBaseUrl": "Disattivato: manca BASE_URL. Il provider ha bisogno dell'indirizzo a cui reindirizzare.",
+      "reachable": "Il provider risponde.",
+      "unreachable": "Il provider non risponde al momento: {{error}}",
+      "provider": "Provider",
+      "issuer": "Issuer",
+      "clientId": "ID client",
+      "redirectUrl": "URI di reindirizzamento",
+      "scopes": "Scope",
+      "autoCreate": "Crea account automaticamente",
+      "passwordLogin": "Accesso con password",
+      "on": "Attivo",
+      "off": "Disattivo",
+      "passwordAdminsOnly": "Solo accesso di emergenza dell'amministrazione",
+      "adminGroup": "Gruppo amministratori",
+      "none": "–",
+      "linkedUsers": "Account collegati"
+    }
   },
   "admin": {
     "loadFailed": "Caricamento dei dati di amministrazione non riuscito",
@@ -836,7 +858,11 @@
       "save": "Cambia password",
       "saved": "Password cambiata. Tutti gli altri dispositivi sono stati disconnessi.",
       "failed": "Impossibile cambiare la password",
-      "noMatch": "Le due nuove password non coincidono"
+      "noMatch": "Le due nuove password non coincidono",
+      "setTitle": "Imposta una password",
+      "set": "Imposta password",
+      "setHint": "Accedi con {{name}} e non ti serve una password tua. Con una password puoi anche accedere direttamente; per confermare MindSift chiede a {{name}}.",
+      "setHintAdmin": "L'accesso con password è disattivato; solo l'amministrazione ha un accesso di emergenza su /?login=password nel caso {{name}} non funzioni. Qui imposti la password per questo."
     },
     "nav": "Sicurezza",
     "navHint": "Password, due fattori e sessioni",
@@ -940,6 +966,20 @@
       "intro": "Questa modifica richiede anche il tuo secondo fattore.",
       "submit": "Conferma",
       "cancelled": "Non confermato, non è stato cambiato nulla."
+    },
+    "oidc": {
+      "title": "Accesso con {{name}}",
+      "linked": "Accedi con {{name}}. Le modifiche delicate come un nuovo indirizzo, una password, le chiavi API o l'eliminazione le confermi accedendo di nuovo a {{name}}.",
+      "notLinked": "Collega il tuo account a {{name}} per accedere anche da lì. Per confermare ti serve la tua password.",
+      "link": "Collega a {{name}}",
+      "linkFailed": "Collegamento non riuscito",
+      "confirmTitle": "Conferma la modifica",
+      "confirmIntro": "Accedi di nuovo a {{name}} per confermare. Poi tornerai qui e potrai fare la modifica nei prossimi cinque minuti.",
+      "confirmButton": "Conferma con {{name}}",
+      "confirmFirst": "Conferma prima la modifica con {{name}}.",
+      "confirmHint": "Confermi accedendo di nuovo a {{name}}.",
+      "confirmedDone": "Confermato. Ora puoi fare la modifica per cinque minuti.",
+      "linkedDone": "Il tuo account è ora collegato a {{name}}."
     }
   }
 }

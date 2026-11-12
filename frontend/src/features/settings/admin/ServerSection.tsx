@@ -7,6 +7,7 @@ import { RegistrationMode } from '../../../lib/types';
 import { ToggleSwitch } from '../../../components/ToggleSwitch';
 import { BackupAdminCard } from '../BackupAdminCard';
 import { VoiceStatusCard } from '../VoiceStatusCard';
+import { OidcStatusCard } from './OidcStatusCard';
 import { SHARING_MODES, useAdminSettings } from './useAdminSettings';
 import { Trans, useTranslation } from 'react-i18next';
 import { FALLBACK_LANGUAGE, LANGUAGES } from '../../../i18n';
@@ -184,6 +185,8 @@ export function ServerSection({
           <BackupAdminCard settings={settings} onSave={(patch) => handleSaveSystemSettings(patch)} />
 
           <VoiceStatusCard />
+
+          <OidcStatusCard status={settings.oidc} />
 
           {/* Alarm webhooks into the local network (SSRF protection) */}
           <div className="p-4 bg-canvas border border-border rounded-card flex items-center justify-between gap-4">

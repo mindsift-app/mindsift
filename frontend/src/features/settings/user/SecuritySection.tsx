@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import i18n from '../../../i18n';
-import { AlertCircle, Check, KeyRound, MonitorSmartphone } from 'lucide-react';
-import { api, triggerHaptic } from '../../../lib/api';
+import { AlertCircle, Check, KeyRound, MonitorSmartphone, ShieldCheck } from 'lucide-react';
+import { api, getCurrentOidc, triggerHaptic } from '../../../lib/api';
+import { startOidcConfirm } from '../../../lib/oidc';
 import { passwordProblem } from '../../../lib/password';
 import { User } from '../../../lib/types';
 import { askConfirm } from '../../../components/askConfirm';
@@ -11,7 +12,10 @@ import { TwoFactorCard } from './TwoFactorCard';
 import { PasskeyCard } from './PasskeyCard';
 import { withSecondFactor } from './askSecondFactor';
 
-// Kontoeinstellungen → Sicherheit: a new password, two-factor sign-in, passkeys and the signed-in devices.
+// Kontoeinstellungen → Sicherheit: a new password, two-factor sign-in, passkeys and the signed-in devices; with
+// an OIDC provider how the account signs in there. The password and the second factors only matter where the
+// account can sign in with a password: with the password login off only administrators can (emergency access),
+// and an account from the provider has no password until it sets one.
 export function SecuritySection({
   currentUser,
   onUserUpdated,
@@ -25,19 +29,31 @@ export function SecuritySection({
   // The app and the passkeys share the state of two-factor sign-in: a change in one card reloads the other
   const [twoFactorKey, setTwoFactorKey] = useState(0);
   const [passkeyKey, setPasskeyKey] = useState(0);
+  const oidc = getCurrentOidc();
+  const passwordUsable = oidc.passwordLogin || currentUser.role === 'admin';
+  const secondFactors = passwordUsable && !currentUser.noPassword;
   return (
     <div className="space-y-6">
       <div className="border-b border-border pb-3">
         <h2 className="text-sm font-bold text-main">{t('security.title')}</h2>
         <p className="text-muted mt-0.5">{t('security.intro')}</p>
       </div>
-      <PasswordCard onUserUpdated={onUserUpdated} demoMode={demoMode} />
-      <div className="pt-5 border-t border-border">
-        <TwoFactorCard currentUser={currentUser} demoMode={demoMode} refreshKey={twoFactorKey} onChanged={() => setPasskeyKey((k) => k + 1)} />
-      </div>
-      <div className="pt-5 border-t border-border">
-        <PasskeyCard currentUser={currentUser} demoMode={demoMode} refreshKey={passkeyKey} onChanged={() => setTwoFactorKey((k) => k + 1)} />
-      </div>
+      {oidc.enabled && <OidcCard currentUser={currentUser} name={oidc.name} />}
+      {passwordUsable && (
+        <div className={oidc.enabled ? 'pt-5 border-t border-border' : ''}>
+          <PasswordCard currentUser={currentUser} onUserUpdated={onUserUpdated} demoMode={demoMode} />
+        </div>
+      )}
+      {secondFactors && (
+        <>
+          <div className="pt-5 border-t border-border">
+            <TwoFactorCard currentUser={currentUser} demoMode={demoMode} refreshKey={twoFactorKey} onChanged={() => setPasskeyKey((k) => k + 1)} />
+          </div>
+          <div className="pt-5 border-t border-border">
+            <PasskeyCard currentUser={currentUser} demoMode={demoMode} refreshKey={passkeyKey} onChanged={() => setTwoFactorKey((k) => k + 1)} />
+          </div>
+        </>
+      )}
       <div className="pt-5 border-t border-border">
         <SessionsCard demoMode={demoMode} />
       </div>
@@ -45,10 +61,69 @@ export function SecuritySection({
   );
 }
 
-// A new password: needs the current one; every other device is signed out (the server sends this one a
-// fresh token)
-function PasswordCard({ onUserUpdated, demoMode }: { onUserUpdated: (u: User) => void; demoMode: boolean }) {
+// Signing in through the OIDC provider: how this account does, or linking it (with the password, so a session
+// alone cannot tie somebody's account at the provider to it). Linking leaves for the provider and comes back.
+function OidcCard({ currentUser, name }: { currentUser: User; name: string }) {
   const { t } = useTranslation('settings');
+  const [password, setPassword] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const link = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setBusy(true);
+    try {
+      await withSecondFactor((proof) => startOidcConfirm({ link: true, password, ...proof }));
+    } catch (err: any) {
+      setError(err?.message || t('security.oidc.linkFailed'));
+      setBusy(false);
+    }
+  };
+  return (
+    <form onSubmit={link} className="space-y-3" data-security-card="oidc">
+      <div>
+        <h3 className="text-xs font-bold text-main flex items-center gap-1.5">
+          <ShieldCheck className="w-3.5 h-3.5 text-accent" />
+          <span>{t('security.oidc.title', { name })}</span>
+        </h3>
+        <p className="text-[11px] text-muted">
+          {currentUser.oidc ? t('security.oidc.linked', { name }) : t('security.oidc.notLinked', { name })}
+        </p>
+      </div>
+      {!currentUser.oidc && (
+        <>
+          <label className="block text-muted font-medium">
+            {t('profile.currentPassword')}
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete="current-password"
+              className="mt-1 w-full h-11 sm:h-9 px-3 input-field text-base sm:text-xs"
+            />
+          </label>
+          {error && (
+            <div role="alert" className="alert-err flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-status-err flex-shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
+          <div className="flex justify-end">
+            <button type="submit" disabled={busy || !password} className="btn-action h-11 sm:h-9 px-5 text-xs font-semibold disabled:opacity-50">
+              {t('security.oidc.link', { name })}
+            </button>
+          </div>
+        </>
+      )}
+    </form>
+  );
+}
+
+// A new password: needs the current one; every other device is signed out (the server sends this one a
+// fresh token). An account from the OIDC provider without a password sets its first one, confirmed there.
+function PasswordCard({ currentUser, onUserUpdated, demoMode }: { currentUser: User; onUserUpdated: (u: User) => void; demoMode: boolean }) {
+  const { t } = useTranslation('settings');
+  const firstPassword = Boolean(currentUser.noPassword);
   const [next, setNext] = useState('');
   const [repeat, setRepeat] = useState('');
   const [current, setCurrent] = useState('');
@@ -71,7 +146,9 @@ function PasswordCard({ onUserUpdated, demoMode }: { onUserUpdated: (u: User) =>
     try {
       // Not trimmed: login compares the password exactly as typed
       // With a second factor on, the server asks for it as well (withSecondFactor)
-      const updated = await withSecondFactor((proof) => api.updateSettings({ password: next, currentPassword: current, ...proof }));
+      const updated = await withSecondFactor((proof) =>
+        api.updateSettings({ password: next, ...(firstPassword ? {} : { currentPassword: current }), ...proof })
+      );
       onUserUpdated(updated);
       setNext('');
       setRepeat('');
@@ -90,9 +167,15 @@ function PasswordCard({ onUserUpdated, demoMode }: { onUserUpdated: (u: User) =>
       <div>
         <h3 className="text-xs font-bold text-main flex items-center gap-1.5">
           <KeyRound className="w-3.5 h-3.5 text-accent" />
-          <span>{t('security.password.title')}</span>
+          <span>{firstPassword ? t('security.password.setTitle') : t('security.password.title')}</span>
         </h3>
-        <p className="text-[11px] text-muted">{t('security.password.hint')}</p>
+        <p className="text-[11px] text-muted">
+          {firstPassword
+            ? t(currentUser.role === 'admin' && !getCurrentOidc().passwordLogin ? 'security.password.setHintAdmin' : 'security.password.setHint', {
+                name: getCurrentOidc().name,
+              })
+            : t('security.password.hint')}
+        </p>
       </div>
       {msg && (
         <div role={msg.type === 'ok' ? 'status' : 'alert'} className={`flex items-center gap-2 ${msg.type === 'ok' ? 'alert-ok' : 'alert-err'}`}>
@@ -125,7 +208,7 @@ function PasswordCard({ onUserUpdated, demoMode }: { onUserUpdated: (u: User) =>
           />
         </label>
       </div>
-      {next !== '' && (
+      {next !== '' && !firstPassword && (
         <label className="block text-muted font-medium">
           {t('profile.currentPassword')}
           <input
@@ -141,11 +224,11 @@ function PasswordCard({ onUserUpdated, demoMode }: { onUserUpdated: (u: User) =>
       <div className="flex justify-end">
         <button
           type="submit"
-          disabled={demoMode || busy || !next || !current}
+          disabled={demoMode || busy || !next || (!firstPassword && !current)}
           title={demoMode ? t('profile.demoDisabled') : undefined}
           className="btn-primary h-11 sm:h-9 px-5 text-xs font-semibold disabled:opacity-50"
         >
-          {busy ? t('saving') : t('security.password.save')}
+          {busy ? t('saving') : firstPassword ? t('security.password.set') : t('security.password.save')}
         </button>
       </div>
     </form>
