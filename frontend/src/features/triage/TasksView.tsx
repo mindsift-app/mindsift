@@ -895,6 +895,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
               <button
                 type="button"
                 onClick={toggleKanbanWide}
+                data-tour="board-wide"
                 aria-pressed={kanbanWide}
                 className="btn-action h-7 w-7 p-0 hidden lg:inline-flex items-center justify-center"
                 title={kanbanWide ? t('view.calendarNormal') : t('view.calendarWide')}
@@ -918,6 +919,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
               <button
                 type="button"
                 onClick={toggleKanbanWide}
+                data-tour="board-wide"
                 aria-pressed={kanbanWide}
                 className="btn-action h-7 w-7 p-0 hidden lg:inline-flex items-center justify-center"
                 title={kanbanWide ? t('view.boardNormal') : t('view.boardWide')}

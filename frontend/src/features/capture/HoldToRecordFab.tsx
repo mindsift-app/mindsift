@@ -311,6 +311,7 @@ export const HoldToRecordFab: React.FC<HoldToRecordFabProps> = ({ onTap, onTrans
         }
         title={t('fab.title')}
         aria-label={t('fab.label')}
+        data-tour="capture"
       >
         {isRecording ? (
           <Mic className="w-7 h-7 stroke-[2.5]" />

@@ -120,6 +120,7 @@ export function TaskRow({
   return (
     <div
       key={task.id}
+      data-tour="task"
       draggable={canDragTasks && !readOnly}
       onDragStart={(e) => handleTaskDragStart(e, task)}
       onDragEnd={() => {

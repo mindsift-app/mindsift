@@ -79,3 +79,13 @@ The owner types with a normal connection, the editor sits behind a simulated pro
 ## Demo tour for a screen recording
 
 `e2e/video-tour.sh` clicks through the demo in a visible Chrome app window (triage, tasks, shopping list, zoom into a note, a linked subtask, the to-do overview) with a drawn pointer and typing at human speed, for a YouTube video. Against the public demo `https://demo.mindsift.app` by default; `LOCAL=1` starts a fresh local demo instead. It speaks the demo's language (the local one is English unless `TOUR_LANG=de`); what it types explains what it is doing at that moment; `PACE=1.5` slows it down, `SIZE=1920,1080` sets the window, `START_DELAY` gives time to start the recorder.
+
+## tour.e2e.mjs
+
+The guided tour (`frontend/src/features/tour`), started with "Tour starten" on the help page. Desktop in Chromium and Firefox, the phone in Chromium:
+
+- every step is clicked through in order ("1 von 7" … "7 von 7"); the card stays inside the window, takes the focus and lights a control; on the phone its buttons are 44 px and the focus-mode step is skipped (the phone shows the list of notes, no open note)
+- at the end the help page is back, with the focus on "Tour starten"
+- keys: → on, ← back, Enter on, Tab stays in the card, Esc ends; the × ends too
+- a click on the dimmed page and the triage's own keys (H, L, D, T, C) do nothing
+- no data changes: notes, tasks, the inbox and lists are the same before and after

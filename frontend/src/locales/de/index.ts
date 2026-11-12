@@ -9,7 +9,8 @@ import tasks from './tasks.json';
 import triage from './triage.json';
 import settings from './settings.json';
 import publicPage from './public.json';
+import tour from './tour.json';
 
 // German texts by area (namespace). Other languages repeat exactly these files and keys.
-const de = { common, app, auth, settings, triage, tasks, lists, groups, workspace, help, public: publicPage };
+const de = { common, app, auth, settings, triage, tasks, lists, groups, workspace, help, public: publicPage, tour };
 export default de;

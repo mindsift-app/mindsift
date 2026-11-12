@@ -879,6 +879,9 @@ export const App: React.FC = () => {
         lists={lists}
       />
 
+      {/* Guided tour, started from the help page (features/tour) */}
+      <views.GuidedTour activeTab={activeTab} setActiveTab={setActiveTab} />
+
       {showAbout && <AboutModal onClose={() => setShowAbout(false)} />}
       {showTriageTrash && <views.TriageTrash onClose={() => setShowTriageTrash(false)} onChanged={refreshAll} />}
       {availableUpdate && <UpdateAvailableModal update={availableUpdate} onLater={dismissUpdate} />}

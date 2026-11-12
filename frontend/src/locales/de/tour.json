@@ -1,0 +1,70 @@
+{
+  "progress": "{{current}} von {{total}}",
+  "next": "Weiter",
+  "back": "Zurück",
+  "finish": "Fertig",
+  "close": "Tour beenden",
+  "keysHint": "← → blättern · Esc beendet",
+  "start": {
+    "button": "Tour starten",
+    "intro": "Neu hier? Eine kurze Tour zeigt in sieben Schritten, wo du was findest – an deinen Daten ändert sie nichts."
+  },
+  "triage": {
+    "title": "Triage: erst festhalten, dann sortieren",
+    "capture": "Was dir gerade einfällt, tippst du ohne Nachdenken oben in den <b>Quick Dump</b> (Taste <kbd>C</kbd>). Es landet nicht gleich irgendwo, sondern als Karte hier in der Triage.",
+    "capturePhone": "Was dir gerade einfällt, wirfst du ohne Nachdenken in den <b>Quick Dump</b>: das <b>+</b> unten in der Mitte, gedrückt halten zum Einsprechen. Es landet als Karte hier in der Triage.",
+    "decide": "Wenn du Zeit hast, entscheidest du Karte für Karte: <kbd>→</kbd> Aufgabe, <kbd>←</kbd> wegwerfen, <kbd>D</kbd> Notiz, <kbd>T</kbd> mit Termin, <kbd>Leertaste</kbd> später – oder die Knöpfe unter der Karte, auch „Auf Liste“.",
+    "decidePhone": "Wenn du Zeit hast, entscheidest du Karte für Karte: nach rechts wischen macht eine Aufgabe daraus, nach links wirft sie weg. Die Knöpfe darunter legen sie auf eine Liste, als Notiz oder mit Termin ab."
+  },
+  "notes": {
+    "title": "Notizen aus Bausteinen",
+    "text": "Jede Notiz ist eine Gliederung aus Punkten. Tippe <kbd>/</kbd> in einen Punkt, und das Menü macht daraus einen anderen Baustein: Überschrift, To-do, nummerierte Liste, Code, Hinweisbox, Tabelle – oder mit <kbd>/canvas</kbd> eine Zeichnung mit Formen, Pfeilen und Freihand.",
+    "empty": "Noch keine Notiz? Das Plus oben in der Seitenleiste legt deine erste an.",
+    "phoneList": "Tippe auf eine Notiz, um sie zu öffnen; das <b>+</b> unten legt eine neue an."
+  },
+  "linked": {
+    "title": "Verbundene Aufgaben",
+    "text": "Ein To-do in einer Notiz wird mit dem Haken-Symbol rechts am Punkt zur echten Aufgabe. Sie steht dann auch unter Aufgaben – mit Fälligkeit, Kanban und Erinnerung – und bleibt mit dem Punkt verbunden: Abhaken und Titel gleichen sich in beide Richtungen ab, To-dos direkt darunter werden zu Unteraufgaben.",
+    "badge": "Das Abzeichen „{{badge}}“ am Punkt öffnet die Aufgabe, „{{back}}“ an der Aufgabe springt zurück."
+  },
+  "focus": {
+    "title": "Vollbild zum Schreiben",
+    "button": "Dieser Knopf startet den Fokus-Modus: nur noch die Notiz, über das ganze Fenster (<kbd>Strg</kbd>+<kbd>⇧</kbd>+<kbd>F</kbd>). <kbd>Esc</kbd> holt alles zurück.",
+    "menu": "Im Menü <b>⋯</b> der Notiz startet „{{item}}“ das Vollbild: nur noch die Notiz, über das ganze Fenster."
+  },
+  "tasks": {
+    "title": "Aufgaben",
+    "text": "Hier schaltest du zwischen Liste, Kanban und Kalender um; im Kanban macht <b>⤢</b> das Board so breit wie das Fenster. Ein Klick auf eine Aufgabe öffnet die Detailansicht mit Fälligkeit, Unteraufgaben, Notizen und Erinnerungen.",
+    "textPhone": "Liste, Kanban und Kalender wählst du im Menü hinter dem Logo oben links. Ein Tipp auf eine Aufgabe öffnet die Detailansicht mit Fälligkeit, Unteraufgaben, Notizen und Erinnerungen."
+  },
+  "search": {
+    "title": "Suche",
+    "text": "<kbd>Strg</kbd>+<kbd>K</kbd> (Mac: <kbd>⌘</kbd>+<kbd>K</kbd>) oder <kbd>/</kbd> öffnet von überall die Suche. Sie findet Notizen bis zum einzelnen Punkt, Aufgaben und Listeneinträge.",
+    "textPhone": "Die Lupe oben öffnet die Suche. Sie findet Notizen bis zum einzelnen Punkt, Aufgaben und Listeneinträge."
+  },
+  "end": {
+    "title": "Das war’s!",
+    "text": "Alles Weitere – Tastenkürzel, Listen, Teilen und mehr – steht hier auf der Hilfeseite (das <b>?</b> oben rechts). Mit „Tour starten“ siehst du die Tour jederzeit wieder.",
+    "textPhone": "Alles Weitere – Listen, Teilen und mehr – steht hier auf der Hilfeseite (über dein Profilbild oben rechts). Mit „Tour starten“ siehst du die Tour jederzeit wieder.",
+    "share": "Notizen, Aufgabenlisten und Listen kannst du übrigens mit anderen teilen und gemeinsam bearbeiten."
+  },
+  "demo": {
+    "thought1": "Zahnarzt anrufen",
+    "thought2": "Alte Prospekte",
+    "thought3": "Rezept Linsensuppe",
+    "h1": "Reise nach Lissabon",
+    "todo": "Pass prüfen",
+    "numbered1": "Koffer packen",
+    "numbered2": "Taxi bestellen",
+    "callout": "Check-in ab 15 Uhr",
+    "tableHead1": "Tag",
+    "tableHead2": "Ort",
+    "tableCell1": "Mo",
+    "tableCell2": "Alfama",
+    "canvas1": "Idee",
+    "canvas2": "Plan",
+    "task": "Angebot schicken",
+    "note": "Notiz",
+    "tasks": "Aufgaben"
+  }
+}

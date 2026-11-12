@@ -1,0 +1,70 @@
+{
+  "progress": "{{current}} de {{total}}",
+  "next": "Siguiente",
+  "back": "Atrás",
+  "finish": "Listo",
+  "close": "Terminar recorrido",
+  "keysHint": "← → para avanzar · Esc termina",
+  "start": {
+    "button": "Iniciar recorrido",
+    "intro": "¿Eres nuevo? Un breve recorrido muestra en siete pasos dónde encontrar cada cosa – no cambia nada de tus datos."
+  },
+  "triage": {
+    "title": "Triage: primero apuntar, luego ordenar",
+    "capture": "Lo que se te ocurra lo escribes sin pensar arriba en el <b>Quick Dump</b> (tecla <kbd>C</kbd>). No va directamente a ningún sitio: llega como tarjeta aquí al Triage.",
+    "capturePhone": "Lo que se te ocurra lo echas sin pensar al <b>Quick Dump</b>: el <b>+</b> abajo en el centro, mantenlo pulsado para dictar. Llega como tarjeta aquí al Triage.",
+    "decide": "Cuando tengas tiempo, decides tarjeta por tarjeta: <kbd>→</kbd> tarea, <kbd>←</kbd> descartar, <kbd>D</kbd> nota, <kbd>T</kbd> con fecha, <kbd>Espacio</kbd> más tarde – o los botones bajo la tarjeta, también «A la lista».",
+    "decidePhone": "Cuando tengas tiempo, decides tarjeta por tarjeta: deslizar a la derecha la convierte en tarea, a la izquierda la descarta. Los botones de abajo la ponen en una lista, como nota o con fecha."
+  },
+  "notes": {
+    "title": "Notas hechas de bloques",
+    "text": "Cada nota es un esquema de puntos. Escribe <kbd>/</kbd> en un punto y el menú lo convierte en otro bloque: título, tarea, lista numerada, código, cuadro de aviso, tabla – o con <kbd>/canvas</kbd> un dibujo con formas, flechas y trazo libre.",
+    "empty": "¿Aún no tienes notas? El más arriba en la barra lateral crea la primera.",
+    "phoneList": "Toca una nota para abrirla; el <b>+</b> de abajo crea una nueva."
+  },
+  "linked": {
+    "title": "Tareas vinculadas",
+    "text": "Con el icono de marca a la derecha del punto, una tarea de una nota se convierte en una tarea de verdad. Aparece también en Tareas – con fecha, Kanban y recordatorio – y sigue vinculada al punto: marcarla y el título se sincronizan en ambas direcciones, las tareas justo debajo pasan a ser subtareas.",
+    "badge": "La insignia «{{badge}}» en el punto abre la tarea, «{{back}}» en la tarea vuelve a la nota."
+  },
+  "focus": {
+    "title": "Pantalla completa para escribir",
+    "button": "Este botón inicia el modo de enfoque: solo la nota, en toda la ventana (<kbd>Ctrl</kbd>+<kbd>⇧</kbd>+<kbd>F</kbd>). <kbd>Esc</kbd> lo devuelve todo.",
+    "menu": "En el menú <b>⋯</b> de la nota, «{{item}}» abre la pantalla completa: solo la nota, en toda la ventana."
+  },
+  "tasks": {
+    "title": "Tareas",
+    "text": "Aquí cambias entre lista, Kanban y calendario; en Kanban, <b>⤢</b> hace el tablero tan ancho como la ventana. Un clic en una tarea abre el detalle con fecha, subtareas, notas y recordatorios.",
+    "textPhone": "Lista, Kanban y calendario se eligen en el menú detrás del logo, arriba a la izquierda. Tocar una tarea abre el detalle con fecha, subtareas, notas y recordatorios."
+  },
+  "search": {
+    "title": "Búsqueda",
+    "text": "<kbd>Ctrl</kbd>+<kbd>K</kbd> (Mac: <kbd>⌘</kbd>+<kbd>K</kbd>) o <kbd>/</kbd> abre la búsqueda desde cualquier sitio. Encuentra notas hasta el punto concreto, tareas y elementos de listas.",
+    "textPhone": "La lupa de arriba abre la búsqueda. Encuentra notas hasta el punto concreto, tareas y elementos de listas."
+  },
+  "end": {
+    "title": "¡Eso es todo!",
+    "text": "Todo lo demás – atajos, listas, compartir y más – está aquí en la página de ayuda (el <b>?</b> arriba a la derecha). Con «Iniciar recorrido» vuelves a verlo cuando quieras.",
+    "textPhone": "Todo lo demás – listas, compartir y más – está aquí en la página de ayuda (desde tu foto de perfil arriba a la derecha). Con «Iniciar recorrido» vuelves a verlo cuando quieras.",
+    "share": "Por cierto, puedes compartir notas, listas de tareas y listas con otras personas y editarlas juntos."
+  },
+  "demo": {
+    "thought1": "Llamar al dentista",
+    "thought2": "Folletos viejos",
+    "thought3": "Receta de sopa de lentejas",
+    "h1": "Viaje a Lisboa",
+    "todo": "Revisar el pasaporte",
+    "numbered1": "Hacer la maleta",
+    "numbered2": "Pedir un taxi",
+    "callout": "Check-in desde las 15 h",
+    "tableHead1": "Día",
+    "tableHead2": "Lugar",
+    "tableCell1": "Lu",
+    "tableCell2": "Alfama",
+    "canvas1": "Idea",
+    "canvas2": "Plan",
+    "task": "Enviar la oferta",
+    "note": "Nota",
+    "tasks": "Tareas"
+  }
+}

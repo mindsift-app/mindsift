@@ -1,0 +1,70 @@
+{
+  "progress": "{{current}} di {{total}}",
+  "next": "Avanti",
+  "back": "Indietro",
+  "finish": "Fatto",
+  "close": "Chiudi il tour",
+  "keysHint": "← → per scorrere · Esc chiude",
+  "start": {
+    "button": "Avvia il tour",
+    "intro": "Sei nuovo? Un breve tour mostra in sette passi dove trovare cosa – senza cambiare nulla dei tuoi dati."
+  },
+  "triage": {
+    "title": "Triage: prima annotare, poi smistare",
+    "capture": "Quello che ti viene in mente lo scrivi senza pensarci in alto nel <b>Quick Dump</b> (tasto <kbd>C</kbd>). Non finisce subito da qualche parte: arriva come scheda qui nel Triage.",
+    "capturePhone": "Quello che ti viene in mente lo butti senza pensarci nel <b>Quick Dump</b>: il <b>+</b> in basso al centro, tienilo premuto per dettare. Arriva come scheda qui nel Triage.",
+    "decide": "Quando hai tempo, decidi scheda per scheda: <kbd>→</kbd> attività, <kbd>←</kbd> scarta, <kbd>D</kbd> nota, <kbd>T</kbd> con data, <kbd>Spazio</kbd> più tardi – oppure i pulsanti sotto la scheda, anche «Su lista».",
+    "decidePhone": "Quando hai tempo, decidi scheda per scheda: scorrere a destra la trasforma in attività, a sinistra la scarta. I pulsanti sotto la mettono su una lista, in una nota o con una data."
+  },
+  "notes": {
+    "title": "Note fatte di blocchi",
+    "text": "Ogni nota è uno schema di punti. Scrivi <kbd>/</kbd> in un punto e il menu lo trasforma in un altro blocco: titolo, to-do, elenco numerato, codice, riquadro, tabella – oppure con <kbd>/canvas</kbd> un disegno con forme, frecce e tratto libero.",
+    "empty": "Ancora nessuna nota? Il più in alto nella barra laterale crea la prima.",
+    "phoneList": "Tocca una nota per aprirla; il <b>+</b> in basso ne crea una nuova."
+  },
+  "linked": {
+    "title": "Attività collegate",
+    "text": "Con l’icona di spunta a destra del punto, un to-do in una nota diventa una vera attività. Compare così anche in Attività – con scadenza, Kanban e promemoria – e resta collegata al punto: spunta e titolo si sincronizzano nei due sensi, i to-do subito sotto diventano sottoattività.",
+    "badge": "Il badge «{{badge}}» sul punto apre l’attività, «{{back}}» sull’attività torna alla nota."
+  },
+  "focus": {
+    "title": "Schermo intero per scrivere",
+    "button": "Questo pulsante avvia la modalità focus: solo la nota, su tutta la finestra (<kbd>Ctrl</kbd>+<kbd>⇧</kbd>+<kbd>F</kbd>). <kbd>Esc</kbd> riporta tutto.",
+    "menu": "Nel menu <b>⋯</b> della nota, «{{item}}» avvia lo schermo intero: solo la nota, su tutta la finestra."
+  },
+  "tasks": {
+    "title": "Attività",
+    "text": "Qui passi da elenco a Kanban e calendario; nel Kanban, <b>⤢</b> allarga la bacheca a tutta la finestra. Un clic su un’attività apre il dettaglio con scadenza, sottoattività, note e promemoria.",
+    "textPhone": "Elenco, Kanban e calendario si scelgono nel menu dietro il logo in alto a sinistra. Toccare un’attività apre il dettaglio con scadenza, sottoattività, note e promemoria."
+  },
+  "search": {
+    "title": "Ricerca",
+    "text": "<kbd>Ctrl</kbd>+<kbd>K</kbd> (Mac: <kbd>⌘</kbd>+<kbd>K</kbd>) o <kbd>/</kbd> apre la ricerca da ovunque. Trova le note fino al singolo punto, le attività e le voci delle liste.",
+    "textPhone": "La lente in alto apre la ricerca. Trova le note fino al singolo punto, le attività e le voci delle liste."
+  },
+  "end": {
+    "title": "Ecco fatto!",
+    "text": "Tutto il resto – scorciatoie, liste, condivisione e altro – è qui nella pagina di aiuto (il <b>?</b> in alto a destra). Con «Avvia il tour» lo rivedi quando vuoi.",
+    "textPhone": "Tutto il resto – liste, condivisione e altro – è qui nella pagina di aiuto (dalla tua foto profilo in alto a destra). Con «Avvia il tour» lo rivedi quando vuoi.",
+    "share": "A proposito: note, liste di attività e liste si possono condividere con altri e modificare insieme."
+  },
+  "demo": {
+    "thought1": "Chiamare il dentista",
+    "thought2": "Vecchi volantini",
+    "thought3": "Ricetta zuppa di lenticchie",
+    "h1": "Viaggio a Lisbona",
+    "todo": "Controllare il passaporto",
+    "numbered1": "Fare la valigia",
+    "numbered2": "Prenotare un taxi",
+    "callout": "Check-in dalle 15",
+    "tableHead1": "Giorno",
+    "tableHead2": "Luogo",
+    "tableCell1": "Lu",
+    "tableCell2": "Alfama",
+    "canvas1": "Idea",
+    "canvas2": "Piano",
+    "task": "Inviare l’offerta",
+    "note": "Nota",
+    "tasks": "Attività"
+  }
+}
