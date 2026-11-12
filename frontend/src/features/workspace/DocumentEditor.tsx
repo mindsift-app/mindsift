@@ -1942,10 +1942,11 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
                 />
               </div>
 
+              {/* Phones leave the zoom with the home button in the header */}
               <button
                 type="button"
                 onClick={() => setZoomedBlockId(null)}
-                className="btn-action inline-flex items-center gap-1.5 px-2.5 py-1 text-xs text-muted hover:text-main shrink-0 mt-1"
+                className="btn-action hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 text-xs text-muted hover:text-main shrink-0 mt-1"
                 title={t('editor.exitFocusTitle')}
               >
                 <Minimize2 className="w-3.5 h-3.5" />

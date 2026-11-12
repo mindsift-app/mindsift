@@ -67,7 +67,7 @@ Fixes from the security review of November 2026 (v0.94.0).
 - The sign-in page loads about 170 kB (compressed) instead of 530 kB; the rest of the app follows right after signing in, or at once when you are still signed in.
 
 ### Fixed
-- Notes on phones: zooming into a deep bullet no longer fills the note's header with the whole path; a home button takes you back to the start of the note instead (back still zooms out one level at a time).
+- Notes on phones: zooming into a deep bullet no longer fills the note's header with the whole path; a home button takes you back to the start of the note instead (back still zooms out one level at a time). The extra button next to the zoomed bullet's heading that did the same is gone on phones.
 - Deleting your data or account asked for the password without counting wrong guesses; now it counts them like failed sign-ins and locks the same way.
 - With e-mail confirmation on, the sign-up form no longer tells whether an address already has an account, and a failed sign-in takes as long for unknown names as for known ones.
 - Accounts waiting for confirmation or approval are locked from the first moment, not only right after being created.
