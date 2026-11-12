@@ -113,6 +113,8 @@ type Config struct {
 // button (OIDC_NAME); members of AdminGroup at the provider (OIDC_ADMIN_GROUP) are administrators.
 // AutoCreate (OIDC_AUTO_CREATE, default true) creates accounts at the first sign-in; PasswordLogin
 // (OIDC_PASSWORD_LOGIN, default true) false leaves the password only to administrators (emergency access).
+// LinkByEmail (OIDC_LINK_BY_EMAIL, default false) links the first sign-in to an existing account with the
+// same address when the provider calls it verified; off, accounts are only linked by hand in the settings.
 type OIDCConfig struct {
 	Issuer           string
 	ClientID         string
@@ -123,8 +125,10 @@ type OIDCConfig struct {
 	Scopes           []string
 	AutoCreate       bool
 	PasswordLogin    bool
-	// The values of OIDC_AUTO_CREATE and OIDC_PASSWORD_LOGIN as set, so Resolve can refuse what is no boolean
-	rawAutoCreate, rawPasswordLogin string
+	LinkByEmail      bool
+	// The values of OIDC_AUTO_CREATE, OIDC_PASSWORD_LOGIN and OIDC_LINK_BY_EMAIL as set, so Resolve can refuse
+	// what is no boolean
+	rawAutoCreate, rawPasswordLogin, rawLinkByEmail string
 }
 
 // Configured: OIDC_ISSUER is set (whether it can be used is up to Resolve, BASE_URL and the demo).
@@ -144,6 +148,7 @@ func loadOIDC() OIDCConfig {
 		Scopes:           strings.Fields(strings.ReplaceAll(os.Getenv("OIDC_SCOPES"), ",", " ")),
 		rawAutoCreate:    strings.TrimSpace(os.Getenv("OIDC_AUTO_CREATE")),
 		rawPasswordLogin: strings.TrimSpace(os.Getenv("OIDC_PASSWORD_LOGIN")),
+		rawLinkByEmail:   strings.TrimSpace(os.Getenv("OIDC_LINK_BY_EMAIL")),
 	}
 	return c
 }
@@ -175,7 +180,11 @@ func (c *OIDCConfig) Resolve() error {
 	if !ok {
 		return fmt.Errorf("OIDC_PASSWORD_LOGIN is %q: set true or false", c.rawPasswordLogin)
 	}
-	c.AutoCreate, c.PasswordLogin = autoCreate, passwordLogin
+	linkByEmail, ok := parseBool(c.rawLinkByEmail, false)
+	if !ok {
+		return fmt.Errorf("OIDC_LINK_BY_EMAIL is %q: set true or false", c.rawLinkByEmail)
+	}
+	c.AutoCreate, c.PasswordLogin, c.LinkByEmail = autoCreate, passwordLogin, linkByEmail
 	if c.Issuer == "" {
 		switch {
 		case c.ClientID != "" || c.ClientSecret != "" || c.ClientSecretFile != "":

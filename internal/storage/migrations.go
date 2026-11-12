@@ -60,6 +60,7 @@ var migrations = []migration{
 	{37, "Two-factor sign-in: authenticator app, recovery codes, trusted devices", (*Store).migrateMFA},
 	{38, "Passkeys", (*Store).migratePasskeys},
 	{39, "Sign-in through an OpenID Connect provider", (*Store).migrateOIDC},
+	{40, "Accounts without an e-mail address", (*Store).migrateEmailOptional},
 }
 
 func (s *Store) migrate() error {
