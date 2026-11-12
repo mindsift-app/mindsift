@@ -56,6 +56,7 @@ var migrations = []migration{
 	{33, "New e-mail addresses wait for confirmation", (*Store).migrateEmailChanges},
 	{34, "Profile pictures only uploaded or emoji", (*Store).migrateAvatars},
 	{35, "Mail alarms go to the login address", (*Store).migrateAlarmToLoginAddress},
+	{36, "Guided tour offered once to new accounts", (*Store).migrateTourOffer},
 }
 
 func (s *Store) migrate() error {

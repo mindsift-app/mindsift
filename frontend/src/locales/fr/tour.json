@@ -9,6 +9,13 @@
     "button": "Lancer la visite",
     "intro": "Nouveau ici ? Une courte visite montre en sept étapes où trouver quoi – elle ne modifie rien à tes données."
   },
+  "offer": {
+    "title": "Faire une visite rapide ?",
+    "text": "Sept courtes étapes te montrent où trouver quoi. Tu peux aussi la lancer plus tard à tout moment depuis l’aide.",
+    "start": "Commencer",
+    "decline": "Non merci",
+    "close": "Fermer"
+  },
   "triage": {
     "title": "Triage : noter d’abord, trier ensuite",
     "capture": "Ce qui te passe par la tête, tu le tapes sans réfléchir en haut dans le <b>Quick Dump</b> (touche <kbd>C</kbd>). Ça ne part pas encore ailleurs : ça arrive comme carte ici dans le Triage.",

@@ -138,6 +138,7 @@ await page.evaluate(([t]) => {
   localStorage.setItem('mindsift_jwt_token', t);
   localStorage.setItem('mindsift_pwa_prompt_dismissed', '1');
   localStorage.setItem('mindsift:demo-hint-closed', '1'); // the demo's public notice is not part of the pictures
+  localStorage.setItem('mindsift:tour-offered', '1'); // nor is the offer of the guided tour
   sessionStorage.clear();
 }, [token]);
 await page.addInitScript(POINTER);

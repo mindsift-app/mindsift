@@ -9,6 +9,13 @@
     "button": "Start tour",
     "intro": "New here? A short tour shows in seven steps where to find what – it changes nothing in your data."
   },
+  "offer": {
+    "title": "Take a quick tour?",
+    "text": "Seven short steps show you where to find things. You can also start it any time later from the help page.",
+    "start": "Start",
+    "decline": "No thanks",
+    "close": "Close"
+  },
   "triage": {
     "title": "Triage: capture first, sort later",
     "capture": "Whatever comes to mind, type it without thinking into the <b>Quick Dump</b> at the top (key <kbd>C</kbd>). It doesn't go anywhere yet, it lands as a card here in Triage.",

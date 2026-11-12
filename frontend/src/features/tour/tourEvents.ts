@@ -1,4 +1,4 @@
-// Starting the guided tour from anywhere (the help page's button); GuidedTour, mounted once in App, listens
+// Starting the guided tour from anywhere (the help page's button, the offer after the first sign-in); GuidedTour, mounted once in App, listens
 const START_EVENT = 'mindsift:tour-start';
 
 export function requestTourStart() {

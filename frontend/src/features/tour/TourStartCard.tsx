@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { requestTourStart } from './tourEvents';
 
-// Help page: one sentence on the guided tour and the button that starts it (the tour's only way in so far)
+// Help page: one sentence on the guided tour and the button that starts it (besides the one-time offer, TourOfferCard)
 export function TourStartCard() {
   const { t } = useTranslation('tour');
   return (

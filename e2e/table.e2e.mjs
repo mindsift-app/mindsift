@@ -34,6 +34,7 @@ async function openNote(browser, token, docId, phone = false) {
   await ctx.addInitScript((t) => {
     localStorage.setItem('mindsift_jwt_token', t);
     localStorage.setItem('mindsift:demo-hint-closed', '1');
+    localStorage.setItem('mindsift:tour-offered', '1'); // the demo asks every browser about the tour once
     sessionStorage.setItem('mindsift_pwa_dismissed', '1');
   }, token);
   const page = await ctx.newPage();
