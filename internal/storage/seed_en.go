@@ -359,7 +359,7 @@ func (s *Store) seedHelpNotesEN(user *domain.User) {
 	help("Sharing & editing together", "🤝", []seedBlock{
 		{text: "Notes, folders, task lists and lists can be shared with people or groups – for editing or read-only"},
 		{text: "Several people write in a shared note at the same time; whoever types in a bullet holds it for a moment"},
-		{level: 1, text: "Try it: “Homelab 2.0” is shared with the demo account **user** – sign in as user/user in a second browser"},
+		{level: 1, text: "Try it: in the demo everything is shared with the account **user** – sign in as user/user in a second browser"},
 		{text: "Tasks in shared lists can be assigned to people and watched"},
 	})
 	help("API & smart home", "🔌", []seedBlock{

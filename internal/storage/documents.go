@@ -402,7 +402,8 @@ func (s *Store) GetDocuments(userID string) ([]domain.Document, error) {
 		_ = ufRows.Close()
 	}
 
-	// 1. Fetch user's own documents (with per-user is_pinned from doc_pins)
+	// 1. Fetch user's own documents (with per-user is_pinned from doc_pins); notes changed in the same second
+	// keep the order they were made in, for the owner and for everyone they are shared with
 	rows, err := s.db.Query(
 		`SELECT d.id, d.user_id, d.space_id, d.title, d.icon, d.content, d.blocks_json, d.tags, d.folder_path,
 		        CASE WHEN p.doc_id IS NOT NULL THEN 1 ELSE 0 END AS is_pinned,
@@ -411,7 +412,7 @@ func (s *Store) GetDocuments(userID string) ([]domain.Document, error) {
 		 FROM documents d
 		 LEFT JOIN doc_pins p ON p.doc_id = d.id AND p.user_id = ?
 		 WHERE d.user_id = ? AND d.is_archived = 0
-		 ORDER BY is_pinned DESC, d.updated_at DESC`,
+		 ORDER BY is_pinned DESC, d.updated_at DESC, d.rowid`,
 		userID, userID,
 	)
 	if err != nil {
@@ -487,7 +488,7 @@ func (s *Store) GetDocuments(userID string) ([]domain.Document, error) {
 		     s.user_id IS NOT NULL OR dts.doc_id IS NOT NULL OR wsf.owner_id = ? OR wfs.folder_id IS NOT NULL
 		 )
 		 GROUP BY d.id
-		 ORDER BY is_pinned DESC, d.updated_at DESC`,
+		 ORDER BY is_pinned DESC, d.updated_at DESC, d.rowid`,
 		userID, userID, userID, userID, userID, userID, userID, userID,
 	)
 	if err == nil {

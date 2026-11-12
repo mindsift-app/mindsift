@@ -87,6 +87,7 @@ import { AvatarStack } from '../../../components/AvatarStack';
 import { userColor } from '../../../lib/userColor';
 import { Applied, patchDrawing } from '../../../lib/drawing/live';
 import { LiveCursor, LiveMode, useLiveDrawing } from './useLiveDrawing';
+import { isTouchPointer } from '../../../lib/useAnchoredPopover';
 
 type Tool = 'select' | 'hand' | ShapeKind | 'arrow' | 'draw' | 'text' | 'eraser';
 type Handle = 'nw' | 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w';
@@ -142,6 +143,13 @@ const MAX_ZOOM = 8;
 const HISTORY_LIMIT = 200;
 const DRAFT_PREFIX = 'mindsift_drawing_draft:';
 const SHAPE_SIZE: Record<ShapeKind, [number, number]> = { rect: [140, 70], ellipse: [120, 80], diamond: [130, 90] };
+// Handles of the selected element, in screen pixels (divided by the zoom, so they keep their size): line
+// ends, elbow stretches and resize squares; a little larger with a finger. A finger also grabs them from
+// further away (about 44 px across), a mouse from a few pixels around the handle.
+const HANDLE_SIZES = {
+  mouse: { end: 6.5, stretch: 5, square: 10, grab: 11 },
+  touch: { end: 8, stretch: 6.5, square: 12, grab: 22 },
+};
 
 // Copied elements survive closing the editor, so they can go into another drawing
 let clipboard: DrawElement[] = [];
@@ -793,15 +801,20 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
   const snapOn = (e: { altKey: boolean }) => !!docRef.current.grid && !e.altKey;
 
   const handleAt = (
-    p: Point
+    p: Point,
+    touch = false
   ): { kind: 'resize'; handle: Handle } | { kind: 'end'; end: 'a' | 'b' } | { kind: 'bend' } | { kind: 'segment'; index: number; poly: Point[]; fixed: boolean } | null => {
     if (selectedRef.current.length !== 1) return null;
     const el = docRef.current.els.find((e) => e.id === selectedRef.current[0]);
     if (!el) return null;
-    const r = 9 / viewRef.current.z;
+    // A finger's larger reach stops short of covering a small element, so it can still be moved
+    const z = viewRef.current.z;
+    const reach = (size: number) => Math.min(HANDLE_SIZES[touch ? 'touch' : 'mouse'].grab / z, Math.max(HANDLE_SIZES.mouse.grab / z, size / 4));
+    let r = 0;
     const near = (q: Point) => Math.abs(p[0] - q[0]) <= r && Math.abs(p[1] - q[1]) <= r;
     if (el.t === 'arrow') {
       const g = arrowGeometry(el, elementMap(docRef.current.els));
+      r = reach(Math.hypot(g.end[0] - g.start[0], g.end[1] - g.start[1]));
       // The handle nearest the pointer wins: on a short last stretch its handle sits close to the end
       type Hit = ReturnType<typeof handleAt>;
       let best: { d: number; hit: Hit } | null = null;
@@ -822,6 +835,7 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
       return best ? (best as { d: number; hit: Hit }).hit : null;
     }
     if (!isShape(el)) return null;
+    r = reach(Math.min(el.w, el.h));
     for (const [h, q] of handlePoints(el)) if (near(q)) return { kind: 'resize', handle: h };
     return null;
   };
@@ -867,7 +881,7 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
     if (e.button !== 0) return;
 
     if (tool === 'select') {
-      const h = handleAt(p);
+      const h = handleAt(p, e.pointerType === 'touch');
       const id = selectedRef.current[0];
       if (h?.kind === 'resize') {
         actionRef.current = { k: 'resize', handle: h.handle, orig: doc0, el: doc0.els.find((x) => x.id === id) as ShapeElement };
@@ -1289,6 +1303,7 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
 
   const selectedEls = selected.map((id) => byId.get(id)).filter(Boolean) as DrawElement[];
   const single = selectedEls.length === 1 ? selectedEls[0] : null;
+  const hs = HANDLE_SIZES[isTouchPointer() ? 'touch' : 'mouse'];
 
   const selectionOverlay = (
     <g pointerEvents="none">
@@ -1311,7 +1326,17 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
       })}
       {single && isShape(single) &&
         handlePoints(single).map(([h, q]) => (
-          <rect key={h} x={q[0] - 4 / z} y={q[1] - 4 / z} width={8 / z} height={8 / z} fill="var(--bg-panel)" stroke="var(--accent-primary)" strokeWidth={1.5 / z} />
+          <rect
+            key={h}
+            x={q[0] - hs.square / 2 / z}
+            y={q[1] - hs.square / 2 / z}
+            width={hs.square / z}
+            height={hs.square / z}
+            rx={1.5 / z}
+            fill="var(--bg-panel)"
+            stroke="var(--accent-primary)"
+            strokeWidth={2 / z}
+          />
         ))}
       {single && single.t === 'arrow' &&
         (() => {
@@ -1321,7 +1346,7 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
           return (
             <>
               {pts.map((q, i) => (
-                <circle key={i} cx={q[0]} cy={q[1]} r={5 / z} fill={i === 2 ? 'var(--accent-primary)' : 'var(--bg-panel)'} stroke="var(--accent-primary)" strokeWidth={1.5 / z} />
+                <circle key={i} cx={q[0]} cy={q[1]} r={hs.end / z} fill={i === 2 ? 'var(--accent-primary)' : 'var(--bg-panel)'} stroke="var(--accent-primary)" strokeWidth={2 / z} />
               ))}
               {/* Elbows: full handles on fixed stretches, grey ones on the stretches the line makes up */}
               {fixed.map((own, i) => (
@@ -1329,7 +1354,7 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
                   key={`s${i}`}
                   cx={(g.poly[i][0] + g.poly[i + 1][0]) / 2}
                   cy={(g.poly[i][1] + g.poly[i + 1][1]) / 2}
-                  r={4 / z}
+                  r={hs.stretch / z}
                   fill={own ? 'var(--accent-primary)' : 'var(--bg-panel)'}
                   stroke={own ? 'var(--bg-panel)' : 'var(--text-faint)'}
                   strokeWidth={1.5 / z}
