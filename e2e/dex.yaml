@@ -1,0 +1,22 @@
+# Dex as the OpenID Connect provider of oidc.e2e.mjs (started by run.sh, which fills in the ports). One
+# client (MindSift) and one person with a password; nothing is stored, every start begins empty.
+issuer: http://localhost:__DEX_PORT__/dex
+storage:
+  type: memory
+web:
+  http: 127.0.0.1:__DEX_PORT__
+oauth2:
+  skipApprovalScreen: true
+enablePasswordDB: true
+staticClients:
+  - id: mindsift
+    name: MindSift
+    secret: __CLIENT_SECRET__
+    redirectURIs:
+      - http://localhost:__OIDC_PORT__/api/v1/auth/oidc/callback
+staticPasswords:
+  # Password "password": the bcrypt hash from Dex's own examples
+  - email: erika@example.com
+    hash: "$2a$10$2b2cU8CPhOTaGrs1HRQuAueS7JTT5ZHsHSzYiFPm1leZck7Mc8T4W"
+    username: erika
+    userID: 9f6c1a52-2f4e-4a8e-9a57-6c2f0f4b7e11
