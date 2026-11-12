@@ -128,6 +128,14 @@ describe('Live drawing in the editor', () => {
     expect(document.querySelector('[data-live-cursor="Anna"]')).toBeNull();
   });
 
+  it('alone in it, there is no host or people to show', () => {
+    open();
+    emit('DRAW_STATE', { host: 'c_ben', participants: [{ id: 'c_ben', userId: 'u_ben', name: 'Ben' }], watchers: [], you: 'c_ben', els: [], order: [], seq: 0 });
+    expect(screen.queryByText('Du bist Gastgeber')).toBeNull();
+    expect(document.querySelector('[data-live-people]')).toBeNull();
+    expect(screen.getByRole('button', { name: /Fertig/ })).toBeTruthy();
+  });
+
   it('takes in changes of others and shows when the host saved', () => {
     open();
     emit('DRAW_STATE', { ...people, you: 'c_ben', els: [], order: [], seq: 0 });

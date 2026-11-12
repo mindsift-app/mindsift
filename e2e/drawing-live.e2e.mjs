@@ -103,8 +103,9 @@ const main = async () => {
   // 1. Anna (admin, Chromium) opens the drawing: with a WebSocket that starts a live session
   await A.page.getByRole('img', { name: /^Zeichnung/ }).first().dblclick();
   await editor(A.page).waitFor({ timeout: 5000 });
-  const hostShown = await waitFor(async () => (await editor(A.page).locator('[data-live-host]').textContent())?.includes('Du bist Gastgeber'), 5000);
-  check(!!hostShown, 'Wer die Zeichnung öffnet, startet die Live-Sitzung als Gastgeber');
+  // Alone in it, the editor looks like drawing alone: no host, no people
+  await sleep(1000);
+  check((await editor(A.page).locator('[data-live-host]').count()) === 0, 'Allein in der Zeichnung keine Gastgeber-Anzeige');
   await drawShape(A.page, 'o', [380, 300], [540, 400]);
 
   // 2. The others' note shows the live drawing instead of a lock
@@ -127,6 +128,8 @@ const main = async () => {
   await editor(B.page).waitFor({ timeout: 5000 });
   const seesEllipse = await waitFor(async () => (await count(B.page, 'ellipse')) >= 1, 5000);
   check(!!seesEllipse, 'Ben sieht die Ellipse von Anna');
+  const hostShown = await waitFor(async () => (await editor(A.page).locator('[data-live-host]').textContent())?.includes('Du bist Gastgeber'), 5000);
+  check(!!hostShown, 'Wer die Zeichnung geöffnet hat, ist Gastgeber, sobald jemand mitzeichnet');
 
   // 4. Both draw at once
   await Promise.all([drawShape(B.page, 'd', [700, 300], [860, 420]), drawShape(A.page, 'o', [380, 500], [520, 580])]);
