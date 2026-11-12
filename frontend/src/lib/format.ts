@@ -4,15 +4,36 @@ import { currentLocale } from '../i18n';
 
 const asDate = (d: Date | string | number) => (d instanceof Date ? d : new Date(d));
 
-export const formatDate = (d: Date | string | number, options?: Intl.DateTimeFormatOptions) =>
-  asDate(d).toLocaleDateString(currentLocale(), options);
+// One formatter per language, options and time zone offset: toLocaleDateString builds a new one on every call,
+// which costs far more than formatting itself (a calendar month formats some 30 days on every render)
+const dateFormats = new Map<string, Intl.DateTimeFormat>();
+function dateFormat(options?: Intl.DateTimeFormatOptions): Intl.DateTimeFormat {
+  const key = `${currentLocale()}|${new Date().getTimezoneOffset()}|${options ? JSON.stringify(options) : ''}`;
+  let f = dateFormats.get(key);
+  if (!f) {
+    f = new Intl.DateTimeFormat(currentLocale(), options);
+    dateFormats.set(key, f);
+  }
+  return f;
+}
+
+// toLocaleDateString shows day, month and year unless the options name a part of the date (a formatter on its
+// own would show only the time for options with nothing but a time)
+const withDate = (o?: Intl.DateTimeFormatOptions): Intl.DateTimeFormatOptions | undefined =>
+  !o || o.dateStyle || o.timeStyle || o.weekday || o.year || o.month || o.day ? o : { ...o, year: 'numeric', month: 'numeric', day: 'numeric' };
+
+export const formatDate = (d: Date | string | number, options?: Intl.DateTimeFormatOptions) => {
+  const date = asDate(d);
+  // An invalid date reads "Invalid Date" there, while a formatter throws
+  return Number.isNaN(date.getTime()) ? date.toLocaleDateString(currentLocale(), options) : dateFormat(withDate(options)).format(date);
+};
 
 export const formatDateTime = (d: Date | string | number, options?: Intl.DateTimeFormatOptions) =>
   asDate(d).toLocaleString(currentLocale(), options);
 
 // "9.–15. Nov." (shared parts once, as the language writes a range)
 export const formatDateRange = (a: Date | string | number, b: Date | string | number, options?: Intl.DateTimeFormatOptions) => {
-  const f = new Intl.DateTimeFormat(currentLocale(), options) as Intl.DateTimeFormat & { formatRange?: (x: Date, y: Date) => string };
+  const f = dateFormat(options) as Intl.DateTimeFormat & { formatRange?: (x: Date, y: Date) => string };
   return f.formatRange ? f.formatRange(asDate(a), asDate(b)) : `${f.format(asDate(a))} – ${f.format(asDate(b))}`;
 };
 

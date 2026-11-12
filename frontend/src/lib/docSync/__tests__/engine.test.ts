@@ -600,10 +600,15 @@ describe('DocSyncEngine', () => {
       expect(loaded?.inflight?.map((o) => o.opId)).toEqual(['c.0']);
       // The queue's record is no note of its own
       expect((await storage.list()).map((st) => [st.docId, st.pending.length])).toEqual([['q', 2]]);
+      // What the server confirmed since the last full save comes back with the queue
+      const tail = [{ seq: 4, effect: { kind: 'set_content' as const, blockId: 'b1', content: 'Bestätigt', version: 2 } }];
+      await storage.saveQueue('q', { pending: [], inflight: null, savedAt: 11, userId: 'u1', tail });
+      expect((await storage.load('q'))?.tail).toEqual(tail);
       // An older app version stores the queue in the note only: then the note's is the newer one
       await storage.save({ docId: 'q', title: 'T', titleVersion: 1, lastSeq: 4, role: 'owner', userId: 'u1', blocks: [], pending: [], inflight: null, savedAt: 12 });
-      await storage.saveQueue('q', { pending: [op(5)], inflight: null, savedAt: 9, userId: 'u1' });
+      await storage.saveQueue('q', { pending: [op(5)], inflight: null, savedAt: 9, userId: 'u1', tail });
       expect((await storage.load('q'))?.pending).toEqual([]);
+      expect((await storage.load('q'))?.tail).toBeUndefined();
     }
     await clearStoredNotes();
   });
@@ -623,7 +628,7 @@ describe('DocSyncEngine', () => {
     await clearStoredNotes();
   });
 
-  it('typing stores only the queue; the whole note only when the server confirmed something', async () => {
+  it('typing stores only the queue; what the server confirmed goes with it, the whole note when leaving', async () => {
     const server = new FakeServer();
     const storage = new MemoryStorage();
     const full = vi.spyOn(storage, 'save');
@@ -638,11 +643,93 @@ describe('DocSyncEngine', () => {
     expect(queue).toHaveBeenCalledTimes(3);
 
     await engine.syncNow();
-    expect(full).toHaveBeenCalledTimes(1); // the answer moved lastSeq on
-    const loaded = await storage.load('doc');
+    expect(full).not.toHaveBeenCalled(); // the confirmed text waits in the queue's tail
+    let loaded = await storage.load('doc');
     expect(loaded?.pending).toEqual([]);
     expect(loaded?.inflight).toBeNull();
+    expect(loaded?.blocks.find((b) => b.id === 'b1')?.content).toBe('Start');
+    expect(loaded?.tail?.map((e) => e.effect.content)).toEqual(['Abc']);
+
+    engine.stop();
+    await new Promise((r) => setTimeout(r, 0));
+    expect(full).toHaveBeenCalledTimes(1);
+    loaded = await storage.load('doc');
     expect(loaded?.blocks.find((b) => b.id === 'b1')?.content).toBe('Abc');
+    expect(loaded?.lastSeq).toBe(server.log.length);
+    expect(loaded?.tail).toBeUndefined();
+  });
+
+  it('a crash after the server confirmed, before the note was stored in full, keeps the text for an offline restart', async () => {
+    const server = new FakeServer([
+      { id: 'b1', content: 'Eins' },
+      { id: 'b2', content: 'Zwei' },
+    ]);
+    const storage = new MemoryStorage();
+    const net = new FakeNet(server);
+    const first = await startEngine(net, storage);
+    edit(first, (b) => [{ ...b[0], content: 'Eins bestätigt' }, b[1], { id: 'b3', type: 'bullet', content: 'Drei bestätigt', level: 0 }]);
+    await first.syncNow();
+    // Someone else changes the note too; this client gets it with its next round trip
+    server.apply({ opId: 'other-1', kind: 'set_content', blockId: 'b2', baseVersion: server.doc.blocks.get('b2')!.version, content: 'Zwei von B' }, 'other');
+    await first.syncNow();
+    // More typing, stored but not sent yet; then the browser crashes (no stop, no full save)
+    edit(first, (b) => [b[0], b[1], { ...b[2], content: 'Drei bestätigt, dann offline' }]);
+    await new Promise((r) => setTimeout(r, 0));
+
+    // Restart without connection: everything confirmed is there, the unsent text on top
+    net.mode = 'down';
+    const second = await startEngine(net, storage);
+    expect(second.getState().ready).toBe(true);
+    expect(contents(second)).toEqual(['Eins bestätigt', 'Zwei von B', 'Drei bestätigt, dann offline']);
+    expect(second.getState().pendingCount).toBe(1);
+
+    // Back online: the log goes on where the stored state ends; nothing is applied twice
+    net.mode = 'ok';
+    await second.syncNow();
+    expect(serverContents(server)).toEqual(['Eins bestätigt', 'Zwei von B', 'Drei bestätigt, dann offline']);
+    expect(contents(second)).toEqual(serverContents(server));
+    expect(second.getState().status).toBe('saved');
+    expect(second.getState().conflicts).toEqual([]);
+    for (const count of server.applyCount.values()) expect(count).toBe(1);
+    second.stop();
+
+    // A third start reads the note stored in full when the second one left
+    net.mode = 'down';
+    const third = await startEngine(net, storage);
+    expect(contents(third)).toEqual(['Eins bestätigt', 'Zwei von B', 'Drei bestätigt, dann offline']);
+    expect(third.getState().pendingCount).toBe(0);
+  });
+
+  it('a crash while the full save is written leaves note and queue in agreement', async () => {
+    const server = new FakeServer();
+    const storage = new MemoryStorage();
+    const net = new FakeNet(server);
+    const first = await startEngine(net, storage);
+    edit(first, (b) => [{ ...b[0], content: 'Vor dem Speichern' }]);
+    await first.syncNow();
+    // The full save of the stopped engine is lost; a later queue save of the same state is not
+    const save = vi.spyOn(storage, 'save').mockRejectedValueOnce(new Error('quota'));
+    first.stop();
+    await new Promise((r) => setTimeout(r, 0));
+    expect(save).toHaveBeenCalledTimes(1);
+    net.mode = 'down';
+    const second = await startEngine(net, storage);
+    expect(contents(second)).toEqual(['Vor dem Speichern']);
+  });
+
+  it('stores the whole note once many confirmed log entries wait', async () => {
+    const server = new FakeServer();
+    const storage = new MemoryStorage();
+    const engine = await startEngine(new FakeNet(server), storage);
+    const full = vi.spyOn(storage, 'save');
+    for (let i = 0; i < 210; i++) {
+      server.apply({ opId: `other-${i}`, kind: 'set_content', blockId: 'b1', baseVersion: server.doc.blocks.get('b1')!.version, content: `Fremd ${i}` }, 'other');
+    }
+    await engine.syncNow();
+    expect(full).toHaveBeenCalledTimes(1);
+    const loaded = await storage.load('doc');
+    expect(loaded?.blocks.find((b) => b.id === 'b1')?.content).toBe('Fremd 209');
+    expect(loaded?.tail).toBeUndefined();
   });
 });
 
@@ -826,6 +913,38 @@ describe('how changes of others arrive', () => {
       push.notify();
       await vi.advanceTimersByTimeAsync(100);
       expect(contents(engine)).toEqual(['Wieder per Push']);
+      engine.stop();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('stores the whole note at most every 10 s while the server confirms typing', async () => {
+    vi.useFakeTimers();
+    try {
+      const server = new FakeServer();
+      const net = new FakeNet(server);
+      const push = new FakePush();
+      push.kind = 'ws';
+      const storage = new MemoryStorage();
+      const engine = new DocSyncEngine('doc', { transport: net, storage, push });
+      await engine.start();
+      await vi.advanceTimersByTimeAsync(100);
+      const full = vi.spyOn(storage, 'save');
+      for (const text of ['Eins', 'Eins zwei', 'Eins zwei drei']) {
+        edit(engine, (b) => [{ ...b[0], content: text }]);
+        await vi.advanceTimersByTimeAsync(2_000); // typing pause: sent and confirmed
+      }
+      expect(serverContents(server)).toEqual(['Eins zwei drei']);
+      expect(full).not.toHaveBeenCalled();
+      await vi.advanceTimersByTimeAsync(5_000);
+      expect(full).toHaveBeenCalledTimes(1);
+      const loaded = await storage.load('doc');
+      expect(loaded?.blocks.find((b) => b.id === 'b1')?.content).toBe('Eins zwei drei');
+      expect(loaded?.tail).toBeUndefined();
+      // Nothing new confirmed: no further full saves
+      await vi.advanceTimersByTimeAsync(30_000);
+      expect(full).toHaveBeenCalledTimes(1);
       engine.stop();
     } finally {
       vi.useRealTimers();

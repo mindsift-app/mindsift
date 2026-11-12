@@ -1,6 +1,12 @@
 // Persists the sync state of each note in IndexedDB so that typed text survives reloads, crashes and
 // offline phases. Falls back to memory when IndexedDB is unavailable (private mode, old browsers).
-import type { Block, Op } from './model';
+import type { Block, Effect, Op } from './model';
+
+/** A server log entry the client applied to its confirmed note (see StoredQueue.tail). */
+export interface AppliedEntry {
+  seq: number;
+  effect: Effect;
+}
 
 export interface StoredDocState {
   docId: string;
@@ -13,6 +19,7 @@ export interface StoredDocState {
   pending: Op[];
   inflight: Op[] | null;
   savedAt: number;
+  tail?: AppliedEntry[]; // confirmed after the blocks were stored, see StoredQueue
 }
 
 /** The changes of a note not confirmed by the server yet, stored on their own (see saveQueue). */
@@ -21,6 +28,12 @@ export interface StoredQueue {
   inflight: Op[] | null;
   savedAt: number;
   userId?: string;
+  /**
+   * What the server confirmed since the note was last stored in full (its log entries after the stored lastSeq):
+   * changes leave the queue when confirmed, and the note is stored in full only now and then, so they wait here
+   * until it is. Applied on top of the stored blocks when loading.
+   */
+  tail?: AppliedEntry[];
 }
 
 export interface SyncStorage {
@@ -29,8 +42,9 @@ export interface SyncStorage {
   /** The whole note and its queue, together. */
   save(state: StoredDocState): Promise<void>;
   /**
-   * Only the queue: every edit changes it, while the note itself changes only with what the server confirms.
-   * Writing all blocks on every typing pause took several MB per pause in large notes.
+   * Only the queue (with what the server confirmed since the last full save): every edit changes it, while the
+   * note itself changes only with what the server confirms. Writing all blocks on every typing pause took
+   * several MB per pause in large notes.
    */
   saveQueue(docId: string, queue: StoredQueue): Promise<void>;
   /** All stored notes (to send changes of notes that are no longer open). */
@@ -53,12 +67,15 @@ interface QueueRecord {
 }
 
 const queueRecord = (docId: string, queue: StoredQueue): QueueRecord => ({ docId: docId + QUEUE_SUFFIX, pending: [], inflight: null, queue });
-const queueOf = (s: StoredDocState): StoredQueue => ({ pending: s.pending, inflight: s.inflight, savedAt: s.savedAt, userId: s.userId });
+const queueOf = (s: StoredDocState): StoredQueue => ({ pending: s.pending, inflight: s.inflight, savedAt: s.savedAt, userId: s.userId, tail: s.tail });
 
-/** The note with the newer of its two queues (an older app version stores the queue in the note only). */
+/**
+ * The note with the newer of its two queues (an older app version stores the queue in the note only, and
+ * ignores the tail: it then shows the note as last stored in full and catches up from the server).
+ */
 function withQueue(state: StoredDocState, queue: StoredQueue | undefined): StoredDocState {
   if (!queue || queue.savedAt < state.savedAt || (queue.userId || '') !== (state.userId || '')) return state;
-  return { ...state, pending: queue.pending || [], inflight: queue.inflight || null };
+  return { ...state, pending: queue.pending || [], inflight: queue.inflight || null, tail: queue.tail };
 }
 
 /** Notes and queues of a store's records joined. */
