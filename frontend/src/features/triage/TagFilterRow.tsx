@@ -1,7 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Hash } from 'lucide-react';
 import { Thought } from '../../lib/types';
+import { PickerPopover } from '../../components/PickerPopover';
+import { OVERFLOW_HIDDEN_TAB, useOverflowTabs } from '../../lib/useOverflowTabs';
 
 interface TagFilterRowProps {
   tags: string[];
@@ -9,87 +11,105 @@ interface TagFilterRowProps {
   tasks: Thought[];
   selected: string | null;
   onSelect: (tag: string | null) => void;
-  // Measured again when the layout changes (list or Kanban)
-  layoutKey: string;
 }
 
-// Desktop hashtag filter of TasksView: chips in one line, cut off with "…" when too many; "…" opens them all
-// in lines. Two siblings in the toolbar's flex row (the chips and the "…" button), hence the fragment.
-export function TagFilterRow({ tags, tasks, selected, onSelect, layoutKey }: TagFilterRowProps) {
+// Desktop hashtag filter of TasksView (Doku/ui-patterns.md "Filter Chips"): frameless chips in one line that
+// never wraps; those that do not fit go behind "+ n mehr", a popover with a search over all hashtags. The
+// chosen hashtag always keeps its chip (useOverflowTabs).
+export function TagFilterRow({ tags, tasks, selected, onSelect }: TagFilterRowProps) {
   const { t } = useTranslation('tasks');
-  const tagRowRef = useRef<HTMLDivElement>(null);
-  const [tagsExpanded, setTagsExpanded] = useState(false);
-  const [tagsOverflow, setTagsOverflow] = useState(false);
+  const overflow = useOverflowTabs(tags, selected);
+  const moreButton = useRef<HTMLButtonElement | null>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
 
-  // Cut off? Measured while the row is one line (on resize and when the tags change)
-  useEffect(() => {
-    const el = tagRowRef.current;
-    if (!el || tagsExpanded) return;
-    const measure = () => setTagsOverflow(el.scrollWidth > el.clientWidth + 1);
-    measure();
-    const ro = new ResizeObserver(measure);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [tags, tagsExpanded, layoutKey]);
+  const counts = useMemo(() => {
+    const out = new Map<string, number>();
+    for (const task of tasks) for (const tag of task.tags ?? []) out.set(tag, (out.get(tag) ?? 0) + 1);
+    return out;
+  }, [tasks]);
+  const hiddenCount = overflow.hidden.length;
+
+  const closePicker = () => {
+    setPickerOpen(false);
+    // Keyboard users go on from the button that opened it
+    requestAnimationFrame(() => {
+      if (document.activeElement === document.body) moreButton.current?.focus();
+    });
+  };
 
   return (
-    <>
-      {/* Hashtag filter chips: one line, cut off with "…" when too many; "…" opens them all in lines */}
-      <div
-        ref={tagRowRef}
-        className={`flex-1 min-w-0 flex items-center gap-1.5 pb-1 ${tagsExpanded ? 'flex-wrap' : 'overflow-hidden'}`}
+    <div
+      ref={overflow.rowRef}
+      role="group"
+      aria-label={t('filter.byTag')}
+      className="relative flex-1 min-w-0 flex items-center gap-1.5"
+    >
+      <span data-tab-fixed className="shrink-0 flex items-center text-faint" title={t('filter.byTag')}>
+        <Hash className="w-3.5 h-3.5" aria-hidden />
+      </span>
+      <button
+        type="button"
+        data-tab-fixed
+        onClick={() => onSelect(null)}
+        aria-pressed={selected === null}
+        className={`filter-chip shrink-0 ${selected === null ? 'filter-chip-active' : ''}`}
       >
-        <span className="text-[11px] font-semibold text-muted flex items-center gap-1 flex-shrink-0">
-          <Hash className="w-3 h-3 text-accent" />
-          <span>{t('detail.hashtags')}</span>
-        </span>
-        <button
-          onClick={() => onSelect(null)}
-          className={`h-6 px-2 text-[11px] rounded-pill border transition-colors flex-shrink-0 ${
-            selected === null
-              ? 'bg-panel border-accent text-accent font-semibold'
-              : 'bg-canvas border-border text-muted hover:text-main'
-          }`}
-        >
-          {t('tags.all', { count: tasks.length })}
-        </button>
-        {tags.map((tag) => {
-          const count = tasks.filter((t) => t.tags?.includes(tag)).length;
-          const isSelected = selected === tag;
-          return (
-            <button
-              key={tag}
-              onClick={() => onSelect(isSelected ? null : tag)}
-              className={`h-6 px-2 text-[11px] rounded-pill border transition-colors flex items-center gap-1 flex-shrink-0 ${
-                isSelected
-                  ? 'bg-accent/15 border-accent text-accent font-semibold'
-                  : 'bg-canvas border-border text-muted hover:text-main'
-              }`}
-            >
-              <span>#{tag}</span>
-              <span className="text-[9px] opacity-70 font-mono">({count})</span>
-            </button>
-          );
-        })}
-        {tagsExpanded && (
+        <span>{t('tags.allChip')}</span>{' '}
+        <span className="filter-chip-count">{tasks.length}</span>
+      </button>
+      {tags.map((tag) => {
+        const isSelected = selected === tag;
+        const hidden = overflow.isHidden(tag);
+        return (
           <button
-            onClick={() => setTagsExpanded(false)}
-            className="h-6 px-2 text-[11px] rounded-pill text-accent hover:underline flex-shrink-0"
+            key={tag}
+            ref={overflow.tabRef(tag)}
+            type="button"
+            onClick={() => onSelect(isSelected ? null : tag)}
+            aria-pressed={isSelected}
+            tabIndex={hidden ? -1 : undefined}
+            aria-hidden={hidden || undefined}
+            className={`filter-chip shrink-0 ${isSelected ? 'filter-chip-active' : ''} ${hidden ? OVERFLOW_HIDDEN_TAB : ''}`}
           >
-            {t('tasks:tags.less')}
+            <span>#{tag}</span>{' '}
+            <span className="filter-chip-count">{counts.get(tag) ?? 0}</span>
           </button>
-        )}
-      </div>
-      {!tagsExpanded && tagsOverflow && (
+        );
+      })}
+      {/* Always rendered, so its width is known before anything overflows */}
+      <div ref={overflow.moreRef} className={`shrink-0 ${hiddenCount === 0 ? OVERFLOW_HIDDEN_TAB : ''}`} aria-hidden={hiddenCount === 0 || undefined}>
         <button
-          onClick={() => setTagsExpanded(true)}
-          className="h-6 px-2 -ml-1 mb-1 text-xs rounded-pill border border-border bg-canvas text-muted hover:text-main flex-shrink-0"
+          ref={moreButton}
+          type="button"
+          onClick={() => setPickerOpen((v) => !v)}
+          tabIndex={hiddenCount === 0 ? -1 : undefined}
+          aria-expanded={pickerOpen}
+          aria-haspopup="dialog"
           title={t('tags.showAll')}
-          aria-label={t('tags.showAll')}
+          className="tool-btn !h-7 !px-2.5"
         >
-          …
+          {t('tags.more', { count: Math.max(1, hiddenCount) })}
         </button>
+      </div>
+      {pickerOpen && moreButton.current && (
+        <PickerPopover
+          anchor={moreButton.current}
+          items={tags.map((tag) => ({
+            id: tag,
+            label: `#${tag}`,
+            selected: tag === selected,
+            trail: <span className="filter-chip-count shrink-0 pl-1">{counts.get(tag) ?? 0}</span>,
+          }))}
+          maxResults={Infinity}
+          placeholder={t('tags.search')}
+          empty={t('tags.noMatch')}
+          onPick={(item) => {
+            onSelect(item.id === selected ? null : item.id);
+            closePicker();
+          }}
+          onClose={closePicker}
+        />
       )}
-    </>
+    </div>
   );
 }

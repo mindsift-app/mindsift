@@ -145,10 +145,6 @@
     "otherUser": "un altro utente",
     "columnsTitle": "Aggiungi, rinomina o riordina le colonne Kanban",
     "columns": "Personalizza colonne",
-    "boardNormal": "Larghezza normale della bacheca",
-    "boardWide": "Estendi bacheca a tutta larghezza",
-    "calendarNormal": "Larghezza normale del calendario",
-    "calendarWide": "Estendi calendario a tutta larghezza",
     "undoTitle": "Annulla (Ctrl+Z)",
     "subtasksTitle": "{{done}} su {{total}} sottoattività completate ({{percent}}%)",
     "subtasks": "{{done}}/{{total}} sottoattività"
@@ -255,7 +251,11 @@
   "tags": {
     "showAll": "Mostra tutti gli hashtag",
     "all": "Tutti ({{count}})",
-    "less": "Meno"
+    "allChip": "Tutti",
+    "more_one": "+{{count}} altro",
+    "more_other": "+{{count}} altri",
+    "search": "Cerca hashtag…",
+    "noMatch": "Nessun hashtag trovato"
   },
   "newList": {
     "failed": "Creazione della lista di attività non riuscita",

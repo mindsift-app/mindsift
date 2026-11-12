@@ -10,7 +10,6 @@ interface KanbanLayoutOptions {
   // The task calendar (desktop only) uses the same scrolling: one block that fills the screen and one wheel
   // step from the page top to its top edge; it has no rows and no phone snapping
   isCalendar?: boolean;
-  isKanbanWide: boolean;
   // Measured again when these change: number of board columns, open list, end of loading
   columnCount: number;
   listId: string;
@@ -18,7 +17,7 @@ interface KanbanLayoutOptions {
 }
 
 // Column heights and scrolling of the Kanban board in TasksView (desktop rows, phone snapping)
-export function useKanbanLayout({ isKanban, isCalendar = false, isKanbanWide, columnCount, listId, loading }: KanbanLayoutOptions) {
+export function useKanbanLayout({ isKanban, isCalendar = false, columnCount, listId, loading }: KanbanLayoutOptions) {
   // Desktop Kanban: every column, in every row, is as high as the room from the board's top to the bottom of
   // the scroll area, so the first row fits completely on opening and each further row fills one screen;
   // more cards scroll inside the column. At least room for about three cards (the page scrolls below that).
@@ -35,14 +34,6 @@ export function useKanbanLayout({ isKanban, isCalendar = false, isKanbanWide, co
   // The first column is lower by the bar above the board, so it shows completely at the page top (its
   // snap point); a swipe then goes on to the second one
   const [kanbanPhoneFirstHeight, setKanbanPhoneFirstHeight] = useState(0);
-  // Stretching the board to full width or back switches at once (animating width and margin laid out and
-  // painted the whole board on every frame) and fades in: opacity runs on the compositor
-  const wideBefore = useRef(isKanbanWide);
-  useEffect(() => {
-    if (wideBefore.current === isKanbanWide) return;
-    wideBefore.current = isKanbanWide;
-    kanbanBoardRef.current?.animate?.([{ opacity: 0.35 }, { opacity: 1 }], { duration: 200, easing: 'ease-out' });
-  }, [isKanbanWide]);
   useEffect(() => {
     if (!isKanban && !isCalendar) {
       setKanbanColHeight(null);
@@ -98,7 +89,7 @@ export function useKanbanLayout({ isKanban, isCalendar = false, isKanbanWide, co
     fit();
     window.addEventListener('resize', fit);
     return () => window.removeEventListener('resize', fit);
-  }, [isKanban, isCalendar, isKanbanWide, columnCount, listId, loading]);
+  }, [isKanban, isCalendar, columnCount, listId, loading]);
 
 
   // Several rows: one wheel step moves to the next row (or back up to the previous row / the page top),

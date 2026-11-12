@@ -41,7 +41,7 @@
   },
   "tasks": {
     "title": "Attività",
-    "text": "Qui passi da elenco a Kanban e calendario; nel Kanban, <b>⤢</b> allarga la bacheca a tutta la finestra. Un clic su un’attività apre il dettaglio con scadenza, sottoattività, note e promemoria.",
+    "text": "Qui passi da elenco a Kanban e calendario. Un clic su un’attività apre il dettaglio con scadenza, sottoattività, note e promemoria.",
     "textPhone": "Elenco, Kanban e calendario si scelgono nel menu dietro il logo in alto a sinistra. Toccare un’attività apre il dettaglio con scadenza, sottoattività, note e promemoria."
   },
   "search": {

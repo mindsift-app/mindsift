@@ -145,10 +145,6 @@
     "otherUser": "Otro usuario",
     "columnsTitle": "Añadir, renombrar o reordenar columnas de Kanban",
     "columns": "Personalizar columnas",
-    "boardNormal": "Tablero al ancho normal",
-    "boardWide": "Expandir tablero a ancho completo",
-    "calendarNormal": "Calendario al ancho normal",
-    "calendarWide": "Expandir calendario a ancho completo",
     "undoTitle": "Deshacer (Ctrl+Z)",
     "subtasksTitle": "{{done}} de {{total}} subtareas completadas ({{percent}}%)",
     "subtasks": "{{done}}/{{total}} subtareas"
@@ -255,7 +251,11 @@
   "tags": {
     "showAll": "Mostrar todos los hashtags",
     "all": "Todos ({{count}})",
-    "less": "Menos"
+    "allChip": "Todos",
+    "more_one": "+{{count}} más",
+    "more_other": "+{{count}} más",
+    "search": "Buscar hashtag…",
+    "noMatch": "Ningún hashtag encontrado"
   },
   "newList": {
     "failed": "Error al crear la lista de tareas",

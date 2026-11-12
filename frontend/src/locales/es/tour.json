@@ -41,7 +41,7 @@
   },
   "tasks": {
     "title": "Tareas",
-    "text": "Aquí cambias entre lista, Kanban y calendario; en Kanban, <b>⤢</b> hace el tablero tan ancho como la ventana. Un clic en una tarea abre el detalle con fecha, subtareas, notas y recordatorios.",
+    "text": "Aquí cambias entre lista, Kanban y calendario. Un clic en una tarea abre el detalle con fecha, subtareas, notas y recordatorios.",
     "textPhone": "Lista, Kanban y calendario se eligen en el menú detrás del logo, arriba a la izquierda. Tocar una tarea abre el detalle con fecha, subtareas, notas y recordatorios."
   },
   "search": {

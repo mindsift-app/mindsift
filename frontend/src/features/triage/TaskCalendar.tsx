@@ -19,11 +19,6 @@ const MODE_KEY = 'mindsift:calendar_mode';
 // screen at first, growing into the room the bar above frees until it fills the whole screen
 const CALENDAR_HEIGHT = 'max(30rem, calc(var(--kb-full) - max(0px, calc(var(--kb-top) - var(--kb-scroll, 0px)))))';
 const CALENDAR_BAR_SPACER = 'max(0px, calc(var(--kb-top) - var(--kb-scroll, 0px)))';
-// Full width: the calendar takes the window (the same button and setting as the Kanban board)
-const calendarWidthStyle = (wide: boolean): React.CSSProperties =>
-  (wide
-    ? { '--kanban-w': 'calc(100vw - var(--app-rail-w, 0px) - 4rem)', '--kanban-ml': 'calc((100% - (100vw - var(--app-rail-w, 0px) - 4rem)) / 2)' }
-    : { '--kanban-w': '100%', '--kanban-ml': '0px' }) as React.CSSProperties;
 
 // Month or week on the desktop, remembered in this browser; the switch sits in the bar above (TasksView)
 export function useCalendarMode(): [CalendarMode, (m: CalendarMode) => void] {
@@ -96,10 +91,9 @@ interface TaskCalendarProps {
   // Desktop: month or week (phones always show the week)
   mode: CalendarMode;
   // Desktop scrolling and height as on the Kanban board (useKanbanLayout): the measured block, whether its
-  // height follows the scroll position yet, and the full-width setting
+  // height follows the scroll position yet
   boardRef: React.RefObject<HTMLDivElement>;
   fillsScreen: boolean;
-  wide: boolean;
 }
 
 const usePhone = () => {
@@ -128,7 +122,6 @@ export function TaskCalendar({
   mode: desktopMode,
   boardRef,
   fillsScreen,
-  wide,
 }: TaskCalendarProps) {
   const { t } = useTranslation('tasks');
   const phone = usePhone();
@@ -567,11 +560,11 @@ export function TaskCalendar({
     <div>
       <div
         ref={boardRef}
-        className={`flex items-stretch gap-3 pt-1 lg:w-[var(--kanban-w)] lg:ml-[var(--kanban-ml)] ${
+        className={`flex items-stretch gap-3 pt-1 ${
           fillsScreen ? '' : 'h-[max(30rem,calc(100dvh-19rem))]'
         }`}
         data-kb-scroll={fillsScreen ? '' : undefined}
-        style={{ ...calendarWidthStyle(wide), ...(fillsScreen ? { height: CALENDAR_HEIGHT } : {}) }}
+        style={fillsScreen ? { height: CALENDAR_HEIGHT } : undefined}
       >
         <aside className="w-64 lg:w-80 shrink-0 flex flex-col min-h-0 rounded-card border border-border bg-panel overflow-hidden">
           {sideNav}

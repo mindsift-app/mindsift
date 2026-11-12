@@ -3,8 +3,6 @@ import i18n from '../../i18n';
 import { useTranslation } from 'react-i18next';
 import {
   Columns,
-  Maximize2,
-  Minimize2,
   Users,
   CheckSquare,
   User as 
@@ -62,7 +60,6 @@ interface TasksViewProps {
   openTasksCount?: number; // all open tasks incl. shared lists (same as the nav bar counter)
 }
 
-const KANBAN_WIDE_KEY = 'mindsift:kanban_wide';
 
 // viewModes: list or Kanban per task list ("all" for Alle Aufgaben); viewMode is the old single value
 type TasksSession = {
@@ -114,23 +111,6 @@ export const TasksView: React.FC<TasksViewProps> = ({
       ? remembered.groupList
       : DEFAULT_GROUP_LIST
   );
-  // Wide Kanban: the board takes the whole window and shows every column in one row
-  const [kanbanWide, setKanbanWide] = useState(() => {
-    try {
-      return localStorage.getItem(KANBAN_WIDE_KEY) === '1';
-    } catch {
-      return false;
-    }
-  });
-  const toggleKanbanWide = () => {
-    const next = !kanbanWide;
-    setKanbanWide(next);
-    try {
-      localStorage.setItem(KANBAN_WIDE_KEY, next ? '1' : '0');
-    } catch {
-      // only a convenience
-    }
-  };
   const [filter, setFilter] = useState<TaskFilter>('open');
   const [tasks, setTasks] = useState<Thought[]>([]);
   const [taskLists, setTaskLists] = useState<TaskList[]>([]);
@@ -156,8 +136,6 @@ export const TasksView: React.FC<TasksViewProps> = ({
       }),
     [selectedListId]
   );
-  // The calendar uses the same full-width setting
-  const isKanbanWide = (viewMode === 'kanban' || viewMode === 'calendar') && kanbanWide;
   const [calendarMode, setCalendarMode] = useCalendarMode();
   const isAllTasks = selectedListId === 'all';
   const groupBy: GroupBy = isAllTasks ? groupAll : groupList;
@@ -402,7 +380,6 @@ export const TasksView: React.FC<TasksViewProps> = ({
   const kanbanLayout = useKanbanLayout({
     isKanban,
     isCalendar: viewMode === 'calendar',
-    isKanbanWide,
     columnCount: boardColumns.length,
     listId: selectedListId,
     loading,
@@ -923,49 +900,21 @@ export const TasksView: React.FC<TasksViewProps> = ({
 
       {/* Hashtag Filter & Grouping / Sorting Toolbar (Desktop only - on mobile accessible via Logo Menu Filter & Sort) */}
       <div className="hidden sm:flex flex-wrap items-center justify-between gap-2 pt-1 pb-0.5">
-        <TagFilterRow tags={allAvailableTags} tasks={safeTasks} selected={selectedTag} onSelect={setSelectedTag} layoutKey={viewMode} />
+        <TagFilterRow tags={allAvailableTags} tasks={safeTasks} selected={selectedTag} onSelect={setSelectedTag} />
 
-        {/* Kanban: manage columns and width; calendar: month or week and width (the list view has grouping
-            and sorting above the list) */}
+        {/* Kanban: manage columns; calendar: month or week (the list view has grouping and sorting above the
+            list) */}
         <div className="flex items-center gap-2 flex-shrink-0 ml-auto">
-          {viewMode === 'calendar' && (
-            <>
-              <CalendarModeSwitch mode={calendarMode} onChange={setCalendarMode} />
-              <button
-                type="button"
-                onClick={toggleKanbanWide}
-                data-tour="board-wide"
-                aria-pressed={kanbanWide}
-                className="tool-icon hidden lg:inline-flex"
-                title={kanbanWide ? t('view.calendarNormal') : t('view.calendarWide')}
-              >
-                {kanbanWide ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
-              </button>
-            </>
-          )}
-          {viewMode === 'kanban' && (
-            <>
-              {!isSelectedListReadOnly && (
-                <button
-                  onClick={() => setShowManageColumnsModal(true)}
-                  className="tool-btn"
-                  title={t('view.columnsTitle')}
-                >
-                  <Columns className="w-3.5 h-3.5" />
-                  <span>{t('view.columns')}</span>
-                </button>
-              )}
-              <button
-                type="button"
-                onClick={toggleKanbanWide}
-                data-tour="board-wide"
-                aria-pressed={kanbanWide}
-                className="tool-icon hidden lg:inline-flex"
-                title={kanbanWide ? t('view.boardNormal') : t('view.boardWide')}
-              >
-                {kanbanWide ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
-              </button>
-            </>
+          {viewMode === 'calendar' && <CalendarModeSwitch mode={calendarMode} onChange={setCalendarMode} />}
+          {viewMode === 'kanban' && !isSelectedListReadOnly && (
+            <button
+              onClick={() => setShowManageColumnsModal(true)}
+              className="tool-btn"
+              title={t('view.columnsTitle')}
+            >
+              <Columns className="w-3.5 h-3.5" />
+              <span>{t('view.columns')}</span>
+            </button>
           )}
         </div>
       </div>
@@ -1109,7 +1058,6 @@ export const TasksView: React.FC<TasksViewProps> = ({
           mode={calendarMode}
           boardRef={kanbanBoardRef}
           fillsScreen={kanbanLayout.kanbanMultiRow}
-          wide={isKanbanWide}
         />
       ) : viewMode === 'kanban' ? (
         /* DYNAMIC KANBAN BOARD */
@@ -1127,7 +1075,6 @@ export const TasksView: React.FC<TasksViewProps> = ({
           handleQuickAddTaskToColumn={handleQuickAddTaskToColumn}
           handleSetKanbanStatus={handleSetKanbanStatus}
           inBoardColumn={inBoardColumn}
-          isKanbanWide={isKanbanWide}
           isSelectedListReadOnly={isSelectedListReadOnly}
           isTaskReadOnly={isTaskReadOnly}
           kanbanTasks={kanbanTasks}

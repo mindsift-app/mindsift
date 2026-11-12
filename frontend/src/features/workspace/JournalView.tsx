@@ -325,9 +325,9 @@ export const JournalView: React.FC<JournalViewProps> = ({
               ) : (
                 <div className="px-4 sm:px-8 py-6 text-xs text-muted">{t('journal.opening', { date: shortDateLabel(date) })}</div>
               )}
-              {/* Between the days a line across the text that fades out to both sides (focus mode: the note's width) */}
+              {/* Between the days a line across the text that fades out to both sides (as wide as the note) */}
               {idx < shown.length - 1 && (
-                <div className={`pl-2 pr-1 sm:px-8 ${focusMode ? 'max-w-[calc(theme(maxWidth.6xl)-2rem-2px)] mx-auto' : ''}`} aria-hidden>
+                <div className={`pl-2 pr-1 sm:px-8 mx-auto ${focusMode ? 'max-w-[var(--note-measure-focus)]' : 'sm:max-w-[var(--note-measure)]'}`} aria-hidden>
                   <div className="h-px bg-[linear-gradient(to_right,transparent,var(--border-color)_20%,var(--border-color)_80%,transparent)]" />
                 </div>
               )}
