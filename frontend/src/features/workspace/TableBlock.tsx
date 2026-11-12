@@ -487,7 +487,8 @@ const TableBlockView: React.FC<TableBlockProps> = ({
         data-right={c === cols - 1 || undefined}
         style={data.align[c] ? { textAlign: data.align[c] as React.CSSProperties['textAlign'] } : undefined}
       >
-        <div className="relative">
+        {/* data-text: the column's minimum width on the desktop (index.css) */}
+        <div className="relative" data-text={text}>
           <div
             className={`nt-text ${isActive ? 'invisible' : canFocus ? 'cursor-text' : ''}`}
             aria-hidden={isActive || undefined}

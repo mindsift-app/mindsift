@@ -738,6 +738,20 @@ fieldset:disabled :is(button, input, select, textarea) {
   .note-table .nt-cell > div {
     max-width: none;
   }
+  /* A column grows with the room there is, but gets no narrower than its text up to 15rem: a wide table
+     scrolls sideways (in .table-scroll) instead of squeezing long cells into narrow columns. The hidden copy
+     of the cell's text (data-text) is only there for that minimum width; a table that fits stays as it was. */
+  .note-table .nt-cell > div::before {
+    content: attr(data-text);
+    display: block;
+    width: max-content;
+    max-width: 15rem;
+    height: 0;
+    overflow: hidden;
+    visibility: hidden;
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+  }
   .note-table .nt-cell {
     min-width: 5rem;
     padding: 5px 10px;
