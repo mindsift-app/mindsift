@@ -1,8 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Document, JournalDay, SharedFolder, TagSummary, User } from '../../lib/types';
 import { api, onWebSocketMessage } from '../../lib/api';
-import { extractHashtags } from '../../lib/hashtags';
 import { isJournalEnabled } from '../../lib/journal';
+import { countHashtags } from './workspaceListing';
 
 interface UseWorkspaceDataOptions {
   currentUser?: User | null;
@@ -19,23 +19,11 @@ export function useWorkspaceData({ currentUser, setSelectedDocId, autoSelectedDo
   const [sharedFolders, setSharedFolders] = useState<SharedFolder[]>([]);
   const [serverTagsSummary, setServerTagsSummary] = useState<TagSummary[]>([]);
 
-  // Dynamically compute hashtag counts directly from in-memory documents
-  const tagsSummary = useMemo(() => {
-    if (docs.length === 0) return serverTagsSummary;
-    const tagMap = new Map<string, number>();
-    for (const d of docs) {
-      for (const b of d.blocks || []) {
-        for (const clean of extractHashtags(b.content)) {
-          tagMap.set(clean, (tagMap.get(clean) || 0) + 1);
-        }
-      }
-    }
-    const list: TagSummary[] = [];
-    tagMap.forEach((count, tag) => {
-      list.push({ tag, count });
-    });
-    return list.sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag));
-  }, [docs, serverTagsSummary]);
+  // Dynamically compute hashtag counts directly from in-memory documents (per note cached, workspaceListing.ts)
+  const tagsSummary = useMemo(
+    () => (docs.length === 0 ? serverTagsSummary : countHashtags(docs)),
+    [docs, serverTagsSummary]
+  );
 
   const loadWorkspaceData = useCallback(async () => {
     try {

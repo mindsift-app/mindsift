@@ -2,6 +2,7 @@ import { Document, DocumentBlock, SharedFolder, TagDetails, TagSummary } from '.
 import { RollupTodo } from './TodoRollupView';
 import { TagMeta } from './HashtagOverview';
 import { FolderTreeNode } from './workspaceTypes';
+import { extractHashtags } from '../../lib/hashtags';
 import i18n from '../../i18n';
 
 // What the folder tree, the to-do collection and the hashtag views of WorkspaceView show. Pure functions.
@@ -18,6 +19,76 @@ export type TagGroup = {
 // Group key of notes outside folders (shown as rollup.root in the person's language)
 export const ROOT_FOLDER_KEY = 'Hauptebene';
 
+// What the hashtag and to-do views need of one note's bullets, worked out once per version of them. After a
+// pause in typing only the note typed in has new bullets (the others keep their array), so only that note is
+// read again, not every bullet of every note.
+type BlockStats = {
+  // Every hashtag (extractHashtags) with the number of times it occurs
+  tagCounts: Map<string, number>;
+  // The hashtags as tagsMetadata matches them (followed by a space, punctuation or the end), each with the
+  // number of open to-dos among the bullets carrying it
+  tagOpenTodos: Map<string, number>;
+  openTodos: number;
+};
+const blockStatsCache = new WeakMap<DocumentBlock[], BlockStats>();
+const NO_BLOCKS: DocumentBlock[] = [];
+// A hashtag that ends at a space, punctuation or the end of the text (as in tagGroups)
+const ENDED_HASHTAG = /(?:^|[\s(])#([\p{L}\p{N}_-]+)(?=[\s.,!?:;)#\]}]|$)/gu;
+
+function blockStats(blocks: DocumentBlock[] | undefined): BlockStats {
+  const blks = blocks || NO_BLOCKS;
+  let stats = blockStatsCache.get(blks);
+  if (stats) return stats;
+  stats = { tagCounts: new Map(), tagOpenTodos: new Map(), openTodos: 0 };
+  for (const b of blks) {
+    const openTodo = b.type === 'todo' && !b.checked;
+    if (openTodo && b.content.trim() !== '') stats.openTodos++;
+    const content = b.content || '';
+    if (!content.includes('#')) continue;
+    for (const tag of extractHashtags(content)) {
+      stats.tagCounts.set(tag, (stats.tagCounts.get(tag) || 0) + 1);
+    }
+    // A bullet counts once per hashtag, however often it carries it
+    const tags = new Set(Array.from(content.matchAll(ENDED_HASHTAG), (m) => m[1].toLowerCase()));
+    for (const tag of tags) {
+      stats.tagOpenTodos.set(tag, (stats.tagOpenTodos.get(tag) || 0) + (openTodo ? 1 : 0));
+    }
+  }
+  blockStatsCache.set(blks, stats);
+  return stats;
+}
+
+// Every hashtag of the notes with the number of times it occurs, most frequent first
+export function countHashtags(docs: Document[]): TagSummary[] {
+  const tagMap = new Map<string, number>();
+  for (const d of docs) {
+    blockStats(d.blocks).tagCounts.forEach((count, tag) => {
+      tagMap.set(tag, (tagMap.get(tag) || 0) + count);
+    });
+  }
+  const list: TagSummary[] = [];
+  tagMap.forEach((count, tag) => {
+    list.push({ tag, count });
+  });
+  return list.sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag));
+}
+
+// The to-dos with text of one note, kept per version of the note (a changed note is a new object)
+const noteTodosCache = new WeakMap<Document, RollupTodo[]>();
+function noteTodos(d: Document): RollupTodo[] {
+  let list = noteTodosCache.get(d);
+  if (!list) {
+    list = [];
+    for (const b of d.blocks || []) {
+      if (b.type === 'todo' && b.content.trim() !== '') {
+        list.push({ doc: d, blockId: b.id, content: b.content, checked: Boolean(b.checked) });
+      }
+    }
+    noteTodosCache.set(d, list);
+  }
+  return list;
+}
+
 // Every to-do with text of all notes (ROOT_FOLDER_KEY for notes outside folders), optionally of one folder only
 // and optionally only the open ones
 export function collectRollupTodos(docs: Document[], todoFolderDrilldown: string | null, openOnly = false): RollupTodo[] {
@@ -25,10 +96,8 @@ export function collectRollupTodos(docs: Document[], todoFolderDrilldown: string
   for (const d of docs) {
     const fName = d.folderPath || ROOT_FOLDER_KEY;
     if (todoFolderDrilldown && fName !== todoFolderDrilldown) continue;
-    for (const b of d.blocks || []) {
-      if (b.type === 'todo' && b.content.trim() !== '' && !(openOnly && b.checked)) {
-        list.push({ doc: d, blockId: b.id, content: b.content, checked: Boolean(b.checked) });
-      }
+    for (const item of noteTodos(d)) {
+      if (!(openOnly && item.checked)) list.push(item);
     }
   }
   return list;
@@ -47,13 +116,7 @@ export function groupRollupTodosByFolder(allRollupTodos: RollupTodo[]): Map<stri
 
 export function countOpenTodos(docs: Document[]): number {
   let count = 0;
-  for (const d of docs) {
-    for (const b of d.blocks || []) {
-      if (b.type === 'todo' && !b.checked && b.content.trim() !== '') {
-        count++;
-      }
-    }
-  }
+  for (const d of docs) count += blockStats(d.blocks).openTodos;
   return count;
 }
 
@@ -62,6 +125,7 @@ export function countOpenTodos(docs: Document[]): number {
 export function tagGroups(docs: Document[], selectedTag: string | null, tagDetails: TagDetails | null): TagGroup[] {
   if (!selectedTag) return [];
   const cleanTag = selectedTag.toLowerCase();
+  const regex = new RegExp(`(?:^|[\\s(])#(${cleanTag})(?=[\\s.,!?:;)#\\]}]|$)`, 'i');
 
   const map = new Map<string, TagGroup>();
 
@@ -77,7 +141,6 @@ export function tagGroups(docs: Document[], selectedTag: string | null, tagDetai
       if (processedChildIds.has(b.id)) continue;
 
       const content = b.content || '';
-      const regex = new RegExp(`(?:^|[\\s(])#(${cleanTag})(?=[\\s.,!?:;)#\\]}]|$)`, 'i');
       if (regex.test(content)) {
         const children: DocumentBlock[] = [];
         const rootLevel = b.level || 0;
@@ -127,36 +190,21 @@ export function tagsMetadata(tagsSummary: TagSummary[], docs: Document[]): Map<s
   const map = new Map<string, TagMeta>();
 
   for (const t of tagsSummary) {
-    const cleanTag = t.tag.toLowerCase();
-    const matchingDocs: { id: string; title: string; icon?: string; folderPath?: string }[] = [];
-    let openTodos = 0;
+    map.set(t.tag.toLowerCase(), { tag: t.tag, count: t.count, docs: [], openTodosCount: 0 });
+  }
 
-    for (const d of docs) {
-      let hasInDoc = false;
-      const blocks = d.blocks || [];
-      for (const b of blocks) {
-        const content = b.content || '';
-        const regex = new RegExp(`(?:^|[\\s(])#(${cleanTag})(?=[\\s.,!?:;)#\\]}]|$)`, 'i');
-        if (regex.test(content)) {
-          hasInDoc = true;
-          if (b.type === 'todo' && !b.checked) openTodos++;
-        }
-      }
-      if (hasInDoc) {
-        matchingDocs.push({
-          id: d.id,
-          title: d.title || i18n.t('workspace:editor.untitled'),
-          icon: d.icon,
-          folderPath: d.folderPath,
-        });
-      }
-    }
-
-    map.set(cleanTag, {
-      tag: t.tag,
-      count: t.count,
-      docs: matchingDocs,
-      openTodosCount: openTodos,
+  // Per note only its own hashtags (blockStats), not every hashtag against every bullet
+  for (const d of docs) {
+    blockStats(d.blocks).tagOpenTodos.forEach((openTodos, tag) => {
+      const meta = map.get(tag);
+      if (!meta) return;
+      meta.openTodosCount += openTodos;
+      meta.docs.push({
+        id: d.id,
+        title: d.title || i18n.t('workspace:editor.untitled'),
+        icon: d.icon,
+        folderPath: d.folderPath,
+      });
     });
   }
 

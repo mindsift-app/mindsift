@@ -4,6 +4,7 @@ const HASHTAG = /(?:^|[\s(])#([\p{L}\p{N}_-]+)/gu;
 
 /** All hashtags in a text, lower case, in order of appearance (with duplicates). */
 export function extractHashtags(text: string | undefined | null): string[] {
-  if (!text) return [];
+  // Most bullets have no # at all: no need to run the expression over them
+  if (!text || !text.includes('#')) return [];
   return Array.from(text.matchAll(HASHTAG), (m) => m[1].toLowerCase());
 }

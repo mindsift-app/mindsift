@@ -24,6 +24,7 @@ Fixes from the security review of November 2026 (v0.94.0).
 - Conflict copies in notes have a third choice, "Keep both": the marking goes and both texts stay, the copy as a bullet of its own under the original. While someone edits the original, "Use" is greyed out and a line under the copy says who holds it; before, the click did nothing visible. Until it is settled, a copy sticks to its original: Enter or pasting in the original adds below the copy, and indenting, dragging or moving the original takes the copy along.
 
 ### Changed
+- Typing and pressing Enter in long notes is faster: after a pause in typing, the hashtag and to-do counters only look at the note that changed, and the outline only updates the bullets that changed instead of going over every bullet.
 - The built-in SQLite engine is updated from 3.46.0 to 3.54.1 (modernc.org/sqlite v1.61.0), with upstream fixes for WAL and full-text search, among them a rare database corruption when the write-ahead log is reset. Existing databases open unchanged. Saving notes and searching are faster under load.
 - The server log names the built-in SQLite version at startup (`Database opened sqlite=…`), so admins can check it against SQLite's list of known vulnerabilities; scanners such as Trivy and govulncheck do not see it.
 - Drawings: dragging shapes in large drawings is noticeably smoother, and the editor opens faster.
