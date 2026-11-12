@@ -1,3 +1,4 @@
+import type React from 'react';
 import { useEffect, useState } from 'react';
 
 // Tallest visible height seen at the current width, i.e. the height without keyboard. Tracked from app
@@ -53,4 +54,29 @@ export function useKeyboardInset(): { inset: number; visibleHeight: number; keyb
     };
   }, []);
   return state;
+}
+
+const isField = (el: Element | null): el is HTMLElement =>
+  !!el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT');
+
+/**
+ * Room for the on-screen keyboard on full-height pages that center a form (sign-in, setup): Android only
+ * shrinks the visible part, so the form stayed where it was and the keyboard covered the lower fields.
+ * While the keyboard is open the page gets its height as padding at the bottom, and the focused field is
+ * scrolled into the visible part (again when the focus moves on). Returns the style for the page.
+ */
+export function useKeyboardRoom(): React.CSSProperties | undefined {
+  const { inset, keyboardOpen } = useKeyboardInset();
+  const open = keyboardOpen && inset > 0;
+  useEffect(() => {
+    if (!open) return;
+    const reveal = () => {
+      const el = document.activeElement;
+      if (isField(el)) requestAnimationFrame(() => el.scrollIntoView({ block: 'center' }));
+    };
+    reveal();
+    document.addEventListener('focusin', reveal);
+    return () => document.removeEventListener('focusin', reveal);
+  }, [open, inset]);
+  return open ? { paddingBottom: inset + 16 } : undefined;
 }

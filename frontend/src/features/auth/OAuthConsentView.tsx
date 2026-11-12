@@ -6,6 +6,7 @@ import { ApiKeyScope, OAuthAuthorizeInfo, User } from '../../lib/types';
 import { SCOPES, scopeGroups } from '../../lib/apiScopes';
 import { api, triggerHaptic } from '../../lib/api';
 import { ToggleSwitch } from '../../components/ToggleSwitch';
+import { useKeyboardRoom } from '../../lib/useKeyboardInset';
 
 interface OAuthConsentViewProps {
   user: User;
@@ -18,6 +19,7 @@ interface OAuthConsentViewProps {
 // client (with a code or access_denied). Shown instead of the app while the address is /oauth/authorize.
 export const OAuthConsentView: React.FC<OAuthConsentViewProps> = ({ user, instanceName, onLogout }) => {
   const { t } = useTranslation('auth');
+  const keyboardRoom = useKeyboardRoom();
   const query = window.location.search;
   const [info, setInfo] = useState<OAuthAuthorizeInfo | null>(null);
   const [scopes, setScopes] = useState<ApiKeyScope[]>([]);
@@ -59,7 +61,7 @@ export const OAuthConsentView: React.FC<OAuthConsentViewProps> = ({ user, instan
   const groups = scopeGroups().filter(([group]) => SCOPES.some((sc) => sc.group === group && offered.includes(sc.id)));
 
   return (
-    <div className="min-h-[100dvh] bg-canvas text-main flex flex-col items-center justify-center p-4 font-sans">
+    <div className="min-h-[100dvh] bg-canvas text-main flex flex-col items-center justify-center p-4 font-sans" style={keyboardRoom}>
       <div className="w-full max-w-md panel-surface shadow-panel overflow-hidden">
         <div className="p-4 bg-canvas border-b border-border flex items-center gap-2.5">
           <div className="w-7 h-7 bg-accent text-on-accent rounded-btn flex items-center justify-center">

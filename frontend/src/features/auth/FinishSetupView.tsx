@@ -7,6 +7,7 @@ import { LegalLinks } from '../../components/LegalLinks';
 import { SetupInstanceSection, useSetupChoices } from './SetupInstanceSection';
 import { SetupEmailSection, SetupMailSection, useSetupMail } from './SetupMailSection';
 import { SetupSummary } from './SetupSummary';
+import { useKeyboardRoom } from '../../lib/useKeyboardInset';
 
 // The rest of the setup wizard for an admin that ADMIN_USER / ADMIN_PASSWORD created at startup: the
 // account exists, so only the instance settings are asked, once, after the first sign-in – plus the
@@ -19,6 +20,7 @@ export const FinishSetupView: React.FC<{
   onLogout: () => void;
 }> = ({ user, authStatus, onDone, onLogout }) => {
   const { t } = useTranslation('auth');
+  const keyboardRoom = useKeyboardRoom();
   const setupChoices = useSetupChoices(authStatus.instanceName);
   const setupMail = useSetupMail();
   // Asked only when the account has no address (ADMIN_EMAIL was not set)
@@ -58,7 +60,7 @@ export const FinishSetupView: React.FC<{
   };
 
   return (
-    <div className="min-h-[100dvh] bg-canvas text-main flex flex-col items-center justify-center p-4 font-sans">
+    <div className="min-h-[100dvh] bg-canvas text-main flex flex-col items-center justify-center p-4 font-sans" style={keyboardRoom}>
       <div className="w-full max-w-xl panel-surface shadow-panel overflow-hidden">
         <div className="p-4 bg-canvas border-b border-border flex items-center justify-between gap-3">
           <div className="flex items-center gap-2.5">

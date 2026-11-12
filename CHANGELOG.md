@@ -74,6 +74,7 @@ Fixes from the security review of November 2026 (v0.94.0).
 - The sign-in page loads about 170 kB (compressed) instead of 530 kB; the rest of the app follows right after signing in, or at once when you are still signed in.
 
 ### Fixed
+- Sign-in and setup on phones: the on-screen keyboard no longer covers the password field; the page makes room for it and scrolls the field into view.
 - Admin settings on phones: the backup time sits below its label and is wide enough.
 - Wide tables in notes scroll sideways on the desktop too, instead of squeezing long cells into narrow columns.
 - When undo takes away the table row with the cursor, the cursor moves to the nearest cell instead of leaving the table.
