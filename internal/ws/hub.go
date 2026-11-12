@@ -37,6 +37,7 @@ func (h *Hub) SetOriginCheck(f func(*http.Request) bool) {
 
 type Client struct {
 	hub             *Hub
+	id              string // connection id (live drawing sessions tell connections apart by it)
 	conn            *websocket.Conn
 	roomID          string
 	userID          string
@@ -46,6 +47,12 @@ type Client struct {
 	sendMu          sync.RWMutex
 	closed          bool
 }
+
+// ID is the connection's id.
+func (c *Client) ID() string { return c.id }
+
+// UserID is the signed-in user of the connection.
+func (c *Client) UserID() string { return c.userID }
 
 func (c *Client) closeSend() {
 	c.sendMu.Lock()
@@ -113,6 +120,35 @@ type Hub struct {
 
 	// authorizeRoom decides whether a user may receive events of a room; without it every join is denied
 	authorizeRoom func(userID, roomID string) bool
+	// messages takes client messages the hub does not handle itself (live drawing, DRAW_*)
+	messages MessageHandler
+}
+
+// MessageHandler handles messages browsers send over WebSocket beyond room subscriptions, and learns
+// when a connection (WebSocket, SSE or long poll) is gone.
+type MessageHandler interface {
+	HandleMessage(c *Client, event string, payload json.RawMessage)
+	ConnectionGone(connID string)
+}
+
+// SetMessageHandler installs the handler for DRAW_* messages and closed connections.
+func (h *Hub) SetMessageHandler(m MessageHandler) {
+	h.mu.Lock()
+	h.messages = m
+	h.mu.Unlock()
+}
+
+func (h *Hub) messageHandler() MessageHandler {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+	return h.messages
+}
+
+// connectionGone tells the message handler; called without holding h.mu.
+func (h *Hub) connectionGone(connID string) {
+	if m := h.messageHandler(); m != nil && connID != "" {
+		m.ConnectionGone(connID)
+	}
 }
 
 // SetRoomAuthorizer installs the permission check used for every room join (URL room, JOIN_ROOM, SSE rooms).
@@ -292,6 +328,7 @@ func (h *Hub) Unregister(c *Client) {
 	h.mu.Lock()
 	h.removeClientLocked(c)
 	h.mu.Unlock()
+	h.connectionGone(c.id)
 }
 
 // removeClientLocked drops a WebSocket client from every map and closes its send channel. The caller
@@ -376,6 +413,7 @@ func (h *Hub) UnregisterSSE(c *SSEClient) {
 	h.mu.Lock()
 	h.removeSSEClientLocked(c)
 	h.mu.Unlock()
+	h.connectionGone(c.id)
 }
 
 // removeSSEClientLocked drops an SSE or long-poll client from every map (including the poll registry)
@@ -440,14 +478,20 @@ func (h *Hub) enforceUserConnLimit(userID string) {
 	}
 	sort.Slice(conns, func(i, j int) bool { return conns[i].at.Before(conns[j].at) })
 	evicted := conns[:total-MaxConnectionsPerUser]
+	gone := make([]string, 0, len(evicted))
 	for _, v := range evicted {
 		if v.ws != nil {
 			h.removeClientLocked(v.ws)
+			gone = append(gone, v.ws.id)
 		} else {
 			h.removeSSEClientLocked(v.sse)
+			gone = append(gone, v.sse.id)
 		}
 	}
 	h.mu.Unlock()
+	for _, id := range gone {
+		h.connectionGone(id)
+	}
 	slog.Warn("Connection limit reached: oldest connection(s) closed",
 		"user_id", userID, "closed", len(evicted), "limit", MaxConnectionsPerUser)
 }
@@ -733,6 +777,7 @@ func (h *Hub) ServeWS(w http.ResponseWriter, r *http.Request, roomID, userID str
 
 	client := &Client{
 		hub:       h,
+		id:        domain.NewID("ws"),
 		conn:      conn,
 		roomID:    roomID,
 		userID:    userID,
@@ -870,6 +915,11 @@ func (c *Client) readPump() {
 				}
 				if room != "" {
 					c.hub.LeaveRoom(c, room)
+				}
+			} else if strings.HasPrefix(incoming.Event, "DRAW_") {
+				// Live drawing: only over WebSocket, the one way a browser can send this fast
+				if m := c.hub.messageHandler(); m != nil {
+					m.HandleMessage(c, incoming.Event, incoming.Payload)
 				}
 			}
 		}

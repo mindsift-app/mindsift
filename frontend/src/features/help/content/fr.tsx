@@ -189,7 +189,7 @@ const fr: HelpContent = {
       title: 'Dessins (/canvas)',
       subtitle: 'Croquis, organigrammes et cartes mentales directement dans la note',
       icon: Shapes,
-      keywords: ['dessin', 'canvas', 'croquis', 'diagramme', 'organigramme', 'carte mentale', 'flèche', 'formes', 'main levée', 'grille', 'mermaid'],
+      keywords: ['dessin', 'canvas', 'croquis', 'diagramme', 'organigramme', 'carte mentale', 'flèche', 'formes', 'main levée', 'grille', 'mermaid', 'en direct', 'dessiner à plusieurs'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
           <ul className="space-y-1.5">
@@ -209,7 +209,10 @@ const fr: HelpContent = {
               <strong className="text-main">Dans la note :</strong> Le dessin occupe la largeur de la note. Clique dedans, puis faire glisser déplace la vue, Ctrl + molette ou deux doigts zooment ; la molette seule fait toujours défiler la page. Un autre clic y met fin, une vue non enregistrée revient en douceur. Tire le bord inférieur pour changer la hauteur. « Enregistrer la vue » fixe cadrage, zoom et hauteur pour tout le monde, Le bouton de taille passe de la taille recommandée à « tout en grand » (dessins hauts) ou à la hauteur recommandée à déplacer sur le côté (dessins larges). Double-clic ou « Modifier » ouvre l’éditeur ; il démarre avec la main (seule la vue bouge), choisis un autre outil pour modifier. Le bouton aux flèches à côté de « Terminé » quitte sans enregistrer et demande d’abord s’il y a des modifications.
             </li>
             <li>
-              <strong className="text-main">À plusieurs et hors ligne :</strong> Dans les notes partagées, un dessin est verrouillé pour les autres tant que quelqu’un dessine dedans. Ce que tu dessines hors ligne est enregistré dès le retour de la connexion ; un brouillon non enregistré est proposé à la restauration à la prochaine ouverture.
+              <strong className="text-main">Dessiner à plusieurs :</strong> Dans les notes partagées, vous pouvez dessiner en même temps dans un même dessin. Qui l’ouvre pour le modifier lance un dessin en direct et en est l’hôte ; la note affiche alors « Dessin en direct : … ». Qui l’ouvre ensuite choisit « Dessiner aussi » ou « Regarder » et voit les formes, les pointeurs et les sélections des autres dans leur couleur, avec tous les participants en haut de l’éditeur. L’hôte enregistre avec « Terminé » pour tous ou abandonne pour tous ; les autres ont « Quitter ». Si l’hôte s’en va, celui qui est là depuis le plus longtemps prend le relais. Annuler ne reprend que tes propres modifications. Dessiner ensemble demande une connexion WebSocket ; sans elle (certains proxys d’entreprise), tu peux regarder en direct, et sans dessin en direct en cours tu modifies seul comme avant pendant que les autres regardent.
+            </li>
+            <li>
+              <strong className="text-main">Hors ligne et brouillons :</strong> Ce que tu dessines hors ligne est enregistré dès le retour de la connexion ; un brouillon non enregistré est proposé à la restauration à la prochaine ouverture. Si tout le monde quitte un dessin en direct sans « Terminé », le serveur garde son état environ 10 minutes ; qui le rouvre dans ce délai reprend là où il en était.
             </li>
             <li>
               <strong className="text-main">Partout :</strong> La recherche trouve les mots des dessins, copier-coller conserve le dessin et l’export Markdown le contient en image SVG (l’import en refait un dessin). Les agents IA (MCP) lisent une description du dessin et peuvent eux-mêmes créer des dessins à partir d’organigrammes et de cartes mentales Mermaid.

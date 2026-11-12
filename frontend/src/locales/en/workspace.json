@@ -577,6 +577,39 @@
     "sizeAutoTitle": "Back to the recommended size (the saved view goes)",
     "discard": "Discard",
     "discardTitle": "Close without saving",
-    "discardAsk": "Discard unsaved changes?"
+    "discardAsk": "Discard unsaved changes?",
+    "live": {
+      "badge": "Live drawing: {{names}}",
+      "ask_one": "{{names}} is drawing right now.",
+      "ask_other": "{{names}} are drawing right now.",
+      "needsWebSocket": "Drawing along needs a WebSocket connection; here you can watch.",
+      "drawAlong": "Draw along",
+      "watch": "Watch",
+      "label": "Live",
+      "host": "Host: {{name}}",
+      "youHost": "You are the host",
+      "you": "You",
+      "drawingNow": "Drawing: {{names}}",
+      "watchingNow": "Watching: {{names}}",
+      "leave": "Leave",
+      "leaveTitle": "Leave the live drawing – the others go on drawing",
+      "doneTitle": "Save for everyone and end the live drawing (Esc)",
+      "discardAsk": "Discarding ends the live drawing for everyone. The changes of this session are lost.",
+      "discardAll": "Discard for everyone",
+      "endedDone": "{{name}} saved the drawing.",
+      "endedDiscard": "{{name}} discarded the live drawing.",
+      "endedExpired": "The live drawing has ended.",
+      "saving": "Saving …",
+      "offline": "Connection lost – your changes go out as soon as it is back.",
+      "offlineWatch": "Connection lost.",
+      "offlineSave": "No connection – saving works once it is back.",
+      "idle": "Nobody is drawing right now. The state is not saved yet.",
+      "error": {
+        "forbidden": "You have no access to draw along.",
+        "locked": "Someone is editing the drawing without a live connection – you can only look.",
+        "limit": "The drawing is too large for the live session. Please remove something, above all freehand strokes.",
+        "save": "Saving did not work. Check the connection and try again."
+      }
+    }
   }
 }

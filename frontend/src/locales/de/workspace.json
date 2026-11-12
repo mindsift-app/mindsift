@@ -573,6 +573,39 @@
     "sizeAutoTitle": "Zurück zur empfohlenen Größe (die gespeicherte Ansicht entfällt)",
     "discard": "Verwerfen",
     "discardTitle": "Schließen ohne zu speichern",
-    "discardAsk": "Ungespeicherte Änderungen verwerfen?"
+    "discardAsk": "Ungespeicherte Änderungen verwerfen?",
+    "live": {
+      "badge": "Live-Zeichnung: {{names}}",
+      "ask_one": "{{names}} zeichnet gerade.",
+      "ask_other": "{{names}} zeichnen gerade.",
+      "needsWebSocket": "Mitzeichnen geht nur mit einer WebSocket-Verbindung; hier kannst du zusehen.",
+      "drawAlong": "Mitzeichnen",
+      "watch": "Zusehen",
+      "label": "Live",
+      "host": "Gastgeber: {{name}}",
+      "youHost": "Du bist Gastgeber",
+      "you": "Du",
+      "drawingNow": "Zeichnen: {{names}}",
+      "watchingNow": "Sehen zu: {{names}}",
+      "leave": "Verlassen",
+      "leaveTitle": "Live-Zeichnung verlassen – die anderen zeichnen weiter",
+      "doneTitle": "Für alle speichern und die Live-Zeichnung beenden (Esc)",
+      "discardAsk": "Verwerfen beendet die Live-Zeichnung für alle. Die Änderungen dieser Sitzung gehen verloren.",
+      "discardAll": "Für alle verwerfen",
+      "endedDone": "{{name}} hat die Zeichnung gespeichert.",
+      "endedDiscard": "{{name}} hat die Live-Zeichnung verworfen.",
+      "endedExpired": "Die Live-Zeichnung ist beendet.",
+      "saving": "Speichert …",
+      "offline": "Verbindung unterbrochen – deine Änderungen gehen raus, sobald sie wieder steht.",
+      "offlineWatch": "Verbindung unterbrochen.",
+      "offlineSave": "Keine Verbindung – speichern geht erst, wenn sie wieder steht.",
+      "idle": "Gerade zeichnet niemand. Der Stand ist noch nicht gespeichert.",
+      "error": {
+        "forbidden": "Du hast keinen Zugriff zum Mitzeichnen.",
+        "locked": "Jemand bearbeitet die Zeichnung gerade ohne Live-Verbindung – du kannst nur ansehen.",
+        "limit": "Die Zeichnung ist zu groß für die Live-Sitzung. Bitte etwas entfernen, vor allem Freihand-Striche.",
+        "save": "Speichern hat nicht geklappt. Prüfe die Verbindung und versuch es noch einmal."
+      }
+    }
   }
 }

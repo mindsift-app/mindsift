@@ -38,7 +38,7 @@ One container, one SQLite file, your server.
 ### 📝 Outliner notes, together, live
 Every thought is a bullet: indent, collapse, zoom in, drag whole branches. Wiki links (also to single bullets, and they survive renaming or moving a note), hashtags, slash commands, code blocks, tables, images, voice notes, dictation, link previews and hidden values (`/secret` for an IP or a token: stored encrypted, shown only on a tap, never to API keys or AI agents). Several people write in the same note at once without overwriting each other, offline and behind strict proxies too. A public link shows a note to outsiders: read only, optionally with a password, always expiring, kept out of search engines.
 
-Drawings in a note (`/canvas`): shapes, arrows that dock to them, text and freehand; AI agents can draw flowcharts and mind maps from Mermaid. Focus mode hides everything but the note.
+Drawings in a note (`/canvas`): shapes, arrows that dock to them, text and freehand; several people can draw in one drawing at once and see each other's pointers, others watch live; AI agents can draw flowcharts and mind maps from Mermaid. Focus mode hides everything but the note.
 
 <p align="center">
   <img src="screenshots/Focus_desktop.webp" alt="MindSift focus mode with pinned bar and sidebar, a note with a network plan drawing" width="90%" />

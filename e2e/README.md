@@ -48,6 +48,17 @@ Offline work in notes:
 - the notice at the bottom counts notes with unsent text and explains where it is kept; signing out asks first and then deletes the stored notes
 - unsent changes survive closing the browser (persistent profile) and are sent at the next start with a connection
 
+## drawing-live.e2e.mjs
+
+Live drawing with three browsers on one shared drawing: admin in Chromium, user in Firefox, and admin again in Chromium with the WebSocket refused (the app falls back to SSE). Checked:
+
+- opening the drawing with a WebSocket starts a live session, the opener is host; the others' note shows „Live-Zeichnung: …“
+- opening it then asks „… zeichnet gerade“ with „Zusehen“ and „Mitzeichnen“; both draw at the same time and see each other's shapes, pointers with names and selections, and the avatar stack
+- without WebSocket there is no „Mitzeichnen“ (a hint says why): the third browser watches, without tools, and sees new shapes live
+- the host's tab closes: the other one becomes host (the watcher sees it), saves with „Fertig“; the drawing is in the note without session data and without a conflict copy, the watcher sees the end, and after reloading the note shows it and no live badge
+
+`SHOTS=<dir>` also saves screenshots of the steps.
+
 ## copy.e2e.mjs
 
 Selection over several bullets in Chromium and Firefox, in two notes (callout at the top; callout at the bottom with an empty indented last bullet). Checked, each time against the Markdown of the whole note:

@@ -577,6 +577,39 @@
     "sizeAutoTitle": "Volver al tamaño recomendado (se quita la vista guardada)",
     "discard": "Descartar",
     "discardTitle": "Cerrar sin guardar",
-    "discardAsk": "¿Descartar los cambios sin guardar?"
+    "discardAsk": "¿Descartar los cambios sin guardar?",
+    "live": {
+      "badge": "Dibujo en vivo: {{names}}",
+      "ask_one": "{{names}} está dibujando ahora.",
+      "ask_other": "{{names}} están dibujando ahora.",
+      "needsWebSocket": "Para dibujar a la vez hace falta una conexión WebSocket; aquí puedes mirar.",
+      "drawAlong": "Dibujar también",
+      "watch": "Mirar",
+      "label": "En vivo",
+      "host": "Anfitrión: {{name}}",
+      "youHost": "Eres el anfitrión",
+      "you": "Tú",
+      "drawingNow": "Dibujan: {{names}}",
+      "watchingNow": "Miran: {{names}}",
+      "leave": "Salir",
+      "leaveTitle": "Salir del dibujo en vivo – los demás siguen dibujando",
+      "doneTitle": "Guardar para todos y terminar el dibujo en vivo (Esc)",
+      "discardAsk": "Descartar termina el dibujo en vivo para todos. Los cambios de esta sesión se pierden.",
+      "discardAll": "Descartar para todos",
+      "endedDone": "{{name}} ha guardado el dibujo.",
+      "endedDiscard": "{{name}} ha descartado el dibujo en vivo.",
+      "endedExpired": "El dibujo en vivo ha terminado.",
+      "saving": "Guardando …",
+      "offline": "Conexión perdida – tus cambios se envían en cuanto vuelva.",
+      "offlineWatch": "Conexión perdida.",
+      "offlineSave": "Sin conexión – se podrá guardar cuando vuelva.",
+      "idle": "Ahora nadie está dibujando. El estado aún no está guardado.",
+      "error": {
+        "forbidden": "No tienes acceso para dibujar.",
+        "locked": "Alguien está editando el dibujo sin conexión en vivo – solo puedes mirarlo.",
+        "limit": "El dibujo es demasiado grande para la sesión en vivo. Quita algo, sobre todo trazos a mano alzada.",
+        "save": "No se pudo guardar. Comprueba la conexión e inténtalo de nuevo."
+      }
+    }
   }
 }

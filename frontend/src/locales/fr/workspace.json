@@ -577,6 +577,39 @@
     "sizeAutoTitle": "Revenir à la taille recommandée (la vue enregistrée est supprimée)",
     "discard": "Abandonner",
     "discardTitle": "Fermer sans enregistrer",
-    "discardAsk": "Abandonner les modifications non enregistrées ?"
+    "discardAsk": "Abandonner les modifications non enregistrées ?",
+    "live": {
+      "badge": "Dessin en direct : {{names}}",
+      "ask_one": "{{names}} dessine en ce moment.",
+      "ask_other": "{{names}} dessinent en ce moment.",
+      "needsWebSocket": "Pour dessiner ensemble, il faut une connexion WebSocket ; ici, tu peux regarder.",
+      "drawAlong": "Dessiner aussi",
+      "watch": "Regarder",
+      "label": "En direct",
+      "host": "Hôte : {{name}}",
+      "youHost": "Tu es l’hôte",
+      "you": "Toi",
+      "drawingNow": "Dessinent : {{names}}",
+      "watchingNow": "Regardent : {{names}}",
+      "leave": "Quitter",
+      "leaveTitle": "Quitter le dessin en direct – les autres continuent",
+      "doneTitle": "Enregistrer pour tous et terminer le dessin en direct (Échap)",
+      "discardAsk": "Abandonner termine le dessin en direct pour tous. Les modifications de cette session sont perdues.",
+      "discardAll": "Abandonner pour tous",
+      "endedDone": "{{name}} a enregistré le dessin.",
+      "endedDiscard": "{{name}} a abandonné le dessin en direct.",
+      "endedExpired": "Le dessin en direct est terminé.",
+      "saving": "Enregistrement …",
+      "offline": "Connexion perdue – tes modifications partent dès qu’elle revient.",
+      "offlineWatch": "Connexion perdue.",
+      "offlineSave": "Pas de connexion – l’enregistrement sera possible quand elle reviendra.",
+      "idle": "Personne ne dessine en ce moment. L’état n’est pas encore enregistré.",
+      "error": {
+        "forbidden": "Tu n’as pas l’accès pour dessiner.",
+        "locked": "Quelqu’un modifie le dessin sans connexion en direct – tu peux seulement regarder.",
+        "limit": "Le dessin est trop grand pour la session en direct. Retire quelque chose, surtout des traits à main levée.",
+        "save": "L’enregistrement n’a pas fonctionné. Vérifie la connexion et réessaie."
+      }
+    }
   }
 }

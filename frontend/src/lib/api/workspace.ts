@@ -196,6 +196,19 @@ export const workspaceApi = {
     });
   },
 
+  /** Watches a live drawing over SSE or long polling (sseId of that connection); leave ends watching. */
+  async watchDrawing(docId: string, blockId: string, sseId: string, leave = false): Promise<any> {
+    return request<any>(`/api/v1/docs/${encodeURIComponent(docId)}/drawings/${encodeURIComponent(blockId)}/watch`, {
+      method: 'POST',
+      body: JSON.stringify({ sseId, leave }),
+    });
+  },
+
+  /** State of a live drawing (watchers catch up with it after a gap). */
+  async liveDrawing(docId: string, blockId: string): Promise<any> {
+    return request<any>(`/api/v1/docs/${encodeURIComponent(docId)}/drawings/${encodeURIComponent(blockId)}/live`);
+  },
+
   /** Moves the note to the trash (owner) or leaves a shared note (others). */
   async deleteDocument(id: string): Promise<void> {
     await request(`/api/v1/documents/${id}`, { method: 'DELETE' });
