@@ -47,6 +47,17 @@ func (s *Store) migrateSessions() error {
 
 func nowUTC() string { return time.Now().UTC().Format(time.RFC3339) }
 
+// ActiveUserCount: accounts with a session used since the time (metrics; -1 when the database fails).
+func (s *Store) ActiveUserCount(since time.Time) int {
+	var n int
+	err := s.db.QueryRow(`SELECT COUNT(DISTINCT user_id) FROM sessions WHERE revoked_at = '' AND last_used_at >= ?`,
+		since.UTC().Format(time.RFC3339)).Scan(&n)
+	if dbFailed(err) {
+		return -1
+	}
+	return n
+}
+
 // CreateSession starts a session for a login; old ended or idle sessions of the user are removed.
 func (s *Store) CreateSession(userID, userAgent, ip string) (string, error) {
 	b := make([]byte, 16)

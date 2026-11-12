@@ -22,7 +22,10 @@ type Config struct {
 	JWTSecret    string
 	// SecretsKey encrypts hidden values in notes (SECRETS_KEY or $DATA_DIR/secrets.key), 32 bytes
 	SecretsKey []byte
-	BaseURL    string
+	// MetricsToken: Prometheus scrapes /metrics with it as bearer token (METRICS_TOKEN or METRICS_TOKEN_FILE);
+	// empty = no /metrics at all
+	MetricsToken string
+	BaseURL      string
 	// BaseURLSet: BASE_URL was configured explicitly. Links in mails (password reset) are only built
 	// from it, never from the request's Host header.
 	BaseURLSet        bool
@@ -281,6 +284,28 @@ func resolveSecretsKey(fromEnv, dataDir string) []byte {
 	return key
 }
 
+// MinMetricsTokenLength: shorter tokens leave /metrics off (it would be guessable).
+const MinMetricsTokenLength = 16
+
+// resolveMetricsToken reads METRICS_TOKEN or, for a Docker secret, the file in METRICS_TOKEN_FILE. A token
+// that is too short switches /metrics off with a warning instead of opening it.
+func resolveMetricsToken() string {
+	token := strings.TrimSpace(os.Getenv("METRICS_TOKEN"))
+	if path := strings.TrimSpace(os.Getenv("METRICS_TOKEN_FILE")); token == "" && path != "" {
+		data, err := os.ReadFile(path)
+		if err != nil {
+			slog.Warn("Reading METRICS_TOKEN_FILE failed, /metrics stays off", "error", err)
+			return ""
+		}
+		token = strings.TrimSpace(string(data))
+	}
+	if token != "" && len(token) < MinMetricsTokenLength {
+		slog.Warn("METRICS_TOKEN is shorter than 16 characters, /metrics stays off", "length", len(token))
+		return ""
+	}
+	return token
+}
+
 // legalContent reads Markdown from NAME or, for longer texts, from the file named in NAME_FILE.
 func legalContent(name string) string {
 	if v := strings.TrimSpace(os.Getenv(name)); v != "" {
@@ -373,6 +398,7 @@ func Load() *Config {
 		DatabasePath:            dbPath,
 		JWTSecret:               jwtSecret,
 		SecretsKey:              resolveSecretsKey(os.Getenv("SECRETS_KEY"), filepath.Dir(dbPath)),
+		MetricsToken:            resolveMetricsToken(),
 		BaseURL:                 baseURL,
 		BaseURLSet:              strings.TrimSpace(os.Getenv("BASE_URL")) != "",
 		AllowRegistration:       allowReg,

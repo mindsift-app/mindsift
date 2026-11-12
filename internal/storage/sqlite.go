@@ -87,6 +87,15 @@ func (s *Store) SQLiteVersion() (string, error) {
 	return v, err
 }
 
+// DBStats: the connection pool of the database (metrics).
+func (s *Store) DBStats() sql.DBStats { return s.db.Stats() }
+
+// Ping answers whether the database answers a query (health check with ?db=1).
+func (s *Store) Ping(ctx context.Context) error {
+	var one int
+	return s.db.QueryRowContext(ctx, `SELECT 1`).Scan(&one)
+}
+
 func (s *Store) Close() error {
 	s.forgetSystemSettings()
 	return s.db.Close()

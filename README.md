@@ -133,7 +133,6 @@ If something here is out of date or unfair, please open an issue.
 * **CalDAV or an iCal feed:** the calendar exists only inside MindSift.
 * **Native apps:** it is a PWA (installable, offline, push), not in the app stores.
 * **End-to-end encryption:** the server reads your data, because search, sharing and AI agents need it; only hidden values (`/secret`) are encrypted in the database. Protect the server and its disk.
-* **Prometheus metrics:** only a health endpoint.
 * **Backups to S3 or WebDAV:** backups go to `data/backups/`; copying them elsewhere is up to you.
 * **A Helm chart:** Docker Compose only.
 
@@ -193,6 +192,7 @@ The most important settings (all of them are in [`.env.example`](.env.example)):
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` | empty | Mail for alarms, invites and password reset (also in the admin UI) |
 | `TRUSTED_PROXIES` | `private` | Whose `X-Forwarded-For` to trust, see [reverse proxy](Doku/reverse-proxy.md) |
 | `MCP_ENABLED` | admin UI decides | `false` switches off the endpoint for AI agents |
+| `METRICS_TOKEN` | empty | Switches on `/metrics` for Prometheus (at least 16 characters, sent as bearer token); also `METRICS_TOKEN_FILE` |
 | `STT_*` | empty | Your own Whisper server for voice input |
 | `MINDSIFT_DEMO` | `false` | Demo accounts `admin/admin` and `user/user` with sample data. **Never on a server with real data!** |
 
@@ -202,6 +202,14 @@ The most important settings (all of them are in [`.env.example`](.env.example)):
 * **Backups:** the setup wizard offers daily backups (preselected: 03:00 server time, kept 3 days); change them later in the admin settings. Each run saves the whole database plus one ZIP per person under `data/backups/`, which people download or restore in their account settings. Copy that folder somewhere else too.
 * **Updates:** `docker compose pull && docker compose up -d`. The database schema updates itself; open apps offer to reload. Since v0.87.3 the container runs as uid 1000 and takes over `data/` by itself; with `user:` in the compose file, run `chown -R 1000:1000 data` first.
 * **Health check:** the image checks `/api/v1/health` every 30 s, shown in `docker ps`, Portainer and Dockge and usable with `depends_on: condition: service_healthy`. Podman ignores checks in images; copy the `healthcheck:` block of `docker-compose.yml` instead.
+* **Monitoring:** `/api/v1/health?db=1` also asks the database and answers `503` when it does not respond (the container's own check stays without it). With `METRICS_TOKEN` set, `/metrics` serves Prometheus metrics: API requests and their duration by route, mails sent and failed, backup runs and the time of the last good one, accounts and active accounts, the database's connections and file size, memory and goroutines. No label holds a name, address or id. Scrape it with the token:
+
+  ```yaml
+  scrape_configs:
+    - job_name: mindsift
+      authorization: { credentials: "<METRICS_TOKEN>" }
+      static_configs: [{ targets: ["mindsift:8080"] }]
+  ```
 * **File permissions:** everything in `data/` is readable by MindSift only (files 0600, folders 0700). The container tightens files from older versions once on its first start; without the container, run `chmod -R go-rwx data`.
 * **Image tags:** `:stable` = the latest tagged release (default in `docker-compose.yml` and the install script), `:vX.Y.Z` = one release, `:latest` = every build of `main`, `:dev` = development. The project is 0.x: a minor version can still change the API or data formats, and the [changelog](CHANGELOG.md) marks those changes with **Attention**.
 

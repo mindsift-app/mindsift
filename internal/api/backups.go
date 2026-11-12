@@ -30,8 +30,14 @@ func (s *Server) backupRoot() string {
 	return filepath.Join(filepath.Dir(s.cfg.DatabasePath), "backups")
 }
 
-// runBackups makes one full run; returns the name of the system snapshot.
+// runBackups makes one full run; returns the name of the system snapshot. The result goes into the metrics.
 func (s *Server) runBackups() (string, error) {
+	name, err := s.runBackupsOnce()
+	s.metrics.backupRun(err, time.Now())
+	return name, err
+}
+
+func (s *Server) runBackupsOnce() (string, error) {
 	backupRunMu.Lock()
 	defer backupRunMu.Unlock()
 	now := time.Now()

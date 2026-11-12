@@ -103,7 +103,9 @@ func (s *Server) sendEmailHTMLWith(cfg smtpSettings, toEmail, subject, bodyText,
 	if s.notifyEmailHook != nil { // tests
 		return s.notifyEmailHook(toEmail, subject, bodyText, html)
 	}
-	if err := sendMail(cfg, toEmail, subject, bodyText, html); err != nil {
+	err := sendMail(cfg, toEmail, subject, bodyText, html)
+	s.metrics.mailSent(err)
+	if err != nil {
 		step := ""
 		if se, ok := err.(*smtpStepError); ok {
 			step = se.Step

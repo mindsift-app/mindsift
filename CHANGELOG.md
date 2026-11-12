@@ -14,6 +14,7 @@ Versions before 0.80.0 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - **Required two-factor sign-in:** Administration → Server can require it for admins or for everyone. An account without a second factor sets one up right after signing in and can do nothing else before; API keys and AI connections keep working.
 - With two-factor sign-in on, a new password or address, deleting your data or account and creating an API key ask for the code or passkey in a small sheet. Every change to it (on, off, an app or passkey added or removed, new recovery codes) is mailed to the account.
 - Administrators reset the two-factor sign-in of somebody who lost their phone in the user list (**2FA** badge, "Reset 2FA"); the person is told by mail.
+- **Prometheus metrics:** with `METRICS_TOKEN` set, `/metrics` serves API requests and their duration by route, mails sent and failed, backup runs and the last good one, accounts and active accounts, the database's connections and size, memory and goroutines (scraped with the token as bearer). Without the variable nothing changes. `/api/v1/health?db=1` also checks the database and answers `503` when it does not respond.
 - New settings section **Security** with the password change, two-factor sign-in and the signed-in devices (moved there from Profile).
 
 ### Fixed
