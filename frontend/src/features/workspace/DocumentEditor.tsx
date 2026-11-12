@@ -36,6 +36,7 @@ import { api } from '../../lib/api';
 import { OfflineError } from '../../lib/offline';
 import { ConflictChoice, DocSyncEngine, EngineState, MAX_NOTE_BLOCKS } from '../../lib/docSync/engine';
 import { formatNumber } from '../../lib/format';
+import { fitFieldHeight, refitOnWidthChange } from '../../lib/fieldHeight';
 import { Presence } from '../../lib/docSync/transport';
 import { OutlinerTree, OutlinerTreeHandle } from './OutlinerTree';
 import type { BlockLock } from './OutlinerBlock';
@@ -273,6 +274,21 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
 
 
   const titleInputRef = useRef<HTMLTextAreaElement | HTMLInputElement | null>(null);
+  // The title grows with its text like the bullets: measured when it appears, when its text changes and when
+  // its width does (lib/fieldHeight), not on every render, where each measurement forced a layout of the page
+  const stopTitleRefitRef = useRef<(() => void) | null>(null);
+  const setTitleField = useCallback((el: HTMLTextAreaElement | null) => {
+    titleInputRef.current = el;
+    stopTitleRefitRef.current?.();
+    stopTitleRefitRef.current = null;
+    if (!el) return;
+    fitFieldHeight(el);
+    stopTitleRefitRef.current = refitOnWidthChange(el);
+  }, []);
+  useLayoutEffect(() => {
+    const el = titleInputRef.current;
+    if (el instanceof HTMLTextAreaElement) fitFieldHeight(el);
+  }, [title]);
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
   // Focus mode keeps the note at the height it has in the workspace, so the text does not move when it
@@ -2049,22 +2065,12 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
               </div>
 
               <textarea
-                ref={(el) => {
-                  titleInputRef.current = el;
-                  if (el) {
-                    el.style.height = 'auto';
-                    el.style.height = `${el.scrollHeight}px`;
-                  }
-                }}
+                ref={setTitleField}
                 rows={1}
                 value={title}
                 readOnly={!canEdit || inJournal}
                 autoFocus={autoFocusTitle}
-                onChange={(e) => {
-                  handleTitleChange(e);
-                  e.target.style.height = 'auto';
-                  e.target.style.height = `${e.target.scrollHeight}px`;
-                }}
+                onChange={handleTitleChange}
                 onKeyDown={(e) => {
                   if ((e.ctrlKey || e.metaKey) && !e.altKey && ['z', 'y'].includes(e.key.toLowerCase())) {
                     e.preventDefault();

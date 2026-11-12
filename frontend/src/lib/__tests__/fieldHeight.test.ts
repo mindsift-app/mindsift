@@ -4,7 +4,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 function field(width: number, lines: number) {
   const el = document.createElement('textarea');
   let w = width;
-  Object.defineProperty(el, 'clientWidth', { get: () => w });
+  Object.defineProperty(el, 'clientWidth', { get: () => w, configurable: true });
   Object.defineProperty(el, 'scrollHeight', { get: () => lines * 20 });
   return {
     el,
@@ -56,5 +56,43 @@ describe('refitOnWidthChange', () => {
 
     stops.forEach((stop) => stop());
     expect(observed.size).toBe(0);
+  });
+
+  it('takes the width a field was fitted at, without measuring it again', async () => {
+    let notify: (entries: { target: Element }[]) => void = () => {};
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        constructor(cb: typeof notify) {
+          notify = cb;
+        }
+        observe() {}
+        unobserve() {}
+      }
+    );
+    const { fitFieldHeight, refitOnWidthChange } = await import('../fieldHeight');
+    const f = field(300, 2);
+    let widthReads = 0;
+    let heightAtWidthRead = '';
+    Object.defineProperty(f.el, 'clientWidth', {
+      get: () => {
+        widthReads++;
+        heightAtWidthRead = f.el.style.height;
+        return 300;
+      },
+    });
+    fitFieldHeight(f.el);
+    expect(f.el.style.height).toBe('40px');
+    // Read right after the measurement, before the new height invalidates the layout again
+    expect(widthReads).toBe(1);
+    expect(heightAtWidthRead).toBe('auto');
+    const stop = refitOnWidthChange(f.el);
+    expect(widthReads).toBe(1);
+
+    // The observer's first report with the same width leaves the field alone
+    f.el.style.height = '1px';
+    notify([{ target: f.el }]);
+    expect(f.el.style.height).toBe('1px');
+    stop();
   });
 });
