@@ -20,6 +20,9 @@ Versions before 0.80.0 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - New settings section **Security** with the password change, two-factor sign-in and the signed-in devices (moved there from Profile).
 
 ### Fixed
+- Sharing a pinned note no longer unpins it for the owner in the open app (realtime updates carried another person's view of the note).
+- Moving a shared note or folder no longer briefly shows collaborators the mover's folder placement.
+- Notes changed at the same moment are listed in the same order for everyone they are shared with.
 - The hashtag filter row above the tasks no longer cuts off at its end.
 - Switching a task list to Kanban (or the calendar) reacts at once: the switch changes right away and the board follows, instead of the click hanging while every card is built (150 tasks, slowed-down CPU: about 0.9 s down to 0.25 s).
 - After a dropped connection (a server update, a phone asleep, a network switch) the app reconnects with its WebSocket instead of falling back to the slower SSE stream for the rest of the visit. That fallback made live drawing impossible after an update ("no WebSocket", the drawing stayed locked). A real fallback behind a proxy is tried again after ten minutes, and opening a drawing tries the WebSocket first.
@@ -28,6 +31,8 @@ Versions before 0.80.0 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - The task dialog opens and closes without delay in long task lists: opening it no longer makes the browser restyle and lay out every row (300 tasks with a slowed-down CPU: about 0.5 s down to 0.07 s).
 
 ### Changed
+- Larger handles on lines, arrows and shapes in drawings; with a finger they can be grabbed from further away.
+- Demo: all of the admin's sample notes, folders, task lists and lists are shared with the demo account `user` for editing.
 - On the desktop, pages use the full width beside the navigation rail; notes keep a comfortable reading width (a little wider in focus mode), also in the journal and on public pages.
 - The Kanban board fits as many columns side by side as there is room for; the "wide board" and "wide calendar" buttons are gone.
 - The hashtag filter above the tasks has calm chips without frames; the chosen one is tinted, and hashtags that do not fit sit behind "+ n more" with a search.
