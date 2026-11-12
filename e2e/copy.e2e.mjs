@@ -31,18 +31,18 @@ const TABLE = '| Name | Wert |\n| --- | --- |\n| [[Homelab#doc_e2ecopy\\|Link]] 
 const NOTES = {
   'Callout oben': {
     blocks: [
-      ['callout', 'Ein Hinweis oben', 0], ['h2', 'Überschrift', 0], ['bullet', 'Erster Punkt mit **fett**', 0], ['bullet', 'Kind mit [[Homelab#doc_e2ecopy|Link]]', 1],
+      ['callout', 'Ein **Hinweis** oben', 0], ['h2', 'Überschrift', 0], ['bullet', 'Erster Punkt mit **fett**', 0], ['bullet', 'Kind mit [[Homelab#doc_e2ecopy|Link]]', 1],
       ['drawing', DRAWING, 0], ['table', TABLE, 0], ['todo', 'Aufgabe', 0],
     ],
-    markdown: '> Ein Hinweis oben\n\n## Überschrift\n\nErster Punkt mit **fett**\n- Kind mit [[Homelab#doc_e2ecopy|Link]]\n\n```mindsift-canvas\n' + DRAWING + '\n```\n\n' + TABLE + '\n\n- [ ] Aufgabe',
+    markdown: '> Ein **Hinweis** oben\n\n## Überschrift\n\nErster Punkt mit **fett**\n- Kind mit [[Homelab#doc_e2ecopy|Link]]\n\n```mindsift-canvas\n' + DRAWING + '\n```\n\n' + TABLE + '\n\n- [ ] Aufgabe',
   },
   'Callout unten, Warnung und Fehler, leerer eingerückter Bullet am Ende': {
     blocks: [
-      ['bullet', 'Erster Punkt', 0], ['bullet', 'Kind', 1], ['table', TABLE, 2], ['warning', 'Achtung, heiß', 1], ['callout', 'Ein Hinweis unten', 0],
+      ['bullet', 'Erster Punkt', 0], ['bullet', 'Kind', 1], ['table', TABLE, 2], ['warning', 'Achtung, heiß', 1], ['callout', 'Ein **Hinweis** unten', 0],
       ['error', 'Fehlgeschlagen', 0], ['bullet', 'Letzter', 0], ['bullet', '', 1],
     ],
     markdown:
-      'Erster Punkt\n- Kind\n\n' + TABLE.replace(/^/gm, '\t') + '\n\n- > [!warning] Achtung, heiß\n\n> Ein Hinweis unten\n\n> [!failure]\n> Fehlgeschlagen\n\nLetzter\n-',
+      'Erster Punkt\n- Kind\n\n' + TABLE.replace(/^/gm, '\t') + '\n\n- > [!warning] Achtung, heiß\n\n> Ein **Hinweis** unten\n\n> [!failure]\n> Fehlgeschlagen\n\nLetzter\n-',
   },
 };
 
@@ -97,7 +97,7 @@ const main = async () => {
       );
       const first = rows[0];
       const last = rows[rows.length - 1];
-      // The rendered text (callouts have none, there it is the text field)
+      // The rendered text (blocks without one: the text field)
       const textBox = (row) => row.locator('[data-outline-text], textarea').first().boundingBox();
       const firstText = await textBox(page.locator('[data-outline-block]').first());
       const lastText = await textBox(page.locator('[data-outline-block]').last());
@@ -139,11 +139,22 @@ const main = async () => {
       await page.waitForTimeout(300);
       const all = await copy();
       check(all === note.markdown, `${tag}: zweimal Strg+A gibt Markdown`, all);
+      // The callout's text is marked like that of any other bullet (text field, CSS highlight or the browser's selection)
       const calloutMarked = await page.evaluate(() => {
-        const row = [...document.querySelectorAll('[data-outline-block]')].find((r) => r.querySelector('.border-l-2.border-accent'));
-        return !!row && /accent/.test(row.className);
+        const box = document.querySelector('[data-outline-block] .border-l-2.border-accent');
+        const span = box && box.querySelector('[data-outline-text]');
+        if (!span) return false;
+        // With the cursor in it (the first bullet) the selection is in its text field
+        const field = box.querySelector('textarea');
+        if (field && document.activeElement === field && field.selectionEnd > field.selectionStart) return true;
+        const highlighted = typeof CSS !== 'undefined' && CSS.highlights && [...CSS.highlights.values()].some((h) => [...h].some((r) => r.intersectsNode(span)));
+        const sel = document.getSelection();
+        return !!highlighted || !!(sel && sel.rangeCount && !sel.isCollapsed && sel.getRangeAt(0).intersectsNode(span));
       });
       check(calloutMarked, `${tag}: zweimal Strg+A markiert auch den Callout`);
+      const calloutBold = await page.evaluate(() => !!document.querySelector('[data-outline-block] .border-l-2.border-accent strong'));
+      check(calloutBold, `${tag}: Callout zeigt **fett** als fett`);
+      if (process.env.SHOT_DIR) await page.screenshot({ path: `${process.env.SHOT_DIR}/callout-${engine.name()}-${Object.keys(NOTES).indexOf(noteName)}.png` });
       await drag(starts['am Textanfang'](first, firstText), below);
       const again = await copy();
       check(again === note.markdown, `${tag}: neues Ziehen direkt nach Strg+A gibt Markdown`, again);
