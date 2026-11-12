@@ -15,6 +15,13 @@ describe('notePlace', () => {
     expect(readNotePlace('c')).toBeNull();
   });
 
+  it('remembers the bullet at the top of the view', () => {
+    writeNotePlace('a', { zoom: null, scroll: 5000, anchor: { id: 'blk7', offset: -12.4 } });
+    expect(readNotePlace('a')).toEqual({ zoom: null, scroll: 5000, anchor: { id: 'blk7', offset: -12 } });
+    localStorage.setItem('mindsift_note_place', JSON.stringify({ b: { zoom: null, scroll: 10, anchor: { id: 3 } } }));
+    expect(readNotePlace('b')?.anchor).toBeUndefined();
+  });
+
   it('keeps only the last 20 notes', () => {
     vi.useFakeTimers();
     for (let i = 0; i < 25; i++) {

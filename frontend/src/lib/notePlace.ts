@@ -7,6 +7,10 @@ const MAX_NOTES = 20;
 export interface NotePlace {
   zoom: string | null;
   scroll: number;
+  // The bullet at the top of the view and how far below the top it starts: in a long note the bullets out of
+  // view have only an estimated height until shown (content-visibility, index.css), so the scroll offset alone
+  // would come back to another bullet
+  anchor?: { id: string; offset: number };
 }
 
 type Stored = Record<string, NotePlace & { at: number }>;
@@ -23,12 +27,22 @@ function readAll(): Stored {
 export function readNotePlace(docId: string): NotePlace | null {
   const p = readAll()[docId];
   if (!p || typeof p !== 'object') return null;
-  return { zoom: typeof p.zoom === 'string' ? p.zoom : null, scroll: Number(p.scroll) > 0 ? Number(p.scroll) : 0 };
+  const a = p.anchor;
+  return {
+    zoom: typeof p.zoom === 'string' ? p.zoom : null,
+    scroll: Number(p.scroll) > 0 ? Number(p.scroll) : 0,
+    anchor: a && typeof a.id === 'string' && Number.isFinite(a.offset) ? { id: a.id, offset: a.offset } : undefined,
+  };
 }
 
 export function writeNotePlace(docId: string, place: NotePlace) {
   const all = readAll();
-  all[docId] = { zoom: place.zoom, scroll: Math.max(0, Math.round(place.scroll)), at: Date.now() };
+  all[docId] = {
+    zoom: place.zoom,
+    scroll: Math.max(0, Math.round(place.scroll)),
+    ...(place.anchor ? { anchor: { id: place.anchor.id, offset: Math.round(place.anchor.offset) } } : {}),
+    at: Date.now(),
+  };
   const ids = Object.keys(all);
   if (ids.length > MAX_NOTES) {
     ids

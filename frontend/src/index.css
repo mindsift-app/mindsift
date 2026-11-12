@@ -688,6 +688,24 @@ fieldset:disabled :is(button, input, select, textarea) {
   pointer-events: none;
 }
 
+/* Long notes (up to 20,000 bullets): the browser lays out and paints only the rows in view, the others keep
+   the height they had when last shown (one line before that: 24px plus the padding). Unlike rendering only
+   the visible rows, every bullet stays in the page: find in page, selecting and copying across many bullets
+   and jumping to a bullet keep working. The containment this brings clips a row's content to the row and
+   makes the row the frame of fixed elements, so the row with the cursor or an open menu (slash, @, link
+   dialog) goes without (data-outline-live, OutlinerBlock); the clip margin keeps the 2px of the guide lines
+   between rows. Coming back to a note and jumps to a bullet go by the bullet, not by the scroll offset
+   (DocumentEditor, OutlinerTree): the heights of rows never shown are only estimated. The remembered height
+   is kept on every row, also while it goes without: a row that just lost the cursor would otherwise drop to
+   one line for a moment and move everything below it (a click would land on the next bullet). */
+.outline-row {
+  contain-intrinsic-height: auto 24px;
+}
+.outline-row:not([data-outline-live]):not(:focus-within) {
+  content-visibility: auto;
+  overflow-clip-margin: 2px;
+}
+
 /* Tables in notes (features/workspace/TableBlock.tsx). Each cell draws its own right and bottom line, so
    the lines can fade out towards the table's outer edge; data-top/-bottom/-left/-right mark the cells on
    the edge and data-lines on the table is the line mode: fade (default, inner lines fading out, no frame),
