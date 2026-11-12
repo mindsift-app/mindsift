@@ -41,22 +41,37 @@ export function useOverflowTabs(ids: string[], activeId: string | null) {
     setHidden((prev) => (prev.join('|') === next.join('|') ? prev : next));
   }, [idsKey, activeId]);
 
-  // After every render (titles, counters and members change the widths); only a real change re-renders
+  // Measured when the tabs change and whenever the row, a tab, a fixed part or the more button changes its
+  // size (titles, counters, members). Not after every render: reading the widths right after a render
+  // makes the browser lay out the whole page at once, which with a long task list below cost more than
+  // the render itself (e.g. opening a task's dialog).
+  const observer = useRef<ResizeObserver | null>(null);
   useLayoutEffect(() => {
     measure();
-  });
+  }, [measure]);
   useEffect(() => {
     const row = rowRef.current;
     if (!row || typeof ResizeObserver === 'undefined') return;
     const ro = new ResizeObserver(() => measure());
     ro.observe(row);
-    return () => ro.disconnect();
+    row.querySelectorAll<HTMLElement>(':scope > [data-tab-fixed]').forEach((el) => ro.observe(el));
+    if (moreRef.current) ro.observe(moreRef.current);
+    tabs.current.forEach((el) => ro.observe(el));
+    observer.current = ro;
+    return () => {
+      ro.disconnect();
+      observer.current = null;
+    };
   }, [measure]);
 
   const tabRef = useCallback(
     (id: string) => (el: HTMLElement | null) => {
-      if (el) tabs.current.set(id, el);
-      else tabs.current.delete(id);
+      const before = tabs.current.get(id);
+      if (before && before !== el) observer.current?.unobserve(before);
+      if (el) {
+        tabs.current.set(id, el);
+        observer.current?.observe(el);
+      } else tabs.current.delete(id);
     },
     []
   );
