@@ -353,7 +353,7 @@ const de: HelpContent = {
         <div className="space-y-2 text-muted leading-relaxed">
           <ul className="space-y-1.5">
             <li>
-              <strong className="text-main">Zoom-Hoisting:</strong> Klicke direkt auf den Bullet-Punkt (<code className="text-accent">•</code>) eines Blocks, um exklusiv in diesen Ast hineinzuzoomen. Die Breadcrumb-Navigation am oberen Rand führt dich jederzeit stufenweise zurück.
+              <strong className="text-main">Zoom-Hoisting:</strong> Klicke direkt auf den Bullet-Punkt (<code className="text-accent">•</code>) eines Blocks, um exklusiv in diesen Ast hineinzuzoomen. Die Breadcrumb-Navigation am oberen Rand führt dich jederzeit stufenweise zurück; am Handy bringt dich dort das Haus-Symbol an den Anfang der Notiz, die Zurück-Taste geht eine Ebene zurück.
             </li>
             <li>
               <strong className="text-main">Blöcke verschieben:</strong> Packe einen Bullet-Punkt mit gedrückter Maustaste, um ihn samt aller untergeordneten Punkte an eine neue Stelle zu ziehen.

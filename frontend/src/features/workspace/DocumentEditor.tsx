@@ -44,6 +44,7 @@ import { extractHashtags } from '../../lib/hashtags';
 import { branchEnd, insertBelow, moveSibling, unitStart } from '../../lib/outlineList';
 import { reportNav, onNavStep, restoringNavPlace } from '../../lib/navHistory';
 import { readNotePlace, writeNotePlace } from '../../lib/notePlace';
+import { isPhoneWidth } from '../../lib/breakpoints';
 import { useTranslation } from 'react-i18next';
 import i18n from '../../i18n';
 
@@ -139,6 +140,12 @@ function subscribeLarge(onChange: () => void) {
 }
 function isLargeScreen() {
   return typeof window !== 'undefined' && !!window.matchMedia && window.matchMedia(LARGE_QUERY).matches;
+}
+// Phones (below sm) show a home button instead of the zoom path, which would fill half the screen there
+function subscribePhone(onChange: () => void) {
+  if (typeof window === 'undefined') return () => {};
+  window.addEventListener('resize', onChange);
+  return () => window.removeEventListener('resize', onChange);
 }
 
 import { EmojiPickerModal } from './EmojiPickerModal';
@@ -241,6 +248,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
   // Embedded in a list of notes (journal, hashtag page): no own scrolling, action bar or backlinks
   const embedded = inJournal || inTagPage;
   const large = useSyncExternalStore(subscribeLarge, isLargeScreen, () => false);
+  const phone = useSyncExternalStore(subscribePhone, isPhoneWidth, () => false);
   // The journal's active day puts its actions into the tab bar as well
   const desktopBar = (!embedded || inJournal) && large && Boolean(actionsTarget);
   const [doc, setDoc] = useState<Document | null>(initialDoc || null);
@@ -1781,7 +1789,30 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
           )}
 
           {/* Breadcrumbs Navigation (Fokus-Modus) or Doc Indicator */}
-          {zoomedBlock && breadcrumbs.length > 0 ? (
+          {zoomedBlock && breadcrumbs.length > 0 && phone ? (
+            // Phones: a home button back to the start of the note, the zoomed bullet's name beside it only
+            // when there is room for it (otherwise it wraps into the clipped second line), never a taller bar
+            <div className="flex min-w-0 h-11 flex-wrap content-start items-center gap-x-2 overflow-hidden">
+              <button
+                type="button"
+                onClick={() => {
+                  setZoomedBlockId(null);
+                  if (scrollRef.current) scrollRef.current.scrollTop = 0;
+                }}
+                className="btn-icon shrink-0 h-11 w-11"
+                title={t('editor.backToMain')}
+                aria-label={t('editor.backToMain')}
+              >
+                <Home className="w-3.5 h-3.5" />
+              </button>
+              <span
+                className="basis-16 grow min-w-0 max-w-[180px] truncate text-xs font-medium text-main"
+                title={breadcrumbs[breadcrumbs.length - 1].title}
+              >
+                {breadcrumbs[breadcrumbs.length - 1].title || t('editor.untitledBullet')}
+              </span>
+            </div>
+          ) : zoomedBlock && breadcrumbs.length > 0 ? (
             breadcrumbNav
           ) : (
             <div
@@ -1911,10 +1942,11 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
                 />
               </div>
 
+              {/* Phones leave the zoom with the home button in the header */}
               <button
                 type="button"
                 onClick={() => setZoomedBlockId(null)}
-                className="btn-action inline-flex items-center gap-1.5 px-2.5 py-1 text-xs text-muted hover:text-main shrink-0 mt-1"
+                className="btn-action hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 text-xs text-muted hover:text-main shrink-0 mt-1"
                 title={t('editor.exitFocusTitle')}
               >
                 <Minimize2 className="w-3.5 h-3.5" />

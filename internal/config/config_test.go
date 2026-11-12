@@ -244,3 +244,72 @@ func TestPostgresURLKeepsSQLitePath(t *testing.T) {
 		t.Errorf("database path: got %q, want %q", got, want)
 	}
 }
+
+// ADMIN_PASSWORD_FILE (Docker secrets): the path comes from the environment, the file is read only by
+// ResolvePassword, without the line break at its end; spaces inside and around the password count.
+func TestInitialAdminPasswordFile(t *testing.T) {
+	t.Setenv("DATA_DIR", t.TempDir())
+	path := filepath.Join(t.TempDir(), "admin_password")
+	if err := os.WriteFile(path, []byte(" Kr0k0dil im Keller\r\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("ADMIN_USER", "admin")
+	t.Setenv("ADMIN_PASSWORD", "")
+	t.Setenv("ADMIN_PASSWORD_FILE", " "+path+" ")
+	cfg := Load()
+	if cfg.InitialAdmin.PasswordFile != path || cfg.InitialAdmin.Password != "" || !cfg.InitialAdmin.Set() {
+		t.Fatalf("InitialAdmin = %+v", cfg.InitialAdmin)
+	}
+	got, err := cfg.InitialAdmin.ResolvePassword()
+	if err != nil || got != " Kr0k0dil im Keller" {
+		t.Fatalf("ResolvePassword = %q, %v", got, err)
+	}
+	// Only the file given: Set() still reports the variables as given
+	if !(InitialAdmin{PasswordFile: path}).Set() {
+		t.Error("Set() ignores ADMIN_PASSWORD_FILE")
+	}
+	// Without a file, ADMIN_PASSWORD as it is
+	if got, err := (InitialAdmin{Password: "geheim  "}).ResolvePassword(); err != nil || got != "geheim  " {
+		t.Fatalf("ResolvePassword without file = %q, %v", got, err)
+	}
+}
+
+// Both variables, a file that cannot be read or one without a password: an error naming the variable and
+// the path, never a password.
+func TestInitialAdminPasswordFileRefused(t *testing.T) {
+	dir := t.TempDir()
+	empty := filepath.Join(dir, "empty")
+	if err := os.WriteFile(empty, []byte("  \n\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	secret := filepath.Join(dir, "secret")
+	if err := os.WriteFile(secret, []byte("Kr0k0dil-im-Keller\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	missing := filepath.Join(dir, "missing")
+	cases := []struct {
+		name  string
+		admin InitialAdmin
+		want  []string
+	}{
+		{"both set", InitialAdmin{Password: "anderes-Passwort", PasswordFile: secret}, []string{"ADMIN_PASSWORD and ADMIN_PASSWORD_FILE are both set"}},
+		{"missing file", InitialAdmin{PasswordFile: missing}, []string{"reading ADMIN_PASSWORD_FILE failed", missing}},
+		{"empty file", InitialAdmin{PasswordFile: empty}, []string{"ADMIN_PASSWORD_FILE", empty, "is empty"}},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			got, err := c.admin.ResolvePassword()
+			if err == nil || got != "" {
+				t.Fatalf("ResolvePassword = %q, %v; want an error", got, err)
+			}
+			for _, w := range c.want {
+				if !strings.Contains(err.Error(), w) {
+					t.Errorf("error %q does not contain %q", err, w)
+				}
+			}
+			if strings.Contains(err.Error(), "Kr0k0dil") || strings.Contains(err.Error(), "anderes-Passwort") {
+				t.Errorf("a password is in the error: %q", err)
+			}
+		})
+	}
+}

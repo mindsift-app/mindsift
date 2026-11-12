@@ -160,6 +160,31 @@ export function pasteIntoTable(table: TableData, row: number, col: number, grid:
   return out;
 }
 
+/** Where the cursor in cell (row, col) goes when new content from outside (undo, another person) replaced
+ *  `before` with `after`: its own row when rows above it went, else the nearest row above the rows that went
+ *  (below them when there is none above), in its column or the last one. Null when no cell is left (the
+ *  cursor leaves the table upwards); the same cell when nothing it stood in went away. */
+export function cellAfterOutsideChange(
+  before: TableData,
+  after: TableData,
+  row: number,
+  col: number
+): { row: number; col: number } | null {
+  const rows = after.rows.length;
+  const cols = after.align.length;
+  if (rows === 0 || cols === 0) return null;
+  let r = row;
+  const removed = before.rows.length - rows;
+  if (removed > 0) {
+    // The rows that went start at the first row that differs (rows above them are the same)
+    let first = 0;
+    while (first < rows && before.rows[first].join('\u0000') === after.rows[first].join('\u0000')) first++;
+    if (row >= first + removed) r = row - removed;
+    else if (row >= first) r = first > 0 ? first - 1 : first;
+  }
+  return { row: Math.min(r, rows - 1), col: Math.min(col, cols - 1) };
+}
+
 export function isTableEmpty(table: TableData): boolean {
   return table.rows.every((r) => r.every((c) => c.trim() === ''));
 }

@@ -28,6 +28,16 @@ Used where items are added to a set shown as chips: organizations of a new accou
 - The popover: a search field (focused), up to 8 matching rows (avatar or icon, name, a second line such as the e-mail address), arrows and Enter pick, Escape or a click outside closes. Picking adds the item and closes it.
 - Chips wrap, so many entries just make the block taller; the form around it never needs its own scrolling.
 
+## Long Lists of People (Administration)
+
+Component: [UserList.tsx](../frontend/src/features/settings/admin/UserList.tsx), search, filters and order in [userListView.ts](../frontend/src/features/settings/admin/userListView.ts). Used for the registered users of the administration; meant for any list that can hold hundreds of people.
+
+- **On top:** a search field (name, `@username`, e-mail; every word must match, case and accents do not count, `NO_AUTOFILL`) and small `SelectMenu`s for the filters (role; organization with "Keine Organisation" when there are organizations) and the order (name A–Z as default, admins first, newest first; kept per device in `localStorage`). On phones the search has a row of its own and the three menus share the next one. With a filter set, "12 von 401" and "Filter zurücksetzen" appear below.
+- **Compact rows:** one button per person, at least 44 px high: avatar, name with small badges (role only for admins and managers, members get none; locked or e-mail unconfirmed), username · e-mail in one muted line, from `sm` the organizations cut short on the right, a chevron. No dropdowns or action icons in the row.
+- **Editing after a tap:** desktop opens the details below the row (one at a time); phones open them in a sheet from below (grip, avatar and name on top, Escape or the backdrop closes). The details hold the role menu, the organizations as information, and the actions as buttons with words (44 px on phones); one that is not allowed stays greyed out with the reason below it.
+- **Only 50 rows are rendered**; "50 weitere anzeigen" below adds the next 50 and says how many are shown. A new search or filter starts again at 50. The data still comes in full from the server (`GET /admin/users`: 400 people are about 150 kB and take a few milliseconds), so searching needs no requests.
+- Something waiting for an answer (registrations to approve) stays above the list in its own frame, with a `CountBadge` (`accent`) in the heading; the total of the list is plain text in its heading, as a badge stops at 99+.
+
 ## Profile Pictures as Stack
 
 Component: [AvatarStack.tsx](../frontend/src/components/AvatarStack.tsx) (uses `UserAvatar`)

@@ -286,7 +286,7 @@ const en: HelpContent = {
         <div className="space-y-2 text-muted leading-relaxed">
           <ul className="space-y-1.5">
             <li>
-              <strong className="text-main">Zoom hoisting:</strong> click right on the bullet (<code className="text-accent">•</code>) of a block to zoom into that branch alone. The breadcrumb navigation at the top leads you back step by step at any time.
+              <strong className="text-main">Zoom hoisting:</strong> click right on the bullet (<code className="text-accent">•</code>) of a block to zoom into that branch alone. The breadcrumb navigation at the top leads you back step by step at any time; on phones the house icon there takes you to the start of the note, and the back button goes up one level.
             </li>
             <li>
               <strong className="text-main">Moving blocks:</strong> grab a bullet with the mouse button held down to drag it with all its sub-bullets to a new spot.

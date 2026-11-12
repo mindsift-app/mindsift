@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Mail,
@@ -12,9 +12,6 @@ import {
   Link2,
   Clock,
   X,
-  AtSign,
-  Ban,
-  UserCheck,
 } from 'lucide-react';
 import { User, UserRole } from '../../../lib/types';
 import { UserAvatar } from '../../../components/UserAvatar';
@@ -23,6 +20,9 @@ import { formatDate } from '../../../lib/format';
 import { OrganizationPicker } from './OrganizationPicker';
 import { MASKED, NO_AUTOFILL } from '../../../lib/noAutofill';
 import { SelectMenu } from '../../../components/SelectMenu';
+import { CountBadge } from '../../../components/CountBadge';
+import { ShowMoreButton, UserList } from './UserList';
+import { USER_PAGE_SIZE } from './userListView';
 
 // Administration → Users & invitations (state in useAdminSettings)
 
@@ -55,13 +55,7 @@ export function UsersSection({
     mailInviteTo,
     mailInviteBusy,
     organizations,
-    sharingMode,
     copiedInviteId,
-    resetPwdUserId,
-    usernameEdit,
-    setUsernameEdit,
-    handleSaveUsername,
-    resetPwdVal,
     handleCreateUser,
     handleCreateInvite,
     handleDeleteInvite,
@@ -70,11 +64,7 @@ export function UsersSection({
     handleCopyInvite,
     handleSendInvite,
     handleApproveUser,
-    handleChangeUserRole,
-    handleToggleUserActive,
-    handleConfirmResetPassword,
     handleDeleteUser,
-    orgName,
     setNewUserName,
     setNewUserEmail,
     setNewUserPassword,
@@ -85,11 +75,9 @@ export function UsersSection({
     setInviteMaxUses,
     setMailInviteId,
     setMailInviteTo,
-    setResetPwdUserId,
-    setResetPwdVal,
   } = admin;
-  // User managers look after members only; admins and other managers stay with server admins
-  const canManage = (u: User) => isServerAdmin || u.role === 'member';
+  const pending = useMemo(() => users.filter((u) => u.pendingApproval), [users]);
+  const [pendingLimit, setPendingLimit] = useState(USER_PAGE_SIZE);
   return (
     <div className="space-y-6">
       <div className="border-b border-border pb-3">
@@ -98,6 +86,54 @@ export function UsersSection({
           {t('users.intro')}
         </p>
       </div>
+
+      {/* Registrations waiting for approval: on top, they wait for an answer */}
+      {pending.length > 0 && (
+        <div className="space-y-2">
+          <h3 className="font-bold text-main inline-flex items-center gap-1.5">
+            <Clock className="w-3.5 h-3.5 text-status-warn" />
+            {t('users.pending')}
+            <CountBadge count={pending.length} variant="accent" />
+          </h3>
+          <div className="border border-status-warn/40 divide-y divide-border bg-canvas rounded-card overflow-hidden">
+            {pending.slice(0, pendingLimit).map((u) => (
+              <div key={u.id} className="p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <UserAvatar user={u} size="sm" className="border border-border/80" />
+                  <div className="min-w-0">
+                    <p className="font-bold text-main truncate flex items-center gap-2">
+                      {u.displayName}
+                      {u.emailUnverified && <span className="badge-neutral text-[10px] font-normal">{t('users.emailUnverified')}</span>}
+                    </p>
+                    <p className="text-muted text-[11px] truncate">
+                      {u.email} · {t('users.registeredOn', { date: formatDate(u.createdAt) })}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => void handleApproveUser(u)}
+                    className="btn-primary h-11 sm:h-8 px-3 text-xs font-semibold flex items-center gap-1.5"
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                    {t('users.approve')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void handleDeleteUser(u)}
+                    className="btn-action h-11 sm:h-8 px-3 text-xs flex items-center gap-1.5 hover:text-status-err"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                    {t('users.reject')}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+          <ShowMoreButton shown={Math.min(pendingLimit, pending.length)} total={pending.length} onMore={() => setPendingLimit((l) => l + USER_PAGE_SIZE)} />
+        </div>
+      )}
 
       {/* Create an account and invite side by side (stacked on smaller screens), fields one below the other */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
@@ -264,7 +300,7 @@ export function UsersSection({
                       )}
                     </div>
 
-                    {/* Icon actions like in the user list, so they stay in one row on the right */}
+                    {/* Icon actions, so they stay in one row on the right */}
                     <div className="flex items-center gap-1.5 shrink-0">
                       {open && (
                         <>
@@ -351,216 +387,7 @@ export function UsersSection({
         )}
       </div>
 
-      {/* Registrations waiting for approval */}
-      {users.some((u) => u.pendingApproval) && (
-        <div className="space-y-2">
-          <h3 className="font-bold text-main flex items-center gap-1.5">
-            <Clock className="w-3.5 h-3.5 text-status-warn" />
-            {t('users.pending', { count: users.filter((u) => u.pendingApproval).length })}
-          </h3>
-          <div className="border border-status-warn/40 divide-y divide-border bg-canvas rounded-card overflow-hidden">
-            {users
-              .filter((u) => u.pendingApproval)
-              .map((u) => (
-                <div key={u.id} className="p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <UserAvatar user={u} size="sm" className="border border-border/80" />
-                    <div className="min-w-0">
-                      <p className="font-bold text-main truncate flex items-center gap-2">
-                        {u.displayName}
-                        {u.emailUnverified && <span className="badge-neutral text-[10px] font-normal">{t('users.emailUnverified')}</span>}
-                      </p>
-                      <p className="text-muted text-[11px] truncate">
-                        {u.email} · {t('users.registeredOn', { date: formatDate(u.createdAt) })}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => void handleApproveUser(u)}
-                      className="btn-primary h-11 sm:h-8 px-3 text-xs font-semibold flex items-center gap-1.5"
-                    >
-                      <Check className="w-3.5 h-3.5" />
-                      {t('users.approve')}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => void handleDeleteUser(u)}
-                      className="btn-action h-11 sm:h-8 px-3 text-xs flex items-center gap-1.5 hover:text-status-err"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                      {t('users.reject')}
-                    </button>
-                  </div>
-                </div>
-              ))}
-          </div>
-        </div>
-      )}
-
-      {/* Users List */}
-      <div className="space-y-2">
-        <h3 className="font-bold text-main">
-          {t('users.registered', { count: users.filter((u) => !u.pendingApproval).length })}
-        </h3>
-        <div className="border border-border divide-y divide-border bg-canvas rounded-card overflow-hidden">
-          {users.filter((u) => !u.pendingApproval).map((u) => (
-            <div key={u.id} className="p-3 space-y-2">
-              {/* One row from sm on (the text gets shorter, the buttons keep their place on the right);
-                  on phones the buttons get a row of their own, aligned right */}
-              <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-                <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                  <UserAvatar user={u} size="sm" className="border border-border/80" />
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span className="font-bold text-main truncate">{u.displayName}</span>
-                      {!u.isActive && (
-                        <span className={`${u.emailUnverified ? 'badge-neutral' : 'badge-err'} text-[10px]`}>
-                          {u.emailUnverified ? t('users.emailUnverified') : t('users.locked')}
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-muted text-[11px] truncate" title={[u.username, u.email].filter(Boolean).join(' · ')}>
-                      {u.username && <span className="font-mono">{u.username} · </span>}
-                      {u.email}
-                    </p>
-                    {/* Organizations only as information: who belongs where is set in the organization */}
-                    <p className="text-[11px] truncate">
-                      {(u.organizationIds || []).length > 0 ? (
-                        <span className="text-faint">{(u.organizationIds || []).map(orgName).filter(Boolean).join(', ')}</span>
-                      ) : (
-                        sharingMode === 'organizations' && <span className="text-status-warn">{t('users.noOrgWarning')}</span>
-                      )}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex flex-wrap sm:flex-nowrap items-center justify-end gap-2 sm:shrink-0">
-                  {/* Role: server admins choose (on phones in a row of its own above the buttons), user
-                      managers only see it */}
-                  {isServerAdmin ? (
-                    <div className="w-full sm:w-auto">
-                      <SelectMenu<UserRole>
-                        size="sm"
-                        ariaLabel={t('users.changeRole')}
-                        title={t('users.changeRole')}
-                        value={u.role}
-                        onChange={(role) => handleChangeUserRole(u, role)}
-                        buttonClassName="w-full sm:w-auto h-11 sm:h-7 px-2 gap-1.5 input-field text-base sm:text-[11px] bg-panel"
-                        options={[
-                          { value: 'member', label: t('users.roleMember') },
-                          { value: 'manager', label: t('users.roleManager') },
-                          { value: 'admin', label: t('users.roleAdmin') },
-                        ]}
-                      />
-                    </div>
-                  ) : (
-                    <span className="min-w-0 flex-1 sm:flex-none truncate">
-                      <span className="badge-neutral text-[10px]">{t(`common:role.${u.role}`)}</span>
-                    </span>
-                  )}
-
-                  {/* Icon actions, always all of them so the rows line up; unavailable ones stay greyed out */}
-                  <span title={t('users.username')}>
-                    <button
-                      onClick={() => setUsernameEdit(usernameEdit?.id === u.id ? null : { id: u.id, value: u.username || '' })}
-                      disabled={!isServerAdmin}
-                      className={iconBtn}
-                      aria-label={t('users.username')}
-                    >
-                      <AtSign className="w-3.5 h-3.5" />
-                    </button>
-                  </span>
-
-                  {/* Passwords stay with server admins (others use "forgot password") */}
-                  <span title={isServerAdmin ? t('users.password') : t('users.passwordAdminOnly')}>
-                    <button
-                      onClick={() => setResetPwdUserId(resetPwdUserId === u.id ? null : u.id)}
-                      disabled={!isServerAdmin}
-                      className={iconBtn}
-                      aria-label={t('users.password')}
-                    >
-                      <KeyRound className="w-3.5 h-3.5" />
-                    </button>
-                  </span>
-
-                  <span title={u.id === currentUser.id ? t('users.notSelf') : !canManage(u) ? t('users.adminOnly') : u.isActive ? t('users.lock') : t('users.activate')}>
-                    <button
-                      onClick={() => handleToggleUserActive(u)}
-                      disabled={u.id === currentUser.id || !canManage(u)}
-                      className={`${iconBtn} ${u.isActive ? 'hover:!text-status-err' : '!text-status-ok'}`}
-                      aria-label={u.isActive ? t('users.lock') : t('users.activate')}
-                    >
-                      {u.isActive ? <Ban className="w-3.5 h-3.5" /> : <UserCheck className="w-3.5 h-3.5" />}
-                    </button>
-                  </span>
-
-                  <span title={u.id === currentUser.id ? t('users.notSelf') : !canManage(u) ? t('users.adminOnly') : t('users.delete')}>
-                    <button
-                      onClick={() => handleDeleteUser(u)}
-                      disabled={u.id === currentUser.id || !canManage(u)}
-                      className={`btn-icon-danger ${iconBtnSize}`}
-                      aria-label={t('users.delete')}
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </span>
-                </div>
-              </div>
-
-              {usernameEdit?.id === u.id && (
-                <div className="flex items-center gap-2 pt-2 border-t border-border">
-                  <input
-                    {...NO_AUTOFILL}
-                    type="text"
-                    value={usernameEdit.value}
-                    onChange={(e) => setUsernameEdit({ id: u.id, value: e.target.value.toLowerCase() })}
-                    onKeyDown={(e) => e.key === 'Enter' && void handleSaveUsername(u)}
-                    maxLength={32}
-                    autoCapitalize="none"
-                    spellCheck={false}
-                    title={t('profile.usernameRules')}
-                    className="flex-1 h-7 px-2 input-field font-mono"
-                  />
-                  <button onClick={() => void handleSaveUsername(u)} className="btn-primary h-7 px-3 text-[11px]">
-                    {t('common:save')}
-                  </button>
-                  <button onClick={() => setUsernameEdit(null)} className="btn-action h-7 px-2 text-[11px]">
-                    {t('common:cancel')}
-                  </button>
-                </div>
-              )}
-
-              {resetPwdUserId === u.id && (
-                <div className="flex items-center gap-2 pt-2 border-t border-border">
-                  <input
-                    {...NO_AUTOFILL}
-                    type="text"
-                    style={MASKED}
-                    value={resetPwdVal}
-                    onChange={(e) => setResetPwdVal(e.target.value)}
-                    placeholder={t('users.newPasswordPlaceholder')}
-                    className="flex-1 h-7 px-2 input-field"
-                  />
-                  <button
-                    onClick={() => handleConfirmResetPassword(u.id)}
-                    className="btn-primary h-7 px-3 text-[11px]"
-                  >
-                    {t('common:save')}
-                  </button>
-                  <button
-                    onClick={() => setResetPwdUserId(null)}
-                    className="btn-action h-7 px-2 text-[11px]"
-                  >
-                    {t('common:cancel')}
-                  </button>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
+      <UserList admin={admin} currentUser={currentUser} isServerAdmin={isServerAdmin} />
     </div>
   );
 }

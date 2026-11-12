@@ -289,7 +289,7 @@ const fr: HelpContent = {
         <div className="space-y-2 text-muted leading-relaxed">
           <ul className="space-y-1.5">
             <li>
-              <strong className="text-main">Zoom hoisting :</strong> clique directement sur la puce (<code className="text-accent">•</code>) d'un bloc pour zoomer sur cette branche uniquement. Le fil d'Ariane en haut te permet de revenir en arrière étape par étape à tout moment.
+              <strong className="text-main">Zoom hoisting :</strong> clique directement sur la puce (<code className="text-accent">•</code>) d'un bloc pour zoomer sur cette branche uniquement. Le fil d'Ariane en haut te permet de revenir en arrière étape par étape à tout moment ; sur le téléphone, l'icône de la maison te ramène au début de la note et le bouton retour remonte d'un niveau.
             </li>
             <li>
               <strong className="text-main">Déplacer des blocs :</strong> saisis une puce en maintenant le bouton de la souris enfoncé pour la déplacer avec toutes ses sous-puces vers un nouvel emplacement.
