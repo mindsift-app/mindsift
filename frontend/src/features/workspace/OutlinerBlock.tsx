@@ -1753,6 +1753,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
                     activeFocus ? 'pointer-events-none' : 'pointer-events-auto'
                   }`}
                   title={block.taskId ? t('block.openTask') : t('block.openParentTask')}
+                  data-tour={block.taskId ? 'linked-task' : undefined}
                 >
                   <CheckSquare className="w-2.5 h-2.5 inline-block align-[-1px] mr-0.5" />
                   {block.taskId ? t('block.badgeTask') : t('block.badgeSubtask')}

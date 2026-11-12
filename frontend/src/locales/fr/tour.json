@@ -1,0 +1,70 @@
+{
+  "progress": "{{current}} sur {{total}}",
+  "next": "Suivant",
+  "back": "Retour",
+  "finish": "Terminé",
+  "close": "Quitter la visite",
+  "keysHint": "← → pour avancer · Échap pour quitter",
+  "start": {
+    "button": "Lancer la visite",
+    "intro": "Nouveau ici ? Une courte visite montre en sept étapes où trouver quoi – elle ne modifie rien à tes données."
+  },
+  "triage": {
+    "title": "Triage : noter d’abord, trier ensuite",
+    "capture": "Ce qui te passe par la tête, tu le tapes sans réfléchir en haut dans le <b>Quick Dump</b> (touche <kbd>C</kbd>). Ça ne part pas encore ailleurs : ça arrive comme carte ici dans le Triage.",
+    "capturePhone": "Ce qui te passe par la tête, tu le jettes sans réfléchir dans le <b>Quick Dump</b> : le <b>+</b> en bas au centre, appui long pour dicter. Ça arrive comme carte ici dans le Triage.",
+    "decide": "Quand tu as le temps, tu décides carte par carte : <kbd>→</kbd> tâche, <kbd>←</kbd> jeter, <kbd>D</kbd> note, <kbd>T</kbd> avec échéance, <kbd>Espace</kbd> plus tard – ou les boutons sous la carte, dont « Sur une liste ».",
+    "decidePhone": "Quand tu as le temps, tu décides carte par carte : glisser vers la droite en fait une tâche, vers la gauche la jette. Les boutons en dessous la mettent sur une liste, en note ou avec une échéance."
+  },
+  "notes": {
+    "title": "Des notes en blocs",
+    "text": "Chaque note est un plan fait de puces. Tape <kbd>/</kbd> dans une puce et le menu la transforme en un autre bloc : titre, case à cocher, liste numérotée, code, encadré, tableau – ou avec <kbd>/canvas</kbd> un dessin avec formes, flèches et main levée.",
+    "empty": "Pas encore de note ? Le plus en haut de la barre latérale crée la première.",
+    "phoneList": "Touche une note pour l’ouvrir ; le <b>+</b> en bas en crée une nouvelle."
+  },
+  "linked": {
+    "title": "Tâches liées",
+    "text": "L’icône de coche à droite d’une case à cocher dans une note en fait une vraie tâche. Elle apparaît alors aussi dans Tâches – avec échéance, Kanban et rappel – et reste liée à la puce : cocher et le titre se synchronisent dans les deux sens, les cases juste en dessous deviennent des sous-tâches.",
+    "badge": "Le badge « {{badge}} » sur la puce ouvre la tâche, « {{back}} » sur la tâche y revient."
+  },
+  "focus": {
+    "title": "Plein écran pour écrire",
+    "button": "Ce bouton lance le mode focus : seulement la note, sur toute la fenêtre (<kbd>Ctrl</kbd>+<kbd>⇧</kbd>+<kbd>F</kbd>). <kbd>Échap</kbd> ramène tout.",
+    "menu": "Dans le menu <b>⋯</b> de la note, « {{item}} » lance le plein écran : seulement la note, sur toute la fenêtre."
+  },
+  "tasks": {
+    "title": "Tâches",
+    "text": "Ici tu passes de la liste au Kanban et au calendrier ; en Kanban, <b>⤢</b> élargit le tableau à toute la fenêtre. Un clic sur une tâche ouvre le détail avec échéance, sous-tâches, notes et rappels.",
+    "textPhone": "Liste, Kanban et calendrier se choisissent dans le menu derrière le logo en haut à gauche. Toucher une tâche ouvre le détail avec échéance, sous-tâches, notes et rappels."
+  },
+  "search": {
+    "title": "Recherche",
+    "text": "<kbd>Ctrl</kbd>+<kbd>K</kbd> (Mac : <kbd>⌘</kbd>+<kbd>K</kbd>) ou <kbd>/</kbd> ouvre la recherche de partout. Elle trouve les notes jusqu’à la puce, les tâches et les éléments de listes.",
+    "textPhone": "La loupe en haut ouvre la recherche. Elle trouve les notes jusqu’à la puce, les tâches et les éléments de listes."
+  },
+  "end": {
+    "title": "C’est tout !",
+    "text": "Tout le reste – raccourcis, listes, partage et plus – se trouve ici sur la page d’aide (le <b>?</b> en haut à droite). « Lancer la visite » la montre à nouveau quand tu veux.",
+    "textPhone": "Tout le reste – listes, partage et plus – se trouve ici sur la page d’aide (via ta photo de profil en haut à droite). « Lancer la visite » la montre à nouveau quand tu veux.",
+    "share": "Au passage : tu peux partager notes, listes de tâches et listes avec d’autres et les modifier ensemble."
+  },
+  "demo": {
+    "thought1": "Appeler le dentiste",
+    "thought2": "Vieux prospectus",
+    "thought3": "Recette de soupe aux lentilles",
+    "h1": "Voyage à Lisbonne",
+    "todo": "Vérifier le passeport",
+    "numbered1": "Faire la valise",
+    "numbered2": "Réserver un taxi",
+    "callout": "Check-in dès 15 h",
+    "tableHead1": "Jour",
+    "tableHead2": "Lieu",
+    "tableCell1": "Lu",
+    "tableCell2": "Alfama",
+    "canvas1": "Idée",
+    "canvas2": "Plan",
+    "task": "Envoyer le devis",
+    "note": "Note",
+    "tasks": "Tâches"
+  }
+}

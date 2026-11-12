@@ -266,15 +266,17 @@ export function TaskListTabs({
         {!currentSelectedList && <span className="w-px h-5 bg-border mx-0.5" aria-hidden />}
 
         {/* View switch: list, Kanban or calendar (the same switch as the hashtag sorting) */}
-        <SegmentedControl
-          value={viewMode}
-          onChange={setViewMode}
-          options={[
-            { value: 'list', title: t('tabs.listView'), label: viewLabel(<LayoutList className="w-3.5 h-3.5" />, t('tabs.list')) },
-            { value: 'kanban', title: t('tabs.kanbanView'), label: viewLabel(<Columns className="w-3.5 h-3.5" />, t('tabs.kanban')) },
-            { value: 'calendar', title: t('tabs.calendarView'), label: viewLabel(<CalendarDays className="w-3.5 h-3.5" />, t('tabs.calendar')) },
-          ]}
-        />
+        <div data-tour="task-views" className="flex">
+          <SegmentedControl
+            value={viewMode}
+            onChange={setViewMode}
+            options={[
+              { value: 'list', title: t('tabs.listView'), label: viewLabel(<LayoutList className="w-3.5 h-3.5" />, t('tabs.list')) },
+              { value: 'kanban', title: t('tabs.kanbanView'), label: viewLabel(<Columns className="w-3.5 h-3.5" />, t('tabs.kanban')) },
+              { value: 'calendar', title: t('tabs.calendarView'), label: viewLabel(<CalendarDays className="w-3.5 h-3.5" />, t('tabs.calendar')) },
+            ]}
+          />
+        </div>
       </div>
       {pendingDelete && (
         <ConfirmPopover

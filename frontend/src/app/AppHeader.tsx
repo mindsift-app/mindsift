@@ -64,6 +64,7 @@ export function MobileHeaderBar({
           triggerHaptic(12);
           setIsMenuOpen((prev) => !prev);
         }}
+        data-tour="view-menu"
         className={`min-h-[44px] px-2.5 -ml-2 rounded-xl flex items-center gap-2.5 cursor-pointer select-none active:scale-95 transition-all ${
           isMenuOpen ? 'bg-panel border border-accent/40 shadow-sm' : 'hover:bg-panel/60'
         }`}
@@ -120,6 +121,7 @@ export function MobileHeaderBar({
             triggerHaptic(10);
             setShowCommandPalette(true);
           }}
+          data-tour="search"
           className="w-11 h-11 rounded-full flex items-center justify-center text-muted hover:text-main transition-transform active:scale-95 cursor-pointer"
           title={t('header.search')}
           aria-label={t('header.openSearch')}
@@ -138,6 +140,7 @@ export function MobileHeaderBar({
             triggerHaptic(10);
             setShowMobileProfile(true);
           }}
+          data-tour="help-entry"
           className={`w-11 h-11 -mr-1.5 rounded-full flex items-center justify-center transition-transform active:scale-95 cursor-pointer ${
             activeTab === 'user_settings' || activeTab === 'admin_settings' || activeTab === 'help'
               ? 'ring-2 ring-accent'
@@ -231,7 +234,7 @@ export function DesktopHeaderBar({
 
       {/* Quick-Capture Input Bubble directly in Header (above Tabs) */}
       <div className="w-full max-w-xl mx-auto flex items-center gap-2">
-        <div className="flex-1">
+        <div className="flex-1" data-tour="capture">
           <InstantCaptureBar
             onCaptured={handleCaptured}
             lists={lists}
@@ -241,6 +244,7 @@ export function DesktopHeaderBar({
         <button
           type="button"
           onClick={() => setShowCommandPalette(true)}
+          data-tour="search"
           className="w-8 h-8 rounded-full bg-panel border border-border text-muted hover:text-main flex items-center justify-center transition-colors cursor-pointer shrink-0"
           title={t('header.searchShortcut')}
           aria-label={t('header.searchShortcut')}
@@ -361,6 +365,7 @@ export function DesktopNav({
         <button
           type="button"
           onClick={handleOpenHelp}
+          data-tour="help-entry"
           className={`p-1.5 transition-colors cursor-pointer rounded-full ${
             activeTab === 'help'
               ? 'text-accent'

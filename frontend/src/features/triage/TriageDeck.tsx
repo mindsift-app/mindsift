@@ -462,7 +462,7 @@ export const TriageDeck: React.FC<TriageDeckProps> = ({
 
   if (!activeCard) {
     return (
-      <div className="max-w-xl mx-auto mt-2 p-6 panel-surface text-center">
+      <div data-tour="triage-deck" className="max-w-xl mx-auto mt-2 p-6 panel-surface text-center">
         <div className="w-12 h-12 bg-accent text-on-accent rounded-xl flex items-center justify-center mx-auto mb-3 shadow-sm">
           <Sparkles className="w-6 h-6" />
         </div>
@@ -510,7 +510,7 @@ export const TriageDeck: React.FC<TriageDeckProps> = ({
   return (
     // Desktop: a column filling the height under the header; card and buttons keep their size, the queue
     // takes the rest and scrolls inside (the page only scrolls when the window is too low even for that)
-    <div className="w-full max-w-2xl mx-auto select-none space-y-4 sm:flex-1 sm:min-h-0 sm:flex sm:flex-col">
+    <div data-tour="triage-deck" className="w-full max-w-2xl mx-auto select-none space-y-4 sm:flex-1 sm:min-h-0 sm:flex sm:flex-col">
       {/* Top Deck Status & Undo Bar */}
       <div className="flex items-center justify-between px-1">
         <div className="flex items-center gap-2">
