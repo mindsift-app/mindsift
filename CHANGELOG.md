@@ -30,6 +30,7 @@ Fixes from the security review of November 2026 (v0.94.0).
 - Conflict copies in notes have a third choice, "Keep both": the marking goes and both texts stay, the copy as a bullet of its own under the original. While someone edits the original, "Use" is greyed out and a line under the copy says who holds it; before, the click did nothing visible. Until it is settled, a copy sticks to its original: Enter or pasting in the original adds below the copy, and indenting, dragging or moving the original takes the copy along.
 
 ### Changed
+- Very long notes open and scroll much faster: bullets out of view are no longer laid out and painted, and opening a note no longer measures every bullet. A note with 5,000 bullets opens in about a fifth of the time, one with 20,000 bullets now opens at all. Find in page, selecting and copying across bullets and links to a bullet work as before; coming back to a note returns to the same bullet.
 - Setup: fields and buttons of the setup wizard are 44 px high on phones; an error shows next to the finish button.
 - Administration: the user list can be searched (name, username, email) and filtered by role and organization, and sorted by name, role or newest first. Rows are compact; role, password, lock and delete open after a click on a person (on phones in a sheet from below), and only 50 people are shown at a time with "Show more". Registrations waiting for approval are now at the top with a counter.
 - Typing in long notes and in the journal is smoother: the note title no longer measures itself on every change, the journal calendar formats its dates much faster, and a large note is no longer written to the browser's storage in full after every typing pause (what the server confirmed is kept with the unsent changes instead, so it still survives a crash or an offline restart).
@@ -74,6 +75,7 @@ Fixes from the security review of November 2026 (v0.94.0).
 - The sign-in page loads about 170 kB (compressed) instead of 530 kB; the rest of the app follows right after signing in, or at once when you are still signed in.
 
 ### Fixed
+- Sign-in and setup on phones: the on-screen keyboard no longer covers the password field; the page makes room for it and scrolls the field into view.
 - Admin settings on phones: the backup time sits below its label and is wide enough.
 - Wide tables in notes scroll sideways on the desktop too, instead of squeezing long cells into narrow columns.
 - When undo takes away the table row with the cursor, the cursor moves to the nearest cell instead of leaving the table.

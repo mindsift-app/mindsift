@@ -19,6 +19,7 @@ import { demoHintText } from '../../components/DemoHint';
 import { SetupInstanceSection, useSetupChoices } from './SetupInstanceSection';
 import { SetupMailSection, useSetupMail } from './SetupMailSection';
 import { SetupSummary } from './SetupSummary';
+import { useKeyboardRoom } from '../../lib/useKeyboardInset';
 
 interface SetupAndAuthViewProps {
   authStatus: AuthStatus;
@@ -37,6 +38,8 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
 }) => {
   const { t } = useTranslation('auth');
   // --- Setup Wizard State ---
+  // The keyboard must not cover the fields (phones)
+  const keyboardRoom = useKeyboardRoom();
   const [setupName, setSetupName] = useState('');
   const [setupEmail, setSetupEmail] = useState('');
   const [setupPassword, setSetupPassword] = useState('');
@@ -257,7 +260,7 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
   // ============================================================================
   if (authStatus.needsSetup) {
     return (
-      <div className="min-h-[100dvh] bg-canvas text-main flex flex-col items-center justify-center p-4 font-sans">
+      <div className="min-h-[100dvh] bg-canvas text-main flex flex-col items-center justify-center p-4 font-sans" style={keyboardRoom}>
         <div className="w-full max-w-xl panel-surface shadow-panel overflow-hidden">
           {/* Top Brand Bar */}
           <div className="p-4 bg-canvas border-b border-border flex items-center justify-between">
@@ -395,7 +398,7 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
   // STANDARD LOGIN / INVITE CODE / REGISTRATION VIEW
   // ============================================================================
   return (
-    <div className="min-h-[100dvh] bg-canvas text-main flex flex-col items-center justify-center p-4 font-sans">
+    <div className="min-h-[100dvh] bg-canvas text-main flex flex-col items-center justify-center p-4 font-sans" style={keyboardRoom}>
       <div className="w-full max-w-md panel-surface shadow-panel overflow-hidden">
         {/* Top Header */}
         <div className="p-4 bg-canvas border-b border-border flex items-center justify-between">

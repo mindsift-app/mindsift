@@ -43,7 +43,7 @@ import type { BlockLock } from './OutlinerBlock';
 import { extractHashtags } from '../../lib/hashtags';
 import { branchEnd, insertBelow, moveSibling, unitStart } from '../../lib/outlineList';
 import { reportNav, onNavStep, restoringNavPlace } from '../../lib/navHistory';
-import { readNotePlace, writeNotePlace } from '../../lib/notePlace';
+import { NotePlace, readNotePlace, writeNotePlace } from '../../lib/notePlace';
 import { isPhoneWidth } from '../../lib/breakpoints';
 import { useTranslation } from 'react-i18next';
 import i18n from '../../i18n';
@@ -121,6 +121,23 @@ function scrollParent(el: Element | null): HTMLElement | null {
     if ((overflowY === 'auto' || overflowY === 'scroll') && p.scrollHeight > p.clientHeight) return p;
   }
   return null;
+}
+
+// The first bullet reaching below the top edge of the note's scroll area and how far below that edge it
+// starts (lib/notePlace.ts). The bullets are in order from top to bottom, so a binary search finds it.
+function topBullet(root: HTMLElement): NotePlace['anchor'] {
+  if (!root.isConnected) return undefined;
+  const rows = root.querySelectorAll<HTMLElement>('[data-outline-block]');
+  const top = root.getBoundingClientRect().top;
+  let lo = 0;
+  let hi = rows.length - 1;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    if (rows[mid].getBoundingClientRect().bottom > top) hi = mid;
+    else lo = mid + 1;
+  }
+  const row = rows[lo];
+  return row?.dataset.outlineBlock ? { id: row.dataset.outlineBlock, offset: row.getBoundingClientRect().top - top } : undefined;
 }
 
 // What undoing the editor's server actions needs, kept with the note's undo history (lib/docSync/undoHistory.ts)
@@ -477,7 +494,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
     let timer: number | null = null;
     const save = () => {
       timer = null;
-      writeNotePlace(docId, { zoom: zoomForPlaceRef.current, scroll: root.scrollTop });
+      writeNotePlace(docId, { zoom: zoomForPlaceRef.current, scroll: root.scrollTop, anchor: topBullet(root) });
     };
     const onScroll = () => {
       if (timer === null) timer = window.setTimeout(save, 200);
@@ -499,12 +516,20 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
     const root = scrollRef.current;
     const target = savedPlace && savedPlace.zoom === zoomedBlockId ? savedPlace.scroll : 0;
     if (!root || target <= 0) return;
-    // Images and code blocks may still grow the note for a few frames
+    const anchor = savedPlace?.anchor;
+    // Images and code blocks may still grow the note for a few frames, and bullets near the view are shown
+    // (with their real height) only in the frames after the jump: held until the place stays put for 3 frames
     let frames = 0;
+    let steady = 0;
     let raf = 0;
     const apply = () => {
-      root.scrollTop = target;
-      if (Math.abs(root.scrollTop - target) > 1 && ++frames < 30) raf = requestAnimationFrame(apply);
+      // Back to the bullet that was at the top; the offset only when it is gone
+      const row = anchor && root.querySelector(`[data-outline-block="${CSS.escape(anchor.id)}"]`);
+      const off = () => (row ? row.getBoundingClientRect().top - root.getBoundingClientRect().top - anchor.offset : target - root.scrollTop);
+      steady = Math.abs(off()) > 1 ? 0 : steady + 1;
+      if (row) root.scrollTop += off();
+      else root.scrollTop = target;
+      if (steady < 3 && ++frames < 30) raf = requestAnimationFrame(apply);
     };
     raf = requestAnimationFrame(apply);
     return () => cancelAnimationFrame(raf);

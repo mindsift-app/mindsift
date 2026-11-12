@@ -546,9 +546,16 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
     if (textareaRef.current) fitFieldHeight(textareaRef.current);
   }, []);
 
+  // Text bullets show their rendered text and lay the text field over it; only with the cursor in it does the
+  // field take its place and need the height of its text. Without the cursor it stretches over the rendered
+  // text: measuring it would cost one forced layout of the note per bullet on opening (minutes at 20,000)
+  const fieldOverText = !mediaPicker && !['audio', 'drawing', 'image', 'divider', 'code', 'table', 'callout'].includes(block.type);
   useLayoutEffect(() => {
-    adjustHeight();
-  }, [localContent, block.type, block.level, activeFocus, adjustHeight]);
+    const ta = textareaRef.current;
+    if (!ta) return;
+    if (activeFocus || !fieldOverText) fitFieldHeight(ta);
+    else ta.style.height = '';
+  }, [localContent, block.type, block.level, activeFocus, fieldOverText]);
 
   // Turning the block into another type (slash menu, ``` or markdown shortcut) can swap the text field
   // for a new one (e.g. the code editor); the cursor must stay in the block so typing goes on there
@@ -1282,11 +1289,17 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
   return (
     <div
       data-outline-block={block.id}
+      // Rows out of view are skipped by the browser (.outline-row in index.css); this one stays rendered
+      data-outline-live={activeFocus || slashSearch !== null || mention.open || showLinkModal ? '' : undefined}
       onMouseMove={handleRowMouseMove}
       onMouseLeave={handleRowMouseLeave}
       onTouchStart={showBubbleForTouch}
-      className={`group relative flex items-start gap-1 py-1 px-0.5 sm:px-1.5 rounded-card transition-all duration-300 ${
+      className={`outline-row group relative flex items-start gap-1 py-1 px-0.5 sm:px-1.5 transition-all duration-300 ${
         inRangeSelection ? 'bg-accent/15' : ''
+      } ${
+        // Round corners only on a tinted row: on the others they are invisible, but the row's content-visibility
+        // would clip with them, and rounded clips in every bullet made Chrome leave the note's corners unpainted
+        inRangeSelection || isDragTarget || isTargeted || block.conflictOf || lockColor ? 'rounded-card' : ''
       } ${
         // Spacing between the rows (OutlinerTree); headings keep their extra margin only as the first bullet
         block.type === 'h1'
@@ -1955,15 +1968,17 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
         ref={bubbleRef}
         className={`absolute ${
           block.type === 'table' && canEdit ? 'right-12 sm:right-8' : 'right-1 sm:right-2'
-        } top-0.5 sm:top-1 z-20 bg-panel/90 backdrop-blur-sm border border-border shadow-xs rounded-pill px-1 sm:px-1.5 py-0.5 flex items-center gap-0.5 sm:gap-1 transition-opacity ${
+        } top-0.5 sm:top-1 z-20 bg-panel/90 border border-border shadow-xs rounded-pill px-1 sm:px-1.5 py-0.5 flex items-center gap-0.5 sm:gap-1 transition-opacity ${
           lockedBy || (!canEdit && !onCopyBlockLink && block.type !== 'drawing')
             ? // Someone else is editing the block: no actions, and the lock badge stays visible. Read only
               // without a link to copy (a public page): nothing to show, not even an empty frame
               'hidden'
-            : showBubble
-            ? 'opacity-100 pointer-events-auto'
+            : // Blurred only while shown: a backdrop filter in every bullet made scrolling a long note
+              // recompose the page each frame
+              showBubble
+            ? 'opacity-100 pointer-events-auto backdrop-blur-sm'
             : // Hidden buttons must not take clicks; keyboard focus inside still shows it
-              'opacity-0 pointer-events-none focus-within:opacity-100 focus-within:pointer-events-auto'
+              'opacity-0 pointer-events-none focus-within:opacity-100 focus-within:pointer-events-auto focus-within:backdrop-blur-sm'
         }`}
       >
         {/* A drawing's own buttons (edit, save view …) come in here */}

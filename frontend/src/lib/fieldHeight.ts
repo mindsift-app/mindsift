@@ -28,7 +28,8 @@ function refit(entries: ResizeObserverEntry[]) {
       const width = el.clientWidth;
       if (width === lastWidth.get(el)) return false;
       lastWidth.set(el, width);
-      return !el.dataset.ownHeight;
+      // Without a height of its own the field stretches with its row (a bullet's field over its rendered text)
+      return !el.dataset.ownHeight && el.style.height !== '';
     });
   fields.forEach((el) => (el.style.height = 'auto'));
   const heights = fields.map((el) => el.scrollHeight);
@@ -43,7 +44,8 @@ export function refitOnWidthChange(el: HTMLTextAreaElement): () => void {
     return () => window.removeEventListener('resize', fit);
   }
   observer ??= new ResizeObserver(refit);
-  if (!lastWidth.has(el)) lastWidth.set(el, el.clientWidth);
+  // Not measured here (one forced layout per bullet on opening a note): a field never fitted has no height to
+  // correct, the observer's first report only notes its width
   observer.observe(el);
   return () => {
     observer?.unobserve(el);
