@@ -89,6 +89,10 @@ const main = async () => {
         await page.waitForTimeout(300);
         return page.evaluate(() => window.__clip);
       };
+      // Outside the note: the empty middle of the workspace bar above it (the page has no margin beside the
+      // note any more, and the footer is not selectable, so a press there leaves the browser's selection)
+      const bar = await page.locator('.seg-track').locator('visible=true').first().boundingBox();
+      const clickOutside = () => page.mouse.click(bar.x + bar.width + 200, bar.y + bar.height / 2);
       const rows = await page.$$eval('[data-outline-block]', (els) =>
         els.map((e) => {
           const r = e.getBoundingClientRect();
@@ -102,7 +106,7 @@ const main = async () => {
       const firstText = await textBox(page.locator('[data-outline-block]').first());
       const lastText = await textBox(page.locator('[data-outline-block]').last());
       const drag = async (from, to) => {
-        await page.mouse.click(1250, 880); // outside the note
+        await clickOutside();
         await page.waitForTimeout(150);
         await page.mouse.move(from.x, from.y);
         await page.waitForTimeout(250); // hover shows the action bubble
@@ -176,7 +180,7 @@ const main = async () => {
 
       // A click outside the note ends the selection: Ctrl+C then copies nothing of it
       await drag(starts['am Textanfang'](last, lastText), above);
-      await page.mouse.click(1250, 880);
+      await clickOutside();
       const afterOutside = await copy();
       check(afterOutside !== note.markdown, `${tag}: Klick außerhalb hebt die Markierung auf`, afterOutside);
 
