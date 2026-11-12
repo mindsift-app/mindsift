@@ -66,10 +66,10 @@ export const AVAILABLE_THEMES: ThemeOption[] = [
       return i18n.t('common:themes.builtin.dark.subtitle');
     },
     file: 'src/themes/theme-dark.css',
-    previewBg: '#0a0c10',
-    previewPanel: '#12161c',
+    previewBg: '#1c1f25',
+    previewPanel: '#22262d',
     previewAccent: '#2563eb',
-    previewText: '#e8ebf1',
+    previewText: '#d9dde4',
     isRounded: true,
   },
   {
@@ -84,7 +84,7 @@ export const AVAILABLE_THEMES: ThemeOption[] = [
     previewBg: '#f6f7f9',
     previewPanel: '#ffffff',
     previewAccent: '#2563eb',
-    previewText: '#0e131b',
+    previewText: '#1a1f27',
     isRounded: true,
   },
   {

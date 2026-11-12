@@ -18,14 +18,13 @@
   --bg-panel-hover: #e8ebf0;
   --bg-input: #ffffff;
   --bg-overlay: rgba(15, 20, 28, 0.45);
-  --bg-code: #1b2230;
-  --text-code: #c9d1dc; /* plain text on the dark code blocks */
+  --bg-code: #f1f3f6;
   --bg-editor: #ffffff;
   --bg-sidebar: #f6f7f9;
 
   /* --- 3. TEXT & CONTRAST --- */
-  --text-main: #0e131b;
-  --text-muted: #3d4554;
+  --text-main: #1a1f27;
+  --text-muted: #464e5c;
   --text-faint: #6a7384;
 
   /* --- 4. BORDERS, LINES & SHADOWS --- */
@@ -59,14 +58,14 @@
   --radius-checkbox: 5px;
   --radius-pill: 9999px;
 
-  /* --- 7. CODE-SYNTAX-HIGHLIGHTING (dark code blocks like on the website) --- */
-  --code-keyword: #7aa2f7;
-  --code-string: #9ece6a;
-  --code-number: #ff9e64;
-  --code-comment: #6b7385;
-  --code-property: #73daca;
-  --code-function: #7dcfff;
-  --code-type: #2ac3de;
-  --code-punctuation: #c9d1dc;
-  --code-variable: #c0caf5;
+  /* --- 7. CODE-SYNTAX-HIGHLIGHTING (light code blocks, colours that read on a light grey) --- */
+  --code-keyword: #7c3aed;
+  --code-string: #15803d;
+  --code-number: #c2410c;
+  --code-comment: #6a7384;
+  --code-property: #0e7490;
+  --code-function: #1d4ed8;
+  --code-type: #0369a1;
+  --code-punctuation: #3d4554;
+  --code-variable: #1a1f27;
 }
