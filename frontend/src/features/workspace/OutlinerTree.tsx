@@ -61,7 +61,7 @@ export interface OutlinerTreeProps {
 }
 
 // Blocks that a selection over several bullets copies whole, never cut at the selection's edge
-const WHOLE_IN_SELECTION = ['code', 'divider', 'table', 'progress', 'callout'];
+const WHOLE_IN_SELECTION = ['code', 'divider', 'table', 'progress'];
 
 // Puts text on the clipboard from a key press: through the browser's copy event, which works on plain
 // HTTP too (navigator.clipboard needs HTTPS or localhost); the clipboard API only as a fallback
@@ -763,7 +763,7 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
   const highlightSupported = typeof CSS !== 'undefined' && 'highlights' in CSS && typeof (window as any).Highlight === 'function';
 
   // Position in the raw text of a bullet for a point in its rendered text (outside it: start or end).
-  // Blocks without a text layer (callouts, code …) count whole when `whole` says from which side
+  // Blocks without a text layer (code, tables …) count whole when `whole` says from which side
   const rawOffsetAtPoint = (row: HTMLElement, id: string, x: number, y: number, whole?: 'start' | 'end') => {
     const raw = textareaMapRef.current.get(id)?.value ?? blocks.find((b) => b.id === id)?.content ?? '';
     const span = row.querySelector<HTMLElement>('[data-outline-text]');
@@ -785,7 +785,7 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
     setRangeSel(null);
   }, []);
 
-  // Selected blocks without a text layer to highlight (callouts, code, images …): tinted as a whole row
+  // Selected blocks without a text layer to highlight (code, images …): tinted as a whole row
   const [wholeRowIds, setWholeRowIds] = useState<Set<string> | null>(null);
 
   // Highlight the selected text of the bullets other than the start one

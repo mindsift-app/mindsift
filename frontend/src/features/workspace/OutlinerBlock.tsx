@@ -549,7 +549,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
   // Text bullets show their rendered text and lay the text field over it; only with the cursor in it does the
   // field take its place and need the height of its text. Without the cursor it stretches over the rendered
   // text: measuring it would cost one forced layout of the note per bullet on opening (minutes at 20,000)
-  const fieldOverText = !mediaPicker && !['audio', 'drawing', 'image', 'divider', 'code', 'table', 'callout'].includes(block.type);
+  const fieldOverText = !mediaPicker && !['audio', 'drawing', 'image', 'divider', 'code', 'table'].includes(block.type);
   useLayoutEffect(() => {
     const ta = textareaRef.current;
     if (!ta) return;
@@ -1674,28 +1674,13 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
             canIndent={Math.max(0, block.level || 0) < maxAllowedLevel}
             canOutdent={Math.max(0, block.level || 0) > (levelOffset || 0)}
           />
-        ) : block.type === 'callout' ? (
-          <div className="bg-panel-elevated border-l-2 border-accent p-2 rounded-r-btn my-0.5">
-            <textarea
-              ref={(el) => {
-                textareaRef.current = el;
-                registerTextareaRef(block.id, el);
-              }}
-              rows={1}
-              value={localContent}
-              readOnly={!canEdit}
-              onFocus={handleFocus}
-              onBlur={handleBlur}
-              onChange={handleContentChange}
-              onKeyDown={handleKeyDown}
-              className="w-full resize-none bg-transparent text-sm text-main border-0 focus:outline-none focus:ring-0 leading-relaxed italic"
-            />
-          </div>
         ) : (
-          // Warnings and errors: normal text in a tinted box with a coloured edge, like a callout
+          // Callouts, warnings and errors: normal text (bold, links, hashtags) in a tinted box with a coloured edge
           <div
             className={
-              block.type === 'warning'
+              block.type === 'callout'
+                ? 'bg-panel-elevated border-l-2 border-accent rounded-r-btn px-2 py-1 my-0.5'
+                : block.type === 'warning'
                 ? 'bg-status-warn-bg border-l-2 border-status-warn rounded-r-btn px-2 py-0.5 my-0.5'
                 : block.type === 'error'
                 ? 'bg-status-err-bg border-l-2 border-status-err rounded-r-btn px-2 py-0.5 my-0.5'
@@ -1723,6 +1708,8 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
                   ? 'text-base font-semibold text-main'
                   : block.type === 'todo' && block.checked
                   ? 'text-sm text-faint line-through'
+                  : block.type === 'callout'
+                  ? 'text-sm text-main italic'
                   : 'text-sm text-main'
               }`}
             >
@@ -1834,6 +1821,8 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
                   ? 'text-base font-semibold text-main'
                   : block.type === 'todo' && block.checked
                   ? 'text-sm text-faint line-through'
+                  : block.type === 'callout'
+                  ? 'text-sm text-main italic'
                   : 'text-sm text-main'
               }`}
             />
