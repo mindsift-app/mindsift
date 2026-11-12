@@ -45,15 +45,16 @@ yes_no() {
   case "${REPLY}" in [yYjJ]*) return 0 ;; *) return 1 ;; esac
 }
 
-# set_env <key> <value>: sets the key in .env, also when it is only there as a comment
+# set_env <key> <value>: sets the key in .env, also when it is only there as a comment. umask 077: the
+# new file that replaces .env stays readable only for you (it holds secrets)
 set_env() {
-  KEY="$1" VALUE="$2" awk '
+  (umask 077 && KEY="$1" VALUE="$2" awk '
     !done && ($0 ~ "^" ENVIRON["KEY"] "=" || $0 ~ "^# ?" ENVIRON["KEY"] "=") {
       print ENVIRON["KEY"] "=" ENVIRON["VALUE"]; done = 1; next
     }
     { print }
     END { if (!done) print ENVIRON["KEY"] "=" ENVIRON["VALUE"] }
-  ' .env >.env.tmp && mv .env.tmp .env
+  ' .env >.env.tmp) && mv .env.tmp .env
 }
 
 echo "📥 Downloading the configuration files..."
@@ -92,6 +93,69 @@ else
   WHISPER=0
   STT_MODEL=""
   PROXY_NETWORK=""
+  ADMIN_NAME=""
+  ADMIN_PW=""
+  ADMIN_PW_GENERATED=0
+
+  # The first admin (ADMIN_USER / ADMIN_PASSWORD), created on the first start, so nobody else can claim the
+  # new instance in the setup wizard. Only for a new installation: with a database in data/ the accounts
+  # exist and the variables would be ignored.
+  if [ ! -f data/mindsift.db ]; then
+    if [ "${INTERACTIVE}" = "1" ]; then
+      echo ""
+      echo "🔐 Admin account: created on the first start, so nobody else can claim your new instance."
+      while true; do
+        ask "Admin username [admin]: " "admin"
+        ADMIN_NAME=$(printf '%s' "${REPLY}" | tr '[:upper:]' '[:lower:]')
+        # The server's rule (storage.ValidUsername)
+        if [[ "${ADMIN_NAME}" =~ ^[a-z0-9]([a-z0-9._-]{0,30}[a-z0-9])?$ ]]; then break; fi
+        echo "    Up to 32 characters: letters, digits, dot, dash and underscore, starting and ending with a letter or digit."
+      done
+      while true; do
+        ADMIN_PW=""
+        IFS= read -r -s -p "Admin password (at least 8 characters, empty = generate one): " ADMIN_PW </dev/tty || true
+        echo ""
+        if [ -z "${ADMIN_PW}" ]; then
+          ADMIN_PW=$(head -c 32 /dev/urandom | base64 | tr -dc 'a-zA-Z0-9' | head -c 20 || openssl rand -hex 10 2>/dev/null)
+          ADMIN_PW_GENERATED=1
+          if [ "${#ADMIN_PW}" -ge 16 ]; then break; fi
+          # Without a random source: no admin from here, the wizard as before
+          echo "    Could not generate a password: create the admin in the setup wizard right after the start."
+          ADMIN_PW=""
+          ADMIN_PW_GENERATED=0
+          break
+        fi
+        # The server's rule (auth.ValidatePassword): 8 characters, not only spaces, at most 72 bytes
+        if [ "${#ADMIN_PW}" -lt 8 ] || [ -z "${ADMIN_PW//[[:space:]]/}" ]; then
+          echo "    At least 8 characters, please."
+          continue
+        fi
+        if [ "$(printf '%s' "${ADMIN_PW}" | LC_ALL=C wc -c)" -gt 72 ]; then
+          echo "    At most 72 bytes, please."
+          continue
+        fi
+        # .env holds it in single quotes (no $ expansion), so these two would not come through as typed
+        case "${ADMIN_PW}" in
+          *\'* | *\\*) echo "    Please without ' and \\."; continue ;;
+        esac
+        IFS= read -r -s -p "Repeat the password: " ADMIN_PW2 </dev/tty || true
+        echo ""
+        if [ "${ADMIN_PW}" = "${ADMIN_PW2}" ]; then break; fi
+        echo "    The passwords differ, please try again."
+      done
+      ADMIN_PW2=""
+      if [ -n "${ADMIN_PW}" ]; then
+        # Single quotes: a $ in the password stays a $ (.env is 0600)
+        set_env ADMIN_USER "${ADMIN_NAME}"
+        set_env ADMIN_PASSWORD "'${ADMIN_PW}'"
+      else
+        ADMIN_NAME=""
+      fi
+    else
+      echo "ℹ️  No terminal for questions, so no admin account is set: open MindSift right after the start"
+      echo "   and create it in the setup wizard."
+    fi
+  fi
 
   if [ "${INTERACTIVE}" = "1" ]; then
     echo ""
@@ -204,8 +268,18 @@ if [ "${OPEN_URL}" != "http://localhost:${PORT_VALUE:-8080}" ]; then
   echo "   Examples: https://github.com/mindsift-app/mindsift/blob/main/Doku/reverse-proxy.md"
 fi
 echo ""
-echo "💡 On the first visit a wizard guides you through"
-echo "   setting up your admin account."
+if [ -n "${ADMIN_NAME:-}" ]; then
+  echo "👤 Sign in as \"${ADMIN_NAME}\"; a short wizard then asks the remaining settings."
+  if [ "${ADMIN_PW_GENERATED:-0}" = "1" ]; then
+    # Shown this once; it is also in .env until you remove it there
+    echo "🔑 Generated password (shown only now, note it down): ${ADMIN_PW}"
+  fi
+  echo "   ADMIN_PASSWORD in .env is only used on this first start; you can delete it there afterwards."
+else
+  echo "💡 On the first visit a wizard guides you through"
+  echo "   setting up your admin account."
+fi
+ADMIN_PW=""
 if [ "${WHISPER:-0}" = "1" ]; then
   echo ""
   echo "🎙️  The speech model downloads on the first start; voice input works"

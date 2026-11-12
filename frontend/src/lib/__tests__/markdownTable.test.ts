@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
+  cellAfterOutsideChange,
   deleteTableColumn,
   deleteTableRow,
   emptyTable,
@@ -160,5 +161,29 @@ describe('table helpers', () => {
     expect(tableLines('yaml')).toBe('');
     expect(tableLines(undefined)).toBe('');
     expect(tableSummary('| Name | | Wert |\n| --- | --- | --- |\n| a | b | c |')).toBe('Name · Wert');
+  });
+});
+
+describe('cellAfterOutsideChange', () => {
+  const t = (...rows: string[]) => parseMarkdownTable(rows.join('\n'));
+  const before = t('| A | B |', '| --- | --- |', '| 1 | 2 |', '| 3 | 4 |', '| 5 | 6 |');
+
+  it('keeps the cell when its row stays', () => {
+    expect(cellAfterOutsideChange(before, t('| A | B |', '| --- | --- |', '| 1 | 2 |', '| 3 | 4 |'), 1, 1)).toEqual({ row: 1, col: 1 });
+  });
+  it('goes to the row above when undo takes away the row with the cursor', () => {
+    // The last row went
+    expect(cellAfterOutsideChange(before, t('| A | B |', '| --- | --- |', '| 1 | 2 |', '| 3 | 4 |'), 3, 0)).toEqual({ row: 2, col: 0 });
+    // A row in the middle went: above it, not into the row that moved up
+    expect(cellAfterOutsideChange(before, t('| A | B |', '| --- | --- |', '| 1 | 2 |', '| 5 | 6 |'), 2, 1)).toEqual({ row: 1, col: 1 });
+  });
+  it('goes below when no row is left above', () => {
+    expect(cellAfterOutsideChange(before, t('| 1 | 2 |', '| --- | --- |', '| 3 | 4 |', '| 5 | 6 |'), 0, 0)).toEqual({ row: 0, col: 0 });
+  });
+  it('follows its own row when a row above it went', () => {
+    expect(cellAfterOutsideChange(before, t('| A | B |', '| --- | --- |', '| 3 | 4 |', '| 5 | 6 |'), 3, 1)).toEqual({ row: 2, col: 1 });
+  });
+  it('moves to the last column when its column went', () => {
+    expect(cellAfterOutsideChange(before, t('| A |', '| --- |', '| 1 |', '| 3 |', '| 5 |'), 2, 1)).toEqual({ row: 2, col: 0 });
   });
 });

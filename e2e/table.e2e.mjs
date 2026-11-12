@@ -1,7 +1,9 @@
 // Tables in notes: /table makes a 2 × 2 table with the bullet's text in the first cell, typing with Tab and
 // Enter, the + for a column, the line mode from the ⋯ menu, Backspace on an empty row, the arrows into and
-// out of the table; after reloading content and line mode are still there (sync). On a phone: tapping a
-// cell and the + (44 px), the page does not scroll sideways. Desktop in Chromium and Firefox, the phone in Chromium.
+// out of the table; after reloading content and line mode are still there (sync); undo that takes away the
+// row with the cursor moves it to the row above. Desktop: a wide table scrolls sideways inside its box. On a
+// phone: tapping a cell and the + (44 px), the page does not scroll sideways. Desktop in Chromium and
+// Firefox, the phone in Chromium.
 // Needs a server in demo mode (admin/admin).
 import { chromium, firefox } from 'playwright';
 
@@ -142,11 +144,63 @@ const main = async () => {
       tag('nach Neuladen sind Inhalt und Modus da'),
       s
     );
+
+    // Undo takes away the row with the cursor: the cursor goes to the row above, the table keeps it
+    await page.locator('[data-table-block] td .nt-text').first().click();
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(300);
+    s = await cellState(page);
+    check(s.values.length === 9 && s.focus === 6, tag('Enter legt vor dem Rückgängig eine Zeile an'), s);
+    await page.keyboard.press('Control+z');
+    await page.waitForTimeout(400);
+    s = await cellState(page);
+    check(s.values.length === 6 && s.focus === 3, tag('Rückgängig nimmt die Zeile weg, Cursor in die Zelle darüber'), s);
     await ctx.close();
     await engineBrowser.close();
   }
 
   const browser = await chromium.launch();
+  // Desktop: a wide table scrolls sideways inside its box (columns no narrower than their text up to 15rem),
+  // a narrow one is as wide as its text
+  {
+    const stamp = `${Date.now()}`;
+    const wideDoc = await api(admin, 'POST', '/api/v1/documents', {
+      title: `Breite Tabelle ${stamp}`,
+      blocks: [
+        { id: `wn_${stamp}`, type: 'table', content: '| Artikel | Menge |\n| --- | --- |\n| Brot | 2 |', level: 0 },
+        {
+          id: `ww_${stamp}`,
+          type: 'table',
+          content:
+            '| Projekt | Beschreibung | Verantwortlich | Nächster Schritt | Status |\n| --- | --- | --- | --- | --- |\n' +
+            '| Umzug Büro | Alle Arbeitsplätze in das neue Gebäude am Hafen bringen | Team Verwaltung und Hausmeister | Angebote von drei Umzugsfirmen einholen | in Planung, Termin noch offen |',
+          level: 0,
+        },
+      ],
+    });
+    const { ctx, page } = await openNote(browser, admin, wideDoc.id);
+    const widths = await page.evaluate(() => {
+      const [narrow, wide] = [...document.querySelectorAll('.table-scroll')];
+      const cols = (box) => [...box.querySelectorAll('thead th')].map((th) => Math.round(th.getBoundingClientRect().width));
+      return {
+        page: document.documentElement.scrollWidth,
+        view: window.innerWidth,
+        narrowScrolls: narrow.scrollWidth > narrow.clientWidth,
+        narrowWidth: narrow.querySelector('table').getBoundingClientRect().width,
+        narrowBox: narrow.parentElement.getBoundingClientRect().width,
+        wideScrolls: wide.scrollWidth > wide.clientWidth,
+        wideCols: cols(wide),
+      };
+    });
+    check(
+      widths.page <= widths.view && widths.wideScrolls && Math.min(...widths.wideCols.slice(1, 4)) >= 240,
+      'breite Tabelle am Desktop scrollt in ihrem Kasten, Spalten bleiben breit',
+      widths
+    );
+    check(!widths.narrowScrolls && widths.narrowWidth < widths.narrowBox / 2, 'schmale Tabelle am Desktop so breit wie ihr Text', widths);
+    await ctx.close();
+  }
+
   // Phone: tap a cell and the +, nothing scrolls the page sideways
   {
     const { ctx, page } = await openNote(browser, admin, doc.id, true);

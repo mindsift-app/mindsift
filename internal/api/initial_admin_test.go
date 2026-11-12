@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -179,6 +180,8 @@ func TestInitialAdminRefusesBadValues(t *testing.T) {
 		{"user with space", config.InitialAdmin{User: "Sandro Dach", Password: initialAdminPassword}, "ADMIN_USER is not a valid username"},
 		{"bad email", config.InitialAdmin{User: "admin", Password: initialAdminPassword, Email: "Admin <admin@example.com>"}, "ADMIN_EMAIL is not a valid email address"},
 		{"too long", config.InitialAdmin{User: "admin", Password: strings.Repeat("x", 73)}, "ADMIN_PASSWORD is too long"},
+		{"password and file", config.InitialAdmin{User: "admin", Password: initialAdminPassword, PasswordFile: "/run/secrets/admin_password"}, "ADMIN_PASSWORD and ADMIN_PASSWORD_FILE are both set"},
+		{"unreadable file", config.InitialAdmin{User: "admin", PasswordFile: "/nonexistent/admin_password"}, "reading ADMIN_PASSWORD_FILE failed: open /nonexistent/admin_password"},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -198,6 +201,29 @@ func TestInitialAdminRefusesBadValues(t *testing.T) {
 	}
 }
 
+// ADMIN_PASSWORD_FILE instead of ADMIN_PASSWORD (Docker secrets): the password from the file, without the
+// line break at its end, signs in; neither it nor the file's content reaches the log.
+func TestInitialAdminFromPasswordFile(t *testing.T) {
+	logs := captureLog(t)
+	store, dbPath := freshStore(t)
+	path := filepath.Join(t.TempDir(), "admin_password")
+	if err := os.WriteFile(path, []byte(initialAdminPassword+"\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	srv, err := startWith(t, store, dbPath, config.InitialAdmin{User: "admin", PasswordFile: path}, false)
+	if err != nil {
+		t.Fatalf("CreateInitialAdmin: %v", err)
+	}
+	u, err := store.GetUserByLogin("admin")
+	if err != nil || u.Role != "admin" {
+		t.Fatalf("admin from the file: %+v, %v", u, err)
+	}
+	loginToken(t, srv.Router(), "admin", initialAdminPassword)
+	if strings.Contains(logs.String(), initialAdminPassword) {
+		t.Fatal("the password is in the log")
+	}
+}
+
 // With accounts in the database the variables do nothing, even unusable ones: they only act on the first
 // start, and a leftover weak value must not stop a running instance.
 func TestInitialAdminIgnoredWhenAccountsExist(t *testing.T) {
@@ -209,6 +235,7 @@ func TestInitialAdminIgnoredWhenAccountsExist(t *testing.T) {
 	for _, admin := range []config.InitialAdmin{
 		{User: "neuer.admin", Password: initialAdminPassword},
 		{User: "neuer.admin", Password: "kurz"},
+		{User: "neuer.admin", PasswordFile: "/nonexistent/admin_password"},
 	} {
 		if _, err := startWith(t, store, dbPath, admin, false); err != nil {
 			t.Fatalf("start with existing accounts: %v", err)
