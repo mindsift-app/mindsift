@@ -68,6 +68,7 @@ jobs:
             for t in ${TAGS}; do TAG_ARGS="${TAG_ARGS} -t ${IMAGE}:${t}"; done
             DOCKER_BUILDKIT=1 docker build --progress=plain \
               --build-arg APP_VERSION="${{ steps.plan.outputs.app_version }}" \
+              --build-arg IMAGE_VERSION="${{ steps.plan.outputs.app_version }}" \
               --build-arg SKIP_TESTS="${{ steps.plan.outputs.skip_tests }}" \
               --build-arg GIT_SHA="${{ steps.plan.outputs.sha }}" \
               --build-arg GIT_TREE="${{ steps.plan.outputs.tree }}" \

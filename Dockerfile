@@ -83,6 +83,14 @@ ARG GIT_TREE=""
 # Hash of Dockerfile, go.mod and go.sum (CI: decides whether a later build needs a security scan)
 ARG GIT_DEPS=""
 LABEL org.opencontainers.image.revision="${GIT_SHA}" io.mindsift.tree="${GIT_TREE}" io.mindsift.deps="${GIT_DEPS}"
+# What the image is and which version (Dozzle, Portainer and others show it, e.g. next to an available update).
+# IMAGE_VERSION: the release (vX.Y.Z) or "vX.Y.Z-dev" for dev builds (CI); empty for local builds.
+ARG IMAGE_VERSION=""
+LABEL org.opencontainers.image.title="MindSift" \
+      org.opencontainers.image.description="Notes, tasks and a clear head, self-hosted: outliner notes, tasks with a Kanban board, shared lists, works offline." \
+      org.opencontainers.image.version="${IMAGE_VERSION}" \
+      org.opencontainers.image.licenses="AGPL-3.0-only" \
+      org.opencontainers.image.url="https://mindsift.app"
 # MindSift runs as the user mindsift (uid/gid 1000), not as root; the entrypoint hands /data over first.
 # apk upgrade: security fixes of the base system released after the alpine image itself
 RUN apk upgrade --no-cache && \
