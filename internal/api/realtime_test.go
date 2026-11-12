@@ -414,3 +414,58 @@ func TestLongPollDeliversEvents(t *testing.T) {
 		t.Errorf("unknown poll connection: want 404, got %d", resp.StatusCode)
 	}
 }
+
+// Sharing a pinned note must not unpin it for the owner: everyone gets the note as they see it, the
+// note's room no copy of someone else's (pin, folder and permission are personal).
+func TestShareKeepsOwnersPinInRealtime(t *testing.T) {
+	_, store, ts, owner, token := startRealtimeServer(t)
+	doc, err := store.CreateDocument(owner.ID, "", "Angeheftet", "", "", nil, nil, true)
+	if err != nil {
+		t.Fatalf("create doc: %v", err)
+	}
+	stream := openSSE(t, ts, token)
+	if r := doJSON(t, ts, http.MethodPost, "/api/v1/events/rooms", token, map[string]string{"sseId": stream.id, "room": "doc:" + doc.ID}); r.StatusCode != http.StatusOK {
+		t.Fatalf("join doc room: %d", r.StatusCode)
+	}
+	for _, mail := range []string{"anna@example.com", "ben@example.com", "carla@example.com"} {
+		u, _ := newTestUser(t, store, mail)
+		if r := doJSON(t, ts, http.MethodPost, "/api/v1/documents/"+doc.ID+"/shares", token, map[string]string{"userId": u.ID, "permission": "write"}); r.StatusCode != http.StatusCreated {
+			t.Fatalf("share: %d", r.StatusCode)
+		}
+	}
+
+	updates := 0
+	deadline := time.After(700 * time.Millisecond)
+	for done := false; !done; {
+		select {
+		case m, ok := <-stream.events:
+			if !ok {
+				done = true
+				continue
+			}
+			if m.Event != "DOC_UPDATED" && m.Event != "DOC_CREATED" {
+				continue
+			}
+			var d domain.Document
+			_ = json.Unmarshal(m.Payload, &d)
+			if d.ID != doc.ID {
+				continue
+			}
+			if !d.IsPinned || !d.IsOwner {
+				t.Errorf("%s for the owner: isPinned=%v isOwner=%v, want both true", m.Event, d.IsPinned, d.IsOwner)
+			}
+			if m.Event == "DOC_UPDATED" {
+				updates++
+			}
+		case <-deadline:
+			done = true
+		}
+	}
+	// One update per share, none a second time through the room
+	if updates != 3 {
+		t.Errorf("owner got %d DOC_UPDATED, want 3", updates)
+	}
+	if got, _ := store.GetDocumentByID(owner.ID, doc.ID); got == nil || !got.IsPinned {
+		t.Error("note no longer pinned for the owner")
+	}
+}

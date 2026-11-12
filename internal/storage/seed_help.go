@@ -151,7 +151,7 @@ func (s *Store) seedHelpNotesDE(user *domain.User) {
 	help("Teilen & gemeinsam bearbeiten", "🤝", []seedBlock{
 		{text: "Notizen, Ordner, Aufgabenlisten und Listen lassen sich mit Personen oder Gruppen teilen – zum Bearbeiten oder nur zum Lesen"},
 		{text: "In einer geteilten Notiz schreiben mehrere gleichzeitig; wer in einem Punkt tippt, hält ihn kurz für sich"},
-		{level: 1, text: "Probier es aus: „Homelab 2.0“ ist mit dem Demo-Konto **user** geteilt – in einem zweiten Browser als user/user anmelden"},
+		{level: 1, text: "Probier es aus: In der Demo ist alles mit dem Konto **user** geteilt – in einem zweiten Browser als user/user anmelden"},
 		{text: "Aufgaben in geteilten Listen lassen sich Personen zuweisen und beobachten"},
 	})
 	help("API & Smart Home", "🔌", []seedBlock{

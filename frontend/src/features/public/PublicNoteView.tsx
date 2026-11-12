@@ -96,7 +96,7 @@ export const PublicNoteView: React.FC<{ token: string }> = ({ token }) => {
 
   return (
     <PublicFrame>
-      <div className="max-w-3xl mx-auto pl-2 pr-1 sm:px-8 pt-16 sm:pt-[18vh] pb-[40vh]">
+      <div className="max-w-[var(--note-measure)] mx-auto pl-2 pr-1 sm:px-8 pt-16 sm:pt-[18vh] pb-[40vh]">
         <div className="flex items-center gap-3 mb-4">
           {note.icon && !zoom.zoomedBlock && <span className="text-2xl sm:text-3xl leading-none select-none">{note.icon}</span>}
           <h1 className="flex-1 min-w-0 text-2xl sm:text-3xl font-light text-main tracking-tight leading-snug break-words [overflow-wrap:anywhere]">

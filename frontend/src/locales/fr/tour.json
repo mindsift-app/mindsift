@@ -41,7 +41,7 @@
   },
   "tasks": {
     "title": "Tâches",
-    "text": "Ici tu passes de la liste au Kanban et au calendrier ; en Kanban, <b>⤢</b> élargit le tableau à toute la fenêtre. Un clic sur une tâche ouvre le détail avec échéance, sous-tâches, notes et rappels.",
+    "text": "Ici tu passes de la liste au Kanban et au calendrier. Un clic sur une tâche ouvre le détail avec échéance, sous-tâches, notes et rappels.",
     "textPhone": "Liste, Kanban et calendrier se choisissent dans le menu derrière le logo en haut à gauche. Toucher une tâche ouvre le détail avec échéance, sous-tâches, notes et rappels."
   },
   "search": {

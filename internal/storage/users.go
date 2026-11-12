@@ -254,7 +254,7 @@ func (s *Store) EnsureDemoAccounts() error {
 	logDBErr(s.SetLanguage(adminUser.ID, lang))
 	logDBErr(s.SetLanguage(normalUser.ID, lang))
 
-	// 3. Sample data for the admin, partly shared with the demo user (only on first start). Both accounts
+	// 3. Sample data for the admin, all shared with the demo user (only on first start). Both accounts
 	// share an organization so they can see each other in the default sharing mode.
 	if adminCreated {
 		if org, err := s.CreateOrganization("Demo"); err == nil {

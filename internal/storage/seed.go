@@ -347,20 +347,52 @@ func (s *Store) seedStarterDE(user *domain.User) error {
 	return nil
 }
 
-// seedDemoShares shares part of the admin's sample data with the demo user, so both demo accounts can try
-// out editing a note, a task list and a shopping list together.
+// seedDemoShares shares all of the admin's sample data with the demo user for editing, the way the app
+// does it: each top-level folder as a shared folder (with the notes and subfolders in it), the notes
+// outside folders one by one, and every task list and list. So the demo user sees the same workspace and
+// both demo accounts can try out editing together (pins stay personal: only the admin's start note is pinned).
 func (s *Store) seedDemoShares(admin, member *domain.User) {
-	var docID, taskListID, listID string
-	logDBErr(s.db.QueryRow(`SELECT id FROM documents WHERE user_id = ? AND title LIKE 'Homelab 2.0%'`, admin.ID).Scan(&docID))
-	logDBErr(s.db.QueryRow(`SELECT id FROM task_lists WHERE user_id = ? AND title = 'Homelab'`, admin.ID).Scan(&taskListID))
-	logDBErr(s.db.QueryRow(`SELECT id FROM lists WHERE user_id = ? AND title IN ('Wocheneinkauf', 'Weekly groceries')`, admin.ID).Scan(&listID))
-	if docID != "" {
-		_, _ = s.CreateDocShare(admin.ID, docID, member.ID, "write")
+	folders := map[string]bool{}
+	for _, q := range []string{
+		`SELECT path FROM workspace_folders WHERE user_id = ? AND shared_folder_id = ''`,
+		`SELECT folder_path FROM documents WHERE user_id = ? AND shared_folder_id = '' AND is_archived = 0 AND folder_path != ''`,
+	} {
+		for _, path := range s.seedStrings(q, admin.ID) {
+			if top, _, _ := strings.Cut(path, "/"); top != "" {
+				folders[top] = true
+			}
+		}
 	}
-	if taskListID != "" {
-		_, _ = s.AddTaskListShare(taskListID, "user", member.ID, "editor", admin.ID)
+	for name := range folders {
+		if sf, err := s.CreateSharedFolder(admin.ID, name, name); err == nil {
+			_, _ = s.CreateFolderShare(admin.ID, sf.ID, "user", member.ID, "write")
+		}
 	}
-	if listID != "" {
-		_, _ = s.AddListShare(admin.ID, listID, "user", member.ID, "editor")
+	for _, id := range s.seedStrings(`SELECT id FROM documents WHERE user_id = ? AND shared_folder_id = '' AND is_archived = 0`, admin.ID) {
+		_, _ = s.CreateDocShare(admin.ID, id, member.ID, "write")
 	}
+	for _, id := range s.seedStrings(`SELECT id FROM task_lists WHERE user_id = ?`, admin.ID) {
+		_, _ = s.AddTaskListShare(id, "user", member.ID, "editor", admin.ID)
+	}
+	for _, id := range s.seedStrings(`SELECT id FROM lists WHERE user_id = ?`, admin.ID) {
+		_, _ = s.AddListShare(admin.ID, id, "user", member.ID, "editor")
+	}
+}
+
+// seedStrings returns the values of a query with one text column.
+func (s *Store) seedStrings(query string, args ...any) []string {
+	rows, err := s.db.Query(query, args...)
+	if dbFailed(err) {
+		return nil
+	}
+	defer rows.Close()
+	var out []string
+	for rows.Next() {
+		var v string
+		if !dbFailed(rows.Scan(&v)) {
+			out = append(out, v)
+		}
+	}
+	logDBErr(rows.Err())
+	return out
 }

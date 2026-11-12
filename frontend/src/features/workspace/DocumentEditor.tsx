@@ -1935,12 +1935,12 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
       {/* Main Content Area */}
       {/* Phones: almost no side margin; very deep outlines scroll sideways (rows keep a minimum width) */}
       {/* shrink-0: the sideways scroll area must keep its full height, so only the editor scrolls vertically */}
-      {/* Focus mode: as wide as the note in the workspace with the sidebar hidden (max-w-6xl less the page padding and the pane border, App.tsx) */}
+      {/* Desktop: at most the reading width, centred in the pane; focus mode a little wider (--note-measure, index.css) */}
       <div
         ref={contentRef}
         className={`w-full pl-2 pr-1 sm:px-8 flex-auto shrink-0 overflow-x-auto sm:overflow-x-visible [-webkit-overflow-scrolling:touch] ${
           inTagPage ? 'py-2' : inJournal ? 'py-3' : 'py-5'
-        } ${focusMode ? 'max-w-[calc(theme(maxWidth.6xl)-2rem-2px)] mx-auto' : ''}`}
+        } ${focusMode ? 'max-w-[var(--note-measure-focus)]' : 'sm:max-w-[var(--note-measure)]'} mx-auto`}
         style={focusMode && desktopBar && !embedded ? { paddingTop: `calc(1.25rem + ${focusTopGap}px)`, paddingBottom: '60vh' } : undefined}
       >
         {desktopBar && zoomedBlock && breadcrumbs.length > 0 && <div className="mb-3">{breadcrumbNav}</div>}

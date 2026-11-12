@@ -393,6 +393,52 @@ func TestDemoAccountsGetSampleDataAndShares(t *testing.T) {
 	if role := s.DocRole(member.ID, docID); role != DocRoleEditor {
 		t.Fatalf("demo user must be editor of the sample note, got %q", role)
 	}
+	// Everything is shared with the demo user for editing: folders as shared folders, the rest one by one
+	adminDocs, _ := s.GetDocuments(admin.ID)
+	memberDocs, _ := s.GetDocuments(member.ID)
+	if len(memberDocs) != len(adminDocs) {
+		t.Fatalf("demo user sees %d of the admin's %d notes", len(memberDocs), len(adminDocs))
+	}
+	start := ""
+	for _, d := range memberDocs {
+		if s.DocRole(member.ID, d.ID) != DocRoleEditor {
+			t.Errorf("demo user must be editor of %q, got %q", d.Title, s.DocRole(member.ID, d.ID))
+		}
+		if d.FolderPath != "" && d.SharedFolderID == "" {
+			t.Errorf("%q in folder %q should come through a shared folder", d.Title, d.FolderPath)
+		}
+		if d.IsPinned {
+			t.Errorf("pins are personal, %q is pinned for the demo user", d.Title)
+		}
+		if strings.HasPrefix(d.Title, "Diagrams") {
+			start = d.ID
+		}
+	}
+	if start == "" {
+		t.Error("the admin's pinned start note must be shared with the demo user")
+	}
+	// Notes made in the same second come in the same order for both (the help notes as written); the
+	// start note is pinned, and so first, only for the admin
+	titles := func(docs []domain.Document) string {
+		var out []string
+		for _, d := range docs {
+			if d.ID != start {
+				out = append(out, d.Title)
+			}
+		}
+		return strings.Join(out, " | ")
+	}
+	if a, m := titles(adminDocs), titles(memberDocs); a != m {
+		t.Errorf("order differs:\nadmin %s\nuser  %s", a, m)
+	}
+	adminTaskLists, _ := s.GetTaskLists(admin.ID)
+	memberTaskLists, _ := s.GetTaskLists(member.ID)
+	adminLists, _ := s.GetAllListsForUser(admin.ID)
+	memberLists, _ := s.GetAllListsForUser(member.ID)
+	if len(adminTaskLists) < 2 || len(memberTaskLists) != len(adminTaskLists) || len(adminLists) < 2 || len(memberLists) != len(adminLists) {
+		t.Fatalf("demo user should see all task lists (%d of %d) and lists (%d of %d)",
+			len(memberTaskLists), len(adminTaskLists), len(memberLists), len(adminLists))
+	}
 	var tasks, inbox int
 	_ = s.db.QueryRow(`SELECT COUNT(*) FROM thoughts WHERE user_id = ? AND converted_type = 'task'`, admin.ID).Scan(&tasks)
 	_ = s.db.QueryRow(`SELECT COUNT(*) FROM thoughts WHERE user_id = ? AND status = 'inbox'`, admin.ID).Scan(&inbox)

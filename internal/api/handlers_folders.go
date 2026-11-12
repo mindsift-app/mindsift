@@ -111,10 +111,7 @@ func (s *Server) handleMoveFolder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	for _, id := range movedDocIDs {
-		if doc, err := s.store.GetDocumentByID(userID, id); err == nil && doc != nil {
-			s.wsHub.BroadcastDocEvent(id, "DOC_UPDATED", doc)
-			s.broadcastDocToAuthorizedUsers(id, "DOC_UPDATED")
-		}
+		s.broadcastDocToAuthorizedUsers(id, "DOC_UPDATED")
 	}
 	s.wsHub.BroadcastToUser(userID, "WORKSPACE_FOLDERS_UPDATED", map[string]string{
 		"sourcePath": req.SourcePath,

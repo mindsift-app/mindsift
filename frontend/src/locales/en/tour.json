@@ -41,7 +41,7 @@
   },
   "tasks": {
     "title": "Tasks",
-    "text": "Switch between list, Kanban and calendar here; in Kanban, <b>⤢</b> makes the board as wide as the window. Clicking a task opens the details with due date, subtasks, notes and reminders.",
+    "text": "Switch between list, Kanban and calendar here. Clicking a task opens the details with due date, subtasks, notes and reminders.",
     "textPhone": "Choose list, Kanban or calendar in the menu behind the logo at the top left. Tapping a task opens the details with due date, subtasks, notes and reminders."
   },
   "search": {
