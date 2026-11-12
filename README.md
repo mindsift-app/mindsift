@@ -106,7 +106,7 @@ claude mcp add --transport http mindsift https://your-server/api/v1/mcp --header
 ```
 
 ### 🏢 Users & admin
-Guided setup, invite codes and links, registration modes (closed, approval, email domains, open), organizations that decide who may share with whom (a person can be in several), groups, sharing as editor or read-only, a user manager role for accounts without the server settings, and automatic backups with restore.
+Guided setup, sign-in through Authentik, Authelia, Keycloak or any other OpenID Connect provider, invite codes and links, registration modes (closed, approval, email domains, open), organizations that decide who may share with whom (a person can be in several), groups, sharing as editor or read-only, a user manager role for accounts without the server settings, and automatic backups with restore.
 
 **More on the [website](https://mindsift.app/en/), or [open the demo](https://demo.mindsift.app) and poke around.**
 
@@ -118,7 +118,7 @@ MindSift sits between a notes app and a task manager. If one of these fits you b
 
 * **[Obsidian](https://obsidian.md):** Markdown files on your own disk, native apps and a huge plugin ecosystem. It is an app, not a server: no web version, and writing in the same note at the same time is not built in. MindSift is a server with a web app; it keeps notes in a database and exports them as Markdown (an Obsidian vault) whenever you ask.
 * **[Logseq](https://logseq.com):** the closest relative on the notes side, a local-first outliner with backlinks, queries, a graph view and plugins, and much deeper there than MindSift. MindSift's outliner is simpler, but it runs on your server, is shared with other people and comes with tasks, lists and alarms.
-* **[Vikunja](https://vikunja.io):** the more complete self-hosted task manager, with Gantt and table views, CalDAV, OIDC sign-in and a choice of databases, but no notes. MindSift's tasks are tied to notes, with fewer integrations.
+* **[Vikunja](https://vikunja.io):** the more complete self-hosted task manager, with Gantt and table views, CalDAV and a choice of databases, but no notes. MindSift's tasks are tied to notes, with fewer integrations.
 * **[Joplin](https://joplinapp.org):** a mature notes app with native apps everywhere, end-to-end encryption and a web clipper. A note is one Markdown document rather than an outline, and two people do not write in it at the same moment. MindSift has none of those three strengths; it has live collaboration and tasks.
 
 If something here is out of date or unfair, please open an issue.
@@ -127,7 +127,7 @@ If something here is out of date or unfair, please open an issue.
 
 ## Not (yet) in MindSift
 
-* **Single sign-on (OIDC/SSO)** through Authentik, Authelia or Keycloak: MindSift only has its own accounts (with passkeys and two-factor sign-in).
+* **SAML, LDAP and logging out at the provider:** single sign-on is OpenID Connect only, and signing out of MindSift does not sign you out of the provider.
 * **Passkeys without a fixed https address:** passkeys need `BASE_URL` with https (or `http://localhost`); on a bare IP address or plain http only the authenticator app works.
 * **PostgreSQL or MySQL:** SQLite on purpose (see [design decisions](#design-decisions)).
 * **CalDAV or an iCal feed:** the calendar exists only inside MindSift.
@@ -191,12 +191,14 @@ The most important settings (all of them are in [`.env.example`](.env.example)):
 | `TZ` | `Europe/Berlin` | Time zone for due dates and alarms |
 | `REGISTRATION_MODE` | admin UI decides | `closed`, `approval`, `domain`, `domain+approval` or `open` |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` | empty | Mail for alarms, invites and password reset (also in the admin UI) |
+| `OIDC_ISSUER`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET` | empty | Sign-in through an OpenID Connect provider, see [single sign-on](#single-sign-on-oidc) below |
 | `TRUSTED_PROXIES` | `private` | Whose `X-Forwarded-For` to trust, see [reverse proxy](Doku/reverse-proxy.md) |
 | `MCP_ENABLED` | admin UI decides | `false` switches off the endpoint for AI agents |
 | `STT_*` | empty | Your own Whisper server for voice input |
 | `MINDSIFT_DEMO` | `false` | Demo accounts `admin/admin` and `user/user` with sample data. **Never on a server with real data!** |
 
 * **First admin:** with `ADMIN_USER` (username) and `ADMIN_PASSWORD` (at least 8 characters), the admin exists before the server accepts connections; after signing in, the wizard asks only the remaining settings. For a Docker secret, `ADMIN_PASSWORD_FILE` names a file with the password instead. They act only while the database has no account and can be removed afterwards. If they are unusable (one missing, password too short, invalid name or email), MindSift does not start and says why in the log. Without `ADMIN_EMAIL` the wizard asks for an address, confirmed by a mailed link; until then there is no "forgot password" for this account. Both ways of the wizard also offer to set up the mail server (when `SMTP_HOST` is not set) and end with a summary of what is still open (mail server, `BASE_URL`) and where the backups are.
+* **Single sign-on:** see [below](#single-sign-on-oidc).
 * **Language:** the app uses the browser's language if it is one of the five, and everyone can pick their own in the settings. `DEFAULT_LANGUAGE` covers the rest; unset, it is German (where the project started), so for an English instance set `en` or pick it in the setup wizard. API clients without `Accept-Language` (scripts, curl) get errors in the configured default language, else in English.
 * **Reverse proxy:** pass through WebSocket upgrades and unbuffered SSE if you can; otherwise MindSift falls back to long polling. Examples for nginx, Traefik, Caddy and Cloudflare: [Doku/reverse-proxy.md](Doku/reverse-proxy.md).
 * **Backups:** the setup wizard offers daily backups (preselected: 03:00 server time, kept 3 days); change them later in the admin settings. Each run saves the whole database plus one ZIP per person under `data/backups/`, which people download or restore in their account settings. Copy that folder somewhere else too.
@@ -204,6 +206,51 @@ The most important settings (all of them are in [`.env.example`](.env.example)):
 * **Health check:** the image checks `/api/v1/health` every 30 s, shown in `docker ps`, Portainer and Dockge and usable with `depends_on: condition: service_healthy`. Podman ignores checks in images; copy the `healthcheck:` block of `docker-compose.yml` instead.
 * **File permissions:** everything in `data/` is readable by MindSift only (files 0600, folders 0700). The container tightens files from older versions once on its first start; without the container, run `chmod -R go-rwx data`.
 * **Image tags:** `:stable` = the latest tagged release (default in `docker-compose.yml` and the install script), `:vX.Y.Z` = one release, `:latest` = every build of `main`, `:dev` = development. The project is 0.x: a minor version can still change the API or data formats, and the [changelog](CHANGELOG.md) marks those changes with **Attention**.
+
+### Single sign-on (OIDC)
+
+With an OpenID Connect provider (Authentik, Authelia, Keycloak, Dex, Google and others) the login shows "Sign in with …". Register MindSift there as a confidential client (authorization code flow with PKCE) with the redirect URI **`<BASE_URL>/api/v1/auth/oidc/callback`** and the scopes `openid email profile` (plus `groups` for `OIDC_ADMIN_GROUP`). `BASE_URL` is required; without it the sign-in through the provider stays off and the log says why.
+
+| Variable | Default | What for |
+|---|---|---|
+| `OIDC_ISSUER` | empty | The provider's issuer address, exactly as in its `/.well-known/openid-configuration` (trailing slash included) |
+| `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET` | empty | The client registered at the provider; `OIDC_CLIENT_SECRET_FILE` reads the secret from a file (Docker secret) instead |
+| `OIDC_NAME` | `SSO` | Text on the button: "Sign in with Authentik" |
+| `OIDC_AUTO_CREATE` | `true` | Create an account at the first sign-in. `false`: only existing accounts are linked, everyone else gets a clear message |
+| `OIDC_PASSWORD_LOGIN` | `true` | `false`: only the provider's button; no password sign-in, sign-up with a password or "forgot password". Administrators keep an emergency access with their password at `/?login=password` |
+| `OIDC_ADMIN_GROUP` | empty | Members of this group at the provider are administrators, checked at every sign-in (in and out; the last administrator always stays one). Needs the `groups` claim |
+| `OIDC_SCOPES` | `openid email profile` (+ `groups`) | Other scopes, if the provider needs them |
+
+* **Accounts:** an account is tied to the provider's identity (issuer and `sub`), so a changed address at the provider keeps the link. At the first sign-in an existing account with the same address is linked, but only if the provider marks it verified (`email_verified`); otherwise a new account is created with the name and username the provider gives, without a password of its own. An account whose address differs is linked by its owner under Settings → Security (with the password). Disabled accounts and accounts waiting for approval stay locked.
+* **Second factor:** the provider asks for its own. MindSift does not ask again, and "require two-factor sign-in" in the administration applies only to password sign-ins. Sensitive changes (address, password, deleting, API keys) are confirmed by signing in at the provider again; that counts for five minutes and only in that browser.
+* **Provider down:** MindSift starts anyway; the button says the provider cannot be reached, and administrators sign in at `/?login=password`. Half a configuration (an issuer without a client, a secret file that cannot be read, `OIDC_PASSWORD_LOGIN=false` without a provider) stops the start with a message in the log. The administration shows the setup and whether the provider answers under Server & Sharing. Off in the demo.
+
+Examples (`BASE_URL=https://notes.example.com`):
+
+* **Authentik:** Applications → Providers → OAuth2/OpenID Provider, client type *Confidential*, redirect URI `https://notes.example.com/api/v1/auth/oidc/callback` (strict), scopes `openid`, `email`, `profile` (Authentik sends the groups with `profile`). `OIDC_ISSUER=https://auth.example.com/application/o/<slug>/`.
+* **Authelia** (`identity_providers.oidc.clients`):
+
+  ```yaml
+  - client_id: mindsift
+    client_secret: '$pbkdf2-sha512$…'   # the hash of OIDC_CLIENT_SECRET
+    redirect_uris: ['https://notes.example.com/api/v1/auth/oidc/callback']
+    scopes: ['openid', 'email', 'profile', 'groups']
+    require_pkce: true
+    pkce_challenge_method: 'S256'
+    token_endpoint_auth_method: 'client_secret_basic'
+  ```
+
+  `OIDC_ISSUER=https://auth.example.com`.
+* **Keycloak:** a client with *Client authentication* on and *Standard flow*, valid redirect URI as above. For `OIDC_ADMIN_GROUP` add a *Group Membership* mapper with the claim name `groups` (with or without the full path). `OIDC_ISSUER=https://keycloak.example.com/realms/<realm>`.
+
+```env
+OIDC_ISSUER=https://auth.example.com/application/o/mindsift/
+OIDC_CLIENT_ID=mindsift
+OIDC_CLIENT_SECRET=...
+OIDC_NAME=Authentik
+# OIDC_ADMIN_GROUP=mindsift-admins
+# OIDC_PASSWORD_LOGIN=false
+```
 
 ---
 
@@ -265,7 +312,7 @@ Load-tested with v0.95.0 on the public demo, a deliberately small server with **
 
 MindSift is meant to be reachable from the internet behind a reverse proxy. The whole code base was reviewed for security in November 2026 (v0.94.0), and the findings are fixed (see the [changelog](CHANGELOG.md)). What protects your data:
 
-* **Sign-in:** passwords are hashed with bcrypt over a SHA-256 of the whole password, so long passphrases count to the last character. Two-factor sign-in with an authenticator app (TOTP), passkeys or both, plus ten one-time recovery codes, can be switched on per person or required by the administration for admins or for everyone; a device can be trusted for 30 days. With it on, a new password or address, deleting data or the account and creating an API key ask for the second factor too, every change to it is mailed to the account, and an administrator can reset it for somebody who lost it. Passkeys (WebAuthn, user verification required) also sign in without a password and cannot be phished: they are bound to the host of `BASE_URL` (https only). Every login is a server-side session tied to a signed token; sessions are listed under Settings → Security, can be ended one by one, end after 30 days without use and with any password change. Failed sign-ins lock the account for that address after 3 tries, the account after 20 and the address after 30, each for 15 minutes; registration, "forgot password", the password asked before deleting data and the passwords of public links are limited the same way. A failed sign-in takes as long whether the account exists or not.
+* **Sign-in:** passwords are hashed with bcrypt over a SHA-256 of the whole password, so long passphrases count to the last character. Two-factor sign-in with an authenticator app (TOTP), passkeys or both, plus ten one-time recovery codes, can be switched on per person or required by the administration for admins or for everyone; a device can be trusted for 30 days. With it on, a new password or address, deleting data or the account and creating an API key ask for the second factor too, every change to it is mailed to the account, and an administrator can reset it for somebody who lost it. Passkeys (WebAuthn, user verification required) also sign in without a password and cannot be phished: they are bound to the host of `BASE_URL` (https only). Sign-in through an OpenID Connect provider uses the authorization code flow with PKCE, state and nonce and checks the ID token completely (signature against the provider's keys, issuer, audience, expiry, nonce); the session token never appears in an address, the provider sends back a one-time ticket that only the browser that started the sign-in can trade. Every login is a server-side session tied to a signed token; sessions are listed under Settings → Security, can be ended one by one, end after 30 days without use and with any password change. Failed sign-ins lock the account for that address after 3 tries, the account after 20 and the address after 30, each for 15 minutes; registration, "forgot password", the password asked before deleting data and the passwords of public links are limited the same way. A failed sign-in takes as long whether the account exists or not.
 * **Secrets never in plain text:** API keys, OAuth tokens, reset and confirmation links and the tokens of public links are stored only as SHA-256 hashes. Hidden values in notes are encrypted with AES-256-GCM under a key kept apart from the database (`SECRETS_KEY`).
 * **Rights checked on every request:** notes, folders, lists and task lists resolve the caller's role (owner, editor, viewer) on each call. API keys and MCP connections reach only what their scopes allow, OAuth tokens only the MCP endpoint. Public links are read-only, live at most 14 days, can carry a password and hide names, hidden values and links to other notes.
 * **Addresses stay private:** others see names, usernames and profile pictures, never e-mail addresses. A new login address counts only once its owner clicks the link mailed to it, and mail alarms and test mails go only to that confirmed address, so the server cannot be used to mail strangers.
