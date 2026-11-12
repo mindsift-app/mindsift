@@ -103,6 +103,8 @@ async function run(engine, admin) {
   await page.getByRole('button', { name: /Kontoeinstellungen/ }).locator('visible=true').first().click();
   await page.locator('aside').getByRole('button', { name: /^Sicherheit/ }).click();
   const card = page.locator('[data-security-card="two-factor"]');
+  await card.getByRole('button', { name: 'Einrichten' }).waitFor({ timeout: 10000 });
+  if (SHOTS && name === 'chromium') await page.screenshot({ path: `${SHOTS}/mfa-settings-off.png` });
   await card.getByRole('button', { name: 'Einrichten' }).click();
   await card.getByLabel('Zur Bestätigung dein Passwort').fill(password);
   await card.getByRole('button', { name: 'Weiter' }).click();
@@ -114,7 +116,7 @@ async function run(engine, admin) {
   check(await card.locator('[data-totp-qr]').isVisible(), `${name}: QR-Code angezeigt`);
   if (SHOTS && name === 'chromium') await page.screenshot({ path: `${SHOTS}/mfa-setup-qr.png` });
   const next = codes(base32(secret));
-  await card.getByLabel('Code').fill(await next());
+  await card.getByLabel('Code', { exact: true }).fill(await next());
   await card.locator('[data-recovery-codes]').waitFor({ timeout: 10000 });
   const recovery = await card.locator('[data-recovery-code]').allInnerTexts();
   check(recovery.length === 10 && recovery.every((c) => /^[a-z2-9]{5}-[a-z2-9]{5}$/.test(c)), `${name}: zehn Wiederherstellungscodes angezeigt`, recovery);
