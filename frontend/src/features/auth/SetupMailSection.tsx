@@ -160,7 +160,8 @@ function SetupTestMail({ defaultTo, send, disabled }: { defaultTo: string; send:
           value={typed ?? defaultTo}
           onChange={(e) => setTyped(e.target.value)}
           placeholder={t('setupMail.emailPlaceholder')}
-          className={`flex-1 min-w-0 input-field ${SETUP_INPUT}`}
+          // flex-1 only beside the button: in the phone's column it would squeeze the field's height
+          className={`w-full sm:flex-1 min-w-0 input-field ${SETUP_INPUT}`}
         />
         <button
           type="button"

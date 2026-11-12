@@ -23,7 +23,7 @@ export const SetupSummary: React.FC<{
 }> = ({ heading, info, choices, wizardSmtpHost, email }) => {
   const { t } = useTranslation('auth');
   const b = <strong className="text-main font-semibold" />;
-  const c = <code className="font-mono break-all" />;
+  const c = <code className="font-mono" />;
   const mailReady = Boolean(info?.smtpConfigured || wizardSmtpHost);
   const linksReady = mailReady && Boolean(info?.baseUrlSet);
 
