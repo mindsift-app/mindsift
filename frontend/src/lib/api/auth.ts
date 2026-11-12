@@ -5,7 +5,9 @@ import {
   LoginResult,
   MfaLoginResult,
   MfaStatus,
+  Passkey,
   Retention,
+  SecondFactorProof,
   SharingMode,
   Session,
   SmtpForm,
@@ -15,6 +17,7 @@ import {
 import { setToken, clearToken, ensureArray, request, setCurrentSharingMode, setCurrentPeopleSearch } from './client';
 import { forgetTrust, rememberTrust, trustedDeviceId, trustTokens } from '../trustedDevice';
 import { clearStoredNotes } from '../docSync/persist';
+import type { PasskeyJSON } from '../webauthn';
 import { clearUndoHistories } from '../docSync/undoHistory';
 
 export const authApi = {
@@ -127,26 +130,89 @@ export const authApi = {
     return res;
   },
 
+  // Second step with a passkey: the options for navigator.credentials.get(), then the browser's answer
+  async mfaPasskeyOptions(mfaToken: string): Promise<{ options: PasskeyJSON }> {
+    return request('/api/v1/auth/login/mfa/passkey/options', { method: 'POST', body: JSON.stringify({ mfaToken }) });
+  },
+
+  async loginMfaPasskey(mfaToken: string, credential: PasskeyJSON, trustDevice: boolean): Promise<MfaLoginResult> {
+    const res = await request<MfaLoginResult>('/api/v1/auth/login/mfa/passkey', {
+      method: 'POST',
+      body: JSON.stringify({ mfaToken, credential, trustDevice }),
+    });
+    setToken(res.token);
+    if (res.trustToken && res.trustedDeviceId) rememberTrust(res.user.id, res.trustedDeviceId, res.trustToken);
+    return res;
+  },
+
+  // Sign-in without password: a challenge for any passkey of this server, then the browser's answer
+  async passkeyLoginOptions(): Promise<{ token: string; options: PasskeyJSON; expiresIn: number }> {
+    return request('/api/v1/auth/login/passkey/options', { method: 'POST' });
+  },
+
+  async loginPasskey(token: string, credential: PasskeyJSON): Promise<{ token: string; user: User }> {
+    const res = await request<{ token: string; user: User }>('/api/v1/auth/login/passkey', {
+      method: 'POST',
+      body: JSON.stringify({ token, credential }),
+    });
+    setToken(res.token);
+    return res;
+  },
+
   async getMfaStatus(): Promise<MfaStatus> {
     return request<MfaStatus>('/api/v1/auth/mfa');
   },
 
-  // A new secret for the authenticator app; on only after confirmTotp
-  async setupTotp(password: string): Promise<{ secret: string; uri: string }> {
-    return request('/api/v1/auth/mfa/totp/setup', { method: 'POST', body: JSON.stringify({ password }) });
+  // A new secret for the authenticator app; on only after confirmTotp. proof: when the account has passkeys
+  async setupTotp(password: string, proof?: SecondFactorProof): Promise<{ secret: string; uri: string }> {
+    return request('/api/v1/auth/mfa/totp/setup', { method: 'POST', body: JSON.stringify({ password, ...proof }) });
   },
 
+  // recoveryCodes is empty when the account has passkeys: it keeps the codes it has
   async confirmTotp(code: string): Promise<{ recoveryCodes: string[]; enabledAt: string }> {
     return request('/api/v1/auth/mfa/totp/confirm', { method: 'POST', body: JSON.stringify({ code }) });
   },
 
-  async disableTotp(userId: string, password: string, code: string): Promise<void> {
-    await request('/api/v1/auth/mfa/totp/disable', { method: 'POST', body: JSON.stringify({ password, code }) });
-    forgetTrust(userId);
+  // mfaOff: the app was the last second factor, the trust of this device is gone too
+  async disableTotp(userId: string, password: string, proof: SecondFactorProof): Promise<{ mfaOff: boolean }> {
+    const res = await request<{ mfaOff: boolean }>('/api/v1/auth/mfa/totp/disable', {
+      method: 'POST',
+      body: JSON.stringify({ password, ...proof }),
+    });
+    if (res?.mfaOff !== false) forgetTrust(userId);
+    return res;
   },
 
-  async newRecoveryCodes(password: string, code: string): Promise<{ recoveryCodes: string[] }> {
-    return request('/api/v1/auth/mfa/recovery-codes', { method: 'POST', body: JSON.stringify({ password, code }) });
+  async newRecoveryCodes(password: string, proof: SecondFactorProof): Promise<{ recoveryCodes: string[] }> {
+    return request('/api/v1/auth/mfa/recovery-codes', { method: 'POST', body: JSON.stringify({ password, ...proof }) });
+  },
+
+  // A passkey confirms a sensitive change: the challenge, answered in the browser, goes with the request
+  async passkeyChallenge(): Promise<{ passkeyToken: string; options: PasskeyJSON }> {
+    return request('/api/v1/auth/mfa/passkeys/challenge', { method: 'POST' });
+  },
+
+  // Adding a passkey: the password (and a second factor when the account has one), then the browser's answer
+  async passkeyRegisterOptions(password: string, proof?: SecondFactorProof): Promise<{ token: string; options: PasskeyJSON }> {
+    return request('/api/v1/auth/mfa/passkeys/register/options', { method: 'POST', body: JSON.stringify({ password, ...proof }) });
+  },
+
+  async registerPasskey(token: string, name: string, credential: PasskeyJSON): Promise<{ passkey: Passkey; recoveryCodes?: string[] }> {
+    return request('/api/v1/auth/mfa/passkeys', { method: 'POST', body: JSON.stringify({ token, name, credential }) });
+  },
+
+  async renamePasskey(id: string, name: string): Promise<{ name: string }> {
+    return request(`/api/v1/auth/mfa/passkeys/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify({ name }) });
+  },
+
+  // mfaOff: it was the last second factor; recovery codes and trusted devices are gone too
+  async removePasskey(userId: string, id: string, password: string, proof: SecondFactorProof): Promise<{ mfaOff: boolean }> {
+    const res = await request<{ mfaOff: boolean }>(`/api/v1/auth/mfa/passkeys/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+      body: JSON.stringify({ password, ...proof }),
+    });
+    if (res?.mfaOff) forgetTrust(userId);
+    return res;
   },
 
   // id omitted: every trusted device of the account

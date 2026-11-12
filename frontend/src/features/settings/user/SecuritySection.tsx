@@ -8,8 +8,9 @@ import { User } from '../../../lib/types';
 import { askConfirm } from '../../../components/askConfirm';
 import { SessionsPanel } from '../SessionsPanel';
 import { TwoFactorCard } from './TwoFactorCard';
+import { PasskeyCard } from './PasskeyCard';
 
-// Kontoeinstellungen → Sicherheit: a new password, two-factor sign-in and the signed-in devices.
+// Kontoeinstellungen → Sicherheit: a new password, two-factor sign-in, passkeys and the signed-in devices.
 export function SecuritySection({
   currentUser,
   onUserUpdated,
@@ -20,6 +21,9 @@ export function SecuritySection({
   demoMode: boolean;
 }) {
   const { t } = useTranslation('settings');
+  // The app and the passkeys share the state of two-factor sign-in: a change in one card reloads the other
+  const [twoFactorKey, setTwoFactorKey] = useState(0);
+  const [passkeyKey, setPasskeyKey] = useState(0);
   return (
     <div className="space-y-6">
       <div className="border-b border-border pb-3">
@@ -28,7 +32,10 @@ export function SecuritySection({
       </div>
       <PasswordCard onUserUpdated={onUserUpdated} demoMode={demoMode} />
       <div className="pt-5 border-t border-border">
-        <TwoFactorCard currentUser={currentUser} demoMode={demoMode} />
+        <TwoFactorCard currentUser={currentUser} demoMode={demoMode} refreshKey={twoFactorKey} onChanged={() => setPasskeyKey((k) => k + 1)} />
+      </div>
+      <div className="pt-5 border-t border-border">
+        <PasskeyCard currentUser={currentUser} demoMode={demoMode} refreshKey={passkeyKey} onChanged={() => setTwoFactorKey((k) => k + 1)} />
       </div>
       <div className="pt-5 border-t border-border">
         <SessionsCard demoMode={demoMode} />

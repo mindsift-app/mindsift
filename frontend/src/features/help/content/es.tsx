@@ -671,7 +671,7 @@ const es: HelpContent = {
       title: 'Sin conexión, copias de seguridad y contraseña',
       subtitle: 'Seguir trabajando sin internet, restaurar copias, restablecer la contraseña',
       icon: CloudOff,
-      keywords: ['sin conexión', 'offline', 'internet', 'copia de seguridad', 'restaurar', 'contraseña', 'olvidada', 'cuenta', 'dos pasos', '2fa', 'autenticación', 'seguridad'],
+      keywords: ['sin conexión', 'offline', 'internet', 'copia de seguridad', 'restaurar', 'contraseña', 'olvidada', 'cuenta', 'dos pasos', '2fa', 'autenticación', 'seguridad', 'llave de acceso', 'passkey', 'huella'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
           <ul className="space-y-1.5">
@@ -689,6 +689,9 @@ const es: HelpContent = {
             </li>
             <li>
               <strong className="text-main">Inicio de sesión en dos pasos:</strong> en <em>Ajustes de la cuenta → Seguridad</em> conectas una app de autenticación (escanear el código QR, introducir el primer código); a partir de entonces, después de la contraseña se pide el código de seis dígitos de la app. Los diez códigos de recuperación que aparecen una sola vez ayudan si no tienes el móvil: cada uno funciona una vez. Con «Confiar en este dispositivo durante 30 días» un dispositivo propio no pide el código durante un mes. «¿Has olvidado tu contraseña?» no desactiva el inicio de sesión en dos pasos.
+            </li>
+            <li>
+              <strong className="text-main">Llaves de acceso:</strong> en <em>Ajustes de la cuenta → Seguridad → Llaves de acceso</em> creas una llave de acceso (confirmar la contraseña, darle un nombre, huella, rostro o PIN del dispositivo). A partir de entonces, «Iniciar sesión con una llave de acceso» te permite entrar sin contraseña; algunos navegadores también la ofrecen directamente en el campo de inicio de sesión. Si inicias sesión con la contraseña, después se pide la llave de acceso: una llave de acceso cuenta como segundo factor, incluso sin app de autenticación. Los códigos de recuperación aparecen con la primera llave de acceso. Si quitas el último segundo factor, el inicio de sesión en dos pasos se desactiva de nuevo. Las llaves de acceso solo están disponibles si el servidor tiene una dirección https fija (BASE_URL).
             </li>
           </ul>
         </div>
