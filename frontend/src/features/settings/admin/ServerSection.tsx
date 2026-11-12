@@ -199,6 +199,26 @@ export function ServerSection({
             />
           </div>
 
+          {/* Who must sign in with a second factor; without one the next request leads to its setup */}
+          <div className="p-4 bg-canvas border border-border rounded-card flex flex-wrap items-center justify-between gap-4" data-admin-mfa-required>
+            <div className="pr-4 min-w-0 flex-1">
+              <p className="font-bold text-main">{t('server.mfaRequired')}</p>
+              <p className="text-[11px] text-muted mt-0.5">{t('server.mfaRequiredHint')}</p>
+            </div>
+            <SelectMenu
+              size="sm"
+              ariaLabel={t('server.mfaRequired')}
+              value={settings.mfaRequired || ''}
+              disabled={demoMode}
+              onChange={(v) => handleSaveSystemSettings({ mfaRequired: v as '' | 'admins' | 'all' })}
+              options={[
+                { value: '', label: t('server.mfaRequiredNobody') },
+                { value: 'admins', label: t('server.mfaRequiredAdmins') },
+                { value: 'all', label: t('server.mfaRequiredAll') },
+              ]}
+            />
+          </div>
+
           {/* Web push only via the push services of the big browsers */}
           <div className="p-4 bg-canvas border border-border rounded-card flex items-center justify-between gap-4">
             <div className="pr-4">

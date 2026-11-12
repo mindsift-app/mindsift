@@ -555,7 +555,13 @@
       "showMore_one": "Mostra altri {{count}}",
       "showMore_other": "Mostra altri {{count}}",
       "orgsHint": "Si assegna in «Organizzazioni»."
-    }
+    },
+    "mfaOn": "Accede con un secondo fattore",
+    "resetMfa": "Reimposta 2FA",
+    "resetMfaHint": "Rimuove l'app di autenticazione, le passkey e i codici di recupero, ad es. dopo aver perso il telefono",
+    "confirmResetMfa": "Reimpostare l'accesso in due passaggi di {{name}}? L'app di autenticazione, le passkey e i codici di recupero vengono rimossi; poi l'accesso chiederà solo la password. {{name}} riceverà un'e-mail.",
+    "mfaReset": "L'accesso in due passaggi di {{name}} è stato reimpostato.",
+    "mfaBadge": "2FA"
   },
   "sharing": {
     "private": {
@@ -611,7 +617,12 @@
     "days_one": "{{count}} giorno",
     "days_other": "{{count}} giorni",
     "pushKnownOnly": "Push solo tramite servizi noti",
-    "pushKnownOnlyHint": "Predefinito: le notifiche push vanno al servizio push indicato dal browser (qualsiasi indirizzo https). Se attivo, solo ai servizi di Google (Chrome, Edge, Android), Mozilla (Firefox), Apple (Safari) e Microsoft (Windows). I dispositivi con altri servizi non ricevono più messaggi push."
+    "pushKnownOnlyHint": "Predefinito: le notifiche push vanno al servizio push indicato dal browser (qualsiasi indirizzo https). Se attivo, solo ai servizi di Google (Chrome, Edge, Android), Mozilla (Firefox), Apple (Safari) e Microsoft (Windows). I dispositivi con altri servizi non ricevono più messaggi push.",
+    "mfaRequired": "Richiedi l'accesso in due passaggi",
+    "mfaRequiredHint": "Chi è interessato e non ha ancora un'app di autenticazione né una passkey ne configura una subito dopo il prossimo accesso e prima non può fare altro. Le chiavi API e gli accessi IA continuano a funzionare.",
+    "mfaRequiredNobody": "Facoltativo",
+    "mfaRequiredAdmins": "Per gli amministratori",
+    "mfaRequiredAll": "Per tutti"
   },
   "admin": {
     "loadFailed": "Caricamento dei dati di amministrazione non riuscito",
@@ -923,6 +934,12 @@
       "off_no_base_url": "Le passkey sono disattivate su questo server: serve un indirizzo fisso. L'amministratore deve impostare BASE_URL con https. L'app di autenticazione funziona anche senza.",
       "off_not_https": "Le passkey sono disattivate su questo server: funzionano solo tramite https. L'amministratore deve impostare BASE_URL su un indirizzo https. L'app di autenticazione funziona anche senza.",
       "off_ip_address": "Le passkey sono disattivate su questo server: serve un nome host invece di un indirizzo IP in BASE_URL. L'app di autenticazione funziona anche senza."
+    },
+    "confirm": {
+      "title": "Conferma con il secondo fattore",
+      "intro": "Questa modifica richiede anche il tuo secondo fattore.",
+      "submit": "Conferma",
+      "cancelled": "Non confermato, non è stato cambiato nulla."
     }
   }
 }

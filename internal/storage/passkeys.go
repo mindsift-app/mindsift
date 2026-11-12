@@ -192,6 +192,24 @@ func (s *Store) MFAActive(userID string) bool {
 	return s.TOTPActive(userID) || s.HasPasskeys(userID)
 }
 
+// MFAUserIDs: the accounts with a second factor (the administration's user list).
+func (s *Store) MFAUserIDs() map[string]bool {
+	out := map[string]bool{}
+	rows, err := s.db.Query(`SELECT user_id FROM user_totp WHERE confirmed_at != '' UNION SELECT user_id FROM user_passkeys`)
+	if dbFailed(err) {
+		return out
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var id string
+		if !dbFailed(rows.Scan(&id)) {
+			out[id] = true
+		}
+	}
+	logDBErr(rows.Err())
+	return out
+}
+
 // UsePasskey records a sign-in with the passkey: its new signature counter, backup state and the time.
 // False when the stored counter is not below the new one any more (a second answer at the same time, or a
 // copied authenticator): counters that are not 0 only go up.

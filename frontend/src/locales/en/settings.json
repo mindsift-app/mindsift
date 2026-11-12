@@ -555,7 +555,13 @@
       "showMore_one": "Show {{count}} more",
       "showMore_other": "Show {{count}} more",
       "orgsHint": "Assigned under “Organizations”."
-    }
+    },
+    "mfaOn": "Signs in with a second factor",
+    "resetMfa": "Reset 2FA",
+    "resetMfaHint": "Removes the authenticator app, passkeys and recovery codes, e.g. after a lost phone",
+    "confirmResetMfa": "Reset the two-factor sign-in of {{name}}? The authenticator app, passkeys and recovery codes are removed; signing in then asks for the password only. {{name}} gets an email.",
+    "mfaReset": "Two-factor sign-in of {{name}} was reset.",
+    "mfaBadge": "2FA"
   },
   "sharing": {
     "private": {
@@ -611,7 +617,12 @@
     "days_one": "{{count}} day",
     "days_other": "{{count}} days",
     "pushKnownOnly": "Push only via known push services",
-    "pushKnownOnlyHint": "Default: push notifications go to the push service the browser names (any https address). Switched on, only to the services of Google (Chrome, Edge, Android), Mozilla (Firefox), Apple (Safari) and Microsoft (Windows). Devices using other services then get no push messages."
+    "pushKnownOnlyHint": "Default: push notifications go to the push service the browser names (any https address). Switched on, only to the services of Google (Chrome, Edge, Android), Mozilla (Firefox), Apple (Safari) and Microsoft (Windows). Devices using other services then get no push messages.",
+    "mfaRequired": "Require two-factor sign-in",
+    "mfaRequiredHint": "Those affected who have no authenticator app and no passkey yet set one up right after their next sign-in and can do nothing else before. API keys and AI connections keep working.",
+    "mfaRequiredNobody": "Optional",
+    "mfaRequiredAdmins": "For admins",
+    "mfaRequiredAll": "For everyone"
   },
   "admin": {
     "loadFailed": "Loading the administration data failed",
@@ -923,6 +934,12 @@
       "off_no_base_url": "Passkeys are off on this server: they need a fixed address. The administrator has to set BASE_URL with https. The authenticator app works without it.",
       "off_not_https": "Passkeys are off on this server: they only work over https. The administrator has to set BASE_URL to an https address. The authenticator app works without it.",
       "off_ip_address": "Passkeys are off on this server: they need a host name instead of an IP address in BASE_URL. The authenticator app works without it."
+    },
+    "confirm": {
+      "title": "Confirm with your second factor",
+      "intro": "This change also needs your second factor.",
+      "submit": "Confirm",
+      "cancelled": "Not confirmed, nothing was changed."
     }
   }
 }

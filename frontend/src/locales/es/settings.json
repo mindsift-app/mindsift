@@ -639,7 +639,13 @@
       "showMore_one": "Mostrar {{count}} más",
       "showMore_other": "Mostrar {{count}} más",
       "orgsHint": "Se asigna en «Organizaciones»."
-    }
+    },
+    "mfaOn": "Inicia sesión con segundo factor",
+    "resetMfa": "Restablecer 2FA",
+    "resetMfaHint": "Quita la app de autenticación, las llaves de acceso y los códigos de recuperación, p. ej. tras perder el móvil",
+    "confirmResetMfa": "¿Restablecer el inicio de sesión en dos pasos de {{name}}? Se quitan la app de autenticación, las llaves de acceso y los códigos de recuperación; después solo se pedirá la contraseña. {{name}} recibirá un correo.",
+    "mfaReset": "Se restableció el inicio de sesión en dos pasos de {{name}}.",
+    "mfaBadge": "2FA"
   },
   "orgs": {
     "createFailed": "Error al crear la organización",
@@ -711,7 +717,12 @@
     "days_one": "{{count}} día",
     "days_other": "{{count}} días",
     "pushKnownOnly": "Push solo mediante servicios conocidos",
-    "pushKnownOnlyHint": "Por defecto: las notificaciones push van al servicio push que indica el navegador (cualquier dirección https). Si se activa, solo a los servicios de Google (Chrome, Edge, Android), Mozilla (Firefox), Apple (Safari) y Microsoft (Windows). Los dispositivos con otros servicios dejan de recibir mensajes push."
+    "pushKnownOnlyHint": "Por defecto: las notificaciones push van al servicio push que indica el navegador (cualquier dirección https). Si se activa, solo a los servicios de Google (Chrome, Edge, Android), Mozilla (Firefox), Apple (Safari) y Microsoft (Windows). Los dispositivos con otros servicios dejan de recibir mensajes push.",
+    "mfaRequired": "Exigir inicio de sesión en dos pasos",
+    "mfaRequiredHint": "Quien esté afectado y aún no tenga app de autenticación ni llave de acceso la configurará justo después de su próximo inicio de sesión y no podrá hacer otra cosa antes. Las claves de API y los accesos de IA siguen funcionando.",
+    "mfaRequiredNobody": "Opcional",
+    "mfaRequiredAdmins": "Para administradores",
+    "mfaRequiredAll": "Para todos"
   },
   "smtp": {
     "title": "Servidor de correo / SMTP para avisos de tareas",
@@ -923,6 +934,12 @@
       "off_no_base_url": "Las llaves de acceso están desactivadas en este servidor: necesitan una dirección fija. El administrador debe configurar BASE_URL con https. La app de autenticación funciona sin ello.",
       "off_not_https": "Las llaves de acceso están desactivadas en este servidor: solo funcionan con https. El administrador debe configurar BASE_URL con una dirección https. La app de autenticación funciona sin ello.",
       "off_ip_address": "Las llaves de acceso están desactivadas en este servidor: necesitan un nombre de host en lugar de una dirección IP en BASE_URL. La app de autenticación funciona sin ello."
+    },
+    "confirm": {
+      "title": "Confirmar con el segundo factor",
+      "intro": "Este cambio también necesita tu segundo factor.",
+      "submit": "Confirmar",
+      "cancelled": "Sin confirmar, no se ha cambiado nada."
     }
   }
 }

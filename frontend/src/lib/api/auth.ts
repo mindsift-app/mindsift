@@ -239,8 +239,10 @@ export const authApi = {
   },
 
   // setupPending: an admin from ADMIN_USER still has the wizard's instance settings to choose
-  async getMe(): Promise<{ user: User; stats: DashboardStats; isLastAdmin?: boolean; setupPending?: boolean }> {
-    return request<{ user: User; stats: DashboardStats; isLastAdmin?: boolean; setupPending?: boolean }>('/api/v1/auth/me');
+  // mfaSetupRequired: the administration requires a second factor this account has not set up yet; until then
+  // only the setup answers (MfaSetupRequiredView)
+  async getMe(): Promise<{ user: User; stats: DashboardStats; isLastAdmin?: boolean; setupPending?: boolean; mfaSetupRequired?: boolean }> {
+    return request<{ user: User; stats: DashboardStats; isLastAdmin?: boolean; setupPending?: boolean; mfaSetupRequired?: boolean }>('/api/v1/auth/me');
   },
 
   async updateSettings(patch: {
@@ -260,7 +262,7 @@ export const authApi = {
     language?: string;
     retention?: Retention;
     tourOffered?: boolean;
-  }): Promise<User> {
+  } & { code?: string; passkeyToken?: string; passkey?: Record<string, unknown> }): Promise<User> {
     return request<User>('/api/v1/auth/settings', {
       method: 'PATCH',
       body: JSON.stringify(patch),

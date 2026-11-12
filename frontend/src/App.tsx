@@ -93,6 +93,8 @@ export const App: React.FC = () => {
     setUser,
     setupPending,
     setSetupPending,
+    mfaSetupRequired,
+    setMfaSetupRequired,
     stats,
     setStats,
     deck,
@@ -598,6 +600,22 @@ export const App: React.FC = () => {
     );
   }
 
+  // The administration requires a second factor this account has not set up yet: nothing else answers until then
+  if (mfaSetupRequired) {
+    if (!views) return <AppLoading onRetry={viewsFailed ? retryViews : undefined} />;
+    return (
+      <views.MfaSetupRequiredView
+        user={user}
+        authStatus={authStatus}
+        onDone={() => {
+          setMfaSetupRequired(false);
+          void refreshAll();
+        }}
+        onLogout={handleLogout}
+      />
+    );
+  }
+
   // Consent of the OAuth flow (claude.ai, ChatGPT connect over MCP) instead of the app; after logging in
   // the address is still /oauth/authorize, so the consent follows the login
   if (window.location.pathname === '/oauth/authorize') {
@@ -893,6 +911,7 @@ export const App: React.FC = () => {
       {showTriageTrash && <views.TriageTrash onClose={() => setShowTriageTrash(false)} onChanged={refreshAll} />}
       {availableUpdate && <UpdateAvailableModal update={availableUpdate} onLater={dismissUpdate} />}
       <ConfirmHost />
+      <views.SecondFactorHost />
       <ErrorNoticeHost />
     </div>
   );

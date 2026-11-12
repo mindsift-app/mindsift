@@ -14,3 +14,5 @@ export { CommandPalette } from '../components/CommandPalette';
 export { PublicNoteView } from '../features/public/PublicNoteView';
 export { GuidedTour } from '../features/tour/GuidedTour';
 export { TourOfferCard } from '../features/tour/TourOfferCard';
+export { MfaSetupRequiredView } from '../features/auth/MfaSetupRequiredView';
+export { SecondFactorHost } from '../features/settings/user/askSecondFactor';

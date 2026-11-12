@@ -15,10 +15,12 @@ import {
 } from 'lucide-react';
 import { APIKey, ApiKeyScope, PriorityLevel, SharedList, TaskList } from '../../lib/types';
 import { SCOPES, scopeGroups, scopeChip, toggleScopeIn } from '../../lib/apiScopes';
-import { api, triggerHaptic } from '../../lib/api';
+import { api, ApiError, triggerHaptic } from '../../lib/api';
 import { ToggleSwitch } from '../../components/ToggleSwitch';
 import { formatDate } from '../../lib/format';
 import { askConfirm } from '../../components/askConfirm';
+import { showError } from '../../components/ErrorNotice';
+import { withSecondFactor } from './user/askSecondFactor';
 import { SelectMenu } from '../../components/SelectMenu';
 
 interface ApiKeysPanelProps {
@@ -159,7 +161,14 @@ export const ApiKeysPanel: React.FC<ApiKeysPanelProps> = ({ onIngested }) => {
   const handleCreateKey = async (e: React.FormEvent) => {
     e.preventDefault();
     triggerHaptic(15);
-    const created = await api.createAPIKey(newKeyName.trim() || t('api.defaultKeyName'), newKeyScopes);
+    let created: APIKey;
+    try {
+      // A key never asks for the second factor itself: with one on, creating it does (withSecondFactor)
+      created = await withSecondFactor((proof) => api.createAPIKey(newKeyName.trim() || t('api.defaultKeyName'), newKeyScopes, proof));
+    } catch (err) {
+      if (!(err instanceof ApiError && err.code === 'mfa_cancelled')) showError(err instanceof Error ? err.message : String(err));
+      return;
+    }
     if (created.rawKey) {
       setNewlyCreatedKey(created.rawKey);
     }

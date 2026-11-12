@@ -619,6 +619,11 @@ func (s *Server) handlePasskeyRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	slog.Info("Passkey added", "user_id", user.ID, "passkey_id", key.ID, "synced", key.Synced, "first_second_factor", codes != nil)
+	if codes != nil {
+		s.notifySecurityChange(user, securityChangeOn)
+	} else {
+		s.notifySecurityChange(user, securityChangePasskeyAdded)
+	}
 	out := map[string]any{"passkey": key}
 	if codes != nil {
 		out["recoveryCodes"] = codes
@@ -685,5 +690,10 @@ func (s *Server) handleRemovePasskey(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	slog.Info("Passkey removed", "user_id", user.ID, "passkey_id", id, "two_factor_off", mfaOff)
+	if mfaOff {
+		s.notifySecurityChange(user, securityChangeOff)
+	} else {
+		s.notifySecurityChange(user, securityChangePasskeyGone)
+	}
 	writeJSON(w, http.StatusOK, map[string]bool{"removed": true, "mfaOff": mfaOff})
 }

@@ -416,6 +416,7 @@ func (s *Server) Router() http.Handler {
 		r.Group(func(r chi.Router) {
 			r.Use(s.adminMiddleware)
 			r.Put("/api/v1/admin/users/{id}/password", s.notInDemo(s.handleAdminResetPassword))
+			r.Post("/api/v1/admin/users/{id}/mfa/reset", s.notInDemo(s.handleAdminResetMFA))
 			r.Get("/api/v1/admin/settings", s.handleAdminGetSettings)
 			// The wizard's instance settings after an admin from ADMIN_USER (initial_admin.go)
 			r.Post("/api/v1/admin/setup", s.notInDemo(s.handleFinishSetup))
@@ -776,6 +777,11 @@ func (s *Server) authMiddleware(next http.Handler) http.Handler {
 		// OAuth tokens were issued for the MCP endpoint only
 		if key != nil && key.OAuth && r.URL.Path != mcpPath {
 			writeError(w, http.StatusForbidden, "OAuth-Zugänge gelten nur für den MCP-Endpunkt")
+			return
+		}
+		// Two-factor sign-in required but not set up yet: only setting it up (and signing out) until then
+		if key == nil && !mfaSetupPath(r.URL.Path) && s.mfaSetupMissing(user) {
+			writeErrorCode(w, http.StatusForbidden, "mfa_setup_required", "Bitte richte zuerst die Zwei-Faktor-Anmeldung ein")
 			return
 		}
 		ctx := auth.WithUserID(r.Context(), user.ID)

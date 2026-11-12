@@ -9,7 +9,7 @@ import {
   UserTheme,
   ImportSummary,
   SearchResults,
-  SearchFilter, DeletedAccountBackups } from '../types';
+  SearchFilter, DeletedAccountBackups, SecondFactorProof } from '../types';
 import { authHeaders, ensureArray, request, downloadBlob } from './client';
 import i18n from '../../i18n';
 
@@ -37,10 +37,11 @@ export const dataApi = {
     return ensureArray(res);
   },
 
-  async createAPIKey(name: string, scopes: ApiKeyScope[]): Promise<APIKey> {
+  // proof: the second factor, when the account has one (askSecondFactor.withSecondFactor)
+  async createAPIKey(name: string, scopes: ApiKeyScope[], proof?: SecondFactorProof): Promise<APIKey> {
     return request<APIKey>('/api/v1/keys', {
       method: 'POST',
-      body: JSON.stringify({ name, scopes }),
+      body: JSON.stringify({ name, scopes, ...proof }),
     });
   },
 
@@ -173,8 +174,8 @@ export const dataApi = {
   },
 
   // Danger zone: both need the current password
-  async purgeOwnData(password: string): Promise<void> {
-    await request('/api/v1/user/data', { method: 'DELETE', body: JSON.stringify({ password }), timeout: 'slow' });
+  async purgeOwnData(password: string, proof?: SecondFactorProof): Promise<void> {
+    await request('/api/v1/user/data', { method: 'DELETE', body: JSON.stringify({ password, ...proof }), timeout: 'slow' });
   },
 
   // New login or alarm address (storage/email_change.go): the link from the mail, keep the old one, new link
@@ -190,8 +191,8 @@ export const dataApi = {
     await request(`/api/v1/user/email-change/${kind}/resend`, { method: 'POST' });
   },
 
-  async deleteOwnAccount(password: string): Promise<void> {
-    await request('/api/v1/user/account', { method: 'DELETE', body: JSON.stringify({ password }), timeout: 'slow' });
+  async deleteOwnAccount(password: string, proof?: SecondFactorProof): Promise<void> {
+    await request('/api/v1/user/account', { method: 'DELETE', body: JSON.stringify({ password, ...proof }), timeout: 'slow' });
   },
 
   // Full backup (all data as JSON) packed into a ZIP; restorable via importData('mindsift', …)

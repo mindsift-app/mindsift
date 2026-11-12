@@ -334,7 +334,13 @@ func TestTrustEndsWithSessionsPasswordAndDisabling(t *testing.T) {
 
 	// A new own password
 	trust, token = e.trustAgain(key)
-	e.call("PATCH", "/api/v1/auth/settings", token, map[string]string{"password": "neues-passwort-1", "currentPassword": e.pw})
+	// With a second factor on, the password alone does not change the password
+	if rec, res := e.call("PATCH", "/api/v1/auth/settings", token, map[string]string{"password": "neues-passwort-1", "currentPassword": e.pw}); rec.Code != http.StatusForbidden || res["code"] != "mfa_required" {
+		t.Fatalf("password change without the second factor: %d %v", rec.Code, res)
+	}
+	if rec, res := e.call("PATCH", "/api/v1/auth/settings", token, map[string]string{"password": "neues-passwort-1", "currentPassword": e.pw, "code": codes[1]}); rec.Code != http.StatusOK {
+		t.Fatalf("password change with a recovery code: %d %v", rec.Code, res)
+	}
 	e.pw = "neues-passwort-1"
 	if _, res := e.login(trust); res["mfaRequired"] != true {
 		t.Fatalf("trust after a password change: %v", res)

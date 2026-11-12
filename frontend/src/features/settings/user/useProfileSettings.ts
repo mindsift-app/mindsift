@@ -4,6 +4,7 @@ import { User } from '../../../lib/types';
 import { api, clearToken, triggerHaptic } from '../../../lib/api';
 import { AvatarPlacement, cropImageToDataUrl, loadImageFile } from '../../../lib/avatarCrop';
 import { clearStoredNotes } from '../../../lib/docSync/persist';
+import { withSecondFactor } from './askSecondFactor';
 
 // Kontoeinstellungen → Profil: name, username, login address, avatar, and the danger zone (delete own data
 // or the account). Lives in the view, so unsaved input survives switching sections. Password, two-factor
@@ -116,7 +117,8 @@ export function useProfileSettings(currentUser: User, onUserUpdated: (u: User) =
       const cleanUsername = username.trim().toLowerCase();
       if (cleanUsername !== (currentUser.username || '')) patch.username = cleanUsername;
       if (needsCurrentPassword) patch.currentPassword = currentPassword;
-      const updated = await api.updateSettings(patch);
+      // A new address with a second factor on: the server asks for it as well (withSecondFactor)
+      const updated = await withSecondFactor((proof) => api.updateSettings({ ...patch, ...proof }));
       onUserUpdated(updated);
       // A new address waits for its link (shown under the field), the field shows the one in use
       setEmail(updated.email || '');
@@ -151,14 +153,14 @@ export function useProfileSettings(currentUser: User, onUserUpdated: (u: User) =
     setDangerError(null);
     try {
       if (dangerAction === 'account') {
-        await api.deleteOwnAccount(dangerPassword);
+        await withSecondFactor((proof) => api.deleteOwnAccount(dangerPassword, proof));
         // The account is gone: drop the session and its stored notes, show the login screen
         clearToken();
         await clearStoredNotes();
         window.location.reload();
         return;
       }
-      await api.purgeOwnData(dangerPassword);
+      await withSecondFactor((proof) => api.purgeOwnData(dangerPassword, proof));
       setDangerAction(null);
       setDangerDone(i18n.t('settings:profile.dataDeleted'));
       onUserUpdated(currentUser);

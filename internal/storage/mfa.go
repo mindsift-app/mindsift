@@ -169,6 +169,17 @@ func (s *Store) DisableTOTP(userID string) (mfaOff bool, err error) {
 	return mfaOff, tx.Commit()
 }
 
+// ResetMFA removes every second factor of the account (app, passkeys), its recovery codes and trusted
+// devices: an administrator's way back in for somebody who lost them all.
+func (s *Store) ResetMFA(userID string) error {
+	return s.execInTx(
+		stmt(`DELETE FROM user_totp WHERE user_id = ?`, userID),
+		stmt(`DELETE FROM user_passkeys WHERE user_id = ?`, userID),
+		stmt(`DELETE FROM user_recovery_codes WHERE user_id = ?`, userID),
+		stmt(`DELETE FROM trusted_devices WHERE user_id = ?`, userID),
+	)
+}
+
 // --- Recovery codes ---
 
 // recoveryAlphabet: lower case letters and digits without the ones that look alike (0/o, 1/l/i)

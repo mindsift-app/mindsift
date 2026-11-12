@@ -555,7 +555,13 @@
       "showMore_one": "{{count}} weiteren anzeigen",
       "showMore_other": "{{count}} weitere anzeigen",
       "orgsHint": "Zuordnen unter „Organisationen“."
-    }
+    },
+    "mfaOn": "Meldet sich mit zweitem Faktor an",
+    "resetMfa": "2FA zurücksetzen",
+    "resetMfaHint": "Entfernt Authenticator-App, Passkeys und Wiederherstellungscodes, z. B. bei verlorenem Handy",
+    "confirmResetMfa": "Zwei-Faktor-Anmeldung von {{name}} zurücksetzen? Authenticator-App, Passkeys und Wiederherstellungscodes werden entfernt, die Anmeldung fragt danach nur noch nach dem Passwort. {{name}} bekommt eine Mail.",
+    "mfaReset": "Zwei-Faktor-Anmeldung von {{name}} zurückgesetzt.",
+    "mfaBadge": "2FA"
   },
   "sharing": {
     "private": {
@@ -611,7 +617,12 @@
     "days_one": "{{count}} Tag",
     "days_other": "{{count}} Tage",
     "pushKnownOnly": "Push nur über bekannte Push-Dienste",
-    "pushKnownOnlyHint": "Standard: Push-Benachrichtigungen gehen an den Push-Dienst, den der Browser nennt (jede https-Adresse). Eingeschaltet nur an die Dienste von Google (Chrome, Edge, Android), Mozilla (Firefox), Apple (Safari) und Microsoft (Windows). Geräte mit anderen Diensten bekommen dann keine Push-Nachrichten mehr."
+    "pushKnownOnlyHint": "Standard: Push-Benachrichtigungen gehen an den Push-Dienst, den der Browser nennt (jede https-Adresse). Eingeschaltet nur an die Dienste von Google (Chrome, Edge, Android), Mozilla (Firefox), Apple (Safari) und Microsoft (Windows). Geräte mit anderen Diensten bekommen dann keine Push-Nachrichten mehr.",
+    "mfaRequired": "Zwei-Faktor-Anmeldung verlangen",
+    "mfaRequiredHint": "Wer betroffen ist und noch keine Authenticator-App und keinen Passkey hat, richtet sie direkt nach der nächsten Anmeldung ein und kann vorher nichts anderes tun. API-Schlüssel und KI-Zugänge funktionieren weiter.",
+    "mfaRequiredNobody": "Freiwillig",
+    "mfaRequiredAdmins": "Für Admins",
+    "mfaRequiredAll": "Für alle"
   },
   "admin": {
     "loadFailed": "Fehler beim Laden der Administrationsdaten",
@@ -922,6 +933,12 @@
       "off_no_base_url": "Passkeys sind auf diesem Server aus: Sie brauchen eine feste Adresse. Die Administration muss BASE_URL mit https setzen. Die Authenticator-App funktioniert auch ohne.",
       "off_not_https": "Passkeys sind auf diesem Server aus: Sie funktionieren nur über https. Die Administration muss BASE_URL auf eine https-Adresse setzen. Die Authenticator-App funktioniert auch ohne.",
       "off_ip_address": "Passkeys sind auf diesem Server aus: Sie brauchen einen Hostnamen statt einer IP-Adresse in BASE_URL. Die Authenticator-App funktioniert auch ohne."
+    },
+    "confirm": {
+      "title": "Mit zweitem Faktor bestätigen",
+      "intro": "Diese Änderung braucht zusätzlich deinen zweiten Faktor.",
+      "submit": "Bestätigen",
+      "cancelled": "Nicht bestätigt, nichts geändert."
     }
   }
 }
