@@ -514,7 +514,8 @@ export const TriageDeck: React.FC<TriageDeckProps> = ({
       {/* Top Deck Status & Undo Bar */}
       <div className="flex items-center justify-between px-1">
         <div className="flex items-center gap-2">
-          <span className="badge-accent text-xs py-1 px-2.5">
+          {/* From sm without a frame: the accent's tint, like the open page in the rail (phones keep the frame) */}
+          <span className="badge-accent text-xs py-1 px-2.5 sm:border-transparent sm:rounded-pill sm:font-semibold">
             {t('openCount', { count: cards.length })}
           </span>
           <span className="hidden sm:inline text-xs text-faint">•</span>

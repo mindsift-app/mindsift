@@ -41,7 +41,7 @@
   },
   "tasks": {
     "title": "Aufgaben",
-    "text": "Hier schaltest du zwischen Liste, Kanban und Kalender um; im Kanban macht <b>⤢</b> das Board so breit wie das Fenster. Ein Klick auf eine Aufgabe öffnet die Detailansicht mit Fälligkeit, Unteraufgaben, Notizen und Erinnerungen.",
+    "text": "Hier schaltest du zwischen Liste, Kanban und Kalender um. Ein Klick auf eine Aufgabe öffnet die Detailansicht mit Fälligkeit, Unteraufgaben, Notizen und Erinnerungen.",
     "textPhone": "Liste, Kanban und Kalender wählst du im Menü hinter dem Logo oben links. Ein Tipp auf eine Aufgabe öffnet die Detailansicht mit Fälligkeit, Unteraufgaben, Notizen und Erinnerungen."
   },
   "search": {

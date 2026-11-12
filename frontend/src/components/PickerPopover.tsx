@@ -1,6 +1,6 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Search } from 'lucide-react';
+import { Check, Search } from 'lucide-react';
 import { NO_AUTOFILL } from '../lib/noAutofill';
 
 export interface PickerItem {
@@ -10,6 +10,10 @@ export interface PickerItem {
   hint?: string;
   /** Avatar, icon or emoji in front */
   lead?: React.ReactNode;
+  /** Something small at the end of the row (e.g. a count) */
+  trail?: React.ReactNode;
+  /** Already chosen: a check at the end, the row in the accent's text colour */
+  selected?: boolean;
 }
 
 interface PickerPopoverProps {
@@ -20,6 +24,8 @@ interface PickerPopoverProps {
   empty: string;
   onPick: (item: PickerItem) => void;
   onClose: () => void;
+  /** Rows shown at most (default 8); the list scrolls */
+  maxResults?: number;
 }
 
 const MARGIN = 8;
@@ -27,7 +33,15 @@ const MAX_RESULTS = 8;
 
 /** Small search-and-pick popover in the style of "In eigene Notiz umwandeln" (ExtractPopover): a search
  *  field, matching rows, arrows and Enter pick, Escape or a click outside closes. See Doku/ui-patterns.md. */
-export const PickerPopover: React.FC<PickerPopoverProps> = ({ anchor, items, placeholder, empty, onPick, onClose }) => {
+export const PickerPopover: React.FC<PickerPopoverProps> = ({
+  anchor,
+  items,
+  placeholder,
+  empty,
+  onPick,
+  onClose,
+  maxResults = MAX_RESULTS,
+}) => {
   const ref = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const [pos, setPos] = useState({ left: 0, top: 0, ready: false });
@@ -37,10 +51,14 @@ export const PickerPopover: React.FC<PickerPopoverProps> = ({ anchor, items, pla
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
     const hits = q ? items.filter((i) => i.label.toLowerCase().includes(q) || (i.hint || '').toLowerCase().includes(q)) : items;
-    return hits.slice(0, MAX_RESULTS);
-  }, [items, query]);
+    return hits.slice(0, maxResults);
+  }, [items, query, maxResults]);
 
   useEffect(() => setActive(0), [query]);
+  // Arrow keys in a long list: the chosen row stays in view
+  useEffect(() => {
+    ref.current?.querySelector<HTMLElement>(`[data-picker-row="${active}"]`)?.scrollIntoView?.({ block: 'nearest' });
+  }, [active]);
 
   useLayoutEffect(() => {
     const el = ref.current;
@@ -112,15 +130,18 @@ export const PickerPopover: React.FC<PickerPopoverProps> = ({ anchor, items, pla
               type="button"
               onClick={() => onPick(item)}
               onMouseMove={() => setActive(i)}
+              data-picker-row={i}
               className={`w-full min-h-11 sm:min-h-0 flex items-center gap-2 px-2 py-1.5 rounded-btn text-left cursor-pointer transition-colors ${
                 active === i ? 'bg-accent-dim text-main' : 'text-main hover:bg-panel-elevated'
               }`}
             >
               {item.lead && <span className="shrink-0 flex items-center">{item.lead}</span>}
               <span className="flex-1 min-w-0">
-                <span className="block truncate">{item.label}</span>
+                <span className={`block truncate ${item.selected ? 'text-accent font-semibold' : ''}`}>{item.label}</span>
                 {item.hint && <span className="block truncate text-[10px] text-faint">{item.hint}</span>}
               </span>
+              {item.trail}
+              {item.selected && <Check className="w-3.5 h-3.5 text-accent shrink-0" />}
             </button>
           ))}
         </div>

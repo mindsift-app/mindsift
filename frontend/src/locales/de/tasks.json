@@ -145,10 +145,6 @@
     "otherUser": "einem anderen Benutzer",
     "columnsTitle": "Kanban-Spalten hinzufügen, umbenennen oder neu anordnen",
     "columns": "Spalten anpassen",
-    "boardNormal": "Board wieder normal breit",
-    "boardWide": "Board auf volle Breite strecken",
-    "calendarNormal": "Kalender wieder normal breit",
-    "calendarWide": "Kalender auf volle Breite strecken",
     "undoTitle": "Rückgängig (Strg+Z)",
     "subtasksTitle": "{{done}} von {{total}} Unteraufgaben erledigt ({{percent}}%)",
     "subtasks": "{{done}}/{{total}} Unteraufgaben"
@@ -255,7 +251,11 @@
   "tags": {
     "showAll": "Alle Hashtags zeigen",
     "all": "Alle ({{count}})",
-    "less": "Weniger"
+    "allChip": "Alle",
+    "more_one": "+{{count}} weiterer",
+    "more_other": "+{{count}} weitere",
+    "search": "Hashtag suchen …",
+    "noMatch": "Kein Hashtag gefunden"
   },
   "newList": {
     "failed": "Fehler beim Erstellen der Aufgabenliste",

@@ -16,22 +16,16 @@ import { KanbanCard } from './KanbanCard';
 const KANBAN_FIRST_ROW_HEIGHT = `max(${KANBAN_MIN_COL_HEIGHT}px, calc(var(--kb-full) - max(0px, calc(var(--kb-top) - var(--kb-scroll, 0px)))))`;
 // Below the board: what the first row has not grown into yet, so the page keeps its height while scrolling
 const KANBAN_BAR_SPACER = 'max(0px, calc(var(--kb-top) - var(--kb-scroll, 0px)))';
-// Wide Kanban: a column grows to at most this width, the board stays centred
-const KANBAN_COL_MAX = 380;
+// Desktop board: as many columns per row as fit at least KANBAN_COL_MIN wide (the rest wraps into further
+// rows); a column grows to at most KANBAN_COL_MAX, so a few columns on a wide screen do not stretch across it
+const KANBAN_COL_MIN = 200;
+const KANBAN_COL_MAX = 420;
 const KANBAN_GAP = 12; // gap-3
-
-// Only the board leaves the page column (header and "new task" keep their width): its width follows
-// the columns (at most KANBAN_COL_MAX each, at most the window) and a margin keeps it centred – a
-// negative one when it is wider than the page column. Width and margin are animated.
-const kanbanBoardStyle = (wide: boolean, columns: number): React.CSSProperties => {
-  if (!wide) return { '--kanban-w': '100%', '--kanban-ml': '0px' } as React.CSSProperties;
-  const w = `min(100vw - var(--app-rail-w, 0px) - 4rem, ${columns * KANBAN_COL_MAX + (columns - 1) * KANBAN_GAP}px)`;
-  return {
-    '--kanban-cols': columns,
-    '--kanban-w': w,
-    '--kanban-ml': `calc((100% - ${w}) / 2)`,
-  } as React.CSSProperties;
-};
+const kanbanBoardStyle = (columns: number): React.CSSProperties =>
+  ({
+    '--kanban-col-min': `${KANBAN_COL_MIN}px`,
+    '--kanban-max-w': `${columns * KANBAN_COL_MAX + Math.max(0, columns - 1) * KANBAN_GAP}px`,
+  }) as React.CSSProperties;
 
 interface KanbanBoardProps {
   // Results of useTaskDrag and useKanbanLayout in TasksView
@@ -48,7 +42,6 @@ interface KanbanBoardProps {
   handleQuickAddTaskToColumn: (columnId: string) => void;
   handleSetKanbanStatus: (task: Thought, nextStatus: string) => void;
   inBoardColumn: (task: Thought, boardCol: KanbanColumn) => boolean;
-  isKanbanWide: boolean;
   isSelectedListReadOnly: boolean;
   isTaskReadOnly: (task: Thought) => boolean;
   kanbanTasks: Thought[];
@@ -81,7 +74,6 @@ export function KanbanBoard({
   handleQuickAddTaskToColumn,
   handleSetKanbanStatus,
   inBoardColumn,
-  isKanbanWide,
   isSelectedListReadOnly,
   isTaskReadOnly,
   kanbanTasks,
@@ -153,10 +145,8 @@ export function KanbanBoard({
       {kanbanTouch.ghost}
       <div
         ref={kanbanBoardRef}
-        className={`grid grid-cols-1 md:grid-cols-2 gap-3 pt-1 lg:w-[var(--kanban-w)] lg:ml-[var(--kanban-ml)] ${
-          isKanbanWide ? 'lg:grid-cols-[repeat(var(--kanban-cols),minmax(0,1fr))]' : 'lg:grid-cols-4'
-        }`}
-        style={kanbanBoardStyle(isKanbanWide, boardColumns.length)}
+        className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1 lg:grid-cols-[repeat(auto-fit,minmax(var(--kanban-col-min),1fr))] lg:max-w-[var(--kanban-max-w)]"
+        style={kanbanBoardStyle(boardColumns.length)}
       >
         {boardColumns.map((col, colIndex) => {
           const colTasks = kanbanTasks.filter((t) => inBoardColumn(t, col));

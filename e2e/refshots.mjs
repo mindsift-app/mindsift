@@ -279,12 +279,13 @@ async function capture() {
   await d.getByRole('button', { name: /^Alle Aufgaben/ }).first().click().catch(() => {});
   await sleep(400);
   await step(d, 'd18_tags_expanded_filtered', async () => {
-    // Kanban in a narrower window (the hashtag row is cut off there): open all hashtags, filter by one
+    // Kanban in a narrower window (not every hashtag fits there): pick one from the "+ n weitere" popover
     await d.setViewportSize({ width: 900, height: 900 });
     await d.getByRole('radio', { name: 'Kanban', exact: true }).locator('visible=true').first().click();
     await sleep(500);
     await d.getByTitle('Alle Hashtags zeigen').click();
-    await d.getByRole('button', { name: /^#backup/ }).locator('visible=true').first().click();
+    await d.getByPlaceholder('Hashtag suchen …').fill('backup');
+    await d.keyboard.press('Enter');
   });
 
   // Logging out ends the session (last on the desktop) and signing in again by the form

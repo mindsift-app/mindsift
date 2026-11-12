@@ -14,7 +14,7 @@ export const AppFooter: React.FC<AppFooterProps> = ({ legal, onOpenAbout }) => {
   // One small, even line: same font, size and weight for every part (mixed mono/bold looked crooked)
   const item = 'leading-none hover:text-muted transition-colors cursor-pointer';
   return (
-    <footer className="hidden sm:flex shrink-0 w-full max-w-6xl mx-auto px-4 py-1.5 items-center justify-between text-[10px] leading-none text-faint select-none">
+    <footer className="hidden sm:flex shrink-0 w-full px-6 py-1.5 items-center justify-between text-[10px] leading-none text-faint select-none">
       <div className="flex items-center gap-1.5">
         <button type="button" onClick={onOpenAbout} className={item} title={t('aboutTitle')}>
           MindSift {APP_VERSION}

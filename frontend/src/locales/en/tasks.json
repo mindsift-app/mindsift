@@ -145,10 +145,6 @@
     "otherUser": "Another user",
     "columnsTitle": "Add, rename or reorder Kanban columns",
     "columns": "Customize columns",
-    "boardNormal": "Board back to normal width",
-    "boardWide": "Stretch the board to full width",
-    "calendarNormal": "Calendar back to normal width",
-    "calendarWide": "Stretch the calendar to full width",
     "undoTitle": "Undo (Ctrl+Z)",
     "subtasksTitle": "{{done}} of {{total}} subtasks done ({{percent}}%)",
     "subtasks": "{{done}}/{{total}} subtasks"
@@ -255,7 +251,11 @@
   "tags": {
     "showAll": "Show all hashtags",
     "all": "All ({{count}})",
-    "less": "Less"
+    "allChip": "All",
+    "more_one": "+{{count}} more",
+    "more_other": "+{{count}} more",
+    "search": "Search hashtags…",
+    "noMatch": "No hashtag found"
   },
   "newList": {
     "failed": "Creating the task list failed",

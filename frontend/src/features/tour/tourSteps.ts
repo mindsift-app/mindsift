@@ -34,12 +34,12 @@ export const TOUR_STEPS: TourStep[] = [
   },
   // Focus mode: its own button on large screens, else the note's ⋯ menu; without an open note: skipped
   { id: 'focus', tab: 'workspace', targets: [tour('focus-mode'), tour('note-more')] },
-  // View switch (list / Kanban / calendar; on phones in the menu behind the logo), wide board, a task
+  // View switch (list / Kanban / calendar; on phones in the menu behind the logo), a task
   {
     id: 'tasks',
     tab: 'tasks',
     targets: [tour('task-views'), tour('view-menu')],
-    also: [tour('board-wide'), `${tour('task')}, [data-kanban-task]`],
+    also: [`${tour('task')}, [data-kanban-task]`],
   },
   { id: 'search', tab: null, targets: [tour('search')] },
   // Back on the help page: where to read up and start the tour again

@@ -424,6 +424,49 @@ body {
     background-color: transparent;
   }
 
+  /* Filter chip (hashtag filter above the tasks, Doku/ui-patterns.md "Filter Chips"): no frame, a light
+     surface like tool-tab; the chosen one in the accent's tint like the open page in the rail */
+  .filter-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    height: 1.75rem;
+    padding: 0 0.625rem;
+    border-radius: var(--radius-pill);
+    color: var(--text-muted);
+    background-color: color-mix(in srgb, var(--text-main) 5%, transparent);
+    font-size: 0.75rem;
+    font-weight: 500;
+    white-space: nowrap;
+    transition: background-color 120ms ease, color 120ms ease;
+    cursor: pointer;
+  }
+  .filter-chip:hover {
+    color: var(--text-main);
+    background-color: color-mix(in srgb, var(--text-main) 9%, transparent);
+  }
+  .filter-chip-active,
+  .filter-chip-active:hover {
+    color: var(--accent-primary);
+    background-color: var(--accent-dim);
+    font-weight: 600;
+  }
+  .filter-chip:focus-visible {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 1px;
+  }
+  /* The number after the label: quieter, digits of equal width */
+  .filter-chip-count {
+    color: var(--text-faint);
+    font-size: 0.6875rem;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+  }
+  .filter-chip-active .filter-chip-count {
+    color: inherit;
+    opacity: 0.7;
+  }
+
   /* View switch (SegmentedControl and rows like it): one surface, the chosen option raised.
      Phones keep the framed look of before; from sm the frame goes. */
   .seg-track {
@@ -860,6 +903,16 @@ fieldset:disabled :is(button, input, select, textarea) {
   :root {
     --app-rail-w: 3.75rem;
   }
+}
+
+/* Reading width of a note (title and bullets, journal days, hashtag page, public view), padding included:
+   the content area runs the full width beside the rail, but lines of text stay readable on wide monitors.
+   56rem leaves 52rem (~830 px) for the text, a little more than a note had beside the folder sidebar before
+   the full-width layout. Focus mode gives a little more room (wide tables and drawings) without running
+   across a 21:9 screen. Phones are narrower than both. */
+:root {
+  --note-measure: 56rem;
+  --note-measure-focus: 64rem;
 }
 
 /* Outliner: indent per level and the width a row keeps for its text. Phones indent less and let very
