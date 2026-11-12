@@ -21,21 +21,28 @@ export interface ActionMenuItem {
 
 // "⋯" button with a menu of actions, in the style of the note menu: closes on a click outside, on Escape
 // and after picking an entry. keepFocus: pressing the button or an entry does not take the focus from
-// the text field being edited (a table's menu acts on the cell with the cursor).
+// the text field being edited (a table's menu acts on the cell with the cursor). onOpenChange: for a
+// button that shows only on hover, so it can stay while its menu is open.
 export function ActionMenu({
   items,
   label,
   buttonClassName = 'btn-icon',
   keepFocus = false,
+  onOpenChange,
 }: {
   items: ActionMenuItem[];
   label: string;
   buttonClassName?: string;
   keepFocus?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }) {
   const holdFocus = keepFocus ? (e: React.MouseEvent) => e.preventDefault() : undefined;
   const [open, setOpen] = useState(false);
   const boxRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    onOpenChange?.(open);
+  }, [open, onOpenChange]);
 
   useEffect(() => {
     if (!open) return;

@@ -225,7 +225,7 @@ const fr: HelpContent = {
       title: 'Tableaux (/table)',
       subtitle: 'Lignes et colonnes directement dans la note',
       icon: TableIcon,
-      keywords: ['tableau', 'table', 'lignes', 'colonnes', 'en-tête', 'traits', 'cadre', 'markdown'],
+      keywords: ['tableau', 'table', 'lignes', 'colonnes', 'en-tête', 'traits', 'cadre', 'aligner', 'centrer', 'markdown'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
           <ul className="space-y-1.5">
@@ -236,7 +236,7 @@ const fr: HelpContent = {
               <strong className="text-main">Saisir :</strong> <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Entrée</kbd> ajoute une ligne sous la ligne actuelle, <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Tab</kbd> / <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Maj + Tab</kbd> passent d’une cellule à l’autre (Tab dans la dernière cellule ajoute une ligne), les flèches changent de ligne et quittent le tableau en haut et en bas. <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Retour arrière</kbd> dans une ligne vide la supprime, dans un tableau entièrement vide le tableau. Gras, italique, liens et #hashtags fonctionnent comme dans le texte.
             </li>
             <li>
-              <strong className="text-main">Colonnes :</strong> Le <strong className="text-main">+</strong> à droite du tableau ajoute une colonne (sur ordinateur, il apparaît quand la souris survole le tableau). En dessous, les trois points ouvrent le menu : insérer une colonne à gauche ou à droite, supprimer la ligne ou la colonne du curseur, augmenter ou réduire le retrait de la puce.
+              <strong className="text-main">Colonnes :</strong> Le <strong className="text-main">+</strong> à droite du tableau ajoute une colonne (sur ordinateur, il apparaît quand la souris survole le tableau). En dessous, les trois points ouvrent le menu : aligner la colonne du curseur à gauche, au centre ou à droite (conservé dans le tableau Markdown), insérer une colonne à gauche ou à droite, supprimer la ligne ou la colonne du curseur, augmenter ou réduire le retrait de la puce.
             </li>
             <li>
               <strong className="text-main">Traits :</strong> Dans le même menu : <em>Standard</em> n’affiche que les traits intérieurs, estompés vers le bord, sans cadre ; <em>Cadre complet</em> tous les traits avec un cadre extérieur (coins selon le thème) ; <em>En-tête et colonnes</em> seulement le trait sous l’en-tête et les traits de colonne.

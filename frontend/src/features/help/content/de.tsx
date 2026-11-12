@@ -265,7 +265,7 @@ const de: HelpContent = {
       title: 'Tabellen (/table)',
       subtitle: 'Zeilen und Spalten direkt in der Notiz',
       icon: TableIcon,
-      keywords: ['tabelle', 'table', 'zeilen', 'spalten', 'kopfzeile', 'linien', 'rahmen', 'markdown'],
+      keywords: ['tabelle', 'table', 'zeilen', 'spalten', 'kopfzeile', 'linien', 'rahmen', 'ausrichten', 'zentrieren', 'markdown'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
           <ul className="space-y-1.5">
@@ -276,7 +276,7 @@ const de: HelpContent = {
               <strong className="text-main">Tippen:</strong> <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Enter</kbd> fügt unter der aktuellen Zeile eine neue ein, <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Tab</kbd> / <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Shift + Tab</kbd> springen von Zelle zu Zelle (Tab in der letzten Zelle legt eine neue Zeile an), die Pfeiltasten wechseln die Zeile und verlassen die Tabelle oben und unten. <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Backspace</kbd> in einer leeren Zeile löscht sie, in einer ganz leeren Tabelle die Tabelle. Fett, kursiv, Links und #Hashtags gehen wie im Text.
             </li>
             <li>
-              <strong className="text-main">Spalten:</strong> Das <strong className="text-main">+</strong> rechts neben der Tabelle fügt eine Spalte hinzu (am Desktop erscheint es, wenn die Maus über der Tabelle ist). Darunter öffnen die drei Punkte das Menü: Spalte links oder rechts einfügen, Zeile oder Spalte mit dem Cursor löschen, den Punkt ein- oder ausrücken.
+              <strong className="text-main">Spalten:</strong> Das <strong className="text-main">+</strong> rechts neben der Tabelle fügt eine Spalte hinzu (am Desktop erscheint es, wenn die Maus über der Tabelle ist). Darunter öffnen die drei Punkte das Menü: die Spalte mit dem Cursor links, zentriert oder rechts ausrichten (bleibt in der Markdown-Tabelle erhalten), Spalte links oder rechts einfügen, Zeile oder Spalte mit dem Cursor löschen, den Punkt ein- oder ausrücken.
             </li>
             <li>
               <strong className="text-main">Linien:</strong> Im selben Menü: <em>Standard</em> zeigt nur die Linien innen, zum Rand hin ausgeblendet, ohne Rahmen; <em>Voller Rahmen</em> alle Linien mit Außenrahmen (Ecken wie im Theme); <em>Kopfzeile und Spalten</em> nur die Linie unter der Kopfzeile und die Spaltenlinien.

@@ -22,6 +22,11 @@
       "grid": "Cadre complet",
       "header": "En-tête et colonnes"
     },
+    "align": {
+      "left": "Aligner la colonne à gauche",
+      "center": "Centrer la colonne",
+      "right": "Aligner la colonne à droite"
+    },
     "insertColumnLeft": "Insérer une colonne à gauche",
     "insertColumnRight": "Insérer une colonne à droite",
     "deleteRow": "Supprimer la ligne",

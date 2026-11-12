@@ -22,6 +22,11 @@
       "grid": "Voller Rahmen",
       "header": "Kopfzeile und Spalten"
     },
+    "align": {
+      "left": "Spalte links ausrichten",
+      "center": "Spalte zentrieren",
+      "right": "Spalte rechts ausrichten"
+    },
     "insertColumnLeft": "Spalte links einfügen",
     "insertColumnRight": "Spalte rechts einfügen",
     "deleteRow": "Zeile löschen",

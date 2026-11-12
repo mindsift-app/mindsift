@@ -779,6 +779,10 @@ fieldset:disabled :is(button, input, select, textarea) {
 .note-table:not([data-lines='grid']) .nt-cell[data-left] {
   padding-left: 0;
 }
+/* A column's alignment (style on the cell) also applies to the text field, which would start left */
+.note-table .nt-input {
+  text-align: inherit;
+}
 .note-table .nt-text,
 .note-table .nt-input {
   white-space: pre-wrap;
@@ -809,24 +813,41 @@ fieldset:disabled :is(button, input, select, textarea) {
   bottom: 0;
   height: 1px;
 }
-/* fade: column lines fade out towards the top and bottom edge, row lines towards the left and right */
+/* fade: column lines fade out towards the top and bottom edge, row lines towards the left and right; only
+   over the last stretch before the outer edge (--nt-fade-y, --nt-fade-x), full strength everywhere else */
+.note-table[data-lines='fade'] {
+  --nt-fade-x: 1.5rem;
+  --nt-fade-y: 0.75rem;
+}
 .note-table[data-lines='fade'] .nt-cell[data-top]:not([data-right])::after {
-  background: linear-gradient(to bottom, transparent, var(--border-color));
+  background: linear-gradient(to bottom, transparent, var(--border-color) var(--nt-fade-y));
 }
 .note-table[data-lines='fade'] .nt-cell[data-bottom]:not([data-right])::after {
-  background: linear-gradient(to top, transparent, var(--border-color));
+  background: linear-gradient(to top, transparent, var(--border-color) var(--nt-fade-y));
 }
 .note-table[data-lines='fade'] .nt-cell[data-top][data-bottom]:not([data-right])::after {
-  background: linear-gradient(to bottom, transparent, var(--border-color), transparent);
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    var(--border-color) var(--nt-fade-y),
+    var(--border-color) calc(100% - var(--nt-fade-y)),
+    transparent
+  );
 }
 .note-table[data-lines='fade'] .nt-cell[data-left]:not([data-bottom])::before {
-  background: linear-gradient(to right, transparent, var(--border-color));
+  background: linear-gradient(to right, transparent, var(--border-color) var(--nt-fade-x));
 }
 .note-table[data-lines='fade'] .nt-cell[data-right]:not([data-bottom])::before {
-  background: linear-gradient(to left, transparent, var(--border-color));
+  background: linear-gradient(to left, transparent, var(--border-color) var(--nt-fade-x));
 }
 .note-table[data-lines='fade'] .nt-cell[data-left][data-right]:not([data-bottom])::before {
-  background: linear-gradient(to right, transparent, var(--border-color), transparent);
+  background: linear-gradient(
+    to right,
+    transparent,
+    var(--border-color) var(--nt-fade-x),
+    var(--border-color) calc(100% - var(--nt-fade-x)),
+    transparent
+  );
 }
 /* grid: a frame around it all */
 .note-table[data-lines='grid'] {

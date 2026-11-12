@@ -26,6 +26,30 @@ func TestNormalizeTable(t *testing.T) {
 	}
 }
 
+func TestTableAlignmentRoundTrip(t *testing.T) {
+	// Every alignment of the separator row survives normalizing (again and again), the export and the import
+	table := "| Name | Menge | Preis | Notiz |\n| --- | :---: | ---: | :--- |\n| Brot | 2 | 3,50 | frisch |"
+	if got := NormalizeTable(table); got != table {
+		t.Fatalf("NormalizeTable lost the alignment: %q", got)
+	}
+	if got := NormalizeTable(NormalizeTable(table)); got != table {
+		t.Errorf("NormalizeTable is not stable: %q", got)
+	}
+	// Short and long forms read the same
+	if got := NormalizeTable("a | b | c\n:-: | -: | :-\n1 | 2 | 3"); got != "| a | b | c |\n| :---: | ---: | :--- |\n| 1 | 2 | 3 |" {
+		t.Errorf("short separators: %q", got)
+	}
+	md := BlocksToVaultMarkdown([]domain.DocumentBlock{{Type: "table", Content: table, Level: 0}, {Type: "bullet", Content: "Danach", Level: 0}})
+	blocks := MarkdownToBlocks(md)
+	if len(blocks) == 0 || blocks[0].Type != "table" || blocks[0].Content != table {
+		t.Errorf("export and import lost the alignment:\n%q\n%+v", md, blocks)
+	}
+	// Tables without colons stay left (no alignment written)
+	if got := NormalizeTable("| a | b |\n|---|---|"); got != "| a | b |\n| --- | --- |" {
+		t.Errorf("plain table: %q", got)
+	}
+}
+
 func TestTablesInVaultMarkdown(t *testing.T) {
 	table := "| Name | Wert |\n| --- | --- |\n| a | 1 |"
 	md := BlocksToVaultMarkdown([]domain.DocumentBlock{
