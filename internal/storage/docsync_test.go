@@ -399,7 +399,7 @@ func TestDemoAccountsGetSampleDataAndShares(t *testing.T) {
 	if len(memberDocs) != len(adminDocs) {
 		t.Fatalf("demo user sees %d of the admin's %d notes", len(memberDocs), len(adminDocs))
 	}
-	pinned := 0
+	start := ""
 	for _, d := range memberDocs {
 		if s.DocRole(member.ID, d.ID) != DocRoleEditor {
 			t.Errorf("demo user must be editor of %q, got %q", d.Title, s.DocRole(member.ID, d.ID))
@@ -408,20 +408,23 @@ func TestDemoAccountsGetSampleDataAndShares(t *testing.T) {
 			t.Errorf("%q in folder %q should come through a shared folder", d.Title, d.FolderPath)
 		}
 		if d.IsPinned {
-			pinned++
-			if !strings.HasPrefix(d.Title, "Diagrams") {
-				t.Errorf("unexpected pinned note for the demo user: %q", d.Title)
-			}
+			t.Errorf("pins are personal, %q is pinned for the demo user", d.Title)
+		}
+		if strings.HasPrefix(d.Title, "Diagrams") {
+			start = d.ID
 		}
 	}
-	if pinned != 1 {
-		t.Errorf("the start note should be pinned for the demo user too, %d pinned", pinned)
+	if start == "" {
+		t.Error("the admin's pinned start note must be shared with the demo user")
 	}
-	// Notes made in the same second come in the same order for both (the help notes as written)
+	// Notes made in the same second come in the same order for both (the help notes as written); the
+	// start note is pinned, and so first, only for the admin
 	titles := func(docs []domain.Document) string {
 		var out []string
 		for _, d := range docs {
-			out = append(out, d.Title)
+			if d.ID != start {
+				out = append(out, d.Title)
+			}
 		}
 		return strings.Join(out, " | ")
 	}

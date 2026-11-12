@@ -350,7 +350,7 @@ func (s *Store) seedStarterDE(user *domain.User) error {
 // seedDemoShares shares all of the admin's sample data with the demo user for editing, the way the app
 // does it: each top-level folder as a shared folder (with the notes and subfolders in it), the notes
 // outside folders one by one, and every task list and list. So the demo user sees the same workspace and
-// both demo accounts can try out editing together; the pinned start note is pinned for both.
+// both demo accounts can try out editing together (pins stay personal: only the admin's start note is pinned).
 func (s *Store) seedDemoShares(admin, member *domain.User) {
 	folders := map[string]bool{}
 	for _, q := range []string{
@@ -377,9 +377,6 @@ func (s *Store) seedDemoShares(admin, member *domain.User) {
 	for _, id := range s.seedStrings(`SELECT id FROM lists WHERE user_id = ?`, admin.ID) {
 		_, _ = s.AddListShare(admin.ID, id, "user", member.ID, "editor")
 	}
-	// Pins are personal: the demo user starts at the same pinned note as the admin
-	s.execLogged(`INSERT OR IGNORE INTO doc_pins (user_id, doc_id, created_at) SELECT ?, doc_id, created_at FROM doc_pins WHERE user_id = ?`,
-		member.ID, admin.ID)
 }
 
 // seedStrings returns the values of a query with one text column.
