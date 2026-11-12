@@ -1,8 +1,9 @@
 // Tables in notes: /table makes a 2 × 2 table with the bullet's text in the first cell, typing with Tab and
 // Enter, the + for a column, the line mode from the ⋯ menu, Backspace on an empty row, the arrows into and
 // out of the table; after reloading content and line mode are still there (sync); undo that takes away the
-// row with the cursor moves it to the row above. Desktop: a wide table scrolls sideways inside its box. On a
-// phone: tapping a cell and the + (44 px), the page does not scroll sideways. Desktop in Chromium and
+// row with the cursor moves it to the row above; the ⋯ menu with the cursor in the bullet below stays
+// visible and in front of that bullet. Desktop: a wide table scrolls sideways inside its box. On a phone:
+// tapping a cell, the + and the ⋯ (44 px), the page does not scroll sideways. Desktop in Chromium and
 // Firefox, the phone in Chromium.
 // Needs a server in demo mode (admin/admin).
 import { chromium, firefox } from 'playwright';
@@ -155,6 +156,49 @@ const main = async () => {
     await page.waitForTimeout(400);
     s = await cellState(page);
     check(s.values.length === 6 && s.focus === 3, tag('Rückgängig nimmt die Zeile weg, Cursor in die Zelle darüber'), s);
+
+    // ⋯ with the cursor in the bullet below the table: the menu hangs over that bullet, and on the way from
+    // the ⋯ to an entry the mouse leaves the table; the menu stays visible and in front of the bullet
+    await page.locator('[data-outline-block]').nth(1).locator('[data-outline-text]').click();
+    await page.waitForTimeout(300);
+    const menuButton = page.getByRole('button', { name: 'Tabelle: Linien und Spalten' });
+    await menuButton.hover();
+    await page.waitForTimeout(250);
+    await menuButton.click();
+    await page.waitForTimeout(250);
+    const from = await menuButton.boundingBox();
+    const entry = page.getByRole('menuitemradio', { name: /Standard/ });
+    const to = await entry.boundingBox();
+    // Down from the ⋯ through the gap above the menu (outside the table: its hover ends there), a moment
+    // longer than the fade, then onto the entry
+    const path = [];
+    for (const [x, y, wait] of [
+      [from.x + from.width / 2, from.y + from.height / 2, 100],
+      [from.x + from.width / 2, from.y + from.height + 3, 300],
+      [to.x + to.width - 30, to.y + to.height / 2, 100],
+    ]) {
+      await page.mouse.move(x, y, { steps: 4 });
+      await page.waitForTimeout(wait);
+      path.push(
+        await page.evaluate(
+          ([x, y]) => {
+            const menu = document.querySelector('[data-table-block] [role="menu"]');
+            const box = menu?.closest('.transition-opacity');
+            return { open: !!menu, opacity: box && getComputedStyle(box).opacity, inMenu: !!menu?.contains(document.elementFromPoint(x, y)) };
+          },
+          [x, y]
+        )
+      );
+    }
+    check(
+      path.every((p) => p.open && p.opacity === '1') && path[path.length - 1].inMenu,
+      tag('⋯-Menü bleibt über dem Punkt darunter sichtbar und erreichbar'),
+      path
+    );
+    await page.mouse.down();
+    await page.mouse.up();
+    await page.waitForTimeout(300);
+    check((await page.locator('table.note-table').getAttribute('data-lines')) === 'fade', tag('Eintrag im ⋯-Menü über dem Punkt darunter lässt sich klicken'));
     await ctx.close();
     await engineBrowser.close();
   }
@@ -226,6 +270,22 @@ const main = async () => {
       scroll: document.querySelector('.table-scroll').scrollWidth > document.querySelector('.table-scroll').clientWidth,
     }));
     check(widths.page <= widths.view && widths.scroll, 'breite Tabelle scrollt seitlich, die Seite nicht', widths);
+
+    // ⋯ with the cursor in the bullet below: tapping it and an entry of its menu over that bullet
+    await page.locator('[data-outline-block]').nth(1).locator('[data-outline-text]').tap();
+    await page.waitForTimeout(400);
+    const menuButton = table.getByRole('button', { name: 'Tabelle: Linien und Spalten' });
+    const menuBox = await menuButton.boundingBox();
+    check(!!menuBox && menuBox.width >= 44 && menuBox.height >= 44, '⋯ am Handy mindestens 44 px', menuBox);
+    await menuButton.tap();
+    await page.waitForTimeout(300);
+    const entry = page.getByRole('menuitemradio', { name: /Voller Rahmen/ });
+    const entryBox = await entry.boundingBox();
+    const hit = entryBox && (await page.evaluate(([x, y]) => !!document.elementFromPoint(x, y)?.closest('[role="menu"]'), [entryBox.x + 30, entryBox.y + entryBox.height / 2]));
+    check(!!hit, '⋯-Menü am Handy liegt über dem Punkt darunter', entryBox);
+    await entry.tap();
+    await page.waitForTimeout(300);
+    check((await page.locator('table.note-table').first().getAttribute('data-lines')) === 'grid', 'Antippen eines Eintrags im ⋯-Menü am Handy wirkt');
     await ctx.close();
   }
   await browser.close();

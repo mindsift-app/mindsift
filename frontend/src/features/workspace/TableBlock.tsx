@@ -119,6 +119,8 @@ const TableBlockView: React.FC<TableBlockProps> = ({
 
   // The cell with the cursor (it shows its raw text); the last one stays known for the menu
   const [active, setActive] = useState<Cell | null>(null);
+  // The ⋯ menu is open: + and ⋯ stay visible on the desktop (see the buttons below)
+  const [menuOpen, setMenuOpen] = useState(false);
   const lastCellRef = useRef<Cell | null>(null);
   const cellRefs = useRef(new Map<string, HTMLTextAreaElement>());
   const pendingFocusRef = useRef<PendingFocus | null>(null);
@@ -579,8 +581,15 @@ const TableBlockView: React.FC<TableBlockProps> = ({
         </table>
       </div>
       {canEdit && (
-        // Phones: always there and big enough to tap; desktop: shows on hover or with the cursor in the table
-        <div className="flex flex-col shrink-0 gap-0.5 opacity-100 sm:opacity-0 sm:group-hover/table:opacity-100 sm:group-focus-within/table:opacity-100 transition-opacity">
+        // Phones: always there and big enough to tap; desktop: shows on hover, with the cursor in the table and
+        // while the menu is open. The menu hangs below the ⋯ over the next bullet: on the way there the mouse
+        // leaves the table, and a fading box (opacity below 1 makes it its own layer) would put the menu
+        // behind the next bullet, out of reach
+        <div
+          className={`flex flex-col shrink-0 gap-0.5 opacity-100 transition-opacity ${
+            menuOpen ? '' : 'sm:opacity-0 sm:group-hover/table:opacity-100 sm:group-focus-within/table:opacity-100'
+          }`}
+        >
           <button
             type="button"
             onMouseDown={(e) => e.preventDefault()}
@@ -593,6 +602,7 @@ const TableBlockView: React.FC<TableBlockProps> = ({
           </button>
           <ActionMenu
             keepFocus
+            onOpenChange={setMenuOpen}
             label={t('table.menu')}
             items={menuItems()}
             buttonClassName="h-11 w-11 sm:h-6 sm:w-6 flex items-center justify-center rounded-btn text-faint hover:text-main hover:bg-panel-elevated transition-colors cursor-pointer"
