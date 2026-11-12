@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useMemo, useCallback } from 'react';
+import React, { useEffect, useState, useRef, useMemo, useCallback, useDeferredValue } from 'react';
 import i18n from '../../i18n';
 import { useTranslation } from 'react-i18next';
 import {
@@ -141,7 +141,10 @@ export const TasksView: React.FC<TasksViewProps> = ({
       return (step?.tab === 'tasks' && step.taskList) || remembered.listId || 'all';
     }
   );
-  const viewMode: ViewMode = viewModes[selectedListId] || 'list';
+  // The switch shows the chosen view at once; the view itself follows as a deferred render, so a board with
+  // many cards does not hold the click back (React renders it in the background, interruptibly)
+  const chosenViewMode: ViewMode = viewModes[selectedListId] || 'list';
+  const viewMode: ViewMode = useDeferredValue(chosenViewMode);
   // Only Kanban and calendar are stored; the list view is the default
   const setViewMode = useCallback(
     (mode: ViewMode) =>
@@ -837,7 +840,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
         setSelectedListId={setSelectedListId}
         setShowNewListModal={setShowNewListModal}
         setViewMode={setViewMode}
-        viewMode={viewMode}
+        viewMode={chosenViewMode}
         tasks={tasks}
         onReorderLists={(ids) => {
           setTaskLists((prev) => inIdOrder(prev, ids));

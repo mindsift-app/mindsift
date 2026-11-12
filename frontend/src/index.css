@@ -344,6 +344,8 @@ body {
     padding: 0 0.625rem;
     border-radius: var(--radius-btn);
     color: var(--text-muted);
+    /* A light surface of their own, so the tabs read as buttons without a frame */
+    background-color: color-mix(in srgb, var(--text-main) 5%, transparent);
     font-size: 0.75rem;
     font-weight: 500;
     white-space: nowrap;
@@ -352,12 +354,13 @@ body {
   }
   .tool-tab:hover {
     color: var(--text-main);
-    background-color: var(--bg-panel-elevated);
+    background-color: color-mix(in srgb, var(--text-main) 9%, transparent);
   }
   .tool-tab-active,
   .tool-tab-active:hover {
     color: var(--text-main);
-    background-color: var(--bg-panel-elevated);
+    /* The open one in the accent's tint, like the open page in the navigation rail */
+    background-color: var(--accent-dim);
     font-weight: 600;
   }
   .tool-tab-active::after {
