@@ -331,7 +331,7 @@ const es: HelpContent = {
         <div className="space-y-2 text-muted leading-relaxed">
           <ul className="space-y-1.5">
             <li>
-              <strong className="text-main">Enfoque (zoom hoisting):</strong> haz clic directamente en el punto (<code className="text-accent">•</code>) de un bloque para hacer zoom únicamente en esa rama. La navegación de migas de pan en la parte superior te permite retroceder paso a paso en cualquier momento.
+              <strong className="text-main">Enfoque (zoom hoisting):</strong> haz clic directamente en el punto (<code className="text-accent">•</code>) de un bloque para hacer zoom únicamente en esa rama. La navegación de migas de pan en la parte superior te permite retroceder paso a paso en cualquier momento; en el móvil, el icono de la casa te lleva al principio de la nota y el botón atrás sube un nivel.
             </li>
             <li>
               <strong className="text-main">Mover bloques:</strong> mantén pulsado el botón del ratón sobre un punto para arrastrarlo con todos sus subpuntos a una nueva ubicación.
