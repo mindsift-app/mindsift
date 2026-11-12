@@ -486,7 +486,12 @@ func (s *Server) handlePasskeyLogin(w http.ResponseWriter, r *http.Request) {
 	if !s.signInAllowed(w, r, user) {
 		return
 	}
-	token, err := s.startSession(r, user)
+	if !s.passwordLoginFor(user) {
+		slog.Warn("Sign-in refused: passkey sign-in is off for everybody but administrators", "user_id", user.ID, "remote_addr", r.RemoteAddr)
+		s.writePasswordLoginOff(w)
+		return
+	}
+	token, err := s.startSession(r, user, storage.SessionViaPasskey)
 	if err != nil {
 		slog.Error("Creating the sign-in token failed", "user_id", user.ID, "error", err)
 		writeError(w, http.StatusInternalServerError, "Token konnte nicht erstellt werden")

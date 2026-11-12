@@ -42,6 +42,8 @@ type Server struct {
 	// passkeyChallenges: the challenges of passkey ceremonies, registration, confirmation, sign-in (passkeys.go)
 	passkeyChallenges passkeyChallenges
 	voice             *voiceService // self-hosted speech recognition (voice.go)
+	// oidc: sign-in through an OpenID Connect provider (oidc.go); nil while it is off
+	oidc *oidcService
 	// now: the time codes of authenticator apps and trusted devices are checked against (tests set it)
 	now func() time.Time
 
@@ -72,6 +74,9 @@ func NewServer(cfg *config.Config, store *storage.Store, wsHub *ws.Hub, staticFS
 		now:      time.Now,
 	}
 	srv.loginGuard = newLoginGuard(!cfg.DisableLoginProtection)
+	var oidcOff string
+	srv.oidc, oidcOff = newOIDCService(cfg)
+	srv.logOIDCSetup(oidcOff)
 	srv.voice = newVoiceService(cfg.Speech.MaxParallel)
 	if srv.voiceMode() == "server" {
 		go srv.startVoiceCheck()
@@ -165,6 +170,10 @@ func (s *Server) Router() http.Handler {
 	r.Post("/api/v1/auth/login/passkey/options", s.passkeysOnly(s.handlePasskeyLoginOptions))
 	r.Post("/api/v1/auth/login/passkey", s.passkeysOnly(s.handlePasskeyLogin))
 	r.Post("/api/v1/auth/forgot-password", s.handleForgotPassword)
+	// Sign-in through an OpenID Connect provider (oidc.go)
+	r.Post("/api/v1/auth/oidc/start", s.oidcOnly(s.handleOIDCStart))
+	r.Get("/api/v1/auth/oidc/callback", s.oidcOnly(s.handleOIDCCallback))
+	r.Post("/api/v1/auth/oidc/exchange", s.oidcOnly(s.handleOIDCExchange))
 	r.Post("/api/v1/auth/reset-password", s.handleResetPassword)
 	r.Post("/api/v1/webhooks/ingest", s.handleWebhookIngest)
 	// Public links to notes (no login; the token is the access, publiclinks.go)
@@ -220,6 +229,7 @@ func (s *Server) Router() http.Handler {
 		r.Post("/api/v1/auth/revoke-all", s.notInDemo(s.handleRevokeAllSessions))
 		// Two-factor sign-in of the own account (mfa.go)
 		r.Get("/api/v1/auth/mfa", s.handleMFAStatus)
+		r.Post("/api/v1/auth/oidc/confirm", s.oidcOnly(s.handleOIDCConfirm))
 		r.Post("/api/v1/auth/mfa/totp/setup", s.notInDemo(s.handleTOTPSetup))
 		r.Post("/api/v1/auth/mfa/totp/confirm", s.notInDemo(s.handleTOTPConfirm))
 		r.Post("/api/v1/auth/mfa/totp/disable", s.notInDemo(s.handleTOTPDisable))
@@ -779,17 +789,23 @@ func (s *Server) authMiddleware(next http.Handler) http.Handler {
 			writeError(w, http.StatusForbidden, "OAuth-Zugänge gelten nur für den MCP-Endpunkt")
 			return
 		}
-		// Two-factor sign-in required but not set up yet: only setting it up (and signing out) until then
-		if key == nil && !mfaSetupPath(r.URL.Path) && s.mfaSetupMissing(user) {
+		var sessionID string
+		var claims *auth.Claims
+		if key == nil {
+			if c, err := auth.ValidateToken(s.cfg.JWTSecret, token); err == nil {
+				claims, sessionID = c, c.ID
+			}
+		}
+		// Two-factor sign-in required but not set up yet: only setting it up (and signing out) until then.
+		// Not for sessions from an OIDC provider, which asks for its own second factor.
+		if key == nil && !mfaSetupPath(r.URL.Path) && s.mfaSetupMissingFor(user, sessionID) {
 			writeErrorCode(w, http.StatusForbidden, "mfa_setup_required", "Bitte richte zuerst die Zwei-Faktor-Anmeldung ein")
 			return
 		}
 		ctx := auth.WithUserID(r.Context(), user.ID)
-		if key == nil {
-			if claims, err := auth.ValidateToken(s.cfg.JWTSecret, token); err == nil {
-				ctx = withSession(ctx, claims.ID)
-				s.renewSessionToken(w, user, claims, false)
-			}
+		if claims != nil {
+			ctx = withSession(ctx, claims.ID)
+			s.renewSessionToken(w, user, claims, false)
 		}
 		if key != nil {
 			if msg := apiKeyRouteDenied(r, key.Scopes); msg != "" {

@@ -44,7 +44,8 @@ func (s *Server) handleForgotPassword(w http.ResponseWriter, r *http.Request) {
 	email := strings.TrimSpace(req.Email)
 	go func() {
 		user, err := s.store.GetUserByEmail(email)
-		if err != nil || user == nil || !user.IsActive {
+		// With the password login off only administrators have a password to reset (emergency access)
+		if err != nil || user == nil || !user.IsActive || !s.passwordLoginFor(user) {
 			return
 		}
 		token, err := s.store.CreatePasswordResetToken(user.ID)
