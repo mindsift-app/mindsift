@@ -137,6 +137,7 @@ export const authApi = {
     voiceLanguage?: string;
     language?: string;
     retention?: Retention;
+    tourOffered?: boolean;
   }): Promise<User> {
     return request<User>('/api/v1/auth/settings', {
       method: 'PATCH',

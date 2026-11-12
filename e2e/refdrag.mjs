@@ -40,7 +40,10 @@ async function record(step) {
 
 async function open(options) {
   const ctx = await browser.newContext({ ...options, locale: 'de-DE', timezoneId: 'Europe/Berlin' });
-  await ctx.addInitScript((t) => localStorage.setItem('mindsift_jwt_token', t), token);
+  await ctx.addInitScript((t) => {
+    localStorage.setItem('mindsift_jwt_token', t);
+    localStorage.setItem('mindsift:tour-offered', '1'); // the demo asks every browser about the tour once
+  }, token);
   const page = await ctx.newPage();
   page.on('pageerror', (e) => console.log('PAGEERROR', e.message));
   await page.goto(BASE);

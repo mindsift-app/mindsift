@@ -879,8 +879,15 @@ export const App: React.FC = () => {
         lists={lists}
       />
 
-      {/* Guided tour, started from the help page (features/tour) */}
+      {/* Guided tour, started from the help page or the offer after the first sign-in (features/tour) */}
       <views.GuidedTour activeTab={activeTab} setActiveTab={setActiveTab} />
+      {/* Once after the first sign-in, after the install offer on phones: take the tour? */}
+      <views.TourOfferCard
+        user={user}
+        demoMode={!!authStatus.demoMode}
+        suppressed={pwa.showPwaInstallModal && !pwa.isStandaloneApp}
+        onUserUpdated={setUser}
+      />
 
       {showAbout && <AboutModal onClose={() => setShowAbout(false)} />}
       {showTriageTrash && <views.TriageTrash onClose={() => setShowTriageTrash(false)} onChanged={refreshAll} />}

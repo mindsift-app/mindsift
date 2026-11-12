@@ -52,7 +52,10 @@ const main = async () => {
     if (mode.block.ws === 'reject') await ctx.routeWebSocket(/\/api\/v1\/ws/, (ws) => ws.close({ code: 1008, reason: 'blocked by proxy' }));
     if (mode.block.sse === 'abort') await ctx.route(/\/api\/v1\/events(\?|$)/, (r) => r.abort());
     if (mode.block.sse === 'hang') await ctx.route(/\/api\/v1\/events(\?|$)/, () => {}); // never answered
-    await ctx.addInitScript((t) => localStorage.setItem('mindsift_jwt_token', t), admin);
+    await ctx.addInitScript((t) => {
+      localStorage.setItem('mindsift_jwt_token', t);
+      localStorage.setItem('mindsift:tour-offered', '1'); // the demo asks every browser about the tour once
+    }, admin);
     const page = await ctx.newPage();
     await page.goto(BASE);
     await page.getByRole('button', { name: /^Aufgaben/ }).locator('visible=true').first().click();

@@ -74,7 +74,10 @@ async function drag(page, source, target) {
 
 const browser = await chromium.launch();
 const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, locale: 'de-DE', timezoneId: 'Europe/Berlin' });
-await ctx.addInitScript((t) => localStorage.setItem('mindsift_jwt_token', t), token);
+await ctx.addInitScript((t) => {
+  localStorage.setItem('mindsift_jwt_token', t);
+  localStorage.setItem('mindsift:tour-offered', '1'); // the demo asks every browser about the tour once
+}, token);
 const d = await ctx.newPage();
 d.on('pageerror', (e) => console.log('PAGEERROR', e.message));
 await d.goto(BASE);
@@ -192,7 +195,10 @@ await step('Realtime: thought captured from outside, triage counter', async () =
 
 // --- Phone: a new note asks for name and emoji first ---
 const mctx = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, locale: 'de-DE', timezoneId: 'Europe/Berlin' });
-await mctx.addInitScript((t) => localStorage.setItem('mindsift_jwt_token', t), token);
+await mctx.addInitScript((t) => {
+  localStorage.setItem('mindsift_jwt_token', t);
+  localStorage.setItem('mindsift:tour-offered', '1'); // the demo asks every browser about the tour once
+}, token);
 const m = await mctx.newPage();
 m.on('pageerror', (e) => console.log('PAGEERROR', e.message));
 await m.goto(BASE);

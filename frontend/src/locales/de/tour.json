@@ -9,6 +9,13 @@
     "button": "Tour starten",
     "intro": "Neu hier? Eine kurze Tour zeigt in sieben Schritten, wo du was findest – an deinen Daten ändert sie nichts."
   },
+  "offer": {
+    "title": "Kurze Tour starten?",
+    "text": "Sieben kurze Schritte zeigen dir, wo du was findest. Du kannst sie auch später jederzeit in der Hilfe starten.",
+    "start": "Starten",
+    "decline": "Nein danke",
+    "close": "Schließen"
+  },
   "triage": {
     "title": "Triage: erst festhalten, dann sortieren",
     "capture": "Was dir gerade einfällt, tippst du ohne Nachdenken oben in den <b>Quick Dump</b> (Taste <kbd>C</kbd>). Es landet nicht gleich irgendwo, sondern als Karte hier in der Triage.",

@@ -9,6 +9,13 @@
     "button": "Avvia il tour",
     "intro": "Sei nuovo? Un breve tour mostra in sette passi dove trovare cosa – senza cambiare nulla dei tuoi dati."
   },
+  "offer": {
+    "title": "Fare un breve tour?",
+    "text": "Sette brevi passi ti mostrano dove trovare le cose. Puoi avviarlo anche più tardi in qualsiasi momento dalla guida.",
+    "start": "Inizia",
+    "decline": "No, grazie",
+    "close": "Chiudi"
+  },
   "triage": {
     "title": "Triage: prima annotare, poi smistare",
     "capture": "Quello che ti viene in mente lo scrivi senza pensarci in alto nel <b>Quick Dump</b> (tasto <kbd>C</kbd>). Non finisce subito da qualche parte: arriva come scheda qui nel Triage.",

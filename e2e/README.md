@@ -80,6 +80,16 @@ The owner types with a normal connection, the editor sits behind a simulated pro
 
 `e2e/video-tour.sh` clicks through the demo in a visible Chrome app window (triage, tasks, shopping list, zoom into a note, a linked subtask, the to-do overview) with a drawn pointer and typing at human speed, for a YouTube video. Against the public demo `https://demo.mindsift.app` by default; `LOCAL=1` starts a fresh local demo instead. It speaks the demo's language (the local one is English unless `TOUR_LANG=de`); what it types explains what it is doing at that moment; `PACE=1.5` slows it down, `SIZE=1920,1080` sets the window, `START_DELAY` gives time to start the recorder.
 
+## tour-offer.e2e.mjs
+
+The offer of the guided tour after the first sign-in (`TourOfferCard`). `run.sh` starts a second server for it without the demo, with a fresh database and the first admin from `ADMIN_USER` / `ADMIN_PASSWORD` (port `E2E_PLAIN_PORT`, else `E2E_PORT` + 1):
+
+- the first admin is not asked during the rest of the setup, but right after it; "Nein danke" closes the card, starts no tour and is kept on the account: not asked again after reloading, nor on another device
+- a member the admin created is asked on a phone: the card stands above the navigation with 44 px buttons; "Starten" starts the tour and counts as the answer
+- in the demo every browser is asked once (closing with × counts), a second browser is asked again, and the shared account keeps nothing
+
+All other scripts against the demo set `mindsift:tour-offered` in the browser, so the card stays out of their clicks and pictures.
+
 ## tour.e2e.mjs
 
 The guided tour (`frontend/src/features/tour`), started with "Tour starten" on the help page. Desktop in Chromium and Firefox, the phone in Chromium:

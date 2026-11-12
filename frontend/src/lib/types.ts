@@ -185,6 +185,8 @@ export interface User {
   organizationIds?: string[];
   // Own organizations with names (own profile, to pick one for a new group)
   organizations?: { id: string; name: string }[];
+  // Own profile only (GET /auth/me): the app already asked about the guided tour (features/tour/tourOffer.ts)
+  tourOffered?: boolean;
   // In the directory: the viewer may share with this person (others only show by name, because they work
   // on something together with the viewer)
   findable?: boolean;

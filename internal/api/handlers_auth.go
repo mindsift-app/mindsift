@@ -651,6 +651,8 @@ func (s *Server) handleUpdateUserSettings(w http.ResponseWriter, r *http.Request
 		Language *string `json:"language"`
 		// All retention delays at once (storage/retention.go)
 		Retention *domain.Retention `json:"retention"`
+		// The app asked about the guided tour (storage/tour.go); ignored in the demo, whose accounts everybody shares
+		TourOffered *bool `json:"tourOffered"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeError(w, http.StatusBadRequest, "Ungültiges JSON")
@@ -793,6 +795,12 @@ func (s *Server) handleUpdateUserSettings(w http.ResponseWriter, r *http.Request
 	if req.Retention != nil {
 		if err := s.store.SetRetention(userID, *req.Retention, s.allowNeverRetention()); err != nil {
 			writeErrorFrom(w, http.StatusBadRequest, err)
+			return
+		}
+	}
+	if req.TourOffered != nil && !s.cfg.DemoMode {
+		if err := s.store.SetTourOffered(userID, *req.TourOffered); err != nil {
+			writeInternal(w, err)
 			return
 		}
 	}
@@ -960,6 +968,8 @@ func (s *Server) fillUserPreferences(u *domain.User) {
 	pending := s.store.PendingEmailChanges(u.ID)
 	u.PendingEmail = pending[storage.EmailChangeAccount].Email
 	u.EmailLinks = s.emailLinksAvailable()
+	offered := s.store.TourOffered(u.ID)
+	u.TourOffered = &offered
 }
 
 // maskLogin: a typed sign-in name as logged. Only its start, so a password typed into the name field
