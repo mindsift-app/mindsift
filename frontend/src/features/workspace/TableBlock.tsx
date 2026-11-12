@@ -609,7 +609,9 @@ const TableBlockView: React.FC<TableBlockProps> = ({
         // while the menu is open. The menu hangs below the ⋯ over the next bullet: on the way there the mouse
         // leaves the table, and a fading box (opacity below 1 makes it its own layer) would put the menu
         // behind the next bullet, out of reach
+        // While the menu is open the row must not clip it (content-visibility in index.css): data-outline-live
         <div
+          data-outline-live={menuOpen ? '' : undefined}
           className={`flex flex-col shrink-0 gap-0.5 opacity-100 transition-opacity ${
             menuOpen ? '' : 'sm:opacity-0 sm:group-hover/table:opacity-100 sm:group-focus-within/table:opacity-100'
           }`}
