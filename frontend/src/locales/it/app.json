@@ -90,5 +90,19 @@
   "appLoad": {
     "failed": "MindSift non è stato caricato completamente. Controlla la connessione e riprova.",
     "retry": "Riprova"
+  },
+  "rail": {
+    "label": "Navigazione principale",
+    "expand": "Espandi navigazione",
+    "collapse": "Comprimi navigazione",
+    "quickDump": "Quick Dump",
+    "quickDumpTip": "Quick Dump – annota un pensiero (C)",
+    "search": "Cerca",
+    "searchKey": "Ctrl K",
+    "help": "Guida"
+  },
+  "quickDump": {
+    "title": "Quick Dump",
+    "hint": "<kbd>Invio</kbd> salva e la finestra resta aperta per il pensiero successivo · <kbd>Esc</kbd> chiude"
   }
 }

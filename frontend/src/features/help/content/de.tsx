@@ -498,11 +498,11 @@ const de: HelpContent = {
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
           <p>
-            Die Schnellerfassungsleiste am oberen Bildschirmrand sorgt dafür, dass kein flüchtiger Gedanke verloren geht:
+            Der Quick Dump sorgt dafür, dass kein flüchtiger Gedanke verloren geht. Am Desktop öffnet ihn das runde <strong className="text-main">+</strong> in der Leiste links als Fenster über allem, auf dem Smartphone das <strong className="text-main">+</strong> unten in der Mitte:
           </p>
           <ul className="space-y-1.5">
             <li>
-              <strong className="text-main">Sofortiger Fokus:</strong> Drücke irgendwo in der App <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">C</kbd> oder <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">/</kbd> (sofern du nicht bereits in einem Textfeld tippst).
+              <strong className="text-main">Per Tastatur:</strong> Drücke irgendwo in der App <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">C</kbd> (sofern du nicht gerade in einem Textfeld tippst). <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Enter</kbd> speichert, das Fenster bleibt für den nächsten Gedanken offen; <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Esc</kbd> oder ein Klick daneben schließt es.
             </li>
             <li>
               <strong className="text-main">Sprach-Diktat:</strong> Klicke auf das Mikrofon-Symbol (<Mic className="w-3.5 h-3.5 inline text-accent" />) für kontinuierliche Spracheingabe über die Web Speech API. Gesprochene Gedanken werden automatisch mit dem Tag <code className="text-accent font-mono">#diktat</code> versehen. Auf dem Smartphone kannst du außerdem den runden <strong className="text-main">+</strong>-Button in der unteren Leiste gedrückt halten, um direkt einzusprechen – beim Loslassen landet der Text sofort im Posteingang (nach oben ziehen bricht ab).
@@ -686,7 +686,7 @@ const de: HelpContent = {
               <strong className="text-main">Erinnerungen pro Aufgabe:</strong> Im Detail-Fenster unter „Erinnerung“ eine oder mehrere Zeiten anhaken, z. B. 2 Wochen vorher und am Fälligkeitstag. Sie ersetzen für diese Aufgabe deine Vorlaufzeit und gelten für alle, die ihren Fälligkeits-Alarm bekommen; „Standard“ nimmt wieder die Vorlaufzeit aus den Einstellungen. Ohne Uhrzeit erinnert MindSift ganze Tage vorher um 9:00. Aufgaben mit eigenen Erinnerungen tragen eine kleine 🔔.
             </li>
             <li>
-              <strong className="text-main">Weitere Benachrichtigungen:</strong> Wenn dir jemand eine Aufgabe zuweist, eine neue Aufgabe in einer geteilten Liste landet oder dort eine erledigt wird, kann MindSift dir Bescheid geben; jedes Ereignis schaltest du in den Einstellungen unter „Alarme“ einzeln ein oder aus. Aufgaben, die du <strong className="text-main">beobachtest</strong>, melden jede Änderung (Status, Priorität, Fälligkeit, Text, Beschreibung, Unteraufgaben, Zuweisung …), auch wenn sie in einer Notiz abgehakt werden. Was du selbst tust, meldet MindSift dir nicht. Mehrere Ereignisse kommen gebündelt in einer Nachricht. Die <strong className="text-main">Glocke</strong> oben neben der Suche sammelt alles der letzten 14 Tage, auch ohne eingeschaltete Kanäle; ein Klick auf einen Eintrag öffnet die Aufgabe oder Notiz.
+              <strong className="text-main">Weitere Benachrichtigungen:</strong> Wenn dir jemand eine Aufgabe zuweist, eine neue Aufgabe in einer geteilten Liste landet oder dort eine erledigt wird, kann MindSift dir Bescheid geben; jedes Ereignis schaltest du in den Einstellungen unter „Alarme“ einzeln ein oder aus. Aufgaben, die du <strong className="text-main">beobachtest</strong>, melden jede Änderung (Status, Priorität, Fälligkeit, Text, Beschreibung, Unteraufgaben, Zuweisung …), auch wenn sie in einer Notiz abgehakt werden. Was du selbst tust, meldet MindSift dir nicht. Mehrere Ereignisse kommen gebündelt in einer Nachricht. Die <strong className="text-main">Glocke</strong> (am Desktop unten in der Leiste links, auf dem Smartphone oben neben der Suche) sammelt alles der letzten 14 Tage, auch ohne eingeschaltete Kanäle; ein Klick auf einen Eintrag öffnet die Aufgabe oder Notiz.
             </li>
             <li>
               <strong className="text-main">@-Erwähnungen:</strong> In der Beschreibung einer Aufgabe, in Unteraufgaben und in Notizen öffnet <strong className="text-main">@</strong> eine Auswahl von Personen (Pfeiltasten, Enter). Wer keinen Zugriff hat, steht ausgegraut darin. Die erwähnte Person bekommt eine Benachrichtigung (Einstellungen → Alarme, „Ich wurde erwähnt“), auch bei einer stummgeschalteten Liste; erneutes Speichern löst keine zweite aus.
@@ -751,7 +751,7 @@ const de: HelpContent = {
         <div className="space-y-2 text-muted leading-relaxed">
           <ul className="space-y-1.5">
             <li>
-              <strong className="text-main">Theme wechseln:</strong> Im Profilmenü oben rechts oder unter <em>Kontoeinstellungen → Darstellung &amp; Themes</em>.
+              <strong className="text-main">Theme wechseln:</strong> Im Profilmenü (dein Profilbild, am Desktop unten in der Leiste links) oder unter <em>Kontoeinstellungen → Darstellung &amp; Themes</em>.
             </li>
             <li>
               <strong className="text-main">Eigenes Theme:</strong> Vorlage herunterladen oder einfügen, Farben und Rundungen anpassen, als <code className="text-accent bg-panel px-1 py-0.5 rounded font-mono">.css</code>-Datei hochladen oder einfügen und „Speichern &amp; aktivieren“. Das Theme greift sofort und steht dir auf allen Geräten zur Verfügung.
@@ -848,9 +848,9 @@ const de: HelpContent = {
   ],
   shortcuts: [
     { key: 'Cmd + K / Strg + K oder /', scope: 'Global', desc: 'Globale Volltextsuche (Command Palette) öffnen' },
-    { key: 'C', scope: 'Global', desc: 'Fokus sofort in die Schnellerfassungsleiste setzen' },
-    { key: 'Enter', scope: 'Schnellerfassung', desc: 'Gedanken blitzschnell speichern' },
-    { key: 'Esc', scope: 'Schnellerfassung', desc: 'Eingabe leeren & Optionen schließen' },
+    { key: 'C', scope: 'Global', desc: 'Quick Dump öffnen (am Desktop als Fenster über allem)' },
+    { key: 'Enter', scope: 'Quick Dump', desc: 'Gedanken speichern; das Fenster bleibt für den nächsten offen' },
+    { key: 'Esc', scope: 'Quick Dump', desc: 'Eingabe leeren und das Fenster schließen' },
     { key: 'Enter', scope: 'Workspace Outliner', desc: 'Neuen Bullet-Point anlegen (oder leeren Block ausrücken)' },
     { key: 'Tab', scope: 'Workspace Outliner', desc: 'Bullet-Point einrücken (unterordnen)' },
     { key: 'Shift + Tab', scope: 'Workspace Outliner', desc: 'Bullet-Point nach links ausrücken' },

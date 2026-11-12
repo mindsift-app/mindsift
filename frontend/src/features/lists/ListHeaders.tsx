@@ -66,7 +66,7 @@ export function ListTabsHeader({
     onDrop: (e: React.DragEvent) => handleDropOnListTab(e, lst),
   });
   return (
-    <div className="hidden sm:flex items-center gap-2 border-b border-border pb-2 !mt-0">
+    <div className="hidden sm:flex items-center gap-2 !mt-0">
       {/* List Tabs: one row, what does not fit goes behind "⋯ n" */}
       <div ref={overflow.rowRef} className="relative flex-1 min-w-0 flex items-center gap-1">
         {lists.map((lst) => {
@@ -88,9 +88,9 @@ export function ListTabsHeader({
               onDrop={(e) => {
                 if (!reorder.handleDrop(e, lst.id)) drop.onDrop(e);
               }}
-              className={`group shrink-0 whitespace-nowrap h-8 flex items-center border rounded-btn transition-colors ${
-                isSelected ? 'bg-panel border-accent text-main' : 'bg-canvas border-border text-muted hover:text-main'
-              } ${dragOverListTab === lst.id ? 'ring-2 ring-accent/60 bg-accent/10 text-main' : ''} ${
+              className={`group tool-tab !px-0 shrink-0 ${isSelected ? 'tool-tab-active' : ''} ${
+                dragOverListTab === lst.id ? 'ring-2 ring-accent/60 !bg-accent/10 text-main' : ''
+              } ${
                 reorder.draggingId === lst.id ? 'opacity-50' : ''
               } ${hidden ? OVERFLOW_HIDDEN_TAB : 'relative'}`}
             >
@@ -98,7 +98,7 @@ export function ListTabsHeader({
               <button
                 onClick={() => setActiveListId(lst.id)}
                 tabIndex={hidden ? -1 : undefined}
-                className="h-full pl-3 pr-2 text-xs font-medium flex items-center gap-1.5 rounded-btn"
+                className="h-full px-2.5 flex items-center gap-1.5 rounded-btn"
               >
                 <span>{lst.icon}</span>
                 {/* Counter on the label, like in the nav bar */}
@@ -135,7 +135,7 @@ export function ListTabsHeader({
         <button
           data-tab-fixed
           onClick={() => setShowNewListModal((prev) => !prev)}
-          className="shrink-0 whitespace-nowrap h-8 px-2.5 bg-canvas hover:bg-panel border border-border border-dashed rounded-btn text-xs text-muted hover:text-main flex items-center gap-1 transition-colors"
+          className="tool-btn shrink-0 !gap-1"
           title={t('newListTitle')}
         >
           <Plus className="w-3.5 h-3.5" />
@@ -166,6 +166,7 @@ export function ListTabsHeader({
 
               <span className="w-px h-5 bg-border mx-0.5" aria-hidden />
               <ActionMenu
+                buttonClassName="tool-icon"
                 label={t('common:listMenu.more')}
                 items={[
                   {

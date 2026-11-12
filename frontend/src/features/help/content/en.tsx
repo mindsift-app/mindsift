@@ -394,10 +394,10 @@ const en: HelpContent = {
       keywords: ['capture', 'quick capture', 'dictation', 'voice', 'microphone', 'inbox', 'c'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
-          <p>The quick capture bar at the top of the screen makes sure no fleeting thought gets lost:</p>
+          <p>The Quick Dump makes sure no fleeting thought gets lost. On the desktop the round <strong className="text-main">+</strong> in the bar on the left opens it as a window over everything, on phones the <strong className="text-main">+</strong> at the bottom centre:</p>
           <ul className="space-y-1.5">
             <li>
-              <strong className="text-main">Instant focus:</strong> press <kbd className={kbd}>C</kbd> or <kbd className={kbd}>/</kbd> anywhere in the app (unless you are already typing in a text field).
+              <strong className="text-main">From the keyboard:</strong> press <kbd className={kbd}>C</kbd> anywhere in the app (unless you are typing in a text field). <kbd className={kbd}>Enter</kbd> saves and the window stays open for the next thought; <kbd className={kbd}>Esc</kbd> or a click beside it closes it.
             </li>
             <li>
               <strong className="text-main">Voice dictation:</strong> click the microphone icon (<Mic className="w-3.5 h-3.5 inline text-accent" />) for continuous voice input. Spoken thoughts get the tag <code className="text-accent font-mono">#diktat</code> automatically. On a phone you can also press and hold the round <strong className="text-main">+</strong> button in the bottom bar to speak right away – when you let go, the text lands in the inbox (dragging up cancels).
@@ -533,7 +533,7 @@ const en: HelpContent = {
               <strong className="text-main">Reminders per task:</strong> In the detail window, tick one or more times under “Reminder”, e.g. 2 weeks before and on the due day. For this task they replace your lead time and apply to everyone who gets its due alarm; “Default” goes back to the lead time from the settings. Without a time, MindSift reminds whole days ahead at 9 am. Tasks with their own reminders carry a small 🔔.
             </li>
             <li>
-              <strong className="text-main">More notifications:</strong> When someone assigns a task to you, a new task lands in a shared list or one there is completed, MindSift can let you know; switch each event on or off in the settings under “Alarms”. Tasks you <strong className="text-main">watch</strong> report every change (status, priority, due date, text, description, subtasks, assignment …), also when they are ticked in a note. MindSift never notifies you about what you did yourself. Several events arrive bundled in one message. The <strong className="text-main">bell</strong> next to search collects everything of the last 14 days, even without any channel switched on; click an entry to open the task or note.
+              <strong className="text-main">More notifications:</strong> When someone assigns a task to you, a new task lands in a shared list or one there is completed, MindSift can let you know; switch each event on or off in the settings under “Alarms”. Tasks you <strong className="text-main">watch</strong> report every change (status, priority, due date, text, description, subtasks, assignment …), also when they are ticked in a note. MindSift never notifies you about what you did yourself. Several events arrive bundled in one message. The <strong className="text-main">bell</strong> (desktop: at the bottom of the bar on the left; phones: next to search) collects everything of the last 14 days, even without any channel switched on; click an entry to open the task or note.
             </li>
             <li>
               <strong className="text-main">@-mentions:</strong> In a task's description, in subtasks and in notes, <strong className="text-main">@</strong> opens a list of people (arrow keys, Enter). People without access are shown greyed out. The person mentioned gets a notification (Settings → Alarms, “I was mentioned”), even from a muted list; saving again does not send a second one.
@@ -587,7 +587,7 @@ const en: HelpContent = {
         <div className="space-y-2 text-muted leading-relaxed">
           <ul className="space-y-1.5">
             <li>
-              <strong className="text-main">Switching themes:</strong> in the profile menu at the top right or under <em>Account settings → Appearance &amp; themes</em>.
+              <strong className="text-main">Switching themes:</strong> in the profile menu (your profile picture, on the desktop at the bottom of the bar on the left) or under <em>Account settings → Appearance &amp; themes</em>.
             </li>
             <li>
               <strong className="text-main">Custom theme:</strong> download or paste the template, adjust colors and corners, upload or paste it as a <code className="text-accent bg-panel px-1 py-0.5 rounded font-mono">.css</code> file and choose “Save &amp; activate”. The theme applies right away and is available on all your devices.
@@ -670,9 +670,9 @@ const en: HelpContent = {
   ],
   shortcuts: [
     { key: 'Cmd + K / Ctrl + K or /', scope: 'Global', desc: 'Open the global full-text search (command palette)' },
-    { key: 'C', scope: 'Global', desc: 'Put the focus in the quick capture bar right away' },
-    { key: 'Enter', scope: 'Quick capture', desc: 'Save the thought in a flash' },
-    { key: 'Esc', scope: 'Quick capture', desc: 'Clear the input & close the options' },
+    { key: 'C', scope: 'Global', desc: 'Open the Quick Dump (on the desktop as a window over everything)' },
+    { key: 'Enter', scope: 'Quick Dump', desc: 'Save the thought; the window stays open for the next one' },
+    { key: 'Esc', scope: 'Quick Dump', desc: 'Clear the input and close the window' },
     { key: 'Enter', scope: 'Workspace outliner', desc: 'Create a new bullet (or outdent an empty block)' },
     { key: 'Tab', scope: 'Workspace outliner', desc: 'Indent the bullet (nest it)' },
     { key: 'Shift + Tab', scope: 'Workspace outliner', desc: 'Outdent the bullet to the left' },

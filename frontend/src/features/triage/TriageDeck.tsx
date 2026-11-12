@@ -527,7 +527,7 @@ export const TriageDeck: React.FC<TriageDeckProps> = ({
           {lastTriaged && (
             <button
               onClick={handleUndo}
-              className="btn-action h-8 px-3 text-xs"
+              className="btn-action tool-ghost h-8 px-3 text-xs"
             >
               <RotateCcw className="w-3.5 h-3.5 text-accent" />
               {t('undo')}
@@ -535,7 +535,7 @@ export const TriageDeck: React.FC<TriageDeckProps> = ({
           )}
           {/* Phones reach the trash through the menu */}
           {discardedCount > 0 && (
-            <button onClick={onOpenTrash} className="hidden sm:inline-flex btn-action h-8 px-3 text-xs" title={t('trashTitle')}>
+            <button onClick={onOpenTrash} className="hidden sm:inline-flex btn-action tool-ghost h-8 px-3 text-xs" title={t('trashTitle')}>
               <Trash2 className="w-3.5 h-3.5" />
               {discardedCount}
             </button>

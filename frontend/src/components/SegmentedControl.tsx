@@ -52,12 +52,12 @@ export function SegmentedControl<T extends string>({ options, value, onChange, a
       ref={boxRef}
       role="radiogroup"
       aria-label={ariaLabel}
-      className="relative flex items-center bg-main/[0.04] border border-border rounded-btn p-0.5 text-[11px]"
+      className="seg-track text-[11px]"
     >
       {pill && (
         <span
           aria-hidden
-          className={`absolute top-0.5 bottom-0.5 rounded-btn bg-panel-elevated shadow-xs ${
+          className={`seg-thumb absolute top-0.5 bottom-0.5 rounded-btn ${
             animate ? 'transition-[left,width] duration-200 ease-out motion-reduce:transition-none' : ''
           }`}
           style={{ left: pill.left, width: pill.width }}
@@ -73,9 +73,7 @@ export function SegmentedControl<T extends string>({ options, value, onChange, a
             aria-checked={active}
             onClick={() => onChange(o.value)}
             title={o.title}
-            className={`relative px-2.5 py-1 rounded-btn font-semibold transition-colors cursor-pointer ${
-              active ? `text-main ${pill ? '' : 'bg-panel-elevated shadow-xs'}` : 'text-muted hover:text-main'
-            }`}
+            className={`seg-item ${active ? `seg-item-active ${pill ? '' : 'seg-item-raised'}` : ''}`}
           >
             {o.label}
           </button>

@@ -18,7 +18,7 @@
   },
   "triage": {
     "title": "Triage: primero apuntar, luego ordenar",
-    "capture": "Lo que se te ocurra lo escribes sin pensar arriba en el <b>Quick Dump</b> (tecla <kbd>C</kbd>). No va directamente a ningún sitio: llega como tarjeta aquí al Triage.",
+    "capture": "Lo que se te ocurra lo echas sin pensar en el <b>Quick Dump</b>: el <b>+</b> de la barra de la izquierda o la tecla <kbd>C</kbd>. No va directamente a ningún sitio: llega como tarjeta aquí al Triage.",
     "capturePhone": "Lo que se te ocurra lo echas sin pensar al <b>Quick Dump</b>: el <b>+</b> abajo en el centro, mantenlo pulsado para dictar. Llega como tarjeta aquí al Triage.",
     "decide": "Cuando tengas tiempo, decides tarjeta por tarjeta: <kbd>→</kbd> tarea, <kbd>←</kbd> descartar, <kbd>D</kbd> nota, <kbd>T</kbd> con fecha, <kbd>Espacio</kbd> más tarde – o los botones bajo la tarjeta, también «A la lista».",
     "decidePhone": "Cuando tengas tiempo, decides tarjeta por tarjeta: deslizar a la derecha la convierte en tarea, a la izquierda la descarta. Los botones de abajo la ponen en una lista, como nota o con fecha."
@@ -51,7 +51,7 @@
   },
   "end": {
     "title": "¡Eso es todo!",
-    "text": "Todo lo demás – atajos, listas, compartir y más – está aquí en la página de ayuda (el <b>?</b> arriba a la derecha). Con «Iniciar recorrido» vuelves a verlo cuando quieras.",
+    "text": "Todo lo demás – atajos, listas, compartir y más – está aquí en la página de ayuda (el <b>?</b> abajo en la barra de la izquierda). Con «Iniciar recorrido» vuelves a verlo cuando quieras.",
     "textPhone": "Todo lo demás – listas, compartir y más – está aquí en la página de ayuda (desde tu foto de perfil arriba a la derecha). Con «Iniciar recorrido» vuelves a verlo cuando quieras.",
     "share": "Por cierto, puedes compartir notas, listas de tareas y listas con otras personas y editarlas juntos."
   },

@@ -394,10 +394,10 @@ const it: HelpContent = {
       keywords: ['cattura', 'registrazione rapida', 'dettatura', 'voce', 'microfono', 'inbox', 'c'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
-          <p>La barra di registrazione rapida in cima allo schermo assicura che nessun pensiero vada perso:</p>
+          <p>Il Quick Dump assicura che nessun pensiero vada perso. Sul desktop il <strong className="text-main">+</strong> rotondo nella barra a sinistra lo apre come finestra sopra tutto, sul telefono il <strong className="text-main">+</strong> in basso al centro:</p>
           <ul className="space-y-1.5">
             <li>
-              <strong className="text-main">Focus immediato:</strong> premi <kbd className={kbd}>C</kbd> o <kbd className={kbd}>/</kbd> ovunque nell'app (a meno che tu non stia già digitando in un campo di testo).
+              <strong className="text-main">Da tastiera:</strong> premi <kbd className={kbd}>C</kbd> ovunque nell'app (a meno che tu non stia digitando in un campo di testo). <kbd className={kbd}>Invio</kbd> salva e la finestra resta aperta per il pensiero successivo; <kbd className={kbd}>Esc</kbd> o un clic accanto la chiude.
             </li>
             <li>
               <strong className="text-main">Dettatura vocale:</strong> fai clic sull'icona del microfono (<Mic className="w-3.5 h-3.5 inline text-accent" />) per l'inserimento vocale continuo. Ai pensieri registrati a voce viene assegnato automaticamente il tag <code className="text-accent font-mono">#diktat</code>. Su smartphone puoi anche tenere premuto il pulsante rotondo <strong className="text-main">+</strong> nella barra inferiore per parlare subito – al rilascio il testo finisce nella posta in arrivo (trascinando verso l'alto si annulla).
@@ -533,7 +533,7 @@ const it: HelpContent = {
               <strong className="text-main">Promemoria per attività:</strong> Nella finestra dei dettagli, spunta uno o più orari in «Promemoria», ad es. 2 settimane prima e il giorno della scadenza. Per questa attività sostituiscono il tuo preavviso e valgono per tutti quelli che ricevono il suo allarme di scadenza; «Predefinito» torna al preavviso delle impostazioni. Senza orario, MindSift ricorda giorni interi prima alle 9. Le attività con promemoria propri hanno una piccola 🔔.
             </li>
             <li>
-              <strong className="text-main">Altre notifiche:</strong> Quando qualcuno ti assegna un'attività, una nuova attività arriva in una lista condivisa o lì ne viene completata una, MindSift può avvisarti; ogni evento si attiva o disattiva singolarmente nelle impostazioni, alla voce “Notifiche”. Le attività che <strong className="text-main">segui</strong> segnalano ogni modifica (stato, priorità, scadenza, testo, descrizione, sottoattività, assegnazione …), anche se spuntate in una nota. MindSift non ti avvisa mai di ciò che fai tu. Più eventi arrivano raggruppati in un unico messaggio. La <strong className="text-main">campanella</strong> accanto alla ricerca raccoglie tutto degli ultimi 14 giorni, anche senza canali attivi; un clic su una voce apre l'attività o la nota.
+              <strong className="text-main">Altre notifiche:</strong> Quando qualcuno ti assegna un'attività, una nuova attività arriva in una lista condivisa o lì ne viene completata una, MindSift può avvisarti; ogni evento si attiva o disattiva singolarmente nelle impostazioni, alla voce “Notifiche”. Le attività che <strong className="text-main">segui</strong> segnalano ogni modifica (stato, priorità, scadenza, testo, descrizione, sottoattività, assegnazione …), anche se spuntate in una nota. MindSift non ti avvisa mai di ciò che fai tu. Più eventi arrivano raggruppati in un unico messaggio. La <strong className="text-main">campanella</strong> (desktop: in basso nella barra a sinistra; telefono: accanto alla ricerca) raccoglie tutto degli ultimi 14 giorni, anche senza canali attivi; un clic su una voce apre l'attività o la nota.
             </li>
             <li>
               <strong className="text-main">Menzioni con @:</strong> Nella descrizione di un'attività, nelle sottoattività e nelle note, <strong className="text-main">@</strong> apre un elenco di persone (frecce, Invio). Chi non ha accesso appare in grigio. La persona menzionata riceve una notifica (Impostazioni → Notifiche, “Sono stato menzionato”), anche da una lista silenziata; salvare di nuovo non ne invia una seconda.
@@ -587,7 +587,7 @@ const it: HelpContent = {
         <div className="space-y-2 text-muted leading-relaxed">
           <ul className="space-y-1.5">
             <li>
-              <strong className="text-main">Cambio tema:</strong> nel menu del profilo in alto a destra oppure in <em>Impostazioni account → Aspetto e temi</em>.
+              <strong className="text-main">Cambio tema:</strong> nel menu del profilo (la tua foto profilo, sul desktop in basso nella barra a sinistra) oppure in <em>Impostazioni account → Aspetto e temi</em>.
             </li>
             <li>
               <strong className="text-main">Tema personalizzato:</strong> scarica o incolla il modello, adatta colori e angoli, carica o incolla come file <code className="text-accent bg-panel px-1 py-0.5 rounded font-mono">.css</code> e scegli «Salva e attiva». Il tema si applica subito ed è disponibile su tutti i tuoi dispositivi.
@@ -670,9 +670,9 @@ const it: HelpContent = {
   ],
   shortcuts: [
     { key: 'Cmd + K / Ctrl + K o /', scope: 'Globale', desc: 'Apri la ricerca globale full-text (tavolozza dei comandi)' },
-    { key: 'C', scope: 'Globale', desc: 'Sposta subito il focus sulla barra di registrazione rapida' },
-    { key: 'Enter', scope: 'Registrazione rapida', desc: 'Salva il pensiero all\'istante' },
-    { key: 'Esc', scope: 'Registrazione rapida', desc: 'Cancella l\'inserimento e chiudi le opzioni' },
+    { key: 'C', scope: 'Globale', desc: 'Apri il Quick Dump (sul desktop come finestra sopra tutto)' },
+    { key: 'Enter', scope: 'Quick Dump', desc: 'Salva il pensiero; la finestra resta aperta per il successivo' },
+    { key: 'Esc', scope: 'Quick Dump', desc: 'Cancella l\'inserimento e chiudi la finestra' },
     { key: 'Enter', scope: 'Workspace outliner', desc: 'Crea un nuovo punto (o riduci il rientro se vuoto)' },
     { key: 'Tab', scope: 'Workspace outliner', desc: 'Aumenta il rientro del punto (nidificazione)' },
     { key: 'Shift + Tab', scope: 'Workspace outliner', desc: 'Riduci il rientro del punto verso sinistra' },

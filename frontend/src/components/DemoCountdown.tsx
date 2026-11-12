@@ -6,6 +6,8 @@ interface DemoCountdownProps {
   minutes?: number;
   className?: string;
   onElapsed?: () => void;
+  // Only "MM:SS" (the collapsed navigation rail); the full text is in the tooltip
+  compact?: boolean;
 }
 
 const fmt = (ms: number) => {
@@ -14,7 +16,7 @@ const fmt = (ms: number) => {
 };
 
 // "✨ Demo · Reset in MM:SS" in place of the version under the app name while the demo mode resets itself
-export const DemoCountdown: React.FC<DemoCountdownProps> = ({ deadline, minutes, className = '', onElapsed }) => {
+export const DemoCountdown: React.FC<DemoCountdownProps> = ({ deadline, minutes, className = '', onElapsed, compact = false }) => {
   const { t } = useTranslation('app');
   const [now, setNow] = useState(() => Date.now());
 
@@ -30,12 +32,13 @@ export const DemoCountdown: React.FC<DemoCountdownProps> = ({ deadline, minutes,
     if (elapsed) onElapsed?.();
   }, [elapsed, deadline, onElapsed]);
 
+  const full = `${t('demo.label')} ${left > 0 ? t('demo.resetIn', { time: fmt(left) }) : t('demo.resetting')}`;
   return (
     <span
       className={`font-mono leading-tight text-accent ${className}`}
-      title={t('demo.resetEvery', { count: minutes || 20 })}
+      title={compact ? `${full} · ${t('demo.resetEvery', { count: minutes || 20 })}` : t('demo.resetEvery', { count: minutes || 20 })}
     >
-      {t('demo.label')} {left > 0 ? t('demo.resetIn', { time: fmt(left) }) : t('demo.resetting')}
+      {compact ? (left > 0 ? fmt(left) : '…') : full}
     </span>
   );
 };

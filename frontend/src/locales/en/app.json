@@ -90,5 +90,19 @@
   "appLoad": {
     "failed": "MindSift could not be loaded completely. Check the connection and try again.",
     "retry": "Try again"
+  },
+  "rail": {
+    "label": "Main navigation",
+    "expand": "Expand navigation",
+    "collapse": "Collapse navigation",
+    "quickDump": "Quick Dump",
+    "quickDumpTip": "Quick Dump – capture a thought (C)",
+    "search": "Search",
+    "searchKey": "Ctrl K",
+    "help": "Help"
+  },
+  "quickDump": {
+    "title": "Quick Dump",
+    "hint": "<kbd>Enter</kbd> saves and keeps the window open for the next thought · <kbd>Esc</kbd> closes"
   }
 }

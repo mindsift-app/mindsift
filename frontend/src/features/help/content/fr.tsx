@@ -400,10 +400,10 @@ const fr: HelpContent = {
       keywords: ['capture', 'saisie rapide', 'dictée', 'voix', 'microphone', 'boîte de réception', 'c'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
-          <p>La barre de saisie rapide en haut de l'écran garantit qu'aucune idée fugace ne se perde :</p>
+          <p>Le Quick Dump garantit qu'aucune idée fugace ne se perde. Sur ordinateur, le <strong className="text-main">+</strong> rond dans la barre de gauche l'ouvre en fenêtre par-dessus tout ; sur mobile, le <strong className="text-main">+</strong> en bas au centre :</p>
           <ul className="space-y-1.5">
             <li>
-              <strong className="text-main">Focus instantané :</strong> appuie sur <kbd className={kbd}>C</kbd> ou <kbd className={kbd}>/</kbd> n'importe où dans l'application (sauf si tu es déjà en train d'écrire dans un champ de texte).
+              <strong className="text-main">Au clavier :</strong> appuie sur <kbd className={kbd}>C</kbd> n'importe où dans l'application (sauf si tu écris dans un champ de texte). <kbd className={kbd}>Entrée</kbd> enregistre et la fenêtre reste ouverte pour l'idée suivante ; <kbd className={kbd}>Échap</kbd> ou un clic à côté la ferme.
             </li>
             <li>
               <strong className="text-main">Dictée vocale :</strong> clique sur l'icône de micro (<Mic className="w-3.5 h-3.5 inline text-accent" />) ou maintiens appuyé le bouton d'action flottant (+) sur mobile pour dicter ta pensée. La reconnaissance vocale la transcrit en temps réel.
@@ -525,7 +525,7 @@ const fr: HelpContent = {
               <strong className="text-main">Rappels par tâche :</strong> Dans la fenêtre de détail, coche une ou plusieurs heures sous « Rappel », p. ex. 2 semaines avant et le jour de l’échéance. Pour cette tâche, ils remplacent ton délai et valent pour tous ceux qui reçoivent son alarme d’échéance ; « Par défaut » revient au délai des paramètres. Sans heure, MindSift rappelle des jours entiers avant, à 9 h. Les tâches avec leurs propres rappels portent une petite 🔔.
             </li>
             <li>
-              <strong className="text-main">Autres notifications :</strong> Quand quelqu’un t’attribue une tâche, qu’une nouvelle tâche arrive dans une liste partagée ou qu’une tâche y est terminée, MindSift peut te prévenir ; chaque événement s’active ou se désactive séparément dans les paramètres, sous « Alarmes ». Les tâches que tu <strong className="text-main">suis</strong> signalent chaque modification (statut, priorité, échéance, texte, description, sous-tâches, attribution …), même cochées dans une note. MindSift ne te signale jamais ce que tu fais toi-même. Plusieurs événements arrivent regroupés dans un seul message. La <strong className="text-main">cloche</strong> à côté de la recherche rassemble tout ce qui s’est passé ces 14 derniers jours, même sans canal activé ; un clic sur une entrée ouvre la tâche ou la note.
+              <strong className="text-main">Autres notifications :</strong> Quand quelqu’un t’attribue une tâche, qu’une nouvelle tâche arrive dans une liste partagée ou qu’une tâche y est terminée, MindSift peut te prévenir ; chaque événement s’active ou se désactive séparément dans les paramètres, sous « Alarmes ». Les tâches que tu <strong className="text-main">suis</strong> signalent chaque modification (statut, priorité, échéance, texte, description, sous-tâches, attribution …), même cochées dans une note. MindSift ne te signale jamais ce que tu fais toi-même. Plusieurs événements arrivent regroupés dans un seul message. La <strong className="text-main">cloche</strong> (ordinateur : en bas de la barre de gauche ; mobile : à côté de la recherche) rassemble tout ce qui s’est passé ces 14 derniers jours, même sans canal activé ; un clic sur une entrée ouvre la tâche ou la note.
             </li>
             <li>
               <strong className="text-main">Mentions avec @ :</strong> Dans la description d’une tâche, dans les sous-tâches et dans les notes, <strong className="text-main">@</strong> ouvre une liste de personnes (flèches, Entrée). Celles sans accès apparaissent grisées. La personne mentionnée reçoit une notification (Paramètres → Alarmes, « On m’a mentionné »), même depuis une liste en sourdine ; enregistrer à nouveau n’en envoie pas une deuxième.
@@ -665,9 +665,9 @@ const fr: HelpContent = {
   ],
   shortcuts: [
     { key: 'Cmd + K / Ctrl + K ou /', scope: 'Global', desc: 'Ouvrir la recherche globale en texte intégral (palette de commandes)' },
-    { key: 'C', scope: 'Global', desc: 'Placer immédiatement le focus dans la barre de saisie rapide' },
-    { key: 'Entrée', scope: 'Saisie rapide', desc: 'Enregistrer la pensée en un éclair' },
-    { key: 'Échap', scope: 'Saisie rapide', desc: 'Effacer la saisie et fermer les options' },
+    { key: 'C', scope: 'Global', desc: 'Ouvrir le Quick Dump (sur ordinateur en fenêtre par-dessus tout)' },
+    { key: 'Entrée', scope: 'Quick Dump', desc: 'Enregistrer la pensée ; la fenêtre reste ouverte pour la suivante' },
+    { key: 'Échap', scope: 'Quick Dump', desc: 'Effacer la saisie et fermer la fenêtre' },
     { key: 'Entrée', scope: 'Outliner Workspace', desc: 'Créer une nouvelle puce (ou désindenter un bloc vide)' },
     { key: 'Tab', scope: 'Outliner Workspace', desc: 'Indenter la puce vers la droite (l\'imbriquer)' },
     { key: 'Maj + Tab', scope: 'Outliner Workspace', desc: 'Désindenter la puce vers la gauche' },
