@@ -17,6 +17,7 @@ import { MobileTaskCreateSheet, MobileTaskDraft } from './MobileTaskCreateSheet'
 import { TagFilterRow } from './TagFilterRow';
 import { inIdOrder } from '../../lib/useTabReorder';
 import { useTaskDrag } from './useTaskDrag';
+import { useLatestCallback } from '../../lib/useLatestCallback';
 import { KanbanBoard } from './KanbanBoard';
 import { TaskRow } from './TaskRow';
 import { buildTasksMenu } from './tasksMenu';
@@ -760,28 +761,63 @@ export const TasksView: React.FC<TasksViewProps> = ({
 
   // Clean Task Row in List View
   // One row of the list view (TaskRow)
-  const renderTaskRow = (task: Thought, compact = false) => (
-    <TaskRow
-      key={task.id}
-      task={task}
-      compact={compact}
-      drag={taskDrag}
-      columnsFor={columnsFor}
-      handleConvertToDoc={handleConvertToDoc}
-      handleCyclePriority={handleCyclePriority}
-      handleDeletePermanent={handleDeletePermanent}
-      handleSetKanbanStatus={handleSetKanbanStatus}
-      handleToggleDone={handleToggleDone}
-      isTaskReadOnly={isTaskReadOnly}
-      onOpenDocument={onOpenDocument}
-      renderAssignees={renderAssignees}
-      renderTaskProgressBar={renderTaskProgressBar}
-      selectedTag={selectedTag}
-      setSelectedTag={setSelectedTag}
-      setDetailTaskId={setDetailTaskId}
-      setShowDetailModal={setShowDetailModal}
-    />
-  );
+  // Stable functions for the rows (TaskRow is memoized): opening the task dialog, dragging or a change
+  // to one task renders only the rows it touches. columnsFor changes with the lists, which renders all rows
+  // again, so their columns and assignees follow.
+  const openTaskDetail = useLatestCallback((taskId: string) => {
+    setDetailTaskId(taskId);
+    setShowDetailModal(true);
+  });
+  const rowDragStart = useLatestCallback(taskDrag.handleTaskDragStart);
+  const rowDragEnd = useLatestCallback(() => {
+    taskDrag.setDraggingTaskId(null);
+    taskDrag.setDragOverTaskTarget(null);
+    taskDrag.setDragOverKanbanCol(null);
+    taskDrag.setDragOverListTab(null);
+  });
+  const rowDragOver = useLatestCallback(taskDrag.handleTaskDragOver);
+  const rowDragLeave = useLatestCallback(taskDrag.handleTaskDragLeave);
+  const rowDrop = useLatestCallback(taskDrag.handleDropOnTask);
+  const rowConvertToDoc = useLatestCallback(handleConvertToDoc);
+  const rowCyclePriority = useLatestCallback(handleCyclePriority);
+  const rowDelete = useLatestCallback(handleDeletePermanent);
+  const rowSetStatus = useLatestCallback(handleSetKanbanStatus);
+  const rowToggleDone = useLatestCallback(handleToggleDone);
+  const rowOpenDocument = useLatestCallback(onOpenDocument);
+  const rowRenderAssignees = useLatestCallback(renderAssignees);
+  const rowProgressBar = useLatestCallback(renderTaskProgressBar);
+
+  // One row of the list view (TaskRow)
+  const renderTaskRow = (task: Thought, compact = false) => {
+    const target = taskDrag.dragOverTaskTarget;
+    return (
+      <TaskRow
+        key={task.id}
+        task={task}
+        compact={compact}
+        readOnly={isTaskReadOnly(task)}
+        isDragging={taskDrag.draggingTaskId === task.id}
+        dropPosition={target?.taskId === task.id ? target.position : null}
+        onDragStart={rowDragStart}
+        onDragEnd={rowDragEnd}
+        onDragOver={rowDragOver}
+        onDragLeave={rowDragLeave}
+        onDrop={rowDrop}
+        onOpen={openTaskDetail}
+        columnsFor={columnsFor}
+        handleConvertToDoc={rowConvertToDoc}
+        handleCyclePriority={rowCyclePriority}
+        handleDeletePermanent={rowDelete}
+        handleSetKanbanStatus={rowSetStatus}
+        handleToggleDone={rowToggleDone}
+        onOpenDocument={rowOpenDocument}
+        renderAssignees={rowRenderAssignees}
+        renderTaskProgressBar={rowProgressBar}
+        selectedTag={selectedTag}
+        setSelectedTag={setSelectedTag}
+      />
+    );
+  };
 
   return (
     // Phone Kanban: the page top is the first snap point (bar and first column)

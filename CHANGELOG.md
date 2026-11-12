@@ -12,6 +12,9 @@ Versions before 0.80.0 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - **Two-factor sign-in:** under Settings → Security you can connect an authenticator app (TOTP). Signing in then asks for its six-digit code after the password; ten one-time recovery codes help when the phone is missing, and your own devices can be trusted for 30 days. Ending all sessions, a new password or switching it off ends that trust; "Forgot password" leaves two-factor sign-in on. Also asked on the sign-in of the OAuth consent page. Not available in the demo.
 - New settings section **Security** with the password change, two-factor sign-in and the signed-in devices (moved there from Profile).
 
+### Fixed
+- The task dialog opens and closes without delay in long task lists: opening it no longer makes the browser restyle and lay out every row (300 tasks with a slowed-down CPU: about 0.5 s down to 0.07 s).
+
 ### Changed
 - **Attention:** passwords count to the last character, up to 1,024 characters; before, only the first 72 bytes counted. Existing passwords keep working and are stored in the new form at the next sign-in, which older versions cannot read: going back to an older version then needs a password reset for those accounts. Keep `SECRETS_KEY` (or `data/secrets.key`): if it changes, authenticator codes stop working and only recovery codes still sign in.
 

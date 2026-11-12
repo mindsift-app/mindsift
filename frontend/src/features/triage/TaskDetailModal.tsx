@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import {
   X,
@@ -335,7 +336,9 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
   const creator = assignableMembers.find((m) => m.userId === task.userId);
   const origin = originDetails(task.origin, task.createdAt, creator ? creator.displayName || creator.email : undefined);
 
-  return (
+  // Rendered into <body>: as a child of the task view its coming and going made the browser restyle every
+  // row of a long list (the view's space-y siblings rule), which delayed opening it.
+  return createPortal(
     <div
       className="fixed inset-0 !m-0 modal-overlay z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
       onMouseDown={(e) => {
@@ -1187,6 +1190,7 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

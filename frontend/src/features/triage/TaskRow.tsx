@@ -6,71 +6,67 @@ import { OriginBadge } from '../../components/OriginBadge';
 import { SelectMenu } from '../../components/SelectMenu';
 import { columnDotClass } from './ManageColumnsModal';
 import { KanbanColumn, RECURRENCE_LABELS, Thought } from '../../lib/types';
-import { useTaskDrag, canDragTasks } from './useTaskDrag';
+import { canDragTasks } from './useTaskDrag';
 import { stopOnControl } from './stopOnControl';
 import { renderMentions } from '../../lib/markdown';
 import { remindersText } from '../../lib/reminders';
 
 interface TaskRowProps {
   task: Thought;
-  // Result of useTaskDrag in TasksView
-  drag: ReturnType<typeof useTaskDrag>;
+  readOnly: boolean;
+  // Dragging (useTaskDrag in TasksView): this row is being dragged / the drop line before or after it
+  isDragging: boolean;
+  dropPosition: 'before' | 'after' | null;
+  onDragStart: (e: React.DragEvent<HTMLDivElement>, task: Thought) => void;
+  onDragEnd: () => void;
+  onDragOver: (e: React.DragEvent<HTMLDivElement>, taskId: string) => void;
+  onDragLeave: (e: React.DragEvent<HTMLDivElement>, taskId: string) => void;
+  onDrop: (e: React.DragEvent<HTMLDivElement>, task: Thought) => void;
+  onOpen: (taskId: string) => void;
   columnsFor: (task: Thought) => KanbanColumn[];
   handleConvertToDoc: (task: Thought) => void;
   handleCyclePriority: (task: Thought) => void;
   handleDeletePermanent: (id: string) => void;
   handleSetKanbanStatus: (task: Thought, nextStatus: string) => void;
   handleToggleDone: (task: Thought) => void;
-  isTaskReadOnly: (task: Thought) => boolean;
   onOpenDocument: (docId: string, blockId?: string) => void;
   renderAssignees: (task: Thought, size: 'xxs' | 'xs') => React.ReactNode;
   renderTaskProgressBar: (task: Thought) => React.ReactNode;
   selectedTag: string | null;
   setSelectedTag: (tag: string | null) => void;
-  setDetailTaskId: (id: string | null) => void;
-  setShowDetailModal: (show: boolean) => void;
   // The calendar's day panel: no due date, assignees and actions at the end of the badges instead of beside the task
   compact?: boolean;
 }
 
 // One task in the list view of TasksView: drag handle and drop line, tick, title, chips (column,
-// priority, due date, hashtags, note, origin), progress, assignees and the desktop actions.
-export function TaskRow({
+// priority, due date, hashtags, note, origin), progress, assignees and the desktop actions. Memoized with
+// stable functions from TasksView: opening the task dialog or dragging another row does not render it again.
+function TaskRowView({
   task,
-  drag,
+  readOnly,
+  isDragging,
+  dropPosition,
+  onDragStart,
+  onDragEnd,
+  onDragOver,
+  onDragLeave,
+  onDrop,
+  onOpen,
   columnsFor,
   handleConvertToDoc,
   handleCyclePriority,
   handleDeletePermanent,
   handleSetKanbanStatus,
   handleToggleDone,
-  isTaskReadOnly,
   onOpenDocument,
   renderAssignees,
   renderTaskProgressBar,
   selectedTag,
   setSelectedTag,
-  setDetailTaskId,
-  setShowDetailModal,
   compact = false,
 }: TaskRowProps) {
   const { t } = useTranslation('tasks');
-  const {
-    dragOverTaskTarget,
-    draggingTaskId,
-    handleDropOnTask,
-    handleTaskDragLeave,
-    handleTaskDragOver,
-    handleTaskDragStart,
-    setDragOverKanbanCol,
-    setDragOverListTab,
-    setDragOverTaskTarget,
-    setDraggingTaskId,
-  } = drag;
   const isCompleted = task.isCompleted;
-  const readOnly = isTaskReadOnly(task);
-  const isDragging = draggingTaskId === task.id;
-  const isTarget = dragOverTaskTarget?.taskId === task.id;
 
   // Assignees and the desktop actions: at the end of the row, or (compact) at the end of the badges
   const side = (
@@ -82,10 +78,7 @@ export function TaskRow({
         <button
           type="button"
           draggable={false}
-          onClick={() => {
-            setDetailTaskId(task.id);
-            setShowDetailModal(true);
-          }}
+          onClick={() => onOpen(task.id)}
           className="text-faint hover:text-accent p-1.5 transition-colors"
           title={readOnly ? t('detail.view') : t('detail.edit')}
         >
@@ -122,20 +115,12 @@ export function TaskRow({
       key={task.id}
       data-tour="task"
       draggable={canDragTasks && !readOnly}
-      onDragStart={(e) => handleTaskDragStart(e, task)}
-      onDragEnd={() => {
-        setDraggingTaskId(null);
-        setDragOverTaskTarget(null);
-        setDragOverKanbanCol(null);
-        setDragOverListTab(null);
-      }}
-      onDragOver={(e) => handleTaskDragOver(e, task.id)}
-      onDragLeave={(e) => handleTaskDragLeave(e, task.id)}
-      onDrop={(e) => handleDropOnTask(e, task)}
-      onClick={() => {
-        setDetailTaskId(task.id);
-        setShowDetailModal(true);
-      }}
+      onDragStart={(e) => onDragStart(e, task)}
+      onDragEnd={onDragEnd}
+      onDragOver={(e) => onDragOver(e, task.id)}
+      onDragLeave={(e) => onDragLeave(e, task.id)}
+      onDrop={(e) => onDrop(e, task)}
+      onClick={() => onOpen(task.id)}
       className={`px-3.5 py-3.5 sm:px-3 sm:py-2.5 flex items-center justify-between gap-3 transition-colors hover:bg-panel-hover group border-b border-border last:border-b-0 relative cursor-pointer select-none ${
         readOnly ? '' : 'cursor-grab active:cursor-grabbing'
       } ${
@@ -143,10 +128,10 @@ export function TaskRow({
       } ${isDragging ? 'opacity-30 border border-dashed border-accent/40' : ''}`}
     >
       {/* Drop insertion line indicator */}
-      {isTarget && dragOverTaskTarget.position === 'before' && (
+      {dropPosition === 'before' && (
         <div className="absolute top-0 left-0 right-0 h-0.5 bg-accent z-20 pointer-events-none rounded-full shadow-[0_0_8px_rgba(var(--accent-rgb),0.6)]" />
       )}
-      {isTarget && dragOverTaskTarget.position === 'after' && (
+      {dropPosition === 'after' && (
         <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-accent z-20 pointer-events-none rounded-full shadow-[0_0_8px_rgba(var(--accent-rgb),0.6)]" />
       )}
 
@@ -271,10 +256,7 @@ export function TaskRow({
             {task.notes && (
               <button
                 type="button"
-                onClick={() => {
-                  setDetailTaskId(task.id);
-                  setShowDetailModal(true);
-                }}
+                onClick={() => onOpen(task.id)}
                 className="inline-flex items-center gap-1 text-[10px] text-muted hover:text-main bg-canvas px-1.5 py-0.5 rounded border border-border"
                 title={t('row.showNote')}
               >
@@ -332,3 +314,5 @@ export function TaskRow({
     </div>
   );
 }
+
+export const TaskRow = React.memo(TaskRowView);
