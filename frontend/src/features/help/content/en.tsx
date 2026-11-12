@@ -601,7 +601,7 @@ const en: HelpContent = {
       title: 'Offline, backups & password',
       subtitle: 'Keep working without internet, restore backups, reset your password',
       icon: CloudOff,
-      keywords: ['offline', 'internet', 'backup', 'restore', 'password', 'forgot', 'account', 'two-factor', '2fa', 'authenticator', 'security'],
+      keywords: ['offline', 'internet', 'backup', 'restore', 'password', 'forgot', 'account', 'two-factor', '2fa', 'authenticator', 'security', 'passkey', 'fingerprint'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
           <ul className="space-y-1.5">
@@ -619,6 +619,9 @@ const en: HelpContent = {
             </li>
             <li>
               <strong className="text-main">Two-factor sign-in:</strong> under <em>Account settings → Security</em> you connect an authenticator app (scan the QR code, enter the first code); from then on signing in asks for the app's six-digit code after the password. The ten recovery codes shown once along the way help when the phone is missing: each works once. With “Trust this device for 30 days” a device of your own asks for no code for a month. “Forgot your password” does not switch two-factor sign-in off.
+            </li>
+            <li>
+              <strong className="text-main">Passkeys:</strong> under <em>Account settings → Security → Passkeys</em> you create a passkey (confirm your password, give it a name, fingerprint, face or device PIN). From then on “Sign in with a passkey” signs you in without any password; some browsers also offer it right in the login field. Signing in with the password asks for the passkey afterwards: a passkey counts as second factor, even without an authenticator app. The recovery codes appear with the first passkey. Removing the last second factor switches two-factor sign-in off again. Passkeys are only available when the server has a fixed https address (BASE_URL).
             </li>
           </ul>
         </div>

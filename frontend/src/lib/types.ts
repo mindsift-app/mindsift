@@ -37,6 +37,8 @@ export interface AuthStatus {
   sharingMode?: SharingMode;
   // "Passwort vergessen?" works (SMTP and BASE_URL configured)
   passwordReset?: boolean;
+  // Passkeys work on this server (BASE_URL with https, not the demo): "Mit Passkey anmelden"
+  passkeys?: boolean;
   // AI agents may connect over MCP (the operator can switch it off)
   mcpEnabled?: boolean;
   // MCP address for claude.ai / ChatGPT connectors (OAuth); empty when the server has no BASE_URL
@@ -813,10 +815,10 @@ export interface Session {
 }
 
 // Two-factor sign-in (Einstellungen → Sicherheit, second step of the login)
-export type MfaMethod = 'totp' | 'recovery';
+export type MfaMethod = 'totp' | 'passkey' | 'recovery';
 
-// Answer of POST /auth/login: a session, or the second step when the account has an authenticator app
-// (tell them apart with `'mfaToken' in res`)
+// Answer of POST /auth/login: a session, or the second step when the account has an authenticator app or
+// a passkey (tell them apart with `'mfaToken' in res`)
 export type LoginResult = { token: string; user: User } | MfaChallenge;
 
 export interface MfaChallenge {
@@ -844,13 +846,31 @@ export interface TrustedDevice {
   lastUsedAt: string;
 }
 
+// A passkey of the own account (Einstellungen → Sicherheit → Passkeys)
+export interface Passkey {
+  id: string;
+  name: string;
+  createdAt: string;
+  lastUsedAt: string; // empty: never used
+  synced: boolean; // kept in a backup (password manager, iCloud, Google account)
+}
+
+// Why passkeys cannot be used on this server
+export type PasskeysOff = '' | 'demo' | 'no_base_url' | 'not_https' | 'ip_address';
+
 export interface MfaStatus {
   available: boolean; // false in the demo
+  enabled?: boolean; // a second factor is on: the app or a passkey
   totp: { enabled: boolean; enabledAt: string };
+  passkeys?: Passkey[];
+  passkeysOff?: PasskeysOff;
   recoveryCodesLeft: number;
   trustedDevices: TrustedDevice[];
   trustDays: number;
 }
+
+// A sensitive change confirmed beside the password: a code of the app, a recovery code, or a passkey
+export type SecondFactorProof = { code: string } | { passkeyToken: string; passkey: Record<string, unknown> };
 
 // Answer of merging two notes; kept by the client to undo it
 // A branch moved into another note (POST /documents/{id}/move)

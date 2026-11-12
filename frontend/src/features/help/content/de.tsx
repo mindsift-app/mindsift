@@ -765,7 +765,7 @@ const de: HelpContent = {
       title: 'Offline, Backups & Passwort',
       subtitle: 'Ohne Internet weiterarbeiten, Sicherungen einspielen, Passwort zurücksetzen',
       icon: CloudOff,
-      keywords: ['offline', 'internet', 'backup', 'sicherung', 'wiederherstellen', 'passwort', 'vergessen', 'konto', 'zwei-faktor', '2fa', 'authenticator', 'sicherheit'],
+      keywords: ['offline', 'internet', 'backup', 'sicherung', 'wiederherstellen', 'passwort', 'vergessen', 'konto', 'zwei-faktor', '2fa', 'authenticator', 'sicherheit', 'passkey', 'fingerabdruck'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
           <ul className="space-y-1.5">
@@ -783,6 +783,9 @@ const de: HelpContent = {
             </li>
             <li>
               <strong className="text-main">Zwei-Faktor-Anmeldung:</strong> Unter <em>Kontoeinstellungen → Sicherheit</em> verbindest du eine Authenticator-App (QR-Code scannen, ersten Code eingeben); danach fragt die Anmeldung nach dem Passwort zusätzlich nach dem sechsstelligen Code der App. Die zehn Wiederherstellungscodes, die dabei einmal erscheinen, helfen, wenn das Handy fehlt: Jeder funktioniert einmal. Mit „Diesem Gerät 30 Tage vertrauen“ fragt ein eigenes Gerät einen Monat lang nicht nach dem Code. „Passwort vergessen“ schaltet die Zwei-Faktor-Anmeldung nicht ab.
+            </li>
+            <li>
+              <strong className="text-main">Passkeys:</strong> Unter <em>Kontoeinstellungen → Sicherheit → Passkeys</em> legst du einen Passkey an (Passwort bestätigen, Namen vergeben, Fingerabdruck, Gesicht oder Geräte-PIN). Danach meldest du dich mit „Mit Passkey anmelden“ ganz ohne Passwort an; manche Browser bieten ihn auch direkt im Anmeldefeld an. Wer sich mit Passwort anmeldet, wird danach nach dem Passkey gefragt: Ein Passkey zählt als zweiter Faktor, auch ohne Authenticator-App. Mit dem ersten Passkey erscheinen die Wiederherstellungscodes. Entfernst du den letzten zweiten Faktor, ist die Zwei-Faktor-Anmeldung wieder aus. Passkeys gibt es nur, wenn der Server eine feste https-Adresse hat (BASE_URL).
             </li>
           </ul>
         </div>

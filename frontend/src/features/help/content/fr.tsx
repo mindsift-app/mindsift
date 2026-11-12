@@ -596,7 +596,7 @@ const fr: HelpContent = {
       title: 'Hors ligne, sauvegardes et mot de passe',
       subtitle: 'Continuer sans Internet, restaurer des sauvegardes, réinitialiser le mot de passe',
       icon: CloudOff,
-      keywords: ['hors ligne', 'offline', 'internet', 'sauvegarde', 'restaurer', 'mot de passe', 'oublié', 'compte', 'deux facteurs', '2fa', 'authentification', 'sécurité'],
+      keywords: ['hors ligne', 'offline', 'internet', 'sauvegarde', 'restaurer', 'mot de passe', 'oublié', 'compte', 'deux facteurs', '2fa', 'authentification', 'sécurité', "clé d'accès", 'passkey', 'empreinte'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
           <ul className="space-y-1.5">
@@ -614,6 +614,9 @@ const fr: HelpContent = {
             </li>
             <li>
               <strong className="text-main">Connexion à deux facteurs :</strong> sous <em>Paramètres du compte → Sécurité</em>, tu relies une application d'authentification (scanner le code QR, saisir le premier code) ; ensuite, la connexion demande après le mot de passe le code à six chiffres de l'application. Les dix codes de récupération affichés une seule fois servent si le téléphone manque : chacun fonctionne une fois. Avec « Faire confiance à cet appareil pendant 30 jours », un appareil à toi ne demande pas de code pendant un mois. « Mot de passe oublié » ne désactive pas la connexion à deux facteurs.
+            </li>
+            <li>
+              <strong className="text-main">Clés d'accès :</strong> sous <em>Paramètres du compte → Sécurité → Clés d'accès</em>, tu crées une clé d'accès (confirmer le mot de passe, lui donner un nom, empreinte digitale, visage ou code PIN de l'appareil). Ensuite, « Se connecter avec une clé d'accès » te connecte sans aucun mot de passe ; certains navigateurs la proposent aussi directement dans le champ de connexion. Si tu te connectes avec le mot de passe, la clé d'accès est demandée ensuite : une clé d'accès compte comme second facteur, même sans application d'authentification. Les codes de récupération apparaissent avec la première clé d'accès. Retirer le dernier second facteur désactive de nouveau la connexion à deux facteurs. Les clés d'accès ne sont disponibles que si le serveur a une adresse https fixe (BASE_URL).
             </li>
           </ul>
         </div>

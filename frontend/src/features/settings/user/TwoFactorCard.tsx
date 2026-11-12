@@ -1,15 +1,17 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import i18n from '../../../i18n';
-import { AlertCircle, AlertTriangle, Check, Copy, Download, Monitor, ShieldCheck, ShieldOff, Smartphone, X } from 'lucide-react';
+import { AlertCircle, AlertTriangle, Check, Copy, Monitor, ShieldCheck, ShieldOff, Smartphone, X } from 'lucide-react';
 import { api } from '../../../lib/api';
-import { MfaStatus, User } from '../../../lib/types';
+import { MfaStatus, SecondFactorProof, User } from '../../../lib/types';
 import { formatDate } from '../../../lib/format';
-import { saveBlob } from '../../../lib/download';
 import { trustedDeviceId } from '../../../lib/trustedDevice';
+import { passkeyCancelled } from '../../../lib/webauthn';
 import { FormSheet } from '../../../components/FormSheet';
 import { describeDevice } from '../SessionsPanel';
 import { TotpQrCode } from './TotpQrCode';
+import { RecoveryCodesPanel } from './RecoveryCodesPanel';
+import { passkeyProof, secondFactorOf, SecondFactorFields } from './SecondFactorFields';
 import { LOW_RECOVERY_CODES } from '../../auth/MfaStep';
 
 type Flow =
@@ -24,9 +26,20 @@ type SheetAction = 'disable' | 'codes';
 const groupSecret = (secret: string) => secret.replace(/(.{4})/g, '$1 ').trim();
 
 // Einstellungen → Sicherheit → Zwei-Faktor-Anmeldung: switch the authenticator app on (password, QR code
-// or key, first code, recovery codes once), and when on: codes left, new codes, switch off (password and
-// code), trusted devices.
-export function TwoFactorCard({ currentUser, demoMode }: { currentUser: User; demoMode: boolean }) {
+// or key, first code, recovery codes once), and while a second factor is on (app or passkey, PasskeyCard):
+// codes left, new codes, remove the app (password and second factor), trusted devices. refreshKey: the
+// passkeys changed, load again; onChanged tells the passkeys about changes here.
+export function TwoFactorCard({
+  currentUser,
+  demoMode,
+  refreshKey = 0,
+  onChanged,
+}: {
+  currentUser: User;
+  demoMode: boolean;
+  refreshKey?: number;
+  onChanged?: () => void;
+}) {
   const { t } = useTranslation('settings');
   const [status, setStatus] = useState<MfaStatus | null>(null);
   const [loadError, setLoadError] = useState('');
@@ -36,7 +49,7 @@ export function TwoFactorCard({ currentUser, demoMode }: { currentUser: User; de
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [done, setDone] = useState('');
-  const [copied, setCopied] = useState<'secret' | 'codes' | ''>('');
+  const [copied, setCopied] = useState(false);
   const [sheet, setSheet] = useState<SheetAction | null>(null);
   const confirming = useRef(false);
 
@@ -50,7 +63,12 @@ export function TwoFactorCard({ currentUser, demoMode }: { currentUser: User; de
   };
   useEffect(() => {
     void load();
-  }, []);
+  }, [refreshKey]);
+
+  const changed = () => {
+    void load();
+    onChanged?.();
+  };
 
   const reset = (next: Flow = { step: 'idle' }) => {
     setFlow(next);
@@ -59,23 +77,25 @@ export function TwoFactorCard({ currentUser, demoMode }: { currentUser: User; de
     setError('');
   };
 
-  const copy = (text: string, what: 'secret' | 'codes') => {
+  const copySecret = (text: string) => {
     void navigator.clipboard?.writeText(text).then(() => {
-      setCopied(what);
-      window.setTimeout(() => setCopied(''), 2000);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
     });
   };
 
-  const startSetup = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const factor = secondFactorOf(status);
+
+  // proof: the account has passkeys already, a second factor confirms the new app too
+  const startSetup = async (proof?: SecondFactorProof) => {
     setBusy(true);
     setError('');
     setDone('');
     try {
-      const res = await api.setupTotp(password);
+      const res = factor.needed ? await api.setupTotp(password, proof ?? { code }) : await api.setupTotp(password);
       reset({ step: 'scan', secret: res.secret, uri: res.uri });
     } catch (err: any) {
-      setError(err?.message || t('security.twoFactor.failed'));
+      if (!passkeyCancelled(err)) setError(err?.message || t('security.twoFactor.failed'));
     } finally {
       setBusy(false);
     }
@@ -88,9 +108,10 @@ export function TwoFactorCard({ currentUser, demoMode }: { currentUser: User; de
     setError('');
     try {
       const res = await api.confirmTotp(value);
-      reset({ step: 'codes', codes: res.recoveryCodes });
+      // An account with passkeys keeps its recovery codes: none to show
+      reset(res.recoveryCodes?.length ? { step: 'codes', codes: res.recoveryCodes } : { step: 'idle' });
       setDone(t('security.twoFactor.enabledDone'));
-      void load();
+      changed();
     } catch (err: any) {
       setError(err?.message || t('security.twoFactor.failed'));
       setCode('');
@@ -106,26 +127,34 @@ export function TwoFactorCard({ currentUser, demoMode }: { currentUser: User; de
     if (digits.length === 6) void confirmSetup(digits);
   };
 
-  const submitSheet = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const runSheet = async (proof: SecondFactorProof) => {
     setBusy(true);
     setError('');
     try {
       if (sheet === 'disable') {
-        await api.disableTotp(currentUser.id, password, code);
+        const res = await api.disableTotp(currentUser.id, password, proof);
         reset();
-        setDone(t('security.twoFactor.disabled'));
+        setDone(res?.mfaOff === false ? t('security.twoFactor.appRemoved') : t('security.twoFactor.disabled'));
       } else {
-        const res = await api.newRecoveryCodes(password, code);
+        const res = await api.newRecoveryCodes(password, proof);
         reset({ step: 'codes', codes: res.recoveryCodes });
         setDone('');
       }
       setSheet(null);
-      void load();
+      changed();
     } catch (err: any) {
-      setError(err?.message || t('security.twoFactor.failed'));
+      if (!passkeyCancelled(err)) setError(err?.message || t('security.twoFactor.failed'));
     } finally {
       setBusy(false);
+    }
+  };
+
+  const withPasskey = async (run: (proof: SecondFactorProof) => Promise<void>) => {
+    setError('');
+    try {
+      await run(await passkeyProof());
+    } catch (err: any) {
+      if (!passkeyCancelled(err)) setError(err?.message || t('security.twoFactor.failed'));
     }
   };
 
@@ -139,12 +168,9 @@ export function TwoFactorCard({ currentUser, demoMode }: { currentUser: User; de
     }
   };
 
-  const downloadCodes = (codes: string[]) => {
-    const text = `${t('security.twoFactor.codesFileTitle', { account: currentUser.email || currentUser.username })}\n\n${codes.join('\n')}\n`;
-    saveBlob(new Blob([text], { type: 'text/plain;charset=utf-8' }), 'mindsift-recovery-codes.txt');
-  };
-
-  const enabled = Boolean(status?.totp.enabled);
+  const appOn = Boolean(status?.totp.enabled);
+  const passkeyCount = status?.passkeys?.length ?? 0;
+  const anyOn = appOn || passkeyCount > 0;
   const thisDevice = trustedDeviceId(currentUser.id);
 
   return (
@@ -158,8 +184,8 @@ export function TwoFactorCard({ currentUser, demoMode }: { currentUser: User; de
           <p className="text-[11px] text-muted">{t('security.twoFactor.intro')}</p>
         </div>
         {status && !demoMode && (
-          <span className={`shrink-0 ${enabled ? 'badge-accent' : 'text-[11px] text-muted border border-border rounded-pill px-2 py-0.5'}`}>
-            {enabled ? t('security.twoFactor.on') : t('security.twoFactor.off')}
+          <span className={`shrink-0 ${anyOn ? 'badge-accent' : 'text-[11px] text-muted border border-border rounded-pill px-2 py-0.5'}`}>
+            {anyOn ? t('security.twoFactor.on') : t('security.twoFactor.off')}
           </span>
         )}
       </div>
@@ -185,10 +211,10 @@ export function TwoFactorCard({ currentUser, demoMode }: { currentUser: User; de
             </div>
           )}
 
-          {/* Off: start with the password */}
-          {!enabled && flow.step === 'idle' && (
+          {/* No app: set it up, starting with the password */}
+          {!appOn && flow.step === 'idle' && (
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-card border border-border bg-canvas">
-              <p className="text-[11px] text-muted">{t('security.twoFactor.offHint')}</p>
+              <p className="text-[11px] text-muted">{anyOn ? t('security.twoFactor.appOffWithPasskeys') : t('security.twoFactor.offHint')}</p>
               <button
                 type="button"
                 onClick={() => {
@@ -203,24 +229,33 @@ export function TwoFactorCard({ currentUser, demoMode }: { currentUser: User; de
           )}
 
           {flow.step === 'password' && (
-            <form onSubmit={startSetup} className="p-3.5 rounded-card border border-border bg-canvas space-y-3">
-              <label className="block text-muted">
-                {t('security.twoFactor.passwordHint')}
-                <input
-                  type="password"
-                  autoFocus
-                  required
-                  autoComplete="current-password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="mt-1 input-field w-full h-11 sm:h-9 px-3 text-base sm:text-xs"
-                />
-              </label>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                void startSetup();
+              }}
+              className="p-3.5 rounded-card border border-border bg-canvas space-y-3"
+            >
+              {factor.needed && <p className="text-[11px] text-muted">{t('security.twoFactor.setupConfirmHint')}</p>}
+              <SecondFactorFields
+                status={status}
+                password={password}
+                onPassword={setPassword}
+                code={code}
+                onCode={setCode}
+                busy={busy}
+                passwordLabel={t('security.twoFactor.passwordHint')}
+                onPasskey={() => void withPasskey(startSetup)}
+              />
               <div className="flex gap-2 justify-end">
                 <button type="button" onClick={() => reset()} className="btn-action h-11 sm:h-8 px-3 text-xs">
                   {t('common:cancel')}
                 </button>
-                <button type="submit" disabled={busy || !password} className="btn-primary h-11 sm:h-8 px-4 text-xs font-semibold disabled:opacity-50">
+                <button
+                  type="submit"
+                  disabled={busy || !password || (factor.needed && !code.trim())}
+                  className="btn-primary h-11 sm:h-8 px-4 text-xs font-semibold disabled:opacity-50"
+                >
                   {t('security.twoFactor.continue')}
                 </button>
               </div>
@@ -248,11 +283,11 @@ export function TwoFactorCard({ currentUser, demoMode }: { currentUser: User; de
                     </code>
                     <button
                       type="button"
-                      onClick={() => copy(flow.secret, 'secret')}
+                      onClick={() => copySecret(flow.secret)}
                       className="btn-action h-11 sm:h-8 px-3 text-xs flex items-center gap-1.5"
                     >
-                      {copied === 'secret' ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                      <span>{copied === 'secret' ? t('security.twoFactor.copied') : t('security.twoFactor.copy')}</span>
+                      {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                      <span>{copied ? t('security.twoFactor.copied') : t('security.twoFactor.copy')}</span>
                     </button>
                   </div>
                 </div>
@@ -286,47 +321,18 @@ export function TwoFactorCard({ currentUser, demoMode }: { currentUser: User; de
           )}
 
           {flow.step === 'codes' && (
-            <div className="p-3.5 rounded-card border border-accent/40 bg-accent/5 space-y-3" data-recovery-codes>
-              <div>
-                <p className="font-semibold text-main">{t('security.twoFactor.codesTitle')}</p>
-                <p className="text-[11px] text-muted">{t('security.twoFactor.codesIntro')}</p>
-              </div>
-              <ul className="grid grid-cols-2 gap-x-4 gap-y-1 font-mono text-sm text-main bg-panel border border-border rounded-btn p-3">
-                {flow.codes.map((c) => (
-                  <li key={c} data-recovery-code>
-                    {c}
-                  </li>
-                ))}
-              </ul>
-              <div className="flex flex-col sm:flex-row gap-2">
-                <button
-                  type="button"
-                  onClick={() => copy(flow.codes.join('\n'), 'codes')}
-                  className="btn-action h-11 sm:h-8 px-3 text-xs flex items-center justify-center gap-1.5"
-                >
-                  {copied === 'codes' ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                  <span>{copied === 'codes' ? t('security.twoFactor.copied') : t('security.twoFactor.copyCodes')}</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => downloadCodes(flow.codes)}
-                  className="btn-action h-11 sm:h-8 px-3 text-xs flex items-center justify-center gap-1.5"
-                >
-                  <Download className="w-3.5 h-3.5" />
-                  <span>{t('security.twoFactor.downloadCodes')}</span>
-                </button>
-                <button type="button" onClick={() => reset()} className="btn-primary h-11 sm:h-8 px-4 text-xs font-semibold sm:ml-auto">
-                  {t('security.twoFactor.codesDone')}
-                </button>
-              </div>
-            </div>
+            <RecoveryCodesPanel codes={flow.codes} account={currentUser.email || currentUser.username} onDone={() => reset()} />
           )}
 
-          {/* On: since when, codes left, new codes, switch off */}
-          {enabled && flow.step === 'idle' && (
+          {/* On (app or passkey): since when, codes left, new codes, remove the app */}
+          {anyOn && flow.step === 'idle' && (
             <div className="p-3.5 rounded-card border border-border bg-canvas space-y-3">
               <div className="text-[11px] space-y-1">
-                <p className="text-main">{t('security.twoFactor.enabledSince', { date: formatDate(status.totp.enabledAt, { dateStyle: 'medium' }) })}</p>
+                <p className="text-main">
+                  {appOn
+                    ? t('security.twoFactor.enabledSince', { date: formatDate(status.totp.enabledAt, { dateStyle: 'medium' }) })
+                    : t('security.twoFactor.onWithPasskeys', { count: passkeyCount })}
+                </p>
                 <p className={status.recoveryCodesLeft <= LOW_RECOVERY_CODES ? 'text-status-err flex items-center gap-1.5' : 'text-muted'}>
                   {status.recoveryCodesLeft <= LOW_RECOVERY_CODES && <AlertTriangle className="w-3.5 h-3.5 shrink-0" />}
                   <span>
@@ -346,22 +352,24 @@ export function TwoFactorCard({ currentUser, demoMode }: { currentUser: User; de
                 >
                   {t('security.twoFactor.newCodes')}
                 </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    reset();
-                    setSheet('disable');
-                  }}
-                  className="btn-danger h-11 sm:h-8 px-3 text-xs flex items-center justify-center gap-1.5 sm:ml-auto"
-                >
-                  <ShieldOff className="w-3.5 h-3.5" />
-                  <span>{t('security.twoFactor.disable')}</span>
-                </button>
+                {appOn && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      reset();
+                      setSheet('disable');
+                    }}
+                    className="btn-danger h-11 sm:h-8 px-3 text-xs flex items-center justify-center gap-1.5 sm:ml-auto"
+                  >
+                    <ShieldOff className="w-3.5 h-3.5" />
+                    <span>{passkeyCount > 0 ? t('security.twoFactor.removeApp') : t('security.twoFactor.disable')}</span>
+                  </button>
+                )}
               </div>
             </div>
           )}
 
-          {enabled && (
+          {anyOn && (
             <div className="space-y-2">
               <div className="flex items-end justify-between gap-3">
                 <div>
@@ -414,42 +422,38 @@ export function TwoFactorCard({ currentUser, demoMode }: { currentUser: User; de
 
       {sheet && (
         <FormSheet
-          title={sheet === 'disable' ? t('security.twoFactor.disable') : t('security.twoFactor.newCodes')}
+          title={sheet === 'disable' ? (passkeyCount > 0 ? t('security.twoFactor.removeApp') : t('security.twoFactor.disable')) : t('security.twoFactor.newCodes')}
           icon={sheet === 'disable' ? <ShieldOff className="w-4 h-4 text-status-err" /> : <ShieldCheck className="w-4 h-4 text-accent" />}
           onClose={() => {
             setSheet(null);
             reset();
           }}
-          onSubmit={submitSheet}
-          submitLabel={sheet === 'disable' ? t('security.twoFactor.disable') : t('security.twoFactor.newCodesSubmit')}
+          onSubmit={(e) => {
+            e.preventDefault();
+            void runSheet({ code });
+          }}
+          submitLabel={sheet === 'disable' ? (passkeyCount > 0 ? t('security.twoFactor.removeApp') : t('security.twoFactor.disable')) : t('security.twoFactor.newCodesSubmit')}
           danger={sheet === 'disable'}
           busy={busy || !password || !code.trim()}
         >
-          <p className="text-xs text-muted">{sheet === 'disable' ? t('security.twoFactor.disableHint') : t('security.twoFactor.newCodesHint')}</p>
-          <label className="block text-xs text-muted">
-            {t('security.twoFactor.password')}
-            <input
-              type="password"
-              autoFocus
-              autoComplete="current-password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 input-field w-full h-11 sm:h-8 px-2.5 text-base sm:text-xs"
-            />
-          </label>
-          <label className="block text-xs text-muted">
-            {t('security.twoFactor.codeOrRecovery')}
-            <input
-              type="text"
-              autoComplete="one-time-code"
-              autoCapitalize="none"
-              autoCorrect="off"
-              spellCheck={false}
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-              className="mt-1 input-field w-full h-11 sm:h-8 px-2.5 text-base sm:text-xs font-mono"
-            />
-          </label>
+          <p className="text-xs text-muted">
+            {sheet === 'disable'
+              ? passkeyCount > 0
+                ? t('security.twoFactor.disableAppHint')
+                : t('security.twoFactor.disableHint')
+              : passkeyCount > 0
+                ? t('security.twoFactor.newCodesHintPasskey')
+                : t('security.twoFactor.newCodesHint')}
+          </p>
+          <SecondFactorFields
+            status={status}
+            password={password}
+            onPassword={setPassword}
+            code={code}
+            onCode={setCode}
+            busy={busy}
+            onPasskey={() => void withPasskey(runSheet)}
+          />
           {error && <p className="text-[11px] text-status-err">{error}</p>}
         </FormSheet>
       )}
