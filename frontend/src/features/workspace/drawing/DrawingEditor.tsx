@@ -1734,7 +1734,8 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
       <div className="shrink-0 flex items-center gap-1 sm:gap-2 px-2 sm:px-4 pt-[calc(0.375rem+env(safe-area-inset-top))] pb-1.5 bg-panel/95 backdrop-blur-sm border-b border-border">
         {!readOnly && <div className="hidden sm:block">{tools}</div>}
         <div className="flex-1" />
-        {liveState && !liveState.ended && (
+        {/* Alone in it (an unshared note, or nobody else there yet): no host, no people, it looks like drawing alone */}
+        {liveState && !liveState.ended && !(liveState.isHost && livePeople.length <= 1) && (
           <div className="min-w-0 flex items-center gap-1.5 text-xs text-muted" title={liveTitle} data-live-people={livePeople.map((p) => p.name).join(',')}>
             <span className={`w-2 h-2 rounded-full shrink-0 ${liveState.status === 'live' ? 'bg-status-err animate-pulse' : 'bg-muted'}`} />
             <AvatarStack people={livePeople} ringClass="ring-[var(--bg-panel)]" />
