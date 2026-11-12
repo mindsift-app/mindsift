@@ -377,7 +377,7 @@ func (s *Server) settingsForBrowser(settings *domain.SystemSettings) *domain.Sys
 	out := *settings
 	out.SMTPPassSet = out.SMTPPass != ""
 	out.SMTPPass = ""
-	out.SMTPConfiguredViaEnv = strings.TrimSpace(s.cfg.SMTPHost) != ""
+	out.SMTPConfiguredViaEnv = s.smtpViaEnv()
 	// What the environment fixes is shown as in effect and locked in the form
 	if s.cfg.RegistrationMode != "" {
 		out.RegistrationMode = s.cfg.RegistrationMode
@@ -472,9 +472,14 @@ func (s *Server) handleAdminUpdateSettings(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	previousMode := s.store.SharingMode()
+	linksBefore := s.emailLinksAvailable()
 	if err := s.store.UpdateSystemSettings(&settings); err != nil {
 		writeInternal(w, err)
 		return
+	}
+	// The admin gave an address while no mail could go out (setup wizard): its link follows now
+	if !linksBefore && s.emailLinksAvailable() {
+		s.sendWaitingEmailLink(auth.GetUserID(r.Context()))
 	}
 	// A stricter mode takes away what is no longer allowed (shares, group memberships, assignments)
 	if settings.SharingMode != previousMode {
@@ -496,8 +501,22 @@ func (s *Server) handleAdminTestSMTP(w http.ResponseWriter, r *http.Request) {
 
 	var req struct {
 		ToEmail string `json:"toEmail"`
+		// A mail server to try before it is stored (setup wizard); left out, the configured one
+		SMTP *setupSMTP `json:"smtp"`
 	}
 	_ = json.NewDecoder(r.Body).Decode(&req)
+	send := s.sendMailContent
+	if req.SMTP != nil {
+		if err := req.SMTP.check(); err != nil {
+			writeErrorFrom(w, http.StatusBadRequest, err)
+			return
+		}
+		cfg := req.SMTP.settings()
+		send = func(to, subject string, c mailContent) error {
+			text, html := renderMail(c)
+			return s.sendEmailHTMLWith(cfg, to, subject, text, html)
+		}
+	}
 	toEmail := strings.TrimSpace(req.ToEmail)
 	if toEmail == "" && user != nil {
 		toEmail = user.Email
@@ -510,7 +529,7 @@ func (s *Server) handleAdminTestSMTP(w http.ResponseWriter, r *http.Request) {
 	lang := s.requestLanguage(r)
 	// The answer says what the mail server said, also when that takes it a minute
 	allowLongWork(w)
-	if err := s.sendMailContent(toEmail, i18n.T(lang, "MindSift: SMTP-Test"), mailContent{
+	if err := send(toEmail, i18n.T(lang, "MindSift: SMTP-Test"), mailContent{
 		Lang:      lang,
 		Preheader: i18n.T(lang, "Die SMTP-Konfiguration funktioniert"),
 		Greeting:  i18n.T(lang, "Es funktioniert!"),

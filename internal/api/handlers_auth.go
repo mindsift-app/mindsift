@@ -78,6 +78,11 @@ func (s *Server) handleAuthStatus(w http.ResponseWriter, r *http.Request) {
 			"customLinkUrl":     s.cfg.Legal.CustomLinkURL,
 		},
 	}
+	// What the first-boot wizard tells beside its questions (mail server, BASE_URL, backup folder); only
+	// while there is no account, since whoever fills the wizard becomes the admin
+	if count == 0 && !s.cfg.DemoMode {
+		status["setup"] = s.setupInfo(false)
+	}
 	// Countdown to the next demo reset; seconds as well, so client clocks do not matter
 	if next := s.demoNextReset(); !next.IsZero() {
 		status["demoNextReset"] = next.UTC().Format(time.RFC3339)
@@ -185,6 +190,8 @@ type setupChoices struct {
 	BackupEnabled       *bool  `json:"backupEnabled"`
 	BackupTime          string `json:"backupTime"`
 	BackupRetentionDays *int   `json:"backupRetentionDays"`
+	// Mail server, when the environment sets none: left out, nothing changes (setup_mail.go)
+	SMTP *setupSMTP `json:"smtp"`
 }
 
 // check refuses what the setup cannot store: an unknown language, a backup time other than HH:MM, a
@@ -200,12 +207,15 @@ func (c setupChoices) check() error {
 	if c.BackupRetentionDays != nil && !storage.ValidBackupRetentionDays(*c.BackupRetentionDays) {
 		return storage.ErrBackupRetention
 	}
+	if c.SMTP != nil {
+		return c.SMTP.check()
+	}
 	return nil
 }
 
 // applySetupChoices stores what the wizard asked besides the account: the language (the server's default
 // and the admin's own), instance name, registration, sharing mode with the first organization, daily
-// backups, and sample data for the admin. The caller has run check. The backup scheduler reads the
+// backups, the mail server, and sample data for the admin. The caller has run check. The backup scheduler reads the
 // settings every minute, so switched on here the first run follows without a restart.
 func (s *Server) applySetupChoices(r *http.Request, user *domain.User, c setupChoices) error {
 	lang := c.DefaultLanguage
@@ -234,6 +244,9 @@ func (s *Server) applySetupChoices(r *http.Request, user *domain.User, c setupCh
 		}
 		if c.BackupRetentionDays != nil {
 			sys.BackupRetentionDays = *c.BackupRetentionDays
+		}
+		if c.SMTP != nil {
+			c.SMTP.store(sys)
 		}
 		if err := s.store.UpdateSystemSettings(sys); err != nil {
 			return err

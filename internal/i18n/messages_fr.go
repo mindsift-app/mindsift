@@ -45,6 +45,8 @@ var messagesFR = map[string]string{
 	"Bitte bestätige zuerst deine E-Mail-Adresse über den Link, den wir dir geschickt haben": "Confirme d’abord ton adresse e-mail avec le lien que nous t’avons envoyé",
 	"Bitte eine Discord Webhook URL angeben":                                                 "Saisis une URL de webhook Discord",
 	"Bitte eine Webhook-URL angeben":                                                         "Saisis une URL de webhook",
+	"Bitte den SMTP-Server angeben oder den Mailserver überspringen":                         "Indique le serveur SMTP ou ignore le serveur de messagerie",
+	"Der SMTP-Port muss eine Zahl von 1 bis 65535 sein":                                      "Le port SMTP doit être un nombre de 1 à 65535",
 	"Bitte eine gültige E-Mail-Adresse angeben":                                              "Saisis une adresse e-mail valide",
 	"Bitte gib zur Bestätigung dein aktuelles Passwort richtig ein":                          "Saisis correctement ton mot de passe actuel pour confirmer",
 	"Blöcke werden über POST /api/v1/docs/{id}/sync gespeichert":                             "Les blocs sont enregistrés via POST /api/v1/docs/{id}/sync",

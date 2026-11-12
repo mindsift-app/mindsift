@@ -45,6 +45,8 @@ var messagesIT = map[string]string{
 	"Bitte bestätige zuerst deine E-Mail-Adresse über den Link, den wir dir geschickt haben": "Conferma prima il tuo indirizzo e-mail con il link che ti abbiamo inviato",
 	"Bitte eine Discord Webhook URL angeben":                                                 "Inserisci un URL webhook di Discord",
 	"Bitte eine Webhook-URL angeben":                                                         "Inserisci un URL webhook",
+	"Bitte den SMTP-Server angeben oder den Mailserver überspringen":                         "Indica il server SMTP oppure salta il server di posta",
+	"Der SMTP-Port muss eine Zahl von 1 bis 65535 sein":                                      "La porta SMTP deve essere un numero da 1 a 65535",
 	"Bitte eine gültige E-Mail-Adresse angeben":                                              "Inserisci un indirizzo e-mail valido",
 	"Bitte gib zur Bestätigung dein aktuelles Passwort richtig ein":                          "Inserisci correttamente la tua password attuale per confermare",
 	"Blöcke werden über POST /api/v1/docs/{id}/sync gespeichert":                             "I blocchi si salvano tramite POST /api/v1/docs/{id}/sync",

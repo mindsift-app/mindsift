@@ -69,6 +69,50 @@ describe('SetupAndAuthView: setup wizard', () => {
     expect(completeSetup).not.toHaveBeenCalled();
   });
 
+  it('asks the mail server when the environment sets none and sends it with the account', async () => {
+    const fresh = { ...status, setup: { smtpConfigured: false, smtpViaEnv: false, baseUrlSet: false, emailLinks: false, backupDir: '/data/backups' } };
+    render(<SetupAndAuthView authStatus={fresh} onAuthenticated={() => {}} />);
+    fillAccount();
+    expect(screen.getByText('3. Mailserver')).toBeTruthy();
+    const summary = screen.getByTestId('setup-summary');
+    expect(summary.textContent).toContain('Kein Mailserver');
+    expect(summary.textContent).toContain('BASE_URL ist nicht gesetzt');
+    expect(summary.textContent).toContain('/data/backups');
+    // The login address is the account's own here: nothing to confirm
+    expect(summary.textContent).not.toContain('E-Mail-Adresse');
+
+    fireEvent.click(screen.getByRole('switch', { name: 'Mailserver jetzt einrichten' }));
+    // No account yet, so no test mail: it comes after the setup, in the administration
+    expect(screen.queryByRole('button', { name: 'Testmail senden' })).toBeNull();
+    expect(screen.getByText(/Eine Testmail sendest du nach dem Abschluss/)).toBeTruthy();
+    fireEvent.change(screen.getByLabelText('SMTP Host (`SMTP_HOST`)'), { target: { value: 'mail.example.com' } });
+    expect(summary.textContent).not.toContain('Kein Mailserver');
+    await submit();
+    expect(completeSetup).toHaveBeenCalledWith(
+      expect.objectContaining({ email: 'chef@example.com', smtp: expect.objectContaining({ smtpHost: 'mail.example.com', smtpPort: '587' }) })
+    );
+  });
+
+  it('only shows a mail server set by the environment', async () => {
+    const withEnv = { ...status, setup: { smtpConfigured: true, smtpViaEnv: true, baseUrlSet: true, emailLinks: true, backupDir: '/data/backups' } };
+    render(<SetupAndAuthView authStatus={withEnv} onAuthenticated={() => {}} />);
+    fillAccount();
+    expect(screen.getByText(/Mailserver per Umgebung eingerichtet/)).toBeTruthy();
+    expect(screen.queryByRole('switch', { name: 'Mailserver jetzt einrichten' })).toBeNull();
+    expect(screen.getByTestId('setup-summary').textContent).toContain('Nichts offen');
+    await submit();
+    expect(completeSetup.mock.calls[0][0]).not.toHaveProperty('smtp');
+  });
+
+  it('refuses a mail server switched on without host', async () => {
+    render(<SetupAndAuthView authStatus={status} onAuthenticated={() => {}} />);
+    fillAccount();
+    fireEvent.click(screen.getByRole('switch', { name: 'Mailserver jetzt einrichten' }));
+    await submit();
+    expect(screen.getByRole('alert').textContent).toContain('Bitte den SMTP-Server angeben');
+    expect(completeSetup).not.toHaveBeenCalled();
+  });
+
   describe('with touch (the system time picker can be emptied)', () => {
     const matchMedia = window.matchMedia;
     beforeEach(() => {

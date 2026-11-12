@@ -66,6 +66,15 @@ func (s *Server) smtpSettings() (smtpSettings, error) {
 	if cfg.Host == "" {
 		return cfg, fmt.Errorf("kein SMTP-Server konfiguriert (bitte in den Administratoreinstellungen oder per Docker-Env hinterlegen)")
 	}
+	return cfg.withDefaults(), nil
+}
+
+// smtpViaEnv: SMTP_HOST is set. Admin settings with a host of their own still take precedence.
+func (s *Server) smtpViaEnv() bool { return strings.TrimSpace(s.cfg.SMTPHost) != "" }
+
+// withDefaults fills what may be left out: port 587, the sender name MindSift, the sender address from
+// the SMTP user (or a placeholder).
+func (cfg smtpSettings) withDefaults() smtpSettings {
 	if cfg.Port == "" {
 		cfg.Port = "587"
 	}
@@ -79,7 +88,7 @@ func (s *Server) smtpSettings() (smtpSettings, error) {
 			cfg.From = "noreply@mindsift.local"
 		}
 	}
-	return cfg, nil
+	return cfg
 }
 
 // ehloName is how MindSift introduces itself (EHLO). It must name the sending side, never "localhost",

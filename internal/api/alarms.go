@@ -91,6 +91,15 @@ func (s *Server) sendEmailHTML(toEmail, subject, bodyText, html string) error {
 	if err != nil {
 		return err
 	}
+	return s.sendEmailHTMLWith(cfg, toEmail, subject, bodyText, html)
+}
+
+// sendEmailHTMLWith sends through the given mail server, e.g. one that is only being tried (SMTP test of
+// the setup wizard) and not stored yet.
+func (s *Server) sendEmailHTMLWith(cfg smtpSettings, toEmail, subject, bodyText, html string) error {
+	if s.cfg.DemoMode {
+		return errDemoOutgoing
+	}
 	if s.notifyEmailHook != nil { // tests
 		return s.notifyEmailHook(toEmail, subject, bodyText, html)
 	}
