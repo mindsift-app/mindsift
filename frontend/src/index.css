@@ -693,7 +693,7 @@ fieldset:disabled :is(button, input, select, textarea) {
    the visible rows, every bullet stays in the page: find in page, selecting and copying across many bullets
    and jumping to a bullet keep working. The containment this brings clips a row's content to the row and
    makes the row the frame of fixed elements, so the row with the cursor or an open menu (slash, @, link
-   dialog) goes without (data-outline-live, OutlinerBlock); the clip margin keeps the 2px of the guide lines
+   dialog; a table's ⋯ menu marks itself) goes without (data-outline-live, OutlinerBlock); the clip margin keeps the 2px of the guide lines
    between rows. Coming back to a note and jumps to a bullet go by the bullet, not by the scroll offset
    (DocumentEditor, OutlinerTree): the heights of rows never shown are only estimated. The remembered height
    is kept on every row, also while it goes without: a row that just lost the cursor would otherwise drop to
@@ -701,7 +701,7 @@ fieldset:disabled :is(button, input, select, textarea) {
 .outline-row {
   contain-intrinsic-height: auto 24px;
 }
-.outline-row:not([data-outline-live]):not(:focus-within) {
+.outline-row:not([data-outline-live]):not(:focus-within):not(:has([data-outline-live])) {
   content-visibility: auto;
   overflow-clip-margin: 2px;
 }
@@ -779,6 +779,10 @@ fieldset:disabled :is(button, input, select, textarea) {
 .note-table:not([data-lines='grid']) .nt-cell[data-left] {
   padding-left: 0;
 }
+/* A column's alignment (style on the cell) also applies to the text field, which would start left */
+.note-table .nt-input {
+  text-align: inherit;
+}
 .note-table .nt-text,
 .note-table .nt-input {
   white-space: pre-wrap;
@@ -809,24 +813,41 @@ fieldset:disabled :is(button, input, select, textarea) {
   bottom: 0;
   height: 1px;
 }
-/* fade: column lines fade out towards the top and bottom edge, row lines towards the left and right */
+/* fade: column lines fade out towards the top and bottom edge, row lines towards the left and right; only
+   over the last stretch before the outer edge (--nt-fade-y, --nt-fade-x), full strength everywhere else */
+.note-table[data-lines='fade'] {
+  --nt-fade-x: 1.5rem;
+  --nt-fade-y: 0.75rem;
+}
 .note-table[data-lines='fade'] .nt-cell[data-top]:not([data-right])::after {
-  background: linear-gradient(to bottom, transparent, var(--border-color));
+  background: linear-gradient(to bottom, transparent, var(--border-color) var(--nt-fade-y));
 }
 .note-table[data-lines='fade'] .nt-cell[data-bottom]:not([data-right])::after {
-  background: linear-gradient(to top, transparent, var(--border-color));
+  background: linear-gradient(to top, transparent, var(--border-color) var(--nt-fade-y));
 }
 .note-table[data-lines='fade'] .nt-cell[data-top][data-bottom]:not([data-right])::after {
-  background: linear-gradient(to bottom, transparent, var(--border-color), transparent);
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    var(--border-color) var(--nt-fade-y),
+    var(--border-color) calc(100% - var(--nt-fade-y)),
+    transparent
+  );
 }
 .note-table[data-lines='fade'] .nt-cell[data-left]:not([data-bottom])::before {
-  background: linear-gradient(to right, transparent, var(--border-color));
+  background: linear-gradient(to right, transparent, var(--border-color) var(--nt-fade-x));
 }
 .note-table[data-lines='fade'] .nt-cell[data-right]:not([data-bottom])::before {
-  background: linear-gradient(to left, transparent, var(--border-color));
+  background: linear-gradient(to left, transparent, var(--border-color) var(--nt-fade-x));
 }
 .note-table[data-lines='fade'] .nt-cell[data-left][data-right]:not([data-bottom])::before {
-  background: linear-gradient(to right, transparent, var(--border-color), transparent);
+  background: linear-gradient(
+    to right,
+    transparent,
+    var(--border-color) var(--nt-fade-x),
+    var(--border-color) calc(100% - var(--nt-fade-x)),
+    transparent
+  );
 }
 /* grid: a frame around it all */
 .note-table[data-lines='grid'] {

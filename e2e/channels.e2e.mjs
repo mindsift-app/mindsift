@@ -49,7 +49,10 @@ async function openDoc(browser, token, title, block = {}) {
     await ctx.route('**/changes**', (r) => r.abort());
     await ctx.route(/\/api\/v1\/events\/poll\//, (r) => r.abort());
   }
-  await ctx.addInitScript((t) => localStorage.setItem('mindsift_jwt_token', t), token);
+  await ctx.addInitScript((t) => {
+    localStorage.setItem('mindsift_jwt_token', t);
+    localStorage.setItem('mindsift:tour-offered', '1'); // the demo asks every browser about the tour once
+  }, token);
   const page = await ctx.newPage();
   await page.goto(BASE);
   await page.getByRole('button', { name: /Workspace/ }).first().click();

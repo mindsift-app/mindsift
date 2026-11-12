@@ -9,6 +9,13 @@
     "button": "Iniciar recorrido",
     "intro": "¿Eres nuevo? Un breve recorrido muestra en siete pasos dónde encontrar cada cosa – no cambia nada de tus datos."
   },
+  "offer": {
+    "title": "¿Hacer un recorrido rápido?",
+    "text": "Siete pasos breves te muestran dónde está cada cosa. También puedes iniciarlo más tarde en cualquier momento desde la ayuda.",
+    "start": "Empezar",
+    "decline": "No, gracias",
+    "close": "Cerrar"
+  },
   "triage": {
     "title": "Triage: primero apuntar, luego ordenar",
     "capture": "Lo que se te ocurra lo escribes sin pensar arriba en el <b>Quick Dump</b> (tecla <kbd>C</kbd>). No va directamente a ningún sitio: llega como tarjeta aquí al Triage.",

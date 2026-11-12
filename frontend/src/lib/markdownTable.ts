@@ -144,6 +144,15 @@ export function insertTableColumn(table: TableData, at: number): TableData {
   return { rows: table.rows.map((r) => splice(r, '')), align: splice(table.align, '' as TableAlign) };
 }
 
+/** The alignment of a column ('' and 'left' both mean left). Left writes no colon ("---"): a table that
+ *  was never aligned stays as it was. */
+export function setTableAlign(table: TableData, col: number, align: TableAlign): TableData {
+  const value: TableAlign = align === 'left' ? '' : align;
+  const current = table.align[col] === 'left' ? '' : table.align[col];
+  if (col < 0 || col >= table.align.length || current === value) return table;
+  return { ...table, align: table.align.map((a, i) => (i === col ? value : a)) };
+}
+
 export function deleteTableColumn(table: TableData, at: number): TableData {
   if (table.align.length <= 1) return table;
   return { rows: table.rows.map((r) => r.filter((_, i) => i !== at)), align: table.align.filter((_, i) => i !== at) };

@@ -12,6 +12,7 @@ import {
   parseMarkdownTable,
   pasteIntoTable,
   serializeMarkdownTable,
+  setTableAlign,
   setTableCell,
   splitTableRow,
   tableLines,
@@ -139,6 +140,35 @@ describe('table helpers', () => {
     // The last row and the last column stay
     expect(deleteTableRow(emptyTable(1, 1), 0).rows.length).toBe(1);
     expect(deleteTableColumn(emptyTable(1, 1), 0).align.length).toBe(1);
+  });
+
+  it('aligns a column, written in the separator row (GitHub style)', () => {
+    let t = parseMarkdownTable('| a | b | c |\n| --- | --- | --- |\n| 1 | 2 | 3 |');
+    t = setTableAlign(setTableAlign(t, 1, 'center'), 2, 'right');
+    const md = serializeMarkdownTable(t);
+    expect(md).toBe('| a | b | c |\n| --- | :---: | ---: |\n| 1 | 2 | 3 |');
+    // Round trip: read back, the alignment and every text are the same
+    expect(parseMarkdownTable(md)).toEqual(t);
+    expect(serializeMarkdownTable(parseMarkdownTable(md))).toBe(md);
+    // Left writes no colon; a column that is left already stays as it was (also ":---")
+    expect(setTableAlign(t, 1, 'left').align).toEqual(['', '', 'right']);
+    const explicit = parseMarkdownTable('| a |\n| :--- |');
+    expect(setTableAlign(explicit, 0, 'left')).toBe(explicit);
+    expect(serializeMarkdownTable(explicit)).toBe('| a |\n| :--- |');
+    // Out of range changes nothing
+    expect(setTableAlign(t, 5, 'center')).toBe(t);
+  });
+
+  it('moves the alignment with its column when columns come or go', () => {
+    let t = setTableAlign(setTableAlign(emptyTable(3, 2), 1, 'center'), 2, 'right');
+    t = insertTableColumn(t, 1);
+    expect(t.align).toEqual(['', '', 'center', 'right']);
+    t = deleteTableColumn(t, 0);
+    expect(t.align).toEqual(['', 'center', 'right']);
+    t = pasteIntoTable(t, 0, 2, [['x', 'y']]);
+    expect(t.align).toEqual(['', 'center', 'right', '']);
+    // Old tables without colons stay left
+    expect(parseMarkdownTable('| a | b |\n| --- | --- |').align).toEqual(['', '']);
   });
 
   it('pastes a block of cells, growing the table', () => {

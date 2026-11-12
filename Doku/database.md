@@ -8,7 +8,7 @@ SQLite file `mindsift.db` (default: `$DATA_DIR/mindsift.db`), opened with `journ
 ### Users and Access
 | Table | Purpose | Key Columns |
 |---|---|---|
-| `users` | User accounts | `email` (unique), `username`, `password_hash`, `display_name`, `role` (`admin`/`manager`/`member`), `is_active`, `token_version`, `alarm_channels` (comma-separated), `alarm_email` (unused since Migration 35, always empty: mail alarms go to `email`), `discord_webhook_url`, `custom_webhook_url`, `notify_before_minutes`, `avatar_url`, `organization_id` (unused since Migration 23, always empty), `notification_settings` (JSON of channels and events), `last_daily_summary` (date of last dispatch), retention periods in days (`done_retention_days` 30, `task_trash_days` 30, `triage_trash_days` 14, `note_trash_days` 30, `list_done_days` 7; 0 = never), `voice_input` (`''` = Whisper server, `browser`) |
+| `users` | User accounts | `email` (unique), `username`, `password_hash`, `display_name`, `role` (`admin`/`manager`/`member`), `is_active`, `token_version`, `alarm_channels` (comma-separated), `alarm_email` (unused since Migration 35, always empty: mail alarms go to `email`), `discord_webhook_url`, `custom_webhook_url`, `notify_before_minutes`, `avatar_url`, `organization_id` (unused since Migration 23, always empty), `notification_settings` (JSON of channels and events), `last_daily_summary` (date of last dispatch), retention periods in days (`done_retention_days` 30, `task_trash_days` 30, `triage_trash_days` 14, `note_trash_days` 30, `list_done_days` 7; 0 = never), `voice_input` (`''` = Whisper server, `browser`), `tour_offered` (1 = the app asked about the guided tour; migration 36 set it for every account that existed then) |
 | `user_invites` | Invitation codes | `code`, `email`, `role` (always `member`), `organization_ids` (comma-separated, Migration 23), `expires_at`, `used_by` |
 | `organization_members` | Who belongs to which organization (Migration 23); a person can be in several | `org_id`, `user_id`, `created_at`; primary key `(org_id, user_id)` |
 | `public_links` | Public read-only links to notes (Migration 24), at most one per note | `doc_id` (unique), `created_by`, `token_hash` (SHA-256 of the token), `token_sealed` (token encrypted with `SECRETS_KEY`, so the owner can copy it again), `password_hash` (bcrypt, `''` = none), `theme_family` (unused since v0.87.1), `expires_at` |
@@ -63,7 +63,7 @@ A task is a `thought` with `status='kept'` or `status='converted' AND converted_
 
 Block types: `h1`, `h2`, `h3`, `paragraph`, `text`, `todo`, `bullet`, `code`, `callout`, `warning`, `error`, `divider`, `table`, `progress`.
 
-`lang` is the language of a code block; for a `table` it holds the line mode (`''` inner lines fading out, `grid` all lines with a frame, `header` the line below the header and the column lines). A table's `content` is a Markdown table in GitHub's style (header, separator row, rows; `|` in a cell written `\|`).
+`lang` is the language of a code block; for a `table` it holds the line mode (`''` inner lines fading out, `grid` all lines with a frame, `header` the line below the header and the column lines). A table's `content` is a Markdown table in GitHub's style (header, separator row, rows; `|` in a cell written `\|`); the separator row holds each column's alignment (`---` left, `:---:` centered, `---:` right; `:---` is read as left too).
 
 ### Lists
 | Table | Purpose |

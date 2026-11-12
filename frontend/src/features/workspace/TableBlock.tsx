@@ -1,5 +1,8 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
+  AlignCenter,
+  AlignLeft,
+  AlignRight,
   BetweenVerticalEnd,
   BetweenVerticalStart,
   Columns3,
@@ -16,6 +19,7 @@ import { InlineMarkdownOptions, renderInlineMarkdown } from '../../lib/markdown'
 import { caretAtPoint, mapRenderedOffsetToRaw } from '../../lib/caret';
 import { toggleInlineFormat } from '../../lib/inlineFormat';
 import {
+  TableAlign,
   TableData,
   TableLines,
   cellAfterOutsideChange,
@@ -28,6 +32,7 @@ import {
   parseMarkdownTable,
   pasteIntoTable,
   serializeMarkdownTable,
+  setTableAlign,
   setTableCell,
   tableLines,
 } from '../../lib/markdownTable';
@@ -119,6 +124,8 @@ const TableBlockView: React.FC<TableBlockProps> = ({
 
   // The cell with the cursor (it shows its raw text); the last one stays known for the menu
   const [active, setActive] = useState<Cell | null>(null);
+  // The ⋯ menu is open: + and ⋯ stay visible on the desktop (see the buttons below)
+  const [menuOpen, setMenuOpen] = useState(false);
   const lastCellRef = useRef<Cell | null>(null);
   const cellRefs = useRef(new Map<string, HTMLTextAreaElement>());
   const pendingFocusRef = useRef<PendingFocus | null>(null);
@@ -415,10 +422,29 @@ const TableBlockView: React.FC<TableBlockProps> = ({
         if (value !== lines) onChangeLines(value);
       },
     });
+    // The alignment of the column with the cursor, in the separator row of the Markdown ('' is left)
+    const colAlign = cell ? data.align[cell.c] || 'left' : null;
+    const align = (value: Exclude<TableAlign, ''>, icon: React.ReactNode, separatorBefore = false): ActionMenuItem => ({
+      key: `align-${value}`,
+      icon,
+      label: t(`table.align.${value}`),
+      checked: colAlign === value,
+      separatorBefore,
+      disabled: !cell,
+      hint: separatorBefore ? needCell : undefined,
+      onSelect: () => {
+        if (!cell) return;
+        const next = setTableAlign(data, cell.c, value);
+        if (next !== data) commit(next, true);
+      },
+    });
     const items: ActionMenuItem[] = [
       mode('fade', '', <Grid2x2 className="w-3.5 h-3.5" />),
       mode('grid', 'grid', <TableIcon className="w-3.5 h-3.5" />),
       mode('header', 'header', <Columns3 className="w-3.5 h-3.5" />),
+      align('left', <AlignLeft className="w-3.5 h-3.5" />, true),
+      align('center', <AlignCenter className="w-3.5 h-3.5" />),
+      align('right', <AlignRight className="w-3.5 h-3.5" />),
       {
         key: 'colLeft',
         icon: <BetweenVerticalStart className="w-3.5 h-3.5" />,
@@ -579,8 +605,17 @@ const TableBlockView: React.FC<TableBlockProps> = ({
         </table>
       </div>
       {canEdit && (
-        // Phones: always there and big enough to tap; desktop: shows on hover or with the cursor in the table
-        <div className="flex flex-col shrink-0 gap-0.5 opacity-100 sm:opacity-0 sm:group-hover/table:opacity-100 sm:group-focus-within/table:opacity-100 transition-opacity">
+        // Phones: always there and big enough to tap; desktop: shows on hover, with the cursor in the table and
+        // while the menu is open. The menu hangs below the ⋯ over the next bullet: on the way there the mouse
+        // leaves the table, and a fading box (opacity below 1 makes it its own layer) would put the menu
+        // behind the next bullet, out of reach
+        // While the menu is open the row must not clip it (content-visibility in index.css): data-outline-live
+        <div
+          data-outline-live={menuOpen ? '' : undefined}
+          className={`flex flex-col shrink-0 gap-0.5 opacity-100 transition-opacity ${
+            menuOpen ? '' : 'sm:opacity-0 sm:group-hover/table:opacity-100 sm:group-focus-within/table:opacity-100'
+          }`}
+        >
           <button
             type="button"
             onMouseDown={(e) => e.preventDefault()}
@@ -593,6 +628,7 @@ const TableBlockView: React.FC<TableBlockProps> = ({
           </button>
           <ActionMenu
             keepFocus
+            onOpenChange={setMenuOpen}
             label={t('table.menu')}
             items={menuItems()}
             buttonClassName="h-11 w-11 sm:h-6 sm:w-6 flex items-center justify-center rounded-btn text-faint hover:text-main hover:bg-panel-elevated transition-colors cursor-pointer"

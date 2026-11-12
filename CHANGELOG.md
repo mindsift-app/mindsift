@@ -11,6 +11,8 @@ Versions before 0.80.0 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 Fixes from the security review of November 2026 (v0.94.0).
 
 ### Added
+- Tables in notes: align a column left, centered or right from the table's ⋯ menu (for the column with the cursor). The alignment is stored in the Markdown table's separator row (`:---:`, `---:`), so it survives copying, the Markdown export and import, and AI agents.
+- New accounts are asked once after their first sign-in whether to take the guided tour; any answer is remembered for the account on every device, and the tour stays available on the help page. Existing accounts are not asked. In the demo, each browser is asked once.
 - A short guided tour shows in seven steps where to find what: triage with the Quick Dump, notes with slash commands, blocks and drawings, tasks linked to a note, focus mode, tasks (list, Kanban, calendar, details) and search. A card with a small animated example points at the real controls while the rest of the page is dimmed; it switches pages as it goes, works on desktops and phones and with the keyboard (arrows, Enter, Esc), and returns to where it started. It never changes any data. For now it is started only from the help page with "Start tour".
 - Setup: when the admin came from `ADMIN_USER` without `ADMIN_EMAIL`, the rest of the setup asks for an email address; it counts once the link mailed to it is clicked, and the link follows as soon as a mail server is set up.
 - Setup: both ways of the setup wizard offer to set up the mail server when `SMTP_HOST` is not set (with a test mail after `ADMIN_USER`), and end with a summary of what is still open (mail server, `BASE_URL`, email address) and where the backups and the administration are.
@@ -30,6 +32,7 @@ Fixes from the security review of November 2026 (v0.94.0).
 - Conflict copies in notes have a third choice, "Keep both": the marking goes and both texts stay, the copy as a bullet of its own under the original. While someone edits the original, "Use" is greyed out and a line under the copy says who holds it; before, the click did nothing visible. Until it is settled, a copy sticks to its original: Enter or pasting in the original adds below the copy, and indenting, dragging or moving the original takes the copy along.
 
 ### Changed
+- Tables in notes: in the default line mode the lines stay at full strength and fade out only just before the table's outer edge.
 - Very long notes open and scroll much faster: bullets out of view are no longer laid out and painted, and opening a note no longer measures every bullet. A note with 5,000 bullets opens in about a fifth of the time, one with 20,000 bullets now opens at all. Find in page, selecting and copying across bullets and links to a bullet work as before; coming back to a note returns to the same bullet.
 - Setup: fields and buttons of the setup wizard are 44 px high on phones; an error shows next to the finish button.
 - Administration: the user list can be searched (name, username, email) and filtered by role and organization, and sorted by name, role or newest first. Rows are compact; role, password, lock and delete open after a click on a person (on phones in a sheet from below), and only 50 people are shown at a time with "Show more". Registrations waiting for approval are now at the top with a counter.
@@ -75,6 +78,7 @@ Fixes from the security review of November 2026 (v0.94.0).
 - The sign-in page loads about 170 kB (compressed) instead of 530 kB; the rest of the app follows right after signing in, or at once when you are still signed in.
 
 ### Fixed
+- Tables in notes: the ⋯ menu no longer disappears behind the bullet below the table when the mouse moves from the ⋯ to an entry.
 - Sign-in and setup on phones: the on-screen keyboard no longer covers the password field; the page makes room for it and scrolls the field into view.
 - Admin settings on phones: the backup time sits below its label and is wide enough.
 - Wide tables in notes scroll sideways on the desktop too, instead of squeezing long cells into narrow columns.

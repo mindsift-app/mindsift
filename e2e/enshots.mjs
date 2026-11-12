@@ -40,6 +40,7 @@ for (const [dev, opts] of [
     localStorage.setItem('mindsift_jwt_token', t);
     sessionStorage.setItem('mindsift_pwa_offer_shown', '1');
     localStorage.setItem('mindsift:demo-hint-closed', '1'); // the demo's public notice is not part of the pictures
+    localStorage.setItem('mindsift:tour-offered', '1'); // nor is the offer of the guided tour
   }, token);
   const p = await c.newPage();
   await p.goto(BASE);

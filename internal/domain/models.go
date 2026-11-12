@@ -109,6 +109,9 @@ type User struct {
 	// RetentionNeverAllowed: whether "nie" may be chosen on this server
 	Retention             *Retention `json:"retention,omitempty"`
 	RetentionNeverAllowed bool       `json:"retentionNeverAllowed"`
+	// TourOffered: the app already asked whether to take the guided tour (storage/tour.go). Only in the
+	// own profile, so the app never reads a missing value as "not asked yet".
+	TourOffered *bool `json:"tourOffered,omitempty"`
 }
 
 // Server roles: admins run everything, user managers ("Benutzerverwaltung") look after members,

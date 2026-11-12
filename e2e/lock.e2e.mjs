@@ -58,7 +58,10 @@ async function clickText(page, text) {
 
 async function openDoc(browser, token, title) {
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 }, locale: 'de-DE' });
-  await ctx.addInitScript((t) => localStorage.setItem('mindsift_jwt_token', t), token);
+  await ctx.addInitScript((t) => {
+    localStorage.setItem('mindsift_jwt_token', t);
+    localStorage.setItem('mindsift:tour-offered', '1'); // the demo asks every browser about the tour once
+  }, token);
   const page = await ctx.newPage();
   await page.goto(BASE);
   await page.getByRole('button', { name: /Workspace/ }).first().click();
