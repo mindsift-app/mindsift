@@ -112,7 +112,8 @@ func (s *Server) handleUpdateDocument(w http.ResponseWriter, r *http.Request) {
 
 	doc, err := s.store.UpdateDocument(userID, docID, req.Title, req.Icon, req.FolderPath, req.IsPinned)
 	if err != nil {
-		writeErrorFrom(w, http.StatusBadRequest, err)
+		// A note without access is a missing note (404), not an internal error (pentest 2026-11-13, P1)
+		writeStoreError(w, http.StatusBadRequest, err)
 		return
 	}
 	if req.Title != nil {
@@ -300,7 +301,7 @@ func (s *Server) handleCreateDocShare(w http.ResponseWriter, r *http.Request) {
 
 	share, err := s.store.CreateDocShare(userID, docID, target, req.Permission)
 	if err != nil {
-		writeErrorFrom(w, http.StatusBadRequest, err)
+		writeStoreError(w, http.StatusBadRequest, err)
 		return
 	}
 	s.notifyShared(userID, "user", share.UserID, "note", docID, s.docTitle(userID, docID))

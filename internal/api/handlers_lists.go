@@ -65,7 +65,11 @@ func (s *Server) handleDeleteList(w http.ResponseWriter, r *http.Request) {
 	userID := auth.GetUserID(r.Context())
 	listID := chi.URLParam(r, "id")
 	if err := s.store.DeleteList(userID, listID); err != nil {
-		writeInternal(w, err)
+		if errors.Is(err, storage.ErrListOwnerOnly) {
+			writeErrorFrom(w, http.StatusForbidden, err)
+			return
+		}
+		writeStoreError(w, http.StatusInternalServerError, err)
 		return
 	}
 	s.wsHub.BroadcastListEvent(listID, "LIST_DELETED", map[string]string{"listId": listID})

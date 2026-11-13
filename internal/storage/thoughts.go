@@ -21,7 +21,7 @@ func (s *Store) CreateThoughtWithDetails(userID, content, priority, source, dueD
 	content = strings.TrimSpace(content)
 	dueDate = domain.NormalizeDue(dueDate)
 	if content == "" {
-		return nil, errors.New("content cannot be empty")
+		return nil, errors.New("'content' darf nicht leer sein")
 	}
 	if priority == "" {
 		priority = "normal"

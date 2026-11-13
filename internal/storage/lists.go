@@ -13,7 +13,7 @@ import (
 
 func (s *Store) CreateList(userID, title, icon, listType string) (*domain.SharedList, error) {
 	if strings.TrimSpace(title) == "" {
-		return nil, errors.New("list title required")
+		return nil, errors.New("'title' darf nicht leer sein")
 	}
 	if icon == "" {
 		icon = "🛒"
@@ -300,10 +300,14 @@ func (s *Store) DeleteList(userID, listID string) error {
 	var ownerID string
 	err := s.db.QueryRow(`SELECT user_id FROM lists WHERE id = ?`, listID).Scan(&ownerID)
 	if err != nil {
-		return errors.New("liste nicht gefunden")
+		return sql.ErrNoRows
 	}
 	if ownerID != userID {
-		return errors.New("nur der Eigentümer kann die Liste löschen")
+		// Without access a foreign list looks like a missing one (no existence oracle, pentest 2026-11-13 P2)
+		if s.ListRole(userID, listID) == "" {
+			return sql.ErrNoRows
+		}
+		return ErrListOwnerOnly
 	}
 	_, err = s.db.Exec(`DELETE FROM lists WHERE id = ?`, listID)
 	return err
@@ -366,7 +370,7 @@ func (s *Store) GetListItems(listID string) ([]domain.ListItem, error) {
 func (s *Store) CreateListItem(listID, content, category, quantity string, sortOrder int, createdBy string) (*domain.ListItem, error) {
 	content = strings.TrimSpace(content)
 	if content == "" {
-		return nil, errors.New("item content cannot be empty")
+		return nil, errors.New("'content' darf nicht leer sein")
 	}
 
 	category = strings.TrimSpace(category)
@@ -576,6 +580,9 @@ var ErrListItemNotFound = errors.New("Listeneintrag nicht gefunden")
 
 // ErrListReadOnly: the list is shared with the user as viewer.
 var ErrListReadOnly = errors.New("Diese Liste ist für dich nur lesbar")
+
+// ErrListOwnerOnly: someone who sees a shared list tried to delete it
+var ErrListOwnerOnly = errors.New("nur der Eigentümer kann die Liste löschen")
 
 // ListRole is the user's role in a list: owner, editor, viewer or "" without access.
 func (s *Store) ListRole(userID, listID string) string {
