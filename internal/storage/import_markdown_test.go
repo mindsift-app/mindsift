@@ -261,7 +261,7 @@ func TestImportBackupZip(t *testing.T) {
 	if buf.Len() == 0 {
 		t.Fatalf("empty archive")
 	}
-	plan, err := PlanMindSiftImport(buf.Bytes(), "mindsift-backup-2026-10-29.zip")
+	plan, err := PlanMindSiftImport(bytes.NewReader(buf.Bytes()), int64(buf.Len()), "mindsift-backup-2026-10-29.zip")
 	if err != nil {
 		t.Fatalf("plan: %v", err)
 	}

@@ -18,22 +18,37 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"github.com/mindsift-app/mindsift/internal/collab"
 	"github.com/mindsift-app/mindsift/internal/domain"
 	"github.com/mindsift-app/mindsift/internal/drawing"
 	"github.com/mindsift-app/mindsift/internal/i18n"
 )
 
 // Import limits: they keep a crafted archive (zip bomb, millions of files) from exhausting the server.
+// Besides, notes, files and the notes of a JSON backup are read one at a time when they are needed (once
+// for the plan, again when it is applied), so an import never holds the whole archive unpacked.
 const (
-	MaxImportUploadBytes   = 100 << 20 // uploaded file
-	maxImportFileBytes     = 10 << 20  // one unpacked note
-	maxImportUnpackedBytes = 500 << 20 // all unpacked notes together
+	MaxImportUploadBytes = 100 << 20 // uploaded file
+	// One note: 20,000 bullets (collab.MaxNoteBlocks) of 100 bytes each; a real note is far smaller
+	maxImportNoteBytes     = 2 << 20
+	maxImportUnpackedBytes = 500 << 20 // all notes and files together
 	maxImportFiles         = 20000
 	maxImportMediaBytes    = 100 << 20 // one image or recording
+	maxImportDrawingBytes  = 10 << 20  // one drawing (an SVG with the drawing inside)
+	// Notes of a JSON backup, tasks, lists and list items together; far more than a person has
+	maxImportItems = 100_000
+	// An entry that unpacks to more than maxImportRatio times its packed size is a zip bomb, not part of
+	// a vault: Markdown packs 3 to 5 times, very repetitive notes up to about 50 (Obsidian's own help
+	// vault, 6500 notes: 3 overall, 134 at most for a 64 KB note). Smaller entries are harmless at any ratio.
+	maxImportRatio  = 100
+	importRatioFrom = 1 << 20
+	// One note, task or list of a JSON backup (the decoder holds one at a time)
+	maxImportJSONValue = 32 << 20
 )
 
 // ImportPlan is everything an import would create. It is built completely (and validated) before
-// anything is written, so the preview shows exactly what the import does.
+// anything is written, so the preview shows exactly what the import does. Notes of an archive or a JSON
+// backup keep only their place and title here; their blocks are read again when the plan is applied.
 type ImportPlan struct {
 	Folders   []string           `json:"-"`
 	Docs      []importDoc        `json:"-"`
@@ -43,14 +58,18 @@ type ImportPlan struct {
 	Themes    []domain.UserTheme `json:"-"`
 	Skipped   []ImportSkip       `json:"skipped"`
 	// Images and recordings of the archive: "media:<id>" (own backup) or the path in the archive
-	Media map[string][]byte `json:"-"`
+	Media map[string]*zip.File `json:"-"`
+	// jsonDocs opens the JSON backup again to read its notes one at a time (nil: Docs hold them)
+	jsonDocs  func() (io.ReadCloser, error)
+	items     int             // tasks and list items, against maxImportItems
+	usedMedia map[string]bool // keys of Media a note shows, while the plan is built
 }
 
 // Only keeps the chosen sections of the plan (see NormalizeSections).
 func (p *ImportPlan) Only(sections map[string]bool) *ImportPlan {
 	out := &ImportPlan{Skipped: p.Skipped}
 	if sections[SectionNotes] {
-		out.Folders, out.Docs, out.Media = p.Folders, p.Docs, p.Media
+		out.Folders, out.Docs, out.Media, out.jsonDocs = p.Folders, p.Docs, p.Media, p.jsonDocs
 	}
 	if sections[SectionTasks] {
 		out.TaskLists = p.TaskLists
@@ -90,6 +109,10 @@ type importDoc struct {
 	folder, title, icon string
 	dir                 string // folder of the note inside the archive, for relative image links
 	blocks              []domain.DocumentBlock
+	// src: the note in the archive, converted again when the plan is applied (blocks stay nil)
+	src *zip.File
+	// hashtags: front matter tags missing in the text become a bullet of hashtags (Obsidian)
+	hashtags bool
 }
 
 type importTask struct {
@@ -138,11 +161,14 @@ func (p *ImportPlan) Summary(applied bool) ImportSummary {
 
 type zipNote struct {
 	path string // inside the archive, "/"-separated, without a leading vault folder
-	text string
+	file *zip.File
 }
 
-// readZipNotes returns the Markdown files of an archive (other files are reported as skipped). A
-// single top-level folder, as Obsidian and most zip tools create, is stripped and returned as name.
+// readZipNotes lists the Markdown notes of an archive, sorted by path, and adds its images and
+// recordings to the plan (other files are reported as skipped). Nothing is unpacked yet: entries too
+// large or packed suspiciously well are skipped by their header, and the sizes they declare must stay
+// within maxImportUnpackedBytes together (reading checks the real sizes again). A single top-level
+// folder, as Obsidian and most zip tools create, is stripped and returned as name.
 func readZipNotes(r io.ReaderAt, size int64, plan *ImportPlan) ([]zipNote, []string, string, error) {
 	zr, err := zip.NewReader(r, size)
 	if err != nil {
@@ -160,7 +186,7 @@ func readZipNotes(r io.ReaderAt, size int64, plan *ImportPlan) ([]zipNote, []str
 
 	var notes []zipNote
 	var dirs []string
-	var unpacked int64
+	var declared uint64
 	for i, f := range zr.File {
 		name := strings.TrimPrefix(names[i], prefix)
 		if name == "" || hiddenPath(name) {
@@ -179,43 +205,176 @@ func readZipNotes(r io.ReaderAt, size int64, plan *ImportPlan) ([]zipNote, []str
 				plan.skip(name, "zu groß (max. 100 MB pro Bild oder Aufnahme)")
 				continue
 			}
-			data, err := readZipFile(f, maxImportMediaBytes)
-			if err != nil {
-				plan.skip(name, "nicht lesbar")
+			if packedTooWell(f) {
+				plan.skip(name, "ungewöhnlich stark gepackt, wird nicht entpackt")
 				continue
 			}
-			if unpacked += int64(len(data)); unpacked > maxImportUnpackedBytes {
-				return nil, nil, "", errors.New("Archiv ist entpackt zu groß (max. 500 MB)")
-			}
-			plan.addMedia(name, data)
+			declared += f.UncompressedSize64
+			plan.addMedia(name, f)
 			continue
 		}
-		if f.UncompressedSize64 > maxImportFileBytes {
-			plan.skip(name, "zu groß (max. 10 MB pro Notiz)")
+		if f.UncompressedSize64 > maxImportNoteBytes {
+			plan.skip(name, "zu groß (max. 2 MB pro Notiz)")
 			continue
 		}
-		rc, err := f.Open()
-		if err != nil {
-			plan.skip(name, "nicht lesbar")
+		if packedTooWell(f) {
+			plan.skip(name, "ungewöhnlich stark gepackt, wird nicht entpackt")
 			continue
 		}
-		data, err := io.ReadAll(io.LimitReader(rc, maxImportFileBytes+1))
-		rc.Close()
-		if err != nil || len(data) > maxImportFileBytes {
-			plan.skip(name, "nicht lesbar oder zu groß")
-			continue
-		}
-		if unpacked += int64(len(data)); unpacked > maxImportUnpackedBytes {
-			return nil, nil, "", errors.New("Archiv ist entpackt zu groß (max. 500 MB)")
-		}
-		if !utf8.Valid(data) {
-			plan.skip(name, "keine UTF-8-Textdatei")
-			continue
-		}
-		notes = append(notes, zipNote{path: name, text: strings.ReplaceAll(string(data), "\r\n", "\n")})
+		declared += f.UncompressedSize64
+		notes = append(notes, zipNote{path: name, file: f})
+	}
+	if declared > maxImportUnpackedBytes {
+		return nil, nil, "", errors.New("Archiv ist entpackt zu groß (max. 500 MB)")
 	}
 	sort.Slice(notes, func(i, j int) bool { return notes[i].path < notes[j].path })
 	return notes, dirs, strings.TrimSuffix(prefix, "/"), nil
+}
+
+// packedTooWell: an entry that would unpack to far more than it takes in the archive (zip bomb).
+func packedTooWell(f *zip.File) bool {
+	return f.UncompressedSize64 > importRatioFrom && f.UncompressedSize64 > maxImportRatio*f.CompressedSize64
+}
+
+// unpackBudget counts the bytes really unpacked while an archive is read, whatever its entries declare.
+type unpackBudget struct{ left int64 }
+
+func newUnpackBudget() *unpackBudget { return &unpackBudget{left: maxImportUnpackedBytes} }
+
+var errUnpackedTooLarge = errors.New("Archiv ist entpackt zu groß (max. 500 MB)")
+
+// readNote reads one note of the archive as text with LF line ends. reason says why the note cannot be
+// imported (it is skipped); err ends the whole import.
+func readNote(f *zip.File, budget *unpackBudget) (text, reason string, err error) {
+	rc, err := f.Open()
+	if err != nil {
+		return "", "nicht lesbar", nil
+	}
+	defer rc.Close()
+	var sb strings.Builder
+	sb.Grow(int(min(f.UncompressedSize64, maxImportNoteBytes)))
+	n, err := io.Copy(&sb, io.LimitReader(rc, min(maxImportNoteBytes, budget.left)+1))
+	if budget.left -= n; budget.left < 0 {
+		return "", "", errUnpackedTooLarge
+	}
+	if err != nil {
+		return "", "nicht lesbar", nil
+	}
+	if n > maxImportNoteBytes {
+		return "", "zu groß (max. 2 MB pro Notiz)", nil
+	}
+	text = sb.String()
+	if !utf8.ValidString(text) {
+		return "", "keine UTF-8-Textdatei", nil
+	}
+	if strings.Contains(text, "\r\n") {
+		text = strings.ReplaceAll(text, "\r\n", "\n")
+	}
+	return text, "", nil
+}
+
+// noteBlocks converts the text of a note. ok is false when it holds more bullets than a note may.
+func noteBlocks(body string, tags []string, hashtags bool) ([]domain.DocumentBlock, bool) {
+	blocks, ok := markdownToBlocks(body, collab.MaxNoteBlocks)
+	if !ok {
+		return nil, false
+	}
+	// Front matter tags become hashtags, since MindSift reads tags from the text
+	if extra := missingTags(tags, body); hashtags && extra != "" {
+		blocks = append(blocks, newBlock("bullet", extra, 0))
+	}
+	return blocks, len(blocks) <= collab.MaxNoteBlocks
+}
+
+// load reads and converts a note of the archive again, when the plan is applied.
+func (d importDoc) load(budget *unpackBudget) ([]domain.DocumentBlock, error) {
+	if d.src == nil {
+		return d.blocks, nil
+	}
+	text, reason, err := readNote(d.src, budget)
+	if err != nil {
+		return nil, err
+	}
+	if reason != "" {
+		return nil, fmt.Errorf("note %q: %s", d.title, reason)
+	}
+	fm, body := splitFrontmatter(text)
+	blocks, ok := noteBlocks(body, fm.tags, d.hashtags)
+	if !ok {
+		return nil, ErrNoteTooLarge
+	}
+	return blocks, nil
+}
+
+// eachDoc hands the notes of the plan to fn one at a time, with their blocks read again from the
+// archive or the JSON backup, so only one note is in memory at a time.
+func (p *ImportPlan) eachDoc(budget *unpackBudget, fn func(importDoc, []domain.DocumentBlock) error) error {
+	if p.jsonDocs != nil {
+		rc, err := p.jsonDocs()
+		if err != nil {
+			return err
+		}
+		defer rc.Close()
+		return decodeExport(rc, nil, func(d *exportDoc) error {
+			if d.skipReason() != "" {
+				return nil
+			}
+			doc := d.importDoc()
+			return fn(doc, doc.blocks)
+		})
+	}
+	for _, d := range p.Docs {
+		blocks, err := d.load(budget)
+		if errors.Is(err, ErrNoteTooLarge) {
+			return i18n.NewError("Notiz „{title}“: {reason}", "title", d.title, "reason", err.Error())
+		}
+		if err != nil {
+			return err
+		}
+		if err := fn(d, blocks); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// readPlanNote reads a note for the plan; one that cannot be imported is reported as skipped (ok false).
+func (p *ImportPlan) readPlanNote(n zipNote, budget *unpackBudget) (fm frontmatter, body, title string, ok bool, err error) {
+	text, reason, err := readNote(n.file, budget)
+	if err != nil {
+		return fm, "", "", false, err
+	}
+	if reason != "" {
+		p.skip(n.path, reason)
+		return fm, "", "", false, nil
+	}
+	fm, body = splitFrontmatter(text)
+	title = fm.title
+	if title == "" {
+		title = strings.TrimSuffix(path.Base(n.path), path.Ext(n.path))
+	}
+	return fm, body, title, true, nil
+}
+
+// addZipDoc converts a note once to check it and to mark the files it shows; the plan keeps only its
+// title and place, the blocks are read again when it is applied.
+func (p *ImportPlan) addZipDoc(n zipNote, doc importDoc, tags []string, body string) {
+	blocks, ok := noteBlocks(body, tags, doc.hashtags)
+	if !ok {
+		p.skip(n.path, "zu viele Punkte (max. 20.000 pro Notiz)")
+		return
+	}
+	doc.dir, doc.src = path.Dir(n.path), n.file
+	p.markUsedMedia(doc.dir, blocks)
+	p.Docs = append(p.Docs, doc)
+}
+
+// addItems counts tasks and list items of an archive against maxImportItems.
+func (p *ImportPlan) addItems(n int) error {
+	if p.items += n; p.items > maxImportItems {
+		return errTooManyItems
+	}
+	return nil
 }
 
 // cleanArchivePath normalises an entry name and removes anything that could escape (.., absolute paths).
@@ -285,20 +444,18 @@ func PlanObsidianImport(r io.ReaderAt, size int64, fileName string) (*ImportPlan
 	for _, d := range dirs {
 		folders[path.Join(root, folderPathOf(d+"/x"))] = true
 	}
+	budget := newUnpackBudget()
 	for _, n := range notes {
-		fm, body := splitFrontmatter(n.text)
+		fm, body, title, ok, err := plan.readPlanNote(n, budget)
+		if err != nil {
+			return nil, err
+		}
+		if !ok {
+			continue
+		}
 		folder := path.Join(root, folderPathOf(n.path))
 		folders[folder] = true
-		title := fm.title
-		if title == "" {
-			title = strings.TrimSuffix(path.Base(n.path), path.Ext(n.path))
-		}
-		blocks := MarkdownToBlocks(body)
-		// Front matter tags become hashtags, since MindSift reads tags from the text
-		if extra := missingTags(fm.tags, body); extra != "" {
-			blocks = append(blocks, newBlock("bullet", extra, 0))
-		}
-		plan.Docs = append(plan.Docs, importDoc{folder: folder, title: title, icon: fm.icon, dir: path.Dir(n.path), blocks: blocks})
+		plan.addZipDoc(n, importDoc{folder: folder, title: title, icon: fm.icon, hashtags: true}, fm.tags, body)
 	}
 	plan.reportUnusedMedia()
 	plan.Folders = sortedKeys(folders)
@@ -322,11 +479,14 @@ func PlanMindSiftArchiveImport(r io.ReaderAt, size int64) (*ImportPlan, error) {
 			folders[folderPathOf(d+"/x")] = true
 		}
 	}
+	budget := newUnpackBudget()
 	for _, n := range notes {
-		fm, body := splitFrontmatter(n.text)
-		title := fm.title
-		if title == "" {
-			title = strings.TrimSuffix(path.Base(n.path), path.Ext(n.path))
+		fm, body, title, ok, err := plan.readPlanNote(n, budget)
+		if err != nil {
+			return nil, err
+		}
+		if !ok {
+			continue
 		}
 		switch dir := folderPathOf(n.path); {
 		case isVaultDir(dir, vaultTasks):
@@ -334,15 +494,21 @@ func PlanMindSiftArchiveImport(r io.ReaderAt, size int64) (*ImportPlan, error) {
 			if isVaultDir(title, vaultNoList) {
 				tl.title = ""
 			}
+			if err := plan.addItems(len(tl.tasks)); err != nil {
+				return nil, err
+			}
 			plan.TaskLists = append(plan.TaskLists, tl)
 		case isVaultDir(dir, vaultLists):
-			plan.Lists = append(plan.Lists, importList{title: title, icon: fm.icon, items: parseListFile(body)})
-		default:
-			folder := folderPathOf(n.path)
-			if folder != "" {
-				folders[folder] = true
+			l := importList{title: title, icon: fm.icon, items: parseListFile(body)}
+			if err := plan.addItems(len(l.items)); err != nil {
+				return nil, err
 			}
-			plan.Docs = append(plan.Docs, importDoc{folder: folder, title: title, icon: fm.icon, dir: path.Dir(n.path), blocks: MarkdownToBlocks(body)})
+			plan.Lists = append(plan.Lists, l)
+		default:
+			if dir != "" {
+				folders[dir] = true
+			}
+			plan.addZipDoc(n, importDoc{folder: dir, title: title, icon: fm.icon}, nil, body)
 		}
 	}
 	plan.reportUnusedMedia()
@@ -406,12 +572,14 @@ func (s *Store) writeMediaFiles(zw zipEntries, userID string, name func(Media) s
 }
 
 // PlanMindSiftImport picks the format of MindSift's own data: plain JSON backup, the backup ZIP
-// (one JSON inside, next to it the Markdown vault) or the Markdown archive.
-func PlanMindSiftImport(data []byte, fileName string) (*ImportPlan, error) {
-	if strings.HasSuffix(strings.ToLower(fileName), ".json") || (len(data) > 0 && data[0] == '{') {
-		return PlanMindSiftJSONImport(data)
+// (one JSON inside, next to it the Markdown vault) or the Markdown archive. r must stay readable until
+// the plan is applied: notes and files are read from it again then.
+func PlanMindSiftImport(r io.ReaderAt, size int64, fileName string) (*ImportPlan, error) {
+	first := make([]byte, 1)
+	if _, err := r.ReadAt(first, 0); strings.HasSuffix(strings.ToLower(fileName), ".json") || (err == nil && first[0] == '{') {
+		return planJSONBackup(func() (io.ReadCloser, error) { return io.NopCloser(io.NewSectionReader(r, 0, size)), nil })
 	}
-	zr, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
+	zr, err := zip.NewReader(r, size)
 	if err != nil {
 		return nil, errors.New("Die Datei ist weder ein MindSift-Backup (.json/.zip) noch ein MindSift-Markdown-Archiv")
 	}
@@ -436,39 +604,35 @@ func PlanMindSiftImport(data []byte, fileName string) (*ImportPlan, error) {
 		}
 	}
 	if backup == nil {
-		return PlanMindSiftArchiveImport(bytes.NewReader(data), int64(len(data)))
+		return PlanMindSiftArchiveImport(r, size)
 	}
 	// Images and recordings: attachments/<id><ext> of the vault next to the JSON, media/<id><ext> in older backups
 	// (the vault's attachments/ also holds drawings as SVG, those are no media)
-	media := map[string][]byte{}
-	var mediaBytes int64
+	media := map[string]*zip.File{}
+	declared := backup.UncompressedSize64
 	vaultMedia := BackupVaultDir + "/" + vaultAttachmentDir + "/med_"
 	for _, f := range zr.File {
 		name := cleanArchivePath(f.Name)
-		if (!strings.HasPrefix(name, "media/") && !strings.HasPrefix(name, vaultMedia)) || f.FileInfo().IsDir() || f.UncompressedSize64 > maxImportMediaBytes {
+		if (!strings.HasPrefix(name, "media/") && !strings.HasPrefix(name, vaultMedia)) || f.FileInfo().IsDir() || f.UncompressedSize64 > maxImportMediaBytes || packedTooWell(f) {
 			continue
 		}
-		if mediaBytes += int64(f.UncompressedSize64); mediaBytes > maxImportUnpackedBytes {
-			return nil, errors.New("Backup ist entpackt zu groß (max. 500 MB)")
-		}
-		if b, err := readZipFile(f, maxImportMediaBytes); err == nil {
-			base := path.Base(name)
-			media["media:"+strings.TrimSuffix(base, path.Ext(base))] = b
-		}
+		declared += f.UncompressedSize64
+		base := path.Base(name)
+		media["media:"+strings.TrimSuffix(base, path.Ext(base))] = f
 	}
-	if backup.UncompressedSize64 > maxImportUnpackedBytes {
+	if declared > maxImportUnpackedBytes {
 		return nil, errors.New("Backup ist entpackt zu groß (max. 500 MB)")
 	}
-	rc, err := backup.Open()
-	if err != nil {
-		return nil, errors.New("Backup im Archiv ist nicht lesbar")
+	if packedTooWell(backup) {
+		return nil, errors.New("Das Backup im Archiv ist ungewöhnlich stark gepackt und wird nicht entpackt")
 	}
-	defer rc.Close()
-	raw, err := io.ReadAll(io.LimitReader(rc, maxImportUnpackedBytes+1))
-	if err != nil || len(raw) > maxImportUnpackedBytes {
-		return nil, errors.New("Backup im Archiv ist nicht lesbar oder zu groß")
-	}
-	plan, err := PlanMindSiftJSONImport(raw)
+	plan, err := planJSONBackup(func() (io.ReadCloser, error) {
+		rc, err := backup.Open()
+		if err != nil {
+			return nil, errors.New("Backup im Archiv ist nicht lesbar")
+		}
+		return readCloser{io.LimitReader(rc, maxImportUnpackedBytes), rc}, nil
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -478,29 +642,44 @@ func PlanMindSiftImport(data []byte, fileName string) (*ImportPlan, error) {
 	return plan, nil
 }
 
+type readCloser struct {
+	io.Reader
+	io.Closer
+}
+
 // PlanMindSiftJSONImport reads the JSON backup ("Backup herunterladen"). Notes shared with the
 // exporting user belong to someone else and are skipped; discarded thoughts are not restored.
 func PlanMindSiftJSONImport(data []byte) (*ImportPlan, error) {
-	var exp domain.FullExport
-	if err := json.Unmarshal(data, &exp); err != nil || (exp.Version == "" && exp.ExportedAt == "") {
-		return nil, errors.New("Die Datei ist kein MindSift-JSON-Backup")
+	return planJSONBackup(func() (io.ReadCloser, error) { return io.NopCloser(bytes.NewReader(data)), nil })
+}
+
+// planJSONBackup reads the backup that open returns. Its notes are read one at a time and only counted
+// here; the plan opens the backup again when it is applied (eachDoc).
+func planJSONBackup(open func() (io.ReadCloser, error)) (*ImportPlan, error) {
+	rc, err := open()
+	if err != nil {
+		return nil, err
 	}
-	plan := &ImportPlan{}
+	defer rc.Close()
+	plan := &ImportPlan{jsonDocs: open}
 	folders := map[string]bool{}
-	for _, d := range exp.Documents {
-		if !d.IsOwner && d.Permission != "" && d.Permission != "owner" {
-			plan.skip(d.Title, "geteilte Notiz eines anderen Benutzers")
-			continue
+	var exp domain.FullExport
+	err = decodeExport(rc, &exp, func(d *exportDoc) error {
+		if reason := d.skipReason(); reason != "" {
+			plan.skip(d.Title, reason)
+			return nil
 		}
 		if d.FolderPath != "" {
 			folders[d.FolderPath] = true
 		}
-		blocks := make([]domain.DocumentBlock, len(d.Blocks))
-		for i, b := range d.Blocks {
-			b.ID, b.DocumentID, b.TaskID = domain.NewID("blk"), "", ""
-			blocks[i] = b
-		}
-		plan.Docs = append(plan.Docs, importDoc{folder: d.FolderPath, title: d.Title, icon: d.Icon, blocks: blocks})
+		plan.Docs = append(plan.Docs, importDoc{folder: d.FolderPath, title: d.Title, icon: d.Icon})
+		return nil
+	})
+	if errors.Is(err, errJSONValueTooLarge) || errors.Is(err, errTooManyItems) {
+		return nil, err
+	}
+	if err != nil || (exp.Version == "" && exp.ExportedAt == "") {
+		return nil, errors.New("Die Datei ist kein MindSift-JSON-Backup")
 	}
 	listIndex := map[string]int{}
 	for _, tl := range exp.TaskLists {
@@ -540,6 +719,171 @@ func PlanMindSiftJSONImport(data []byte) (*ImportPlan, error) {
 	return plan, nil
 }
 
+// exportDoc is the part of a note in a JSON backup the import uses (the content caches stay out).
+type exportDoc struct {
+	Title      string                 `json:"title"`
+	Icon       string                 `json:"icon"`
+	FolderPath string                 `json:"folderPath"`
+	Permission string                 `json:"permission"`
+	IsOwner    bool                   `json:"isOwner"`
+	Blocks     []domain.DocumentBlock `json:"blocks"`
+}
+
+// skipReason says why a note of the backup is not imported ("" = it is).
+func (d *exportDoc) skipReason() string {
+	switch {
+	case !d.IsOwner && d.Permission != "" && d.Permission != "owner":
+		return "geteilte Notiz eines anderen Benutzers"
+	case len(d.Blocks) > collab.MaxNoteBlocks:
+		return "zu viele Punkte (max. 20.000 pro Notiz)"
+	}
+	return ""
+}
+
+// importDoc gives the note's blocks new IDs and no task links: a backup cannot reach anything existing.
+func (d *exportDoc) importDoc() importDoc {
+	for i := range d.Blocks {
+		d.Blocks[i].ID, d.Blocks[i].DocumentID, d.Blocks[i].TaskID = domain.NewID("blk"), "", ""
+	}
+	return importDoc{folder: d.FolderPath, title: d.Title, icon: d.Icon, blocks: d.Blocks}
+}
+
+var (
+	errJSONValueTooLarge = i18n.NewError("Ein Eintrag im Backup ist zu groß (max. {mb} MB)", "mb", strconv.Itoa(maxImportJSONValue>>20))
+	errTooManyItems      = i18n.NewError("Zu viele Einträge im Archiv (max. {max})", "max", strconv.Itoa(maxImportItems))
+)
+
+// valueLimit fails a read once the JSON value being decoded has grown beyond maxImportJSONValue: the
+// decoder holds a whole value in memory before it decodes it.
+type valueLimit struct {
+	r        io.Reader
+	n, start int64
+}
+
+func (v *valueLimit) Read(p []byte) (int, error) {
+	if v.n-v.start > maxImportJSONValue {
+		return 0, errJSONValueTooLarge
+	}
+	n, err := v.r.Read(p)
+	v.n += int64(n)
+	return n, err
+}
+
+// decodeExport reads a JSON backup one value at a time: onDoc gets each note as it is decoded, the
+// other parts are collected in rest (nil: passed over). It never holds more than one note.
+func decodeExport(r io.Reader, rest *domain.FullExport, onDoc func(*exportDoc) error) error {
+	lim := &valueLimit{r: r}
+	dec := json.NewDecoder(lim)
+	if t, err := dec.Token(); err != nil || t != json.Delim('{') {
+		return errors.New("not a JSON object")
+	}
+	items := 0
+	countItems := func(n int) error {
+		if items += n; items > maxImportItems {
+			return errTooManyItems
+		}
+		return nil
+	}
+	for dec.More() {
+		lim.start = lim.n
+		t, err := dec.Token()
+		if err != nil {
+			return err
+		}
+		lim.start = lim.n
+		key, _ := t.(string)
+		switch {
+		case key == "documents":
+			err = jsonArray(dec, lim, func() error {
+				var d exportDoc
+				if err := dec.Decode(&d); err != nil {
+					return err
+				}
+				if err := countItems(1); err != nil {
+					return err
+				}
+				return onDoc(&d)
+			})
+		case rest == nil:
+			var skip json.RawMessage
+			if key == "thoughts" || key == "lists" || key == "taskLists" || key == "themes" {
+				err = jsonArray(dec, lim, func() error { return dec.Decode(&skip) })
+			} else {
+				err = dec.Decode(&skip)
+			}
+		case key == "thoughts":
+			err = jsonArray(dec, lim, func() error {
+				var th domain.Thought
+				if err := dec.Decode(&th); err != nil {
+					return err
+				}
+				rest.Thoughts = append(rest.Thoughts, th)
+				return countItems(1)
+			})
+		case key == "lists":
+			err = jsonArray(dec, lim, func() error {
+				var l domain.SharedList
+				if err := dec.Decode(&l); err != nil {
+					return err
+				}
+				rest.Lists = append(rest.Lists, l)
+				return countItems(1 + len(l.Items))
+			})
+		case key == "taskLists":
+			err = jsonArray(dec, lim, func() error {
+				var tl domain.TaskList
+				if err := dec.Decode(&tl); err != nil {
+					return err
+				}
+				rest.TaskLists = append(rest.TaskLists, tl)
+				return countItems(1)
+			})
+		case key == "themes":
+			err = jsonArray(dec, lim, func() error {
+				var th domain.UserTheme
+				if err := dec.Decode(&th); err != nil {
+					return err
+				}
+				rest.Themes = append(rest.Themes, th)
+				return countItems(1)
+			})
+		case key == "exportedAt":
+			err = dec.Decode(&rest.ExportedAt)
+		case key == "version":
+			err = dec.Decode(&rest.Version)
+		default: // the profile and anything unknown: not imported
+			var skip json.RawMessage
+			err = dec.Decode(&skip)
+		}
+		if err != nil {
+			return err
+		}
+	}
+	lim.start = lim.n
+	_, err := dec.Token()
+	return err
+}
+
+// jsonArray calls each for every element of the array that comes next (null counts as empty).
+func jsonArray(dec *json.Decoder, lim *valueLimit, each func() error) error {
+	t, err := dec.Token()
+	if err != nil || t == nil {
+		return err
+	}
+	if t != json.Delim('[') {
+		return errors.New("not a JSON array")
+	}
+	for dec.More() {
+		lim.start = lim.n
+		if err := each(); err != nil {
+			return err
+		}
+	}
+	lim.start = lim.n
+	_, err = dec.Token()
+	return err
+}
+
 // --- Applying ---------------------------------------------------------------------------------------
 
 // ApplyImport creates everything of the plan for the user. Existing data is never changed; imported
@@ -548,7 +892,8 @@ func (s *Store) ApplyImport(userID string, plan *ImportPlan) (ImportSummary, err
 	for _, f := range plan.Folders {
 		_, _ = s.CreateFolder(userID, f) // already existing folders are fine
 	}
-	for _, d := range plan.Docs {
+	budget := newUnpackBudget()
+	err := plan.eachDoc(budget, func(d importDoc, blocks []domain.DocumentBlock) error {
 		title := strings.TrimSpace(d.title)
 		if title == "" {
 			title = i18n.T(s.MessageLanguage(userID), "Unbenannte Notiz")
@@ -557,18 +902,22 @@ func (s *Store) ApplyImport(userID string, plan *ImportPlan) (ImportSummary, err
 		if icon == "" {
 			icon = "🗒️"
 		}
-		blocks, files := linkImportMedia(d, plan.Media, nil)
+		blocks, files := linkImportMedia(d.dir, blocks, plan.Media)
 		doc, err := s.CreateDocument(userID, "", title, icon, d.folder, blocks, nil, false)
 		if errors.Is(err, ErrNoteTooLarge) {
 			// Said with the note's name, so the person knows which file to split
-			return plan.Summary(false), i18n.NewError("Notiz „{title}“: {reason}", "title", title, "reason", err.Error())
+			return i18n.NewError("Notiz „{title}“: {reason}", "title", title, "reason", err.Error())
 		}
 		if err != nil {
-			return plan.Summary(false), fmt.Errorf("note %q: %w", title, err)
+			return fmt.Errorf("note %q: %w", title, err)
 		}
-		if err := s.storeImportMedia(userID, doc.ID, files); err != nil {
-			return plan.Summary(false), fmt.Errorf("note %q: %w", title, err)
+		if err := s.storeImportMedia(userID, doc.ID, files, budget); err != nil {
+			return fmt.Errorf("note %q: %w", title, err)
 		}
+		return nil
+	})
+	if err != nil {
+		return plan.Summary(false), err
 	}
 	// [[Titel]] in the imported notes point at their notes by id, now that all of them exist
 	if len(plan.Docs) > 0 {
@@ -780,6 +1129,13 @@ func indentWidth(s string) int {
 // quotes become callout blocks, fenced code becomes a code block, Markdown tables become table blocks,
 // plain paragraphs become bullets.
 func MarkdownToBlocks(md string) []domain.DocumentBlock {
+	blocks, _ := markdownToBlocks(md, 0)
+	return blocks
+}
+
+// markdownToBlocks stops (ok false) as soon as there are more than limit blocks (0: no limit), so a
+// note of countless short lines never turns into countless blocks in memory.
+func markdownToBlocks(md string, limit int) (_ []domain.DocumentBlock, ok bool) {
 	lines := strings.Split(md, "\n")
 	var blocks []domain.DocumentBlock
 	base := 0          // level of content in the current heading section
@@ -805,6 +1161,9 @@ func MarkdownToBlocks(md string) []domain.DocumentBlock {
 	}
 
 	for i := 0; i < len(lines); i++ {
+		if limit > 0 && len(blocks) > limit {
+			return nil, false
+		}
 		line := lines[i]
 		trimmed := strings.TrimSpace(line)
 
@@ -959,7 +1318,7 @@ func MarkdownToBlocks(md string) []domain.DocumentBlock {
 		blocks = append(blocks, newBlock("bullet", strings.Join(para, "\n"), base))
 		indents, inList, afterParagraph = nil, false, true
 	}
-	return blocks
+	return blocks, limit <= 0 || len(blocks) <= limit
 }
 
 var (
@@ -1089,27 +1448,38 @@ var importMediaExt = map[string]bool{".png": true, ".jpg": true, ".jpeg": true, 
 // reportUnusedMedia lists files no note shows (or that are no valid image/recording) as skipped in the
 // preview and drops them from the plan.
 func (p *ImportPlan) reportUnusedMedia() {
-	if len(p.Media) == 0 {
-		return
-	}
-	used := map[string]bool{}
-	for _, d := range p.Docs {
-		linkImportMedia(d, p.Media, used)
-	}
 	for _, k := range sortedKeys(keySet(p.Media)) {
-		if used[k] {
+		if p.usedMedia[k] {
 			continue
 		}
-		if _, _, ok := DetectMedia(p.Media[k], ""); !ok {
+		if head, err := readZipHead(p.Media[k]); err != nil {
+			p.skip(k, "nicht lesbar")
+		} else if _, _, ok := DetectMedia(head, ""); !ok {
 			p.skip(k, "kein gültiges Bild bzw. keine gültige Aufnahme")
 		} else {
 			p.skip(k, "wird in keiner Notiz angezeigt")
 		}
 		delete(p.Media, k)
 	}
+	p.usedMedia = nil
 }
 
-func keySet(m map[string][]byte) map[string]bool {
+// markUsedMedia notes the files of the archive that blocks of a note show.
+func (p *ImportPlan) markUsedMedia(dir string, blocks []domain.DocumentBlock) {
+	if len(p.Media) == 0 {
+		return
+	}
+	if p.usedMedia == nil {
+		p.usedMedia = map[string]bool{}
+	}
+	for _, b := range blocks {
+		if key, _ := mediaKey(b.Content, dir, p.Media); key != "" {
+			p.usedMedia[key] = true
+		}
+	}
+}
+
+func keySet(m map[string]*zip.File) map[string]bool {
 	out := make(map[string]bool, len(m))
 	for k := range m {
 		out[k] = true
@@ -1117,11 +1487,11 @@ func keySet(m map[string][]byte) map[string]bool {
 	return out
 }
 
-func (p *ImportPlan) addMedia(name string, data []byte) {
+func (p *ImportPlan) addMedia(name string, f *zip.File) {
 	if p.Media == nil {
-		p.Media = map[string][]byte{}
+		p.Media = map[string]*zip.File{}
 	}
-	p.Media[name] = data
+	p.Media[name] = f
 }
 
 func readZipFile(f *zip.File, limit int64) ([]byte, error) {
@@ -1137,9 +1507,24 @@ func readZipFile(f *zip.File, limit int64) ([]byte, error) {
 	return data, nil
 }
 
+// readZipHead reads the start of a file, enough to recognise its format (DetectMedia).
+func readZipHead(f *zip.File) ([]byte, error) {
+	rc, err := f.Open()
+	if err != nil {
+		return nil, err
+	}
+	defer rc.Close()
+	head := make([]byte, 512)
+	n, err := io.ReadFull(rc, head)
+	if err != nil && !errors.Is(err, io.ErrUnexpectedEOF) && !errors.Is(err, io.EOF) {
+		return nil, err
+	}
+	return head[:n], nil
+}
+
 type importMediaFile struct {
 	id, kind, mime string
-	data           []byte
+	src            *zip.File // copied to the media folder when the note exists
 }
 
 var (
@@ -1148,61 +1533,71 @@ var (
 	sizeOnlyRe  = regexp.MustCompile(`^\d+(x\d+)?$`)
 )
 
-// linkImportMedia turns blocks that only show a file of the archive into image/audio blocks with new
-// file IDs: media:<id> of an own backup, Markdown images relative to the note, Obsidian ![[file]]
-// embeds (found by name anywhere in the archive). Files without such a block are not imported.
-func linkImportMedia(d importDoc, media map[string][]byte, used map[string]bool) ([]domain.DocumentBlock, []importMediaFile) {
-	if len(media) == 0 {
-		return d.blocks, nil
+// mediaKey finds the file of the archive a block shows on its own: media:<id> of an own backup, a
+// Markdown image relative to the note (dir), an Obsidian ![[file]] embed (found by name anywhere in the
+// archive). "" when the block shows none of them.
+func mediaKey(content, dir string, media map[string]*zip.File) (key, caption string) {
+	content = strings.TrimSpace(content)
+	if ref, ok := ParseMediaContent(content); ok {
+		key, caption = "media:"+ref.ID, ref.Caption
+	} else if m := mdEmbedRe.FindStringSubmatch(content); m != nil {
+		target := m[2]
+		if u, err := url.PathUnescape(target); err == nil {
+			target = u
+		}
+		key, caption = path.Clean(path.Join(dir, target)), m[1]
+	} else if m := wikiEmbedRe.FindStringSubmatch(content); m != nil {
+		name := strings.TrimSpace(m[1])
+		for k := range media {
+			if path.Base(k) == name || k == name {
+				key = k
+				break
+			}
+		}
+		if !sizeOnlyRe.MatchString(m[2]) {
+			caption = m[2]
+		}
 	}
-	blocks := make([]domain.DocumentBlock, len(d.blocks))
-	copy(blocks, d.blocks)
+	if _, ok := media[key]; key == "" || !ok {
+		return "", ""
+	}
+	return key, caption
+}
+
+// linkImportMedia turns blocks that only show a file of the archive into image/audio blocks with new
+// file IDs (drawings exported as SVG back into drawings). Files without such a block are not imported.
+// The files are copied once the note exists (storeImportMedia).
+func linkImportMedia(dir string, blocks []domain.DocumentBlock, media map[string]*zip.File) ([]domain.DocumentBlock, []importMediaFile) {
+	if len(media) == 0 {
+		return blocks, nil
+	}
 	byKey := map[string]importMediaFile{} // one copy per note, even when shown twice
 	var files []importMediaFile
 	for i, b := range blocks {
-		content := strings.TrimSpace(b.Content)
-		key, caption := "", ""
-		if ref, ok := ParseMediaContent(content); ok {
-			key, caption = "media:"+ref.ID, ref.Caption
-		} else if m := mdEmbedRe.FindStringSubmatch(content); m != nil {
-			target := m[2]
-			if u, err := url.PathUnescape(target); err == nil {
-				target = u
-			}
-			key, caption = path.Clean(path.Join(d.dir, target)), m[1]
-		} else if m := wikiEmbedRe.FindStringSubmatch(content); m != nil {
-			name := strings.TrimSpace(m[1])
-			for k := range media {
-				if path.Base(k) == name || k == name {
-					key = k
-					break
+		key, caption := mediaKey(b.Content, dir, media)
+		if key == "" {
+			continue
+		}
+		src := media[key]
+		if strings.EqualFold(path.Ext(src.Name), ".svg") {
+			if svg, err := readZipFile(src, maxImportDrawingBytes); err == nil {
+				if content, ok := drawing.FromSVG(svg); ok {
+					blocks[i].Type, blocks[i].Content = drawing.BlockType, content
+					continue
 				}
 			}
-			if !sizeOnlyRe.MatchString(m[2]) {
-				caption = m[2]
-			}
-		}
-		data, ok := media[key]
-		if key == "" || !ok {
-			continue
-		}
-		if content, ok := drawing.FromSVG(data); ok {
-			if used != nil {
-				used[key] = true
-			}
-			blocks[i].Type, blocks[i].Content = drawing.BlockType, content
-			continue
 		}
 		f, seen := byKey[key]
 		if !seen {
-			if used != nil {
-				used[key] = true
+			head, err := readZipHead(src)
+			if err != nil {
+				continue
 			}
-			mime, kind, ok := DetectMedia(data, "")
+			mime, kind, ok := DetectMedia(head, "")
 			if !ok {
 				continue
 			}
-			f = importMediaFile{id: domain.NewID("med"), kind: kind, mime: mime, data: data}
+			f = importMediaFile{id: domain.NewID("med"), kind: kind, mime: mime, src: src}
 			byKey[key] = f
 			files = append(files, f)
 		}
@@ -1212,12 +1607,12 @@ func linkImportMedia(d importDoc, media map[string][]byte, used map[string]bool)
 	return blocks, files
 }
 
-func (s *Store) storeImportMedia(userID, docID string, files []importMediaFile) error {
+func (s *Store) storeImportMedia(userID, docID string, files []importMediaFile, budget *unpackBudget) error {
 	if len(files) == 0 || s.mediaRoot == "" {
 		return nil
 	}
 	for _, f := range files {
-		m, err := s.createMediaWithID(f.id, docID, userID, f.kind, f.mime, int64(len(f.data)), "")
+		m, err := s.createMediaWithID(f.id, docID, userID, f.kind, f.mime, int64(f.src.UncompressedSize64), "")
 		if err != nil {
 			return err
 		}
@@ -1225,9 +1620,35 @@ func (s *Store) storeImportMedia(userID, docID string, files []importMediaFile) 
 		if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
 			return err
 		}
-		if err := os.WriteFile(dst, f.data, 0o644); err != nil {
+		if err := copyZipFile(f.src, dst, budget); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+// copyZipFile unpacks a file of the archive straight to dst (max. maxImportMediaBytes).
+func copyZipFile(f *zip.File, dst string, budget *unpackBudget) error {
+	rc, err := f.Open()
+	if err != nil {
+		return err
+	}
+	defer rc.Close()
+	out, err := os.OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o644)
+	if err != nil {
+		return err
+	}
+	n, err := io.Copy(out, io.LimitReader(rc, min(maxImportMediaBytes, budget.left)+1))
+	if cerr := out.Close(); err == nil {
+		err = cerr
+	}
+	if budget.left -= n; budget.left < 0 {
+		err = errUnpackedTooLarge
+	} else if err == nil && n > maxImportMediaBytes {
+		err = errors.New("media file too large")
+	}
+	if err != nil {
+		_ = os.Remove(dst)
+	}
+	return err
 }

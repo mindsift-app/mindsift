@@ -99,7 +99,7 @@ func TestBackupZipCarriesMedia(t *testing.T) {
 		t.Fatalf("backup ZIP must hold the note as Markdown: %v", names)
 	}
 
-	plan, err := PlanMindSiftImport(buf.Bytes(), "backup.zip")
+	plan, err := PlanMindSiftImport(bytes.NewReader(buf.Bytes()), int64(buf.Len()), "backup.zip")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -131,7 +131,7 @@ func TestOldBackupZipMediaStillRestores(t *testing.T) {
 	}
 	_ = zw.Close()
 
-	plan, err := PlanMindSiftImport(buf.Bytes(), "backup.zip")
+	plan, err := PlanMindSiftImport(bytes.NewReader(buf.Bytes()), int64(buf.Len()), "backup.zip")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -174,7 +174,7 @@ func TestMarkdownVaultCarriesMedia(t *testing.T) {
 		t.Fatalf("vault: attachment %v, note:\n%s", hasFile, note)
 	}
 
-	plan, err := PlanMindSiftImport(buf.Bytes(), "vault.zip")
+	plan, err := PlanMindSiftImport(bytes.NewReader(buf.Bytes()), int64(buf.Len()), "vault.zip")
 	if err != nil {
 		t.Fatal(err)
 	}
