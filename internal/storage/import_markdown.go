@@ -29,8 +29,8 @@ import (
 // for the plan, again when it is applied), so an import never holds the whole archive unpacked.
 const (
 	MaxImportUploadBytes = 100 << 20 // uploaded file
-	// One note: 20,000 bullets (collab.MaxNoteBlocks) of 100 bytes each; a real note is far smaller
-	maxImportNoteBytes     = 2 << 20
+	// One note (read one at a time, so this bounds the memory of a single note)
+	maxImportNoteBytes     = 10 << 20
 	maxImportUnpackedBytes = 500 << 20 // all notes and files together
 	maxImportFiles         = 20000
 	maxImportMediaBytes    = 100 << 20 // one image or recording
@@ -214,7 +214,7 @@ func readZipNotes(r io.ReaderAt, size int64, plan *ImportPlan) ([]zipNote, []str
 			continue
 		}
 		if f.UncompressedSize64 > maxImportNoteBytes {
-			plan.skip(name, "zu groß (max. 2 MB pro Notiz)")
+			plan.skip(name, "zu groß (max. 10 MB pro Notiz)")
 			continue
 		}
 		if packedTooWell(f) {
@@ -261,7 +261,7 @@ func readNote(f *zip.File, budget *unpackBudget) (text, reason string, err error
 		return "", "nicht lesbar", nil
 	}
 	if n > maxImportNoteBytes {
-		return "", "zu groß (max. 2 MB pro Notiz)", nil
+		return "", "zu groß (max. 10 MB pro Notiz)", nil
 	}
 	text = sb.String()
 	if !utf8.ValidString(text) {

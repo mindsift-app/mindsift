@@ -440,7 +440,7 @@ var messagesES = map[string]string{
 	"Wartet auf andere":              "Esperando a otros",
 	"Erledigt":                       "Hecho",
 	"zu groß (max. 100 MB pro Bild oder Aufnahme)": "demasiado grande (máx. 100 MB por imagen o grabación)",
-	"zu groß (max. 2 MB pro Notiz)":                "demasiado grande (máx. 2 MB por nota)",
+	"zu groß (max. 10 MB pro Notiz)":                "demasiado grande (máx. 10 MB por nota)",
 	"Zusammengeführte Notiz":                       "Nota fusionada",
 	"Aufgaben":                                     "Tareas",
 	"Listen":                                       "Listas",

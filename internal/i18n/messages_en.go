@@ -440,7 +440,7 @@ var messagesEN = map[string]string{
 	"Wartet auf andere":              "Waiting for others",
 	"Erledigt":                       "Done",
 	"zu groß (max. 100 MB pro Bild oder Aufnahme)": "too large (max. 100 MB per image or recording)",
-	"zu groß (max. 2 MB pro Notiz)":                "too large (max. 2 MB per note)",
+	"zu groß (max. 10 MB pro Notiz)":                "too large (max. 10 MB per note)",
 	"Zusammengeführte Notiz":                       "Merged note",
 	"Aufgaben":                                     "Tasks",
 	"Listen":                                       "Lists",

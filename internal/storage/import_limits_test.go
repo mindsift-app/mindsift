@@ -42,7 +42,7 @@ func TestImportSkipsOversizedNote(t *testing.T) {
 		t.Fatalf("plan: %v", err)
 	}
 	sum := plan.Summary(false)
-	if sum.Notes != 1 || skippedFor(sum, "Gross.md") != "zu groß (max. 2 MB pro Notiz)" {
+	if sum.Notes != 1 || skippedFor(sum, "Gross.md") != "zu groß (max. 10 MB pro Notiz)" {
 		t.Fatalf("the oversized note should be skipped with its reason: %+v", sum)
 	}
 }
