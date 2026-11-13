@@ -68,7 +68,7 @@ interface NavRailProps {
   handleOpenHelp: () => void;
   user: User;
   connection: ConnectionState;
-  dropdownRef: React.RefObject<HTMLDivElement | null>;
+  dropdownRef: React.RefObject<HTMLDivElement>;
   showProfileMenu: boolean;
   setShowProfileMenu: React.Dispatch<React.SetStateAction<boolean>>;
   // ProfileDropdown, opened to the right of the avatar

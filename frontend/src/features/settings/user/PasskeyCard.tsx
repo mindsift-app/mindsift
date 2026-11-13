@@ -364,7 +364,7 @@ export function PasskeyCard({
           )}
 
           {flow.step === 'codes' && (
-            <RecoveryCodesPanel codes={flow.codes} account={currentUser.email || currentUser.username} onDone={() => reset()} />
+            <RecoveryCodesPanel codes={flow.codes} account={currentUser.email || currentUser.username || ''} onDone={() => reset()} />
           )}
         </>
       )}

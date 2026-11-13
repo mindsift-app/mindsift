@@ -90,7 +90,7 @@ function joinRecords(records: Array<StoredDocState | QueueRecord>): StoredDocSta
 export class MemoryStorage implements SyncStorage {
   private data = new Map<string, StoredDocState>();
   private queues = new Map<string, StoredQueue>();
-  async load(docId: string) {
+  async load(docId: string): Promise<StoredDocState | null> {
     const s = this.data.get(docId);
     return s ? JSON.parse(JSON.stringify(withQueue(s, this.queues.get(docId)))) : null;
   }
