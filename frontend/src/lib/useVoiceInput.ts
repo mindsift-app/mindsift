@@ -348,6 +348,7 @@ export function useVoiceInput({ onText, onError, continuous = false, live = fals
     if (current === 'server') await startServer();
     else if (current === 'browser') startBrowser();
     else fail(current === 'off' ? i18n.t('common:voice.off') : i18n.t('common:voice.unsupported'));
+    // startServer, startBrowser and fail are new on every render; they read only refs and the options listed
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, continuous, live, chunkServer]);
 

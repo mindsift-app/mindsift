@@ -355,6 +355,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
   const noteFull = engineState?.noteFull ?? 0;
   useEffect(() => {
     if (noteFull > 0) showNotice(t('editor.noteFull', { max: formatNumber(MAX_NOTE_BLOCKS) }));
+    // Only a new refusal shows the notice; a language switch (t) or a new showNotice must not repeat it
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [noteFull]);
 

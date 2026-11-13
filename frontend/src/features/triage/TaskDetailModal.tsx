@@ -173,6 +173,7 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
     setNotesDraft(task.notes || '');
     setIsEditingTitle(editTitleOnOpen);
     setIsEditingNotes(false);
+    // task.content and task.notes are left out on purpose: an edit of the same task keeps the open drafts
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [task.id, editTitleOnOpen]);
   useEffect(() => {
