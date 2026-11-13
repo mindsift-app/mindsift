@@ -19,6 +19,8 @@ Versions without a git tag were development states and were never published as a
 - **Prometheus metrics:** with `METRICS_TOKEN` set, `/metrics` serves API requests and their duration by route, mails sent and failed, backup runs and the last good one, accounts and active accounts, the database's connections and size, memory and goroutines (scraped with the token as bearer). Without the variable nothing changes. `/api/v1/health?db=1` also checks the database and answers `503` when it does not respond.
 - New settings section **Security** with the password change, two-factor sign-in and the signed-in devices (moved there from Profile).
 - `THIRD_PARTY_LICENSES.txt` with the licenses of the npm packages and Go modules built into MindSift, generated at build time: in the image under `/app/` and in the release archives next to the binary.
+- **Backup before database updates:** before an update changes the database schema, MindSift saves a compressed copy of the database in `data/backups/system/pre-migration-….db.gz` and logs where; the last three are kept. If the copy cannot be written (a full disk, for example), the database is left as it is and MindSift does not start, saying why.
+- **Way back after an update:** an older version started on a database a newer one has already changed no longer runs on it silently: it refuses to start and logs both versions' migration numbers and how to go back (restore the pre-migration copy and start the older image, or run the newer image again). The README explains it under "Rolling back".
 
 ### Fixed
 - Zooming into a bullet whose level was never stored shows its path and sub-bullets again, and the recovery-code file of an account without email or username no longer names it "undefined".
