@@ -18,7 +18,8 @@ cd "$ROOT"
 STATICCHECK="honnef.co/go/tools/cmd/staticcheck@2026.2.2"
 # golangci-lint runs from its own image, pinned like the other images here
 GOLANGCI_LINT_IMAGE="docker.io/golangci/golangci-lint:v2.15.0-alpine"
-NODE_IMAGE="docker.io/library/node:22-alpine"
+# Same Node as the Dockerfile
+NODE_IMAGE="docker.io/library/node:26.13.0-alpine"
 
 # Named volumes keep npm and Go downloads between runs. npm ci as in the Dockerfile: exactly the versions of
 # package-lock.json, and a lockfile that does not match package.json fails here as it would in the build.

@@ -5,7 +5,9 @@
 # ==============================================================================
 # Stage 1: Frontend Check & Build (Cached npm dependencies layer)
 # ==============================================================================
-FROM --platform=$BUILDPLATFORM node:22-alpine AS frontend-builder
+# Node: the active LTS line, pinned to a release that was out for two weeks when it was chosen. It only
+# builds the frontend; nothing of it ends up in the image.
+FROM --platform=$BUILDPLATFORM node:26.13.0-alpine AS frontend-builder
 WORKDIR /app/frontend
 COPY frontend/package*.json ./
 # npm ci installs exactly what package-lock.json lists and stops when it does not match package.json
