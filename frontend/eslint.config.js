@@ -31,8 +31,8 @@ export default tseslint.config(
     plugins: { 'react-hooks': reactHooks },
     rules: {
       ...reactHooks.configs.recommended.rules,
-      // Error payloads and browser APIs without types are handled as any on purpose
-      '@typescript-eslint/no-explicit-any': 'off',
+      // Caught errors are unknown (errorMessage reads them), browser APIs without types get a small interface
+      '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrors: 'none' }],
       'no-empty': ['error', { allowEmptyCatch: true }],
       'no-restricted-imports': [
@@ -47,13 +47,6 @@ export default tseslint.config(
           ],
         },
       ],
-    },
-  },
-  // No any where it is already gone; the rule grows folder by folder until it holds everywhere
-  {
-    files: ['src/lib/api/**/*.{ts,tsx}'],
-    rules: {
-      '@typescript-eslint/no-explicit-any': 'error',
     },
   },
   // Texts shown to people come from the language files (src/locales); no new fixed text in JSX

@@ -136,7 +136,7 @@ describe('Live drawing: merging by version', () => {
     const saved = serializeDrawing(finalDrawing({ v: 1, els: [], grid: true }, els, ['b', 'a']));
     expect(saved).not.toContain('nonce');
     expect(saved).not.toContain('deleted');
-    expect(JSON.parse(saved).els.map((e: any) => [e.id, e.ver])).toEqual([
+    expect(JSON.parse(saved).els.map((e: { id: string; ver: number }) => [e.id, e.ver])).toEqual([
       ['b', 2],
       ['a', 5],
     ]);

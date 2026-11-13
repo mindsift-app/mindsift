@@ -5,7 +5,7 @@ const bytes = (b: ArrayBuffer) => Array.from(new Uint8Array(b));
 
 describe('webauthn: base64url and the options of the server', () => {
   afterEach(() => {
-    delete (window as any).PublicKeyCredential;
+    Reflect.deleteProperty(window, 'PublicKeyCredential');
   });
 
   it('converts base64url both ways, without padding', () => {
@@ -17,7 +17,7 @@ describe('webauthn: base64url and the options of the server', () => {
   });
 
   it('turns the JSON options into what navigator.credentials expects', () => {
-    (window as any).PublicKeyCredential = function () {};
+    Object.assign(window, { PublicKeyCredential: function () {} });
     const get = requestOptions({
       challenge: 'AQID',
       rpId: 'notizen.example.org',
@@ -41,7 +41,7 @@ describe('webauthn: base64url and the options of the server', () => {
 
   it('uses the browser’s own parser when there is one', () => {
     const parsed = { challenge: new ArrayBuffer(1) };
-    (window as any).PublicKeyCredential = { parseRequestOptionsFromJSON: () => parsed };
+    Object.assign(window, { PublicKeyCredential: { parseRequestOptionsFromJSON: () => parsed } });
     expect(requestOptions({ challenge: 'AA' })).toBe(parsed);
   });
 

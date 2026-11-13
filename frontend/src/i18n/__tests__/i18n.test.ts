@@ -17,7 +17,7 @@ function keysOf(obj: unknown, prefix = ''): string[] {
 // Plural forms differ by language (key_one, key_other, key_few …); keys are compared without them
 const PLURAL = /_(zero|one|two|few|many|other)$/;
 const baseKey = (k: string) => k.replace(PLURAL, '');
-const get = (obj: unknown, path: string) => path.split('.').reduce((o: any, k) => o?.[k], obj);
+const get = (obj: unknown, path: string) => path.split('.').reduce<unknown>((o, k) => (o as Record<string, unknown> | undefined)?.[k], obj);
 // Placeholders of a key over all its plural forms
 function placeholdersByBase(texts: unknown): Map<string, Set<string>> {
   const out = new Map<string, Set<string>>();

@@ -13,8 +13,8 @@ class FakeSpeechRecognition {
   stopped = false;
   aborted = false;
 
-  onresult: ((event: any) => void) | null = null;
-  onerror: ((event: any) => void) | null = null;
+  onresult: ((event: { results: { transcript: string }[][] }) => void) | null = null;
+  onerror: ((event: { error: string }) => void) | null = null;
   onend: (() => void) | null = null;
 
   constructor() {
@@ -50,14 +50,14 @@ describe('HoldToRecordFab', () => {
   beforeEach(() => {
     vi.useFakeTimers();
     FakeSpeechRecognition.instances = [];
-    (window as any).SpeechRecognition = FakeSpeechRecognition;
-    delete (window as any).webkitSpeechRecognition;
+    Object.assign(window, { SpeechRecognition: FakeSpeechRecognition });
+    Reflect.deleteProperty(window, 'webkitSpeechRecognition');
   });
 
   afterEach(() => {
     vi.useRealTimers();
-    delete (window as any).SpeechRecognition;
-    delete (window as any).webkitSpeechRecognition;
+    Reflect.deleteProperty(window, 'SpeechRecognition');
+    Reflect.deleteProperty(window, 'webkitSpeechRecognition');
   });
 
   it('calls onTap on a short tap (< 350 ms)', () => {
@@ -238,8 +238,8 @@ describe('HoldToRecordFab', () => {
   });
 
   it('falls back to onTap and shows a status message when SpeechRecognition is unsupported', () => {
-    delete (window as any).SpeechRecognition;
-    delete (window as any).webkitSpeechRecognition;
+    Reflect.deleteProperty(window, 'SpeechRecognition');
+    Reflect.deleteProperty(window, 'webkitSpeechRecognition');
 
     const onTap = vi.fn();
     const onTranscript = vi.fn();
