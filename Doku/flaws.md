@@ -77,7 +77,6 @@ FLAW-31 and FLAW-34 are resolved in part (0.6.0) and stay in the overview above.
 - **Email to Inbox:** A dedicated personal email address whose incoming emails become inbox thoughts.
 
 ### Tasks & Reminders
-- **Per-User Timezone** instead of a single server-wide timezone.
 - **iCal Subscription or CalDAV** for due tasks (e.g. in Google/Apple Calendar); the calendar view inside MindSift exists.
 - **Flexible Recurrence:** "every 2nd Tuesday", "on the last business day", "3 days after completion".
 

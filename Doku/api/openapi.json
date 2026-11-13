@@ -411,7 +411,7 @@
     "/api/v1/admin/settings": {
       "get": {
         "summary": "Server settings",
-        "description": "instanceName, allowRegistration, sharingMode (private/organizations/open), peopleSearch, publicLinks, publicLinkMaxDays (1–14), pushKnownServicesOnly (web push only via the push services of Google, Mozilla, Apple and Microsoft; default false), SMTP fields; changing mode cleans up shares. Values fixed by the environment come with …ConfiguredViaEnv and are not changed by PUT. smtpPass is never returned (smtpPassSet indicates whether one is stored); empty = unchanged",
+        "description": "instanceName, allowRegistration, sharingMode (private/organizations/open), peopleSearch, publicLinks, publicLinkMaxDays (1–14), pushKnownServicesOnly (web push only via the push services of Google, Mozilla, Apple and Microsoft; default false), SMTP fields, timeZone (the server's time zone as an IANA name; \"\" = not set, then TZ, else UTC; 400 for an unknown name; in effect at once); changing mode cleans up shares. Values fixed by the environment come with …ConfiguredViaEnv and are not changed by PUT. smtpPass is never returned (smtpPassSet indicates whether one is stored); empty = unchanged. Read only: serverTime (zone in effect, source setting/env/default, now in RFC 3339 with the offset, fallback: the zone without the setting)",
         "tags": [
           "Administration"
         ],
@@ -423,7 +423,7 @@
       },
       "put": {
         "summary": "Change server settings",
-        "description": "instanceName, allowRegistration, sharingMode (private/organizations/open), peopleSearch, publicLinks, publicLinkMaxDays (1–14), pushKnownServicesOnly (web push only via the push services of Google, Mozilla, Apple and Microsoft; default false), SMTP fields; changing mode cleans up shares. Values fixed by the environment come with …ConfiguredViaEnv and are not changed by PUT. smtpPass is never returned (smtpPassSet indicates whether one is stored); empty = unchanged",
+        "description": "instanceName, allowRegistration, sharingMode (private/organizations/open), peopleSearch, publicLinks, publicLinkMaxDays (1–14), pushKnownServicesOnly (web push only via the push services of Google, Mozilla, Apple and Microsoft; default false), SMTP fields, timeZone (the server's time zone as an IANA name; \"\" = not set, then TZ, else UTC; left out = unchanged; 400 for an unknown name; in effect at once); changing mode cleans up shares. Values fixed by the environment come with …ConfiguredViaEnv and are not changed by PUT. smtpPass is never returned (smtpPassSet indicates whether one is stored); empty = unchanged",
         "tags": [
           "Administration"
         ],

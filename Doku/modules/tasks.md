@@ -42,7 +42,7 @@ A task is a `thought` ([database.md](../database.md)) with `kanbanStatus`, `prio
 
 ## Alarms
 
-The ticker runs every minute ([architecture.md](../architecture.md)). For open tasks with `alarm_sent = 0`, it sends notifications as soon as the alarm time is reached (due time, all-day 9:00 AM, in each case minus `notifyBeforeMinutes`, timezone `TZ`), targeting the channels of the task **owner**:
+The ticker runs every minute ([architecture.md](../architecture.md)). For open tasks with `alarm_sent = 0`, it sends notifications as soon as the alarm time is reached (due time, all-day 9:00 AM, in each case minus `notifyBeforeMinutes`, in the server's time zone), targeting the channels of the task **owner**:
 
 | Channel | Target | Configuration |
 |---|---|---|
