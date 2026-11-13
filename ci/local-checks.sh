@@ -41,12 +41,25 @@ frontend() {
         [ "$kb" -le "$max" ] || { echo "bundle: $name is larger than $max kB, see MAX_START_KB/MAX_APP_KB in ci/local-checks.sh"; exit 1; }
       done'
 }
+# Tests of calendar days, due dates, alarms, summaries and backups, run once more in a zone far from UTC
+# (the container itself runs on UTC): code that takes time.Now() where the server's zone is meant fails
+# there. All of internal/clock and internal/domain, and these tests of internal/api and internal/storage
+# (one group: go test -run splits a pattern at a top-level | and (?i) would cover only the first part).
+TZ_RUN_ZONE="Asia/Tokyo"
+TZ_RUN_TESTS='(?i)(time|zone|alarm|due|digest|summar|backup|today|clock|day|date|greet|remind|sched|calendar|week|journal|repeat|recur|midnight|overdue|deadline|retention|expir|trash|hour|month|filter|center|completed|done|notif)'
+
 # The Go packages of the image build (cmd/ and internal/), not ./...: that would also walk frontend/node_modules,
-# which has Go files of its own and is deleted and rebuilt by npm ci in the frontend part at the same time
+# which has Go files of its own and is deleted and rebuilt by npm ci in the frontend part at the same time.
+# The time zone run: -count=1, since the test cache does not notice a change of TZ and would only replay the
+# results of the first run (code that reads TZ through the time package is not tracked). ZONEINFO names Go's
+# own zone data, as the Alpine image has no /usr/share/zoneinfo; clock's TestProcessRunsInTZ fails when the
+# zone is not in effect.
 backend() {
   "$ENGINE" run --rm -v "$ROOT":/src:z -v mindsift-go-cache:/go/pkg/mod -v mindsift-go-build:/root/.cache/go-build -w /src \
-    -e DB_MAX_CONNS=1 -e CGO_ENABLED=0 "$GO_IMAGE" \
-    sh -c 'test -z "$(gofmt -l internal cmd)" || { echo "gofmt:"; gofmt -l internal cmd; exit 1; }; go vet ./cmd/... ./internal/... && go test -timeout 5m ./cmd/... ./internal/...'
+    -e DB_MAX_CONNS=1 -e CGO_ENABLED=0 -e TZ_RUN_ZONE="$TZ_RUN_ZONE" -e TZ_RUN_TESTS="$TZ_RUN_TESTS" "$GO_IMAGE" \
+    sh -c 'test -z "$(gofmt -l internal cmd)" || { echo "gofmt:"; gofmt -l internal cmd; exit 1; }; go vet ./cmd/... ./internal/... && go test -timeout 5m ./cmd/... ./internal/... &&
+      echo "time zone run: TZ=$TZ_RUN_ZONE" && export TZ="$TZ_RUN_ZONE" ZONEINFO="$(go env GOROOT)/lib/time/zoneinfo.zip" &&
+      go test -count=1 ./internal/clock/ ./internal/domain/ && go test -count=1 -timeout 5m -run "$TZ_RUN_TESTS" ./internal/api/ ./internal/storage/'
 }
 # The standard linters of golangci-lint (.golangci.yml, staticcheck included) over the same packages, read-only
 lint() {
