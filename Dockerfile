@@ -5,9 +5,9 @@
 # ==============================================================================
 # Stage 1: Frontend Check & Build (Cached npm dependencies layer)
 # ==============================================================================
-# Node: the active LTS line, pinned to a release that was out for two weeks when it was chosen. It only
-# builds the frontend; nothing of it ends up in the image.
-FROM --platform=$BUILDPLATFORM node:26.13.0-alpine AS frontend-builder
+# Node: the active LTS line, pinned to a release that was out for two weeks when it was chosen, or to a
+# security release (26.13.1). It only builds the frontend; nothing of it ends up in the image.
+FROM --platform=$BUILDPLATFORM node:26.13.1-alpine AS frontend-builder
 WORKDIR /app/frontend
 COPY frontend/package*.json ./
 # npm ci installs exactly what package-lock.json lists and stops when it does not match package.json
@@ -29,7 +29,8 @@ RUN node /app/ci/third-party-licenses-npm.mjs . > /app/third-party-npm.txt
 # ==============================================================================
 # Stage 2: Go Backend Lint, Unit Tests & Binary Build (Cached Go module & sqlite layer)
 # ==============================================================================
-FROM --platform=$BUILDPLATFORM golang:1.27-alpine AS backend-builder
+# Go: pinned like Node (1.27.4 is a security release); ci/local-checks.sh uses the same image
+FROM --platform=$BUILDPLATFORM golang:1.27.4-alpine AS backend-builder
 WORKDIR /app
 RUN apk add --no-cache git ca-certificates
 
