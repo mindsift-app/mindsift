@@ -27,7 +27,7 @@ export function useBlockEditing({
   childBlocks: DocumentBlock[];
   scrollRef: React.RefObject<HTMLDivElement | null>;
   outlinerTreeRef: React.RefObject<OutlinerTreeHandle | null>;
-  currentBlocksRef: React.MutableRefObject<DocumentBlock[]>;
+  currentBlocksRef: React.RefObject<DocumentBlock[]>;
   applyLocalBlocks: (update: DocumentBlock[] | ((prev: DocumentBlock[]) => DocumentBlock[])) => void;
 }) {
   // "Expand / collapse all bullets" (note menu, Ctrl+Shift+ArrowDown / ArrowUp) in what is shown, i.e. only

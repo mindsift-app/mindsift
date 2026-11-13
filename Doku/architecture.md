@@ -22,7 +22,7 @@ The frontend is embedded into the binary via `go:embed` ([cmd/server/main.go](..
 |---|---|
 | Backend | Go 1.27, `go-chi/chi` v5, `go-chi/cors`, `gorilla/websocket`, `golang-jwt/jwt` v5, `SherClockHolmes/webpush-go`, `coreos/go-oidc` v3 and `x/oauth2` (OIDC sign-in), `go-webauthn/webauthn` (passkeys), `x/crypto/bcrypt`, `x/net/html` |
 | Database | SQLite via `modernc.org/sqlite` (pure Go, no CGO), WAL, `foreign_keys=ON` |
-| Frontend | React 18, TypeScript, Vite 8, Tailwind 3, framer-motion (triage cards), lucide-react, prismjs (code blocks) |
+| Frontend | React 19, TypeScript, Vite 8, Tailwind 3, framer-motion (triage cards), lucide-react, prismjs (code blocks) |
 | Delivery | Multi-stage Dockerfile (Node 26 → Go 1.27 → Alpine 3.24), image `ghcr.io/mindsift-app/mindsift` |
 
 ## Design Decisions

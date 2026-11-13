@@ -372,7 +372,7 @@ e2e/run.sh                         # browser tests (Playwright) against a fresh 
 e2e/screenshots.sh                 # recreate the screenshots in this README
 ```
 
-The multi-stage `Dockerfile` builds the frontend, embeds it into the Go binary and runs all checks. **Stack:** Go (chi, gorilla/websocket, modernc SQLite) · React 18, TypeScript, Vite, Tailwind.
+The multi-stage `Dockerfile` builds the frontend, embeds it into the Go binary and runs all checks. **Stack:** Go (chi, gorilla/websocket, modernc SQLite) · React 19, TypeScript, Vite, Tailwind.
 
 Technical documentation: [Doku/](Doku/README.md) (architecture, database, REST and realtime API, collaboration, permissions, themes). Known weak spots: [Doku/flaws.md](Doku/flaws.md). Want to help? Read [CONTRIBUTING.md](CONTRIBUTING.md) first.
 

@@ -7,7 +7,7 @@ import { countHashtags } from './workspaceListing';
 interface UseWorkspaceDataOptions {
   currentUser?: User | null;
   setSelectedDocId: React.Dispatch<React.SetStateAction<string | null>>;
-  autoSelectedDocRef: React.MutableRefObject<boolean>;
+  autoSelectedDocRef: React.RefObject<boolean>;
   reloadTrash: () => void;
 }
 
