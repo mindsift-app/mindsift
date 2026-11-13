@@ -117,6 +117,16 @@ describe('TaskDetailModal', () => {
     expect(screen.getByRole('button', { name: 'Beobachten' })).toBeTruthy();
   });
 
+  it('hands the new watch state to the parent instead of changing the task it was given', async () => {
+    vi.spyOn(api, 'watchTask').mockResolvedValue({ watching: true });
+    const onTaskChange = vi.fn();
+    const given = { ...task, isWatching: false };
+    render(<TaskDetailModal {...props({ task: given, onTaskChange })} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Beobachten' }));
+    await waitFor(() => expect(onTaskChange).toHaveBeenCalledWith('th_1', { isWatching: true }));
+    expect(given.isWatching).toBe(false);
+  });
+
   it('keeps the notes being typed when the task is followed meanwhile', async () => {
     vi.spyOn(api, 'watchTask').mockResolvedValue({ watching: true });
     render(<TaskDetailModal {...props({ task: { ...task, isWatching: false } })} />);
