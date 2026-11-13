@@ -6,7 +6,7 @@
 // With a Whisper server everyone may pick the browser instead (account setting), unless the server
 // forbids it (STT_ALLOW_BROWSER=false).
 import { api } from './api';
-import type { VoiceMode } from './types';
+import type { AuthStatus, VoiceMode } from './types';
 import { voiceLanguageTag } from './voiceLanguages';
 
 export type EffectiveVoiceMode = VoiceMode | 'unsupported';
@@ -95,22 +95,29 @@ export function effectiveMode(mode: VoiceMode | undefined): EffectiveVoiceMode {
   return browserRecognition() ? 'browser' : 'unsupported';
 }
 
+function configFrom(status: Promise<AuthStatus>): Promise<VoiceConfig> {
+  return status
+    .then((st) => {
+      serverMode = st.voice?.mode;
+      browserAllowed = st.voice?.browserAllowed !== false;
+      loadedConfig = { mode: effectiveMode(applyPreference(serverMode)), maxSeconds: st.voice?.maxSeconds || 600 };
+      return loadedConfig;
+    })
+    .catch(() => {
+      configPromise = null; // offline at start: ask again next time
+      return { mode: effectiveMode('browser'), maxSeconds: 600 };
+    });
+}
+
+/** The server status the app asks for at start (app/useSessionBootstrap.ts): the setting comes from that answer
+ *  instead of a request of its own. */
+export function voiceConfigFromStatus(status: Promise<AuthStatus>): void {
+  if (!configPromise) configPromise = configFrom(status);
+}
+
 /** Loaded once per page; the setting only changes with a server restart. */
 export function loadVoiceConfig(): Promise<VoiceConfig> {
-  if (!configPromise) {
-    configPromise = api
-      .getAuthStatus()
-      .then((st) => {
-        serverMode = st.voice?.mode;
-        browserAllowed = st.voice?.browserAllowed !== false;
-        loadedConfig = { mode: effectiveMode(applyPreference(serverMode)), maxSeconds: st.voice?.maxSeconds || 600 };
-        return loadedConfig;
-      })
-      .catch(() => {
-        configPromise = null; // offline at start: ask again next time
-        return { mode: effectiveMode('browser'), maxSeconds: 600 };
-      });
-  }
+  if (!configPromise) configPromise = configFrom(api.getAuthStatus());
   return configPromise;
 }
 
