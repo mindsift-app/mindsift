@@ -1,6 +1,6 @@
 # MindSift Technical Documentation
 
-Reference for developers and administrators. All information describes the code in the `dev` branch. Please report discrepancies between the documentation and code as a [GitHub issue](https://github.com/mindsift-app/mindsift/issues); known weak spots are in [flaws.md](flaws.md).
+Reference for developers and administrators. It describes the current development state (branch `dev`); released versions are on `main`, and the [changelog](../CHANGELOG.md) says what changed since the last release. Please report discrepancies between the documentation and code as a [GitHub issue](https://github.com/mindsift-app/mindsift/issues); known weak spots are in [flaws.md](flaws.md).
 
 ## Contents
 
