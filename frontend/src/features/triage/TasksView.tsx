@@ -114,7 +114,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
       : DEFAULT_GROUP_LIST
   );
   const [filter, setFilter] = useState<TaskFilter>('open');
-  const [tasks, setTasks] = useState<Thought[]>([]);
+  const [tasks, setTasksState] = useState<Thought[]>([]);
   const [taskLists, setTaskLists] = useState<TaskList[]>([]);
   const [selectedListId, setSelectedListIdState] = useState<string>(
     () => {
@@ -177,6 +177,17 @@ export const TasksView: React.FC<TasksViewProps> = ({
   const [detailTaskId, setDetailTaskId] = useState<string | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [extraTask, setExtraTask] = useState<Thought | null>(null);
+  // Every change to the tasks also reaches a task opened from outside the shown list (a link, the
+  // search): it is not in `tasks`, so the detail dialog kept showing the old values of priority, status,
+  // title … although the server had them (bug of 2026-11-13).
+  const setTasks = useCallback<React.Dispatch<React.SetStateAction<Thought[]>>>((update) => {
+    setTasksState(update);
+    setExtraTask((prev) => {
+      if (!prev) return prev;
+      const next = typeof update === 'function' ? update([prev]) : update;
+      return next.find((t) => t.id === prev.id) ?? prev;
+    });
+  }, []);
 
   const onInitialTaskShownRef = useLatestRef(onInitialTaskShown);
   useEffect(() => {
@@ -288,7 +299,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
     setLoading(!known);
     loadedListRef.current = known ? id : null;
     setSelectedListIdState(id);
-  }, [selectedListIdRef]);
+  }, [selectedListIdRef, setTasks]);
 
   // Switching task lists is a step of the browser history (lib/navHistory.ts)
   useEffect(() => reportNav({ taskList: selectedListId }), [selectedListId]);
