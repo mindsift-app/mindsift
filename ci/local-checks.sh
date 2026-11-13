@@ -16,8 +16,9 @@ cd "$ROOT"
 
 # golangci-lint runs from its own image, pinned like the other images here
 GOLANGCI_LINT_IMAGE="docker.io/golangci/golangci-lint:v2.15.0-alpine"
-# Same Node as the Dockerfile
-NODE_IMAGE="docker.io/library/node:26.13.0-alpine"
+# Same Node and Go as the Dockerfile
+NODE_IMAGE="docker.io/library/node:26.13.1-alpine"
+GO_IMAGE="docker.io/library/golang:1.27.4-alpine"
 
 # Upper bounds for the compressed size (gzip, kB) of the start chunk (index-*.js: shell and sign-in pages) and of
 # the app chunk (mainViews-*.js), a little above the build of 2026-11 (about 170 and 240 kB; the texts of every
@@ -44,7 +45,7 @@ frontend() {
 # which has Go files of its own and is deleted and rebuilt by npm ci in the frontend part at the same time
 backend() {
   "$ENGINE" run --rm -v "$ROOT":/src:z -v mindsift-go-cache:/go/pkg/mod -v mindsift-go-build:/root/.cache/go-build -w /src \
-    -e DB_MAX_CONNS=1 -e CGO_ENABLED=0 docker.io/library/golang:1.27-alpine \
+    -e DB_MAX_CONNS=1 -e CGO_ENABLED=0 "$GO_IMAGE" \
     sh -c 'test -z "$(gofmt -l internal cmd)" || { echo "gofmt:"; gofmt -l internal cmd; exit 1; }; go vet ./cmd/... ./internal/... && go test -timeout 5m ./cmd/... ./internal/...'
 }
 # The standard linters of golangci-lint (.golangci.yml, staticcheck included) over the same packages, read-only
