@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Loader2, RotateCcw, Trash2 } from 'lucide-react';
+import { LoaderCircle, RotateCcw, Trash } from 'lucide-react';
 import { api, triggerHaptic } from '../../lib/api';
 import { formatDeletedAt } from '../../lib/due';
 import type { Thought } from '../../lib/types';
@@ -53,7 +53,7 @@ export const TriageTrash: React.FC<TriageTrashProps> = ({ onClose, onChanged }) 
     <ReadingModal title={t('trashTitle')} onClose={onClose}>
       {items === null ? (
         <div className="py-6 flex justify-center text-muted">
-          <Loader2 className="w-5 h-5 animate-spin" />
+          <LoaderCircle className="w-5 h-5 animate-spin" />
         </div>
       ) : items.length === 0 ? (
         <p className="py-6 text-center text-muted">{t('trash.none')}</p>
@@ -77,7 +77,7 @@ export const TriageTrash: React.FC<TriageTrashProps> = ({ onClose, onChanged }) 
                     title={confirmId === item.id ? t('trash.confirmDelete') : t('trash.delete')}
                     aria-label={t('trash.delete')}
                   >
-                    {confirmId === item.id ? <span className="text-[11px] font-semibold px-1">{t('trash.really')}</span> : <Trash2 className="w-3.5 h-3.5" />}
+                    {confirmId === item.id ? <span className="text-[11px] font-semibold px-1">{t('trash.really')}</span> : <Trash className="w-3.5 h-3.5" />}
                   </button>
                 </div>
               </div>
@@ -85,7 +85,7 @@ export const TriageTrash: React.FC<TriageTrashProps> = ({ onClose, onChanged }) 
           </div>
           <div className="flex justify-end">
             <button type="button" onClick={() => purge('__all__')} className="btn-action min-h-[38px] sm:min-h-0 text-status-err">
-              <Trash2 className="w-3.5 h-3.5" />
+              <Trash className="w-3.5 h-3.5" />
               {confirmId === '__all__' ? t('trash.confirmEmpty', { count: items.length }) : t('trash.empty')}
             </button>
           </div>

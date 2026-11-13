@@ -2,7 +2,7 @@ import React from 'react';
 import {
   Layers,
   FileText,
-  CheckSquare,
+  SquareCheckBig,
   Keyboard,
   Pin,
   Sparkles,
@@ -10,7 +10,7 @@ import {
   Users,
   Mic,
   ShoppingCart,
-  Columns,
+  Columns2,
   Tag,
   Link as LinkIcon,
   Bell,
@@ -343,7 +343,7 @@ const it: HelpContent = {
       category: 'workspace',
       title: 'Riepilogo globale dei to-do e collegamenti alle attività',
       subtitle: 'Tutti i to-do aperti di tutte le note raccolti in un unico posto',
-      icon: CheckSquare,
+      icon: SquareCheckBig,
       keywords: ['rollup', 'todos', 'caselle di controllo', 'attività avanzata', 'globale', 'attività'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
@@ -480,7 +480,7 @@ const it: HelpContent = {
       category: 'tasks',
       title: 'Vista elenco e bacheca Kanban flessibile',
       subtitle: 'Visualizza le attività e gestiscile con colonne personalizzate',
-      icon: Columns,
+      icon: Columns2,
       keywords: ['attività', 'kanban', 'bacheca', 'colonne', 'trascina', 'rilascia', 'liste'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
@@ -507,7 +507,7 @@ const it: HelpContent = {
       category: 'tasks',
       title: 'Sottoattività, date di scadenza e notifiche automatiche',
       subtitle: 'Liste di controllo con barra di avanzamento, note in Markdown e notifiche',
-      icon: CheckSquare,
+      icon: SquareCheckBig,
       keywords: ['sottoattività', 'notifiche', 'avvisi', 'email', 'discord', 'data', 'scadenza', 'priorità', 'assegna', 'assegnato'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">

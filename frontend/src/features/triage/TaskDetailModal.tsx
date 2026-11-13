@@ -5,12 +5,12 @@ import {
   X,
   Check,
   Calendar,
-  Trash2,
+  Trash,
   FileText,
   Plus,
-  CheckSquare,
+  SquareCheckBig,
   Hash,
-  AlertTriangle,
+  TriangleAlert,
   Flame,
   Folder,
   Lock,
@@ -458,7 +458,7 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
               title={t('detail.delete')}
               className="btn-action min-h-[38px] sm:min-h-0 h-9 sm:h-7 px-2.5 sm:px-2 text-xs text-status-err border-status-err/30 hover:bg-status-err/10 flex items-center gap-1"
             >
-              <Trash2 className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
+              <Trash className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
               <span className="sm:hidden font-medium">{t('detail.deleteShort')}</span>
             </button>
             )}
@@ -626,7 +626,7 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
                     : 'bg-canvas border-border text-muted hover:text-main'
                 }`}
               >
-                <AlertTriangle className="w-3 h-3 text-status-warn" />
+                <TriangleAlert className="w-3 h-3 text-status-warn" />
                 <span>{t('common:priority.high')}</span>
               </button>
               <button
@@ -910,7 +910,7 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
           <div className="space-y-2 pt-1 border-t border-border lg:col-start-1 lg:row-start-2">
             <div className="flex items-center justify-between">
               <label className="block text-xs font-semibold text-main flex items-center gap-1.5">
-                <CheckSquare className="w-3.5 h-3.5 text-accent" />
+                <SquareCheckBig className="w-3.5 h-3.5 text-accent" />
                 <span>{t('detail.subtasks', { done: completedSubtasks, total: subtasks.length })}</span>
               </label>
               {subtasks.length > 0 && (
@@ -1012,7 +1012,7 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
                       onClick={() => onDeleteSubtask(task, st.id)}
                       className="opacity-0 group-hover:opacity-100 text-faint hover:text-status-err p-0.5 transition-opacity"
                     >
-                      <Trash2 className="w-3 h-3" />
+                      <Trash className="w-3 h-3" />
                     </button>
                     )}
                   </div>

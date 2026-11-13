@@ -1,7 +1,7 @@
 import React, { Suspense, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { createPortal } from 'react-dom';
-import { X, Trash2, Loader2 } from 'lucide-react';
+import { X, Trash, LoaderCircle } from 'lucide-react';
 import type { Categories, EmojiClickData, EmojiStyle, SuggestionMode, Theme } from 'emoji-picker-react';
 import { useKeyboardInset } from '../../lib/useKeyboardInset';
 import { isPhoneWidth } from '../../lib/breakpoints';
@@ -162,7 +162,7 @@ export const EmojiPickerModal: React.FC<EmojiPickerModalProps> = ({
                 className="h-11 sm:h-7 px-3 sm:px-2 rounded text-xs font-medium text-status-err hover:bg-status-err/10 flex items-center gap-1 transition-colors cursor-pointer"
                 title={t('emojiPicker.remove')}
               >
-                <Trash2 className="w-3.5 h-3.5" />
+                <Trash className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">{t('emojiPicker.removeShort')}</span>
               </button>
             )}
@@ -188,7 +188,7 @@ export const EmojiPickerModal: React.FC<EmojiPickerModalProps> = ({
                 className="flex flex-col items-center justify-center gap-2 text-xs text-muted"
                 style={{ height: pickerHeight }}
               >
-                <Loader2 className="w-5 h-5 animate-spin text-accent" />
+                <LoaderCircle className="w-5 h-5 animate-spin text-accent" />
                 <span>{t('emojiPicker.loading')}</span>
               </div>
             }
@@ -220,7 +220,7 @@ export const EmojiPickerModal: React.FC<EmojiPickerModalProps> = ({
             onClick={() => onSelectEmoji('')}
             className="hidden sm:flex items-center gap-1.5 w-full h-7 px-2 mt-1 rounded-btn text-xs text-muted hover:text-status-err hover:bg-panel-hover transition-colors cursor-pointer"
           >
-            <Trash2 className="w-3.5 h-3.5" />
+            <Trash className="w-3.5 h-3.5" />
             {t('emojiPicker.remove')}
           </button>
         )}

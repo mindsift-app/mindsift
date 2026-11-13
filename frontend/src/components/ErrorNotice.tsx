@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { AlertTriangle } from 'lucide-react';
+import { TriangleAlert } from 'lucide-react';
 
 const EVENT = 'mindsift:error-notice';
 
@@ -39,7 +39,7 @@ export const ErrorNoticeHost: React.FC = () => {
         onClick={() => setNotice(null)}
         className="notice-shake px-3 py-2 rounded-card text-xs font-medium text-status-err bg-panel-elevated border border-status-err/60 shadow-panel flex items-center gap-2 cursor-pointer"
       >
-        <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+        <TriangleAlert className="w-3.5 h-3.5 shrink-0" />
         <span>{notice.text}</span>
       </div>
     </div>

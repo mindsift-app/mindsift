@@ -2,7 +2,7 @@ import React from 'react';
 import {
   Layers,
   FileText,
-  CheckSquare,
+  SquareCheckBig,
   Keyboard,
   Pin,
   Sparkles,
@@ -10,7 +10,7 @@ import {
   Users,
   Mic,
   ShoppingCart,
-  Columns,
+  Columns2,
   Tag,
   Link as LinkIcon,
   Bell,
@@ -388,7 +388,7 @@ const es: HelpContent = {
       category: 'workspace',
       title: 'Resumen global de tareas y enlaces a tareas',
       subtitle: 'Todas las tareas pendientes de todas las notas en un solo lugar',
-      icon: CheckSquare,
+      icon: SquareCheckBig,
       keywords: ['rollup', 'tareas', 'casillas', 'tarea ampliada', 'global', 'pendientes'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
@@ -539,7 +539,7 @@ const es: HelpContent = {
       category: 'tasks',
       title: 'Vista de lista y tablero Kanban flexible',
       subtitle: 'Visualiza tareas y gestiónalas con columnas personalizadas',
-      icon: Columns,
+      icon: Columns2,
       keywords: ['tareas', 'kanban', 'tablero', 'columnas', 'arrastrar', 'soltar', 'listas'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
@@ -566,7 +566,7 @@ const es: HelpContent = {
       category: 'tasks',
       title: 'Subtareas, fechas de vencimiento y avisos automáticos',
       subtitle: 'Listas de verificación con barra de progreso, notas en Markdown y notificaciones',
-      icon: CheckSquare,
+      icon: SquareCheckBig,
       keywords: [
         'subtareas',
         'avisos',

@@ -2,9 +2,9 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Plus,
-  Trash2,
-  AlertCircle,
-  Building2,
+  Trash,
+  CircleAlert,
+  BuildingComplex,
   Pencil,
   ChevronDown,
   ChevronRight,
@@ -127,7 +127,7 @@ export function OrganizationsSection({
                       ) : (
                         <ChevronRight className="w-3.5 h-3.5 text-muted group-hover:text-main shrink-0" />
                       )}
-                      <Building2 className="w-4 h-4 text-accent shrink-0" />
+                      <BuildingComplex className="w-4 h-4 text-accent shrink-0" />
                       <span className="font-bold text-main truncate">{o.name}</span>
                       <CountBadge count={o.memberCount} showZero />
                     </button>
@@ -149,7 +149,7 @@ export function OrganizationsSection({
                         className="btn-icon btn-icon-danger w-11 h-11 sm:w-7 sm:h-7"
                         title={t('orgs.delete')}
                       >
-                        <Trash2 className="w-3.5 h-3.5" />
+                        <Trash className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   )}
@@ -216,7 +216,7 @@ export function OrganizationsSection({
 
                 {open && pendingRemoval?.orgId === o.id && (
                   <div className="flex flex-wrap items-center gap-2 p-2 border border-status-warn/40 bg-status-warn/5 rounded-card">
-                    <AlertCircle className="w-3.5 h-3.5 text-status-warn shrink-0" />
+                    <CircleAlert className="w-3.5 h-3.5 text-status-warn shrink-0" />
                     <span className="flex-1 min-w-0 text-main">
                       {t('orgs.removeWarning', { name: pendingRemoval.user.displayName, org: o.name, count: pendingRemoval.affected })}
                     </span>
@@ -234,7 +234,7 @@ export function OrganizationsSection({
 
                 {deletingOrgId === o.id && (
                   <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-border">
-                    <AlertCircle className="w-3.5 h-3.5 text-status-warn shrink-0" />
+                    <CircleAlert className="w-3.5 h-3.5 text-status-warn shrink-0" />
                     <span className="flex-1 min-w-0 text-muted">
                       {t('orgs.deleteWarning', { count: o.memberCount })}
                     </span>

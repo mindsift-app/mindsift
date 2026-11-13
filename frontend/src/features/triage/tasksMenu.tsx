@@ -1,4 +1,4 @@
-import { Bell, BellOff, CalendarDays, Check, Columns, Filter, Folder, Layers, LayoutList, Pencil, Plus, Settings, Trash2, Users } from 'lucide-react';
+import { Bell, BellOff, CalendarDays, Check, Columns2, Funnel, Folder, Layers, LayoutList, Pencil, Plus, Settings, Trash, Users } from 'lucide-react';
 import { isTaskListShared } from './TaskListTabs';
 import i18n from '../../i18n';
 import { TaskList } from '../../lib/types';
@@ -93,7 +93,7 @@ export function buildTasksMenu({
     {
       id: 'tasks-filter-modal',
       label: i18n.t('tasks:menu.filter'),
-      icon: <Filter className="w-4 h-4 text-accent" />,
+      icon: <Funnel className="w-4 h-4 text-accent" />,
       badge: filterSortActiveCount > 0 ? `${filterSortActiveCount} aktiv` : undefined,
       active: filterSortActiveCount > 0,
       onClick: () => setShowFilterModal(true),
@@ -135,7 +135,7 @@ export function buildTasksMenu({
     listManagementItems.push({
       id: 'delete-task-list',
       label: i18n.t('tasks:menu.deleteList', { title: currentSelectedList.title }),
-      icon: <Trash2 className="w-4 h-4" />,
+      icon: <Trash className="w-4 h-4" />,
       variant: 'danger',
       onClick: () => handleDeleteTaskList(currentSelectedList.id),
     });
@@ -167,7 +167,7 @@ export function buildTasksMenu({
     {
       id: 'filter-discarded',
       label: i18n.t('common:trash'),
-      icon: <Trash2 className="w-4 h-4" />,
+      icon: <Trash className="w-4 h-4" />,
       badge: trashCount,
       active: viewMode === 'list' && filter === 'discarded',
       onClick: () => {
@@ -178,7 +178,7 @@ export function buildTasksMenu({
     {
       id: 'view-kanban',
       label: i18n.t('tasks:menu.kanban'),
-      icon: <Columns className="w-4 h-4" />,
+      icon: <Columns2 className="w-4 h-4" />,
       badge: kanbanCount,
       active: viewMode === 'kanban',
       onClick: () => setViewMode('kanban'),

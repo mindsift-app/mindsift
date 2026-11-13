@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import {
   Mail,
   Plus,
-  Trash2,
+  Trash,
   KeyRound,
   Copy,
   Check,
@@ -343,7 +343,7 @@ export function UsersSection({
                         title={t('users.invite.delete')}
                         aria-label={t('users.invite.delete')}
                       >
-                        <Trash2 className="w-3.5 h-3.5" />
+                        <Trash className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   </div>

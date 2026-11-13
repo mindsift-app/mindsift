@@ -1,6 +1,6 @@
 import React, { forwardRef, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { BellOff, Check, MoreHorizontal } from 'lucide-react';
+import { BellOff, Check, Ellipsis } from 'lucide-react';
 import { CountBadge } from './CountBadge';
 import { OVERFLOW_HIDDEN_TAB } from '../lib/useOverflowTabs';
 
@@ -94,7 +94,7 @@ export const MoreTabsButton = forwardRef<HTMLDivElement, MoreTabsButtonProps>(fu
         title={t('listMenu.moreLists')}
         className="tool-btn !gap-1"
       >
-        <MoreHorizontal className="w-3.5 h-3.5" />
+        <Ellipsis className="w-3.5 h-3.5" />
         <span>{items.length}</span>
       </button>
       {open && !empty && (

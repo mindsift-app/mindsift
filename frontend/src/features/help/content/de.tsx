@@ -2,7 +2,7 @@ import React from 'react';
 import {
   Layers,
   FileText,
-  CheckSquare,
+  SquareCheckBig,
   Keyboard,
   Pin,
   Sparkles,
@@ -10,7 +10,7 @@ import {
   Users,
   Mic,
   ShoppingCart,
-  Columns,
+  Columns2,
   Tag,
   Link as LinkIcon,
   Bell,
@@ -420,7 +420,7 @@ const de: HelpContent = {
       category: 'workspace',
       title: 'Globale To-Dos Rollup & Aufgaben-Verknüpfung',
       subtitle: 'Alle offenen Aufgaben aus sämtlichen Notizen an einem Ort',
-      icon: CheckSquare,
+      icon: SquareCheckBig,
       keywords: [
         'rollup',
         'todos',
@@ -613,7 +613,7 @@ const de: HelpContent = {
       category: 'tasks',
       title: 'Listenansicht & Flexibles Kanban-Board',
       subtitle: 'Aufgaben visualisieren und mit anpassbaren Spalten steuern',
-      icon: Columns,
+      icon: Columns2,
       keywords: [
         'aufgaben',
         'tasks',
@@ -648,7 +648,7 @@ const de: HelpContent = {
       category: 'tasks',
       title: 'Teilaufgaben, Fälligkeiten & Automatische Alarme',
       subtitle: 'Checklisten mit Fortschrittsbalken, Markdown-Notizen und Benachrichtigungen',
-      icon: CheckSquare,
+      icon: SquareCheckBig,
       keywords: [
         'subtasks',
         'unteraufgaben',

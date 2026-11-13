@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { AlertCircle, Bell, Check, Globe, Mail, MessageSquare, Send, X } from 'lucide-react';
+import { CircleAlert, Bell, Check, Globe, Mail, MessageSquare, Send, X } from 'lucide-react';
 import { NotificationEvents, User } from '../../../lib/types';
 import { pushSupported } from '../../../lib/push';
 import { ToggleSwitch } from '../../../components/ToggleSwitch';
@@ -65,7 +65,7 @@ export function AlarmsSection({
 
       {demoMode && (
         <div className="flex items-center gap-2 alert-err">
-          <AlertCircle className="w-4 h-4 text-status-err flex-shrink-0" />
+          <CircleAlert className="w-4 h-4 text-status-err flex-shrink-0" />
           <span>{t('alarms.demoOff')}</span>
         </div>
       )}
@@ -79,7 +79,7 @@ export function AlarmsSection({
           {alarmMsg.type === 'ok' ? (
             <Check className="w-4 h-4 text-status-ok flex-shrink-0" />
           ) : (
-            <AlertCircle className="w-4 h-4 text-status-err flex-shrink-0" />
+            <CircleAlert className="w-4 h-4 text-status-err flex-shrink-0" />
           )}
           <span>{alarmMsg.text}</span>
         </div>

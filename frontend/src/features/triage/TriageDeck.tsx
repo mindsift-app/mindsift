@@ -4,7 +4,7 @@ import { LazyMotion, m, useMotionValue, useTransform } from 'motion/react';
 import {
   X,
   Check,
-  CheckSquare,
+  SquareCheckBig,
   Calendar,
   FileText,
   ShoppingCart,
@@ -15,13 +15,13 @@ import {
   Tag,
   Clock,
   SkipForward,
-  Edit3,
+  PenLine,
   Layers,
-  MoreHorizontal,
+  Ellipsis,
   ArrowLeft,
   ArrowRight,
   ChevronDown,
-  Trash2,
+  Trash,
 } from 'lucide-react';
 import { SharedList, Thought } from '../../lib/types';
 import { addDays, formatDue } from '../../lib/due';
@@ -87,7 +87,7 @@ const SwipeableQueueItem: React.FC<SwipeableQueueItemProps> = ({
         className="pointer-events-none absolute inset-0 bg-accent/20 flex items-center justify-start px-4 text-accent font-semibold text-xs uppercase tracking-wide"
       >
         <span className="flex items-center gap-1.5">
-          <CheckSquare className="w-4 h-4" />
+          <SquareCheckBig className="w-4 h-4" />
           <span>{t('swipe.toTask')}</span>
         </span>
       </m.div>
@@ -498,7 +498,7 @@ const TriageDeckView: React.FC<TriageDeckProps> = ({
 
           {discardedCount > 0 && (
             <button onClick={onOpenTrash} className="btn-action h-10 px-4 text-sm">
-              <Trash2 className="w-4 h-4" />
+              <Trash className="w-4 h-4" />
               {t('trashCount', { count: discardedCount })}
             </button>
           )}
@@ -537,7 +537,7 @@ const TriageDeckView: React.FC<TriageDeckProps> = ({
           {/* Phones reach the trash through the menu */}
           {discardedCount > 0 && (
             <button onClick={onOpenTrash} className="hidden sm:inline-flex btn-action tool-ghost h-8 px-3 text-xs" title={t('trashTitle')}>
-              <Trash2 className="w-3.5 h-3.5" />
+              <Trash className="w-3.5 h-3.5" />
               {discardedCount}
             </button>
           )}
@@ -648,7 +648,7 @@ const TriageDeckView: React.FC<TriageDeckProps> = ({
                   title={t('moreOptions')}
                   className="h-8 w-8 bg-canvas hover:bg-panel-hover border border-border rounded-btn text-muted hover:text-main flex items-center justify-center cursor-pointer"
                 >
-                  <MoreHorizontal className="w-4 h-4" />
+                  <Ellipsis className="w-4 h-4" />
                 </button>
               </div>
             </div>
@@ -950,7 +950,7 @@ const TriageDeckView: React.FC<TriageDeckProps> = ({
           title={t('taskTitle')}
           className="btn-primary flex-[1.25] h-9 px-4 justify-center whitespace-nowrap font-semibold"
         >
-          <CheckSquare className="w-3.5 h-3.5 flex-shrink-0" />
+          <SquareCheckBig className="w-3.5 h-3.5 flex-shrink-0" />
           <span>{t('action.task')}</span>
         </button>
       </div>
@@ -1142,7 +1142,7 @@ const TriageDeckView: React.FC<TriageDeckProps> = ({
                   }}
                   className="w-full min-h-[46px] px-3.5 py-2 rounded-xl bg-canvas hover:bg-panel-elevated border border-border flex items-center justify-center gap-2 text-sm font-medium text-main transition-colors cursor-pointer"
                 >
-                  <Edit3 className="w-4 h-4 text-accent" />
+                  <PenLine className="w-4 h-4 text-accent" />
                   <span>{t('sheet.editText')}</span>
                 </button>
 
@@ -1169,7 +1169,7 @@ const TriageDeckView: React.FC<TriageDeckProps> = ({
                     }
                     className="min-h-[46px] px-4 py-2 rounded-xl bg-accent text-on-accent text-sm font-semibold flex items-center justify-center gap-2 whitespace-nowrap cursor-pointer"
                   >
-                    <CheckSquare className="w-4 h-4 flex-shrink-0" />
+                    <SquareCheckBig className="w-4 h-4 flex-shrink-0" />
                     <span>{t('action.task')}</span>
                   </button>
                 </div>

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import i18n from '../../../i18n';
-import { AlertCircle } from 'lucide-react';
+import { CircleAlert } from 'lucide-react';
 import { Retention, User } from '../../../lib/types';
 import { api } from '../../../lib/api';
 import { SelectMenu } from '../../../components/SelectMenu';
@@ -51,7 +51,7 @@ export function RetentionSection({
       </div>
       {retentionError && (
         <div className="alert-err flex items-center gap-2">
-          <AlertCircle className="w-4 h-4 text-status-err flex-shrink-0" />
+          <CircleAlert className="w-4 h-4 text-status-err flex-shrink-0" />
           <span>{retentionError}</span>
         </div>
       )}

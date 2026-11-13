@@ -2,7 +2,7 @@ import React from 'react';
 import {
   Layers,
   FileText,
-  CheckSquare,
+  SquareCheckBig,
   Keyboard,
   Pin,
   Sparkles,
@@ -10,7 +10,7 @@ import {
   Users,
   Mic,
   ShoppingCart,
-  Columns,
+  Columns2,
   Tag,
   Link as LinkIcon,
   Bell,
@@ -237,7 +237,7 @@ const en: HelpContent = {
               <strong className="text-main">Typing:</strong> <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Enter</kbd> adds a row below the current one, <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Tab</kbd> / <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Shift + Tab</kbd> jump from cell to cell (Tab in the last cell adds a row), the arrow keys change rows and leave the table at the top and bottom. <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Backspace</kbd> in an empty row deletes it, in a completely empty table the table. Bold, italics, links and #hashtags work as in text.
             </li>
             <li>
-              <strong className="text-main">Columns:</strong> The <strong className="text-main">+</strong> right of the table adds a column (on a desktop it shows while the mouse is over the table). Below it, the three dots open the menu: align the column with the cursor left, centered or right (kept in the Markdown table), insert a column left or right, delete the row or column with the cursor, indent or outdent the bullet.
+              <strong className="text-main">Columns2:</strong> The <strong className="text-main">+</strong> right of the table adds a column (on a desktop it shows while the mouse is over the table). Below it, the three dots open the menu: align the column with the cursor left, centered or right (kept in the Markdown table), insert a column left or right, delete the row or column with the cursor, indent or outdent the bullet.
             </li>
             <li>
               <strong className="text-main">Lines:</strong> In the same menu: <em>Default</em> shows only the inner lines, fading out towards the edge, without a frame; <em>Full frame</em> every line with an outer frame (corners as in the theme); <em>Header row and columns</em> only the line below the header and the column lines.
@@ -343,7 +343,7 @@ const en: HelpContent = {
       category: 'workspace',
       title: 'Global to-do rollup & task links',
       subtitle: 'All open to-dos from all notes in one place',
-      icon: CheckSquare,
+      icon: SquareCheckBig,
       keywords: ['rollup', 'todos', 'checkboxes', 'enhanced task', 'global', 'tasks'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
@@ -480,7 +480,7 @@ const en: HelpContent = {
       category: 'tasks',
       title: 'List view & flexible Kanban board',
       subtitle: 'Visualize tasks and steer them with custom columns',
-      icon: Columns,
+      icon: Columns2,
       keywords: ['tasks', 'kanban', 'board', 'columns', 'drag', 'drop', 'lists'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
@@ -507,7 +507,7 @@ const en: HelpContent = {
       category: 'tasks',
       title: 'Subtasks, due dates & automatic alarms',
       subtitle: 'Checklists with a progress bar, Markdown notes and notifications',
-      icon: CheckSquare,
+      icon: SquareCheckBig,
       keywords: ['subtasks', 'alarms', 'notifications', 'mail', 'discord', 'date', 'due date', 'priority', 'assign', 'assigned'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">

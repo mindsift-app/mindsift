@@ -7,7 +7,7 @@ import {
   X,
   Search,
   ExternalLink,
-  Loader2,
+  LoaderCircle,
   Plus,
   ArrowLeft,
   ListTree,
@@ -413,7 +413,7 @@ export const LinkModal: React.FC<LinkModalProps> = ({
             <div ref={pickDoc ? listRef : undefined} className="space-y-0.5 max-h-64 overflow-y-auto pr-0.5">
               {pickBlocks === null ? (
                 <div className="p-4 text-xs text-muted flex items-center gap-2 justify-center">
-                  <Loader2 className="w-4 h-4 animate-spin text-accent" />
+                  <LoaderCircle className="w-4 h-4 animate-spin text-accent" />
                   <span>{t('link.loadingBlocks')}</span>
                 </div>
               ) : pickableBlocks.length === 0 ? (
@@ -453,7 +453,7 @@ export const LinkModal: React.FC<LinkModalProps> = ({
             <div className="space-y-1.5 max-h-56 overflow-y-auto pr-0.5">
               {loading ? (
                 <div className="p-6 bg-canvas border border-border rounded-card text-xs text-muted flex items-center gap-2 justify-center text-center">
-                  <Loader2 className="w-4 h-4 animate-spin text-accent" />
+                  <LoaderCircle className="w-4 h-4 animate-spin text-accent" />
                   <span>{t('link.loadingNotes')}</span>
                 </div>
               ) : filteredDocs.length === 0 ? (
@@ -522,7 +522,7 @@ export const LinkModal: React.FC<LinkModalProps> = ({
               <>
                 <div className="flex items-center justify-between text-xs font-semibold text-muted uppercase tracking-wider px-0.5 pt-1">
                   <span>{t('link.blocks')}</span>
-                  {blockHitsLoading && <Loader2 className="w-3.5 h-3.5 animate-spin text-accent" />}
+                  {blockHitsLoading && <LoaderCircle className="w-3.5 h-3.5 animate-spin text-accent" />}
                 </div>
                 <div className="space-y-1.5 max-h-56 overflow-y-auto pr-0.5">
                   {blockHits.map((h, j) => {

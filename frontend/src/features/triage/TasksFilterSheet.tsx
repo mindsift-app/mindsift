@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Filter, Hash, X } from 'lucide-react';
+import { Funnel, Hash, X } from 'lucide-react';
 import { Thought } from '../../lib/types';
 import { GroupBy, TaskSort, ViewMode } from './taskViewTypes';
 
@@ -51,7 +51,7 @@ export function TasksFilterSheet({
         <div className="flex items-center justify-between pb-3 border-b border-border">
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-btn bg-accent/15 text-accent flex items-center justify-center">
-              <Filter className="w-4 h-4" />
+              <Funnel className="w-4 h-4" />
             </div>
             <h3 className="text-sm font-semibold text-main">{t('filter.title')}</h3>
           </div>

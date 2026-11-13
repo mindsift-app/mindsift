@@ -1,7 +1,7 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
-import { FilePlus2, Search } from 'lucide-react';
+import { FilePlusCorner, Search } from 'lucide-react';
 import { NO_AUTOFILL } from '../../lib/noAutofill';
 
 export interface ExtractTarget {
@@ -116,7 +116,7 @@ export const ExtractPopover: React.FC<ExtractPopoverProps> = ({ x, y, align = 'r
       className="fixed z-[70] w-72 max-w-[calc(100vw-1rem)] p-1.5 bg-panel border border-border rounded-card shadow-panel text-xs text-main space-y-1"
     >
       <button type="button" onClick={() => choose(0)} onMouseMove={hoverRow(0)} className={rowClass(active === 0)}>
-        <FilePlus2 className="w-3.5 h-3.5 text-accent shrink-0" />
+        <FilePlusCorner className="w-3.5 h-3.5 text-accent shrink-0" />
         <span className="flex-1 font-medium">{t('extractMenu.newNote')}</span>
         {active === 0 && <kbd className="text-[10px] text-faint font-mono">⏎</kbd>}
       </button>

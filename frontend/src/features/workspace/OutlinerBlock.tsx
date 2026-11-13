@@ -3,8 +3,8 @@ import {
   ChevronRight,
   ChevronDown,
   Check,
-  CheckSquare,
-  Trash2,
+  SquareCheckBig,
+  Trash,
   Code,
   Heading1,
   Heading2,
@@ -16,8 +16,8 @@ import {
   ExternalLink,
   Link as LinkIcon,
   Lock,
-  AlertTriangle,
-  XCircle,
+  TriangleAlert,
+  CircleX,
   Image as ImageIcon,
   Mic,
   Shapes,
@@ -108,8 +108,8 @@ const SLASH_COMMANDS: SlashCommand[] = [
   { type: 'code', label: '/code', get desc() { return i18n.t('workspace:slash.code'); }, icon: <Code className="w-3.5 h-3.5" /> },
   { type: 'table', label: '/table', get desc() { return i18n.t('workspace:slash.table'); }, icon: <TableIcon className="w-3.5 h-3.5" />, aliases: ['tabelle', 'tabla', 'tableau', 'tabella', 'grid'] },
   { type: 'callout', label: '/callout', get desc() { return i18n.t('workspace:slash.callout'); }, icon: <MessageSquare className="w-3.5 h-3.5" /> },
-  { type: 'warning', label: '/warn', get desc() { return i18n.t('workspace:slash.warning'); }, icon: <AlertTriangle className="w-3.5 h-3.5 text-status-warn" />, aliases: ['warnung', 'warning', 'achtung'] },
-  { type: 'error', label: '/fail', get desc() { return i18n.t('workspace:slash.error'); }, icon: <XCircle className="w-3.5 h-3.5 text-status-err" />, aliases: ['fehler', 'error', 'danger'] },
+  { type: 'warning', label: '/warn', get desc() { return i18n.t('workspace:slash.warning'); }, icon: <TriangleAlert className="w-3.5 h-3.5 text-status-warn" />, aliases: ['warnung', 'warning', 'achtung'] },
+  { type: 'error', label: '/fail', get desc() { return i18n.t('workspace:slash.error'); }, icon: <CircleX className="w-3.5 h-3.5 text-status-err" />, aliases: ['fehler', 'error', 'danger'] },
   { type: 'divider', label: '/divider', get desc() { return i18n.t('workspace:slash.divider'); }, icon: <Minus className="w-3.5 h-3.5" /> },
   { type: 'extract', label: '/extract', get desc() { return i18n.t('workspace:slash.extract'); }, icon: <FileOutput className="w-3.5 h-3.5" />, aliases: ['notiz', 'auslagern'] },
   { type: 'image', label: '/image', get desc() { return i18n.t('workspace:slash.image'); }, icon: <ImageIcon className="w-3.5 h-3.5" />, media: true, aliases: ['bild', 'foto'] },
@@ -1417,13 +1417,13 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
               {listMarker}
             </span>
           ) : block.type === 'warning' ? (
-            <AlertTriangle
+            <TriangleAlert
               className={`w-3.5 h-3.5 shrink-0 text-status-warn transition-transform group-hover/bullet:scale-110 ${
                 block.collapsed && hasChildren ? COLLAPSED_ICON : ''
               }`}
             />
           ) : block.type === 'error' ? (
-            <XCircle
+            <CircleX
               className={`w-3.5 h-3.5 shrink-0 text-status-err transition-transform group-hover/bullet:scale-110 ${
                 block.collapsed && hasChildren ? COLLAPSED_ICON : ''
               }`}
@@ -1766,7 +1766,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
                   title={block.taskId ? t('block.openTask') : t('block.openParentTask')}
                   data-tour={block.taskId ? 'linked-task' : undefined}
                 >
-                  <CheckSquare className="w-2.5 h-2.5 inline-block align-[-1px] mr-0.5" />
+                  <SquareCheckBig className="w-2.5 h-2.5 inline-block align-[-1px] mr-0.5" />
                   {block.taskId ? t('block.badgeTask') : t('block.badgeSubtask')}
                 </button>
               )}
@@ -1844,7 +1844,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
         {/* Conflict copy: text that lost against someone else's change */}
         {block.conflictOf && (
           <div className="flex flex-wrap items-center gap-1.5 mt-1 text-[11px] text-status-warn select-none">
-            <AlertTriangle className="w-3 h-3 shrink-0" />
+            <TriangleAlert className="w-3 h-3 shrink-0" />
             <span>
               {block.conflictOf === 'title' ? t('block.titleConflict') : t('block.conflict')}
               {block.conflictAuthor ? ` ${t('block.conflictBy', { name: block.conflictAuthor })}` : ''}
@@ -2026,7 +2026,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
             title={t('block.toTask')}
             aria-label={t('block.toTask')}
           >
-            <CheckSquare className="w-3.5 h-3.5" />
+            <SquareCheckBig className="w-3.5 h-3.5" />
           </button>
         )}
         {block.type === 'todo' && canEdit && block.taskId && (
@@ -2107,7 +2107,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
             className="p-1 sm:p-0.5 min-w-[28px] min-h-[28px] sm:min-w-0 sm:min-h-0 flex items-center justify-center text-faint hover:text-status-err rounded-btn transition-colors cursor-pointer"
             title={t('block.delete')}
           >
-            <Trash2 className="w-3.5 h-3.5" />
+            <Trash className="w-3.5 h-3.5" />
           </button>
         )}
       </div>

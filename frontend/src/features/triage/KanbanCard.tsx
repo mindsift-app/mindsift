@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, ArrowRight, Calendar, FileText, Repeat, Bell, Trash2 } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Calendar, FileText, Repeat, Bell, Trash } from 'lucide-react';
 import { formatDue, isOverdue } from '../../lib/due';
 import { OriginBadge } from '../../components/OriginBadge';
 import { KanbanColumn, RECURRENCE_LABELS, TaskList, Thought } from '../../lib/types';
@@ -101,7 +101,7 @@ const KanbanCardView: React.FC<KanbanCardProps> = ({
               title={t('detail.delete')}
               className="text-faint hover:text-status-err p-0.5"
             >
-              <Trash2 className="w-3 h-3" />
+              <Trash className="w-3 h-3" />
             </button>
           </div>
         )}

@@ -7,8 +7,8 @@ import {
   Mail,
   Check,
   ArrowLeft,
-  AlertCircle,
-  Building2,
+  CircleAlert,
+  BuildingComplex,
 } from 'lucide-react';
 import {
   User,
@@ -75,7 +75,7 @@ export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
             {statusMsg.type === 'ok' ? (
               <Check className="w-4 h-4 text-accent flex-shrink-0" />
             ) : (
-              <AlertCircle className="w-4 h-4 text-status-err flex-shrink-0" />
+              <CircleAlert className="w-4 h-4 text-status-err flex-shrink-0" />
             )}
             <span>{statusMsg.text}</span>
           </div>
@@ -115,7 +115,7 @@ export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
                     : 'text-muted hover:text-main hover:bg-canvas/50'
                 }`}
               >
-                <Building2 className="w-4 h-4 text-accent flex-shrink-0" />
+                <BuildingComplex className="w-4 h-4 text-accent flex-shrink-0" />
                 <div>
                   <p className="font-semibold">{t('orgs.title')}</p>
                   <p className="text-[10px] text-faint">{t('admin.nav.orgsHint')}</p>
@@ -162,7 +162,7 @@ export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
         <div className="md:col-span-3 panel-surface p-5 text-xs">
           {demoMode && (
             <div className="flex items-center gap-2 alert-err mb-4">
-              <AlertCircle className="w-4 h-4 text-status-err flex-shrink-0" />
+              <CircleAlert className="w-4 h-4 text-status-err flex-shrink-0" />
               <span>
                 {t('admin.demo')}
               </span>

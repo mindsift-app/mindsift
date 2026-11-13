@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import i18n from '../../../i18n';
-import { AlertCircle, Check, KeyRound, MonitorSmartphone, ShieldCheck } from 'lucide-react';
+import { CircleAlert, Check, KeyRound, MonitorSmartphone, ShieldCheck } from 'lucide-react';
 import { api, getCurrentOidc, triggerHaptic } from '../../../lib/api';
 import { startOidcConfirm } from '../../../lib/oidc';
 import { passwordProblem } from '../../../lib/password';
@@ -104,7 +104,7 @@ function OidcCard({ currentUser, name }: { currentUser: User; name: string }) {
           </label>
           {error && (
             <div role="alert" className="alert-err flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 text-status-err flex-shrink-0" />
+              <CircleAlert className="w-4 h-4 text-status-err flex-shrink-0" />
               <span>{error}</span>
             </div>
           )}
@@ -179,7 +179,7 @@ function PasswordCard({ currentUser, onUserUpdated, demoMode }: { currentUser: U
       </div>
       {msg && (
         <div role={msg.type === 'ok' ? 'status' : 'alert'} className={`flex items-center gap-2 ${msg.type === 'ok' ? 'alert-ok' : 'alert-err'}`}>
-          {msg.type === 'ok' ? <Check className="w-4 h-4 text-status-ok flex-shrink-0" /> : <AlertCircle className="w-4 h-4 text-status-err flex-shrink-0" />}
+          {msg.type === 'ok' ? <Check className="w-4 h-4 text-status-ok flex-shrink-0" /> : <CircleAlert className="w-4 h-4 text-status-err flex-shrink-0" />}
           <span>{msg.text}</span>
         </div>
       )}

@@ -2,7 +2,7 @@ import React from 'react';
 import {
   Layers,
   FileText,
-  CheckSquare,
+  SquareCheckBig,
   Keyboard,
   Pin,
   Sparkles,
@@ -10,7 +10,7 @@ import {
   Users,
   Mic,
   ShoppingCart,
-  Columns,
+  Columns2,
   Tag,
   Link as LinkIcon,
   Bell,
@@ -346,7 +346,7 @@ const fr: HelpContent = {
       category: 'workspace',
       title: 'Rollup global des tâches & liens de tâches',
       subtitle: 'Toutes les tâches ouvertes de l\'ensemble des notes réunies en un seul endroit',
-      icon: CheckSquare,
+      icon: SquareCheckBig,
       keywords: ['rollup', 'todos', 'cases à cocher', 'tâche étendue', 'global', 'tâches'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
@@ -481,7 +481,7 @@ const fr: HelpContent = {
       category: 'tasks',
       title: 'Vue en liste & tableau Kanban modulable',
       subtitle: 'Visualiser les tâches et les piloter grâce à des colonnes personnalisées',
-      icon: Columns,
+      icon: Columns2,
       keywords: ['tâches', 'kanban', 'tableau', 'colonnes', 'glisser', 'déposer', 'listes'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
@@ -508,7 +508,7 @@ const fr: HelpContent = {
       category: 'tasks',
       title: 'Sous-tâches, échéances & alertes automatiques',
       subtitle: 'Listes de contrôle avec barre de progression, notes en Markdown et notifications',
-      icon: CheckSquare,
+      icon: SquareCheckBig,
       keywords: ['sous-tâches', 'alarmes', 'notifications', 'e-mail', 'discord', 'date', 'échéance', 'priorité', 'assigner', 'assigné'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { AtSign, CheckCircle2, Mail, Send } from 'lucide-react';
+import { AtSign, CircleCheck, Mail, Send } from 'lucide-react';
 import i18n from '../../i18n';
 import { SetupInfo, SmtpForm } from '../../lib/types';
 import { ToggleSwitch } from '../../components/ToggleSwitch';
@@ -88,7 +88,7 @@ export const SetupMailSection: React.FC<{
       {configured ? (
         <div className="space-y-1">
           <p className="flex items-start gap-1.5 text-main font-medium">
-            <CheckCircle2 className="w-3.5 h-3.5 mt-px text-status-ok flex-shrink-0" />
+            <CircleCheck className="w-3.5 h-3.5 mt-px text-status-ok flex-shrink-0" />
             <span className="min-w-0 break-words">
               {info?.smtpViaEnv ? t('setupMail.envSet') : t('setupMail.alreadySet')}
               {info?.smtpHost && <code className="font-mono font-normal text-muted"> · {info.smtpHost}</code>}

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Loader2, Mic, Square, Upload, X } from 'lucide-react';
+import { LoaderCircle, Mic, Square, Upload, X } from 'lucide-react';
 import { UploadedMedia, uploadMedia } from '../../lib/media';
 import { VoiceRecorder } from '../../lib/voice';
 import { VoiceWave } from '../../components/VoiceWave';
@@ -122,7 +122,7 @@ export const AudioRecorderPicker: React.FC<AudioRecorderPickerProps> = ({ docId,
         {state === 'ready' && <span className="text-xs text-muted">{t('media.record')}</span>}
         {state === 'uploading' && (
           <span className="text-xs text-muted flex items-center gap-1.5">
-            <Loader2 className="w-3.5 h-3.5 animate-spin" /> {t('workspace:media.saving')}
+            <LoaderCircle className="w-3.5 h-3.5 animate-spin" /> {t('workspace:media.saving')}
           </span>
         )}
 

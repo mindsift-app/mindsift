@@ -1,17 +1,17 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
-  AlignCenter,
-  AlignLeft,
-  AlignRight,
+  TextAlignCenter,
+  TextAlignStart,
+  TextAlignEnd,
   BetweenVerticalEnd,
   BetweenVerticalStart,
   Columns3,
   Grid2x2,
-  IndentDecrease,
-  IndentIncrease,
+  ListIndentDecrease,
+  ListIndentIncrease,
   Plus,
   Table as TableIcon,
-  Trash2,
+  Trash,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { ActionMenu, ActionMenuItem } from '../../components/ActionMenu';
@@ -443,9 +443,9 @@ const TableBlockView: React.FC<TableBlockProps> = ({
       mode('fade', '', <Grid2x2 className="w-3.5 h-3.5" />),
       mode('grid', 'grid', <TableIcon className="w-3.5 h-3.5" />),
       mode('header', 'header', <Columns3 className="w-3.5 h-3.5" />),
-      align('left', <AlignLeft className="w-3.5 h-3.5" />, true),
-      align('center', <AlignCenter className="w-3.5 h-3.5" />),
-      align('right', <AlignRight className="w-3.5 h-3.5" />),
+      align('left', <TextAlignStart className="w-3.5 h-3.5" />, true),
+      align('center', <TextAlignCenter className="w-3.5 h-3.5" />),
+      align('right', <TextAlignEnd className="w-3.5 h-3.5" />),
       {
         key: 'colLeft',
         icon: <BetweenVerticalStart className="w-3.5 h-3.5" />,
@@ -473,7 +473,7 @@ const TableBlockView: React.FC<TableBlockProps> = ({
       },
       {
         key: 'deleteRow',
-        icon: <Trash2 className="w-3.5 h-3.5" />,
+        icon: <Trash className="w-3.5 h-3.5" />,
         label: t('table.deleteRow'),
         danger: true,
         separatorBefore: true,
@@ -487,7 +487,7 @@ const TableBlockView: React.FC<TableBlockProps> = ({
       },
       {
         key: 'deleteColumn',
-        icon: <Trash2 className="w-3.5 h-3.5" />,
+        icon: <Trash className="w-3.5 h-3.5" />,
         label: t('table.deleteColumn'),
         danger: true,
         disabled: !cell || cols <= 1,
@@ -503,7 +503,7 @@ const TableBlockView: React.FC<TableBlockProps> = ({
       items.push(
         {
           key: 'indent',
-          icon: <IndentIncrease className="w-3.5 h-3.5" />,
+          icon: <ListIndentIncrease className="w-3.5 h-3.5" />,
           label: t('outlineBar.indent'),
           separatorBefore: true,
           disabled: !canIndent,
@@ -511,7 +511,7 @@ const TableBlockView: React.FC<TableBlockProps> = ({
         },
         {
           key: 'outdent',
-          icon: <IndentDecrease className="w-3.5 h-3.5" />,
+          icon: <ListIndentDecrease className="w-3.5 h-3.5" />,
           label: t('outlineBar.outdent'),
           disabled: !canOutdent,
           onSelect: () => onOutdent?.(),
