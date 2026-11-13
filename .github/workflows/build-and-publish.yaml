@@ -12,8 +12,9 @@ name: MindSift CI & Docker Release
 # go.sum changed; .github/workflows/security-scan.yaml checks :stable and :latest every week.
 # After the images of a tag, release.yaml creates its release page from the CHANGELOG and attaches the
 # binaries.
-# Actions are pinned to exact releases (not the moving major tag) that were out for at least two weeks
-# when they were chosen; the same holds for the images and tools in ci/ and the Dockerfile.
+# Actions are pinned to the commit of an exact release (the version in the comment behind it; a tag can be
+# moved, a commit cannot) that was out for at least two weeks when it was chosen; the same two weeks hold
+# for the images and tools in ci/ and the Dockerfile.
 on:
   push:
     branches:
@@ -37,7 +38,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v7.0.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Determine Image
         id: prep
@@ -46,15 +47,15 @@ jobs:
       # arm64 on an amd64 runner: QEMU for the last stage of the Dockerfile, and a builder that can build
       # and push several platforms as one image (the default one cannot)
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v4.4.0
+        uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
         with:
           platforms: arm64
 
       - name: Set up Buildx
-        uses: docker/setup-buildx-action@v4.4.1
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
 
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@v4.7.0
+        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}

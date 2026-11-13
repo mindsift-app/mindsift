@@ -62,6 +62,29 @@ func TestConfigLogLevelAndDebug(t *testing.T) {
 	os.Unsetenv("LOG_LEVEL")
 }
 
+// The server's logger is set up from LogLevelFromEnv before Load, whose warnings (no JWT_SECRET) go
+// through it: both must agree on the level, and those warnings come in the logger's format.
+func TestLogLevelFromEnvBeforeLoad(t *testing.T) {
+	t.Setenv("JWT_SECRET", "")
+	for _, env := range []struct{ level, debug string }{{"", ""}, {"warn", ""}, {"ERROR", ""}, {" debug ", ""}, {"error", "on"}, {"nonsense", "no"}} {
+		// A new data directory each time, so the secret is generated (and warned about) again
+		t.Setenv("DATA_DIR", t.TempDir())
+		t.Setenv("LOG_LEVEL", env.level)
+		t.Setenv("DEBUG", env.debug)
+		var out bytes.Buffer
+		prev := slog.Default()
+		slog.SetDefault(slog.New(slog.NewTextHandler(&out, &slog.HandlerOptions{Level: LogLevelFromEnv()})))
+		cfg := Load()
+		slog.SetDefault(prev)
+		if got := LogLevelFromEnv(); got != cfg.SlogLevel() {
+			t.Errorf("LOG_LEVEL=%q DEBUG=%q: before Load %v, Load %v", env.level, env.debug, got, cfg.SlogLevel())
+		}
+		if cfg.SlogLevel() <= slog.LevelWarn && !strings.Contains(out.String(), `level=WARN msg="No JWT_SECRET set`) {
+			t.Errorf("LOG_LEVEL=%q: the JWT warning is not in the logger's format: %q", env.level, out.String())
+		}
+	}
+}
+
 func TestJWTSecretNeverUsesAKnownDefault(t *testing.T) {
 	dir := t.TempDir()
 	for _, env := range []string{"", "mindsift-default-selfhosted-jwt-secret-key-2026", "change_this_to_a_secure_random_key_min_32_chars"} {

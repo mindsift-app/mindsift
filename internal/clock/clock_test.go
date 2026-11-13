@@ -1,10 +1,24 @@
 package clock
 
 import (
+	"os"
+	"strings"
 	"sync"
 	"testing"
 	"time"
 )
+
+// The run of ci/local-checks.sh with TZ=Asia/Tokyo only tests something when the process really runs in
+// that zone: with an unknown name or no zone data Go stays on UTC without a word.
+func TestProcessRunsInTZ(t *testing.T) {
+	tz := strings.TrimPrefix(os.Getenv("TZ"), ":")
+	if tz == "" || strings.HasPrefix(tz, "/") {
+		t.Skip("TZ names no zone")
+	}
+	if time.Local.String() != tz {
+		t.Fatalf("TZ=%s, but the process runs in %s (zone data missing?)", tz, time.Local)
+	}
+}
 
 func TestResolvePrecedence(t *testing.T) {
 	cases := []struct {

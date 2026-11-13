@@ -1,12 +1,12 @@
 # Running MindSift
 
-Details for administrators that the README only touches: the install script, the first admin, language, backups, updates, health checks, monitoring, file permissions and image tags. Every environment variable is in [`.env.example`](../.env.example) and in the configuration table of [architecture.md](architecture.md#configuration); rolling back an update is described in the [README](../README.md#running-it).
+Details for administrators that the README only touches: the install script, the first admin, language, backups, updates, rolling back and restoring, health checks, monitoring, file permissions and image tags. Every environment variable is in [`.env.example`](../.env.example) and in the configuration table of [architecture.md](architecture.md#configuration).
 
 ## Install script
 
-[`install.sh`](../install.sh) creates a folder, downloads `docker-compose.yml` and `.env.example`, generates `JWT_SECRET` and `SECRETS_KEY`, takes over the server's time zone and starts the container.
+[`install.sh`](../install.sh) creates a folder, downloads `docker-compose.yml` and `.env.example`, generates `JWT_SECRET` and `SECRETS_KEY` and starts the container. It does not take over the host's time zone: the setup wizard asks for it, and Administration → Server (or `TZ` in `.env`) changes it later.
 
-- On a new install it asks for the admin account (`ADMIN_USER`, `ADMIN_PASSWORD`; Enter means `admin` with a generated password, shown once); without a terminal it skips that and shows the setup code the wizard asks for.
+- On a new install it asks for the admin account (`ADMIN_USER`, `ADMIN_PASSWORD`; Enter means `admin` with a generated password, shown once); without a terminal it skips that and shows the setup code the wizard asks for. `ADMIN_PASSWORD` is only needed on the first start: once the container answers, the script removes it from `.env` again.
 - Two optional questions (Enter means no): your own speech recognition (adds a Whisper container with large-v3-turbo or small), and a reverse proxy (asks for `BASE_URL` and the proxy's Docker network). These additions go into `docker-compose.override.yml`.
 - Running the script again updates `docker-compose.yml` and keeps `.env` and the override.
 
@@ -18,7 +18,7 @@ The [releases](https://github.com/mindsift-app/mindsift/releases) carry the serv
 
 ## First admin
 
-Without `ADMIN_USER` and `ADMIN_PASSWORD`, a setup wizard creates the admin account. It asks for a one-time setup code that MindSift writes to its log on start (`docker logs mindsift | grep 'Setup code'`), so only someone who can read the server's log becomes its admin; a restart makes a new code, and it stops working once the admin exists.
+Without `ADMIN_USER` and `ADMIN_PASSWORD`, a setup wizard creates the admin account. It asks for a one-time setup code that MindSift writes to its log on start (`docker logs mindsift | grep 'Setup code'`, which needs `container_name: mindsift` as in [`docker-compose.yml`](../docker-compose.yml); in the compose folder `docker compose logs mindsift` works with any container name), so only someone who can read the server's log becomes its admin; a restart makes a new code, and it stops working once the admin exists.
 
 With `ADMIN_USER` (username) and `ADMIN_PASSWORD` (at least 8 characters), the admin exists before the server accepts connections; after signing in, the wizard asks only the remaining settings.
 
@@ -40,6 +40,34 @@ The setup wizard offers daily backups (preselected: 03:00 server time, kept 3 da
 ## Updates
 
 `docker compose pull && docker compose up -d`. The database schema updates itself; open apps offer to reload. Since v0.87.3 the container runs as uid 1000 and takes over `data/` by itself; with `user:` in the compose file, run `chown -R 1000:1000 data` first.
+
+## Rolling back
+
+Before an update changes the database schema, MindSift saves a compressed copy of the database as `data/backups/system/pre-migration-<migration>-<date>-<time>.db.gz` and logs where; the last three are kept. Without the copy (a full disk, for example) it does not migrate and stops ([database.md](database.md#migrations-and-startup-cleanup)).
+
+- **From the release after v0.95.0 on**, an older image refuses to start on a database a newer one has changed and logs both versions' migration numbers. Start the newer image again, or go back as below.
+- **v0.95.0 and earlier do not check this.** They start on the newer database without a word, and accounts that signed in on the newer version cannot sign in there any more: since the release after v0.95.0, passwords are stored in a newer form at the next sign-in, which older versions cannot read. Going back to v0.95.0 or earlier therefore always means restoring the copy from before the update; it predates the new password form, so sign-ins work again.
+
+To go back:
+
+1. Stop the container (`docker compose down`).
+2. Unpack the copy from before the update over the database: `gunzip -c data/backups/system/pre-migration-….db.gz > data/mindsift.db`.
+3. Delete `data/mindsift.db-wal` and `data/mindsift.db-shm` if they exist. A leftover WAL file belongs to the newer database and would be applied to the restored one on the next start.
+4. Pin the older image (`image: ghcr.io/mindsift-app/mindsift:vX.Y.Z`) and start it.
+
+Whatever was written after the update is not in that copy.
+
+## Restoring a whole server
+
+The daily backups hold the whole database as `data/backups/system/mindsift-db-<date>-<time>.db.gz` ([what else they contain](architecture.md#background-job-backups)). To put one back:
+
+1. Stop the container. Never replace the database while MindSift runs.
+2. Unpack the snapshot over the database: `gunzip -c data/backups/system/mindsift-db-….db.gz > data/mindsift.db`.
+3. Delete `data/mindsift.db-wal` and `data/mindsift.db-shm` if they exist (see above).
+4. Keep the keys that belong to the data: `SECRETS_KEY` or `data/secrets.key` (without it, hidden values and authenticator codes cannot be read) and `JWT_SECRET` or `data/jwt.secret` (otherwise everyone is signed out). Images and audio are not in the database dump but in `data/media/`; on a new machine copy the whole `data/` folder.
+5. Start the same version that wrote the snapshot, or a newer one. The container hands `data/` to its user (uid 1000) on start; without the container, keep the files owned by the user that runs MindSift and readable for it only.
+
+People restore their own data from their personal backups in the account settings, without stopping the server.
 
 ## Health check
 

@@ -30,12 +30,14 @@ func main() {
 	privateFiles()
 	// The server's time zone (internal/clock): TZ or UTC until the stored setting is read (srv.ApplyTimeZone)
 	_, _ = clock.Apply("")
-	cfg := config.Load()
 
-	level := cfg.SlogLevel()
-	// Errors meant for people are German catalog texts; the log shows them in English
+	// The logger comes before config.Load, whose warnings (no JWT_SECRET …) would otherwise appear in the
+	// standard library's plain format. Errors meant for people are German catalog texts; the log shows them
+	// in English.
+	level := config.LogLevelFromEnv()
 	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: level, ReplaceAttr: i18n.LogInEnglish}))
 	slog.SetDefault(logger)
+	cfg := config.Load()
 
 	slog.Info("MindSift Server starting", "port", cfg.Port, "log_level", level.String())
 

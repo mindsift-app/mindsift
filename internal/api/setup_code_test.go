@@ -135,23 +135,32 @@ func TestSetupCodeRateLimited(t *testing.T) {
 	store, dbPath := freshStore(t)
 	srv, _ := startWith(t, store, dbPath, config.InitialAdmin{}, false)
 	router := srv.Router()
-	post := func(ip, code string) int {
+	send := func(ip, code string) *httptest.ResponseRecorder {
 		body := `{"email":"chefin@example.com","password":"secretpassword","setupCode":"` + code + `"}`
 		req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/setup", strings.NewReader(body))
 		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Accept-Language", "de")
 		req.RemoteAddr = ip + ":40000"
 		rec := httptest.NewRecorder()
 		router.ServeHTTP(rec, req)
-		return rec.Code
+		return rec
 	}
+	post := func(ip, code string) int { return send(ip, code).Code }
 	for i := 0; i < loginLimitAccountIP; i++ {
 		if c := post("203.0.113.7", "AAAA-BBBB-CCCC"); c != http.StatusForbidden {
 			t.Fatalf("wrong code %d: %d", i+1, c)
 		}
 	}
-	// Locked: a further wrong code is refused with 429
-	if c := post("203.0.113.7", "AAAA-BBBB-DDDD"); c != http.StatusTooManyRequests {
-		t.Fatalf("after %d wrong codes: %d, want 429", loginLimitAccountIP, c)
+	// Locked: a further wrong code is refused with 429, and the answer speaks of the setup, not the sign-in
+	rec := send("203.0.113.7", "AAAA-BBBB-DDDD")
+	if rec.Code != http.StatusTooManyRequests {
+		t.Fatalf("after %d wrong codes: %d, want 429", loginLimitAccountIP, rec.Code)
+	}
+	var answer struct{ Error, Code string }
+	_ = json.Unmarshal(rec.Body.Bytes(), &answer)
+	if answer.Code != "setup_locked" || rec.Header().Get("Retry-After") == "" ||
+		answer.Error != "Zu viele falsche Einrichtungscodes. Die Einrichtung ist für noch 15 Minuten gesperrt." {
+		t.Fatalf("locked setup: %s (Retry-After %q)", rec.Body.String(), rec.Header().Get("Retry-After"))
 	}
 	if n, _ := store.CountUsers(); n != 0 {
 		t.Fatal("a wrong code created the admin")
