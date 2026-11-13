@@ -13,6 +13,7 @@ Severity levels: **High** (account takeover or data exfiltration possible), **Me
 | FLAW-31 | Auth | Session token stored in `localStorage` (no HttpOnly cookies) | Partially resolved |
 | FLAW-34 | Admin | SMTP password stored in plain text in DB and backups | Partially resolved |
 | FLAW-43 | Sharing | A picture copied out of a shared note stays readable after the share is revoked | Accepted (by design) |
+| FLAW-44 | Accounts | Changing one's login address tells whether another address already has an account | Accepted |
 
 ---
 
@@ -30,6 +31,10 @@ Severity levels: **High** (account takeover or data exfiltration possible), **Me
 - **Status: Accepted (by design).** A file is readable for everyone who may read the note it was uploaded to or any note whose bullets point to it ([media.go](../internal/api/media.go) `canReadMedia`, [block_refs.go](../internal/storage/block_refs.go) `sqlDocsWithMedia`). This is what keeps an image working when a bullet is copied or moved into another note.
 - **Consequence:** someone who saw a picture (or recording) in a shared note and copies that bullet into a note of their own keeps access to the file after the share is revoked, and can publish it through a public link of their own note (`handlePublicMedia` in [publiclinks.go](../internal/api/publiclinks.go) serves every file the note shows).
 - **Why it stays:** what was shared once can be copied or photographed anyway. A copy in one's own notes is one's own copy, just like copied text. Revoking a share stops access to the note, not to copies made while it was shared.
+
+### FLAW-44: Changing the Login Address Reveals Taken Addresses
+- **Status: Accepted.** Changing one's login address in the account settings answers `409` ("E-Mail-Adresse existiert bereits") when another account already uses the new address ([handlers_auth.go](../internal/api/handlers_auth.go) `handleUpdateUserSettings`), so a signed-in person can test whether an address has an account on this server.
+- **Why it stays:** it needs an account of one's own and its current password, and every try is a deliberate settings change. On a self-hosted server the people with accounts are known to the admin. Answering the same way every time and mailing nothing to a taken address would hide it, but someone who mistypes would never learn why no mail arrives.
 
 ---
 
