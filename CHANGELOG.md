@@ -25,7 +25,7 @@ Versions without a git tag were development states and were never published as a
 - **Way back after an update:** from this version on, MindSift started on a database that a newer version has already changed no longer runs on it silently (versions before this one still do): it refuses to start and logs both versions' migration numbers and how to go back (restore the pre-migration copy and start the older image, or run the newer image again). The README explains it under "Rolling back".
 - **Time zone in the administration:** Administration → Server sets the server's time zone from a searchable list of all zones (or takes over the browser's) and shows the server's time right now and where the zone comes from (this setting, `TZ`, or UTC by default). Due dates, alarms, the daily summary, backups and dates in emails follow a change at once, without a restart. One time zone per server, not per person.
 - The setup wizard asks for the server's time zone, suggested from the browser, with the same searchable list as the administration; it applies right away. Its summary names the zone with the backup time, e.g. "03:00 (Europe/Berlin)".
-- "About MindSift" links the licenses of the third-party software in the app (`/third-party-licenses.txt`, served by MindSift itself).
+- "About MindSift" shows the licenses of the third-party software in the app to signed-in people (they name every dependency's version, so they are not public).
 - The help says that due times and alarms follow the server's time zone and where admins set it.
 
 ### Fixed
