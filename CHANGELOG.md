@@ -29,6 +29,7 @@ Versions without a git tag were development states and were never published as a
 - The help says that due times and alarms follow the server's time zone and where admins set it.
 
 ### Fixed
+- The app loads pictures only from MindSift itself (uploaded images, profile pictures and link-preview pictures already came through the server). An image address on another server, smuggled into shared content, can no longer act as a tracking pixel that tells that server who opened the note. Custom themes that pull background pictures from other servers lose them; embed them as `data:` instead.
 - Backups are flushed to disk before they count as written (the daily backups, the copy before database updates and the backups kept for a deleted account), so a power cut right after a backup no longer leaves an empty or missing file.
 - The install script says "MindSift is up and running" only once MindSift answers; otherwise it points to the log.
 - Hidden values stay with their owner: someone who may only read a shared note and copied a hidden value into a note of their own can no longer change it from there, and no longer takes it over when the owner deletes the bullet.
