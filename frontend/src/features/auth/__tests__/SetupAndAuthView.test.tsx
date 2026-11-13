@@ -113,6 +113,35 @@ describe('SetupAndAuthView: setup wizard', () => {
     expect(completeSetup).not.toHaveBeenCalled();
   });
 
+  it('asks for the setup code from the server log only when the server requires one', async () => {
+    render(<SetupAndAuthView authStatus={status} onAuthenticated={() => {}} />);
+    expect(screen.queryByLabelText('Einrichtungscode *')).toBeNull();
+    fillAccount();
+    await submit();
+    expect(completeSetup.mock.calls[0][0]).not.toHaveProperty('setupCode');
+  });
+
+  it('sends the setup code with the account', async () => {
+    render(<SetupAndAuthView authStatus={{ ...status, setupCodeRequired: true }} onAuthenticated={() => {}} />);
+    const field = screen.getByLabelText('Einrichtungscode *') as HTMLInputElement;
+    expect(field.required).toBe(true);
+    expect(document.activeElement).toBe(field);
+    expect(screen.getByText('docker logs mindsift')).toBeTruthy();
+    fireEvent.change(field, { target: { value: ' abcd-efgh-jkmn ' } });
+    fillAccount();
+    await submit();
+    expect(completeSetup).toHaveBeenCalledWith(expect.objectContaining({ setupCode: 'abcd-efgh-jkmn', email: 'chef@example.com' }));
+  });
+
+  it('shows the server error for a wrong setup code', async () => {
+    completeSetup.mockRejectedValueOnce(new Error('Der Einrichtungscode stimmt nicht. Er steht im Server-Log.'));
+    render(<SetupAndAuthView authStatus={{ ...status, setupCodeRequired: true }} onAuthenticated={() => {}} />);
+    fireEvent.change(screen.getByLabelText('Einrichtungscode *'), { target: { value: 'AAAA-BBBB-CCCC' } });
+    fillAccount();
+    await submit();
+    expect(screen.getByRole('alert').textContent).toContain('Der Einrichtungscode stimmt nicht');
+  });
+
   describe('with touch (the system time picker can be emptied)', () => {
     const matchMedia = window.matchMedia;
     beforeEach(() => {

@@ -503,7 +503,7 @@ var messagesFR = map[string]string{
 	"Deine neue E-Mail-Adresse ist bestätigt. Du meldest dich ab jetzt mit ihr an.":                                                                        "Ta nouvelle adresse e-mail est confirmée. Tu te connectes désormais avec elle.",
 	"Ungültige E-Mail-Adresse": "Adresse e-mail invalide",
 	"Der Bestätigungslink ist ungültig oder abgelaufen. Bitte gib die neue Adresse in den Einstellungen noch einmal ein.": "Le lien de confirmation est invalide ou a expiré. Saisis à nouveau la nouvelle adresse dans les paramètres.",
-	"Interner Fehler – Details stehen im Server-Log":                                                                      "Erreur interne – les détails figurent dans le journal du serveur",
+	"Interner Fehler – Details stehen im Server-Log":                                                                      "Erreur interne – les détails figurent dans le journal du serveur.",
 	"Dieser Server erlaubt Push-Benachrichtigungen nur über die Dienste der großen Browser":                               "Ce serveur n'autorise les notifications push que via les services des grands navigateurs",
 	"Weiterleitung von https auf http abgelehnt":                                                                          "Redirection de https vers http refusée",
 	"Als Profilbild geht nur ein hochgeladenes Bild (höchstens 300 KB) oder ein Emoji":                                    "Comme photo de profil, seule une image téléversée (300 Ko au plus) ou un emoji est possible",
@@ -557,4 +557,6 @@ var messagesFR = map[string]string{
 	"Die Registrierung mit Passwort ist ausgeschaltet. Bitte melde dich über {name} an.":       "L'inscription avec mot de passe est désactivée. Connecte-toi avec {name}.",
 	"Die Anmeldung mit Passwort ist ausgeschaltet. Bitte melde dich über {name} an.":           "La connexion avec mot de passe est désactivée. Connecte-toi avec {name}.",
 	"Die Anmeldung über einen Anbieter (OIDC) ist auf diesem Server nicht eingerichtet":        "La connexion via un fournisseur (OIDC) n'est pas configurée sur ce serveur",
+	"Einrichtungscode erforderlich: Er steht im Server-Log.":                                   "Le code de configuration est requis : il figure dans le journal du serveur.",
+	"Der Einrichtungscode stimmt nicht. Er steht im Server-Log.":                               "Le code de configuration est incorrect. Il figure dans le journal du serveur.",
 }

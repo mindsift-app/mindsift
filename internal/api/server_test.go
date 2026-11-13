@@ -103,7 +103,7 @@ func TestFirstBootSetupAndInviteRegistrationAndNonNullSlices(t *testing.T) {
 		"sharingMode": "organizations",
 		"createSampleData": false
 	}`)
-	req = httptest.NewRequest(http.MethodPost, "/api/v1/auth/setup", bytes.NewReader(setupBody))
+	req = httptest.NewRequest(http.MethodPost, "/api/v1/auth/setup", strings.NewReader(withSetupCode(srv, string(setupBody))))
 	req.Header.Set("Content-Type", "application/json")
 	rec = httptest.NewRecorder()
 	router.ServeHTTP(rec, req)
@@ -790,7 +790,7 @@ func TestWebhookTriageBadgeAndIngestion(t *testing.T) {
 		"allowRegistration": false,
 		"createSampleData": false
 	}`)
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/setup", bytes.NewReader(setupBody))
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/setup", strings.NewReader(withSetupCode(srv, string(setupBody))))
 	req.Header.Set("Content-Type", "application/json")
 	rec := httptest.NewRecorder()
 	router.ServeHTTP(rec, req)
@@ -883,7 +883,7 @@ func TestSSEGlobalEndpoint(t *testing.T) {
 		"allowRegistration": false,
 		"createSampleData": false
 	}`)
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/setup", bytes.NewReader(setupBody))
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/setup", strings.NewReader(withSetupCode(srv, string(setupBody))))
 	req.Header.Set("Content-Type", "application/json")
 	rec := httptest.NewRecorder()
 	router.ServeHTTP(rec, req)
@@ -1357,7 +1357,7 @@ func TestFirstBootSetupWithSampleData(t *testing.T) {
 	t.Cleanup(srv.Close)
 
 	// Too short passwords are refused (FLAW-09)
-	short := httptest.NewRequest(http.MethodPost, "/api/v1/auth/setup", strings.NewReader(`{"email":"me@example.com","password":"secret"}`))
+	short := httptest.NewRequest(http.MethodPost, "/api/v1/auth/setup", strings.NewReader(withSetupCode(srv, `{"email":"me@example.com","password":"secret"}`)))
 	short.Header.Set("Content-Type", "application/json")
 	short.Header.Set("Accept-Language", "de")
 	shortRec := httptest.NewRecorder()
@@ -1367,7 +1367,7 @@ func TestFirstBootSetupWithSampleData(t *testing.T) {
 	}
 
 	body := []byte(`{"email":"me@example.com","password":"secret123","displayName":"Ich","createSampleData":true}`)
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/setup", bytes.NewReader(body))
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/setup", strings.NewReader(withSetupCode(srv, string(body))))
 	req.Header.Set("Content-Type", "application/json")
 	rec := httptest.NewRecorder()
 	srv.Router().ServeHTTP(rec, req)

@@ -19,6 +19,8 @@ Versions without a git tag were development states and were never published as a
 - **Prometheus metrics:** with `METRICS_TOKEN` set, `/metrics` serves API requests and their duration by route, mails sent and failed, backup runs and the last good one, accounts and active accounts, the database's connections and size, memory and goroutines (scraped with the token as bearer). Without the variable nothing changes. `/api/v1/health?db=1` also checks the database and answers `503` when it does not respond.
 - New settings section **Security** with the password change, two-factor sign-in and the signed-in devices (moved there from Profile).
 - `THIRD_PARTY_LICENSES.txt` with the licenses of the npm packages and Go modules built into MindSift, generated at build time: in the image under `/app/` and in the release archives next to the binary.
+- **Backup before database updates:** before an update changes the database schema, MindSift saves a compressed copy of the database in `data/backups/system/pre-migration-….db.gz` and logs where; the last three are kept. If the copy cannot be written (a full disk, for example), the database is left as it is and MindSift does not start, saying why.
+- **Way back after an update:** from this version on, MindSift started on a database that a newer version has already changed no longer runs on it silently (versions before this one still do): it refuses to start and logs both versions' migration numbers and how to go back (restore the pre-migration copy and start the older image, or run the newer image again). The README explains it under "Rolling back".
 
 ### Fixed
 - Zooming into a bullet whose level was never stored shows its path and sub-bullets again, and the recovery-code file of an account without email or username no longer names it "undefined".
@@ -35,6 +37,7 @@ Versions without a git tag were development states and were never published as a
 - The task dialog opens and closes without delay in long task lists: opening it no longer makes the browser restyle and lay out every row (300 tasks with a slowed-down CPU: about 0.5 s down to 0.07 s).
 
 ### Changed
+- **Attention:** the setup wizard of a new server now asks for a one-time **setup code** that MindSift writes to its log when it starts without any account (`docker logs mindsift | grep 'Setup code'`), so only someone who can read the server's log becomes its admin, not whoever opens the page first. The code changes with every restart and stops working once the admin exists; three wrong codes lock the address for 15 minutes. With `ADMIN_USER`/`ADMIN_PASSWORD` and in the demo nothing changes. The install script shows the code when it has not created the admin itself. Scripts that call `POST /api/v1/auth/setup` send it as `setupCode`; `POST /api/v1/auth/register` no longer creates the first account of a server.
 - Dragging a card on a Kanban board with many tasks is much smoother: the drop gap opens at once and the cards below glide aside instead of the whole column being laid out again in every frame.
 - The note preview on a Kanban card and in a task row shows the first 60 characters of the note instead of carrying the whole note; in the list it is no longer cut at a fixed narrow width but shortens only when the row runs out of room.
 - On wide screens the Kanban board is centred, and its columns grow to 640 px instead of 420 px.

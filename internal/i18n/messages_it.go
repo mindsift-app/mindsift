@@ -503,7 +503,7 @@ var messagesIT = map[string]string{
 	"Deine neue E-Mail-Adresse ist bestätigt. Du meldest dich ab jetzt mit ihr an.":                                                                        "Il tuo nuovo indirizzo e-mail è confermato. D'ora in poi accedi con questo.",
 	"Ungültige E-Mail-Adresse": "Indirizzo e-mail non valido",
 	"Der Bestätigungslink ist ungültig oder abgelaufen. Bitte gib die neue Adresse in den Einstellungen noch einmal ein.": "Il link di conferma non è valido o è scaduto. Inserisci di nuovo il nuovo indirizzo nelle impostazioni.",
-	"Interner Fehler – Details stehen im Server-Log":                                                                      "Errore interno: i dettagli sono nel log del server",
+	"Interner Fehler – Details stehen im Server-Log":                                                                      "Errore interno: i dettagli sono nel log del server.",
 	"Dieser Server erlaubt Push-Benachrichtigungen nur über die Dienste der großen Browser":                               "Questo server consente le notifiche push solo tramite i servizi dei grandi browser",
 	"Weiterleitung von https auf http abgelehnt":                                                                          "Reindirizzamento da https a http rifiutato",
 	"Als Profilbild geht nur ein hochgeladenes Bild (höchstens 300 KB) oder ein Emoji":                                    "Come immagine del profilo vale solo un'immagine caricata (al massimo 300 KB) o un'emoji",
@@ -557,4 +557,6 @@ var messagesIT = map[string]string{
 	"Die Registrierung mit Passwort ist ausgeschaltet. Bitte melde dich über {name} an.":       "La registrazione con password è disattivata. Accedi con {name}.",
 	"Die Anmeldung mit Passwort ist ausgeschaltet. Bitte melde dich über {name} an.":           "L'accesso con password è disattivato. Accedi con {name}.",
 	"Die Anmeldung über einen Anbieter (OIDC) ist auf diesem Server nicht eingerichtet":        "L'accesso tramite un provider (OIDC) non è configurato su questo server",
+	"Einrichtungscode erforderlich: Er steht im Server-Log.":                                   "Serve il codice di configurazione: si trova nel log del server.",
+	"Der Einrichtungscode stimmt nicht. Er steht im Server-Log.":                               "Il codice di configurazione non è corretto. Si trova nel log del server.",
 }

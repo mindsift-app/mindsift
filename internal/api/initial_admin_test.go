@@ -133,7 +133,7 @@ func TestInitialAdminFromEnvironment(t *testing.T) {
 	if strings.Contains(rec.Body.String(), `"needsSetup":true`) {
 		t.Fatalf("status still needs setup: %s", rec.Body.String())
 	}
-	rec = postJSON(t, router, "/api/v1/auth/setup", "", `{"email":"evil@example.com","password":"secretpassword"}`)
+	rec = postJSON(t, router, "/api/v1/auth/setup", "", withSetupCode(srv, `{"email":"evil@example.com","password":"secretpassword"}`))
 	if rec.Code != http.StatusForbidden {
 		t.Fatalf("setup after the admin from the environment: %d, want 403", rec.Code)
 	}
@@ -330,7 +330,7 @@ func TestFirstBootSetupNeedsJSONContentType(t *testing.T) {
 	router := srv.Router()
 	body := `{"email":"owner@example.com","password":"secretpassword"}`
 	for _, ct := range []string{"text/plain", "application/x-www-form-urlencoded", ""} {
-		req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/setup", strings.NewReader(body))
+		req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/setup", strings.NewReader(withSetupCode(srv, body)))
 		if ct != "" {
 			req.Header.Set("Content-Type", ct)
 		}
@@ -343,7 +343,7 @@ func TestFirstBootSetupNeedsJSONContentType(t *testing.T) {
 	if n, _ := store.CountUsers(); n != 0 {
 		t.Fatalf("%d accounts created without JSON", n)
 	}
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/setup", strings.NewReader(body))
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/setup", strings.NewReader(withSetupCode(srv, body)))
 	req.Header.Set("Content-Type", "application/json; charset=utf-8")
 	rec := httptest.NewRecorder()
 	router.ServeHTTP(rec, req)

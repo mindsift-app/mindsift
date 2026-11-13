@@ -96,6 +96,8 @@ else
   ADMIN_NAME=""
   ADMIN_PW=""
   ADMIN_PW_GENERATED=0
+  # Without an admin from here the setup wizard asks for the setup code from MindSift's log (shown at the end)
+  SETUP_CODE_NEEDED=0
 
   # The first admin (ADMIN_USER / ADMIN_PASSWORD), created on the first start, so nobody else can claim the
   # new instance in the setup wizard. Only for a new installation: with a database in data/ the accounts
@@ -150,10 +152,13 @@ else
         set_env ADMIN_PASSWORD "'${ADMIN_PW}'"
       else
         ADMIN_NAME=""
+        SETUP_CODE_NEEDED=1
       fi
     else
       echo "ℹ️  No terminal for questions, so no admin account is set: open MindSift right after the start"
-      echo "   and create it in the setup wizard."
+      echo "   and create it in the setup wizard. It asks for the setup code MindSift writes to its log"
+      echo "   (shown at the end, or: ${COMPOSE_CMD} logs mindsift | grep 'Setup code')."
+      SETUP_CODE_NEEDED=1
     fi
   fi
 
@@ -275,6 +280,23 @@ if [ -n "${ADMIN_NAME:-}" ]; then
     echo "🔑 Generated password (shown only now, note it down): ${ADMIN_PW}"
   fi
   echo "   ADMIN_PASSWORD in .env is only used on this first start; you can delete it there afterwards."
+elif [ "${SETUP_CODE_NEEDED:-0}" = "1" ]; then
+  echo "💡 On the first visit a wizard guides you through"
+  echo "   setting up your admin account."
+  # The wizard asks for the one-time code MindSift writes to its log when it starts without an account
+  SETUP_CODE=""
+  for _ in $(seq 1 30); do
+    SETUP_CODE=$(${COMPOSE_CMD} logs mindsift 2>/dev/null | sed -n 's/.*Setup code: \([A-Z0-9]\{4\}-[A-Z0-9]\{4\}-[A-Z0-9]\{4\}\).*/\1/p' | tail -n1 || true)
+    if [ -n "${SETUP_CODE}" ]; then break; fi
+    sleep 1
+  done
+  if [ -n "${SETUP_CODE}" ]; then
+    echo "🔑 Setup code for the wizard: ${SETUP_CODE}"
+    echo "   Valid until the admin exists; after a restart MindSift logs a new one:"
+  else
+    echo "🔑 The wizard asks for the setup code from MindSift's log:"
+  fi
+  echo "   ${COMPOSE_CMD} logs mindsift | grep 'Setup code'"
 else
   echo "💡 On the first visit a wizard guides you through"
   echo "   setting up your admin account."

@@ -147,3 +147,14 @@ Sign-in through an OpenID Connect provider (`internal/api/oidc.go`, `frontend/sr
 - on a phone the provider's button is at least 44 px high
 
 Against servers that are already running: `MINDSIFT_OIDC_URL` (with `OIDC_PASSWORD_LOGIN=false` and `OIDC_NAME=Dex`), `MINDSIFT_OIDC_ADMIN`, `MINDSIFT_OIDC_PASSWORD`; the person at Dex is `erika@example.com` / `password` (`DEX_LOGIN`, `DEX_PASSWORD`). `SHOT_DIR=<folder>` saves the login with only the button (desktop and phone) and the error of the return.
+
+## setup.e2e.mjs
+
+The first-boot setup wizard with its one-time setup code (`internal/api/setup_code.go`). `run.sh` starts a fourth server without the demo and without `ADMIN_USER` (fresh database, port `E2E_SETUP_PORT`, else `E2E_PORT` + 4, else a free one), reads the code from that container's log (`Setup code: XXXX-XXXX-XXXX`) the way an administrator would, and passes it as `MINDSIFT_SETUP_CODE`. Checked:
+
+- `/auth/status` says `setupCodeRequired`, and `/auth/register` does not create the first account
+- the wizard shows the code field first, focused, with the hint on `docker logs mindsift`; on a phone it is at least 44 px high
+- a wrong code is refused with the server's message and creates no account
+- the right code, typed in lower case, creates the admin and signs in; afterwards the status asks for no code, the code is refused, and the new admin signs in with the password
+
+Against a server that is already running (fresh, without `ADMIN_USER`): `MINDSIFT_SETUP_URL` and `MINDSIFT_SETUP_CODE` from its log. The test sets up that server, so it runs once per fresh database.

@@ -160,7 +160,7 @@ services:
       # - ADMIN_PASSWORD=...
 ```
 
-Open `http://localhost:8080`. Without `ADMIN_USER` and `ADMIN_PASSWORD`, a setup wizard creates the admin account: do that right after the first start, so nobody else grabs it.
+Open `http://localhost:8080`. Without `ADMIN_USER` and `ADMIN_PASSWORD`, a setup wizard creates the admin account. It asks for a one-time setup code that MindSift writes to its log on start (`docker logs mindsift | grep 'Setup code'`), so only someone who can read the server's log becomes its admin; a restart makes a new code, and it stops working once the admin exists.
 
 **Or the install script** ([read it first](install.sh)):
 
@@ -168,7 +168,7 @@ Open `http://localhost:8080`. Without `ADMIN_USER` and `ADMIN_PASSWORD`, a setup
 curl -fsSL https://raw.githubusercontent.com/mindsift-app/mindsift/main/install.sh | bash
 ```
 
-It creates a folder, downloads `docker-compose.yml` and `.env.example`, generates `JWT_SECRET` and `SECRETS_KEY`, takes over the server's time zone and starts the container. On a new install it asks for the admin account (`ADMIN_USER`, `ADMIN_PASSWORD`; Enter means `admin` with a generated password, shown once); without a terminal it skips that, so open the setup wizard right away. Two optional questions (Enter means no): your own speech recognition (adds a Whisper container with large-v3-turbo or small), and a reverse proxy (asks for `BASE_URL` and the proxy's Docker network). These additions go into `docker-compose.override.yml`. Running the script again updates `docker-compose.yml` and keeps `.env` and the override.
+It creates a folder, downloads `docker-compose.yml` and `.env.example`, generates `JWT_SECRET` and `SECRETS_KEY`, takes over the server's time zone and starts the container. On a new install it asks for the admin account (`ADMIN_USER`, `ADMIN_PASSWORD`; Enter means `admin` with a generated password, shown once); without a terminal it skips that and shows the setup code the wizard asks for. Two optional questions (Enter means no): your own speech recognition (adds a Whisper container with large-v3-turbo or small), and a reverse proxy (asks for `BASE_URL` and the proxy's Docker network). These additions go into `docker-compose.override.yml`. Running the script again updates `docker-compose.yml` and keeps `.env` and the override.
 
 All settings are explained in [`.env.example`](.env.example). For voice recognition by hand, follow the comments on the `whisper` block in [`docker-compose.yml`](docker-compose.yml); which model to pick is in the [docs](Doku/architecture.md#speech-recognition).
 
@@ -203,6 +203,7 @@ The most important settings (all of them are in [`.env.example`](.env.example)):
 * **Reverse proxy:** pass through WebSocket upgrades and unbuffered SSE if you can; otherwise MindSift falls back to long polling. Examples for nginx, Traefik, Caddy and Cloudflare: [Doku/reverse-proxy.md](Doku/reverse-proxy.md).
 * **Backups:** the setup wizard offers daily backups (preselected: 03:00 server time, kept 3 days); change them later in the admin settings. Each run saves the whole database plus one ZIP per person under `data/backups/`, which people download or restore in their account settings. Copy that folder somewhere else too.
 * **Updates:** `docker compose pull && docker compose up -d`. The database schema updates itself; open apps offer to reload. Since v0.87.3 the container runs as uid 1000 and takes over `data/` by itself; with `user:` in the compose file, run `chown -R 1000:1000 data` first.
+* **Rolling back:** before an update changes the database schema, MindSift saves a compressed copy of the database as `data/backups/system/pre-migration-<migration>-<date>-<time>.db.gz` (the last three are kept; without the copy, for example on a full disk, it does not migrate and stops). An older image refuses to start on a database a newer one has changed and says so in the log. To go back: stop the container, unpack the copy from before the update over the database (`gunzip -c data/backups/system/pre-migration-….db.gz > data/mindsift.db`) and delete `data/mindsift.db-wal` and `data/mindsift.db-shm` if they exist, pin the older image (`image: ghcr.io/mindsift-app/mindsift:vX.Y.Z`) and start it. Whatever was written after the update is not in that copy.
 * **Health check:** the image checks `/api/v1/health` every 30 s, shown in `docker ps`, Portainer and Dockge and usable with `depends_on: condition: service_healthy`. Podman ignores checks in images; copy the `healthcheck:` block of `docker-compose.yml` instead.
 * **Monitoring:** `/api/v1/health?db=1` also asks the database and answers `503` when it does not respond (the container's own check stays without it). With `METRICS_TOKEN` set, `/metrics` serves Prometheus metrics: API requests and their duration by route, mails sent and failed, backup runs and the time of the last good one, accounts and active accounts, the database's connections and file size, memory and goroutines. No label holds a name, address or id. Scrape it with the token:
 
