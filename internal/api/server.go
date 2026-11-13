@@ -31,6 +31,8 @@ type Server struct {
 	staticFS fs.FS
 	// setupMu: the first-boot setup runs once at a time
 	setupMu sync.Mutex
+	// setupCode: the one-time code the first-boot setup asks for (setup_code.go)
+	setupCode setupCodeState
 
 	leases   *collab.LeaseManager // block leases and open sessions of notes
 	notifier *collab.Notifier     // wakes long-poll requests on note changes
@@ -76,6 +78,7 @@ func NewServer(cfg *config.Config, store *storage.Store, wsHub *ws.Hub, staticFS
 		now:      time.Now,
 	}
 	srv.loginGuard = newLoginGuard(!cfg.DisableLoginProtection)
+	srv.prepareSetupCode()
 	srv.metrics = newAPIMetrics(srv)
 	var oidcOff string
 	srv.oidc, oidcOff = newOIDCService(cfg)

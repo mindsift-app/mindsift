@@ -3,6 +3,8 @@ package domain
 import (
 	"testing"
 	"time"
+
+	"github.com/mindsift-app/mindsift/internal/clock"
 )
 
 func TestNormalizeDue(t *testing.T) {
@@ -63,6 +65,27 @@ func TestDueAlarmAtCalendarDays(t *testing.T) {
 		if !at.Equal(time.Date(2026, 11, 23, 9, 0, 0, 0, loc)) {
 			t.Errorf("%s: a day before an all-day task: %v", zone, at)
 		}
+	}
+}
+
+// A due date given as an instant (RFC 3339) is stored as the server's wall time; a change of the zone
+// counts for the next one at once
+func TestNormalizeDueFollowsServerZone(t *testing.T) {
+	tokyo, _ := time.LoadLocation("Asia/Tokyo")
+	clock.UseInTest(t, time.UTC)
+	if got := NormalizeDue("2026-11-13T23:30:00Z"); got != "2026-11-13T23:30" {
+		t.Fatalf("UTC: %s", got)
+	}
+	clock.Set(clock.Zone{Loc: tokyo, Source: clock.SourceSetting})
+	if got := NormalizeDue("2026-11-13T23:30:00Z"); got != "2026-11-14T08:30" {
+		t.Fatalf("Tokyo: %s", got)
+	}
+	// Plain dates and wall times stay as written whatever the zone
+	if got := NormalizeDue("2026-11-13 23:30"); got != "2026-11-13T23:30" {
+		t.Fatalf("wall time: %s", got)
+	}
+	if got := HumanDue("de", "2026-11-14T08:30"); got != "14.11.2026, 08:30 Uhr" {
+		t.Fatalf("HumanDue: %s", got)
 	}
 }
 

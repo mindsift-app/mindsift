@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/mindsift-app/mindsift/internal/clock"
 	"github.com/mindsift-app/mindsift/internal/domain"
 )
 
@@ -40,8 +41,8 @@ func TestTaskRemindersAlarm(t *testing.T) {
 	}
 
 	// Two weeks ahead at 09:00: the early reminder, once
-	srv.checkAlarms(time.Date(2026, 11, 10, 9, 0, 0, 0, time.Local))
-	srv.checkAlarms(time.Date(2026, 11, 10, 9, 1, 0, 0, time.Local))
+	srv.checkAlarms(time.Date(2026, 11, 10, 9, 0, 0, 0, clock.Location()))
+	srv.checkAlarms(time.Date(2026, 11, 10, 9, 1, 0, 0, clock.Location()))
 	if texts := dueEntries(); len(texts) != 1 || texts[0] != "„Geburtstag Mama“ ist am 24.11.2026 fällig" {
 		t.Fatalf("early reminder in the bell: %q", texts)
 	}
@@ -51,11 +52,11 @@ func TestTaskRemindersAlarm(t *testing.T) {
 		}
 	}
 	// The lead time (30 min) no longer applies; on the day the second reminder comes
-	srv.checkAlarms(time.Date(2026, 11, 24, 8, 45, 0, 0, time.Local))
+	srv.checkAlarms(time.Date(2026, 11, 24, 8, 45, 0, 0, clock.Location()))
 	if texts := dueEntries(); len(texts) != 1 {
 		t.Fatalf("nothing at the lead time: %q", texts)
 	}
-	srv.checkAlarms(time.Date(2026, 11, 24, 9, 0, 0, 0, time.Local))
+	srv.checkAlarms(time.Date(2026, 11, 24, 9, 0, 0, 0, clock.Location()))
 	if texts := dueEntries(); len(texts) != 2 {
 		t.Fatalf("reminder on the day: %q", texts)
 	}

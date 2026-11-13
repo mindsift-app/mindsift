@@ -2,10 +2,15 @@ package storage
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"log/slog"
+	"os"
+	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
+	"time"
 
 	"github.com/mindsift-app/mindsift/internal/domain"
 )
@@ -64,6 +69,11 @@ var migrations = []migration{
 }
 
 func (s *Store) migrate() error {
+	// A database without any table is new (or was just emptied by the demo reset): nothing to back up
+	var tables int
+	if err := s.db.QueryRow(`SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'`).Scan(&tables); err != nil {
+		return err
+	}
 	if _, err := s.db.Exec(`CREATE TABLE IF NOT EXISTS schema_migrations (
 		id INTEGER PRIMARY KEY,
 		name TEXT NOT NULL,
@@ -72,6 +82,7 @@ func (s *Store) migrate() error {
 		return err
 	}
 	applied := map[int]bool{}
+	lastApplied := 0
 	rows, err := s.db.Query(`SELECT id FROM schema_migrations`)
 	if err != nil {
 		return err
@@ -83,11 +94,27 @@ func (s *Store) migrate() error {
 			return err
 		}
 		applied[id] = true
+		lastApplied = max(lastApplied, id)
 	}
 	if err := rows.Err(); err != nil {
 		return err
 	}
 	_ = rows.Close()
+
+	known, pending := 0, false
+	for _, m := range migrations {
+		known = max(known, m.id)
+		pending = pending || !applied[m.id]
+	}
+	// An older binary on a database a newer one has migrated would run on a schema it does not know
+	if lastApplied > known {
+		return s.newerDatabase(lastApplied, known)
+	}
+	if pending && tables > 0 && s.systemBackupDir != "" {
+		if err := s.backupBeforeMigrations(lastApplied); err != nil {
+			return err
+		}
+	}
 
 	last := 0
 	for _, m := range migrations {
@@ -104,8 +131,132 @@ func (s *Store) migrate() error {
 			return err
 		}
 	}
-	_, err = s.db.Exec(fmt.Sprintf(`PRAGMA user_version = %d`, last))
+	if _, err = s.db.Exec(fmt.Sprintf(`PRAGMA user_version = %d`, last)); err != nil {
+		return err
+	}
+	s.migrationsFinished()
+	return nil
+}
+
+// Before pending migrations run on a database with content, a gzip-compressed copy of it goes to
+// $DATA_DIR/backups/system/pre-migration-<last applied id>-<time>.db.gz, the way back after an update.
+// The last preMigrationKeep copies stay; they are not part of the daily backups (other name, no
+// retention in days). Without the copy nothing is migrated. Migrations are not one transaction: a step
+// that fails can leave the database half migrated, and a restart loop would copy that state again and
+// again. So the marker file names the copy taken before the attempt, until the migrations have run
+// through; while it is there, that copy is kept besides the newest ones.
+
+const (
+	preMigrationKeep   = 3
+	preMigrationMarker = "pre-migration-pending"
+)
+
+var (
+	preMigrationNameRe = regexp.MustCompile(`^pre-migration-(\d+)-(\d{4}-\d{2}-\d{2}-\d{6})\.db\.gz$`)
+	// migrationNow: the time in the name of the copy (tests set it)
+	migrationNow = time.Now
+)
+
+// NewerDatabaseError: the database has a migration this binary does not know, so an older MindSift was
+// started on a database a newer one has already migrated.
+type NewerDatabaseError struct {
+	DatabaseID int // highest migration applied to the database
+	KnownID    int // highest migration this binary knows
+	BackupDir  string
+}
+
+func (e *NewerDatabaseError) Error() string {
+	where := "a pre-migration backup"
+	if e.BackupDir != "" {
+		where = "a pre-migration backup from " + e.BackupDir
+	}
+	return fmt.Sprintf("the database has migration %d, this MindSift version knows only up to %d: an older version is running on a database a newer version has migrated. "+
+		"Run the newer image again, or roll back: stop MindSift, restore %s (unpack it and put it in place of mindsift.db, removing mindsift.db-wal and mindsift.db-shm) and start the older image",
+		e.DatabaseID, e.KnownID, where)
+}
+
+func (s *Store) newerDatabase(dbID, known int) error {
+	err := &NewerDatabaseError{DatabaseID: dbID, KnownID: known, BackupDir: s.systemBackupDir}
+	slog.Error("Database is newer than this MindSift version; not starting, so it stays untouched",
+		"database_migration", dbID, "known_migration", known, "backups", s.systemBackupDir)
 	return err
+}
+
+// backupBeforeMigrations writes the copy before migrating; an error stops the start before anything
+// changed (a full disk, most likely).
+func (s *Store) backupBeforeMigrations(lastApplied int) error {
+	dir := s.systemBackupDir
+	now := migrationNow()
+	name := fmt.Sprintf("pre-migration-%d-%s.db.gz", lastApplied, now.Format("2006-01-02-150405"))
+	if err := s.writeSnapshot(dir, name, now); err != nil {
+		slog.Error("Backup before the database migration failed; MindSift does not migrate without one and stops. "+
+			"The copy needs free space of about the size of the database (mindsift.db) in the backup folder; free some and start again",
+			"folder", dir, "error", err)
+		return fmt.Errorf("backup before the database migration to %s failed, the database was not changed (free disk space and start again): %w", dir, err)
+	}
+	marker := filepath.Join(dir, preMigrationMarker)
+	pinned := ""
+	if b, err := os.ReadFile(marker); err == nil {
+		prev := strings.TrimSpace(string(b))
+		if _, err := os.Stat(filepath.Join(dir, prev)); err == nil && preMigrationNameRe.MatchString(prev) && prev != name {
+			pinned = prev
+		}
+	}
+	if pinned == "" {
+		if err := os.WriteFile(marker, []byte(name+"\n"), 0o600); err != nil {
+			slog.Warn("Could not note the pre-migration backup as pending", "file", marker, "error", err)
+		}
+	}
+	slog.Info("Backup written before the database migration; to go back after the update, restore it (see README, Rolling back)",
+		"file", filepath.Join(dir, name), "last_migration", lastApplied)
+	if pinned != "" {
+		slog.Warn("An earlier migration attempt did not finish; the backup from before it is kept as well",
+			"file", filepath.Join(dir, pinned))
+	}
+	if err := prunePreMigrationBackups(dir, preMigrationKeep, pinned); err != nil {
+		slog.Warn("Removing old pre-migration backups failed", "folder", dir, "error", err)
+	}
+	return nil
+}
+
+// migrationsFinished: the attempt went through, so its copy no longer needs to be kept on its own.
+func (s *Store) migrationsFinished() {
+	if s.systemBackupDir == "" {
+		return
+	}
+	if err := os.Remove(filepath.Join(s.systemBackupDir, preMigrationMarker)); err != nil && !errors.Is(err, os.ErrNotExist) {
+		slog.Warn("Could not remove the marker of the pre-migration backup", "folder", s.systemBackupDir, "error", err)
+	}
+}
+
+// prunePreMigrationBackups keeps the newest keep copies in dir, pinned among them when given.
+func prunePreMigrationBackups(dir string, keep int, pinned string) error {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return err
+	}
+	type copyFile struct{ name, stamp string }
+	var files []copyFile
+	for _, e := range entries {
+		if m := preMigrationNameRe.FindStringSubmatch(e.Name()); m != nil && !e.IsDir() && e.Name() != pinned {
+			files = append(files, copyFile{e.Name(), m[2]})
+		}
+	}
+	sort.Slice(files, func(i, j int) bool {
+		if files[i].stamp != files[j].stamp {
+			return files[i].stamp > files[j].stamp
+		}
+		return files[i].name > files[j].name
+	})
+	if pinned != "" {
+		keep--
+	}
+	for i := max(keep, 0); i < len(files); i++ {
+		if err := os.Remove(filepath.Join(dir, files[i].name)); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 var addColumnRe = regexp.MustCompile(`(?is)^\s*ALTER\s+TABLE\s+(\w+)\s+ADD\s+COLUMN\s+(\w+)\s+(.+?);?\s*$`)

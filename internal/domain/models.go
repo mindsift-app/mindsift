@@ -488,6 +488,19 @@ type SystemSettings struct {
 	// DefaultLanguage: language for people without their own choice whose browser language MindSift does
 	// not speak, and for the demo; empty in an update leaves it unchanged
 	DefaultLanguage string `json:"defaultLanguage,omitempty"`
+	// TimeZone: the server's time zone as an IANA name ("Europe/Berlin"); "" = not set (TZ, else UTC).
+	// nil in an update leaves it unchanged. ServerTime: the zone in effect right now (read only).
+	TimeZone   *string     `json:"timeZone,omitempty"`
+	ServerTime *ServerTime `json:"serverTime,omitempty"`
+}
+
+// ServerTime is the time zone the server works in and its time now, for the administration.
+type ServerTime struct {
+	Zone   string `json:"zone"`   // IANA name in effect
+	Source string `json:"source"` // setting | env (TZ) | default (UTC)
+	Now    string `json:"now"`    // RFC 3339 with the zone's offset
+	// Fallback: the zone without the setting (TZ, else UTC)
+	Fallback string `json:"fallback"`
 }
 
 // UnmarshalJSON accepts smtpPort as text or number: older clients sent a number, which made the whole

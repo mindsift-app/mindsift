@@ -11,6 +11,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/mindsift-app/mindsift/internal/auth"
+	"github.com/mindsift-app/mindsift/internal/clock"
 	"github.com/mindsift-app/mindsift/internal/domain"
 	"github.com/mindsift-app/mindsift/internal/storage"
 )
@@ -208,7 +209,7 @@ func filterTasks(tasks []domain.Thought, status, due string, now time.Time) ([]d
 	default:
 		return nil, errors.New("status: open, done oder all")
 	}
-	today := now.In(time.Local).Format("2006-01-02")
+	today := clock.In(now).Format("2006-01-02")
 	var match func(day string) bool
 	switch due {
 	case "":
@@ -423,7 +424,7 @@ func (s *Server) handleSearch(w http.ResponseWriter, r *http.Request) {
 		TaskListID: qs.Get("taskListId"),
 		Priority:   qs.Get("priority"),
 		Due:        qs.Get("due"),
-		Today:      time.Now().In(time.Local).Format("2006-01-02"),
+		Today:      clock.Today(),
 		Folder:     qs.Get("folder"),
 		ListID:     qs.Get("listId"),
 		ItemStatus: qs.Get("itemStatus"),

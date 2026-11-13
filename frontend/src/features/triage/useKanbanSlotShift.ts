@@ -10,11 +10,11 @@ const CARD_GAP = 8; // mt-2 between the cards
 // sibling rules of Tailwind's space-y and divide classes), one growing in height laid the column out again
 // in every frame; a transform only composites. Touch dragging sets neither slot nor hidden card.
 export function useKanbanSlotShift(
-  boardRef: React.RefObject<HTMLElement>,
+  boardRef: React.RefObject<HTMLElement | null>,
   slot: { col: string; index: number } | null,
   // The dragged card, taken out of its column while the mouse drags it
   hiddenId: string | null,
-  slotHeight: React.MutableRefObject<number>
+  slotHeight: React.RefObject<number>
 ) {
   // Cards with a transform of the drag, and the card hidden at the last commit (where it lands, nothing glides)
   const shifted = useRef(new Set<HTMLElement>());

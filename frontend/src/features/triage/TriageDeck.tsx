@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
-import { motion, useMotionValue, useTransform } from 'framer-motion';
+import { LazyMotion, m, useMotionValue, useTransform } from 'motion/react';
 import {
   X,
   Check,
@@ -82,7 +82,7 @@ const SwipeableQueueItem: React.FC<SwipeableQueueItemProps> = ({
   return (
     <div className="relative overflow-hidden select-none">
       {/* Swipe Right Background Indicator (Als Aufgabe) */}
-      <motion.div
+      <m.div
         style={{ opacity: rightBgOpacity }}
         className="pointer-events-none absolute inset-0 bg-accent/20 flex items-center justify-start px-4 text-accent font-semibold text-xs uppercase tracking-wide"
       >
@@ -90,10 +90,10 @@ const SwipeableQueueItem: React.FC<SwipeableQueueItemProps> = ({
           <CheckSquare className="w-4 h-4" />
           <span>{t('swipe.toTask')}</span>
         </span>
-      </motion.div>
+      </m.div>
 
       {/* Swipe Left Background Indicator (Wegwerfen) */}
-      <motion.div
+      <m.div
         style={{ opacity: leftBgOpacity }}
         className="pointer-events-none absolute inset-0 bg-status-err-bg flex items-center justify-end px-4 text-status-err font-semibold text-xs uppercase tracking-wide"
       >
@@ -101,9 +101,9 @@ const SwipeableQueueItem: React.FC<SwipeableQueueItemProps> = ({
           <span>{t('swipe.discard')}</span>
           <X className="w-4 h-4" />
         </span>
-      </motion.div>
+      </m.div>
 
-      <motion.div
+      <m.div
         style={{ x: qx }}
         drag="x"
         dragDirectionLock
@@ -217,12 +217,12 @@ const SwipeableQueueItem: React.FC<SwipeableQueueItemProps> = ({
             <X className="w-3.5 h-3.5" />
           </button>
         </div>
-      </motion.div>
+      </m.div>
     </div>
   );
 };
 
-export const TriageDeck: React.FC<TriageDeckProps> = ({
+const TriageDeckView: React.FC<TriageDeckProps> = ({
   deck,
   lists,
   onDeckChange,
@@ -563,11 +563,11 @@ export const TriageDeck: React.FC<TriageDeckProps> = ({
         )}
 
         {/* Active Draggable & Long-Pressable Card */}
-        {/* No exit animation: the leaving card goes at once and the next one slides in. With framer-motion's
+        {/* No exit animation: the leaving card goes at once and the next one slides in. With Motion's
             exit (popLayout) a re-render right after it (the deck reloading) showed the leaving card again for a
             frame, which looked like a flicker. */}
         <>
-          <motion.div
+          <m.div
             key={activeCard.id}
             style={{ x, rotate, borderColor: cardBorderColor }}
             drag={isEditingCard ? false : 'x'}
@@ -603,24 +603,24 @@ export const TriageDeck: React.FC<TriageDeckProps> = ({
                 handleAction('discard');
               }
             }}
-            // Slides in by CSS (once, when the card appears): framer-motion's initial/animate started over for a
+            // Slides in by CSS (once, when the card appears): Motion's initial/animate started over for a
             // frame on every re-render (the deck reloading), which made the card flash
             className="relative w-full h-full panel-surface p-5 cursor-grab active:cursor-grabbing flex flex-col justify-between overflow-hidden animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-2 duration-200"
           >
             {/* Dynamic Swipe Overlays */}
-            <motion.div
+            <m.div
               style={{ opacity: keepOpacity }}
               className="pointer-events-none absolute top-3.5 right-3.5 px-3 py-1.5 bg-accent-dim border border-accent rounded-btn text-accent font-semibold text-xs tracking-wide uppercase"
             >
               {t('swipe.toTask')}
-            </motion.div>
+            </m.div>
 
-            <motion.div
+            <m.div
               style={{ opacity: discardOpacity }}
               className="pointer-events-none absolute top-3.5 left-3.5 px-3 py-1.5 bg-panel-elevated border border-strong rounded-btn text-main font-semibold text-xs tracking-wide uppercase"
             >
               {t('swipe.discard')}
-            </motion.div>
+            </m.div>
 
             {/* Card Header */}
             <div className="flex flex-wrap items-center justify-between gap-2">
@@ -715,7 +715,7 @@ export const TriageDeck: React.FC<TriageDeckProps> = ({
                 </span>
               )}
             </div>
-          </motion.div>
+          </m.div>
         </>
       </div>
 
@@ -1259,3 +1259,12 @@ export const TriageDeck: React.FC<TriageDeckProps> = ({
   );
 };
 
+// Motion's features (drag, springs) are a chunk of their own, loaded with the deck instead of with the app;
+// the service worker precaches it with the other assets
+const loadMotionFeatures = () => import('./motionFeatures').then((mod) => mod.default);
+
+export const TriageDeck: React.FC<TriageDeckProps> = (props) => (
+  <LazyMotion features={loadMotionFeatures} strict>
+    <TriageDeckView {...props} />
+  </LazyMotion>
+);

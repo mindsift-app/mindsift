@@ -24,6 +24,8 @@ export interface SetupInfo {
 
 export interface AuthStatus {
   needsSetup: boolean;
+  // The wizard asks for the one-time setup code the server wrote to its log (not in the demo, not with ADMIN_USER)
+  setupCodeRequired?: boolean;
   // Only while needsSetup: mail server, BASE_URL and backup folder for the first-boot wizard
   setup?: SetupInfo;
   allowRegistration: boolean;
@@ -442,6 +444,17 @@ export interface SystemSettings {
   publicLinkMaxDaysConfiguredViaEnv?: boolean;
   // Language for new accounts and everyone whose browser language the app does not speak
   defaultLanguage?: string;
+  // The server's time zone (IANA name, '' = not set: TZ, else UTC) and the zone in effect now (read only)
+  timeZone?: string;
+  serverTime?: ServerTime;
+}
+
+/** The time zone the server works in right now (GET/PUT /admin/settings, read only). */
+export interface ServerTime {
+  zone: string;
+  source: 'setting' | 'env' | 'default';
+  now: string; // RFC 3339 with the zone's offset
+  fallback: string; // the zone without the setting: TZ, else UTC
 }
 
 /** One file of a server backup listing. */

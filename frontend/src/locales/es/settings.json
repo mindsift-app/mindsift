@@ -11,6 +11,19 @@
     "title": "Idioma predeterminado",
     "hint": "Para cuentas nuevas y para usuarios cuyo navegador tenga un idioma no compatible con MindSift, así como en la pantalla de inicio de sesión y en la demo. Cualquiera puede cambiarlo en Ajustes de la cuenta → Idioma."
   },
+  "timeZone": {
+    "title": "Zona horaria",
+    "notSet": "Sin definir ({{zone}})",
+    "now": "Hora del servidor ahora: {{time}} ({{zone}})",
+    "source": {
+      "setting": "Origen: este ajuste",
+      "env": "Origen: variable de entorno TZ",
+      "default": "Origen: UTC por defecto; no hay zona horaria definida ni aquí ni mediante TZ"
+    },
+    "hint": "Una zona horaria para todo el servidor: de ella dependen los vencimientos, las alarmas, el resumen diario, las copias de seguridad y las fechas de los correos. Un cambio se aplica al instante.",
+    "useBrowser": "Usar la zona horaria de este navegador ({{zone}})",
+    "reset": "Dejar sin definir"
+  },
   "user": {
     "backTitle": "Volver a la vista general",
     "back": "Atrás",

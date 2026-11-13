@@ -8,8 +8,8 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"time"
 
+	"github.com/mindsift-app/mindsift/internal/clock"
 	"github.com/mindsift-app/mindsift/internal/collab"
 	"github.com/mindsift-app/mindsift/internal/domain"
 	"github.com/mindsift-app/mindsift/internal/i18n"
@@ -362,7 +362,7 @@ func (s *Store) MergeDocuments(userID, sourceID, targetID string, a collab.Actor
 	if heading == "" {
 		heading = i18n.T(lang, "Zusammengeführte Notiz")
 	}
-	heading += " (" + i18n.ShortDate(lang, time.Now()) + ")"
+	heading += " (" + i18n.ShortDate(lang, clock.Now()) + ")"
 
 	_, _, err = s.applyDocChange(targetID, a, leases, func(d *collab.Doc) []collab.Op {
 		// After the last top-level block, deleted ones included, so keys never collide

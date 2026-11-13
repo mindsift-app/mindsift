@@ -129,6 +129,8 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
           publicLinkMaxDaysConfiguredViaEnv: Boolean(sys.publicLinkMaxDaysConfiguredViaEnv),
           // Shown only (OIDC_* environment)
           oidc: sys.oidc,
+          timeZone: sys.timeZone ?? '',
+          serverTime: sys.serverTime,
         });
       }
     } catch (err: any) {

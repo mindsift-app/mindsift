@@ -11,6 +11,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/mindsift-app/mindsift/internal/auth"
+	"github.com/mindsift-app/mindsift/internal/clock"
 	"github.com/mindsift-app/mindsift/internal/domain"
 	"github.com/mindsift-app/mindsift/internal/i18n"
 	"github.com/mindsift-app/mindsift/internal/storage"
@@ -295,7 +296,7 @@ func (s *Server) handleAdminSendInvite(w http.ResponseWriter, r *http.Request) {
 	link := s.appLink(r) + "?invite=" + url.QueryEscape(inv.Code)
 	until := inv.ExpiresAt
 	if t, err := time.Parse(time.RFC3339, inv.ExpiresAt); err == nil {
-		until = i18n.ShortDate(lang, t.Local())
+		until = i18n.ShortDate(lang, clock.In(t))
 	}
 	invites := i18n.T(lang, "{name} lädt dich zu MindSift ein", "name", inviter)
 	allowLongWork(w)

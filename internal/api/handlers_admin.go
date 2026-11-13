@@ -6,10 +6,12 @@ import (
 	"log/slog"
 	"net/http"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/mindsift-app/mindsift/internal/auth"
+	"github.com/mindsift-app/mindsift/internal/clock"
 	"github.com/mindsift-app/mindsift/internal/domain"
 	"github.com/mindsift-app/mindsift/internal/i18n"
 	"github.com/mindsift-app/mindsift/internal/storage"
@@ -451,8 +453,36 @@ func (s *Server) settingsForBrowser(settings *domain.SystemSettings) *domain.Sys
 	out.EmailLinksAvailable = s.emailLinksAvailable()
 	out.DefaultLanguage = s.defaultLanguage()
 	out.OIDC = s.oidcStatusForAdmin()
+	out.ServerTime = serverTimeNow()
 	return &out
 }
+
+// serverTimeNow: the zone the server works in, where it comes from, its time now, and the zone it would
+// use without the setting.
+func serverTimeNow() *domain.ServerTime {
+	z := clock.Current()
+	return &domain.ServerTime{Zone: z.Name(), Source: z.Source, Now: time.Now().In(z.Loc).Format(time.RFC3339), Fallback: clock.Fallback().Name()}
+}
+
+// ApplyTimeZone puts the server's time zone in effect: the stored setting, else TZ, else UTC. Called at
+// start and whenever the administration saves the settings.
+func (s *Server) ApplyTimeZone() {
+	setting := ""
+	if sys, err := s.store.GetSystemSettings(); err == nil && sys.TimeZone != nil {
+		setting = *sys.TimeZone
+	}
+	before := clock.Current()
+	z, err := clock.Apply(setting)
+	if err != nil {
+		slog.Warn("A time zone could not be read and is skipped", "error", err)
+	}
+	// Once at start, then only when it changed (the administration saves all settings together)
+	if first := !timeZoneLogged.Swap(true); first || z.Name() != before.Name() || z.Source != before.Source {
+		slog.Info("Time zone", "zone", z.Name(), "source", z.Source)
+	}
+}
+
+var timeZoneLogged atomic.Bool
 
 func (s *Server) handleAdminUpdateSettings(w http.ResponseWriter, r *http.Request) {
 	var settings domain.SystemSettings
@@ -508,11 +538,22 @@ func (s *Server) handleAdminUpdateSettings(w http.ResponseWriter, r *http.Reques
 		writeError(w, http.StatusBadRequest, storage.ErrInvalidLanguage.Error())
 		return
 	}
+	settings.ServerTime = nil // read only
+	if settings.TimeZone != nil && strings.TrimSpace(*settings.TimeZone) != "" {
+		if _, err := clock.Load(*settings.TimeZone); err != nil {
+			writeErrorFrom(w, http.StatusBadRequest, storage.ErrInvalidTimeZone)
+			return
+		}
+	}
 	previousMode := s.store.SharingMode()
 	linksBefore := s.emailLinksAvailable()
 	if err := s.store.UpdateSystemSettings(&settings); err != nil {
 		writeInternal(w, err)
 		return
+	}
+	// A new time zone counts from now on: due dates, alarms, the daily summary and backups read it
+	if settings.TimeZone != nil {
+		s.ApplyTimeZone()
 	}
 	// The admin gave an address while no mail could go out (setup wizard): its link follows now
 	if !linksBefore && s.emailLinksAvailable() {

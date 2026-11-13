@@ -16,6 +16,7 @@ import (
 	_ "time/tzdata" // time zones without system tzdata (scratch/alpine images)
 
 	"github.com/mindsift-app/mindsift/internal/api"
+	"github.com/mindsift-app/mindsift/internal/clock"
 	"github.com/mindsift-app/mindsift/internal/config"
 	"github.com/mindsift-app/mindsift/internal/storage"
 	"github.com/mindsift-app/mindsift/internal/ws"
@@ -26,12 +27,8 @@ var embeddedDist embed.FS
 
 func main() {
 	privateFiles()
-	// Due dates and alarms use the server's local time; without TZ that is Europe/Berlin
-	if os.Getenv("TZ") == "" {
-		if loc, err := time.LoadLocation("Europe/Berlin"); err == nil {
-			time.Local = loc
-		}
-	}
+	// The server's time zone (internal/clock): TZ or UTC until the stored setting is read (srv.ApplyTimeZone)
+	_, _ = clock.Apply("")
 	cfg := config.Load()
 
 	level := cfg.SlogLevel()
@@ -79,6 +76,7 @@ func main() {
 	}
 
 	srv := api.NewServer(cfg, store, wsHub, staticFS)
+	srv.ApplyTimeZone()
 	// ADMIN_USER / ADMIN_PASSWORD: the first admin exists before anyone can reach the setup wizard. Set
 	// but unusable, the server does not start: it would wait for the first visitor to become admin.
 	if err := srv.CreateInitialAdmin(); err != nil {

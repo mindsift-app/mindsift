@@ -81,6 +81,8 @@ export const authApi = {
   },
 
   async completeSetup(payload: {
+    // The one-time code from the server log, while /auth/status says setupCodeRequired
+    setupCode?: string;
     email: string;
     password: string;
     displayName: string;

@@ -22,6 +22,9 @@ type Store struct {
 	initMu sync.Mutex
 	// mediaRoot holds the files of images and audio in notes ($DATA_DIR/media), see media.go
 	mediaRoot string
+	// systemBackupDir ($DATA_DIR/backups/system) takes the copy written before pending migrations
+	// (migrations.go); empty for databases without a file (tests in memory)
+	systemBackupDir string
 
 	// OnTaskCreated is told about tasks the store creates by itself (next occurrence of a repeating
 	// task), so the server can push them to connected clients.
@@ -71,6 +74,7 @@ func NewStore(dbPath string) (*Store, error) {
 	store := &Store{db: db}
 	if dbPath != ":memory:" && !strings.HasPrefix(dbPath, "file:") {
 		store.mediaRoot = filepath.Join(filepath.Dir(dbPath), "media")
+		store.systemBackupDir = filepath.Join(filepath.Dir(dbPath), "backups", "system")
 	}
 	if err := store.migrate(); err != nil {
 		return nil, fmt.Errorf("failed to run migrations: %w", err)

@@ -180,7 +180,7 @@ func TestSetupLanguage(t *testing.T) {
 	t.Cleanup(srv.Close)
 	router := srv.Router()
 	setup := func(body string) *httptest.ResponseRecorder {
-		req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/setup", strings.NewReader(body))
+		req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/setup", strings.NewReader(withSetupCode(srv, body)))
 		req.Header.Set("Content-Type", "application/json")
 		rec := httptest.NewRecorder()
 		router.ServeHTTP(rec, req)

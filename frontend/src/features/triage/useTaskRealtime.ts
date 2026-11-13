@@ -44,8 +44,8 @@ interface TaskRealtimeOptions {
   setTasks: React.Dispatch<React.SetStateAction<Thought[]>>;
   setTaskLists: React.Dispatch<React.SetStateAction<TaskList[]>>;
   // Refs, because the handler is registered once and must see the current list and callbacks
-  listIdRef: React.MutableRefObject<string>;
-  loadDataRef: React.MutableRefObject<() => Promise<void>>;
+  listIdRef: React.RefObject<string>;
+  loadDataRef: React.RefObject<() => Promise<void>>;
 }
 
 // Realtime updates of TasksView: created, changed, deleted and reordered tasks and changed task lists

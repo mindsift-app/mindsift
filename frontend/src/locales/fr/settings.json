@@ -11,6 +11,19 @@
     "title": "Langue par défaut",
     "hint": "Pour les nouveaux comptes et toute personne dont la langue de navigateur n'est pas prise en charge par MindSift, également sur l'écran de connexion et dans la démo. Chacun peut la modifier dans Paramètres du compte → Langue."
   },
+  "timeZone": {
+    "title": "Fuseau horaire",
+    "notSet": "Non défini ({{zone}})",
+    "now": "Heure du serveur : {{time}} ({{zone}})",
+    "source": {
+      "setting": "Source : ce réglage",
+      "env": "Source : variable d'environnement TZ",
+      "default": "Source : UTC par défaut – aucun fuseau horaire n'est défini ici ni par TZ"
+    },
+    "hint": "Un seul fuseau horaire pour tout le serveur : les échéances, les alarmes, le résumé quotidien, les sauvegardes et les dates dans les e-mails en dépendent. Un changement s'applique immédiatement.",
+    "useBrowser": "Utiliser le fuseau horaire de ce navigateur ({{zone}})",
+    "reset": "Ne plus définir"
+  },
   "user": {
     "backTitle": "Retour à la vue d'ensemble",
     "back": "Retour",

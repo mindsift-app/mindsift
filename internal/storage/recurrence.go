@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/mindsift-app/mindsift/internal/clock"
 	"github.com/mindsift-app/mindsift/internal/domain"
 )
 
@@ -21,9 +22,10 @@ func validRecurrence(r string) bool {
 
 // NextDueDate moves a due date (YYYY-MM-DD or YYYY-MM-DDTHH:MM, today when empty) one interval forward
 // and keeps the time. Months and years keep the day where possible and fall back to the month's last
-// day (31 Jan -> 28/29 Feb).
+// day (31 Jan -> 28/29 Feb). today is an instant; its day counts in the server's time zone.
 func NextDueDate(due, rule string, today time.Time) string {
-	parsed, hasTime, ok := domain.ParseDue(due, time.UTC)
+	parsed, hasTime, ok := domain.ParseDue(due, clock.Location())
+	today = clock.In(today)
 	base := time.Date(today.Year(), today.Month(), today.Day(), 0, 0, 0, 0, time.UTC)
 	if ok {
 		base = time.Date(parsed.Year(), parsed.Month(), parsed.Day(), 0, 0, 0, 0, time.UTC)

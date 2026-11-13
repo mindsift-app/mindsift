@@ -20,7 +20,9 @@ services:
     environment:
       - PORT=8080
       - DATA_DIR=/data
-      - TZ=${TZ:-Europe/Berlin}
+      # Time zone of the server (due dates, alarms, daily summary, backups); the admin center can set it
+      # instead, and its setting wins. Unset: UTC
+      - TZ=${TZ:-UTC}
       - JWT_SECRET=${JWT_SECRET:-}
       - SECRETS_KEY=${SECRETS_KEY:-}
       - BASE_URL=${BASE_URL:-http://localhost:8080}

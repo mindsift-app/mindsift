@@ -14,6 +14,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/mindsift-app/mindsift/internal/auth"
+	"github.com/mindsift-app/mindsift/internal/clock"
 	"github.com/mindsift-app/mindsift/internal/domain"
 	"github.com/mindsift-app/mindsift/internal/i18n"
 	"github.com/mindsift-app/mindsift/internal/storage"
@@ -54,6 +55,8 @@ func (s *Server) handleAuthStatus(w http.ResponseWriter, r *http.Request) {
 	}
 	status := map[string]any{
 		"needsSetup": count == 0,
+		// The wizard asks for the one-time code from the server log (setup_code.go)
+		"setupCodeRequired": count == 0 && s.setupCode.required(),
 		// Registering without an invite: allowed at all, how (closed | approval | domain | domain+approval |
 		// open) and for which e-mail domains (shown as a hint on the sign-up form)
 		"allowRegistration":   policy.Mode != storage.RegistrationClosed,
@@ -148,10 +151,14 @@ func (s *Server) handleFirstBootSetup(w http.ResponseWriter, r *http.Request) {
 		Email       string `json:"email"`
 		Password    string `json:"password"`
 		DisplayName string `json:"displayName"`
+		SetupCode   string `json:"setupCode"`
 		setupChoices
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeError(w, http.StatusBadRequest, "Ungültige Anfrage")
+		return
+	}
+	if !s.checkSetupCode(w, r, req.SetupCode) {
 		return
 	}
 	if err := req.check(); err != nil {
@@ -180,6 +187,10 @@ func (s *Server) handleFirstBootSetup(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
+	}
+	if s.setupCode.required() {
+		s.setupCode.clear()
+		slog.Info("First administrator created in the setup wizard; the setup code is no longer valid", "user_id", user.ID)
 	}
 	if err := s.applySetupChoices(r, user, req.setupChoices); err != nil {
 		writeError(w, http.StatusInternalServerError, "Einstellungen konnten nicht gespeichert werden: "+clientMessage(err))
@@ -339,7 +350,9 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 		validInvite = inv
 		role = domain.RoleMember // invites never make admins (older codes may still say so)
 	} else if count == 0 {
-		role = "admin"
+		// The first account comes from the setup wizard (with its setup code) or ADMIN_USER, never from here
+		writeErrorCode(w, http.StatusForbidden, "setup_required", "Bitte richte MindSift zuerst ein")
+		return
 	} else {
 		policy := s.registrationPolicy()
 		var err error
@@ -980,7 +993,7 @@ func (s *Server) handleTestUserAlarm(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusBadRequest, "Bitte eine Discord Webhook URL angeben")
 			return
 		}
-		if err := s.sendDiscordNotification(lang, url, testTitle, i18n.T(lang, "Dein Discord-Alarmkanal funktioniert einwandfrei!"), domain.HumanDue(lang, domain.NowISO()[:10]), "normal"); err != nil {
+		if err := s.sendDiscordNotification(lang, url, testTitle, i18n.T(lang, "Dein Discord-Alarmkanal funktioniert einwandfrei!"), domain.HumanDue(lang, clock.Today()), "normal"); err != nil {
 			writeJSON(w, http.StatusBadGateway, map[string]string{"error": tr(w, "Discord-Fehler") + ": " + deliveryProblem(w, err)})
 			return
 		}
@@ -993,7 +1006,7 @@ func (s *Server) handleTestUserAlarm(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusBadRequest, "Bitte eine Webhook-URL angeben")
 			return
 		}
-		if err := s.sendCustomWebhookNotification(url, "test_alarm", testTitle, i18n.T(lang, "Dein eigener Webhook empfängt MindSift-Alarme!"), domain.NowISO()[:10], "normal", nil); err != nil {
+		if err := s.sendCustomWebhookNotification(url, "test_alarm", testTitle, i18n.T(lang, "Dein eigener Webhook empfängt MindSift-Alarme!"), clock.Today(), "normal", nil); err != nil {
 			writeJSON(w, http.StatusBadGateway, map[string]string{"error": tr(w, "Webhook-Fehler") + ": " + deliveryProblem(w, err)})
 			return
 		}
@@ -1004,7 +1017,7 @@ func (s *Server) handleTestUserAlarm(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusBadRequest, "Dein Konto hat noch keine E-Mail-Adresse – trag sie im Profil ein")
 			return
 		}
-		sample := time.Date(2026, 1, 1, 18, 0, 0, 0, time.Local)
+		sample := time.Date(2026, 1, 1, 18, 0, 0, 0, clock.Location())
 		if err := s.sendMailContent(toEmail, "⏰ "+i18n.T(lang, "MindSift Test-Alarm"), mailContent{
 			Lang:      lang,
 			Preheader: i18n.T(lang, "Dein E-Mail-Alarmkanal funktioniert"),

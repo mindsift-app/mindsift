@@ -16,6 +16,8 @@ import (
 // Automatic backups below $DATA_DIR/backups/:
 //   system/mindsift-db-YYYY-MM-DD-HHMM.db.gz        the whole database (VACUUM INTO, consistent while
 //                                                     others write), for the admin
+//   system/pre-migration-<id>-YYYY-MM-DD-HHMMSS.db.gz   the same, written at start before pending
+//                                                     migrations (migrations.go); the last three stay
 //   users/<user id>/mindsift-backup-YYYY-MM-DD-HHMM.zip   the same ZIP as "Backup herunterladen"
 // Files older than the retention are deleted after each run. Backups next to the database protect
 // against mistakes, not against a broken disk; copy the folder elsewhere as well.
@@ -115,19 +117,23 @@ func PruneBackups(dir string, keepDays int, now time.Time) error {
 
 // WriteSystemSnapshot writes a gzip-compressed copy of the whole database into dir.
 func (s *Store) WriteSystemSnapshot(dir string, now time.Time) (string, error) {
-	if err := os.MkdirAll(dir, 0o700); err != nil {
-		return "", err
-	}
 	name := "mindsift-db-" + now.Format(backupStampFmt) + ".db.gz"
+	return name, s.writeSnapshot(dir, name, now)
+}
+
+// writeSnapshot writes a consistent copy of the database (VACUUM INTO) gzip-compressed to dir/name.
+// While it runs, the uncompressed copy lies next to it, so dir needs about the size of the database in
+// free space; nothing half-written stays behind when that runs out.
+func (s *Store) writeSnapshot(dir, name string, now time.Time) error {
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		return err
+	}
 	tmp := filepath.Join(dir, ".tmp-"+now.Format("20060102150405.000000")+".db")
 	defer os.Remove(tmp)
 	if _, err := s.db.Exec(`VACUUM INTO ?`, tmp); err != nil {
-		return "", fmt.Errorf("Datenbank-Abzug: %w", err)
+		return fmt.Errorf("Datenbank-Abzug: %w", err)
 	}
-	if err := gzipFile(tmp, filepath.Join(dir, name)); err != nil {
-		return "", err
-	}
-	return name, nil
+	return gzipFile(tmp, filepath.Join(dir, name))
 }
 
 // WriteUserBackup writes the user's MindSift backup (ZIP with the JSON export) into dir.

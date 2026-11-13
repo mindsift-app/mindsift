@@ -11,7 +11,7 @@ interface VoiceInputButtonProps {
   onChange: (text: string) => void;
   onError?: (message: string) => void;
   // Field to focus once the text is final
-  focusRef?: React.RefObject<HTMLInputElement | HTMLTextAreaElement>;
+  focusRef?: React.RefObject<HTMLInputElement | HTMLTextAreaElement | null>;
   className?: string;
 }
 

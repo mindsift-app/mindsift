@@ -11,6 +11,19 @@
     "title": "Standardsprache",
     "hint": "Für neue Konten und alle, deren Browsersprache MindSift nicht kann, auch auf dem Login-Bildschirm und in der Demo. Jede Person kann unter Kontoeinstellungen → Sprache selbst umstellen."
   },
+  "timeZone": {
+    "title": "Zeitzone",
+    "notSet": "Nicht festgelegt ({{zone}})",
+    "now": "Serverzeit jetzt: {{time}} ({{zone}})",
+    "source": {
+      "setting": "Quelle: diese Einstellung",
+      "env": "Quelle: Umgebungsvariable TZ",
+      "default": "Quelle: Standard UTC – weder hier noch über TZ ist eine Zeitzone festgelegt"
+    },
+    "hint": "Eine Zeitzone für den ganzen Server: Danach richten sich Fälligkeiten, Alarme, die Tageszusammenfassung, Backups und Datumsangaben in E-Mails. Eine Änderung gilt sofort.",
+    "useBrowser": "Zeitzone dieses Browsers übernehmen ({{zone}})",
+    "reset": "Nicht mehr festlegen"
+  },
   "user": {
     "backTitle": "Zurück zur Übersicht",
     "back": "Zurück",

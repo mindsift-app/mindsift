@@ -7,10 +7,10 @@ import (
 	"log/slog"
 	"net/http"
 	"strings"
-	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/mindsift-app/mindsift/internal/auth"
+	"github.com/mindsift-app/mindsift/internal/clock"
 	"github.com/mindsift-app/mindsift/internal/domain"
 	"github.com/mindsift-app/mindsift/internal/storage"
 )
@@ -154,7 +154,7 @@ func (s *Server) handleExportMarkdown(w http.ResponseWriter, r *http.Request) {
 	userID := auth.GetUserID(r.Context())
 	allowLongTransfer(w)
 	w.Header().Set("Content-Type", "application/zip")
-	w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="mindsift-vault-%s.zip"`, time.Now().Format("2006-01-02")))
+	w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="mindsift-vault-%s.zip"`, clock.Today()))
 	if err := s.store.WriteMarkdownVault(userID, w); err != nil {
 		abortDownload("Markdown export failed", userID, err)
 	}
@@ -171,7 +171,7 @@ func (s *Server) handleExport(w http.ResponseWriter, r *http.Request) {
 	// ?format=zip: the same JSON compressed (backups grow quickly with notes); plain JSON stays the API default
 	if r.URL.Query().Get("format") == "zip" {
 		w.Header().Set("Content-Type", "application/zip")
-		w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="mindsift-backup-%s.zip"`, time.Now().Format("2006-01-02")))
+		w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="mindsift-backup-%s.zip"`, clock.Today()))
 		if err := s.store.WriteBackupZip(userID, exportData, w); err != nil {
 			abortDownload("Backup export failed", userID, err)
 		}
