@@ -493,13 +493,8 @@ func Load() *Config {
 	baseURL := getEnv("BASE_URL", "http://localhost:"+port)
 	allowReg := strings.ToLower(getEnv("ALLOW_REGISTRATION", "false")) == "true"
 
-	debugVal := strings.ToLower(getEnv("DEBUG", "false"))
-	debug := debugVal == "true" || debugVal == "1" || debugVal == "yes" || debugVal == "on"
-
-	logLevel := strings.ToLower(getEnv("LOG_LEVEL", "info"))
-	if debug {
-		logLevel = "debug"
-	}
+	debug := debugFromEnv()
+	logLevel := logLevelFromEnv()
 
 	// MINDSIFT_DEMO is the name; MINDA_DEMO and DEMO_MODE are earlier names that still switch it on
 	demoMode := false
@@ -595,6 +590,25 @@ func Load() *Config {
 		}(),
 	}
 }
+
+// debugFromEnv: DEBUG is switched on (true, 1, yes, on).
+func debugFromEnv() bool {
+	v := strings.ToLower(getEnv("DEBUG", "false"))
+	return v == "true" || v == "1" || v == "yes" || v == "on"
+}
+
+// logLevelFromEnv: LOG_LEVEL, or debug while DEBUG is on.
+func logLevelFromEnv() string {
+	if debugFromEnv() {
+		return "debug"
+	}
+	return strings.ToLower(getEnv("LOG_LEVEL", "info"))
+}
+
+// LogLevelFromEnv is the level Load gives Config.LogLevel, read before Load: the server sets up its logger
+// first, so the messages of Load itself (a generated JWT secret, ignored variables) are already in its
+// format and filtered by its level.
+func LogLevelFromEnv() slog.Level { return (&Config{LogLevel: logLevelFromEnv()}).SlogLevel() }
 
 // SlogLevel parses Config.LogLevel into a standard slog.Level.
 func (c *Config) SlogLevel() slog.Level {
