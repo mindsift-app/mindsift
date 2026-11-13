@@ -126,11 +126,17 @@ async function runChromium(admin) {
   check(true, 'Anmeldung ohne Passwort aus dem Autofill des Anmeldefelds');
 
   // … and with the button (the authenticator only answers once it is pressed)
+  // The authenticator answers only requests started while presence is on: switching it on after the click
+  // raced the button's request (left waiting for good when it was faster). So it stays off until the
+  // autofill's waiting request has started (that one is never answered then), and the click comes after.
   await cdp.send('WebAuthn.setAutomaticPresenceSimulation', { authenticatorId, enabled: false });
+  const autofillWaiting = page.waitForResponse((r) => r.url().endsWith('/auth/login/passkey/options'));
   await signOut(page);
+  await autofillWaiting;
+  await page.waitForTimeout(300);
+  await cdp.send('WebAuthn.setAutomaticPresenceSimulation', { authenticatorId, enabled: true });
   const passkeyButton = page.getByRole('button', { name: 'Mit Passkey anmelden' });
   await passkeyButton.click();
-  await cdp.send('WebAuthn.setAutomaticPresenceSimulation', { authenticatorId, enabled: true });
   await appReady(page);
   check(true, 'Anmeldung ohne Passwort mit dem Knopf „Mit Passkey anmelden“');
 
