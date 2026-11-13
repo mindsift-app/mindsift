@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"log/slog"
+	"mime/multipart"
 	"net/http"
 	"strings"
 	"sync"
@@ -675,20 +675,27 @@ func (s *Server) handleDeleteOwnAccount(w http.ResponseWriter, r *http.Request) 
 	writeJSON(w, http.StatusOK, map[string]bool{"deleted": true})
 }
 
-// importUpload reads the multipart field "file" (max. storage.MaxImportUploadBytes).
-func importUpload(w http.ResponseWriter, r *http.Request) ([]byte, string, error) {
+// importUploadMemory: uploads up to this size are kept in memory, larger ones in a temporary file that
+// is removed after the request, so a large archive is not held in memory while it is imported.
+const importUploadMemory = 8 << 20
+
+// importUpload opens the multipart field "file" (max. storage.MaxImportUploadBytes). The import reads
+// it until it is done; the caller closes it.
+func importUpload(w http.ResponseWriter, r *http.Request) (multipart.File, int64, string, error) {
 	allowLongTransfer(w)
 	r.Body = http.MaxBytesReader(w, r.Body, storage.MaxImportUploadBytes+1<<20)
+	if err := r.ParseMultipartForm(importUploadMemory); err != nil {
+		return nil, 0, "", fmt.Errorf("Keine Datei erhalten oder Datei zu groß (max. 100 MB)")
+	}
 	file, header, err := r.FormFile("file")
 	if err != nil {
-		return nil, "", fmt.Errorf("Keine Datei erhalten oder Datei zu groß (max. 100 MB)")
+		return nil, 0, "", fmt.Errorf("Keine Datei erhalten oder Datei zu groß (max. 100 MB)")
 	}
-	defer file.Close()
-	data, err := io.ReadAll(io.LimitReader(file, storage.MaxImportUploadBytes+1))
-	if err != nil || len(data) > storage.MaxImportUploadBytes {
-		return nil, "", fmt.Errorf("Datei zu groß (max. 100 MB)")
+	if header.Size > storage.MaxImportUploadBytes {
+		file.Close()
+		return nil, 0, "", fmt.Errorf("Datei zu groß (max. 100 MB)")
 	}
-	return data, header.Filename, nil
+	return file, header.Size, header.Filename, nil
 }
 
 // --- USER SETTINGS & ALARMS ---

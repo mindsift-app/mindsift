@@ -176,6 +176,40 @@ func (g *loginGuard) throttleKey(key string, limit int) time.Duration {
 	return 0
 }
 
+// lockedKey returns how long requests under key are still refused, without counting this one.
+func (g *loginGuard) lockedKey(key string) time.Duration {
+	if !g.enabled {
+		return 0
+	}
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	now := g.now()
+	if b := g.buckets[key]; b != nil && b.lockedUntil.After(now) {
+		return b.lockedUntil.Sub(now)
+	}
+	return 0
+}
+
+// failKey counts a failure under key (whatever the address); at limit failures within the lock window
+// the key is locked for the lock window.
+func (g *loginGuard) failKey(key string, limit int) {
+	if !g.enabled {
+		return
+	}
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	now := g.now()
+	g.cleanupLocked(now)
+	b := g.buckets[key]
+	if b == nil || now.Sub(b.windowStart) > loginLockWindow {
+		b = &loginBucket{windowStart: now}
+		g.buckets[key] = b
+	}
+	if b.count++; b.count >= limit {
+		b.lockedUntil = now.Add(loginLockWindow)
+	}
+}
+
 func writeThrottled(w http.ResponseWriter, wait time.Duration) {
 	w.Header().Set("Retry-After", strconv.Itoa(int(math.Ceil(wait.Seconds()))))
 	writeError(w, http.StatusTooManyRequests,

@@ -43,6 +43,7 @@ type Server struct {
 	demo          demoState     // periodic reset in demo mode (demo.go)
 	streamTickets streamTickets // one-time tickets for WebSocket/SSE (streamticket.go)
 	loginGuard    *loginGuard   // brute-force protection (loginguard.go)
+	imports       importGate    // imports running at a time (importgate.go)
 	mfaChallenges mfaChallenges // second step of a sign-in with a second factor (mfa.go)
 	// passkeyChallenges: the challenges of passkey ceremonies, registration, confirmation, sign-in (passkeys.go)
 	passkeyChallenges passkeyChallenges

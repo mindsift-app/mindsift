@@ -1,7 +1,6 @@
 package api
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -122,23 +121,35 @@ func trSummary(w http.ResponseWriter, sum storage.ImportSummary) storage.ImportS
 
 // handleImportMindSift restores MindSift's own data: the JSON backup or the Markdown archive (ZIP).
 func (s *Server) handleImportMindSift(w http.ResponseWriter, r *http.Request) {
-	data, name, err := importUpload(w, r)
+	file, size, name, err := importUpload(w, r)
 	if err != nil {
 		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
-	plan, err := storage.PlanMindSiftImport(data, name)
+	defer file.Close()
+	done, ok := s.startImport(w, r)
+	if !ok {
+		return
+	}
+	defer done()
+	plan, err := storage.PlanMindSiftImport(file, size, name)
 	s.runImport(w, r, plan, err)
 }
 
 // handleImportObsidian imports an Obsidian vault (ZIP) into a folder named after the vault.
 func (s *Server) handleImportObsidian(w http.ResponseWriter, r *http.Request) {
-	data, name, err := importUpload(w, r)
+	file, size, name, err := importUpload(w, r)
 	if err != nil {
 		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
-	plan, err := storage.PlanObsidianImport(bytes.NewReader(data), int64(len(data)), name)
+	defer file.Close()
+	done, ok := s.startImport(w, r)
+	if !ok {
+		return
+	}
+	defer done()
+	plan, err := storage.PlanObsidianImport(file, size, name)
 	s.runImport(w, r, plan, err)
 }
 

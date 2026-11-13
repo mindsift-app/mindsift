@@ -176,12 +176,23 @@ func (s *Server) handleRestoreMyBackup(w http.ResponseWriter, r *http.Request) {
 		writeErrorFrom(w, http.StatusNotFound, err)
 		return
 	}
-	data, err := os.ReadFile(path)
+	done, ok := s.startImport(w, r)
+	if !ok {
+		return
+	}
+	defer done()
+	file, err := os.Open(path)
 	if err != nil {
 		writeInternal(w, err)
 		return
 	}
-	plan, err := storage.PlanMindSiftImport(data, filepath.Base(path))
+	defer file.Close()
+	info, err := file.Stat()
+	if err != nil {
+		writeInternal(w, err)
+		return
+	}
+	plan, err := storage.PlanMindSiftImport(file, info.Size(), filepath.Base(path))
 	if err != nil {
 		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
