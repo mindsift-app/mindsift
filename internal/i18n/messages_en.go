@@ -559,4 +559,5 @@ var messagesEN = map[string]string{
 	"Die Anmeldung über einen Anbieter (OIDC) ist auf diesem Server nicht eingerichtet":        "Sign-in through a provider (OIDC) is not set up on this server",
 	"Einrichtungscode erforderlich: Er steht im Server-Log.":                                   "The setup code is required: it is in the server log.",
 	"Der Einrichtungscode stimmt nicht. Er steht im Server-Log.":                               "The setup code is wrong. It is in the server log.",
+	"Unbekannte Zeitzone": "Unknown time zone",
 }

@@ -21,6 +21,7 @@ Versions without a git tag were development states and were never published as a
 - `THIRD_PARTY_LICENSES.txt` with the licenses of the npm packages and Go modules built into MindSift, generated at build time: in the image under `/app/` and in the release archives next to the binary.
 - **Backup before database updates:** before an update changes the database schema, MindSift saves a compressed copy of the database in `data/backups/system/pre-migration-….db.gz` and logs where; the last three are kept. If the copy cannot be written (a full disk, for example), the database is left as it is and MindSift does not start, saying why.
 - **Way back after an update:** from this version on, MindSift started on a database that a newer version has already changed no longer runs on it silently (versions before this one still do): it refuses to start and logs both versions' migration numbers and how to go back (restore the pre-migration copy and start the older image, or run the newer image again). The README explains it under "Rolling back".
+- **Time zone in the administration:** Administration → Server sets the server's time zone from a searchable list of all zones (or takes over the browser's) and shows the server's time right now and where the zone comes from (this setting, `TZ`, or UTC by default). Due dates, alarms, the daily summary, backups and dates in emails follow a change at once, without a restart. One time zone per server, not per person.
 
 ### Fixed
 - Zooming into a bullet whose level was never stored shows its path and sub-bullets again, and the recovery-code file of an account without email or username no longer names it "undefined".
@@ -54,6 +55,7 @@ Versions without a git tag were development states and were never published as a
 - `/extract` (`/notiz`) offers the same choice as the button, a new note or an existing one, under the bullet and by keyboard; before, it always made a new note. The help lists numbered lists (`/number`, or `1. ` at the start).
 - The default dark theme is a soft slate grey instead of near black, with slightly calmer text; the light theme shows code blocks light instead of dark.
 - **Attention:** passwords count to the last character, up to 1,024 characters; before, only the first 72 bytes counted. Existing passwords keep working and are stored in the new form at the next sign-in, which older versions cannot read: going back to an older version then needs a password reset for those accounts. Keep `SECRETS_KEY` (or `data/secrets.key`): if it changes, authenticator codes stop working and only recovery codes still sign in.
+- **Attention:** without `TZ` the server now runs on UTC instead of Europe/Berlin: alarms, the daily summary and backups go by UTC (in Central Europe an hour or two late) and "today" begins at midnight UTC. After the update, pick your time zone under Administration → Server (or set `TZ`, e.g. `TZ=Europe/Berlin` in `.env`); the setting there wins over `TZ`. `docker-compose.yml` and `.env.example` default to UTC.
 
 ## [0.95.0] - 2026-11-12
 

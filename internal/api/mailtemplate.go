@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/mindsift-app/mindsift/internal/clock"
 	"github.com/mindsift-app/mindsift/internal/i18n"
 )
 
@@ -65,10 +66,11 @@ type mailContent struct {
 	Footer    string // why this mail came / where to change it
 }
 
-// greeting for the time of day: the daily summary in the morning says "Guten Morgen".
+// greeting for the time of day in the server's time zone: the daily summary in the morning says
+// "Guten Morgen".
 func mailGreeting(lang string, now time.Time, name string) string {
 	g := "Hallo"
-	switch h := now.Hour(); {
+	switch h := clock.In(now).Hour(); {
 	case h >= 4 && h < 11:
 		g = "Guten Morgen"
 	case h >= 18 || h < 4:

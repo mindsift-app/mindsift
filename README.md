@@ -135,6 +135,7 @@ If something here is out of date or unfair, please open an issue.
 * **End-to-end encryption:** the server reads your data, because search, sharing and AI agents need it; only hidden values (`/secret`) are encrypted in the database. Protect the server and its disk.
 * **Backups to S3 or WebDAV:** backups go to `data/backups/`; copying them elsewhere is up to you.
 * **A Helm chart:** Docker Compose only.
+* **Time zones per person:** one time zone per server, not per person (Administration → Server, or `TZ`).
 
 More ideas and the known weak spots: [Doku/flaws.md](Doku/flaws.md).
 
@@ -187,7 +188,7 @@ The most important settings (all of them are in [`.env.example`](.env.example)):
 | `JWT_SECRET` | generated (`/data/jwt.secret`) | Signing key for sign-ins, at least 32 characters (`openssl rand -hex 32`). Shorter values and published examples are ignored. Changing it signs everyone out |
 | `SECRETS_KEY` | generated (`/data/secrets.key`) | Key for hidden values (`/secret`); set it to keep it apart from the database. Never change it once values are stored |
 | `DEFAULT_LANGUAGE` | `de` (demo: `en`) | `de`, `en`, `es`, `fr` or `it`, see "Language" below |
-| `TZ` | `Europe/Berlin` | Time zone for due dates and alarms |
+| `TZ` | `UTC` | Time zone of the server for due dates, alarms, the daily summary and backups; the admin center can set it instead (its setting wins) |
 | `REGISTRATION_MODE` | admin UI decides | `closed`, `approval`, `domain`, `domain+approval` or `open` |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` | empty | Mail for alarms, invites and password reset (also in the admin UI) |
 | `OIDC_ISSUER`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET` | empty | Sign-in through an OpenID Connect provider, see [single sign-on](#single-sign-on-oidc) below |

@@ -13,6 +13,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/mindsift-app/mindsift/internal/auth"
+	"github.com/mindsift-app/mindsift/internal/clock"
 	"github.com/mindsift-app/mindsift/internal/domain"
 	"github.com/mindsift-app/mindsift/internal/i18n"
 	"github.com/mindsift-app/mindsift/internal/storage"
@@ -767,8 +768,9 @@ func (s *Server) summaryMail(lang, name string, items []notifyItem, now time.Tim
 // --- Daily summary ---
 
 // sendDailySummaries sends each user who wants one their summary in the 30 minutes after the chosen
-// time, once a day. Nothing due → no message.
+// time (server time zone), once a day. Nothing due → no message.
 func (s *Server) sendDailySummaries(now time.Time) {
+	now = clock.In(now)
 	day := now.Format("2006-01-02")
 	for _, uid := range s.store.ActiveUserIDs() {
 		set := s.store.NotificationSettingsOf(uid)
@@ -794,6 +796,7 @@ func (s *Server) sendDailySummaries(now time.Time) {
 
 // summaryItems: overdue, today, tomorrow (with time), plus how many follow in the next 7 days.
 func (s *Server) summaryItems(userID string, now time.Time) []notifyItem {
+	now = clock.In(now)
 	today := now.Format("2006-01-02")
 	tomorrow := now.AddDate(0, 0, 1).Format("2006-01-02")
 	tasks, err := s.store.OpenTasksDueBefore(userID, now.AddDate(0, 0, 8).Format("2006-01-02"))

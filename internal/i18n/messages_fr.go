@@ -559,4 +559,5 @@ var messagesFR = map[string]string{
 	"Die Anmeldung über einen Anbieter (OIDC) ist auf diesem Server nicht eingerichtet":        "La connexion via un fournisseur (OIDC) n'est pas configurée sur ce serveur",
 	"Einrichtungscode erforderlich: Er steht im Server-Log.":                                   "Le code de configuration est requis : il figure dans le journal du serveur.",
 	"Der Einrichtungscode stimmt nicht. Er steht im Server-Log.":                               "Le code de configuration est incorrect. Il figure dans le journal du serveur.",
+	"Unbekannte Zeitzone": "Fuseau horaire inconnu",
 }

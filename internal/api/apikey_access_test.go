@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/mindsift-app/mindsift/internal/auth"
+	"github.com/mindsift-app/mindsift/internal/clock"
 	"github.com/mindsift-app/mindsift/internal/domain"
 )
 
@@ -95,7 +96,7 @@ func TestAPIKeyRESTAccess(t *testing.T) {
 
 // The day filters count in the server's time zone, whatever the time of day.
 func TestFilterTasks(t *testing.T) {
-	now := time.Date(2026, 11, 1, 23, 30, 0, 0, time.Local)
+	now := time.Date(2026, 11, 1, 23, 30, 0, 0, clock.Location())
 	tasks := []domain.Thought{
 		{ID: "a", DueDate: "2026-11-01T09:00"},
 		{ID: "b", DueDate: "2026-10-30"},

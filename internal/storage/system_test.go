@@ -92,3 +92,45 @@ func TestSystemSettingsCache(t *testing.T) {
 		}
 	}
 }
+
+// The server's time zone: "" until set, nil in an update leaves it, an unknown name is refused, ""
+// takes it back
+func TestTimeZoneSetting(t *testing.T) {
+	store, err := NewStore(filepath.Join(t.TempDir(), "tz.db"))
+	if err != nil {
+		t.Fatalf("NewStore: %v", err)
+	}
+	defer store.Close()
+	zone := func() string {
+		s, _ := store.GetSystemSettings()
+		if s.TimeZone == nil {
+			t.Fatal("TimeZone is never nil when read")
+		}
+		return *s.TimeZone
+	}
+	if zone() != "" {
+		t.Fatalf("not set at first: %q", zone())
+	}
+	s, _ := store.GetSystemSettings()
+	berlin := " Europe/Berlin "
+	s.TimeZone = &berlin
+	if err := store.UpdateSystemSettings(s); err != nil || zone() != "Europe/Berlin" {
+		t.Fatalf("set: %v %q", err, zone())
+	}
+	s, _ = store.GetSystemSettings()
+	s.TimeZone = nil
+	s.InstanceName = "Zuhause"
+	if err := store.UpdateSystemSettings(s); err != nil || zone() != "Europe/Berlin" {
+		t.Fatalf("nil must leave it: %v %q", err, zone())
+	}
+	bad := "Mars/Olympus"
+	s.TimeZone = &bad
+	if err := store.UpdateSystemSettings(s); err != ErrInvalidTimeZone || zone() != "Europe/Berlin" {
+		t.Fatalf("unknown zone: %v %q", err, zone())
+	}
+	empty := ""
+	s.TimeZone = &empty
+	if err := store.UpdateSystemSettings(s); err != nil || zone() != "" {
+		t.Fatalf("reset: %v %q", err, zone())
+	}
+}

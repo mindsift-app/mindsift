@@ -2,8 +2,8 @@ package storage
 
 import (
 	"strings"
-	"time"
 
+	"github.com/mindsift-app/mindsift/internal/clock"
 	"github.com/mindsift-app/mindsift/internal/domain"
 	"github.com/mindsift-app/mindsift/internal/drawing"
 )
@@ -87,7 +87,7 @@ func (s *Store) SeedStarterContent(user *domain.User) error {
 }
 
 // seedDay: a due date offset days from today
-func seedDay(offset int) string { return time.Now().AddDate(0, 0, offset).Format("2006-01-02") }
+func seedDay(offset int) string { return clock.Now().AddDate(0, 0, offset).Format("2006-01-02") }
 
 // seedTasks adds sample tasks to a task list, with their Kanban state, notes and subtasks.
 func (s *Store) seedTasks(user *domain.User, listID string, tasks []seedTask) {

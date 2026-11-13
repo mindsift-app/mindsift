@@ -559,4 +559,5 @@ var messagesES = map[string]string{
 	"Die Anmeldung über einen Anbieter (OIDC) ist auf diesem Server nicht eingerichtet":        "El inicio de sesión mediante un proveedor (OIDC) no está configurado en este servidor",
 	"Einrichtungscode erforderlich: Er steht im Server-Log.":                                   "Se necesita el código de configuración: está en el registro del servidor.",
 	"Der Einrichtungscode stimmt nicht. Er steht im Server-Log.":                               "El código de configuración no es correcto. Está en el registro del servidor.",
+	"Unbekannte Zeitzone": "Zona horaria desconocida",
 }

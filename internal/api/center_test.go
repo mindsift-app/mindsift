@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/mindsift-app/mindsift/internal/clock"
 	"github.com/mindsift-app/mindsift/internal/domain"
 	"github.com/mindsift-app/mindsift/internal/storage"
 )
@@ -79,8 +80,8 @@ func TestNotificationCenter(t *testing.T) {
 	// Due: once per due date, even with a pause
 	due := "2026-01-02"
 	_, _ = store.UpdateThoughtDetails(owner.ID, task.ID, nil, nil, &due, nil, nil, nil, nil, nil, nil)
-	srv.checkAlarms(time.Date(2026, 1, 2, 12, 0, 0, 0, time.Local))
-	srv.checkAlarms(time.Date(2026, 1, 2, 12, 1, 0, 0, time.Local))
+	srv.checkAlarms(time.Date(2026, 1, 2, 12, 0, 0, 0, clock.Location()))
+	srv.checkAlarms(time.Date(2026, 1, 2, 12, 1, 0, 0, clock.Location()))
 	dues := 0
 	for _, e := range getCenter(t, srv, bobToken).Items {
 		if e.Kind == "due" {

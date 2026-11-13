@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/mindsift-app/mindsift/internal/clock"
 	"github.com/mindsift-app/mindsift/internal/domain"
 	"github.com/mindsift-app/mindsift/internal/drawing"
 	"github.com/mindsift-app/mindsift/internal/i18n"
@@ -45,7 +46,7 @@ func (p prefixedZip) CreateHeader(fh *zip.FileHeader) (io.Writer, error) {
 func (s *Store) writeVault(zw zipEntries, userID string) error {
 	names := newVaultNames()
 	names.lang = s.MessageLanguage(userID)
-	now := time.Now()
+	now := clock.Now() // folder times in the zip as the server's local time
 
 	// Folders first, so empty ones survive the round trip
 	if folders, err := s.GetFolders(userID); err == nil {

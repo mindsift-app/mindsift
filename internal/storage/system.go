@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/mindsift-app/mindsift/internal/clock"
 	"github.com/mindsift-app/mindsift/internal/domain"
 	"github.com/mindsift-app/mindsift/internal/i18n"
 )
@@ -153,9 +154,15 @@ func (s *Store) forgetSystemSettings() {
 
 func cloneSystemSettings(in *domain.SystemSettings) *domain.SystemSettings {
 	out := *in
-	if out.MFARequired != nil {
-		v := *out.MFARequired
-		out.MFARequired = &v
+	for _, p := range []**string{&out.MFARequired, &out.TimeZone} {
+		if *p != nil {
+			v := **p
+			*p = &v
+		}
+	}
+	if out.ServerTime != nil {
+		v := *out.ServerTime
+		out.ServerTime = &v
 	}
 	for _, p := range []**bool{&out.PushKnownServicesOnly, &out.RetentionAllowNever, &out.MCPEnabled, &out.PeopleSearch, &out.PublicLinks} {
 		if *p != nil {
@@ -256,6 +263,9 @@ func (s *Store) readSystemSettings() (*domain.SystemSettings, error) {
 				if i18n.Valid(v) {
 					settings.DefaultLanguage = v
 				}
+			case "time_zone":
+				zone := v
+				settings.TimeZone = &zone
 			}
 		}
 	}
@@ -296,6 +306,10 @@ func (s *Store) readSystemSettings() (*domain.SystemSettings, error) {
 	}
 	if settings.PublicLinkMaxDays == 0 {
 		settings.PublicLinkMaxDays = MaxPublicLinkDays
+	}
+	if settings.TimeZone == nil {
+		notSet := ""
+		settings.TimeZone = &notSet
 	}
 	return settings, nil
 }
@@ -412,8 +426,21 @@ func (s *Store) UpdateSystemSettings(settings *domain.SystemSettings) error {
 		_, err = s.db.Exec(`INSERT INTO system_settings (key, value) VALUES ('default_language', ?)
 			ON CONFLICT(key) DO UPDATE SET value = excluded.value`, settings.DefaultLanguage)
 	}
+	if err == nil && settings.TimeZone != nil {
+		zone := strings.TrimSpace(*settings.TimeZone)
+		if zone != "" {
+			if _, zerr := clock.Load(zone); zerr != nil {
+				return ErrInvalidTimeZone
+			}
+		}
+		_, err = s.db.Exec(`INSERT INTO system_settings (key, value) VALUES ('time_zone', ?)
+			ON CONFLICT(key) DO UPDATE SET value = excluded.value`, zone)
+	}
 	return err
 }
+
+// ErrInvalidTimeZone: the time zone setting is not an IANA name this server knows.
+var ErrInvalidTimeZone = i18n.NewError("Unbekannte Zeitzone")
 
 // SetupPending: the first administrator came from ADMIN_USER / ADMIN_PASSWORD and has not chosen the
 // instance settings of the setup wizard yet (api.handleFinishSetup). Off when it cannot be read.

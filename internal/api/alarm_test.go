@@ -3,10 +3,13 @@ package api
 import (
 	"testing"
 	"time"
+
+	"github.com/mindsift-app/mindsift/internal/clock"
 )
 
 func TestAlarmDue(t *testing.T) {
 	berlin, _ := time.LoadLocation("Europe/Berlin")
+	clock.UseInTest(t, berlin) // alarms read due dates in the server's time zone
 	at := func(h, m int) time.Time { return time.Date(2026, 10, 30, h, m, 0, 0, berlin) }
 	cases := []struct {
 		due    string

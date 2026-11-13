@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/mindsift-app/mindsift/internal/clock"
 	"github.com/mindsift-app/mindsift/internal/collab"
 	"github.com/mindsift-app/mindsift/internal/domain"
 )
@@ -145,7 +146,7 @@ func TestDailySummary(t *testing.T) {
 	srv, sent := notifyServer(t)
 	store := srv.store
 	me, _ := newTestUser(t, store, "summary@example.com")
-	now := time.Date(2026, 10, 30, 7, 0, 30, 0, time.Local)
+	now := time.Date(2026, 10, 30, 7, 0, 30, 0, clock.Location())
 	set := store.NotificationSettingsOf(me.ID)
 	set.DailySummary = domain.DailySummary{Enabled: true, Time: "07:00", Email: true}
 	_ = store.SetNotificationSettings(me.ID, set)
@@ -211,7 +212,7 @@ func TestDailySummaryIncludesGroupSharedLists(t *testing.T) {
 	set := store.NotificationSettingsOf(me.ID)
 	set.DailySummary = domain.DailySummary{Enabled: true, Time: "07:00", Email: true}
 	_ = store.SetNotificationSettings(me.ID, set)
-	srv.sendDailySummaries(time.Date(2026, 10, 30, 7, 1, 0, 0, time.Local))
+	srv.sendDailySummaries(time.Date(2026, 10, 30, 7, 1, 0, 0, clock.Location()))
 	if len(*sent) != 1 || !strings.Contains((*sent)[0].text, "Bericht abgeben (10:00 Uhr · Projekt)") {
 		t.Fatalf("group-shared task missing: %+v", *sent)
 	}
