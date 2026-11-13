@@ -104,7 +104,8 @@ func (s *Server) handleCreateSecret(w http.ResponseWriter, r *http.Request) {
 // secretFor looks up a secret as seen from the note {id} it is shown in. Its own note: whoever can see
 // (or with write, edit) that note. Another note (the bullet was moved or pasted there): the bullet must
 // be there and the person must also be allowed to see the note the secret belongs to, so copying a
-// reference into one's own note reveals nothing. If the secret's note no longer holds it, it moves here.
+// reference into one's own note reveals nothing. If the secret's note no longer holds it and the person may
+// edit both notes, it moves here.
 func (s *Server) secretFor(w http.ResponseWriter, r *http.Request, write bool) (*storage.NoteSecret, bool) {
 	userID := auth.GetUserID(r.Context())
 	docID := chi.URLParam(r, "id")
@@ -127,11 +128,19 @@ func (s *Server) secretFor(w http.ResponseWriter, r *http.Request, write bool) (
 		return nil, false
 	}
 	if sec.DocumentID != docID {
-		if !s.store.DocReferencesSecret(docID, sec.ID) || s.store.DocRole(userID, sec.DocumentID) == "" {
+		originRole := s.store.DocRole(userID, sec.DocumentID)
+		if !s.store.DocReferencesSecret(docID, sec.ID) || originRole == "" {
 			writeErrorCode(w, http.StatusNotFound, "secret_gone", storage.ErrSecretNotFound.Error())
 			return nil, false
 		}
-		if storage.CanEditDoc(role) && !s.store.DocReferencesSecret(sec.DocumentID, sec.ID) {
+		// Changing it needs write access where it belongs, not only in the note the copy sits in.
+		if write && !storage.CanEditDoc(originRole) {
+			writeError(w, http.StatusForbidden, "Keine Schreibrechte für diese Notiz")
+			return nil, false
+		}
+		// Only someone who may edit both notes moves it; reading changes nothing, so a reader who copied
+		// the reference does not take the value over when the owner deletes its bullet.
+		if storage.CanEditDoc(role) && storage.CanEditDoc(originRole) && !s.store.DocReferencesSecret(sec.DocumentID, sec.ID) {
 			if err := s.store.MoveSecret(sec.ID, docID); err == nil {
 				sec.DocumentID = docID
 			}

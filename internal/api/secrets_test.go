@@ -89,3 +89,34 @@ func TestSecretsOnlyRevealToLoginsWithAccess(t *testing.T) {
 		t.Fatalf("unknown secret: %d %s", rec.Code, rec.Body.String())
 	}
 }
+
+// A reader who copied the reference into an own note must not take the value over once the owner's
+// bullet is gone (security review N3): reading changes nothing, the owner keeps the value.
+func TestSecretDoesNotMoveToAReadersNote(t *testing.T) {
+	srv, store, token := setupTestServer(t)
+	router := srv.Router()
+	claims, _ := auth.ValidateToken(testJWTSecret, token)
+	// The owner's note no longer holds the reference, as after deleting the bullet.
+	doc, _ := store.CreateDocument(claims.UserID, "", "Server", "", "", nil, nil, false)
+	rec := sessionCall(router, "POST", "/api/v1/documents/"+doc.ID+"/secrets", token, `{"value":"geheim"}`, "")
+	var created struct{ ID, Ref string }
+	_ = json.Unmarshal(rec.Body.Bytes(), &created)
+
+	reader, readerToken := newTestUser(t, store, "leser@example.com")
+	if _, err := store.CreateDocShare(claims.UserID, doc.ID, reader.ID, "read"); err != nil {
+		t.Fatal(err)
+	}
+	own, _ := store.CreateDocument(reader.ID, "", "Kopie", "", "", []domain.DocumentBlock{{ID: "c1", Type: "bullet", Content: created.Ref}}, nil, false)
+	if rec := sessionCall(router, "GET", "/api/v1/documents/"+own.ID+"/secrets/"+created.ID, readerToken, "", ""); rec.Code != http.StatusOK {
+		t.Fatalf("reader with access to the note of origin: want 200, got %d", rec.Code)
+	}
+	if sec, _ := store.GetSecret(created.ID); sec.DocumentID != doc.ID {
+		t.Fatalf("a reader's GET moved the secret to %s", sec.DocumentID)
+	}
+	if rec := sessionCall(router, "PUT", "/api/v1/documents/"+own.ID+"/secrets/"+created.ID, readerToken, `{"value":"x"}`, ""); rec.Code != http.StatusForbidden {
+		t.Fatalf("reader changing the owner's value through an own note: want 403, got %d", rec.Code)
+	}
+	if rec := sessionCall(router, "GET", "/api/v1/documents/"+doc.ID+"/secrets/"+created.ID, token, "", ""); rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), "geheim") {
+		t.Fatalf("owner lost the value: %d %s", rec.Code, rec.Body.String())
+	}
+}
