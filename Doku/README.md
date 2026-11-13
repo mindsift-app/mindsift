@@ -42,7 +42,7 @@ go vet ./... && go test ./...
 cd frontend && npm ci && npx tsc --noEmit && npm run test:run && npm run build
 
 # Everything at once in containers (podman, no local Go or Node): the checks above plus ESLint,
-# gofmt and staticcheck (staticcheck.conf); E2E=1 adds the browser tests
+# gofmt, staticcheck (staticcheck.conf) and golangci-lint (.golangci.yml); E2E=1 adds the browser tests
 ci/local-checks.sh
 ```
 

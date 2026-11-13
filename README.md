@@ -274,7 +274,7 @@ MindSift is written with a lot of AI help (see the note at the top). One person 
 
 * **Tests:** more than 500 frontend tests and more than 370 backend tests run before every push and again in the build of every release. If one fails, no image is published.
 * **Browser tests:** eight runs with over 180 checks cover what is hard to unit-test: two people editing the same note at once, offline and back online, sharing, locks and conflict copies, tables, copy & paste as Markdown in Chromium and Firefox, and connections behind proxies that block WebSockets ([e2e/](e2e/README.md)). They run before every release and every change to these areas.
-* **Static checks:** TypeScript, ESLint, gofmt, `go vet` and staticcheck, in the same run as the tests.
+* **Static checks:** TypeScript, ESLint, gofmt, `go vet`, staticcheck and [golangci-lint](https://golangci-lint.run) with its standard linters ([.golangci.yml](.golangci.yml)), in the same run as the tests.
 * **Security:** a review of the whole code base in November 2026, findings fixed ([Security](#security)); every tagged release is scanned with Trivy ([Security scan](#security-scan)).
 
 History starts at v0.70.0, when the project moved from a private repository; the [changelog](CHANGELOG.md) and its [archive](CHANGELOG-archive.md) go back to 0.1.
