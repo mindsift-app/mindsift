@@ -572,8 +572,8 @@ const main = async () => {
     }
   }
 
-  // 9. Opening a page that is not the app (the third-party licenses, plain text) is a navigation the service
-  //    worker answers from the network; it must not keep that text as the app's offline start page
+  // 9. Opening a file that is not the app (an icon) is a navigation the service worker answers from the
+  //    network; it must not keep that file as the app's offline start page
   {
     const profile = mkdtempSync(join(tmpdir(), 'mindsift-offline-'));
     try {
@@ -583,11 +583,10 @@ const main = async () => {
       await page.getByTitle('Benutzermenü öffnen').first().waitFor({ timeout: 10000 });
       const controlled = await waitFor(() => page.evaluate(() => !!navigator.serviceWorker.controller), 10000);
       check(!!controlled, 'The service worker controls the page');
-      const res = await page.goto(`${BASE}/third-party-licenses.txt`);
-      const text = (await page.locator('body').innerText().catch(() => '')) || '';
+      const res = await page.goto(`${BASE}/badge.svg`);
       check(
-        res?.status() === 200 && (res?.headers()['content-type'] || '').startsWith('text/plain') && /license/i.test(text),
-        `The license page opens as text (${res?.status()} ${res?.headers()['content-type']})`
+        res?.status() === 200 && (res?.headers()['content-type'] || '').startsWith('image/svg+xml'),
+        `The icon opens as a file (${res?.status()} ${res?.headers()['content-type']})`
       );
       const stored = await page.evaluate(async () => {
         for (const k of (await caches.keys()).filter((k) => k.startsWith('mindsift-shell-'))) {
@@ -603,7 +602,7 @@ const main = async () => {
       page = await setup(ctx, admin);
       await page.goto(BASE).catch(() => {});
       const started = await waitFor(async () => (await page.getByTitle('Benutzermenü öffnen').count()) > 0, 10000);
-      check(!!started, 'Started offline after opening the license page: the app opens');
+      check(!!started, 'Started offline after opening the icon: the app opens');
       await ctx.close();
     } finally {
       rmSync(profile, { recursive: true, force: true });

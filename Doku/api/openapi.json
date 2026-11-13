@@ -952,6 +952,20 @@
         }
       }
     },
+    "/api/v1/third-party-licenses": {
+      "get": {
+        "summary": "Licenses of the third-party software in this build",
+        "description": "THIRD_PARTY_LICENSES.txt next to the server binary as text/plain, for signed-in people only (it names the version of every dependency; shown in About MindSift); 404 where there is none, e.g. in development",
+        "tags": [
+          "Account and General"
+        ],
+        "responses": {
+          "default": {
+            "description": "text/plain; 404 without the file"
+          }
+        }
+      }
+    },
     "/api/v1/auth/register": {
       "post": {
         "summary": "Create an account",
@@ -4477,21 +4491,6 @@
         "responses": {
           "default": {
             "description": "JSON; errors as {\"error\": \"…\"}"
-          }
-        }
-      }
-    },
-    "/third-party-licenses.txt": {
-      "get": {
-        "summary": "Licenses of the third-party software in this build",
-        "description": "THIRD_PARTY_LICENSES.txt next to the server binary as text/plain (linked in About MindSift); 404 where there is none, e.g. in development",
-        "tags": [
-          "Public"
-        ],
-        "security": [],
-        "responses": {
-          "default": {
-            "description": "text/plain; 404 without the file"
           }
         }
       }

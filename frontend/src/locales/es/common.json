@@ -39,6 +39,8 @@
     "source": "Código fuente",
     "thirdPartyLabel": "Software de terceros",
     "thirdParty": "Licencias de las bibliotecas incluidas",
+    "thirdPartyLoading": "Cargando …",
+    "thirdPartyError": "No se pudieron cargar las licencias.",
     "operator": "El responsable de esta instancia gestiona su aviso legal y política de privacidad; los enlaces se encuentran en los ajustes de la cuenta y en la página de inicio de sesión.",
     "changelog": "Qué ha cambiado (registro de cambios)"
   },

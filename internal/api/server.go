@@ -29,7 +29,7 @@ type Server struct {
 	store    *storage.Store
 	wsHub    *ws.Hub
 	staticFS fs.FS
-	// licensesFile: THIRD_PARTY_LICENSES.txt, served at /third-party-licenses.txt (licenses.go); tests set it
+	// licensesFile: THIRD_PARTY_LICENSES.txt, served at /api/v1/third-party-licenses (licenses.go); tests set it
 	licensesFile string
 	// setupMu: the first-boot setup runs once at a time
 	setupMu sync.Mutex
@@ -241,6 +241,8 @@ func (s *Server) Router() http.Handler {
 		r.Use(s.authMiddleware)
 
 		r.Get("/api/v1/auth/me", s.handleMe)
+		// Licenses of the third-party software in this build (licenses.go), shown in the app's About part
+		r.Get("/api/v1/third-party-licenses", s.handleThirdPartyLicenses)
 		r.Post("/api/v1/events/rooms", s.handleSSERooms)
 		r.Post("/api/v1/events/poll", s.handleOpenPoll)
 		r.Get("/api/v1/events/poll/{id}", s.handlePoll)
@@ -494,9 +496,6 @@ func (s *Server) Router() http.Handler {
 	r.Post("/share-target", func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 	})
-
-	// Licenses of the third-party software in this build (licenses.go), linked in the app's About part
-	r.Get("/third-party-licenses.txt", s.handleThirdPartyLicenses)
 
 	// Embedded Frontend SPA Handler
 	if s.staticFS != nil {
