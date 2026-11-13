@@ -72,7 +72,7 @@ Shopping, packing and checklists with quantities and categories by hashtag (`oat
 </p>
 
 ### ⚡ Quick capture & triage
-Capture a thought without picking a folder: the input bar (`C` or `/`), voice input (in the browser or through your own Whisper server), your phone's share menu or the API. Everything lands in an inbox, and the Tinder-style triage empties it later, one card at a time: a key (`H`/`L`, arrows) or a swipe discards a card or turns it into a task, a note or a list item.
+Capture a thought without picking a folder: the input bar (`C` or `/`), voice input (in the browser or through your own Whisper server), your phone's share menu or the API. Everything lands in an inbox, and the swipe-style triage empties it later, one card at a time: a key (`H`/`L`, arrows) or a swipe discards a card or turns it into a task, a note or a list item.
 
 <p align="center">
   <img src="screenshots/Triage_desktop.webp" alt="MindSift triage on the desktop, light theme on the left, dark on the right" width="85%" />
@@ -272,10 +272,10 @@ No telemetry, no third-party services; fonts and icons ship with the app. The se
 
 MindSift is written with a lot of AI help (see the note at the top). One person decides what goes in and tries it on real devices. What keeps the code honest is that it gets checked:
 
-* **Tests:** more than 500 frontend tests and more than 370 backend tests run before every push and again in the build of every release. If one fails, no image is published.
-* **Browser tests:** eight runs with over 180 checks cover what is hard to unit-test: two people editing the same note at once, offline and back online, sharing, locks and conflict copies, tables, copy & paste as Markdown in Chromium and Firefox, and connections behind proxies that block WebSockets ([e2e/](e2e/README.md)). They run before every release and every change to these areas.
+* **Tests:** more than 650 frontend tests and more than 450 backend tests run before every push and again in the build of every release. If one fails, no image is published.
+* **Browser tests:** more than a dozen runs with over 250 checks cover what is hard to unit-test: two people editing the same note at once, offline and back online, sharing, locks and conflict copies, tables, copy & paste as Markdown in Chromium and Firefox, live drawing, two-factor sign-in, passkeys, sign-in through an OpenID Connect provider (against Dex) and connections behind proxies that block WebSockets ([e2e/](e2e/README.md)). They run before every release and every change to these areas.
 * **Static checks:** TypeScript, ESLint, gofmt, `go vet` and staticcheck, in the same run as the tests.
-* **Security:** a review of the whole code base in November 2026, findings fixed ([Security](#security)); every tagged release is scanned with Trivy ([Security scan](#security-scan)).
+* **Security:** a review of the whole code base in November 2026 (v0.94.0), findings fixed ([Security](#security)); OIDC, two-factor sign-in and passkeys came later and have their own browser tests; every tagged release is scanned with Trivy ([Security scan](#security-scan)).
 
 History starts at v0.70.0, when the project moved from a private repository; the [changelog](CHANGELOG.md) and its [archive](CHANGELOG-archive.md) go back to 0.1.
 
@@ -289,8 +289,8 @@ MindSift builds a few things itself that other projects take from a library, and
 * **Own note sync instead of Yjs or Automerge:** the server has to understand a note (rights, search, backlinks, Markdown), and sync has to survive proxies that cut WebSockets, where Yjs did not hold up. Every change is a plain HTTP request against an operations log. The price: two people cannot type in the same bullet at once.
 * **Own OAuth and MCP server:** claude.ai and ChatGPT only connect through OAuth issued by the MCP server itself (discovery, dynamic client registration, PKCE), and MCP over HTTP is four JSON-RPC methods.
 * **Own drawing layout:** agents hand in Mermaid, and the server turns it into drawings you can keep editing.
-* **Two chunks:** the sign-in page needs about 170 kB compressed, the app about 250 kB more after signing in. The service worker loads everything when it installs, so the installed app works offline once it has been opened.
-* **Few dependencies:** eight direct Go modules and a handful of npm packages at runtime.
+* **Two chunks:** the sign-in page needs less than 200 kB compressed, the app less than 300 kB more after signing in. The service worker loads everything when it installs, so the installed app works offline once it has been opened.
+* **Few dependencies:** about a dozen direct Go modules (router, SQLite, WebSocket, JWT, web push, OIDC, WebAuthn and parts of `x/`) and a handful of npm packages at runtime.
 * **Grown rather than designed:** a session is a signed token plus a database row plus a version counter. A random session ID would do the same with less; it works and is tested, so it stays for now.
 
 ---
@@ -318,7 +318,7 @@ Load-tested with v0.95.0 on the public demo, a deliberately small server with **
 
 ## Security
 
-MindSift is meant to be reachable from the internet behind a reverse proxy. The whole code base was reviewed for security in November 2026 (v0.94.0), and the findings are fixed (see the [changelog](CHANGELOG.md)). What protects your data:
+MindSift is meant to be reachable from the internet behind a reverse proxy. The whole code base was reviewed for security in November 2026 (v0.94.0), and the findings are fixed (see the [changelog](CHANGELOG.md)). Sign-in through OpenID Connect, two-factor sign-in and passkeys came after that review; they have their own browser tests ([e2e/](e2e/README.md)). What protects your data:
 
 * **Sign-in:** passwords are hashed with bcrypt over a SHA-256 of the whole password, so long passphrases count to the last character. Two-factor sign-in with an authenticator app (TOTP), passkeys or both, plus ten one-time recovery codes, can be switched on per person or required by the administration for admins or for everyone; a device can be trusted for 30 days. With it on, a new password or address, deleting data or the account and creating an API key ask for the second factor too, every change to it is mailed to the account, and an administrator can reset it for somebody who lost it. Passkeys (WebAuthn, user verification required) also sign in without a password and cannot be phished: they are bound to the host of `BASE_URL` (https only). Sign-in through an OpenID Connect provider uses the authorization code flow with PKCE, state and nonce and checks the ID token completely (signature against the provider's keys, issuer, audience, expiry, nonce); the session token never appears in an address, the provider sends back a one-time ticket that only the browser that started the sign-in can trade. Every login is a server-side session tied to a signed token; sessions are listed under Settings → Security, can be ended one by one, end after 30 days without use and with any password change. Failed sign-ins lock the account for that address after 3 tries, the account after 20 and the address after 30, each for 15 minutes; registration, "forgot password", the password asked before deleting data and the passwords of public links are limited the same way. A failed sign-in takes as long whether the account exists or not.
 * **Secrets never in plain text:** API keys, OAuth tokens, reset and confirmation links and the tokens of public links are stored only as SHA-256 hashes. Hidden values in notes are encrypted with AES-256-GCM under a key kept apart from the database (`SECRETS_KEY`).
@@ -374,7 +374,7 @@ e2e/screenshots.sh                 # recreate the screenshots in this README
 
 The multi-stage `Dockerfile` builds the frontend, embeds it into the Go binary and runs all checks. **Stack:** Go (chi, gorilla/websocket, modernc SQLite) · React 18, TypeScript, Vite, Tailwind.
 
-Technical documentation: [Doku/](Doku/README.md) (architecture, database, REST and realtime API, collaboration, permissions, themes). Known weak spots: [Doku/flaws.md](Doku/flaws.md).
+Technical documentation: [Doku/](Doku/README.md) (architecture, database, REST and realtime API, collaboration, permissions, themes). Known weak spots: [Doku/flaws.md](Doku/flaws.md). Want to help? Read [CONTRIBUTING.md](CONTRIBUTING.md) first.
 
 ---
 
