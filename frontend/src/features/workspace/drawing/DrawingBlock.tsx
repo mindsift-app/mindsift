@@ -1,13 +1,16 @@
-import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import React, { Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { Expand, Maximize2, Pencil, RotateCcw, Save, Shrink } from 'lucide-react';
 import { Drawing, contentBox, drawingTexts, parseDrawing, serializeDrawing, wheelZoom } from '../../../lib/drawing/model';
 import { DrawingElements } from './DrawingElements';
-import { DrawingEditor } from './DrawingEditor';
 import { ConfirmPopover } from '../../../components/ConfirmPopover';
 import { AvatarStack } from '../../../components/AvatarStack';
 import { isWebSocketConnected, tryWebSocket } from '../../../lib/api';
+
+// The editor (with the live drawing) is a chunk of its own, loaded when a drawing is opened; the service
+// worker precaches it with the other assets, so it opens offline as well
+const DrawingEditor = React.lazy(() => import('./DrawingEditor').then((m) => ({ default: m.DrawingEditor })));
 
 interface View {
   x: number;
@@ -486,26 +489,28 @@ export const DrawingBlock: React.FC<DrawingBlockProps> = ({
       )}
 
       {editing && (
-        <DrawingEditor
-          // The live session holds the bullet itself
-          onActivity={editing === 'solo' ? onActivity : undefined}
-          initial={drawing}
-          baseContent={content}
-          draftKey={blockId}
-          readOnly={editing === 'view'}
-          live={
-            docId && (editing === 'draw' || editing === 'watch')
-              ? { docId, blockId, mode: editing, canDraw: canEdit && isWebSocketConnected() }
-              : undefined
-          }
-          onClose={(next) => {
-            setEditing(null);
-            const fresh = freshRef.current;
-            freshRef.current = false;
-            if (next !== null) onChange(next);
-            else if (fresh && empty) onDiscardNew?.();
-          }}
-        />
+        <Suspense fallback={null}>
+          <DrawingEditor
+            // The live session holds the bullet itself
+            onActivity={editing === 'solo' ? onActivity : undefined}
+            initial={drawing}
+            baseContent={content}
+            draftKey={blockId}
+            readOnly={editing === 'view'}
+            live={
+              docId && (editing === 'draw' || editing === 'watch')
+                ? { docId, blockId, mode: editing, canDraw: canEdit && isWebSocketConnected() }
+                : undefined
+            }
+            onClose={(next) => {
+              setEditing(null);
+              const fresh = freshRef.current;
+              freshRef.current = false;
+              if (next !== null) onChange(next);
+              else if (fresh && empty) onDiscardNew?.();
+            }}
+          />
+        </Suspense>
       )}
     </div>
   );

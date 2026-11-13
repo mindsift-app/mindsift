@@ -38,6 +38,7 @@ Versions without a git tag were development states and were never published as a
 
 ### Changed
 - **Attention:** the setup wizard of a new server now asks for a one-time **setup code** that MindSift writes to its log when it starts without any account (`docker logs mindsift | grep 'Setup code'`), so only someone who can read the server's log becomes its admin, not whoever opens the page first. The code changes with every restart and stops working once the admin exists; three wrong codes lock the address for 15 minutes. With `ADMIN_USER`/`ADMIN_PASSWORD` and in the demo nothing changes. The install script shows the code when it has not created the admin itself. Scripts that call `POST /api/v1/auth/setup` send it as `setupCode`; `POST /api/v1/auth/register` no longer creates the first account of a server.
+- Some icons (shopping cart, calendar, key and a few more) have a slightly updated look from a newer version of the icon set, and the emoji picker offers the newer emoji.
 - Dragging a card on a Kanban board with many tasks is much smoother: the drop gap opens at once and the cards below glide aside instead of the whole column being laid out again in every frame.
 - The note preview on a Kanban card and in a task row shows the first 60 characters of the note instead of carrying the whole note; in the list it is no longer cut at a fixed narrow width but shortens only when the row runs out of room.
 - On wide screens the Kanban board is centred, and its columns grow to 640 px instead of 420 px.

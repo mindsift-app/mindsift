@@ -4,7 +4,7 @@
 # local Node or Go needed): tsc, ESLint and Vitest for the frontend, go vet and go test with a single
 # database connection for the backend, plus the cases of the build plan. Only here, not in the image
 # build: gofmt, staticcheck (settings in staticcheck.conf) and golangci-lint (settings in .golangci.yml).
-#   ci/local-checks.sh          frontend, backend, golangci-lint, build plan (in parallel)
+#   ci/local-checks.sh          frontend (with the size of the bundle), backend, golangci-lint, build plan (in parallel)
 #   E2E=1 ci/local-checks.sh    additionally the browser tests (e2e/run.sh, a few minutes)
 # Exits non-zero when anything fails; the log of each part is printed at the end.
 set -uo pipefail
@@ -21,11 +21,25 @@ GOLANGCI_LINT_IMAGE="docker.io/golangci/golangci-lint:v2.15.0-alpine"
 # Same Node as the Dockerfile
 NODE_IMAGE="docker.io/library/node:26.13.0-alpine"
 
+# Upper bounds for the compressed size (gzip, kB) of the start chunk (index-*.js: shell and sign-in pages) and of
+# the app chunk (mainViews-*.js), a little above the build of 2026-11 (about 210 and 240 kB). Going over them is not
+# wrong as such, but should be a decision: raise the bound, or load the new part on demand (Doku/architecture.md).
+MAX_START_KB=225
+MAX_APP_KB=255
+
 # Named volumes keep npm and Go downloads between runs. npm ci as in the Dockerfile: exactly the versions of
 # package-lock.json, and a lockfile that does not match package.json fails here as it would in the build.
+# The build goes to a folder inside the container, not to frontend/dist; then the size of the two chunks.
 frontend() {
-  "$ENGINE" run --rm -v "$ROOT/frontend":/app:z -v mindsift-npm-cache:/root/.npm -e NO_COLOR=1 -e FORCE_COLOR=0 -w /app "$NODE_IMAGE" \
-    sh -c 'npm ci --no-audit --no-fund --loglevel=error && npx tsc --noEmit && npm run lint && npm run test:run'
+  "$ENGINE" run --rm -v "$ROOT/frontend":/app:z -v mindsift-npm-cache:/root/.npm -e NO_COLOR=1 -e FORCE_COLOR=0 -w /app \
+    -e MAX_START_KB="$MAX_START_KB" -e MAX_APP_KB="$MAX_APP_KB" "$NODE_IMAGE" \
+    sh -c 'npm ci --no-audit --no-fund --loglevel=error && npx tsc --noEmit && npm run lint && npm run test:run &&
+      npx vite build --outDir /tmp/dist --logLevel error && for chunk in index:$MAX_START_KB mainViews:$MAX_APP_KB; do
+        name=${chunk%%:*} max=${chunk#*:} file=$(ls /tmp/dist/assets/${chunk%%:*}-*.js)
+        kb=$(( $(gzip -c "$file" | wc -c) / 1000 ))
+        echo "bundle: $name $kb kB gzip (at most $max)"
+        [ "$kb" -le "$max" ] || { echo "bundle: $name is larger than $max kB, see MAX_START_KB/MAX_APP_KB in ci/local-checks.sh"; exit 1; }
+      done'
 }
 # The Go packages of the image build (cmd/ and internal/), not ./...: that would also walk frontend/node_modules,
 # which has Go files of its own and is deleted and rebuilt by npm ci in the frontend part at the same time
@@ -61,7 +75,7 @@ for log in "$LOGS"/*.log; do
     echo "===== $part: FAILED"
     tail -n 60 "$log"
   else
-    echo "===== $part: ok ($(grep -E 'Tests +[0-9]+ passed|^ok |ALL CASES PASSED|All checks passed|^0 issues' "$log" | tail -n 3 | tr -s ' ' | paste -sd ';' -))"
+    echo "===== $part: ok ($(grep -E 'Tests +[0-9]+ passed|^bundle: |^ok |ALL CASES PASSED|All checks passed|^0 issues' "$log" | tail -n 3 | tr -s ' ' | paste -sd ';' -))"
   fi
 done
 echo "Took $(( $(date +%s) - start )) s"

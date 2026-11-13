@@ -27,7 +27,7 @@ interface TaskDragOptions {
   setTaskLists: React.Dispatch<React.SetStateAction<TaskList[]>>;
   onRefreshStats: () => void;
   viewMode: string;
-  kanbanBoardRef: React.RefObject<HTMLDivElement>;
+  kanbanBoardRef: React.RefObject<HTMLDivElement | null>;
   kanbanPhoneSnap: boolean;
   kanbanPhoneTop: number;
 }

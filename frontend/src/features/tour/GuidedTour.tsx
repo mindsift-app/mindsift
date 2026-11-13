@@ -111,7 +111,7 @@ function TourOverlay({
 }: {
   state: TourState;
   dispatch: (action: TourAction) => void;
-  tabRef: React.MutableRefObject<ActiveTab>;
+  tabRef: React.RefObject<ActiveTab>;
   setActiveTab: (tab: ActiveTab) => void;
 }) {
   const { t } = useTranslation('tour');

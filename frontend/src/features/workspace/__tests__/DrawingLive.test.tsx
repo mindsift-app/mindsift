@@ -70,18 +70,23 @@ describe('Live drawing in the note', () => {
     expect(screen.getByRole('button', { name: 'Zusehen' })).toBeTruthy();
   });
 
-  it('readers only watch', () => {
+  // The editor loads on demand (its own chunk): its messages go out once it has mounted
+  it('readers only watch', async () => {
     render(<DrawingBlock docId="d1" blockId="b1" content={CONTENT} canEdit={false} live={[live[0]]} onChange={() => {}} />);
     fireEvent.doubleClick(screen.getByRole('img'));
     expect(screen.queryByRole('button', { name: 'Mitzeichnen' })).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Zusehen' }));
-    expect(realtime.sent.map((m) => m.event)).toContain('DRAW_WATCH');
+    await vi.waitFor(() => expect(realtime.sent.map((m) => m.event)).toContain('DRAW_WATCH'));
   });
 
-  it('starts a live session when opened with a WebSocket', () => {
+  it('starts a live session when opened with a WebSocket', async () => {
     render(<DrawingBlock docId="d1" blockId="b1" content={CONTENT} canEdit onChange={() => {}} />);
     fireEvent.doubleClick(screen.getByRole('img'));
-    const join = realtime.sent.find((m) => m.event === 'DRAW_JOIN');
+    const join = await vi.waitFor(() => {
+      const sent = realtime.sent.find((m) => m.event === 'DRAW_JOIN');
+      expect(sent).toBeTruthy();
+      return sent;
+    });
     expect(join?.payload).toMatchObject({ docId: 'd1', blockId: 'b1', base: CONTENT });
     expect(join?.payload.els).toEqual([expect.objectContaining({ id: 'a', ver: 1, nonce: 0 })]);
   });

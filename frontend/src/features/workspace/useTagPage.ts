@@ -20,8 +20,8 @@ export function useTagPage({
   inTagPage: boolean;
   tagFilter?: string;
   blocks: DocumentBlock[];
-  engineRef: React.MutableRefObject<DocSyncEngine | null>;
-  currentBlocksRef: React.MutableRefObject<DocumentBlock[]>;
+  engineRef: React.RefObject<DocSyncEngine | null>;
+  currentBlocksRef: React.RefObject<DocumentBlock[]>;
   handleCreateBlock: (newBlock: DocumentBlock, afterBlockId?: string) => void;
   handleInsertBlocks: (afterBlockId: string, updatedCurrentBlock: DocumentBlock, newBlocks: DocumentBlock[]) => void;
   handleMoveBlock: (blockId: string, targetIndex: number, newLevel?: number) => void;

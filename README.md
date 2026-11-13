@@ -290,7 +290,7 @@ MindSift builds a few things itself that other projects take from a library, and
 * **Own note sync instead of Yjs or Automerge:** the server has to understand a note (rights, search, backlinks, Markdown), and sync has to survive proxies that cut WebSockets, where Yjs did not hold up. Every change is a plain HTTP request against an operations log. The price: two people cannot type in the same bullet at once.
 * **Own OAuth and MCP server:** claude.ai and ChatGPT only connect through OAuth issued by the MCP server itself (discovery, dynamic client registration, PKCE), and MCP over HTTP is four JSON-RPC methods.
 * **Own drawing layout:** agents hand in Mermaid, and the server turns it into drawings you can keep editing.
-* **Two chunks:** the sign-in page needs less than 200 kB compressed, the app less than 300 kB more after signing in. The service worker loads everything when it installs, so the installed app works offline once it has been opened.
+* **Two chunks:** the sign-in page needs less than 220 kB compressed, the app less than 250 kB more after signing in. The service worker loads everything when it installs, so the installed app works offline once it has been opened.
 * **Few dependencies:** about a dozen direct Go modules (router, SQLite, WebSocket, JWT, web push, OIDC, WebAuthn and parts of `x/`) and a handful of npm packages at runtime.
 * **Grown rather than designed:** a session is a signed token plus a database row plus a version counter. A random session ID would do the same with less; it works and is tested, so it stays for now.
 
@@ -373,7 +373,7 @@ e2e/run.sh                         # browser tests (Playwright) against a fresh 
 e2e/screenshots.sh                 # recreate the screenshots in this README
 ```
 
-The multi-stage `Dockerfile` builds the frontend, embeds it into the Go binary and runs all checks. **Stack:** Go (chi, gorilla/websocket, modernc SQLite) · React 18, TypeScript, Vite, Tailwind.
+The multi-stage `Dockerfile` builds the frontend, embeds it into the Go binary and runs all checks. **Stack:** Go (chi, gorilla/websocket, modernc SQLite) · React 19, TypeScript, Vite, Tailwind.
 
 Technical documentation: [Doku/](Doku/README.md) (architecture, database, REST and realtime API, collaboration, permissions, themes). Known weak spots: [Doku/flaws.md](Doku/flaws.md). Want to help? Read [CONTRIBUTING.md](CONTRIBUTING.md) first.
 

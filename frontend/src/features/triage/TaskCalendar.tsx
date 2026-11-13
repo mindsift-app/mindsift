@@ -92,7 +92,7 @@ interface TaskCalendarProps {
   mode: CalendarMode;
   // Desktop scrolling and height as on the Kanban board (useKanbanLayout): the measured block, whether its
   // height follows the scroll position yet
-  boardRef: React.RefObject<HTMLDivElement>;
+  boardRef: React.RefObject<HTMLDivElement | null>;
   fillsScreen: boolean;
 }
 
