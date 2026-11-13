@@ -15,7 +15,7 @@ ci/local-checks.sh          # tsc, ESLint, Vitest, gofmt, go vet, golangci-lint,
 E2E=1 ci/local-checks.sh    # plus the browser tests (Playwright, a few minutes)
 ```
 
-`E2E=1` is required for changes to notes, sharing, sync, locks or sign-in; see [e2e/README.md](e2e/README.md). The pipeline does not run these tests for you, so a pull request should say that both were green.
+`E2E=1` is required for changes to notes, sharing, sync, locks or sign-in; see [e2e/README.md](e2e/README.md). The pipelines do not run the browser tests, and the checks of a pull request leave out gofmt and golangci-lint, so a pull request should say that both runs were green.
 
 ESLint runs without warnings, and new code should not add any. An intentionally omitted hook dependency gets a one-line reason above its `// eslint-disable-next-line react-hooks/exhaustive-deps`.
 
