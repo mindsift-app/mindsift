@@ -159,9 +159,10 @@ func layoutFlowchart(g *graph) layoutResult {
 		state[u] = 1
 		for _, ei := range adj[u] {
 			v := edges[ei].v
-			if state[v] == 1 {
+			switch state[v] {
+			case 1:
 				edges[ei].reversed = true
-			} else if state[v] == 0 {
+			case 0:
 				dfs(v)
 			}
 		}
@@ -515,7 +516,7 @@ func layoutFlowchart(g *graph) layoutResult {
 			continue
 		}
 		top := chains[k][0].layer
-		need := 40.0
+		var need float64
 		if horizontal {
 			need = textWidth(e.e.label, labelFont) + 50
 		} else {

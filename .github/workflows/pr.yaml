@@ -1,0 +1,37 @@
+name: Pull Request Checks
+
+# Checks a pull request to dev or main before it is merged: the test stages of the Dockerfile (tsc,
+# ESLint and Vitest for the frontend, go vet and go test for the backend, as in the build of main) and
+# the cases of the build plan (ci/test-build-plan.sh). It builds for the runner's platform only, with
+# the tests on (SKIP_TESTS=0, the Dockerfile's default), and stops after the stage that runs the Go tests.
+# No registry login and no push: the code of a pull request gets a read-only token and nothing else.
+# ci/local-checks.sh runs the same and more (gofmt, staticcheck, golangci-lint) on a developer's machine.
+on:
+  pull_request:
+    branches:
+      - dev
+      - main
+
+permissions:
+  contents: read
+
+# A new push to the same pull request cancels the check of the previous one
+concurrency:
+  group: pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Build & Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Build Plan Cases
+        run: ci/test-build-plan.sh
+
+      - name: Frontend and Backend Tests (Dockerfile up to backend-builder)
+        run: docker build --progress=plain --target backend-builder --build-arg SKIP_TESTS=0 .

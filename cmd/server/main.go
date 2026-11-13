@@ -51,7 +51,7 @@ func main() {
 		slog.Error("Failed to initialize storage", "error", err)
 		os.Exit(1)
 	}
-	defer store.Close()
+	defer func() { _ = store.Close() }()
 	store.ConfiguredLanguage = cfg.DefaultLanguage
 	if v, err := store.SQLiteVersion(); err == nil {
 		slog.Info("Database opened", "sqlite", v)

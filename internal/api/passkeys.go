@@ -143,7 +143,8 @@ func (s *Server) passkeyRP() (rpID, origin, reason string) {
 	}
 	// The origin as browsers write it: without the scheme's default port
 	origin = scheme + "://" + host
-	if port := u.Port(); port != "" && !(scheme == "https" && port == "443") && !(scheme == "http" && port == "80") {
+	defaultPort := map[string]string{"https": "443", "http": "80"}[scheme]
+	if port := u.Port(); port != "" && port != defaultPort {
 		origin += ":" + port
 	}
 	return host, origin, ""

@@ -274,7 +274,7 @@ MindSift is written with a lot of AI help (see the note at the top). One person 
 
 * **Tests:** more than 650 frontend tests and more than 450 backend tests run before every push and again in the build of every release. If one fails, no image is published.
 * **Browser tests:** more than a dozen runs with over 250 checks cover what is hard to unit-test: two people editing the same note at once, offline and back online, sharing, locks and conflict copies, tables, copy & paste as Markdown in Chromium and Firefox, live drawing, two-factor sign-in, passkeys, sign-in through an OpenID Connect provider (against Dex) and connections behind proxies that block WebSockets ([e2e/](e2e/README.md)). They run before every release and every change to these areas.
-* **Static checks:** TypeScript, ESLint, gofmt, `go vet` and staticcheck, in the same run as the tests.
+* **Static checks:** TypeScript, ESLint, gofmt, `go vet`, staticcheck and [golangci-lint](https://golangci-lint.run) with its standard linters ([.golangci.yml](.golangci.yml)), in the same run as the tests.
 * **Security:** a review of the whole code base in November 2026 (v0.94.0), findings fixed ([Security](#security)); OIDC, two-factor sign-in and passkeys came later and have their own browser tests; every tagged release is scanned with Trivy ([Security scan](#security-scan)).
 
 History starts at v0.70.0, when the project moved from a private repository; the [changelog](CHANGELOG.md) and its [archive](CHANGELOG-archive.md) go back to 0.1.
@@ -343,7 +343,7 @@ The image is scanned with [Trivy](https://trivy.dev) for known vulnerabilities, 
 * **every tagged release** (`:stable`, `:vX.Y.Z`) before it is published, and every build that changes the base image, the Go version or the Go modules. A known high or critical vulnerability that already has a fix, or a leaked secret, stops the release;
 * **the published `:stable` and `:latest` every week**, because new vulnerabilities become known after a release. The badge shows the last weekly run, its log the result.
 
-The base images (`node:22-alpine`, `golang:1.27-alpine`, `alpine:3.24`) are referenced by tag, not by digest, so each build gets their security fixes without manual updates; the last stage also runs `apk upgrade`. The application's own dependencies are pinned: `npm ci` installs exactly what `package-lock.json` lists, and the Go modules are checked against `go.sum`.
+The base images (`golang:1.27-alpine`, `alpine:3.24`) are referenced by tag, not by digest, so each build gets their security fixes without manual updates (Node, `node:26.13.0-alpine`, only builds the frontend and is pinned to a release); the last stage also runs `apk upgrade`. The application's own dependencies are pinned: `npm ci` installs exactly what `package-lock.json` lists, and the Go modules are checked against `go.sum`.
 
 When you scan the image yourself:
 
@@ -360,7 +360,7 @@ docker run --rm aquasec/trivy image ghcr.io/mindsift-app/mindsift:stable
 
 ## Development
 
-Go 1.27 and Node 22.
+Go 1.27 and Node 26 (the active LTS).
 
 ```bash
 go vet ./cmd/... ./internal/... && go test ./cmd/... ./internal/...   # backend
@@ -381,6 +381,8 @@ Technical documentation: [Doku/](Doku/README.md) (architecture, database, REST a
 ## License
 
 MindSift is free software under the [GNU Affero General Public License v3.0](LICENSE): use it, change it, pass it on, even commercially. If you hand out a changed version or run it as a service on the net, its source has to be available under the same license. No warranty.
+
+The licenses of the third-party software built into MindSift (npm packages and Go modules) are in `THIRD_PARTY_LICENSES.txt`, generated at build time: in the image at `/app/THIRD_PARTY_LICENSES.txt` and next to the binary in every release archive.
 
 <div align="center">
 
