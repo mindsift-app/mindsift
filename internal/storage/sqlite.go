@@ -28,6 +28,8 @@ type Store struct {
 	systemBackupDir string
 	// blockRefsReady: block_refs exists (migration 41 has run), so writing blocks maintains it
 	blockRefsReady atomic.Bool
+	// secretsKey seals the SMTP password in the system settings (sealed.go, WithSecretsKey)
+	secretsKey []byte
 
 	// OnTaskCreated is told about tasks the store creates by itself (next occurrence of a repeating
 	// task), so the server can push them to connected clients.
@@ -43,7 +45,7 @@ type Store struct {
 	settingsGen   uint64
 }
 
-func NewStore(dbPath string) (*Store, error) {
+func NewStore(dbPath string, opts ...StoreOption) (*Store, error) {
 	if dbPath != ":memory:" && !strings.HasPrefix(dbPath, "file:") {
 		dir := filepath.Dir(dbPath)
 		if err := os.MkdirAll(dir, 0755); err != nil {
@@ -75,6 +77,9 @@ func NewStore(dbPath string) (*Store, error) {
 	db.SetMaxIdleConns(min(4, maxConns))
 
 	store := &Store{db: db}
+	for _, opt := range opts {
+		opt(store)
+	}
 	if dbPath != ":memory:" && !strings.HasPrefix(dbPath, "file:") {
 		store.mediaRoot = filepath.Join(filepath.Dir(dbPath), "media")
 		store.systemBackupDir = filepath.Join(filepath.Dir(dbPath), "backups", "system")

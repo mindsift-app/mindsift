@@ -731,6 +731,7 @@
     "testSending": "Sending test mail…",
     "testSend": "Send test email",
     "passwordKept": "Saved – leave empty for no change",
+    "passwordUnreadable": "The stored password can no longer be decrypted: the server's key (SECRETS_KEY or secrets.key) has changed. No email goes out until you enter it again and save.",
     "save": "Save SMTP configuration to the database",
     "testSent": "Test e-mail sent to {{email}}.",
     "testFailed": "SMTP test failed: {{error}}"

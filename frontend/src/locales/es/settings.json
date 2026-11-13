@@ -781,6 +781,7 @@
     "testSending": "Enviando correo de prueba…",
     "testSend": "Enviar correo de prueba",
     "passwordKept": "Guardado – dejar en blanco para no cambiar",
+    "passwordUnreadable": "La contraseña guardada ya no se puede descifrar: la clave del servidor (SECRETS_KEY o secrets.key) ha cambiado. No sale ningún correo hasta que la vuelvas a introducir y guardes.",
     "save": "Guardar configuración SMTP en la base de datos",
     "testSent": "Correo de prueba enviado a {{email}}.",
     "testFailed": "La prueba SMTP ha fallado: {{error}}"

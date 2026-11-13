@@ -46,9 +46,15 @@ func (e *smtpStepError) Unwrap() error { return e.Err }
 
 const smtpTimeout = 30 * time.Second
 
+var errSMTPPassUnreadable = i18n.NewError("Das gespeicherte SMTP-Passwort lässt sich nicht entschlüsseln (SECRETS_KEY oder secrets.key geändert?); bitte in der Administration unter E-Mail neu eingeben")
+
 func (s *Server) smtpSettings() (smtpSettings, error) {
 	cfg := smtpSettings{Port: "587", TLS: true}
 	if sys, _ := s.store.GetSystemSettings(); sys != nil && strings.TrimSpace(sys.SMTPHost) != "" {
+		// The stored password does not decrypt (logged when it was read): no attempt without it
+		if sys.SMTPPassUnreadable {
+			return cfg, errSMTPPassUnreadable
+		}
 		cfg = smtpSettings{
 			Host: strings.TrimSpace(sys.SMTPHost), Port: strings.TrimSpace(sys.SMTPPort),
 			User: strings.TrimSpace(sys.SMTPUser), Pass: sys.SMTPPass, From: strings.TrimSpace(sys.SMTPFrom),

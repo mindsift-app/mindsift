@@ -444,7 +444,10 @@ type SystemSettings struct {
 	// writing it empty keeps the stored password
 	SMTPPass    string `json:"smtpPass"`
 	SMTPPassSet bool   `json:"smtpPassSet,omitempty"`
-	SMTPFrom    string `json:"smtpFrom"`
+	// SMTPPassUnreadable: a password is stored (encrypted with SECRETS_KEY) but does not decrypt, the
+	// key changed; no mail goes out until an admin enters it again. Read only.
+	SMTPPassUnreadable bool   `json:"smtpPassUnreadable,omitempty"`
+	SMTPFrom           string `json:"smtpFrom"`
 	// SMTPFromName is shown as sender when SMTPFrom is a bare address (empty = "MindSift")
 	SMTPFromName   string `json:"smtpFromName"`
 	SMTPTLS        bool   `json:"smtpTls"`

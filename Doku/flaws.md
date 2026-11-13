@@ -24,8 +24,8 @@ Severity levels: **High** (account takeover or data exfiltration possible), **Me
 - **Remaining risk:** The token remains stored in `localStorage` (any script executing in the app context could access it); HttpOnly cookies with CSRF protection were deliberately deferred because strict CSP and link sanitization (formerly FLAW-28/29) close the known exploit vectors. If needed: short-lived access token + HttpOnly cookie.
 
 ### FLAW-34: Plaintext SMTP Password
-- **Status: Partially resolved.** `GET`/`PUT /admin/settings` always return `smtpPass` empty and only report `smtpPassSet`; leaving the field empty retains the stored password, while omitting an SMTP username clears it ([handlers_admin.go](../internal/api/handlers_admin.go)).
-- **Remaining risk:** In the database and its backups, the password remains in plain text (the server needs it to authenticate). Operators who wish to avoid this can configure `SMTP_HOST`/`SMTP_PASS` via environment variables and leave the fields blank in the admin UI.
+- **Status: Resolved.** `GET`/`PUT /admin/settings` always return `smtpPass` empty and only report `smtpPassSet`; leaving the field empty retains the stored password, while omitting an SMTP username clears it ([handlers_admin.go](../internal/api/handlers_admin.go)). Since Migration 43 the stored password is encrypted with `SECRETS_KEY` like hidden values ([sealed.go](../internal/storage/sealed.go)), so the database and its backups no longer contain it in plain text.
+- **Remaining risk:** Whoever has the database and `data/secrets.key` together can decrypt it (the server needs it to authenticate); keep `SECRETS_KEY` in the environment to hold the key apart from the data folder.
 
 ### FLAW-43: Copied Pictures Outlive a Revoked Share
 - **Status: Accepted (by design).** A file is readable for everyone who may read the note it was uploaded to or any note whose bullets point to it ([media.go](../internal/api/media.go) `canReadMedia`, [block_refs.go](../internal/storage/block_refs.go) `sqlDocsWithMedia`). This is what keeps an image working when a bullet is copied or moved into another note.

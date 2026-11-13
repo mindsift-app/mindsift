@@ -215,7 +215,8 @@ func (s *Store) readSystemSettings() (*domain.SystemSettings, error) {
 			case "smtp_user":
 				settings.SMTPUser = v
 			case "smtp_pass":
-				settings.SMTPPass = v
+				pass, ok := s.readSMTPPass(v)
+				settings.SMTPPass, settings.SMTPPassUnreadable = pass, !ok
 			case "smtp_from":
 				settings.SMTPFrom = v
 			case "smtp_from_name":
@@ -362,7 +363,6 @@ func (s *Store) UpdateSystemSettings(settings *domain.SystemSettings) error {
 		('smtp_host', ?),
 		('smtp_port', ?),
 		('smtp_user', ?),
-		('smtp_pass', ?),
 		('smtp_from', ?),
 		('smtp_from_name', ?),
 		('smtp_tls', ?),
@@ -381,7 +381,6 @@ func (s *Store) UpdateSystemSettings(settings *domain.SystemSettings) error {
 		strings.TrimSpace(settings.SMTPHost),
 		strings.TrimSpace(settings.SMTPPort),
 		strings.TrimSpace(settings.SMTPUser),
-		settings.SMTPPass,
 		strings.TrimSpace(settings.SMTPFrom),
 		strings.TrimSpace(settings.SMTPFromName),
 		tlsStr,
@@ -394,6 +393,15 @@ func (s *Store) UpdateSystemSettings(settings *domain.SystemSettings) error {
 		settings.RegistrationDomains,
 		strconv.FormatBool(settings.RegistrationVerifyEmail),
 	)
+	// The SMTP password sealed with SECRETS_KEY (sealed.go). One that no longer opens stays as it is when
+	// no new one comes with the settings, so saving other settings does not lose it.
+	if err == nil && (settings.SMTPPass != "" || !settings.SMTPPassUnreadable) {
+		var stored string
+		if stored, err = s.storedSMTPPass(settings.SMTPPass); err == nil {
+			_, err = s.db.Exec(`INSERT INTO system_settings (key, value) VALUES ('smtp_pass', ?)
+				ON CONFLICT(key) DO UPDATE SET value = excluded.value`, stored)
+		}
+	}
 	if err == nil && settings.RetentionAllowNever != nil {
 		_, err = s.db.Exec(`INSERT INTO system_settings (key, value) VALUES ('retention_allow_never', ?)
 			ON CONFLICT(key) DO UPDATE SET value = excluded.value`, strconv.FormatBool(*settings.RetentionAllowNever))

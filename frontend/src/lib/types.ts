@@ -406,6 +406,8 @@ export interface SystemSettings {
   smtpUser?: string;
   smtpPass?: string; // write only: the server never sends it back, empty keeps the stored one
   smtpPassSet?: boolean;
+  // A password is stored but does not decrypt (SECRETS_KEY changed): no mail until it is entered again
+  smtpPassUnreadable?: boolean;
   smtpFrom?: string;
   smtpFromName?: string; // display name when smtpFrom is a bare address (empty = MindSift)
   smtpTls?: boolean;
