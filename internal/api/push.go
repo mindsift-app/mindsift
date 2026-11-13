@@ -109,7 +109,7 @@ func (s *Server) sendPush(userID string, msg pushMessage) error {
 		case resp.StatusCode == http.StatusNotFound || resp.StatusCode == http.StatusGone:
 			s.store.ForgetPushEndpoint(sub.Endpoint)
 		case resp.StatusCode >= 400:
-			lastErr = fmt.Errorf("Push-Dienst antwortet mit HTTP %d", resp.StatusCode)
+			lastErr = fmt.Errorf("push service answered with HTTP %d", resp.StatusCode)
 		default:
 			sent++
 		}

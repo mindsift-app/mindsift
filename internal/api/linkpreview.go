@@ -186,7 +186,7 @@ func fetchLimited(ctx context.Context, raw string, limit int64, accept string) (
 		return nil, nil, err
 	}
 	if int64(len(data)) > limit {
-		return nil, nil, errors.New("zu groß")
+		return nil, nil, errors.New("too large")
 	}
 	return data, resp.Header, nil
 }

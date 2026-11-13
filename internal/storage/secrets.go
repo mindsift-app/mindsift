@@ -101,14 +101,13 @@ func (s *Store) MoveSecret(id, docID string) error {
 // DocReferencesSecret reports whether a live bullet of the note holds the reference.
 func (s *Store) DocReferencesSecret(docID, id string) bool {
 	var n int
-	logDBErr(s.db.QueryRow(`SELECT COUNT(*) FROM blocks WHERE document_id = ? AND deleted = 0 AND instr(content, ?) > 0`,
-		docID, secretRef(id)).Scan(&n))
+	logDBErr(s.db.QueryRow(sqlDocHoldsSecret, id, docID).Scan(&n))
 	return n > 0
 }
 
 // docsReferencingSecret: the notes (trashed ones too) with a live bullet holding the reference.
 func (s *Store) docsReferencingSecret(id string) ([]string, error) {
-	rows, err := s.db.Query(`SELECT DISTINCT document_id FROM blocks WHERE deleted = 0 AND instr(content, ?) > 0`, secretRef(id))
+	rows, err := s.db.Query(sqlDocsHoldingSecret, id)
 	if err != nil {
 		return nil, err
 	}

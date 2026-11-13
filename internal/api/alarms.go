@@ -109,7 +109,7 @@ func (s *Server) sendEmailHTMLWith(cfg smtpSettings, toEmail, subject, bodyText,
 	if err != nil {
 		step := ""
 		if se, ok := err.(*smtpStepError); ok {
-			step = se.Step
+			step = i18n.T("en", se.Step) // the log is English (Verbindung: connection)
 		}
 		slog.Warn("Sending email failed", "smtp_step", step, "host", cfg.Host, "port", cfg.Port, "to", toEmail, "error", err)
 		return err
@@ -201,8 +201,12 @@ func alarmDue(dueDate string, notifyBeforeMinutes int, now time.Time) bool {
 func (s *Server) startAlarmTicker() {
 	ticker := time.NewTicker(60 * time.Second)
 	defer ticker.Stop()
-
-	for range ticker.C {
+	for {
+		select {
+		case <-s.stop:
+			return
+		case <-ticker.C:
+		}
 		s.checkAlarms(time.Now())
 	}
 }

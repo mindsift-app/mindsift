@@ -41,6 +41,7 @@ Versions without a git tag were development states and were never published as a
 - Callouts show **bold**, *italic*, links and hashtags like any other bullet instead of the raw Markdown; marking several bullets marks the callout's text.
 - The task dialog opens and closes without delay in long task lists: opening it no longer makes the browser restyle and lay out every row (300 tasks with a slowed-down CPU: about 0.5 s down to 0.07 s).
 - Running `install.sh` again over an existing installation pulls the latest image and says that settings and data were kept, instead of pointing to the setup wizard for a new admin.
+- With many notes, images and hidden values no longer make the server search the text of every bullet: it keeps an index of what each bullet points to (built once by the database update). On 100,000 bullets with 1,200 images, the cleanup of unused files went from about 50 s to 2 ms, a backup or Markdown export with images from about 2 minutes to under 10 ms, and opening an image copied into another note from 80 ms to well under a millisecond; the regular check of hidden values gained as much per value.
 
 ### Changed
 - The app's start file is about 40 kB (a fifth) smaller compressed: the interface texts of every language, German included, now load on their own, only the ones needed. In English, Spanish, French or Italian the app no longer flashes German texts ("Verbinde mit MindSift…", the sign-in form) while it starts.
@@ -62,6 +63,7 @@ Versions without a git tag were development states and were never published as a
 - The default dark theme is a soft slate grey instead of near black, with slightly calmer text; the light theme shows code blocks light instead of dark.
 - **Attention:** passwords count to the last character, up to 1,024 characters; before, only the first 72 bytes counted. Existing passwords keep working and are stored in the new form at the next sign-in, which older versions cannot read: going back to an older version then needs a password reset for those accounts. Keep `SECRETS_KEY` (or `data/secrets.key`): if it changes, authenticator codes stop working and only recovery codes still sign in.
 - **Attention:** without `TZ` the server now runs on UTC instead of Europe/Berlin: alarms, the daily summary and backups go by UTC (in Central Europe an hour or two late) and "today" begins at midnight UTC. After the update, pick your time zone under Administration → Server (or set `TZ`, e.g. `TZ=Europe/Berlin` in `.env`); the setting there wins over `TZ`. `docker-compose.yml` and `.env.example` default to UTC.
+- The server log is in English throughout: error messages that the app shows translated (a mail server refusing a sign-in, for example) and those of database updates, backups and imports no longer appear there in German.
 
 ## [0.95.0] - 2026-11-12
 

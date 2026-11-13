@@ -88,7 +88,12 @@ func (s *Server) startBackupScheduler() {
 	if files, err := storage.ListBackups(filepath.Join(s.backupRoot(), "system")); err == nil && len(files) > 0 {
 		lastRun = strings.TrimPrefix(files[0].Name, "mindsift-db-")[:10] // date of the newest snapshot
 	}
-	for range ticker.C {
+	for {
+		select {
+		case <-s.stop:
+			return
+		case <-ticker.C:
+		}
 		sys, err := s.store.GetSystemSettings()
 		if err != nil {
 			continue

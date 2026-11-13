@@ -477,14 +477,8 @@ func (s *Server) drawTickOnce() {
 }
 
 func (s *Server) startDrawTicker() {
-	defer s.bg.Done()
-	for {
-		select {
-		case <-s.stop:
-			return
-		case <-time.After(drawTick):
-			s.drawTickOnce()
-		}
+	for s.wait(drawTick) {
+		s.drawTickOnce()
 	}
 }
 

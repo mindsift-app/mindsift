@@ -424,7 +424,7 @@ func (s *Store) applyDocChangeCtx(ctx context.Context, docID string, a collab.Ac
 	}
 
 	if head != startHead {
-		if err := persistDocState(tx, docID, before, doc, head, now); err != nil {
+		if err := persistDocState(tx, docID, before, doc, head, now, s.blockRefsReady.Load()); err != nil {
 			return nil, 0, err
 		}
 	}
@@ -434,8 +434,9 @@ func (s *Store) applyDocChangeCtx(ctx context.Context, docID string, a collab.Ac
 	return results, head, nil
 }
 
-// persistDocState writes changed blocks and refreshes data derived from the note (markdown, search text, tags).
-func persistDocState(tx *sql.Tx, docID string, before, after *collab.Doc, head int64, now string) error {
+// persistDocState writes changed blocks and refreshes data derived from the note (markdown, search text, tags,
+// and with refs the references in block_refs).
+func persistDocState(tx *sql.Tx, docID string, before, after *collab.Doc, head int64, now string, refs bool) error {
 	stmt, err := tx.Prepare(`
 		INSERT INTO blocks (id, document_id, parent_id, order_key, type, content, checked, collapsed, lang,
 		                    conflict_of, conflict_author, version, deleted, deleted_at, updated_by, level, position)
@@ -465,6 +466,17 @@ func persistDocState(tx *sql.Tx, docID string, before, after *collab.Doc, head i
 			boolInt(b.Props.Collapsed), b.Props.Lang, b.Props.ConflictOf, b.Props.ConflictAuthor, b.Version,
 			boolInt(b.Deleted), deletedAt, b.UpdatedBy); err != nil {
 			return err
+		}
+		if refs {
+			var was []blockRef
+			if old, ok := before.Blocks[id]; ok {
+				was = blockRefsOf(old.Content)
+			}
+			if is := blockRefsOf(b.Content); !sameRefs(was, is) {
+				if err := writeBlockRefs(tx, docID, b.ID, is); err != nil {
+					return err
+				}
+			}
 		}
 	}
 	for id := range before.Blocks {
