@@ -294,3 +294,42 @@ func TestBlockRefQueriesUseIndexes(t *testing.T) {
 		}
 	}
 }
+
+// A bullet full of made-up file references keeps at most maxBlockRefs rows (audit 2026-11-13, N1):
+// before, every "media:med_…" in a long bullet became a row of its own.
+func TestBlockRefsCappedPerBullet(t *testing.T) {
+	var sb strings.Builder
+	sb.WriteString("![Bild](media:med_00) ")
+	for i := 1; i < 500; i++ {
+		fmt.Fprintf(&sb, "media:med_%04x ", i)
+	}
+	refs := blockRefsOf(sb.String())
+	if len(refs) != maxBlockRefs {
+		t.Fatalf("blockRefsOf kept %d references, want %d", len(refs), maxBlockRefs)
+	}
+	// The first references of the bullet are kept (an image bullet's own file comes first)
+	found := false
+	for _, r := range refs {
+		if r.id == "med_00" {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatal("the bullet's own file was dropped")
+	}
+
+	s, u := newSyncTestStore(t)
+	doc, err := s.CreateDocument(u.ID, "", "Viele Verweise", "", "", []domain.DocumentBlock{
+		{ID: "many", Type: "bullet", Content: sb.String()},
+	}, nil, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var n int
+	if err := s.db.QueryRow(`SELECT COUNT(*) FROM block_refs WHERE document_id = ?`, doc.ID).Scan(&n); err != nil {
+		t.Fatal(err)
+	}
+	if n != maxBlockRefs {
+		t.Fatalf("block_refs has %d rows for the bullet, want %d", n, maxBlockRefs)
+	}
+}

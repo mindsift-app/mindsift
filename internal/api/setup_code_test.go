@@ -149,15 +149,17 @@ func TestSetupCodeRateLimited(t *testing.T) {
 			t.Fatalf("wrong code %d: %d", i+1, c)
 		}
 	}
-	if c := post("203.0.113.7", setupCodeOf(srv)); c != http.StatusTooManyRequests {
+	// Locked: a further wrong code is refused with 429
+	if c := post("203.0.113.7", "AAAA-BBBB-DDDD"); c != http.StatusTooManyRequests {
 		t.Fatalf("after %d wrong codes: %d, want 429", loginLimitAccountIP, c)
 	}
 	if n, _ := store.CountUsers(); n != 0 {
-		t.Fatal("a locked address created the admin")
+		t.Fatal("a wrong code created the admin")
 	}
-	// The real admin from another address is not locked out
-	if c := post("198.51.100.20", setupCodeOf(srv)); c != http.StatusCreated {
-		t.Fatalf("other address with the right code: %d, want 201", c)
+	// The right code still goes through from the locked address: behind a proxy everyone may share it,
+	// and someone else's wrong codes must not lock the admin out
+	if c := post("203.0.113.7", setupCodeOf(srv)); c != http.StatusCreated {
+		t.Fatalf("locked address with the right code: %d, want 201", c)
 	}
 }
 
