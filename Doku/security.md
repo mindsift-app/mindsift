@@ -58,7 +58,7 @@ How the scan runs in CI is described under [Build](architecture.md#build).
 
 ### Base images and pinning
 
-The base images (`golang:1.27-alpine`, `alpine:3.24`) are referenced by tag, not by digest, so each build gets their security fixes without manual updates (Node, `node:26.13.0-alpine`, only builds the frontend and is pinned to a release); the last stage also runs `apk upgrade`. The application's own dependencies are pinned: `npm ci` installs exactly what `package-lock.json` lists, and the Go modules are checked against `go.sum`.
+The build images are pinned to exact releases (`golang:1.27.4-alpine`, `node:26.13.1-alpine`); the runtime image `alpine:3.24` is referenced by its minor tag, not by digest, so each build gets its security fixes without manual updates, and the last stage also runs `apk upgrade`. The application's own dependencies are pinned: `npm ci` installs exactly what `package-lock.json` lists, and the Go modules are checked against `go.sum`.
 
 ### When you scan the image yourself
 
