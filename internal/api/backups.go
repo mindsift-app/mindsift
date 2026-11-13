@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -271,8 +272,11 @@ func (s *Server) keepUserBackups(u *domain.User, now time.Time) {
 	if err := os.MkdirAll(filepath.Dir(dst), 0o700); err == nil {
 		err = os.Rename(src, dst)
 		if err == nil {
+			// The move itself on disk (both folders), then account.json written and flushed like a backup
+			logFailed("Flushing the moved backups of a deleted account to disk", errors.Join(
+				storage.SyncDir(filepath.Dir(dst)), storage.SyncDir(filepath.Dir(src))), "user_id", u.ID)
 			meta, _ := json.Marshal(deletedAccountBackups{UserID: u.ID, DisplayName: u.DisplayName, Email: u.Email, DeletedAt: now.UTC().Format(time.RFC3339)})
-			err = os.WriteFile(filepath.Join(dst, "account.json"), meta, 0o600)
+			err = storage.WriteFileAtomically(filepath.Join(dst, "account.json"), meta)
 		}
 		if err == nil {
 			return
