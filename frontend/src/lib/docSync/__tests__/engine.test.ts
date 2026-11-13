@@ -100,7 +100,7 @@ class FakeNet implements Transport {
     if (this.mode === 'down') throw new TransportError('offline', 0);
     return { ...this.server.snapshot(), role: this.role };
   }
-  async sync(_docId: string, body: SyncRequest) {
+  async sync(_docId: string, body: SyncRequest, _opts?: { keepalive?: boolean }) {
     if (this.mode === 'down') throw new TransportError('offline', 0);
     this.server.roles.set(body.clientId, this.role);
     const hook = this.duringRequest;
