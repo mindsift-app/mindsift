@@ -34,17 +34,18 @@ const (
 		JOIN media m ON m.id = r.ref_id WHERE d.user_id = ?`
 	// A live bullet of the note shows the file (DocShowsMedia); arguments media id, note id
 	sqlDocShowsMedia = `SELECT COUNT(*) FROM block_refs r JOIN blocks b ON b.id = r.block_id
-		WHERE r.kind = 'media' AND r.ref_id = ? AND r.document_id = ? AND b.deleted = 0`
+		WHERE r.kind = 'media' AND r.ref_id = ? AND r.document_id = ? AND b.document_id = r.document_id AND b.deleted = 0`
 	// A live bullet of the note holds the secret (DocReferencesSecret); arguments secret id, note id
 	sqlDocHoldsSecret = `SELECT COUNT(*) FROM block_refs r JOIN blocks b ON b.id = r.block_id
-		WHERE r.kind = 'secret' AND r.ref_id = ? AND r.document_id = ? AND b.deleted = 0`
+		WHERE r.kind = 'secret' AND r.ref_id = ? AND r.document_id = ? AND b.document_id = r.document_id AND b.deleted = 0`
 	// Notes with a live bullet holding the secret (docsReferencingSecret)
 	sqlDocsHoldingSecret = `SELECT DISTINCT r.document_id FROM block_refs r JOIN blocks b ON b.id = r.block_id
-		WHERE r.kind = 'secret' AND r.ref_id = ? AND b.deleted = 0`
+		WHERE r.kind = 'secret' AND r.ref_id = ? AND b.document_id = r.document_id AND b.deleted = 0`
 	// Deleting a note for good: its secrets go, unless a live bullet of another note holds them (hardDeleteDocument)
 	sqlDeleteSecretsHeldNowhereElse = `DELETE FROM note_secrets WHERE document_id = ? AND NOT EXISTS (
 		SELECT 1 FROM block_refs r JOIN blocks b ON b.id = r.block_id
-		WHERE r.kind = 'secret' AND r.ref_id = note_secrets.id AND r.document_id != note_secrets.document_id AND b.deleted = 0)`
+		WHERE r.kind = 'secret' AND r.ref_id = note_secrets.id AND r.document_id != note_secrets.document_id
+		AND b.document_id = r.document_id AND b.deleted = 0)`
 )
 
 // mediaIDRe finds every file a block points to, wherever in the content (image and audio bullets, but
@@ -53,7 +54,15 @@ var mediaIDRe = regexp.MustCompile(`media:(med_[0-9a-f]+)`)
 
 type blockRef struct{ kind, id string }
 
-// blockRefsOf returns the references in a block's content, sorted and without duplicates.
+// maxBlockRefs caps the references kept per bullet. A real bullet shows a file or two (an image, audio, a
+// table with a few pictures); without a cap a single long bullet full of made-up "media:med_…" strings
+// became thousands of rows, and one sync of such bullets held the write lock for half a minute and grew
+// the database several times over (audit 2026-11-13, N1). References are not checked against media and
+// note_secrets here on purpose: an import stores a note before its files.
+const maxBlockRefs = 64
+
+// blockRefsOf returns the references in a block's content (at most maxBlockRefs, in order of appearance),
+// sorted and without duplicates.
 func blockRefsOf(content string) []blockRef {
 	hasMedia, hasSecret := strings.Contains(content, "media:"), strings.Contains(content, "{{secret:")
 	if !hasMedia && !hasSecret {
@@ -62,7 +71,7 @@ func blockRefsOf(content string) []blockRef {
 	seen := map[blockRef]bool{}
 	var refs []blockRef
 	add := func(r blockRef) {
-		if !seen[r] {
+		if !seen[r] && len(refs) < maxBlockRefs {
 			seen[r] = true
 			refs = append(refs, r)
 		}
@@ -104,14 +113,29 @@ func writeBlockRefs(tx *sql.Tx, docID, blockID string, refs []blockRef) error {
 	if _, err := tx.Exec(`DELETE FROM block_refs WHERE block_id = ? AND document_id = ?`, blockID, docID); err != nil {
 		return err
 	}
-	for _, r := range refs {
-		if _, err := tx.Exec(`INSERT OR IGNORE INTO block_refs (block_id, document_id, kind, ref_id)
-			SELECT ?, ?, ?, ? WHERE EXISTS (SELECT 1 FROM blocks WHERE id = ? AND document_id = ?)`,
-			blockID, docID, r.kind, r.id, blockID, docID); err != nil {
-			return err
-		}
+	if len(refs) == 0 {
+		return nil
 	}
-	return nil
+	var owned int
+	if err := tx.QueryRow(`SELECT COUNT(*) FROM blocks WHERE id = ? AND document_id = ?`, blockID, docID).Scan(&owned); err != nil {
+		return err
+	}
+	if owned == 0 {
+		return nil
+	}
+	// One statement for all rows of the block (at most maxBlockRefs, so 4 × 64 parameters)
+	var sb strings.Builder
+	sb.WriteString(`INSERT OR IGNORE INTO block_refs (block_id, document_id, kind, ref_id) VALUES `)
+	args := make([]any, 0, 4*len(refs))
+	for i, r := range refs {
+		if i > 0 {
+			sb.WriteString(", ")
+		}
+		sb.WriteString("(?, ?, ?, ?)")
+		args = append(args, blockID, docID, r.kind, r.id)
+	}
+	_, err := tx.Exec(sb.String(), args...)
+	return err
 }
 
 // migrateBlockRefs creates block_refs and fills it from the blocks there are (migration 41).
