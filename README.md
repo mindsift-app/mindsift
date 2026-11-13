@@ -160,7 +160,7 @@ services:
       # - ADMIN_PASSWORD=...
 ```
 
-Open `http://localhost:8080`. Without `ADMIN_USER` and `ADMIN_PASSWORD`, a setup wizard creates the admin account: do that right after the first start, so nobody else grabs it.
+Open `http://localhost:8080`. Without `ADMIN_USER` and `ADMIN_PASSWORD`, a setup wizard creates the admin account. It asks for a one-time setup code that MindSift writes to its log on start (`docker logs mindsift | grep 'Setup code'`), so only someone who can read the server's log becomes its admin; a restart makes a new code, and it stops working once the admin exists.
 
 **Or the install script** ([read it first](install.sh)):
 
@@ -168,7 +168,7 @@ Open `http://localhost:8080`. Without `ADMIN_USER` and `ADMIN_PASSWORD`, a setup
 curl -fsSL https://raw.githubusercontent.com/mindsift-app/mindsift/main/install.sh | bash
 ```
 
-It creates a folder, downloads `docker-compose.yml` and `.env.example`, generates `JWT_SECRET` and `SECRETS_KEY`, takes over the server's time zone and starts the container. On a new install it asks for the admin account (`ADMIN_USER`, `ADMIN_PASSWORD`; Enter means `admin` with a generated password, shown once); without a terminal it skips that, so open the setup wizard right away. Two optional questions (Enter means no): your own speech recognition (adds a Whisper container with large-v3-turbo or small), and a reverse proxy (asks for `BASE_URL` and the proxy's Docker network). These additions go into `docker-compose.override.yml`. Running the script again updates `docker-compose.yml` and keeps `.env` and the override.
+It creates a folder, downloads `docker-compose.yml` and `.env.example`, generates `JWT_SECRET` and `SECRETS_KEY`, takes over the server's time zone and starts the container. On a new install it asks for the admin account (`ADMIN_USER`, `ADMIN_PASSWORD`; Enter means `admin` with a generated password, shown once); without a terminal it skips that and shows the setup code the wizard asks for. Two optional questions (Enter means no): your own speech recognition (adds a Whisper container with large-v3-turbo or small), and a reverse proxy (asks for `BASE_URL` and the proxy's Docker network). These additions go into `docker-compose.override.yml`. Running the script again updates `docker-compose.yml` and keeps `.env` and the override.
 
 All settings are explained in [`.env.example`](.env.example). For voice recognition by hand, follow the comments on the `whisper` block in [`docker-compose.yml`](docker-compose.yml); which model to pick is in the [docs](Doku/architecture.md#speech-recognition).
 

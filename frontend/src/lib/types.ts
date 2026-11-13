@@ -24,6 +24,8 @@ export interface SetupInfo {
 
 export interface AuthStatus {
   needsSetup: boolean;
+  // The wizard asks for the one-time setup code the server wrote to its log (not in the demo, not with ADMIN_USER)
+  setupCodeRequired?: boolean;
   // Only while needsSetup: mail server, BASE_URL and backup folder for the first-boot wizard
   setup?: SetupInfo;
   allowRegistration: boolean;

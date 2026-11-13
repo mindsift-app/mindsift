@@ -45,6 +45,7 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
   // --- Setup Wizard State ---
   // The keyboard must not cover the fields (phones)
   const keyboardRoom = useKeyboardRoom();
+  const [setupCode, setSetupCode] = useState('');
   const [setupName, setSetupName] = useState('');
   const [setupEmail, setSetupEmail] = useState('');
   const [setupPassword, setSetupPassword] = useState('');
@@ -311,6 +312,7 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
     triggerHaptic(15);
     try {
       const res = await api.completeSetup({
+        ...(authStatus.setupCodeRequired ? { setupCode: setupCode.trim() } : {}),
         email: setupEmail.trim(),
         password: setupPassword,
         displayName: setupName.trim(),
@@ -415,6 +417,31 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
                 <span>{t('setup.adminSection')}</span>
               </h2>
 
+              {/* Only whoever can read the server's log may become its admin (setup_code.go) */}
+              {authStatus.setupCodeRequired && (
+                <div>
+                  <label htmlFor="setup-code" className="block text-muted mb-1">{t('setup.code')}</label>
+                  <input
+                    id="setup-code"
+                    data-setup-code
+                    type="text"
+                    value={setupCode}
+                    onChange={(e) => setSetupCode(e.target.value)}
+                    placeholder={t('setup.codePlaceholder')}
+                    required
+                    autoFocus
+                    autoComplete="off"
+                    autoCapitalize="characters"
+                    spellCheck={false}
+                    maxLength={32}
+                    className="w-full sm:w-56 h-11 sm:h-8 px-2.5 text-base sm:text-xs font-mono tracking-wider input-field"
+                  />
+                  <span className="text-[11px] text-muted mt-1 block">
+                    <Trans t={t} i18nKey="setup.codeHint" components={{ c: <code className="font-mono" /> }} />
+                  </span>
+                </div>
+              )}
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-muted mb-1">{t('setup.yourName')}</label>
@@ -424,7 +451,7 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
                     onChange={(e) => setSetupName(e.target.value)}
                     placeholder={t('setup.yourNamePlaceholder')}
                     required
-                    autoFocus
+                    autoFocus={!authStatus.setupCodeRequired}
                     className="w-full h-11 sm:h-8 px-2.5 text-base sm:text-xs input-field"
                   />
                 </div>
