@@ -106,6 +106,13 @@ func (s *Server) checkSetupCode(w http.ResponseWriter, r *http.Request, typed st
 	}
 	ip := clientIPFrom(r)
 	account := "setup:" + ip.ip
+	// The right code always goes through, also while the address is locked: behind a proxy without a client
+	// address header everyone shares one address, and wrong codes from someone else must not lock the admin
+	// out (audit 2026-11-13, N2). Guessing stays hopeless with 60 bits; the lock only slows wrong codes down.
+	if strings.TrimSpace(typed) != "" && s.setupCode.matches(typed) {
+		s.loginGuard.recordSuccess(account, ip)
+		return true
+	}
 	if wait := s.loginGuard.lockedFor(account, ip); wait > 0 {
 		slog.Warn("Setup locked after wrong setup codes", "remote_addr", r.RemoteAddr, "wait", wait.Round(time.Second))
 		writeLoginLocked(w, wait)
@@ -115,12 +122,8 @@ func (s *Server) checkSetupCode(w http.ResponseWriter, r *http.Request, typed st
 		writeErrorCode(w, http.StatusForbidden, "setup_code_required", "Einrichtungscode erforderlich: Er steht im Server-Log.")
 		return false
 	}
-	if !s.setupCode.matches(typed) {
-		s.loginGuard.recordFailure(account, ip)
-		slog.Warn("Setup refused: wrong setup code", "remote_addr", r.RemoteAddr)
-		writeErrorCode(w, http.StatusForbidden, "setup_code_invalid", "Der Einrichtungscode stimmt nicht. Er steht im Server-Log.")
-		return false
-	}
-	s.loginGuard.recordSuccess(account, ip)
-	return true
+	s.loginGuard.recordFailure(account, ip)
+	slog.Warn("Setup refused: wrong setup code", "remote_addr", r.RemoteAddr)
+	writeErrorCode(w, http.StatusForbidden, "setup_code_invalid", "Der Einrichtungscode stimmt nicht. Er steht im Server-Log.")
+	return false
 }
