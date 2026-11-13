@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from './api';
-import { browserRecognition, browserVoiceLanguage, currentVoiceConfig, EffectiveVoiceMode, joinSpeechResults, loadVoiceConfig, VOICE_CONFIG_EVENT, VoiceRecorder } from './voice';
+import { BrowserRecognition, BrowserRecognitionClass, browserRecognition, browserVoiceLanguage, currentVoiceConfig, EffectiveVoiceMode, joinSpeechResults, loadVoiceConfig, VOICE_CONFIG_EVENT, VoiceRecorder } from './voice';
 import i18n, { currentLocale } from '../i18n';
+import { errorMessage } from './errorMessage';
+import { useLatestRef } from './useLatestRef';
 
 export type VoiceState = 'idle' | 'listening' | 'transcribing';
 
@@ -38,7 +40,7 @@ export function useVoiceInput({ onText, onError, continuous = false, live = fals
   const [pendingChunks, setPendingChunks] = useState(0);
   const maxSecondsRef = useRef(600);
   const recorderRef = useRef<VoiceRecorder | null>(null);
-  const recognitionRef = useRef<any>(null);
+  const recognitionRef = useRef<BrowserRecognition | null>(null);
   const timerRef = useRef<number | null>(null);
   const segmentTimerRef = useRef<number | null>(null);
   const restartTimerRef = useRef<number | null>(null);
@@ -52,10 +54,8 @@ export function useVoiceInput({ onText, onError, continuous = false, live = fals
   const chunkResultsRef = useRef<Map<number, string>>(new Map());
   const inFlightChunksRef = useRef(0);
   const mountedRef = useRef(true);
-  const onTextRef = useRef(onText);
-  onTextRef.current = onText;
-  const onErrorRef = useRef(onError);
-  onErrorRef.current = onError;
+  const onTextRef = useLatestRef(onText);
+  const onErrorRef = useLatestRef(onError);
 
   const clearAllTimers = () => {
     if (timerRef.current !== null) window.clearTimeout(timerRef.current);
@@ -140,14 +140,14 @@ export function useVoiceInput({ onText, onError, continuous = false, live = fals
           onTextRef.current(combined, false);
         }
       })
-      .catch((err: any) => {
+      .catch((err: unknown) => {
         if (cancelledRef.current) return;
         cancelledRef.current = true;
         inFlightChunksRef.current = 0;
         clearAllTimers();
         recorderRef.current?.cancel();
         recorderRef.current = null;
-        fail(err?.message || i18n.t('common:voice.failed'));
+        fail(errorMessage(err, i18n.t('common:voice.failed')));
       });
   };
 
@@ -189,8 +189,8 @@ export function useVoiceInput({ onText, onError, continuous = false, live = fals
       const text = await api.transcribe(blob);
       setStateSafe('idle');
       onTextRef.current(text, true);
-    } catch (err: any) {
-      fail(err?.message || i18n.t('common:voice.failed'));
+    } catch (err) {
+      fail(errorMessage(err, i18n.t('common:voice.failed')));
     }
     // fail only touches refs and state setters
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -243,7 +243,7 @@ export function useVoiceInput({ onText, onError, continuous = false, live = fals
     }
   };
 
-  const spawnBrowserRecognition = (Recognition: any, isRestart: boolean) => {
+  const spawnBrowserRecognition = (Recognition: BrowserRecognitionClass, isRestart: boolean) => {
     const recognition = new Recognition();
     recognition.lang = browserVoiceLanguage(currentLocale());
     recognition.interimResults = true;
@@ -256,7 +256,7 @@ export function useVoiceInput({ onText, onError, continuous = false, live = fals
       silenceTimerRef.current = window.setTimeout(() => void stop(), BROWSER_SILENCE_STOP_MS);
     };
     armSilenceStop();
-    recognition.onresult = (event: any) => {
+    recognition.onresult = (event) => {
       armSilenceStop();
       const parts: string[] = [];
       for (let i = 0; i < event.results.length; i++) parts.push(event.results[i][0].transcript);
@@ -270,7 +270,7 @@ export function useVoiceInput({ onText, onError, continuous = false, live = fals
       }
       onTextRef.current(transcriptRef.current, false);
     };
-    recognition.onerror = (event: any) => {
+    recognition.onerror = (event) => {
       if (event?.error === 'not-allowed' || event?.error === 'service-not-allowed') {
         cancelledRef.current = true;
         clearAllTimers();

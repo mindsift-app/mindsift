@@ -6,6 +6,7 @@ import { SetupInfo, SmtpForm } from '../../lib/types';
 import { ToggleSwitch } from '../../components/ToggleSwitch';
 import { SmtpFields } from '../settings/admin/SmtpFields';
 import { NO_AUTOFILL } from '../../lib/noAutofill';
+import { errorMessage } from '../../lib/errorMessage';
 
 // The setup wizard's mail questions, shared by the first-boot wizard and the rest of it after an admin from
 // ADMIN_USER (FinishSetupView): the mail server when the environment sets none (the fields of the
@@ -141,8 +142,8 @@ function SetupTestMail({ defaultTo, send, disabled }: { defaultTo: string; send:
     try {
       await send(to);
       setResult({ ok: true, text: t('setupMail.testSent', { email: to }) });
-    } catch (err: any) {
-      setResult({ ok: false, text: t('setupMail.testFailed', { error: err.message || '' }) });
+    } catch (err) {
+      setResult({ ok: false, text: t('setupMail.testFailed', { error: errorMessage(err, '') }) });
     } finally {
       setSending(false);
     }

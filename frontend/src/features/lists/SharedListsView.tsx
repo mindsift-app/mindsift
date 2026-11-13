@@ -27,6 +27,8 @@ import { buildListsMenu } from './listsMenu';
 import { askConfirm } from '../../components/askConfirm';
 import { showError } from '../../components/ErrorNotice';
 import { RenameListSheet } from '../../components/RenameListSheet';
+import { errorMessage } from '../../lib/errorMessage';
+import { useLatestRef } from '../../lib/useLatestRef';
 
 interface SharedListsViewProps {
   onRefreshGlobal: () => void;
@@ -65,14 +67,15 @@ export const SharedListsView: React.FC<SharedListsViewProps> = ({ onRefreshGloba
     if (activeListId) writeViewMemory('lists', { listId: activeListId });
   }, [activeListId]);
 
-  const onInitialListShownRef = useRef(onInitialListShown);
-  onInitialListShownRef.current = onInitialListShown;
+  const onInitialListShownRef = useLatestRef(onInitialListShown);
   useEffect(() => {
     if (initialListId) {
+      // A list asked for from outside (link, search) opens once
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setActiveListId(initialListId);
       onInitialListShownRef.current?.();
     }
-  }, [initialListId]);
+  }, [initialListId, onInitialListShownRef]);
 
   const [newItemText, setNewItemText] = useState('');
   const [newItemQty, setNewItemQty] = useState('');
@@ -136,6 +139,8 @@ export const SharedListsView: React.FC<SharedListsViewProps> = ({ onRefreshGloba
   };
 
   useEffect(() => {
+    // Loads the lists when the view opens
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadLists();
     api
       .getWorkspaceTags()
@@ -200,8 +205,8 @@ export const SharedListsView: React.FC<SharedListsViewProps> = ({ onRefreshGloba
         })
       );
       onRefreshGlobal();
-    } catch (err: any) {
-      showError(err.message || t('createItemFailed'));
+    } catch (err) {
+      showError(errorMessage(err, t('createItemFailed')));
     } finally {
       setIsSubmittingItem(false);
     }
@@ -231,8 +236,8 @@ export const SharedListsView: React.FC<SharedListsViewProps> = ({ onRefreshGloba
       await api.deleteList(listId);
       await loadLists();
       onRefreshGlobal();
-    } catch (err: any) {
-      showError(err.message || t('deleteFailed'));
+    } catch (err) {
+      showError(errorMessage(err, t('deleteFailed')));
     }
   };
 

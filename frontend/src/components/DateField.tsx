@@ -50,6 +50,8 @@ export function DateField({ value, onChange, ariaLabel, disabled, className = ''
   const [cursor, setCursor] = useState(value || today);
   const [picking, setPicking] = useState<'days' | 'months'>('days');
 
+  // The typed text follows the value when it changes from outside
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => setDraft(formatDayField(value)), [value]);
 
   if (touch) {

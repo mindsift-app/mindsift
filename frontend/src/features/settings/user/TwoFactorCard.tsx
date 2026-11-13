@@ -13,6 +13,7 @@ import { TotpQrCode } from './TotpQrCode';
 import { RecoveryCodesPanel } from './RecoveryCodesPanel';
 import { passkeyProof, secondFactorOf, SecondFactorFields } from './SecondFactorFields';
 import { LOW_RECOVERY_CODES } from '../../auth/MfaStep';
+import { errorMessage } from '../../../lib/errorMessage';
 
 type Flow =
   | { step: 'idle' }
@@ -57,11 +58,13 @@ export function TwoFactorCard({
     try {
       setStatus(await api.getMfaStatus());
       setLoadError('');
-    } catch (err: any) {
-      setLoadError(err?.message || i18n.t('settings:security.twoFactor.loadFailed'));
+    } catch (err) {
+      setLoadError(errorMessage(err, i18n.t('settings:security.twoFactor.loadFailed')));
     }
   };
   useEffect(() => {
+    // Loads the status when the card opens and after changes
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void load();
   }, [refreshKey]);
 
@@ -94,8 +97,8 @@ export function TwoFactorCard({
     try {
       const res = factor.needed ? await api.setupTotp(password, proof ?? { code }) : await api.setupTotp(password);
       reset({ step: 'scan', secret: res.secret, uri: res.uri });
-    } catch (err: any) {
-      if (!passkeyCancelled(err)) setError(err?.message || t('security.twoFactor.failed'));
+    } catch (err) {
+      if (!passkeyCancelled(err)) setError(errorMessage(err, t('security.twoFactor.failed')));
     } finally {
       setBusy(false);
     }
@@ -112,8 +115,8 @@ export function TwoFactorCard({
       reset(res.recoveryCodes?.length ? { step: 'codes', codes: res.recoveryCodes } : { step: 'idle' });
       setDone(t('security.twoFactor.enabledDone'));
       changed();
-    } catch (err: any) {
-      setError(err?.message || t('security.twoFactor.failed'));
+    } catch (err) {
+      setError(errorMessage(err, t('security.twoFactor.failed')));
       setCode('');
     } finally {
       confirming.current = false;
@@ -142,8 +145,8 @@ export function TwoFactorCard({
       }
       setSheet(null);
       changed();
-    } catch (err: any) {
-      if (!passkeyCancelled(err)) setError(err?.message || t('security.twoFactor.failed'));
+    } catch (err) {
+      if (!passkeyCancelled(err)) setError(errorMessage(err, t('security.twoFactor.failed')));
     } finally {
       setBusy(false);
     }
@@ -153,8 +156,8 @@ export function TwoFactorCard({
     setError('');
     try {
       await run(await passkeyProof());
-    } catch (err: any) {
-      if (!passkeyCancelled(err)) setError(err?.message || t('security.twoFactor.failed'));
+    } catch (err) {
+      if (!passkeyCancelled(err)) setError(errorMessage(err, t('security.twoFactor.failed')));
     }
   };
 
@@ -163,8 +166,8 @@ export function TwoFactorCard({
     try {
       await api.removeTrustedDevice(currentUser.id, id);
       void load();
-    } catch (err: any) {
-      setError(err?.message || t('security.twoFactor.failed'));
+    } catch (err) {
+      setError(errorMessage(err, t('security.twoFactor.failed')));
     }
   };
 

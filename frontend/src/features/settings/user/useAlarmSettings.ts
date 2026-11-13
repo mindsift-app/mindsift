@@ -3,6 +3,7 @@ import i18n from '../../../i18n';
 import { NotificationEvents, NotificationSettings, PushDevice, User } from '../../../lib/types';
 import { api } from '../../../lib/api';
 import { currentPushSubscription, disablePush, enablePush, removePushDevice } from '../../../lib/push';
+import { errorMessage } from '../../../lib/errorMessage';
 
 // The notification settings of an account; old accounts only have alarmChannels (the channels of due tasks)
 export function buildNotificationSettings(user: User): NotificationSettings {
@@ -111,6 +112,8 @@ export function useAlarmSettings(currentUser: User, onUserUpdated: (u: User) => 
     }
   };
   useEffect(() => {
+    // Loads the push state of this browser when the section opens
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void reloadPush();
   }, [reloadPush]);
   const togglePushHere = async (on: boolean) => {
@@ -143,6 +146,8 @@ export function useAlarmSettings(currentUser: User, onUserUpdated: (u: User) => 
 
   // The form follows the account when it changes (saved here or on another device)
   useEffect(() => {
+    // The form follows the account when it changes (saved here or on another device)
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setNotificationSettings(buildNotificationSettings(currentUser));
     setDiscordWebhookUrl(currentUser.discordWebhookUrl || '');
     setCustomWebhookUrl(currentUser.customWebhookUrl || '');
@@ -185,8 +190,8 @@ export function useAlarmSettings(currentUser: User, onUserUpdated: (u: User) => 
         notificationSettings: updated.notificationSettings ?? notificationSettings,
       });
       setAlarmMsg({ type: 'ok', text: i18n.t('settings:alarms.saved') });
-    } catch (err: any) {
-      setAlarmMsg({ type: 'err', text: err.message || i18n.t('settings:alarms.saveFailed') });
+    } catch (err) {
+      setAlarmMsg({ type: 'err', text: errorMessage(err, i18n.t('settings:alarms.saveFailed')) });
     } finally {
       setSavingAlarms(false);
     }
@@ -223,10 +228,10 @@ export function useAlarmSettings(currentUser: User, onUserUpdated: (u: User) => 
         type: 'ok',
         text: i18n.t('settings:alarms.testSent', { label }),
       });
-    } catch (err: any) {
+    } catch (err) {
       setAlarmMsg({
         type: 'err',
-        text: i18n.t('settings:alarms.testFailedWith', { message: err.message || i18n.t('common:errors.unknown') }),
+        text: i18n.t('settings:alarms.testFailedWith', { message: errorMessage(err, i18n.t('common:errors.unknown')) }),
       });
     } finally {
       setTestingChannel(null);

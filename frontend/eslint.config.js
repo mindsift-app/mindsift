@@ -4,30 +4,48 @@ import globals from 'globals';
 import reactHooks from 'eslint-plugin-react-hooks';
 import tseslint from 'typescript-eslint';
 import i18next from 'eslint-plugin-i18next';
+import { readFileSync } from 'node:fs';
+
+// lucide-react's old names for renamed icons ("TriangleAlert as AlertTriangle"), read from its type exports so
+// the list follows the installed version; the app uses the canonical names only. "X as XIcon" and
+// "X as LucideX" are the same icon under its own name and stay allowed.
+function lucideAliasNames() {
+  const types = readFileSync(new URL('./node_modules/lucide-react/dist/lucide-react.d.ts', import.meta.url), 'utf8');
+  const exportList = types.match(/^export \{([^}]*)\}/m)?.[1] ?? '';
+  const aliases = new Set();
+  for (const [, name, alias] of exportList.matchAll(/(\w+) as (\w+)/g)) {
+    if (alias !== `${name}Icon` && alias !== `Lucide${name}`) aliases.add(alias);
+  }
+  return [...aliases].sort();
+}
 
 export default tseslint.config(
   { ignores: ['dist', 'node_modules', 'coverage'] },
   {
     files: ['src/**/*.{ts,tsx}'],
-    extends: [js.configs.recommended, ...tseslint.configs.recommended],
+    // react-hooks: the rules of hooks plus the React Compiler's checks (refs, effects, purity …)
+    extends: [js.configs.recommended, ...tseslint.configs.recommended, reactHooks.configs.flat.recommended],
     languageOptions: {
       ecmaVersion: 2022,
       globals: globals.browser,
     },
-    plugins: { 'react-hooks': reactHooks },
     rules: {
-      ...reactHooks.configs.recommended.rules,
-      // Error payloads and browser APIs without types are handled as any on purpose
-      '@typescript-eslint/no-explicit-any': 'off',
+      // Caught errors are unknown (errorMessage reads them), browser APIs without types get a small interface
+      '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrors: 'none' }],
       'no-empty': ['error', { allowEmptyCatch: true }],
-    },
-  },
-  // No any where it is already gone; the rule grows folder by folder until it holds everywhere
-  {
-    files: ['src/lib/api/**/*.{ts,tsx}'],
-    rules: {
-      '@typescript-eslint/no-explicit-any': 'error',
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: 'lucide-react',
+              importNames: lucideAliasNames(),
+              message: "Old lucide name of a renamed icon; import the icon's current name (lucide.dev/icons).",
+            },
+          ],
+        },
+      ],
     },
   },
   // Texts shown to people come from the language files (src/locales); no new fixed text in JSX

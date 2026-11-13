@@ -11,6 +11,8 @@ const renders: Record<string, number> = {};
 
 // A bullet: shows what its link points at and counts its renders
 const Bullet = React.memo(({ name, content }: { name: string; content: string }) => {
+  // Counts renders on purpose
+  // eslint-disable-next-line react-hooks/immutability
   renders[name] = (renders[name] || 0) + 1;
   const resolve = useWikiLinkResolver(content);
   return <span data-testid={name}>{resolve?.(parseWikiLink('Ziel#doc_target'))?.title ?? '-'}</span>;

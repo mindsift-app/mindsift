@@ -4,6 +4,7 @@ import i18n from '../../i18n';
 import { CircleAlert, Check, LoaderCircle, Mic, RefreshCw, Square } from 'lucide-react';
 import { api } from '../../lib/api';
 import { VoiceAdminStatus } from '../../lib/types';
+import { errorMessage } from '../../lib/errorMessage';
 
 const TEST_SECONDS = 6;
 
@@ -25,14 +26,16 @@ export const VoiceStatusCard: React.FC = () => {
     try {
       setInfo(await api.adminVoiceStatus());
       setError(null);
-    } catch (err: any) {
-      setError(err.message || i18n.t('settings:voiceStatus.loadFailed'));
+    } catch (err) {
+      setError(errorMessage(err, i18n.t('settings:voiceStatus.loadFailed')));
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
+    // Loads the status when the card opens
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void load();
     return () => {
       if (stopTimerRef.current !== null) window.clearTimeout(stopTimerRef.current);
@@ -69,8 +72,8 @@ export const VoiceStatusCard: React.FC = () => {
       try {
         const text = await api.transcribe(new Blob(chunks, { type: recorder.mimeType }));
         setResult({ text, ms: Math.round(performance.now() - started) });
-      } catch (err: any) {
-        setError(err.message || t('voiceStatus.failed'));
+      } catch (err) {
+        setError(errorMessage(err, t('voiceStatus.failed')));
       } finally {
         setTesting(false);
       }

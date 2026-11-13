@@ -21,6 +21,7 @@ import { UserAvatar } from '../../components/UserAvatar';
 import { askConfirm } from '../../components/askConfirm';
 import { NO_AUTOFILL } from '../../lib/noAutofill';
 import { SelectMenu } from '../../components/SelectMenu';
+import { errorMessage } from '../../lib/errorMessage';
 
 interface GroupsViewProps {
   currentUser: User;
@@ -60,14 +61,16 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ currentUser, onBack }) =
       ]);
       setTeams(userTeams);
       setDirectoryUsers(allUsers);
-    } catch (err: any) {
-      setStatusMsg({ type: 'err', text: err.message || i18n.t('groups:loadFailed') });
+    } catch (err) {
+      setStatusMsg({ type: 'err', text: errorMessage(err, i18n.t('groups:loadFailed')) });
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
+    // Loads the groups when the view opens
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadData();
   }, []);
 
@@ -87,8 +90,8 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ currentUser, onBack }) =
       setShowCreateModal(false);
       await loadData();
       setStatusMsg({ type: 'ok', text: i18n.t('groups:created', { name: created.name }) });
-    } catch (err: any) {
-      setStatusMsg({ type: 'err', text: err.message || i18n.t('groups:createFailed') });
+    } catch (err) {
+      setStatusMsg({ type: 'err', text: errorMessage(err, i18n.t('groups:createFailed')) });
     } finally {
       setCreating(false);
     }
@@ -111,8 +114,8 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ currentUser, onBack }) =
       setEditingTeamId(null);
       await loadData();
       setStatusMsg({ type: 'ok', text: i18n.t('groups:updated') });
-    } catch (err: any) {
-      setStatusMsg({ type: 'err', text: err.message || i18n.t('groups:updateFailed') });
+    } catch (err) {
+      setStatusMsg({ type: 'err', text: errorMessage(err, i18n.t('groups:updateFailed')) });
     }
   };
 
@@ -129,8 +132,8 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ currentUser, onBack }) =
       await api.deleteTeam(team.id);
       await loadData();
       setStatusMsg({ type: 'ok', text: i18n.t('groups:deleted', { name: team.name }) });
-    } catch (err: any) {
-      setStatusMsg({ type: 'err', text: err.message || i18n.t('groups:deleteFailed') });
+    } catch (err) {
+      setStatusMsg({ type: 'err', text: errorMessage(err, i18n.t('groups:deleteFailed')) });
     }
   };
 
@@ -146,8 +149,8 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ currentUser, onBack }) =
       setSelectedUserByTeam((prev) => ({ ...prev, [teamId]: null }));
       await loadData();
       setStatusMsg({ type: 'ok', text: i18n.t('groups:memberAdded', { name: user.displayName }) });
-    } catch (err: any) {
-      setStatusMsg({ type: 'err', text: err.message || i18n.t('groups:addFailed') });
+    } catch (err) {
+      setStatusMsg({ type: 'err', text: errorMessage(err, i18n.t('groups:addFailed')) });
     }
   };
 
@@ -161,8 +164,8 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ currentUser, onBack }) =
         type: 'ok',
         text: i18n.t('groups:roleChanged', { role: newRole === 'admin' ? i18n.t('groups:roleAdmin') : i18n.t('groups:roleMember') }),
       });
-    } catch (err: any) {
-      setStatusMsg({ type: 'err', text: err.message || i18n.t('groups:roleFailed') });
+    } catch (err) {
+      setStatusMsg({ type: 'err', text: errorMessage(err, i18n.t('groups:roleFailed')) });
     }
   };
 
@@ -179,8 +182,8 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ currentUser, onBack }) =
         type: 'ok',
         text: isSelf ? i18n.t('groups:left') : i18n.t('groups:removed', { name: memberName }),
       });
-    } catch (err: any) {
-      setStatusMsg({ type: 'err', text: err.message || i18n.t('groups:removeFailed') });
+    } catch (err) {
+      setStatusMsg({ type: 'err', text: errorMessage(err, i18n.t('groups:removeFailed')) });
     }
   };
 

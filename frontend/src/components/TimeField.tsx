@@ -32,6 +32,8 @@ export function TimeField({ value, onChange, ariaLabel, disabled, className = ''
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [draft, setDraft] = useState(() => formatTimeField(value));
 
+  // The typed text follows the value when it changes from outside
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => setDraft(formatTimeField(value)), [value]);
 
   // The list opens at the chosen time, otherwise at the next step from now

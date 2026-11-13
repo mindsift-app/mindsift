@@ -136,17 +136,17 @@ export function TasksFilterSheet({
               {t('tasks:filter.sorting')}
             </span>
             <div className="grid grid-cols-2 gap-1.5">
-              {[
+              {([
                 { id: 'custom', label: t('view.sortCustom') },
                 { id: 'created', label: t('view.sortCreated') },
                 { id: 'due', label: t('view.sortDue') },
                 { id: 'priority', label: t('view.sortPriority') },
                 { id: 'alpha', label: t('sortShort.alpha') },
-              ].map((s) => (
+              ] satisfies { id: TaskSort; label: string }[]).map((s) => (
                 <button
                   key={s.id}
                   type="button"
-                  onClick={() => setSortBy(s.id as any)}
+                  onClick={() => setSortBy(s.id)}
                   className={`min-h-[36px] px-3 text-xs rounded-btn border text-left transition-colors cursor-pointer ${
                     sortBy === s.id
                       ? 'bg-accent-dim border-accent text-accent font-semibold'

@@ -838,7 +838,7 @@ export interface DashboardStats {
   discardedCount: number;
 }
 
-export interface WSMessage<T = any> {
+export interface WSMessage<T = unknown> {
   event: string;
   space_id?: string;
   list_id?: string;

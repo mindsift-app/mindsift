@@ -50,6 +50,8 @@ export const LinkModal: React.FC<LinkModalProps> = ({
   useEffect(() => {
     if (!isOpen) return;
     if (availableDocs && availableDocs.length > 0) {
+      // The notes handed in are used at once, otherwise they are loaded
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setDocs(availableDocs as Document[]);
       return;
     }
@@ -116,6 +118,8 @@ export const LinkModal: React.FC<LinkModalProps> = ({
   const [blockSearch, setBlockSearch] = useState('');
   useEffect(() => {
     if (!isOpen) {
+      // Closing the dialog forgets the note being picked from
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setPickDoc(null);
       setPickBlocks(null);
       setBlockSearch('');
@@ -148,6 +152,8 @@ export const LinkModal: React.FC<LinkModalProps> = ({
   useEffect(() => {
     const q = search.trim();
     if (!isOpen || tab !== 'note' || pickDoc || q.length < 3) {
+      // A search too short for the index clears the hits at once
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setBlockHits([]);
       setBlockHitsLoading(false);
       return;
@@ -194,8 +200,12 @@ export const LinkModal: React.FC<LinkModalProps> = ({
   const listRef = useRef<HTMLDivElement | null>(null);
   const blockSearchInputRef = useRef<HTMLInputElement | null>(null);
   const entryCount = pickDoc ? pickableBlocks.length : filteredDocs.length + blockHits.length;
+  // A new search or tab marks the first entry
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => setActive(0), [search, blockSearch, pickDoc, tab]);
   useEffect(() => {
+    // The mark stays within the list when it gets shorter
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (active >= entryCount && entryCount > 0) setActive(entryCount - 1);
   }, [active, entryCount]);
   useEffect(() => {

@@ -121,6 +121,8 @@ export const InstantCaptureBar: React.FC<InstantCaptureBarProps> = ({
 
   useEffect(() => {
     if (!targetListId && writableLists.length > 0) {
+      // The first writable list is chosen once the lists are there
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setTargetListId(writableLists[0].id);
     }
   }, [writableLists, targetListId]);

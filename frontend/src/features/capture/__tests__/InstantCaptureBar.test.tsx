@@ -15,8 +15,9 @@ vi.mock('../../../lib/api', () => ({
 }));
 
 import { InstantCaptureBar } from '../InstantCaptureBar';
+import type { SharedList } from '../../../lib/types';
 
-const lists = [{ id: 'lst_1', title: 'Wocheneinkauf', icon: '🛒', isOwner: true, listType: 'shopping', items: [] }] as any;
+const lists: SharedList[] = [{ id: 'lst_1', title: 'Wocheneinkauf', icon: '🛒', isOwner: true, listType: 'shopping', items: [], createdAt: '', updatedAt: '' }];
 
 describe('InstantCaptureBar', () => {
   beforeEach(() => {

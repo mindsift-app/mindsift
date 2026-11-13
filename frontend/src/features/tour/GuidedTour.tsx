@@ -9,6 +9,7 @@ import { pickTarget, startTour, tourReducer, tourReturnTab, TourAction, TourStat
 import { Box, CardPlacement, dockCard, placeCard, TOUR_MARGIN } from './tourLayout';
 import { onTourStartRequest } from './tourEvents';
 import { TourContent, TourTitle } from './TourContent';
+import { useLatestRef } from '../../lib/useLatestRef';
 
 // The guided tour: a card with a short text at the real controls, the rest of the page slightly dimmed and
 // the controls cut out of the dimming. It switches pages as it goes and returns to where it was started.
@@ -22,10 +23,9 @@ interface GuidedTourProps {
 
 export function GuidedTour({ activeTab, setActiveTab }: GuidedTourProps) {
   const [state, setState] = useState<TourState | null>(null);
-  const tabRef = useRef(activeTab);
-  tabRef.current = activeTab;
+  const tabRef = useLatestRef(activeTab);
 
-  useEffect(() => onTourStartRequest(() => setState((s) => (s && !s.done ? s : startTour(tabRef.current)))), []);
+  useEffect(() => onTourStartRequest(() => setState((s) => (s && !s.done ? s : startTour(tabRef.current)))), [tabRef]);
   const dispatch = useCallback(
     (action: TourAction) => setState((s) => (s ? tourReducer(s, action, TOUR_STEPS.length) : s)),
     []
@@ -34,6 +34,8 @@ export function GuidedTour({ activeTab, setActiveTab }: GuidedTourProps) {
   // Over: back to the page it started on, the start button focused again when that is the help page
   useEffect(() => {
     if (!state?.done) return;
+    // A finished tour ends and goes back to its page
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setState(null);
     setActiveTab(tourReturnTab(state));
     // The page comes back a moment later; no cleanup, as clearing the state above re-runs this effect
@@ -148,6 +150,8 @@ function TourOverlay({
     let scrolled = false;
     let last = '';
     let raf = 0;
+    // A new step starts searching for its target from scratch
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setView(null);
     setSearching(false);
 
@@ -225,8 +229,7 @@ function TourOverlay({
 
   // Keys: Esc ends, arrows step, Enter goes on, Tab stays inside the card. Caught before the app's own
   // shortcuts (triage: arrows sort cards, C, /, Ctrl+K …), which never see them while the tour runs.
-  const latest = useRef({ showing, dispatch });
-  latest.current = { showing, dispatch };
+  const latest = useLatestRef({ showing, dispatch });
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       e.stopPropagation();
@@ -266,7 +269,7 @@ function TourOverlay({
       window.removeEventListener('keyup', onKey, true);
       window.removeEventListener('keypress', onKey, true);
     };
-  }, []);
+  }, [latest]);
 
   const phone = view?.phone ?? isPhoneWidth();
   const vw = view?.vw ?? window.innerWidth;

@@ -5,6 +5,7 @@ import { VoiceRecorder } from '../../lib/voice';
 import { VoiceWave } from '../../components/VoiceWave';
 import { triggerHaptic } from '../../lib/api';
 import { useTranslation } from 'react-i18next';
+import { errorMessage } from '../../lib/errorMessage';
 
 interface AudioRecorderPickerProps {
   docId: string;
@@ -50,8 +51,8 @@ export const AudioRecorderPicker: React.FC<AudioRecorderPickerProps> = ({ docId,
     setError(null);
     try {
       onDone(await uploadMedia(docId, blob, name));
-    } catch (err: any) {
-      setError(err?.message || t('media.uploadFailed'));
+    } catch (err) {
+      setError(errorMessage(err, t('media.uploadFailed')));
       setState('ready');
     }
   };

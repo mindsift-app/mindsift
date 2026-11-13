@@ -15,6 +15,7 @@ import { KanbanColumn } from '../../lib/types';
 import { triggerHaptic } from '../../lib/api';
 import { askConfirm } from '../../components/askConfirm';
 import { showError } from '../../components/ErrorNotice';
+import { errorMessage } from '../../lib/errorMessage';
 
 interface ManageColumnsModalProps {
   isOpen: boolean;
@@ -130,6 +131,8 @@ const ManageColumnsModalContent: React.FC<ManageColumnsModalProps> = ({
   };
 
   useEffect(() => {
+    // Opening the dialog starts from the list's columns
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setColumns(initialColumns && initialColumns.length > 0 ? initialColumns : DEFAULT_KANBAN_COLUMNS);
   }, [initialColumns, isOpen]);
 
@@ -208,8 +211,8 @@ const ManageColumnsModalContent: React.FC<ManageColumnsModalProps> = ({
     try {
       await onSave(columns);
       onClose();
-    } catch (err: any) {
-      showError(err.message || t('columnsModal.saveFailed'));
+    } catch (err) {
+      showError(errorMessage(err, t('columnsModal.saveFailed')));
     } finally {
       setSaving(false);
     }

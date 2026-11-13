@@ -2,7 +2,7 @@ import { Bell, BellOff, CalendarDays, Check, Columns2, Funnel, Folder, Layers, L
 import { isTaskListShared } from './TaskListTabs';
 import i18n from '../../i18n';
 import { TaskList } from '../../lib/types';
-import { MobileMenuGroup } from '../../context/MobileActionContext';
+import { MobileActionItem, MobileMenuGroup } from '../../context/MobileActionContext';
 import { ViewMode } from './taskViewTypes';
 
 type TaskFilter = 'open' | 'done' | 'discarded';
@@ -73,7 +73,7 @@ export function buildTasksMenu({
     setShowMobileCreateModal(true);
   };
 
-  const primaryItems: any[] = [
+  const primaryItems: MobileActionItem[] = [
     {
       id: 'new-task',
       label: i18n.t('tasks:menu.newTask'),
@@ -89,18 +89,18 @@ export function buildTasksMenu({
   const filterSortActiveCount =
     (selectedTag ? 1 : 0) + (groupBy !== defaultGroupBy ? 1 : 0) + (sortBy !== 'custom' ? 1 : 0);
 
-  const filterItems: any[] = [
+  const filterItems: MobileActionItem[] = [
     {
       id: 'tasks-filter-modal',
       label: i18n.t('tasks:menu.filter'),
       icon: <Funnel className="w-4 h-4 text-accent" />,
-      badge: filterSortActiveCount > 0 ? `${filterSortActiveCount} aktiv` : undefined,
+      badge: filterSortActiveCount > 0 ? i18n.t('tasks:menu.activeCount', { count: filterSortActiveCount }) : undefined,
       active: filterSortActiveCount > 0,
       onClick: () => setShowFilterModal(true),
     },
   ];
 
-  const listManagementItems: any[] = [
+  const listManagementItems: MobileActionItem[] = [
     {
       id: 'new-task-list',
       label: i18n.t('tasks:tabs.newListTitle'),
@@ -141,7 +141,7 @@ export function buildTasksMenu({
     });
   }
 
-  const viewItems: any[] = [
+  const viewItems: MobileActionItem[] = [
     {
       id: 'filter-open',
       label: i18n.t('tasks:menu.openList'),
@@ -201,7 +201,7 @@ export function buildTasksMenu({
     });
   }
 
-  const listItems: any[] = [
+  const listItems: MobileActionItem[] = [
     {
       id: 'list-all',
       label: i18n.t('tasks:allTasks'),

@@ -70,6 +70,7 @@ import { rememberMentionNames } from './lib/mentions';
 import { NotificationBell } from './components/NotificationBell';
 import i18n, { applyLanguage, resolveLanguage } from './i18n';
 import { useTranslation } from 'react-i18next';
+import { useLatestRef } from './lib/useLatestRef';
 
 // Server admins and user managers reach the administration
 const canAdminister = (u: User) => u.role === 'admin' || u.role === 'manager';
@@ -159,6 +160,8 @@ export const App: React.FC = () => {
     [user?.language, authStatus.defaultLanguage]
   );
   useEffect(() => {
+    // A non-admin never stays on the administration (also after the role changed)
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (user && !canAdminister(user) && activeTab === 'admin_settings') setActiveTab('triage');
   }, [user, activeTab]);
   const [previousTab, setPreviousTab] = useState<ActiveTab>('triage');
@@ -187,8 +190,7 @@ export const App: React.FC = () => {
   const [showMobileProfile, setShowMobileProfile] = useState(false);
 
   const { isMenuOpen, setIsMenuOpen, closeMenu, setGroups, primaryAction, setPrimaryAction } = useMobileActions();
-  const primaryActionRef = useRef(primaryAction);
-  primaryActionRef.current = primaryAction;
+  const primaryActionRef = useLatestRef(primaryAction);
 
   // App icon shortcuts (manifest "shortcuts", long-press on the icon): open the tab and its input right away.
   // ?shortcut=quickdump|task|list; the old links (?mode=capture, ?tab=triage) still lead to the Quick Dump.
@@ -200,6 +202,8 @@ export const App: React.FC = () => {
   useEffect(() => {
     if (!pendingShortcut || !user?.id) return;
     if (activeTab !== pendingShortcut) {
+      // The shortcut's tab first, the action on the next run once that view is there
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setActiveTab(pendingShortcut);
       return;
     }
@@ -211,6 +215,8 @@ export const App: React.FC = () => {
     // The view registers its "+" action once it is mounted, so wait a moment (no cleanup: resetting
     // pendingShortcut above re-runs this effect and must not cancel the timer)
     window.setTimeout(() => {
+      // Declared further down; the timer runs after render, when it exists
+      // eslint-disable-next-line react-hooks/immutability
       if (target === 'triage') handleTriggerAddButton();
       else if (isPhoneWidth() || target === 'lists') primaryActionRef.current?.();
     }, 400);
@@ -221,6 +227,8 @@ export const App: React.FC = () => {
   useEffect(() => {
     closeMenu();
     if (activeTab === 'triage') {
+      // Declared further down; the effect runs after render, when it exists
+      // eslint-disable-next-line react-hooks/immutability
       setPrimaryAction(openMobileTriageCapture);
       setGroups([
         {
@@ -501,6 +509,8 @@ export const App: React.FC = () => {
   useEffect(() => {
     if (!user?.id || !(deepLink.note || deepLink.task || deepLink.list)) return;
     if (deepLink.note) {
+      // A deep link opens its note, task or list once signed in
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelectedDocId(deepLink.note);
       setOpenDocNonce((n) => n + 1);
       setSelectedBlockId(null);
@@ -512,6 +522,8 @@ export const App: React.FC = () => {
       setSelectedListId(deepLink.list);
       setActiveTab('lists');
     }
+    // Marks the link as used without another render; only a new link runs this again
+    // eslint-disable-next-line react-hooks/immutability
     deepLink.note = deepLink.task = deepLink.list = null;
     const url = new URL(window.location.href);
     ['note', 'task', 'list'].forEach((k) => url.searchParams.delete(k));

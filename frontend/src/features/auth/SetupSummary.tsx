@@ -3,6 +3,7 @@ import { Trans, useTranslation } from 'react-i18next';
 import { TriangleAlert, Archive, CircleCheck, ClipboardList, Settings, AtSign } from 'lucide-react';
 import { SetupInfo } from '../../lib/types';
 import { formatTimeField } from '../../lib/dateInput';
+import { timeZoneLabel } from '../../lib/timeZones';
 import { SetupChoices } from './SetupInstanceSection';
 
 // The last part of the setup wizard: what is still open (no mail server, no BASE_URL, no address of the
@@ -82,7 +83,11 @@ export const SetupSummary: React.FC<{
           i18nKey="setupSummary.backups"
           count={choices.backupRetentionDays ?? 0}
           values={{
-            time: formatTimeField(choices.backupTime || ''),
+            // The backups run on the server's clock: the zone chosen above, else TZ or UTC
+            time: t('setupSummary.backupAt', {
+              time: formatTimeField(choices.backupTime || ''),
+              zone: choices.timeZone ? timeZoneLabel(choices.timeZone) : t('setupSummary.backupZoneUnset'),
+            }),
             dir: info?.backupDir || 'data/backups',
             count: choices.backupRetentionDays ?? 0,
           }}

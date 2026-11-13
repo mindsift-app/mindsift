@@ -16,7 +16,7 @@ if (typeof window !== 'undefined' && !window.PointerEvent) {
       this.pointerType = params.pointerType ?? 'touch';
     }
   }
-  (window as any).PointerEvent = PolyfillPointerEvent;
+  Object.assign(window, { PointerEvent: PolyfillPointerEvent });
 }
 
 afterEach(() => {

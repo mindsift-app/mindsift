@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { buildBlockLink } from '../../lib/wikiLink';
 import { Document } from '../../lib/types';
 import { api } from '../../lib/api';
@@ -6,6 +6,8 @@ import i18n from '../../i18n';
 import { MOVE_BRANCH_EVENT } from './moveBranchEvent';
 import type { ExtractTarget } from './ExtractPopover';
 import { ensureNonEmptyBlocks, useDocumentSync } from './useDocumentSync';
+import { errorMessage } from '../../lib/errorMessage';
+import { useLatestRef } from '../../lib/useLatestRef';
 
 type DocumentSync = ReturnType<typeof useDocumentSync>;
 
@@ -46,7 +48,7 @@ export function useBranchActions({
         lastMoveRef.current = null;
         api
           .undoMove(docId, move.result, engineRef.current?.clientId || '')
-          .catch((err: any) => showNotice(err?.message || i18n.t('workspace:editor.moveFailed')));
+          .catch((err: unknown) => showNotice(errorMessage(err, i18n.t('workspace:editor.moveFailed'))));
       }
     }
     const inlined = lastInlineRef.current;
@@ -58,7 +60,7 @@ export function useBranchActions({
           .restoreDocument(inlined.sourceId)
           .then(() => api.getDocument(inlined.sourceId))
           .then((restored) => onDocCreated?.(restored))
-          .catch((err: any) => showNotice(err?.message || i18n.t('workspace:editor.restoreFailed')));
+          .catch((err: unknown) => showNotice(errorMessage(err, i18n.t('workspace:editor.restoreFailed'))));
       }
     }
     const info = lastExtractRef.current;
@@ -70,7 +72,7 @@ export function useBranchActions({
     api
       .undoExtract(info.newDocId)
       .then(() => onDocRemoved?.(info.newDocId))
-      .catch((err: any) => showNotice(err?.message || i18n.t('workspace:editor.removeExtractedFailed')));
+      .catch((err: unknown) => showNotice(errorMessage(err, i18n.t('workspace:editor.removeExtractedFailed'))));
   }, [docId, onDocCreated, onDocRemoved, showNotice, currentBlocksRef, engineRef, lastExtractRef, lastInlineRef, lastMoveRef]);
 
   const handleUndo = useCallback(() => {
@@ -86,8 +88,7 @@ export function useBranchActions({
 
   // Strg+Z / Strg+Y with the focus outside the text fields (e.g. after a click on a bullet's delete button,
   // on the undo button or into empty space): the bullets and the title handle the keys themselves
-  const historyKeyRef = useRef({ handleUndo, handleRedo });
-  historyKeyRef.current = { handleUndo, handleRedo };
+  const historyKeyRef = useLatestRef({ handleUndo, handleRedo });
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (!(e.ctrlKey || e.metaKey) || e.altKey || !['z', 'y'].includes(e.key.toLowerCase())) return;
@@ -105,7 +106,7 @@ export function useBranchActions({
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [embedded, actionsTarget, scrollRef]);
+  }, [embedded, actionsTarget, scrollRef, historyKeyRef]);
 
   // A bullet with its children becomes a note of its own. The server only creates the note; the branch
   // is replaced here as an ordinary own edit, so it shows at once, syncs like typing and Strg+Z works.
@@ -139,8 +140,8 @@ export function useBranchActions({
           { label: i18n.t('workspace:editor.open'), run: () => onOpenDocBlock?.(created.id) },
           { label: i18n.t('common:sync.undo'), run: () => handleUndo() },
         ]);
-      } catch (err: any) {
-        showNotice(err?.message || i18n.t('workspace:editor.convertFailed'));
+      } catch (err) {
+        showNotice(errorMessage(err, i18n.t('workspace:editor.convertFailed')));
       }
     },
     [docId, canEdit, onOpenDocBlock, onDocCreated, showNotice, handleUndo, applyLocalBlocks, currentBlocksRef, engineRef, lastExtractRef, lastInlineRef]
@@ -180,18 +181,16 @@ export function useBranchActions({
           { label: i18n.t('workspace:editor.open'), run: () => onOpenDocBlock?.(result.targetId, result.rootId) },
           { label: i18n.t('common:sync.undo'), run: () => handleUndo() },
         ]);
-      } catch (err: any) {
-        showNotice(err?.message || i18n.t('workspace:editor.moveFailed'));
+      } catch (err) {
+        showNotice(errorMessage(err, i18n.t('workspace:editor.moveFailed')));
       }
     },
     [docId, canEdit, onOpenDocBlock, showNotice, handleUndo, applyLocalBlocks, currentBlocksRef, engineRef, lastExtractRef, lastInlineRef, lastMoveRef]
   );
 
   // A bullet dragged out of this note onto another note in the sidebar (useDocDragDrop)
-  const handleMoveBranchRef = useRef(handleMoveBranch);
-  handleMoveBranchRef.current = handleMoveBranch;
-  const handleExtractBlockRef = useRef(handleExtractBlock);
-  handleExtractBlockRef.current = handleExtractBlock;
+  const handleMoveBranchRef = useLatestRef(handleMoveBranch);
+  const handleExtractBlockRef = useLatestRef(handleExtractBlock);
   useEffect(() => {
     const onMove = (e: Event) => {
       const { docId: from, blockId, targetId, targetTitle } = (e as CustomEvent).detail || {};
@@ -201,7 +200,7 @@ export function useBranchActions({
     };
     window.addEventListener(MOVE_BRANCH_EVENT, onMove);
     return () => window.removeEventListener(MOVE_BRANCH_EVENT, onMove);
-  }, [docId, embedded]);
+  }, [docId, embedded, handleExtractBlockRef, handleMoveBranchRef]);
 
   // The extract button asks where to: a new note (as before) or an existing one
   const [extractAt, setExtractAt] = useState<{ blockId: string; x: number; y: number; align?: 'left' | 'right' } | null>(null);
@@ -239,8 +238,8 @@ export function useBranchActions({
         lastInlineRef.current = { sourceId: res.sourceId, blockId, content: res.content };
         onDocRemoved?.(res.sourceId);
         showNotice(i18n.t('workspace:editor.pulledBack'), [{ label: i18n.t('common:sync.undo'), run: () => handleUndo() }]);
-      } catch (err: any) {
-        showNotice(err?.message || i18n.t('workspace:editor.pullBackFailed'));
+      } catch (err) {
+        showNotice(errorMessage(err, i18n.t('workspace:editor.pullBackFailed')));
       }
     },
     [docId, canEdit, onDocRemoved, showNotice, handleUndo, applyLocalBlocks, currentBlocksRef, engineRef, lastExtractRef, lastInlineRef]

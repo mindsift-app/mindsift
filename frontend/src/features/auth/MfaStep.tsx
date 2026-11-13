@@ -5,6 +5,7 @@ import { MfaLoginResult, MfaMethod, User } from '../../lib/types';
 import { api, ApiError, triggerHaptic } from '../../lib/api';
 import { getPasskey, PasskeyJSON, passkeyCancelled, passkeysSupported } from '../../lib/webauthn';
 import { ToggleSwitch } from '../../components/ToggleSwitch';
+import { errorMessage } from '../../lib/errorMessage';
 
 // Days a trusted device signs in without a code (storage.TrustedDeviceLifetime on the server)
 export const TRUST_DAYS = 30;
@@ -58,12 +59,12 @@ export const MfaStep: React.FC<MfaStepProps> = ({ mfaToken, methods, onAuthentic
     onAuthenticated(res.user);
   };
 
-  const failed = (err: any, fallback: string) => {
+  const failed = (err: unknown, fallback: string) => {
     if (err instanceof ApiError && err.code === 'mfa_expired') {
-      onBack(err.message);
+      onBack(errorMessage(err));
       return;
     }
-    setError(err?.message || fallback);
+    setError(errorMessage(err, fallback));
     triggerHaptic(25);
   };
 
@@ -75,7 +76,7 @@ export const MfaStep: React.FC<MfaStepProps> = ({ mfaToken, methods, onAuthentic
     triggerHaptic(15);
     try {
       finish(await api.loginMfa(mfaToken, value, trust));
-    } catch (err: any) {
+    } catch (err) {
       failed(err, t('mfa.failed'));
       setCode('');
       window.setTimeout(() => inputRef.current?.focus(), 0);
@@ -96,7 +97,7 @@ export const MfaStep: React.FC<MfaStepProps> = ({ mfaToken, methods, onAuthentic
       const { options } = await pending;
       const credential = await getPasskey(options);
       finish(await api.loginMfaPasskey(mfaToken, credential, trust));
-    } catch (err: any) {
+    } catch (err) {
       if (!passkeyCancelled(err)) failed(err, t('mfa.passkeyFailed'));
       // A new challenge for the next try (each one is used up by an answer)
       prefetch();

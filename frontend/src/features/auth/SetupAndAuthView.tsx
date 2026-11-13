@@ -25,6 +25,7 @@ import { SetupMailSection, useSetupMail } from './SetupMailSection';
 import { SetupSummary } from './SetupSummary';
 import { useKeyboardRoom } from '../../lib/useKeyboardInset';
 import { startOidcLogin, takeOidcResult } from '../../lib/oidc';
+import { errorMessage } from '../../lib/errorMessage';
 
 interface SetupAndAuthViewProps {
   authStatus: AuthStatus;
@@ -66,6 +67,8 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [inviteCode, setInviteCode] = useState(linkInviteCode);
+  const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   // Link from the confirmation mail (?verifyToken=…): confirm right away and say what happens next
   useEffect(() => {
     const url = new URL(window.location.href);
@@ -73,11 +76,13 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
     if (!token) return;
     url.searchParams.delete('verifyToken');
     window.history.replaceState({}, '', url.pathname + url.search + url.hash);
+    // The link from the mail is read from the URL after mounting; the login tab shows the result
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setAuthTab('login');
     api
       .verifyEmail(token)
       .then((res) => setNotice(res.message))
-      .catch((err) => setError(err.message || i18n.t('auth:verify.invalidLink')));
+      .catch((err) => setError(errorMessage(err, i18n.t('auth:verify.invalidLink'))));
   }, []);
   // Login refused because the address is not confirmed: offer to send the link again
   const [resendState, setResendState] = useState<'idle' | 'sending' | 'sent'>('idle');
@@ -88,9 +93,9 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
       setResendState('sent');
       setError(null);
       setNotice(t('verify.resent'));
-    } catch (err: any) {
+    } catch (err) {
       setResendState('idle');
-      setError(err.message || t('verify.sendFailed'));
+      setError(errorMessage(err, t('verify.sendFailed')));
     }
   };
 
@@ -124,10 +129,8 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
       : registrationHint;
 
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   // Message of a login refused because the email address is not confirmed yet: while it shows, the link can be sent again
   const [unverifiedError, setUnverifiedError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
   const [newPassword, setNewPassword] = useState('');
   const [newPasswordConfirm, setNewPasswordConfirm] = useState('');
   // Password right, the account has a second factor: its code or passkey comes next (MfaStep)
@@ -144,6 +147,8 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
   // An error of the return from the provider (cancelled, no account, locked …)
   useEffect(() => {
     const result = takeOidcResult();
+    // The provider's answer is taken from the URL once after mounting
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (result?.kind === 'error') setError(result.message);
   }, []);
   const handleOidcLogin = async () => {
@@ -155,8 +160,8 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
     try {
       await startOidcLogin();
       // The browser leaves for the provider; the button stays busy until then
-    } catch (err: any) {
-      setError(err?.message || t('oidc.error.failed', { name: oidcName }));
+    } catch (err) {
+      setError(errorMessage(err, t('oidc.error.failed', { name: oidcName })));
       setSubmitting(false);
     }
   };
@@ -199,12 +204,12 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
         setSubmitting(true);
         const res = await api.loginPasskey(token, credential);
         onAuthenticated(res.user);
-      } catch (err: any) {
+      } catch (err) {
         window.clearTimeout(renew);
         // Stopped for the button or the form went away: nothing to say
         if (stopped || conditionalRequest.current !== ctrl) return;
         if (answered) setSubmitting(false);
-        if (answered && !passkeyCancelled(err)) setError(err?.message || i18n.t('auth:login.passkeyFailed'));
+        if (answered && !passkeyCancelled(err)) setError(errorMessage(err, i18n.t('auth:login.passkeyFailed')));
         // The timer ran out or the server refused the passkey: offer the autofill again
         if (answered || ctrl.signal.aborted) void run();
       }
@@ -234,8 +239,8 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
       const credential = await getPasskey(options);
       const res = await api.loginPasskey(token, credential);
       onAuthenticated(res.user);
-    } catch (err: any) {
-      if (!passkeyCancelled(err)) setError(err?.message || t('login.passkeyFailed'));
+    } catch (err) {
+      if (!passkeyCancelled(err)) setError(errorMessage(err, t('login.passkeyFailed')));
       setSubmitting(false);
       setConditionalRun((n) => n + 1);
     }
@@ -249,8 +254,8 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
       await api.requestPasswordReset(email.trim());
       setNotice(t('forgot.sent'));
       setAuthTab('login');
-    } catch (err: any) {
-      setError(err.message || t('forgot.failed'));
+    } catch (err) {
+      setError(errorMessage(err, t('forgot.failed')));
     } finally {
       setSubmitting(false);
     }
@@ -279,8 +284,8 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
       setNotice(t('reset.done'));
       setAuthTab('login');
       onResetDone?.();
-    } catch (err: any) {
-      setError(err.message || t('reset.failed'));
+    } catch (err) {
+      setError(errorMessage(err, t('reset.failed')));
     } finally {
       setSubmitting(false);
     }
@@ -320,8 +325,8 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
         ...(setupMail.smtpChoice && !authStatus.setup?.smtpConfigured ? { smtp: setupMail.smtpChoice } : {}),
       });
       onAuthenticated(res.user);
-    } catch (err: any) {
-      setError(err.message || t('setup.failed'));
+    } catch (err) {
+      setError(errorMessage(err, t('setup.failed')));
     } finally {
       setSubmitting(false);
     }
@@ -342,8 +347,8 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
         return;
       }
       onAuthenticated(res.user);
-    } catch (err: any) {
-      const msg = err.message || t('login.failed');
+    } catch (err) {
+      const msg = errorMessage(err, t('login.failed'));
       setUnverifiedError(err instanceof ApiError && err.code === 'email_unverified' ? msg : null);
       setError(msg);
     } finally {
@@ -373,8 +378,8 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
         return;
       }
       onAuthenticated(res.user);
-    } catch (err: any) {
-      setError(err.message || t('register.failed'));
+    } catch (err) {
+      setError(errorMessage(err, t('register.failed')));
     } finally {
       setSubmitting(false);
     }

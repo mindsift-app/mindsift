@@ -3,6 +3,7 @@
 import { authHeaders } from '../api';
 import i18n from '../../i18n';
 import type { Block, Effect, Op, Result } from './model';
+import { errorMessage } from '../errorMessage';
 
 export interface LeaseInfo {
   blockId: string;
@@ -89,8 +90,8 @@ async function call<T>(path: string, init: RequestInit & { keepalive?: boolean }
   let res: Response;
   try {
     res = await fetch(path, { ...init, headers, cache: 'no-store', signal: init.keepalive ? undefined : controller.signal });
-  } catch (err: any) {
-    throw new TransportError(err?.message || i18n.t('common:errors.network'), 0);
+  } catch (err) {
+    throw new TransportError(errorMessage(err, i18n.t('common:errors.network')), 0);
   } finally {
     clearTimeout(timer);
   }

@@ -47,7 +47,7 @@ export function ListTabsHeader({
   const { t } = useTranslation('lists');
   const { draggingItemId, dragOverListTab, setDragOverListTab, handleDropOnListTab } = drag;
   const reorder = useTabReorder(lists.map((l) => l.id), onReorderLists);
-  const overflow = useOverflowTabs(
+  const { rowRef, moreRef, tabRef, isHidden } = useOverflowTabs(
     lists.map((l) => l.id),
     activeList?.id || null
   );
@@ -68,16 +68,16 @@ export function ListTabsHeader({
   return (
     <div className="hidden sm:flex items-center gap-2 !mt-0">
       {/* List Tabs: one row, what does not fit goes behind "⋯ n" */}
-      <div ref={overflow.rowRef} className="relative flex-1 min-w-0 flex items-center gap-1">
+      <div ref={rowRef} className="relative flex-1 min-w-0 flex items-center gap-1">
         {lists.map((lst) => {
           const openCount = openCountOf(lst);
           const isSelected = activeList?.id === lst.id;
           const drop = tabDropProps(lst);
-          const hidden = overflow.isHidden(lst.id);
+          const hidden = isHidden(lst.id);
           return (
             <div
               key={lst.id}
-              ref={overflow.tabRef(lst.id)}
+              ref={tabRef(lst.id)}
               aria-hidden={hidden || undefined}
               {...reorder.dragProps(lst.id)}
               onDragOver={(e) => {
@@ -118,9 +118,9 @@ export function ListTabsHeader({
         })}
 
         <MoreTabsButton
-          ref={overflow.moreRef}
+          ref={moreRef}
           items={lists
-            .filter((lst) => overflow.isHidden(lst.id))
+            .filter((lst) => isHidden(lst.id))
             .map((lst) => ({ id: lst.id, icon: lst.icon, title: lst.title, count: openCountOf(lst) }))}
           activeId={activeList?.id || null}
           onSelect={setActiveListId}

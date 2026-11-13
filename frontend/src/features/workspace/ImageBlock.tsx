@@ -20,6 +20,8 @@ export const ImageBlock: React.FC<ImageBlockProps> = ({ content, canEdit, onCapt
   const [caption, setCaption] = useState(ref?.caption || '');
 
   useEffect(() => {
+    // The caption field follows the stored caption (also from other devices)
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCaption(ref?.caption || '');
   }, [ref?.caption]);
 
@@ -27,6 +29,8 @@ export const ImageBlock: React.FC<ImageBlockProps> = ({ content, canEdit, onCapt
   useEffect(() => {
     if (!mediaId) return;
     let alive = true;
+    // Another image starts without the error of the previous one
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setFailed(false);
     mediaObjectURL(mediaId)
       .then((u) => alive && setSrc(u))

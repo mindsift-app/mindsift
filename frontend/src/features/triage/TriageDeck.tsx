@@ -268,6 +268,8 @@ const TriageDeckView: React.FC<TriageDeckProps> = ({
 
   // Another card in front closes the editor; its draft is taken from the card when editing starts
   useEffect(() => {
+    // Another card in front closes the editor
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsEditingCard(false);
   }, [activeCard?.id]);
 

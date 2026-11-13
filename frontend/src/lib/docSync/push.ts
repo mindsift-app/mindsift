@@ -15,8 +15,8 @@ export const realtimePush: PushChannel = {
     const current = (): PushKind => (isRealtimeConnected() ? (getRealtimeTransport() as PushKind) : 'none');
     const conn = createRealtimeConnection({
       docId,
-      onMessage: (msg: any) => {
-        if (msg?.event === 'DOC_SEQ' && msg.payload?.docId === docId) onPoke();
+      onMessage: (msg) => {
+        if (msg?.event === 'DOC_SEQ' && (msg.payload as { docId?: string } | undefined)?.docId === docId) onPoke();
       },
       onStatusChange: () => onStatus(current()),
     });

@@ -113,6 +113,8 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
   // Focus input and reset on open
   useEffect(() => {
     if (isOpen) {
+      // Opening starts with an empty search
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setQuery('');
       setHits([]);
       setSelectedIndex(0);
@@ -162,6 +164,8 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
 
     const trimmed = query.trim();
     if (!trimmed) {
+      // An empty search clears the hits at once; others are searched with a delay
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setHits([]);
       setLoading(false);
       setSelectedIndex(0);

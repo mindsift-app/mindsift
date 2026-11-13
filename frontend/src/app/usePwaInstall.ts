@@ -10,28 +10,28 @@ export function usePwaInstall(userId: string | undefined) {
     if (typeof window === 'undefined') return false;
     return (
       window.matchMedia('(display-mode: standalone)').matches ||
-      (window.navigator as any).standalone === true
+      window.navigator.standalone === true
     );
   });
-  const [deferredPwaPrompt, setDeferredPwaPrompt] = useState<any>(() =>
-    typeof window !== 'undefined' ? (window as any).__deferredPwaPrompt || null : null
+  const [deferredPwaPrompt, setDeferredPwaPrompt] = useState<BeforeInstallPromptEvent | null>(() =>
+    typeof window !== 'undefined' ? window.__deferredPwaPrompt || null : null
   );
   const [showPwaInstallModal, setShowPwaInstallModal] = useState(false);
   const [showManualPwaGuide, setShowManualPwaGuide] = useState(false);
 
   useEffect(() => {
     const syncPwaPrompt = () => {
-      if ((window as any).__deferredPwaPrompt) {
-        setDeferredPwaPrompt((window as any).__deferredPwaPrompt);
+      if (window.__deferredPwaPrompt) {
+        setDeferredPwaPrompt(window.__deferredPwaPrompt);
       }
     };
-    const onBeforeInstallPrompt = (e: Event) => {
+    const onBeforeInstallPrompt = (e: BeforeInstallPromptEvent) => {
       e.preventDefault();
-      (window as any).__deferredPwaPrompt = e;
+      window.__deferredPwaPrompt = e;
       setDeferredPwaPrompt(e);
     };
     const onAppInstalled = () => {
-      (window as any).__deferredPwaPrompt = null;
+      window.__deferredPwaPrompt = null;
       setDeferredPwaPrompt(null);
       setIsStandaloneApp(true);
       setShowPwaInstallModal(false);
@@ -53,19 +53,21 @@ export function usePwaInstall(userId: string | undefined) {
   useEffect(() => {
     if (!userId || isStandaloneApp) return;
     if (isPhoneWidth() && !sessionStorage.getItem('mindsift_pwa_dismissed')) {
+      // Screen width and sessionStorage are read after mounting, not during render
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setShowPwaInstallModal(true);
     }
   }, [userId, isStandaloneApp]);
 
   const handleInstallWebApp = async () => {
     triggerHaptic(15);
-    const promptEvent = deferredPwaPrompt || (window as any).__deferredPwaPrompt;
+    const promptEvent = deferredPwaPrompt || window.__deferredPwaPrompt;
     if (promptEvent && typeof promptEvent.prompt === 'function') {
       try {
         await promptEvent.prompt();
         const choice = await promptEvent.userChoice;
         if (choice && choice.outcome === 'accepted') {
-          (window as any).__deferredPwaPrompt = null;
+          window.__deferredPwaPrompt = null;
           setDeferredPwaPrompt(null);
           setShowPwaInstallModal(false);
           setShowManualPwaGuide(false);

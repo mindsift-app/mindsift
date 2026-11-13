@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useLatestRef } from '../../lib/useLatestRef';
 
 // Reordering a short vertical list by a drag handle, with mouse, pen and finger alike (pointer events; HTML5
 // drag & drop does not exist on touch devices) and with the arrow keys on the handle. Items carry
@@ -8,12 +9,9 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 export function usePointerSort(ids: string[], onReorder: (ids: string[]) => void) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [drag, setDrag] = useState<{ id: string; index: number } | null>(null);
-  const dragRef = useRef(drag);
-  dragRef.current = drag;
-  const idsRef = useRef(ids);
-  idsRef.current = ids;
-  const onReorderRef = useRef(onReorder);
-  onReorderRef.current = onReorder;
+  const dragRef = useLatestRef(drag);
+  const idsRef = useLatestRef(ids);
+  const onReorderRef = useLatestRef(onReorder);
 
   const order = useMemo(() => {
     if (!drag) return ids;
@@ -26,8 +24,7 @@ export function usePointerSort(ids: string[], onReorder: (ids: string[]) => void
     setDrag(null);
     if (next.join('\n') !== idsRef.current.join('\n')) onReorderRef.current(next);
   };
-  const finishRef = useRef(finish);
-  finishRef.current = finish;
+  const finishRef = useLatestRef(finish);
 
   const dragId = drag?.id ?? null;
   useEffect(() => {
@@ -64,7 +61,7 @@ export function usePointerSort(ids: string[], onReorder: (ids: string[]) => void
       window.removeEventListener('pointerup', up);
       window.removeEventListener('pointercancel', cancel);
     };
-  }, [dragId]);
+  }, [dragId, dragRef, finishRef, idsRef]);
 
   const handleProps = (id: string) => ({
     onPointerDown: (e: React.PointerEvent<HTMLElement>) => {

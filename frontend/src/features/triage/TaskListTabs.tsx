@@ -77,7 +77,7 @@ export function TaskListTabs({
   const { dragOverListTab, draggingTaskId, handleDropOnListTab, setDragOverListTab } = drag;
   const [pendingDelete, setPendingDelete] = useState<{ list: TaskList; x: number; y: number } | null>(null);
   const reorder = useTabReorder(safeTaskLists.map((tl) => tl.id), onReorderLists);
-  const overflow = useOverflowTabs(
+  const { rowRef, moreRef, tabRef, isHidden } = useOverflowTabs(
     safeTaskLists.map((tl) => tl.id),
     selectedListId === 'all' ? null : selectedListId
   );
@@ -99,7 +99,7 @@ export function TaskListTabs({
   return (
     <div className="hidden sm:flex items-center gap-2 !mt-0">
       {/* Task Lists selector tabs: one row, what does not fit goes behind "⋯ n" */}
-      <div ref={overflow.rowRef} className="relative flex-1 min-w-0 flex items-center gap-1">
+      <div ref={rowRef} className="relative flex-1 min-w-0 flex items-center gap-1">
         <button
           data-tab-fixed
           onClick={() => setSelectedListId('all')}
@@ -114,11 +114,11 @@ export function TaskListTabs({
 
         {safeTaskLists.map((tl) => {
           const drop = tabDropProps(tl);
-          const hidden = overflow.isHidden(tl.id);
+          const hidden = isHidden(tl.id);
           return (
           <div
             key={tl.id}
-            ref={overflow.tabRef(tl.id)}
+            ref={tabRef(tl.id)}
             aria-hidden={hidden || undefined}
             {...reorder.dragProps(tl.id)}
             onDragOver={(e) => {
@@ -168,9 +168,9 @@ export function TaskListTabs({
         })}
 
         <MoreTabsButton
-          ref={overflow.moreRef}
+          ref={moreRef}
           items={safeTaskLists
-            .filter((tl) => overflow.isHidden(tl.id))
+            .filter((tl) => isHidden(tl.id))
             .map((tl) => ({ id: tl.id, icon: tl.icon, title: tl.title, count: tl.tasksCount, muted: tl.isMuted }))}
           activeId={selectedListId}
           onSelect={setSelectedListId}

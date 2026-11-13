@@ -44,6 +44,8 @@ import { LivePill } from '../../components/LivePill';
 import { useMobileActions } from '../../context/MobileActionContext';
 import { askConfirm } from '../../components/askConfirm';
 import { showError } from '../../components/ErrorNotice';
+import { errorMessage } from '../../lib/errorMessage';
+import { useLatestRef } from '../../lib/useLatestRef';
 
 
 
@@ -176,10 +178,11 @@ export const TasksView: React.FC<TasksViewProps> = ({
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [extraTask, setExtraTask] = useState<Thought | null>(null);
 
-  const onInitialTaskShownRef = useRef(onInitialTaskShown);
-  onInitialTaskShownRef.current = onInitialTaskShown;
+  const onInitialTaskShownRef = useLatestRef(onInitialTaskShown);
   useEffect(() => {
     if (initialSelectedTaskId) {
+      // A task asked for from outside (link, search) opens once
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setDetailTaskId(initialSelectedTaskId);
       setShowDetailModal(true);
       setFilter('open');
@@ -188,7 +191,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
         if (th) setExtraTask(th);
       }).catch(() => {});
     }
-  }, [initialSelectedTaskId]);
+  }, [initialSelectedTaskId, onInitialTaskShownRef]);
 
   // Manage columns modal state
   const [showManageColumnsModal, setShowManageColumnsModal] = useState(false);
@@ -234,6 +237,8 @@ export const TasksView: React.FC<TasksViewProps> = ({
       setTaskLists(Array.isArray(allLists) ? allLists : []);
       // The remembered list was deleted or unshared meanwhile
       if (listId !== 'all' && Array.isArray(allLists) && !allLists.some((l) => l.id === listId)) {
+        // Declared further down; loadData runs after render, when it exists
+        // eslint-disable-next-line react-hooks/immutability
         setSelectedListId('all');
       }
       setTeams(Array.isArray(allTeams) ? allTeams : []);
@@ -247,13 +252,14 @@ export const TasksView: React.FC<TasksViewProps> = ({
   };
 
   useEffect(() => {
+    // Loads the tasks when the view opens and another list is chosen
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadData();
     // loadData reads the selected list and refs
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [refreshTrigger, selectedListId]);
 
-  const selectedListIdRef = useRef(selectedListId);
-  selectedListIdRef.current = selectedListId;
+  const selectedListIdRef = useLatestRef(selectedListId);
 
   // Last known tasks of every list opened in this session. Switching lists shows them in the same render
   // as the new list's view (list or Kanban), so the board never flashes the previous list's tasks; the
@@ -264,6 +270,8 @@ export const TasksView: React.FC<TasksViewProps> = ({
       listCacheRef.current.set(selectedListId, { tasks, trash: taskTrash });
     }
   }, [tasks, taskTrash, loading, selectedListId]);
+  // Reads refs on purpose; the app is not built with the React Compiler
+  // eslint-disable-next-line react-hooks/preserve-manual-memoization
   const setSelectedListId = useCallback((id: string) => {
     if (id === selectedListIdRef.current) return;
     const cache = listCacheRef.current;
@@ -280,7 +288,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
     setLoading(!known);
     loadedListRef.current = known ? id : null;
     setSelectedListIdState(id);
-  }, []);
+  }, [selectedListIdRef]);
 
   // Switching task lists is a step of the browser history (lib/navHistory.ts)
   useEffect(() => reportNav({ taskList: selectedListId }), [selectedListId]);
@@ -293,8 +301,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
   );
 
   // The realtime handler is registered once; it must reload with the current list, not the first one
-  const loadDataRef = useRef(loadData);
-  loadDataRef.current = loadData;
+  const loadDataRef = useLatestRef(loadData);
 
   // Live-Sync of tasks and task lists (useTaskRealtime)
   useTaskRealtime({ setTasks, setTaskLists, listIdRef: selectedListIdRef, loadDataRef });
@@ -523,8 +530,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
   const [draftTaskId, setDraftTaskId] = useState<string | null>(null);
   // Latest tasks for closing the dialog: "Save" in its unsaved-changes question renames the draft and closes
   // right after, before a render would bring the new title into this closure
-  const tasksRef = useRef(tasks);
-  tasksRef.current = tasks;
+  const tasksRef = useLatestRef(tasks);
   const handleQuickAddTaskToColumn = async (columnId: string) => {
     triggerHaptic(10);
     const targetCol = activeColumns.find((c) => boardIdOf(c) === columnId);
@@ -599,8 +605,8 @@ export const TasksView: React.FC<TasksViewProps> = ({
       // Plain switch: the deleted list's tasks belong to "Alle Aufgaben" anyway (and the menu effect keeps
       // this handler out of its dependencies)
       setSelectedListIdState('all');
-    } catch (err: any) {
-      showError(err.message);
+    } catch (err) {
+      showError(errorMessage(err));
     }
   };
 
@@ -611,9 +617,9 @@ export const TasksView: React.FC<TasksViewProps> = ({
     setTaskLists((prev) => prev.map((l) => (l.id === tl.id ? { ...l, isMuted: muted } : l)));
     try {
       await api.muteTaskList(tl.id, muted);
-    } catch (err: any) {
+    } catch (err) {
       setTaskLists((prev) => prev.map((l) => (l.id === tl.id ? { ...l, isMuted: !muted } : l)));
-      showError(err.message);
+      showError(errorMessage(err));
     }
   };
 

@@ -40,6 +40,7 @@ import { usePointerSort } from './usePointerSort';
 import { formatDate } from '../../lib/format';
 import { pushModal } from '../../lib/navHistory';
 import { useScrollLock } from '../../lib/useScrollLock';
+import { useLatestRef } from '../../lib/useLatestRef';
 
 interface TaskDetailModalProps {
   task: Thought | null;
@@ -169,6 +170,8 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
   // Another task in the dialog: its texts, editors closed. Changes of the same task leave an open editor
   // and what was typed in it alone; a draft is taken from the task when editing starts.
   useEffect(() => {
+    // Another task in the dialog starts with its own texts
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setTitleDraft(task.content);
     setNotesDraft(task.notes || '');
     setIsEditingTitle(editTitleOnOpen);
@@ -177,6 +180,8 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [task.id, editTitleOnOpen]);
   useEffect(() => {
+    // The switch follows the task, it also changes from other devices
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsWatching(Boolean(task.isWatching));
   }, [task.isWatching]);
 
@@ -187,6 +192,8 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
       const res = isWatching ? await api.unwatchTask(task.id) : await api.watchTask(task.id);
       const next = Boolean(res.watching);
       setIsWatching(next);
+      // The list's copy of the task keeps the new state until it reloads (reopening shows it)
+      // eslint-disable-next-line react-hooks/immutability
       task.isWatching = next;
       triggerHaptic(10);
     } catch {
@@ -213,8 +220,8 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
   useScrollLock();
 
   // Back (browser, mouse button, Android) closes the dialog first, or asks about unsaved changes
-  const backRef = useRef<() => boolean>(() => true);
-  backRef.current = () => {
+  const onCloseRef = useLatestRef(onClose);
+  const backRef = useLatestRef((): boolean => {
     if (confirmUnsaved) {
       setConfirmUnsaved(false);
       return false;
@@ -226,10 +233,8 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
     }
     onCloseRef.current();
     return true;
-  };
-  const onCloseRef = useRef(onClose);
-  onCloseRef.current = onClose;
-  useEffect(() => pushModal(() => backRef.current()), []);
+  });
+  useEffect(() => pushModal(() => backRef.current()), [backRef]);
 
   // Handle escape key to close
   useEffect(() => {
@@ -325,12 +330,17 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
 
   const subtasks = Array.isArray(task.subtasks) ? task.subtasks : [];
   const canSortSubtasks = !readOnly && !!onReorderSubtasks && subtasks.length > 1;
-  const subtaskSort = usePointerSort(
+  const {
+    containerRef: subtaskSortRef,
+    order: subtaskOrder,
+    draggingId: draggingSubtaskId,
+    handleProps: subtaskHandleProps,
+  } = usePointerSort(
     subtasks.map((st) => st.id),
     (ids) => void onReorderSubtasks?.(task, ids)
   );
   const subtaskById = new Map(subtasks.map((st) => [st.id, st]));
-  const sortedSubtasks = subtaskSort.order.map((id) => subtaskById.get(id)).filter((st): st is NonNullable<typeof st> => !!st);
+  const sortedSubtasks = subtaskOrder.map((id) => subtaskById.get(id)).filter((st): st is NonNullable<typeof st> => !!st);
   const completedSubtasks = subtasks.filter((s) => s.isCompleted).length;
   const subtasksPercent = subtasks.length > 0 ? Math.round((completedSubtasks / subtasks.length) * 100) : 0;
   // In shared lists the origin also names who created the task (assignableMembers is empty otherwise)
@@ -931,20 +941,20 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
 
             {/* Subtask items list */}
             {subtasks.length > 0 && (
-              <div ref={subtaskSort.containerRef} className="space-y-1 max-h-48 overflow-y-auto pr-1">
+              <div ref={subtaskSortRef} className="space-y-1 max-h-48 overflow-y-auto pr-1">
                 {sortedSubtasks.map((st) => (
                   <div
                     key={st.id}
                     data-sort-id={st.id}
                     className={`p-1.5 bg-canvas border rounded-card flex items-center justify-between text-xs group ${
-                      subtaskSort.draggingId === st.id ? 'border-accent shadow-sm opacity-80' : 'border-border'
+                      draggingSubtaskId === st.id ? 'border-accent shadow-sm opacity-80' : 'border-border'
                     }`}
                   >
                     <div className="flex items-center gap-2 min-w-0 flex-1">
                       {canSortSubtasks && (
                         <button
                           type="button"
-                          {...subtaskSort.handleProps(st.id)}
+                          {...subtaskHandleProps(st.id)}
                           className="-my-2.5 sm:my-0 h-11 w-6 sm:h-5 sm:w-4 flex items-center justify-center flex-shrink-0 text-faint hover:text-main cursor-grab active:cursor-grabbing touch-none"
                           title={t('detail.dragSort')}
                           aria-label={t('moveSubtask', { title: st.title })}

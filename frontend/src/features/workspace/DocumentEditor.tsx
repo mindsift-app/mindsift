@@ -120,6 +120,7 @@ import { useDocPresence } from './useDocPresence';
 import { useBranchActions } from './useBranchActions';
 import { useBlockEditing } from './useBlockEditing';
 import { useTagPage } from './useTagPage';
+import { useLatestRef } from '../../lib/useLatestRef';
 
 export const DocumentEditor: React.FC<DocumentEditorProps> = ({
   docId,
@@ -208,8 +209,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
     cursorAnchorRef,
   });
   const outlinerTreeRef = useRef<OutlinerTreeHandle | null>(null);
-  const docRef = useRef<Document | null>(doc);
-  docRef.current = doc;
+  const docRef = useLatestRef<Document | null>(doc);
 
   const { zoomedBlock, childBlocks, levelOffset } = useMemo(() => {
     return getZoomedSubtree(blocks, zoomedBlockId);
@@ -317,8 +317,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
   }, [docId, embedded, loading]);
 
   // A link pointed to a bullet that is gone (moved, extracted, deleted): the note opens with a hint
-  const blocksForTargetRef = useRef(blocks);
-  blocksForTargetRef.current = blocks;
+  const blocksForTargetRef = useLatestRef(blocks);
   useEffect(() => {
     if (!initialFocusedBlockId || !doc?.id) return;
     const timer = window.setTimeout(() => {
@@ -327,7 +326,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
       }
     }, 1500);
     return () => window.clearTimeout(timer);
-  }, [initialFocusedBlockId, doc?.id, showNotice]);
+  }, [initialFocusedBlockId, doc?.id, showNotice, blocksForTargetRef]);
 
   const { handleUndo, handleRedo, handleExtractBlock, handleMoveBranch, handleExtractRequest, handleInlineBlock, extractAt, setExtractAt } =
     useBranchActions({
@@ -354,6 +353,8 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
   // The note holds as many bullets as it may: the server refused new ones, which disappear again
   const noteFull = engineState?.noteFull ?? 0;
   useEffect(() => {
+    // A refusal of the server shows its notice once
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (noteFull > 0) showNotice(t('editor.noteFull', { max: formatNumber(MAX_NOTE_BLOCKS) }));
     // Only a new refusal shows the notice; a language switch (t) or a new showNotice must not repeat it
     // eslint-disable-next-line react-hooks/exhaustive-deps

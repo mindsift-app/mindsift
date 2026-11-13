@@ -26,6 +26,8 @@ export const TriageTrash: React.FC<TriageTrashProps> = ({ onClose, onChanged }) 
   };
 
   useEffect(() => {
+    // Loads the trash when it opens
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void load();
   }, []);
 
