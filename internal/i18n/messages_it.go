@@ -440,7 +440,7 @@ var messagesIT = map[string]string{
 	"Wartet auf andere":              "In attesa di altri",
 	"Erledigt":                       "Fatto",
 	"zu groß (max. 100 MB pro Bild oder Aufnahme)": "troppo grande (max. 100 MB per immagine o registrazione)",
-	"zu groß (max. 10 MB pro Notiz)":                "troppo grande (max. 10 MB per nota)",
+	"zu groß (max. 10 MB pro Notiz)":               "troppo grande (max. 10 MB per nota)",
 	"Zusammengeführte Notiz":                       "Nota unita",
 	"Aufgaben":                                     "Attività",
 	"Listen":                                       "Liste",
