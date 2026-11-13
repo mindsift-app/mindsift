@@ -7,7 +7,9 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
+	"github.com/mindsift-app/mindsift/internal/clock"
 	"github.com/mindsift-app/mindsift/internal/config"
 	"github.com/mindsift-app/mindsift/internal/storage"
 )
@@ -166,9 +168,14 @@ func TestSetupStatus(t *testing.T) {
 		_ = json.Unmarshal(rec.Body.Bytes(), &info)
 		return info
 	}
+	t.Setenv("TZ", "")
+	clock.UseInTest(t, time.UTC)
 	info := status()
 	if info.SMTPConfigured || info.SMTPViaEnv || info.BaseURLSet || info.EmailLinks || !strings.HasSuffix(info.BackupDir, "backups") {
 		t.Fatalf("fresh server: %+v", info)
+	}
+	if info.ServerTime == nil || info.ServerTime.Zone != "UTC" || info.ServerTime.Fallback != "UTC" || info.ServerTime.Source != clock.SourceSetting {
+		t.Fatalf("server time: %+v", info.ServerTime)
 	}
 
 	srv.cfg.SMTPHost, srv.cfg.BaseURL, srv.cfg.BaseURLSet = "smtp.env.example", "https://mindsift.example", true
@@ -180,6 +187,8 @@ func TestSetupStatus(t *testing.T) {
 // The public status tells the first-boot wizard about mail server and BASE_URL only while there is no
 // account, and never the mail server's host.
 func TestAuthStatusSetupInfoOnlyBeforeTheFirstAccount(t *testing.T) {
+	t.Setenv("TZ", "Asia/Tokyo")
+	clock.UseInTest(t, time.UTC)
 	store, dbPath := freshStore(t)
 	srv, _ := startWith(t, store, dbPath, config.InitialAdmin{}, false)
 	srv.cfg.SMTPHost = "smtp.env.example"
@@ -193,6 +202,10 @@ func TestAuthStatusSetupInfoOnlyBeforeTheFirstAccount(t *testing.T) {
 	setup, ok := authStatus()["setup"].(map[string]any)
 	if !ok || setup["smtpViaEnv"] != true || setup["smtpConfigured"] != true || setup["baseUrlSet"] != false {
 		t.Fatalf("setup info: %+v", authStatus())
+	}
+	// The summary names the zone the backups follow when the wizard leaves it unset
+	if zone, _ := setup["serverTime"].(map[string]any); zone == nil || zone["fallback"] != "Asia/Tokyo" || zone["zone"] != "UTC" {
+		t.Fatalf("server time in the setup info: %+v", setup["serverTime"])
 	}
 	if _, leaked := setup["smtpHost"]; leaked {
 		t.Fatalf("host in the public status: %+v", setup)

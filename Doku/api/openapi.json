@@ -451,7 +451,7 @@
     "/api/v1/admin/setup/status": {
       "get": {
         "summary": "What the setup wizard's summary tells",
-        "description": "Mail server (smtpConfigured, smtpViaEnv, smtpHost), BASE_URL (baseUrlSet), whether mails with links can go out (emailLinks) and the folder of the daily backups (backupDir)",
+        "description": "Mail server (smtpConfigured, smtpViaEnv, smtpHost), BASE_URL (baseUrlSet), whether mails with links can go out (emailLinks), the folder of the daily backups (backupDir) and the server's time zone (serverTime: zone, source, now, fallback, as in /admin/settings)",
         "tags": [
           "Administration"
         ],
@@ -1095,7 +1095,7 @@
     "/api/v1/auth/status": {
       "get": {
         "summary": "Server status before signing in (setup, registration, demo, language)",
-        "description": "needsSetup, setupCodeRequired (true while no account exists and the server logged a setup code: not in demo mode, not with ADMIN_USER), allowRegistration, instanceName, demoMode, sharingMode, legal (imprintUrl, hasImprintContent, privacyUrl, hasPrivacyContent, customLinkLabel, customLinkUrl), voice (mode = server/browser/off, maxSeconds, browserAllowed), mcpEnabled, mcpConnectorUrl, defaultLanguage (the server's default language: admin setting, else DEFAULT_LANGUAGE, else de); setup (smtpConfigured, smtpViaEnv, baseUrlSet, emailLinks, backupDir) only while no account exists, for the first-boot wizard",
+        "description": "needsSetup, setupCodeRequired (true while no account exists and the server logged a setup code: not in demo mode, not with ADMIN_USER), allowRegistration, instanceName, demoMode, sharingMode, legal (imprintUrl, hasImprintContent, privacyUrl, hasPrivacyContent, customLinkLabel, customLinkUrl), voice (mode = server/browser/off, maxSeconds, browserAllowed), mcpEnabled, mcpConnectorUrl, defaultLanguage (the server's default language: admin setting, else DEFAULT_LANGUAGE, else de); setup (smtpConfigured, smtpViaEnv, baseUrlSet, emailLinks, backupDir, serverTime) only while no account exists, for the first-boot wizard",
         "tags": [
           "Public"
         ],
