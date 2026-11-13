@@ -27,6 +27,7 @@ Versions without a git tag were development states and were never published as a
 - The help says that due times and alarms follow the server's time zone and where admins set it.
 
 ### Fixed
+- The API answers mistakes with the right status instead of an internal error: an empty list title, list item or inbox entry is a `400`, changing, sharing or deleting a note or list without access a `404` that does not reveal whether it exists.
 - A task opened from a link or the search while another task list is shown now shows changes made in its detail dialog at once (priority, status, title, dates …); before, they were saved but the dialog kept the old values.
 - The phone menu of the tasks shows how many filters are active in the app's language instead of always in German.
 - Zooming into a bullet whose level was never stored shows its path and sub-bullets again, and the recovery-code file of an account without email or username no longer names it "undefined".

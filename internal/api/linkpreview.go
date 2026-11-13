@@ -38,11 +38,19 @@ var spacesRe = regexp.MustCompile(`\s+`)
 // HTML tokenizer.
 func cleanText(s string, max int) string {
 	s = strings.TrimSpace(spacesRe.ReplaceAllString(s, " "))
-	if utf8.RuneCountInString(s) > max {
-		r := []rune(s)
-		s = strings.TrimSpace(string(r[:max-1])) + "…"
+	if utf8.RuneCountInString(s) <= max {
+		return s
 	}
-	return s
+	// Too long: cut to max-1 characters plus "…"; with max below 2 only the ellipsis or nothing fits
+	// (max <= 0 used to panic, found by fuzzing in the pentest of 2026-11-13, P3)
+	if max <= 0 {
+		return ""
+	}
+	if max == 1 {
+		return "…"
+	}
+	r := []rune(s)
+	return strings.TrimSpace(string(r[:max-1])) + "…"
 }
 
 // latin1ToUTF8 for pages that still declare ISO-8859-1/windows-1252.
