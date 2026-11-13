@@ -94,7 +94,7 @@ export function buildTasksMenu({
       id: 'tasks-filter-modal',
       label: i18n.t('tasks:menu.filter'),
       icon: <Funnel className="w-4 h-4 text-accent" />,
-      badge: filterSortActiveCount > 0 ? `${filterSortActiveCount} aktiv` : undefined,
+      badge: filterSortActiveCount > 0 ? i18n.t('tasks:menu.activeCount', { count: filterSortActiveCount }) : undefined,
       active: filterSortActiveCount > 0,
       onClick: () => setShowFilterModal(true),
     },
