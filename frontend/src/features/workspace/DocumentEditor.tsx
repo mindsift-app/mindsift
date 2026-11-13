@@ -31,11 +31,9 @@ import {
   SmilePlus,
   Link2,
 } from 'lucide-react';
-import { Document, DocumentBlock, MoveResult, User } from '../../lib/types';
+import { Document, DocumentBlock, User } from '../../lib/types';
 import { api } from '../../lib/api';
-import { OfflineError } from '../../lib/offline';
-import { ConflictChoice, DocSyncEngine, EngineState, MAX_NOTE_BLOCKS } from '../../lib/docSync/engine';
-import { registerNoteClient } from '../../lib/docSync/noteClients';
+import { ConflictChoice, MAX_NOTE_BLOCKS } from '../../lib/docSync/engine';
 import { formatNumber } from '../../lib/format';
 import { fitFieldHeight, refitOnWidthChange } from '../../lib/fieldHeight';
 import { Presence } from '../../lib/docSync/transport';
@@ -99,22 +97,6 @@ export interface DocumentEditorProps {
   onEmptied?: () => void;
 }
 
-// The bullet of this note the cursor is in, with its position on screen, held for a second after a change
-// of others arrived (null: the cursor is elsewhere)
-interface CursorAnchor {
-  blockId: string;
-  top: number;
-  until: number;
-  observer?: ResizeObserver;
-}
-const CURSOR_HOLD_MS = 1000;
-function cursorAnchor(blocks: DocumentBlock[]): CursorAnchor | null {
-  const el = document.activeElement?.closest<HTMLElement>('[data-outline-block]');
-  const blockId = el?.dataset.outlineBlock;
-  if (!el || !blockId || !blocks.some((b) => b.id === blockId)) return null;
-  return { blockId, top: el.getBoundingClientRect().top, until: performance.now() + CURSOR_HOLD_MS };
-}
-
 // The element that scrolls el (the note, or the journal with its days)
 function scrollParent(el: Element | null): HTMLElement | null {
   for (let p = el?.parentElement; p; p = p.parentElement) {
@@ -141,13 +123,6 @@ function topBullet(root: HTMLElement): NotePlace['anchor'] {
   return row?.dataset.outlineBlock ? { id: row.dataset.outlineBlock, offset: row.getBoundingClientRect().top - top } : undefined;
 }
 
-// What undoing the editor's server actions needs, kept with the note's undo history (lib/docSync/undoHistory.ts)
-interface EditorUndoExtra {
-  extract: { newDocId: string; blockId: string; link: string } | null;
-  inline: { sourceId: string; blockId: string; content: string } | null;
-  move: { result: MoveResult; blockId: string; link: string } | null;
-}
-
 // Large screens (lg) put the note's actions into the workspace tab bar and drop the editor header
 const LARGE_QUERY = '(min-width: 1024px)';
 function subscribeLarge(onChange: () => void) {
@@ -171,65 +146,10 @@ import { ExtractPopover, ExtractTarget } from './ExtractPopover';
 import { BacklinksSection } from './BacklinksSection';
 import { useKeyboardInset } from '../../lib/useKeyboardInset';
 import { blockTitle, computeBreadcrumbs, getZoomedSubtree, isTitleFromKind } from './zoom';
+import { ensureNonEmptyBlocks, useDocumentSync } from './useDocumentSync';
 
 // Height of the outline bar that sits on the keyboard (MobileOutlineBar), with a little air
 const KEYBOARD_BAR_SPACE = 64;
-
-function ensureNonEmptyBlocks(docId: string, blocks?: DocumentBlock[]): DocumentBlock[] {
-  if (!blocks || blocks.length === 0) {
-    return [
-      {
-        id: `${docId}-b0`,
-        documentId: docId,
-        type: 'text',
-        content: '',
-        level: 0,
-        position: 1000,
-      },
-    ];
-  }
-  // A block that needs nothing keeps its object, so its bullet does not render again (OutlinerBlock is memoized)
-  return blocks.map((b, idx) => {
-    const id = b.id || `${docId}-b${idx}`;
-    const type = b.type || 'text';
-    const level = Math.max(0, b.level || 0);
-    const position = b.position || (idx + 1) * 1000;
-    if (b.id === id && b.documentId === docId && b.type === type && b.level === level && b.position === position) return b;
-    return { ...b, id, documentId: docId, type, level, position };
-  });
-}
-
-function sameBlock(x: DocumentBlock, y: DocumentBlock): boolean {
-  return (
-    x.id === y.id &&
-    x.content === y.content &&
-    (x.level || 0) === (y.level || 0) &&
-    x.type === y.type &&
-    !!x.checked === !!y.checked &&
-    !!x.collapsed === !!y.collapsed &&
-    (x.lang || '') === (y.lang || '') &&
-    (x.taskId || '') === (y.taskId || '') &&
-    (x.subtaskOf || '') === (y.subtaskOf || '') &&
-    (x.conflictOf || '') === (y.conflictOf || '') &&
-    (x.conflictAuthor || '') === (y.conflictAuthor || '')
-  );
-}
-
-// True if both lists show the same blocks; avoids re-rendering when the sync engine echoes a local change.
-function sameBlocks(a: DocumentBlock[], b: DocumentBlock[]): boolean {
-  return a.length === b.length && a.every((x, i) => sameBlock(x, b[i]));
-}
-
-// The engine's list with the objects of `prev` for blocks that did not change: a change of someone else
-// renders only the bullets it touches
-function keepUnchanged(prev: DocumentBlock[], next: DocumentBlock[]): DocumentBlock[] {
-  const byId = new Map(prev.map((b) => [b.id, b]));
-  return next.map((b) => {
-    const old = byId.get(b.id);
-    return old && sameBlock(old, b) ? old : b;
-  });
-}
-
 
 export const DocumentEditor: React.FC<DocumentEditorProps> = ({
   docId,
@@ -269,15 +189,24 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
   const phone = useSyncExternalStore(subscribePhone, isPhoneWidth, () => false);
   // The journal's active day puts its actions into the tab bar as well
   const desktopBar = (!embedded || inJournal) && large && Boolean(actionsTarget);
-  const [doc, setDoc] = useState<Document | null>(initialDoc || null);
-  const [title, setTitle] = useState<string>(initialDoc?.title || '');
-  const [blocks, setBlocks] = useState<DocumentBlock[]>(() =>
-    ensureNonEmptyBlocks(docId, initialDoc?.blocks)
-  );
-  const [loading, setLoading] = useState<boolean>(!initialDoc);
-  const [error, setError] = useState<string | null>(null);
-  // The note could not be fetched for lack of connection; the sync engine may still have a copy on this device
-  const [loadedOffline, setLoadedOffline] = useState(false);
+  const {
+    doc,
+    setDoc,
+    title,
+    setTitle,
+    blocks,
+    loading,
+    error,
+    loadedOffline,
+    engineRef,
+    engineState,
+    currentBlocksRef,
+    cursorAnchorRef,
+    lastExtractRef,
+    lastInlineRef,
+    lastMoveRef,
+    applyLocalBlocks,
+  } = useDocumentSync(docId, initialDoc, onDocMetadataChange, onSaveStatusChange);
   const [showEmojiPicker, setShowEmojiPicker] = useState<boolean>(false);
   // Where the user last was in this note (zoom, scroll), unless a link points to a bullet in it
   const [savedPlace] = useState(() =>
@@ -293,11 +222,6 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
   });
   const [showActionsMenu, setShowActionsMenu] = useState<boolean>(false);
   const actionsMenuRef = useRef<HTMLDivElement | null>(null);
-
-  // Sync engine (operation log): stores every change locally and syncs it with the server
-  const engineRef = useRef<DocSyncEngine | null>(null);
-  const [engineState, setEngineState] = useState<EngineState | null>(null);
-
 
   const titleInputRef = useRef<HTMLTextAreaElement | HTMLInputElement | null>(null);
   // The title grows with its text like the bullets: measured when it appears, when its text changes and when
@@ -402,15 +326,9 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
   const docRef = useRef<Document | null>(doc);
   docRef.current = doc;
 
-  const currentTitleRef = useRef<string>(title);
-  currentTitleRef.current = title;
-  const currentBlocksRef = useRef<DocumentBlock[]>(blocks);
-  currentBlocksRef.current = blocks;
-
   // The bullet with the cursor stays where it is on screen when changes of others arrive above it. New
   // text of a bullet above reaches its field only in a later render (and only then it wraps onto another
   // line), so for a moment every change of the list's size is evened out too, before it is painted
-  const cursorAnchorRef = useRef<CursorAnchor | null>(null);
   const keepCursorInPlace = useCallback(() => {
     const anchor = cursorAnchorRef.current;
     if (!anchor) return;
@@ -427,9 +345,9 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
       anchor.observer = new ResizeObserver(keepCursorInPlace);
       anchor.observer.observe(el.parentElement);
     }
-  }, []);
+  }, [cursorAnchorRef]);
   useLayoutEffect(keepCursorInPlace, [blocks, keepCursorInPlace]);
-  useEffect(() => () => cursorAnchorRef.current?.observer?.disconnect(), []);
+  useEffect(() => () => cursorAnchorRef.current?.observer?.disconnect(), [cursorAnchorRef]);
 
   useEffect(() => {
     const root = scrollRef.current;
@@ -576,113 +494,6 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
     return Array.from(tagSet);
   }, [blocks]);
 
-
-  // Fetch document on mount
-  useEffect(() => {
-    let isCancelled = false;
-    if (!initialDoc) {
-      setLoading(true);
-    }
-    setError(null);
-    setLoadedOffline(false);
-
-    api
-      .getDocument(docId)
-      .then((fetched) => {
-        if (isCancelled) return;
-        const normalized = ensureNonEmptyBlocks(docId, fetched.blocks);
-        setDoc(fetched);
-        if (!engineRef.current?.getState().ready) {
-          setTitle(fetched.title || i18n.t('workspace:editor.untitled'));
-          currentBlocksRef.current = normalized;
-          setBlocks(normalized);
-        }
-        const links = new Map<string, string>();
-        const subtaskLinks = new Map<string, string>();
-        for (const b of fetched.blocks || []) {
-          if (b.taskId) links.set(b.id, b.taskId);
-          if (b.subtaskOf) subtaskLinks.set(b.id, b.subtaskOf);
-        }
-        engineRef.current?.setTaskLinks(links, subtaskLinks);
-        setLoading(false);
-        onDocMetadataChange(fetched);
-
-      })
-      .catch((err: any) => {
-        if (isCancelled) return;
-        if (err instanceof OfflineError) {
-          setLoadedOffline(true);
-          setError(i18n.t('workspace:editor.notAvailableOffline'));
-        } else {
-          setError(err?.message || i18n.t('workspace:editor.loadFailed'));
-        }
-        setLoading(false);
-      });
-
-    return () => {
-      isCancelled = true;
-    };
-    // Fetched once per note; initialDoc only decides whether the loading state shows
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [docId]);
-
-  // Start the sync engine for this note: shows stored state immediately (also offline), then syncs
-  useEffect(() => {
-    const engine = new DocSyncEngine(docId);
-    engineRef.current = engine;
-    const unregisterClient = registerNoteClient(docId, engine.clientId);
-    // Undo of the editor's server actions from the last time the note was open (kept with the engine's steps)
-    const kept = engine.undoExtra as EditorUndoExtra | undefined;
-    lastExtractRef.current = kept?.extract ?? null;
-    lastInlineRef.current = kept?.inline ?? null;
-    lastMoveRef.current = kept?.move ?? null;
-    const unsubscribe = engine.subscribe((state) => {
-      setEngineState(state);
-      if (!state.ready) return;
-      const next = keepUnchanged(currentBlocksRef.current, ensureNonEmptyBlocks(docId, state.blocks));
-      if (!sameBlocks(currentBlocksRef.current, next)) {
-        // Changes of others (own edits are in currentBlocksRef already): remember where the bullet with the
-        // cursor is, so bullets added or removed above it do not move it (layout effect below)
-        cursorAnchorRef.current?.observer?.disconnect();
-        cursorAnchorRef.current = cursorAnchor(currentBlocksRef.current);
-        currentBlocksRef.current = next;
-        setBlocks(next);
-      }
-      if (state.title && state.title !== currentTitleRef.current) {
-        setTitle(state.title);
-      }
-    });
-    void engine.start();
-    return () => {
-      unsubscribe();
-      unregisterClient();
-      const extra: EditorUndoExtra = { extract: lastExtractRef.current, inline: lastInlineRef.current, move: lastMoveRef.current };
-      engine.undoExtra = extra.extract || extra.inline || extra.move ? extra : undefined;
-      engine.stop();
-      if (engineRef.current === engine) engineRef.current = null;
-    };
-  }, [docId]);
-
-  useEffect(() => {
-    if (!engineState) return;
-    switch (engineState.status) {
-      case 'saving':
-        onSaveStatusChange?.('saving');
-        break;
-      case 'offline':
-        onSaveStatusChange?.('unsaved', i18n.t('workspace:editor.offlineSaved'));
-        break;
-      case 'error':
-        onSaveStatusChange?.('error', engineState.errorMessage);
-        break;
-      default:
-        onSaveStatusChange?.('saved');
-    }
-    // Reports a change of the save status, not every step of the sync (engineState) or render of the
-    // parent (its callback is new each time)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [engineState?.status, engineState?.errorMessage]);
-
   const otherPeople = useMemo(
     () => (engineState?.presence || []).filter((p) => p.userId !== currentUser?.id),
     [engineState?.presence, currentUser?.id]
@@ -821,12 +632,6 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
     return () => window.clearTimeout(timer);
   }, [initialFocusedBlockId, doc?.id, showNotice]);
 
-  // The last extraction, so undoing it (toast or Strg+Z) also puts the new note into the trash
-  const lastExtractRef = useRef<{ newDocId: string; blockId: string; link: string } | null>(null);
-  // The last note brought back, so undoing it also takes the note out of the trash again
-  const lastInlineRef = useRef<{ sourceId: string; blockId: string; content: string } | null>(null);
-  // The last branch moved into another note, so undoing it here also takes it out of the target again
-  const lastMoveRef = useRef<{ result: MoveResult; blockId: string; link: string } | null>(null);
   const finishUndoExtract = useCallback(() => {
     const move = lastMoveRef.current;
     if (move) {
@@ -861,7 +666,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
       .undoExtract(info.newDocId)
       .then(() => onDocRemoved?.(info.newDocId))
       .catch((err: any) => showNotice(err?.message || i18n.t('workspace:editor.removeExtractedFailed')));
-  }, [docId, onDocCreated, onDocRemoved, showNotice]);
+  }, [docId, onDocCreated, onDocRemoved, showNotice, currentBlocksRef, engineRef, lastExtractRef, lastInlineRef, lastMoveRef]);
   useEffect(() => () => {
     if (noticeTimerRef.current !== null) window.clearTimeout(noticeTimerRef.current);
   }, []);
@@ -874,12 +679,12 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
     const res = engineRef.current?.undo();
     if (res?.message) showNotice(res.message);
     if (res?.ok) finishUndoExtract();
-  }, [showNotice, finishUndoExtract]);
+  }, [showNotice, finishUndoExtract, engineRef]);
 
   const handleRedo = useCallback(() => {
     const res = engineRef.current?.redo();
     if (res?.message) showNotice(res.message);
-  }, [showNotice]);
+  }, [showNotice, engineRef]);
 
   // Strg+Z / Strg+Y with the focus outside the text fields (e.g. after a click on a bullet's delete button,
   // on the undo button or into empty space): the bullets and the title handle the keys themselves
@@ -915,20 +720,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
       const res = engineRef.current?.resolveConflict(blockId, choice);
       if (res?.message) showNotice(res.message);
     },
-    [showNotice]
-  );
-
-  // Every local block change goes to the engine, which turns it into operations
-  const applyLocalBlocks = useCallback(
-    (update: DocumentBlock[] | ((prev: DocumentBlock[]) => DocumentBlock[])) => {
-      const prev = currentBlocksRef.current;
-      const next = typeof update === 'function' ? update(prev) : update;
-      if (next === prev) return;
-      currentBlocksRef.current = next;
-      setBlocks(next);
-      engineRef.current?.applyFlat(next);
-    },
-    []
+    [showNotice, engineRef]
   );
 
   // "Expand / collapse all bullets" (note menu, Ctrl+Shift+ArrowDown / ArrowUp) in what is shown, i.e. only
@@ -960,7 +752,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
       while (i > 0 && lvl(all[i]) > top && scope.has(all[i - 1].id)) i--;
       if (i >= 0 && all[i]) window.setTimeout(() => outlinerTreeRef.current?.focusBlock(all[i].id), 0);
     },
-    [canEdit, applyLocalBlocks, zoomedBlockId, childBlocks]
+    [canEdit, applyLocalBlocks, zoomedBlockId, childBlocks, currentBlocksRef]
   );
   const setAllCollapsedRef = useRef(handleSetAllCollapsed);
   setAllCollapsedRef.current = handleSetAllCollapsed;
@@ -1016,7 +808,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
         showNotice(err?.message || i18n.t('workspace:editor.convertFailed'));
       }
     },
-    [docId, onOpenDocBlock, onDocCreated, showNotice, handleUndo, applyLocalBlocks]
+    [docId, onOpenDocBlock, onDocCreated, showNotice, handleUndo, applyLocalBlocks, currentBlocksRef, engineRef, lastExtractRef, lastInlineRef]
   );
 
   // A bullet with its children goes to the end of another note (dragged onto it in the sidebar, or chosen
@@ -1057,7 +849,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
         showNotice(err?.message || i18n.t('workspace:editor.moveFailed'));
       }
     },
-    [docId, canEdit, onOpenDocBlock, showNotice, handleUndo, applyLocalBlocks]
+    [docId, canEdit, onOpenDocBlock, showNotice, handleUndo, applyLocalBlocks, currentBlocksRef, engineRef, lastExtractRef, lastInlineRef, lastMoveRef]
   );
 
   // A bullet dragged out of this note onto another note in the sidebar (useDocDragDrop)
@@ -1116,7 +908,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
         showNotice(err?.message || i18n.t('workspace:editor.pullBackFailed'));
       }
     },
-    [docId, onDocRemoved, showNotice, handleUndo, applyLocalBlocks]
+    [docId, onDocRemoved, showNotice, handleUndo, applyLocalBlocks, currentBlocksRef, engineRef, lastExtractRef, lastInlineRef]
   );
 
   // Keep parent sidebar metadata in sync when blocks/tags change
@@ -1345,7 +1137,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
     }
     setTagFocusId(id);
     setTagFreshIds((prev) => (prev.size === 0 || prev.has(id) ? prev : new Set()));
-  }, []);
+  }, [engineRef]);
   useEffect(() => () => {
     if (tagBlurTimerRef.current !== null) window.clearTimeout(tagBlurTimerRef.current);
   }, []);
