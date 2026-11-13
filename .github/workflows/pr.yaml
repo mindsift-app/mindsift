@@ -4,8 +4,11 @@ name: Pull Request Checks
 # ESLint and Vitest for the frontend, go vet and go test for the backend, as in the build of main) and
 # the cases of the build plan (ci/test-build-plan.sh). It builds for the runner's platform only, with
 # the tests on (SKIP_TESTS=0, the Dockerfile's default), and stops after the stage that runs the Go tests.
+# gofmt and golangci-lint (.golangci.yml, staticcheck among its linters) run as in ci/local-checks.sh,
+# with the images named there.
 # No registry login and no push: the code of a pull request gets a read-only token and nothing else.
-# ci/local-checks.sh runs the same and more (gofmt, staticcheck, golangci-lint) on a developer's machine.
+# ci/local-checks.sh runs the same on a developer's machine, plus the size check of the bundle and a
+# second run of the time-related Go tests in another time zone.
 on:
   pull_request:
     branches:
@@ -32,6 +35,15 @@ jobs:
 
       - name: Build Plan Cases
         run: ci/test-build-plan.sh
+
+      - name: gofmt and golangci-lint (as ci/local-checks.sh)
+        run: |
+          GO_IMAGE="$(sed -n 's/^GO_IMAGE="\(.*\)"$/\1/p' ci/local-checks.sh)"
+          LINT_IMAGE="$(sed -n 's/^GOLANGCI_LINT_IMAGE="\(.*\)"$/\1/p' ci/local-checks.sh)"
+          [ -n "${GO_IMAGE}" ] && [ -n "${LINT_IMAGE}" ] || { echo "::error::images not found in ci/local-checks.sh"; exit 1; }
+          docker run --rm -v "${PWD}":/src:ro -w /src "${GO_IMAGE}" \
+            sh -c 'files="$(gofmt -l internal cmd)"; [ -z "${files}" ] || { echo "::error::not formatted with gofmt: ${files}"; exit 1; }'
+          docker run --rm -v "${PWD}":/src:ro -w /src -e CGO_ENABLED=0 "${LINT_IMAGE}" golangci-lint run ./cmd/... ./internal/...
 
       - name: Frontend and Backend Tests (Dockerfile up to backend-builder)
         run: docker build --progress=plain --target backend-builder --build-arg SKIP_TESTS=0 .
