@@ -4,6 +4,20 @@ import globals from 'globals';
 import reactHooks from 'eslint-plugin-react-hooks';
 import tseslint from 'typescript-eslint';
 import i18next from 'eslint-plugin-i18next';
+import { readFileSync } from 'node:fs';
+
+// lucide-react's old names for renamed icons ("TriangleAlert as AlertTriangle"), read from its type exports so
+// the list follows the installed version; the app uses the canonical names only. "X as XIcon" and
+// "X as LucideX" are the same icon under its own name and stay allowed.
+function lucideAliasNames() {
+  const types = readFileSync(new URL('./node_modules/lucide-react/dist/lucide-react.d.ts', import.meta.url), 'utf8');
+  const exportList = types.match(/^export \{([^}]*)\}/m)?.[1] ?? '';
+  const aliases = new Set();
+  for (const [, name, alias] of exportList.matchAll(/(\w+) as (\w+)/g)) {
+    if (alias !== `${name}Icon` && alias !== `Lucide${name}`) aliases.add(alias);
+  }
+  return [...aliases].sort();
+}
 
 export default tseslint.config(
   { ignores: ['dist', 'node_modules', 'coverage'] },
@@ -21,6 +35,18 @@ export default tseslint.config(
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrors: 'none' }],
       'no-empty': ['error', { allowEmptyCatch: true }],
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: 'lucide-react',
+              importNames: lucideAliasNames(),
+              message: "Old lucide name of a renamed icon; import the icon's current name (lucide.dev/icons).",
+            },
+          ],
+        },
+      ],
     },
   },
   // No any where it is already gone; the rule grows folder by folder until it holds everywhere
