@@ -219,9 +219,10 @@ func writeThrottled(w http.ResponseWriter, wait time.Duration) {
 func writeLoginLocked(w http.ResponseWriter, wait time.Duration) {
 	minutes := int(math.Ceil(wait.Minutes()))
 	w.Header().Set("Retry-After", strconv.Itoa(int(math.Ceil(wait.Seconds()))))
-	msg := "Zu viele fehlgeschlagene Anmeldeversuche. Die Anmeldung ist für noch {minutes} Minuten gesperrt."
+	// Each text in its own tr call, so the catalog test sees both
 	if minutes == 1 {
-		msg = "Zu viele fehlgeschlagene Anmeldeversuche. Die Anmeldung ist für noch eine Minute gesperrt."
+		writeError(w, http.StatusTooManyRequests, tr(w, "Zu viele fehlgeschlagene Anmeldeversuche. Die Anmeldung ist für noch eine Minute gesperrt."))
+		return
 	}
-	writeError(w, http.StatusTooManyRequests, tr(w, msg, "minutes", strconv.Itoa(minutes)))
+	writeError(w, http.StatusTooManyRequests, tr(w, "Zu viele fehlgeschlagene Anmeldeversuche. Die Anmeldung ist für noch {minutes} Minuten gesperrt.", "minutes", strconv.Itoa(minutes)))
 }

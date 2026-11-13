@@ -40,7 +40,7 @@ echo "Taking screenshots …"
   sh -c 'npm install --no-audit --no-fund >/dev/null 2>&1 && node screenshots.mjs'
 
 echo "Converting to WebP …"
-"$ENGINE" run --rm -v "$WORK/png":/png:Z -v "$ROOT/screenshots":/shots:Z docker.io/library/alpine:3.20 sh -c '
+"$ENGINE" run --rm -v "$WORK/png":/png:Z -v "$ROOT/screenshots":/shots:Z docker.io/library/alpine:3.24 sh -c '
   apk add -q libwebp-tools >/dev/null
   for f in /png/*.png; do
     name=$(basename "$f" .png)
