@@ -291,7 +291,7 @@ func (s *Server) Router() http.Handler {
 		r.Delete("/api/v1/thoughts/{id}", s.handleDeleteThought)
 		r.Delete("/api/v1/thoughts/discarded/purge", s.handlePurgeDiscarded)
 
-		// Tinder-Style Triage & Tasks
+		// Triage (swipe-style cards) & Tasks
 		r.Get("/api/v1/triage/deck", s.handleGetTriageDeck)
 		r.Patch("/api/v1/triage/{id}", s.handleTriageAction)
 		r.Get("/api/v1/tasks", s.handleGetTasks)

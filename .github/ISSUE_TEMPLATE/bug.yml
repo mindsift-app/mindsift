@@ -1,0 +1,62 @@
+name: Bug report
+description: Something does not work as it should.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. Security problems please not here, but privately as described in [SECURITY.md](https://github.com/mindsift-app/mindsift/blob/main/SECURITY.md).
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Shown in the app under "About MindSift", or the image tag you run.
+      placeholder: v0.95.0 / :stable
+    validations:
+      required: true
+  - type: dropdown
+    id: install
+    attributes:
+      label: How do you run MindSift?
+      options:
+        - Docker Compose (docker-compose.yml)
+        - Install script (install.sh)
+        - docker run / Podman
+        - Binary from a release
+        - The public demo
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: proxy
+    attributes:
+      label: Reverse proxy
+      description: Which one, if any (Caddy, nginx, Traefik, Cloudflare tunnel …), and whether `BASE_URL` is set.
+      placeholder: none / Caddy, BASE_URL set
+  - type: input
+    id: client
+    attributes:
+      label: Browser and device
+      description: For problems in the app. Installed app (PWA) or browser tab?
+      placeholder: Firefox on Windows / installed app on Android
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open a note …
+        2. …
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: Server log around the time (`docker compose logs mindsift`) and errors from the browser console, if any. Remove tokens and addresses you do not want to share.
+      render: text

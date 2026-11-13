@@ -4,7 +4,7 @@ All notable changes to MindSift are documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and from v0.6.0 on the version numbers follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html). While the major version is 0, the API and data formats can change with any minor version; such changes are listed under "Changed" or "Removed" and marked **Attention**.
 
-Versions before 0.80.0 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
+Versions without a git tag were development states and were never published as a versioned image. Versions before 0.80.0 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ## [Unreleased]
 
