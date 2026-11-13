@@ -113,6 +113,8 @@ function OidcReturnToast() {
   const [result, setResult] = useState<OidcResult | null>(null);
   useEffect(() => {
     const r = takeOidcResult();
+    // The provider's answer is taken from the URL once after mounting
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (r && r.kind !== 'signedIn') setResult(r);
   }, []);
   if (!result) return null;

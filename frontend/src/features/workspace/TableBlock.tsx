@@ -631,6 +631,8 @@ const TableBlockView: React.FC<TableBlockProps> = ({
             keepFocus
             onOpenChange={setMenuOpen}
             label={t('table.menu')}
+            // Built at each render; opening the menu renders again, so it shows the cell of the cursor
+            // eslint-disable-next-line react-hooks/refs
             items={menuItems()}
             buttonClassName="h-11 w-11 sm:h-6 sm:w-6 flex items-center justify-center rounded-btn text-faint hover:text-main hover:bg-panel-elevated transition-colors cursor-pointer"
           />

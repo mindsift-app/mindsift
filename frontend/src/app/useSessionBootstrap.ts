@@ -5,6 +5,7 @@ import { clearOfflineData, outboxCount } from '../lib/offline';
 import { flushClosedNotes } from '../lib/docSync/flushClosed';
 import { finishOidcReturn } from '../lib/oidc';
 import i18n from '../i18n';
+import { useLatestRef } from '../lib/useLatestRef';
 
 // The session of the app: server status (setup, registration, demo), the signed-in user with counters,
 // triage deck and lists, the boot check, offline changes retried when online, the realtime connection,
@@ -27,9 +28,7 @@ export function useSessionBootstrap(onSignedOut: () => void) {
   const [dataEpoch, setDataEpoch] = useState(0);
   const [demoNotice, setDemoNotice] = useState<string | null>(null);
   const lastDemoResetRef = useRef(0);
-  const handleDemoResetRef = useRef<() => void>(() => {});
-  const onSignedOutRef = useRef(onSignedOut);
-  onSignedOutRef.current = onSignedOut;
+  const onSignedOutRef = useLatestRef(onSignedOut);
   const [stats, setStats] = useState<DashboardStats>({
     inboxCount: 0,
     tasksOpenCount: 0,
@@ -136,7 +135,7 @@ export function useSessionBootstrap(onSignedOut: () => void) {
       window.removeEventListener('mindsift:mfa-setup-required', onMfaSetupRequired);
       window.removeEventListener('online', onOnline);
     };
-  }, [refreshAll]);
+  }, [refreshAll, onSignedOutRef]);
 
   // WebSocket Connection Management
   useEffect(() => {
@@ -148,6 +147,8 @@ export function useSessionBootstrap(onSignedOut: () => void) {
   }, [user?.id]);
 
   useEffect(() => {
+    // The deadline counts from when the status arrived (Date.now() is not for render)
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setDemoDeadline(
       authStatus.demoMode && typeof authStatus.demoResetInSeconds === 'number'
         ? Date.now() + authStatus.demoResetInSeconds * 1000
@@ -167,7 +168,7 @@ export function useSessionBootstrap(onSignedOut: () => void) {
     setDemoNotice(i18n.t('app:demoReset'));
     window.setTimeout(() => setDemoNotice(null), 4000);
   }, [refreshAll]);
-  handleDemoResetRef.current = handleDemoReset;
+  const handleDemoResetRef = useLatestRef(handleDemoReset);
 
   // Countdown reached zero but no DEMO_RESET arrived (e.g. long polling): ask the server shortly after
   const handleDemoCountdownElapsed = useCallback(() => {
@@ -180,7 +181,7 @@ export function useSessionBootstrap(onSignedOut: () => void) {
         })
         .catch(() => {});
     }, 5000);
-  }, []);
+  }, [handleDemoResetRef]);
 
   // Refresh stats on task/doc/list real-time events (counters in the navigation). Task events also
   // reload the triage deck: a note sorted on another device must leave this deck too.
@@ -221,7 +222,7 @@ export function useSessionBootstrap(onSignedOut: () => void) {
       window.removeEventListener('mindsift:ws', handleWs);
       document.removeEventListener('visibilitychange', onVisible);
     };
-  }, [refreshAll, refreshStats]);
+  }, [refreshAll, refreshStats, handleDemoResetRef]);
 
   return {
     bootLoading,

@@ -54,6 +54,8 @@ export const PickerPopover: React.FC<PickerPopoverProps> = ({
     return hits.slice(0, maxResults);
   }, [items, query, maxResults]);
 
+  // A new search marks the first hit
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => setActive(0), [query]);
   // Arrow keys in a long list: the chosen row stays in view
   useEffect(() => {

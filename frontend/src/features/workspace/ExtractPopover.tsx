@@ -43,6 +43,8 @@ export const ExtractPopover: React.FC<ExtractPopoverProps> = ({ x, y, align = 'r
   }, [notes, query]);
 
   useEffect(() => {
+    // A new search marks its first hit
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setActive(query.trim() && results.length > 0 ? 1 : 0);
   }, [query, results.length]);
 

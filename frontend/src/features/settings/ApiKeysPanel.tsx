@@ -98,6 +98,8 @@ export const ApiKeysPanel: React.FC<ApiKeysPanelProps> = ({ onIngested }) => {
   };
 
   useEffect(() => {
+    // Loads the keys when the panel opens
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadKeys();
     api.getAllLists().then(setLists).catch(() => {});
     api.getTaskLists().then(setTaskLists).catch(() => {});

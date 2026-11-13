@@ -67,6 +67,8 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [inviteCode, setInviteCode] = useState(linkInviteCode);
+  const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   // Link from the confirmation mail (?verifyToken=…): confirm right away and say what happens next
   useEffect(() => {
     const url = new URL(window.location.href);
@@ -74,6 +76,8 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
     if (!token) return;
     url.searchParams.delete('verifyToken');
     window.history.replaceState({}, '', url.pathname + url.search + url.hash);
+    // The link from the mail is read from the URL after mounting; the login tab shows the result
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setAuthTab('login');
     api
       .verifyEmail(token)
@@ -125,10 +129,8 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
       : registrationHint;
 
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   // Message of a login refused because the email address is not confirmed yet: while it shows, the link can be sent again
   const [unverifiedError, setUnverifiedError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
   const [newPassword, setNewPassword] = useState('');
   const [newPasswordConfirm, setNewPasswordConfirm] = useState('');
   // Password right, the account has a second factor: its code or passkey comes next (MfaStep)
@@ -145,6 +147,8 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
   // An error of the return from the provider (cancelled, no account, locked …)
   useEffect(() => {
     const result = takeOidcResult();
+    // The provider's answer is taken from the URL once after mounting
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (result?.kind === 'error') setError(result.message);
   }, []);
   const handleOidcLogin = async () => {

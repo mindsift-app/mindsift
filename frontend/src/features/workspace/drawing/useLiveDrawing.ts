@@ -7,6 +7,7 @@ import { Applied, LiveMerge, WireElement, finalDrawing } from '../../../lib/draw
 import { Drawing } from '../../../lib/drawing/model';
 import type { LiveDrawingState } from '../../../lib/api/workspace';
 import { noteClientId } from '../../../lib/docSync/noteClients';
+import { useLatestRef } from '../../../lib/useLatestRef';
 
 export type LiveMode = 'draw' | 'watch';
 
@@ -68,8 +69,7 @@ const POINTER_MS = 50; // pointers at most 20 times a second
 const SAVE_TIMEOUT_MS = 6000;
 
 export function useLiveDrawing(opts: LiveOptions | null) {
-  const optsRef = useRef(opts);
-  optsRef.current = opts;
+  const optsRef = useLatestRef(opts);
   // Made once from the drawing as opened; later changes of opts do not start over
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const merge = useMemo(() => (opts ? new LiveMerge(opts.initial) : null), []);
@@ -144,8 +144,11 @@ export function useLiveDrawing(opts: LiveOptions | null) {
   // Behind (a message was dropped on the way): the whole state again
   const resync = () => {
     const o = optsRef.current;
-    if (!o || Date.now() - lastResync.current < 1000) return;
-    lastResync.current = Date.now();
+    // resync runs from messages and timers, not during render
+    // eslint-disable-next-line react-hooks/purity
+    const now = Date.now();
+    if (!o || now - lastResync.current < 1000) return;
+    lastResync.current = now;
     if (isWebSocketConnected()) send('DRAW_SYNC');
     else
       api
@@ -336,6 +339,8 @@ export function useLiveDrawing(opts: LiveOptions | null) {
       if (pointerTimer.current !== null) window.clearTimeout(pointerTimer.current);
       if (saveTimer.current !== null) window.clearTimeout(saveTimer.current);
       if (retryTimer.current !== null) window.clearTimeout(retryTimer.current);
+      // Declared further down; the cleanup runs after render, when it exists
+      // eslint-disable-next-line react-hooks/immutability
       if (!left.current && !endedRef.current) leaveNow();
     };
     // One session per editor: everything it needs is read through refs

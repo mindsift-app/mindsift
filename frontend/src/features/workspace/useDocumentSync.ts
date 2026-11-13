@@ -7,6 +7,7 @@ import { registerNoteClient } from '../../lib/docSync/noteClients';
 import i18n from '../../i18n';
 import type { DocSaveStatus } from './DocumentEditor';
 import { errorMessage } from '../../lib/errorMessage';
+import { useLatestRef } from '../../lib/useLatestRef';
 
 // The bullet of this note the cursor is in, with its position on screen, held for a second after a change
 // of others arrived (null: the cursor is elsewhere)
@@ -108,10 +109,8 @@ export function useDocumentSync(
   const engineRef = useRef<DocSyncEngine | null>(null);
   const [engineState, setEngineState] = useState<EngineState | null>(null);
 
-  const currentTitleRef = useRef<string>(title);
-  currentTitleRef.current = title;
-  const currentBlocksRef = useRef<DocumentBlock[]>(blocks);
-  currentBlocksRef.current = blocks;
+  const currentTitleRef = useLatestRef<string>(title);
+  const currentBlocksRef = useLatestRef<DocumentBlock[]>(blocks);
 
   // The bullet with the cursor stays where it is on screen when changes of others arrive above it
   // (keepCursorInPlace); set here when such a change comes in
@@ -128,6 +127,8 @@ export function useDocumentSync(
   useEffect(() => {
     let isCancelled = false;
     if (!initialDoc) {
+      // Another note shows its loading state at once
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLoading(true);
     }
     setError(null);
@@ -208,7 +209,7 @@ export function useDocumentSync(
       engine.stop();
       if (engineRef.current === engine) engineRef.current = null;
     };
-  }, [docId]);
+  }, [docId, currentBlocksRef, currentTitleRef]);
 
   useEffect(() => {
     if (!engineState) return;
@@ -240,7 +241,7 @@ export function useDocumentSync(
       setBlocks(next);
       engineRef.current?.applyFlat(next);
     },
-    []
+    [currentBlocksRef]
   );
 
   return {

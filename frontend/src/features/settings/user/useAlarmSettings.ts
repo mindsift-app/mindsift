@@ -112,6 +112,8 @@ export function useAlarmSettings(currentUser: User, onUserUpdated: (u: User) => 
     }
   };
   useEffect(() => {
+    // Loads the push state of this browser when the section opens
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void reloadPush();
   }, [reloadPush]);
   const togglePushHere = async (on: boolean) => {
@@ -144,6 +146,8 @@ export function useAlarmSettings(currentUser: User, onUserUpdated: (u: User) => 
 
   // The form follows the account when it changes (saved here or on another device)
   useEffect(() => {
+    // The form follows the account when it changes (saved here or on another device)
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setNotificationSettings(buildNotificationSettings(currentUser));
     setDiscordWebhookUrl(currentUser.discordWebhookUrl || '');
     setCustomWebhookUrl(currentUser.customWebhookUrl || '');

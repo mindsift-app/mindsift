@@ -5,6 +5,7 @@ import { useVoiceInput } from '../lib/useVoiceInput';
 import i18n from '../i18n';
 import { showError } from '../components/ErrorNotice';
 import { errorMessage } from '../lib/errorMessage';
+import { useLatestRef } from '../lib/useLatestRef';
 
 // State of the Quick Dump sheet on phones: text, priority, due date and voice input; saving puts the
 // thought into the inbox
@@ -68,8 +69,7 @@ export function useMobileCapture(
   };
 
   // Stays the same function: views register it once as their "+", so it reads the voice input as it is now
-  const mobileVoiceRef = useRef(mobileVoice);
-  mobileVoiceRef.current = mobileVoice;
+  const mobileVoiceRef = useLatestRef(mobileVoice);
   const openMobileTriageCapture = useCallback(() => {
     setMobileTriageContent('');
     setMobileTriagePriority('normal');
@@ -77,7 +77,7 @@ export function useMobileCapture(
     setIsVoiceCaptured(false);
     if (mobileVoiceRef.current.state !== 'idle') mobileVoiceRef.current.cancel();
     setShowMobileCapture(true);
-  }, []);
+  }, [mobileVoiceRef]);
 
   return {
     showMobileCapture,

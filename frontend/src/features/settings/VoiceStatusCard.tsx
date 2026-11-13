@@ -34,6 +34,8 @@ export const VoiceStatusCard: React.FC = () => {
   };
 
   useEffect(() => {
+    // Loads the status when the card opens
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void load();
     return () => {
       if (stopTimerRef.current !== null) window.clearTimeout(stopTimerRef.current);

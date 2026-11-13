@@ -1,9 +1,10 @@
-import React, { useCallback, useEffect, useRef } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { DocumentBlock } from '../../lib/types';
 import { branchEnd, insertBelow, moveSibling, unitStart } from '../../lib/outlineList';
 import type { OutlinerTreeHandle } from './OutlinerTree';
 import { getZoomedSubtree } from './zoom';
 import { ensureNonEmptyBlocks } from './useDocumentSync';
+import { useLatestRef } from '../../lib/useLatestRef';
 
 // Editing the bullets of the note: every change of the outline (typing, new bullets, deleting, moving,
 // expanding and collapsing all) as one own edit for the sync engine (applyLocalBlocks)
@@ -61,8 +62,7 @@ export function useBlockEditing({
     },
     [canEdit, applyLocalBlocks, zoomedBlockId, childBlocks, currentBlocksRef, outlinerTreeRef]
   );
-  const setAllCollapsedRef = useRef(handleSetAllCollapsed);
-  setAllCollapsedRef.current = handleSetAllCollapsed;
+  const setAllCollapsedRef = useLatestRef(handleSetAllCollapsed);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (!(e.ctrlKey || e.metaKey) || !e.shiftKey || e.altKey || (e.key !== 'ArrowDown' && e.key !== 'ArrowUp')) return;
@@ -77,7 +77,7 @@ export function useBlockEditing({
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [embedded, inTrash, scrollRef]);
+  }, [embedded, inTrash, scrollRef, setAllCollapsedRef]);
 
   const handleUpdateBlock = useCallback(
     (updatedBlock: DocumentBlock) => {

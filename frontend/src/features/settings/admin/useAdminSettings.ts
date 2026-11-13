@@ -142,6 +142,8 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
   // Read-only in the public demo (FLAW-33)
   const [demoMode, setDemoMode] = useState(false);
   useEffect(() => {
+    // Loads the settings when the administration opens
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadAll();
     api
       .getAuthStatus()

@@ -122,6 +122,8 @@ export const HoldToRecordFab: React.FC<HoldToRecordFabProps> = ({ onTap, onTrans
   }, []);
 
   useEffect(() => {
+    // The hint shows while the recording is transcribed
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (voice.state === 'transcribing') showToast(i18n.t('app:capture.transcribing'), true);
   }, [voice.state]);
 

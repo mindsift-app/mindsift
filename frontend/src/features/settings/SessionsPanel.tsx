@@ -60,6 +60,8 @@ export function SessionsPanel() {
   };
 
   useEffect(() => {
+    // Loads the sessions when the panel opens
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void load();
   }, []);
 

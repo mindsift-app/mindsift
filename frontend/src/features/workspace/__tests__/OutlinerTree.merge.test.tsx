@@ -12,6 +12,8 @@ let lockedNotices: string[] = [];
 
 const Harness: React.FC<{ initial: DocumentBlock[]; locked?: Map<string, BlockLock> }> = ({ initial, locked }) => {
   const [blocks, setBlocks] = useState(initial);
+  // The test reads the blocks of the harness's last render
+  // eslint-disable-next-line react-hooks/globals
   live = blocks;
   return (
     <OutlinerTree

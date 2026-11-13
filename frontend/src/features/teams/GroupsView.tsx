@@ -69,6 +69,8 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ currentUser, onBack }) =
   };
 
   useEffect(() => {
+    // Loads the groups when the view opens
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadData();
   }, []);
 

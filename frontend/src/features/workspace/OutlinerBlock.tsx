@@ -66,6 +66,7 @@ import { UserAvatar } from '../../components/UserAvatar';
 import { userColorStyles } from '../../lib/userColor';
 import { showError } from '../../components/ErrorNotice';
 import { errorMessage } from '../../lib/errorMessage';
+import { useLatestRef } from '../../lib/useLatestRef';
 
 export interface SlashCommand {
   type: BlockType | 'link' | 'secret' | 'dictation' | 'extract';
@@ -322,26 +323,17 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
   // A table has a text field per cell (textareaRef is its first): the cursor counts as in this bullet in any
   const tableRootRef = useRef<HTMLDivElement | null>(null);
   const debounceTimerRef = useRef<number | null>(null);
-  const latestBlockRef = useRef<DocumentBlock>(block);
-  latestBlockRef.current = block;
-  const localContentRef = useRef<string>(localContent);
-  localContentRef.current = localContent;
+  const latestBlockRef = useLatestRef<DocumentBlock>(block);
+  const localContentRef = useLatestRef<string>(localContent);
 
   // Callback refs to avoid stale closures in setTimeout, debounce flush, and event listeners
-  const onUpdateBlockRef = useRef(onUpdateBlock);
-  onUpdateBlockRef.current = onUpdateBlock;
-  const onCreateBlockBelowRef = useRef(onCreateBlockBelow);
-  onCreateBlockBelowRef.current = onCreateBlockBelow;
-  const onPasteMultiLinesRef = useRef(onPasteMultiLines);
-  onPasteMultiLinesRef.current = onPasteMultiLines;
-  const onDeleteBlockRef = useRef(onDeleteBlock);
-  onDeleteBlockRef.current = onDeleteBlock;
-  const onMergeWithPreviousRef = useRef(onMergeWithPrevious);
-  onMergeWithPreviousRef.current = onMergeWithPrevious;
-  const onIndentBlockRef = useRef(onIndentBlock);
-  onIndentBlockRef.current = onIndentBlock;
-  const onNavigateFocusRef = useRef(onNavigateFocus);
-  onNavigateFocusRef.current = onNavigateFocus;
+  const onUpdateBlockRef = useLatestRef(onUpdateBlock);
+  const onCreateBlockBelowRef = useLatestRef(onCreateBlockBelow);
+  const onPasteMultiLinesRef = useLatestRef(onPasteMultiLines);
+  const onDeleteBlockRef = useLatestRef(onDeleteBlock);
+  const onMergeWithPreviousRef = useLatestRef(onMergeWithPrevious);
+  const onIndentBlockRef = useLatestRef(onIndentBlock);
+  const onNavigateFocusRef = useLatestRef(onNavigateFocus);
   const isPastingRef = useRef<boolean>(false);
 
   // Track if this input currently has actual focus in an active browser window
@@ -360,7 +352,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
       };
       onUpdateBlockRef.current(nextBlock, true);
     },
-    []
+    [latestBlockRef, onUpdateBlockRef]
   );
 
   // A link to a note that no longer exists becomes plain text (asked when it is clicked)
@@ -379,21 +371,18 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
         }
       : undefined;
   const resolveWikiLink = useWikiLinkResolver(localContent) || undefined;
+  // Right after undo/redo the focused field must show the engine's text, not keep its own
+  const acceptRemoteUntilRef = useRef<number>(0);
+  // ...and keep the cursor at the changed part instead of the browser's jump to the end (set after render)
+  const pendingCaretRef = useRef<number | null>(null);
   // "@" opens the picker of people who can see this note
   const mention = useMentionInput(canEdit ? { docId } : null);
   const applyMention = (next: string, caret: number) => {
     pendingCaretRef.current = caret;
     changeContent(next);
   };
-
-  // Right after undo/redo the focused field must show the engine's text, not keep its own
-  const acceptRemoteUntilRef = useRef<number>(0);
-  // ...and keep the cursor at the changed part instead of the browser's jump to the end (set after render)
-  const pendingCaretRef = useRef<number | null>(null);
-  const onUndoRef = useRef(onUndo);
-  onUndoRef.current = onUndo;
-  const onRedoRef = useRef(onRedo);
-  onRedoRef.current = onRedo;
+  const onUndoRef = useLatestRef(onUndo);
+  const onRedoRef = useLatestRef(onRedo);
 
   // Sync incoming remote changes ONLY when this textarea is NOT actively being edited (or not edited at all)
   // Condition: isFocusedRef.current === true && document.hasFocus()
@@ -417,7 +406,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
       localContentRef.current = block.content || '';
       editedRef.current = false;
     }
-  }, [block.content, isLocallyFocused]);
+  }, [block.content, isLocallyFocused, localContentRef]);
 
   useLayoutEffect(() => {
     const pos = pendingCaretRef.current;
@@ -455,7 +444,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
       window.removeEventListener('blur', handleWindowBlur);
       window.removeEventListener('focus', handleWindowFocus);
     };
-  }, [flushDebounce]);
+  }, [flushDebounce, latestBlockRef, localContentRef]);
 
   useEffect(() => {
     return () => {
@@ -1288,6 +1277,8 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
 
   // Touch: the focus shows the bubble (timer started in the effect below)
   useEffect(() => {
+    // Touch: the focus shows the bubble, losing it hides the bubble
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (activeFocus) showBubbleForTouch();
     else setTouchShown(false);
     // showBubbleForTouch only sets state and the timer
@@ -1741,6 +1732,8 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
                     <span className="truncate max-w-[16rem]">{linkHost(previewUrl)}</span>
                   </a>
                 ) : localContent ? (
+                  // The handlers passed in read refs when clicked, not while the text renders
+                  // eslint-disable-next-line react-hooks/refs
                   renderInlineMarkdown(localContent, {
                     onTagClick,
                     onWikiLinkClick: onWikiLinkClick && ((link) => onWikiLinkClick(link, linkActions(link))),

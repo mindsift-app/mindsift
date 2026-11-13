@@ -58,6 +58,8 @@ export function PasskeyCard({
     }
   };
   useEffect(() => {
+    // Loads the status when the card opens and after changes
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void load();
   }, [refreshKey]);
 

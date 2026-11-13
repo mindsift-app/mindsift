@@ -267,6 +267,8 @@ export function UsersSection({
             {invites.map((inv) => {
               const maxUses = inv.maxUses || 1;
               const used = inv.useCount ?? (inv.usedBy ? 1 : 0);
+              // Whether an invite is still open is judged at each render of the list
+              // eslint-disable-next-line react-hooks/purity
               const open = used < maxUses && new Date(inv.expiresAt).getTime() > Date.now();
               const copied = copiedInviteId === inv.id;
               const details = [

@@ -3,6 +3,7 @@ import { api } from './api';
 import { BrowserRecognition, BrowserRecognitionClass, browserRecognition, browserVoiceLanguage, currentVoiceConfig, EffectiveVoiceMode, joinSpeechResults, loadVoiceConfig, VOICE_CONFIG_EVENT, VoiceRecorder } from './voice';
 import i18n, { currentLocale } from '../i18n';
 import { errorMessage } from './errorMessage';
+import { useLatestRef } from './useLatestRef';
 
 export type VoiceState = 'idle' | 'listening' | 'transcribing';
 
@@ -53,10 +54,8 @@ export function useVoiceInput({ onText, onError, continuous = false, live = fals
   const chunkResultsRef = useRef<Map<number, string>>(new Map());
   const inFlightChunksRef = useRef(0);
   const mountedRef = useRef(true);
-  const onTextRef = useRef(onText);
-  onTextRef.current = onText;
-  const onErrorRef = useRef(onError);
-  onErrorRef.current = onError;
+  const onTextRef = useLatestRef(onText);
+  const onErrorRef = useLatestRef(onError);
 
   const clearAllTimers = () => {
     if (timerRef.current !== null) window.clearTimeout(timerRef.current);

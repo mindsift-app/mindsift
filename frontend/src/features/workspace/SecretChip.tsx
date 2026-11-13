@@ -79,7 +79,7 @@ const RevealableSecret: React.FC<{ docId: string; secretId: string; canEdit: boo
 
   // Clicks stay with the chip: the row would otherwise start editing or a selection
   const stop = (e: React.SyntheticEvent) => e.stopPropagation();
-  const act = (fn: () => void) => (e: React.MouseEvent) => {
+  const act = (e: React.MouseEvent, fn: () => void) => {
     e.preventDefault();
     e.stopPropagation();
     fn();
@@ -145,7 +145,7 @@ const RevealableSecret: React.FC<{ docId: string; secretId: string; canEdit: boo
           type="button"
           data-secret
           onMouseDown={stop}
-          onClick={act(() => void reveal())}
+          onClick={(e) => act(e, () => void reveal())}
           disabled={state === 'loading'}
           title={t('secret.reveal')}
           aria-label={t('secret.label')}
@@ -164,7 +164,7 @@ const RevealableSecret: React.FC<{ docId: string; secretId: string; canEdit: boo
       <span data-v={value} className="before:content-[attr(data-v)] select-none break-all" />
       <button
         type="button"
-        onClick={act(() => {
+        onClick={(e) => act(e, () => {
           void navigator.clipboard?.writeText(value).catch(() => {});
           setCopied(true);
         })}
@@ -177,7 +177,7 @@ const RevealableSecret: React.FC<{ docId: string; secretId: string; canEdit: boo
       {canEdit && (
         <button
           type="button"
-          onClick={act(() => {
+          onClick={(e) => act(e, () => {
             clearTimer();
             setEditing(value);
           })}
@@ -188,7 +188,7 @@ const RevealableSecret: React.FC<{ docId: string; secretId: string; canEdit: boo
           <Pencil className="w-3.5 h-3.5 sm:w-3 sm:h-3" />
         </button>
       )}
-      <button type="button" onClick={act(hide)} title={t('secret.hide')} aria-label={t('secret.hide')} className={chipButton}>
+      <button type="button" onClick={(e) => act(e, hide)} title={t('secret.hide')} aria-label={t('secret.hide')} className={chipButton}>
         <EyeOff className="w-3.5 h-3.5 sm:w-3 sm:h-3" />
       </button>
       {editSheet}

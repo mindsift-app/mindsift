@@ -6,6 +6,7 @@ import { shortDateLabel, todayISO } from '../../lib/journal';
 import { DocHeaderStatus, DocSaveStatus, DocumentEditor } from './DocumentEditor';
 import { JournalCalendar } from './JournalCalendar';
 import { useTranslation } from 'react-i18next';
+import { useLatestRef } from '../../lib/useLatestRef';
 
 const PAGE = 7;
 
@@ -121,6 +122,8 @@ export const JournalView: React.FC<JournalViewProps> = ({
     if (!root) return;
     if (!focusMode) {
       workspaceTopRef.current = pageTop(root);
+      // The gap is measured from the page's layout, which exists only after rendering
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setFocusTopGap(0);
       return;
     }
@@ -147,6 +150,8 @@ export const JournalView: React.FC<JournalViewProps> = ({
     const idx = dates.indexOf(jumpRequest.date);
     if (idx === -1) return; // the parent adds the day first
     handledJump.current = jumpRequest.nonce;
+    // A jump to a day further down loads enough days first
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (idx >= limit) setLimit(idx + PAGE);
     pendingJump.current = jumpRequest.date;
   }, [jumpRequest, dates, limit]);
@@ -194,23 +199,21 @@ export const JournalView: React.FC<JournalViewProps> = ({
   // Save status of every day on screen; the tab bar shows the active day's, also right after the active day
   // changed or left the list (otherwise a "saving" from before would stay there)
   const saveStatusByDate = useRef(new Map<string, { status: DocSaveStatus; err?: string }>());
-  const activeDateRef = useRef(activeDate);
-  activeDateRef.current = activeDate;
-  const onActiveSaveStatusChangeRef = useRef(onActiveSaveStatusChange);
-  onActiveSaveStatusChangeRef.current = onActiveSaveStatusChange;
+  const activeDateRef = useLatestRef(activeDate);
+  const onActiveSaveStatusChangeRef = useLatestRef(onActiveSaveStatusChange);
   const handleDaySaveStatus = useCallback(
     (date: string, status: DocSaveStatus, err?: string) => {
       saveStatusByDate.current.set(date, { status, err });
       if (status === 'saved') onDaySaved();
       if (date === activeDateRef.current) onActiveSaveStatusChangeRef.current?.(status, err);
     },
-    [onDaySaved]
+    [onDaySaved, activeDateRef, onActiveSaveStatusChangeRef]
   );
   const activeShown = shown.includes(activeDate);
   useEffect(() => {
     const s = activeShown ? saveStatusByDate.current.get(activeDate) : undefined;
     onActiveSaveStatusChangeRef.current?.(s?.status ?? 'saved', s?.err);
-  }, [activeDate, activeShown]);
+  }, [activeDate, activeShown, onActiveSaveStatusChangeRef]);
 
   // The active day left the journal (its last bullet was deleted): the day now at the top becomes active
   const activeListed = dates.includes(activeDate);

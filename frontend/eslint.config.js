@@ -23,14 +23,13 @@ export default tseslint.config(
   { ignores: ['dist', 'node_modules', 'coverage'] },
   {
     files: ['src/**/*.{ts,tsx}'],
-    extends: [js.configs.recommended, ...tseslint.configs.recommended],
+    // react-hooks: the rules of hooks plus the React Compiler's checks (refs, effects, purity …)
+    extends: [js.configs.recommended, ...tseslint.configs.recommended, reactHooks.configs.flat.recommended],
     languageOptions: {
       ecmaVersion: 2022,
       globals: globals.browser,
     },
-    plugins: { 'react-hooks': reactHooks },
     rules: {
-      ...reactHooks.configs.recommended.rules,
       // Caught errors are unknown (errorMessage reads them), browser APIs without types get a small interface
       '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrors: 'none' }],

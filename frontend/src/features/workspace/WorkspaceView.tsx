@@ -55,6 +55,7 @@ import { askChoice } from '../../components/askConfirm';
 import { WikiLinkClickHandler } from '../../lib/wikiLink';
 import { findLinkedDoc, useWikiLinkStore, WikiLinkResolverContext } from '../../lib/wikiLinkResolver';
 import { errorMessage } from '../../lib/errorMessage';
+import { useLatestRef } from '../../lib/useLatestRef';
 
 interface WorkspaceViewProps {
   currentUser?: User | null;
@@ -136,6 +137,8 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
   const [tagSortBy, setTagSortBy] = useState<'count' | 'name'>('count');
 
   const hadSavedFolders = useRef(true);
+  // Runs once in the first render: remembers whether folders were saved at all
+  // eslint-disable-next-line react-hooks/refs
   const [expandedFolders, setExpandedFolders] = useState<Record<string, boolean>>(() => {
     try {
       const saved = localStorage.getItem('mindsift:workspace_expanded_folders');
@@ -248,6 +251,8 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
 
   useEffect(() => {
     if (initialDocId) {
+      // A note asked for from outside (link, search) opens once
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelectedDocId(initialDocId);
       // A bullet hit of the search while the workspace is already open
       setTargetBlockId(initialBlockId || null);
@@ -338,6 +343,8 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
     } else {
       openJournal();
     }
+  // treeDocsRef (a ref that never changes) is declared further down, with the tree it follows
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [subView, openJournal]);
 
   const openTrash = useCallback(() => {
@@ -577,8 +584,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
         .map((d) => ({ id: d.id, title: d.title, icon: d.icon })),
     [docs, selectedDocId]
   );
-  const treeDocsRef = useRef(treeDocs);
-  treeDocsRef.current = treeDocs;
+  const treeDocsRef = useLatestRef(treeDocs);
 
   useEffect(() => {
     writeWorkspaceSession({ journal: subView === 'journal', docId: selectedDocId });
@@ -621,6 +627,8 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
   useEffect(() => {
     if (!selectedFolder) return;
     const open = folderAncestors(selectedFolder);
+    // An opened note shows its folders open
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setExpandedFolders((prev) => (Object.keys(open).every((k) => prev[k]) ? prev : { ...prev, ...open }));
   }, [selectedDocId, selectedFolder]);
 
@@ -677,6 +685,8 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
   // The hashtag page keeps its order while open: a note whose last hashtag was just removed stays in its
   // place (its editor then shows nothing), new matches come at the end; leaving the page starts afresh
   const tagPageOrderRef = useRef<{ tag: string | null; groups: typeof activeTagGroups }>({ tag: null, groups: [] });
+  // The order of the last result is read and kept in the ref while computing the next one, on purpose
+  /* eslint-disable react-hooks/refs */
   const tagPageGroups = useMemo(() => {
     const prev = tagPageOrderRef.current;
     const byId = new Map(activeTagGroups.map((g) => [g.docId, g]));
@@ -691,6 +701,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
     tagPageOrderRef.current = { tag: selectedTag, groups };
     return groups;
   }, [activeTagGroups, selectedTag]);
+  /* eslint-enable react-hooks/refs */
   useEffect(() => {
     if (subView !== 'tag_detail') tagPageOrderRef.current = { tag: null, groups: [] };
   }, [subView]);

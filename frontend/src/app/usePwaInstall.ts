@@ -53,6 +53,8 @@ export function usePwaInstall(userId: string | undefined) {
   useEffect(() => {
     if (!userId || isStandaloneApp) return;
     if (isPhoneWidth() && !sessionStorage.getItem('mindsift_pwa_dismissed')) {
+      // Screen width and sessionStorage are read after mounting, not during render
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setShowPwaInstallModal(true);
     }
   }, [userId, isStandaloneApp]);

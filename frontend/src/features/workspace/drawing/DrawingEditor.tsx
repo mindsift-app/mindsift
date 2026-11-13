@@ -88,6 +88,7 @@ import { userColor } from '../../../lib/userColor';
 import { Applied, patchDrawing } from '../../../lib/drawing/live';
 import { LiveCursor, LiveMode, useLiveDrawing } from './useLiveDrawing';
 import { isTouchPointer } from '../../../lib/useAnchoredPopover';
+import { useLatestRef } from '../../../lib/useLatestRef';
 
 type Tool = 'select' | 'hand' | ShapeKind | 'arrow' | 'draw' | 'text' | 'eraser';
 type Handle = 'nw' | 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w';
@@ -248,8 +249,7 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
   // Phones: line, fill and arrow options only on request, so they do not cover the canvas
   const [panelOpen, setPanelOpen] = useState(false);
 
-  const onActivityRef = useRef(onActivity);
-  onActivityRef.current = onActivity;
+  const onActivityRef = useLatestRef(onActivity);
   const lastActivity = useRef(0);
   const scheduleDraft = () => {
     if (draftTimer.current !== null) window.clearTimeout(draftTimer.current);
@@ -388,6 +388,8 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
       const raw = localStorage.getItem(DRAFT_PREFIX + draftKey);
       if (!raw) return;
       const d = JSON.parse(raw);
+      // A draft left in localStorage is offered after mounting
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       if (typeof d?.content === 'string' && d.content !== baseContent) setDraft({ content: d.content, at: Number(d.at) || 0 });
       else localStorage.removeItem(DRAFT_PREFIX + draftKey);
     } catch {
@@ -655,8 +657,7 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
     }
     onClose(content === baseContent ? null : content);
   };
-  const closeRef = useRef(close);
-  closeRef.current = close;
+  const closeRef = useLatestRef(close);
 
   // Live: the host saves for everyone ("Fertig"), the others leave (the session goes on); the local draft
   // stays until the session is saved or discarded

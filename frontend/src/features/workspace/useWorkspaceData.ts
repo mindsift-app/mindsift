@@ -55,6 +55,8 @@ export function useWorkspaceData({ currentUser, setSelectedDocId, autoSelectedDo
   }, [setSelectedDocId, autoSelectedDocRef]);
 
   useEffect(() => {
+    // Loads the notes and folders when the workspace opens
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadWorkspaceData();
   }, [loadWorkspaceData]);
 
