@@ -564,10 +564,10 @@ func (s *Store) ApplyImport(userID string, plan *ImportPlan) (ImportSummary, err
 			return plan.Summary(false), i18n.NewError("Notiz „{title}“: {reason}", "title", title, "reason", err.Error())
 		}
 		if err != nil {
-			return plan.Summary(false), fmt.Errorf("Notiz %q: %w", title, err)
+			return plan.Summary(false), fmt.Errorf("note %q: %w", title, err)
 		}
 		if err := s.storeImportMedia(userID, doc.ID, files); err != nil {
-			return plan.Summary(false), fmt.Errorf("Notiz %q: %w", title, err)
+			return plan.Summary(false), fmt.Errorf("note %q: %w", title, err)
 		}
 	}
 	// [[Titel]] in the imported notes point at their notes by id, now that all of them exist
@@ -583,7 +583,7 @@ func (s *Store) ApplyImport(userID string, plan *ImportPlan) (ImportSummary, err
 			}
 			created, err := s.CreateTaskList(userID, "", "", tl.title, icon, "")
 			if err != nil {
-				return plan.Summary(false), fmt.Errorf("Aufgabenliste %q: %w", tl.title, err)
+				return plan.Summary(false), fmt.Errorf("task list %q: %w", tl.title, err)
 			}
 			listID = created.ID
 		}
@@ -605,7 +605,7 @@ func (s *Store) ApplyImport(userID string, plan *ImportPlan) (ImportSummary, err
 		}
 		created, err := s.CreateList(userID, l.title, icon, "shopping")
 		if err != nil {
-			return plan.Summary(false), fmt.Errorf("Liste %q: %w", l.title, err)
+			return plan.Summary(false), fmt.Errorf("list %q: %w", l.title, err)
 		}
 		for i, it := range l.items {
 			item, err := s.CreateListItem(created.ID, it.content, it.category, it.quantity, i, userID)
@@ -637,13 +637,13 @@ func (s *Store) importTaskInto(userID, listID string, t importTask, asTask bool)
 	}
 	th, err := s.CreateThoughtWithDetails(userID, content, priority, "import", t.due, listID, "todo", t.notes)
 	if err != nil {
-		return fmt.Errorf("Aufgabe %q: %w", content, err)
+		return fmt.Errorf("task %q: %w", content, err)
 	}
 	if !asTask {
 		return nil
 	}
 	if _, err := s.UpdateThoughtTriage(userID, th.ID, "keep", "task", "", t.due, listID); err != nil {
-		return fmt.Errorf("Aufgabe %q: %w", content, err)
+		return fmt.Errorf("task %q: %w", content, err)
 	}
 	if validRecurrence(t.recurrence) && t.recurrence != "" {
 		// Imported as already handled: completing a restored task must not create a second successor

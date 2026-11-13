@@ -287,7 +287,7 @@ func (s *Store) addColumnIfMissing(table, column, definition string) error {
 		return err
 	}
 	if _, err := s.db.Exec(fmt.Sprintf(`ALTER TABLE %s ADD COLUMN %s %s`, table, column, definition)); err != nil {
-		return fmt.Errorf("Spalte %s.%s anlegen: %w", table, column, err)
+		return fmt.Errorf("add column %s.%s: %w", table, column, err)
 	}
 	return nil
 }

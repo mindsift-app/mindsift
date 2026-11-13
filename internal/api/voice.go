@@ -209,7 +209,7 @@ func (s *Server) transcribe(ctx context.Context, audio []byte, filename, content
 		Text string `json:"text"`
 	}
 	if err := json.Unmarshal(raw, &out); err != nil {
-		return "", fmt.Errorf("unerwartete Antwort: %s", strings.TrimSpace(string(raw)))
+		return "", fmt.Errorf("unexpected answer: %s", strings.TrimSpace(string(raw)))
 	}
 	return dropRepeatedTail(strings.TrimSpace(out.Text)), nil
 }

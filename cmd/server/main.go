@@ -18,6 +18,7 @@ import (
 	"github.com/mindsift-app/mindsift/internal/api"
 	"github.com/mindsift-app/mindsift/internal/clock"
 	"github.com/mindsift-app/mindsift/internal/config"
+	"github.com/mindsift-app/mindsift/internal/i18n"
 	"github.com/mindsift-app/mindsift/internal/storage"
 	"github.com/mindsift-app/mindsift/internal/ws"
 )
@@ -32,7 +33,8 @@ func main() {
 	cfg := config.Load()
 
 	level := cfg.SlogLevel()
-	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: level}))
+	// Errors meant for people are German catalog texts; the log shows them in English
+	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: level, ReplaceAttr: i18n.LogInEnglish}))
 	slog.SetDefault(logger)
 
 	slog.Info("MindSift Server starting", "port", cfg.Port, "log_level", level.String())

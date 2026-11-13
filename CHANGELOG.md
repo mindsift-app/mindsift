@@ -62,6 +62,7 @@ Versions without a git tag were development states and were never published as a
 - The default dark theme is a soft slate grey instead of near black, with slightly calmer text; the light theme shows code blocks light instead of dark.
 - **Attention:** passwords count to the last character, up to 1,024 characters; before, only the first 72 bytes counted. Existing passwords keep working and are stored in the new form at the next sign-in, which older versions cannot read: going back to an older version then needs a password reset for those accounts. Keep `SECRETS_KEY` (or `data/secrets.key`): if it changes, authenticator codes stop working and only recovery codes still sign in.
 - **Attention:** without `TZ` the server now runs on UTC instead of Europe/Berlin: alarms, the daily summary and backups go by UTC (in Central Europe an hour or two late) and "today" begins at midnight UTC. After the update, pick your time zone under Administration → Server (or set `TZ`, e.g. `TZ=Europe/Berlin` in `.env`); the setting there wins over `TZ`. `docker-compose.yml` and `.env.example` default to UTC.
+- The server log is in English throughout: error messages that the app shows translated (a mail server refusing a sign-in, for example) and those of database updates, backups and imports no longer appear there in German.
 
 ## [0.95.0] - 2026-11-12
 
