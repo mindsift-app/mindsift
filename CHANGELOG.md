@@ -33,7 +33,7 @@ Versions before 0.80.0 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 ### Changed
 - Larger handles on lines, arrows and shapes in drawings; with a finger they can be grabbed from further away.
 - Demo: all of the admin's sample notes, folders, task lists and lists are shared with the demo account `user` for editing.
-- On the desktop, pages use the full width beside the navigation rail; notes keep a comfortable reading width (a little wider in focus mode), also in the journal and on public pages.
+- On the desktop, pages use the full width beside the navigation rail; notes keep a comfortable reading width, the same in focus mode, also in the journal and on public pages.
 - The Kanban board fits as many columns side by side as there is room for; the "wide board" and "wide calendar" buttons are gone.
 - The hashtag filter above the tasks has calm chips without frames; the chosen one is tinted, and hashtags that do not fit sit behind "+ n more" with a search.
 - The "Quick Dumps open" badge in the triage header no longer has a frame on the desktop.

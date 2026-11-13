@@ -907,11 +907,11 @@ fieldset:disabled :is(button, input, select, textarea) {
 
 /* Reading width of a note (title and bullets, journal days, hashtag page, public view), padding included:
    the content area runs the full width beside the rail, but lines of text stay readable on wide monitors.
-   56rem leaves 52rem (~830 px) for the text, a little more than a note had beside the folder sidebar before
-   the full-width layout. Focus mode gives a little more room (wide tables and drawings) without running
-   across a 21:9 screen. Phones are narrower than both. */
+   64rem leaves 60rem (~960 px) for the text: room for wide tables and drawings without running across a
+   21:9 screen. Focus mode uses the same width, so switching it on does not reflow the note. Phones are
+   narrower than both. */
 :root {
-  --note-measure: 56rem;
+  --note-measure: 64rem;
   --note-measure-focus: 64rem;
 }
 
