@@ -3,7 +3,7 @@
 # main (ci/build-plan.sh, TEST_REFS). The steps of the test stage of the Dockerfile, in containers (no
 # local Node or Go needed): tsc, ESLint and Vitest for the frontend, go vet and go test with a single
 # database connection for the backend, plus the cases of the build plan. Only here, not in the image
-# build: gofmt, staticcheck (settings in staticcheck.conf) and golangci-lint (settings in .golangci.yml).
+# build: gofmt and golangci-lint (settings in .golangci.yml, staticcheck among its linters).
 #   ci/local-checks.sh          frontend (with the size of the bundle), backend, golangci-lint, build plan (in parallel)
 #   E2E=1 ci/local-checks.sh    additionally the browser tests (e2e/run.sh, a few minutes)
 # Exits non-zero when anything fails; the log of each part is printed at the end.
@@ -14,8 +14,6 @@ LOGS="$(mktemp -d)"
 trap 'rm -rf "$LOGS"' EXIT
 cd "$ROOT"
 
-# staticcheck is no dependency of MindSift (not in go.mod): it runs at this version from the module cache
-STATICCHECK="honnef.co/go/tools/cmd/staticcheck@2026.2.2"
 # golangci-lint runs from its own image, pinned like the other images here
 GOLANGCI_LINT_IMAGE="docker.io/golangci/golangci-lint:v2.15.0-alpine"
 # Same Node as the Dockerfile
@@ -45,10 +43,10 @@ frontend() {
 # which has Go files of its own and is deleted and rebuilt by npm ci in the frontend part at the same time
 backend() {
   "$ENGINE" run --rm -v "$ROOT":/src:z -v mindsift-go-cache:/go/pkg/mod -v mindsift-go-build:/root/.cache/go-build -w /src \
-    -e DB_MAX_CONNS=1 -e CGO_ENABLED=0 -e STATICCHECK="$STATICCHECK" docker.io/library/golang:1.27-alpine \
-    sh -c 'test -z "$(gofmt -l internal cmd)" || { echo "gofmt:"; gofmt -l internal cmd; exit 1; }; go vet ./cmd/... ./internal/... && go run "$STATICCHECK" ./cmd/... ./internal/... && go test -timeout 5m ./cmd/... ./internal/...'
+    -e DB_MAX_CONNS=1 -e CGO_ENABLED=0 docker.io/library/golang:1.27-alpine \
+    sh -c 'test -z "$(gofmt -l internal cmd)" || { echo "gofmt:"; gofmt -l internal cmd; exit 1; }; go vet ./cmd/... ./internal/... && go test -timeout 5m ./cmd/... ./internal/...'
 }
-# The standard linters of golangci-lint (.golangci.yml) over the same packages, read-only
+# The standard linters of golangci-lint (.golangci.yml, staticcheck included) over the same packages, read-only
 lint() {
   "$ENGINE" run --rm -v "$ROOT":/src:ro,z -v mindsift-go-cache:/go/pkg/mod -v mindsift-golangci-cache:/root/.cache -w /src \
     -e CGO_ENABLED=0 "$GOLANGCI_LINT_IMAGE" golangci-lint run ./cmd/... ./internal/...
