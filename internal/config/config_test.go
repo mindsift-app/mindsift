@@ -341,6 +341,31 @@ func TestOIDCConfigFromEnvironment(t *testing.T) {
 	}
 }
 
+// OIDC_LINK_BY_EMAIL is gone: an installation that still sets it (even to no boolean) starts, the log says so
+func TestOIDCLinkByEmailRemoved(t *testing.T) {
+	t.Setenv("DATA_DIR", t.TempDir())
+	t.Setenv("OIDC_ISSUER", "https://auth.example.com/application/o/mindsift/")
+	t.Setenv("OIDC_CLIENT_ID", "mindsift")
+	t.Setenv("OIDC_CLIENT_SECRET", "geheim")
+	for _, v := range []string{"true", "vielleicht"} {
+		t.Setenv("OIDC_LINK_BY_EMAIL", v)
+		buf := captureLog(t)
+		c := Load().OIDC
+		if err := c.Resolve(); err != nil {
+			t.Fatalf("OIDC_LINK_BY_EMAIL=%s: %v", v, err)
+		}
+		if !strings.Contains(buf.String(), "OIDC_LINK_BY_EMAIL was removed") || !strings.Contains(buf.String(), "Settings → Security") {
+			t.Fatalf("OIDC_LINK_BY_EMAIL=%s: no warning in the log: %s", v, buf)
+		}
+	}
+	t.Setenv("OIDC_LINK_BY_EMAIL", "")
+	buf := captureLog(t)
+	Load()
+	if strings.Contains(buf.String(), "OIDC_LINK_BY_EMAIL") {
+		t.Fatalf("warning without the variable: %s", buf)
+	}
+}
+
 func TestOIDCConfigRefusesHalfASetup(t *testing.T) {
 	secret := filepath.Join(t.TempDir(), "secret")
 	if err := os.WriteFile(secret, []byte("Kr0k0dil\n"), 0o600); err != nil {

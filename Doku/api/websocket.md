@@ -65,7 +65,7 @@ Several people draw in one drawing bullet at once (concept: [architecture.md](..
 
 | Client → Server | Payload (besides `docId`, `blockId`) | Effect |
 |---|---|---|
-| `DRAW_JOIN` | `base` (block content when opened), `els` (own whole state: elements with `ver`, `nonce`, tombstones), `grid` | Draw along (write access). Starts a session without one (host), resumes one everyone left within 10 min if `base` matches, or joins a running one; merges `els` by version. Answer `DRAW_STATE`; joining again after a lost connection or a server restart works the same way |
+| `DRAW_JOIN` | `base` (block content when opened), `els` (own whole state: elements with `ver`, `nonce`, tombstones), `grid` | Draw along (write access). Starts a session without one (host), resumes one everyone left within 10 min if `base` matches, or joins a running one; merges `els` by version. Answer `DRAW_STATE`; joining again after a lost connection or a server restart works the same way. A connection draws in one drawing at a time: joining another leaves the previous one. Limits per person and server: [architecture.md](../architecture.md#collaboration-live-drawing) |
 | `DRAW_WATCH` | – | Watch (read access); answer `DRAW_STATE` (`active: false` without a session) |
 | `DRAW_OPS` | `els` (changed elements and tombstones), `order` (new order of the ids, optional), `grid` (optional) | Merged by version; the winners go to the room as `DRAW_OPS`, the sender gets `DRAW_ACK` |
 | `DRAW_PRESENCE` | `x`, `y` (drawing coordinates), `gone`, `touch`, `sel` (selected ids) | Pointer and selection, at most 30 a second, the rest dropped |
@@ -82,7 +82,7 @@ Several people draw in one drawing bullet at once (concept: [architecture.md](..
 | `DRAW_PEOPLE` | `active`, `host`, `participants`, `watchers` | Room (joined, left, new host) |
 | `DRAW_PRESENCE` | `from`, `userId`, `name`, `x`, `y`, `gone`, `touch`, `sel` | Room, without the sender |
 | `DRAW_END` | `reason` (`done`, `discard`, `expired`), `by`; for the host also the final `els`, `order`, `grid` | Room |
-| `DRAW_ERROR` | `code`: `forbidden`, `locked` (someone edits alone), `no_session`, `not_host`, `limit`, `rate`, `invalid` | The sender |
+| `DRAW_ERROR` | `code`: `forbidden`, `locked` (someone edits alone), `no_session`, `not_host`, `limit` (session too large), `too_many` (the person keeps too many sessions going), `busy` (the server holds as many sessions or bytes as it takes), `rate` (changes, or joining and watching, too fast), `invalid` | The sender |
 
 `seq` counts the merged changes of a session; a browser that sees a gap (a message was dropped because its connection was too slow) fetches the state again (`DRAW_SYNC`, or `GET …/live` without WebSocket).
 

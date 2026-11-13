@@ -67,8 +67,6 @@ export function oidcErrorText(code: string): string {
       return i18n.t('auth:oidc.error.noAccount', { name });
     case 'no_email':
       return i18n.t('auth:oidc.error.noEmail', { name });
-    case 'email_in_use':
-      return i18n.t('auth:oidc.error.emailInUse', { name });
     case 'disabled':
       return i18n.t('auth:oidc.error.disabled');
     case 'pending':

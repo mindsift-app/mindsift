@@ -816,8 +816,7 @@ func (s *Server) authMiddleware(next http.Handler) http.Handler {
 		}
 		// Two-factor sign-in required but not set up yet: only setting it up (and signing out) until then.
 		// Not for sessions from an OIDC provider, which asks for its own second factor.
-		if key == nil && !mfaSetupPath(r.URL.Path) && s.mfaSetupMissingFor(user, sessionID) {
-			writeErrorCode(w, http.StatusForbidden, "mfa_setup_required", "Bitte richte zuerst die Zwei-Faktor-Anmeldung ein")
+		if key == nil && !mfaSetupPath(r.URL.Path) && s.mfaSetupRefused(w, user, sessionID) {
 			return
 		}
 		ctx := auth.WithUserID(r.Context(), user.ID)

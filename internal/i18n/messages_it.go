@@ -241,6 +241,7 @@ var messagesIT = map[string]string{
 	"Ziel-E-Mail-Adresse erforderlich":                                              "È richiesto l’indirizzo e-mail di destinazione",
 	"Ziel-ID erforderlich":                                                          "È richiesto l’ID di destinazione",
 	"Zielliste fehlt":                                                               "Manca la lista di destinazione",
+	"Zu viele Anfragen – bitte kurz warten":                                         "Troppe richieste – attendi un momento",
 	"Zu viele Anfragen von dieser Adresse. Bitte versuche es in {minutes} Minuten erneut.":             "Troppe richieste da questo indirizzo. Riprova tra {minutes} minuti.",
 	"Zu viele fehlgeschlagene Anmeldeversuche. Die Anmeldung ist für noch eine Minute gesperrt.":       "Troppi tentativi di accesso non riusciti. L’accesso è bloccato ancora per un minuto.",
 	"Zu viele fehlgeschlagene Anmeldeversuche. Die Anmeldung ist für noch {minutes} Minuten gesperrt.": "Troppi tentativi di accesso non riusciti. L’accesso è bloccato ancora per {minutes} minuti.",

@@ -113,8 +113,7 @@ type Config struct {
 // button (OIDC_NAME); members of AdminGroup at the provider (OIDC_ADMIN_GROUP) are administrators.
 // AutoCreate (OIDC_AUTO_CREATE, default true) creates accounts at the first sign-in; PasswordLogin
 // (OIDC_PASSWORD_LOGIN, default true) false leaves the password only to administrators (emergency access).
-// LinkByEmail (OIDC_LINK_BY_EMAIL, default false) links the first sign-in to an existing account with the
-// same address when the provider calls it verified; off, accounts are only linked by hand in the settings.
+// An existing account is never taken over by its address; its owner links it in the settings.
 type OIDCConfig struct {
 	Issuer           string
 	ClientID         string
@@ -125,10 +124,8 @@ type OIDCConfig struct {
 	Scopes           []string
 	AutoCreate       bool
 	PasswordLogin    bool
-	LinkByEmail      bool
-	// The values of OIDC_AUTO_CREATE, OIDC_PASSWORD_LOGIN and OIDC_LINK_BY_EMAIL as set, so Resolve can refuse
-	// what is no boolean
-	rawAutoCreate, rawPasswordLogin, rawLinkByEmail string
+	// The values of OIDC_AUTO_CREATE and OIDC_PASSWORD_LOGIN as set, so Resolve can refuse what is no boolean
+	rawAutoCreate, rawPasswordLogin string
 }
 
 // Configured: OIDC_ISSUER is set (whether it can be used is up to Resolve, BASE_URL and the demo).
@@ -148,7 +145,12 @@ func loadOIDC() OIDCConfig {
 		Scopes:           strings.Fields(strings.ReplaceAll(os.Getenv("OIDC_SCOPES"), ",", " ")),
 		rawAutoCreate:    strings.TrimSpace(os.Getenv("OIDC_AUTO_CREATE")),
 		rawPasswordLogin: strings.TrimSpace(os.Getenv("OIDC_PASSWORD_LOGIN")),
-		rawLinkByEmail:   strings.TrimSpace(os.Getenv("OIDC_LINK_BY_EMAIL")),
+	}
+	// Taking over an existing account by its address at the provider is gone; an installation that still
+	// sets the variable starts as before, the log says what to do instead
+	if strings.TrimSpace(os.Getenv("OIDC_LINK_BY_EMAIL")) != "" {
+		slog.Warn("OIDC_LINK_BY_EMAIL was removed and is ignored: a sign-in through the provider never takes over an existing account by its address. " +
+			"The owner links the account under Settings → Security; you can remove the variable")
 	}
 	return c
 }
@@ -180,11 +182,7 @@ func (c *OIDCConfig) Resolve() error {
 	if !ok {
 		return fmt.Errorf("OIDC_PASSWORD_LOGIN is %q: set true or false", c.rawPasswordLogin)
 	}
-	linkByEmail, ok := parseBool(c.rawLinkByEmail, false)
-	if !ok {
-		return fmt.Errorf("OIDC_LINK_BY_EMAIL is %q: set true or false", c.rawLinkByEmail)
-	}
-	c.AutoCreate, c.PasswordLogin, c.LinkByEmail = autoCreate, passwordLogin, linkByEmail
+	c.AutoCreate, c.PasswordLogin = autoCreate, passwordLogin
 	if c.Issuer == "" {
 		switch {
 		case c.ClientID != "" || c.ClientSecret != "" || c.ClientSecretFile != "":

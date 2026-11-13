@@ -9,31 +9,53 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/mindsift-app/mindsift/internal/auth"
+	"github.com/mindsift-app/mindsift/internal/domain"
 )
 
 // authenticateUserFromReq authenticates a live stream: a one-time ticket (?ticket=, browsers) or a
 // session in the Authorization header (other clients). Session tokens in the URL are not accepted any
-// more (FLAW-22), API keys never (streams carry the user's data, keys only deliver).
-func (s *Server) authenticateUserFromReq(r *http.Request) string {
+// more (FLAW-22), API keys never (streams carry the user's data, keys only deliver). Returns the account
+// and the session it signed in with; nil if neither way holds.
+func (s *Server) authenticateUserFromReq(r *http.Request) (*domain.User, string) {
 	if id := r.URL.Query().Get("ticket"); id != "" {
 		tk, ok := s.streamTickets.consume(id)
 		if !ok {
-			return ""
+			return nil, ""
 		}
 		u, err := s.store.GetUserByID(tk.userID)
 		if err != nil || u == nil || !u.IsActive || u.TokenVersion != tk.tokenVersion || !s.store.SessionActive(tk.sessionID, u.ID) {
-			return ""
+			return nil, ""
 		}
-		return u.ID
+		return u, tk.sessionID
 	}
 	token := ""
 	if authHdr := r.Header.Get("Authorization"); strings.HasPrefix(authHdr, "Bearer ") {
 		token = strings.TrimPrefix(authHdr, "Bearer ")
 	}
-	if user, key := s.authenticateToken(token); user != nil && key == nil {
-		return user.ID
+	user, key := s.authenticateToken(token)
+	if user == nil || key != nil {
+		return nil, ""
 	}
-	return ""
+	claims, err := auth.ValidateToken(s.cfg.JWTSecret, token)
+	if err != nil {
+		return nil, ""
+	}
+	return user, claims.ID
+}
+
+// authenticateStream: authenticateUserFromReq for the stream handlers, which answers refusals itself. A
+// session that still has to set up the required second factor gets no stream (as in authMiddleware); that
+// covers tickets issued before the administration switched the requirement on as well.
+func (s *Server) authenticateStream(w http.ResponseWriter, r *http.Request) string {
+	user, sessionID := s.authenticateUserFromReq(r)
+	if user == nil {
+		writeError(w, http.StatusUnauthorized, "Nicht autorisiert – bitte anmelden")
+		return ""
+	}
+	if s.mfaSetupRefused(w, user, sessionID) {
+		return ""
+	}
+	return user.ID
 }
 
 func (s *Server) handleWebSocket(w http.ResponseWriter, r *http.Request) {
@@ -54,9 +76,8 @@ func (s *Server) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 		roomID = r.URL.Query().Get("listId")
 	}
 
-	userID := s.authenticateUserFromReq(r)
+	userID := s.authenticateStream(w, r)
 	if userID == "" {
-		writeError(w, http.StatusUnauthorized, "Nicht autorisiert – bitte anmelden")
 		return
 	}
 	s.wsHub.ServeWS(w, r, roomID, userID)
@@ -65,9 +86,8 @@ func (s *Server) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleSSE(w http.ResponseWriter, r *http.Request) {
 	roomID := r.URL.Query().Get("listId")
 
-	userID := s.authenticateUserFromReq(r)
+	userID := s.authenticateStream(w, r)
 	if userID == "" {
-		writeError(w, http.StatusUnauthorized, "Nicht autorisiert – bitte anmelden")
 		return
 	}
 

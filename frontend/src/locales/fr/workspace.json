@@ -609,6 +609,8 @@
         "forbidden": "Tu n’as pas l’accès pour dessiner.",
         "locked": "Quelqu’un modifie le dessin sans connexion en direct – tu peux seulement regarder.",
         "limit": "Le dessin est trop grand pour la session en direct. Retire quelque chose, surtout des traits à main levée.",
+        "too_many": "Tu dessines déjà en direct dans trop de dessins. Ferme-en un, puis rouvre celui-ci.",
+        "busy": "Trop de dessins en direct sont en cours sur le serveur. Rouvre-le plus tard.",
         "save": "L’enregistrement n’a pas fonctionné. Vérifie la connexion et réessaie."
       }
     }

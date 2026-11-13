@@ -116,8 +116,21 @@ func (m *apiMetrics) observeRequest(r *http.Request, status int, d time.Duration
 			route = p
 		}
 	}
-	m.requests.Inc(r.Method, route, strconv.Itoa(status))
-	m.duration.Observe(d.Seconds(), r.Method, route)
+	method := methodLabel(r.Method)
+	m.requests.Inc(method, route, strconv.Itoa(status))
+	m.duration.Observe(d.Seconds(), method, route)
+}
+
+// methodLabel: the request method as a metrics label. Anything but the standard methods counts as "other":
+// the method is whatever the client sends, and every new label value would add series that are never
+// dropped (anyone could grow the server's memory without signing in).
+func methodLabel(method string) string {
+	switch method {
+	case http.MethodGet, http.MethodHead, http.MethodPost, http.MethodPut, http.MethodPatch,
+		http.MethodDelete, http.MethodOptions, http.MethodConnect, http.MethodTrace:
+		return method
+	}
+	return "other"
 }
 
 func (m *apiMetrics) mailSent(err error) {

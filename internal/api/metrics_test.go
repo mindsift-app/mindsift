@@ -89,3 +89,24 @@ func TestHealthWithDatabase(t *testing.T) {
 		t.Fatalf("health with the database gone: %d %s", rec.Code, rec.Body.String())
 	}
 }
+
+// Made-up methods share one label value: otherwise every request with a new one would add series for good
+func TestMetricsMadeUpMethodsShareALabel(t *testing.T) {
+	srv, _, _ := setupTestServer(t)
+	srv.cfg.MetricsToken = testMetricsToken
+	router := srv.Router()
+
+	for _, method := range []string{"FOO1", "FOO2", strings.Repeat("X", 500)} {
+		router.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(method, "/api/v1/auth/me", nil))
+	}
+	body := metricsGet(router, testMetricsToken).Body.String()
+	if strings.Contains(body, "FOO1") || strings.Contains(body, "XXXX") {
+		t.Fatalf("a made-up method reached a label:\n%s", body)
+	}
+	if !strings.Contains(body, `mindsift_http_requests_total{method="other",`) {
+		t.Fatalf("made-up methods should count as other:\n%s", body)
+	}
+	if methodLabel(http.MethodPatch) != "PATCH" {
+		t.Fatal("standard methods keep their name")
+	}
+}

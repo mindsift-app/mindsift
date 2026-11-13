@@ -118,6 +118,16 @@ func (s *Server) handleWebhookIngest(w http.ResponseWriter, r *http.Request) {
 	}
 	if key != nil {
 		r = r.WithContext(withAPIKey(r.Context(), key, storage.OriginAPI))
+	} else {
+		// A session delivers only once the required second factor is set up (as in authMiddleware)
+		claims, err := auth.ValidateToken(s.cfg.JWTSecret, token)
+		if err != nil {
+			writeError(w, http.StatusUnauthorized, "Ungültiger Webhook-Token oder API-Key")
+			return
+		}
+		if s.mfaSetupRefused(w, user, claims.ID) {
+			return
+		}
 	}
 	actor := actorFrom(r.Context())
 

@@ -332,9 +332,12 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
   );
   liveRef.current = liveState;
   // Watching, or the session ended or refused: look only
-  const readOnly =
-    readOnlyProp ||
-    (!!liveState && (liveState.mode === 'watch' || !!liveState.ended || liveState.error === 'forbidden' || liveState.error === 'locked'));
+  const refused =
+    !!liveState &&
+    (liveState.error === 'forbidden' ||
+      liveState.error === 'locked' ||
+      ((liveState.error === 'busy' || liveState.error === 'too_many') && liveState.status !== 'live'));
+  const readOnly = readOnlyProp || (!!liveState && (liveState.mode === 'watch' || !!liveState.ended || refused));
   const lastPointer = useRef<{ at: [number, number] | null; touch: boolean }>({ at: null, touch: false });
   const livePointer = (at: [number, number] | null, touch: boolean) => {
     if (liveState?.mode !== 'draw') return;

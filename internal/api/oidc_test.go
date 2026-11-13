@@ -452,7 +452,7 @@ func TestOIDCReturnPathStaysOnTheSite(t *testing.T) {
 	}
 }
 
-func TestOIDCNeverLinksByAddressByDefault(t *testing.T) {
+func TestOIDCNeverLinksByAddress(t *testing.T) {
 	e := newOIDCEnv(t, nil)
 	existing, err := e.store.CreateUser("erika@example.com", mustHash(t, "eigenes-Passwort"), "Erika", domain.RoleMember)
 	if err != nil {
@@ -476,27 +476,21 @@ func TestOIDCNeverLinksByAddressByDefault(t *testing.T) {
 	}
 }
 
-func TestOIDCLinksByVerifiedAddressWhenSwitchedOn(t *testing.T) {
+// Not even for an administrator with the verified address (some providers send the flag as text): the
+// sign-in gets an account of its own, the existing one is linked only by its owner in the settings
+func TestOIDCNeverTakesOverAnAdminByAddress(t *testing.T) {
 	e := newOIDCEnv(t, nil)
-	e.srv.oidc.cfg.LinkByEmail = true
-	existing, _ := e.store.CreateUser("erika@example.com", mustHash(t, "eigenes-Passwort"), "Erika", domain.RoleMember)
-	// Not verified: no link, a new account without the address instead
-	e.idp.person["email_verified"] = false
-	other := e.userOf(e.mustSignIn())
-	if other["id"] == existing.ID || other["email"] != "" {
-		t.Fatalf("an unverified address must not link: %v", other)
+	admin, err := e.store.CreateUser("chefin@example.com", mustHash(t, "eigenes-Passwort"), "Chefin", domain.RoleAdmin)
+	if err != nil {
+		t.Fatal(err)
 	}
-	// A second identity with the verified address (some providers send the flag as text) links
-	e.idp.person["sub"] = "zweite-id"
-	e.idp.person["email_verified"] = "true"
+	e.idp.person = map[string]any{"sub": "fremd", "name": "Fremd", "email": "chefin@example.com", "email_verified": "true"}
 	user := e.userOf(e.mustSignIn())
-	if user["id"] != existing.ID || user["noPassword"] == true || user["oidc"] != true {
-		t.Fatalf("linked account: %v", user)
+	if user["id"] == admin.ID || user["email"] != "" || user["role"] == domain.RoleAdmin {
+		t.Fatalf("new member account without address expected: %v", user)
 	}
-	// The address changes at the provider: the link stays by sub
-	e.idp.person["email"] = "erika.neu@example.com"
-	if e.userOf(e.mustSignIn())["id"] != existing.ID {
-		t.Fatal("the link must follow sub, not the address")
+	if id, _ := e.store.OIDCIdentityUser(e.idp.srv.URL, "fremd"); id == admin.ID {
+		t.Fatal("the administrator's account must not rest on the identity")
 	}
 }
 
@@ -633,10 +627,12 @@ func TestOIDCLockedAccountsStayLocked(t *testing.T) {
 	if token, code := e.signIn(); token != "" || code != "disabled" {
 		t.Fatalf("disabled account: %q %q", token, code)
 	}
-	// Waiting for approval: linked by its verified address (OIDC_LINK_BY_EMAIL), but not let in
-	e.srv.oidc.cfg.LinkByEmail = true
+	// Waiting for approval: linked to the identity, but not let in
 	pending, _ := e.store.CreateInactiveUser("wartet@example.com", mustHash(t, "irgendein-Passwort"), "Wartet", domain.RoleMember)
 	if err := e.store.AddPendingRegistration(pending.ID); err != nil {
+		t.Fatal(err)
+	}
+	if err := e.store.LinkOIDCIdentity(e.idp.srv.URL, "wartet", pending.ID, "wartet@example.com", e.clock); err != nil {
 		t.Fatal(err)
 	}
 	e.idp.person = map[string]any{"sub": "wartet", "email": "wartet@example.com", "email_verified": true}
