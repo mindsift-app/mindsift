@@ -41,8 +41,6 @@ import { OutlinerTree, OutlinerTreeHandle } from './OutlinerTree';
 import type { BlockLock } from './OutlinerBlock';
 import { extractHashtags } from '../../lib/hashtags';
 import { branchEnd, insertBelow, moveSibling, unitStart } from '../../lib/outlineList';
-import { reportNav, onNavStep, restoringNavPlace } from '../../lib/navHistory';
-import { NotePlace, readNotePlace, writeNotePlace } from '../../lib/notePlace';
 import { isPhoneWidth } from '../../lib/breakpoints';
 import { useTranslation } from 'react-i18next';
 import i18n from '../../i18n';
@@ -106,23 +104,6 @@ function scrollParent(el: Element | null): HTMLElement | null {
   return null;
 }
 
-// The first bullet reaching below the top edge of the note's scroll area and how far below that edge it
-// starts (lib/notePlace.ts). The bullets are in order from top to bottom, so a binary search finds it.
-function topBullet(root: HTMLElement): NotePlace['anchor'] {
-  if (!root.isConnected) return undefined;
-  const rows = root.querySelectorAll<HTMLElement>('[data-outline-block]');
-  const top = root.getBoundingClientRect().top;
-  let lo = 0;
-  let hi = rows.length - 1;
-  while (lo < hi) {
-    const mid = (lo + hi) >> 1;
-    if (rows[mid].getBoundingClientRect().bottom > top) hi = mid;
-    else lo = mid + 1;
-  }
-  const row = rows[lo];
-  return row?.dataset.outlineBlock ? { id: row.dataset.outlineBlock, offset: row.getBoundingClientRect().top - top } : undefined;
-}
-
 // Large screens (lg) put the note's actions into the workspace tab bar and drop the editor header
 const LARGE_QUERY = '(min-width: 1024px)';
 function subscribeLarge(onChange: () => void) {
@@ -147,6 +128,7 @@ import { BacklinksSection } from './BacklinksSection';
 import { useKeyboardInset } from '../../lib/useKeyboardInset';
 import { blockTitle, computeBreadcrumbs, getZoomedSubtree, isTitleFromKind } from './zoom';
 import { ensureNonEmptyBlocks, useDocumentSync } from './useDocumentSync';
+import { useNotePlace } from './useNotePlace';
 
 // Height of the outline bar that sits on the keyboard (MobileOutlineBar), with a little air
 const KEYBOARD_BAR_SPACE = 64;
@@ -208,17 +190,16 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
     applyLocalBlocks,
   } = useDocumentSync(docId, initialDoc, onDocMetadataChange, onSaveStatusChange);
   const [showEmojiPicker, setShowEmojiPicker] = useState<boolean>(false);
-  // Where the user last was in this note (zoom, scroll), unless a link points to a bullet in it
-  const [savedPlace] = useState(() =>
-    !embedded && !initialFocusedBlockId ? readNotePlace(docId) : null
-  );
-  // Zoomed bullet; coming here by the browser's back/forward it is the zoom of that step, else the one
-  // the note had when the user last left it
-  const [zoomedBlockId, setZoomedBlockId] = useState<string | null>(() => {
-    const place = restoringNavPlace();
-    if (inJournal || inTagPage) return null;
-    if (place?.docId === docId) return place.zoom ?? null;
-    return savedPlace?.zoom ?? null;
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const { zoomedBlockId, setZoomedBlockId } = useNotePlace({
+    docId,
+    embedded,
+    inJournal,
+    inTagPage,
+    initialFocusedBlockId,
+    blocks,
+    loading,
+    scrollRef,
   });
   const [showActionsMenu, setShowActionsMenu] = useState<boolean>(false);
   const actionsMenuRef = useRef<HTMLDivElement | null>(null);
@@ -239,7 +220,6 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
     const el = titleInputRef.current;
     if (el instanceof HTMLTextAreaElement) fitFieldHeight(el);
   }, [title]);
-  const scrollRef = useRef<HTMLDivElement | null>(null);
 
   // Focus mode keeps the note at the height it has in the workspace, so the text does not move when it
   // starts; the room below lets the end of the note scroll up into the upper third
@@ -390,83 +370,6 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
     // Only when the note opens: a later change of its title or bullets must not pull the cursor into the title
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, autoFocusTitle, doc?.id]);
-
-  useEffect(() => {
-    if (!loading && zoomedBlockId && !blocks.some((b) => b.id === zoomedBlockId)) {
-      setZoomedBlockId(null);
-    }
-  }, [blocks, zoomedBlockId, loading]);
-
-  // Remember zoom and scroll position (lib/notePlace.ts); the scroll position belongs to the zoom it was
-  // taken in, so it is restored only when the note opens in that zoom again
-  const zoomForPlaceRef = useRef(zoomedBlockId);
-  useEffect(() => {
-    if (embedded) return;
-    if (zoomForPlaceRef.current !== zoomedBlockId) {
-      zoomForPlaceRef.current = zoomedBlockId;
-      writeNotePlace(docId, { zoom: zoomedBlockId, scroll: 0 });
-    }
-  }, [zoomedBlockId, docId, embedded]);
-  useEffect(() => {
-    const root = scrollRef.current;
-    if (embedded || !root) return;
-    let timer: number | null = null;
-    const save = () => {
-      timer = null;
-      writeNotePlace(docId, { zoom: zoomForPlaceRef.current, scroll: root.scrollTop, anchor: topBullet(root) });
-    };
-    const onScroll = () => {
-      if (timer === null) timer = window.setTimeout(save, 200);
-    };
-    root.addEventListener('scroll', onScroll, { passive: true });
-    return () => {
-      root.removeEventListener('scroll', onScroll);
-      if (timer !== null) {
-        window.clearTimeout(timer);
-        save();
-      }
-    };
-    // the note's scroll area exists only once it has loaded
-  }, [docId, embedded, loading]);
-  const scrollRestoredRef = useRef(false);
-  useEffect(() => {
-    if (loading || scrollRestoredRef.current) return;
-    scrollRestoredRef.current = true;
-    const root = scrollRef.current;
-    const target = savedPlace && savedPlace.zoom === zoomedBlockId ? savedPlace.scroll : 0;
-    if (!root || target <= 0) return;
-    const anchor = savedPlace?.anchor;
-    // Images and code blocks may still grow the note for a few frames, and bullets near the view are shown
-    // (with their real height) only in the frames after the jump: held until the place stays put for 3 frames
-    let frames = 0;
-    let steady = 0;
-    let raf = 0;
-    const apply = () => {
-      // Back to the bullet that was at the top; the offset only when it is gone
-      const row = anchor && root.querySelector(`[data-outline-block="${CSS.escape(anchor.id)}"]`);
-      const off = () => (row ? row.getBoundingClientRect().top - root.getBoundingClientRect().top - anchor.offset : target - root.scrollTop);
-      steady = Math.abs(off()) > 1 ? 0 : steady + 1;
-      if (row) root.scrollTop += off();
-      else root.scrollTop = target;
-      if (steady < 3 && ++frames < 30) raf = requestAnimationFrame(apply);
-    };
-    raf = requestAnimationFrame(apply);
-    return () => cancelAnimationFrame(raf);
-    // only once, when the note's content is first there
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading]);
-
-  // Zooming in and out are steps of the browser history: back zooms out again (lib/navHistory.ts)
-  useEffect(() => {
-    if (!embedded) reportNav({ zoom: zoomedBlockId });
-  }, [zoomedBlockId, embedded]);
-  useEffect(
-    () =>
-      onNavStep((place) => {
-        if (!embedded && place.docId === docId) setZoomedBlockId(place.zoom ?? null);
-      }),
-    [embedded, docId]
-  );
 
   const { zoomedBlock, childBlocks, levelOffset } = useMemo(() => {
     return getZoomedSubtree(blocks, zoomedBlockId);
