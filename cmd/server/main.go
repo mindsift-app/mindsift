@@ -81,6 +81,7 @@ func main() {
 
 	srv := api.NewServer(cfg, store, wsHub, staticFS)
 	srv.ApplyTimeZone()
+	srv.CheckSecretsKey()
 	// ADMIN_USER / ADMIN_PASSWORD: the first admin exists before anyone can reach the setup wizard. Set
 	// but unusable, the server does not start: it would wait for the first visitor to become admin.
 	if err := srv.CreateInitialAdmin(); err != nil {

@@ -79,7 +79,7 @@ MindSift builds several things itself that other projects take from a library, a
 | `DATA_DIR` | `./data` (container: `/data`) | Database directory |
 | `DATABASE_URL` | empty | `sqlite:///path/file.db` or path; defaults to `DATA_DIR/mindsift.db`. Postgres URLs are **not** supported (see note) |
 | `JWT_SECRET` | randomly generated, saved in `$DATA_DIR/jwt.secret` | Signing key for tokens and the unlock keys of password-protected public links, at least 32 characters (`openssl rand -hex 32`). Published example values and shorter values are ignored with a warning; the generated secret is used instead (`internal/config/config.go`). Changing it signs everyone out |
-| `SECRETS_KEY` | randomly generated, saved in `$DATA_DIR/secrets.key` | Key (hashed with SHA-256) for hidden values in notes, AES-256-GCM; another key makes stored values unreadable |
+| `SECRETS_KEY` | randomly generated, saved in `$DATA_DIR/secrets.key` | Key (hashed with SHA-256) for hidden values in notes, authenticator secrets and public link tokens, AES-256-GCM; another key makes stored values unreadable, which the start detects on a sample and logs as a warning |
 | `TRUSTED_PROXIES` | `private` | Proxies whose `X-Forwarded-For`/`X-Real-IP` headers are trusted (`private`, `all`, `none`, CIDR list); `internal/api/clientip.go` |
 | `LOGIN_PROTECTION` | `true` | Login lockout after failed attempts and rate limits for registration and "forgot password" (`internal/api/loginguard.go`), `false` = disabled |
 | `BASE_URL` | `http://localhost:<PORT>` | Base URL of the instance; explicitly setting this is required for password reset via email |

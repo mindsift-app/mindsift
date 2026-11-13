@@ -77,6 +77,7 @@ Versions without a git tag were development states and were never published as a
 - `install.sh` removes `ADMIN_PASSWORD` from `.env` again once the first start has created the admin; an update never changes `.env`.
 - `install.sh` no longer copies the host's time zone into `.env`: the setup wizard suggests the browser's zone (or set it under Administration → Server). Existing `TZ` settings stay.
 - `install.sh` accepts admin passwords up to 1,024 characters, as the server does, instead of stopping at 72 bytes.
+- A server started with a database whose hidden values, authenticator secrets and public link tokens were encrypted with another key (a backup restored on a new machine without `SECRETS_KEY` or `data/secrets.key`) now logs a clear warning at the start: what no longer works and to restore the old key. It still starts; notes, tasks and images are not affected.
 
 ## [0.95.0] - 2026-11-12
 

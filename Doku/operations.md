@@ -65,7 +65,7 @@ The daily backups hold the whole database as `data/backups/system/mindsift-db-<d
 1. Stop the container. Never replace the database while MindSift runs.
 2. Unpack the snapshot over the database (as root, see above): `gunzip -c data/backups/system/mindsift-db-….db.gz > data/mindsift.db`.
 3. Delete `data/mindsift.db-wal` and `data/mindsift.db-shm` if they exist (see above).
-4. Keep the keys that belong to the data: `SECRETS_KEY` or `data/secrets.key` (without it, hidden values and authenticator codes cannot be read) and `JWT_SECRET` or `data/jwt.secret` (otherwise everyone is signed out). Images and audio are not in the database dump but in `data/media/`; on a new machine copy the whole `data/` folder.
+4. Keep the keys that belong to the data: `SECRETS_KEY` or `data/secrets.key` (without it, hidden values, authenticator codes and the copy of public links cannot be read) and `JWT_SECRET` or `data/jwt.secret` (otherwise everyone is signed out). If the key is missing or wrong, MindSift still starts but logs a warning that begins with `THE SECRETS KEY DOES NOT MATCH THE DATA`; stop it, put the old key back and start again. Images and audio are not in the database dump but in `data/media/`; on a new machine copy the whole `data/` folder.
 5. Start the same version that wrote the snapshot, or a newer one. The container hands `data/` to its user (uid 1000) on start; without the container, keep the files owned by the user that runs MindSift and readable for it only.
 
 People restore their own data from their personal backups in the account settings, without stopping the server.

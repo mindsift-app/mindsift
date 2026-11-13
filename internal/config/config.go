@@ -24,6 +24,9 @@ type Config struct {
 	JWTSecret    string
 	// SecretsKey encrypts hidden values in notes (SECRETS_KEY or $DATA_DIR/secrets.key), 32 bytes
 	SecretsKey []byte
+	// SecretsKeySource: where SecretsKey came from: "SECRETS_KEY", "secrets.key", or "generated" when this
+	// start made a new one (no SECRETS_KEY and no usable secrets.key)
+	SecretsKeySource string
 	// MetricsToken: Prometheus scrapes /metrics with it as bearer token (METRICS_TOKEN or METRICS_TOKEN_FILE);
 	// empty = no /metrics at all
 	MetricsToken string
@@ -385,21 +388,22 @@ const secretsKeyFile = "secrets.key"
 // out of the data directory, so a copy of the database alone reveals nothing; otherwise a random key is
 // generated once and kept in the data directory. Its own key and not one derived from JWT_SECRET, so
 // changing JWT_SECRET (signing everyone out) does not lose the values.
-func resolveSecretsKey(fromEnv, dataDir string) []byte {
+// source says where the key came from (the start checks it against the stored values, api/secrets_check.go).
+func resolveSecretsKey(fromEnv, dataDir string) (key []byte, source string) {
 	if v := strings.TrimSpace(fromEnv); v != "" {
 		if len(v) < 32 {
 			slog.Warn("SECRETS_KEY is shorter than 32 characters – please use a longer random value")
 		}
 		sum := sha256.Sum256([]byte(v))
-		return sum[:]
+		return sum[:], "SECRETS_KEY"
 	}
 	path := filepath.Join(dataDir, secretsKeyFile)
 	if data, err := os.ReadFile(path); err == nil {
 		if key, err := hex.DecodeString(strings.TrimSpace(string(data))); err == nil && len(key) == 32 {
-			return key
+			return key, secretsKeyFile
 		}
 	}
-	key := make([]byte, 32)
+	key = make([]byte, 32)
 	if _, err := rand.Read(key); err != nil {
 		panic("crypto/rand: " + err.Error())
 	}
@@ -407,7 +411,7 @@ func resolveSecretsKey(fromEnv, dataDir string) []byte {
 	if err := os.WriteFile(path, []byte(hex.EncodeToString(key)+"\n"), 0o600); err != nil {
 		slog.Error("Saving the generated key for hidden values failed – they cannot be read after a restart", "path", path, "error", err)
 	}
-	return key
+	return key, "generated"
 }
 
 // MinMetricsTokenLength: shorter tokens leave /metrics off (it would be guessable).
@@ -490,6 +494,7 @@ func Load() *Config {
 	}
 
 	jwtSecret := resolveJWTSecret(os.Getenv("JWT_SECRET"), filepath.Dir(dbPath))
+	secretsKey, secretsKeySource := resolveSecretsKey(os.Getenv("SECRETS_KEY"), filepath.Dir(dbPath))
 	baseURL := getEnv("BASE_URL", "http://localhost:"+port)
 	allowReg := strings.ToLower(getEnv("ALLOW_REGISTRATION", "false")) == "true"
 
@@ -518,7 +523,8 @@ func Load() *Config {
 		DataDir:                 dataDir,
 		DatabasePath:            dbPath,
 		JWTSecret:               jwtSecret,
-		SecretsKey:              resolveSecretsKey(os.Getenv("SECRETS_KEY"), filepath.Dir(dbPath)),
+		SecretsKey:              secretsKey,
+		SecretsKeySource:        secretsKeySource,
 		MetricsToken:            resolveMetricsToken(),
 		BaseURL:                 baseURL,
 		BaseURLSet:              strings.TrimSpace(os.Getenv("BASE_URL")) != "",
