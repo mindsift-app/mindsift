@@ -222,14 +222,27 @@ type oidcEnv struct {
 	store  *storage.Store
 	router http.Handler
 	clock  time.Time
-	idp    *fakeIssuer
-	admin  *domain.User
+	// clockMu guards clock between the test moving it and the server's background jobs reading it
+	clockMu sync.Mutex
+	idp     *fakeIssuer
+	admin   *domain.User
+}
+
+// advance moves the clock the server and the provider see by d.
+func (e *oidcEnv) advance(d time.Duration) {
+	e.clockMu.Lock()
+	defer e.clockMu.Unlock()
+	e.clock = e.clock.Add(d)
 }
 
 func newOIDCEnv(t *testing.T, change func(c *config.OIDCConfig)) *oidcEnv {
 	t.Helper()
 	e := &oidcEnv{t: t, clock: time.Date(2026, 11, 12, 9, 0, 10, 0, time.UTC)}
-	now := func() time.Time { return e.clock }
+	now := func() time.Time {
+		e.clockMu.Lock()
+		defer e.clockMu.Unlock()
+		return e.clock
+	}
 	e.idp = newFakeIssuer(t, now)
 	dbPath := filepath.Join(t.TempDir(), "oidc.db")
 	store, err := storage.NewStore(dbPath)
@@ -419,14 +432,14 @@ func TestOIDCTicketIsBoundAndUsedOnce(t *testing.T) {
 	}
 	authURL, bind = e.begin("/api/v1/auth/oidc/start", "", nil)
 	q = e.back(e.idp.authorize(authURL))
-	e.clock = e.clock.Add(oidcTicketTTL + time.Second)
+	e.advance(oidcTicketTTL + time.Second)
 	if rec, _ := e.call("POST", "/api/v1/auth/oidc/exchange", "", map[string]string{"ticket": q.Get("oidc"), "bind": bind}); rec.Code != http.StatusUnauthorized {
 		t.Fatalf("expired ticket: %d", rec.Code)
 	}
 	// A flow that waited too long at the provider
 	authURL, _ = e.begin("/api/v1/auth/oidc/start", "", nil)
 	callback = e.idp.authorize(authURL)
-	e.clock = e.clock.Add(oidcFlowTTL + time.Second)
+	e.advance(oidcFlowTTL + time.Second)
 	if q := e.back(callback); q.Get("oidc_error") != "expired" {
 		t.Fatalf("expired flow: %v", q)
 	}
@@ -656,7 +669,7 @@ func TestOIDCCancelledAndProviderDown(t *testing.T) {
 		t.Fatalf("provider down: %d %v", rec.Code, res)
 	}
 	e2.idp.discoveryDown = false
-	e2.clock = e2.clock.Add(oidcRetryAfter + time.Second)
+	e2.advance(oidcRetryAfter + time.Second)
 	e2.mustSignIn()
 }
 
@@ -788,7 +801,7 @@ func TestOIDCSensitiveChangesNeedTheProvider(t *testing.T) {
 		t.Fatalf("the other session is not confirmed: %d", rec.Code)
 	}
 	// A few minutes later it has to be confirmed again
-	e.clock = e.clock.Add(oidcConfirmTTL + time.Second)
+	e.advance(oidcConfirmTTL + time.Second)
 	if rec, res := e.call("DELETE", "/api/v1/user/account", token, map[string]any{}); rec.Code != http.StatusForbidden || res["code"] != "oidc_confirm_required" {
 		t.Fatalf("after the window: %d %v", rec.Code, res)
 	}
