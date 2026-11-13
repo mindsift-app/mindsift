@@ -134,7 +134,7 @@ describe('SetupAndAuthView: setup wizard', () => {
   });
 
   it('shows the server error for a wrong setup code', async () => {
-    completeSetup.mockRejectedValueOnce(new Error('Der Einrichtungscode stimmt nicht. Er steht im Server-Log'));
+    completeSetup.mockRejectedValueOnce(new Error('Der Einrichtungscode stimmt nicht. Er steht im Server-Log.'));
     render(<SetupAndAuthView authStatus={{ ...status, setupCodeRequired: true }} onAuthenticated={() => {}} />);
     fireEvent.change(screen.getByLabelText('Einrichtungscode *'), { target: { value: 'AAAA-BBBB-CCCC' } });
     fillAccount();

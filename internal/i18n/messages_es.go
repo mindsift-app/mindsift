@@ -503,7 +503,7 @@ var messagesES = map[string]string{
 	"Deine neue E-Mail-Adresse ist bestätigt. Du meldest dich ab jetzt mit ihr an.":                                                                        "Tu nueva dirección de correo está confirmada. A partir de ahora inicias sesión con ella.",
 	"Ungültige E-Mail-Adresse": "Dirección de correo no válida",
 	"Der Bestätigungslink ist ungültig oder abgelaufen. Bitte gib die neue Adresse in den Einstellungen noch einmal ein.": "El enlace de confirmación no es válido o ha caducado. Vuelve a introducir la nueva dirección en los ajustes.",
-	"Interner Fehler – Details stehen im Server-Log":                                                                      "Error interno: los detalles están en el registro del servidor",
+	"Interner Fehler – Details stehen im Server-Log":                                                                      "Error interno: los detalles están en el registro del servidor.",
 	"Dieser Server erlaubt Push-Benachrichtigungen nur über die Dienste der großen Browser":                               "Este servidor solo permite notificaciones push mediante los servicios de los grandes navegadores",
 	"Weiterleitung von https auf http abgelehnt":                                                                          "Redirección de https a http rechazada",
 	"Als Profilbild geht nur ein hochgeladenes Bild (höchstens 300 KB) oder ein Emoji":                                    "Como foto de perfil solo vale una imagen subida (como máximo 300 KB) o un emoji",
@@ -557,6 +557,6 @@ var messagesES = map[string]string{
 	"Die Registrierung mit Passwort ist ausgeschaltet. Bitte melde dich über {name} an.":       "El registro con contraseña está desactivado. Inicia sesión con {name}.",
 	"Die Anmeldung mit Passwort ist ausgeschaltet. Bitte melde dich über {name} an.":           "El inicio de sesión con contraseña está desactivado. Inicia sesión con {name}.",
 	"Die Anmeldung über einen Anbieter (OIDC) ist auf diesem Server nicht eingerichtet":        "El inicio de sesión mediante un proveedor (OIDC) no está configurado en este servidor",
-	"Einrichtungscode erforderlich: Er steht im Server-Log":                                    "Se necesita el código de configuración: está en el registro del servidor",
-	"Der Einrichtungscode stimmt nicht. Er steht im Server-Log":                                "El código de configuración no es correcto. Está en el registro del servidor",
+	"Einrichtungscode erforderlich: Er steht im Server-Log.":                                   "Se necesita el código de configuración: está en el registro del servidor.",
+	"Der Einrichtungscode stimmt nicht. Er steht im Server-Log.":                               "El código de configuración no es correcto. Está en el registro del servidor.",
 }

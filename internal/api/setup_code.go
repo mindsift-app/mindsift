@@ -112,13 +112,13 @@ func (s *Server) checkSetupCode(w http.ResponseWriter, r *http.Request, typed st
 		return false
 	}
 	if strings.TrimSpace(typed) == "" {
-		writeErrorCode(w, http.StatusForbidden, "setup_code_required", "Einrichtungscode erforderlich: Er steht im Server-Log")
+		writeErrorCode(w, http.StatusForbidden, "setup_code_required", "Einrichtungscode erforderlich: Er steht im Server-Log.")
 		return false
 	}
 	if !s.setupCode.matches(typed) {
 		s.loginGuard.recordFailure(account, ip)
 		slog.Warn("Setup refused: wrong setup code", "remote_addr", r.RemoteAddr)
-		writeErrorCode(w, http.StatusForbidden, "setup_code_invalid", "Der Einrichtungscode stimmt nicht. Er steht im Server-Log")
+		writeErrorCode(w, http.StatusForbidden, "setup_code_invalid", "Der Einrichtungscode stimmt nicht. Er steht im Server-Log.")
 		return false
 	}
 	s.loginGuard.recordSuccess(account, ip)
