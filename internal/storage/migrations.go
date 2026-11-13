@@ -307,7 +307,7 @@ func (s *Store) ExpirePreMigrationBackups(now time.Time) (int, error) {
 	return removed, nil
 }
 
-var addColumnRe =regexp.MustCompile(`(?is)^\s*ALTER\s+TABLE\s+(\w+)\s+ADD\s+COLUMN\s+(\w+)\s+(.+?);?\s*$`)
+var addColumnRe = regexp.MustCompile(`(?is)^\s*ALTER\s+TABLE\s+(\w+)\s+ADD\s+COLUMN\s+(\w+)\s+(.+?);?\s*$`)
 
 // execSchemaStatement runs one schema statement; "ALTER TABLE … ADD COLUMN" only when the column is
 // missing, so that a real error is never mistaken for "already there".
