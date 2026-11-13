@@ -4538,7 +4538,7 @@
     "/api/v1/auth/oidc/callback": {
       "get": {
         "summary": "Return from the OIDC provider",
-        "description": "The provider sends the browser here (redirect URI <BASE_URL>/api/v1/auth/oidc/callback). Exchanges the code, checks the ID token (signature, iss, aud, azp, exp, iat, nonce), finds, links or creates the account and redirects (303) to the return path with ?oidc=<one-time ticket>, or with ?oidc_error=<code>: cancelled, expired, unavailable, failed, no_account, no_email, email_in_use, disabled, pending, unverified, setup; confirmations also wrong_account, not_fresh, linked_elsewhere, already_linked",
+        "description": "The provider sends the browser here (redirect URI <BASE_URL>/api/v1/auth/oidc/callback). Exchanges the code, checks the ID token (signature, iss, aud, azp, exp, iat, nonce), finds, links or creates the account and redirects (303) to the return path with ?oidc=<one-time ticket>, or with ?oidc_error=<code>: cancelled, expired, unavailable, failed, no_account, no_email, disabled, pending, unverified, setup; confirmations also wrong_account, not_fresh, linked_elsewhere, already_linked",
         "tags": [
           "Public"
         ],

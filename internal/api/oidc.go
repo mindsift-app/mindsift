@@ -156,7 +156,7 @@ func (s *Server) logOIDCSetup(reason string) {
 	}
 	slog.Info("Sign-in through an OIDC provider is on", "name", s.oidc.cfg.Name, "issuer", s.oidc.cfg.Issuer,
 		"redirect_uri", s.oidc.redirectURL, "auto_create", s.oidc.cfg.AutoCreate, "password_login", s.oidc.cfg.PasswordLogin,
-		"link_by_email", s.oidc.cfg.LinkByEmail, "admin_group", s.oidc.cfg.AdminGroup)
+		"admin_group", s.oidc.cfg.AdminGroup)
 	go func() {
 		if _, err := s.oidc.discover(time.Now()); err == nil {
 			slog.Info("OIDC provider found", "issuer", s.oidc.cfg.Issuer)
@@ -717,11 +717,10 @@ func (s *Server) oidcConfirmIdentity(f *oidcFlow, id *oidcIdentity) string {
 	return ""
 }
 
-// oidcSignIn finds, links or creates the account of the identity and sees that it may sign in. Returns the
+// oidcSignIn finds or creates the account of the identity and sees that it may sign in. Returns the
 // account, or nil and the error code for the app.
 func (s *Server) oidcSignIn(r *http.Request, id *oidcIdentity) (*domain.User, string) {
 	now := s.now()
-	name := s.oidcName()
 	if count, _ := s.store.CountUsers(); count == 0 {
 		return nil, "setup"
 	}
@@ -737,17 +736,6 @@ func (s *Server) oidcSignIn(r *http.Request, id *oidcIdentity) (*domain.User, st
 		}
 	}
 	address := domain.NormalizeEmail(id.email)
-	if user == nil && s.oidc.cfg.LinkByEmail && id.emailVerified && address != "" {
-		// Only with OIDC_LINK_BY_EMAIL: the provider vouches for the address, the account with it is taken over
-		if existing, err := s.store.UserByEmailExactly(address); err == nil && existing != nil {
-			if err := s.store.LinkOIDCIdentity(id.issuer, id.subject, existing.ID, address, now); err != nil {
-				slog.Warn("OIDC sign-in refused: the account with this address is linked to another identity at the provider", "user_id", existing.ID, "error", err)
-				return nil, "email_in_use"
-			}
-			slog.Info("Account linked to the OIDC provider by its verified e-mail address (OIDC_LINK_BY_EMAIL)", "user_id", existing.ID, "provider", name)
-			user = existing
-		}
-	}
 	if user == nil {
 		// A new account rests on the identity alone (issuer and subject); an existing account with the same
 		// address is never taken over here, its owner links it in the settings
