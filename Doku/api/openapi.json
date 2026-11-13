@@ -955,7 +955,7 @@
     "/api/v1/auth/register": {
       "post": {
         "summary": "Create an account",
-        "description": "Registration (email, password, displayName, inviteCode); always allowed with code, otherwise depending on registration mode. 201 with token or 202 {\"pending\":true,\"verify\",\"message\"} if email verification (verify) and/or admin approval is required (login returns 403 until then); 429 after 20 attempts per address in 15 minutes or when more than 50 accounts are pending approval",
+        "description": "Registration (email, password, displayName, inviteCode); always allowed with code, otherwise depending on registration mode. 201 with token or 202 {\"pending\":true,\"verify\",\"message\"} if email verification (verify) and/or admin approval is required (login returns 403 until then); 429 after 20 attempts per address in 15 minutes or when more than 50 accounts are pending approval; 403 setup_required while no account exists (the first one comes from /auth/setup or ADMIN_USER)",
         "tags": [
           "Public"
         ],
@@ -1066,7 +1066,7 @@
     "/api/v1/auth/setup": {
       "post": {
         "summary": "Create the first administrator",
-        "description": "First administrator account (email, password, displayName, instanceName, allowRegistration, sharingMode, createSampleData, defaultLanguage: becomes the server's default language and the admin's own, 400 for unknown codes; backupEnabled, backupTime (HH:MM, server time zone), backupRetentionDays (1–365): daily backups as in the admin settings, left out = unchanged (off, 03:00, 3 days on a new server), 400 for another time format or retention, before the account is created); only while no accounts exist (403 afterwards, also when ADMIN_USER/ADMIN_PASSWORD created the admin at startup). The body must be sent as Content-Type: application/json (415 otherwise). Sample data comes in German for German accounts, otherwise in English",
+        "description": "First administrator account (email, password, displayName, instanceName, allowRegistration, sharingMode, createSampleData, defaultLanguage: becomes the server's default language and the admin's own, 400 for unknown codes; backupEnabled, backupTime (HH:MM, server time zone), backupRetentionDays (1–365): daily backups as in the admin settings, left out = unchanged (off, 03:00, 3 days on a new server), 400 for another time format or retention, before the account is created); only while no accounts exist (403 afterwards, also when ADMIN_USER/ADMIN_PASSWORD created the admin at startup). setupCode: the one-time code from the server log (XXXX-XXXX-XXXX, case, spaces and dashes do not matter), required while setupCodeRequired is true: without it 403 setup_code_required, wrong 403 setup_code_invalid, three wrong codes from one address 429 for 15 minutes; gone once the admin exists. The body must be sent as Content-Type: application/json (415 otherwise). Sample data comes in German for German accounts, otherwise in English",
         "tags": [
           "Public"
         ],
@@ -1081,7 +1081,7 @@
     "/api/v1/auth/status": {
       "get": {
         "summary": "Server status before signing in (setup, registration, demo, language)",
-        "description": "needsSetup, allowRegistration, instanceName, demoMode, sharingMode, legal (imprintUrl, hasImprintContent, privacyUrl, hasPrivacyContent, customLinkLabel, customLinkUrl), voice (mode = server/browser/off, maxSeconds, browserAllowed), mcpEnabled, mcpConnectorUrl, defaultLanguage (the server's default language: admin setting, else DEFAULT_LANGUAGE, else de); setup (smtpConfigured, smtpViaEnv, baseUrlSet, emailLinks, backupDir) only while no account exists, for the first-boot wizard",
+        "description": "needsSetup, setupCodeRequired (true while no account exists and the server logged a setup code: not in demo mode, not with ADMIN_USER), allowRegistration, instanceName, demoMode, sharingMode, legal (imprintUrl, hasImprintContent, privacyUrl, hasPrivacyContent, customLinkLabel, customLinkUrl), voice (mode = server/browser/off, maxSeconds, browserAllowed), mcpEnabled, mcpConnectorUrl, defaultLanguage (the server's default language: admin setting, else DEFAULT_LANGUAGE, else de); setup (smtpConfigured, smtpViaEnv, baseUrlSet, emailLinks, backupDir) only while no account exists, for the first-boot wizard",
         "tags": [
           "Public"
         ],

@@ -557,4 +557,6 @@ var messagesEN = map[string]string{
 	"Die Registrierung mit Passwort ist ausgeschaltet. Bitte melde dich über {name} an.":       "Signing up with a password is switched off. Please sign in with {name}.",
 	"Die Anmeldung mit Passwort ist ausgeschaltet. Bitte melde dich über {name} an.":           "Signing in with a password is switched off. Please sign in with {name}.",
 	"Die Anmeldung über einen Anbieter (OIDC) ist auf diesem Server nicht eingerichtet":        "Sign-in through a provider (OIDC) is not set up on this server",
+	"Einrichtungscode erforderlich: Er steht im Server-Log":                                    "The setup code is required: it is in the server log",
+	"Der Einrichtungscode stimmt nicht. Er steht im Server-Log":                                "The setup code is wrong. It is in the server log",
 }

@@ -197,7 +197,7 @@ func TestAuthStatusSetupInfoOnlyBeforeTheFirstAccount(t *testing.T) {
 	if _, leaked := setup["smtpHost"]; leaked {
 		t.Fatalf("host in the public status: %+v", setup)
 	}
-	if rec := postJSON(t, router, "/api/v1/auth/setup", "", `{"email":"owner@example.com","password":"secretpassword"}`); rec.Code != http.StatusCreated {
+	if rec := postJSON(t, router, "/api/v1/auth/setup", "", withSetupCode(srv, `{"email":"owner@example.com","password":"secretpassword"}`)); rec.Code != http.StatusCreated {
 		t.Fatalf("setup: %d %s", rec.Code, rec.Body.String())
 	}
 	if _, still := authStatus()["setup"]; still {
@@ -210,7 +210,7 @@ func TestFirstBootSetupStoresMailServer(t *testing.T) {
 	store, dbPath := freshStore(t)
 	srv, _ := startWith(t, store, dbPath, config.InitialAdmin{}, false)
 	body := `{"email":"owner@example.com","password":"secretpassword","smtp":{"smtpHost":"mail.example.com","smtpPort":"","smtpTls":true}}`
-	if rec := postJSON(t, srv.Router(), "/api/v1/auth/setup", "", body); rec.Code != http.StatusCreated {
+	if rec := postJSON(t, srv.Router(), "/api/v1/auth/setup", "", withSetupCode(srv, body)); rec.Code != http.StatusCreated {
 		t.Fatalf("setup: %d %s", rec.Code, rec.Body.String())
 	}
 	sys, _ := store.GetSystemSettings()

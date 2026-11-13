@@ -18,7 +18,7 @@ func TestFirstBootSetupSwitchesOnBackups(t *testing.T) {
 	srv, _ := startWith(t, store, dbPath, config.InitialAdmin{}, false)
 	router := srv.Router()
 
-	rec := postJSON(t, router, "/api/v1/auth/setup", "", `{"email":"owner@example.com","password":"secretpassword","backupEnabled":true,"backupTime":"02:30","backupRetentionDays":7}`)
+	rec := postJSON(t, router, "/api/v1/auth/setup", "", withSetupCode(srv, `{"email":"owner@example.com","password":"secretpassword","backupEnabled":true,"backupTime":"02:30","backupRetentionDays":7}`))
 	if rec.Code != http.StatusCreated {
 		t.Fatalf("setup: %d %s", rec.Code, rec.Body.String())
 	}
@@ -53,7 +53,7 @@ func TestFirstBootSetupWithoutBackups(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			store, dbPath := freshStore(t)
 			srv, _ := startWith(t, store, dbPath, config.InitialAdmin{}, false)
-			if rec := postJSON(t, srv.Router(), "/api/v1/auth/setup", "", body); rec.Code != http.StatusCreated {
+			if rec := postJSON(t, srv.Router(), "/api/v1/auth/setup", "", withSetupCode(srv, body)); rec.Code != http.StatusCreated {
 				t.Fatalf("setup: %d %s", rec.Code, rec.Body.String())
 			}
 			sys, _ := store.GetSystemSettings()
@@ -86,7 +86,7 @@ func TestFirstBootSetupRefusesBadBackupValues(t *testing.T) {
 			store, dbPath := freshStore(t)
 			srv, _ := startWith(t, store, dbPath, config.InitialAdmin{}, false)
 			req := `{"email":"owner@example.com","password":"secretpassword","backupEnabled":true,` + c.json + `}`
-			rec := postJSONLang(t, srv.Router(), "/api/v1/auth/setup", "", req, "en")
+			rec := postJSONLang(t, srv.Router(), "/api/v1/auth/setup", "", withSetupCode(srv, req), "en")
 			if rec.Code != http.StatusBadRequest || !strings.Contains(rec.Body.String(), c.want) {
 				t.Fatalf("%s: %d %s, want 400 %q", c.json, rec.Code, rec.Body.String(), c.want)
 			}
@@ -101,7 +101,7 @@ func TestFirstBootSetupRefusesBadBackupValues(t *testing.T) {
 	// In German, the language of the wizard's default
 	store, dbPath := freshStore(t)
 	srv, _ := startWith(t, store, dbPath, config.InitialAdmin{}, false)
-	rec := postJSONLang(t, srv.Router(), "/api/v1/auth/setup", "", `{"email":"owner@example.com","password":"secretpassword","backupTime":"24:00"}`, "de")
+	rec := postJSONLang(t, srv.Router(), "/api/v1/auth/setup", "", withSetupCode(srv, `{"email":"owner@example.com","password":"secretpassword","backupTime":"24:00"}`), "de")
 	if rec.Code != http.StatusBadRequest || !strings.Contains(rec.Body.String(), "Ungültige Uhrzeit für die Backups") {
 		t.Fatalf("German message: %d %s", rec.Code, rec.Body.String())
 	}

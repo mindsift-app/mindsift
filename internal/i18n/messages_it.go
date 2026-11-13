@@ -557,4 +557,6 @@ var messagesIT = map[string]string{
 	"Die Registrierung mit Passwort ist ausgeschaltet. Bitte melde dich über {name} an.":       "La registrazione con password è disattivata. Accedi con {name}.",
 	"Die Anmeldung mit Passwort ist ausgeschaltet. Bitte melde dich über {name} an.":           "L'accesso con password è disattivato. Accedi con {name}.",
 	"Die Anmeldung über einen Anbieter (OIDC) ist auf diesem Server nicht eingerichtet":        "L'accesso tramite un provider (OIDC) non è configurato su questo server",
+	"Einrichtungscode erforderlich: Er steht im Server-Log":                                    "Serve il codice di configurazione: si trova nel log del server",
+	"Der Einrichtungscode stimmt nicht. Er steht im Server-Log":                                "Il codice di configurazione non è corretto. Si trova nel log del server",
 }
