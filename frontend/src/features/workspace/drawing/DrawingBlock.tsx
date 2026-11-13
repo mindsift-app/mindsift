@@ -270,6 +270,9 @@ export const DrawingBlock: React.FC<DrawingBlockProps> = ({
   }
 
   const onPointerDown = (e: React.PointerEvent) => {
+    // A text selection left on the page would make the browser drag that text (and the outline react to
+    // it) instead of moving the drawing
+    window.getSelection()?.removeAllRanges();
     if (!focused) {
       setFocused(true);
       return;
@@ -395,7 +398,7 @@ export const DrawingBlock: React.FC<DrawingBlockProps> = ({
     <div className="my-1 group/drawing">
       <div
         ref={boxRef}
-        className={`relative w-full rounded-card border bg-panel overflow-hidden transition-colors ${
+        className={`relative w-full rounded-card border bg-panel overflow-hidden select-none transition-colors ${
           focused ? 'border-accent ring-1 ring-accent/30' : 'border-border'
         }`}
         style={{ height, touchAction: focused ? 'none' : 'auto', cursor: focused ? (gesture.current ? 'grabbing' : 'grab') : 'pointer' }}
@@ -403,6 +406,14 @@ export const DrawingBlock: React.FC<DrawingBlockProps> = ({
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
+        // No text selection and no native drag from the drawing: pressing and moving only moves the section
+        onMouseDown={(e) => {
+          if (e.button !== 0) return;
+          e.preventDefault();
+          // preventDefault also keeps the focus where it was; leave a bullet's text field as a click did before
+          (document.activeElement as HTMLElement | null)?.blur?.();
+        }}
+        onDragStart={(e) => e.preventDefault()}
         onDoubleClick={(e) => (canEdit || liveNames.length > 0) && openEditor(e)}
         role="img"
         aria-label={texts.length ? t('drawing.ariaWithText', { text: texts.join(', ') }) : t('drawing.aria')}

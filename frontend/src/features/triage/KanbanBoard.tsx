@@ -17,9 +17,10 @@ const KANBAN_FIRST_ROW_HEIGHT = `max(${KANBAN_MIN_COL_HEIGHT}px, calc(var(--kb-f
 // Below the board: what the first row has not grown into yet, so the page keeps its height while scrolling
 const KANBAN_BAR_SPACER = 'max(0px, calc(var(--kb-top) - var(--kb-scroll, 0px)))';
 // Desktop board: as many columns per row as fit at least KANBAN_COL_MIN wide (the rest wraps into further
-// rows); a column grows to at most KANBAN_COL_MAX, so a few columns on a wide screen do not stretch across it
+// rows); a column grows to at most KANBAN_COL_MAX, so a few columns on a wide screen do not stretch across it,
+// and the board is centred once it reaches that width
 const KANBAN_COL_MIN = 200;
-const KANBAN_COL_MAX = 420;
+const KANBAN_COL_MAX = 640;
 const KANBAN_GAP = 12; // gap-3
 const kanbanBoardStyle = (columns: number): React.CSSProperties =>
   ({
@@ -145,7 +146,7 @@ export function KanbanBoard({
       {kanbanTouch.ghost}
       <div
         ref={kanbanBoardRef}
-        className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1 lg:grid-cols-[repeat(auto-fit,minmax(var(--kanban-col-min),1fr))] lg:max-w-[var(--kanban-max-w)]"
+        className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1 lg:grid-cols-[repeat(auto-fit,minmax(var(--kanban-col-min),1fr))] lg:max-w-[var(--kanban-max-w)] lg:mx-auto"
         style={kanbanBoardStyle(boardColumns.length)}
       >
         {boardColumns.map((col, colIndex) => {

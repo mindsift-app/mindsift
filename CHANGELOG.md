@@ -20,6 +20,7 @@ Versions before 0.80.0 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - New settings section **Security** with the password change, two-factor sign-in and the signed-in devices (moved there from Profile).
 
 ### Fixed
+- Dragging a drawing in a note to move its section no longer selects text or drags a selection (and with it the bullet) instead; in Firefox a selection on the page no longer stops the drawing from moving.
 - On phones, the save status of a note shows "Saved" in the app's language instead of always in German.
 - Sharing a pinned note no longer unpins it for the owner in the open app (realtime updates carried another person's view of the note).
 - Moving a shared note or folder no longer briefly shows collaborators the mover's folder placement.
@@ -32,6 +33,7 @@ Versions before 0.80.0 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - The task dialog opens and closes without delay in long task lists: opening it no longer makes the browser restyle and lay out every row (300 tasks with a slowed-down CPU: about 0.5 s down to 0.07 s).
 
 ### Changed
+- On wide screens the Kanban board is centred, and its columns grow to 640 px instead of 420 px.
 - Larger handles on lines, arrows and shapes in drawings; with a finger they can be grabbed from further away.
 - Demo: all of the admin's sample notes, folders, task lists and lists are shared with the demo account `user` for editing.
 - On the desktop, pages use the full width beside the navigation rail; notes keep a comfortable reading width, the same in focus mode, also in the journal and on public pages.

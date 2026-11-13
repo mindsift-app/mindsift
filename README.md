@@ -54,7 +54,7 @@ A to-do in a note can be kept as a full task with due date, column and alarm; ch
 </p>
 
 <p align="center">
-  <img src="screenshots/calendar_desktop.webp" alt="MindSift tasks in the calendar view: a month with tasks on their days, repeating tasks shown ahead, unscheduled tasks on the right" width="90%" />
+  <img src="screenshots/calendar_desktop.webp" alt="MindSift tasks in the calendar view: a month with tasks on their days, the chosen day and unscheduled tasks beside it" width="90%" />
 </p>
 
 ### 📅 Journal

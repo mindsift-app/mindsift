@@ -169,7 +169,7 @@ Component: [TagFilterRow.tsx](../frontend/src/features/triage/TagFilterRow.tsx) 
 
 ## Content Width (Desktop)
 
-- From `sm` the content uses the whole width beside the rail (side padding 24 px); boards, lists and the calendar stretch with it. The Kanban board puts as many columns in a row as fit 200 px wide and lets a column grow to at most 420 px.
+- From `sm` the content uses the whole width beside the rail (side padding 24 px); boards, lists and the calendar stretch with it. The Kanban board puts as many columns in a row as fit 200 px wide and lets a column grow to at most 640 px; once the columns reach that width, the board is centred.
 - **Notes keep a reading width:** title and bullets (also journal days, the hashtag page and the public view) are at most `--note-measure` (56rem with padding) wide and centred in their pane; focus mode uses `--note-measure-focus` (64rem). Both are set in `index.css`.
 
 ## Dropdown (Select Menu)

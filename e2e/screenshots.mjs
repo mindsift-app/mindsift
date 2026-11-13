@@ -11,7 +11,8 @@ const BASE = process.env.MINDSIFT_URL || 'http://localhost:18080';
 const OUT = process.env.SHOTS_DIR || '../screenshots';
 const LIGHT = process.env.SHOT_LIGHT || 'light';
 const DARK = process.env.SHOT_DARK || 'dark';
-const DESKTOP = { viewport: { width: 1518, height: 886 }, deviceScaleFactor: 2 };
+// 16:9, so the desktop pictures look like an app window rather than a stretched screen
+const DESKTOP = { viewport: { width: 1440, height: 810 }, deviceScaleFactor: 2 };
 const MOBILE = { viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true };
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 // Colour families for the theme grid in the README (Klassik is the title picture)
@@ -147,13 +148,16 @@ const main = async () => {
   await shot(page, 'Triage_desktop.png');
 
   await tab(page, 'Tasks');
-  await page.getByText('Homelab', { exact: true }).first().click().catch(() => {});
-  await page.getByRole('button', { name: /Kanban|Board/ }).first().click().catch(() => {});
+  await page.getByRole('radio', { name: /Kanban/ }).first().click();
   await plain(page, 'aufgaben_desktop.png', 'dark');
   // Colour families: the board fills the width, so both halves of the diagonal show content
   for (const [family, light, dark] of FAMILIES) {
     await shot(page, `Theme_${family}.png`, { light, dark, scale: 0.5 });
   }
+  // The same list in the calendar view (month)
+  await page.getByRole('radio', { name: /Calendar/ }).first().click();
+  await sleep(1200);
+  await plain(page, 'calendar_desktop.png', 'light');
 
   // The demo user edits a bullet of the shared note, so the screenshot shows lock and presence
   const other = await open(browser, user, DESKTOP);
@@ -220,7 +224,7 @@ const main = async () => {
   }
   // Back to today in the calendar (large screens have no "Today" button above the days)
   await page.getByTitle(new RegExp(today.toLocaleDateString('en-US', { day: 'numeric', month: 'long' }))).first().click().catch(() => {});
-  await page.mouse.click(1000, 860);
+  await page.mouse.click(1000, DESKTOP.viewport.height - 20);
   await sleep(2500);
   // Round corners (setting "Corners: round") for this picture only
   await page.evaluate(() => document.documentElement.setAttribute('data-corners', 'round'));
