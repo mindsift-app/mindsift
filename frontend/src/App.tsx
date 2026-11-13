@@ -151,12 +151,13 @@ export const App: React.FC = () => {
   useEffect(() => setVoicePreference(user?.voiceInput), [user?.voiceInput]);
   // Language spoken into the microphone: app language, automatic or a fixed one (lib/voice.ts)
   useEffect(() => setVoiceLanguage(user?.voiceLanguage), [user?.voiceLanguage]);
-  // Language: the account's choice, else the browser's, else the server's default (i18n/index.ts)
+  // Language: the account's choice, else the browser's, else the server's default (i18n/index.ts). Not
+  // before the server has answered: until then the start language of main.tsx stays.
   useEffect(
     () => {
-      void applyLanguage(resolveLanguage(user?.language, authStatus.defaultLanguage));
+      if (!bootLoading) void applyLanguage(resolveLanguage(user?.language, authStatus.defaultLanguage));
     },
-    [user?.language, authStatus.defaultLanguage]
+    [bootLoading, user?.language, authStatus.defaultLanguage]
   );
   useEffect(() => {
     if (user && !canAdminister(user) && activeTab === 'admin_settings') setActiveTab('triage');

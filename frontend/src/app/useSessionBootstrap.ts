@@ -6,6 +6,14 @@ import { flushClosedNotes } from '../lib/docSync/flushClosed';
 import { finishOidcReturn } from '../lib/oidc';
 import i18n from '../i18n';
 
+// The first server status, asked for in main.tsx while the texts of the start language load, so the first
+// render does not wait for the texts and then for the server in turn; taken once by the boot check below
+let earlyAuthStatus: Promise<AuthStatus> | null = null;
+export function prefetchAuthStatus(): void {
+  earlyAuthStatus = api.getAuthStatus();
+  earlyAuthStatus.catch(() => {}); // a failure is handled where it is awaited
+}
+
 // The session of the app: server status (setup, registration, demo), the signed-in user with counters,
 // triage deck and lists, the boot check, offline changes retried when online, the realtime connection,
 // counters kept current by realtime events and the demo reset with its countdown. onSignedOut runs when
@@ -72,8 +80,10 @@ export function useSessionBootstrap(onSignedOut: () => void) {
   useEffect(() => {
     const checkBootAndAuth = async () => {
       setBootLoading(true);
+      const early = earlyAuthStatus;
+      earlyAuthStatus = null;
       try {
-        const st = await api.getAuthStatus();
+        const st = await (early ?? api.getAuthStatus());
         setAuthStatus(st);
 
         if (st.needsSetup) {

@@ -36,6 +36,25 @@ function precacheList(): Plugin {
   };
 }
 
+// German is the fallback for missing texts and loaded at every start, before the first render (src/i18n/index.ts);
+// a modulepreload link in index.html fetches its chunk together with the start chunk instead of after it
+function preloadGermanTexts(): Plugin {
+  return {
+    name: 'mindsift-preload-german',
+    apply: 'build',
+    transformIndexHtml: {
+      order: 'post',
+      handler(_html, ctx) {
+        const chunk = Object.values(ctx.bundle ?? {}).find(
+          (c) => c.type === 'chunk' && c.facadeModuleId?.replace(/\\/g, '/').endsWith('/src/locales/de/index.ts')
+        );
+        if (!chunk) throw new Error('mindsift-preload-german: no chunk for src/locales/de/index.ts');
+        return [{ tag: 'link', attrs: { rel: 'modulepreload', crossorigin: true, href: `/${chunk.fileName}` }, injectTo: 'head' }];
+      },
+    },
+  };
+}
+
 export default defineConfig({
   plugins: [
     react(),
@@ -46,6 +65,7 @@ export default defineConfig({
       },
     },
     precacheList(),
+    preloadGermanTexts(),
   ],
   define: {
     __APP_VERSION__: JSON.stringify(appVersion),
