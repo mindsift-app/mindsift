@@ -394,6 +394,17 @@ func (s *Server) mfaSetupMissingFor(user *domain.User, sessionID string) bool {
 	return s.mfaSetupMissing(user) && s.store.SessionVia(sessionID) != storage.SessionViaOIDC
 }
 
+// mfaSetupRefused answers 403 mfa_setup_required when the account's session sessionID has to set up the
+// required second factor first (mfaSetupMissingFor). For every place that takes a session token:
+// authMiddleware, the live streams and the webhook ingest. Never for API keys, which deliver from scripts.
+func (s *Server) mfaSetupRefused(w http.ResponseWriter, user *domain.User, sessionID string) bool {
+	if !s.mfaSetupMissingFor(user, sessionID) {
+		return false
+	}
+	writeErrorCode(w, http.StatusForbidden, "mfa_setup_required", "Bitte richte zuerst die Zwei-Faktor-Anmeldung ein")
+	return true
+}
+
 // mfaSetupPath: what a session may do while the required second factor is missing: read itself, set the
 // factor up and sign out.
 func mfaSetupPath(path string) bool {

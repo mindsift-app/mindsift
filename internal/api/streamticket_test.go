@@ -22,7 +22,11 @@ func TestStreamTicketsReplaceTokensInURLs(t *testing.T) {
 		return out.Ticket
 	}
 	stream := func(query string) string {
-		return srv.authenticateUserFromReq(httptest.NewRequest(http.MethodGet, "/api/v1/events?"+query, nil))
+		u, _ := srv.authenticateUserFromReq(httptest.NewRequest(http.MethodGet, "/api/v1/events?"+query, nil))
+		if u == nil {
+			return ""
+		}
+		return u.ID
 	}
 
 	tk := ticket(token)

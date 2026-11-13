@@ -2,8 +2,10 @@ package api
 
 import (
 	"net/http"
+	"net/http/httptest"
 	"testing"
 
+	"github.com/mindsift-app/mindsift/internal/auth"
 	"github.com/mindsift-app/mindsift/internal/storage"
 )
 
@@ -55,6 +57,73 @@ func TestRequiredMFABlocksAllButTheSetup(t *testing.T) {
 	}
 	if _, res := e.call("GET", "/api/v1/auth/me", token, nil); res["mfaSetupRequired"] != false {
 		t.Fatalf("me after the setup: %v", res)
+	}
+}
+
+// The requirement holds for every way a session is taken, not only REST: live streams (Bearer header or
+// a ticket from before it was switched on) and the webhook ingest. API keys from scripts keep delivering,
+// sessions from the OIDC provider keep their streams.
+func TestRequiredMFABlocksStreamsAndIngest(t *testing.T) {
+	e := newMFAEnv(t)
+	token := e.session()
+	rec, res := e.call("POST", "/api/v1/auth/stream-ticket", token, nil)
+	if rec.Code != http.StatusOK || res["ticket"] == nil {
+		t.Fatalf("ticket before the requirement: %d %v", rec.Code, res)
+	}
+	oldTicket := res["ticket"].(string)
+	key, err := e.store.CreateAPIKey(e.user.ID, "Skript", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	e.requireMFA(storage.MFARequiredAll)
+
+	refused := func(what string, rec *httptest.ResponseRecorder, res map[string]any) {
+		t.Helper()
+		if rec.Code != http.StatusForbidden || res["code"] != "mfa_setup_required" {
+			t.Fatalf("%s before the setup: %d %v", what, rec.Code, res)
+		}
+	}
+	rec, res = e.call("POST", "/api/v1/auth/stream-ticket", token, nil)
+	refused("stream ticket", rec, res)
+	rec, res = e.call("GET", "/api/v1/ws", token, nil)
+	refused("WebSocket with Bearer", rec, res)
+	rec, res = e.call("GET", "/api/v1/events", token, nil)
+	refused("SSE with Bearer", rec, res)
+	rec, res = e.call("GET", "/api/v1/events?ticket="+oldTicket, "", nil)
+	refused("SSE with an earlier ticket", rec, res)
+	rec, res = e.call("POST", "/api/v1/webhooks/ingest", token, map[string]any{"title": "Trotz Pflicht"})
+	refused("ingest with a session", rec, res)
+
+	// API keys are not sessions: scripts and devices keep delivering
+	if rec, res := e.call("POST", "/api/v1/webhooks/ingest", key.RawKey, map[string]any{"title": "Vom Skript"}); rec.Code != http.StatusCreated {
+		t.Fatalf("ingest with an API key: %d %v", rec.Code, res)
+	}
+
+	// The provider asks for its own second factor: its sessions keep their streams
+	sid, err := e.store.CreateSession(e.user.ID, "go-test", "192.0.2.1", storage.SessionViaOIDC)
+	if err != nil {
+		t.Fatal(err)
+	}
+	oidcToken, err := auth.GenerateToken(e.srv.cfg.JWTSecret, e.user.ID, e.user.Email, e.user.DisplayName, e.user.TokenVersion, sid)
+	if err != nil {
+		t.Fatal(err)
+	}
+	stream := func(tok string) (string, int) {
+		req := httptest.NewRequest(http.MethodGet, "/api/v1/events", nil)
+		req.Header.Set("Authorization", "Bearer "+tok)
+		rec := httptest.NewRecorder()
+		return e.srv.authenticateStream(rec, req), rec.Code
+	}
+	if uid, code := stream(oidcToken); uid != e.user.ID {
+		t.Fatalf("stream of an OIDC session: %q %d", uid, code)
+	}
+
+	e.enable(token)
+	if uid, code := stream(token); uid != e.user.ID {
+		t.Fatalf("stream after the setup: %q %d", uid, code)
+	}
+	if rec, res := e.call("POST", "/api/v1/webhooks/ingest", token, map[string]any{"title": "Nach der Einrichtung"}); rec.Code != http.StatusCreated {
+		t.Fatalf("ingest with a session after the setup: %d %v", rec.Code, res)
 	}
 }
 

@@ -1159,8 +1159,8 @@ func TestTokenBlacklistingAndTokenVersionRevocation(t *testing.T) {
 	// Also check authenticateUserFromReq rejects token1
 	req = httptest.NewRequest(http.MethodGet, "/api/v1/ws", nil)
 	req.Header.Set("Authorization", "Bearer "+token1)
-	if uid := srv.authenticateUserFromReq(req); uid != "" {
-		t.Fatalf("authenticateUserFromReq should reject blacklisted token1, got uid %q", uid)
+	if u, _ := srv.authenticateUserFromReq(req); u != nil {
+		t.Fatalf("authenticateUserFromReq should reject blacklisted token1, got uid %q", u.ID)
 	}
 
 	// 5. Login again to get token2
@@ -1490,7 +1490,7 @@ func TestAPIKeysOnlyDeliverData(t *testing.T) {
 	// Keys never open live streams (those carry the user's data)
 	streamReq := httptest.NewRequest(http.MethodGet, "/api/v1/events", nil)
 	streamReq.Header.Set("Authorization", "Bearer "+full.RawKey)
-	if uid := srv.authenticateUserFromReq(streamReq); uid != "" {
+	if u, _ := srv.authenticateUserFromReq(streamReq); u != nil {
 		t.Fatalf("API key must not authenticate a live stream")
 	}
 	if code := do(http.MethodGet, "/api/v1/documents", key.RawKey, ""); code != http.StatusForbidden {
