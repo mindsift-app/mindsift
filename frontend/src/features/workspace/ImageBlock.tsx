@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { ImageOff, Loader2, X } from 'lucide-react';
+import { ImageOff, LoaderCircle, X } from 'lucide-react';
 import { mediaObjectURL, parseMediaContent } from '../../lib/media';
 import { useTranslation } from 'react-i18next';
 
@@ -68,7 +68,7 @@ export const ImageBlock: React.FC<ImageBlockProps> = ({ content, canEdit, onCapt
         </button>
       ) : (
         <div className="flex items-center justify-center w-48 h-32 rounded-card border border-border bg-panel">
-          <Loader2 className="w-4 h-4 animate-spin text-muted" />
+          <LoaderCircle className="w-4 h-4 animate-spin text-muted" />
         </div>
       )}
 

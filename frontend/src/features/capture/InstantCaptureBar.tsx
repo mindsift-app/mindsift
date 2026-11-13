@@ -7,14 +7,14 @@ import {
   Sparkles,
   Calendar,
   Check,
-  CheckSquare,
+  SquareCheckBig,
   ShoppingCart,
   FileText,
   Layers,
   ChevronDown,
-  AlertTriangle,
+  TriangleAlert,
   Flame,
-  Loader2,
+  LoaderCircle,
 } from 'lucide-react';
 import { PriorityLevel, SharedList, TaskList, Thought } from '../../lib/types';
 import { api, triggerHaptic } from '../../lib/api';
@@ -336,7 +336,7 @@ export const InstantCaptureBar: React.FC<InstantCaptureBarProps> = ({
                 }`}
               >
                 {target === 'task' ? (
-                  <CheckSquare className="w-3 h-3" />
+                  <SquareCheckBig className="w-3 h-3" />
                 ) : target === 'list_item' ? (
                   <ShoppingCart className="w-3 h-3" />
                 ) : target === 'document' ? (
@@ -370,7 +370,7 @@ export const InstantCaptureBar: React.FC<InstantCaptureBarProps> = ({
                   }`}
                 >
                   {isTranscribing ? (
-                    <Loader2 className="w-3 h-3 animate-spin" />
+                    <LoaderCircle className="w-3 h-3 animate-spin" />
                   ) : isListening ? (
                     <MicOff className="w-3 h-3" />
                   ) : (
@@ -466,7 +466,7 @@ export const InstantCaptureBar: React.FC<InstantCaptureBarProps> = ({
                           : 'bg-canvas border-border text-muted hover:text-main hover:bg-panel-hover'
                       }`}
                     >
-                      <CheckSquare className="w-3.5 h-3.5 text-accent flex-shrink-0" />
+                      <SquareCheckBig className="w-3.5 h-3.5 text-accent flex-shrink-0" />
                       <span className="truncate">{t('triage:capture.directTask')}{writableTaskLists.length > 0 ? '…' : ''}</span>
                     </button>
 
@@ -511,7 +511,7 @@ export const InstantCaptureBar: React.FC<InstantCaptureBarProps> = ({
                 {target === 'task' && writableTaskLists.length > 0 && (
                   <div className="pt-2 border-t border-border flex flex-wrap items-center gap-1.5">
                     <span className="text-muted mr-1 flex items-center gap-1">
-                      <CheckSquare className="w-3 h-3 text-accent" />
+                      <SquareCheckBig className="w-3 h-3 text-accent" />
                       {t('capture.taskList')}
                     </span>
                     {[{ id: '', icon: '📥', title: t('capture.allTasks') }, ...writableTaskLists].map((tl) => {
@@ -578,7 +578,7 @@ export const InstantCaptureBar: React.FC<InstantCaptureBarProps> = ({
                   const config: Record<PriorityLevel, { label: string; icon?: React.ReactNode; activeClass: string }> = {
                     low: { label: t('common:priority.low'), activeClass: 'bg-canvas border-strong text-main font-semibold shadow-xs' },
                     normal: { label: t('common:priority.normal'), activeClass: 'bg-accent/15 border-accent text-accent font-semibold shadow-xs' },
-                    high: { label: t('common:priority.high'), icon: <AlertTriangle className="w-3 h-3 text-status-warn" />, activeClass: 'bg-status-warn/15 border-status-warn text-status-warn font-semibold shadow-xs' },
+                    high: { label: t('common:priority.high'), icon: <TriangleAlert className="w-3 h-3 text-status-warn" />, activeClass: 'bg-status-warn/15 border-status-warn text-status-warn font-semibold shadow-xs' },
                     urgent: { label: t('common:priority.urgent'), icon: <Flame className="w-3 h-3 text-status-err" />, activeClass: 'bg-status-err/15 border-status-err text-status-err font-semibold shadow-xs' },
                   };
                   const active = priority === p;

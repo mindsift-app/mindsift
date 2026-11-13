@@ -161,3 +161,57 @@ func postJSONLang(t *testing.T, router http.Handler, path, token, body, lang str
 	router.ServeHTTP(rec, req)
 	return rec
 }
+
+// The wizard's time zone: an unknown name is refused before the admin exists; a known one is stored and
+// in effect at once, on both ways through the setup. Left out, the setting stays as it was.
+func TestSetupTimeZone(t *testing.T) {
+	t.Setenv("TZ", "")
+	clock.UseInTest(t, time.UTC)
+
+	store, dbPath := freshStore(t)
+	srv, _ := startWith(t, store, dbPath, config.InitialAdmin{}, false)
+	router := srv.Router()
+	rec := postJSONLang(t, router, "/api/v1/auth/setup", "", withSetupCode(srv, `{"email":"owner@example.com","password":"secretpassword","timeZone":"Mars/Olympus"}`), "de")
+	if rec.Code != http.StatusBadRequest || !strings.Contains(rec.Body.String(), "Unbekannte Zeitzone") {
+		t.Fatalf("unknown zone: %d %s", rec.Code, rec.Body.String())
+	}
+	if n, _ := store.CountUsers(); n != 0 {
+		t.Fatalf("%d accounts created", n)
+	}
+	rec = postJSON(t, router, "/api/v1/auth/setup", "", withSetupCode(srv, `{"email":"owner@example.com","password":"secretpassword","timeZone":"Asia/Tokyo"}`))
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("setup: %d %s", rec.Code, rec.Body.String())
+	}
+	if sys, _ := store.GetSystemSettings(); sys.TimeZone == nil || *sys.TimeZone != "Asia/Tokyo" {
+		t.Fatalf("not stored: %v", sys.TimeZone)
+	}
+	if z := clock.Current(); z.Name() != "Asia/Tokyo" || z.Source != clock.SourceSetting {
+		t.Fatalf("not in effect: %s %s", z.Name(), z.Source)
+	}
+
+	// After an admin from ADMIN_USER; without the field nothing changes
+	clock.Set(clock.Zone{Loc: time.UTC})
+	captureLog(t)
+	store, dbPath = freshStore(t)
+	srv, err := startWith(t, store, dbPath, config.InitialAdmin{User: "admin", Password: initialAdminPassword}, false)
+	if err != nil {
+		t.Fatalf("CreateInitialAdmin: %v", err)
+	}
+	router = srv.Router()
+	token := loginToken(t, router, "admin", initialAdminPassword)
+	if rec := postJSON(t, router, "/api/v1/admin/setup", token, `{"sharingMode":"private","timeZone":"Europe/Berlin"}`); rec.Code != http.StatusOK {
+		t.Fatalf("finish setup: %d %s", rec.Code, rec.Body.String())
+	}
+	if sys, _ := store.GetSystemSettings(); sys.TimeZone == nil || *sys.TimeZone != "Europe/Berlin" || clock.Location().String() != "Europe/Berlin" {
+		t.Fatalf("finish setup: stored %v, in effect %s", sys.TimeZone, clock.Location())
+	}
+
+	store, dbPath = freshStore(t)
+	srv, _ = startWith(t, store, dbPath, config.InitialAdmin{}, false)
+	if rec := postJSON(t, srv.Router(), "/api/v1/auth/setup", "", withSetupCode(srv, `{"email":"owner@example.com","password":"secretpassword"}`)); rec.Code != http.StatusCreated {
+		t.Fatalf("setup without zone: %d %s", rec.Code, rec.Body.String())
+	}
+	if sys, _ := store.GetSystemSettings(); sys.TimeZone != nil && *sys.TimeZone != "" {
+		t.Fatalf("zone set without the field: %v", *sys.TimeZone)
+	}
+}

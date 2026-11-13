@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import i18n from '../i18n';
 import { useTranslation } from 'react-i18next';
-import { ArrowRight, CheckSquare, Inbox, ShoppingCart, X } from 'lucide-react';
+import { ArrowRight, SquareCheckBig, Inbox, ShoppingCart, X } from 'lucide-react';
 import { api, triggerHaptic } from '../lib/api';
 import type { SharedList } from '../lib/types';
 
@@ -95,7 +95,7 @@ export const SharedImportToast: React.FC<SharedImportToastProps> = ({ thoughtIds
               </button>
             )}
             <button type="button" disabled={busy} onClick={() => convert('task')} className={`${big} bg-accent text-on-accent`}>
-              <CheckSquare className="w-4 h-4" />
+              <SquareCheckBig className="w-4 h-4" />
               <span>{t('sharedImport.task')}</span>
               <ArrowRight className="w-4 h-4" />
             </button>

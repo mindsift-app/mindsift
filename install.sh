@@ -63,7 +63,13 @@ REPO_RAW_URL="https://raw.githubusercontent.com/mindsift-app/mindsift/main"
 curl -fsSL "${REPO_RAW_URL}/docker-compose.yml" -o docker-compose.yml
 
 BASE_URL=""
+# 1 when the script runs again over an installation (.env exists): an update, data and settings stay
+UPDATING=0
+# 1 when the data folder already holds a database (accounts exist, no setup wizard)
+HAD_DATA=0
+if [ -f data/mindsift.db ]; then HAD_DATA=1; fi
 if [ -f .env ]; then
+  UPDATING=1
   # Running the script again updates docker-compose.yml and keeps your settings
   echo "ℹ️  Existing installation found: .env and docker-compose.override.yml stay as they are."
   BASE_URL=$(sed -n 's/^BASE_URL=//p' .env | head -n1)
@@ -250,6 +256,17 @@ EOF
   fi
 fi
 
+# compose up alone keeps an image it already has; on an update it should start the latest one
+PULLED=0
+if [ "${UPDATING}" = "1" ]; then
+  echo "📥 Pulling the latest image..."
+  if ${COMPOSE_CMD} pull; then
+    PULLED=1
+  else
+    echo "⚠️  Could not pull the latest image; starting the one already on this host."
+  fi
+fi
+
 echo "🚀 Starting MindSift..."
 ${COMPOSE_CMD} up -d
 
@@ -297,6 +314,15 @@ elif [ "${SETUP_CODE_NEEDED:-0}" = "1" ]; then
     echo "🔑 The wizard asks for the setup code from MindSift's log:"
   fi
   echo "   ${COMPOSE_CMD} logs mindsift | grep 'Setup code'"
+elif [ "${UPDATING}" = "1" ]; then
+  if [ "${PULLED}" = "1" ]; then
+    echo "🔄 MindSift was updated to the latest image."
+  else
+    echo "🔄 MindSift was restarted."
+  fi
+  echo "   Your settings (.env) and your data (data/) were kept; sign in as before."
+elif [ "${HAD_DATA}" = "1" ]; then
+  echo "📂 The existing data in data/ was kept; sign in with your accounts."
 else
   echo "💡 On the first visit a wizard guides you through"
   echo "   setting up your admin account."

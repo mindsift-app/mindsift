@@ -1,5 +1,5 @@
 # golangci-lint (ci/local-checks.sh): the standard linters (errcheck, govet, ineffassign, staticcheck,
-# unused) over cmd/ and internal/.
+# unused) over cmd/ and internal/. staticcheck runs only here, not as a step of its own.
 version: "2"
 
 linters:
@@ -17,7 +17,7 @@ linters:
         - -ST1022
         # ST1005 wants error texts in lower case and without a full stop. The errors people read in the app
         # are German sentences whose text is the key of the translation (internal/i18n, see Doku/i18n.md),
-        # so they are written as sentences. Same setting as staticcheck.conf.
+        # so they are written as sentences with a capital letter and often a full stop.
         - -ST1005
     errcheck:
       # Closing and rolling back in cleanup paths (defer, error returns): the error that matters has

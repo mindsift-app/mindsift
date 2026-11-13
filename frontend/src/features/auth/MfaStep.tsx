@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { AlertCircle, AlertTriangle, ArrowLeft, Fingerprint, KeyRound, ShieldCheck } from 'lucide-react';
+import { CircleAlert, TriangleAlert, ArrowLeft, FingerprintPattern, KeyRound, ShieldCheck } from 'lucide-react';
 import { MfaLoginResult, MfaMethod, User } from '../../lib/types';
 import { api, ApiError, triggerHaptic } from '../../lib/api';
 import { getPasskey, PasskeyJSON, passkeyCancelled, passkeysSupported } from '../../lib/webauthn';
@@ -128,7 +128,7 @@ export const MfaStep: React.FC<MfaStepProps> = ({ mfaToken, methods, onAuthentic
     return (
       <div className="space-y-3.5" data-mfa-step="recovery-left">
         <div role="status" className={`flex items-start gap-2 ${low ? 'alert-err' : 'alert-ok'}`}>
-          {low ? <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-px" /> : <ShieldCheck className="w-4 h-4 flex-shrink-0 mt-px" />}
+          {low ? <TriangleAlert className="w-4 h-4 flex-shrink-0 mt-px" /> : <ShieldCheck className="w-4 h-4 flex-shrink-0 mt-px" />}
           <div className="space-y-1">
             <p>{t('mfa.recoveryUsed', { count: recoveryDone.left })}</p>
             {low && <p>{recoveryDone.left === 0 ? t('mfa.recoveryNone') : t('mfa.recoveryLow')}</p>}
@@ -155,7 +155,7 @@ export const MfaStep: React.FC<MfaStepProps> = ({ mfaToken, methods, onAuthentic
       className={`w-full ${primary ? 'btn-primary font-semibold' : 'btn-action'} h-11 sm:h-9 text-xs flex items-center justify-center gap-2 disabled:opacity-50`}
       data-mfa-passkey
     >
-      <Fingerprint className="w-3.5 h-3.5" />
+      <FingerprintPattern className="w-3.5 h-3.5" />
       <span>{busy && method === 'passkey' ? t('mfa.passkeyWaiting') : t('mfa.usePasskey')}</span>
     </button>
   );
@@ -192,7 +192,7 @@ export const MfaStep: React.FC<MfaStepProps> = ({ mfaToken, methods, onAuthentic
 
       {error && (
         <div role="alert" className="alert-err flex items-center gap-2">
-          <AlertCircle className="w-4 h-4 text-status-err flex-shrink-0" />
+          <CircleAlert className="w-4 h-4 text-status-err flex-shrink-0" />
           <span>{error}</span>
         </div>
       )}
@@ -276,7 +276,7 @@ export const MfaStep: React.FC<MfaStepProps> = ({ mfaToken, methods, onAuthentic
         </button>
         {other && (
           <button type="button" onClick={() => switchTo(other.to)} className="h-11 sm:h-8 text-accent hover:underline flex items-center gap-1.5">
-            {other.to === 'passkey' ? <Fingerprint className="w-3.5 h-3.5" /> : <KeyRound className="w-3.5 h-3.5" />}
+            {other.to === 'passkey' ? <FingerprintPattern className="w-3.5 h-3.5" /> : <KeyRound className="w-3.5 h-3.5" />}
             <span>{other.label}</span>
           </button>
         )}

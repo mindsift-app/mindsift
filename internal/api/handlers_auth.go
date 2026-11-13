@@ -221,12 +221,14 @@ type setupChoices struct {
 	BackupEnabled       *bool  `json:"backupEnabled"`
 	BackupTime          string `json:"backupTime"`
 	BackupRetentionDays *int   `json:"backupRetentionDays"`
+	// The server's time zone (IANA name, "" = not set: TZ, else UTC); left out, the setting stays
+	TimeZone *string `json:"timeZone"`
 	// Mail server, when the environment sets none: left out, nothing changes (setup_mail.go)
 	SMTP *setupSMTP `json:"smtp"`
 }
 
 // check refuses what the setup cannot store: an unknown language, a backup time other than HH:MM, a
-// retention outside 1 to 365 days. The admin settings keep the old value for such input; here the wizard
+// retention outside 1 to 365 days, a time zone this server does not know. The admin settings keep the old value for such input; here the wizard
 // says so before anything is created.
 func (c setupChoices) check() error {
 	if c.DefaultLanguage != "" && !i18n.Valid(c.DefaultLanguage) {
@@ -238,6 +240,11 @@ func (c setupChoices) check() error {
 	if c.BackupRetentionDays != nil && !storage.ValidBackupRetentionDays(*c.BackupRetentionDays) {
 		return storage.ErrBackupRetention
 	}
+	if c.TimeZone != nil && strings.TrimSpace(*c.TimeZone) != "" {
+		if _, err := clock.Load(strings.TrimSpace(*c.TimeZone)); err != nil {
+			return storage.ErrInvalidTimeZone
+		}
+	}
 	if c.SMTP != nil {
 		return c.SMTP.check()
 	}
@@ -246,7 +253,7 @@ func (c setupChoices) check() error {
 
 // applySetupChoices stores what the wizard asked besides the account: the language (the server's default
 // and the admin's own), instance name, registration, sharing mode with the first organization, daily
-// backups, the mail server, and sample data for the admin. The caller has run check. The backup scheduler reads the
+// backups, the time zone (in effect at once), the mail server, and sample data for the admin. The caller has run check. The backup scheduler reads the
 // settings every minute, so switched on here the first run follows without a restart.
 func (s *Server) applySetupChoices(r *http.Request, user *domain.User, c setupChoices) error {
 	lang := c.DefaultLanguage
@@ -276,11 +283,18 @@ func (s *Server) applySetupChoices(r *http.Request, user *domain.User, c setupCh
 		if c.BackupRetentionDays != nil {
 			sys.BackupRetentionDays = *c.BackupRetentionDays
 		}
+		if c.TimeZone != nil {
+			zone := strings.TrimSpace(*c.TimeZone)
+			sys.TimeZone = &zone
+		}
 		if c.SMTP != nil {
 			c.SMTP.store(sys)
 		}
 		if err := s.store.UpdateSystemSettings(sys); err != nil {
 			return err
+		}
+		if c.TimeZone != nil {
+			s.ApplyTimeZone()
 		}
 		// In organization mode the first admin starts in an organization named after the instance
 		if sys.SharingMode == storage.SharingOrganizations {

@@ -1,4 +1,4 @@
-import { CheckSquare, FileText, Layers, ShoppingCart } from 'lucide-react';
+import { SquareCheckBig, FileText, Layers, ShoppingCart } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { DashboardStats, Thought } from '../lib/types';
 import { api, triggerHaptic } from '../lib/api';
@@ -95,7 +95,7 @@ export function MobileNav({
         title={t('nav.tasks')}
       >
         <div className="relative">
-          <CheckSquare className="w-5 h-5" />
+          <SquareCheckBig className="w-5 h-5" />
           <CountBadge count={stats.tasksOpenCount} variant="accent" position="corner" className="-top-1.5 -right-2.5" />
         </div>
         <span className="text-[10px] leading-tight">{t('nav.tasks')}</span>

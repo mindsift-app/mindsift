@@ -1,6 +1,6 @@
 import React from 'react';
 import { Trans, useTranslation } from 'react-i18next';
-import { AlertTriangle, Archive, CheckCircle2, ClipboardList, Settings, AtSign } from 'lucide-react';
+import { TriangleAlert, Archive, CircleCheck, ClipboardList, Settings, AtSign } from 'lucide-react';
 import { SetupInfo } from '../../lib/types';
 import { formatTimeField } from '../../lib/dateInput';
 import { SetupChoices } from './SetupInstanceSection';
@@ -29,8 +29,8 @@ export const SetupSummary: React.FC<{
 
   const open: Item[] = [];
   const good: Item[] = [];
-  const warnIcon = <AlertTriangle className="w-3.5 h-3.5 text-status-warn" />;
-  const okIcon = <CheckCircle2 className="w-3.5 h-3.5 text-status-ok" />;
+  const warnIcon = <TriangleAlert className="w-3.5 h-3.5 text-status-warn" />;
+  const okIcon = <CircleCheck className="w-3.5 h-3.5 text-status-ok" />;
 
   if (email !== undefined) {
     const address = email.trim();

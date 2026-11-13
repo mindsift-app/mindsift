@@ -9,8 +9,8 @@ import {
   UserPlus,
   LogIn,
   Check,
-  AlertCircle,
-  Fingerprint,
+  CircleAlert,
+  FingerprintPattern,
   ShieldCheck,
 } from 'lucide-react';
 import { conditionalPasskeysAvailable, getPasskey, passkeyCancelled, passkeysSupported } from '../../lib/webauthn';
@@ -520,7 +520,7 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
             {/* Beside the button: the form is long, an error on top would be out of sight */}
             {error && (
               <div role="alert" className="alert-err flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 text-status-err flex-shrink-0" />
+                <CircleAlert className="w-4 h-4 text-status-err flex-shrink-0" />
                 <span>{error}</span>
               </div>
             )}
@@ -623,7 +623,7 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
         <div className="p-5 text-xs">
           {error && (
             <div className="mb-4 alert-err flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 text-status-err flex-shrink-0" />
+              <CircleAlert className="w-4 h-4 text-status-err flex-shrink-0" />
               <span className="flex-1">{error}</span>
               {error === unverifiedError && email.trim() && (
                 <button
@@ -868,7 +868,7 @@ export const SetupAndAuthView: React.FC<SetupAndAuthViewProps> = ({
                     className="w-full btn-action h-11 sm:h-9 text-xs font-semibold flex items-center justify-center gap-2 disabled:opacity-50"
                     data-passkey-login
                   >
-                    <Fingerprint className="w-3.5 h-3.5" />
+                    <FingerprintPattern className="w-3.5 h-3.5" />
                     <span>{t('login.passkey')}</span>
                   </button>
                 </>

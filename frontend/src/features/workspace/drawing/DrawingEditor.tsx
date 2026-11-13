@@ -24,7 +24,7 @@ import {
   SlidersHorizontal,
   Spline,
   Square,
-  Trash2,
+  Trash,
   Type,
   Undo2,
   ZoomIn,
@@ -1638,7 +1638,7 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
               <Copy className="w-4 h-4" />
             </button>
             <button type="button" onClick={deleteSelected} className={`${iconBtn} hover:!text-status-err`} title={t('drawing.delete')} aria-label={t('drawing.delete')}>
-              <Trash2 className="w-4 h-4" />
+              <Trash className="w-4 h-4" />
             </button>
           </div>
         )}

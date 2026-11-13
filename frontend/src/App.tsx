@@ -1,11 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Layers,
-  CheckSquare,
+  SquareCheckBig,
   FileText,
   ShoppingCart,
   RotateCcw,
-  Trash2,
+  Trash,
   Plus,
   Users,
 } from 'lucide-react';
@@ -244,7 +244,7 @@ export const App: React.FC = () => {
             {
               id: 'triage-trash',
               label: t('common:trash'),
-              icon: <Trash2 className="w-4 h-4" />,
+              icon: <Trash className="w-4 h-4" />,
               badge: stats.discardedCount,
               onClick: () => setShowTriageTrash(true),
             },
@@ -264,7 +264,7 @@ export const App: React.FC = () => {
             {
               id: 'goto-tasks',
               label: t('menu.gotoTasks'),
-              icon: <CheckSquare className="w-4 h-4" />,
+              icon: <SquareCheckBig className="w-4 h-4" />,
               badge: stats.tasksOpenCount,
               onClick: () => setActiveTab('tasks'),
             },
@@ -315,7 +315,7 @@ export const App: React.FC = () => {
             {
               id: 'goto-tasks',
               label: t('menu.toTasks'),
-              icon: <CheckSquare className="w-4 h-4" />,
+              icon: <SquareCheckBig className="w-4 h-4" />,
               onClick: () => setActiveTab('tasks'),
             },
             {

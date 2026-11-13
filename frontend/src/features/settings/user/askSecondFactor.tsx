@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import i18n from '../../../i18n';
-import { AlertCircle, Check, Fingerprint, ShieldCheck, X } from 'lucide-react';
+import { CircleAlert, Check, FingerprintPattern, ShieldCheck, X } from 'lucide-react';
 import { api, ApiError } from '../../../lib/api';
 import { MfaStatus, SecondFactorProof } from '../../../lib/types';
 import { passkeyCancelled } from '../../../lib/webauthn';
@@ -98,7 +98,7 @@ function OidcConfirmSheet() {
         <p className="text-xs text-muted">{t('security.oidc.confirmIntro', { name })}</p>
         {error && (
           <div role="alert" className="alert-err flex items-center gap-2 text-xs">
-            <AlertCircle className="w-4 h-4 text-status-err flex-shrink-0" />
+            <CircleAlert className="w-4 h-4 text-status-err flex-shrink-0" />
             <span>{error}</span>
           </div>
         )}
@@ -129,7 +129,7 @@ function OidcReturnToast() {
       className="fixed z-[70] left-4 right-4 sm:left-auto sm:right-6 sm:w-96 top-[calc(4.5rem+env(safe-area-inset-top))] sm:top-auto sm:bottom-6 p-3 rounded-xl border border-border bg-panel shadow-lg flex items-start gap-2.5 text-sm"
       data-oidc-result
     >
-      {ok ? <Check className="w-4 h-4 mt-0.5 flex-shrink-0 text-status-ok" /> : <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0 text-status-err" />}
+      {ok ? <Check className="w-4 h-4 mt-0.5 flex-shrink-0 text-status-ok" /> : <CircleAlert className="w-4 h-4 mt-0.5 flex-shrink-0 text-status-err" />}
       <p className="flex-1 min-w-0 text-main">{text}</p>
       <button
         type="button"
@@ -215,13 +215,13 @@ function SecondFactorSheet() {
             className="btn-action w-full h-11 sm:h-8 px-3 text-xs flex items-center justify-center gap-1.5"
             data-confirm-passkey
           >
-            <Fingerprint className="w-3.5 h-3.5" />
+            <FingerprintPattern className="w-3.5 h-3.5" />
             <span>{t('security.twoFactor.confirmWithPasskey')}</span>
           </button>
         )}
         {error && (
           <div role="alert" className="alert-err flex items-center gap-2 text-xs">
-            <AlertCircle className="w-4 h-4 text-status-err flex-shrink-0" />
+            <CircleAlert className="w-4 h-4 text-status-err flex-shrink-0" />
             <span>{error}</span>
           </div>
         )}

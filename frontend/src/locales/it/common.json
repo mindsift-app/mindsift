@@ -37,6 +37,8 @@
     "licenseLabel": "Licenza",
     "license": "GNU AGPLv3 – software libero, le modifiche restano libere",
     "source": "Codice sorgente",
+    "thirdPartyLabel": "Software di terze parti",
+    "thirdParty": "Licenze delle librerie incluse",
     "operator": "Il gestore di questa istanza è responsabile per le note legali e l'informativa sulla privacy; i link sono disponibili nelle impostazioni dell'account e nella pagina di accesso.",
     "changelog": "Cosa è cambiato (registro delle modifiche)"
   },

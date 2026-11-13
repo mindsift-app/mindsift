@@ -2,7 +2,8 @@
 // frontend/src/features/auth/SetupAndAuthView.tsx). Needs a fresh server without the demo and without
 // ADMIN_USER (MINDSIFT_SETUP_URL); run.sh reads the code from that container's log and passes it as
 // MINDSIFT_SETUP_CODE. German interface. The wizard asks for the code, refuses a wrong one, creates the
-// admin with the right one, and the code is no longer accepted afterwards.
+// admin with the right one, and the code is no longer accepted afterwards. The time zone field suggests the
+// browser's zone (Asia/Tokyo here), which becomes the server's.
 import { chromium } from 'playwright';
 
 const BASE = process.env.MINDSIFT_SETUP_URL || 'http://localhost:18084';
@@ -14,10 +15,10 @@ const check = (cond, msg, detail) => {
   if (!cond) failures++;
 };
 
-async function call(method, path, body) {
+async function call(method, path, body, token) {
   const res = await fetch(BASE + path, {
     method,
-    headers: { 'Content-Type': 'application/json', 'Accept-Language': 'de' },
+    headers: { 'Content-Type': 'application/json', 'Accept-Language': 'de', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
     body: body ? JSON.stringify(body) : undefined,
   });
   const text = await res.text();
@@ -25,7 +26,8 @@ async function call(method, path, body) {
 }
 
 const PHONE = { viewport: { width: 400, height: 860 }, isMobile: true, hasTouch: true, locale: 'de-DE' };
-const DESKTOP = { viewport: { width: 1280, height: 900 }, locale: 'de-DE' };
+// A browser in Tokyo, whose zone the wizard suggests
+const DESKTOP = { viewport: { width: 1280, height: 900 }, locale: 'de-DE', timezoneId: 'Asia/Tokyo' };
 
 async function fillAccount(page, code) {
   await page.locator('[data-setup-code]').fill(code);
@@ -71,6 +73,8 @@ const main = async () => {
     await page.locator('[data-setup-code]').evaluate((el) => el === document.activeElement),
     'Code-Feld hat den Fokus'
   );
+  const zoneField = page.getByRole('button', { name: 'Zeitzone' });
+  check((await zoneField.textContent()).includes('Asia/Tokyo'), 'Zeitzone des Browsers vorgeschlagen', await zoneField.textContent());
 
   // A wrong code: refused with the server's message, no account
   const wrong = CODE.startsWith('A') ? 'BBBB-BBBB-BBBB' : 'AAAA-AAAA-AAAA';
@@ -93,6 +97,12 @@ const main = async () => {
   check(again.status === 403, 'Code gilt nach der Einrichtung nicht mehr', again);
   const login = await call('POST', '/api/v1/auth/login', { login: 'chefin@example.com', password: PASSWORD });
   check(login.status === 200 && !!login.body?.token, 'Anmeldung als neue Administratorin', login.status);
+  const settings = (await call('GET', '/api/v1/admin/settings', undefined, login.body?.token)).body;
+  check(
+    settings?.timeZone === 'Asia/Tokyo' && settings?.serverTime?.zone === 'Asia/Tokyo' && settings?.serverTime?.source === 'setting',
+    'Zeitzone aus dem Assistenten gespeichert und in Kraft',
+    { timeZone: settings?.timeZone, serverTime: settings?.serverTime }
+  );
   check(errors.length === 0, 'Keine Fehler im Browser', errors);
 
   await browser.close();

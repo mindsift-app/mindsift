@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { AlertTriangle, Check, Clock, FileText, Hash, Loader2, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { TriangleAlert, Check, Clock, FileText, Hash, LoaderCircle, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { PresenceAvatars } from './PresenceAvatars';
 import { CountBadge } from '../../components/CountBadge';
 import { SharedPill } from '../../components/SharedPill';
@@ -230,7 +230,7 @@ export function WorkspaceTabBar({
               )}
               {docSaveStatus === 'saving' && (
                 <>
-                  <Loader2 className="w-3.5 h-3.5 animate-spin text-accent" />
+                  <LoaderCircle className="w-3.5 h-3.5 animate-spin text-accent" />
                 </>
               )}
               {docSaveStatus === 'unsaved' && (
@@ -240,7 +240,7 @@ export function WorkspaceTabBar({
               )}
               {docSaveStatus === 'error' && (
                 <>
-                  <AlertTriangle className="w-3.5 h-3.5 text-status-err" />
+                  <TriangleAlert className="w-3.5 h-3.5 text-status-err" />
                 </>
               )}
             </div>

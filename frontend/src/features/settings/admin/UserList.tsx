@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { AtSign, Ban, ChevronDown, ChevronRight, KeyRound, Search, ShieldCheck, ShieldOff, Trash2, UserCheck, X } from 'lucide-react';
+import { AtSign, Ban, ChevronDown, ChevronRight, KeyRound, Search, ShieldCheck, ShieldOff, Trash, UserCheck, X } from 'lucide-react';
 import { User, UserRole } from '../../../lib/types';
 import { UserAvatar } from '../../../components/UserAvatar';
 import { SelectMenu } from '../../../components/SelectMenu';
@@ -384,7 +384,7 @@ function UserDetails({ u, admin, currentUser, isServerAdmin }: { u: User; admin:
           </button>
         )}
         <button type="button" onClick={() => handleDeleteUser(u)} disabled={Boolean(lockReason)} title={lockReason || undefined} className={`${btn} hover:text-status-err`}>
-          <Trash2 className="w-3.5 h-3.5" />
+          <Trash className="w-3.5 h-3.5" />
           <span>{t('users.delete')}</span>
         </button>
       </div>

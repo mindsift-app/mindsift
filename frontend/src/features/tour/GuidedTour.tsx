@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, ArrowRight, Loader2, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, LoaderCircle, X } from 'lucide-react';
 import type { ActiveTab } from '../../app/appTabs';
 import { isPhoneWidth } from '../../lib/breakpoints';
 import { TOUR_STEPS } from './tourSteps';
@@ -329,7 +329,7 @@ function TourOverlay({
 
       {searching && !showing && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none" aria-hidden>
-          <Loader2 className="w-6 h-6 text-on-accent animate-spin" />
+          <LoaderCircle className="w-6 h-6 text-on-accent animate-spin" />
         </div>
       )}
 

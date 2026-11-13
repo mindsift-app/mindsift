@@ -1,4 +1,4 @@
-import { RotateCcw, Trash2 } from 'lucide-react';
+import { RotateCcw, Trash } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { TaskList, TrashedTask } from '../../lib/types';
 import { formatDeletedAt } from '../../lib/due';
@@ -25,7 +25,7 @@ export function TaskTrashList({ items, lists, showList, onRestore, onPurge }: Ta
           return (
             <div key={item.id} className="px-3 py-2 flex items-center justify-between gap-3 hover:bg-panel-hover">
               <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                <Trash2 className="w-4 h-4 text-faint flex-shrink-0" />
+                <Trash className="w-4 h-4 text-faint flex-shrink-0" />
                 <div className="min-w-0">
                   <p className={`text-sm truncate ${item.isCompleted ? 'text-muted line-through' : 'text-main'}`}>{item.content}</p>
                   <p className="text-[11px] text-faint truncate">
@@ -51,7 +51,7 @@ export function TaskTrashList({ items, lists, showList, onRestore, onPurge }: Ta
                     title={t('trash.delete')}
                     aria-label={t('trash.delete')}
                   >
-                    <Trash2 className="w-3.5 h-3.5" />
+                    <Trash className="w-3.5 h-3.5" />
                   </button>
                 </div>
               )}

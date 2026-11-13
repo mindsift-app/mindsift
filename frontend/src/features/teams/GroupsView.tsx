@@ -4,10 +4,10 @@ import i18n from '../../i18n';
 import {
   Users,
   Plus,
-  Trash2,
+  Trash,
   ArrowLeft,
   Check,
-  AlertCircle,
+  CircleAlert,
   UserPlus,
   Shield,
   Pencil,
@@ -257,7 +257,7 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ currentUser, onBack }) =
             {statusMsg.type === 'ok' ? (
               <Check className="w-4 h-4 text-accent flex-shrink-0" />
             ) : (
-              <AlertCircle className="w-4 h-4 text-status-err flex-shrink-0" />
+              <CircleAlert className="w-4 h-4 text-status-err flex-shrink-0" />
             )}
             <span>{statusMsg.text}</span>
           </div>
@@ -499,7 +499,7 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ currentUser, onBack }) =
                               className="btn-icon btn-icon-danger"
                               title={t('delete')}
                             >
-                              <Trash2 className="w-3.5 h-3.5" />
+                              <Trash className="w-3.5 h-3.5" />
                             </button>
                           </div>
                         )}

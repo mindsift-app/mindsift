@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
-import { Bell, BellOff, CalendarDays, Columns, LayoutList, Pencil, Plus, Trash2, Users } from 'lucide-react';
+import { Bell, BellOff, CalendarDays, Columns2, LayoutList, Pencil, Plus, Trash, Users } from 'lucide-react';
 import { CountBadge } from '../../components/CountBadge';
 import { SegmentedControl } from '../../components/SegmentedControl';
 import { SharedPill } from '../../components/SharedPill';
@@ -249,7 +249,7 @@ export function TaskListTabs({
                   },
                   {
                     key: 'delete',
-                    icon: <Trash2 className="w-3.5 h-3.5" />,
+                    icon: <Trash className="w-3.5 h-3.5" />,
                     label: t('common:listMenu.delete'),
                     danger: true,
                     disabled: !isOwner,
@@ -270,7 +270,7 @@ export function TaskListTabs({
             onChange={setViewMode}
             options={[
               { value: 'list', title: t('tabs.listView'), label: viewLabel(<LayoutList className="w-3.5 h-3.5" />, t('tabs.list')) },
-              { value: 'kanban', title: t('tabs.kanbanView'), label: viewLabel(<Columns className="w-3.5 h-3.5" />, t('tabs.kanban')) },
+              { value: 'kanban', title: t('tabs.kanbanView'), label: viewLabel(<Columns2 className="w-3.5 h-3.5" />, t('tabs.kanban')) },
               { value: 'calendar', title: t('tabs.calendarView'), label: viewLabel(<CalendarDays className="w-3.5 h-3.5" />, t('tabs.calendar')) },
             ]}
           />

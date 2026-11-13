@@ -5,7 +5,7 @@ import {
   User as UserIcon,
   X,
   Plus,
-  Trash2,
+  Trash,
   Lock,
   Check,
 } from 'lucide-react';
@@ -400,7 +400,7 @@ export const UnifiedShareModal: React.FC<UnifiedShareModalProps> = ({
                           className="p-1 text-faint hover:text-status-err rounded transition-colors cursor-pointer"
                           title={t('share.remove')}
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
+                          <Trash className="w-3.5 h-3.5" />
                         </button>
                       )}
                     </div>

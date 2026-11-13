@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { Fingerprint } from 'lucide-react';
+import { FingerprintPattern } from 'lucide-react';
 import { api } from '../../../lib/api';
 import { MfaStatus, SecondFactorProof } from '../../../lib/types';
 import { getPasskey, passkeysSupported } from '../../../lib/webauthn';
@@ -82,7 +82,7 @@ export function SecondFactorFields({
           className="btn-action w-full h-11 sm:h-8 px-3 text-xs flex items-center justify-center gap-1.5 disabled:opacity-50"
           data-confirm-passkey
         >
-          <Fingerprint className="w-3.5 h-3.5" />
+          <FingerprintPattern className="w-3.5 h-3.5" />
           <span>{t('security.twoFactor.confirmWithPasskey')}</span>
         </button>
       )}

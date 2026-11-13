@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
-import { AlertCircle, Brain, Check, LogOut } from 'lucide-react';
+import { CircleAlert, Brain, Check, LogOut } from 'lucide-react';
 import { AuthStatus, SetupInfo, User } from '../../lib/types';
 import { api, triggerHaptic } from '../../lib/api';
 import { LegalLinks } from '../../components/LegalLinks';
@@ -110,7 +110,7 @@ export const FinishSetupView: React.FC<{
           {/* Beside the button: the form is long, an error on top would be out of sight */}
           {error && (
             <div role="alert" className="alert-err flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 text-status-err flex-shrink-0" />
+              <CircleAlert className="w-4 h-4 text-status-err flex-shrink-0" />
               <span>{error}</span>
             </div>
           )}

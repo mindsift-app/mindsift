@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import i18n from '../../i18n';
-import { AlertCircle, Check, Loader2, Mic, RefreshCw, Square } from 'lucide-react';
+import { CircleAlert, Check, LoaderCircle, Mic, RefreshCw, Square } from 'lucide-react';
 import { api } from '../../lib/api';
 import { VoiceAdminStatus } from '../../lib/types';
 
@@ -137,7 +137,7 @@ export const VoiceStatusCard: React.FC = () => {
                   </span>
                 ) : (
                   <span className="text-status-err flex items-center gap-1">
-                    <AlertCircle className="w-3.5 h-3.5" />
+                    <CircleAlert className="w-3.5 h-3.5" />
                     {status?.reachable ? t('voiceStatus.modelMissing') : t('voiceStatus.unreachable')}
                     {status?.error && !status.reachable ? `: ${status.error}` : ''}
                   </span>
@@ -175,7 +175,7 @@ export const VoiceStatusCard: React.FC = () => {
               disabled={testing}
               className="btn-secondary h-11 sm:h-8 px-3 text-xs flex items-center justify-center gap-1.5 disabled:opacity-40"
             >
-              {testing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Mic className="w-3.5 h-3.5" />}
+              {testing ? <LoaderCircle className="w-3.5 h-3.5 animate-spin" /> : <Mic className="w-3.5 h-3.5" />}
               {testing ? t('app:capture.transcribing') : t('voiceStatus.test', { seconds: TEST_SECONDS })}
             </button>
           )}

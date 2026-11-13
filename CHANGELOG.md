@@ -22,6 +22,9 @@ Versions without a git tag were development states and were never published as a
 - **Backup before database updates:** before an update changes the database schema, MindSift saves a compressed copy of the database in `data/backups/system/pre-migration-….db.gz` and logs where; the last three are kept. If the copy cannot be written (a full disk, for example), the database is left as it is and MindSift does not start, saying why.
 - **Way back after an update:** from this version on, MindSift started on a database that a newer version has already changed no longer runs on it silently (versions before this one still do): it refuses to start and logs both versions' migration numbers and how to go back (restore the pre-migration copy and start the older image, or run the newer image again). The README explains it under "Rolling back".
 - **Time zone in the administration:** Administration → Server sets the server's time zone from a searchable list of all zones (or takes over the browser's) and shows the server's time right now and where the zone comes from (this setting, `TZ`, or UTC by default). Due dates, alarms, the daily summary, backups and dates in emails follow a change at once, without a restart. One time zone per server, not per person.
+- The setup wizard asks for the server's time zone, suggested from the browser, with the same searchable list as the administration; it applies right away.
+- "About MindSift" links the licenses of the third-party software in the app (`/third-party-licenses.txt`, served by MindSift itself).
+- The help says that due times and alarms follow the server's time zone and where admins set it.
 
 ### Fixed
 - Zooming into a bullet whose level was never stored shows its path and sub-bullets again, and the recovery-code file of an account without email or username no longer names it "undefined".
@@ -36,6 +39,7 @@ Versions without a git tag were development states and were never published as a
 - Changing the password no longer signs out the device it was changed on.
 - Callouts show **bold**, *italic*, links and hashtags like any other bullet instead of the raw Markdown; marking several bullets marks the callout's text.
 - The task dialog opens and closes without delay in long task lists: opening it no longer makes the browser restyle and lay out every row (300 tasks with a slowed-down CPU: about 0.5 s down to 0.07 s).
+- Running `install.sh` again over an existing installation pulls the latest image and says that settings and data were kept, instead of pointing to the setup wizard for a new admin.
 
 ### Changed
 - **Attention:** the setup wizard of a new server now asks for a one-time **setup code** that MindSift writes to its log when it starts without any account (`docker logs mindsift | grep 'Setup code'`), so only someone who can read the server's log becomes its admin, not whoever opens the page first. The code changes with every restart and stops working once the admin exists; three wrong codes lock the address for 15 minutes. With `ADMIN_USER`/`ADMIN_PASSWORD` and in the demo nothing changes. The install script shows the code when it has not created the admin itself. Scripts that call `POST /api/v1/auth/setup` send it as `setupCode`; `POST /api/v1/auth/register` no longer creates the first account of a server.

@@ -1,4 +1,4 @@
-import { Check, FileText, FilePlus, FolderPlus, Hash, Trash2 } from 'lucide-react';
+import { Check, FileText, FilePlus, FolderPlus, Hash, Trash } from 'lucide-react';
 import { MobileMenuGroup } from '../../context/MobileActionContext';
 import { WorkspaceSubView } from './workspaceTypes';
 import i18n from '../../i18n';
@@ -88,7 +88,7 @@ export function buildWorkspaceMenu({
             {
               id: 'trash',
               label: i18n.t('workspace:trash.title'),
-              icon: <Trash2 className="w-4 h-4" />,
+              icon: <Trash className="w-4 h-4" />,
               badge: trashCount,
               onClick: openTrash,
             },

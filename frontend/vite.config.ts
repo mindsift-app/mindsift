@@ -59,6 +59,11 @@ export default defineConfig({
         changeOrigin: true,
         ws: true,
       },
+      // Served by the server (internal/api/licenses.go); a dev server without the file answers 404
+      '/third-party-licenses.txt': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+      },
     },
   },
   build: {

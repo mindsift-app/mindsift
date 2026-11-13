@@ -2,9 +2,9 @@ import React, { useEffect, useState, useRef, useMemo, useCallback, useDeferredVa
 import i18n from '../../i18n';
 import { useTranslation } from 'react-i18next';
 import {
-  Columns,
+  Columns2,
   Users,
-  CheckSquare,
+  SquareCheckBig,
   User as 
   Lock,
 } from 'lucide-react';
@@ -718,7 +718,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
       >
         <div className="flex items-center justify-between text-[9px] text-muted font-medium">
           <span className="flex items-center gap-1">
-            <CheckSquare className="w-2.5 h-2.5 text-accent" />
+            <SquareCheckBig className="w-2.5 h-2.5 text-accent" />
             <span>
               {t('view.subtasks', { done, total })}
             </span>
@@ -912,7 +912,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
               className="tool-btn"
               title={t('view.columnsTitle')}
             >
-              <Columns className="w-3.5 h-3.5" />
+              <Columns2 className="w-3.5 h-3.5" />
               <span>{t('view.columns')}</span>
             </button>
           )}

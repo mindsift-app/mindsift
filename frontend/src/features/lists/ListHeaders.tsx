@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Pencil, Plus, Trash2, Users } from 'lucide-react';
+import { Pencil, Plus, Trash, Users } from 'lucide-react';
 import { ActionMenu } from '../../components/ActionMenu';
 import { MoreTabsButton } from '../../components/MoreTabsButton';
 import { OVERFLOW_HIDDEN_TAB, useOverflowTabs } from '../../lib/useOverflowTabs';
@@ -188,7 +188,7 @@ export function ListTabsHeader({
                     ? [
                         {
                           key: 'delete',
-                          icon: <Trash2 className="w-3.5 h-3.5" />,
+                          icon: <Trash className="w-3.5 h-3.5" />,
                           label: t('common:listMenu.delete'),
                           danger: true,
                           disabled: activeList.userId !== currentUser?.id,

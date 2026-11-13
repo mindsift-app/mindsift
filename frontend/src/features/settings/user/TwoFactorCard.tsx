@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import i18n from '../../../i18n';
-import { AlertCircle, AlertTriangle, Check, Copy, Monitor, ShieldCheck, ShieldOff, Smartphone, X } from 'lucide-react';
+import { CircleAlert, TriangleAlert, Check, Copy, Monitor, ShieldCheck, ShieldOff, Smartphone, X } from 'lucide-react';
 import { api } from '../../../lib/api';
 import { MfaStatus, SecondFactorProof, User } from '../../../lib/types';
 import { formatDate } from '../../../lib/format';
@@ -206,7 +206,7 @@ export function TwoFactorCard({
           )}
           {error && !sheet && (
             <div role="alert" className="alert-err flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 text-status-err flex-shrink-0" />
+              <CircleAlert className="w-4 h-4 text-status-err flex-shrink-0" />
               <span>{error}</span>
             </div>
           )}
@@ -334,7 +334,7 @@ export function TwoFactorCard({
                     : t('security.twoFactor.onWithPasskeys', { count: passkeyCount })}
                 </p>
                 <p className={status.recoveryCodesLeft <= LOW_RECOVERY_CODES ? 'text-status-err flex items-center gap-1.5' : 'text-muted'}>
-                  {status.recoveryCodesLeft <= LOW_RECOVERY_CODES && <AlertTriangle className="w-3.5 h-3.5 shrink-0" />}
+                  {status.recoveryCodesLeft <= LOW_RECOVERY_CODES && <TriangleAlert className="w-3.5 h-3.5 shrink-0" />}
                   <span>
                     {t('security.twoFactor.codesLeft', { count: status.recoveryCodesLeft })}
                     {status.recoveryCodesLeft <= LOW_RECOVERY_CODES && ` ${t('security.twoFactor.codesLow')}`}

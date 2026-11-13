@@ -4,7 +4,7 @@ import {
   ArrowLeft,
   ArrowRight,
   Check,
-  CheckSquare,
+  SquareCheckBig,
   Code,
   FileText,
   Heading1,
@@ -91,7 +91,7 @@ export function TriageDemo() {
           {t('triage:action.note')}
         </span>
         <span className={`${chip} ${lit('task') ? 'bg-accent text-on-accent border-accent' : 'border-border text-muted'}`}>
-          <CheckSquare className="w-3 h-3" />
+          <SquareCheckBig className="w-3 h-3" />
           {t('triage:action.task')}
           <ArrowRight className="w-3 h-3" />
         </span>
@@ -226,7 +226,7 @@ export function LinkedTaskDemo() {
       </div>
       <div className="space-y-1">
         <div className="text-[10px] font-semibold uppercase tracking-wide text-faint flex items-center gap-1">
-          <CheckSquare className="w-3 h-3" />
+          <SquareCheckBig className="w-3 h-3" />
           {t('demo.tasks')}
         </div>
         <div className="rounded-btn bg-panel border border-border px-2 py-1.5 text-[11px] text-main flex items-center gap-1.5 flex-wrap">

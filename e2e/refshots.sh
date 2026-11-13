@@ -9,7 +9,8 @@
 #   e2e/refshots.sh ws before          # workspace steps (refworkspace.mjs), notes/folders/trash to .refshots/shots/before.ws.txt
 #   e2e/refshots.sh lists before       # shopping list steps (reflists.mjs), lists and entries to .refshots/shots/before.lists.txt
 #
-# Requires podman (or docker via ENGINE=docker). SKIP_BUILD=1 reuses the last image.
+# Requires podman (or docker via ENGINE=docker). SKIP_BUILD=1 reuses the last image. PORT, REFSHOTS_DIR,
+# REFSHOTS_IMAGE and REFSHOTS_NAME keep parallel runs apart.
 set -eu
 ENGINE="${ENGINE:-podman}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -18,8 +19,9 @@ DIR="${REFSHOTS_DIR:-$ROOT/.refshots}"
 # which would take the database away from the running server if it lay inside
 SHOTS="$DIR/shots"
 DATA="$DIR/data"
-IMAGE=mindsift-refshots
-NAME=mindsift-refshots
+# Image and container name; own ones (REFSHOTS_IMAGE, REFSHOTS_NAME) let several working copies run at once
+IMAGE="${REFSHOTS_IMAGE:-mindsift-refshots}"
+NAME="${REFSHOTS_NAME:-mindsift-refshots}"
 PORT="${PORT:-18666}"
 PW=mcr.microsoft.com/playwright:v1.65.0-noble
 

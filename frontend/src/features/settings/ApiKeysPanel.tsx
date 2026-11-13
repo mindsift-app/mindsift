@@ -4,7 +4,7 @@ import i18n from '../../i18n';
 import {
   Key,
   Plus,
-  Trash2,
+  Trash,
   Pencil,
   Copy,
   Check,
@@ -392,7 +392,7 @@ http_headers = { "X-API-Key" = "${exampleToken}" }`
                     className="btn-icon btn-icon-danger w-7 h-7"
                     aria-label={t('api.deleteKey', { name: k.name })}
                   >
-                    <Trash2 className="w-3.5 h-3.5" />
+                    <Trash className="w-3.5 h-3.5" />
                   </button>
                 </div>
               </div>

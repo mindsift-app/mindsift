@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { AtSign, Bell, CalendarClock, CheckCheck, CheckCircle2, Eye, PlusCircle, Share2, Trash2, UserPlus } from 'lucide-react';
+import { AtSign, Bell, CalendarClock, CheckCheck, CircleCheck, Eye, CirclePlus, Share2, Trash, UserPlus } from 'lucide-react';
 import { api, triggerHaptic } from '../lib/api';
 import { CenterEntry } from '../lib/types';
 import { formatRelative } from '../lib/format';
@@ -11,8 +11,8 @@ const KIND_ICON: Record<string, React.ReactNode> = {
   assigned: <UserPlus className="w-3.5 h-3.5" />,
   mentioned: <AtSign className="w-3.5 h-3.5" />,
   due: <CalendarClock className="w-3.5 h-3.5" />,
-  taskDone: <CheckCircle2 className="w-3.5 h-3.5" />,
-  taskCreated: <PlusCircle className="w-3.5 h-3.5" />,
+  taskDone: <CircleCheck className="w-3.5 h-3.5" />,
+  taskCreated: <CirclePlus className="w-3.5 h-3.5" />,
   watched: <Eye className="w-3.5 h-3.5" />,
   shared: <Share2 className="w-3.5 h-3.5" />,
 };
@@ -165,7 +165,7 @@ export function NotificationBell({
               title={t('center.clear')}
               aria-label={t('center.clear')}
             >
-              <Trash2 className="w-3.5 h-3.5" />
+              <Trash className="w-3.5 h-3.5" />
             </button>
           </div>
           {/* 2 px between entries, so tinted unread ones do not merge into one */}
