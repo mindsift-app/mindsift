@@ -1,5 +1,4 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { motion } from 'framer-motion';
 import { api, triggerHaptic } from '../../lib/api';
 import { KanbanColumn, TaskList, Thought } from '../../lib/types';
 import { useKanbanTouchDrag } from './useKanbanTouchDrag';
@@ -206,24 +205,17 @@ export function useTaskDrag({
     setKanbanHiddenId(null);
   };
 
-  // The gap where the dragged card would land; it opens and closes smoothly, the cards below slide along
-  const renderDropSlot = (colId: string, index: number) => (
-    <motion.div
-      key={`slot-${colId}-${index}`}
-      variants={{
-        closed: { height: 0, opacity: 0 },
-        open: { height: dragHeightRef.current, opacity: 1 },
-        // On a drop the card takes the gap's place at once, so the gap goes without closing first
-        gone: (dropped: boolean) => ({ height: 0, opacity: 0, transition: { duration: dropped ? 0 : 0.2 } }),
-      }}
-      initial="closed"
-      animate="open"
-      exit="gone"
-      transition={{ duration: 0.2, ease: 'easeOut' }}
-      className="mt-2 first:mt-0 rounded-card border-2 border-dashed border-accent/50 bg-accent/5 pointer-events-none"
-      aria-hidden="true"
-    />
-  );
+  // The gap where the dragged card would land: one per column list, invisible until a mouse drag needs it.
+  // useKanbanSlotShift moves it to the insert position at the card's height (fading in, gliding along within
+  // a column) and moves the cards below it down by a transform, so the layout of the column stays as it is.
+  const renderDropSlot = () =>
+    canDragTasks ? (
+      <div
+        data-kanban-slot=""
+        className="absolute left-2 right-2 top-0 opacity-0 rounded-card border-2 border-dashed border-accent/50 bg-accent/5 pointer-events-none"
+        aria-hidden="true"
+      />
+    ) : null;
 
   const handleKanbanColDragOver = (e: React.DragEvent<HTMLDivElement>, colId: string) => {
     if (!draggingTaskId) return;

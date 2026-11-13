@@ -1,6 +1,5 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { AnimatePresence } from 'framer-motion';
 import { Plus } from 'lucide-react';
 import { columnDotClass } from './ManageColumnsModal';
 import { KanbanColumn, TaskList, Thought } from '../../lib/types';
@@ -9,6 +8,7 @@ import { useTaskDrag } from './useTaskDrag';
 import { AvatarPerson } from '../../components/AvatarStack';
 import { useLatestCallback } from '../../lib/useLatestCallback';
 import { KanbanCard } from './KanbanCard';
+import { useKanbanSlotShift } from './useKanbanSlotShift';
 
 // First row of a Kanban board with several rows: the full height minus what is still visible of the bar
 // above the board (--kb-top at the start, shrinking with the scroll position --kb-scroll, which is set on
@@ -139,6 +139,8 @@ export function KanbanBoard({
   const stableAssigneePeople = useLatestCallback(getAssigneePeople);
   const stableRenderAssignees = useLatestCallback(renderAssignees);
   const stableProgressBar = useLatestCallback(renderTaskProgressBar);
+  // The drop slot opens by moving the cards below it with a transform, not by changing the layout
+  useKanbanSlotShift(kanbanBoardRef, kanbanSlot, kanbanHiddenId, dragHeightRef);
 
   return (
     <div className="space-y-2">
@@ -154,8 +156,6 @@ export function KanbanBoard({
           const blockedForDrag =
             !!draggingTaskId && !ownColumnIdFor(tasks.find((t) => t.id === draggingTaskId), col.id);
 
-          // Cards that take part in the slot count (the dragged one has left its place)
-          const visibleIds = colTasks.filter((t) => t.id !== kanbanHiddenId).map((t) => t.id);
           const slotHere = kanbanSlot && kanbanSlot.col === col.id ? kanbanSlot.index : -1;
 
           return (
@@ -193,23 +193,21 @@ export function KanbanBoard({
                 <span className="badge-neutral font-mono">{colTasks.length}</span>
               </div>
 
-              {/* Tasks List in Column. Cards and drop slot space themselves (mt-2 first:mt-0): space-y's
-                  sibling rule made the browser restyle every card below a moving drop slot */}
-              <div data-kanban-list className={`p-2 flex-1 min-h-0 overflow-y-auto ${kanbanColHeight ? '' : 'max-h-[70vh]'}`}>
+              {/* Tasks List in Column. Cards space themselves (mt-2 first:mt-0). The drop slot is its last
+                  child, positioned within the list (useKanbanSlotShift), so dragging inserts no element
+                  between the cards: the sibling rules of Tailwind's space-y and divide classes made the
+                  browser restyle every card of the column for each one */}
+              <div data-kanban-list className={`relative p-2 flex-1 min-h-0 overflow-y-auto ${kanbanColHeight ? '' : 'max-h-[70vh]'}`}>
                 {colTasks.map((task) => {
                   const readOnly = isTaskReadOnly(task);
-                  const visibleIdx = visibleIds.indexOf(task.id);
                   const ownCols = columnsFor(task);
                   const ownIdx = ownCols.findIndex((c) => c.id === ownColumnOf(task)?.id);
                   const prevCol = ownIdx > 0 ? ownCols[ownIdx - 1] : undefined;
                   const nextCol = ownIdx >= 0 ? ownCols[ownIdx + 1] : undefined;
 
                   return (
-                    <React.Fragment key={task.id}>
-                    <AnimatePresence initial={false} custom={justDroppedId !== null}>
-                      {slotHere >= 0 && slotHere === visibleIdx && renderDropSlot(col.id, visibleIdx)}
-                    </AnimatePresence>
                     <KanbanCard
+                      key={task.id}
                       task={task}
                       readOnly={readOnly}
                       isDragging={draggingTaskId === task.id}
@@ -233,18 +231,14 @@ export function KanbanBoard({
                       renderAssignees={stableRenderAssignees}
                       renderTaskProgressBar={stableProgressBar}
                     />
-                    </React.Fragment>
                 );
               })}
-                <AnimatePresence initial={false} custom={justDroppedId !== null}>
-                  {slotHere >= 0 && slotHere === visibleIds.length && renderDropSlot(col.id, visibleIds.length)}
-                </AnimatePresence>
-
                 {colTasks.length === 0 && slotHere < 0 && (
                   <div className="p-4 text-center text-faint text-xs italic">
                     {t('kanban.emptyColumn')}
                   </div>
                 )}
+                {renderDropSlot()}
               </div>
 
               {/* Quick Add Task to Column. In "Alle Aufgaben" a new task has no list: a column only lists
