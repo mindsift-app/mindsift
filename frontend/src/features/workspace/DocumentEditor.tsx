@@ -890,7 +890,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
                   ? t('editor.offline')
                   : engineState.status === 'error'
                   ? engineState.errorMessage || t('editor.saveFailed')
-                  : 'Gespeichert'
+                  : t('editor.saved')
               }
               aria-label={t('editor.saveStatus')}
             >

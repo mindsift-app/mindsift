@@ -113,7 +113,7 @@ export function useBranchActions({
   const handleExtractBlock = useCallback(
     async (blockId: string, withLink = true) => {
       const engine = engineRef.current;
-      if (!engine) return;
+      if (!engine || !canEdit) return;
       try {
         await engine.syncNow(); // the server reads the branch as typed so far
         const { document: created, link } = await api.extractBranch(docId, blockId, engine.clientId);
@@ -143,7 +143,7 @@ export function useBranchActions({
         showNotice(err?.message || i18n.t('workspace:editor.convertFailed'));
       }
     },
-    [docId, onOpenDocBlock, onDocCreated, showNotice, handleUndo, applyLocalBlocks, currentBlocksRef, engineRef, lastExtractRef, lastInlineRef]
+    [docId, canEdit, onOpenDocBlock, onDocCreated, showNotice, handleUndo, applyLocalBlocks, currentBlocksRef, engineRef, lastExtractRef, lastInlineRef]
   );
 
   // A bullet with its children goes to the end of another note (dragged onto it in the sidebar, or chosen
@@ -218,7 +218,7 @@ export function useBranchActions({
   const handleInlineBlock = useCallback(
     async (blockId: string) => {
       const engine = engineRef.current;
-      if (!engine) return;
+      if (!engine || !canEdit) return;
       try {
         await engine.syncNow();
         const res = await api.inlineNote(docId, blockId);
@@ -243,7 +243,7 @@ export function useBranchActions({
         showNotice(err?.message || i18n.t('workspace:editor.pullBackFailed'));
       }
     },
-    [docId, onDocRemoved, showNotice, handleUndo, applyLocalBlocks, currentBlocksRef, engineRef, lastExtractRef, lastInlineRef]
+    [docId, canEdit, onDocRemoved, showNotice, handleUndo, applyLocalBlocks, currentBlocksRef, engineRef, lastExtractRef, lastInlineRef]
   );
 
   return {
