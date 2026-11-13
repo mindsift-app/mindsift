@@ -90,12 +90,6 @@ else
     if [ -n "${SECRETS_KEY_VALUE}" ]; then sed -i "s/^SECRETS_KEY=$/SECRETS_KEY=${SECRETS_KEY_VALUE}/" .env; fi
   fi
 
-  # Time zone of this server for due dates and alarms
-  HOST_TZ=$(timedatectl show -p Timezone --value 2>/dev/null || true)
-  if [ -z "${HOST_TZ}" ] && [ -f /etc/timezone ]; then HOST_TZ=$(head -n1 /etc/timezone); fi
-  if [ -z "${HOST_TZ}" ]; then HOST_TZ=$(readlink /etc/localtime 2>/dev/null | sed -n 's#.*zoneinfo/##p' || true); fi
-  if [ -n "${HOST_TZ}" ]; then set_env TZ "${HOST_TZ}"; fi
-
   WHISPER=0
   STT_MODEL=""
   PROXY_NETWORK=""
@@ -133,13 +127,15 @@ else
           ADMIN_PW_GENERATED=0
           break
         fi
-        # The server's rule (auth.ValidatePassword): 8 characters, not only spaces, at most 72 bytes
-        if [ "${#ADMIN_PW}" -lt 8 ] || [ -z "${ADMIN_PW//[[:space:]]/}" ]; then
+        # The server's rule (auth.ValidatePassword): 8 to 1024 characters, not only spaces. Characters as
+        # the server counts them, whatever the locale: the bytes of the UTF-8 text without its continuation bytes
+        PW_CHARS=$(printf '%s' "${ADMIN_PW}" | LC_ALL=C tr -d '\200-\277' | LC_ALL=C wc -c)
+        if [ "${PW_CHARS}" -lt 8 ] || [ -z "${ADMIN_PW//[[:space:]]/}" ]; then
           echo "    At least 8 characters, please."
           continue
         fi
-        if [ "$(printf '%s' "${ADMIN_PW}" | LC_ALL=C wc -c)" -gt 72 ]; then
-          echo "    At most 72 bytes, please."
+        if [ "${PW_CHARS}" -gt 1024 ]; then
+          echo "    At most 1024 characters, please."
           continue
         fi
         # .env holds it in single quotes (no $ expansion), so these two would not come through as typed
@@ -274,6 +270,27 @@ PORT_VALUE=$(sed -n 's/^PORT=//p' .env | head -n1)
 OPEN_URL="http://localhost:${PORT_VALUE:-8080}"
 if [ -n "${BASE_URL}" ] && [ "${BASE_URL}" != "http://localhost:8080" ]; then OPEN_URL="${BASE_URL}"; fi
 
+# A new installation with an admin from here: once MindSift answers and has created that account, the
+# password leaves .env again (only the first start uses it). Never on an update.
+ADMIN_PW_REMOVED=0
+ADMIN_FAILED=0
+if [ "${UPDATING}" = "0" ] && [ -n "${ADMIN_NAME:-}" ]; then
+  echo "⏳ Waiting for the first start..."
+  for _ in $(seq 1 90); do
+    LOGS=$(${COMPOSE_CMD} logs mindsift 2>/dev/null || true)
+    # Variables set but unusable: MindSift stops and says why; the password stays for a fix
+    if grep -q 'Creating the first administrator from ADMIN_USER / ADMIN_PASSWORD failed' <<<"${LOGS}"; then ADMIN_FAILED=1; break; fi
+    if grep -q 'First administrator created from ADMIN_USER' <<<"${LOGS}" &&
+      curl -fsS --noproxy '*' -m 4 -o /dev/null "http://localhost:${PORT_VALUE:-8080}/api/v1/health" 2>/dev/null; then
+      set_env ADMIN_PASSWORD ""
+      ADMIN_PW_REMOVED=1
+      break
+    fi
+    sleep 1
+  done
+  LOGS=""
+fi
+
 echo ""
 echo "============================================="
 echo "✅ MindSift is up and running!"
@@ -293,10 +310,18 @@ echo ""
 if [ -n "${ADMIN_NAME:-}" ]; then
   echo "👤 Sign in as \"${ADMIN_NAME}\"; a short wizard then asks the remaining settings."
   if [ "${ADMIN_PW_GENERATED:-0}" = "1" ]; then
-    # Shown this once; it is also in .env until you remove it there
+    # Shown this once
     echo "🔑 Generated password (shown only now, note it down): ${ADMIN_PW}"
   fi
-  echo "   ADMIN_PASSWORD in .env is only used on this first start; you can delete it there afterwards."
+  if [ "${ADMIN_PW_REMOVED}" = "1" ]; then
+    echo "   The account exists, so ADMIN_PASSWORD was removed from .env again (only the first start used it)."
+  elif [ "${ADMIN_FAILED}" = "1" ]; then
+    echo "⚠️  MindSift could not create the account and did not start; the log says why:"
+    echo "   ${COMPOSE_CMD} logs mindsift   (fix .env, then: ${COMPOSE_CMD} up -d)"
+  else
+    echo "⚠️  MindSift has not confirmed the account yet, so ADMIN_PASSWORD is still in .env. Check the log"
+    echo "   (${COMPOSE_CMD} logs mindsift) and delete the password from .env once you can sign in."
+  fi
 elif [ "${SETUP_CODE_NEEDED:-0}" = "1" ]; then
   echo "💡 On the first visit a wizard guides you through"
   echo "   setting up your admin account."
