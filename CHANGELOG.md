@@ -20,6 +20,7 @@ Versions before 0.80.0 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - New settings section **Security** with the password change, two-factor sign-in and the signed-in devices (moved there from Profile).
 
 ### Fixed
+- On phones, the save status of a note shows "Saved" in the app's language instead of always in German.
 - Sharing a pinned note no longer unpins it for the owner in the open app (realtime updates carried another person's view of the note).
 - Moving a shared note or folder no longer briefly shows collaborators the mover's folder placement.
 - Notes changed at the same moment are listed in the same order for everyone they are shared with.
