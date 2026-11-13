@@ -48,7 +48,7 @@ Before an update changes the database schema, MindSift saves a compressed copy o
 - **From the release after v0.95.0 on**, an older image refuses to start on a database a newer one has changed and logs both versions' migration numbers. Start the newer image again, or go back as below.
 - **v0.95.0 and earlier do not check this.** They start on the newer database without a word, and accounts that signed in on the newer version cannot sign in there any more: since the release after v0.95.0, passwords are stored in a newer form at the next sign-in, which older versions cannot read. Going back to v0.95.0 or earlier therefore always means restoring the copy from before the update; it predates the new password form, so sign-ins work again.
 
-To go back:
+To go back (the files in `data/` belong to the container's user, uid 1000, and only it can read them: run the commands as root, for example with `sudo`, or with rootless Podman inside `podman unshare`; the container hands the restored file back to its user on the next start):
 
 1. Stop the container (`docker compose down`).
 2. Unpack the copy from before the update over the database: `gunzip -c data/backups/system/pre-migration-….db.gz > data/mindsift.db`.
@@ -62,7 +62,7 @@ Whatever was written after the update is not in that copy.
 The daily backups hold the whole database as `data/backups/system/mindsift-db-<date>-<time>.db.gz` ([what else they contain](architecture.md#background-job-backups)). To put one back:
 
 1. Stop the container. Never replace the database while MindSift runs.
-2. Unpack the snapshot over the database: `gunzip -c data/backups/system/mindsift-db-….db.gz > data/mindsift.db`.
+2. Unpack the snapshot over the database (as root, see above): `gunzip -c data/backups/system/mindsift-db-….db.gz > data/mindsift.db`.
 3. Delete `data/mindsift.db-wal` and `data/mindsift.db-shm` if they exist (see above).
 4. Keep the keys that belong to the data: `SECRETS_KEY` or `data/secrets.key` (without it, hidden values and authenticator codes cannot be read) and `JWT_SECRET` or `data/jwt.secret` (otherwise everyone is signed out). Images and audio are not in the database dump but in `data/media/`; on a new machine copy the whole `data/` folder.
 5. Start the same version that wrote the snapshot, or a newer one. The container hands `data/` to its user (uid 1000) on start; without the container, keep the files owned by the user that runs MindSift and readable for it only.
