@@ -6,7 +6,9 @@ import (
 	"crypto/subtle"
 	"fmt"
 	"log/slog"
+	"math"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -115,7 +117,7 @@ func (s *Server) checkSetupCode(w http.ResponseWriter, r *http.Request, typed st
 	}
 	if wait := s.loginGuard.lockedFor(account, ip); wait > 0 {
 		slog.Warn("Setup locked after wrong setup codes", "remote_addr", r.RemoteAddr, "wait", wait.Round(time.Second))
-		writeLoginLocked(w, wait)
+		writeSetupLocked(w, wait)
 		return false
 	}
 	if strings.TrimSpace(typed) == "" {
@@ -126,4 +128,16 @@ func (s *Server) checkSetupCode(w http.ResponseWriter, r *http.Request, typed st
 	slog.Warn("Setup refused: wrong setup code", "remote_addr", r.RemoteAddr)
 	writeErrorCode(w, http.StatusForbidden, "setup_code_invalid", "Der Einrichtungscode stimmt nicht. Er steht im Server-Log.")
 	return false
+}
+
+// writeSetupLocked answers like writeLoginLocked (429, Retry-After), but says that the setup is locked: the
+// wizard shows the server's text, and "sign-in" would point the admin to the wrong place.
+func writeSetupLocked(w http.ResponseWriter, wait time.Duration) {
+	minutes := int(math.Ceil(wait.Minutes()))
+	w.Header().Set("Retry-After", strconv.Itoa(int(math.Ceil(wait.Seconds()))))
+	msg := tr(w, "Zu viele falsche Einrichtungscodes. Die Einrichtung ist für noch {minutes} Minuten gesperrt.", "minutes", strconv.Itoa(minutes))
+	if minutes == 1 {
+		msg = tr(w, "Zu viele falsche Einrichtungscodes. Die Einrichtung ist für noch eine Minute gesperrt.")
+	}
+	writeJSON(w, http.StatusTooManyRequests, map[string]string{"error": msg, "code": "setup_locked"})
 }

@@ -85,6 +85,16 @@ const main = async () => {
   check((await alert.textContent()).includes('Der Einrichtungscode stimmt nicht'), 'Falscher Code wird abgelehnt', await alert.textContent());
   check((await call('GET', '/api/v1/auth/status')).body?.needsSetup === true, 'Nach falschem Code kein Konto');
 
+  // After three wrong codes the address is locked for a while, and the wizard says so for the setup (not
+  // for the sign-in); the right code still goes through below
+  const answered = () => page.waitForResponse((r) => r.url().endsWith('/api/v1/auth/setup'), { timeout: 10000 });
+  for (let i = 0; i < 2; i++) await Promise.all([answered(), submit(page)]);
+  const [lockAnswer] = await Promise.all([answered(), submit(page)]);
+  check(lockAnswer.status() === 429, 'Gesperrt: 429', lockAnswer.status());
+  await page.waitForFunction(() => document.querySelector('[role=alert]')?.textContent?.includes('gesperrt'), null, { timeout: 10000 });
+  const locked = await page.getByRole('alert').textContent();
+  check(locked.includes('Die Einrichtung ist für noch') && !locked.includes('Anmeldung'), 'Nach drei falschen Codes: Einrichtung gesperrt', locked);
+
   // The right one, typed in lower case: the admin exists and is signed in
   await page.locator('[data-setup-code]').fill(CODE.toLowerCase());
   await submit(page);
