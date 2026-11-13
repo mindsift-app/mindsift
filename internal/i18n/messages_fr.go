@@ -440,7 +440,7 @@ var messagesFR = map[string]string{
 	"Wartet auf andere":              "En attente d’autres personnes",
 	"Erledigt":                       "Terminé",
 	"zu groß (max. 100 MB pro Bild oder Aufnahme)": "trop volumineux (max. 100 Mo par image ou enregistrement)",
-	"zu groß (max. 10 MB pro Notiz)":                "trop volumineux (max. 10 Mo par note)",
+	"zu groß (max. 10 MB pro Notiz)":               "trop volumineux (max. 10 Mo par note)",
 	"Zusammengeführte Notiz":                       "Note fusionnée",
 	"Aufgaben":                                     "Tâches",
 	"Listen":                                       "Listes",

@@ -9,6 +9,7 @@ Details for administrators that the README only touches: the install script, the
 - On a new install it asks for the admin account (`ADMIN_USER`, `ADMIN_PASSWORD`; Enter means `admin` with a generated password, shown once); without a terminal it skips that and shows the setup code the wizard asks for. `ADMIN_PASSWORD` is only needed on the first start: once the container answers, the script removes it from `.env` again.
 - Two optional questions (Enter means no): your own speech recognition (adds a Whisper container with large-v3-turbo or small), and a reverse proxy (asks for `BASE_URL` and the proxy's Docker network). These additions go into `docker-compose.override.yml`.
 - Running the script again updates `docker-compose.yml` and keeps `.env` and the override.
+- The container is named `mindsift` (`container_name` in `docker-compose.yml`). A second installation on the same host, or another container of that name, makes `docker compose up` fail with a name conflict: change the name in a `docker-compose.override.yml` (`services: mindsift: container_name: mindsift-2`) or remove the line; `docker compose logs mindsift` in the folder works with any name. The script does not check this.
 
 For voice recognition by hand, follow the comments on the `whisper` block in [`docker-compose.yml`](../docker-compose.yml); which model to pick is in [architecture.md](architecture.md#speech-recognition).
 

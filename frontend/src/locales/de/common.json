@@ -39,6 +39,8 @@
     "source": "Quellcode",
     "thirdPartyLabel": "Fremdsoftware",
     "thirdParty": "Lizenzen der enthaltenen Bibliotheken",
+    "thirdPartyLoading": "Wird geladen …",
+    "thirdPartyError": "Die Lizenzen konnten nicht geladen werden.",
     "operator": "Impressum und Datenschutz dieser Instanz verantwortet ihr Betreiber; die Links stehen in den Kontoeinstellungen und auf der Anmeldeseite.",
     "changelog": "Was sich geändert hat (Changelog)"
   },

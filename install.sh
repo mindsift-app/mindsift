@@ -291,9 +291,31 @@ if [ "${UPDATING}" = "0" ] && [ -n "${ADMIN_NAME:-}" ]; then
   LOGS=""
 fi
 
+# The headline only claims success once MindSift answers (an update, or a start without an admin from here,
+# was not waited for above). A server that stopped on its own (a wrong setting, a newer database) says why
+# in the log.
+HEALTHY=0
+if [ "${ADMIN_PW_REMOVED}" = "1" ]; then
+  HEALTHY=1
+elif [ "${ADMIN_FAILED}" = "0" ]; then
+  echo "⏳ Waiting for MindSift to answer..."
+  for _ in $(seq 1 90); do
+    if curl -fsS --noproxy '*' -m 4 -o /dev/null "http://localhost:${PORT_VALUE:-8080}/api/v1/health" 2>/dev/null; then
+      HEALTHY=1
+      break
+    fi
+    sleep 1
+  done
+fi
+
 echo ""
 echo "============================================="
-echo "✅ MindSift is up and running!"
+if [ "${HEALTHY}" = "1" ]; then
+  echo "✅ MindSift is up and running!"
+else
+  echo "⚠️  MindSift does not answer yet. If it does not come up in a minute, the log says why:"
+  echo "   ${COMPOSE_CMD} logs mindsift"
+fi
 echo ""
 echo "🌐 Open your browser at:"
 echo "   ${OPEN_URL}"

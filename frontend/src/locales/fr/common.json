@@ -39,6 +39,8 @@
     "source": "Code source",
     "thirdPartyLabel": "Logiciels tiers",
     "thirdParty": "Licences des bibliothèques incluses",
+    "thirdPartyLoading": "Chargement …",
+    "thirdPartyError": "Impossible de charger les licences.",
     "operator": "L'exploitant de cette instance est responsable de ses mentions légales et de sa politique de confidentialité ; les liens se trouvent dans les paramètres du compte et sur la page de connexion.",
     "changelog": "Ce qui a changé (journal des modifications)"
   },
