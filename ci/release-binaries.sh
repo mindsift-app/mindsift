@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Takes the server binary out of a published image, once per platform, and packs it with the licence:
+# Takes the server binary out of a published image, once per platform, and packs it with the licence and
+# the licenses of the third-party software in it (THIRD_PARTY_LICENSES.txt, from the same image):
 # <dir>/mindsift-<version>-linux-<arch>.tar.gz and their SHA256SUMS. It is the binary of the image, so
 # the one that was tested and scanned, and the frontend is embedded in it: the file runs on its own.
 # Usage: ci/release-binaries.sh <image> <version> <dir>
@@ -30,6 +31,7 @@ for platform in ${PLATFORMS:-linux/amd64 linux/arm64}; do
   # The container is only created to copy the file out of it, never started
   container="$("${ENGINE}" create --platform "${platform}" "${IMAGE}")"
   "${ENGINE}" cp "${container}:/app/mindsift" "${WORK}/${name}/mindsift"
+  "${ENGINE}" cp "${container}:/app/THIRD_PARTY_LICENSES.txt" "${WORK}/${name}/THIRD_PARTY_LICENSES.txt"
   "${ENGINE}" rm "${container}" >/dev/null
   # An image built for one platform only is handed out whatever platform was asked for
   if [ "$(elf_machine "${WORK}/${name}/mindsift")" != "${machine}" ]; then

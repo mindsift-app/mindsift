@@ -382,6 +382,8 @@ Technical documentation: [Doku/](Doku/README.md) (architecture, database, REST a
 
 MindSift is free software under the [GNU Affero General Public License v3.0](LICENSE): use it, change it, pass it on, even commercially. If you hand out a changed version or run it as a service on the net, its source has to be available under the same license. No warranty.
 
+The licenses of the third-party software built into MindSift (npm packages and Go modules) are in `THIRD_PARTY_LICENSES.txt`, generated at build time: in the image at `/app/THIRD_PARTY_LICENSES.txt` and next to the binary in every release archive.
+
 <div align="center">
 
 **[Try the demo](https://demo.mindsift.app)** · **[mindsift.app](https://mindsift.app/en/)**
