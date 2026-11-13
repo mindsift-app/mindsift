@@ -3,6 +3,7 @@ import i18n from '../../../i18n';
 import { NotificationEvents, NotificationSettings, PushDevice, User } from '../../../lib/types';
 import { api } from '../../../lib/api';
 import { currentPushSubscription, disablePush, enablePush, removePushDevice } from '../../../lib/push';
+import { errorMessage } from '../../../lib/errorMessage';
 
 // The notification settings of an account; old accounts only have alarmChannels (the channels of due tasks)
 export function buildNotificationSettings(user: User): NotificationSettings {
@@ -185,8 +186,8 @@ export function useAlarmSettings(currentUser: User, onUserUpdated: (u: User) => 
         notificationSettings: updated.notificationSettings ?? notificationSettings,
       });
       setAlarmMsg({ type: 'ok', text: i18n.t('settings:alarms.saved') });
-    } catch (err: any) {
-      setAlarmMsg({ type: 'err', text: err.message || i18n.t('settings:alarms.saveFailed') });
+    } catch (err) {
+      setAlarmMsg({ type: 'err', text: errorMessage(err, i18n.t('settings:alarms.saveFailed')) });
     } finally {
       setSavingAlarms(false);
     }
@@ -223,10 +224,10 @@ export function useAlarmSettings(currentUser: User, onUserUpdated: (u: User) => 
         type: 'ok',
         text: i18n.t('settings:alarms.testSent', { label }),
       });
-    } catch (err: any) {
+    } catch (err) {
       setAlarmMsg({
         type: 'err',
-        text: i18n.t('settings:alarms.testFailedWith', { message: err.message || i18n.t('common:errors.unknown') }),
+        text: i18n.t('settings:alarms.testFailedWith', { message: errorMessage(err, i18n.t('common:errors.unknown')) }),
       });
     } finally {
       setTestingChannel(null);

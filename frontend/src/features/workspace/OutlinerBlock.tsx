@@ -65,6 +65,7 @@ import i18n from '../../i18n';
 import { UserAvatar } from '../../components/UserAvatar';
 import { userColorStyles } from '../../lib/userColor';
 import { showError } from '../../components/ErrorNotice';
+import { errorMessage } from '../../lib/errorMessage';
 
 export interface SlashCommand {
   type: BlockType | 'link' | 'secret' | 'dictation' | 'extract';
@@ -2018,8 +2019,8 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
                 };
                 onUpdateBlockRef.current(updatedBlock, true);
                 onOpenTask?.(thought.id);
-              } catch (err: any) {
-                showError(err.message || t('block.createTaskFailed'));
+              } catch (err) {
+                showError(errorMessage(err, t('block.createTaskFailed')));
               }
             }}
             className="p-1 sm:p-0.5 min-w-[28px] min-h-[28px] sm:min-w-0 sm:min-h-0 flex items-center justify-center text-faint hover:text-accent rounded-btn transition-colors cursor-pointer"
@@ -2042,8 +2043,8 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
                   type: 'todo',
                 };
                 onUpdateBlockRef.current(updatedBlock, true);
-              } catch (err: any) {
-                showError(err.message || t('block.unlinkFailed'));
+              } catch (err) {
+                showError(errorMessage(err, t('block.unlinkFailed')));
               }
             }}
             className="p-1 sm:p-0.5 min-w-[28px] min-h-[28px] sm:min-w-0 sm:min-h-0 flex items-center justify-center text-faint hover:text-status-warn rounded-btn transition-colors cursor-pointer"

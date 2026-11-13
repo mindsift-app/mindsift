@@ -4,6 +4,7 @@ import { TrashedDocument } from '../../lib/types';
 import { CountBadge } from '../../components/CountBadge';
 import { formatDeletedAt } from '../../lib/due';
 import { useTranslation } from 'react-i18next';
+import { errorMessage } from '../../lib/errorMessage';
 
 interface TrashViewProps {
   items: TrashedDocument[];
@@ -29,8 +30,8 @@ export const TrashView: React.FC<TrashViewProps> = ({ items, onOpen, onRestore, 
     try {
       await action();
       setConfirmId(null);
-    } catch (err: any) {
-      setError(err.message || t('editor.inTrashAction'));
+    } catch (err) {
+      setError(errorMessage(err, t('editor.inTrashAction')));
     } finally {
       setBusyId(null);
     }

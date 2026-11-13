@@ -6,6 +6,7 @@ import { DocSyncEngine, EngineState } from '../../lib/docSync/engine';
 import { registerNoteClient } from '../../lib/docSync/noteClients';
 import i18n from '../../i18n';
 import type { DocSaveStatus } from './DocumentEditor';
+import { errorMessage } from '../../lib/errorMessage';
 
 // The bullet of this note the cursor is in, with its position on screen, held for a second after a change
 // of others arrived (null: the cursor is elsewhere)
@@ -154,13 +155,13 @@ export function useDocumentSync(
         onDocMetadataChange(fetched);
 
       })
-      .catch((err: any) => {
+      .catch((err: unknown) => {
         if (isCancelled) return;
         if (err instanceof OfflineError) {
           setLoadedOffline(true);
           setError(i18n.t('workspace:editor.notAvailableOffline'));
         } else {
-          setError(err?.message || i18n.t('workspace:editor.loadFailed'));
+          setError(errorMessage(err, i18n.t('workspace:editor.loadFailed')));
         }
         setLoading(false);
       });

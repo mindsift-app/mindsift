@@ -6,6 +6,7 @@ import { api } from '../../../lib/api';
 import { saveBlob } from '../../../lib/download';
 import { ImportCard } from '../ImportCard';
 import { ServerBackupsCard } from '../ServerBackupsCard';
+import { errorMessage } from '../../../lib/errorMessage';
 
 // Export of the own data: full backup (JSON) and the notes as an Obsidian vault
 export function useDataExport() {
@@ -16,8 +17,8 @@ export function useDataExport() {
     setExportingBackup(true);
     try {
       saveBlob(await api.exportBackupZip(), `mindsift-backup-${new Date().toISOString().slice(0, 10)}.zip`);
-    } catch (err: any) {
-      setVaultError(err.message || i18n.t('settings:data.backupFailed'));
+    } catch (err) {
+      setVaultError(errorMessage(err, i18n.t('settings:data.backupFailed')));
     } finally {
       setExportingBackup(false);
     }
@@ -30,8 +31,8 @@ export function useDataExport() {
     setVaultError(null);
     try {
       saveBlob(await api.exportMarkdownVault(), `mindsift-vault-${new Date().toISOString().slice(0, 10)}.zip`);
-    } catch (err: any) {
-      setVaultError(err.message || i18n.t('settings:data.exportFailed'));
+    } catch (err) {
+      setVaultError(errorMessage(err, i18n.t('settings:data.exportFailed')));
     } finally {
       setExportingVault(false);
     }

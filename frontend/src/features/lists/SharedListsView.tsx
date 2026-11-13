@@ -27,6 +27,7 @@ import { buildListsMenu } from './listsMenu';
 import { askConfirm } from '../../components/askConfirm';
 import { showError } from '../../components/ErrorNotice';
 import { RenameListSheet } from '../../components/RenameListSheet';
+import { errorMessage } from '../../lib/errorMessage';
 
 interface SharedListsViewProps {
   onRefreshGlobal: () => void;
@@ -200,8 +201,8 @@ export const SharedListsView: React.FC<SharedListsViewProps> = ({ onRefreshGloba
         })
       );
       onRefreshGlobal();
-    } catch (err: any) {
-      showError(err.message || t('createItemFailed'));
+    } catch (err) {
+      showError(errorMessage(err, t('createItemFailed')));
     } finally {
       setIsSubmittingItem(false);
     }
@@ -231,8 +232,8 @@ export const SharedListsView: React.FC<SharedListsViewProps> = ({ onRefreshGloba
       await api.deleteList(listId);
       await loadLists();
       onRefreshGlobal();
-    } catch (err: any) {
-      showError(err.message || t('deleteFailed'));
+    } catch (err) {
+      showError(errorMessage(err, t('deleteFailed')));
     }
   };
 

@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { MailCheck } from 'lucide-react';
 import { api } from '../../../lib/api';
 import { User } from '../../../lib/types';
+import { errorMessage } from '../../../lib/errorMessage';
 
 // A new login address waits for the click on the link mailed to it; until then the old one stays in use.
 // Shown under the field, with sending the link again and keeping the old address.
@@ -18,8 +19,8 @@ export function PendingEmailNote({ user, onUserUpdated }: { user: User; onUserUp
     try {
       await api.resendEmailChange('account');
       setMsg(t('pendingEmail.resent'));
-    } catch (err: any) {
-      setMsg(err.message || t('pendingEmail.failed'));
+    } catch (err) {
+      setMsg(errorMessage(err, t('pendingEmail.failed')));
     } finally {
       setBusy(false);
     }
@@ -29,8 +30,8 @@ export function PendingEmailNote({ user, onUserUpdated }: { user: User; onUserUp
     try {
       await api.cancelEmailChange('account');
       onUserUpdated({ ...user, pendingEmail: undefined });
-    } catch (err: any) {
-      setMsg(err.message || t('pendingEmail.failed'));
+    } catch (err) {
+      setMsg(errorMessage(err, t('pendingEmail.failed')));
       setBusy(false);
     }
   };

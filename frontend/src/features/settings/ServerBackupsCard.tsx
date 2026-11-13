@@ -6,6 +6,7 @@ import { api } from '../../lib/api';
 import { formatBytes, saveBlob } from '../../lib/download';
 import { SectionPicker } from './SectionPicker';
 import { formatDateTime } from '../../lib/format';
+import { errorMessage } from '../../lib/errorMessage';
 
 // The user's own automatic backups on the server: download or restore (all or some sections)
 export const ServerBackupsCard: React.FC = () => {
@@ -37,8 +38,8 @@ export const ServerBackupsCard: React.FC = () => {
     try {
       setResult(await api.restoreMyBackup(open, mode, sections));
       setConfirm(false);
-    } catch (err: any) {
-      setError(err.message || t('backups.restoreFailed'));
+    } catch (err) {
+      setError(errorMessage(err, t('backups.restoreFailed')));
     } finally {
       setBusy(false);
     }

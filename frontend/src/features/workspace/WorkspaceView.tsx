@@ -54,6 +54,7 @@ import { showError } from '../../components/ErrorNotice';
 import { askChoice } from '../../components/askConfirm';
 import { WikiLinkClickHandler } from '../../lib/wikiLink';
 import { findLinkedDoc, useWikiLinkStore, WikiLinkResolverContext } from '../../lib/wikiLinkResolver';
+import { errorMessage } from '../../lib/errorMessage';
 
 interface WorkspaceViewProps {
   currentUser?: User | null;
@@ -402,8 +403,8 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
       setNewFolderName('');
       setNewFolderParentPath('');
       setShowNewFolderModal(false);
-    } catch (err: any) {
-      showError(err.message || i18n.t('workspace:folder.createFailed'));
+    } catch (err) {
+      showError(errorMessage(err, i18n.t('workspace:folder.createFailed')));
     }
   };
 
@@ -468,8 +469,8 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
             setEditorNonce((n) => n + 1);
             reloadTrash();
             showToast(i18n.t('workspace:merge.undone'));
-          } catch (err: any) {
-            showToast(err?.message || i18n.t('workspace:merge.undoFailed'));
+          } catch (err) {
+            showToast(errorMessage(err, i18n.t('workspace:merge.undoFailed')));
           }
         },
       },

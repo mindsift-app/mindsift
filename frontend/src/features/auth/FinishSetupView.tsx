@@ -8,6 +8,7 @@ import { SetupInstanceSection, useSetupChoices } from './SetupInstanceSection';
 import { SetupEmailSection, SetupMailSection, useSetupMail } from './SetupMailSection';
 import { SetupSummary } from './SetupSummary';
 import { useKeyboardRoom } from '../../lib/useKeyboardInset';
+import { errorMessage } from '../../lib/errorMessage';
 
 // The rest of the setup wizard for an admin that ADMIN_USER / ADMIN_PASSWORD created at startup: the
 // account exists, so only the instance settings are asked, once, after the first sign-in – plus the
@@ -52,8 +53,8 @@ export const FinishSetupView: React.FC<{
         ...(asksEmail && email.trim() ? { email: email.trim() } : {}),
       });
       onDone();
-    } catch (err: any) {
-      setError(err.message || t('setup.failed'));
+    } catch (err) {
+      setError(errorMessage(err, t('setup.failed')));
     } finally {
       setSubmitting(false);
     }

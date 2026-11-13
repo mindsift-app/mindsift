@@ -4,6 +4,7 @@ import { api, triggerHaptic } from '../lib/api';
 import { useVoiceInput } from '../lib/useVoiceInput';
 import i18n from '../i18n';
 import { showError } from '../components/ErrorNotice';
+import { errorMessage } from '../lib/errorMessage';
 
 // State of the Quick Dump sheet on phones: text, priority, due date and voice input; saving puts the
 // thought into the inbox
@@ -61,8 +62,8 @@ export function useMobileCapture(
       setIsVoiceCaptured(false);
       setShowMobileCapture(false);
       triggerHaptic(20);
-    } catch (err: any) {
-      showError(i18n.t('common:errors.saveFailed', { message: err.message || i18n.t('common:errors.unknown') }));
+    } catch (err) {
+      showError(i18n.t('common:errors.saveFailed', { message: errorMessage(err, i18n.t('common:errors.unknown')) }));
     }
   };
 

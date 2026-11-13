@@ -4,6 +4,7 @@ import { api } from '../../lib/api';
 import { mediaBlob, mediaObjectURL, parseMediaContent } from '../../lib/media';
 import { loadVoiceConfig } from '../../lib/voice';
 import { useTranslation } from 'react-i18next';
+import { errorMessage } from '../../lib/errorMessage';
 
 interface AudioBlockProps {
   content: string;
@@ -79,8 +80,8 @@ export const AudioBlock: React.FC<AudioBlockProps> = ({ content, canEdit, onCapt
       } else {
         setError(t('media.nothing'));
       }
-    } catch (err: any) {
-      setError(err?.message || t('media.sttFailed'));
+    } catch (err) {
+      setError(errorMessage(err, t('media.sttFailed')));
     } finally {
       setTranscribing(false);
     }

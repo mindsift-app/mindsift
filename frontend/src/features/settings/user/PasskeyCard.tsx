@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import i18n from '../../../i18n';
 import { CircleAlert, TriangleAlert, Check, Cloud, FingerprintPattern, KeyRound, Pencil, Trash } from 'lucide-react';
-import { api } from '../../../lib/api';
+import { api, ApiError } from '../../../lib/api';
 import { MfaStatus, Passkey, SecondFactorProof, User } from '../../../lib/types';
 import { formatDate } from '../../../lib/format';
 import { createPasskey, PasskeyJSON, passkeyCancelled, passkeysSupported } from '../../../lib/webauthn';
@@ -10,6 +10,7 @@ import { FormSheet } from '../../../components/FormSheet';
 import { describeDevice } from '../SessionsPanel';
 import { RecoveryCodesPanel } from './RecoveryCodesPanel';
 import { passkeyProof, secondFactorOf, SecondFactorFields } from './SecondFactorFields';
+import { errorMessage } from '../../../lib/errorMessage';
 
 type Flow =
   | { step: 'idle' }
@@ -52,8 +53,8 @@ export function PasskeyCard({
     try {
       setStatus(await api.getMfaStatus());
       setLoadError('');
-    } catch (err: any) {
-      setLoadError(err?.message || i18n.t('settings:security.twoFactor.loadFailed'));
+    } catch (err) {
+      setLoadError(errorMessage(err, i18n.t('settings:security.twoFactor.loadFailed')));
     }
   };
   useEffect(() => {
@@ -72,8 +73,8 @@ export function PasskeyCard({
     setError('');
   };
 
-  const fail = (err: any) => {
-    if (!passkeyCancelled(err)) setError(err?.message || t('security.passkeys.failed'));
+  const fail = (err: unknown) => {
+    if (!passkeyCancelled(err)) setError(errorMessage(err, t('security.passkeys.failed')));
   };
 
   const confirm = async (proof?: SecondFactorProof) => {
@@ -107,11 +108,11 @@ export function PasskeyCard({
         setDone(t('security.passkeys.added'));
       }
       changed();
-    } catch (err: any) {
+    } catch (err) {
       // Cancelled in the browser: the step stays, the options are still valid for a while
       if (passkeyCancelled(err)) return;
       fail(err);
-      if (err?.code === 'passkey_expired') reset();
+      if (err instanceof ApiError && err.code === 'passkey_expired') reset();
     } finally {
       setBusy(false);
     }

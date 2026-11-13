@@ -22,6 +22,7 @@ import { askConfirm } from '../../components/askConfirm';
 import { showError } from '../../components/ErrorNotice';
 import { withSecondFactor } from './user/askSecondFactor';
 import { SelectMenu } from '../../components/SelectMenu';
+import { errorMessage } from '../../lib/errorMessage';
 
 interface ApiKeysPanelProps {
   onIngested?: () => void;
@@ -131,8 +132,8 @@ export const ApiKeysPanel: React.FC<ApiKeysPanelProps> = ({ onIngested }) => {
       triggerHaptic(15);
       setEditKeyId(null);
       await loadKeys();
-    } catch (err: any) {
-      setEditError(err?.message || t('api.saveFailed'));
+    } catch (err) {
+      setEditError(errorMessage(err, t('api.saveFailed')));
     }
   };
 
@@ -221,8 +222,8 @@ export const ApiKeysPanel: React.FC<ApiKeysPanelProps> = ({ onIngested }) => {
       );
       onIngested?.();
       setTimeout(() => setSimStatus(null), 4000);
-    } catch (err: any) {
-      setSimStatus('❌ ' + t('api.sim.error', { message: err.message }));
+    } catch (err) {
+      setSimStatus('❌ ' + t('api.sim.error', { message: errorMessage(err) }));
     }
   };
 

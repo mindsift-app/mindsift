@@ -7,6 +7,7 @@ import { SCOPES, scopeGroups } from '../../lib/apiScopes';
 import { api, triggerHaptic } from '../../lib/api';
 import { ToggleSwitch } from '../../components/ToggleSwitch';
 import { useKeyboardRoom } from '../../lib/useKeyboardInset';
+import { errorMessage } from '../../lib/errorMessage';
 
 interface OAuthConsentViewProps {
   user: User;
@@ -38,7 +39,7 @@ export const OAuthConsentView: React.FC<OAuthConsentViewProps> = ({ user, instan
         setInfo(res);
         setScopes(res.scopes || []);
       })
-      .catch((err) => setError(err?.message || i18n.t('auth:consent.invalid')));
+      .catch((err) => setError(errorMessage(err, i18n.t('auth:consent.invalid'))));
   }, [query]);
 
   const toggle = (id: ApiKeyScope) =>
@@ -51,8 +52,8 @@ export const OAuthConsentView: React.FC<OAuthConsentViewProps> = ({ user, instan
     try {
       const res = await api.answerOAuthAuthorize(query, approve, scopes);
       window.location.replace(res.redirect);
-    } catch (err: any) {
-      setError(err?.message || t('consent.failed'));
+    } catch (err) {
+      setError(errorMessage(err, t('consent.failed')));
       setBusy(false);
     }
   };

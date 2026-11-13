@@ -44,6 +44,7 @@ import { LivePill } from '../../components/LivePill';
 import { useMobileActions } from '../../context/MobileActionContext';
 import { askConfirm } from '../../components/askConfirm';
 import { showError } from '../../components/ErrorNotice';
+import { errorMessage } from '../../lib/errorMessage';
 
 
 
@@ -599,8 +600,8 @@ export const TasksView: React.FC<TasksViewProps> = ({
       // Plain switch: the deleted list's tasks belong to "Alle Aufgaben" anyway (and the menu effect keeps
       // this handler out of its dependencies)
       setSelectedListIdState('all');
-    } catch (err: any) {
-      showError(err.message);
+    } catch (err) {
+      showError(errorMessage(err));
     }
   };
 
@@ -611,9 +612,9 @@ export const TasksView: React.FC<TasksViewProps> = ({
     setTaskLists((prev) => prev.map((l) => (l.id === tl.id ? { ...l, isMuted: muted } : l)));
     try {
       await api.muteTaskList(tl.id, muted);
-    } catch (err: any) {
+    } catch (err) {
       setTaskLists((prev) => prev.map((l) => (l.id === tl.id ? { ...l, isMuted: !muted } : l)));
-      showError(err.message);
+      showError(errorMessage(err));
     }
   };
 

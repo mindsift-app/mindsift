@@ -14,6 +14,7 @@ import {
   MAX_BACKUP_RETENTION_DAYS,
   validBackupRetentionDays,
 } from '../../lib/backupDefaults';
+import { errorMessage } from '../../lib/errorMessage';
 
 interface BackupAdminCardProps {
   settings: SystemSettings;
@@ -38,8 +39,8 @@ export const BackupAdminCard: React.FC<BackupAdminCardProps> = ({ settings, onSa
     setError(null);
     try {
       setFiles(await api.adminRunBackup());
-    } catch (err: any) {
-      setError(err.message || t('data.backupFailed'));
+    } catch (err) {
+      setError(errorMessage(err, t('data.backupFailed')));
       api.adminListBackups().then(setFiles).catch(() => {});
     } finally {
       setRunning(false);
@@ -49,16 +50,16 @@ export const BackupAdminCard: React.FC<BackupAdminCardProps> = ({ settings, onSa
   const download = async (name: string) => {
     try {
       saveBlob(await api.adminDownloadBackup(name), name);
-    } catch (err: any) {
-      setError(err.message || t('backups.downloadFailed'));
+    } catch (err) {
+      setError(errorMessage(err, t('backups.downloadFailed')));
     }
   };
 
   const downloadDeleted = async (userId: string, name: string) => {
     try {
       saveBlob(await api.adminDownloadDeletedBackup(userId, name), name);
-    } catch (err: any) {
-      setError(err.message || t('backups.downloadFailed'));
+    } catch (err) {
+      setError(errorMessage(err, t('backups.downloadFailed')));
     }
   };
 
@@ -67,8 +68,8 @@ export const BackupAdminCard: React.FC<BackupAdminCardProps> = ({ settings, onSa
     setError(null);
     try {
       setFiles(await api.adminDeleteBackup(name));
-    } catch (err: any) {
-      setError(err.message || t('backups.deleteFailed'));
+    } catch (err) {
+      setError(errorMessage(err, t('backups.deleteFailed')));
     }
   };
 

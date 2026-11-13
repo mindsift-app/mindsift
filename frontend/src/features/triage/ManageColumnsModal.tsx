@@ -15,6 +15,7 @@ import { KanbanColumn } from '../../lib/types';
 import { triggerHaptic } from '../../lib/api';
 import { askConfirm } from '../../components/askConfirm';
 import { showError } from '../../components/ErrorNotice';
+import { errorMessage } from '../../lib/errorMessage';
 
 interface ManageColumnsModalProps {
   isOpen: boolean;
@@ -208,8 +209,8 @@ const ManageColumnsModalContent: React.FC<ManageColumnsModalProps> = ({
     try {
       await onSave(columns);
       onClose();
-    } catch (err: any) {
-      showError(err.message || t('columnsModal.saveFailed'));
+    } catch (err) {
+      showError(errorMessage(err, t('columnsModal.saveFailed')));
     } finally {
       setSaving(false);
     }

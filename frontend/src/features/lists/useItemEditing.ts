@@ -29,7 +29,7 @@ export function useItemEditing({ activeList, setLists, onRefreshGlobal }: UseIte
           };
         })
       );
-    } catch (err: any) {
+    } catch (err) {
       console.error('Updating the quantity failed', err);
     }
   };

@@ -5,6 +5,7 @@ import { FormSheet } from '../../components/FormSheet';
 import { api } from '../../lib/api';
 import { Document, MergeResult } from '../../lib/types';
 import { NO_AUTOFILL } from '../../lib/noAutofill';
+import { errorMessage } from '../../lib/errorMessage';
 
 interface MergeDialogProps {
   docs: Document[];
@@ -43,8 +44,8 @@ export const MergeDialog: React.FC<MergeDialogProps> = ({ docs, sourceId, target
     setError(null);
     try {
       onMerged(await api.mergeDocuments(target, sourceId));
-    } catch (err: any) {
-      setError(err?.message || t('merge.failed'));
+    } catch (err) {
+      setError(errorMessage(err, t('merge.failed')));
       setBusy(false);
     }
   };

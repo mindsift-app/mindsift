@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from './api';
 import { browserRecognition, browserVoiceLanguage, currentVoiceConfig, EffectiveVoiceMode, joinSpeechResults, loadVoiceConfig, VOICE_CONFIG_EVENT, VoiceRecorder } from './voice';
 import i18n, { currentLocale } from '../i18n';
+import { errorMessage } from './errorMessage';
 
 export type VoiceState = 'idle' | 'listening' | 'transcribing';
 
@@ -140,14 +141,14 @@ export function useVoiceInput({ onText, onError, continuous = false, live = fals
           onTextRef.current(combined, false);
         }
       })
-      .catch((err: any) => {
+      .catch((err: unknown) => {
         if (cancelledRef.current) return;
         cancelledRef.current = true;
         inFlightChunksRef.current = 0;
         clearAllTimers();
         recorderRef.current?.cancel();
         recorderRef.current = null;
-        fail(err?.message || i18n.t('common:voice.failed'));
+        fail(errorMessage(err, i18n.t('common:voice.failed')));
       });
   };
 
@@ -189,8 +190,8 @@ export function useVoiceInput({ onText, onError, continuous = false, live = fals
       const text = await api.transcribe(blob);
       setStateSafe('idle');
       onTextRef.current(text, true);
-    } catch (err: any) {
-      fail(err?.message || i18n.t('common:voice.failed'));
+    } catch (err) {
+      fail(errorMessage(err, i18n.t('common:voice.failed')));
     }
     // fail only touches refs and state setters
     // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -4,6 +4,7 @@ import { Pencil } from 'lucide-react';
 import { FormSheet } from './FormSheet';
 import { EmojiIconButton } from './EmojiIconButton';
 import { showError } from './ErrorNotice';
+import { errorMessage } from '../lib/errorMessage';
 
 // Renames a task list or shopping list (icon and name), laid out like "Neue Liste"
 export function RenameListSheet({
@@ -30,8 +31,8 @@ export function RenameListSheet({
     try {
       await onSave(name, icon);
       onClose();
-    } catch (err: any) {
-      showError(err?.message || t('listMenu.renameFailed'));
+    } catch (err) {
+      showError(errorMessage(err, t('listMenu.renameFailed')));
     } finally {
       setBusy(false);
     }

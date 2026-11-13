@@ -5,6 +5,7 @@ import { api, setCurrentPeopleSearch, setCurrentSharingMode, triggerHaptic } fro
 import { passwordProblem } from '../../../lib/password';
 import { DEFAULT_BACKUP_RETENTION_DAYS, DEFAULT_BACKUP_TIME } from '../../../lib/backupDefaults';
 import { askConfirm } from '../../../components/askConfirm';
+import { errorMessage } from '../../../lib/errorMessage';
 
 // The three sharing modes, stricter first; texts in settings:sharing.<id> in the language shown when read
 const sharingMode = (id: SharingMode) => ({
@@ -133,8 +134,8 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
           serverTime: sys.serverTime,
         });
       }
-    } catch (err: any) {
-      setStatusMsg({ type: 'err', text: err.message || i18n.t('settings:admin.loadFailed') });
+    } catch (err) {
+      setStatusMsg({ type: 'err', text: errorMessage(err, i18n.t('settings:admin.loadFailed')) });
     }
   };
 
@@ -181,8 +182,8 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
       setNewUserRole('member');
       setNewUserOrgs([]);
       setStatusMsg({ type: 'ok', text: i18n.t('settings:admin.userCreated', { name: created.displayName }) });
-    } catch (err: any) {
-      setStatusMsg({ type: 'err', text: err.message || i18n.t('settings:users.create.failed') });
+    } catch (err) {
+      setStatusMsg({ type: 'err', text: errorMessage(err, i18n.t('settings:users.create.failed')) });
     }
   };
 
@@ -205,8 +206,8 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
             ? i18n.t('settings:users.invite.linkCreated', { count: inv.maxUses, code: inv.code })
             : i18n.t('settings:users.invite.codeCreated', { code: inv.code }),
       });
-    } catch (err: any) {
-      setStatusMsg({ type: 'err', text: err.message || i18n.t('settings:users.invite.failed') });
+    } catch (err) {
+      setStatusMsg({ type: 'err', text: errorMessage(err, i18n.t('settings:users.invite.failed')) });
     }
   };
 
@@ -214,8 +215,8 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
     try {
       await api.adminDeleteInvite(id);
       setInvites((prev) => prev.filter((i) => i.id !== id));
-    } catch (err: any) {
-      setStatusMsg({ type: 'err', text: err.message });
+    } catch (err) {
+      setStatusMsg({ type: 'err', text: errorMessage(err) });
     }
   };
 
@@ -239,8 +240,8 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
       setStatusMsg({ type: 'ok', text: i18n.t('settings:admin.inviteSent', { email: mailInviteTo.trim() }) });
       setMailInviteId(null);
       setMailInviteTo('');
-    } catch (err: any) {
-      setStatusMsg({ type: 'err', text: err.message || i18n.t('settings:users.invite.mailFailed') });
+    } catch (err) {
+      setStatusMsg({ type: 'err', text: errorMessage(err, i18n.t('settings:users.invite.mailFailed')) });
     } finally {
       setMailInviteBusy(false);
     }
@@ -253,8 +254,8 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
       const updated = await api.adminApproveUser(u.id);
       setUsers((prev) => prev.map((item) => (item.id === u.id ? { ...updated, pendingApproval: false } : item)));
       setStatusMsg({ type: 'ok', text: i18n.t('settings:admin.userApproved', { name: u.displayName }) });
-    } catch (err: any) {
-      setStatusMsg({ type: 'err', text: err.message });
+    } catch (err) {
+      setStatusMsg({ type: 'err', text: errorMessage(err) });
     }
   };
 
@@ -267,8 +268,8 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
         type: 'ok',
         text: i18n.t('settings:users.roleChanged', { name: updated.displayName, role: i18n.t(`common:role.${role}`) }),
       });
-    } catch (err: any) {
-      setStatusMsg({ type: 'err', text: err.message });
+    } catch (err) {
+      setStatusMsg({ type: 'err', text: errorMessage(err) });
     }
   };
 
@@ -282,8 +283,8 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
       setUsers((prev) => prev.map((item) => (item.id === u.id ? updated : item)));
       setUsernameEdit(null);
       setStatusMsg({ type: 'ok', text: i18n.t('settings:users.usernameChanged', { name: updated.displayName, username: updated.username }) });
-    } catch (err: any) {
-      setStatusMsg({ type: 'err', text: err.message });
+    } catch (err) {
+      setStatusMsg({ type: 'err', text: errorMessage(err) });
     }
   };
 
@@ -292,8 +293,8 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
     try {
       const updated = await api.adminUpdateUser(u.id, { isActive: !u.isActive });
       setUsers((prev) => prev.map((item) => (item.id === u.id ? updated : item)));
-    } catch (err: any) {
-      setStatusMsg({ type: 'err', text: err.message });
+    } catch (err) {
+      setStatusMsg({ type: 'err', text: errorMessage(err) });
     }
   };
 
@@ -311,8 +312,8 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
       setResetPwdUserId(null);
       setResetPwdVal('');
       setStatusMsg({ type: 'ok', text: i18n.t('settings:users.passwordReset') });
-    } catch (err: any) {
-      setStatusMsg({ type: 'err', text: err.message });
+    } catch (err) {
+      setStatusMsg({ type: 'err', text: errorMessage(err) });
     }
   };
 
@@ -330,8 +331,8 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
       await api.adminDeleteUser(u.id);
       setUsers((prev) => prev.filter((item) => item.id !== u.id));
       setStatusMsg({ type: 'ok', text: i18n.t('settings:users.deleted') });
-    } catch (err: any) {
-      setStatusMsg({ type: 'err', text: err.message });
+    } catch (err) {
+      setStatusMsg({ type: 'err', text: errorMessage(err) });
     }
   };
 
@@ -350,8 +351,8 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
       await api.adminResetMfa(u.id);
       setUsers((prev) => prev.map((item) => (item.id === u.id ? { ...item, mfaEnabled: false } : item)));
       setStatusMsg({ type: 'ok', text: i18n.t('settings:users.mfaReset', { name: u.displayName }) });
-    } catch (err: any) {
-      setStatusMsg({ type: 'err', text: err.message });
+    } catch (err) {
+      setStatusMsg({ type: 'err', text: errorMessage(err) });
     }
   };
 
@@ -376,8 +377,8 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
       await api.adminCreateOrganization(newOrgName.trim());
       setNewOrgName('');
       await reloadOrganizations();
-    } catch (err: any) {
-      setStatusMsg({ type: 'err', text: err.message || i18n.t('settings:orgs.createFailed') });
+    } catch (err) {
+      setStatusMsg({ type: 'err', text: errorMessage(err, i18n.t('settings:orgs.createFailed')) });
     }
   };
 
@@ -386,8 +387,8 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
       await api.adminRenameOrganization(orgId, renameOrgVal.trim());
       setRenamingOrgId(null);
       await reloadOrganizations();
-    } catch (err: any) {
-      setStatusMsg({ type: 'err', text: err.message || i18n.t('settings:orgs.renameFailed') });
+    } catch (err) {
+      setStatusMsg({ type: 'err', text: errorMessage(err, i18n.t('settings:orgs.renameFailed')) });
     }
   };
 
@@ -397,8 +398,8 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
       setDeletingOrgId(null);
       setUsers((prev) => prev.map((u) => ({ ...u, organizationIds: (u.organizationIds || []).filter((id) => id !== orgId) })));
       await reloadOrganizations();
-    } catch (err: any) {
-      setStatusMsg({ type: 'err', text: err.message || i18n.t('settings:orgs.deleteFailed') });
+    } catch (err) {
+      setStatusMsg({ type: 'err', text: errorMessage(err, i18n.t('settings:orgs.deleteFailed')) });
     }
   };
 
@@ -410,8 +411,8 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
       await api.adminAddOrganizationMember(orgId, u.id);
       setUserOrgs(u.id, (ids) => (ids.includes(orgId) ? ids : [...ids, orgId]));
       await reloadOrganizations();
-    } catch (err: any) {
-      setStatusMsg({ type: 'err', text: err.message || i18n.t('settings:orgs.assignFailed') });
+    } catch (err) {
+      setStatusMsg({ type: 'err', text: errorMessage(err, i18n.t('settings:orgs.assignFailed')) });
     }
   };
 
@@ -429,8 +430,8 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
       await api.adminRemoveOrganizationMember(orgId, u.id);
       setUserOrgs(u.id, (ids) => ids.filter((id) => id !== orgId));
       await reloadOrganizations();
-    } catch (err: any) {
-      setStatusMsg({ type: 'err', text: err.message || i18n.t('settings:orgs.assignFailed') });
+    } catch (err) {
+      setStatusMsg({ type: 'err', text: errorMessage(err, i18n.t('settings:orgs.assignFailed')) });
     }
   };
 
@@ -465,8 +466,8 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
       setSharingMode(saved.sharingMode);
       if (saved.peopleSearch !== undefined) setCurrentPeopleSearch(saved.peopleSearch);
       setStatusMsg({ type: 'ok', text: i18n.t('settings:server.saved') });
-    } catch (err: any) {
-      setStatusMsg({ type: 'err', text: err.message || i18n.t('settings:profile.saveFailed') });
+    } catch (err) {
+      setStatusMsg({ type: 'err', text: errorMessage(err, i18n.t('settings:profile.saveFailed')) });
     }
   };
 
@@ -478,8 +479,8 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
       await api.adminUpdateSettings(settings);
       await api.adminTestSMTP(testSmtpEmail.trim());
       setStatusMsg({ type: 'ok', text: i18n.t('settings:smtp.testSent', { email: testSmtpEmail.trim() }) });
-    } catch (err: any) {
-      setStatusMsg({ type: 'err', text: i18n.t('settings:smtp.testFailed', { error: err.message }) });
+    } catch (err) {
+      setStatusMsg({ type: 'err', text: i18n.t('settings:smtp.testFailed', { error: errorMessage(err) }) });
     } finally {
       setTestingSmtp(false);
     }
