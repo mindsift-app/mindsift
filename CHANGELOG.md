@@ -20,6 +20,7 @@ Versions without a git tag were development states and were never published as a
 - New settings section **Security** with the password change, two-factor sign-in and the signed-in devices (moved there from Profile).
 
 ### Fixed
+- Zooming into a bullet whose level was never stored shows its path and sub-bullets again, and the recovery-code file of an account without email or username no longer names it "undefined".
 - Dragging a drawing in a note to move its section no longer selects text or drags a selection (and with it the bullet) instead; in Firefox a selection on the page no longer stops the drawing from moving.
 - On phones, the save status of a note shows "Saved" in the app's language instead of always in German.
 - Sharing a pinned note no longer unpins it for the owner in the open app (realtime updates carried another person's view of the note).
