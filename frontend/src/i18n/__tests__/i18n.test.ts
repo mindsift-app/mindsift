@@ -1,12 +1,13 @@
-import { describe, expect, it } from 'vitest';
-import { LANGUAGES, resolveLanguage, resources } from '..';
+import { afterEach, describe, expect, it } from 'vitest';
+import i18n, { LANGUAGES, NAMESPACES, applyLanguage, resolveLanguage, startI18n, startLanguage } from '..';
+import deTexts from '../../locales/de';
 import en from '../../locales/en';
 import es from '../../locales/es';
 import fr from '../../locales/fr';
 import itLocale from '../../locales/it';
 
-// Every language's texts, loaded directly (the app loads all but German on demand)
-const ALL: Record<string, unknown> = { de: resources.de, en, es, fr, it: itLocale };
+// Every language's texts, loaded directly (the app loads each on demand)
+const ALL: Record<string, unknown> = { de: deTexts, en, es, fr, it: itLocale };
 
 // All keys of a namespace as "a.b.c", so languages can be compared
 function keysOf(obj: unknown, prefix = ''): string[] {
@@ -30,7 +31,11 @@ function placeholdersByBase(texts: unknown): Map<string, Set<string>> {
 }
 
 describe('locales', () => {
-  const german = placeholdersByBase(resources.de);
+  const german = placeholdersByBase(deTexts);
+
+  it('names every area of the German texts', () => {
+    expect([...NAMESPACES].sort()).toEqual(Object.keys(deTexts).sort());
+  });
 
   it('loads every language of the list', () => {
     expect(Object.keys(ALL).sort()).toEqual(LANGUAGES.map((l) => l.id).sort());
@@ -69,7 +74,7 @@ describe('keys in the code', () => {
       for (const [, key] of code.matchAll(/\bt\('([^']+)'/g)) {
         const [keyNs, path] = key.includes(':') ? key.split(':') : [ns, key];
         checked++;
-        const nsTexts = (resources.de as Record<string, unknown>)[keyNs];
+        const nsTexts = (deTexts as Record<string, unknown>)[keyNs];
         // Plural keys exist as key_one / key_other (i18next picks one by count)
         const found = [path, `${path}_one`, `${path}_other`].some((k) => typeof get(nsTexts, k) === 'string');
         if (!found) missing.push(`${file}: ${key}`);
@@ -90,5 +95,29 @@ describe('resolveLanguage', () => {
     expect(resolveLanguage('', 'de', ['nl-NL', 'de-AT'])).toBe('de');
     expect(resolveLanguage(undefined, 'de', ['nl-NL'])).toBe('de');
     expect(resolveLanguage('xx', 'yy', [])).toBe('de');
+  });
+});
+
+describe('start language', () => {
+  afterEach(async () => {
+    localStorage.clear();
+    await i18n.changeLanguage('de');
+    document.documentElement.lang = 'de';
+  });
+
+  it('starts signed in with the language shown last, else like the sign-in page', async () => {
+    await applyLanguage('fr');
+    expect(localStorage.getItem('mindsift:language')).toBe('fr');
+    expect(startLanguage(true)).toBe('fr');
+    document.documentElement.lang = 'it';
+    expect(startLanguage(false)).toBe(resolveLanguage(undefined, 'it'));
+  });
+
+  it('loads the start language and German before switching', async () => {
+    await startI18n('en');
+    expect(i18n.language).toBe('en');
+    expect(document.documentElement.lang).toBe('en');
+    expect(i18n.hasResourceBundle('de', 'common')).toBe(true);
+    expect(i18n.t('common:nav.tasks')).toBe(get(ALL.en, 'common.nav.tasks'));
   });
 });

@@ -20,9 +20,10 @@ GOLANGCI_LINT_IMAGE="docker.io/golangci/golangci-lint:v2.15.0-alpine"
 NODE_IMAGE="docker.io/library/node:26.13.0-alpine"
 
 # Upper bounds for the compressed size (gzip, kB) of the start chunk (index-*.js: shell and sign-in pages) and of
-# the app chunk (mainViews-*.js), a little above the build of 2026-11 (about 210 and 240 kB). Going over them is not
-# wrong as such, but should be a decision: raise the bound, or load the new part on demand (Doku/architecture.md).
-MAX_START_KB=225
+# the app chunk (mainViews-*.js), a little above the build of 2026-11 (about 170 and 240 kB; the texts of every
+# language, German included, are chunks of their own). Going over them is not wrong as such, but should be a
+# decision: raise the bound, or load the new part on demand (Doku/architecture.md).
+MAX_START_KB=180
 MAX_APP_KB=255
 
 # Named volumes keep npm and Go downloads between runs. npm ci as in the Dockerfile: exactly the versions of
