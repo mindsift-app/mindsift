@@ -313,7 +313,7 @@ func (s *Store) UpdateThoughtTriage(userID, thoughtID, action, convertTo, target
 	}
 
 	now := domain.NowISO()
-	newStatus := domain.StatusKept
+	var newStatus domain.ThoughtStatus
 	convertedType := thought.ConvertedType
 	convertedRefID := thought.ConvertedRefID
 	dueDate = domain.NormalizeDue(dueDate)

@@ -633,8 +633,8 @@ var mcpTools = []mcpTool{
 			if err := decodeArgs(args, &a); err != nil {
 				return nil, err
 			}
-			a.taskPatch.Assignees, a.taskPatch.Recurrence, a.taskPatch.Subtasks = nil, nil, nil
-			a.taskPatch.actor = actor
+			a.Assignees, a.Recurrence, a.Subtasks = nil, nil, nil
+			a.actor = actor
 			t, err := s.updateTask(userID, a.ID, a.taskPatch)
 			if err != nil {
 				return nil, err
