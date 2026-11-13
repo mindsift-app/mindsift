@@ -183,6 +183,39 @@ describe('FinishSetupView', () => {
     );
   });
 
+  it('suggests the browser time zone and sends the one chosen', async () => {
+    const real = Intl.DateTimeFormat.prototype.resolvedOptions;
+    const spy = vi.spyOn(Intl.DateTimeFormat.prototype, 'resolvedOptions').mockImplementation(function (this: Intl.DateTimeFormat) {
+      return { ...real.call(this), timeZone: 'America/Los_Angeles' };
+    });
+    try {
+      render(<FinishSetupView user={admin} authStatus={status} onDone={() => {}} onLogout={() => {}} />);
+      const field = screen.getByRole('button', { name: 'Zeitzone' });
+      expect(field.textContent).toContain('America/Los Angeles');
+      expect(screen.getByText(/Vorgeschlagen ist die Zeitzone dieses Browsers/)).toBeTruthy();
+
+      // Unchanged, the suggestion is sent
+      await finish();
+      expect(finishSetup).toHaveBeenLastCalledWith(expect.objectContaining({ timeZone: 'America/Los_Angeles' }));
+
+      // Another one through the search of the list, or none at all
+      fireEvent.click(field);
+      const search = screen.getByLabelText('Suchen …');
+      fireEvent.change(search, { target: { value: 'berlin' } });
+      fireEvent.keyDown(search, { key: 'Enter' });
+      expect(field.textContent).toContain('Europe/Berlin');
+      await finish();
+      expect(finishSetup).toHaveBeenLastCalledWith(expect.objectContaining({ timeZone: 'Europe/Berlin' }));
+
+      fireEvent.click(field);
+      fireEvent.click(screen.getByRole('option', { name: /Nicht festgelegt/ }));
+      await finish();
+      expect(finishSetup).toHaveBeenLastCalledWith(expect.objectContaining({ timeZone: '' }));
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
   it('sends backups off without time and retention', async () => {
     render(<FinishSetupView user={admin} authStatus={status} onDone={() => {}} onLogout={() => {}} />);
     fireEvent.click(screen.getByRole('switch', { name: 'Tägliche Backups einschalten' }));

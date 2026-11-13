@@ -91,6 +91,7 @@ export const authApi = {
     allowRegistration?: boolean;
     createSampleData?: boolean;
     defaultLanguage?: string;
+    timeZone?: string;
     backupEnabled?: boolean;
     backupTime?: string;
     backupRetentionDays?: number;
@@ -112,6 +113,7 @@ export const authApi = {
     allowRegistration?: boolean;
     createSampleData?: boolean;
     defaultLanguage?: string;
+    timeZone?: string;
     backupEnabled?: boolean;
     backupTime?: string;
     backupRetentionDays?: number;
