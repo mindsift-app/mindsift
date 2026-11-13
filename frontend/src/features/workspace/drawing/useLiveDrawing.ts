@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { api, getSSEId, isWebSocketConnected, onRealtimeStatus, onWebSocketMessage, sendWebSocketMessage } from '../../../lib/api';
 import { Applied, LiveMerge, WireElement, finalDrawing } from '../../../lib/drawing/live';
 import { Drawing } from '../../../lib/drawing/model';
+import type { LiveDrawingState } from '../../../lib/api/workspace';
 import { noteClientId } from '../../../lib/docSync/noteClients';
 
 export type LiveMode = 'draw' | 'watch';
@@ -45,6 +46,22 @@ export interface LiveOptions {
   /** The host's "Verwerfen" went through */
   onDiscarded: () => void;
 }
+
+// A DRAW_* message's payload or a REST answer about the session; every field is checked where it is read
+type DrawWire = Partial<LiveDrawingState> & {
+  success?: boolean;
+  from?: string;
+  userId?: string;
+  name?: string;
+  gone?: boolean;
+  x?: number;
+  y?: number;
+  sel?: string[];
+  touch?: boolean;
+  reason?: string;
+  by?: string;
+  code?: string;
+};
 
 const FLUSH_MS = 50; // changes go out at most this often
 const POINTER_MS = 50; // pointers at most 20 times a second
@@ -120,7 +137,7 @@ export function useLiveDrawing(opts: LiveOptions | null) {
     if (!sseId) return;
     api
       .watchDrawing(o.docId, o.blockId, sseId)
-      .then((st: any) => takeState(st))
+      .then((st) => takeState(st))
       .catch(() => setStatus('offline'));
   };
 
@@ -133,11 +150,11 @@ export function useLiveDrawing(opts: LiveOptions | null) {
     else
       api
         .liveDrawing(o.docId, o.blockId)
-        .then((st: any) => takeState(st))
+        .then((st) => takeState(st))
         .catch(() => {});
   };
 
-  const takePeople = (p: any) => {
+  const takePeople = (p: DrawWire) => {
     const parts: LivePerson[] = Array.isArray(p.participants) ? p.participants : [];
     setParticipants(parts);
     setWatchers(Array.isArray(p.watchers) ? p.watchers : []);
@@ -156,7 +173,7 @@ export function useLiveDrawing(opts: LiveOptions | null) {
     });
   };
 
-  const takeState = (st: any) => {
+  const takeState = (st: DrawWire) => {
     const o = optsRef.current;
     if (!o || !merge || !st) return;
     if (typeof st.you === 'string' && st.you) {
@@ -204,7 +221,7 @@ export function useLiveDrawing(opts: LiveOptions | null) {
   useEffect(() => {
     if (!opts || !merge) return;
     const offMsg = onWebSocketMessage((msg) => {
-      const p = msg?.payload;
+      const p = msg?.payload as DrawWire | undefined;
       const o = optsRef.current;
       if (!o || !p || p.docId !== o.docId || p.blockId !== o.blockId || !msg.event?.startsWith('DRAW_')) return;
       switch (msg.event) {
@@ -239,13 +256,14 @@ export function useLiveDrawing(opts: LiveOptions | null) {
           break;
         }
         case 'DRAW_PRESENCE': {
-          if (p.from === youRef.current) break;
+          const from = p.from;
+          if (!from || from === youRef.current) break;
           setCursors((prev) => {
             const next = new Map(prev);
-            next.set(p.from, {
-              id: p.from,
-              userId: p.userId,
-              name: p.name,
+            next.set(from, {
+              id: from,
+              userId: p.userId ?? '',
+              name: p.name ?? '',
               at: p.gone ? undefined : [Number(p.x) || 0, Number(p.y) || 0],
               sel: Array.isArray(p.sel) ? p.sel : [],
               touch: !!p.touch,

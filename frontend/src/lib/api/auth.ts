@@ -274,6 +274,7 @@ export const authApi = {
 
   async updateSettings(patch: {
     displayName?: string;
+    username?: string;
     email?: string;
     password?: string;
     currentPassword?: string;

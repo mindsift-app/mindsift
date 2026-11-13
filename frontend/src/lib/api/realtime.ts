@@ -278,7 +278,7 @@ export async function connectSSE(rooms?: string[]): Promise<void> {
           sseEverConnected = true;
           sseFailedAttempts = 0;
           notifyRealtimeStatusChange(true, 'sse');
-          activeSSEId = msg.payload?.sseId || null;
+          activeSSEId = (msg.payload as { sseId?: string } | undefined)?.sseId || null;
           if (activeSSEId && globalSubscribedRooms.size > 0) {
             globalSubscribedRooms.forEach((room) => {
               api.joinSSERoom(activeSSEId!, room, 'join').catch(() => {});

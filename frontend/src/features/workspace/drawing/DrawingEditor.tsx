@@ -553,7 +553,8 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
     const ids = selectedRef.current;
     if (ids.length === 0) return;
     updateElements(ids, (el) => {
-      const next: any = { ...el };
+      // Each field below is set only for the kinds that have it
+      const next = { ...el } as DrawElement & Record<string, unknown>;
       if (patch.s !== undefined) next.s = patch.s;
       if (patch.sw !== undefined) next.sw = patch.sw;
       if (patch.dash !== undefined) next.dash = patch.dash || undefined;
@@ -993,9 +994,10 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
     }
   };
 
-  const replaceEl = (base: Drawing, id: string, change: (el: any) => DrawElement): Drawing => ({
+  // The caller knows the kind of the element with that id (the one its gesture started on)
+  const replaceEl = <E extends DrawElement = ShapeElement>(base: Drawing, id: string, change: (el: E) => DrawElement): Drawing => ({
     ...base,
-    els: base.els.map((el) => (el.id === id ? change(el) : el)),
+    els: base.els.map((el) => (el.id === id ? change(el as E) : el)),
   });
 
   const onPointerMove = (e: React.PointerEvent) => {

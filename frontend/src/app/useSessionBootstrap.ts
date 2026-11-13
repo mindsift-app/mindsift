@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AuthStatus, DashboardStats, SharedList, Thought, User } from '../lib/types';
+import { AuthStatus, DashboardStats, SharedList, Thought, User, WSMessage } from '../lib/types';
 import { api, clearToken, connectWebSocket, disconnectWebSocket, getToken } from '../lib/api';
 import { clearOfflineData, outboxCount } from '../lib/offline';
 import { flushClosedNotes } from '../lib/docSync/flushClosed';
@@ -196,7 +196,7 @@ export function useSessionBootstrap(onSignedOut: () => void) {
     const onVisible = () => {
       if (document.visibilityState === 'visible' && getToken()) refreshAll();
     };
-    const handleWs = (e: any) => {
+    const handleWs = (e: CustomEvent<WSMessage | undefined>) => {
       const msg = e.detail;
       if (!msg) return;
       if (msg.event === 'DEMO_RESET') {

@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { api } from '../../lib/api';
-import { TaskList, Thought } from '../../lib/types';
+import { TaskList, Thought, WSMessage } from '../../lib/types';
 
 // Same rule as the server's task query: a fresh Quick Dump note (status inbox) is no task yet
 export const isTaskThought = (t: Thought) =>
@@ -53,7 +53,7 @@ export function useTaskRealtime({ setTasks, setTaskLists, listIdRef, loadDataRef
   // Live-Sync WebSocket listener for tasks (registered once on mount; all dependencies are stable). The
   // counters in the navigation follow these events in app/useSessionBootstrap.ts already.
   useEffect(() => {
-    const handleWs = (e: any) => {
+    const handleWs = (e: CustomEvent<WSMessage | undefined>) => {
       const msg = e.detail;
       if (!msg || !msg.event) return;
 
@@ -68,7 +68,7 @@ export function useTaskRealtime({ setTasks, setTaskLists, listIdRef, loadDataRef
           setTasks((prev) => tasksAfterUpdate(prev, updated, listIdRef.current));
         }
       } else if (msg.event === 'TASK_DELETED') {
-        const deletedId = typeof msg.payload === 'string' ? msg.payload : msg.payload?.id;
+        const deletedId = typeof msg.payload === 'string' ? msg.payload : (msg.payload as { id?: string } | undefined)?.id;
         if (deletedId) {
           setTasks((prev) => tasksAfterDelete(prev, deletedId));
         }

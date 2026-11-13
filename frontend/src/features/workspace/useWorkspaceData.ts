@@ -79,8 +79,9 @@ export function useWorkspaceData({ currentUser, setSelectedDocId, autoSelectedDo
       } else if (msg.event === 'DOC_UPDATED' && msg.payload) {
         const updated = msg.payload as Document;
         setDocs((prev) => prev.map((d) => (d.id === updated.id ? { ...d, ...updated } : d)));
-      } else if (msg.event === 'DOC_DELETED' && msg.payload?.id) {
-        const delId = msg.payload.id as string;
+      } else if (msg.event === 'DOC_DELETED') {
+        const delId = (msg.payload as { id?: string } | undefined)?.id;
+        if (!delId) return;
         setDocs((prev) => prev.filter((d) => d.id !== delId));
         setSelectedDocId((prev) => (prev === delId ? null : prev));
         reloadTrash();

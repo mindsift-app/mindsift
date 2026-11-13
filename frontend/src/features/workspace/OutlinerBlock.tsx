@@ -500,7 +500,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
     const raw = ta.value;
     let pos = raw.length;
     const span = renderedTextRef.current;
-    const doc = document as any;
+    const doc = document;
     let node: Node | null = null;
     let offset = 0;
     if (typeof doc.caretPositionFromPoint === 'function') {

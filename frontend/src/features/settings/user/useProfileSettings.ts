@@ -112,7 +112,7 @@ export function useProfileSettings(currentUser: User, onUserUpdated: (u: User) =
     setSavingProfile(true);
     try {
       // The avatar is not part of it: it saves on its own (saveAvatar)
-      const patch: any = {
+      const patch: Parameters<typeof api.updateSettings>[0] = {
         displayName: displayName.trim(),
         email: email.trim() };
       // Only when changed: the shared demo accounts refuse any change of their username

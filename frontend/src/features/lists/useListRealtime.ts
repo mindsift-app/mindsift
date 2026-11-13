@@ -9,10 +9,10 @@ export const LIST_RELOAD_EVENTS = ['LIST_CREATED', 'LIST_DELETED', 'LIST_SHARED'
 
 // How an entry event of a list's connection changes the lists shown
 export function listsAfterMessage(prev: SharedList[], msg: WSMessage): SharedList[] {
-  const msgListId = msg.listId || (msg as any).list_id;
+  const msgListId = msg.listId || msg.list_id;
   if (!msgListId) return prev;
   if (msg.event === 'ITEM_CREATED') {
-    const newItem: ListItem = msg.payload;
+    const newItem = msg.payload as ListItem | undefined;
     if (!newItem || !newItem.id) return prev;
     return prev.map((l) => {
       if (l.id !== msgListId) return l;
@@ -21,7 +21,7 @@ export function listsAfterMessage(prev: SharedList[], msg: WSMessage): SharedLis
     });
   }
   if (msg.event === 'ITEM_TOGGLED' || msg.event === 'ITEM_UPDATED') {
-    const updatedItem: ListItem = msg.payload;
+    const updatedItem = msg.payload as ListItem;
     return prev.map((l) => {
       if (l.id !== msgListId) return l;
       return {
@@ -31,7 +31,7 @@ export function listsAfterMessage(prev: SharedList[], msg: WSMessage): SharedLis
     });
   }
   if (msg.event === 'ITEM_DELETED') {
-    const deletedId = msg.payload?.itemId;
+    const deletedId = (msg.payload as { itemId?: string } | undefined)?.itemId;
     return prev.map((l) => {
       if (l.id !== msgListId) return l;
       return { ...l, items: l.items.filter((i) => i.id !== deletedId) };
@@ -54,7 +54,7 @@ export function useListRealtime(
   setLists: React.Dispatch<React.SetStateAction<SharedList[]>>,
   loadLists: () => Promise<void>
 ) {
-  const realtimeConnRef = useRef<any>(null);
+  const realtimeConnRef = useRef<ReturnType<typeof createRealtimeConnection> | null>(null);
   // The listeners below live longer than one render; they call the loadLists of the latest one, which
   // knows the list that is open now
   const loadListsRef = useRef(loadLists);
@@ -108,7 +108,7 @@ export function useListRealtime(
   }, []);
 
   useEffect(() => {
-    const handleGlobalWs = (e: any) => {
+    const handleGlobalWs = (e: CustomEvent<WSMessage | undefined>) => {
       const msg = e.detail;
       if (!msg) return;
       if (LIST_RELOAD_EVENTS.includes(msg.event)) {
