@@ -33,6 +33,7 @@ Versions before 0.80.0 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - The task dialog opens and closes without delay in long task lists: opening it no longer makes the browser restyle and lay out every row (300 tasks with a slowed-down CPU: about 0.5 s down to 0.07 s).
 
 ### Changed
+- The note preview on a Kanban card and in a task row shows the first 60 characters of the note instead of carrying the whole note; in the list it is no longer cut at a fixed narrow width but shortens only when the row runs out of room.
 - On wide screens the Kanban board is centred, and its columns grow to 640 px instead of 420 px.
 - Larger handles on lines, arrows and shapes in drawings; with a finger they can be grabbed from further away.
 - Demo: all of the admin's sample notes, folders, task lists and lists are shared with the demo account `user` for editing.

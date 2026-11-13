@@ -8,7 +8,7 @@ import { columnDotClass } from './ManageColumnsModal';
 import { KanbanColumn, RECURRENCE_LABELS, Thought } from '../../lib/types';
 import { canDragTasks } from './useTaskDrag';
 import { stopOnControl } from './stopOnControl';
-import { renderMentions } from '../../lib/markdown';
+import { notePreview, renderMentions } from '../../lib/markdown';
 import { remindersText } from '../../lib/reminders';
 
 interface TaskRowProps {
@@ -257,11 +257,12 @@ function TaskRowView({
               <button
                 type="button"
                 onClick={() => onOpen(task.id)}
-                className="inline-flex items-center gap-1 text-[10px] text-muted hover:text-main bg-canvas px-1.5 py-0.5 rounded border border-border"
+                className="inline-flex items-center gap-1 min-w-0 max-w-full text-[10px] text-muted hover:text-main bg-canvas px-1.5 py-0.5 rounded border border-border"
                 title={t('row.showNote')}
               >
-                <FileText className="w-2.5 h-2.5 text-accent" />
-                <span className="truncate max-w-[120px]">{renderMentions(task.notes)}</span>
+                <FileText className="w-2.5 h-2.5 text-accent shrink-0" />
+                {/* Up to NOTE_PREVIEW_CHARS on one line; a narrower row shortens it further */}
+                <span className="truncate">{renderMentions(notePreview(task.notes))}</span>
               </button>
             )}
 
