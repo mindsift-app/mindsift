@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/mindsift-app/mindsift/internal/clock"
 	"github.com/mindsift-app/mindsift/internal/config"
 	"github.com/mindsift-app/mindsift/internal/storage"
 )
@@ -28,7 +29,7 @@ func TestFirstBootSetupSwitchesOnBackups(t *testing.T) {
 	}
 
 	// What the scheduler decides with these settings, in the server's time zone (TZ)
-	day := func(h, m int) time.Time { return time.Date(2026, 11, 11, h, m, 0, 0, time.Local) }
+	day := func(h, m int) time.Time { return time.Date(2026, 11, 11, h, m, 0, 0, clock.Location()) }
 	if backupDue(sys, "", day(2, 29)) {
 		t.Error("due before the chosen time")
 	}
@@ -57,7 +58,7 @@ func TestFirstBootSetupWithoutBackups(t *testing.T) {
 				t.Fatalf("setup: %d %s", rec.Code, rec.Body.String())
 			}
 			sys, _ := store.GetSystemSettings()
-			if sys.BackupEnabled || backupDue(sys, "", time.Date(2026, 11, 11, 23, 0, 0, 0, time.Local)) {
+			if sys.BackupEnabled || backupDue(sys, "", time.Date(2026, 11, 11, 23, 0, 0, 0, clock.Location())) {
 				t.Fatal("backups switched on")
 			}
 			if name == "omitted" && (sys.BackupTime != storage.DefaultBackupTime || sys.BackupRetentionDays != storage.DefaultBackupRetentionDays) {
@@ -139,7 +140,7 @@ func TestFinishSetupBackups(t *testing.T) {
 	if !sys.BackupEnabled || sys.BackupTime != "23:45" || sys.BackupRetentionDays != 14 {
 		t.Fatalf("backup settings not applied: enabled=%v time=%q days=%d", sys.BackupEnabled, sys.BackupTime, sys.BackupRetentionDays)
 	}
-	if backupDue(sys, "", time.Date(2026, 11, 11, 23, 44, 0, 0, time.Local)) || !backupDue(sys, "", time.Date(2026, 11, 11, 23, 45, 0, 0, time.Local)) {
+	if backupDue(sys, "", time.Date(2026, 11, 11, 23, 44, 0, 0, clock.Location())) || !backupDue(sys, "", time.Date(2026, 11, 11, 23, 45, 0, 0, clock.Location())) {
 		t.Fatal("not scheduled at 23:45")
 	}
 	if store.SetupPending() {

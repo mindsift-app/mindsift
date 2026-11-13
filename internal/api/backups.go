@@ -15,6 +15,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/mindsift-app/mindsift/internal/auth"
+	"github.com/mindsift-app/mindsift/internal/clock"
 	"github.com/mindsift-app/mindsift/internal/domain"
 	"github.com/mindsift-app/mindsift/internal/i18n"
 	"github.com/mindsift-app/mindsift/internal/storage"
@@ -40,7 +41,7 @@ func (s *Server) runBackups() (string, error) {
 func (s *Server) runBackupsOnce() (string, error) {
 	backupRunMu.Lock()
 	defer backupRunMu.Unlock()
-	now := time.Now()
+	now := clock.Now() // the file names carry the server's date and time; the scheduler reads them back
 	root := s.backupRoot()
 	sys, _ := s.store.GetSystemSettings()
 	keep := storage.DefaultBackupRetentionDays
@@ -92,7 +93,8 @@ func (s *Server) startBackupScheduler() {
 		if err != nil {
 			continue
 		}
-		now := time.Now()
+		// Read on every tick, so a new time zone from the administration counts from the next minute
+		now := clock.Now()
 		if !backupDue(sys, lastRun, now) {
 			continue
 		}
@@ -104,11 +106,12 @@ func (s *Server) startBackupScheduler() {
 }
 
 // backupDue: the settings read on this tick ask for a run at now (switched on, the time of day reached,
-// none yet on now's date). lastRun is the date (YYYY-MM-DD) of the last run.
+// none yet on now's date), both in the server's time zone. lastRun is the date (YYYY-MM-DD) of the last run.
 func backupDue(sys *domain.SystemSettings, lastRun string, now time.Time) bool {
 	if sys == nil || !sys.BackupEnabled {
 		return false
 	}
+	now = clock.In(now)
 	return lastRun != now.Format("2006-01-02") && now.Format("15:04") >= sys.BackupTime
 }
 

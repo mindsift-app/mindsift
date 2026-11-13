@@ -6,11 +6,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/mindsift-app/mindsift/internal/clock"
 	"github.com/mindsift-app/mindsift/internal/i18n"
 )
 
 // Due dates are stored as "2006-01-02" (all day) or "2006-01-02T15:04" (with time), always in the
-// server's local time zone (TZ, default Europe/Berlin). Both sort correctly as plain strings.
+// server's time zone (clock.Location: the admin's setting, else TZ, else UTC). Both sort correctly as
+// plain strings.
 const (
 	dueDateLayout     = "2006-01-02"
 	dueDateTimeLayout = "2006-01-02T15:04"
@@ -26,7 +28,7 @@ func NormalizeDue(raw string) string {
 	if raw == "" {
 		return ""
 	}
-	if t, hasTime, ok := ParseDue(raw, time.Local); ok {
+	if t, hasTime, ok := ParseDue(raw, clock.Location()); ok {
 		if hasTime {
 			return t.Format(dueDateTimeLayout)
 		}
@@ -137,7 +139,7 @@ func FormatReminders(r []int) string {
 
 // HumanDue renders a due date for messages in lang: "30.10.2026" or "30.10.2026, 14:30 Uhr".
 func HumanDue(lang, raw string) string {
-	t, hasTime, ok := ParseDue(raw, time.Local)
+	t, hasTime, ok := ParseDue(raw, clock.Location())
 	if !ok {
 		return raw
 	}

@@ -16,6 +16,7 @@ import (
 	_ "time/tzdata" // time zones without system tzdata (scratch/alpine images)
 
 	"github.com/mindsift-app/mindsift/internal/api"
+	"github.com/mindsift-app/mindsift/internal/clock"
 	"github.com/mindsift-app/mindsift/internal/config"
 	"github.com/mindsift-app/mindsift/internal/storage"
 	"github.com/mindsift-app/mindsift/internal/ws"
@@ -26,12 +27,8 @@ var embeddedDist embed.FS
 
 func main() {
 	privateFiles()
-	// Due dates and alarms use the server's local time; without TZ that is Europe/Berlin
-	if os.Getenv("TZ") == "" {
-		if loc, err := time.LoadLocation("Europe/Berlin"); err == nil {
-			time.Local = loc
-		}
-	}
+	// The server's time zone (internal/clock): TZ, else UTC
+	_, _ = clock.Apply("")
 	cfg := config.Load()
 
 	level := cfg.SlogLevel()

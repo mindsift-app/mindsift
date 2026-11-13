@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/mindsift-app/mindsift/internal/clock"
 	"github.com/mindsift-app/mindsift/internal/domain"
 	"github.com/mindsift-app/mindsift/internal/i18n"
 	"github.com/mindsift-app/mindsift/internal/storage"
@@ -190,9 +191,10 @@ func (s *Server) sendCustomWebhookNotification(webhookURL, event, title, notes, 
 }
 
 // alarmDue reports whether the alarm for a due date should go out now: from the due time (09:00 for
-// all-day tasks) minus the lead time or reminder on. Unreadable dates never fire.
+// all-day tasks) minus the lead time or reminder on, read in the server's time zone (clock). Unreadable
+// dates never fire.
 func alarmDue(dueDate string, notifyBeforeMinutes int, now time.Time) bool {
-	at, ok := domain.DueAlarmAt(dueDate, notifyBeforeMinutes, now.Location())
+	at, ok := domain.DueAlarmAt(dueDate, notifyBeforeMinutes, clock.Location())
 	return ok && !now.Before(at)
 }
 

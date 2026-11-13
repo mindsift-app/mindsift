@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/mindsift-app/mindsift/internal/clock"
 	"github.com/mindsift-app/mindsift/internal/domain"
 )
 
@@ -23,6 +24,22 @@ func TestNextDueDate(t *testing.T) {
 	for _, c := range cases {
 		if got := NextDueDate(c.due, c.rule, today); got != c.want {
 			t.Errorf("NextDueDate(%q, %s) = %s, want %s", c.due, c.rule, got, c.want)
+		}
+	}
+}
+
+// Without a due date the next one counts from today in the server's time zone
+func TestNextDueDateCountsFromTheServersDay(t *testing.T) {
+	instant := time.Date(2026, 11, 13, 23, 30, 0, 0, time.UTC) // 14 November in Tokyo, 13th in Los Angeles
+	for zone, want := range map[string]string{"UTC": "2026-11-14", "Asia/Tokyo": "2026-11-15", "America/Los_Angeles": "2026-11-14"} {
+		loc, _ := time.LoadLocation(zone)
+		clock.UseInTest(t, loc)
+		if got := NextDueDate("", "daily", instant); got != want {
+			t.Errorf("%s: NextDueDate = %s, want %s", zone, got, want)
+		}
+		// A date that is set does not depend on the zone
+		if got := NextDueDate("2026-10-30T23:30", "daily", instant); got != "2026-10-31T23:30" {
+			t.Errorf("%s: with a date: %s", zone, got)
 		}
 	}
 }

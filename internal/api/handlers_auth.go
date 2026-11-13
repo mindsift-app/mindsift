@@ -14,6 +14,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/mindsift-app/mindsift/internal/auth"
+	"github.com/mindsift-app/mindsift/internal/clock"
 	"github.com/mindsift-app/mindsift/internal/domain"
 	"github.com/mindsift-app/mindsift/internal/i18n"
 	"github.com/mindsift-app/mindsift/internal/storage"
@@ -980,7 +981,7 @@ func (s *Server) handleTestUserAlarm(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusBadRequest, "Bitte eine Discord Webhook URL angeben")
 			return
 		}
-		if err := s.sendDiscordNotification(lang, url, testTitle, i18n.T(lang, "Dein Discord-Alarmkanal funktioniert einwandfrei!"), domain.HumanDue(lang, domain.NowISO()[:10]), "normal"); err != nil {
+		if err := s.sendDiscordNotification(lang, url, testTitle, i18n.T(lang, "Dein Discord-Alarmkanal funktioniert einwandfrei!"), domain.HumanDue(lang, clock.Today()), "normal"); err != nil {
 			writeJSON(w, http.StatusBadGateway, map[string]string{"error": tr(w, "Discord-Fehler") + ": " + deliveryProblem(w, err)})
 			return
 		}
@@ -993,7 +994,7 @@ func (s *Server) handleTestUserAlarm(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusBadRequest, "Bitte eine Webhook-URL angeben")
 			return
 		}
-		if err := s.sendCustomWebhookNotification(url, "test_alarm", testTitle, i18n.T(lang, "Dein eigener Webhook empfängt MindSift-Alarme!"), domain.NowISO()[:10], "normal", nil); err != nil {
+		if err := s.sendCustomWebhookNotification(url, "test_alarm", testTitle, i18n.T(lang, "Dein eigener Webhook empfängt MindSift-Alarme!"), clock.Today(), "normal", nil); err != nil {
 			writeJSON(w, http.StatusBadGateway, map[string]string{"error": tr(w, "Webhook-Fehler") + ": " + deliveryProblem(w, err)})
 			return
 		}
@@ -1004,7 +1005,7 @@ func (s *Server) handleTestUserAlarm(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusBadRequest, "Dein Konto hat noch keine E-Mail-Adresse – trag sie im Profil ein")
 			return
 		}
-		sample := time.Date(2026, 1, 1, 18, 0, 0, 0, time.Local)
+		sample := time.Date(2026, 1, 1, 18, 0, 0, 0, clock.Location())
 		if err := s.sendMailContent(toEmail, "⏰ "+i18n.T(lang, "MindSift Test-Alarm"), mailContent{
 			Lang:      lang,
 			Preheader: i18n.T(lang, "Dein E-Mail-Alarmkanal funktioniert"),
