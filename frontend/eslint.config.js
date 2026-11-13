@@ -23,6 +23,13 @@ export default tseslint.config(
       'no-empty': ['error', { allowEmptyCatch: true }],
     },
   },
+  // No any where it is already gone; the rule grows folder by folder until it holds everywhere
+  {
+    files: ['src/lib/api/**/*.{ts,tsx}'],
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'error',
+    },
+  },
   // Texts shown to people come from the language files (src/locales); no new fixed text in JSX
   {
     files: ['src/**/*.tsx'],

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { render } from '@testing-library/react';
-import { renderInlineMarkdown } from '../markdown';
+import { notePreview, renderInlineMarkdown } from '../markdown';
 
 describe('renderInlineMarkdown', () => {
   it('renders bold text with <strong> tag', () => {
@@ -65,5 +65,28 @@ describe('renderInlineMarkdown', () => {
     expect(link).toBeTruthy();
     expect(link?.getAttribute('href')).toBe('https://example.com/');
     expect(link?.textContent).toBe('Testseite');
+  });
+});
+
+describe('notePreview', () => {
+  it('keeps a short note and collapses line breaks', () => {
+    expect(notePreview('Händler hat das Ersatzteil\n\n  seit Montag da.')).toBe('Händler hat das Ersatzteil seit Montag da.');
+    expect(notePreview('')).toBe('');
+  });
+
+  it('cuts a long note after 60 characters with an ellipsis', () => {
+    const long = 'a'.repeat(50) + ' ' + 'b'.repeat(50);
+    const out = notePreview(long);
+    expect(out.endsWith('…')).toBe(true);
+    expect(out.length).toBeLessThanOrEqual(61);
+    expect(out).toBe('a'.repeat(50) + ' ' + 'b'.repeat(9) + '…');
+  });
+
+  it('counts a mention as a short name and never cuts it', () => {
+    const mention = '{{mention:abcdefghijklmnopqrstuvwxyz0123456789}}';
+    expect(notePreview(`Frag ${mention} wegen der SSD`)).toBe(`Frag ${mention} wegen der SSD`);
+    const cut = notePreview('x'.repeat(55) + ' ' + mention + ' danach');
+    expect(cut).toBe('x'.repeat(55) + '…');
+    expect(cut).not.toContain('{{mention');
   });
 });

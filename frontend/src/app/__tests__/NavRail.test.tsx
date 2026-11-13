@@ -34,7 +34,7 @@ function Harness({ setActiveTab = () => {} }: { setActiveTab?: (tab: ActiveTab) 
   const [open, setOpen] = useState(false);
   const [focus, setFocus] = useState(0);
   const [profile, setProfile] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement | null>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const openQuickDump = useCallback(() => {
     setOpen(true);
     setFocus((n) => n + 1);

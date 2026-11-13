@@ -14,7 +14,7 @@ export const LANGUAGES = [
 ] as const;
 export type Language = (typeof LANGUAGES)[number]['id'];
 // German is the language of the source texts: whatever is missing elsewhere shows in German
-export const FALLBACK_LANGUAGE: Language = 'de';
+export const FALLBACK_LANGUAGE = 'de' satisfies Language;
 // German ships with the app; the others load the first time someone uses them
 export const resources = { de };
 const loaders: Record<Exclude<Language, 'de'>, () => Promise<{ default: Record<string, object> }>> = {

@@ -8,7 +8,7 @@
 set -euo pipefail
 
 IMAGE="${1:?usage: ci/trivy-scan.sh <image>}"
-TRIVY_IMAGE="${TRIVY_IMAGE:-docker.io/aquasec/trivy:0.76.0}"
+TRIVY_IMAGE="${TRIVY_IMAGE:-docker.io/aquasec/trivy:0.76.1}"
 
 MOUNT=()
 if [ -n "${SARIF_DIR:-}" ]; then

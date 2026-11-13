@@ -91,7 +91,6 @@ FLAW-31 and FLAW-34 are resolved in part (0.6.0) and stay in the overview above.
 - **Suggest Frequent Items** while typing (based on completed entries).
 
 ### Account & Security
-- **Two-Factor Authentication** (TOTP) or **Passkeys**.
 - **Admin Audit Log:** Detailed record of who modified accounts, roles, and settings, and when.
 
 ### Operations

@@ -304,7 +304,7 @@ func matchMountPath(folderPath string, mounts map[string]string) (string, string
 
 	var bestFolderID string
 	var bestSubPath string
-	var longestMountLen int = -1
+	longestMountLen := -1
 
 	for fID, mPath := range mounts {
 		cleanMount := cleanFolderPath(mPath)

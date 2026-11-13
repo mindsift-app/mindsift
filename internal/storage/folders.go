@@ -839,12 +839,13 @@ func (s *Store) CreateFolderShare(currentUserID, folderID, targetType, targetIde
 	}
 
 	var mounts []sqlStmt
-	if cleanType == "user" {
+	switch cleanType {
+	case "user":
 		mounts = append(mounts, stmt(`
 			INSERT OR IGNORE INTO workspace_folder_mounts (user_id, folder_id, mount_path, created_at, updated_at)
 			VALUES (?, ?, ?, ?, ?)
 		`, targetID, folderID, f.Name, now, now))
-	} else if cleanType == "team" {
+	case "team":
 		mRows, err := s.db.Query(`SELECT user_id FROM team_members WHERE team_id = ?`, targetID)
 		if err == nil {
 			var memberIDs []string

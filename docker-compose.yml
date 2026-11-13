@@ -54,7 +54,6 @@ services:
       - LOG_LEVEL=${LOG_LEVEL:-info}
       - DEBUG=${DEBUG:-false}
       - MINDSIFT_DEMO=${MINDSIFT_DEMO:-false}
-      - MINDA_DEMO=${MINDA_DEMO:-}   # earlier name of MINDSIFT_DEMO, still read
       - DEMO_RESET_MINUTES=${DEMO_RESET_MINUTES:-20}
       # Email
       - SMTP_HOST=${SMTP_HOST:-}

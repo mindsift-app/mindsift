@@ -321,7 +321,7 @@ export function TwoFactorCard({
           )}
 
           {flow.step === 'codes' && (
-            <RecoveryCodesPanel codes={flow.codes} account={currentUser.email || currentUser.username} onDone={() => reset()} />
+            <RecoveryCodesPanel codes={flow.codes} account={currentUser.email || currentUser.username || ''} onDone={() => reset()} />
           )}
 
           {/* On (app or passkey): since when, codes left, new codes, remove the app */}

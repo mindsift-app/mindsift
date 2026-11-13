@@ -7,7 +7,7 @@ import { KanbanColumn, RECURRENCE_LABELS, TaskList, Thought } from '../../lib/ty
 import { canDragTasks } from './useTaskDrag';
 import { stopOnControl } from './stopOnControl';
 import { AvatarPerson } from '../../components/AvatarStack';
-import { renderMentions } from '../../lib/markdown';
+import { notePreview, renderMentions } from '../../lib/markdown';
 import { remindersText } from '../../lib/reminders';
 
 interface KanbanCardProps {
@@ -114,7 +114,7 @@ const KanbanCardView: React.FC<KanbanCardProps> = ({
       {task.notes && (
         <div className="flex items-center gap-1 text-[10px] text-muted bg-canvas p-1 rounded border border-border truncate">
           <FileText className="w-2.5 h-2.5 text-accent flex-shrink-0" />
-          <span className="truncate">{renderMentions(task.notes)}</span>
+          <span className="truncate">{renderMentions(notePreview(task.notes))}</span>
         </div>
       )}
 

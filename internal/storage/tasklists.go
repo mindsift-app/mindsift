@@ -440,7 +440,8 @@ func (s *Store) getMembersForTaskList(tl *domain.TaskList) []domain.TaskListMemb
 
 	// 2. From task_list_shares
 	for _, sh := range tl.Shares {
-		if sh.TargetType == "team" {
+		switch sh.TargetType {
+		case "team":
 			rows, err := s.db.Query(
 				`SELECT u.id, u.display_name, u.email, u.avatar_url FROM team_members tm JOIN users u ON u.id = tm.user_id WHERE tm.team_id = ?`,
 				sh.TargetID,
@@ -456,7 +457,7 @@ func (s *Store) getMembersForTaskList(tl *domain.TaskList) []domain.TaskListMemb
 				logDBErr(rows.Err())
 				_ = rows.Close()
 			}
-		} else if sh.TargetType == "user" {
+		case "user":
 			var m domain.TaskListMember
 			if err := s.db.QueryRow(`SELECT id, display_name, email, avatar_url FROM users WHERE id = ?`, sh.TargetID).Scan(&m.UserID, &m.DisplayName, &m.Email, &m.AvatarURL); err == nil {
 				m.Role = "member"

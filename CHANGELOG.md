@@ -4,7 +4,7 @@ All notable changes to MindSift are documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and from v0.6.0 on the version numbers follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html). While the major version is 0, the API and data formats can change with any minor version; such changes are listed under "Changed" or "Removed" and marked **Attention**.
 
-Versions before 0.80.0 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
+Versions without a git tag were development states and were never published as a versioned image. Versions before 0.80.0 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
 ## [Unreleased]
 
@@ -18,8 +18,10 @@ Versions before 0.80.0 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - **Live drawing:** several people draw in the same drawing at once and see each other's pointers, selections and shapes as they go. The note shows who is drawing; others choose to draw along or watch. Whoever started saves for everyone with "Done" (or discards for everyone); if they leave, the person drawing longest takes over. Drawing along needs a WebSocket connection, without one you can watch live. Unsaved sessions are kept for ten minutes. A browser tab draws in one drawing at a time, and the number of live drawings per person and per server is limited; when no further one can start, the editor says so and shows the drawing read-only. Drawing alone (an unshared note, or nobody else there) looks as before, without host or people shown.
 - **Prometheus metrics:** with `METRICS_TOKEN` set, `/metrics` serves API requests and their duration by route, mails sent and failed, backup runs and the last good one, accounts and active accounts, the database's connections and size, memory and goroutines (scraped with the token as bearer). Without the variable nothing changes. `/api/v1/health?db=1` also checks the database and answers `503` when it does not respond.
 - New settings section **Security** with the password change, two-factor sign-in and the signed-in devices (moved there from Profile).
+- `THIRD_PARTY_LICENSES.txt` with the licenses of the npm packages and Go modules built into MindSift, generated at build time: in the image under `/app/` and in the release archives next to the binary.
 
 ### Fixed
+- Zooming into a bullet whose level was never stored shows its path and sub-bullets again, and the recovery-code file of an account without email or username no longer names it "undefined".
 - Dragging a drawing in a note to move its section no longer selects text or drags a selection (and with it the bullet) instead; in Firefox a selection on the page no longer stops the drawing from moving.
 - On phones, the save status of a note shows "Saved" in the app's language instead of always in German.
 - Sharing a pinned note no longer unpins it for the owner in the open app (realtime updates carried another person's view of the note).
@@ -33,6 +35,8 @@ Versions before 0.80.0 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - The task dialog opens and closes without delay in long task lists: opening it no longer makes the browser restyle and lay out every row (300 tasks with a slowed-down CPU: about 0.5 s down to 0.07 s).
 
 ### Changed
+- Dragging a card on a Kanban board with many tasks is much smoother: the drop gap opens at once and the cards below glide aside instead of the whole column being laid out again in every frame.
+- The note preview on a Kanban card and in a task row shows the first 60 characters of the note instead of carrying the whole note; in the list it is no longer cut at a fixed narrow width but shortens only when the row runs out of room.
 - On wide screens the Kanban board is centred, and its columns grow to 640 px instead of 420 px.
 - Larger handles on lines, arrows and shapes in drawings; with a finger they can be grabbed from further away.
 - Demo: all of the admin's sample notes, folders, task lists and lists are shared with the demo account `user` for editing.

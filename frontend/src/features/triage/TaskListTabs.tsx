@@ -199,8 +199,9 @@ export function TaskListTabs({
         {currentSelectedList && (() => {
           const listOwnerId = currentSelectedList.ownerId || currentSelectedList.userId;
           const isOwner = currentSelectedList.isOwner !== false && (!listOwnerId || listOwnerId === currentUser?.id);
-          const sharesCount = (currentSelectedList.shares?.length || 0) > 0
-            ? currentSelectedList.shares.length
+          const directShares = currentSelectedList.shares?.length || 0;
+          const sharesCount = directShares > 0
+            ? directShares
             : (currentSelectedList.members?.filter((m) => m.userId !== listOwnerId).length || 0);
           const isShared = sharesCount > 0 || ((currentSelectedList.members?.length || 0) > 1);
           const ownerMember = currentSelectedList.members?.find((m) => m.role === 'owner' || m.userId === listOwnerId);

@@ -445,7 +445,7 @@ func PlanMindSiftImport(data []byte, fileName string) (*ImportPlan, error) {
 	vaultMedia := BackupVaultDir + "/" + vaultAttachmentDir + "/med_"
 	for _, f := range zr.File {
 		name := cleanArchivePath(f.Name)
-		if !(strings.HasPrefix(name, "media/") || strings.HasPrefix(name, vaultMedia)) || f.FileInfo().IsDir() || f.UncompressedSize64 > maxImportMediaBytes {
+		if (!strings.HasPrefix(name, "media/") && !strings.HasPrefix(name, vaultMedia)) || f.FileInfo().IsDir() || f.UncompressedSize64 > maxImportMediaBytes {
 			continue
 		}
 		if mediaBytes += int64(f.UncompressedSize64); mediaBytes > maxImportUnpackedBytes {

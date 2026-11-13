@@ -235,7 +235,7 @@ func authenticate(client *smtp.Client, cfg smtpSettings) error {
 			mech = "LOGIN"
 		}
 	}
-	var a smtp.Auth = smtp.PlainAuth("", cfg.User, cfg.Pass, cfg.Host)
+	a := smtp.PlainAuth("", cfg.User, cfg.Pass, cfg.Host)
 	if mech == "LOGIN" {
 		a = &loginAuth{user: cfg.User, pass: cfg.Pass, host: cfg.Host}
 	}

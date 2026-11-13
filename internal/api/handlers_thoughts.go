@@ -210,11 +210,11 @@ func filterTasks(tasks []domain.Thought, status, due string, now time.Time) ([]d
 	}
 	today := now.In(time.Local).Format("2006-01-02")
 	var match func(day string) bool
-	switch {
-	case due == "":
-	case due == "today":
+	switch due {
+	case "":
+	case "today":
 		match = func(day string) bool { return day == today }
-	case due == "overdue":
+	case "overdue":
 		match = func(day string) bool { return day < today }
 	default:
 		if _, err := time.Parse("2006-01-02", due); err != nil {

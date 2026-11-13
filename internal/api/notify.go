@@ -54,7 +54,7 @@ func (s *Server) notify(kind, actorID string, recipients []string, payload func(
 		if set.Paused {
 			continue
 		}
-		if uid == actorID && !(kind == "watched" && set.IncludeOwnWatched) {
+		if uid == actorID && (kind != "watched" || !set.IncludeOwnWatched) {
 			continue
 		}
 		if !set.Channels(kind).Any() {
@@ -353,7 +353,7 @@ func (s *Server) notifyTaskChange(actorID string, before, after *domain.Thought,
 	var tellWatchers []string
 	for _, w := range watchers {
 		watching[w] = true
-		if !(assigned[w] && len(changes) == 1 && changes[0].sentence == changeAssignees) {
+		if !assigned[w] || len(changes) != 1 || changes[0].sentence != changeAssignees {
 			tellWatchers = append(tellWatchers, w)
 		}
 	}

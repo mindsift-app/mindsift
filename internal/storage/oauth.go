@@ -145,8 +145,8 @@ func (s *Store) GrantOAuth(userID string, client *OAuthClient, scopes []string, 
 	var keyID string
 	err := s.db.QueryRow(`SELECT id FROM api_keys WHERE user_id = ? AND kind = ? AND oauth_client_id = ?`,
 		userID, APIKeyKindOAuth, client.ID).Scan(&keyID)
-	switch {
-	case err == sql.ErrNoRows:
+	switch err {
+	case sql.ErrNoRows:
 		keyID = domain.NewID("key")
 		_, err = s.db.Exec(
 			`INSERT INTO api_keys (id, user_id, name, key_prefix, key_hash, scopes, created_at, kind, oauth_client_id)
@@ -154,7 +154,7 @@ func (s *Store) GrantOAuth(userID string, client *OAuthClient, scopes []string, 
 			// Nobody knows this secret: OAuth entries are only reachable through their tokens
 			keyID, userID, client.Name+" (OAuth)", "OAuth", auth.HashAPIKey(randomToken("unused_")), joined, isoTime(now),
 			APIKeyKindOAuth, client.ID)
-	case err == nil:
+	case nil:
 		_, err = s.db.Exec(`UPDATE api_keys SET scopes = ? WHERE id = ?`, joined, keyID)
 	}
 	if err != nil {

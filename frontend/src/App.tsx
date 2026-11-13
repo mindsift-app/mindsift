@@ -181,7 +181,7 @@ export const App: React.FC = () => {
   const [showAbout, setShowAbout] = useState(false);
   const [showTriageTrash, setShowTriageTrash] = useState(false);
   const { update: availableUpdate, dismiss: dismissUpdate } = useUpdateCheck();
-  const dropdownRef = useRef<HTMLDivElement | null>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Mobile Navigation & Quick-Action State
   const [showMobileProfile, setShowMobileProfile] = useState(false);

@@ -27,9 +27,7 @@ vi.mock('../../../lib/api', async (importOriginal) => {
 });
 
 const makeDoc = (overrides: Partial<Document> & { id: string; title: string }): Document => ({
-  id: overrides.id,
   userId: 'u1',
-  title: overrides.title,
   icon: '📝',
   folderPath: '',
   content: '',

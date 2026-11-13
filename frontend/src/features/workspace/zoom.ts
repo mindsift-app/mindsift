@@ -54,14 +54,14 @@ export function computeBreadcrumbs(
   const trail: BreadcrumbNode[] = [];
   const zoomedBlock = blocks[zoomedIdx];
 
-  let currentLevel = zoomedBlock.level;
+  let currentLevel = zoomedBlock.level || 0;
   for (let i = zoomedIdx - 1; i >= 0; i--) {
-    if (blocks[i].level < currentLevel) {
+    if ((blocks[i].level || 0) < currentLevel) {
       trail.unshift({
         id: blocks[i].id,
         title: blockTitle(blocks[i]),
       });
-      currentLevel = blocks[i].level;
+      currentLevel = blocks[i].level || 0;
       if (currentLevel === 0) break;
     }
   }
@@ -97,11 +97,11 @@ export function getZoomedSubtree(
   }
 
   const zoomedBlock = blocks[idx];
-  const zLevel = zoomedBlock.level;
+  const zLevel = zoomedBlock.level || 0;
   const childBlocks: DocumentBlock[] = [];
 
   for (let i = idx + 1; i < blocks.length; i++) {
-    if (blocks[i].level > zLevel) {
+    if ((blocks[i].level || 0) > zLevel) {
       childBlocks.push(blocks[i]);
     } else {
       break;

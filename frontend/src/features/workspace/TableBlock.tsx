@@ -185,7 +185,8 @@ const TableBlockView: React.FC<TableBlockProps> = ({
     // Its cell is still there (someone typed elsewhere): the cursor stays where it is
     if (to.row === cell.r && to.col === cell.c) return;
     applyFocus({ r: to.row, c: to.col, caret: 'end' });
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- only for new cells; onLeave keeps its identity
+    // Runs only for new cell data; onLeave keeps its identity and applyFocus works on refs
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [own]);
 
   // Mobile keyboards and the context menu undo via beforeinput instead of key events

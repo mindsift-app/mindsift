@@ -194,6 +194,28 @@ function renderInlineTokens(text: string, options?: InlineMarkdownOptions): Reac
   return elements;
 }
 
+// Start of a task's note for a one-line preview (Kanban card, task row): whitespace and line breaks
+// collapsed, at most `max` characters with "…" after a cut. A mention counts as a short name and is never
+// cut in half, so the preview does not carry the whole note into the page.
+export const NOTE_PREVIEW_CHARS = 60;
+const MENTION_PREVIEW_WEIGHT = 10;
+export function notePreview(text: string, max = NOTE_PREVIEW_CHARS): string {
+  const flat = (text || '').replace(/\s+/g, ' ').trim();
+  let used = 0;
+  let pos = 0;
+  for (const m of flat.matchAll(new RegExp(MENTION_REF_SOURCE, 'g'))) {
+    const before = m.index! - pos;
+    if (used + before > max) break;
+    used += before;
+    if (used + MENTION_PREVIEW_WEIGHT > max) return flat.slice(0, m.index).trimEnd() + '…';
+    used += MENTION_PREVIEW_WEIGHT;
+    pos = m.index! + m[0].length;
+  }
+  const rest = flat.length - pos;
+  if (used + rest <= max) return flat;
+  return flat.slice(0, pos + (max - used)).trimEnd() + '…';
+}
+
 // Plain text with only its @-mentions shown as names (subtasks, which have no other formatting)
 export function renderMentions(text: string): React.ReactNode[] {
   if (!text || !text.includes('{{mention:')) return [text];

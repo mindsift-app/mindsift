@@ -5,7 +5,9 @@
 # ==============================================================================
 # Stage 1: Frontend Check & Build (Cached npm dependencies layer)
 # ==============================================================================
-FROM --platform=$BUILDPLATFORM node:22-alpine AS frontend-builder
+# Node: the active LTS line, pinned to a release that was out for two weeks when it was chosen. It only
+# builds the frontend; nothing of it ends up in the image.
+FROM --platform=$BUILDPLATFORM node:26.13.0-alpine AS frontend-builder
 WORKDIR /app/frontend
 COPY frontend/package*.json ./
 # npm ci installs exactly what package-lock.json lists and stops when it does not match package.json
@@ -20,6 +22,9 @@ RUN if [ "$SKIP_TESTS" != "1" ]; then \
       echo "Skipping frontend tests (SKIP_TESTS=1)"; \
     fi && \
     APP_VERSION="${APP_VERSION}" npm run build
+# Licenses of the npm packages bundled into the app (the first part of THIRD_PARTY_LICENSES.txt)
+COPY ci/third-party-licenses-npm.mjs /app/ci/
+RUN node /app/ci/third-party-licenses-npm.mjs . > /app/third-party-npm.txt
 
 # ==============================================================================
 # Stage 2: Go Backend Lint, Unit Tests & Binary Build (Cached Go module & sqlite layer)
@@ -70,6 +75,13 @@ ARG TARGETOS
 ARG TARGETARCH
 RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build \
     CGO_ENABLED=0 GOOS="${TARGETOS}" GOARCH="${TARGETARCH}" go build -ldflags="-s -w" -o /app/mindsift ./cmd/server
+# The licenses of everything in that binary: the npm packages from the frontend stage, the Go modules it
+# imports on this platform and Go's standard library
+COPY --from=frontend-builder /app/third-party-npm.txt /app/third-party-npm.txt
+COPY ci/third-party-licenses.sh ./ci/
+RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build \
+    CGO_ENABLED=0 GOOS="${TARGETOS}" GOARCH="${TARGETARCH}" \
+      sh ci/third-party-licenses.sh /app/third-party-npm.txt ./cmd/server > /app/THIRD_PARTY_LICENSES.txt
 
 # ==============================================================================
 # Stage 3: Minimal Production Runtime (< 35 MB)
@@ -101,6 +113,7 @@ RUN apk upgrade --no-cache && \
 
 WORKDIR /app
 COPY --from=backend-builder /app/mindsift /app/mindsift
+COPY --from=backend-builder /app/THIRD_PARTY_LICENSES.txt /app/THIRD_PARTY_LICENSES.txt
 COPY ci/entrypoint.sh /app/entrypoint.sh
 
 ENV PORT=8080

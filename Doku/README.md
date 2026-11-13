@@ -38,11 +38,11 @@ Reference for developers and administrators. All information has been verified a
 # Backend (Go 1.27)
 go vet ./... && go test ./...
 
-# Frontend (Node 22)
+# Frontend (Node 26)
 cd frontend && npm ci && npx tsc --noEmit && npm run test:run && npm run build
 
 # Everything at once in containers (podman, no local Go or Node): the checks above plus ESLint,
-# gofmt and staticcheck (staticcheck.conf); E2E=1 adds the browser tests
+# gofmt, staticcheck (staticcheck.conf) and golangci-lint (.golangci.yml); E2E=1 adds the browser tests
 ci/local-checks.sh
 ```
 

@@ -265,6 +265,7 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
     }
     scheduleDraft();
     liveRef.current?.changed();
+    // scheduleDraft only touches refs (saveDraft reads docRef), so setDoc keeps one identity for all handlers
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -395,6 +396,7 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
     const onHide = () => document.visibilityState === 'hidden' && saveDraft();
     document.addEventListener('visibilitychange', onHide);
     return () => document.removeEventListener('visibilitychange', onHide);
+    // Once per editor: the draft is offered on open only, and saveDraft reads the current drawing from docRef
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -415,6 +417,7 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
         : null;
     ro?.observe(el);
     return () => ro?.disconnect();
+    // Once on mount: the first view fits the initial drawing; later changes of initial must not move the view
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -463,6 +466,7 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
     };
     el.addEventListener('wheel', onWheel, { passive: false });
     return () => el.removeEventListener('wheel', onWheel);
+    // Attached once: zoomAt and the handler read the view from viewRef and the container from containerRef
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

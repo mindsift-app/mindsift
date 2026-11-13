@@ -542,13 +542,15 @@ func parseMindmap(lines []string) *mindNode {
 			continue
 		}
 		indent := 0
+	indentation:
 		for _, c := range l {
-			if c == ' ' {
+			switch c {
+			case ' ':
 				indent++
-			} else if c == '\t' {
+			case '\t':
 				indent += 4
-			} else {
-				break
+			default:
+				break indentation
 			}
 		}
 		n := &mindNode{text: t, shape: ""}

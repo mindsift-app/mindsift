@@ -961,7 +961,8 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
             onRequestMerge={(d) => setMergeDialog({ sourceId: d.id })}
             onDocCreated={(created) => {
               setDocs((prev) => (prev.some((d) => d.id === created.id) ? prev : [created, ...prev]));
-              if (created.folderPath) setExpandedFolders((prev) => ({ ...prev, ...folderAncestors(created.folderPath) }));
+              const folderPath = created.folderPath;
+              if (folderPath) setExpandedFolders((prev) => ({ ...prev, ...folderAncestors(folderPath) }));
               onStatsChange();
             }}
             onDocRemoved={(id) => {
