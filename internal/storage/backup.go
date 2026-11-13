@@ -17,7 +17,8 @@ import (
 //   system/mindsift-db-YYYY-MM-DD-HHMM.db.gz        the whole database (VACUUM INTO, consistent while
 //                                                     others write), for the admin
 //   system/pre-migration-<id>-YYYY-MM-DD-HHMMSS.db.gz   the same, written at start before pending
-//                                                     migrations (migrations.go); the last three stay
+//                                                     migrations (migrations.go); the last three stay,
+//                                                     none longer than 90 days
 //   users/<user id>/mindsift-backup-YYYY-MM-DD-HHMM.zip   the same ZIP as "Backup herunterladen"
 // Files older than the retention are deleted after each run. Backups next to the database protect
 // against mistakes, not against a broken disk; copy the folder elsewhere as well.

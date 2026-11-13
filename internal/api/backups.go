@@ -331,6 +331,16 @@ func (s *Server) runDeletedBackupSweep(now time.Time) {
 	s.deletedAccounts(now, true)
 }
 
+// runPreMigrationBackupExpiry removes the copies from before migrations once they are 90 days old
+// (hourly), so accounts deleted since do not live on in them.
+func (s *Server) runPreMigrationBackupExpiry(now time.Time) {
+	n, err := s.store.ExpirePreMigrationBackups(now)
+	logFailed("Removing expired pre-migration backups", err)
+	if n > 0 {
+		slog.Info("Expired pre-migration backups removed", "count", n)
+	}
+}
+
 // handleAdminDeletedBackups: GET /admin/backups/deleted – kept backups of deleted accounts.
 func (s *Server) handleAdminDeletedBackups(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, s.deletedAccounts(time.Now(), false))
