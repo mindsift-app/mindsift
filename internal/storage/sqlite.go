@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 
 	"github.com/mindsift-app/mindsift/internal/auth"
 	"github.com/mindsift-app/mindsift/internal/domain"
@@ -25,6 +26,8 @@ type Store struct {
 	// systemBackupDir ($DATA_DIR/backups/system) takes the copy written before pending migrations
 	// (migrations.go); empty for databases without a file (tests in memory)
 	systemBackupDir string
+	// blockRefsReady: block_refs exists (migration 41 has run), so writing blocks maintains it
+	blockRefsReady atomic.Bool
 
 	// OnTaskCreated is told about tasks the store creates by itself (next occurrence of a repeating
 	// task), so the server can push them to connected clients.

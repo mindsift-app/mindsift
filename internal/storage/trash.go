@@ -307,8 +307,7 @@ func (s *Store) hardDeleteDocument(docID string) error {
 		`UPDATE thoughts SET converted_type = '', converted_ref_id = '' WHERE converted_type = 'document_block'
 		  AND substr(converted_ref_id, 1, instr(converted_ref_id, ':') - 1) = ?`,
 		// Its hidden values go along, unless a bullet of another note still holds them (moved there)
-		`DELETE FROM note_secrets WHERE document_id = ? AND NOT EXISTS (SELECT 1 FROM blocks b
-		  WHERE b.document_id != note_secrets.document_id AND b.deleted = 0 AND instr(b.content, '{{secret:' || note_secrets.id || '}}') > 0)`,
+		sqlDeleteSecretsHeldNowhereElse,
 		`DELETE FROM blocks WHERE document_id = ?`,
 		`DELETE FROM block_tags WHERE document_id = ?`,
 		`DELETE FROM doc_pins WHERE doc_id = ?`,

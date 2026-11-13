@@ -157,7 +157,7 @@ func (s *Store) MediaUsage(ownerID string) (int64, error) {
 // MediaReferencedIn lists the notes whose blocks (deleted ones included) point to the file. A block
 // copied into another note keeps working there.
 func (s *Store) MediaReferencedIn(id string) ([]string, error) {
-	rows, err := s.db.Query(`SELECT DISTINCT document_id FROM blocks WHERE instr(content, ?) > 0`, "media:"+id)
+	rows, err := s.db.Query(sqlDocsWithMedia, id)
 	if err != nil {
 		return nil, err
 	}
@@ -176,9 +176,7 @@ func (s *Store) MediaReferencedIn(id string) ([]string, error) {
 // UnreferencedMedia returns files older than the grace time that no block mentions any more. The grace
 // time covers uploads whose block has not reached the server yet (offline, slow sync).
 func (s *Store) UnreferencedMedia(olderThan time.Time) ([]Media, error) {
-	rows, err := s.db.Query(`SELECT id, doc_id, owner_id, kind, mime, size, source_url, created_at FROM media m
-		WHERE created_at < ? AND NOT EXISTS (SELECT 1 FROM blocks b WHERE instr(b.content, 'media:' || m.id) > 0)`,
-		olderThan.UTC().Format(time.RFC3339))
+	rows, err := s.db.Query(sqlUnreferencedMedia, olderThan.UTC().Format(time.RFC3339))
 	if err != nil {
 		return nil, err
 	}
@@ -196,9 +194,7 @@ func (s *Store) UnreferencedMedia(olderThan time.Time) ([]Media, error) {
 
 // MediaOfUser lists the files shown in the user's own notes (for backups and exports).
 func (s *Store) MediaOfUser(userID string) ([]Media, error) {
-	rows, err := s.db.Query(`SELECT DISTINCT m.id, m.doc_id, m.owner_id, m.kind, m.mime, m.size, m.source_url, m.created_at
-		FROM media m JOIN blocks b ON instr(b.content, 'media:' || m.id) > 0
-		JOIN documents d ON d.id = b.document_id WHERE d.user_id = ?`, userID)
+	rows, err := s.db.Query(sqlMediaOfUser, userID)
 	if err != nil {
 		return nil, err
 	}

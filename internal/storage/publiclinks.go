@@ -114,8 +114,7 @@ func (s *Store) DocIcon(docID string) string {
 // DocShowsMedia reports whether a living bullet of the note shows the file.
 func (s *Store) DocShowsMedia(docID, mediaID string) bool {
 	var n int
-	logDBErr(s.db.QueryRow(`SELECT COUNT(*) FROM blocks WHERE document_id = ? AND deleted = 0 AND instr(content, ?) > 0`,
-		docID, "media:"+mediaID).Scan(&n))
+	logDBErr(s.db.QueryRow(sqlDocShowsMedia, mediaID, docID).Scan(&n))
 	return n > 0
 }
 

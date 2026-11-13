@@ -56,6 +56,7 @@ A task is a `thought` with `status='kept'` or `status='converted' AND converted_
 | `doc_ops` | Operation change log per note: `seq` (sequential per note), `op_id`, `user_id`, `client_id`, `kind`, `block_id`, `payload` (mutation effect as JSON), `created_at`. Replaying all entries from a snapshot yields the current state. Periodically compacted (see below). |
 | `doc_op_results` | Results per client operation (`op_id` unique) for idempotent retries; purged after 90 days |
 | `block_tags` | `#hashtags` per block (`tag`, `document_id`, `block_id`) |
+| `block_refs` | What a bullet points to (Migration 41), so these lookups use an index instead of searching the text of every block: `block_id`, `document_id`, `kind` (`media`: a file, `ref_id` = `media.id`, from `media:med_…`; `secret`: a hidden value, `ref_id` = `note_secrets.id`, from `{{secret:…}}`), `ref_id`. Written with the block in `persistDocState` (only when its references change), removed with it by the trigger `trg_blocks_refs_ad`; tombstones keep their rows (queries for live bullets join `blocks` on `deleted = 0`). The migration fills it from the existing blocks. Used by the media cleanup, read rights of a file, public pages, export and the secret sweep (queries in [block_refs.go](../internal/storage/block_refs.go)) |
 | `tag_pages` | Freeform note per user and tag |
 | `doc_pins` | Pinned notes / favorites per user |
 | `doc_shares`, `doc_team_shares` | Note shares to users or teams (`permission`: `read` = viewer, `write` = editor) |

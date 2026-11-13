@@ -66,7 +66,12 @@ var migrations = []migration{
 	{38, "Passkeys", (*Store).migratePasskeys},
 	{39, "Sign-in through an OpenID Connect provider", (*Store).migrateOIDC},
 	{40, "Accounts without an e-mail address", (*Store).migrateEmailOptional},
+	{41, "References from bullets to files and hidden values", (*Store).migrateBlockRefs},
 }
+
+// migrationBlockRefs creates block_refs: until it has run (earlier steps that rewrite notes), writing a
+// block leaves the table alone, and the step itself fills it from all blocks.
+const migrationBlockRefs = 41
 
 func (s *Store) migrate() error {
 	// A database without any table is new (or was just emptied by the demo reset): nothing to back up
@@ -117,18 +122,21 @@ func (s *Store) migrate() error {
 	}
 
 	last := 0
+	s.blockRefsReady.Store(false) // the demo reset migrates an emptied database again
 	for _, m := range migrations {
 		last = m.id
-		if applied[m.id] {
-			continue
+		if !applied[m.id] {
+			slog.Info("Database migration", "id", m.id, "name", m.name)
+			if err := m.run(s); err != nil {
+				return fmt.Errorf("Migration %d (%s): %w", m.id, m.name, err)
+			}
+			if _, err := s.db.Exec(`INSERT INTO schema_migrations (id, name, applied_at) VALUES (?, ?, ?)`,
+				m.id, m.name, domain.NowISO()); err != nil {
+				return err
+			}
 		}
-		slog.Info("Database migration", "id", m.id, "name", m.name)
-		if err := m.run(s); err != nil {
-			return fmt.Errorf("Migration %d (%s): %w", m.id, m.name, err)
-		}
-		if _, err := s.db.Exec(`INSERT INTO schema_migrations (id, name, applied_at) VALUES (?, ?, ?)`,
-			m.id, m.name, domain.NowISO()); err != nil {
-			return err
+		if m.id == migrationBlockRefs {
+			s.blockRefsReady.Store(true)
 		}
 	}
 	if _, err = s.db.Exec(fmt.Sprintf(`PRAGMA user_version = %d`, last)); err != nil {
