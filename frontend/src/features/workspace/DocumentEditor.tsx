@@ -1,7 +1,6 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo, useSyncExternalStore, useLayoutEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 import { buildBlockLink, WikiLinkClickHandler } from '../../lib/wikiLink';
-import { MOVE_BRANCH_EVENT } from './moveBranchEvent';
 import { onDocFocusRequest, takeDocFocus } from '../../lib/docFocusRequest';
 import {
   Pin,
@@ -31,20 +30,13 @@ import {
   SmilePlus,
   Link2,
 } from 'lucide-react';
-import { Document, DocumentBlock, MoveResult, User } from '../../lib/types';
+import { Document, DocumentBlock, User } from '../../lib/types';
 import { api } from '../../lib/api';
-import { OfflineError } from '../../lib/offline';
-import { ConflictChoice, DocSyncEngine, EngineState, MAX_NOTE_BLOCKS } from '../../lib/docSync/engine';
-import { registerNoteClient } from '../../lib/docSync/noteClients';
+import { ConflictChoice, MAX_NOTE_BLOCKS } from '../../lib/docSync/engine';
 import { formatNumber } from '../../lib/format';
-import { fitFieldHeight, refitOnWidthChange } from '../../lib/fieldHeight';
 import { Presence } from '../../lib/docSync/transport';
 import { OutlinerTree, OutlinerTreeHandle } from './OutlinerTree';
-import type { BlockLock } from './OutlinerBlock';
 import { extractHashtags } from '../../lib/hashtags';
-import { branchEnd, insertBelow, moveSibling, unitStart } from '../../lib/outlineList';
-import { reportNav, onNavStep, restoringNavPlace } from '../../lib/navHistory';
-import { NotePlace, readNotePlace, writeNotePlace } from '../../lib/notePlace';
 import { isPhoneWidth } from '../../lib/breakpoints';
 import { useTranslation } from 'react-i18next';
 import i18n from '../../i18n';
@@ -99,55 +91,6 @@ export interface DocumentEditorProps {
   onEmptied?: () => void;
 }
 
-// The bullet of this note the cursor is in, with its position on screen, held for a second after a change
-// of others arrived (null: the cursor is elsewhere)
-interface CursorAnchor {
-  blockId: string;
-  top: number;
-  until: number;
-  observer?: ResizeObserver;
-}
-const CURSOR_HOLD_MS = 1000;
-function cursorAnchor(blocks: DocumentBlock[]): CursorAnchor | null {
-  const el = document.activeElement?.closest<HTMLElement>('[data-outline-block]');
-  const blockId = el?.dataset.outlineBlock;
-  if (!el || !blockId || !blocks.some((b) => b.id === blockId)) return null;
-  return { blockId, top: el.getBoundingClientRect().top, until: performance.now() + CURSOR_HOLD_MS };
-}
-
-// The element that scrolls el (the note, or the journal with its days)
-function scrollParent(el: Element | null): HTMLElement | null {
-  for (let p = el?.parentElement; p; p = p.parentElement) {
-    const { overflowY } = getComputedStyle(p);
-    if ((overflowY === 'auto' || overflowY === 'scroll') && p.scrollHeight > p.clientHeight) return p;
-  }
-  return null;
-}
-
-// The first bullet reaching below the top edge of the note's scroll area and how far below that edge it
-// starts (lib/notePlace.ts). The bullets are in order from top to bottom, so a binary search finds it.
-function topBullet(root: HTMLElement): NotePlace['anchor'] {
-  if (!root.isConnected) return undefined;
-  const rows = root.querySelectorAll<HTMLElement>('[data-outline-block]');
-  const top = root.getBoundingClientRect().top;
-  let lo = 0;
-  let hi = rows.length - 1;
-  while (lo < hi) {
-    const mid = (lo + hi) >> 1;
-    if (rows[mid].getBoundingClientRect().bottom > top) hi = mid;
-    else lo = mid + 1;
-  }
-  const row = rows[lo];
-  return row?.dataset.outlineBlock ? { id: row.dataset.outlineBlock, offset: row.getBoundingClientRect().top - top } : undefined;
-}
-
-// What undoing the editor's server actions needs, kept with the note's undo history (lib/docSync/undoHistory.ts)
-interface EditorUndoExtra {
-  extract: { newDocId: string; blockId: string; link: string } | null;
-  inline: { sourceId: string; blockId: string; content: string } | null;
-  move: { result: MoveResult; blockId: string; link: string } | null;
-}
-
 // Large screens (lg) put the note's actions into the workspace tab bar and drop the editor header
 const LARGE_QUERY = '(min-width: 1024px)';
 function subscribeLarge(onChange: () => void) {
@@ -169,67 +112,14 @@ function subscribePhone(onChange: () => void) {
 import { EmojiPickerModal } from './EmojiPickerModal';
 import { ExtractPopover, ExtractTarget } from './ExtractPopover';
 import { BacklinksSection } from './BacklinksSection';
-import { useKeyboardInset } from '../../lib/useKeyboardInset';
 import { blockTitle, computeBreadcrumbs, getZoomedSubtree, isTitleFromKind } from './zoom';
-
-// Height of the outline bar that sits on the keyboard (MobileOutlineBar), with a little air
-const KEYBOARD_BAR_SPACE = 64;
-
-function ensureNonEmptyBlocks(docId: string, blocks?: DocumentBlock[]): DocumentBlock[] {
-  if (!blocks || blocks.length === 0) {
-    return [
-      {
-        id: `${docId}-b0`,
-        documentId: docId,
-        type: 'text',
-        content: '',
-        level: 0,
-        position: 1000,
-      },
-    ];
-  }
-  // A block that needs nothing keeps its object, so its bullet does not render again (OutlinerBlock is memoized)
-  return blocks.map((b, idx) => {
-    const id = b.id || `${docId}-b${idx}`;
-    const type = b.type || 'text';
-    const level = Math.max(0, b.level || 0);
-    const position = b.position || (idx + 1) * 1000;
-    if (b.id === id && b.documentId === docId && b.type === type && b.level === level && b.position === position) return b;
-    return { ...b, id, documentId: docId, type, level, position };
-  });
-}
-
-function sameBlock(x: DocumentBlock, y: DocumentBlock): boolean {
-  return (
-    x.id === y.id &&
-    x.content === y.content &&
-    (x.level || 0) === (y.level || 0) &&
-    x.type === y.type &&
-    !!x.checked === !!y.checked &&
-    !!x.collapsed === !!y.collapsed &&
-    (x.lang || '') === (y.lang || '') &&
-    (x.taskId || '') === (y.taskId || '') &&
-    (x.subtaskOf || '') === (y.subtaskOf || '') &&
-    (x.conflictOf || '') === (y.conflictOf || '') &&
-    (x.conflictAuthor || '') === (y.conflictAuthor || '')
-  );
-}
-
-// True if both lists show the same blocks; avoids re-rendering when the sync engine echoes a local change.
-function sameBlocks(a: DocumentBlock[], b: DocumentBlock[]): boolean {
-  return a.length === b.length && a.every((x, i) => sameBlock(x, b[i]));
-}
-
-// The engine's list with the objects of `prev` for blocks that did not change: a change of someone else
-// renders only the bullets it touches
-function keepUnchanged(prev: DocumentBlock[], next: DocumentBlock[]): DocumentBlock[] {
-  const byId = new Map(prev.map((b) => [b.id, b]));
-  return next.map((b) => {
-    const old = byId.get(b.id);
-    return old && sameBlock(old, b) ? old : b;
-  });
-}
-
+import { useDocumentSync } from './useDocumentSync';
+import { useNotePlace } from './useNotePlace';
+import { KEYBOARD_BAR_SPACE, useEditorLayout } from './useEditorLayout';
+import { useDocPresence } from './useDocPresence';
+import { useBranchActions } from './useBranchActions';
+import { useBlockEditing } from './useBlockEditing';
+import { useTagPage } from './useTagPage';
 
 export const DocumentEditor: React.FC<DocumentEditorProps> = ({
   docId,
@@ -269,286 +159,57 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
   const phone = useSyncExternalStore(subscribePhone, isPhoneWidth, () => false);
   // The journal's active day puts its actions into the tab bar as well
   const desktopBar = (!embedded || inJournal) && large && Boolean(actionsTarget);
-  const [doc, setDoc] = useState<Document | null>(initialDoc || null);
-  const [title, setTitle] = useState<string>(initialDoc?.title || '');
-  const [blocks, setBlocks] = useState<DocumentBlock[]>(() =>
-    ensureNonEmptyBlocks(docId, initialDoc?.blocks)
-  );
-  const [loading, setLoading] = useState<boolean>(!initialDoc);
-  const [error, setError] = useState<string | null>(null);
-  // The note could not be fetched for lack of connection; the sync engine may still have a copy on this device
-  const [loadedOffline, setLoadedOffline] = useState(false);
+  const {
+    doc,
+    setDoc,
+    title,
+    setTitle,
+    blocks,
+    loading,
+    error,
+    loadedOffline,
+    engineRef,
+    engineState,
+    currentBlocksRef,
+    cursorAnchorRef,
+    lastExtractRef,
+    lastInlineRef,
+    lastMoveRef,
+    applyLocalBlocks,
+  } = useDocumentSync(docId, initialDoc, onDocMetadataChange, onSaveStatusChange);
   const [showEmojiPicker, setShowEmojiPicker] = useState<boolean>(false);
-  // Where the user last was in this note (zoom, scroll), unless a link points to a bullet in it
-  const [savedPlace] = useState(() =>
-    !embedded && !initialFocusedBlockId ? readNotePlace(docId) : null
-  );
-  // Zoomed bullet; coming here by the browser's back/forward it is the zoom of that step, else the one
-  // the note had when the user last left it
-  const [zoomedBlockId, setZoomedBlockId] = useState<string | null>(() => {
-    const place = restoringNavPlace();
-    if (inJournal || inTagPage) return null;
-    if (place?.docId === docId) return place.zoom ?? null;
-    return savedPlace?.zoom ?? null;
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const { zoomedBlockId, setZoomedBlockId } = useNotePlace({
+    docId,
+    embedded,
+    inJournal,
+    inTagPage,
+    initialFocusedBlockId,
+    blocks,
+    loading,
+    scrollRef,
   });
   const [showActionsMenu, setShowActionsMenu] = useState<boolean>(false);
   const actionsMenuRef = useRef<HTMLDivElement | null>(null);
 
-  // Sync engine (operation log): stores every change locally and syncs it with the server
-  const engineRef = useRef<DocSyncEngine | null>(null);
-  const [engineState, setEngineState] = useState<EngineState | null>(null);
-
-
-  const titleInputRef = useRef<HTMLTextAreaElement | HTMLInputElement | null>(null);
-  // The title grows with its text like the bullets: measured when it appears, when its text changes and when
-  // its width does (lib/fieldHeight), not on every render, where each measurement forced a layout of the page
-  const stopTitleRefitRef = useRef<(() => void) | null>(null);
-  const setTitleField = useCallback((el: HTMLTextAreaElement | null) => {
-    titleInputRef.current = el;
-    stopTitleRefitRef.current?.();
-    stopTitleRefitRef.current = null;
-    if (!el) return;
-    fitFieldHeight(el);
-    stopTitleRefitRef.current = refitOnWidthChange(el);
-  }, []);
-  useLayoutEffect(() => {
-    const el = titleInputRef.current;
-    if (el instanceof HTMLTextAreaElement) fitFieldHeight(el);
-  }, [title]);
-  const scrollRef = useRef<HTMLDivElement | null>(null);
-
-  // Focus mode keeps the note at the height it has in the workspace, so the text does not move when it
-  // starts; the room below lets the end of the note scroll up into the upper third
-  const workspaceTopRef = useRef(0);
-  const [focusTopGap, setFocusTopGap] = useState(0);
-  useLayoutEffect(() => {
-    const root = scrollRef.current;
-    if (!root) return;
-    if (!focusMode) {
-      workspaceTopRef.current = root.getBoundingClientRect().top;
-      return;
-    }
-    // The fixed pane starts at the top edge; offsetTop ignores its zoom-in animation (a transform).
-    // Unpinned, the header slides in over the note: at least its height (45 px) plus 16 px stay free
-    const top = root.offsetTop;
-    setFocusTopGap(Math.max(focusBarPinned ? 0 : 41, workspaceTopRef.current - top));
-  }, [focusMode, focusBarPinned]);
-  // After a page load the note is still loading when that runs (no pane yet), and the bars above it may
-  // appear later: measured once the pane is there and again whenever it changes (otherwise focus mode would
-  // start too high)
   const showsLoading = loading && !engineState?.ready;
-  useEffect(() => {
-    const root = scrollRef.current;
-    if (!root || focusMode || typeof ResizeObserver === 'undefined') return;
-    const ro = new ResizeObserver(() => {
-      workspaceTopRef.current = root.getBoundingClientRect().top;
-    });
-    ro.observe(root);
-    return () => ro.disconnect();
-  }, [focusMode, showsLoading]);
-
-  // Sideways the note moves to the middle in focus mode and gets wider (and back): it glides from where it
-  // was instead of jumping. Only the position glides (transform, on the compositor); the width changes at
-  // once, so the lines rewrap once instead of on every frame
-  const contentRef = useRef<HTMLDivElement | null>(null);
-  const contentBoxRef = useRef<{ left: number; width: number } | null>(null);
-  useLayoutEffect(() => {
-    const el = contentRef.current;
-    if (!el) return;
-    const { left, width } = el.getBoundingClientRect();
-    const from = contentBoxRef.current;
-    contentBoxRef.current = { left, width };
-    if (
-      !from ||
-      (Math.abs(from.left - left) < 1 && Math.abs(from.width - width) < 1) ||
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    )
-      return;
-    el.animate([{ transform: `translateX(${from.left - left}px)` }, { transform: 'none' }], {
-      duration: 300,
-      easing: 'cubic-bezier(0.2, 0, 0, 1)',
-    });
-  }, [focusMode]);
-
-  // Keeps the bullet being typed in above the keyboard (and the outline bar on it): the browser only
-  // scrolls it into the visible part if the note can scroll that far, hence also the room at the end
-  const { inset: keyboardInset, keyboardOpen, visibleHeight } = useKeyboardInset();
-  useEffect(() => {
-    // Without visualViewport the keyboard is unknown (counts as open): nothing to measure against
-    if (!keyboardOpen || embedded || !window.visualViewport) return;
-    const root = scrollRef.current;
-    if (!root) return;
-    const reveal = () => {
-      const el = document.activeElement as HTMLElement | null;
-      if (!el || !root.contains(el) || el.tagName !== 'TEXTAREA') return;
-      const vv = window.visualViewport;
-      const visibleBottom = (vv ? vv.offsetTop : 0) + visibleHeight - KEYBOARD_BAR_SPACE;
-      const over = el.getBoundingClientRect().bottom + 12 - visibleBottom;
-      if (over > 0) root.scrollBy({ top: over });
-    };
-    reveal();
-    root.addEventListener('focusin', reveal);
-    root.addEventListener('input', reveal);
-    return () => {
-      root.removeEventListener('focusin', reveal);
-      root.removeEventListener('input', reveal);
-    };
-  }, [keyboardOpen, visibleHeight, embedded]);
-  // The header repeats the title only once the big title has scrolled out of view
-  // The note's name in the sticky header once the title has scrolled away. Switched on the element itself:
-  // as state of the editor it rendered every bullet of the note again on the first scroll step
-  const titleIndicatorRef = useRef<HTMLDivElement>(null);
+  const { setTitleField, titleIndicatorRef, contentRef, focusTopGap, keyboardInset, keyboardOpen } = useEditorLayout({
+    doc,
+    title,
+    blocks,
+    loading,
+    showsLoading,
+    embedded,
+    autoFocusTitle,
+    focusMode,
+    focusBarPinned,
+    zoomedBlockId,
+    scrollRef,
+    cursorAnchorRef,
+  });
   const outlinerTreeRef = useRef<OutlinerTreeHandle | null>(null);
   const docRef = useRef<Document | null>(doc);
   docRef.current = doc;
-
-  const currentTitleRef = useRef<string>(title);
-  currentTitleRef.current = title;
-  const currentBlocksRef = useRef<DocumentBlock[]>(blocks);
-  currentBlocksRef.current = blocks;
-
-  // The bullet with the cursor stays where it is on screen when changes of others arrive above it. New
-  // text of a bullet above reaches its field only in a later render (and only then it wraps onto another
-  // line), so for a moment every change of the list's size is evened out too, before it is painted
-  const cursorAnchorRef = useRef<CursorAnchor | null>(null);
-  const keepCursorInPlace = useCallback(() => {
-    const anchor = cursorAnchorRef.current;
-    if (!anchor) return;
-    const el = document.querySelector(`[data-outline-block="${anchor.blockId}"]`);
-    // Time is up, or the cursor went elsewhere: the user moves on, nothing to hold any more
-    if (!el || performance.now() > anchor.until || document.activeElement?.closest('[data-outline-block]') !== el) {
-      cursorAnchorRef.current = null;
-      anchor.observer?.disconnect();
-      return;
-    }
-    const shift = el.getBoundingClientRect().top - anchor.top;
-    if (Math.abs(shift) >= 1) scrollParent(el)?.scrollBy({ top: shift, behavior: 'instant' });
-    if (!anchor.observer && el.parentElement && typeof ResizeObserver !== 'undefined') {
-      anchor.observer = new ResizeObserver(keepCursorInPlace);
-      anchor.observer.observe(el.parentElement);
-    }
-  }, []);
-  useLayoutEffect(keepCursorInPlace, [blocks, keepCursorInPlace]);
-  useEffect(() => () => cursorAnchorRef.current?.observer?.disconnect(), []);
-
-  useEffect(() => {
-    const root = scrollRef.current;
-    const el = titleInputRef.current;
-    const show = (shown: boolean) => {
-      const indicator = titleIndicatorRef.current;
-      if (!indicator) return;
-      indicator.dataset.shown = String(shown);
-      indicator.setAttribute('aria-hidden', String(!shown));
-    };
-    if (embedded || !root || !el || typeof IntersectionObserver === 'undefined') {
-      show(false);
-      return;
-    }
-    const observer = new IntersectionObserver(
-      ([entry]) => show(!entry.isIntersecting),
-      // the sticky header covers the top of the scroll area
-      { root, rootMargin: '-56px 0px 0px 0px' }
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [zoomedBlockId, doc?.id, embedded]);
-
-  useEffect(() => {
-    if (!loading && (autoFocusTitle || (doc?.title === i18n.t('workspace:editor.newNote') && (!doc?.blocks || doc?.blocks.length <= 1)))) {
-      const focusTitle = () => {
-        if (titleInputRef.current) {
-          titleInputRef.current.focus();
-          titleInputRef.current.select();
-        }
-      };
-      focusTitle();
-      const t1 = setTimeout(focusTitle, 50);
-      const t2 = setTimeout(focusTitle, 150);
-      return () => {
-        clearTimeout(t1);
-        clearTimeout(t2);
-      };
-    }
-    // Only when the note opens: a later change of its title or bullets must not pull the cursor into the title
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading, autoFocusTitle, doc?.id]);
-
-  useEffect(() => {
-    if (!loading && zoomedBlockId && !blocks.some((b) => b.id === zoomedBlockId)) {
-      setZoomedBlockId(null);
-    }
-  }, [blocks, zoomedBlockId, loading]);
-
-  // Remember zoom and scroll position (lib/notePlace.ts); the scroll position belongs to the zoom it was
-  // taken in, so it is restored only when the note opens in that zoom again
-  const zoomForPlaceRef = useRef(zoomedBlockId);
-  useEffect(() => {
-    if (embedded) return;
-    if (zoomForPlaceRef.current !== zoomedBlockId) {
-      zoomForPlaceRef.current = zoomedBlockId;
-      writeNotePlace(docId, { zoom: zoomedBlockId, scroll: 0 });
-    }
-  }, [zoomedBlockId, docId, embedded]);
-  useEffect(() => {
-    const root = scrollRef.current;
-    if (embedded || !root) return;
-    let timer: number | null = null;
-    const save = () => {
-      timer = null;
-      writeNotePlace(docId, { zoom: zoomForPlaceRef.current, scroll: root.scrollTop, anchor: topBullet(root) });
-    };
-    const onScroll = () => {
-      if (timer === null) timer = window.setTimeout(save, 200);
-    };
-    root.addEventListener('scroll', onScroll, { passive: true });
-    return () => {
-      root.removeEventListener('scroll', onScroll);
-      if (timer !== null) {
-        window.clearTimeout(timer);
-        save();
-      }
-    };
-    // the note's scroll area exists only once it has loaded
-  }, [docId, embedded, loading]);
-  const scrollRestoredRef = useRef(false);
-  useEffect(() => {
-    if (loading || scrollRestoredRef.current) return;
-    scrollRestoredRef.current = true;
-    const root = scrollRef.current;
-    const target = savedPlace && savedPlace.zoom === zoomedBlockId ? savedPlace.scroll : 0;
-    if (!root || target <= 0) return;
-    const anchor = savedPlace?.anchor;
-    // Images and code blocks may still grow the note for a few frames, and bullets near the view are shown
-    // (with their real height) only in the frames after the jump: held until the place stays put for 3 frames
-    let frames = 0;
-    let steady = 0;
-    let raf = 0;
-    const apply = () => {
-      // Back to the bullet that was at the top; the offset only when it is gone
-      const row = anchor && root.querySelector(`[data-outline-block="${CSS.escape(anchor.id)}"]`);
-      const off = () => (row ? row.getBoundingClientRect().top - root.getBoundingClientRect().top - anchor.offset : target - root.scrollTop);
-      steady = Math.abs(off()) > 1 ? 0 : steady + 1;
-      if (row) root.scrollTop += off();
-      else root.scrollTop = target;
-      if (steady < 3 && ++frames < 30) raf = requestAnimationFrame(apply);
-    };
-    raf = requestAnimationFrame(apply);
-    return () => cancelAnimationFrame(raf);
-    // only once, when the note's content is first there
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading]);
-
-  // Zooming in and out are steps of the browser history: back zooms out again (lib/navHistory.ts)
-  useEffect(() => {
-    if (!embedded) reportNav({ zoom: zoomedBlockId });
-  }, [zoomedBlockId, embedded]);
-  useEffect(
-    () =>
-      onNavStep((place) => {
-        if (!embedded && place.docId === docId) setZoomedBlockId(place.zoom ?? null);
-      }),
-    [embedded, docId]
-  );
 
   const { zoomedBlock, childBlocks, levelOffset } = useMemo(() => {
     return getZoomedSubtree(blocks, zoomedBlockId);
@@ -576,160 +237,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
     return Array.from(tagSet);
   }, [blocks]);
 
-
-  // Fetch document on mount
-  useEffect(() => {
-    let isCancelled = false;
-    if (!initialDoc) {
-      setLoading(true);
-    }
-    setError(null);
-    setLoadedOffline(false);
-
-    api
-      .getDocument(docId)
-      .then((fetched) => {
-        if (isCancelled) return;
-        const normalized = ensureNonEmptyBlocks(docId, fetched.blocks);
-        setDoc(fetched);
-        if (!engineRef.current?.getState().ready) {
-          setTitle(fetched.title || i18n.t('workspace:editor.untitled'));
-          currentBlocksRef.current = normalized;
-          setBlocks(normalized);
-        }
-        const links = new Map<string, string>();
-        const subtaskLinks = new Map<string, string>();
-        for (const b of fetched.blocks || []) {
-          if (b.taskId) links.set(b.id, b.taskId);
-          if (b.subtaskOf) subtaskLinks.set(b.id, b.subtaskOf);
-        }
-        engineRef.current?.setTaskLinks(links, subtaskLinks);
-        setLoading(false);
-        onDocMetadataChange(fetched);
-
-      })
-      .catch((err: any) => {
-        if (isCancelled) return;
-        if (err instanceof OfflineError) {
-          setLoadedOffline(true);
-          setError(i18n.t('workspace:editor.notAvailableOffline'));
-        } else {
-          setError(err?.message || i18n.t('workspace:editor.loadFailed'));
-        }
-        setLoading(false);
-      });
-
-    return () => {
-      isCancelled = true;
-    };
-    // Fetched once per note; initialDoc only decides whether the loading state shows
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [docId]);
-
-  // Start the sync engine for this note: shows stored state immediately (also offline), then syncs
-  useEffect(() => {
-    const engine = new DocSyncEngine(docId);
-    engineRef.current = engine;
-    const unregisterClient = registerNoteClient(docId, engine.clientId);
-    // Undo of the editor's server actions from the last time the note was open (kept with the engine's steps)
-    const kept = engine.undoExtra as EditorUndoExtra | undefined;
-    lastExtractRef.current = kept?.extract ?? null;
-    lastInlineRef.current = kept?.inline ?? null;
-    lastMoveRef.current = kept?.move ?? null;
-    const unsubscribe = engine.subscribe((state) => {
-      setEngineState(state);
-      if (!state.ready) return;
-      const next = keepUnchanged(currentBlocksRef.current, ensureNonEmptyBlocks(docId, state.blocks));
-      if (!sameBlocks(currentBlocksRef.current, next)) {
-        // Changes of others (own edits are in currentBlocksRef already): remember where the bullet with the
-        // cursor is, so bullets added or removed above it do not move it (layout effect below)
-        cursorAnchorRef.current?.observer?.disconnect();
-        cursorAnchorRef.current = cursorAnchor(currentBlocksRef.current);
-        currentBlocksRef.current = next;
-        setBlocks(next);
-      }
-      if (state.title && state.title !== currentTitleRef.current) {
-        setTitle(state.title);
-      }
-    });
-    void engine.start();
-    return () => {
-      unsubscribe();
-      unregisterClient();
-      const extra: EditorUndoExtra = { extract: lastExtractRef.current, inline: lastInlineRef.current, move: lastMoveRef.current };
-      engine.undoExtra = extra.extract || extra.inline || extra.move ? extra : undefined;
-      engine.stop();
-      if (engineRef.current === engine) engineRef.current = null;
-    };
-  }, [docId]);
-
-  useEffect(() => {
-    if (!engineState) return;
-    switch (engineState.status) {
-      case 'saving':
-        onSaveStatusChange?.('saving');
-        break;
-      case 'offline':
-        onSaveStatusChange?.('unsaved', i18n.t('workspace:editor.offlineSaved'));
-        break;
-      case 'error':
-        onSaveStatusChange?.('error', engineState.errorMessage);
-        break;
-      default:
-        onSaveStatusChange?.('saved');
-    }
-    // Reports a change of the save status, not every step of the sync (engineState) or render of the
-    // parent (its callback is new each time)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [engineState?.status, engineState?.errorMessage]);
-
-  const otherPeople = useMemo(
-    () => (engineState?.presence || []).filter((p) => p.userId !== currentUser?.id),
-    [engineState?.presence, currentUser?.id]
-  );
-
-  // Presence only carries names; profile pictures come from the user directory, loaded once
-  // the first time someone else shows up (avatars can be data URLs, too big for every sync)
-  const [avatarsById, setAvatarsById] = useState<Map<string, string>>(new Map());
-  const avatarsRequestedRef = useRef(false);
-  useEffect(() => {
-    if (otherPeople.length === 0 || avatarsRequestedRef.current) return;
-    avatarsRequestedRef.current = true;
-    api.getUsersDirectory()
-      .then((users) => {
-        const m = new Map<string, string>();
-        for (const u of users) if (u.avatarUrl) m.set(u.id, u.avatarUrl);
-        setAvatarsById(m);
-      })
-      .catch(() => {});
-  }, [otherPeople.length]);
-
-  // Blocks other users are editing right now (blockId -> who, with color key and profile picture)
-  const lockedBlocks = useMemo(() => {
-    const m = new Map<string, BlockLock>();
-    for (const l of engineState?.lockedByOthers || []) {
-      m.set(l.blockId, {
-        userId: l.userId,
-        name: l.name || t('lock.someone'),
-        avatarUrl: avatarsById.get(l.userId),
-        // A live drawing holds the bullet: everyone drawing in it
-        ...(l.live?.length ? { live: l.live.map((p) => ({ userId: p.userId, name: p.name || t('lock.someone'), avatarUrl: avatarsById.get(p.userId) })) } : {}),
-      });
-    }
-    return m;
-  }, [engineState?.lockedByOthers, avatarsById, t]);
-
-  const showLive = Boolean(engineState && (engineState.shared || engineState.sessions > 1));
-  const liveChannel = engineState?.channel || 'ws';
-  useEffect(() => {
-    onHeaderStatusChange?.({ showLive, channel: liveChannel, otherPeople, avatarsById });
-  }, [showLive, liveChannel, otherPeople, avatarsById, onHeaderStatusChange]);
-
-  useEffect(() => {
-    return () => {
-      onHeaderStatusChange?.(null);
-    };
-  }, [onHeaderStatusChange]);
+  const { lockedBlocks } = useDocPresence(engineState, currentUser?.id, onHeaderStatusChange);
 
   useEffect(() => {
     if (!showActionsMenu) return;
@@ -821,47 +329,20 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
     return () => window.clearTimeout(timer);
   }, [initialFocusedBlockId, doc?.id, showNotice]);
 
-  // The last extraction, so undoing it (toast or Strg+Z) also puts the new note into the trash
-  const lastExtractRef = useRef<{ newDocId: string; blockId: string; link: string } | null>(null);
-  // The last note brought back, so undoing it also takes the note out of the trash again
-  const lastInlineRef = useRef<{ sourceId: string; blockId: string; content: string } | null>(null);
-  // The last branch moved into another note, so undoing it here also takes it out of the target again
-  const lastMoveRef = useRef<{ result: MoveResult; blockId: string; link: string } | null>(null);
-  const finishUndoExtract = useCallback(() => {
-    const move = lastMoveRef.current;
-    if (move) {
-      const block = currentBlocksRef.current.find((b) => b.id === move.blockId);
-      // Undone when the bullet is back as it was (without a link, or no longer the link)
-      if (block && (!move.link || block.content !== move.link)) {
-        lastMoveRef.current = null;
-        api
-          .undoMove(docId, move.result, engineRef.current?.clientId || '')
-          .catch((err: any) => showNotice(err?.message || i18n.t('workspace:editor.moveFailed')));
-      }
-    }
-    const inlined = lastInlineRef.current;
-    if (inlined) {
-      const block = currentBlocksRef.current.find((b) => b.id === inlined.blockId);
-      if (!block || block.content !== inlined.content) {
-        lastInlineRef.current = null;
-        api
-          .restoreDocument(inlined.sourceId)
-          .then(() => api.getDocument(inlined.sourceId))
-          .then((restored) => onDocCreated?.(restored))
-          .catch((err: any) => showNotice(err?.message || i18n.t('workspace:editor.restoreFailed')));
-      }
-    }
-    const info = lastExtractRef.current;
-    if (!info) return;
-    const block = currentBlocksRef.current.find((b) => b.id === info.blockId);
-    // The undone step was something else: the link (or, without one, the gap of the branch) is still there
-    if (info.link ? block?.content === info.link : !block) return;
-    lastExtractRef.current = null;
-    api
-      .undoExtract(info.newDocId)
-      .then(() => onDocRemoved?.(info.newDocId))
-      .catch((err: any) => showNotice(err?.message || i18n.t('workspace:editor.removeExtractedFailed')));
-  }, [docId, onDocCreated, onDocRemoved, showNotice]);
+  const { handleUndo, handleRedo, handleExtractBlock, handleMoveBranch, handleExtractRequest, handleInlineBlock, extractAt, setExtractAt } =
+    useBranchActions({
+      docId,
+      canEdit,
+      embedded,
+      actionsTarget,
+      scrollRef,
+      moveTargets,
+      sync: { engineRef, currentBlocksRef, lastExtractRef, lastInlineRef, lastMoveRef, applyLocalBlocks },
+      showNotice,
+      onOpenDocBlock,
+      onDocCreated,
+      onDocRemoved,
+    });
   useEffect(() => () => {
     if (noticeTimerRef.current !== null) window.clearTimeout(noticeTimerRef.current);
   }, []);
@@ -870,39 +351,6 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
     (holder: string) => showNotice(i18n.t('workspace:lock.notice', { name: holder })),
     [showNotice]
   );
-  const handleUndo = useCallback(() => {
-    const res = engineRef.current?.undo();
-    if (res?.message) showNotice(res.message);
-    if (res?.ok) finishUndoExtract();
-  }, [showNotice, finishUndoExtract]);
-
-  const handleRedo = useCallback(() => {
-    const res = engineRef.current?.redo();
-    if (res?.message) showNotice(res.message);
-  }, [showNotice]);
-
-  // Strg+Z / Strg+Y with the focus outside the text fields (e.g. after a click on a bullet's delete button,
-  // on the undo button or into empty space): the bullets and the title handle the keys themselves
-  const historyKeyRef = useRef({ handleUndo, handleRedo });
-  historyKeyRef.current = { handleUndo, handleRedo };
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (!(e.ctrlKey || e.metaKey) || e.altKey || !['z', 'y'].includes(e.key.toLowerCase())) return;
-      const el = e.target as HTMLElement | null;
-      if (!el || el.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName)) return;
-      const root = scrollRef.current;
-      if (!root) return;
-      const inEditor = root.contains(el) || !!actionsTarget?.contains(el);
-      // Nothing focused: only the note that fills the view, not one of the journal's embedded days
-      const onPage = el === document.body && !embedded && root.offsetParent !== null;
-      if (!inEditor && !onPage) return;
-      e.preventDefault();
-      if (e.key.toLowerCase() === 'y' || e.shiftKey) historyKeyRef.current.handleRedo();
-      else historyKeyRef.current.handleUndo();
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [embedded, actionsTarget]);
   // The note holds as many bullets as it may: the server refused new ones, which disappear again
   const noteFull = engineState?.noteFull ?? 0;
   useEffect(() => {
@@ -915,209 +363,35 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
       const res = engineRef.current?.resolveConflict(blockId, choice);
       if (res?.message) showNotice(res.message);
     },
-    [showNotice]
+    [showNotice, engineRef]
   );
 
-  // Every local block change goes to the engine, which turns it into operations
-  const applyLocalBlocks = useCallback(
-    (update: DocumentBlock[] | ((prev: DocumentBlock[]) => DocumentBlock[])) => {
-      const prev = currentBlocksRef.current;
-      const next = typeof update === 'function' ? update(prev) : update;
-      if (next === prev) return;
-      currentBlocksRef.current = next;
-      setBlocks(next);
-      engineRef.current?.applyFlat(next);
-    },
-    []
-  );
-
-  // "Expand / collapse all bullets" (note menu, Ctrl+Shift+ArrowDown / ArrowUp) in what is shown, i.e. only
-  // inside the zoomed branch. One edit, so a single Strg+Z takes it back.
-  const lvl = (b?: DocumentBlock) => Math.max(0, b?.level || 0);
-  const hasCollapsed = childBlocks.some((b) => b.collapsed);
-  const canCollapse = childBlocks.some((b, i) => !b.collapsed && lvl(childBlocks[i + 1]) > lvl(b) && i + 1 < childBlocks.length);
-  const handleSetAllCollapsed = useCallback(
-    (collapse: boolean) => {
-      if (!canEdit) return;
-      const scope = new Set(getZoomedSubtree(currentBlocksRef.current, zoomedBlockId).childBlocks.map((b) => b.id));
-      // The bullet holding the cursor may disappear when collapsing: the cursor goes to its top-level bullet
-      const focusedId = (document.activeElement as HTMLElement | null)?.closest('[data-outline-block]')?.getAttribute('data-outline-block');
-      let changed = false;
-      applyLocalBlocks((prev) => {
-        const next = prev.map((b, i) => {
-          if (!scope.has(b.id)) return b;
-          const want = collapse && i + 1 < prev.length && lvl(prev[i + 1]) > lvl(b);
-          if (!!b.collapsed === want) return b;
-          changed = true;
-          return { ...b, collapsed: want };
-        });
-        return changed ? next : prev;
-      });
-      if (!collapse || !changed || !focusedId) return;
-      const all = currentBlocksRef.current;
-      let i = all.findIndex((b) => b.id === focusedId);
-      const top = Math.min(...childBlocks.map((b) => lvl(b)));
-      while (i > 0 && lvl(all[i]) > top && scope.has(all[i - 1].id)) i--;
-      if (i >= 0 && all[i]) window.setTimeout(() => outlinerTreeRef.current?.focusBlock(all[i].id), 0);
-    },
-    [canEdit, applyLocalBlocks, zoomedBlockId, childBlocks]
-  );
-  const setAllCollapsedRef = useRef(handleSetAllCollapsed);
-  setAllCollapsedRef.current = handleSetAllCollapsed;
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (!(e.ctrlKey || e.metaKey) || !e.shiftKey || e.altKey || (e.key !== 'ArrowDown' && e.key !== 'ArrowUp')) return;
-      const el = e.target as HTMLElement | null;
-      const root = scrollRef.current;
-      if (!root || inTrash) return;
-      // In this note, or nothing focused and this is the note that fills the view (not a journal day)
-      const inEditor = !!el && root.contains(el);
-      if (!inEditor && (embedded || (el && el !== document.body))) return;
-      e.preventDefault();
-      setAllCollapsedRef.current(e.key === 'ArrowUp');
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [embedded, inTrash]);
-
-  // A bullet with its children becomes a note of its own. The server only creates the note; the branch
-  // is replaced here as an ordinary own edit, so it shows at once, syncs like typing and Strg+Z works.
-  // withLink false (dragged onto the "new note" button): the branch just leaves, like a move.
-  const handleExtractBlock = useCallback(
-    async (blockId: string, withLink = true) => {
-      const engine = engineRef.current;
-      if (!engine) return;
-      try {
-        await engine.syncNow(); // the server reads the branch as typed so far
-        const { document: created, link } = await api.extractBranch(docId, blockId, engine.clientId);
-        // The focused field keeps its own text while typing; leave it so it shows the link
-        (document.activeElement as HTMLElement | null)?.blur?.();
-        const prev = currentBlocksRef.current;
-        const i = prev.findIndex((b) => b.id === blockId);
-        if (i >= 0) {
-          const level = prev[i].level || 0;
-          let end = i + 1;
-          while (end < prev.length && (prev[end].level || 0) > level) end++;
-          applyLocalBlocks(
-            withLink
-              ? // The bullet itself went into the note: a plain bullet with the link stays (not a drawing, to-do …)
-                [...prev.slice(0, i), { ...prev[i], type: 'bullet', checked: false, taskId: '', content: link }, ...prev.slice(end)]
-              : ensureNonEmptyBlocks(docId, [...prev.slice(0, i), ...prev.slice(end)])
-          );
-        }
-        lastInlineRef.current = null;
-        lastExtractRef.current = { newDocId: created.id, blockId, link: withLink ? link : '' };
-        onDocCreated?.(created);
-        showNotice(i18n.t(withLink ? 'workspace:editor.extracted' : 'workspace:editor.moved', { title: created.title }), [
-          { label: i18n.t('workspace:editor.open'), run: () => onOpenDocBlock?.(created.id) },
-          { label: i18n.t('common:sync.undo'), run: () => handleUndo() },
-        ]);
-      } catch (err: any) {
-        showNotice(err?.message || i18n.t('workspace:editor.convertFailed'));
-      }
-    },
-    [docId, onOpenDocBlock, onDocCreated, showNotice, handleUndo, applyLocalBlocks]
-  );
-
-  // A bullet with its children goes to the end of another note (dragged onto it in the sidebar, or chosen
-  // when extracting). The server copies it there; here it is removed as an own edit, like extracting, so
-  // Strg+Z brings it back (and takes it out of the target again). withLink: a link to the bullet in the
-  // target note stays behind instead.
-  const handleMoveBranch = useCallback(
-    async (blockId: string, target: ExtractTarget, withLink: boolean) => {
-      const engine = engineRef.current;
-      if (!engine || !canEdit) return;
-      try {
-        await engine.syncNow(); // the server reads the branch as typed so far
-        const result = await api.moveBranch(docId, blockId, target.id, engine.clientId);
-        (document.activeElement as HTMLElement | null)?.blur?.();
-        const prev = currentBlocksRef.current;
-        const i = prev.findIndex((b) => b.id === blockId);
-        let link = '';
-        if (i >= 0) {
-          const level = prev[i].level || 0;
-          let end = i + 1;
-          while (end < prev.length && (prev[end].level || 0) > level) end++;
-          if (withLink) {
-            link = buildBlockLink(result.targetTitle || target.title, result.targetId, result.rootId);
-            applyLocalBlocks([...prev.slice(0, i), { ...prev[i], type: 'bullet', checked: false, taskId: '', content: link }, ...prev.slice(end)]);
-          } else {
-            applyLocalBlocks(ensureNonEmptyBlocks(docId, [...prev.slice(0, i), ...prev.slice(end)]));
-          }
-        }
-        lastExtractRef.current = null;
-        lastInlineRef.current = null;
-        lastMoveRef.current = { result, blockId, link };
-        const name = result.targetTitle || target.title;
-        showNotice(i18n.t(withLink ? 'workspace:editor.extractedInto' : 'workspace:editor.moved', { title: name }), [
-          { label: i18n.t('workspace:editor.open'), run: () => onOpenDocBlock?.(result.targetId, result.rootId) },
-          { label: i18n.t('common:sync.undo'), run: () => handleUndo() },
-        ]);
-      } catch (err: any) {
-        showNotice(err?.message || i18n.t('workspace:editor.moveFailed'));
-      }
-    },
-    [docId, canEdit, onOpenDocBlock, showNotice, handleUndo, applyLocalBlocks]
-  );
-
-  // A bullet dragged out of this note onto another note in the sidebar (useDocDragDrop)
-  const handleMoveBranchRef = useRef(handleMoveBranch);
-  handleMoveBranchRef.current = handleMoveBranch;
-  const handleExtractBlockRef = useRef(handleExtractBlock);
-  handleExtractBlockRef.current = handleExtractBlock;
-  useEffect(() => {
-    const onMove = (e: Event) => {
-      const { docId: from, blockId, targetId, targetTitle } = (e as CustomEvent).detail || {};
-      if (from !== docId || embedded) return;
-      if (!targetId) void handleExtractBlockRef.current(blockId, false);
-      else void handleMoveBranchRef.current(blockId, { id: targetId, title: targetTitle }, false);
-    };
-    window.addEventListener(MOVE_BRANCH_EVENT, onMove);
-    return () => window.removeEventListener(MOVE_BRANCH_EVENT, onMove);
-  }, [docId, embedded]);
-
-  // The extract button asks where to: a new note (as before) or an existing one
-  const [extractAt, setExtractAt] = useState<{ blockId: string; x: number; y: number; align?: 'left' | 'right' } | null>(null);
-  const handleExtractRequest = useCallback(
-    (blockId: string, at?: { x: number; y: number; align?: 'left' | 'right' }) => {
-      if (at && moveTargets && moveTargets.length > 0) setExtractAt({ blockId, ...at });
-      else void handleExtractBlock(blockId);
-    },
-    [moveTargets, handleExtractBlock]
-  );
-
-  // The way back: a bullet that only links to a note gets that note's bullets below it again, the note
-  // goes to the trash. Inserted here as an own edit like extracting, so Strg+Z brings the link back.
-  const handleInlineBlock = useCallback(
-    async (blockId: string) => {
-      const engine = engineRef.current;
-      if (!engine) return;
-      try {
-        await engine.syncNow();
-        const res = await api.inlineNote(docId, blockId);
-        (document.activeElement as HTMLElement | null)?.blur?.();
-        const prev = currentBlocksRef.current;
-        const i = prev.findIndex((b) => b.id === blockId);
-        if (i >= 0) {
-          const level = prev[i].level || 0;
-          const inserted = res.blocks.map((b) => ({ ...b, level: level + 1 + (b.level || 0) }));
-          // An extracted note's first bullet takes the link's place again, as a drawing, to-do …
-          const head = res.head
-            ? { ...prev[i], type: res.head.type, checked: res.head.checked, collapsed: res.head.collapsed, lang: res.head.lang }
-            : prev[i];
-          // Above any bullets added below the link meanwhile
-          applyLocalBlocks([...prev.slice(0, i), { ...head, content: res.content }, ...inserted, ...prev.slice(i + 1)]);
-        }
-        lastExtractRef.current = null;
-        lastInlineRef.current = { sourceId: res.sourceId, blockId, content: res.content };
-        onDocRemoved?.(res.sourceId);
-        showNotice(i18n.t('workspace:editor.pulledBack'), [{ label: i18n.t('common:sync.undo'), run: () => handleUndo() }]);
-      } catch (err: any) {
-        showNotice(err?.message || i18n.t('workspace:editor.pullBackFailed'));
-      }
-    },
-    [docId, onDocRemoved, showNotice, handleUndo, applyLocalBlocks]
-  );
+  const {
+    hasCollapsed,
+    canCollapse,
+    handleSetAllCollapsed,
+    handleUpdateBlock,
+    handleUpdateBlocks,
+    handleCreateBlock,
+    handleInsertBlocks,
+    enterFromTitle,
+    handleDeleteBlock,
+    handleDeleteBlocks,
+    handleReplaceRange,
+    handleMoveSibling,
+    handleMoveBlock,
+  } = useBlockEditing({
+    docId,
+    canEdit,
+    inTrash,
+    embedded,
+    zoomedBlockId,
+    childBlocks,
+    scrollRef,
+    outlinerTreeRef,
+    currentBlocksRef,
+    applyLocalBlocks,
+  });
 
   // Keep parent sidebar metadata in sync when blocks/tags change
   useEffect(() => {
@@ -1145,277 +419,16 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
     void engineRef.current?.syncNow();
   };
 
-  const handleUpdateBlock = useCallback(
-    (updatedBlock: DocumentBlock) => {
-      if (!canEdit) return;
-      applyLocalBlocks((prev) => prev.map((b) => (b.id === updatedBlock.id ? updatedBlock : b)));
-    },
-    [canEdit, applyLocalBlocks]
-  );
-
-  const handleUpdateBlocks = useCallback(
-    (updatedBlocks: DocumentBlock[]) => {
-      if (!canEdit || updatedBlocks.length === 0) return;
-      const map = new Map<string, DocumentBlock>();
-      for (const b of updatedBlocks) {
-        map.set(b.id, b);
-      }
-      applyLocalBlocks((prev) => prev.map((b) => map.get(b.id) || b));
-    },
-    [canEdit, applyLocalBlocks]
-  );
-
-  const handleCreateBlock = useCallback(
-    (newBlock: DocumentBlock, afterBlockId?: string) => {
-      if (!canEdit) return;
-      applyLocalBlocks((prev) => {
-        const next = [...prev];
-        if (afterBlockId) {
-          const idx = next.findIndex((b) => b.id === afterBlockId);
-          if (idx >= 0) {
-            // A new bullet on the same level comes below the conflict copies of this one (they stick to it)
-            const at = (newBlock.level || 0) <= Math.max(0, next[idx].level || 0) ? insertBelow(next, idx) : idx + 1;
-            next.splice(at, 0, newBlock);
-            return ensureNonEmptyBlocks(docId, next);
-          }
-        }
-        next.push(newBlock);
-        return ensureNonEmptyBlocks(docId, next);
-      });
-    },
-    [docId, canEdit, applyLocalBlocks]
-  );
-
-  const handleInsertBlocks = useCallback(
-    (afterBlockId: string, updatedCurrentBlock: DocumentBlock, newBlocks: DocumentBlock[]) => {
-      if (!canEdit) return;
-      applyLocalBlocks((prev) => {
-        const next = [...prev];
-        const idx = next.findIndex((b) => b.id === afterBlockId);
-        if (idx >= 0) {
-          next[idx] = updatedCurrentBlock;
-          const sameLevel = newBlocks.length > 0 && (newBlocks[0].level || 0) <= Math.max(0, updatedCurrentBlock.level || 0);
-          next.splice(sameLevel ? insertBelow(next, idx) : idx + 1, 0, ...newBlocks);
-        } else {
-          next.push(updatedCurrentBlock, ...newBlocks);
-        }
-        return ensureNonEmptyBlocks(docId, next);
-      });
-    },
-    [docId, canEdit, applyLocalBlocks]
-  );
-
-  // Enter (or Tab) in the title: into the first bullet when that is an empty text bullet, otherwise a new
-  // empty bullet goes first, so a drawing or image at the top can still get something in front of it
-  const enterFromTitle = () => {
-    const first = currentBlocksRef.current[0];
-    const emptyText = !!first && first.type === 'text' && !(first.content || '').trim() && !(first.level || 0);
-    if (!canEdit || !first || emptyText || zoomedBlockId) {
-      outlinerTreeRef.current?.focusFirstBlock();
-      return;
-    }
-    const block: DocumentBlock = {
-      id: `blk_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`,
-      documentId: docId,
-      type: 'text',
-      content: '',
-      level: 0,
-      checked: false,
-      collapsed: false,
-      position: 0,
-    };
-    applyLocalBlocks((prev) => [block, ...prev]);
-    outlinerTreeRef.current?.focusBlock(block.id, 'start');
-  };
-
-  const handleDeleteBlock = useCallback(
-    (blockId: string) => {
-      if (!canEdit) return;
-      applyLocalBlocks((prev) => ensureNonEmptyBlocks(docId, prev.filter((b) => b.id !== blockId)));
-    },
-    [docId, canEdit, applyLocalBlocks]
-  );
-
-  const handleDeleteBlocks = useCallback(
-    (blockIds: string[]) => {
-      if (!canEdit) return;
-      const gone = new Set(blockIds);
-      applyLocalBlocks((prev) => ensureNonEmptyBlocks(docId, prev.filter((b) => !gone.has(b.id))));
-    },
-    [docId, canEdit, applyLocalBlocks]
-  );
-
-  // A selection over several bullets was deleted (OutlinerTree): one change, so Strg+Z undoes it at once
-  const handleReplaceRange = useCallback(
-    (first: DocumentBlock, deleteIds: string[], movedChildren: DocumentBlock[]) => {
-      if (!canEdit) return;
-      const changed = new Map([first, ...movedChildren].map((b) => [b.id, b]));
-      const gone = new Set(deleteIds);
-      applyLocalBlocks((prev) =>
-        ensureNonEmptyBlocks(docId, prev.filter((b) => !gone.has(b.id)).map((b) => changed.get(b.id) || b))
-      );
-    },
-    [docId, canEdit, applyLocalBlocks]
-  );
-
-  // Swaps a bullet (with its children) with the previous or next one on the same level, within the same
-  // parent. By id, not by index, so it also works while zoomed into a branch (the tree then sees a slice).
-  const handleMoveSibling = useCallback(
-    (blockId: string, direction: -1 | 1) => {
-      if (!canEdit) return;
-      applyLocalBlocks((prev) => moveSibling(prev, blockId, direction));
-    },
-    [canEdit, applyLocalBlocks]
-  );
-
-  const handleMoveBlock = useCallback(
-    (blockId: string, targetIndex: number, newLevel?: number) => {
-      if (!canEdit) return;
-      applyLocalBlocks((prev) => {
-        const fromIdx = prev.findIndex((b) => b.id === blockId);
-        if (fromIdx === -1) return prev;
-
-        const parentBlock = prev[fromIdx];
-        const parentLevel = Math.max(0, parentBlock.level || 0);
-
-        // The dragged block with its descendants and its conflict copies
-        const count = branchEnd(prev, fromIdx) - fromIdx;
-
-        // Prevent dropping inside its own subtree
-        if (targetIndex >= fromIdx && targetIndex < fromIdx + count) {
-          return prev;
-        }
-
-        const copy = [...prev];
-        const subtree = copy.splice(fromIdx, count);
-
-        // Adjust insertion index because removing elements from before shifts target index
-        let insertIndex = targetIndex;
-        if (fromIdx < targetIndex) {
-          insertIndex = targetIndex - count;
-        }
-        insertIndex = Math.max(0, Math.min(insertIndex, copy.length));
-
-        // Calculate level adjustments if moving to a constrained position
-        const prevBlockInPosition = insertIndex > 0 ? copy[insertIndex - 1] : null;
-        const maxAllowed = prevBlockInPosition
-          ? Math.max(0, prevBlockInPosition.level || 0) + 1
-          : 0;
-
-        const targetLevel = newLevel !== undefined ? newLevel : parentLevel;
-        const clampedLevel = Math.min(targetLevel, maxAllowed);
-        const levelDelta = clampedLevel - parentLevel;
-        // Never between a bullet and its conflict copies: behind them instead
-        const landing = copy[insertIndex];
-        if (landing?.conflictOf && clampedLevel <= Math.max(0, landing.level || 0)) {
-          const start = unitStart(copy, insertIndex);
-          if (start < insertIndex) insertIndex = branchEnd(copy, start);
-        }
-
-        const updatedSubtree = subtree.map((b) => ({
-          ...b,
-          level: Math.max(0, (b.level || 0) + levelDelta),
-        }));
-
-        copy.splice(insertIndex, 0, ...updatedSubtree);
-        return ensureNonEmptyBlocks(docId, copy);
-      });
-    },
-    [docId, canEdit, applyLocalBlocks]
-  );
-
-  // --- Hashtag page (variant 'tag') ---
-  // Shown are the bullets carrying the hashtag with all their children. The bullet with the cursor (and
-  // the bullets above it) and bullets just created here stay even without the hashtag, so typing never
-  // pulls the text away; once the cursor leaves, a bullet without the hashtag disappears.
-  const [tagFocusId, setTagFocusId] = useState<string | null>(null);
-  const [tagFreshIds, setTagFreshIds] = useState<Set<string>>(() => new Set());
-  const tagBlurTimerRef = useRef<number | null>(null);
-  const handleTagFocusChange = useCallback((id: string | null) => {
-    engineRef.current?.focusBlock(id);
-    if (tagBlurTimerRef.current !== null) window.clearTimeout(tagBlurTimerRef.current);
-    tagBlurTimerRef.current = null;
-    if (id === null) {
-      // Moving from one bullet to the next blurs first; only a real leave counts
-      tagBlurTimerRef.current = window.setTimeout(() => {
-        setTagFocusId(null);
-        setTagFreshIds((prev) => (prev.size === 0 ? prev : new Set()));
-      }, 150);
-      return;
-    }
-    setTagFocusId(id);
-    setTagFreshIds((prev) => (prev.size === 0 || prev.has(id) ? prev : new Set()));
-  }, []);
-  useEffect(() => () => {
-    if (tagBlurTimerRef.current !== null) window.clearTimeout(tagBlurTimerRef.current);
-  }, []);
-  // What was shown last time: of the bullets above the cursor only those stay that were already shown
-  // (adding a heading above would start the branch anew and lose the cursor)
-  const tagShownRef = useRef<Set<string>>(new Set());
-  const tagGroups = useMemo(() => {
-    if (!inTagPage || !tagFilter) return [] as DocumentBlock[][];
-    const tag = tagFilter.replace(/^#/, '').toLowerCase();
-    const keep = new Set<string>(tagFreshIds);
-    const fIdx = tagFocusId ? blocks.findIndex((b) => b.id === tagFocusId) : -1;
-    if (fIdx >= 0) {
-      keep.add(blocks[fIdx].id);
-      let lvl = Math.max(0, blocks[fIdx].level || 0);
-      for (let i = fIdx - 1; i >= 0 && lvl > 0; i--) {
-        const l = Math.max(0, blocks[i].level || 0);
-        if (l < lvl) {
-          if (!tagShownRef.current.has(blocks[i].id)) break;
-          keep.add(blocks[i].id);
-          lvl = l;
-        }
-      }
-    }
-    // Runs of shown bullets: a shown bullet brings its children; gaps start a new run
-    const groups: DocumentBlock[][] = [];
-    let current: DocumentBlock[] | null = null;
-    let insideLevel: number | null = null;
-    for (const b of blocks) {
-      const lvl = Math.max(0, b.level || 0);
-      if (insideLevel !== null && lvl <= insideLevel) insideLevel = null;
-      const shown = insideLevel !== null || keep.has(b.id) || extractHashtags(b.content).includes(tag);
-      if (!shown) {
-        current = null;
-        continue;
-      }
-      if (!current) {
-        current = [];
-        groups.push(current);
-      }
-      current.push(b);
-      if (insideLevel === null) insideLevel = lvl;
-    }
-    tagShownRef.current = new Set(groups.flat().map((b) => b.id));
-    return groups;
-  }, [inTagPage, tagFilter, blocks, tagFocusId, tagFreshIds]);
-  const handleTagCreateBlock = useCallback(
-    (newBlock: DocumentBlock, afterBlockId?: string) => {
-      setTagFreshIds((prev) => new Set(prev).add(newBlock.id));
-      handleCreateBlock(newBlock, afterBlockId);
-    },
-    [handleCreateBlock]
-  );
-  const handleTagInsertBlocks = useCallback(
-    (afterBlockId: string, updatedCurrent: DocumentBlock, newBlocks: DocumentBlock[]) => {
-      setTagFreshIds((prev) => {
-        const next = new Set(prev);
-        newBlocks.forEach((b) => next.add(b.id));
-        return next;
-      });
-      handleInsertBlocks(afterBlockId, updatedCurrent, newBlocks);
-    },
-    [handleInsertBlocks]
-  );
-  // Dragging inside one run: its positions are positions in the whole note
-  const tagMoveBlock = (group: DocumentBlock[]) => (blockId: string, targetIndex: number, newLevel?: number) => {
-    const anchor = targetIndex < group.length ? group[targetIndex] : group[group.length - 1];
-    const idx = currentBlocksRef.current.findIndex((b) => b.id === anchor.id);
-    if (idx < 0) return;
-    handleMoveBlock(blockId, targetIndex < group.length ? idx : idx + 1, newLevel);
-  };
+  const { tagGroups, handleTagFocusChange, handleTagCreateBlock, handleTagInsertBlocks, tagMoveBlock } = useTagPage({
+    inTagPage,
+    tagFilter,
+    blocks,
+    engineRef,
+    currentBlocksRef,
+    handleCreateBlock,
+    handleInsertBlocks,
+    handleMoveBlock,
+  });
 
   const handleTogglePin = async () => {
     if (!doc) return;
@@ -1877,7 +890,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
                   ? t('editor.offline')
                   : engineState.status === 'error'
                   ? engineState.errorMessage || t('editor.saveFailed')
-                  : 'Gespeichert'
+                  : t('editor.saved')
               }
               aria-label={t('editor.saveStatus')}
             >

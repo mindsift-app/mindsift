@@ -67,6 +67,7 @@
     "saving": "Guardando…",
     "offline": "Sin conexión – los cambios se guardan en este navegador",
     "saveFailed": "Error al guardar",
+    "saved": "Guardado",
     "saveStatus": "Estado de guardado",
     "readOnly": "Solo lectura",
     "inTrash": "Esta nota está en la papelera y es de solo lectura.",

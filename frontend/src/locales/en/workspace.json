@@ -67,6 +67,7 @@
     "saving": "Saving…",
     "offline": "Offline – changes are saved in this browser",
     "saveFailed": "Saving failed",
+    "saved": "Saved",
     "saveStatus": "Save status",
     "readOnly": "Read only",
     "inTrash": "This note is in the trash and read-only.",

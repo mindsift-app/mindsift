@@ -20,6 +20,7 @@ Versions before 0.80.0 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 - New settings section **Security** with the password change, two-factor sign-in and the signed-in devices (moved there from Profile).
 
 ### Fixed
+- On phones, the save status of a note shows "Saved" in the app's language instead of always in German.
 - Sharing a pinned note no longer unpins it for the owner in the open app (realtime updates carried another person's view of the note).
 - Moving a shared note or folder no longer briefly shows collaborators the mover's folder placement.
 - Notes changed at the same moment are listed in the same order for everyone they are shared with.
@@ -33,7 +34,7 @@ Versions before 0.80.0 are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 ### Changed
 - Larger handles on lines, arrows and shapes in drawings; with a finger they can be grabbed from further away.
 - Demo: all of the admin's sample notes, folders, task lists and lists are shared with the demo account `user` for editing.
-- On the desktop, pages use the full width beside the navigation rail; notes keep a comfortable reading width (a little wider in focus mode), also in the journal and on public pages.
+- On the desktop, pages use the full width beside the navigation rail; notes keep a comfortable reading width, the same in focus mode, also in the journal and on public pages.
 - The Kanban board fits as many columns side by side as there is room for; the "wide board" and "wide calendar" buttons are gone.
 - The hashtag filter above the tasks has calm chips without frames; the chosen one is tinted, and hashtags that do not fit sit behind "+ n more" with a search.
 - The "Quick Dumps open" badge in the triage header no longer has a frame on the desktop.
