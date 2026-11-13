@@ -37,7 +37,6 @@ import { ConflictChoice, MAX_NOTE_BLOCKS } from '../../lib/docSync/engine';
 import { formatNumber } from '../../lib/format';
 import { Presence } from '../../lib/docSync/transport';
 import { OutlinerTree, OutlinerTreeHandle } from './OutlinerTree';
-import type { BlockLock } from './OutlinerBlock';
 import { extractHashtags } from '../../lib/hashtags';
 import { branchEnd, insertBelow, moveSibling, unitStart } from '../../lib/outlineList';
 import { isPhoneWidth } from '../../lib/breakpoints';
@@ -119,6 +118,7 @@ import { blockTitle, computeBreadcrumbs, getZoomedSubtree, isTitleFromKind } fro
 import { ensureNonEmptyBlocks, useDocumentSync } from './useDocumentSync';
 import { useNotePlace } from './useNotePlace';
 import { KEYBOARD_BAR_SPACE, useEditorLayout } from './useEditorLayout';
+import { useDocPresence } from './useDocPresence';
 
 export const DocumentEditor: React.FC<DocumentEditorProps> = ({
   docId,
@@ -236,53 +236,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
     return Array.from(tagSet);
   }, [blocks]);
 
-  const otherPeople = useMemo(
-    () => (engineState?.presence || []).filter((p) => p.userId !== currentUser?.id),
-    [engineState?.presence, currentUser?.id]
-  );
-
-  // Presence only carries names; profile pictures come from the user directory, loaded once
-  // the first time someone else shows up (avatars can be data URLs, too big for every sync)
-  const [avatarsById, setAvatarsById] = useState<Map<string, string>>(new Map());
-  const avatarsRequestedRef = useRef(false);
-  useEffect(() => {
-    if (otherPeople.length === 0 || avatarsRequestedRef.current) return;
-    avatarsRequestedRef.current = true;
-    api.getUsersDirectory()
-      .then((users) => {
-        const m = new Map<string, string>();
-        for (const u of users) if (u.avatarUrl) m.set(u.id, u.avatarUrl);
-        setAvatarsById(m);
-      })
-      .catch(() => {});
-  }, [otherPeople.length]);
-
-  // Blocks other users are editing right now (blockId -> who, with color key and profile picture)
-  const lockedBlocks = useMemo(() => {
-    const m = new Map<string, BlockLock>();
-    for (const l of engineState?.lockedByOthers || []) {
-      m.set(l.blockId, {
-        userId: l.userId,
-        name: l.name || t('lock.someone'),
-        avatarUrl: avatarsById.get(l.userId),
-        // A live drawing holds the bullet: everyone drawing in it
-        ...(l.live?.length ? { live: l.live.map((p) => ({ userId: p.userId, name: p.name || t('lock.someone'), avatarUrl: avatarsById.get(p.userId) })) } : {}),
-      });
-    }
-    return m;
-  }, [engineState?.lockedByOthers, avatarsById, t]);
-
-  const showLive = Boolean(engineState && (engineState.shared || engineState.sessions > 1));
-  const liveChannel = engineState?.channel || 'ws';
-  useEffect(() => {
-    onHeaderStatusChange?.({ showLive, channel: liveChannel, otherPeople, avatarsById });
-  }, [showLive, liveChannel, otherPeople, avatarsById, onHeaderStatusChange]);
-
-  useEffect(() => {
-    return () => {
-      onHeaderStatusChange?.(null);
-    };
-  }, [onHeaderStatusChange]);
+  const { lockedBlocks } = useDocPresence(engineState, currentUser?.id, onHeaderStatusChange);
 
   useEffect(() => {
     if (!showActionsMenu) return;
