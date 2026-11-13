@@ -228,7 +228,7 @@ Stage 3  alpine:3.24      binary only, ca-certificates, tzdata
 
 The displayed version (phone header, expanded desktop rail, footer) is injected by build arg `APP_VERSION`: CI supplies the tag name on Git tags (`v0.6.0`), otherwise the app displays the version from `frontend/package.json` with `-dev` suffix (`v0.6.0-dev`). Implemented in `frontend/vite.config.ts` and `frontend/src/version.ts`.
 
-Tests run during image build (frontend: `npm run test:run`, backend: `go test -v ./...`); failures abort the build. Frontend tests are located under `frontend/src/**/__tests__/` (Vitest + jsdom + Testing Library, setup in `frontend/src/test/setup.ts`).
+Tests run during the image build of GitHub `main` (frontend: `npm run test:run`, backend: `go test` over `./cmd/...` and `./internal/...`; `TEST_REFS` in the workflow), and failures abort that build; other builds skip them, because `ci/local-checks.sh` runs them before every push. Frontend tests are located under `frontend/src/**/__tests__/` (Vitest + jsdom + Testing Library, setup in `frontend/src/test/setup.ts`).
 
 ## Container User
 

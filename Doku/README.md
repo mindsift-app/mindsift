@@ -1,6 +1,6 @@
 # MindSift Technical Documentation
 
-Reference for developers and administrators. All information has been verified against the code in the `dev` branch (as of October 2026). Please report discrepancies between the documentation and code as issues in [flaws.md](flaws.md).
+Reference for developers and administrators. All information describes the code in the `dev` branch. Please report discrepancies between the documentation and code as issues in [flaws.md](flaws.md).
 
 ## Contents
 
@@ -40,7 +40,7 @@ Reference for developers and administrators. All information has been verified a
 
 ```bash
 # Backend (Go 1.27)
-go vet ./... && go test ./...
+go vet ./cmd/... ./internal/... && go test ./cmd/... ./internal/...
 
 # Frontend (Node 26)
 cd frontend && npm ci && npx tsc --noEmit && npm run test:run && npm run build
@@ -50,4 +50,4 @@ cd frontend && npm ci && npx tsc --noEmit && npm run test:run && npm run build
 ci/local-checks.sh
 ```
 
-The frontend is built to `cmd/server/dist` for inclusion in the binary (see `Dockerfile`). CI runs twice using the same build plan (`ci/build-plan.sh`): on private Gitea (`.gitea/workflows/`, tests and pre-release images) and on GitHub (`.github/workflows/`, public images at `ghcr.io/mindsift-app/mindsift`, for amd64 and arm64). On GitHub, a version tag also gets its release page from the matching `CHANGELOG.md` section (`.github/workflows/release.yaml`, `ci/release-notes.sh`; versions before 0.80.0 are in `CHANGELOG-archive.md`), with the server binaries for Linux attached (`ci/release-binaries.sh`).
+The frontend is built to `cmd/server/dist` for inclusion in the binary (see `Dockerfile`). CI runs twice using the same build plan (`ci/build-plan.sh`): on private Gitea (`.gitea/workflows/`, images of `main` only, without tests) and on GitHub (`.github/workflows/`, public images at `ghcr.io/mindsift-app/mindsift`, for amd64 and arm64; only the build of `main` runs the tests, all other builds rely on `ci/local-checks.sh` before the push). On GitHub, a version tag also gets its release page from the matching `CHANGELOG.md` section (`.github/workflows/release.yaml`, `ci/release-notes.sh`; versions before 0.80.0 are in `CHANGELOG-archive.md`), with the server binaries for Linux attached (`ci/release-binaries.sh`).
