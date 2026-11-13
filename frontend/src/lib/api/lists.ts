@@ -32,7 +32,7 @@ export const listsApi = {
     let title = titleOrSpaceId;
     // An empty icon means "no icon"; only a missing one gets the default
     let icon = titleOrIcon ?? '🛒';
-    let type = (iconOrType as any) || 'shopping';
+    let type: string = iconOrType || 'shopping';
     if (listType !== undefined) {
       title = titleOrIcon || '';
       icon = iconOrType ?? '🛒';

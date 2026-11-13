@@ -10,8 +10,8 @@ let activeTransport: RealtimeTransport = 'none';
 let activeGlobalWS: WebSocket | null = null;
 let activeGlobalSSE: EventSource | null = null;
 let activeSSEId: string | null = null;
-let wsReconnectTimer: any = null;
-let wsConnectionWatchdog: any = null;
+let wsReconnectTimer: ReturnType<typeof setTimeout> | undefined;
+let wsConnectionWatchdog: ReturnType<typeof setTimeout> | undefined;
 let wsListeners: ((msg: WSMessage) => void)[] = [];
 let realtimeStatusListeners: ((connected: boolean, transport: RealtimeTransport) => void)[] = [];
 let isRealtimeConnectedState = false;
@@ -97,7 +97,7 @@ let isWsBlockedByProxy = typeof window !== 'undefined' && wsBlockedSince() > Dat
 // Some proxies buffer event streams: the connection opens, but events only arrive much later (or never).
 // Then SSE is useless and the note sync engines fall back to long polling.
 let isSseBufferedByProxy = typeof window !== 'undefined' && sessionStorage.getItem('mindsift_sse_buffered') === 'true';
-let sseFirstEventWatchdog: any = null;
+let sseFirstEventWatchdog: ReturnType<typeof setTimeout> | undefined;
 const SSE_FIRST_EVENT_TIMEOUT_MS = 5000;
 // SSE attempts that failed although the server answered the ticket request, i.e. something in between
 // refuses the stream; from this many on long polling takes over
@@ -105,11 +105,11 @@ const SSE_FAILED_ATTEMPTS_FOR_POLL = 2;
 let sseFailedAttempts = 0;
 let sseEverConnected = false;
 // Some proxies accept the WebSocket upgrade but then forward nothing. An app-level ping detects that.
-let wsHeartbeatTimer: any = null;
+let wsHeartbeatTimer: ReturnType<typeof setInterval> | undefined;
 let wsLastMessageAt = 0;
 const WS_PING_INTERVAL_MS = 15000;
 const WS_DEAD_AFTER_MS = 35000;
-let sseReconnectTimer: any = null;
+let sseReconnectTimer: ReturnType<typeof setTimeout> | undefined;
 let sseReconnectDelay = 2000;
 const globalSubscribedRooms = new Set<string>();
 
@@ -152,7 +152,7 @@ function switchToSSE(reason: string) {
 }
 
 let sseTicketPending = false;
-let wsBlockRetryTimer: any = null;
+let wsBlockRetryTimer: ReturnType<typeof setTimeout> | undefined;
 // A WebSocket worked in this tab: a failed attempt afterwards is the server restarting or the network
 // changing, not a proxy, so it tries again (with growing pauses) before falling back to SSE
 let wsWorkedBefore = false;
@@ -591,7 +591,10 @@ export function disconnectWebSocket(): void {
   notifyRealtimeStatusChange(false, 'none');
 }
 
-export function sendWebSocketMessage(msg: any): void {
+// What the browser sends over the WebSocket: an event with its room or payload, or that already as JSON
+export type OutgoingWSMessage = string | { event: string; room?: string; payload?: unknown };
+
+export function sendWebSocketMessage(msg: OutgoingWSMessage): void {
   if (activeGlobalWS && activeGlobalWS.readyState === WebSocket.OPEN) {
     activeGlobalWS.send(typeof msg === 'string' ? msg : JSON.stringify(msg));
     return;
@@ -599,7 +602,7 @@ export function sendWebSocketMessage(msg: any): void {
 
   // SSE Fallback: dispatch via REST endpoints
   try {
-    const parsed = typeof msg === 'string' ? JSON.parse(msg) : msg;
+    const parsed: { event?: string; room?: string } = typeof msg === 'string' ? JSON.parse(msg) : msg;
     if (parsed.event === 'JOIN_ROOM' && parsed.room) {
       if (activeSSEId) api.joinSSERoom(activeSSEId, parsed.room, 'join').catch(() => {});
     } else if (parsed.event === 'LEAVE_ROOM' && parsed.room) {
@@ -680,7 +683,7 @@ export function createRealtimeConnection(options: {
   return {
     getTransport: () => activeTransport,
     isConnected: () => isRealtimeConnected(),
-    send: (msg: any) => {
+    send: (msg: OutgoingWSMessage) => {
       if (isClosed) return;
       sendWebSocketMessage(msg);
     },

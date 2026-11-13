@@ -19,6 +19,27 @@ import {
   MentionCandidate,
 } from '../types';
 import { ensureArray, request } from './client';
+import type { WireElement } from '../drawing/live';
+
+// A live drawing as the server reports it (withYou in internal/api/drawlive.go)
+export interface LiveDrawingPerson {
+  id: string; // connection
+  userId: string;
+  name: string;
+}
+export interface LiveDrawingState {
+  docId: string;
+  blockId: string;
+  active: boolean;
+  host: string;
+  participants: LiveDrawingPerson[];
+  watchers: LiveDrawingPerson[];
+  els: WireElement[];
+  order: string[];
+  grid: boolean;
+  seq: number;
+  you: string;
+}
 
 export const workspaceApi = {
   // --- WORKSPACE FOLDERS ---
@@ -197,16 +218,16 @@ export const workspaceApi = {
   },
 
   /** Watches a live drawing over SSE or long polling (sseId of that connection); leave ends watching. */
-  async watchDrawing(docId: string, blockId: string, sseId: string, leave = false): Promise<any> {
-    return request<any>(`/api/v1/docs/${encodeURIComponent(docId)}/drawings/${encodeURIComponent(blockId)}/watch`, {
+  async watchDrawing(docId: string, blockId: string, sseId: string, leave = false): Promise<LiveDrawingState | { success: boolean }> {
+    return request<LiveDrawingState | { success: boolean }>(`/api/v1/docs/${encodeURIComponent(docId)}/drawings/${encodeURIComponent(blockId)}/watch`, {
       method: 'POST',
       body: JSON.stringify({ sseId, leave }),
     });
   },
 
   /** State of a live drawing (watchers catch up with it after a gap). */
-  async liveDrawing(docId: string, blockId: string): Promise<any> {
-    return request<any>(`/api/v1/docs/${encodeURIComponent(docId)}/drawings/${encodeURIComponent(blockId)}/live`);
+  async liveDrawing(docId: string, blockId: string): Promise<LiveDrawingState> {
+    return request<LiveDrawingState>(`/api/v1/docs/${encodeURIComponent(docId)}/drawings/${encodeURIComponent(blockId)}/live`);
   },
 
   /** Moves the note to the trash (owner) or leaves a shared note (others). */
