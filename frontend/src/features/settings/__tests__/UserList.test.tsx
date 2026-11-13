@@ -58,7 +58,8 @@ describe('UserList', () => {
     expect(rows()).toHaveLength(100);
     fireEvent.click(screen.getByRole('button', { name: '30 weitere anzeigen' }));
     expect(screen.queryByText(/angezeigt/)).toBeNull();
-  });
+    // Renders up to 130 rows in jsdom: on a busy machine (parallel builds) that took longer than the 5 s default
+  }, 20_000);
 
   it('searches name, username and e-mail and says how many match', () => {
     const users = [me, person(1), person(2, { displayName: 'Anna Müller' }), person(3, { email: 'anna@firma.de' })];
