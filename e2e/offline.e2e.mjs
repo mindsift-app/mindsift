@@ -1,6 +1,7 @@
 // Offline work in notes with real browsers: opening a note without connection, changes in a note that was
 // left offline, a conflict with someone editing the same bullet live, unsent changes surviving a browser
-// restart, the note tree after starting offline, and merging with someone who worked on the note meanwhile.
+// restart, the note tree after starting offline, merging with someone who worked on the note meanwhile, and
+// a plain text page (the third-party licenses) that must not replace the offline start page.
 // Needs a server in demo mode (accounts admin/admin and user/user); see e2e/README.md.
 import { chromium } from 'playwright';
 import { mkdtempSync, rmSync } from 'node:fs';
@@ -568,6 +569,44 @@ const main = async () => {
       check(!!unmarked, 'The other browser shows it unmarked too');
     } finally {
       await b2.close();
+    }
+  }
+
+  // 9. Opening a page that is not the app (the third-party licenses, plain text) is a navigation the service
+  //    worker answers from the network; it must not keep that text as the app's offline start page
+  {
+    const profile = mkdtempSync(join(tmpdir(), 'mindsift-offline-'));
+    try {
+      let ctx = await chromium.launchPersistentContext(profile, { viewport: { width: 1280, height: 900 }, locale: 'de-DE' });
+      let page = await setup(ctx, admin);
+      await page.goto(BASE);
+      await page.getByTitle('Benutzermenü öffnen').first().waitFor({ timeout: 10000 });
+      const controlled = await waitFor(() => page.evaluate(() => !!navigator.serviceWorker.controller), 10000);
+      check(!!controlled, 'The service worker controls the page');
+      const res = await page.goto(`${BASE}/third-party-licenses.txt`);
+      const text = (await page.locator('body').innerText().catch(() => '')) || '';
+      check(
+        res?.status() === 200 && (res?.headers()['content-type'] || '').startsWith('text/plain') && /license/i.test(text),
+        `The license page opens as text (${res?.status()} ${res?.headers()['content-type']})`
+      );
+      const stored = await page.evaluate(async () => {
+        for (const k of (await caches.keys()).filter((k) => k.startsWith('mindsift-shell-'))) {
+          const hit = await (await caches.open(k)).match('/index.html');
+          if (hit) return hit.headers.get('Content-Type') || '';
+        }
+        return '';
+      });
+      check(stored.startsWith('text/html'), `The stored start page is still the app's HTML (${stored})`);
+      await ctx.close();
+
+      ctx = await chromium.launchPersistentContext(profile, { viewport: { width: 1280, height: 900 }, locale: 'de-DE', offline: true });
+      page = await setup(ctx, admin);
+      await page.goto(BASE).catch(() => {});
+      const started = await waitFor(async () => (await page.getByTitle('Benutzermenü öffnen').count()) > 0, 10000);
+      check(!!started, 'Started offline after opening the license page: the app opens');
+      await ctx.close();
+    } finally {
+      rmSync(profile, { recursive: true, force: true });
     }
   }
 

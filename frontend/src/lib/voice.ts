@@ -57,13 +57,35 @@ export function voiceChoiceAvailable(): boolean {
   return serverMode === 'server' && browserAllowed;
 }
 
-export function browserRecognition(): any {
+/** The Web Speech API's recognizer, as far as MindSift uses it (TypeScript's DOM types do not have it). */
+export interface BrowserRecognition {
+  lang: string;
+  interimResults: boolean;
+  continuous: boolean;
+  onresult: ((event: { results: SpeechRecognitionResultList }) => void) | null;
+  onerror: ((event: { error?: string }) => void) | null;
+  onend: (() => void) | null;
+  start(): void;
+  stop(): void;
+  abort?(): void;
+}
+export type BrowserRecognitionClass = new () => BrowserRecognition;
+
+// Chrome and Safari still name the recognizer and the audio context with their prefix
+type PrefixedWindow = Window & {
+  SpeechRecognition?: BrowserRecognitionClass;
+  webkitSpeechRecognition?: BrowserRecognitionClass;
+  webkitAudioContext?: typeof AudioContext;
+};
+
+export function browserRecognition(): BrowserRecognitionClass | null {
   if (typeof window === 'undefined') return null;
-  return (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition || null;
+  const w = window as PrefixedWindow;
+  return w.SpeechRecognition || w.webkitSpeechRecognition || null;
 }
 
 export function canRecord(): boolean {
-  return typeof window !== 'undefined' && typeof (window as any).MediaRecorder !== 'undefined' && !!navigator.mediaDevices?.getUserMedia;
+  return typeof window !== 'undefined' && typeof window.MediaRecorder !== 'undefined' && !!navigator.mediaDevices?.getUserMedia;
 }
 
 /** What this browser can actually do with the server's setting. */
@@ -111,7 +133,7 @@ export function resetVoiceConfig(): void {
 const RECORDING_TYPES = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg;codecs=opus'];
 
 function recordingType(): string | undefined {
-  const MR = (window as any).MediaRecorder;
+  const MR: typeof MediaRecorder | undefined = window.MediaRecorder;
   if (!MR?.isTypeSupported) return undefined;
   return RECORDING_TYPES.find((t) => MR.isTypeSupported(t));
 }
@@ -135,7 +157,8 @@ export class VoiceRecorder {
     });
     this.startSegmentRecorder();
     try {
-      const Ctx = (window as any).AudioContext || (window as any).webkitAudioContext;
+      const Ctx = window.AudioContext || (window as PrefixedWindow).webkitAudioContext;
+      if (!Ctx) throw new Error('no AudioContext');
       this.audioCtx = new Ctx();
       const source = this.audioCtx!.createMediaStreamSource(this.stream);
       this.analyser = this.audioCtx!.createAnalyser();

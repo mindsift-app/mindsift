@@ -3,8 +3,8 @@ import {
   ChevronRight,
   ChevronDown,
   Check,
-  CheckSquare,
-  Trash2,
+  SquareCheckBig,
+  Trash,
   Code,
   Heading1,
   Heading2,
@@ -16,8 +16,8 @@ import {
   ExternalLink,
   Link as LinkIcon,
   Lock,
-  AlertTriangle,
-  XCircle,
+  TriangleAlert,
+  CircleX,
   Image as ImageIcon,
   Mic,
   Shapes,
@@ -65,6 +65,8 @@ import i18n from '../../i18n';
 import { UserAvatar } from '../../components/UserAvatar';
 import { userColorStyles } from '../../lib/userColor';
 import { showError } from '../../components/ErrorNotice';
+import { errorMessage } from '../../lib/errorMessage';
+import { useLatestRef } from '../../lib/useLatestRef';
 
 export interface SlashCommand {
   type: BlockType | 'link' | 'secret' | 'dictation' | 'extract';
@@ -108,8 +110,8 @@ const SLASH_COMMANDS: SlashCommand[] = [
   { type: 'code', label: '/code', get desc() { return i18n.t('workspace:slash.code'); }, icon: <Code className="w-3.5 h-3.5" /> },
   { type: 'table', label: '/table', get desc() { return i18n.t('workspace:slash.table'); }, icon: <TableIcon className="w-3.5 h-3.5" />, aliases: ['tabelle', 'tabla', 'tableau', 'tabella', 'grid'] },
   { type: 'callout', label: '/callout', get desc() { return i18n.t('workspace:slash.callout'); }, icon: <MessageSquare className="w-3.5 h-3.5" /> },
-  { type: 'warning', label: '/warn', get desc() { return i18n.t('workspace:slash.warning'); }, icon: <AlertTriangle className="w-3.5 h-3.5 text-status-warn" />, aliases: ['warnung', 'warning', 'achtung'] },
-  { type: 'error', label: '/fail', get desc() { return i18n.t('workspace:slash.error'); }, icon: <XCircle className="w-3.5 h-3.5 text-status-err" />, aliases: ['fehler', 'error', 'danger'] },
+  { type: 'warning', label: '/warn', get desc() { return i18n.t('workspace:slash.warning'); }, icon: <TriangleAlert className="w-3.5 h-3.5 text-status-warn" />, aliases: ['warnung', 'warning', 'achtung'] },
+  { type: 'error', label: '/fail', get desc() { return i18n.t('workspace:slash.error'); }, icon: <CircleX className="w-3.5 h-3.5 text-status-err" />, aliases: ['fehler', 'error', 'danger'] },
   { type: 'divider', label: '/divider', get desc() { return i18n.t('workspace:slash.divider'); }, icon: <Minus className="w-3.5 h-3.5" /> },
   { type: 'extract', label: '/extract', get desc() { return i18n.t('workspace:slash.extract'); }, icon: <FileOutput className="w-3.5 h-3.5" />, aliases: ['notiz', 'auslagern'] },
   { type: 'image', label: '/image', get desc() { return i18n.t('workspace:slash.image'); }, icon: <ImageIcon className="w-3.5 h-3.5" />, media: true, aliases: ['bild', 'foto'] },
@@ -321,26 +323,17 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
   // A table has a text field per cell (textareaRef is its first): the cursor counts as in this bullet in any
   const tableRootRef = useRef<HTMLDivElement | null>(null);
   const debounceTimerRef = useRef<number | null>(null);
-  const latestBlockRef = useRef<DocumentBlock>(block);
-  latestBlockRef.current = block;
-  const localContentRef = useRef<string>(localContent);
-  localContentRef.current = localContent;
+  const latestBlockRef = useLatestRef<DocumentBlock>(block);
+  const localContentRef = useLatestRef<string>(localContent);
 
   // Callback refs to avoid stale closures in setTimeout, debounce flush, and event listeners
-  const onUpdateBlockRef = useRef(onUpdateBlock);
-  onUpdateBlockRef.current = onUpdateBlock;
-  const onCreateBlockBelowRef = useRef(onCreateBlockBelow);
-  onCreateBlockBelowRef.current = onCreateBlockBelow;
-  const onPasteMultiLinesRef = useRef(onPasteMultiLines);
-  onPasteMultiLinesRef.current = onPasteMultiLines;
-  const onDeleteBlockRef = useRef(onDeleteBlock);
-  onDeleteBlockRef.current = onDeleteBlock;
-  const onMergeWithPreviousRef = useRef(onMergeWithPrevious);
-  onMergeWithPreviousRef.current = onMergeWithPrevious;
-  const onIndentBlockRef = useRef(onIndentBlock);
-  onIndentBlockRef.current = onIndentBlock;
-  const onNavigateFocusRef = useRef(onNavigateFocus);
-  onNavigateFocusRef.current = onNavigateFocus;
+  const onUpdateBlockRef = useLatestRef(onUpdateBlock);
+  const onCreateBlockBelowRef = useLatestRef(onCreateBlockBelow);
+  const onPasteMultiLinesRef = useLatestRef(onPasteMultiLines);
+  const onDeleteBlockRef = useLatestRef(onDeleteBlock);
+  const onMergeWithPreviousRef = useLatestRef(onMergeWithPrevious);
+  const onIndentBlockRef = useLatestRef(onIndentBlock);
+  const onNavigateFocusRef = useLatestRef(onNavigateFocus);
   const isPastingRef = useRef<boolean>(false);
 
   // Track if this input currently has actual focus in an active browser window
@@ -359,7 +352,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
       };
       onUpdateBlockRef.current(nextBlock, true);
     },
-    []
+    [latestBlockRef, onUpdateBlockRef]
   );
 
   // A link to a note that no longer exists becomes plain text (asked when it is clicked)
@@ -378,21 +371,18 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
         }
       : undefined;
   const resolveWikiLink = useWikiLinkResolver(localContent) || undefined;
+  // Right after undo/redo the focused field must show the engine's text, not keep its own
+  const acceptRemoteUntilRef = useRef<number>(0);
+  // ...and keep the cursor at the changed part instead of the browser's jump to the end (set after render)
+  const pendingCaretRef = useRef<number | null>(null);
   // "@" opens the picker of people who can see this note
   const mention = useMentionInput(canEdit ? { docId } : null);
   const applyMention = (next: string, caret: number) => {
     pendingCaretRef.current = caret;
     changeContent(next);
   };
-
-  // Right after undo/redo the focused field must show the engine's text, not keep its own
-  const acceptRemoteUntilRef = useRef<number>(0);
-  // ...and keep the cursor at the changed part instead of the browser's jump to the end (set after render)
-  const pendingCaretRef = useRef<number | null>(null);
-  const onUndoRef = useRef(onUndo);
-  onUndoRef.current = onUndo;
-  const onRedoRef = useRef(onRedo);
-  onRedoRef.current = onRedo;
+  const onUndoRef = useLatestRef(onUndo);
+  const onRedoRef = useLatestRef(onRedo);
 
   // Sync incoming remote changes ONLY when this textarea is NOT actively being edited (or not edited at all)
   // Condition: isFocusedRef.current === true && document.hasFocus()
@@ -416,7 +406,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
       localContentRef.current = block.content || '';
       editedRef.current = false;
     }
-  }, [block.content, isLocallyFocused]);
+  }, [block.content, isLocallyFocused, localContentRef]);
 
   useLayoutEffect(() => {
     const pos = pendingCaretRef.current;
@@ -454,7 +444,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
       window.removeEventListener('blur', handleWindowBlur);
       window.removeEventListener('focus', handleWindowFocus);
     };
-  }, [flushDebounce]);
+  }, [flushDebounce, latestBlockRef, localContentRef]);
 
   useEffect(() => {
     return () => {
@@ -499,7 +489,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
     const raw = ta.value;
     let pos = raw.length;
     const span = renderedTextRef.current;
-    const doc = document as any;
+    const doc = document;
     let node: Node | null = null;
     let offset = 0;
     if (typeof doc.caretPositionFromPoint === 'function') {
@@ -1287,6 +1277,8 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
 
   // Touch: the focus shows the bubble (timer started in the effect below)
   useEffect(() => {
+    // Touch: the focus shows the bubble, losing it hides the bubble
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (activeFocus) showBubbleForTouch();
     else setTouchShown(false);
     // showBubbleForTouch only sets state and the timer
@@ -1417,13 +1409,13 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
               {listMarker}
             </span>
           ) : block.type === 'warning' ? (
-            <AlertTriangle
+            <TriangleAlert
               className={`w-3.5 h-3.5 shrink-0 text-status-warn transition-transform group-hover/bullet:scale-110 ${
                 block.collapsed && hasChildren ? COLLAPSED_ICON : ''
               }`}
             />
           ) : block.type === 'error' ? (
-            <XCircle
+            <CircleX
               className={`w-3.5 h-3.5 shrink-0 text-status-err transition-transform group-hover/bullet:scale-110 ${
                 block.collapsed && hasChildren ? COLLAPSED_ICON : ''
               }`}
@@ -1740,6 +1732,8 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
                     <span className="truncate max-w-[16rem]">{linkHost(previewUrl)}</span>
                   </a>
                 ) : localContent ? (
+                  // The handlers passed in read refs when clicked, not while the text renders
+                  // eslint-disable-next-line react-hooks/refs
                   renderInlineMarkdown(localContent, {
                     onTagClick,
                     onWikiLinkClick: onWikiLinkClick && ((link) => onWikiLinkClick(link, linkActions(link))),
@@ -1766,7 +1760,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
                   title={block.taskId ? t('block.openTask') : t('block.openParentTask')}
                   data-tour={block.taskId ? 'linked-task' : undefined}
                 >
-                  <CheckSquare className="w-2.5 h-2.5 inline-block align-[-1px] mr-0.5" />
+                  <SquareCheckBig className="w-2.5 h-2.5 inline-block align-[-1px] mr-0.5" />
                   {block.taskId ? t('block.badgeTask') : t('block.badgeSubtask')}
                 </button>
               )}
@@ -1844,7 +1838,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
         {/* Conflict copy: text that lost against someone else's change */}
         {block.conflictOf && (
           <div className="flex flex-wrap items-center gap-1.5 mt-1 text-[11px] text-status-warn select-none">
-            <AlertTriangle className="w-3 h-3 shrink-0" />
+            <TriangleAlert className="w-3 h-3 shrink-0" />
             <span>
               {block.conflictOf === 'title' ? t('block.titleConflict') : t('block.conflict')}
               {block.conflictAuthor ? ` ${t('block.conflictBy', { name: block.conflictAuthor })}` : ''}
@@ -2018,15 +2012,15 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
                 };
                 onUpdateBlockRef.current(updatedBlock, true);
                 onOpenTask?.(thought.id);
-              } catch (err: any) {
-                showError(err.message || t('block.createTaskFailed'));
+              } catch (err) {
+                showError(errorMessage(err, t('block.createTaskFailed')));
               }
             }}
             className="p-1 sm:p-0.5 min-w-[28px] min-h-[28px] sm:min-w-0 sm:min-h-0 flex items-center justify-center text-faint hover:text-accent rounded-btn transition-colors cursor-pointer"
             title={t('block.toTask')}
             aria-label={t('block.toTask')}
           >
-            <CheckSquare className="w-3.5 h-3.5" />
+            <SquareCheckBig className="w-3.5 h-3.5" />
           </button>
         )}
         {block.type === 'todo' && canEdit && block.taskId && (
@@ -2042,8 +2036,8 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
                   type: 'todo',
                 };
                 onUpdateBlockRef.current(updatedBlock, true);
-              } catch (err: any) {
-                showError(err.message || t('block.unlinkFailed'));
+              } catch (err) {
+                showError(errorMessage(err, t('block.unlinkFailed')));
               }
             }}
             className="p-1 sm:p-0.5 min-w-[28px] min-h-[28px] sm:min-w-0 sm:min-h-0 flex items-center justify-center text-faint hover:text-status-warn rounded-btn transition-colors cursor-pointer"
@@ -2107,7 +2101,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
             className="p-1 sm:p-0.5 min-w-[28px] min-h-[28px] sm:min-w-0 sm:min-h-0 flex items-center justify-center text-faint hover:text-status-err rounded-btn transition-colors cursor-pointer"
             title={t('block.delete')}
           >
-            <Trash2 className="w-3.5 h-3.5" />
+            <Trash className="w-3.5 h-3.5" />
           </button>
         )}
       </div>

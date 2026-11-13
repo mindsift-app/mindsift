@@ -71,6 +71,8 @@ export function useMentionInput(place: MentionPlace | null) {
     return -1;
   }, [items]);
   useEffect(() => {
+    // New suggestions mark the first one that can be picked
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIndex(firstPickable(0, 1));
   }, [items, firstPickable]);
 

@@ -3,7 +3,7 @@ import {
   Search,
   Layers,
   FileText,
-  CheckSquare,
+  SquareCheckBig,
   Keyboard,
   Sparkles,
   Users,
@@ -11,7 +11,7 @@ import {
   UserCog,
   ArrowLeft,
   X,
-  Loader2,
+  LoaderCircle,
   CloudOff,
 } from 'lucide-react';
 import { AboutModal } from '../../components/AboutModal';
@@ -141,7 +141,7 @@ export const HelpView: React.FC<HelpViewProps> = ({ onBack }) => {
           { id: 'all', label: t('cat.all'), icon: Sparkles },
           { id: 'workspace', label: t('cat.workspace'), icon: FileText },
           { id: 'triage', label: t('cat.triage'), icon: Layers },
-          { id: 'tasks', label: t('cat.tasks'), icon: CheckSquare },
+          { id: 'tasks', label: t('cat.tasks'), icon: SquareCheckBig },
           { id: 'lists', label: t('cat.lists'), icon: ShoppingCart },
           { id: 'collaboration', label: t('cat.collaboration'), icon: Users },
           { id: 'account', label: t('cat.account'), icon: UserCog },
@@ -198,7 +198,7 @@ export const HelpView: React.FC<HelpViewProps> = ({ onBack }) => {
             </>
           ) : (
             <>
-              <Loader2 className="w-5 h-5 animate-spin text-accent" />
+              <LoaderCircle className="w-5 h-5 animate-spin text-accent" />
               <span>{t('loading')}</span>
             </>
           )}

@@ -321,13 +321,10 @@ func (s *Server) handleDocLeave(w http.ResponseWriter, r *http.Request) {
 const compactionInterval = 6 * time.Hour
 
 func (s *Server) startCompaction() {
-	defer s.bg.Done()
 	for {
 		s.compactOnce()
-		select {
-		case <-s.stop:
+		if !s.wait(compactionInterval) {
 			return
-		case <-time.After(compactionInterval):
 		}
 	}
 }

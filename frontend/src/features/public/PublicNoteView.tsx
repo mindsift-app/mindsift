@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ChevronRight, Home, Lock, LinkIcon } from 'lucide-react';
+import { ChevronRight, House, Lock, LinkIcon } from 'lucide-react';
 import { OutlinerTree } from '../workspace/OutlinerTree';
 import { blockTitle, computeBreadcrumbs, getZoomedSubtree, isTitleFromKind } from '../workspace/zoom';
 import { readableMentions } from '../../lib/mentions';
@@ -106,7 +106,7 @@ export const PublicNoteView: React.FC<{ token: string }> = ({ token }) => {
         {zoom.zoomedBlock && (
           <nav aria-label={t('path')} className="flex items-center flex-wrap gap-1 mb-4 text-xs text-muted">
             <button type="button" onClick={() => setZoomedId(null)} className="inline-flex items-center gap-1 hover:text-accent cursor-pointer" title={t('backToNote')}>
-              <Home className="w-3.5 h-3.5 text-accent shrink-0" />
+              <House className="w-3.5 h-3.5 text-accent shrink-0" />
             </button>
             {trail.slice(1).map((crumb, i) => (
               <React.Fragment key={crumb.id || i}>

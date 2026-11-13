@@ -22,6 +22,13 @@ const token = (
     })
   ).json()
 ).token;
+// The run copy is not in demo mode: the offer of the guided tour comes from the account and would cover the
+// bottom right of the page, so it counts as answered
+await fetch(`${BASE}/api/v1/auth/settings`, {
+  method: 'PATCH',
+  headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+  body: JSON.stringify({ tourOffered: true }),
+});
 const send = async (method, p, body) =>
   (
     await fetch(BASE + p, {
@@ -120,7 +127,7 @@ await step('Menge bearbeiten', async () => {
 });
 await step('Delete an item', async () => {
   await row('Avocados').hover();
-  await row('Avocados').getByTitle('Delete an item').click({ force: true });
+  await row('Avocados').getByTitle('Eintrag löschen').click({ force: true });
 });
 await step('Drag an item up within its category', async () => {
   await drag(d, row('Cherrytomaten'), row('Äpfel (Elstar)'), -10);
@@ -135,7 +142,7 @@ await step('Reopen a done item', async () => {
   await d.getByText('Bauernbrot', { exact: true }).first().locator('xpath=ancestor::div[.//button[@title="Als offen markieren"]][1]').getByTitle('Als offen markieren').click();
 });
 await step('Clear checked items', async () => {
-  await d.getByRole('button', { name: 'Clear checked items' }).click();
+  await d.getByRole('button', { name: /^Erledigte aufräumen/ }).click();
   await sleep(300);
   // A confirmation, if there is one
   await d.getByRole('button', { name: /^(Aufräumen|Löschen|Entfernen)$/ }).first().click({ timeout: 1000 }).catch(() => {});

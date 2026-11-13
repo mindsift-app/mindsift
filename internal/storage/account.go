@@ -122,7 +122,7 @@ func (s *Store) PurgeUserSections(userID string, sections map[string]bool) error
 		stmts = append(stmts, stmt(`DELETE FROM thoughts WHERE user_id = ?`, userID))
 	}
 	if err := s.execInTx(stmts...); err != nil {
-		return fmt.Errorf("Daten löschen: %w", err)
+		return fmt.Errorf("delete data: %w", err)
 	}
 	s.PruneTaskAssignees()
 	return nil

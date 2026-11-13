@@ -4,7 +4,7 @@ import i18n from '../../i18n';
 import {
   Key,
   Plus,
-  Trash2,
+  Trash,
   Pencil,
   Copy,
   Check,
@@ -22,6 +22,7 @@ import { askConfirm } from '../../components/askConfirm';
 import { showError } from '../../components/ErrorNotice';
 import { withSecondFactor } from './user/askSecondFactor';
 import { SelectMenu } from '../../components/SelectMenu';
+import { errorMessage } from '../../lib/errorMessage';
 
 interface ApiKeysPanelProps {
   onIngested?: () => void;
@@ -97,6 +98,8 @@ export const ApiKeysPanel: React.FC<ApiKeysPanelProps> = ({ onIngested }) => {
   };
 
   useEffect(() => {
+    // Loads the keys when the panel opens
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadKeys();
     api.getAllLists().then(setLists).catch(() => {});
     api.getTaskLists().then(setTaskLists).catch(() => {});
@@ -131,8 +134,8 @@ export const ApiKeysPanel: React.FC<ApiKeysPanelProps> = ({ onIngested }) => {
       triggerHaptic(15);
       setEditKeyId(null);
       await loadKeys();
-    } catch (err: any) {
-      setEditError(err?.message || t('api.saveFailed'));
+    } catch (err) {
+      setEditError(errorMessage(err, t('api.saveFailed')));
     }
   };
 
@@ -221,8 +224,8 @@ export const ApiKeysPanel: React.FC<ApiKeysPanelProps> = ({ onIngested }) => {
       );
       onIngested?.();
       setTimeout(() => setSimStatus(null), 4000);
-    } catch (err: any) {
-      setSimStatus('❌ ' + t('api.sim.error', { message: err.message }));
+    } catch (err) {
+      setSimStatus('❌ ' + t('api.sim.error', { message: errorMessage(err) }));
     }
   };
 
@@ -392,7 +395,7 @@ http_headers = { "X-API-Key" = "${exampleToken}" }`
                     className="btn-icon btn-icon-danger w-7 h-7"
                     aria-label={t('api.deleteKey', { name: k.name })}
                   >
-                    <Trash2 className="w-3.5 h-3.5" />
+                    <Trash className="w-3.5 h-3.5" />
                   </button>
                 </div>
               </div>

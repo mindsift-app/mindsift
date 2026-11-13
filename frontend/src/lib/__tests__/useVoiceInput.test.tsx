@@ -3,7 +3,7 @@ import { act, renderHook, waitFor } from '@testing-library/react';
 
 const getAuthStatus = vi.fn();
 const transcribe = vi.fn();
-vi.mock('../api', () => ({ api: { getAuthStatus: (...a: any[]) => getAuthStatus(...a), transcribe: (...a: any[]) => transcribe(...a) } }));
+vi.mock('../api', () => ({ api: { getAuthStatus: (...a: unknown[]) => getAuthStatus(...a), transcribe: (...a: unknown[]) => transcribe(...a) } }));
 
 import { useVoiceInput } from '../useVoiceInput';
 import { resetVoiceConfig } from '../voice';
@@ -14,7 +14,7 @@ class FakeMediaRecorder {
   mimeType = 'audio/webm;codecs=opus';
   ondataavailable: ((e: { data: Blob }) => void) | null = null;
   onstop: (() => void) | null = null;
-  constructor(public stream: any) {}
+  constructor(public stream: MediaStream) {}
   start() {
     this.state = 'recording';
   }
@@ -32,7 +32,7 @@ beforeEach(() => {
   getAuthStatus.mockReset();
   transcribe.mockReset();
   stopTrack.mockReset();
-  (window as any).MediaRecorder = FakeMediaRecorder;
+  Object.assign(window, { MediaRecorder: FakeMediaRecorder });
   Object.defineProperty(navigator, 'mediaDevices', {
     configurable: true,
     value: { getUserMedia: vi.fn(async () => ({ getTracks: () => [{ stop: stopTrack }] })) },
@@ -40,8 +40,8 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  delete (window as any).MediaRecorder;
-  delete (window as any).SpeechRecognition;
+  Reflect.deleteProperty(window, 'MediaRecorder');
+  Reflect.deleteProperty(window, 'SpeechRecognition');
   vi.useRealTimers();
 });
 
@@ -132,13 +132,13 @@ describe('useVoiceInput', () => {
   });
 
   it('browser mode with live=true: restarts on pause (onend), keeps base text, rate-limits restarts to 300ms, and sends final=true only on stop()', async () => {
-    const instances: any[] = [];
+    const instances: FakeSpeechRecognition[] = [];
     class FakeSpeechRecognition {
       lang = '';
       interimResults = false;
       continuous = false;
-      onresult: ((e: any) => void) | null = null;
-      onerror: ((e: any) => void) | null = null;
+      onresult: ((e: { results: { transcript: string }[][] }) => void) | null = null;
+      onerror: ((e: { error: string }) => void) | null = null;
       onend: (() => void) | null = null;
       constructor() {
         instances.push(this);
@@ -149,7 +149,7 @@ describe('useVoiceInput', () => {
       }
       abort() {}
     }
-    (window as any).SpeechRecognition = FakeSpeechRecognition;
+    Object.assign(window, { SpeechRecognition: FakeSpeechRecognition });
     getAuthStatus.mockResolvedValue({ voice: { mode: 'browser', maxSeconds: 600 } });
 
     const onText = vi.fn();

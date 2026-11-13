@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Hash } from 'lucide-react';
 import { Thought } from '../../lib/types';
@@ -18,8 +18,9 @@ interface TagFilterRowProps {
 // chosen hashtag always keeps its chip (useOverflowTabs).
 export function TagFilterRow({ tags, tasks, selected, onSelect }: TagFilterRowProps) {
   const { t } = useTranslation('tasks');
-  const overflow = useOverflowTabs(tags, selected);
-  const moreButton = useRef<HTMLButtonElement | null>(null);
+  const { rowRef, moreRef, tabRef, hidden: overflowHidden, isHidden } = useOverflowTabs(tags, selected);
+  // In state, not a ref: the popover is anchored to it during render
+  const [moreButton, setMoreButton] = useState<HTMLButtonElement | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
 
   const counts = useMemo(() => {
@@ -27,19 +28,19 @@ export function TagFilterRow({ tags, tasks, selected, onSelect }: TagFilterRowPr
     for (const task of tasks) for (const tag of task.tags ?? []) out.set(tag, (out.get(tag) ?? 0) + 1);
     return out;
   }, [tasks]);
-  const hiddenCount = overflow.hidden.length;
+  const hiddenCount = overflowHidden.length;
 
   const closePicker = () => {
     setPickerOpen(false);
     // Keyboard users go on from the button that opened it
     requestAnimationFrame(() => {
-      if (document.activeElement === document.body) moreButton.current?.focus();
+      if (document.activeElement === document.body) moreButton?.focus();
     });
   };
 
   return (
     <div
-      ref={overflow.rowRef}
+      ref={rowRef}
       role="group"
       aria-label={t('filter.byTag')}
       className="relative flex-1 min-w-0 flex items-center gap-1.5"
@@ -59,11 +60,11 @@ export function TagFilterRow({ tags, tasks, selected, onSelect }: TagFilterRowPr
       </button>
       {tags.map((tag) => {
         const isSelected = selected === tag;
-        const hidden = overflow.isHidden(tag);
+        const hidden = isHidden(tag);
         return (
           <button
             key={tag}
-            ref={overflow.tabRef(tag)}
+            ref={tabRef(tag)}
             type="button"
             onClick={() => onSelect(isSelected ? null : tag)}
             aria-pressed={isSelected}
@@ -77,9 +78,9 @@ export function TagFilterRow({ tags, tasks, selected, onSelect }: TagFilterRowPr
         );
       })}
       {/* Always rendered, so its width is known before anything overflows */}
-      <div ref={overflow.moreRef} className={`shrink-0 ${hiddenCount === 0 ? OVERFLOW_HIDDEN_TAB : ''}`} aria-hidden={hiddenCount === 0 || undefined}>
+      <div ref={moreRef} className={`shrink-0 ${hiddenCount === 0 ? OVERFLOW_HIDDEN_TAB : ''}`} aria-hidden={hiddenCount === 0 || undefined}>
         <button
-          ref={moreButton}
+          ref={setMoreButton}
           type="button"
           onClick={() => setPickerOpen((v) => !v)}
           tabIndex={hiddenCount === 0 ? -1 : undefined}
@@ -91,9 +92,9 @@ export function TagFilterRow({ tags, tasks, selected, onSelect }: TagFilterRowPr
           {t('tags.more', { count: Math.max(1, hiddenCount) })}
         </button>
       </div>
-      {pickerOpen && moreButton.current && (
+      {pickerOpen && moreButton && (
         <PickerPopover
-          anchor={moreButton.current}
+          anchor={moreButton}
           items={tags.map((tag) => ({
             id: tag,
             label: `#${tag}`,

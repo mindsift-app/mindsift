@@ -7,6 +7,7 @@ import { DrawingElements } from './DrawingElements';
 import { ConfirmPopover } from '../../../components/ConfirmPopover';
 import { AvatarStack } from '../../../components/AvatarStack';
 import { isWebSocketConnected, tryWebSocket } from '../../../lib/api';
+import { useLatestRef } from '../../../lib/useLatestRef';
 
 // The editor (with the live drawing) is a chunk of its own, loaded when a drawing is opened; the service
 // worker precaches it with the other assets, so it opens offline as well
@@ -149,6 +150,8 @@ export const DrawingBlock: React.FC<DrawingBlockProps> = ({
 
   // A new version from the editor or from someone else replaces a section moved by hand
   useEffect(() => {
+    // A new version of the drawing replaces a section moved by hand
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setView(null);
     viewRef.current = null;
   }, [content]);
@@ -198,18 +201,15 @@ export const DrawingBlock: React.FC<DrawingBlockProps> = ({
     cancelAnimationFrame(glide.current);
     glide.current = requestAnimationFrame(step);
   };
-  const glideBackRef = useRef(glideBack);
-  glideBackRef.current = glideBack;
+  const glideBackRef = useLatestRef(glideBack);
   const leave = () => {
     setFocused(false);
     glideBackRef.current();
   };
-  const leaveRef = useRef(leave);
-  leaveRef.current = leave;
+  const leaveRef = useLatestRef(leave);
 
   // The bullet counts as focused while the drawing takes gestures or its editor is open
-  const onFocusChangeRef = useRef(onFocusChange);
-  onFocusChangeRef.current = onFocusChange;
+  const onFocusChangeRef = useLatestRef(onFocusChange);
   const active = focused || !!editing;
   const firstRun = useRef(true);
   useEffect(() => {
@@ -219,7 +219,7 @@ export const DrawingBlock: React.FC<DrawingBlockProps> = ({
     }
     firstRun.current = false;
     onFocusChangeRef.current?.(active);
-  }, [active]);
+  }, [active, onFocusChangeRef]);
 
   // Clicking elsewhere hands scrolling back to the page (its buttons in the bubble count as the drawing)
   useEffect(() => {
@@ -241,7 +241,7 @@ export const DrawingBlock: React.FC<DrawingBlockProps> = ({
       document.removeEventListener('pointerdown', onDown, true);
       document.removeEventListener('keydown', onKey);
     };
-  }, [focused, actionsTarget]);
+  }, [focused, actionsTarget, leaveRef]);
 
   const zoomAt = (clientX: number, clientY: number, factor: number, base: View) => {
     const rect = boxRef.current!.getBoundingClientRect();
@@ -404,6 +404,8 @@ export const DrawingBlock: React.FC<DrawingBlockProps> = ({
         className={`relative w-full rounded-card border bg-panel overflow-hidden select-none transition-colors ${
           focused ? 'border-accent ring-1 ring-accent/30' : 'border-border'
         }`}
+        // The ref only picks the cursor: a drag moves the view, which renders again
+        // eslint-disable-next-line react-hooks/refs
         style={{ height, touchAction: focused ? 'none' : 'auto', cursor: focused ? (gesture.current ? 'grabbing' : 'grab') : 'pointer' }}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}

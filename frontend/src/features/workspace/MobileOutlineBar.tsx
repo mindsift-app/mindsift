@@ -1,6 +1,6 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
-import { ArrowDown, ArrowUp, IndentDecrease, IndentIncrease } from 'lucide-react';
+import { ArrowDown, ArrowUp, ListIndentDecrease, ListIndentIncrease } from 'lucide-react';
 import { useKeyboardInset } from '../../lib/useKeyboardInset';
 import { useTranslation } from 'react-i18next';
 
@@ -48,8 +48,8 @@ export const MobileOutlineBar: React.FC<MobileOutlineBarProps> = ({ onOutdent, o
       role="toolbar"
       aria-label={t('outlineBar.label')}
     >
-      {button(t('outlineBar.outdent'), <IndentDecrease className="w-5 h-5" />, onOutdent)}
-      {button(t('outlineBar.indent'), <IndentIncrease className="w-5 h-5" />, onIndent)}
+      {button(t('outlineBar.outdent'), <ListIndentDecrease className="w-5 h-5" />, onOutdent)}
+      {button(t('outlineBar.indent'), <ListIndentIncrease className="w-5 h-5" />, onIndent)}
       <span className="w-px h-6 bg-border mx-1" aria-hidden />
       {button(t('outlineBar.up'), <ArrowUp className="w-5 h-5" />, onMoveUp)}
       {button(t('outlineBar.down'), <ArrowDown className="w-5 h-5" />, onMoveDown)}

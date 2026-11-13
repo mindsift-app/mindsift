@@ -7,7 +7,7 @@ import {
   X,
   Search,
   ExternalLink,
-  Loader2,
+  LoaderCircle,
   Plus,
   ArrowLeft,
   ListTree,
@@ -50,6 +50,8 @@ export const LinkModal: React.FC<LinkModalProps> = ({
   useEffect(() => {
     if (!isOpen) return;
     if (availableDocs && availableDocs.length > 0) {
+      // The notes handed in are used at once, otherwise they are loaded
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setDocs(availableDocs as Document[]);
       return;
     }
@@ -116,6 +118,8 @@ export const LinkModal: React.FC<LinkModalProps> = ({
   const [blockSearch, setBlockSearch] = useState('');
   useEffect(() => {
     if (!isOpen) {
+      // Closing the dialog forgets the note being picked from
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setPickDoc(null);
       setPickBlocks(null);
       setBlockSearch('');
@@ -148,6 +152,8 @@ export const LinkModal: React.FC<LinkModalProps> = ({
   useEffect(() => {
     const q = search.trim();
     if (!isOpen || tab !== 'note' || pickDoc || q.length < 3) {
+      // A search too short for the index clears the hits at once
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setBlockHits([]);
       setBlockHitsLoading(false);
       return;
@@ -194,8 +200,12 @@ export const LinkModal: React.FC<LinkModalProps> = ({
   const listRef = useRef<HTMLDivElement | null>(null);
   const blockSearchInputRef = useRef<HTMLInputElement | null>(null);
   const entryCount = pickDoc ? pickableBlocks.length : filteredDocs.length + blockHits.length;
+  // A new search or tab marks the first entry
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => setActive(0), [search, blockSearch, pickDoc, tab]);
   useEffect(() => {
+    // The mark stays within the list when it gets shorter
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (active >= entryCount && entryCount > 0) setActive(entryCount - 1);
   }, [active, entryCount]);
   useEffect(() => {
@@ -413,7 +423,7 @@ export const LinkModal: React.FC<LinkModalProps> = ({
             <div ref={pickDoc ? listRef : undefined} className="space-y-0.5 max-h-64 overflow-y-auto pr-0.5">
               {pickBlocks === null ? (
                 <div className="p-4 text-xs text-muted flex items-center gap-2 justify-center">
-                  <Loader2 className="w-4 h-4 animate-spin text-accent" />
+                  <LoaderCircle className="w-4 h-4 animate-spin text-accent" />
                   <span>{t('link.loadingBlocks')}</span>
                 </div>
               ) : pickableBlocks.length === 0 ? (
@@ -453,7 +463,7 @@ export const LinkModal: React.FC<LinkModalProps> = ({
             <div className="space-y-1.5 max-h-56 overflow-y-auto pr-0.5">
               {loading ? (
                 <div className="p-6 bg-canvas border border-border rounded-card text-xs text-muted flex items-center gap-2 justify-center text-center">
-                  <Loader2 className="w-4 h-4 animate-spin text-accent" />
+                  <LoaderCircle className="w-4 h-4 animate-spin text-accent" />
                   <span>{t('link.loadingNotes')}</span>
                 </div>
               ) : filteredDocs.length === 0 ? (
@@ -522,7 +532,7 @@ export const LinkModal: React.FC<LinkModalProps> = ({
               <>
                 <div className="flex items-center justify-between text-xs font-semibold text-muted uppercase tracking-wider px-0.5 pt-1">
                   <span>{t('link.blocks')}</span>
-                  {blockHitsLoading && <Loader2 className="w-3.5 h-3.5 animate-spin text-accent" />}
+                  {blockHitsLoading && <LoaderCircle className="w-3.5 h-3.5 animate-spin text-accent" />}
                 </div>
                 <div className="space-y-1.5 max-h-56 overflow-y-auto pr-0.5">
                   {blockHits.map((h, j) => {

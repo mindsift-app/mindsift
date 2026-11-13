@@ -17,10 +17,14 @@ export function useFocusMode(canFocus: boolean, selectedDocId: string | null) {
   const zenSideOpen = zenPinSide || zenSidebar !== 'closed';
 
   useEffect(() => {
+    // Focus mode ends where it is not possible
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (!canFocus) setFocusMode(false);
   }, [canFocus]);
   // Leaving focus mode or picking another note closes the sliding sidebar
   useEffect(() => {
+    // Leaving focus mode or picking another note closes the sliding sidebar
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setZenSidebar('closed');
   }, [focusMode, selectedDocId]);
   useEffect(() => {

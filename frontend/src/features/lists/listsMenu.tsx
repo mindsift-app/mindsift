@@ -1,4 +1,4 @@
-import { Pencil, Plus, Sparkles, Trash2, Users } from 'lucide-react';
+import { Pencil, Plus, Sparkles, Trash, Users } from 'lucide-react';
 import i18n from '../../i18n';
 import { SharedList } from '../../lib/types';
 import { MobileMenuGroup } from '../../context/MobileActionContext';
@@ -86,7 +86,7 @@ export function buildListsMenu({
                   {
                     id: 'list-delete',
                     label: i18n.t('lists:menu.deleteList', { title: activeList.title }),
-                    icon: <Trash2 className="w-4 h-4" />,
+                    icon: <Trash className="w-4 h-4" />,
                     variant: 'danger' as const,
                     onClick: () => handleDeleteList(activeList.id),
                   },

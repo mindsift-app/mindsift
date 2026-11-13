@@ -1405,7 +1405,9 @@ func TestLegalTextsArePublic(t *testing.T) {
 			CustomLinkLabel: "Support",
 			CustomLinkURL:   "https://support.example.org",
 		}}
-	router := NewServer(cfg, store, ws.NewHub(), nil).Router()
+	srv := NewServer(cfg, store, ws.NewHub(), nil)
+	defer srv.Close()
+	router := srv.Router()
 
 	rec := httptest.NewRecorder()
 	router.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/v1/auth/status", nil))
@@ -1550,7 +1552,9 @@ func TestShareTargetFallbackRedirects(t *testing.T) {
 		t.Fatalf("NewStore: %v", err)
 	}
 	defer store.Close()
-	router := NewServer(&config.Config{Port: "8080", DatabasePath: ":memory:", JWTSecret: "test-jwt-secret-key"}, store, ws.NewHub(), nil).Router()
+	srv := NewServer(&config.Config{Port: "8080", DatabasePath: ":memory:", JWTSecret: "test-jwt-secret-key"}, store, ws.NewHub(), nil)
+	defer srv.Close()
+	router := srv.Router()
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodPost, "/share-target", nil)
 	router.ServeHTTP(rec, req)

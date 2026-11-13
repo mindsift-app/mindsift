@@ -265,6 +265,8 @@
   },
   "menu": {
     "newTask": "Crea nuova attività",
+    "activeCount_one": "{{count}} attivo",
+    "activeCount_other": "{{count}} attivi",
     "filter": "Filtri, hashtag e ordinamento",
     "openList": "Attività aperte (elenco)",
     "done": "Attività completate",

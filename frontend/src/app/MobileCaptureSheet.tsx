@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { AlertTriangle, Calendar, Flame, Layers, Loader2, Mic, MicOff, X } from 'lucide-react';
+import { TriangleAlert, Calendar, Flame, Layers, LoaderCircle, Mic, MicOff, X } from 'lucide-react';
 import { PriorityLevel } from '../lib/types';
 import { triggerHaptic } from '../lib/api';
 import { VoiceWave } from '../components/VoiceWave';
@@ -98,7 +98,7 @@ export function MobileCaptureSheet({ capture }: { capture: ReturnType<typeof use
                     title={mobileVoiceActive ? t('capture.stopRecording') : t('capture.voiceInput')}
                   >
                     {mobileVoice.state === 'transcribing' ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <LoaderCircle className="w-4 h-4 animate-spin" />
                     ) : mobileVoiceActive ? (
                       <MicOff className="w-4 h-4" />
                     ) : (
@@ -129,7 +129,7 @@ export function MobileCaptureSheet({ capture }: { capture: ReturnType<typeof use
                   },
                   high: {
                     label: t('common:priority.high'),
-                    icon: <AlertTriangle className="w-3 h-3 text-status-warn" />,
+                    icon: <TriangleAlert className="w-3 h-3 text-status-warn" />,
                     activeClass:
                       'bg-status-warn/15 border-status-warn text-status-warn font-semibold shadow-xs',
                   },

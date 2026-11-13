@@ -4,17 +4,18 @@ import i18n from '../../i18n';
 import {
   X,
   Plus,
-  Trash2,
+  Trash,
   ArrowUp,
   ArrowDown,
   RotateCcw,
   Check,
-  Columns,
+  Columns2,
 } from 'lucide-react';
 import { KanbanColumn } from '../../lib/types';
 import { triggerHaptic } from '../../lib/api';
 import { askConfirm } from '../../components/askConfirm';
 import { showError } from '../../components/ErrorNotice';
+import { errorMessage } from '../../lib/errorMessage';
 
 interface ManageColumnsModalProps {
   isOpen: boolean;
@@ -130,6 +131,8 @@ const ManageColumnsModalContent: React.FC<ManageColumnsModalProps> = ({
   };
 
   useEffect(() => {
+    // Opening the dialog starts from the list's columns
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setColumns(initialColumns && initialColumns.length > 0 ? initialColumns : DEFAULT_KANBAN_COLUMNS);
   }, [initialColumns, isOpen]);
 
@@ -208,8 +211,8 @@ const ManageColumnsModalContent: React.FC<ManageColumnsModalProps> = ({
     try {
       await onSave(columns);
       onClose();
-    } catch (err: any) {
-      showError(err.message || t('columnsModal.saveFailed'));
+    } catch (err) {
+      showError(errorMessage(err, t('columnsModal.saveFailed')));
     } finally {
       setSaving(false);
     }
@@ -224,7 +227,7 @@ const ManageColumnsModalContent: React.FC<ManageColumnsModalProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-panel">
           <div className="flex items-center gap-2">
-            <Columns className="w-4 h-4 text-accent" />
+            <Columns2 className="w-4 h-4 text-accent" />
             <div>
               <h3 className="text-sm font-semibold text-main">{t('columnsModal.title')}</h3>
               {listTitle && (
@@ -321,7 +324,7 @@ const ManageColumnsModalContent: React.FC<ManageColumnsModalProps> = ({
                       className="text-muted hover:text-status-err disabled:opacity-20 p-1 transition-colors"
                       title={t('columnsModal.delete')}
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
+                      <Trash className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 </div>

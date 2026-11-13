@@ -2,7 +2,7 @@ import React from 'react';
 import {
   Layers,
   FileText,
-  CheckSquare,
+  SquareCheckBig,
   Keyboard,
   Pin,
   Sparkles,
@@ -10,7 +10,7 @@ import {
   Users,
   Mic,
   ShoppingCart,
-  Columns,
+  Columns2,
   Tag,
   Link as LinkIcon,
   Bell,
@@ -237,7 +237,7 @@ const en: HelpContent = {
               <strong className="text-main">Typing:</strong> <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Enter</kbd> adds a row below the current one, <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Tab</kbd> / <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Shift + Tab</kbd> jump from cell to cell (Tab in the last cell adds a row), the arrow keys change rows and leave the table at the top and bottom. <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Backspace</kbd> in an empty row deletes it, in a completely empty table the table. Bold, italics, links and #hashtags work as in text.
             </li>
             <li>
-              <strong className="text-main">Columns:</strong> The <strong className="text-main">+</strong> right of the table adds a column (on a desktop it shows while the mouse is over the table). Below it, the three dots open the menu: align the column with the cursor left, centered or right (kept in the Markdown table), insert a column left or right, delete the row or column with the cursor, indent or outdent the bullet.
+              <strong className="text-main">Columns2:</strong> The <strong className="text-main">+</strong> right of the table adds a column (on a desktop it shows while the mouse is over the table). Below it, the three dots open the menu: align the column with the cursor left, centered or right (kept in the Markdown table), insert a column left or right, delete the row or column with the cursor, indent or outdent the bullet.
             </li>
             <li>
               <strong className="text-main">Lines:</strong> In the same menu: <em>Default</em> shows only the inner lines, fading out towards the edge, without a frame; <em>Full frame</em> every line with an outer frame (corners as in the theme); <em>Header row and columns</em> only the line below the header and the column lines.
@@ -343,7 +343,7 @@ const en: HelpContent = {
       category: 'workspace',
       title: 'Global to-do rollup & task links',
       subtitle: 'All open to-dos from all notes in one place',
-      icon: CheckSquare,
+      icon: SquareCheckBig,
       keywords: ['rollup', 'todos', 'checkboxes', 'enhanced task', 'global', 'tasks'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
@@ -480,7 +480,7 @@ const en: HelpContent = {
       category: 'tasks',
       title: 'List view & flexible Kanban board',
       subtitle: 'Visualize tasks and steer them with custom columns',
-      icon: Columns,
+      icon: Columns2,
       keywords: ['tasks', 'kanban', 'board', 'columns', 'drag', 'drop', 'lists'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
@@ -507,8 +507,8 @@ const en: HelpContent = {
       category: 'tasks',
       title: 'Subtasks, due dates & automatic alarms',
       subtitle: 'Checklists with a progress bar, Markdown notes and notifications',
-      icon: CheckSquare,
-      keywords: ['subtasks', 'alarms', 'notifications', 'mail', 'discord', 'date', 'due date', 'priority', 'assign', 'assigned'],
+      icon: SquareCheckBig,
+      keywords: ['subtasks', 'alarms', 'notifications', 'mail', 'discord', 'date', 'due date', 'time zone', 'priority', 'assign', 'assigned'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
           <ul className="space-y-1.5">
@@ -531,7 +531,7 @@ const en: HelpContent = {
               <strong className="text-main">Due date with time:</strong> in the detail window you can set a time next to the date; “✕ Time” makes the task all-day again. It shows e.g. “Today, 14:30”, overdue items in red.
             </li>
             <li>
-              <strong className="text-main">Automatic alarms:</strong> at the due time (all-day tasks at 9:00, minus your advance warning) MindSift notifies you by <strong className="text-main">email</strong>, <strong className="text-main">Discord webhook</strong> or your own HTTP webhook. Move the due date or reopen the task and the alarm comes again. Configurable in your account settings. Email alarms go to your sign-in address. A new sign-in address counts only once you click the link in the confirmation e-mail sent to it; until then the previous one stays.
+              <strong className="text-main">Automatic alarms:</strong> at the due time (all-day tasks at 9:00, minus your advance warning) MindSift notifies you by <strong className="text-main">email</strong>, <strong className="text-main">Discord webhook</strong> or your own HTTP webhook. Move the due date or reopen the task and the alarm comes again. Configurable in your account settings. Email alarms go to your sign-in address. A new sign-in address counts only once you click the link in the confirmation e-mail sent to it; until then the previous one stays. All times are in the server's time zone, which a server admin sets under <em>Server administration → Server &amp; sharing</em>.
             </li>
             <li>
               <strong className="text-main">Reminders per task:</strong> In the detail window, tick one or more times under “Reminder”, e.g. 2 weeks before and on the due day. For this task they replace your lead time and apply to everyone who gets its due alarm; “Default” goes back to the lead time from the settings. Without a time, MindSift reminds whole days ahead at 9 am. Tasks with their own reminders carry a small 🔔.
@@ -651,6 +651,9 @@ const en: HelpContent = {
           <ul className="space-y-1.5">
             <li>
               <strong className="text-main">Who may share with whom:</strong> the server admin decides: with everyone, only with people you have at least one <em>organization</em> in common with, or with nobody (“Private” mode: no sharing, no groups). You can belong to several organizations; server admins and user managers look after them. With people search switched off, you enter the exact e-mail address or username when sharing. Whoever works on something with you always shows there by name.
+            </li>
+            <li>
+              <strong className="text-main">Server time zone:</strong> server admins set it under <em>Server administration → Server &amp; sharing → Time zone</em>. It applies to everyone at once: due times, alarms, the daily summary and the backup time.
             </li>
             <li>
               <strong className="text-main">Groups:</strong> combine people you can see into groups (e.g. family, flatmates, a project) and share with all of them at once. Whoever creates a group is its admin; only members can share with a group.

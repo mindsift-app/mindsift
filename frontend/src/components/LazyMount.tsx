@@ -15,6 +15,8 @@ export const LazyMount: React.FC<LazyMountProps> = ({ children, placeholder }) =
     const el = ref.current;
     if (shown || !el) return;
     if (typeof IntersectionObserver === 'undefined') {
+      // Without IntersectionObserver the content is shown right away
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setShown(true);
       return;
     }

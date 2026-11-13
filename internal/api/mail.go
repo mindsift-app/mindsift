@@ -208,7 +208,7 @@ func (a *loginAuth) Next(fromServer []byte, more bool) ([]byte, error) {
 	case strings.Contains(prompt, "password"), strings.Contains(prompt, "pass"):
 		return []byte(a.pass), nil
 	default:
-		return nil, fmt.Errorf("unerwartete AUTH-LOGIN-Frage %q", prompt)
+		return nil, fmt.Errorf("unexpected AUTH LOGIN challenge %q", prompt)
 	}
 }
 

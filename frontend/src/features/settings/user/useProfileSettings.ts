@@ -5,6 +5,7 @@ import { api, clearToken, triggerHaptic } from '../../../lib/api';
 import { AvatarPlacement, cropImageToDataUrl, loadImageFile } from '../../../lib/avatarCrop';
 import { clearStoredNotes } from '../../../lib/docSync/persist';
 import { withSecondFactor } from './askSecondFactor';
+import { errorMessage } from '../../../lib/errorMessage';
 
 // Kontoeinstellungen → Profil: name, username, login address, avatar, and the danger zone (delete own data
 // or the account). Lives in the view, so unsaved input survives switching sections. Password, two-factor
@@ -54,9 +55,9 @@ export function useProfileSettings(currentUser: User, onUserUpdated: (u: User) =
       const updated = await api.updateSettings({ avatarUrl: value });
       onUserUpdated(updated);
       setProfileMsg({ type: 'ok', text: i18n.t(value ? 'settings:profile.avatarSaved' : 'settings:profile.avatarRemoved') });
-    } catch (err: any) {
+    } catch (err) {
       setAvatarUrl(before);
-      setProfileMsg({ type: 'err', text: err.message || i18n.t('settings:profile.saveFailed') });
+      setProfileMsg({ type: 'err', text: errorMessage(err, i18n.t('settings:profile.saveFailed')) });
     } finally {
       setIsProcessingAvatar(false);
     }
@@ -68,8 +69,8 @@ export function useProfileSettings(currentUser: User, onUserUpdated: (u: User) =
     setProfileMsg(null);
     try {
       setCropImage(await loadImageFile(file));
-    } catch (err: any) {
-      setProfileMsg({ type: 'err', text: err.message || i18n.t('settings:profile.imageFailed') });
+    } catch (err) {
+      setProfileMsg({ type: 'err', text: errorMessage(err, i18n.t('settings:profile.imageFailed')) });
     } finally {
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
@@ -80,8 +81,8 @@ export function useProfileSettings(currentUser: User, onUserUpdated: (u: User) =
     let dataUrl: string;
     try {
       dataUrl = cropImageToDataUrl(cropImage, placement, 256);
-    } catch (err: any) {
-      setProfileMsg({ type: 'err', text: err.message || i18n.t('settings:profile.imageFailed') });
+    } catch (err) {
+      setProfileMsg({ type: 'err', text: errorMessage(err, i18n.t('settings:profile.imageFailed')) });
       setCropImage(null);
       return;
     }
@@ -111,7 +112,7 @@ export function useProfileSettings(currentUser: User, onUserUpdated: (u: User) =
     setSavingProfile(true);
     try {
       // The avatar is not part of it: it saves on its own (saveAvatar)
-      const patch: any = {
+      const patch: Parameters<typeof api.updateSettings>[0] = {
         displayName: displayName.trim(),
         email: email.trim() };
       // Only when changed: the shared demo accounts refuse any change of their username
@@ -125,8 +126,8 @@ export function useProfileSettings(currentUser: User, onUserUpdated: (u: User) =
       setEmail(updated.email || '');
       setCurrentPassword('');
       setProfileMsg({ type: 'ok', text: i18n.t('settings:profile.saved') });
-    } catch (err: any) {
-      setProfileMsg({ type: 'err', text: err.message || i18n.t('settings:profile.saveFailed') });
+    } catch (err) {
+      setProfileMsg({ type: 'err', text: errorMessage(err, i18n.t('settings:profile.saveFailed')) });
     } finally {
       setSavingProfile(false);
     }
@@ -165,8 +166,8 @@ export function useProfileSettings(currentUser: User, onUserUpdated: (u: User) =
       setDangerAction(null);
       setDangerDone(i18n.t('settings:profile.dataDeleted'));
       onUserUpdated(currentUser);
-    } catch (err: any) {
-      setDangerError(err.message || i18n.t('settings:profile.actionFailed'));
+    } catch (err) {
+      setDangerError(errorMessage(err, i18n.t('settings:profile.actionFailed')));
     } finally {
       setDangerBusy(false);
     }

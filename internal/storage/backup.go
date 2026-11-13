@@ -131,7 +131,7 @@ func (s *Store) writeSnapshot(dir, name string, now time.Time) error {
 	tmp := filepath.Join(dir, ".tmp-"+now.Format("20060102150405.000000")+".db")
 	defer os.Remove(tmp)
 	if _, err := s.db.Exec(`VACUUM INTO ?`, tmp); err != nil {
-		return fmt.Errorf("Datenbank-Abzug: %w", err)
+		return fmt.Errorf("database snapshot: %w", err)
 	}
 	return gzipFile(tmp, filepath.Join(dir, name))
 }

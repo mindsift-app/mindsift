@@ -265,6 +265,8 @@
   },
   "menu": {
     "newTask": "Neue Aufgabe erstellen",
+    "activeCount_one": "{{count}} aktiv",
+    "activeCount_other": "{{count}} aktiv",
     "filter": "Filter, Hashtags & Sortierung",
     "openList": "Offene Aufgaben (Liste)",
     "done": "Erledigte Aufgaben",

@@ -21,6 +21,13 @@ const token = (
     })
   ).json()
 ).token;
+// The run copy is not in demo mode: the offer of the guided tour comes from the account and would cover the
+// bottom right of the page, so it counts as answered
+await fetch(`${BASE}/api/v1/auth/settings`, {
+  method: 'PATCH',
+  headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+  body: JSON.stringify({ tourOffered: true }),
+});
 const get = async (p) => (await fetch(BASE + p, { headers: { Authorization: `Bearer ${token}` } })).json();
 
 // Notes (folder, pinned, open to-dos), folders and the trash as the server has them
@@ -136,6 +143,8 @@ await step('Delete a folder after confirming', async () => {
   await d.getByRole('button', { name: 'In den Papierkorb' }).click();
 });
 await step('Drag a note to the trash, undo in the notice', async () => {
+  // The note lies in the folder "Projekte", which may be closed
+  if (!(await side.getByText(/^Homelab 2\.0/).first().isVisible())) await side.getByText('Projekte', { exact: true }).first().click();
   await drag(d, side.getByText(/^Homelab 2\.0/).first(), d.getByTitle(/^Papierkorb – Notizen hierher ziehen/).first());
   await d.getByRole('status').getByRole('button', { name: 'Rückgängig' }).click();
 });

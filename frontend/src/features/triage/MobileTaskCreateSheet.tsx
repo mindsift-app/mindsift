@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { AlertTriangle, Calendar, CheckSquare, Flame, X } from 'lucide-react';
+import { TriangleAlert, Calendar, SquareCheckBig, Flame, X } from 'lucide-react';
 import { PriorityLevel, TaskList } from '../../lib/types';
 import { triggerHaptic } from '../../lib/api';
 import { VoiceInputButton } from '../../components/VoiceInputButton';
@@ -60,7 +60,7 @@ export function MobileTaskCreateSheet({ open, onClose, lists, listId, onListIdCh
         <div className="flex items-center justify-between pb-3 border-b border-border mb-3">
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-btn bg-accent/15 text-accent flex items-center justify-center">
-              <CheckSquare className="w-4 h-4" />
+              <SquareCheckBig className="w-4 h-4" />
             </div>
             <h3 className="text-sm font-semibold text-main">{t('create.title')}</h3>
           </div>
@@ -123,7 +123,7 @@ export function MobileTaskCreateSheet({ open, onClose, lists, listId, onListIdCh
                 const config: Record<PriorityLevel, { label: string; icon?: React.ReactNode; activeClass: string }> = {
                   low: { label: t('common:priority.low'), activeClass: 'bg-canvas border-strong text-main font-semibold shadow-xs' },
                   normal: { label: t('common:priority.normal'), activeClass: 'bg-accent/15 border-accent text-accent font-semibold shadow-xs' },
-                  high: { label: t('common:priority.high'), icon: <AlertTriangle className="w-3 h-3 text-status-warn" />, activeClass: 'bg-status-warn/15 border-status-warn text-status-warn font-semibold shadow-xs' },
+                  high: { label: t('common:priority.high'), icon: <TriangleAlert className="w-3 h-3 text-status-warn" />, activeClass: 'bg-status-warn/15 border-status-warn text-status-warn font-semibold shadow-xs' },
                   urgent: { label: t('common:priority.urgent'), icon: <Flame className="w-3 h-3 text-status-err" />, activeClass: 'bg-status-err/15 border-status-err text-status-err font-semibold shadow-xs' },
                 };
                 const active = priority === p;

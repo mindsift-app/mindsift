@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Check, CloudOff, Sparkles, Trash2 } from 'lucide-react';
+import { Check, CloudOff, Sparkles, Trash } from 'lucide-react';
 import { ListItem } from '../../lib/types';
 import { OFFLINE_ITEM_PREFIX } from '../../lib/offline';
 import { OriginBadge } from '../../components/OriginBadge';
@@ -190,7 +190,7 @@ export function OpenItemGroups({
                         className="btn-icon btn-icon-danger p-2 sm:p-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
                         title={t('deleteItem')}
                       >
-                        <Trash2 className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
+                        <Trash className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
                       </button>
                     </div>
                   );
@@ -317,7 +317,7 @@ export function CompletedItems({
                       className="btn-icon btn-icon-danger p-2 sm:p-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
                       title={t('delete')}
                     >
-                      <Trash2 className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
+                      <Trash className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
                     </button>
                   </div>
                 </div>

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import i18n from '../../../i18n';
-import { AlertCircle, Check, KeyRound, MonitorSmartphone, ShieldCheck } from 'lucide-react';
+import { CircleAlert, Check, KeyRound, MonitorSmartphone, ShieldCheck } from 'lucide-react';
 import { api, getCurrentOidc, triggerHaptic } from '../../../lib/api';
 import { startOidcConfirm } from '../../../lib/oidc';
 import { passwordProblem } from '../../../lib/password';
@@ -11,6 +11,7 @@ import { SessionsPanel } from '../SessionsPanel';
 import { TwoFactorCard } from './TwoFactorCard';
 import { PasskeyCard } from './PasskeyCard';
 import { withSecondFactor } from './askSecondFactor';
+import { errorMessage } from '../../../lib/errorMessage';
 
 // Kontoeinstellungen → Sicherheit: a new password, two-factor sign-in, passkeys and the signed-in devices; with
 // an OIDC provider how the account signs in there. The password and the second factors only matter where the
@@ -74,8 +75,8 @@ function OidcCard({ currentUser, name }: { currentUser: User; name: string }) {
     setBusy(true);
     try {
       await withSecondFactor((proof) => startOidcConfirm({ link: true, password, ...proof }));
-    } catch (err: any) {
-      setError(err?.message || t('security.oidc.linkFailed'));
+    } catch (err) {
+      setError(errorMessage(err, t('security.oidc.linkFailed')));
       setBusy(false);
     }
   };
@@ -104,7 +105,7 @@ function OidcCard({ currentUser, name }: { currentUser: User; name: string }) {
           </label>
           {error && (
             <div role="alert" className="alert-err flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 text-status-err flex-shrink-0" />
+              <CircleAlert className="w-4 h-4 text-status-err flex-shrink-0" />
               <span>{error}</span>
             </div>
           )}
@@ -155,8 +156,8 @@ function PasswordCard({ currentUser, onUserUpdated, demoMode }: { currentUser: U
       setCurrent('');
       setMsg({ type: 'ok', text: t('security.password.saved') });
       triggerHaptic(15);
-    } catch (err: any) {
-      setMsg({ type: 'err', text: err?.message || t('security.password.failed') });
+    } catch (err) {
+      setMsg({ type: 'err', text: errorMessage(err, t('security.password.failed')) });
     } finally {
       setBusy(false);
     }
@@ -179,7 +180,7 @@ function PasswordCard({ currentUser, onUserUpdated, demoMode }: { currentUser: U
       </div>
       {msg && (
         <div role={msg.type === 'ok' ? 'status' : 'alert'} className={`flex items-center gap-2 ${msg.type === 'ok' ? 'alert-ok' : 'alert-err'}`}>
-          {msg.type === 'ok' ? <Check className="w-4 h-4 text-status-ok flex-shrink-0" /> : <AlertCircle className="w-4 h-4 text-status-err flex-shrink-0" />}
+          {msg.type === 'ok' ? <Check className="w-4 h-4 text-status-ok flex-shrink-0" /> : <CircleAlert className="w-4 h-4 text-status-err flex-shrink-0" />}
           <span>{msg.text}</span>
         </div>
       )}
@@ -253,8 +254,8 @@ function SessionsCard({ demoMode }: { demoMode: boolean }) {
       await api.revokeAllSessions();
       await api.logout();
       window.location.reload();
-    } catch (err: any) {
-      setError(err?.message || i18n.t('settings:security.sessions.revokeFailed'));
+    } catch (err) {
+      setError(errorMessage(err, i18n.t('settings:security.sessions.revokeFailed')));
       setRevoking(false);
     }
   };

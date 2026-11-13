@@ -475,7 +475,7 @@ func TestPasswordlessChallengeWorksOnce(t *testing.T) {
 	}
 	// A challenge lives 5 minutes
 	_, res = e.call("POST", "/api/v1/auth/login/passkey/options", "", nil)
-	e.clock = e.clock.Add(passkeyChallengeTTL + time.Second)
+	e.advance(passkeyChallengeTTL + time.Second)
 	if rec, res := e.call("POST", "/api/v1/auth/login/passkey", "", map[string]any{"token": res["token"], "credential": a.get(options(t, res))}); rec.Code != http.StatusUnauthorized || res["code"] != "passkey_expired" {
 		t.Fatalf("expired challenge: %d %v", rec.Code, res)
 	}

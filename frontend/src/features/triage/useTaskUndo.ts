@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import i18n from '../../i18n';
 import { api, triggerHaptic } from '../../lib/api';
 import { Thought } from '../../lib/types';
+import { useLatestRef } from '../../lib/useLatestRef';
 
 export type UndoEntry =
   | { kind: 'delete'; ids: string[] }
@@ -78,8 +79,7 @@ export function useTaskUndo({ tasks, setTasks, selectedListId, loadData, onRefre
       onRefreshStats();
     }
   };
-  const undoLastRef = useRef(undoLast);
-  undoLastRef.current = undoLast;
+  const undoLastRef = useLatestRef(undoLast);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (!(e.ctrlKey || e.metaKey) || e.shiftKey || e.altKey || e.key.toLowerCase() !== 'z') return;
@@ -92,7 +92,7 @@ export function useTaskUndo({ tasks, setTasks, selectedListId, loadData, onRefre
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, []);
+  }, [undoLastRef]);
 
   return { toast, pushUndo, orderSnapshot, showToast, undoLast };
 }

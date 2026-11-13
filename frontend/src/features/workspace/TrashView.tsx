@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Folder, RotateCcw, Trash2 } from 'lucide-react';
+import { ArrowLeft, Folder, RotateCcw, Trash } from 'lucide-react';
 import { TrashedDocument } from '../../lib/types';
 import { CountBadge } from '../../components/CountBadge';
 import { formatDeletedAt } from '../../lib/due';
 import { useTranslation } from 'react-i18next';
+import { errorMessage } from '../../lib/errorMessage';
 
 interface TrashViewProps {
   items: TrashedDocument[];
@@ -29,8 +30,8 @@ export const TrashView: React.FC<TrashViewProps> = ({ items, onOpen, onRestore, 
     try {
       await action();
       setConfirmId(null);
-    } catch (err: any) {
-      setError(err.message || t('editor.inTrashAction'));
+    } catch (err) {
+      setError(errorMessage(err, t('editor.inTrashAction')));
     } finally {
       setBusyId(null);
     }
@@ -48,7 +49,7 @@ export const TrashView: React.FC<TrashViewProps> = ({ items, onOpen, onRestore, 
           >
             <ArrowLeft className="w-4 h-4" />
           </button>
-          <Trash2 className="w-5 h-5 text-accent" />
+          <Trash className="w-5 h-5 text-accent" />
           <h1 className="text-xl font-bold text-main">{t('trash.title')}</h1>
           <CountBadge count={items.length} />
           {items.length > 0 && (
@@ -140,7 +141,7 @@ export const TrashView: React.FC<TrashViewProps> = ({ items, onOpen, onRestore, 
                         : 'btn-action text-status-err border-status-err/40'
                     }`}
                   >
-                    <Trash2 className="w-3.5 h-3.5" />
+                    <Trash className="w-3.5 h-3.5" />
                     {confirmId === item.id ? t('trash.reallyDelete') : t('trash.deleteForever')}
                   </button>
                 </div>

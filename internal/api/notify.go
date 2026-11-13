@@ -426,7 +426,13 @@ func (s *Server) notifyTaskAdded(actorID string, t *domain.Thought, skip map[str
 func (s *Server) startNotificationJobs() {
 	ticker := time.NewTicker(time.Minute)
 	defer ticker.Stop()
-	for now := range ticker.C {
+	for {
+		var now time.Time
+		select {
+		case <-s.stop:
+			return
+		case now = <-ticker.C:
+		}
 		s.flushNotifications(now)
 		s.sendDailySummaries(now)
 		if now.Minute()%30 == 0 {

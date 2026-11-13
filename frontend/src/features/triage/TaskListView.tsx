@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Trash2 } from 'lucide-react';
+import { Trash } from 'lucide-react';
 import { TaskTrashList } from './TaskTrashList';
 import { SelectMenu } from '../../components/SelectMenu';
 import { TaskList, Thought, TrashedTask } from '../../lib/types';
@@ -127,7 +127,7 @@ export function TaskListView({
             title={t('view.emptyTrash')}
             aria-label={t('view.emptyTrash')}
           >
-            <Trash2 className="w-3.5 h-3.5" />
+            <Trash className="w-3.5 h-3.5" />
           </button>
         )}
         {filter === 'done' && doneTasks.length > 0 && !isSelectedListReadOnly && (
@@ -137,7 +137,7 @@ export function TaskListView({
             title={t('view.doneToTrash')}
             aria-label={t('view.doneToTrash')}
           >
-            <Trash2 className="w-3.5 h-3.5" />
+            <Trash className="w-3.5 h-3.5" />
           </button>
         )}
       </div>

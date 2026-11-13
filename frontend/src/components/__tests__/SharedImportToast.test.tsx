@@ -16,7 +16,7 @@ describe('SharedImportToast (after sharing into MindSift)', () => {
   });
 
   it('sends every shared entry on as a task', async () => {
-    const spy = vi.spyOn(api, 'triageAction').mockResolvedValue({} as any);
+    const spy = vi.spyOn(api, 'triageAction').mockResolvedValue({} as Awaited<ReturnType<typeof api.triageAction>>);
     const onConverted = vi.fn();
     render(<SharedImportToast thoughtIds={['th_1', 'th_2']} lists={[]} onClose={() => {}} onConverted={onConverted} />);
     expect(screen.getByText('2 Einträge im Quick Dump abgelegt')).toBeTruthy();
@@ -28,7 +28,7 @@ describe('SharedImportToast (after sharing into MindSift)', () => {
   });
 
   it('puts it straight onto the only writable list', async () => {
-    const spy = vi.spyOn(api, 'triageAction').mockResolvedValue({} as any);
+    const spy = vi.spyOn(api, 'triageAction').mockResolvedValue({} as Awaited<ReturnType<typeof api.triageAction>>);
     const onConverted = vi.fn();
     render(
       <SharedImportToast
@@ -44,7 +44,7 @@ describe('SharedImportToast (after sharing into MindSift)', () => {
   });
 
   it('lets you pick among several lists, read-only ones left out', async () => {
-    const spy = vi.spyOn(api, 'triageAction').mockResolvedValue({} as any);
+    const spy = vi.spyOn(api, 'triageAction').mockResolvedValue({} as Awaited<ReturnType<typeof api.triageAction>>);
     render(
       <SharedImportToast
         thoughtIds={['th_1']}

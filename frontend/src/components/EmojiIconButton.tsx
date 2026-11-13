@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { SmilePlus } from 'lucide-react';
+import { FaceSlightlySmilingPlus } from 'lucide-react';
 import { EmojiPickerModal } from '../features/workspace/EmojiPickerModal';
 
 interface EmojiIconButtonProps {
@@ -25,7 +25,7 @@ export const EmojiIconButton: React.FC<EmojiIconButtonProps> = ({ value, onChang
         aria-label={value ? t('icon.change') : t('icon.choose')}
         className="w-12 sm:w-10 h-11 sm:h-8 flex-shrink-0 flex items-center justify-center input-field text-lg sm:text-base leading-none cursor-pointer hover:border-strong"
       >
-        {value || <SmilePlus className="w-4 h-4 text-faint" strokeWidth={1.75} />}
+        {value || <FaceSlightlySmilingPlus className="w-4 h-4 text-faint" strokeWidth={1.75} />}
       </button>
       {anchor && (
         <EmojiPickerModal

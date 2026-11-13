@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Building2, Plus, X } from 'lucide-react';
+import { BuildingComplex, Plus, X } from 'lucide-react';
 import { Organization } from '../../../lib/types';
 import { PickerPopover } from '../../../components/PickerPopover';
 
@@ -24,7 +24,7 @@ export function OrganizationPicker({
         if (!org) return null;
         return (
           <span key={id} className="inline-flex items-center gap-1 h-7 pl-2 pr-1 rounded-pill bg-panel border border-border text-[11px] text-main">
-            <Building2 className="w-3 h-3 text-accent shrink-0" />
+            <BuildingComplex className="w-3 h-3 text-accent shrink-0" />
             <span className="truncate max-w-[10rem]">{org.name}</span>
             <button
               type="button"
@@ -54,7 +54,7 @@ export function OrganizationPicker({
       {anchor && (
         <PickerPopover
           anchor={anchor}
-          items={rest.map((o) => ({ id: o.id, label: o.name, lead: <Building2 className="w-3.5 h-3.5 text-accent" /> }))}
+          items={rest.map((o) => ({ id: o.id, label: o.name, lead: <BuildingComplex className="w-3.5 h-3.5 text-accent" /> }))}
           placeholder={t('orgs.searchOrganization')}
           empty={t('orgs.noMatch')}
           onPick={(item) => {

@@ -1,7 +1,6 @@
 package api
 
 import (
-	"bytes"
 	"encoding/json"
 	"log/slog"
 	"net/http"
@@ -71,7 +70,7 @@ func TestSetupCodeFormat(t *testing.T) {
 
 // A fresh server without ADMIN_USER logs a code; the setup needs it, and once the admin exists it is gone.
 func TestFirstBootSetupNeedsSetupCode(t *testing.T) {
-	var logged bytes.Buffer
+	var logged logBuffer
 	prev := slog.Default()
 	slog.SetDefault(slog.New(slog.NewTextHandler(&logged, nil)))
 	store, dbPath := freshStore(t)

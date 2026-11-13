@@ -91,6 +91,7 @@ export const authApi = {
     allowRegistration?: boolean;
     createSampleData?: boolean;
     defaultLanguage?: string;
+    timeZone?: string;
     backupEnabled?: boolean;
     backupTime?: string;
     backupRetentionDays?: number;
@@ -112,6 +113,7 @@ export const authApi = {
     allowRegistration?: boolean;
     createSampleData?: boolean;
     defaultLanguage?: string;
+    timeZone?: string;
     backupEnabled?: boolean;
     backupTime?: string;
     backupRetentionDays?: number;
@@ -272,6 +274,7 @@ export const authApi = {
 
   async updateSettings(patch: {
     displayName?: string;
+    username?: string;
     email?: string;
     password?: string;
     currentPassword?: string;

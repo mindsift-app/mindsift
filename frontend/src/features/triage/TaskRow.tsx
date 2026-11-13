@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Calendar, Check, Edit3, FileText, Lock, Repeat, Bell, Trash2 } from 'lucide-react';
+import { Calendar, Check, PenLine, FileText, Lock, Repeat, Bell, Trash } from 'lucide-react';
 import { formatDue, isOverdue } from '../../lib/due';
 import { OriginBadge } from '../../components/OriginBadge';
 import { SelectMenu } from '../../components/SelectMenu';
@@ -82,7 +82,7 @@ function TaskRowView({
           className="text-faint hover:text-accent p-1.5 transition-colors"
           title={readOnly ? t('detail.view') : t('detail.edit')}
         >
-          {readOnly ? <Lock className="w-3.5 h-3.5" /> : <Edit3 className="w-3.5 h-3.5" />}
+          {readOnly ? <Lock className="w-3.5 h-3.5" /> : <PenLine className="w-3.5 h-3.5" />}
         </button>
         {!readOnly && (
         <>
@@ -102,7 +102,7 @@ function TaskRowView({
           title={t('detail.delete')}
           className="text-faint hover:text-status-err p-1.5 transition-colors"
         >
-          <Trash2 className="w-3.5 h-3.5" />
+          <Trash className="w-3.5 h-3.5" />
         </button>
         </>
         )}

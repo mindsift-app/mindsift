@@ -2,9 +2,9 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Brain,
-  CheckSquare,
+  SquareCheckBig,
   FileText,
-  HelpCircle,
+  CircleQuestionMark,
   Layers,
   PanelLeftClose,
   PanelLeftOpen,
@@ -52,7 +52,7 @@ const QUICK_DUMP_KEY = 'C';
 const PAGES: { tab: ActiveTab; icon: React.ReactNode; stat?: keyof DashboardStats }[] = [
   { tab: 'triage', icon: <Layers className="w-5 h-5" />, stat: 'inboxCount' },
   { tab: 'workspace', icon: <FileText className="w-5 h-5" /> },
-  { tab: 'tasks', icon: <CheckSquare className="w-5 h-5" />, stat: 'tasksOpenCount' },
+  { tab: 'tasks', icon: <SquareCheckBig className="w-5 h-5" />, stat: 'tasksOpenCount' },
   { tab: 'lists', icon: <ShoppingCart className="w-5 h-5" />, stat: 'listItemsOpenCount' },
 ];
 
@@ -247,7 +247,7 @@ export function NavRail({
         aria-current={activeTab === 'help' ? 'page' : undefined}
         className={`rail-item ${activeTab === 'help' ? 'rail-item-active' : ''}`}
       >
-        <RailItemContent icon={<HelpCircle className="w-5 h-5" />} label={t('rail.help')} tip={t('header.help')} expanded={expanded} />
+        <RailItemContent icon={<CircleQuestionMark className="w-5 h-5" />} label={t('rail.help')} tip={t('header.help')} expanded={expanded} />
       </button>
 
       {renderBell(expanded)}

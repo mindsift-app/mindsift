@@ -37,6 +37,8 @@
     "licenseLabel": "License",
     "license": "GNU AGPLv3 – free software, changes stay free",
     "source": "Source code",
+    "thirdPartyLabel": "Third-party software",
+    "thirdParty": "Licenses of the included libraries",
     "operator": "The operator of this instance is responsible for its legal notice and privacy policy; the links are in the account settings and on the sign-in page.",
     "changelog": "What changed (changelog)"
   },

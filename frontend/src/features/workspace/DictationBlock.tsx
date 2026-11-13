@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Loader2, Square } from 'lucide-react';
+import { LoaderCircle, Square } from 'lucide-react';
 import { useVoiceInput } from '../../lib/useVoiceInput';
 import { VoiceWave } from '../../components/VoiceWave';
 import { triggerHaptic } from '../../lib/api';
@@ -107,7 +107,7 @@ export const DictationBlock: React.FC<DictationBlockProps> = ({ onDone, onCancel
             <span className="text-status-err font-normal">{error}</span>
           ) : transcribing ? (
             <>
-              <Loader2 className="w-3.5 h-3.5 animate-spin" /> {t('workspace:media.transcribing')}
+              <LoaderCircle className="w-3.5 h-3.5 animate-spin" /> {t('workspace:media.transcribing')}
             </>
           ) : (
             <>

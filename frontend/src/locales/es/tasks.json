@@ -265,6 +265,8 @@
   },
   "menu": {
     "newTask": "Crear una nueva tarea",
+    "activeCount_one": "{{count}} activo",
+    "activeCount_other": "{{count}} activos",
     "filter": "Filtros, hashtags y ordenación",
     "openList": "Tareas pendientes (lista)",
     "done": "Tareas completadas",

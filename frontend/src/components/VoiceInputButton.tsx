@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Loader2, Mic, MicOff } from 'lucide-react';
+import { LoaderCircle, Mic, MicOff } from 'lucide-react';
 import { useVoiceInput } from '../lib/useVoiceInput';
 import { triggerHaptic } from '../lib/api';
 import { VoiceWave } from './VoiceWave';
@@ -53,7 +53,7 @@ export const VoiceInputButton: React.FC<VoiceInputButtonProps> = ({ value, onCha
         }`}
       >
         {transcribing ? (
-          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          <LoaderCircle className="w-3.5 h-3.5 animate-spin" />
         ) : listening ? (
           <MicOff className="w-3.5 h-3.5" />
         ) : (

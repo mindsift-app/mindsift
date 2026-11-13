@@ -75,7 +75,9 @@ func (s *Server) startDemoResetTicker() {
 	for {
 		next := time.Now().Add(interval)
 		s.setDemoNextReset(next)
-		time.Sleep(time.Until(next))
+		if !s.wait(time.Until(next)) {
+			return
+		}
 		s.resetDemo()
 	}
 }

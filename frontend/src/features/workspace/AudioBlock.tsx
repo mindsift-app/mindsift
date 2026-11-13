@@ -1,9 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { FileAudio, Loader2, Wand2 } from 'lucide-react';
+import { FileHeadphone, LoaderCircle, WandSparkles } from 'lucide-react';
 import { api } from '../../lib/api';
 import { mediaBlob, mediaObjectURL, parseMediaContent } from '../../lib/media';
 import { loadVoiceConfig } from '../../lib/voice';
 import { useTranslation } from 'react-i18next';
+import { errorMessage } from '../../lib/errorMessage';
 
 interface AudioBlockProps {
   content: string;
@@ -39,12 +40,16 @@ export const AudioBlock: React.FC<AudioBlockProps> = ({ content, canEdit, onCapt
   };
 
   useEffect(() => {
+    // The caption field follows the stored caption (also from other devices)
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCaption(ref?.caption || '');
   }, [ref?.caption]);
 
   useEffect(() => {
     if (!mediaId) return;
     let alive = true;
+    // Another recording starts without the error of the previous one
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setFailed(false);
     mediaObjectURL(mediaId)
       .then((u) => alive && setSrc(u))
@@ -79,8 +84,8 @@ export const AudioBlock: React.FC<AudioBlockProps> = ({ content, canEdit, onCapt
       } else {
         setError(t('media.nothing'));
       }
-    } catch (err: any) {
-      setError(err?.message || t('media.sttFailed'));
+    } catch (err) {
+      setError(errorMessage(err, t('media.sttFailed')));
     } finally {
       setTranscribing(false);
     }
@@ -90,7 +95,7 @@ export const AudioBlock: React.FC<AudioBlockProps> = ({ content, canEdit, onCapt
     <div className="my-1 space-y-1">
       {failed ? (
         <div className="flex items-center gap-2 h-12 px-4 rounded-full border border-border bg-panel text-xs text-muted">
-          <FileAudio className="w-4 h-4" /> {t('media.audioUnavailable')}
+          <FileHeadphone className="w-4 h-4" /> {t('media.audioUnavailable')}
         </div>
       ) : src ? (
         <div className="flex items-center gap-2">
@@ -103,14 +108,14 @@ export const AudioBlock: React.FC<AudioBlockProps> = ({ content, canEdit, onCapt
               title={t('media.transcribeTitle')}
               className="btn-secondary !rounded-full h-11 sm:h-8 px-3 text-xs flex items-center gap-1.5 shrink-0 disabled:opacity-40"
             >
-              {transcribing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Wand2 className="w-3.5 h-3.5" />}
+              {transcribing ? <LoaderCircle className="w-3.5 h-3.5 animate-spin" /> : <WandSparkles className="w-3.5 h-3.5" />}
               <span className="hidden sm:inline">{transcribing ? t('media.transcribing') : t('media.transcribe')}</span>
             </button>
           )}
         </div>
       ) : (
         <div className="flex items-center h-12 px-4 rounded-full border border-border bg-panel w-64">
-          <Loader2 className="w-4 h-4 animate-spin text-muted" />
+          <LoaderCircle className="w-4 h-4 animate-spin text-muted" />
         </div>
       )}
 

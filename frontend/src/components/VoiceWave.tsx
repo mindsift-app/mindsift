@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import { useLatestRef } from '../lib/useLatestRef';
 
 interface VoiceWaveProps {
   /** Input level 0..1; null (unknown, e.g. browser recognition) shows a calm idle wave. */
@@ -12,8 +13,7 @@ interface VoiceWaveProps {
 // not re-render 60 times a second.
 export const VoiceWave: React.FC<VoiceWaveProps> = ({ getLevel, bars = 5, className = 'h-4 text-accent' }) => {
   const barRefs = useRef<(HTMLSpanElement | null)[]>([]);
-  const getLevelRef = useRef(getLevel);
-  getLevelRef.current = getLevel;
+  const getLevelRef = useLatestRef(getLevel);
 
   useEffect(() => {
     const history: number[] = new Array(bars).fill(0);
@@ -39,7 +39,7 @@ export const VoiceWave: React.FC<VoiceWaveProps> = ({ getLevel, bars = 5, classN
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [bars]);
+  }, [bars, getLevelRef]);
 
   return (
     <span className={`inline-flex items-center gap-[3px] ${className}`} aria-hidden="true">

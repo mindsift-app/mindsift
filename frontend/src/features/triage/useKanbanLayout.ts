@@ -36,6 +36,8 @@ export function useKanbanLayout({ isKanban, isCalendar = false, columnCount, lis
   const [kanbanPhoneFirstHeight, setKanbanPhoneFirstHeight] = useState(0);
   useEffect(() => {
     if (!isKanban && !isCalendar) {
+      // Leaving the board and the calendar drops their measured layout
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setKanbanColHeight(null);
       setKanbanMultiRow(false);
       setKanbanPhoneSnap(false);

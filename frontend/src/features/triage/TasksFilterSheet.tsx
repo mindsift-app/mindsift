@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Filter, Hash, X } from 'lucide-react';
+import { Funnel, Hash, X } from 'lucide-react';
 import { Thought } from '../../lib/types';
 import { GroupBy, TaskSort, ViewMode } from './taskViewTypes';
 
@@ -51,7 +51,7 @@ export function TasksFilterSheet({
         <div className="flex items-center justify-between pb-3 border-b border-border">
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-btn bg-accent/15 text-accent flex items-center justify-center">
-              <Filter className="w-4 h-4" />
+              <Funnel className="w-4 h-4" />
             </div>
             <h3 className="text-sm font-semibold text-main">{t('filter.title')}</h3>
           </div>
@@ -136,17 +136,17 @@ export function TasksFilterSheet({
               {t('tasks:filter.sorting')}
             </span>
             <div className="grid grid-cols-2 gap-1.5">
-              {[
+              {([
                 { id: 'custom', label: t('view.sortCustom') },
                 { id: 'created', label: t('view.sortCreated') },
                 { id: 'due', label: t('view.sortDue') },
                 { id: 'priority', label: t('view.sortPriority') },
                 { id: 'alpha', label: t('sortShort.alpha') },
-              ].map((s) => (
+              ] satisfies { id: TaskSort; label: string }[]).map((s) => (
                 <button
                   key={s.id}
                   type="button"
-                  onClick={() => setSortBy(s.id as any)}
+                  onClick={() => setSortBy(s.id)}
                   className={`min-h-[36px] px-3 text-xs rounded-btn border text-left transition-colors cursor-pointer ${
                     sortBy === s.id
                       ? 'bg-accent-dim border-accent text-accent font-semibold'

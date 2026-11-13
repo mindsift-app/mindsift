@@ -1,6 +1,6 @@
 # MindSift Technical Documentation
 
-Reference for developers and administrators. All information has been verified against the code in the `dev` branch (as of October 2026). Please report discrepancies between the documentation and code as issues in [flaws.md](flaws.md).
+Reference for developers and administrators. All information describes the code in the `dev` branch. Please report discrepancies between the documentation and code as issues in [flaws.md](flaws.md).
 
 ## Contents
 
@@ -17,6 +17,10 @@ Reference for developers and administrators. All information has been verified a
 | [modules/collaboration.md](modules/collaboration.md) | Collaborative note editing: log, locks, conflicts, offline, transport tiers |
 | [modules/lists.md](modules/lists.md) | Shared lists |
 | [sharing-and-permissions.md](sharing-and-permissions.md) | Roles, groups, sharing permissions |
+| [operations.md](operations.md) | Running MindSift: install script, first admin, backups, updates, monitoring, image tags |
+| [oidc.md](oidc.md) | Single sign-on through an OpenID Connect provider: settings, accounts, provider examples |
+| [security.md](security.md) | What protects the data, security scan of the image |
+| [performance.md](performance.md) | Load test on 1 CPU core and 1 GB RAM |
 | [reverse-proxy.md](reverse-proxy.md) | Nginx, Traefik, Caddy, Cloudflare |
 | [theming.md](theming.md) | Themes and design variables |
 | [i18n.md](i18n.md) | Languages: where texts live, adding a language |
@@ -36,14 +40,14 @@ Reference for developers and administrators. All information has been verified a
 
 ```bash
 # Backend (Go 1.27)
-go vet ./... && go test ./...
+go vet ./cmd/... ./internal/... && go test ./cmd/... ./internal/...
 
 # Frontend (Node 26)
 cd frontend && npm ci && npx tsc --noEmit && npm run test:run && npm run build
 
 # Everything at once in containers (podman, no local Go or Node): the checks above plus ESLint,
-# gofmt, staticcheck (staticcheck.conf) and golangci-lint (.golangci.yml); E2E=1 adds the browser tests
+# gofmt and golangci-lint (.golangci.yml, with staticcheck); E2E=1 adds the browser tests
 ci/local-checks.sh
 ```
 
-The frontend is built to `cmd/server/dist` for inclusion in the binary (see `Dockerfile`). CI runs twice using the same build plan (`ci/build-plan.sh`): on private Gitea (`.gitea/workflows/`, tests and pre-release images) and on GitHub (`.github/workflows/`, public images at `ghcr.io/mindsift-app/mindsift`, for amd64 and arm64). On GitHub, a version tag also gets its release page from the matching `CHANGELOG.md` section (`.github/workflows/release.yaml`, `ci/release-notes.sh`; versions before 0.80.0 are in `CHANGELOG-archive.md`), with the server binaries for Linux attached (`ci/release-binaries.sh`).
+The frontend is built to `cmd/server/dist` for inclusion in the binary (see `Dockerfile`). CI runs twice using the same build plan (`ci/build-plan.sh`): on private Gitea (`.gitea/workflows/`, images of `main` only, without tests) and on GitHub (`.github/workflows/`, public images at `ghcr.io/mindsift-app/mindsift`, for amd64 and arm64; only the build of `main` runs the tests, all other builds rely on `ci/local-checks.sh` before the push). On GitHub, a version tag also gets its release page from the matching `CHANGELOG.md` section (`.github/workflows/release.yaml`, `ci/release-notes.sh`; versions before 0.80.0 are in `CHANGELOG-archive.md`), with the server binaries for Linux attached (`ci/release-binaries.sh`).

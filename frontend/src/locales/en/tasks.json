@@ -265,6 +265,8 @@
   },
   "menu": {
     "newTask": "Create a new task",
+    "activeCount_one": "{{count}} active",
+    "activeCount_other": "{{count}} active",
     "filter": "Filter, hashtags & sorting",
     "openList": "Open tasks (list)",
     "done": "Done tasks",

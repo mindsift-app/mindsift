@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { AlertCircle, Check, ShieldCheck } from 'lucide-react';
+import { CircleAlert, Check, ShieldCheck } from 'lucide-react';
 import { OidcAdminStatus } from '../../../lib/types';
 
 // Admin: the sign-in through an OpenID Connect provider. Set up by environment only (OIDC_*), so this card just
@@ -34,7 +34,7 @@ export const OidcStatusCard: React.FC<{ status?: OidcAdminStatus }> = ({ status 
       </div>
       {status.configured && !status.enabled && (
         <div role="alert" className="alert-err flex items-center gap-2 text-xs">
-          <AlertCircle className="w-4 h-4 text-status-err flex-shrink-0" />
+          <CircleAlert className="w-4 h-4 text-status-err flex-shrink-0" />
           <span>{status.reason === 'demo' ? t('server.oidc.offDemo') : t('server.oidc.offNoBaseUrl')}</span>
         </div>
       )}
@@ -46,7 +46,7 @@ export const OidcStatusCard: React.FC<{ status?: OidcAdminStatus }> = ({ status 
           {status.reachable ? (
             <Check className="w-4 h-4 text-status-ok flex-shrink-0" />
           ) : (
-            <AlertCircle className="w-4 h-4 text-status-err flex-shrink-0" />
+            <CircleAlert className="w-4 h-4 text-status-err flex-shrink-0" />
           )}
           <span className="min-w-0 break-words">
             {status.reachable ? t('server.oidc.reachable') : t('server.oidc.unreachable', { error: status.error || '' })}

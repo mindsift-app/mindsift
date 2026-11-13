@@ -1,7 +1,7 @@
 import React from 'react';
 import {
   Users,
-  AlertCircle,
+  CircleAlert,
 } from 'lucide-react';
 import { RegistrationMode } from '../../../lib/types';
 import { ToggleSwitch } from '../../../components/ToggleSwitch';
@@ -112,7 +112,7 @@ export function ServerSection({
 
             {pendingMode && (
               <div className="p-3 border border-status-warn/40 bg-status-warn/5 rounded-card flex flex-wrap items-center gap-2">
-                <AlertCircle className="w-4 h-4 text-status-warn shrink-0" />
+                <CircleAlert className="w-4 h-4 text-status-warn shrink-0" />
                 <span className="flex-1 min-w-0 text-main">
                   {t('server.switchWarning', {
                     mode: SHARING_MODES.find((m) => m.id === pendingMode.mode)?.title.replace(/^\d\.\s*/, ''),

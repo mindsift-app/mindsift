@@ -11,6 +11,7 @@ import {
   placedSize,
   zoomAround,
 } from '../../../lib/avatarCrop';
+import { useLatestRef } from '../../../lib/useLatestRef';
 
 // Place a picked picture in the round avatar frame before it is saved: drag to move it, zoom with the
 // slider, the mouse wheel or two fingers. The square around the circle is what gets stored.
@@ -27,8 +28,7 @@ export function AvatarCropSheet({
   const imgW = image.naturalWidth;
   const imgH = image.naturalHeight;
   const [placement, setPlacement] = useState<AvatarPlacement>(() => initialPlacement(imgW, imgH));
-  const placementRef = useRef(placement);
-  placementRef.current = placement;
+  const placementRef = useLatestRef(placement);
   const frameRef = useRef<HTMLDivElement>(null);
   // Active pointers (one: drag, two: pinch), in frame units
   const pointers = useRef(new Map<number, { x: number; y: number }>());
@@ -79,7 +79,7 @@ export function AvatarCropSheet({
     };
     el.addEventListener('wheel', onWheel, { passive: false });
     return () => el.removeEventListener('wheel', onWheel);
-  }, [imgW, imgH]);
+  }, [imgW, imgH, placementRef]);
 
   const { w, h } = placedSize(imgW, imgH, placement.zoom);
 

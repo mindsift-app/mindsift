@@ -1,6 +1,6 @@
 import React from 'react';
 import { Trans, useTranslation } from 'react-i18next';
-import { AlertCircle, Check, Trash2, Upload } from 'lucide-react';
+import { CircleAlert, Check, Trash, Upload } from 'lucide-react';
 import { UserAvatar } from '../../../components/UserAvatar';
 import { FormSheet } from '../../../components/FormSheet';
 import { useProfileSettings } from './useProfileSettings';
@@ -63,7 +63,7 @@ export function ProfileSection({
           {profileMsg.type === 'ok' ? (
             <Check className="w-4 h-4 text-status-ok flex-shrink-0" />
           ) : (
-            <AlertCircle className="w-4 h-4 text-status-err flex-shrink-0" />
+            <CircleAlert className="w-4 h-4 text-status-err flex-shrink-0" />
           )}
           <span>{profileMsg.text}</span>
         </div>
@@ -114,7 +114,7 @@ export function ProfileSection({
                     className="btn-ghost h-8 px-2.5 text-xs text-status-err hover:bg-status-err/10 flex items-center gap-1"
                     title={t('profile.removeAvatar')}
                   >
-                    <Trash2 className="w-3.5 h-3.5" />
+                    <Trash className="w-3.5 h-3.5" />
                     <span>{t('profile.remove')}</span>
                   </button>
                 )}
@@ -252,7 +252,7 @@ export function ProfileSection({
       {/* Danger zone: delete own data or the whole account (password required) */}
       <div className="p-4 border border-status-err/40 bg-status-err/5 rounded-card space-y-3">
         <h3 className="font-bold text-status-err flex items-center gap-1.5">
-          <AlertCircle className="w-4 h-4" />
+          <CircleAlert className="w-4 h-4" />
           <span>{t('profile.danger')}</span>
         </h3>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -312,7 +312,7 @@ export function DangerConfirmSheet({ profile }: { profile: ReturnType<typeof use
   return (
     <FormSheet
       title={dangerAction === 'account' ? t('profile.deleteAccount') : t('profile.deleteData')}
-      icon={<AlertCircle className="w-4 h-4 text-status-err" />}
+      icon={<CircleAlert className="w-4 h-4 text-status-err" />}
       onClose={() => setDangerAction(null)}
       onSubmit={handleDangerSubmit}
       submitLabel={dangerAction === 'account' ? t('profile.deleteAccountButton') : t('profile.deleteDataButton')}

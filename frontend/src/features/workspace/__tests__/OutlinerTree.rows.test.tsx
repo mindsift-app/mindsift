@@ -5,7 +5,7 @@ import type { BlockLock } from '../OutlinerBlock';
 import { DocumentBlock } from '../../../lib/types';
 
 // The tree keeps each bullet's element while its values stay the same; whatever changes must still show
-const mk = (id: string, content: string, level = 0, type: any = 'bullet', more: Partial<DocumentBlock> = {}): DocumentBlock =>
+const mk = (id: string, content: string, level = 0, type: DocumentBlock['type'] = 'bullet', more: Partial<DocumentBlock> = {}): DocumentBlock =>
   ({ id, type, content, level, position: 1, ...more }) as DocumentBlock;
 
 const tree = (blocks: DocumentBlock[], lockedBlocks?: Map<string, BlockLock>, canEdit = true) => (

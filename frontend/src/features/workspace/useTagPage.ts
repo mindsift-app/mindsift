@@ -50,6 +50,8 @@ export function useTagPage({
   // What was shown last time: of the bullets above the cursor only those stay that were already shown
   // (adding a heading above would start the branch anew and lose the cursor)
   const tagShownRef = useRef<Set<string>>(new Set());
+  // The last result is read and kept in the ref while computing the next one, on purpose
+  /* eslint-disable react-hooks/refs */
   const tagGroups = useMemo(() => {
     if (!inTagPage || !tagFilter) return [] as DocumentBlock[][];
     const tag = tagFilter.replace(/^#/, '').toLowerCase();
@@ -89,6 +91,7 @@ export function useTagPage({
     tagShownRef.current = new Set(groups.flat().map((b) => b.id));
     return groups;
   }, [inTagPage, tagFilter, blocks, tagFocusId, tagFreshIds]);
+  /* eslint-enable react-hooks/refs */
   const handleTagCreateBlock = useCallback(
     (newBlock: DocumentBlock, afterBlockId?: string) => {
       setTagFreshIds((prev) => new Set(prev).add(newBlock.id));

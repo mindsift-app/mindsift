@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Check, MoreHorizontal } from 'lucide-react';
+import { Check, Ellipsis } from 'lucide-react';
 
 export interface ActionMenuItem {
   key: string;
@@ -72,7 +72,7 @@ export function ActionMenu({
         title={label}
         className={buttonClassName}
       >
-        <MoreHorizontal className="w-3.5 h-3.5" />
+        <Ellipsis className="w-3.5 h-3.5" />
       </button>
       {open && (
         <div

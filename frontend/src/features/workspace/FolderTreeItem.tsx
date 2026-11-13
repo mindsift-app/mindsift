@@ -1,5 +1,5 @@
 import React from 'react';
-import { Folder, FolderOpen, FolderPlus, Plus, Trash2, Users } from 'lucide-react';
+import { Folder, FolderOpen, FolderPlus, Plus, Trash, Users } from 'lucide-react';
 import { SharedFolder } from '../../lib/types';
 import { FolderTreeNode, WorkspaceSubView } from './workspaceTypes';
 import { isFolderShared } from './workspaceListing';
@@ -180,7 +180,7 @@ export const FolderTreeItem: React.FC<FolderTreeItemProps> = ({
             className="p-1 h-6 w-6 flex items-center justify-center text-faint hover:text-status-err transition-colors cursor-pointer"
             title={t('folder.delete')}
           >
-            <Trash2 className="w-3 h-3" />
+            <Trash className="w-3 h-3" />
           </button>
         </div>
       </div>

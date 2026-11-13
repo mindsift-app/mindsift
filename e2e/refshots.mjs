@@ -2,7 +2,8 @@
 // on desktop and phone from a fresh demo server, and compares two such sets pixel by pixel.
 // Client clock fixed, animations and the caret off, and every run starts from the same database (see
 // refshots.sh), so two runs of the same code give the same pictures. Known exceptions, real server times:
-// the login time in the session list (d14) and the deletion time in the task trash (d17).
+// the login time in the session list (d14), the server's clock beside its time zone (d15_as_server) and the
+// deletion time in the task trash (d17).
 //
 //   MODE=capture OUT=/shots/before node refshots.mjs
 //   MODE=compare A=/shots/before B=/shots/after OUT=/shots/diff node refshots.mjs
@@ -32,7 +33,15 @@ async function login(user) {
     body: JSON.stringify({ login: user, password: user }),
   });
   if (!res.ok) throw new Error(`login ${user}: ${res.status}`);
-  return (await res.json()).token;
+  const token = (await res.json()).token;
+  // The run copy is not in demo mode, so the offer of the guided tour comes from the account (not from
+  // localStorage) and would cover the bottom right of every view
+  await fetch(`${BASE}/api/v1/auth/settings`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ tourOffered: true }),
+  });
+  return token;
 }
 
 async function open(browser, token, options) {
@@ -60,6 +69,8 @@ const tab = (page, name) =>
 // Phone: the bottom bar (badges come before the label there)
 const navTab = (page, name) => page.locator('[data-mobile-nav]').getByRole('button', { name: new RegExp(name) }).first().click();
 const exact = (page, name) => page.getByRole('button', { name, exact: true }).locator('visible=true').first().click();
+// The view switch (list, Kanban, calendar) is a group of radio buttons
+const view = (page, name) => page.getByRole('radio', { name, exact: true }).locator('visible=true').first().click();
 // Bottom right: no edge that slides something in (focus mode), no bullet that shows its action bubble
 const park = (page) => {
   const v = page.viewportSize();
@@ -106,14 +117,14 @@ async function capture() {
   await step(d, 'd02_tasks_all_list', async () => {
     await tab(d, 'Aufgaben');
     await d.getByRole('button', { name: /^Alle Aufgaben/ }).first().click();
-    await exact(d, 'Liste');
+    await view(d, 'Liste');
   });
   await step(d, 'd03_tasks_all_kanban', () => d.getByRole('radio', { name: 'Kanban', exact: true }).locator('visible=true').first().click());
   await step(d, 'd04_tasks_list_kanban', async () => {
     await d.getByRole('button', { name: /Homelab/ }).locator('visible=true').first().click();
     await d.getByRole('radio', { name: 'Kanban', exact: true }).locator('visible=true').first().click();
   });
-  await step(d, 'd05_tasks_list_list', () => exact(d, 'Liste'));
+  await step(d, 'd05_tasks_list_list', () => view(d, 'Liste'));
   await step(d, 'd06_task_detail', async () => {
     await d.getByText(/Nginx-Timeouts/).first().click();
     await sleep(500);
@@ -205,7 +216,7 @@ async function capture() {
     await d.locator('aside button', { hasText: 'Profil' }).first().click();
     await d.locator('label', { hasText: 'Anzeigename' }).locator('xpath=following-sibling::input').fill('Admin geändert');
     await d.locator('aside button', { hasText: 'Alarme' }).first().click();
-    await d.locator('label', { hasText: 'Abweichende Empfänger-E-Mail' }).locator('xpath=following-sibling::input').fill('alarm@example.org');
+    await d.getByPlaceholder('https://discord.com/api/webhooks/123456789/token...').fill('https://discord.com/api/webhooks/1/beispiel');
     await d.locator('aside button', { hasText: 'Profil' }).first().click();
   });
   await step(d, 'd14_us_unsaved_kept_alarms', () => d.locator('aside button', { hasText: 'Alarme' }).first().click());
@@ -227,7 +238,7 @@ async function capture() {
   for (const [key, label] of [
     ['users', 'Benutzer & Einladungen'],
     ['orgs', 'Organisationen'],
-    ['server', 'Server & Isolation'],
+    ['server', 'Server & Teilen'],
     ['smtp', 'E-Mail / SMTP-Server'],
   ]) {
     await step(d, `d15_as_${key}`, () => d.locator('aside button', { hasText: label }).first().click());
@@ -264,7 +275,7 @@ async function capture() {
     if (victim) await fetch(`${BASE}/api/v1/thoughts/${victim.id}`, { method: 'DELETE', headers: H });
     await tab(d, 'Aufgaben');
     await d.getByRole('button', { name: /^Alle Aufgaben/ }).first().click();
-    await exact(d, 'Liste');
+    await view(d, 'Liste');
     await d.getByRole('button', { name: /^Papierkorb \(/ }).locator('visible=true').first().click();
   });
   await step(d, 'd19_tasklist_share', async () => {
@@ -351,7 +362,9 @@ async function capture() {
   await m.getByTitle('Menü schließen').first().click().catch(() => {});
   await sleep(300);
   await step(m, 'm05_workspace_note', async () => {
-    await m.getByText(/^Homelab 2\.0/).first().click();
+    // The note lies in the folder "Projekte", closed on the phone
+    await m.getByText('Projekte', { exact: true }).locator('visible=true').first().click();
+    await m.getByText(/^Homelab 2\.0/).locator('visible=true').first().click();
     await sleep(800);
   });
   await step(m, 'm06_lists', async () => {

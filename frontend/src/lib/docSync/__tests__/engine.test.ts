@@ -427,7 +427,7 @@ describe('DocSyncEngine', () => {
     engine.focusBlock('b1');
     edit(engine, (b) => [{ ...b[0], content: 'Start und' }]);
     // Tab hidden (window switch, app switch on the phone): pending text goes out with keepalive
-    (engine as any).flushOnExit();
+    (engine as unknown as { flushOnExit(): void }).flushOnExit();
     await new Promise((r) => setTimeout(r, 0));
     expect(serverContents(server)).toEqual(['Start und']);
 

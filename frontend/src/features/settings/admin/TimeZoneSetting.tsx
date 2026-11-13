@@ -33,6 +33,8 @@ export function TimeZoneSetting({
   const [loadedAt, setLoadedAt] = useState(() => Date.now());
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
+    // The local clock restarts from each new server time (Date.now() is not for render)
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoadedAt(Date.now());
     setNow(Date.now());
   }, [st?.now]);

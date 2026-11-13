@@ -145,14 +145,18 @@ export function newElementId(): string {
 const num = (v: unknown, fallback = 0) => (typeof v === 'number' && Number.isFinite(v) ? v : fallback);
 const color = (v: unknown): DrawColor => (DRAW_COLORS.includes(v as DrawColor) ? (v as DrawColor) : 'main');
 const fill = (v: unknown): DrawFill => (v === 'none' ? 'none' : DRAW_COLORS.includes(v as DrawColor) ? (v as DrawColor) : 'none');
-const point = (v: unknown): Point => (Array.isArray(v) ? [num(v[0]), num(v[1])] : [0, 0]);
+// An object to read fields from (also arrays, as `typeof` says, like the checks it replaces)
+const isRecord = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object';
+const point = (v: unknown): Point =>(Array.isArray(v) ? [num(v[0]), num(v[1])] : [0, 0]);
 
 /** Reads one element (as stored, or as another browser sent it in a live session); null if broken */
-export function parseElement(raw: any): DrawElement | null {
-  if (!raw || typeof raw !== 'object' || typeof raw.id !== 'string') return null;
-  const base = { id: raw.id.slice(0, 40), ver: num(raw.ver, 1), s: color(raw.s), sw: Math.min(12, Math.max(1, num(raw.sw, 2))), ...(raw.dash ? { dash: true } : {}) };
+export function parseElement(input: unknown): DrawElement | null {
+  if (!isRecord(input) || typeof input.id !== 'string') return null;
+  const raw = input;
+  const base = { id: input.id.slice(0, 40), ver: num(raw.ver, 1), s: color(raw.s), sw: Math.min(12, Math.max(1, num(raw.sw, 2))), ...(raw.dash ? { dash: true } : {}) };
   const txt = typeof raw.txt === 'string' ? raw.txt : undefined;
-  const fs = FONT_SIZES.includes(raw.fs) ? (raw.fs as number) : undefined;
+  const fs = FONT_SIZES.includes(raw.fs as number) ? (raw.fs as number) : undefined;
+  const head = raw.head;
   switch (raw.t) {
     case 'rect':
     case 'ellipse':
@@ -183,7 +187,7 @@ export function parseElement(raw: any): DrawElement | null {
         // laid out before arrows were stored as elbows say "straight" there and would turn straight when moved
         route:
           raw.route === 'curve' || raw.route === 'elbow' ? raw.route : Array.isArray(raw.via) && raw.via.length ? 'elbow' : 'straight',
-        head: [0, 1, 2, 3].includes(raw.head) ? raw.head : 2,
+        head: head === 0 || head === 1 || head === 2 || head === 3 ? head : 2,
         ...(typeof raw.bend === 'number' && Number.isFinite(raw.bend) ? { bend: raw.bend } : {}),
         ...(raw.axis === 'h' || raw.axis === 'v' ? { axis: raw.axis } : {}),
         ...(Array.isArray(raw.via) && raw.via.length ? { via: raw.via.slice(0, 100).map(point) } : {}),
@@ -200,25 +204,27 @@ export function parseElement(raw: any): DrawElement | null {
   }
 }
 
-function parsePort(raw: any): Port | undefined {
-  if (!raw || !['t', 'r', 'b', 'l'].includes(raw.side)) return undefined;
+function parsePort(raw: unknown): Port | undefined {
+  if (!isRecord(raw)) return undefined;
+  const side = raw.side;
+  if (side !== 't' && side !== 'r' && side !== 'b' && side !== 'l') return undefined;
   const at = typeof raw.at === 'number' && Number.isFinite(raw.at) ? Math.max(0, Math.min(1, raw.at)) : 0.5;
-  return { side: raw.side, at };
+  return { side, at };
 }
 
 /** Reads a block's content; null if it is not a drawing */
 export function parseDrawing(content: string): Drawing | null {
-  let raw: any;
+  let raw: unknown;
   try {
     raw = JSON.parse(content);
   } catch {
     return null;
   }
-  if (!raw || typeof raw !== 'object' || !Array.isArray(raw.els)) return null;
+  if (!isRecord(raw) || !Array.isArray(raw.els)) return null;
   const els = raw.els.map(parseElement).filter(Boolean) as DrawElement[];
   const f = raw.frame;
   const frame =
-    f && typeof f === 'object' && num(f.w) > 0 && num(f.h) > 0 ? { x: num(f.x), y: num(f.y), w: num(f.w), h: num(f.h) } : undefined;
+    isRecord(f) && num(f.w) > 0 && num(f.h) > 0 ? { x: num(f.x), y: num(f.y), w: num(f.w), h: num(f.h) } : undefined;
   const fit = raw.fit === 'all' || raw.fit === 'readable' ? raw.fit : undefined;
   return { v: 1, ...(frame ? { frame } : {}), ...(fit ? { fit } : {}), ...(raw.grid ? { grid: true } : {}), els };
 }

@@ -15,6 +15,7 @@ import {
 import { useLinkPreviewsEnabled } from '../../../lib/linkPreview';
 import { isJournalEnabled } from '../../../lib/journal';
 import themeTemplateCss from '../../../themes/theme-template.css?raw';
+import { errorMessage } from '../../../lib/errorMessage';
 
 // Kontoeinstellungen → Darstellung & Themes: the device settings (corners, accent, borders, system theme,
 // link previews, journal) and the editor for own themes. Lives in the view, so an unsaved theme survives
@@ -85,8 +86,8 @@ export function useAppearanceSettings(
       onCustomThemesChange(next, customThemeId(saved));
       setThemeMsg({ type: 'ok', text: i18n.t('settings:appearanceExtra.themeSaved', { name: saved.name }) });
       resetThemeEditor();
-    } catch (err: any) {
-      setThemeMsg({ type: 'err', text: err.message || i18n.t('settings:appearance.custom.saveFailed') });
+    } catch (err) {
+      setThemeMsg({ type: 'err', text: errorMessage(err, i18n.t('settings:appearance.custom.saveFailed')) });
     } finally {
       setSavingTheme(false);
     }
@@ -109,8 +110,8 @@ export function useAppearanceSettings(
         customThemes.filter((x) => x.id !== t.id),
         activeTheme === customThemeId(t) ? 'dark' : undefined
       );
-    } catch (err: any) {
-      setThemeMsg({ type: 'err', text: err.message || i18n.t('settings:appearance.custom.deleteFailed') });
+    } catch (err) {
+      setThemeMsg({ type: 'err', text: errorMessage(err, i18n.t('settings:appearance.custom.deleteFailed')) });
     }
   };
 

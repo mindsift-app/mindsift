@@ -39,6 +39,8 @@ export const LinkPreviewCard: React.FC<LinkPreviewCardProps> = ({ url, canEdit, 
 
   useEffect(() => {
     let alive = true;
+    // Another link drops the preview of the previous one
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setPreview(null);
     void loadLinkPreview(url).then((p) => alive && setPreview(p));
     return () => {

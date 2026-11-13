@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -21,15 +22,21 @@ type mfaEnv struct {
 	store  *storage.Store
 	router http.Handler
 	clock  time.Time
-	user   *domain.User
-	pw     string
+	// clockMu guards clock between the test moving it and the server's background jobs reading it
+	clockMu sync.Mutex
+	user    *domain.User
+	pw      string
 }
 
 func newMFAEnv(t *testing.T) *mfaEnv {
 	t.Helper()
 	srv, store, _ := setupTestServer(t)
 	e := &mfaEnv{t: t, srv: srv, store: store, pw: "richtig-1234", clock: time.Date(2026, 11, 12, 9, 0, 10, 0, time.UTC)}
-	srv.now = func() time.Time { return e.clock }
+	srv.now = func() time.Time {
+		e.clockMu.Lock()
+		defer e.clockMu.Unlock()
+		return e.clock
+	}
 	e.router = srv.Router()
 	u, err := store.CreateUser("zwei@example.com", mustHash(t, e.pw), "Zwei Faktor", "member")
 	if err != nil {
@@ -101,7 +108,14 @@ func (e *mfaEnv) code(key []byte, offset int64) string {
 }
 
 // tick moves the clock to the next step, so the next code is a fresh one.
-func (e *mfaEnv) tick() { e.clock = e.clock.Add(auth.TOTPPeriod * time.Second) }
+func (e *mfaEnv) tick() { e.advance(auth.TOTPPeriod * time.Second) }
+
+// advance moves the clock the server sees by d.
+func (e *mfaEnv) advance(d time.Duration) {
+	e.clockMu.Lock()
+	defer e.clockMu.Unlock()
+	e.clock = e.clock.Add(d)
+}
 
 func (e *mfaEnv) secondStep(mfaToken, code string, trust bool) (*httptest.ResponseRecorder, map[string]any) {
 	e.t.Helper()
@@ -208,7 +222,7 @@ func TestLoginWithTOTP(t *testing.T) {
 	}
 	// A challenge lives 5 minutes
 	old := e.challenge()
-	e.clock = e.clock.Add(mfaChallengeTTL + time.Second)
+	e.advance(mfaChallengeTTL + time.Second)
 	if rec, res := e.secondStep(old, e.code(key, 0), false); rec.Code != http.StatusUnauthorized || res["code"] != "mfa_expired" {
 		t.Fatalf("expired challenge: %d %v", rec.Code, res)
 	}
@@ -298,7 +312,7 @@ func TestTrustedDevice(t *testing.T) {
 		t.Fatalf("trusted devices: %v", res["trustedDevices"])
 	}
 	// 30 days later the code is asked again
-	e.clock = e.clock.Add(storage.TrustedDeviceLifetime + time.Minute)
+	e.advance(storage.TrustedDeviceLifetime + time.Minute)
 	if _, res := e.login(trust); res["mfaRequired"] != true {
 		t.Fatalf("expired trust must ask for the code: %v", res)
 	}

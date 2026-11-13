@@ -24,7 +24,7 @@ describe('mapRenderedOffsetToRaw', () => {
 
 describe('clicking into an unfocused bullet', () => {
   afterEach(() => {
-    delete (document as any).caretRangeFromPoint;
+    Reflect.deleteProperty(document, 'caretRangeFromPoint');
   });
 
   it('places the caret at the click position instead of the end', () => {
@@ -49,7 +49,7 @@ describe('clicking into an unfocused bullet', () => {
     const ta = container.querySelector('textarea') as HTMLTextAreaElement;
     const strong = container.querySelector('strong') as HTMLElement; // rendered "Welt"
     // jsdom has no layout: pretend the click hit between "We" and "lt"
-    (document as any).caretRangeFromPoint = () => {
+    document.caretRangeFromPoint = () => {
       const r = document.createRange();
       r.setStart(strong.firstChild!, 2);
       return r;

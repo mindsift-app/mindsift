@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Camera, ImagePlus, Link as LinkIcon, Loader2, X } from 'lucide-react';
+import { Camera, ImagePlus, Link as LinkIcon, LoaderCircle, X } from 'lucide-react';
 import { copyExternalImage, prepareImage, UploadedMedia, uploadMedia } from '../../lib/media';
 import { useTranslation } from 'react-i18next';
+import { errorMessage } from '../../lib/errorMessage';
 
 interface ImagePickerProps {
   docId: string;
@@ -36,8 +37,8 @@ export const ImagePicker: React.FC<ImagePickerProps> = ({ docId, onDone, onCance
     try {
       const { blob, name } = await prepareImage(file);
       onDone(await uploadMedia(docId, blob, name));
-    } catch (err: any) {
-      setError(err?.message || t('media.uploadFailed'));
+    } catch (err) {
+      setError(errorMessage(err, t('media.uploadFailed')));
       setBusy(false);
     }
   };
@@ -50,8 +51,8 @@ export const ImagePicker: React.FC<ImagePickerProps> = ({ docId, onDone, onCance
     setError(null);
     try {
       onDone(await copyExternalImage(docId, target));
-    } catch (err: any) {
-      setError(err?.message || t('media.imageFetchFailed'));
+    } catch (err) {
+      setError(errorMessage(err, t('media.imageFetchFailed')));
       setBusy(false);
     }
   };
@@ -105,7 +106,7 @@ export const ImagePicker: React.FC<ImagePickerProps> = ({ docId, onDone, onCance
 
       {busy ? (
         <div className="flex items-center gap-2 text-xs text-muted py-3">
-          <Loader2 className="w-4 h-4 animate-spin text-accent" /> {t('workspace:media.uploading')}
+          <LoaderCircle className="w-4 h-4 animate-spin text-accent" /> {t('workspace:media.uploading')}
         </div>
       ) : (
         <>

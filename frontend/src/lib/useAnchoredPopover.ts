@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useLatestRef } from './useLatestRef';
 
 export interface PopoverPosition {
   left: number;
@@ -37,8 +38,7 @@ export function useAnchoredPopover<A extends HTMLElement>(wanted: number, popWid
     // Scrolling the list inside the popover (or anything else that leaves the field in place) renders nothing
     setPos((prev) => (prev && samePosition(prev, next) ? prev : next));
   };
-  const placeRef = useRef(place);
-  placeRef.current = place;
+  const placeRef = useLatestRef(place);
 
   const show = () => {
     place();
@@ -63,7 +63,7 @@ export function useAnchoredPopover<A extends HTMLElement>(wanted: number, popWid
       window.removeEventListener('resize', follow);
       cancelAnimationFrame(frame);
     };
-  }, [open]);
+  }, [open, placeRef]);
 
   useEffect(() => {
     if (!open) return;

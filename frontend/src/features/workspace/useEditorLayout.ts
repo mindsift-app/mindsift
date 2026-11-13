@@ -161,6 +161,8 @@ export function useEditorLayout({
     const shift = el.getBoundingClientRect().top - anchor.top;
     if (Math.abs(shift) >= 1) scrollParent(el)?.scrollBy({ top: shift, behavior: 'instant' });
     if (!anchor.observer && el.parentElement && typeof ResizeObserver !== 'undefined') {
+      // Observes with itself: it exists when it runs
+      // eslint-disable-next-line react-hooks/immutability
       anchor.observer = new ResizeObserver(keepCursorInPlace);
       anchor.observer.observe(el.parentElement);
     }

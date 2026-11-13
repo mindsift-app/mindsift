@@ -12,6 +12,8 @@ let lockedNotices: string[] = [];
 
 const Harness: React.FC<{ initial: DocumentBlock[]; locked?: Map<string, BlockLock> }> = ({ initial, locked }) => {
   const [blocks, setBlocks] = useState(initial);
+  // The test reads the blocks of the harness's last render
+  // eslint-disable-next-line react-hooks/globals
   live = blocks;
   return (
     <OutlinerTree
@@ -34,7 +36,8 @@ const Harness: React.FC<{ initial: DocumentBlock[]; locked?: Map<string, BlockLo
   );
 };
 
-const mk = (id: string, content: string, level = 0, type: any = 'bullet'): DocumentBlock =>
+// '' as type: legacy blocks stored without one
+const mk = (id: string, content: string, level = 0, type: DocumentBlock['type'] | '' = 'bullet'): DocumentBlock =>
   ({ id, type, content, level, position: 1 }) as DocumentBlock;
 
 const area = (text: string) => screen.getAllByDisplayValue(text)[0] as HTMLTextAreaElement;

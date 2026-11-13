@@ -56,6 +56,8 @@ export function useNotePlace({
 
   useEffect(() => {
     if (!loading && zoomedBlockId && !blocks.some((b) => b.id === zoomedBlockId)) {
+      // The zoom ends when its bullet is gone
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setZoomedBlockId(null);
     }
   }, [blocks, zoomedBlockId, loading]);

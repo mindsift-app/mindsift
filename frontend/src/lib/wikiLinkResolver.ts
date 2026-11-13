@@ -29,6 +29,8 @@ export function useWikiLinkStore(docs: Document[]): WikiLinkStore {
   });
   useLayoutEffect(() => {
     if (store.current === resolver) return;
+    // The store lives outside React's state; its listeners are told after the change
+    // eslint-disable-next-line react-hooks/immutability
     store.current = resolver;
     store.listeners.forEach((l) => l());
   }, [store, resolver]);

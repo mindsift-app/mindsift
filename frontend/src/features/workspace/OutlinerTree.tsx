@@ -760,7 +760,7 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
   rangeSelRef.current = rangeSel;
   const treeRootRef = useRef<HTMLDivElement>(null);
   const dragAnchorRef = useRef<{ id: string; offset: number } | null>(null);
-  const highlightSupported = typeof CSS !== 'undefined' && 'highlights' in CSS && typeof (window as any).Highlight === 'function';
+  const highlightSupported = typeof CSS !== 'undefined' && 'highlights' in CSS && typeof window.Highlight === 'function';
 
   // Position in the raw text of a bullet for a point in its rendered text (outside it: start or end).
   // Blocks without a text layer (code, tables …) count whole when `whole` says from which side
@@ -791,7 +791,7 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
   // Highlight the selected text of the bullets other than the start one
   useEffect(() => {
     if (!highlightSupported) return;
-    const registry = (CSS as any).highlights;
+    const registry = CSS.highlights;
     const setWholeRows = (ids: string[]) =>
       setWholeRowIds((prev) => (ids.length === 0 ? null : prev && prev.size === ids.length && ids.every((id) => prev.has(id)) ? prev : new Set(ids)));
     if (!rangeSel || !treeRootRef.current) {
@@ -827,9 +827,11 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
       }
       ranges.push(r);
     }
-    registry.set('outline-range', new (window as any).Highlight(...ranges));
+    registry.set('outline-range', new Highlight(...ranges));
     setWholeRows(whole);
-    return () => registry.delete('outline-range');
+    return () => {
+      registry.delete('outline-range');
+    };
   }, [rangeSel, visibleEntries, highlightSupported]);
 
   // Mouse: a drag that leaves its bullet becomes a selection over several bullets

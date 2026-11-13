@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
-import { Archive, Download, Loader2, Trash2 } from 'lucide-react';
+import { Archive, Download, LoaderCircle, Trash } from 'lucide-react';
 import { BackupFile, DeletedAccountBackups, SystemSettings } from '../../lib/types';
 import { api } from '../../lib/api';
 import { ToggleSwitch } from '../../components/ToggleSwitch';
@@ -14,6 +14,7 @@ import {
   MAX_BACKUP_RETENTION_DAYS,
   validBackupRetentionDays,
 } from '../../lib/backupDefaults';
+import { errorMessage } from '../../lib/errorMessage';
 
 interface BackupAdminCardProps {
   settings: SystemSettings;
@@ -38,8 +39,8 @@ export const BackupAdminCard: React.FC<BackupAdminCardProps> = ({ settings, onSa
     setError(null);
     try {
       setFiles(await api.adminRunBackup());
-    } catch (err: any) {
-      setError(err.message || t('data.backupFailed'));
+    } catch (err) {
+      setError(errorMessage(err, t('data.backupFailed')));
       api.adminListBackups().then(setFiles).catch(() => {});
     } finally {
       setRunning(false);
@@ -49,16 +50,16 @@ export const BackupAdminCard: React.FC<BackupAdminCardProps> = ({ settings, onSa
   const download = async (name: string) => {
     try {
       saveBlob(await api.adminDownloadBackup(name), name);
-    } catch (err: any) {
-      setError(err.message || t('backups.downloadFailed'));
+    } catch (err) {
+      setError(errorMessage(err, t('backups.downloadFailed')));
     }
   };
 
   const downloadDeleted = async (userId: string, name: string) => {
     try {
       saveBlob(await api.adminDownloadDeletedBackup(userId, name), name);
-    } catch (err: any) {
-      setError(err.message || t('backups.downloadFailed'));
+    } catch (err) {
+      setError(errorMessage(err, t('backups.downloadFailed')));
     }
   };
 
@@ -67,8 +68,8 @@ export const BackupAdminCard: React.FC<BackupAdminCardProps> = ({ settings, onSa
     setError(null);
     try {
       setFiles(await api.adminDeleteBackup(name));
-    } catch (err: any) {
-      setError(err.message || t('backups.deleteFailed'));
+    } catch (err) {
+      setError(errorMessage(err, t('backups.deleteFailed')));
     }
   };
 
@@ -123,7 +124,7 @@ export const BackupAdminCard: React.FC<BackupAdminCardProps> = ({ settings, onSa
           disabled={running}
           className="btn-action h-11 sm:h-8 px-3 text-xs inline-flex items-center gap-1.5 disabled:opacity-50"
         >
-          {running ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Archive className="w-3.5 h-3.5 text-accent" />}
+          {running ? <LoaderCircle className="w-3.5 h-3.5 animate-spin" /> : <Archive className="w-3.5 h-3.5 text-accent" />}
           {running ? t('backups.running') : t('backups.runNow')}
         </button>
       </div>
@@ -157,7 +158,7 @@ export const BackupAdminCard: React.FC<BackupAdminCardProps> = ({ settings, onSa
                   aria-label={t('backups.deleteNamed', { name: f.name })}
                   className="btn-action h-11 w-11 sm:h-7 sm:w-7 inline-flex items-center justify-center text-faint hover:text-status-err"
                 >
-                  <Trash2 className="w-3.5 h-3.5" />
+                  <Trash className="w-3.5 h-3.5" />
                 </button>
               </div>
             </div>

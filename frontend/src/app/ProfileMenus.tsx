@@ -1,4 +1,4 @@
-import { Brain, HelpCircle, LogOut, Palette, Settings, Shield, Smartphone, Users, X } from 'lucide-react';
+import { Brain, CircleQuestionMark, LogOut, Palette, Settings, Shield, Smartphone, Users, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { User } from '../lib/types';
 import { isSharingDisabled, triggerHaptic } from '../lib/api';
@@ -99,7 +99,7 @@ export function ProfileDropdown({
             activeTab === 'help' ? 'text-accent font-semibold' : 'text-main'
           }`}
         >
-          <HelpCircle className="w-4 h-4 text-accent" />
+          <CircleQuestionMark className="w-4 h-4 text-accent" />
           <span>{t('profile.help')}</span>
         </button>
 
@@ -257,7 +257,7 @@ export function MobileProfileSheet({
               activeTab === 'help' ? 'text-accent font-semibold bg-panel-elevated' : 'text-main'
             }`}
           >
-            <HelpCircle className="w-4 h-4 text-accent" />
+            <CircleQuestionMark className="w-4 h-4 text-accent" />
             <span>{t('profile.help')}</span>
           </button>
 

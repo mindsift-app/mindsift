@@ -1,6 +1,6 @@
 import React from 'react';
 import { Trans, useTranslation } from 'react-i18next';
-import { Copy, Download, Pencil, Trash2, Upload } from 'lucide-react';
+import { Copy, Download, Pencil, Trash, Upload } from 'lucide-react';
 import { UserTheme } from '../../../lib/types';
 import {
   AVAILABLE_THEMES,
@@ -385,7 +385,7 @@ export function AppearanceSection({
                       className="btn-icon btn-icon-danger"
                       title={t('appearance.custom.deleteTitle')}
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
+                      <Trash className="w-3.5 h-3.5" />
                     </button>
                   </>
                 )}

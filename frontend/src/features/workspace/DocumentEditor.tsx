@@ -5,15 +5,15 @@ import { onDocFocusRequest, takeDocFocus } from '../../lib/docFocusRequest';
 import {
   Pin,
   Users,
-  Trash2,
+  Trash,
   RotateCcw,
   Download,
   Maximize2,
   FileText,
-  Loader2,
+  LoaderCircle,
   ArrowLeft,
   Lock,
-  Home,
+  House,
   ChevronRight,
   ChevronsUpDown,
   ChevronsDownUp,
@@ -21,13 +21,13 @@ import {
   Plus,
   Check,
   CloudOff,
-  AlertTriangle,
+  TriangleAlert,
   GitMerge,
   Undo2,
   Redo2,
-  MoreHorizontal,
+  Ellipsis,
   CalendarDays,
-  SmilePlus,
+  FaceSlightlySmilingPlus,
   Link2,
 } from 'lucide-react';
 import { Document, DocumentBlock, User } from '../../lib/types';
@@ -120,6 +120,7 @@ import { useDocPresence } from './useDocPresence';
 import { useBranchActions } from './useBranchActions';
 import { useBlockEditing } from './useBlockEditing';
 import { useTagPage } from './useTagPage';
+import { useLatestRef } from '../../lib/useLatestRef';
 
 export const DocumentEditor: React.FC<DocumentEditorProps> = ({
   docId,
@@ -208,8 +209,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
     cursorAnchorRef,
   });
   const outlinerTreeRef = useRef<OutlinerTreeHandle | null>(null);
-  const docRef = useRef<Document | null>(doc);
-  docRef.current = doc;
+  const docRef = useLatestRef<Document | null>(doc);
 
   const { zoomedBlock, childBlocks, levelOffset } = useMemo(() => {
     return getZoomedSubtree(blocks, zoomedBlockId);
@@ -317,8 +317,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
   }, [docId, embedded, loading]);
 
   // A link pointed to a bullet that is gone (moved, extracted, deleted): the note opens with a hint
-  const blocksForTargetRef = useRef(blocks);
-  blocksForTargetRef.current = blocks;
+  const blocksForTargetRef = useLatestRef(blocks);
   useEffect(() => {
     if (!initialFocusedBlockId || !doc?.id) return;
     const timer = window.setTimeout(() => {
@@ -327,7 +326,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
       }
     }, 1500);
     return () => window.clearTimeout(timer);
-  }, [initialFocusedBlockId, doc?.id, showNotice]);
+  }, [initialFocusedBlockId, doc?.id, showNotice, blocksForTargetRef]);
 
   const { handleUndo, handleRedo, handleExtractBlock, handleMoveBranch, handleExtractRequest, handleInlineBlock, extractAt, setExtractAt } =
     useBranchActions({
@@ -354,6 +353,8 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
   // The note holds as many bullets as it may: the server refused new ones, which disappear again
   const noteFull = engineState?.noteFull ?? 0;
   useEffect(() => {
+    // A refusal of the server shows its notice once
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (noteFull > 0) showNotice(t('editor.noteFull', { max: formatNumber(MAX_NOTE_BLOCKS) }));
     // Only a new refusal shows the notice; a language switch (t) or a new showNotice must not repeat it
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -494,7 +495,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
   if (showsLoading) {
     return (
       <div className="flex-1 flex items-center justify-center p-12 text-muted">
-        <Loader2 className="w-5 h-5 animate-spin mr-2 text-accent" />
+        <LoaderCircle className="w-5 h-5 animate-spin mr-2 text-accent" />
         <span className="text-xs">{t('editor.loading')}</span>
       </div>
     );
@@ -528,7 +529,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
         className="hover:text-accent inline-flex items-center gap-1 font-medium transition-colors cursor-pointer"
         title={t('editor.backToMain')}
       >
-        <Home className="w-3.5 h-3.5 text-accent shrink-0" />
+        <House className="w-3.5 h-3.5 text-accent shrink-0" />
         <span className="truncate max-w-[130px]">
           {title || doc?.title || t('editor.untitled')}
         </span>
@@ -633,7 +634,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
           data-tour="note-more"
           className="btn-icon tool-ghost h-11 w-11 sm:h-8 sm:w-8"
         >
-          <MoreHorizontal className="w-3.5 h-3.5" />
+          <Ellipsis className="w-3.5 h-3.5" />
         </button>
 
         {showActionsMenu && (
@@ -785,7 +786,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
                   }}
                   className="w-full min-h-[44px] sm:min-h-0 px-2.5 py-2 sm:py-1.5 rounded-btn hover:bg-status-err/10 text-left text-status-err font-medium flex items-center gap-2 transition-colors cursor-pointer"
                 >
-                  <Trash2 className="w-3.5 h-3.5 text-status-err shrink-0" />
+                  <Trash className="w-3.5 h-3.5 text-status-err shrink-0" />
                   <span>{t('editor.delete')}</span>
                 </button>
               </>
@@ -855,7 +856,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
                 title={t('editor.backToMain')}
                 aria-label={t('editor.backToMain')}
               >
-                <Home className="w-3.5 h-3.5" />
+                <House className="w-3.5 h-3.5" />
               </button>
               <span
                 className="basis-16 grow min-w-0 max-w-[180px] truncate text-xs font-medium text-main"
@@ -896,11 +897,11 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
               aria-label={t('editor.saveStatus')}
             >
               {engineState.status === 'saving' ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin text-accent" />
+                <LoaderCircle className="w-3.5 h-3.5 animate-spin text-accent" />
               ) : engineState.status === 'offline' ? (
                 <CloudOff className="w-3.5 h-3.5 text-status-warn" />
               ) : engineState.status === 'error' ? (
-                <AlertTriangle className="w-3.5 h-3.5 text-status-err" />
+                <TriangleAlert className="w-3.5 h-3.5 text-status-err" />
               ) : (
                 <Check className="w-3.5 h-3.5 text-status-ok" />
               )}
@@ -923,7 +924,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
       {/* In the trash: read-only with a way back */}
       {inTrash && (
         <div className="flex flex-wrap items-center gap-2 px-4 sm:px-6 py-2 bg-status-err/10 border-b border-status-err/25 text-status-err text-xs">
-          <Trash2 className="w-3.5 h-3.5 shrink-0" />
+          <Trash className="w-3.5 h-3.5 shrink-0" />
           <span className="flex-1 min-w-0">{t('editor.inTrash')}</span>
           {onRestoreDoc && (
             <button
@@ -1136,7 +1137,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
                   ) : doc?.icon ? (
                     doc.icon
                   ) : canEdit ? (
-                    <SmilePlus className="w-6 h-6 sm:w-7 sm:h-7 text-faint" strokeWidth={1.5} aria-label={t('editor.chooseIcon')} />
+                    <FaceSlightlySmilingPlus className="w-6 h-6 sm:w-7 sm:h-7 text-faint" strokeWidth={1.5} aria-label={t('editor.chooseIcon')} />
                   ) : null}
                 </button>
                 {showEmojiPicker && canEdit && (

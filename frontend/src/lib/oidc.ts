@@ -5,6 +5,7 @@
 import i18n from '../i18n';
 import { api, getCurrentOidc } from './api';
 import type { SecondFactorProof } from './types';
+import { errorMessage } from './errorMessage';
 
 const BIND_KEY = 'mindsift_oidc_bind';
 
@@ -105,8 +106,8 @@ export async function finishOidcReturn(): Promise<OidcResult | null> {
   try {
     const res = await api.oidcExchange(ticket, bind);
     pending = res.token ? { kind: 'signedIn' } : { kind: 'confirmed', linked: Boolean(res.linked) };
-  } catch (err: any) {
-    pending = { kind: 'error', message: err?.message || oidcErrorText('failed') };
+  } catch (err) {
+    pending = { kind: 'error', message: errorMessage(err, oidcErrorText('failed')) };
   }
   return pending;
 }

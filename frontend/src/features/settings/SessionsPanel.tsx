@@ -5,6 +5,7 @@ import { LogOut, Monitor, Smartphone } from 'lucide-react';
 import { api } from '../../lib/api';
 import { Session } from '../../lib/types';
 import { formatDateTime } from '../../lib/format';
+import { errorMessage } from '../../lib/errorMessage';
 
 // Rough device label from the user agent; good enough to tell one's own devices apart
 export function describeDevice(ua: string): { label: string; mobile: boolean } {
@@ -53,12 +54,14 @@ export function SessionsPanel() {
       const list = await api.listSessions();
       setSessions([...list.filter((s) => s.current), ...list.filter((s) => !s.current)]);
       setError('');
-    } catch (err: any) {
-      setError(err.message || i18n.t('settings:sessions.loadFailed'));
+    } catch (err) {
+      setError(errorMessage(err, i18n.t('settings:sessions.loadFailed')));
     }
   };
 
   useEffect(() => {
+    // Loads the sessions when the panel opens
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void load();
   }, []);
 
@@ -67,8 +70,8 @@ export function SessionsPanel() {
     try {
       await api.endSession(id);
       setSessions((prev) => (prev || []).filter((s) => s.id !== id));
-    } catch (err: any) {
-      setError(err.message || t('sessions.endFailed'));
+    } catch (err) {
+      setError(errorMessage(err, t('sessions.endFailed')));
     } finally {
       setEnding('');
     }

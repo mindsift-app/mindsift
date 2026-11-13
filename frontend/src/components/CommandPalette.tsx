@@ -4,10 +4,10 @@ import i18n from '../i18n';
 import {
   Search,
   FileText,
-  CheckSquare,
+  SquareCheckBig,
   ShoppingCart,
   X,
-  Loader2,
+  LoaderCircle,
   CornerDownLeft,
   Maximize2,
   Minimize2,
@@ -95,7 +95,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
 
     return [
       { key: 'documents', label: i18n.t('common:palette.kind.document'), icon: FileText, items: docs },
-      { key: 'tasks', label: i18n.t('common:palette.kind.thought'), icon: CheckSquare, items: tasks },
+      { key: 'tasks', label: i18n.t('common:palette.kind.thought'), icon: SquareCheckBig, items: tasks },
       { key: 'lists', label: i18n.t('common:palette.kind.list_item'), icon: ShoppingCart, items: listHits },
     ].filter((g) => g.items.length > 0);
   }, [hits]);
@@ -113,6 +113,8 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
   // Focus input and reset on open
   useEffect(() => {
     if (isOpen) {
+      // Opening starts with an empty search
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setQuery('');
       setHits([]);
       setSelectedIndex(0);
@@ -162,6 +164,8 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
 
     const trimmed = query.trim();
     if (!trimmed) {
+      // An empty search clears the hits at once; others are searched with a delay
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setHits([]);
       setLoading(false);
       setSelectedIndex(0);
@@ -338,7 +342,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
           {/* One fixed slot for the spinner or the clear button, so the field keeps its width while typing */}
           <span className="w-6 h-6 shrink-0 flex items-center justify-center">
             {loading ? (
-              <Loader2 className="w-4 h-4 animate-spin text-accent" />
+              <LoaderCircle className="w-4 h-4 animate-spin text-accent" />
             ) : query ? (
               <button
                 type="button"

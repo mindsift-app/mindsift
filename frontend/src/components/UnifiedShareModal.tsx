@@ -5,7 +5,7 @@ import {
   User as UserIcon,
   X,
   Plus,
-  Trash2,
+  Trash,
   Lock,
   Check,
 } from 'lucide-react';
@@ -15,6 +15,7 @@ import { UserAvatar } from './UserAvatar';
 import { isSharingDisabled } from '../lib/api';
 import { NO_AUTOFILL } from '../lib/noAutofill';
 import { SelectMenu } from './SelectMenu';
+import { errorMessage } from '../lib/errorMessage';
 
 export interface UnifiedShareModalProps {
   isOpen: boolean;
@@ -83,8 +84,8 @@ export const UnifiedShareModal: React.FC<UnifiedShareModalProps> = ({
       await onAddShare(shareType, targetId, permToUse);
       setSelectedTeamId('');
       setSelectedUser(null);
-    } catch (err: any) {
-      setError(err?.message || t('share.addFailed'));
+    } catch (err) {
+      setError(errorMessage(err, t('share.addFailed')));
     } finally {
       setLoading(false);
     }
@@ -95,8 +96,8 @@ export const UnifiedShareModal: React.FC<UnifiedShareModalProps> = ({
     setLoading(true);
     try {
       await onRemoveShare(shareId);
-    } catch (err: any) {
-      setError(err?.message || t('share.removeFailed'));
+    } catch (err) {
+      setError(errorMessage(err, t('share.removeFailed')));
     } finally {
       setLoading(false);
     }
@@ -400,7 +401,7 @@ export const UnifiedShareModal: React.FC<UnifiedShareModalProps> = ({
                           className="p-1 text-faint hover:text-status-err rounded transition-colors cursor-pointer"
                           title={t('share.remove')}
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
+                          <Trash className="w-3.5 h-3.5" />
                         </button>
                       )}
                     </div>

@@ -1,14 +1,14 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const getAuthStatus = vi.fn();
-vi.mock('../api', () => ({ api: { getAuthStatus: (...a: any[]) => getAuthStatus(...a) } }));
+vi.mock('../api', () => ({ api: { getAuthStatus: (...a: unknown[]) => getAuthStatus(...a) } }));
 
 import { loadVoiceConfig, resetVoiceConfig, setVoicePreference, voiceChoiceAvailable } from '../voice';
 
 // Recording and recognition as far as jsdom needs them to count as available
-(window as any).MediaRecorder = function () {};
+Object.assign(window, { MediaRecorder: function () {} });
 Object.defineProperty(navigator, 'mediaDevices', { value: { getUserMedia: vi.fn() }, configurable: true });
-(window as any).webkitSpeechRecognition = function () {};
+Object.assign(window, { webkitSpeechRecognition: function () {} });
 
 afterEach(() => {
   resetVoiceConfig();

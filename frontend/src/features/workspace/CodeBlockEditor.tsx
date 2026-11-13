@@ -364,6 +364,8 @@ export const CodeBlockEditor: React.FC<CodeBlockEditorProps> = ({
 
   useEffect(() => {
     if (!isControlled) {
+      // Uncontrolled: the text follows the block when it changes from outside
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setUncontrolledContent(block.content || '');
     }
   }, [block.content, isControlled]);
@@ -388,6 +390,8 @@ export const CodeBlockEditor: React.FC<CodeBlockEditorProps> = ({
   useEffect(() => {
     if (!prismLang) return;
     if (Prism.languages[prismLang]) {
+      // A grammar already loaded is used at once, others after loading
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLoadedGrammar(prismLang);
       return;
     }

@@ -18,20 +18,22 @@ import (
 // values no note holds any more (secrets.go), expired public links (publiclinks.go) and backups of
 // deleted accounts past the backup retention (backups.go).
 func (s *Server) startDoneCleanupTicker() {
-	time.Sleep(2 * time.Minute)
-	s.runDoneCleanup(time.Now())
-	s.runOAuthCleanup(time.Now())
-	s.runSecretSweep(time.Now())
-	s.runPublicLinkCleanup(time.Now())
-	s.runDeletedBackupSweep(time.Now())
+	if !s.wait(2 * time.Minute) {
+		return
+	}
 	ticker := time.NewTicker(time.Hour)
 	defer ticker.Stop()
-	for now := range ticker.C {
+	for now := time.Now(); ; now = time.Now() {
 		s.runDoneCleanup(now)
 		s.runOAuthCleanup(now)
 		s.runSecretSweep(now)
 		s.runPublicLinkCleanup(now)
 		s.runDeletedBackupSweep(now)
+		select {
+		case <-s.stop:
+			return
+		case <-ticker.C:
+		}
 	}
 }
 

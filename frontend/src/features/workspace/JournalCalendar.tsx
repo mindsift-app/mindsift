@@ -22,6 +22,8 @@ export const JournalCalendar: React.FC<JournalCalendarProps> = ({ activeDate, en
   const [view, setView] = useState({ year: active.getFullYear(), month: active.getMonth() });
   useEffect(() => {
     const d = parseISODate(activeDate);
+    // The calendar shows the month of the day chosen elsewhere
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setView({ year: d.getFullYear(), month: d.getMonth() });
   }, [activeDate]);
 

@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useLatestRef } from '../../lib/useLatestRef';
 
 // Drag & drop on the Kanban board with a finger (browsers offer HTML5 drag & drop only for mouse and
 // pen): hold a card for a moment, it lifts, drag it onto another card or column, let go. A short tap
@@ -40,8 +41,7 @@ export function useKanbanTouchDrag({ enabled, onStart, onHover, onDrop, onCancel
   const dragRef = useRef<Drag | null>(null);
   const hoverRef = useRef<{ col: string | null; target: KanbanDropTarget }>({ col: null, target: null });
   const suppressClickRef = useRef(false);
-  const callbacks = useRef({ onStart, onHover, onDrop, onCancel, snapPoints });
-  callbacks.current = { onStart, onHover, onDrop, onCancel, snapPoints };
+  const callbacks = useLatestRef({ onStart, onHover, onDrop, onCancel, snapPoints });
 
   const cancelHold = () => {
     if (holdRef.current) window.clearTimeout(holdRef.current.timer);
@@ -170,7 +170,7 @@ export function useKanbanTouchDrag({ enabled, onStart, onHover, onDrop, onCancel
         style: { WebkitTouchCallout: 'none' } as React.CSSProperties,
       };
     },
-    [enabled]
+    [enabled, callbacks]
   );
 
   /** A tap right after a drag must not open the task */

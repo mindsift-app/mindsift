@@ -1,7 +1,7 @@
 import React from 'react';
 import i18n from '../../i18n';
 import { api, triggerHaptic } from '../../lib/api';
-import { KanbanColumn, Recurrence, SubTask, TaskList, Thought, TrashedTask } from '../../lib/types';
+import { KanbanColumn, PriorityLevel, Recurrence, SubTask, TaskList, Thought, TrashedTask } from '../../lib/types';
 import { UndoEntry } from './useTaskUndo';
 import { askConfirm } from '../../components/askConfirm';
 
@@ -70,7 +70,7 @@ export function useTaskActions({
     triggerHaptic(10);
     const normalized = nextPriority === 'none' || nextPriority === '' ? 'normal' : nextPriority;
     setTasks((prev) =>
-      prev.map((t) => (t.id === task.id ? { ...t, priority: normalized as any } : t))
+      prev.map((t) => (t.id === task.id ? { ...t, priority: normalized as PriorityLevel } : t))
     );
     await api.updateThought(task.id, { priority: normalized });
     onRefreshStats();

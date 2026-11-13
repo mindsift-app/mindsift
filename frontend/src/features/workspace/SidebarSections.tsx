@@ -1,4 +1,4 @@
-import { CalendarDays, Trash2 } from 'lucide-react';
+import { CalendarDays, Trash } from 'lucide-react';
 import { JournalDay, TagSummary } from '../../lib/types';
 import { todayISO } from '../../lib/journal';
 import { CountBadge } from '../../components/CountBadge';
@@ -159,7 +159,7 @@ export function SidebarTrash({
             : 'border-transparent text-muted hover:text-main hover:bg-panel-elevated'
         }`}
       >
-        <Trash2 className="w-3.5 h-3.5" />
+        <Trash className="w-3.5 h-3.5" />
         <span className="flex-1 text-left">{t('trash.title')}</span>
         <CountBadge count={trashCount} />
       </button>

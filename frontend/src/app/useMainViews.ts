@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { getToken } from '../lib/api';
 
 export type MainViews = typeof import('./mainViews');
 
@@ -19,8 +18,6 @@ export function loadMainViews(): Promise<MainViews> {
   return pending;
 }
 
-// With a stored session the chunk starts loading right away, next to the sign-in check
-if (getToken()) loadMainViews().catch(() => {});
 
 const RELOAD_KEY = 'mindsift:chunk-reload';
 

@@ -1,4 +1,4 @@
-import { Filter, X } from 'lucide-react';
+import { Funnel, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { GROUP_LABELS, GroupBy, TaskSort } from './taskViewTypes';
 
@@ -21,7 +21,7 @@ export function ActiveFilterBanner({ selectedTag, setSelectedTag, groupBy, defau
   return (
     <div className="flex sm:hidden items-center justify-between gap-2 p-2 rounded-btn bg-accent/10 border border-accent/20 text-xs">
       <div className="flex items-center gap-1.5 flex-wrap min-w-0">
-        <Filter className="w-3.5 h-3.5 text-accent flex-shrink-0" />
+        <Funnel className="w-3.5 h-3.5 text-accent flex-shrink-0" />
         {selectedTag && (
           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-accent text-on-accent text-[11px] font-semibold">
             #{selectedTag}

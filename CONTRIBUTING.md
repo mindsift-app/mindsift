@@ -11,7 +11,7 @@ MindSift is developed with a lot of AI assistance. One person decides what goes 
 Run the checks locally. They need only podman (or Docker with `ENGINE=docker`), no local Node or Go:
 
 ```bash
-ci/local-checks.sh          # tsc, ESLint, Vitest, gofmt, go vet, staticcheck, Go tests, build plan
+ci/local-checks.sh          # tsc, ESLint, Vitest, gofmt, go vet, golangci-lint, Go tests, build plan
 E2E=1 ci/local-checks.sh    # plus the browser tests (Playwright, a few minutes)
 ```
 

@@ -5,6 +5,7 @@ import { api } from '../lib/api';
 import { MarkdownViewer } from '../lib/markdown';
 import { ReadingModal } from './ReadingModal';
 import { safeHref } from '../lib/safeUrl';
+import { errorMessage } from '../lib/errorMessage';
 
 type LegalType = 'imprint' | 'privacy';
 
@@ -38,8 +39,8 @@ export const LegalLinks: React.FC<LegalLinksProps> = ({ legal, className = '', c
     setError(null);
     try {
       setOpen({ type, content: await api.getLegalText(type) });
-    } catch (err: any) {
-      setError(err.message || t('legal.loadFailed'));
+    } catch (err) {
+      setError(errorMessage(err, t('legal.loadFailed')));
     }
   };
 

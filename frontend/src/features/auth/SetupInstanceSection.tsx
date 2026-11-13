@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import { Archive, Server, Users } from 'lucide-react';
 import i18n, { applyLanguage, isLanguage, LANGUAGES } from '../../i18n';
@@ -12,9 +12,10 @@ import {
   MAX_BACKUP_RETENTION_DAYS,
   validBackupRetentionDays,
 } from '../../lib/backupDefaults';
+import { browserTimeZone, timeZoneLabel, timeZoneList } from '../../lib/timeZones';
 
 // The setup wizard's questions about the instance, beside the admin account: name, default language,
-// sharing mode, registration, daily backups and sample data. The first-boot wizard asks them together with
+// time zone, sharing mode, registration, daily backups and sample data. The first-boot wizard asks them together with
 // the account; after an admin from ADMIN_USER they come on their own (FinishSetupView). Further questions
 // of the setup go here, so both ways ask them (mail server and summary: SetupMailSection, SetupSummary).
 
@@ -24,6 +25,8 @@ export interface SetupChoices {
   allowRegistration: boolean;
   createSampleData: boolean;
   defaultLanguage: string;
+  // The server's time zone (IANA name); '' leaves it to TZ, else UTC
+  timeZone: string;
   backupEnabled: boolean;
   // Only with backups switched on; otherwise the server keeps its defaults for the admin settings
   backupTime?: string;
@@ -46,6 +49,8 @@ export function useSetupChoices(initialInstanceName?: string) {
     setDefaultLanguage(lang);
     if (isLanguage(lang)) void applyLanguage(lang);
   };
+  // The server's time zone, suggested from this browser: whoever sets up the server usually lives where it runs
+  const [timeZone, setTimeZone] = useState(browserTimeZone);
   const keepDays = Number(backupKeepDays);
   const choices: SetupChoices = {
     instanceName: instanceName.trim() || 'MindSift',
@@ -53,6 +58,7 @@ export function useSetupChoices(initialInstanceName?: string) {
     allowRegistration,
     createSampleData,
     defaultLanguage,
+    timeZone,
     backupEnabled,
     ...(backupEnabled ? { backupTime, backupRetentionDays: keepDays } : {}),
   };
@@ -75,6 +81,8 @@ export function useSetupChoices(initialInstanceName?: string) {
     setCreateSampleData,
     defaultLanguage,
     chooseLanguage,
+    timeZone,
+    setTimeZone,
     backupEnabled,
     setBackupEnabled,
     backupTime,
@@ -95,6 +103,14 @@ export const SetupInstanceSection: React.FC<{ state: SetupChoicesState; heading:
     { id: 'organizations', label: t('setup.organizations'), hint: t('setup.organizationsHint') },
     { id: 'open', label: t('setup.open'), hint: t('setup.openHint') },
   ];
+  // Same list as the administration's setting (TimeZoneSetting), with the browser's zone always in it
+  const zoneOptions = useMemo(
+    () => [
+      { value: '', label: t('setup.timeZoneNotSet') },
+      ...timeZoneList([browserTimeZone(), state.timeZone]).map((z) => ({ value: z, label: timeZoneLabel(z) })),
+    ],
+    [t, state.timeZone],
+  );
   return (
     <div className="p-3.5 bg-canvas border border-border space-y-3">
       <h2 className="text-xs font-bold text-main uppercase tracking-wider flex items-center gap-1.5">
@@ -122,6 +138,12 @@ export const SetupInstanceSection: React.FC<{ state: SetupChoicesState; heading:
           options={LANGUAGES.map((l) => ({ value: l.id, label: l.name }))}
         />
         <p className="text-[11px] text-muted mt-1">{t('setup.languageHint')}</p>
+      </div>
+
+      <div data-setup-time-zone>
+        <p className="block text-muted mb-1">{t('setup.timeZone')}</p>
+        <SelectMenu ariaLabel={t('setup.timeZone')} value={state.timeZone} onChange={state.setTimeZone} options={zoneOptions} />
+        <p className="text-[11px] text-muted mt-1">{t('setup.timeZoneHint')}</p>
       </div>
 
       <div>

@@ -8,6 +8,8 @@ import { ReadingModal } from './ReadingModal';
 export const PROJECT_REPO_URL = 'https://github.com/mindsift-app/mindsift';
 // What changed in each version, as released on main
 export const CHANGELOG_URL = `${PROJECT_REPO_URL}/blob/main/CHANGELOG.md`;
+// The licenses of the third-party software in this build, served by MindSift itself (internal/api/licenses.go)
+export const THIRD_PARTY_LICENSES_URL = '/third-party-licenses.txt';
 // The license text is in the locale files (common:about.license)
 
 export const AboutModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
@@ -49,6 +51,19 @@ export const AboutModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         <dd>
           <a href={PROJECT_REPO_URL} target="_blank" rel="noopener noreferrer" className="text-accent hover:underline inline-flex items-center gap-1">
             {PROJECT_REPO_URL.replace(/^https:\/\//, '')}
+            <ExternalLink className="w-3 h-3" />
+          </a>
+        </dd>
+        <dt className="font-semibold text-main">{t('about.thirdPartyLabel')}</dt>
+        <dd>
+          <a
+            href={THIRD_PARTY_LICENSES_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-accent hover:underline inline-flex items-center gap-1"
+            data-third-party-licenses
+          >
+            {t('about.thirdParty')}
             <ExternalLink className="w-3 h-3" />
           </a>
         </dd>

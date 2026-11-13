@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
-import { AlertCircle, Brain, Check, LogOut } from 'lucide-react';
+import { CircleAlert, Brain, Check, LogOut } from 'lucide-react';
 import { AuthStatus, SetupInfo, User } from '../../lib/types';
 import { api, triggerHaptic } from '../../lib/api';
 import { LegalLinks } from '../../components/LegalLinks';
@@ -8,6 +8,7 @@ import { SetupInstanceSection, useSetupChoices } from './SetupInstanceSection';
 import { SetupEmailSection, SetupMailSection, useSetupMail } from './SetupMailSection';
 import { SetupSummary } from './SetupSummary';
 import { useKeyboardRoom } from '../../lib/useKeyboardInset';
+import { errorMessage } from '../../lib/errorMessage';
 
 // The rest of the setup wizard for an admin that ADMIN_USER / ADMIN_PASSWORD created at startup: the
 // account exists, so only the instance settings are asked, once, after the first sign-in – plus the
@@ -52,8 +53,8 @@ export const FinishSetupView: React.FC<{
         ...(asksEmail && email.trim() ? { email: email.trim() } : {}),
       });
       onDone();
-    } catch (err: any) {
-      setError(err.message || t('setup.failed'));
+    } catch (err) {
+      setError(errorMessage(err, t('setup.failed')));
     } finally {
       setSubmitting(false);
     }
@@ -110,7 +111,7 @@ export const FinishSetupView: React.FC<{
           {/* Beside the button: the form is long, an error on top would be out of sight */}
           {error && (
             <div role="alert" className="alert-err flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 text-status-err flex-shrink-0" />
+              <CircleAlert className="w-4 h-4 text-status-err flex-shrink-0" />
               <span>{error}</span>
             </div>
           )}

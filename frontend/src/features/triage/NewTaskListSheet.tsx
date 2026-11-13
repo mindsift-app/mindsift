@@ -6,6 +6,7 @@ import { TaskList } from '../../lib/types';
 import { FormSheet } from '../../components/FormSheet';
 import { EmojiIconButton } from '../../components/EmojiIconButton';
 import { showError } from '../../components/ErrorNotice';
+import { errorMessage } from '../../lib/errorMessage';
 
 interface NewTaskListSheetProps {
   showNewListModal: boolean;
@@ -36,8 +37,8 @@ export function NewTaskListSheet({ showNewListModal, setShowNewListModal, setTas
       setShowNewListModal(false);
       setNewListTitle('');
       setNewListIcon('📋');
-    } catch (err: any) {
-      showError(err.message || t('newList.failed'));
+    } catch (err) {
+      showError(errorMessage(err, t('newList.failed')));
     }
   };
 

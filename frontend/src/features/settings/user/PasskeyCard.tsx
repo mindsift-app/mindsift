@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import i18n from '../../../i18n';
-import { AlertCircle, AlertTriangle, Check, Cloud, Fingerprint, KeyRound, Pencil, Trash2 } from 'lucide-react';
-import { api } from '../../../lib/api';
+import { CircleAlert, TriangleAlert, Check, Cloud, FingerprintPattern, KeyRound, Pencil, Trash } from 'lucide-react';
+import { api, ApiError } from '../../../lib/api';
 import { MfaStatus, Passkey, SecondFactorProof, User } from '../../../lib/types';
 import { formatDate } from '../../../lib/format';
 import { createPasskey, PasskeyJSON, passkeyCancelled, passkeysSupported } from '../../../lib/webauthn';
@@ -10,6 +10,7 @@ import { FormSheet } from '../../../components/FormSheet';
 import { describeDevice } from '../SessionsPanel';
 import { RecoveryCodesPanel } from './RecoveryCodesPanel';
 import { passkeyProof, secondFactorOf, SecondFactorFields } from './SecondFactorFields';
+import { errorMessage } from '../../../lib/errorMessage';
 
 type Flow =
   | { step: 'idle' }
@@ -52,11 +53,13 @@ export function PasskeyCard({
     try {
       setStatus(await api.getMfaStatus());
       setLoadError('');
-    } catch (err: any) {
-      setLoadError(err?.message || i18n.t('settings:security.twoFactor.loadFailed'));
+    } catch (err) {
+      setLoadError(errorMessage(err, i18n.t('settings:security.twoFactor.loadFailed')));
     }
   };
   useEffect(() => {
+    // Loads the status when the card opens and after changes
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void load();
   }, [refreshKey]);
 
@@ -72,8 +75,8 @@ export function PasskeyCard({
     setError('');
   };
 
-  const fail = (err: any) => {
-    if (!passkeyCancelled(err)) setError(err?.message || t('security.passkeys.failed'));
+  const fail = (err: unknown) => {
+    if (!passkeyCancelled(err)) setError(errorMessage(err, t('security.passkeys.failed')));
   };
 
   const confirm = async (proof?: SecondFactorProof) => {
@@ -107,11 +110,11 @@ export function PasskeyCard({
         setDone(t('security.passkeys.added'));
       }
       changed();
-    } catch (err: any) {
+    } catch (err) {
       // Cancelled in the browser: the step stays, the options are still valid for a while
       if (passkeyCancelled(err)) return;
       fail(err);
-      if (err?.code === 'passkey_expired') reset();
+      if (err instanceof ApiError && err.code === 'passkey_expired') reset();
     } finally {
       setBusy(false);
     }
@@ -166,7 +169,7 @@ export function PasskeyCard({
     <div className="space-y-3" data-security-card="passkeys">
       <div>
         <h3 className="text-xs font-bold text-main flex items-center gap-1.5">
-          <Fingerprint className="w-3.5 h-3.5 text-accent" />
+          <FingerprintPattern className="w-3.5 h-3.5 text-accent" />
           <span>{t('security.passkeys.title')}</span>
         </h3>
         <p className="text-[11px] text-muted">{t('security.passkeys.intro')}</p>
@@ -194,7 +197,7 @@ export function PasskeyCard({
           )}
           {error && !removing && (
             <div role="alert" className="alert-err flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 text-status-err flex-shrink-0" />
+              <CircleAlert className="w-4 h-4 text-status-err flex-shrink-0" />
               <span>{error}</span>
             </div>
           )}
@@ -261,7 +264,7 @@ export function PasskeyCard({
                           }}
                           className="btn-secondary h-11 sm:h-8 px-3 text-xs flex-1 sm:flex-none flex items-center justify-center gap-1.5"
                         >
-                          <Trash2 size={13} />
+                          <Trash size={13} />
                           <span>{t('security.passkeys.remove')}</span>
                         </button>
                       </div>
@@ -287,7 +290,7 @@ export function PasskeyCard({
                 }}
                 className="btn-primary h-11 sm:h-8 px-4 text-xs font-semibold shrink-0 flex items-center justify-center gap-1.5"
               >
-                <Fingerprint className="w-3.5 h-3.5" />
+                <FingerprintPattern className="w-3.5 h-3.5" />
                 <span>{t('security.passkeys.add')}</span>
               </button>
             </div>
@@ -356,7 +359,7 @@ export function PasskeyCard({
                   disabled={busy || !name.trim()}
                   className="btn-primary h-11 sm:h-8 px-4 text-xs font-semibold flex items-center justify-center gap-1.5 disabled:opacity-50"
                 >
-                  <Fingerprint className="w-3.5 h-3.5" />
+                  <FingerprintPattern className="w-3.5 h-3.5" />
                   <span>{busy ? t('security.passkeys.creating') : t('security.passkeys.create')}</span>
                 </button>
               </div>
@@ -372,7 +375,7 @@ export function PasskeyCard({
       {removing && (
         <FormSheet
           title={t('security.passkeys.removeTitle')}
-          icon={<Trash2 className="w-4 h-4 text-status-err" />}
+          icon={<Trash className="w-4 h-4 text-status-err" />}
           onClose={() => {
             setRemoving(null);
             reset();
@@ -388,7 +391,7 @@ export function PasskeyCard({
           <p className="text-xs text-muted">{t('security.passkeys.removeHint', { name: removing.name })}</p>
           {lastFactor && (
             <p role="alert" className="text-xs text-status-err flex items-start gap-1.5" data-last-factor>
-              <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-px" />
+              <TriangleAlert className="w-3.5 h-3.5 shrink-0 mt-px" />
               <span>{t('security.passkeys.removeLast')}</span>
             </p>
           )}

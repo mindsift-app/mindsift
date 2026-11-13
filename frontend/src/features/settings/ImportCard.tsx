@@ -1,10 +1,11 @@
 import React, { useRef, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import i18n from '../../i18n';
-import { Upload, Check, AlertCircle, FileArchive } from 'lucide-react';
+import { Upload, Check, CircleAlert, FileArchive } from 'lucide-react';
 import { DATA_SECTIONS, DataSection, ImportSummary } from '../../lib/types';
 import { SectionPicker } from './SectionPicker';
 import { api } from '../../lib/api';
+import { errorMessage } from '../../lib/errorMessage';
 
 interface ImportCardProps {
   source: 'mindsift' | 'obsidian';
@@ -58,8 +59,8 @@ export const ImportCard: React.FC<ImportCardProps> = ({ source, title, descripti
     setBusy(true);
     try {
       setPreview(await api.importData(source, f, true, 'merge', sectionParam));
-    } catch (err: any) {
-      setError(err.message || t('import.readFailed'));
+    } catch (err) {
+      setError(errorMessage(err, t('import.readFailed')));
     } finally {
       setBusy(false);
     }
@@ -74,8 +75,8 @@ export const ImportCard: React.FC<ImportCardProps> = ({ source, title, descripti
       setFile(null);
       setPreview(null);
       setConfirmRestore(false);
-    } catch (err: any) {
-      setError(err.message || t('import.failed'));
+    } catch (err) {
+      setError(errorMessage(err, t('import.failed')));
     } finally {
       setBusy(false);
     }
@@ -133,7 +134,7 @@ export const ImportCard: React.FC<ImportCardProps> = ({ source, title, descripti
               api
                 .importData(source, file, true, 'merge', next)
                 .then(setPreview)
-                .catch((err) => setError(err.message))
+                .catch((err) => setError(errorMessage(err)))
                 .finally(() => setBusy(false));
             }
           }}
@@ -180,7 +181,7 @@ export const ImportCard: React.FC<ImportCardProps> = ({ source, title, descripti
       {busy && <p className="text-[11px] text-muted">{preview ? t('import.importing') : t('import.reading')}</p>}
       {error && (
         <p className="text-[11px] text-status-err flex items-start gap-1.5">
-          <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-px" />
+          <CircleAlert className="w-3.5 h-3.5 shrink-0 mt-px" />
           <span>{error}</span>
         </p>
       )}

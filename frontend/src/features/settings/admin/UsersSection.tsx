@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import {
   Mail,
   Plus,
-  Trash2,
+  Trash,
   KeyRound,
   Copy,
   Check,
@@ -267,6 +267,8 @@ export function UsersSection({
             {invites.map((inv) => {
               const maxUses = inv.maxUses || 1;
               const used = inv.useCount ?? (inv.usedBy ? 1 : 0);
+              // Whether an invite is still open is judged at each render of the list
+              // eslint-disable-next-line react-hooks/purity
               const open = used < maxUses && new Date(inv.expiresAt).getTime() > Date.now();
               const copied = copiedInviteId === inv.id;
               const details = [
@@ -343,7 +345,7 @@ export function UsersSection({
                         title={t('users.invite.delete')}
                         aria-label={t('users.invite.delete')}
                       >
-                        <Trash2 className="w-3.5 h-3.5" />
+                        <Trash className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   </div>

@@ -29,6 +29,8 @@ type Server struct {
 	store    *storage.Store
 	wsHub    *ws.Hub
 	staticFS fs.FS
+	// licensesFile: THIRD_PARTY_LICENSES.txt, served at /third-party-licenses.txt (licenses.go); tests set it
+	licensesFile string
 	// setupMu: the first-boot setup runs once at a time
 	setupMu sync.Mutex
 	// setupCode: the one-time code the first-boot setup asks for (setup_code.go)
@@ -59,7 +61,7 @@ type Server struct {
 	pushHTTPClient    *http.Client // tests: reach a local push service
 	push              pushKeys
 
-	// Background work that touches the database right from the start (compaction); Close stops it
+	// Background jobs (tickers, compaction, backups); Close stops them
 	stop     chan struct{}
 	stopOnce sync.Once
 	bg       sync.WaitGroup
@@ -72,10 +74,12 @@ func NewServer(cfg *config.Config, store *storage.Store, wsHub *ws.Hub, staticFS
 		store:    store,
 		wsHub:    wsHub,
 		staticFS: staticFS,
-		leases:   collab.NewLeaseManager(nil),
-		notifier: collab.NewNotifier(),
-		stop:     make(chan struct{}),
-		now:      time.Now,
+		// Next to the binary: /app/ in the image, the unpacked folder of a release archive
+		licensesFile: defaultThirdPartyLicenses(),
+		leases:       collab.NewLeaseManager(nil),
+		notifier:     collab.NewNotifier(),
+		stop:         make(chan struct{}),
+		now:          time.Now,
 	}
 	srv.loginGuard = newLoginGuard(!cfg.DisableLoginProtection)
 	srv.prepareSetupCode()
@@ -95,20 +99,40 @@ func NewServer(cfg *config.Config, store *storage.Store, wsHub *ws.Hub, staticFS
 	store.OnTaskCreated = func(th *domain.Thought) {
 		srv.wsHub.BroadcastToUsers(srv.taskAudience(th), "TASK_CREATED", th)
 	}
-	srv.bg.Add(2)
-	go srv.startCompaction()
-	go srv.startDrawTicker()
+	srv.background(srv.startCompaction)
+	srv.background(srv.startDrawTicker)
 	if cfg.DemoMode && cfg.DemoResetMinutes > 0 {
-		go srv.startDemoResetTicker()
+		srv.background(srv.startDemoResetTicker)
 	}
 	// The demo sends nothing (FLAW-33); its alarm ticker only fills the notification center
-	go srv.startAlarmTicker()
+	srv.background(srv.startAlarmTicker)
 	if !cfg.DemoMode {
-		go srv.startNotificationJobs()
-		go srv.startBackupScheduler()
-		go srv.startDoneCleanupTicker()
+		srv.background(srv.startNotificationJobs)
+		srv.background(srv.startBackupScheduler)
+		srv.background(srv.startDoneCleanupTicker)
 	}
 	return srv
+}
+
+// background runs a job of the server until Close (each job returns once s.stop is closed).
+func (s *Server) background(job func()) {
+	s.bg.Add(1)
+	go func() {
+		defer s.bg.Done()
+		job()
+	}()
+}
+
+// wait pauses a background job for d; false means the server is stopping and the job should return.
+func (s *Server) wait(d time.Duration) bool {
+	t := time.NewTimer(d)
+	defer t.Stop()
+	select {
+	case <-s.stop:
+		return false
+	case <-t.C:
+		return true
+	}
 }
 
 // canJoinRoom allows realtime rooms only to users with read access: "doc:<id>" for notes, otherwise a shared list ID.
@@ -133,8 +157,9 @@ func (s *Server) taskAudience(th *domain.Thought) []string {
 	return append(s.store.GetTaskListUserIDs(th.TaskListID), th.UserID)
 }
 
-// Close stops the background compaction and waits until a running pass has finished, so the database
-// can be closed safely afterwards (tests close it right away; a pass still writing would race with that).
+// Close stops the background jobs and waits until running passes have finished, so the database can be
+// closed safely afterwards (tests close it right away; a pass still writing would race with that, and a
+// ticker left running would keep logging failed queries on the closed database).
 func (s *Server) Close() {
 	s.stopOnce.Do(func() { close(s.stop) })
 	s.bg.Wait()
@@ -468,6 +493,9 @@ func (s *Server) Router() http.Handler {
 	r.Post("/share-target", func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 	})
+
+	// Licenses of the third-party software in this build (licenses.go), linked in the app's About part
+	r.Get("/third-party-licenses.txt", s.handleThirdPartyLicenses)
 
 	// Embedded Frontend SPA Handler
 	if s.staticFS != nil {
