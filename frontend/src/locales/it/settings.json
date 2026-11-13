@@ -11,6 +11,19 @@
     "title": "Lingua predefinita",
     "hint": "Per i nuovi account e per chi usa un browser con una lingua non supportata da MindSift, inclusa la schermata di accesso e la demo. Ciascun utente può modificarla in Impostazioni account → Lingua."
   },
+  "timeZone": {
+    "title": "Fuso orario",
+    "notSet": "Non impostato ({{zone}})",
+    "now": "Ora del server: {{time}} ({{zone}})",
+    "source": {
+      "setting": "Origine: questa impostazione",
+      "env": "Origine: variabile d'ambiente TZ",
+      "default": "Origine: UTC predefinito – nessun fuso orario impostato qui o tramite TZ"
+    },
+    "hint": "Un unico fuso orario per tutto il server: scadenze, allarmi, riepilogo giornaliero, backup e date nelle e-mail lo seguono. Una modifica vale subito.",
+    "useBrowser": "Usa il fuso orario di questo browser ({{zone}})",
+    "reset": "Non impostare più"
+  },
   "user": {
     "backTitle": "Torna alla panoramica",
     "back": "Indietro",

@@ -557,4 +557,5 @@ var messagesES = map[string]string{
 	"Die Registrierung mit Passwort ist ausgeschaltet. Bitte melde dich über {name} an.":       "El registro con contraseña está desactivado. Inicia sesión con {name}.",
 	"Die Anmeldung mit Passwort ist ausgeschaltet. Bitte melde dich über {name} an.":           "El inicio de sesión con contraseña está desactivado. Inicia sesión con {name}.",
 	"Die Anmeldung über einen Anbieter (OIDC) ist auf diesem Server nicht eingerichtet":        "El inicio de sesión mediante un proveedor (OIDC) no está configurado en este servidor",
+	"Unbekannte Zeitzone": "Zona horaria desconocida",
 }

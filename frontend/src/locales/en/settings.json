@@ -11,6 +11,19 @@
     "title": "Default language",
     "hint": "For new accounts and everyone whose browser language MindSift does not speak, also on the sign-in screen and in the demo. Everyone can change it under Account settings → Language."
   },
+  "timeZone": {
+    "title": "Time zone",
+    "notSet": "Not set ({{zone}})",
+    "now": "Server time now: {{time}} ({{zone}})",
+    "source": {
+      "setting": "Source: this setting",
+      "env": "Source: environment variable TZ",
+      "default": "Source: default UTC – no time zone is set here or through TZ"
+    },
+    "hint": "One time zone for the whole server: due dates, alarms, the daily summary, backups and dates in emails follow it. A change applies at once.",
+    "useBrowser": "Use this browser's time zone ({{zone}})",
+    "reset": "Unset"
+  },
   "user": {
     "backTitle": "Back to the overview",
     "back": "Back",

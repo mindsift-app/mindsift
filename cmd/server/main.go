@@ -27,7 +27,7 @@ var embeddedDist embed.FS
 
 func main() {
 	privateFiles()
-	// The server's time zone (internal/clock): TZ, else UTC
+	// The server's time zone (internal/clock): TZ or UTC until the stored setting is read (srv.ApplyTimeZone)
 	_, _ = clock.Apply("")
 	cfg := config.Load()
 
@@ -76,6 +76,7 @@ func main() {
 	}
 
 	srv := api.NewServer(cfg, store, wsHub, staticFS)
+	srv.ApplyTimeZone()
 	// ADMIN_USER / ADMIN_PASSWORD: the first admin exists before anyone can reach the setup wizard. Set
 	// but unusable, the server does not start: it would wait for the first visitor to become admin.
 	if err := srv.CreateInitialAdmin(); err != nil {

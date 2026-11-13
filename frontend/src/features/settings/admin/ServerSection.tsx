@@ -8,6 +8,7 @@ import { ToggleSwitch } from '../../../components/ToggleSwitch';
 import { BackupAdminCard } from '../BackupAdminCard';
 import { VoiceStatusCard } from '../VoiceStatusCard';
 import { OidcStatusCard } from './OidcStatusCard';
+import { TimeZoneSetting } from './TimeZoneSetting';
 import { SHARING_MODES, useAdminSettings } from './useAdminSettings';
 import { Trans, useTranslation } from 'react-i18next';
 import { FALLBACK_LANGUAGE, LANGUAGES } from '../../../i18n';
@@ -80,6 +81,9 @@ export function ServerSection({
             </div>
             <p className="text-[11px] text-muted mt-1 max-w-md">{t('defaultLanguage.hint')}</p>
           </div>
+
+          {/* The server's time zone: due dates, alarms, the daily summary and backups follow it */}
+          <TimeZoneSetting settings={settings} onSave={(patch) => handleSaveSystemSettings(patch)} />
 
           {/* Sharing Isolation Cards */}
           <div className="space-y-2">

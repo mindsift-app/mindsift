@@ -557,4 +557,5 @@ var messagesEN = map[string]string{
 	"Die Registrierung mit Passwort ist ausgeschaltet. Bitte melde dich über {name} an.":       "Signing up with a password is switched off. Please sign in with {name}.",
 	"Die Anmeldung mit Passwort ist ausgeschaltet. Bitte melde dich über {name} an.":           "Signing in with a password is switched off. Please sign in with {name}.",
 	"Die Anmeldung über einen Anbieter (OIDC) ist auf diesem Server nicht eingerichtet":        "Sign-in through a provider (OIDC) is not set up on this server",
+	"Unbekannte Zeitzone": "Unknown time zone",
 }

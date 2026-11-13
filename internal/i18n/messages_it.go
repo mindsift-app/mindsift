@@ -557,4 +557,5 @@ var messagesIT = map[string]string{
 	"Die Registrierung mit Passwort ist ausgeschaltet. Bitte melde dich über {name} an.":       "La registrazione con password è disattivata. Accedi con {name}.",
 	"Die Anmeldung mit Passwort ist ausgeschaltet. Bitte melde dich über {name} an.":           "L'accesso con password è disattivato. Accedi con {name}.",
 	"Die Anmeldung über einen Anbieter (OIDC) ist auf diesem Server nicht eingerichtet":        "L'accesso tramite un provider (OIDC) non è configurato su questo server",
+	"Unbekannte Zeitzone": "Fuso orario sconosciuto",
 }

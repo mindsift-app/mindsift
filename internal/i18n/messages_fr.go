@@ -557,4 +557,5 @@ var messagesFR = map[string]string{
 	"Die Registrierung mit Passwort ist ausgeschaltet. Bitte melde dich über {name} an.":       "L'inscription avec mot de passe est désactivée. Connecte-toi avec {name}.",
 	"Die Anmeldung mit Passwort ist ausgeschaltet. Bitte melde dich über {name} an.":           "La connexion avec mot de passe est désactivée. Connecte-toi avec {name}.",
 	"Die Anmeldung über einen Anbieter (OIDC) ist auf diesem Server nicht eingerichtet":        "La connexion via un fournisseur (OIDC) n'est pas configurée sur ce serveur",
+	"Unbekannte Zeitzone": "Fuseau horaire inconnu",
 }
