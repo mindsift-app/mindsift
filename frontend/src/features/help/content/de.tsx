@@ -658,6 +658,7 @@ const de: HelpContent = {
         'discord',
         'termin',
         'fälligkeit',
+        'zeitzone',
         'priorität',
         'zuweisen',
         'zugewiesen',
@@ -684,7 +685,7 @@ const de: HelpContent = {
               <strong className="text-main">Fälligkeit mit Uhrzeit:</strong> Im Detail-Fenster neben dem Datum optional eine Uhrzeit setzen; „✕ Uhrzeit“ macht die Aufgabe wieder ganztägig. Angezeigt wird z.B. „Heute, 14:30“, Überfälliges in Rot.
             </li>
             <li>
-              <strong className="text-main">Automatische Alarme:</strong> Zur Fälligkeit (ganztägige Aufgaben um 9:00, abzüglich deiner Vorlaufzeit) benachrichtigt MindSift dich per <strong className="text-main">E-Mail</strong>, <strong className="text-main">Discord-Webhook</strong> oder individuellem HTTP-Webhook. Verschiebst du die Fälligkeit oder öffnest die Aufgabe wieder, kommt der Alarm erneut. Konfigurierbar in deinen Benutzereinstellungen. E-Mail-Alarme gehen an deine Anmelde-Adresse. Eine neue Anmelde-Adresse gilt erst, wenn du den Link in der Bestätigungs-E-Mail an sie anklickst; bis dahin bleibt die bisherige.
+              <strong className="text-main">Automatische Alarme:</strong> Zur Fälligkeit (ganztägige Aufgaben um 9:00, abzüglich deiner Vorlaufzeit) benachrichtigt MindSift dich per <strong className="text-main">E-Mail</strong>, <strong className="text-main">Discord-Webhook</strong> oder individuellem HTTP-Webhook. Verschiebst du die Fälligkeit oder öffnest die Aufgabe wieder, kommt der Alarm erneut. Konfigurierbar in deinen Benutzereinstellungen. E-Mail-Alarme gehen an deine Anmelde-Adresse. Eine neue Anmelde-Adresse gilt erst, wenn du den Link in der Bestätigungs-E-Mail an sie anklickst; bis dahin bleibt die bisherige. Alle Zeiten gelten in der Zeitzone des Servers, die ein Server-Admin unter <em>Server-Administration → Server &amp; Teilen</em> einstellt.
             </li>
             <li>
               <strong className="text-main">Erinnerungen pro Aufgabe:</strong> Im Detail-Fenster unter „Erinnerung“ eine oder mehrere Zeiten anhaken, z. B. 2 Wochen vorher und am Fälligkeitstag. Sie ersetzen für diese Aufgabe deine Vorlaufzeit und gelten für alle, die ihren Fälligkeits-Alarm bekommen; „Standard“ nimmt wieder die Vorlaufzeit aus den Einstellungen. Ohne Uhrzeit erinnert MindSift ganze Tage vorher um 9:00. Aufgaben mit eigenen Erinnerungen tragen eine kleine 🔔.
@@ -829,6 +830,9 @@ const de: HelpContent = {
           <ul className="space-y-1.5">
             <li>
               <strong className="text-main">Wer mit wem teilen darf:</strong> Das legt der Server-Admin fest: mit allen, nur mit Personen, mit denen du mindestens eine <em>Organisation</em> gemeinsam hast, oder mit niemandem (Modus „Privat“: kein Teilen, keine Gruppen). Du kannst mehreren Organisationen angehören; sie verwalten Server-Admins und die Benutzerverwaltung. Ist die Personensuche abgeschaltet, gibst du beim Teilen die genaue E-Mail-Adresse oder den Benutzernamen ein. Wer mit dir an etwas arbeitet, siehst du dort immer mit Namen.
+            </li>
+            <li>
+              <strong className="text-main">Zeitzone des Servers:</strong> Server-Admins stellen sie unter <em>Server-Administration → Server &amp; Teilen → Zeitzone</em> ein. Sie gilt sofort für alle: Fälligkeiten mit Uhrzeit, Alarme, die Tageszusammenfassung und die Backup-Zeit.
             </li>
             <li>
               <strong className="text-main">Gruppen:</strong> Fasse Personen, die du sehen kannst, zu Gruppen zusammen (z. B. Familie, WG, Projekt) und teile mit allen auf einmal. Wer eine Gruppe anlegt, ist ihr Admin; mit einer Gruppe teilen kann nur, wer selbst Mitglied ist.

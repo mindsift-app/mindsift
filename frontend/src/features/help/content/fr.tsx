@@ -509,7 +509,7 @@ const fr: HelpContent = {
       title: 'Sous-tâches, échéances & alertes automatiques',
       subtitle: 'Listes de contrôle avec barre de progression, notes en Markdown et notifications',
       icon: SquareCheckBig,
-      keywords: ['sous-tâches', 'alarmes', 'notifications', 'e-mail', 'discord', 'date', 'échéance', 'priorité', 'assigner', 'assigné'],
+      keywords: ['sous-tâches', 'alarmes', 'notifications', 'e-mail', 'discord', 'date', 'échéance', 'fuseau horaire', 'priorité', 'assigner', 'assigné'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
           <ul className="space-y-1.5">
@@ -523,7 +523,7 @@ const fr: HelpContent = {
               <strong className="text-main">Répétition :</strong> sous <em>Répétition</em>, choisis quotidien, hebdomadaire, mensuel ou annuel. Cocher la tâche crée automatiquement la suivante pour la prochaine occurrence.
             </li>
             <li>
-              <strong className="text-main">Alertes &amp; notifications :</strong> reçois des alertes par e-mail, webhook Discord ou notifications push sur tes appareils à l'approche d'une échéance (par ex. 15 minutes ou 1 jour avant). Les alertes par e-mail vont à ton adresse de connexion. Une nouvelle adresse de connexion ne compte qu'après un clic sur le lien de l'e-mail de confirmation qui lui est envoyé ; d'ici là, l'ancienne reste valable.
+              <strong className="text-main">Alertes &amp; notifications :</strong> reçois des alertes par e-mail, webhook Discord ou notifications push sur tes appareils à l'approche d'une échéance (par ex. 15 minutes ou 1 jour avant). Les alertes par e-mail vont à ton adresse de connexion. Une nouvelle adresse de connexion ne compte qu'après un clic sur le lien de l'e-mail de confirmation qui lui est envoyé ; d'ici là, l'ancienne reste valable. Toutes les heures suivent le fuseau horaire du serveur, que l'administrateur du serveur règle sous <em>Administration du serveur → Serveur &amp; partage</em>.
             </li>
             <li>
               <strong className="text-main">Rappels par tâche :</strong> Dans la fenêtre de détail, coche une ou plusieurs heures sous « Rappel », p. ex. 2 semaines avant et le jour de l’échéance. Pour cette tâche, ils remplacent ton délai et valent pour tous ceux qui reçoivent son alarme d’échéance ; « Par défaut » revient au délai des paramètres. Sans heure, MindSift rappelle des jours entiers avant, à 9 h. Les tâches avec leurs propres rappels portent une petite 🔔.
@@ -646,6 +646,9 @@ const fr: HelpContent = {
           <ul className="space-y-1.5">
             <li>
               <strong className="text-main">Qui peut partager avec qui :</strong> l'administrateur du serveur décide : avec tout le monde, uniquement avec les personnes avec qui tu as au moins une <em>organisation</em> en commun, ou avec personne (mode « Privé » : pas de partage, pas de groupes). Tu peux appartenir à plusieurs organisations ; les administrateurs et la gestion des utilisateurs s'en occupent. Si la recherche de personnes est désactivée, tu saisis l'adresse e-mail ou le nom d'utilisateur exacts lors du partage. Les personnes qui travaillent avec toi sur quelque chose y apparaissent toujours avec leur nom.
+            </li>
+            <li>
+              <strong className="text-main">Fuseau horaire du serveur :</strong> l'administrateur du serveur le règle sous <em>Administration du serveur → Serveur &amp; partage → Fuseau horaire</em>. Il vaut aussitôt pour tous : échéances avec heure, alertes, résumé quotidien et heure des sauvegardes.
             </li>
             <li>
               <strong className="text-main">Groupes :</strong> regroupe les personnes visibles au sein de groupes (par ex. famille, colocation, projet) et partage avec tous simultanément. Le créateur du groupe en est l'administrateur ; seuls les membres peuvent partager avec un groupe.

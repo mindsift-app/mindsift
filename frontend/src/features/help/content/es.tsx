@@ -573,6 +573,7 @@ const es: HelpContent = {
         'notificaciones',
         'correo',
         'discord',
+        'zona horaria',
         'fecha',
         'vencimiento',
         'prioridad',
@@ -601,7 +602,7 @@ const es: HelpContent = {
               <strong className="text-main">Fecha de vencimiento con hora:</strong> en la ventana de detalle puedes indicar una hora junto a la fecha; «✕ Hora» vuelve a hacer la tarea para todo el día. Muestra p. ej. «Hoy, 14:30», y los elementos vencidos en rojo.
             </li>
             <li>
-              <strong className="text-main">Avisos automáticos:</strong> a la hora de vencimiento (tareas de todo el día a las 9:00, menos tu tiempo de antelación), MindSift te notifica por <strong className="text-main">correo electrónico</strong>, <strong className="text-main">webhook de Discord</strong> o tu propio webhook HTTP. Si pospones la fecha o reabres la tarea, el aviso vuelve a programarse. Configurable en los ajustes de tu cuenta. Los avisos por correo van a tu dirección de inicio de sesión. Una nueva dirección de inicio de sesión solo vale cuando pulsas el enlace del correo de confirmación que se le envía; hasta entonces sigue la anterior.
+              <strong className="text-main">Avisos automáticos:</strong> a la hora de vencimiento (tareas de todo el día a las 9:00, menos tu tiempo de antelación), MindSift te notifica por <strong className="text-main">correo electrónico</strong>, <strong className="text-main">webhook de Discord</strong> o tu propio webhook HTTP. Si pospones la fecha o reabres la tarea, el aviso vuelve a programarse. Configurable en los ajustes de tu cuenta. Los avisos por correo van a tu dirección de inicio de sesión. Una nueva dirección de inicio de sesión solo vale cuando pulsas el enlace del correo de confirmación que se le envía; hasta entonces sigue la anterior. Todas las horas están en la zona horaria del servidor, que la administración del servidor ajusta en <em>Administración del servidor → Servidor y compartir</em>.
             </li>
             <li>
               <strong className="text-main">Recordatorios por tarea:</strong> En la ventana de detalles, marca una o varias horas en «Recordatorio», p. ej. 2 semanas antes y el día de vencimiento. Para esta tarea sustituyen tu antelación y valen para todos los que reciben su alarma de vencimiento; «Predeterminado» vuelve a la antelación de los ajustes. Sin hora, MindSift recuerda días enteros antes a las 9:00. Las tareas con recordatorios propios llevan una pequeña 🔔.
@@ -734,6 +735,9 @@ const es: HelpContent = {
           <ul className="space-y-1.5">
             <li>
               <strong className="text-main">Quién puede compartir con quién:</strong> lo decide la administración del servidor: con todos, solo con personas con las que tienes al menos una <em>organización</em> en común, o con nadie (modo «Privado»: sin compartir ni grupos). Puedes pertenecer a varias organizaciones; las gestionan la administración y la gestión de usuarios. Si la búsqueda de personas está desactivada, al compartir introduces la dirección de correo o el nombre de usuario exactos. Quien trabaja contigo en algo aparece siempre allí con su nombre.
+            </li>
+            <li>
+              <strong className="text-main">Zona horaria del servidor:</strong> la administración del servidor la ajusta en <em>Administración del servidor → Servidor y compartir → Zona horaria</em>. Vale al instante para todos: vencimientos con hora, avisos, el resumen diario y la hora de las copias de seguridad.
             </li>
             <li>
               <strong className="text-main">Grupos:</strong> agrupa a personas que puedes ver (p. ej. familia, compañeros de piso, un proyecto) y comparte contenido con todos ellos a la vez. Quien crea un grupo es su administrador; solo los miembros pueden compartir con el grupo.

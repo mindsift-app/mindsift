@@ -508,7 +508,7 @@ const it: HelpContent = {
       title: 'Sottoattività, date di scadenza e notifiche automatiche',
       subtitle: 'Liste di controllo con barra di avanzamento, note in Markdown e notifiche',
       icon: SquareCheckBig,
-      keywords: ['sottoattività', 'notifiche', 'avvisi', 'email', 'discord', 'data', 'scadenza', 'priorità', 'assegna', 'assegnato'],
+      keywords: ['sottoattività', 'notifiche', 'avvisi', 'email', 'discord', 'data', 'scadenza', 'fuso orario', 'priorità', 'assegna', 'assegnato'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
           <ul className="space-y-1.5">
@@ -531,7 +531,7 @@ const it: HelpContent = {
               <strong className="text-main">Data di scadenza con ora:</strong> nella finestra dei dettagli puoi impostare un orario accanto alla data; «✕ Ora» rende nuovamente l'attività valida per l'intera giornata. Mostra ad esempio «Oggi, 14:30», gli elementi scaduti in rosso.
             </li>
             <li>
-              <strong className="text-main">Notifiche automatiche:</strong> all'orario di scadenza (per le attività valide tutto il giorno alle 9:00, meno il tuo tempo di preavviso) MindSift ti avvisa via <strong className="text-main">email</strong>, <strong className="text-main">webhook Discord</strong> o il tuo webhook HTTP. Se sposti la data di scadenza o riapri l'attività, l'avviso scatterà di nuovo. Configurabile nelle impostazioni dell'account. Le notifiche via email vanno al tuo indirizzo di accesso. Un nuovo indirizzo di accesso vale solo dopo che hai cliccato il link nell'e-mail di conferma inviata a quell'indirizzo; fino ad allora resta quello precedente.
+              <strong className="text-main">Notifiche automatiche:</strong> all'orario di scadenza (per le attività valide tutto il giorno alle 9:00, meno il tuo tempo di preavviso) MindSift ti avvisa via <strong className="text-main">email</strong>, <strong className="text-main">webhook Discord</strong> o il tuo webhook HTTP. Se sposti la data di scadenza o riapri l'attività, l'avviso scatterà di nuovo. Configurabile nelle impostazioni dell'account. Le notifiche via email vanno al tuo indirizzo di accesso. Un nuovo indirizzo di accesso vale solo dopo che hai cliccato il link nell'e-mail di conferma inviata a quell'indirizzo; fino ad allora resta quello precedente. Tutti gli orari seguono il fuso orario del server, che l'amministratore del server imposta in <em>Amministrazione del server → Server e condivisione</em>.
             </li>
             <li>
               <strong className="text-main">Promemoria per attività:</strong> Nella finestra dei dettagli, spunta uno o più orari in «Promemoria», ad es. 2 settimane prima e il giorno della scadenza. Per questa attività sostituiscono il tuo preavviso e valgono per tutti quelli che ricevono il suo allarme di scadenza; «Predefinito» torna al preavviso delle impostazioni. Senza orario, MindSift ricorda giorni interi prima alle 9. Le attività con promemoria propri hanno una piccola 🔔.
@@ -651,6 +651,9 @@ const it: HelpContent = {
           <ul className="space-y-1.5">
             <li>
               <strong className="text-main">Chi può condividere con chi:</strong> lo decide l'amministratore del server: con tutti, solo con le persone con cui hai almeno un'<em>organizzazione</em> in comune, o con nessuno (modalità «Privato»: nessuna condivisione, nessun gruppo). Puoi appartenere a più organizzazioni; le gestiscono gli amministratori e la gestione utenti. Se la ricerca persone è disattivata, durante la condivisione inserisci l'indirizzo e-mail o il nome utente esatti. Chi lavora con te a qualcosa compare sempre lì con il nome.
+            </li>
+            <li>
+              <strong className="text-main">Fuso orario del server:</strong> l'amministratore del server lo imposta in <em>Amministrazione del server → Server e condivisione → Fuso orario</em>. Vale subito per tutti: scadenze con orario, notifiche, riepilogo giornaliero e ora dei backup.
             </li>
             <li>
               <strong className="text-main">Gruppi:</strong> raggruppa le persone visibili in gruppi (es. famiglia, coinquilini, progetto) e condividi con tutti in una volta sola. Chi crea un gruppo ne è amministratore; solo i membri possono condividere con un gruppo.
