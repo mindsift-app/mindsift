@@ -21,6 +21,13 @@ const token = (
     })
   ).json()
 ).token;
+// The run copy is not in demo mode: the offer of the guided tour comes from the account and would cover the
+// bottom right of the board (the drop into the done column), so it counts as answered
+await fetch(`${BASE}/api/v1/auth/settings`, {
+  method: 'PATCH',
+  headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+  body: JSON.stringify({ tourOffered: true }),
+});
 
 // Task state as the server has it: list, column, done, and the order within each list
 async function record(step) {
@@ -68,6 +75,53 @@ async function drag(page, source, target, pos) {
   await page.mouse.up();
 }
 
+// HTML5 drag in the page itself: dragstart, then dragenter/dragover in many small steps (each after a frame,
+// so React renders the started drag and the opened gap), drop and dragend, with one DataTransfer. The board
+// reacts to dragover; Playwright's mouse drag sends only three or four of them, so a move within a column
+// sometimes ended in the wrong place.
+async function dragInPage(page, source, target, pos) {
+  const a = await source.boundingBox();
+  const b = await target.boundingBox();
+  const from = { x: a.x + a.width / 2, y: a.y + Math.min(20, a.height / 2) };
+  const to = { x: b.x + (pos?.x ?? b.width / 2), y: b.y + (pos?.y ?? b.height / 2) };
+  await page.evaluate(
+    async ({ from, to }) => {
+      const frame = () => new Promise((r) => requestAnimationFrame(() => setTimeout(r, 16)));
+      const dt = new DataTransfer();
+      const fire = (el, type, x, y) =>
+        el.dispatchEvent(new DragEvent(type, { bubbles: true, cancelable: true, composed: true, clientX: x, clientY: y, dataTransfer: dt }));
+      const src = document.elementFromPoint(from.x, from.y)?.closest('[draggable="true"]');
+      if (!src) throw new Error('no draggable element at the start');
+      fire(src, 'dragstart', from.x, from.y);
+      await frame();
+      let over = null;
+      for (let i = 1; i <= 24; i++) {
+        const x = from.x + ((to.x - from.x) * i) / 24;
+        const y = from.y + ((to.y - from.y) * i) / 24;
+        const el = document.elementFromPoint(x, y);
+        if (!el) continue;
+        if (el !== over) {
+          if (over) fire(over, 'dragleave', x, y);
+          fire(el, 'dragenter', x, y);
+          over = el;
+        }
+        fire(el, 'dragover', x, y);
+        await frame();
+      }
+      // A few more at the end: the gap below the pointer has opened and the drop index follows it
+      for (let i = 0; i < 4; i++) {
+        const el = document.elementFromPoint(to.x, to.y);
+        if (el) fire(el, 'dragover', to.x, to.y);
+        await frame();
+      }
+      const el = document.elementFromPoint(to.x, to.y);
+      if (el) fire(el, 'drop', to.x, to.y);
+      fire(src, 'dragend', to.x, to.y);
+    },
+    { from, to }
+  );
+}
+
 async function step(name, fn) {
   try {
     await fn();
@@ -95,18 +149,18 @@ await sleep(800);
 await step('Kanban: card before the second card of another column', async () => {
   const target = column('In Bearbeitung').locator('[data-kanban-task]').nth(1);
   const box = await target.boundingBox();
-  await drag(d, card('USV-Batterie'), target, { x: box.width / 2, y: 6 });
+  await dragInPage(d, card('USV-Batterie'), target, { x: box.width / 2, y: 6 });
 });
 await step('Kanban: card into the empty part of the done column', async () => {
   const col = column('Erledigt');
   const box = await col.boundingBox();
-  await drag(d, card('Wartet auf Lieferung'), col, { x: box.width / 2, y: box.height - 120 });
+  await dragInPage(d, card('Wartet auf Lieferung'), col, { x: box.width / 2, y: box.height - 120 });
 });
 await step('Kanban: card down within the column', async () => {
   const col = column('Zu erledigen');
   const last = col.locator('[data-kanban-task]').last();
   const box = await last.boundingBox();
-  await drag(d, col.locator('[data-kanban-task]').first(), last, { x: box.width / 2, y: box.height - 4 });
+  await dragInPage(d, col.locator('[data-kanban-task]').first(), last, { x: box.width / 2, y: box.height - 4 });
 });
 
 await step('Kanban: Ctrl+Z undoes the last move', async () => {
