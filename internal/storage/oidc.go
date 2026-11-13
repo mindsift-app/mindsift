@@ -127,16 +127,6 @@ func (s *Store) SetAdminByGroup(userID string, admin bool) (changed bool, err er
 	return n > 0, nil
 }
 
-// UserByEmailExactly finds the account whose login address is exactly email (no username, unlike
-// GetUserByLogin); sql.ErrNoRows when there is none.
-func (s *Store) UserByEmailExactly(email string) (*domain.User, error) {
-	email = domain.NormalizeEmail(email)
-	if email == "" {
-		return nil, sql.ErrNoRows
-	}
-	return scanUser(s.db.QueryRow(`SELECT `+userSelectCols+` FROM users WHERE LOWER(email) = ?`, email))
-}
-
 // CountOIDCIdentities: how many accounts sign in through the provider of this issuer.
 func (s *Store) CountOIDCIdentities(issuer string) int {
 	var n int
