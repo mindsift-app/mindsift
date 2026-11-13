@@ -347,4 +347,6 @@ func (s *Server) compactOnce() {
 	if st.Docs > 0 || st.OpResults > 0 {
 		slog.Info("Change log compacted", "notes", st.Docs, "log_entries", st.LogEntries, "tombstones", st.Tombstones, "op_results", st.OpResults)
 	}
+	// After the deletions above: statistics of tables that grew or shrank a lot since the last run
+	logFailed("Updating the query planner statistics", s.store.Optimize())
 }

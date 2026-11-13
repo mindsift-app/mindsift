@@ -40,6 +40,13 @@ func NormalizeSections(sections []string) map[string]bool {
 	return out
 }
 
+// sqlUnlinkTasksOfUserNotes: tasks (of anyone) created from bullets of a user's notes lose the link;
+// for each note a range over idx_thoughts_doc_block like sqlTasksOfNoteBlocks.
+const sqlUnlinkTasksOfUserNotes = `UPDATE thoughts SET converted_type = '', converted_ref_id = ''
+	FROM (SELECT id AS doc_id FROM documents WHERE user_id = ?) d
+	WHERE thoughts.converted_type = 'document_block'
+	  AND thoughts.converted_ref_id >= d.doc_id || ':' AND thoughts.converted_ref_id < d.doc_id || ';'`
+
 // purgeStmts lists what deleting one section of a user's data takes. Each statement gets the user ID
 // as often as it has placeholders.
 func purgeStmts(section string) []struct {
@@ -67,8 +74,7 @@ func purgeStmts(section string) []struct {
 	case SectionNotes:
 		return []st{
 			// Tasks of others linked to blocks of the user's notes lose the link
-			{`UPDATE thoughts SET converted_type = '', converted_ref_id = '' WHERE converted_type = 'document_block'
-			  AND substr(converted_ref_id, 1, instr(converted_ref_id, ':') - 1) IN ` + ownDocs, 1},
+			{sqlUnlinkTasksOfUserNotes, 1},
 			// Shared folders owned by the user
 			{`UPDATE documents SET shared_folder_id = '', sub_folder_path = '' WHERE shared_folder_id IN ` + ownFolders, 1},
 			{`DELETE FROM workspace_folder_mounts WHERE folder_id IN ` + ownFolders, 1},

@@ -46,7 +46,7 @@ SQLite file `mindsift.db` (default: `$DATA_DIR/mindsift.db`), opened with `journ
 | `task_lists` | Task lists | `user_id` (owner), `title`, `icon`, `color`, `columns` (JSON, Kanban columns) |
 | `task_list_shares` | Task list shares | `target_type` (`team`/`user`), `target_id`, **`permission`** (`editor`/`viewer`, default `editor`) |
 
-A task is a `thought` with `status='kept'` or `status='converted' AND converted_type='task'`. Tasks originating from a note block have `converted_type='document_block'` and `converted_ref_id='<docId>:<blockId>'`.
+A task is a `thought` with `status='kept'` or `status='converted' AND converted_type='task'`. Tasks originating from a note block have `converted_type='document_block'` and `converted_ref_id='<docId>:<blockId>'`. The tasks of a note are found by the prefix range `converted_ref_id >= '<docId>:' AND converted_ref_id < '<docId>;'` over the partial index `idx_thoughts_doc_block` (Migration 42; `sqlTasksOfNoteBlocks` in [docsync.go](../internal/storage/docsync.go)), not by cutting every reference apart.
 
 ### Workspace
 | Table | Purpose |
@@ -135,7 +135,11 @@ The entire instance consists of the file `mindsift.db` (plus `-wal`/`-shm` durin
 |---|---|---|
 | `doc_ops` of shared notes | 30 days | Older entries deleted; `documents.log_floor` tracks the compaction boundary |
 | `doc_ops` of private notes | 7 days | Same as above |
-| Tombstones in `blocks` | 30 days after `deleted_at` | Permanently purged; this is itself a `purge` log entry, applied by open editors without reloading. A tombstone is retained as long as a newer deleted child block references it. |
+| Tombstones in `blocks` | 30 days after `deleted_at` (found through the partial index `idx_blocks_deleted_at`, Migration 42) | Permanently purged; this is itself a `purge` log entry, applied by open editors without reloading. A tombstone is retained as long as a newer deleted child block references it. |
 | `doc_op_results` | 90 days | Deleted |
 
 A client whose `lastSeq` falls below `log_floor` (e.g. a device offline for weeks) receives `resync: true` from `/sync` and reloads the full snapshot; its pending unsent changes remain in the queue and are applied afterward. Text edits for a block that has since been permanently purged are appended as a new block at the end of the note; a new block whose parent was permanently purged is placed at the root level.
+
+## Query Planner Statistics
+
+`Store.Optimize` runs `PRAGMA optimize=0x10002` after the migrations at every start and at the end of every compaction run (every 6 hours): SQLite analyzes the tables whose size changed a lot since the last run and keeps the result in `sqlite_stat1`. Without these statistics the query planner guesses how selective an index is and can pick a poor plan (seen with `MediaOfUser`). `0x10002` checks all tables, not only those the pooled connection happened to query; SQLite caps the rows it reads per index (`analysis_limit`), so it stays quick on large databases.

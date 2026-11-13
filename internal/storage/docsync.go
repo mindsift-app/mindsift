@@ -534,12 +534,16 @@ func persistDocState(tx *sql.Tx, docID string, before, after *collab.Doc, head i
 	return nil
 }
 
+// sqlTasksOfNoteBlocks selects the tasks created from bullets of one note (converted_ref_id
+// "<note id>:<bullet id>"), argument ?1 the note's id: a range over the index idx_thoughts_doc_block
+// (migration 42) instead of cutting every task's reference apart (';' is the character after ':').
+// TestTaskOfNoteQueriesUseIndexes checks the plans.
+const sqlTasksOfNoteBlocks = `converted_type = 'document_block' AND converted_ref_id >= ?1 || ':' AND converted_ref_id < ?1 || ';'`
+
 // docTaskLinks maps block IDs of a note to the IDs of tasks created from them ("Erweitert").
 func (s *Store) docTaskLinks(docID string) map[string]string {
 	links := map[string]string{}
-	rows, err := s.db.Query(
-		`SELECT id, converted_ref_id FROM thoughts WHERE converted_type = 'document_block' AND converted_ref_id LIKE ?`,
-		docID+":%")
+	rows, err := s.db.Query(`SELECT id, converted_ref_id FROM thoughts WHERE `+sqlTasksOfNoteBlocks, docID)
 	if dbFailed(err) {
 		return links
 	}
@@ -933,6 +937,10 @@ func longestIncreasing(keys []string) []bool {
 	return keep
 }
 
+// sqlOldTombstoneDocs: notes with bullets deleted before the cutoff, through the partial index
+// idx_blocks_deleted_at (migration 42) instead of reading every block.
+const sqlOldTombstoneDocs = `SELECT document_id FROM blocks WHERE deleted = 1 AND deleted_at != '' AND deleted_at < ?`
+
 // CompactStats counts what one compaction run removed.
 type CompactStats struct {
 	Docs       int
@@ -954,8 +962,7 @@ func (s *Store) CompactDocs(now time.Time) (CompactStats, error) {
 	ts := func(d time.Duration) string { return now.Add(-d).UTC().Format(time.RFC3339) }
 	tombCutoff := ts(TombstoneRetention)
 	rows, err := s.db.Query(
-		`SELECT doc_id FROM doc_ops WHERE created_at < ?
-		 UNION SELECT document_id FROM blocks WHERE deleted = 1 AND deleted_at != '' AND deleted_at < ?`,
+		`SELECT doc_id FROM doc_ops WHERE created_at < ? UNION `+sqlOldTombstoneDocs,
 		ts(LogRetentionPrivate), tombCutoff)
 	if err != nil {
 		return st, err

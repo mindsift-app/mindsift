@@ -304,8 +304,7 @@ func (s *Store) hardDeleteDocument(docID string) error {
 	defer tx.Rollback()
 	for _, q := range []string{
 		// Tasks created from blocks of this note keep existing without the link
-		`UPDATE thoughts SET converted_type = '', converted_ref_id = '' WHERE converted_type = 'document_block'
-		  AND substr(converted_ref_id, 1, instr(converted_ref_id, ':') - 1) = ?`,
+		`UPDATE thoughts SET converted_type = '', converted_ref_id = '' WHERE ` + sqlTasksOfNoteBlocks,
 		// Its hidden values go along, unless a bullet of another note still holds them (moved there)
 		sqlDeleteSecretsHeldNowhereElse,
 		`DELETE FROM blocks WHERE document_id = ?`,
