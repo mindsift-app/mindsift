@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
-import { motion, useMotionValue, useTransform } from 'framer-motion';
+import { motion, useMotionValue, useTransform } from 'motion/react';
 import {
   X,
   Check,
@@ -563,7 +563,7 @@ export const TriageDeck: React.FC<TriageDeckProps> = ({
         )}
 
         {/* Active Draggable & Long-Pressable Card */}
-        {/* No exit animation: the leaving card goes at once and the next one slides in. With framer-motion's
+        {/* No exit animation: the leaving card goes at once and the next one slides in. With Motion's
             exit (popLayout) a re-render right after it (the deck reloading) showed the leaving card again for a
             frame, which looked like a flicker. */}
         <>
@@ -603,7 +603,7 @@ export const TriageDeck: React.FC<TriageDeckProps> = ({
                 handleAction('discard');
               }
             }}
-            // Slides in by CSS (once, when the card appears): framer-motion's initial/animate started over for a
+            // Slides in by CSS (once, when the card appears): Motion's initial/animate started over for a
             // frame on every re-render (the deck reloading), which made the card flash
             className="relative w-full h-full panel-surface p-5 cursor-grab active:cursor-grabbing flex flex-col justify-between overflow-hidden animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-2 duration-200"
           >
