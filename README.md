@@ -173,7 +173,7 @@ It creates a folder, downloads `docker-compose.yml` and `.env.example`, generate
 
 All settings are explained in [`.env.example`](.env.example). For voice recognition by hand, follow the comments on the `whisper` block in [`docker-compose.yml`](docker-compose.yml); which model to pick is in the [docs](Doku/architecture.md#speech-recognition).
 
-**Without a container:** the [releases](https://github.com/mindsift-app/mindsift/releases) carry the server as a single file for Linux (amd64 and arm64), frontend included. Unpack it and start `./mindsift`: it listens on port 8080 and keeps everything in `./data` (`PORT` and `DATA_DIR` change that). The other settings work as in the container.
+**Without a container:** the [releases](https://github.com/mindsift-app/mindsift/releases) carry the server as a single file for Linux (amd64 and arm64), frontend included. Unpack it and start `./mindsift`: it listens on port 8080 and keeps everything in `./data` (`PORT` and `DATA_DIR` change that). The other settings work as in the container; the time zone is not taken from the system but from `TZ` or the administration (UTC until one is set).
 
 ---
 
