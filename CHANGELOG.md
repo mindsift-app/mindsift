@@ -29,6 +29,8 @@ Versions without a git tag were development states and were never published as a
 - The help says that due times and alarms follow the server's time zone and where admins set it.
 
 ### Fixed
+- Importing an Obsidian vault, a MindSift archive or a backup no longer takes a large amount of server memory: notes and files are read one at a time instead of unpacking the whole archive at once, and archive entries that would unpack to far more than they take (zip bombs) are refused before unpacking. Notes over 2 MB or 20,000 bullets and suspiciously packed files are listed as skipped in the preview with the reason; a note of a backup with too many bullets no longer stops the whole import. One import per person and two per server run at the same time, others are asked to try again in a moment.
+- The password of a public link is now also limited per link, not only per visitor address: after 50 wrong passwords within 15 minutes the link takes no passwords for 15 minutes. Visitors who already entered it keep reading; sharing a new link starts afresh.
 - The API answers mistakes with the right status instead of an internal error: an empty list title, list item or inbox entry is a `400`, changing, sharing or deleting a note or list without access a `404` that does not reveal whether it exists.
 - A task opened from a link or the search while another task list is shown now shows changes made in its detail dialog at once (priority, status, title, dates …); before, they were saved but the dialog kept the old values.
 - The phone menu of the tasks shows how many filters are active in the app's language instead of always in German.
