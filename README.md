@@ -169,17 +169,17 @@ Open `http://localhost:8080`. Without `ADMIN_USER` and `ADMIN_PASSWORD`, a setup
 curl -fsSL https://raw.githubusercontent.com/mindsift-app/mindsift/main/install.sh | bash
 ```
 
-It creates a folder, downloads `docker-compose.yml` and `.env.example`, generates `JWT_SECRET` and `SECRETS_KEY`, takes over the server's time zone and starts the container. On a new install it asks for the admin account (`ADMIN_USER`, `ADMIN_PASSWORD`; Enter means `admin` with a generated password, shown once); without a terminal it skips that and shows the setup code the wizard asks for. Two optional questions (Enter means no): your own speech recognition (adds a Whisper container with large-v3-turbo or small), and a reverse proxy (asks for `BASE_URL` and the proxy's Docker network). These additions go into `docker-compose.override.yml`. Running the script again updates `docker-compose.yml` and keeps `.env` and the override.
+It generates the secrets, takes over the server's time zone, asks for the admin account and optionally adds a Whisper container for voice input and a reverse proxy network; running it again updates and keeps your settings. Details: [Doku/operations.md](Doku/operations.md#install-script).
 
-All settings are explained in [`.env.example`](.env.example). For voice recognition by hand, follow the comments on the `whisper` block in [`docker-compose.yml`](docker-compose.yml); which model to pick is in the [docs](Doku/architecture.md#speech-recognition).
+All settings are explained in [`.env.example`](.env.example).
 
-**Without a container:** the [releases](https://github.com/mindsift-app/mindsift/releases) carry the server as a single file for Linux (amd64 and arm64), frontend included. Unpack it and start `./mindsift`: it listens on port 8080 and keeps everything in `./data` (`PORT` and `DATA_DIR` change that). The other settings work as in the container; the time zone is not taken from the system but from `TZ` or the administration (UTC until one is set).
+**Without a container:** the [releases](https://github.com/mindsift-app/mindsift/releases) carry the server as a single file for Linux (amd64 and arm64), frontend included. Start `./mindsift`: it listens on port 8080 and keeps everything in `./data`. The time zone is not taken from the system but from `TZ` or the administration (UTC until one is set).
 
 ---
 
 ## Running it
 
-The most important settings (all of them are in [`.env.example`](.env.example)):
+The most important settings (all of them are in [`.env.example`](.env.example); more on running it in [Doku/operations.md](Doku/operations.md)):
 
 | Variable | Default | What for |
 |---|---|---|
@@ -191,76 +191,26 @@ The most important settings (all of them are in [`.env.example`](.env.example)):
 | `TZ` | `UTC` | Time zone of the server for due dates, alarms, the daily summary and backups; the admin center can set it instead (its setting wins) |
 | `REGISTRATION_MODE` | admin UI decides | `closed`, `approval`, `domain`, `domain+approval` or `open` |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` | empty | Mail for alarms, invites and password reset (also in the admin UI) |
-| `OIDC_ISSUER`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET` | empty | Sign-in through an OpenID Connect provider, see [single sign-on](#single-sign-on-oidc) below |
+| `OIDC_ISSUER`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET` | empty | Sign-in through an OpenID Connect provider, see [single sign-on](#single-sign-on-oidc) below; more options in [Doku/oidc.md](Doku/oidc.md#setup) |
 | `TRUSTED_PROXIES` | `private` | Whose `X-Forwarded-For` to trust, see [reverse proxy](Doku/reverse-proxy.md) |
 | `MCP_ENABLED` | admin UI decides | `false` switches off the endpoint for AI agents |
-| `METRICS_TOKEN` | empty | Switches on `/metrics` for Prometheus (at least 16 characters, sent as bearer token); also `METRICS_TOKEN_FILE` |
+| `METRICS_TOKEN` | empty | Switches on `/metrics` for Prometheus, see [monitoring](Doku/operations.md#monitoring) |
 | `STT_*` | empty | Your own Whisper server for voice input |
 | `MINDSIFT_DEMO` | `false` | Demo accounts `admin/admin` and `user/user` with sample data. **Never on a server with real data!** |
 
-* **First admin:** with `ADMIN_USER` (username) and `ADMIN_PASSWORD` (at least 8 characters), the admin exists before the server accepts connections; after signing in, the wizard asks only the remaining settings. For a Docker secret, `ADMIN_PASSWORD_FILE` names a file with the password instead. They act only while the database has no account and can be removed afterwards. If they are unusable (one missing, password too short, invalid name or email), MindSift does not start and says why in the log. Without `ADMIN_EMAIL` the wizard asks for an address, confirmed by a mailed link; until then there is no "forgot password" for this account. Both ways of the wizard also offer to set up the mail server (when `SMTP_HOST` is not set) and end with a summary of what is still open (mail server, `BASE_URL`) and where the backups are.
-* **Single sign-on:** see [below](#single-sign-on-oidc).
-* **Language:** the app uses the browser's language if it is one of the five, and everyone can pick their own in the settings. `DEFAULT_LANGUAGE` covers the rest; unset, it is German (where the project started), so for an English instance set `en` or pick it in the setup wizard. API clients without `Accept-Language` (scripts, curl) get errors in the configured default language, else in English.
+* **First admin:** with `ADMIN_USER` and `ADMIN_PASSWORD` (at least 8 characters, or `ADMIN_PASSWORD_FILE`), the admin exists before the server accepts connections; unusable values stop the start with a reason in the log. They act only while the database has no account ([details](Doku/operations.md#first-admin)).
+* **Language:** the app follows the browser if it speaks that language, and everyone can pick their own. `DEFAULT_LANGUAGE` covers the rest; unset, it is German, so for an English instance set `en` or pick it in the setup wizard.
 * **Reverse proxy:** pass through WebSocket upgrades and unbuffered SSE if you can; otherwise MindSift falls back to long polling. Examples for nginx, Traefik, Caddy and Cloudflare: [Doku/reverse-proxy.md](Doku/reverse-proxy.md).
-* **Backups:** the setup wizard offers daily backups (preselected: 03:00 server time, kept 3 days); change them later in the admin settings. Each run saves the whole database plus one ZIP per person under `data/backups/`, which people download or restore in their account settings. Copy that folder somewhere else too.
-* **Updates:** `docker compose pull && docker compose up -d`. The database schema updates itself; open apps offer to reload. Since v0.87.3 the container runs as uid 1000 and takes over `data/` by itself; with `user:` in the compose file, run `chown -R 1000:1000 data` first.
+* **Backups:** the setup wizard offers daily backups (preselected: 03:00 server time, kept 3 days). Each run saves the whole database plus one ZIP per person under `data/backups/`; copy that folder somewhere else too.
+* **Updates:** `docker compose pull && docker compose up -d`. The database schema updates itself; with `user:` in the compose file, run `chown -R 1000:1000 data` first (the container runs as uid 1000 since v0.87.3).
 * **Rolling back:** before an update changes the database schema, MindSift saves a compressed copy of the database as `data/backups/system/pre-migration-<migration>-<date>-<time>.db.gz` (the last three are kept; without the copy, for example on a full disk, it does not migrate and stops). An older image refuses to start on a database a newer one has changed and says so in the log. To go back: stop the container, unpack the copy from before the update over the database (`gunzip -c data/backups/system/pre-migration-….db.gz > data/mindsift.db`) and delete `data/mindsift.db-wal` and `data/mindsift.db-shm` if they exist, pin the older image (`image: ghcr.io/mindsift-app/mindsift:vX.Y.Z`) and start it. Whatever was written after the update is not in that copy.
-* **Health check:** the image checks `/api/v1/health` every 30 s, shown in `docker ps`, Portainer and Dockge and usable with `depends_on: condition: service_healthy`. Podman ignores checks in images; copy the `healthcheck:` block of `docker-compose.yml` instead.
-* **Monitoring:** `/api/v1/health?db=1` also asks the database and answers `503` when it does not respond (the container's own check stays without it). With `METRICS_TOKEN` set, `/metrics` serves Prometheus metrics: API requests and their duration by route, mails sent and failed, backup runs and the time of the last good one, accounts and active accounts, the database's connections and file size, memory and goroutines. No label holds a name, address or id. Scrape it with the token:
-
-  ```yaml
-  scrape_configs:
-    - job_name: mindsift
-      authorization: { credentials: "<METRICS_TOKEN>" }
-      static_configs: [{ targets: ["mindsift:8080"] }]
-  ```
-* **File permissions:** everything in `data/` is readable by MindSift only (files 0600, folders 0700). The container tightens files from older versions once on its first start; without the container, run `chmod -R go-rwx data`.
-* **Image tags:** `:stable` = the latest tagged release (default in `docker-compose.yml` and the install script), `:vX.Y.Z` = one release, `:latest` = every build of `main`, `:dev` = development. The project is 0.x: a minor version can still change the API or data formats, and the [changelog](CHANGELOG.md) marks those changes with **Attention**.
+* **Health and monitoring:** the image checks `/api/v1/health` every 30 s (Podman ignores that; copy the `healthcheck:` block of `docker-compose.yml`). `METRICS_TOKEN` switches on Prometheus metrics at `/metrics` ([scrape config and details](Doku/operations.md#monitoring)).
+* **File permissions:** everything in `data/` is readable by MindSift only; without the container, run `chmod -R go-rwx data`.
+* **Image tags:** `:stable` = the latest release (default), `:vX.Y.Z` = one release, `:latest` = every build of `main`, `:dev` = development. The project is 0.x: the [changelog](CHANGELOG.md) marks breaking changes with **Attention**.
 
 ### Single sign-on (OIDC)
 
-With an OpenID Connect provider (Authentik, Authelia, Keycloak, Dex, Google and others) the login shows "Sign in with …". Register MindSift there as a confidential client (authorization code flow with PKCE) with the redirect URI **`<BASE_URL>/api/v1/auth/oidc/callback`** and the scopes `openid email profile` (plus `groups` for `OIDC_ADMIN_GROUP`). `BASE_URL` is required; without it the sign-in through the provider stays off and the log says why.
-
-| Variable | Default | What for |
-|---|---|---|
-| `OIDC_ISSUER` | empty | The provider's issuer address, exactly as in its `/.well-known/openid-configuration` (trailing slash included) |
-| `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET` | empty | The client registered at the provider; `OIDC_CLIENT_SECRET_FILE` reads the secret from a file (Docker secret) instead |
-| `OIDC_NAME` | `SSO` | Text on the button: "Sign in with Authentik" |
-| `OIDC_AUTO_CREATE` | `true` | Create an account at the first sign-in. `false`: only accounts already linked get in, everyone else gets a clear message |
-| `OIDC_PASSWORD_LOGIN` | `true` | `false`: only the provider's button; no password sign-in, sign-up with a password or "forgot password". Administrators keep an emergency access with their password at `/?login=password` |
-| `OIDC_ADMIN_GROUP` | empty | Members of this group at the provider are administrators, checked at every sign-in (in and out; the last administrator always stays one). Needs the `groups` claim |
-| `OIDC_SCOPES` | `openid email profile` (+ `groups`) | Other scopes, if the provider needs them |
-
-* **Accounts:** an account is tied to the provider's identity (issuer and `sub`) alone, so a changed address at the provider keeps the link. MindSift never takes over an existing account at a sign-in, not even by a verified address: its owner links it under Settings → Security (with the password and the second factor). `OIDC_LINK_BY_EMAIL` no longer exists; if it is still set, MindSift starts as usual and says so in the log. A first sign-in creates a new account with the name and username the provider gives and no password of its own. Its address: verified and free, it is the login address; not verified, it waits for the confirmation link like a changed address; already used by another account (or not sent), the account starts without an address and can add one in the settings. Disabled accounts and accounts waiting for approval stay locked.
-* **Second factor:** the provider asks for its own. MindSift does not ask again, and "require two-factor sign-in" in the administration applies only to password sign-ins. Sensitive changes (address, password, deleting, API keys) are confirmed by signing in at the provider again; that counts for five minutes and only in that browser.
-* **Provider down:** MindSift starts anyway; the button says the provider cannot be reached, and administrators sign in at `/?login=password`. Half a configuration (an issuer without a client, a secret file that cannot be read, `OIDC_PASSWORD_LOGIN=false` without a provider) stops the start with a message in the log. The administration shows the setup and whether the provider answers under Server & Sharing. Off in the demo.
-
-Examples (`BASE_URL=https://notes.example.com`):
-
-* **Authentik:** Applications → Providers → OAuth2/OpenID Provider, client type *Confidential*, redirect URI `https://notes.example.com/api/v1/auth/oidc/callback` (strict), scopes `openid`, `email`, `profile` (Authentik sends the groups with `profile`). `OIDC_ISSUER=https://auth.example.com/application/o/<slug>/`.
-* **Authelia** (`identity_providers.oidc.clients`):
-
-  ```yaml
-  - client_id: mindsift
-    client_secret: '$pbkdf2-sha512$…'   # the hash of OIDC_CLIENT_SECRET
-    redirect_uris: ['https://notes.example.com/api/v1/auth/oidc/callback']
-    scopes: ['openid', 'email', 'profile', 'groups']
-    require_pkce: true
-    pkce_challenge_method: 'S256'
-    token_endpoint_auth_method: 'client_secret_basic'
-  ```
-
-  `OIDC_ISSUER=https://auth.example.com`.
-* **Keycloak:** a client with *Client authentication* on and *Standard flow*, valid redirect URI as above. For `OIDC_ADMIN_GROUP` add a *Group Membership* mapper with the claim name `groups` (with or without the full path). `OIDC_ISSUER=https://keycloak.example.com/realms/<realm>`.
-
-```env
-OIDC_ISSUER=https://auth.example.com/application/o/mindsift/
-OIDC_CLIENT_ID=mindsift
-OIDC_CLIENT_SECRET=...
-OIDC_NAME=Authentik
-# OIDC_ADMIN_GROUP=mindsift-admins
-# OIDC_PASSWORD_LOGIN=false
-```
+With an OpenID Connect provider (Authentik, Authelia, Keycloak, Dex, Google and others) the login shows "Sign in with …". Register MindSift there as a confidential client with the redirect URI **`<BASE_URL>/api/v1/auth/oidc/callback`**, set `BASE_URL` and the three `OIDC_*` variables from the table above. Accounts are tied to the provider's identity, never taken over by email address; `OIDC_PASSWORD_LOGIN=false` leaves only the provider's button (administrators keep an emergency access). All options, edge cases and examples for Authentik, Authelia and Keycloak: [Doku/oidc.md](Doku/oidc.md).
 
 ---
 
@@ -285,7 +235,7 @@ History starts at v0.70.0, when the project moved from a private repository; the
 
 ## Design decisions
 
-MindSift builds a few things itself that other projects take from a library, and leaves out a few that are standard elsewhere. The short version (the long one, with what each decision costs, is in [Doku/architecture.md](Doku/architecture.md#design-decisions)):
+The short version; what each decision costs is in [Doku/architecture.md](Doku/architecture.md#design-decisions):
 
 * **One process, one SQLite file:** nothing to run besides the container, and a backup is a file copy. No cluster, no PostgreSQL.
 * **Own note sync instead of Yjs or Automerge:** the server has to understand a note (rights, search, backlinks, Markdown), and sync has to survive proxies that cut WebSockets, where Yjs did not hold up. Every change is a plain HTTP request against an operations log. The price: two people cannot type in the same bullet at once.
@@ -299,7 +249,7 @@ MindSift builds a few things itself that other projects take from a library, and
 
 ## Performance on 1 CPU core and 1 GB RAM
 
-Load-tested with v0.95.0 on the public demo, a deliberately small server with **1 CPU core and 1 GB RAM**. Simulated people sign in, open notes and type in them, work with tasks and lists and search, all at the same time, each pausing about 3 seconds between actions:
+Load-tested with v0.95.0 on the public demo, a deliberately small server with **1 CPU core and 1 GB RAM**, with simulated people signing in, typing in notes, working with tasks and lists and searching at the same time:
 
 | People working at once | Typical answer (median) | Slowest 5 % | Errors |
 |---|---|---|---|
@@ -310,27 +260,22 @@ Load-tested with v0.95.0 on the public demo, a deliberately small server with **
 | 200, all in the **same** note | ~0.3–1.3 s for an edit | ~2–3 s | 0 % |
 | 300, all in the **same** note | ~6 s for an edit | ~7–8 s | 0 % |
 
-* **About 300 people at the same moment** run smoothly on that single core, far more than are usually active at once on an instance of a few hundred accounts.
-* **Above that, the CPU is the limit:** everything slows down evenly instead of failing. Even 1,200 people at once, spread over their notes, got no errors. More or faster cores help directly.
-* **Many people in one note:** changes to one note are applied one after another so that no edit gets lost, so hundreds typing in one note wait for each other (500 in one note: 10–15 s per edit, still without errors; from 800 on, requests time out). Opening the note stays fast.
-* **It recovers by itself:** right after 1,200 people at once, the server answers in under 0.1 s again, without a restart.
-* **Compared with the first test** (5 November 2026): with 200 to 300 people 5 to 8 times faster, edits in a shared note 2 to 3 times faster; search, the most expensive request back then, answers in about 0.1 s instead of 1 s.
+About 300 people at the same moment run smoothly on that single core; above that the CPU is the limit and everything slows down evenly instead of failing. Hundreds typing in the *same* note wait for each other, because edits to one note are applied one after another. More: [Doku/performance.md](Doku/performance.md).
 
 ---
 
 ## Security
 
-MindSift is meant to be reachable from the internet behind a reverse proxy. The whole code base was reviewed for security in November 2026 (v0.94.0), and the findings are fixed (see the [changelog](CHANGELOG.md)). Sign-in through OpenID Connect, two-factor sign-in and passkeys came after that review; they have their own browser tests ([e2e/](e2e/README.md)). What protects your data:
+MindSift is meant to be reachable from the internet behind a reverse proxy. The whole code base was reviewed for security in November 2026 (v0.94.0) and the findings are fixed; OIDC, two-factor sign-in and passkeys came later and have their own browser tests. In brief (details in [Doku/security.md](Doku/security.md)):
 
-* **Sign-in:** passwords are hashed with bcrypt over a SHA-256 of the whole password, so long passphrases count to the last character. Two-factor sign-in with an authenticator app (TOTP), passkeys or both, plus ten one-time recovery codes, can be switched on per person or required by the administration for admins or for everyone; a device can be trusted for 30 days. With it on, a new password or address, deleting data or the account and creating an API key ask for the second factor too, every change to it is mailed to the account, and an administrator can reset it for somebody who lost it. Passkeys (WebAuthn, user verification required) also sign in without a password and cannot be phished: they are bound to the host of `BASE_URL` (https only). Sign-in through an OpenID Connect provider uses the authorization code flow with PKCE, state and nonce and checks the ID token completely (signature against the provider's keys, issuer, audience, expiry, nonce); the session token never appears in an address, the provider sends back a one-time ticket that only the browser that started the sign-in can trade. Every login is a server-side session tied to a signed token; sessions are listed under Settings → Security, can be ended one by one, end after 30 days without use and with any password change. Failed sign-ins lock the account for that address after 3 tries, the account after 20 and the address after 30, each for 15 minutes; registration, "forgot password", the password asked before deleting data and the passwords of public links are limited the same way. A failed sign-in takes as long whether the account exists or not.
-* **Secrets never in plain text:** API keys, OAuth tokens, reset and confirmation links and the tokens of public links are stored only as SHA-256 hashes. Hidden values in notes are encrypted with AES-256-GCM under a key kept apart from the database (`SECRETS_KEY`).
-* **Rights checked on every request:** notes, folders, lists and task lists resolve the caller's role (owner, editor, viewer) on each call. API keys and MCP connections reach only what their scopes allow, OAuth tokens only the MCP endpoint. Public links are read-only, live at most 14 days, can carry a password and hide names, hidden values and links to other notes.
-* **Addresses stay private:** others see names, usernames and profile pictures, never e-mail addresses. A new login address counts only once its owner clicks the link mailed to it, and mail alarms and test mails go only to that confirmed address, so the server cannot be used to mail strangers.
-* **Browser hardening:** HSTS over https, a strict Content Security Policy (scripts only from MindSift itself, no embedding in other sites), links in notes limited to http(s) and mailto, uploads recognised by their content (no SVG, no scripts), media and previews served with a sandboxing policy. Profile pictures are uploaded, never loaded from other servers.
-* **Nothing reaches into your network:** every address the server contacts (webhooks, Discord, push services, link previews, image copies) is checked at connection time against localhost, link-local, cloud-metadata and private ranges, after DNS and after redirects (never from https down to http); private ranges only with an explicit admin switch. `X-Forwarded-*` headers only count from trusted proxies.
-* **Limits everywhere:** request bodies capped per endpoint, realtime connections capped per account, import archives checked for size and file count before anything is written.
-* **Quiet logs and errors:** tokens of public links and typed sign-in names stay out of the log; unexpected errors tell clients and AI agents nothing about the database or files.
-* **Supply chain:** the image runs as an unprivileged user and every release is scanned with Trivy (below). `govulncheck` and `npm audit` report no vulnerability reachable from the code (November 2026).
+* **Sign-in:** bcrypt passwords, optional or required two-factor sign-in (authenticator app, passkeys, recovery codes) and server-side sessions you can end one by one. Failed sign-ins lock the account and the address for 15 minutes.
+* **Secrets never in plain text:** API keys, tokens and links are stored only as SHA-256 hashes. Hidden values in notes are encrypted with AES-256-GCM under a key kept apart from the database (`SECRETS_KEY`).
+* **Rights checked on every request:** every call resolves the caller's role on that note, folder or list; API keys reach only what their scopes allow. Public links are read-only and expire after at most 14 days.
+* **Addresses stay private:** others never see e-mail addresses. Mail goes only to confirmed addresses, so the server cannot be used to mail strangers.
+* **Browser hardening:** HSTS, a strict Content Security Policy and uploads recognised by their content (no SVG, no scripts). Profile pictures are never loaded from other servers.
+* **Nothing reaches into your network:** every address the server contacts (webhooks, push, link previews) is checked against localhost, cloud-metadata and private ranges, also after DNS and redirects. `X-Forwarded-*` headers only count from trusted proxies.
+* **Limits and quiet logs:** request bodies, realtime connections and imports are capped. Tokens and typed sign-in names stay out of the log, and errors reveal nothing about the database or files.
+* **Supply chain:** the image runs as an unprivileged user. `govulncheck` and `npm audit` report no vulnerability reachable from the code (November 2026).
 
 Found something? Please follow [SECURITY.md](SECURITY.md).
 
@@ -340,19 +285,7 @@ Found something? Please follow [SECURITY.md](SECURITY.md).
 
 [![Weekly Security Scan](https://github.com/mindsift-app/mindsift/actions/workflows/security-scan.yaml/badge.svg)](https://github.com/mindsift-app/mindsift/actions/workflows/security-scan.yaml)
 
-The image is scanned with [Trivy](https://trivy.dev) for known vulnerabilities, leaked secrets and misconfigurations:
-
-* **every tagged release** (`:stable`, `:vX.Y.Z`) before it is published, and every build that changes the base image, the Go version or the Go modules. A known high or critical vulnerability that already has a fix, or a leaked secret, stops the release;
-* **the published `:stable` and `:latest` every week**, because new vulnerabilities become known after a release. The badge shows the last weekly run, its log the result.
-
-The base images (`golang:1.27-alpine`, `alpine:3.24`) are referenced by tag, not by digest, so each build gets their security fixes without manual updates (Node, `node:26.13.0-alpine`, only builds the frontend and is pinned to a release); the last stage also runs `apk upgrade`. The application's own dependencies are pinned: `npm ci` installs exactly what `package-lock.json` lists, and the Go modules are checked against `go.sum`.
-
-When you scan the image yourself:
-
-* **A missing `USER` line is intended:** MindSift runs as the user `mindsift` (uid 1000) since v0.87.3. The image starts as root only to hand `data/` to that user, then drops the rights.
-* **Entries for code MindSift does not call:** Trivy lists everything known about a module, for example the `openpgp` package of `golang.org/x/crypto`, of which MindSift only uses `bcrypt`. [govulncheck](https://go.dev/blog/govulncheck) follows the code that is actually called and reports nothing that affects MindSift.
-
-Neither tool sees **SQLite itself**: it is built in through [modernc.org/sqlite](https://gitlab.com/cznic/sqlite), a Go translation of SQLite's C code, so scanners see only a Go module. That module is updated by hand when SQLite publishes fixes ([release notes](https://sqlite.org/changes.html)). The log names the SQLite version at startup (`Database opened sqlite=3.54.1`), so you can compare it with SQLite's [list of known vulnerabilities](https://sqlite.org/cves.html).
+Every tagged release is scanned with [Trivy](https://trivy.dev) before it is published; a fixable high or critical vulnerability or a leaked secret stops it. The published `:stable` and `:latest` are scanned again every week, and the badge shows the last run. Base images, why a missing `USER` line is intended, and how to check the built-in SQLite: [Doku/security.md](Doku/security.md#security-scan).
 
 ```bash
 docker run --rm aquasec/trivy image ghcr.io/mindsift-app/mindsift:stable

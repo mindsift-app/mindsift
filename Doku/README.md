@@ -17,6 +17,10 @@ Reference for developers and administrators. All information has been verified a
 | [modules/collaboration.md](modules/collaboration.md) | Collaborative note editing: log, locks, conflicts, offline, transport tiers |
 | [modules/lists.md](modules/lists.md) | Shared lists |
 | [sharing-and-permissions.md](sharing-and-permissions.md) | Roles, groups, sharing permissions |
+| [operations.md](operations.md) | Running MindSift: install script, first admin, backups, updates, monitoring, image tags |
+| [oidc.md](oidc.md) | Single sign-on through an OpenID Connect provider: settings, accounts, provider examples |
+| [security.md](security.md) | What protects the data, security scan of the image |
+| [performance.md](performance.md) | Load test on 1 CPU core and 1 GB RAM |
 | [reverse-proxy.md](reverse-proxy.md) | Nginx, Traefik, Caddy, Cloudflare |
 | [theming.md](theming.md) | Themes and design variables |
 | [i18n.md](i18n.md) | Languages: where texts live, adding a language |

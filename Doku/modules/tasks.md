@@ -50,7 +50,7 @@ The ticker runs every minute ([architecture.md](../architecture.md)). For open t
 | Discord | Webhook URL | User settings |
 | Webhook | Arbitrary URL (JSON: `event`, `title`, `notes`, `dueDate`, `priority`, `timestamp`) | User settings |
 
-Afterwards, `alarm_sent = 1` is set as soon as at least one channel succeeds. In addition to due date alarms (which are dispatched immediately), MindSift supports granular notifications for shares, completed shared tasks, and watched tasks, which are batched via `notification_queue` and sent after `NOTIFY_DIGEST_MINUTES` ([architecture.md](../architecture.md#benachrichtigungen)).
+Afterwards, `alarm_sent = 1` is set as soon as at least one channel succeeds. In addition to due date alarms (which are dispatched immediately), MindSift supports granular notifications for shares, completed shared tasks, and watched tasks, which are batched via `notification_queue` and sent after `NOTIFY_DIGEST_MINUTES` ([architecture.md](../architecture.md#notifications)).
 
 **Email delivery** ([mail.go](../../internal/api/mail.go)) executes the SMTP conversation step by step:
 
