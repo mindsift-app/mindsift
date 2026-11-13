@@ -67,6 +67,7 @@
     "saving": "Enregistrement en cours…",
     "offline": "Hors ligne – modifications enregistrées dans ce navigateur",
     "saveFailed": "Échec de l'enregistrement",
+    "saved": "Enregistré",
     "saveStatus": "État de l'enregistrement",
     "readOnly": "Lecture seule",
     "inTrash": "Cette note est dans la corbeille et en lecture seule.",
