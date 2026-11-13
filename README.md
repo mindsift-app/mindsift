@@ -151,6 +151,7 @@ One container with web server, API, database and frontend, for amd64 and arm64 (
 services:
   mindsift:
     image: ghcr.io/mindsift-app/mindsift:stable   # the latest tagged release
+    container_name: mindsift
     restart: unless-stopped
     ports: ["8080:8080"]
     volumes: ["./data:/data"]
@@ -161,7 +162,7 @@ services:
       # - ADMIN_PASSWORD=...
 ```
 
-Open `http://localhost:8080`. Without `ADMIN_USER` and `ADMIN_PASSWORD`, a setup wizard creates the admin account. It asks for a one-time setup code that MindSift writes to its log on start (`docker logs mindsift | grep 'Setup code'`), so only someone who can read the server's log becomes its admin; a restart makes a new code, and it stops working once the admin exists.
+Open `http://localhost:8080`. Without `ADMIN_USER` and `ADMIN_PASSWORD`, a setup wizard creates the admin account. It asks for a one-time setup code that MindSift writes to its log on start (`docker logs mindsift | grep 'Setup code'`; in the compose folder `docker compose logs mindsift` works too), so only someone who can read the server's log becomes its admin; a restart makes a new code, and it stops working once the admin exists.
 
 **Or the install script** ([read it first](install.sh)):
 
@@ -169,7 +170,7 @@ Open `http://localhost:8080`. Without `ADMIN_USER` and `ADMIN_PASSWORD`, a setup
 curl -fsSL https://raw.githubusercontent.com/mindsift-app/mindsift/main/install.sh | bash
 ```
 
-It generates the secrets, takes over the server's time zone, asks for the admin account and optionally adds a Whisper container for voice input and a reverse proxy network; running it again updates and keeps your settings. Details: [Doku/operations.md](Doku/operations.md#install-script).
+It generates the secrets, asks for the admin account (and removes its password from `.env` once the admin exists) and optionally adds a Whisper container for voice input and a reverse proxy network; running it again updates and keeps your settings. Details: [Doku/operations.md](Doku/operations.md#install-script).
 
 All settings are explained in [`.env.example`](.env.example).
 
@@ -201,9 +202,9 @@ The most important settings (all of them are in [`.env.example`](.env.example); 
 * **First admin:** with `ADMIN_USER` and `ADMIN_PASSWORD` (at least 8 characters, or `ADMIN_PASSWORD_FILE`), the admin exists before the server accepts connections; unusable values stop the start with a reason in the log. They act only while the database has no account ([details](Doku/operations.md#first-admin)).
 * **Language:** the app follows the browser if it speaks that language, and everyone can pick their own. `DEFAULT_LANGUAGE` covers the rest; unset, it is German, so for an English instance set `en` or pick it in the setup wizard.
 * **Reverse proxy:** pass through WebSocket upgrades and unbuffered SSE if you can; otherwise MindSift falls back to long polling. Examples for nginx, Traefik, Caddy and Cloudflare: [Doku/reverse-proxy.md](Doku/reverse-proxy.md).
-* **Backups:** the setup wizard offers daily backups (preselected: 03:00 server time, kept 3 days). Each run saves the whole database plus one ZIP per person under `data/backups/`; copy that folder somewhere else too.
+* **Backups:** the setup wizard offers daily backups (preselected: 03:00 server time, kept 3 days). Each run saves the whole database plus one ZIP per person under `data/backups/`; copy that folder somewhere else too. Putting a whole database back: [Doku/operations.md](Doku/operations.md#restoring-a-whole-server).
 * **Updates:** `docker compose pull && docker compose up -d`. The database schema updates itself; with `user:` in the compose file, run `chown -R 1000:1000 data` first (the container runs as uid 1000 since v0.87.3).
-* **Rolling back:** before an update changes the database schema, MindSift saves a compressed copy of the database as `data/backups/system/pre-migration-<migration>-<date>-<time>.db.gz` (the last three are kept; without the copy, for example on a full disk, it does not migrate and stops). An older image refuses to start on a database a newer one has changed and says so in the log. To go back: stop the container, unpack the copy from before the update over the database (`gunzip -c data/backups/system/pre-migration-….db.gz > data/mindsift.db`) and delete `data/mindsift.db-wal` and `data/mindsift.db-shm` if they exist, pin the older image (`image: ghcr.io/mindsift-app/mindsift:vX.Y.Z`) and start it. Whatever was written after the update is not in that copy.
+* **Rolling back:** before an update changes the database schema, MindSift saves a compressed copy of the database as `data/backups/system/pre-migration-<migration>-<date>-<time>.db.gz` (the last three are kept; without the copy, for example on a full disk, it does not migrate and stops). From the release after v0.95.0 on, an older image refuses to start on a database a newer one has changed and says so in the log. **v0.95.0 and earlier do not check this:** they start on the newer database without a word, and accounts that signed in on the newer version cannot sign in there any more (passwords are stored in a newer form that they cannot read). So going back to v0.95.0 or earlier always means restoring the copy from before the update; it predates the new password form, and sign-ins work again. To go back: stop the container, unpack the copy from before the update over the database (`gunzip -c data/backups/system/pre-migration-….db.gz > data/mindsift.db`) and delete `data/mindsift.db-wal` and `data/mindsift.db-shm` if they exist, pin the older image (`image: ghcr.io/mindsift-app/mindsift:vX.Y.Z`) and start it. Whatever was written after the update is not in that copy ([details](Doku/operations.md#rolling-back)).
 * **Health and monitoring:** the image checks `/api/v1/health` every 30 s (Podman ignores that; copy the `healthcheck:` block of `docker-compose.yml`). `METRICS_TOKEN` switches on Prometheus metrics at `/metrics` ([scrape config and details](Doku/operations.md#monitoring)).
 * **File permissions:** everything in `data/` is readable by MindSift only; without the container, run `chmod -R go-rwx data`.
 * **Image tags:** `:stable` = the latest release (default), `:vX.Y.Z` = one release, `:latest` = every build of `main`, `:dev` = development. The project is 0.x: the [changelog](CHANGELOG.md) marks breaking changes with **Attention**.
@@ -224,9 +225,9 @@ No telemetry, no third-party services; fonts and icons ship with the app. The se
 
 MindSift is written with a lot of AI help (see the note at the top). One person decides what goes in and tries it on real devices. What keeps the code honest is that it gets checked:
 
-* **Tests:** more than 650 frontend tests and more than 450 backend tests run before every push and again in the build of every release. If one fails, no image is published.
-* **Browser tests:** more than a dozen runs with over 250 checks cover what is hard to unit-test: two people editing the same note at once, offline and back online, sharing, locks and conflict copies, tables, copy & paste as Markdown in Chromium and Firefox, live drawing, two-factor sign-in, passkeys, sign-in through an OpenID Connect provider (against Dex) and connections behind proxies that block WebSockets ([e2e/](e2e/README.md)). They run before every release and every change to these areas.
-* **Static checks:** TypeScript, ESLint, gofmt, `go vet` and [golangci-lint](https://golangci-lint.run) with its standard linters (staticcheck among them) ([.golangci.yml](.golangci.yml)), in the same run as the tests.
+* **Tests:** more than 650 frontend tests and more than 450 backend tests run locally before every push (`ci/local-checks.sh`) and again in the build of GitHub `main`; if one fails there, no `:latest` image is published, and a release is tagged only on a `main` commit whose build is green. Other builds (`:dev`) only build the image; pull requests run the tests of the image build (without gofmt and golangci-lint).
+* **Browser tests:** more than a dozen runs with over 250 checks cover what is hard to unit-test: two people editing the same note at once, offline and back online, sharing, locks and conflict copies, tables, copy & paste as Markdown in Chromium and Firefox, live drawing, two-factor sign-in, passkeys, sign-in through an OpenID Connect provider (against Dex) and connections behind proxies that block WebSockets ([e2e/](e2e/README.md)). They run locally before every release and every change to these areas, not in the pipelines.
+* **Static checks:** TypeScript, ESLint, gofmt, `go vet` and [golangci-lint](https://golangci-lint.run) with its standard linters (staticcheck among them) ([.golangci.yml](.golangci.yml)), in the same local run as the tests; the build of `main` repeats TypeScript, ESLint and `go vet`.
 * **Security:** a review of the whole code base in November 2026 (v0.94.0), findings fixed ([Security](#security)); OIDC, two-factor sign-in and passkeys came later and have their own browser tests; every tagged release is scanned with Trivy ([Security scan](#security-scan)).
 
 History starts at v0.70.0, when the project moved from a private repository; the [changelog](CHANGELOG.md) and its [archive](CHANGELOG-archive.md) go back to 0.1.
@@ -302,7 +303,7 @@ go vet ./cmd/... ./internal/... && go test ./cmd/... ./internal/...   # backend
 cd frontend && npm ci
 npm run dev                        # Vite dev server
 npx tsc --noEmit && npm run test:run
-cd .. && ci/local-checks.sh        # all checks at once in containers (podman), with gofmt and staticcheck
+cd .. && ci/local-checks.sh        # all checks at once in containers (podman), with gofmt and golangci-lint
 e2e/run.sh                         # browser tests (Playwright) against a fresh image
 e2e/screenshots.sh                 # recreate the screenshots in this README
 ```

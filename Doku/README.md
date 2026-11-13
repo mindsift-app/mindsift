@@ -1,6 +1,6 @@
 # MindSift Technical Documentation
 
-Reference for developers and administrators. All information describes the code in the `dev` branch. Please report discrepancies between the documentation and code as issues in [flaws.md](flaws.md).
+Reference for developers and administrators. All information describes the code in the `dev` branch. Please report discrepancies between the documentation and code as a [GitHub issue](https://github.com/mindsift-app/mindsift/issues); known weak spots are in [flaws.md](flaws.md).
 
 ## Contents
 
@@ -17,7 +17,7 @@ Reference for developers and administrators. All information describes the code 
 | [modules/collaboration.md](modules/collaboration.md) | Collaborative note editing: log, locks, conflicts, offline, transport tiers |
 | [modules/lists.md](modules/lists.md) | Shared lists |
 | [sharing-and-permissions.md](sharing-and-permissions.md) | Roles, groups, sharing permissions |
-| [operations.md](operations.md) | Running MindSift: install script, first admin, backups, updates, monitoring, image tags |
+| [operations.md](operations.md) | Running MindSift: install script, first admin, backups, updates, rolling back and restoring, monitoring, image tags |
 | [oidc.md](oidc.md) | Single sign-on through an OpenID Connect provider: settings, accounts, provider examples |
 | [security.md](security.md) | What protects the data, security scan of the image |
 | [performance.md](performance.md) | Load test on 1 CPU core and 1 GB RAM |
