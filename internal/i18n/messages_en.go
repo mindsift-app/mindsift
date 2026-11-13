@@ -241,6 +241,7 @@ var messagesEN = map[string]string{
 	"Ziel-E-Mail-Adresse erforderlich":                                              "Target email address required",
 	"Ziel-ID erforderlich":                                                          "Target ID required",
 	"Zielliste fehlt":                                                               "Target list missing",
+	"Zu viele Anfragen – bitte kurz warten":                                         "Too many requests – please wait a moment",
 	"Zu viele Anfragen von dieser Adresse. Bitte versuche es in {minutes} Minuten erneut.":             "Too many requests from this address. Please try again in {minutes} minutes.",
 	"Zu viele fehlgeschlagene Anmeldeversuche. Die Anmeldung ist für noch eine Minute gesperrt.":       "Too many failed sign-in attempts. Sign-in is locked for one more minute.",
 	"Zu viele fehlgeschlagene Anmeldeversuche. Die Anmeldung ist für noch {minutes} Minuten gesperrt.": "Too many failed sign-in attempts. Sign-in is locked for {minutes} more minutes.",

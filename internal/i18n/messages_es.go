@@ -241,6 +241,7 @@ var messagesES = map[string]string{
 	"Ziel-E-Mail-Adresse erforderlich":                                              "Se requiere la dirección de correo de destino",
 	"Ziel-ID erforderlich":                                                          "Se requiere el ID de destino",
 	"Zielliste fehlt":                                                               "Falta la lista de destino",
+	"Zu viele Anfragen – bitte kurz warten":                                         "Demasiadas solicitudes – espera un momento",
 	"Zu viele Anfragen von dieser Adresse. Bitte versuche es in {minutes} Minuten erneut.":             "Demasiadas solicitudes desde esta dirección. Inténtalo de nuevo dentro de {minutes} minutos.",
 	"Zu viele fehlgeschlagene Anmeldeversuche. Die Anmeldung ist für noch eine Minute gesperrt.":       "Demasiados intentos de inicio de sesión fallidos. El inicio de sesión está bloqueado un minuto más.",
 	"Zu viele fehlgeschlagene Anmeldeversuche. Die Anmeldung ist für noch {minutes} Minuten gesperrt.": "Demasiados intentos de inicio de sesión fallidos. El inicio de sesión está bloqueado {minutes} minutos más.",

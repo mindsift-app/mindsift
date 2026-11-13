@@ -24,7 +24,8 @@ export interface LiveCursor extends LivePerson {
 
 export type LiveStatus = 'connecting' | 'live' | 'offline' | 'idle';
 export type LiveEndReason = 'done' | 'discard' | 'expired';
-export type LiveError = 'forbidden' | 'locked' | 'limit' | 'save' | null;
+// busy and too_many: the server takes no further live drawing (from this person, or at all) right now
+export type LiveError = 'forbidden' | 'locked' | 'limit' | 'busy' | 'too_many' | 'save' | null;
 
 export interface LiveOptions {
   docId: string;
@@ -84,6 +85,7 @@ export function useLiveDrawing(opts: LiveOptions | null) {
   const left = useRef(false);
   const lastResync = useRef(0);
   const saveTimer = useRef<number | null>(null);
+  const retryTimer = useRef<number | null>(null);
 
   const setEnded = (e: { reason: LiveEndReason; by?: string }) => {
     endedRef.current = true;
@@ -166,6 +168,8 @@ export function useLiveDrawing(opts: LiveOptions | null) {
       setStatus('idle');
       return;
     }
+    // In after all (another drawing was closed meanwhile)
+    setError((e) => (e === 'busy' || e === 'too_many' ? null : e));
     const r = merge.reconcile(o.getDoc(), { els: st.els || [], order: st.order, grid: st.grid }, o.held());
     o.apply(r.doc, r.applied);
     lastSeq.current = Number(st.seq) || 0;
@@ -271,6 +275,8 @@ export function useLiveDrawing(opts: LiveOptions | null) {
             case 'forbidden':
             case 'locked':
             case 'limit':
+            case 'busy':
+            case 'too_many':
               setError(p.code);
               break;
             case 'no_session':
@@ -281,7 +287,15 @@ export function useLiveDrawing(opts: LiveOptions | null) {
               }
               break;
             case 'rate':
-              resync();
+              // Not in yet: joining or watching came too fast (several at once), try again shortly
+              if (statusRef.current === 'live') resync();
+              else if (retryTimer.current === null)
+                retryTimer.current = window.setTimeout(() => {
+                  retryTimer.current = null;
+                  if (left.current || endedRef.current) return;
+                  if (modeRef.current === 'draw') join();
+                  else watch();
+                }, 2000);
               break;
           }
           break;
@@ -303,6 +317,7 @@ export function useLiveDrawing(opts: LiveOptions | null) {
       if (flushTimer.current !== null) window.clearTimeout(flushTimer.current);
       if (pointerTimer.current !== null) window.clearTimeout(pointerTimer.current);
       if (saveTimer.current !== null) window.clearTimeout(saveTimer.current);
+      if (retryTimer.current !== null) window.clearTimeout(retryTimer.current);
       if (!left.current && !endedRef.current) leaveNow();
     };
     // One session per editor: everything it needs is read through refs
