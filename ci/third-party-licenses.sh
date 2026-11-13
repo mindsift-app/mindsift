@@ -6,7 +6,7 @@
 # standard library. Needs only the go tool and the downloaded modules. Fails when a Go module has no
 # license file.
 # Usage: ci/third-party-licenses.sh <npm part> <go package> > THIRD_PARTY_LICENSES.txt
-set -eu
+set -euo pipefail
 
 NPM_PART="${1:?usage: ci/third-party-licenses.sh <npm part> <go package>}"
 GO_PKG="${2:?usage: ci/third-party-licenses.sh <npm part> <go package>}"
@@ -37,14 +37,16 @@ printf '\n'
 
 MODULES="$(go list -deps -f '{{with .Module}}{{if not .Main}}{{.Path}} {{.Version}} {{if .Replace}}{{.Replace.Dir}}{{else}}{{.Dir}}{{end}}{{end}}{{end}}' "${GO_PKG}" | sort -u)"
 [ -n "${MODULES}" ] || { echo "third-party-licenses: no Go modules found for ${GO_PKG}" >&2; exit 1; }
+# One file name per line, each used as a whole (no word splitting or globbing). grep without -q reads all
+# of its input, so pipefail never sees the writer cut off.
 printf '%s\n' "${MODULES}" | while read -r path version dir; do
-  files="$(ls -1 "${dir}" | grep -iE "${LICENSE_FILES}" | sort || true)"
-  if ! printf '%s\n' "${files}" | grep -qiE '^(licen[cs]e|copying)'; then
+  files="$(ls -1 "${dir}" | { grep -iE "${LICENSE_FILES}" || true; } | sort)"
+  if ! printf '%s\n' "${files}" | grep -iE '^(licen[cs]e|copying)' >/dev/null; then
     echo "third-party-licenses: Go module ${path} ${version} has no license file in ${dir}" >&2
     exit 1
   fi
   heading "${path} ${version} (Go module)"
-  for f in ${files}; do
+  printf '%s\n' "${files}" | while IFS= read -r f; do
     cat "${dir}/${f}"
     printf '\n'
   done
