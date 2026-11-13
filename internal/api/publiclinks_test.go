@@ -1,7 +1,9 @@
 package api
 
 import (
+	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -149,4 +151,60 @@ func TestPublicLinks(t *testing.T) {
 func jsonNumber(n int64) string {
 	b, _ := json.Marshal(n)
 	return string(b)
+}
+
+// The password of a public link is limited per link too, not only per address: visitors with changing
+// addresses (X-Forwarded-For through a trusted proxy) cannot keep guessing. While the link is paused
+// the right password gets the same refusal as a wrong one, and the pause ends after the lock window.
+func TestPublicLinkPasswordLockedAcrossAddresses(t *testing.T) {
+	srv, store, ts, owner, ownerToken := startRealtimeServer(t)
+	doc, err := store.CreateDocument(owner.ID, "", "Geschützt", "", "", []domain.DocumentBlock{
+		{ID: "blk_a", Type: "bullet", Content: "Inhalt", Level: 0, Position: 1},
+	}, nil, false)
+	if err != nil {
+		t.Fatalf("create note: %v", err)
+	}
+	resp := doJSON(t, ts, http.MethodPut, "/api/v1/documents/"+doc.ID+"/public-link", ownerToken, map[string]any{"hours": 1, "password": "Richtiges Passwort"})
+	var state struct {
+		Link *publicLinkView `json:"link"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&state); err != nil || state.Link == nil {
+		t.Fatalf("create link: %v", err)
+	}
+	unlock := func(addr, password string) *http.Response {
+		t.Helper()
+		body, _ := json.Marshal(map[string]string{"password": password})
+		req, _ := http.NewRequest(http.MethodPost, ts.URL+"/api/v1/public/"+state.Link.Token+"/unlock", bytes.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("X-Forwarded-For", addr)
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatalf("unlock: %v", err)
+		}
+		t.Cleanup(func() { _ = resp.Body.Close() })
+		return resp
+	}
+
+	// Every guess from a new address: the limit per address never applies
+	for i := range publicLinkFailures {
+		if resp := unlock(fmt.Sprintf("203.0.113.%d", i+1), "geraten"); resp.StatusCode != http.StatusUnauthorized {
+			t.Fatalf("guess %d: status %d, want 401", i+1, resp.StatusCode)
+		}
+	}
+	for _, password := range []string{"geraten", "Richtiges Passwort"} {
+		resp := unlock("198.51.100.7", password)
+		body, _ := io.ReadAll(resp.Body)
+		if resp.StatusCode != http.StatusTooManyRequests || resp.Header.Get("Retry-After") == "" {
+			t.Fatalf("paused link, %q: status %d, want 429 with Retry-After", password, resp.StatusCode)
+		}
+		if strings.Contains(string(body), `"key"`) {
+			t.Fatalf("a paused link must not unlock: %s", body)
+		}
+	}
+
+	// After the lock window the right password works again
+	srv.loginGuard.now = func() time.Time { return time.Now().Add(loginLockWindow + time.Minute) }
+	if resp := unlock("198.51.100.7", "Richtiges Passwort"); resp.StatusCode != http.StatusOK {
+		t.Fatalf("after the pause: status %d, want 200", resp.StatusCode)
+	}
 }

@@ -7,6 +7,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
+	"math"
 	"net/http"
 	"os"
 	"strconv"
@@ -30,8 +31,20 @@ var publicLinkHours = []int{1, 24, 72, 168, 336}
 // publicKeyTTL: how long a visitor stays unlocked after entering the password.
 const publicKeyTTL = 12 * time.Hour
 
-// publicPasswordTries: wrong passwords per link and address before a pause (loginGuard window).
+// publicPasswordTries: password attempts per link and address before a pause (loginGuard window).
 const publicPasswordTries = 10
+
+// publicLinkFailures: wrong passwords for one link from all addresses together before its password
+// check pauses for the lock window (15 minutes). Addresses can be shared or, behind a trusted proxy,
+// made up, so the limit per address alone does not bound guessing. While the pause lasts the password is
+// not checked at all, so the answer says nothing about it, the right one included. Visitors who entered
+// it before keep reading (their key is valid for publicKeyTTL), and a new password starts a new count.
+const publicLinkFailures = 50
+
+// publicLinkLockKey: the loginGuard bucket of a link's password (a new password gets a new bucket).
+func publicLinkLockKey(l *storage.PublicLink) string {
+	return "publink:" + l.ID + ":" + hashPublicToken(l.PasswordHash)[:16]
+}
 
 func hashPublicToken(token string) string {
 	sum := sha256.Sum256([]byte(token))
@@ -125,10 +138,18 @@ func (s *Server) handlePublicUnlock(w http.ResponseWriter, r *http.Request) {
 		writeThrottled(w, wait)
 		return
 	}
+	lockKey := publicLinkLockKey(l)
+	if wait := s.loginGuard.lockedKey(lockKey); wait > 0 {
+		w.Header().Set("Retry-After", strconv.Itoa(int(math.Ceil(wait.Seconds()))))
+		writeError(w, http.StatusTooManyRequests, tr(w, "Zu viele falsche Passwörter für diesen Link. Bitte versuche es in {minutes} Minuten erneut.",
+			"minutes", strconv.Itoa(int(math.Ceil(wait.Minutes())))))
+		return
+	}
 	var req struct {
 		Password string `json:"password"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || !auth.CheckPassword(req.Password, l.PasswordHash) {
+		s.loginGuard.failKey(lockKey, publicLinkFailures)
 		writeErrorCode(w, http.StatusUnauthorized, "password_wrong", "Falsches Passwort")
 		return
 	}
