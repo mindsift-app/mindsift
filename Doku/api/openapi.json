@@ -4481,6 +4481,21 @@
         }
       }
     },
+    "/third-party-licenses.txt": {
+      "get": {
+        "summary": "Licenses of the third-party software in this build",
+        "description": "THIRD_PARTY_LICENSES.txt next to the server binary as text/plain (linked in About MindSift); 404 where there is none, e.g. in development",
+        "tags": [
+          "Public"
+        ],
+        "security": [],
+        "responses": {
+          "default": {
+            "description": "text/plain; 404 without the file"
+          }
+        }
+      }
+    },
     "/share-target": {
       "post": {
         "summary": "Share target of the installed app (fallback without service worker)",
