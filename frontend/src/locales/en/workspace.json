@@ -608,6 +608,8 @@
         "forbidden": "You have no access to draw along.",
         "locked": "Someone is editing the drawing without a live connection – you can only look.",
         "limit": "The drawing is too large for the live session. Please remove something, above all freehand strokes.",
+        "too_many": "You are already drawing live in too many drawings. Close one of them, then open this one again.",
+        "busy": "Too many live drawings are running on the server right now. Please open it again later.",
         "save": "Saving did not work. Check the connection and try again."
       }
     }

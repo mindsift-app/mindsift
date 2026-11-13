@@ -307,7 +307,7 @@ Concept and rules: [modules/collaboration.md](../modules/collaboration.md). Acce
 | GET | `/docs/{id}/changes?since=N&wait=S` | Long polling: returns immediately if `headSeq > N`, otherwise on next change (including leases/presence) or after at most 25 s. Response `{headSeq, changed}`; client then retrieves data via `/sync` |
 | POST | `/docs/{id}/leave` | Terminate session, release all client leases (`{clientId}`) |
 | GET | `/docs/{id}/drawings/{blockId}/live` | State of a live drawing session: `active`, `host`, `participants`, `watchers`, `els` (with `ver`, `nonce`, tombstones), `order`, `grid`, `seq`; read access |
-| POST | `/docs/{id}/drawings/{blockId}/watch` | Watch a live drawing over SSE or long polling: `{sseId}` joins the room `drawing:<docId>:<blockId>` and counts as watching, returns the state with `you`; `{sseId, leave: true}` ends it. Drawing along needs the WebSocket, see [websocket.md](websocket.md#live-drawing) |
+| POST | `/docs/{id}/drawings/{blockId}/watch` | Watch a live drawing over SSE or long polling: `{sseId}` joins the room `drawing:<docId>:<blockId>` and counts as watching, returns the state with `you` (`429` when joining and watching too fast); `{sseId, leave: true}` ends it, only for a connection of the caller (else `403`). Drawing along needs the WebSocket, see [websocket.md](websocket.md#live-drawing) |
 
 `/sync` request:
 

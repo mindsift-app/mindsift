@@ -299,3 +299,166 @@ func TestReconnectMergesOwnState(t *testing.T) {
 		t.Fatalf("Anna stays host: %+v", st.Participants)
 	}
 }
+
+func TestLeaveOwnOnlyTakesOwnConnections(t *testing.T) {
+	m := NewManager()
+	m.Join("d1", "b1", anna(), "base", nil, nil, t0)
+	m.Watch("d1", "b1", cleo())
+	// Cleo sees Anna's connection id, but cannot take her out
+	if _, ok := m.LeaveOwn("d1", "b1", "ws_a", "u_cleo", t0); ok || !m.Running("d1", "b1") {
+		t.Fatal("someone else's connection left the session")
+	}
+	if ch, ok := m.LeaveOwn("d1", "b1", "ws_c", "u_cleo", t0); !ok || ch.Participant {
+		t.Fatalf("leaving as watcher: %+v", ch)
+	}
+	if ch, ok := m.LeaveOwn("d1", "b1", "ws_a", "u_anna", t0); !ok || !ch.Empty {
+		t.Fatalf("leaving as the one drawing: %+v", ch)
+	}
+}
+
+func TestOneDrawingPerConnection(t *testing.T) {
+	m := NewManager()
+	m.Join("d1", "b1", anna(), "base", nil, nil, t0)
+	m.Join("d1", "b1", ben(), "base", nil, nil, t0)
+	if chs := m.LeaveElsewhere("d1", "b1", "ws_a", t0); len(chs) != 0 {
+		t.Fatal("joining the same drawing again leaves nothing")
+	}
+	chs := m.LeaveElsewhere("d1", "b2", "ws_a", t0)
+	if len(chs) != 1 || chs[0].BlockID != "b1" || !chs[0].HostChanged || chs[0].State.Host != "ws_b" {
+		t.Fatalf("joining another drawing: %+v", chs)
+	}
+}
+
+func TestSessionsPerPerson(t *testing.T) {
+	m := NewManager()
+	conn := func(i int) Person { return Person{ID: fmt.Sprintf("ws_a%d", i), UserID: "u_anna", Name: "Anna"} }
+	for i := 0; i < MaxUserSessions; i++ {
+		if _, _, _, err := m.Join("d1", fmt.Sprintf("b%d", i), conn(i), "base", nil, nil, t0); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, _, _, err := m.Join("d1", "bx", conn(99), "base", nil, nil, t0); !errors.Is(err, ErrTooMany) {
+		t.Fatalf("one drawing more: %v", err)
+	}
+	if _, ok := m.State("d1", "bx"); ok {
+		t.Fatal("a refused join keeps no session")
+	}
+	// Drawing along in a running session of someone else is always possible
+	m.Join("d1", "bb", ben(), "base", nil, nil, t0)
+	if _, _, _, err := m.Join("d1", "bb", conn(99), "base", nil, nil, t0); err != nil {
+		t.Fatalf("drawing along: %v", err)
+	}
+	m.Leave("d1", "bb", "ws_a99", t0)
+	// Sessions Anna left last count until they expire, but give way for a new one, the oldest first
+	m.Leave("d1", "b3", "ws_a3", t0)
+	m.Leave("d1", "b5", "ws_a5", t0.Add(time.Second))
+	if _, _, _, err := m.Join("d1", "bx", conn(99), "base", nil, nil, t0.Add(2*time.Second)); err != nil {
+		t.Fatalf("after leaving two: %v", err)
+	}
+	if _, ok := m.State("d1", "b3"); ok {
+		t.Fatal("the oldest left session should have given way")
+	}
+	if _, ok := m.State("d1", "b5"); !ok {
+		t.Fatal("only as many give way as needed")
+	}
+	if d := m.Dropped(); len(d) != 1 || d[0].BlockID != "b3" {
+		t.Fatalf("dropped: %+v", d)
+	}
+	if len(m.Dropped()) != 0 {
+		t.Fatal("dropped sessions are told once")
+	}
+	if !m.Running("d1", "bb") {
+		t.Fatal("Ben's session stays")
+	}
+}
+
+func TestSessionsOfTheServer(t *testing.T) {
+	someone := func(i int) Person {
+		return Person{ID: fmt.Sprintf("ws_%d", i), UserID: fmt.Sprintf("u_%d", i), Name: "P"}
+	}
+	m := NewManager()
+	for i := 0; i < MaxSessions; i++ {
+		if _, _, _, err := m.Join("d1", fmt.Sprintf("b%d", i), someone(i), "base", nil, nil, t0); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, _, _, err := m.Join("d1", "bx", someone(999), "base", nil, nil, t0); !errors.Is(err, ErrBusy) {
+		t.Fatalf("one session more than the server takes: %v", err)
+	}
+	m.Leave("d1", "b7", "ws_7", t0)
+	if _, _, _, err := m.Join("d1", "bx", someone(999), "base", nil, nil, t0); err != nil {
+		t.Fatalf("a left session gives way: %v", err)
+	}
+	if _, ok := m.State("d1", "b7"); ok {
+		t.Fatal("the left session is still there")
+	}
+
+	// Bytes: sessions of about 1 MB each until the total is reached
+	m = NewManager()
+	pad := `,"txt":"` + strings.Repeat("y", 60000) + `"`
+	heavy := func() []Element {
+		var out []Element
+		for i := 0; i < 17; i++ {
+			out = append(out, el(t, fmt.Sprintf("h%d", i), 1, 0, pad))
+		}
+		return out
+	}
+	// b0 starts small and grows later
+	if _, _, _, err := m.Join("d1", "b0", someone(0), "base", nil, nil, t0); err != nil {
+		t.Fatal(err)
+	}
+	n := 1
+	for ; n < MaxSessions; n++ {
+		_, _, _, err := m.Join("d1", fmt.Sprintf("b%d", n), someone(n), "base", heavy(), nil, t0)
+		if errors.Is(err, ErrBusy) {
+			break
+		}
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+	if n == MaxSessions || m.bytes > MaxTotalBytes || m.bytes < MaxTotalBytes-MaxBytes {
+		t.Fatalf("%d sessions with %d bytes", n, m.bytes)
+	}
+	if _, ok := m.State("d1", fmt.Sprintf("b%d", n)); ok {
+		t.Fatal("a refused join keeps no session")
+	}
+	// Changes that keep the size still go into running sessions; growing over the total does not
+	if _, _, err := m.Apply("d1", "b1", "ws_1", []Element{el(t, "h0", 2, 0, pad)}, nil, nil, t0); err != nil {
+		t.Fatalf("a change of the same size: %v", err)
+	}
+	if _, _, err := m.Apply("d1", "b0", "ws_0", heavy(), nil, nil, t0); !errors.Is(err, ErrBusy) {
+		t.Fatalf("growing over the total: %v", err)
+	}
+	m.Leave("d1", "b1", "ws_1", t0)
+	if _, _, _, err := m.Join("d1", "bx", someone(999), "base", heavy(), nil, t0); err != nil {
+		t.Fatalf("a left session gives way for bytes too: %v", err)
+	}
+	// Whatever ends a session gives its bytes back
+	m.Forget("d1")
+	if m.bytes != 0 {
+		t.Fatalf("%d bytes left after all sessions ended", m.bytes)
+	}
+}
+
+func TestJoinRate(t *testing.T) {
+	m := NewManager()
+	for i := 0; i < joinsBurst; i++ {
+		if !m.AllowJoin("u_anna", t0) {
+			t.Fatalf("join %d refused within the burst", i)
+		}
+	}
+	if m.AllowJoin("u_anna", t0) {
+		t.Fatal("joining is limited")
+	}
+	if !m.AllowJoin("u_ben", t0) {
+		t.Fatal("the rate is per person")
+	}
+	if !m.AllowJoin("u_anna", t0.Add(time.Second)) {
+		t.Fatal("a second later there is room again")
+	}
+	m.Sweep(t0.Add(time.Minute))
+	if len(m.joins) != 0 {
+		t.Fatalf("rates that filled up again are kept: %d", len(m.joins))
+	}
+}

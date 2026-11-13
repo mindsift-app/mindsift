@@ -241,6 +241,7 @@ var messagesFR = map[string]string{
 	"Ziel-E-Mail-Adresse erforderlich":                                              "Adresse e-mail de destination requise",
 	"Ziel-ID erforderlich":                                                          "ID de destination requis",
 	"Zielliste fehlt":                                                               "Liste de destination manquante",
+	"Zu viele Anfragen – bitte kurz warten":                                         "Trop de requêtes – attends un instant",
 	"Zu viele Anfragen von dieser Adresse. Bitte versuche es in {minutes} Minuten erneut.":             "Trop de requêtes depuis cette adresse. Réessaie dans {minutes} minutes.",
 	"Zu viele fehlgeschlagene Anmeldeversuche. Die Anmeldung ist für noch eine Minute gesperrt.":       "Trop de tentatives de connexion échouées. La connexion est bloquée encore une minute.",
 	"Zu viele fehlgeschlagene Anmeldeversuche. Die Anmeldung ist für noch {minutes} Minuten gesperrt.": "Trop de tentatives de connexion échouées. La connexion est bloquée encore {minutes} minutes.",

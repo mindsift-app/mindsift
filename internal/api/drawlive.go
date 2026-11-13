@@ -72,6 +72,10 @@ func drawErrorCode(err error) string {
 		return "limit"
 	case errors.Is(err, drawlive.ErrRate):
 		return "rate"
+	case errors.Is(err, drawlive.ErrTooMany):
+		return "too_many"
+	case errors.Is(err, drawlive.ErrBusy):
+		return "busy"
 	case errors.Is(err, drawlive.ErrNotHost):
 		return "not_host"
 	case errors.Is(err, drawlive.ErrInvalid):
@@ -152,15 +156,35 @@ func (s *Server) handleDrawMessage(c *ws.Client, event string, payload json.RawM
 		d.mu.Unlock()
 	case "DRAW_LEAVE":
 		s.wsHub.LeaveRoom(c, drawRoom(p.DocID, p.BlockID))
-		s.drawLeave(p.DocID, p.BlockID, c.ID())
+		s.drawLeave(p.DocID, p.BlockID, c.ID(), c.UserID())
 	case "DRAW_DONE", "DRAW_DISCARD":
 		s.drawFinish(c, p, event == "DRAW_DONE")
+	}
+}
+
+// allowDrawJoin keeps the rate of joining and watching per person (each start loads the note).
+func (s *Server) allowDrawJoin(userID string) bool {
+	d := s.draw
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	return d.m.AllowJoin(userID, s.now())
+}
+
+// tellDrawDropped tells the watchers of sessions everyone had left, and that gave way for others, that
+// they ended (as when they expire); called holding d.mu.
+func (s *Server) tellDrawDropped() {
+	for _, st := range s.draw.m.Dropped() {
+		s.wsHub.BroadcastRoom(drawRoom(st.DocID, st.BlockID), "DRAW_END", map[string]any{"docId": st.DocID, "blockId": st.BlockID, "reason": "expired"}, nil)
 	}
 }
 
 // drawJoin: someone with write access draws along, or starts a session.
 func (s *Server) drawJoin(c *ws.Client, p drawMessage) {
 	userID := c.UserID()
+	if !s.allowDrawJoin(userID) {
+		drawError(c, p.DocID, p.BlockID, "rate")
+		return
+	}
 	if !storage.CanEditDoc(s.store.DocRole(userID, p.DocID)) {
 		drawError(c, p.DocID, p.BlockID, "forbidden")
 		return
@@ -172,8 +196,17 @@ func (s *Server) drawJoin(c *ws.Client, p drawMessage) {
 	}
 	d := s.draw
 	d.mu.Lock()
+	// One drawing per connection: joining another leaves the previous one
+	left := d.m.LeaveElsewhere(p.DocID, p.BlockID, c.ID(), s.now())
+	for _, ch := range left {
+		s.wsHub.BroadcastRoom(drawRoom(ch.DocID, ch.BlockID), "DRAW_PEOPLE", people(ch.State), nil)
+	}
 	running := d.m.Running(p.DocID, p.BlockID)
 	d.mu.Unlock()
+	for _, ch := range left {
+		s.wsHub.LeaveRoom(c, drawRoom(ch.DocID, ch.BlockID))
+		s.syncDrawLease(ch.DocID, ch.BlockID)
+	}
 	if !running && !s.isDrawingBlock(p.DocID, p.BlockID) {
 		drawError(c, p.DocID, p.BlockID, "no_session")
 		return
@@ -199,6 +232,7 @@ func (s *Server) drawJoin(c *ws.Client, p drawMessage) {
 		}
 		s.wsHub.BroadcastRoom(drawRoom(p.DocID, p.BlockID), "DRAW_PEOPLE", people(st), c)
 	}
+	s.tellDrawDropped()
 	d.mu.Unlock()
 	if err != nil {
 		drawError(c, p.DocID, p.BlockID, drawErrorCode(err))
@@ -223,6 +257,10 @@ func (s *Server) isDrawingBlock(docID, blockID string) bool {
 // drawWatch: someone looks on over WebSocket (readers, or editors who chose to watch).
 func (s *Server) drawWatch(c *ws.Client, p drawMessage) {
 	userID := c.UserID()
+	if !s.allowDrawJoin(userID) {
+		drawError(c, p.DocID, p.BlockID, "rate")
+		return
+	}
 	if !s.wsHub.JoinRoom(c, drawRoom(p.DocID, p.BlockID)) {
 		drawError(c, p.DocID, p.BlockID, "forbidden")
 		return
@@ -254,6 +292,7 @@ func (s *Server) drawOps(c *ws.Client, p drawMessage) {
 			"from": c.ID(), "els": ops.Els, "order": ops.Order, "grid": ops.Grid, "seq": ops.Seq}, c)
 		c.SendEvent("DRAW_ACK", map[string]any{"docId": p.DocID, "blockId": p.BlockID, "seq": ops.Seq})
 	}
+	s.tellDrawDropped()
 	d.mu.Unlock()
 	if err != nil {
 		drawError(c, p.DocID, p.BlockID, drawErrorCode(err))
@@ -283,11 +322,18 @@ func (s *Server) drawPresence(c *ws.Client, p drawMessage) {
 		"from": who.ID, "userId": who.UserID, "name": who.Name, "x": p.X, "y": p.Y, "sel": clean, "touch": p.Touch, "gone": p.Gone}, c)
 }
 
-// drawLeave takes a connection out of a session ("Verlassen", editor closed).
-func (s *Server) drawLeave(docID, blockID, connID string) {
+// drawLeave takes a connection out of a session ("Verlassen", editor closed). With userID, only a
+// connection of that person (one a browser named); "" is for the server's own decisions.
+func (s *Server) drawLeave(docID, blockID, connID, userID string) {
 	d := s.draw
 	d.mu.Lock()
-	ch, ok := d.m.Leave(docID, blockID, connID, s.now())
+	var ch drawlive.Change
+	var ok bool
+	if userID != "" {
+		ch, ok = d.m.LeaveOwn(docID, blockID, connID, userID, s.now())
+	} else {
+		ch, ok = d.m.Leave(docID, blockID, connID, s.now())
+	}
 	if ok {
 		s.wsHub.BroadcastRoom(drawRoom(docID, blockID), "DRAW_PEOPLE", people(ch.State), nil)
 	}
@@ -422,7 +468,7 @@ func (s *Server) drawTickOnce() {
 			if c != nil {
 				drawError(c, info.DocID, info.BlockID, "forbidden")
 			}
-			s.drawLeave(info.DocID, info.BlockID, connID)
+			s.drawLeave(info.DocID, info.BlockID, connID, "")
 		}
 		if len(lost) == 0 {
 			s.holdDrawLease(info.DocID, info.BlockID)
@@ -460,9 +506,17 @@ func (s *Server) handleDrawWatch(w http.ResponseWriter, r *http.Request) {
 	}
 	room := drawRoom(docID, blockID)
 	if req.Leave {
-		s.wsHub.LeaveSSERoomByID(req.SSEID, userID, room)
-		s.drawLeave(docID, blockID, req.SSEID)
+		// Only one's own connection: everyone in a drawing sees the connection ids of the others
+		if !s.wsHub.LeaveSSERoomByID(req.SSEID, userID, room) {
+			writeError(w, http.StatusForbidden, "Keine Berechtigung")
+			return
+		}
+		s.drawLeave(docID, blockID, req.SSEID, userID)
 		writeJSON(w, http.StatusOK, map[string]bool{"success": true})
+		return
+	}
+	if !s.allowDrawJoin(userID) {
+		writeError(w, http.StatusTooManyRequests, "Zu viele Anfragen – bitte kurz warten")
 		return
 	}
 	if !s.wsHub.JoinSSERoomByID(req.SSEID, userID, room) {

@@ -35,6 +35,20 @@ const (
 	opsBurst          = 80
 	presencePerSecond = 30
 	presenceBurst     = 30
+
+	// Limits across sessions: each one holds up to MaxBytes in memory, so a person cannot start any number
+	// of them. A session everyone left still counts (for the person who left it last) until it expires,
+	// but gives way as soon as room is needed: its state only matters to someone resuming it, and a
+	// browser joining again brings its own state anyway.
+	// MaxUserSessions: sessions one person keeps going (draws in, or left last); joining a running
+	// session of someone else is always possible
+	MaxUserSessions = 8
+	// MaxSessions and MaxTotalBytes: all sessions of the server together
+	MaxSessions   = 256
+	MaxTotalBytes = 32 << 20
+	// Joining and watching per person: each start loads the note to check the block
+	joinsPerSecond = 2
+	joinsBurst     = 20
 )
 
 var (
@@ -45,6 +59,10 @@ var (
 	ErrNotHost       = errors.New("only the host may do that")
 	ErrNoSession     = errors.New("no live session")
 	ErrSessionLocked = errors.New("someone else is editing the drawing")
+	// ErrTooMany: the person keeps MaxUserSessions sessions going already
+	ErrTooMany = errors.New("too many live drawings of this person")
+	// ErrBusy: the server holds as many sessions (or bytes) as it takes
+	ErrBusy = errors.New("too many live drawings on the server")
 )
 
 // Element is one element as a browser sent it; Raw is passed on unchanged.
@@ -167,7 +185,9 @@ type session struct {
 	watchers       []Person
 	seq            int64
 	emptySince     time.Time
-	ops, presence  map[string]*bucket
+	// lastUser: the person who left the session last (it counts for them while it is kept)
+	lastUser      string
+	ops, presence map[string]*bucket
 }
 
 type key struct{ docID, blockID string }
@@ -175,10 +195,16 @@ type key struct{ docID, blockID string }
 // Manager holds the sessions of all drawings.
 type Manager struct {
 	sessions map[key]*session
+	// bytes: what all sessions hold together
+	bytes int
+	// joins: rate of joining and watching per person
+	joins map[string]*bucket
+	// dropped: sessions everyone had left that gave way for a new one (their watchers learn it)
+	dropped []State
 }
 
 func NewManager() *Manager {
-	return &Manager{sessions: map[key]*session{}}
+	return &Manager{sessions: map[key]*session{}, joins: map[string]*bucket{}}
 }
 
 func newSession(docID, blockID, base string) *session {
@@ -216,8 +242,8 @@ func (s *session) state() State {
 }
 
 // merge takes the elements that beat what the session has; either all of them fit the limits or nothing
-// changes.
-func (s *session) merge(els []Element) ([]Element, error) {
+// changes. room is what the session may hold within MaxTotalBytes; growing over it is ErrBusy.
+func (s *session) merge(els []Element, room int) ([]Element, error) {
 	won := make([]Element, 0, len(els))
 	next := map[string]Element{}
 	bytes, live, tombs := s.bytes, s.live, s.tombs
@@ -247,6 +273,9 @@ func (s *session) merge(els []Element) ([]Element, error) {
 	}
 	if bytes > MaxBytes || live > MaxElements || tombs > MaxElements {
 		return nil, ErrLimit
+	}
+	if bytes > room && bytes > s.bytes {
+		return nil, ErrBusy
 	}
 	for _, e := range els {
 		w, ok := next[e.ID]
@@ -299,6 +328,114 @@ func (m *Manager) get(docID, blockID string) *session {
 	return m.sessions[key{docID, blockID}]
 }
 
+// drop removes a session and what it held from the total.
+func (m *Manager) drop(k key) {
+	if s := m.sessions[k]; s != nil {
+		m.bytes -= s.bytes
+		delete(m.sessions, k)
+	}
+}
+
+// mergeInto merges into the session k within its own limits and the total; sessions everyone left give
+// way when the total runs short.
+func (m *Manager) mergeInto(k key, s *session, els []Element) ([]Element, error) {
+	for {
+		before := s.bytes
+		won, err := s.merge(els, MaxTotalBytes-(m.bytes-before))
+		if err == nil {
+			m.bytes += s.bytes - before
+			return won, nil
+		}
+		if !errors.Is(err, ErrBusy) || !m.evictEmpty(k, "") {
+			return nil, err
+		}
+	}
+}
+
+// evictEmpty drops the session everyone left longest ago (one a person left last, or anyone's with
+// userID ""), never the session except; false when there is none.
+func (m *Manager) evictEmpty(except key, userID string) bool {
+	var oldest key
+	var found *session
+	for k, s := range m.sessions {
+		if k == except || s.active() || (userID != "" && s.lastUser != userID) {
+			continue
+		}
+		if found == nil || s.emptySince.Before(found.emptySince) {
+			oldest, found = k, s
+		}
+	}
+	if found == nil {
+		return false
+	}
+	m.dropped = append(m.dropped, State{DocID: found.docID, BlockID: found.blockID, Watchers: append([]Person{}, found.watchers...)})
+	m.drop(oldest)
+	return true
+}
+
+// userSessions counts the sessions a person keeps going besides except: those they draw in and those
+// they left last.
+func (m *Manager) userSessions(userID string, except key) int {
+	n := 0
+	for k, s := range m.sessions {
+		if k == except {
+			continue
+		}
+		if !s.active() {
+			if s.lastUser == userID {
+				n++
+			}
+			continue
+		}
+		for _, p := range s.participants {
+			if p.UserID == userID {
+				n++
+				break
+			}
+		}
+	}
+	return n
+}
+
+// makeRoom checks that a person may start (or resume) the session k; sessions everyone left give way,
+// first the person's own, then anyone's when the server is full.
+func (m *Manager) makeRoom(k key, userID string) error {
+	for m.userSessions(userID, k) >= MaxUserSessions {
+		if !m.evictEmpty(k, userID) {
+			return ErrTooMany
+		}
+	}
+	for {
+		n := len(m.sessions)
+		if _, ok := m.sessions[k]; ok {
+			n--
+		}
+		if n < MaxSessions {
+			return nil
+		}
+		if !m.evictEmpty(k, "") {
+			return ErrBusy
+		}
+	}
+}
+
+// Dropped returns (once) the sessions everyone had left that gave way for others since the last call.
+func (m *Manager) Dropped() []State {
+	out := m.dropped
+	m.dropped = nil
+	return out
+}
+
+// AllowJoin tells whether a person may join or watch a drawing now (within the rate).
+func (m *Manager) AllowJoin(userID string, now time.Time) bool {
+	b := m.joins[userID]
+	if b == nil {
+		b = &bucket{}
+		m.joins[userID] = b
+	}
+	return b.take(now, joinsPerSecond, joinsBurst)
+}
+
 // Running tells whether people draw in the drawing right now.
 func (m *Manager) Running(docID, blockID string) bool {
 	s := m.get(docID, blockID)
@@ -313,6 +450,7 @@ func (m *Manager) Join(docID, blockID string, p Person, base string, els []Eleme
 	k := key{docID, blockID}
 	s := m.sessions[k]
 	if s != nil && !s.active() && (now.Sub(s.emptySince) > KeepFor || s.base != base) {
+		m.drop(k)
 		s = nil
 	}
 	fresh := s == nil
@@ -323,7 +461,12 @@ func (m *Manager) Join(docID, blockID string, p Person, base string, els []Eleme
 		}
 	}
 	started = !s.active()
-	if won, err = s.merge(els); err != nil {
+	if started {
+		if err = m.makeRoom(k, p.UserID); err != nil {
+			return State{}, false, nil, err
+		}
+	}
+	if won, err = m.mergeInto(k, s, els); err != nil {
 		return State{}, false, nil, err
 	}
 	if fresh {
@@ -338,8 +481,23 @@ func (m *Manager) Join(docID, blockID string, p Person, base string, els []Eleme
 	if indexOf(s.participants, p.ID) < 0 {
 		s.participants = append(s.participants, p)
 	}
-	s.emptySince = time.Time{}
+	s.emptySince, s.lastUser = time.Time{}, ""
 	return s.state(), started, won, nil
+}
+
+// LeaveElsewhere takes a connection out of the sessions it draws in other than this one: a browser has
+// one drawing open at a time, so joining another ends the previous one.
+func (m *Manager) LeaveElsewhere(docID, blockID, connID string, now time.Time) []Change {
+	var out []Change
+	for k, s := range m.sessions {
+		if k == (key{docID, blockID}) || indexOf(s.participants, connID) < 0 {
+			continue
+		}
+		if ch, ok := m.leave(s, connID, now); ok {
+			out = append(out, ch)
+		}
+	}
+	return out
 }
 
 // Watch adds a connection that only looks. ok is false when nobody draws in the drawing.
@@ -383,7 +541,7 @@ func (m *Manager) Apply(docID, blockID, connID string, els []Element, order []st
 	if !b.take(now, opsPerSecond, opsBurst) {
 		return Ops{}, false, ErrRate
 	}
-	won, err := s.merge(els)
+	won, err := m.mergeInto(key{docID, blockID}, s, els)
 	if err != nil {
 		return Ops{}, false, err
 	}
@@ -434,7 +592,7 @@ func (m *Manager) leave(s *session, connID string, now time.Time) (Change, bool)
 		delete(s.presence, connID)
 		if !s.active() {
 			ch.Empty, ch.HostChanged = true, false
-			s.emptySince = now
+			s.emptySince, s.lastUser = now, ch.Person.UserID
 		}
 	} else if i := indexOf(s.watchers, connID); i >= 0 {
 		ch.Person = s.watchers[i]
@@ -450,6 +608,20 @@ func (m *Manager) leave(s *session, connID string, now time.Time) (Change, bool)
 func (m *Manager) Leave(docID, blockID, connID string, now time.Time) (Change, bool) {
 	s := m.get(docID, blockID)
 	if s == nil {
+		return Change{}, false
+	}
+	return m.leave(s, connID, now)
+}
+
+// LeaveOwn is Leave for a connection a browser names: only when it is that person's (everyone in a
+// drawing sees the connection ids of the others).
+func (m *Manager) LeaveOwn(docID, blockID, connID, userID string, now time.Time) (Change, bool) {
+	s := m.get(docID, blockID)
+	if s == nil {
+		return Change{}, false
+	}
+	i, j := indexOf(s.participants, connID), indexOf(s.watchers, connID)
+	if (i < 0 || s.participants[i].UserID != userID) && (j < 0 || s.watchers[j].UserID != userID) {
 		return Change{}, false
 	}
 	return m.leave(s, connID, now)
@@ -476,7 +648,7 @@ func (m *Manager) Finish(docID, blockID, connID string) (State, error) {
 		return State{}, ErrNotHost
 	}
 	st := s.state()
-	delete(m.sessions, key{docID, blockID})
+	m.drop(key{docID, blockID})
 	return st, nil
 }
 
@@ -484,7 +656,7 @@ func (m *Manager) Finish(docID, blockID, connID string) (State, error) {
 func (m *Manager) Forget(docID string) {
 	for k := range m.sessions {
 		if k.docID == docID {
-			delete(m.sessions, k)
+			m.drop(k)
 		}
 	}
 }
@@ -507,7 +679,13 @@ func (m *Manager) Sweep(now time.Time) []State {
 	for k, s := range m.sessions {
 		if !s.active() && now.Sub(s.emptySince) > KeepFor {
 			out = append(out, State{DocID: s.docID, BlockID: s.blockID, Watchers: append([]Person{}, s.watchers...)})
-			delete(m.sessions, k)
+			m.drop(k)
+		}
+	}
+	// A rate that has filled up again tells nothing any more
+	for u, b := range m.joins {
+		if now.Sub(b.at).Seconds()*joinsPerSecond >= joinsBurst {
+			delete(m.joins, u)
 		}
 	}
 	return out

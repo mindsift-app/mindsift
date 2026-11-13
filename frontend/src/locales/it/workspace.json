@@ -608,6 +608,8 @@
         "forbidden": "Non hai accesso per disegnare.",
         "locked": "Qualcuno sta modificando il disegno senza connessione dal vivo – puoi solo guardare.",
         "limit": "Il disegno è troppo grande per la sessione dal vivo. Togli qualcosa, soprattutto tratti a mano libera.",
+        "too_many": "Stai già disegnando dal vivo in troppi disegni. Chiudine uno e riapri questo.",
+        "busy": "In questo momento sul server ci sono troppi disegni dal vivo. Riaprilo più tardi.",
         "save": "Il salvataggio non è riuscito. Controlla la connessione e riprova."
       }
     }

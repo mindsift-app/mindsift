@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strings"
 	"testing"
@@ -219,5 +220,105 @@ func TestLiveDrawingWatchOverSSE(t *testing.T) {
 	_ = json.NewDecoder(live.Body).Decode(&now)
 	if !now.Active || len(now.Participants) != 1 {
 		t.Fatalf("live state: %+v", now)
+	}
+}
+
+// Everyone in a drawing sees the connection ids of the others; a reader must not take someone out with them.
+func TestLiveDrawingLeaveOnlyOwnConnection(t *testing.T) {
+	_, store, ts, owner, ownerToken := startRealtimeServer(t)
+	reader, readerToken := newTestUser(t, store, "draw-reader@example.com")
+	doc, err := store.CreateDocument(owner.ID, "", "Skizze", "", "", []domain.DocumentBlock{{ID: "d_b1", Type: "drawing", Content: drawBase}}, nil, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.CreateDocShare(owner.ID, doc.ID, reader.ID, "read"); err != nil {
+		t.Fatal(err)
+	}
+	own := dialWS(t, ts, ownerToken)
+	sendDraw(t, own, "DRAW_JOIN", map[string]any{"docId": doc.ID, "blockId": "d_b1", "base": drawBase})
+	host := readDraw(t, own, "DRAW_STATE").You
+	sse := openSSE(t, ts, readerToken)
+	watch := "/api/v1/docs/" + doc.ID + "/drawings/d_b1/watch"
+	if r := doJSON(t, ts, http.MethodPost, watch, readerToken, map[string]any{"sseId": sse.id}); r.StatusCode != http.StatusOK {
+		t.Fatalf("watch: %d", r.StatusCode)
+	}
+	readDraw(t, own, "DRAW_PEOPLE")
+
+	if r := doJSON(t, ts, http.MethodPost, watch, readerToken, map[string]any{"sseId": host, "leave": true}); r.StatusCode != http.StatusForbidden {
+		t.Fatalf("reader taking the host out: %d", r.StatusCode)
+	}
+	live := doJSON(t, ts, http.MethodGet, "/api/v1/docs/"+doc.ID+"/drawings/d_b1/live", readerToken, nil)
+	var now drawPayload
+	_ = json.NewDecoder(live.Body).Decode(&now)
+	if !now.Active || len(now.Participants) != 1 || now.Participants[0].ID != host || len(now.Watchers) != 1 {
+		t.Fatalf("the host is still drawing: %+v", now)
+	}
+	sendDraw(t, own, "DRAW_OPS", map[string]any{"docId": doc.ID, "blockId": "d_b1", "els": []json.RawMessage{drawEl("e2", 1, 3, 200)}})
+	readDraw(t, own, "DRAW_ACK")
+
+	// Their own connection leaves
+	if r := doJSON(t, ts, http.MethodPost, watch, readerToken, map[string]any{"sseId": sse.id, "leave": true}); r.StatusCode != http.StatusOK {
+		t.Fatalf("reader leaving: %d", r.StatusCode)
+	}
+	if p := readDraw(t, own, "DRAW_PEOPLE"); len(p.Watchers) != 0 || len(p.Participants) != 1 {
+		t.Fatalf("after the reader left: %+v", p)
+	}
+}
+
+func TestLiveDrawingLimits(t *testing.T) {
+	_, store, ts, owner, ownerToken := startRealtimeServer(t)
+	blocks := []domain.DocumentBlock{{ID: "d_s1", Type: "drawing", Content: drawBase}, {ID: "d_s2", Type: "drawing", Content: drawBase}}
+	for i := 0; i < 8; i++ {
+		blocks = append(blocks, domain.DocumentBlock{ID: fmt.Sprintf("d_l%d", i), Type: "drawing", Content: drawBase})
+	}
+	doc, err := store.CreateDocument(owner.ID, "", "Skizzen", "", "", blocks, nil, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	at := func(block string) map[string]any {
+		return map[string]any{"docId": doc.ID, "blockId": block, "base": drawBase}
+	}
+	liveActive := func(block string) bool {
+		r := doJSON(t, ts, http.MethodGet, "/api/v1/docs/"+doc.ID+"/drawings/"+block+"/live", ownerToken, nil)
+		var p drawPayload
+		_ = json.NewDecoder(r.Body).Decode(&p)
+		return p.Active
+	}
+
+	// A connection draws in one drawing at a time: joining another leaves the first
+	first := dialWS(t, ts, ownerToken)
+	sendDraw(t, first, "DRAW_JOIN", at("d_s1"))
+	readDraw(t, first, "DRAW_STATE")
+	sendDraw(t, first, "DRAW_JOIN", at("d_s2"))
+	if p := readDraw(t, first, "DRAW_STATE"); !p.Active {
+		t.Fatalf("second drawing: %+v", p)
+	}
+	if liveActive("d_s1") || !liveActive("d_s2") {
+		t.Fatal("the connection should only draw in the second drawing")
+	}
+
+	// A person keeps drawlive.MaxUserSessions going (the one left above gives way)
+	for i := 0; i < 7; i++ {
+		c := dialWS(t, ts, ownerToken)
+		sendDraw(t, c, "DRAW_JOIN", at(fmt.Sprintf("d_l%d", i)))
+		readDraw(t, c, "DRAW_STATE")
+	}
+	extra := dialWS(t, ts, ownerToken)
+	sendDraw(t, extra, "DRAW_JOIN", at("d_l7"))
+	if p := readDraw(t, extra, "DRAW_ERROR"); p.Code != "too_many" {
+		t.Fatalf("one drawing more: %+v", p)
+	}
+	if liveActive("d_l7") {
+		t.Fatal("a refused join started a session")
+	}
+
+	// Joining is limited in rate
+	codes := map[string]int{}
+	for i := 0; i < 30; i++ {
+		sendDraw(t, extra, "DRAW_JOIN", at("d_l7"))
+		codes[readDraw(t, extra, "DRAW_ERROR").Code]++
+	}
+	if codes["rate"] == 0 {
+		t.Fatalf("no join refused for the rate: %v", codes)
 	}
 }
