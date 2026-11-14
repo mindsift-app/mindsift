@@ -82,20 +82,37 @@ func (s *Server) handleDeleteFolder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	for _, docID := range deletedDocIDs {
-		s.wsHub.BroadcastDocEvent(docID, "DOC_DELETED", map[string]string{"id": docID})
-	}
 	if deletedDocIDs == nil {
 		deletedDocIDs = []string{}
 	}
 	s.wsHub.BroadcastToUser(userID, "WORKSPACE_FOLDERS_UPDATED", map[string]any{
 		"type": folderEventDeleted, "path": folderPath, "deletedDocIds": deletedDocIDs,
 	})
+	// Everyone else with access to some of the notes (shared notes, shared folder) gets one event with the
+	// notes they lose, without a path (theirs differ), instead of a DOC_DELETED per note
+	for uid, ids := range s.othersWithDocs(userID, deletedDocIDs) {
+		s.wsHub.BroadcastToUser(uid, "WORKSPACE_FOLDERS_UPDATED", map[string]any{"type": folderEventDeleted, "deletedDocIds": ids})
+	}
 
 	writeJSON(w, http.StatusOK, map[string]any{
 		"deleted":       true,
 		"deletedDocIds": deletedDocIDs,
 	})
+}
+
+// othersWithDocs: per user other than the actor, the notes of docIDs they have access to (shares stay
+// while a note is in the trash, so this also works right after deleting).
+func (s *Server) othersWithDocs(actorID string, docIDs []string) map[string][]string {
+	byUser := map[string][]string{}
+	for _, docID := range docIDs {
+		users, _ := s.store.GetAuthorizedDocUsers(docID)
+		for _, uid := range users {
+			if uid != actorID {
+				byUser[uid] = append(byUser[uid], docID)
+			}
+		}
+	}
+	return byUser
 }
 
 // handleRestoreFolder brings a folder from the trash back with its subfolders and notes.

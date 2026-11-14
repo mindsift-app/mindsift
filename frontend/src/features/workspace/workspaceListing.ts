@@ -116,6 +116,35 @@ export function withListedNote(prev: Document, listed: Document, isOpen: boolean
   return { ...listed, blocks: isOpen && hasBlocks(prev) ? prev.blocks : [] };
 }
 
+/**
+ * A note of the list after its editor closed: without bullets (they would go stale and the counts would
+ * follow them), with the counts of its last bullets in the list's fields until the server sends newer ones.
+ */
+export function withoutBullets(d: Document): Document {
+  if (!hasBlocks(d)) return d;
+  const stats = blockStats(d.blocks);
+  return {
+    ...d,
+    blocks: [],
+    openTodos: stats.openTodos,
+    tagCounts: Object.fromEntries(stats.tagCounts),
+    tagOpenTodos: Object.fromEntries(stats.tagOpenTodos),
+  };
+}
+
+/** A note of the list with the counts of a DOC_COUNTS event (the same for everyone who sees the note). */
+export function withCounts(d: Document, counts: NoteCounts): Document {
+  return { ...d, openTodos: counts.openTodos, tagCounts: counts.tagCounts || {}, tagOpenTodos: counts.tagOpenTodos || {} };
+}
+
+// DOC_COUNTS (server: doc_counts.go)
+export type NoteCounts = {
+  id: string;
+  openTodos: number;
+  tagCounts?: Record<string, number>;
+  tagOpenTodos?: Record<string, number>;
+};
+
 // The to-dos with text of one note from its bullets, kept per version of the note (a changed note is a new object)
 const noteTodosCache = new WeakMap<Document, RollupTodo[]>();
 function noteTodos(d: Document): RollupTodo[] {

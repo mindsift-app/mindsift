@@ -6,8 +6,9 @@ interface UseTrashActionsOptions {
   selectedDocId: string | null;
   setSelectedDocId: React.Dispatch<React.SetStateAction<string | null>>;
   trash: TrashedDocument[];
-  // The note list fetched again (useWorkspaceData); the folders follow the realtime event of the restore
+  // The note list and the folders fetched again (useWorkspaceData)
   reloadDocList: () => Promise<void>;
+  reloadFolders: () => Promise<void>;
   setEditorNonce: React.Dispatch<React.SetStateAction<number>>;
   reloadTrash: () => void;
   onStatsChange: () => void;
@@ -19,6 +20,7 @@ export function useTrashActions({
   setSelectedDocId,
   trash,
   reloadDocList,
+  reloadFolders,
   setEditorNonce,
   reloadTrash,
   onStatsChange,
@@ -44,7 +46,9 @@ export function useTrashActions({
   const handleRestoreTrashItem = async (item: TrashedDocument) => {
     if (item.kind !== 'folder') return handleRestoreDocument(item.id);
     await api.restoreFolder(item.id);
-    await reloadDocList();
+    // The folders as well, not only through the realtime event: empty subfolders show even without a
+    // connection to it
+    await Promise.all([reloadDocList(), reloadFolders()]);
     reloadTrash();
     onStatsChange();
   };

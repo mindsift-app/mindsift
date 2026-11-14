@@ -2,10 +2,10 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { DocTodo, Document, JournalDay, SharedFolder, TagSummary, User } from '../../lib/types';
 import { api, onWebSocketMessage } from '../../lib/api';
 import { isJournalEnabled } from '../../lib/journal';
-import { noteClientId } from '../../lib/docSync/noteClients';
+import { noteClientId, onNoteClosed } from '../../lib/docSync/noteClients';
 import { refreshBlocks } from '../../lib/blockLookup';
 import { useLatestRef } from '../../lib/useLatestRef';
-import { countHashtags, mergeDocList, withListedNote } from './workspaceListing';
+import { NoteCounts, countHashtags, hasBlocks, mergeDocList, withCounts, withListedNote, withoutBullets } from './workspaceListing';
 
 interface UseWorkspaceDataOptions {
   currentUser?: User | null;
@@ -70,6 +70,21 @@ export function useWorkspaceData({ currentUser, setSelectedDocId, autoSelectedDo
     if (todosShownRef.current) loadRollupTodos();
     refreshBlocks();
   }, [loadRollupTodos, todosShownRef]);
+
+  // The folders alone fetched again (folder events, a folder restored from the trash)
+  const reloadFolders = useCallback(() => api.getFolders().then(setFolders).catch(() => {}), []);
+
+  // A note closed in its editor: the list drops its bullets, so its counts come from the server's fields
+  // (DOC_COUNTS, DOC_UPDATED) and the link dialog fetches its bullets fresh
+  useEffect(
+    () =>
+      onNoteClosed((docId) => {
+        setDocs((prev) =>
+          prev.some((d) => d.id === docId && hasBlocks(d)) ? prev.map((d) => (d.id === docId ? withoutBullets(d) : d)) : prev
+        );
+      }),
+    []
+  );
 
   // The note list alone fetched again (after restoring from the trash, undoing a merge, or when a folder
   // event changed where or for whom many notes show)
@@ -148,6 +163,12 @@ export function useWorkspaceData({ currentUser, setSelectedDocId, autoSelectedDo
         // The note as the list has it (no bullets, with its counts): one note changes, the list is not fetched again
         const updated = msg.payload as Document;
         setDocs((prev) => prev.map((d) => (d.id === updated.id ? withListedNote(d, updated, isNoteOpen(d.id)) : d)));
+      } else if (msg.event === 'DOC_COUNTS' && msg.payload) {
+        // The counts of a note someone changed (open to-dos, hashtags); a note open here counts its bullets
+        const counts = msg.payload as NoteCounts;
+        setDocs((prev) =>
+          prev.some((d) => d.id === counts.id) ? prev.map((d) => (d.id === counts.id ? withCounts(d, counts) : d)) : prev
+        );
       } else if (msg.event === 'DOC_DELETED') {
         const delId = (msg.payload as { id?: string } | undefined)?.id;
         if (!delId) return;
@@ -156,7 +177,7 @@ export function useWorkspaceData({ currentUser, setSelectedDocId, autoSelectedDo
         reloadTrash();
       } else if (msg.event === 'WORKSPACE_FOLDERS_UPDATED') {
         const ev = (msg.payload || {}) as FoldersEvent;
-        const loadFolders = () => api.getFolders().then(setFolders).catch(() => {});
+        const loadFolders = reloadFolders;
         const loadAll = () => {
           loadFolders();
           api.getSharedFolders().then(setSharedFolders).catch(() => {});
@@ -187,8 +208,17 @@ export function useWorkspaceData({ currentUser, setSelectedDocId, autoSelectedDo
             break;
           case 'deleted': {
             const path = ev.path;
-            if (!path) break;
             const gone = new Set(ev.deletedDocIds || []);
+            if (!path) {
+              // Somebody else deleted a folder with notes I see (shared with me, of a shared folder): all of
+              // them in one event, the folders and the trash fetched once
+              if (gone.size === 0) break;
+              setDocs((prev) => prev.filter((d) => !gone.has(d.id)));
+              setSelectedDocId((prev) => (prev && gone.has(prev) ? null : prev));
+              loadFolders();
+              reloadTrash();
+              return;
+            }
             // Other notes there (shared with me and placed there, or of a shared folder given back) moved
             // or disappeared: those only the list knows
             if (docsRef.current.some((d) => !gone.has(d.id) && inFolder(d.folderPath, path))) break;
@@ -207,7 +237,7 @@ export function useWorkspaceData({ currentUser, setSelectedDocId, autoSelectedDo
       }
     });
     return unsub;
-  }, [currentUser, reloadTrash, setSelectedDocId, reloadDocList, docsRef]);
+  }, [currentUser, reloadTrash, setSelectedDocId, reloadDocList, reloadFolders, docsRef]);
 
   return {
     docs,
@@ -219,6 +249,7 @@ export function useWorkspaceData({ currentUser, setSelectedDocId, autoSelectedDo
     tagsSummary,
     loadWorkspaceData,
     reloadDocList,
+    reloadFolders,
     rollupTodos,
     setRollupTodos,
   };

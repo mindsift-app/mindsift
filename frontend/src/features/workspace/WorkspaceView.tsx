@@ -113,7 +113,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
 
   // A note the app picked by itself (not a step of its own in the browser history)
   const autoSelectedDocRef = useRef(false);
-  const { docs, setDocs, folders, setFolders, sharedFolders, setSharedFolders, tagsSummary, loadWorkspaceData, reloadDocList, rollupTodos, setRollupTodos } =
+  const { docs, setDocs, folders, setFolders, sharedFolders, setSharedFolders, tagsSummary, loadWorkspaceData, reloadDocList, reloadFolders, rollupTodos, setRollupTodos } =
     useWorkspaceData({ currentUser, setSelectedDocId, autoSelectedDocRef, reloadTrash, todosShown: subView === 'todos' });
 
   // Journal: one note per day, listed separately from the folder tree (can be switched off per device)
@@ -389,6 +389,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
     setSelectedDocId,
     trash,
     reloadDocList,
+    reloadFolders,
     setEditorNonce,
     reloadTrash,
     onStatsChange,

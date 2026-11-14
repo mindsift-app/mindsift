@@ -241,9 +241,11 @@ func (s *Server) afterDocChange(actorID, docID string, ops []collab.Op, results 
 	}
 }
 
-// notifyDocChanged wakes long-poll requests and pokes WebSocket/SSE clients in the note's room.
+// notifyDocChanged wakes long-poll requests and pokes WebSocket/SSE clients in the note's room; the
+// note lists of everyone with access get its counts when they changed (doc_counts.go).
 func (s *Server) notifyDocChanged(docID string, head int64) {
 	s.notifier.Notify(docID)
+	s.touchDocCounts(docID, time.Now())
 	s.wsHub.BroadcastDocEvent(docID, "DOC_SEQ", map[string]any{"docId": docID, "headSeq": head})
 }
 

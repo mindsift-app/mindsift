@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { api, onWebSocketMessage } from '../../../lib/api';
-import { Document } from '../../../lib/types';
+import { Document, DocumentBlock } from '../../../lib/types';
+import { registerNoteClient } from '../../../lib/docSync/noteClients';
 import { useWorkspaceData } from '../useWorkspaceData';
 
 vi.mock('../../../lib/api', async (importOriginal) => {
@@ -111,5 +112,54 @@ describe('useWorkspaceData', () => {
     // A note shared with me stayed there (it goes back to the top level): only the list knows
     act(() => lastHandler()({ event: 'WORKSPACE_FOLDERS_UPDATED', payload: { type: 'deleted', path: 'Andere', deletedDocIds: [] } }));
     await waitFor(() => expect(api.getDocuments).toHaveBeenCalledTimes(2));
+  });
+
+  it('removes the notes of a folder somebody else deleted at once, with one look at the trash', async () => {
+    const reloadTrash = vi.fn();
+    const fixed = { setSelectedDocId: vi.fn(), autoSelectedDocRef: { current: false }, reloadTrash };
+    const { result } = renderHook(() => useWorkspaceData(fixed));
+    await waitFor(() => expect(result.current.docs).toHaveLength(2));
+    act(() => lastHandler()({ event: 'WORKSPACE_FOLDERS_UPDATED', payload: { type: 'deleted', deletedDocIds: ['a', 'b'] } }));
+    await waitFor(() => expect(result.current.docs).toHaveLength(0));
+    expect(reloadTrash).toHaveBeenCalledTimes(1);
+    expect(api.getDocuments).toHaveBeenCalledTimes(1);
+    expect(api.getFolders).toHaveBeenCalledTimes(2);
+  });
+
+  it('takes the counts of DOC_COUNTS for the note in the list', async () => {
+    const { result } = setup(false);
+    await waitFor(() => expect(result.current.docs).toHaveLength(2));
+    act(() =>
+      lastHandler()({
+        event: 'DOC_COUNTS',
+        payload: { id: 'b', openTodos: 2, tagCounts: { einkauf: 3 }, tagOpenTodos: { einkauf: 2 } },
+      })
+    );
+    await waitFor(() => expect(result.current.docs.find((d) => d.id === 'b')?.openTodos).toBe(2));
+    expect(result.current.tagsSummary).toEqual([{ tag: 'einkauf', count: 3 }]);
+    // Unknown notes change nothing
+    const before = result.current.docs;
+    act(() => lastHandler()({ event: 'DOC_COUNTS', payload: { id: 'x', openTodos: 1 } }));
+    expect(result.current.docs).toBe(before);
+  });
+
+  it('drops the bullets of a note once it closes, keeping their counts', async () => {
+    const { result } = setup(false);
+    await waitFor(() => expect(result.current.docs).toHaveLength(2));
+    const unregister = registerNoteClient('a', 'client-1');
+    act(() =>
+      result.current.setDocs((prev) =>
+        prev.map((d) =>
+          d.id === 'a'
+            ? { ...d, blocks: [{ id: 'a1', type: 'todo', content: 'Milch #einkauf', checked: false } as DocumentBlock] }
+            : d
+        )
+      )
+    );
+    act(() => unregister());
+    const a = result.current.docs.find((d) => d.id === 'a');
+    expect(a?.blocks).toEqual([]);
+    expect(a?.openTodos).toBe(1);
+    expect(a?.tagCounts).toEqual({ einkauf: 1 });
   });
 });
