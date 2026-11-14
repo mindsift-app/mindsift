@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strconv"
@@ -420,29 +421,32 @@ func (s *Store) scanDocumentWithBlocks(rows interface {
 // on the server that works with the bullets (export, backlinks, links, folders); the app's note list
 // uses GetDocumentList.
 func (s *Store) GetDocuments(userID string) ([]domain.Document, error) {
-	return s.getDocuments(userID, true)
+	return s.getDocuments(context.Background(), userID, true)
 }
 
 // GetDocumentList returns the notes the user can see without their bullets (Blocks empty, Content ""),
 // with the counts the folder tree, the hashtag list and the to-do overview need (OpenTodos, TagCounts,
 // TagOpenTodos). Every client loads it at start: with bullets it grew by about 43 KB per note, and many
-// of them at once took gigabytes of memory under load.
-func (s *Store) GetDocumentList(userID string) ([]domain.Document, error) {
-	docs, err := s.getDocuments(userID, false)
+// of them at once took gigabytes of memory under load. When ctx ends (the client gave up) its queries are
+// cancelled and it returns ctx's error.
+func (s *Store) GetDocumentList(ctx context.Context, userID string) ([]domain.Document, error) {
+	docs, err := s.getDocuments(ctx, userID, false)
 	if err != nil {
 		return nil, err
 	}
-	if err := s.attachListStats(docs); err != nil {
+	if err := s.attachListStats(ctx, docs); err != nil {
 		return nil, err
 	}
 	return docs, nil
 }
 
-func (s *Store) getDocuments(userID string, withBlocks bool) ([]domain.Document, error) {
+// getDocuments: the notes the user can see. The queries run with ctx; an ended ctx returns its error, not
+// a partial list.
+func (s *Store) getDocuments(ctx context.Context, userID string, withBlocks bool) ([]domain.Document, error) {
 	mounts, names, _ := s.getUserFolderMounts(userID)
 
 	userFolders := make(map[string]string)
-	ufRows, err := s.db.Query(`SELECT doc_id, folder_path FROM doc_user_folders WHERE user_id = ?`, userID)
+	ufRows, err := s.db.QueryContext(ctx, `SELECT doc_id, folder_path FROM doc_user_folders WHERE user_id = ?`, userID)
 	if err == nil {
 		for ufRows.Next() {
 			var did, fp string
@@ -456,7 +460,7 @@ func (s *Store) getDocuments(userID string, withBlocks bool) ([]domain.Document,
 
 	// 1. Fetch user's own documents (with per-user is_pinned from doc_pins); notes changed in the same second
 	// keep the order they were made in, for the owner and for everyone they are shared with
-	rows, err := s.db.Query(
+	rows, err := s.db.QueryContext(ctx,
 		`SELECT d.id, d.user_id, d.space_id, d.title, d.icon, d.content, d.blocks_json, d.tags, d.folder_path,
 		        CASE WHEN p.doc_id IS NOT NULL THEN 1 ELSE 0 END AS is_pinned,
 		        d.is_archived, d.created_at, d.updated_at,
@@ -508,7 +512,7 @@ func (s *Store) getDocuments(userID string, withBlocks bool) ([]domain.Document,
 	}
 
 	// 2. Fetch documents shared with the user directly, via teams, or via shared folders
-	sharedRows, err := s.db.Query(
+	sharedRows, err := s.db.QueryContext(ctx,
 		`SELECT d.id, d.user_id, d.space_id, d.title, d.icon, d.content, d.blocks_json, d.tags, d.folder_path,
 		        CASE WHEN p.doc_id IS NOT NULL THEN 1 ELSE 0 END AS is_pinned,
 		        d.is_archived, d.created_at, d.updated_at,
@@ -575,6 +579,10 @@ func (s *Store) getDocuments(userID string, withBlocks bool) ([]domain.Document,
 			r.doc.Blocks, r.doc.Content = s.listBlocks(r.doc.ID, r.blocksStr, withBlocks)
 			docs = append(docs, r.doc)
 		}
+	}
+
+	if err := ctx.Err(); err != nil {
+		return nil, err
 	}
 
 	// 3. Attach shares to owned documents: two queries for all of them, not two per note (a list of a

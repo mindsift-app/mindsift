@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -37,7 +38,7 @@ const sqlOpenTodo = `b.type = 'todo' AND b.checked = 0 AND TRIM(b.content) != ''
 
 // attachListStats fills OpenTodos, TagCounts and TagOpenTodos of the notes with two grouped queries over
 // all of them (not one per note); only counts leave the database, no bullet text.
-func (s *Store) attachListStats(docs []domain.Document) error {
+func (s *Store) attachListStats(ctx context.Context, docs []domain.Document) error {
 	if len(docs) == 0 {
 		return nil
 	}
@@ -47,7 +48,7 @@ func (s *Store) attachListStats(docs []domain.Document) error {
 	}
 	ids := docIDsJSON(docs)
 
-	rows, err := s.db.Query(`SELECT b.document_id, COUNT(*) FROM blocks b
+	rows, err := s.db.QueryContext(ctx, `SELECT b.document_id, COUNT(*) FROM blocks b
 		WHERE b.document_id IN (SELECT value FROM json_each(?)) AND b.deleted = 0 AND `+sqlOpenTodo+`
 		GROUP BY b.document_id`, ids)
 	if err != nil {
@@ -71,7 +72,7 @@ func (s *Store) attachListStats(docs []domain.Document) error {
 	_ = rows.Close()
 
 	// block_tags holds the hashtags of live bullets (rewritten with the note, see docsync.go)
-	rows, err = s.db.Query(`SELECT bt.document_id, bt.tag, COUNT(*),
+	rows, err = s.db.QueryContext(ctx, `SELECT bt.document_id, bt.tag, COUNT(*),
 			SUM(CASE WHEN b.type = 'todo' AND b.checked = 0 THEN 1 ELSE 0 END)
 		FROM block_tags bt
 		JOIN blocks b ON b.id = bt.block_id AND b.document_id = bt.document_id AND b.deleted = 0
@@ -112,7 +113,7 @@ func (s *Store) GetDocumentListItem(userID, docID string) (*domain.Document, err
 	doc.Content = ""
 	doc.MarkdownCache = ""
 	one := []domain.Document{*doc}
-	if err := s.attachListStats(one); err != nil {
+	if err := s.attachListStats(context.Background(), one); err != nil {
 		return nil, err
 	}
 	return &one[0], nil
@@ -122,7 +123,7 @@ func (s *Store) GetDocumentListItem(userID, docID string) (*domain.Document, err
 // order of the note list and, within a note, in the order the note shows its bullets (the tree: siblings
 // by order key, as collab.Doc.Flatten). The order comes from the structure columns only, no text.
 func (s *Store) ListNoteTodos(userID string) ([]domain.NoteTodo, error) {
-	docs, err := s.getDocuments(userID, false)
+	docs, err := s.getDocuments(context.Background(), userID, false)
 	if err != nil {
 		return nil, err
 	}

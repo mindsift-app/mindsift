@@ -22,7 +22,7 @@ type noteSearchRow struct {
 //  2. snippets only for these hits;
 //  3. the text and type of the matched bullets.
 func (s *Store) searchVisibleNotes(ctx context.Context, userID, ftsQuery, folder string, limit int) ([]noteSearchRow, error) {
-	docs, err := s.getDocuments(userID, false)
+	docs, err := s.getDocuments(ctx, userID, false)
 	if err != nil {
 		return nil, err
 	}

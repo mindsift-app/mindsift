@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"path/filepath"
@@ -33,7 +34,7 @@ func TestDocumentListWithoutBullets(t *testing.T) {
 	other, _ := store.CreateDocument(anna.ID, "", "Leer", "", "", []domain.DocumentBlock{{ID: "x1", Type: "bullet", Content: "nichts"}}, nil, false)
 	bensDoc, _ := store.CreateDocument(ben.ID, "", "Bens", "", "", []domain.DocumentBlock{{ID: "z1", Type: "todo", Content: "Geheim #ben"}}, nil, false)
 
-	list, err := store.GetDocumentList(anna.ID)
+	list, err := store.GetDocumentList(context.Background(), anna.ID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -103,7 +104,7 @@ func TestDocumentListWithoutBullets(t *testing.T) {
 	if _, err := store.CreateDocShare(anna.ID, doc.ID, ben.ID, "read"); err != nil {
 		t.Fatal(err)
 	}
-	benList, _ := store.GetDocumentList(ben.ID)
+	benList, _ := store.GetDocumentList(context.Background(), ben.ID)
 	found := false
 	for i := range benList {
 		if benList[i].ID == doc.ID {
@@ -166,5 +167,26 @@ func TestDocumentListItem(t *testing.T) {
 	}
 	if _, err := store.GetDocumentListItem(carla.ID, doc.ID); err == nil {
 		t.Error("Carla got a note not shared with her")
+	}
+}
+
+// A client that gave up gets nothing built: the list stops with the context's error, not a partial list.
+func TestDocumentListStopsWithContext(t *testing.T) {
+	store, err := NewStore(filepath.Join(t.TempDir(), "list.db"))
+	if err != nil {
+		t.Fatalf("NewStore: %v", err)
+	}
+	defer store.Close()
+	anna, _ := store.CreateUser("anna@example.com", "hash", "Anna", "member")
+	if _, err := store.CreateDocument(anna.ID, "", "Einkauf", "", "", nil, nil, false); err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	if list, err := store.GetDocumentList(ctx, anna.ID); !errors.Is(err, context.Canceled) || list != nil {
+		t.Fatalf("cancelled list: %v, %d notes", err, len(list))
+	}
+	if list, err := store.GetDocumentList(context.Background(), anna.ID); err != nil || len(list) != 1 {
+		t.Fatalf("list: %v, %d notes", err, len(list))
 	}
 }
