@@ -1956,7 +1956,7 @@
     "/api/v1/documents/{id}/secrets": {
       "post": {
         "summary": "Hide a value",
-        "description": "Hide a value (/secret): {value} (up to 4096 bytes; requires write permission) → {id, ref}; only ref ({{secret:<id>}}) goes into the bullet text",
+        "description": "Hide a value (/hidden in the app; the API keeps the name secret for compatibility): {value} (up to 4096 bytes; requires write permission) → {id, ref}; only ref ({{secret:<id>}}) goes into the bullet text",
         "tags": [
           "Workspace"
         ],
@@ -1980,7 +1980,7 @@
     "/api/v1/documents/{id}/secrets/{secretId}": {
       "get": {
         "summary": "Reveal a hidden value",
-        "description": "Reveal a hidden value → {value}. Allowed to everyone who can see the note it belongs to; from another note only if a bullet there holds the reference and the caller can also see the original note (the value then moves along when the caller may edit). 404 with code: secret_gone when deleted, 409 secret_unreadable when the key changed. Never cached offline",
+        "description": "Reveal a hidden value → {value}. Allowed to everyone who can see the note, and only for a value of that note (a bullet copied into another note gets a copy of the value there). 404 with code: secret_gone when deleted or belonging to another note, 409 secret_unreadable when the key changed. Never cached offline",
         "tags": [
           "Workspace"
         ],

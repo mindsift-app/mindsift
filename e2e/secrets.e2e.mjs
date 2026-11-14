@@ -2,8 +2,8 @@
 // (internal/storage/secret_gate.go) and the editor gets the bullet with the new reference back, so the chip
 // reveals the value there; undo and redo of the paste work although the reference changed, and a paste made
 // offline gets its copy once the connection is back. The text goes in as the clipboard would put it into the
-// bullet's field. Needs a server in demo mode (account admin/admin); see e2e/README.md.
-import { chromium } from 'playwright';
+// bullet's field; last, two bullets are copied and pasted with the keyboard in Chromium and Firefox. Needs a server in demo mode (account admin/admin); see e2e/README.md.
+import { chromium, firefox } from 'playwright';
 
 const BASE = process.env.MINDSIFT_URL || 'http://localhost:18080';
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -64,6 +64,95 @@ const chip = (page, blockId) => page.locator(`[data-outline-block="${blockId}"] 
 async function reveals(page, blockId, value) {
   await chip(page, blockId).click();
   return !!(await waitFor(() => page.locator(`[data-outline-block="${blockId}"] [data-v="${value}"]`).count(), 5000));
+}
+
+// Two bullets selected with Ctrl+A twice and copied with Ctrl+C, pasted with Ctrl+V into another note: the
+// plain text masks the value and names no reference, the app's own format carries the reference, and the
+// server gives the other note its own copy, which the chip there reveals. Headless Firefox keeps only the plain
+// text on its clipboard; there the paste takes the references from the tab's last copy (rememberCopied).
+async function copySeveral(engine, admin) {
+  const tag = engine.name();
+  const stamp = `${Date.now()}${Math.floor(Math.random() * 1000)}`;
+  const value = `Kopie-${stamp % 10000}`;
+  const [konto, hinweis] = [`mq1_${stamp}`, `mq2_${stamp}`];
+  const origin = await api(admin, 'POST', '/api/v1/documents', {
+    title: `Mehrere Quelle ${tag} ${stamp}`,
+    blocks: [
+      { id: konto, type: 'bullet', content: 'Konto', level: 0 },
+      { id: hinweis, type: 'bullet', content: 'Hinweis', level: 1 },
+    ],
+  });
+  const { id: y } = await api(admin, 'POST', `/api/v1/documents/${origin.id}/secrets`, { value });
+  await api(admin, 'POST', `/api/v1/docs/${origin.id}/sync`, {
+    clientId: `e2e-m-${stamp}`, lastSeq: 0,
+    ops: [{ opId: `opm_${stamp}`, kind: 'set_content', blockId: konto, baseVersion: 1, content: `Konto {{secret:${y}}}` }],
+  });
+  const targetTitle = `Mehrere Ziel ${tag} ${stamp}`;
+  const [anfang, schluss] = [`mz1_${stamp}`, `mz2_${stamp}`];
+  const target = await api(admin, 'POST', '/api/v1/documents', {
+    title: targetTitle,
+    blocks: [
+      { id: anfang, type: 'bullet', content: 'Anfang', level: 0 },
+      { id: schluss, type: 'bullet', content: 'Schluss', level: 0 },
+    ],
+  });
+
+  const browser = await engine.launch();
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 }, locale: 'de-DE' });
+  await ctx.addInitScript((t) => {
+    localStorage.setItem('mindsift_jwt_token', t);
+    localStorage.setItem('mindsift:tour-offered', '1');
+    // What Ctrl+C puts on the clipboard, per type (the system clipboard is not readable in every engine)
+    const orig = DataTransfer.prototype.setData;
+    DataTransfer.prototype.setData = function (type, v) {
+      window.__clip = { ...(window.__clip || {}), [type]: v };
+      return orig.call(this, type, v);
+    };
+  }, admin);
+  const page = await ctx.newPage();
+  page.on('pageerror', (e) => console.log('PAGEERROR', e.message));
+  await page.goto(BASE);
+  await page.getByRole('button', { name: /Workspace/ }).locator('visible=true').first().click();
+  await page.getByText(origin.title, { exact: true }).first().click();
+  await page.locator(`[data-outline-block="${hinweis}"]`).waitFor({ timeout: 10000 });
+
+  await page.locator(`[data-outline-block="${hinweis}"] [data-outline-text]`).click({ force: true });
+  await page.keyboard.press('Control+a');
+  await page.keyboard.press('Control+a');
+  await sleep(300);
+  await page.evaluate(() => (window.__clip = null));
+  await page.keyboard.press('Control+c');
+  await sleep(300);
+  const clip = (await page.evaluate(() => window.__clip)) || {};
+  const plain = clip['text/plain'] || '';
+  check(plain.includes('Konto ••••') && !plain.includes('secret') && !plain.includes(value), `${tag}: the copied text masks the hidden value`, plain);
+  check((clip['application/x-mindsift-outline'] || '').includes(`Konto {{secret:${y}}}`), `${tag}: the app's own format carries the reference`, clip);
+
+  await page.getByText(targetTitle, { exact: true }).first().click();
+  await page.locator(`[data-outline-block="${schluss}"]`).waitFor({ timeout: 10000 });
+  await page.locator(`[data-outline-block="${anfang}"] [data-outline-text]`).click({ force: true });
+  await page.keyboard.press('End');
+  await page.keyboard.press('Enter');
+  await sleep(300);
+  await page.keyboard.press('Control+v');
+  await sleep(500);
+  await page.locator(`[data-outline-block="${schluss}"] [data-outline-text]`).click({ force: true });
+
+  const pasted = await waitFor(async () => {
+    const snap = await api(admin, 'GET', `/api/v1/docs/${target.id}/snapshot`);
+    const live = snap.blocks.filter((b) => !b.deleted);
+    const k = live.find((b) => /^Konto \{\{secret:/.test(b.content || ''));
+    const h = live.find((b) => b.content === 'Hinweis');
+    const id = refOf(k?.content);
+    return k && h && id && id !== y ? { k, h, id } : null;
+  }, 10000);
+  check(!!pasted, `${tag}: pasted into another note, both bullets arrive and the value is copied there`);
+  if (pasted) {
+    check(pasted.h.parentId === pasted.k.id, `${tag}: the second bullet stays indented under the first`, pasted.h);
+    await waitFor(() => chip(page, pasted.k.id).count(), 5000);
+    check(await reveals(page, pasted.k.id, value), `${tag}: the chip of the pasted bullet reveals the copy`);
+  }
+  await browser.close();
 }
 
 const main = async () => {
@@ -139,6 +228,7 @@ const main = async () => {
   check(await reveals(page, offline, value), 'The chip of the bullet pasted offline reveals the value');
 
   await browser.close();
+  for (const engine of [chromium, firefox]) await copySeveral(engine, admin);
   console.log(failures ? `\n${failures} check(s) FAILED` : '\nAll checks passed');
   process.exit(failures ? 1 : 0);
 };

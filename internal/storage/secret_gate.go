@@ -205,7 +205,7 @@ func (g *secretGate) placeholderFor(ref string) string {
 	if g.lang == "" {
 		g.lang = g.s.MessageLanguage(g.userID)
 	}
-	if p := i18n.T(g.lang, "(verdeckter Wert nicht übernommen)"); len(p) <= len(ref) {
+	if p := i18n.T(g.lang, "(versteckter Wert nicht übernommen)"); len(p) <= len(ref) {
 		return p
 	}
 	return ""

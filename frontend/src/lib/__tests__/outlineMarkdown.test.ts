@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { blocksToMarkdown } from '../outlineMarkdown';
+import {
+  blocksToClipboard,
+  blocksToMarkdown,
+  OUTLINE_CLIPBOARD_TYPE,
+  ownClipboardText,
+  putOnClipboard,
+  rememberCopied,
+} from '../outlineMarkdown';
 import { parsePastedLines } from '../pasteOutline';
 import type { DocumentBlock } from '../types';
 
@@ -155,5 +162,46 @@ describe('blocksToMarkdown', () => {
       ['h2', 'Abschnitt', 0],
       ['table', table, 1],
     ]);
+  });
+});
+
+describe('blocksToClipboard', () => {
+  const blocks = [b('text', 'Zugang {{secret:sec1}}', 0), b('text', 'PIN {{secret:sec2}} und Ende', 1)];
+
+  it('masks hidden values in the Markdown and keeps their references in the own format', () => {
+    const clip = blocksToClipboard(blocks);
+    expect(clip.text).toBe('Zugang ••••\n- PIN •••• und Ende');
+    expect(clip.own).toBe('Zugang {{secret:sec1}}\n- PIN {{secret:sec2}} und Ende');
+    // Pasted back, the own format gives the bullets with their references
+    expect(parsePastedLines(clip.own!.split('\n')).map((i) => [i.content, i.indent])).toEqual([
+      ['Zugang {{secret:sec1}}', 0],
+      ['PIN {{secret:sec2}} und Ende', 1],
+    ]);
+  });
+
+  it('has no own format when the bullets hold no hidden value', () => {
+    expect(blocksToClipboard([b('text', 'Eins'), b('text', 'Zwei', 1)])).toEqual({ text: 'Eins\n- Zwei', own: null });
+  });
+
+  it('puts the own format on the clipboard only next to the plain text', () => {
+    const data = new Map<string, string>();
+    const dt = { setData: (type: string, v: string) => data.set(type, v) } as unknown as DataTransfer;
+    putOnClipboard(dt, blocksToClipboard(blocks));
+    expect(data.get('text/plain')).toBe('Zugang ••••\n- PIN •••• und Ende');
+    expect(data.get(OUTLINE_CLIPBOARD_TYPE)).toContain('{{secret:sec2}}');
+    data.clear();
+    putOnClipboard(dt, blocksToClipboard([b('text', 'Eins'), b('text', 'Zwei')]));
+    expect([...data.keys()]).toEqual(['text/plain']);
+  });
+
+  it('takes the own format from the last copy when the clipboard kept only the plain text', () => {
+    const clipboard = (data: Record<string, string>) => ({ getData: (type: string) => data[type] ?? '' }) as unknown as DataTransfer;
+    const clip = blocksToClipboard(blocks);
+    rememberCopied(clip);
+    expect(ownClipboardText(clipboard({ text: clip.text.replace(/\n/g, '\r\n') }))).toBe(clip.own);
+    expect(ownClipboardText(clipboard({ text: 'Zugang ••••' }))).toBe('');
+    expect(ownClipboardText(clipboard({ text: clip.text, [OUTLINE_CLIPBOARD_TYPE]: 'X {{secret:sec9}}' }))).toBe('X {{secret:sec9}}');
+    rememberCopied(blocksToClipboard([b('text', 'Eins'), b('text', 'Zwei')]));
+    expect(ownClipboardText(clipboard({ text: clip.text }))).toBe('');
   });
 });

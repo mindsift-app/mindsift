@@ -4,7 +4,7 @@ import { DocumentBlock, BlockType } from '../../lib/types';
 import { OutlinerBlock, BlockLock } from './OutlinerBlock';
 import { caretAtPoint, mapRenderedOffsetToRaw } from '../../lib/caret';
 import { parsePastedLines } from '../../lib/pasteOutline';
-import { blocksToMarkdown } from '../../lib/outlineMarkdown';
+import { blocksToClipboard, putOnClipboard, rememberCopied, type OutlineClipboard } from '../../lib/outlineMarkdown';
 import { branchEnd, OutlineRow, outlineRows, sameOutlineShape } from '../../lib/outlineList';
 import { useLatestCallback } from '../../lib/useLatestCallback';
 import { flushSync } from 'react-dom';
@@ -64,10 +64,11 @@ export interface OutlinerTreeProps {
 const WHOLE_IN_SELECTION = ['code', 'divider', 'table', 'progress'];
 
 // Puts text on the clipboard from a key press: through the browser's copy event, which works on plain
-// HTTP too (navigator.clipboard needs HTTPS or localhost); the clipboard API only as a fallback
-function writeClipboardText(text: string) {
+// HTTP too (navigator.clipboard needs HTTPS or localhost); the clipboard API only as a fallback (plain
+// text only: references of hidden values are kept in this tab, rememberCopied)
+function writeClipboard(clip: OutlineClipboard) {
   const onCopy = (e: ClipboardEvent) => {
-    e.clipboardData?.setData('text/plain', text);
+    if (e.clipboardData) putOnClipboard(e.clipboardData, clip);
     e.preventDefault();
   };
   document.addEventListener('copy', onCopy);
@@ -78,7 +79,10 @@ function writeClipboardText(text: string) {
     // not supported: fall back below
   }
   document.removeEventListener('copy', onCopy);
-  if (!copied) void navigator.clipboard?.writeText(text).catch(() => {});
+  if (!copied) {
+    rememberCopied(clip);
+    void navigator.clipboard?.writeText(clip.text).catch(() => {});
+  }
 }
 
 // A table registers its first cell as its text field; coming from below (cursor at the end) the cursor goes
@@ -952,12 +956,13 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
 
   // The selection as Markdown (lib/outlineMarkdown.ts): pasted elsewhere it is a proper list, pasted
   // back into a note it becomes the same bullets again. Code blocks (and other blocks that are not plain
-  // text) at either end come whole: half a code block from where the drag started is no use
-  const selectedText = (sel: RangeSel) => {
+  // text) at either end come whole: half a code block from where the drag started is no use. Hidden values
+  // are masked in the Markdown and keep their references in the app's own format (blocksToClipboard)
+  const selectedText = (sel: RangeSel): OutlineClipboard | null => {
     const r = resolveRangeSel(sel);
-    if (!r) return '';
+    if (!r) return null;
     const whole = (b: DocumentBlock) => WHOLE_IN_SELECTION.includes(b.type);
-    return blocksToMarkdown([
+    return blocksToClipboard([
       whole(r.first) ? r.first : { ...r.first, content: (r.first.content || '').slice(r.firstOffset) },
       ...blocks.slice(r.fIdx + 1, r.lIdx),
       whole(r.last) ? r.last : { ...r.last, content: (r.last.content || '').slice(0, r.lastOffset) },
@@ -1032,7 +1037,7 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
       };
       if (mod && (e.key === 'c' || e.key === 'x')) {
         stop();
-        writeClipboardText(selectedTextRef.current(sel));
+        writeClipboard(selectedTextRef.current(sel) ?? { text: '', own: null });
         if (e.key === 'x') deleteRangeSelRef.current(sel);
         return;
       }
@@ -1107,9 +1112,9 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
       // A selection here counts while the note has the focus; otherwise only what the browser selected
       const own = rangeSelRef.current && root.contains(document.activeElement) ? rangeSelRef.current : null;
       const sel = own ?? nativeRangeSelRef.current(root);
-      const text = sel ? selectedTextRef.current(sel) : '';
-      if (!text) return;
-      e.clipboardData?.setData('text/plain', text);
+      const clip = sel ? selectedTextRef.current(sel) : null;
+      if (!clip?.text) return;
+      if (e.clipboardData) putOnClipboard(e.clipboardData, clip);
       e.preventDefault();
     };
     document.addEventListener('copy', onCopy);

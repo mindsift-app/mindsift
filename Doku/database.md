@@ -65,7 +65,7 @@ A task is a `thought` with `status='kept'` or `status='converted' AND converted_
 | `workspace_folder_shares` | Shared folder permissions |
 | `workspace_folder_mounts` | Personal mount path per recipient and shared folder |
 | `doc_user_folders` | Personal filing location for shared individual notes per recipient |
-| `note_secrets` | Hidden values in notes (`/secret`): `document_id` (note it belongs to; only bullets of that note point to it, a bullet copied into another note gets a copy there), `created_by`, `source_id` (the value a copy was made from, `''` for one made with `/secret`; Migration 46), `ciphertext` (AES-256-GCM with `SECRETS_KEY`, the id bound as additional data), `orphaned_at` (no live bullet of its note holds the reference any more; deleted 30 days later by the hourly cleanup, together with the note when it is purged) |
+| `note_secrets` | Hidden values in notes (`/hidden`): `document_id` (note it belongs to; only bullets of that note point to it, a bullet copied into another note gets a copy there), `created_by`, `source_id` (the value a copy was made from, `''` for one made with `/hidden`; Migration 46), `ciphertext` (AES-256-GCM with `SECRETS_KEY`, the id bound as additional data), `orphaned_at` (no live bullet of its note holds the reference any more; deleted 30 days later by the hourly cleanup, together with the note when it is purged) |
 
 Block types: `h1`, `h2`, `h3`, `paragraph`, `text`, `todo`, `bullet`, `code`, `callout`, `warning`, `error`, `divider`, `table`, `progress`.
 
