@@ -206,3 +206,41 @@ func TestTaskTitleKeepsFilesTheBulletShows(t *testing.T) {
 		t.Fatal("the picture lost its reference")
 	}
 }
+
+// Dropping references never makes a bullet longer: a short made-up reference without caption is dropped
+// instead of becoming the longer placeholder, so a bullet just under the length limit full of them is
+// stored (shortened) instead of refused as too long (re-test 2026-11-14, side finding 2).
+func TestMediaGateNeverLengthensContent(t *testing.T) {
+	s, u := newSyncTestStore(t)
+	g := s.newMediaGate(u.ID, nil)
+	for _, in := range []string{"![](media:med_1)", "media:med_1", "a ![](media:med_12) b media:med_3 c"} {
+		if _, out, _ := g.cleanBlock("bullet", in); len(out) > len(in) || strings.Contains(out, "media:") {
+			t.Errorf("%q became %q", in, out)
+		}
+	}
+	// A real id is longer than the placeholder: that one stays
+	realRef := "![](media:med_000000000000000000000001)"
+	if _, out, _ := g.cleanBlock("bullet", realRef); out != "(Datei nicht übernommen)" {
+		t.Errorf("%q became %q", realRef, out)
+	}
+
+	doc, err := s.CreateDocument(u.ID, "", "Lang", "", "", nil, nil, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ref := "![](media:med_1) "
+	content := strings.Repeat(ref, (100_000-10)/len(ref))
+	root := ""
+	res, _, err := s.ApplyDocOps(doc.ID, collab.Actor{UserID: u.ID, ClientID: "c"}, []collab.Op{
+		{OpID: "op_long", Kind: collab.OpInsert, BlockID: "blk_long", ParentID: &root, OrderKey: "a0", Type: "bullet", Content: &content},
+	}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(res) != 1 || res[0].Status != collab.StatusApplied {
+		t.Fatalf("bullet full of made-up references refused: %+v", res)
+	}
+	if b := blocksOf(t, s, doc.ID)["blk_long"]; b == nil || strings.Contains(b.Content, "media:") {
+		t.Errorf("references kept: %v", b != nil)
+	}
+}

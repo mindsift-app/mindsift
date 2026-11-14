@@ -345,13 +345,13 @@ func (g *mediaGate) clean(content string) (out string, changed bool) {
 		if caption := strings.TrimSpace(mediaRefEsc.ReplaceAllString(m[1], "$1")); caption != "" {
 			return caption
 		}
-		return g.placeholder()
+		return g.placeholderFor(link)
 	})
 	out = mediaIDRe.ReplaceAllStringFunc(out, func(ref string) string {
 		if ok[strings.TrimPrefix(ref, "media:")] {
 			return ref
 		}
-		return g.placeholder()
+		return g.placeholderFor(ref)
 	})
 	return out, true
 }
@@ -361,6 +361,17 @@ func (g *mediaGate) placeholder() string {
 		g.lang = g.s.MessageLanguage(g.userID)
 	}
 	return i18n.T(g.lang, "(Datei nicht übernommen)")
+}
+
+// placeholderFor replaces a reference without caption: the placeholder, or nothing where the placeholder
+// is longer than the reference (a short made-up id; real ids are longer). Dropping files never makes
+// content longer, so a bullet just under the length limit full of such references is not refused as
+// too long (re-test 2026-11-14, side finding 2).
+func (g *mediaGate) placeholderFor(ref string) string {
+	if p := g.placeholder(); len(p) <= len(ref) {
+		return p
+	}
+	return ""
 }
 
 // cleanBlock drops from a bullet what the person may not show; an image or audio bullet that loses its
