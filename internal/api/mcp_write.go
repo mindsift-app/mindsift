@@ -103,9 +103,9 @@ func (s *Server) editableNote(userID, docID string) error {
 
 // applyNoteOps runs bullet operations as the agent and tells open editors and lists about them
 func (s *Server) applyNoteOps(userID string, actor *apiActor, docID string, ops []collab.Op) error {
-	a := collab.Actor{UserID: userID, ClientID: "mcp"}
+	a := collab.Actor{UserID: userID, ClientID: collab.MCPHolder}
 	if actor != nil && actor.KeyID != "" {
-		a.ClientID = "mcp-" + actor.KeyID
+		a.ClientID = collab.MCPKeyHolderPrefix + actor.KeyID
 	}
 	if u, err := s.store.GetUserByID(userID); err == nil {
 		a.Name = u.DisplayName

@@ -182,6 +182,59 @@ func TestLiveDrawingHoldsTheLeaseAndHandsItOver(t *testing.T) {
 	}
 }
 
+func TestLiveDrawingHolderCannotBeClaimedByAClient(t *testing.T) {
+	_, store, ts, owner, ownerToken := startRealtimeServer(t)
+	doc, err := store.CreateDocument(owner.ID, "", "Skizze", "", "", []domain.DocumentBlock{{ID: "d_b1", Type: "drawing", Content: drawBase}}, nil, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	own := dialWS(t, ts, ownerToken)
+	sendDraw(t, own, "DRAW_JOIN", map[string]any{"docId": doc.ID, "blockId": "d_b1", "base": drawBase, "els": []json.RawMessage{drawEl("e1", 1, 0, 0)}})
+	readDraw(t, own, "DRAW_STATE")
+
+	// A note editor posing as the live session is refused: no write into the bullet, no lease, no leave
+	text := `{"v":1,"els":[]}`
+	for _, id := range []string{drawHolder("d_b1"), "draw:", "mcp", "mcp-k1", "server", "legacy"} {
+		resp := doJSON(t, ts, http.MethodPost, "/api/v1/docs/"+doc.ID+"/sync", ownerToken, map[string]any{
+			"clientId": id, "leases": map[string]any{"hold": []string{"d_b1"}},
+			"ops": []collab.Op{{OpID: "fake-" + id, Kind: collab.OpSetContent, BlockID: "d_b1", BaseVersion: 1, Content: &text}}})
+		resp.Body.Close()
+		if resp.StatusCode != http.StatusBadRequest {
+			t.Fatalf("sync as %q: status %d", id, resp.StatusCode)
+		}
+		resp = doJSON(t, ts, http.MethodPost, "/api/v1/docs/"+doc.ID+"/leave", ownerToken, map[string]any{"clientId": id})
+		resp.Body.Close()
+		if resp.StatusCode != http.StatusBadRequest {
+			t.Fatalf("leave as %q: status %d", id, resp.StatusCode)
+		}
+		resp = doJSON(t, ts, http.MethodPost, "/api/v1/documents/"+doc.ID+"/extract", ownerToken, map[string]any{"blockId": "d_b1", "clientId": id})
+		resp.Body.Close()
+		if resp.StatusCode != http.StatusBadRequest {
+			t.Fatalf("extract as %q: status %d", id, resp.StatusCode)
+		}
+	}
+	if b, _ := store.GetDocumentByID(owner.ID, doc.ID); len(b.Blocks) != 1 || b.Blocks[0].Content != drawBase {
+		t.Fatalf("the bullet stays untouched: %+v", b.Blocks)
+	}
+
+	// A normal note still syncs and sees the live session holding the bullet
+	resp := doJSON(t, ts, http.MethodPost, "/api/v1/docs/"+doc.ID+"/sync", ownerToken, map[string]any{"clientId": "c_0123abcd", "leases": map[string]any{"hold": []string{"d_b1"}}})
+	var out syncResponse
+	_ = json.NewDecoder(resp.Body).Decode(&out)
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusOK || len(out.Leases.Others) != 1 || len(out.Leases.Others[0].Live) != 1 || len(out.Leases.Granted) != 0 {
+		t.Fatalf("normal client during the session: %d %+v", resp.StatusCode, out.Leases)
+	}
+	// Variations in case are a different holder for the lease code, so they are ordinary client ids
+	resp = doJSON(t, ts, http.MethodPost, "/api/v1/docs/"+doc.ID+"/sync", ownerToken, map[string]any{"clientId": "Draw:d_b1", "leases": map[string]any{"hold": []string{"d_b1"}}})
+	out = syncResponse{}
+	_ = json.NewDecoder(resp.Body).Decode(&out)
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusOK || len(out.Leases.Denied) != 1 {
+		t.Fatalf("other case is no live session: %d %+v", resp.StatusCode, out.Leases)
+	}
+}
+
 func TestLiveDrawingWatchOverSSE(t *testing.T) {
 	_, store, ts, owner, ownerToken := startRealtimeServer(t)
 	reader, readerToken := newTestUser(t, store, "draw-reader@example.com")

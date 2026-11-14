@@ -2,6 +2,7 @@ package collab
 
 import (
 	"sort"
+	"strings"
 	"sync"
 	"time"
 )
@@ -10,6 +11,29 @@ const (
 	LeaseTTL       = 20 * time.Second
 	SessionTimeout = 30 * time.Second
 )
+
+// Lease holders the server uses itself, in place of a note editor's client ID: a live drawing session
+// ("draw:<blockId>", api/drawlive.go), MCP writes ("mcp", "mcp-<keyId>", api/mcp_write.go) and the server's
+// own changes ("server", "legacy", storage). A client claiming one of them could write into a bullet held
+// by it or take over its lease, so ReservedClientID refuses them for client IDs from outside.
+const (
+	LiveDrawHolderPrefix = "draw:"
+	MCPHolder            = "mcp"
+	MCPKeyHolderPrefix   = "mcp-"
+	ServerHolder         = "server"
+	LegacyHolder         = "legacy"
+)
+
+// ReservedClientID reports whether a client ID sent from outside (note sync, leave, extract/move/merge,
+// DRAW_DONE) is one of the server's own lease holders. Leases compare holders exactly, so the check is
+// case-sensitive like them.
+func ReservedClientID(id string) bool {
+	switch id {
+	case MCPHolder, ServerHolder, LegacyHolder:
+		return true
+	}
+	return strings.HasPrefix(id, LiveDrawHolderPrefix) || strings.HasPrefix(id, MCPKeyHolderPrefix)
+}
 
 type lease struct {
 	clientID string
