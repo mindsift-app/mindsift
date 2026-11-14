@@ -181,12 +181,29 @@ func (s *Store) SyncTaskToDoc(userID, taskID string) string {
 	docID, mainID, _ := strings.Cut(t.ConvertedRefID, ":")
 	subs := make([]domain.SubTask, len(t.Subtasks))
 	copy(subs, t.Subtasks)
-	// Titles become bullets: no references to files the person may not read (mediaGate)
+	// Titles become bullets: no references to files the person may not read (mediaGate). Files the
+	// bullet shows already stay: whoever changes the task (a tick, another word) may not be able to read
+	// the note, and dropping the owner's picture from the bullet would let media cleanup delete the file.
+	// Every title is checked here, before the transaction: titleFor runs inside it and must not query
+	// the database. Keeping files only allows more, so it finds every file and the placeholder's
+	// language in the gate's memory (known, lang).
 	gate := s.newMediaGate(userID, nil)
-	mainTitle, _ := gate.clean(t.Content)
+	_, _ = gate.clean(t.Content)
 	titles := make([]string, len(subs))
 	for i := range subs {
 		titles[i], _ = gate.clean(subs[i].Title)
+	}
+	titleFor := func(current, raw string) string {
+		if raw == "" || strings.TrimSpace(current) == raw {
+			return raw
+		}
+		gate.keep = map[string]bool{}
+		for _, m := range mediaIDRe.FindAllStringSubmatch(current, -1) {
+			gate.keep[m[1]] = true
+		}
+		out, _ := gate.clean(raw)
+		gate.keep = nil
+		return out
 	}
 	subsChanged := false
 	a := collab.Actor{UserID: userID, ClientID: "server"}
@@ -196,17 +213,18 @@ func (s *Store) SyncTaskToDoc(userID, taskID string) string {
 			return nil
 		}
 		var ops []collab.Op
-		setBlock := func(b *collab.Block, checked bool, title string) {
+		// setBlock: rawTitle is the task's or subtask's own title, gated against the bullet's content
+		setBlock := func(b *collab.Block, checked bool, rawTitle string) {
 			if b.Props.Checked != checked {
 				c := checked
 				ops = append(ops, collab.Op{OpID: domain.NewID("op"), Kind: collab.OpSetProps, BlockID: b.ID, Patch: &collab.PropsPatch{Checked: &c}})
 			}
-			if title != "" && strings.TrimSpace(b.Content) != title {
+			if title := titleFor(b.Content, rawTitle); title != "" && strings.TrimSpace(b.Content) != title {
 				text := title
 				ops = append(ops, collab.Op{OpID: domain.NewID("op"), Kind: collab.OpSetContent, BlockID: b.ID, BaseVersion: b.Version, Content: &text})
 			}
 		}
-		setBlock(main, t.IsCompleted, mainTitle)
+		setBlock(main, t.IsCompleted, t.Content)
 
 		used := map[string]bool{mainID: true}
 		for _, st := range subs {
@@ -221,7 +239,7 @@ func (s *Store) SyncTaskToDoc(userID, taskID string) string {
 		for i := range subs {
 			if b, ok := d.Blocks[subs[i].BlockID]; ok && subs[i].BlockID != "" {
 				if !b.Deleted && b.Type == "todo" {
-					setBlock(b, subs[i].IsCompleted, titles[i])
+					setBlock(b, subs[i].IsCompleted, subs[i].Title)
 				}
 				continue
 			}

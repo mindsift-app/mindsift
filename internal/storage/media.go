@@ -176,27 +176,56 @@ func (s *Store) MediaReferencedIn(id string) ([]string, error) {
 }
 
 // UnreferencedMedia returns files older than the grace time that no block mentions any more. The grace
-// time covers uploads whose block has not reached the server yet (offline, slow sync).
+// time covers uploads whose block has not reached the server yet (offline, slow sync). A file only a
+// bullet beyond maxBlockRefs references mentions is not one of them (mediaBeyondRefCap).
 func (s *Store) UnreferencedMedia(olderThan time.Time) ([]Media, error) {
-	rows, err := s.db.Query(sqlUnreferencedMedia, olderThan.UTC().Format(time.RFC3339))
+	out, err := s.queryMedia(sqlUnreferencedMedia, olderThan.UTC().Format(time.RFC3339))
+	if err != nil || len(out) == 0 {
+		return out, err
+	}
+	beyond, err := s.mediaBeyondRefCap("")
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
-	var out []Media
-	for rows.Next() {
-		var m Media
-		if err := rows.Scan(&m.ID, &m.DocID, &m.OwnerID, &m.Kind, &m.Mime, &m.Size, &m.SourceURL, &m.CreatedAt); err != nil {
-			return nil, err
+	kept := out[:0]
+	for _, m := range out {
+		if len(beyond[m.ID]) == 0 {
+			kept = append(kept, m)
 		}
-		out = append(out, m)
 	}
-	return out, rows.Err()
+	return kept, nil
 }
 
-// MediaOfUser lists the files shown in the user's own notes (for backups and exports).
+// MediaOfUser lists the files shown in the user's own notes (for backups and exports), also those a
+// bullet beyond maxBlockRefs references shows.
 func (s *Store) MediaOfUser(userID string) ([]Media, error) {
-	rows, err := s.db.Query(sqlMediaOfUser, userID)
+	out, err := s.queryMedia(sqlMediaOfUser, userID)
+	if err != nil {
+		return nil, err
+	}
+	beyond, err := s.mediaBeyondRefCap(userID)
+	if err != nil || len(beyond) == 0 {
+		return out, err
+	}
+	have := map[string]bool{}
+	for _, m := range out {
+		have[m.ID] = true
+	}
+	for id := range beyond {
+		if have[id] {
+			continue
+		}
+		if m, err := s.GetMedia(id); err == nil {
+			out = append(out, *m)
+		} else if !errors.Is(err, ErrMediaNotFound) {
+			return nil, err
+		}
+	}
+	return out, nil
+}
+
+func (s *Store) queryMedia(q string, args ...any) ([]Media, error) {
+	rows, err := s.db.Query(q, args...)
 	if err != nil {
 		return nil, err
 	}

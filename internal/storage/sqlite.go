@@ -21,6 +21,8 @@ import (
 type Store struct {
 	db     *sql.DB
 	initMu sync.Mutex
+	// dataDir is the directory of the database file ($DATA_DIR); empty for databases without a file
+	dataDir string
 	// mediaRoot holds the files of images and audio in notes ($DATA_DIR/media), see media.go
 	mediaRoot string
 	// systemBackupDir ($DATA_DIR/backups/system) takes the copy written before pending migrations
@@ -87,6 +89,7 @@ func NewStore(dbPath string, opts ...StoreOption) (*Store, error) {
 		opt(store)
 	}
 	if dbPath != ":memory:" && !strings.HasPrefix(dbPath, "file:") {
+		store.dataDir = filepath.Dir(dbPath)
 		store.mediaRoot = filepath.Join(filepath.Dir(dbPath), "media")
 		store.systemBackupDir = filepath.Join(filepath.Dir(dbPath), "backups", "system")
 	}

@@ -2,6 +2,7 @@ package storage
 
 import (
 	"database/sql"
+	"fmt"
 	"regexp"
 	"sort"
 	"strings"
@@ -59,7 +60,46 @@ type blockRef struct{ kind, id string }
 // became thousands of rows, and one sync of such bullets held the write lock for half a minute and grew
 // the database several times over (audit 2026-11-13, N1). References are not checked against media and
 // note_secrets here on purpose: an import stores a note before its files.
+//
+// A bullet that really shows more files (an old table full of pictures) has some of them missing from
+// block_refs. Where that would lose data, the bullets at the cap are read as well (mediaBeyondRefCap):
+// before the media cleanup deletes a file and when a backup collects a person's files. Read rights and
+// public pages go by block_refs alone; such a file stays readable through the note it was uploaded to.
 const maxBlockRefs = 64
+
+// sqlCappedBlocks: the bullets (deleted ones too) whose references reached maxBlockRefs, the only ones
+// that can show a file block_refs does not list. It reads all of block_refs (not the text of bullets), so
+// it runs only where a missed file costs data.
+var sqlCappedBlocks = fmt.Sprintf(`SELECT b.document_id, b.content FROM blocks b
+	WHERE b.id IN (SELECT block_id FROM block_refs GROUP BY block_id HAVING COUNT(*) >= %d)`, maxBlockRefs)
+
+// mediaBeyondRefCap returns the files mentioned in bullets at the cap, each with the notes of those
+// bullets; with userID only bullets of that person's own notes.
+func (s *Store) mediaBeyondRefCap(userID string) (map[string][]string, error) {
+	q, args := sqlCappedBlocks, []any{}
+	if userID != "" {
+		q += ` AND b.document_id IN (SELECT id FROM documents WHERE user_id = ?)`
+		args = append(args, userID)
+	}
+	rows, err := s.db.Query(q, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := map[string][]string{}
+	for rows.Next() {
+		var docID, content string
+		if err := rows.Scan(&docID, &content); err != nil {
+			return nil, err
+		}
+		for _, m := range mediaIDRe.FindAllStringSubmatch(content, -1) {
+			if docs := out[m[1]]; len(docs) == 0 || docs[len(docs)-1] != docID {
+				out[m[1]] = append(docs, docID)
+			}
+		}
+	}
+	return out, rows.Err()
+}
 
 // blockRefsOf returns the references in a block's content (at most maxBlockRefs, in order of appearance),
 // sorted and without duplicates.

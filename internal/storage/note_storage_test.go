@@ -3,9 +3,11 @@ package storage
 import (
 	"encoding/json"
 	"fmt"
+	"maps"
 	"math/rand"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -344,6 +346,14 @@ func TestNoteStorageMigration(t *testing.T) {
 	}
 	legacy, _ := s.CreateDocument(u.ID, "", "Uralt", "", "", flatBlocks([3]any{"l1", 0, "Uralter Gartenzaun"}, [3]any{"l2", 1, "darunter"}), nil, false)
 
+	blank, _ := s.CreateDocument(u.ID, "", "Leer", "", "", flatBlocks([3]any{"e1", 0, ""}), nil, false)
+	for day, id := range map[string]string{"2026-11-01": typed.ID, "2026-11-02": mixed.ID, "2026-11-03": legacy.ID, "2026-11-04": blank.ID} {
+		if err := s.SetJournalDay(u.ID, day, id); err != nil {
+			t.Fatal(err)
+		}
+	}
+	wantJournal := map[string]bool{"2026-11-01": false, "2026-11-02": false, "2026-11-03": false, "2026-11-04": true}
+
 	docs := []string{typed.ID, mixed.ID, legacy.ID}
 	want := map[string]docState{}
 	for _, id := range docs {
@@ -422,6 +432,10 @@ func TestNoteStorageMigration(t *testing.T) {
 			t.Fatalf("note %s changed:\n got %+v\nwant %+v", id, got, w)
 		}
 	}
+	// The journal reads whether a day has text from the bullets, not from the emptied copies
+	if got := journalEmpty(t, s, u.ID); !maps.Equal(got, wantJournal) {
+		t.Fatalf("journal days after the migration:\n got %v\nwant %v", got, wantJournal)
+	}
 	var leftover int
 	_ = s.db.QueryRow(`SELECT COUNT(*) FROM documents WHERE blocks_json != '[]' OR markdown_cache != '' OR content != ''`).Scan(&leftover)
 	if leftover != 0 {
@@ -486,4 +500,40 @@ func withoutDoc(hits []string, docID string) []string {
 		}
 	}
 	return out
+}
+
+// The one-time VACUUM after migration 44 needs up to about twice the compacted size in free space; with
+// less it is skipped and the freed pages stay for reuse.
+func TestVacuumOnlyWithEnoughFreeSpace(t *testing.T) {
+	if _, ok := diskFree(t.TempDir()); !ok && runtime.GOOS == "linux" {
+		t.Fatal("the free space of the data directory cannot be read")
+	}
+	s, err := NewStore(filepath.Join(t.TempDir(), "vacuum.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer s.Close()
+	for _, q := range []string{`CREATE TABLE junk (x BLOB)`,
+		`WITH RECURSIVE c(n) AS (SELECT 1 UNION ALL SELECT n + 1 FROM c WHERE n < 3000) INSERT INTO junk SELECT randomblob(4096) FROM c`,
+		`DROP TABLE junk`} {
+		if _, err := s.db.Exec(q); err != nil {
+			t.Fatal(err)
+		}
+	}
+	pages := func() (n int64) {
+		_ = s.db.QueryRow(`PRAGMA page_count`).Scan(&n)
+		return n
+	}
+	before := pages()
+	defer func(orig func(string) (int64, bool)) { diskFreeOf = orig }(diskFreeOf)
+	diskFreeOf = func(string) (int64, bool) { return 1 << 20, true }
+	s.vacuumIfWorthwhile()
+	if pages() != before {
+		t.Fatal("compacted without enough free space")
+	}
+	diskFreeOf = func(string) (int64, bool) { return 1 << 40, true }
+	s.vacuumIfWorthwhile()
+	if after := pages(); after*2 > before {
+		t.Fatalf("not compacted with enough free space: %d pages before, %d after", before, after)
+	}
 }
