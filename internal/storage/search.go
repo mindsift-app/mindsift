@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -11,7 +12,6 @@ import (
 	"strings"
 
 	"github.com/mindsift-app/mindsift/internal/domain"
-	"github.com/mindsift-app/mindsift/internal/drawing"
 )
 
 // SearchHit represents a single ranked match across documents, tasks/thoughts, and lists.
@@ -287,52 +287,18 @@ func (s *Store) SearchCtx(ctx context.Context, userID, query string, opts Search
 	}
 
 	// 1. Search Documents and Blocks
-	// Weights: 10.0 for title, 1.0 for block content
-	docWhere, docArgs := "", []any{ftsQuery}
-	if opts.Folder != "" {
-		docWhere = ` AND (d.folder_path = ? OR d.folder_path LIKE ?)`
-		docArgs = append(docArgs, opts.Folder, opts.Folder+"/%")
-	}
-	var docRows *sql.Rows
+	// Only in the notes the person can see, and in three cheap steps instead of one expensive query: the
+	// index alone gives matches and scores (bm25 needs no text), they are kept to the visible notes and cut
+	// to the limit, and only then are snippets made for the hits shown. Before, the match ran over every
+	// note of the server, made a snippet for each matching row (since migration 44 that reads the text
+	// through documents_fts_source) and filtered by rights after the limit, so other people's hits could
+	// push one's own out of the results.
+	var found []noteSearchRow
 	var err error
 	if want("document") {
-		docRows, err = s.db.QueryContext(ctx, `
-		SELECT f.doc_id, f.block_id,
-		       snippet(documents_fts, -1, '<mark>', '</mark>', '…', 14) AS snip,
-		       bm25(documents_fts, 10.0, 1.0) AS score,
-		       d.title, d.icon, d.user_id, d.is_archived, COALESCE(b.content, ''), COALESCE(b.type, '')
-		FROM documents_fts f
-		JOIN documents d ON d.id = f.doc_id
-		LEFT JOIN blocks b ON f.block_id != '' AND b.id = f.block_id AND b.document_id = f.doc_id
-		WHERE documents_fts MATCH ? AND d.is_archived = 0`+docWhere+`
-		ORDER BY score ASC
-		LIMIT `+strconv.Itoa(limit), docArgs...)
+		found, err = s.searchVisibleNotes(ctx, userID, ftsQuery, opts.Folder, limit)
 	}
 	if want("document") && err == nil {
-		// Read all rows first and close them: the access check and loading the note need connections of
-		// their own, and holding the rows' one meanwhile can use up the pool (deadlock under load)
-		type docRow struct {
-			docID, blockID, snip, title, icon, content, typ string
-			score                                           float64
-		}
-		var found []docRow
-		for docRows.Next() {
-			var r docRow
-			var ownerID string
-			var isArchived int
-			if scanErr := docRows.Scan(&r.docID, &r.blockID, &r.snip, &r.score, &r.title, &r.icon, &ownerID, &isArchived, &r.content, &r.typ); !dbFailed(scanErr) {
-				if r.typ == drawing.BlockType {
-					r.content = strings.Join(drawing.Texts(r.content), " · ")
-				}
-				if r.typ == "table" {
-					r.content = TableText(r.content)
-				}
-				found = append(found, r)
-			}
-		}
-		logDBErr(docRows.Err())
-		_ = docRows.Close()
-
 		seenDocIDs := make(map[string]bool)
 		docBlocks := map[string][]domain.DocumentBlock{}
 		// Links in the snippets with the current titles instead of ids (loaded once, when needed)
@@ -347,18 +313,7 @@ func (s *Store) SearchCtx(ctx context.Context, userID, query string, opts Search
 			}
 			return ReadableWikiLinks(snip, titles)
 		}
-		roles := map[string]string{}
 		for _, r := range found {
-			// Access check via DocRole
-			role, checked := roles[r.docID]
-			if !checked {
-				role = s.DocRole(userID, r.docID)
-				roles[r.docID] = role
-			}
-			if role == "" {
-				continue
-			}
-
 			hitID := r.docID
 			if r.blockID != "" {
 				hitID = r.docID + ":" + r.blockID
@@ -505,7 +460,14 @@ func (s *Store) SearchCtx(ctx context.Context, userID, query string, opts Search
 		accessibleListIDs[l.ID] = true
 	}
 
-	itemWhere, itemArgs := "", []any{ftsQuery}
+	// Only the lists the person can see, in the query itself: filtering after the limit let hits in other
+	// people's lists push one's own out of the results
+	listIDs := make([]string, 0, len(accessibleListIDs))
+	for id := range accessibleListIDs {
+		listIDs = append(listIDs, id)
+	}
+	listIDsJSON, _ := json.Marshal(listIDs)
+	itemWhere, itemArgs := ` AND li.list_id IN (SELECT value FROM json_each(?))`, []any{ftsQuery, string(listIDsJSON)}
 	if opts.ListID != "" {
 		itemWhere += ` AND li.list_id = ?`
 		itemArgs = append(itemArgs, opts.ListID)
