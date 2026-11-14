@@ -133,6 +133,20 @@ func foreignLeaseIn(ids []string, a collab.Actor, leases collab.LeaseView) bool 
 	return false
 }
 
+// branchSecretGate prepares the hidden values of bullets that go into the note targetID (a moved branch,
+// a merged note): each becomes a copy in the target (secretGate), made before the change's transaction,
+// in which the gate only looks up what it prepared.
+func (s *Store) branchSecretGate(userID, targetID string, blocks []collab.FlatBlock) *secretGate {
+	g := s.newSecretGate(userID, targetID)
+	contents := make([]string, len(blocks))
+	for i, b := range blocks {
+		contents[i] = b.Content
+	}
+	g.prepare(contents...)
+	g.frozen = true
+	return g
+}
+
 // ExtractBranch creates a new note from a bullet with its children, named after the bullet, in the same
 // folder and shared like the original. The bullet stays the note's first bullet (its hashtags with it). The original note is not changed here: the editor replaces the branch
 // by the returned link itself, as an ordinary own edit (no clash with unsent typing, undo works).
@@ -363,6 +377,7 @@ func (s *Store) MergeDocuments(userID, sourceID, targetID string, a collab.Actor
 		heading = i18n.T(lang, "Zusammengeführte Notiz")
 	}
 	heading += " (" + i18n.ShortDate(lang, clock.Now()) + ")"
+	secrets := s.branchSecretGate(userID, targetID, flat)
 
 	_, _, err = s.applyDocChange(targetID, a, leases, func(d *collab.Doc) []collab.Op {
 		// After the last top-level block, deleted ones included, so keys never collide
@@ -393,7 +408,7 @@ func (s *Store) MergeDocuments(userID, sourceID, targetID string, a collab.Actor
 			}
 			lastKey[parent] = k
 			id := domain.NewID("blk")
-			content := b.Content
+			content, _ := secrets.clean(b.Content)
 			props := collab.Props{Checked: b.Props.Checked, Collapsed: b.Props.Collapsed, Lang: b.Props.Lang}
 			p := parent
 			ops = append(ops, collab.Op{OpID: domain.NewID("op"), Kind: collab.OpInsert, BlockID: id, ParentID: &p, OrderKey: k, Type: b.Type, Content: &content, Props: &props})
@@ -478,6 +493,7 @@ func (s *Store) MoveBranch(userID, sourceID, blockID, targetID string, a collab.
 
 	moved := map[string]string{}
 	rootID := ""
+	secrets := s.branchSecretGate(userID, targetID, branch)
 	_, _, err = s.applyDocChange(targetID, a, targetLeases, func(d *collab.Doc) []collab.Op {
 		// After the last top-level block, deleted ones included, so keys never collide
 		last := ""
@@ -503,7 +519,7 @@ func (s *Store) MoveBranch(userID, sourceID, blockID, targetID string, a collab.
 			}
 			lastKey[parent] = k
 			id := domain.NewID("blk")
-			content := b.Content
+			content, _ := secrets.clean(b.Content)
 			props := collab.Props{Checked: b.Props.Checked, Collapsed: b.Props.Collapsed, Lang: b.Props.Lang}
 			p := parent
 			ops = append(ops, collab.Op{OpID: domain.NewID("op"), Kind: collab.OpInsert, BlockID: id, ParentID: &p, OrderKey: k, Type: b.Type, Content: &content, Props: &props})

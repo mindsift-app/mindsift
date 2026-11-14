@@ -10,6 +10,7 @@ var messagesFR = map[string]string{
 	"'to': task, note oder list_item":                                                       "'to' : task, note ou list_item",
 	"'type': text, todo, h1, h2, h3, numbered, callout, warning, error, table oder drawing": "'type' : text, todo, h1, h2, h3, numbered, callout, warning, error, table ou drawing",
 	"(Datei nicht übernommen)":                                                              "(fichier non repris)",
+	"(verdeckter Wert nicht übernommen)":                                                    "(valeur masquée non reprise)",
 	"API-Key besitzt keine Berechtigung für diese Aktion":                                   "La clé API n’a pas l’autorisation pour cette action",
 	"API-Schlüssel nicht gefunden":                                                          "Clé API introuvable",
 	"Abmelden fehlgeschlagen":                                                               "La déconnexion a échoué",

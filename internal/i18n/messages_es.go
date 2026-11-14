@@ -10,6 +10,7 @@ var messagesES = map[string]string{
 	"'to': task, note oder list_item":                                                       "'to': task, note o list_item",
 	"'type': text, todo, h1, h2, h3, numbered, callout, warning, error, table oder drawing": "'type': text, todo, h1, h2, h3, numbered, callout, warning, error, table o drawing",
 	"(Datei nicht übernommen)":                                                              "(archivo no incluido)",
+	"(verdeckter Wert nicht übernommen)":                                                    "(valor oculto no incluido)",
 	"API-Key besitzt keine Berechtigung für diese Aktion":                                   "La clave API no tiene permiso para esta acción",
 	"API-Schlüssel nicht gefunden":                                                          "Clave API no encontrada",
 	"Abmelden fehlgeschlagen":                                                               "No se pudo cerrar la sesión",

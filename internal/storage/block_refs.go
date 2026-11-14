@@ -37,17 +37,15 @@ const (
 	// A live bullet of the note shows the file (DocShowsMedia); arguments media id, note id
 	sqlDocShowsMedia = `SELECT COUNT(*) FROM block_refs r JOIN blocks b ON b.id = r.block_id
 		WHERE r.kind = 'media' AND r.ref_id = ? AND r.document_id = ? AND b.document_id = r.document_id AND b.deleted = 0`
-	// A live bullet of the note holds the secret (DocReferencesSecret); arguments secret id, note id
-	sqlDocHoldsSecret = `SELECT COUNT(*) FROM block_refs r JOIN blocks b ON b.id = r.block_id
-		WHERE r.kind = 'secret' AND r.ref_id = ? AND r.document_id = ? AND b.document_id = r.document_id AND b.deleted = 0`
-	// Notes with a live bullet holding the secret (docsReferencingSecret)
-	sqlDocsHoldingSecret = `SELECT DISTINCT r.document_id FROM block_refs r JOIN blocks b ON b.id = r.block_id
-		WHERE r.kind = 'secret' AND r.ref_id = ? AND b.document_id = r.document_id AND b.deleted = 0`
-	// Deleting a note for good: its secrets go, unless a live bullet of another note holds them (hardDeleteDocument)
-	sqlDeleteSecretsHeldNowhereElse = `DELETE FROM note_secrets WHERE document_id = ? AND NOT EXISTS (
+	// Every secret with whether a live bullet of its own note holds it (SweepSecrets)
+	sqlSecretsHeldAtHome = `SELECT s.id, s.document_id, s.orphaned_at, EXISTS (
 		SELECT 1 FROM block_refs r JOIN blocks b ON b.id = r.block_id
-		WHERE r.kind = 'secret' AND r.ref_id = note_secrets.id AND r.document_id != note_secrets.document_id
-		AND b.document_id = r.document_id AND b.deleted = 0)`
+		WHERE r.kind = 'secret' AND r.ref_id = s.id AND r.document_id = s.document_id
+		AND b.document_id = r.document_id AND b.deleted = 0) FROM note_secrets s`
+	// Notes with a live bullet holding a secret of another note (splitCrossNoteSecrets)
+	sqlNotesWithForeignSecrets = `SELECT DISTINCT r.document_id FROM note_secrets s
+		JOIN block_refs r ON r.kind = 'secret' AND r.ref_id = s.id AND r.document_id != s.document_id
+		JOIN blocks b ON b.id = r.block_id WHERE b.document_id = r.document_id AND b.deleted = 0`
 )
 
 // mediaIDRe finds every file a block points to, wherever in the content (image and audio bullets, but
@@ -102,23 +100,12 @@ func (s *Store) mediaBeyondRefCap(userID string) (map[string][]string, error) {
 	return out, rows.Err()
 }
 
-// sqlCappedLiveBlocksOfDoc: the live bullets of one note whose references reached maxBlockRefs; arguments
-// note id twice. Through idx_block_refs_doc, so it reads only that note's rows.
-var sqlCappedLiveBlocksOfDoc = fmt.Sprintf(`SELECT b.document_id, b.content FROM blocks b
-	WHERE b.document_id = ? AND b.deleted = 0
-	AND b.id IN (SELECT block_id FROM block_refs WHERE document_id = ? GROUP BY block_id HAVING COUNT(*) >= %d)`, maxBlockRefs)
-
 // secretsBeyondRefCap is mediaBeyondRefCap for hidden values: the secrets mentioned in live bullets at
-// the cap, each with the notes of those bullets; with docID only bullets of that note. q is s.db or the
-// transaction the caller holds (one connection, see Doku/database.md). A secret only such a bullet
-// holds may have no block_refs row there, and neither the secret sweep nor deleting a note for good may
-// take its value away.
-func secretsBeyondRefCap(q docQueryer, docID string) (map[string][]string, error) {
-	query, args := sqlCappedBlocks+` AND b.deleted = 0`, []any{}
-	if docID != "" {
-		query, args = sqlCappedLiveBlocksOfDoc, []any{docID, docID}
-	}
-	rows, err := q.Query(query, args...)
+// the cap, each with the notes of those bullets. A secret only such a bullet holds may have no
+// block_refs row there: the secret sweep must neither delete it nor miss it when it belongs to another
+// note (splitCrossNoteSecrets).
+func secretsBeyondRefCap(q docQueryer) (map[string][]string, error) {
+	rows, err := q.Query(sqlCappedBlocks + ` AND b.deleted = 0`)
 	if err != nil {
 		return nil, err
 	}

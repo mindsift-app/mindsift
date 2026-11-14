@@ -10,6 +10,7 @@ var messagesIT = map[string]string{
 	"'to': task, note oder list_item":                                                       "'to': task, note o list_item",
 	"'type': text, todo, h1, h2, h3, numbered, callout, warning, error, table oder drawing": "'type': text, todo, h1, h2, h3, numbered, callout, warning, error, table o drawing",
 	"(Datei nicht übernommen)":                                                              "(file non incluso)",
+	"(verdeckter Wert nicht übernommen)":                                                    "(valore nascosto non incluso)",
 	"API-Key besitzt keine Berechtigung für diese Aktion":                                   "La chiave API non ha l’autorizzazione per questa azione",
 	"API-Schlüssel nicht gefunden":                                                          "Chiave API non trovata",
 	"Abmelden fehlgeschlagen":                                                               "Disconnessione non riuscita",
