@@ -529,6 +529,12 @@ const sqlSharedDocIDs = `
 	WHERE (f.target_type = 'user' AND f.target_id = ?1)
 	   OR (f.target_type = 'team' AND f.target_id IN (SELECT team_id FROM team_members WHERE user_id = ?1))`
 
+// sqlVisibleDocIDs: the ids of all notes ?1 can see, their own and those of sqlSharedDocIDs, each once.
+// Notes in the trash can be among them; the caller filters them.
+const sqlVisibleDocIDs = `
+	SELECT id FROM documents WHERE user_id = ?1
+	UNION` + sqlSharedDocIDs
+
 // listDocuments: the notes the user can see, without bullets, the owned ones with their shares; per
 // note its blocks_json when withBlockJSON (else ""). Only queries on q, one after the other, so it can
 // run on a single connection.
