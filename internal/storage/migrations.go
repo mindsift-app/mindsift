@@ -67,6 +67,7 @@ var migrations = []migration{
 	{39, "Sign-in through an OpenID Connect provider", (*Store).migrateOIDC},
 	{40, "Accounts without an e-mail address", (*Store).migrateEmailOptional},
 	{41, "References from bullets to files and hidden values", (*Store).migrateBlockRefs},
+	{42, "Indexes for tasks from bullets and for deleted bullets", (*Store).migrateLookupIndexes},
 	{43, "SMTP password encrypted with SECRETS_KEY", (*Store).migrateSealSMTPPass},
 	{44, "Note text stored only once", (*Store).migrateNoteStorage},
 	{45, "Usernames unique in the database", (*Store).migrateUniqueUsernames},
@@ -367,4 +368,23 @@ func (s *Store) columnExists(table, column string) (bool, error) {
 		}
 	}
 	return false, rows.Err()
+}
+
+// migrateLookupIndexes adds indexes for two lookups that read whole tables:
+//   - tasks created from bullets of a note (converted_ref_id "<note id>:<bullet id>"): opening a note,
+//     purging it and deleting an account's notes look them up by the note's id prefix
+//     (sqlTasksOfNoteBlocks), which was a scan of every thought,
+//   - deleted bullets older than the retention (CompactDocs every six hours), a scan of every block.
+//
+// Both are partial: only tasks from bullets and only deleted bullets get an entry.
+func (s *Store) migrateLookupIndexes() error {
+	for _, q := range []string{
+		`CREATE INDEX IF NOT EXISTS idx_thoughts_doc_block ON thoughts(converted_ref_id) WHERE converted_type = 'document_block'`,
+		`CREATE INDEX IF NOT EXISTS idx_blocks_deleted_at ON blocks(deleted_at) WHERE deleted = 1`,
+	} {
+		if _, err := s.db.Exec(q); err != nil {
+			return err
+		}
+	}
+	return nil
 }

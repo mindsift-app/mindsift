@@ -93,8 +93,21 @@ func NewStore(dbPath string, opts ...StoreOption) (*Store, error) {
 	if err := store.migrate(); err != nil {
 		return nil, fmt.Errorf("failed to run migrations: %w", err)
 	}
+	if err := store.Optimize(); err != nil {
+		slog.Warn("Updating the query planner statistics failed", "error", err)
+	}
 
 	return store, nil
+}
+
+// Optimize lets SQLite update its statistics (sqlite_stat1) for the tables that need it, so the query
+// planner knows how selective each index is; without them it guesses, and picked a poor plan for
+// MediaOfUser. Runs after the migrations and with the compaction every six hours. 0x10002 checks every
+// table, not only the ones this connection has queried (the pool hands out any connection); SQLite caps
+// the work per table (analysis_limit), so it stays quick on large databases.
+func (s *Store) Optimize() error {
+	_, err := s.db.Exec(`PRAGMA optimize=0x10002`)
+	return err
 }
 
 // SQLiteVersion is the version of the SQLite engine built into the binary (modernc.org/sqlite), logged

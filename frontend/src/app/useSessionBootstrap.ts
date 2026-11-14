@@ -3,17 +3,35 @@ import { AuthStatus, DashboardStats, SharedList, Thought, User, WSMessage } from
 import { api, clearToken, connectWebSocket, disconnectWebSocket, getToken } from '../lib/api';
 import { clearOfflineData, outboxCount } from '../lib/offline';
 import { flushClosedNotes } from '../lib/docSync/flushClosed';
-import { finishOidcReturn } from '../lib/oidc';
+import { finishOidcReturn, oidcReturnPending } from '../lib/oidc';
+import { voiceConfigFromStatus } from '../lib/voice';
 import i18n from '../i18n';
 import { useLatestRef } from '../lib/useLatestRef';
 import { setServerLinkPreviews } from '../lib/linkPreview';
 
+type AccountLoad = [
+  PromiseSettledResult<Awaited<ReturnType<typeof api.getMe>>>,
+  PromiseSettledResult<Thought[]>,
+  PromiseSettledResult<SharedList[]>,
+];
+// The account with its counters, the triage deck and the lists; deck and lists are refused while a required
+// second factor is missing, the account itself still loads
+const loadAccount = (): Promise<AccountLoad> => Promise.allSettled([api.getMe(), api.getTriageDeck(), api.getAllLists()]);
+
 // The first server status, asked for in main.tsx while the texts of the start language load, so the first
-// render does not wait for the texts and then for the server in turn; taken once by the boot check below
+// render does not wait for the texts and then for the server in turn; taken once by the boot check below.
+// The voice input takes its setting from the same answer.
 let earlyAuthStatus: Promise<AuthStatus> | null = null;
+// With a stored session the account loads at the same time, instead of after the status. Not when the boot
+// check has to come first: on the return from the OIDC provider (the ticket may bring a new session, and a 401
+// of the stored one would sign that out) and with changes made offline still waiting (they reach the server
+// before deck and lists are read).
+let earlyAccount: Promise<AccountLoad> | null = null;
 export function prefetchAuthStatus(): void {
   earlyAuthStatus = api.getAuthStatus();
   earlyAuthStatus.catch(() => {}); // a failure is handled where it is awaited
+  voiceConfigFromStatus(earlyAuthStatus);
+  earlyAccount = getToken() && !oidcReturnPending() && outboxCount() === 0 ? loadAccount() : null;
 }
 
 // The session of the app: server status (setup, registration, demo), the signed-in user with counters,
@@ -51,21 +69,20 @@ export function useSessionBootstrap(onSignedOut: () => void) {
   const [deck, setDeck] = useState<Thought[]>([]);
   const [lists, setLists] = useState<SharedList[]>([]);
 
-  const refreshAll = useCallback(async () => {
-    try {
-      // Deck and lists are refused while a required second factor is missing; the account itself still loads
-      const [meRes, deckRes, listsRes] = await Promise.allSettled([api.getMe(), api.getTriageDeck(), api.getAllLists()]);
-      if (meRes.status === 'rejected') return;
-      setUser(meRes.value.user);
-      setSetupPending(Boolean(meRes.value.setupPending));
-      setMfaSetupRequired(Boolean(meRes.value.mfaSetupRequired));
-      setStats(meRes.value.stats);
-      if (deckRes.status === 'fulfilled') setDeck(Array.isArray(deckRes.value) ? deckRes.value : []);
-      if (listsRes.status === 'fulfilled') setLists(Array.isArray(listsRes.value) ? listsRes.value : []);
-    } catch {
-      // If token expired or invalid, api.ts dispatches mindsift:unauthorized
-    }
+  // A rejected account (token expired or invalid) changes nothing: api.ts dispatches mindsift:unauthorized
+  const applyAccount = useCallback(([meRes, deckRes, listsRes]: AccountLoad) => {
+    if (meRes.status === 'rejected') return;
+    setUser(meRes.value.user);
+    setSetupPending(Boolean(meRes.value.setupPending));
+    setMfaSetupRequired(Boolean(meRes.value.mfaSetupRequired));
+    setStats(meRes.value.stats);
+    if (deckRes.status === 'fulfilled') setDeck(Array.isArray(deckRes.value) ? deckRes.value : []);
+    if (listsRes.status === 'fulfilled') setLists(Array.isArray(listsRes.value) ? listsRes.value : []);
   }, []);
+
+  const refreshAll = useCallback(async () => {
+    applyAccount(await loadAccount());
+  }, [applyAccount]);
 
   // The counters in the navigation only, debounced: an action and the realtime echo of it (and a burst of
   // events from a shared note) make one request together
@@ -81,9 +98,13 @@ export function useSessionBootstrap(onSignedOut: () => void) {
     const checkBootAndAuth = async () => {
       setBootLoading(true);
       const early = earlyAuthStatus;
+      const account = earlyAccount;
       earlyAuthStatus = null;
+      earlyAccount = null;
       try {
-        const st = await (early ?? api.getAuthStatus());
+        const statusLoad = early ?? api.getAuthStatus();
+        if (!early) voiceConfigFromStatus(statusLoad);
+        const st = await statusLoad;
         setAuthStatus(st);
 
         if (st.needsSetup) {
@@ -95,7 +116,11 @@ export function useSessionBootstrap(onSignedOut: () => void) {
         // Back from the OIDC provider: the ticket gives the session (or confirms this one) before anything else
         await finishOidcReturn();
 
-        if (getToken()) {
+        if (getToken() && account) {
+          // Loading since main.tsx; nothing was waiting in the outbox then
+          void flushClosedNotes();
+          applyAccount(await account);
+        } else if (getToken()) {
           await api.flushOfflineQueue();
           void flushClosedNotes();
           await refreshAll();
@@ -146,7 +171,7 @@ export function useSessionBootstrap(onSignedOut: () => void) {
       window.removeEventListener('mindsift:mfa-setup-required', onMfaSetupRequired);
       window.removeEventListener('online', onOnline);
     };
-  }, [refreshAll, onSignedOutRef]);
+  }, [refreshAll, applyAccount, onSignedOutRef]);
 
   // WebSocket Connection Management
   useEffect(() => {

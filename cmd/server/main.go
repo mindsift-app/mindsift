@@ -98,9 +98,9 @@ func main() {
 		BaseContext: func(l net.Listener) context.Context {
 			return serverCtx
 		},
-		ReadTimeout:  15 * time.Second,
-		WriteTimeout: 30 * time.Second,
-		IdleTimeout:  60 * time.Second,
+		ReadTimeout:  api.ReadTimeout,
+		WriteTimeout: api.WriteTimeout,
+		IdleTimeout:  api.IdleTimeout,
 		// MindSift sets no cookies and uses short headers; Go's default of 1 MiB per request only helps
 		// someone filling the server's memory
 		MaxHeaderBytes: 64 << 10,

@@ -72,6 +72,7 @@ Versions without a git tag were development states and were never published as a
 - The Docker Compose example in the README sets `container_name: mindsift` like `docker-compose.yml`, so `docker logs mindsift` (for the setup code, for example) works with it. The README and `Doku/operations.md` say honestly that going back to v0.95.0 or earlier is not guarded and always means restoring the pre-migration copy, and how to restore a whole server (stop it, remove `mindsift.db-wal` and `mindsift.db-shm`, keep the keys).
 - Some icons (shopping cart, calendar, key and a few more) have a slightly updated look from a newer version of the icon set, and the emoji picker offers the newer emoji.
 - Dragging a card on a Kanban board with many tasks is much smoother: the drop gap opens at once and the cards below glide aside instead of the whole column being laid out again in every frame.
+- The app starts faster when you are signed in: your account, the inbox and the lists load together with the server's status instead of after it, and the server's status is asked for once instead of twice.
 - The note preview on a Kanban card and in a task row shows the first 60 characters of the note instead of carrying the whole note; in the list it is no longer cut at a fixed narrow width but shortens only when the row runs out of room.
 - On wide screens the Kanban board is centred, and its columns grow to 640 px instead of 420 px.
 - Larger handles on lines, arrows and shapes in drawings; with a finger they can be grabbed from further away.
