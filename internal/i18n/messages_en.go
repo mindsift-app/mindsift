@@ -10,6 +10,7 @@ var messagesEN = map[string]string{
 	"'to': task, note oder list_item":                                                       "'to': task, note or list_item",
 	"'type': text, todo, h1, h2, h3, numbered, callout, warning, error, table oder drawing": "'type': text, todo, h1, h2, h3, numbered, callout, warning, error, table or drawing",
 	"(Datei nicht übernommen)":                                                              "(file not included)",
+	"(verdeckter Wert nicht übernommen)":                                                    "(hidden value not included)",
 	"API-Key besitzt keine Berechtigung für diese Aktion":                                   "The API key lacks the permission for this action",
 	"API-Schlüssel nicht gefunden":                                                          "API key not found",
 	"Abmelden fehlgeschlagen":                                                               "Signing out failed",

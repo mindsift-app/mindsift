@@ -13,6 +13,8 @@ class Server {
   log: LogEntry[] = [];
   results = new Map<string, Result>();
   othersLeases: { blockId: string; userId: string; name: string }[] = [];
+  /** What the server makes of an operation before applying it (the Go server's gates) */
+  gate?: (op: Op) => Op;
 
   constructor(blocks: [string, string][]) {
     blocks.forEach(([id, content], i) => this.apply({ opId: `seed${i}`, kind: 'insert', blockId: id, parentId: '', orderKey: `a${i}`, content }, 'seed'));
@@ -39,7 +41,7 @@ class Server {
       }),
       sync: async (_id: string, body: SyncRequest) => {
         if (!body) throw new TransportError('x', 0);
-        const results = body.ops.map((op) => this.apply(op, body.clientId));
+        const results = body.ops.map((op) => this.apply(this.gate ? this.gate(op) : op, body.clientId));
         return {
           results,
           ops: this.log.filter((e) => e.seq > body.lastSeq),
@@ -136,6 +138,33 @@ describe('undo/redo', () => {
     expect(res.ok).toBe(false);
     expect(res.message).toMatch(/jemand anderem/);
     expect(texts(e)).toEqual(['Fremd']);
+  });
+
+  it('undoes a paste whose hidden value the server copied under a new id', async () => {
+    const server = new Server([['a', 'Start']]);
+    // A value of another note becomes a copy in this one (internal/storage/secret_gate.go)
+    server.gate = (op) => (op.content ? { ...op, content: op.content.replace('{{secret:fremd}}', '{{secret:eigen}}') } : op);
+    const e = await engineFor(server);
+    edit(e, (b) => [...b, { id: 'n', type: 'bullet', content: 'IP {{secret:fremd}}', level: 0 }]);
+    clock += 2000;
+    edit(e, (b) => b.map((x) => (x.id === 'a' ? { ...x, content: 'Start {{secret:fremd}}' } : x)));
+    await e.syncNow();
+    expect(texts(e)).toEqual(['Start {{secret:eigen}}', 'IP {{secret:eigen}}']);
+    expect(e.undo().ok).toBe(true);
+    expect(texts(e)).toEqual(['Start', 'IP {{secret:eigen}}']);
+    expect(e.undo().ok).toBe(true);
+    expect(texts(e)).toEqual(['Start']);
+  });
+
+  it('still skips undo when someone else put another hidden value into the bullet', async () => {
+    const server = new Server([['a', 'Start']]);
+    const e = await engineFor(server);
+    edit(e, (b) => [{ ...b[0], content: 'Start {{secret:meins}}' }]);
+    await e.syncNow();
+    server.apply({ opId: 'other', kind: 'set_content', blockId: 'a', baseVersion: 2, content: 'Anders {{secret:meins}}' }, 'other');
+    await e.syncNow();
+    expect(e.undo().ok).toBe(false);
+    expect(texts(e)).toEqual(['Anders {{secret:meins}}']);
   });
 
   it('skips undo on a block someone else is editing', async () => {

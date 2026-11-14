@@ -2,6 +2,11 @@
 // check of the state the action left behind. Undo only runs if that state is still there, i.e. nobody
 // else changed the affected blocks in between; otherwise the step is skipped instead of overwriting.
 import { applyOp, cloneDoc, Doc, normProps, Op, propsEqual } from './model';
+import { withoutSecretIds } from '../secretRef';
+
+// The text a step left behind is still there. References to hidden values count as the same whatever their
+// id: pasting a bullet from another note, the server gives it copies of its values under new ids.
+const sameText = (a: string, b: string) => a === b || withoutSecretIds(a) === withoutSecretIds(b);
 
 export type UndoCheck =
   | { kind: 'content'; blockId: string; content: string }
@@ -103,12 +108,12 @@ export function failedChecks(d: Doc, step: UndoStep): string[] {
     switch (c.kind) {
       case 'content': {
         const b = d.blocks.get(c.blockId);
-        if (!b || b.deleted || b.content !== c.content) failed.push(c.blockId);
+        if (!b || b.deleted || !sameText(b.content, c.content)) failed.push(c.blockId);
         break;
       }
       case 'alive': {
         const b = d.blocks.get(c.blockId);
-        if (!b || b.deleted || b.content !== c.content) failed.push(c.blockId);
+        if (!b || b.deleted || !sameText(b.content, c.content)) failed.push(c.blockId);
         break;
       }
       case 'deleted':

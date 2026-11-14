@@ -40,6 +40,19 @@ describe('hidden values in a bullet', () => {
     expect(container.querySelector('[data-v="192.168.1.10"]')).toBeNull();
   });
 
+  it('starts afresh when the server swaps the reference for the copy in this note', async () => {
+    // Pasted from another note: until the sync answers, the bullet holds the old reference, which this note
+    // does not reveal
+    vi.mocked(api.revealSecret).mockRejectedValueOnce(new ApiError('weg', 404, 'secret_gone'));
+    const { rerender } = render(<SecretChip docId="doc1" secretId="secfremd" canEdit />);
+    fireEvent.click(screen.getByRole('button', { name: 'Verdeckter Wert' }));
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'Verdeckter Wert' })).toBeNull());
+    rerender(<SecretChip docId="doc1" secretId="seceigen" canEdit />);
+    vi.mocked(api.revealSecret).mockResolvedValue('10.0.0.1');
+    fireEvent.click(screen.getByRole('button', { name: 'Verdeckter Wert' }));
+    await waitFor(() => expect(api.revealSecret).toHaveBeenLastCalledWith('doc1', 'seceigen'));
+  });
+
   it('tells deleted and unreadable values apart from other errors', () => {
     expect(revealFailure(new ApiError('weg', 404, 'secret_gone'))).toBe('gone');
     expect(revealFailure(new ApiError('kaputt', 409, 'secret_unreadable'))).toBe('unreadable');

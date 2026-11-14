@@ -16,3 +16,12 @@ export function secretIdOf(token: string): string | null {
 export function maskSecrets(text: string): string {
   return text.includes('{{secret:') ? text.replace(new RegExp(SECRET_REF_SOURCE, 'g'), SECRET_MASK) : text;
 }
+
+/**
+ * The text with every reference reduced to {{secret:}}. A bullet that brings a hidden value of another note
+ * gets a copy of the value under a new id on the server (internal/storage/secret_gate.go), so the text it
+ * comes back with differs from the one sent only in these ids; undo compares texts this way.
+ */
+export function withoutSecretIds(text: string): string {
+  return text.includes('{{secret:') ? text.replace(new RegExp(SECRET_REF_SOURCE, 'g'), '{{secret:}}') : text;
+}

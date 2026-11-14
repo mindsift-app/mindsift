@@ -95,6 +95,26 @@ func applyOps(t *testing.T, s *Store, docID string, a collab.Actor, ops ...colla
 	}
 }
 
+// secretHolders: the notes with a live bullet holding the reference (through block_refs), sorted.
+func secretHolders(t *testing.T, s *Store, id string) []string {
+	t.Helper()
+	rows, err := s.db.Query(`SELECT DISTINCT r.document_id FROM block_refs r JOIN blocks b ON b.id = r.block_id
+		WHERE r.kind = 'secret' AND r.ref_id = ? AND b.document_id = r.document_id AND b.deleted = 0 ORDER BY r.document_id`, id)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer rows.Close()
+	var out []string
+	for rows.Next() {
+		var d string
+		if err := rows.Scan(&d); err != nil {
+			t.Fatal(err)
+		}
+		out = append(out, d)
+	}
+	return out
+}
+
 // block_refs follows every way a bullet changes: created with the note, inserted, edited, deleted
 // (tombstone), purged, copied into another note, and deleted with its note.
 func TestBlockRefsFollowBlocks(t *testing.T) {
@@ -150,7 +170,7 @@ func TestBlockRefsFollowBlocks(t *testing.T) {
 	if s.DocShowsMedia(doc.ID, "med_bb") {
 		t.Error("a deleted bullet does not show its file on a public page")
 	}
-	if !s.DocShowsMedia(doc.ID, "med_cc") || !s.DocReferencesSecret(doc.ID, "secip") {
+	if !s.DocShowsMedia(doc.ID, "med_cc") || !reflect.DeepEqual(secretHolders(t, s, "secip"), []string{doc.ID}) {
 		t.Error("live bullets show their file and hold their secret")
 	}
 
@@ -160,11 +180,8 @@ func TestBlockRefsFollowBlocks(t *testing.T) {
 		t.Fatal(err)
 	}
 	applyOps(t, s, doc.ID, a, collab.Op{OpID: "o5", Kind: collab.OpDelete, BlockID: "ip"})
-	if docs, _ := s.docsReferencingSecret("secip", nil); !reflect.DeepEqual(docs, []string{other.ID}) {
-		t.Errorf("the secret is held only by the moved bullet now, got %v", docs)
-	}
-	if !s.DocReferencesSecret(other.ID, "secip") || s.DocReferencesSecret(doc.ID, "secip") {
-		t.Error("DocReferencesSecret after the move")
+	if docs := secretHolders(t, s, "secip"); !reflect.DeepEqual(docs, []string{other.ID}) {
+		t.Errorf("the reference is held only by the moved bullet now, got %v", docs)
 	}
 
 	// Purging tombstones drops their rows
@@ -192,7 +209,7 @@ func TestBlockRefsFollowBlocks(t *testing.T) {
 			t.Errorf("row of a purged note left: %s", row)
 		}
 	}
-	if docs, _ := s.docsReferencingSecret("secip", nil); !reflect.DeepEqual(docs, []string{other.ID}) {
+	if docs := secretHolders(t, s, "secip"); !reflect.DeepEqual(docs, []string{other.ID}) {
 		t.Errorf("the other note keeps its reference, got %v", docs)
 	}
 }
@@ -279,14 +296,12 @@ func TestBlockRefQueriesUseIndexes(t *testing.T) {
 		sql  string
 		args []any
 	}{
-		"sqlDocsWithMedia":                {sqlDocsWithMedia, []any{"med_0a"}},
-		"sqlUnreferencedMedia":            {sqlUnreferencedMedia, []any{"2026-01-01"}},
-		"sqlMediaOfUser":                  {sqlMediaOfUser, []any{u.ID}},
-		"sqlDocShowsMedia":                {sqlDocShowsMedia, []any{"med_0a", "doc"}},
-		"sqlDocHoldsSecret":               {sqlDocHoldsSecret, []any{"sec", "doc"}},
-		"sqlDocsHoldingSecret":            {sqlDocsHoldingSecret, []any{"sec"}},
-		"sqlDeleteSecretsHeldNowhereElse": {sqlDeleteSecretsHeldNowhereElse, []any{"doc"}},
-		"sqlCappedLiveBlocksOfDoc":        {sqlCappedLiveBlocksOfDoc, []any{"doc", "doc"}},
+		"sqlDocsWithMedia":           {sqlDocsWithMedia, []any{"med_0a"}},
+		"sqlUnreferencedMedia":       {sqlUnreferencedMedia, []any{"2026-01-01"}},
+		"sqlMediaOfUser":             {sqlMediaOfUser, []any{u.ID}},
+		"sqlDocShowsMedia":           {sqlDocShowsMedia, []any{"med_0a", "doc"}},
+		"sqlSecretsHeldAtHome":       {sqlSecretsHeldAtHome, nil},
+		"sqlNotesWithForeignSecrets": {sqlNotesWithForeignSecrets, nil},
 	} {
 		rows, err := s.db.Query(`EXPLAIN QUERY PLAN `+q.sql, q.args...)
 		if err != nil {

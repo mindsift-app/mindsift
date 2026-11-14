@@ -36,7 +36,9 @@ export const SecretChip: React.FC<{ docId: string; secretId: string; canEdit: bo
       <span aria-hidden="true" className="before:content-['••••'] tracking-wider" />
     </span>
   ) : (
-    <RevealableSecret {...props} />
+    // A new id starts afresh: a bullet pasted from another note shows the old reference until the server
+    // answers with the copy of the value in this note, and a click before that found nothing ('gone')
+    <RevealableSecret key={props.secretId} {...props} />
   );
 
 const RevealableSecret: React.FC<{ docId: string; secretId: string; canEdit: boolean }> = ({ docId, secretId, canEdit }) => {
