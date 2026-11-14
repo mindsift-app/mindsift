@@ -25,6 +25,8 @@ type Store struct {
 	inMemory     bool
 	maxIdleConns int
 	initMu       sync.Mutex
+	// importMu: imports are applied one at a time (ApplyImport)
+	importMu sync.Mutex
 	// dataDir is the directory of the database file ($DATA_DIR); empty for databases without a file
 	dataDir string
 	// mediaRoot holds the files of images and audio in notes ($DATA_DIR/media), see media.go
