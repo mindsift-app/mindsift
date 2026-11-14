@@ -70,9 +70,14 @@ type ImportPlan struct {
 	outside      []importMediaRefs
 	outsideIDs   int
 	mediaChecked bool
+	// Hidden values the notes refer to ({{secret:<id>}}); values of notes the person may not read become
+	// a placeholder (secretGate). secretIDs counts them against maxImportOutsideMedia as well.
+	secretRefs []importMediaRefs
+	secretIDs  int
 }
 
-// importMediaRefs: the files of one note (by its path or title) that are not part of the import.
+// importMediaRefs: the files (or hidden values) of one note (by its path or title) that are not part of
+// the import.
 type importMediaRefs struct {
 	note string
 	ids  []string
@@ -85,7 +90,7 @@ const maxImportOutsideMedia = 10_000
 func (p *ImportPlan) Only(sections map[string]bool) *ImportPlan {
 	out := &ImportPlan{Skipped: p.Skipped}
 	if sections[SectionNotes] {
-		out.Folders, out.Docs, out.Media, out.jsonDocs, out.outside = p.Folders, p.Docs, p.Media, p.jsonDocs, p.outside
+		out.Folders, out.Docs, out.Media, out.jsonDocs, out.outside, out.secretRefs = p.Folders, p.Docs, p.Media, p.jsonDocs, p.outside, p.secretRefs
 	}
 	if sections[SectionTasks] {
 		out.TaskLists = p.TaskLists
@@ -383,6 +388,7 @@ func (p *ImportPlan) addZipDoc(n zipNote, doc importDoc, tags []string, body str
 	doc.dir, doc.src = path.Dir(n.path), n.file
 	p.markUsedMedia(doc.dir, blocks)
 	p.noteOutsideMedia(n.path, doc.dir, blocks)
+	p.noteSecretRefs(n.path, blocks)
 	p.Docs = append(p.Docs, doc)
 }
 
@@ -687,6 +693,7 @@ func planJSONBackup(open func() (io.ReadCloser, error), media map[string]*zip.Fi
 			folders[d.FolderPath] = true
 		}
 		plan.noteOutsideMedia(d.Title, "", d.Blocks)
+		plan.noteSecretRefs(d.Title, d.Blocks)
 		plan.Docs = append(plan.Docs, importDoc{folder: d.FolderPath, title: d.Title, icon: d.Icon})
 		return nil
 	})
@@ -1636,9 +1643,34 @@ func (p *ImportPlan) noteOutsideMedia(note, dir string, blocks []domain.Document
 	}
 }
 
+// noteSecretRefs notes the hidden values a note refers to. An import brings no values along, so every
+// reference points to a value of a note on this server, or to nothing.
+func (p *ImportPlan) noteSecretRefs(note string, blocks []domain.DocumentBlock) {
+	var ids []string
+	seen := map[string]bool{}
+	for _, b := range blocks {
+		if !strings.Contains(b.Content, "{{secret:") {
+			continue
+		}
+		for _, m := range SecretRefRe.FindAllStringSubmatch(b.Content, -1) {
+			if seen[m[1]] || p.secretIDs >= maxImportOutsideMedia {
+				continue
+			}
+			seen[m[1]] = true
+			ids = append(ids, m[1])
+			p.secretIDs++
+		}
+	}
+	if len(ids) > 0 {
+		p.secretRefs = append(p.secretRefs, importMediaRefs{note: note, ids: ids})
+	}
+}
+
 // CheckImportMedia lists the notes of the plan as skipped that show a file the import does not bring
-// along and the person may not read (someone else's file, or one that no longer exists). Applying the
-// plan drops these references: a bullet showing a file would make it readable (mediaGate).
+// along and the person may not read (someone else's file, or one that no longer exists), or that refer
+// to a hidden value of a note the person may not read. Applying the plan drops these references: a
+// bullet showing a file would make it readable (mediaGate), the hidden value becomes a placeholder
+// (secretGate).
 func (s *Store) CheckImportMedia(userID string, plan *ImportPlan) {
 	if plan.mediaChecked {
 		return
@@ -1649,6 +1681,34 @@ func (s *Store) CheckImportMedia(userID string, plan *ImportPlan) {
 		for _, id := range r.ids {
 			if !gate.allowed(id) {
 				plan.skip(r.note, "Bild oder Aufnahme ohne Zugriff, nur die Beschriftung wird übernommen")
+				break
+			}
+		}
+	}
+	s.checkImportSecrets(userID, plan)
+}
+
+// checkImportSecrets is CheckImportMedia for hidden values, by the rule of secretGate.prepare: a value of
+// a note the person may read becomes a copy in the new note, a reference to no value stays (it shows
+// nothing); only a value of a note the person may not read becomes a placeholder.
+func (s *Store) checkImportSecrets(userID string, plan *ImportPlan) {
+	if len(plan.secretRefs) == 0 {
+		return
+	}
+	var ids []string
+	for _, r := range plan.secretRefs {
+		ids = append(ids, r.ids...)
+	}
+	rows, err := s.secretsByID(ids)
+	if err != nil {
+		logDBErr(err)
+		return
+	}
+	gate := s.newSecretGate(userID, "")
+	for _, r := range plan.secretRefs {
+		for _, id := range r.ids {
+			if v, ok := rows[id]; ok && !gate.mayRead(v.DocumentID) {
+				plan.skip(r.note, "Versteckter Wert ohne Zugriff, nur ein Platzhalter wird übernommen")
 				break
 			}
 		}
