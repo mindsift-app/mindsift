@@ -95,3 +95,26 @@ func TestDatabaseFailureAnswersOnTheSafeSide(t *testing.T) {
 		t.Errorf("every failed check is logged, got %d entries: %s", n, log)
 	}
 }
+
+// While a demo reset drops and recreates the tables, readers outside the server's gate get "no such
+// table/column"; that is the reset and is not logged. Other errors are, and outside a reset these too.
+func TestSchemaErrorsDuringDemoResetAreQuiet(t *testing.T) {
+	log := captureLog(t)
+	gone := errors.New("SQL logic error: no such table: system_settings (1)")
+	if !dbFailed(gone) || !strings.Contains(log.String(), "no such table") {
+		t.Fatalf("outside a reset a missing table is logged: %s", log)
+	}
+	log.Reset()
+
+	demoResetsRunning.Add(1)
+	defer demoResetsRunning.Add(-1)
+	if !dbFailed(gone) || !dbFailed(errors.New("SQL logic error: no such column: language (1)")) {
+		t.Fatal("a missing table is still a failure for the caller")
+	}
+	if log.Len() != 0 {
+		t.Fatalf("during a reset a missing table or column is not logged: %s", log)
+	}
+	if !dbFailed(errors.New("disk I/O error")) || !strings.Contains(log.String(), "disk I/O error") {
+		t.Fatalf("other errors are logged during a reset as well: %s", log)
+	}
+}

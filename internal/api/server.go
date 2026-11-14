@@ -189,10 +189,11 @@ func (s *Server) Router() http.Handler {
 	r := chi.NewRouter()
 
 	r.Use(s.clientIPMiddleware)
+	// Before the language: its lookup reads the system settings, which a demo reset drops for a moment
+	r.Use(s.demoResetGate)
 	r.Use(s.languageMiddleware)
 	r.Use(s.securityHeaders)
 	r.Use(s.bodyLimit)
-	r.Use(s.demoResetGate)
 	r.Use(middleware.Recoverer)
 	r.Use(s.apiLoggingMiddleware)
 	// Browsers of other sites may only call the API when no BASE_URL is set (auth runs over the

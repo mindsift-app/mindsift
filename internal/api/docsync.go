@@ -339,7 +339,9 @@ const compactionInterval = 6 * time.Hour
 
 func (s *Server) startCompaction() {
 	for {
+		done := s.demoPass()
 		s.compactOnce()
+		done()
 		if !s.wait(compactionInterval) {
 			return
 		}
