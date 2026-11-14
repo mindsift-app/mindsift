@@ -1,6 +1,6 @@
 # Running MindSift
 
-Details for administrators that the README only touches: the install script, the first admin, language, backups, updates, rolling back and restoring, health checks, monitoring, file permissions and image tags. Every environment variable is in [`.env.example`](../.env.example) and in the configuration table of [architecture.md](architecture.md#configuration).
+Details for administrators that the README only touches: the install script, the first admin, language, backups, updates, rolling back and restoring, health checks, monitoring, file permissions, network storage and rootless Podman, and image tags. Every environment variable is in [`.env.example`](../.env.example) and in the configuration table of [architecture.md](architecture.md#configuration).
 
 ## Install script
 
@@ -92,6 +92,15 @@ How the exporter is built: [architecture.md](architecture.md#monitoring).
 ## File permissions
 
 Everything in `data/` is readable by MindSift only (files 0600, folders 0700). The container tightens files from older versions once on its first start; without the container, run `chmod -R go-rwx data`.
+
+## Network storage and rootless Podman
+
+Started as root (the default), the container hands `data/` to its user (uid 1000) and then runs as that user. Where it may not change owners, it says so in the log and carries on as long as uid 1000 can write to the folder; if it cannot, the container stops with a line that starts with `MindSift: ERROR` and says what to do. Started with `user:`, it only warns when the folder is not writable for that user.
+
+- **Keep the database on a local disk.** SQLite runs in WAL mode, which needs file locks and shared memory (`mindsift.db-shm`) that network filesystems often do not provide reliably. Do not put `data/` (at least `mindsift.db`) on SMB/CIFS; NFS works at best with working locks (NFSv4) and is at your own risk. Backups can go to network storage: copy `data/backups/` there with a cron job or the NAS's own sync.
+- **NFS with `root_squash`** (the default of most NAS): root in the container becomes `nobody` on the NAS and may not change owners. Give the folder to uid 1000 on the NAS (`chown -R 1000:1000 <folder>`), or run the container as the uid and gid that own the folder (`user: "1026:100"` in `docker-compose.override.yml`, for example), or export the share with `no_root_squash`.
+- **SMB/CIFS** knows no Unix owners; the mount options decide them (`uid=1000,gid=1000`). Not for the database, see above.
+- **Rootless Podman:** root in the container is your own user on the host, and uid 1000 in the container is one of your sub-uids, so the files in `data/` show up with a large uid on the host and your user cannot read them directly. Use `podman unshare` for work on them (`podman unshare ls -l data`, `podman unshare cp …`, or `podman unshare chown -R 1000:1000 data` after copying files in). On SELinux hosts (Fedora, RHEL) mount the folder with `:Z` (`./data:/data:Z`), otherwise the container may not read it.
 
 ## Image tags
 
