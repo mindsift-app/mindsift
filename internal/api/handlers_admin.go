@@ -164,8 +164,13 @@ func (s *Server) handleAdminCreateUser(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "Ungültiges JSON")
 		return
 	}
+	req.Email = domain.NormalizeEmail(req.Email)
 	if req.Email == "" {
 		writeError(w, http.StatusBadRequest, "E-Mail-Adresse erforderlich")
+		return
+	}
+	if !validEmail(req.Email) {
+		writeError(w, http.StatusBadRequest, "Ungültige E-Mail-Adresse")
 		return
 	}
 	if s.store.EmailInUse(req.Email) {
@@ -180,9 +185,7 @@ func (s *Server) handleAdminCreateUser(w http.ResponseWriter, r *http.Request) {
 	if !isAdmin(caller) {
 		req.Role = domain.RoleMember
 	}
-	if domain.CleanDisplayName(req.DisplayName) == "" {
-		req.DisplayName = strings.Split(req.Email, "@")[0]
-	}
+	// Without a display name the account shows its username (the store gives it)
 
 	hash, err := auth.HashPassword(req.Password)
 	if err != nil {
@@ -243,8 +246,13 @@ func (s *Server) handleAdminUpdateUser(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	// Checked before the username changes, so a taken address does not leave half the change behind
-	if req.Email != nil && domain.NormalizeEmail(*req.Email) != targetUser.Email && s.store.EmailInUse(*req.Email) {
+	// Checked before the username changes, so a wrong or taken address does not leave half the change behind
+	changesEmail := req.Email != nil && domain.NormalizeEmail(*req.Email) != targetUser.Email
+	if changesEmail && domain.NormalizeEmail(*req.Email) != "" && !validEmail(domain.NormalizeEmail(*req.Email)) {
+		writeError(w, http.StatusBadRequest, "Ungültige E-Mail-Adresse")
+		return
+	}
+	if changesEmail && s.store.EmailInUse(*req.Email) {
 		writeError(w, http.StatusConflict, "E-Mail-Adresse existiert bereits")
 		return
 	}

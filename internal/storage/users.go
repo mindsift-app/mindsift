@@ -92,6 +92,10 @@ func (s *Store) createUserWithID(id, email, username, passwordHash, displayName,
 	return s.createUser(id, email, username, passwordHash, displayName, role, true)
 }
 
+// afterUsernameCheck runs between finding a free username and writing the account (tests take the name
+// there, as a request at the same moment would)
+var afterUsernameCheck = func(string) {}
+
 func (s *Store) createUser(id, email, username, passwordHash, displayName, role string, active bool) (*domain.User, error) {
 	if !domain.ValidRole(role) {
 		role = domain.RoleMember
@@ -101,16 +105,10 @@ func (s *Store) createUser(id, email, username, passwordHash, displayName, role 
 	if len(cleanUsername) < 2 {
 		cleanUsername = UsernameFromName(strings.Split(cleanEmail, "@")[0])
 	}
-	cleanUsername, err := s.uniqueUsername(cleanUsername, id)
-	if err != nil {
-		return nil, err
-	}
 	u := &domain.User{
 		ID:                  id,
 		Email:               cleanEmail,
-		Username:            cleanUsername,
 		PasswordHash:        passwordHash,
-		DisplayName:         domain.CleanDisplayName(displayName),
 		Role:                role,
 		IsActive:            active,
 		TokenVersion:        1,
@@ -121,15 +119,34 @@ func (s *Store) createUser(id, email, username, passwordHash, displayName, role 
 		AvatarURL:           "",
 		CreatedAt:           domain.NowISO(),
 	}
-	_, err = s.db.Exec(
-		`INSERT INTO users (id, email, username, password_hash, display_name, role, is_active, token_version, alarm_channels, discord_webhook_url, custom_webhook_url, notify_before_minutes, avatar_url, created_at)
-		 VALUES (?, ?, ?, ?, ?, ?, ?, 1, '', '', '', 30, '', ?)`,
-		u.ID, u.Email, u.Username, u.PasswordHash, u.DisplayName, u.Role, active, u.CreatedAt,
-	)
-	if err != nil {
+	// The name is checked before the write; when another account takes it in between, the unique index
+	// refuses it and the next free one is tried
+	for attempt := 0; ; attempt++ {
+		name, err := s.uniqueUsername(cleanUsername, id)
+		if err != nil {
+			return nil, err
+		}
+		u.Username = name
+		afterUsernameCheck(name)
+		// Without a display name the account shows its username, which (unlike the part of the address
+		// before the @) no other account has
+		u.DisplayName = domain.CleanDisplayName(displayName)
+		if u.DisplayName == "" {
+			u.DisplayName = name
+		}
+		_, err = s.db.Exec(
+			`INSERT INTO users (id, email, username, password_hash, display_name, role, is_active, token_version, alarm_channels, discord_webhook_url, custom_webhook_url, notify_before_minutes, avatar_url, created_at)
+			 VALUES (?, ?, ?, ?, ?, ?, ?, 1, '', '', '', 30, '', ?)`,
+			u.ID, u.Email, u.Username, u.PasswordHash, u.DisplayName, u.Role, active, u.CreatedAt,
+		)
+		if err == nil {
+			return u, nil
+		}
+		if err = usernameTakenErr(err); errors.Is(err, ErrUsernameTaken) && attempt < 5 {
+			continue
+		}
 		return nil, emailTakenErr(err)
 	}
-	return u, nil
 }
 
 // emailTakenErr turns the unique index on users.email refusing an address (another request took it
@@ -337,6 +354,9 @@ func (s *Store) UpdateUserFull(
 	}
 	if displayName != nil {
 		u.DisplayName = domain.CleanDisplayName(*displayName)
+		if u.DisplayName == "" {
+			u.DisplayName = u.Username // an empty name shows the username, as at sign-up
+		}
 	}
 	if email != nil {
 		u.Email = domain.NormalizeEmail(*email)

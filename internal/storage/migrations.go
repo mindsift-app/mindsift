@@ -67,6 +67,7 @@ var migrations = []migration{
 	{39, "Sign-in through an OpenID Connect provider", (*Store).migrateOIDC},
 	{40, "Accounts without an e-mail address", (*Store).migrateEmailOptional},
 	{41, "References from bullets to files and hidden values", (*Store).migrateBlockRefs},
+	{45, "Usernames unique in the database", (*Store).migrateUniqueUsernames},
 }
 
 // migrationBlockRefs creates block_refs: until it has run (earlier steps that rewrite notes), writing a
