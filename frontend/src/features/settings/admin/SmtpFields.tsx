@@ -10,12 +10,15 @@ export function SmtpFields({
   value,
   onChange,
   passwordSet = false,
+  passwordViaEnv = false,
   inputClassName = 'h-11 sm:h-9 px-3',
 }: {
   value: SmtpForm;
   onChange: (patch: Partial<SmtpForm>) => void;
   // A password is stored: the empty field keeps it
   passwordSet?: boolean;
+  // The password comes from SMTP_PASS and is not stored
+  passwordViaEnv?: boolean;
   // Height, padding and text size of the inputs
   inputClassName?: string;
 }) {
@@ -69,7 +72,7 @@ export function SmtpFields({
           style={MASKED}
           value={value.smtpPass || ''}
           onChange={(e) => onChange({ smtpPass: e.target.value })}
-          placeholder={passwordSet ? t('smtp.passwordKept') : '••••••••••••'}
+          placeholder={passwordViaEnv ? t('smtp.passwordViaEnv') : passwordSet ? t('smtp.passwordKept') : '••••••••••••'}
           autoComplete="new-password"
           className={`${field} font-mono`}
         />

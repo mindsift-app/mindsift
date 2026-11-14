@@ -412,6 +412,8 @@ export interface SystemSettings {
   smtpPassSet?: boolean;
   // A password is stored but does not decrypt (SECRETS_KEY changed): no mail until it is entered again
   smtpPassUnreadable?: boolean;
+  // The password comes from SMTP_PASS (not stored) and takes precedence over one entered here
+  smtpPassViaEnv?: boolean;
   smtpFrom?: string;
   smtpFromName?: string; // display name when smtpFrom is a bare address (empty = MindSift)
   smtpTls?: boolean;

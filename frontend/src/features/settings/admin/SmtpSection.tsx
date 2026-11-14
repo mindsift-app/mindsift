@@ -48,6 +48,7 @@ export function SmtpSection({
         <SmtpFields
           value={settings}
           passwordSet={settings.smtpPassSet}
+          passwordViaEnv={settings.smtpPassViaEnv}
           onChange={(patch) => setSettings((prev) => ({ ...prev, ...patch }))}
         />
 

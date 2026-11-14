@@ -423,11 +423,15 @@ func (s *Server) handleAdminGetSettings(w http.ResponseWriter, r *http.Request) 
 	writeJSON(w, http.StatusOK, s.settingsForBrowser(settings))
 }
 
-// settingsForBrowser hides the SMTP password; the admin only sees whether one is stored.
+// settingsForBrowser hides the SMTP password; the admin only sees whether one is stored or comes from
+// SMTP_PASS.
 func (s *Server) settingsForBrowser(settings *domain.SystemSettings) *domain.SystemSettings {
 	out := *settings
 	out.SMTPPassSet = out.SMTPPass != ""
 	out.SMTPPass = ""
+	if s.envSMTPPass(settings) != "" {
+		out.SMTPPassSet, out.SMTPPassViaEnv, out.SMTPPassUnreadable = true, true, false
+	}
 	out.SMTPConfiguredViaEnv = s.smtpViaEnv()
 	// What the environment fixes is shown as in effect and locked in the form
 	if s.cfg.RegistrationMode != "" {
