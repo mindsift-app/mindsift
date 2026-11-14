@@ -30,7 +30,7 @@ Reference for developers and administrators. It describes the current developmen
 ## 60-Second Overview
 
 - **Single Go binary** serves the REST API, WebSocket/SSE, and the embedded React frontend (`go:embed`). There is exactly one container and one SQLite file (`/data/mindsift.db`).
-- **Data storage:** Entirely in SQLite. There are no `.md` files on disk; Markdown is generated on demand from blocks (`documents.markdown_cache`, export as `.md`).
+- **Data storage:** Entirely in SQLite. There are no `.md` files on disk; the text of a note is stored once, in its blocks, and Markdown is generated from them on demand (export as `.md`); see [database.md](database.md#note-text-stored-once).
 - **Real-time:** A hub with rooms and user channels (WebSocket, SSE as fallback). Broadcasts events following changes.
 - **Collaborative note editing:** Server-authoritative operation log with versions and per-bullet locks, conflict copies instead of overwrites, offline queue in IndexedDB, synchronization even behind restrictive proxies ([modules/collaboration.md](modules/collaboration.md)).
 - **Auth:** JWT (HS256) with server-side sessions (`sessions`, sliding 30-day expiry) and `token_version`, plus API keys (`mindsift_sec_…`) for webhooks.

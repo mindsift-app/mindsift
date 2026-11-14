@@ -1,7 +1,6 @@
 package storage
 
 import (
-	"encoding/json"
 	"log/slog"
 	"strconv"
 	"strings"
@@ -36,29 +35,12 @@ func (s *Store) GetDashboardStats(userID string) (*domain.DashboardStats, error)
 		userID, userID, userID).Scan(&st.ListItemsOpenCount))
 
 	// Count open (uncompleted) To-Dos across accessible workspace documents (owned or shared)
-	docRows, err := s.db.Query(`
-		SELECT blocks_json FROM documents 
-		WHERE (user_id = ? OR id IN (SELECT doc_id FROM doc_shares WHERE user_id = ?))
-		  AND is_archived = 0`,
+	logDBErr(s.db.QueryRow(`
+		SELECT COUNT(*) FROM blocks b JOIN documents d ON d.id = b.document_id
+		WHERE (d.user_id = ? OR d.id IN (SELECT doc_id FROM doc_shares WHERE user_id = ?))
+		  AND d.is_archived = 0 AND b.deleted = 0 AND b.type = 'todo' AND b.checked = 0`,
 		userID, userID,
-	)
-	if err == nil {
-		for docRows.Next() {
-			var bj string
-			if err := docRows.Scan(&bj); !dbFailed(err) && bj != "" {
-				var blocks []domain.DocumentBlock
-				if err := json.Unmarshal([]byte(bj), &blocks); err == nil {
-					for _, b := range blocks {
-						if b.Type == "todo" && !b.Checked {
-							st.DocsTodosOpenCount++
-						}
-					}
-				}
-			}
-		}
-		logDBErr(docRows.Err())
-		_ = docRows.Close()
-	}
+	).Scan(&st.DocsTodosOpenCount))
 
 	return st, nil
 }

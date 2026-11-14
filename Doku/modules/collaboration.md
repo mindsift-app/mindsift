@@ -38,7 +38,7 @@ Details in [database.md](../database.md).
 - **Tree instead of a flat list.** `blocks.parent_id` (empty = top level) and `blocks.order_key` sort siblings. Indenting or moving a branch is *one* operation on *one* block. Depth level and position for the UI are calculated by the server on read.
 - **Sort keys (Fractional Index).** A new block between `a0` and `a1` gets a key in between; renumbering never occurs. Identical keys (two simultaneous insertions) are broken by block ID. Go (`orderkey.go`) and TypeScript (`orderKey.ts`) generate identical keys, validated using shared test vectors.
 - **Tombstones.** Deleted blocks remain with `deleted = 1` and `deleted_at`. A late text change restores the block rather than being lost. After 30 days, they are permanently purged (see [Compaction](#compaction)).
-- **Log** `doc_ops` (effects per `seq`) and **idempotency** `doc_op_results` (result per operation ID). Replaying the log from a snapshot yields the exact server state.
+- **Log** `doc_ops` (effects per `seq`) and **idempotency** `doc_op_results` (result per operation ID). Replaying the log from a snapshot yields the exact server state. The log stores the text of a bullet only as a reference to its current text and as deltas between its versions; the server puts the full texts back when it reads the log, so clients see no difference ([database.md](../database.md#note-text-stored-once)).
 - **Leases and sessions live in memory** (`collab.LeaseManager`). They are short-lived; after a restart, clients automatically request them again. MindSift runs as a single instance, so this fits well.
 - **Derived data** (`markdown_cache`, search text, `tags`, `block_tags`) are generated in the same transaction as the change.
 

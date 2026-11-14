@@ -68,12 +68,17 @@ var migrations = []migration{
 	{40, "Accounts without an e-mail address", (*Store).migrateEmailOptional},
 	{41, "References from bullets to files and hidden values", (*Store).migrateBlockRefs},
 	{43, "SMTP password encrypted with SECRETS_KEY", (*Store).migrateSealSMTPPass},
+	{44, "Note text stored only once", (*Store).migrateNoteStorage},
 	{45, "Usernames unique in the database", (*Store).migrateUniqueUsernames},
 }
 
 // migrationBlockRefs creates block_refs: until it has run (earlier steps that rewrite notes), writing a
 // block leaves the table alone, and the step itself fills it from all blocks.
 const migrationBlockRefs = 41
+
+// migrationNoteStorage (note_storage.go) adds the columns the compact log and the search index need:
+// until it has run, notes are written the way before and the step converts them.
+const migrationNoteStorage = 44
 
 func (s *Store) migrate() error {
 	// A database without any table is new (or was just emptied by the demo reset): nothing to back up
@@ -125,6 +130,13 @@ func (s *Store) migrate() error {
 
 	last := 0
 	s.blockRefsReady.Store(false) // the demo reset migrates an emptied database again
+	// Taken from the schema, not from the order of the steps: a step that runs after 44 was applied
+	// (one added later with a lower id) must write the log in the new form, or it would break it
+	ready, err := s.hasNoteStorageColumns()
+	if err != nil {
+		return err
+	}
+	s.noteStorageReady.Store(ready)
 	for _, m := range migrations {
 		last = m.id
 		if !applied[m.id] {
@@ -139,6 +151,9 @@ func (s *Store) migrate() error {
 		}
 		if m.id == migrationBlockRefs {
 			s.blockRefsReady.Store(true)
+		}
+		if m.id == migrationNoteStorage {
+			s.noteStorageReady.Store(true)
 		}
 	}
 	if _, err = s.db.Exec(fmt.Sprintf(`PRAGMA user_version = %d`, last)); err != nil {

@@ -44,7 +44,7 @@ MindSift builds several things itself that other projects take from a library, a
 |---|---|
 | `cmd/server/` | `main.go`, embedded `dist/` |
 | `internal/api/` | `server.go` (server, router with all routes, middleware, JSON helpers); handlers by domain in `handlers_*.go` (`auth`, `account`, `thoughts`, `documents`, `folders`, `lists`, `tasklists`, `teams`, `admin`, `integrations`), `realtime.go` (WebSocket/SSE/long polling), `alarms.go` (ticker and dispatch), `docsync.go`, `mail.go`, `netguard.go`, `password_reset.go` |
-| `internal/storage/` | `sqlite.go` (store, schema, migrations); data logic by domain: `users.go`, `apikeys.go`, `thoughts.go` (incl. alarms), `tasklists.go`, `documents.go`, `folders.go`, `tags.go`, `lists.go`, `teams.go`, `system.go` (settings, statistics, export), plus `visibility.go`, `docsync.go`, `search.go`, `trash.go`, `backlinks.go`, `recurrence.go`, among others |
+| `internal/storage/` | `sqlite.go` (store, schema, migrations); data logic by domain: `users.go`, `apikeys.go`, `thoughts.go` (incl. alarms), `tasklists.go`, `documents.go`, `folders.go`, `tags.go`, `lists.go`, `teams.go`, `system.go` (settings, statistics, export), plus `visibility.go`, `docsync.go` (note log, snapshot, compaction), `doclog.go` (bullet texts in the log as references and deltas), `note_storage.go` (migration 44, search index of notes without a copy of their text), `search.go`, `trash.go`, `backlinks.go`, `recurrence.go`, among others |
 | `internal/domain/` | Structures (`models.go`), ID generation, tag extraction |
 | `internal/ws/` | `hub.go` |
 | `internal/collab/` | Core note synchronization without database: block tree, operations and conflict rules, order keys, leases, long-polling notification |
