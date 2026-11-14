@@ -151,7 +151,16 @@ func (s *Store) GetAuthorizedSharedFolderUsers(folderID string) ([]string, error
 // ErrNoteTooLarge: a note would hold more bullets than it may (collab.MaxNoteBlocks).
 var ErrNoteTooLarge = i18n.NewError("Eine Notiz kann höchstens {max} Punkte haben", "max", strconv.Itoa(collab.MaxNoteBlocks))
 
+// CreateDocument creates a note of userID with the given bullets. References to files userID may not
+// read are dropped from them (mediaGate).
 func (s *Store) CreateDocument(userID, spaceID, title, icon, folderPath string, blocks []domain.DocumentBlock, tags []string, isPinned bool) (*domain.Document, error) {
+	return s.createDocument(userID, spaceID, title, icon, folderPath, blocks, tags, isPinned, nil)
+}
+
+// createDocument is CreateDocument; keepMedia are file ids kept without a check (an import's own files,
+// stored once the note exists).
+func (s *Store) createDocument(userID, spaceID, title, icon, folderPath string, blocks []domain.DocumentBlock, tags []string, isPinned bool, keepMedia map[string]bool) (*domain.Document, error) {
+	blocks, _ = s.newMediaGate(userID, keepMedia).cleanBlocks(blocks)
 	if strings.TrimSpace(title) == "" {
 		title = i18n.T(s.MessageLanguage(userID), "Unbenannte Notiz")
 	}

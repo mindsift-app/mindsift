@@ -200,7 +200,7 @@ func (s *Server) handleRestoreMyBackup(w http.ResponseWriter, r *http.Request) {
 	sections := storage.NormalizeSections(strings.Split(r.URL.Query().Get("sections"), ","))
 	plan = plan.Only(sections)
 	if r.URL.Query().Get("preview") == "1" {
-		writeJSON(w, http.StatusOK, trSummary(w, plan.Summary(false)))
+		s.previewImport(w, userID, plan)
 		return
 	}
 	s.applyImport(w, userID, plan, sections, r.URL.Query().Get("mode") == "restore")

@@ -181,6 +181,13 @@ func (s *Store) SyncTaskToDoc(userID, taskID string) string {
 	docID, mainID, _ := strings.Cut(t.ConvertedRefID, ":")
 	subs := make([]domain.SubTask, len(t.Subtasks))
 	copy(subs, t.Subtasks)
+	// Titles become bullets: no references to files the person may not read (mediaGate)
+	gate := s.newMediaGate(userID, nil)
+	mainTitle, _ := gate.clean(t.Content)
+	titles := make([]string, len(subs))
+	for i := range subs {
+		titles[i], _ = gate.clean(subs[i].Title)
+	}
 	subsChanged := false
 	a := collab.Actor{UserID: userID, ClientID: "server"}
 	results, _, err := s.applyDocChange(docID, a, nil, func(d *collab.Doc) []collab.Op {
@@ -199,7 +206,7 @@ func (s *Store) SyncTaskToDoc(userID, taskID string) string {
 				ops = append(ops, collab.Op{OpID: domain.NewID("op"), Kind: collab.OpSetContent, BlockID: b.ID, BaseVersion: b.Version, Content: &text})
 			}
 		}
-		setBlock(main, t.IsCompleted, t.Content)
+		setBlock(main, t.IsCompleted, mainTitle)
 
 		used := map[string]bool{mainID: true}
 		for _, st := range subs {
@@ -214,13 +221,13 @@ func (s *Store) SyncTaskToDoc(userID, taskID string) string {
 		for i := range subs {
 			if b, ok := d.Blocks[subs[i].BlockID]; ok && subs[i].BlockID != "" {
 				if !b.Deleted && b.Type == "todo" {
-					setBlock(b, subs[i].IsCompleted, subs[i].Title)
+					setBlock(b, subs[i].IsCompleted, titles[i])
 				}
 				continue
 			}
 			// Not in the note yet: take over an unlinked checkbox with the same text, else add one
 			for _, c := range d.Children(mainID) {
-				if !c.Deleted && c.Type == "todo" && !used[c.ID] && strings.TrimSpace(c.Content) == subs[i].Title {
+				if !c.Deleted && c.Type == "todo" && !used[c.ID] && strings.TrimSpace(c.Content) == titles[i] {
 					subs[i].BlockID, used[c.ID], subsChanged = c.ID, true, true
 					setBlock(c, subs[i].IsCompleted, "")
 					break
@@ -235,7 +242,7 @@ func (s *Store) SyncTaskToDoc(userID, taskID string) string {
 			}
 			lastKey = key
 			id := domain.NewID("blk")
-			parent, title := mainID, subs[i].Title
+			parent, title := mainID, titles[i]
 			ops = append(ops, collab.Op{OpID: domain.NewID("op"), Kind: collab.OpInsert, BlockID: id, ParentID: &parent, OrderKey: key,
 				Type: "todo", Content: &title, Props: &collab.Props{Checked: subs[i].IsCompleted}})
 			subs[i].BlockID, used[id], subsChanged = id, true, true

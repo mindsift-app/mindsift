@@ -114,9 +114,16 @@ func TestMediaCleanupAndCopiedBlocks(t *testing.T) {
 	}
 	used, unused := upload(), upload()
 
-	// A second user's note shows the used image (block copied there); that user may read it
+	// A second user copied the image bullet out of the note while it was shared with them; the copy
+	// keeps working after the share ends (FLAW-43)
 	other, otherToken := newTestUser(t, store, "kopie@example.com")
+	if _, err := store.CreateDocShare(claims.UserID, doc.ID, other.ID, "read"); err != nil {
+		t.Fatal(err)
+	}
 	_, _ = store.CreateDocument(other.ID, "", "Kopie", "", "", []domain.DocumentBlock{{ID: "blk_copy", Type: "image", Content: "![Foto](media:" + used + ")"}}, nil, false)
+	if err := store.DeleteDocShare(claims.UserID, doc.ID, other.ID); err != nil {
+		t.Fatal(err)
+	}
 	if rec := sessionCall(router, "GET", "/api/v1/media/"+used, otherToken, "", ""); rec.Code != http.StatusOK {
 		t.Fatalf("copied block: want 200, got %d", rec.Code)
 	}
