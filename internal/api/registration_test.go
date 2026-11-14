@@ -187,10 +187,11 @@ func verificationServer(t *testing.T) (*Server, *storage.Store, string, func() [
 	return srv, store, adminToken, mails
 }
 
-// waitMail waits for a mail to `to` (mails go out in the background)
+// waitMail waits for a mail to `to` (mails go out in the background; up to 10 s, a busy machine with
+// one database connection needs more than the 2 s this once allowed)
 func waitMail(t *testing.T, mails func() []sentNote, to string) sentNote {
 	t.Helper()
-	for i := 0; i < 100; i++ {
+	for deadline := time.Now().Add(10 * time.Second); time.Now().Before(deadline); {
 		for _, m := range mails() {
 			if m.to == to {
 				return m

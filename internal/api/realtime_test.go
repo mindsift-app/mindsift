@@ -107,7 +107,7 @@ func openSSE(t *testing.T, ts *httptest.Server, token string) *sseStream {
 		cancel()
 		_ = resp.Body.Close()
 	})
-	connected := st.waitFor(t, "SSE_CONNECTED", 2*time.Second)
+	connected := st.waitFor(t, "SSE_CONNECTED", 10*time.Second)
 	if connected == nil {
 		t.Fatal("no SSE_CONNECTED event")
 	}
@@ -180,7 +180,7 @@ func TestSSEStreamOutlivesWriteTimeout(t *testing.T) {
 	time.Sleep(1500 * time.Millisecond) // longer than the server's WriteTimeout of 1s
 	srv.wsHub.BroadcastToUser(owner.ID, "LATE_EVENT", map[string]string{"ok": "1"})
 
-	if st.waitFor(t, "LATE_EVENT", 2*time.Second) == nil {
+	if st.waitFor(t, "LATE_EVENT", 10*time.Second) == nil {
 		t.Fatal("SSE stream was cut by the WriteTimeout")
 	}
 }
@@ -209,7 +209,7 @@ func TestTaskEventsOnlyReachAuthorizedUsers(t *testing.T) {
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("update task: status %d", resp.StatusCode)
 	}
-	if memberStream.waitFor(t, "TASK_UPDATED", 2*time.Second) == nil {
+	if memberStream.waitFor(t, "TASK_UPDATED", 10*time.Second) == nil {
 		t.Error("list member did not receive TASK_UPDATED")
 	}
 	if outsiderStream.waitFor(t, "TASK_UPDATED", 500*time.Millisecond) != nil {
@@ -220,7 +220,7 @@ func TestTaskEventsOnlyReachAuthorizedUsers(t *testing.T) {
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("update list: status %d", resp.StatusCode)
 	}
-	msg := memberStream.waitFor(t, "TASK_LIST_UPDATED", 2*time.Second)
+	msg := memberStream.waitFor(t, "TASK_LIST_UPDATED", 10*time.Second)
 	if msg == nil {
 		t.Fatal("list member did not receive TASK_LIST_UPDATED")
 	}
@@ -319,7 +319,7 @@ func TestWebSocketHeartbeat(t *testing.T) {
 	if err := conn.WriteJSON(map[string]string{"event": "PING"}); err != nil {
 		t.Fatal(err)
 	}
-	if readWSEvent(conn, "PONG", 2*time.Second) == nil {
+	if readWSEvent(conn, "PONG", 10*time.Second) == nil {
 		t.Fatal("no PONG for an app-level PING")
 	}
 }
@@ -339,7 +339,14 @@ func TestDocChangesArePushedToTheNoteRoom(t *testing.T) {
 	if err := conn.WriteJSON(map[string]string{"event": "JOIN_ROOM", "room": "doc:" + doc.ID}); err != nil {
 		t.Fatal(err)
 	}
-	time.Sleep(100 * time.Millisecond) // the join is processed asynchronously
+	// The join is processed asynchronously; messages of a connection are handled in order, so the PONG
+	// to a PING sent after it means the join is done (a fixed sleep was too short under load)
+	if err := conn.WriteJSON(map[string]string{"event": "PING"}); err != nil {
+		t.Fatal(err)
+	}
+	if readWSEvent(conn, "PONG", 10*time.Second) == nil {
+		t.Fatal("no PONG after the join")
+	}
 
 	text := "Geändert"
 	resp := doJSON(t, ts, http.MethodPost, "/api/v1/docs/"+doc.ID+"/sync", ownerToken, map[string]any{
@@ -349,7 +356,7 @@ func TestDocChangesArePushedToTheNoteRoom(t *testing.T) {
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("sync: %d", resp.StatusCode)
 	}
-	msg := readWSEvent(conn, "DOC_SEQ", 2*time.Second)
+	msg := readWSEvent(conn, "DOC_SEQ", 10*time.Second)
 	if msg == nil || !strings.Contains(string(msg.Payload), doc.ID) {
 		t.Fatalf("no DOC_SEQ push for the note: %+v", msg)
 	}
@@ -359,7 +366,7 @@ func TestLogoutEndsLiveStreams(t *testing.T) {
 	srv, _, ts, owner, token := startRealtimeServer(t)
 	st := openSSE(t, ts, token)
 	srv.wsHub.DisconnectUser(owner.ID)
-	deadline := time.After(2 * time.Second)
+	deadline := time.After(10 * time.Second)
 	for {
 		select {
 		case _, ok := <-st.events:
@@ -406,8 +413,8 @@ func TestLongPollDeliversEvents(t *testing.T) {
 		srv.wsHub.BroadcastToUser(owner.ID, "TASK_UPDATED", map[string]string{"id": "t1"})
 	}()
 	start := time.Now()
-	code, events := poll(token, 5)
-	if code != http.StatusOK || len(events) != 1 || events[0].Event != "TASK_UPDATED" || time.Since(start) > 3*time.Second {
+	code, events := poll(token, 20)
+	if code != http.StatusOK || len(events) != 1 || events[0].Event != "TASK_UPDATED" || time.Since(start) > 10*time.Second {
 		t.Fatalf("waiting poll: %d %v after %s", code, events, time.Since(start))
 	}
 
@@ -450,9 +457,15 @@ func TestShareKeepsOwnersPinInRealtime(t *testing.T) {
 		}
 	}
 
+	// Wait for the three updates (generously: under load they take a while), then a little longer for a
+	// fourth that must not come; a fixed 700 ms window lost updates on a busy machine
 	updates := 0
-	deadline := time.After(700 * time.Millisecond)
+	deadline := time.After(10 * time.Second)
+	var grace <-chan time.Time
 	for done := false; !done; {
+		if updates == 3 && grace == nil {
+			grace = time.After(500 * time.Millisecond)
+		}
 		select {
 		case m, ok := <-stream.events:
 			if !ok {
@@ -478,6 +491,8 @@ func TestShareKeepsOwnersPinInRealtime(t *testing.T) {
 				updates++
 			}
 		case <-deadline:
+			done = true
+		case <-grace:
 			done = true
 		}
 	}

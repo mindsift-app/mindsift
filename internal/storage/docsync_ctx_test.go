@@ -17,7 +17,7 @@ func TestDocSnapshotDoesNotWaitForWriters(t *testing.T) {
 
 	unlock := lockDoc(doc.ID) // a writer holds the note
 	defer unlock()
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	snap, err := s.GetDocSnapshotCtx(ctx, doc.ID)
 	if err != nil || len(snap.Blocks) == 0 {

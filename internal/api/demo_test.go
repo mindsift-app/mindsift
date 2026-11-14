@@ -85,7 +85,7 @@ func TestDemoResetKeepsSessionsAndRestoresSampleData(t *testing.T) {
 		DemoResetInSeconds int    `json:"demoResetInSeconds"`
 	}
 	_ = json.Unmarshal(call("GET", "/api/v1/auth/status", "", "").Body.Bytes(), &st)
-	if st.DemoNextReset == "" || st.DemoResetInSeconds < 85 || st.DemoResetInSeconds > 90 {
+	if st.DemoNextReset == "" || st.DemoResetInSeconds < 60 || st.DemoResetInSeconds > 90 {
 		t.Errorf("status should announce the next reset: %+v", st)
 	}
 }

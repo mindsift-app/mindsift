@@ -40,7 +40,7 @@ type drawPayload struct {
 
 func readDraw(t *testing.T, conn *websocket.Conn, event string) drawPayload {
 	t.Helper()
-	m := readWSEvent(conn, event, 2*time.Second)
+	m := readWSEvent(conn, event, 10*time.Second)
 	if m == nil {
 		t.Fatalf("no %s", event)
 	}
@@ -260,7 +260,7 @@ func TestLiveDrawingWatchOverSSE(t *testing.T) {
 		t.Fatalf("the host sees the SSE watcher: %+v", p)
 	}
 	sendDraw(t, own, "DRAW_OPS", map[string]any{"docId": doc.ID, "blockId": "d_b1", "els": []json.RawMessage{drawEl("e2", 1, 3, 200)}})
-	if m := sse.waitFor(t, "DRAW_OPS", 2*time.Second); m == nil || !strings.Contains(string(m.Payload), `"e2"`) {
+	if m := sse.waitFor(t, "DRAW_OPS", 10*time.Second); m == nil || !strings.Contains(string(m.Payload), `"e2"`) {
 		t.Fatalf("SSE watcher gets the change: %+v", m)
 	}
 	// Someone else's connection id does not get in

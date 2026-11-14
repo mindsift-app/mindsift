@@ -905,20 +905,24 @@ func TestSSEGlobalEndpoint(t *testing.T) {
 
 	req = httptest.NewRequest(http.MethodGet, "/api/v1/events", nil).WithContext(ctx)
 	req.Header.Set("Authorization", "Bearer "+token)
-	rec = httptest.NewRecorder()
-
+	// The stream ends once SSE_CONNECTED was written (a fixed 50 ms before cancelling could end it before
+	// it started on a busy machine)
+	sse := &signalRecorder{ResponseRecorder: httptest.NewRecorder(), marker: "SSE_CONNECTED", seen: make(chan struct{})}
 	go func() {
-		time.Sleep(50 * time.Millisecond)
+		select {
+		case <-sse.seen:
+		case <-time.After(10 * time.Second):
+		}
 		cancel()
 	}()
 
-	router.ServeHTTP(rec, req)
+	router.ServeHTTP(sse, req)
 
-	contentType := rec.Header().Get("Content-Type")
+	contentType := sse.Header().Get("Content-Type")
 	if !strings.Contains(contentType, "text/event-stream") {
 		t.Fatalf("expected Content-Type text/event-stream, got %s", contentType)
 	}
-	bodyStr := rec.Body.String()
+	bodyStr := sse.body()
 	if !strings.Contains(bodyStr, "SSE_CONNECTED") {
 		t.Fatalf("expected SSE_CONNECTED event in body, got: %s", bodyStr)
 	}
@@ -1625,3 +1629,31 @@ func TestMoveListItemBetweenLists(t *testing.T) {
 		t.Fatalf("item addressed through the wrong list must be refused, got %d", code)
 	}
 }
+
+// signalRecorder is a ResponseRecorder that closes seen once the body contains marker; a stream can be
+// ended right after it wrote that, instead of after a guessed delay.
+type signalRecorder struct {
+	*httptest.ResponseRecorder
+	marker string
+	seen   chan struct{}
+	mu     sync.Mutex
+	once   sync.Once
+}
+
+func (r *signalRecorder) Write(p []byte) (int, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	n, err := r.ResponseRecorder.Write(p)
+	if strings.Contains(r.ResponseRecorder.Body.String(), r.marker) {
+		r.once.Do(func() { close(r.seen) })
+	}
+	return n, err
+}
+
+func (r *signalRecorder) body() string {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return r.ResponseRecorder.Body.String()
+}
+
+func (r *signalRecorder) WriteString(s string) (int, error) { return r.Write([]byte(s)) }
