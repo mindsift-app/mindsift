@@ -577,16 +577,81 @@ func (s *Store) getDocuments(userID string, withBlocks bool) ([]domain.Document,
 		}
 	}
 
-	// 3. Attach shares to owned documents
+	// 3. Attach shares to owned documents: two queries for all of them, not two per note (a list of a
+	// thousand notes made two thousand queries)
+	var owned []string
 	for i := range docs {
 		if docs[i].IsOwner {
-			if shares, err := s.GetDocShares(docs[i].ID); err == nil {
-				docs[i].SharedWith = shares
+			owned = append(owned, docs[i].ID)
+		}
+	}
+	if byDoc, err := s.docSharesOf(owned); err == nil {
+		for i := range docs {
+			if sh, ok := byDoc[docs[i].ID]; ok {
+				docs[i].SharedWith = sh
 			}
 		}
 	}
 
 	return docs, nil
+}
+
+// docSharesOf returns the shares of several notes at once, per note in the order GetDocShares gives
+// them (people first, then teams, each by creation time).
+func (s *Store) docSharesOf(docIDs []string) (map[string][]domain.DocShare, error) {
+	out := map[string][]domain.DocShare{}
+	if len(docIDs) == 0 {
+		return out, nil
+	}
+	idsJSON, _ := json.Marshal(docIDs)
+	uRows, err := s.db.Query(
+		`SELECT s.id, s.doc_id, s.user_id, u.email, u.display_name, s.permission, s.created_by, s.created_at
+		 FROM doc_shares s
+		 JOIN users u ON s.user_id = u.id
+		 WHERE s.doc_id IN (SELECT value FROM json_each(?))
+		 ORDER BY s.doc_id, s.created_at ASC`,
+		string(idsJSON),
+	)
+	if err != nil {
+		return nil, err
+	}
+	for uRows.Next() {
+		var sh domain.DocShare
+		if err := uRows.Scan(&sh.ID, &sh.DocID, &sh.UserID, &sh.UserEmail, &sh.DisplayName, &sh.Permission, &sh.CreatedBy, &sh.CreatedAt); !dbFailed(err) {
+			sh.TargetType = "user"
+			sh.TargetID = sh.UserID
+			sh.TargetName = sh.DisplayName
+			out[sh.DocID] = append(out[sh.DocID], sh)
+		}
+	}
+	logDBErr(uRows.Err())
+	_ = uRows.Close()
+
+	tRows, err := s.db.Query(
+		`SELECT s.id, s.doc_id, s.team_id, t.name, s.permission, s.created_by, s.created_at
+		 FROM doc_team_shares s
+		 JOIN teams t ON s.team_id = t.id
+		 WHERE s.doc_id IN (SELECT value FROM json_each(?))
+		 ORDER BY s.doc_id, s.created_at ASC`,
+		string(idsJSON),
+	)
+	if err != nil {
+		return nil, err
+	}
+	for tRows.Next() {
+		var sh domain.DocShare
+		var teamID, teamName string
+		if err := tRows.Scan(&sh.ID, &sh.DocID, &teamID, &teamName, &sh.Permission, &sh.CreatedBy, &sh.CreatedAt); !dbFailed(err) {
+			sh.TargetType = "team"
+			sh.TargetID = teamID
+			sh.TargetName = teamName
+			sh.DisplayName = teamName
+			out[sh.DocID] = append(out[sh.DocID], sh)
+		}
+	}
+	logDBErr(tRows.Err())
+	_ = tRows.Close()
+	return out, nil
 }
 
 func (s *Store) GetDocumentByID(userID, docID string) (*domain.Document, error) {
