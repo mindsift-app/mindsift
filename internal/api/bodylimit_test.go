@@ -33,7 +33,7 @@ func TestWebhookTokenInURLOnlyAPIKey(t *testing.T) {
 // A mail server that takes longer than the server gives an answer (here 1 s, 30 s in production): the test
 // mail, the test alarm and the invite still get their answer instead of a cut connection.
 func TestAnswerSurvivesASlowMailServer(t *testing.T) {
-	srv, store, ts, owner, token := startRealtimeServer(t)
+	srv, store, ts, owner, token := startShortWriteTimeoutServer(t)
 	sys, _ := store.GetSystemSettings()
 	sys.SMTPHost = "smtp.example.com"
 	if err := store.UpdateSystemSettings(sys); err != nil {

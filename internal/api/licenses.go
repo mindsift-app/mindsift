@@ -23,8 +23,9 @@ func defaultThirdPartyLicenses() string {
 	return filepath.Join(filepath.Dir(exe), thirdPartyLicensesName)
 }
 
-// handleThirdPartyLicenses serves the license file as plain text, public like the app itself (the About
-// part of the settings links it). 404 where there is none (development, a binary built by hand).
+// handleThirdPartyLicenses serves the license file as plain text to signed-in people (the About part of
+// the app shows it). Not public: it names the exact version of every dependency, which would let anyone
+// pick servers by known flaws. 404 where there is none (development, a binary built by hand).
 func (s *Server) handleThirdPartyLicenses(w http.ResponseWriter, r *http.Request) {
 	if s.licensesFile == "" {
 		http.NotFound(w, r)
@@ -42,7 +43,7 @@ func (s *Server) handleThirdPartyLicenses(w http.ResponseWriter, r *http.Request
 		return
 	}
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-	// Changes only with a new version: the browser may keep it for a day and asks again after that
-	w.Header().Set("Cache-Control", "public, max-age=86400")
+	// Changes only with a new version; only this browser may keep it, not shared caches
+	w.Header().Set("Cache-Control", "private, max-age=86400")
 	http.ServeContent(w, r, thirdPartyLicensesName, info.ModTime(), f)
 }

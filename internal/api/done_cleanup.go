@@ -15,8 +15,9 @@ import (
 // startDoneCleanupTicker runs the retention delays (storage/retention.go): completed tasks into the
 // task trash, the trashes and ticked-off list items emptied; once shortly after the start and then
 // every hour. Expired and unused OAuth connections go in the same pass (oauth.go), and so do hidden
-// values no note holds any more (secrets.go), expired public links (publiclinks.go) and backups of
-// deleted accounts past the backup retention (backups.go).
+// values no note holds any more (secrets.go), expired public links (publiclinks.go), backups of
+// deleted accounts past the backup retention and copies from before migrations older than 90 days
+// (backups.go).
 func (s *Server) startDoneCleanupTicker() {
 	if !s.wait(2 * time.Minute) {
 		return
@@ -29,6 +30,7 @@ func (s *Server) startDoneCleanupTicker() {
 		s.runSecretSweep(now)
 		s.runPublicLinkCleanup(now)
 		s.runDeletedBackupSweep(now)
+		s.runPreMigrationBackupExpiry(now)
 		select {
 		case <-s.stop:
 			return

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { userColorStyles } from '../lib/userColor';
 
 export interface UserAvatarProps {
@@ -61,6 +62,7 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({
   alt,
   showTitle = true,
 }) => {
+  const { t } = useTranslation();
   const [imageError, setImageError] = useState(false);
 
   const effectiveAvatarUrl = avatarUrl !== undefined ? avatarUrl : user?.avatarUrl;
@@ -85,7 +87,7 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({
       {hasImage ? (
         <img
           src={effectiveAvatarUrl}
-          alt={alt || effectiveName || 'Avatar'}
+          alt={alt || effectiveName || t('avatar.alt')}
           onError={() => setImageError(true)}
           className="w-full h-full object-cover rounded-full"
           style={ringStyle}

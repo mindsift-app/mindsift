@@ -1,7 +1,7 @@
 // MindSift service worker: keeps the app shell so the PWA also starts without network.
 // - Page loads (navigation): network first, so a new release is picked up right away; offline the
-//   last loaded index.html is used. Only an HTML answer is kept as that page: opening a text file such as
-//   /third-party-licenses.txt is a navigation too, and must not become the app's offline start page.
+//   last loaded index.html is used. Only an HTML answer is kept as that page: opening another file such as
+//   an icon is a navigation too, and must not become the app's offline start page.
 // - Built bundles (/assets/*, file names contain a content hash): every file of the build is loaded when
 //   the worker installs (PRECACHE), so the app also starts offline after its very first visit; later
 //   requests come from the cache.

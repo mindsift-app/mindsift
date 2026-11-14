@@ -13,11 +13,11 @@ MindSift is meant to be reachable from the internet behind a reverse proxy ([rev
 - **Passkeys** (WebAuthn, user verification required) also sign in without a password and cannot be phished: they are bound to the host of `BASE_URL` (https only).
 - **OpenID Connect:** sign-in through a provider uses the authorization code flow with PKCE, state and nonce and checks the ID token completely (signature against the provider's keys, issuer, audience, expiry, nonce); the session token never appears in an address, the provider sends back a one-time ticket that only the browser that started the sign-in can trade.
 - **Sessions:** every login is a server-side session tied to a signed token; sessions are listed under Settings → Security, can be ended one by one, end after 30 days without use and with any password change.
-- **Rate limits:** failed sign-ins lock the account for that address after 3 tries, the account after 20 and the address after 30, each for 15 minutes; registration, "forgot password", the password asked before deleting data and the passwords of public links are limited the same way. A failed sign-in takes as long whether the account exists or not.
+- **Rate limits:** failed sign-ins lock the account for that address after 3 tries, the account after 20 and the address after 30, each for 15 minutes; registration, "forgot password" and the password asked before deleting data are limited the same way. The password of a public link allows 10 tries per address and, from all addresses together, 50 wrong ones in 15 minutes; then that link's password is not checked at all for 15 minutes (the right one is refused too, so the answer gives nothing away; visitors who already entered it keep reading). A failed sign-in takes as long whether the account exists or not.
 
 ### Secrets never in plain text
 
-API keys, OAuth tokens, reset and confirmation links and the tokens of public links are stored only as SHA-256 hashes. Hidden values in notes are encrypted with AES-256-GCM under a key kept apart from the database (`SECRETS_KEY`).
+API keys, OAuth tokens, reset and confirmation links and the tokens of public links are stored only as SHA-256 hashes. Hidden values in notes, authenticator secrets and the SMTP password of the administration are encrypted with AES-256-GCM under a key kept apart from the database (`SECRETS_KEY`), so a database backup does not reveal them.
 
 ### Rights checked on every request
 
@@ -33,11 +33,11 @@ HSTS over https, a strict Content Security Policy (scripts only from MindSift it
 
 ### Nothing reaches into your network
 
-Every address the server contacts (webhooks, Discord, push services, link previews, image copies) is checked at connection time against localhost, link-local, cloud-metadata and private ranges, after DNS and after redirects (never from https down to http); private ranges only with an explicit admin switch. `X-Forwarded-*` headers only count from trusted proxies (`TRUSTED_PROXIES`, see [reverse-proxy.md](reverse-proxy.md)).
+Every address the server contacts (webhooks, Discord, push services, link previews, image copies) is checked at connection time against localhost, link-local, cloud-metadata and private ranges, after DNS and after redirects (never from https down to http); private ranges only with an explicit admin switch. `X-Forwarded-*` headers only count from trusted proxies (`TRUSTED_PROXIES`, see [reverse-proxy.md](reverse-proxy.md)). The default `private` trusts every device in the local network, so any of them can claim another address and get around the per-address limits (those per account and per link still hold): without a reverse proxy set `none`, with one the narrowest range that holds the proxy.
 
 ### Limits everywhere
 
-Request bodies capped per endpoint, realtime connections capped per account, import archives checked for size and file count before anything is written.
+Request bodies capped per endpoint, realtime connections capped per account. Import archives are checked for size and file count before anything is written: the sizes their entries declare must stay under 500 MB together and are checked again while reading, an entry packed more than 100 times smaller than it unpacks (a zip bomb) is not unpacked, a note may have 10 MB and 20,000 bullets. Notes and files are read one at a time (an import never holds the whole archive in memory), and one import per person and two per server run at a time.
 
 ### Quiet logs and errors
 

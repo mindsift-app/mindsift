@@ -16,14 +16,20 @@ This document describes the recommended configuration of reverse proxies and ing
 
 ### Client IP and `TRUSTED_PROXIES`
 
-MindSift also locks logins after failed attempts on a per-IP address basis. Behind a proxy, every connection originates from the proxy; the real address is contained in `X-Forwarded-For` or `X-Real-IP`. MindSift only trusts these headers if the connection comes from a trusted proxy, otherwise anyone who directly reaches the port could spoof an arbitrary address.
+MindSift also locks logins after failed attempts on a per-IP address basis, and limits registration, "forgot password" and the passwords of public links per address. Behind a proxy, every connection originates from the proxy; the real address is contained in `X-Forwarded-For` or `X-Real-IP`. MindSift only trusts these headers if the connection comes from a trusted proxy, otherwise anyone who directly reaches the port could spoof an arbitrary address.
+
+**Whatever you trust can claim any address.** Every device in a trusted range may set `X-Forwarded-For` itself and so get around the per-address limits (the limits per account and per link still hold). The default `private` trusts the whole local network, not only your proxy: any computer, phone or container in the LAN, a Docker network or Tailscale counts as a proxy. It works without configuration, which is why it stays the default; tighten it when other people's devices share that network.
+
+- **No reverse proxy:** `TRUSTED_PROXIES=none` (see below).
+- **With a reverse proxy:** the narrowest address or range that holds the proxy, without `private`: `127.0.0.1` for a proxy on the same host, the subnet of the Docker network MindSift shares with the proxy (`docker network inspect <network>`, e.g. `172.18.0.0/16`; a container's own address can change on restart), or the proxy's address in the LAN.
 
 | `TRUSTED_PROXIES` | Effect |
 |---|---|
-| `private` (default) | Proxies from localhost, Docker, and private/home networks (`10.x`, `172.16–31.x`, `192.168.x`, `fd…`, `100.64.x`). Suitable for a proxy in the same Docker network or on the same host — nothing to configure. |
+| `private` (default) | Every device in localhost, Docker, and private/home networks (`10.x`, `172.16–31.x`, `192.168.x`, `fd…`, `100.64.x`). Works for a proxy in the same Docker network or on the same host without configuration, but trusts the rest of those networks too. |
+| `127.0.0.1`, `172.18.0.0/16`, `192.168.1.10` | Only these addresses or ranges (an address without `/` is a single host): the narrowest choice for your own proxy |
 | `private,198.51.100.0/24` | Additional custom ranges, e.g., an external proxy server or [Cloudflare IP ranges](https://www.cloudflare.com/ips/) |
 | `all` | Always trust headers (former behavior) — escape hatch if detection causes issues |
-| `none` | Never trust headers |
+| `none` | Never trust headers: the right value without a reverse proxy |
 
 If a trusted proxy does not send any client IP, a warning is logged once, and only account-level lockout applies to these requests. The entire login lockout mechanism can be disabled with `LOGIN_PROTECTION=false`.
 

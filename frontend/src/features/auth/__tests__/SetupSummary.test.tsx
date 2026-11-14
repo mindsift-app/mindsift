@@ -22,7 +22,13 @@ describe('SetupSummary: backup time', () => {
     expect(screen.getByTestId('setup-summary').textContent).toContain('Tägliche Backups um 03:00 (America/Los Angeles)');
   });
 
-  it('says the server decides when no zone is chosen', () => {
+  it('names the zone the server uses without a choice (TZ, else UTC)', () => {
+    const withZone = { ...info, serverTime: { zone: 'UTC', source: 'env' as const, now: '2026-11-14T10:00:00+01:00', fallback: 'Europe/Berlin' } };
+    render(<SetupSummary heading="Zusammenfassung" info={withZone} choices={choices('')} wizardSmtpHost="" />);
+    expect(screen.getByTestId('setup-summary').textContent).toContain('Tägliche Backups um 03:00 (Europe/Berlin)');
+  });
+
+  it('says the server decides when no zone is chosen and the server does not name it', () => {
     render(<SetupSummary heading="Zusammenfassung" info={info} choices={choices('')} wizardSmtpHost="" />);
     expect(screen.getByTestId('setup-summary').textContent).toContain('Tägliche Backups um 03:00 (Zeitzone des Servers: TZ, sonst UTC)');
   });

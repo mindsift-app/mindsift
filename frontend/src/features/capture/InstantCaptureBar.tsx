@@ -409,7 +409,7 @@ export const InstantCaptureBar: React.FC<InstantCaptureBarProps> = ({
                       ? t('toList')
                       : target === 'document'
                       ? t('asNote')
-                      : 'Dump'}
+                      : t('quickDump')}
                   </span>
                 </>
               )}

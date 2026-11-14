@@ -235,7 +235,9 @@
     "personal": "Personale",
     "deletedAt": "eliminata il {{date}}",
     "empty": "Il cestino è vuoto.",
-    "delete": "Elimina definitivamente"
+    "delete": "Elimina definitivamente",
+    "deletedAtBy": "eliminata il {{date}} da {{name}}",
+    "deletedAtAuto": "eliminata il {{date}} (automaticamente)"
   },
   "quickAdd": {
     "toList": "Aggiungi un'attività a \"{{title}}\"…",

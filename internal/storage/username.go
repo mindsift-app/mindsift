@@ -3,6 +3,8 @@ package storage
 import (
 	"database/sql"
 	"errors"
+	"fmt"
+	"log/slog"
 	"regexp"
 	"strconv"
 	"strings"
@@ -53,17 +55,31 @@ func (s *Store) usernameTaken(u, exceptUserID string) (bool, error) {
 	return n > 0, err
 }
 
+// usernameWithNumber: base with i appended (i > 0), shortened so it stays within the length limit.
+func usernameWithNumber(base string, i int) string {
+	if i == 0 {
+		return base
+	}
+	suffix := strconv.Itoa(i)
+	return strings.Trim(base[:min(len(base), usernameMaxLen-len(suffix))], "._-") + suffix
+}
+
+// usernameTakenErr turns the unique index on users.username refusing a name (another request took it
+// between the check and the write) into ErrUsernameTaken; other errors pass unchanged.
+func usernameTakenErr(err error) error {
+	if err != nil && strings.Contains(err.Error(), "UNIQUE constraint failed: users.username") {
+		return ErrUsernameTaken
+	}
+	return err
+}
+
 // uniqueUsername returns base or, when taken, base with the first free number appended (base1, base2 …).
 func (s *Store) uniqueUsername(base, exceptUserID string) (string, error) {
 	if len(base) < 2 {
 		base = "user"
 	}
 	for i := 0; i < 10000; i++ {
-		candidate := base
-		if i > 0 {
-			suffix := strconv.Itoa(i)
-			candidate = strings.Trim(base[:min(len(base), usernameMaxLen-len(suffix))], "._-") + suffix
-		}
+		candidate := usernameWithNumber(base, i)
 		taken, err := s.usernameTaken(candidate, exceptUserID)
 		if err != nil {
 			return "", err
@@ -90,7 +106,7 @@ func (s *Store) SetUsername(userID, username string) error {
 	}
 	res, err := s.db.Exec(`UPDATE users SET username = ? WHERE id = ?`, u, userID)
 	if err != nil {
-		return err
+		return usernameTakenErr(err)
 	}
 	if n, _ := res.RowsAffected(); n == 0 {
 		return sql.ErrNoRows
@@ -138,4 +154,76 @@ func (s *Store) migrateUsernames() error {
 		}
 	}
 	return nil
+}
+
+// migrateUniqueUsernames is migration 45: the index on users.username becomes UNIQUE, so two requests at
+// the same moment can no longer hand out the same name (the check before the write saw it free for both).
+// Names that are already there twice are resolved first: the oldest account keeps its name, each later one
+// gets the next free number as a new account would (sandro, sandro1 …), and every change is logged. Names
+// are stored in lower case; one that is not (never written by this version) is lowered first, so the index
+// sees what the sign-in compares. Accounts without a username stay without one.
+func (s *Store) migrateUniqueUsernames() error {
+	rows, err := s.db.Query(`SELECT id, username FROM users ORDER BY created_at, id`)
+	if err != nil {
+		return err
+	}
+	type row struct{ id, username string }
+	var all []row
+	taken := map[string]bool{}
+	for rows.Next() {
+		var r row
+		if err := rows.Scan(&r.id, &r.username); err != nil {
+			_ = rows.Close()
+			return err
+		}
+		all = append(all, r)
+		taken[strings.ToLower(r.username)] = true
+	}
+	if err := rows.Err(); err != nil {
+		return err
+	}
+	_ = rows.Close()
+
+	// One transaction: the reads above are closed, nothing below needs a second connection
+	tx, err := s.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback() }()
+	kept := map[string]bool{}
+	for _, r := range all {
+		name := strings.ToLower(r.username)
+		if name == "" {
+			continue
+		}
+		if kept[name] {
+			free := ""
+			for i := 1; i < 10000 && free == ""; i++ {
+				if c := usernameWithNumber(name, i); !taken[c] {
+					free = c
+				}
+			}
+			if free == "" {
+				return fmt.Errorf("no free username for account %s", r.id)
+			}
+			slog.Warn("Username was also held by an older account; renamed", "user_id", r.id, "old_username", r.username, "new_username", free)
+			name = free
+			taken[name] = true
+		} else if name != r.username {
+			slog.Info("Username stored in lower case", "user_id", r.id, "old_username", r.username, "new_username", name)
+		}
+		kept[name] = true
+		if name != r.username {
+			if _, err := tx.Exec(`UPDATE users SET username = ? WHERE id = ?`, name, r.id); err != nil {
+				return err
+			}
+		}
+	}
+	if _, err := tx.Exec(`DROP INDEX IF EXISTS idx_users_username`); err != nil {
+		return err
+	}
+	if _, err := tx.Exec(`CREATE UNIQUE INDEX idx_users_username ON users(username) WHERE username != ''`); err != nil {
+		return err
+	}
+	return tx.Commit()
 }

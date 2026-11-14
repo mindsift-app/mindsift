@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"errors"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -25,6 +26,34 @@ func TestSeveralAccountsWithoutAddress(t *testing.T) {
 	}
 	if s.EmailInUse("") {
 		t.Fatal("no address is never in use")
+	}
+}
+
+// When two requests take the same address at once, the second one past the check meets the unique index:
+// that is ErrEmailTaken (409 for clients), not a raw database error (500)
+func TestTakenAddressIsErrEmailTaken(t *testing.T) {
+	s, err := NewStore(filepath.Join(t.TempDir(), "m.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer s.Close()
+	if _, err := s.CreateUser("anna@example.com", "x", "Anna", "member"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.CreateUser("Anna@Example.com", "x", "Anna Zwei", "member"); !errors.Is(err, ErrEmailTaken) {
+		t.Fatalf("create with a taken address: %v", err)
+	}
+	ben, err := s.CreateUser("ben@example.com", "x", "Ben", "member")
+	if err != nil {
+		t.Fatal(err)
+	}
+	taken := "anna@example.com"
+	if _, err := s.UpdateUser(ben.ID, nil, &taken, nil, nil, nil, nil); !errors.Is(err, ErrEmailTaken) {
+		t.Fatalf("update to a taken address: %v", err)
+	}
+	name := "Ben\nBcc: x@example.com"
+	if u, err := s.UpdateUser(ben.ID, &name, nil, nil, nil, nil, nil); err != nil || u.DisplayName != "Ben Bcc: x@example.com" {
+		t.Fatalf("display name not stored in one line: %v %+v", err, u)
 	}
 }
 

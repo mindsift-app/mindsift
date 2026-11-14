@@ -19,7 +19,8 @@ import (
 
 // Link previews for notes: the server fetches the page once (https only, never into its own network,
 // like alarm webhooks), reads title, description, picture and icon, and keeps them. Readers' browsers
-// only talk to MindSift. Off in the demo, which must not send anything out.
+// only talk to MindSift. Off in the demo, which must not send anything out, and when the administration
+// switches them off for the whole server (system setting link_previews).
 
 const (
 	previewTTL        = 7 * 24 * time.Hour
@@ -272,8 +273,30 @@ func previewFresh(p *storage.LinkPreview, now time.Time) bool {
 	return now.Sub(at) < ttl
 }
 
+// linkPreviewsEnabled: the admin's switch (default on); never in demo mode.
+func (s *Server) linkPreviewsEnabled() bool {
+	if s.cfg.DemoMode {
+		return false
+	}
+	sys, _ := s.store.GetSystemSettings()
+	return sys == nil || sys.LinkPreviews == nil || *sys.LinkPreviews
+}
+
+// refuseLinkPreviews answers 404 with the code link_previews_off when the administration switched link
+// previews off: nothing is fetched, and the app stops showing preview cards. Reports whether it answered.
+func (s *Server) refuseLinkPreviews(w http.ResponseWriter) bool {
+	if s.linkPreviewsEnabled() {
+		return false
+	}
+	writeErrorCode(w, http.StatusNotFound, "link_previews_off", "Link-Vorschauen sind auf diesem Server ausgeschaltet")
+	return true
+}
+
 // handleLinkPreview: GET /link-preview?url=https://…
 func (s *Server) handleLinkPreview(w http.ResponseWriter, r *http.Request) {
+	if s.refuseLinkPreviews(w) {
+		return
+	}
 	raw := strings.TrimSpace(r.URL.Query().Get("url"))
 	u, err := url.Parse(raw)
 	if err != nil || u.Scheme != "https" || u.Host == "" || len(raw) > 2000 {
@@ -315,6 +338,9 @@ func (s *Server) handleLinkPreview(w http.ResponseWriter, r *http.Request) {
 
 // handleLinkPreviewPicture: GET /link-preview/{key}/image or /icon
 func (s *Server) handleLinkPreviewPicture(w http.ResponseWriter, r *http.Request) {
+	if s.refuseLinkPreviews(w) {
+		return
+	}
 	p, err := s.store.GetLinkPreview(chi.URLParam(r, "key"))
 	if err != nil {
 		writeError(w, http.StatusNotFound, "Kein Bild")

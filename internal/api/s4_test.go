@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -88,6 +89,80 @@ func TestSMTPPasswordNeverReturned(t *testing.T) {
 	sessionCall(router, "PUT", "/api/v1/admin/settings", token, `{"sharingMode":"organizations","smtpHost":"mail.example.com","smtpUser":"","smtpPass":""}`, "")
 	if sys, _ := store.GetSystemSettings(); sys.SMTPPass != "" {
 		t.Fatalf("password without user must be cleared, got %q", sys.SMTPPass)
+	}
+}
+
+// SECRETS_KEY changed: the stored SMTP password no longer decrypts. Mail fails with a clear reason, the
+// administration says so (still without any password), and the admin can enter it again.
+func TestSMTPPasswordUndecryptable(t *testing.T) {
+	srv, _, token := setupTestServer(t)
+	if rec := sessionCall(srv.Router(), "PUT", "/api/v1/admin/settings", token,
+		`{"sharingMode":"organizations","smtpHost":"mail.example.com","smtpUser":"bot","smtpPass":"geheim123"}`, ""); rec.Code != http.StatusOK {
+		t.Fatalf("save: %d %s", rec.Code, rec.Body.String())
+	}
+	other, err := storage.NewStore(srv.cfg.DatabasePath, storage.WithSecretsKey([]byte("another-secrets-key-32-bytes!!!!")))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = other.Close() })
+	cfg := *srv.cfg
+	srv2 := NewServer(&cfg, other, ws.NewHub(), nil)
+	t.Cleanup(srv2.Close)
+	router := srv2.Router()
+
+	if _, err := srv2.smtpSettings(); !errors.Is(err, errSMTPPassUnreadable) {
+		t.Fatalf("mail must fail with the unreadable password, got %v", err)
+	}
+	body := sessionCall(router, "GET", "/api/v1/admin/settings", token, "", "").Body.String()
+	if !strings.Contains(body, `"smtpPassUnreadable":true`) || strings.Contains(body, `"smtpPassSet":true`) || strings.Contains(body, "v1:") {
+		t.Fatalf("the administration must learn that the password is unreadable, and nothing of it: %s", body)
+	}
+	// Saving with the empty field (other settings) keeps the stored password; it opens again with the old key
+	sessionCall(router, "PUT", "/api/v1/admin/settings", token, `{"sharingMode":"organizations","instanceName":"Neu","smtpHost":"mail.example.com","smtpUser":"bot","smtpPass":"","smtpPassUnreadable":false}`, "")
+	again, err := storage.NewStore(srv.cfg.DatabasePath, storage.WithSecretsKey(testSecretsKey))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if sys, _ := again.GetSystemSettings(); sys.SMTPPass != "geheim123" || sys.InstanceName != "Neu" {
+		t.Fatalf("the unreadable password must stay as it was, got %q / %q", sys.SMTPPass, sys.InstanceName)
+	}
+	_ = again.Close()
+	// The admin enters it again
+	sessionCall(router, "PUT", "/api/v1/admin/settings", token, `{"sharingMode":"organizations","smtpHost":"mail.example.com","smtpUser":"bot","smtpPass":"neu-2026"}`, "")
+	if cfg, err := srv2.smtpSettings(); err != nil || cfg.Pass != "neu-2026" {
+		t.Fatalf("after entering it again: %q (%v)", cfg.Pass, err)
+	}
+}
+
+// SMTP_PASS stays in the environment: the first start copies host and user, not the password; mail uses
+// it while host and user are those of the environment, and the administration shows that one is set
+func TestSMTPPasswordFromEnvNotStored(t *testing.T) {
+	srv, store, token := setupTestServer(t)
+	srv.cfg.SMTPHost, srv.cfg.SMTPUser, srv.cfg.SMTPPass = "mail.example.com", "bot", "aus-der-umgebung"
+	store.SeedSMTPDefaultsFromEnv(srv.cfg.SMTPHost, "587", srv.cfg.SMTPUser, srv.cfg.SMTPPass, "bot@example.com", "", true, false)
+	if sys, _ := store.GetSystemSettings(); sys.SMTPHost != "mail.example.com" || sys.SMTPPass != "" {
+		t.Fatalf("seeded host %q, stored password %q", sys.SMTPHost, sys.SMTPPass)
+	}
+	if cfg, err := srv.smtpSettings(); err != nil || cfg.Pass != "aus-der-umgebung" {
+		t.Fatalf("mail must use SMTP_PASS, got %q (%v)", cfg.Pass, err)
+	}
+	router := srv.Router()
+	body := sessionCall(router, "GET", "/api/v1/admin/settings", token, "", "").Body.String()
+	if !strings.Contains(body, `"smtpPassSet":true`) || !strings.Contains(body, `"smtpPassViaEnv":true`) || strings.Contains(body, "aus-der-umgebung") {
+		t.Fatalf("the administration must show a password from the environment, and nothing of it: %s", body)
+	}
+	// Saving the settings with the empty field still stores no password
+	sessionCall(router, "PUT", "/api/v1/admin/settings", token, `{"sharingMode":"organizations","smtpHost":"mail.example.com","smtpUser":"bot","smtpPass":""}`, "")
+	if sys, _ := store.GetSystemSettings(); sys.SMTPPass != "" {
+		t.Fatalf("saving must not store SMTP_PASS, got %q", sys.SMTPPass)
+	}
+	// Another mail server set in the administration never gets the password of the environment
+	sessionCall(router, "PUT", "/api/v1/admin/settings", token, `{"sharingMode":"organizations","smtpHost":"smtp.other.example","smtpUser":"bot","smtpPass":""}`, "")
+	if cfg, err := srv.smtpSettings(); err != nil || cfg.Pass != "" {
+		t.Fatalf("another server must not get SMTP_PASS, got %q (%v)", cfg.Pass, err)
+	}
+	if body := sessionCall(router, "GET", "/api/v1/admin/settings", token, "", "").Body.String(); strings.Contains(body, `"smtpPassViaEnv":true`) {
+		t.Fatalf("another server: no password from the environment: %s", body)
 	}
 }
 

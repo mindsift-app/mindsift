@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import i18n from '../../../i18n';
 import { NotificationEvents, NotificationSettings, PushDevice, User } from '../../../lib/types';
 import { api } from '../../../lib/api';
@@ -144,14 +144,25 @@ export function useAlarmSettings(currentUser: User, onUserUpdated: (u: User) => 
   };
 
 
-  // The form follows the account when it changes (saved here or on another device)
+  // The form follows the account when it changes (saved here or on another device). Only fields whose
+  // saved value changed are replaced: the account is loaded again on every return to the tab and after
+  // other settings are saved (e.g. the avatar), and that must not throw away what is being typed here.
+  const shownUserRef = useRef(currentUser);
   useEffect(() => {
-    // The form follows the account when it changes (saved here or on another device)
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setNotificationSettings(buildNotificationSettings(currentUser));
-    setDiscordWebhookUrl(currentUser.discordWebhookUrl || '');
-    setCustomWebhookUrl(currentUser.customWebhookUrl || '');
-    setNotifyBeforeMinutes(currentUser.notifyBeforeMinutes ?? 30);
+    const prev = shownUserRef.current;
+    shownUserRef.current = currentUser;
+    if (prev === currentUser) return;
+    const saved = buildNotificationSettings(currentUser);
+    if (JSON.stringify(buildNotificationSettings(prev)) !== JSON.stringify(saved)) setNotificationSettings(saved);
+    if ((prev.discordWebhookUrl || '') !== (currentUser.discordWebhookUrl || '')) {
+      setDiscordWebhookUrl(currentUser.discordWebhookUrl || '');
+    }
+    if ((prev.customWebhookUrl || '') !== (currentUser.customWebhookUrl || '')) {
+      setCustomWebhookUrl(currentUser.customWebhookUrl || '');
+    }
+    if ((prev.notifyBeforeMinutes ?? 30) !== (currentUser.notifyBeforeMinutes ?? 30)) {
+      setNotifyBeforeMinutes(currentUser.notifyBeforeMinutes ?? 30);
+    }
   }, [currentUser]);
 
   const setEventChannel = (eventKey: keyof NotificationEvents, channel: 'email' | 'discord' | 'webhook' | 'push', value: boolean) => {

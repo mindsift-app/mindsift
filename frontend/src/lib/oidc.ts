@@ -88,6 +88,12 @@ export function oidcErrorText(code: string): string {
   return i18n.t('auth:oidc.error.failed', { name });
 }
 
+// This page load comes back from the provider (finishOidcReturn has not taken the address yet)
+export function oidcReturnPending(): boolean {
+  const params = new URLSearchParams(window.location.search);
+  return params.has('oidc') || params.has('oidc_error');
+}
+
 // Reads ?oidc / ?oidc_error once, removes them from the address bar and trades the ticket. Runs at the start
 // of the app, before it looks for a session; the result waits for takeOidcResult.
 export async function finishOidcReturn(): Promise<OidcResult | null> {

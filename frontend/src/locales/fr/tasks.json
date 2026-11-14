@@ -235,7 +235,9 @@
     "personal": "Personnel",
     "deletedAt": "supprimée le {{date}}",
     "empty": "La corbeille est vide.",
-    "delete": "Supprimer définitivement"
+    "delete": "Supprimer définitivement",
+    "deletedAtBy": "supprimée le {{date}} par {{name}}",
+    "deletedAtAuto": "supprimée le {{date}} (automatiquement)"
   },
   "quickAdd": {
     "toList": "Ajouter une tâche à \"{{title}}\"…",

@@ -9,10 +9,10 @@ import (
 	"testing/fstest"
 )
 
-// The third-party licenses come as plain text without signing in, next to the app's page; without the
-// file (development) the address answers 404, not the app's page.
+// The third-party licenses come as plain text to signed-in people only (they name every dependency's
+// version); without the file (development) the address answers 404. The old public address is gone.
 func TestThirdPartyLicenses(t *testing.T) {
-	srv, _, _ := setupTestServer(t)
+	srv, _, token := setupTestServer(t)
 	srv.staticFS = fstest.MapFS{"index.html": {Data: []byte("<html><head></head></html>")}}
 	file := filepath.Join(t.TempDir(), thirdPartyLicensesName)
 	if err := os.WriteFile(file, []byte("react 19.2.0 (MIT)\n"), 0o600); err != nil {
@@ -21,7 +21,13 @@ func TestThirdPartyLicenses(t *testing.T) {
 	srv.licensesFile = file
 	router := srv.Router()
 
-	rec := getWith(t, router, "/third-party-licenses.txt", "")
+	if rec := getWith(t, router, "/api/v1/third-party-licenses", ""); rec.Code != http.StatusUnauthorized || strings.Contains(rec.Body.String(), "react") {
+		t.Fatalf("without signing in: %d %q", rec.Code, rec.Body.String())
+	}
+	if rec := getWith(t, router, "/third-party-licenses.txt", ""); strings.Contains(rec.Body.String(), "react 19.2.0") {
+		t.Fatalf("old public address still serves the file: %d", rec.Code)
+	}
+	rec := getWith(t, router, "/api/v1/third-party-licenses", token)
 	if rec.Code != http.StatusOK || !strings.HasPrefix(rec.Header().Get("Content-Type"), "text/plain") || !strings.Contains(rec.Body.String(), "react 19.2.0") {
 		t.Fatalf("licenses: %d %q %q", rec.Code, rec.Header().Get("Content-Type"), rec.Body.String())
 	}
@@ -31,7 +37,7 @@ func TestThirdPartyLicenses(t *testing.T) {
 
 	for _, missing := range []string{"", filepath.Join(t.TempDir(), "fehlt.txt"), t.TempDir()} {
 		srv.licensesFile = missing
-		if rec := getWith(t, srv.Router(), "/third-party-licenses.txt", ""); rec.Code != http.StatusNotFound || strings.Contains(rec.Body.String(), "<html>") {
+		if rec := getWith(t, srv.Router(), "/api/v1/third-party-licenses", token); rec.Code != http.StatusNotFound || strings.Contains(rec.Body.String(), "<html>") {
 			t.Fatalf("without the file (%q): %d %q", missing, rec.Code, rec.Body.String())
 		}
 	}

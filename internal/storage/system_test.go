@@ -134,3 +134,75 @@ func TestTimeZoneSetting(t *testing.T) {
 		t.Fatalf("reset: %v %q", err, zone())
 	}
 }
+
+// Switching link previews off server-wide clears the cached previews at once; switching them on or
+// saving other settings leaves them
+func TestLinkPreviewsOffClearsCache(t *testing.T) {
+	store, _, _ := setupTestStore(t)
+	if err := store.SaveLinkPreview(&LinkPreview{URL: "https://example.com/a", Title: "Beispiel", OK: true}); err != nil {
+		t.Fatal(err)
+	}
+	cached := func() int {
+		var n int
+		if err := store.db.QueryRow(`SELECT COUNT(*) FROM link_previews`).Scan(&n); err != nil {
+			t.Fatal(err)
+		}
+		return n
+	}
+	save := func(linkPreviews *bool) {
+		sys, err := store.GetSystemSettings()
+		if err != nil {
+			t.Fatal(err)
+		}
+		sys.LinkPreviews = linkPreviews
+		if err := store.UpdateSystemSettings(sys); err != nil {
+			t.Fatal(err)
+		}
+	}
+	on, off := true, false
+	save(&on)
+	save(nil)
+	if n := cached(); n != 1 {
+		t.Fatalf("previews on: want the cached preview kept, got %d", n)
+	}
+	save(&off)
+	if n := cached(); n != 0 {
+		t.Fatalf("previews off: want the cache empty, got %d rows", n)
+	}
+}
+
+// SMTP_PASS is not copied into the database; a copy older versions stored for the same server is removed
+func TestSeedSMTPFromEnvKeepsPasswordOut(t *testing.T) {
+	store, _, _ := setupTestStore(t)
+	store.SeedSMTPDefaultsFromEnv("mail.example.com", "465", "bot", "aus-der-umgebung", "bot@example.com", "", true, false)
+	sys, err := store.GetSystemSettings()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if sys.SMTPHost != "mail.example.com" || sys.SMTPPort != "465" || sys.SMTPUser != "bot" || sys.SMTPPass != "" {
+		t.Fatalf("seeded %q %q %q, password %q", sys.SMTPHost, sys.SMTPPort, sys.SMTPUser, sys.SMTPPass)
+	}
+	if row := storedSMTPPassRow(t, store); row != "" {
+		t.Fatalf("the password from the environment must not be stored, got %q", row)
+	}
+
+	// An older version stored the copy: the next start removes it
+	sys.SMTPPass = "aus-der-umgebung"
+	if err := store.UpdateSystemSettings(sys); err != nil {
+		t.Fatal(err)
+	}
+	store.SeedSMTPDefaultsFromEnv("MAIL.example.com", "465", "bot", "aus-der-umgebung", "bot@example.com", "", true, false)
+	if got, _ := store.GetSystemSettings(); got.SMTPPass != "" {
+		t.Fatalf("the old copy of SMTP_PASS must be removed, got %q", got.SMTPPass)
+	}
+
+	// A password the admin entered (another one) stays
+	sys.SMTPPass = "vom-admin"
+	if err := store.UpdateSystemSettings(sys); err != nil {
+		t.Fatal(err)
+	}
+	store.SeedSMTPDefaultsFromEnv("mail.example.com", "465", "bot", "aus-der-umgebung", "bot@example.com", "", true, false)
+	if got, _ := store.GetSystemSettings(); got.SMTPPass != "vom-admin" {
+		t.Fatalf("a password entered in the administration must stay, got %q", got.SMTPPass)
+	}
+}

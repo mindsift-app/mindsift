@@ -35,8 +35,9 @@ export function TaskTrashList({ items, lists, showList, onRestore, onPurge }: Ta
                         {' · '}
                       </>
                     )}
-                    {t('trash.deletedAt', { date: formatDeletedAt(item.trashedAt) })}
-                    {item.trashedBy ? ` von ${item.trashedBy}` : ' (automatisch)'}
+                    {item.trashedBy
+                      ? t('trash.deletedAtBy', { date: formatDeletedAt(item.trashedAt), name: item.trashedBy })
+                      : t('trash.deletedAtAuto', { date: formatDeletedAt(item.trashedAt) })}
                   </p>
                 </div>
               </div>

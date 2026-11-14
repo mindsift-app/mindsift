@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/mindsift-app/mindsift/internal/clock"
+	"github.com/mindsift-app/mindsift/internal/domain"
 	"github.com/mindsift-app/mindsift/internal/i18n"
 )
 
@@ -76,7 +77,7 @@ func mailGreeting(lang string, now time.Time, name string) string {
 	case h >= 18 || h < 4:
 		g = "Guten Abend"
 	}
-	if name = strings.TrimSpace(name); name != "" {
+	if name = domain.CleanDisplayName(name); name != "" {
 		return i18n.T(lang, g+", {name}", "name", name)
 	}
 	return i18n.T(lang, g)
@@ -108,7 +109,35 @@ func esc(s string) string {
 
 // renderMail returns the plain-text and the HTML version of the same content.
 func renderMail(c mailContent) (text, htmlBody string) {
+	c = c.oneLineFields()
 	return renderMailText(c), renderMailHTML(c)
+}
+
+// oneLineFields: the fields shown as a single line (greeting, preview, headings, titles, button) without
+// line breaks or other control characters. They carry names and titles people typed in; a line break there
+// would otherwise start a line of its own in the plain-text part. Intro, notes and bodies keep theirs.
+func (c mailContent) oneLineFields() mailContent {
+	c.Preheader = domain.CleanDisplayName(c.Preheader)
+	c.Greeting = domain.CleanDisplayName(c.Greeting)
+	sections := make([]mailSection, len(c.Sections))
+	for i, sec := range c.Sections {
+		sec.Title = domain.CleanDisplayName(sec.Title)
+		items := make([]mailItem, len(sec.Items))
+		for j, it := range sec.Items {
+			it.Title = domain.CleanDisplayName(it.Title)
+			it.Meta = domain.CleanDisplayName(it.Meta)
+			items[j] = it
+		}
+		sec.Items = items
+		sections[i] = sec
+	}
+	c.Sections = sections
+	if c.Button != nil {
+		b := *c.Button
+		b.Label = domain.CleanDisplayName(b.Label)
+		c.Button = &b
+	}
+	return c
 }
 
 func renderMailText(c mailContent) string {

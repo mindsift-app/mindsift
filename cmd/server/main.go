@@ -47,7 +47,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	store, err := storage.NewStore(cfg.DatabasePath)
+	store, err := storage.NewStore(cfg.DatabasePath, storage.WithSecretsKey(cfg.SecretsKey))
 	if err != nil {
 		slog.Error("Failed to initialize storage", "error", err)
 		os.Exit(1)
@@ -81,6 +81,7 @@ func main() {
 
 	srv := api.NewServer(cfg, store, wsHub, staticFS)
 	srv.ApplyTimeZone()
+	srv.CheckSecretsKey()
 	// ADMIN_USER / ADMIN_PASSWORD: the first admin exists before anyone can reach the setup wizard. Set
 	// but unusable, the server does not start: it would wait for the first visitor to become admin.
 	if err := srv.CreateInitialAdmin(); err != nil {
@@ -97,9 +98,9 @@ func main() {
 		BaseContext: func(l net.Listener) context.Context {
 			return serverCtx
 		},
-		ReadTimeout:  15 * time.Second,
-		WriteTimeout: 30 * time.Second,
-		IdleTimeout:  60 * time.Second,
+		ReadTimeout:  api.ReadTimeout,
+		WriteTimeout: api.WriteTimeout,
+		IdleTimeout:  api.IdleTimeout,
 		// MindSift sets no cookies and uses short headers; Go's default of 1 MiB per request only helps
 		// someone filling the server's memory
 		MaxHeaderBytes: 64 << 10,

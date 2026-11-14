@@ -100,7 +100,7 @@ export const ImageBlock: React.FC<ImageBlockProps> = ({ content, canEdit, onCapt
         createPortal(
           <div
             role="dialog"
-            aria-label={ref.caption || 'Bild'}
+            aria-label={ref.caption || t('editor.kind.image')}
             onClick={() => setZoomed(false)}
             className="fixed inset-0 z-[100] bg-black/85 flex flex-col items-center justify-center p-4 cursor-zoom-out"
           >

@@ -1,7 +1,6 @@
 package api
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -88,10 +87,17 @@ func (s *Server) runImport(w http.ResponseWriter, r *http.Request, plan *storage
 	sections := storage.NormalizeSections(strings.Split(r.URL.Query().Get("sections"), ","))
 	plan = plan.Only(sections)
 	if r.URL.Query().Get("preview") == "1" {
-		writeJSON(w, http.StatusOK, trSummary(w, plan.Summary(false)))
+		s.previewImport(w, auth.GetUserID(r.Context()), plan)
 		return
 	}
 	s.applyImport(w, auth.GetUserID(r.Context()), plan, sections, r.URL.Query().Get("mode") == "restore" && strings.HasSuffix(r.URL.Path, "/mindsift"))
+}
+
+// previewImport answers with what the plan would create and skip, including references to files the
+// person may not read (they are dropped when the plan is applied).
+func (s *Server) previewImport(w http.ResponseWriter, userID string, plan *storage.ImportPlan) {
+	s.store.CheckImportMedia(userID, plan)
+	writeJSON(w, http.StatusOK, trSummary(w, plan.Summary(false)))
 }
 
 // applyImport adds the plan to the user's data; with restore the chosen sections are emptied first.
@@ -122,23 +128,35 @@ func trSummary(w http.ResponseWriter, sum storage.ImportSummary) storage.ImportS
 
 // handleImportMindSift restores MindSift's own data: the JSON backup or the Markdown archive (ZIP).
 func (s *Server) handleImportMindSift(w http.ResponseWriter, r *http.Request) {
-	data, name, err := importUpload(w, r)
+	file, size, name, err := importUpload(w, r)
 	if err != nil {
 		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
-	plan, err := storage.PlanMindSiftImport(data, name)
+	defer file.Close()
+	done, ok := s.startImport(w, r)
+	if !ok {
+		return
+	}
+	defer done()
+	plan, err := storage.PlanMindSiftImport(file, size, name)
 	s.runImport(w, r, plan, err)
 }
 
 // handleImportObsidian imports an Obsidian vault (ZIP) into a folder named after the vault.
 func (s *Server) handleImportObsidian(w http.ResponseWriter, r *http.Request) {
-	data, name, err := importUpload(w, r)
+	file, size, name, err := importUpload(w, r)
 	if err != nil {
 		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
-	plan, err := storage.PlanObsidianImport(bytes.NewReader(data), int64(len(data)), name)
+	defer file.Close()
+	done, ok := s.startImport(w, r)
+	if !ok {
+		return
+	}
+	defer done()
+	plan, err := storage.PlanObsidianImport(file, size, name)
 	s.runImport(w, r, plan, err)
 }
 

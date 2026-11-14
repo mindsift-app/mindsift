@@ -1,7 +1,6 @@
 package storage
 
 import (
-	"encoding/json"
 	"log/slog"
 	"strconv"
 	"strings"
@@ -36,29 +35,12 @@ func (s *Store) GetDashboardStats(userID string) (*domain.DashboardStats, error)
 		userID, userID, userID).Scan(&st.ListItemsOpenCount))
 
 	// Count open (uncompleted) To-Dos across accessible workspace documents (owned or shared)
-	docRows, err := s.db.Query(`
-		SELECT blocks_json FROM documents 
-		WHERE (user_id = ? OR id IN (SELECT doc_id FROM doc_shares WHERE user_id = ?))
-		  AND is_archived = 0`,
+	logDBErr(s.db.QueryRow(`
+		SELECT COUNT(*) FROM blocks b JOIN documents d ON d.id = b.document_id
+		WHERE (d.user_id = ? OR d.id IN (SELECT doc_id FROM doc_shares WHERE user_id = ?))
+		  AND d.is_archived = 0 AND b.deleted = 0 AND b.type = 'todo' AND b.checked = 0`,
 		userID, userID,
-	)
-	if err == nil {
-		for docRows.Next() {
-			var bj string
-			if err := docRows.Scan(&bj); !dbFailed(err) && bj != "" {
-				var blocks []domain.DocumentBlock
-				if err := json.Unmarshal([]byte(bj), &blocks); err == nil {
-					for _, b := range blocks {
-						if b.Type == "todo" && !b.Checked {
-							st.DocsTodosOpenCount++
-						}
-					}
-				}
-			}
-		}
-		logDBErr(docRows.Err())
-		_ = docRows.Close()
-	}
+	).Scan(&st.DocsTodosOpenCount))
 
 	return st, nil
 }
@@ -96,27 +78,46 @@ func (s *Store) ExportUserData(userID string) (*domain.FullExport, error) {
 
 // --- SYSTEM SETTINGS ---
 
+// SeedSMTPDefaultsFromEnv copies the mail server from the environment (SMTP_*) into the admin settings
+// on the first start, so the administration shows it and can change it. The password is not copied: it
+// stays in SMTP_PASS only, and the server takes it from there while host and user are those of the
+// environment (Server.envSMTPPass). A copy older versions stored for that host and user is removed again.
 func (s *Store) SeedSMTPDefaultsFromEnv(host, port, user, pass, from, fromName string, tls, skipVerify bool) {
 	cur, err := s.GetSystemSettings()
 	if err != nil || cur == nil {
 		return
 	}
-	// Only populate DB from env if DB has no SMTP host configured yet and env provides one
-	if cur.SMTPHost == "" && strings.TrimSpace(host) != "" {
-		cur.SMTPHost = strings.TrimSpace(host)
+	host, user = strings.TrimSpace(host), strings.TrimSpace(user)
+	if host == "" {
+		return
+	}
+	switch {
+	case cur.SMTPHost == "":
+		// Only populate DB from env if DB has no SMTP host configured yet and env provides one
+		cur.SMTPHost = host
 		if strings.TrimSpace(port) != "" {
 			cur.SMTPPort = strings.TrimSpace(port)
 		}
-		cur.SMTPUser = strings.TrimSpace(user)
-		cur.SMTPPass = pass
+		cur.SMTPUser = user
+		cur.SMTPPass = ""
 		cur.SMTPFrom = strings.TrimSpace(from)
 		cur.SMTPFromName = strings.TrimSpace(fromName)
 		cur.SMTPTLS = tls
 		cur.SMTPSkipVerify = skipVerify
-		if err := s.UpdateSystemSettings(cur); err != nil {
-			slog.Warn("Taking the mail settings from the environment failed", "error", err)
-		}
+	case pass != "" && cur.SMTPPass == pass && SMTPMatchesEnv(cur.SMTPHost, cur.SMTPUser, host, user):
+		cur.SMTPPass = ""
+	default:
+		return
 	}
+	if err := s.UpdateSystemSettings(cur); err != nil {
+		slog.Warn("Taking the mail settings from the environment failed", "error", err)
+	}
+}
+
+// SMTPMatchesEnv: the stored mail server is the one SMTP_HOST and SMTP_USER name, so SMTP_PASS belongs to it.
+func SMTPMatchesEnv(host, user, envHost, envUser string) bool {
+	return strings.TrimSpace(envHost) != "" && strings.EqualFold(strings.TrimSpace(host), strings.TrimSpace(envHost)) &&
+		strings.TrimSpace(user) == strings.TrimSpace(envUser)
 }
 
 // GetSystemSettings answers from memory after the first read: there is one process, and every change goes
@@ -164,7 +165,7 @@ func cloneSystemSettings(in *domain.SystemSettings) *domain.SystemSettings {
 		v := *out.ServerTime
 		out.ServerTime = &v
 	}
-	for _, p := range []**bool{&out.PushKnownServicesOnly, &out.RetentionAllowNever, &out.MCPEnabled, &out.PeopleSearch, &out.PublicLinks} {
+	for _, p := range []**bool{&out.PushKnownServicesOnly, &out.RetentionAllowNever, &out.MCPEnabled, &out.PeopleSearch, &out.PublicLinks, &out.LinkPreviews} {
 		if *p != nil {
 			v := **p
 			*p = &v
@@ -215,7 +216,8 @@ func (s *Store) readSystemSettings() (*domain.SystemSettings, error) {
 			case "smtp_user":
 				settings.SMTPUser = v
 			case "smtp_pass":
-				settings.SMTPPass = v
+				pass, ok := s.readSMTPPass(v)
+				settings.SMTPPass, settings.SMTPPassUnreadable = pass, !ok
 			case "smtp_from":
 				settings.SMTPFrom = v
 			case "smtp_from_name":
@@ -255,6 +257,9 @@ func (s *Store) readSystemSettings() (*domain.SystemSettings, error) {
 			case "public_links":
 				on := v != "false"
 				settings.PublicLinks = &on
+			case "link_previews":
+				on := v != "false"
+				settings.LinkPreviews = &on
 			case "public_link_max_days":
 				if n, err := strconv.Atoi(v); err == nil && n >= 1 && n <= MaxPublicLinkDays {
 					settings.PublicLinkMaxDays = n
@@ -299,6 +304,10 @@ func (s *Store) readSystemSettings() (*domain.SystemSettings, error) {
 	if settings.PublicLinks == nil {
 		on := true
 		settings.PublicLinks = &on
+	}
+	if settings.LinkPreviews == nil {
+		on := true
+		settings.LinkPreviews = &on
 	}
 	if settings.MFARequired == nil {
 		nobody := MFARequiredNobody
@@ -362,7 +371,6 @@ func (s *Store) UpdateSystemSettings(settings *domain.SystemSettings) error {
 		('smtp_host', ?),
 		('smtp_port', ?),
 		('smtp_user', ?),
-		('smtp_pass', ?),
 		('smtp_from', ?),
 		('smtp_from_name', ?),
 		('smtp_tls', ?),
@@ -381,7 +389,6 @@ func (s *Store) UpdateSystemSettings(settings *domain.SystemSettings) error {
 		strings.TrimSpace(settings.SMTPHost),
 		strings.TrimSpace(settings.SMTPPort),
 		strings.TrimSpace(settings.SMTPUser),
-		settings.SMTPPass,
 		strings.TrimSpace(settings.SMTPFrom),
 		strings.TrimSpace(settings.SMTPFromName),
 		tlsStr,
@@ -394,6 +401,15 @@ func (s *Store) UpdateSystemSettings(settings *domain.SystemSettings) error {
 		settings.RegistrationDomains,
 		strconv.FormatBool(settings.RegistrationVerifyEmail),
 	)
+	// The SMTP password sealed with SECRETS_KEY (sealed.go). One that no longer opens stays as it is when
+	// no new one comes with the settings, so saving other settings does not lose it.
+	if err == nil && (settings.SMTPPass != "" || !settings.SMTPPassUnreadable) {
+		var stored string
+		if stored, err = s.storedSMTPPass(settings.SMTPPass); err == nil {
+			_, err = s.db.Exec(`INSERT INTO system_settings (key, value) VALUES ('smtp_pass', ?)
+				ON CONFLICT(key) DO UPDATE SET value = excluded.value`, stored)
+		}
+	}
 	if err == nil && settings.RetentionAllowNever != nil {
 		_, err = s.db.Exec(`INSERT INTO system_settings (key, value) VALUES ('retention_allow_never', ?)
 			ON CONFLICT(key) DO UPDATE SET value = excluded.value`, strconv.FormatBool(*settings.RetentionAllowNever))
@@ -402,11 +418,16 @@ func (s *Store) UpdateSystemSettings(settings *domain.SystemSettings) error {
 		_, err = s.db.Exec(`INSERT INTO system_settings (key, value) VALUES ('mcp_enabled', ?)
 			ON CONFLICT(key) DO UPDATE SET value = excluded.value`, strconv.FormatBool(*settings.MCPEnabled))
 	}
-	for key, v := range map[string]*bool{"people_search": settings.PeopleSearch, "public_links": settings.PublicLinks, "push_known_services_only": settings.PushKnownServicesOnly} {
+	for key, v := range map[string]*bool{"people_search": settings.PeopleSearch, "public_links": settings.PublicLinks, "push_known_services_only": settings.PushKnownServicesOnly, "link_previews": settings.LinkPreviews} {
 		if err == nil && v != nil {
 			_, err = s.db.Exec(`INSERT INTO system_settings (key, value) VALUES (?, ?)
 				ON CONFLICT(key) DO UPDATE SET value = excluded.value`, key, strconv.FormatBool(*v))
 		}
+	}
+	// Switched off: the cached previews (titles, pictures and icons of linked pages) go with it instead of
+	// lingering until they expire
+	if err == nil && settings.LinkPreviews != nil && !*settings.LinkPreviews {
+		_, err = s.db.Exec(`DELETE FROM link_previews`)
 	}
 	if err == nil && settings.MFARequired != nil {
 		if !ValidMFARequired(*settings.MFARequired) {

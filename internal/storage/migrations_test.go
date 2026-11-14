@@ -314,3 +314,63 @@ func TestNewerDatabaseRefused(t *testing.T) {
 		t.Fatalf("a refused start writes no copy, got %v", files)
 	}
 }
+
+// Copies from before migrations expire after 90 days, the newest one too; an unfinished attempt's stays
+func TestPreMigrationBackupsExpire(t *testing.T) {
+	dataDir := t.TempDir()
+	store, err := NewStore(filepath.Join(dataDir, "mindsift.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer store.Close()
+	backups := filepath.Join(dataDir, "backups", "system")
+	if err := os.MkdirAll(backups, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	now := time.Date(2026, 11, 14, 12, 0, 0, 0, time.Local)
+	write := func(name string) {
+		if err := os.WriteFile(filepath.Join(backups, name), []byte("x"), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	copyName := func(id, days int) string {
+		return fmt.Sprintf("pre-migration-%d-%s.db.gz", id, now.AddDate(0, 0, -days).Format("2006-01-02-150405"))
+	}
+	write(copyName(38, 120))
+	write(copyName(39, 95))
+	write(copyName(40, 91))
+	write("mindsift-db-2020-01-01-0300.db.gz") // daily backups have their own retention
+	n, err := store.ExpirePreMigrationBackups(now)
+	if err != nil || n != 3 {
+		t.Fatalf("all three copies are older than 90 days, the newest included: removed %d (%v)", n, err)
+	}
+	if files := preMigrationFiles(t, backups); len(files) != 0 {
+		t.Fatalf("expected no copy left, got %v", files)
+	}
+	if _, err := os.Stat(filepath.Join(backups, "mindsift-db-2020-01-01-0300.db.gz")); err != nil {
+		t.Fatalf("a daily backup must be left to its own retention: %v", err)
+	}
+
+	young, pinned := copyName(41, 89), copyName(39, 200)
+	write(young)
+	write(pinned)
+	if err := os.WriteFile(filepath.Join(backups, preMigrationMarker), []byte(pinned+"\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if n, err := store.ExpirePreMigrationBackups(now); err != nil || n != 0 {
+		t.Fatalf("a copy younger than 90 days and the one of an unfinished attempt stay: removed %d (%v)", n, err)
+	}
+	if files := preMigrationFiles(t, backups); len(files) != 2 {
+		t.Fatalf("expected both copies kept, got %v", files)
+	}
+
+	// A store without a backup folder (in memory) has nothing to do
+	mem, err := NewStore(":memory:")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer mem.Close()
+	if n, err := mem.ExpirePreMigrationBackups(now); n != 0 || err != nil {
+		t.Fatalf("in memory: %d, %v", n, err)
+	}
+}

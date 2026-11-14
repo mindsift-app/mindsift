@@ -50,6 +50,9 @@ services:
       - REGISTRATION_MODE=${REGISTRATION_MODE:-}
       - REGISTRATION_DOMAINS=${REGISTRATION_DOMAINS:-}
       - REGISTRATION_VERIFY_EMAIL=${REGISTRATION_VERIFY_EMAIL:-}
+      # Who may tell MindSift the visitor's address (X-Forwarded-For). The default "private" trusts every
+      # device in the local network; without a reverse proxy set none, with one the narrowest range that
+      # holds the proxy (.env.example, Doku/reverse-proxy.md)
       - TRUSTED_PROXIES=${TRUSTED_PROXIES:-private}
       - RETENTION_ALLOW_NEVER=${RETENTION_ALLOW_NEVER:-}
       - LOGIN_PROTECTION=${LOGIN_PROTECTION:-true}

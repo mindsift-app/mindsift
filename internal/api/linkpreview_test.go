@@ -80,3 +80,38 @@ func TestLinkPreviewEndpoints(t *testing.T) {
 		t.Fatalf("without login: want 401, got %d", rec.Code)
 	}
 }
+
+// The administration switches link previews off for the whole server: nothing is fetched or served (not
+// even a cached preview), the answer says why in a way the app understands, and the status tells the app.
+func TestLinkPreviewsSwitchedOffServerWide(t *testing.T) {
+	srv, store, token := setupTestServer(t)
+	router := srv.Router()
+	p := &storage.LinkPreview{URL: "https://example.com/", Title: "Beispiel", OK: true, Icon: []byte("\x89PNG\r\n\x1a\n"), IconMime: "image/png"}
+	if err := store.SaveLinkPreview(p); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(sessionCall(router, "GET", "/api/v1/auth/status", "", "", "").Body.String(), `"linkPreviews":true`) {
+		t.Fatal("link previews are on by default")
+	}
+	if rec := sessionCall(router, "PUT", "/api/v1/admin/settings", token, `{"sharingMode":"organizations","linkPreviews":false}`, ""); rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), `"linkPreviews":false`) {
+		t.Fatalf("switch off: %d %s", rec.Code, rec.Body.String())
+	}
+	for _, path := range []string{"/api/v1/link-preview?url=https://example.com/", "/api/v1/link-preview/" + p.Key + "/icon"} {
+		rec := sessionCall(router, "GET", path, token, "", "")
+		if rec.Code != http.StatusNotFound || !strings.Contains(rec.Body.String(), `"code":"link_previews_off"`) || !strings.Contains(rec.Body.String(), "ausgeschaltet") {
+			t.Fatalf("%s while off: %d %s", path, rec.Code, rec.Body.String())
+		}
+	}
+	if !strings.Contains(sessionCall(router, "GET", "/api/v1/auth/status", "", "", "").Body.String(), `"linkPreviews":false`) {
+		t.Fatal("the status must tell the app that previews are off")
+	}
+	// Other settings saved without the field leave it as it is
+	sessionCall(router, "PUT", "/api/v1/admin/settings", token, `{"sharingMode":"organizations","instanceName":"Neu"}`, "")
+	if sys, _ := store.GetSystemSettings(); sys.LinkPreviews == nil || *sys.LinkPreviews {
+		t.Fatal("saving other settings must keep link previews off")
+	}
+	sessionCall(router, "PUT", "/api/v1/admin/settings", token, `{"sharingMode":"organizations","linkPreviews":true}`, "")
+	if rec := sessionCall(router, "GET", "/api/v1/link-preview?url=https://example.com/", token, "", ""); rec.Code != http.StatusOK {
+		t.Fatalf("on again: %d %s", rec.Code, rec.Body.String())
+	}
+}

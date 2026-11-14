@@ -9,7 +9,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/mindsift-app/mindsift/internal/collab"
 	"github.com/mindsift-app/mindsift/internal/domain"
+	"github.com/mindsift-app/mindsift/internal/i18n"
 )
 
 // Media files of notes (images, audio). The file lies in $DATA_DIR/media/<docID>/<id><ext>; a block
@@ -233,4 +235,157 @@ func MediaContent(kind, id, caption string) string {
 		prefix = "!"
 	}
 	return prefix + "[" + caption + "](media:" + id + ")"
+}
+
+// CanReadMedia: the user may read the note the file was uploaded to, or a note whose bullets show it
+// (e.g. a bullet copied into another note).
+func (s *Store) CanReadMedia(userID string, m *Media) bool {
+	if s.DocRole(userID, m.DocID) != "" {
+		return true
+	}
+	docs, _ := s.MediaReferencedIn(m.ID)
+	for _, d := range docs {
+		if s.DocRole(userID, d) != "" {
+			return true
+		}
+	}
+	return false
+}
+
+// A bullet that shows a file makes the file readable for everyone who may read its note (CanReadMedia).
+// So a bullet may only point to a file its writer uploaded or may read already; otherwise knowing the id
+// of someone else's file would be enough to read it, by writing ![…](media:<id>) into an own note or
+// importing a note that does (FLAW-43). mediaGate drops the other references from content one person
+// writes. It runs where content comes in: sync and MCP operations, new notes (imports included) and a
+// task's title carried into its note. Moving bullets between notes on the server copies content the
+// person can read already.
+type mediaGate struct {
+	s      *Store
+	userID string
+	keep   map[string]bool // ids fine without a check (files an import brings along, stored after the note)
+	known  map[string]bool // ids checked so far
+	lang   string          // for the placeholder, read once it is needed
+}
+
+func (s *Store) newMediaGate(userID string, keep map[string]bool) *mediaGate {
+	return &mediaGate{s: s, userID: userID, keep: keep, known: map[string]bool{}}
+}
+
+// allowed: the file exists and the person uploaded it or may read it.
+func (g *mediaGate) allowed(id string) bool {
+	if g.keep[id] {
+		return true
+	}
+	if ok, seen := g.known[id]; seen {
+		return ok
+	}
+	m, err := g.s.GetMedia(id)
+	ok := err == nil && (m.OwnerID == g.userID || g.s.CanReadMedia(g.userID, m))
+	g.known[id] = ok
+	return ok
+}
+
+// mediaLinkRe: a reference with its caption anywhere in the content (image or audio)
+var mediaLinkRe = regexp.MustCompile(`!?\[((?:[^\]\\]|\\.)*)\]\(media:(med_[0-9a-f]+)\)`)
+
+// clean returns the content without references to files the person may not show: an image or a
+// recording becomes its caption (a placeholder without one), a bare "media:<id>" the placeholder.
+// changed is false when everything stays. Like block_refs, only the first maxBlockRefs files of the
+// content count; references beyond them are dropped unchecked, so a bullet full of made-up ids costs
+// at most that many lookups.
+func (g *mediaGate) clean(content string) (out string, changed bool) {
+	if !strings.Contains(content, "media:") {
+		return content, false
+	}
+	ok := map[string]bool{}
+	denied := false
+	for _, m := range mediaIDRe.FindAllStringSubmatch(content, -1) {
+		if _, seen := ok[m[1]]; !seen {
+			ok[m[1]] = len(ok) < maxBlockRefs && g.allowed(m[1])
+			denied = denied || !ok[m[1]]
+		}
+	}
+	if !denied {
+		return content, false
+	}
+	out = mediaLinkRe.ReplaceAllStringFunc(content, func(link string) string {
+		m := mediaLinkRe.FindStringSubmatch(link)
+		if ok[m[2]] {
+			return link
+		}
+		if caption := strings.TrimSpace(mediaRefEsc.ReplaceAllString(m[1], "$1")); caption != "" {
+			return caption
+		}
+		return g.placeholder()
+	})
+	out = mediaIDRe.ReplaceAllStringFunc(out, func(ref string) string {
+		if ok[strings.TrimPrefix(ref, "media:")] {
+			return ref
+		}
+		return g.placeholder()
+	})
+	return out, true
+}
+
+func (g *mediaGate) placeholder() string {
+	if g.lang == "" {
+		g.lang = g.s.MessageLanguage(g.userID)
+	}
+	return i18n.T(g.lang, "(Datei nicht übernommen)")
+}
+
+// cleanBlock drops from a bullet what the person may not show; an image or audio bullet that loses its
+// file becomes a plain bullet with the caption.
+func (g *mediaGate) cleanBlock(typ, content string) (string, string, bool) {
+	out, changed := g.clean(content)
+	if !changed {
+		return typ, content, false
+	}
+	if typ == "image" || typ == "audio" {
+		if _, still := ParseMediaContent(out); !still {
+			typ = "bullet"
+		}
+	}
+	return typ, out, true
+}
+
+// cleanBlocks applies cleanBlock to bullets (copied on the first change, the caller's list stays).
+func (g *mediaGate) cleanBlocks(blocks []domain.DocumentBlock) (_ []domain.DocumentBlock, dropped bool) {
+	out := blocks
+	for i, b := range blocks {
+		typ, content, changed := g.cleanBlock(b.Type, b.Content)
+		if !changed {
+			continue
+		}
+		if !dropped {
+			out = append([]domain.DocumentBlock(nil), blocks...)
+			dropped = true
+		}
+		out[i].Type, out[i].Content = typ, content
+	}
+	return out, dropped
+}
+
+// cleanOps applies cleanBlock to inserted and changed bullets (copied on the first change).
+func (g *mediaGate) cleanOps(ops []collab.Op) []collab.Op {
+	out := ops
+	copied := false
+	for i, op := range ops {
+		if op.Content == nil || (op.Kind != collab.OpInsert && op.Kind != collab.OpSetContent) {
+			continue
+		}
+		typ, content, changed := g.cleanBlock(op.Type, *op.Content)
+		if !changed {
+			continue
+		}
+		if !copied {
+			out = append([]collab.Op(nil), ops...)
+			copied = true
+		}
+		out[i].Content = &content
+		if op.Kind == collab.OpInsert {
+			out[i].Type = typ
+		}
+	}
+	return out
 }

@@ -158,7 +158,7 @@ export function ProfileSection({
               type="text"
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
-              required
+              placeholder={username.trim().toLowerCase()}
               className="w-full h-9 px-3 input-field"
             />
           </div>

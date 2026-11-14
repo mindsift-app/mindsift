@@ -235,7 +235,9 @@
     "personal": "Persönlich",
     "deletedAt": "gelöscht {{date}}",
     "empty": "Der Papierkorb ist leer.",
-    "delete": "Endgültig löschen"
+    "delete": "Endgültig löschen",
+    "deletedAtBy": "gelöscht {{date}} von {{name}}",
+    "deletedAtAuto": "gelöscht {{date}} (automatisch)"
   },
   "quickAdd": {
     "toList": "Aufgabe zu \"{{title}}\" hinzufügen…",

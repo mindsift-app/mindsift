@@ -57,15 +57,31 @@ export default tseslint.config(
       'i18next/no-literal-string': [
         'error',
         {
-          mode: 'jsx-text-only',
-          // Names and code that read the same in every language: the product, services, keys, MCP tools,
-          // the demo logins, and anything without letters (symbols, numbers)
+          // jsx-only: the text between tags, the attributes people read (placeholder, tooltip, screen reader,
+          // image text; every other attribute is code) and strings in JSX expressions ({x ? 'a' : 'b'}).
+          // jsx-text-only would skip attributes altogether.
+          mode: 'jsx-only',
+          'jsx-attributes': { include: ['placeholder', 'title', 'aria-label', 'alt'], exclude: ['.*'] },
+          // Names and code that read the same in every language: the product, services and tools, keys, MCP
+          // tools, the demo logins, example addresses, and anything without letters (symbols, numbers).
+          // In expressions also values for code: single words in lower case or camelCase (ids, keys,
+          // Intl options), lists of CSS classes, colours.
           words: {
             exclude: [
-              '^\\s*(MindSift|OAuth|Discord|Webhook|Push|Live|Tab|Esc|Enter|⌘K|Hashtags|To-Dos)\\s*$',
+              '^\\s*(MindSift|OAuth|Discord|Webhook|Push|Live|Tab|Esc|Enter|⌘K|Hashtags|To-Dos|Kanban)\\s*$',
+              '^(Claude Code|OpenAI Codex|Claude Desktop / Cursor|claude\\.ai / ChatGPT)$',
               '^[a-z]+(_[a-z]+)+$',
               '^(search|admin / admin|user / user)$',
               '^[^A-Za-zÄÖÜäöüß]*$',
+              '^[a-z0-9][a-zA-Z0-9_.:/-]*$',
+              '^(?=.*\\S-\\S)[a-z0-9:/\\[\\]().%!-]+( [a-z0-9:/\\[\\]().%!-]+)*$',
+              '^#[0-9a-fA-F]{3,8}$',
+              '^[A-Z]$',
+              '^T\\d\\d:\\d\\d$',
+              '^https://example\\.com$',
+              // Placeholders that show a format: the setup code, a hashtag, custom CSS
+              '^(MS-X+|\\+ #hashtag)$',
+              '^:root\\[data-theme=.*$',
             ],
           },
         },

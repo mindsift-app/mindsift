@@ -7,7 +7,9 @@ import (
 
 // securityHeaders protects the browser side (FLAW-29):
 //   - Content-Security-Policy: scripts only from MindSift itself, so injected markup cannot run code;
-//     styles may be inline (custom themes, style attributes); images also from https (avatar URLs);
+//     styles may be inline (custom themes, style attributes); images only from MindSift itself or as
+//     data:/blob: (uploaded media, profile pictures and link-preview pictures all come through the
+//     server), so markup in a shared note cannot load a tracking pixel from another server;
 //     connections only to this server, including its WebSocket.
 //   - frame-ancestors 'none' / X-Frame-Options: no embedding in other sites (clickjacking).
 //   - nosniff, a same-origin referrer and a permissions policy that only allows the microphone
@@ -40,7 +42,7 @@ func contentSecurityPolicy(host string) string {
 		"default-src 'self'",
 		"script-src 'self'",
 		"style-src 'self' 'unsafe-inline'",
-		"img-src 'self' data: blob: https:",
+		"img-src 'self' data: blob:",
 		"font-src 'self' data:",
 		"connect-src " + connect,
 		"worker-src 'self'",

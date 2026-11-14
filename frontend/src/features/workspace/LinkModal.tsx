@@ -116,9 +116,13 @@ export const LinkModal: React.FC<LinkModalProps> = ({
   const [pickDoc, setPickDoc] = useState<Document | null>(null);
   const [pickBlocks, setPickBlocks] = useState<DocumentBlock[] | null>(null);
   const [blockSearch, setBlockSearch] = useState('');
+  // The note whose bullets are being loaded: an answer for a note picked before is dropped, or A's
+  // bullets would show under B when B is picked before A's answer arrives
+  const pickingRef = useRef<string | null>(null);
   useEffect(() => {
     if (!isOpen) {
       // Closing the dialog forgets the note being picked from
+      pickingRef.current = null;
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setPickDoc(null);
       setPickBlocks(null);
@@ -126,6 +130,7 @@ export const LinkModal: React.FC<LinkModalProps> = ({
     }
   }, [isOpen]);
   const openBlockPicker = (doc: Document) => {
+    pickingRef.current = doc.id;
     setPickDoc(doc);
     setBlockSearch('');
     if (doc.blocks && doc.blocks.length > 0) {
@@ -133,10 +138,11 @@ export const LinkModal: React.FC<LinkModalProps> = ({
       return;
     }
     setPickBlocks(null);
+    const stillPicked = () => pickingRef.current === doc.id;
     api
       .getDocument(doc.id)
-      .then((full) => setPickBlocks(full.blocks || []))
-      .catch(() => setPickBlocks([]));
+      .then((full) => stillPicked() && setPickBlocks(full.blocks || []))
+      .catch(() => stillPicked() && setPickBlocks([]));
   };
   const pickableBlocks = useMemo(() => {
     const q = blockSearch.trim().toLowerCase();

@@ -11,6 +11,7 @@ import (
 	"strings"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/mindsift-app/mindsift/internal/config"
 )
@@ -68,6 +69,43 @@ func voiceServer(t *testing.T, speech config.SpeechConfig) (*Server, string) {
 	srv.cfg.Speech = speech
 	srv.voice = newVoiceService(speech.MaxParallel)
 	return srv, token
+}
+
+// The wait for the Whisper server is a background job: Close ends it, also in the middle of a check
+// (before, it slept on its own and a check ran until its 10 s timeout after the server had stopped).
+func TestVoiceCheckEndsWithClose(t *testing.T) {
+	started := make(chan struct{}, 1)
+	cancelled := make(chan struct{})
+	whisper := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		select {
+		case started <- struct{}{}:
+		default:
+		}
+		select {
+		case <-r.Context().Done():
+			close(cancelled)
+		case <-time.After(30 * time.Second):
+		}
+	}))
+	t.Cleanup(whisper.Close)
+	srv, _ := voiceServer(t, config.SpeechConfig{URL: whisper.URL, Model: "m", MaxParallel: 1, TimeoutSeconds: 10})
+	srv.background(srv.startVoiceCheck)
+	select {
+	case <-started:
+	case <-time.After(10 * time.Second):
+		t.Fatal("the voice check did not ask the Whisper server")
+	}
+
+	begin := time.Now()
+	srv.Close()
+	if d := time.Since(begin); d > 5*time.Second {
+		t.Fatalf("Close waited %s for the voice check", d)
+	}
+	select {
+	case <-cancelled:
+	case <-time.After(2 * time.Second):
+		t.Fatal("the running check was not cancelled by Close")
+	}
 }
 
 func TestVoiceTranscribeForwardsToWhisper(t *testing.T) {

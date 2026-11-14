@@ -475,7 +475,7 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ currentUser, onBack }) =
                                   {t('roleAdmin')}
                                 </span>
                                 <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-panel-elevated text-muted border border-border">
-                                  {members.length} {members.length === 1 ? t('roleMember') : 'Mitglieder'}
+                                  {t('memberCount', { count: members.length })}
                                 </span>
                               </div>
                               {team.description && (
@@ -636,7 +636,7 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ currentUser, onBack }) =
                             <div className="flex items-center gap-2">
                               <span className="font-bold text-sm text-main">{team.name}</span>
                               <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-panel-elevated text-muted border border-border">
-                                {members.length} {members.length === 1 ? t('roleMember') : 'Mitglieder'}
+                                {t('memberCount', { count: members.length })}
                               </span>
                             </div>
                             {team.description && (

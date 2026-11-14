@@ -73,6 +73,8 @@ interface TaskDetailModalProps {
   readOnly?: boolean; // Task belongs to a list shared with "viewer" permission
   // A new task (draft from a Kanban column): the title opens for editing, its placeholder selected
   editTitleOnOpen?: boolean;
+  // Changes the dialog saved itself (following the task): the parent takes them into its copy of the task
+  onTaskChange?: (taskId: string, changes: Partial<Thought>) => void;
 }
 
 // The wrapper decides whether the dialog is shown; the content holds all hooks, so their number never
@@ -107,6 +109,7 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
   onDeleteTask,
   readOnly = false,
   editTitleOnOpen = false,
+  onTaskChange,
 }) => {
   const { t } = useTranslation('tasks');
   const [titleDraft, setTitleDraft] = useState(task.content);
@@ -192,9 +195,8 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
       const res = isWatching ? await api.unwatchTask(task.id) : await api.watchTask(task.id);
       const next = Boolean(res.watching);
       setIsWatching(next);
-      // The list's copy of the task keeps the new state until it reloads (reopening shows it)
-      // eslint-disable-next-line react-hooks/immutability
-      task.isWatching = next;
+      // The list's copy of the task takes the new state, so reopening the dialog shows it
+      onTaskChange?.(task.id, { isWatching: next });
       triggerHaptic(10);
     } catch {
       // ignore

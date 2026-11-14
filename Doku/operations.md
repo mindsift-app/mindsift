@@ -1,6 +1,6 @@
 # Running MindSift
 
-Details for administrators that the README only touches: the install script, the first admin, language, backups, updates, rolling back and restoring, health checks, monitoring, file permissions and image tags. Every environment variable is in [`.env.example`](../.env.example) and in the configuration table of [architecture.md](architecture.md#configuration).
+Details for administrators that the README only touches: the install script, the first admin, language, backups, updates, rolling back and restoring, health checks, monitoring, file permissions, network storage and rootless Podman, and image tags. Every environment variable is in [`.env.example`](../.env.example) and in the configuration table of [architecture.md](architecture.md#configuration).
 
 ## Install script
 
@@ -9,6 +9,7 @@ Details for administrators that the README only touches: the install script, the
 - On a new install it asks for the admin account (`ADMIN_USER`, `ADMIN_PASSWORD`; Enter means `admin` with a generated password, shown once); without a terminal it skips that and shows the setup code the wizard asks for. `ADMIN_PASSWORD` is only needed on the first start: once the container answers, the script removes it from `.env` again.
 - Two optional questions (Enter means no): your own speech recognition (adds a Whisper container with large-v3-turbo or small), and a reverse proxy (asks for `BASE_URL` and the proxy's Docker network). These additions go into `docker-compose.override.yml`.
 - Running the script again updates `docker-compose.yml` and keeps `.env` and the override.
+- The container is named `mindsift` (`container_name` in `docker-compose.yml`). A second installation on the same host, or another container of that name, makes `docker compose up` fail with a name conflict: change the name in a `docker-compose.override.yml` (`services: mindsift: container_name: mindsift-2`) or remove the line; `docker compose logs mindsift` in the folder works with any name. The script does not check this.
 
 For voice recognition by hand, follow the comments on the `whisper` block in [`docker-compose.yml`](../docker-compose.yml); which model to pick is in [architecture.md](architecture.md#speech-recognition).
 
@@ -43,12 +44,12 @@ The setup wizard offers daily backups (preselected: 03:00 server time, kept 3 da
 
 ## Rolling back
 
-Before an update changes the database schema, MindSift saves a compressed copy of the database as `data/backups/system/pre-migration-<migration>-<date>-<time>.db.gz` and logs where; the last three are kept. Without the copy (a full disk, for example) it does not migrate and stops ([database.md](database.md#migrations-and-startup-cleanup)).
+Before an update changes the database schema, MindSift saves a compressed copy of the database as `data/backups/system/pre-migration-<migration>-<date>-<time>.db.gz` and logs where; the last three are kept, each for at most 90 days (the newest too: the copies still hold accounts deleted since, and the daily backups cover anything later). Without the copy (a full disk, for example) it does not migrate and stops ([database.md](database.md#migrations-and-startup-cleanup)).
 
 - **From the release after v0.95.0 on**, an older image refuses to start on a database a newer one has changed and logs both versions' migration numbers. Start the newer image again, or go back as below.
 - **v0.95.0 and earlier do not check this.** They start on the newer database without a word, and accounts that signed in on the newer version cannot sign in there any more: since the release after v0.95.0, passwords are stored in a newer form at the next sign-in, which older versions cannot read. Going back to v0.95.0 or earlier therefore always means restoring the copy from before the update; it predates the new password form, so sign-ins work again.
 
-To go back:
+To go back (the files in `data/` belong to the container's user, uid 1000, and only it can read them: run the commands as root, for example with `sudo`, or with rootless Podman inside `podman unshare`; the container hands the restored file back to its user on the next start):
 
 1. Stop the container (`docker compose down`).
 2. Unpack the copy from before the update over the database: `gunzip -c data/backups/system/pre-migration-….db.gz > data/mindsift.db`.
@@ -62,9 +63,9 @@ Whatever was written after the update is not in that copy.
 The daily backups hold the whole database as `data/backups/system/mindsift-db-<date>-<time>.db.gz` ([what else they contain](architecture.md#background-job-backups)). To put one back:
 
 1. Stop the container. Never replace the database while MindSift runs.
-2. Unpack the snapshot over the database: `gunzip -c data/backups/system/mindsift-db-….db.gz > data/mindsift.db`.
+2. Unpack the snapshot over the database (as root, see above): `gunzip -c data/backups/system/mindsift-db-….db.gz > data/mindsift.db`.
 3. Delete `data/mindsift.db-wal` and `data/mindsift.db-shm` if they exist (see above).
-4. Keep the keys that belong to the data: `SECRETS_KEY` or `data/secrets.key` (without it, hidden values and authenticator codes cannot be read) and `JWT_SECRET` or `data/jwt.secret` (otherwise everyone is signed out). Images and audio are not in the database dump but in `data/media/`; on a new machine copy the whole `data/` folder.
+4. Keep the keys that belong to the data: `SECRETS_KEY` or `data/secrets.key` (without it, hidden values, authenticator codes, the copy of public links and the SMTP password of the administration cannot be read) and `JWT_SECRET` or `data/jwt.secret` (otherwise everyone is signed out). If the key is missing or wrong, MindSift still starts but logs a warning that begins with `THE SECRETS KEY DOES NOT MATCH THE DATA`; stop it, put the old key back and start again. Images and audio are not in the database dump but in `data/media/`; on a new machine copy the whole `data/` folder.
 5. Start the same version that wrote the snapshot, or a newer one. The container hands `data/` to its user (uid 1000) on start; without the container, keep the files owned by the user that runs MindSift and readable for it only.
 
 People restore their own data from their personal backups in the account settings, without stopping the server.
@@ -91,6 +92,15 @@ How the exporter is built: [architecture.md](architecture.md#monitoring).
 ## File permissions
 
 Everything in `data/` is readable by MindSift only (files 0600, folders 0700). The container tightens files from older versions once on its first start; without the container, run `chmod -R go-rwx data`.
+
+## Network storage and rootless Podman
+
+Started as root (the default), the container hands `data/` to its user (uid 1000) and then runs as that user. Where it may not change owners, it says so in the log and carries on as long as uid 1000 can write to the folder; if it cannot, the container stops with a line that starts with `MindSift: ERROR` and says what to do. Started with `user:`, it only warns when the folder is not writable for that user.
+
+- **Keep the database on a local disk.** SQLite runs in WAL mode, which needs file locks and shared memory (`mindsift.db-shm`) that network filesystems often do not provide reliably. Do not put `data/` (at least `mindsift.db`) on SMB/CIFS; NFS works at best with working locks (NFSv4) and is at your own risk. Backups can go to network storage: copy `data/backups/` there with a cron job or the NAS's own sync.
+- **NFS with `root_squash`** (the default of most NAS): root in the container becomes `nobody` on the NAS and may not change owners. Give the folder to uid 1000 on the NAS (`chown -R 1000:1000 <folder>`), or run the container as the uid and gid that own the folder (`user: "1026:100"` in `docker-compose.override.yml`, for example), or export the share with `no_root_squash`.
+- **SMB/CIFS** knows no Unix owners; the mount options decide them (`uid=1000,gid=1000`). Not for the database, see above.
+- **Rootless Podman:** root in the container is your own user on the host, and uid 1000 in the container is one of your sub-uids, so the files in `data/` show up with a large uid on the host and your user cannot read them directly. Use `podman unshare` for work on them (`podman unshare ls -l data`, `podman unshare cp …`, or `podman unshare chown -R 1000:1000 data` after copying files in). On SELinux hosts (Fedora, RHEL) mount the folder with `:Z` (`./data:/data:Z`), otherwise the container may not read it.
 
 ## Image tags
 

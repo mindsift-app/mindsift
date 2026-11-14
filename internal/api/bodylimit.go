@@ -35,6 +35,14 @@ func (s *Server) bodyLimit(next http.Handler) http.Handler {
 	})
 }
 
+// The limits of the HTTP server (cmd/server; the tests serve with the same ones): every request has
+// ReadTimeout to send its body and WriteTimeout for the answer, an idle connection is kept IdleTimeout.
+const (
+	ReadTimeout  = 15 * time.Second
+	WriteTimeout = 30 * time.Second
+	IdleTimeout  = 60 * time.Second
+)
+
 // The server gives every request 15 s to send its body and 30 s for the answer. Whole archives on a slow
 // line need longer: downloads of backups and exports, uploads of imports (FLAW-38).
 const longTransferTime = 30 * time.Minute

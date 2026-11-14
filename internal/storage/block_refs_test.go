@@ -35,6 +35,17 @@ func TestBlockRefsOf(t *testing.T) {
 	}
 }
 
+// ownMedia registers made-up file ids as uploads of userID: a bullet only keeps references to files
+// its writer uploaded or may read (mediaGate).
+func ownMedia(t *testing.T, s *Store, userID string, ids ...string) {
+	t.Helper()
+	for _, id := range ids {
+		if _, err := s.createMediaWithID(id, "", userID, "image", "image/png", 0, ""); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
 // refRows lists block_refs as "block doc kind ref", sorted.
 func refRows(t *testing.T, s *Store) []string {
 	t.Helper()
@@ -88,6 +99,7 @@ func applyOps(t *testing.T, s *Store, docID string, a collab.Actor, ops ...colla
 // (tombstone), purged, copied into another note, and deleted with its note.
 func TestBlockRefsFollowBlocks(t *testing.T) {
 	s, u := newSyncTestStore(t)
+	ownMedia(t, s, u.ID, "med_aa", "med_bb", "med_cc")
 	a := collab.Actor{UserID: u.ID, ClientID: "tab1"}
 	doc, err := s.CreateDocument(u.ID, "", "Urlaub", "🏖️", "", []domain.DocumentBlock{
 		{ID: "img", Type: "image", Content: MediaContent("image", "med_aa", "Strand")},
@@ -194,6 +206,7 @@ func TestBlockRefsMigrationBackfill(t *testing.T) {
 		t.Fatal(err)
 	}
 	u, _ := s.CreateUser("anna@example.com", "hash", "Anna", "member")
+	ownMedia(t, s, u.ID, "med_01", "med_02", "med_03")
 	a := collab.Actor{UserID: u.ID, ClientID: "tab1"}
 	target, _ := s.CreateDocument(u.ID, "", "Ziel", "", "", nil, nil, false)
 	doc, _ := s.CreateDocument(u.ID, "", "Quelle", "", "", []domain.DocumentBlock{
@@ -255,6 +268,7 @@ func TestBlockRefsMigrationBackfill(t *testing.T) {
 func TestBlockRefQueriesUseIndexes(t *testing.T) {
 	s, u := newSyncTestStore(t)
 	for i := 0; i < 20; i++ {
+		ownMedia(t, s, u.ID, fmt.Sprintf("med_%02x", i))
 		_, _ = s.CreateDocument(u.ID, "", "Notiz", "", "", []domain.DocumentBlock{
 			{ID: domain.NewID("blk"), Type: "image", Content: MediaContent("image", fmt.Sprintf("med_%02x", i), "")},
 			{ID: domain.NewID("blk"), Type: "bullet", Content: "Text"},
@@ -319,6 +333,11 @@ func TestBlockRefsCappedPerBullet(t *testing.T) {
 	}
 
 	s, u := newSyncTestStore(t)
+	// The first maxBlockRefs files are the writer's own; the gate drops the rest unchecked anyway
+	ownMedia(t, s, u.ID, "med_00")
+	for i := 1; i < maxBlockRefs; i++ {
+		ownMedia(t, s, u.ID, fmt.Sprintf("med_%04x", i))
+	}
 	doc, err := s.CreateDocument(u.ID, "", "Viele Verweise", "", "", []domain.DocumentBlock{
 		{ID: "many", Type: "bullet", Content: sb.String()},
 	}, nil, false)

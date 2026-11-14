@@ -387,10 +387,11 @@ func TestOIDCFirstSignInCreatesAccount(t *testing.T) {
 			t.Fatalf("session via %q", v)
 		}
 	}
-	// Unique usernames: a second person with the same preferred_username gets another one
+	// Unique usernames: a second person with the same preferred_username gets another one; without a name
+	// from the provider it is also the display name, so the two can be told apart
 	e.idp.person = map[string]any{"sub": "xyz-9", "email": "erika2@example.com", "email_verified": true, "preferred_username": "Erika"}
 	other := e.userOf(e.mustSignIn())
-	if other["username"] == "erika" || !strings.HasPrefix(other["username"].(string), "erika") || other["displayName"] != "Erika" {
+	if other["username"] == "erika" || !strings.HasPrefix(other["username"].(string), "erika") || other["displayName"] != other["username"] {
 		t.Fatalf("second person: %v", other)
 	}
 }

@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"log/slog"
+	"mime/multipart"
 	"net/http"
 	"strings"
 	"sync"
@@ -79,6 +79,8 @@ func (s *Server) handleAuthStatus(w http.ResponseWriter, r *http.Request) {
 		"peopleSearch":      s.peopleSearchEnabled(),
 		"publicLinks":       s.publicLinksEnabled(),
 		"publicLinkMaxDays": s.publicLinkMaxDays(),
+		// Preview cards for web addresses in notes (the admin's switch; off in the demo)
+		"linkPreviews": s.linkPreviewsEnabled(),
 		// Language of the login screen when MindSift does not speak the browser's language
 		"defaultLanguage": s.defaultLanguage(),
 		// Address to enter as connector in claude.ai / ChatGPT (OAuth); empty while OAuth is off
@@ -165,17 +167,20 @@ func (s *Server) handleFirstBootSetup(w http.ResponseWriter, r *http.Request) {
 		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
-	if strings.TrimSpace(req.Email) == "" {
+	req.Email = domain.NormalizeEmail(req.Email)
+	if req.Email == "" {
 		writeError(w, http.StatusBadRequest, "E-Mail-Adresse erforderlich")
+		return
+	}
+	if !validEmail(req.Email) {
+		writeError(w, http.StatusBadRequest, "Ungültige E-Mail-Adresse")
 		return
 	}
 	if err := auth.ValidatePassword(req.Password); err != nil {
 		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
-	if strings.TrimSpace(req.DisplayName) == "" {
-		req.DisplayName = "Administrator"
-	}
+	// Without a display name the account shows its username (the store gives it)
 
 	hash, err := auth.HashPassword(req.Password)
 	if err != nil {
@@ -336,13 +341,15 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "E-Mail-Adresse erforderlich")
 		return
 	}
+	if !validEmail(req.Email) {
+		writeError(w, http.StatusBadRequest, "Ungültige E-Mail-Adresse")
+		return
+	}
 	if err := auth.ValidatePassword(req.Password); err != nil {
 		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
-	if strings.TrimSpace(req.DisplayName) == "" {
-		req.DisplayName = strings.Split(req.Email, "@")[0]
-	}
+	// Without a display name the account shows its username (the store gives it)
 
 	count, _ := s.store.CountUsers()
 	role := "member"
@@ -419,7 +426,8 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 		if validInvite != nil {
 			s.store.ReleaseUserInvite(validInvite.ID, claim)
 		}
-		writeError(w, http.StatusConflict, "E-Mail-Adresse existiert bereits")
+		// Taken (also by a request that came in after the check) is 409, anything else is not the address's fault
+		writeEmailError(w, err)
 		return
 	}
 	logFailed("Setting the language", s.store.SetLanguage(user.ID, s.requestLanguage(r)), "user_id", user.ID)
@@ -675,20 +683,27 @@ func (s *Server) handleDeleteOwnAccount(w http.ResponseWriter, r *http.Request) 
 	writeJSON(w, http.StatusOK, map[string]bool{"deleted": true})
 }
 
-// importUpload reads the multipart field "file" (max. storage.MaxImportUploadBytes).
-func importUpload(w http.ResponseWriter, r *http.Request) ([]byte, string, error) {
+// importUploadMemory: uploads up to this size are kept in memory, larger ones in a temporary file that
+// is removed after the request, so a large archive is not held in memory while it is imported.
+const importUploadMemory = 8 << 20
+
+// importUpload opens the multipart field "file" (max. storage.MaxImportUploadBytes). The import reads
+// it until it is done; the caller closes it.
+func importUpload(w http.ResponseWriter, r *http.Request) (multipart.File, int64, string, error) {
 	allowLongTransfer(w)
 	r.Body = http.MaxBytesReader(w, r.Body, storage.MaxImportUploadBytes+1<<20)
+	if err := r.ParseMultipartForm(importUploadMemory); err != nil {
+		return nil, 0, "", fmt.Errorf("Keine Datei erhalten oder Datei zu groß (max. 100 MB)")
+	}
 	file, header, err := r.FormFile("file")
 	if err != nil {
-		return nil, "", fmt.Errorf("Keine Datei erhalten oder Datei zu groß (max. 100 MB)")
+		return nil, 0, "", fmt.Errorf("Keine Datei erhalten oder Datei zu groß (max. 100 MB)")
 	}
-	defer file.Close()
-	data, err := io.ReadAll(io.LimitReader(file, storage.MaxImportUploadBytes+1))
-	if err != nil || len(data) > storage.MaxImportUploadBytes {
-		return nil, "", fmt.Errorf("Datei zu groß (max. 100 MB)")
+	if header.Size > storage.MaxImportUploadBytes {
+		file.Close()
+		return nil, 0, "", fmt.Errorf("Datei zu groß (max. 100 MB)")
 	}
-	return data, header.Filename, nil
+	return file, header.Size, header.Filename, nil
 }
 
 // --- USER SETTINGS & ALARMS ---

@@ -28,7 +28,7 @@ export const LivePill: React.FC = () => {
     >
       <span className={`w-1.5 h-1.5 rounded-full ${connected ? 'bg-status-ok' : 'bg-status-warn'}`} />
       {!connected ? (
-        'Offline'
+        t('live.offline')
       ) : (
         <>
           Live

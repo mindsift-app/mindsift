@@ -124,3 +124,26 @@ func TestSetWhileReading(t *testing.T) {
 	close(stop)
 	wg.Wait()
 }
+
+// Today follows the server's zone, not the machine's: UTC+14 and UTC-12 are 26 hours apart, so their
+// calendar days always differ and an implementation using the machine's zone cannot match both.
+func TestTodayFollowsTheServerZone(t *testing.T) {
+	var days []string
+	for _, name := range []string{"Pacific/Kiritimati", "Etc/GMT+12"} {
+		loc, err := time.LoadLocation(name)
+		if err != nil {
+			t.Fatal(err)
+		}
+		UseInTest(t, loc)
+		before := time.Now().In(loc).Format("2006-01-02")
+		got := Today()
+		after := time.Now().In(loc).Format("2006-01-02")
+		if got != before && got != after {
+			t.Fatalf("Today() in %s = %s, want %s", name, got, before)
+		}
+		days = append(days, got)
+	}
+	if days[0] == days[1] {
+		t.Fatalf("both zones gave the same day %s", days[0])
+	}
+}

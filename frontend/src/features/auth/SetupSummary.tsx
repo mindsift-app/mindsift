@@ -83,10 +83,14 @@ export const SetupSummary: React.FC<{
           i18nKey="setupSummary.backups"
           count={choices.backupRetentionDays ?? 0}
           values={{
-            // The backups run on the server's clock: the zone chosen above, else TZ or UTC
+            // The backups run on the server's clock: the zone chosen above, else TZ or UTC (as the server says)
             time: t('setupSummary.backupAt', {
               time: formatTimeField(choices.backupTime || ''),
-              zone: choices.timeZone ? timeZoneLabel(choices.timeZone) : t('setupSummary.backupZoneUnset'),
+              zone: choices.timeZone
+                ? timeZoneLabel(choices.timeZone)
+                : info?.serverTime?.fallback
+                  ? timeZoneLabel(info.serverTime.fallback)
+                  : t('setupSummary.backupZoneUnset'),
             }),
             dir: info?.backupDir || 'data/backups',
             count: choices.backupRetentionDays ?? 0,

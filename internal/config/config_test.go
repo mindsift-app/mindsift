@@ -173,6 +173,22 @@ func TestJWTSecretUsesLongOwnValue(t *testing.T) {
 	}
 }
 
+// The start needs to know whether the secrets key is new, to warn when the data was sealed with another one.
+func TestSecretsKeySource(t *testing.T) {
+	dir := t.TempDir()
+	if _, source := resolveSecretsKey("a-long-random-value-for-the-secrets-key", dir); source != "SECRETS_KEY" {
+		t.Errorf("from the variable: source %q", source)
+	}
+	first, source := resolveSecretsKey("", dir)
+	if source != "generated" {
+		t.Errorf("first start without a key: source %q", source)
+	}
+	again, source := resolveSecretsKey("", dir)
+	if source != secretsKeyFile || string(again) != string(first) {
+		t.Errorf("second start: source %q, same key %v", source, string(again) == string(first))
+	}
+}
+
 func TestCustomLinkValidation(t *testing.T) {
 	t.Setenv("DATA_DIR", t.TempDir())
 

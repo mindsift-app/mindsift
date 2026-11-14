@@ -1051,6 +1051,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
         onConvertToDoc={handleConvertToDoc}
         onDeleteTask={handleDeletePermanent}
         readOnly={detailTask ? isTaskReadOnly(detailTask) : false}
+        onTaskChange={(taskId, changes) => setTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, ...changes } : t)))}
       />
 
       {/* VIEW MODES: LIST, KANBAN OR CALENDAR */}

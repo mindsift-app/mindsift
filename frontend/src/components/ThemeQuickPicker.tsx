@@ -89,7 +89,7 @@ export const ThemeQuickPicker: React.FC<ThemeQuickPickerProps> = ({ activeTheme,
                 ) : (
                   <Monitor className="w-3.5 h-3.5" />
                 )}
-                <span>{m === 'light' ? t('theme.light') : m === 'dark' ? t('theme.dark') : 'System'}</span>
+                <span>{m === 'light' ? t('theme.light') : m === 'dark' ? t('theme.dark') : t('theme.systemShort')}</span>
               </button>
             );
           })}

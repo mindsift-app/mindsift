@@ -106,8 +106,10 @@ func (s *Server) storeCenterEntry(userID string, e storage.CenterEntry, group st
 }
 
 func (s *Server) actorName(lang, userID string) string {
-	if u, err := s.store.GetUserByID(userID); err == nil && u != nil && u.DisplayName != "" {
-		return u.DisplayName
+	// One line: the name goes into mails, push messages and chat posts (stored names from before the
+	// cleaning on save may still carry line breaks)
+	if u, err := s.store.GetUserByID(userID); err == nil && u != nil && domain.CleanDisplayName(u.DisplayName) != "" {
+		return domain.CleanDisplayName(u.DisplayName)
 	}
 	return i18n.T(lang, "Jemand")
 }

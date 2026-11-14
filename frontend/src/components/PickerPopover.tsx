@@ -54,9 +54,6 @@ export const PickerPopover: React.FC<PickerPopoverProps> = ({
     return hits.slice(0, maxResults);
   }, [items, query, maxResults]);
 
-  // A new search marks the first hit
-  // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => setActive(0), [query]);
   // Arrow keys in a long list: the chosen row stays in view
   useEffect(() => {
     ref.current?.querySelector<HTMLElement>(`[data-picker-row="${active}"]`)?.scrollIntoView?.({ block: 'nearest' });
@@ -118,7 +115,10 @@ export const PickerPopover: React.FC<PickerPopoverProps> = ({
           ref={inputRef}
           type="search"
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setActive(0); // a new search marks the first hit
+          }}
           {...NO_AUTOFILL}
           placeholder={placeholder}
           className="flex-1 min-w-0 bg-transparent border-0 outline-none text-main placeholder:text-faint text-base sm:text-xs"

@@ -164,8 +164,17 @@ func (s *Server) handleAdminCreateUser(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "Ungültiges JSON")
 		return
 	}
+	req.Email = domain.NormalizeEmail(req.Email)
 	if req.Email == "" {
 		writeError(w, http.StatusBadRequest, "E-Mail-Adresse erforderlich")
+		return
+	}
+	if !validEmail(req.Email) {
+		writeError(w, http.StatusBadRequest, "Ungültige E-Mail-Adresse")
+		return
+	}
+	if s.store.EmailInUse(req.Email) {
+		writeError(w, http.StatusConflict, "E-Mail-Adresse existiert bereits")
 		return
 	}
 	if err := auth.ValidatePassword(req.Password); err != nil {
@@ -176,9 +185,7 @@ func (s *Server) handleAdminCreateUser(w http.ResponseWriter, r *http.Request) {
 	if !isAdmin(caller) {
 		req.Role = domain.RoleMember
 	}
-	if strings.TrimSpace(req.DisplayName) == "" {
-		req.DisplayName = strings.Split(req.Email, "@")[0]
-	}
+	// Without a display name the account shows its username (the store gives it)
 
 	hash, err := auth.HashPassword(req.Password)
 	if err != nil {
@@ -187,7 +194,7 @@ func (s *Server) handleAdminCreateUser(w http.ResponseWriter, r *http.Request) {
 	}
 	u, err := s.store.CreateUser(req.Email, hash, req.DisplayName, req.Role)
 	if err != nil {
-		writeErrorFrom(w, http.StatusBadRequest, err)
+		writeEmailError(w, err)
 		return
 	}
 	for _, orgID := range s.store.ValidOrganizationIDs(req.OrganizationIDs) {
@@ -239,6 +246,16 @@ func (s *Server) handleAdminUpdateUser(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+	// Checked before the username changes, so a wrong or taken address does not leave half the change behind
+	changesEmail := req.Email != nil && domain.NormalizeEmail(*req.Email) != targetUser.Email
+	if changesEmail && domain.NormalizeEmail(*req.Email) != "" && !validEmail(domain.NormalizeEmail(*req.Email)) {
+		writeError(w, http.StatusBadRequest, "Ungültige E-Mail-Adresse")
+		return
+	}
+	if changesEmail && s.store.EmailInUse(*req.Email) {
+		writeError(w, http.StatusConflict, "E-Mail-Adresse existiert bereits")
+		return
+	}
 	if req.Username != nil && strings.ToLower(strings.TrimSpace(*req.Username)) != targetUser.Username {
 		if s.cfg.DemoMode {
 			writeError(w, http.StatusForbidden, "In der Demo deaktiviert")
@@ -251,7 +268,7 @@ func (s *Server) handleAdminUpdateUser(w http.ResponseWriter, r *http.Request) {
 	}
 	u, err := s.store.UpdateUser(targetUserID, req.DisplayName, req.Email, req.Role, req.IsActive, req.DiscordWebhookURL, nil)
 	if err != nil {
-		writeErrorFrom(w, http.StatusBadRequest, err)
+		writeEmailError(w, err)
 		return
 	}
 	if req.IsActive != nil && !*req.IsActive {
@@ -406,11 +423,15 @@ func (s *Server) handleAdminGetSettings(w http.ResponseWriter, r *http.Request) 
 	writeJSON(w, http.StatusOK, s.settingsForBrowser(settings))
 }
 
-// settingsForBrowser hides the SMTP password; the admin only sees whether one is stored.
+// settingsForBrowser hides the SMTP password; the admin only sees whether one is stored or comes from
+// SMTP_PASS.
 func (s *Server) settingsForBrowser(settings *domain.SystemSettings) *domain.SystemSettings {
 	out := *settings
 	out.SMTPPassSet = out.SMTPPass != ""
 	out.SMTPPass = ""
+	if s.envSMTPPass(settings) != "" {
+		out.SMTPPassSet, out.SMTPPassViaEnv, out.SMTPPassUnreadable = true, true, false
+	}
 	out.SMTPConfiguredViaEnv = s.smtpViaEnv()
 	// What the environment fixes is shown as in effect and locked in the form
 	if s.cfg.RegistrationMode != "" {
@@ -449,6 +470,10 @@ func (s *Server) settingsForBrowser(settings *domain.SystemSettings) *domain.Sys
 	if s.cfg.PublicLinkMaxDays > 0 {
 		out.PublicLinkMaxDays = s.cfg.PublicLinkMaxDays
 		out.PublicLinkMaxDaysViaEnv = true
+	}
+	if s.cfg.DemoMode {
+		off := false
+		out.LinkPreviews = &off // the demo sends nothing out
 	}
 	out.EmailLinksAvailable = s.emailLinksAvailable()
 	out.DefaultLanguage = s.defaultLanguage()
@@ -490,10 +515,12 @@ func (s *Server) handleAdminUpdateSettings(w http.ResponseWriter, r *http.Reques
 		writeError(w, http.StatusBadRequest, "Ungültiges JSON")
 		return
 	}
-	// Empty means unchanged (the browser never has it); without SMTP user the password goes too
+	// Empty means unchanged (the browser never has it); without SMTP user the password goes too. One that
+	// no longer decrypts (SECRETS_KEY changed) stays stored until a new one is entered.
+	settings.SMTPPassUnreadable = false
 	if settings.SMTPPass == "" && strings.TrimSpace(settings.SMTPUser) != "" {
 		if cur, err := s.store.GetSystemSettings(); err == nil {
-			settings.SMTPPass = cur.SMTPPass
+			settings.SMTPPass, settings.SMTPPassUnreadable = cur.SMTPPass, cur.SMTPPassUnreadable
 		}
 	}
 	// Registration fixed by the environment cannot be changed here (the stored value stays as it was)

@@ -67,11 +67,19 @@ var migrations = []migration{
 	{39, "Sign-in through an OpenID Connect provider", (*Store).migrateOIDC},
 	{40, "Accounts without an e-mail address", (*Store).migrateEmailOptional},
 	{41, "References from bullets to files and hidden values", (*Store).migrateBlockRefs},
+	{42, "Indexes for tasks from bullets and for deleted bullets", (*Store).migrateLookupIndexes},
+	{43, "SMTP password encrypted with SECRETS_KEY", (*Store).migrateSealSMTPPass},
+	{44, "Note text stored only once", (*Store).migrateNoteStorage},
+	{45, "Usernames unique in the database", (*Store).migrateUniqueUsernames},
 }
 
 // migrationBlockRefs creates block_refs: until it has run (earlier steps that rewrite notes), writing a
 // block leaves the table alone, and the step itself fills it from all blocks.
 const migrationBlockRefs = 41
+
+// migrationNoteStorage (note_storage.go) adds the columns the compact log and the search index need:
+// until it has run, notes are written the way before and the step converts them.
+const migrationNoteStorage = 44
 
 func (s *Store) migrate() error {
 	// A database without any table is new (or was just emptied by the demo reset): nothing to back up
@@ -123,6 +131,13 @@ func (s *Store) migrate() error {
 
 	last := 0
 	s.blockRefsReady.Store(false) // the demo reset migrates an emptied database again
+	// Taken from the schema, not from the order of the steps: a step that runs after 44 was applied
+	// (one added later with a lower id) must write the log in the new form, or it would break it
+	ready, err := s.hasNoteStorageColumns()
+	if err != nil {
+		return err
+	}
+	s.noteStorageReady.Store(ready)
 	for _, m := range migrations {
 		last = m.id
 		if !applied[m.id] {
@@ -138,6 +153,9 @@ func (s *Store) migrate() error {
 		if m.id == migrationBlockRefs {
 			s.blockRefsReady.Store(true)
 		}
+		if m.id == migrationNoteStorage {
+			s.noteStorageReady.Store(true)
+		}
 	}
 	if _, err = s.db.Exec(fmt.Sprintf(`PRAGMA user_version = %d`, last)); err != nil {
 		return err
@@ -148,14 +166,16 @@ func (s *Store) migrate() error {
 
 // Before pending migrations run on a database with content, a gzip-compressed copy of it goes to
 // $DATA_DIR/backups/system/pre-migration-<last applied id>-<time>.db.gz, the way back after an update.
-// The last preMigrationKeep copies stay; they are not part of the daily backups (other name, no
-// retention in days). Without the copy nothing is migrated. Migrations are not one transaction: a step
+// The last preMigrationKeep copies stay, each for at most preMigrationMaxAge (the newest one too: they
+// hold accounts deleted since, and the daily backups cover later mistakes); they are not part of the
+// daily backups (other name, own expiry). Without the copy nothing is migrated. Migrations are not one transaction: a step
 // that fails can leave the database half migrated, and a restart loop would copy that state again and
 // again. So the marker file names the copy taken before the attempt, until the migrations have run
 // through; while it is there, that copy is kept besides the newest ones.
 
 const (
 	preMigrationKeep   = 3
+	preMigrationMaxAge = 90 * 24 * time.Hour
 	preMigrationMarker = "pre-migration-pending"
 )
 
@@ -267,6 +287,44 @@ func prunePreMigrationBackups(dir string, keep int, pinned string) error {
 	return nil
 }
 
+// ExpirePreMigrationBackups deletes the copies from before migrations that are older than
+// preMigrationMaxAge, the newest one included; the age is the time in the name (server time zone).
+// The copy named by the marker of an unfinished attempt stays. Returns how many went.
+func (s *Store) ExpirePreMigrationBackups(now time.Time) (int, error) {
+	dir := s.systemBackupDir
+	if dir == "" {
+		return 0, nil
+	}
+	entries, err := os.ReadDir(dir)
+	if errors.Is(err, os.ErrNotExist) {
+		return 0, nil
+	}
+	if err != nil {
+		return 0, err
+	}
+	pinned := ""
+	if b, err := os.ReadFile(filepath.Join(dir, preMigrationMarker)); err == nil {
+		pinned = strings.TrimSpace(string(b))
+	}
+	cutoff := now.Add(-preMigrationMaxAge)
+	removed := 0
+	for _, e := range entries {
+		m := preMigrationNameRe.FindStringSubmatch(e.Name())
+		if m == nil || e.IsDir() || e.Name() == pinned {
+			continue
+		}
+		taken, err := time.ParseInLocation("2006-01-02-150405", m[2], time.Local)
+		if err != nil || !taken.Before(cutoff) {
+			continue
+		}
+		if err := os.Remove(filepath.Join(dir, e.Name())); err != nil {
+			return removed, err
+		}
+		removed++
+	}
+	return removed, nil
+}
+
 var addColumnRe = regexp.MustCompile(`(?is)^\s*ALTER\s+TABLE\s+(\w+)\s+ADD\s+COLUMN\s+(\w+)\s+(.+?);?\s*$`)
 
 // execSchemaStatement runs one schema statement; "ALTER TABLE … ADD COLUMN" only when the column is
@@ -310,4 +368,23 @@ func (s *Store) columnExists(table, column string) (bool, error) {
 		}
 	}
 	return false, rows.Err()
+}
+
+// migrateLookupIndexes adds indexes for two lookups that read whole tables:
+//   - tasks created from bullets of a note (converted_ref_id "<note id>:<bullet id>"): opening a note,
+//     purging it and deleting an account's notes look them up by the note's id prefix
+//     (sqlTasksOfNoteBlocks), which was a scan of every thought,
+//   - deleted bullets older than the retention (CompactDocs every six hours), a scan of every block.
+//
+// Both are partial: only tasks from bullets and only deleted bullets get an entry.
+func (s *Store) migrateLookupIndexes() error {
+	for _, q := range []string{
+		`CREATE INDEX IF NOT EXISTS idx_thoughts_doc_block ON thoughts(converted_ref_id) WHERE converted_type = 'document_block'`,
+		`CREATE INDEX IF NOT EXISTS idx_blocks_deleted_at ON blocks(deleted_at) WHERE deleted = 1`,
+	} {
+		if _, err := s.db.Exec(q); err != nil {
+			return err
+		}
+	}
+	return nil
 }

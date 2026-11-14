@@ -1,10 +1,6 @@
 package api
 
 import (
-	"crypto/aes"
-	"crypto/cipher"
-	"crypto/rand"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"log/slog"
@@ -20,45 +16,16 @@ import (
 // Hidden values in notes (storage/secrets.go). The routes sit among the note routes, which API keys
 // and MCP cannot reach (apikey_access.go), so only a login creates, reveals or changes a value.
 
-const secretCipherPrefix = "v1:"
+const secretCipherPrefix = storage.SealedPrefix
 
-// sealSecret encrypts with AES-256-GCM; the secret's id is bound in as additional data, so a
-// ciphertext copied into another row does not open.
+// sealSecret encrypts with SECRETS_KEY (AES-256-GCM, storage/sealed.go); the secret's id is bound in as
+// additional data, so a ciphertext copied into another row does not open.
 func (s *Server) sealSecret(id, value string) (string, error) {
-	gcm, err := s.secretAEAD()
-	if err != nil {
-		return "", err
-	}
-	nonce := make([]byte, gcm.NonceSize())
-	if _, err := rand.Read(nonce); err != nil {
-		return "", err
-	}
-	sealed := gcm.Seal(nonce, nonce, []byte(value), []byte(id))
-	return secretCipherPrefix + base64.StdEncoding.EncodeToString(sealed), nil
+	return storage.SealValue(s.cfg.SecretsKey, id, value)
 }
 
 func (s *Server) openSecret(id, ciphertext string) (string, error) {
-	gcm, err := s.secretAEAD()
-	if err != nil {
-		return "", err
-	}
-	raw, err := base64.StdEncoding.DecodeString(strings.TrimPrefix(ciphertext, secretCipherPrefix))
-	if err != nil || len(raw) < gcm.NonceSize() {
-		return "", errors.New("malformed ciphertext")
-	}
-	plain, err := gcm.Open(nil, raw[:gcm.NonceSize()], raw[gcm.NonceSize():], []byte(id))
-	if err != nil {
-		return "", err
-	}
-	return string(plain), nil
-}
-
-func (s *Server) secretAEAD() (cipher.AEAD, error) {
-	block, err := aes.NewCipher(s.cfg.SecretsKey)
-	if err != nil {
-		return nil, err
-	}
-	return cipher.NewGCM(block)
+	return storage.OpenValue(s.cfg.SecretsKey, id, ciphertext)
 }
 
 func readSecretValue(w http.ResponseWriter, r *http.Request) (string, bool) {
@@ -104,7 +71,8 @@ func (s *Server) handleCreateSecret(w http.ResponseWriter, r *http.Request) {
 // secretFor looks up a secret as seen from the note {id} it is shown in. Its own note: whoever can see
 // (or with write, edit) that note. Another note (the bullet was moved or pasted there): the bullet must
 // be there and the person must also be allowed to see the note the secret belongs to, so copying a
-// reference into one's own note reveals nothing. If the secret's note no longer holds it, it moves here.
+// reference into one's own note reveals nothing. If the secret's note no longer holds it and the person may
+// edit both notes, it moves here.
 func (s *Server) secretFor(w http.ResponseWriter, r *http.Request, write bool) (*storage.NoteSecret, bool) {
 	userID := auth.GetUserID(r.Context())
 	docID := chi.URLParam(r, "id")
@@ -127,11 +95,19 @@ func (s *Server) secretFor(w http.ResponseWriter, r *http.Request, write bool) (
 		return nil, false
 	}
 	if sec.DocumentID != docID {
-		if !s.store.DocReferencesSecret(docID, sec.ID) || s.store.DocRole(userID, sec.DocumentID) == "" {
+		originRole := s.store.DocRole(userID, sec.DocumentID)
+		if !s.store.DocReferencesSecret(docID, sec.ID) || originRole == "" {
 			writeErrorCode(w, http.StatusNotFound, "secret_gone", storage.ErrSecretNotFound.Error())
 			return nil, false
 		}
-		if storage.CanEditDoc(role) && !s.store.DocReferencesSecret(sec.DocumentID, sec.ID) {
+		// Changing it needs write access where it belongs, not only in the note the copy sits in.
+		if write && !storage.CanEditDoc(originRole) {
+			writeError(w, http.StatusForbidden, "Keine Schreibrechte für diese Notiz")
+			return nil, false
+		}
+		// Only someone who may edit both notes moves it; reading changes nothing, so a reader who copied
+		// the reference does not take the value over when the owner deletes its bullet.
+		if storage.CanEditDoc(role) && storage.CanEditDoc(originRole) && !s.store.DocReferencesSecret(sec.DocumentID, sec.ID) {
 			if err := s.store.MoveSecret(sec.ID, docID); err == nil {
 				sec.DocumentID = docID
 			}

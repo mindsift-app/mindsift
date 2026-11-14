@@ -79,16 +79,22 @@ func PrepareFTSQuery(raw string) string {
 }
 
 // blockSearchText is the SQL for the searchable text of a block row (prefix "new." in triggers): drawings
-// only with the words written in them, not their JSON; tables without the pipes and the separator row
+// only with the words written in them, not their JSON; tables without the pipes and the separator row.
+// The words of a drawing are taken element by element (a recursive CTE), not with json_each: FTS5 reads
+// the text of the index through the view documents_fts_source and refuses virtual tables there.
 func blockSearchText(row string) string {
-	return `CASE WHEN ` + row + `type = 'drawing' THEN COALESCE((SELECT group_concat(json_extract(e.value, '$.txt'), ' ')
-		FROM json_each(CASE WHEN json_valid(` + row + `content) THEN ` + row + `content ELSE '{}' END, '$.els') e
-		WHERE json_extract(e.value, '$.txt') IS NOT NULL), '')
+	doc := `CASE WHEN json_valid(` + row + `content) THEN ` + row + `content ELSE '{}' END`
+	word := `json_extract(` + doc + `, '$.els[' || n || '].txt')`
+	return `CASE WHEN ` + row + `type = 'drawing' THEN COALESCE((WITH RECURSIVE el(n) AS (SELECT 0 UNION ALL
+		SELECT n + 1 FROM el WHERE n + 1 < json_array_length(` + doc + `, '$.els'))
+		SELECT group_concat(` + word + `, ' ') FROM el WHERE ` + word + ` IS NOT NULL), '')
 		WHEN ` + row + `type = 'table' THEN replace(replace(replace(` + row + `content, '\|', '|'), '|', ' '), '---', ' ')
 		ELSE ` + row + `content END`
 }
 
-// migrateSearchFTS creates the virtual FTS5 tables and synchronization triggers.
+// migrateSearchFTS creates the virtual FTS5 tables and synchronization triggers (part of the baseline,
+// migration 3). Migration 44 replaces documents_fts and its triggers by an index without a copy of the
+// note text (noteSearchSQL in note_storage.go).
 func (s *Store) migrateSearchFTS() {
 	tables := []string{
 		`CREATE VIRTUAL TABLE IF NOT EXISTS thoughts_fts USING fts5(

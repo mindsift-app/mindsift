@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -29,7 +30,7 @@ type Server struct {
 	store    *storage.Store
 	wsHub    *ws.Hub
 	staticFS fs.FS
-	// licensesFile: THIRD_PARTY_LICENSES.txt, served at /third-party-licenses.txt (licenses.go); tests set it
+	// licensesFile: THIRD_PARTY_LICENSES.txt, served at /api/v1/third-party-licenses (licenses.go); tests set it
 	licensesFile string
 	// setupMu: the first-boot setup runs once at a time
 	setupMu sync.Mutex
@@ -43,6 +44,7 @@ type Server struct {
 	demo          demoState     // periodic reset in demo mode (demo.go)
 	streamTickets streamTickets // one-time tickets for WebSocket/SSE (streamticket.go)
 	loginGuard    *loginGuard   // brute-force protection (loginguard.go)
+	imports       importGate    // imports running at a time (importgate.go)
 	mfaChallenges mfaChallenges // second step of a sign-in with a second factor (mfa.go)
 	// passkeyChallenges: the challenges of passkey ceremonies, registration, confirmation, sign-in (passkeys.go)
 	passkeyChallenges passkeyChallenges
@@ -89,7 +91,7 @@ func NewServer(cfg *config.Config, store *storage.Store, wsHub *ws.Hub, staticFS
 	srv.logOIDCSetup(oidcOff)
 	srv.voice = newVoiceService(cfg.Speech.MaxParallel)
 	if srv.voiceMode() == "server" {
-		go srv.startVoiceCheck()
+		srv.background(srv.startVoiceCheck)
 	}
 	srv.draw = newDrawHub()
 	wsHub.SetRoomAuthorizer(srv.canJoinRoom)
@@ -133,6 +135,20 @@ func (s *Server) wait(d time.Duration) bool {
 	case <-t.C:
 		return true
 	}
+}
+
+// stopContext is cancelled once the server stops (Close) or cancel is called, so a background job's
+// request to another service does not hold up Close.
+func (s *Server) stopContext() (context.Context, context.CancelFunc) {
+	ctx, cancel := context.WithCancel(context.Background())
+	go func() {
+		select {
+		case <-s.stop:
+			cancel()
+		case <-ctx.Done():
+		}
+	}()
+	return ctx, cancel
 }
 
 // canJoinRoom allows realtime rooms only to users with read access: "doc:<id>" for notes, otherwise a shared list ID.
@@ -240,6 +256,8 @@ func (s *Server) Router() http.Handler {
 		r.Use(s.authMiddleware)
 
 		r.Get("/api/v1/auth/me", s.handleMe)
+		// Licenses of the third-party software in this build (licenses.go), shown in the app's About part
+		r.Get("/api/v1/third-party-licenses", s.handleThirdPartyLicenses)
 		r.Post("/api/v1/events/rooms", s.handleSSERooms)
 		r.Post("/api/v1/events/poll", s.handleOpenPoll)
 		r.Get("/api/v1/events/poll/{id}", s.handlePoll)
@@ -494,9 +512,6 @@ func (s *Server) Router() http.Handler {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 	})
 
-	// Licenses of the third-party software in this build (licenses.go), linked in the app's About part
-	r.Get("/third-party-licenses.txt", s.handleThirdPartyLicenses)
-
 	// Embedded Frontend SPA Handler
 	if s.staticFS != nil {
 		fileServer := http.FileServer(http.FS(s.staticFS))
@@ -642,6 +657,16 @@ func writeUsernameError(w http.ResponseWriter, err error) {
 	default:
 		writeErrorFrom(w, http.StatusBadRequest, err)
 	}
+}
+
+// writeEmailError answers a refused account write: a taken address is 409 (also when another request took
+// it after the check), the rest 400
+func writeEmailError(w http.ResponseWriter, err error) {
+	if errors.Is(err, storage.ErrEmailTaken) {
+		writeError(w, http.StatusConflict, storage.ErrEmailTaken.Error())
+		return
+	}
+	writeErrorFrom(w, http.StatusBadRequest, err)
 }
 
 func writeErrorCode(w http.ResponseWriter, status int, code, message string) {

@@ -235,7 +235,9 @@
     "personal": "Personal",
     "deletedAt": "eliminado el {{date}}",
     "empty": "La papelera está vacía.",
-    "delete": "Eliminar definitivamente"
+    "delete": "Eliminar definitivamente",
+    "deletedAtBy": "eliminado el {{date}} por {{name}}",
+    "deletedAtAuto": "eliminado el {{date}} (automáticamente)"
   },
   "quickAdd": {
     "toList": "Añadir una tarea a «{{title}}»…",

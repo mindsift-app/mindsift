@@ -9,6 +9,7 @@ import { BackupAdminCard } from '../BackupAdminCard';
 import { VoiceStatusCard } from '../VoiceStatusCard';
 import { OidcStatusCard } from './OidcStatusCard';
 import { TimeZoneSetting } from './TimeZoneSetting';
+import { LinkPreviewSetting } from './LinkPreviewSetting';
 import { SHARING_MODES, useAdminSettings } from './useAdminSettings';
 import { Trans, useTranslation } from 'react-i18next';
 import { FALLBACK_LANGUAGE, LANGUAGES } from '../../../i18n';
@@ -185,6 +186,9 @@ export function ServerSection({
               </div>
             )}
           </div>
+
+          {/* Link previews for the whole server: off, nothing is fetched and the app shows no cards */}
+          <LinkPreviewSetting settings={settings} demoMode={demoMode} onSave={(patch) => handleSaveSystemSettings(patch)} />
 
           <BackupAdminCard settings={settings} onSave={(patch) => handleSaveSystemSettings(patch)} />
 

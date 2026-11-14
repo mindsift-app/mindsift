@@ -60,11 +60,12 @@ ARG SKIP_TESTS=0
 # go.mod and go.sum are used as committed.
 # The tests run with a single database connection: code that needs a second one while holding one hangs
 # here at once (and fails after the timeout) instead of deadlocking the pool under load.
+# -timeout 20m per package as in ci/local-checks.sh: internal/api alone takes minutes on a busy runner.
 RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build \
     go mod verify && \
     if [ "$SKIP_TESTS" != "1" ]; then \
       CGO_ENABLED=0 go vet ./... && \
-      DB_MAX_CONNS=1 CGO_ENABLED=0 go test -v -timeout 5m ./...; \
+      DB_MAX_CONNS=1 CGO_ENABLED=0 go test -v -timeout 20m ./...; \
     else \
       echo "Skipping backend tests (SKIP_TESTS=1)"; \
     fi

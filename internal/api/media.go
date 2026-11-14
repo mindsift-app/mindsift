@@ -170,26 +170,12 @@ func (s *Server) handleFetchMedia(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// canReadMedia: the user may read the note the file was uploaded to, or a note whose blocks show it
-// (e.g. a block copied into another note).
-func (s *Server) canReadMedia(userID string, m *storage.Media) bool {
-	if s.store.DocRole(userID, m.DocID) != "" {
-		return true
-	}
-	docs, _ := s.store.MediaReferencedIn(m.ID)
-	for _, d := range docs {
-		if s.store.DocRole(userID, d) != "" {
-			return true
-		}
-	}
-	return false
-}
-
-// handleGetMedia: GET /media/{id} with range requests (seeking in audio).
+// handleGetMedia: GET /media/{id} with range requests (seeking in audio). Readable for whoever may read
+// the note the file was uploaded to or a note that shows it (storage.CanReadMedia).
 func (s *Server) handleGetMedia(w http.ResponseWriter, r *http.Request) {
 	userID := auth.GetUserID(r.Context())
 	m, err := s.store.GetMedia(chi.URLParam(r, "id"))
-	if err != nil || !s.canReadMedia(userID, m) {
+	if err != nil || !s.store.CanReadMedia(userID, m) {
 		writeError(w, http.StatusNotFound, storage.ErrMediaNotFound.Error())
 		return
 	}

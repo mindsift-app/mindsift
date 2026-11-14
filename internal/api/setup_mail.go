@@ -82,6 +82,9 @@ type setupInfo struct {
 	EmailLinks bool `json:"emailLinks"`
 	// Where the daily backups are written (on the server, i.e. inside the container)
 	BackupDir string `json:"backupDir"`
+	// The zone the server works in now and the one without the setting (TZ, else UTC), so the summary
+	// names the zone the backups follow when the wizard leaves it unset
+	ServerTime *domain.ServerTime `json:"serverTime"`
 }
 
 func (s *Server) setupInfo(forAdmin bool) setupInfo {
@@ -92,6 +95,7 @@ func (s *Server) setupInfo(forAdmin bool) setupInfo {
 		BaseURLSet:     s.cfg.BaseURLSet,
 		EmailLinks:     s.emailLinksAvailable(),
 		BackupDir:      s.backupRoot(),
+		ServerTime:     serverTimeNow(),
 	}
 	if forAdmin && err == nil {
 		info.SMTPHost = cfg.Host

@@ -651,7 +651,7 @@ export const CodeBlockEditor: React.FC<CodeBlockEditorProps> = ({
             ]}
           />
         ) : (
-          <span className="font-mono text-[11px] text-faint px-1">{block.lang || 'Text'}</span>
+          <span className="font-mono text-[11px] text-faint px-1">{block.lang || t('workspace:code.plain')}</span>
         )}
       </div>
 

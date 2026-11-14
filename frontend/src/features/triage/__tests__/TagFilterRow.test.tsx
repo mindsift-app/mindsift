@@ -58,6 +58,19 @@ describe('TagFilterRow', () => {
     expect(screen.queryByPlaceholderText('Hashtag suchen …')).toBeNull();
   });
 
+  it('marks the first hit again after a new search', () => {
+    rowWidth = 420;
+    const onSelect = vi.fn();
+    render(<TagFilterRow tags={tags} tasks={tasks} selected={null} onSelect={onSelect} />);
+    fireEvent.click(screen.getByRole('button', { name: /weitere/ }));
+    const search = screen.getByPlaceholderText('Hashtag suchen …');
+    fireEvent.keyDown(search, { key: 'ArrowDown' });
+    fireEvent.keyDown(search, { key: 'ArrowDown' });
+    fireEvent.change(search, { target: { value: 'e' } }); // garten, einkauf
+    fireEvent.keyDown(search, { key: 'Enter' });
+    expect(onSelect).toHaveBeenCalledWith('garten');
+  });
+
   it('says so when the search finds nothing', () => {
     rowWidth = 420;
     render(<TagFilterRow tags={tags} tasks={tasks} selected={null} onSelect={() => {}} />);
