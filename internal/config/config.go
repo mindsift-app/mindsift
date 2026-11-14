@@ -615,6 +615,12 @@ func logLevelFromEnv() string {
 	return strings.ToLower(getEnv("LOG_LEVEL", "info"))
 }
 
+// LogJSONFromEnv: LOG_FORMAT=json, the log as one JSON object per line (for Loki, ELK and the like)
+// instead of key=value text.
+func LogJSONFromEnv() bool {
+	return strings.EqualFold(strings.TrimSpace(getEnv("LOG_FORMAT", "text")), "json")
+}
+
 // LogLevelFromEnv is the level Load gives Config.LogLevel, read before Load: the server sets up its logger
 // first, so the messages of Load itself (a generated JWT secret, ignored variables) are already in its
 // format and filtered by its level.

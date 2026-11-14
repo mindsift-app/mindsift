@@ -61,6 +61,7 @@ services:
       - GOMEMLIMIT=${GOMEMLIMIT:-}
       - LOGIN_PROTECTION=${LOGIN_PROTECTION:-true}
       - LOG_LEVEL=${LOG_LEVEL:-info}
+      - LOG_FORMAT=${LOG_FORMAT:-text}
       - DEBUG=${DEBUG:-false}
       - MINDSIFT_DEMO=${MINDSIFT_DEMO:-false}
       - DEMO_RESET_MINUTES=${DEMO_RESET_MINUTES:-20}

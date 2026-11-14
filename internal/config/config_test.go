@@ -444,3 +444,16 @@ func TestOIDCConfigRefusesHalfASetup(t *testing.T) {
 		t.Fatalf("unset: %+v %v", none, err)
 	}
 }
+
+// LOG_FORMAT=json switches the log to JSON lines; anything else keeps the text format.
+func TestLogJSONFromEnv(t *testing.T) {
+	for _, c := range []struct {
+		value string
+		want  bool
+	}{{"", false}, {"text", false}, {"json", true}, {" JSON ", true}, {"yaml", false}} {
+		t.Setenv("LOG_FORMAT", c.value)
+		if got := LogJSONFromEnv(); got != c.want {
+			t.Errorf("LOG_FORMAT=%q: got %v, want %v", c.value, got, c.want)
+		}
+	}
+}
