@@ -13,7 +13,16 @@ import (
 	"github.com/mindsift-app/mindsift/internal/domain"
 )
 
-// migrateCodeBlockSecrets (migration 52) gives the code blocks there are the placeholder instead of references to values
+// migrateCodeBlocksAndOpResults is migration 52: code blocks keep no hidden values (migrateCodeBlockSecrets)
+// and doc_op_results becomes compact (migrateCompactOpResults, op_results.go).
+func (s *Store) migrateCodeBlocksAndOpResults() error {
+	if err := s.migrateCodeBlockSecrets(); err != nil {
+		return err
+	}
+	return s.migrateCompactOpResults()
+}
+
+// migrateCodeBlockSecrets gives the code blocks there are the placeholder instead of references to values
 // (secrets.go), as a change of the note by its owner (placeholder in the owner's message language), so open
 // editors get it through the log. block_refs drops their rows: the secret sweep neither copies a value for
 // a code block any more nor keeps one because of it (a value only a code block held is deleted after

@@ -385,7 +385,7 @@ func runSimulation(t *testing.T, seed int64, steps int) {
 
 	// Every operation got exactly one stored result, and no text was lost
 	var stored int
-	if err := store.db.QueryRow(`SELECT COUNT(*) FROM doc_op_results WHERE doc_id = ? AND user_id IN ('u0', 'u1')`, doc.ID).Scan(&stored); err != nil {
+	if err := store.db.QueryRow(`SELECT COUNT(*) FROM doc_op_results WHERE doc_id = ?`, doc.ID).Scan(&stored); err != nil {
 		t.Fatal(err)
 	}
 	if stored != len(w.sent) {
