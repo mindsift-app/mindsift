@@ -121,7 +121,7 @@ const en: HelpContent = {
               </div>
               <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main">
                 <Code className="w-3.5 h-3.5 text-accent" />
-                <span>/code (code block)</span>
+                <span>/code (code block; Enter twice at the end leaves it)</span>
               </div>
               <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main col-span-2">
                 <span className="text-accent font-bold">1.</span>
@@ -240,7 +240,7 @@ const en: HelpContent = {
               <strong className="text-main">Creating one:</strong> Type <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">/table</kbd> in a bullet: a table with 2 columns and 2 rows appears, text already in the bullet goes into the first cell. The first row is the header (bold).
             </li>
             <li>
-              <strong className="text-main">Typing:</strong> <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Enter</kbd> adds a row below the current one, <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Tab</kbd> / <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Shift + Tab</kbd> jump from cell to cell (Tab in the last cell adds a row), the arrow keys change rows and leave the table at the top and bottom. <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Backspace</kbd> in an empty row deletes it, in a completely empty table the table. Bold, italics, links and #hashtags work as in text.
+              <strong className="text-main">Typing:</strong> <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Enter</kbd> adds a row below the current one, <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Tab</kbd> / <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Shift + Tab</kbd> jump from cell to cell (Tab in the last cell adds a row), the arrow keys change rows and leave the table at the top and bottom. <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Backspace</kbd> in an empty row deletes it, in a completely empty table the table. <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Enter</kbd> in an empty last row removes it and adds a new bullet below the table. Bold, italics, links and #hashtags work as in text.
             </li>
             <li>
               <strong className="text-main">Columns2:</strong> The <strong className="text-main">+</strong> right of the table adds a column (on a desktop it shows while the mouse is over the table). Below it, the three dots open the menu: align the column with the cursor left, centered or right (kept in the Markdown table), insert a column left or right, delete the row or column with the cursor, indent or outdent the bullet.

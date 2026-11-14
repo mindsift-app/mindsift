@@ -1671,6 +1671,12 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
             }}
             canIndent={Math.max(0, block.level || 0) < maxAllowedLevel}
             canOutdent={Math.max(0, block.level || 0) > (levelOffset || 0)}
+            onExitBelow={(content) => {
+              setLocalContent(content);
+              localContentRef.current = content;
+              flushDebounce(content);
+              onCreateBlockBelowRef.current(block.id, '');
+            }}
           />
         ) : block.type === 'table' ? (
           <TableBlock
@@ -1690,6 +1696,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
             onLeave={leaveTable}
             onDelete={deleteTable}
             onAppendBelow={lockedBy && canAppendBelow ? appendBelowTable : undefined}
+            onExitBelow={appendBelowTable}
             onHistory={tableHistory}
             onIndent={indentTable}
             onOutdent={outdentTable}

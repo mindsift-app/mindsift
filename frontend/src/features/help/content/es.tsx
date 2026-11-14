@@ -168,7 +168,7 @@ const es: HelpContent = {
               </div>
               <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main">
                 <Code className="w-3.5 h-3.5 text-accent" />
-                <span>/code (bloque de código)</span>
+                <span>/code (bloque de código; Enter dos veces al final lo deja)</span>
               </div>
               <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main col-span-2">
                 <span className="text-accent font-bold">1.</span>
@@ -287,7 +287,7 @@ const es: HelpContent = {
               <strong className="text-main">Crear una:</strong> Escribe <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">/table</kbd> (o <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">/tabla</kbd>) en un punto: aparece una tabla de 2 columnas y 2 filas, el texto que ya había en el punto pasa a la primera celda. La primera fila es el encabezado (en negrita).
             </li>
             <li>
-              <strong className="text-main">Escribir:</strong> <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Enter</kbd> añade una fila debajo de la actual, <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Tab</kbd> / <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Shift + Tab</kbd> saltan de celda en celda (Tab en la última celda añade una fila), las flechas cambian de fila y salen de la tabla por arriba y por abajo. <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Backspace</kbd> en una fila vacía la elimina; en una tabla totalmente vacía, la tabla. Negrita, cursiva, enlaces y #hashtags funcionan como en el texto.
+              <strong className="text-main">Escribir:</strong> <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Enter</kbd> añade una fila debajo de la actual, <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Tab</kbd> / <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Shift + Tab</kbd> saltan de celda en celda (Tab en la última celda añade una fila), las flechas cambian de fila y salen de la tabla por arriba y por abajo. <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Backspace</kbd> en una fila vacía la elimina; en una tabla totalmente vacía, la tabla. <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Enter</kbd> en una última fila vacía la elimina y añade un punto nuevo debajo de la tabla. Negrita, cursiva, enlaces y #hashtags funcionan como en el texto.
             </li>
             <li>
               <strong className="text-main">Columnas:</strong> El <strong className="text-main">+</strong> a la derecha de la tabla añade una columna (en el escritorio aparece al pasar el ratón por la tabla). Debajo, los tres puntos abren el menú: alinear la columna del cursor a la izquierda, al centro o a la derecha (se conserva en la tabla Markdown), insertar una columna a la izquierda o a la derecha, eliminar la fila o la columna del cursor, aumentar o reducir la sangría del punto.

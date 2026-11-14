@@ -321,6 +321,17 @@ export function escapeHtml(raw: string): string {
     .replace(/>/g, '&gt;');
 }
 
+/**
+ * The code without its last line when the caret sits at the end of an empty (or only indented) last line,
+ * else null: then Enter leaves the code block instead of adding another line.
+ */
+export function contentWithoutEmptyLastLine(content: string, start: number, end: number): string | null {
+  if (start !== end || end !== content.length) return null;
+  const nl = content.lastIndexOf('\n');
+  if (nl === -1 || content.slice(nl + 1).trim() !== '') return null;
+  return content.slice(0, nl);
+}
+
 export interface CodeBlockEditorProps {
   block: DocumentBlock;
   content?: string;
@@ -340,6 +351,8 @@ export interface CodeBlockEditorProps {
   onOutdent?: () => void;
   canIndent?: boolean;
   canOutdent?: boolean;
+  /** Enter on an empty last line leaves the block: that line goes, a new bullet follows below */
+  onExitBelow?: (content: string) => void;
 }
 
 export const CodeBlockEditor: React.FC<CodeBlockEditorProps> = ({
@@ -358,6 +371,7 @@ export const CodeBlockEditor: React.FC<CodeBlockEditorProps> = ({
   onOutdent,
   canIndent = false,
   canOutdent = false,
+  onExitBelow,
 }) => {
   const { t } = useTranslation('workspace');
   const isControlled = content !== undefined;
@@ -518,6 +532,12 @@ export const CodeBlockEditor: React.FC<CodeBlockEditorProps> = ({
       const ta = e.currentTarget;
       const start = ta.selectionStart ?? 0;
       const end = ta.selectionEnd ?? start;
+      // A second Enter on the empty last line leaves the block, as in Markdown editors
+      const exitTo = onExitBelow ? contentWithoutEmptyLastLine(currentContent, start, end) : null;
+      if (exitTo !== null) {
+        onExitBelow?.(exitTo);
+        return;
+      }
       const { value, caret } = enterWithIndent(currentContent, start, end, block.lang);
       applyContentUpdate(value, ta);
       ta.value = value;

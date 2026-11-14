@@ -65,6 +65,8 @@ export interface TableBlockProps {
   onDelete: () => void;
   /** Enter while someone else edits the table: a new bullet below it */
   onAppendBelow?: () => void;
+  /** Enter in an empty last row: that row goes and a new bullet follows below the table */
+  onExitBelow?: () => void;
   onHistory: (redo: boolean) => void;
   /** Tab moves between cells, so the bullet is indented from the table's menu */
   onIndent?: () => void;
@@ -99,6 +101,7 @@ const TableBlockView: React.FC<TableBlockProps> = ({
   onLeave,
   onDelete,
   onAppendBelow,
+  onExitBelow,
   onHistory,
   onIndent,
   onOutdent,
@@ -348,10 +351,16 @@ const TableBlockView: React.FC<TableBlockProps> = ({
       return;
     }
 
-    // Cells hold no line breaks: Enter (also with Shift) adds a row below this one
+    // Cells hold no line breaks: Enter (also with Shift) adds a row below this one. In an empty last row
+    // (not the header) it leaves the table instead, like a second Enter at the end of a code block
     if (key === 'Enter' && !e.ctrlKey && !e.metaKey && !e.altKey) {
       e.preventDefault();
       e.stopPropagation();
+      if (onExitBelow && r > 0 && r === rows.length - 1 && rows[r].every((cell) => cell.trim() === '')) {
+        commit(deleteTableRow(data, r), true);
+        onExitBelow();
+        return;
+      }
       addRowBelow(r);
       return;
     }

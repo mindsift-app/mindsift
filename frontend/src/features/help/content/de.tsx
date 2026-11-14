@@ -169,7 +169,7 @@ const de: HelpContent = {
               </div>
               <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main">
                 <Code className="w-3.5 h-3.5 text-accent" />
-                <span>/code (Code-Block)</span>
+                <span>/code (Code-Block; zweimal Enter am Ende verlässt ihn)</span>
               </div>
               <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main col-span-2">
                 <span className="text-accent font-bold">1.</span>
@@ -288,7 +288,7 @@ const de: HelpContent = {
               <strong className="text-main">Anlegen:</strong> Tippe <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">/table</kbd> (oder <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">/tabelle</kbd>) in einen Punkt: es entsteht eine Tabelle mit 2 Spalten und 2 Zeilen, Text aus dem Punkt landet in der ersten Zelle. Die erste Zeile ist die Kopfzeile (fett).
             </li>
             <li>
-              <strong className="text-main">Tippen:</strong> <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Enter</kbd> fügt unter der aktuellen Zeile eine neue ein, <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Tab</kbd> / <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Shift + Tab</kbd> springen von Zelle zu Zelle (Tab in der letzten Zelle legt eine neue Zeile an), die Pfeiltasten wechseln die Zeile und verlassen die Tabelle oben und unten. <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Backspace</kbd> in einer leeren Zeile löscht sie, in einer ganz leeren Tabelle die Tabelle. Fett, kursiv, Links und #Hashtags gehen wie im Text.
+              <strong className="text-main">Tippen:</strong> <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Enter</kbd> fügt unter der aktuellen Zeile eine neue ein, <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Tab</kbd> / <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Shift + Tab</kbd> springen von Zelle zu Zelle (Tab in der letzten Zelle legt eine neue Zeile an), die Pfeiltasten wechseln die Zeile und verlassen die Tabelle oben und unten. <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Backspace</kbd> in einer leeren Zeile löscht sie, in einer ganz leeren Tabelle die Tabelle. <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Enter</kbd> in einer leeren letzten Zeile entfernt sie und legt einen neuen Punkt unter der Tabelle an. Fett, kursiv, Links und #Hashtags gehen wie im Text.
             </li>
             <li>
               <strong className="text-main">Spalten:</strong> Das <strong className="text-main">+</strong> rechts neben der Tabelle fügt eine Spalte hinzu (am Desktop erscheint es, wenn die Maus über der Tabelle ist). Darunter öffnen die drei Punkte das Menü: die Spalte mit dem Cursor links, zentriert oder rechts ausrichten (bleibt in der Markdown-Tabelle erhalten), Spalte links oder rechts einfügen, Zeile oder Spalte mit dem Cursor löschen, den Punkt ein- oder ausrücken.

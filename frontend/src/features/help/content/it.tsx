@@ -121,7 +121,7 @@ const it: HelpContent = {
               </div>
               <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main">
                 <Code className="w-3.5 h-3.5 text-accent" />
-                <span>/code (blocco di codice)</span>
+                <span>/code (blocco di codice; Invio due volte alla fine per uscire)</span>
               </div>
               <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main col-span-2">
                 <span className="text-accent font-bold">1.</span>
@@ -240,7 +240,7 @@ const it: HelpContent = {
               <strong className="text-main">Crearne una:</strong> Scrivi <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">/table</kbd> (o <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">/tabella</kbd>) in un punto: compare una tabella con 2 colonne e 2 righe, il testo già presente nel punto finisce nella prima cella. La prima riga è l’intestazione (in grassetto).
             </li>
             <li>
-              <strong className="text-main">Scrivere:</strong> <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Invio</kbd> aggiunge una riga sotto quella attuale, <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Tab</kbd> / <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Maiusc + Tab</kbd> passano da una cella all’altra (Tab nell’ultima cella aggiunge una riga), le frecce cambiano riga ed escono dalla tabella in alto e in basso. <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Backspace</kbd> in una riga vuota la elimina, in una tabella completamente vuota la tabella. Grassetto, corsivo, link e #hashtag funzionano come nel testo.
+              <strong className="text-main">Scrivere:</strong> <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Invio</kbd> aggiunge una riga sotto quella attuale, <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Tab</kbd> / <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Maiusc + Tab</kbd> passano da una cella all’altra (Tab nell’ultima cella aggiunge una riga), le frecce cambiano riga ed escono dalla tabella in alto e in basso. <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Backspace</kbd> in una riga vuota la elimina, in una tabella completamente vuota la tabella. <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Enter</kbd> in un'ultima riga vuota la elimina e aggiunge un nuovo punto sotto la tabella. Grassetto, corsivo, link e #hashtag funzionano come nel testo.
             </li>
             <li>
               <strong className="text-main">Colonne:</strong> Il <strong className="text-main">+</strong> a destra della tabella aggiunge una colonna (sul desktop compare quando il mouse è sopra la tabella). Sotto, i tre puntini aprono il menu: allineare la colonna del cursore a sinistra, al centro o a destra (resta nella tabella Markdown), inserire una colonna a sinistra o a destra, eliminare la riga o la colonna del cursore, aumentare o ridurre il rientro del punto.
