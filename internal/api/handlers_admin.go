@@ -168,6 +168,10 @@ func (s *Server) handleAdminCreateUser(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "E-Mail-Adresse erforderlich")
 		return
 	}
+	if s.store.EmailInUse(req.Email) {
+		writeError(w, http.StatusConflict, "E-Mail-Adresse existiert bereits")
+		return
+	}
 	if err := auth.ValidatePassword(req.Password); err != nil {
 		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
@@ -176,7 +180,7 @@ func (s *Server) handleAdminCreateUser(w http.ResponseWriter, r *http.Request) {
 	if !isAdmin(caller) {
 		req.Role = domain.RoleMember
 	}
-	if strings.TrimSpace(req.DisplayName) == "" {
+	if domain.CleanDisplayName(req.DisplayName) == "" {
 		req.DisplayName = strings.Split(req.Email, "@")[0]
 	}
 
@@ -187,7 +191,7 @@ func (s *Server) handleAdminCreateUser(w http.ResponseWriter, r *http.Request) {
 	}
 	u, err := s.store.CreateUser(req.Email, hash, req.DisplayName, req.Role)
 	if err != nil {
-		writeErrorFrom(w, http.StatusBadRequest, err)
+		writeEmailError(w, err)
 		return
 	}
 	for _, orgID := range s.store.ValidOrganizationIDs(req.OrganizationIDs) {
@@ -239,6 +243,11 @@ func (s *Server) handleAdminUpdateUser(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+	// Checked before the username changes, so a taken address does not leave half the change behind
+	if req.Email != nil && domain.NormalizeEmail(*req.Email) != targetUser.Email && s.store.EmailInUse(*req.Email) {
+		writeError(w, http.StatusConflict, "E-Mail-Adresse existiert bereits")
+		return
+	}
 	if req.Username != nil && strings.ToLower(strings.TrimSpace(*req.Username)) != targetUser.Username {
 		if s.cfg.DemoMode {
 			writeError(w, http.StatusForbidden, "In der Demo deaktiviert")
@@ -251,7 +260,7 @@ func (s *Server) handleAdminUpdateUser(w http.ResponseWriter, r *http.Request) {
 	}
 	u, err := s.store.UpdateUser(targetUserID, req.DisplayName, req.Email, req.Role, req.IsActive, req.DiscordWebhookURL, nil)
 	if err != nil {
-		writeErrorFrom(w, http.StatusBadRequest, err)
+		writeEmailError(w, err)
 		return
 	}
 	if req.IsActive != nil && !*req.IsActive {

@@ -370,12 +370,12 @@ Routes marked **S** are open to server admins and user managers (`role = manager
 
 | Method | Path | Purpose |
 |---|---|---|
-| GET/POST | `/admin/users` | **S** List users (with `organizationIds`; without alarm targets – webhooks, channels – and token version); create (`email`, `password`, `displayName`, `role` (`member`/`manager`/`admin`), optional `organizationIds`) |
+| GET/POST | `/admin/users` | **S** List users (with `organizationIds`; without alarm targets – webhooks, channels – and token version); create (`email`, `password`, `displayName`, `role` (`member`/`manager`/`admin`), optional `organizationIds`); `409` if the address belongs to another account. Control characters in `displayName` (line breaks, tabs) become a space, here and wherever a name is saved |
 | GET/POST | `/admin/organizations` | **S** Organizations with `memberCount`; create (`name`) |
 | PUT/DELETE | `/admin/organizations/{id}` | **S** Rename (`name`); delete (shares only this organization allowed go) |
 | POST | `/admin/organizations/{id}/members` | **S** Add a person (`userId`) |
 | DELETE | `/admin/organizations/{id}/members/{userId}` | **S** Take a person out; removes shares, group memberships and assignments that no other common organization allows. `?dryRun=true` only counts them (`affected`) |
-| PATCH/DELETE | `/admin/users/{id}` | **S** `displayName`, `username` (rules and errors as in `/auth/settings`), `email`, `role`, `isActive`, `discordWebhookUrl`; delete (for pending accounts = reject). `GET /admin/users` flags pending accounts with `pendingApproval` and accounts with a second factor with `mfaEnabled` |
+| PATCH/DELETE | `/admin/users/{id}` | **S** `displayName`, `username` (rules and errors as in `/auth/settings`), `email` (`409` if another account has it; nothing of the request is applied), `role`, `isActive`, `discordWebhookUrl`; delete (for pending accounts = reject). `GET /admin/users` flags pending accounts with `pendingApproval` and accounts with a second factor with `mfaEnabled` |
 | POST | `/admin/users/{id}/mfa/reset` | Removes every second factor of another account (authenticator app, passkeys, recovery codes, trusted devices), e.g. after a lost phone; it signs in with the password alone again and is told by mail. `400` for the own account, `403` for managers on admins and managers. `403` in demo mode |
 | POST | `/admin/users/{id}/approve` | **S** Approve pending account; the user receives an email (`409` if not pending) |
 | PUT | `/admin/users/{id}/password` | Reset password (server admins only) |

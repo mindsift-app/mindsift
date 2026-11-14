@@ -173,7 +173,7 @@ func (s *Server) handleFirstBootSetup(w http.ResponseWriter, r *http.Request) {
 		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
-	if strings.TrimSpace(req.DisplayName) == "" {
+	if domain.CleanDisplayName(req.DisplayName) == "" {
 		req.DisplayName = "Administrator"
 	}
 
@@ -340,7 +340,7 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
-	if strings.TrimSpace(req.DisplayName) == "" {
+	if domain.CleanDisplayName(req.DisplayName) == "" {
 		req.DisplayName = strings.Split(req.Email, "@")[0]
 	}
 

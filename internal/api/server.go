@@ -644,6 +644,16 @@ func writeUsernameError(w http.ResponseWriter, err error) {
 	}
 }
 
+// writeEmailError answers a refused account write: a taken address is 409 (also when another request took
+// it after the check), the rest 400
+func writeEmailError(w http.ResponseWriter, err error) {
+	if errors.Is(err, storage.ErrEmailTaken) {
+		writeError(w, http.StatusConflict, storage.ErrEmailTaken.Error())
+		return
+	}
+	writeErrorFrom(w, http.StatusBadRequest, err)
+}
+
 func writeErrorCode(w http.ResponseWriter, status int, code, message string) {
 	writeJSON(w, status, map[string]string{"error": tr(w, message), "code": code})
 }

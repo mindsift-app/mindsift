@@ -110,7 +110,7 @@ func (s *Store) createUser(id, email, username, passwordHash, displayName, role 
 		Email:               cleanEmail,
 		Username:            cleanUsername,
 		PasswordHash:        passwordHash,
-		DisplayName:         strings.TrimSpace(displayName),
+		DisplayName:         domain.CleanDisplayName(displayName),
 		Role:                role,
 		IsActive:            active,
 		TokenVersion:        1,
@@ -127,9 +127,18 @@ func (s *Store) createUser(id, email, username, passwordHash, displayName, role 
 		u.ID, u.Email, u.Username, u.PasswordHash, u.DisplayName, u.Role, active, u.CreatedAt,
 	)
 	if err != nil {
-		return nil, err
+		return nil, emailTakenErr(err)
 	}
 	return u, nil
+}
+
+// emailTakenErr turns the unique index on users.email refusing an address (another request took it
+// between the check and the write) into ErrEmailTaken; other errors pass unchanged.
+func emailTakenErr(err error) error {
+	if err != nil && strings.Contains(err.Error(), "UNIQUE constraint failed: users.email") {
+		return ErrEmailTaken
+	}
+	return err
 }
 
 // EmailInUse: an account has exactly this login address (other ways of signing in do not count). When
@@ -327,7 +336,7 @@ func (s *Store) UpdateUserFull(
 		return nil, err
 	}
 	if displayName != nil {
-		u.DisplayName = strings.TrimSpace(*displayName)
+		u.DisplayName = domain.CleanDisplayName(*displayName)
 	}
 	if email != nil {
 		u.Email = domain.NormalizeEmail(*email)
@@ -369,7 +378,7 @@ func (s *Store) UpdateUserFull(
 		u.DisplayName, u.Email, u.Role, activeInt, u.TokenVersion, channelsStr, u.DiscordWebhookURL, u.CustomWebhookURL, u.NotifyBeforeMinutes, u.AvatarURL, userID,
 	)
 	if err != nil {
-		return nil, err
+		return nil, emailTakenErr(err)
 	}
 	return u, nil
 }

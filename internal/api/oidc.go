@@ -779,9 +779,9 @@ func (s *Server) createOIDCAccount(r *http.Request, id *oidcIdentity, address st
 		login = address
 	}
 	local := strings.Split(address, "@")[0]
-	display := strings.TrimSpace(id.name)
+	display := domain.CleanDisplayName(id.name)
 	if display == "" {
-		display = strings.TrimSpace(id.username)
+		display = domain.CleanDisplayName(id.username)
 	}
 	if display == "" {
 		display = local

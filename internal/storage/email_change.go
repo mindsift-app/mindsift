@@ -150,7 +150,7 @@ func (s *Store) ConfirmEmailChange(raw string) (*domain.User, string, error) {
 		return nil, "", ErrEmailTaken
 	}
 	if _, err = tx.Exec(`UPDATE users SET email = ? WHERE id = ?`, email, userID); err != nil {
-		return nil, "", err
+		return nil, "", emailTakenErr(err)
 	}
 	if err := tx.Commit(); err != nil {
 		return nil, "", err
