@@ -165,8 +165,13 @@ func (s *Server) handleFirstBootSetup(w http.ResponseWriter, r *http.Request) {
 		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
-	if strings.TrimSpace(req.Email) == "" {
+	req.Email = domain.NormalizeEmail(req.Email)
+	if req.Email == "" {
 		writeError(w, http.StatusBadRequest, "E-Mail-Adresse erforderlich")
+		return
+	}
+	if !validEmail(req.Email) {
+		writeError(w, http.StatusBadRequest, "Ungültige E-Mail-Adresse")
 		return
 	}
 	if err := auth.ValidatePassword(req.Password); err != nil {
@@ -334,6 +339,10 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "E-Mail-Adresse erforderlich")
 		return
 	}
+	if !validEmail(req.Email) {
+		writeError(w, http.StatusBadRequest, "Ungültige E-Mail-Adresse")
+		return
+	}
 	if err := auth.ValidatePassword(req.Password); err != nil {
 		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
@@ -415,7 +424,8 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 		if validInvite != nil {
 			s.store.ReleaseUserInvite(validInvite.ID, claim)
 		}
-		writeError(w, http.StatusConflict, "E-Mail-Adresse existiert bereits")
+		// Taken (also by a request that came in after the check) is 409, anything else is not the address's fault
+		writeEmailError(w, err)
 		return
 	}
 	logFailed("Setting the language", s.store.SetLanguage(user.ID, s.requestLanguage(r)), "user_id", user.ID)

@@ -1,6 +1,7 @@
 package api
 
 import (
+	"database/sql"
 	"encoding/json"
 	"net/http"
 	"regexp"
@@ -9,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/mindsift-app/mindsift/internal/config"
 	"github.com/mindsift-app/mindsift/internal/domain"
 	"github.com/mindsift-app/mindsift/internal/storage"
 )
@@ -299,5 +301,64 @@ func TestRegisterInviteEmailWithInvisibleCharacters(t *testing.T) {
 	}
 	if u, _ := store.GetUserByLogin("\u200elara21@gmail.com"); u == nil || u.Email != "lara21@gmail.com" {
 		t.Fatalf("account address stored clean and found: %+v", u)
+	}
+}
+
+// Registration takes only a bare address, like the admin and the profile; the setup wizard as well.
+func TestRegisterAndSetupRefuseInvalidEmail(t *testing.T) {
+	srv, store, _ := setupTestServer(t)
+	setRegistration(t, store, storage.RegistrationOpen, "")
+	for _, bad := range []string{"keine-adresse", "Anna <anna@example.com>", "a@example.com, b@example.com"} {
+		body := `{"email":"` + strings.ReplaceAll(bad, `"`, `\"`) + `","password":"password123"}`
+		rec := postJSONLang(t, srv.Router(), "/api/v1/auth/register", "", body, "de")
+		if rec.Code != http.StatusBadRequest || !strings.Contains(rec.Body.String(), "Ungültige E-Mail-Adresse") {
+			t.Fatalf("register %q: want 400 Ungültige E-Mail-Adresse, got %d %s", bad, rec.Code, rec.Body.String())
+		}
+	}
+	if code, _ := register(srv, "gut@example.com", ""); code != http.StatusCreated {
+		t.Fatalf("valid address: want 201, got %d", code)
+	}
+
+	fresh, dbPath := freshStore(t)
+	setup, _ := startWith(t, fresh, dbPath, config.InitialAdmin{}, false)
+	rec := postJSONLang(t, setup.Router(), "/api/v1/auth/setup", "", withSetupCode(setup, `{"email":"chefin","password":"secretpassword"}`), "de")
+	if rec.Code != http.StatusBadRequest || !strings.Contains(rec.Body.String(), "Ungültige E-Mail-Adresse") {
+		t.Fatalf("setup: want 400 Ungültige E-Mail-Adresse, got %d %s", rec.Code, rec.Body.String())
+	}
+	if n, _ := fresh.CountUsers(); n != 0 {
+		t.Fatalf("setup with an invalid address created %d accounts", n)
+	}
+	rec = postJSON(t, setup.Router(), "/api/v1/auth/setup", "", withSetupCode(setup, `{"email":" Chefin@Example.com ","password":"secretpassword"}`))
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("setup with a valid address: %d %s", rec.Code, rec.Body.String())
+	}
+	if u, _ := fresh.GetUserByEmail("chefin@example.com"); u == nil {
+		t.Fatal("setup must store the cleaned address")
+	}
+}
+
+// Only a taken address is 409; a failed write for another reason is not blamed on the address.
+func TestRegisterCreateErrors(t *testing.T) {
+	srv, store, _ := setupTestServer(t)
+	setRegistration(t, store, storage.RegistrationOpen, "")
+	if code, _ := register(srv, "doppelt@example.com", ""); code != http.StatusCreated {
+		t.Fatalf("first: want 201, got %d", code)
+	}
+	if code, out := register(srv, "doppelt@example.com", ""); code != http.StatusConflict || out["error"] != "E-Mail-Adresse existiert bereits" {
+		t.Fatalf("taken: want 409, got %d %v", code, out)
+	}
+
+	// The database refuses every new account (as a full disk or a broken file would)
+	db, err := sql.Open("sqlite", srv.cfg.DatabasePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	if _, err := db.Exec(`CREATE TRIGGER test_refuse_users BEFORE INSERT ON users BEGIN SELECT RAISE(ABORT, 'disk I/O error'); END`); err != nil {
+		t.Fatal(err)
+	}
+	code, out := register(srv, "neu@example.com", "")
+	if code != http.StatusInternalServerError || strings.Contains(out["error"].(string), "existiert") || strings.Contains(out["error"].(string), "disk") {
+		t.Fatalf("failed write: want 500 without details, got %d %v", code, out)
 	}
 }
