@@ -736,7 +736,8 @@
     "passwordUnreadable": "Das gespeicherte Passwort lässt sich nicht mehr entschlüsseln, der Schlüssel des Servers (SECRETS_KEY oder secrets.key) hat sich geändert. Bis du es neu eingibst und speicherst, geht keine E-Mail hinaus.",
     "save": "SMTP-Konfiguration in Datenbank speichern",
     "testSent": "Test-E-Mail an {{email}} gesendet.",
-    "testFailed": "SMTP-Test fehlgeschlagen: {{error}}"
+    "testFailed": "SMTP-Test fehlgeschlagen: {{error}}",
+    "addressPlaceholder": "alerts@deinedomain.de"
   },
   "import": {
     "readFailed": "Datei konnte nicht gelesen werden",

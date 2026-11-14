@@ -97,7 +97,8 @@
     "select": "Auswählen",
     "switchKind": "Art wechseln",
     "hits": "{{count}} Treffer",
-    "navigate": "Navigieren"
+    "navigate": "Navigieren",
+    "untitled": "Unbenannt"
   },
   "share": {
     "chooseGroup": "Bitte eine Gruppe auswählen",
@@ -148,7 +149,8 @@
     "sse": "Live-Verbindung über Server-Sent Events (WebSocket wird blockiert)",
     "poll": "Live über Long-Polling (WebSocket und SSE werden blockiert)",
     "ws": "Live-Verbindung über WebSocket",
-    "longPolling": " (Long-Polling)"
+    "longPolling": " (Long-Polling)",
+    "offline": "Offline"
   },
   "update": {
     "title": "Neue Version verfügbar",
@@ -163,7 +165,8 @@
     "mode": "Hell oder dunkel",
     "light": "Hell",
     "dark": "Dunkel",
-    "system": "Wie System"
+    "system": "Wie System",
+    "systemShort": "System"
   },
   "voice": {
     "stop": "Aufnahme beenden",
@@ -190,7 +193,8 @@
   "avatar": {
     "readFailed": "Fehler beim Lesen der Datei",
     "loadFailed": "Fehler beim Laden des Bildes",
-    "canvasFailed": "Canvas Context konnte nicht erstellt werden"
+    "canvasFailed": "Canvas Context konnte nicht erstellt werden",
+    "alt": "Profilbild"
   },
   "offline": {
     "waiting_one": "{{count}} Änderung wartet",

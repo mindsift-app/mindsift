@@ -736,7 +736,8 @@
     "passwordUnreadable": "La password salvata non può più essere decifrata: la chiave del server (SECRETS_KEY o secrets.key) è cambiata. Nessuna email parte finché non la inserisci di nuovo e salvi.",
     "save": "Salva configurazione SMTP nel database",
     "testSent": "E-mail di prova inviata a {{email}}.",
-    "testFailed": "Test SMTP non riuscito: {{error}}"
+    "testFailed": "Test SMTP non riuscito: {{error}}",
+    "addressPlaceholder": "avvisi@tuodominio.it"
   },
   "import": {
     "readFailed": "Impossibile leggere il file",

@@ -20,6 +20,8 @@ export interface SetupInfo {
   emailLinks: boolean;
   // Folder of the daily backups on the server
   backupDir: string;
+  // The zone in effect and the one without the setting (TZ, else UTC); older servers leave it out
+  serverTime?: ServerTime;
 }
 
 export interface AuthStatus {

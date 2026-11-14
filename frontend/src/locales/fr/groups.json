@@ -57,5 +57,7 @@
   "noAdmin": "Tu n'es administrateur d'aucun groupe actuellement. Clique ci-dessus sur « Nouveau groupe » pour créer le tien.",
   "managed": "Groupes que je gère ({{count}})",
   "you": "(toi)",
-  "memberships": "Mes adhésions ({{count}})"
+  "memberships": "Mes adhésions ({{count}})",
+  "memberCount_one": "{{count}} membre",
+  "memberCount_other": "{{count}} membres"
 }

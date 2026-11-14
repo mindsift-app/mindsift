@@ -736,7 +736,8 @@
     "passwordUnreadable": "Le mot de passe enregistré ne peut plus être déchiffré : la clé du serveur (SECRETS_KEY ou secrets.key) a changé. Aucun e-mail ne part tant que tu ne l'as pas saisi à nouveau et enregistré.",
     "save": "Enregistrer la configuration SMTP dans la base de données",
     "testSent": "E-mail de test envoyé à {{email}}.",
-    "testFailed": "Le test SMTP a échoué : {{error}}"
+    "testFailed": "Le test SMTP a échoué : {{error}}",
+    "addressPlaceholder": "alertes@tondomaine.fr"
   },
   "import": {
     "readFailed": "Le fichier n'a pas pu être lu",
