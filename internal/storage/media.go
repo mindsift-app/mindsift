@@ -284,8 +284,8 @@ func (s *Store) CanReadMedia(userID string, m *Media) bool {
 // A bullet that shows a file makes the file readable for everyone who may read its note (CanReadMedia).
 // So a bullet may only point to a file its writer uploaded or may read already; otherwise knowing the id
 // of someone else's file would be enough to read it, by writing ![…](media:<id>) into an own note or
-// importing a note that does (FLAW-43). mediaGate drops the other references from content one person
-// writes. It runs where content comes in: sync and MCP operations, new notes (imports included) and a
+// importing a note that does (Doku/sharing-and-permissions.md, "Files in Shared Notes"). mediaGate drops
+// the other references from content one person writes. It runs where content comes in: sync and MCP operations, new notes (imports included) and a
 // task's title carried into its note. Moving bullets between notes on the server copies content the
 // person can read already.
 type mediaGate struct {
