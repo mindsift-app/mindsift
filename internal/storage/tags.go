@@ -93,30 +93,16 @@ func (s *Store) GetTagDetails(userID, tag string) (*domain.TagDetails, error) {
 	).Scan(&noteContent, &noteUpdatedAt))
 
 	// The candidates first (sqlVisibleDocIDs), then their bullets with the hashtag (idx_block_tags_doc_tag),
-	// instead of checking every note of the server that has it. The joins only give the permission:
-	// the one of the first share found, as the note list's sqlSharedDocJoins knows them.
+	// instead of checking every note of the server that has it. The permission comes from DocRole below,
+	// the same rule as everywhere else (the best of all shares, the owner of a shared folder owns its notes).
 	rows, err := s.db.Query(
 		`WITH visible(id) AS (`+sqlVisibleDocIDs+`)
 		 SELECT t.block_id, d.id, d.title, d.icon, d.folder_path, d.blocks_json, d.updated_at, d.user_id,
-		        COALESCE(u.display_name, '') as owner_name,
-		        COALESCE(s.permission, dts.permission, wfs.permission, '') as shared_permission
+		        COALESCE(u.display_name, '') as owner_name
 		 FROM visible
 		 CROSS JOIN documents d ON d.id = visible.id
 		 CROSS JOIN block_tags t ON t.document_id = d.id AND t.tag = ?2
 		 LEFT JOIN users u ON d.user_id = u.id
-		 LEFT JOIN doc_shares s ON s.doc_id = d.id AND s.user_id = ?1
-		 LEFT JOIN (
-		     SELECT dts2.doc_id, dts2.permission
-		     FROM doc_team_shares dts2
-		     JOIN team_members tm ON tm.team_id = dts2.team_id
-		     WHERE tm.user_id = ?1
-		 ) dts ON d.id = dts.doc_id
-		 LEFT JOIN (
-		     SELECT wfs2.folder_id, wfs2.permission
-		     FROM workspace_folder_shares wfs2
-		     WHERE (wfs2.target_type = 'user' AND wfs2.target_id = ?1)
-		        OR (wfs2.target_type = 'team' AND wfs2.target_id IN (SELECT team_id FROM team_members WHERE user_id = ?1))
-		 ) wfs ON d.shared_folder_id = wfs.folder_id
 		 WHERE d.is_archived = 0
 		 ORDER BY d.updated_at DESC, d.rowid`,
 		userID, cleanTag,
@@ -136,13 +122,12 @@ func (s *Store) GetTagDetails(userID, tag string) (*domain.TagDetails, error) {
 		updatedAt        string
 		docUserID        string
 		ownerName        string
-		sharedPermission string
 	}
 
 	var rawMatches []rawMatch
 	for rows.Next() {
 		var rm rawMatch
-		if err := rows.Scan(&rm.blockID, &rm.docID, &rm.title, &rm.icon, &rm.folderPath, &rm.blocksJSON, &rm.updatedAt, &rm.docUserID, &rm.ownerName, &rm.sharedPermission); !dbFailed(err) {
+		if err := rows.Scan(&rm.blockID, &rm.docID, &rm.title, &rm.icon, &rm.folderPath, &rm.blocksJSON, &rm.updatedAt, &rm.docUserID, &rm.ownerName); !dbFailed(err) {
 			rawMatches = append(rawMatches, rm)
 		}
 	}
@@ -218,12 +203,18 @@ func (s *Store) GetTagDetails(userID, tag string) (*domain.TagDetails, error) {
 			continue
 		}
 
-		isOwner := first.docUserID == userID
+		// As the note list shows it: owner, write (editor) or read (viewer)
+		role := s.DocRole(userID, first.docID)
+		if role == "" {
+			continue
+		}
+		isOwner := role == DocRoleOwner
 		permission := "read"
-		if isOwner {
+		switch role {
+		case DocRoleOwner:
 			permission = "owner"
-		} else if first.sharedPermission != "" {
-			permission = first.sharedPermission
+		case DocRoleEditor:
+			permission = "write"
 		}
 
 		docGroups = append(docGroups, domain.TagDocumentGroup{

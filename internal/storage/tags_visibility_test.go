@@ -80,7 +80,7 @@ func TestTagsSeeEveryKindOfShare(t *testing.T) {
 	must(store.CreateDocTeamShare(viaTeam.ID, d2.ID, team.ID, "read"))
 	d2b := note(viaTeam, "Zwei Teams", "", "Über zwei Teams #gemeinsam #team")
 	must(store.CreateDocTeamShare(viaTeam.ID, d2b.ID, team.ID, "read"))
-	must(store.CreateDocTeamShare(viaTeam.ID, d2b.ID, team2.ID, "read"))
+	must(store.CreateDocTeamShare(viaTeam.ID, d2b.ID, team2.ID, "write")) // read through one team, write through the other: write wins
 
 	// In a shared folder shared with the person, read only
 	sf, err := store.CreateSharedFolder(folderOwner.ID, "Geteilt", "Geteilt")
@@ -160,7 +160,7 @@ func TestTagsSeeEveryKindOfShare(t *testing.T) {
 			t.Fatalf("notes on the page = %v, want %v", ids, wantIDs)
 		}
 	}
-	for id, p := range map[string]string{own.ID: "owner", d1.ID: "write", d2.ID: "read", d2b.ID: "read", d3.ID: "read", d4.ID: "write"} {
+	for id, p := range map[string]string{own.ID: "owner", d1.ID: "write", d2.ID: "read", d2b.ID: "write", d3.ID: "read", d4.ID: "write", d5.ID: "write"} {
 		if perm[id] != p {
 			t.Fatalf("permission of %s = %q, want %q (%v)", id, perm[id], p, perm)
 		}
