@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"errors"
 	"path/filepath"
 	"strings"
@@ -72,31 +73,8 @@ func TestMigrationKeepsAccountsAndReferences(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	// Back to the old definition, as databases of earlier versions have it, and the migration run again
-	if _, err := s.db.Exec(`DROP INDEX IF EXISTS idx_users_email`); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := s.db.Exec(`PRAGMA writable_schema = ON`); err != nil {
-		t.Fatal(err)
-	}
-	var create string
-	if err := s.db.QueryRow(`SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'users'`).Scan(&create); err != nil {
-		t.Fatal(err)
-	}
-	old := strings.Replace(create, "email TEXT NOT NULL DEFAULT ''", "email TEXT UNIQUE NOT NULL", 1)
-	if _, err := s.db.Exec(`UPDATE sqlite_master SET sql = ? WHERE type = 'table' AND name = 'users'`, old); err != nil {
-		t.Fatal(err)
-	}
-	_, _ = s.db.Exec(`PRAGMA writable_schema = OFF`)
-	_ = s.Close()
-	s, err = NewStore(path)
-	if err != nil {
-		t.Fatal(err)
-	}
+	s = withUniqueEmailColumn(t, s, path, "email TEXT UNIQUE NOT NULL")
 	defer s.Close()
-	if _, err := s.db.Exec(`DELETE FROM schema_migrations WHERE id = 40`); err != nil {
-		t.Fatal(err)
-	}
 	if err := s.migrateEmailOptional(); err != nil {
 		t.Fatal(err)
 	}
@@ -110,5 +88,78 @@ func TestMigrationKeepsAccountsAndReferences(t *testing.T) {
 		if _, err := s.CreateUser("", "x", name, "member"); err != nil {
 			t.Fatalf("account without address after the rebuild: %v", err)
 		}
+	}
+}
+
+// withUniqueEmailColumn puts the users table back to a definition from before migration 40 (the column
+// spelled as given) and reopens the store with migration 40 to run again.
+func withUniqueEmailColumn(t *testing.T, s *Store, path, column string) *Store {
+	t.Helper()
+	if _, err := s.db.Exec(`DROP INDEX IF EXISTS idx_users_email`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.db.Exec(`PRAGMA writable_schema = ON`); err != nil {
+		t.Fatal(err)
+	}
+	var create string
+	if err := s.db.QueryRow(`SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'users'`).Scan(&create); err != nil {
+		t.Fatal(err)
+	}
+	old := strings.Replace(create, "email TEXT NOT NULL DEFAULT ''", column, 1)
+	if _, err := s.db.Exec(`UPDATE sqlite_master SET sql = ? WHERE type = 'table' AND name = 'users'`, old); err != nil {
+		t.Fatal(err)
+	}
+	_, _ = s.db.Exec(`PRAGMA writable_schema = OFF`)
+	_ = s.Close()
+	s, err := NewStore(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.db.Exec(`DELETE FROM schema_migrations WHERE id = 40`); err != nil {
+		t.Fatal(err)
+	}
+	return s
+}
+
+// Old orphans elsewhere in the database (a log entry of a note that no longer exists) do not stop the
+// rebuild; foreign_key_check only fails it for references the rebuild broke.
+func TestMigrationToleratesOldOrphans(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "orphans.db")
+	s, err := NewStore(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	u, err := s.CreateUser("carla@example.com", "x", "Carla", "member")
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := context.Background()
+	conn, err := s.db.Conn(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, q := range []string{`PRAGMA foreign_keys = OFF`,
+		`INSERT INTO doc_ops (doc_id, seq, kind, payload, created_at) VALUES ('doc_gone', 1, 'insert', '{}', '2026-01-01T00:00:00Z')`,
+		`PRAGMA foreign_keys = ON`} {
+		if _, err := conn.ExecContext(ctx, q); err != nil {
+			t.Fatal(err)
+		}
+	}
+	_ = conn.Close()
+	s = withUniqueEmailColumn(t, s, path, "email TEXT UNIQUE NOT NULL")
+	defer s.Close()
+	if err := s.migrateEmailOptional(); err != nil {
+		t.Fatalf("an old orphan stopped the migration: %v", err)
+	}
+	if got, err := s.GetUserByID(u.ID); err != nil || got.Email != "carla@example.com" {
+		t.Fatalf("account after the rebuild: %v %v", got, err)
+	}
+	var orphans int
+	_ = s.db.QueryRow(`SELECT COUNT(*) FROM doc_ops WHERE doc_id = 'doc_gone'`).Scan(&orphans)
+	if orphans != 1 {
+		t.Fatal("the migration is not meant to clean up old orphans")
+	}
+	if _, err := s.CreateUser("", "x", "Ohne", "member"); err != nil {
+		t.Fatalf("account without address after the rebuild: %v", err)
 	}
 }

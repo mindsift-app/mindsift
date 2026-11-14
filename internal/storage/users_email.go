@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log/slog"
 	"regexp"
 	"strings"
 )
@@ -65,6 +66,16 @@ func (s *Store) migrateEmailOptional() error {
 		return err
 	}
 	defer tx.Rollback()
+	// Broken references the database had before (orphans of old versions, unrelated to users) do not
+	// stop the migration; only ones the rebuild would add do
+	before, err := foreignKeyViolations(ctx, tx)
+	if err != nil {
+		return err
+	}
+	for k, n := range before {
+		slog.Warn("The database already had broken references before rebuilding the users table; they are left as they are",
+			"table", k.table, "parent", k.parent, "rows", n)
+	}
 	steps := []string{newCreate, `INSERT INTO users_new SELECT * FROM users`, `DROP TABLE users`, `ALTER TABLE users_new RENAME TO users`}
 	steps = append(steps, indexes...)
 	steps = append(steps, `CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(email) WHERE email != ''`)
@@ -73,21 +84,40 @@ func (s *Store) migrateEmailOptional() error {
 			return fmt.Errorf("%w (%s)", err, strings.SplitN(strings.TrimSpace(q), "\n", 2)[0])
 		}
 	}
-	if err := foreignKeysIntact(ctx, tx); err != nil {
+	after, err := foreignKeyViolations(ctx, tx)
+	if err != nil {
 		return err
+	}
+	for k, n := range after {
+		if n > before[k] {
+			return fmt.Errorf("foreign key check failed after rebuilding the users table (%s -> %s)", k.table, k.parent)
+		}
 	}
 	return tx.Commit()
 }
 
-// foreignKeysIntact: PRAGMA foreign_key_check finds nothing (the rebuild kept every reference).
-func foreignKeysIntact(ctx context.Context, tx *sql.Tx) error {
+// fkViolation groups the rows PRAGMA foreign_key_check reports: by table, parent table and constraint,
+// not by row, because the rows of users get new rowids in the rebuild.
+type fkViolation struct {
+	table, parent string
+	fkid          int
+}
+
+// foreignKeyViolations counts the broken references in the whole database.
+func foreignKeyViolations(ctx context.Context, tx *sql.Tx) (map[fkViolation]int, error) {
 	rows, err := tx.QueryContext(ctx, `PRAGMA foreign_key_check`)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer rows.Close()
-	if rows.Next() {
-		return fmt.Errorf("foreign key check failed after rebuilding the users table")
+	out := map[fkViolation]int{}
+	for rows.Next() {
+		var k fkViolation
+		var rowid sql.NullInt64
+		if err := rows.Scan(&k.table, &rowid, &k.parent, &k.fkid); err != nil {
+			return nil, err
+		}
+		out[k]++
 	}
-	return rows.Err()
+	return out, rows.Err()
 }
