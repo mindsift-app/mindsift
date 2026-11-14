@@ -471,7 +471,8 @@
     "editTitle": "Modifier la valeur masquée",
     "save": "Enregistrer",
     "gone": "Valeur masquée supprimée",
-    "unreadable": "Illisible"
+    "unreadable": "Illisible",
+    "notIncluded": "(valeur masquée non reprise)"
   },
   "publicLink": {
     "title": "Lien public",

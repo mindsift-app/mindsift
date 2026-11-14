@@ -471,7 +471,8 @@
     "editTitle": "Change hidden value",
     "save": "Save",
     "gone": "Hidden value deleted",
-    "unreadable": "Unreadable"
+    "unreadable": "Unreadable",
+    "notIncluded": "(hidden value not included)"
   },
   "publicLink": {
     "title": "Public link",

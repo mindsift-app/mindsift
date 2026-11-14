@@ -467,7 +467,8 @@
     "editTitle": "Versteckten Wert ändern",
     "save": "Speichern",
     "gone": "Versteckter Wert gelöscht",
-    "unreadable": "Nicht lesbar"
+    "unreadable": "Nicht lesbar",
+    "notIncluded": "(versteckter Wert nicht übernommen)"
   },
   "publicLink": {
     "title": "Öffentlicher Link",

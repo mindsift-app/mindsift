@@ -18,6 +18,7 @@ import { ActionMenu, ActionMenuItem } from '../../components/ActionMenu';
 import { InlineMarkdownOptions, renderInlineMarkdown } from '../../lib/markdown';
 import { caretAtPoint, mapRenderedOffsetToRaw } from '../../lib/caret';
 import { toggleInlineFormat } from '../../lib/inlineFormat';
+import { ownClipboardText } from '../../lib/outlineMarkdown';
 import {
   TableAlign,
   TableData,
@@ -250,11 +251,14 @@ const TableBlockView: React.FC<TableBlockProps> = ({
 
   const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>, r: number, c: number) => {
     if (!canEdit) return;
-    const text = e.clipboardData.getData('text');
+    // Bullets copied from a note with hidden values: the app's own format has their references where the
+    // plain text has the mask (lib/outlineMarkdown.ts); a cell shows them like a bullet does
+    const own = ownClipboardText(e.clipboardData);
+    const text = own || e.clipboardData.getData('text');
     const clean = text.replace(/\r\n?/g, '\n').replace(/\n+$/, '');
     if (!clean.includes('\n') && !clean.includes('\t')) {
       // One line: into the cell at the cursor (without the line break it may end with)
-      if (clean === text) return;
+      if (clean === text && !own) return;
       e.preventDefault();
       const ta = e.currentTarget;
       const start = ta.selectionStart ?? ta.value.length;

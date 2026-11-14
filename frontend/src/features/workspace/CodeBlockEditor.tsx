@@ -6,6 +6,8 @@ import { useTranslation } from 'react-i18next';
 import i18n from '../../i18n';
 import { enterWithIndent, indentUnit } from './codeIndent';
 import { SelectMenu } from '../../components/SelectMenu';
+import { ownClipboardText } from '../../lib/outlineMarkdown';
+import { maskSecrets } from '../../lib/secretRef';
 
 Prism.manual = true;
 if (typeof globalThis !== 'undefined') {
@@ -572,6 +574,24 @@ export const CodeBlockEditor: React.FC<CodeBlockEditorProps> = ({
     handleKeyDown?.(e);
   };
 
+  // Bullets copied from a note with hidden values: a code block shows its text as it is and cannot show a
+  // hidden value, so neither the reference nor the mask of the plain text ("••••", which looks like a value
+  // to reveal) goes in, but the placeholder the server writes where a value is not taken over
+  const onTextareaPaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    if (!canEdit) return;
+    const own = ownClipboardText(e.clipboardData);
+    if (!own) return;
+    e.preventDefault();
+    const ta = e.currentTarget;
+    const start = ta.selectionStart ?? currentContent.length;
+    const end = ta.selectionEnd ?? start;
+    const pasted = maskSecrets(own, t('secret.notIncluded'));
+    const newVal = currentContent.slice(0, start) + pasted + currentContent.slice(end);
+    applyContentUpdate(newVal, ta);
+    ta.value = newVal;
+    setSelectionAfterUpdate(ta, start + pasted.length, start + pasted.length);
+  };
+
   const handleScroll = (e: React.UIEvent<HTMLTextAreaElement>) => {
     const target = e.currentTarget;
     if (preRef.current) {
@@ -716,6 +736,7 @@ export const CodeBlockEditor: React.FC<CodeBlockEditorProps> = ({
             onBlur={handleBlur}
             onChange={onTextareaChange}
             onKeyDown={onTextareaKeyDown}
+            onPaste={onTextareaPaste}
             onScroll={handleScroll}
             style={{ caretColor: 'var(--text-code)' }}
             className="relative block w-full m-0 p-2 font-mono text-xs leading-relaxed whitespace-pre bg-transparent text-transparent caret-code-fg selection:bg-accent/25 selection:text-transparent border-0 focus:outline-none focus:ring-0 resize-none overflow-x-auto overflow-y-hidden code-scroll"

@@ -4,6 +4,7 @@ import { render, fireEvent, screen, waitFor, act } from '@testing-library/react'
 import { CodeBlockEditor, loadPrismLanguage } from '../CodeBlockEditor';
 import { OutlinerBlock } from '../OutlinerBlock';
 import { DocumentBlock } from '../../../lib/types';
+import { OUTLINE_CLIPBOARD_TYPE } from '../../../lib/outlineMarkdown';
 
 function makeCodeBlock(overrides: Partial<DocumentBlock> = {}): DocumentBlock {
   return {
@@ -129,6 +130,28 @@ describe('CodeBlockEditor', () => {
     expect(textarea.value).toBe('key: value');
     expect(updates[updates.length - 1]?.content).toBe('key: value');
     expect(indentCalls).toHaveLength(0);
+  });
+
+  it('pastes copied bullets with hidden values with the placeholder, neither reference nor mask', () => {
+    const { container, updates } = renderOutlinerCodeBlock(makeCodeBlock({ content: 'a\nb' }));
+    const textarea = container.querySelector('textarea') as HTMLTextAreaElement;
+    textarea.focus();
+    textarea.setSelectionRange(2, 2);
+    const data: Record<string, string> = {
+      'text/plain': '- Server\n\t- PIN ••••',
+      [OUTLINE_CLIPBOARD_TYPE]: '- Server\n\t- PIN {{secret:abc}}',
+    };
+    fireEvent.paste(textarea, { clipboardData: { getData: (type: string) => data[type === 'text' ? 'text/plain' : type] || '' } });
+    expect(updates[updates.length - 1]?.content).toBe('a\n- Server\n\t- PIN (versteckter Wert nicht übernommen)b');
+  });
+
+  it('leaves a plain paste to the browser', () => {
+    const { container, updates } = renderOutlinerCodeBlock(makeCodeBlock({ content: 'a' }));
+    const textarea = container.querySelector('textarea') as HTMLTextAreaElement;
+    textarea.focus();
+    const ok = fireEvent.paste(textarea, { clipboardData: { getData: (type: string) => (type === 'text' || type === 'text/plain' ? 'x = 1' : '') } });
+    expect(ok).toBe(true);
+    expect(updates).toHaveLength(0);
   });
 
   it('indents and outdents multiple selected lines on Tab and Shift+Tab', () => {

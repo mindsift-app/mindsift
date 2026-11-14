@@ -13,6 +13,6 @@ export function secretIdOf(token: string): string | null {
   return m ? m[1] : null;
 }
 
-export function maskSecrets(text: string): string {
-  return text.includes('{{secret:') ? text.replace(new RegExp(SECRET_REF_SOURCE, 'g'), SECRET_MASK) : text;
+export function maskSecrets(text: string, mask = SECRET_MASK): string {
+  return text.includes('{{secret:') ? text.replace(new RegExp(SECRET_REF_SOURCE, 'g'), () => mask) : text;
 }
