@@ -91,27 +91,49 @@ func TestMigrationKeepsAccountsAndReferences(t *testing.T) {
 	}
 }
 
-// withUniqueEmailColumn puts the users table back to a definition from before migration 40 (the column
-// spelled as given) and reopens the store with migration 40 to run again.
+// withUniqueEmailColumn gives the users table a definition from before migration 40 (the column spelled
+// as given), rebuilt for real so SQLite keeps the constraint's index, and reopens the store with migration
+// 40 to run again.
 func withUniqueEmailColumn(t *testing.T, s *Store, path, column string) *Store {
 	t.Helper()
-	if _, err := s.db.Exec(`DROP INDEX IF EXISTS idx_users_email`); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := s.db.Exec(`PRAGMA writable_schema = ON`); err != nil {
+	ctx := context.Background()
+	conn, err := s.db.Conn(ctx)
+	if err != nil {
 		t.Fatal(err)
 	}
 	var create string
-	if err := s.db.QueryRow(`SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'users'`).Scan(&create); err != nil {
+	if err := conn.QueryRowContext(ctx, `SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'users'`).Scan(&create); err != nil {
 		t.Fatal(err)
 	}
 	old := strings.Replace(create, "email TEXT NOT NULL DEFAULT ''", column, 1)
-	if _, err := s.db.Exec(`UPDATE sqlite_master SET sql = ? WHERE type = 'table' AND name = 'users'`, old); err != nil {
+	old = strings.Replace(strings.Replace(old, `CREATE TABLE "users"`, "CREATE TABLE users_old", 1), "CREATE TABLE users ", "CREATE TABLE users_old ", 1)
+	if !strings.Contains(old, column) || !strings.Contains(old, "users_old") {
+		t.Fatalf("unexpected definition: %s", create)
+	}
+	var indexes []string
+	rows, err := conn.QueryContext(ctx, `SELECT sql FROM sqlite_master WHERE type = 'index' AND tbl_name = 'users' AND sql IS NOT NULL AND name != 'idx_users_email'`)
+	if err != nil {
 		t.Fatal(err)
 	}
-	_, _ = s.db.Exec(`PRAGMA writable_schema = OFF`)
+	for rows.Next() {
+		var q string
+		_ = rows.Scan(&q)
+		indexes = append(indexes, q)
+	}
+	_ = rows.Close()
+	steps := append([]string{`PRAGMA foreign_keys = OFF`, old, `INSERT INTO users_old SELECT * FROM users`, `DROP TABLE users`,
+		`ALTER TABLE users_old RENAME TO users`}, indexes...)
+	for _, q := range append(steps, `PRAGMA foreign_keys = ON`) {
+		if _, err := conn.ExecContext(ctx, q); err != nil {
+			t.Fatalf("%s: %v", q, err)
+		}
+	}
+	if unique, err := emailUnique(ctx, conn); err != nil || !unique {
+		t.Fatalf("the old definition must have UNIQUE on email: %v %v", unique, err)
+	}
+	_ = conn.Close()
 	_ = s.Close()
-	s, err := NewStore(path)
+	s, err = NewStore(path)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -119,6 +141,36 @@ func withUniqueEmailColumn(t *testing.T, s *Store, path, column string) *Store {
 		t.Fatal(err)
 	}
 	return s
+}
+
+// Migration 40 finds the constraint by the schema's index, not by how the definition spells it.
+func TestMigrationFindsUniqueEmailSpelledOtherwise(t *testing.T) {
+	for _, column := range []string{"email TEXT NOT NULL UNIQUE", "email text unique not null", "email TEXT NOT NULL UNIQUE DEFAULT ''"} {
+		path := filepath.Join(t.TempDir(), "spelled.db")
+		s, err := NewStore(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := s.CreateUser("dora@example.com", "x", "Dora", "member"); err != nil {
+			t.Fatal(err)
+		}
+		s = withUniqueEmailColumn(t, s, path, column)
+		if err := s.migrateEmailOptional(); err != nil {
+			t.Fatalf("%s: %v", column, err)
+		}
+		if unique, _ := emailUnique(context.Background(), s.db); unique {
+			t.Fatalf("%s: the column keeps UNIQUE", column)
+		}
+		for _, name := range []string{"Ohne Eins", "Ohne Zwei"} {
+			if _, err := s.CreateUser("", "x", name, "member"); err != nil {
+				t.Fatalf("%s: account without address after the rebuild: %v", column, err)
+			}
+		}
+		if _, err := s.CreateUser("dora@example.com", "x", "Dora Zwei", "member"); err == nil {
+			t.Fatalf("%s: an address that is there must stay unique", column)
+		}
+		_ = s.Close()
+	}
 }
 
 // Old orphans elsewhere in the database (a log entry of a note that no longer exists) do not stop the
