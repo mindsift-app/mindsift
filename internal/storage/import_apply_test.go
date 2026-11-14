@@ -3,8 +3,11 @@ package storage
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"sync"
 	"testing"
+
+	"github.com/mindsift-app/mindsift/internal/domain"
 )
 
 // countOf counts the rows of a table that belong to the user (column user_id).
@@ -94,5 +97,45 @@ func TestConcurrentImportsAllComplete(t *testing.T) {
 		if n := countOf(t, store, "documents", id); n != 1 {
 			t.Errorf("import %d: %d notes, want 1", i, n)
 		}
+	}
+}
+
+// A failed import leaves the person's existing notes as they were: their [[Titel]] links are not turned
+// into links to an imported note that is taken out again.
+func TestFailedImportLeavesWikiLinksAlone(t *testing.T) {
+	store, anna, ben := newImportStore(t)
+	seedAnna(t, store, anna)
+	exp, _ := store.ExportUserData(anna.ID)
+	raw, _ := json.Marshal(exp)
+	plan, err := PlanMindSiftJSONImport(raw)
+	if err != nil {
+		t.Fatalf("plan: %v", err)
+	}
+	const text = "Siehe [[Umzug]]"
+	own, err := store.CreateDocument(ben.ID, "", "Eigene Notiz", "", "", []domain.DocumentBlock{
+		{ID: "own1", Type: "bullet", Content: text},
+	}, nil, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.db.Exec(`CREATE TRIGGER test_fail_lists BEFORE INSERT ON lists BEGIN SELECT RAISE(ABORT, 'Testfehler'); END`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.ApplyImport(ben.ID, plan); err == nil {
+		t.Fatal("the import should fail")
+	}
+	if got := blocksOf(t, store, own.ID)["own1"].Content; got != text {
+		t.Errorf("the failed import rewrote a link in an existing note: %q", got)
+	}
+
+	// A complete import links it
+	if _, err := store.db.Exec(`DROP TRIGGER test_fail_lists`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.ApplyImport(ben.ID, plan); err != nil {
+		t.Fatalf("apply: %v", err)
+	}
+	if got := blocksOf(t, store, own.ID)["own1"].Content; !strings.Contains(got, "#doc_") {
+		t.Errorf("the link does not point at the imported note: %q", got)
 	}
 }

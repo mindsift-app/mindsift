@@ -916,8 +916,15 @@ func (s *Store) ApplyImport(userID string, plan *ImportPlan) (ImportSummary, err
 	sum, err := s.applyImport(userID, plan, undo)
 	if err != nil {
 		s.undoImport(userID, undo)
+		return sum, err
 	}
-	return sum, err
+	// [[Titel]] links point at their notes by id, now that all of them exist. Only once nothing can
+	// fail any more: it rewrites links in the person's existing notes too, and undoImport does not put
+	// those back, so they would point at notes it deleted.
+	if len(plan.Docs) > 0 {
+		s.LinkWikiTitles(userID)
+	}
+	return sum, nil
 }
 
 // importUndo lists what an import created so far.
@@ -1015,10 +1022,6 @@ func (s *Store) applyImport(userID string, plan *ImportPlan, undo *importUndo) (
 	})
 	if err != nil {
 		return plan.Summary(false), err
-	}
-	// [[Titel]] in the imported notes point at their notes by id, now that all of them exist
-	if len(plan.Docs) > 0 {
-		s.LinkWikiTitles(userID)
 	}
 	for _, tl := range plan.TaskLists {
 		listID := "" // tasks without a list
