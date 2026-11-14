@@ -49,6 +49,8 @@ export interface AuthStatus {
   passkeys?: boolean;
   // AI agents may connect over MCP (the operator can switch it off)
   mcpEnabled?: boolean;
+  // API keys on the REST API (API_KEYS_ENABLED); false: keys only work for MCP
+  restApiKeys?: boolean;
   // MCP address for claude.ai / ChatGPT connectors (OAuth); empty when the server has no BASE_URL
   mcpConnectorUrl?: string;
   // The server's default language (login screen, people without own choice and unknown browser language)

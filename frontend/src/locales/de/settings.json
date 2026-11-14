@@ -109,6 +109,8 @@
     "confirmDisconnect": "Die Verbindung „{{name}}“ wirklich trennen?",
     "confirmRevoke": "Diesen API-Schlüssel wirklich widerrufen?",
     "intro": "Ein Schlüssel verbindet Home Assistant, n8n, eigene Skripte oder KI-Agenten (Claude Code, Codex …) mit MindSift. Was er darf, legst du je Bereich mit Lesen, Anlegen und Ändern fest („Ändern“ schaltet „Lesen“ mit ein); das gilt per curl und per MCP gleich, nur Notizen sowie Lesen und Sortieren der Inbox gibt es ausschließlich über MCP. Einstellungen bleiben für Schlüssel gesperrt. Was ein Schlüssel bei Aufgaben und Listen anlegt oder ändert, trägt seinen Namen als Badge.",
+    "keysOff": "API-Schlüssel sind auf diesem Server ausgeschaltet.",
+    "mcpOnly": "API-Schlüssel gelten auf diesem Server nur für MCP.",
     "rightsOf": "Berechtigungen von {{name}}",
     "editKey": "API-Key {{name}} bearbeiten",
     "deleteKey": "API-Key {{name}} löschen",

@@ -109,6 +109,8 @@
     "confirmDisconnect": "Vuoi davvero disconnettere «{{name}}»?",
     "confirmRevoke": "Vuoi davvero revocare questa chiave API?",
     "intro": "Una chiave collega Home Assistant, n8n, i tuoi script o gli agenti IA (Claude Code, Codex …) a MindSift. Definisci cosa può fare per area con Lettura, Creazione e Modifica (\"Modifica\" attiva anche \"Lettura\"); questo vale sia per curl che per MCP, con l'eccezione che le note e la lettura/organizzazione della posta in arrivo sono disponibili solo via MCP. Le impostazioni restano bloccate per le chiavi. Tutto ciò che una chiave crea o modifica in attività e liste riporta il suo nome come contrassegno.",
+    "keysOff": "Le chiavi API sono disattivate su questo server.",
+    "mcpOnly": "Su questo server le chiavi API funzionano solo per MCP.",
     "rightsOf": "Permessi di {{name}}",
     "editKey": "Modifica chiave API {{name}}",
     "deleteKey": "Elimina chiave API {{name}}",

@@ -78,6 +78,9 @@ type Config struct {
 	// MCPEnabled: MCP_ENABLED=true/false fixes whether the MCP endpoint (and OAuth for connectors) is on;
 	// unset (nil) leaves it to the system settings
 	MCPEnabled *bool
+	// RESTAPIKeysOff: API_KEYS_ENABLED=false refuses API keys on the REST API (unset or true: allowed); they
+	// keep working on the MCP endpoint, which MCP_ENABLED and the system settings switch on their own
+	RESTAPIKeysOff bool
 	// PeopleSearch: PEOPLE_SEARCH=true/false fixes whether names are suggested when sharing; PublicLinks:
 	// PUBLIC_LINKS=true/false fixes whether notes may be shared by public link (false forbids it outright);
 	// PublicLinkMaxDays: PUBLIC_LINKS_MAX_DAYS (1–14) fixes how long such a link may live. Unset leaves
@@ -539,6 +542,7 @@ func Load() *Config {
 		TrustedProxies:          getEnv("TRUSTED_PROXIES", "private"),
 		RetentionAllowNever:     envBoolPtr("RETENTION_ALLOW_NEVER"),
 		MCPEnabled:              envBoolPtr("MCP_ENABLED"),
+		RESTAPIKeysOff:          envBoolPtr("API_KEYS_ENABLED") != nil && !*envBoolPtr("API_KEYS_ENABLED"),
 		PeopleSearch:            envBoolPtr("PEOPLE_SEARCH"),
 		PublicLinks:             envBoolPtr("PUBLIC_LINKS"),
 		PublicLinkMaxDays:       publicLinkMaxDaysFromEnv(),

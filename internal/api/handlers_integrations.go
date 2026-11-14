@@ -26,6 +26,11 @@ func (s *Server) handleGetAPIKeys(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, keys)
 }
 
+// apiKeysUsable: a key works somewhere, on the REST API (API_KEYS_ENABLED) or the MCP endpoint.
+func (s *Server) apiKeysUsable() bool {
+	return !s.cfg.RESTAPIKeysOff || s.mcpEnabled()
+}
+
 func (s *Server) handleCreateAPIKey(w http.ResponseWriter, r *http.Request) {
 	userID := auth.GetUserID(r.Context())
 	var req struct {
@@ -47,6 +52,11 @@ func (s *Server) handleCreateAPIKey(w http.ResponseWriter, r *http.Request) {
 	// A session from the OIDC provider of an account without a second factor in MindSift confirms there
 	if s.sessionViaOIDC(r) && !s.store.MFAActive(user.ID) && !s.oidcConfirmed(r, user) {
 		s.writeOIDCConfirmRequired(w)
+		return
+	}
+	// REST refuses keys and MCP is off: a new key could not be used anywhere
+	if !s.apiKeysUsable() {
+		writeError(w, http.StatusForbidden, "API-Schlüssel sind auf diesem Server ausgeschaltet")
 		return
 	}
 	if !s.confirmSecondFactor(w, r, user, req.secondFactor) {
@@ -114,6 +124,10 @@ func (s *Server) handleWebhookIngest(w http.ResponseWriter, r *http.Request) {
 	user, key := s.authenticateToken(token)
 	if user == nil || (key != nil && key.OAuth) {
 		writeError(w, http.StatusUnauthorized, "Ungültiger Webhook-Token oder API-Key")
+		return
+	}
+	if key != nil && s.cfg.RESTAPIKeysOff {
+		writeError(w, http.StatusForbidden, "API-Schlüssel gelten auf diesem Server nur für MCP")
 		return
 	}
 	if key != nil {

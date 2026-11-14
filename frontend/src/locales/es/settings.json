@@ -212,6 +212,8 @@
     "confirmDisconnect": "¿De verdad quieres desconectar «{{name}}»?",
     "confirmRevoke": "¿De verdad quieres revocar esta clave API?",
     "intro": "Una clave conecta Home Assistant, n8n, tus propios scripts o agentes de IA (Claude Code, Codex …) con MindSift. Puedes definir qué acciones puede realizar por área mediante Leer, Crear y Modificar («Modificar» activa también «Leer»); esto aplica tanto a curl como a MCP, salvo que las notas y la lectura/clasificación de la bandeja de entrada solo están disponibles vía MCP. Los ajustes permanecen bloqueados para las claves. Cualquier elemento creado o modificado en tareas y listas llevará su nombre como distintivo.",
+    "keysOff": "Las claves API están desactivadas en este servidor.",
+    "mcpOnly": "En este servidor, las claves API solo funcionan para MCP.",
     "rightsOf": "Permisos de {{name}}",
     "editKey": "Editar clave API {{name}}",
     "deleteKey": "Eliminar clave API {{name}}",
