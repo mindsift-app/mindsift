@@ -51,6 +51,7 @@ Versions without a git tag were development states and were never published as a
 - Email addresses: registration, the setup wizard and Administration → Users refuse an invalid address (`400`), and a taken one is reported as "This email address already exists" (`409`) instead of an internal error, also when two requests take it at once; registration no longer blames the address for other failures.
 - Display names lose line breaks, other control characters and invisible text-direction characters, so names stay on one line in mails and cannot show partly backwards.
 - The API answers client mistakes with `400` (an empty list title, list item or inbox entry) and missing access to a note or list with `404`, instead of an internal error.
+- AI agents (MCP): `update_task` and `complete_task` with the id of a task the agent may not see answer "Task not found" instead of an internal error.
 - Backups are flushed to disk before they count as written, so a power cut right after one no longer leaves an empty or missing file.
 - The container no longer fails to start where it may not change the owner of `data/` (NFS with root_squash, SMB/CIFS): it starts as long as its user can write there and otherwise says how to fix the owner. `Doku/operations.md` covers network storage and rootless Podman.
 - After a dropped connection (a server update, a phone asleep, a network switch) the app reconnects with its WebSocket instead of staying on the slower SSE stream for the rest of the visit.
