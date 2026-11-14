@@ -135,7 +135,7 @@ func (s *Server) handleVerifyEmail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if s.store.IsPendingRegistration(userID) {
-		go s.notifyAdminsOfRegistration(user)
+		s.background(func() { s.notifyAdminsOfRegistration(user) })
 		writeJSON(w, http.StatusOK, map[string]any{
 			"verified": true, "pending": true,
 			"message": tr(w, "Deine E-Mail-Adresse ist bestätigt. Ein Administrator schaltet dein Konto noch frei – du bekommst dann eine E-Mail."),
@@ -169,11 +169,11 @@ func (s *Server) handleResendVerification(w http.ResponseWriter, r *http.Request
 	}
 	email := strings.TrimSpace(req.Email)
 	if s.emailLinksAvailable() {
-		go func() {
+		s.background(func() {
 			if user, err := s.store.GetUserByEmail(email); err == nil && user != nil && s.store.IsEmailUnverified(user.ID) {
 				s.sendVerificationMail(user)
 			}
-		}()
+		})
 	}
 	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
 }
@@ -240,7 +240,7 @@ func (s *Server) handleAdminApproveUser(w http.ResponseWriter, r *http.Request) 
 	s.store.ClearEmailVerification(userID) // the admin vouches for the account
 	link := s.appLink(r)
 	lang := s.userLanguage(user.ID)
-	go func() {
+	s.background(func() {
 		err := s.sendMailContent(user.Email, i18n.T(lang, "MindSift: Dein Konto ist freigeschaltet"), mailContent{
 			Lang:      lang,
 			Preheader: i18n.T(lang, "Du kannst dich jetzt anmelden"),
@@ -252,7 +252,7 @@ func (s *Server) handleAdminApproveUser(w http.ResponseWriter, r *http.Request) 
 		if err != nil {
 			slog.Warn("Email about the activated account not sent", "user_id", user.ID, "error", err)
 		}
-	}()
+	})
 	writeJSON(w, http.StatusOK, staffUser{User: *user})
 }
 

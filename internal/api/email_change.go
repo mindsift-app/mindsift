@@ -42,7 +42,7 @@ func (s *Server) requestEmailChange(user *domain.User, kind, email string) {
 	link := strings.TrimRight(s.cfg.BaseURL, "/") + "/?confirmEmail=" + url.QueryEscape(raw)
 	lang := s.userLanguage(user.ID)
 	intro := i18n.T(lang, "Du möchtest diese Adresse als Anmelde-Adresse deines MindSift-Kontos verwenden. Bitte bestätige sie – bis dahin bleibt die bisherige Adresse gültig.")
-	go func() {
+	s.background(func() {
 		err := s.sendMailContent(email, i18n.T(lang, "MindSift: Bitte bestätige deine neue E-Mail-Adresse"), mailContent{
 			Lang:      lang,
 			Preheader: i18n.T(lang, "Ein Klick, dann gilt die neue Adresse"),
@@ -56,7 +56,7 @@ func (s *Server) requestEmailChange(user *domain.User, kind, email string) {
 		if err != nil {
 			slog.Warn("Confirmation email for a new address not sent", "user_id", user.ID, "kind", kind, "error", err)
 		}
-	}()
+	})
 }
 
 // handleConfirmEmailChange: POST /auth/confirm-email {"token"} – the link from the mail, signed in or not.
