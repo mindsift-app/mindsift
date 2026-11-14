@@ -75,6 +75,7 @@ var migrations = []migration{
 	{47, "Search of tasks and list items without a copy of the text", (*Store).migrateItemSearch},
 	{48, "Unused copy of a note's markdown removed", (*Store).migrateDropMarkdownCache},
 	{49, "Database file shrinks after deletes (incremental auto_vacuum)", (*Store).migrateIncrementalVacuum},
+	{50, "Index for the open to-dos of the note list", (*Store).migrateOpenTodoIndex},
 }
 
 // migrationBlockRefs creates block_refs: until it has run (earlier steps that rewrite notes), writing a
@@ -373,6 +374,14 @@ func (s *Store) columnExists(table, column string) (bool, error) {
 		}
 	}
 	return false, rows.Err()
+}
+
+// migrateOpenTodoIndex indexes the open to-dos per note: the note list counts them for every listed note
+// (attachListStats, sqlOpenTodo), which read every bullet of every note. Partial, so only open to-dos get
+// an entry; the query names the same conditions, so SQLite can use it.
+func (s *Store) migrateOpenTodoIndex() error {
+	_, err := s.db.Exec(`CREATE INDEX IF NOT EXISTS idx_blocks_open_todo ON blocks(document_id) WHERE type = 'todo' AND checked = 0 AND deleted = 0`)
+	return err
 }
 
 // migrateLookupIndexes adds indexes for two lookups that read whole tables:
