@@ -68,7 +68,7 @@ import { useMainViews } from './app/useMainViews';
 import { AppLoading } from './app/AppLoading';
 import { rememberMentionNames } from './lib/mentions';
 import { NotificationBell } from './components/NotificationBell';
-import i18n, { applyLanguage, resolveLanguage } from './i18n';
+import i18n, { applyLanguage, messageLanguage, resolveLanguage, setMessageLanguage } from './i18n';
 import { useTranslation } from 'react-i18next';
 import { useLatestRef } from './lib/useLatestRef';
 
@@ -160,6 +160,10 @@ export const App: React.FC = () => {
     },
     [bootLoading, user?.language, authStatus.defaultLanguage]
   );
+  // Texts written into notes (placeholders) follow the server's rule, without the browser (i18n/index.ts)
+  useEffect(() => {
+    if (!bootLoading && user) setMessageLanguage(messageLanguage(user.language, authStatus.defaultLanguage));
+  }, [bootLoading, user, authStatus.defaultLanguage]);
   useEffect(() => {
     // A non-admin never stays on the administration (also after the role changed)
     // eslint-disable-next-line react-hooks/set-state-in-effect

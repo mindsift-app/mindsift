@@ -3,6 +3,7 @@
 import type { DocumentBlock } from '../types';
 import { keysBetween } from './orderKey';
 import { Doc, Op, flatten, normProps, propsEqual } from './model';
+import { codeBlockText } from '../secretRef';
 
 /** Parent index (-1 = top level) for every entry of a flat list; impossible levels are clamped. */
 export function parentsFromLevels(levels: number[]): number[] {
@@ -96,8 +97,11 @@ export function diffFlat(d: Doc, blocks: DocumentBlock[], newOpId: () => string)
     const parent = parentOf[i];
     const props = normProps({ checked: b.checked, collapsed: b.collapsed, lang: b.lang });
     const cur = d.blocks.get(b.id);
+    // A code block keeps no reference to a hidden value: the placeholder goes in with the same step (before
+    // the type), so undo brings the reference back with the bullet (codeBlockText in lib/secretRef.ts)
+    const content = b.type === 'code' ? codeBlockText(b.content || '') : b.content || '';
     if (!cur) {
-      push({ kind: 'insert', blockId: b.id, parentId: parent, orderKey: keys[i], type: b.type, content: b.content || '', props });
+      push({ kind: 'insert', blockId: b.id, parentId: parent, orderKey: keys[i], type: b.type, content, props });
       return;
     }
     if (cur.deleted) push({ kind: 'restore', ids: [b.id] });
@@ -105,8 +109,8 @@ export function diffFlat(d: Doc, blocks: DocumentBlock[], newOpId: () => string)
       push({ kind: 'move', blockId: b.id, parentId: parent, orderKey: keys[i] });
     }
     const setContent = () => {
-      if (cur.content !== (b.content || '')) {
-        push({ kind: 'set_content', blockId: b.id, baseVersion: cur.version, content: b.content || '' });
+      if (cur.content !== content) {
+        push({ kind: 'set_content', blockId: b.id, baseVersion: cur.version, content });
       }
     };
     // A drawing only takes drawing content: the drawing's model first, then the type; leaving a drawing,

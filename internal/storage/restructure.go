@@ -138,9 +138,12 @@ func foreignLeaseIn(ids []string, a collab.Actor, leases collab.LeaseView) bool 
 // in which the gate only looks up what it prepared.
 func (s *Store) branchSecretGate(userID, targetID string, blocks []collab.FlatBlock) *secretGate {
 	g := s.newSecretGate(userID, targetID)
-	contents := make([]string, len(blocks))
-	for i, b := range blocks {
-		contents[i] = b.Content
+	contents := make([]string, 0, len(blocks))
+	for _, b := range blocks {
+		// A code block keeps no value (secrets.go): no copy for it, the change puts the placeholder in
+		if b.Type != "code" {
+			contents = append(contents, b.Content)
+		}
 	}
 	g.prepare(contents...)
 	g.frozen = true

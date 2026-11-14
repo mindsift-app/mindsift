@@ -122,6 +122,29 @@ export async function startI18n(lang: Language): Promise<void> {
   document.documentElement.lang = i18n.language;
 }
 
+// Texts the app writes into content (a placeholder in a note) are in the person's message language, the
+// server's rule for the texts it writes (MessageLanguage in internal/storage/language.go): their own choice,
+// else the server's default, never the browser's. So a placeholder reads the same whoever wrote it.
+export function messageLanguage(own?: string, serverDefault?: string): Language {
+  if (isLanguage(own)) return own;
+  return isLanguage(serverDefault) ? serverDefault : FALLBACK_LANGUAGE;
+}
+
+let currentMessageLanguage: Language | '' = '';
+
+// App sets it once the account and the server's default are known; its texts are loaded with it
+export function setMessageLanguage(lang: Language): void {
+  currentMessageLanguage = lang;
+  void loadLanguage(lang).catch(() => {});
+}
+
+// A text in the message language (the app's language until that is known or its texts are loaded)
+export function messageText(key: string): string {
+  const [ns] = key.split(':');
+  const lng = currentMessageLanguage && i18n.hasResourceBundle(currentMessageLanguage, ns) ? currentMessageLanguage : i18n.language;
+  return i18n.t(key, { lng });
+}
+
 // Locale for dates, numbers and sorting (lib/format.ts)
 export const currentLocale = (): string => LANGUAGES.find((l) => l.id === i18n.language)?.locale ?? 'de-DE';
 

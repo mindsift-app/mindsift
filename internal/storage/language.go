@@ -36,9 +36,20 @@ func (s *Store) SetLanguage(userID, lang string) error {
 }
 
 // MessageLanguage: the language texts the store writes for a person are in (e.g. a task turned into a
-// note): their own choice, else the admin's default language, else DEFAULT_LANGUAGE, else German.
-func (s *Store) MessageLanguage(userID string) string {
-	for _, v := range []string{s.Language(userID), s.DefaultLanguageSetting(), s.ConfiguredLanguage} {
+// note): their own choice, else the admin's default language, else DEFAULT_LANGUAGE, else German. The
+// app writes such texts itself in the same language (messageLanguage in frontend/src/i18n/index.ts, from
+// the account's choice and the server's defaultLanguage), so a placeholder reads the same whoever wrote it.
+func (s *Store) MessageLanguage(userID string) string { return s.messageLanguageIn(s.db, userID) }
+
+// messageLanguageIn is MessageLanguage read through q (a transaction's connection, see Doku/database.md).
+func (s *Store) messageLanguageIn(q docQueryer, userID string) string {
+	var own, def string
+	logDBErr(rowErr(q.QueryRow(`SELECT language FROM users WHERE id = ?`, userID).Scan(&own)))
+	if i18n.Valid(own) {
+		return own
+	}
+	logDBErr(rowErr(q.QueryRow(`SELECT value FROM system_settings WHERE key = 'default_language'`).Scan(&def)))
+	for _, v := range []string{def, s.ConfiguredLanguage} {
 		if i18n.Valid(v) {
 			return v
 		}

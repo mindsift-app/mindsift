@@ -7,7 +7,7 @@ import i18n from '../../i18n';
 import { enterWithIndent, indentUnit } from './codeIndent';
 import { SelectMenu } from '../../components/SelectMenu';
 import { ownClipboardText } from '../../lib/outlineMarkdown';
-import { maskSecrets } from '../../lib/secretRef';
+import { maskSecrets, secretPlaceholder } from '../../lib/secretRef';
 
 Prism.manual = true;
 if (typeof globalThis !== 'undefined') {
@@ -576,7 +576,7 @@ export const CodeBlockEditor: React.FC<CodeBlockEditorProps> = ({
 
   // Bullets copied from a note with hidden values: a code block shows its text as it is and cannot show a
   // hidden value, so neither the reference nor the mask of the plain text ("••••", which looks like a value
-  // to reveal) goes in, but the placeholder the server writes where a value is not taken over
+  // to reveal) goes in, but the placeholder the server writes where a value is not taken over, in its language
   const onTextareaPaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
     if (!canEdit) return;
     const own = ownClipboardText(e.clipboardData);
@@ -585,7 +585,7 @@ export const CodeBlockEditor: React.FC<CodeBlockEditorProps> = ({
     const ta = e.currentTarget;
     const start = ta.selectionStart ?? currentContent.length;
     const end = ta.selectionEnd ?? start;
-    const pasted = maskSecrets(own, t('secret.notIncluded'));
+    const pasted = maskSecrets(own, secretPlaceholder());
     const newVal = currentContent.slice(0, start) + pasted + currentContent.slice(end);
     applyContentUpdate(newVal, ta);
     ta.value = newVal;

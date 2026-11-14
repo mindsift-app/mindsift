@@ -6,7 +6,6 @@ import (
 
 	"github.com/mindsift-app/mindsift/internal/collab"
 	"github.com/mindsift-app/mindsift/internal/domain"
-	"github.com/mindsift-app/mindsift/internal/i18n"
 )
 
 // A copy is a copy: every reference {{secret:<id>}} in a note points to a hidden value of that note
@@ -205,23 +204,33 @@ func (g *secretGate) placeholderFor(ref string) string {
 	if g.lang == "" {
 		g.lang = g.s.MessageLanguage(g.userID)
 	}
-	if p := i18n.T(g.lang, "(versteckter Wert nicht übernommen)"); len(p) <= len(ref) {
+	if p := secretPlaceholderIn(g.lang); len(p) <= len(ref) {
 		return p
 	}
 	return ""
 }
 
-// cleanBlocks applies clean to bullets (copied on the first change, the caller's list stays).
+// cleanBlocks applies clean to bullets (copied on the first change, the caller's list stays). A code block
+// keeps no reference to a value (secrets.go): it gets the placeholder, and no copy is made for it.
 func (g *secretGate) cleanBlocks(blocks []domain.DocumentBlock) []domain.DocumentBlock {
-	contents := make([]string, len(blocks))
-	for i, b := range blocks {
-		contents[i] = b.Content
+	contents := make([]string, 0, len(blocks))
+	for _, b := range blocks {
+		if b.Type != "code" {
+			contents = append(contents, b.Content)
+		}
 	}
 	g.prepare(contents...)
 	out := blocks
 	copied := false
 	for i, b := range blocks {
-		content, changed := g.clean(b.Content)
+		var content string
+		var changed bool
+		if b.Type == "code" {
+			content = g.codeText(b.Content)
+			changed = content != b.Content
+		} else {
+			content, changed = g.clean(b.Content)
+		}
 		if !changed {
 			continue
 		}
@@ -234,11 +243,28 @@ func (g *secretGate) cleanBlocks(blocks []domain.DocumentBlock) []domain.Documen
 	return out
 }
 
-// cleanOps applies clean to inserted and changed bullets (copied on the first change).
-func (g *secretGate) cleanOps(ops []collab.Op) []collab.Op {
+// codeText is codeBlockText with the placeholder in the writer's language.
+func (g *secretGate) codeText(content string) string {
+	if !strings.Contains(content, "{{secret:") {
+		return content
+	}
+	if g.lang == "" {
+		g.lang = g.s.MessageLanguage(g.userID)
+	}
+	return codeBlockText(content, secretPlaceholderIn(g.lang))
+}
+
+// cleanOps applies clean to inserted and changed bullets (copied on the first change). Operations whose
+// text goes into a code block (code, see codeTargets) are left alone: no copies for them, the change's
+// collab.Env.CodeText puts the placeholder in.
+func (g *secretGate) cleanOps(ops []collab.Op, code []bool) []collab.Op {
+	gated := func(i int) bool {
+		op := ops[i]
+		return op.Content != nil && (op.Kind == collab.OpInsert || op.Kind == collab.OpSetContent) && (code == nil || !code[i])
+	}
 	var contents []string
-	for _, op := range ops {
-		if op.Content != nil && (op.Kind == collab.OpInsert || op.Kind == collab.OpSetContent) {
+	for i, op := range ops {
+		if gated(i) {
 			contents = append(contents, *op.Content)
 		}
 	}
@@ -246,7 +272,7 @@ func (g *secretGate) cleanOps(ops []collab.Op) []collab.Op {
 	out := ops
 	copied := false
 	for i, op := range ops {
-		if op.Content == nil || (op.Kind != collab.OpInsert && op.Kind != collab.OpSetContent) {
+		if !gated(i) {
 			continue
 		}
 		content, changed := g.clean(*op.Content)
@@ -260,6 +286,54 @@ func (g *secretGate) cleanOps(ops []collab.Op) []collab.Op {
 		out[i].Content = &content
 	}
 	return out
+}
+
+// codeTargets marks the operations of a batch whose text goes into a code block: the insert of one, a
+// text change of a block that is one in the note or becomes one earlier in the batch. Only text changes
+// with a reference need the note's types (the others pass the gate unchanged anyway).
+func (s *Store) codeTargets(docID string, ops []collab.Op) []bool {
+	var ask []string
+	for _, op := range ops {
+		if op.Kind == collab.OpSetContent && op.Content != nil && strings.Contains(*op.Content, "{{secret:") {
+			ask = append(ask, op.BlockID)
+		}
+	}
+	types := map[string]string{}
+	for start := 0; start < len(ask); start += secretLookupChunk {
+		chunk := ask[start:min(start+secretLookupChunk, len(ask))]
+		args := []any{docID}
+		for _, id := range chunk {
+			args = append(args, id)
+		}
+		rows, err := s.db.Query(`SELECT id, type FROM blocks WHERE document_id = ? AND id IN (?`+
+			strings.Repeat(", ?", len(chunk)-1)+`)`, args...)
+		if dbFailed(err) {
+			break // the gate treats them as bullets; the change still puts the placeholder in
+		}
+		for rows.Next() {
+			var id, typ string
+			if !dbFailed(rows.Scan(&id, &typ)) {
+				types[id] = typ
+			}
+		}
+		logDBErr(rows.Err())
+		_ = rows.Close()
+	}
+	code := make([]bool, len(ops))
+	for i, op := range ops {
+		switch op.Kind {
+		case collab.OpInsert:
+			types[op.BlockID] = op.Type
+			code[i] = op.Type == "code"
+		case collab.OpSetProps:
+			if op.Patch != nil && op.Patch.Type != nil && *op.Patch.Type != "" {
+				types[op.BlockID] = *op.Patch.Type
+			}
+		case collab.OpSetContent:
+			code[i] = types[op.BlockID] == "code"
+		}
+	}
+	return code
 }
 
 // discard deletes the copies the gate stored, for content that was not written after all (a new note

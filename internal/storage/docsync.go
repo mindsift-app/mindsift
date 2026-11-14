@@ -340,10 +340,11 @@ func (s *Store) ApplyDocOps(docID string, a collab.Actor, ops []collab.Op, lease
 // client resends its operations, and their opIds keep them from being applied twice.
 // References to files the person may not read are dropped from the content first (mediaGate), and
 // references to hidden values of other notes become copies in this note or a placeholder (secretGate);
-// the client gets the content as stored through the log.
+// the client gets the content as stored through the log. A code block keeps no reference to a value
+// (secrets.go): no copies for text that goes into one (codeTargets), the change puts the placeholder in.
 func (s *Store) ApplyDocOpsCtx(ctx context.Context, docID string, a collab.Actor, ops []collab.Op, leases collab.LeaseView) ([]collab.Result, int64, error) {
 	ops = s.newDocMediaGate(a.UserID, docID).cleanOps(ops)
-	ops = s.newSecretGate(a.UserID, docID).cleanOps(ops)
+	ops = s.newSecretGate(a.UserID, docID).cleanOps(ops, s.codeTargets(docID, ops))
 	return s.applyDocChangeCtx(ctx, docID, a, leases, func(*collab.Doc) []collab.Op { return ops })
 }
 
@@ -381,6 +382,18 @@ func (s *Store) applyDocChangeCtx(ctx context.Context, docID string, a collab.Ac
 			err := tx.QueryRow(`SELECT document_id FROM blocks WHERE id = ?`, id).Scan(&owner)
 			return dbFailed(err) || (err == nil && owner != docID) // an id that cannot be checked counts as taken
 		},
+	}
+	// A code block keeps no reference to a hidden value (secrets.go); the placeholder in the writer's
+	// language, read through the transaction once it is needed
+	placeholder := ""
+	env.CodeText = func(content string) string {
+		if !strings.Contains(content, "{{secret:") {
+			return content
+		}
+		if placeholder == "" {
+			placeholder = secretPlaceholderIn(s.messageLanguageIn(tx, a.UserID))
+		}
+		return codeBlockText(content, placeholder)
 	}
 	now := domain.NowISO()
 	ops := build(doc)
@@ -479,9 +492,9 @@ func persistDocState(tx *sql.Tx, docID string, before, after *collab.Doc, head i
 		if refs {
 			var was []blockRef
 			if old, ok := before.Blocks[id]; ok {
-				was = blockRefsOf(old.Content)
+				was = blockRefsOf(old.Type, old.Content)
 			}
-			if is := blockRefsOf(b.Content); !sameRefs(was, is) {
+			if is := blockRefsOf(b.Type, b.Content); !sameRefs(was, is) {
 				if err := writeBlockRefs(tx, docID, b.ID, is); err != nil {
 					return err
 				}

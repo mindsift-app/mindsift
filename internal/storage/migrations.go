@@ -77,6 +77,7 @@ var migrations = []migration{
 	{49, "Database file shrinks after deletes (incremental auto_vacuum)", (*Store).migrateIncrementalVacuum},
 	{50, "Index for the open to-dos of the note list", (*Store).migrateOpenTodoIndex},
 	{51, "Leaner note list: indexes for its hashtag counts and shares, unused documents.content removed", (*Store).migrateNoteList},
+	{52, "Code blocks keep no hidden values", (*Store).migrateCodeBlockSecrets},
 }
 
 // migrationBlockRefs creates block_refs: until it has run (earlier steps that rewrite notes), writing a

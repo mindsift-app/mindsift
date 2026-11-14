@@ -49,6 +49,7 @@ import { currentVoiceConfig } from '../../lib/voice';
 import { LinkPreviewCard } from './LinkPreviewCard';
 import { linkCardUrl, hidePreviewContent, linkHost, useLinkPreviewsEnabled } from '../../lib/linkPreview';
 import { mediaContent, parseMediaContent } from '../../lib/media';
+import { codeBlockText } from '../../lib/secretRef';
 import { InlineMarkdownOptions, renderInlineMarkdown } from '../../lib/markdown';
 import { useMentionInput } from '../../lib/useMentionInput';
 import { MentionMenu } from '../../components/MentionMenu';
@@ -352,9 +353,18 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
         content: contentToFlush,
         ...overrides,
       };
+      // A code block keeps no hidden value (lib/secretRef.ts): the field shows the placeholder the note gets
+      if (nextBlock.type === 'code') {
+        const code = codeBlockText(nextBlock.content || '');
+        if (code !== nextBlock.content) {
+          nextBlock.content = code;
+          setShownContent(code);
+          localContentRef.current = code;
+        }
+      }
       onUpdateBlockRef.current(nextBlock, true);
     },
-    [latestBlockRef, onUpdateBlockRef]
+    [latestBlockRef, onUpdateBlockRef, localContentRef]
   );
 
   // A link to a note that no longer exists becomes plain text (asked when it is clicked)
