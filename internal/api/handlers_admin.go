@@ -434,6 +434,9 @@ func (s *Server) settingsForBrowser(settings *domain.SystemSettings) *domain.Sys
 	if s.envSMTPPass(settings) != "" {
 		out.SMTPPassSet, out.SMTPPassViaEnv, out.SMTPPassUnreadable = true, true, false
 	}
+	if s.cfg.SMTPPass != "" && strings.TrimSpace(s.cfg.SMTPHost) != "" {
+		out.SMTPPassEnvHost, out.SMTPPassEnvUser = strings.TrimSpace(s.cfg.SMTPHost), strings.TrimSpace(s.cfg.SMTPUser)
+	}
 	out.SMTPConfiguredViaEnv = s.smtpViaEnv()
 	// What the environment fixes is shown as in effect and locked in the form
 	if s.cfg.RegistrationMode != "" {

@@ -450,6 +450,11 @@ type SystemSettings struct {
 	// SMTPPassViaEnv: the password comes from SMTP_PASS (host and user are those of the environment); it
 	// is not stored and takes precedence over one entered here. Read only.
 	SMTPPassViaEnv bool   `json:"smtpPassViaEnv,omitempty"`
+	// SMTPPassEnvHost and SMTPPassEnvUser: the mail server and user SMTP_PASS belongs to (set only with
+	// SMTP_PASS), so the form locks the password field while it names them and frees it for another server
+	// before saving. Read only.
+	SMTPPassEnvHost string `json:"smtpPassEnvHost,omitempty"`
+	SMTPPassEnvUser string `json:"smtpPassEnvUser,omitempty"`
 	SMTPFrom       string `json:"smtpFrom"`
 	// SMTPFromName is shown as sender when SMTPFrom is a bare address (empty = "MindSift")
 	SMTPFromName   string `json:"smtpFromName"`

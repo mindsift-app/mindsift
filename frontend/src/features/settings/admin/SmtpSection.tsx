@@ -25,6 +25,9 @@ export function SmtpSection({
     setSettings,
     setTestSmtpEmail,
   } = admin;
+  // SMTP_PASS applies to the mail server and user the form names right now (as the server compares them),
+  // so the field frees up as soon as another server is entered, before saving
+  const passwordViaEnv = smtpPassAppliesTo(settings.smtpHost, settings.smtpUser, settings.smtpPassEnvHost, settings.smtpPassEnvUser);
   return (
     <fieldset disabled={demoMode} className="min-w-0 border-0 p-0 m-0">
       <div className="space-y-6">
@@ -47,8 +50,8 @@ export function SmtpSection({
 
         <SmtpFields
           value={settings}
-          passwordSet={settings.smtpPassSet}
-          passwordViaEnv={settings.smtpPassViaEnv}
+          passwordSet={passwordViaEnv || (settings.smtpPassSet && !settings.smtpPassViaEnv)}
+          passwordViaEnv={passwordViaEnv}
           onChange={(patch) => setSettings((prev) => ({ ...prev, ...patch }))}
         />
 
@@ -98,4 +101,10 @@ export function SmtpSection({
       </div>
     </fieldset>
   );
+}
+
+// smtpPassAppliesTo mirrors storage.SMTPMatchesEnv: same host (any case) and same user.
+export function smtpPassAppliesTo(host?: string, user?: string, envHost?: string, envUser?: string): boolean {
+  const eh = (envHost || '').trim();
+  return eh !== '' && (host || '').trim().toLowerCase() === eh.toLowerCase() && (user || '').trim() === (envUser || '').trim();
 }

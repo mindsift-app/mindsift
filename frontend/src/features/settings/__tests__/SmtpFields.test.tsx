@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { SmtpFields } from '../admin/SmtpFields';
+import { smtpPassAppliesTo } from '../admin/SmtpSection';
 
 const value = { smtpHost: 'mail.beispiel.de', smtpPort: '587', smtpUser: 'bot', smtpPass: '', smtpTls: true };
 
@@ -23,5 +24,15 @@ describe('SmtpFields', () => {
     expect(field.disabled).toBe(false);
     expect(field.placeholder).toBe('Gespeichert – leer lassen für keine Änderung');
     expect(screen.queryByText(/Festgelegt per/)).toBeNull();
+  });
+
+  it('ties the lock to the mail server and user in the form, as the server compares them', () => {
+    expect(smtpPassAppliesTo('mail.beispiel.de', 'bot', 'mail.beispiel.de', 'bot')).toBe(true);
+    expect(smtpPassAppliesTo(' Mail.Beispiel.de ', 'bot', 'mail.beispiel.de', 'bot')).toBe(true);
+    // Another server or user entered in the form frees the field before saving
+    expect(smtpPassAppliesTo('smtp.anders.de', 'bot', 'mail.beispiel.de', 'bot')).toBe(false);
+    expect(smtpPassAppliesTo('mail.beispiel.de', 'Bot', 'mail.beispiel.de', 'bot')).toBe(false);
+    // Without SMTP_PASS nothing is locked
+    expect(smtpPassAppliesTo('mail.beispiel.de', 'bot', '', '')).toBe(false);
   });
 });
