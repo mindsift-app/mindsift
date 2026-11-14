@@ -325,6 +325,7 @@ Concept and rules: [modules/collaboration.md](../modules/collaboration.md). Acce
 ```
 
 - Operation kinds: `insert`, `set_content`, `set_props` (`patch`: `type`, `checked`, `collapsed`, `lang`, `clearConflict`), `move`, `delete`, `restore` (`ids`), `set_title` (`baseVersion`, `title`).
+- `clientId` (at most 64 characters) is chosen by the client; the server's own lease holders are refused with `400` ("clientId ist reserviert"): anything starting with `draw:` (a live drawing session) or `mcp-`, and exactly `mcp`, `server`, `legacy`. The same applies to `clientId` in `/leave`, extract, move, merge and their undo, and in `DRAW_DONE` (ignored there: the bullet is released instead of handed over).
 - `leases.hold` is the complete list of blocks the client intends to hold; all other leases belonging to the client are released. Newly inserted blocks and conflict copies are automatically granted to the author.
 - At most 500 operations per request. Viewers cannot submit operations (`403`), but may query.
 - A note holds at most 20,000 live bullets and 40,000 including deleted ones (they are purged after the retention period). An operation that would add one more (insert, restore, a conflict copy) is answered `rejected` with reason `note_full`; creating a note with more bullets (`POST /documents`, import, MCP) answers `400`. Every sync and snapshot loads the whole note, so its size is the cost of each change.

@@ -55,6 +55,9 @@ func (s *Server) handleExtractBranch(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "blockId fehlt")
 		return
 	}
+	if reservedClientID(w, req.ClientID) {
+		return
+	}
 	created, link, err := s.store.ExtractBranch(userID, docID, req.BlockID, s.restructureActor(r, req.ClientID), s.leases.View(docID))
 	if err != nil {
 		writeError(w, restructureStatus(err), trErr(w, err))
@@ -89,6 +92,9 @@ func (s *Server) handleMoveBranch(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusForbidden, "Keine Schreibrechte für die Zielnotiz")
 		return
 	}
+	if reservedClientID(w, req.ClientID) {
+		return
+	}
 	res, err := s.store.MoveBranch(userID, docID, req.BlockID, req.TargetID, s.restructureActor(r, req.ClientID), s.leases.View(docID), s.leases.View(req.TargetID))
 	if err != nil {
 		writeError(w, restructureStatus(err), trErr(w, err))
@@ -113,6 +119,9 @@ func (s *Server) handleUndoMove(w http.ResponseWriter, r *http.Request) {
 	}
 	if !storage.CanEditDoc(s.store.DocRole(userID, docID)) || !storage.CanEditDoc(s.store.DocRole(userID, req.TargetID)) {
 		writeError(w, http.StatusForbidden, "Keine Schreibrechte für die Zielnotiz")
+		return
+	}
+	if reservedClientID(w, req.ClientID) {
 		return
 	}
 	if err := s.store.UndoMove(docID, req.MoveResult, s.restructureActor(r, req.ClientID), s.leases.View(req.TargetID)); err != nil {
@@ -183,6 +192,9 @@ func (s *Server) handleMergeDocuments(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	sourceUsers, _ := s.store.GetAuthorizedDocUsers(req.SourceID)
+	if reservedClientID(w, req.ClientID) {
+		return
+	}
 	res, err := s.store.MergeDocuments(userID, req.SourceID, targetID, s.restructureActor(r, req.ClientID), s.leases.View(targetID))
 	if err != nil {
 		writeError(w, restructureStatus(err), trErr(w, err))
@@ -213,6 +225,9 @@ func (s *Server) handleUndoMerge(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	m := storage.MergeResult{TargetID: targetID, SourceID: req.SourceID, HeadingID: req.HeadingID}
+	if reservedClientID(w, req.ClientID) {
+		return
+	}
 	if err := s.store.UndoMerge(userID, m, s.restructureActor(r, req.ClientID), s.leases.View(targetID)); err != nil {
 		writeError(w, restructureStatus(err), trErr(w, err))
 		return

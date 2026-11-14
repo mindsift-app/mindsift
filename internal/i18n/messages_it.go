@@ -255,6 +255,7 @@ var messagesIT = map[string]string{
 	"benutzername oder e-mail darf nicht leer sein": "il nome utente o l’e-mail non possono essere vuoti",
 	"clientId fehlt":                  "Manca clientId",
 	"clientId fehlt oder ist zu lang": "Manca clientId o è troppo lungo",
+	"clientId ist reserviert":         "clientId è riservato",
 	"der Server bietet kein STARTTLS an (TLS deaktivieren oder Port 465 nutzen)":                              "il server non offre STARTTLS (disattiva TLS o usa la porta 465)",
 	"dokument gehört bereits diesem Benutzer":                                                                 "il documento appartiene già a questo utente",
 	"due: today, overdue oder ein Datum JJJJ-MM-TT":                                                           "due: today, overdue o una data AAAA-MM-GG",

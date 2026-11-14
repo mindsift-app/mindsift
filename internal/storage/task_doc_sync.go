@@ -206,7 +206,7 @@ func (s *Store) SyncTaskToDoc(userID, taskID string) string {
 		return out
 	}
 	subsChanged := false
-	a := collab.Actor{UserID: userID, ClientID: "server"}
+	a := collab.Actor{UserID: userID, ClientID: collab.ServerHolder}
 	results, _, err := s.applyDocChange(docID, a, nil, func(d *collab.Doc) []collab.Op {
 		main, ok := d.Blocks[mainID]
 		if !ok || main.Deleted {

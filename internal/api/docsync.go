@@ -107,6 +107,9 @@ func (s *Server) handleDocSync(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "clientId fehlt oder ist zu lang")
 		return
 	}
+	if reservedClientID(w, req.ClientID) {
+		return
+	}
 	if len(req.Ops) > syncMaxOps {
 		writeError(w, http.StatusRequestEntityTooLarge, "Zu viele Änderungen in einer Anfrage")
 		return
@@ -311,10 +314,24 @@ func (s *Server) handleDocLeave(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "clientId fehlt")
 		return
 	}
+	if reservedClientID(w, req.ClientID) {
+		return
+	}
 	s.leases.Leave(docID, req.ClientID)
 	_, head, _ := s.store.GetDocOpsSince(docID, 0, 0)
 	s.notifyDocChanged(docID, head)
 	writeJSON(w, http.StatusOK, map[string]bool{"success": true})
+}
+
+// reservedClientID answers 400 for a client ID that is one of the server's own lease holders (a live
+// drawing session, MCP, the server): an editor sending it could write into a bullet such a holder has.
+// The app's editors never use these ("c_…", "once_…").
+func reservedClientID(w http.ResponseWriter, id string) bool {
+	if !collab.ReservedClientID(id) {
+		return false
+	}
+	writeError(w, http.StatusBadRequest, "clientId ist reserviert")
+	return true
 }
 
 // compactionInterval is how often the operation log and tombstones are compacted (also once at start).

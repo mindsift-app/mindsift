@@ -255,6 +255,7 @@ var messagesES = map[string]string{
 	"benutzername oder e-mail darf nicht leer sein": "el nombre de usuario o el correo no pueden estar vacíos",
 	"clientId fehlt":                  "Falta clientId",
 	"clientId fehlt oder ist zu lang": "Falta clientId o es demasiado largo",
+	"clientId ist reserviert":         "clientId está reservado",
 	"der Server bietet kein STARTTLS an (TLS deaktivieren oder Port 465 nutzen)":                              "el servidor no ofrece STARTTLS (desactiva TLS o usa el puerto 465)",
 	"dokument gehört bereits diesem Benutzer":                                                                 "el documento ya pertenece a este usuario",
 	"due: today, overdue oder ein Datum JJJJ-MM-TT":                                                           "due: today, overdue o una fecha AAAA-MM-DD",

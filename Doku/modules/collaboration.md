@@ -66,7 +66,7 @@ All operations on a note run sequentially: one mutex per note and one SQLite tra
 5. **`move`:** Rejected on cycles, when target parent is deleted, or when someone else holds the block itself. Sub-items move along; anyone typing within them simply continues typing at the new location.
 6. **`delete`:** Rejected if someone else holds a block within the branch; otherwise a tombstone is created for the entire branch.
 7. **`insert`:** If the parent block is deleted, inserted under the nearest surviving ancestor; if permanently purged, inserted at top level.
-8. **Leases:** Granted only if free, expired, or already owned by the same client; valid for 20 s from the last confirmation. `leases.hold` is always the complete list. Newly inserted blocks and conflict copies are automatically assigned to their author.
+8. **Leases:** Granted only if free, expired, or already owned by the same client; valid for 20 s from the last confirmation. `leases.hold` is always the complete list. Newly inserted blocks and conflict copies are automatically assigned to their author. Client IDs the server uses as holders itself (`draw:<blockId>` for a live drawing session, `mcp`, `mcp-<keyId>`, `server`, `legacy`; `collab.ReservedClientID`) are refused from clients, so no editor can pose as one of them.
 9. **No lease on parent blocks:** Inserting, indenting, and outdenting under a parent block do not require a lease on that parent.
 
 ### Typing Flow
