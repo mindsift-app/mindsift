@@ -783,7 +783,8 @@
     "passwordKept": "Guardado – dejar en blanco para no cambiar",
     "save": "Guardar configuración SMTP en la base de datos",
     "testSent": "Correo de prueba enviado a {{email}}.",
-    "testFailed": "La prueba SMTP ha fallado: {{error}}"
+    "testFailed": "La prueba SMTP ha fallado: {{error}}",
+    "addressPlaceholder": "avisos@tudominio.com"
   },
   "backups": {
     "restoreFailed": "Error al restaurar",

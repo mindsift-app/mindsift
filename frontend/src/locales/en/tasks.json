@@ -235,7 +235,9 @@
     "personal": "Personal",
     "deletedAt": "deleted {{date}}",
     "empty": "The trash is empty.",
-    "delete": "Delete for good"
+    "delete": "Delete for good",
+    "deletedAtBy": "deleted {{date}} by {{name}}",
+    "deletedAtAuto": "deleted {{date}} (automatically)"
   },
   "quickAdd": {
     "toList": "Add a task to \"{{title}}\"…",

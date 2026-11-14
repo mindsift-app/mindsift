@@ -56,7 +56,7 @@ export function SmtpFields({
           type="text"
           value={value.smtpUser || ''}
           onChange={(e) => onChange({ smtpUser: e.target.value })}
-          placeholder="alerts@deinedomain.de"
+          placeholder={t('smtp.addressPlaceholder')}
           className={`${field} font-mono`}
         />
       </label>
@@ -82,7 +82,7 @@ export function SmtpFields({
           type="text"
           value={value.smtpFrom || ''}
           onChange={(e) => onChange({ smtpFrom: e.target.value })}
-          placeholder="alerts@deinedomain.de"
+          placeholder={t('smtp.addressPlaceholder')}
           className={field}
         />
       </label>

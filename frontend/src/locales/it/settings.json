@@ -733,7 +733,8 @@
     "passwordKept": "Salvata — lascia vuoto per non modificarla",
     "save": "Salva configurazione SMTP nel database",
     "testSent": "E-mail di prova inviata a {{email}}.",
-    "testFailed": "Test SMTP non riuscito: {{error}}"
+    "testFailed": "Test SMTP non riuscito: {{error}}",
+    "addressPlaceholder": "avvisi@tuodominio.it"
   },
   "import": {
     "readFailed": "Impossibile leggere il file",

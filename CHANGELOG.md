@@ -39,6 +39,7 @@ Versions without a git tag were development states and were never published as a
 - Zooming into a bullet whose level was never stored shows its path and sub-bullets again, and the recovery-code file of an account without email or username no longer names it "undefined".
 - Dragging a drawing in a note to move its section no longer selects text or drags a selection (and with it the bullet) instead; in Firefox a selection on the page no longer stops the drawing from moving.
 - On phones, the save status of a note shows "Saved" in the app's language instead of always in German.
+- More texts follow the app's language instead of always being German: the member count of groups, who deleted a task in the task trash ("by …", "automatically"), the name of an untitled entry in the search, the label of a zoomed image without caption and the example addresses in the mail server settings. "Offline" on the connection badge, "System" in the theme picker and the description of profile pictures are translated too.
 - Sharing a pinned note no longer unpins it for the owner in the open app (realtime updates carried another person's view of the note).
 - Moving a shared note or folder no longer briefly shows collaborators the mover's folder placement.
 - Notes changed at the same moment are listed in the same order for everyone they are shared with.

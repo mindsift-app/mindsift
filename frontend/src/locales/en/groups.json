@@ -57,5 +57,7 @@
   "noAdmin": "You are not an admin of any group yet. Click \"New group\" above to create your own.",
   "managed": "Groups I manage ({{count}})",
   "you": "(you)",
-  "memberships": "My memberships ({{count}})"
+  "memberships": "My memberships ({{count}})",
+  "memberCount_one": "{{count}} member",
+  "memberCount_other": "{{count}} members"
 }

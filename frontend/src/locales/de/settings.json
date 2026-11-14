@@ -733,7 +733,8 @@
     "passwordKept": "Gespeichert – leer lassen für keine Änderung",
     "save": "SMTP-Konfiguration in Datenbank speichern",
     "testSent": "Test-E-Mail an {{email}} gesendet.",
-    "testFailed": "SMTP-Test fehlgeschlagen: {{error}}"
+    "testFailed": "SMTP-Test fehlgeschlagen: {{error}}",
+    "addressPlaceholder": "alerts@deinedomain.de"
   },
   "import": {
     "readFailed": "Datei konnte nicht gelesen werden",

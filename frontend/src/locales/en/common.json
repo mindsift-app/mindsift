@@ -98,7 +98,8 @@
     "switchKind": "Switch kind",
     "hits_one": "{{count}} result",
     "hits_other": "{{count}} results",
-    "navigate": "Navigate"
+    "navigate": "Navigate",
+    "untitled": "Untitled"
   },
   "share": {
     "chooseGroup": "Please choose a group",
@@ -150,7 +151,8 @@
     "sse": "Live connection via server-sent events (WebSocket is blocked)",
     "poll": "Live via long polling (WebSocket and SSE are blocked)",
     "ws": "Live connection via WebSocket",
-    "longPolling": " (long polling)"
+    "longPolling": " (long polling)",
+    "offline": "Offline"
   },
   "update": {
     "title": "New version available",
@@ -165,7 +167,8 @@
     "mode": "Light or dark",
     "light": "Light",
     "dark": "Dark",
-    "system": "Like the system"
+    "system": "Like the system",
+    "systemShort": "System"
   },
   "voice": {
     "stop": "Stop recording",
@@ -192,7 +195,8 @@
   "avatar": {
     "readFailed": "Reading the file failed",
     "loadFailed": "Loading the image failed",
-    "canvasFailed": "Could not create a canvas context"
+    "canvasFailed": "Could not create a canvas context",
+    "alt": "Profile picture"
   },
   "offline": {
     "waiting_one": "{{count}} change waiting",

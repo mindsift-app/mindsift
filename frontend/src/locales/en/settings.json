@@ -733,7 +733,8 @@
     "passwordKept": "Saved – leave empty for no change",
     "save": "Save SMTP configuration to the database",
     "testSent": "Test e-mail sent to {{email}}.",
-    "testFailed": "SMTP test failed: {{error}}"
+    "testFailed": "SMTP test failed: {{error}}",
+    "addressPlaceholder": "alerts@yourdomain.com"
   },
   "import": {
     "readFailed": "The file could not be read",

@@ -526,7 +526,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                           <div className="flex-1 min-w-0 space-y-0.5">
                             <div className="flex items-center justify-between gap-2">
                               <span className={`font-semibold text-xs truncate ${finished ? 'line-through text-muted' : ''}`}>
-                                {item.title || 'Unbenannt'}
+                                {item.title || t('palette.untitled')}
                               </span>
                               {isSelected && (
                                 <span className="hidden sm:inline-flex items-center text-[10px] text-accent gap-0.5 shrink-0">
