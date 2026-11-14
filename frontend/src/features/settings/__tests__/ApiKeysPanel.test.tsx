@@ -3,7 +3,7 @@ import { render, screen, fireEvent, act, within } from '@testing-library/react';
 
 const createAPIKey = vi.fn(async () => ({ id: 'k1', userId: 'u', name: 'HA', keyPrefix: 'mindsift_sec_ab', scopes: 'webhook:triage,webhook:list', createdAt: '' }));
 const updateAPIKey = vi.fn(async () => ({}));
-const getAuthStatus = vi.fn(async (): Promise<{ mcpConnectorUrl?: string; mcpEnabled?: boolean }> => ({
+const getAuthStatus = vi.fn(async (): Promise<{ mcpConnectorUrl?: string; mcpEnabled?: boolean; restApiKeys?: boolean }> => ({
   mcpConnectorUrl: 'https://ms.example/api/v1/mcp',
 }));
 vi.mock('../../../lib/api', () => ({
@@ -69,6 +69,24 @@ describe('ApiKeysPanel', () => {
     expect(screen.queryByRole('tab', { name: /KI-Agenten/ })).toBeNull();
     expect(screen.queryByRole('switch', { name: 'Notizen lesen' })).toBeNull();
     expect(screen.getAllByText(/tasks\?due=today&status=open/).length).toBeGreaterThan(0);
+  });
+
+  it('says keys only work for MCP when the server refuses them on REST', async () => {
+    getAuthStatus.mockResolvedValueOnce({ mcpConnectorUrl: 'https://ms.example/api/v1/mcp', mcpEnabled: true, restApiKeys: false });
+    render(<ApiKeysPanel />);
+    expect(await screen.findByText('API-Schlüssel gelten auf diesem Server nur für MCP.')).toBeTruthy();
+    expect(screen.queryByRole('tab', { name: /KI-Agenten/ })).toBeNull();
+    expect(screen.queryAllByText(/tasks\?due=today&status=open/)).toHaveLength(0);
+    expect(screen.getByText('https://ms.example/api/v1/mcp')).toBeTruthy();
+    expect(screen.getByRole('button', { name: /API-Key erzeugen/ })).toBeTruthy();
+  });
+
+  it('offers no new key when neither REST nor MCP takes one', async () => {
+    getAuthStatus.mockResolvedValueOnce({ mcpConnectorUrl: '', mcpEnabled: false, restApiKeys: false });
+    render(<ApiKeysPanel />);
+    expect(await screen.findByText('API-Schlüssel sind auf diesem Server ausgeschaltet.')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /API-Key erzeugen/ })).toBeNull();
+    expect(await screen.findByText('Rauchmelder')).toBeTruthy();
   });
 
   it('marks OAuth connections instead of showing a key prefix', async () => {

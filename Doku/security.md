@@ -21,7 +21,7 @@ API keys, OAuth tokens, reset and confirmation links and the tokens of public li
 
 ### Rights checked on every request
 
-Notes, folders, lists and task lists resolve the caller's role (owner, editor, viewer) on each call ([sharing-and-permissions.md](sharing-and-permissions.md)). API keys and MCP connections reach only what their scopes allow, OAuth tokens only the MCP endpoint. Public links are read-only, live at most 14 days, can carry a password and hide names, hidden values and links to other notes.
+Notes, folders, lists and task lists resolve the caller's role (owner, editor, viewer) on each call ([sharing-and-permissions.md](sharing-and-permissions.md)). API keys and MCP connections reach only what their scopes allow, OAuth tokens only the MCP endpoint. `API_KEYS_ENABLED=false` limits API keys to the MCP endpoint as well, for servers that want no key-based access to the REST API (the app's own sessions are not affected). Public links are read-only, live at most 14 days, can carry a password and hide names, hidden values and links to other notes.
 
 ### Addresses stay private
 

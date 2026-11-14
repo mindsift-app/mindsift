@@ -863,6 +863,11 @@ func (s *Server) authMiddleware(next http.Handler) http.Handler {
 			writeError(w, http.StatusForbidden, "OAuth-Zugänge gelten nur für den MCP-Endpunkt")
 			return
 		}
+		// API_KEYS_ENABLED=false: personal keys still reach MCP, the REST API refuses them
+		if key != nil && !key.OAuth && r.URL.Path != mcpPath && s.cfg.RESTAPIKeysOff {
+			writeError(w, http.StatusForbidden, "API-Schlüssel gelten auf diesem Server nur für MCP")
+			return
+		}
 		var sessionID string
 		var claims *auth.Claims
 		if key == nil {
