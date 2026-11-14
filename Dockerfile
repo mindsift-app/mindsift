@@ -104,7 +104,8 @@ LABEL org.opencontainers.image.title="MindSift" \
       org.opencontainers.image.description="Notes, tasks and a clear head, self-hosted: outliner notes, tasks with a Kanban board, shared lists, works offline." \
       org.opencontainers.image.version="${IMAGE_VERSION}" \
       org.opencontainers.image.licenses="AGPL-3.0-only" \
-      org.opencontainers.image.url="https://mindsift.app"
+      org.opencontainers.image.url="https://mindsift.app" \
+      org.opencontainers.image.source="https://github.com/mindsift-app/mindsift"
 # MindSift runs as the user mindsift (uid/gid 1000), not as root; the entrypoint hands /data over first.
 # apk upgrade: security fixes of the base system released after the alpine image itself
 RUN apk upgrade --no-cache && \
