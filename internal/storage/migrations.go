@@ -71,6 +71,7 @@ var migrations = []migration{
 	{43, "SMTP password encrypted with SECRETS_KEY", (*Store).migrateSealSMTPPass},
 	{44, "Note text stored only once", (*Store).migrateNoteStorage},
 	{45, "Usernames unique in the database", (*Store).migrateUniqueUsernames},
+	{46, "Hidden values copied with a bullet belong to its note", (*Store).migrateSecretCopies},
 }
 
 // migrationBlockRefs creates block_refs: until it has run (earlier steps that rewrite notes), writing a

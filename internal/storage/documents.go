@@ -170,7 +170,8 @@ func (s *Store) GetAuthorizedSharedFolderUsers(folderID string) ([]string, error
 var ErrNoteTooLarge = i18n.NewError("Eine Notiz kann höchstens {max} Punkte haben", "max", strconv.Itoa(collab.MaxNoteBlocks))
 
 // CreateDocument creates a note of userID with the given bullets. References to files userID may not
-// read are dropped from them (mediaGate).
+// read are dropped from them (mediaGate); references to hidden values of other notes become copies in
+// the new note or a placeholder (secretGate).
 func (s *Store) CreateDocument(userID, spaceID, title, icon, folderPath string, blocks []domain.DocumentBlock, tags []string, isPinned bool) (*domain.Document, error) {
 	return s.createDocument(userID, spaceID, title, icon, folderPath, blocks, tags, isPinned, nil)
 }
@@ -179,6 +180,9 @@ func (s *Store) CreateDocument(userID, spaceID, title, icon, folderPath string, 
 // stored once the note exists).
 func (s *Store) createDocument(userID, spaceID, title, icon, folderPath string, blocks []domain.DocumentBlock, tags []string, isPinned bool, keepMedia map[string]bool) (*domain.Document, error) {
 	blocks, _ = s.newMediaGate(userID, keepMedia).cleanBlocks(blocks)
+	docID := domain.NewID("doc")
+	secrets := s.newSecretGate(userID, docID)
+	blocks = secrets.cleanBlocks(blocks)
 	if strings.TrimSpace(title) == "" {
 		title = i18n.T(s.MessageLanguage(userID), "Unbenannte Notiz")
 	}
@@ -193,6 +197,7 @@ func (s *Store) createDocument(userID, spaceID, title, icon, folderPath string, 
 	// The same limit as for bullets added later (collab.MaxNoteBlocks): a note created whole, by the API,
 	// an import or an agent, would otherwise skip it
 	if len(blocks) > collab.MaxNoteBlocks {
+		secrets.discard()
 		return nil, ErrNoteTooLarge
 	}
 	tags = stripFolderTags(tags)
@@ -216,7 +221,7 @@ func (s *Store) createDocument(userID, spaceID, title, icon, folderPath string, 
 	}
 
 	doc := &domain.Document{
-		ID:             domain.NewID("doc"),
+		ID:             docID,
 		UserID:         userID,
 		SpaceID:        spaceID,
 		Title:          strings.TrimSpace(title),
@@ -242,11 +247,13 @@ func (s *Store) createDocument(userID, spaceID, title, icon, folderPath string, 
 		doc.ID, doc.UserID, doc.SpaceID, doc.Title, doc.Icon, string(tagsJSON), doc.FolderPath, pinnedInt, doc.CreatedAt, doc.UpdatedAt, doc.SharedFolderID, doc.SubFolderPath,
 	)
 	if err != nil {
+		secrets.discard()
 		return nil, err
 	}
 	if err := s.saveDocBlocks(doc.ID, userID, doc.Blocks); err != nil {
 		// Without its bullets the note would be empty: it is not created
 		s.execLogged(`DELETE FROM documents WHERE id = ?`, doc.ID)
+		secrets.discard()
 		return nil, err
 	}
 	if isPinned {

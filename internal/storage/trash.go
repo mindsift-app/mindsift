@@ -5,9 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"path"
-	"slices"
 	"sort"
-	"strings"
 
 	"github.com/mindsift-app/mindsift/internal/domain"
 )
@@ -298,45 +296,15 @@ func (s *Store) EmptyTrash(userID string) ([]string, error) {
 	return ids, nil
 }
 
-// deleteSecretsHeldNowhereElse runs sqlDeleteSecretsHeldNowhereElse, sparing also the note's secrets
-// that a live bullet of another note holds beyond maxBlockRefs references (no block_refs row there).
-// Like those held through block_refs they stay bound to the deleted note until the secret sweep moves
-// them on. The bullets at the cap are only read when the note has secrets at all.
-func deleteSecretsHeldNowhereElse(tx *sql.Tx, docID string) error {
-	var n int
-	if err := tx.QueryRow(`SELECT COUNT(*) FROM note_secrets WHERE document_id = ?`, docID).Scan(&n); err != nil || n == 0 {
-		return err
-	}
-	beyond, err := secretsBeyondRefCap(tx, "")
-	if err != nil {
-		return err
-	}
-	q, args := sqlDeleteSecretsHeldNowhereElse, []any{docID}
-	var spare []string
-	for id, docs := range beyond {
-		if slices.ContainsFunc(docs, func(d string) bool { return d != docID }) {
-			spare = append(spare, "?")
-			args = append(args, id)
-		}
-	}
-	if len(spare) > 0 {
-		q += ` AND id NOT IN (` + strings.Join(spare, ", ") + `)`
-	}
-	_, err = tx.Exec(q, args...)
-	return err
-}
-
 func (s *Store) hardDeleteDocument(docID string) error {
 	tx, err := s.db.Begin()
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
-	// Its hidden values go along, unless a bullet of another note still holds them (moved there)
-	if err := deleteSecretsHeldNowhereElse(tx, docID); err != nil {
-		return err
-	}
 	for _, q := range []string{
+		// Its hidden values go along (no other note points to them: a copied bullet has copies of its own)
+		`DELETE FROM note_secrets WHERE document_id = ?`,
 		// Tasks created from blocks of this note keep existing without the link
 		`UPDATE thoughts SET converted_type = '', converted_ref_id = '' WHERE ` + sqlTasksOfNoteBlocks,
 		`DELETE FROM blocks WHERE document_id = ?`,

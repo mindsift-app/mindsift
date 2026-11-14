@@ -71,6 +71,14 @@ Selection over several bullets in Chromium and Firefox, in two notes (callout at
 
 Run it after every change to selecting, copying or deleting in notes.
 
+## secrets.e2e.mjs
+
+A bullet with a hidden value of another note pasted into a note (the text goes into the bullet's field as pasting puts it there). Checked:
+
+- the server stores a copy of the value in the note and the bullet points to it; the chip there reveals the value, the note does not reveal the value of the note of origin
+- Ctrl+Z takes the paste out again and redo brings the copy back, although the server changed the reference
+- a paste made offline is sent once the connection is back and gets the copy the note already has; its chip reveals the value
+
 ## live.e2e.mjs
 
 Tasks and shopping lists behind simulated proxies (nothing blocked; WebSocket refused and SSE held without an answer; WebSocket refused and SSE refused): another device adds a task, moves it to another column and adds a list item. Each change has to show up in the open browser within 8 s, without reloading or switching tabs.

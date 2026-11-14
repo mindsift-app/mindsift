@@ -193,6 +193,14 @@ func (s *Store) SyncTaskToDoc(userID, taskID string) string {
 	for i := range subs {
 		titles[i], _ = gate.clean(subs[i].Title)
 	}
+	// Hidden values of other notes in a title become copies in this note (secretGate), prepared here as
+	// well; the same reference carried in again gets the same copy. Frozen, it does not query any more.
+	secrets := s.newSecretGate(userID, docID)
+	secrets.prepare(append([]string{t.Content}, titles...)...)
+	for i := range titles {
+		titles[i], _ = secrets.clean(titles[i])
+	}
+	secrets.frozen = true
 	titleFor := func(current, raw string) string {
 		if raw == "" || strings.TrimSpace(current) == raw {
 			return raw
@@ -203,6 +211,7 @@ func (s *Store) SyncTaskToDoc(userID, taskID string) string {
 		}
 		out, _ := gate.clean(raw)
 		gate.keep = nil
+		out, _ = secrets.clean(out)
 		return out
 	}
 	subsChanged := false
