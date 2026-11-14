@@ -55,6 +55,8 @@ services:
       # holds the proxy (.env.example, Doku/reverse-proxy.md)
       - TRUSTED_PROXIES=${TRUSTED_PROXIES:-private}
       - RETENTION_ALLOW_NEVER=${RETENTION_ALLOW_NEVER:-}
+      # false: API keys only work for MCP, the REST API refuses them (.env.example)
+      - API_KEYS_ENABLED=${API_KEYS_ENABLED:-true}
       - LOGIN_PROTECTION=${LOGIN_PROTECTION:-true}
       - LOG_LEVEL=${LOG_LEVEL:-info}
       - DEBUG=${DEBUG:-false}

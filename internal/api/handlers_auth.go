@@ -75,6 +75,8 @@ func (s *Server) handleAuthStatus(w http.ResponseWriter, r *http.Request) {
 		"passwordLogin": s.passwordLoginOn(),
 		// AI agents may connect over MCP (MCP_ENABLED or the admin's switch)
 		"mcpEnabled": s.mcpEnabled(),
+		// API keys on the REST API (API_KEYS_ENABLED); off, they only work for MCP
+		"restApiKeys": !s.cfg.RESTAPIKeysOff,
 		// Sharing: names suggested while typing, notes shareable by public link (and for how long at most)
 		"peopleSearch":      s.peopleSearchEnabled(),
 		"publicLinks":       s.publicLinksEnabled(),

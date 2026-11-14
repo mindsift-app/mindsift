@@ -81,6 +81,10 @@ export const ApiKeysPanel: React.FC<ApiKeysPanelProps> = ({ onIngested }) => {
   const [access, setAccess] = useState<Access>('rest');
   // The operator can switch MCP off; then only the curl / smart home access is shown
   const [mcpEnabled, setMcpEnabled] = useState(true);
+  // API_KEYS_ENABLED=false: the REST API refuses keys, they only work for MCP (curl access hidden)
+  const [restKeys, setRestKeys] = useState(true);
+  // Neither REST nor MCP takes a key: no new ones, existing ones can still be revoked
+  const keysUsable = restKeys || mcpEnabled;
 
   // Live Webhook Simulator State
   const [simTitle, setSimTitle] = useState(() => i18n.t('settings:api.sim.defaultTitle'));
@@ -108,6 +112,7 @@ export const ApiKeysPanel: React.FC<ApiKeysPanelProps> = ({ onIngested }) => {
       .then((st) => {
         setConnectorUrl(st.mcpConnectorUrl || '');
         setMcpEnabled(st.mcpEnabled !== false);
+        setRestKeys(st.restApiKeys !== false);
       })
       .catch(() => {});
   }, []);
@@ -287,23 +292,30 @@ http_headers = { "X-API-Key" = "${exampleToken}" }`
             </p>
           </div>
         </div>
+        {!restKeys && (
+          <p role="note" className="mt-2 text-xs font-medium text-main">
+            {mcpEnabled ? t('api.mcpOnly') : t('api.keysOff')}
+          </p>
+        )}
 
-        <form onSubmit={handleCreateKey} className="mt-3 space-y-2">
-          <div className="flex flex-col sm:flex-row gap-2">
-            <input
-              type="text"
-              value={newKeyName}
-              onChange={(e) => setNewKeyName(e.target.value)}
-              placeholder={t('api.namePlaceholder')}
-              className="w-full sm:flex-1 min-w-0 h-11 sm:h-9 px-3 input-field text-base sm:text-sm"
-            />
-            <button type="submit" className="btn-primary h-11 sm:h-9 px-4 text-sm flex items-center justify-center gap-1.5">
-              <Plus className="w-4 h-4" />
-              <span>{t('api.create')}</span>
-            </button>
-          </div>
-          {renderScopeSwitches(newKeyScopes, toggleScope, t('api.rightsNew'))}
-        </form>
+        {keysUsable && (
+          <form onSubmit={handleCreateKey} className="mt-3 space-y-2">
+            <div className="flex flex-col sm:flex-row gap-2">
+              <input
+                type="text"
+                value={newKeyName}
+                onChange={(e) => setNewKeyName(e.target.value)}
+                placeholder={t('api.namePlaceholder')}
+                className="w-full sm:flex-1 min-w-0 h-11 sm:h-9 px-3 input-field text-base sm:text-sm"
+              />
+              <button type="submit" className="btn-primary h-11 sm:h-9 px-4 text-sm flex items-center justify-center gap-1.5">
+                <Plus className="w-4 h-4" />
+                <span>{t('api.create')}</span>
+              </button>
+            </div>
+            {renderScopeSwitches(newKeyScopes, toggleScope, t('api.rightsNew'))}
+          </form>
+        )}
 
         {newlyCreatedKey && (
           <div className="mt-3 p-3 bg-accent/15 border border-accent/30 flex flex-wrap items-center justify-between gap-3">
@@ -405,9 +417,9 @@ http_headers = { "X-API-Key" = "${exampleToken}" }`
         </div>
       </div>
 
-      {/* How to connect: one API, two accesses */}
-      <div className="pt-4 border-t border-border space-y-4">
-        {mcpEnabled && (
+      {/* How to connect: one API, two accesses (tabs only while both take keys) */}
+      <div className={keysUsable ? 'pt-4 border-t border-border space-y-4' : 'hidden'}>
+        {mcpEnabled && restKeys && (
           <div className="flex flex-wrap gap-1.5" role="tablist" aria-label={t('api.access')}>
             {(
               [
@@ -432,7 +444,7 @@ http_headers = { "X-API-Key" = "${exampleToken}" }`
           </div>
         )}
 
-        {(access === 'rest' || !mcpEnabled) && (
+        {restKeys && (access === 'rest' || !mcpEnabled) && (
           <div className="space-y-5">
             {/* Reading: e.g. a smart home sensor for what is due today */}
             <div>
@@ -590,7 +602,7 @@ http_headers = { "X-API-Key" = "${exampleToken}" }`
           </div>
         )}
 
-        {access === 'mcp' && mcpEnabled && (
+        {mcpEnabled && (access === 'mcp' || !restKeys) && (
           <div>
             <div className="flex items-center gap-3 mb-3">
               <div className="w-7 h-7 bg-accent text-on-accent flex items-center justify-center flex-shrink-0">

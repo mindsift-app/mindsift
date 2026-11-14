@@ -109,6 +109,8 @@
     "confirmDisconnect": "Really disconnect “{{name}}”?",
     "confirmRevoke": "Really revoke this API key?",
     "intro": "A key connects Home Assistant, n8n, your own scripts or AI agents (Claude Code, Codex …) with MindSift. You set what it may do per area with Read, Create and Change (“Change” switches “Read” on too); this applies to curl and MCP alike, except that notes as well as reading and sorting the inbox are available over MCP only. Settings stay locked for keys. Whatever a key creates or changes in tasks and lists carries its name as a badge.",
+    "keysOff": "API keys are switched off on this server.",
+    "mcpOnly": "API keys only work for MCP on this server.",
     "rightsOf": "Permissions of {{name}}",
     "editKey": "Edit API key {{name}}",
     "deleteKey": "Delete API key {{name}}",
