@@ -3,6 +3,7 @@ package storage
 import (
 	"encoding/json"
 	"fmt"
+	"maps"
 	"math/rand"
 	"path/filepath"
 	"reflect"
@@ -344,6 +345,14 @@ func TestNoteStorageMigration(t *testing.T) {
 	}
 	legacy, _ := s.CreateDocument(u.ID, "", "Uralt", "", "", flatBlocks([3]any{"l1", 0, "Uralter Gartenzaun"}, [3]any{"l2", 1, "darunter"}), nil, false)
 
+	blank, _ := s.CreateDocument(u.ID, "", "Leer", "", "", flatBlocks([3]any{"e1", 0, ""}), nil, false)
+	for day, id := range map[string]string{"2026-11-01": typed.ID, "2026-11-02": mixed.ID, "2026-11-03": legacy.ID, "2026-11-04": blank.ID} {
+		if err := s.SetJournalDay(u.ID, day, id); err != nil {
+			t.Fatal(err)
+		}
+	}
+	wantJournal := map[string]bool{"2026-11-01": false, "2026-11-02": false, "2026-11-03": false, "2026-11-04": true}
+
 	docs := []string{typed.ID, mixed.ID, legacy.ID}
 	want := map[string]docState{}
 	for _, id := range docs {
@@ -421,6 +430,10 @@ func TestNoteStorageMigration(t *testing.T) {
 		if !reflect.DeepEqual(got, w) {
 			t.Fatalf("note %s changed:\n got %+v\nwant %+v", id, got, w)
 		}
+	}
+	// The journal reads whether a day has text from the bullets, not from the emptied copies
+	if got := journalEmpty(t, s, u.ID); !maps.Equal(got, wantJournal) {
+		t.Fatalf("journal days after the migration:\n got %v\nwant %v", got, wantJournal)
 	}
 	var leftover int
 	_ = s.db.QueryRow(`SELECT COUNT(*) FROM documents WHERE blocks_json != '[]' OR markdown_cache != '' OR content != ''`).Scan(&leftover)

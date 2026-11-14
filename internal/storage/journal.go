@@ -27,8 +27,15 @@ func (s *Store) migrateJournal() error {
 }
 
 // JournalDays lists the user's days whose note still exists (not in the trash), newest first.
+//
+// A day is empty when docPlainText of its note would be empty: no live bullet with text, where a drawing
+// counts only with words written in it (an image, a table or a to-do counts). The text comes from the
+// bullets; documents.content stays empty since migration 44 and only holds something for an old note
+// whose blocks_json could not be converted.
 func (s *Store) JournalDays(userID string) ([]JournalDay, error) {
-	rows, err := s.db.Query(`SELECT j.day, j.doc_id, TRIM(d.content) = ''
+	rows, err := s.db.Query(`SELECT j.day, j.doc_id, TRIM(d.content) = '' AND NOT EXISTS (
+			SELECT 1 FROM blocks b WHERE b.document_id = d.id AND b.deleted = 0 AND b.content != ''
+			  AND (b.type != 'drawing' OR TRIM(`+blockSearchText("b.")+`) != ''))
 		FROM journal_days j JOIN documents d ON d.id = j.doc_id
 		WHERE j.user_id = ? AND d.is_archived = 0
 		ORDER BY j.day DESC`, userID)
