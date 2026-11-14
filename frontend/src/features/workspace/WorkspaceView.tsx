@@ -30,7 +30,7 @@ import { isJournalEnabled, readWorkspaceSession, writeWorkspaceSession } from '.
 import { MergeDialog } from './MergeDialog';
 import { isPhoneWidth } from '../../lib/breakpoints';
 import { reportNav, onNavStep, restoringNavPlace } from '../../lib/navHistory';
-import { TodoRollupView } from './TodoRollupView';
+import { RollupTodo, TodoRollupView } from './TodoRollupView';
 import { HashtagOverview } from './HashtagOverview';
 import { TagDetailView } from './TagDetailView';
 import { WorkspaceTabBar } from './WorkspaceTabBar';
@@ -45,7 +45,7 @@ import { SidebarJournal, SidebarTags, SidebarTrash } from './SidebarSections';
 import { useWorkspaceData } from './useWorkspaceData';
 import { useTrashActions } from './useTrashActions';
 import { buildWorkspaceMenu } from './workspaceMenu';
-import { buildFolderTree, collectFolderPaths, folderAncestors, collectRollupTodos, countOpenTodos, filterTags, groupRollupTodosByFolder, isFolderShared, tagGroups, tagsMetadata } from './workspaceListing';
+import { buildFolderTree, collectFolderPaths, folderAncestors, collectRollupTodos, countOpenTodos, filterTags, groupRollupTodosByFolder, isFolderShared, tagGroups, tagsMetadata, withTodoToggled } from './workspaceListing';
 import { FolderDialogs } from './FolderDialogs';
 import { WorkspaceSubView } from './workspaceTypes';
 import { Trans, useTranslation } from 'react-i18next';
@@ -54,6 +54,7 @@ import { showError } from '../../components/ErrorNotice';
 import { askChoice } from '../../components/askConfirm';
 import { WikiLinkClickHandler } from '../../lib/wikiLink';
 import { findLinkedDoc, useWikiLinkStore, WikiLinkResolverContext } from '../../lib/wikiLinkResolver';
+import { cachedBlock, lookupBlock } from '../../lib/blockLookup';
 import { errorMessage } from '../../lib/errorMessage';
 import { useLatestRef } from '../../lib/useLatestRef';
 
@@ -112,8 +113,8 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
 
   // A note the app picked by itself (not a step of its own in the browser history)
   const autoSelectedDocRef = useRef(false);
-  const { docs, setDocs, folders, setFolders, sharedFolders, setSharedFolders, tagsSummary, loadWorkspaceData } =
-    useWorkspaceData({ currentUser, setSelectedDocId, autoSelectedDocRef, reloadTrash });
+  const { docs, setDocs, folders, setFolders, sharedFolders, setSharedFolders, tagsSummary, loadWorkspaceData, rollupTodos, setRollupTodos } =
+    useWorkspaceData({ currentUser, setSelectedDocId, autoSelectedDocRef, reloadTrash, todosShown: subView === 'todos' });
 
   // Journal: one note per day, listed separately from the folder tree (can be switched off per device)
   const {
@@ -507,10 +508,9 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
     }
   };
 
-  // Links carry the id of the note (renaming does not break them); older ones go by the bullet or title
-  const handleWikiLinkClick = useCallback<WikiLinkClickHandler>(
-    (link, actions) => {
-      const match = findLinkedDoc(docs, link);
+  // Opens what a link points to; a note that is gone (deleted or never created) asks first
+  const openWikiLink = useCallback(
+    (match: Document | undefined, ...[link, actions]: Parameters<WikiLinkClickHandler>) => {
       if (match && link.blockId) {
         handleJumpToDocBlock(match.id, link.blockId);
       } else if (match) {
@@ -532,7 +532,22 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
         });
       }
     },
-    [docs, handleCreateDocument, handleJumpToDocBlock]
+    [handleCreateDocument, handleJumpToDocBlock]
+  );
+  // Links carry the id of the note (renaming does not break them); older ones go by the bullet or title
+  const docsRef = useLatestRef(docs);
+  const handleWikiLinkClick = useCallback<WikiLinkClickHandler>(
+    (link, actions) => {
+      // An older link to one bullet (no note id) whose note is not known here: the bullet is looked up first
+      // (the note list has no bullets)
+      const { blockId } = link;
+      if (blockId && !link.docId && cachedBlock(blockId) === undefined && !docs.some((d) => d.blocks?.some((b) => b.id === blockId))) {
+        void lookupBlock(blockId).then(() => openWikiLink(findLinkedDoc(docsRef.current, link), link, actions));
+        return;
+      }
+      openWikiLink(findLinkedDoc(docs, link), link, actions);
+    },
+    [docs, docsRef, openWikiLink]
   );
   const wikiLinkStore = useWikiLinkStore(docs);
 
@@ -554,16 +569,14 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
     [openFolderShareModal, setSharedFolders]
   );
 
-  const handleToggleRollupTodo = async (doc: Document, blockId: string, currentChecked: boolean) => {
+  // Shown ticked at once (the note's bullets or its counts, and the fetched to-dos), then sent into the note
+  const handleToggleRollupTodo = async ({ doc, blockId, content, checked: currentChecked }: RollupTodo) => {
     triggerHaptic(10);
-    const updatedBlocks = (doc.blocks || []).map((b) =>
-      b.id === blockId ? { ...b, checked: !currentChecked } : b
-    );
-    setDocs((prev) =>
-      prev.map((d) => (d.id === doc.id ? { ...d, blocks: updatedBlocks } : d))
-    );
+    const checked = !currentChecked;
+    setDocs((prev) => prev.map((d) => (d.id === doc.id ? withTodoToggled(d, blockId, content, checked) : d)));
+    setRollupTodos((prev) => prev && prev.map((item) => (item.docId === doc.id && item.blockId === blockId ? { ...item, checked } : item)));
     try {
-      const [result] = await sendDocOps(doc.id, [{ kind: 'set_props', blockId, patch: { checked: !currentChecked } }]);
+      const [result] = await sendDocOps(doc.id, [{ kind: 'set_props', blockId, patch: { checked } }]);
       if (result?.status !== 'applied') loadWorkspaceData();
     } catch {
       loadWorkspaceData();
@@ -644,13 +657,13 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
 
   // Global To-Dos rollup collections
   const allRollupTodos = useMemo(
-    () => collectRollupTodos(docs, todoFolderDrilldown, todoShow === 'open'),
-    [docs, todoFolderDrilldown, todoShow]
+    () => collectRollupTodos(docs, rollupTodos, todoFolderDrilldown, todoShow === 'open'),
+    [docs, rollupTodos, todoFolderDrilldown, todoShow]
   );
 
   const hasDoneTodos = useMemo(
-    () => todoShow === 'open' && collectRollupTodos(docs, todoFolderDrilldown).some((i) => i.checked),
-    [docs, todoFolderDrilldown, todoShow]
+    () => todoShow === 'open' && collectRollupTodos(docs, rollupTodos, todoFolderDrilldown).some((i) => i.checked),
+    [docs, rollupTodos, todoFolderDrilldown, todoShow]
   );
 
   const rollupTodosByFolder = useMemo(() => groupRollupTodosByFolder(allRollupTodos), [allRollupTodos]);
@@ -1043,6 +1056,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
             hasDoneTodos={hasDoneTodos}
             handleJumpToDocBlock={handleJumpToDocBlock}
             handleToggleRollupTodo={handleToggleRollupTodo}
+            loading={rollupTodos === null}
           />
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center p-12 text-center bg-editor">

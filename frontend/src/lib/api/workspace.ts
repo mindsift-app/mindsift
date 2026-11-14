@@ -5,6 +5,8 @@ import {
   JournalDay,
   PushDevice,
   Backlink,
+  BlockInfo,
+  DocTodo,
   DocumentBlock,
   DocShare,
   SharedFolder,
@@ -152,6 +154,7 @@ export const workspaceApi = {
   },
 
   // --- WORKSPACE DOCUMENTS ---
+  /** The notes without their bullets: per note the counts of to-dos and hashtags instead (openTodos, tagCounts, tagOpenTodos). */
   async getDocuments(): Promise<Document[]> {
     const res = await request<Document[]>('/api/v1/documents');
     return ensureArray(res).map((d) => ({
@@ -159,6 +162,17 @@ export const workspaceApi = {
       blocks: ensureArray(d.blocks),
       tags: ensureArray(d.tags),
     }));
+  },
+
+  /** Every to-do with text in the visible notes, in note order and then bullet order. */
+  async getDocumentTodos(): Promise<DocTodo[]> {
+    const res = await request<DocTodo[]>('/api/v1/documents/todos');
+    return ensureArray(res);
+  },
+
+  /** One bullet the caller may read (404 otherwise): its note, text and type. */
+  async getBlock(id: string): Promise<BlockInfo> {
+    return request<BlockInfo>(`/api/v1/blocks/${encodeURIComponent(id)}`);
   },
 
   async getDocument(id: string): Promise<Document> {

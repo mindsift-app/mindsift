@@ -9,9 +9,11 @@ import {
   filterTags,
   folderAncestors,
   groupRollupTodosByFolder,
+  mergeDocList,
   isFolderShared,
   tagGroups,
   tagsMetadata,
+  withTodoToggled,
 } from '../workspaceListing';
 
 const block = (id: string, content: string, b: Partial<DocumentBlock> = {}) =>
@@ -28,11 +30,11 @@ describe('workspace listing', () => {
   ];
 
   it('collects the to-dos with text, per folder and counts the open ones', () => {
-    const all = collectRollupTodos(docs, null);
+    const all = collectRollupTodos(docs, null, null);
     expect(all.map((t) => t.blockId)).toEqual(['a1', 'a2', 'b1']);
-    expect(collectRollupTodos(docs, 'Privat').map((t) => t.blockId)).toEqual(['b1']);
-    expect(collectRollupTodos(docs, 'Hauptebene').map((t) => t.blockId)).toEqual(['a1', 'a2']);
-    expect(collectRollupTodos(docs, null, true).map((t) => t.blockId)).toEqual(['a1', 'b1']);
+    expect(collectRollupTodos(docs, null, 'Privat').map((t) => t.blockId)).toEqual(['b1']);
+    expect(collectRollupTodos(docs, null, 'Hauptebene').map((t) => t.blockId)).toEqual(['a1', 'a2']);
+    expect(collectRollupTodos(docs, null, null, true).map((t) => t.blockId)).toEqual(['a1', 'b1']);
     const byFolder = groupRollupTodosByFolder(all);
     expect([...byFolder.keys()]).toEqual(['Hauptebene', 'Privat']);
     expect(byFolder.get('Privat')?.[0].checked).toBe(false);
@@ -73,16 +75,113 @@ describe('workspace listing', () => {
     expect(meta.get('haus')?.docs.map((d) => d.folderPath)).toEqual(['Privat']);
   });
 
-  it('counts hashtags over all notes, most frequent first', () => {
+  it('counts the bullets per hashtag over all notes, most frequent first', () => {
     const notes = [
-      doc('x', [block('x1', '#Haus und #garten'), block('x2', 'kein#tag, #haus #haus')]),
+      doc('x', [block('x1', '#Haus und #garten'), block('x2', 'kein#tag, #haus #haus'), block('x3', 'noch #haus')]),
       doc('y', [block('y1', '(#garten) #Auto')]),
     ];
+    // A bullet counts once per hashtag, as the server's block_tags
     expect(countHashtags(notes)).toEqual([
       { tag: 'haus', count: 3 },
       { tag: 'garten', count: 2 },
       { tag: 'auto', count: 1 },
     ]);
+  });
+
+  describe('notes of the note list (no bullets, counts per note)', () => {
+    const listed = (id: string, d: Partial<Document> = {}) => doc(id, [], d);
+    const a = listed('a', { openTodos: 2, tagCounts: { einkauf: 3, haus: 1 }, tagOpenTodos: { einkauf: 2 } });
+    const b = listed('b', { folderPath: 'Privat', tagCounts: { haus: 2 } });
+
+    it('counts hashtags and open to-dos from the counts of the list', () => {
+      expect(countHashtags([a, b])).toEqual([
+        { tag: 'einkauf', count: 3 },
+        { tag: 'haus', count: 3 },
+      ]);
+      expect(countOpenTodos([a, b])).toBe(2);
+      const meta = tagsMetadata(countHashtags([a, b]), [a, b]);
+      expect(meta.get('einkauf')).toMatchObject({ count: 3, openTodosCount: 2 });
+      expect(meta.get('haus')?.docs.map((d) => d.id)).toEqual(['a', 'b']);
+      expect(meta.get('haus')?.openTodosCount).toBe(0);
+    });
+
+    it('counts a note whose bullets are here from its bullets, over the counts of the list', () => {
+      // The open note: its bullets arrived (typed in), the list's counts of it are outdated
+      const open = { ...a, blocks: [todo('a1', 'Neu #einkauf'), todo('a2', 'fertig #einkauf', true)] };
+      expect(countOpenTodos([open, b])).toBe(1);
+      expect(countHashtags([open, b])).toEqual([
+        { tag: 'einkauf', count: 2 },
+        { tag: 'haus', count: 2 },
+      ]);
+      expect(tagsMetadata(countHashtags([open, b]), [open, b]).get('einkauf')?.openTodosCount).toBe(1);
+    });
+
+    it('takes the to-dos of the server for notes of the list and the bullets of loaded notes', () => {
+      const todos = [
+        { docId: 'a', blockId: 'a1', content: 'Kaufen', checked: false },
+        { docId: 'gone', blockId: 'g1', content: 'Nicht in der Liste', checked: false },
+        { docId: 'b', blockId: 'b1', content: 'Streichen', checked: true },
+        { docId: 'a', blockId: 'a2', content: 'Bezahlen', checked: true },
+      ];
+      expect(collectRollupTodos([a, b], todos, null).map((t) => [t.doc.id, t.blockId, t.checked])).toEqual([
+        ['a', 'a1', false],
+        ['a', 'a2', true],
+        ['b', 'b1', true],
+      ]);
+      expect(collectRollupTodos([a, b], todos, null, true).map((t) => t.blockId)).toEqual(['a1']);
+      expect(collectRollupTodos([a, b], todos, 'Privat').map((t) => t.blockId)).toEqual(['b1']);
+      // Not fetched yet: only notes whose bullets are here
+      expect(collectRollupTodos([a, b], null, null)).toEqual([]);
+      // The open note gives its own to-dos (they follow typing), not the server's
+      const open = { ...a, blocks: [todo('a1', 'Kaufen und mehr')] };
+      expect(collectRollupTodos([open, b], todos, null).map((t) => [t.blockId, t.content])).toEqual([
+        ['a1', 'Kaufen und mehr'],
+        ['b1', 'Streichen'],
+      ]);
+    });
+
+    it('ticks a to-do in the counts of a note of the list, or in its bullets when they are here', () => {
+      const done = withTodoToggled(a, 'a1', 'Kaufen #einkauf #Haus', true);
+      expect(done.openTodos).toBe(1);
+      expect(done.tagOpenTodos).toEqual({ einkauf: 1, haus: 0 });
+      expect(a.openTodos).toBe(2);
+      const again = withTodoToggled(done, 'a1', 'Kaufen #einkauf #Haus', false);
+      expect(again.openTodos).toBe(2);
+      expect(again.tagOpenTodos).toEqual({ einkauf: 2, haus: 1 });
+      const loaded = doc('l', [todo('l1', 'x'), todo('l2', 'y')]);
+      expect(withTodoToggled(loaded, 'l2', 'y', true).blocks.map((bl) => bl.checked)).toEqual([false, true]);
+    });
+
+    it('lists notes of the list carrying the hashtag in list order, with the server\'s matches', () => {
+      const details = {
+        documents: [
+          { docId: 'b', title: 'b', matchedBlocks: [{ rootBlock: block('b1', '#haus'), children: [] }] },
+          { docId: 'srv', title: 'Nur Server', matchedBlocks: [] },
+        ],
+      } as unknown as TagDetails;
+      const loaded = doc('c', [block('c1', 'Dach #haus'), block('c2', 'Ziegel', { level: 1 })]);
+      const groups = tagGroups([a, loaded, b], 'Haus', details);
+      expect(groups.map((g) => g.docId)).toEqual(['a', 'c', 'b', 'srv']);
+      expect(groups[1].matchedBlocks.map((m) => [m.rootBlock.id, m.children.map((c) => c.id)])).toEqual([['c1', ['c2']]]);
+      expect(groups[2].matchedBlocks.map((m) => m.rootBlock.id)).toEqual(['b1']);
+      // Before the tag details arrive: the notes by their counts
+      expect(tagGroups([a, loaded, b], 'haus', null).map((g) => g.docId)).toEqual(['a', 'c', 'b']);
+    });
+
+    it('keeps the bullets of open notes when the list is fetched again', () => {
+      const openA = { ...a, blocks: [todo('a1', 'offen')] };
+      const closedB = { ...b, blocks: [block('b1', 'alt')] };
+      const freshA = listed('a', { title: 'A neu', openTodos: 5 });
+      const freshB = listed('b', { openTodos: 1 });
+      const merged = mergeDocList([openA, closedB], [freshB, freshA], (id) => id === 'a' || id === 'b2');
+      expect(merged.map((d) => [d.id, d.title, d.blocks.length])).toEqual([
+        ['b', 'b', 0],
+        ['a', 'A neu', 1],
+      ]);
+      expect(countOpenTodos(merged)).toBe(2);
+      const fresh = [freshA];
+      expect(mergeDocList([closedB], fresh, () => false)).toBe(fresh);
+    });
   });
 
   it('matches hashtags for the tiles like the tag page: whole tags only, each bullet once', () => {
@@ -106,8 +205,8 @@ describe('workspace listing', () => {
     const a2 = { ...a, blocks: [todo('a1', 'Kaufen #einkauf #heute', true)] };
     expect(countHashtags([a2, b]).map((t) => t.tag)).toEqual(['einkauf', 'haus', 'heute']);
     expect(countOpenTodos([a2, b])).toBe(1);
-    expect(collectRollupTodos([a2, b], null).map((t) => [t.doc, t.checked])).toEqual([[a2, true], [b, false]]);
-    expect(collectRollupTodos([a2, b], null, true).map((t) => t.blockId)).toEqual(['b1']);
+    expect(collectRollupTodos([a2, b], null, null).map((t) => [t.doc, t.checked])).toEqual([[a2, true], [b, false]]);
+    expect(collectRollupTodos([a2, b], null, null, true).map((t) => t.blockId)).toEqual(['b1']);
     expect(tagsMetadata(countHashtags([a2, b]), [a2, b]).get('einkauf')?.openTodosCount).toBe(0);
   });
 

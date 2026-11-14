@@ -1,4 +1,4 @@
-import { Document, DocumentBlock, SharedFolder, TagDetails, TagSummary } from '../../lib/types';
+import { DocTodo, Document, DocumentBlock, SharedFolder, TagDetails, TagSummary } from '../../lib/types';
 import { RollupTodo } from './TodoRollupView';
 import { TagMeta } from './HashtagOverview';
 import { FolderTreeNode } from './workspaceTypes';
@@ -19,50 +19,67 @@ export type TagGroup = {
 // Group key of notes outside folders (shown as rollup.root in the person's language)
 export const ROOT_FOLDER_KEY = 'Hauptebene';
 
-// What the hashtag and to-do views need of one note's bullets, worked out once per version of them. After a
-// pause in typing only the note typed in has new bullets (the others keep their array), so only that note is
-// read again, not every bullet of every note.
-type BlockStats = {
-  // Every hashtag (extractHashtags) with the number of times it occurs
+// What the hashtag and to-do views need of one note's bullets. The note list (GET /documents) brings no
+// bullets but these counts per note; a note whose bullets are here (the open note, one fetched) counts its own,
+// so the counts follow typing at once.
+export type NoteStats = {
+  // Every hashtag (extractHashtags, as the server's block_tags) with the number of bullets carrying it
   tagCounts: Map<string, number>;
-  // The hashtags as tagsMetadata matches them (followed by a space, punctuation or the end), each with the
-  // number of open to-dos among the bullets carrying it
+  // The same hashtags, each with the number of open to-dos among the bullets carrying it
   tagOpenTodos: Map<string, number>;
   openTodos: number;
 };
-const blockStatsCache = new WeakMap<DocumentBlock[], BlockStats>();
-const NO_BLOCKS: DocumentBlock[] = [];
-// A hashtag that ends at a space, punctuation or the end of the text (as in tagGroups)
-const ENDED_HASHTAG = /(?:^|[\s(])#([\p{L}\p{N}_-]+)(?=[\s.,!?:;)#\]}]|$)/gu;
 
-function blockStats(blocks: DocumentBlock[] | undefined): BlockStats {
-  const blks = blocks || NO_BLOCKS;
-  let stats = blockStatsCache.get(blks);
+/** Whether the note's bullets are here; a note of the list has none (a note always keeps one bullet). */
+export function hasBlocks(d: Document): boolean {
+  return (d.blocks?.length ?? 0) > 0;
+}
+
+// Worked out once per version of the bullets: after a pause in typing only the note typed in has new bullets
+// (the others keep their array), so only that note is read again
+const blockStatsCache = new WeakMap<DocumentBlock[], NoteStats>();
+
+function blockStats(blocks: DocumentBlock[]): NoteStats {
+  let stats = blockStatsCache.get(blocks);
   if (stats) return stats;
   stats = { tagCounts: new Map(), tagOpenTodos: new Map(), openTodos: 0 };
-  for (const b of blks) {
-    const openTodo = b.type === 'todo' && !b.checked;
-    if (openTodo && b.content.trim() !== '') stats.openTodos++;
+  for (const b of blocks) {
     const content = b.content || '';
-    if (!content.includes('#')) continue;
-    for (const tag of extractHashtags(content)) {
-      stats.tagCounts.set(tag, (stats.tagCounts.get(tag) || 0) + 1);
-    }
+    const openTodo = b.type === 'todo' && !b.checked && content.trim() !== '';
+    if (openTodo) stats.openTodos++;
     // A bullet counts once per hashtag, however often it carries it
-    const tags = new Set(Array.from(content.matchAll(ENDED_HASHTAG), (m) => m[1].toLowerCase()));
-    for (const tag of tags) {
+    for (const tag of new Set(extractHashtags(content))) {
+      stats.tagCounts.set(tag, (stats.tagCounts.get(tag) || 0) + 1);
       stats.tagOpenTodos.set(tag, (stats.tagOpenTodos.get(tag) || 0) + (openTodo ? 1 : 0));
     }
   }
-  blockStatsCache.set(blks, stats);
+  blockStatsCache.set(blocks, stats);
   return stats;
 }
 
-// Every hashtag of the notes with the number of times it occurs, most frequent first
+// The server's counts of a note of the list, kept per version of the note (a changed note is a new object)
+const listStatsCache = new WeakMap<Document, NoteStats>();
+
+/** The counts of one note: from its bullets when they are here, else as the note list reported them. */
+export function noteStats(d: Document): NoteStats {
+  if (hasBlocks(d)) return blockStats(d.blocks);
+  let stats = listStatsCache.get(d);
+  if (!stats) {
+    stats = {
+      tagCounts: new Map(Object.entries(d.tagCounts || {})),
+      tagOpenTodos: new Map(Object.entries(d.tagOpenTodos || {})),
+      openTodos: d.openTodos || 0,
+    };
+    listStatsCache.set(d, stats);
+  }
+  return stats;
+}
+
+// Every hashtag of the notes with the number of bullets carrying it, most frequent first
 export function countHashtags(docs: Document[]): TagSummary[] {
   const tagMap = new Map<string, number>();
   for (const d of docs) {
-    blockStats(d.blocks).tagCounts.forEach((count, tag) => {
+    noteStats(d).tagCounts.forEach((count, tag) => {
       tagMap.set(tag, (tagMap.get(tag) || 0) + count);
     });
   }
@@ -73,14 +90,30 @@ export function countHashtags(docs: Document[]): TagSummary[] {
   return list.sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag));
 }
 
-// The to-dos with text of one note, kept per version of the note (a changed note is a new object)
+/**
+ * A fresh note list over the one in memory: notes open in an editor keep the bullets they have here (the list
+ * brings none, and the open note's counts follow its bullets); every other note is taken as listed.
+ */
+export function mergeDocList(prev: Document[], fresh: Document[], isOpen: (docId: string) => boolean): Document[] {
+  const kept = new Map<string, DocumentBlock[]>();
+  for (const d of prev) {
+    if (hasBlocks(d) && isOpen(d.id)) kept.set(d.id, d.blocks);
+  }
+  if (kept.size === 0) return fresh;
+  return fresh.map((d) => {
+    const blocks = kept.get(d.id);
+    return blocks && !hasBlocks(d) ? { ...d, blocks } : d;
+  });
+}
+
+// The to-dos with text of one note from its bullets, kept per version of the note (a changed note is a new object)
 const noteTodosCache = new WeakMap<Document, RollupTodo[]>();
 function noteTodos(d: Document): RollupTodo[] {
   let list = noteTodosCache.get(d);
   if (!list) {
     list = [];
-    for (const b of d.blocks || []) {
-      if (b.type === 'todo' && b.content.trim() !== '') {
+    for (const b of d.blocks) {
+      if (b.type === 'todo' && (b.content || '').trim() !== '') {
         list.push({ doc: d, blockId: b.id, content: b.content, checked: Boolean(b.checked) });
       }
     }
@@ -89,18 +122,64 @@ function noteTodos(d: Document): RollupTodo[] {
   return list;
 }
 
+// The server's to-dos (GET /documents/todos) by note, worked out once per answer
+const todosByDocCache = new WeakMap<DocTodo[], Map<string, DocTodo[]>>();
+function todosByDoc(todos: DocTodo[]): Map<string, DocTodo[]> {
+  let map = todosByDocCache.get(todos);
+  if (!map) {
+    map = new Map();
+    for (const item of todos) {
+      const arr = map.get(item.docId);
+      if (arr) arr.push(item);
+      else map.set(item.docId, [item]);
+    }
+    todosByDocCache.set(todos, map);
+  }
+  return map;
+}
+
 // Every to-do with text of all notes (ROOT_FOLDER_KEY for notes outside folders), optionally of one folder only
-// and optionally only the open ones
-export function collectRollupTodos(docs: Document[], todoFolderDrilldown: string | null, openOnly = false): RollupTodo[] {
+// and optionally only the open ones. A note whose bullets are here gives its own to-dos (they follow typing),
+// the others those of the server's list (`todos`, null while not loaded).
+export function collectRollupTodos(
+  docs: Document[],
+  todos: DocTodo[] | null,
+  todoFolderDrilldown: string | null,
+  openOnly = false
+): RollupTodo[] {
+  const fromServer = todos ? todosByDoc(todos) : null;
   const list: RollupTodo[] = [];
   for (const d of docs) {
     const fName = d.folderPath || ROOT_FOLDER_KEY;
     if (todoFolderDrilldown && fName !== todoFolderDrilldown) continue;
-    for (const item of noteTodos(d)) {
-      if (!(openOnly && item.checked)) list.push(item);
+    if (hasBlocks(d)) {
+      for (const item of noteTodos(d)) {
+        if (!(openOnly && item.checked)) list.push(item);
+      }
+      continue;
+    }
+    for (const item of fromServer?.get(d.id) || []) {
+      if (!(openOnly && item.checked)) list.push({ doc: d, blockId: item.blockId, content: item.content, checked: item.checked });
     }
   }
   return list;
+}
+
+/**
+ * The note after ticking one of its to-dos (checked = the new state): its bullets when they are here, else the
+ * counts of the note list, so the open to-dos in the sidebar and on the hashtags follow at once.
+ */
+export function withTodoToggled(d: Document, blockId: string, content: string, checked: boolean): Document {
+  if (hasBlocks(d)) {
+    return { ...d, blocks: d.blocks.map((b) => (b.id === blockId ? { ...b, checked } : b)) };
+  }
+  if (content.trim() === '') return d;
+  const delta = checked ? -1 : 1;
+  const tagOpenTodos = { ...(d.tagOpenTodos || {}) };
+  for (const tag of new Set(extractHashtags(content))) {
+    tagOpenTodos[tag] = Math.max(0, (tagOpenTodos[tag] || 0) + delta);
+  }
+  return { ...d, openTodos: Math.max(0, (d.openTodos || 0) + delta), tagOpenTodos };
 }
 
 export function groupRollupTodosByFolder(allRollupTodos: RollupTodo[]): Map<string, RollupTodo[]> {
@@ -116,23 +195,40 @@ export function groupRollupTodosByFolder(allRollupTodos: RollupTodo[]): Map<stri
 
 export function countOpenTodos(docs: Document[]): number {
   let count = 0;
-  for (const d of docs) count += blockStats(d.blocks).openTodos;
+  for (const d of docs) count += noteStats(d).openTodos;
   return count;
 }
 
-// Notes with blocks carrying the hashtag, from the notes in memory; notes only the server knows of (not
-// loaded here) come from its tag details at the end
+// Notes with bullets carrying the hashtag, in the order of the note list: a note whose bullets are here with
+// its matching bullets (each with the bullets nested below), a note of the list by its counts (the hashtag page
+// loads its bullets itself), then the notes only the server's tag details know of
 export function tagGroups(docs: Document[], selectedTag: string | null, tagDetails: TagDetails | null): TagGroup[] {
   if (!selectedTag) return [];
   const cleanTag = selectedTag.toLowerCase();
   const regex = new RegExp(`(?:^|[\\s(])#(${cleanTag})(?=[\\s.,!?:;)#\\]}]|$)`, 'i');
+  const fromServer = new Map((tagDetails?.documents || []).map((dg) => [dg.docId, dg]));
 
   const map = new Map<string, TagGroup>();
+  const group = (
+    docId: string,
+    d: { title?: string; icon?: string; folderPath?: string },
+    matchedBlocks: TagGroup['matchedBlocks']
+  ): TagGroup => ({
+    docId,
+    title: d.title || i18n.t('workspace:editor.untitled'),
+    icon: d.icon || '',
+    folderPath: d.folderPath || '',
+    matchedBlocks,
+  });
 
   for (const d of docs) {
-    const blks = d.blocks || [];
-    if (blks.length === 0) continue;
-
+    if (!hasBlocks(d)) {
+      if (noteStats(d).tagCounts.has(cleanTag)) {
+        map.set(d.id, group(d.id, d, fromServer.get(d.id)?.matchedBlocks || []));
+      }
+      continue;
+    }
+    const blks = d.blocks;
     const matched: { rootBlock: DocumentBlock; children: DocumentBlock[] }[] = [];
     const processedChildIds = new Set<string>();
 
@@ -157,29 +253,11 @@ export function tagGroups(docs: Document[], selectedTag: string | null, tagDetai
       }
     }
 
-    if (matched.length > 0) {
-      map.set(d.id, {
-        docId: d.id,
-        title: d.title || i18n.t('workspace:editor.untitled'),
-        icon: d.icon || '',
-        folderPath: d.folderPath || '',
-        matchedBlocks: matched,
-      });
-    }
+    if (matched.length > 0) map.set(d.id, group(d.id, d, matched));
   }
 
-  if (tagDetails?.documents) {
-    for (const dg of tagDetails.documents) {
-      if (!map.has(dg.docId)) {
-        map.set(dg.docId, {
-          docId: dg.docId,
-          title: dg.title || i18n.t('workspace:editor.untitled'),
-          icon: dg.icon || '',
-          folderPath: dg.folderPath || '',
-          matchedBlocks: dg.matchedBlocks || [],
-        });
-      }
-    }
+  for (const dg of fromServer.values()) {
+    if (!map.has(dg.docId)) map.set(dg.docId, group(dg.docId, dg, dg.matchedBlocks || []));
   }
 
   return Array.from(map.values());
@@ -193,12 +271,13 @@ export function tagsMetadata(tagsSummary: TagSummary[], docs: Document[]): Map<s
     map.set(t.tag.toLowerCase(), { tag: t.tag, count: t.count, docs: [], openTodosCount: 0 });
   }
 
-  // Per note only its own hashtags (blockStats), not every hashtag against every bullet
+  // Per note only its own hashtags (noteStats), not every hashtag against every bullet
   for (const d of docs) {
-    blockStats(d.blocks).tagOpenTodos.forEach((openTodos, tag) => {
+    const stats = noteStats(d);
+    stats.tagCounts.forEach((_, tag) => {
       const meta = map.get(tag);
       if (!meta) return;
-      meta.openTodosCount += openTodos;
+      meta.openTodosCount += stats.tagOpenTodos.get(tag) || 0;
       meta.docs.push({
         id: d.id,
         title: d.title || i18n.t('workspace:editor.untitled'),
