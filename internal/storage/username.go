@@ -158,12 +158,13 @@ func (s *Store) migrateUsernames() error {
 
 // migrateUniqueUsernames is migration 45: the index on users.username becomes UNIQUE, so two requests at
 // the same moment can no longer hand out the same name (the check before the write saw it free for both).
-// Names that are already there twice are resolved first: the oldest account keeps its name, each later one
-// gets the next free number as a new account would (sandro, sandro1 …), and every change is logged. Names
-// are stored in lower case; one that is not (never written by this version) is lowered first, so the index
-// sees what the sign-in compares. Accounts without a username stay without one.
+// Names that are already there twice are resolved first: the oldest account keeps its name (of two created
+// in the same second the one written first, by rowid, since ids are random), each later one gets the next
+// free number as a new account would (sandro, sandro1 …), and every change is logged. Names are stored in
+// lower case; one that is not (never written by this version) is lowered first, so the index sees what the
+// sign-in compares. Accounts without a username stay without one.
 func (s *Store) migrateUniqueUsernames() error {
-	rows, err := s.db.Query(`SELECT id, username FROM users ORDER BY created_at, id`)
+	rows, err := s.db.Query(`SELECT id, username FROM users ORDER BY created_at, rowid`)
 	if err != nil {
 		return err
 	}

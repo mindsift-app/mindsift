@@ -22,7 +22,7 @@ import { buildTasksMenu } from './tasksMenu';
 import { TasksFilterSheet } from './TasksFilterSheet';
 import { TaskListTabs } from './TaskListTabs';
 import { TaskListView } from './TaskListView';
-import { filterAndSortTasks, groupTasks, tasksWithTag } from './taskListing';
+import { filterAndSortTasks, followTaskUpdate, groupTasks, tasksWithTag } from './taskListing';
 import { useTaskRealtime } from './useTaskRealtime';
 import { useTaskUndo } from './useTaskUndo';
 import { useTaskActions } from './useTaskActions';
@@ -179,14 +179,11 @@ export const TasksView: React.FC<TasksViewProps> = ({
   const [extraTask, setExtraTask] = useState<Thought | null>(null);
   // Every change to the tasks also reaches a task opened from outside the shown list (a link, the
   // search): it is not in `tasks`, so the detail dialog kept showing the old values of priority, status,
-  // title … although the server had them (bug of 2026-11-13).
+  // title … although the server had them (bug of 2026-11-13). The dialog's own changes (onTaskChange)
+  // go through here too.
   const setTasks = useCallback<React.Dispatch<React.SetStateAction<Thought[]>>>((update) => {
     setTasksState(update);
-    setExtraTask((prev) => {
-      if (!prev) return prev;
-      const next = typeof update === 'function' ? update([prev]) : update;
-      return next.find((t) => t.id === prev.id) ?? prev;
-    });
+    setExtraTask((prev) => followTaskUpdate(prev, update));
   }, []);
 
   const onInitialTaskShownRef = useLatestRef(onInitialTaskShown);

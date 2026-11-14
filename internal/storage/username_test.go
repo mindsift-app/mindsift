@@ -127,6 +127,8 @@ func TestMigrateUniqueUsernames(t *testing.T) {
 		{"u5", "Anna", "2026-01-05T00:00:00Z"},    // alone, only lowered
 		{"u6", "", "2026-01-06T00:00:00Z"},
 		{"u7", "", "2026-01-07T00:00:00Z"},
+		{"zz", "berta", "2026-01-08T00:00:00Z"}, // same second, written first: keeps the name
+		{"aa", "berta", "2026-01-08T00:00:00Z"},
 	} {
 		if _, err := store.db.Exec(`INSERT INTO users (id, email, username, password_hash, display_name, role, is_active, token_version, alarm_channels, discord_webhook_url, custom_webhook_url, notify_before_minutes, avatar_url, created_at)
 			VALUES (?, ?, ?, 'x', 'Name', 'member', 1, 1, '', '', '', 30, '', ?)`, r[0], r[0]+"@example.org", r[1], r[2]); err != nil {
@@ -136,7 +138,7 @@ func TestMigrateUniqueUsernames(t *testing.T) {
 	if err := store.migrateUniqueUsernames(); err != nil {
 		t.Fatal(err)
 	}
-	want := map[string]string{"u1": "sandro", "u2": "sandro2", "u3": "sandro3", "u4": "sandro1", "u5": "anna", "u6": "", "u7": ""}
+	want := map[string]string{"u1": "sandro", "u2": "sandro2", "u3": "sandro3", "u4": "sandro1", "u5": "anna", "u6": "", "u7": "", "zz": "berta", "aa": "berta1"}
 	for id, w := range want {
 		u, err := store.GetUserByID(id)
 		if err != nil || u.Username != w {

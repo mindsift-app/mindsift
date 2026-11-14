@@ -154,3 +154,55 @@ func TestImportDropsFilesOfOthers(t *testing.T) {
 		t.Fatal("the import gave Ben access to Anna's file")
 	}
 }
+
+// Someone who changes a task but cannot read its note (a shared task list) does not take the owner's
+// picture out of the task's bullet: the file would lose its last reference and media cleanup would
+// delete it. Only files new in the title go through the gate.
+func TestTaskTitleKeepsFilesTheBulletShows(t *testing.T) {
+	s, anna, ben := newImportStore(t)
+	th, _ := s.CreateThoughtWithDetails(anna.ID, "Aufgabe", "normal", "manual", "", "", "todo", "")
+	_, _ = s.UpdateThoughtTriage(anna.ID, th.ID, "keep", "task", "", "", "")
+	task, err := s.UpdateThoughtTriage(anna.ID, th.ID, "keep", "document", "", "", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	photo := storeTestMedia(t, s, task.DocID, anna.ID, pngBytes(t, 3))
+	other := storeTestMedia(t, s, task.DocID, anna.ID, pngBytes(t, 4))
+	m, _ := s.GetMedia(photo.ID)
+	if s.CanReadMedia(ben.ID, m) {
+		t.Fatal("Ben must not be able to read Anna's note")
+	}
+	setTitle := func(title string) {
+		t.Helper()
+		if _, err := s.db.Exec(`UPDATE thoughts SET content = ? WHERE id = ?`, title, th.ID); err != nil {
+			t.Fatal(err)
+		}
+	}
+	bullet := func() *collab.Block { return blocksOf(t, s, task.DocID)[task.BlockID] }
+
+	withPhoto := "Siehe ![Foto](media:" + photo.ID + ")"
+	setTitle(withPhoto)
+	s.SyncTaskToDoc(anna.ID, th.ID)
+	if bullet().Content != withPhoto {
+		t.Fatalf("Anna's own title: %q", bullet().Content)
+	}
+
+	// Ben ticks the task: the title is the bullet's text already, nothing is rewritten
+	if _, err := s.db.Exec(`UPDATE thoughts SET is_completed = 1 WHERE id = ?`, th.ID); err != nil {
+		t.Fatal(err)
+	}
+	s.SyncTaskToDoc(ben.ID, th.ID)
+	if b := bullet(); b.Content != withPhoto || !b.Props.Checked {
+		t.Fatalf("after Ben's tick: %q checked=%v", b.Content, b.Props.Checked)
+	}
+
+	// Ben changes a word and adds another of Anna's files: the picture stays, the new file does not
+	setTitle("Bitte ![Foto](media:" + photo.ID + ") und ![Mehr](media:" + other.ID + ")")
+	s.SyncTaskToDoc(ben.ID, th.ID)
+	if want := "Bitte ![Foto](media:" + photo.ID + ") und Mehr"; bullet().Content != want {
+		t.Fatalf("after Ben's edit:\n got %q\nwant %q", bullet().Content, want)
+	}
+	if docs, _ := s.MediaReferencedIn(photo.ID); len(docs) == 0 {
+		t.Fatal("the picture lost its reference")
+	}
+}

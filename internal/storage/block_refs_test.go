@@ -352,3 +352,58 @@ func TestBlockRefsCappedPerBullet(t *testing.T) {
 		t.Fatalf("block_refs has %d rows for the bullet, want %d", n, maxBlockRefs)
 	}
 }
+
+// A bullet that really shows more files than maxBlockRefs (a table full of pictures written before the
+// cap) keeps all of them: the media cleanup does not delete the ones beyond the cap, and backups take them.
+func TestFilesBeyondTheRefCapAreKept(t *testing.T) {
+	s, u := newSyncTestStore(t)
+	const files = maxBlockRefs + 6
+	var sb strings.Builder
+	sb.WriteString("| Bild |\n|---|\n")
+	for i := range files {
+		id := fmt.Sprintf("med_%04x", i)
+		ownMedia(t, s, u.ID, id)
+		fmt.Fprintf(&sb, "| ![%d](media:%s) |\n", i, id)
+	}
+	ownMedia(t, s, u.ID, "med_ffff") // shown nowhere
+	doc, err := s.CreateDocument(u.ID, "", "Bildertabelle", "", "", []domain.DocumentBlock{
+		{ID: "tbl", Type: "table", Content: "leer"},
+	}, nil, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// The content as an older version stored it, block_refs filled as migration 41 does
+	if _, err := s.db.Exec(`UPDATE blocks SET content = ? WHERE id = 'tbl'`, sb.String()); err != nil {
+		t.Fatal(err)
+	}
+	tx, err := s.db.Begin()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := fillBlockRefs(tx); err != nil {
+		t.Fatal(err)
+	}
+	if err := tx.Commit(); err != nil {
+		t.Fatal(err)
+	}
+	var n int
+	_ = s.db.QueryRow(`SELECT COUNT(*) FROM block_refs WHERE document_id = ?`, doc.ID).Scan(&n)
+	if n != maxBlockRefs {
+		t.Fatalf("block_refs has %d rows, want the cap %d", n, maxBlockRefs)
+	}
+
+	orphans, err := s.UnreferencedMedia(time.Now().Add(time.Hour))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(orphans) != 1 || orphans[0].ID != "med_ffff" {
+		t.Fatalf("the cleanup would delete %v, want only med_ffff", orphans)
+	}
+	backup, err := s.MediaOfUser(u.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(backup) != files {
+		t.Fatalf("a backup takes %d files, want %d", len(backup), files)
+	}
+}

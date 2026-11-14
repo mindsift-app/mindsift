@@ -5,7 +5,7 @@ Code: [WorkspaceView.tsx](../../frontend/src/features/workspace/WorkspaceView.ts
 ## Data Storage
 
 - A note is a record in `documents` plus a tree of blocks in `blocks` (`parent_id`, sort key `order_key`). Every change goes through `internal/collab` and is recorded in the `doc_ops` log. Depth level and position for the UI are calculated by the server on read. The log and deleted blocks are compacted regularly ([database.md](../database.md#verdichtung-des-notiz-logs)). Everything resides in SQLite; there are no files on disk.
-- On every change, `documents.markdown_cache` is regenerated; `block_tags` is rebuilt from `#hashtags` in the blocks.
+- On every change, `block_tags` is rebuilt from `#hashtags` in the blocks. Markdown and plain text are built from the blocks when a note is read (`documents.markdown_cache` and `documents.content` stay empty since Migration 44); the journal, too, takes whether a day has text from the blocks.
 - **Hashtag rule:** `#word` only counts at the start of text or after whitespace or `(`. Anchors in links (`example.com/blog#heading`) and words like `C#` are not tags. The same rule applies on the server (`domain.ExtractTags`) and in the browser (`lib/hashtags.ts`). On first start after migration, `migrateAnchorTags` runs a one-time cleanup of stored tags that originated solely from anchors.
 - Export as `.md` is handled in the browser (button in editor, blob download).
 - Block types: Headings `h1`–`h3`, `paragraph`/`text`, `bullet`, `todo`, `code`, `callout`, `divider`, `table`, `progress`, `drawing`.

@@ -40,7 +40,7 @@ Details in [database.md](../database.md).
 - **Tombstones.** Deleted blocks remain with `deleted = 1` and `deleted_at`. A late text change restores the block rather than being lost. After 30 days, they are permanently purged (see [Compaction](#compaction)).
 - **Log** `doc_ops` (effects per `seq`) and **idempotency** `doc_op_results` (result per operation ID). Replaying the log from a snapshot yields the exact server state. The log stores the text of a bullet only as a reference to its current text and as deltas between its versions; the server puts the full texts back when it reads the log, so clients see no difference ([database.md](../database.md#note-text-stored-once)).
 - **Leases and sessions live in memory** (`collab.LeaseManager`). They are short-lived; after a restart, clients automatically request them again. MindSift runs as a single instance, so this fits well.
-- **Derived data** (`markdown_cache`, search text, `tags`, `block_tags`) are generated in the same transaction as the change.
+- **Derived data** (search index, `tags`, `block_tags`) are generated in the same transaction as the change.
 
 ## Protocol
 
