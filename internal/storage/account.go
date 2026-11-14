@@ -79,7 +79,10 @@ func purgeStmts(section string) []string {
 			`DELETE FROM workspace_folder_shares WHERE folder_id IN ` + ownFolders,
 			`DELETE FROM workspace_folders WHERE shared_folder_id IN ` + ownFolders,
 			`DELETE FROM workspace_shared_folders WHERE owner_id = ?1`,
-			// Notes (history tables cascade with the document)
+			// Notes (history tables cascade with the document). Their hidden values go right away, as when
+			// the trash is emptied (hardDeleteDocument), not with the sweep weeks later: no other note
+			// points to them, a copied bullet has copies of its own
+			`DELETE FROM note_secrets WHERE document_id IN ` + ownDocs,
 			`DELETE FROM blocks WHERE document_id IN ` + ownDocs,
 			`DELETE FROM block_tags WHERE document_id IN ` + ownDocs,
 			`DELETE FROM doc_user_folders WHERE doc_id IN ` + ownDocs,

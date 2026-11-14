@@ -457,6 +457,35 @@ func TestSecretCopiesOutliveTheirOrigin(t *testing.T) {
 	}
 }
 
+// Deleting an account deletes the hidden values of its notes right away, not with the sweep weeks
+// later; copies in notes of others stay.
+func TestSecretsGoWithTheAccount(t *testing.T) {
+	s, anna, ben := newSecretStore(t)
+	origin, _ := s.CreateDocument(anna.ID, "", "Server", "", "", nil, nil, false)
+	x := hideValue(t, s, origin.ID, anna.ID, "geheim")
+	y := hideValue(t, s, origin.ID, anna.ID, "auch geheim")
+	if _, err := s.CreateDocShare(anna.ID, origin.ID, ben.ID, "read"); err != nil {
+		t.Fatal(err)
+	}
+	benNote, _ := s.CreateDocument(ben.ID, "", "Bens", "", "", []domain.DocumentBlock{{ID: "blk_b", Type: "bullet", Content: secretRef(x)}}, nil, false)
+	benCp := ownCopy(t, s, benNote.ID, contentOf(t, s, benNote.ID, "blk_b"), x, "geheim")
+
+	if err := s.DeleteOwnAccount(anna.ID); err != nil {
+		t.Fatal(err)
+	}
+	for _, id := range []string{x, y} {
+		if _, err := s.GetSecret(id); err != ErrSecretNotFound {
+			t.Errorf("value %s of the deleted account's note must be gone, got %v", id, err)
+		}
+	}
+	if revealIn(t, s, benNote.ID, benCp) != "geheim" {
+		t.Error("Ben's copy must stay")
+	}
+	if n := countSecrets(t, s); n != 1 {
+		t.Errorf("want only Ben's copy left, got %d values", n)
+	}
+}
+
 // The sweep marks values no live bullet of their own note holds, forgets the mark when one holds it
 // again (undo) and deletes values marked SecretOrphanDays ago; values a note shows, also one in the
 // trash, stay.
