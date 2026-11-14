@@ -47,7 +47,11 @@ func main() {
 		os.Exit(1)
 	}
 
-	store, err := storage.NewStore(cfg.DatabasePath, storage.WithSecretsKey(cfg.SecretsKey))
+	storeOpts := []storage.StoreOption{storage.WithSecretsKey(cfg.SecretsKey)}
+	if cfg.DemoMode {
+		storeOpts = append(storeOpts, storage.WithDemoMode())
+	}
+	store, err := storage.NewStore(cfg.DatabasePath, storeOpts...)
 	if err != nil {
 		slog.Error("Failed to initialize storage", "error", err)
 		os.Exit(1)
