@@ -574,7 +574,11 @@
     "resetMfaHint": "Entfernt Authenticator-App, Passkeys und Wiederherstellungscodes, z. B. bei verlorenem Handy",
     "confirmResetMfa": "Zwei-Faktor-Anmeldung von {{name}} zurücksetzen? Authenticator-App, Passkeys und Wiederherstellungscodes werden entfernt, die Anmeldung fragt danach nur noch nach dem Passwort. {{name}} bekommt eine Mail.",
     "mfaReset": "Zwei-Faktor-Anmeldung von {{name}} zurückgesetzt.",
-    "mfaBadge": "2FA"
+    "mfaBadge": "2FA",
+    "email": "E-Mail-Adresse",
+    "emailChanged": "E-Mail-Adresse von {{name}} ist jetzt {{email}}.",
+    "emailRemoved": "{{name}} hat jetzt keine E-Mail-Adresse mehr.",
+    "emailRemoveHint": "Ohne Adresse kann {{name}} das Passwort nicht mehr per Mail zurücksetzen. Die Anmeldung mit Benutzername und Passwort geht weiter."
   },
   "sharing": {
     "private": {
@@ -733,7 +737,6 @@
     "testSending": "Sende Test-Mail…",
     "testSend": "Test-E-Mail senden",
     "passwordKept": "Gespeichert – leer lassen für keine Änderung",
-    "passwordViaEnv": "Aus SMTP_PASS, nicht gespeichert – hat Vorrang",
     "passwordUnreadable": "Das gespeicherte Passwort lässt sich nicht mehr entschlüsseln, der Schlüssel des Servers (SECRETS_KEY oder secrets.key) hat sich geändert. Bis du es neu eingibst und speicherst, geht keine E-Mail hinaus.",
     "save": "SMTP-Konfiguration in Datenbank speichern",
     "testSent": "Test-E-Mail an {{email}} gesendet.",

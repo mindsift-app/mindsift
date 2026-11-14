@@ -12,7 +12,6 @@ Severity levels: **High** (account takeover or data exfiltration possible), **Me
 |---|---|---|---|
 | FLAW-31 | Auth | Session token stored in `localStorage` (no HttpOnly cookies) | Partially resolved |
 | FLAW-34 | Admin | SMTP password stored in plain text in DB and backups | Resolved |
-| FLAW-43 | Sharing | A picture copied out of a shared note stays readable after the share is revoked | Accepted (by design) |
 | FLAW-44 | Accounts | Changing one's login address tells whether another address already has an account | Accepted |
 
 ---
@@ -26,12 +25,6 @@ Severity levels: **High** (account takeover or data exfiltration possible), **Me
 ### FLAW-34: Plaintext SMTP Password
 - **Status: Resolved.** `GET`/`PUT /admin/settings` always return `smtpPass` empty and only report `smtpPassSet`; leaving the field empty retains the stored password, while omitting an SMTP username clears it ([handlers_admin.go](../internal/api/handlers_admin.go)). Since Migration 43 the stored password is encrypted with `SECRETS_KEY` like hidden values ([sealed.go](../internal/storage/sealed.go)), so the database and its backups no longer contain it in plain text. `SMTP_PASS` from the environment is not stored at all (the first start copies only host, user and the other values; see [system.go](../internal/storage/system.go) `SeedSMTPDefaultsFromEnv`).
 - **Remaining risk:** Whoever has the database and `data/secrets.key` together can decrypt it (the server needs it to authenticate); keep `SECRETS_KEY` in the environment to hold the key apart from the data folder.
-
-### FLAW-43: Copied Pictures Outlive a Revoked Share
-- **Status: Accepted (by design).** A file is readable for everyone who may read the note it was uploaded to or any note whose bullets point to it ([media.go](../internal/storage/media.go) `CanReadMedia`, [block_refs.go](../internal/storage/block_refs.go) `sqlDocsWithMedia`). This is what keeps an image working when a bullet is copied or moved into another note.
-- **Only what one could read already:** a bullet may only point to a file its writer uploaded or may read at that moment. Wherever content comes in (editor sync, MCP, new notes through the API, imports of an Obsidian vault, a MindSift archive or a backup, restoring a personal backup, a task's title carried into its note), references to any other file are replaced by their caption or a placeholder, or dropped where the placeholder would be longer than the reference, so the content never grows (`mediaGate` in [media.go](../internal/storage/media.go)); an import lists the notes concerned as skipped. Knowing a file's id is therefore no way in: before, importing a note (or writing a bullet) with `![…](media:<id>)` of someone else's file made that file readable (pentest 2026-11-14).
-- **Consequence:** someone who saw a picture (or recording) in a shared note and copies that bullet into a note of their own keeps access to the file after the share is revoked, and can publish it through a public link of their own note (`handlePublicMedia` in [publiclinks.go](../internal/api/publiclinks.go) serves every file the note shows).
-- **Why it stays:** what was shared once can be copied or photographed anyway. A copy in one's own notes is one's own copy, just like copied text. Revoking a share stops access to the note, not to copies made while it was shared.
 
 ### FLAW-44: Changing the Login Address Reveals Taken Addresses
 - **Status: Accepted.** Changing one's login address in the account settings answers `409` ("E-Mail-Adresse existiert bereits") when another account already uses the new address ([handlers_auth.go](../internal/api/handlers_auth.go) `handleUpdateUserSettings`), so a signed-in person can test whether an address has an account on this server.
@@ -77,6 +70,7 @@ Every ID that was ever given out and is no longer open. IDs up to FLAW-27 date f
 | FLAW-40 | An invite code cannot be redeemed twice at the same moment | 0.6.0 |
 | FLAW-41 | The largest frontend files (`TasksView`, `WorkspaceView`, `App`, `lib/api.ts`) split into components, hooks and pure functions with tests | 0.69.38 |
 | FLAW-42 | At most 20 realtime connections per account; the oldest is closed for a new one | 0.68.1 |
+| FLAW-43 | Not a flaw: intended behaviour, described in [sharing-and-permissions.md](sharing-and-permissions.md#files-in-shared-notes) (files in shared notes and copies of their bullets) | unreleased |
 
 FLAW-31 is resolved in part (0.6.0) and stays in the overview above. FLAW-34 (resolved in part in 0.6.0, fully since migration 43) stays there with its details as well.
 

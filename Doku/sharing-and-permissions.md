@@ -81,6 +81,12 @@ The owner of a note can share it read only with anyone who has the link (`/p/<to
 - **Not in search engines:** `X-Robots-Tag: noindex, nofollow, noarchive` on every answer and a `robots` meta tag on the page; `Referrer-Policy: no-referrer` keeps the token out of other sites' logs.
 - API keys and MCP cannot create links.
 
+## Files in Shared Notes
+
+- **Who reads a file:** everyone who may read a note showing it, the note it was uploaded to or any note whose bullets point to it ([media.go](../internal/storage/media.go) `CanReadMedia`, [block_refs.go](../internal/storage/block_refs.go) `sqlDocsWithMedia`). That keeps a picture working when its bullet is copied or moved into another note.
+- **Only files one may read:** a bullet may only point to files its writer uploaded or may read at that moment. On every way in (editor sync, MCP, new notes through the API, imports, restoring a backup, a task's title carried into its note) references to other files are replaced by their caption or a placeholder (`mediaGate` in [media.go](../internal/storage/media.go)), so knowing a file's id gives no access.
+- **Copies stay:** a bullet copied out of a note while it was shared keeps its picture after the share ends, like copied text, and its owner can show it through a public link of their own note. Ending a share stops access to the note, not to copies made while it was shared.
+
 ## Decoupled Storage for Shared Notes and Folders
 
 - **Shared Folders:** The folder exists once (`workspace_shared_folders`); each recipient has their own mount path (`workspace_folder_mounts.mount_path`). If a recipient moves the folder, only their mount path changes. The subfolder path within the folder (`documents.sub_folder_path`) applies to everyone.

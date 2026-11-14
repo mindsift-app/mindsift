@@ -765,9 +765,10 @@ func (s *Server) oidcSignIn(r *http.Request, id *oidcIdentity) (*domain.User, st
 }
 
 // createOIDCAccount creates the account of a first sign-in: username from preferred_username (made unique by
-// the store), display name from name, no password of its own. The address the provider sent: verified and
-// free, it is the login address; not verified, it waits for its confirmation link like a changed address;
-// taken by another account, or none at all, the account has no address (it can add one in the settings).
+// the store), display name from name or else preferred_username, no password of its own. The address the
+// provider sent: verified and free, it is the login address; not verified, it waits for its confirmation link
+// like a changed address; taken by another account, or none at all, the account has no address (it can add
+// one in the settings).
 func (s *Server) createOIDCAccount(r *http.Request, id *oidcIdentity, address string) (*domain.User, error) {
 	hash, err := auth.NoPasswordHash()
 	if err != nil {
@@ -779,8 +780,12 @@ func (s *Server) createOIDCAccount(r *http.Request, id *oidcIdentity, address st
 		login = address
 	}
 	local := strings.Split(address, "@")[0]
-	// Without a name the account shows its username (the store gives it)
+	// Without a name the display name is preferred_username as the provider spells it ("Erika"); without that
+	// too the account shows its username (the store gives it)
 	display := domain.CleanDisplayName(id.name)
+	if display == "" {
+		display = domain.CleanDisplayName(id.username)
+	}
 	if r := []rune(display); len(r) > 100 {
 		display = string(r[:100])
 	}
