@@ -502,6 +502,24 @@ func withoutDoc(hits []string, docID string) []string {
 	return out
 }
 
+// SQLite's temp directory is picked as SQLite does: SQLITE_TMPDIR first, then TMPDIR, skipping one that
+// is not a directory.
+func TestSQLiteTempDir(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skip("only Linux tells the free space")
+	}
+	a, b := t.TempDir(), t.TempDir()
+	t.Setenv("SQLITE_TMPDIR", a)
+	t.Setenv("TMPDIR", b)
+	if got := sqliteTempDir(); got != a {
+		t.Errorf("got %q, want SQLITE_TMPDIR %q", got, a)
+	}
+	t.Setenv("SQLITE_TMPDIR", filepath.Join(a, "missing"))
+	if got := sqliteTempDir(); got != b {
+		t.Errorf("got %q, want TMPDIR %q", got, b)
+	}
+}
+
 // The one-time VACUUM after migration 44 needs up to about twice the compacted size in free space; with
 // less it is skipped and the freed pages stay for reuse.
 func TestVacuumOnlyWithEnoughFreeSpace(t *testing.T) {
@@ -531,6 +549,43 @@ func TestVacuumOnlyWithEnoughFreeSpace(t *testing.T) {
 	if pages() != before {
 		t.Fatal("compacted without enough free space")
 	}
+	// SQLite writes VACUUM's temporary copy to its temp directory: on another file system that one
+	// needs room for the copy as well, the data directory only for the WAL
+	defer func(orig func(string) (uint64, bool)) { fileSystemIDOf = orig }(fileSystemIDOf)
+	defer func(orig func() string) { sqliteTempDirOf = orig }(sqliteTempDirOf)
+	const tmp = "/sqlite-tmp"
+	sqliteTempDirOf = func() string { return tmp }
+	fileSystemIDOf = func(dir string) (uint64, bool) {
+		if dir == tmp {
+			return 2, true
+		}
+		return 1, true
+	}
+	diskFreeOf = func(dir string) (int64, bool) {
+		if dir == tmp {
+			return 0, true
+		}
+		return 1 << 40, true
+	}
+	s.vacuumIfWorthwhile()
+	if pages() != before {
+		t.Fatal("compacted without room for the temporary copy in the temp directory")
+	}
+	const size = int64(100 << 20) // the compacted size; the copies need it once each
+	diskFreeOf = func(dir string) (int64, bool) {
+		if dir == tmp {
+			return 1 << 40, true
+		}
+		return size + size/2, true // too little for both copies, enough for the WAL alone
+	}
+	if !s.vacuumHasRoom(size) {
+		t.Fatal("with the temp directory elsewhere the data directory needs room for the WAL only")
+	}
+	fileSystemIDOf = func(string) (uint64, bool) { return 1, true }
+	if s.vacuumHasRoom(size) {
+		t.Fatal("on one file system VACUUM needs room for both copies")
+	}
+
 	diskFreeOf = func(string) (int64, bool) { return 1 << 40, true }
 	s.vacuumIfWorthwhile()
 	if after := pages(); after*2 > before {
