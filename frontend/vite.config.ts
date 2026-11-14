@@ -55,6 +55,32 @@ function preloadGermanTexts(): Plugin {
   };
 }
 
+// The app's chunk (src/app/mainViews.ts) and the chunks it imports, named in a meta tag of index.html: with a
+// stored session main.tsx preloads them (modulepreload: fetched and parsed, not run) before the texts are
+// loaded, instead of fetching them only once loadMainViews() runs. Visitors of a public note or the sign-in
+// page do not load them.
+function nameMainChunk(): Plugin {
+  return {
+    name: 'mindsift-name-main-chunk',
+    apply: 'build',
+    transformIndexHtml: {
+      order: 'post',
+      handler(_html, ctx) {
+        const bundle = ctx.bundle ?? {};
+        const chunk = Object.values(bundle).find(
+          (c) => c.type === 'chunk' && c.facadeModuleId?.replace(/\\/g, '/').endsWith('/src/app/mainViews.ts')
+        );
+        if (!chunk || chunk.type !== 'chunk') throw new Error('mindsift-name-main-chunk: no chunk for src/app/mainViews.ts');
+        // Chunks the start chunk imports itself are loaded already
+        const entry = Object.values(bundle).find((c) => c.type === 'chunk' && c.isEntry);
+        const loaded = new Set(entry && entry.type === 'chunk' ? [entry.fileName, ...entry.imports] : []);
+        const files = [chunk.fileName, ...chunk.imports].filter((f) => !loaded.has(f)).map((f) => `/${f}`);
+        return [{ tag: 'meta', attrs: { name: 'mindsift-main-chunk', content: files.join(' ') }, injectTo: 'head' }];
+      },
+    },
+  };
+}
+
 export default defineConfig({
   plugins: [
     react(),
@@ -66,6 +92,7 @@ export default defineConfig({
     },
     precacheList(),
     preloadGermanTexts(),
+    nameMainChunk(),
   ],
   define: {
     __APP_VERSION__: JSON.stringify(appVersion),
