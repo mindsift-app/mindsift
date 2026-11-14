@@ -120,6 +120,10 @@ func (g *secretGate) prepare(contents ...string) {
 			g.to[id] = id
 		case !g.mayRead(r.DocumentID):
 			g.to[id] = ""
+			// Read now: a frozen gate writes the placeholder without querying
+			if g.lang == "" {
+				g.lang = g.s.MessageLanguage(g.userID)
+			}
 		default:
 			g.to[id] = g.copyOf(r, &copies)
 		}

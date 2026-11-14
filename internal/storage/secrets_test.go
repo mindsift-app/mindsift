@@ -346,6 +346,41 @@ func TestSecretCopiedOnEveryWayIn(t *testing.T) {
 	})
 }
 
+// Moving a branch and carrying a task's title write inside the change's transaction, where the gate must
+// not query: a reference to a value the writer may not read still becomes the placeholder there (with a
+// single connection, DB_MAX_CONNS=1, a query for its language would wait forever).
+func TestSecretPlaceholderInsideTheTransaction(t *testing.T) {
+	s, anna, ben := newSecretStore(t)
+	annaDoc, _ := s.CreateDocument(anna.ID, "", "Annas", "", "", nil, nil, false)
+	x := hideValue(t, s, annaDoc.ID, anna.ID, "privat")
+	// An old reference Ben's note holds from before (written past the gate)
+	source, _ := s.CreateDocument(ben.ID, "", "Quelle", "", "", nil, nil, false)
+	if err := s.saveDocBlocks(source.ID, ben.ID, []domain.DocumentBlock{{ID: "blk_q1", Type: "bullet", Content: "Alt " + secretRef(x)}}); err != nil {
+		t.Fatal(err)
+	}
+	target, _ := s.CreateDocument(ben.ID, "", "Ziel", "", "", nil, nil, false)
+	res, err := s.MoveBranch(ben.ID, source.ID, "blk_q1", target.ID, collab.Actor{UserID: ben.ID, ClientID: "c"}, nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := contentOf(t, s, target.ID, res.RootID); got != "Alt "+secretPlaceholder {
+		t.Errorf("moved bullet: %q", got)
+	}
+
+	th, _ := s.CreateThoughtWithDetails(ben.ID, "Aufgabe", "normal", "manual", "", "", "todo", "")
+	_, _ = s.UpdateThoughtTriage(ben.ID, th.ID, "keep", "task", "", "", "")
+	task, err := s.UpdateThoughtTriage(ben.ID, th.ID, "keep", "document", "", "", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	title := "Siehe " + secretRef(x)
+	_, _ = s.UpdateThoughtDetails(ben.ID, th.ID, &title, nil, nil, nil, nil, nil, nil, nil, nil)
+	s.SyncTaskToDoc(ben.ID, th.ID)
+	if got := contentOf(t, s, task.DocID, task.BlockID); got != "Siehe "+secretPlaceholder {
+		t.Errorf("task title: %q", got)
+	}
+}
+
 // A gate looks up at most maxSecretLookups different references per request, so a bullet full of made-up
 // ids costs a few queries. A reference beyond stays as it is, which reveals nothing outside its note, and the
 // hourly sweep copies it.
