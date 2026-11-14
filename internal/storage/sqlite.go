@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"database/sql"
+	"database/sql/driver"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -19,8 +20,13 @@ import (
 )
 
 type Store struct {
-	db     *sql.DB
-	initMu sync.Mutex
+	db *sql.DB
+	// inMemory: the database lives in memory (tests), where each connection is a database of its own
+	inMemory     bool
+	maxIdleConns int
+	initMu       sync.Mutex
+	// importMu: imports are applied one at a time (ApplyImport)
+	importMu sync.Mutex
 	// dataDir is the directory of the database file ($DATA_DIR); empty for databases without a file
 	dataDir string
 	// mediaRoot holds the files of images and audio in notes ($DATA_DIR/media), see media.go
@@ -82,9 +88,11 @@ func NewStore(dbPath string, opts ...StoreOption) (*Store, error) {
 		maxConns = n
 	}
 	db.SetMaxOpenConns(maxConns)
-	db.SetMaxIdleConns(min(4, maxConns))
+	maxIdle := min(4, maxConns)
+	db.SetMaxIdleConns(maxIdle)
 
-	store := &Store{db: db}
+	store := &Store{db: db, maxIdleConns: maxIdle,
+		inMemory: strings.Contains(dbPath, ":memory:") || strings.Contains(dbPath, "mode=memory")}
 	for _, opt := range opts {
 		opt(store)
 	}
@@ -103,13 +111,67 @@ func NewStore(dbPath string, opts ...StoreOption) (*Store, error) {
 	return store, nil
 }
 
+// minStatRows: statistics of a table analyzed with fewer rows are dropped (see Optimize).
+const minStatRows = 1000
+
+// sqlDropMisleadingStats removes statistics the planner is better off without: those of tables that were
+// small when analyzed, and those of the shadow tables of FTS5 indexes (FTS5 reaches them by rowid or
+// primary key only, where the default assumptions always pick the right plan).
+const sqlDropMisleadingStats = `DELETE FROM sqlite_stat1 WHERE CAST(stat AS INTEGER) < ? OR tbl IN (
+	SELECT m.name || s.suffix FROM sqlite_schema m,
+		(SELECT '_data' AS suffix UNION ALL SELECT '_idx' UNION ALL SELECT '_content' UNION ALL SELECT '_docsize' UNION ALL SELECT '_config') s
+	WHERE m.type = 'table' AND m.sql LIKE 'CREATE VIRTUAL TABLE%fts5%')`
+
 // Optimize lets SQLite update its statistics (sqlite_stat1) for the tables that need it, so the query
 // planner knows how selective each index is; without them it guesses, and picked a poor plan for
 // MediaOfUser. Runs after the migrations and with the compaction every six hours. 0x10002 checks every
 // table, not only the ones this connection has queried (the pool hands out any connection); SQLite caps
 // the work per table (analysis_limit), so it stays quick on large databases.
+//
+// Statistics of small tables are not kept: they no longer fit once the table grows (an import adds
+// thousands of rows in a minute, the next run is hours away), and a table the planner believes tiny is
+// scanned instead of searched. On a new server the start analyzed the FTS5 index of notes with 2 rows;
+// every merge of the index then read all of it to delete a few pages, each note of an import took
+// longer than the one before, and the import held the write lock almost without a break, so sign-ins
+// of other people failed with SQLITE_BUSY. Without statistics the planner assumes a large table.
+//
+// The statistics change in one transaction, so no other connection loads them half done. The connection
+// that analyzed keeps the dropped estimates in memory (a reload does not reset them) and is closed.
 func (s *Store) Optimize() error {
-	_, err := s.db.Exec(`PRAGMA optimize=0x10002`)
+	ctx := context.Background()
+	conn, err := s.db.Conn(ctx)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+	err = func() error {
+		tx, err := conn.BeginTx(ctx, nil)
+		if err != nil {
+			return err
+		}
+		defer tx.Rollback()
+		if _, err := tx.Exec(`PRAGMA optimize=0x10002`); err != nil {
+			return err
+		}
+		var hasStats int
+		if err := tx.QueryRow(`SELECT COUNT(*) FROM sqlite_schema WHERE name = 'sqlite_stat1'`).Scan(&hasStats); err != nil {
+			return err
+		}
+		if hasStats > 0 {
+			if _, err := tx.Exec(sqlDropMisleadingStats, minStatRows); err != nil {
+				return err
+			}
+		}
+		return tx.Commit()
+	}()
+	if !s.inMemory {
+		// Every connection to an in-memory database is a database of its own: that one stays
+		_ = conn.Raw(func(any) error { return driver.ErrBadConn })
+		// The other connections loaded the statistics when they opened and keep them: idle ones are
+		// replaced, so the new statistics reach the pool (busy ones keep theirs until they close)
+		s.db.SetMaxIdleConns(0)
+		s.db.SetMaxIdleConns(s.maxIdleConns)
+	}
 	return err
 }
 
