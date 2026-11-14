@@ -397,7 +397,8 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
 
   // Keep parent sidebar metadata in sync when blocks/tags change
   useEffect(() => {
-    if (!docRef.current) return;
+    // While loading, the bullets are only a placeholder: the list keeps the note's counts until they are here
+    if (!docRef.current || showsLoading) return;
     const updatedDoc: Document = {
       ...docRef.current,
       title,
@@ -407,9 +408,9 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
     };
     docRef.current = updatedDoc;
     onDocMetadataChange(updatedDoc);
-    // Runs when title, bullets or tags change, not when the parent hands in another callback
+    // Runs when title, bullets or tags change or the bullets arrive, not when the parent hands in another callback
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [blocks, extractedTags, title]);
+  }, [blocks, extractedTags, title, showsLoading]);
 
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     if (!canEdit) return;

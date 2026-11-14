@@ -220,7 +220,8 @@
     "showOpenTitle": "N’afficher que les tâches ouvertes",
     "showAll": "Toutes",
     "showAllTitle": "Afficher aussi les tâches faites",
-    "allDone": "Tout est fait : aucune tâche ouverte."
+    "allDone": "Tout est fait : aucune tâche ouverte.",
+    "loading": "Chargement des tâches…"
   },
   "emoji": {
     "suggested": "Récemment utilisés",

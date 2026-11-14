@@ -220,7 +220,8 @@
     "showOpenTitle": "Nur offene To-Dos zeigen",
     "showAll": "Alle",
     "showAllTitle": "Auch erledigte To-Dos zeigen",
-    "allDone": "Alles erledigt – keine offenen To-Dos."
+    "allDone": "Alles erledigt – keine offenen To-Dos.",
+    "loading": "To-Dos werden geladen…"
   },
   "emoji": {
     "suggested": "Zuletzt verwendet",

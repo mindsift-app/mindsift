@@ -416,7 +416,29 @@ func (s *Store) scanDocumentWithBlocks(rows interface {
 	return d, nil
 }
 
+// GetDocuments returns every note the user can see, each with all its bullets and plain text. For code
+// on the server that works with the bullets (export, backlinks, links, folders); the app's note list
+// uses GetDocumentList.
 func (s *Store) GetDocuments(userID string) ([]domain.Document, error) {
+	return s.getDocuments(userID, true)
+}
+
+// GetDocumentList returns the notes the user can see without their bullets (Blocks empty, Content ""),
+// with the counts the folder tree, the hashtag list and the to-do overview need (OpenTodos, TagCounts,
+// TagOpenTodos). Every client loads it at start: with bullets it grew by about 43 KB per note, and many
+// of them at once took gigabytes of memory under load.
+func (s *Store) GetDocumentList(userID string) ([]domain.Document, error) {
+	docs, err := s.getDocuments(userID, false)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.attachListStats(docs); err != nil {
+		return nil, err
+	}
+	return docs, nil
+}
+
+func (s *Store) getDocuments(userID string, withBlocks bool) ([]domain.Document, error) {
 	mounts, names, _ := s.getUserFolderMounts(userID)
 
 	userFolders := make(map[string]string)
@@ -481,8 +503,7 @@ func (s *Store) GetDocuments(userID string) ([]domain.Document, error) {
 
 	docs := make([]domain.Document, 0, len(ownRaw))
 	for _, r := range ownRaw {
-		r.doc.Blocks = s.loadDocBlocks(r.doc.ID, r.blocksStr)
-		r.doc.Content = docPlainText(r.doc.Blocks)
+		r.doc.Blocks, r.doc.Content = s.listBlocks(r.doc.ID, r.blocksStr, withBlocks)
 		docs = append(docs, r.doc)
 	}
 
@@ -551,8 +572,7 @@ func (s *Store) GetDocuments(userID string) ([]domain.Document, error) {
 		_ = sharedRows.Close()
 
 		for _, r := range sharedRaw {
-			r.doc.Blocks = s.loadDocBlocks(r.doc.ID, r.blocksStr)
-			r.doc.Content = docPlainText(r.doc.Blocks)
+			r.doc.Blocks, r.doc.Content = s.listBlocks(r.doc.ID, r.blocksStr, withBlocks)
 			docs = append(docs, r.doc)
 		}
 	}

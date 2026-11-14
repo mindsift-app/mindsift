@@ -220,7 +220,8 @@
     "showOpenTitle": "Mostrar solo las tareas pendientes",
     "showAll": "Todas",
     "showAllTitle": "Mostrar también las tareas hechas",
-    "allDone": "Todo hecho: no hay tareas pendientes."
+    "allDone": "Todo hecho: no hay tareas pendientes.",
+    "loading": "Cargando tareas…"
   },
   "emoji": {
     "suggested": "Usados recientemente",

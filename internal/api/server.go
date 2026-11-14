@@ -45,6 +45,9 @@ type Server struct {
 	streamTickets streamTickets // one-time tickets for WebSocket/SSE (streamticket.go)
 	loginGuard    *loginGuard   // brute-force protection (loginguard.go)
 	imports       importGate    // imports running at a time (importgate.go)
+	// docLists: note lists being built at a time (handleGetDocuments); a burst of sign-ins waits here
+	// instead of building hundreds of lists in memory at once
+	docLists      chan struct{}
 	mfaChallenges mfaChallenges // second step of a sign-in with a second factor (mfa.go)
 	// passkeyChallenges: the challenges of passkey ceremonies, registration, confirmation, sign-in (passkeys.go)
 	passkeyChallenges passkeyChallenges
@@ -82,6 +85,7 @@ func NewServer(cfg *config.Config, store *storage.Store, wsHub *ws.Hub, staticFS
 		notifier:     collab.NewNotifier(),
 		stop:         make(chan struct{}),
 		now:          time.Now,
+		docLists:     make(chan struct{}, maxDocListsBuilding),
 	}
 	srv.loginGuard = newLoginGuard(!cfg.DisableLoginProtection)
 	srv.prepareSetupCode()
@@ -392,6 +396,8 @@ func (s *Server) Router() http.Handler {
 		r.Post("/api/v1/push/test", s.handlePushTest)
 		r.Post("/api/v1/journal/{date}", s.handleOpenJournalDay)
 		r.Get("/api/v1/documents", s.handleGetDocuments)
+		r.Get("/api/v1/documents/todos", s.handleGetNoteTodos)
+		r.Get("/api/v1/blocks/{id}", s.handleGetBlock)
 		r.Post("/api/v1/documents", s.handleCreateDocument)
 		r.Get("/api/v1/documents/{id}", s.handleGetDocument)
 		r.Put("/api/v1/documents/{id}", s.handleUpdateDocument)

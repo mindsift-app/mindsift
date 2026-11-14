@@ -57,6 +57,8 @@ services:
       - RETENTION_ALLOW_NEVER=${RETENTION_ALLOW_NEVER:-}
       # false: API keys only work for MCP, the REST API refuses them (.env.example)
       - API_KEYS_ENABLED=${API_KEYS_ENABLED:-true}
+      # Memory target of the server; empty = 80 % of a container memory limit, if any (.env.example)
+      - GOMEMLIMIT=${GOMEMLIMIT:-}
       - LOGIN_PROTECTION=${LOGIN_PROTECTION:-true}
       - LOG_LEVEL=${LOG_LEVEL:-info}
       - DEBUG=${DEBUG:-false}

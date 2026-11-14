@@ -100,7 +100,9 @@ export function useDocumentSync(
   const [blocks, setBlocks] = useState<DocumentBlock[]>(() =>
     ensureNonEmptyBlocks(docId, initialDoc?.blocks)
   );
-  const [loading, setLoading] = useState<boolean>(!initialDoc);
+  // A note of the note list has no bullets yet (GET /documents leaves them out): it loads like an unknown one
+  const initialHasBlocks = Boolean(initialDoc?.blocks?.length);
+  const [loading, setLoading] = useState<boolean>(!initialHasBlocks);
   const [error, setError] = useState<string | null>(null);
   // The note could not be fetched for lack of connection; the sync engine may still have a copy on this device
   const [loadedOffline, setLoadedOffline] = useState(false);
@@ -126,7 +128,7 @@ export function useDocumentSync(
   // Fetch document on mount
   useEffect(() => {
     let isCancelled = false;
-    if (!initialDoc) {
+    if (!initialHasBlocks) {
       // Another note shows its loading state at once
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setLoading(true);
@@ -170,7 +172,7 @@ export function useDocumentSync(
     return () => {
       isCancelled = true;
     };
-    // Fetched once per note; initialDoc only decides whether the loading state shows
+    // Fetched once per note; initialDoc's bullets only decide whether the loading state shows
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [docId]);
 

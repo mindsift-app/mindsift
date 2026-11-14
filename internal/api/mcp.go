@@ -953,7 +953,7 @@ var mcpTools = []mcpTool{
 			if err := decodeArgs(args, &a); err != nil {
 				return nil, err
 			}
-			docs, err := s.store.GetDocuments(userID)
+			docs, err := s.store.GetDocumentList(userID)
 			if err != nil {
 				return nil, err
 			}

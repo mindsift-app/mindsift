@@ -262,7 +262,9 @@ Write attempts by viewers on lists or their tasks return `403` ("No write permis
 | DELETE | `/workspace/folders/shared/{id}/shares/{shareId}` | Remove share of a shared folder |
 | GET | `/workspace/tags`, `/workspace/tags/{tag}` | Tag overview and details |
 | PUT | `/workspace/tags/{tag}/note` | Save tag note page (`content`) |
-| GET/POST | `/documents` | List notes; create (`title`, `icon`, `folderPath`, `blocks`, `tags`, `isPinned`; `icon: ""` = no icon, if omitted: 🗒️) |
+| GET/POST | `/documents` | List notes; create (`title`, `icon`, `folderPath`, `blocks`, `tags`, `isPinned`; `icon: ""` = no icon, if omitted: 🗒️). The list carries no bullets (`blocks` is `[]`, `content` is `""`; load a note with `GET /documents/{id}`) but per note `openTodos` (open to-dos with text), `tagCounts` (hashtag → live bullets carrying it) and `tagOpenTodos` (hashtag → open to-dos among them). At most four lists are built at the same time; a request whose client gave up meanwhile gets nothing |
+| GET | `/documents/todos` | Every to-do with text in the notes the caller can see (not in the trash): `[{docId, blockId, content, checked}]`, in the order of the note list, within a note in bullet order |
+| GET | `/blocks/{id}` | One live bullet of a note the caller may read: `{documentId, content, type}` (for links to a single bullet); `404` otherwise |
 | GET/PUT/DELETE | `/documents/{id}` | Retrieve; update `title`, `icon`, `folderPath`, `isPinned` (updating blocks here returns `400`, as they are handled via `/docs/{id}/sync`); delete = move to trash (owner) or leave share (others) |
 | GET/DELETE | `/documents/trash` | List trash (`id`, `kind` `note`/`folder`, `title`, `icon`, `folderPath`, `deletedAt`, `isOwner`, for folders `noteCount`; notes from a deleted folder are contained within its trash entry) or empty trash (notes and folders) |
 | GET | `/documents/{id}/backlinks` | Notes containing a link to this note (`[[Title#doc_id…]]`, older links without id by title) (visible notes only, excluding trash): `docId`, `title`, `icon`, `folderPath`, up to 5 `blocks` (`id`, `content`), `more` |

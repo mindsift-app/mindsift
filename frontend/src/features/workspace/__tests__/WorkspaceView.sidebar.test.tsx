@@ -1,6 +1,6 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { WorkspaceView } from '../WorkspaceView';
 import { api } from '../../../lib/api';
 import { Document } from '../../../lib/types';
@@ -16,6 +16,7 @@ vi.mock('../../../lib/api', async (importOriginal) => {
     api: {
       ...actual.api,
       getDocuments: vi.fn(),
+      getDocumentTodos: vi.fn(),
       getFolders: vi.fn(),
       getSharedFolders: vi.fn(),
       getWorkspaceTags: vi.fn(),
@@ -135,6 +136,36 @@ describe('WorkspaceView sidebar explorer', () => {
     const pinnedItem = screen.getByText('Einzige Notiz Pinned').closest('div[draggable="true"]');
     const pinnedContainer = pinnedItem?.parentElement;
     expect(pinnedContainer?.className).not.toContain('border-b');
+  });
+
+  it('counts hashtags and open to-dos from the note list and fetches the to-dos for the collection', async () => {
+    // The note list brings no bullets, only the counts per note
+    const docs: Document[] = [
+      makeDoc({ id: 'doc_a', title: 'Einkauf', openTodos: 2, tagCounts: { einkauf: 3 }, tagOpenTodos: { einkauf: 2 } }),
+      makeDoc({ id: 'doc_b', title: 'Haus', folderPath: 'Privat', tagCounts: { haus: 1, einkauf: 1 } }),
+    ];
+    vi.mocked(api.getDocuments).mockResolvedValue(docs);
+    vi.mocked(api.getFolders).mockResolvedValue(['Privat']);
+    vi.mocked(api.getDocumentTodos).mockResolvedValue([
+      { docId: 'doc_a', blockId: 'a1', content: 'Milch kaufen', checked: false },
+      { docId: 'doc_a', blockId: 'a2', content: 'Brot kaufen', checked: false },
+    ]);
+
+    render(<WorkspaceView onStatsChange={vi.fn()} />);
+
+    await waitFor(() => {
+      expect(screen.getByText('#einkauf')).toBeTruthy();
+    });
+    expect(screen.getByText('#einkauf').nextElementSibling?.textContent).toBe('4');
+    expect(screen.getByText('#haus').nextElementSibling?.textContent).toBe('1');
+    expect(api.getDocumentTodos).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('button', { name: /To-Dos/ }));
+    await waitFor(() => {
+      expect(screen.getByText('Milch kaufen')).toBeTruthy();
+    });
+    expect(api.getDocumentTodos).toHaveBeenCalledTimes(1);
+    expect(screen.getByText('Brot kaufen')).toBeTruthy();
   });
 
   it('keeps pinned note in folder visible in its folder', async () => {
