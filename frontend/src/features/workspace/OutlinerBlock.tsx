@@ -244,6 +244,20 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
   }, []);
   const [isLocallyFocused, setIsLocallyFocused] = useState<boolean>(false);
   const activeFocus = isFocused || isLocallyFocused;
+  // Text size and colour of the bullet's field, shared with the dimmed copy under it
+  const fieldText =
+    block.type === 'h1'
+      ? 'text-xl sm:text-2xl font-bold text-main tracking-tight'
+      : block.type === 'h2'
+      ? 'text-lg sm:text-xl font-semibold text-main'
+      : block.type === 'h3'
+      ? 'text-base font-semibold text-main'
+      : block.type === 'todo' && block.checked
+      ? 'text-sm text-faint line-through'
+      : block.type === 'callout'
+      ? 'text-sm text-main italic'
+      : 'text-sm text-main';
+  const showSecretDim = activeFocus && localContent.includes('{{secret:');
   // A block someone else is editing can still get the cursor (read-only), e.g. to press Enter at its end
   const canFocus = canEdit || (!!lockedBy && !!canAppendBelow);
   const [slashMatchInfo, setSlashMatchInfo] = useState<{ query: string; slashStart: number; cursor: number } | null>(null);
@@ -1792,6 +1806,13 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
               )}
             </div>
 
+            {/* While a bullet with a hidden value is edited, the same text lies under the field with the
+                references dimmed: equal characters wrap and place the caret exactly alike */}
+            {showSecretDim && (
+              <div aria-hidden="true" className={`${FIELD_LAYOUT} absolute inset-0 pointer-events-none select-none ${fieldText}`}>
+                {dimSecretRefs(localContent)}
+              </div>
+            )}
             {/* Display block: inline, the focused field would sit on a text baseline and leave a gap below
                 it, so the row grew by a few pixels on every click */}
             <textarea
@@ -1841,21 +1862,11 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
                   }
                 }
               }}
-              className={`block w-full min-h-[1.5rem] resize-none overflow-hidden bg-transparent border-0 focus:outline-none focus:ring-0 leading-relaxed whitespace-pre-wrap break-words [overflow-wrap:anywhere] ${
+              className={`${FIELD_LAYOUT} ${
                 activeFocus ? 'relative z-0 text-main' : 'absolute inset-0 text-transparent selection:text-transparent pointer-events-none'
-              } ${
-                block.type === 'h1'
-                  ? 'text-xl sm:text-2xl font-bold text-main tracking-tight'
-                  : block.type === 'h2'
-                  ? 'text-lg sm:text-xl font-semibold text-main'
-                  : block.type === 'h3'
-                  ? 'text-base font-semibold text-main'
-                  : block.type === 'todo' && block.checked
-                  ? 'text-sm text-faint line-through'
-                  : block.type === 'callout'
-                  ? 'text-sm text-main italic'
-                  : 'text-sm text-main'
-              }`}
+              } ${fieldText}`}
+              // Over the dimmed copy below: its own text invisible, the caret still in the text colour
+              style={showSecretDim ? { color: 'transparent', caretColor: 'var(--text-main)' } : undefined}
             />
           </div>
           </div>
@@ -2167,4 +2178,28 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
 
 // Memoized: a note renders only the bullets whose props changed (OutlinerTree keeps its handlers stable),
 // not all of them on every Enter or after every pause in typing
+// Layout of a bullet's text field; the dimmed copy under it must wrap exactly the same
+const FIELD_LAYOUT =
+  'block w-full min-h-[1.5rem] resize-none overflow-hidden bg-transparent border-0 focus:outline-none focus:ring-0 leading-relaxed whitespace-pre-wrap break-words [overflow-wrap:anywhere]';
+
+const SECRET_REF_RE = /\{\{secret:[A-Za-z0-9_]+\}\}/g;
+
+/** The text with its hidden-value references dimmed (same characters, so it lines up with the field). */
+function dimSecretRefs(text: string): React.ReactNode[] {
+  const out: React.ReactNode[] = [];
+  let last = 0;
+  for (const m of text.matchAll(SECRET_REF_RE)) {
+    if (m.index > last) out.push(text.slice(last, m.index));
+    out.push(
+      <span key={m.index} className="text-faint">
+        {m[0]}
+      </span>
+    );
+    last = m.index + m[0].length;
+  }
+  // A trailing line break needs a character after it to take up its line, as in the field
+  out.push(text.slice(last) + '\u200b');
+  return out;
+}
+
 export const OutlinerBlock = React.memo(OutlinerBlockView);
