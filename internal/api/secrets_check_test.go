@@ -39,9 +39,18 @@ func TestCheckSecretsKeyWarnsWhenTheKeyDoesNotMatch(t *testing.T) {
 	if err := store.StartTOTPSetup(user.ID, totp, time.Now()); err != nil {
 		t.Fatal(err)
 	}
+	// The SMTP password, sealed by the store with the same key
+	sys, err := store.GetSystemSettings()
+	if err != nil {
+		t.Fatal(err)
+	}
+	sys.SMTPHost, sys.SMTPUser, sys.SMTPPass = "mail.example.com", "bot", "geheim123"
+	if err := store.UpdateSystemSettings(sys); err != nil {
+		t.Fatal(err)
+	}
 
 	// The same key opens everything: no warning
-	if checked, unreadable := srv.CheckSecretsKey(); checked != 2 || unreadable != 0 {
+	if checked, unreadable := srv.CheckSecretsKey(); checked != 3 || unreadable != 0 {
 		t.Fatalf("matching key: checked %d, unreadable %d", checked, unreadable)
 	}
 	if strings.Contains(logs.String(), "WARN") {
@@ -54,11 +63,11 @@ func TestCheckSecretsKeyWarnsWhenTheKeyDoesNotMatch(t *testing.T) {
 		SecretsKey: []byte("another-secrets-key-32-bytes!!!!"), SecretsKeySource: "generated",
 	}, store, ws.NewHub(), nil)
 	t.Cleanup(other.Close)
-	if checked, unreadable := other.CheckSecretsKey(); checked != 2 || unreadable != 2 {
+	if checked, unreadable := other.CheckSecretsKey(); checked != 3 || unreadable != 3 {
 		t.Fatalf("other key: checked %d, unreadable %d", checked, unreadable)
 	}
 	out := logs.String()
-	for _, want := range []string{"DOES NOT MATCH", "secrets.key", "Restoring a whole server", "key=generated", "note_secret=1", "totp=1"} {
+	for _, want := range []string{"DOES NOT MATCH", "secrets.key", "Restoring a whole server", "key=generated", "note_secret=1", "totp=1", "smtp_pass=1", "SMTP password"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("warning lacks %q:\n%s", want, out)
 		}
@@ -74,7 +83,7 @@ func TestCheckSecretsKeyWarnsWhenTheKeyDoesNotMatch(t *testing.T) {
 	if err := store.CreateSecret(id2, "doc-1", user.ID, sealed2); err != nil {
 		t.Fatal(err)
 	}
-	if checked, unreadable := other.CheckSecretsKey(); checked != 3 || unreadable != 2 {
+	if checked, unreadable := other.CheckSecretsKey(); checked != 4 || unreadable != 3 {
 		t.Fatalf("mixed: checked %d, unreadable %d", checked, unreadable)
 	}
 	if out := logs.String(); !strings.Contains(out, "Some stored encrypted values") || strings.Contains(out, "DOES NOT MATCH") {

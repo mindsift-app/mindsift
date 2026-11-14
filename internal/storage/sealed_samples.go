@@ -15,16 +15,20 @@ const (
 	SealedNoteSecret = "note_secret"
 	SealedTOTP       = "totp"
 	SealedPublicLink = "public_link"
+	SealedSMTPPass   = "smtp_pass"
 )
 
 // SealedSamples returns up to perKind of the newest values of each kind encrypted with SECRETS_KEY, so the
 // start can check that the current key still opens them. The TOTP rows carry the user id; the caller
-// builds the seal id from it.
+// builds the seal id from it. The SMTP password (sealed by the store, see sealed.go) comes with its
+// seal id as it is.
 func (s *Store) SealedSamples(perKind int) ([]SealedSample, error) {
 	queries := []struct{ kind, query string }{
 		{SealedNoteSecret, `SELECT id, ciphertext FROM note_secrets ORDER BY updated_at DESC LIMIT ?`},
 		{SealedTOTP, `SELECT user_id, secret_sealed FROM user_totp ORDER BY created_at DESC LIMIT ?`},
 		{SealedPublicLink, `SELECT id, token_sealed FROM public_links ORDER BY created_at DESC LIMIT ?`},
+		{SealedSMTPPass, `SELECT '` + smtpPassSealID + `', value FROM system_settings
+			WHERE key = 'smtp_pass' AND value LIKE '` + SealedPrefix + `%' LIMIT ?`},
 	}
 	var out []SealedSample
 	for _, q := range queries {
