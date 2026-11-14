@@ -785,9 +785,11 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
     setShowLinkModal(false);
     const b = linkBeforeRef.current ?? '';
     const a = linkAfterRef.current ?? '';
+    // A web link without a name of its own in an otherwise empty bullet becomes the bare address (with its
+    // preview card); a link with a name keeps the name
     if (b.trim() === '' && a.trim() === '') {
-      const webMatch = linkMarkdown.match(/^\[.*\]\((https?:\/\/[^\s)]+)\)$/);
-      if (webMatch) {
+      const webMatch = linkMarkdown.match(/^\[(.*)\]\((https?:\/\/[^\s)]+)\)$/);
+      if (webMatch && webMatch[1] === webMatch[2]) {
         const bareUrl = webMatch[1];
         setLocalContent(bareUrl);
         localContentRef.current = bareUrl;
@@ -2176,8 +2178,6 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
   );
 };
 
-// Memoized: a note renders only the bullets whose props changed (OutlinerTree keeps its handlers stable),
-// not all of them on every Enter or after every pause in typing
 // Layout of a bullet's text field; the dimmed copy under it must wrap exactly the same
 const FIELD_LAYOUT =
   'block w-full min-h-[1.5rem] resize-none overflow-hidden bg-transparent border-0 focus:outline-none focus:ring-0 leading-relaxed whitespace-pre-wrap break-words [overflow-wrap:anywhere]';
@@ -2202,4 +2202,6 @@ function dimSecretRefs(text: string): React.ReactNode[] {
   return out;
 }
 
+// Memoized: a note renders only the bullets whose props changed (OutlinerTree keeps its handlers stable),
+// not all of them on every Enter or after every pause in typing
 export const OutlinerBlock = React.memo(OutlinerBlockView);
