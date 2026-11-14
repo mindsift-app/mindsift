@@ -127,7 +127,8 @@ func (s *Store) migrate() error {
 	if lastApplied > known {
 		return s.newerDatabase(lastApplied, known)
 	}
-	if pending && tables > 0 && s.systemBackupDir != "" {
+	// The demo's sample data is disposable and reset at start anyway: no copy of it (WithDemoMode)
+	if pending && tables > 0 && s.systemBackupDir != "" && !s.demoMode {
 		if err := s.backupBeforeMigrations(lastApplied); err != nil {
 			return err
 		}

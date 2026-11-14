@@ -374,3 +374,32 @@ func TestPreMigrationBackupsExpire(t *testing.T) {
 		t.Fatalf("in memory: %d, %v", n, err)
 	}
 }
+
+// The demo's data is disposable: pending migrations at its start write no copy of it
+func TestNoPreMigrationBackupInDemoMode(t *testing.T) {
+	stepClock(t)
+	dataDir := t.TempDir()
+	path := filepath.Join(dataDir, "mindsift.db")
+	backups := filepath.Join(dataDir, "backups", "system")
+	store, err := NewStore(path, WithDemoMode())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := store.ResetAndSeedDemo(); err != nil {
+		t.Fatal(err)
+	}
+	_ = store.Close()
+
+	withExtraMigration(t, func(s *Store) error { return nil })
+	store, err = NewStore(path, WithDemoMode())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer store.Close()
+	if files := preMigrationFiles(t, backups); len(files) != 0 {
+		t.Fatalf("demo mode must not back up its sample data, got %v", files)
+	}
+	if _, err := os.Stat(filepath.Join(backups, preMigrationMarker)); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("demo mode must not leave a marker: %v", err)
+	}
+}
