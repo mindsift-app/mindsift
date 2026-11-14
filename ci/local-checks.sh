@@ -84,13 +84,22 @@ if [ "${E2E:-}" = 1 ] && [ ${#failed[@]} -eq 0 ]; then
   bash e2e/run.sh >"$LOGS/e2e.log" 2>&1 || failed+=(e2e)
 fi
 
+# The lines of a passing part worth seeing: for the backend internal/api and internal/storage of the full run
+# and of the time zone run (marked TZ), so the duration of the long full run shows; else the last three.
+summary() {
+  if [ "$1" = backend ]; then
+    awk '/^time zone run:/ { tz = "TZ " } /^ok .*\/internal\/(api|storage)[[:space:]]/ { print tz $0 }' "$2"
+  else
+    grep -E 'Tests +[0-9]+ passed|^bundle: |^ok |ALL CASES PASSED|All checks passed|^0 issues' "$2" | tail -n 3
+  fi
+}
 for log in "$LOGS"/*.log; do
   part="$(basename "$log" .log)"
   if printf '%s\n' "${failed[@]}" | grep -qx "$part"; then
     echo "===== $part: FAILED"
     tail -n 60 "$log"
   else
-    echo "===== $part: ok ($(grep -E 'Tests +[0-9]+ passed|^bundle: |^ok |ALL CASES PASSED|All checks passed|^0 issues' "$log" | tail -n 3 | tr -s ' ' | paste -sd ';' -))"
+    echo "===== $part: ok ($(summary "$part" "$log" | tr -s ' \t' ' ' | paste -sd ';' -))"
   fi
 done
 echo "Took $(( $(date +%s) - start )) s"
