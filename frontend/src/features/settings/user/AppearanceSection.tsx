@@ -17,7 +17,7 @@ import {
   ThemeOption,
 } from '../../../lib/theme';
 import { ToggleSwitch } from '../../../components/ToggleSwitch';
-import { setLinkPreviewsEnabled } from '../../../lib/linkPreview';
+import { setLinkPreviewsEnabled, useServerLinkPreviews } from '../../../lib/linkPreview';
 import { setJournalEnabled } from '../../../lib/journal';
 import themeTemplateCss from '../../../themes/theme-template.css?raw';
 import { useAppearanceSettings } from './useAppearanceSettings';
@@ -37,6 +37,7 @@ export function AppearanceSection({
   onThemeChange: (themeId: ThemeId) => void;
 }) {
   const { t } = useTranslation('settings');
+  const serverPreviews = useServerLinkPreviews();
   const {
     linkPreviewsOn,
     journalOn,
@@ -78,15 +79,18 @@ export function AppearanceSection({
         </p>
       </div>
 
-      <div className="p-3.5 rounded-card border border-border bg-canvas flex items-center justify-between gap-4">
-        <div className="text-xs">
-          <p className="font-semibold text-main">{t('appearance.linkPreviews')}</p>
-          <p className="text-[11px] text-faint">
-            {t('appearance.linkPreviewsHint')}
-          </p>
+      {/* Only while the server offers link previews at all (the administration can switch them off) */}
+      {serverPreviews && (
+        <div className="p-3.5 rounded-card border border-border bg-canvas flex items-center justify-between gap-4" data-device-link-previews>
+          <div className="text-xs">
+            <p className="font-semibold text-main">{t('appearance.linkPreviews')}</p>
+            <p className="text-[11px] text-faint">
+              {t('appearance.linkPreviewsHint')}
+            </p>
+          </div>
+          <ToggleSwitch checked={linkPreviewsOn} onChange={setLinkPreviewsEnabled} title={t('appearance.linkPreviews')} />
         </div>
-        <ToggleSwitch checked={linkPreviewsOn} onChange={setLinkPreviewsEnabled} title={t('appearance.linkPreviews')} />
-      </div>
+      )}
 
       <div className="p-3.5 rounded-card border border-border bg-canvas flex items-center justify-between gap-4">
         <div className="text-xs">

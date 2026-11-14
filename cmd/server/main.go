@@ -47,7 +47,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	store, err := storage.NewStore(cfg.DatabasePath)
+	store, err := storage.NewStore(cfg.DatabasePath, storage.WithSecretsKey(cfg.SecretsKey))
 	if err != nil {
 		slog.Error("Failed to initialize storage", "error", err)
 		os.Exit(1)

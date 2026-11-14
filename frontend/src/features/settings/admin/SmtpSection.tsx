@@ -1,6 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import {
+  CircleAlert,
   Send,
 } from 'lucide-react';
 import { useAdminSettings } from './useAdminSettings';
@@ -49,6 +50,13 @@ export function SmtpSection({
           passwordSet={settings.smtpPassSet}
           onChange={(patch) => setSettings((prev) => ({ ...prev, ...patch }))}
         />
+
+        {settings.smtpPassUnreadable && (
+          <p className="text-[11px] text-status-warn flex items-start gap-1.5" data-smtp-pass-unreadable>
+            <CircleAlert className="w-3.5 h-3.5 shrink-0 mt-px" />
+            <span>{t('smtp.passwordUnreadable')}</span>
+          </p>
+        )}
 
         <div className="flex justify-end pt-2 border-t border-border">
           <button

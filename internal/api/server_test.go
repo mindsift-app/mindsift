@@ -20,10 +20,13 @@ import (
 	"github.com/mindsift-app/mindsift/internal/ws"
 )
 
+// testSecretsKey: SECRETS_KEY of the test servers, given to their store as well (as cmd/server does)
+var testSecretsKey = []byte("test-secrets-key-32-bytes-long!!")
+
 func setupTestServer(t *testing.T) (*Server, *storage.Store, string) {
 	t.Helper()
 	dbPath := filepath.Join(t.TempDir(), "test_mindsift.db")
-	store, err := storage.NewStore(dbPath)
+	store, err := storage.NewStore(dbPath, storage.WithSecretsKey(testSecretsKey))
 	openSharing(t, store)
 	if err != nil {
 		t.Fatalf("failed to create test store: %v", err)
@@ -42,7 +45,7 @@ func setupTestServer(t *testing.T) (*Server, *storage.Store, string) {
 		Port:              "8080",
 		DatabasePath:      dbPath,
 		JWTSecret:         "test-jwt-secret-key",
-		SecretsKey:        []byte("test-secrets-key-32-bytes-long!!"),
+		SecretsKey:        testSecretsKey,
 		AllowRegistration: false,
 	}
 	hub := ws.NewHub()

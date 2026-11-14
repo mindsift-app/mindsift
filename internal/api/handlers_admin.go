@@ -467,6 +467,10 @@ func (s *Server) settingsForBrowser(settings *domain.SystemSettings) *domain.Sys
 		out.PublicLinkMaxDays = s.cfg.PublicLinkMaxDays
 		out.PublicLinkMaxDaysViaEnv = true
 	}
+	if s.cfg.DemoMode {
+		off := false
+		out.LinkPreviews = &off // the demo sends nothing out
+	}
 	out.EmailLinksAvailable = s.emailLinksAvailable()
 	out.DefaultLanguage = s.defaultLanguage()
 	out.OIDC = s.oidcStatusForAdmin()
@@ -507,10 +511,12 @@ func (s *Server) handleAdminUpdateSettings(w http.ResponseWriter, r *http.Reques
 		writeError(w, http.StatusBadRequest, "Ungültiges JSON")
 		return
 	}
-	// Empty means unchanged (the browser never has it); without SMTP user the password goes too
+	// Empty means unchanged (the browser never has it); without SMTP user the password goes too. One that
+	// no longer decrypts (SECRETS_KEY changed) stays stored until a new one is entered.
+	settings.SMTPPassUnreadable = false
 	if settings.SMTPPass == "" && strings.TrimSpace(settings.SMTPUser) != "" {
 		if cur, err := s.store.GetSystemSettings(); err == nil {
-			settings.SMTPPass = cur.SMTPPass
+			settings.SMTPPass, settings.SMTPPassUnreadable = cur.SMTPPass, cur.SMTPPassUnreadable
 		}
 	}
 	// Registration fixed by the environment cannot be changed here (the stored value stays as it was)

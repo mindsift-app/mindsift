@@ -27,6 +27,10 @@ func TestSecurityHeaders(t *testing.T) {
 			t.Errorf("%s = %q, want %q", k, rec.Header().Get(k), v)
 		}
 	}
+	// Pictures only through MindSift (media, profile pictures, link previews): no other server learns who reads
+	if !strings.Contains(csp, "img-src 'self' data: blob:;") || strings.Contains(csp, "https:") {
+		t.Errorf("img-src must not allow other servers: %s", csp)
+	}
 	// A Host header with quotes or semicolons must not be able to extend the policy
 	if p := contentSecurityPolicy("evil.com; script-src *"); strings.Contains(p, "evil.com") {
 		t.Errorf("host must not be copied into the policy unchecked: %s", p)

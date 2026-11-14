@@ -164,7 +164,7 @@ func cloneSystemSettings(in *domain.SystemSettings) *domain.SystemSettings {
 		v := *out.ServerTime
 		out.ServerTime = &v
 	}
-	for _, p := range []**bool{&out.PushKnownServicesOnly, &out.RetentionAllowNever, &out.MCPEnabled, &out.PeopleSearch, &out.PublicLinks} {
+	for _, p := range []**bool{&out.PushKnownServicesOnly, &out.RetentionAllowNever, &out.MCPEnabled, &out.PeopleSearch, &out.PublicLinks, &out.LinkPreviews} {
 		if *p != nil {
 			v := **p
 			*p = &v
@@ -215,7 +215,8 @@ func (s *Store) readSystemSettings() (*domain.SystemSettings, error) {
 			case "smtp_user":
 				settings.SMTPUser = v
 			case "smtp_pass":
-				settings.SMTPPass = v
+				pass, ok := s.readSMTPPass(v)
+				settings.SMTPPass, settings.SMTPPassUnreadable = pass, !ok
 			case "smtp_from":
 				settings.SMTPFrom = v
 			case "smtp_from_name":
@@ -255,6 +256,9 @@ func (s *Store) readSystemSettings() (*domain.SystemSettings, error) {
 			case "public_links":
 				on := v != "false"
 				settings.PublicLinks = &on
+			case "link_previews":
+				on := v != "false"
+				settings.LinkPreviews = &on
 			case "public_link_max_days":
 				if n, err := strconv.Atoi(v); err == nil && n >= 1 && n <= MaxPublicLinkDays {
 					settings.PublicLinkMaxDays = n
@@ -299,6 +303,10 @@ func (s *Store) readSystemSettings() (*domain.SystemSettings, error) {
 	if settings.PublicLinks == nil {
 		on := true
 		settings.PublicLinks = &on
+	}
+	if settings.LinkPreviews == nil {
+		on := true
+		settings.LinkPreviews = &on
 	}
 	if settings.MFARequired == nil {
 		nobody := MFARequiredNobody
@@ -362,7 +370,6 @@ func (s *Store) UpdateSystemSettings(settings *domain.SystemSettings) error {
 		('smtp_host', ?),
 		('smtp_port', ?),
 		('smtp_user', ?),
-		('smtp_pass', ?),
 		('smtp_from', ?),
 		('smtp_from_name', ?),
 		('smtp_tls', ?),
@@ -381,7 +388,6 @@ func (s *Store) UpdateSystemSettings(settings *domain.SystemSettings) error {
 		strings.TrimSpace(settings.SMTPHost),
 		strings.TrimSpace(settings.SMTPPort),
 		strings.TrimSpace(settings.SMTPUser),
-		settings.SMTPPass,
 		strings.TrimSpace(settings.SMTPFrom),
 		strings.TrimSpace(settings.SMTPFromName),
 		tlsStr,
@@ -394,6 +400,15 @@ func (s *Store) UpdateSystemSettings(settings *domain.SystemSettings) error {
 		settings.RegistrationDomains,
 		strconv.FormatBool(settings.RegistrationVerifyEmail),
 	)
+	// The SMTP password sealed with SECRETS_KEY (sealed.go). One that no longer opens stays as it is when
+	// no new one comes with the settings, so saving other settings does not lose it.
+	if err == nil && (settings.SMTPPass != "" || !settings.SMTPPassUnreadable) {
+		var stored string
+		if stored, err = s.storedSMTPPass(settings.SMTPPass); err == nil {
+			_, err = s.db.Exec(`INSERT INTO system_settings (key, value) VALUES ('smtp_pass', ?)
+				ON CONFLICT(key) DO UPDATE SET value = excluded.value`, stored)
+		}
+	}
 	if err == nil && settings.RetentionAllowNever != nil {
 		_, err = s.db.Exec(`INSERT INTO system_settings (key, value) VALUES ('retention_allow_never', ?)
 			ON CONFLICT(key) DO UPDATE SET value = excluded.value`, strconv.FormatBool(*settings.RetentionAllowNever))
@@ -402,7 +417,7 @@ func (s *Store) UpdateSystemSettings(settings *domain.SystemSettings) error {
 		_, err = s.db.Exec(`INSERT INTO system_settings (key, value) VALUES ('mcp_enabled', ?)
 			ON CONFLICT(key) DO UPDATE SET value = excluded.value`, strconv.FormatBool(*settings.MCPEnabled))
 	}
-	for key, v := range map[string]*bool{"people_search": settings.PeopleSearch, "public_links": settings.PublicLinks, "push_known_services_only": settings.PushKnownServicesOnly} {
+	for key, v := range map[string]*bool{"people_search": settings.PeopleSearch, "public_links": settings.PublicLinks, "push_known_services_only": settings.PushKnownServicesOnly, "link_previews": settings.LinkPreviews} {
 		if err == nil && v != nil {
 			_, err = s.db.Exec(`INSERT INTO system_settings (key, value) VALUES (?, ?)
 				ON CONFLICT(key) DO UPDATE SET value = excluded.value`, key, strconv.FormatBool(*v))

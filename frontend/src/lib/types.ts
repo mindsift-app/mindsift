@@ -71,6 +71,8 @@ export interface AuthStatus {
   peopleSearch?: boolean;
   publicLinks?: boolean;
   publicLinkMaxDays?: number;
+  // Preview cards for web addresses in notes (the administration can switch them off; off in the demo)
+  linkPreviews?: boolean;
 }
 
 export type VoiceMode = 'server' | 'browser' | 'off';
@@ -406,6 +408,8 @@ export interface SystemSettings {
   smtpUser?: string;
   smtpPass?: string; // write only: the server never sends it back, empty keeps the stored one
   smtpPassSet?: boolean;
+  // A password is stored but does not decrypt (SECRETS_KEY changed): no mail until it is entered again
+  smtpPassUnreadable?: boolean;
   smtpFrom?: string;
   smtpFromName?: string; // display name when smtpFrom is a bare address (empty = MindSift)
   smtpTls?: boolean;
@@ -442,6 +446,8 @@ export interface SystemSettings {
   publicLinksConfiguredViaEnv?: boolean;
   publicLinkMaxDays?: number;
   publicLinkMaxDaysConfiguredViaEnv?: boolean;
+  // The server fetches previews of web addresses in notes (off: no cards, nothing fetched; off in the demo)
+  linkPreviews?: boolean;
   // Language for new accounts and everyone whose browser language the app does not speak
   defaultLanguage?: string;
   // The server's time zone (IANA name, '' = not set: TZ, else UTC) and the zone in effect now (read only)

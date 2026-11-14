@@ -79,6 +79,8 @@ func (s *Server) handleAuthStatus(w http.ResponseWriter, r *http.Request) {
 		"peopleSearch":      s.peopleSearchEnabled(),
 		"publicLinks":       s.publicLinksEnabled(),
 		"publicLinkMaxDays": s.publicLinkMaxDays(),
+		// Preview cards for web addresses in notes (the admin's switch; off in the demo)
+		"linkPreviews": s.linkPreviewsEnabled(),
 		// Language of the login screen when MindSift does not speak the browser's language
 		"defaultLanguage": s.defaultLanguage(),
 		// Address to enter as connector in claude.ai / ChatGPT (OAuth); empty while OAuth is off

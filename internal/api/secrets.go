@@ -1,10 +1,6 @@
 package api
 
 import (
-	"crypto/aes"
-	"crypto/cipher"
-	"crypto/rand"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"log/slog"
@@ -20,45 +16,16 @@ import (
 // Hidden values in notes (storage/secrets.go). The routes sit among the note routes, which API keys
 // and MCP cannot reach (apikey_access.go), so only a login creates, reveals or changes a value.
 
-const secretCipherPrefix = "v1:"
+const secretCipherPrefix = storage.SealedPrefix
 
-// sealSecret encrypts with AES-256-GCM; the secret's id is bound in as additional data, so a
-// ciphertext copied into another row does not open.
+// sealSecret encrypts with SECRETS_KEY (AES-256-GCM, storage/sealed.go); the secret's id is bound in as
+// additional data, so a ciphertext copied into another row does not open.
 func (s *Server) sealSecret(id, value string) (string, error) {
-	gcm, err := s.secretAEAD()
-	if err != nil {
-		return "", err
-	}
-	nonce := make([]byte, gcm.NonceSize())
-	if _, err := rand.Read(nonce); err != nil {
-		return "", err
-	}
-	sealed := gcm.Seal(nonce, nonce, []byte(value), []byte(id))
-	return secretCipherPrefix + base64.StdEncoding.EncodeToString(sealed), nil
+	return storage.SealValue(s.cfg.SecretsKey, id, value)
 }
 
 func (s *Server) openSecret(id, ciphertext string) (string, error) {
-	gcm, err := s.secretAEAD()
-	if err != nil {
-		return "", err
-	}
-	raw, err := base64.StdEncoding.DecodeString(strings.TrimPrefix(ciphertext, secretCipherPrefix))
-	if err != nil || len(raw) < gcm.NonceSize() {
-		return "", errors.New("malformed ciphertext")
-	}
-	plain, err := gcm.Open(nil, raw[:gcm.NonceSize()], raw[gcm.NonceSize():], []byte(id))
-	if err != nil {
-		return "", err
-	}
-	return string(plain), nil
-}
-
-func (s *Server) secretAEAD() (cipher.AEAD, error) {
-	block, err := aes.NewCipher(s.cfg.SecretsKey)
-	if err != nil {
-		return nil, err
-	}
-	return cipher.NewGCM(block)
+	return storage.OpenValue(s.cfg.SecretsKey, id, ciphertext)
 }
 
 func readSecretValue(w http.ResponseWriter, r *http.Request) (string, bool) {

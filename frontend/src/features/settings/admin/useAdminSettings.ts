@@ -6,6 +6,7 @@ import { passwordProblem } from '../../../lib/password';
 import { DEFAULT_BACKUP_RETENTION_DAYS, DEFAULT_BACKUP_TIME } from '../../../lib/backupDefaults';
 import { askConfirm } from '../../../components/askConfirm';
 import { errorMessage } from '../../../lib/errorMessage';
+import { setServerLinkPreviews } from '../../../lib/linkPreview';
 
 // The three sharing modes, stricter first; texts in settings:sharing.<id> in the language shown when read
 const sharingMode = (id: SharingMode) => ({
@@ -107,6 +108,8 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
           smtpPort: sys.smtpPort ? String(sys.smtpPort) : '587',
           smtpUser: sys.smtpUser || '',
           smtpPass: sys.smtpPass || '',
+          smtpPassSet: Boolean(sys.smtpPassSet),
+          smtpPassUnreadable: Boolean(sys.smtpPassUnreadable),
           smtpFrom: sys.smtpFrom || '',
           smtpFromName: sys.smtpFromName || '',
           smtpTls: sys.smtpTls ?? true,
@@ -128,6 +131,7 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
           publicLinksConfiguredViaEnv: Boolean(sys.publicLinksConfiguredViaEnv),
           publicLinkMaxDays: sys.publicLinkMaxDays || 14,
           publicLinkMaxDaysConfiguredViaEnv: Boolean(sys.publicLinkMaxDaysConfiguredViaEnv),
+          linkPreviews: sys.linkPreviews ?? true,
           // Shown only (OIDC_* environment)
           oidc: sys.oidc,
           timeZone: sys.timeZone ?? '',
@@ -464,10 +468,18 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
     setSettings(next);
     try {
       const saved = await api.adminUpdateSettings(next);
-      setSettings((prev) => ({ ...prev, ...saved }));
+      // The password flags are left out of the answer when false, so they are set, not merged
+      setSettings((prev) => ({
+        ...prev,
+        ...saved,
+        smtpPassSet: Boolean(saved.smtpPassSet),
+        smtpPassUnreadable: Boolean(saved.smtpPassUnreadable),
+      }));
       setCurrentSharingMode(saved.sharingMode);
       setSharingMode(saved.sharingMode);
       if (saved.peopleSearch !== undefined) setCurrentPeopleSearch(saved.peopleSearch);
+      // This app follows the server's switch at once (others at their next start or preview request)
+      if (saved.linkPreviews !== undefined) setServerLinkPreviews(saved.linkPreviews);
       setStatusMsg({ type: 'ok', text: i18n.t('settings:server.saved') });
     } catch (err) {
       setStatusMsg({ type: 'err', text: errorMessage(err, i18n.t('settings:profile.saveFailed')) });

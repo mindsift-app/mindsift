@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -88,6 +89,48 @@ func TestSMTPPasswordNeverReturned(t *testing.T) {
 	sessionCall(router, "PUT", "/api/v1/admin/settings", token, `{"sharingMode":"organizations","smtpHost":"mail.example.com","smtpUser":"","smtpPass":""}`, "")
 	if sys, _ := store.GetSystemSettings(); sys.SMTPPass != "" {
 		t.Fatalf("password without user must be cleared, got %q", sys.SMTPPass)
+	}
+}
+
+// SECRETS_KEY changed: the stored SMTP password no longer decrypts. Mail fails with a clear reason, the
+// administration says so (still without any password), and the admin can enter it again.
+func TestSMTPPasswordUndecryptable(t *testing.T) {
+	srv, _, token := setupTestServer(t)
+	if rec := sessionCall(srv.Router(), "PUT", "/api/v1/admin/settings", token,
+		`{"sharingMode":"organizations","smtpHost":"mail.example.com","smtpUser":"bot","smtpPass":"geheim123"}`, ""); rec.Code != http.StatusOK {
+		t.Fatalf("save: %d %s", rec.Code, rec.Body.String())
+	}
+	other, err := storage.NewStore(srv.cfg.DatabasePath, storage.WithSecretsKey([]byte("another-secrets-key-32-bytes!!!!")))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = other.Close() })
+	cfg := *srv.cfg
+	srv2 := NewServer(&cfg, other, ws.NewHub(), nil)
+	t.Cleanup(srv2.Close)
+	router := srv2.Router()
+
+	if _, err := srv2.smtpSettings(); !errors.Is(err, errSMTPPassUnreadable) {
+		t.Fatalf("mail must fail with the unreadable password, got %v", err)
+	}
+	body := sessionCall(router, "GET", "/api/v1/admin/settings", token, "", "").Body.String()
+	if !strings.Contains(body, `"smtpPassUnreadable":true`) || strings.Contains(body, `"smtpPassSet":true`) || strings.Contains(body, "v1:") {
+		t.Fatalf("the administration must learn that the password is unreadable, and nothing of it: %s", body)
+	}
+	// Saving with the empty field (other settings) keeps the stored password; it opens again with the old key
+	sessionCall(router, "PUT", "/api/v1/admin/settings", token, `{"sharingMode":"organizations","instanceName":"Neu","smtpHost":"mail.example.com","smtpUser":"bot","smtpPass":"","smtpPassUnreadable":false}`, "")
+	again, err := storage.NewStore(srv.cfg.DatabasePath, storage.WithSecretsKey(testSecretsKey))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if sys, _ := again.GetSystemSettings(); sys.SMTPPass != "geheim123" || sys.InstanceName != "Neu" {
+		t.Fatalf("the unreadable password must stay as it was, got %q / %q", sys.SMTPPass, sys.InstanceName)
+	}
+	_ = again.Close()
+	// The admin enters it again
+	sessionCall(router, "PUT", "/api/v1/admin/settings", token, `{"sharingMode":"organizations","smtpHost":"mail.example.com","smtpUser":"bot","smtpPass":"neu-2026"}`, "")
+	if cfg, err := srv2.smtpSettings(); err != nil || cfg.Pass != "neu-2026" {
+		t.Fatalf("after entering it again: %q (%v)", cfg.Pass, err)
 	}
 }
 

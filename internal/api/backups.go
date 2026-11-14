@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -271,8 +272,11 @@ func (s *Server) keepUserBackups(u *domain.User, now time.Time) {
 	if err := os.MkdirAll(filepath.Dir(dst), 0o700); err == nil {
 		err = os.Rename(src, dst)
 		if err == nil {
+			// The move itself on disk (both folders), then account.json written and flushed like a backup
+			logFailed("Flushing the moved backups of a deleted account to disk", errors.Join(
+				storage.SyncDir(filepath.Dir(dst)), storage.SyncDir(filepath.Dir(src))), "user_id", u.ID)
 			meta, _ := json.Marshal(deletedAccountBackups{UserID: u.ID, DisplayName: u.DisplayName, Email: u.Email, DeletedAt: now.UTC().Format(time.RFC3339)})
-			err = os.WriteFile(filepath.Join(dst, "account.json"), meta, 0o600)
+			err = storage.WriteFileAtomically(filepath.Join(dst, "account.json"), meta)
 		}
 		if err == nil {
 			return
@@ -325,6 +329,16 @@ func (s *Server) deletedAccounts(now time.Time, sweep bool) []deletedAccountBack
 // runDeletedBackupSweep removes backups of deleted accounts past the retention period (hourly).
 func (s *Server) runDeletedBackupSweep(now time.Time) {
 	s.deletedAccounts(now, true)
+}
+
+// runPreMigrationBackupExpiry removes the copies from before migrations once they are 90 days old
+// (hourly), so accounts deleted since do not live on in them.
+func (s *Server) runPreMigrationBackupExpiry(now time.Time) {
+	n, err := s.store.ExpirePreMigrationBackups(now)
+	logFailed("Removing expired pre-migration backups", err)
+	if n > 0 {
+		slog.Info("Expired pre-migration backups removed", "count", n)
+	}
 }
 
 // handleAdminDeletedBackups: GET /admin/backups/deleted – kept backups of deleted accounts.

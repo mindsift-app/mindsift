@@ -626,6 +626,8 @@
     "peopleSearchHint": "Attiva, durante la condivisione e nei gruppi vengono suggeriti i nomi. Disattiva, bisogna conoscere l’indirizzo e-mail o il nome utente esatti; chi lavora già insieme a qualcosa continua a vedersi lì con il nome.",
     "publicLinks": "Link pubblici alle note",
     "publicLinksHint": "I proprietari possono condividere una nota in sola lettura tramite link, anche con persone senza account, eventualmente con password. I link scadono sempre e non finiscono nei motori di ricerca. Disattivato, nessun link esistente funziona più.",
+    "linkPreviews": "Anteprime dei link",
+    "linkPreviewsHint": "Quando un punto contiene solo un indirizzo web, il server MindSift recupera la pagina e ne mostra titolo, descrizione e immagine come scheda. Disattivato, il server non recupera nessuna pagina e l'app non mostra né schede di anteprima né l'interruttore per dispositivo.",
     "publicLinkMaxDays": "Durata massima di un link",
     "days_one": "{{count}} giorno",
     "days_other": "{{count}} giorni",
@@ -731,6 +733,7 @@
     "testSending": "Invio email di prova in corso…",
     "testSend": "Invia email di prova",
     "passwordKept": "Salvata — lascia vuoto per non modificarla",
+    "passwordUnreadable": "La password salvata non può più essere decifrata: la chiave del server (SECRETS_KEY o secrets.key) è cambiata. Nessuna email parte finché non la inserisci di nuovo e salvi.",
     "save": "Salva configurazione SMTP nel database",
     "testSent": "E-mail di prova inviata a {{email}}.",
     "testFailed": "Test SMTP non riuscito: {{error}}"

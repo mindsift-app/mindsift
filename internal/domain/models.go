@@ -444,7 +444,10 @@ type SystemSettings struct {
 	// writing it empty keeps the stored password
 	SMTPPass    string `json:"smtpPass"`
 	SMTPPassSet bool   `json:"smtpPassSet,omitempty"`
-	SMTPFrom    string `json:"smtpFrom"`
+	// SMTPPassUnreadable: a password is stored (encrypted with SECRETS_KEY) but does not decrypt, the
+	// key changed; no mail goes out until an admin enters it again. Read only.
+	SMTPPassUnreadable bool   `json:"smtpPassUnreadable,omitempty"`
+	SMTPFrom           string `json:"smtpFrom"`
 	// SMTPFromName is shown as sender when SMTPFrom is a bare address (empty = "MindSift")
 	SMTPFromName   string `json:"smtpFromName"`
 	SMTPTLS        bool   `json:"smtpTls"`
@@ -485,6 +488,9 @@ type SystemSettings struct {
 	// unchanged; ViaEnv: fixed by PUBLIC_LINKS_MAX_DAYS.
 	PublicLinkMaxDays       int  `json:"publicLinkMaxDays,omitempty"`
 	PublicLinkMaxDaysViaEnv bool `json:"publicLinkMaxDaysConfiguredViaEnv,omitempty"`
+	// LinkPreviews: the server fetches previews of web addresses in notes (default on); off, it fetches
+	// nothing and the app shows no preview cards. nil in an update leaves it unchanged. Off in demo mode.
+	LinkPreviews *bool `json:"linkPreviews,omitempty"`
 	// DefaultLanguage: language for people without their own choice whose browser language MindSift does
 	// not speak, and for the demo; empty in an update leaves it unchanged
 	DefaultLanguage string `json:"defaultLanguage,omitempty"`

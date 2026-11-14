@@ -17,7 +17,7 @@ MindSift is meant to be reachable from the internet behind a reverse proxy ([rev
 
 ### Secrets never in plain text
 
-API keys, OAuth tokens, reset and confirmation links and the tokens of public links are stored only as SHA-256 hashes. Hidden values in notes are encrypted with AES-256-GCM under a key kept apart from the database (`SECRETS_KEY`).
+API keys, OAuth tokens, reset and confirmation links and the tokens of public links are stored only as SHA-256 hashes. Hidden values in notes, authenticator secrets and the SMTP password of the administration are encrypted with AES-256-GCM under a key kept apart from the database (`SECRETS_KEY`), so a database backup does not reveal them.
 
 ### Rights checked on every request
 
