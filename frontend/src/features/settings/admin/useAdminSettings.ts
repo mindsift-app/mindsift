@@ -110,6 +110,7 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
           smtpPass: sys.smtpPass || '',
           smtpPassSet: Boolean(sys.smtpPassSet),
           smtpPassUnreadable: Boolean(sys.smtpPassUnreadable),
+          smtpPassViaEnv: Boolean(sys.smtpPassViaEnv),
           smtpFrom: sys.smtpFrom || '',
           smtpFromName: sys.smtpFromName || '',
           smtpTls: sys.smtpTls ?? true,
@@ -474,6 +475,7 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
         ...saved,
         smtpPassSet: Boolean(saved.smtpPassSet),
         smtpPassUnreadable: Boolean(saved.smtpPassUnreadable),
+        smtpPassViaEnv: Boolean(saved.smtpPassViaEnv),
       }));
       setCurrentSharingMode(saved.sharingMode);
       setSharingMode(saved.sharingMode);

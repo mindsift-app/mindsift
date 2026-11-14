@@ -96,27 +96,46 @@ func (s *Store) ExportUserData(userID string) (*domain.FullExport, error) {
 
 // --- SYSTEM SETTINGS ---
 
+// SeedSMTPDefaultsFromEnv copies the mail server from the environment (SMTP_*) into the admin settings
+// on the first start, so the administration shows it and can change it. The password is not copied: it
+// stays in SMTP_PASS only, and the server takes it from there while host and user are those of the
+// environment (Server.envSMTPPass). A copy older versions stored for that host and user is removed again.
 func (s *Store) SeedSMTPDefaultsFromEnv(host, port, user, pass, from, fromName string, tls, skipVerify bool) {
 	cur, err := s.GetSystemSettings()
 	if err != nil || cur == nil {
 		return
 	}
-	// Only populate DB from env if DB has no SMTP host configured yet and env provides one
-	if cur.SMTPHost == "" && strings.TrimSpace(host) != "" {
-		cur.SMTPHost = strings.TrimSpace(host)
+	host, user = strings.TrimSpace(host), strings.TrimSpace(user)
+	if host == "" {
+		return
+	}
+	switch {
+	case cur.SMTPHost == "":
+		// Only populate DB from env if DB has no SMTP host configured yet and env provides one
+		cur.SMTPHost = host
 		if strings.TrimSpace(port) != "" {
 			cur.SMTPPort = strings.TrimSpace(port)
 		}
-		cur.SMTPUser = strings.TrimSpace(user)
-		cur.SMTPPass = pass
+		cur.SMTPUser = user
+		cur.SMTPPass = ""
 		cur.SMTPFrom = strings.TrimSpace(from)
 		cur.SMTPFromName = strings.TrimSpace(fromName)
 		cur.SMTPTLS = tls
 		cur.SMTPSkipVerify = skipVerify
-		if err := s.UpdateSystemSettings(cur); err != nil {
-			slog.Warn("Taking the mail settings from the environment failed", "error", err)
-		}
+	case pass != "" && cur.SMTPPass == pass && SMTPMatchesEnv(cur.SMTPHost, cur.SMTPUser, host, user):
+		cur.SMTPPass = ""
+	default:
+		return
 	}
+	if err := s.UpdateSystemSettings(cur); err != nil {
+		slog.Warn("Taking the mail settings from the environment failed", "error", err)
+	}
+}
+
+// SMTPMatchesEnv: the stored mail server is the one SMTP_HOST and SMTP_USER name, so SMTP_PASS belongs to it.
+func SMTPMatchesEnv(host, user, envHost, envUser string) bool {
+	return strings.TrimSpace(envHost) != "" && strings.EqualFold(strings.TrimSpace(host), strings.TrimSpace(envHost)) &&
+		strings.TrimSpace(user) == strings.TrimSpace(envUser)
 }
 
 // GetSystemSettings answers from memory after the first read: there is one process, and every change goes
@@ -422,6 +441,11 @@ func (s *Store) UpdateSystemSettings(settings *domain.SystemSettings) error {
 			_, err = s.db.Exec(`INSERT INTO system_settings (key, value) VALUES (?, ?)
 				ON CONFLICT(key) DO UPDATE SET value = excluded.value`, key, strconv.FormatBool(*v))
 		}
+	}
+	// Switched off: the cached previews (titles, pictures and icons of linked pages) go with it instead of
+	// lingering until they expire
+	if err == nil && settings.LinkPreviews != nil && !*settings.LinkPreviews {
+		_, err = s.db.Exec(`DELETE FROM link_previews`)
 	}
 	if err == nil && settings.MFARequired != nil {
 		if !ValidMFARequired(*settings.MFARequired) {

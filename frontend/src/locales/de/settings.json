@@ -733,6 +733,7 @@
     "testSending": "Sende Test-Mail…",
     "testSend": "Test-E-Mail senden",
     "passwordKept": "Gespeichert – leer lassen für keine Änderung",
+    "passwordViaEnv": "Aus SMTP_PASS, nicht gespeichert – hat Vorrang",
     "passwordUnreadable": "Das gespeicherte Passwort lässt sich nicht mehr entschlüsseln, der Schlüssel des Servers (SECRETS_KEY oder secrets.key) hat sich geändert. Bis du es neu eingibst und speicherst, geht keine E-Mail hinaus.",
     "save": "SMTP-Konfiguration in Datenbank speichern",
     "testSent": "Test-E-Mail an {{email}} gesendet.",

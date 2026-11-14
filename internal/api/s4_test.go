@@ -134,6 +134,38 @@ func TestSMTPPasswordUndecryptable(t *testing.T) {
 	}
 }
 
+// SMTP_PASS stays in the environment: the first start copies host and user, not the password; mail uses
+// it while host and user are those of the environment, and the administration shows that one is set
+func TestSMTPPasswordFromEnvNotStored(t *testing.T) {
+	srv, store, token := setupTestServer(t)
+	srv.cfg.SMTPHost, srv.cfg.SMTPUser, srv.cfg.SMTPPass = "mail.example.com", "bot", "aus-der-umgebung"
+	store.SeedSMTPDefaultsFromEnv(srv.cfg.SMTPHost, "587", srv.cfg.SMTPUser, srv.cfg.SMTPPass, "bot@example.com", "", true, false)
+	if sys, _ := store.GetSystemSettings(); sys.SMTPHost != "mail.example.com" || sys.SMTPPass != "" {
+		t.Fatalf("seeded host %q, stored password %q", sys.SMTPHost, sys.SMTPPass)
+	}
+	if cfg, err := srv.smtpSettings(); err != nil || cfg.Pass != "aus-der-umgebung" {
+		t.Fatalf("mail must use SMTP_PASS, got %q (%v)", cfg.Pass, err)
+	}
+	router := srv.Router()
+	body := sessionCall(router, "GET", "/api/v1/admin/settings", token, "", "").Body.String()
+	if !strings.Contains(body, `"smtpPassSet":true`) || !strings.Contains(body, `"smtpPassViaEnv":true`) || strings.Contains(body, "aus-der-umgebung") {
+		t.Fatalf("the administration must show a password from the environment, and nothing of it: %s", body)
+	}
+	// Saving the settings with the empty field still stores no password
+	sessionCall(router, "PUT", "/api/v1/admin/settings", token, `{"sharingMode":"organizations","smtpHost":"mail.example.com","smtpUser":"bot","smtpPass":""}`, "")
+	if sys, _ := store.GetSystemSettings(); sys.SMTPPass != "" {
+		t.Fatalf("saving must not store SMTP_PASS, got %q", sys.SMTPPass)
+	}
+	// Another mail server set in the administration never gets the password of the environment
+	sessionCall(router, "PUT", "/api/v1/admin/settings", token, `{"sharingMode":"organizations","smtpHost":"smtp.other.example","smtpUser":"bot","smtpPass":""}`, "")
+	if cfg, err := srv.smtpSettings(); err != nil || cfg.Pass != "" {
+		t.Fatalf("another server must not get SMTP_PASS, got %q (%v)", cfg.Pass, err)
+	}
+	if body := sessionCall(router, "GET", "/api/v1/admin/settings", token, "", "").Body.String(); strings.Contains(body, `"smtpPassViaEnv":true`) {
+		t.Fatalf("another server: no password from the environment: %s", body)
+	}
+}
+
 func TestDeletedAccountLosesServerBackups(t *testing.T) {
 	srv, store, token := setupTestServer(t)
 	root := srv.backupRoot()
