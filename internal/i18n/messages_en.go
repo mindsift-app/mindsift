@@ -147,6 +147,7 @@ var messagesEN = map[string]string{
 	"Keine Vorschau vorhanden":                                                                   "No preview available",
 	"Konto konnte nicht angelegt werden":                                                         "The account could not be created",
 	"Konto konnte nicht freigeschaltet werden":                                                   "The account could not be approved",
+	"Link-Vorschauen sind auf diesem Server ausgeschaltet":                                       "Link previews are switched off on this server",
 	"Liste nicht gefunden":                                                                       "List not found",
 	"Listeneintrag nicht gefunden":                                                               "List item not found",
 	"Liste nicht gefunden oder kein Zugriff":                                                     "List not found or no access",

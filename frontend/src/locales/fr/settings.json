@@ -626,6 +626,8 @@
     "peopleSearchHint": "Activée, des noms correspondants sont suggérés lors du partage et dans les groupes. Désactivée, il faut connaître l’adresse e-mail ou le nom d’utilisateur exacts ; celles et ceux qui travaillent déjà ensemble sur quelque chose continuent d’y voir leurs noms.",
     "publicLinks": "Liens publics vers les notes",
     "publicLinksHint": "Les propriétaires peuvent partager une note en lecture seule par lien, y compris avec des personnes sans compte, avec mot de passe en option. Les liens expirent toujours et n’apparaissent pas dans les moteurs de recherche. Désactivé, plus aucun lien existant ne fonctionne.",
+    "linkPreviews": "Aperçus de liens",
+    "linkPreviewsHint": "Quand une puce ne contient qu'une adresse web, le serveur MindSift récupère la page et affiche son titre, sa description et son image sous forme de carte. Désactivé, le serveur ne récupère plus aucune page, et l'app n'affiche ni cartes d'aperçu ni l'interrupteur par appareil.",
     "publicLinkMaxDays": "Durée maximale d’un lien",
     "days_one": "{{count}} jour",
     "days_other": "{{count}} jours",

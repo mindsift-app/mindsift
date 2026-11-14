@@ -27,6 +27,7 @@ Versions without a git tag were development states and were never published as a
 - The setup wizard asks for the server's time zone, suggested from the browser, with the same searchable list as the administration; it applies right away. Its summary names the zone with the backup time, e.g. "03:00 (Europe/Berlin)".
 - "About MindSift" shows the licenses of the third-party software in the app to signed-in people (they name every dependency's version, so they are not public).
 - The help says that due times and alarms follow the server's time zone and where admins set it.
+- **Link previews off for the whole server:** Administration → Server has a switch for link previews. Off, the server fetches no web pages for them, notes show no preview cards and the switch per device under Appearance disappears. On by default; always off in the demo.
 
 ### Fixed
 - The app loads pictures only from MindSift itself (uploaded images, profile pictures and link-preview pictures already came through the server). An image address on another server, smuggled into shared content, can no longer act as a tracking pixel that tells that server who opened the note. Custom themes that pull background pictures from other servers lose them; embed them as `data:` instead.

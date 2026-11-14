@@ -71,6 +71,8 @@ export interface AuthStatus {
   peopleSearch?: boolean;
   publicLinks?: boolean;
   publicLinkMaxDays?: number;
+  // Preview cards for web addresses in notes (the administration can switch them off; off in the demo)
+  linkPreviews?: boolean;
 }
 
 export type VoiceMode = 'server' | 'browser' | 'off';
@@ -444,6 +446,8 @@ export interface SystemSettings {
   publicLinksConfiguredViaEnv?: boolean;
   publicLinkMaxDays?: number;
   publicLinkMaxDaysConfiguredViaEnv?: boolean;
+  // The server fetches previews of web addresses in notes (off: no cards, nothing fetched; off in the demo)
+  linkPreviews?: boolean;
   // Language for new accounts and everyone whose browser language the app does not speak
   defaultLanguage?: string;
   // The server's time zone (IANA name, '' = not set: TZ, else UTC) and the zone in effect now (read only)

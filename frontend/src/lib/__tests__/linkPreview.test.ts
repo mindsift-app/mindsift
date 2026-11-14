@@ -1,5 +1,52 @@
-import { describe, expect, it } from 'vitest';
-import { linkCardUrl, hidePreviewContent } from '../linkPreview';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import {
+  linkCardUrl,
+  hidePreviewContent,
+  linkPreviewsEnabled,
+  loadLinkPreview,
+  serverLinkPreviewsOn,
+  setServerLinkPreviews,
+} from '../linkPreview';
+
+describe('link previews switched off for the whole server', () => {
+  afterEach(() => {
+    setServerLinkPreviews(true);
+    vi.unstubAllGlobals();
+  });
+
+  it('turns all previews off, whatever this device says', () => {
+    expect(linkPreviewsEnabled()).toBe(true);
+    setServerLinkPreviews(false);
+    expect(serverLinkPreviewsOn()).toBe(false);
+    expect(linkPreviewsEnabled()).toBe(false);
+    setServerLinkPreviews(true);
+    expect(linkPreviewsEnabled()).toBe(true);
+  });
+
+  it('learns it from the server answer link_previews_off', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ error: 'Link-Vorschauen sind auf diesem Server ausgeschaltet', code: 'link_previews_off' }), {
+        status: 404,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+    const changed = vi.fn();
+    window.addEventListener('mindsift:link-previews', changed);
+    expect(await loadLinkPreview('https://koch.de/spaetzle')).toBeNull();
+    window.removeEventListener('mindsift:link-previews', changed);
+    expect(serverLinkPreviewsOn()).toBe(false);
+    expect(changed).toHaveBeenCalled();
+  });
+
+  it('keeps previews on after other refusals (a plain 404, the demo)', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({ error: 'In der Demo deaktiviert' }), { status: 403 })));
+    expect(await loadLinkPreview('https://koch.de/andere-seite')).toBeNull();
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({ error: 'nicht da' }), { status: 404 })));
+    expect(await loadLinkPreview('https://koch.de/dritte-seite')).toBeNull();
+    expect(serverLinkPreviewsOn()).toBe(true);
+  });
+});
 
 describe('link preview helpers', () => {
   it('returns the URL only when the entire trimmed content is a single https address', () => {

@@ -726,6 +726,8 @@
     "peopleSearchHint": "Activada, al compartir y en los grupos se sugieren nombres. Desactivada, hay que conocer la dirección de correo o el nombre de usuario exactos; quienes ya trabajan juntos en algo se siguen viendo allí con su nombre.",
     "publicLinks": "Enlaces públicos a notas",
     "publicLinksHint": "Los propietarios pueden compartir una nota de solo lectura mediante enlace, también con personas sin cuenta y, opcionalmente, con contraseña. Los enlaces siempre caducan y no aparecen en buscadores. Desactivado, ningún enlace existente funciona.",
+    "linkPreviews": "Vistas previas de enlaces",
+    "linkPreviewsHint": "Cuando un punto contiene solo una dirección web, el servidor de MindSift obtiene la página y muestra su título, descripción e imagen como tarjeta. Desactivado, el servidor no obtiene ninguna página y la app no muestra tarjetas de vista previa ni el interruptor por dispositivo.",
     "publicLinkMaxDays": "Duración máxima de un enlace",
     "days_one": "{{count}} día",
     "days_other": "{{count}} días",

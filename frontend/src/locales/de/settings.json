@@ -626,6 +626,8 @@
     "peopleSearchHint": "Eingeschaltet werden beim Teilen und in Gruppen passende Namen vorgeschlagen. Ausgeschaltet muss man die genaue E-Mail-Adresse oder den Benutzernamen kennen; wer schon gemeinsam an etwas arbeitet, sieht sich dort weiter mit Namen.",
     "publicLinks": "Öffentliche Links zu Notizen",
     "publicLinksHint": "Eigentümer können eine Notiz per Link zum Lesen freigeben, auch für Personen ohne Konto, wahlweise mit Passwort. Links laufen immer ab und landen nicht in Suchmaschinen. Ausgeschaltet funktioniert kein bestehender Link mehr.",
+    "linkPreviews": "Link-Vorschauen",
+    "linkPreviewsHint": "Steht in einem Punkt nur eine Web-Adresse, ruft der MindSift-Server die Seite ab und zeigt Titel, Beschreibung und Bild als Karte. Ausgeschaltet ruft der Server keine Seiten mehr ab, und die App zeigt weder Vorschaukarten noch den Schalter pro Gerät.",
     "publicLinkMaxDays": "Längste Laufzeit eines Links",
     "days_one": "{{count}} Tag",
     "days_other": "{{count}} Tage",

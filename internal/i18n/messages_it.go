@@ -147,6 +147,7 @@ var messagesIT = map[string]string{
 	"Keine Vorschau vorhanden":                                                                   "Nessuna anteprima disponibile",
 	"Konto konnte nicht angelegt werden":                                                         "Non è stato possibile creare l’account",
 	"Konto konnte nicht freigeschaltet werden":                                                   "Non è stato possibile approvare l’account",
+	"Link-Vorschauen sind auf diesem Server ausgeschaltet":                                       "Le anteprime dei link sono disattivate su questo server",
 	"Liste nicht gefunden":                                                                       "Lista non trovata",
 	"Listeneintrag nicht gefunden":                                                               "Elemento della lista non trovato",
 	"Liste nicht gefunden oder kein Zugriff":                                                     "Lista non trovata o senza accesso",

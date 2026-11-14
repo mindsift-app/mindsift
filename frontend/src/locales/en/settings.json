@@ -626,6 +626,8 @@
     "peopleSearchHint": "On, matching names are suggested when sharing and in groups. Off, people need the exact e-mail address or username; those already working on something together still see each other’s names there.",
     "publicLinks": "Public links to notes",
     "publicLinksHint": "Owners can share a note read only by link, also with people without an account, optionally with a password. Links always expire and stay out of search engines. Off, no existing link works any more.",
+    "linkPreviews": "Link previews",
+    "linkPreviewsHint": "When a bullet holds only a web address, the MindSift server fetches the page and shows its title, description and picture as a card. Off, the server fetches no pages, and the app shows neither preview cards nor the switch per device.",
     "publicLinkMaxDays": "Longest a link may live",
     "days_one": "{{count}} day",
     "days_other": "{{count}} days",

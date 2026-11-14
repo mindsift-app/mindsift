@@ -488,6 +488,9 @@ type SystemSettings struct {
 	// unchanged; ViaEnv: fixed by PUBLIC_LINKS_MAX_DAYS.
 	PublicLinkMaxDays       int  `json:"publicLinkMaxDays,omitempty"`
 	PublicLinkMaxDaysViaEnv bool `json:"publicLinkMaxDaysConfiguredViaEnv,omitempty"`
+	// LinkPreviews: the server fetches previews of web addresses in notes (default on); off, it fetches
+	// nothing and the app shows no preview cards. nil in an update leaves it unchanged. Off in demo mode.
+	LinkPreviews *bool `json:"linkPreviews,omitempty"`
 	// DefaultLanguage: language for people without their own choice whose browser language MindSift does
 	// not speak, and for the demo; empty in an update leaves it unchanged
 	DefaultLanguage string `json:"defaultLanguage,omitempty"`

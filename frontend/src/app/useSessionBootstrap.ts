@@ -6,6 +6,7 @@ import { flushClosedNotes } from '../lib/docSync/flushClosed';
 import { finishOidcReturn } from '../lib/oidc';
 import i18n from '../i18n';
 import { useLatestRef } from '../lib/useLatestRef';
+import { setServerLinkPreviews } from '../lib/linkPreview';
 
 // The first server status, asked for in main.tsx while the texts of the start language load, so the first
 // render does not wait for the texts and then for the server in turn; taken once by the boot check below
@@ -165,6 +166,11 @@ export function useSessionBootstrap(onSignedOut: () => void) {
         : null
     );
   }, [authStatus.demoMode, authStatus.demoResetInSeconds]);
+
+  // Link previews switched off for the whole server: no cards in notes, no switch in the settings
+  useEffect(() => {
+    setServerLinkPreviews(authStatus.linkPreviews !== false);
+  }, [authStatus.linkPreviews]);
 
   // The demo database was reset: drop cached answers of the old data, remount the views (they load
   // fresh data), refresh counters and the countdown. Sessions stay valid (fixed demo account IDs).

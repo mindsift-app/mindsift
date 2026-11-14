@@ -411,7 +411,7 @@
     "/api/v1/admin/settings": {
       "get": {
         "summary": "Server settings",
-        "description": "instanceName, allowRegistration, sharingMode (private/organizations/open), peopleSearch, publicLinks, publicLinkMaxDays (1–14), pushKnownServicesOnly (web push only via the push services of Google, Mozilla, Apple and Microsoft; default false), SMTP fields, timeZone (the server's time zone as an IANA name; \"\" = not set, then TZ, else UTC; 400 for an unknown name; in effect at once); changing mode cleans up shares. Values fixed by the environment come with …ConfiguredViaEnv and are not changed by PUT. smtpPass is never returned (smtpPassSet indicates whether one is stored; smtpPassUnreadable that one is stored but no longer decrypts because SECRETS_KEY changed, and no mail goes out until a new one is entered); empty = unchanged. Read only: serverTime (zone in effect, source setting/env/default, now in RFC 3339 with the offset, fallback: the zone without the setting)",
+        "description": "instanceName, allowRegistration, sharingMode (private/organizations/open), peopleSearch, publicLinks, publicLinkMaxDays (1–14), linkPreviews (the server fetches previews of web addresses in notes; default true, always false in demo mode), pushKnownServicesOnly (web push only via the push services of Google, Mozilla, Apple and Microsoft; default false), SMTP fields, timeZone (the server's time zone as an IANA name; \"\" = not set, then TZ, else UTC; 400 for an unknown name; in effect at once); changing mode cleans up shares. Values fixed by the environment come with …ConfiguredViaEnv and are not changed by PUT. smtpPass is never returned (smtpPassSet indicates whether one is stored; smtpPassUnreadable that one is stored but no longer decrypts because SECRETS_KEY changed, and no mail goes out until a new one is entered); empty = unchanged. Read only: serverTime (zone in effect, source setting/env/default, now in RFC 3339 with the offset, fallback: the zone without the setting)",
         "tags": [
           "Administration"
         ],
@@ -423,7 +423,7 @@
       },
       "put": {
         "summary": "Change server settings",
-        "description": "instanceName, allowRegistration, sharingMode (private/organizations/open), peopleSearch, publicLinks, publicLinkMaxDays (1–14), pushKnownServicesOnly (web push only via the push services of Google, Mozilla, Apple and Microsoft; default false), SMTP fields, timeZone (the server's time zone as an IANA name; \"\" = not set, then TZ, else UTC; left out = unchanged; 400 for an unknown name; in effect at once); changing mode cleans up shares. Values fixed by the environment come with …ConfiguredViaEnv and are not changed by PUT. smtpPass is never returned (smtpPassSet indicates whether one is stored; smtpPassUnreadable that one is stored but no longer decrypts because SECRETS_KEY changed, and no mail goes out until a new one is entered); empty = unchanged",
+        "description": "instanceName, allowRegistration, sharingMode (private/organizations/open), peopleSearch, publicLinks, publicLinkMaxDays (1–14), linkPreviews (the server fetches previews of web addresses in notes; default true, always false in demo mode), pushKnownServicesOnly (web push only via the push services of Google, Mozilla, Apple and Microsoft; default false), SMTP fields, timeZone (the server's time zone as an IANA name; \"\" = not set, then TZ, else UTC; left out = unchanged; 400 for an unknown name; in effect at once); changing mode cleans up shares. Values fixed by the environment come with …ConfiguredViaEnv and are not changed by PUT. smtpPass is never returned (smtpPassSet indicates whether one is stored; smtpPassUnreadable that one is stored but no longer decrypts because SECRETS_KEY changed, and no mail goes out until a new one is entered); empty = unchanged",
         "tags": [
           "Administration"
         ],
@@ -1095,7 +1095,7 @@
     "/api/v1/auth/status": {
       "get": {
         "summary": "Server status before signing in (setup, registration, demo, language)",
-        "description": "needsSetup, setupCodeRequired (true while no account exists and the server logged a setup code: not in demo mode, not with ADMIN_USER), allowRegistration, instanceName, demoMode, sharingMode, legal (imprintUrl, hasImprintContent, privacyUrl, hasPrivacyContent, customLinkLabel, customLinkUrl), voice (mode = server/browser/off, maxSeconds, browserAllowed), mcpEnabled, mcpConnectorUrl, defaultLanguage (the server's default language: admin setting, else DEFAULT_LANGUAGE, else de); setup (smtpConfigured, smtpViaEnv, baseUrlSet, emailLinks, backupDir) only while no account exists, for the first-boot wizard",
+        "description": "needsSetup, setupCodeRequired (true while no account exists and the server logged a setup code: not in demo mode, not with ADMIN_USER), allowRegistration, instanceName, demoMode, sharingMode, legal (imprintUrl, hasImprintContent, privacyUrl, hasPrivacyContent, customLinkLabel, customLinkUrl), voice (mode = server/browser/off, maxSeconds, browserAllowed), mcpEnabled, mcpConnectorUrl, defaultLanguage (the server's default language: admin setting, else DEFAULT_LANGUAGE, else de), linkPreviews (false when the administration switched link previews off, and in demo mode); setup (smtpConfigured, smtpViaEnv, baseUrlSet, emailLinks, backupDir) only while no account exists, for the first-boot wizard",
         "tags": [
           "Public"
         ],
@@ -2507,7 +2507,7 @@
     "/api/v1/link-preview": {
       "get": {
         "summary": "Preview of a web page",
-        "description": "Preview of a webpage (title, description, siteName, hasImage, hasIcon, ok, key), fetched by server and cached for 7 days; 422 without https, 403 in demo, 429 rate limit exceeded",
+        "description": "Preview of a webpage (title, description, siteName, hasImage, hasIcon, ok, key), fetched by server and cached for 7 days; 422 without https, 403 in demo, 404 with code link_previews_off when the administration switched link previews off (nothing is fetched), 429 rate limit exceeded",
         "tags": [
           "Workspace"
         ],
@@ -2521,7 +2521,7 @@
     "/api/v1/link-preview/{key}/{kind}": {
       "get": {
         "summary": "Image or icon of a link preview",
-        "description": "Image (kind = image) or icon (icon) for a preview",
+        "description": "Image (kind = image) or icon (icon) for a preview; 404 with code link_previews_off while link previews are switched off",
         "tags": [
           "Workspace"
         ],

@@ -147,6 +147,7 @@ var messagesES = map[string]string{
 	"Keine Vorschau vorhanden":                                                                   "No hay vista previa disponible",
 	"Konto konnte nicht angelegt werden":                                                         "No se pudo crear la cuenta",
 	"Konto konnte nicht freigeschaltet werden":                                                   "No se pudo aprobar la cuenta",
+	"Link-Vorschauen sind auf diesem Server ausgeschaltet":                                       "Las vistas previas de enlaces están desactivadas en este servidor",
 	"Liste nicht gefunden":                                                                       "Lista no encontrada",
 	"Listeneintrag nicht gefunden":                                                               "Elemento de la lista no encontrado",
 	"Liste nicht gefunden oder kein Zugriff":                                                     "Lista no encontrada o sin acceso",

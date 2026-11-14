@@ -147,6 +147,7 @@ var messagesFR = map[string]string{
 	"Keine Vorschau vorhanden":                                                                   "Aucun aperçu disponible",
 	"Konto konnte nicht angelegt werden":                                                         "Le compte n’a pas pu être créé",
 	"Konto konnte nicht freigeschaltet werden":                                                   "Le compte n’a pas pu être validé",
+	"Link-Vorschauen sind auf diesem Server ausgeschaltet":                                       "Les aperçus de liens sont désactivés sur ce serveur",
 	"Liste nicht gefunden":                                                                       "Liste introuvable",
 	"Listeneintrag nicht gefunden":                                                               "Élément de liste introuvable",
 	"Liste nicht gefunden oder kein Zugriff":                                                     "Liste introuvable ou accès refusé",

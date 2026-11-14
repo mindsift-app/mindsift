@@ -164,7 +164,7 @@ func cloneSystemSettings(in *domain.SystemSettings) *domain.SystemSettings {
 		v := *out.ServerTime
 		out.ServerTime = &v
 	}
-	for _, p := range []**bool{&out.PushKnownServicesOnly, &out.RetentionAllowNever, &out.MCPEnabled, &out.PeopleSearch, &out.PublicLinks} {
+	for _, p := range []**bool{&out.PushKnownServicesOnly, &out.RetentionAllowNever, &out.MCPEnabled, &out.PeopleSearch, &out.PublicLinks, &out.LinkPreviews} {
 		if *p != nil {
 			v := **p
 			*p = &v
@@ -256,6 +256,9 @@ func (s *Store) readSystemSettings() (*domain.SystemSettings, error) {
 			case "public_links":
 				on := v != "false"
 				settings.PublicLinks = &on
+			case "link_previews":
+				on := v != "false"
+				settings.LinkPreviews = &on
 			case "public_link_max_days":
 				if n, err := strconv.Atoi(v); err == nil && n >= 1 && n <= MaxPublicLinkDays {
 					settings.PublicLinkMaxDays = n
@@ -300,6 +303,10 @@ func (s *Store) readSystemSettings() (*domain.SystemSettings, error) {
 	if settings.PublicLinks == nil {
 		on := true
 		settings.PublicLinks = &on
+	}
+	if settings.LinkPreviews == nil {
+		on := true
+		settings.LinkPreviews = &on
 	}
 	if settings.MFARequired == nil {
 		nobody := MFARequiredNobody
@@ -410,7 +417,7 @@ func (s *Store) UpdateSystemSettings(settings *domain.SystemSettings) error {
 		_, err = s.db.Exec(`INSERT INTO system_settings (key, value) VALUES ('mcp_enabled', ?)
 			ON CONFLICT(key) DO UPDATE SET value = excluded.value`, strconv.FormatBool(*settings.MCPEnabled))
 	}
-	for key, v := range map[string]*bool{"people_search": settings.PeopleSearch, "public_links": settings.PublicLinks, "push_known_services_only": settings.PushKnownServicesOnly} {
+	for key, v := range map[string]*bool{"people_search": settings.PeopleSearch, "public_links": settings.PublicLinks, "push_known_services_only": settings.PushKnownServicesOnly, "link_previews": settings.LinkPreviews} {
 		if err == nil && v != nil {
 			_, err = s.db.Exec(`INSERT INTO system_settings (key, value) VALUES (?, ?)
 				ON CONFLICT(key) DO UPDATE SET value = excluded.value`, key, strconv.FormatBool(*v))

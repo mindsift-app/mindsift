@@ -450,6 +450,10 @@ func (s *Server) settingsForBrowser(settings *domain.SystemSettings) *domain.Sys
 		out.PublicLinkMaxDays = s.cfg.PublicLinkMaxDays
 		out.PublicLinkMaxDaysViaEnv = true
 	}
+	if s.cfg.DemoMode {
+		off := false
+		out.LinkPreviews = &off // the demo sends nothing out
+	}
 	out.EmailLinksAvailable = s.emailLinksAvailable()
 	out.DefaultLanguage = s.defaultLanguage()
 	out.OIDC = s.oidcStatusForAdmin()
