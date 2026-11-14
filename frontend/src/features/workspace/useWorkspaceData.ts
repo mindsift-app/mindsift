@@ -35,6 +35,7 @@ export function useWorkspaceData({ currentUser, setSelectedDocId, autoSelectedDo
   // Every to-do with text of the notes (GET /documents/todos); null until the collection was first shown
   const [rollupTodos, setRollupTodos] = useState<DocTodo[] | null>(null);
   const todosShownRef = useLatestRef(todosShown);
+  const docsRef = useLatestRef(docs);
 
   // Hashtag counts from the notes in memory: the list's counts per note, the open note's from its bullets
   // (per note cached, workspaceListing.ts)
@@ -131,6 +132,14 @@ export function useWorkspaceData({ currentUser, setSelectedDocId, autoSelectedDo
         // Folders created, moved, deleted or shared: many notes may have another place or audience
         api.getFolders().then(setFolders).catch(() => {});
         api.getSharedFolders().then(setSharedFolders).catch(() => {});
+        // One note moved to another folder: DOC_UPDATED (sent just before) brought it, unless it is new here
+        // (moved into a folder shared with me)
+        const payload = msg.payload as Record<string, unknown> | undefined;
+        const movedId = payload && Object.keys(payload).length === 1 ? payload.docId : undefined;
+        if (typeof movedId === 'string' && docsRef.current.some((d) => d.id === movedId)) {
+          reloadTrash();
+          return;
+        }
         api
           .getDocuments()
           .then((fresh) => {
@@ -142,7 +151,7 @@ export function useWorkspaceData({ currentUser, setSelectedDocId, autoSelectedDo
       }
     });
     return unsub;
-  }, [currentUser, reloadTrash, setSelectedDocId, afterListFetched]);
+  }, [currentUser, reloadTrash, setSelectedDocId, afterListFetched, docsRef]);
 
   return {
     docs,
