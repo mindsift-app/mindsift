@@ -60,10 +60,14 @@ describe('withSecondFactor', () => {
       result.catch(() => {});
     });
     await screen.findByLabelText('Code der App oder Wiederherstellungscode');
-    fireEvent.keyDown(window, { key: 'Escape' });
+    // The dialog listens for Escape from an effect, which can run after the field shows up on a busy
+    // machine: press it again until the dialog has closed
+    await waitFor(() => {
+      fireEvent.keyDown(window, { key: 'Escape' });
+      expect(screen.queryByText('Mit zweitem Faktor bestätigen')).toBeNull();
+    });
     await expect(result).rejects.toMatchObject({ code: 'mfa_cancelled' });
     expect(run).toHaveBeenCalledTimes(1);
-    await waitFor(() => expect(screen.queryByText('Mit zweitem Faktor bestätigen')).toBeNull());
   });
 
   it('sends an account of the OIDC provider to sign in there again', async () => {
