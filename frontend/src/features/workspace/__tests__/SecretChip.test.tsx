@@ -31,12 +31,12 @@ describe('hidden values in a bullet', () => {
   it('reveals on click, keeps the value out of the text and hides it again', async () => {
     vi.mocked(api.revealSecret).mockResolvedValue('192.168.1.10');
     const { container } = render(<SecretChip docId="doc1" secretId="secab12" canEdit />);
-    fireEvent.click(screen.getByRole('button', { name: 'Verdeckter Wert' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Versteckter Wert' }));
     await waitFor(() => expect(container.querySelector('[data-v="192.168.1.10"]')).not.toBeNull());
     expect(api.revealSecret).toHaveBeenCalledWith('doc1', 'secab12');
     expect(container.textContent).not.toContain('192.168');
     expect(screen.getByRole('button', { name: 'Ändern' })).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: 'Wieder verdecken' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Wieder verstecken' }));
     expect(container.querySelector('[data-v="192.168.1.10"]')).toBeNull();
   });
 
@@ -45,11 +45,11 @@ describe('hidden values in a bullet', () => {
     // does not reveal
     vi.mocked(api.revealSecret).mockRejectedValueOnce(new ApiError('weg', 404, 'secret_gone'));
     const { rerender } = render(<SecretChip docId="doc1" secretId="secfremd" canEdit />);
-    fireEvent.click(screen.getByRole('button', { name: 'Verdeckter Wert' }));
-    await waitFor(() => expect(screen.queryByRole('button', { name: 'Verdeckter Wert' })).toBeNull());
+    fireEvent.click(screen.getByRole('button', { name: 'Versteckter Wert' }));
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'Versteckter Wert' })).toBeNull());
     rerender(<SecretChip docId="doc1" secretId="seceigen" canEdit />);
     vi.mocked(api.revealSecret).mockResolvedValue('10.0.0.1');
-    fireEvent.click(screen.getByRole('button', { name: 'Verdeckter Wert' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Versteckter Wert' }));
     await waitFor(() => expect(api.revealSecret).toHaveBeenLastCalledWith('doc1', 'seceigen'));
   });
 
@@ -60,7 +60,8 @@ describe('hidden values in a bullet', () => {
   });
 });
 
-describe('/secret', () => {
+// /hidden, and /secret (its name before) and the German name still find it
+describe.each(['/hidden', '/secret', '/versteckt'])('%s', (command) => {
   it('stores the value and puts only the reference into the bullet', async () => {
     vi.mocked(api.createSecret).mockResolvedValue({ id: 'secx1', ref: '{{secret:secx1}}' });
     const updates: DocumentBlock[] = [];
@@ -89,9 +90,9 @@ describe('/secret', () => {
     };
     const { container } = render(<Wrapper />);
     const ta = container.querySelector('textarea') as HTMLTextAreaElement;
-    fireEvent.change(ta, { target: { value: 'IP /secret' } });
+    fireEvent.change(ta, { target: { value: `IP ${command}` } });
     fireEvent.keyDown(ta, { key: 'Enter' });
-    const input = await screen.findByPlaceholderText('z. B. IP-Adresse oder Token');
+    const input = await screen.findByPlaceholderText('z. B. Passwort oder Token');
     fireEvent.change(input, { target: { value: '10.0.0.5' } });
     fireEvent.submit(input.closest('form') as HTMLFormElement);
     await waitFor(() => expect(updates[updates.length - 1]?.content).toBe('IP {{secret:secx1}}'));

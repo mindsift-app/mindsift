@@ -78,6 +78,7 @@ A bullet with a hidden value of another note pasted into a note (the text goes i
 - the server stores a copy of the value in the note and the bullet points to it; the chip there reveals the value, the note does not reveal the value of the note of origin
 - Ctrl+Z takes the paste out again and redo brings the copy back, although the server changed the reference
 - a paste made offline is sent once the connection is back and gets the copy the note already has; its chip reveals the value
+- in Chromium and Firefox: two bullets selected with Ctrl+A twice and copied with Ctrl+C give plain text with `••••` and no reference, and the app's own clipboard format with the reference; pasted with Ctrl+V into another note, both bullets arrive (the second still indented), the note gets its own copy of the value, and its chip reveals it
 
 ## live.e2e.mjs
 

@@ -62,7 +62,7 @@ func (s *Server) handleCreateSecret(w http.ResponseWriter, r *http.Request) {
 	}
 	if err != nil {
 		slog.Error("Storing a hidden value failed", "error", err)
-		writeError(w, http.StatusInternalServerError, "Geheimnis konnte nicht gespeichert werden")
+		writeError(w, http.StatusInternalServerError, "Versteckter Wert konnte nicht gespeichert werden")
 		return
 	}
 	writeJSON(w, http.StatusCreated, map[string]string{"id": id, "ref": "{{secret:" + id + "}}"})
@@ -89,7 +89,7 @@ func (s *Server) secretFor(w http.ResponseWriter, r *http.Request, write bool) (
 		return nil, false
 	}
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "Geheimnis konnte nicht gelesen werden")
+		writeError(w, http.StatusInternalServerError, "Versteckter Wert konnte nicht gelesen werden")
 		return nil, false
 	}
 	return sec, true
@@ -104,7 +104,7 @@ func (s *Server) handleRevealSecret(w http.ResponseWriter, r *http.Request) {
 	value, err := s.openSecret(sec.ID, sec.Ciphertext)
 	if err != nil {
 		slog.Warn("A hidden value could not be decrypted (SECRETS_KEY or secrets.key changed?)", "id", sec.ID)
-		writeErrorCode(w, http.StatusConflict, "secret_unreadable", "Geheimnis konnte nicht entschlüsselt werden")
+		writeErrorCode(w, http.StatusConflict, "secret_unreadable", "Versteckter Wert konnte nicht entschlüsselt werden")
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]string{"value": value})
@@ -125,7 +125,7 @@ func (s *Server) handleUpdateSecret(w http.ResponseWriter, r *http.Request) {
 		err = s.store.UpdateSecret(sec.ID, sealed)
 	}
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "Geheimnis konnte nicht gespeichert werden")
+		writeError(w, http.StatusInternalServerError, "Versteckter Wert konnte nicht gespeichert werden")
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)

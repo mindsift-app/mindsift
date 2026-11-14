@@ -58,6 +58,7 @@ import { isNoteLinkOnly, retargetWikiLinks, unlinkWikiLinks, WikiLink, WikiLinkC
 import { useWikiLinkResolver } from '../../lib/wikiLinkResolver';
 import { fitFieldHeight, refitOnWidthChange } from '../../lib/fieldHeight';
 import { BLOCK_DRAG_TYPE } from './moveBranchEvent';
+import { ownClipboardText } from '../../lib/outlineMarkdown';
 import { caretAfterChange, mapRenderedOffsetToRaw } from '../../lib/caret';
 import { toggleInlineFormat } from '../../lib/inlineFormat';
 import { useTranslation } from 'react-i18next';
@@ -102,11 +103,12 @@ const SLASH_COMMANDS: SlashCommand[] = [
   { type: 'todo', label: '/todo', get desc() { return i18n.t('workspace:slash.todo'); }, icon: <ListTodo className="w-3.5 h-3.5" /> },
   { type: 'numbered', label: '/number', get desc() { return i18n.t('workspace:slash.numbered'); }, icon: <ListOrdered className="w-3.5 h-3.5" />, aliases: ['nummer', 'liste', 'ol'] },
   { type: 'link', label: '/link', get desc() { return i18n.t('workspace:slash.link'); }, icon: <LinkIcon className="w-3.5 h-3.5" /> },
-  { type: 'secret', label: '/secret', get desc() { return i18n.t('workspace:slash.secret'); }, icon: <KeyRound className="w-3.5 h-3.5" />, aliases: ['geheim', 'verdeckt', 'passwort', 'password', 'hidden'] },
   { type: 'bullet', label: '/text', get desc() { return i18n.t('workspace:slash.bullet'); }, icon: <Type className="w-3.5 h-3.5" />, aliases: ['p', 'paragraph', 'bullet', 'standard'] },
   { type: 'h1', label: '/h1', get desc() { return i18n.t('workspace:slash.h1'); }, icon: <Heading1 className="w-3.5 h-3.5" /> },
   { type: 'h2', label: '/h2', get desc() { return i18n.t('workspace:slash.h2'); }, icon: <Heading2 className="w-3.5 h-3.5" /> },
   { type: 'h3', label: '/h3', get desc() { return i18n.t('workspace:slash.h3'); }, icon: <Heading3 className="w-3.5 h-3.5" /> },
+  // A hidden value; /secret, its name before, still finds it. After the headings, so "/h" still means /h1
+  { type: 'secret', label: '/hidden', get desc() { return i18n.t('workspace:slash.secret'); }, icon: <KeyRound className="w-3.5 h-3.5" />, aliases: ['secret', 'versteckt', 'verstecken', 'geheim', 'verdeckt', 'passwort', 'password', 'oculto', 'ocultar', 'secreto', 'masquer', 'masqué', 'nascosto', 'nascondi', 'segreto'] },
   { type: 'code', label: '/code', get desc() { return i18n.t('workspace:slash.code'); }, icon: <Code className="w-3.5 h-3.5" /> },
   { type: 'table', label: '/table', get desc() { return i18n.t('workspace:slash.table'); }, icon: <TableIcon className="w-3.5 h-3.5" />, aliases: ['tabelle', 'tabla', 'tableau', 'tabella', 'grid'] },
   { type: 'callout', label: '/callout', get desc() { return i18n.t('workspace:slash.callout'); }, icon: <MessageSquare className="w-3.5 h-3.5" /> },
@@ -591,7 +593,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
         (c.aliases || []).some((a) => a.includes(cmdQuery));
       if (!matchesQuery) return false;
 
-      // /link, /secret and /dictation everywhere
+      // /link, /hidden and /dictation everywhere
       if (c.type === 'link' || c.type === 'secret') return true;
       if (c.type === 'dictation') {
         return ['server', 'browser'].includes(currentVoiceConfig().mode);
@@ -956,17 +958,24 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
 
   const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
     if (!canEdit || block.type === 'code') return;
-    const pastedText = e.clipboardData.getData('text');
+    // Bullets copied from a note with hidden values: the app's own format has their references where the
+    // plain text has the mask (lib/outlineMarkdown.ts)
+    const own = ownClipboardText(e.clipboardData);
+    const pastedText = own || e.clipboardData.getData('text');
+    const start = e.currentTarget.selectionStart ?? localContent.length;
+    const end = e.currentTarget.selectionEnd ?? start;
+    const textBefore = localContent.slice(0, start);
+    const textAfter = localContent.slice(end);
+    if (own && !own.includes('\n')) {
+      e.preventDefault();
+      applyFormattingChange(textBefore + own + textAfter, start + own.length, start + own.length);
+      return;
+    }
     if (!pastedText || !pastedText.includes('\n')) return;
 
     e.preventDefault();
     const rawLines = pastedText.split(/\r?\n/);
     if (rawLines.length <= 1) return;
-
-    const start = e.currentTarget.selectionStart ?? localContent.length;
-    const end = e.currentTarget.selectionEnd ?? start;
-    const textBefore = localContent.slice(0, start);
-    const textAfter = localContent.slice(end);
 
     if (debounceTimerRef.current !== null) {
       window.clearTimeout(debounceTimerRef.current);

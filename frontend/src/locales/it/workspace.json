@@ -128,7 +128,7 @@
     "image": "Carica o collega immagini",
     "audio": "Nota vocale o file audio",
     "dictation": "Parla invece di digitare",
-    "secret": "Nascondi un valore (IP, token …)",
+    "secret": "Nascondi un valore (password, token …)",
     "drawing": "Disegno, diagramma, mappa mentale"
   },
   "block": {
@@ -458,7 +458,7 @@
   },
   "secret": {
     "newTitle": "Nascondi un valore",
-    "placeholder": "ad es. indirizzo IP o token",
+    "placeholder": "ad es. password o token",
     "hint": "Salvato cifrato e mostrato solo dopo un tocco. Le chiavi API e MCP lo vedono solo nascosto.",
     "create": "Nascondi",
     "label": "Valore nascosto",
@@ -469,7 +469,7 @@
     "edit": "Modifica",
     "editTitle": "Modifica valore nascosto",
     "save": "Salva",
-    "gone": "Segreto eliminato",
+    "gone": "Valore nascosto eliminato",
     "unreadable": "Illeggibile"
   },
   "publicLink": {

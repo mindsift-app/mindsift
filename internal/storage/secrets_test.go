@@ -15,7 +15,7 @@ import (
 // testSealKey is the SECRETS_KEY of the stores in these tests (the server passes its key the same way).
 var testSealKey = []byte("0123456789abcdef0123456789abcdef")
 
-const secretPlaceholder = "(verdeckter Wert nicht übernommen)"
+const secretPlaceholder = "(versteckter Wert nicht übernommen)"
 
 // newSecretStore: a store with a key, open sharing and two people.
 func newSecretStore(t *testing.T) (*Store, *domain.User, *domain.User) {

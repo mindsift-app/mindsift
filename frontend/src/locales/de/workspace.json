@@ -128,7 +128,7 @@
     "image": "Bilder hochladen oder verlinken",
     "audio": "Sprachnotiz oder Audiodatei",
     "dictation": "Sprechen statt tippen",
-    "secret": "Wert verdecken (IP, Token …)",
+    "secret": "Wert verstecken (Passwort, Token …)",
     "drawing": "Zeichnung, Diagramm, Mindmap"
   },
   "block": {
@@ -453,19 +453,19 @@
     "none": "Keine passende Notiz"
   },
   "secret": {
-    "newTitle": "Wert verdecken",
-    "placeholder": "z. B. IP-Adresse oder Token",
-    "hint": "Wird verschlüsselt gespeichert und erst nach Antippen angezeigt. Über API-Schlüssel und MCP bleibt er verdeckt.",
-    "create": "Verdecken",
-    "label": "Verdeckter Wert",
+    "newTitle": "Wert verstecken",
+    "placeholder": "z. B. Passwort oder Token",
+    "hint": "Wird verschlüsselt gespeichert und erst nach Antippen angezeigt. Über API-Schlüssel und MCP bleibt er versteckt.",
+    "create": "Verstecken",
+    "label": "Versteckter Wert",
     "reveal": "Anzeigen",
-    "hide": "Wieder verdecken",
+    "hide": "Wieder verstecken",
     "copy": "Kopieren",
     "copied": "Kopiert!",
     "edit": "Ändern",
-    "editTitle": "Verdeckten Wert ändern",
+    "editTitle": "Versteckten Wert ändern",
     "save": "Speichern",
-    "gone": "Geheimnis gelöscht",
+    "gone": "Versteckter Wert gelöscht",
     "unreadable": "Nicht lesbar"
   },
   "publicLink": {

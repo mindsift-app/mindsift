@@ -75,5 +75,5 @@ Neither tool sees **SQLite itself**: it is built in through [modernc.org/sqlite]
 
 ## Known limits
 
-- **No end-to-end encryption:** the server reads your data, because search, sharing and AI agents need it; only hidden values (`/secret`) are encrypted in the database. Protect the server and its disk.
+- **No end-to-end encryption:** the server reads your data, because search, sharing and AI agents need it; only hidden values (`/hidden`) are encrypted in the database. Protect the server and its disk.
 - Further known weak spots (for example the sign-in token in `localStorage`) are listed in [flaws.md](flaws.md).

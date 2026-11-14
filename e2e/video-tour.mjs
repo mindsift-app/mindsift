@@ -28,7 +28,7 @@ const TEXTS = {
       renovation: 'Hausrenovierung', personal: 'Privat', tick3: 'Gegenangebot vom zweiten Studio', tick4: 'Fußbodenheizung vorher prüfen',
       after2: 'Musterplatten liegen im Keller', write3: 'Enter macht einen neuen Punkt, Tab rückt ihn ein, alles speichert live',
       warning: 'Warnungen wie diese fallen in der Notiz sofort auf',
-      secretLine: 'Verborgene Werte halten Codes unter Verschluss, z. B. den Schlüsseltresor: ', secretValue: '4719', secretSave: 'Speichern',
+      secretLine: 'Versteckte Werte halten Codes unter Verschluss, z. B. den Schlüsseltresor: ', secretValue: '4719', secretSave: 'Speichern',
       backup: 'Backup-Konzept', projects: 'Projekte', subtask: 'Nächtlicher Lauf per systemd-Timer', parent: 'Backup-Konzept umsetzen',
       openTask: 'Erweiterte Aufgabe öffnen', lastSubtask: 'Wiederherstellung einmal komplett testen', addNote: 'Detailnotiz hinzufügen…',
       note: 'Häkchen in Notizen können echte Aufgaben werden – Notiz und Aufgabe bleiben dabei immer gleich.', saveNote: 'Notiz speichern', openInNote: 'In Notiz öffnen',
@@ -248,7 +248,7 @@ await shot('after-warning');
 await slash('text');
 // A code that is only needed for a few days, kept as a hidden value
 await type(N.secretLine);
-await slash('secret');
+await slash('hidden');
 await wait(400);
 await type(N.secretValue, { perChar: 140 });
 await wait(400);

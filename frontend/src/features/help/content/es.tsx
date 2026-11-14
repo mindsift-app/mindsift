@@ -144,6 +144,8 @@ const es: HelpContent = {
         'dictado',
         'foto',
         'formato automatico',
+        'valor oculto',
+        'contraseña',
       ],
       content: (
         <div className="space-y-3 text-muted leading-relaxed">
@@ -178,7 +180,7 @@ const es: HelpContent = {
               </div>
               <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main">
                 <KeyRound className="w-3.5 h-3.5 text-accent" />
-                <span>/secret (ocultar un valor, p. ej. una IP o un token)</span>
+                <span>/hidden (ocultar un valor, p. ej. una contraseña)</span>
               </div>
               <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main">
                 <span className="text-accent font-bold">💬</span>
@@ -213,6 +215,12 @@ const es: HelpContent = {
                 <span>/diktat (hablar en lugar de escribir: empieza al instante, pulsar «Detener» inserta el texto en el punto)</span>
               </div>
             </div>
+          </div>
+          <div className="pt-2 border-t border-border">
+            <span className="font-semibold text-main block mb-1">Valores ocultos (/hidden, también /oculto o /secret):</span>
+            <p className="text-xs">
+              Mantienen valores como contraseñas fuera de la pantalla y fuera de notas compartidas o públicas; no son un gestor de contraseñas. El texto solo muestra ••••, y un clic muestra el valor un momento a quien pueda ver la nota (nunca a través de un enlace público). Si copias el punto a otra nota, esa nota recibe su propia copia del valor.
+            </p>
           </div>
           <div className="pt-2 border-t border-border">
             <span className="font-semibold text-main block mb-1">Formato instantáneo al escribir:</span>

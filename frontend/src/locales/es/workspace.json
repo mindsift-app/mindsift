@@ -128,7 +128,7 @@
     "image": "Subir o enlazar imágenes",
     "audio": "Nota de voz o archivo de audio",
     "dictation": "Hablar en lugar de escribir",
-    "secret": "Ocultar un valor (IP, token …)",
+    "secret": "Ocultar un valor (contraseña, token …)",
     "drawing": "Dibujo, diagrama, mapa mental"
   },
   "block": {
@@ -458,7 +458,7 @@
   },
   "secret": {
     "newTitle": "Ocultar un valor",
-    "placeholder": "p. ej. dirección IP o token",
+    "placeholder": "p. ej. contraseña o token",
     "hint": "Se guarda cifrado y solo se muestra al tocarlo. Las claves API y MCP solo lo ven oculto.",
     "create": "Ocultar",
     "label": "Valor oculto",
@@ -469,7 +469,7 @@
     "edit": "Cambiar",
     "editTitle": "Cambiar valor oculto",
     "save": "Guardar",
-    "gone": "Secreto eliminado",
+    "gone": "Valor oculto eliminado",
     "unreadable": "Ilegible"
   },
   "publicLink": {

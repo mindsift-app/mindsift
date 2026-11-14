@@ -985,7 +985,7 @@ var mcpTools = []mcpTool{
 	},
 	{
 		Name:        "get_note",
-		Description: "One note: content is its bullets as an indented Markdown list (one tab per level; - [ ] / - [x] are to-dos); bullets lists them with their ids, level and type, for add_note_bullet / update_note_bullet / delete_note_bullet. {{secret:…}} is a value the user hid; it cannot be read here, keep it unchanged when editing the bullet. {{mention:<user id>}} in bullets is an @-mention of a person (content shows it as @Name); keep it unchanged as well. Drawings (type drawing) are described in words: shapes with their text, arrows as „A“ → „B“ (label).",
+		Description: "One note: content is its bullets as an indented Markdown list (one tab per level; - [ ] / - [x] are to-dos); bullets lists them with their ids, level and type, for add_note_bullet / update_note_bullet / delete_note_bullet. {{secret:…}} is a hidden value (the user keeps it off the screen; the format still says secret); it cannot be read here, keep it unchanged when editing the bullet. {{mention:<user id>}} in bullets is an @-mention of a person (content shows it as @Name); keep it unchanged as well. Drawings (type drawing) are described in words: shapes with their text, arrows as „A“ → „B“ (label).",
 		Scope:       storage.ScopeNotesRead,
 		Schema:      schema([]string{"id"}, map[string]any{"id": prop("string", "Note id")}),
 		run: func(s *Server, userID string, _ *apiActor, args json.RawMessage) (any, error) {

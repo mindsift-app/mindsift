@@ -128,7 +128,7 @@
     "image": "Upload or link images",
     "audio": "Voice note or audio file",
     "dictation": "Speak instead of typing",
-    "secret": "Hide a value (IP, token …)",
+    "secret": "Hide a value (password, token …)",
     "drawing": "Drawing, diagram, mind map"
   },
   "block": {
@@ -458,7 +458,7 @@
   },
   "secret": {
     "newTitle": "Hide a value",
-    "placeholder": "e.g. IP address or token",
+    "placeholder": "e.g. password or token",
     "hint": "Stored encrypted and only shown when tapped. API keys and MCP only ever see it hidden.",
     "create": "Hide",
     "label": "Hidden value",
@@ -469,7 +469,7 @@
     "edit": "Change",
     "editTitle": "Change hidden value",
     "save": "Save",
-    "gone": "Secret deleted",
+    "gone": "Hidden value deleted",
     "unreadable": "Unreadable"
   },
   "publicLink": {

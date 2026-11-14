@@ -99,7 +99,7 @@ const en: HelpContent = {
       title: 'Slash commands (/) & auto-formatting',
       subtitle: 'Switch block types and format Markdown while typing',
       icon: Command,
-      keywords: ['slash', 'commands', 'todo', 'link', 'h1', 'h2', 'h3', 'code', 'callout', 'warn', 'fail', 'divider', 'image', 'extract', 'merge', 'audio', 'voice note', 'dictation', 'photo', 'auto-formatting'],
+      keywords: ['slash', 'commands', 'todo', 'link', 'h1', 'h2', 'h3', 'code', 'callout', 'warn', 'fail', 'divider', 'image', 'extract', 'merge', 'audio', 'voice note', 'dictation', 'photo', 'auto-formatting', 'hidden value', 'password'],
       content: (
         <div className="space-y-3 text-muted leading-relaxed">
           <div>
@@ -133,7 +133,7 @@ const en: HelpContent = {
               </div>
               <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main">
                 <KeyRound className="w-3.5 h-3.5 text-accent" />
-                <span>/secret (hide a value, e.g. an IP or token)</span>
+                <span>/hidden (hide a value, e.g. a password)</span>
               </div>
               <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main">
                 <span className="text-accent font-bold">💬</span>
@@ -168,6 +168,12 @@ const en: HelpContent = {
                 <span>/diktat (speak instead of typing: starts right away, tapping “Stop” puts the text into the bullet)</span>
               </div>
             </div>
+          </div>
+          <div className="pt-2 border-t border-border">
+            <span className="font-semibold text-main block mb-1">Hidden values (/hidden, also /secret):</span>
+            <p className="text-xs">
+              They keep values like passwords off the screen and out of shared or public notes; they are not a password manager. The text only shows ••••, and a click shows the value for a moment, to everyone who may see the note (never through a public link). Copy the bullet into another note and that note gets its own copy of the value.
+            </p>
           </div>
           <div className="pt-2 border-t border-border">
             <span className="font-semibold text-main block mb-1">Instant formatting while writing:</span>

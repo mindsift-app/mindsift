@@ -105,7 +105,7 @@ const fr: HelpContent = {
       title: 'Commandes slash (/) & formatage automatique',
       subtitle: 'Changer de type de bloc et formater en Markdown pendant la saisie',
       icon: Command,
-      keywords: ['slash', 'commandes', 'tâche', 'lien', 'h1', 'h2', 'h3', 'code', 'callout', 'warn', 'fail', 'séparateur', 'image', 'extraire', 'fusionner', 'audio', 'note vocale', 'dictée', 'photo', 'auto-formatage'],
+      keywords: ['slash', 'commandes', 'tâche', 'lien', 'h1', 'h2', 'h3', 'code', 'callout', 'warn', 'fail', 'séparateur', 'image', 'extraire', 'fusionner', 'audio', 'note vocale', 'dictée', 'photo', 'auto-formatage', 'valeur masquée', 'mot de passe'],
       content: (
         <div className="space-y-3 text-muted leading-relaxed">
           <div>
@@ -139,7 +139,7 @@ const fr: HelpContent = {
               </div>
               <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main">
                 <KeyRound className="w-3.5 h-3.5 text-accent" />
-                <span>/secret (masquer une valeur, p. ex. une IP ou un jeton)</span>
+                <span>/hidden (masquer une valeur, p. ex. un mot de passe)</span>
               </div>
               <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main">
                 <span className="text-accent font-bold">💬</span>
@@ -174,6 +174,12 @@ const fr: HelpContent = {
                 <span>/diktat (parler au lieu de taper : démarre immédiatement, appuyer sur « Arrêter » insère le texte dans la puce)</span>
               </div>
             </div>
+          </div>
+          <div className="pt-2 border-t border-border">
+            <span className="font-semibold text-main block mb-1">Valeurs masquées (/hidden, aussi /masquer ou /secret) :</span>
+            <p className="text-xs">
+              Elles gardent des valeurs comme les mots de passe hors de l'écran et hors des notes partagées ou publiques ; ce n'est pas un gestionnaire de mots de passe. Le texte n'affiche que ••••, et un clic montre la valeur un instant à toute personne qui peut voir la note (jamais par un lien public). Si tu copies la puce dans une autre note, celle-ci reçoit sa propre copie de la valeur.
+            </p>
           </div>
           <div className="pt-2 border-t border-border">
             <span className="font-semibold text-main block mb-1">Formatage instantané pendant la saisie :</span>
