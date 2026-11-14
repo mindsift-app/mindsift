@@ -19,7 +19,7 @@ type DocCounts struct {
 // without loading the note or its bullets.
 func (s *Store) GetDocCounts(ctx context.Context, docID string) (DocCounts, error) {
 	one := []domain.Document{{ID: docID}}
-	if err := s.attachListStats(ctx, one); err != nil {
+	if err := s.readConsistent(ctx, func(q docQueryer) error { return attachListStats(q, one) }); err != nil {
 		return DocCounts{}, err
 	}
 	c := DocCounts{ID: docID, OpenTodos: one[0].OpenTodos, TagCounts: one[0].TagCounts, TagOpenTodos: one[0].TagOpenTodos}
