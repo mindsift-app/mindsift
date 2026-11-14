@@ -1,6 +1,7 @@
 package api
 
 import (
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -30,14 +31,53 @@ func (s *Server) broadcastDocToAuthorizedUsers(docID, event string) {
 	}
 }
 
+// maxDocListsBuilding: note lists built at the same time. A list no longer carries bullets, but a burst
+// of sign-ins (each client loads it at start) still queued hundreds of them on a small server.
+const maxDocListsBuilding = 4
+
+// handleGetDocuments: GET /documents, the note list without bullets (storage.GetDocumentList). Waits for
+// a free slot; a client that gave up meanwhile gets nothing built for it.
 func (s *Server) handleGetDocuments(w http.ResponseWriter, r *http.Request) {
 	userID := auth.GetUserID(r.Context())
-	docs, err := s.store.GetDocuments(userID)
+	select {
+	case s.docLists <- struct{}{}:
+		defer func() { <-s.docLists }()
+	case <-r.Context().Done():
+		return
+	}
+	if r.Context().Err() != nil {
+		return
+	}
+	docs, err := s.store.GetDocumentList(userID)
 	if err != nil {
 		writeInternal(w, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, docs)
+}
+
+// handleGetNoteTodos: GET /documents/todos, the to-dos with text of all notes the user can see.
+func (s *Server) handleGetNoteTodos(w http.ResponseWriter, r *http.Request) {
+	todos, err := s.store.ListNoteTodos(auth.GetUserID(r.Context()))
+	if err != nil {
+		writeInternal(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, todos)
+}
+
+// handleGetBlock: GET /blocks/{id}, one bullet of a note the user may read (for links to a bullet).
+func (s *Server) handleGetBlock(w http.ResponseWriter, r *http.Request) {
+	b, err := s.store.GetBlockForUser(auth.GetUserID(r.Context()), chi.URLParam(r, "id"))
+	if errors.Is(err, sql.ErrNoRows) {
+		writeError(w, http.StatusNotFound, "Nicht gefunden")
+		return
+	}
+	if err != nil {
+		writeInternal(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, b)
 }
 
 func (s *Server) handleCreateDocument(w http.ResponseWriter, r *http.Request) {

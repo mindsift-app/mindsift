@@ -40,6 +40,30 @@ writable_as() {
   return 1
 }
 
+# Go only learns about a memory limit of the container from GOMEMLIMIT: without it, a burst of requests
+# can grow the heap past the limit before the garbage collector runs, and the kernel stops the process.
+# When the container has a limit (cgroup v2 memory.max, v1 memory.limit_in_bytes) and GOMEMLIMIT is not
+# set, aim at 80 % of it, leaving room for SQLite's cache and the rest of the process.
+if [ -z "${GOMEMLIMIT:-}" ]; then
+  limit=""
+  if [ -r /sys/fs/cgroup/memory.max ]; then
+    limit="$(cat /sys/fs/cgroup/memory.max 2>/dev/null)"
+  elif [ -r /sys/fs/cgroup/memory/memory.limit_in_bytes ]; then
+    limit="$(cat /sys/fs/cgroup/memory/memory.limit_in_bytes 2>/dev/null)"
+  fi
+  case "$limit" in
+    ''|max|*[!0-9]*) ;;
+    *)
+      # cgroup v1 reports a huge number for "no limit"; anything above 1 TiB counts as none
+      if [ "$limit" -lt 1099511627776 ]; then
+        GOMEMLIMIT="$((limit / 1048576 * 8 / 10))MiB"
+        export GOMEMLIMIT
+        echo "MindSift: container memory limit $((limit / 1048576)) MiB, setting GOMEMLIMIT=$GOMEMLIMIT"
+      fi
+      ;;
+  esac
+fi
+
 if [ "$(id -u)" = "0" ]; then
   for d in $dirs; do
     # Root in the container may not create it either (NFS with root_squash): the check below says why

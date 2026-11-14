@@ -1375,7 +1375,7 @@
     "/api/v1/documents": {
       "get": {
         "summary": "List notes",
-        "description": "List notes; create (title, icon, folderPath, blocks, tags, isPinned; icon: \"\" = no icon, if omitted: 🗒️)",
+        "description": "List notes without bullets (blocks [], content \"\"), with openTodos, tagCounts and tagOpenTodos per note; at most four lists built at a time; create (title, icon, folderPath, blocks, tags, isPinned; icon: \"\" = no icon, if omitted: 🗒️)",
         "tags": [
           "Workspace"
         ],
@@ -4585,6 +4585,44 @@
         "description": "{return, link?, password?, code | passkeyToken + passkey} → {url, bind, expiresIn}. Without link: sign in at the provider again (prompt=login, max_age=0) to confirm sensitive changes; after the ticket exchange the session counts as confirmed for 5 minutes (answers oidc_confirm_required of password, address, deleting, API keys, second factor). With link: ties the account to the provider, needs the password (and second factor) first; 409 when already linked",
         "tags": [
           "Account and General"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/documents/todos": {
+      "get": {
+        "summary": "To-dos of all notes",
+        "description": "Every to-do with text in the notes the caller can see: [{docId, blockId, content, checked}]",
+        "tags": [
+          "Workspace"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/blocks/{id}": {
+      "get": {
+        "summary": "One bullet",
+        "description": "One live bullet of a note the caller may read: {documentId, content, type}; 404 otherwise",
+        "tags": [
+          "Workspace"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
         ],
         "responses": {
           "default": {

@@ -634,6 +634,21 @@ type Document struct {
 	SubFolderPath    string     `json:"subFolderPath,omitempty"`
 	IsSharedFolder   bool       `json:"isSharedFolder,omitempty"`
 	FolderPermission string     `json:"folderPermission,omitempty"`
+
+	// Only in the note list (GetDocumentList), which carries no bullets: what the folder tree, the hashtag
+	// list and the to-do counts need of them. OpenTodos: open to-dos with text; TagCounts: per hashtag the
+	// live bullets carrying it; TagOpenTodos: per hashtag the open to-dos among those bullets.
+	OpenTodos    int            `json:"openTodos,omitempty"`
+	TagCounts    map[string]int `json:"tagCounts,omitempty"`
+	TagOpenTodos map[string]int `json:"tagOpenTodos,omitempty"`
+}
+
+// NoteTodo: a to-do bullet with text, for the to-do collection over all notes (GET /documents/todos).
+type NoteTodo struct {
+	DocID   string `json:"docId"`
+	BlockID string `json:"blockId"`
+	Content string `json:"content"`
+	Checked bool   `json:"checked"`
 }
 
 type TagSummary struct {
