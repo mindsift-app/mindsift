@@ -3,10 +3,11 @@ import { render, screen, fireEvent, act } from '@testing-library/react';
 import { LinkModal } from '../LinkModal';
 import { api } from '../../../lib/api';
 import { Document, DocumentBlock } from '../../../lib/types';
+import { WikiLinkResolverContext, WikiLinkStore } from '../../../lib/wikiLinkResolver';
 
 vi.mock('../../../lib/api', async () => {
   const actual = await vi.importActual<typeof import('../../../lib/api')>('../../../lib/api');
-  return { ...actual, api: { ...actual.api, getDocument: vi.fn() } };
+  return { ...actual, api: { ...actual.api, getDocument: vi.fn(), getDocuments: vi.fn() } };
 });
 
 const block = (id: string, content: string): DocumentBlock =>
@@ -40,5 +41,21 @@ describe('LinkModal block picker', () => {
 
     expect(screen.getByText('Koffer packen')).toBeTruthy();
     expect(screen.queryByText('Milch kaufen')).toBeNull();
+  });
+
+  // Opened from a bullet in the workspace: the notes the workspace holds, no list fetched
+  it('uses the notes of the workspace instead of fetching the list', () => {
+    const store: WikiLinkStore = {
+      current: () => null,
+      subscribe: () => () => {},
+      docs: [{ id: 'doc_a', title: 'Einkauf' } as Document],
+    };
+    render(
+      <WikiLinkResolverContext.Provider value={store}>
+        <LinkModal isOpen onClose={() => {}} onInsertLink={() => {}} />
+      </WikiLinkResolverContext.Provider>
+    );
+    expect(screen.getByText('Einkauf')).toBeTruthy();
+    expect(api.getDocuments).not.toHaveBeenCalled();
   });
 });

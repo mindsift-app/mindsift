@@ -1,4 +1,4 @@
-import { createContext, useContext, useLayoutEffect, useMemo, useState, useSyncExternalStore } from 'react';
+import { createContext, useCallback, useContext, useLayoutEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { BlockInfo, Document } from './types';
 import { WikiLink, WikiLinkResolver, WikiLinkTarget } from './wikiLink';
 import { blocksVersion, cachedBlock, requestBlock, subscribeBlocks } from './blockLookup';
@@ -10,6 +10,8 @@ import { blocksVersion, cachedBlock, requestBlock, subscribeBlocks } from './blo
 export interface WikiLinkStore {
   current: WikiLinkResolver;
   subscribe: (onChange: () => void) => () => void;
+  // The workspace's notes as of the last render (e.g. for the link dialog, which then fetches no list)
+  docs?: Document[];
 }
 
 export const WikiLinkResolverContext = createContext<WikiLinkStore | null>(null);
@@ -31,12 +33,18 @@ export function useWikiLinkStore(docs: Document[]): WikiLinkStore {
     return {
       listeners,
       current: resolver,
+      docs,
       subscribe: (onChange: () => void) => {
         listeners.add(onChange);
         return () => listeners.delete(onChange);
       },
     };
   });
+  useLayoutEffect(() => {
+    // Read when needed (no listener follows it), so no one is told
+    // eslint-disable-next-line react-hooks/immutability
+    store.docs = docs;
+  }, [store, docs]);
   useLayoutEffect(() => {
     if (store.current === resolver) return;
     // The store lives outside React's state; its listeners are told after the change
@@ -48,6 +56,12 @@ export function useWikiLinkStore(docs: Document[]): WikiLinkStore {
 }
 
 const noSubscription = () => () => {};
+
+/** The workspace's notes, read once (not followed); undefined outside the workspace. */
+export function useWorkspaceDocsSnapshot(): () => Document[] | undefined {
+  const store = useContext(WikiLinkResolverContext);
+  return useCallback(() => store?.docs, [store]);
+}
 
 /**
  * The current resolver. With `content`, only while it holds a link: a bullet without one then does not
