@@ -676,6 +676,8 @@ func (s *Store) migrateBaseline() error {
 
 		"ALTER TABLE documents ADD COLUMN folder_id TEXT NOT NULL DEFAULT '';",
 		"ALTER TABLE documents ADD COLUMN markdown_cache TEXT NOT NULL DEFAULT '';",
+		// Dropped again by migration 51; the steps before it (anchor tags here, migration 44) still use it
+		"ALTER TABLE documents ADD COLUMN content TEXT NOT NULL DEFAULT '';",
 
 		"CREATE TABLE IF NOT EXISTS blocks (id TEXT PRIMARY KEY, document_id TEXT NOT NULL, content TEXT NOT NULL DEFAULT '', level INT NOT NULL DEFAULT 0, position REAL NOT NULL DEFAULT 0, type TEXT NOT NULL DEFAULT 'bullet', checked INTEGER NOT NULL DEFAULT 0, collapsed INTEGER NOT NULL DEFAULT 0, lang TEXT NOT NULL DEFAULT '', FOREIGN KEY(document_id) REFERENCES documents(id) ON DELETE CASCADE);",
 		"CREATE INDEX IF NOT EXISTS idx_blocks_doc_pos ON blocks(document_id, position ASC);",

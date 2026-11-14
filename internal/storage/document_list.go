@@ -36,9 +36,34 @@ func docIDsJSON(docs []domain.Document) string {
 // An open to-do counts when it has text, as the app counts them.
 const sqlOpenTodo = `b.type = 'todo' AND b.checked = 0 AND TRIM(b.content) != ''`
 
-// attachListStats fills OpenTodos, TagCounts and TagOpenTodos of the notes with two grouped queries over
-// all of them (not one per note); only counts leave the database, no bullet text.
-func (s *Store) attachListStats(ctx context.Context, docs []domain.Document) error {
+// The list's counts, each over all listed notes (?: the note ids as JSON) and only from indexes where
+// they can: no bullet text leaves the database, and none is read for a bullet that is not an open to-do.
+// INDEXED BY, because SQLite's statistics can make it pick an index over all bullets of a note.
+const (
+	// sqlListOpenTodos: open to-dos per note, through the partial index of migration 50 (only open
+	// to-dos have an entry; their text is read for the TRIM).
+	sqlListOpenTodos = `SELECT b.document_id, COUNT(*) FROM blocks b INDEXED BY idx_blocks_open_todo
+		WHERE b.document_id IN (SELECT value FROM json_each(?)) AND b.deleted = 0 AND ` + sqlOpenTodo + `
+		GROUP BY b.document_id`
+	// sqlListTagCounts: bullets per hashtag and note, from the covering index idx_block_tags_doc_tag
+	// (migration 51) alone, in its order. block_tags holds the hashtags of live, shown bullets of the
+	// note only: it is rewritten from them whenever a bullet of the note changes (docsync.go), the other
+	// writer checks each bullet (indexDocBlockTags), and migration 51 removed older rows of other ones.
+	// Joining every row to blocks to check that again cost about three times as much.
+	sqlListTagCounts = `SELECT document_id, tag, COUNT(*) FROM block_tags
+		WHERE document_id IN (SELECT value FROM json_each(?))
+		GROUP BY document_id, tag`
+	// sqlListTagOpenTodos: open to-dos (with or without text) per hashtag and note, from the open to-dos
+	// to their hashtags (idx_block_tags_block, migration 51); CROSS JOIN keeps that order.
+	sqlListTagOpenTodos = `SELECT bt.document_id, bt.tag, COUNT(*) FROM blocks b INDEXED BY idx_blocks_open_todo
+		CROSS JOIN block_tags bt ON bt.block_id = b.id AND bt.document_id = b.document_id
+		WHERE b.document_id IN (SELECT value FROM json_each(?)) AND b.type = 'todo' AND b.checked = 0 AND b.deleted = 0
+		GROUP BY bt.document_id, bt.tag`
+)
+
+// attachListStats fills OpenTodos, TagCounts and TagOpenTodos of the notes with three grouped queries
+// over all of them (not one per note), on q.
+func attachListStats(q docQueryer, docs []domain.Document) error {
 	if len(docs) == 0 {
 		return nil
 	}
@@ -48,56 +73,49 @@ func (s *Store) attachListStats(ctx context.Context, docs []domain.Document) err
 	}
 	ids := docIDsJSON(docs)
 
-	rows, err := s.db.QueryContext(ctx, `SELECT b.document_id, COUNT(*) FROM blocks b
-		WHERE b.document_id IN (SELECT value FROM json_each(?)) AND b.deleted = 0 AND `+sqlOpenTodo+`
-		GROUP BY b.document_id`, ids)
-	if err != nil {
+	if err := scanListCounts(q, sqlListOpenTodos, ids, false, func(d *domain.Document, _ string, n int) {
+		d.OpenTodos = n
+	}, byID); err != nil {
 		return err
 	}
-	for rows.Next() {
-		var docID string
-		var n int
-		if err := rows.Scan(&docID, &n); err != nil {
-			_ = rows.Close()
-			return err
+	if err := scanListCounts(q, sqlListTagCounts, ids, true, func(d *domain.Document, tag string, n int) {
+		if d.TagCounts == nil {
+			d.TagCounts = map[string]int{}
+			d.TagOpenTodos = map[string]int{}
 		}
-		if d := byID[docID]; d != nil {
-			d.OpenTodos = n
-		}
-	}
-	if err := rows.Err(); err != nil {
-		_ = rows.Close()
+		d.TagCounts[tag] = n
+		d.TagOpenTodos[tag] = 0
+	}, byID); err != nil {
 		return err
 	}
-	_ = rows.Close()
+	return scanListCounts(q, sqlListTagOpenTodos, ids, true, func(d *domain.Document, tag string, n int) {
+		if _, ok := d.TagOpenTodos[tag]; ok {
+			d.TagOpenTodos[tag] = n
+		}
+	}, byID)
+}
 
-	// block_tags holds the hashtags of live bullets (rewritten with the note, see docsync.go)
-	rows, err = s.db.QueryContext(ctx, `SELECT bt.document_id, bt.tag, COUNT(*),
-			SUM(CASE WHEN b.type = 'todo' AND b.checked = 0 THEN 1 ELSE 0 END)
-		FROM block_tags bt
-		JOIN blocks b ON b.id = bt.block_id AND b.document_id = bt.document_id AND b.deleted = 0
-		WHERE bt.document_id IN (SELECT value FROM json_each(?))
-		GROUP BY bt.document_id, bt.tag`, ids)
+// scanListCounts runs one query of attachListStats and hands each row (note id, the tag when withTag,
+// count) to set, for the notes in byID.
+func scanListCounts(q docQueryer, query, ids string, withTag bool, set func(d *domain.Document, tag string, n int), byID map[string]*domain.Document) error {
+	rows, err := q.Query(query, ids)
 	if err != nil {
 		return err
 	}
 	defer rows.Close()
 	for rows.Next() {
 		var docID, tag string
-		var count, open int
-		if err := rows.Scan(&docID, &tag, &count, &open); err != nil {
+		var n int
+		dest := []any{&docID, &n}
+		if withTag {
+			dest = []any{&docID, &tag, &n}
+		}
+		if err := rows.Scan(dest...); err != nil {
 			return err
 		}
-		d := byID[docID]
-		if d == nil {
-			continue
+		if d := byID[docID]; d != nil {
+			set(d, tag, n)
 		}
-		if d.TagCounts == nil {
-			d.TagCounts = map[string]int{}
-			d.TagOpenTodos = map[string]int{}
-		}
-		d.TagCounts[tag] = count
-		d.TagOpenTodos[tag] = open
 	}
 	return rows.Err()
 }
@@ -105,15 +123,12 @@ func (s *Store) attachListStats(ctx context.Context, docs []domain.Document) err
 // GetDocumentListItem returns one note as GetDocumentList lists it: without bullets and plain text, with
 // the counts. For the realtime events that keep the note lists current (DOC_CREATED, DOC_UPDATED).
 func (s *Store) GetDocumentListItem(userID, docID string) (*domain.Document, error) {
-	doc, err := s.GetDocumentByID(userID, docID)
+	doc, err := s.getDocumentByID(userID, docID, false)
 	if err != nil {
 		return nil, err
 	}
-	doc.Blocks = []domain.DocumentBlock{}
-	doc.Content = ""
-	doc.MarkdownCache = ""
 	one := []domain.Document{*doc}
-	if err := s.attachListStats(context.Background(), one); err != nil {
+	if err := attachListStats(s.db, one); err != nil {
 		return nil, err
 	}
 	return &one[0], nil

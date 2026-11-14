@@ -190,3 +190,44 @@ func TestDocumentListStopsWithContext(t *testing.T) {
 		t.Fatalf("list: %v, %d notes", err, len(list))
 	}
 }
+
+// A note created with bullet ids of another note (copied bullets) gets new ids for them; its hashtags are
+// counted under those, and no row of block_tags points to the other note's bullets.
+func TestDocumentListTagsOfCopiedBullets(t *testing.T) {
+	store, err := NewStore(filepath.Join(t.TempDir(), "list.db"))
+	if err != nil {
+		t.Fatalf("NewStore: %v", err)
+	}
+	defer store.Close()
+	anna, _ := store.CreateUser("anna@example.com", "hash", "Anna", "member")
+	blocks := []domain.DocumentBlock{{ID: "k1", Type: "todo", Content: "Milch #laden"}, {ID: "k2", Type: "bullet", Content: "Idee #garten"}}
+	first, err := store.CreateDocument(anna.ID, "", "Original", "", "", blocks, nil, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	blocks[1].Content = "Idee #balkon"
+	copied, err := store.CreateDocument(anna.ID, "", "Kopie", "", "", blocks, nil, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	list, err := store.GetDocumentList(context.Background(), anna.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := map[string]map[string]int{first.ID: {"laden": 1, "garten": 1}, copied.ID: {"laden": 1, "balkon": 1}}
+	for _, d := range list {
+		if len(d.TagCounts) != len(want[d.ID]) || d.TagOpenTodos["laden"] != 1 {
+			t.Errorf("%s: tags %v, open %v", d.Title, d.TagCounts, d.TagOpenTodos)
+		}
+		for tag, n := range want[d.ID] {
+			if d.TagCounts[tag] != n {
+				t.Errorf("%s: tags %v, want %v", d.Title, d.TagCounts, want[d.ID])
+			}
+		}
+	}
+	var stale int
+	if err := store.db.QueryRow(`SELECT COUNT(*) FROM block_tags bt WHERE NOT EXISTS (SELECT 1 FROM blocks b
+		WHERE b.id = bt.block_id AND b.document_id = bt.document_id AND b.deleted = 0)`).Scan(&stale); err != nil || stale != 0 {
+		t.Fatalf("%d rows of block_tags without a live bullet of their note (%v)", stale, err)
+	}
+}

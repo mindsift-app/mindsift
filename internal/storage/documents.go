@@ -14,7 +14,7 @@ import (
 )
 
 // docPlainText is the text of a note, one bullet per line (a drawing with the words written in it); the
-// "content" of a note in the API. It is built from the bullets, documents.content stays empty.
+// "content" of a note in the API. It is built from the bullets (documents has no copy since migration 51).
 func docPlainText(blocks []domain.DocumentBlock) string {
 	var b strings.Builder
 	for _, bl := range blocks {
@@ -241,10 +241,10 @@ func (s *Store) createDocument(userID, spaceID, title, icon, folderPath string, 
 		UpdatedAt:      now,
 	}
 
-	// The text goes into blocks only (content and blocks_json stay empty, see note_storage.go)
+	// The text goes into blocks only (blocks_json stays empty, see note_storage.go)
 	_, err := s.db.Exec(
-		`INSERT INTO documents (id, user_id, space_id, title, icon, content, blocks_json, tags, folder_path, is_pinned, is_archived, created_at, updated_at, shared_folder_id, sub_folder_path)
-		 VALUES (?, ?, ?, ?, ?, '', '[]', ?, ?, ?, 0, ?, ?, ?, ?)`,
+		`INSERT INTO documents (id, user_id, space_id, title, icon, blocks_json, tags, folder_path, is_pinned, is_archived, created_at, updated_at, shared_folder_id, sub_folder_path)
+		 VALUES (?, ?, ?, ?, ?, '[]', ?, ?, ?, 0, ?, ?, ?, ?)`,
 		doc.ID, doc.UserID, doc.SpaceID, doc.Title, doc.Icon, string(tagsJSON), doc.FolderPath, pinnedInt, doc.CreatedAt, doc.UpdatedAt, doc.SharedFolderID, doc.SubFolderPath,
 	)
 	if err != nil {
@@ -260,16 +260,22 @@ func (s *Store) createDocument(userID, spaceID, title, icon, folderPath string, 
 	if isPinned {
 		s.execLogged(`INSERT OR IGNORE INTO doc_pins (user_id, doc_id, created_at) VALUES (?, ?, ?)`, userID, doc.ID, doc.CreatedAt)
 	}
-	logDBErr(s.indexDocBlockTags(doc.ID, doc.UserID, doc.Blocks))
+	// block_tags was written with the bullets (applyDocChange), with the ids they were stored under:
+	// saveDocBlocks gives bullets whose id belongs to another note a new one, doc.Blocks keeps the old
 	return doc, nil
 }
 
 // getUserFolderMounts returns map[folder_id]mount_path and map[folder_id]folder_name for all shared folders accessible to userID
 func (s *Store) getUserFolderMounts(userID string) (map[string]string, map[string]string, error) {
+	return userFolderMounts(s.db, userID)
+}
+
+// userFolderMounts is getUserFolderMounts with the query on q.
+func userFolderMounts(q docQueryer, userID string) (map[string]string, map[string]string, error) {
 	mounts := make(map[string]string)
 	names := make(map[string]string)
 
-	rows, err := s.db.Query(`
+	rows, err := q.Query(`
 		SELECT f.id, f.name, COALESCE(m.mount_path, f.name) as mount_path
 		FROM workspace_shared_folders f
 		LEFT JOIN workspace_folder_mounts m ON m.folder_id = f.id AND m.user_id = ?
@@ -391,32 +397,6 @@ func resolveDocumentPath(userID string, doc *domain.Document, mounts map[string]
 	}
 }
 
-func (s *Store) scanDocumentWithBlocks(rows interface {
-	Scan(dest ...any) error
-}) (*domain.Document, error) {
-	d := &domain.Document{}
-	var blocksStr, tagsStr string
-	var isPinned, isArchived int
-	err := rows.Scan(
-		&d.ID, &d.UserID, &d.SpaceID, &d.Title, &d.Icon, &d.Content,
-		&blocksStr, &tagsStr, &d.FolderPath, &isPinned, &isArchived, &d.CreatedAt, &d.UpdatedAt,
-		&d.SharedFolderID, &d.SubFolderPath,
-	)
-	if err != nil {
-		return nil, err
-	}
-	d.IsPinned = isPinned != 0
-	d.IsArchived = isArchived != 0
-	d.Tags = []string{}
-	_ = json.Unmarshal([]byte(tagsStr), &d.Tags)
-	d.Tags = stripFolderTags(d.Tags)
-	d.Blocks = s.loadDocBlocks(d.ID, blocksStr)
-	d.Content = docPlainText(d.Blocks)
-	d.MarkdownCache = domain.CompileBlocksToMarkdown(d.Blocks)
-	d.FolderID = d.FolderPath
-	return d, nil
-}
-
 // GetDocuments returns every note the user can see, each with all its bullets and plain text. For code
 // on the server that works with the bullets (export, backlinks, links, folders); the app's note list
 // uses GetDocumentList.
@@ -427,26 +407,136 @@ func (s *Store) GetDocuments(userID string) ([]domain.Document, error) {
 // GetDocumentList returns the notes the user can see without their bullets (Blocks empty, Content ""),
 // with the counts the folder tree, the hashtag list and the to-do overview need (OpenTodos, TagCounts,
 // TagOpenTodos). Every client loads it at start: with bullets it grew by about 43 KB per note, and many
-// of them at once took gigabytes of memory under load. When ctx ends (the client gave up) its queries are
-// cancelled and it returns ctx's error.
+// of them at once took gigabytes of memory under load. Its reads run on one connection and see one state
+// of the database (readConsistent) instead of taking a connection from the pool for each. When ctx ends
+// (the client gave up) its queries are cancelled and it returns ctx's error.
 func (s *Store) GetDocumentList(ctx context.Context, userID string) ([]domain.Document, error) {
-	docs, err := s.getDocuments(ctx, userID, false)
-	if err != nil {
-		return nil, err
+	var docs []domain.Document
+	err := s.readConsistent(ctx, func(q docQueryer) error {
+		var err error
+		if docs, _, err = listDocuments(q, userID, false); err != nil {
+			return err
+		}
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		return attachListStats(q, docs)
+	})
+	if ctxErr := ctx.Err(); ctxErr != nil {
+		return nil, ctxErr
 	}
-	if err := s.attachListStats(ctx, docs); err != nil {
+	if err != nil {
 		return nil, err
 	}
 	return docs, nil
 }
 
-// getDocuments: the notes the user can see. The queries run with ctx; an ended ctx returns its error, not
-// a partial list.
+// getDocuments: the notes the user can see, with their bullets and plain text when withBlocks. The
+// queries run with ctx; an ended ctx returns its error, not a partial list.
 func (s *Store) getDocuments(ctx context.Context, userID string, withBlocks bool) ([]domain.Document, error) {
-	mounts, names, _ := s.getUserFolderMounts(userID)
+	docs, blocksJSON, err := listDocuments(connOrDB(ctx, s.db), userID, withBlocks)
+	if err != nil {
+		return nil, err
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	if withBlocks {
+		// After the queries above: loading the bullets takes connections of its own
+		for i := range docs {
+			docs[i].Blocks, docs[i].Content = s.listBlocks(docs[i].ID, blocksJSON[i], true)
+		}
+	}
+	return docs, nil
+}
+
+// docColumns: the columns of documents (d, with the pin p) that scanDocRow reads, in its order.
+// blocks_json is only read when the bullets are wanted (withBlockJSON): it holds something only for a
+// very old note whose block list could not be converted (loadDocBlocks); the note list has no bullets.
+func docColumns(withBlockJSON bool) string {
+	blocksJSON := `''`
+	if withBlockJSON {
+		blocksJSON = `d.blocks_json`
+	}
+	return `d.id, d.user_id, d.space_id, d.title, d.icon, ` + blocksJSON + `, d.tags, d.folder_path,
+		CASE WHEN p.doc_id IS NOT NULL THEN 1 ELSE 0 END AS is_pinned,
+		d.is_archived, d.created_at, d.updated_at,
+		d.shared_folder_id, d.sub_folder_path`
+}
+
+// scanDocRow reads the columns of docColumns, followed by extra, into a note without bullets and returns
+// its blocks_json.
+func scanDocRow(row interface{ Scan(dest ...any) error }, d *domain.Document, extra ...any) (string, error) {
+	var blocksStr, tagsStr string
+	var isPinned, isArchived int
+	dest := append([]any{
+		&d.ID, &d.UserID, &d.SpaceID, &d.Title, &d.Icon,
+		&blocksStr, &tagsStr, &d.FolderPath, &isPinned, &isArchived, &d.CreatedAt, &d.UpdatedAt,
+		&d.SharedFolderID, &d.SubFolderPath,
+	}, extra...)
+	if err := row.Scan(dest...); err != nil {
+		return "", err
+	}
+	d.IsPinned = isPinned != 0
+	d.IsArchived = isArchived != 0
+	d.Tags = []string{}
+	_ = json.Unmarshal([]byte(tagsStr), &d.Tags)
+	d.Tags = stripFolderTags(d.Tags)
+	d.Blocks = []domain.DocumentBlock{}
+	return blocksStr, nil
+}
+
+// sqlSharedDocPermission: the permission of ?1 on a note shared with them (d), from the joins of
+// sqlSharedDocJoins.
+const sqlSharedDocPermission = `CASE
+		WHEN wsf.owner_id = ?1 THEN 'owner'
+		WHEN COALESCE(s.permission, '') = 'write' OR COALESCE(dts.permission, '') = 'write' OR COALESCE(wfs.permission, '') = 'write' THEN 'write'
+		ELSE 'read'
+	END`
+
+// sqlSharedDocJoins joins the ways a note (d) can be shared with ?1: directly (s), through a team (dts),
+// as the owner of its shared folder (wsf) or through a share of that folder (wfs); and ?1's pin (p) and
+// the note's owner (u).
+const sqlSharedDocJoins = `
+	JOIN users u ON d.user_id = u.id
+	LEFT JOIN doc_shares s ON d.id = s.doc_id AND s.user_id = ?1
+	LEFT JOIN (
+		SELECT dts2.doc_id, dts2.permission
+		FROM doc_team_shares dts2
+		JOIN team_members tm ON tm.team_id = dts2.team_id
+		WHERE tm.user_id = ?1
+	) dts ON d.id = dts.doc_id
+	LEFT JOIN workspace_shared_folders wsf ON d.shared_folder_id = wsf.id
+	LEFT JOIN (
+		SELECT wfs2.folder_id, wfs2.permission
+		FROM workspace_folder_shares wfs2
+		WHERE (wfs2.target_type = 'user' AND wfs2.target_id = ?1)
+		   OR (wfs2.target_type = 'team' AND wfs2.target_id IN (SELECT team_id FROM team_members WHERE user_id = ?1))
+	) wfs ON d.shared_folder_id = wfs.folder_id
+	LEFT JOIN doc_pins p ON p.doc_id = d.id AND p.user_id = ?1`
+
+// sqlSharedDocIDs: the ids of the notes shared with ?1 in one of the ways of sqlSharedDocJoins, found
+// through the shares instead of checking every note of the server. Notes of ?1 and notes in the trash
+// can be among them; the caller filters them.
+const sqlSharedDocIDs = `
+	SELECT doc_id FROM doc_shares WHERE user_id = ?1
+	UNION
+	SELECT dts.doc_id FROM doc_team_shares dts JOIN team_members tm ON tm.team_id = dts.team_id WHERE tm.user_id = ?1
+	UNION
+	SELECT d.id FROM workspace_shared_folders f JOIN documents d ON d.shared_folder_id = f.id WHERE f.owner_id = ?1
+	UNION
+	SELECT d.id FROM workspace_folder_shares f JOIN documents d ON d.shared_folder_id = f.folder_id
+	WHERE (f.target_type = 'user' AND f.target_id = ?1)
+	   OR (f.target_type = 'team' AND f.target_id IN (SELECT team_id FROM team_members WHERE user_id = ?1))`
+
+// listDocuments: the notes the user can see, without bullets, the owned ones with their shares; per
+// note its blocks_json when withBlockJSON (else ""). Only queries on q, one after the other, so it can
+// run on a single connection.
+func listDocuments(q docQueryer, userID string, withBlockJSON bool) ([]domain.Document, []string, error) {
+	mounts, names, _ := userFolderMounts(q, userID)
 
 	userFolders := make(map[string]string)
-	ufRows, err := s.db.QueryContext(ctx, `SELECT doc_id, folder_path FROM doc_user_folders WHERE user_id = ?`, userID)
+	ufRows, err := q.Query(`SELECT doc_id, folder_path FROM doc_user_folders WHERE user_id = ?`, userID)
 	if err == nil {
 		for ufRows.Next() {
 			var did, fp string
@@ -458,161 +548,96 @@ func (s *Store) getDocuments(ctx context.Context, userID string, withBlocks bool
 		_ = ufRows.Close()
 	}
 
-	// 1. Fetch user's own documents (with per-user is_pinned from doc_pins); notes changed in the same second
-	// keep the order they were made in, for the owner and for everyone they are shared with
-	rows, err := s.db.QueryContext(ctx,
-		`SELECT d.id, d.user_id, d.space_id, d.title, d.icon, d.content, d.blocks_json, d.tags, d.folder_path,
-		        CASE WHEN p.doc_id IS NOT NULL THEN 1 ELSE 0 END AS is_pinned,
-		        d.is_archived, d.created_at, d.updated_at,
-		        d.shared_folder_id, d.sub_folder_path
+	// 1. The user's own notes (with their own pin from doc_pins); notes changed in the same second keep
+	// the order they were made in, for the owner and for everyone they are shared with
+	rows, err := q.Query(
+		`SELECT `+docColumns(withBlockJSON)+`
 		 FROM documents d
-		 LEFT JOIN doc_pins p ON p.doc_id = d.id AND p.user_id = ?
-		 WHERE d.user_id = ? AND d.is_archived = 0
+		 LEFT JOIN doc_pins p ON p.doc_id = d.id AND p.user_id = ?1
+		 WHERE d.user_id = ?1 AND d.is_archived = 0
 		 ORDER BY is_pinned DESC, d.updated_at DESC, d.rowid`,
-		userID, userID,
+		userID,
 	)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-
-	type rawDocRow struct {
-		doc       domain.Document
-		blocksStr string
-	}
-	var ownRaw []rawDocRow
+	docs := []domain.Document{}
+	var blocksJSON []string
 	for rows.Next() {
 		d := domain.Document{}
-		var blocksStr, tagsStr string
-		var isPinned, isArchived int
-		if err := rows.Scan(
-			&d.ID, &d.UserID, &d.SpaceID, &d.Title, &d.Icon, &d.Content,
-			&blocksStr, &tagsStr, &d.FolderPath, &isPinned, &isArchived, &d.CreatedAt, &d.UpdatedAt,
-			&d.SharedFolderID, &d.SubFolderPath,
-		); !dbFailed(err) {
-			d.IsPinned = isPinned != 0
-			d.IsArchived = isArchived != 0
-			d.Tags = []string{}
-			_ = json.Unmarshal([]byte(tagsStr), &d.Tags)
-			d.Tags = stripFolderTags(d.Tags)
-			d.Permission = "owner"
-			d.IsOwner = true
-			resolveDocumentPath(userID, &d, mounts, names, userFolders)
-			ownRaw = append(ownRaw, rawDocRow{doc: d, blocksStr: blocksStr})
+		bj, err := scanDocRow(rows, &d)
+		if dbFailed(err) {
+			continue
 		}
+		d.Permission = "owner"
+		d.IsOwner = true
+		resolveDocumentPath(userID, &d, mounts, names, userFolders)
+		docs = append(docs, d)
+		blocksJSON = append(blocksJSON, bj)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, err
+		_ = rows.Close()
+		return nil, nil, err
 	}
 	_ = rows.Close()
 
-	docs := make([]domain.Document, 0, len(ownRaw))
-	for _, r := range ownRaw {
-		r.doc.Blocks, r.doc.Content = s.listBlocks(r.doc.ID, r.blocksStr, withBlocks)
-		docs = append(docs, r.doc)
-	}
-
-	// 2. Fetch documents shared with the user directly, via teams, or via shared folders
-	sharedRows, err := s.db.QueryContext(ctx,
-		`SELECT d.id, d.user_id, d.space_id, d.title, d.icon, d.content, d.blocks_json, d.tags, d.folder_path,
-		        CASE WHEN p.doc_id IS NOT NULL THEN 1 ELSE 0 END AS is_pinned,
-		        d.is_archived, d.created_at, d.updated_at,
-		        d.shared_folder_id, d.sub_folder_path,
-		        CASE
-		            WHEN wsf.owner_id = ? THEN 'owner'
-		            WHEN COALESCE(s.permission, '') = 'write' OR COALESCE(dts.permission, '') = 'write' OR COALESCE(wfs.permission, '') = 'write' THEN 'write'
-		            ELSE 'read'
-		        END AS permission,
-		        u.display_name
-		 FROM documents d
-		 JOIN users u ON d.user_id = u.id
-		 LEFT JOIN doc_shares s ON d.id = s.doc_id AND s.user_id = ?
-		 LEFT JOIN (
-		     SELECT dts2.doc_id, dts2.permission
-		     FROM doc_team_shares dts2
-		     JOIN team_members tm ON tm.team_id = dts2.team_id
-		     WHERE tm.user_id = ?
-		 ) dts ON d.id = dts.doc_id
-		 LEFT JOIN workspace_shared_folders wsf ON d.shared_folder_id = wsf.id
-		 LEFT JOIN (
-		     SELECT wfs2.folder_id, wfs2.permission
-		     FROM workspace_folder_shares wfs2
-		     WHERE (wfs2.target_type = 'user' AND wfs2.target_id = ?)
-		        OR (wfs2.target_type = 'team' AND wfs2.target_id IN (SELECT team_id FROM team_members WHERE user_id = ?))
-		 ) wfs ON d.shared_folder_id = wfs.folder_id
-		 LEFT JOIN doc_pins p ON p.doc_id = d.id AND p.user_id = ?
-		 WHERE d.is_archived = 0 AND d.user_id != ? AND (
-		     s.user_id IS NOT NULL OR dts.doc_id IS NOT NULL OR wsf.owner_id = ? OR wfs.folder_id IS NOT NULL
-		 )
+	// 2. Notes shared with the user directly, through teams or through shared folders: first the
+	// candidates from the shares, then only those notes (the query grew with every note of the server)
+	sharedRows, err := q.Query(
+		`WITH shared(id) AS (`+sqlSharedDocIDs+`)
+		 SELECT `+docColumns(withBlockJSON)+`, `+sqlSharedDocPermission+` AS permission, u.display_name
+		 FROM shared CROSS JOIN documents d ON d.id = shared.id`+sqlSharedDocJoins+`
+		 WHERE d.is_archived = 0 AND d.user_id != ?1
 		 GROUP BY d.id
 		 ORDER BY is_pinned DESC, d.updated_at DESC, d.rowid`,
-		userID, userID, userID, userID, userID, userID, userID, userID,
+		userID,
 	)
 	if err == nil {
-		var sharedRaw []rawDocRow
 		for sharedRows.Next() {
 			d := domain.Document{}
-			var blocksStr, tagsStr string
-			var isPinned, isArchived int
 			var perm, ownerName string
-			if scanErr := sharedRows.Scan(
-				&d.ID, &d.UserID, &d.SpaceID, &d.Title, &d.Icon, &d.Content,
-				&blocksStr, &tagsStr, &d.FolderPath, &isPinned, &isArchived, &d.CreatedAt, &d.UpdatedAt,
-				&d.SharedFolderID, &d.SubFolderPath,
-				&perm, &ownerName,
-			); !dbFailed(scanErr) {
-				d.IsPinned = isPinned != 0
-				d.IsArchived = isArchived != 0
-				d.Tags = []string{}
-				_ = json.Unmarshal([]byte(tagsStr), &d.Tags)
-				d.Tags = stripFolderTags(d.Tags)
-				d.Permission = perm
-				d.IsOwner = (perm == "owner")
-				d.OwnerName = ownerName
-				resolveDocumentPath(userID, &d, mounts, names, userFolders)
-				sharedRaw = append(sharedRaw, rawDocRow{doc: d, blocksStr: blocksStr})
+			bj, scanErr := scanDocRow(sharedRows, &d, &perm, &ownerName)
+			if dbFailed(scanErr) {
+				continue
 			}
+			d.Permission = perm
+			d.IsOwner = (perm == "owner")
+			d.OwnerName = ownerName
+			resolveDocumentPath(userID, &d, mounts, names, userFolders)
+			docs = append(docs, d)
+			blocksJSON = append(blocksJSON, bj)
 		}
 		logDBErr(sharedRows.Err())
 		_ = sharedRows.Close()
-
-		for _, r := range sharedRaw {
-			r.doc.Blocks, r.doc.Content = s.listBlocks(r.doc.ID, r.blocksStr, withBlocks)
-			docs = append(docs, r.doc)
-		}
 	}
 
-	if err := ctx.Err(); err != nil {
-		return nil, err
-	}
-
-	// 3. Attach shares to owned documents: two queries for all of them, not two per note (a list of a
-	// thousand notes made two thousand queries)
+	// 3. Shares of the owned notes: two queries for all of them, not two per note (a list of a thousand
+	// notes made two thousand queries)
 	var owned []string
 	for i := range docs {
 		if docs[i].IsOwner {
 			owned = append(owned, docs[i].ID)
 		}
 	}
-	if byDoc, err := s.docSharesOf(owned); err == nil {
+	if byDoc, err := docSharesOf(q, owned); err == nil {
 		for i := range docs {
 			if sh, ok := byDoc[docs[i].ID]; ok {
 				docs[i].SharedWith = sh
 			}
 		}
 	}
-
-	return docs, nil
+	return docs, blocksJSON, nil
 }
 
 // docSharesOf returns the shares of several notes at once, per note in the order GetDocShares gives
 // them (people first, then teams, each by creation time).
-func (s *Store) docSharesOf(docIDs []string) (map[string][]domain.DocShare, error) {
+func docSharesOf(q docQueryer, docIDs []string) (map[string][]domain.DocShare, error) {
 	out := map[string][]domain.DocShare{}
 	if len(docIDs) == 0 {
 		return out, nil
 	}
 	idsJSON, _ := json.Marshal(docIDs)
-	uRows, err := s.db.Query(
+	uRows, err := q.Query(
 		`SELECT s.id, s.doc_id, s.user_id, u.email, u.display_name, s.permission, s.created_by, s.created_at
 		 FROM doc_shares s
 		 JOIN users u ON s.user_id = u.id
@@ -635,7 +660,7 @@ func (s *Store) docSharesOf(docIDs []string) (map[string][]domain.DocShare, erro
 	logDBErr(uRows.Err())
 	_ = uRows.Close()
 
-	tRows, err := s.db.Query(
+	tRows, err := q.Query(
 		`SELECT s.id, s.doc_id, s.team_id, t.name, s.permission, s.created_by, s.created_at
 		 FROM doc_team_shares s
 		 JOIN teams t ON s.team_id = t.id
@@ -662,7 +687,14 @@ func (s *Store) docSharesOf(docIDs []string) (map[string][]domain.DocShare, erro
 	return out, nil
 }
 
+// GetDocumentByID returns a note the user can see (or one of theirs in the trash) with all its bullets.
 func (s *Store) GetDocumentByID(userID, docID string) (*domain.Document, error) {
+	return s.getDocumentByID(userID, docID, true)
+}
+
+// getDocumentByID is GetDocumentByID; without withBlocks the note has no bullets, plain text or
+// markdown, and none of them is loaded.
+func (s *Store) getDocumentByID(userID, docID string, withBlocks bool) (*domain.Document, error) {
 	mounts, names, _ := s.getUserFolderMounts(userID)
 	userFolders := make(map[string]string)
 	var personalFp string
@@ -670,19 +702,22 @@ func (s *Store) GetDocumentByID(userID, docID string) (*domain.Document, error) 
 		userFolders[docID] = personalFp
 	}
 
-	// Try owned document first (with per-user is_pinned)
-	row := s.db.QueryRow(
-		`SELECT d.id, d.user_id, d.space_id, d.title, d.icon, d.content, d.blocks_json, d.tags, d.folder_path,
-		        CASE WHEN p.doc_id IS NOT NULL THEN 1 ELSE 0 END AS is_pinned,
-		        d.is_archived, d.created_at, d.updated_at,
-		        d.shared_folder_id, d.sub_folder_path
+	// Owned note first (with the user's pin)
+	doc := &domain.Document{}
+	blocksStr, err := scanDocRow(s.db.QueryRow(
+		`SELECT `+docColumns(withBlocks)+`
 		 FROM documents d
-		 LEFT JOIN doc_pins p ON p.doc_id = d.id AND p.user_id = ?
-		 WHERE d.id = ? AND (d.user_id = ? OR (d.is_archived = 1 AND d.archived_by = ?))`,
-		userID, docID, userID, userID,
-	)
-	doc, err := s.scanDocumentWithBlocks(row)
+		 LEFT JOIN doc_pins p ON p.doc_id = d.id AND p.user_id = ?1
+		 WHERE d.id = ?2 AND (d.user_id = ?1 OR (d.is_archived = 1 AND d.archived_by = ?1))`,
+		userID, docID,
+	), doc)
 	if err == nil {
+		if withBlocks {
+			doc.Blocks = s.loadDocBlocks(doc.ID, blocksStr)
+			doc.Content = docPlainText(doc.Blocks)
+			doc.MarkdownCache = domain.CompileBlocksToMarkdown(doc.Blocks)
+		}
+		doc.FolderID = doc.FolderPath
 		doc.Permission = "owner"
 		doc.IsOwner = doc.UserID == userID
 		if doc.IsArchived {
@@ -695,59 +730,23 @@ func (s *Store) GetDocumentByID(userID, docID string) (*domain.Document, error) 
 		return doc, nil
 	}
 
-	// Try shared document (direct, via team, or via shared folder)
-	sharedRow := s.db.QueryRow(
-		`SELECT d.id, d.user_id, d.space_id, d.title, d.icon, d.content, d.blocks_json, d.tags, d.folder_path,
-		        CASE WHEN p.doc_id IS NOT NULL THEN 1 ELSE 0 END AS is_pinned,
-		        d.is_archived, d.created_at, d.updated_at,
-		        d.shared_folder_id, d.sub_folder_path,
-		        CASE
-		            WHEN wsf.owner_id = ? THEN 'owner'
-		            WHEN COALESCE(s.permission, '') = 'write' OR COALESCE(dts.permission, '') = 'write' OR COALESCE(wfs.permission, '') = 'write' THEN 'write'
-		            ELSE 'read'
-		        END AS permission,
-		        u.display_name
-		 FROM documents d
-		 JOIN users u ON d.user_id = u.id
-		 LEFT JOIN doc_shares s ON d.id = s.doc_id AND s.user_id = ?
-		 LEFT JOIN (
-		     SELECT dts2.doc_id, dts2.permission
-		     FROM doc_team_shares dts2
-		     JOIN team_members tm ON tm.team_id = dts2.team_id
-		     WHERE tm.user_id = ?
-		 ) dts ON d.id = dts.doc_id
-		 LEFT JOIN workspace_shared_folders wsf ON d.shared_folder_id = wsf.id
-		 LEFT JOIN (
-		     SELECT wfs2.folder_id, wfs2.permission
-		     FROM workspace_folder_shares wfs2
-		     WHERE (wfs2.target_type = 'user' AND wfs2.target_id = ?)
-		        OR (wfs2.target_type = 'team' AND wfs2.target_id IN (SELECT team_id FROM team_members WHERE user_id = ?))
-		 ) wfs ON d.shared_folder_id = wfs.folder_id
-		 LEFT JOIN doc_pins p ON p.doc_id = d.id AND p.user_id = ?
-		 WHERE d.id = ? AND d.is_archived = 0 AND (s.user_id = ? OR dts.doc_id IS NOT NULL OR wsf.owner_id = ? OR wfs.folder_id IS NOT NULL)
-		 LIMIT 1`,
-		userID, userID, userID, userID, userID, userID, docID, userID, userID,
-	)
+	// Shared note (directly, through a team or through a shared folder)
 	d := &domain.Document{}
-	var blocksStr, tagsStr string
-	var isPinned, isArchived int
 	var perm, ownerName string
-	err = sharedRow.Scan(
-		&d.ID, &d.UserID, &d.SpaceID, &d.Title, &d.Icon, &d.Content,
-		&blocksStr, &tagsStr, &d.FolderPath, &isPinned, &isArchived, &d.CreatedAt, &d.UpdatedAt,
-		&d.SharedFolderID, &d.SubFolderPath,
-		&perm, &ownerName,
-	)
+	blocksStr, err = scanDocRow(s.db.QueryRow(
+		`SELECT `+docColumns(withBlocks)+`, `+sqlSharedDocPermission+` AS permission, u.display_name
+		 FROM documents d`+sqlSharedDocJoins+`
+		 WHERE d.id = ?2 AND d.is_archived = 0 AND (s.user_id = ?1 OR dts.doc_id IS NOT NULL OR wsf.owner_id = ?1 OR wfs.folder_id IS NOT NULL)
+		 LIMIT 1`,
+		userID, docID,
+	), d, &perm, &ownerName)
 	if err != nil {
 		return nil, err
 	}
-	d.IsPinned = isPinned != 0
-	d.IsArchived = isArchived != 0
-	d.Tags = []string{}
-	_ = json.Unmarshal([]byte(tagsStr), &d.Tags)
-	d.Tags = stripFolderTags(d.Tags)
-	d.Blocks = s.loadDocBlocks(d.ID, blocksStr)
-	d.Content = docPlainText(d.Blocks)
+	if withBlocks {
+		d.Blocks = s.loadDocBlocks(d.ID, blocksStr)
+		d.Content = docPlainText(d.Blocks)
+	}
 	d.Permission = perm
 	d.IsOwner = (perm == "owner")
 	d.OwnerName = ownerName
@@ -867,6 +866,9 @@ func (s *Store) reindexAllDocBlockTags() error {
 	return nil
 }
 
+// indexDocBlockTags rewrites the hashtags of a note's bullets in block_tags. Only bullets stored live in
+// this note get rows (not those of a very old note whose block list could not be converted): the note
+// list counts block_tags without checking the bullets (sqlListTagCounts).
 func (s *Store) indexDocBlockTags(docID, _ string, blocks []domain.DocumentBlock) error {
 	if _, err := s.db.Exec(`DELETE FROM block_tags WHERE document_id = ?`, docID); err != nil {
 		return err
@@ -875,7 +877,8 @@ func (s *Store) indexDocBlockTags(docID, _ string, blocks []domain.DocumentBlock
 		return nil
 	}
 
-	stmt, err := s.db.Prepare(`INSERT OR IGNORE INTO block_tags (tag, document_id, block_id) VALUES (?, ?, ?)`)
+	stmt, err := s.db.Prepare(`INSERT OR IGNORE INTO block_tags (tag, document_id, block_id)
+		SELECT ?1, ?2, ?3 WHERE EXISTS (SELECT 1 FROM blocks WHERE id = ?3 AND document_id = ?2 AND deleted = 0)`)
 	if err != nil {
 		return err
 	}

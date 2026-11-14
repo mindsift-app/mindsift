@@ -67,8 +67,8 @@ func (s *Store) hasNoteStorageColumns() (bool, error) {
 // migrateDropMarkdownCache is migration 48: documents.markdown_cache has been empty since migration 44
 // (the markdown of a note is built from its bullets when it is read) and nothing reads it, not even for
 // a note whose blocks_json could not be converted (that one is read from blocks_json). DROP COLUMN
-// writes every row of documents once. documents.content and blocks_json stay: both still serve such a
-// note (the journal reads content, loadDocBlocks blocks_json).
+// writes every row of documents once. documents.content (until migration 51) and blocks_json stayed: both
+// still served such a note (the journal read content, loadDocBlocks reads blocks_json).
 func (s *Store) migrateDropMarkdownCache() error {
 	if ok, err := s.columnExists("documents", "markdown_cache"); err != nil || !ok {
 		return err
