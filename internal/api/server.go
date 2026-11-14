@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -90,7 +91,7 @@ func NewServer(cfg *config.Config, store *storage.Store, wsHub *ws.Hub, staticFS
 	srv.logOIDCSetup(oidcOff)
 	srv.voice = newVoiceService(cfg.Speech.MaxParallel)
 	if srv.voiceMode() == "server" {
-		go srv.startVoiceCheck()
+		srv.background(srv.startVoiceCheck)
 	}
 	srv.draw = newDrawHub()
 	wsHub.SetRoomAuthorizer(srv.canJoinRoom)
@@ -134,6 +135,20 @@ func (s *Server) wait(d time.Duration) bool {
 	case <-t.C:
 		return true
 	}
+}
+
+// stopContext is cancelled once the server stops (Close) or cancel is called, so a background job's
+// request to another service does not hold up Close.
+func (s *Server) stopContext() (context.Context, context.CancelFunc) {
+	ctx, cancel := context.WithCancel(context.Background())
+	go func() {
+		select {
+		case <-s.stop:
+			cancel()
+		case <-ctx.Done():
+		}
+	}()
+	return ctx, cancel
 }
 
 // canJoinRoom allows realtime rooms only to users with read access: "doc:<id>" for notes, otherwise a shared list ID.

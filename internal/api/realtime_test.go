@@ -31,8 +31,22 @@ type sseStream struct {
 	events chan sseMsg
 }
 
-// startRealtimeServer serves the router over real HTTP with a short WriteTimeout, like production but faster.
+// startRealtimeServer serves the router over real HTTP with the limits of the real server.
 func startRealtimeServer(t *testing.T) (*Server, *storage.Store, *httptest.Server, *domain.User, string) {
+	t.Helper()
+	return startServerWithWriteTimeout(t, WriteTimeout)
+}
+
+// startShortWriteTimeoutServer is startRealtimeServer with a WriteTimeout of 1 s instead of 30 s, for the
+// tests that check that long answers lift it (streams, slow mail servers). Any other request that takes
+// longer gets its connection cut and the client sees EOF: under -race a request that hashes a password
+// (bcrypt) already does, so other tests use startRealtimeServer.
+func startShortWriteTimeoutServer(t *testing.T) (*Server, *storage.Store, *httptest.Server, *domain.User, string) {
+	t.Helper()
+	return startServerWithWriteTimeout(t, time.Second)
+}
+
+func startServerWithWriteTimeout(t *testing.T, writeTimeout time.Duration) (*Server, *storage.Store, *httptest.Server, *domain.User, string) {
 	t.Helper()
 	srv, store, token := setupTestServer(t)
 	claims, err := auth.ValidateToken(testJWTSecret, token)
@@ -41,7 +55,9 @@ func startRealtimeServer(t *testing.T) (*Server, *storage.Store, *httptest.Serve
 	}
 	owner, _ := store.GetUserByID(claims.UserID)
 	ts := httptest.NewUnstartedServer(srv.Router())
-	ts.Config.WriteTimeout = time.Second
+	ts.Config.ReadTimeout = ReadTimeout
+	ts.Config.WriteTimeout = writeTimeout
+	ts.Config.IdleTimeout = IdleTimeout
 	ts.Start()
 	t.Cleanup(ts.Close)
 	return srv, store, ts, owner, token
@@ -158,7 +174,7 @@ func TestRealtimeEndpointsRequireAuth(t *testing.T) {
 }
 
 func TestSSEStreamOutlivesWriteTimeout(t *testing.T) {
-	srv, _, ts, owner, token := startRealtimeServer(t)
+	srv, _, ts, owner, token := startShortWriteTimeoutServer(t)
 	st := openSSE(t, ts, token)
 
 	time.Sleep(1500 * time.Millisecond) // longer than the server's WriteTimeout of 1s

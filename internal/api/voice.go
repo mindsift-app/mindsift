@@ -308,16 +308,22 @@ func (s *Server) setVoiceStatus(st voiceStatus) {
 }
 
 // startVoiceCheck waits for the Whisper server after startup (it may start later than MindSift) and
-// asks it to download the model if it does not have it yet, so the first recording works.
+// asks it to download the model if it does not have it yet, so the first recording works. A background
+// job: it ends with Close, also while it waits or a check is under way.
 func (s *Server) startVoiceCheck() {
 	cfg := s.cfg.Speech
 	slog.Info("Speech recognition: server mode", "url", cfg.URL, "model", cfg.Model,
 		"max_parallel", cfg.MaxParallel, "per_user_per_hour", cfg.PerUserPerHour, "max_upload_mb", cfg.MaxUploadMB)
+	stopCtx, stopCancel := s.stopContext()
+	defer stopCancel()
 	downloadRequested := false
 	for attempt := 0; ; attempt++ {
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		ctx, cancel := context.WithTimeout(stopCtx, 10*time.Second)
 		st := s.checkVoice(ctx)
 		cancel()
+		if stopCtx.Err() != nil {
+			return
+		}
 		s.setVoiceStatus(st)
 		switch {
 		case st.ModelReady:
@@ -330,9 +336,14 @@ func (s *Server) startVoiceCheck() {
 		case !st.Reachable && attempt%6 == 0:
 			slog.Warn("Speech recognition: Whisper server not reachable, will retry", "url", cfg.URL, "error", st.Error)
 		}
-		time.Sleep(10 * time.Second)
+		if !s.wait(voiceCheckInterval) {
+			return
+		}
 	}
 }
+
+// voiceCheckInterval: how often startVoiceCheck asks the Whisper server until the model is ready
+const voiceCheckInterval = 10 * time.Second
 
 func (s *Server) requestModelDownload() {
 	// Model IDs contain a slash (owner/name); speaches takes them as a path
