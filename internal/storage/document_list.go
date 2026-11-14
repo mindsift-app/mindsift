@@ -102,7 +102,8 @@ func (s *Store) attachListStats(docs []domain.Document) error {
 }
 
 // ListNoteTodos returns every to-do with text in the notes the user can see (not in the trash), in the
-// order of the note list and, within a note, of the bullets.
+// order of the note list and, within a note, in the order the note shows its bullets (the tree: siblings
+// by order key, as collab.Doc.Flatten). The order comes from the structure columns only, no text.
 func (s *Store) ListNoteTodos(userID string) ([]domain.NoteTodo, error) {
 	docs, err := s.getDocuments(userID, false)
 	if err != nil {
@@ -112,33 +113,101 @@ func (s *Store) ListNoteTodos(userID string) ([]domain.NoteTodo, error) {
 	if len(docs) == 0 {
 		return out, nil
 	}
-	order := make(map[string]int, len(docs))
+	docOrder := make(map[string]int, len(docs))
 	for i := range docs {
-		order[docs[i].ID] = i
+		docOrder[docs[i].ID] = i
 	}
 	rows, err := s.db.Query(`SELECT b.document_id, b.id, b.content, b.checked FROM blocks b
 		WHERE b.document_id IN (SELECT value FROM json_each(?)) AND b.deleted = 0
-		  AND b.type = 'todo' AND TRIM(b.content) != ''
-		ORDER BY b.document_id, b.position`, docIDsJSON(docs))
+		  AND b.type = 'todo' AND TRIM(b.content) != ''`, docIDsJSON(docs))
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	withTodos := map[string]bool{}
 	for rows.Next() {
 		var t domain.NoteTodo
 		var checked int
 		if err := rows.Scan(&t.DocID, &t.BlockID, &t.Content, &checked); err != nil {
+			_ = rows.Close()
 			return nil, err
 		}
 		t.Checked = checked != 0
 		out = append(out, t)
+		withTodos[t.DocID] = true
 	}
 	if err := rows.Err(); err != nil {
+		_ = rows.Close()
 		return nil, err
 	}
-	// Within a note the query keeps the bullet order; sort the notes like the list
-	sort.SliceStable(out, func(i, j int) bool { return order[out[i].DocID] < order[out[j].DocID] })
-	return out, nil
+	_ = rows.Close()
+	if len(out) == 0 {
+		return out, nil
+	}
+
+	// Display position of every live bullet of the notes with to-dos
+	ids := make([]string, 0, len(withTodos))
+	for id := range withTodos {
+		ids = append(ids, id)
+	}
+	idsJSON, _ := json.Marshal(ids)
+	type node struct{ id, orderKey string }
+	children := map[string]map[string][]node{} // note → parent → children
+	srows, err := s.db.Query(`SELECT document_id, id, COALESCE(parent_id, ''), COALESCE(order_key, '') FROM blocks
+		WHERE document_id IN (SELECT value FROM json_each(?)) AND deleted = 0`, string(idsJSON))
+	if err != nil {
+		return nil, err
+	}
+	for srows.Next() {
+		var docID, id, parent, key string
+		if err := srows.Scan(&docID, &id, &parent, &key); err != nil {
+			_ = srows.Close()
+			return nil, err
+		}
+		if children[docID] == nil {
+			children[docID] = map[string][]node{}
+		}
+		children[docID][parent] = append(children[docID][parent], node{id, key})
+	}
+	if err := srows.Err(); err != nil {
+		_ = srows.Close()
+		return nil, err
+	}
+	_ = srows.Close()
+	position := map[string]int{} // bullet → position in its note
+	for _, byParent := range children {
+		for _, list := range byParent {
+			sort.Slice(list, func(i, j int) bool {
+				if list[i].orderKey != list[j].orderKey {
+					return list[i].orderKey < list[j].orderKey
+				}
+				return list[i].id < list[j].id
+			})
+		}
+		n := 0
+		var walk func(parent string)
+		walk = func(parent string) {
+			for _, c := range byParent[parent] {
+				position[c.id] = n
+				n++
+				walk(c.id)
+			}
+		}
+		walk("")
+	}
+	// Bullets under a deleted parent are not shown (Flatten does not reach them)
+	shown := out[:0]
+	for _, t := range out {
+		if _, ok := position[t.BlockID]; ok {
+			shown = append(shown, t)
+		}
+	}
+	sort.SliceStable(shown, func(i, j int) bool {
+		if docOrder[shown[i].DocID] != docOrder[shown[j].DocID] {
+			return docOrder[shown[i].DocID] < docOrder[shown[j].DocID]
+		}
+		return position[shown[i].BlockID] < position[shown[j].BlockID]
+	})
+	return shown, nil
 }
 
 // BlockInfo: one bullet as GET /blocks/{id} answers it.
