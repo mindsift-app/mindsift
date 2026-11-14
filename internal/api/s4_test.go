@@ -156,6 +156,15 @@ func TestSMTPPasswordFromEnvNotStored(t *testing.T) {
 	if sys, _ := store.GetSystemSettings(); sys.SMTPPass != "" {
 		t.Fatalf("saving must not store SMTP_PASS, got %q", sys.SMTPPass)
 	}
+	// A password sent while SMTP_PASS applies is ignored: not stored, mail keeps using the environment's
+	// (also with the host and user written differently)
+	sessionCall(router, "PUT", "/api/v1/admin/settings", token, `{"sharingMode":"organizations","smtpHost":"Mail.Example.com","smtpUser":"bot","smtpPass":"eingetippt"}`, "")
+	if sys, _ := store.GetSystemSettings(); sys.SMTPPass != "" {
+		t.Fatalf("a password sent while SMTP_PASS applies must not be stored, got %q", sys.SMTPPass)
+	}
+	if cfg, err := srv.smtpSettings(); err != nil || cfg.Pass != "aus-der-umgebung" {
+		t.Fatalf("mail must keep using SMTP_PASS, got %q (%v)", cfg.Pass, err)
+	}
 	// Another mail server set in the administration never gets the password of the environment
 	sessionCall(router, "PUT", "/api/v1/admin/settings", token, `{"sharingMode":"organizations","smtpHost":"smtp.other.example","smtpUser":"bot","smtpPass":""}`, "")
 	if cfg, err := srv.smtpSettings(); err != nil || cfg.Pass != "" {
@@ -163,6 +172,11 @@ func TestSMTPPasswordFromEnvNotStored(t *testing.T) {
 	}
 	if body := sessionCall(router, "GET", "/api/v1/admin/settings", token, "", "").Body.String(); strings.Contains(body, `"smtpPassViaEnv":true`) {
 		t.Fatalf("another server: no password from the environment: %s", body)
+	}
+	// ... and takes a password of its own
+	sessionCall(router, "PUT", "/api/v1/admin/settings", token, `{"sharingMode":"organizations","smtpHost":"smtp.other.example","smtpUser":"bot","smtpPass":"eigenes"}`, "")
+	if cfg, err := srv.smtpSettings(); err != nil || cfg.Pass != "eigenes" {
+		t.Fatalf("another server must keep its own password, got %q (%v)", cfg.Pass, err)
 	}
 }
 

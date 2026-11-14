@@ -100,16 +100,15 @@ func (s *Server) previewImport(w http.ResponseWriter, userID string, plan *stora
 	writeJSON(w, http.StatusOK, trSummary(w, plan.Summary(false)))
 }
 
-// applyImport adds the plan to the user's data; with restore the chosen sections are emptied first.
-// The plan is fully read and validated at this point, so a broken file never wipes anything.
+// applyImport adds the plan to the user's data; with restore it replaces the chosen sections, whose
+// previous content is deleted only once the plan is in completely (Store.RestoreImport). A failed
+// import or restore keeps nothing of the plan and leaves the previous data as it was.
 func (s *Server) applyImport(w http.ResponseWriter, userID string, plan *storage.ImportPlan, sections map[string]bool, restore bool) {
+	var replace map[string]bool
 	if restore {
-		if err := s.store.PurgeUserSections(userID, sections); err != nil {
-			writeError(w, http.StatusInternalServerError, "Wiederherstellen abgebrochen: "+clientMessage(err))
-			return
-		}
+		replace = sections
 	}
-	sum, err := s.store.ApplyImport(userID, plan)
+	sum, err := s.store.RestoreImport(userID, plan, replace)
 	if err != nil {
 		slog.Error("Import aborted", "user_id", userID, "error", err)
 		writeError(w, http.StatusInternalServerError, "Import abgebrochen, nichts übernommen: "+clientMessage(err))

@@ -411,7 +411,7 @@
     "/api/v1/admin/settings": {
       "get": {
         "summary": "Server settings",
-        "description": "instanceName, allowRegistration, sharingMode (private/organizations/open), peopleSearch, publicLinks, publicLinkMaxDays (1–14), linkPreviews (the server fetches previews of web addresses in notes; default true, always false in demo mode), pushKnownServicesOnly (web push only via the push services of Google, Mozilla, Apple and Microsoft; default false), SMTP fields, timeZone (the server's time zone as an IANA name; \"\" = not set, then TZ, else UTC; 400 for an unknown name; in effect at once); changing mode cleans up shares. Values fixed by the environment come with …ConfiguredViaEnv and are not changed by PUT. smtpPass is never returned (smtpPassSet indicates whether one is stored; smtpPassUnreadable that one is stored but no longer decrypts because SECRETS_KEY changed, and no mail goes out until a new one is entered; smtpPassViaEnv that it comes from SMTP_PASS, which is never stored and takes precedence while host and user are those of the environment); empty = unchanged; saving linkPreviews false empties the cache of previews. Read only: serverTime (zone in effect, source setting/env/default, now in RFC 3339 with the offset, fallback: the zone without the setting)",
+        "description": "instanceName, allowRegistration, sharingMode (private/organizations/open), peopleSearch, publicLinks, publicLinkMaxDays (1–14), linkPreviews (the server fetches previews of web addresses in notes; default true, always false in demo mode), pushKnownServicesOnly (web push only via the push services of Google, Mozilla, Apple and Microsoft; default false), SMTP fields, timeZone (the server's time zone as an IANA name; \"\" = not set, then TZ, else UTC; 400 for an unknown name; in effect at once); changing mode cleans up shares. Values fixed by the environment come with …ConfiguredViaEnv and are not changed by PUT. smtpPass is never returned (smtpPassSet indicates whether one is stored; smtpPassUnreadable that one is stored but no longer decrypts because SECRETS_KEY changed, and no mail goes out until a new one is entered; smtpPassViaEnv that it comes from SMTP_PASS, which is never stored and takes precedence while host and user are those of the environment; a smtpPass sent for that host and user is ignored, not stored); empty = unchanged; saving linkPreviews false empties the cache of previews. Read only: serverTime (zone in effect, source setting/env/default, now in RFC 3339 with the offset, fallback: the zone without the setting)",
         "tags": [
           "Administration"
         ],
@@ -423,7 +423,7 @@
       },
       "put": {
         "summary": "Change server settings",
-        "description": "instanceName, allowRegistration, sharingMode (private/organizations/open), peopleSearch, publicLinks, publicLinkMaxDays (1–14), linkPreviews (the server fetches previews of web addresses in notes; default true, always false in demo mode), pushKnownServicesOnly (web push only via the push services of Google, Mozilla, Apple and Microsoft; default false), SMTP fields, timeZone (the server's time zone as an IANA name; \"\" = not set, then TZ, else UTC; left out = unchanged; 400 for an unknown name; in effect at once); changing mode cleans up shares. Values fixed by the environment come with …ConfiguredViaEnv and are not changed by PUT. smtpPass is never returned (smtpPassSet indicates whether one is stored; smtpPassUnreadable that one is stored but no longer decrypts because SECRETS_KEY changed, and no mail goes out until a new one is entered; smtpPassViaEnv that it comes from SMTP_PASS, which is never stored and takes precedence while host and user are those of the environment); empty = unchanged; saving linkPreviews false empties the cache of previews",
+        "description": "instanceName, allowRegistration, sharingMode (private/organizations/open), peopleSearch, publicLinks, publicLinkMaxDays (1–14), linkPreviews (the server fetches previews of web addresses in notes; default true, always false in demo mode), pushKnownServicesOnly (web push only via the push services of Google, Mozilla, Apple and Microsoft; default false), SMTP fields, timeZone (the server's time zone as an IANA name; \"\" = not set, then TZ, else UTC; left out = unchanged; 400 for an unknown name; in effect at once); changing mode cleans up shares. Values fixed by the environment come with …ConfiguredViaEnv and are not changed by PUT. smtpPass is never returned (smtpPassSet indicates whether one is stored; smtpPassUnreadable that one is stored but no longer decrypts because SECRETS_KEY changed, and no mail goes out until a new one is entered; smtpPassViaEnv that it comes from SMTP_PASS, which is never stored and takes precedence while host and user are those of the environment; a smtpPass sent for that host and user is ignored, not stored); empty = unchanged; saving linkPreviews false empties the cache of previews",
         "tags": [
           "Administration"
         ],
@@ -493,7 +493,7 @@
     "/api/v1/admin/users": {
       "get": {
         "summary": "List users",
-        "description": "List users (with organizationIds; without alarm targets – webhooks, alarm address, channels – and token version); create (email, password, displayName, role (member/manager/admin), optional organizationIds)",
+        "description": "List users (with organizationIds and noPassword for accounts without a password of their own; without alarm targets – webhooks, alarm address, channels – and token version); create (email, password, displayName, role (member/manager/admin), optional organizationIds)",
         "tags": [
           "Administration"
         ],
@@ -505,7 +505,7 @@
       },
       "post": {
         "summary": "Create a user",
-        "description": "List users (with organizationIds; without alarm targets – webhooks, alarm address, channels – and token version); create (email, password, displayName, role (member/manager/admin), optional organizationIds)",
+        "description": "List users (with organizationIds and noPassword for accounts without a password of their own; without alarm targets – webhooks, alarm address, channels – and token version); create (email, password, displayName, role (member/manager/admin), optional organizationIds)",
         "tags": [
           "Administration"
         ],
@@ -519,7 +519,7 @@
     "/api/v1/admin/users/{id}": {
       "delete": {
         "summary": "Delete a user (rejects a pending account)",
-        "description": "displayName, username (rules and errors as in /auth/settings), email, role, isActive, discordWebhookUrl; delete (for pending accounts = reject). GET /admin/users flags pending accounts with pendingApproval",
+        "description": "displayName, username (rules and errors as in /auth/settings), email, role, isActive, discordWebhookUrl; delete (for pending accounts = reject). GET /admin/users flags pending accounts with pendingApproval, accounts with a second factor with mfaEnabled and accounts without a password of their own with noPassword",
         "tags": [
           "Administration"
         ],
@@ -541,7 +541,7 @@
       },
       "patch": {
         "summary": "Change a user (name, username, address, role, active)",
-        "description": "displayName, username (rules and errors as in /auth/settings), email, role, isActive, discordWebhookUrl; delete (for pending accounts = reject). GET /admin/users flags pending accounts with pendingApproval",
+        "description": "displayName, username (rules and errors as in /auth/settings), email, role, isActive, discordWebhookUrl; delete (for pending accounts = reject). GET /admin/users flags pending accounts with pendingApproval, accounts with a second factor with mfaEnabled and accounts without a password of their own with noPassword",
         "tags": [
           "Administration"
         ],

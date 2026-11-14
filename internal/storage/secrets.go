@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"regexp"
+	"slices"
 	"strings"
 	"time"
 
@@ -98,15 +99,35 @@ func (s *Store) MoveSecret(id, docID string) error {
 	return err
 }
 
-// DocReferencesSecret reports whether a live bullet of the note holds the reference.
+// DocReferencesSecret reports whether a live bullet of the note holds the reference, also one beyond
+// maxBlockRefs references (secretsBeyondRefCap).
 func (s *Store) DocReferencesSecret(docID, id string) bool {
 	var n int
 	logDBErr(s.db.QueryRow(sqlDocHoldsSecret, id, docID).Scan(&n))
-	return n > 0
+	if n > 0 {
+		return true
+	}
+	beyond, err := secretsBeyondRefCap(s.db, docID)
+	logDBErr(err)
+	return len(beyond[id]) > 0
 }
 
-// docsReferencingSecret: the notes (trashed ones too) with a live bullet holding the reference.
-func (s *Store) docsReferencingSecret(id string) ([]string, error) {
+// docsReferencingSecret: the notes (trashed ones too) with a live bullet holding the reference. beyond
+// is secretsBeyondRefCap of all notes (read once per sweep).
+func (s *Store) docsReferencingSecret(id string, beyond map[string][]string) ([]string, error) {
+	ids, err := s.docsReferencingSecretByRefs(id)
+	if err != nil {
+		return nil, err
+	}
+	for _, d := range beyond[id] {
+		if !slices.Contains(ids, d) {
+			ids = append(ids, d)
+		}
+	}
+	return ids, nil
+}
+
+func (s *Store) docsReferencingSecretByRefs(id string) ([]string, error) {
 	rows, err := s.db.Query(sqlDocsHoldingSecret, id)
 	if err != nil {
 		return nil, err
@@ -152,10 +173,18 @@ func (s *Store) SweepSecrets(now time.Time) (SecretSweep, error) {
 		return res, err
 	}
 
+	if len(all) == 0 {
+		return res, nil
+	}
+	beyond, err := secretsBeyondRefCap(s.db, "")
+	if err != nil {
+		return res, err
+	}
+
 	nowISO := now.UTC().Format(time.RFC3339)
 	cutoff := now.UTC().AddDate(0, 0, -SecretOrphanDays).Format(time.RFC3339)
 	for _, r := range all {
-		docs, err := s.docsReferencingSecret(r.id)
+		docs, err := s.docsReferencingSecret(r.id, beyond)
 		if err != nil {
 			return res, err
 		}

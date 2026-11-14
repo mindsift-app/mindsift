@@ -118,6 +118,38 @@ describe('UserList', () => {
     fireEvent.click(screen.getByRole('button', { name: /Person 001/ }));
     expect((screen.getByRole('button', { name: 'Sperren' }) as HTMLButtonElement).disabled).toBe(false);
     expect((screen.getByRole('button', { name: 'Passwort' }) as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByRole('button', { name: 'E-Mail-Adresse' }) as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it('warns before an empty address is saved for an account with a password, not for one without', () => {
+    const hint = /kann Person 001 das Passwort nicht mehr per Mail zurücksetzen/;
+    const open = (u: User, value: string) => {
+      const admin = fakeAdmin([me, u], { emailEdit: { id: u.id, value }, setEmailEdit: vi.fn(), handleSaveEmail: vi.fn() });
+      const view = render(<UserList admin={admin} currentUser={me} isServerAdmin />);
+      fireEvent.click(screen.getByRole('button', { name: new RegExp(u.displayName) }));
+      return { admin, view };
+    };
+    // with an address in the field: no hint
+    let { admin, view } = open(person(1), 'neu@beispiel.de');
+    expect(screen.getByRole('textbox', { name: 'E-Mail-Adresse' })).toBeTruthy();
+    expect(screen.queryByText(hint)).toBeNull();
+    view.unmount();
+    // emptied: the hint, and saving stays possible
+    ({ admin, view } = open(person(1), '  '));
+    expect(screen.getByText(hint)).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Speichern' }));
+    expect(admin.handleSaveEmail).toHaveBeenCalledWith(expect.objectContaining({ id: 'usr_1' }));
+    view.unmount();
+    // an account from the OIDC provider without a password of its own: nothing to reset
+    ({ view } = open(person(1, { noPassword: true }), ''));
+    expect(screen.queryByText(hint)).toBeNull();
+    view.unmount();
+    // the action opens the form with the current address
+    const setEmailEdit = vi.fn();
+    render(<UserList admin={fakeAdmin([me, person(1)], { emailEdit: null, setEmailEdit })} currentUser={me} isServerAdmin />);
+    fireEvent.click(screen.getByRole('button', { name: /Person 001/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'E-Mail-Adresse' }));
+    expect(setEmailEdit).toHaveBeenCalledWith({ id: 'usr_1', value: 'person1@beispiel.de' });
   });
 
   it('filters by organization, including people without one', () => {

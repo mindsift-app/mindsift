@@ -296,6 +296,26 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
     }
   };
 
+  // Login address, set by a server admin; empty removes it (the form warns when the account has a password)
+  const [emailEdit, setEmailEdit] = useState<{ id: string; value: string } | null>(null);
+  const handleSaveEmail = async (u: User) => {
+    if (!emailEdit || emailEdit.id !== u.id) return;
+    setStatusMsg(null);
+    try {
+      const updated = await api.adminUpdateUser(u.id, { email: emailEdit.value.trim() });
+      setUsers((prev) => prev.map((item) => (item.id === u.id ? updated : item)));
+      setEmailEdit(null);
+      setStatusMsg({
+        type: 'ok',
+        text: updated.email
+          ? i18n.t('settings:users.emailChanged', { name: updated.displayName, email: updated.email })
+          : i18n.t('settings:users.emailRemoved', { name: updated.displayName }),
+      });
+    } catch (err) {
+      setStatusMsg({ type: 'err', text: errorMessage(err) });
+    }
+  };
+
   const handleToggleUserActive = async (u: User) => {
     setStatusMsg(null);
     try {
@@ -533,6 +553,9 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
     usernameEdit,
     setUsernameEdit,
     handleSaveUsername,
+    emailEdit,
+    setEmailEdit,
+    handleSaveEmail,
     resetPwdVal,
     settings,
     testSmtpEmail,

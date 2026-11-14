@@ -20,7 +20,8 @@ func blocksOf(t *testing.T, s *Store, docID string) map[string]*collab.Block {
 }
 
 // A bullet may only show a file its writer uploaded or may read: anything else would make the file
-// readable through the bullet's note (FLAW-43). Own files and files of notes shared with the writer stay.
+// readable through the bullet's note (Doku/sharing-and-permissions.md, "Files in Shared Notes"). Own files
+// and files of notes shared with the writer stay.
 func TestMediaGateKeepsOnlyReadableFiles(t *testing.T) {
 	s, anna, ben := newImportStore(t)
 	annaDoc, _ := s.CreateDocument(anna.ID, "", "Annas", "", "", nil, nil, false)

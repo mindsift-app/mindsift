@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { AtSign, Ban, ChevronDown, ChevronRight, KeyRound, Search, ShieldCheck, ShieldOff, Trash, UserCheck, X } from 'lucide-react';
+import { AtSign, Ban, ChevronDown, ChevronRight, KeyRound, Mail, Search, ShieldCheck, ShieldOff, Trash, UserCheck, X } from 'lucide-react';
 import { User, UserRole } from '../../../lib/types';
 import { UserAvatar } from '../../../components/UserAvatar';
 import { SelectMenu } from '../../../components/SelectMenu';
@@ -271,7 +271,7 @@ function UserSheet({ u, onClose, children }: { u: User; onClose: () => void; chi
   );
 }
 
-// Everything one can do with an account: role, username, password, lock, delete; organizations as information
+// Everything one can do with an account: role, username, address, password, lock, delete; organizations as information
 function UserDetails({ u, admin, currentUser, isServerAdmin }: { u: User; admin: Admin; currentUser: User; isServerAdmin: boolean }) {
   const { t } = useTranslation('settings');
   const {
@@ -280,6 +280,9 @@ function UserDetails({ u, admin, currentUser, isServerAdmin }: { u: User; admin:
     usernameEdit,
     setUsernameEdit,
     handleSaveUsername,
+    emailEdit,
+    setEmailEdit,
+    handleSaveEmail,
     resetPwdUserId,
     setResetPwdUserId,
     resetPwdVal,
@@ -346,6 +349,16 @@ function UserDetails({ u, admin, currentUser, isServerAdmin }: { u: User; admin:
         >
           <AtSign className="w-3.5 h-3.5" />
           <span>{t('users.username')}</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setEmailEdit(emailEdit?.id === u.id ? null : { id: u.id, value: u.email || '' })}
+          disabled={!isServerAdmin}
+          aria-expanded={emailEdit?.id === u.id}
+          className={`${btn} ${emailEdit?.id === u.id ? '!border-accent' : ''}`}
+        >
+          <Mail className="w-3.5 h-3.5" />
+          <span>{t('users.email')}</span>
         </button>
         {/* Passwords stay with server admins (others use "forgot password") */}
         <button
@@ -418,6 +431,43 @@ function UserDetails({ u, admin, currentUser, isServerAdmin }: { u: User; admin:
           <button type="button" onClick={() => setUsernameEdit(null)} className="btn-action h-11 sm:h-8 px-2 text-xs">
             {t('common:cancel')}
           </button>
+        </form>
+      )}
+
+      {emailEdit?.id === u.id && (
+        <form
+          {...NO_AUTOFILL}
+          onSubmit={(e) => {
+            e.preventDefault();
+            void handleSaveEmail(u);
+          }}
+          className="pt-2 border-t border-border space-y-2"
+        >
+          <div className="flex items-center gap-2">
+            <input
+              {...NO_AUTOFILL}
+              type="email"
+              value={emailEdit.value}
+              onChange={(e) => setEmailEdit({ id: u.id, value: e.target.value })}
+              autoCapitalize="none"
+              spellCheck={false}
+              autoFocus
+              aria-label={t('users.email')}
+              className="flex-1 min-w-0 h-11 sm:h-8 px-2 input-field text-base sm:text-xs"
+            />
+            <button type="submit" className="btn-primary h-11 sm:h-8 px-3 text-xs">
+              {t('common:save')}
+            </button>
+            <button type="button" onClick={() => setEmailEdit(null)} className="btn-action h-11 sm:h-8 px-2 text-xs">
+              {t('common:cancel')}
+            </button>
+          </div>
+          {/* Removing the address is allowed, but a password account then has no way to reset it by mail */}
+          {!emailEdit.value.trim() && Boolean(u.email) && !u.noPassword && (
+            <p role="status" className="text-[11px] text-status-warn" data-email-remove-hint>
+              {t('users.emailRemoveHint', { name: u.displayName })}
+            </p>
+          )}
         </form>
       )}
 

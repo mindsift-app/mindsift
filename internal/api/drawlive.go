@@ -44,7 +44,7 @@ func newDrawHub() *drawHub {
 func drawRoom(docID, blockID string) string { return "drawing:" + docID + ":" + blockID }
 
 // drawHolder is the lease holder of a session (in place of a client of the note sync).
-func drawHolder(blockID string) string { return "draw:" + blockID }
+func drawHolder(blockID string) string { return collab.LiveDrawHolderPrefix + blockID }
 
 type drawMessage struct {
 	DocID    string            `json:"docId"`
@@ -384,7 +384,7 @@ func (s *Server) drawFinish(c *ws.Client, p drawMessage, save bool) {
 		drawError(c, p.DocID, p.BlockID, drawErrorCode(err))
 		return
 	}
-	if save && p.ClientID != "" && len(p.ClientID) <= drawMaxClientID {
+	if save && p.ClientID != "" && len(p.ClientID) <= drawMaxClientID && !collab.ReservedClientID(p.ClientID) {
 		s.leases.HandOver(p.DocID, p.BlockID, drawHolder(p.BlockID), collab.Actor{UserID: c.UserID(), ClientID: p.ClientID, Name: s.displayName(c.UserID())})
 	} else {
 		s.leases.Release(p.DocID, drawHolder(p.BlockID), []string{p.BlockID})

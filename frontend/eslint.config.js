@@ -19,6 +19,30 @@ function lucideAliasNames() {
   return [...aliases].sort();
 }
 
+// Dropdowns, dates and times in the app's look (Doku/ui-patterns.md)
+const uiPatternSyntax = [
+  { selector: "JSXOpeningElement[name.name='select']", message: 'Use SelectMenu instead of <select> (Doku/ui-patterns.md).' },
+  {
+    selector: "JSXAttribute[name.name='type'][value.value=/^(date|time|datetime-local)$/]",
+    message: 'Use DateField or TimeField instead of the browser picker (Doku/ui-patterns.md).',
+  },
+];
+
+// The attributes people read (placeholder, tooltip, screen reader, image text) take no fixed text, written
+// directly (title="…") or as a string in braces (title={'…'}); every other attribute is code. Values without
+// letters (symbols, numbers) are no text, nor are the product's name and placeholders that show a format: an
+// address, the setup code, a recovery code, a hashtag, custom CSS (esquery regex: no "/" inside).
+const readAttribute = "[name.name=/^(placeholder|title|aria-label|alt)$/]";
+const hasLetter = '/^(?!MindSift$|https?:|MS-X+$|[a-z]{5}-[a-z]{5}$|\\+ #hashtag$|:root\\[).*[A-Za-zÄÖÜäöüß]/';
+const literalAttributeMessage = "Text people read comes from the language files: t('…') (src/locales).";
+const literalAttributeSyntax = [
+  { selector: `JSXAttribute${readAttribute}[value.type='Literal'][value.value=${hasLetter}]`, message: literalAttributeMessage },
+  {
+    selector: `JSXAttribute${readAttribute}[value.expression.type='Literal'][value.expression.value=${hasLetter}]`,
+    message: literalAttributeMessage,
+  },
+];
+
 export default tseslint.config(
   { ignores: ['dist', 'node_modules', 'coverage'] },
   {
@@ -48,7 +72,7 @@ export default tseslint.config(
       ],
     },
   },
-  // Texts shown to people come from the language files (src/locales); no new fixed text in JSX
+  // Texts shown to people come from the language files (src/locales); no new fixed text between tags
   {
     files: ['src/**/*.tsx'],
     ignores: ['src/**/__tests__/**', 'src/features/help/content/**'],
@@ -57,52 +81,31 @@ export default tseslint.config(
       'i18next/no-literal-string': [
         'error',
         {
-          // jsx-only: the text between tags, the attributes people read (placeholder, tooltip, screen reader,
-          // image text; every other attribute is code) and strings in JSX expressions ({x ? 'a' : 'b'}).
-          // jsx-text-only would skip attributes altogether.
-          mode: 'jsx-only',
-          'jsx-attributes': { include: ['placeholder', 'title', 'aria-label', 'alt'], exclude: ['.*'] },
-          // Names and code that read the same in every language: the product, services and tools, keys, MCP
-          // tools, the demo logins, example addresses, and anything without letters (symbols, numbers).
-          // In expressions also values for code: single words in lower case or camelCase (ids, keys,
-          // Intl options), lists of CSS classes, colours.
+          mode: 'jsx-text-only',
+          // Names and code that read the same in every language: the product, services, keys, MCP tools,
+          // the demo logins, and anything without letters (symbols, numbers)
           words: {
             exclude: [
-              '^\\s*(MindSift|OAuth|Discord|Webhook|Push|Live|Tab|Esc|Enter|⌘K|Hashtags|To-Dos|Kanban)\\s*$',
-              '^(Claude Code|OpenAI Codex|Claude Desktop / Cursor|claude\\.ai / ChatGPT)$',
+              '^\\s*(MindSift|OAuth|Discord|Webhook|Push|Live|Tab|Esc|Enter|⌘K|Hashtags|To-Dos)\\s*$',
               '^[a-z]+(_[a-z]+)+$',
               '^(search|admin / admin|user / user)$',
               '^[^A-Za-zÄÖÜäöüß]*$',
-              '^[a-z0-9][a-zA-Z0-9_.:/-]*$',
-              '^(?=.*\\S-\\S)[a-z0-9:/\\[\\]().%!-]+( [a-z0-9:/\\[\\]().%!-]+)*$',
-              '^#[0-9a-fA-F]{3,8}$',
-              '^[A-Z]$',
-              '^T\\d\\d:\\d\\d$',
-              '^https://example\\.com$',
-              // Placeholders that show a format: the setup code, a hashtag, custom CSS
-              '^(MS-X+|\\+ #hashtag)$',
-              '^:root\\[data-theme=.*$',
             ],
           },
         },
       ],
+      'no-restricted-syntax': ['error', ...uiPatternSyntax, ...literalAttributeSyntax],
     },
   },
-  // Dropdowns, dates and times in the app's look (Doku/ui-patterns.md); only the fields themselves use the
-  // browser's inputs, for the system pickers on touch screens
+  // The date and time fields themselves use the browser's inputs, for the system pickers on touch screens
   {
-    files: ['src/**/*.tsx'],
-    ignores: ['src/**/__tests__/**', 'src/components/DateField.tsx', 'src/components/TimeField.tsx'],
-    rules: {
-      'no-restricted-syntax': [
-        'error',
-        { selector: "JSXOpeningElement[name.name='select']", message: 'Use SelectMenu instead of <select> (Doku/ui-patterns.md).' },
-        {
-          selector: "JSXAttribute[name.name='type'][value.value=/^(date|time|datetime-local)$/]",
-          message: 'Use DateField or TimeField instead of the browser picker (Doku/ui-patterns.md).',
-        },
-      ],
-    },
+    files: ['src/components/DateField.tsx', 'src/components/TimeField.tsx'],
+    rules: { 'no-restricted-syntax': ['error', ...literalAttributeSyntax] },
+  },
+  // The help pages are written per language (features/help/content/<code>.tsx)
+  {
+    files: ['src/features/help/content/**/*.tsx'],
+    rules: { 'no-restricted-syntax': ['error', ...uiPatternSyntax] },
   },
   {
     files: ['public/sw.js'],

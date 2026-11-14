@@ -115,7 +115,7 @@ func TestMediaCleanupAndCopiedBlocks(t *testing.T) {
 	used, unused := upload(), upload()
 
 	// A second user copied the image bullet out of the note while it was shared with them; the copy
-	// keeps working after the share ends (FLAW-43)
+	// keeps working after the share ends (Doku/sharing-and-permissions.md, "Files in Shared Notes")
 	other, otherToken := newTestUser(t, store, "kopie@example.com")
 	if _, err := store.CreateDocShare(claims.UserID, doc.ID, other.ID, "read"); err != nil {
 		t.Fatal(err)

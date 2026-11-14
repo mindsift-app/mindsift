@@ -144,6 +144,7 @@ func (s *Server) handleAdminGetUsers(w http.ResponseWriter, r *http.Request) {
 		u.PendingApproval = pending[u.ID]
 		u.EmailUnverified = unverified[u.ID]
 		u.OrganizationIDs = orgs[u.ID]
+		u.NoPassword = !auth.HasPassword(u.PasswordHash)
 		out[i] = staffUser{User: u}
 	}
 	writeJSON(w, http.StatusOK, out)
@@ -279,6 +280,7 @@ func (s *Server) handleAdminUpdateUser(w http.ResponseWriter, r *http.Request) {
 		s.store.ClearPendingRegistration(targetUserID)
 		s.store.ClearEmailVerification(targetUserID)
 	}
+	u.NoPassword = !auth.HasPassword(u.PasswordHash)
 	writeJSON(w, http.StatusOK, staffUser{User: *u})
 }
 
@@ -518,6 +520,11 @@ func (s *Server) handleAdminUpdateSettings(w http.ResponseWriter, r *http.Reques
 	// Empty means unchanged (the browser never has it); without SMTP user the password goes too. One that
 	// no longer decrypts (SECRETS_KEY changed) stays stored until a new one is entered.
 	settings.SMTPPassUnreadable = false
+	// While SMTP_PASS applies to the mail server and user being saved, it is the password: one sent along
+	// is not stored (the form locks the field), the stored one stays as it was
+	if settings.SMTPPass != "" && s.envSMTPPass(&settings) != "" {
+		settings.SMTPPass = ""
+	}
 	if settings.SMTPPass == "" && strings.TrimSpace(settings.SMTPUser) != "" {
 		if cur, err := s.store.GetSystemSettings(); err == nil {
 			settings.SMTPPass, settings.SMTPPassUnreadable = cur.SMTPPass, cur.SMTPPassUnreadable

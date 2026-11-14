@@ -341,7 +341,7 @@ func (s *Store) ApplyDocOps(docID string, a collab.Actor, ops []collab.Op, lease
 // References to files the person may not read are dropped from the content first (mediaGate); the
 // client gets the content as stored through the log.
 func (s *Store) ApplyDocOpsCtx(ctx context.Context, docID string, a collab.Actor, ops []collab.Op, leases collab.LeaseView) ([]collab.Result, int64, error) {
-	ops = s.newMediaGate(a.UserID, nil).cleanOps(ops)
+	ops = s.newDocMediaGate(a.UserID, docID).cleanOps(ops)
 	return s.applyDocChangeCtx(ctx, docID, a, leases, func(*collab.Doc) []collab.Op { return ops })
 }
 
@@ -710,7 +710,7 @@ func (s *Store) IsDocShared(docID string) bool {
 // SetBlockChecked ticks or unticks a block through the log (server-side change, e.g. a linked task was
 // completed). Returns true if the block changed.
 func (s *Store) SetBlockChecked(userID, docID, blockID string, checked bool) bool {
-	a := collab.Actor{UserID: userID, ClientID: "server"}
+	a := collab.Actor{UserID: userID, ClientID: collab.ServerHolder}
 	results, _, err := s.applyDocChange(docID, a, nil, func(d *collab.Doc) []collab.Op {
 		b, ok := d.Blocks[blockID]
 		if !ok || b.Deleted || b.Props.Checked == checked {
@@ -723,7 +723,7 @@ func (s *Store) SetBlockChecked(userID, docID, blockID string, checked bool) boo
 
 // --- Writing a complete block list (new notes, imports) ---
 
-const legacyClientID = "legacy"
+const legacyClientID = collab.LegacyHolder
 
 // replaceDocBlocksInDB stores a complete flat block list (initial blocks of a new note, old blocks_json data)
 // by diffing it against the current tree and applying the difference as regular operations.

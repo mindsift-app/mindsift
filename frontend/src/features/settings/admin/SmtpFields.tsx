@@ -66,16 +66,19 @@ export function SmtpFields({
 
       <label className="block">
         <span className="block text-muted font-medium mb-1">{t('smtp.password')}</span>
+        {/* Locked while SMTP_PASS applies: the server would not store a password entered here */}
         <input
           {...NO_AUTOFILL}
           type="text"
           style={MASKED}
-          value={value.smtpPass || ''}
+          value={passwordViaEnv ? '' : value.smtpPass || ''}
           onChange={(e) => onChange({ smtpPass: e.target.value })}
-          placeholder={passwordViaEnv ? t('smtp.passwordViaEnv') : passwordSet ? t('smtp.passwordKept') : '••••••••••••'}
+          disabled={passwordViaEnv}
+          placeholder={passwordSet && !passwordViaEnv ? t('smtp.passwordKept') : '••••••••••••'}
           autoComplete="new-password"
-          className={`${field} font-mono`}
+          className={`${field} font-mono disabled:opacity-60`}
         />
+        {passwordViaEnv && <span className="block text-[11px] text-muted mt-1">{t('server.fixedBy', { env: 'SMTP_PASS' })}</span>}
       </label>
 
       <label className="block">

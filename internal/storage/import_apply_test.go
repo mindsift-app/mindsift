@@ -3,8 +3,11 @@ package storage
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"sync"
 	"testing"
+
+	"github.com/mindsift-app/mindsift/internal/domain"
 )
 
 // countOf counts the rows of a table that belong to the user (column user_id).
@@ -94,5 +97,132 @@ func TestConcurrentImportsAllComplete(t *testing.T) {
 		if n := countOf(t, store, "documents", id); n != 1 {
 			t.Errorf("import %d: %d notes, want 1", i, n)
 		}
+	}
+}
+
+// A failed import leaves the person's existing notes as they were: their [[Titel]] links are not turned
+// into links to an imported note that is taken out again.
+func TestFailedImportLeavesWikiLinksAlone(t *testing.T) {
+	store, anna, ben := newImportStore(t)
+	seedAnna(t, store, anna)
+	exp, _ := store.ExportUserData(anna.ID)
+	raw, _ := json.Marshal(exp)
+	plan, err := PlanMindSiftJSONImport(raw)
+	if err != nil {
+		t.Fatalf("plan: %v", err)
+	}
+	const text = "Siehe [[Umzug]]"
+	own, err := store.CreateDocument(ben.ID, "", "Eigene Notiz", "", "", []domain.DocumentBlock{
+		{ID: "own1", Type: "bullet", Content: text},
+	}, nil, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.db.Exec(`CREATE TRIGGER test_fail_lists BEFORE INSERT ON lists BEGIN SELECT RAISE(ABORT, 'Testfehler'); END`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.ApplyImport(ben.ID, plan); err == nil {
+		t.Fatal("the import should fail")
+	}
+	if got := blocksOf(t, store, own.ID)["own1"].Content; got != text {
+		t.Errorf("the failed import rewrote a link in an existing note: %q", got)
+	}
+
+	// A complete import links it
+	if _, err := store.db.Exec(`DROP TRIGGER test_fail_lists`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.ApplyImport(ben.ID, plan); err != nil {
+		t.Fatalf("apply: %v", err)
+	}
+	if got := blocksOf(t, store, own.ID)["own1"].Content; !strings.Contains(got, "#doc_") {
+		t.Errorf("the link does not point at the imported note: %q", got)
+	}
+}
+
+// A restore that fails keeps the person's previous data: it is deleted only once the backup is in
+// completely. Before, the sections were emptied first and a failing import left them empty.
+func TestFailedRestoreKeepsPreviousData(t *testing.T) {
+	store, anna, ben := newImportStore(t)
+	seedAnna(t, store, anna)
+	exp, _ := store.ExportUserData(anna.ID)
+	raw, _ := json.Marshal(exp)
+	plan, err := PlanMindSiftJSONImport(raw)
+	if err != nil {
+		t.Fatalf("plan: %v", err)
+	}
+	old, err := store.CreateDocument(ben.ID, "", "Alte Notiz", "", "Altes", []domain.DocumentBlock{
+		{ID: "alt1", Type: "bullet", Content: "Bisher"},
+	}, nil, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.CreateFolder(ben.ID, "Altes"); err != nil {
+		t.Fatal(err)
+	}
+	oldList, _ := store.CreateTaskList(ben.ID, "", "", "Alte Liste", "📋", "")
+	if _, err := store.CreateThoughtWithDetails(ben.ID, "Alte Aufgabe", "normal", "manual", "", oldList.ID, "todo", ""); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.CreateList(ben.ID, "Alter Einkauf", "🛒", "shopping"); err != nil {
+		t.Fatal(err)
+	}
+	counts := func() map[string]int {
+		out := map[string]int{}
+		for _, table := range []string{"documents", "task_lists", "thoughts", "lists", "workspace_folders"} {
+			out[table] = countOf(t, store, table, ben.ID)
+		}
+		return out
+	}
+	before := counts()
+	all := NormalizeSections(nil)
+
+	// The import fails at the lists, the last part
+	if _, err := store.db.Exec(`CREATE TRIGGER test_fail_lists BEFORE INSERT ON lists BEGIN SELECT RAISE(ABORT, 'Testfehler'); END`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.RestoreImport(ben.ID, plan, all); err == nil {
+		t.Fatal("the restore should fail")
+	}
+	if got := counts(); fmt.Sprint(got) != fmt.Sprint(before) {
+		t.Errorf("after the failed restore: %v, want the previous %v", got, before)
+	}
+	if b := blocksOf(t, store, old.ID)["alt1"]; b == nil || b.Content != "Bisher" {
+		t.Error("the previous note lost its bullets")
+	}
+	if _, err := store.db.Exec(`DROP TRIGGER test_fail_lists`); err != nil {
+		t.Fatal(err)
+	}
+
+	// Deleting the previous data fails: rolled back, and the import is taken out again
+	if _, err := store.db.Exec(`CREATE TRIGGER test_fail_purge BEFORE DELETE ON documents WHEN old.title = 'Alte Notiz' BEGIN SELECT RAISE(ABORT, 'Testfehler'); END`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.RestoreImport(ben.ID, plan, all); err == nil {
+		t.Fatal("the restore should fail")
+	}
+	if got := counts(); fmt.Sprint(got) != fmt.Sprint(before) {
+		t.Errorf("after the failed delete: %v, want the previous %v", got, before)
+	}
+	if b := blocksOf(t, store, old.ID)["alt1"]; b == nil || b.Content != "Bisher" {
+		t.Error("the previous note lost its bullets in the failed delete")
+	}
+	if _, err := store.db.Exec(`DROP TRIGGER test_fail_purge`); err != nil {
+		t.Fatal(err)
+	}
+
+	// Without a failure the backup replaces the previous data
+	if _, err := store.RestoreImport(ben.ID, plan, all); err != nil {
+		t.Fatalf("restore: %v", err)
+	}
+	checkRestored(t, store, ben)
+	folders := countOf(t, store, "workspace_folders", ben.ID)
+	if _, err := store.CreateFolder(ben.ID, "Projekte/Server"); err != nil || countOf(t, store, "workspace_folders", ben.ID) != folders {
+		t.Errorf("the restored note's folder entry is missing (%v)", err)
+	}
+	var altes int
+	_ = store.db.QueryRow(`SELECT COUNT(*) FROM workspace_folders WHERE user_id = ? AND path = 'Altes'`, ben.ID).Scan(&altes)
+	if altes != 0 {
+		t.Error("the previous folder is still there")
 	}
 }

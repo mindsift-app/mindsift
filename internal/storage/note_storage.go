@@ -305,15 +305,46 @@ func (s *Store) rebuildNoteSearch() error {
 	return tx.Commit()
 }
 
-// diskFreeOf is diskFree; tests replace it.
-var diskFreeOf = diskFree
+// diskFreeOf, fileSystemIDOf and sqliteTempDirOf are diskFree, fileSystemID and sqliteTempDir; tests
+// replace them.
+var (
+	diskFreeOf      = diskFree
+	fileSystemIDOf  = fileSystemID
+	sqliteTempDirOf = sqliteTempDir
+)
+
+// vacuumHasRoom: VACUUM writes the compacted database (size bytes) twice for a moment, as a temporary
+// copy in SQLite's temp directory (SQLITE_TMPDIR, TMPDIR, /var/tmp, /tmp) and, in WAL mode, once more
+// into the WAL next to the database before the checkpoint. On one file system that is twice the size;
+// with the temp directory elsewhere (in a container often the image's /tmp, not the data volume) each
+// needs the size once. Where the system cannot tell the free space, VACUUM goes ahead.
+func (s *Store) vacuumHasRoom(size int64) bool {
+	type room struct {
+		dir  string
+		need int64
+	}
+	rooms := []room{{s.dataDir, 2 * size}}
+	if tmp := sqliteTempDirOf(); tmp != "" {
+		tmpFS, okTmp := fileSystemIDOf(tmp)
+		dataFS, okData := fileSystemIDOf(s.dataDir)
+		if okTmp && okData && tmpFS != dataFS {
+			rooms = []room{{s.dataDir, size}, {tmp, size}}
+		}
+	}
+	for _, r := range rooms {
+		if avail, ok := diskFreeOf(r.dir); ok && avail < r.need {
+			slog.Warn("Not compacting the database: too little free disk space; the freed space stays for reuse",
+				"dir", r.dir, "needed_mb", r.need>>20, "available_mb", avail>>20)
+			return false
+		}
+	}
+	return true
+}
 
 // vacuumIfWorthwhile compacts the database file once the conversion has freed a good part of it
 // (at least 8 MB and a quarter of the file). SQLite keeps freed pages for reuse and does not shrink the
-// file by itself. VACUUM writes the compacted database twice for a moment: as a temporary copy and, in
-// WAL mode, once more into the WAL before the checkpoint; so up to about twice the size of the database.
-// Without that much free space in the data directory (as far as the system tells) it is skipped with a
-// line in the log. A failure only costs the space: the start goes on.
+// file by itself. Without room for VACUUM's copies (vacuumHasRoom, as far as the system tells) it is
+// skipped with a line in the log. A failure only costs the space: the start goes on.
 func (s *Store) vacuumIfWorthwhile() {
 	var pageSize, pages, free int64
 	if dbFailed(s.db.QueryRow(`PRAGMA page_size`).Scan(&pageSize)) ||
@@ -324,10 +355,7 @@ func (s *Store) vacuumIfWorthwhile() {
 	if free*pageSize < 8<<20 || free*4 < pages {
 		return
 	}
-	need := 2 * (pages - free) * pageSize
-	if avail, ok := diskFreeOf(s.dataDir); ok && avail < need {
-		slog.Warn("Not compacting the database: too little free disk space; the freed space stays for reuse",
-			"needed_mb", need>>20, "available_mb", avail>>20)
+	if !s.vacuumHasRoom((pages - free) * pageSize) {
 		return
 	}
 	slog.Info("Compacting the database once after storing note text only once", "size_mb", pages*pageSize>>20, "free_mb", free*pageSize>>20)

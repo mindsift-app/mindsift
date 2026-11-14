@@ -97,8 +97,8 @@ type User struct {
 	PendingEmail string `json:"pendingEmail,omitempty"`
 	// EmailLinks: this server can mail confirmation links (mail server and BASE_URL; own profile only)
 	EmailLinks bool `json:"emailLinks,omitempty"`
-	// NoPassword: the account has no password of its own, it signs in through the OIDC provider; OIDC: it is
-	// linked to the provider (own profile only)
+	// NoPassword: the account has no password of its own, it signs in through the OIDC provider (own profile
+	// and admin user list); OIDC: it is linked to the provider (own profile only)
 	NoPassword bool `json:"noPassword,omitempty"`
 	OIDC       bool `json:"oidc,omitempty"`
 	// Only filled for the user's own profile (GET /auth/me, PATCH /auth/settings)
