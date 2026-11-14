@@ -30,6 +30,9 @@ Versions without a git tag were development states and were never published as a
 
 ### Fixed
 - Knowing the id of someone else's image or recording no longer gives access to it: a bullet only keeps a file its writer uploaded or may read already. Imports (Obsidian, MindSift archive, backups, restoring a personal backup), the editor, AI agents and new notes through the API turn a reference to any other file into its caption (or "(file not included)"), and the import preview lists the notes concerned as skipped.
+- Alarm settings being typed (Discord or webhook address, channels, lead time) are no longer reset when you come back to the tab or save another setting such as the profile picture; only a value saved elsewhere replaces its field.
+- Columns renamed or reordered in "Manage columns" are no longer undone when the task lists reload while the dialog is open.
+- Linking to a single bullet: picking one note and quickly another no longer shows the first note's bullets under the second.
 - The install script says "MindSift is up and running" only once MindSift answers; otherwise it points to the log.
 - Hidden values stay with their owner: someone who may only read a shared note and copied a hidden value into a note of their own can no longer change it from there, and no longer takes it over when the owner deletes the bullet.
 - Importing an Obsidian vault, a MindSift archive or a backup no longer takes a large amount of server memory: notes and files are read one at a time instead of unpacking the whole archive at once, and archive entries that would unpack to far more than they take (zip bombs) are refused before unpacking. Notes over 10 MB or 20,000 bullets and suspiciously packed files are listed as skipped in the preview with the reason; a note of a backup with too many bullets no longer stops the whole import. One import per person and two per server run at the same time, others are asked to try again in a moment.
