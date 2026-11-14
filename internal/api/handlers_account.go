@@ -112,7 +112,7 @@ func (s *Server) applyImport(w http.ResponseWriter, userID string, plan *storage
 	sum, err := s.store.ApplyImport(userID, plan)
 	if err != nil {
 		slog.Error("Import aborted", "user_id", userID, "error", err)
-		writeError(w, http.StatusInternalServerError, "Import abgebrochen: "+clientMessage(err))
+		writeError(w, http.StatusInternalServerError, "Import abgebrochen, nichts übernommen: "+clientMessage(err))
 		return
 	}
 	writeJSON(w, http.StatusOK, trSummary(w, sum))

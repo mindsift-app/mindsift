@@ -1,6 +1,7 @@
 package api
 
 import (
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -187,7 +188,10 @@ func (s *Server) handleMCP(w http.ResponseWriter, r *http.Request) {
 		result, err := tool.run(s, userID, actor, p.Arguments)
 		if err != nil {
 			msg := errInternal
-			if clientMessage(err) != errInternal {
+			if errors.Is(err, sql.ErrNoRows) {
+				// A tool that did not look the id up first: someone else's or a missing item
+				msg = "Nicht gefunden oder kein Zugriff"
+			} else if clientMessage(err) != errInternal {
 				msg = i18n.Text("en", err)
 			}
 			writeRPC(w, req.ID, toolError(msg), nil)
@@ -633,6 +637,9 @@ var mcpTools = []mcpTool{
 			if err := decodeArgs(args, &a); err != nil {
 				return nil, err
 			}
+			if _, err := s.store.GetThoughtByID(userID, a.ID); err != nil {
+				return nil, errors.New("Aufgabe nicht gefunden")
+			}
 			a.Assignees, a.Recurrence, a.Subtasks = nil, nil, nil
 			a.actor = actor
 			t, err := s.updateTask(userID, a.ID, a.taskPatch)
@@ -657,6 +664,9 @@ var mcpTools = []mcpTool{
 			}
 			if err := decodeArgs(args, &a); err != nil {
 				return nil, err
+			}
+			if _, err := s.store.GetThoughtByID(userID, a.ID); err != nil {
+				return nil, errors.New("Aufgabe nicht gefunden")
 			}
 			done := a.Completed == nil || *a.Completed
 			t, err := s.updateTask(userID, a.ID, taskPatch{IsCompleted: &done, actor: actor})

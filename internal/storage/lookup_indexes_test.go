@@ -149,7 +149,8 @@ func TestTasksOfNoteBlocksRange(t *testing.T) {
 // opened and filled, without any earlier ANALYZE.
 func TestOptimizeWritesStatistics(t *testing.T) {
 	s, u := newSyncTestStore(t)
-	for i := 0; i < 200; i++ {
+	// Enough rows to keep them (minStatRows)
+	for i := 0; i < minStatRows+100; i++ {
 		if _, err := s.CreateThought(u.ID, "Gedanke", "normal", "manual", ""); err != nil {
 			t.Fatal(err)
 		}
@@ -163,5 +164,41 @@ func TestOptimizeWritesStatistics(t *testing.T) {
 	}
 	if n == 0 {
 		t.Fatal("no statistics for thoughts after Optimize")
+	}
+}
+
+// Statistics taken on a new server (nearly empty tables) are not kept: with the FTS5 index of notes
+// analyzed at 2 rows, the planner scanned the whole index for every merge, and an import grew slower
+// with every note while it held the write lock (re-test 2026-11-14, A1). The index's deletes have to
+// stay a search by rowid, on the connections opened after Optimize too.
+func TestOptimizeKeepsNoStatisticsOfSmallTables(t *testing.T) {
+	s, u := newSyncTestStore(t)
+	for i := 0; i < 3; i++ {
+		if _, err := s.CreateDocument(u.ID, "", fmt.Sprintf("Notiz %d", i), "", "", []domain.DocumentBlock{
+			{ID: domain.NewID("blk"), Type: "bullet", Content: "Text"},
+		}, nil, false); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for round := 0; round < 2; round++ { // the second run does not bring them back either
+		if err := s.Optimize(); err != nil {
+			t.Fatal(err)
+		}
+	}
+	var n int
+	if err := s.db.QueryRow(`SELECT COUNT(*) FROM sqlite_stat1 WHERE tbl LIKE '%fts%' OR CAST(stat AS INTEGER) < ?`, minStatRows).Scan(&n); err != nil {
+		t.Fatal(err)
+	}
+	if n != 0 {
+		t.Fatalf("%d statistics rows of small or FTS5 tables kept", n)
+	}
+	for _, q := range []string{
+		`SELECT block FROM documents_fts_data WHERE id >= ? AND id <= ?`,
+		`SELECT block FROM thoughts_fts_data WHERE id >= ? AND id <= ?`,
+	} {
+		plan := strings.Join(queryPlan(t, s, q, 1, 2), "\n")
+		if !strings.Contains(plan, "SEARCH") {
+			t.Errorf("%s scans:\n%s", q, plan)
+		}
 	}
 }

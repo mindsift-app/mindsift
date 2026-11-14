@@ -9,7 +9,8 @@ import (
 
 // importGate lets one import per person and maxImportsRunning per server run at a time, previews and
 // restores of a server backup included. An import reads and converts a whole archive; a few at once
-// would take the memory of a small server, and nobody needs two of their own in parallel.
+// would take the memory of a small server, and nobody needs two of their own in parallel. The two
+// running apply their plans one after the other (Store.ApplyImport).
 type importGate struct {
 	mu      sync.Mutex
 	running map[string]bool

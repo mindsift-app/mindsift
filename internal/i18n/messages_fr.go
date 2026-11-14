@@ -125,7 +125,7 @@ var messagesFR = map[string]string{
 	"Gerät konnte nicht gespeichert werden":                                                     "L’appareil n’a pas pu être enregistré",
 	"Geräte konnten nicht geladen werden":                                                       "Les appareils n’ont pas pu être chargés",
 	"Im Archiv wurden keine Markdown-Notizen gefunden":                                          "Aucune note Markdown n’a été trouvée dans l’archive",
-	"Import abgebrochen":                                                                        "Importation annulée",
+	"Import abgebrochen, nichts übernommen":                                                     "Importation annulée, rien n’a été conservé",
 	"In der Demo deaktiviert":                                                                   "Désactivé dans la démo",
 	"In der URL sind nur API-Keys erlaubt; Sitzungs-Tokens gehören in den Authorization-Header": "Seules les clés API sont autorisées dans l’URL ; les jetons de session vont dans l’en-tête Authorization",
 	"Jemand anderes bearbeitet gerade einen Punkt in diesem Ast. Bitte kurz warten.":            "Quelqu’un d’autre modifie un point de cette branche en ce moment. Patiente un instant.",

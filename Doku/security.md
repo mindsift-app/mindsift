@@ -37,7 +37,7 @@ Every address the server contacts (webhooks, Discord, push services, link previe
 
 ### Limits everywhere
 
-Request bodies capped per endpoint, realtime connections capped per account. Import archives are checked for size and file count before anything is written: the sizes their entries declare must stay under 500 MB together and are checked again while reading, an entry packed more than 100 times smaller than it unpacks (a zip bomb) is not unpacked, a note may have 10 MB and 20,000 bullets. Notes and files are read one at a time (an import never holds the whole archive in memory), and one import per person and two per server run at a time.
+Request bodies capped per endpoint, realtime connections capped per account. Import archives are checked for size and file count before anything is written: the sizes their entries declare must stay under 500 MB together and are checked again while reading, an entry packed more than 100 times smaller than it unpacks (a zip bomb) is not unpacked, a note may have 10 MB and 20,000 bullets. Notes and files are read one at a time (an import never holds the whole archive in memory), and one import per person and two per server run at a time (applied one after the other).
 
 ### Quiet logs and errors
 

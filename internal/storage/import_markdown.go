@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/url"
 	"os"
 	"path"
@@ -901,13 +902,88 @@ func jsonArray(dec *json.Decoder, lim *valueLimit, each func() error) error {
 
 // ApplyImport creates everything of the plan for the user. Existing data is never changed; imported
 // items are added next to it. Task lists of the same name get merged into one new list per import.
+//
+// Imports are applied one at a time (importMu); a second one waits for its turn. Two at once competed
+// note by note for the write lock with each other and with everybody else, and one of them gave up with
+// "database is locked" (re-test 2026-11-14, A2). An import that fails half way takes out what it
+// created, so the person never keeps half of an archive without being told; the error says which part
+// failed. Each note is still written in transactions of its own: one transaction for a whole archive
+// would keep everybody else from writing for as long as the import runs.
 func (s *Store) ApplyImport(userID string, plan *ImportPlan) (ImportSummary, error) {
+	s.importMu.Lock()
+	defer s.importMu.Unlock()
+	undo := &importUndo{}
+	sum, err := s.applyImport(userID, plan, undo)
+	if err != nil {
+		s.undoImport(userID, undo)
+	}
+	return sum, err
+}
+
+// importUndo lists what an import created so far.
+type importUndo struct {
+	folders, docs, taskLists, tasks, lists []string
+}
+
+// undoImport deletes what a failed import created. A step that fails is logged and the rest go on.
+func (s *Store) undoImport(userID string, u *importUndo) {
+	for _, id := range u.tasks {
+		s.execLogged(`DELETE FROM thoughts WHERE id = ? AND user_id = ?`, id, userID)
+	}
+	for _, id := range u.taskLists {
+		logDBErr(s.DeleteTaskList(userID, id))
+	}
+	for _, id := range u.lists {
+		s.execLogged(`DELETE FROM lists WHERE id = ? AND user_id = ?`, id, userID) // items cascade
+	}
+	for _, id := range u.docs {
+		logDBErr(s.hardDeleteDocument(id))
+	}
+	for _, id := range u.folders {
+		s.execLogged(`DELETE FROM workspace_folders WHERE id = ? AND user_id = ?`, id, userID)
+	}
+	slog.Info("Failed import taken out again", "user_id", userID, "notes", len(u.docs), "tasks", len(u.tasks),
+		"task_lists", len(u.taskLists), "lists", len(u.lists), "folders", len(u.folders))
+}
+
+// userFolderIDs: the ids of the folder entries the user has (workspace_folders).
+func (s *Store) userFolderIDs(userID string) (map[string]bool, error) {
+	rows, err := s.db.Query(`SELECT id FROM workspace_folders WHERE user_id = ?`, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	ids := map[string]bool{}
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		ids[id] = true
+	}
+	return ids, rows.Err()
+}
+
+func (s *Store) applyImport(userID string, plan *ImportPlan, undo *importUndo) (ImportSummary, error) {
 	s.CheckImportMedia(userID, plan)
+	before, err := s.userFolderIDs(userID)
+	if err != nil {
+		return plan.Summary(false), err
+	}
 	for _, f := range plan.Folders {
 		_, _ = s.CreateFolder(userID, f) // already existing folders are fine
 	}
+	after, err := s.userFolderIDs(userID)
+	if err != nil {
+		return plan.Summary(false), err
+	}
+	for id := range after {
+		if !before[id] {
+			undo.folders = append(undo.folders, id)
+		}
+	}
 	budget := newUnpackBudget()
-	err := plan.eachDoc(budget, func(d importDoc, blocks []domain.DocumentBlock) error {
+	err = plan.eachDoc(budget, func(d importDoc, blocks []domain.DocumentBlock) error {
 		title := strings.TrimSpace(d.title)
 		if title == "" {
 			title = i18n.T(s.MessageLanguage(userID), "Unbenannte Notiz")
@@ -931,6 +1007,7 @@ func (s *Store) ApplyImport(userID string, plan *ImportPlan) (ImportSummary, err
 		if err != nil {
 			return fmt.Errorf("note %q: %w", title, err)
 		}
+		undo.docs = append(undo.docs, doc.ID)
 		if err := s.storeImportMedia(userID, doc.ID, files, budget); err != nil {
 			return fmt.Errorf("note %q: %w", title, err)
 		}
@@ -955,15 +1032,16 @@ func (s *Store) ApplyImport(userID string, plan *ImportPlan) (ImportSummary, err
 				return plan.Summary(false), fmt.Errorf("task list %q: %w", tl.title, err)
 			}
 			listID = created.ID
+			undo.taskLists = append(undo.taskLists, listID)
 		}
 		for _, t := range tl.tasks {
-			if err := s.importTaskInto(userID, listID, t, true); err != nil {
+			if err := s.importTaskInto(userID, listID, t, true, undo); err != nil {
 				return plan.Summary(false), err
 			}
 		}
 	}
 	for _, t := range plan.Inbox {
-		if err := s.importTaskInto(userID, "", t, false); err != nil {
+		if err := s.importTaskInto(userID, "", t, false, undo); err != nil {
 			return plan.Summary(false), err
 		}
 	}
@@ -976,6 +1054,7 @@ func (s *Store) ApplyImport(userID string, plan *ImportPlan) (ImportSummary, err
 		if err != nil {
 			return plan.Summary(false), fmt.Errorf("list %q: %w", l.title, err)
 		}
+		undo.lists = append(undo.lists, created.ID)
 		for i, it := range l.items {
 			item, err := s.CreateListItem(created.ID, it.content, it.category, it.quantity, i, userID)
 			if err != nil {
@@ -995,7 +1074,7 @@ func (s *Store) ApplyImport(userID string, plan *ImportPlan) (ImportSummary, err
 	return plan.Summary(true), nil
 }
 
-func (s *Store) importTaskInto(userID, listID string, t importTask, asTask bool) error {
+func (s *Store) importTaskInto(userID, listID string, t importTask, asTask bool, undo *importUndo) error {
 	content := strings.TrimSpace(t.content)
 	if content == "" {
 		return nil
@@ -1008,6 +1087,7 @@ func (s *Store) importTaskInto(userID, listID string, t importTask, asTask bool)
 	if err != nil {
 		return fmt.Errorf("task %q: %w", content, err)
 	}
+	undo.tasks = append(undo.tasks, th.ID)
 	if !asTask {
 		return nil
 	}
