@@ -260,8 +260,13 @@ func (s *Store) createDocument(userID, spaceID, title, icon, folderPath string, 
 	if isPinned {
 		s.execLogged(`INSERT OR IGNORE INTO doc_pins (user_id, doc_id, created_at) VALUES (?, ?, ?)`, userID, doc.ID, doc.CreatedAt)
 	}
-	// block_tags was written with the bullets (applyDocChange), with the ids they were stored under:
-	// saveDocBlocks gives bullets whose id belongs to another note a new one, doc.Blocks keeps the old
+	// The bullets as stored: saveDocBlocks gives bullets whose id belongs to another note (copied
+	// bullets, starter content) or is missing or repeated a new one and fills in a missing type, so the
+	// answer names the ids the note has, as GET /documents/{id} does. block_tags was written with them.
+	if stored := s.loadDocBlocks(doc.ID, ""); len(stored) > 0 {
+		doc.Blocks = stored
+		doc.Content = docPlainText(stored)
+	}
 	return doc, nil
 }
 
