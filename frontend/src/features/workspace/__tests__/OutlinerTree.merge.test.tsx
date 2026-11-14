@@ -4,6 +4,7 @@ import { render, fireEvent, screen, act } from '@testing-library/react';
 import { OutlinerTree } from '../OutlinerTree';
 import type { BlockLock } from '../OutlinerBlock';
 import { DocumentBlock } from '../../../lib/types';
+import { OUTLINE_CLIPBOARD_TYPE } from '../../../lib/outlineMarkdown';
 
 // Holds the latest block state rendered by the harness
 let live: DocumentBlock[] = [];
@@ -170,5 +171,36 @@ describe('Enter at the end of a bullet with children', () => {
     render(<Harness initial={[{ ...mk('a', 'Zu'), collapsed: true }, mk('b', 'Kind', 1)]} />);
     await enterAtEnd('Zu');
     expect(live[1]).toMatchObject({ content: '', level: 0 });
+  });
+});
+
+describe('Pasting bullets copied from a note', () => {
+  const paste = async (ta: HTMLTextAreaElement, data: Record<string, string>) => {
+    ta.focus();
+    ta.setSelectionRange(ta.value.length, ta.value.length);
+    await act(async () => {
+      fireEvent.paste(ta, { clipboardData: { getData: (type: string) => data[type] ?? (type === 'text' ? data['text/plain'] ?? '' : '') } });
+    });
+  };
+
+  it('takes the references of hidden values from the app\'s own format, not the masked text', async () => {
+    render(<Harness initial={[mk('a', 'Ziel')]} />);
+    await paste(area('Ziel'), {
+      'text/plain': 'Zugang ••••\n- PIN ••••',
+      [OUTLINE_CLIPBOARD_TYPE]: 'Zugang {{secret:sec1}}\n- PIN {{secret:sec2}}',
+    });
+    expect(live.map((b) => [b.content, b.level])).toEqual([
+      ['ZielZugang {{secret:sec1}}', 0],
+      ['PIN {{secret:sec2}}', 1],
+    ]);
+  });
+
+  it('puts a single line of the own format into the bullet', async () => {
+    render(<Harness initial={[mk('a', 'Ziel')]} />);
+    await paste(area('Ziel'), { 'text/plain': 'PIN ••••', [OUTLINE_CLIPBOARD_TYPE]: 'PIN {{secret:sec2}}' });
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 200));
+    });
+    expect(live.map((b) => b.content)).toEqual(['ZielPIN {{secret:sec2}}']);
   });
 });

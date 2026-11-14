@@ -58,6 +58,7 @@ import { isNoteLinkOnly, retargetWikiLinks, unlinkWikiLinks, WikiLink, WikiLinkC
 import { useWikiLinkResolver } from '../../lib/wikiLinkResolver';
 import { fitFieldHeight, refitOnWidthChange } from '../../lib/fieldHeight';
 import { BLOCK_DRAG_TYPE } from './moveBranchEvent';
+import { ownClipboardText } from '../../lib/outlineMarkdown';
 import { caretAfterChange, mapRenderedOffsetToRaw } from '../../lib/caret';
 import { toggleInlineFormat } from '../../lib/inlineFormat';
 import { useTranslation } from 'react-i18next';
@@ -956,17 +957,24 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
 
   const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
     if (!canEdit || block.type === 'code') return;
-    const pastedText = e.clipboardData.getData('text');
+    // Bullets copied from a note with hidden values: the app's own format has their references where the
+    // plain text has the mask (lib/outlineMarkdown.ts)
+    const own = ownClipboardText(e.clipboardData);
+    const pastedText = own || e.clipboardData.getData('text');
+    const start = e.currentTarget.selectionStart ?? localContent.length;
+    const end = e.currentTarget.selectionEnd ?? start;
+    const textBefore = localContent.slice(0, start);
+    const textAfter = localContent.slice(end);
+    if (own && !own.includes('\n')) {
+      e.preventDefault();
+      applyFormattingChange(textBefore + own + textAfter, start + own.length, start + own.length);
+      return;
+    }
     if (!pastedText || !pastedText.includes('\n')) return;
 
     e.preventDefault();
     const rawLines = pastedText.split(/\r?\n/);
     if (rawLines.length <= 1) return;
-
-    const start = e.currentTarget.selectionStart ?? localContent.length;
-    const end = e.currentTarget.selectionEnd ?? start;
-    const textBefore = localContent.slice(0, start);
-    const textAfter = localContent.slice(end);
 
     if (debounceTimerRef.current !== null) {
       window.clearTimeout(debounceTimerRef.current);

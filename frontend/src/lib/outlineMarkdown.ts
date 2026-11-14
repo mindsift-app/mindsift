@@ -11,8 +11,8 @@ const CALLOUT_KIND = { warning: 'warning', error: 'failure' } as const;
 // with one tab per level ("-", "1." for numbered, "- [ ]" for to-dos). To-dos and numbered items stay list
 // items on the top level too. Pasting it back (pasteOutline.ts: a list right after a paragraph nests
 // under it) gives the same structure. Levels count from the shallowest bullet, so a copied branch starts
-// at the left margin.
-export function blocksToMarkdown(blocks: DocumentBlock[]): string {
+// at the left margin. Hidden values are masked unless keepSecretRefs (the app's own clipboard format below).
+export function blocksToMarkdown(blocks: DocumentBlock[], { keepSecretRefs = false } = {}): string {
   if (blocks.length === 0) return '';
   const base = Math.min(...blocks.map((b) => Math.max(0, b.level || 0)));
   const out: string[] = [];
@@ -32,7 +32,8 @@ export function blocksToMarkdown(blocks: DocumentBlock[]): string {
     else lvl = Math.max(0, lvl - lift);
     const indent = '\t'.repeat(lvl);
     // Hidden values stay hidden on the clipboard
-    const content = maskSecrets((b.content || '').replace(/\r\n/g, '\n'));
+    const text = (b.content || '').replace(/\r\n/g, '\n');
+    const content = keepSecretRefs ? text : maskSecrets(text);
     const oneLine = content.replace(/\n/g, ' ');
     // Soft line breaks continue the list item, aligned under its text
     const cont = (prefix: string) => content.replace(/\n/g, `\n${indent}${prefix}`);
@@ -113,4 +114,46 @@ export function blocksToMarkdown(blocks: DocumentBlock[]): string {
   }
   // No blank lines at the start and end, at most one in a row
   return out.join('\n').replace(/\n{3,}/g, '\n\n').replace(/^\n+|\n+$/g, '');
+}
+
+// The app's own clipboard format for bullets copied from a note: the same Markdown, but a hidden value keeps
+// its reference {{secret:<id>}} (never the value itself). Pasted into another note, the reference goes to the
+// server, which gives that note a copy of the value if the writer may read it (internal/storage/secret_gate.go).
+// Other apps only read text/plain, where hidden values stay masked and no reference ids leak out.
+export const OUTLINE_CLIPBOARD_TYPE = 'application/x-mindsift-outline';
+
+export interface OutlineClipboard {
+  /** Markdown for every app, hidden values masked */
+  text: string;
+  /** Markdown with the references, only when the bullets hold hidden values */
+  own: string | null;
+}
+
+export function blocksToClipboard(blocks: DocumentBlock[]): OutlineClipboard {
+  const text = blocksToMarkdown(blocks);
+  const own = blocksToMarkdown(blocks, { keepSecretRefs: true });
+  return { text, own: own !== text ? own : null };
+}
+
+// The last bullets with hidden values copied in this tab. Some clipboards keep only the plain text (Firefox
+// without a display, the clipboard API fallback of OutlinerTree): pasting exactly that text here takes the
+// own format from this copy. Only references are kept, never a value.
+let lastCopied: OutlineClipboard | null = null;
+
+export function rememberCopied(clip: OutlineClipboard) {
+  lastCopied = clip.own ? clip : null;
+}
+
+export function putOnClipboard(data: DataTransfer, clip: OutlineClipboard) {
+  data.setData('text/plain', clip.text);
+  if (clip.own) data.setData(OUTLINE_CLIPBOARD_TYPE, clip.own);
+  rememberCopied(clip);
+}
+
+/** The own format of pasted bullets ('' when the clipboard holds no bullets with hidden values from a note) */
+export function ownClipboardText(data: DataTransfer): string {
+  const own = data.getData(OUTLINE_CLIPBOARD_TYPE);
+  if (own) return own;
+  if (!lastCopied) return '';
+  return data.getData('text').replace(/\r\n/g, '\n') === lastCopied.text ? lastCopied.own || '' : '';
 }
