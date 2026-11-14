@@ -305,10 +305,15 @@ func (s *Store) rebuildNoteSearch() error {
 	return tx.Commit()
 }
 
+// diskFreeOf is diskFree; tests replace it.
+var diskFreeOf = diskFree
+
 // vacuumIfWorthwhile compacts the database file once the conversion has freed a good part of it
 // (at least 8 MB and a quarter of the file). SQLite keeps freed pages for reuse and does not shrink the
-// file by itself. The copy needs about as much free space as the database; the backup before the
-// migrations needed that too. A failure only costs the space: the start goes on.
+// file by itself. VACUUM writes the compacted database twice for a moment: as a temporary copy and, in
+// WAL mode, once more into the WAL before the checkpoint; so up to about twice the size of the database.
+// Without that much free space in the data directory (as far as the system tells) it is skipped with a
+// line in the log. A failure only costs the space: the start goes on.
 func (s *Store) vacuumIfWorthwhile() {
 	var pageSize, pages, free int64
 	if dbFailed(s.db.QueryRow(`PRAGMA page_size`).Scan(&pageSize)) ||
@@ -317,6 +322,12 @@ func (s *Store) vacuumIfWorthwhile() {
 		return
 	}
 	if free*pageSize < 8<<20 || free*4 < pages {
+		return
+	}
+	need := 2 * (pages - free) * pageSize
+	if avail, ok := diskFreeOf(s.dataDir); ok && avail < need {
+		slog.Warn("Not compacting the database: too little free disk space; the freed space stays for reuse",
+			"needed_mb", need>>20, "available_mb", avail>>20)
 		return
 	}
 	slog.Info("Compacting the database once after storing note text only once", "size_mb", pages*pageSize>>20, "free_mb", free*pageSize>>20)

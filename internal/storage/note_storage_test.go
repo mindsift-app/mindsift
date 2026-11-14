@@ -7,6 +7,7 @@ import (
 	"math/rand"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -499,4 +500,40 @@ func withoutDoc(hits []string, docID string) []string {
 		}
 	}
 	return out
+}
+
+// The one-time VACUUM after migration 44 needs up to about twice the compacted size in free space; with
+// less it is skipped and the freed pages stay for reuse.
+func TestVacuumOnlyWithEnoughFreeSpace(t *testing.T) {
+	if _, ok := diskFree(t.TempDir()); !ok && runtime.GOOS == "linux" {
+		t.Fatal("the free space of the data directory cannot be read")
+	}
+	s, err := NewStore(filepath.Join(t.TempDir(), "vacuum.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer s.Close()
+	for _, q := range []string{`CREATE TABLE junk (x BLOB)`,
+		`WITH RECURSIVE c(n) AS (SELECT 1 UNION ALL SELECT n + 1 FROM c WHERE n < 3000) INSERT INTO junk SELECT randomblob(4096) FROM c`,
+		`DROP TABLE junk`} {
+		if _, err := s.db.Exec(q); err != nil {
+			t.Fatal(err)
+		}
+	}
+	pages := func() (n int64) {
+		_ = s.db.QueryRow(`PRAGMA page_count`).Scan(&n)
+		return n
+	}
+	before := pages()
+	defer func(orig func(string) (int64, bool)) { diskFreeOf = orig }(diskFreeOf)
+	diskFreeOf = func(string) (int64, bool) { return 1 << 20, true }
+	s.vacuumIfWorthwhile()
+	if pages() != before {
+		t.Fatal("compacted without enough free space")
+	}
+	diskFreeOf = func(string) (int64, bool) { return 1 << 40, true }
+	s.vacuumIfWorthwhile()
+	if after := pages(); after*2 > before {
+		t.Fatalf("not compacted with enough free space: %d pages before, %d after", before, after)
+	}
 }
