@@ -470,6 +470,10 @@ func TestShareKeepsOwnersPinInRealtime(t *testing.T) {
 			if !d.IsPinned || !d.IsOwner {
 				t.Errorf("%s for the owner: isPinned=%v isOwner=%v, want both true", m.Event, d.IsPinned, d.IsOwner)
 			}
+			// What the note list needs, not the bullets (clients with the note open sync those)
+			if len(d.Blocks) != 0 || d.Content != "" || d.MarkdownCache != "" {
+				t.Errorf("%s carries the bullets: %+v", m.Event, d)
+			}
 			if m.Event == "DOC_UPDATED" {
 				updates++
 			}
@@ -483,5 +487,71 @@ func TestShareKeepsOwnersPinInRealtime(t *testing.T) {
 	}
 	if got, _ := store.GetDocumentByID(owner.ID, doc.ID); got == nil || !got.IsPinned {
 		t.Error("note no longer pinned for the owner")
+	}
+}
+
+// WORKSPACE_FOLDERS_UPDATED names what changed, so clients fetch only that; notes brought back from the
+// trash arrive as DOC_CREATED before it (the list is not fetched again for them).
+func TestFolderEventTypes(t *testing.T) {
+	_, store, ts, owner, token := startRealtimeServer(t)
+	stream := openSSE(t, ts, token)
+	next := func(want string) map[string]any {
+		t.Helper()
+		deadline := time.After(2 * time.Second)
+		for {
+			select {
+			case m, ok := <-stream.events:
+				if !ok {
+					t.Fatalf("stream closed waiting for %s", want)
+				}
+				if m.Event != want {
+					continue
+				}
+				var p map[string]any
+				_ = json.Unmarshal(m.Payload, &p)
+				return p
+			case <-deadline:
+				t.Fatalf("no %s", want)
+			}
+		}
+	}
+
+	if r := doJSON(t, ts, http.MethodPost, "/api/v1/folders", token, map[string]string{"path": "Zz Projekt"}); r.StatusCode != http.StatusCreated {
+		t.Fatalf("create folder: %d", r.StatusCode)
+	}
+	if p := next("WORKSPACE_FOLDERS_UPDATED"); p["type"] != "created" || p["path"] != "Zz Projekt" {
+		t.Errorf("create: %v", p)
+	}
+
+	doc, err := store.CreateDocument(owner.ID, "", "Plan", "", "Zz Projekt", nil, nil, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if r := doJSON(t, ts, http.MethodPost, "/api/v1/folders/move", token, map[string]string{"sourcePath": "Zz Projekt", "targetParentPath": "Zz Ablage"}); r.StatusCode != http.StatusOK {
+		t.Fatalf("move folder: %d", r.StatusCode)
+	}
+	if p := next("DOC_UPDATED"); p["id"] != doc.ID || p["folderPath"] != "Zz Ablage/Zz Projekt" {
+		t.Errorf("moved note: %v", p)
+	}
+	if p := next("WORKSPACE_FOLDERS_UPDATED"); p["type"] != "moved" || p["newPath"] != "Zz Ablage/Zz Projekt" {
+		t.Errorf("move: %v", p)
+	}
+
+	if r := doJSON(t, ts, http.MethodDelete, "/api/v1/folders?path=Zz%20Ablage", token, nil); r.StatusCode != http.StatusOK {
+		t.Fatalf("delete folder: %d", r.StatusCode)
+	}
+	p := next("WORKSPACE_FOLDERS_UPDATED")
+	if ids, _ := p["deletedDocIds"].([]any); p["type"] != "deleted" || len(ids) != 1 || ids[0] != doc.ID {
+		t.Errorf("delete: %v", p)
+	}
+
+	if r := doJSON(t, ts, http.MethodPost, "/api/v1/documents/"+doc.ID+"/restore", token, nil); r.StatusCode != http.StatusOK {
+		t.Fatalf("restore: %d", r.StatusCode)
+	}
+	if p := next("DOC_CREATED"); p["id"] != doc.ID || p["blocks"] != nil && len(p["blocks"].([]any)) != 0 {
+		t.Errorf("restored note: %v", p)
+	}
+	if p := next("WORKSPACE_FOLDERS_UPDATED"); p["type"] != "restored" {
+		t.Errorf("restore: %v", p)
 	}
 }

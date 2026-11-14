@@ -57,7 +57,7 @@ describe('useWorkspaceData', () => {
     await waitFor(() => expect(result.current.rollupTodos).toHaveLength(1));
     expect(api.getDocumentTodos).toHaveBeenCalledTimes(1);
 
-    act(() => lastHandler()({ event: 'WORKSPACE_FOLDERS_UPDATED', payload: { path: 'Neu' } }));
+    act(() => lastHandler()({ event: 'WORKSPACE_FOLDERS_UPDATED', payload: { type: 'shared', folderId: 'f1' } }));
     await waitFor(() => expect(api.getDocumentTodos).toHaveBeenCalledTimes(2));
     expect(api.getDocuments).toHaveBeenCalledTimes(2);
   });
@@ -67,14 +67,49 @@ describe('useWorkspaceData', () => {
     await waitFor(() => expect(result.current.docs).toHaveLength(2));
     act(() => {
       lastHandler()({ event: 'DOC_UPDATED', payload: listed('a', { folderPath: 'Privat' }) });
-      lastHandler()({ event: 'WORKSPACE_FOLDERS_UPDATED', payload: { docId: 'a' } });
+      lastHandler()({ event: 'WORKSPACE_FOLDERS_UPDATED', payload: { type: 'noteMoved', docId: 'a' } });
     });
     await waitFor(() => expect(api.getFolders).toHaveBeenCalledTimes(2));
     expect(api.getDocuments).toHaveBeenCalledTimes(1);
     expect(result.current.docs.find((d) => d.id === 'a')?.folderPath).toBe('Privat');
 
     // A note new here (moved into a folder shared with me): the list is fetched
-    act(() => lastHandler()({ event: 'WORKSPACE_FOLDERS_UPDATED', payload: { docId: 'c' } }));
+    act(() => lastHandler()({ event: 'WORKSPACE_FOLDERS_UPDATED', payload: { type: 'noteMoved', docId: 'c' } }));
+    await waitFor(() => expect(api.getDocuments).toHaveBeenCalledTimes(2));
+  });
+
+  it('fetches only the folders when a folder was created, moved or a note restored', async () => {
+    const { result } = setup(false);
+    await waitFor(() => expect(result.current.docs).toHaveLength(2));
+    act(() => {
+      lastHandler()({ event: 'WORKSPACE_FOLDERS_UPDATED', payload: { type: 'created', path: 'Neu' } });
+      lastHandler()({ event: 'WORKSPACE_FOLDERS_UPDATED', payload: { type: 'moved', sourcePath: 'Neu', newPath: 'Alt/Neu' } });
+      // A note back from the trash comes as DOC_CREATED first
+      lastHandler()({ event: 'DOC_CREATED', payload: listed('c') });
+      lastHandler()({ event: 'WORKSPACE_FOLDERS_UPDATED', payload: { type: 'restored', restored: 'c' } });
+    });
+    await waitFor(() => expect(api.getFolders).toHaveBeenCalledTimes(4));
+    expect(api.getDocuments).toHaveBeenCalledTimes(1);
+    expect(api.getSharedFolders).toHaveBeenCalledTimes(1);
+    expect(result.current.docs.map((d) => d.id)).toEqual(['c', 'a', 'b']);
+  });
+
+  it('removes the notes of a deleted folder, and fetches the list only when other notes were there', async () => {
+    vi.mocked(api.getDocuments).mockResolvedValue([
+      listed('a', { folderPath: 'Alt' }),
+      listed('b', { folderPath: 'Alt/Unter' }),
+      listed('c', { folderPath: 'Andere' }),
+    ]);
+    const { result } = setup(false);
+    await waitFor(() => expect(result.current.docs).toHaveLength(3));
+    act(() =>
+      lastHandler()({ event: 'WORKSPACE_FOLDERS_UPDATED', payload: { type: 'deleted', path: 'Alt', deletedDocIds: ['a', 'b'] } })
+    );
+    await waitFor(() => expect(result.current.docs.map((d) => d.id)).toEqual(['c']));
+    expect(api.getDocuments).toHaveBeenCalledTimes(1);
+
+    // A note shared with me stayed there (it goes back to the top level): only the list knows
+    act(() => lastHandler()({ event: 'WORKSPACE_FOLDERS_UPDATED', payload: { type: 'deleted', path: 'Andere', deletedDocIds: [] } }));
     await waitFor(() => expect(api.getDocuments).toHaveBeenCalledTimes(2));
   });
 });

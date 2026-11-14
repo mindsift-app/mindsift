@@ -113,7 +113,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
 
   // A note the app picked by itself (not a step of its own in the browser history)
   const autoSelectedDocRef = useRef(false);
-  const { docs, setDocs, folders, setFolders, sharedFolders, setSharedFolders, tagsSummary, loadWorkspaceData, rollupTodos, setRollupTodos } =
+  const { docs, setDocs, folders, setFolders, sharedFolders, setSharedFolders, tagsSummary, loadWorkspaceData, reloadDocList, rollupTodos, setRollupTodos } =
     useWorkspaceData({ currentUser, setSelectedDocId, autoSelectedDocRef, reloadTrash, todosShown: subView === 'todos' });
 
   // Journal: one note per day, listed separately from the folder tree (can be switched off per device)
@@ -388,8 +388,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
     selectedDocId,
     setSelectedDocId,
     trash,
-    setDocs,
-    setFolders,
+    reloadDocList,
     setEditorNonce,
     reloadTrash,
     onStatsChange,
@@ -443,6 +442,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
   const drag = useDocDragDrop({
     docs,
     setDocs,
+    setFolders,
     selectedDocId,
     setSelectedDocId,
     setMobileShowDetail,
@@ -450,7 +450,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
     setMergeDialog,
     treeRef,
     showToast,
-    loadWorkspaceData,
+    reloadDocList,
     reloadTrash,
     onStatsChange,
   });
@@ -472,7 +472,8 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
         run: async () => {
           try {
             await api.undoMerge(result);
-            await loadWorkspaceData();
+            // The note is back in the lists by DOC_CREATED as well; fetched here so it is there before it opens
+            await reloadDocList();
             setSelectedDocId(result.sourceId);
             setEditorNonce((n) => n + 1);
             reloadTrash();

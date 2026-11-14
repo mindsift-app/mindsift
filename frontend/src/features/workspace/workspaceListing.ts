@@ -106,6 +106,16 @@ export function mergeDocList(prev: Document[], fresh: Document[], isOpen: (docId
   });
 }
 
+/**
+ * A note of the list after a realtime event brought it as the list has it (DOC_UPDATED, without bullets):
+ * taken as sent (shares, counts and place may be gone, not only changed); a note open in an editor keeps
+ * its bullets, the bullets of a closed one (the counts would follow those) are dropped for the new counts.
+ */
+export function withListedNote(prev: Document, listed: Document, isOpen: boolean): Document {
+  if (hasBlocks(listed)) return { ...prev, ...listed };
+  return { ...listed, blocks: isOpen && hasBlocks(prev) ? prev.blocks : [] };
+}
+
 // The to-dos with text of one note from its bullets, kept per version of the note (a changed note is a new object)
 const noteTodosCache = new WeakMap<Document, RollupTodo[]>();
 function noteTodos(d: Document): RollupTodo[] {

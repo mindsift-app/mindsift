@@ -120,3 +120,51 @@ func TestDocumentListWithoutBullets(t *testing.T) {
 		t.Fatalf("shared bullet for Ben: %v", err)
 	}
 }
+
+// One note as the list has it, for the realtime events: no bullets, the counts, the person's own view.
+func TestDocumentListItem(t *testing.T) {
+	store, err := NewStore(filepath.Join(t.TempDir(), "item.db"))
+	if err != nil {
+		t.Fatalf("NewStore: %v", err)
+	}
+	defer store.Close()
+	openSharing(t, store)
+	anna, _ := store.CreateUser("anna@example.com", "hash", "Anna", "member")
+	ben, _ := store.CreateUser("ben@example.com", "hash", "Ben", "member")
+	carla, _ := store.CreateUser("carla@example.com", "hash", "Carla", "member")
+	doc, err := store.CreateDocument(anna.ID, "", "Einkauf", "", "Privat", []domain.DocumentBlock{
+		{ID: "t1", Type: "todo", Content: "Milch #laden"},
+		{ID: "b1", Type: "bullet", Content: "Notiz #idee"},
+	}, nil, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.CreateDocShare(anna.ID, doc.ID, ben.ID, "write"); err != nil {
+		t.Fatal(err)
+	}
+
+	item, err := store.GetDocumentListItem(anna.ID, doc.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(item.Blocks) != 0 || item.Content != "" || item.MarkdownCache != "" {
+		t.Fatalf("list item carries bullets: %+v", item)
+	}
+	if item.OpenTodos != 1 || item.TagCounts["laden"] != 1 || item.TagCounts["idee"] != 1 || item.TagOpenTodos["laden"] != 1 {
+		t.Errorf("counts = %d %v %v", item.OpenTodos, item.TagCounts, item.TagOpenTodos)
+	}
+	if !item.IsOwner || !item.IsPinned || item.FolderPath != "Privat" || len(item.SharedWith) != 1 {
+		t.Errorf("owner's view: %+v", item)
+	}
+
+	forBen, err := store.GetDocumentListItem(ben.ID, doc.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if forBen.IsOwner || forBen.Permission != "write" || forBen.FolderPath != "" || forBen.OpenTodos != 1 {
+		t.Errorf("Ben's view: %+v", forBen)
+	}
+	if _, err := store.GetDocumentListItem(carla.ID, doc.ID); err == nil {
+		t.Error("Carla got a note not shared with her")
+	}
+}

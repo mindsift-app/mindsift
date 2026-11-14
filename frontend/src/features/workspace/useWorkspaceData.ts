@@ -5,7 +5,7 @@ import { isJournalEnabled } from '../../lib/journal';
 import { noteClientId } from '../../lib/docSync/noteClients';
 import { refreshBlocks } from '../../lib/blockLookup';
 import { useLatestRef } from '../../lib/useLatestRef';
-import { countHashtags, mergeDocList } from './workspaceListing';
+import { countHashtags, mergeDocList, withListedNote } from './workspaceListing';
 
 interface UseWorkspaceDataOptions {
   currentUser?: User | null;
@@ -23,6 +23,18 @@ const isNoteOpen = (docId: string) => noteClientId(docId) !== undefined;
 export function freshDocList(fresh: Document[]): React.SetStateAction<Document[]> {
   return (prev) => mergeDocList(prev, fresh, isNoteOpen);
 }
+
+// WORKSPACE_FOLDERS_UPDATED (server: handlers_folders.go). `type` says what changed; an event without one
+// (or of a type not known here) fetches everything again.
+type FoldersEvent = {
+  type?: 'created' | 'deleted' | 'moved' | 'restored' | 'noteMoved' | 'mount' | 'shared';
+  path?: string;
+  docId?: string;
+  deletedDocIds?: string[];
+};
+
+const inFolder = (folderPath: string | undefined, path: string) =>
+  !!folderPath && (folderPath === path || folderPath.startsWith(`${path}/`));
 
 // Notes, folders, shared folders and hashtags of the workspace: loaded once, then kept current by the
 // realtime events. The note list has no bullets, only counts per note (to-dos, hashtags); the to-do
@@ -58,6 +70,20 @@ export function useWorkspaceData({ currentUser, setSelectedDocId, autoSelectedDo
     if (todosShownRef.current) loadRollupTodos();
     refreshBlocks();
   }, [loadRollupTodos, todosShownRef]);
+
+  // The note list alone fetched again (after restoring from the trash, undoing a merge, or when a folder
+  // event changed where or for whom many notes show)
+  const reloadDocList = useCallback(
+    () =>
+      api
+        .getDocuments()
+        .then((fresh) => {
+          setDocs(freshDocList(fresh));
+          afterListFetched();
+        })
+        .catch(() => {}),
+    [afterListFetched]
+  );
 
   const loadWorkspaceData = useCallback(async () => {
     try {
@@ -119,9 +145,9 @@ export function useWorkspaceData({ currentUser, setSelectedDocId, autoSelectedDo
         }
         setDocs((prev) => (prev.some((d) => d.id === created.id) ? prev : [created, ...prev]));
       } else if (msg.event === 'DOC_UPDATED' && msg.payload) {
-        // The note as the server has it, bullets included: one note changes, the list is not fetched again
+        // The note as the list has it (no bullets, with its counts): one note changes, the list is not fetched again
         const updated = msg.payload as Document;
-        setDocs((prev) => prev.map((d) => (d.id === updated.id ? { ...d, ...updated } : d)));
+        setDocs((prev) => prev.map((d) => (d.id === updated.id ? withListedNote(d, updated, isNoteOpen(d.id)) : d)));
       } else if (msg.event === 'DOC_DELETED') {
         const delId = (msg.payload as { id?: string } | undefined)?.id;
         if (!delId) return;
@@ -129,29 +155,59 @@ export function useWorkspaceData({ currentUser, setSelectedDocId, autoSelectedDo
         setSelectedDocId((prev) => (prev === delId ? null : prev));
         reloadTrash();
       } else if (msg.event === 'WORKSPACE_FOLDERS_UPDATED') {
-        // Folders created, moved, deleted or shared: many notes may have another place or audience
-        api.getFolders().then(setFolders).catch(() => {});
-        api.getSharedFolders().then(setSharedFolders).catch(() => {});
-        // One note moved to another folder: DOC_UPDATED (sent just before) brought it, unless it is new here
-        // (moved into a folder shared with me)
-        const payload = msg.payload as Record<string, unknown> | undefined;
-        const movedId = payload && Object.keys(payload).length === 1 ? payload.docId : undefined;
-        if (typeof movedId === 'string' && docsRef.current.some((d) => d.id === movedId)) {
+        const ev = (msg.payload || {}) as FoldersEvent;
+        const loadFolders = () => api.getFolders().then(setFolders).catch(() => {});
+        const loadAll = () => {
+          loadFolders();
+          api.getSharedFolders().then(setSharedFolders).catch(() => {});
+          reloadDocList();
           reloadTrash();
-          return;
+        };
+        switch (ev.type) {
+          case 'created':
+            loadFolders();
+            return;
+          case 'moved':
+            // The notes moved came as DOC_UPDATED just before
+            loadFolders();
+            return;
+          case 'restored':
+            // The notes brought back came as DOC_CREATED just before; a folder may be back as well
+            loadFolders();
+            reloadTrash();
+            return;
+          case 'noteMoved':
+            // DOC_UPDATED (sent just before) brought the note, unless it is new here (moved into a folder
+            // shared with me)
+            if (ev.docId && docsRef.current.some((d) => d.id === ev.docId)) {
+              loadFolders();
+              reloadTrash();
+              return;
+            }
+            break;
+          case 'deleted': {
+            const path = ev.path;
+            if (!path) break;
+            const gone = new Set(ev.deletedDocIds || []);
+            // Other notes there (shared with me and placed there, or of a shared folder given back) moved
+            // or disappeared: those only the list knows
+            if (docsRef.current.some((d) => !gone.has(d.id) && inFolder(d.folderPath, path))) break;
+            if (gone.size > 0) {
+              setDocs((prev) => prev.filter((d) => !gone.has(d.id)));
+              setSelectedDocId((prev) => (prev && gone.has(prev) ? null : prev));
+            }
+            loadFolders();
+            reloadTrash();
+            return;
+          }
         }
-        api
-          .getDocuments()
-          .then((fresh) => {
-            setDocs(freshDocList(fresh));
-            afterListFetched();
-          })
-          .catch(() => {});
-        reloadTrash();
+        // A shared folder created, shared, given back or placed elsewhere: many notes may have another
+        // place or audience
+        loadAll();
       }
     });
     return unsub;
-  }, [currentUser, reloadTrash, setSelectedDocId, afterListFetched, docsRef]);
+  }, [currentUser, reloadTrash, setSelectedDocId, reloadDocList, docsRef]);
 
   return {
     docs,
@@ -162,6 +218,7 @@ export function useWorkspaceData({ currentUser, setSelectedDocId, autoSelectedDo
     setSharedFolders,
     tagsSummary,
     loadWorkspaceData,
+    reloadDocList,
     rollupTodos,
     setRollupTodos,
   };

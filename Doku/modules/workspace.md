@@ -66,7 +66,7 @@ Code: [WorkspaceView.tsx](../../frontend/src/features/workspace/WorkspaceView.ts
 
 - Individual notes and entire **shared folders** can be shared with users or groups – with either the **Editor** (`write`) or **Viewer** (`read`) role ([sharing-and-permissions.md](../sharing-and-permissions.md)). Editors modify content and structure via the sync engine; viewers see changes live.
 - Recipients organize shared notes and folders within their own folder tree (`doc_user_folders`, `workspace_folder_mounts`) without affecting the owner's hierarchy.
-- Changes reach open windows via the `DOC_SEQ` wake-up call followed by sync; note lists update via `DOC_UPDATED` ([websocket.md](../api/websocket.md)).
+- Changes reach open windows via the `DOC_SEQ` wake-up call followed by sync; note lists update via `DOC_UPDATED` (the note as the list has it, without bullets) and `WORKSPACE_FOLDERS_UPDATED`, whose `type` decides whether the list is fetched again ([websocket.md](../api/websocket.md)).
 
 ## Limitations
 

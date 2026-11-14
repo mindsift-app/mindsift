@@ -1,14 +1,13 @@
 import React, { useCallback } from 'react';
-import { Document, TrashedDocument } from '../../lib/types';
+import { TrashedDocument } from '../../lib/types';
 import { api } from '../../lib/api';
-import { freshDocList } from './useWorkspaceData';
 
 interface UseTrashActionsOptions {
   selectedDocId: string | null;
   setSelectedDocId: React.Dispatch<React.SetStateAction<string | null>>;
   trash: TrashedDocument[];
-  setDocs: React.Dispatch<React.SetStateAction<Document[]>>;
-  setFolders: React.Dispatch<React.SetStateAction<string[]>>;
+  // The note list fetched again (useWorkspaceData); the folders follow the realtime event of the restore
+  reloadDocList: () => Promise<void>;
   setEditorNonce: React.Dispatch<React.SetStateAction<number>>;
   reloadTrash: () => void;
   onStatsChange: () => void;
@@ -19,8 +18,7 @@ export function useTrashActions({
   selectedDocId,
   setSelectedDocId,
   trash,
-  setDocs,
-  setFolders,
+  reloadDocList,
   setEditorNonce,
   reloadTrash,
   onStatsChange,
@@ -28,14 +26,12 @@ export function useTrashActions({
   const handleRestoreDocument = useCallback(
     async (docId: string) => {
       await api.restoreDocument(docId);
-      const [freshDocs, freshFolders] = await Promise.all([api.getDocuments(), api.getFolders()]);
-      setDocs(freshDocList(freshDocs));
-      setFolders(freshFolders);
+      await reloadDocList();
       setEditorNonce((n) => n + 1);
       reloadTrash();
       onStatsChange();
     },
-    [reloadTrash, onStatsChange, setDocs, setFolders, setEditorNonce]
+    [reloadTrash, onStatsChange, reloadDocList, setEditorNonce]
   );
 
   const handlePurgeDocument = async (docId: string) => {
@@ -48,9 +44,7 @@ export function useTrashActions({
   const handleRestoreTrashItem = async (item: TrashedDocument) => {
     if (item.kind !== 'folder') return handleRestoreDocument(item.id);
     await api.restoreFolder(item.id);
-    const [freshDocs, freshFolders] = await Promise.all([api.getDocuments(), api.getFolders()]);
-    setDocs(freshDocList(freshDocs));
-    setFolders(freshFolders);
+    await reloadDocList();
     reloadTrash();
     onStatsChange();
   };

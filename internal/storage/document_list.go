@@ -101,6 +101,23 @@ func (s *Store) attachListStats(docs []domain.Document) error {
 	return rows.Err()
 }
 
+// GetDocumentListItem returns one note as GetDocumentList lists it: without bullets and plain text, with
+// the counts. For the realtime events that keep the note lists current (DOC_CREATED, DOC_UPDATED).
+func (s *Store) GetDocumentListItem(userID, docID string) (*domain.Document, error) {
+	doc, err := s.GetDocumentByID(userID, docID)
+	if err != nil {
+		return nil, err
+	}
+	doc.Blocks = []domain.DocumentBlock{}
+	doc.Content = ""
+	doc.MarkdownCache = ""
+	one := []domain.Document{*doc}
+	if err := s.attachListStats(one); err != nil {
+		return nil, err
+	}
+	return &one[0], nil
+}
+
 // ListNoteTodos returns every to-do with text in the notes the user can see (not in the trash), in the
 // order of the note list and, within a note, in the order the note shows its bullets (the tree: siblings
 // by order key, as collab.Doc.Flatten). The order comes from the structure columns only, no text.

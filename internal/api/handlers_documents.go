@@ -15,7 +15,8 @@ import (
 
 // --- DOCUMENTS ---
 
-// broadcastDocToAuthorizedUsers sends each person with access the note as they see it. Pin, folder
+// broadcastDocToAuthorizedUsers sends each person with access the note as they see it, as the note list
+// has it (no bullets, with the counts; clients with the note open get its bullets by sync). Pin, folder
 // placement and permission are personal, so the note's room gets no copy of its own: every connection
 // in it belongs to one of these people and already has theirs (someone else's copy would overwrite
 // their pin and place, e.g. unpin the note for the owner after sharing it).
@@ -25,7 +26,7 @@ func (s *Server) broadcastDocToAuthorizedUsers(docID, event string) {
 		return
 	}
 	for _, uid := range users {
-		if userDoc, err := s.store.GetDocumentByID(uid, docID); err == nil && userDoc != nil {
+		if userDoc, err := s.store.GetDocumentListItem(uid, docID); err == nil && userDoc != nil {
 			s.wsHub.BroadcastToUser(uid, event, userDoc)
 		}
 	}
@@ -197,10 +198,11 @@ func (s *Server) handleRestoreDocument(w http.ResponseWriter, r *http.Request) {
 		writeTrashError(w, err)
 		return
 	}
-	// Everyone with access reloads their tree, so the note is back for shared users as well
+	// Everyone with access gets the note back in their list (shared users as well), then reloads their folders
+	s.broadcastDocToAuthorizedUsers(docID, "DOC_CREATED")
 	authorized, _ := s.store.GetAuthorizedDocUsers(docID)
 	for _, uid := range append(authorized, userID) {
-		s.wsHub.BroadcastToUser(uid, "WORKSPACE_FOLDERS_UPDATED", map[string]string{"restored": docID})
+		s.wsHub.BroadcastToUser(uid, "WORKSPACE_FOLDERS_UPDATED", map[string]string{"type": folderEventRestored, "restored": docID})
 	}
 	writeJSON(w, http.StatusOK, map[string]bool{"restored": true})
 }
@@ -279,7 +281,7 @@ func (s *Server) handleMoveDocument(w http.ResponseWriter, r *http.Request) {
 	}
 	s.broadcastDocToAuthorizedUsers(docID, "DOC_UPDATED")
 	docUsers, _ := s.store.GetAuthorizedDocUsers(docID)
-	s.wsHub.BroadcastToUsers(append(docUsers, userID), "WORKSPACE_FOLDERS_UPDATED", map[string]string{"docId": docID})
+	s.wsHub.BroadcastToUsers(append(docUsers, userID), "WORKSPACE_FOLDERS_UPDATED", map[string]string{"type": folderEventNoteMoved, "docId": docID})
 	writeJSON(w, http.StatusOK, doc)
 }
 

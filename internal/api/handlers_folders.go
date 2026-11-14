@@ -3,12 +3,42 @@ package api
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/mindsift-app/mindsift/internal/auth"
 )
 
 // --- WORKSPACE FOLDERS ---
+
+// The `type` of WORKSPACE_FOLDERS_UPDATED, so clients fetch only what changed (Doku/api/websocket.md):
+// created, moved and restored need the folders only (the notes come as DOC_UPDATED / DOC_CREATED before),
+// deleted names the notes that went to the trash, noteMoved the one note moved; mount and shared change
+// where or for whom many notes show, clients fetch their note list again.
+const (
+	folderEventCreated   = "created"
+	folderEventDeleted   = "deleted"
+	folderEventMoved     = "moved"
+	folderEventRestored  = "restored"
+	folderEventNoteMoved = "noteMoved"
+	folderEventMount     = "mount"
+	folderEventShared    = "shared"
+)
+
+// isFolderMount: whether the path is where the user placed a shared folder (moving it moves the mount).
+func (s *Server) isFolderMount(userID, path string) bool {
+	clean := strings.Trim(strings.TrimSpace(path), "/")
+	folders, err := s.store.GetSharedFolders(userID)
+	if err != nil {
+		return false
+	}
+	for _, f := range folders {
+		if f.MountPath != "" && strings.Trim(f.MountPath, "/") == clean {
+			return true
+		}
+	}
+	return false
+}
 
 func (s *Server) handleGetFolders(w http.ResponseWriter, r *http.Request) {
 	userID := auth.GetUserID(r.Context())
@@ -34,7 +64,7 @@ func (s *Server) handleCreateFolder(w http.ResponseWriter, r *http.Request) {
 		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
-	s.wsHub.BroadcastToUser(userID, "WORKSPACE_FOLDERS_UPDATED", map[string]string{"path": cleanPath})
+	s.wsHub.BroadcastToUser(userID, "WORKSPACE_FOLDERS_UPDATED", map[string]string{"type": folderEventCreated, "path": cleanPath})
 	writeJSON(w, http.StatusCreated, map[string]string{"path": cleanPath})
 }
 
@@ -55,7 +85,12 @@ func (s *Server) handleDeleteFolder(w http.ResponseWriter, r *http.Request) {
 	for _, docID := range deletedDocIDs {
 		s.wsHub.BroadcastDocEvent(docID, "DOC_DELETED", map[string]string{"id": docID})
 	}
-	s.wsHub.BroadcastToUser(userID, "WORKSPACE_FOLDERS_UPDATED", map[string]string{"path": folderPath})
+	if deletedDocIDs == nil {
+		deletedDocIDs = []string{}
+	}
+	s.wsHub.BroadcastToUser(userID, "WORKSPACE_FOLDERS_UPDATED", map[string]any{
+		"type": folderEventDeleted, "path": folderPath, "deletedDocIds": deletedDocIDs,
+	})
 
 	writeJSON(w, http.StatusOK, map[string]any{
 		"deleted":       true,
@@ -71,16 +106,17 @@ func (s *Server) handleRestoreFolder(w http.ResponseWriter, r *http.Request) {
 		writeTrashError(w, err)
 		return
 	}
-	// Everyone with access to one of the notes reloads their tree
+	// Everyone with access to one of the notes gets it back in their list, then reloads their folders
 	users := map[string]bool{userID: true}
 	for _, docID := range docIDs {
 		authorized, _ := s.store.GetAuthorizedDocUsers(docID)
 		for _, uid := range authorized {
 			users[uid] = true
 		}
+		s.broadcastDocToAuthorizedUsers(docID, "DOC_CREATED")
 	}
 	for uid := range users {
-		s.wsHub.BroadcastToUser(uid, "WORKSPACE_FOLDERS_UPDATED", map[string]string{"restored": "folder"})
+		s.wsHub.BroadcastToUser(uid, "WORKSPACE_FOLDERS_UPDATED", map[string]string{"type": folderEventRestored, "restored": "folder"})
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"restored": true, "restoredDocIds": docIDs})
 }
@@ -105,6 +141,11 @@ func (s *Server) handleMoveFolder(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "Ungültiges JSON")
 		return
 	}
+	// Moving the place of a shared folder moves no note, but every note in it shows elsewhere
+	eventType := folderEventMoved
+	if s.isFolderMount(userID, req.SourcePath) {
+		eventType = folderEventMount
+	}
 	newPath, movedDocIDs, err := s.store.MoveFolder(userID, req.SourcePath, req.TargetParentPath)
 	if err != nil {
 		writeErrorFrom(w, http.StatusBadRequest, err)
@@ -114,6 +155,7 @@ func (s *Server) handleMoveFolder(w http.ResponseWriter, r *http.Request) {
 		s.broadcastDocToAuthorizedUsers(id, "DOC_UPDATED")
 	}
 	s.wsHub.BroadcastToUser(userID, "WORKSPACE_FOLDERS_UPDATED", map[string]string{
+		"type":       eventType,
 		"sourcePath": req.SourcePath,
 		"newPath":    newPath,
 	})
@@ -150,7 +192,7 @@ func (s *Server) handleCreateSharedFolder(w http.ResponseWriter, r *http.Request
 		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
-	s.wsHub.BroadcastToUser(userID, "WORKSPACE_FOLDERS_UPDATED", folder)
+	s.wsHub.BroadcastToUser(userID, "WORKSPACE_FOLDERS_UPDATED", map[string]string{"type": folderEventShared, "folderId": folder.ID})
 	writeJSON(w, http.StatusCreated, folder)
 }
 
@@ -173,7 +215,7 @@ func (s *Server) handleDeleteSharedFolder(w http.ResponseWriter, r *http.Request
 		writeInternal(w, err)
 		return
 	}
-	s.wsHub.BroadcastToUsers(append(audience, userID), "WORKSPACE_FOLDERS_UPDATED", map[string]string{"folderId": folderID})
+	s.wsHub.BroadcastToUsers(append(audience, userID), "WORKSPACE_FOLDERS_UPDATED", map[string]string{"type": folderEventShared, "folderId": folderID})
 	writeJSON(w, http.StatusOK, map[string]bool{"deleted": true})
 }
 
@@ -191,7 +233,7 @@ func (s *Server) handleUpdateFolderMount(w http.ResponseWriter, r *http.Request)
 		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
-	s.wsHub.BroadcastToUser(userID, "WORKSPACE_FOLDERS_UPDATED", map[string]string{"folderId": folderID, "mountPath": req.MountPath})
+	s.wsHub.BroadcastToUser(userID, "WORKSPACE_FOLDERS_UPDATED", map[string]string{"type": folderEventMount, "folderId": folderID, "mountPath": req.MountPath})
 	writeJSON(w, http.StatusOK, map[string]bool{"updated": true})
 }
 
@@ -248,7 +290,7 @@ func (s *Server) handleCreateFolderShare(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	s.notifyShared(userID, share.TargetType, share.TargetID, "folder", folderID, s.store.SharedFolderName(folderID))
-	s.wsHub.BroadcastToUsers(s.store.GetSharedFolderUserIDs(folderID), "WORKSPACE_FOLDERS_UPDATED", map[string]string{"folderId": folderID})
+	s.wsHub.BroadcastToUsers(s.store.GetSharedFolderUserIDs(folderID), "WORKSPACE_FOLDERS_UPDATED", map[string]string{"type": folderEventShared, "folderId": folderID})
 	if docIDs, err := s.store.GetSharedFolderDocIDs(folderID); err == nil {
 		for _, docID := range docIDs {
 			s.broadcastDocToAuthorizedUsers(docID, "DOC_CREATED")
@@ -272,7 +314,7 @@ func (s *Server) handleDeleteFolderShare(w http.ResponseWriter, r *http.Request)
 	for _, uid := range audienceAfter {
 		stillAllowed[uid] = true
 	}
-	s.wsHub.BroadcastToUsers(append(audienceBefore, audienceAfter...), "WORKSPACE_FOLDERS_UPDATED", map[string]string{"folderId": folderID})
+	s.wsHub.BroadcastToUsers(append(audienceBefore, audienceAfter...), "WORKSPACE_FOLDERS_UPDATED", map[string]string{"type": folderEventShared, "folderId": folderID})
 	for _, docID := range docIDs {
 		// Users who lost access remove the notes; the rest refresh them
 		for _, uid := range audienceBefore {
