@@ -574,7 +574,11 @@
     "resetMfaHint": "Retire l'application d'authentification, les clés d'accès et les codes de récupération, p. ex. après la perte du téléphone",
     "confirmResetMfa": "Réinitialiser la connexion en deux étapes de {{name}} ? L'application d'authentification, les clés d'accès et les codes de récupération sont retirés ; la connexion ne demandera plus que le mot de passe. {{name}} reçoit un e-mail.",
     "mfaReset": "La connexion en deux étapes de {{name}} a été réinitialisée.",
-    "mfaBadge": "2FA"
+    "mfaBadge": "2FA",
+    "email": "Adresse e-mail",
+    "emailChanged": "L’adresse e-mail de {{name}} est maintenant {{email}}.",
+    "emailRemoved": "{{name}} n’a plus d’adresse e-mail.",
+    "emailRemoveHint": "Sans adresse, {{name}} ne pourra plus réinitialiser son mot de passe par e-mail. La connexion avec nom d’utilisateur et mot de passe continue de fonctionner."
   },
   "sharing": {
     "private": {

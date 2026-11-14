@@ -574,7 +574,11 @@
     "resetMfaHint": "Removes the authenticator app, passkeys and recovery codes, e.g. after a lost phone",
     "confirmResetMfa": "Reset the two-factor sign-in of {{name}}? The authenticator app, passkeys and recovery codes are removed; signing in then asks for the password only. {{name}} gets an email.",
     "mfaReset": "Two-factor sign-in of {{name}} was reset.",
-    "mfaBadge": "2FA"
+    "mfaBadge": "2FA",
+    "email": "Email address",
+    "emailChanged": "{{name}}'s email address is now {{email}}.",
+    "emailRemoved": "{{name}} no longer has an email address.",
+    "emailRemoveHint": "Without an address, {{name}} can no longer reset the password by email. Signing in with username and password keeps working."
   },
   "sharing": {
     "private": {

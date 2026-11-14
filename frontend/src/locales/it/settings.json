@@ -574,7 +574,11 @@
     "resetMfaHint": "Rimuove l'app di autenticazione, le passkey e i codici di recupero, ad es. dopo aver perso il telefono",
     "confirmResetMfa": "Reimpostare l'accesso in due passaggi di {{name}}? L'app di autenticazione, le passkey e i codici di recupero vengono rimossi; poi l'accesso chiederà solo la password. {{name}} riceverà un'e-mail.",
     "mfaReset": "L'accesso in due passaggi di {{name}} è stato reimpostato.",
-    "mfaBadge": "2FA"
+    "mfaBadge": "2FA",
+    "email": "Indirizzo email",
+    "emailChanged": "L’indirizzo email di {{name}} ora è {{email}}.",
+    "emailRemoved": "{{name}} non ha più un indirizzo email.",
+    "emailRemoveHint": "Senza indirizzo, {{name}} non potrà più reimpostare la password via email. L’accesso con nome utente e password continua a funzionare."
   },
   "sharing": {
     "private": {

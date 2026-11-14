@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/mindsift-app/mindsift/internal/auth"
 	"github.com/mindsift-app/mindsift/internal/storage"
 )
 
@@ -190,5 +191,56 @@ func TestMailNamesStayOnOneLine(t *testing.T) {
 	}
 	if strings.Contains(htmlBody, "Anna<br>") {
 		t.Fatalf("HTML greeting must not break either")
+	}
+}
+
+// The admin user list says which accounts have no password of their own, so the administration can warn
+// before it removes the address of one that has (no reset by mail any more); removing it stays allowed
+func TestAdminUserListTellsNoPassword(t *testing.T) {
+	srv, store, token := setupTestServer(t)
+	router := srv.Router()
+	withPassword, _ := newTestUser(t, store, "mit@example.com")
+	hash, err := auth.NoPasswordHash()
+	if err != nil {
+		t.Fatal(err)
+	}
+	fromProvider, err := store.CreateUser("ohne@example.com", hash, "Ohne", "member")
+	if err != nil {
+		t.Fatal(err)
+	}
+	rec := sessionCall(router, "GET", "/api/v1/admin/users", token, "", "")
+	var list []map[string]any
+	if err := json.Unmarshal(rec.Body.Bytes(), &list); err != nil || rec.Code != http.StatusOK {
+		t.Fatalf("list: %d %s", rec.Code, rec.Body.String())
+	}
+	seen := 0
+	for _, u := range list {
+		switch u["id"] {
+		case withPassword.ID:
+			seen++
+			if _, ok := u["noPassword"]; ok {
+				t.Fatalf("account with a password: %v", u)
+			}
+		case fromProvider.ID:
+			seen++
+			if u["noPassword"] != true {
+				t.Fatalf("account without a password: %v", u)
+			}
+		}
+	}
+	if seen != 2 {
+		t.Fatalf("accounts missing from the list: %v", list)
+	}
+	rec = sessionCall(router, "PATCH", "/api/v1/admin/users/"+withPassword.ID, token, `{"email":""}`, "")
+	var updated map[string]any
+	_ = json.Unmarshal(rec.Body.Bytes(), &updated)
+	if rec.Code != http.StatusOK || updated["email"] != "" || updated["noPassword"] != nil {
+		t.Fatalf("removing the address: %d %s", rec.Code, rec.Body.String())
+	}
+	updated = nil
+	rec = sessionCall(router, "PATCH", "/api/v1/admin/users/"+fromProvider.ID, token, `{"displayName":"Ohne Passwort"}`, "")
+	_ = json.Unmarshal(rec.Body.Bytes(), &updated)
+	if rec.Code != http.StatusOK || updated["noPassword"] != true {
+		t.Fatalf("update of an account without a password: %d %s", rec.Code, rec.Body.String())
 	}
 }

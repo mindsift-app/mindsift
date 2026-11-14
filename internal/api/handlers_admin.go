@@ -144,6 +144,7 @@ func (s *Server) handleAdminGetUsers(w http.ResponseWriter, r *http.Request) {
 		u.PendingApproval = pending[u.ID]
 		u.EmailUnverified = unverified[u.ID]
 		u.OrganizationIDs = orgs[u.ID]
+		u.NoPassword = !auth.HasPassword(u.PasswordHash)
 		out[i] = staffUser{User: u}
 	}
 	writeJSON(w, http.StatusOK, out)
@@ -279,6 +280,7 @@ func (s *Server) handleAdminUpdateUser(w http.ResponseWriter, r *http.Request) {
 		s.store.ClearPendingRegistration(targetUserID)
 		s.store.ClearEmailVerification(targetUserID)
 	}
+	u.NoPassword = !auth.HasPassword(u.PasswordHash)
 	writeJSON(w, http.StatusOK, staffUser{User: *u})
 }
 

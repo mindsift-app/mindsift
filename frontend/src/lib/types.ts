@@ -197,7 +197,8 @@ export interface User {
   pendingEmail?: string;
   // The server can mail confirmation links at all (own profile)
   emailLinks?: boolean;
-  // Signs in through the OIDC provider: noPassword has no password of its own, oidc is linked (own profile only)
+  // Signs in through the OIDC provider: noPassword has no password of its own (own profile and the
+  // administration's user list), oidc is linked (own profile only)
   noPassword?: boolean;
   oidc?: boolean;
   discordWebhookUrl?: string;

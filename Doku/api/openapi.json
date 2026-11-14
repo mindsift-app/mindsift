@@ -493,7 +493,7 @@
     "/api/v1/admin/users": {
       "get": {
         "summary": "List users",
-        "description": "List users (with organizationIds; without alarm targets – webhooks, alarm address, channels – and token version); create (email, password, displayName, role (member/manager/admin), optional organizationIds)",
+        "description": "List users (with organizationIds and noPassword for accounts without a password of their own; without alarm targets – webhooks, alarm address, channels – and token version); create (email, password, displayName, role (member/manager/admin), optional organizationIds)",
         "tags": [
           "Administration"
         ],
@@ -505,7 +505,7 @@
       },
       "post": {
         "summary": "Create a user",
-        "description": "List users (with organizationIds; without alarm targets – webhooks, alarm address, channels – and token version); create (email, password, displayName, role (member/manager/admin), optional organizationIds)",
+        "description": "List users (with organizationIds and noPassword for accounts without a password of their own; without alarm targets – webhooks, alarm address, channels – and token version); create (email, password, displayName, role (member/manager/admin), optional organizationIds)",
         "tags": [
           "Administration"
         ],
@@ -519,7 +519,7 @@
     "/api/v1/admin/users/{id}": {
       "delete": {
         "summary": "Delete a user (rejects a pending account)",
-        "description": "displayName, username (rules and errors as in /auth/settings), email, role, isActive, discordWebhookUrl; delete (for pending accounts = reject). GET /admin/users flags pending accounts with pendingApproval",
+        "description": "displayName, username (rules and errors as in /auth/settings), email, role, isActive, discordWebhookUrl; delete (for pending accounts = reject). GET /admin/users flags pending accounts with pendingApproval, accounts with a second factor with mfaEnabled and accounts without a password of their own with noPassword",
         "tags": [
           "Administration"
         ],
@@ -541,7 +541,7 @@
       },
       "patch": {
         "summary": "Change a user (name, username, address, role, active)",
-        "description": "displayName, username (rules and errors as in /auth/settings), email, role, isActive, discordWebhookUrl; delete (for pending accounts = reject). GET /admin/users flags pending accounts with pendingApproval",
+        "description": "displayName, username (rules and errors as in /auth/settings), email, role, isActive, discordWebhookUrl; delete (for pending accounts = reject). GET /admin/users flags pending accounts with pendingApproval, accounts with a second factor with mfaEnabled and accounts without a password of their own with noPassword",
         "tags": [
           "Administration"
         ],
