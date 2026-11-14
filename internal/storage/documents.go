@@ -8,8 +8,26 @@ import (
 
 	"github.com/mindsift-app/mindsift/internal/collab"
 	"github.com/mindsift-app/mindsift/internal/domain"
+	"github.com/mindsift-app/mindsift/internal/drawing"
 	"github.com/mindsift-app/mindsift/internal/i18n"
 )
+
+// docPlainText is the text of a note, one bullet per line (a drawing with the words written in it); the
+// "content" of a note in the API. It is built from the bullets, documents.content stays empty.
+func docPlainText(blocks []domain.DocumentBlock) string {
+	var b strings.Builder
+	for _, bl := range blocks {
+		text := bl.Content
+		if bl.Type == drawing.BlockType {
+			text = strings.Join(drawing.Texts(bl.Content), "\n")
+		}
+		if text != "" {
+			b.WriteString(text)
+			b.WriteString("\n")
+		}
+	}
+	return b.String()
+}
 
 func (s *Store) loadDocBlocks(docID string, fallbackJSON string) []domain.DocumentBlock {
 	if d, _, err := loadCollabDoc(s.db, docID); err == nil && len(d.Blocks) > 0 {
@@ -169,16 +187,6 @@ func (s *Store) CreateDocument(userID, spaceID, title, icon, folderPath string, 
 		return nil, ErrNoteTooLarge
 	}
 	tags = stripFolderTags(tags)
-
-	var plainBuilder strings.Builder
-	for _, b := range blocks {
-		if b.Content != "" {
-			plainBuilder.WriteString(b.Content)
-			plainBuilder.WriteString("\n")
-		}
-	}
-
-	blocksJSON, _ := json.Marshal(blocks)
 	tagsJSON, _ := json.Marshal(tags)
 	now := domain.NowISO()
 	pinnedInt := 0
@@ -204,7 +212,7 @@ func (s *Store) CreateDocument(userID, spaceID, title, icon, folderPath string, 
 		SpaceID:        spaceID,
 		Title:          strings.TrimSpace(title),
 		Icon:           icon,
-		Content:        plainBuilder.String(),
+		Content:        docPlainText(blocks),
 		Blocks:         blocks,
 		Tags:           tags,
 		FolderPath:     cleanFolder,
@@ -218,18 +226,23 @@ func (s *Store) CreateDocument(userID, spaceID, title, icon, folderPath string, 
 		UpdatedAt:      now,
 	}
 
+	// The text goes into blocks only (content and blocks_json stay empty, see note_storage.go)
 	_, err := s.db.Exec(
 		`INSERT INTO documents (id, user_id, space_id, title, icon, content, blocks_json, tags, folder_path, is_pinned, is_archived, created_at, updated_at, shared_folder_id, sub_folder_path)
-		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?)`,
-		doc.ID, doc.UserID, doc.SpaceID, doc.Title, doc.Icon, doc.Content, string(blocksJSON), string(tagsJSON), doc.FolderPath, pinnedInt, doc.CreatedAt, doc.UpdatedAt, doc.SharedFolderID, doc.SubFolderPath,
+		 VALUES (?, ?, ?, ?, ?, '', '[]', ?, ?, ?, 0, ?, ?, ?, ?)`,
+		doc.ID, doc.UserID, doc.SpaceID, doc.Title, doc.Icon, string(tagsJSON), doc.FolderPath, pinnedInt, doc.CreatedAt, doc.UpdatedAt, doc.SharedFolderID, doc.SubFolderPath,
 	)
 	if err != nil {
+		return nil, err
+	}
+	if err := s.saveDocBlocks(doc.ID, userID, doc.Blocks); err != nil {
+		// Without its bullets the note would be empty: it is not created
+		s.execLogged(`DELETE FROM documents WHERE id = ?`, doc.ID)
 		return nil, err
 	}
 	if isPinned {
 		s.execLogged(`INSERT OR IGNORE INTO doc_pins (user_id, doc_id, created_at) VALUES (?, ?, ?)`, userID, doc.ID, doc.CreatedAt)
 	}
-	s.replaceDocBlocksInDB(doc.ID, userID, doc.Blocks, now)
 	logDBErr(s.indexDocBlockTags(doc.ID, doc.UserID, doc.Blocks))
 	return doc, nil
 }
@@ -381,6 +394,7 @@ func (s *Store) scanDocumentWithBlocks(rows interface {
 	_ = json.Unmarshal([]byte(tagsStr), &d.Tags)
 	d.Tags = stripFolderTags(d.Tags)
 	d.Blocks = s.loadDocBlocks(d.ID, blocksStr)
+	d.Content = docPlainText(d.Blocks)
 	d.MarkdownCache = domain.CompileBlocksToMarkdown(d.Blocks)
 	d.FolderID = d.FolderPath
 	return d, nil
@@ -452,6 +466,7 @@ func (s *Store) GetDocuments(userID string) ([]domain.Document, error) {
 	docs := make([]domain.Document, 0, len(ownRaw))
 	for _, r := range ownRaw {
 		r.doc.Blocks = s.loadDocBlocks(r.doc.ID, r.blocksStr)
+		r.doc.Content = docPlainText(r.doc.Blocks)
 		docs = append(docs, r.doc)
 	}
 
@@ -521,6 +536,7 @@ func (s *Store) GetDocuments(userID string) ([]domain.Document, error) {
 
 		for _, r := range sharedRaw {
 			r.doc.Blocks = s.loadDocBlocks(r.doc.ID, r.blocksStr)
+			r.doc.Content = docPlainText(r.doc.Blocks)
 			docs = append(docs, r.doc)
 		}
 	}
@@ -622,6 +638,7 @@ func (s *Store) GetDocumentByID(userID, docID string) (*domain.Document, error) 
 	_ = json.Unmarshal([]byte(tagsStr), &d.Tags)
 	d.Tags = stripFolderTags(d.Tags)
 	d.Blocks = s.loadDocBlocks(d.ID, blocksStr)
+	d.Content = docPlainText(d.Blocks)
 	d.Permission = perm
 	d.IsOwner = (perm == "owner")
 	d.OwnerName = ownerName

@@ -28,6 +28,9 @@ type Store struct {
 	systemBackupDir string
 	// blockRefsReady: block_refs exists (migration 41 has run), so writing blocks maintains it
 	blockRefsReady atomic.Bool
+	// noteStorageReady: migration 44 has run, so the log stores bullet texts by reference (doclog.go) and
+	// new blocks bring their key in the search index (note_storage.go)
+	noteStorageReady atomic.Bool
 	// secretsKey seals the SMTP password in the system settings (sealed.go, WithSecretsKey)
 	secretsKey []byte
 
@@ -56,9 +59,12 @@ func NewStore(dbPath string, opts ...StoreOption) (*Store, error) {
 	// _txlock=immediate: transactions take the write lock when they begin. A transaction that reads
 	// first and writes later would otherwise fail at once with SQLITE_BUSY while another one writes
 	// (busy_timeout cannot help there); now it simply waits its turn (FLAW-23).
+	// journal_size_limit: the WAL grows to the size of the largest transaction (an import, a large paste)
+	// and without a limit stays that large; with it, SQLite cuts it back to 16 MB once a checkpoint has
+	// written it into the database.
 	dsn := dbPath
 	if !strings.Contains(dsn, "?") {
-		dsn += "?_pragma=busy_timeout(10000)&_pragma=journal_mode(WAL)&_pragma=synchronous(NORMAL)&_pragma=foreign_keys(1)&_txlock=immediate"
+		dsn += "?_pragma=busy_timeout(10000)&_pragma=journal_mode(WAL)&_pragma=synchronous(NORMAL)&_pragma=foreign_keys(1)&_pragma=journal_size_limit(16777216)&_txlock=immediate"
 	}
 
 	db, err := sql.Open("sqlite", dsn)
@@ -113,7 +119,7 @@ func (s *Store) Close() error {
 	return s.db.Close()
 }
 
-// dropAllTables removes every table; used by the demo mode reset.
+// dropAllTables removes every table and view; used by the demo mode reset.
 func (s *Store) dropAllTables() error {
 	conn, err := s.db.Conn(context.Background())
 	if err != nil {
@@ -121,18 +127,20 @@ func (s *Store) dropAllTables() error {
 	}
 	defer conn.Close()
 	ctx := context.Background()
-	rows, err := conn.QueryContext(ctx, `SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'`)
+	// Views first (documents_fts_source reads two tables)
+	rows, err := conn.QueryContext(ctx, `SELECT type, name FROM sqlite_master WHERE type IN ('view', 'table') AND name NOT LIKE 'sqlite_%'
+		ORDER BY type = 'table'`)
 	if err != nil {
 		return err
 	}
-	var tables []string
+	var drops []string
 	for rows.Next() {
-		var name string
-		if err := rows.Scan(&name); err != nil {
+		var typ, name string
+		if err := rows.Scan(&typ, &name); err != nil {
 			_ = rows.Close()
 			return err
 		}
-		tables = append(tables, name)
+		drops = append(drops, `DROP `+strings.ToUpper(typ)+` IF EXISTS "`+strings.ReplaceAll(name, `"`, `""`)+`"`)
 	}
 	if err := rows.Err(); err != nil {
 		return err
@@ -142,8 +150,8 @@ func (s *Store) dropAllTables() error {
 	if _, err := conn.ExecContext(ctx, `PRAGMA foreign_keys = OFF`); err != nil {
 		return err
 	}
-	for _, t := range tables {
-		if _, err := conn.ExecContext(ctx, `DROP TABLE IF EXISTS "`+strings.ReplaceAll(t, `"`, `""`)+`"`); err != nil {
+	for _, q := range drops {
+		if _, err := conn.ExecContext(ctx, q); err != nil {
 			return err
 		}
 	}

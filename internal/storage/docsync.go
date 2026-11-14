@@ -15,7 +15,6 @@ import (
 
 	"github.com/mindsift-app/mindsift/internal/collab"
 	"github.com/mindsift-app/mindsift/internal/domain"
-	"github.com/mindsift-app/mindsift/internal/drawing"
 )
 
 // Collaborative note editing: every change to a note's blocks or title runs through collab.Apply under a
@@ -381,6 +380,8 @@ func (s *Store) applyDocChangeCtx(ctx context.Context, docID string, a collab.Ac
 	now := domain.NowISO()
 	ops := build(doc)
 	results := make([]collab.Result, 0, len(ops))
+	compact := s.noteStorageReady.Load()
+	texts := newLogTexts(before)
 
 	for _, op := range ops {
 		if op.OpID == "" || len(op.OpID) > 100 {
@@ -404,11 +405,7 @@ func (s *Store) applyDocChangeCtx(ctx context.Context, docID string, a collab.Ac
 		effects, res := collab.Apply(doc, op, a, env)
 		for _, e := range effects {
 			head++
-			payload, _ := json.Marshal(e)
-			if _, err := tx.Exec(
-				`INSERT INTO doc_ops (doc_id, seq, op_id, user_id, client_id, kind, block_id, payload, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-				docID, head, op.OpID, a.UserID, a.ClientID, e.Kind, e.BlockID, string(payload), now,
-			); err != nil {
+			if err := appendLogEntry(tx, docID, head, op.OpID, a, e, now, texts, compact); err != nil {
 				return nil, 0, err
 			}
 		}
@@ -424,7 +421,7 @@ func (s *Store) applyDocChangeCtx(ctx context.Context, docID string, a collab.Ac
 	}
 
 	if head != startHead {
-		if err := persistDocState(tx, docID, before, doc, head, now, s.blockRefsReady.Load()); err != nil {
+		if err := persistDocState(tx, docID, before, doc, head, now, s.blockRefsReady.Load(), compact); err != nil {
 			return nil, 0, err
 		}
 	}
@@ -434,13 +431,20 @@ func (s *Store) applyDocChangeCtx(ctx context.Context, docID string, a collab.Ac
 	return results, head, nil
 }
 
-// persistDocState writes changed blocks and refreshes data derived from the note (markdown, search text, tags,
-// and with refs the references in block_refs).
-func persistDocState(tx *sql.Tx, docID string, before, after *collab.Doc, head int64, now string, refs bool) error {
+// persistDocState writes changed blocks and refreshes data derived from the note (tags, and with refs the
+// references in block_refs). The text of a note is stored once, in blocks: its markdown, plain text and
+// flat block list are built from them when asked for (migration 44 emptied the copies documents kept).
+// With ftsKeys (migration 44 has run) a new block brings its key in the search index along (see
+// noteSearchSQL), so the trigger does not have to write the row a second time to give it one.
+func persistDocState(tx *sql.Tx, docID string, before, after *collab.Doc, head int64, now string, refs, ftsKeys bool) error {
+	ftsCol, ftsVal := "", ""
+	if ftsKeys {
+		ftsCol, ftsVal = ", fts_rowid", ", (SELECT COALESCE(MAX(fts_rowid), 0) + 1 FROM blocks)"
+	}
 	stmt, err := tx.Prepare(`
 		INSERT INTO blocks (id, document_id, parent_id, order_key, type, content, checked, collapsed, lang,
-		                    conflict_of, conflict_author, version, deleted, deleted_at, updated_by, level, position)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0)
+		                    conflict_of, conflict_author, version, deleted, deleted_at, updated_by, level, position` + ftsCol + `)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0` + ftsVal + `)
 		ON CONFLICT(id) DO UPDATE SET
 			parent_id = excluded.parent_id, order_key = excluded.order_key, type = excluded.type,
 			content = excluded.content, checked = excluded.checked, collapsed = excluded.collapsed,
@@ -488,18 +492,6 @@ func persistDocState(tx *sql.Tx, docID string, before, after *collab.Doc, head i
 	}
 
 	flat := flatDocumentBlocks(docID, after)
-	var plain strings.Builder
-	for _, b := range flat {
-		text := b.Content
-		if b.Type == drawing.BlockType {
-			text = strings.Join(drawing.Texts(b.Content), "\n")
-		}
-		if text != "" {
-			plain.WriteString(text)
-			plain.WriteString("\n")
-		}
-	}
-	blocksJSON, _ := json.Marshal(flat)
 	tagSet := map[string]bool{}
 	for _, b := range flat {
 		for _, tag := range domain.ExtractTags(b.Content) {
@@ -513,8 +505,8 @@ func persistDocState(tx *sql.Tx, docID string, before, after *collab.Doc, head i
 	sort.Strings(tags)
 	tagsJSON, _ := json.Marshal(tags)
 	if _, err := tx.Exec(
-		`UPDATE documents SET title = ?, title_version = ?, head_seq = ?, markdown_cache = ?, content = ?, blocks_json = ?, tags = ?, updated_at = ? WHERE id = ?`,
-		after.Title, after.TitleVersion, head, domain.CompileBlocksToMarkdown(flat), plain.String(), string(blocksJSON), string(tagsJSON), now, docID,
+		`UPDATE documents SET title = ?, title_version = ?, head_seq = ?, tags = ?, updated_at = ? WHERE id = ?`,
+		after.Title, after.TitleVersion, head, string(tagsJSON), now, docID,
 	); err != nil {
 		return err
 	}
@@ -586,27 +578,15 @@ func (s *Store) GetDocOpsSinceCtx(ctx context.Context, docID string, since int64
 		if limit > 0 && since < floor {
 			return ErrLogCompacted
 		}
-		rows, err := q.Query(
-			`SELECT seq, op_id, user_id, client_id, payload FROM doc_ops WHERE doc_id = ? AND seq > ? ORDER BY seq ASC LIMIT ?`,
-			docID, since, limit)
-		if err != nil {
-			return err
-		}
-		defer rows.Close()
-		out = make([]DocLogEntry, 0)
-		for rows.Next() {
-			var e DocLogEntry
-			var payload string
-			if err := rows.Scan(&e.Seq, &e.OpID, &e.UserID, &e.ClientID, &payload); err != nil {
-				return err
-			}
-			if err := json.Unmarshal([]byte(payload), &e.Effect); err != nil {
-				return fmt.Errorf("log entry %d unreadable: %w", e.Seq, err)
-			}
-			out = append(out, e)
-		}
-		return rows.Err()
+		var err error
+		out, err = readDocLog(q, docID, since, limit, s.noteStorageReady.Load())
+		return err
 	})
+	if errors.Is(err, errLogText) {
+		// The snapshot is always right: the client reloads it, its unsent changes stay queued
+		slog.Error("Note log cannot be read back, the client reloads the note", "doc_id", docID, "error", err)
+		err = ErrLogCompacted
+	}
 	if errors.Is(err, ErrLogCompacted) {
 		return nil, head, err
 	}
@@ -741,11 +721,17 @@ const legacyClientID = "legacy"
 // replaceDocBlocksInDB stores a complete flat block list (initial blocks of a new note, old blocks_json data)
 // by diffing it against the current tree and applying the difference as regular operations.
 func (s *Store) replaceDocBlocksInDB(docID, userID string, blocks []domain.DocumentBlock, _ string) {
-	blocks = s.renameForeignBlockIDs(docID, blocks)
-	a := collab.Actor{UserID: userID, ClientID: legacyClientID}
-	if _, _, err := s.applyDocChange(docID, a, nil, func(d *collab.Doc) []collab.Op { return legacyOps(d, blocks) }); err != nil {
+	if err := s.saveDocBlocks(docID, userID, blocks); err != nil {
 		slog.Error("Saving the note failed", "doc_id", docID, "error", err)
 	}
+}
+
+// saveDocBlocks is replaceDocBlocksInDB that returns the error.
+func (s *Store) saveDocBlocks(docID, userID string, blocks []domain.DocumentBlock) error {
+	blocks = s.renameForeignBlockIDs(docID, blocks)
+	a := collab.Actor{UserID: userID, ClientID: legacyClientID}
+	_, _, err := s.applyDocChange(docID, a, nil, func(d *collab.Doc) []collab.Op { return legacyOps(d, blocks) })
+	return err
 }
 
 // renameForeignBlockIDs gives new IDs to blocks whose ID already belongs to another note (e.g. fixed IDs of
@@ -1014,6 +1000,23 @@ func (s *Store) compactDoc(docID, logCutoff, tombCutoff, now string) (removed in
 	if err != nil {
 		return 0, 0, 0, err
 	}
+
+	// The old end of the log first: what it removes needs no attention when bullets are purged below
+	var floor int64
+	if err := tx.QueryRow(`SELECT COALESCE(MAX(seq), 0) FROM doc_ops WHERE doc_id = ? AND created_at < ?`, docID, logCutoff).Scan(&floor); err != nil {
+		return 0, 0, 0, err
+	}
+	if floor > 0 {
+		res, err := tx.Exec(`DELETE FROM doc_ops WHERE doc_id = ? AND seq <= ?`, docID, floor)
+		if err != nil {
+			return 0, 0, 0, err
+		}
+		removed, _ = res.RowsAffected()
+		if _, err := tx.Exec(`UPDATE documents SET log_floor = MAX(log_floor, ?) WHERE id = ?`, floor, docID); err != nil {
+			return 0, 0, 0, err
+		}
+	}
+
 	var candidates []string
 	rows, err := tx.Query(`SELECT id FROM blocks WHERE document_id = ? AND deleted = 1 AND deleted_at != '' AND deleted_at < ?`, docID, tombCutoff)
 	if err != nil {
@@ -1040,6 +1043,12 @@ func (s *Store) compactDoc(docID, logCutoff, tombCutoff, now string) (removed in
 			return 0, 0, 0, err
 		}
 		for _, id := range e.IDs {
+			// Log entries that still take their text from the bullet get it written into them first
+			if s.noteStorageReady.Load() {
+				if err := materializeLogTexts(tx, docID, id); err != nil {
+					return 0, 0, 0, err
+				}
+			}
 			if _, err := tx.Exec(`DELETE FROM blocks WHERE id = ? AND document_id = ?`, id, docID); err != nil {
 				return 0, 0, 0, err
 			}
@@ -1049,21 +1058,6 @@ func (s *Store) compactDoc(docID, logCutoff, tombCutoff, now string) (removed in
 			return 0, 0, 0, err
 		}
 		purged = len(e.IDs)
-	}
-
-	var floor int64
-	if err := tx.QueryRow(`SELECT COALESCE(MAX(seq), 0) FROM doc_ops WHERE doc_id = ? AND created_at < ?`, docID, logCutoff).Scan(&floor); err != nil {
-		return 0, 0, 0, err
-	}
-	if floor > 0 {
-		res, err := tx.Exec(`DELETE FROM doc_ops WHERE doc_id = ? AND seq <= ?`, docID, floor)
-		if err != nil {
-			return 0, 0, 0, err
-		}
-		removed, _ = res.RowsAffected()
-		if _, err := tx.Exec(`UPDATE documents SET log_floor = MAX(log_floor, ?) WHERE id = ?`, floor, docID); err != nil {
-			return 0, 0, 0, err
-		}
 	}
 	return removed, purged, head, tx.Commit()
 }
