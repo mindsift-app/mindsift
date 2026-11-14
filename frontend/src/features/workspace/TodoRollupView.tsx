@@ -25,7 +25,10 @@ interface TodoRollupViewProps {
   // Done to-dos exist but are hidden: the empty view says "all done" instead of "no to-dos"
   hasDoneTodos: boolean;
   handleJumpToDocBlock: (docId: string, blockId?: string) => void;
-  handleToggleRollupTodo: (doc: Document, blockId: string, currentChecked: boolean) => void;
+  // Ticks the to-do off, or on again
+  handleToggleRollupTodo: (item: RollupTodo) => void;
+  // The to-dos of the notes are still being fetched
+  loading?: boolean;
 }
 
 // The workspace's to-do collection: every to-do of all notes, grouped by folder and note or as one list,
@@ -47,6 +50,7 @@ export function TodoRollupView({
   hasDoneTodos,
   handleJumpToDocBlock,
   handleToggleRollupTodo,
+  loading = false,
 }: TodoRollupViewProps) {
   const { t } = useTranslation('workspace');
   return (
@@ -102,7 +106,9 @@ export function TodoRollupView({
         )}
 
         {/* Grouped Folders & To-Dos */}
-        {allRollupTodos.length === 0 ? (
+        {allRollupTodos.length === 0 && loading ? (
+          <p className="p-8 text-center text-muted text-xs">{t('rollup.loading')}</p>
+        ) : allRollupTodos.length === 0 ? (
           <div className="p-8 text-center text-muted text-xs space-y-1 border border-border rounded-card bg-main/[0.03]">
             <Sparkles className="w-6 h-6 text-accent mx-auto mb-1" />
             {todoShow === 'open' && hasDoneTodos ? (
@@ -129,7 +135,7 @@ export function TodoRollupView({
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleToggleRollupTodo(item.doc, item.blockId, item.checked);
+                      handleToggleRollupTodo(item);
                     }}
                     className={`w-3.5 h-3.5 checkbox-square flex items-center justify-center transition-colors border cursor-pointer ${
                       item.checked
@@ -287,11 +293,7 @@ export function TodoRollupView({
                                         type="button"
                                         onClick={(e) => {
                                           e.stopPropagation();
-                                          handleToggleRollupTodo(
-                                            item.doc,
-                                            item.blockId,
-                                            item.checked
-                                          );
+                                          handleToggleRollupTodo(item);
                                         }}
                                         className={`w-3.5 h-3.5 checkbox-square flex items-center justify-center transition-colors border cursor-pointer ${
                                           item.checked

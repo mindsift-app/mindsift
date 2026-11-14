@@ -1,6 +1,7 @@
 import React, { useCallback } from 'react';
 import { Document, TrashedDocument } from '../../lib/types';
 import { api } from '../../lib/api';
+import { freshDocList } from './useWorkspaceData';
 
 interface UseTrashActionsOptions {
   selectedDocId: string | null;
@@ -28,7 +29,7 @@ export function useTrashActions({
     async (docId: string) => {
       await api.restoreDocument(docId);
       const [freshDocs, freshFolders] = await Promise.all([api.getDocuments(), api.getFolders()]);
-      setDocs(freshDocs);
+      setDocs(freshDocList(freshDocs));
       setFolders(freshFolders);
       setEditorNonce((n) => n + 1);
       reloadTrash();
@@ -48,7 +49,7 @@ export function useTrashActions({
     if (item.kind !== 'folder') return handleRestoreDocument(item.id);
     await api.restoreFolder(item.id);
     const [freshDocs, freshFolders] = await Promise.all([api.getDocuments(), api.getFolders()]);
-    setDocs(freshDocs);
+    setDocs(freshDocList(freshDocs));
     setFolders(freshFolders);
     reloadTrash();
     onStatsChange();

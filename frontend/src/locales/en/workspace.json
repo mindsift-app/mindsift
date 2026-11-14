@@ -220,7 +220,8 @@
     "showOpenTitle": "Show open to-dos only",
     "showAll": "All",
     "showAllTitle": "Show done to-dos as well",
-    "allDone": "All done – no open to-dos."
+    "allDone": "All done – no open to-dos.",
+    "loading": "Loading to-dos…"
   },
   "emoji": {
     "suggested": "Recently used",

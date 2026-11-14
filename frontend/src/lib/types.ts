@@ -515,6 +515,21 @@ export interface DocumentBlock {
   conflictAuthor?: string;
 }
 
+/** A to-do with text of a note (GET /documents/todos). */
+export interface DocTodo {
+  docId: string;
+  blockId: string;
+  content: string;
+  checked: boolean;
+}
+
+/** One bullet looked up by its id (GET /blocks/{id}), e.g. for a link to it. */
+export interface BlockInfo {
+  documentId: string;
+  content: string;
+  type: BlockType;
+}
+
 export interface DocBlocksPatchRequest {
   upserted?: DocumentBlock[];
   deletedIds?: string[];
@@ -604,6 +619,7 @@ export interface Document {
   icon: string;
   folderId?: string;
   markdownCache?: string;
+  // The note list (GET /documents) leaves both empty; the note itself (GET /documents/{id}) has them
   content: string;
   blocks: DocumentBlock[];
   tags: string[];
@@ -612,6 +628,14 @@ export interface Document {
   isArchived: boolean;
   createdAt: string;
   updatedAt: string;
+
+  // What the note list reports of the bullets instead (workspaceListing.ts noteStats)
+  // Open to-dos with text
+  openTodos?: number;
+  // Hashtag (lower case) → number of bullets carrying it
+  tagCounts?: Record<string, number>;
+  // Hashtag (lower case) → number of open to-dos among the bullets carrying it
+  tagOpenTodos?: Record<string, number>;
 
   // Collaboration & Permissions
   permission?: 'owner' | 'write' | 'read';
