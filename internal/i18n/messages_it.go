@@ -238,7 +238,6 @@ var messagesIT = map[string]string{
 	"Vorschau nur für https-Links":                                                  "Anteprime solo per link https",
 	"Webhook-Fehler":                                                                "Errore del webhook",
 	"Webhook-URL":                                                                   "URL del webhook",
-	"Wiederherstellen abgebrochen":                                                  "Ripristino annullato",
 	"Wähle mindestens ein Recht aus.":                                               "Scegli almeno un permesso.",
 	"Ziel nicht erlaubt: interne oder reservierte Adresse":                          "Destinazione non consentita: indirizzo interno o riservato",
 	"Ziel-E-Mail-Adresse erforderlich":                                              "È richiesto l’indirizzo e-mail di destinazione",

@@ -238,7 +238,6 @@ var messagesFR = map[string]string{
 	"Vorschau nur für https-Links":                                                  "Aperçus uniquement pour les liens https",
 	"Webhook-Fehler":                                                                "Erreur du webhook",
 	"Webhook-URL":                                                                   "URL du webhook",
-	"Wiederherstellen abgebrochen":                                                  "Restauration annulée",
 	"Wähle mindestens ein Recht aus.":                                               "Choisis au moins une autorisation.",
 	"Ziel nicht erlaubt: interne oder reservierte Adresse":                          "Cible non autorisée : adresse interne ou réservée",
 	"Ziel-E-Mail-Adresse erforderlich":                                              "Adresse e-mail de destination requise",

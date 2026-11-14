@@ -13,6 +13,7 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -910,26 +911,60 @@ func jsonArray(dec *json.Decoder, lim *valueLimit, each func() error) error {
 // failed. Each note is still written in transactions of its own: one transaction for a whole archive
 // would keep everybody else from writing for as long as the import runs.
 func (s *Store) ApplyImport(userID string, plan *ImportPlan) (ImportSummary, error) {
+	return s.RestoreImport(userID, plan, nil)
+}
+
+// RestoreImport is ApplyImport that replaces the chosen sections of the person's data with the plan
+// (restoring a backup); with replace empty it only adds, as ApplyImport.
+//
+// The previous data is deleted only once the plan is in completely, in one transaction that leaves what
+// the import created alone (purgeUserSections with keep). An import that fails before that is taken out
+// as usual and the previous data was never touched; a delete that fails is rolled back and the import
+// taken out as well. Emptying the sections first, as before, lost the previous data whenever the import
+// failed after it; one transaction around everything is no option (see ApplyImport). For the time of
+// the import the previous and the new data are there side by side, and what someone adds to these
+// sections meanwhile goes with the previous data.
+func (s *Store) RestoreImport(userID string, plan *ImportPlan, replace map[string]bool) (ImportSummary, error) {
 	s.importMu.Lock()
 	defer s.importMu.Unlock()
 	undo := &importUndo{}
-	sum, err := s.applyImport(userID, plan, undo)
+	err := s.applyImport(userID, plan, undo)
+	if err == nil && len(replace) > 0 {
+		if err = s.purgeUserSections(userID, replace, undo.created()); err == nil {
+			// The delete took all folder entries along, also those the import uses
+			for _, f := range plan.Folders {
+				_, _ = s.CreateFolder(userID, f)
+			}
+		}
+	}
 	if err != nil {
 		s.undoImport(userID, undo)
-		return sum, err
+		return plan.Summary(false), err
 	}
-	// [[Titel]] links point at their notes by id, now that all of them exist. Only once nothing can
-	// fail any more: it rewrites links in the person's existing notes too, and undoImport does not put
-	// those back, so they would point at notes it deleted.
+	// After the delete, which would take them along; one that cannot be saved is listed as skipped
+	for _, th := range plan.Themes {
+		if _, err := s.SaveUserTheme(userID, "", th.Name, th.CSS); err != nil {
+			plan.skip(th.Name, "Theme: "+err.Error())
+		}
+	}
+	// [[Titel]] links point at their notes by id, now that all of them exist and the previous ones of a
+	// restore are gone. Only once nothing can fail any more: it rewrites links in the person's existing
+	// notes too, and undoImport does not put those back, so they would point at notes it deleted.
 	if len(plan.Docs) > 0 {
 		s.LinkWikiTitles(userID)
 	}
-	return sum, nil
+	return plan.Summary(true), nil
 }
 
 // importUndo lists what an import created so far.
 type importUndo struct {
 	folders, docs, taskLists, tasks, lists []string
+}
+
+// created: the ids of the notes, task lists, tasks and lists the import created (folders are matched
+// by path, not id).
+func (u *importUndo) created() []string {
+	return slices.Concat(u.docs, u.taskLists, u.tasks, u.lists)
 }
 
 // undoImport deletes what a failed import created. A step that fails is logged and the rest go on.
@@ -971,18 +1006,18 @@ func (s *Store) userFolderIDs(userID string) (map[string]bool, error) {
 	return ids, rows.Err()
 }
 
-func (s *Store) applyImport(userID string, plan *ImportPlan, undo *importUndo) (ImportSummary, error) {
+func (s *Store) applyImport(userID string, plan *ImportPlan, undo *importUndo) error {
 	s.CheckImportMedia(userID, plan)
 	before, err := s.userFolderIDs(userID)
 	if err != nil {
-		return plan.Summary(false), err
+		return err
 	}
 	for _, f := range plan.Folders {
 		_, _ = s.CreateFolder(userID, f) // already existing folders are fine
 	}
 	after, err := s.userFolderIDs(userID)
 	if err != nil {
-		return plan.Summary(false), err
+		return err
 	}
 	for id := range after {
 		if !before[id] {
@@ -1021,7 +1056,7 @@ func (s *Store) applyImport(userID string, plan *ImportPlan, undo *importUndo) (
 		return nil
 	})
 	if err != nil {
-		return plan.Summary(false), err
+		return err
 	}
 	for _, tl := range plan.TaskLists {
 		listID := "" // tasks without a list
@@ -1032,20 +1067,20 @@ func (s *Store) applyImport(userID string, plan *ImportPlan, undo *importUndo) (
 			}
 			created, err := s.CreateTaskList(userID, "", "", tl.title, icon, "")
 			if err != nil {
-				return plan.Summary(false), fmt.Errorf("task list %q: %w", tl.title, err)
+				return fmt.Errorf("task list %q: %w", tl.title, err)
 			}
 			listID = created.ID
 			undo.taskLists = append(undo.taskLists, listID)
 		}
 		for _, t := range tl.tasks {
 			if err := s.importTaskInto(userID, listID, t, true, undo); err != nil {
-				return plan.Summary(false), err
+				return err
 			}
 		}
 	}
 	for _, t := range plan.Inbox {
 		if err := s.importTaskInto(userID, "", t, false, undo); err != nil {
-			return plan.Summary(false), err
+			return err
 		}
 	}
 	for _, l := range plan.Lists {
@@ -1055,7 +1090,7 @@ func (s *Store) applyImport(userID string, plan *ImportPlan, undo *importUndo) (
 		}
 		created, err := s.CreateList(userID, l.title, icon, "shopping")
 		if err != nil {
-			return plan.Summary(false), fmt.Errorf("list %q: %w", l.title, err)
+			return fmt.Errorf("list %q: %w", l.title, err)
 		}
 		undo.lists = append(undo.lists, created.ID)
 		for i, it := range l.items {
@@ -1069,12 +1104,7 @@ func (s *Store) applyImport(userID string, plan *ImportPlan, undo *importUndo) (
 			}
 		}
 	}
-	for _, th := range plan.Themes {
-		if _, err := s.SaveUserTheme(userID, "", th.Name, th.CSS); err != nil {
-			plan.skip(th.Name, "Theme: "+err.Error())
-		}
-	}
-	return plan.Summary(true), nil
+	return nil
 }
 
 func (s *Store) importTaskInto(userID, listID string, t importTask, asTask bool, undo *importUndo) error {

@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -47,61 +48,59 @@ const sqlUnlinkTasksOfUserNotes = `UPDATE thoughts SET converted_type = '', conv
 	WHERE thoughts.converted_type = 'document_block'
 	  AND thoughts.converted_ref_id >= d.doc_id || ':' AND thoughts.converted_ref_id < d.doc_id || ';'`
 
-// purgeStmts lists what deleting one section of a user's data takes. Each statement gets the user ID
-// as often as it has placeholders.
-func purgeStmts(section string) []struct {
-	q    string
-	args int
-} {
-	ownDocs := `(SELECT id FROM documents WHERE user_id = ?)`
-	ownTaskLists := `(SELECT id FROM task_lists WHERE user_id = ?)`
-	ownFolders := `(SELECT id FROM workspace_shared_folders WHERE owner_id = ?)`
-	type st = struct {
-		q    string
-		args int
-	}
+// purgeStmts lists what deleting one section of a user's data takes. ?1 (or the single ?) is the user
+// ID, ?2 a JSON array of ids that stay: what a restore has just imported (RestoreImport), so the
+// previous data is only deleted once the new data is complete.
+func purgeStmts(section string) []string {
+	keep := `(SELECT value FROM json_each(?2))`
+	ownDocs := `(SELECT id FROM documents WHERE user_id = ?1 AND id NOT IN ` + keep + `)`
+	ownTaskLists := `(SELECT id FROM task_lists WHERE user_id = ?1 AND id NOT IN ` + keep + `)`
+	ownLists := `(SELECT id FROM lists WHERE user_id = ?1 AND id NOT IN ` + keep + `)`
+	ownFolders := `(SELECT id FROM workspace_shared_folders WHERE owner_id = ?1)`
 	switch section {
 	case SectionTasks:
-		return []st{
+		return []string{
 			// Task lists: keep the tasks of others, drop shares and the lists
-			{`UPDATE thoughts SET task_list_id = '' WHERE task_list_id IN ` + ownTaskLists + ` AND user_id != ?`, 2},
-			{`DELETE FROM task_list_shares WHERE task_list_id IN ` + ownTaskLists, 1},
-			{`DELETE FROM task_lists WHERE user_id = ?`, 1},
-			{`DELETE FROM thoughts WHERE user_id = ? AND (status = 'kept' OR (status = 'converted' AND converted_type IN ('task', 'document_block')))`, 1},
+			`UPDATE thoughts SET task_list_id = '' WHERE task_list_id IN ` + ownTaskLists + ` AND user_id != ?1`,
+			`DELETE FROM task_list_shares WHERE task_list_id IN ` + ownTaskLists,
+			`DELETE FROM task_lists WHERE id IN ` + ownTaskLists,
+			`DELETE FROM thoughts WHERE user_id = ?1 AND (status = 'kept' OR (status = 'converted' AND converted_type IN ('task', 'document_block'))) AND id NOT IN ` + keep,
 		}
 	case SectionInbox:
-		return []st{{`DELETE FROM thoughts WHERE user_id = ? AND status IN ('inbox', 'discarded')`, 1}}
+		return []string{`DELETE FROM thoughts WHERE user_id = ?1 AND status IN ('inbox', 'discarded') AND id NOT IN ` + keep}
 	case SectionNotes:
-		return []st{
-			// Tasks of others linked to blocks of the user's notes lose the link
-			{sqlUnlinkTasksOfUserNotes, 1},
-			// Shared folders owned by the user
-			{`UPDATE documents SET shared_folder_id = '', sub_folder_path = '' WHERE shared_folder_id IN ` + ownFolders, 1},
-			{`DELETE FROM workspace_folder_mounts WHERE folder_id IN ` + ownFolders, 1},
-			{`DELETE FROM workspace_folder_shares WHERE folder_id IN ` + ownFolders, 1},
-			{`DELETE FROM workspace_folders WHERE shared_folder_id IN ` + ownFolders, 1},
-			{`DELETE FROM workspace_shared_folders WHERE owner_id = ?`, 1},
+		return []string{
+			// Tasks of others linked to blocks of the user's notes lose the link (an import links none)
+			sqlUnlinkTasksOfUserNotes,
+			// Shared folders owned by the user (imported notes placed in one become plain notes, as if
+			// the folder had been gone before the import)
+			`UPDATE documents SET shared_folder_id = '', sub_folder_path = '' WHERE shared_folder_id IN ` + ownFolders,
+			`DELETE FROM workspace_folder_mounts WHERE folder_id IN ` + ownFolders,
+			`DELETE FROM workspace_folder_shares WHERE folder_id IN ` + ownFolders,
+			`DELETE FROM workspace_folders WHERE shared_folder_id IN ` + ownFolders,
+			`DELETE FROM workspace_shared_folders WHERE owner_id = ?1`,
 			// Notes (history tables cascade with the document)
-			{`DELETE FROM blocks WHERE document_id IN ` + ownDocs, 1},
-			{`DELETE FROM block_tags WHERE document_id IN ` + ownDocs, 1},
-			{`DELETE FROM doc_user_folders WHERE doc_id IN ` + ownDocs, 1},
-			{`DELETE FROM doc_team_shares WHERE doc_id IN ` + ownDocs, 1},
-			{`DELETE FROM doc_shares WHERE doc_id IN ` + ownDocs, 1},
-			{`DELETE FROM documents WHERE user_id = ?`, 1},
-			// The user's own placement of notes, folders, pins and tag pages
-			{`DELETE FROM doc_user_folders WHERE user_id = ?`, 1},
-			{`DELETE FROM doc_pins WHERE user_id = ?`, 1},
-			{`DELETE FROM workspace_folders WHERE user_id = ?`, 1},
-			{`DELETE FROM trashed_folders WHERE user_id = ?`, 1},
-			{`DELETE FROM tag_pages WHERE user_id = ?`, 1},
+			`DELETE FROM blocks WHERE document_id IN ` + ownDocs,
+			`DELETE FROM block_tags WHERE document_id IN ` + ownDocs,
+			`DELETE FROM doc_user_folders WHERE doc_id IN ` + ownDocs,
+			`DELETE FROM doc_team_shares WHERE doc_id IN ` + ownDocs,
+			`DELETE FROM doc_shares WHERE doc_id IN ` + ownDocs,
+			`DELETE FROM documents WHERE id IN ` + ownDocs,
+			// The user's own placement of notes, folders, pins and tag pages (a restore creates its
+			// folders again afterwards)
+			`DELETE FROM doc_user_folders WHERE user_id = ?1 AND doc_id NOT IN ` + keep,
+			`DELETE FROM doc_pins WHERE user_id = ?1 AND doc_id NOT IN ` + keep,
+			`DELETE FROM workspace_folders WHERE user_id = ?1`,
+			`DELETE FROM trashed_folders WHERE user_id = ?1`,
+			`DELETE FROM tag_pages WHERE user_id = ?1`,
 		}
 	case SectionLists:
-		return []st{
-			{`DELETE FROM list_shares WHERE list_id IN (SELECT id FROM lists WHERE user_id = ?)`, 1},
-			{`DELETE FROM lists WHERE user_id = ?`, 1}, // items cascade
+		return []string{
+			`DELETE FROM list_shares WHERE list_id IN ` + ownLists,
+			`DELETE FROM lists WHERE id IN ` + ownLists, // items cascade
 		}
 	case SectionThemes:
-		return []st{{`DELETE FROM user_themes WHERE user_id = ?`, 1}}
+		return []string{`DELETE FROM user_themes WHERE user_id = ?1`} // a restore saves its themes afterwards
 	}
 	return nil
 }
@@ -110,22 +109,36 @@ func purgeStmts(section string) []struct {
 // others shared with the user stays; other people's tasks in the user's task lists become their own
 // personal tasks, as when a single list is deleted.
 func (s *Store) PurgeUserSections(userID string, sections map[string]bool) error {
-	var stmts []sqlStmt
+	return s.purgeUserSections(userID, sections, nil)
+}
+
+// purgeUserSections is PurgeUserSections that leaves the notes, tasks, task lists and lists with the
+// ids in keep alone.
+func (s *Store) purgeUserSections(userID string, sections map[string]bool, keep []string) error {
+	if keep == nil {
+		keep = []string{}
+	}
+	keepJSON, err := json.Marshal(keep)
+	if err != nil {
+		return err
+	}
+	var queries []string
 	for _, sec := range AllSections {
-		if !sections[sec] {
-			continue
-		}
-		for _, st := range purgeStmts(sec) {
-			args := make([]any, st.args)
-			for i := range args {
-				args[i] = userID
-			}
-			stmts = append(stmts, stmt(st.q, args...))
+		if sections[sec] {
+			queries = append(queries, purgeStmts(sec)...)
 		}
 	}
 	if sections[SectionTasks] && sections[SectionInbox] {
 		// Everything else of the thought history (turned into notes or list items) goes as well
-		stmts = append(stmts, stmt(`DELETE FROM thoughts WHERE user_id = ?`, userID))
+		queries = append(queries, `DELETE FROM thoughts WHERE user_id = ?1 AND id NOT IN (SELECT value FROM json_each(?2))`)
+	}
+	stmts := make([]sqlStmt, len(queries))
+	for i, q := range queries {
+		if strings.Contains(q, "?2") {
+			stmts[i] = stmt(q, userID, string(keepJSON))
+		} else {
+			stmts[i] = stmt(q, userID)
+		}
 	}
 	if err := s.execInTx(stmts...); err != nil {
 		return fmt.Errorf("delete data: %w", err)

@@ -238,7 +238,6 @@ var messagesES = map[string]string{
 	"Vorschau nur für https-Links":                                                  "Vistas previas solo para enlaces https",
 	"Webhook-Fehler":                                                                "Error del webhook",
 	"Webhook-URL":                                                                   "URL del webhook",
-	"Wiederherstellen abgebrochen":                                                  "Restauración cancelada",
 	"Wähle mindestens ein Recht aus.":                                               "Elige al menos un permiso.",
 	"Ziel nicht erlaubt: interne oder reservierte Adresse":                          "Destino no permitido: dirección interna o reservada",
 	"Ziel-E-Mail-Adresse erforderlich":                                              "Se requiere la dirección de correo de destino",

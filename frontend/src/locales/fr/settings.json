@@ -777,7 +777,7 @@
     "willCreate": "Sera créé : {{what}}.",
     "nothing": "rien",
     "skipped": "{{count}} ignoré",
-    "restoreWarning": "<b>Attention :</b> tes données actuelles dans les domaines choisis ({{sections}}) seront définitivement supprimées avant l'import et remplacées par la sauvegarde. Le contenu partagé avec toi par d'autres est conservé.",
+    "restoreWarning": "<b>Attention :</b> tes données actuelles dans les domaines choisis ({{sections}}) seront remplacées par la sauvegarde et définitivement supprimées dès qu'elle aura été entièrement importée (en cas d'échec, elles restent telles quelles). Le contenu partagé avec toi par d'autres est conservé.",
     "restoreNow": "Supprimer et restaurer",
     "importNow": "Importer maintenant"
   },

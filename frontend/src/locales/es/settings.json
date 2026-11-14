@@ -501,7 +501,7 @@
     "willCreate": "Se creará: {{what}}.",
     "nothing": "nada",
     "skipped": "{{count}} omitidos",
-    "restoreWarning": "<b>Atención:</b> tus datos actuales en las áreas seleccionadas ({{sections}}) se eliminarán definitivamente antes de la importación y se sustituirán por los de la copia de seguridad. El contenido compartido contigo por otros usuarios se conserva.",
+    "restoreWarning": "<b>Atención:</b> tus datos actuales en las áreas seleccionadas ({{sections}}) se sustituirán por los de la copia de seguridad y se eliminarán definitivamente en cuanto esta se haya importado por completo (si falla, se quedan como están). El contenido compartido contigo por otros usuarios se conserva.",
     "restoreNow": "Eliminar y restaurar",
     "importNow": "Importar ahora"
   },

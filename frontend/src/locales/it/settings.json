@@ -777,7 +777,7 @@
     "willCreate": "Verrà creato: {{what}}.",
     "nothing": "niente",
     "skipped": "{{count}} ignorati",
-    "restoreWarning": "<b>Attenzione:</b> i tuoi dati attuali nelle aree selezionate ({{sections}}) verranno eliminati definitivamente prima dell'importazione e sostituiti dal backup. I contenuti condivisi da altri vengono mantenuti.",
+    "restoreWarning": "<b>Attenzione:</b> i tuoi dati attuali nelle aree selezionate ({{sections}}) verranno sostituiti dal backup ed eliminati definitivamente non appena sarà stato importato completamente (se non riesce, restano invariati). I contenuti condivisi da altri vengono mantenuti.",
     "restoreNow": "Elimina e ripristina",
     "importNow": "Importa ora"
   },
