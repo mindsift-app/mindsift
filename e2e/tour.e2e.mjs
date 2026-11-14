@@ -29,9 +29,12 @@ async function snapshot(token) {
   const [stats, docs, tasks, thoughts, lists] = await Promise.all(
     ['/api/v1/stats', '/api/v1/documents', '/api/v1/tasks', '/api/v1/thoughts', '/api/v1/lists'].map((p) => api(token, 'GET', p))
   );
+  // The note list carries no bullets: read each note on its own for its text
+  const full = await Promise.all(docs.map((d) => api(token, 'GET', `/api/v1/documents/${d.id}`)));
+  const text = new Map(full.map((d) => [d.id, (d.blocks || []).map((b) => [b.id, b.type, b.content, !!b.checked])]));
   return JSON.stringify({
     stats,
-    docs: docs.map((d) => [d.id, d.title, d.content, d.folderPath, d.isPinned]).sort(),
+    docs: docs.map((d) => [d.id, d.title, JSON.stringify(text.get(d.id)), d.folderPath, d.isPinned]).sort(),
     tasks: tasks.map((t) => [t.id, t.content, t.isCompleted, t.kanbanStatus, t.dueDate]).sort(),
     thoughts: thoughts.map((t) => [t.id, t.status, t.content]).sort(),
     lists: lists.map((l) => [l.id, l.title, (l.items || []).map((i) => [i.id, i.isCompleted]).sort()]).sort(),
