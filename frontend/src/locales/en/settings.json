@@ -777,7 +777,7 @@
     "willCreate": "Will create: {{what}}.",
     "nothing": "nothing",
     "skipped": "{{count}} skipped",
-    "restoreWarning": "<b>Caution:</b> your current data in the chosen areas ({{sections}}) will be deleted for good before the import and replaced by the backup. Content others shared with you is kept.",
+    "restoreWarning": "<b>Caution:</b> your current data in the chosen areas ({{sections}}) will be replaced by the backup and deleted for good once it has been imported completely (if that fails, they stay as they are). Content others shared with you is kept.",
     "restoreNow": "Delete and restore",
     "importNow": "Import now"
   },

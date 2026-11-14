@@ -776,7 +776,7 @@
     "willCreate": "Wird angelegt: {{what}}.",
     "nothing": "nichts",
     "skipped": "{{count}} übersprungen",
-    "restoreWarning": "<b>Achtung:</b> Deine bisherigen Daten in den gewählten Bereichen ({{sections}}) werden vor dem Import unwiderruflich gelöscht und durch das Backup ersetzt. Mit dir geteilte Inhalte anderer bleiben erhalten.",
+    "restoreWarning": "<b>Achtung:</b> Deine bisherigen Daten in den gewählten Bereichen ({{sections}}) werden durch das Backup ersetzt und unwiderruflich gelöscht, sobald es vollständig importiert ist (schlägt es fehl, bleiben sie unverändert). Mit dir geteilte Inhalte anderer bleiben erhalten.",
     "restoreNow": "Löschen und wiederherstellen",
     "importNow": "Jetzt importieren"
   },

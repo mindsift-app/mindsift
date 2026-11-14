@@ -13,6 +13,7 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"github.com/mindsift-app/mindsift/internal/auth"
 	"github.com/mindsift-app/mindsift/internal/domain"
@@ -93,6 +94,13 @@ func NewStore(dbPath string, opts ...StoreOption) (*Store, error) {
 
 	store := &Store{db: db, maxIdleConns: maxIdle,
 		inMemory: strings.Contains(dbPath, ":memory:") || strings.Contains(dbPath, "mode=memory")}
+	if !store.inMemory {
+		// A connection loads the planner statistics when it opens. Optimize replaces the idle ones, but
+		// those busy at that moment would keep the old statistics for as long as the pool keeps them;
+		// after an hour a connection is closed once it is returned and the next one loads them anew.
+		// Not for in-memory databases, where each connection is a database of its own.
+		db.SetConnMaxLifetime(connMaxLifetime)
+	}
 	for _, opt := range opts {
 		opt(store)
 	}
@@ -113,6 +121,9 @@ func NewStore(dbPath string, opts ...StoreOption) (*Store, error) {
 
 // minStatRows: statistics of a table analyzed with fewer rows are dropped (see Optimize).
 const minStatRows = 1000
+
+// connMaxLifetime: how long the pool keeps a connection to the database file (see NewStore).
+const connMaxLifetime = time.Hour
 
 // sqlDropMisleadingStats removes statistics the planner is better off without: those of tables that were
 // small when analyzed, and those of the shadow tables of FTS5 indexes (FTS5 reaches them by rowid or
@@ -168,7 +179,8 @@ func (s *Store) Optimize() error {
 		// Every connection to an in-memory database is a database of its own: that one stays
 		_ = conn.Raw(func(any) error { return driver.ErrBadConn })
 		// The other connections loaded the statistics when they opened and keep them: idle ones are
-		// replaced, so the new statistics reach the pool (busy ones keep theirs until they close)
+		// replaced, so the new statistics reach the pool (busy ones keep theirs until they close, at the
+		// latest after connMaxLifetime)
 		s.db.SetMaxIdleConns(0)
 		s.db.SetMaxIdleConns(s.maxIdleConns)
 	}

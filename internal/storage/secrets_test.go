@@ -1,7 +1,9 @@
 package storage
 
 import (
+	"fmt"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -75,5 +77,60 @@ func TestSecretSweepOrphansMovesAndDeletes(t *testing.T) {
 func TestMaskSecretRefs(t *testing.T) {
 	if got := MaskSecretRefs("ssh root@{{secret:sec_ab12}} -p 22"); got != "ssh root@•••• -p 22" {
 		t.Errorf("got %q", got)
+	}
+}
+
+// A bullet with maxBlockRefs files has no block_refs row for a secret after them. The secret still
+// counts as held there: purging its first note does not delete it, the sweep moves it to the note
+// holding it, and that note may reveal it.
+func TestSecretBeyondTheRefCapIsKept(t *testing.T) {
+	s, anna := newSyncTestStore(t)
+	sec := NewSecretID()
+	home, _ := s.CreateDocument(anna.ID, "", "Server", "", "", []domain.DocumentBlock{
+		{ID: "h1", Type: "bullet", Content: "IP " + secretRef(sec)},
+	}, nil, false)
+	if err := s.CreateSecret(sec, home.ID, anna.ID, "v1:x"); err != nil {
+		t.Fatal(err)
+	}
+	var sb strings.Builder
+	for i := range maxBlockRefs {
+		id := fmt.Sprintf("med_%04x", i)
+		ownMedia(t, s, anna.ID, id)
+		fmt.Fprintf(&sb, "| ![%d](media:%s) |\n", i, id)
+	}
+	sb.WriteString("| Token " + secretRef(sec) + " |\n")
+	other, err := s.CreateDocument(anna.ID, "", "Bildertabelle", "", "", []domain.DocumentBlock{
+		{ID: "tbl", Type: "table", Content: sb.String()},
+	}, nil, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var n int
+	_ = s.db.QueryRow(`SELECT COUNT(*) FROM block_refs WHERE document_id = ? AND kind = 'secret'`, other.ID).Scan(&n)
+	if n != 0 {
+		t.Fatalf("the test needs the secret beyond the cap, block_refs has %d rows for it", n)
+	}
+	if !s.DocReferencesSecret(other.ID, sec) {
+		t.Error("the note holding the secret beyond the cap does not count as holding it")
+	}
+
+	if err := s.DeleteDocument(anna.ID, home.ID); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.PurgeDocument(anna.ID, home.ID); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.GetSecret(sec); err != nil {
+		t.Fatalf("purging its first note deleted a secret another note holds: %v", err)
+	}
+	res, err := s.SweepSecrets(time.Now())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got, _ := s.GetSecret(sec); res.Moved != 1 || got == nil || got.DocumentID != other.ID {
+		t.Fatalf("the sweep did not move the secret to the note holding it: %+v %+v", res, got)
+	}
+	if s.DocReferencesSecret(home.ID, sec) {
+		t.Error("a purged note holds the secret")
 	}
 }
