@@ -366,4 +366,10 @@ func (s *Server) compactOnce() {
 	}
 	// After the deletions above: statistics of tables that grew or shrank a lot since the last run
 	logFailed("Updating the query planner statistics", s.store.Optimize())
+	// and the space they freed back to the file system (databases with incremental auto_vacuum)
+	if n, err := s.store.ReclaimFreePages(); err != nil {
+		slog.Error("Giving free pages of the database back failed", "error", err)
+	} else if n > 0 {
+		slog.Info("Database file shrunk", "freed_mb", n>>20)
+	}
 }

@@ -74,6 +74,7 @@ var migrations = []migration{
 	{46, "Hidden values copied with a bullet belong to its note", (*Store).migrateSecretCopies},
 	{47, "Search of tasks and list items without a copy of the text", (*Store).migrateItemSearch},
 	{48, "Unused copy of a note's markdown removed", (*Store).migrateDropMarkdownCache},
+	{49, "Database file shrinks after deletes (incremental auto_vacuum)", (*Store).migrateIncrementalVacuum},
 }
 
 // migrationBlockRefs creates block_refs: until it has run (earlier steps that rewrite notes), writing a

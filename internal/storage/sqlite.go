@@ -74,9 +74,11 @@ func NewStore(dbPath string, opts ...StoreOption) (*Store, error) {
 	// journal_size_limit: the WAL grows to the size of the largest transaction (an import, a large paste)
 	// and without a limit stays that large; with it, SQLite cuts it back to 16 MB once a checkpoint has
 	// written it into the database.
+	// auto_vacuum(2): a new database gives free pages back with PRAGMA incremental_vacuum (vacuum.go);
+	// on an existing one the setting waits for the next VACUUM.
 	dsn := dbPath
 	if !strings.Contains(dsn, "?") {
-		dsn += "?_pragma=busy_timeout(10000)&_pragma=journal_mode(WAL)&_pragma=synchronous(NORMAL)&_pragma=foreign_keys(1)&_pragma=journal_size_limit(16777216)&_txlock=immediate"
+		dsn += "?_pragma=busy_timeout(10000)&_pragma=auto_vacuum(2)&_pragma=journal_mode(WAL)&_pragma=synchronous(NORMAL)&_pragma=foreign_keys(1)&_pragma=journal_size_limit(16777216)&_txlock=immediate"
 	}
 
 	db, err := sql.Open("sqlite", dsn)
