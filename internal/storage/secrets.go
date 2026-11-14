@@ -28,7 +28,7 @@ const SecretOrphanDays = 30
 // MaxSecretLength: longest value in bytes.
 const MaxSecretLength = 4096
 
-var ErrSecretNotFound = errors.New("Geheimnis nicht gefunden")
+var ErrSecretNotFound = errors.New("Versteckter Wert nicht gefunden")
 
 // NoteSecret is one stored value; Ciphertext is what the server layer produced. SourceID is the value
 // it was copied from (secretGate), empty for one created with /secret.

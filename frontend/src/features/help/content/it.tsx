@@ -99,7 +99,7 @@ const it: HelpContent = {
       title: 'Comandi slash (/) e formattazione automatica',
       subtitle: 'Cambia tipo di blocco e formatta in Markdown durante la digitazione',
       icon: Command,
-      keywords: ['slash', 'comandi', 'todo', 'link', 'h1', 'h2', 'h3', 'codice', 'callout', 'warn', 'fail', 'separatore', 'immagine', 'estrai', 'unisci', 'audio', 'nota vocale', 'dettatura', 'foto', 'formattazione automatica'],
+      keywords: ['slash', 'comandi', 'todo', 'link', 'h1', 'h2', 'h3', 'codice', 'callout', 'warn', 'fail', 'separatore', 'immagine', 'estrai', 'unisci', 'audio', 'nota vocale', 'dettatura', 'foto', 'formattazione automatica', 'valore nascosto', 'password'],
       content: (
         <div className="space-y-3 text-muted leading-relaxed">
           <div>
@@ -133,7 +133,7 @@ const it: HelpContent = {
               </div>
               <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main">
                 <KeyRound className="w-3.5 h-3.5 text-accent" />
-                <span>/secret (nascondi un valore, ad es. un IP o un token)</span>
+                <span>/hidden (nascondi un valore, ad es. una password)</span>
               </div>
               <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main">
                 <span className="text-accent font-bold">💬</span>
@@ -168,6 +168,12 @@ const it: HelpContent = {
                 <span>/diktat (parla invece di digitare: si avvia subito, tocca «Stop» per inserire il testo nel punto)</span>
               </div>
             </div>
+          </div>
+          <div className="pt-2 border-t border-border">
+            <span className="font-semibold text-main block mb-1">Valori nascosti (/hidden, anche /nascosto o /secret):</span>
+            <p className="text-xs">
+              Tengono valori come le password lontani dallo schermo e fuori dalle note condivise o pubbliche; non sono un gestore di password. Il testo mostra solo ••••, e un clic mostra il valore per un attimo a chi può vedere la nota (mai tramite un link pubblico). Se copi il punto in un'altra nota, quella nota riceve una propria copia del valore.
+            </p>
           </div>
           <div className="pt-2 border-t border-border">
             <span className="font-semibold text-main block mb-1">Formattazione immediata durante la scrittura:</span>

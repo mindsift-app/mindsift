@@ -145,6 +145,8 @@ const de: HelpContent = {
         'image',
         'foto',
         'auto-formatting',
+        'versteckter wert',
+        'passwort',
       ],
       content: (
         <div className="space-y-3 text-muted leading-relaxed">
@@ -179,7 +181,7 @@ const de: HelpContent = {
               </div>
               <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main">
                 <KeyRound className="w-3.5 h-3.5 text-accent" />
-                <span>/secret (Wert verdecken, z. B. IP oder Token)</span>
+                <span>/hidden (Wert verstecken, z. B. ein Passwort)</span>
               </div>
               <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main">
                 <span className="text-accent font-bold">💬</span>
@@ -214,6 +216,12 @@ const de: HelpContent = {
                 <span>/diktat (sprechen statt tippen: startet sofort, Tipp auf „Stopp“ setzt den Text in den Punkt)</span>
               </div>
             </div>
+          </div>
+          <div className="pt-2 border-t border-border">
+            <span className="font-semibold text-main block mb-1">Versteckte Werte (/hidden, auch /versteckt oder /secret):</span>
+            <p className="text-xs">
+              Sie halten Werte wie Passwörter vom Bildschirm fern und aus geteilten oder öffentlichen Notizen heraus; ein Passwortmanager sind sie nicht. Im Text steht nur ••••, ein Klick zeigt den Wert kurz an, allen, die die Notiz sehen dürfen (über einen öffentlichen Link nie). Kopierst du den Punkt in eine andere Notiz, bekommt sie eine eigene Kopie des Werts.
+            </p>
           </div>
           <div className="pt-2 border-t border-border">
             <span className="font-semibold text-main block mb-1">Blitz-Formatierung beim Schreiben:</span>
@@ -841,7 +849,7 @@ const de: HelpContent = {
               <strong className="text-main">Nur der Eigentümer teilt:</strong> Bearbeiter können Inhalte ändern, aber nicht weiterteilen. Eine Freigabe an dich kannst du jederzeit selbst verlassen. Verlässt jemand eine Organisation oder Gruppe, fallen Freigaben, die nur darüber erlaubt waren, automatisch weg.
             </li>
             <li>
-              <strong className="text-main">Öffentlicher Link:</strong> Eine eigene Notiz kannst du im Teilen-Dialog per Link zum Lesen freigeben, auch für Leute ohne Konto, wahlweise mit Passwort. Der Link läuft immer ab (1 Stunde bis 14 Tage), lässt sich jederzeit zurückziehen und landet nicht in Suchmaschinen. Besucher sehen Änderungen live, aber keine verborgenen Werte und keine Namen. Ob es das gibt, entscheidet der Server-Admin.
+              <strong className="text-main">Öffentlicher Link:</strong> Eine eigene Notiz kannst du im Teilen-Dialog per Link zum Lesen freigeben, auch für Leute ohne Konto, wahlweise mit Passwort. Der Link läuft immer ab (1 Stunde bis 14 Tage), lässt sich jederzeit zurückziehen und landet nicht in Suchmaschinen. Besucher sehen Änderungen live, aber keine versteckten Werte und keine Namen. Ob es das gibt, entscheidet der Server-Admin.
             </li>
             <li>
               <strong className="text-main">Rollen (Bearbeiter vs. Leser):</strong> Beim Teilen von Notizen, Ordnern oder Listen wählst du zwischen <em>Bearbeiter</em> (Vollzugriff auf Inhalte und Checklisten) und <em>Nur Lesen</em> (reine Ansicht mit Live-Updates).

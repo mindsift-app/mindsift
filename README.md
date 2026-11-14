@@ -36,7 +36,7 @@ One container, one SQLite file, your server.
 ## What's inside
 
 ### 📝 Outliner notes, together, live
-Every thought is a bullet: indent, collapse, zoom in, drag whole branches. Wiki links (also to single bullets, and they survive renaming or moving a note), hashtags, slash commands, code blocks, tables, images, voice notes, dictation, link previews and hidden values (`/secret` for an IP or a token: stored encrypted, shown only on a tap, never to API keys or AI agents). Several people write in the same note at once without overwriting each other, offline and behind strict proxies too. A public link shows a note to outsiders: read only, optionally with a password, always expiring, kept out of search engines.
+Every thought is a bullet: indent, collapse, zoom in, drag whole branches. Wiki links (also to single bullets, and they survive renaming or moving a note), hashtags, slash commands, code blocks, tables, images, voice notes, dictation, link previews and hidden values (`/hidden` to keep values like passwords off the screen and out of shared or public notes: stored encrypted, shown only on a tap, never to API keys or AI agents; not a password manager). Several people write in the same note at once without overwriting each other, offline and behind strict proxies too. A public link shows a note to outsiders: read only, optionally with a password, always expiring, kept out of search engines.
 
 Drawings in a note (`/canvas`): shapes, arrows that dock to them, text and freehand; several people can draw in one drawing at once and see each other's pointers, others watch live; AI agents can draw flowcharts and mind maps from Mermaid. Focus mode hides everything but the note.
 
@@ -132,7 +132,7 @@ If something here is out of date or unfair, please open an issue.
 * **PostgreSQL or MySQL:** SQLite on purpose (see [design decisions](#design-decisions)).
 * **CalDAV or an iCal feed:** the calendar exists only inside MindSift.
 * **Native apps:** it is a PWA (installable, offline, push), not in the app stores.
-* **End-to-end encryption:** the server reads your data, because search, sharing and AI agents need it; only hidden values (`/secret`) are encrypted in the database. Protect the server and its disk.
+* **End-to-end encryption:** the server reads your data, because search, sharing and AI agents need it; only hidden values (`/hidden`) are encrypted in the database. Protect the server and its disk.
 * **Backups to S3 or WebDAV:** backups go to `data/backups/`; copying them elsewhere is up to you.
 * **A Helm chart:** Docker Compose only.
 * **Time zones per person:** one time zone per server, not per person (Administration → Server, or `TZ`).
@@ -187,7 +187,7 @@ The most important settings (all of them are in [`.env.example`](.env.example); 
 | `BASE_URL` | `http://localhost:8080` | Public URL; needed for links in mails (password reset), OAuth for claude.ai/ChatGPT and passkeys (these need https, or `http://localhost`, and a host name, not an IP address; the passkeys are bound to this host) |
 | `ADMIN_USER`, `ADMIN_PASSWORD`, `ADMIN_EMAIL` | empty | First administrator, created on the first start (see below) |
 | `JWT_SECRET` | generated (`/data/jwt.secret`) | Signing key for sign-ins, at least 32 characters (`openssl rand -hex 32`). Shorter values and published examples are ignored. Changing it signs everyone out |
-| `SECRETS_KEY` | generated (`/data/secrets.key`) | Key for hidden values (`/secret`), authenticator apps and the SMTP password of the administration; set it to keep it apart from the database. Never change it once values are stored (a changed key means entering the SMTP password again) |
+| `SECRETS_KEY` | generated (`/data/secrets.key`) | Key for hidden values (`/hidden`), authenticator apps and the SMTP password of the administration; set it to keep it apart from the database. Never change it once values are stored (a changed key means entering the SMTP password again) |
 | `DEFAULT_LANGUAGE` | `de` (demo: `en`) | `de`, `en`, `es`, `fr` or `it`, see "Language" below |
 | `TZ` | `UTC` | Time zone of the server for due dates, alarms, the daily summary and backups; the admin center can set it instead (its setting wins) |
 | `REGISTRATION_MODE` | admin UI decides | `closed`, `approval`, `domain`, `domain+approval` or `open` |
