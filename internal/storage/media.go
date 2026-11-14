@@ -294,10 +294,51 @@ type mediaGate struct {
 	keep   map[string]bool // ids fine without a check (files an import brings along, stored after the note)
 	known  map[string]bool // ids checked so far
 	lang   string          // for the placeholder, read once it is needed
+
+	docID   string          // the note the content goes into ("" for a new note or a task title)
+	present map[string]bool // files its bullets (deleted ones too) show now, read once it is needed
+	extra   int             // lookups left for files beyond maxBlockRefs in a bullet (for the whole gate)
 }
 
 func (s *Store) newMediaGate(userID string, keep map[string]bool) *mediaGate {
-	return &mediaGate{s: s, userID: userID, keep: keep, known: map[string]bool{}}
+	return &mediaGate{s: s, userID: userID, keep: keep, known: map[string]bool{}, extra: maxBlockRefs}
+}
+
+// newDocMediaGate is newMediaGate for content written into an existing note: files beyond maxBlockRefs
+// in a bullet stay when the note shows them already (inNote).
+func (s *Store) newDocMediaGate(userID, docID string) *mediaGate {
+	g := s.newMediaGate(userID, nil)
+	g.docID = docID
+	return g
+}
+
+// inNote: a bullet of the gate's note (a deleted one too) shows the file now. The note's bullets with
+// files are read once per gate and only for a bullet with more than maxBlockRefs files, so this costs
+// one query per request at most. A file there entered the note through the gate before (or as content
+// the person could read), and beyond maxBlockRefs it gets no block_refs row, so keeping it there grants
+// no one a read right they did not have.
+func (g *mediaGate) inNote(id string) bool {
+	if g.docID == "" {
+		return false
+	}
+	if g.present == nil {
+		g.present = map[string]bool{}
+		rows, err := g.s.db.Query(`SELECT content FROM blocks WHERE document_id = ? AND instr(content, 'media:') > 0`, g.docID)
+		if err != nil {
+			return false
+		}
+		defer rows.Close()
+		for rows.Next() {
+			var content string
+			if rows.Scan(&content) != nil {
+				return false
+			}
+			for _, m := range mediaIDRe.FindAllStringSubmatch(content, -1) {
+				g.present[m[1]] = true
+			}
+		}
+	}
+	return g.present[id]
 }
 
 // allowed: the file exists and the person uploaded it or may read it.
@@ -319,9 +360,16 @@ var mediaLinkRe = regexp.MustCompile(`!?\[((?:[^\]\\]|\\.)*)\]\(media:(med_[0-9a
 
 // clean returns the content without references to files the person may not show: an image or a
 // recording becomes its caption (a placeholder without one), a bare "media:<id>" the placeholder.
-// changed is false when everything stays. Like block_refs, only the first maxBlockRefs files of the
-// content count; references beyond them are dropped unchecked, so a bullet full of made-up ids costs
-// at most that many lookups.
+// changed is false when everything stays.
+//
+// Like block_refs, the first maxBlockRefs files of a bullet are each checked, so a bullet full of
+// made-up ids costs at most that many lookups. A file beyond them must not get lost either: editing an
+// old bullet with more pictures than the cap sends its whole text again. Such a file stays when the
+// import brings it along (keep), was checked already (known), or the note shows it now (inNote, one
+// query per gate); otherwise it is checked while the gate's extra lookups last (a new picture added to
+// a big table) and dropped after that. Files beyond the cap get no block_refs row (blockRefsOf counts
+// the same way), so keeping them grants no read right; an edit that moves one into the first
+// maxBlockRefs comes through here again and has it checked.
 func (g *mediaGate) clean(content string) (out string, changed bool) {
 	if !strings.Contains(content, "media:") {
 		return content, false
@@ -329,9 +377,20 @@ func (g *mediaGate) clean(content string) (out string, changed bool) {
 	ok := map[string]bool{}
 	denied := false
 	for _, m := range mediaIDRe.FindAllStringSubmatch(content, -1) {
-		if _, seen := ok[m[1]]; !seen {
-			ok[m[1]] = len(ok) < maxBlockRefs && g.allowed(m[1])
-			denied = denied || !ok[m[1]]
+		id := m[1]
+		if _, seen := ok[id]; !seen {
+			if len(ok) < maxBlockRefs {
+				ok[id] = g.allowed(id)
+			} else {
+				ok[id] = g.keep[id] || g.known[id] || g.inNote(id)
+				if !ok[id] && g.extra > 0 {
+					if _, seen := g.known[id]; !seen {
+						g.extra--
+						ok[id] = g.allowed(id)
+					}
+				}
+			}
+			denied = denied || !ok[id]
 		}
 	}
 	if !denied {

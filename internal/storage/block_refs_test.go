@@ -407,3 +407,77 @@ func TestFilesBeyondTheRefCapAreKept(t *testing.T) {
 		t.Fatalf("a backup takes %d files, want %d", len(backup), files)
 	}
 }
+
+// Editing a bullet that shows more files than maxBlockRefs sends its whole text again: the files beyond
+// the cap the note shows already stay, a new own file beyond the cap is checked and stays, someone
+// else's file beyond the cap is dropped. block_refs keeps the cap.
+func TestEditKeepsFilesBeyondTheRefCap(t *testing.T) {
+	s, anna, ben := newImportStore(t)
+	const files = maxBlockRefs + 6
+	var sb strings.Builder
+	for i := range files {
+		id := fmt.Sprintf("med_%04x", i)
+		ownMedia(t, s, anna.ID, id)
+		fmt.Fprintf(&sb, "| ![%d](media:%s) |\n", i, id)
+	}
+	ownMedia(t, s, anna.ID, "med_a000") // a new picture of Anna's
+	ownMedia(t, s, ben.ID, "med_b000")  // Ben's, which Anna may not read
+	doc, err := s.CreateDocument(anna.ID, "", "Bildertabelle", "", "", []domain.DocumentBlock{
+		{ID: "tbl", Type: "table", Content: "leer"},
+	}, nil, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// The content as an older version stored it, block_refs filled as migration 41 does
+	if _, err := s.db.Exec(`UPDATE blocks SET content = ? WHERE id = 'tbl'`, sb.String()); err != nil {
+		t.Fatal(err)
+	}
+	tx, err := s.db.Begin()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := fillBlockRefs(tx); err != nil {
+		t.Fatal(err)
+	}
+	if err := tx.Commit(); err != nil {
+		t.Fatal(err)
+	}
+
+	edited := "| Kopf |\n" + sb.String() + "| ![neu](media:med_a000) |\n| ![fremd](media:med_b000) |\n"
+	b := blocksOf(t, s, doc.ID)["tbl"]
+	res, _, err := s.ApplyDocOps(doc.ID, collab.Actor{UserID: anna.ID, ClientID: "c"}, []collab.Op{
+		{OpID: "op_edit", Kind: collab.OpSetContent, BlockID: "tbl", BaseVersion: b.Version, Content: &edited},
+	}, nil)
+	if err != nil || len(res) != 1 || res[0].Status != collab.StatusApplied {
+		t.Fatalf("edit not applied: %+v %v", res, err)
+	}
+	got := blocksOf(t, s, doc.ID)["tbl"].Content
+	for i := range files {
+		if id := fmt.Sprintf("media:med_%04x", i); !strings.Contains(got, id) {
+			t.Errorf("%s got lost", id)
+		}
+	}
+	if !strings.Contains(got, "media:med_a000") {
+		t.Error("the new own picture beyond the cap got lost")
+	}
+	if strings.Contains(got, "med_b000") || !strings.Contains(got, "| fremd |") {
+		t.Errorf("someone else's picture beyond the cap was kept: %q", got[len(got)-60:])
+	}
+	var n int
+	_ = s.db.QueryRow(`SELECT COUNT(*) FROM block_refs WHERE document_id = ?`, doc.ID).Scan(&n)
+	if n != maxBlockRefs {
+		t.Fatalf("block_refs has %d rows, want the cap %d", n, maxBlockRefs)
+	}
+
+	// The gate's lookups stay bounded: beyond the cap, made-up ids not in the note cost at most
+	// maxBlockRefs lookups per gate, after that they are dropped unchecked.
+	g := s.newDocMediaGate(anna.ID, doc.ID)
+	var many strings.Builder
+	for i := range 3 * maxBlockRefs {
+		fmt.Fprintf(&many, "media:med_c%04x ", i)
+	}
+	g.clean(many.String())
+	if len(g.known) != 2*maxBlockRefs {
+		t.Errorf("the gate looked up %d files, want %d", len(g.known), 2*maxBlockRefs)
+	}
+}

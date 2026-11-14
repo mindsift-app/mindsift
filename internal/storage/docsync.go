@@ -341,7 +341,7 @@ func (s *Store) ApplyDocOps(docID string, a collab.Actor, ops []collab.Op, lease
 // References to files the person may not read are dropped from the content first (mediaGate); the
 // client gets the content as stored through the log.
 func (s *Store) ApplyDocOpsCtx(ctx context.Context, docID string, a collab.Actor, ops []collab.Op, leases collab.LeaseView) ([]collab.Result, int64, error) {
-	ops = s.newMediaGate(a.UserID, nil).cleanOps(ops)
+	ops = s.newDocMediaGate(a.UserID, docID).cleanOps(ops)
 	return s.applyDocChangeCtx(ctx, docID, a, leases, func(*collab.Doc) []collab.Op { return ops })
 }
 
