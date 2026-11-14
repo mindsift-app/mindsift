@@ -215,7 +215,7 @@ describe('FinishSetupView', () => {
       spy.mockRestore();
     }
     // Builds the full list of time zones in jsdom: on a busy machine that took longer than the 5 s default
-  }, 20_000);
+  });
 
   it('sends backups off without time and retention', async () => {
     render(<FinishSetupView user={admin} authStatus={status} onDone={() => {}} onLogout={() => {}} />);

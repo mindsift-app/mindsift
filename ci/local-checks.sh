@@ -54,12 +54,14 @@ TZ_RUN_TESTS='(?i)(time|zone|alarm|due|digest|summar|backup|today|clock|day|date
 # results of the first run (code that reads TZ through the time package is not tracked). ZONEINFO names Go's
 # own zone data, as the Alpine image has no /usr/share/zoneinfo; clock's TestProcessRunsInTZ fails when the
 # zone is not in effect.
+# -timeout 20m per package: internal/api alone takes about four minutes and far longer beside the other parts
+# and other builds on the machine (a passing run is not slowed by the higher bound).
 backend() {
   "$ENGINE" run --rm -v "$ROOT":/src:z -v mindsift-go-cache:/go/pkg/mod -v mindsift-go-build:/root/.cache/go-build -w /src \
     -e DB_MAX_CONNS=1 -e CGO_ENABLED=0 -e TZ_RUN_ZONE="$TZ_RUN_ZONE" -e TZ_RUN_TESTS="$TZ_RUN_TESTS" "$GO_IMAGE" \
-    sh -c 'test -z "$(gofmt -l internal cmd)" || { echo "gofmt:"; gofmt -l internal cmd; exit 1; }; go vet ./cmd/... ./internal/... && go test -timeout 5m ./cmd/... ./internal/... &&
+    sh -c 'test -z "$(gofmt -l internal cmd)" || { echo "gofmt:"; gofmt -l internal cmd; exit 1; }; go vet ./cmd/... ./internal/... && go test -timeout 20m ./cmd/... ./internal/... &&
       echo "time zone run: TZ=$TZ_RUN_ZONE" && export TZ="$TZ_RUN_ZONE" ZONEINFO="$(go env GOROOT)/lib/time/zoneinfo.zip" &&
-      go test -count=1 ./internal/clock/ ./internal/domain/ && go test -count=1 -timeout 5m -run "$TZ_RUN_TESTS" ./internal/api/ ./internal/storage/'
+      go test -count=1 ./internal/clock/ ./internal/domain/ && go test -count=1 -timeout 20m -run "$TZ_RUN_TESTS" ./internal/api/ ./internal/storage/'
 }
 # The standard linters of golangci-lint (.golangci.yml, staticcheck included) over the same packages, read-only
 lint() {
