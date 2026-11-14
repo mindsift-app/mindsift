@@ -63,13 +63,27 @@ type ImportPlan struct {
 	jsonDocs  func() (io.ReadCloser, error)
 	items     int             // tasks and list items, against maxImportItems
 	usedMedia map[string]bool // keys of Media a note shows, while the plan is built
+	// Files the notes show that the archive does not bring along (other people's files cannot be shown,
+	// see CheckImportMedia); outsideIDs counts them against maxImportOutsideMedia
+	outside      []importMediaRefs
+	outsideIDs   int
+	mediaChecked bool
 }
+
+// importMediaRefs: the files of one note (by its path or title) that are not part of the import.
+type importMediaRefs struct {
+	note string
+	ids  []string
+}
+
+// maxImportOutsideMedia bounds the file ids the preview checks; applying checks every reference anyway.
+const maxImportOutsideMedia = 10_000
 
 // Only keeps the chosen sections of the plan (see NormalizeSections).
 func (p *ImportPlan) Only(sections map[string]bool) *ImportPlan {
 	out := &ImportPlan{Skipped: p.Skipped}
 	if sections[SectionNotes] {
-		out.Folders, out.Docs, out.Media, out.jsonDocs = p.Folders, p.Docs, p.Media, p.jsonDocs
+		out.Folders, out.Docs, out.Media, out.jsonDocs, out.outside = p.Folders, p.Docs, p.Media, p.jsonDocs, p.outside
 	}
 	if sections[SectionTasks] {
 		out.TaskLists = p.TaskLists
@@ -366,6 +380,7 @@ func (p *ImportPlan) addZipDoc(n zipNote, doc importDoc, tags []string, body str
 	}
 	doc.dir, doc.src = path.Dir(n.path), n.file
 	p.markUsedMedia(doc.dir, blocks)
+	p.noteOutsideMedia(n.path, doc.dir, blocks)
 	p.Docs = append(p.Docs, doc)
 }
 
@@ -577,7 +592,7 @@ func (s *Store) writeMediaFiles(zw zipEntries, userID string, name func(Media) s
 func PlanMindSiftImport(r io.ReaderAt, size int64, fileName string) (*ImportPlan, error) {
 	first := make([]byte, 1)
 	if _, err := r.ReadAt(first, 0); strings.HasSuffix(strings.ToLower(fileName), ".json") || (err == nil && first[0] == '{') {
-		return planJSONBackup(func() (io.ReadCloser, error) { return io.NopCloser(io.NewSectionReader(r, 0, size)), nil })
+		return planJSONBackup(func() (io.ReadCloser, error) { return io.NopCloser(io.NewSectionReader(r, 0, size)), nil }, nil)
 	}
 	zr, err := zip.NewReader(r, size)
 	if err != nil {
@@ -626,20 +641,13 @@ func PlanMindSiftImport(r io.ReaderAt, size int64, fileName string) (*ImportPlan
 	if packedTooWell(backup) {
 		return nil, errors.New("Das Backup im Archiv ist ungewöhnlich stark gepackt und wird nicht entpackt")
 	}
-	plan, err := planJSONBackup(func() (io.ReadCloser, error) {
+	return planJSONBackup(func() (io.ReadCloser, error) {
 		rc, err := backup.Open()
 		if err != nil {
 			return nil, errors.New("Backup im Archiv ist nicht lesbar")
 		}
 		return readCloser{io.LimitReader(rc, maxImportUnpackedBytes), rc}, nil
-	})
-	if err != nil {
-		return nil, err
-	}
-	if len(media) > 0 {
-		plan.Media = media
-	}
-	return plan, nil
+	}, media)
 }
 
 type readCloser struct {
@@ -650,18 +658,22 @@ type readCloser struct {
 // PlanMindSiftJSONImport reads the JSON backup ("Backup herunterladen"). Notes shared with the
 // exporting user belong to someone else and are skipped; discarded thoughts are not restored.
 func PlanMindSiftJSONImport(data []byte) (*ImportPlan, error) {
-	return planJSONBackup(func() (io.ReadCloser, error) { return io.NopCloser(bytes.NewReader(data)), nil })
+	return planJSONBackup(func() (io.ReadCloser, error) { return io.NopCloser(bytes.NewReader(data)), nil }, nil)
 }
 
-// planJSONBackup reads the backup that open returns. Its notes are read one at a time and only counted
-// here; the plan opens the backup again when it is applied (eachDoc).
-func planJSONBackup(open func() (io.ReadCloser, error)) (*ImportPlan, error) {
+// planJSONBackup reads the backup that open returns, with the files of its archive (media, nil for a
+// bare JSON). Its notes are read one at a time and only counted here; the plan opens the backup again
+// when it is applied (eachDoc).
+func planJSONBackup(open func() (io.ReadCloser, error), media map[string]*zip.File) (*ImportPlan, error) {
 	rc, err := open()
 	if err != nil {
 		return nil, err
 	}
 	defer rc.Close()
 	plan := &ImportPlan{jsonDocs: open}
+	if len(media) > 0 {
+		plan.Media = media
+	}
 	folders := map[string]bool{}
 	var exp domain.FullExport
 	err = decodeExport(rc, &exp, func(d *exportDoc) error {
@@ -672,6 +684,7 @@ func planJSONBackup(open func() (io.ReadCloser, error)) (*ImportPlan, error) {
 		if d.FolderPath != "" {
 			folders[d.FolderPath] = true
 		}
+		plan.noteOutsideMedia(d.Title, "", d.Blocks)
 		plan.Docs = append(plan.Docs, importDoc{folder: d.FolderPath, title: d.Title, icon: d.Icon})
 		return nil
 	})
@@ -889,6 +902,7 @@ func jsonArray(dec *json.Decoder, lim *valueLimit, each func() error) error {
 // ApplyImport creates everything of the plan for the user. Existing data is never changed; imported
 // items are added next to it. Task lists of the same name get merged into one new list per import.
 func (s *Store) ApplyImport(userID string, plan *ImportPlan) (ImportSummary, error) {
+	s.CheckImportMedia(userID, plan)
 	for _, f := range plan.Folders {
 		_, _ = s.CreateFolder(userID, f) // already existing folders are fine
 	}
@@ -903,7 +917,13 @@ func (s *Store) ApplyImport(userID string, plan *ImportPlan) (ImportSummary, err
 			icon = "🗒️"
 		}
 		blocks, files := linkImportMedia(d.dir, blocks, plan.Media)
-		doc, err := s.CreateDocument(userID, "", title, icon, d.folder, blocks, nil, false)
+		// The import's own files are stored once the note exists; any other file stays out unless the
+		// person may read it already (mediaGate)
+		keep := make(map[string]bool, len(files))
+		for _, f := range files {
+			keep[f.id] = true
+		}
+		doc, err := s.createDocument(userID, "", title, icon, d.folder, blocks, nil, false, keep)
 		if errors.Is(err, ErrNoteTooLarge) {
 			// Said with the note's name, so the person knows which file to split
 			return i18n.NewError("Notiz „{title}“: {reason}", "title", title, "reason", err.Error())
@@ -1475,6 +1495,49 @@ func (p *ImportPlan) markUsedMedia(dir string, blocks []domain.DocumentBlock) {
 	for _, b := range blocks {
 		if key, _ := mediaKey(b.Content, dir, p.Media); key != "" {
 			p.usedMedia[key] = true
+		}
+	}
+}
+
+// noteOutsideMedia notes the files a note shows that the import does not bring along: references by id
+// (media:<id>) other than a bullet showing a file of the archive, which gets a new id.
+func (p *ImportPlan) noteOutsideMedia(note, dir string, blocks []domain.DocumentBlock) {
+	var ids []string
+	seen := map[string]bool{}
+	for _, b := range blocks {
+		if !strings.Contains(b.Content, "media:") {
+			continue
+		}
+		key, _ := mediaKey(b.Content, dir, p.Media)
+		for _, m := range mediaIDRe.FindAllStringSubmatch(b.Content, -1) {
+			if key == "media:"+m[1] || seen[m[1]] || p.outsideIDs >= maxImportOutsideMedia {
+				continue
+			}
+			seen[m[1]] = true
+			ids = append(ids, m[1])
+			p.outsideIDs++
+		}
+	}
+	if len(ids) > 0 {
+		p.outside = append(p.outside, importMediaRefs{note: note, ids: ids})
+	}
+}
+
+// CheckImportMedia lists the notes of the plan as skipped that show a file the import does not bring
+// along and the person may not read (someone else's file, or one that no longer exists). Applying the
+// plan drops these references: a bullet showing a file would make it readable (mediaGate).
+func (s *Store) CheckImportMedia(userID string, plan *ImportPlan) {
+	if plan.mediaChecked {
+		return
+	}
+	plan.mediaChecked = true
+	gate := s.newMediaGate(userID, nil)
+	for _, r := range plan.outside {
+		for _, id := range r.ids {
+			if !gate.allowed(id) {
+				plan.skip(r.note, "Bild oder Aufnahme ohne Zugriff, nur die Beschriftung wird übernommen")
+				break
+			}
 		}
 	}
 }

@@ -145,4 +145,41 @@ describe('UserSettingsView notification matrix', () => {
     expect(patch.notificationSettings?.events.due.webhook).toBe(true);
     expect(patch.notificationSettings?.events.shared.webhook).toBe(true);
   });
+
+  it('keeps unsaved input when the account is loaded again, and takes over only what changed', async () => {
+    const view = (user: User) => (
+      <UserSettingsView
+        currentUser={user}
+        activeTheme="dark"
+        themes={[]}
+        customThemes={[]}
+        onThemeChange={() => {}}
+        onCustomThemesChange={() => {}}
+        onUserUpdated={() => {}}
+        onBack={() => {}}
+      />
+    );
+    const { rerender } = render(view(baseUser));
+    fireEvent.click(screen.getByText('Alarme'));
+    const discordUrl = 'https://discord.com/api/webhooks/123/abc';
+    fireEvent.change(screen.getByPlaceholderText(/https:\/\/discord\.com\/api\/webhooks/), { target: { value: discordUrl } });
+    fireEvent.click(screen.getByTitle('Fällige Aufgaben (sofort) – Discord'));
+
+    // Back in the tab (or after saving the avatar): the same account as a new object
+    rerender(view({ ...baseUser }));
+    expect((screen.getByPlaceholderText(/https:\/\/discord\.com\/api\/webhooks/) as HTMLInputElement).value).toBe(discordUrl);
+    expect(screen.getByTitle('Fällige Aufgaben (sofort) – Discord').getAttribute('aria-checked')).toBe('true');
+
+    // Saved on another device: that field follows, the input here stays
+    rerender(view({ ...baseUser, customWebhookUrl: 'https://hooks.example.com/neu' }));
+    expect((screen.getByPlaceholderText(/dein-server\.local/) as HTMLInputElement).value).toBe('https://hooks.example.com/neu');
+    expect((screen.getByPlaceholderText(/https:\/\/discord\.com\/api\/webhooks/) as HTMLInputElement).value).toBe(discordUrl);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Alarm-Einstellungen speichern' }));
+    await waitFor(() => expect(api.updateSettings).toHaveBeenCalledTimes(1));
+    const patch = vi.mocked(api.updateSettings).mock.calls[0][0];
+    expect(patch.discordWebhookUrl).toBe(discordUrl);
+    expect(patch.customWebhookUrl).toBe('https://hooks.example.com/neu');
+    expect(patch.notificationSettings?.events.due.discord).toBe(true);
+  });
 });

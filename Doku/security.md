@@ -33,7 +33,7 @@ HSTS over https, a strict Content Security Policy (scripts only from MindSift it
 
 ### Nothing reaches into your network
 
-Every address the server contacts (webhooks, Discord, push services, link previews, image copies) is checked at connection time against localhost, link-local, cloud-metadata and private ranges, after DNS and after redirects (never from https down to http); private ranges only with an explicit admin switch. `X-Forwarded-*` headers only count from trusted proxies (`TRUSTED_PROXIES`, see [reverse-proxy.md](reverse-proxy.md)).
+Every address the server contacts (webhooks, Discord, push services, link previews, image copies) is checked at connection time against localhost, link-local, cloud-metadata and private ranges, after DNS and after redirects (never from https down to http); private ranges only with an explicit admin switch. `X-Forwarded-*` headers only count from trusted proxies (`TRUSTED_PROXIES`, see [reverse-proxy.md](reverse-proxy.md)). The default `private` trusts every device in the local network, so any of them can claim another address and get around the per-address limits (those per account and per link still hold): without a reverse proxy set `none`, with one the narrowest range that holds the proxy.
 
 ### Limits everywhere
 

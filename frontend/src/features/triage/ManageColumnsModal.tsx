@@ -78,13 +78,14 @@ export const ManageColumnsModal: React.FC<ManageColumnsModalProps> = (props) =>
   props.isOpen ? <ManageColumnsModalContent {...props} /> : null;
 
 const ManageColumnsModalContent: React.FC<ManageColumnsModalProps> = ({
-  isOpen,
   onClose,
   initialColumns,
   onSave,
   listTitle,
 }) => {
   const { t } = useTranslation('tasks');
+  // The content only exists while the dialog is open: opening starts from the list's columns, and task
+  // lists loaded again meanwhile (another device, a return to the tab) leave the edits alone
   const [columns, setColumns] = useState<KanbanColumn[]>(() => {
     return initialColumns && initialColumns.length > 0 ? initialColumns : DEFAULT_KANBAN_COLUMNS;
   });
@@ -129,12 +130,6 @@ const ManageColumnsModalContent: React.FC<ManageColumnsModalProps> = ({
         : { id, left, bottom: window.innerHeight - rect.top + 4 }
     );
   };
-
-  useEffect(() => {
-    // Opening the dialog starts from the list's columns
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setColumns(initialColumns && initialColumns.length > 0 ? initialColumns : DEFAULT_KANBAN_COLUMNS);
-  }, [initialColumns, isOpen]);
 
   const handleMove = (index: number, direction: 'up' | 'down') => {
     triggerHaptic(10);
