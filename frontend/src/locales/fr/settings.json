@@ -737,7 +737,6 @@
     "testSending": "Envoi du mail de test en cours…",
     "testSend": "Envoyer l'e-mail de test",
     "passwordKept": "Enregistré – laisser vide pour ne pas changer",
-    "passwordViaEnv": "Depuis SMTP_PASS, non enregistré – prioritaire",
     "passwordUnreadable": "Le mot de passe enregistré ne peut plus être déchiffré : la clé du serveur (SECRETS_KEY ou secrets.key) a changé. Aucun e-mail ne part tant que tu ne l'as pas saisi à nouveau et enregistré.",
     "save": "Enregistrer la configuration SMTP dans la base de données",
     "testSent": "E-mail de test envoyé à {{email}}.",
