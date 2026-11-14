@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"regexp"
+	"slices"
 	"sort"
 	"strings"
 )
@@ -95,6 +96,42 @@ func (s *Store) mediaBeyondRefCap(userID string) (map[string][]string, error) {
 		for _, m := range mediaIDRe.FindAllStringSubmatch(content, -1) {
 			if docs := out[m[1]]; len(docs) == 0 || docs[len(docs)-1] != docID {
 				out[m[1]] = append(docs, docID)
+			}
+		}
+	}
+	return out, rows.Err()
+}
+
+// sqlCappedLiveBlocksOfDoc: the live bullets of one note whose references reached maxBlockRefs; arguments
+// note id twice. Through idx_block_refs_doc, so it reads only that note's rows.
+var sqlCappedLiveBlocksOfDoc = fmt.Sprintf(`SELECT b.document_id, b.content FROM blocks b
+	WHERE b.document_id = ? AND b.deleted = 0
+	AND b.id IN (SELECT block_id FROM block_refs WHERE document_id = ? GROUP BY block_id HAVING COUNT(*) >= %d)`, maxBlockRefs)
+
+// secretsBeyondRefCap is mediaBeyondRefCap for hidden values: the secrets mentioned in live bullets at
+// the cap, each with the notes of those bullets; with docID only bullets of that note. q is s.db or the
+// transaction the caller holds (one connection, see Doku/database.md). A secret only such a bullet
+// holds may have no block_refs row there, and neither the secret sweep nor deleting a note for good may
+// take its value away.
+func secretsBeyondRefCap(q docQueryer, docID string) (map[string][]string, error) {
+	query, args := sqlCappedBlocks+` AND b.deleted = 0`, []any{}
+	if docID != "" {
+		query, args = sqlCappedLiveBlocksOfDoc, []any{docID, docID}
+	}
+	rows, err := q.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := map[string][]string{}
+	for rows.Next() {
+		var d, content string
+		if err := rows.Scan(&d, &content); err != nil {
+			return nil, err
+		}
+		for _, m := range SecretRefRe.FindAllStringSubmatch(content, -1) {
+			if docs := out[m[1]]; !slices.Contains(docs, d) {
+				out[m[1]] = append(docs, d)
 			}
 		}
 	}

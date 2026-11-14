@@ -160,7 +160,7 @@ func TestBlockRefsFollowBlocks(t *testing.T) {
 		t.Fatal(err)
 	}
 	applyOps(t, s, doc.ID, a, collab.Op{OpID: "o5", Kind: collab.OpDelete, BlockID: "ip"})
-	if docs, _ := s.docsReferencingSecret("secip"); !reflect.DeepEqual(docs, []string{other.ID}) {
+	if docs, _ := s.docsReferencingSecret("secip", nil); !reflect.DeepEqual(docs, []string{other.ID}) {
 		t.Errorf("the secret is held only by the moved bullet now, got %v", docs)
 	}
 	if !s.DocReferencesSecret(other.ID, "secip") || s.DocReferencesSecret(doc.ID, "secip") {
@@ -192,7 +192,7 @@ func TestBlockRefsFollowBlocks(t *testing.T) {
 			t.Errorf("row of a purged note left: %s", row)
 		}
 	}
-	if docs, _ := s.docsReferencingSecret("secip"); !reflect.DeepEqual(docs, []string{other.ID}) {
+	if docs, _ := s.docsReferencingSecret("secip", nil); !reflect.DeepEqual(docs, []string{other.ID}) {
 		t.Errorf("the other note keeps its reference, got %v", docs)
 	}
 }
@@ -286,6 +286,7 @@ func TestBlockRefQueriesUseIndexes(t *testing.T) {
 		"sqlDocHoldsSecret":               {sqlDocHoldsSecret, []any{"sec", "doc"}},
 		"sqlDocsHoldingSecret":            {sqlDocsHoldingSecret, []any{"sec"}},
 		"sqlDeleteSecretsHeldNowhereElse": {sqlDeleteSecretsHeldNowhereElse, []any{"doc"}},
+		"sqlCappedLiveBlocksOfDoc":        {sqlCappedLiveBlocksOfDoc, []any{"doc", "doc"}},
 	} {
 		rows, err := s.db.Query(`EXPLAIN QUERY PLAN `+q.sql, q.args...)
 		if err != nil {
