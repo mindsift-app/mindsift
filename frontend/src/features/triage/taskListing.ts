@@ -7,6 +7,15 @@ import { GroupBy, TaskFilter, TaskSort } from './taskViewTypes';
 
 export type TaskGroup = { key: string; title: string; count: number; tasks: Thought[] };
 
+// A task opened from outside the shown list (a link, the search) is not in the list's tasks; every
+// update of the list (a new array or a function of the old one) is applied to it as well, so its detail
+// dialog shows the change. A task the update leaves out stays as it was.
+export function followTaskUpdate(extra: Thought | null, update: Thought[] | ((prev: Thought[]) => Thought[])): Thought | null {
+  if (!extra) return extra;
+  const next = typeof update === 'function' ? update([extra]) : update;
+  return next.find((t) => t.id === extra.id) ?? extra;
+}
+
 // Tasks with the hashtag (all with none); the Kanban board shows these
 export function tasksWithTag(tasks: Thought[], selectedTag: string | null): Thought[] {
   let result = tasks;

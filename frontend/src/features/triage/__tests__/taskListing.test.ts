@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { KanbanColumn, TaskList, Thought } from '../../../lib/types';
-import { filterAndSortTasks, groupTasks, tasksWithTag } from '../taskListing';
+import { filterAndSortTasks, followTaskUpdate, groupTasks, tasksWithTag } from '../taskListing';
 
 const task = (id: string, t: Partial<Thought> = {}) =>
   ({ id, content: id, isCompleted: false, priority: 'normal', createdAt: '2026-01-01T00:00:00Z', ...t }) as Thought;
@@ -71,5 +71,24 @@ describe('task listing', () => {
       ['due:upcoming', ['soon']],
       ['due:none', ['none']],
     ]);
+  });
+});
+
+describe('task opened from outside the list', () => {
+  // The update TasksView's onTaskChange makes (the detail dialog's own changes, e.g. watching)
+  const change = (taskId: string, changes: Partial<Thought>) => (prev: Thought[]) =>
+    prev.map((t) => (t.id === taskId ? { ...t, ...changes } : t));
+
+  it('gets the changes the dialog makes to it', () => {
+    const extra = task('x', { isWatching: false });
+    expect(followTaskUpdate(extra, change('x', { isWatching: true }))?.isWatching).toBe(true);
+  });
+
+  it('gets a new list that holds it, and stays as it is otherwise', () => {
+    const extra = task('x', { priority: 'normal' });
+    expect(followTaskUpdate(extra, [task('a'), task('x', { priority: 'high' })])?.priority).toBe('high');
+    expect(followTaskUpdate(extra, [task('a')])).toBe(extra);
+    expect(followTaskUpdate(extra, change('a', { priority: 'high' }))).toEqual(extra);
+    expect(followTaskUpdate(null, change('x', { priority: 'high' }))).toBeNull();
   });
 });
