@@ -172,7 +172,8 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
       const created = await api.adminCreateUser({
         email: newUserEmail.trim(),
         password: newUserPassword,
-        displayName: newUserName.trim() || newUserEmail.split('@')[0],
+        // Left empty, the server uses the new account's username
+        displayName: newUserName.trim(),
         role: isServerAdmin ? newUserRole : 'member',
         organizationIds: newUserOrgs,
       });

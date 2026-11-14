@@ -173,9 +173,7 @@ func (s *Server) handleFirstBootSetup(w http.ResponseWriter, r *http.Request) {
 		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
-	if domain.CleanDisplayName(req.DisplayName) == "" {
-		req.DisplayName = "Administrator"
-	}
+	// Without a display name the account shows its username (the store gives it)
 
 	hash, err := auth.HashPassword(req.Password)
 	if err != nil {
@@ -340,9 +338,7 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
-	if domain.CleanDisplayName(req.DisplayName) == "" {
-		req.DisplayName = strings.Split(req.Email, "@")[0]
-	}
+	// Without a display name the account shows its username (the store gives it)
 
 	count, _ := s.store.CountUsers()
 	role := "member"

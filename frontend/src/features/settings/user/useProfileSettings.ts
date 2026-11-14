@@ -124,6 +124,8 @@ export function useProfileSettings(currentUser: User, onUserUpdated: (u: User) =
       onUserUpdated(updated);
       // A new address waits for its link (shown under the field), the field shows the one in use
       setEmail(updated.email || '');
+      // An empty name is stored as the username: the field shows it, also when it was that before
+      setDisplayName(updated.displayName || '');
       setCurrentPassword('');
       setProfileMsg({ type: 'ok', text: i18n.t('settings:profile.saved') });
     } catch (err) {

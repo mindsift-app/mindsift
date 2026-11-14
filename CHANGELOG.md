@@ -35,6 +35,9 @@ Versions without a git tag were development states and were never published as a
 - The password of a public link is now also limited per link, not only per visitor address: after 50 wrong passwords within 15 minutes the link takes no passwords for 15 minutes. Visitors who already entered it keep reading; sharing a new link starts afresh.
 - Creating a user, or giving one an address, that another account already has in Administration → Users now says "This email address already exists" (`409`) instead of an internal error, also when two requests take the same address at once.
 - Line breaks and other control characters in a display name are turned into spaces when it is saved, and names in mails stay on one line; before, a line break in a name started a line of its own in the plain-text part of mails.
+- Display names no longer keep invisible text-direction characters, which could make a name show partly backwards or two names that look the same differ.
+- Two accounts created or renamed at the same moment can no longer end up with the same username: the database itself now keeps usernames unique, and a new account (registration, setup, single sign-on, Administration → Users) whose name was taken a moment earlier gets the next free one (`anna1`). **Attention:** if your server already has a username twice, the update keeps it for the oldest account and gives each later one the next free number (`anna` → `anna1`); the server log lists every renamed account. Those people sign in with the new username or their address.
+- Administration → Users refuses an invalid email address (`400` "Invalid e-mail address") when creating a user or changing an address, as the profile does.
 - The API answers mistakes with the right status instead of an internal error: an empty list title, list item or inbox entry is a `400`, changing, sharing or deleting a note or list without access a `404` that does not reveal whether it exists.
 - A task opened from a link or the search while another task list is shown now shows changes made in its detail dialog at once (priority, status, title, dates …); before, they were saved but the dialog kept the old values.
 - The phone menu of the tasks shows how many filters are active in the app's language instead of always in German.
@@ -79,6 +82,7 @@ Versions without a git tag were development states and were never published as a
 - `install.sh` removes `ADMIN_PASSWORD` from `.env` again once the first start has created the admin; an update never changes `.env`.
 - `install.sh` no longer copies the host's time zone into `.env`: the setup wizard suggests the browser's zone (or set it under Administration → Server). Existing `TZ` settings stay.
 - `install.sh` accepts admin passwords up to 1,024 characters, as the server does, instead of stopping at 72 bytes.
+- An empty display name becomes the account's username, wherever a name is set: in the profile (the name field may now be left empty and shows the username afterwards), in Administration → Users, at registration, in the setup wizard and at a first sign-in through single sign-on without a name. Before, a new account got the part of its address before the @, which two accounts can share (sandro@email.de and sandro@firma.de), or "Administrator"; the username is unique (`sandro`, `sandro1`).
 
 ## [0.95.0] - 2026-11-12
 

@@ -779,16 +779,8 @@ func (s *Server) createOIDCAccount(r *http.Request, id *oidcIdentity, address st
 		login = address
 	}
 	local := strings.Split(address, "@")[0]
+	// Without a name the account shows its username (the store gives it)
 	display := domain.CleanDisplayName(id.name)
-	if display == "" {
-		display = domain.CleanDisplayName(id.username)
-	}
-	if display == "" {
-		display = local
-	}
-	if display == "" {
-		display = s.oidcName()
-	}
 	if r := []rune(display); len(r) > 100 {
 		display = string(r[:100])
 	}

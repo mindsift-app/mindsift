@@ -6,6 +6,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/mindsift-app/mindsift/internal/storage"
 )
 
 // An address another account has is 409 in the admin's user management, not a 500 from the database
@@ -73,11 +75,97 @@ func TestAdminUserDisplayNameOneLine(t *testing.T) {
 	if u, _ := store.GetUserByID(created.ID); u.DisplayName != "Anna B." {
 		t.Fatalf("display name not cleaned on update: %q", u.DisplayName)
 	}
-	// Nothing but control characters: the name from the address, as for an empty one
+	// Nothing but control characters: the username, as for an empty name
 	rec = sessionCall(router, "POST", "/api/v1/admin/users", token,
 		`{"email":"leer@example.com","password":"ein-langes-Passwort-42","displayName":"\u0000\n"}`, "")
 	if rec.Code != http.StatusCreated || !strings.Contains(rec.Body.String(), `"displayName":"leer"`) {
 		t.Fatalf("create with a control-only name: %d %s", rec.Code, rec.Body.String())
+	}
+}
+
+// The admin's user management checks an address the way the profile does
+func TestAdminUserInvalidEmail(t *testing.T) {
+	srv, store, token := setupTestServer(t)
+	router := srv.Router()
+	other, _ := newTestUser(t, store, "other@example.com")
+	errText := func(body []byte) string {
+		var res struct{ Error string }
+		_ = json.Unmarshal(body, &res)
+		return res.Error
+	}
+	for _, email := range []string{"keine-adresse", "a@b@c", "Anna <anna@example.com>", "@example.com"} {
+		body, _ := json.Marshal(map[string]string{"email": email, "password": "ein-langes-Passwort-42", "displayName": "Neu"})
+		rec := sessionCall(router, "POST", "/api/v1/admin/users", token, string(body), "")
+		if rec.Code != http.StatusBadRequest || errText(rec.Body.Bytes()) != "Ungültige E-Mail-Adresse" {
+			t.Errorf("create with %q: %d %s", email, rec.Code, rec.Body.String())
+		}
+		body, _ = json.Marshal(map[string]string{"email": email, "username": "neuer.name"})
+		rec = sessionCall(router, "PATCH", "/api/v1/admin/users/"+other.ID, token, string(body), "")
+		if rec.Code != http.StatusBadRequest || errText(rec.Body.Bytes()) != "Ungültige E-Mail-Adresse" {
+			t.Errorf("update to %q: %d %s", email, rec.Code, rec.Body.String())
+		}
+	}
+	// Nothing of a refused update was applied
+	if u, _ := store.GetUserByID(other.ID); u.Email != "other@example.com" || u.Username == "neuer.name" {
+		t.Fatalf("refused update changed the account: %+v", u)
+	}
+	// Spaces and capitals around a valid address are no reason to refuse it
+	rec := sessionCall(router, "POST", "/api/v1/admin/users", token,
+		`{"email":" Neu@Example.com ","password":"ein-langes-Passwort-42","displayName":"Neu"}`, "")
+	if rec.Code != http.StatusCreated || !strings.Contains(rec.Body.String(), `"email":"neu@example.com"`) {
+		t.Fatalf("create with a valid address: %d %s", rec.Code, rec.Body.String())
+	}
+}
+
+// An empty display name becomes the username, which (unlike the part of the address before the @) no
+// other account has: in the admin's user management, in the profile and at registration
+func TestEmptyDisplayNameBecomesUsername(t *testing.T) {
+	srv, store, token := setupTestServer(t)
+	router := srv.Router()
+	created := func(body string) (id, username, display string) {
+		t.Helper()
+		rec := sessionCall(router, "POST", "/api/v1/admin/users", token, body, "")
+		if rec.Code != http.StatusCreated {
+			t.Fatalf("create: %d %s", rec.Code, rec.Body.String())
+		}
+		var u struct{ ID, Username, DisplayName string }
+		_ = json.Unmarshal(rec.Body.Bytes(), &u)
+		return u.ID, u.Username, u.DisplayName
+	}
+	_, u1, d1 := created(`{"email":"sandro@email.de","password":"ein-langes-Passwort-42","displayName":""}`)
+	id2, u2, d2 := created(`{"email":"sandro@firma.de","password":"ein-langes-Passwort-42","displayName":"  "}`)
+	if u1 != "sandro" || d1 != "sandro" || u2 != "sandro1" || d2 != "sandro1" {
+		t.Fatalf("got %s/%s and %s/%s, want sandro/sandro and sandro1/sandro1", u1, d1, u2, d2)
+	}
+
+	// The admin clears the name: the username again
+	if rec := sessionCall(router, "PATCH", "/api/v1/admin/users/"+id2, token, `{"displayName":"Sandro F."}`, ""); rec.Code != http.StatusOK {
+		t.Fatalf("rename: %d %s", rec.Code, rec.Body.String())
+	}
+	rec := sessionCall(router, "PATCH", "/api/v1/admin/users/"+id2, token, `{"displayName":"\u202e"}`, "")
+	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), `"displayName":"sandro1"`) {
+		t.Fatalf("admin clears the name: %d %s", rec.Code, rec.Body.String())
+	}
+
+	// The person clears it in the profile, together with a new username: the new one
+	me, meToken := newTestUser(t, store, "anna@example.com")
+	rec = sessionCall(router, "PATCH", "/api/v1/auth/settings", meToken, `{"displayName":"","username":"anna.b"}`, "")
+	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), `"displayName":"anna.b"`) {
+		t.Fatalf("profile clears the name: %d %s", rec.Code, rec.Body.String())
+	}
+	if u, _ := store.GetUserByID(me.ID); u.DisplayName != "anna.b" {
+		t.Fatalf("stored name %q", u.DisplayName)
+	}
+
+	// Registration without a name
+	setRegistration(t, store, storage.RegistrationOpen, "")
+	rec = sessionCall(router, "POST", "/api/v1/auth/register", "",
+		`{"email":"sandro@privat.de","password":"password123","displayName":""}`, "")
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("register: %d %s", rec.Code, rec.Body.String())
+	}
+	if u, _ := store.GetUserByEmail("sandro@privat.de"); u == nil || u.Username != "sandro2" || u.DisplayName != "sandro2" {
+		t.Fatalf("registered account: %+v", u)
 	}
 }
 

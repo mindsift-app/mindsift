@@ -150,7 +150,6 @@ export function UsersSection({
               value={newUserName}
               onChange={(e) => setNewUserName(e.target.value)}
               placeholder={t('users.create.namePlaceholder')}
-              required
               className="w-full min-w-0 h-11 sm:h-8 px-2.5 input-field text-base sm:text-xs"
             />
           </label>
