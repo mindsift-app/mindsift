@@ -465,7 +465,9 @@ func (g *mediaGate) cleanBlocks(blocks []domain.DocumentBlock) (_ []domain.Docum
 	return out, dropped
 }
 
-// cleanOps applies cleanBlock to inserted and changed bullets (copied on the first change).
+// cleanOps applies cleanBlock to inserted and changed bullets (copied on the first change). A changed
+// bullet that loses the file it showed is marked FileDropped, so an image or audio bullet becomes a plain
+// bullet with its caption.
 func (g *mediaGate) cleanOps(ops []collab.Op) []collab.Op {
 	out := ops
 	copied := false
@@ -484,6 +486,10 @@ func (g *mediaGate) cleanOps(ops []collab.Op) []collab.Op {
 		out[i].Content = &content
 		if op.Kind == collab.OpInsert {
 			out[i].Type = typ
+		} else if _, still := ParseMediaContent(content); !still {
+			// A changed bullet carries no type: an image or audio bullet left without its file becomes a
+			// plain bullet when the change is applied (collab knows the bullet's type)
+			out[i].FileDropped = true
 		}
 	}
 	return out

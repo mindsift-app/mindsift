@@ -63,7 +63,14 @@ type Op struct {
 	Patch       *PropsPatch `json:"patch,omitempty"`       // set_props
 	IDs         []string    `json:"ids,omitempty"`         // restore
 	Title       *string     `json:"title,omitempty"`       // set_title
+	// FileDropped (set_content, server only): the server took the file this content pointed to out of
+	// it (storage's media gate), so a block that shows a file (image, audio) becomes a plain bullet with
+	// the remaining text, as an insert does. Never read from a client.
+	FileDropped bool `json:"-"`
 }
+
+// fileBlockType: blocks whose content is one file reference with its caption.
+func fileBlockType(typ string) bool { return typ == "image" || typ == "audio" }
 
 // Effect is a normalized, already validated change. The server log stores effects; replaying them in
 // order on an empty Doc reproduces the server state exactly.
@@ -284,12 +291,14 @@ func (ap *applier) apply(op Op) Result {
 			ap.restore([]string{b.ID})
 		}
 		if *op.Content == b.Content {
+			ap.dropFileType(op, b)
 			return Result{Status: StatusApplied, Version: b.Version}
 		}
 		if ap.foreignLease(b.ID) || op.BaseVersion != b.Version {
 			return ap.conflictCopy(op, b, *op.Content)
 		}
 		ap.emit(Effect{Kind: OpSetContent, BlockID: b.ID, Content: *op.Content, Version: b.Version + 1})
+		ap.dropFileType(op, b)
 		return Result{Status: StatusApplied, Version: b.Version}
 
 	case OpSetProps:
@@ -491,9 +500,22 @@ func (ap *applier) conflictCopy(op Op, b *Block, content string) Result {
 	}
 	if _, exists := ap.d.Blocks[id]; !exists {
 		props := Props{ConflictOf: b.ID, ConflictAuthor: ap.a.Name}
-		ap.emit(Effect{Kind: OpInsert, BlockID: id, ParentID: b.ParentID, OrderKey: ap.d.keyAfter(b), Type: b.Type, Content: content, Props: &props, Version: 1})
+		typ := b.Type
+		if op.FileDropped && fileBlockType(typ) {
+			typ = "bullet"
+		}
+		ap.emit(Effect{Kind: OpInsert, BlockID: id, ParentID: b.ParentID, OrderKey: ap.d.keyAfter(b), Type: typ, Content: content, Props: &props, Version: 1})
 	}
 	return Result{Status: StatusConflict, Version: b.Version, ConflictBlockID: id}
+}
+
+// dropFileType turns a block that showed a file into a plain bullet once a set_content without the
+// file (FileDropped) was applied to it.
+func (ap *applier) dropFileType(op Op, b *Block) {
+	if op.FileDropped && fileBlockType(b.Type) {
+		props := b.Props
+		ap.emit(Effect{Kind: OpSetProps, BlockID: b.ID, Type: "bullet", Props: &props})
+	}
 }
 
 // titleConflict keeps a losing title as a conflict block at the very top of the note.
