@@ -72,6 +72,7 @@ var migrations = []migration{
 	{44, "Note text stored only once", (*Store).migrateNoteStorage},
 	{45, "Usernames unique in the database", (*Store).migrateUniqueUsernames},
 	{46, "Hidden values copied with a bullet belong to its note", (*Store).migrateSecretCopies},
+	{47, "Search of tasks and list items without a copy of the text", (*Store).migrateItemSearch},
 }
 
 // migrationBlockRefs creates block_refs: until it has run (earlier steps that rewrite notes), writing a

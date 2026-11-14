@@ -94,7 +94,8 @@ func blockSearchText(row string) string {
 
 // migrateSearchFTS creates the virtual FTS5 tables and synchronization triggers (part of the baseline,
 // migration 3). Migration 44 replaces documents_fts and its triggers by an index without a copy of the
-// note text (noteSearchSQL in note_storage.go).
+// note text (noteSearchSQL in note_storage.go), migration 47 does the same for thoughts_fts and
+// list_items_fts (itemSearchSQL in item_search.go).
 func (s *Store) migrateSearchFTS() {
 	tables := []string{
 		`CREATE VIRTUAL TABLE IF NOT EXISTS thoughts_fts USING fts5(
@@ -365,7 +366,8 @@ func (s *Store) SearchCtx(ctx context.Context, userID, query string, opts Search
 	}
 
 	// 2. Search Thoughts & Tasks
-	// Weights: 5.0 for content, 1.0 for notes, 1.0 for subtasks
+	// Content, notes and subtasks weigh the same (the weights of the index before migration 47 were
+	// 5.0 for its id column, which never matches, and 1.0 for the others)
 	taskWhere, taskArgs := "", []any{}
 	switch opts.TaskStatus {
 	case "open":
@@ -400,15 +402,15 @@ func (s *Store) SearchCtx(ctx context.Context, userID, query string, opts Search
 	err = errSkip
 	if want("thought") {
 		thoughtRows, err = s.db.QueryContext(ctx, `
-		SELECT f.thought_id,
+		SELECT t.id,
 		       snippet(thoughts_fts, -1, '<mark>', '</mark>', '…', 14) AS snip,
-		       bm25(thoughts_fts, 5.0, 1.0, 1.0) AS score,
+		       bm25(thoughts_fts) AS score,
 		       t.id, t.user_id, t.content, t.tags, t.priority, t.source, t.status,
 		       t.is_completed, t.converted_type, t.converted_ref_id, t.due_date,
 		       t.task_list_id, t.kanban_status, t.notes, t.alarm_sent, t.created_at,
 		       t.triaged_at, t.subtasks, t.sort_order
 		FROM thoughts_fts f
-		JOIN thoughts t ON t.id = f.thought_id
+		JOIN thoughts t ON t.fts_rowid = f.rowid
 		WHERE thoughts_fts MATCH ?
 		  AND (t.user_id = ? OR t.task_list_id IN (`+s.accessibleTaskListIDsQuery()+`))`+taskWhere+`
 		-- Open before completed, discarded thoughts last; within each by relevance
@@ -453,7 +455,7 @@ func (s *Store) SearchCtx(ctx context.Context, userID, query string, opts Search
 	}
 
 	// 3. Search List Items
-	// Weights: 2.0 for content, 1.0 for category
+	// Content and category weigh the same (as before migration 47, where 2.0 went to the id column)
 	accessibleLists, _ := s.GetAllListsForUser(userID)
 	accessibleListIDs := make(map[string]bool, len(accessibleLists))
 	for _, l := range accessibleLists {
@@ -480,14 +482,14 @@ func (s *Store) SearchCtx(ctx context.Context, userID, query string, opts Search
 	}
 	if want("list_item") && len(accessibleListIDs) > 0 {
 		itemRows, err := s.db.QueryContext(ctx, `
-			SELECT f.item_id, f.list_id,
+			SELECT li.id, li.list_id,
 			       snippet(list_items_fts, -1, '<mark>', '</mark>', '…', 14) AS snip,
-			       bm25(list_items_fts, 2.0, 1.0) AS score,
+			       bm25(list_items_fts) AS score,
 			       li.id, li.list_id, li.content, li.category, li.quantity,
 			       li.is_completed, li.completed_by, li.completed_by_name,
 			       li.sort_order, li.created_at, li.completed_at
 			FROM list_items_fts f
-			JOIN list_items li ON li.id = f.item_id
+			JOIN list_items li ON li.fts_rowid = f.rowid
 			WHERE list_items_fts MATCH ?`+itemWhere+`
 			ORDER BY li.is_completed ASC, score ASC
 			LIMIT `+strconv.Itoa(limit), itemArgs...)
