@@ -42,6 +42,9 @@ type Store struct {
 	noteStorageReady atomic.Bool
 	// secretsKey seals the SMTP password in the system settings (sealed.go, WithSecretsKey)
 	secretsKey []byte
+	// demoMode: the database holds only the demo's sample data, so one that cannot be migrated or reset
+	// is wiped instead of stopping the start (WithDemoMode, demo.go)
+	demoMode bool
 
 	// OnTaskCreated is told about tasks the store creates by itself (next occurrence of a repeating
 	// task), so the server can push them to connected clients.
@@ -110,7 +113,13 @@ func NewStore(dbPath string, opts ...StoreOption) (*Store, error) {
 		store.systemBackupDir = filepath.Join(filepath.Dir(dbPath), "backups", "system")
 	}
 	if err := store.migrate(); err != nil {
-		return nil, fmt.Errorf("failed to run migrations: %w", err)
+		// The demo's data is disposable: a database it cannot migrate (left half reset, say) is wiped
+		if !store.demoMode {
+			return nil, fmt.Errorf("failed to run migrations: %w", err)
+		}
+		if err := store.recoverDemoDatabase(err); err != nil {
+			return nil, fmt.Errorf("failed to run migrations: %w", err)
+		}
 	}
 	if err := store.Optimize(); err != nil {
 		slog.Warn("Updating the query planner statistics failed", "error", err)
@@ -209,28 +218,45 @@ func (s *Store) Close() error {
 	return s.db.Close()
 }
 
-// dropAllTables removes every table and view; used by the demo mode reset.
+// dropAllTables removes every table and view, and the planner statistics; used by the demo mode reset.
+// The order matters: views first (documents_fts_source reads two tables), then the virtual tables (FTS5),
+// whose DROP also removes their shadow tables (…_data, …_idx, …_content, …_docsize, …_config), then the
+// remaining tables, oldest first. A shadow table dropped before its virtual table leaves an index that can
+// no longer be opened: every later DROP or migration touching it fails with "vtable constructor failed"
+// (the demo hung in a crash loop that way). VACUUM puts virtual tables behind their shadow tables in
+// sqlite_master, so the order of the schema table itself cannot be relied on. The statistics go as well:
+// kept, they would describe the tables of the old data to the planner (sqlite_stat1/sqlite_stat4 are the
+// only sqlite_ tables SQLite lets drop; ANALYZE and PRAGMA optimize create them anew).
+// All drops run in one transaction, so a failure leaves the database as it was instead of half dropped.
 func (s *Store) dropAllTables() error {
-	conn, err := s.db.Conn(context.Background())
+	ctx := context.Background()
+	conn, err := s.db.Conn(ctx)
 	if err != nil {
 		return err
 	}
 	defer conn.Close()
-	ctx := context.Background()
-	// Views first (documents_fts_source reads two tables)
-	rows, err := conn.QueryContext(ctx, `SELECT type, name FROM sqlite_master WHERE type IN ('view', 'table') AND name NOT LIKE 'sqlite_%'
-		ORDER BY type = 'table'`)
+	rows, err := conn.QueryContext(ctx, `SELECT type, name, COALESCE(sql, '') FROM sqlite_master
+		WHERE type IN ('view', 'table') AND (name NOT GLOB 'sqlite_*' OR name GLOB 'sqlite_stat*') ORDER BY rowid`)
 	if err != nil {
 		return err
 	}
-	var drops []string
+	var views, virtual, tables []string
 	for rows.Next() {
-		var typ, name string
-		if err := rows.Scan(&typ, &name); err != nil {
+		var typ, name, def string
+		if err := rows.Scan(&typ, &name, &def); err != nil {
 			_ = rows.Close()
 			return err
 		}
-		drops = append(drops, `DROP `+strings.ToUpper(typ)+` IF EXISTS "`+strings.ReplaceAll(name, `"`, `""`)+`"`)
+		quoted := `"` + strings.ReplaceAll(name, `"`, `""`) + `"`
+		switch {
+		case typ == "view":
+			views = append(views, `DROP VIEW IF EXISTS `+quoted)
+		case strings.HasPrefix(strings.ToUpper(strings.TrimSpace(def)), "CREATE VIRTUAL TABLE"):
+			virtual = append(virtual, `DROP TABLE IF EXISTS `+quoted)
+		default:
+			// IF EXISTS: shadow tables are gone with their virtual table by now
+			tables = append(tables, `DROP TABLE IF EXISTS `+quoted)
+		}
 	}
 	if err := rows.Err(); err != nil {
 		return err
@@ -240,13 +266,61 @@ func (s *Store) dropAllTables() error {
 	if _, err := conn.ExecContext(ctx, `PRAGMA foreign_keys = OFF`); err != nil {
 		return err
 	}
-	for _, q := range drops {
-		if _, err := conn.ExecContext(ctx, q); err != nil {
-			return err
+	// The connection goes back to the pool: with foreign keys on again, however the drops went
+	defer func() { _, _ = conn.ExecContext(ctx, `PRAGMA foreign_keys = ON`) }()
+	tx, err := conn.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback() }()
+	for _, q := range append(append(views, virtual...), tables...) {
+		if _, err := tx.ExecContext(ctx, q); err != nil {
+			return fmt.Errorf("%s: %w", q, err)
 		}
 	}
-	_, err = conn.ExecContext(ctx, `PRAGMA foreign_keys = ON`)
-	return err
+	return tx.Commit()
+}
+
+// wipeDatabase empties the database without dropping anything: it deletes the rows of the schema table
+// itself (writable_schema) and lets VACUUM write the file anew without the pages nothing refers to any
+// more. Unlike DROP TABLE it cannot fail on a broken schema, such as an FTS5 index whose shadow tables are
+// gone. Everything in the database is lost, so only the demo mode uses it, as the way out when the normal
+// reset or the migrations fail (recoverDemoDatabase); a server with real data never gets here.
+func (s *Store) wipeDatabase() error {
+	ctx := context.Background()
+	conn, err := s.db.Conn(ctx)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+	if !s.inMemory {
+		// This connection's settings and view of the schema belong to the old database: it is not returned
+		// to the pool (an in-memory database lives only as long as its connection, so that one stays)
+		defer func() { _ = conn.Raw(func(any) error { return driver.ErrBadConn }) }()
+	}
+	if _, err := conn.ExecContext(ctx, `PRAGMA writable_schema = ON`); err != nil {
+		return err
+	}
+	_, err = conn.ExecContext(ctx, `DELETE FROM sqlite_master`)
+	// RESET: writing the schema is off again, and the connection reads the (now empty) schema anew
+	if _, rerr := conn.ExecContext(ctx, `PRAGMA writable_schema = RESET`); err == nil {
+		err = rerr
+	}
+	if err != nil {
+		return fmt.Errorf("clear the schema: %w", err)
+	}
+	// VACUUM copies only what the schema names, so the pages of the old tables are gone; it also changes
+	// the schema cookie, which makes every other connection read the empty schema before its next statement
+	if _, err := conn.ExecContext(ctx, `VACUUM`); err != nil {
+		return fmt.Errorf("vacuum the wiped database: %w", err)
+	}
+	if !s.inMemory {
+		_, _ = conn.ExecContext(ctx, `PRAGMA wal_checkpoint(TRUNCATE)`)
+		// Idle connections are replaced as well, so none keeps anything of the old database
+		s.db.SetMaxIdleConns(0)
+		s.db.SetMaxIdleConns(s.maxIdleConns)
+	}
+	return nil
 }
 
 // migrateBaseline is migration 3: the complete schema as of v0.4.1, built so that it also brings any
