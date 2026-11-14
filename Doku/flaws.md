@@ -11,7 +11,7 @@ Severity levels: **High** (account takeover or data exfiltration possible), **Me
 | ID | Domain | Summary | Severity |
 |---|---|---|---|
 | FLAW-31 | Auth | Session token stored in `localStorage` (no HttpOnly cookies) | Partially resolved |
-| FLAW-34 | Admin | SMTP password stored in plain text in DB and backups | Partially resolved |
+| FLAW-34 | Admin | SMTP password stored in plain text in DB and backups | Resolved |
 | FLAW-43 | Sharing | A picture copied out of a shared note stays readable after the share is revoked | Accepted (by design) |
 | FLAW-44 | Accounts | Changing one's login address tells whether another address already has an account | Accepted |
 
@@ -78,7 +78,7 @@ Every ID that was ever given out and is no longer open. IDs up to FLAW-27 date f
 | FLAW-41 | The largest frontend files (`TasksView`, `WorkspaceView`, `App`, `lib/api.ts`) split into components, hooks and pure functions with tests | 0.69.38 |
 | FLAW-42 | At most 20 realtime connections per account; the oldest is closed for a new one | 0.68.1 |
 
-FLAW-31 and FLAW-34 are resolved in part (0.6.0) and stay in the overview above.
+FLAW-31 is resolved in part (0.6.0) and stays in the overview above. FLAW-34 (resolved in part in 0.6.0, fully since migration 43) stays there with its details as well.
 
 ---
 
