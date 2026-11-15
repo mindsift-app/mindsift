@@ -10,6 +10,7 @@ import { OUTLINE_CLIPBOARD_TYPE } from '../../../lib/outlineMarkdown';
 let live: DocumentBlock[] = [];
 
 let lockedNotices: string[] = [];
+let lockedOwn: boolean[] = [];
 
 const Harness: React.FC<{ initial: DocumentBlock[]; locked?: Map<string, BlockLock> }> = ({ initial, locked }) => {
   const [blocks, setBlocks] = useState(initial);
@@ -21,7 +22,10 @@ const Harness: React.FC<{ initial: DocumentBlock[]; locked?: Map<string, BlockLo
       docId="d1"
       blocks={blocks}
       lockedBlocks={locked}
-      onLockedAction={(name) => lockedNotices.push(name)}
+      onLockedAction={(l) => {
+        lockedNotices.push(l.name);
+        lockedOwn.push(!!l.own);
+      }}
       canEdit
       onUpdateBlock={(b) => setBlocks((p) => p.map((x) => (x.id === b.id ? b : x)))}
       onUpdateBlocks={(u) => setBlocks((p) => p.map((x) => u.find((y) => y.id === x.id) || x))}
@@ -114,6 +118,15 @@ describe('blocks locked by someone else', () => {
     await backspaceAt(area('B'));
     expect(live.map((b) => b.content)).toEqual(['A', 'B', 'C']);
     expect(lockedNotices).toEqual(['Ben']);
+  });
+
+  it('held by oneself elsewhere do not name oneself', async () => {
+    lockedOwn = [];
+    render(<Harness initial={[mk('a', 'Oben'), mk('b', 'Unten')]} locked={new Map([['a', { userId: 'u-Ich', name: 'Ich', own: true }]])} />);
+    expect(screen.getByTitle('Wird gerade auf einem anderen Gerät oder in einem anderen Tab bearbeitet')).toBeTruthy();
+    expect(screen.queryByTitle('Ich bearbeitet diesen Punkt gerade')).toBeNull();
+    await backspaceAt(area('Unten'));
+    expect(lockedOwn).toEqual([true]);
   });
 });
 

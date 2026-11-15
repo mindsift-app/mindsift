@@ -1933,7 +1933,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
                   className="px-1.5 py-0.5 rounded-btn border border-status-warn/40 hover:bg-status-warn/15 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
                   title={
                     lockedBy
-                      ? t('lock.copy', { name: lockedBy.name })
+                      ? (lockedBy.own ? t('lock.drawingOwn') : t('lock.copy', { name: lockedBy.name }))
                       : originalLockedBy
                         ? t('block.originalLocked', { name: originalLockedBy.name })
                         : block.conflictOf === 'title'
@@ -1956,7 +1956,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
                   disabled={!!lockedBy}
                   onClick={() => onResolveConflict(block.id, 'drop')}
                   className="px-1.5 py-0.5 rounded-btn border border-border text-muted hover:text-main hover:bg-panel cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
-                  title={lockedBy ? t('lock.copy', { name: lockedBy.name }) : t('block.dropVersion')}
+                  title={lockedBy ? (lockedBy.own ? t('lock.drawingOwn') : t('lock.copy', { name: lockedBy.name })) : t('block.dropVersion')}
                 >
                   {t('common:discard')}
                 </button>
@@ -2020,7 +2020,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
         <span
           className="absolute right-1 sm:right-2 top-0.5 sm:top-1 z-20 h-5 inline-flex items-center gap-1 pl-0.5 pr-1.5 rounded-pill text-[10px] font-semibold bg-panel select-none max-w-[45%]"
           style={{ color: lockColor!.text, border: `1px solid ${lockColor!.border}` }}
-          title={t('lock.title', { name: lockedBy.name })}
+          title={lockedBy.own ? t('lock.drawingOwn') : t('lock.title', { name: lockedBy.name })}
         >
           <UserAvatar
             userId={lockedBy.userId}

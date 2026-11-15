@@ -66,7 +66,8 @@ export interface OutlinerTreeProps {
   /** The focused field took over the block's text from elsewhere (engine.fieldShows) */
   onFieldShows?: (blockId: string, content: string) => void;
   lockedBlocks?: Map<string, BlockLock>; // blockId -> the user editing it (someone else)
-  onLockedAction?: (holderName: string) => void;
+  /** A change was refused because someone (or the same person elsewhere) holds a bullet it touches */
+  onLockedAction?: (holder: BlockLock) => void;
   /** A double-click on a drawing someone else is editing */
   onLockedDrawing?: (lock: BlockLock) => void;
   onResolveConflict?: (blockId: string, choice: ConflictChoice) => void;
@@ -531,16 +532,16 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
   // Name of the other user holding the block (or, withBranch, any block below it); structural actions on
   // such blocks are not started at all, so they cannot end up half applied
   const lockHolder = useCallback(
-    (blockId: string, withBranch = false): string | undefined => {
+    (blockId: string, withBranch = false): BlockLock | undefined => {
       if (!lockedBlocks || lockedBlocks.size === 0) return undefined;
-      const direct = lockedBlocks.get(blockId)?.name;
+      const direct = lockedBlocks.get(blockId);
       if (direct || !withBranch) return direct;
       const idx = blocks.findIndex((b) => b.id === blockId);
       if (idx < 0) return undefined;
       const level = blocks[idx].level || 0;
       for (let i = idx + 1; i < blocks.length && (blocks[i].level || 0) > level; i++) {
-        const name = lockedBlocks.get(blocks[i].id)?.name;
-        if (name) return name;
+        const lock = lockedBlocks.get(blocks[i].id);
+        if (lock) return lock;
       }
       return undefined;
     },
