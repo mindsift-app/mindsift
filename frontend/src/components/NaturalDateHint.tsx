@@ -93,11 +93,16 @@ export function PhraseHighlight({ inputRef, text, spans }: PhraseHighlightProps)
       inner.style.transform = `translate(${-input.scrollLeft}px, ${-input.scrollTop}px)`;
     };
     sync();
+    // The parent may still move the field after this render (its height and alignment are set in its own
+    // effect), so once more on the next frame
+    const frame = requestAnimationFrame(sync);
     const events = ['scroll', 'keyup', 'click', 'select'] as const;
     for (const e of events) input.addEventListener(e, sync);
     const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(sync) : null;
     ro?.observe(input);
+    if (input.offsetParent) ro?.observe(input.offsetParent);
     return () => {
+      cancelAnimationFrame(frame);
       for (const e of events) input.removeEventListener(e, sync);
       ro?.disconnect();
     };
