@@ -1,5 +1,5 @@
 // REST calls: Administration: users, invites, server settings, voice, organizations
-import { Organization, SetupInfo, SmtpForm, SystemSettings, SharingMode, User, UserInvite, VoiceAdminStatus } from '../types';
+import { Organization, SetupInfo, SmtpForm, SystemSettings, SharingMode, UpdateStatus, User, UserInvite, VoiceAdminStatus } from '../types';
 import { authHeaders, ensureArray, request } from './client';
 import i18n from '../../i18n';
 
@@ -91,6 +91,15 @@ export const adminApi = {
 
   async adminDeleteInvite(id: string): Promise<void> {
     await request(`/api/v1/admin/invites/${id}`, { method: 'DELETE' });
+  },
+
+  async adminUpdateStatus(): Promise<UpdateStatus> {
+    return request<UpdateStatus>('/api/v1/admin/update');
+  },
+
+  // Puts the hint for this release aside for the signed-in admin; a newer release shows it again
+  async adminDismissUpdate(version: string): Promise<UpdateStatus> {
+    return request<UpdateStatus>('/api/v1/admin/update/dismiss', { method: 'POST', body: JSON.stringify({ version }) });
   },
 
   async adminVoiceStatus(): Promise<VoiceAdminStatus> {

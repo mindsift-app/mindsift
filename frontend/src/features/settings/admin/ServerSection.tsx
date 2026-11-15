@@ -8,6 +8,7 @@ import { ToggleSwitch } from '../../../components/ToggleSwitch';
 import { BackupAdminCard } from '../BackupAdminCard';
 import { VoiceStatusCard } from '../VoiceStatusCard';
 import { OidcStatusCard } from './OidcStatusCard';
+import { UpdateStatusCard } from './UpdateStatusCard';
 import { TimeZoneSetting } from './TimeZoneSetting';
 import { LinkPreviewSetting } from './LinkPreviewSetting';
 import { SHARING_MODES, useAdminSettings } from './useAdminSettings';
@@ -45,6 +46,9 @@ export function ServerSection({
         </div>
 
         <div className="space-y-4">
+          {/* Installed and latest release (read only) */}
+          <UpdateStatusCard />
+
           <div>
             <label className="block text-muted font-semibold mb-1">
               {t('server.instanceName')}

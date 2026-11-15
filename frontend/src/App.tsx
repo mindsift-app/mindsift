@@ -942,6 +942,12 @@ export const App: React.FC = () => {
         suppressed={pwa.showPwaInstallModal && !pwa.isStandaloneApp}
         onUserUpdated={setUser}
       />
+      {/* Admins: a new MindSift release is out (same place as the tour offer, after it) */}
+      <views.UpdateNoticeCard
+        user={user}
+        demoMode={!!authStatus.demoMode}
+        suppressed={pwa.showPwaInstallModal && !pwa.isStandaloneApp}
+      />
 
       {showAbout && <AboutModal onClose={() => setShowAbout(false)} />}
       {showTriageTrash && <views.TriageTrash onClose={() => setShowTriageTrash(false)} onChanged={refreshAll} />}

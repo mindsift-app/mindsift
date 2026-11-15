@@ -1045,5 +1045,29 @@
       }
     },
     "note": "Las apps de calendario solo actualizan las suscripciones de vez en cuando; Google, por ejemplo, tras varias horas. Por eso los cambios en MindSift aparecen allí con retraso."
+  },
+  "update": {
+    "card": {
+      "title": "Ya está disponible MindSift {{version}}",
+      "text": "Tienes instalada la {{current}}. Qué ha cambiado y cómo actualizar también aparece en la administración.",
+      "whatsNew": "Novedades",
+      "later": "Más tarde",
+      "close": "Cerrar"
+    },
+    "admin": {
+      "title": "Versión de MindSift",
+      "hint": "Una vez al día el servidor consulta a GitHub la versión más reciente. No se envía nada sobre tu instancia.",
+      "installed": "Instalada",
+      "latest": "Más reciente",
+      "checked": "Última comprobación",
+      "upToDate": "Estás usando la versión más reciente.",
+      "available": "Ya está disponible MindSift {{version}}.",
+      "whatsNew": "Novedades",
+      "howTo": "Actualizar con Docker Compose (en la carpeta con docker-compose.yml):",
+      "notYet": "Todavía no hay respuesta de GitHub. La primera comprobación se hace unos minutos después del arranque.",
+      "off": "La búsqueda de nuevas versiones está desactivada (UPDATE_CHECK=false).",
+      "demo": "La demo no busca nuevas versiones.",
+      "devBuild": "Esta compilación no es una versión publicada, así que MindSift no busca nuevas versiones."
+    }
   }
 }
