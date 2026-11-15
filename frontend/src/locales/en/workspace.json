@@ -620,6 +620,7 @@
       "endedDone": "{{name}} saved the drawing.",
       "endedDiscard": "{{name}} discarded the live drawing.",
       "endedExpired": "The live drawing has ended.",
+      "unsentKept": "Your last changes did not reach the session; they stay in this browser as a draft and are offered the next time you open the drawing.",
       "saving": "Saving …",
       "offline": "Connection lost – your changes go out as soon as it is back.",
       "offlineWatch": "Connection lost.",
@@ -631,6 +632,7 @@
         "limit": "The drawing is too large for the live session. Please remove something, above all freehand strokes.",
         "too_many": "You are already drawing live in too many drawings. Close one of them, then open this one again.",
         "busy": "Too many live drawings are running on the server right now. Please open it again later.",
+        "busy_live": "The server is not taking more changes to live drawings right now. Your changes stay here and are sent as soon as there is room again.",
         "save": "Saving did not work. Check the connection and try again."
       }
     }

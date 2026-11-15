@@ -620,6 +620,7 @@
       "endedDone": "{{name}} ha guardado el dibujo.",
       "endedDiscard": "{{name}} ha descartado el dibujo en vivo.",
       "endedExpired": "El dibujo en vivo ha terminado.",
+      "unsentKept": "Tus últimos cambios no llegaron a la sesión; se quedan en este navegador como borrador y se ofrecerán la próxima vez que abras el dibujo.",
       "saving": "Guardando …",
       "offline": "Conexión perdida – tus cambios se envían en cuanto vuelva.",
       "offlineWatch": "Conexión perdida.",
@@ -631,6 +632,7 @@
         "limit": "El dibujo es demasiado grande para la sesión en vivo. Quita algo, sobre todo trazos a mano alzada.",
         "too_many": "Ya estás dibujando en vivo en demasiados dibujos. Cierra uno y vuelve a abrir este.",
         "busy": "Ahora mismo hay demasiados dibujos en vivo en el servidor. Vuelve a abrirlo más tarde.",
+        "busy_live": "Ahora mismo el servidor no acepta más cambios en dibujos en vivo. Tus cambios se quedan aquí y se enviarán en cuanto vuelva a haber espacio.",
         "save": "No se pudo guardar. Comprueba la conexión e inténtalo de nuevo."
       }
     }
