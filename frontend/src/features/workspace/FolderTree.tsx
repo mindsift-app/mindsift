@@ -91,7 +91,7 @@ export function FolderTree({
                     <Users className="w-3 h-3 text-status-ok shrink-0" />
                   )}
                   <Pin className="w-3 h-3 text-muted shrink-0" />
-                  <DocRowDelete doc={d} onRequestDelete={requestDeleteDoc} />
+                  <DocRowDelete doc={d} selected={selectedDocId === d.id && subView === 'editor'} onRequestDelete={requestDeleteDoc} />
                 </div>
               ))}
             </div>
@@ -154,7 +154,7 @@ export function FolderTree({
                   {d.sharedWith && d.sharedWith.length > 0 && (
                     <Users className="w-3 h-3 text-status-ok shrink-0" />
                   )}
-                  <DocRowDelete doc={d} onRequestDelete={requestDeleteDoc} />
+                  <DocRowDelete doc={d} selected={selectedDocId === d.id && subView === 'editor'} onRequestDelete={requestDeleteDoc} />
                 </div>
               ))}
             </div>

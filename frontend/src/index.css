@@ -33,6 +33,9 @@
 @custom-variant dark (&:is(.dark *));
 /* Hover styles also on touch devices, as in Tailwind 3 (Tailwind 4 limits hover to @media (hover: hover)) */
 @custom-variant hover (&:hover);
+/* Touch screens without hover (phones, tablets): controls that appear on hover elsewhere stay visible here
+   where needed, e.g. the delete button on the open note's row in the tree */
+@custom-variant touch (@media (hover: none) and (pointer: coarse));
 
 @theme {
   /* Phone layout below sm, desktop from sm (see AGENTS.md). sm is 768 px, not Tailwind's 640, so phones in

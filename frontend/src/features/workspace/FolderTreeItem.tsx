@@ -59,11 +59,13 @@ const deleteAt = (e: React.MouseEvent<HTMLElement>) => {
 export const DOC_ROW_GROUP = 'group/doc';
 
 // Delete button at the end of a note row, as the folder rows have it (shown on hover): only for notes the
-// person may delete (their own, like "Notiz löschen" in the note's ⋯ menu); asks first
-export const DocRowDelete: React.FC<{ doc: Document; onRequestDelete?: (docId: string, at: { x: number; y: number }) => void }> = ({
-  doc,
-  onRequestDelete,
-}) => {
+// person may delete (their own, like "Notiz löschen" in the note's ⋯ menu); asks first. Touch screens have
+// no hover, so there the open note's row (`selected`) shows it all the time, also after going back to the tree.
+export const DocRowDelete: React.FC<{
+  doc: Document;
+  selected?: boolean;
+  onRequestDelete?: (docId: string, at: { x: number; y: number }) => void;
+}> = ({ doc, selected = false, onRequestDelete }) => {
   const { t } = useTranslation('workspace');
   if (!onRequestDelete || !(doc.isOwner || doc.permission === 'owner')) return null;
   return (
@@ -75,7 +77,9 @@ export const DocRowDelete: React.FC<{ doc: Document; onRequestDelete?: (docId: s
         e.stopPropagation();
         onRequestDelete(doc.id, deleteAt(e));
       }}
-      className="-my-1.5 sm:my-0 p-1 h-11 w-11 sm:h-6 sm:w-6 shrink-0 flex items-center justify-center text-faint hover:text-status-err transition-colors cursor-pointer opacity-0 pointer-events-none group-hover/doc:opacity-100 group-hover/doc:pointer-events-auto focus-visible:opacity-100 focus-visible:pointer-events-auto"
+      className={`-my-1.5 sm:my-0 p-1 h-11 w-11 sm:h-6 sm:w-6 shrink-0 flex items-center justify-center text-faint hover:text-status-err transition-colors cursor-pointer opacity-0 pointer-events-none group-hover/doc:opacity-100 group-hover/doc:pointer-events-auto focus-visible:opacity-100 focus-visible:pointer-events-auto${
+        selected ? ' touch:opacity-100 touch:pointer-events-auto' : ''
+      }`}
       title={t('folder.deleteNote')}
       aria-label={t('folder.deleteNote')}
     >
@@ -287,7 +291,7 @@ export const FolderTreeItem: React.FC<FolderTreeItemProps> = ({
               <DocRowIcon icon={d.icon} />
               <span className="truncate flex-1">{d.title || t('editor.untitled')}</span>
               {d.isTemplate && <TemplateMark />}
-              <DocRowDelete doc={d} onRequestDelete={requestDeleteDoc} />
+              <DocRowDelete doc={d} selected={selectedDocId === d.id && subView === 'editor'} onRequestDelete={requestDeleteDoc} />
             </div>
           ))}
 
