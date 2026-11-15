@@ -21,6 +21,7 @@ vi.mock('../../../lib/api', async (importOriginal) => {
       getSharedFolders: vi.fn(),
       getWorkspaceTags: vi.fn(),
       getTrash: vi.fn(),
+      deleteDocument: vi.fn(),
     },
     onWebSocketMessage: vi.fn(() => () => {}),
     triggerHaptic: vi.fn(),
@@ -190,5 +191,28 @@ describe('WorkspaceView sidebar explorer', () => {
       // Folder exists
       expect(screen.getByText('Team')).toBeTruthy();
     });
+  });
+  it('note rows have a delete button for own notes that asks before the note goes to the trash', async () => {
+    vi.mocked(api.getDocuments).mockResolvedValue([
+      makeDoc({ id: 'doc_own', title: 'Eigene Notiz', isOwner: true }),
+      makeDoc({ id: 'doc_shared', title: 'Geteilte Notiz', isOwner: false, permission: 'write' }),
+    ]);
+    vi.mocked(api.deleteDocument).mockResolvedValue(undefined as never);
+
+    render(<WorkspaceView onStatsChange={vi.fn()} />);
+    await waitFor(() => expect(screen.getByText('Geteilte Notiz')).toBeTruthy());
+
+    const own = screen.getByText('Eigene Notiz').closest('[data-doc-row]') as HTMLElement;
+    const shared = screen.getByText('Geteilte Notiz').closest('[data-doc-row]') as HTMLElement;
+    // Only notes the person may delete, like "Notiz löschen" in the note's menu
+    expect(shared.querySelector('button[aria-label="Notiz löschen"]')).toBeNull();
+    fireEvent.click(own.querySelector('button[aria-label="Notiz löschen"]') as HTMLElement, { clientX: 40, clientY: 80 });
+
+    // A confirmation, no browser dialog; the click does not open the note
+    expect(screen.getByText('In den Papierkorb legen?')).toBeTruthy();
+    expect(api.deleteDocument).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'In den Papierkorb' }));
+    await waitFor(() => expect(api.deleteDocument).toHaveBeenCalledWith('doc_own'));
+    await waitFor(() => expect(screen.queryByText('Eigene Notiz')).toBeNull());
   });
 });

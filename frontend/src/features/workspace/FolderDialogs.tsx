@@ -9,6 +9,12 @@ import { NOTE_TITLE_MAX } from '../../lib/noteTitle';
 import { SelectMenu } from '../../components/SelectMenu';
 import type { TemplateChoice } from './NoteTemplates';
 
+/** The form for a new note: its folder, and on the desktop the point it opens at (centred without) */
+export interface NewNoteSheet {
+  folderPath: string;
+  anchor?: { x: number; y: number } | null;
+}
+
 interface FolderDialogsProps {
   showNewFolderModal: boolean;
   setShowNewFolderModal: (show: boolean) => void;
@@ -17,8 +23,8 @@ interface FolderDialogsProps {
   newFolderName: string;
   setNewFolderName: (name: string) => void;
   handleCreateFolderSubmit: (e: React.FormEvent) => void;
-  newNoteSheet: { folderPath: string } | null;
-  setNewNoteSheet: (sheet: { folderPath: string } | null) => void;
+  newNoteSheet: NewNoteSheet | null;
+  setNewNoteSheet: (sheet: NewNoteSheet | null) => void;
   newNoteTitle: string;
   setNewNoteTitle: (title: string) => void;
   newNoteIcon: string;
@@ -29,6 +35,10 @@ interface FolderDialogsProps {
   setNewNoteTemplate: (id: string) => void;
   handleCreateDocument: (folderPath?: string, title?: string, icon?: string, templateId?: string) => Promise<unknown>;
   pendingFolderDelete: { path: string; x: number; y: number } | null;
+  /** A note's delete button was clicked: asks before the note goes to the trash */
+  pendingDocDelete?: { id: string; x: number; y: number } | null;
+  closeDocDelete?: () => void;
+  handleDeleteDocument?: (docId: string) => Promise<void>;
   closeFolderDelete: () => void;
   handleDeleteFolder: (path: string) => Promise<void>;
   docs: Document[];
@@ -56,6 +66,9 @@ export function FolderDialogs({
   handleCreateDocument,
   pendingFolderDelete,
   closeFolderDelete,
+  pendingDocDelete,
+  closeDocDelete,
+  handleDeleteDocument,
   handleDeleteFolder,
   docs,
 }: FolderDialogsProps) {
@@ -94,6 +107,7 @@ export function FolderDialogs({
             setNewNoteSheet(null);
             void handleCreateDocument(folderPath, newNoteTitle, newNoteIcon, newNoteTemplate);
           }}
+          anchor={newNoteSheet.anchor}
         >
           <div className="flex items-center gap-1.5">
             <EmojiIconButton value={newNoteIcon} onChange={setNewNoteIcon} />
@@ -153,6 +167,22 @@ export function FolderDialogs({
             />
           );
         })()}
+
+      {pendingDocDelete && closeDocDelete && handleDeleteDocument && (
+        <ConfirmPopover
+          x={pendingDocDelete.x}
+          y={pendingDocDelete.y}
+          danger
+          confirmLabel={t('folder.toTrash')}
+          message={t('folder.confirmDeleteNote')}
+          onCancel={closeDocDelete}
+          onConfirm={() => {
+            const { id } = pendingDocDelete;
+            closeDocDelete();
+            void handleDeleteDocument(id);
+          }}
+        />
+      )}
     </>
   );
 }

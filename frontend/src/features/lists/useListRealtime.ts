@@ -1,8 +1,8 @@
 import React, { useEffect, useRef } from 'react';
 import { ListItem, SharedList, WSMessage } from '../../lib/types';
 import { createRealtimeConnection } from '../../lib/api';
-import { OFFLINE_ITEM_PREFIX, getOutbox, isListEntry, isOffline, pendingListItems } from '../../lib/offline';
-import { deduplicateItems } from './listItems';
+import { OFFLINE_ITEM_PREFIX, PendingListChange, getOutbox, isListEntry, isOffline, pendingListChanges, pendingListItems } from '../../lib/offline';
+import { deduplicateItems, withPendingChanges } from './listItems';
 import { useLatestRef } from '../../lib/useLatestRef';
 import { useRealtimeReload } from '../../lib/realtimeReload';
 
@@ -11,6 +11,11 @@ import { useRealtimeReload } from '../../lib/realtimeReload';
 export const LIST_RELOAD_EVENTS = ['LIST_SHARED', 'LIST_UNSHARED'];
 
 type ReorderedItem = { id: string; sortOrder: number; category?: string; content?: string };
+
+// Ticks, edits and deletions made offline and not sent yet (lib/offline.ts pendingListChanges), by item id:
+// an event arriving meanwhile carries the server's older state, the change waiting to be sent stays on top
+type PendingChanges = Map<string, PendingListChange>;
+const NO_CHANGES: PendingChanges = new Map();
 
 // ITEM_REORDERED carries the new places (and category and text of an entry dropped into another
 // category): applied in place, the list sorted by them. Nothing changed keeps the list.
@@ -31,8 +36,8 @@ function itemsAfterReorder(items: ListItem[], moved: ReorderedItem[]): ListItem[
 }
 
 // LIST_UPDATED carries the list without what differs per person (isOwner, role): title, icon, type,
-// entries, shares and members. Entries added offline and not sent yet stay.
-function listAfterUpdate(l: SharedList, p: Partial<SharedList>): SharedList {
+// entries, shares and members. Entries added offline and not sent yet stay, and so do changes made offline.
+function listAfterUpdate(l: SharedList, p: Partial<SharedList>, changes: PendingChanges): SharedList {
   const offline = l.items.filter((i) => i.id.startsWith(OFFLINE_ITEM_PREFIX));
   return {
     ...l,
@@ -40,14 +45,19 @@ function listAfterUpdate(l: SharedList, p: Partial<SharedList>): SharedList {
     ...(typeof p.icon === 'string' ? { icon: p.icon } : {}),
     ...(typeof p.listType === 'string' ? { listType: p.listType } : {}),
     ...(typeof p.updatedAt === 'string' ? { updatedAt: p.updatedAt } : {}),
-    ...(Array.isArray(p.items) ? { items: deduplicateItems([...offline, ...p.items]) } : {}),
+    ...(Array.isArray(p.items) ? { items: withPendingChanges(deduplicateItems([...offline, ...p.items]), changes) } : {}),
     ...(Array.isArray(p.shares) ? { shares: p.shares } : {}),
     ...(Array.isArray(p.members) ? { members: p.members } : {}),
   };
 }
 
-// How a list event changes the lists shown; reload: it cannot be applied from what it carries
-export function listsAfterEvent(prev: SharedList[], msg: WSMessage): { lists: SharedList[]; reload: boolean } {
+// How a list event changes the lists shown; reload: it cannot be applied from what it carries. changes:
+// the ones made offline and not sent yet, kept on top of what the event carries
+export function listsAfterEvent(
+  prev: SharedList[],
+  msg: WSMessage,
+  changes: PendingChanges = NO_CHANGES
+): { lists: SharedList[]; reload: boolean } {
   if (LIST_RELOAD_EVENTS.includes(msg.event)) return { lists: prev, reload: true };
   // Only the creator gets it: the tab that created the list shows it already, their other devices load
   // the lists (its place among them is the server's)
@@ -60,7 +70,7 @@ export function listsAfterEvent(prev: SharedList[], msg: WSMessage): { lists: Sh
     const p = msg.payload as Partial<SharedList> | null | undefined;
     const id = listId || p?.id;
     if (!p || !id || !prev.some((l) => l.id === id)) return { lists: prev, reload: true };
-    return { lists: prev.map((l) => (l.id === id ? listAfterUpdate(l, p) : l)), reload: false };
+    return { lists: prev.map((l) => (l.id === id ? listAfterUpdate(l, p, changes) : l)), reload: false };
   }
   if (msg.event === 'LIST_DELETED') {
     const id = listId || (msg.payload as { listId?: string } | null | undefined)?.listId;
@@ -80,15 +90,16 @@ export function listsAfterEvent(prev: SharedList[], msg: WSMessage): { lists: Sh
       const items = itemsAfterReorder(l.items, moved as ReorderedItem[]);
       if (items === l.items) return l;
       changed = true;
-      return { ...l, items };
+      // A category or text changed offline wins over the one of the entry moved
+      return { ...l, items: withPendingChanges(items, changes) };
     });
     return { lists: changed ? lists : prev, reload: false };
   }
-  return { lists: listsAfterMessage(prev, msg), reload: false };
+  return { lists: listsAfterMessage(prev, msg, changes), reload: false };
 }
 
-// How an entry event of a list's connection changes the lists shown
-export function listsAfterMessage(prev: SharedList[], msg: WSMessage): SharedList[] {
+// How an entry event of a list's connection changes the lists shown (changes: see listsAfterEvent)
+export function listsAfterMessage(prev: SharedList[], msg: WSMessage, changes: PendingChanges = NO_CHANGES): SharedList[] {
   const msgListId = msg.listId || msg.list_id;
   if (!msgListId) return prev;
   if (msg.event === 'ITEM_CREATED') {
@@ -102,11 +113,14 @@ export function listsAfterMessage(prev: SharedList[], msg: WSMessage): SharedLis
   }
   if (msg.event === 'ITEM_TOGGLED' || msg.event === 'ITEM_UPDATED') {
     const updatedItem = msg.payload as ListItem;
+    if (!updatedItem || !updatedItem.id) return prev;
+    // Deleted offline: it stays hidden
+    const shown = withPendingChanges([updatedItem], changes)[0] as ListItem | undefined;
     return prev.map((l) => {
       if (l.id !== msgListId) return l;
       return {
         ...l,
-        items: l.items.map((i) => (i.id === updatedItem.id ? updatedItem : i)),
+        items: shown ? l.items.map((i) => (i.id === updatedItem.id ? shown : i)) : l.items.filter((i) => i.id !== updatedItem.id),
       };
     });
   }
@@ -193,7 +207,8 @@ export function useListRealtime(
       if (!msg.event.startsWith('LIST_') && !msg.event.startsWith('ITEM_')) return;
       // Applied to the latest state (an event right after another must not undo it); whether it needs a
       // reload is decided from the lists shown
-      setLists((prev) => listsAfterEvent(prev, msg).lists);
+      const changes = pendingListChanges();
+      setLists((prev) => listsAfterEvent(prev, msg, changes).lists);
       if (listsAfterEvent(listsRef.current, msg).reload) reloader.request();
     };
     window.addEventListener('mindsift:ws', handleGlobalWs);

@@ -271,6 +271,8 @@
     "createFailed": "Fehler beim Erstellen des Ordners",
     "subfolderIn": "Unterordner in \"{{path}}\"",
     "toTrash": "In den Papierkorb",
+    "deleteNote": "Notiz löschen",
+    "confirmDeleteNote": "In den Papierkorb legen?",
     "confirmDelete": "Ordner <b>„{{name}}“</b> wirklich löschen?",
     "confirmDeleteWithNotes_one": "Ordner <b>„{{name}}“</b> mit {{count}} Notiz wirklich löschen?",
     "confirmDeleteWithNotes_other": "Ordner <b>„{{name}}“</b> mit {{count}} Notizen wirklich löschen?",

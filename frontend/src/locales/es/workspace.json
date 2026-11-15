@@ -271,6 +271,8 @@
     "createFailed": "Error al crear la carpeta",
     "subfolderIn": "Subcarpeta en «{{path}}»",
     "toTrash": "Mover a la papelera",
+    "deleteNote": "Eliminar nota",
+    "confirmDeleteNote": "¿Mover a la papelera?",
     "confirmDelete": "¿De verdad quieres eliminar la carpeta <b>«{{name}}»</b>?",
     "confirmDeleteWithNotes_one": "¿De verdad quieres eliminar la carpeta <b>«{{name}}»</b> con {{count}} nota?",
     "confirmDeleteWithNotes_other": "¿De verdad quieres eliminar la carpeta <b>«{{name}}»</b> con {{count}} notas?",

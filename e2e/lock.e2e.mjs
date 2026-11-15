@@ -57,7 +57,7 @@ async function clickText(page, text) {
 }
 
 async function openDoc(browser, token, title) {
-  const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 }, locale: 'de-DE' });
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 }, locale: 'de-DE', ...(process.env.SHOTS ? { deviceScaleFactor: 2 } : {}) });
   await ctx.addInitScript((t) => {
     localStorage.setItem('mindsift_jwt_token', t);
     localStorage.setItem('mindsift:tour-offered', '1'); // the demo asks every browser about the tour once
@@ -115,6 +115,26 @@ const main = async () => {
   const afterMerge = (await serverBlocks(admin, doc.id)).map((b) => b.content).sort();
   check(JSON.stringify(afterMerge) === JSON.stringify(['Admin schreibt hier', 'Darunter', 'Gemeinsamer Punkt']), `Nothing was done halfway: ${JSON.stringify(afterMerge)}`);
 
+  // The same person in another tab is not named: "on another device or in another tab"
+  const OWN = 'Wird gerade auf einem anderen Gerät oder in einem anderen Tab bearbeitet';
+  const A2 = await openDoc(browser, admin, TITLE);
+  const ownBadge = await waitFor(async () => (await A2.page.getByTitle(OWN).count()) > 0, 10000);
+  check(!!ownBadge && (await A2.page.getByTitle(/Admin bearbeitet diesen Punkt gerade/i).count()) === 0, 'Own other tab: the lock badge does not name oneself');
+  // The editor leaves "Darunter" (it held it since the merge attempt), so the merge is refused only for the own lock
+  await clickText(B.page, 'Gemeinsamer Punkt');
+  await waitFor(async () => (await A2.page.getByTitle(/User bearbeitet diesen Punkt gerade/i).count()) === 1 &&
+    (await A2.page.$$eval('textarea', (els) => els.find((e) => e.value === 'Darunter')?.readOnly === false)), 10000);
+  await A2.page.getByText('Darunter', { exact: true }).first().click();
+  await A2.page.keyboard.press('Home');
+  await A2.page.keyboard.press('Backspace');
+  const ownNotice = await waitFor(async () => A2.page.getByRole('status').filter({ hasText: /bearbeitet/ }).first().innerText(), 3000);
+  check(ownNotice === OWN, `Own other tab: the notice says "another device or tab": ${ownNotice}`);
+  if (process.env.SHOTS) await A2.page.screenshot({ path: `${process.env.SHOTS}/nachher-sperrhinweis-eigener-tab.png` });
+  await A2.ctx.close();
+  // Back as before: the editor's cursor in "Darunter"
+  await clickText(B.page, 'Darunter');
+  await waitFor(async () => A.page.$$eval('textarea', (els) => els.find((e) => e.value === 'Gemeinsamer Punkt')?.readOnly === false), 10000);
+
   // Clicking into a bullet someone else is typing in and out again changes nothing: no conflict copy
   await clickText(A.page, 'Gemeinsamer Punkt');
   await A.page.keyboard.type(' – Admin');
@@ -124,6 +144,7 @@ const main = async () => {
   const shownInside = await waitFor(async () => (await editorValues(B.page)).includes('Gemeinsamer Punkt – Admin tippt weiter'), 8000);
   check(!!shownInside, 'With the cursor in the locked bullet, the editor sees the other person typing');
   await clickText(B.page, 'Darunter');
+  await waitFor(async () => A.page.$$eval('textarea', (els) => els.find((e) => e.value === 'Gemeinsamer Punkt')?.readOnly === false), 10000);
   await A.page.keyboard.type('!');
   await sleep(2500);
   const afterVisit = await serverBlocks(admin, doc.id);

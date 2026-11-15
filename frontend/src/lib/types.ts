@@ -91,6 +91,8 @@ export interface OidcAdminStatus {
   issuer?: string;
   clientId?: string;
   redirectUrl?: string;
+  // Back-channel logout URL to enter at the provider; empty while that is off
+  logoutUrl?: string;
   scopes?: string;
   adminGroup?: string;
   autoCreate: boolean;
@@ -219,6 +221,9 @@ export interface User {
   // administration's user list), oidc is linked (own profile only)
   noPassword?: boolean;
   oidc?: boolean;
+  // A reset by the administration asked for a new own password at the next sign-in (own profile and the
+  // administration's user list)
+  mustChangePassword?: boolean;
   discordWebhookUrl?: string;
   customWebhookUrl?: string;
   notifyBeforeMinutes?: number;

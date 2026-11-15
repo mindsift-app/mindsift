@@ -60,6 +60,8 @@ interface PhraseHighlightProps {
   inputRef: React.RefObject<HTMLInputElement | HTMLTextAreaElement | null>;
   text: string;
   spans: DateSpan[];
+  // For tests telling the marks apart (a date, a quantity)
+  markTestId?: string;
 }
 
 /**
@@ -67,7 +69,7 @@ interface PhraseHighlightProps {
  * field, its letters invisible, only the marks tinted. Render it as a sibling of the field (same positioned
  * parent); it follows the field's size and scrolling and lets every click through.
  */
-export function PhraseHighlight({ inputRef, text, spans }: PhraseHighlightProps) {
+export function PhraseHighlight({ inputRef, text, spans, markTestId = 'natural-date-mark' }: PhraseHighlightProps) {
   const boxRef = useRef<HTMLDivElement | null>(null);
   const innerRef = useRef<HTMLDivElement | null>(null);
 
@@ -113,7 +115,7 @@ export function PhraseHighlight({ inputRef, text, spans }: PhraseHighlightProps)
   spans.forEach((s, i) => {
     if (s.start > at) parts.push(text.slice(at, s.start));
     parts.push(
-      <mark key={i} data-testid="natural-date-mark" className="bg-accent/20 text-transparent rounded-sm">
+      <mark key={i} data-testid={markTestId} className="bg-accent/20 text-transparent rounded-sm">
         {text.slice(s.start, s.end)}
       </mark>
     );

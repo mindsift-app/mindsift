@@ -1,6 +1,7 @@
 import React from 'react';
 import i18n from '../../i18n';
 import { api, triggerHaptic } from '../../lib/api';
+import { queuedTaskStart } from '../../lib/offline';
 import { KanbanColumn, PriorityLevel, Recurrence, SubTask, TaskList, Thought, TrashedTask } from '../../lib/types';
 import { UndoEntry } from './useTaskUndo';
 import { askConfirm } from '../../components/askConfirm';
@@ -42,7 +43,11 @@ export function useTaskActions({
     const cols = columnsFor(task);
     const doneCol = cols.find((c) => c.isDone) || cols[cols.length - 1];
     const todoCol = cols.find((c) => !c.isDone) || cols[0];
-    const nextKanban = nextState ? (doneCol ? doneCol.id : 'done') : (todoCol ? todoCol.id : 'todo');
+    // Un-ticked while its tick made offline still waits to be sent: back to the column it came from
+    // ("In Arbeit"), so nothing is left to send (lib/api/tasks.ts updateThought)
+    const start = nextState ? undefined : queuedTaskStart(task.id);
+    const backTo = start?.isCompleted === false && cols.find((c) => c.id === start.kanbanStatus && !c.isDone);
+    const nextKanban = nextState ? (doneCol ? doneCol.id : 'done') : backTo ? backTo.id : todoCol ? todoCol.id : 'todo';
 
     setTasks((prev) =>
       prev.map((t) =>

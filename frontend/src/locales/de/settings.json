@@ -541,7 +541,7 @@
     "activate": "Aktivieren",
     "passwordReset": "Passwort erfolgreich zurückgesetzt.",
     "deleted": "Benutzer gelöscht.",
-    "roleChanged": "Rolle für {{name}} auf \"{{role}}\" aktualisiert.",
+    "roleChanged": "Rolle für {{name}} auf \"{{role}}\" aktualisiert. Die Person wird auf allen Geräten abgemeldet und meldet sich mit der neuen Rolle wieder an.",
     "confirmReject": "Registrierung von \"{{name}}\" ({{email}}) ablehnen? Das Konto wird gelöscht.",
     "confirmDelete": "Benutzer \"{{name}}\" ({{email}}) wirklich unwiderruflich löschen?",
     "username": "Benutzername",
@@ -582,7 +582,13 @@
     "email": "E-Mail-Adresse",
     "emailChanged": "E-Mail-Adresse von {{name}} ist jetzt {{email}}.",
     "emailRemoved": "{{name}} hat jetzt keine E-Mail-Adresse mehr.",
-    "emailRemoveHint": "Ohne Adresse kann {{name}} das Passwort nicht mehr per Mail zurücksetzen. Die Anmeldung mit Benutzername und Passwort geht weiter."
+    "emailRemoveHint": "Ohne Adresse kann {{name}} das Passwort nicht mehr per Mail zurücksetzen. Die Anmeldung mit Benutzername und Passwort geht weiter.",
+    "mustChange": "Bei der nächsten Anmeldung ändern",
+    "mustChangeHint": "Die Person muss nach der Anmeldung zuerst ein eigenes Passwort festlegen.",
+    "revokeKeys": "API-Schlüssel und KI-Zugänge widerrufen",
+    "revokeKeysHint": "Entfernt alle API-Schlüssel und verbundenen KI-Clients (MCP) des Kontos, etwa wenn es übernommen wurde. Sonst laufen sie weiter.",
+    "passwordResetMustChange": "Passwort zurückgesetzt. Bei der nächsten Anmeldung wird ein eigenes verlangt.",
+    "keysRevoked": "{{keys}} API-Schlüssel und {{connections}} KI-Zugänge widerrufen."
   },
   "sharing": {
     "private": {
@@ -660,6 +666,8 @@
       "issuer": "Issuer",
       "clientId": "Client-ID",
       "redirectUrl": "Redirect-URI",
+      "logoutUrl": "Back-Channel-Logout-URL",
+      "logoutUrlHint": "Beim Anbieter eintragen. Er ruft sie direkt auf, der Server muss für ihn also ohne Umweg über einen Browser erreichbar sein.",
       "scopes": "Scopes",
       "autoCreate": "Konten automatisch anlegen",
       "passwordLogin": "Anmeldung mit Passwort",
@@ -1126,7 +1134,10 @@
       "setup_finished": "Ersteinrichtung abgeschlossen",
       "backup_created": "Backup erstellt",
       "backup_deleted": "Backup gelöscht",
-      "backup_downloaded": "Backup heruntergeladen"
+      "backup_downloaded": "Backup heruntergeladen",
+      "account_registered": "Selbst registriert",
+      "account_unconfirmed_deleted": "Unbestätigtes Konto gelöscht",
+      "invite_redeemed": "Einladung eingelöst"
     },
     "detail": {
       "fromTo": "{{label}}: {{from}} → {{to}}",
@@ -1136,7 +1147,12 @@
       "viaEnv": "Aus ADMIN_USER beim ersten Start",
       "secondFactorsRemoved": "Zweite Faktoren entfernt",
       "pendingRegistration": "Registrierung abgelehnt",
-      "content": "Mit {{notes}} Notizen, {{tasks}} Aufgaben, {{lists}} Listen"
+      "content": "Mit {{notes}} Notizen, {{tasks}} Aufgaben, {{lists}} Listen",
+      "awaitingApproval": "Wartet auf Freigabe",
+      "emailConfirmation": "Wartet auf Bestätigung der E-Mail-Adresse",
+      "unconfirmedDeleted": "E-Mail-Adresse nicht innerhalb von 48 Stunden bestätigt",
+      "mustChange": "Neues Passwort bei der nächsten Anmeldung verlangt",
+      "keysRevoked": "{{keys}} API-Schlüssel und {{connections}} KI-Zugänge widerrufen"
     },
     "value": {
       "on": "an",
@@ -1200,7 +1216,9 @@
       "recipient": "An",
       "maxUses": "Nutzungen",
       "expiresAt": "Gültig bis",
-      "file": "Datei"
+      "file": "Datei",
+      "account": "Konto",
+      "invitedBy": "Eingeladen von"
     }
   }
 }

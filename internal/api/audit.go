@@ -191,6 +191,35 @@ func auditInviteTarget(inv *domain.UserInvite) storage.AuditEntry {
 	return storage.AuditEntry{TargetKind: storage.AuditTargetInvite, TargetID: inv.ID, TargetName: inv.Email}
 }
 
+// auditRegistration records a sign-up on the login page by the new account itself: with an invite as
+// invite.redeemed (which invite, who made it, the account; never the code), else as account.registered
+// with what it waits for (the address confirmed, the approval).
+func (s *Server) auditRegistration(user *domain.User, inv *domain.UserInvite, awaitingApproval, emailConfirmation bool) {
+	if inv != nil {
+		details := map[string]any{"account": auditName(user)}
+		if by, _ := s.store.GetUserByID(inv.CreatedBy); by != nil {
+			details["invitedBy"] = auditName(by)
+		}
+		if names := s.organizationNames(inv.OrganizationIDs); len(names) > 0 {
+			details["organizations"] = names
+		}
+		s.auditAs(user, storage.AuditInviteRedeemed, auditInviteTarget(inv), details)
+		return
+	}
+	details := map[string]bool{}
+	if awaitingApproval {
+		details["awaitingApproval"] = true
+	}
+	if emailConfirmation {
+		details["emailConfirmation"] = true
+	}
+	if len(details) == 0 {
+		s.auditAs(user, storage.AuditAccountRegistered, auditUserTarget(user), nil)
+		return
+	}
+	s.auditAs(user, storage.AuditAccountRegistered, auditUserTarget(user), details)
+}
+
 // organizationName: "" when there is no such organization.
 func (s *Server) organizationName(id string) string {
 	names := s.organizationNames([]string{id})

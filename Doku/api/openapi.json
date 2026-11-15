@@ -814,6 +814,20 @@
         }
       }
     },
+    "/api/v1/auth/password": {
+      "post": {
+        "summary": "Set a new own password",
+        "description": "{currentPassword, password} plus the second factor (code or passkeyToken + passkey) unless the administration asked for the change (passwordChangeRequired in /auth/me). 400 password_unchanged for the same password again; clears passwordChangeRequired, signs other devices out, fresh token in X-Session-Token",
+        "tags": [
+          "Account and General"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
     "/api/v1/auth/mfa": {
       "get": {
         "summary": "Two-factor status",
@@ -2827,7 +2841,7 @@
       },
       "patch": {
         "summary": "Check or uncheck an item",
-        "description": "Check off item (isCompleted)",
+        "description": "Check off or reopen an item. isCompleted is the wanted state, not a toggle; already in that state, nothing is written or broadcast. Optional changedAt and sentAt (sender's clock, ms since 1970): a change made offline and sent later; the server takes its time as now minus (sentAt - changedAt), so the clocks need not agree, and ignores it when the checked state changed after it.",
         "tags": [
           "Shared Lists"
         ],
@@ -2852,12 +2866,38 @@
         "responses": {
           "default": {
             "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "isCompleted": {
+                    "type": "boolean",
+                    "description": "The wanted state (false when left out)"
+                  },
+                  "changedAt": {
+                    "type": "integer",
+                    "format": "int64",
+                    "description": "When the change was made (sender's clock, ms since 1970)"
+                  },
+                  "sentAt": {
+                    "type": "integer",
+                    "format": "int64",
+                    "description": "When it was sent (same clock as changedAt)"
+                  }
+                }
+              }
+            }
           }
         }
       },
       "put": {
         "summary": "Change an item",
-        "description": "Update item (content, category, quantity)",
+        "description": "Update an item: only the fields sent are written, a field left out keeps its value.",
         "tags": [
           "Shared Lists"
         ],
@@ -2882,6 +2922,28 @@
         "responses": {
           "default": {
             "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "content": {
+                    "type": "string"
+                  },
+                  "category": {
+                    "type": "string"
+                  },
+                  "quantity": {
+                    "type": "string",
+                    "description": "Free text, e.g. \"2x\" or \"500 g\""
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -4064,7 +4126,7 @@
       },
       "patch": {
         "summary": "Change a Quick Dump entry or task",
-        "description": "Retrieve item; partial update (content, isCompleted, dueDate, priority, taskListId, kanbanStatus, notes, subtasks, tags, assignees, recurrence = daily/weekly/monthly/yearly/empty, reminders = minutes before the due date that replace each recipient's lead time, from 0, 15, 30, 60, 120, 1440, 2880, 4320, 10080, 20160, 43200 (one calendar month); whole days count as calendar days, [] = the lead time again, other values 400; tasks return reminders); delete: a task is moved to the task trash, while a thought from inbox or triage trash is permanently deleted. assignees replaces all assignments; only users with access to the list, otherwise 403",
+        "description": "Retrieve item; partial update (content, isCompleted, dueDate, priority, taskListId, kanbanStatus, notes, subtasks, tags, assignees, recurrence = daily/weekly/monthly/yearly/empty, reminders = minutes before the due date that replace each recipient's lead time, from 0, 15, 30, 60, 120, 1440, 2880, 4320, 10080, 20160, 43200 (one calendar month); whole days count as calendar days, [] = the lead time again, other values 400; tasks return reminders); delete: a task is moved to the task trash, while a thought from inbox or triage trash is permanently deleted. assignees replaces all assignments; only users with access to the list, otherwise 403. isCompleted and kanbanStatus state the wanted status, never a toggle: a task already in it stays as it is and nothing is broadcast. Optional changedAt and sentAt (sender's clock, ms since 1970): a tick or column change made offline and sent later; the status stays as it is when it changed after that, the other fields are written anyway. Without them the change counts as made now",
         "tags": [
           "Thoughts, Triage, Tasks"
         ],

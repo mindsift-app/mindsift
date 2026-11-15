@@ -1,7 +1,7 @@
 // REST calls: Capture, thoughts, triage, tasks, task trash and task lists
 import { TrashedTask, KanbanColumn, PriorityLevel, TaskList, TaskListShare, TaskReorderResult, Thought, SubTask } from '../types';
 import { extractHashtags } from '../hashtags';
-import { OfflineError, enqueue, flushOutbox } from '../offline';
+import { OfflineError, enqueue, flushOutbox, queuedTaskStart } from '../offline';
 import { getToken, getCurrentUserId, ensureArray, request, sendOutboxEntry } from './client';
 
 export const tasksApi = {
@@ -137,6 +137,7 @@ export const tasksApi = {
     },
     base?: { isCompleted: boolean; kanbanStatus?: string }
   ): Promise<Thought> {
+    const changedAt = Date.now(); // the tap, not when a slow connection gave up
     try {
       return await request<Thought>(`/api/v1/thoughts/${thoughtId}`, {
         method: 'PATCH',
@@ -146,10 +147,18 @@ export const tasksApi = {
       // Checking a task off (or on) also works offline; other edits need the server
       const onlyStatus = Object.keys(patch).every((k) => k === 'isCompleted' || k === 'kanbanStatus');
       if (!(err instanceof OfflineError) || !onlyStatus) throw err;
-      // Checked off and on again while offline: nothing to send (it would undo somebody who checked it off
-      // meanwhile; base is the state the caller changed it from). The wanted state is sent, never a toggle.
-      enqueue('PATCH', `/api/v1/thoughts/${thoughtId}`, patch, base);
-      return { id: thoughtId, ...patch } as Thought;
+      // The wanted state is sent, never a toggle, with when it was changed: an older change does not undo a
+      // newer one made meanwhile (UpdateTask in internal/storage/thoughts.go). Checked off and on again while
+      // offline, back in the column it started from: nothing to send (it would undo somebody who checked it
+      // off meanwhile; base is the state the caller changed it from).
+      const body: Record<string, unknown> = { ...patch, changedAt };
+      const start = queuedTaskStart(thoughtId);
+      if (patch.isCompleted === false && patch.kanbanStatus === undefined && start?.isCompleted === false && start.kanbanStatus) {
+        body.kanbanStatus = start.kanbanStatus; // un-ticked without a column (command palette): the one it had
+      }
+      const from = base && (base.kanbanStatus ? base : { isCompleted: base.isCompleted });
+      enqueue('PATCH', `/api/v1/thoughts/${thoughtId}`, body, from);
+      return { id: thoughtId, ...patch, ...(body.kanbanStatus ? { kanbanStatus: body.kanbanStatus as string } : {}) } as Thought;
     }
   },
 

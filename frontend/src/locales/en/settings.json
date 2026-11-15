@@ -541,7 +541,7 @@
     "activate": "Activate",
     "passwordReset": "Password reset.",
     "deleted": "User deleted.",
-    "roleChanged": "Role of {{name}} changed to \"{{role}}\".",
+    "roleChanged": "Role of {{name}} changed to \"{{role}}\". They are signed out on every device and sign in again with the new role.",
     "confirmReject": "Reject the registration of \"{{name}}\" ({{email}})? The account will be deleted.",
     "confirmDelete": "Really delete the user \"{{name}}\" ({{email}}) for good?",
     "username": "Username",
@@ -582,7 +582,13 @@
     "email": "Email address",
     "emailChanged": "{{name}}'s email address is now {{email}}.",
     "emailRemoved": "{{name}} no longer has an email address.",
-    "emailRemoveHint": "Without an address, {{name}} can no longer reset the password by email. Signing in with username and password keeps working."
+    "emailRemoveHint": "Without an address, {{name}} can no longer reset the password by email. Signing in with username and password keeps working.",
+    "mustChange": "Change at the next sign-in",
+    "mustChangeHint": "After signing in, the person has to choose their own password first.",
+    "revokeKeys": "Revoke API keys and AI access",
+    "revokeKeysHint": "Removes all API keys and connected AI clients (MCP) of the account, for instance after a takeover. Otherwise they keep working.",
+    "passwordResetMustChange": "Password reset. An own password is asked for at the next sign-in.",
+    "keysRevoked": "{{keys}} API keys and {{connections}} AI connections revoked."
   },
   "sharing": {
     "private": {
@@ -660,6 +666,8 @@
       "issuer": "Issuer",
       "clientId": "Client ID",
       "redirectUrl": "Redirect URI",
+      "logoutUrl": "Back-channel logout URL",
+      "logoutUrlHint": "Enter it at the provider. The provider calls it directly, so the server must be reachable from there without going through a browser.",
       "scopes": "Scopes",
       "autoCreate": "Create accounts automatically",
       "passwordLogin": "Sign-in with password",
@@ -1127,7 +1135,10 @@
       "setup_finished": "Setup finished",
       "backup_created": "Backup created",
       "backup_deleted": "Backup deleted",
-      "backup_downloaded": "Backup downloaded"
+      "backup_downloaded": "Backup downloaded",
+      "account_registered": "Signed up",
+      "account_unconfirmed_deleted": "Unconfirmed account deleted",
+      "invite_redeemed": "Invite redeemed"
     },
     "detail": {
       "fromTo": "{{label}}: {{from}} → {{to}}",
@@ -1137,7 +1148,12 @@
       "viaEnv": "From ADMIN_USER at the first start",
       "secondFactorsRemoved": "Second factors removed",
       "pendingRegistration": "Registration rejected",
-      "content": "With {{notes}} notes, {{tasks}} tasks, {{lists}} lists"
+      "content": "With {{notes}} notes, {{tasks}} tasks, {{lists}} lists",
+      "awaitingApproval": "Waiting for approval",
+      "emailConfirmation": "Waiting for the email address to be confirmed",
+      "unconfirmedDeleted": "Email address not confirmed within 48 hours",
+      "mustChange": "New password required at the next sign-in",
+      "keysRevoked": "{{keys}} API keys and {{connections}} AI connections revoked"
     },
     "value": {
       "on": "on",
@@ -1201,7 +1217,9 @@
       "recipient": "To",
       "maxUses": "Uses",
       "expiresAt": "Valid until",
-      "file": "File"
+      "file": "File",
+      "account": "Account",
+      "invitedBy": "Invited by"
     }
   }
 }

@@ -16,6 +16,17 @@ export const OidcStatusCard: React.FC<{ status?: OidcAdminStatus }> = ({ status 
         ...(status.redirectUrl
           ? ([[t('server.oidc.redirectUrl'), <span className="font-mono break-all">{status.redirectUrl}</span>]] as [string, React.ReactNode][])
           : []),
+        ...(status.logoutUrl
+          ? ([
+              [
+                t('server.oidc.logoutUrl'),
+                <>
+                  <span className="font-mono break-all">{status.logoutUrl}</span>
+                  <span className="block text-[11px] text-muted mt-0.5">{t('server.oidc.logoutUrlHint')}</span>
+                </>,
+              ],
+            ] as [string, React.ReactNode][])
+          : []),
         [t('server.oidc.scopes'), <span className="font-mono">{status.scopes}</span>],
         [t('server.oidc.autoCreate'), status.autoCreate ? t('server.oidc.on') : t('server.oidc.off')],
         [t('server.oidc.passwordLogin'), status.passwordLogin ? t('server.oidc.on') : t('server.oidc.passwordAdminsOnly')],

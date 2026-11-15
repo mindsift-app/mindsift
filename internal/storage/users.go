@@ -17,7 +17,7 @@ import (
 
 // --- USERS ---
 
-const userSelectCols = `id, email, username, password_hash, display_name, role, is_active, token_version, alarm_channels, discord_webhook_url, custom_webhook_url, notify_before_minutes, avatar_url, created_at`
+const userSelectCols = `id, email, username, password_hash, display_name, role, is_active, token_version, alarm_channels, discord_webhook_url, custom_webhook_url, notify_before_minutes, avatar_url, created_at, must_change_password`
 
 func parseAlarmChannels(raw string) []string {
 	parts := strings.Split(raw, ",")
@@ -35,17 +35,18 @@ func parseAlarmChannels(raw string) []string {
 
 func scanUser(row interface{ Scan(dest ...any) error }) (*domain.User, error) {
 	u := &domain.User{}
-	var isActiveInt int
+	var isActiveInt, mustChangeInt int
 	var channelsRaw string
 	err := row.Scan(
 		&u.ID, &u.Email, &u.Username, &u.PasswordHash, &u.DisplayName,
 		&u.Role, &isActiveInt, &u.TokenVersion, &channelsRaw,
-		&u.DiscordWebhookURL, &u.CustomWebhookURL, &u.NotifyBeforeMinutes, &u.AvatarURL, &u.CreatedAt,
+		&u.DiscordWebhookURL, &u.CustomWebhookURL, &u.NotifyBeforeMinutes, &u.AvatarURL, &u.CreatedAt, &mustChangeInt,
 	)
 	if err != nil {
 		return nil, err
 	}
 	u.IsActive = isActiveInt != 0
+	u.MustChangePassword = mustChangeInt != 0
 	if u.TokenVersion <= 0 {
 		u.TokenVersion = 1
 	}
@@ -353,6 +354,8 @@ func (s *Store) UpdateUserFull(
 	if err != nil {
 		return nil, err
 	}
+	// Compared with the stored values below: a new role or a lock signs every session out
+	roleBefore, activeBefore := u.Role, u.IsActive
 	if displayName != nil {
 		u.DisplayName = domain.CleanDisplayName(*displayName)
 		if u.DisplayName == "" {
@@ -386,7 +389,7 @@ func (s *Store) UpdateUserFull(
 			return nil, ErrInvalidAvatar
 		}
 	}
-	if (role != nil && *role != u.Role) || (isActive != nil && !*isActive && u.IsActive) {
+	if u.Role != roleBefore || (activeBefore && !u.IsActive) {
 		u.TokenVersion++
 	}
 	activeInt := 0
@@ -404,8 +407,10 @@ func (s *Store) UpdateUserFull(
 	return u, nil
 }
 
+// UpdateUserPassword sets the password the person chose (signs every session out); a new password asked for
+// by the administration (must_change_password) is done with it.
 func (s *Store) UpdateUserPassword(userID, passwordHash string) error {
-	_, err := s.db.Exec(`UPDATE users SET password_hash = ?, token_version = token_version + 1 WHERE id = ?`, passwordHash, userID)
+	_, err := s.db.Exec(`UPDATE users SET password_hash = ?, token_version = token_version + 1, must_change_password = 0 WHERE id = ?`, passwordHash, userID)
 	return err
 }
 

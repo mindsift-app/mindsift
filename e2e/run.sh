@@ -31,8 +31,13 @@ IMAGE="mindsift-e2e-image:$RUN_ID"
 PLAIN_ADMIN_PASSWORD="Tour-Angebot-$RUN_ID"
 OIDC_ADMIN_PASSWORD="Notzugang-$RUN_ID"
 OIDC_CLIENT_SECRET="dex-client-$RUN_ID"
-# /metrics of the demo server, for the server memory measured by linked-todos.e2e.mjs
-METRICS_TOKEN="e2e-metrics-$RUN_ID"
+# /metrics of the demo server, for the server memory measured by linked-todos.e2e.mjs. The server ignores a
+# token shorter than 16 characters and leaves /metrics off (config.resolveMetricsToken), so keep it long.
+METRICS_TOKEN="e2e-metrics-token-$RUN_ID"
+if [ "${#METRICS_TOKEN}" -lt 16 ]; then
+  echo "e2e/run.sh: METRICS_TOKEN has ${#METRICS_TOKEN} characters, the server needs at least 16 or /metrics stays off" >&2
+  exit 1
+fi
 # A free port, none of the ones given
 free_port() {
   for p in $(shuf -i 18100-18999 -n 50); do
@@ -112,4 +117,4 @@ echo "Starting the browser tests (port $PORT, without demo $PLAIN_PORT, OIDC $OI
   -e MINDSIFT_SETUP_URL="http://localhost:$SETUP_PORT" -e MINDSIFT_SETUP_CODE="$SETUP_CODE" \
   -v "$ROOT/e2e":/e2e:Z -w /e2e \
   mcr.microsoft.com/playwright:v1.65.0-noble \
-  sh -c 'npm install --no-audit --no-fund >/dev/null 2>&1 && node collab.e2e.mjs && node share.e2e.mjs && node lock.e2e.mjs && node copy.e2e.mjs && node secrets.e2e.mjs && node drawing-live.e2e.mjs && node table.e2e.mjs && node templates.e2e.mjs && node live.e2e.mjs && node linked-todos.e2e.mjs && node channels.e2e.mjs && node offline.e2e.mjs && node lists-offline.e2e.mjs && node tour.e2e.mjs && node tour-offer.e2e.mjs && node mfa.e2e.mjs && node passkey.e2e.mjs && node oidc.e2e.mjs && node setup.e2e.mjs'
+  sh -c 'npm install --no-audit --no-fund >/dev/null 2>&1 && node collab.e2e.mjs && node share.e2e.mjs && node lock.e2e.mjs && node copy.e2e.mjs && node secrets.e2e.mjs && node drawing-live.e2e.mjs && node table.e2e.mjs && node templates.e2e.mjs && node live.e2e.mjs && node linked-todos.e2e.mjs && node channels.e2e.mjs && node offline.e2e.mjs && node lists-offline.e2e.mjs && node tasks-offline.e2e.mjs && node tour.e2e.mjs && node tour-offer.e2e.mjs && node mfa.e2e.mjs && node passkey.e2e.mjs && node oidc.e2e.mjs && node setup.e2e.mjs'

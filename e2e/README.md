@@ -66,6 +66,17 @@ A shared shopping list on two phones (admin and user, touch emulation), one of t
 
 `SHOT_DIR=<dir>` (and `SHOT_PREFIX`) also saves screenshots of both phones after some of the steps.
 
+## tasks-offline.e2e.mjs
+
+A task list shared by admin and user: admin's browser goes offline (`context.setOffline`) and ticks in the list view while user changes the same tasks online. After the outbox has been sent, the page shows the server's state, and:
+
+- A ticks offline, B ticks and opens it again afterwards: open (an older tick does not undo a newer change)
+- a task in „In Bearbeitung“ ticked and un-ticked offline goes back to that column and sends nothing; B's tick meanwhile stays
+- both tick a repeating task: ticked, exactly one next occurrence
+- A opens a done task offline, nobody else changes it: open
+
+`SHOT_DIR=<dir>` saves a screenshot after each scenario.
+
 ## drawing-live.e2e.mjs
 
 Live drawing with three browsers on one shared drawing: admin in Chromium, user in Firefox, and admin again in Chromium with the WebSocket refused (the app falls back to SSE). Checked:

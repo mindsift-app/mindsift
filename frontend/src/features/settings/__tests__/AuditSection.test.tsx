@@ -66,6 +66,25 @@ describe('audit log details in words', () => {
       '„A“ → „B“',
     ]);
   });
+
+  it('password reset with its switches, sign-ups, redeemed invites and accounts deleted unconfirmed', () => {
+    expect(
+      detailLines(t, row({ action: 'account.password_reset', details: { mustChange: true, keysRevoked: 2, connectionsRevoked: 1 } }))
+    ).toEqual(['Neues Passwort bei der nächsten Anmeldung verlangt', '2 API-Schlüssel und 1 KI-Zugänge widerrufen']);
+    expect(detailLines(t, row({ action: 'account.registered', details: { awaitingApproval: true, emailConfirmation: true } }))).toEqual([
+      'Wartet auf Bestätigung der E-Mail-Adresse',
+      'Wartet auf Freigabe',
+    ]);
+    expect(
+      detailLines(
+        t,
+        row({ action: 'invite.redeemed', targetKind: 'invite', details: { account: 'gast', invitedBy: 'admin', organizations: ['Gäste'] } })
+      )
+    ).toEqual(['Organisationen: Gäste', 'Konto: gast', 'Eingeladen von: admin']);
+    expect(detailLines(t, row({ action: 'account.unconfirmed_deleted', actorKind: 'system' }))).toEqual([
+      'E-Mail-Adresse nicht innerhalb von 48 Stunden bestätigt',
+    ]);
+  });
 });
 
 describe('AuditSection (Administration → Protokoll)', () => {

@@ -39,7 +39,7 @@ const fr: HelpContent = {
       title: 'Outliner hiérarchique & synchronisation hors ligne',
       subtitle: 'Stockage atomique avec synchronisation collaborative en temps réel',
       icon: FileText,
-      keywords: ['workspace', 'outliner', 'base de données', 'sqlite', 'hors ligne', 'indexeddb', 'export', 'markdown', 'sauvegarde'],
+      keywords: ['titre', 'coller', 'chatgpt', 'claude', 'code', 'workspace', 'outliner', 'base de données', 'sqlite', 'hors ligne', 'indexeddb', 'export', 'markdown', 'sauvegarde'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
           <p>
@@ -51,6 +51,12 @@ const fr: HelpContent = {
             <li>
               <strong className="text-main">Entièrement utilisable hors ligne :</strong> tu peux continuer à travailler sans connexion Internet ;
               les modifications se synchronisent automatiquement dès que tu te reconnectes.
+            </li>
+            <li>
+              <strong className="text-main">Titre :</strong> Un titre de note compte au plus 60 caractères, pour tenir sur une ligne et rester un nom de fichier utilisable à l'export. Près de la limite, le champ affiche le décompte.
+            </li>
+            <li>
+              <strong className="text-main">Coller :</strong> Un texte de plusieurs lignes devient des puces séparées. Le code copié depuis des pages de chat comme ChatGPT ou Claude, ou depuis une documentation, devient un bloc de code avec le bon langage.
             </li>
             <li>
               <strong className="text-main">Export Markdown :</strong> grâce à l'icône de téléchargement (<Download className="w-3 h-3 inline text-accent" />) dans l'en-tête de la note, tu peux exporter à tout moment l'état actuel sous forme de fichier Markdown standard (<code className="font-mono text-accent">.md</code>) sur ton ordinateur.
@@ -70,7 +76,7 @@ const fr: HelpContent = {
         <div className="space-y-2 text-muted leading-relaxed">
           <ul className="space-y-1.5">
             <li>
-              <kbd className={kbd}>Entrée</kbd> : crée immédiatement une nouvelle puce au même niveau. Si la puce est vide et indentée, elle recule d'un niveau vers la gauche.
+              <kbd className={kbd}>Entrée</kbd> : crée immédiatement une nouvelle puce au même niveau. Si la puce est vide et indentée, elle recule d'un niveau vers la gauche. Après une case à cocher vient une nouvelle case (non cochée, sans tâche propre) ; Entrée dans une case vide la transforme en puce normale.
             </li>
             <li>
               <kbd className={kbd}>Tab</kbd> : indente la puce actuelle vers la droite et la subordonne à la puce précédente.
@@ -556,7 +562,7 @@ const fr: HelpContent = {
       title: 'Sous-tâches, échéances & alertes automatiques',
       subtitle: 'Listes de contrôle avec barre de progression, notes en Markdown et notifications',
       icon: SquareCheckBig,
-      keywords: ['sous-tâches', 'alarmes', 'notifications', 'e-mail', 'discord', 'date', 'échéance', 'fuseau horaire', 'priorité', 'assigner', 'assigné'],
+      keywords: ['sous-tâches', 'alarmes', 'notifications', 'e-mail', 'discord', 'date', 'échéance', 'fuseau horaire', 'priorité', 'assigner', 'assigné', 'calendrier', 'abonnement', 'ical'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
           <ul className="space-y-1.5">
@@ -605,13 +611,13 @@ const fr: HelpContent = {
       title: 'Listes partagées, quantités & catégories par hashtag',
       subtitle: 'Listes de courses en temps réel, listes de bagages et check-lists',
       icon: ShoppingCart,
-      keywords: ['listes', 'courses', 'achats', 'checklist', 'quantités', 'catégories', 'hashtag', 'temps réel'],
+      keywords: ['listes', 'courses', 'achats', 'checklist', 'quantités', 'catégories', 'hashtag', 'temps réel', 'suggestions'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
           <p>Les listes partagées sont idéales pour les courses communes, les valises et les listes de choses à faire à plusieurs :</p>
           <ul className="space-y-1.5">
             <li>
-              <strong className="text-main">Quantités automatiques :</strong> une saisie comme <code className="text-accent font-mono">2x lait bio</code> ou <code className="text-accent font-mono">500g pâtes</code> sépare automatiquement la quantité et le libellé.
+              <strong className="text-main">Saisir la quantité avec l’article :</strong> avec <code className="text-accent font-mono">2x lait bio</code>, <code className="text-accent font-mono">500g pâtes</code>, <code className="text-accent font-mono">3 pommes</code> ou <code className="text-accent font-mono">tomates 2 boîtes</code>, le champ surligne la quantité et la reporte aussitôt dans le champ quantité. À l’ajout, le nom va sur la liste sans elle. Vide le champ quantité pour garder le texte tel quel ; une quantité que tu saisis toi-même dans ce champ l’emporte. Sont reconnus un nombre suivi de x, un nombre avec une unité (g, kg, l, ml, pièce, paquet, boîte, bouteille, botte …) et un nombre au début. Un nombre à la fin sans unité fait partie du nom (<code className="text-accent font-mono">iPhone 15</code>, <code className="text-accent font-mono">cola 0,5</code>), tout comme un nombre collé à un mot (<code className="text-accent font-mono">7up</code>). Le champ quantité accepte aussi les unités, par exemple <code className="text-accent font-mono">500 g</code>.
             </li>
             <li>
               <strong className="text-main">Catégories par hashtag :</strong> ajoute un hashtag comme <code className="text-accent font-mono">#frais</code> ou <code className="text-accent font-mono">#légumes</code>. La liste regroupe automatiquement les articles dans les sections correspondantes.

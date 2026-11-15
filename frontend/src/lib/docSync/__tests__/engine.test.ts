@@ -388,6 +388,26 @@ describe('DocSyncEngine', () => {
     expect(contents(a)).toEqual(['Start getippt weiter', 'Neu aus Aufgabe']);
   });
 
+  it('names the author of the server text in its copy, like the server names its own copies', async () => {
+    const server = new FakeServer();
+    const names: Record<string, string> = { 'u-ben': 'Ben' };
+    const a = new DocSyncEngine('doc', { transport: new FakeNet(server), storage: new MemoryStorage(), manual: true, authorName: (id) => names[id] || '' });
+    await a.start();
+    a.focusBlock('b1');
+    edit(a, (blocks) => [{ ...blocks[0], content: 'Start getippt' }]);
+    await a.syncNow();
+    // Ben renames the linked task; the server writes the title into the bullet under his user id
+    const effects = applyOp(server.doc, { opId: 'task-title', kind: 'set_content', blockId: 'b1', baseVersion: 2, content: 'Von Ben' }, 'u-ben').effects;
+    for (const e of effects) server.log.push({ seq: server.log.length + 1, userId: 'u-ben', clientId: 'server', opId: 'task-title', effect: e });
+    await a.syncNow();
+    a.applyFlat([{ id: 'b1', type: 'bullet', content: 'Start getippt weiter', level: 0 }]);
+    await a.syncNow();
+
+    const copy = Array.from(server.doc.blocks.values()).find((b) => b.props.conflictOf === 'b1');
+    expect(copy?.content).toBe('Von Ben');
+    expect(copy?.props.conflictAuthor).toBe('Ben');
+  });
+
   it('leaving a block someone else typed in without typing there makes no conflict copy', async () => {
     const server = new FakeServer();
     const a = await startEngine(new FakeNet(server));

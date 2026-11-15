@@ -11,6 +11,7 @@ import { buildStep, failedChecks, touchedBlocks, UndoStep } from './undo';
 import { keepUndoHistory, takeUndoHistory } from './undoHistory';
 import { PushChannel, PushKind, realtimePush } from './push';
 import { getCurrentUserId } from '../api/client';
+import { personName } from '../mentions';
 import i18n from '../../i18n';
 
 export type EngineStatus = 'loading' | 'saved' | 'saving' | 'offline' | 'error';
@@ -58,6 +59,8 @@ export interface EngineOptions {
   push?: PushChannel;
   /** Who is signed in; stored with the changes. Defaults to the user of the session token. */
   userId?: string;
+  /** Display name of a user ('' when unknown), for the conflict copies the engine makes itself */
+  authorName?: (userId: string) => string;
 }
 
 // Notes open in an editor right now (docId -> number of engines); their changes are sent by the editor
@@ -143,6 +146,7 @@ export class DocSyncEngine {
   private now: () => number;
   private manual: boolean;
   private userId: string;
+  private authorName: (userId: string) => string;
 
   private confirmed: Doc = emptyDoc();
   private lastSeq = 0;
@@ -207,6 +211,7 @@ export class DocSyncEngine {
     this.now = opts.now || (() => Date.now());
     this.manual = !!opts.manual;
     this.userId = opts.userId ?? (getCurrentUserId() || '');
+    this.authorName = opts.authorName || personName;
     this.push = opts.push || (this.manual ? null : realtimePush);
     // Undo/redo from the last time the note was open in this app session
     if (!this.manual) {
@@ -596,6 +601,8 @@ export class DocSyncEngine {
     if (!seen || !cur || cur.deleted || cur.version <= seen.version || cur.content === seen.content || cur.content === op.content) return null;
     if (this.serverWritten.get(id) !== cur.version) return null;
     op.baseVersion = cur.version;
+    // Named like the server's copies: the author of the text in the copy (whoever renamed the task)
+    const author = cur.updatedBy ? this.authorName(cur.updatedBy) : '';
     return {
       opId: this.newOpId(),
       kind: 'insert',
@@ -604,7 +611,7 @@ export class DocSyncEngine {
       orderKey: keyAfterBlock(this.local, cur),
       type: cur.type,
       content: cur.content,
-      props: { ...(cur.props.checked ? { checked: true } : {}), conflictOf: id },
+      props: { ...(cur.props.checked ? { checked: true } : {}), conflictOf: id, ...(author ? { conflictAuthor: author } : {}) },
     };
   }
 

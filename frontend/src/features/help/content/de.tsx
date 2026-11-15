@@ -39,6 +39,11 @@ const de: HelpContent = {
       subtitle: 'Atomare Speicherung mit kollaborativem Echtzeit-Abgleich',
       icon: FileText,
       keywords: [
+        'titel',
+        'einfügen',
+        'chatgpt',
+        'claude',
+        'code',
         'workspace',
         'outliner',
         'datenbank',
@@ -60,6 +65,12 @@ const de: HelpContent = {
             <li>
               <strong className="text-main">Volle Offline-Fähigkeit:</strong> Du kannst auch ohne Internetverbindung nahtlos weiterarbeiten;
               Änderungen synchronisieren sich automatisch, sobald du wieder online bist.
+            </li>
+            <li>
+              <strong className="text-main">Titel:</strong> Ein Notiztitel hat höchstens 60 Zeichen, damit er in eine Zeile passt und beim Export ein brauchbarer Dateiname bleibt. Kurz vor der Grenze zeigt das Feld, wie viele Zeichen es sind.
+            </li>
+            <li>
+              <strong className="text-main">Einfügen:</strong> Text mit mehreren Zeilen wird zu einzelnen Punkten. Code aus Chat-Seiten wie ChatGPT oder Claude und aus Dokumentationen wird zum Code-Block mit der passenden Sprache.
             </li>
             <li>
               <strong className="text-main">Markdown-Export:</strong> Über das Download-Symbol (<Download className="w-3 h-3 inline text-accent" />) im Kopf der Notiz kannst du den aktuellen Stand jederzeit als Standard-Markdown-Datei (<code className="font-mono text-accent">.md</code>) auf deinen Rechner exportieren.
@@ -92,7 +103,7 @@ const de: HelpContent = {
         <div className="space-y-2 text-muted leading-relaxed">
           <ul className="space-y-1.5">
             <li>
-              <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">Enter</kbd> : Erzeugt sofort einen neuen Bullet-Point auf derselben Ebene. Ist der Punkt leer und eingerückt, rückt er eine Ebene nach links aus.
+              <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">Enter</kbd> : Erzeugt sofort einen neuen Bullet-Point auf derselben Ebene. Ist der Punkt leer und eingerückt, rückt er eine Ebene nach links aus. Nach einem To-do kommt wieder ein To-do (nicht abgehakt, ohne eigene Aufgabe); Enter in einem leeren To-do macht daraus einen normalen Punkt.
             </li>
             <li>
               <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">Tab</kbd> : Rückt den aktuellen Bullet-Point nach rechts ein und ordnet ihn dem vorherigen Punkt unter.
@@ -131,7 +142,7 @@ const de: HelpContent = {
         'h1',
         'h2',
         'h3',
-        'code',
+        'code', 
         'callout',
         'warn',
         'fail',
@@ -375,7 +386,7 @@ const de: HelpContent = {
               <strong className="text-main">Rückverweise:</strong> Am Ende jeder Notiz siehst du unter „Verlinkt auf diese Notiz“, welche anderen Notizen sie mit <code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">[[Titel]]</code> verlinken. Ein Klick auf die Fundstelle springt direkt dorthin.
             </li>
             <li>
-              <strong className="text-main">Papierkorb:</strong> Gelöschte Notizen (auch aus gelöschten Ordnern) landen im „Papierkorb“ unten in der Ordnerleiste bzw. im mobilen Menü. Dort kannst du sie schreibgeschützt ansehen, wiederherstellen oder endgültig löschen. Solange eine Notiz im Papierkorb liegt, sehen sie auch die Personen nicht, mit denen sie geteilt war. Nach der Frist aus Kontoeinstellungen → Aufbewahrung (Standard 30 Tage) wird sie endgültig gelöscht. Gelöschte Aufgaben liegen im Reiter „Papierkorb“ der Aufgaben, verworfene Gedanken im Papierkorb der Triage.
+              <strong className="text-main">Papierkorb:</strong> Eigene Notizen löschst du über ⋯ → „Notiz löschen“ oder den Papierkorb-Knopf, der beim Überfahren einer Notiz in der Ordnerleiste erscheint (mit kurzer Rückfrage). Gelöschte Notizen (auch aus gelöschten Ordnern) landen im „Papierkorb“ unten in der Ordnerleiste bzw. im mobilen Menü. Dort kannst du sie schreibgeschützt ansehen, wiederherstellen oder endgültig löschen. Solange eine Notiz im Papierkorb liegt, sehen sie auch die Personen nicht, mit denen sie geteilt war. Nach der Frist aus Kontoeinstellungen → Aufbewahrung (Standard 30 Tage) wird sie endgültig gelöscht. Gelöschte Aufgaben liegen im Reiter „Papierkorb“ der Aufgaben, verworfene Gedanken im Papierkorb der Triage.
             </li>
           </ul>
         </div>
@@ -715,6 +726,9 @@ const de: HelpContent = {
         'priorität',
         'zuweisen',
         'zugewiesen',
+        'kalender',
+        'abo',
+        'ical',
       ],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
@@ -779,6 +793,7 @@ const de: HelpContent = {
         'kategorien',
         'hashtag',
         'realtime',
+        'vorschläge',
       ],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
@@ -787,7 +802,7 @@ const de: HelpContent = {
           </p>
           <ul className="space-y-1.5">
             <li>
-              <strong className="text-main">Automatische Mengenerkennung:</strong> Eingaben wie <code className="text-accent font-mono">2x Bio-Milch</code> oder <code className="text-accent font-mono">500g Pasta</code> trennen Menge und Bezeichnung automatisch.
+              <strong className="text-main">Menge gleich mittippen:</strong> Bei <code className="text-accent font-mono">2x Bio-Milch</code>, <code className="text-accent font-mono">500g Pasta</code>, <code className="text-accent font-mono">3 Äpfel</code> oder <code className="text-accent font-mono">Tomaten 2 Dosen</code> markiert das Feld die Menge und trägt sie gleich ins Mengenfeld ein. Beim Hinzufügen kommt der Name ohne sie auf die Liste. Leerst du das Mengenfeld, bleibt der Text, wie er ist; tippst du selbst eine Menge ins Feld, gilt deine. Erkannt werden eine Zahl mit x, eine Zahl mit Einheit (g, kg, l, ml, Stück, Pck, Dose, Flasche, Bund …) und eine Zahl am Anfang. Eine Zahl am Ende ohne Einheit gehört zum Namen (<code className="text-accent font-mono">iPhone 15</code>, <code className="text-accent font-mono">Cola 0,5</code>), ebenso eine am Wort (<code className="text-accent font-mono">7up</code>). Ins Mengenfeld darfst du auch Einheiten schreiben, etwa <code className="text-accent font-mono">500 g</code>.
             </li>
             <li>
               <strong className="text-main">Kategorisierung per Hashtag:</strong> Ergänze einen Hashtag wie <code className="text-accent font-mono">#Kühlregal</code> oder <code className="text-accent font-mono">#Gemüse</code>. Die Liste gruppiert die Artikel automatisch in entsprechende Abschnitte.

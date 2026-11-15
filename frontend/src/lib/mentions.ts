@@ -57,6 +57,13 @@ export function mentionName(userId: string): string {
   return names.get(userId) || '?';
 }
 
+// The name of a person, '' while it is not known (asks the directory for it, for the next time)
+export function personName(userId: string): string {
+  const name = names.get(userId);
+  if (!name && userId && userId !== 'hidden') loadNames();
+  return name || '';
+}
+
 // The current name of a mentioned person; re-renders once the names are loaded
 export function useMentionName(userId: string): string {
   useSyncExternalStore(

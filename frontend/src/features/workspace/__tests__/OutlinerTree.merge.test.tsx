@@ -10,6 +10,7 @@ import { OUTLINE_CLIPBOARD_TYPE } from '../../../lib/outlineMarkdown';
 let live: DocumentBlock[] = [];
 
 let lockedNotices: string[] = [];
+let lockedOwn: boolean[] = [];
 
 const Harness: React.FC<{ initial: DocumentBlock[]; locked?: Map<string, BlockLock> }> = ({ initial, locked }) => {
   const [blocks, setBlocks] = useState(initial);
@@ -21,7 +22,10 @@ const Harness: React.FC<{ initial: DocumentBlock[]; locked?: Map<string, BlockLo
       docId="d1"
       blocks={blocks}
       lockedBlocks={locked}
-      onLockedAction={(name) => lockedNotices.push(name)}
+      onLockedAction={(l) => {
+        lockedNotices.push(l.name);
+        lockedOwn.push(!!l.own);
+      }}
       canEdit
       onUpdateBlock={(b) => setBlocks((p) => p.map((x) => (x.id === b.id ? b : x)))}
       onUpdateBlocks={(u) => setBlocks((p) => p.map((x) => u.find((y) => y.id === x.id) || x))}
@@ -115,6 +119,15 @@ describe('blocks locked by someone else', () => {
     expect(live.map((b) => b.content)).toEqual(['A', 'B', 'C']);
     expect(lockedNotices).toEqual(['Ben']);
   });
+
+  it('held by oneself elsewhere do not name oneself', async () => {
+    lockedOwn = [];
+    render(<Harness initial={[mk('a', 'Oben'), mk('b', 'Unten')]} locked={new Map([['a', { userId: 'u-Ich', name: 'Ich', own: true }]])} />);
+    expect(screen.getByTitle('Wird gerade auf einem anderen Gerät oder in einem anderen Tab bearbeitet')).toBeTruthy();
+    expect(screen.queryByTitle('Ich bearbeitet diesen Punkt gerade')).toBeNull();
+    await backspaceAt(area('Unten'));
+    expect(lockedOwn).toEqual([true]);
+  });
 });
 
 describe('Enter on a locked bullet', () => {
@@ -171,6 +184,62 @@ describe('Enter at the end of a bullet with children', () => {
     render(<Harness initial={[{ ...mk('a', 'Zu'), collapsed: true }, mk('b', 'Kind', 1)]} />);
     await enterAtEnd('Zu');
     expect(live[1]).toMatchObject({ content: '', level: 0 });
+  });
+});
+
+describe('Enter in a to-do', () => {
+  const enterAt = async (text: string, pos = text.length) => {
+    const ta = area(text);
+    ta.focus();
+    ta.setSelectionRange(pos, pos);
+    await act(async () => {
+      fireEvent.keyDown(ta, { key: 'Enter' });
+    });
+  };
+  const todo = (id: string, content: string, level = 0, extra: Partial<DocumentBlock> = {}) =>
+    ({ ...mk(id, content, level, 'todo'), checked: false, ...extra }) as DocumentBlock;
+
+  it('at the end adds an unticked to-do without a task below', async () => {
+    render(<Harness initial={[todo('a', 'Milch kaufen', 1, { checked: true, taskId: 't1' })]} />);
+    await enterAt('Milch kaufen');
+    expect(live.map((b) => [b.content, b.type, b.level, !!b.checked, b.taskId || ''])).toEqual([
+      ['Milch kaufen', 'todo', 1, true, 't1'],
+      ['', 'todo', 1, false, ''],
+    ]);
+  });
+
+  it('in the middle splits it into two to-dos', async () => {
+    render(<Harness initial={[todo('a', 'Brot Butter')]} />);
+    await enterAt('Brot Butter', 4);
+    expect(live.map((b) => [b.content, b.type])).toEqual([
+      ['Brot', 'todo'],
+      [' Butter', 'todo'],
+    ]);
+  });
+
+  it('in an empty to-do turns it into a plain bullet on the same level', async () => {
+    render(<Harness initial={[todo('a', 'Eins', 1), todo('b', '', 1)]} />);
+    await enterAt('');
+    expect(live.map((b) => [b.content, b.type, b.level])).toEqual([
+      ['Eins', 'todo', 1],
+      ['', 'text', 1],
+    ]);
+  });
+
+  it('then in the empty plain bullet outdents it as before', async () => {
+    render(<Harness initial={[todo('a', 'Eins', 1), todo('b', '', 1)]} />);
+    await enterAt('');
+    await enterAt('');
+    expect(live.map((b) => [b.type, b.level])).toEqual([
+      ['todo', 1],
+      ['text', 0],
+    ]);
+  });
+
+  it('keeps plain bullets plain', async () => {
+    render(<Harness initial={[mk('a', 'Text')]} />);
+    await enterAt('Text');
+    expect(live[1]).toMatchObject({ type: 'text', content: '' });
   });
 });
 

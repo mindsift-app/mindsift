@@ -39,7 +39,7 @@ const en: HelpContent = {
       title: 'Hierarchical outliner & offline sync',
       subtitle: 'Atomic storage with collaborative real-time sync',
       icon: FileText,
-      keywords: ['workspace', 'outliner', 'database', 'sqlite', 'offline', 'indexeddb', 'export', 'markdown', 'save'],
+      keywords: ['title', 'paste', 'chatgpt', 'claude', 'code', 'workspace', 'outliner', 'database', 'sqlite', 'offline', 'indexeddb', 'export', 'markdown', 'save'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
           <p>
@@ -51,6 +51,12 @@ const en: HelpContent = {
             <li>
               <strong className="text-main">Fully offline-capable:</strong> you can keep working without an internet connection;
               changes sync automatically once you are back online.
+            </li>
+            <li>
+              <strong className="text-main">Title:</strong> A note title has at most 60 characters, so it fits on one line and stays a usable file name on export. Close to the limit the field shows the count.
+            </li>
+            <li>
+              <strong className="text-main">Pasting:</strong> Text with several lines becomes separate bullets. Code copied from chat pages such as ChatGPT or Claude, or from documentation, becomes a code block with the matching language.
             </li>
             <li>
               <strong className="text-main">Markdown export:</strong> with the download icon (<Download className="w-3 h-3 inline text-accent" />) in the note header you can export the current state as a standard Markdown file (<code className="font-mono text-accent">.md</code>) to your computer at any time.
@@ -70,7 +76,7 @@ const en: HelpContent = {
         <div className="space-y-2 text-muted leading-relaxed">
           <ul className="space-y-1.5">
             <li>
-              <kbd className={kbd}>Enter</kbd> : creates a new bullet on the same level right away. If the bullet is empty and indented, it moves one level to the left.
+              <kbd className={kbd}>Enter</kbd> : creates a new bullet on the same level right away. If the bullet is empty and indented, it moves one level to the left. After a to-do the new bullet is a to-do too (unticked, without a task of its own); Enter in an empty to-do turns it into a plain bullet.
             </li>
             <li>
               <kbd className={kbd}>Tab</kbd> : indents the current bullet to the right and places it under the previous one.
@@ -317,7 +323,7 @@ const en: HelpContent = {
               <strong className="text-main">Backlinks:</strong> at the end of every note, “Linked to this note” shows which other notes link to it with <code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">[[title]]</code>. Clicking a place jumps right there.
             </li>
             <li>
-              <strong className="text-main">Trash:</strong> deleted notes (also from deleted folders) land in the “Trash” at the bottom of the folder bar or in the mobile menu. There you can view them read-only, restore them or delete them for good. While a note is in the trash, the people it was shared with do not see it either. After the period set in Account settings → Retention (default 30 days) it is deleted for good. Deleted tasks are in the “Trash” tab of the tasks, discarded thoughts in the triage trash.
+              <strong className="text-main">Trash:</strong> you delete your own notes with ⋯ → “Delete note” or the trash button that appears when you hover over a note in the folder bar (it asks first). Deleted notes (also from deleted folders) land in the “Trash” at the bottom of the folder bar or in the mobile menu. There you can view them read-only, restore them or delete them for good. While a note is in the trash, the people it was shared with do not see it either. After the period set in Account settings → Retention (default 30 days) it is deleted for good. Deleted tasks are in the “Trash” tab of the tasks, discarded thoughts in the triage trash.
             </li>
           </ul>
         </div>
@@ -555,7 +561,7 @@ const en: HelpContent = {
       title: 'Subtasks, due dates & automatic alarms',
       subtitle: 'Checklists with a progress bar, Markdown notes and notifications',
       icon: SquareCheckBig,
-      keywords: ['subtasks', 'alarms', 'notifications', 'mail', 'discord', 'date', 'due date', 'time zone', 'priority', 'assign', 'assigned'],
+      keywords: ['subtasks', 'alarms', 'notifications', 'mail', 'discord', 'date', 'due date', 'time zone', 'priority', 'assign', 'assigned', 'calendar', 'subscription', 'ical'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
           <ul className="space-y-1.5">
@@ -610,13 +616,13 @@ const en: HelpContent = {
       title: 'Shared lists, quantities & hashtag categories',
       subtitle: 'Real-time shopping lists, packing lists and checklists',
       icon: ShoppingCart,
-      keywords: ['lists', 'shopping', 'groceries', 'checklist', 'quantities', 'categories', 'hashtag', 'realtime'],
+      keywords: ['lists', 'shopping', 'groceries', 'checklist', 'quantities', 'categories', 'hashtag', 'realtime', 'suggestions'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
           <p>Shared lists are perfect for shopping, packing lists and errands together:</p>
           <ul className="space-y-1.5">
             <li>
-              <strong className="text-main">Automatic quantities:</strong> input like <code className="text-accent font-mono">2x organic milk</code> or <code className="text-accent font-mono">500g pasta</code> separates quantity and name automatically.
+              <strong className="text-main">Type the quantity along with it:</strong> With <code className="text-accent font-mono">2x organic milk</code>, <code className="text-accent font-mono">500g pasta</code>, <code className="text-accent font-mono">3 apples</code> or <code className="text-accent font-mono">tomatoes 2 cans</code> the field marks the quantity and fills it into the quantity field right away. When you add the item, the name goes onto the list without it. Empty the quantity field to keep the text as typed; a quantity you type into the field yourself wins. Recognized are a number with x, a number with a unit (g, kg, l, ml, pcs, pack, can, bottle, bunch …) and a number at the start. A number at the end without a unit belongs to the name (<code className="text-accent font-mono">iPhone 15</code>, <code className="text-accent font-mono">cola 0.5</code>), and so does one attached to a word (<code className="text-accent font-mono">7up</code>). The quantity field takes units too, such as <code className="text-accent font-mono">500 g</code>.
             </li>
             <li>
               <strong className="text-main">Categories by hashtag:</strong> add a hashtag like <code className="text-accent font-mono">#fridge</code> or <code className="text-accent font-mono">#vegetables</code>. The list groups the items into matching sections automatically.

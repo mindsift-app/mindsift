@@ -4,6 +4,7 @@ import { AtSign, Ban, ChevronDown, ChevronRight, KeyRound, Mail, Search, ShieldC
 import { User, UserRole } from '../../../lib/types';
 import { UserAvatar } from '../../../components/UserAvatar';
 import { SelectMenu } from '../../../components/SelectMenu';
+import { ToggleSwitch } from '../../../components/ToggleSwitch';
 import { formatDate } from '../../../lib/format';
 import { isPhoneWidth } from '../../../lib/breakpoints';
 import { MASKED, NO_AUTOFILL } from '../../../lib/noAutofill';
@@ -271,6 +272,31 @@ function UserSheet({ u, onClose, children }: { u: User; onClose: () => void; chi
   );
 }
 
+// One switch of the password reset: the whole row toggles it (44 px on phones), text left, switch right
+function ResetSwitch({
+  label,
+  hint,
+  checked,
+  onChange,
+  data,
+}: {
+  label: string;
+  hint: string;
+  checked: boolean;
+  onChange: (v: boolean) => void;
+  data: string;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3 min-h-11 sm:min-h-0 py-1" data-reset-option={data}>
+      <div className="min-w-0 text-xs">
+        <p className="font-medium text-main">{label}</p>
+        <p className="text-[11px] text-muted">{hint}</p>
+      </div>
+      <ToggleSwitch checked={checked} onChange={onChange} title={label} />
+    </div>
+  );
+}
+
 // Everything one can do with an account: role, username, address, password, lock, delete; organizations as information
 function UserDetails({ u, admin, currentUser, isServerAdmin }: { u: User; admin: Admin; currentUser: User; isServerAdmin: boolean }) {
   const { t } = useTranslation('settings');
@@ -287,6 +313,10 @@ function UserDetails({ u, admin, currentUser, isServerAdmin }: { u: User; admin:
     setResetPwdUserId,
     resetPwdVal,
     setResetPwdVal,
+    resetPwdMustChange,
+    setResetPwdMustChange,
+    resetPwdRevokeKeys,
+    setResetPwdRevokeKeys,
     handleChangeUserRole,
     handleToggleUserActive,
     handleConfirmResetPassword,
@@ -478,25 +508,43 @@ function UserDetails({ u, admin, currentUser, isServerAdmin }: { u: User; admin:
             e.preventDefault();
             void handleConfirmResetPassword(u.id);
           }}
-          className="flex items-center gap-2 pt-2 border-t border-border"
+          className="space-y-1 pt-2 border-t border-border"
+          data-reset-password-form
         >
-          <input
-            {...NO_AUTOFILL}
-            type="text"
-            style={MASKED}
-            value={resetPwdVal}
-            onChange={(e) => setResetPwdVal(e.target.value)}
-            placeholder={t('users.newPasswordPlaceholder')}
-            autoFocus
-            aria-label={t('users.password')}
-            className="flex-1 min-w-0 h-11 sm:h-8 px-2 input-field text-base sm:text-xs"
+          <div className="flex items-center gap-2">
+            <input
+              {...NO_AUTOFILL}
+              type="text"
+              style={MASKED}
+              value={resetPwdVal}
+              onChange={(e) => setResetPwdVal(e.target.value)}
+              placeholder={t('users.newPasswordPlaceholder')}
+              autoFocus
+              aria-label={t('users.password')}
+              className="flex-1 min-w-0 h-11 sm:h-8 px-2 input-field text-base sm:text-xs"
+            />
+            <button type="submit" className="btn-primary h-11 sm:h-8 px-3 text-xs">
+              {t('common:save')}
+            </button>
+            <button type="button" onClick={() => setResetPwdUserId(null)} className="btn-action h-11 sm:h-8 px-2 text-xs">
+              {t('common:cancel')}
+            </button>
+          </div>
+          {/* Switches, not checkboxes (Doku/ui-patterns.md); both off unless the admin turns them on */}
+          <ResetSwitch
+            label={t('users.mustChange')}
+            hint={t('users.mustChangeHint')}
+            checked={resetPwdMustChange}
+            onChange={setResetPwdMustChange}
+            data="must-change"
           />
-          <button type="submit" className="btn-primary h-11 sm:h-8 px-3 text-xs">
-            {t('common:save')}
-          </button>
-          <button type="button" onClick={() => setResetPwdUserId(null)} className="btn-action h-11 sm:h-8 px-2 text-xs">
-            {t('common:cancel')}
-          </button>
+          <ResetSwitch
+            label={t('users.revokeKeys')}
+            hint={t('users.revokeKeysHint')}
+            checked={resetPwdRevokeKeys}
+            onChange={setResetPwdRevokeKeys}
+            data="revoke-keys"
+          />
         </form>
       )}
     </div>

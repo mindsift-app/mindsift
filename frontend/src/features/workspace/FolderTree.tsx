@@ -1,7 +1,7 @@
 import React from 'react';
 import { Pin, Users } from 'lucide-react';
 import { Document, SharedFolder } from '../../lib/types';
-import { DocRowIcon, FolderTreeItem } from './FolderTreeItem';
+import { DOC_ROW_GROUP, DocRowDelete, DocRowIcon, FolderTreeItem } from './FolderTreeItem';
 import { useDocDragDrop } from './useDocDragDrop';
 import { FolderTreeNode, WorkspaceSubView } from './workspaceTypes';
 import { TemplateMark } from './NoteTemplates';
@@ -16,10 +16,12 @@ interface FolderTreeProps {
   selectedDocId: string | null;
   subView: WorkspaceSubView;
   drag: ReturnType<typeof useDocDragDrop>;
-  handleCreateDocument: (folderPath?: string) => void;
+  handleCreateDocument: (folderPath?: string, e?: React.MouseEvent) => void;
   handleOpenNewFolder: (parentPath?: string, e?: React.MouseEvent) => void;
   handleShareFolderClick: (folderPath: string, existingSf?: SharedFolder) => void;
   requestDeleteFolder: (folderPath: string, at: { x: number; y: number }) => void;
+  // A note's delete button (own notes): asks first, then moves it to the trash
+  requestDeleteDoc?: (docId: string, at: { x: number; y: number }) => void;
   // A row clicked (pinned or top-level note) and a note picked in a folder (also resets the jump target)
   onOpenDoc: (id: string) => void;
   onSelectDoc: (id: string) => void;
@@ -40,6 +42,7 @@ export function FolderTree({
   handleOpenNewFolder,
   handleShareFolderClick,
   requestDeleteFolder,
+  requestDeleteDoc,
   onOpenDoc,
   onSelectDoc,
 }: FolderTreeProps) {
@@ -71,7 +74,7 @@ export function FolderTree({
                   onClick={(e) =>
                     handleDocRowClick(e, d.id, () => onOpenDoc(d.id))
                   }
-                  className={`w-full flex items-center gap-1.5 pl-[9px] pr-2 py-1.5 min-h-11 sm:min-h-0 rounded-btn text-left text-sm sm:text-xs cursor-pointer border transition-colors ${
+                  className={`${DOC_ROW_GROUP} w-full flex items-center gap-1.5 pl-[9px] pr-2 py-1.5 min-h-11 sm:min-h-0 rounded-btn text-left text-sm sm:text-xs cursor-pointer border transition-colors ${
                     mergeHoverId === d.id
                       ? 'border-accent bg-accent/15 ring-2 ring-accent/30 text-main'
                       : markedDocIds.has(d.id)
@@ -88,6 +91,7 @@ export function FolderTree({
                     <Users className="w-3 h-3 text-status-ok shrink-0" />
                   )}
                   <Pin className="w-3 h-3 text-muted shrink-0" />
+                  <DocRowDelete doc={d} onRequestDelete={requestDeleteDoc} />
                 </div>
               ))}
             </div>
@@ -114,6 +118,7 @@ export function FolderTree({
                   handleOpenNewFolder={handleOpenNewFolder}
                   handleShareFolderClick={handleShareFolderClick}
                   handleDeleteFolder={requestDeleteFolder}
+                  requestDeleteDoc={requestDeleteDoc}
                   onSelectDoc={onSelectDoc}
                   docDropProps={docDropProps}
                   mergeHoverId={mergeHoverId}
@@ -133,7 +138,7 @@ export function FolderTree({
                   onClick={(e) =>
                     handleDocRowClick(e, d.id, () => onOpenDoc(d.id))
                   }
-                  className={`w-full flex items-center gap-1.5 pl-[9px] pr-2 py-1.5 min-h-11 sm:min-h-0 rounded-btn text-left text-sm sm:text-xs cursor-pointer border transition-colors ${
+                  className={`${DOC_ROW_GROUP} w-full flex items-center gap-1.5 pl-[9px] pr-2 py-1.5 min-h-11 sm:min-h-0 rounded-btn text-left text-sm sm:text-xs cursor-pointer border transition-colors ${
                     mergeHoverId === d.id
                       ? 'border-accent bg-accent/15 ring-2 ring-accent/30 text-main'
                       : markedDocIds.has(d.id)
@@ -149,6 +154,7 @@ export function FolderTree({
                   {d.sharedWith && d.sharedWith.length > 0 && (
                     <Users className="w-3 h-3 text-status-ok shrink-0" />
                   )}
+                  <DocRowDelete doc={d} onRequestDelete={requestDeleteDoc} />
                 </div>
               ))}
             </div>

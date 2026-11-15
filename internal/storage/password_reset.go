@@ -89,6 +89,6 @@ func (s *Store) ResetPasswordWithToken(raw, passwordHash string) (string, error)
 	// New password and the end of every other open link belong together
 	return userID, s.execInTx(
 		stmt(`UPDATE password_reset_tokens SET used_at = ? WHERE user_id = ? AND used_at = ''`, now, userID),
-		stmt(`UPDATE users SET password_hash = ?, token_version = token_version + 1 WHERE id = ?`, passwordHash, userID),
+		stmt(`UPDATE users SET password_hash = ?, token_version = token_version + 1, must_change_password = 0 WHERE id = ?`, passwordHash, userID),
 	)
 }

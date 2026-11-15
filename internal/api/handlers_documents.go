@@ -181,6 +181,11 @@ func (s *Server) handleUpdateDocument(w http.ResponseWriter, r *http.Request) {
 	}
 	if req.Title != nil || req.Icon != nil || req.FolderPath != nil {
 		s.broadcastDocToAuthorizedUsers(docID, "DOC_UPDATED")
+	} else if req.IsPinned != nil || req.IsTemplate != nil {
+		// Pin and template mark are the person's own: only their other tabs and devices hear of it
+		if listed, err := s.store.GetDocumentListItem(userID, docID); err == nil && listed != nil {
+			s.wsHub.BroadcastToUser(userID, "DOC_UPDATED", listed)
+		}
 	}
 	writeJSON(w, http.StatusOK, doc)
 }

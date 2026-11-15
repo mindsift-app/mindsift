@@ -38,6 +38,26 @@ describe('shopping list realtime updates', () => {
     expect(ids(listsAfterMessage(prev, msg('LIST_CLEARED', {})))).toEqual(['a']);
   });
 
+  it('keeps changes made offline and not sent yet on top of incoming events', () => {
+    const prev = lists();
+    const changes = new Map([
+      ['a', { isCompleted: true, quantity: '3x' }],
+      ['b', { deleted: true }],
+    ]);
+    // Somebody else changes the text of a while my tick and quantity wait: their text, my tick and quantity
+    const toggled = listsAfterMessage(prev, msg('ITEM_UPDATED', item('a', { content: 'Hafermilch', quantity: '1' })), changes);
+    expect(toggled[0].items[0]).toMatchObject({ id: 'a', content: 'Hafermilch', isCompleted: true, quantity: '3x' });
+    expect(listsAfterMessage(prev, msg('ITEM_TOGGLED', item('a', { isCompleted: false })), changes)[0].items[0].isCompleted).toBe(true);
+    // Deleted offline: an event for it does not bring it back
+    expect(ids(listsAfterMessage(prev, msg('ITEM_TOGGLED', item('b', { isCompleted: false })), changes))).toEqual(['a']);
+    // The whole list (LIST_UPDATED) and moved entries too
+    const updated = listsAfterEvent(prev, msg('LIST_UPDATED', { id: 'l1', items: [item('a'), item('b')] }), changes).lists;
+    expect(updated[0].items.map((i) => [i.id, i.isCompleted, i.quantity])).toEqual([['a', true, '3x']]);
+    const pendingCategory = new Map([['a', { category: 'Kühlregal' }]]);
+    const moved = listsAfterEvent(prev, msg('ITEM_REORDERED', { items: [{ id: 'a', sortOrder: 5, category: 'Getränke' }] }), pendingCategory).lists;
+    expect(moved[0].items.find((i) => i.id === 'a')?.category).toBe('Kühlregal');
+  });
+
   it('reads the list from list_id too and ignores events without a list', () => {
     const prev = lists();
     const next = listsAfterMessage(prev, { event: 'ITEM_DELETED', list_id: 'l2', payload: { itemId: 'c' } } as unknown as WSMessage);

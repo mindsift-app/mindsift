@@ -39,7 +39,7 @@ const it: HelpContent = {
       title: 'Outliner gerarchico e sincronizzazione offline',
       subtitle: 'Archiviazione atomica con sincronizzazione collaborativa in tempo reale',
       icon: FileText,
-      keywords: ['workspace', 'outliner', 'database', 'sqlite', 'offline', 'indexeddb', 'esportazione', 'markdown', 'salvataggio'],
+      keywords: ['titolo', 'incollare', 'chatgpt', 'claude', 'codice', 'workspace', 'outliner', 'database', 'sqlite', 'offline', 'indexeddb', 'esportazione', 'markdown', 'salvataggio'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
           <p>
@@ -51,6 +51,12 @@ const it: HelpContent = {
             <li>
               <strong className="text-main">Pienamente utilizzabile offline:</strong> puoi continuare a lavorare anche senza connessione a Internet;
               le modifiche si sincronizzano automaticamente appena torni online.
+            </li>
+            <li>
+              <strong className="text-main">Titolo:</strong> Il titolo di una nota ha al massimo 60 caratteri, così sta su una riga e resta un nome di file utilizzabile nell'esportazione. Vicino al limite il campo mostra il conteggio.
+            </li>
+            <li>
+              <strong className="text-main">Incollare:</strong> Un testo su più righe diventa punti separati. Il codice copiato da pagine di chat come ChatGPT o Claude, o da una documentazione, diventa un blocco di codice con il linguaggio giusto.
             </li>
             <li>
               <strong className="text-main">Esportazione Markdown:</strong> con l'icona di download (<Download className="w-3 h-3 inline text-accent" />) nell'intestazione della nota puoi esportare lo stato corrente in qualsiasi momento come file Markdown standard (<code className="font-mono text-accent">.md</code>) sul tuo computer.
@@ -70,7 +76,7 @@ const it: HelpContent = {
         <div className="space-y-2 text-muted leading-relaxed">
           <ul className="space-y-1.5">
             <li>
-              <kbd className={kbd}>Enter</kbd> : crea subito un nuovo punto sullo stesso livello. Se il punto è vuoto e indentato, si sposta di un livello a sinistra.
+              <kbd className={kbd}>Enter</kbd> : crea subito un nuovo punto sullo stesso livello. Se il punto è vuoto e indentato, si sposta di un livello a sinistra. Dopo una casella ne arriva un'altra (non spuntata, senza attività propria); Invio in una casella vuota la trasforma in un punto normale.
             </li>
             <li>
               <kbd className={kbd}>Tab</kbd> : aumenta il rientro del punto corrente verso destra e lo posiziona sotto il punto precedente.
@@ -317,7 +323,7 @@ const it: HelpContent = {
               <strong className="text-main">Backlink:</strong> in fondo a ogni nota, la sezione «Collegano a questa nota» mostra quali altre note la collegano con <code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">[[titolo]]</code>. Facendo clic su un riferimento si salta direttamente al blocco corrispondente.
             </li>
             <li>
-              <strong className="text-main">Cestino:</strong> le note eliminate (anche dalle cartelle eliminate) finiscono nel «Cestino» in fondo alla barra delle cartelle o nel menu mobile. Lì puoi visualizzarle in sola lettura, ripristinarle o eliminarle definitivamente. Finché una nota è nel cestino, non è visibile nemmeno a chi la condivideva. Trascorso il periodo impostato in Impostazioni account → Conservazione (predefinito 30 giorni) viene eliminata per sempre. Le attività eliminate si trovano nella scheda «Cestino» delle attività, i pensieri scartati nel cestino di Triage.
+              <strong className="text-main">Cestino:</strong> elimini le tue note con ⋯ → «Elimina nota» o con il pulsante del cestino che appare passando il mouse su una nota nella barra delle cartelle (chiede prima conferma). Le note eliminate (anche dalle cartelle eliminate) finiscono nel «Cestino» in fondo alla barra delle cartelle o nel menu mobile. Lì puoi visualizzarle in sola lettura, ripristinarle o eliminarle definitivamente. Finché una nota è nel cestino, non è visibile nemmeno a chi la condivideva. Trascorso il periodo impostato in Impostazioni account → Conservazione (predefinito 30 giorni) viene eliminata per sempre. Le attività eliminate si trovano nella scheda «Cestino» delle attività, i pensieri scartati nel cestino di Triage.
             </li>
           </ul>
         </div>
@@ -555,7 +561,7 @@ const it: HelpContent = {
       title: 'Sottoattività, date di scadenza e notifiche automatiche',
       subtitle: 'Liste di controllo con barra di avanzamento, note in Markdown e notifiche',
       icon: SquareCheckBig,
-      keywords: ['sottoattività', 'notifiche', 'avvisi', 'email', 'discord', 'data', 'scadenza', 'fuso orario', 'priorità', 'assegna', 'assegnato'],
+      keywords: ['sottoattività', 'notifiche', 'avvisi', 'email', 'discord', 'data', 'scadenza', 'fuso orario', 'priorità', 'assegna', 'assegnato', 'calendario', 'abbonamento', 'ical'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
           <ul className="space-y-1.5">
@@ -610,13 +616,13 @@ const it: HelpContent = {
       title: 'Liste condivise, quantità e categorie hashtag',
       subtitle: 'Liste della spesa, liste bagagli e liste di controllo in tempo reale',
       icon: ShoppingCart,
-      keywords: ['liste', 'spesa', 'checklist', 'quantità', 'categorie', 'hashtag', 'tempo reale'],
+      keywords: ['liste', 'spesa', 'checklist', 'quantità', 'categorie', 'hashtag', 'tempo reale', 'suggerimenti'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
           <p>Le liste condivise sono ideali per fare la spesa, preparare la valigia o gestire commissioni insieme:</p>
           <ul className="space-y-1.5">
             <li>
-              <strong className="text-main">Quantità automatiche:</strong> inserimenti come <code className="text-accent font-mono">2x latte bio</code> o <code className="text-accent font-mono">500g pasta</code> separano automaticamente quantità e nome.
+              <strong className="text-main">Scrivi la quantità insieme all’articolo:</strong> con <code className="text-accent font-mono">2x latte bio</code>, <code className="text-accent font-mono">500g pasta</code>, <code className="text-accent font-mono">3 mele</code> o <code className="text-accent font-mono">pomodori 2 lattine</code> il campo evidenzia la quantità e la inserisce subito nel campo quantità. All’aggiunta il nome finisce nella lista senza di essa. Svuota il campo quantità per lasciare il testo com’è; una quantità scritta da te nel campo ha la precedenza. Vengono riconosciuti un numero con x, un numero con un’unità (g, kg, l, ml, pz, confezione, lattina, bottiglia, mazzo …) e un numero all’inizio. Un numero alla fine senza unità fa parte del nome (<code className="text-accent font-mono">iPhone 15</code>, <code className="text-accent font-mono">cola 0,5</code>), come pure uno attaccato a una parola (<code className="text-accent font-mono">7up</code>). Nel campo quantità puoi scrivere anche le unità, ad esempio <code className="text-accent font-mono">500 g</code>.
             </li>
             <li>
               <strong className="text-main">Categorie tramite hashtag:</strong> aggiungi un hashtag come <code className="text-accent font-mono">#frigo</code> o <code className="text-accent font-mono">#verdure</code>. La lista raggruppa automaticamente gli elementi nelle sezioni corrispondenti.

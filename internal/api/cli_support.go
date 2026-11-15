@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/json"
 	"log/slog"
 	"time"
 
@@ -14,7 +15,9 @@ import (
 // token version, session), so a new password, a deleted account or a changed role count at once. What
 // the server keeps in memory is caught up here: the command line records each change in the audit log
 // (source cli), and cliEventInterval later the server ends the live connections (WebSocket, SSE) of the
-// account, lifts the lock of the sign-in protection after a new password, and writes the change to its log.
+// account, lifts the lock of the sign-in protection after a new password, mails the owner when the second
+// factors were removed, and writes the change to its log. A change made while no server runs is not caught
+// up later (the server starts at the newest row), so that mail is not sent then.
 
 // cliEventInterval: how often the server looks for changes made on the command line.
 const cliEventInterval = 3 * time.Second
@@ -51,6 +54,18 @@ func (s *Server) applyCLIEvents(last int64) int64 {
 		switch e.Action {
 		case storage.AuditAccountPasswordReset:
 			s.loginGuard.unlockAccount(e.TargetID)
+			// --disable-2fa: the owner hears about it as after the reset in the administration. The server
+			// sends it, not the command line: it has the mail settings (SMTP password from SECRETS_KEY or
+			// SMTP_PASS) and the language and link of the account, and a slow mail server does not hold up
+			// the command
+			var d struct {
+				SecondFactorsRemoved bool `json:"secondFactorsRemoved"`
+			}
+			if json.Unmarshal(e.Details, &d) == nil && d.SecondFactorsRemoved {
+				if u, _ := s.store.GetUserByID(e.TargetID); u != nil {
+					s.notifySecurityChange(u, securityChangeReset)
+				}
+			}
 		case storage.AuditAccountDeleted:
 			// Counters of others included what the account shared
 			s.stats.clear()

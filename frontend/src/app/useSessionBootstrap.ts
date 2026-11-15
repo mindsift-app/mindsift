@@ -51,6 +51,8 @@ export function useSessionBootstrap(onSignedOut: () => void) {
   const [setupPending, setSetupPending] = useState(false);
   // The administration requires a second factor this account has not set up yet (MfaSetupRequiredView)
   const [mfaSetupRequired, setMfaSetupRequired] = useState(false);
+  // A reset by the administration asked for a new own password first (PasswordChangeRequiredView)
+  const [passwordChangeRequired, setPasswordChangeRequired] = useState(false);
   // Demo mode: when the next reset happens (local clock), and a counter that remounts all views after it
   const [demoDeadline, setDemoDeadline] = useState<number | null>(null);
   const [dataEpoch, setDataEpoch] = useState(0);
@@ -76,6 +78,7 @@ export function useSessionBootstrap(onSignedOut: () => void) {
     setUser(meRes.value.user);
     setSetupPending(Boolean(meRes.value.setupPending));
     setMfaSetupRequired(Boolean(meRes.value.mfaSetupRequired));
+    setPasswordChangeRequired(Boolean(meRes.value.passwordChangeRequired));
     setStats(meRes.value.stats);
     if (deckRes.status === 'fulfilled') setDeck(Array.isArray(deckRes.value) ? deckRes.value : []);
     if (listsRes.status === 'fulfilled') setLists(Array.isArray(listsRes.value) ? listsRes.value : []);
@@ -167,14 +170,17 @@ export function useSessionBootstrap(onSignedOut: () => void) {
 
     // The administration switched the requirement on while this session was open
     const onMfaSetupRequired = () => setMfaSetupRequired(true);
+    const onPasswordChangeRequired = () => setPasswordChangeRequired(true);
 
     window.addEventListener('mindsift:unauthorized', onUnauthorized);
     window.addEventListener('mindsift:mfa-setup-required', onMfaSetupRequired);
+    window.addEventListener('mindsift:password-change-required', onPasswordChangeRequired);
     window.addEventListener('online', onOnline);
     return () => {
       window.clearInterval(retry);
       window.removeEventListener('mindsift:unauthorized', onUnauthorized);
       window.removeEventListener('mindsift:mfa-setup-required', onMfaSetupRequired);
+      window.removeEventListener('mindsift:password-change-required', onPasswordChangeRequired);
       window.removeEventListener('online', onOnline);
     };
   }, [refreshAll, applyAccount, onSignedOutRef]);
@@ -297,6 +303,8 @@ export function useSessionBootstrap(onSignedOut: () => void) {
     setSetupPending,
     mfaSetupRequired,
     setMfaSetupRequired,
+    passwordChangeRequired,
+    setPasswordChangeRequired,
     stats,
     setStats,
     deck,

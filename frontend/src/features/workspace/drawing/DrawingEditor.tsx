@@ -1807,8 +1807,12 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
         {/* Alone in it (an unshared note, or nobody else there yet): no host, no people, it looks like drawing alone */}
         {liveState && !liveState.ended && !(liveState.isHost && livePeople.length <= 1) && (
           <div className="min-w-0 flex items-center gap-1.5 text-xs text-muted" title={liveTitle} data-live-people={livePeople.map((p) => p.name).join(',')}>
-            <span className={`w-2 h-2 rounded-full shrink-0 ${liveState.status === 'live' ? 'bg-status-err animate-pulse' : 'bg-muted'}`} />
-            <AvatarStack people={livePeople} ringClass="ring-(--bg-panel)" />
+            {/* Dot and pictures never shrink (a crowded phone header squeezes the host's name instead) and keep
+                clear of each other: the pictures' ring reaches 2 px beyond them */}
+            <span className="shrink-0 inline-flex items-center gap-2.5 pl-0.5">
+              <span className={`w-2 h-2 rounded-full shrink-0 ${liveState.status === 'live' ? 'bg-status-err animate-pulse' : 'bg-muted'}`} />
+              <AvatarStack people={livePeople} ringClass="ring-(--bg-panel)" />
+            </span>
             {/* Who saves for everyone; phones show the host's name with a crown */}
             <span className="min-w-0 inline-flex items-center gap-0.5" data-live-host={hostName || ''}>
               <span className="hidden sm:inline truncate max-w-56">

@@ -1216,6 +1216,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
     }
 
     // 2. Enter (without Shift) -> If block is completely empty:
+    //    - A to-do becomes a plain bullet
     //    - If level > minLevel, outdent (Shift+Tab behaviour)
     //    - Otherwise split paragraph at cursor and create new block below
     if (e.key === 'Enter' && !e.shiftKey && block.type !== 'code') {
@@ -1240,6 +1241,12 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
 
       const minLevel = levelOffset || 0;
       if (localContent === '') {
+        // Enter in an empty to-do ends the to-dos: it becomes a plain bullet on the same level
+        if (block.type === 'todo') {
+          refocusAfterTypeChangeRef.current = true;
+          flushDebounce('', { type: 'text', checked: false, taskId: '' });
+          return;
+        }
         if (Math.max(0, block.level || 0) > minLevel && !siblingFollows) {
           flushDebounce(localContent);
           onIndentBlockRef.current(block.id, -1);
@@ -1494,7 +1501,8 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
                 ? 'bg-accent ring-2 ring-accent/30'
                 : activeFocus
                 ? 'bg-main scale-125'
-                : 'bg-faint group-hover/bullet:bg-accent group-hover/bullet:scale-125'
+                : // Resting dots stay quiet next to the text (a quarter of the faint colour, in every theme)
+                  'bg-faint/25 group-hover/bullet:bg-accent group-hover/bullet:scale-125'
             } ${
               // Empty rows show the dot only near the pointer (to-dos keep it: the guide lines start there)
               isEmpty
@@ -1926,7 +1934,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
                   className="px-1.5 py-0.5 rounded-btn border border-status-warn/40 hover:bg-status-warn/15 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
                   title={
                     lockedBy
-                      ? t('lock.copy', { name: lockedBy.name })
+                      ? (lockedBy.own ? t('lock.drawingOwn') : t('lock.copy', { name: lockedBy.name }))
                       : originalLockedBy
                         ? t('block.originalLocked', { name: originalLockedBy.name })
                         : block.conflictOf === 'title'
@@ -1949,7 +1957,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
                   disabled={!!lockedBy}
                   onClick={() => onResolveConflict(block.id, 'drop')}
                   className="px-1.5 py-0.5 rounded-btn border border-border text-muted hover:text-main hover:bg-panel cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
-                  title={lockedBy ? t('lock.copy', { name: lockedBy.name }) : t('block.dropVersion')}
+                  title={lockedBy ? (lockedBy.own ? t('lock.drawingOwn') : t('lock.copy', { name: lockedBy.name })) : t('block.dropVersion')}
                 >
                   {t('common:discard')}
                 </button>
@@ -2013,7 +2021,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
         <span
           className="absolute right-1 sm:right-2 top-0.5 sm:top-1 z-20 h-5 inline-flex items-center gap-1 pl-0.5 pr-1.5 rounded-pill text-[10px] font-semibold bg-panel select-none max-w-[45%]"
           style={{ color: lockColor!.text, border: `1px solid ${lockColor!.border}` }}
-          title={t('lock.title', { name: lockedBy.name })}
+          title={lockedBy.own ? t('lock.drawingOwn') : t('lock.title', { name: lockedBy.name })}
         >
           <UserAvatar
             userId={lockedBy.userId}

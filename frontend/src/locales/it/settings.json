@@ -541,7 +541,7 @@
     "activate": "Attiva",
     "passwordReset": "Password reimpostata.",
     "deleted": "Utente eliminato.",
-    "roleChanged": "Ruolo di {{name}} modificato in \"{{role}}\".",
+    "roleChanged": "Ruolo di {{name}} modificato in \"{{role}}\". La persona viene disconnessa su tutti i dispositivi e accede di nuovo con il nuovo ruolo.",
     "confirmReject": "Rifiutare la registrazione di \"{{name}}\" ({{email}})? L'account verrà eliminato.",
     "confirmDelete": "Vuoi davvero eliminare definitivamente l'utente \"{{name}}\" ({{email}})?",
     "username": "Nome utente",
@@ -582,7 +582,13 @@
     "email": "Indirizzo email",
     "emailChanged": "L’indirizzo email di {{name}} ora è {{email}}.",
     "emailRemoved": "{{name}} non ha più un indirizzo email.",
-    "emailRemoveHint": "Senza indirizzo, {{name}} non potrà più reimpostare la password via email. L’accesso con nome utente e password continua a funzionare."
+    "emailRemoveHint": "Senza indirizzo, {{name}} non potrà più reimpostare la password via email. L’accesso con nome utente e password continua a funzionare.",
+    "mustChange": "Da cambiare al prossimo accesso",
+    "mustChangeHint": "Dopo l’accesso la persona deve prima scegliere una password propria.",
+    "revokeKeys": "Revoca chiavi API e accessi IA",
+    "revokeKeysHint": "Rimuove tutte le chiavi API e i client IA collegati (MCP) dell’account, ad esempio dopo un furto. Altrimenti continuano a funzionare.",
+    "passwordResetMustChange": "Password reimpostata. Al prossimo accesso ne verrà chiesta una propria.",
+    "keysRevoked": "{{keys}} chiavi API e {{connections}} accessi IA revocati."
   },
   "sharing": {
     "private": {
@@ -660,6 +666,8 @@
       "issuer": "Issuer",
       "clientId": "ID client",
       "redirectUrl": "URI di reindirizzamento",
+      "logoutUrl": "URL di logout back-channel",
+      "logoutUrlHint": "Da inserire presso il provider. Il provider la chiama direttamente, quindi il server deve essere raggiungibile da lì senza passare da un browser.",
       "scopes": "Scope",
       "autoCreate": "Crea account automaticamente",
       "passwordLogin": "Accesso con password",
@@ -1127,7 +1135,10 @@
       "setup_finished": "Configurazione iniziale completata",
       "backup_created": "Backup creato",
       "backup_deleted": "Backup eliminato",
-      "backup_downloaded": "Backup scaricato"
+      "backup_downloaded": "Backup scaricato",
+      "account_registered": "Registrazione autonoma",
+      "account_unconfirmed_deleted": "Account non confermato eliminato",
+      "invite_redeemed": "Invito riscattato"
     },
     "detail": {
       "fromTo": "{{label}}: {{from}} → {{to}}",
@@ -1137,7 +1148,12 @@
       "viaEnv": "Da ADMIN_USER al primo avvio",
       "secondFactorsRemoved": "Secondi fattori rimossi",
       "pendingRegistration": "Registrazione rifiutata",
-      "content": "Con {{notes}} note, {{tasks}} attività, {{lists}} liste"
+      "content": "Con {{notes}} note, {{tasks}} attività, {{lists}} liste",
+      "awaitingApproval": "In attesa di approvazione",
+      "emailConfirmation": "In attesa di conferma dell’indirizzo e-mail",
+      "unconfirmedDeleted": "Indirizzo e-mail non confermato entro 48 ore",
+      "mustChange": "Nuova password richiesta al prossimo accesso",
+      "keysRevoked": "{{keys}} chiavi API e {{connections}} accessi IA revocati"
     },
     "value": {
       "on": "attivo",
@@ -1201,7 +1217,9 @@
       "recipient": "A",
       "maxUses": "Utilizzi",
       "expiresAt": "Valido fino al",
-      "file": "File"
+      "file": "File",
+      "account": "Account",
+      "invitedBy": "Invitato da"
     }
   }
 }

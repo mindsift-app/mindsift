@@ -9,6 +9,7 @@ import { stopOnControl } from './stopOnControl';
 import { AvatarPerson } from '../../components/AvatarStack';
 import { notePreview, renderMentions } from '../../lib/markdown';
 import { remindersText } from '../../lib/reminders';
+import { CARD_TITLE_MAX, cardTitle } from './cardTitle';
 
 interface KanbanCardProps {
   task: Thought;
@@ -79,16 +80,11 @@ const KanbanCardView: React.FC<KanbanCardProps> = ({
         justDropped ? 'ring-2 ring-accent/60' : ''
       }`}
     >
-      <div className="flex items-start justify-between gap-2">
-        <p
-          className={`text-xs font-medium wrap-break-word flex-1 leading-snug ${
-            task.isCompleted ? 'line-through text-faint' : 'text-main'
-          }`}
-        >
-          {task.content}
-        </p>
+      {/* The buttons float at the top right so the title flows around and below them; long words break
+          anywhere and very long titles are shortened (the dialog shows the whole text). */}
+      <div className="flow-root">
         {!readOnly && (
-          <div className="hidden sm:flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+          <div className="hidden sm:flex float-right ml-2 items-center gap-1" onClick={(e) => e.stopPropagation()}>
             <button
               onClick={() => onConvertToDoc(task)}
               title={task.docId ? t('row.openNote') : t('detail.toDoc')}
@@ -105,6 +101,14 @@ const KanbanCardView: React.FC<KanbanCardProps> = ({
             </button>
           </div>
         )}
+        <p
+          title={task.content.length > CARD_TITLE_MAX ? task.content : undefined}
+          className={`text-xs font-medium [overflow-wrap:anywhere] leading-snug ${
+            task.isCompleted ? 'line-through text-faint' : 'text-main'
+          }`}
+        >
+          {cardTitle(task.content)}
+        </p>
       </div>
 
       {/* Subtasks progress */}

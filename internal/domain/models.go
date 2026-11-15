@@ -102,6 +102,9 @@ type User struct {
 	// and admin user list); OIDC: it is linked to the provider (own profile only)
 	NoPassword bool `json:"noPassword,omitempty"`
 	OIDC       bool `json:"oidc,omitempty"`
+	// MustChangePassword: a reset by the administration asked for an own password at the next sign-in; until
+	// it is set, password sessions reach only that (own profile and admin user list)
+	MustChangePassword bool `json:"mustChangePassword,omitempty"`
 	// Only filled for the user's own profile (GET /auth/me, PATCH /auth/settings)
 	NotificationSettings *NotificationSettings `json:"notificationSettings,omitempty"`
 	// DoneRetentionDays: completed tasks are deleted this many days after ticking them off (0 = never)
@@ -861,6 +864,7 @@ type OIDCStatus struct {
 	Issuer        string `json:"issuer,omitempty"`
 	ClientID      string `json:"clientId,omitempty"`
 	RedirectURL   string `json:"redirectUrl,omitempty"`
+	LogoutURL     string `json:"logoutUrl,omitempty"` // back-channel logout; empty while that is off
 	Scopes        string `json:"scopes,omitempty"`
 	AdminGroup    string `json:"adminGroup,omitempty"`
 	AutoCreate    bool   `json:"autoCreate"`

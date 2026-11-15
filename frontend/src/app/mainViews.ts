@@ -16,4 +16,5 @@ export { GuidedTour } from '../features/tour/GuidedTour';
 export { TourOfferCard } from '../features/tour/TourOfferCard';
 export { UpdateNoticeCard } from '../features/update/UpdateNoticeCard';
 export { MfaSetupRequiredView } from '../features/auth/MfaSetupRequiredView';
+export { PasswordChangeRequiredView } from '../features/auth/PasswordChangeRequiredView';
 export { SecondFactorHost } from '../features/settings/user/askSecondFactor';

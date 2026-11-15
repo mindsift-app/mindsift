@@ -106,15 +106,18 @@ describe('TaskDetailModal', () => {
     const unwatchSpy = vi.spyOn(api, 'unwatchTask').mockResolvedValue({ watching: false });
 
     render(<TaskDetailModal {...props({ task: { ...task, isWatching: false } })} />);
-    const btn = screen.getByRole('button', { name: 'Beobachten' });
-    fireEvent.click(btn);
+    fireEvent.click(screen.getByRole('button', { name: 'Beobachten' }));
+    expect(watchSpy).toHaveBeenCalledWith('th_1');
 
-    await waitFor(() => expect(watchSpy).toHaveBeenCalledWith('th_1'));
-    expect(screen.getByRole('button', { name: 'Nicht mehr beobachten' })).toBeTruthy();
+    // The answer arrives a moment after the click: wait until the button shows the new state and takes
+    // clicks again (it is disabled while the request runs, a click then would be ignored)
+    const unwatch = await screen.findByRole('button', { name: 'Nicht mehr beobachten' });
+    await waitFor(() => expect((unwatch as HTMLButtonElement).disabled).toBe(false));
 
-    fireEvent.click(screen.getByRole('button', { name: 'Nicht mehr beobachten' }));
-    await waitFor(() => expect(unwatchSpy).toHaveBeenCalledWith('th_1'));
-    expect(screen.getByRole('button', { name: 'Beobachten' })).toBeTruthy();
+    fireEvent.click(unwatch);
+    expect(unwatchSpy).toHaveBeenCalledWith('th_1');
+    const watch = await screen.findByRole('button', { name: 'Beobachten' });
+    await waitFor(() => expect((watch as HTMLButtonElement).disabled).toBe(false));
   });
 
   it('hands the new watch state to the parent instead of changing the task it was given', async () => {

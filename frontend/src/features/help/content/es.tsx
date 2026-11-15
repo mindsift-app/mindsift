@@ -40,6 +40,11 @@ const es: HelpContent = {
       subtitle: 'Almacenamiento atómico con sincronización colaborativa en tiempo real',
       icon: FileText,
       keywords: [
+        'título',
+        'pegar',
+        'chatgpt',
+        'claude',
+        'código',
         'workspace',
         'outliner',
         'base de datos',
@@ -62,6 +67,12 @@ const es: HelpContent = {
             <li>
               <strong className="text-main">Totalmente funcional sin conexión:</strong> puedes seguir trabajando sin conexión a internet;
               los cambios se sincronizan automáticamente en cuanto vuelvas a estar en línea.
+            </li>
+            <li>
+              <strong className="text-main">Título:</strong> El título de una nota tiene como máximo 60 caracteres, para que quepa en una línea y siga siendo un nombre de archivo útil al exportar. Cerca del límite, el campo muestra el recuento.
+            </li>
+            <li>
+              <strong className="text-main">Pegar:</strong> Un texto de varias líneas se convierte en viñetas separadas. El código copiado de páginas de chat como ChatGPT o Claude, o de una documentación, se convierte en un bloque de código con el lenguaje correspondiente.
             </li>
             <li>
               <strong className="text-main">Exportación a Markdown:</strong> mediante el icono de descarga (<Download className="w-3 h-3 inline text-accent" />) en la cabecera de la nota puedes exportar el estado actual como archivo Markdown estándar (<code className="font-mono text-accent">.md</code>) a tu equipo en cualquier momento.
@@ -94,7 +105,7 @@ const es: HelpContent = {
         <div className="space-y-2 text-muted leading-relaxed">
           <ul className="space-y-1.5">
             <li>
-              <kbd className={kbd}>Enter</kbd> : crea inmediatamente un nuevo punto en el mismo nivel. Si el punto está vacío y sangrado, se desplaza un nivel a la izquierda.
+              <kbd className={kbd}>Enter</kbd> : crea inmediatamente un nuevo punto en el mismo nivel. Si el punto está vacío y sangrado, se desplaza un nivel a la izquierda. Después de una casilla viene otra (sin marcar y sin tarea propia); Enter en una casilla vacía la convierte en un punto normal.
             </li>
             <li>
               <kbd className={kbd}>Tab</kbd> : sangra el punto actual hacia la derecha y lo anida bajo el anterior.
@@ -364,7 +375,7 @@ const es: HelpContent = {
               <strong className="text-main">Enlaces entrantes (backlinks):</strong> al final de cada nota, «Vinculado a esta nota» muestra qué otras notas la enlazan mediante <code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">[[título]]</code>. Al hacer clic en un lugar, se salta directamente allí.
             </li>
             <li>
-              <strong className="text-main">Papelera:</strong> las notas eliminadas (también las de carpetas eliminadas) van a la «Papelera» en la parte inferior de la barra de carpetas o en el menú móvil. Allí puedes verlas en modo de solo lectura, restaurarlas o eliminarlas definitivamente. Mientras una nota está en la papelera, las personas con las que se compartió tampoco la ven. Tras el periodo establecido en Ajustes de la cuenta → Retención (por defecto 30 días) se elimina de forma permanente. Las tareas eliminadas se encuentran en la pestaña «Papelera» de tareas, y los pensamientos descartados en la papelera de triage.
+              <strong className="text-main">Papelera:</strong> tus propias notas se eliminan con ⋯ → «Eliminar nota» o con el botón de papelera que aparece al pasar el ratón sobre una nota en la barra de carpetas (pregunta antes). Las notas eliminadas (también las de carpetas eliminadas) van a la «Papelera» en la parte inferior de la barra de carpetas o en el menú móvil. Allí puedes verlas en modo de solo lectura, restaurarlas o eliminarlas definitivamente. Mientras una nota está en la papelera, las personas con las que se compartió tampoco la ven. Tras el periodo establecido en Ajustes de la cuenta → Retención (por defecto 30 días) se elimina de forma permanente. Las tareas eliminadas se encuentran en la pestaña «Papelera» de tareas, y los pensamientos descartados en la papelera de triage.
             </li>
           </ul>
         </div>
@@ -628,6 +639,9 @@ const es: HelpContent = {
         'prioridad',
         'asignar',
         'asignado',
+        'calendario',
+        'suscripción',
+        'ical',
       ],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
@@ -683,13 +697,13 @@ const es: HelpContent = {
       title: 'Listas compartidas, cantidades y categorías por hashtag',
       subtitle: 'Listas de la compra, equipaje y verificación en tiempo real',
       icon: ShoppingCart,
-      keywords: ['listas', 'compra', 'supermercado', 'verificacion', 'cantidades', 'categorias', 'hashtag', 'tiempo real'],
+      keywords: ['listas', 'compra', 'supermercado', 'verificacion', 'cantidades', 'categorias', 'hashtag', 'tiempo real', 'sugerencias'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
           <p>Las listas compartidas son ideales para compras, equipaje y recados en común:</p>
           <ul className="space-y-1.5">
             <li>
-              <strong className="text-main">Cantidades automáticas:</strong> entradas como <code className="text-accent font-mono">2x leche bio</code> o <code className="text-accent font-mono">500g pasta</code> separan la cantidad y el nombre automáticamente.
+              <strong className="text-main">Escribe la cantidad junto al artículo:</strong> con <code className="text-accent font-mono">2x leche bio</code>, <code className="text-accent font-mono">500g pasta</code>, <code className="text-accent font-mono">3 manzanas</code> o <code className="text-accent font-mono">tomates 2 latas</code> el campo resalta la cantidad y la pasa enseguida al campo de cantidad. Al añadir, el nombre va a la lista sin ella. Vacía el campo de cantidad para dejar el texto tal cual; una cantidad que escribas tú en ese campo tiene prioridad. Se reconocen un número con x, un número con unidad (g, kg, l, ml, uds, paquete, lata, botella, manojo …) y un número al principio. Un número al final sin unidad forma parte del nombre (<code className="text-accent font-mono">iPhone 15</code>, <code className="text-accent font-mono">cola 0,5</code>), igual que uno pegado a una palabra (<code className="text-accent font-mono">7up</code>). En el campo de cantidad también puedes escribir unidades, por ejemplo <code className="text-accent font-mono">500 g</code>.
             </li>
             <li>
               <strong className="text-main">Categorías por hashtag:</strong> añade un hashtag como <code className="text-accent font-mono">#nevera</code> o <code className="text-accent font-mono">#verduras</code>. La lista agrupa automáticamente los elementos en secciones correspondientes.

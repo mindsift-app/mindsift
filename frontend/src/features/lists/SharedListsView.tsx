@@ -18,6 +18,9 @@ import { EmojiIconButton } from '../../components/EmojiIconButton';
 import { useMobileActions } from '../../context/MobileActionContext';
 import { collectHashtags, deduplicateItems, findHashtagQuery, matchHashtags, groupOpenItems, parseListItemInput, withPendingChanges } from './listItems';
 import { matchItemSuggestions, withRecordedUse } from './itemSuggestions';
+import { useItemQuantity } from './QuantityHint';
+import { QUANTITY_MAX_LENGTH } from './itemQuantity';
+import { PhraseHighlight } from '../../components/NaturalDateHint';
 import { useListDrag } from './useListDrag';
 import { useListRealtime } from './useListRealtime';
 import { useItemEditing } from './useItemEditing';
@@ -80,6 +83,9 @@ export const SharedListsView: React.FC<SharedListsViewProps> = ({ onRefreshGloba
 
   const [newItemText, setNewItemText] = useState('');
   const [newItemQty, setNewItemQty] = useState('');
+  // "2x Milch": the quantity in the text (itemQuantity.ts) unless one is typed into its own field
+  const typedQuantity = useItemQuantity(newItemText, !newItemQty.trim());
+  const autoQuantity = typedQuantity.parsed?.quantity ?? '';
   const [itemVoiceError, setItemVoiceError] = useState<string | null>(null);
   const [isSubmittingItem, setIsSubmittingItem] = useState(false);
 
@@ -210,13 +216,14 @@ export const SharedListsView: React.FC<SharedListsViewProps> = ({ onRefreshGloba
 
   const handleAddItem = (e: React.FormEvent) => {
     e.preventDefault();
-    const parsed = parseListItemInput(newItemText, newItemQty);
+    const parsed = parseListItemInput(newItemText, newItemQty, typedQuantity.parsed);
     void addItem(parsed.content, parsed.category, parsed.quantity);
   };
 
-  // A suggestion chosen: its name and category; a hashtag typed in the field and the quantity win
+  // A suggestion chosen: its name and category; a hashtag typed in the field and the quantity (its field or
+  // the one in the text) win
   const applyItemSuggestion = (s: ListItemSuggestion) => {
-    const typed = parseListItemInput(newItemText, newItemQty);
+    const typed = parseListItemInput(newItemText, newItemQty, typedQuantity.parsed);
     void addItem(s.content, typed.category ?? (s.category || undefined), typed.quantity);
   };
 
@@ -231,6 +238,7 @@ export const SharedListsView: React.FC<SharedListsViewProps> = ({ onRefreshGloba
     setItemSuggestionIndex(-1);
     setNewItemText('');
     setNewItemQty('');
+    typedQuantity.reset();
     setCursorPosition(null);
 
     try {
@@ -332,9 +340,9 @@ export const SharedListsView: React.FC<SharedListsViewProps> = ({ onRefreshGloba
   const itemSuggestions = useMemo(
     () =>
       showSuggestions && !activeHashtagQuery && activeList
-        ? matchItemSuggestions(itemHistory[activeList.id] || [], parseListItemInput(newItemText).content, openItems)
+        ? matchItemSuggestions(itemHistory[activeList.id] || [], parseListItemInput(newItemText, '', typedQuantity.parsed).content, openItems)
         : [],
-    [showSuggestions, activeHashtagQuery, activeList, itemHistory, newItemText, openItems]
+    [showSuggestions, activeHashtagQuery, activeList, itemHistory, newItemText, openItems, typedQuantity.parsed]
   );
 
   const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -455,11 +463,19 @@ export const SharedListsView: React.FC<SharedListsViewProps> = ({ onRefreshGloba
         placeholder={itemVoiceError || t('itemPlaceholder', { title: activeList?.title })}
         className={className}
       />
+      {typedQuantity.parsed && (
+        <PhraseHighlight
+          inputRef={inputRef}
+          text={newItemText}
+          spans={[{ start: typedQuantity.parsed.start, end: typedQuantity.parsed.end }]}
+          markTestId="quantity-mark"
+        />
+      )}
       {/* Hashtag Autocomplete Suggestions Dropdown */}
       {showSuggestions && activeHashtagQuery && matchingSuggestions.length > 0 && (
         <div className="absolute left-6 top-full mt-2 w-64 max-h-56 overflow-y-auto bg-panel-elevated border border-border rounded-btn shadow-xl py-1 z-50 animate-in fade-in zoom-in-95 duration-100">
           <div className="px-2.5 py-1 text-[10px] uppercase font-semibold text-faint tracking-wider border-b">
-            Hashtags
+            {t('hashtagsHeading')}
           </div>
           {matchingSuggestions.map((tag, idx) => {
             const isSelected = idx === suggestionIndex;
@@ -546,12 +562,18 @@ export const SharedListsView: React.FC<SharedListsViewProps> = ({ onRefreshGloba
   const quantityInput = (className: string) => (
     <input
       type="text"
-      inputMode="decimal"
-      value={newItemQty}
-      onChange={(e) => setNewItemQty(e.target.value.replace(/[^0-9.,xX]/g, ''))}
+      maxLength={QUANTITY_MAX_LENGTH}
+      // A quantity typed into the item shows up here (accent colour) until this field is typed into;
+      // emptying it keeps the text as typed
+      value={newItemQty || autoQuantity}
+      onChange={(e) => {
+        if (!newItemQty && autoQuantity && e.target.value === '') typedQuantity.dismiss();
+        else setNewItemQty(e.target.value);
+      }}
       placeholder={t('quantity')}
       aria-label={t('quantityLabel')}
-      className={className}
+      title={!newItemQty && autoQuantity ? t('quantityHint.recognized', { quantity: autoQuantity }) : undefined}
+      className={`${className} ${!newItemQty && autoQuantity ? 'text-accent' : ''}`}
     />
   );
   const renderAddItemFields = (desktop: boolean) =>

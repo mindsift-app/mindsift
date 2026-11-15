@@ -46,5 +46,9 @@
   "shareMenuLabel": "Compartir la lista «{{title}}»",
   "item": {
     "addQuantity": "+ cantidad"
-  }
+  },
+  "quantityHint": {
+    "recognized": "Cantidad reconocida: {{quantity}}"
+  },
+  "hashtagsHeading": "Hashtags"
 }

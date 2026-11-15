@@ -396,6 +396,7 @@ func (s *Server) oidcStatusForAdmin() *domain.OIDCStatus {
 	}
 	st.Enabled = true
 	st.RedirectURL = s.oidc.redirectURL
+	st.LogoutURL = s.oidcLogoutURL()
 	_, err := s.oidc.discover(s.now())
 	reachable := err == nil
 	st.Reachable = &reachable

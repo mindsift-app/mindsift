@@ -14,12 +14,14 @@ import (
 )
 
 // Automatic backups below $DATA_DIR/backups/:
-//   system/mindsift-db-YYYY-MM-DD-HHMM.db.gz        the whole database (VACUUM INTO, consistent while
+//   system/mindsift-db-YYYY-MM-DD-HHMMSS.db.gz      the whole database (VACUUM INTO, consistent while
 //                                                     others write), for the admin
 //   system/pre-migration-<id>-YYYY-MM-DD-HHMMSS.db.gz   the same, written at start before pending
 //                                                     migrations (migrations.go); the last three stay,
 //                                                     none longer than 90 days
-//   users/<user id>/mindsift-backup-YYYY-MM-DD-HHMM.zip   the same ZIP as "Backup herunterladen"
+//   users/<user id>/mindsift-backup-YYYY-MM-DD-HHMMSS.zip   the same ZIP as "Backup herunterladen"
+// Names written before seconds were added (…-HHMM) are still listed, kept and pruned: the names sort
+// by time either way, and pruning goes by the file time.
 // Files older than the retention are deleted after each run. Backups next to the database protect
 // against mistakes, not against a broken disk; copy the folder elsewhere as well.
 
@@ -31,12 +33,13 @@ const (
 
 var (
 	backupTimeRe  = regexp.MustCompile(`^([01]\d|2[0-3]):[0-5]\d$`)
-	backupNameRe  = regexp.MustCompile(`^mindsift-(db|backup)-\d{4}-\d{2}-\d{2}-\d{4}\.(db\.gz|zip)$`)
+	backupNameRe  = regexp.MustCompile(`^mindsift-(db|backup)-\d{4}-\d{2}-\d{2}-\d{4}(\d{2})?\.(db\.gz|zip)$`)
 	ErrBackupName = errors.New("Unbekannte Sicherung")
 	// The admin settings keep the stored value for these; the setup wizard refuses them
 	ErrBackupTime      = errors.New("Ungültige Uhrzeit für die Backups (HH:MM)")
 	ErrBackupRetention = errors.New("Ungültige Aufbewahrung der Backups (1 bis 365 Tage)")
-	backupStampFmt     = "2006-01-02-1504"
+	// With seconds: two backups in the same minute (a manual one right after the daily run) keep both
+	backupStampFmt = "2006-01-02-150405"
 )
 
 // ValidBackupTime: the daily backup time as HH:MM (24 h).

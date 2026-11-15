@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/mindsift-app/mindsift/internal/domain"
 	"github.com/mindsift-app/mindsift/internal/i18n"
@@ -362,7 +363,7 @@ func (s *Store) UpdateThoughtTriage(userID, thoughtID, action, convertTo, target
 			}
 			newStatus = domain.StatusConverted
 			convertedType = "document"
-			title := ShortTitle(thought.Content)
+			title := FirstLineTitle(thought.Content)
 			blocks := make([]domain.DocumentBlock, 0)
 
 			// A task turned into a note starts with the task itself as a checkbox, even though it is the title too,
@@ -494,6 +495,41 @@ type ThoughtPatch struct {
 	// elsewhere (the note, another task view) stays.
 	SubtasksBase *[]domain.SubTask
 	Tags         *[]string
+	// StatusAt: when the person ticked the task, un-ticked it or moved it to another column (zero: now),
+	// e.g. on a phone that was offline and sends it later. A change of the status is skipped when
+	// somebody changed it after that (UpdateTask).
+	StatusAt time.Time
+}
+
+// taskStatus is a task's status as stored: completed, its Kanban column and when either last changed
+// (thoughts.status_changed_at, doneTimeLayout; empty: not since migration 65).
+type taskStatus struct {
+	done      bool
+	column    string
+	changedAt string
+}
+
+func (s *Store) taskStatus(taskID string) (taskStatus, error) {
+	var st taskStatus
+	var done int
+	err := s.db.QueryRow(`SELECT is_completed, kanban_status, status_changed_at FROM thoughts WHERE id = ?`, taskID).Scan(&done, &st.column, &st.changedAt)
+	st.done = done != 0
+	if st.column == "" {
+		st.column = "todo"
+		if st.done {
+			st.column = "done"
+		}
+	}
+	return st, err
+}
+
+// statusTime is thoughts.status_changed_at for a change made at (zero or in the future: now).
+func statusTime(at time.Time) string {
+	now := time.Now().UTC()
+	if at.IsZero() || at.After(now) {
+		at = now
+	}
+	return at.UTC().Format(doneTimeLayout)
 }
 
 // NotifyPlan gives the notifications about a change from the task's new state (center entries and queued
@@ -505,9 +541,30 @@ type NotifyPlan func(t *domain.Thought) ([]CenterAdd, []QueuedAdd)
 // is; the caller compares it with the result) and writes it in one transaction together with plan's
 // notifications: a change and what it tells others used to wait twice for the database's write lock.
 // Returns the new state and the center entries as stored, in plan's order.
+//
+// A change of the status (isCompleted, kanbanStatus) states the wanted state, never a toggle, and is
+// compared with the status as stored right now, not with before: it is written only if
+//   - the task is not in that state already (ticked: completed, whatever its done column; with a column:
+//     that column and completion), so two people ticking the same task leave it ticked, and
+//   - nobody changed the status after p.StatusAt (thoughts.status_changed_at): an older change sent late
+//     by a phone that was offline does not undo a newer one. The last one to change it wins, by when
+//     they did it, not by when it reached the server.
+//
+// Otherwise the task keeps its status (the other fields of the patch are written all the same), and a
+// repeating task gets its next occurrence only on a real change from open to done.
 func (s *Store) UpdateTask(userID string, before *domain.Thought, p ThoughtPatch, plan NotifyPlan) (*domain.Thought, []CenterEntry, error) {
 	thought := before.Clone()
 	wasCompleted := thought.IsCompleted
+	statusPatch := p.IsCompleted != nil || (p.KanbanStatus != nil && *p.KanbanStatus != "")
+	var stored taskStatus
+	if statusPatch {
+		var err error
+		if stored, err = s.taskStatus(thought.ID); err != nil {
+			return nil, nil, err // sql.ErrNoRows: deleted meanwhile
+		}
+		thought.IsCompleted, thought.KanbanStatus = stored.done, stored.column
+		wasCompleted = stored.done
+	}
 	oldDue := thought.DueDate
 	if err := s.ensureTaskListWritable(userID, thought.TaskListID); err != nil {
 		return nil, nil, err
@@ -578,6 +635,20 @@ func (s *Store) UpdateTask(userID string, before *domain.Thought, p ThoughtPatch
 		thought.Assignees = kept
 	}
 
+	statusStamp := ""
+	if statusPatch {
+		same := thought.IsCompleted == stored.done
+		if p.KanbanStatus != nil && *p.KanbanStatus != "" {
+			same = same && thought.KanbanStatus == stored.column
+		}
+		statusStamp = statusTime(p.StatusAt)
+		if same || stored.changedAt > statusStamp {
+			// Already so, or changed by somebody later: the status stays as stored
+			statusPatch = false
+			thought.IsCompleted, thought.KanbanStatus = stored.done, stored.column
+		}
+	}
+
 	// A new due date or a reopened task gets its alarm again (in the same statement)
 	rearm := thought.DueDate != oldDue || (wasCompleted && !thought.IsCompleted)
 	if rearm {
@@ -599,9 +670,16 @@ func (s *Store) UpdateTask(userID string, before *domain.Thought, p ThoughtPatch
 		tagsJSON, _ := json.Marshal(thought.Tags)
 		set("tags", string(tagsJSON))
 	}
-	if p.IsCompleted != nil || (p.KanbanStatus != nil && *p.KanbanStatus != "") {
-		set("is_completed", boolInt(thought.IsCompleted))
-		set("kanban_status", thought.KanbanStatus)
+	if statusPatch {
+		// Guarded once more in the statement: a status change stored since it was read above and made after
+		// StatusAt stays (the trigger of migration 65 stamps changes that do not set the time themselves)
+		guarded := func(col string, v any) {
+			sets = append(sets, col+" = CASE WHEN status_changed_at <= ? THEN ? ELSE "+col+" END")
+			args = append(args, statusStamp, v)
+		}
+		guarded("is_completed", boolInt(thought.IsCompleted))
+		guarded("kanban_status", thought.KanbanStatus)
+		guarded("status_changed_at", statusStamp)
 	}
 	if p.DueDate != nil {
 		set("due_date", thought.DueDate)

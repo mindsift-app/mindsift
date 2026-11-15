@@ -6,6 +6,7 @@ import { OFFLINE_ITEM_PREFIX } from '../../lib/offline';
 import { OriginBadge } from '../../components/OriginBadge';
 import { getItemCategory, getItemDisplayContent, ItemGroup } from './listItems';
 import { useItemEditing } from './useItemEditing';
+import { QUANTITY_MAX_LENGTH } from './itemQuantity';
 import { useListDrag } from './useListDrag';
 
 // Open entries of the list, by category, draggable; an empty list shows a hint
@@ -135,7 +136,8 @@ export function OpenItemGroups({
                               type="text"
                               autoFocus
                               value={editingQtyValue}
-                              onChange={(e) => setEditingQtyValue(e.target.value.replace(/[^0-9.,xX]/g, ''))}
+                              maxLength={QUANTITY_MAX_LENGTH}
+                              onChange={(e) => setEditingQtyValue(e.target.value)}
                               onKeyDown={async (e) => {
                                 if (e.key === 'Enter') {
                                   e.preventDefault();
@@ -159,7 +161,7 @@ export function OpenItemGroups({
                               setEditingQtyItemId(item.id);
                               setEditingQtyValue(item.quantity || '');
                             }}
-                            className={`text-xs px-2 py-0.5 rounded-full transition-colors ${
+                            className={`text-xs px-2 py-0.5 rounded-full whitespace-nowrap shrink-0 transition-colors ${
                               item.quantity
                                 ? 'badge-accent cursor-pointer hover:brightness-125'
                                 : 'opacity-0 group-hover:opacity-60 hover:opacity-100! text-muted hover:text-accent border border-dashed hover:border-accent text-[11px]'
@@ -266,7 +268,8 @@ export function CompletedItems({
                           type="text"
                           autoFocus
                           value={editingQtyValue}
-                          onChange={(e) => setEditingQtyValue(e.target.value.replace(/[^0-9.,xX]/g, ''))}
+                          maxLength={QUANTITY_MAX_LENGTH}
+                          onChange={(e) => setEditingQtyValue(e.target.value)}
                           onKeyDown={async (e) => {
                             if (e.key === 'Enter') {
                               e.preventDefault();
@@ -290,7 +293,7 @@ export function CompletedItems({
                           setEditingQtyItemId(item.id);
                           setEditingQtyValue(item.quantity || '');
                         }}
-                        className={`text-xs px-1.5 py-0.5 rounded-sm transition-colors ${
+                        className={`text-xs px-1.5 py-0.5 rounded-sm whitespace-nowrap shrink-0 transition-colors ${
                           item.quantity
                             ? 'text-faint hover:text-main cursor-pointer'
                             : 'opacity-0 group-hover:opacity-60 text-faint hover:text-main text-[11px]'

@@ -43,8 +43,12 @@ function fakeAdmin(users: User[], extra: Partial<Admin> = {}): Admin {
   } as unknown as Admin;
 }
 
-// Rows are the buttons that open a person (aria-expanded), not the filters
-const rows = () => screen.getAllByRole('button', { expanded: false }).filter((b) => b.textContent?.includes('person'));
+// Rows are the buttons that open a person (aria-expanded), not the filters. A plain selector, not a role
+// query: with a hundred rows in the page the role queries take seconds on a busy machine
+const rows = () =>
+  Array.from(document.querySelectorAll<HTMLButtonElement>('button[aria-expanded="false"]')).filter((b) => b.textContent?.includes('person'));
+// The "show more" button by its text, for the same reason
+const showMore = (label: string) => screen.getByText(label).closest('button') as HTMLButtonElement;
 
 describe('UserList', () => {
   beforeEach(() => localStorage.clear());
@@ -54,11 +58,11 @@ describe('UserList', () => {
     render(<UserList admin={fakeAdmin(users)} currentUser={me} isServerAdmin />);
     expect(rows()).toHaveLength(50);
     expect(screen.getByText('50 von 130 angezeigt')).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: '50 weitere anzeigen' }));
+    fireEvent.click(showMore('50 weitere anzeigen'));
     expect(rows()).toHaveLength(100);
-    fireEvent.click(screen.getByRole('button', { name: '30 weitere anzeigen' }));
+    fireEvent.click(showMore('30 weitere anzeigen'));
+    expect(rows()).toHaveLength(130);
     expect(screen.queryByText(/angezeigt/)).toBeNull();
-    // Renders up to 130 rows in jsdom: on a busy machine (parallel builds) that took longer than the 5 s default
   });
 
   it('searches name, username and e-mail and says how many match', () => {
@@ -106,6 +110,29 @@ describe('UserList', () => {
     expect((screen.getByRole('button', { name: 'Sperren' }) as HTMLButtonElement).disabled).toBe(true);
     expect((screen.getByRole('button', { name: 'Benutzer löschen' }) as HTMLButtonElement).disabled).toBe(true);
     expect(screen.getByText('Nicht beim eigenen Konto')).toBeTruthy();
+  });
+
+  it('offers two switches with the password reset, both off: change at the next sign-in, revoke API keys', () => {
+    const admin = fakeAdmin([me, person(1)], {
+      resetPwdUserId: 'usr_1',
+      resetPwdVal: 'ein-neues-Passwort',
+      resetPwdMustChange: false,
+      setResetPwdMustChange: vi.fn(),
+      resetPwdRevokeKeys: false,
+      setResetPwdRevokeKeys: vi.fn(),
+    } as Partial<Admin>);
+    render(<UserList admin={admin} currentUser={me} isServerAdmin />);
+    fireEvent.click(screen.getByRole('button', { name: /Person 001/ }));
+    const mustChange = screen.getByRole('switch', { name: 'Bei der nächsten Anmeldung ändern' });
+    const revoke = screen.getByRole('switch', { name: 'API-Schlüssel und KI-Zugänge widerrufen' });
+    expect(mustChange.getAttribute('aria-checked')).toBe('false');
+    expect(revoke.getAttribute('aria-checked')).toBe('false');
+    fireEvent.click(mustChange);
+    expect(admin.setResetPwdMustChange).toHaveBeenCalledWith(true);
+    fireEvent.click(revoke);
+    expect(admin.setResetPwdRevokeKeys).toHaveBeenCalledWith(true);
+    fireEvent.click(screen.getByRole('button', { name: 'Speichern' }));
+    expect(admin.handleConfirmResetPassword).toHaveBeenCalledWith('usr_1');
   });
 
   it('lets user managers change members only, without passwords or roles', () => {

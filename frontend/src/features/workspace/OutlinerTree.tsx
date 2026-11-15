@@ -66,7 +66,8 @@ export interface OutlinerTreeProps {
   /** The focused field took over the block's text from elsewhere (engine.fieldShows) */
   onFieldShows?: (blockId: string, content: string) => void;
   lockedBlocks?: Map<string, BlockLock>; // blockId -> the user editing it (someone else)
-  onLockedAction?: (holderName: string) => void;
+  /** A change was refused because someone (or the same person elsewhere) holds a bullet it touches */
+  onLockedAction?: (holder: BlockLock) => void;
   /** A double-click on a drawing someone else is editing */
   onLockedDrawing?: (lock: BlockLock) => void;
   onResolveConflict?: (blockId: string, choice: ConflictChoice) => void;
@@ -339,7 +340,7 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
   const rowCacheRef = useRef<RowCache>({ treeValues: [], rows: new Map() });
 
   const handleCreateBlockBelow = useCallback(
-    (afterBlockId: string, newContent: string = '') => {
+    (afterBlockId: string, newContent: string = '', type?: BlockType) => {
       if (!canEdit) return;
       const idx = blocks.findIndex((b) => b.id === afterBlockId);
       const currentBlock = idx >= 0 ? blocks[idx] : null;
@@ -353,8 +354,10 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
       const opensChildren =
         !!currentBlock && !currentBlock.collapsed && !!nextBlock && Math.max(0, nextBlock.level || 0) > currentLevel;
       const level = currentBlock ? currentLevel + (isHeading || opensChildren ? 1 : 0) : 0;
-      // Numbered lists continue on Enter (an empty item ends the list, see OutlinerBlock)
-      const inheritedType: BlockType = currentBlock?.type === 'numbered' ? 'numbered' : 'text';
+      // Numbered lists and to-dos continue on Enter (an empty item ends them, see OutlinerBlock). The new
+      // to-do is not linked to a task itself; the server's rules for linked to-dos apply as for any other.
+      const inheritedType: BlockType =
+        type ?? (currentBlock?.type === 'numbered' || currentBlock?.type === 'todo' ? currentBlock.type : 'text');
 
       const newBlock: DocumentBlock = {
         id: `blk_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`,
@@ -529,16 +532,16 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
   // Name of the other user holding the block (or, withBranch, any block below it); structural actions on
   // such blocks are not started at all, so they cannot end up half applied
   const lockHolder = useCallback(
-    (blockId: string, withBranch = false): string | undefined => {
+    (blockId: string, withBranch = false): BlockLock | undefined => {
       if (!lockedBlocks || lockedBlocks.size === 0) return undefined;
-      const direct = lockedBlocks.get(blockId)?.name;
+      const direct = lockedBlocks.get(blockId);
       if (direct || !withBranch) return direct;
       const idx = blocks.findIndex((b) => b.id === blockId);
       if (idx < 0) return undefined;
       const level = blocks[idx].level || 0;
       for (let i = idx + 1; i < blocks.length && (blocks[i].level || 0) > level; i++) {
-        const name = lockedBlocks.get(blocks[i].id)?.name;
-        if (name) return name;
+        const lock = lockedBlocks.get(blocks[i].id);
+        if (lock) return lock;
       }
       return undefined;
     },
@@ -1384,7 +1387,8 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
             } else {
               const lastBlock = blocks[blocks.length - 1];
               if (lastBlock.content && lastBlock.content.trim() !== '') {
-                handleCreateBlockBelow(lastBlock.id, '');
+                // A click below the note starts a plain bullet, even after a to-do
+                handleCreateBlockBelow(lastBlock.id, '', 'text');
               } else {
                 focusBlockInput(lastBlock.id, 'end');
               }

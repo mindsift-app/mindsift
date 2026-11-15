@@ -356,8 +356,10 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
     if (noticeTimerRef.current !== null) window.clearTimeout(noticeTimerRef.current);
   }, []);
 
+  // A bullet held by the same person in another tab or on another device does not name them
   const handleLockedAction = useCallback(
-    (holder: string) => showNotice(i18n.t('workspace:lock.notice', { name: holder })),
+    (holder: BlockLock) =>
+      showNotice(holder.own ? i18n.t('workspace:lock.drawingOwn') : i18n.t('workspace:lock.notice', { name: holder.name })),
     [showNotice]
   );
   // A drawing someone else is editing does not open on a double-click: say who (or that it is open in

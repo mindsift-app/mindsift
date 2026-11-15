@@ -86,6 +86,8 @@ var migrations = []migration{
 	{60, "Audit log of the administration (takes over the command line's record)", (*Store).migrateAuditLog},
 	{61, "Note templates per person", (*Store).migrateNoteTemplates},
 	{62, "History of list items for suggestions while typing", (*Store).migrateListItemHistory},
+	{63, "New password at the next sign-in after a reset by the administration", (*Store).migrateMustChangePassword},
+	{65, "When a task was last ticked, opened or moved to another column", (*Store).migrateTaskStatusChangedAt},
 }
 
 // migrationBlockRefs creates block_refs: until it has run (earlier steps that rewrite notes), writing a
@@ -406,6 +408,22 @@ func (s *Store) migrateOpenTodoIndex() error {
 // change somebody made after it (SetListItemDone). Empty: never changed since the column exists.
 func (s *Store) migrateListItemDoneChangedAt() error {
 	return s.execSchemaStatement(`ALTER TABLE list_items ADD COLUMN done_changed_at TEXT NOT NULL DEFAULT ''`)
+}
+
+// migrateTaskStatusChangedAt is migration 65: thoughts.status_changed_at holds when a task's status
+// (completed, Kanban column) last changed (doneTimeLayout, UTC), so a tick sent late by a phone that was
+// offline does not undo a change somebody made after it (UpdateTask). UpdateTask sets it to when the
+// change was made; the trigger stamps every other change (Kanban drag, a to-do ticked in its note, the
+// API) with the time it is written. Empty: not changed since the column exists.
+func (s *Store) migrateTaskStatusChangedAt() error {
+	if err := s.execSchemaStatement(`ALTER TABLE thoughts ADD COLUMN status_changed_at TEXT NOT NULL DEFAULT ''`); err != nil {
+		return err
+	}
+	return s.execSchemaStatement(`CREATE TRIGGER IF NOT EXISTS trg_thoughts_status_changed AFTER UPDATE OF is_completed, kanban_status ON thoughts
+		WHEN (NEW.is_completed != OLD.is_completed OR NEW.kanban_status != OLD.kanban_status)
+			AND NEW.status_changed_at = OLD.status_changed_at BEGIN
+			UPDATE thoughts SET status_changed_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = NEW.id;
+		END`)
 }
 
 func (s *Store) migrateSearchCoverIndex() error {

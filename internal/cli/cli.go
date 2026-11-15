@@ -67,10 +67,12 @@ Commands:
                                           one-time password, printed once
   users delete <name> [--yes] [--json]    delete an account with its data; without --yes it
                                           only shows what would be deleted
-  reset-password <name> [--disable-2fa] [--json]
+  reset-password <name> [--must-change] [--revoke-keys] [--disable-2fa] [--json]
                                           new one-time password, signs out every session;
-                                          --disable-2fa also removes app codes, passkeys and
-                                          recovery codes
+                                          --must-change: a new own password at the next sign-in
+                                          before anything else; --revoke-keys also removes the
+                                          API keys and AI connections (MCP); --disable-2fa also
+                                          removes app codes, passkeys and recovery codes
   make-admin <name> [--revoke] [--json]   give (or take away) the admin role
   check [--backup] [--json]               check the database (integrity, foreign keys);
                                           --backup first writes a snapshot to backups/system

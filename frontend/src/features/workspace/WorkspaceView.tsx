@@ -47,7 +47,7 @@ import { useWorkspaceData } from './useWorkspaceData';
 import { useTrashActions } from './useTrashActions';
 import { buildWorkspaceMenu } from './workspaceMenu';
 import { buildFolderTree, collectFolderPaths, folderAncestors, collectRollupTodos, countOpenTodos, filterTags, groupRollupTodosByFolder, isFolderShared, tagGroups, tagsMetadata, withTodoToggled } from './workspaceListing';
-import { FolderDialogs } from './FolderDialogs';
+import { FolderDialogs, type NewNoteSheet } from './FolderDialogs';
 import { WorkspaceSubView } from './workspaceTypes';
 import { Trans, useTranslation } from 'react-i18next';
 import i18n from '../../i18n';
@@ -74,6 +74,15 @@ interface WorkspaceViewProps {
   onOpenTask?: (taskId: string) => void;
   // Opens the global search (command palette); the notes sidebar has no search of its own
   onOpenSearch?: () => void;
+}
+
+// Room the new-note form needs below its point (title, template, buttons), so it does not run off the bottom
+const NEW_NOTE_SHEET_HEIGHT = 260;
+
+/** The point below an element (its middle) where an anchored form opens, kept clear of the window's bottom */
+function anchorBelow(el: HTMLElement): { x: number; y: number } {
+  const r = el.getBoundingClientRect();
+  return { x: r.left + r.width / 2, y: Math.max(8, Math.min(r.bottom, window.innerHeight - NEW_NOTE_SHEET_HEIGHT)) };
 }
 
 export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
@@ -329,7 +338,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
 
   // Phones: "+" asks for name and emoji first, so a stray tap does not leave an empty note behind.
   // The desktop keeps creating at once.
-  const [newNoteSheet, setNewNoteSheet] = useState<{ folderPath: string } | null>(null);
+  const [newNoteSheet, setNewNoteSheet] = useState<NewNoteSheet | null>(null);
   const [newNoteTitle, setNewNoteTitle] = useState('');
   const [newNoteIcon, setNewNoteIcon] = useState('🗒️');
   // '' = an empty note; otherwise the id of the template the note starts from
@@ -337,7 +346,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
   // With templates the desktop asks too (name, emoji, template); without, it creates at once as before
   const hasTemplates = templates.length > 0;
   const openNewNote = useCallback(
-    (folderPath = '') => {
+    (folderPath = '', e?: React.MouseEvent) => {
       if (!isPhoneWidth() && !hasTemplates) {
         void handleCreateDocument(folderPath);
         return;
@@ -345,7 +354,8 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
       setNewNoteTitle('');
       setNewNoteIcon('🗒️');
       setNewNoteTemplate('');
-      setNewNoteSheet({ folderPath });
+      // On the desktop the form opens at the button that was clicked (centred without one, e.g. a shortcut)
+      setNewNoteSheet({ folderPath, anchor: e ? anchorBelow(e.currentTarget as HTMLElement) : null });
     },
     [handleCreateDocument, hasTemplates]
   );
@@ -448,6 +458,10 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
   const [pendingFolderDelete, setPendingFolderDelete] = useState<{ path: string; x: number; y: number } | null>(null);
   const requestDeleteFolder = (path: string, at: { x: number; y: number }) => setPendingFolderDelete({ path, ...at });
   const closeFolderDelete = useCallback(() => setPendingFolderDelete(null), []);
+  // Likewise a note's delete button in the tree
+  const [pendingDocDelete, setPendingDocDelete] = useState<{ id: string; x: number; y: number } | null>(null);
+  const requestDeleteDoc = useCallback((id: string, at: { x: number; y: number }) => setPendingDocDelete({ id, ...at }), []);
+  const closeDocDelete = useCallback(() => setPendingDocDelete(null), []);
 
   const handleDeleteFolder = async (folderPath: string) => {
     try {
@@ -863,7 +877,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
               {/* A bullet dragged here becomes a note of its own */}
               <button
                 type="button"
-                onClick={() => openNewNote('')}
+                onClick={(e) => openNewNote('', e)}
                 data-tour="new-note"
                 {...drag.newNoteDropProps}
                 className={`btn-icon h-8 w-8 transition-transform ${drag.newNoteHover ? 'scale-110 text-accent ring-2 ring-accent bg-accent/10' : ''}`}
@@ -923,6 +937,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
             handleOpenNewFolder={handleOpenNewFolder}
             handleShareFolderClick={handleShareFolderClick}
             requestDeleteFolder={requestDeleteFolder}
+            requestDeleteDoc={requestDeleteDoc}
             onOpenDoc={(id) => {
               setSelectedDocId(id);
               setSubView('editor');
@@ -1113,7 +1128,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
               )}
               <button
                 type="button"
-                onClick={() => openNewNote('')}
+                onClick={(e) => openNewNote('', e)}
                 className="btn-primary inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold"
               >
                 <Plus className="w-3.5 h-3.5" />
@@ -1143,6 +1158,9 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
         setNewNoteTemplate={setNewNoteTemplate}
         handleCreateDocument={handleCreateDocument}
         pendingFolderDelete={pendingFolderDelete}
+        pendingDocDelete={pendingDocDelete}
+        closeDocDelete={closeDocDelete}
+        handleDeleteDocument={handleDeleteDocument}
         closeFolderDelete={closeFolderDelete}
         handleDeleteFolder={handleDeleteFolder}
         docs={docs}

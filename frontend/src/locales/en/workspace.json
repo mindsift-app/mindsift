@@ -271,6 +271,8 @@
     "createFailed": "Creating the folder failed",
     "subfolderIn": "Subfolder in \"{{path}}\"",
     "toTrash": "Move to trash",
+    "deleteNote": "Delete note",
+    "confirmDeleteNote": "Move to the trash?",
     "confirmDelete": "Really delete the folder <b>“{{name}}”</b>?",
     "confirmDeleteWithNotes_one": "Really delete the folder <b>“{{name}}”</b> with {{count}} note?",
     "confirmDeleteWithNotes_other": "Really delete the folder <b>“{{name}}”</b> with {{count}} notes?",

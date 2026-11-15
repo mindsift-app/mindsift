@@ -69,14 +69,14 @@ One note per day, all days below each other, with a calendar to jump around (dot
 </p>
 
 ### 🛒 Shared lists
-Shopping, packing and checklists with quantities and categories by hashtag (`oat milk #fridge`). Tick something off at the supermarket and it's gone on everyone's phone right away.
+Shopping, packing and checklists with quantities and categories by hashtag (`oat milk #fridge`). Tick something off at the supermarket and it's gone on everyone's phone right away. While you type a new item, the list suggests what you have added to it before.
 
 <p align="center">
   <img src="screenshots/Listen_desktop.webp" alt="MindSift shared lists" width="90%" />
 </p>
 
 ### ⚡ Quick capture & triage
-Capture a thought without picking a folder: the input bar (`C` or `/`), voice input (in the browser or through your own Whisper server), your phone's share menu or the API. Everything lands in an inbox, and the swipe-style triage empties it later, one card at a time: a key (`H`/`L`, arrows) or a swipe discards a card or turns it into a task, a note or a list item.
+Capture a thought without picking a folder: the Quick Dump window (`C`, or the + in the sidebar or on the phone), voice input (in the browser or through your own Whisper server), your phone's share menu or the API. Write a due date into the text ("dentist tomorrow 2pm") and it is recognised while you type, without AI. Everything lands in an inbox, and the swipe-style triage empties it later, one card at a time: a key (`H`/`L`, arrows) or a swipe discards a card or turns it into a task, a note or a list item.
 
 <p align="center">
   <img src="screenshots/Triage_desktop.webp" alt="MindSift triage on the desktop, light theme on the left, dark on the right" width="85%" />
@@ -202,6 +202,7 @@ The most important settings (all of them are in [`.env.example`](.env.example); 
 | `MCP_ENABLED` | admin UI decides | `false` switches off the endpoint for AI agents |
 | `API_KEYS_ENABLED` | `true` | `false` refuses API keys on the REST API; they keep working for MCP |
 | `UPDATE_CHECK` | `true` | `false` stops the daily look for a new MindSift release (admins get a hint); no request goes out then |
+| `HTTP_PROXY`, `HTTPS_PROXY`, `NO_PROXY` | empty | Outgoing proxy for OIDC, the update check, webhooks, push, link previews and image copies; MindSift still checks each target's addresses itself before handing it over, and needs DNS for that ([limits](Doku/security.md#nothing-reaches-into-your-network)) |
 | `METRICS_TOKEN` | empty | Switches on `/metrics` for Prometheus, see [monitoring](Doku/operations.md#monitoring) |
 | `STT_*` | empty | Your own Whisper server for voice input |
 | `MINDSIFT_DEMO` | `false` | Demo accounts `admin/admin` and `user/user` with sample data. **Never on a server with real data!** |
