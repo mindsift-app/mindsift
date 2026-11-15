@@ -158,6 +158,25 @@ describe('Drawing alone, and starting to draw together', () => {
     expect(screen.queryByRole('button', { name: 'Gemeinsam zeichnen' })).toBeNull();
   });
 
+  it('the host sees who joins, also the own other tab, and no "Live" before the session answered', async () => {
+    openBlock(true);
+    fireEvent.doubleClick(screen.getByRole('img'));
+    await editorOpen();
+    fireEvent.click(screen.getByRole('button', { name: 'Gemeinsam zeichnen' }));
+    await vi.waitFor(() => expect(realtime.sent.map((m) => m.event)).toContain('DRAW_JOIN'));
+    // Not answered yet: nothing flashes
+    expect(document.querySelector('[data-live-people]')).toBeNull();
+    const anna = { id: 'c_anna', userId: 'u_anna', name: 'Anna' };
+    emit('DRAW_STATE', { active: true, host: 'c_anna', participants: [anna], watchers: [], you: 'c_anna', els: [], order: [], seq: 0 });
+    expect(document.querySelector('[data-live-people]')).toBeNull();
+    // Anna's other tab draws along: the same person, but someone else in the session
+    emit('DRAW_PEOPLE', { active: true, host: 'c_anna', participants: [anna, { id: 'c_anna2', userId: 'u_anna', name: 'Anna' }], watchers: [] });
+    expect(document.querySelector('[data-live-people]')).toBeTruthy();
+    expect(screen.getByText('Du bist Gastgeber')).toBeTruthy();
+    emit('DRAW_PEOPLE', { active: true, host: 'c_anna', participants: [anna, { id: 'c_ben', userId: 'u_ben', name: 'Ben' }], watchers: [] });
+    expect(document.querySelector('[data-live-people]')?.getAttribute('data-live-people')).toBe('Anna,Ben');
+  });
+
   it('without a WebSocket it says so and goes on alone', async () => {
     realtime.ws = false;
     openBlock(true);
