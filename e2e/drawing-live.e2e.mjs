@@ -134,6 +134,15 @@ const main = async () => {
   await B.page.getByRole('img', { name: /^Zeichnung/ }).first().dblclick();
   await sleep(1500);
   check((await editor(B.page).count()) === 0 && (await B.page.getByRole('alertdialog').count()) === 0, 'Allein gezeichnet: Doppelklick der anderen öffnet nichts zum Mitzeichnen');
+  // ...but says why, with the name; the same person in another tab hears that it is open elsewhere
+  const hintB = await waitFor(async () => (await B.page.getByText(`Wird gerade von ${adminName} bearbeitet`).count()) > 0, 3000);
+  check(!!hintB, 'Doppelklick auf die gesperrte Zeichnung zeigt „Wird gerade von … bearbeitet“');
+  await shot(B.page, 'locked-hint');
+  const lockedC = await waitFor(async () => (await C.page.locator(`[title="${adminName} bearbeitet diesen Punkt gerade"]`).count()) === 1, 10000);
+  check(!!lockedC, 'Im anderen Tab derselben Person ist die Zeichnung gesperrt');
+  await C.page.getByRole('img', { name: /^Zeichnung/ }).first().dblclick();
+  const hintC = await waitFor(async () => (await C.page.getByText('Wird gerade auf einem anderen Gerät oder in einem anderen Tab bearbeitet').count()) > 0, 3000);
+  check(!!hintC && (await editor(C.page).count()) === 0, 'Im anderen Tab sagt der Doppelklick „… auf einem anderen Gerät oder in einem anderen Tab …“');
   await shot(A.page, 'alone');
 
   // Anna starts drawing together: a live session with what she drew so far

@@ -36,6 +36,7 @@ import { ConflictChoice, MAX_NOTE_BLOCKS } from '../../lib/docSync/engine';
 import { formatNumber } from '../../lib/format';
 import { Presence } from '../../lib/docSync/transport';
 import { OutlinerTree, OutlinerTreeHandle } from './OutlinerTree';
+import type { BlockLock } from './OutlinerBlock';
 import { NoteSharedContext } from './drawing/noteShared';
 import { extractHashtags } from '../../lib/hashtags';
 import { isPhoneWidth } from '../../lib/breakpoints';
@@ -352,6 +353,12 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
 
   const handleLockedAction = useCallback(
     (holder: string) => showNotice(i18n.t('workspace:lock.notice', { name: holder })),
+    [showNotice]
+  );
+  // A drawing someone else is editing does not open on a double-click: say who (or that it is open in
+  // another tab or on another device of the same person)
+  const handleLockedDrawing = useCallback(
+    (lock: BlockLock) => showNotice(lock.own ? i18n.t('workspace:lock.drawingOwn') : i18n.t('workspace:lock.drawing', { name: lock.name })),
     [showNotice]
   );
   // The note holds as many bullets as it may: the server refused new ones, which disappear again
@@ -1073,6 +1080,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
                 onFieldShows={(id, content) => engineRef.current?.fieldShows(id, content)}
                 lockedBlocks={lockedBlocks}
                 onLockedAction={handleLockedAction}
+                onLockedDrawing={handleLockedDrawing}
                 onResolveConflict={handleResolveConflict}
                 onUndo={handleUndo}
                 onRedo={handleRedo}
@@ -1125,6 +1133,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
                     onFieldShows={(id, content) => engineRef.current?.fieldShows(id, content)}
                     lockedBlocks={lockedBlocks}
                     onLockedAction={handleLockedAction}
+                onLockedDrawing={handleLockedDrawing}
                     onResolveConflict={handleResolveConflict}
                     onUndo={handleUndo}
                     onRedo={handleRedo}
@@ -1231,6 +1240,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
                 onFieldShows={(id, content) => engineRef.current?.fieldShows(id, content)}
               lockedBlocks={lockedBlocks}
               onLockedAction={handleLockedAction}
+                onLockedDrawing={handleLockedDrawing}
               onResolveConflict={handleResolveConflict}
               onUndo={handleUndo}
               onRedo={handleRedo}

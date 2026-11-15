@@ -451,7 +451,9 @@
     "notice": "{{name}} is editing this bullet right now – please wait a moment",
     "title": "{{name}} is editing this bullet right now",
     "copy": "{{name}} is editing this version right now – please wait a moment",
-    "someone": "Someone"
+    "someone": "Someone",
+    "drawing": "Being edited by {{name}} right now",
+    "drawingOwn": "Being edited on another device or in another tab right now"
   },
   "extractMenu": {
     "title": "Move out to where?",

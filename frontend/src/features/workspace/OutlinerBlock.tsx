@@ -131,6 +131,8 @@ export interface BlockLock {
   avatarUrl?: string;
   /** A live drawing holds the bullet: everyone drawing in it (host first); others may join or watch */
   live?: { userId: string; name: string; avatarUrl?: string }[];
+  /** Held by the same person in another tab or on another device */
+  own?: boolean;
 }
 
 export interface OutlinerBlockProps {
@@ -179,6 +181,8 @@ export interface OutlinerBlockProps {
   /** Another bullet on the same level follows: Enter in this empty bullet adds a bullet instead of outdenting */
   siblingFollows?: boolean;
   lockedBy?: BlockLock; // someone else is editing this block
+  /** A double-click on a drawing someone else is editing: tell the user why it does not open */
+  onLockedDrawing?: (lock: BlockLock) => void;
   originalLockedBy?: BlockLock; // a conflict copy: someone else is editing its original
   canAppendBelow?: boolean; // the user may edit the note, so Enter in a locked block still adds one below
   onResolveConflict?: (blockId: string, choice: ConflictChoice) => void;
@@ -227,6 +231,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
   listMarker,
   siblingFollows = false,
   lockedBy: heldBy,
+  onLockedDrawing,
   originalLockedBy,
   canAppendBelow,
   onResolveConflict,
@@ -1595,6 +1600,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
             // Someone else drawing alone holds the block: look only. A live drawing holds it for everyone
             // drawing: whoever may edit the note may join (the row itself counts as locked)
             canEdit={liveDrawing ? !!canAppendBelow : canEdit && !lockedBy}
+            onLocked={lockedBy && canAppendBelow && onLockedDrawing ? () => onLockedDrawing(lockedBy) : undefined}
             autoOpen={drawingAutoOpen}
             actionsTarget={drawingActionsEl}
             // Clicked into or open in the editor counts as the cursor in this bullet (action bubble, lease)

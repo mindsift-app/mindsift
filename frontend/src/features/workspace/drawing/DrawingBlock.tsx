@@ -84,6 +84,8 @@ interface DrawingBlockProps {
   onActivity?: () => void;
   /** People drawing in it live right now (host first) */
   live?: { userId: string; name: string; avatarUrl?: string }[];
+  /** Someone else is editing it (drawing alone): a double-click shows why it does not open */
+  onLocked?: () => void;
 }
 
 /** How the editor is open: alone ('solo', a live session can start from there in a shared note), looking
@@ -104,6 +106,7 @@ export const DrawingBlock: React.FC<DrawingBlockProps> = ({
   onFocusChange,
   onActivity,
   live,
+  onLocked,
 }) => {
   const { t } = useTranslation('workspace');
   // Shared with someone: "Gemeinsam zeichnen" in the editor (someone else could join)
@@ -448,7 +451,10 @@ export const DrawingBlock: React.FC<DrawingBlockProps> = ({
           (document.activeElement as HTMLElement | null)?.blur?.();
         }}
         onDragStart={(e) => e.preventDefault()}
-        onDoubleClick={(e) => (canEdit || liveNames.length > 0) && openEditor(e)}
+        onDoubleClick={(e) => {
+          if (canEdit || liveNames.length > 0) void openEditor(e);
+          else onLocked?.();
+        }}
         role="img"
         aria-label={texts.length ? t('drawing.ariaWithText', { text: texts.join(', ') }) : t('drawing.aria')}
       >

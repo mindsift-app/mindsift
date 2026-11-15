@@ -75,6 +75,14 @@ describe('Live drawing in the note', () => {
     expect(screen.getByRole('button', { name: 'Zusehen' })).toBeTruthy();
   });
 
+  it('a double-click on a drawing someone else draws in alone says so instead of doing nothing', () => {
+    const onLocked = vi.fn();
+    render(<DrawingBlock docId="d1" blockId="b1" content={CONTENT} canEdit={false} onLocked={onLocked} onChange={() => {}} />);
+    fireEvent.doubleClick(screen.getByRole('img'));
+    expect(onLocked).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole('button', { name: 'Zusehen' })).toBeNull();
+  });
+
   // The editor loads on demand (its own chunk): its messages go out once it has mounted
   it('readers only watch', async () => {
     render(<DrawingBlock docId="d1" blockId="b1" content={CONTENT} canEdit={false} live={[live[0]]} onChange={() => {}} />);

@@ -52,6 +52,8 @@ export interface OutlinerTreeProps {
   onFieldShows?: (blockId: string, content: string) => void;
   lockedBlocks?: Map<string, BlockLock>; // blockId -> the user editing it (someone else)
   onLockedAction?: (holderName: string) => void;
+  /** A double-click on a drawing someone else is editing */
+  onLockedDrawing?: (lock: BlockLock) => void;
   onResolveConflict?: (blockId: string, choice: ConflictChoice) => void;
   onUndo?: () => void;
   onRedo?: () => void;
@@ -130,6 +132,7 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
   onFieldShows,
   lockedBlocks,
   onLockedAction,
+  onLockedDrawing,
   onResolveConflict,
   onUndo,
   onRedo,
@@ -1161,6 +1164,7 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
   const stableNavigateFocus = useLatestCallback(handleNavigateFocus);
   const stableBlockActivity = useLatestCallback(onBlockActivity ?? noop);
   const stableFieldShows = useLatestCallback(onFieldShows ?? noop);
+  const stableLockedDrawing = useLatestCallback(onLockedDrawing ?? noop);
   const stableOpenTask = useLatestCallback(onOpenTask ?? noop);
   const stableTagClick = useLatestCallback(onTagClick ?? noop);
   const stableWikiLinkClick = useLatestCallback(onWikiLinkClick ?? noop);
@@ -1188,6 +1192,7 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
     Boolean(onInlineBlock),
     Boolean(onBlockActivity),
     Boolean(onFieldShows),
+    Boolean(onLockedDrawing),
     Boolean(onOpenTask),
     Boolean(onTagClick),
     Boolean(onWikiLinkClick),
@@ -1220,6 +1225,7 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
           isFocused={isFocused}
           canEdit={rowCanEdit}
           lockedBy={lockedBy}
+          onLockedDrawing={onLockedDrawing ? stableLockedDrawing : undefined}
           originalLockedBy={originalLockedBy}
           canAppendBelow={canEdit}
           onResolveConflict={canEdit && onResolveConflict ? stableResolveConflict : undefined}

@@ -451,7 +451,9 @@
     "notice": "{{name}} modifie ce point en ce moment – patiente un instant",
     "title": "{{name}} modifie ce point en ce moment",
     "copy": "{{name}} modifie cette version en ce moment – patiente un instant",
-    "someone": "Quelqu'un"
+    "someone": "Quelqu'un",
+    "drawing": "En cours de modification par {{name}}",
+    "drawingOwn": "En cours de modification sur un autre appareil ou dans un autre onglet"
   },
   "extractMenu": {
     "title": "Extraire vers où ?",
