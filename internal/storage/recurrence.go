@@ -83,34 +83,30 @@ func (s *Store) getThoughtRaw(id string) (*domain.Thought, error) {
 	return t, nil
 }
 
+// openSuccessors are the open next occurrences spawned from a task (recurrence_of). A deleted one is in
+// the task trash, not in thoughts, and a completed one does not count.
+func (s *Store) openSuccessors(taskID string) []string {
+	return s.queryUserIDs(`SELECT id FROM thoughts WHERE recurrence_of = ? AND is_completed = 0 AND status != 'discarded'`, taskID)
+}
+
 // spawnNextOccurrence creates the follow-up of a repeating task that was just completed: same title,
 // tags, priority, notes, list, assignees and rule, subtasks unchecked, due date one interval later,
-// in the list's first open column. Each task spawns at most once, so re-opening and completing it
-// again creates no duplicate. The new task goes to OnTaskCreated (live update for all clients).
+// in the list's first open column, linked to the task (recurrence_of). It spawns whenever the task is
+// completed and has no open successor: re-opening and completing it again creates no second one, while
+// a successor deleted or completed meanwhile (or a rule set again after it was removed) lets the series
+// go on. The new task goes to OnTaskCreated (live update for all clients).
 func (s *Store) spawnNextOccurrence(taskID string) {
+	s.recurrenceMu.Lock()
+	defer s.recurrenceMu.Unlock()
 	t, err := s.getThoughtRaw(taskID)
 	if err != nil || t.Recurrence == "" || !t.IsCompleted {
 		return
 	}
-	res, err := s.db.Exec(`UPDATE thoughts SET recurrence_spawned = 1 WHERE id = ? AND recurrence_spawned = 0`, taskID)
-	if dbFailed(err) {
+	if len(s.openSuccessors(taskID)) > 0 {
 		return
 	}
-	if n, _ := res.RowsAffected(); n == 0 {
-		return // already spawned its successor
-	}
 
-	column := "todo"
-	if t.TaskListID != "" {
-		if tl, err := s.GetTaskListByID(t.UserID, t.TaskListID); err == nil {
-			for _, c := range tl.Columns {
-				if !c.IsDone {
-					column = c.ID
-					break
-				}
-			}
-		}
-	}
+	column := statusColumn(s.listColumns(t.TaskListID), false, "")
 	due := NextDueDate(t.DueDate, t.Recurrence, time.Now())
 	next, err := s.CreateThoughtWithDetails(t.UserID, t.Content, t.Priority, t.Source, due, t.TaskListID, column, t.Notes)
 	if err != nil {
@@ -129,7 +125,8 @@ func (s *Store) spawnNextOccurrence(taskID string) {
 	if _, err := s.UpdateThoughtDetails(t.UserID, next.ID, nil, nil, nil, nil, nil, &column, nil, &subs, &tags); err != nil {
 		slog.Error("Next occurrence: subtasks and tags missing", "task_id", next.ID, "error", err)
 	}
-	carry := []sqlStmt{stmt(`UPDATE thoughts SET recurrence = ?, reminders = ?, sort_order = ? WHERE id = ?`, t.Recurrence, domain.FormatReminders(t.Reminders), t.SortOrder, next.ID)}
+	carry := []sqlStmt{stmt(`UPDATE thoughts SET recurrence = ?, reminders = ?, sort_order = ?, recurrence_of = ? WHERE id = ?`,
+		t.Recurrence, domain.FormatReminders(t.Reminders), t.SortOrder, taskID, next.ID)}
 	for _, uid := range t.Assignees {
 		carry = append(carry, stmt(`INSERT OR IGNORE INTO task_assignees (task_id, user_id, created_at) VALUES (?, ?, ?)`, next.ID, uid, domain.NowISO()))
 	}
@@ -141,4 +138,59 @@ func (s *Store) spawnNextOccurrence(taskID string) {
 	if created, err := s.getThoughtRaw(next.ID); err == nil && s.OnTaskCreated != nil {
 		s.OnTaskCreated(created)
 	}
+}
+
+// dropUntouchedSuccessor undoes the next occurrence a repeating task spawned when it is reopened (a tick
+// by mistake, undone): its open successor is deleted for good as long as nobody touched it, i.e. it still
+// is what spawnNextOccurrence made of the task as it is now (title, notes, priority, list, rule,
+// reminders, due date, first open column, subtasks unchecked). A successor edited, moved or with a
+// subtask ticked stays. Ticking the task again spawns a fresh one, so tick, untick, tick leaves one.
+// The removed task goes to OnTaskRemoved (live update for all clients).
+func (s *Store) dropUntouchedSuccessor(taskID string) {
+	s.recurrenceMu.Lock()
+	defer s.recurrenceMu.Unlock()
+	t, err := s.getThoughtRaw(taskID)
+	if err != nil || t.IsCompleted || t.Recurrence == "" {
+		return
+	}
+	for _, id := range s.openSuccessors(taskID) {
+		next, err := s.getThoughtRaw(id)
+		if err != nil || !s.untouchedSuccessor(t, next) {
+			continue
+		}
+		if err := s.execInTx(
+			stmt(`DELETE FROM task_assignees WHERE task_id = ?`, id),
+			stmt(`DELETE FROM task_watchers WHERE task_id = ?`, id),
+			stmt(`DELETE FROM thoughts WHERE id = ? AND is_completed = 0`, id),
+		); err != nil {
+			slog.Error("Removing the next occurrence of a reopened task failed", "task_id", id, "error", err)
+			continue
+		}
+		if s.OnTaskRemoved != nil {
+			s.OnTaskRemoved(next)
+		}
+	}
+}
+
+// untouchedSuccessor: next is still what spawnNextOccurrence made of t.
+func (s *Store) untouchedSuccessor(t, next *domain.Thought) bool {
+	if next.IsCompleted || next.Content != t.Content || next.Notes != t.Notes || next.Priority != t.Priority ||
+		next.TaskListID != t.TaskListID || next.Recurrence != t.Recurrence ||
+		domain.FormatReminders(next.Reminders) != domain.FormatReminders(t.Reminders) ||
+		next.KanbanStatus != statusColumn(s.listColumns(t.TaskListID), false, "") {
+		return false
+	}
+	created, err := time.Parse(time.RFC3339, next.CreatedAt)
+	if err != nil || next.DueDate != NextDueDate(t.DueDate, t.Recurrence, created) {
+		return false
+	}
+	if len(next.Subtasks) != len(t.Subtasks) {
+		return false
+	}
+	for i, st := range next.Subtasks {
+		if st.IsCompleted || st.Title != t.Subtasks[i].Title {
+			return false
+		}
+	}
+	return true
 }

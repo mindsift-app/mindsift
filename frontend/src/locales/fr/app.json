@@ -96,7 +96,12 @@
     "expand": "Déplier la navigation",
     "collapse": "Replier la navigation",
     "quickDump": "Quick Dump",
-    "quickDumpTip": "Quick Dump – noter une idée (C)",
+    "quickDumpTip": "Quick Dump – noter une idée (C) · Maintenir appuyé pour dicter",
+    "dictateListening": "Dictée {{time}} – relâcher enregistre, Échap annule",
+    "dictateCancel": "Relâcher pour annuler",
+    "dictateSaving": "Enregistrement…",
+    "dictateSaved": "Enregistré dans le Quick Dump",
+    "dictateNothing": "Rien n’a été reconnu",
     "search": "Recherche",
     "searchKey": "Ctrl K",
     "help": "Aide"

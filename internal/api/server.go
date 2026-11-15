@@ -124,6 +124,10 @@ func NewServer(cfg *config.Config, store *storage.Store, wsHub *ws.Hub, staticFS
 	store.OnTaskCreated = func(th *domain.Thought) {
 		srv.wsHub.BroadcastToUsers(srv.taskAudience(th), "TASK_CREATED", th)
 	}
+	// ... and the untouched next occurrence of a task ticked by mistake goes again when it is reopened
+	store.OnTaskRemoved = func(th *domain.Thought) {
+		srv.wsHub.BroadcastToUsers(srv.taskAudience(th), "TASK_DELETED", map[string]string{"id": th.ID})
+	}
 	srv.background(srv.startCompaction)
 	srv.background(srv.startDrawTicker)
 	srv.background(srv.startDocCountsTicker)

@@ -64,7 +64,7 @@ async function openDoc(browser, token, title) {
   }, token);
   const page = await ctx.newPage();
   await page.goto(BASE);
-  await page.getByRole('button', { name: /Workspace/ }).first().click();
+  await page.getByRole('button', { name: /^Workspace/ }).first().click();
   await page.getByText(title, { exact: true }).first().click();
   await page.waitForFunction(() => document.querySelectorAll('textarea').length > 1, null, { timeout: 10000 });
   return { ctx, page };
@@ -120,6 +120,22 @@ const main = async () => {
   const A2 = await openDoc(browser, admin, TITLE);
   const ownBadge = await waitFor(async () => (await A2.page.getByTitle(OWN).count()) > 0, 10000);
   check(!!ownBadge && (await A2.page.getByTitle(/Admin bearbeitet diesen Punkt gerade/i).count()) === 0, 'Own other tab: the lock badge does not name oneself');
+  const badgeOf = (page) =>
+    page.getByTitle(OWN).first().evaluate((el) => ({
+      text: el.textContent,
+      icon: ['monitor', 'smartphone', 'app-window'].find((n) => el.querySelector(`svg.lucide-${n}`)) || '',
+    }));
+  const otherBrowser = await badgeOf(A2.page);
+  check(otherBrowser.text === 'Du' && otherBrowser.icon === 'monitor', `Own other computer: "Du" with a computer icon: ${JSON.stringify(otherBrowser)}`);
+  // Another tab of the same browser (same context, same local storage) shows a tab icon
+  const sameBrowser = await A.ctx.newPage();
+  await sameBrowser.goto(BASE);
+  await sameBrowser.getByRole('button', { name: /^Workspace/ }).first().click();
+  await sameBrowser.getByText(TITLE, { exact: true }).first().click();
+  const tabBadge = await waitFor(async () => (await sameBrowser.getByTitle(OWN).count()) > 0 && (await badgeOf(sameBrowser)), 10000);
+  check(tabBadge?.text === 'Du' && tabBadge?.icon === 'app-window', `Own other tab in this browser: "Du" with a tab icon: ${JSON.stringify(tabBadge)}`);
+  if (process.env.SHOTS) await sameBrowser.screenshot({ path: `${process.env.SHOTS}/nachher-sperre-eigener-tab.png` });
+  await sameBrowser.close();
   // The editor leaves "Darunter" (it held it since the merge attempt), so the merge is refused only for the own lock
   await clickText(B.page, 'Gemeinsamer Punkt');
   await waitFor(async () => (await A2.page.getByTitle(/User bearbeitet diesen Punkt gerade/i).count()) === 1 &&

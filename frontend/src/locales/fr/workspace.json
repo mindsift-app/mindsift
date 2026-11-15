@@ -457,7 +457,8 @@
     "copy": "{{name}} modifie cette version en ce moment – patiente un instant",
     "someone": "Quelqu'un",
     "drawing": "En cours de modification par {{name}}",
-    "drawingOwn": "En cours de modification sur un autre appareil ou dans un autre onglet"
+    "drawingOwn": "En cours de modification sur un autre appareil ou dans un autre onglet",
+    "you": "Toi"
   },
   "extractMenu": {
     "title": "Extraire vers où ?",
@@ -608,8 +609,7 @@
       "leave": "Quitter",
       "leaveTitle": "Quitter le dessin en direct – les autres continuent",
       "doneTitle": "Enregistrer pour tous et terminer le dessin en direct (Échap)",
-      "discardAsk": "Abandonner termine le dessin en direct pour tous. Les modifications de cette session sont perdues.",
-      "discardAll": "Abandonner pour tous",
+      "discarded": "Dessin abandonné",
       "endedDone": "{{name}} a enregistré le dessin.",
       "endedDiscard": "{{name}} a abandonné le dessin en direct.",
       "endedExpired": "Le dessin en direct est terminé.",

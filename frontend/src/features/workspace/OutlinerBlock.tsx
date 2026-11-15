@@ -30,6 +30,9 @@ import {
   KeyRound,
   Table as TableIcon,
   LayoutTemplate,
+  AppWindow,
+  Monitor,
+  Smartphone,
 } from 'lucide-react';
 import { DocumentBlock, BlockType } from '../../lib/types';
 import { LinkModal } from './LinkModal';
@@ -136,7 +139,19 @@ export interface BlockLock {
   live?: { userId: string; name: string; avatarUrl?: string }[];
   /** Held by the same person in another tab or on another device */
   own?: boolean;
+  /** Where the own other client runs: another tab of this browser, a phone or another computer */
+  ownOn?: 'tab' | 'phone' | 'computer';
 }
+
+// One's own other tab or device holds the bullet: an icon in place of the avatar, same size (UserAvatar xxs)
+const OwnLockIcon: React.FC<{ on?: BlockLock['ownOn'] }> = ({ on }) => {
+  const Icon = on === 'tab' ? AppWindow : on === 'phone' ? Smartphone : Monitor;
+  return (
+    <span aria-hidden="true" className="w-4 h-4 shrink-0 rounded-full inline-flex items-center justify-center bg-panel-elevated border border-current">
+      <Icon className="w-2.5 h-2.5" />
+    </span>
+  );
+};
 
 export interface OutlinerBlockProps {
   docId: string;
@@ -2023,15 +2038,19 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
           style={{ color: lockColor!.text, border: `1px solid ${lockColor!.border}` }}
           title={lockedBy.own ? t('lock.drawingOwn') : t('lock.title', { name: lockedBy.name })}
         >
-          <UserAvatar
-            userId={lockedBy.userId}
-            name={lockedBy.name}
-            avatarUrl={lockedBy.avatarUrl || ''}
-            size="xxs"
-            colorRing
-            showTitle={false}
-          />
-          <span className="truncate">{lockedBy.name}</span>
+          {lockedBy.own ? (
+            <OwnLockIcon on={lockedBy.ownOn} />
+          ) : (
+            <UserAvatar
+              userId={lockedBy.userId}
+              name={lockedBy.name}
+              avatarUrl={lockedBy.avatarUrl || ''}
+              size="xxs"
+              colorRing
+              showTitle={false}
+            />
+          )}
+          <span className="truncate">{lockedBy.own ? t('lock.you') : lockedBy.name}</span>
           <Lock className="w-2.5 h-2.5 shrink-0 opacity-80" />
         </span>
       )}

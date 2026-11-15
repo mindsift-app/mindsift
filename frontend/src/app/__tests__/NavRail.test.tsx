@@ -51,6 +51,7 @@ function Harness({ setActiveTab = () => {} }: { setActiveTab?: (tab: ActiveTab) 
         demoDeadline={null}
         handleDemoCountdownElapsed={() => {}}
         onQuickDump={openQuickDump}
+        onDictated={() => {}}
         onSearch={() => {}}
         handleOpenHelp={() => {}}
         user={user}

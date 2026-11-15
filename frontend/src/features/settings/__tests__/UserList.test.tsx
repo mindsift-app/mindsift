@@ -91,6 +91,15 @@ describe('UserList', () => {
     expect(screen.queryByRole('button', { name: 'Benutzerrolle ändern' })).toBeNull();
   });
 
+  it('marks people who have to choose a new password at the next sign-in', () => {
+    const users = [me, person(1, { displayName: 'Anna', mustChangePassword: true }), person(2, { displayName: 'Ben' })];
+    render(<UserList admin={fakeAdmin(users)} currentUser={me} isServerAdmin />);
+    const [anna, ben] = rows().filter((b) => /Anna|Ben/.test(b.textContent || ''));
+    const badge = within(anna).getByText('Muss Passwort ändern');
+    expect(badge.getAttribute('title')).toBe('Muss bei der nächsten Anmeldung ein neues Passwort wählen');
+    expect(within(ben).queryByText('Muss Passwort ändern')).toBeNull();
+  });
+
   it('opens a person on a tap with all actions; the own account cannot be locked or deleted', () => {
     const admin = fakeAdmin([me, person(1)]);
     render(<UserList admin={admin} currentUser={me} isServerAdmin />);

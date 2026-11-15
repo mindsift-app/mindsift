@@ -59,7 +59,7 @@ async function openNote(browser, token, title) {
   }, token);
   const page = await ctx.newPage();
   await page.goto(BASE);
-  await page.getByRole('button', { name: /Workspace/ }).locator('visible=true').first().click();
+  await page.getByRole('button', { name: /^Workspace/ }).locator('visible=true').first().click();
   await page.getByText(title, { exact: true }).first().click();
   await page.waitForFunction(() => document.querySelectorAll('[data-outline-block]').length > 3, null, { timeout: 10000 });
   // What Ctrl+C puts on the clipboard (the system clipboard is not readable in every engine)

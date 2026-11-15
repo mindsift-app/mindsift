@@ -665,6 +665,8 @@
     "confirmResetMfa": "¿Restablecer el inicio de sesión en dos pasos de {{name}}? Se quitan la app de autenticación, las llaves de acceso y los códigos de recuperación; después solo se pedirá la contraseña. {{name}} recibirá un correo.",
     "mfaReset": "Se restableció el inicio de sesión en dos pasos de {{name}}.",
     "mfaBadge": "2FA",
+    "mustChangePassword": "Debe cambiar la contraseña",
+    "mustChangePasswordHint": "Tiene que elegir una contraseña nueva en el próximo inicio de sesión",
     "email": "Dirección de correo",
     "emailChanged": "La dirección de correo de {{name}} ahora es {{email}}.",
     "emailRemoved": "{{name}} ya no tiene dirección de correo.",

@@ -138,15 +138,35 @@ describe('SharedListsView: quantity typed into the item', () => {
   };
 
   const qtyField = () => screen.getByLabelText('Menge (optional)') as HTMLInputElement;
+  const bubble = () => screen.queryByTestId('quantity-bubble');
+  const ignoreButton = () => screen.getByRole('button', { name: 'Nicht als Menge übernehmen' });
 
-  it('fills the quantity field from the text, marks it and saves the name without it', async () => {
+  it('fills the quantity field from the text, marks it, points at it and saves the name without it', async () => {
     const input = await setup();
     type(input, '2x Milch #Kühlregal');
     expect(qtyField().value).toBe('2x');
     expect(screen.getByTestId('quantity-mark').textContent).toBe('2x');
+    // The bubble shows only the quantity; screen readers hear a sentence
+    expect(bubble()!.textContent).toBe('2x');
+    expect(screen.getByRole('status').textContent).toBe('Erkannte Menge: 2x');
     await submit(input);
     expect(createListItem).toHaveBeenCalledWith('lst_1', 'Milch', 'Kühlregal', '2x');
     expect(qtyField().value).toBe('');
+    expect(bubble()).toBeNull();
+    expect(screen.getByRole('status').textContent).toBe('');
+  });
+
+  it('× on the bubble keeps the text as typed and empties the field, without taking the focus', async () => {
+    const input = await setup();
+    type(input, '2x Milch');
+    const mouseDown = fireEvent.mouseDown(ignoreButton());
+    expect(mouseDown).toBe(false); // default prevented: the item field keeps the focus
+    fireEvent.click(ignoreButton());
+    expect(bubble()).toBeNull();
+    expect(qtyField().value).toBe('');
+    expect(screen.queryByTestId('quantity-mark')).toBeNull();
+    await submit(input);
+    expect(createListItem).toHaveBeenCalledWith('lst_1', '2x Milch', undefined, '');
   });
 
   it('emptying the filled quantity field keeps the text as typed', async () => {
@@ -156,16 +176,19 @@ describe('SharedListsView: quantity typed into the item', () => {
     fireEvent.change(qtyField(), { target: { value: '' } });
     expect(qtyField().value).toBe('');
     expect(screen.queryByTestId('quantity-mark')).toBeNull();
+    expect(bubble()).toBeNull();
     await submit(input);
     expect(createListItem).toHaveBeenCalledWith('lst_1', '500g Pasta', undefined, '');
   });
 
-  it('a quantity typed into its own field wins, units included', async () => {
+  it('a quantity typed into its own field wins, units included, and hides the bubble', async () => {
     const input = await setup();
     type(input, '3 Äpfel');
     expect(qtyField().value).toBe('3');
+    expect(bubble()!.textContent).toBe('3');
     fireEvent.change(qtyField(), { target: { value: '500 g' } });
     expect(qtyField().value).toBe('500 g');
+    expect(bubble()).toBeNull();
     await submit(input);
     expect(createListItem).toHaveBeenCalledWith('lst_1', '3 Äpfel', undefined, '500 g');
   });

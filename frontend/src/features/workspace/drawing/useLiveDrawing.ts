@@ -43,6 +43,8 @@ export interface LiveOptions {
   mode: LiveMode | null;
   /** Draw along in a running session only (someone asked to join one): if it ended meanwhile, none starts */
   join?: boolean;
+  /** "Rückgängig" right after discarding: brings back only the session discarded moments ago */
+  resume?: boolean;
   /** Block content when the editor opened (a session everyone left resumes only on the same base) */
   baseContent: string;
   initial: Drawing;
@@ -54,7 +56,7 @@ export interface LiveOptions {
   apply: (doc: Drawing, applied: Applied[]) => void;
   /** The host's "Fertig" went through: the final state to save */
   onSaved: (final: Drawing) => void;
-  /** The host's "Verwerfen" went through */
+  /** The host's "Verwerfen" went through (the server keeps the state a few seconds for "Rückgängig") */
   onDiscarded: () => void;
   /** Refused before being in the session; true: handled (the editor draws alone again) */
   onRefused?: (code: LiveRefusal) => boolean;
@@ -119,6 +121,8 @@ export function useLiveDrawing(opts: LiveOptions | null) {
   // The first join only attaches to a running session (opts.join, "Mitzeichnen"); once in, joining again
   // (lost connection, server restart) may start it anew as before
   const joinOnly = useRef(false);
+  // The first join brings back a session discarded moments ago ("Rückgängig"), nothing else
+  const resumeOnly = useRef(false);
   const joinedRef = useRef(false);
   const [joined, setJoined] = useState(false);
 
@@ -141,7 +145,13 @@ export function useLiveDrawing(opts: LiveOptions | null) {
       return;
     }
     const doc = o.getDoc();
-    send('DRAW_JOIN', { base: o.baseContent, els: merge.all(doc), grid: !!doc.grid, ...(joinOnly.current ? { join: true } : {}) });
+    send('DRAW_JOIN', {
+      base: o.baseContent,
+      els: merge.all(doc),
+      grid: !!doc.grid,
+      ...(joinOnly.current ? { join: true } : {}),
+      ...(resumeOnly.current ? { resume: true } : {}),
+    });
   };
 
   const watch = () => {
@@ -209,6 +219,7 @@ export function useLiveDrawing(opts: LiveOptions | null) {
     // In after all (another drawing was closed meanwhile)
     setError((e) => (e === 'busy' || e === 'too_many' ? null : e));
     joinOnly.current = false;
+    resumeOnly.current = false;
     joinedRef.current = true;
     setJoined(true);
     const r = merge.reconcile(o.getDoc(), { els: st.els || [], order: st.order, grid: st.grid }, o.held());
@@ -247,6 +258,7 @@ export function useLiveDrawing(opts: LiveOptions | null) {
     // Started (again, after a refusal sent the editor back to drawing alone)
     modeRef.current = opts.mode;
     joinOnly.current = !!opts.join;
+    resumeOnly.current = !!opts.resume;
     left.current = false;
     endedRef.current = false;
     lastSeq.current = 0;
@@ -329,7 +341,7 @@ export function useLiveDrawing(opts: LiveOptions | null) {
               setError(p.code);
               break;
             case 'ended':
-              // Asked to join, but the session ended meanwhile
+              // Asked to join (or to bring back a discarded one), but the session ended meanwhile
               setEnded({ reason: 'expired' });
               break;
             case 'no_session':

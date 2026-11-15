@@ -579,6 +579,8 @@
     "confirmResetMfa": "Reset the two-factor sign-in of {{name}}? The authenticator app, passkeys and recovery codes are removed; signing in then asks for the password only. {{name}} gets an email.",
     "mfaReset": "Two-factor sign-in of {{name}} was reset.",
     "mfaBadge": "2FA",
+    "mustChangePassword": "Must change password",
+    "mustChangePasswordHint": "Has to choose a new password at the next sign-in",
     "email": "Email address",
     "emailChanged": "{{name}}'s email address is now {{email}}.",
     "emailRemoved": "{{name}} no longer has an email address.",

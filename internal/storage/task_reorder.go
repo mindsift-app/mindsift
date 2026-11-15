@@ -23,7 +23,8 @@ type TaskReorderResult struct {
 	Written int
 	// Audience: everyone who sees one of the moved tasks (owners and everyone with access to their lists)
 	Audience []string
-	// Spawned: a repeating task was completed and got its next occurrence (a new task the move does not list)
+	// Spawned: a repeating task was completed and got its next occurrence (a new task the move does not
+	// list). Reopened, its untouched occurrence goes with TASK_DELETED (OnTaskRemoved).
 	Spawned bool
 }
 
@@ -192,6 +193,7 @@ func (s *Store) applyTaskOrder(items []domain.ThoughtReorderItem, expected map[s
 	}
 	var changes []change
 	var completed []string // tasks that move into "done" now (repeating ones spawn their successor)
+	var reopened []string  // repeating tasks that move out of "done" (their untouched successor goes)
 	for _, it := range items {
 		cur, ok := current[it.ID]
 		if !ok {
@@ -218,6 +220,8 @@ func (s *Store) applyTaskOrder(items []domain.ThoughtReorderItem, expected map[s
 			if cur.recurrence != "" {
 				res.Spawned = true
 			}
+		} else if !next.done && cur.done && cur.recurrence != "" {
+			reopened = append(reopened, it.ID)
 		}
 	}
 
@@ -250,6 +254,9 @@ func (s *Store) applyTaskOrder(items []domain.ThoughtReorderItem, expected map[s
 	for _, id := range completed {
 		s.spawnNextOccurrence(id)
 	}
+	for _, id := range reopened {
+		s.dropUntouchedSuccessor(id)
+	}
 	return res, nil
 }
 
@@ -262,6 +269,47 @@ func doneColumn(cols []domain.KanbanColumn, column string) bool {
 		}
 	}
 	return column == "done"
+}
+
+// statusColumn is the Kanban column a plain tick (done) or untick puts a task that now stands in column:
+// ticked, it stays in a column marked as done, else goes to the last (right-most) one, else "done";
+// reopened from a done column, it goes to the first open column, else "todo" (an open one stays).
+func statusColumn(cols []domain.KanbanColumn, done bool, column string) string {
+	if column != "" && doneColumn(cols, column) == done {
+		return column
+	}
+	if done {
+		for i := len(cols) - 1; i >= 0; i-- {
+			if cols[i].IsDone {
+				return cols[i].ID
+			}
+		}
+		return "done"
+	}
+	for _, c := range cols {
+		if !c.IsDone {
+			return c.ID
+		}
+	}
+	return "todo"
+}
+
+// listColumns are the board columns stored for a task list (nil: none, or no list), without an access
+// check: for working out the status column of a task the caller may change.
+func (s *Store) listColumns(listID string) []domain.KanbanColumn {
+	if listID == "" {
+		return nil
+	}
+	var raw string
+	if err := s.db.QueryRow(`SELECT COALESCE(columns, '') FROM task_lists WHERE id = ?`, listID).Scan(&raw); err != nil {
+		logDBErr(rowErr(err))
+		return nil
+	}
+	var cols []domain.KanbanColumn
+	if raw != "" {
+		_ = json.Unmarshal([]byte(raw), &cols)
+	}
+	return cols
 }
 
 // uniqueReorderItems drops repeated IDs (the last place given wins, at the position it was first named).

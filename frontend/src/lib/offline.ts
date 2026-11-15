@@ -207,6 +207,46 @@ export function queuedTaskStart(taskId: string): { isCompleted?: boolean; kanban
   return entry?.base as { isCompleted?: boolean; kanbanStatus?: string } | undefined;
 }
 
+const TASK_PATH = /^\/api\/v1\/thoughts\/([^/]+)$/;
+
+export interface PendingTaskChange {
+  isCompleted?: boolean;
+  kanbanStatus?: string;
+}
+
+/** Ticks and column changes of tasks still waiting in the outbox, by task id: the task view shows them on
+ *  top of what it loaded (the cached answer offline, also after a reload, or the server's before they are
+ *  sent), as the list view does with pendingListChanges. */
+export function pendingTaskChanges(): Map<string, PendingTaskChange> {
+  const out = new Map<string, PendingTaskChange>();
+  for (const e of getOutbox()) {
+    const m = e.method === 'PATCH' ? e.path.match(TASK_PATH) : null;
+    if (!m) continue;
+    const change = out.get(m[1]) || {};
+    if (typeof e.body.isCompleted === 'boolean') change.isCompleted = e.body.isCompleted;
+    if (typeof e.body.kanbanStatus === 'string' && e.body.kanbanStatus) change.kanbanStatus = e.body.kanbanStatus;
+    out.set(m[1], change);
+  }
+  return out;
+}
+
+/** Tasks with the changes still waiting in the outbox applied (pendingTaskChanges). */
+export function withPendingTaskChanges<T extends { id: string; isCompleted?: boolean; kanbanStatus?: string }>(
+  tasks: T[],
+  changes: Map<string, PendingTaskChange> = pendingTaskChanges()
+): T[] {
+  if (changes.size === 0) return tasks;
+  return tasks.map((t) => {
+    const c = changes.get(t.id);
+    if (!c) return t;
+    return {
+      ...t,
+      ...(c.isCompleted !== undefined ? { isCompleted: c.isCompleted } : {}),
+      ...(c.kanbanStatus !== undefined ? { kanbanStatus: c.kanbanStatus } : {}),
+    };
+  });
+}
+
 // List items added offline: a stand-in id until the server knows them, derived from the outbox entry
 export const OFFLINE_ITEM_PREFIX = 'itm_offline_';
 const LIST_ITEMS_PATH = /^\/api\/v1\/lists\/([^/]+)\/items$/;

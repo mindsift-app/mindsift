@@ -457,7 +457,8 @@
     "copy": "{{name}} sta modificando questa versione: attendi un momento",
     "someone": "Qualcuno",
     "drawing": "In modifica da parte di {{name}} in questo momento",
-    "drawingOwn": "In modifica in questo momento su un altro dispositivo o in un'altra scheda"
+    "drawingOwn": "In modifica in questo momento su un altro dispositivo o in un'altra scheda",
+    "you": "Tu"
   },
   "extractMenu": {
     "title": "Estrarre dove?",
@@ -608,8 +609,7 @@
       "leave": "Esci",
       "leaveTitle": "Esci dal disegno dal vivo – gli altri continuano",
       "doneTitle": "Salva per tutti e termina il disegno dal vivo (Esc)",
-      "discardAsk": "Scartare termina il disegno dal vivo per tutti. Le modifiche di questa sessione vanno perse.",
-      "discardAll": "Scarta per tutti",
+      "discarded": "Disegno scartato",
       "endedDone": "{{name}} ha salvato il disegno.",
       "endedDiscard": "{{name}} ha scartato il disegno dal vivo.",
       "endedExpired": "Il disegno dal vivo è terminato.",

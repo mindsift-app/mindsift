@@ -18,7 +18,7 @@ import { EmojiIconButton } from '../../components/EmojiIconButton';
 import { useMobileActions } from '../../context/MobileActionContext';
 import { collectHashtags, deduplicateItems, findHashtagQuery, matchHashtags, groupOpenItems, parseListItemInput, withPendingChanges } from './listItems';
 import { matchItemSuggestions, withRecordedUse } from './itemSuggestions';
-import { useItemQuantity } from './QuantityHint';
+import { QuantityBubble, useItemQuantity } from './QuantityHint';
 import { QUANTITY_MAX_LENGTH } from './itemQuantity';
 import { PhraseHighlight } from '../../components/NaturalDateHint';
 import { useListDrag } from './useListDrag';
@@ -559,22 +559,33 @@ export const SharedListsView: React.FC<SharedListsViewProps> = ({ onRefreshGloba
       className={className}
     />
   );
-  const quantityInput = (className: string) => (
-    <input
-      type="text"
-      maxLength={QUANTITY_MAX_LENGTH}
-      // A quantity typed into the item shows up here (accent colour) until this field is typed into;
-      // emptying it keeps the text as typed
-      value={newItemQty || autoQuantity}
-      onChange={(e) => {
-        if (!newItemQty && autoQuantity && e.target.value === '') typedQuantity.dismiss();
-        else setNewItemQty(e.target.value);
-      }}
-      placeholder={t('quantity')}
-      aria-label={t('quantityLabel')}
-      title={!newItemQty && autoQuantity ? t('quantityHint.recognized', { quantity: autoQuantity }) : undefined}
-      className={`${className} ${!newItemQty && autoQuantity ? 'text-accent' : ''}`}
-    />
+  // A quantity typed into the item shows up in its field (accent colour) with a bubble pointing at it until
+  // the field is typed into; the bubble's × or emptying the field keeps the text as typed. On the desktop
+  // the bubble sits above the field (the suggestions open below the item), on phones right of it.
+  const showsAutoQuantity = !newItemQty && !!autoQuantity;
+  const quantityInput = (desktop: boolean, className: string) => (
+    <div className={desktop ? 'relative shrink-0' : 'flex items-center gap-2.5'}>
+      <input
+        type="text"
+        maxLength={QUANTITY_MAX_LENGTH}
+        value={newItemQty || autoQuantity}
+        onChange={(e) => {
+          if (showsAutoQuantity && e.target.value === '') typedQuantity.dismiss();
+          else setNewItemQty(e.target.value);
+        }}
+        placeholder={t('quantity')}
+        aria-label={t('quantityLabel')}
+        title={showsAutoQuantity ? t('quantityHint.recognized', { quantity: autoQuantity }) : undefined}
+        className={`${className} ${showsAutoQuantity ? 'text-accent' : ''}`}
+      />
+      {showsAutoQuantity && (
+        <QuantityBubble quantity={autoQuantity} onDismiss={typedQuantity.dismiss} side={desktop ? 'above' : 'right'} />
+      )}
+      {/* Always there, so screen readers announce when a quantity is recognised */}
+      <span role="status" aria-live="polite" className="sr-only">
+        {showsAutoQuantity ? t('quantityHint.recognized', { quantity: autoQuantity }) : ''}
+      </span>
+    </div>
   );
   const renderAddItemFields = (desktop: boolean) =>
     !activeList ? null : desktop ? (
@@ -586,7 +597,7 @@ export const SharedListsView: React.FC<SharedListsViewProps> = ({ onRefreshGloba
         </div>
         <div className="flex items-center gap-1 shrink-0">
           {itemVoice()}
-          {quantityInput('w-20 h-7 px-2 input-field text-xs')}
+          {quantityInput(true, 'w-20 h-7 px-2 input-field text-xs')}
           <button
             type="submit"
             disabled={isSubmittingItem || !newItemText.trim()}
@@ -606,7 +617,7 @@ export const SharedListsView: React.FC<SharedListsViewProps> = ({ onRefreshGloba
           {itemVoice('absolute right-1 top-1/2 -translate-y-1/2')}
         </div>
         {renderItemSuggestions(false)}
-        {quantityInput('w-24 h-11 px-2.5 input-field text-base')}
+        {quantityInput(false, 'w-24 h-11 px-2.5 input-field text-base')}
       </>
     );
 

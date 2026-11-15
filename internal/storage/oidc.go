@@ -111,20 +111,24 @@ func (s *Store) TouchOIDCIdentity(issuer, subject string, now time.Time) {
 
 // SetAdminByGroup makes the account an administrator (admin) or takes the role back to member (!admin) as the
 // provider's group says. The last administrator is never taken back. Managers and members outside the group
-// stay what they are. changed reports whether the role changed.
-func (s *Store) SetAdminByGroup(userID string, admin bool) (changed bool, err error) {
-	var res sql.Result
+// stay what they are. changed reports whether the role changed; a change signs every session out (token
+// version, as UpdateUserFull does for a new role), and tokenVersion is the account's new one then.
+func (s *Store) SetAdminByGroup(userID string, admin bool) (changed bool, tokenVersion int, err error) {
 	if admin {
-		res, err = s.db.Exec(`UPDATE users SET role = 'admin' WHERE id = ? AND role != 'admin'`, userID)
+		err = s.db.QueryRow(`UPDATE users SET role = 'admin', token_version = token_version + 1 WHERE id = ? AND role != 'admin'
+			RETURNING token_version`, userID).Scan(&tokenVersion)
 	} else {
-		res, err = s.db.Exec(`UPDATE users SET role = 'member' WHERE id = ? AND role = 'admin'
-			AND (SELECT COUNT(*) FROM users WHERE role = 'admin' AND id != ?) > 0`, userID, userID)
+		err = s.db.QueryRow(`UPDATE users SET role = 'member', token_version = token_version + 1 WHERE id = ? AND role = 'admin'
+			AND (SELECT COUNT(*) FROM users WHERE role = 'admin' AND id != ?) > 0
+			RETURNING token_version`, userID, userID).Scan(&tokenVersion)
+	}
+	if errors.Is(err, sql.ErrNoRows) {
+		return false, 0, nil
 	}
 	if err != nil {
-		return false, err
+		return false, 0, err
 	}
-	n, _ := res.RowsAffected()
-	return n > 0, nil
+	return true, tokenVersion, nil
 }
 
 // CountOIDCIdentities: how many accounts sign in through the provider of this issuer.

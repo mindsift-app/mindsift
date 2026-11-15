@@ -9,6 +9,7 @@ import { AvatarStack } from '../../../components/AvatarStack';
 import { isWebSocketConnected, tryWebSocket } from '../../../lib/api';
 import { useLatestRef } from '../../../lib/useLatestRef';
 import { NoteClientContext, NoteSharedContext } from './noteShared';
+import { useToast, WorkspaceToast } from '../WorkspaceToast';
 
 // The editor (with the live drawing) is a chunk of its own, loaded when a drawing is opened; the service
 // worker precaches it with the other assets, so it opens offline as well
@@ -90,7 +91,7 @@ interface DrawingBlockProps {
 
 /** How the editor is open: alone ('solo', a live session can start from there in a shared note), looking
  *  only ('view'), or joining or watching a running live session */
-type EditMode = 'solo' | 'view' | 'draw' | 'watch';
+type EditMode = 'solo' | 'view' | 'draw' | 'watch' | 'resume';
 
 // Drawing in a note: a preview that fills the note's width. Hovering leaves the page scrolling as usual; after
 // a click the drawing takes dragging, the wheel and pinching to move and zoom. Editing happens full screen.
@@ -112,6 +113,8 @@ export const DrawingBlock: React.FC<DrawingBlockProps> = ({
   // Shared with someone: "Gemeinsam zeichnen" in the editor (someone else could join)
   const shared = useContext(NoteSharedContext);
   const noteClientId = useContext(NoteClientContext);
+  // "Zeichnung verworfen · Rückgängig" after discarding a live session
+  const { toast, setToast, showToast } = useToast();
   const drawing = useMemo(() => parseDrawing(content), [content]);
   const boxRef = useRef<HTMLDivElement | null>(null);
   const [width, setWidth] = useState(0);
@@ -526,6 +529,8 @@ export const DrawingBlock: React.FC<DrawingBlockProps> = ({
         />
       )}
 
+      {toast && createPortal(<WorkspaceToast toast={toast} setToast={setToast} />, document.body)}
+
       {editing && (
         <Suspense fallback={null}>
           <DrawingEditor
@@ -538,13 +543,26 @@ export const DrawingBlock: React.FC<DrawingBlockProps> = ({
             live={
               docId && (editing === 'draw' || editing === 'watch')
                 ? { docId, blockId, mode: editing, canDraw: canEdit && isWebSocketConnected(), noteClientId }
+                : docId && editing === 'resume'
+                ? { docId, blockId, mode: 'draw', canDraw: true, noteClientId, resume: true }
                 : docId && editing === 'solo'
                 ? { docId, blockId, mode: null, canDraw: true, canStart: shared, noteClientId }
                 : undefined
             }
-            onClose={(next, wasLive) => {
+            onClose={(next, wasLive, undoable) => {
               setEditing(null);
               if (wasLive) setEndedHere(Date.now());
+              // The live session was discarded with changes: the server keeps it a few seconds for this
+              if (undoable && canEdit)
+                showToast(t('drawing.live.discarded'), [
+                  {
+                    label: t('common:sync.undo'),
+                    run: () => {
+                      setEndedHere(null);
+                      setEditing('resume');
+                    },
+                  },
+                ]);
               const fresh = freshRef.current;
               freshRef.current = false;
               if (next !== null) onChange(next);

@@ -223,6 +223,11 @@ function UserRow({ u, open, orgNames, showNoOrg, onToggle }: { u: User; open: bo
               {t('users.mfaBadge')}
             </span>
           )}
+          {u.mustChangePassword && (
+            <span className="badge-neutral text-[10px] shrink-0 truncate" title={t('users.mustChangePasswordHint')}>
+              {t('users.mustChangePassword')}
+            </span>
+          )}
         </span>
         <span className="block text-muted text-[11px] truncate" title={sub}>
           {sub}

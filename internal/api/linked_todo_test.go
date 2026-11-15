@@ -670,7 +670,7 @@ func TestLinkedTodoTaskMoveDeleteRestore(t *testing.T) {
 }
 
 // A repeating task completed by ticking its to-do: like completing it in the task view, the next
-// occurrence is created (once), with the assignees.
+// occurrence is created, with the assignees; unticked again, it goes while untouched.
 func TestLinkedTodoRecurringTickedInNote(t *testing.T) {
 	f := newLinkedFixture(t)
 	f.patch(t, f.ownerTok, map[string]any{"recurrence": "weekly", "dueDate": "2026-11-20"})
@@ -684,12 +684,15 @@ func TestLinkedTodoRecurringTickedInNote(t *testing.T) {
 	if !sameSet(f.taskOf(t, next.ID).Assignees, f.assignees) {
 		t.Errorf("next occurrence lost the assignees")
 	}
-	// Unticked and ticked again: no second occurrence
+	// Unticked: the untouched occurrence goes (TASK_DELETED); ticked again: a fresh one, so one in the end
 	f.edit(t, checkOp(f.main, false))
 	f.edit(t, checkOp(f.main, true))
 	f.ownerWS.waitTask(t, "TASK_UPDATED", f.taskID, func(th *domain.Thought) bool { return th.IsCompleted })
-	if got := f.memberWS.quiet(500 * time.Millisecond); got["TASK_CREATED"] > 0 {
-		t.Errorf("ticking again created another occurrence: %v", got)
+	if got := f.memberWS.quiet(500 * time.Millisecond); got["TASK_CREATED"] != 1 || got["TASK_DELETED"] != 1 {
+		t.Errorf("untick and tick again: want one occurrence removed and one created, got %v", got)
+	}
+	if _, err := f.store.GetThoughtByID(f.owner.ID, next.ID); err == nil {
+		t.Errorf("the untouched occurrence is still there after unticking")
 	}
 }
 

@@ -612,10 +612,21 @@ func TestOIDCAdminGroup(t *testing.T) {
 		t.Fatalf("in the group: %v", role)
 	}
 	id := e.userOf(token)["id"].(string)
-	// Out of the group: member again (the first admin is still there)
+	// Signed in again with the same role: earlier sessions stay
+	again := e.mustSignIn()
+	if rec, _ := e.call("GET", "/api/v1/auth/me", token, nil); rec.Code != http.StatusOK {
+		t.Fatalf("same role: the earlier session was signed out: %d", rec.Code)
+	}
+	// Out of the group: member again (the first admin is still there), and the sessions with the admin
+	// role are signed out (token version), as after a change in the administration
 	e.idp.person["groups"] = []string{"andere"}
 	if role := e.userOf(e.mustSignIn())["role"]; role != domain.RoleMember {
 		t.Fatalf("out of the group: %v", role)
+	}
+	for _, old := range []string{token, again} {
+		if rec, _ := e.call("GET", "/api/v1/auth/me", old, nil); rec.Code != http.StatusUnauthorized {
+			t.Fatalf("role taken back: an admin session still works: %d", rec.Code)
+		}
 	}
 	// No groups claim at all: nothing changes
 	e.idp.person["groups"] = []string{"mindsift-admins"}

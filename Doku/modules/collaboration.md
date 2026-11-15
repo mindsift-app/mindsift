@@ -128,7 +128,7 @@ Long-polling stays at 25 s, below standard proxy limits (Nginx 60 s, Cloudflare 
 
 ## Live Drawing
 
-Drawing bullets have a mode of their own on top of this: opening one draws alone (the bullet held like a text bullet), and in a shared note "Gemeinsam zeichnen" starts a session in which several people draw at once over WebSocket, merged per element by version; the session holds the bullet's lease and the host saves the result as one normal change. Details: [architecture.md](../architecture.md#collaboration-live-drawing).
+Drawing bullets have a mode of their own on top of this: opening one draws alone (the bullet held like a text bullet), and in a shared note "Gemeinsam zeichnen" starts a session in which several people draw at once over WebSocket, merged per element by version; the session holds the bullet's lease and the host saves the result as one normal change. Closing without saving only leaves while others draw along; only the last one discards (with "Rückgängig" for a few seconds). Details: [architecture.md](../architecture.md#collaboration-live-drawing).
 
 ## Private Notes
 

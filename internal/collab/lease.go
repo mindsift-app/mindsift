@@ -39,8 +39,14 @@ type lease struct {
 	clientID string
 	userID   string
 	name     string
+	device   string // Actor.Device of the holder
+	browser  string // Actor.Browser of the holder
 	expires  time.Time
 	live     []Presence // a live drawing session holds the block: everyone drawing in it
+}
+
+func leaseOf(a Actor, expires time.Time) lease {
+	return lease{clientID: a.ClientID, userID: a.UserID, name: a.Name, device: a.Device, browser: a.Browser, expires: expires}
 }
 
 type session struct {
@@ -56,6 +62,10 @@ type LeaseInfo struct {
 	Name    string `json:"name"`
 	// Live: the block is a drawing several people draw in right now ("Live-Zeichnung: Anna, Ben")
 	Live []Presence `json:"live,omitempty"`
+	// Only for a block the asking person holds in another tab or on another device of their own: the
+	// device kind that client announced, and whether it runs in the same browser as the asking one
+	Device      string `json:"device,omitempty"`
+	SameBrowser bool   `json:"sameBrowser,omitempty"`
 }
 
 // Presence is one client that synced a document recently.
@@ -114,7 +124,7 @@ func (m *LeaseManager) Hold(docID string, a Actor, blockIDs []string) (granted, 
 			denied = append(denied, id)
 			continue
 		}
-		l[id] = lease{clientID: a.ClientID, userID: a.UserID, name: a.Name, expires: now.Add(LeaseTTL)}
+		l[id] = leaseOf(a, now.Add(LeaseTTL))
 		granted = append(granted, id)
 	}
 	return granted, denied
@@ -189,7 +199,7 @@ func (m *LeaseManager) HandOver(docID, blockID, from string, to Actor) bool {
 	if cur, ok := l[blockID]; ok && cur.clientID != from && cur.clientID != to.ClientID {
 		return false
 	}
-	l[blockID] = lease{clientID: to.ClientID, userID: to.UserID, name: to.Name, expires: now.Add(LeaseTTL)}
+	l[blockID] = leaseOf(to, now.Add(LeaseTTL))
 	return true
 }
 
@@ -233,16 +243,23 @@ func (m *LeaseManager) View(docID string) LeaseView {
 	return snap
 }
 
-// Others lists blocks held by clients other than clientID.
-func (m *LeaseManager) Others(docID, clientID string) []LeaseInfo {
+// Others lists blocks held by clients other than the asking one; blocks the same person holds elsewhere
+// say on which kind of device and whether in the same browser.
+func (m *LeaseManager) Others(docID string, a Actor) []LeaseInfo {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.prune(docID, m.now())
 	out := make([]LeaseInfo, 0)
 	for id, l := range m.leases[docID] {
-		if l.clientID != clientID {
-			out = append(out, LeaseInfo{BlockID: id, UserID: l.userID, Name: l.name, Live: l.live})
+		if l.clientID == a.ClientID {
+			continue
 		}
+		info := LeaseInfo{BlockID: id, UserID: l.userID, Name: l.name, Live: l.live}
+		if l.live == nil && a.UserID != "" && l.userID == a.UserID {
+			info.Device = l.device
+			info.SameBrowser = a.Browser != "" && l.browser == a.Browser
+		}
+		out = append(out, info)
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].BlockID < out[j].BlockID })
 	return out

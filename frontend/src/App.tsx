@@ -62,6 +62,7 @@ import { useMobileCapture } from './app/useMobileCapture';
 import { MobileCaptureSheet } from './app/MobileCaptureSheet';
 import { MobileHeaderBar } from './app/AppHeader';
 import { NavRail } from './app/NavRail';
+import { captureDictation } from './features/capture/captureDictation';
 import { QuickDumpWindow, useQuickDumpShortcut } from './app/QuickDumpWindow';
 import { useSessionBootstrap } from './app/useSessionBootstrap';
 import { useMainViews } from './app/useMainViews';
@@ -724,6 +725,10 @@ export const App: React.FC = () => {
         onQuickDump={() => {
           triggerHaptic(20);
           openQuickDump();
+        }}
+        onDictated={async (text) => {
+          const thought = await captureDictation(text);
+          handleCaptured(thought, 'inbox');
         }}
         onSearch={() => setShowCommandPalette(true)}
         handleOpenHelp={handleOpenHelp}

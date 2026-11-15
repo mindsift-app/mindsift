@@ -84,14 +84,14 @@ Several people draw in one drawing bullet at once (concept: [architecture.md](..
 
 | Client → Server | Payload (besides `docId`, `blockId`) | Effect |
 |---|---|---|
-| `DRAW_JOIN` | `base` (block content when opened), `els` (own whole state: elements with `ver`, `nonce`, tombstones), `grid`, `join` (optional) | Draw along (write access). Starts a session without one (host; the browser sends this only after "Gemeinsam zeichnen", or again after a lost connection), with `join: true` ("Mitzeichnen" in a session someone else runs) only joins a running one and answers `ended` otherwise; resumes one everyone left within 10 min if `base` matches, or joins a running one; merges `els` by version. Answer `DRAW_STATE`; joining again after a lost connection or a server restart works the same way. A connection draws in one drawing at a time: joining another leaves the previous one. Limits per person and server: [architecture.md](../architecture.md#collaboration-live-drawing) |
+| `DRAW_JOIN` | `base` (block content when opened), `els` (own whole state: elements with `ver`, `nonce`, tombstones), `grid`, `join` (optional), `resume` (optional) | Draw along (write access). Starts a session without one (host; the browser sends this only after "Gemeinsam zeichnen", or again after a lost connection), with `join: true` ("Mitzeichnen" in a session someone else runs) only joins a running one and answers `ended` otherwise; with `resume: true` ("Rückgängig" after discarding) only brings back a session discarded within 15 s for the same `base`, else `ended`, and a join without it never resumes a discarded session; resumes one everyone left within 10 min if `base` matches, or joins a running one; merges `els` by version. Answer `DRAW_STATE`; joining again after a lost connection or a server restart works the same way. A connection draws in one drawing at a time: joining another leaves the previous one. Limits per person and server: [architecture.md](../architecture.md#collaboration-live-drawing) |
 | `DRAW_WATCH` | – | Watch (read access); answer `DRAW_STATE` (`active: false` without a session) |
 | `DRAW_OPS` | `els` (changed elements and tombstones), `order` (new order of the ids, optional), `grid` (optional) | Merged by version; the winners go to the room as `DRAW_OPS`, the sender gets `DRAW_ACK` |
 | `DRAW_PRESENCE` | `x`, `y` (drawing coordinates), `gone`, `touch`, `sel` (selected ids) | Pointer and selection, at most 30 a second, the rest dropped |
 | `DRAW_SYNC` | – | The whole state again as `DRAW_STATE` (after a gap in `seq`) |
 | `DRAW_LEAVE` | – | Leave (drawing or watching); the host's leaving hands over to the person drawing longest |
 | `DRAW_DONE` | `clientId` (the note's sync client) | Host only: ends the session; the host gets `DRAW_END` with the final state and saves it via `/docs/{id}/sync`, the bullet's lease goes to `clientId` |
-| `DRAW_DISCARD` | – | Host only: ends the session without saving |
+| `DRAW_DISCARD` | – | Host only: ends the session without saving; everyone is out (`DRAW_END` `discard`), the state stays 15 s for `DRAW_JOIN` with `resume`. The app sends it only when nobody else draws along; otherwise closing without saving is `DRAW_LEAVE` |
 
 | Event | Payload (besides `docId`, `blockId`) | Recipients |
 |---|---|---|

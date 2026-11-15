@@ -457,7 +457,8 @@
     "copy": "{{name}} is editing this version right now – please wait a moment",
     "someone": "Someone",
     "drawing": "Being edited by {{name}} right now",
-    "drawingOwn": "Being edited on another device or in another tab right now"
+    "drawingOwn": "Being edited on another device or in another tab right now",
+    "you": "You"
   },
   "extractMenu": {
     "title": "Move out to where?",
@@ -608,8 +609,7 @@
       "leave": "Leave",
       "leaveTitle": "Leave the live drawing – the others go on drawing",
       "doneTitle": "Save for everyone and end the live drawing (Esc)",
-      "discardAsk": "Discarding ends the live drawing for everyone. The changes of this session are lost.",
-      "discardAll": "Discard for everyone",
+      "discarded": "Drawing discarded",
       "endedDone": "{{name}} saved the drawing.",
       "endedDiscard": "{{name}} discarded the live drawing.",
       "endedExpired": "The live drawing has ended.",

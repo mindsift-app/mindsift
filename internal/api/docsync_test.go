@@ -96,6 +96,39 @@ func TestDocSyncBetweenTwoEditors(t *testing.T) {
 	}
 }
 
+// A bullet held in one's own other tab or on one's own other device says which kind of device and whether
+// in the same browser; others only see the name, and a made-up device kind is dropped.
+func TestDocSyncOwnLeaseDevice(t *testing.T) {
+	f := newCollabFixture(t)
+	hold := func(client, device, browser string, blocks []string) syncResponse {
+		t.Helper()
+		code, res := syncDoc(t, f.ts, f.ownerTok, f.docID, map[string]any{
+			"clientId": client, "lastSeq": 0, "device": device, "browser": browser,
+			"leases": map[string]any{"hold": blocks, "release": []string{}},
+		})
+		if code != http.StatusOK {
+			t.Fatalf("sync %s: %d", client, code)
+		}
+		return res
+	}
+	hold("phone-tab", "phone", "brA", []string{"b1"})
+	others := hold("desk-tab", "computer", "brB", nil).Leases.Others
+	if len(others) != 1 || others[0].Device != "phone" || others[0].SameBrowser {
+		t.Fatalf("own phone in another browser: %+v", others)
+	}
+	if others := hold("phone-tab2", "phone", "brA", nil).Leases.Others; len(others) != 1 || !others[0].SameBrowser {
+		t.Fatalf("own other tab in the same browser: %+v", others)
+	}
+	_, ed := syncDoc(t, f.ts, f.editorTok, f.docID, map[string]any{"clientId": "editor-tab", "lastSeq": 0, "browser": "brA"})
+	if len(ed.Leases.Others) != 1 || ed.Leases.Others[0].Device != "" || ed.Leases.Others[0].SameBrowser {
+		t.Fatalf("someone else learns nothing about the device: %+v", ed.Leases.Others)
+	}
+	hold("phone-tab", "toaster", "brA", []string{"b1"})
+	if others := hold("desk-tab", "computer", "brB", nil).Leases.Others; len(others) != 1 || others[0].Device != "" {
+		t.Fatalf("unknown device kinds are dropped: %+v", others)
+	}
+}
+
 func TestDocSyncRetryIsIdempotent(t *testing.T) {
 	f := newCollabFixture(t)
 	body := map[string]any{

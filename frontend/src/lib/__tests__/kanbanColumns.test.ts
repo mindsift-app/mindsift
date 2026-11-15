@@ -29,7 +29,7 @@ describe('kanban columns', () => {
     expect(ownColumnIn(task({ kanbanStatus: 'gone' }), [col('w', 'Wartet'), STD[2]])?.id).toBe('w');
     const twoDone = [...STD, col('archiv', 'Archiv', { isDone: true })];
     expect(ownColumnIn(task({ isCompleted: true, kanbanStatus: 'archiv' }), twoDone)?.id).toBe('archiv');
-    expect(ownColumnIn(task({ isCompleted: true, kanbanStatus: 'todo' }), twoDone)?.id).toBe('done');
+    expect(ownColumnIn(task({ isCompleted: true, kanbanStatus: 'todo' }), twoDone)?.id).toBe('archiv'); // the last done column, as the server and a tick use
   });
 
   it('board IDs are names on the combined board only', () => {

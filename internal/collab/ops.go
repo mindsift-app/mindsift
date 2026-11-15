@@ -116,7 +116,18 @@ type Actor struct {
 	UserID   string
 	ClientID string
 	Name     string
+	// Device and Browser describe the client for the person's own other tabs and devices ("Du" on a
+	// bullet held elsewhere): Device is DevicePhone, DeviceComputer or empty (not told), Browser an id the
+	// tabs of one browser share. Neither is shown to anyone else; Browser never leaves the server.
+	Device  string
+	Browser string
 }
+
+// Device kinds a note editor may announce with its sync (Actor.Device).
+const (
+	DevicePhone    = "phone"
+	DeviceComputer = "computer"
+)
 
 // LeaseView answers which client currently holds the lease on a block.
 type LeaseView interface {

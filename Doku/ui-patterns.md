@@ -311,6 +311,7 @@ Component: [HoldToRecordFab.tsx](../frontend/src/features/capture/HoldToRecordFa
 - **Release:** Stops recording, briefly awaits the final word, and saves the text as an idea to the inbox regardless of the active view (`source: 'voice'`, `target: 'inbox'`).
 - **Drag upward (> 60 px):** Switches the pill to cancellation state ("🗑️ Release to cancel"); releasing here discards the recording (`abort()`).
 - **Fallback:** If speech input is disabled (`STT_DISABLED=true`), unsupported by the browser, or microphone permissions are denied (`not-allowed`), holding the button opens the dialog just like tapping and briefly displays a status message above the bottom bar.
+- **Desktop rail:** the `+` of the rail ([RailQuickDumpButton.tsx](../frontend/src/app/RailQuickDumpButton.tsx), logic in [useHoldToDictate.ts](../frontend/src/features/capture/useHoldToDictate.ts)) does the same with mouse or pen: a click opens the Quick Dump window, holding (≥ 350 ms) records into the inbox via the same `captureDictation`. The circle shows the state (microphone with a level ring, a spinning ring while saving, a check mark for 800 ms) and a live `rail-tip` beside it the elapsed time. Releasing beside the button or Escape cancels; voice input off or a denied microphone only show `showError`. Touch and keyboard only click.
 
 ## Guided Tour
 

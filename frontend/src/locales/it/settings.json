@@ -579,6 +579,8 @@
     "confirmResetMfa": "Reimpostare l'accesso in due passaggi di {{name}}? L'app di autenticazione, le passkey e i codici di recupero vengono rimossi; poi l'accesso chiederà solo la password. {{name}} riceverà un'e-mail.",
     "mfaReset": "L'accesso in due passaggi di {{name}} è stato reimpostato.",
     "mfaBadge": "2FA",
+    "mustChangePassword": "Deve cambiare password",
+    "mustChangePasswordHint": "Deve scegliere una nuova password al prossimo accesso",
     "email": "Indirizzo email",
     "emailChanged": "L’indirizzo email di {{name}} ora è {{email}}.",
     "emailRemoved": "{{name}} non ha più un indirizzo email.",

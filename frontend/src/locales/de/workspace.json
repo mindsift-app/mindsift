@@ -453,7 +453,8 @@
     "copy": "{{name}} bearbeitet diese Version gerade – bitte kurz warten",
     "someone": "Jemand",
     "drawing": "Wird gerade von {{name}} bearbeitet",
-    "drawingOwn": "Wird gerade auf einem anderen Gerät oder in einem anderen Tab bearbeitet"
+    "drawingOwn": "Wird gerade auf einem anderen Gerät oder in einem anderen Tab bearbeitet",
+    "you": "Du"
   },
   "extractMenu": {
     "title": "Wohin auslagern?",
@@ -604,8 +605,7 @@
       "leave": "Verlassen",
       "leaveTitle": "Live-Zeichnung verlassen – die anderen zeichnen weiter",
       "doneTitle": "Für alle speichern und die Live-Zeichnung beenden (Esc)",
-      "discardAsk": "Verwerfen beendet die Live-Zeichnung für alle. Die Änderungen dieser Sitzung gehen verloren.",
-      "discardAll": "Für alle verwerfen",
+      "discarded": "Zeichnung verworfen",
       "endedDone": "{{name}} hat die Zeichnung gespeichert.",
       "endedDiscard": "{{name}} hat die Live-Zeichnung verworfen.",
       "endedExpired": "Die Live-Zeichnung ist beendet.",

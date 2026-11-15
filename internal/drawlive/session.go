@@ -18,6 +18,9 @@ import (
 const (
 	// KeepFor: after everyone left without saving, the state stays this long; joining again resumes it
 	KeepFor = 10 * time.Minute
+	// DiscardKeep: after the last person discarded the session ("Verwerfen"), its state stays this long, so
+	// "Rückgängig" (Resumable, Join with resume) brings it back; the browser offers that for 10 s
+	DiscardKeep = 15 * time.Second
 	// MaxElements: live elements of a session, and as many tombstones
 	MaxElements = 5000
 	// MaxBytes: everything a session holds (elements and tombstones as sent). A drawing block takes 100 kB;
@@ -186,7 +189,9 @@ type session struct {
 	seq            int64
 	emptySince     time.Time
 	// lastUser: the person who left the session last (it counts for them while it is kept)
-	lastUser      string
+	lastUser string
+	// discarded: the last person discarded it; kept for DiscardKeep for "Rückgängig" only
+	discarded     bool
 	ops, presence map[string]*bucket
 }
 
@@ -222,6 +227,14 @@ func indexOf(people []Person, connID string) int {
 }
 
 func (s *session) active() bool { return len(s.participants) > 0 }
+
+// kept tells whether a session everyone left is still kept at now (KeepFor, after discarding DiscardKeep).
+func (s *session) kept(now time.Time) bool {
+	if s.discarded {
+		return now.Sub(s.emptySince) <= DiscardKeep
+	}
+	return now.Sub(s.emptySince) <= KeepFor
+}
 
 func (s *session) state() State {
 	st := State{DocID: s.docID, BlockID: s.blockID, Active: s.active(), Participants: append([]Person{}, s.participants...),
@@ -436,6 +449,12 @@ func (m *Manager) AllowJoin(userID string, now time.Time) bool {
 	return b.take(now, joinsPerSecond, joinsBurst)
 }
 
+// Resumable tells whether a session discarded within DiscardKeep can come back for the same base.
+func (m *Manager) Resumable(docID, blockID, base string, now time.Time) bool {
+	s := m.get(docID, blockID)
+	return s != nil && !s.active() && s.discarded && s.kept(now) && s.base == base
+}
+
 // Running tells whether people draw in the drawing right now.
 func (m *Manager) Running(docID, blockID string) bool {
 	s := m.get(docID, blockID)
@@ -444,12 +463,14 @@ func (m *Manager) Running(docID, blockID string) bool {
 
 // Join adds a connection as drawing. Without a running session it starts one with the joiner as host: a
 // session everyone left within KeepFor resumes, if the block still holds what it started from (base);
-// otherwise the joiner's elements are the start. els is the joiner's own state (after a reconnect or a
-// server restart its changes merge in by version); won are those that changed the session, for the others.
-func (m *Manager) Join(docID, blockID string, p Person, base string, els []Element, grid *bool, now time.Time) (st State, started bool, won []Element, err error) {
+// otherwise the joiner's elements are the start. A discarded session resumes only with resume
+// ("Rückgängig" right after discarding), and resume resumes nothing else. els is the joiner's own state
+// (after a reconnect or a server restart its changes merge in by version); won are those that changed the
+// session, for the others.
+func (m *Manager) Join(docID, blockID string, p Person, base string, els []Element, grid *bool, resume bool, now time.Time) (st State, started bool, won []Element, err error) {
 	k := key{docID, blockID}
 	s := m.sessions[k]
-	if s != nil && !s.active() && (now.Sub(s.emptySince) > KeepFor || s.base != base) {
+	if s != nil && !s.active() && (!s.kept(now) || s.base != base || s.discarded != resume) {
 		m.drop(k)
 		s = nil
 	}
@@ -481,7 +502,7 @@ func (m *Manager) Join(docID, blockID string, p Person, base string, els []Eleme
 	if indexOf(s.participants, p.ID) < 0 {
 		s.participants = append(s.participants, p)
 	}
-	s.emptySince, s.lastUser = time.Time{}, ""
+	s.emptySince, s.lastUser, s.discarded = time.Time{}, "", false
 	return s.state(), started, won, nil
 }
 
@@ -638,8 +659,10 @@ func (m *Manager) Gone(connID string, now time.Time) []Change {
 	return out
 }
 
-// Finish ends a session for "Fertig" (the host saves the returned state) or "Verwerfen"; only the host may.
-func (m *Manager) Finish(docID, blockID, connID string) (State, error) {
+// Finish ends a session for everyone; only the host may. "Fertig" (save): the host saves the returned
+// state and the session is gone. "Verwerfen": everyone is out, but the state stays for DiscardKeep, so the
+// person who discarded can take it back (Join with resume).
+func (m *Manager) Finish(docID, blockID, connID string, save bool, now time.Time) (State, error) {
 	s := m.get(docID, blockID)
 	if s == nil || !s.active() {
 		return State{}, ErrNoSession
@@ -648,7 +671,14 @@ func (m *Manager) Finish(docID, blockID, connID string) (State, error) {
 		return State{}, ErrNotHost
 	}
 	st := s.state()
-	m.drop(key{docID, blockID})
+	if save {
+		m.drop(key{docID, blockID})
+		return st, nil
+	}
+	s.lastUser = s.participants[0].UserID
+	s.participants, s.watchers = nil, nil
+	s.ops, s.presence = map[string]*bucket{}, map[string]*bucket{}
+	s.emptySince, s.discarded = now, true
 	return st, nil
 }
 
@@ -677,7 +707,7 @@ func (m *Manager) Active() []Info {
 func (m *Manager) Sweep(now time.Time) []State {
 	var out []State
 	for k, s := range m.sessions {
-		if !s.active() && now.Sub(s.emptySince) > KeepFor {
+		if !s.active() && !s.kept(now) {
 			out = append(out, State{DocID: s.docID, BlockID: s.blockID, Watchers: append([]Person{}, s.watchers...)})
 			m.drop(k)
 		}

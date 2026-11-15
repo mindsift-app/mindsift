@@ -2,8 +2,9 @@
 // un-ticked offline is sent once the connection is back, with when it was done, and meets what the other
 // person did meanwhile without undoing it. An older tick does not undo a newer change, two people ticking
 // the same task leave it ticked (a repeating task repeats once), and a task ticked and un-ticked again
-// offline goes back to its column ("In Bearbeitung") and sends nothing. Afterwards the page shows the
-// server's state.
+// offline goes back to its column ("In Bearbeitung") and sends nothing. A tick still waiting stays visible
+// after a reload without connection (list, counter, Kanban board). Afterwards the page shows the server's
+// state.
 // Needs a server in demo mode (accounts admin/admin and user/user); see e2e/README.md.
 import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
@@ -100,6 +101,15 @@ const main = async () => {
     await ctx.setOffline(false);
     await page.evaluate(() => window.dispatchEvent(new Event('online')));
   };
+  // A reload while offline. Chromium lifts the offline emulation of the page being left: it gets an "online"
+  // event and would send its outbox past setOffline. On a phone without reception the page being left has
+  // no network either, so its fetch fails here (as in lists-offline.e2e.mjs)
+  const reloadOffline = async () => {
+    await page.evaluate(() => {
+      window.fetch = () => Promise.reject(new TypeError('Failed to fetch'));
+    });
+    await page.reload();
+  };
   const outbox = () => page.evaluate(() => JSON.parse(localStorage.getItem('mindsift_outbox') || '[]'));
   const outboxEmpty = () => waitFor(async () => (await outbox()).length === 0, 15000);
   const shot = async (name) => {
@@ -182,6 +192,39 @@ const main = async () => {
     check(!(await serverTask(bins)).isCompleted, 'Offline wieder geöffnet, sonst keine Änderung: offen', await serverTask(bins));
     await agree(bins, 'Mülltonnen');
     await shot('4-offen');
+
+    // 5. Ticked offline, then the page reloaded without connection: the tasks come from the cached answer,
+    //    older than the tick; list, counts and Kanban board still show it ticked until it is sent
+    const plants = await newTask(`Blumen gießen ${STAMP}`);
+    await openList();
+    check(!!(await waitFor(async () => (await shownDone(plants.content)) === false, 10000)), 'Die Aufgabe ist offen');
+    const doneCount = async () => Number(((await page.locator('button[aria-pressed]', { hasText: /^Erledigt \(/ }).first().innerText()).match(/\((\d+)\)/) || [])[1]);
+    const doneBefore = await doneCount();
+    await goOffline();
+    await tick(plants.content, true);
+    await reloadOffline();
+    await page.getByRole('button', { name: /^Aufgaben/ }).locator('visible=true').first().click({ timeout: 30000 });
+    await page.getByRole('button', { name: new RegExp(LIST) }).first().click();
+    await page.getByRole('radio', { name: /^Liste/ }).first().click();
+    const stillTicked = await waitFor(async () => {
+      await showTab('Erledigt');
+      return (await shownDone(plants.content)) === true;
+    }, 10000);
+    check(!!stillTicked, '5: nach Neuladen offline zeigt die Liste die Aufgabe weiter abgehakt', await shownDone(plants.content));
+    check((await doneCount()) === doneBefore + 1, '5: der Zähler „Erledigt“ zählt sie mit', { before: doneBefore, after: await doneCount() });
+    await page.getByRole('radio', { name: 'Kanban', exact: true }).locator('visible=true').first().click();
+    const inDone = await waitFor(
+      async () => (await page.locator('[data-kanban-col="done"] [data-kanban-task]', { hasText: plants.content }).count()) === 1,
+      8000
+    );
+    check(!!inDone, '5: auf dem Kanban-Board steht sie in „Erledigt“');
+    await page.getByRole('radio', { name: /^Liste/ }).first().click();
+    check((await outbox()).length === 1, '5: das Abhaken wartet noch', await outbox());
+    await goOnline();
+    check(!!(await outboxEmpty()), '5: nach dem Verbinden ist das Abhaken gesendet');
+    check((await serverTask(plants)).isCompleted, '5: nach Neuladen offline und Senden → erledigt', await serverTask(plants));
+    await agree(plants, 'Blumen gießen');
+    await shot('5-neu-geladen');
   } catch (e) {
     check(false, `Abgebrochen: ${String(e.message).split('\n')[0]}`);
     await shot('abbruch').catch(() => {});

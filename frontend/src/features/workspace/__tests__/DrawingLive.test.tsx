@@ -1,6 +1,6 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, act } from '@testing-library/react';
+import { render, screen, fireEvent, act, within } from '@testing-library/react';
 import type { WSMessage } from '../../../lib/types';
 
 // What the editor sends (always an event with its payload)
@@ -158,6 +158,25 @@ describe('Drawing alone, and starting to draw together', () => {
     expect(screen.queryByRole('button', { name: 'Gemeinsam zeichnen' })).toBeNull();
   });
 
+  it('the host sees who joins, also the own other tab, and no "Live" before the session answered', async () => {
+    openBlock(true);
+    fireEvent.doubleClick(screen.getByRole('img'));
+    await editorOpen();
+    fireEvent.click(screen.getByRole('button', { name: 'Gemeinsam zeichnen' }));
+    await vi.waitFor(() => expect(realtime.sent.map((m) => m.event)).toContain('DRAW_JOIN'));
+    // Not answered yet: nothing flashes
+    expect(document.querySelector('[data-live-people]')).toBeNull();
+    const anna = { id: 'c_anna', userId: 'u_anna', name: 'Anna' };
+    emit('DRAW_STATE', { active: true, host: 'c_anna', participants: [anna], watchers: [], you: 'c_anna', els: [], order: [], seq: 0 });
+    expect(document.querySelector('[data-live-people]')).toBeNull();
+    // Anna's other tab draws along: the same person, but someone else in the session
+    emit('DRAW_PEOPLE', { active: true, host: 'c_anna', participants: [anna, { id: 'c_anna2', userId: 'u_anna', name: 'Anna' }], watchers: [] });
+    expect(document.querySelector('[data-live-people]')).toBeTruthy();
+    expect(screen.getByText('Du bist Gastgeber')).toBeTruthy();
+    emit('DRAW_PEOPLE', { active: true, host: 'c_anna', participants: [anna, { id: 'c_ben', userId: 'u_ben', name: 'Ben' }], watchers: [] });
+    expect(document.querySelector('[data-live-people]')?.getAttribute('data-live-people')).toBe('Anna,Ben');
+  });
+
   it('without a WebSocket it says so and goes on alone', async () => {
     realtime.ws = false;
     openBlock(true);
@@ -214,7 +233,7 @@ describe('Closing without saving', () => {
     expect(realtime.sent.map((m) => m.event)).toContain('DRAW_DISCARD');
   });
 
-  it('with others drawing along it asks, as that ends it for them too', () => {
+  it('the host with others drawing along just leaves, without asking; they go on', () => {
     openEditor({ docId: 'd1', blockId: 'b1', mode: 'draw', canDraw: true });
     emit('DRAW_STATE', {
       active: true,
@@ -229,8 +248,87 @@ describe('Closing without saving', () => {
       order: [],
       seq: 0,
     });
+    fireEvent.click(screen.getByRole('button', { name: /^Gitter/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Live-Zeichnung verlassen – die anderen zeichnen weiter' }));
+    expect(screen.queryByRole('alertdialog')).toBeNull();
+    const events = realtime.sent.map((m) => m.event);
+    expect(events).toContain('DRAW_LEAVE');
+    expect(events).not.toContain('DRAW_DISCARD');
+    expect(onClose).toHaveBeenCalledWith(null);
+  });
+
+  it('the last one with changes is asked, and the discard can be undone', () => {
+    openEditor({ docId: 'd1', blockId: 'b1', mode: 'draw', canDraw: true });
+    emit('DRAW_STATE', { active: true, host: 'c_ben', participants: [{ id: 'c_ben', userId: 'u_ben', name: 'Ben' }], watchers: [], you: 'c_ben', els: [], order: [], seq: 0 });
+    fireEvent.click(screen.getByRole('button', { name: /^Gitter/ }));
     fireEvent.click(closeButton());
-    expect(screen.getByRole('alertdialog').textContent).toContain('Verwerfen beendet die Live-Zeichnung für alle.');
+    const ask = screen.getByRole('alertdialog');
+    expect(ask.textContent).toContain('Ungespeicherte Änderungen verwerfen?');
+    fireEvent.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Verwerfen' }));
+    expect(realtime.sent.map((m) => m.event)).toContain('DRAW_DISCARD');
+    emit('DRAW_END', { reason: 'discard', you: 'c_ben', by: 'Ben' });
+    expect(onClose).toHaveBeenCalledWith(null, true, true);
+  });
+});
+
+describe('Undoing a discarded live drawing', () => {
+  const start = async (beforeEnd?: () => void) => {
+    render(
+      <NoteSharedContext.Provider value>
+        <DrawingBlock docId="d1" blockId="b1" content={CONTENT} canEdit onChange={() => {}} />
+      </NoteSharedContext.Provider>
+    );
+    fireEvent.doubleClick(screen.getByRole('img'));
+    await screen.findByRole('dialog', { name: 'Zeichnung bearbeiten' });
+    fireEvent.click(screen.getByRole('button', { name: 'Gemeinsam zeichnen' }));
+    await vi.waitFor(() => expect(realtime.sent.map((m) => m.event)).toContain('DRAW_JOIN'));
+    emit('DRAW_STATE', { active: true, host: 'c_ben', participants: [{ id: 'c_ben', userId: 'u_ben', name: 'Ben' }], watchers: [], you: 'c_ben', els: [], order: [], seq: 0 });
+    fireEvent.click(screen.getByRole('button', { name: /^Gitter/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Schließen ohne zu speichern' }));
+    fireEvent.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Verwerfen' }));
+    beforeEnd?.();
+    emit('DRAW_END', { reason: 'discard', you: 'c_ben', by: 'Ben' });
+    realtime.sent = [];
+  };
+
+  it('"Zeichnung verworfen · Rückgängig" brings the session back as host', async () => {
+    await start();
+    expect(screen.queryByRole('dialog', { name: 'Zeichnung bearbeiten' })).toBeNull();
+    expect(screen.getByRole('status').textContent).toContain('Zeichnung verworfen');
+    fireEvent.click(screen.getByRole('button', { name: 'Rückgängig' }));
+    await screen.findByRole('dialog', { name: 'Zeichnung bearbeiten' });
+    const join = await vi.waitFor(() => {
+      const sent = realtime.sent.find((m) => m.event === 'DRAW_JOIN');
+      expect(sent).toBeTruthy();
+      return sent;
+    });
+    expect(join?.payload).toMatchObject({ resume: true, base: CONTENT });
+    expect(join?.payload.join).toBeUndefined();
+    emit('DRAW_STATE', {
+      active: true, host: 'c_ben2', participants: [{ id: 'c_ben2', userId: 'u_ben', name: 'Ben' }], watchers: [], you: 'c_ben2',
+      els: [{ id: 'a', ver: 1, nonce: 0, t: 'rect', x: 0, y: 0, w: 120, h: 60, s: 'main', f: 'none', sw: 2, txt: 'Kasten' }], order: ['a'], grid: true, seq: 1,
+    });
+    expect(screen.getByRole('button', { name: /Fertig/ })).toBeTruthy();
+  });
+
+  it('too late (after the window): the editor says the session is over', async () => {
+    await start();
+    fireEvent.click(screen.getByRole('button', { name: 'Rückgängig' }));
+    await screen.findByRole('dialog', { name: 'Zeichnung bearbeiten' });
+    await vi.waitFor(() => expect(realtime.sent.map((m) => m.event)).toContain('DRAW_JOIN'));
+    emit('DRAW_ERROR', { code: 'ended' });
+    expect(screen.getByText('Die Live-Zeichnung ist beendet.')).toBeTruthy();
+  });
+
+  it('the undo hint goes after 10 s', async () => {
+    await start(() => vi.useFakeTimers());
+    try {
+      expect(screen.getByRole('button', { name: 'Rückgängig' })).toBeTruthy();
+      act(() => vi.advanceTimersByTime(10_001));
+      expect(screen.queryByRole('button', { name: 'Rückgängig' })).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 

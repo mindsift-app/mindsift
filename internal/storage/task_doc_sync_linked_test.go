@@ -174,7 +174,8 @@ func TestSyncTaskToDocFromCarriesOnlyChanges(t *testing.T) {
 	}
 }
 
-// A repeating task ticked in its note repeats once; unticked, its due alarm is armed again.
+// A repeating task ticked in its note repeats; unticked, its due alarm is armed again and its untouched
+// next occurrence goes.
 func TestReconcileRepeatsAndRearms(t *testing.T) {
 	l := newLinkedTodo(t)
 	if err := l.s.SetTaskRecurrence(l.anna.ID, l.taskID, "weekly"); err != nil {
@@ -198,10 +199,11 @@ func TestReconcileRepeatsAndRearms(t *testing.T) {
 	if got := l.task(t); got.IsCompleted || got.AlarmSent {
 		t.Fatalf("reopened from the note: done %v alarm sent %v", got.IsCompleted, got.AlarmSent)
 	}
+	// Unticking removed the untouched occurrence, so ticking again spawns one: one open in the end
 	l.tick(t, true)
 	l.s.ReconcileDocTaskLinks(l.docID)
-	if len(created) != 1 {
-		t.Fatalf("ticked again: another occurrence: %d", len(created))
+	if open := l.s.openSuccessors(l.taskID); len(created) != 2 || len(open) != 1 || open[0] != created[1].ID {
+		t.Fatalf("ticked again: %d spawned, open %v", len(created), open)
 	}
 }
 

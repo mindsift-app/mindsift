@@ -96,7 +96,12 @@
     "expand": "Espandi navigazione",
     "collapse": "Comprimi navigazione",
     "quickDump": "Quick Dump",
-    "quickDumpTip": "Quick Dump – annota un pensiero (C)",
+    "quickDumpTip": "Quick Dump – annota un pensiero (C) · Tieni premuto per dettare",
+    "dictateListening": "Dettatura {{time}} – rilascia per salvare, Esc annulla",
+    "dictateCancel": "Rilascia per annullare",
+    "dictateSaving": "Salvataggio…",
+    "dictateSaved": "Salvato nel Quick Dump",
+    "dictateNothing": "Non è stato riconosciuto nulla",
     "search": "Cerca",
     "searchKey": "Ctrl K",
     "help": "Guida"

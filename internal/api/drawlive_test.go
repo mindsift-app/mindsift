@@ -127,6 +127,35 @@ func TestLiveDrawingRightsAndRelay(t *testing.T) {
 	}
 }
 
+// "Verwerfen" and then "Rückgängig": DRAW_JOIN with resume brings the discarded state back; resume without
+// a discarded session (or after the window) answers "ended" and starts nothing.
+func TestLiveDrawingDiscardUndo(t *testing.T) {
+	_, store, ts, owner, ownerToken := startRealtimeServer(t)
+	doc, err := store.CreateDocument(owner.ID, "", "Skizze", "", "", []domain.DocumentBlock{{ID: "d_b1", Type: "drawing", Content: drawBase}}, nil, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	conn := dialWS(t, ts, ownerToken)
+	join := map[string]any{"docId": doc.ID, "blockId": "d_b1", "base": drawBase, "els": []json.RawMessage{drawEl("e1", 1, 0, 0)}}
+	resume := map[string]any{"docId": doc.ID, "blockId": "d_b1", "base": drawBase, "els": []json.RawMessage{drawEl("e1", 1, 0, 0)}, "resume": true}
+	sendDraw(t, conn, "DRAW_JOIN", resume)
+	if p := readDraw(t, conn, "DRAW_ERROR"); p.Code != "ended" {
+		t.Fatalf("resume without a discarded session: %+v", p)
+	}
+	sendDraw(t, conn, "DRAW_JOIN", join)
+	readDraw(t, conn, "DRAW_STATE")
+	sendDraw(t, conn, "DRAW_OPS", map[string]any{"docId": doc.ID, "blockId": "d_b1", "els": []json.RawMessage{drawEl("e2", 1, 0, 200)}})
+	readDraw(t, conn, "DRAW_ACK")
+	sendDraw(t, conn, "DRAW_DISCARD", map[string]any{"docId": doc.ID, "blockId": "d_b1"})
+	if p := readDraw(t, conn, "DRAW_END"); p.Reason != "discard" {
+		t.Fatalf("discard: %+v", p)
+	}
+	sendDraw(t, conn, "DRAW_JOIN", resume)
+	if st := readDraw(t, conn, "DRAW_STATE"); !st.Active || st.Host != st.You || len(st.Els) != 2 {
+		t.Fatalf("undo brings back the discarded drawing: %+v", st)
+	}
+}
+
 func TestLiveDrawingHoldsTheLeaseAndHandsItOver(t *testing.T) {
 	_, store, ts, owner, ownerToken := startRealtimeServer(t)
 	editor, editorToken := newTestUser(t, store, "draw-editor@example.com")

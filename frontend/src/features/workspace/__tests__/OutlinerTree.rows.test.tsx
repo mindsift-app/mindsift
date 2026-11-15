@@ -53,4 +53,15 @@ describe('OutlinerTree rows', () => {
     rerender(tree(folded, new Map([['a', lock]]), false));
     expect((screen.getByDisplayValue('Zwei neu') as HTMLTextAreaElement).readOnly).toBe(true);
   });
+
+  it('shows "Du" with a device icon instead of the own name for a bullet held in the own other tab or device', () => {
+    const blocks = [mk('a', 'Eins'), mk('b', 'Zwei')];
+    const own: BlockLock = { userId: 'u1', name: 'Anna', own: true, ownOn: 'phone' };
+    const { container } = render(tree(blocks, new Map([['a', own], ['b', { userId: 'u2', name: 'Bea' }]])));
+    const badgeA = container.querySelector('[data-outline-block="a"] [title="Wird gerade auf einem anderen Gerät oder in einem anderen Tab bearbeitet"]');
+    expect(badgeA?.textContent).toBe('Du');
+    expect(badgeA?.querySelector('svg.lucide-smartphone')).toBeTruthy();
+    const badgeB = container.querySelector('[data-outline-block="b"] [title="Bea bearbeitet diesen Punkt gerade"]');
+    expect(badgeB?.textContent).toContain('Bea');
+  });
 });

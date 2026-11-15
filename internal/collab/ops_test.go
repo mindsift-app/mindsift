@@ -253,7 +253,7 @@ func TestLeaseManager(t *testing.T) {
 	if g, den = m.Hold("d", ben, []string{"a", "c"}); len(g) != 1 || den[0] != "a" {
 		t.Fatalf("ben: granted=%v denied=%v", g, den)
 	}
-	if others := m.Others("d", "c_ben"); len(others) != 2 || others[0].Name != "Anna" {
+	if others := m.Others("d", ben); len(others) != 2 || others[0].Name != "Anna" {
 		t.Fatalf("others: %+v", others)
 	}
 
@@ -450,7 +450,7 @@ func TestLiveDrawingLease(t *testing.T) {
 	if !m.HoldLive("d", "draw", "draw:draw", []Presence{{UserID: "u_anna", Name: "Anna"}, {UserID: "u_ben", Name: "Ben"}}) {
 		t.Fatal("the session must take the bullet over from the people drawing")
 	}
-	others := m.Others("d", "c_anna")
+	others := m.Others("d", anna)
 	if len(others) != 1 || len(others[0].Live) != 2 || others[0].Name != "Anna" {
 		t.Fatalf("the note shows the live drawing: %+v", others)
 	}

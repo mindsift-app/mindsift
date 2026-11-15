@@ -70,7 +70,7 @@ async function openNote(engine, token, title, { noWebSocket = false, phone = fal
   page.on('pageerror', (e) => console.log('PAGEERROR', e.message));
   await page.goto(BASE);
   if (phone) await skipAppOffer(page);
-  await page.getByRole('button', { name: /Workspace/ }).locator('visible=true').first().click();
+  await page.getByRole('button', { name: /^Workspace/ }).locator('visible=true').first().click();
   await page.getByText(title, { exact: true }).first().click();
   await page.getByRole('img', { name: /^Zeichnung/ }).first().waitFor({ timeout: 10000 });
   await sleep(2500); // realtime connection (and the fallback without WebSocket) settles
@@ -265,7 +265,7 @@ const main = async () => {
 
   await B.page.reload();
   if (PHONE) await skipAppOffer(B.page);
-  await B.page.getByRole('button', { name: /Workspace/ }).locator('visible=true').first().click();
+  await B.page.getByRole('button', { name: /^Workspace/ }).locator('visible=true').first().click();
   await B.page.getByText(title, { exact: true }).first().click();
   const afterReload = await waitFor(
     async () => (await B.page.locator('[role="img"][aria-label^="Zeichnung"] ellipse').count()) === 3 && (await B.page.locator('[role="img"][aria-label^="Zeichnung"] polygon').count()) === 1,
@@ -274,8 +274,59 @@ const main = async () => {
   check(!!afterReload, 'Nach dem Neuladen zeigt die Notiz die Zeichnung');
   check((await B.page.locator('[data-live-badge]').count()) === 0, 'Nach Fertig keine Live-Anzeige mehr');
 
-  await B.browser.close();
+  // 9. A second session: the host sees who joins; closing without saving while Ben draws along only leaves
+  // (the watcher, Anna's other tab, goes first: its note holds the drawing bullet it had clicked)
   await C.browser.close();
+  const A2 = await openNote(chromium, admin, title);
+  // The bullet went to Ben's note with "Fertig"; it is free once that lease runs out
+  const a2Open = await waitFor(async () => {
+    await A2.page.getByRole('img', { name: /^Zeichnung/ }).first().dblclick();
+    return editor(A2.page).waitFor({ timeout: 2000 }).then(() => true, () => false);
+  }, 30000);
+  check(!!a2Open, 'Anna öffnet die Zeichnung wieder');
+  await editor(A2.page).getByRole('button', { name: 'Gemeinsam zeichnen' }).click();
+  await sleep(1500);
+  check((await editor(A2.page).locator('[data-live-people]').count()) === 0, 'Gastgeber allein: keine Live-Anzeige, auch nicht kurz');
+  await waitFor(async () => (await B.page.locator('[data-live-badge]').count()) === 1, 10000);
+  await B.page.getByRole('img', { name: /^Zeichnung/ }).first().dblclick();
+  await B.page.getByRole('alertdialog').getByRole('button', { name: 'Mitzeichnen' }).click();
+  await editor(B.page).waitFor({ timeout: 5000 });
+  const hostSeesBen = await waitFor(async () => (await editor(A2.page).locator('[data-live-people]').getAttribute('data-live-people'))?.includes(userName), 8000);
+  check(!!hostSeesBen, 'Der Gastgeber sieht die Live-Anzeige mit dem, der mitzeichnet');
+  await drawShape(A2.page, 'o', [380, 600], [460, 660]);
+  await sleep(500);
+  await editor(A2.page).getByRole('button', { name: 'Live-Zeichnung verlassen – die anderen zeichnen weiter' }).click();
+  const hostLeft = await waitFor(async () => (await editor(A2.page).count()) === 0, 5000);
+  check(!!hostLeft && (await A2.page.getByRole('alertdialog').count()) === 0, 'Gastgeber schließt ohne Rückfrage, während andere mitzeichnen');
+  const benHostAgain = await waitFor(async () => (await editor(B.page).getByRole('button', { name: /^Fertig/ }).count()) === 1, 8000);
+  check(!!benHostAgain, 'Ben übernimmt als Gastgeber, als Anna den Editor schließt');
+  await A2.browser.close();
+
+  // 10. Ben, the last one, discards after the question and takes it back with "Rückgängig"
+  await drawShape(B.page, 'd', atB([700, 600]), atB([820, 680]));
+  await sleep(500);
+  await editor(B.page).getByRole('button', { name: 'Schließen ohne zu speichern' }).click();
+  const askLast = B.page.getByRole('alertdialog');
+  await askLast.waitFor({ timeout: 3000 });
+  check((await askLast.textContent()).includes('Ungespeicherte Änderungen verwerfen?'), 'Der Letzte wird gefragt, ob er verwerfen will');
+  await askLast.getByRole('button', { name: 'Verwerfen' }).click();
+  const undoHint = await waitFor(async () => (await B.page.getByRole('status').filter({ hasText: 'Zeichnung verworfen' }).count()) === 1, 5000);
+  check(!!undoHint && (await editor(B.page).count()) === 0, 'Verwerfen zeigt „Zeichnung verworfen · Rückgängig“');
+  await shot(B.page, 'discarded-undo');
+  await B.page.getByRole('status').getByRole('button', { name: 'Rückgängig' }).click();
+  await editor(B.page).waitFor({ timeout: 5000 });
+  const back = await waitFor(async () => (await count(B.page, 'ellipse')) === 4 && (await count(B.page, 'polygon')) === 2, 8000);
+  check(!!back, 'Rückgängig bringt die verworfene Zeichnung mit allen Änderungen zurück');
+  await editor(B.page).getByRole('button', { name: /^Fertig/ }).click();
+  const savedAfterUndo = await waitFor(async () => {
+    const snap = await api(admin, 'GET', `/api/v1/docs/${doc.id}/snapshot`);
+    const b = snap.blocks.find((x) => x.type === 'drawing' && !x.deleted);
+    const kinds = (b && JSON.parse(b.content).els?.map((e) => e.t)) || [];
+    return kinds.filter((k) => k === 'ellipse').length === 4 && kinds.filter((k) => k === 'diamond').length === 2;
+  }, 10000);
+  check(!!savedAfterUndo, 'Nach Rückgängig speichert „Fertig“ die Zeichnung');
+
+  await B.browser.close();
   console.log(failures ? `${failures} FAILED` : 'ALL CHECKS PASSED');
   process.exit(failures ? 1 : 0);
 };

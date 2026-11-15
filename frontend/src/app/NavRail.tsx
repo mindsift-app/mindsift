@@ -8,7 +8,6 @@ import {
   Layers,
   PanelLeftClose,
   PanelLeftOpen,
-  Plus,
   Search,
   ShoppingCart,
 } from 'lucide-react';
@@ -21,6 +20,7 @@ import { RailItemContent } from '../components/RailItemContent';
 import { APP_VERSION } from '../version';
 import { ActiveTab } from './appTabs';
 import { useConnectionStatus } from './AppHeader';
+import { RailQuickDumpButton } from './RailQuickDumpButton';
 
 // Expanded or not, per device (a convenience; private windows simply start collapsed)
 export const NAV_RAIL_KEY = 'mindsift:nav-rail-expanded';
@@ -64,6 +64,8 @@ interface NavRailProps {
   demoDeadline: number | null;
   handleDemoCountdownElapsed: () => void;
   onQuickDump: () => void;
+  // Text dictated by holding the + (saved into the inbox)
+  onDictated: (text: string) => Promise<void> | void;
   onSearch: () => void;
   handleOpenHelp: () => void;
   user: User;
@@ -89,6 +91,7 @@ export function NavRail({
   demoDeadline,
   handleDemoCountdownElapsed,
   onQuickDump,
+  onDictated,
   onSearch,
   handleOpenHelp,
   user,
@@ -208,25 +211,14 @@ export function NavRail({
 
       <div className="mx-1.5 my-1.5 border-t border-border" aria-hidden />
 
-      {/* Quick Dump: a round, neutral button (not the accent, so it does not read as a second logo) */}
-      <button
-        type="button"
-        onClick={onQuickDump}
-        data-tour="capture"
-        className="rail-item rail-plus group"
-      >
-        <RailItemContent
-          icon={
-            <span className="w-9 h-9 -m-2 rounded-full bg-panel-elevated border border-border text-main flex items-center justify-center shadow-xs transition-colors group-hover:bg-panel-hover group-hover:border-strong">
-              <Plus className="w-[18px] h-[18px]" />
-            </span>
-          }
-          label={t('rail.quickDump')}
-          tip={t('rail.quickDumpTip')}
-          hint={<kbd className="font-mono">{QUICK_DUMP_KEY}</kbd>}
-          expanded={expanded}
-        />
-      </button>
+      {/* Quick Dump: a round, neutral button (not the accent, so it does not read as a second logo); holding it
+          dictates into the inbox */}
+      <RailQuickDumpButton
+        expanded={expanded}
+        shortcut={QUICK_DUMP_KEY}
+        onQuickDump={onQuickDump}
+        onDictated={onDictated}
+      />
 
       <button type="button" onClick={onSearch} data-tour="search" className="rail-item">
         <RailItemContent

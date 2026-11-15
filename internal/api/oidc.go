@@ -862,10 +862,16 @@ func (s *Server) syncOIDCAdmin(user *domain.User, id *oidcIdentity) {
 	if in == isAdmin || (!in && !isAdmin) {
 		return
 	}
-	changed, err := s.store.SetAdminByGroup(user.ID, in)
+	changed, tokenVersion, err := s.store.SetAdminByGroup(user.ID, in)
 	if err != nil {
 		logFailed("Setting the role from the provider's group", err, "user_id", user.ID)
 		return
+	}
+	if changed {
+		// The new role signed every earlier session out (token version), as a change in the administration
+		// does; live connections end as well. The sign-in going on gets a token of the new version.
+		user.TokenVersion = tokenVersion
+		s.wsHub.DisconnectUser(user.ID)
 	}
 	before := user.Role
 	switch {
