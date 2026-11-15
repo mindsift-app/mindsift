@@ -87,6 +87,7 @@
     "changeIcon": "Modifica icona",
     "chooseIcon": "Scegli icona",
     "titlePlaceholder": "Titolo della nota…",
+    "titleLength": "{{length}} di {{max}} caratteri",
     "unpin": "Rimuovi blocco",
     "copyNoteLink": "Copia link",
     "noteLinkCopied": "Link alla nota copiato – la apre direttamente in MindSift, anche per tutti quelli con cui è condivisa",

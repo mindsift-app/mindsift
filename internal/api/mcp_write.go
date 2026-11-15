@@ -228,7 +228,7 @@ var mcpWriteTools = []mcpTool{
 		Scope:       storage.ScopeNotesWrite,
 		Schema: schema([]string{"id"}, map[string]any{
 			"id":         prop("string", "Note id"),
-			"title":      prop("string", "New title, optional"),
+			"title":      prop("string", "New title, optional; at most 60 characters (a longer existing title may be kept or shortened)"),
 			"icon":       prop("string", "One emoji, optional"),
 			"folderPath": prop("string", "Folder, e.g. Projekte/MindSift; empty string = top level; leave out to keep it"),
 		}),

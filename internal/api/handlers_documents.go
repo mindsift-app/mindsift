@@ -102,6 +102,10 @@ func (s *Server) handleCreateDocument(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "Ungültiges JSON")
 		return
 	}
+	if err := storage.CheckNoteTitle(req.Title, ""); err != nil {
+		writeErrorFrom(w, http.StatusBadRequest, err)
+		return
+	}
 
 	doc, err := s.store.CreateDocument(userID, req.SpaceID, req.Title, derefIcon(req.Icon), req.FolderPath, req.Blocks, req.Tags, req.IsPinned)
 	if err == nil && doc != nil && req.Icon != nil && *req.Icon == "" {

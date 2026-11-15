@@ -87,6 +87,7 @@
     "changeIcon": "Change icon",
     "chooseIcon": "Choose icon",
     "titlePlaceholder": "Note title…",
+    "titleLength": "{{length}} of {{max}} characters",
     "unpin": "Unpin",
     "copyNoteLink": "Copy link",
     "noteLinkCopied": "Link to the note copied – opens it straight in MindSift, also for everyone it is shared with",

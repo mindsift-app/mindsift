@@ -122,6 +122,7 @@ import { useBranchActions } from './useBranchActions';
 import { useBlockEditing } from './useBlockEditing';
 import { useTagPage } from './useTagPage';
 import { useLatestRef } from '../../lib/useLatestRef';
+import { NOTE_TITLE_MAX, noteTitleLength } from '../../lib/noteTitle';
 
 export const DocumentEditor: React.FC<DocumentEditorProps> = ({
   docId,
@@ -180,6 +181,8 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
     applyLocalBlocks,
   } = useDocumentSync(docId, initialDoc, onDocMetadataChange, onSaveStatusChange);
   const [showEmojiPicker, setShowEmojiPicker] = useState<boolean>(false);
+  // The title's length shows near the limit while it is being edited
+  const [titleFocused, setTitleFocused] = useState(false);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const { zoomedBlockId, setZoomedBlockId } = useNotePlace({
     docId,
@@ -415,11 +418,17 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
 
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     if (!canEdit) return;
-    setTitle(e.target.value);
+    // maxLength stops typing at the limit; a longer title from before may shrink but not grow (the server
+    // refuses that too). maxLength counts an emoji twice, the server once: the field is never the looser one.
+    const next = e.target.value;
+    const n = noteTitleLength(next);
+    if (n > NOTE_TITLE_MAX && n > noteTitleLength(title)) return;
+    setTitle(next);
     engineRef.current?.setTitle(e.target.value);
   };
 
   const handleTitleBlur = () => {
+    setTitleFocused(false);
     void engineRef.current?.syncNow();
   };
 
@@ -1174,9 +1183,19 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
                   }
                 }}
                 onBlur={handleTitleBlur}
+                onFocus={() => setTitleFocused(true)}
+                maxLength={NOTE_TITLE_MAX}
                 placeholder={t('editor.titlePlaceholder')}
                 className="flex-1 min-w-0 text-2xl sm:text-3xl font-light text-main bg-transparent border-0 focus:outline-hidden focus:ring-0 tracking-tight resize-none leading-snug sm:leading-9 whitespace-pre-wrap wrap-break-word wrap-anywhere"
               />
+              {titleFocused && canEdit && !inJournal && noteTitleLength(title) > NOTE_TITLE_MAX - 10 && (
+                <span
+                  className="absolute right-0 -bottom-4 text-[11px] leading-none text-faint tabular-nums pointer-events-none select-none"
+                  title={t('editor.titleLength', { length: noteTitleLength(title), max: NOTE_TITLE_MAX })}
+                >
+                  {`${noteTitleLength(title)}/${NOTE_TITLE_MAX}`}
+                </span>
+              )}
             </div>
 
             {/* Logseq Outliner Tree */}

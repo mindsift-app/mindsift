@@ -65,9 +65,7 @@ func branchTitle(lang string, b *collab.Block) string {
 		first := titlePrefixRe.ReplaceAllString(strings.SplitN(b.Content, "\n", 2)[0], "")
 		t = strings.TrimSpace(titleTagRe.ReplaceAllString(first, ""))
 		t = strings.NewReplacer("[[", "", "]]", "").Replace(t)
-		if r := []rune(t); len(r) > 120 {
-			t = strings.TrimSpace(string(r[:119])) + "…"
-		}
+		t = ShortTitle(t)
 	}
 	if t == "" {
 		t = i18n.T(lang, "Neue Notiz")
@@ -196,6 +194,8 @@ func (s *Store) ExtractBranchAs(userID, docID, blockID, title string, folder *st
 
 	if title = strings.TrimSpace(title); title == "" {
 		title = branchTitle(s.MessageLanguage(userID), root.Block)
+	} else if err := CheckNoteTitle(title, ""); err != nil {
+		return nil, "", err
 	}
 	title = s.uniqueTitle(userID, title)
 	folderPath := source.FolderPath

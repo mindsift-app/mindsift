@@ -170,6 +170,28 @@ func (s *Store) GetAuthorizedSharedFolderUsers(folderID string) ([]string, error
 // ErrNoteTooLarge: a note would hold more bullets than it may (collab.MaxNoteBlocks).
 var ErrNoteTooLarge = i18n.NewError("Eine Notiz kann höchstens {max} Punkte haben", "max", strconv.Itoa(collab.MaxNoteBlocks))
 
+// ErrNoteTitleTooLong: a title given through the API is longer than a note title may be (collab.MaxTitleRunes)
+var ErrNoteTitleTooLong = i18n.NewError("Ein Notiztitel darf höchstens {max} Zeichen haben", "max", strconv.Itoa(collab.MaxTitleRunes))
+
+// CheckNoteTitle checks a title given through the API (REST, MCP) for a note whose title is current ("" for
+// a new note): at most collab.MaxTitleRunes characters, or not longer than a longer title it replaces.
+// Titles from imports, backups and the app itself are not checked: an import keeps its titles.
+func CheckNoteTitle(title, current string) error {
+	if !collab.TitleAllowed(strings.TrimSpace(title), current) {
+		return ErrNoteTitleTooLong
+	}
+	return nil
+}
+
+// ShortTitle: a title made from other text (a bullet, an inbox entry) cut to the limit, with "…"
+func ShortTitle(t string) string {
+	r := []rune(strings.TrimSpace(t))
+	if len(r) <= collab.MaxTitleRunes {
+		return string(r)
+	}
+	return strings.TrimSpace(string(r[:collab.MaxTitleRunes-1])) + "…"
+}
+
 // CreateDocument creates a note of userID with the given bullets. References to files userID may not
 // read are dropped from them (mediaGate); references to hidden values of other notes become copies in
 // the new note or a placeholder (secretGate).
@@ -813,6 +835,9 @@ func (s *Store) UpdateDocument(userID, docID string, title, icon, folderPath *st
 		return doc, nil
 	}
 	if title != nil {
+		if err := CheckNoteTitle(*title, doc.Title); err != nil {
+			return nil, err
+		}
 		doc.Title = strings.TrimSpace(*title)
 		s.applyLegacyTitle(docID, userID, doc.Title)
 	}

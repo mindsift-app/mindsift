@@ -57,6 +57,7 @@ import { findLinkedDoc, useWikiLinkStore, WikiLinkResolverContext } from '../../
 import { cachedBlock, lookupBlock } from '../../lib/blockLookup';
 import { errorMessage } from '../../lib/errorMessage';
 import { useLatestRef } from '../../lib/useLatestRef';
+import { shortNoteTitle } from '../../lib/noteTitle';
 
 interface WorkspaceViewProps {
   currentUser?: User | null;
@@ -269,7 +270,8 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
       triggerHaptic(10);
       try {
         const created = await api.createDocument({
-          title: title.trim() || i18n.t('workspace:editor.newNote'),
+          // A wiki link to a missing note may be longer than a title may be
+          title: shortNoteTitle(title) || i18n.t('workspace:editor.newNote'),
           icon: icon.trim(),
           folderPath,
           blocks: [

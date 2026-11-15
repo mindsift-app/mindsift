@@ -1375,7 +1375,7 @@
     "/api/v1/documents": {
       "get": {
         "summary": "List notes",
-        "description": "List notes without bullets (blocks [], content \"\"), with openTodos, tagCounts and tagOpenTodos per note; at most four lists built at a time; create (title, icon, folderPath, blocks, tags, isPinned; icon: \"\" = no icon, if omitted: 🗒️)",
+        "description": "List notes without bullets (blocks [], content \"\"), with openTodos, tagCounts and tagOpenTodos per note; at most four lists built at a time; create (title with at most 60 characters, icon, folderPath, blocks, tags, isPinned; icon: \"\" = no icon, if omitted: 🗒️)",
         "tags": [
           "Workspace"
         ],
@@ -1387,7 +1387,7 @@
       },
       "post": {
         "summary": "Create a note",
-        "description": "List notes; create (title, icon, folderPath, blocks, tags, isPinned; icon: \"\" = no icon, if omitted: 🗒️)",
+        "description": "List notes; create (title with at most 60 characters, icon, folderPath, blocks, tags, isPinned; icon: \"\" = no icon, if omitted: 🗒️)",
         "tags": [
           "Workspace"
         ],
@@ -1427,7 +1427,7 @@
     "/api/v1/documents/{id}": {
       "delete": {
         "summary": "Move a note to the trash (owner) or leave its share (others)",
-        "description": "Retrieve; update title, icon, folderPath, isPinned (updating blocks here returns 400, as they are handled via /docs/{id}/sync); delete = move to trash (owner) or leave share (others)",
+        "description": "Retrieve; update title (at most 60 characters; a longer title from before may stay or get shorter), icon, folderPath, isPinned (updating blocks here returns 400, as they are handled via /docs/{id}/sync); delete = move to trash (owner) or leave share (others)",
         "tags": [
           "Workspace"
         ],
@@ -1449,7 +1449,7 @@
       },
       "get": {
         "summary": "A note",
-        "description": "Retrieve; update title, icon, folderPath, isPinned (updating blocks here returns 400, as they are handled via /docs/{id}/sync); delete = move to trash (owner) or leave share (others)",
+        "description": "Retrieve; update title (at most 60 characters; a longer title from before may stay or get shorter), icon, folderPath, isPinned (updating blocks here returns 400, as they are handled via /docs/{id}/sync); delete = move to trash (owner) or leave share (others)",
         "tags": [
           "Workspace"
         ],
@@ -1471,7 +1471,7 @@
       },
       "put": {
         "summary": "Change a note (title, icon, folder, pinned)",
-        "description": "Retrieve; update title, icon, folderPath, isPinned (updating blocks here returns 400, as they are handled via /docs/{id}/sync); delete = move to trash (owner) or leave share (others)",
+        "description": "Retrieve; update title (at most 60 characters; a longer title from before may stay or get shorter), icon, folderPath, isPinned (updating blocks here returns 400, as they are handled via /docs/{id}/sync); delete = move to trash (owner) or leave share (others)",
         "tags": [
           "Workspace"
         ],
