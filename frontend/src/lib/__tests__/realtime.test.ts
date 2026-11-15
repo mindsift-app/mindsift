@@ -218,4 +218,29 @@ describe('realtime fallback', () => {
     api.disconnectWebSocket();
     expect(api.isRealtimeConnected()).toBe(false);
   });
+
+  it('a session that ended elsewhere (signed out at the provider) drops back to the sign-in instead of retrying', async () => {
+    const calls: string[] = [];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        calls.push(url);
+        return new Response('{"error":"Sitzung beendet"}', { status: 401 });
+      })
+    );
+    const api = await loadApi();
+    const unauthorized = vi.fn();
+    window.addEventListener('mindsift:unauthorized', unauthorized);
+    await api.connectWebSocket();
+    // The refused ticket alone signs nobody out (a new password may be on its way) …
+    expect(unauthorized).not.toHaveBeenCalled();
+    expect(localStorage.getItem('mindsift_jwt_token')).toBe('test-token');
+    // … a moment later the session is asked, and its 401 does
+    await vi.advanceTimersByTimeAsync(3000);
+    expect(calls).toContain('/api/v1/auth/me');
+    expect(unauthorized).toHaveBeenCalled();
+    expect(localStorage.getItem('mindsift_jwt_token')).toBeNull();
+    window.removeEventListener('mindsift:unauthorized', unauthorized);
+    api.disconnectWebSocket();
+  });
 });

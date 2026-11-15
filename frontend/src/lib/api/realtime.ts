@@ -1,6 +1,6 @@
 // Realtime transport: WebSocket, with SSE and long polling as fallbacks behind proxies
 import { WSMessage } from '../types';
-import { authHeaders, getToken, request } from './client';
+import { ApiError, authHeaders, getToken, request } from './client';
 import { api } from './rest';
 
 // poll: long polling, when a proxy lets neither WebSocket nor event streams through
@@ -24,9 +24,25 @@ async function fetchStreamTicket(): Promise<string | null> {
   try {
     const res = await request<{ ticket?: string }>('/api/v1/auth/stream-ticket', { method: 'POST' });
     return res?.ticket || null;
-  } catch {
+  } catch (err) {
+    if (err instanceof ApiError && err.status === 401) checkSessionSoon();
     return null;
   }
+}
+
+// SESSION_CHECK_DELAY_MS: a refused ticket is no sign-out by itself (the stream may have reconnected with the token
+// a new password replaced, a moment before the fresh one arrived), so the session is asked a little later. A
+// session that really ended, e.g. signed out at the OIDC provider (back-channel logout), then gets 401 from
+// /auth/me and the app shows the sign-in instead of retrying the stream in an idle tab.
+const SESSION_CHECK_DELAY_MS = 3000;
+let sessionCheckTimer: ReturnType<typeof setTimeout> | undefined;
+
+function checkSessionSoon() {
+  if (sessionCheckTimer) return;
+  sessionCheckTimer = setTimeout(() => {
+    sessionCheckTimer = undefined;
+    if (getToken()) void request('/api/v1/auth/me').catch(() => {});
+  }, SESSION_CHECK_DELAY_MS);
 }
 
 export function buildWebSocketURL(ticket: string, listId?: string): string {
