@@ -80,6 +80,7 @@ var migrations = []migration{
 	{52, "Code blocks keep no hidden values; smaller results of note operations", (*Store).migrateCodeBlocksAndOpResults},
 	{53, "Covering index for the note search", (*Store).migrateSearchCoverIndex},
 	{54, "Record of changes made on the command line", (*Store).migrateCLIEvents},
+	{55, "Calendar subscription per person", (*Store).migrateCalendarFeeds},
 	{56, "When a list item was last ticked or opened", (*Store).migrateListItemDoneChangedAt},
 }
 

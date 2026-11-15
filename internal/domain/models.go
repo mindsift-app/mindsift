@@ -520,6 +520,11 @@ type SystemSettings struct {
 	// unchanged; ViaEnv: fixed by PUBLIC_LINKS_MAX_DAYS.
 	PublicLinkMaxDays       int  `json:"publicLinkMaxDays,omitempty"`
 	PublicLinkMaxDaysViaEnv bool `json:"publicLinkMaxDaysConfiguredViaEnv,omitempty"`
+	// CalendarFeeds: people may subscribe to their open tasks in a calendar app (read-only iCalendar feed
+	// behind a secret address; default on). nil in an update leaves it unchanged; ViaEnv: fixed by
+	// CALENDAR_FEEDS.
+	CalendarFeeds       *bool `json:"calendarFeeds,omitempty"`
+	CalendarFeedsViaEnv bool  `json:"calendarFeedsConfiguredViaEnv,omitempty"`
 	// LinkPreviews: the server fetches previews of web addresses in notes (default on); off, it fetches
 	// nothing and the app shows no preview cards. nil in an update leaves it unchanged. Off in demo mode.
 	LinkPreviews *bool `json:"linkPreviews,omitempty"`

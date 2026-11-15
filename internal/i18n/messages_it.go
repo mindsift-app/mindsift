@@ -2,6 +2,12 @@ package i18n
 
 // Italian texts of the server, keyed by the German source text (see messages.go). Same order as messages_en.go.
 var messagesIT = map[string]string{
+	// Calendar subscription
+	"Kalender-Abo nicht gefunden":                        "Abbonamento al calendario non trovato",
+	"Kalender-Abos sind auf diesem Server ausgeschaltet": "Gli abbonamenti al calendario sono disattivati su questo server",
+	"Liste: {name}":       "Elenco: {name}",
+	"MindSift – Aufgaben": "MindSift – Attività",
+
 	// MCP: note structure tools
 	"Der Server verarbeitet gerade andere große Anfragen (Bilder); bitte in ein paar Sekunden noch einmal versuchen": "Il server sta elaborando altre richieste di grandi dimensioni (immagini); riprova tra qualche secondo",
 	"'language' gibt es nur für Code (type code)":                                                                    "'language' esiste solo per il codice (type code)",

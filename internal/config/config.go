@@ -88,6 +88,9 @@ type Config struct {
 	PeopleSearch      *bool
 	PublicLinks       *bool
 	PublicLinkMaxDays int
+	// CalendarFeeds: CALENDAR_FEEDS=true/false fixes whether people may subscribe to their tasks in a
+	// calendar app (false forbids it outright); unset leaves it to the system settings.
+	CalendarFeeds *bool
 	// DefaultLanguage: DEFAULT_LANGUAGE gives the server's default language until the admin picks one in
 	// the system settings (unsupported or unset: German; English in demo mode)
 	DefaultLanguage string
@@ -556,6 +559,7 @@ func Load() *Config {
 		PeopleSearch:            envBoolPtr("PEOPLE_SEARCH"),
 		PublicLinks:             envBoolPtr("PUBLIC_LINKS"),
 		PublicLinkMaxDays:       publicLinkMaxDaysFromEnv(),
+		CalendarFeeds:           envBoolPtr("CALENDAR_FEEDS"),
 		DefaultLanguage:         defaultLanguage(demoMode),
 		DisableLoginProtection:  strings.ToLower(getEnv("LOGIN_PROTECTION", "true")) == "false",
 		OAuthIdleDays:           envInt("OAUTH_IDLE_DAYS", 90, 0, 36500),

@@ -2,6 +2,12 @@ package i18n
 
 // English texts of the server, keyed by the German source text (see messages.go). Sorted by key.
 var messagesEN = map[string]string{
+	// Calendar subscription
+	"Kalender-Abo nicht gefunden":                        "Calendar subscription not found",
+	"Kalender-Abos sind auf diesem Server ausgeschaltet": "Calendar subscriptions are switched off on this server",
+	"Liste: {name}":       "List: {name}",
+	"MindSift – Aufgaben": "MindSift – Tasks",
+
 	// MCP: note structure tools
 	"Der Server verarbeitet gerade andere große Anfragen (Bilder); bitte in ein paar Sekunden noch einmal versuchen": "The server is busy with other large requests (images); please try again in a few seconds",
 	"'language' gibt es nur für Code (type code)":                                                                    "'language' only exists for code (type code)",

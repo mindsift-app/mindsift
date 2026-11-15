@@ -254,6 +254,8 @@ func (s *Server) Router() http.Handler {
 	r.Get("/api/v1/public/{token}", s.handlePublicNote)
 	r.Post("/api/v1/public/{token}/unlock", s.handlePublicUnlock)
 	r.Get("/api/v1/public/{token}/media/{mediaId}", s.handlePublicMedia)
+	// Calendar subscription (no login; the token is the access, calendar_feed.go)
+	r.Get("/calendar/{file}", s.handleCalendarFeed)
 	r.Get("/api/v1/ws", s.handleWebSocket)
 	r.Get("/api/v1/ws/lists/{listId}", s.handleWebSocket)
 	r.Get("/api/v1/events", s.handleSSE)
@@ -479,6 +481,11 @@ func (s *Server) Router() http.Handler {
 		r.Post("/api/v1/keys", s.handleCreateAPIKey)
 		r.Patch("/api/v1/keys/{id}", s.handleUpdateAPIKey)
 		r.Delete("/api/v1/keys/{id}", s.handleDeleteAPIKey)
+
+		// Calendar subscription of the own tasks (calendar_feed.go)
+		r.Get("/api/v1/calendar-feed", s.handleGetCalendarFeed)
+		r.Put("/api/v1/calendar-feed", s.handleSetCalendarFeed)
+		r.Delete("/api/v1/calendar-feed", s.handleDeleteCalendarFeed)
 
 		// Staff routes: server admins and user managers (members, invites, organizations)
 		r.Group(func(r chi.Router) {

@@ -4630,6 +4630,69 @@
           }
         }
       }
+    },
+    "/api/v1/calendar-feed": {
+      "get": {
+        "summary": "The own calendar subscription",
+        "description": "Answer of all three: enabled (the server allows calendar subscriptions: CALENDAR_FEEDS, else the admin's switch), active (the person has a feed), token and url (the feed's address /calendar/<token>.ics; url only with BASE_URL, else null), createdAt, unreadable (a feed exists but its token no longer decrypts because SECRETS_KEY changed; PUT makes a new one). Not reachable with API keys",
+        "tags": [
+          "Account and General"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      },
+      "put": {
+        "summary": "Switch the calendar subscription on with a new address",
+        "description": "A new secret address; an earlier one stops working at once. 403 while the server does not allow calendar subscriptions. Answer of all three: enabled (the server allows calendar subscriptions: CALENDAR_FEEDS, else the admin's switch), active (the person has a feed), token and url (the feed's address /calendar/<token>.ics; url only with BASE_URL, else null), createdAt, unreadable (a feed exists but its token no longer decrypts because SECRETS_KEY changed; PUT makes a new one). Not reachable with API keys",
+        "tags": [
+          "Account and General"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Switch the calendar subscription off",
+        "description": "Deletes the token; the address stops working at once. Answer of all three: enabled (the server allows calendar subscriptions: CALENDAR_FEEDS, else the admin's switch), active (the person has a feed), token and url (the feed's address /calendar/<token>.ics; url only with BASE_URL, else null), createdAt, unreadable (a feed exists but its token no longer decrypts because SECRETS_KEY changed; PUT makes a new one). Not reachable with API keys",
+        "tags": [
+          "Account and General"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/calendar/{file}": {
+      "get": {
+        "summary": "Calendar subscription (iCalendar feed)",
+        "description": "No login; file is <token>.ics. Read-only iCalendar (text/calendar) of the person's open tasks with a due date (own tasks and those of shared task lists, due from 30 days ago to a year ahead) as events: all-day tasks as DATE events, timed tasks in UTC for 30 minutes, reminders as alarms. ETag with If-None-Match (304), Cache-Control private, max-age=900. Unknown or switched-off tokens and a server without calendar subscriptions: 404; too many unknown tokens from one address or too many fetches of one feed: 429",
+        "tags": [
+          "Account and General"
+        ],
+        "parameters": [
+          {
+            "name": "file",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [],
+        "responses": {
+          "default": {
+            "description": "text/calendar; 404 without body details"
+          }
+        }
+      }
     }
   }
 }
