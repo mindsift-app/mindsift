@@ -9,14 +9,19 @@ interface TagFilterRowProps {
   tags: string[];
   // Tasks of the open list: total and count per hashtag
   tasks: Thought[];
-  selected: string | null;
-  onSelect: (tag: string | null) => void;
+  // Chosen hashtags; a task shows with any of them
+  selected: readonly string[];
+  // A click on a hashtag switches it on or off
+  onToggle: (tag: string) => void;
+  // "Alle": no hashtag filter
+  onClear: () => void;
 }
 
 // Desktop hashtag filter of TasksView (Doku/ui-patterns.md "Filter Chips"): frameless chips in one line that
-// never wraps; those that do not fit go behind "+ n mehr", a popover with a search over all hashtags. The
-// chosen hashtag always keeps its chip (useOverflowTabs).
-export function TagFilterRow({ tags, tasks, selected, onSelect }: TagFilterRowProps) {
+// never wraps; those that do not fit go behind "+ n mehr", a popover with a search over all hashtags. A click
+// switches a hashtag on or off (several at once), "Alle" clears the filter. Chosen hashtags always keep their
+// chip (useOverflowTabs).
+export function TagFilterRow({ tags, tasks, selected, onToggle, onClear }: TagFilterRowProps) {
   const { t } = useTranslation('tasks');
   const { rowRef, moreRef, tabRef, hidden: overflowHidden, isHidden } = useOverflowTabs(tags, selected);
   // In state, not a ref: the popover is anchored to it during render
@@ -51,22 +56,22 @@ export function TagFilterRow({ tags, tasks, selected, onSelect }: TagFilterRowPr
       <button
         type="button"
         data-tab-fixed
-        onClick={() => onSelect(null)}
-        aria-pressed={selected === null}
-        className={`filter-chip shrink-0 ${selected === null ? 'filter-chip-active' : ''}`}
+        onClick={onClear}
+        aria-pressed={selected.length === 0}
+        className={`filter-chip shrink-0 ${selected.length === 0 ? 'filter-chip-active' : ''}`}
       >
         <span>{t('tags.allChip')}</span>{' '}
         <span className="filter-chip-count">{tasks.length}</span>
       </button>
       {tags.map((tag) => {
-        const isSelected = selected === tag;
+        const isSelected = selected.includes(tag);
         const hidden = isHidden(tag);
         return (
           <button
             key={tag}
             ref={tabRef(tag)}
             type="button"
-            onClick={() => onSelect(isSelected ? null : tag)}
+            onClick={() => onToggle(tag)}
             aria-pressed={isSelected}
             tabIndex={hidden ? -1 : undefined}
             aria-hidden={hidden || undefined}
@@ -98,14 +103,14 @@ export function TagFilterRow({ tags, tasks, selected, onSelect }: TagFilterRowPr
           items={tags.map((tag) => ({
             id: tag,
             label: `#${tag}`,
-            selected: tag === selected,
+            selected: selected.includes(tag),
             trail: <span className="filter-chip-count shrink-0 pl-1">{counts.get(tag) ?? 0}</span>,
           }))}
           maxResults={Infinity}
           placeholder={t('tags.search')}
           empty={t('tags.noMatch')}
           onPick={(item) => {
-            onSelect(item.id === selected ? null : item.id);
+            onToggle(item.id);
             closePicker();
           }}
           onClose={closePicker}

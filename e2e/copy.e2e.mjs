@@ -1,6 +1,7 @@
 // Selection over several bullets with the mouse and Ctrl+A, copied with Ctrl+C as Markdown and deleted with
 // Backspace, in Chromium and Firefox. Covers both directions, different start points in the row (text, empty
-// space, the action bubble on the right), callouts at the top and the bottom, warnings and errors, tables (on the top level and
+// space, the action bubble on the right), callouts at the top and the bottom, warnings and errors, a code block with a free
+// language name, tables (on the top level and
 // nested in a list), an empty indented last bullet and a drag past the first/last bullet. Needs a server in demo mode (account admin/admin); see e2e/README.md.
 import { chromium, firefox } from 'playwright';
 
@@ -27,14 +28,18 @@ async function api(token, method, path, body) {
 const DRAWING = JSON.stringify({ v: 1, els: [{ id: 'a', ver: 1, t: 'rect', x: 0, y: 0, w: 120, h: 60, s: 'main', f: 'none', sw: 2, txt: 'Kasten' }] });
 // A table (block type 'table'): copied as a Markdown table, a block of its own
 const TABLE = '| Name | Wert |\n| --- | --- |\n| [[Homelab#doc_e2ecopy\\|Link]] | 1 |';
+// A code block with a language outside the editor's list: copied as a fence with that name
+const CODE = '# SSH von innen\npass in on $int_if proto tcp to port 22';
 
 const NOTES = {
   'Callout oben': {
     blocks: [
       ['callout', 'Ein **Hinweis** oben', 0], ['h2', 'Überschrift', 0], ['bullet', 'Erster Punkt mit **fett**', 0], ['bullet', 'Kind mit [[Homelab#doc_e2ecopy|Link]]', 1],
-      ['drawing', DRAWING, 0], ['table', TABLE, 0], ['todo', 'Aufgabe', 0],
+      ['drawing', DRAWING, 0], ['table', TABLE, 0], ['code', CODE, 0, 'OpenBSD-pf'], ['todo', 'Aufgabe', 0],
     ],
-    markdown: '> Ein **Hinweis** oben\n\n## Überschrift\n\nErster Punkt mit **fett**\n- Kind mit [[Homelab#doc_e2ecopy|Link]]\n\n```mindsift-canvas\n' + DRAWING + '\n```\n\n' + TABLE + '\n\n- [ ] Aufgabe',
+    markdown:
+      '> Ein **Hinweis** oben\n\n## Überschrift\n\nErster Punkt mit **fett**\n- Kind mit [[Homelab#doc_e2ecopy|Link]]\n\n```mindsift-canvas\n' + DRAWING + '\n```\n\n' + TABLE +
+      '\n\n```OpenBSD-pf\n' + CODE + '\n```\n\n- [ ] Aufgabe',
   },
   'Callout unten, Warnung und Fehler, leerer eingerückter Bullet am Ende': {
     blocks: [
@@ -78,7 +83,7 @@ const main = async () => {
       const title = `Kopier-Test ${engine.name()} ${stamp}`;
       await api(admin, 'POST', '/api/v1/documents', {
         title,
-        blocks: note.blocks.map(([type, content, level], i) => ({ id: `cp${i}_${stamp}`, type, content, level })),
+        blocks: note.blocks.map(([type, content, level, lang], i) => ({ id: `cp${i}_${stamp}`, type, content, level, ...(lang ? { lang } : {}) })),
       });
       const { ctx, page } = await openNote(browser, admin, title);
       const tag = `${engine.name()}, ${noteName}`;

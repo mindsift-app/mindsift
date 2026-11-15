@@ -5,6 +5,7 @@ var messagesEN = map[string]string{
 	// MCP: note structure tools
 	"Der Server verarbeitet gerade andere große Anfragen (Bilder); bitte in ein paar Sekunden noch einmal versuchen": "The server is busy with other large requests (images); please try again in a few seconds",
 	"'language' gibt es nur für Code (type code)":                                                                    "'language' only exists for code (type code)",
+	"'language': 1 bis 40 Zeichen, nur Buchstaben, Ziffern und + - _ . #":                                            "'language': 1 to 40 characters, only letters, digits and + - _ . #",
 	"Ein Trennstrich hat keinen Text (mit type einen anderen Typ wählen)":                                            "A divider has no text (choose another type with type)",
 	"Ein Punkt lässt sich nicht in seine eigenen Unterpunkte oder neben sich selbst verschieben":                     "A bullet cannot be moved into its own children or next to itself",
 	"Genau eins angeben: afterId, beforeId, parentId oder step":                                                      "Give exactly one: afterId, beforeId, parentId or step",

@@ -23,30 +23,36 @@ afterEach(() => {
 });
 
 describe('TagFilterRow', () => {
-  it('shows every hashtag with its count and filters by a click', () => {
-    const onSelect = vi.fn();
-    render(<TagFilterRow tags={tags} tasks={tasks} selected={null} onSelect={onSelect} />);
+  it('shows every hashtag with its count and switches one on by a click', () => {
+    const onToggle = vi.fn();
+    render(<TagFilterRow tags={tags} tasks={tasks} selected={[]} onToggle={onToggle} onClear={() => {}} />);
     expect(screen.getByRole('button', { name: 'Alle 3' }).getAttribute('aria-pressed')).toBe('true');
     expect(screen.getByRole('button', { name: '#backup 2' }).getAttribute('aria-pressed')).toBe('false');
     // Everything fits: no "+ n weitere"
     expect(screen.queryByRole('button', { name: /weitere/ })).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: '#garten 1' }));
-    expect(onSelect).toHaveBeenCalledWith('garten');
+    expect(onToggle).toHaveBeenCalledWith('garten');
   });
 
-  it('a second click on the chosen hashtag clears the filter', () => {
-    const onSelect = vi.fn();
-    render(<TagFilterRow tags={tags} tasks={tasks} selected="backup" onSelect={onSelect} />);
-    const chip = screen.getByRole('button', { name: '#backup 2' });
-    expect(chip.getAttribute('aria-pressed')).toBe('true');
-    fireEvent.click(chip);
-    expect(onSelect).toHaveBeenCalledWith(null);
+  it('marks several chosen hashtags; a click switches one off, "Alle" clears the filter', () => {
+    const onToggle = vi.fn();
+    const onClear = vi.fn();
+    render(<TagFilterRow tags={tags} tasks={tasks} selected={['backup', 'einkauf']} onToggle={onToggle} onClear={onClear} />);
+    const alle = screen.getByRole('button', { name: 'Alle 3' });
+    expect(alle.getAttribute('aria-pressed')).toBe('false');
+    expect(screen.getByRole('button', { name: '#backup 2' }).getAttribute('aria-pressed')).toBe('true');
+    expect(screen.getByRole('button', { name: '#einkauf 1' }).getAttribute('aria-pressed')).toBe('true');
+    expect(screen.getByRole('button', { name: '#garten 1' }).getAttribute('aria-pressed')).toBe('false');
+    fireEvent.click(screen.getByRole('button', { name: '#backup 2' }));
+    expect(onToggle).toHaveBeenCalledWith('backup');
+    fireEvent.click(alle);
+    expect(onClear).toHaveBeenCalled();
   });
 
   it('puts what does not fit behind "+ n weitere", keeps the chosen chip and picks from the search', () => {
     rowWidth = 420;
-    const onSelect = vi.fn();
-    render(<TagFilterRow tags={tags} tasks={tasks} selected="einkauf" onSelect={onSelect} />);
+    const onToggle = vi.fn();
+    render(<TagFilterRow tags={tags} tasks={tasks} selected={['einkauf']} onToggle={onToggle} onClear={() => {}} />);
     // The chosen hashtag keeps its chip even though it comes last
     expect(screen.getByRole('button', { name: '#einkauf 1' })).toBeTruthy();
     const more = screen.getByRole('button', { name: '+2 weitere' });
@@ -54,26 +60,34 @@ describe('TagFilterRow', () => {
     const search = screen.getByPlaceholderText('Hashtag suchen …');
     fireEvent.change(search, { target: { value: 'gar' } });
     fireEvent.keyDown(search, { key: 'Enter' });
-    expect(onSelect).toHaveBeenCalledWith('garten');
+    expect(onToggle).toHaveBeenCalledWith('garten');
     expect(screen.queryByPlaceholderText('Hashtag suchen …')).toBeNull();
+  });
+
+  it('keeps every chosen hashtag in the row, even when they come last', () => {
+    rowWidth = 420;
+    render(<TagFilterRow tags={tags} tasks={tasks} selected={['garten', 'einkauf']} onToggle={() => {}} onClear={() => {}} />);
+    expect(screen.getByRole('button', { name: '#garten 1' }).getAttribute('aria-hidden')).toBeNull();
+    expect(screen.getByRole('button', { name: '#einkauf 1' }).getAttribute('aria-hidden')).toBeNull();
+    expect(screen.getByRole('button', { name: '+1 weiterer' })).toBeTruthy();
   });
 
   it('marks the first hit again after a new search', () => {
     rowWidth = 420;
-    const onSelect = vi.fn();
-    render(<TagFilterRow tags={tags} tasks={tasks} selected={null} onSelect={onSelect} />);
+    const onToggle = vi.fn();
+    render(<TagFilterRow tags={tags} tasks={tasks} selected={[]} onToggle={onToggle} onClear={() => {}} />);
     fireEvent.click(screen.getByRole('button', { name: /weitere/ }));
     const search = screen.getByPlaceholderText('Hashtag suchen …');
     fireEvent.keyDown(search, { key: 'ArrowDown' });
     fireEvent.keyDown(search, { key: 'ArrowDown' });
     fireEvent.change(search, { target: { value: 'e' } }); // garten, einkauf
     fireEvent.keyDown(search, { key: 'Enter' });
-    expect(onSelect).toHaveBeenCalledWith('garten');
+    expect(onToggle).toHaveBeenCalledWith('garten');
   });
 
   it('says so when the search finds nothing', () => {
     rowWidth = 420;
-    render(<TagFilterRow tags={tags} tasks={tasks} selected={null} onSelect={() => {}} />);
+    render(<TagFilterRow tags={tags} tasks={tasks} selected={[]} onToggle={() => {}} onClear={() => {}} />);
     fireEvent.click(screen.getByRole('button', { name: /weitere/ }));
     fireEvent.change(screen.getByPlaceholderText('Hashtag suchen …'), { target: { value: 'xyz' } });
     expect(screen.getByText('Kein Hashtag gefunden')).toBeTruthy();

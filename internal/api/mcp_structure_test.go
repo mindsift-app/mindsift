@@ -42,9 +42,13 @@ func TestMCPCodeAndDivider(t *testing.T) {
 	other, _ := store.CreateDocument(claims.UserID, "", "Andere Notiz", "", "", nil, nil, false)
 	_ = other
 
-	// Code with an editor id, an alias and an unknown language; [[…]] stays text in code
+	// Code with an editor id, an alias and an unknown language (kept as written, the block shows it as its
+	// label); [[…]] stays text in code
 	code := "func main() {\n\tfmt.Println(\"[[Andere Notiz]]\")\n}"
-	for _, c := range []struct{ lang, want string }{{"go", "go"}, {"TS", "typescript"}, {"c++", "cpp"}, {"klingon", ""}, {"", ""}} {
+	for _, c := range []struct{ lang, want string }{
+		{"go", "go"}, {"TS", "typescript"}, {"c++", "cpp"}, {"IPTables", "iptables"}, {"nft", "nftables"},
+		{"klingon", "klingon"}, {" OpenBSD-pf.conf ", "OpenBSD-pf.conf"}, {"", ""},
+	} {
 		res, isErr, msg := call(key.RawKey, "add_note_bullet", `{"noteId":"`+doc.ID+`","type":"code","language":"`+c.lang+`","text":`+jsonString(code)+`}`)
 		if isErr {
 			t.Fatalf("code %q: %s", c.lang, msg)
@@ -57,6 +61,17 @@ func TestMCPCodeAndDivider(t *testing.T) {
 		if b := bulletByID(t, res, id); b["language"] != nilIfEmpty(c.want) {
 			t.Fatalf("get_note language for %q: %v", c.lang, b)
 		}
+	}
+	// A name the block could not show as its language is refused, nothing is added
+	snap, _ := srv.store.GetDocSnapshot(doc.ID)
+	before := len(snap.Blocks)
+	for _, bad := range []string{"pf conf", "<b>pf</b>", "fire/wall", strings.Repeat("x", 41), "nft{}"} {
+		if _, isErr, msg := call(key.RawKey, "add_note_bullet", `{"noteId":"`+doc.ID+`","type":"code","language":`+jsonString(bad)+`,"text":"x"}`); !isErr || !strings.Contains(msg, "1 to 40 characters") {
+			t.Fatalf("language %q: %v %s", bad, isErr, msg)
+		}
+	}
+	if snap, _ = srv.store.GetDocSnapshot(doc.ID); len(snap.Blocks) != before {
+		t.Fatalf("a refused language added a bullet: %d → %d", before, len(snap.Blocks))
 	}
 	// A language for anything but code, an unknown type
 	if _, isErr, msg := call(key.RawKey, "add_note_bullet", `{"noteId":"`+doc.ID+`","type":"text","language":"go","text":"x"}`); !isErr || !strings.Contains(msg, "language") {
@@ -94,6 +109,19 @@ func TestMCPCodeAndDivider(t *testing.T) {
 	}
 	if _, _, lang := snapBullet(t, srv, doc.ID, "blk_cd1"); lang != "bash" {
 		t.Fatalf("language only: %q", lang)
+	}
+	// An unknown name is kept as written, a name the block could not show is refused (the language stays)
+	if _, isErr, msg := call(key.RawKey, "update_note_bullet", `{"noteId":"`+doc.ID+`","bulletId":"blk_cd1","language":"PF"}`); isErr {
+		t.Fatalf("unknown language: %s", msg)
+	}
+	if _, _, lang := snapBullet(t, srv, doc.ID, "blk_cd1"); lang != "PF" {
+		t.Fatalf("unknown language: %q", lang)
+	}
+	if _, isErr, msg := call(key.RawKey, "update_note_bullet", `{"noteId":"`+doc.ID+`","bulletId":"blk_cd1","language":"p f"}`); !isErr || !strings.Contains(msg, "1 to 40 characters") {
+		t.Fatalf("invalid language: %v %s", isErr, msg)
+	}
+	if _, _, lang := snapBullet(t, srv, doc.ID, "blk_cd1"); lang != "PF" {
+		t.Fatalf("invalid language changed it: %q", lang)
 	}
 	if _, isErr, _ := call(key.RawKey, "update_note_bullet", `{"noteId":"`+doc.ID+`","bulletId":"`+div+`","language":"go"}`); !isErr {
 		t.Fatal("a language for a divider must fail")

@@ -12,7 +12,8 @@
     "copied": "Copié !",
     "copyTitle": "Copier dans le presse-papiers",
     "copy": "Copier",
-    "plain": "Texte"
+    "plain": "Texte",
+    "useTyped": "Utiliser « {{name}} » comme langage (sans coloration)"
   },
   "table": {
     "menu": "Tableau : lignes et colonnes",
@@ -588,6 +589,9 @@
       "needsWebSocket": "Pour dessiner ensemble, il faut une connexion WebSocket ; ici, tu peux regarder.",
       "drawAlong": "Dessiner aussi",
       "watch": "Regarder",
+      "start": "Dessiner ensemble",
+      "startTitle": "Lancer une session en direct : qui peut modifier la note peut dessiner aussi, qui peut la lire peut regarder",
+      "needsWebSocketStart": "Pour dessiner ensemble, il faut une connexion WebSocket. Tu continues à dessiner seul.",
       "label": "En direct",
       "host": "Hôte : {{name}}",
       "youHost": "Tu es l’hôte",
@@ -609,7 +613,7 @@
       "idle": "Personne ne dessine en ce moment. L’état n’est pas encore enregistré.",
       "error": {
         "forbidden": "Tu n’as pas l’accès pour dessiner.",
-        "locked": "Quelqu’un modifie le dessin sans connexion en direct – tu peux seulement regarder.",
+        "locked": "Quelqu’un d’autre modifie le dessin en ce moment – dessiner ensemble sera possible une fois qu’il sera libre.",
         "limit": "Le dessin est trop grand pour la session en direct. Retire quelque chose, surtout des traits à main levée.",
         "too_many": "Tu dessines déjà en direct dans trop de dessins. Ferme-en un, puis rouvre celui-ci.",
         "busy": "Trop de dessins en direct sont en cours sur le serveur. Rouvre-le plus tard.",

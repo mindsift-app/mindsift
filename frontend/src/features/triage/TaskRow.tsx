@@ -32,8 +32,8 @@ interface TaskRowProps {
   onOpenDocument: (docId: string, blockId?: string) => void;
   renderAssignees: (task: Thought, size: 'xxs' | 'xs') => React.ReactNode;
   renderTaskProgressBar: (task: Thought) => React.ReactNode;
-  selectedTag: string | null;
-  setSelectedTag: (tag: string | null) => void;
+  selectedTags: readonly string[];
+  onToggleTag: (tag: string) => void;
   // The calendar's day panel: no due date, assignees and actions at the end of the badges instead of beside the task
   compact?: boolean;
 }
@@ -61,8 +61,8 @@ function TaskRowView({
   onOpenDocument,
   renderAssignees,
   renderTaskProgressBar,
-  selectedTag,
-  setSelectedTag,
+  selectedTags,
+  onToggleTag,
   compact = false,
 }: TaskRowProps) {
   const { t } = useTranslation('tasks');
@@ -295,9 +295,10 @@ function TaskRowView({
               <button
                 key={tag}
                 type="button"
-                onClick={() => setSelectedTag(selectedTag === tag ? null : tag)}
+                onClick={() => onToggleTag(tag)}
+                aria-pressed={selectedTags.includes(tag)}
                 className={`text-[10px] px-1.5 py-0.2 rounded-pill border transition-colors ${
-                  selectedTag === tag
+                  selectedTags.includes(tag)
                     ? 'bg-accent/15 border-accent text-accent font-semibold'
                     : 'badge-neutral hover:border-accent'
                 }`}

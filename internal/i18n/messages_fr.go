@@ -5,6 +5,7 @@ var messagesFR = map[string]string{
 	// MCP: note structure tools
 	"Der Server verarbeitet gerade andere große Anfragen (Bilder); bitte in ein paar Sekunden noch einmal versuchen": "Le serveur traite d'autres requêtes volumineuses (images) ; réessayez dans quelques secondes",
 	"'language' gibt es nur für Code (type code)":                                                                    "'language' n'existe que pour le code (type code)",
+	"'language': 1 bis 40 Zeichen, nur Buchstaben, Ziffern und + - _ . #":                                            "'language' : 1 à 40 caractères, uniquement lettres, chiffres et + - _ . #",
 	"Ein Trennstrich hat keinen Text (mit type einen anderen Typ wählen)":                                            "Un séparateur n'a pas de texte (choisir un autre type avec type)",
 	"Ein Punkt lässt sich nicht in seine eigenen Unterpunkte oder neben sich selbst verschieben":                     "Un point ne peut pas être déplacé dans ses propres sous-points ni à côté de lui-même",
 	"Genau eins angeben: afterId, beforeId, parentId oder step":                                                      "Indiquer exactement un seul : afterId, beforeId, parentId ou step",

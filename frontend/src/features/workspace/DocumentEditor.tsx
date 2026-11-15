@@ -36,6 +36,7 @@ import { ConflictChoice, MAX_NOTE_BLOCKS } from '../../lib/docSync/engine';
 import { formatNumber } from '../../lib/format';
 import { Presence } from '../../lib/docSync/transport';
 import { OutlinerTree, OutlinerTreeHandle } from './OutlinerTree';
+import { NoteSharedContext } from './drawing/noteShared';
 import { extractHashtags } from '../../lib/hashtags';
 import { isPhoneWidth } from '../../lib/breakpoints';
 import { useTranslation } from 'react-i18next';
@@ -801,6 +802,8 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
   // The note scrolls on its own; at its end the scroll must not pass on to the page, where phones would show
   // and hide the address bar, resize the app (100dvh) and make the bars at the bottom flicker
   return (
+    // Drawings in a shared note may start a live session ("Gemeinsam zeichnen")
+    <NoteSharedContext.Provider value={!!engineState?.shared}>
     <div
       ref={scrollRef}
       className={embedded ? 'flex flex-col bg-editor' : 'flex-1 flex flex-col h-full min-h-0 bg-editor overflow-y-auto overscroll-y-contain'}
@@ -1249,5 +1252,6 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
         </div>
       )}
     </div>
+    </NoteSharedContext.Provider>
   );
 };

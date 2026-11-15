@@ -750,7 +750,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
     const codeLangMatch = slashMatchInfo?.query.match(/^code\s+([a-z0-9_+#.-]+)$/i);
     const langOverride =
       cmd.type === 'code' && codeLangMatch
-        ? resolveLanguageId(codeLangMatch[1]) || codeLangMatch[1].toLowerCase()
+        ? resolveLanguageId(codeLangMatch[1]) || codeLangMatch[1]
         : undefined;
 
     // Code keeps its spacing; only the typed command goes
@@ -852,20 +852,20 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
         const rawLang = fenceSpaceMatch[1];
         val = fenceSpaceMatch[2];
         typeOverride = 'code';
-        langOverride = rawLang ? resolveLanguageId(rawLang) || rawLang.toLowerCase() : '';
+        langOverride = rawLang ? resolveLanguageId(rawLang) || rawLang : '';
       } else if (fenceDirectMatch && isUnambiguousLanguageShortcut(fenceDirectMatch[1])) {
         val = '';
         typeOverride = 'code';
-        langOverride = resolveLanguageId(fenceDirectMatch[1]) || fenceDirectMatch[1].toLowerCase();
+        langOverride = resolveLanguageId(fenceDirectMatch[1]) || fenceDirectMatch[1];
       } else if (slashCodeSpaceMatch) {
         const rawLang = slashCodeSpaceMatch[1];
         val = slashCodeSpaceMatch[2];
         typeOverride = 'code';
-        langOverride = resolveLanguageId(rawLang) || rawLang.toLowerCase();
+        langOverride = resolveLanguageId(rawLang) || rawLang;
       } else if (slashCodeDirectMatch && isUnambiguousLanguageShortcut(slashCodeDirectMatch[1])) {
         val = '';
         typeOverride = 'code';
-        langOverride = resolveLanguageId(slashCodeDirectMatch[1]) || slashCodeDirectMatch[1].toLowerCase();
+        langOverride = resolveLanguageId(slashCodeDirectMatch[1]) || slashCodeDirectMatch[1];
       } else if (val.startsWith('[] ') || val.startsWith('[ ] ')) {
         val = val.replace(/^\[\s?\]\s/, '');
         typeOverride = 'todo';
@@ -1194,7 +1194,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
       const fenceMatch = localContent.match(/^```([a-z0-9_+#.-]*)$/i);
       if (fenceMatch) {
         const rawLang = fenceMatch[1];
-        const resolvedLang = rawLang ? resolveLanguageId(rawLang) || rawLang.toLowerCase() : '';
+        const resolvedLang = rawLang ? resolveLanguageId(rawLang) || rawLang : '';
         setLocalContent('');
         localContentRef.current = '';
         refocusAfterTypeChangeRef.current = true;

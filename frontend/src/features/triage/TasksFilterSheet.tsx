@@ -10,9 +10,11 @@ interface TasksFilterSheetProps {
   groupBy: GroupBy;
   groupOptions: { id: GroupBy; label: string }[];
   safeTasks: Thought[];
-  selectedTag: string | null;
+  // Chosen hashtags (a task shows with any of them); a tap switches one on or off, "Alle" clears them
+  selectedTags: readonly string[];
   setGroupBy: (g: GroupBy) => void;
-  setSelectedTag: (tag: string | null) => void;
+  toggleTag: (tag: string) => void;
+  clearTags: () => void;
   setShowFilterModal: (show: boolean) => void;
   setSortBy: (sort: TaskSort) => void;
   sortBy: TaskSort;
@@ -28,9 +30,10 @@ export function TasksFilterSheet({
   groupBy,
   groupOptions,
   safeTasks,
-  selectedTag,
+  selectedTags,
   setGroupBy,
-  setSelectedTag,
+  toggleTag,
+  clearTags,
   setShowFilterModal,
   setSortBy,
   sortBy,
@@ -73,9 +76,10 @@ export function TasksFilterSheet({
           <div className="flex flex-wrap gap-1.5">
             <button
               type="button"
-              onClick={() => setSelectedTag(null)}
+              onClick={clearTags}
+              aria-pressed={selectedTags.length === 0}
               className={`min-h-[32px] px-3 text-xs rounded-full border transition-colors cursor-pointer ${
-                selectedTag === null
+                selectedTags.length === 0
                   ? 'bg-accent text-on-accent border-accent font-semibold'
                   : 'bg-canvas border-border text-muted'
               }`}
@@ -84,12 +88,13 @@ export function TasksFilterSheet({
             </button>
             {allAvailableTags.map((tag) => {
               const count = safeTasks.filter((t) => t.tags?.includes(tag)).length;
-              const isSelected = selectedTag === tag;
+              const isSelected = selectedTags.includes(tag);
               return (
                 <button
                   key={tag}
                   type="button"
-                  onClick={() => setSelectedTag(isSelected ? null : tag)}
+                  onClick={() => toggleTag(tag)}
+                  aria-pressed={isSelected}
                   className={`min-h-[32px] px-3 text-xs rounded-full border transition-colors flex items-center gap-1 cursor-pointer ${
                     isSelected
                       ? 'bg-accent text-on-accent border-accent font-semibold'
@@ -164,7 +169,7 @@ export function TasksFilterSheet({
           <button
             type="button"
             onClick={() => {
-              setSelectedTag(null);
+              clearTags();
               setGroupBy(defaultGroupBy);
               setSortBy('custom');
             }}

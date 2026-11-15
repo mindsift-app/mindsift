@@ -572,11 +572,10 @@ func (s *Store) docTaskLinks(docID string) map[string]string {
 	return links
 }
 
-// GetThoughtByIDUnchecked loads a task without access check, for server-internal notifications.
+// GetThoughtByIDUnchecked loads a task without access check, for server-internal notifications. With
+// its assignees: what it loads goes out as the whole task (TASK_CREATED after a restore, the answer).
 func (s *Store) GetThoughtByIDUnchecked(thoughtID string) (*domain.Thought, error) {
-	return scanThought(s.db.QueryRow(
-		`SELECT id, user_id, content, tags, priority, source, status, is_completed, converted_type, converted_ref_id, due_date, task_list_id, kanban_status, notes, alarm_sent, created_at, triaged_at, subtasks, sort_order, recurrence, reminders, `+originColumns("")+`
-		 FROM thoughts WHERE id = ?`, thoughtID))
+	return s.getThoughtRaw(thoughtID)
 }
 
 // GetDocOpsSince returns up to limit log entries after seq, plus the current head. If entries after seq

@@ -82,6 +82,13 @@ func TestLiveDrawingRightsAndRelay(t *testing.T) {
 	}
 	join := at("d_b1")
 	join["base"], join["els"] = drawBase, []json.RawMessage{drawEl("e1", 1, 0, 0)}
+	// Asking to join a session that is not running starts none
+	join["join"] = true
+	sendDraw(t, own, "DRAW_JOIN", join)
+	if p := readDraw(t, own, "DRAW_ERROR"); p.Code != "ended" {
+		t.Fatalf("joining without a running session: %+v", p)
+	}
+	delete(join, "join")
 	sendDraw(t, own, "DRAW_JOIN", join)
 	st := readDraw(t, own, "DRAW_STATE")
 	if !st.Active || st.Host == "" || st.Host != st.You || len(st.Els) != 1 {
@@ -146,7 +153,12 @@ func TestLiveDrawingHoldsTheLeaseAndHandsItOver(t *testing.T) {
 	sendDraw(t, own, "DRAW_JOIN", at)
 	readDraw(t, own, "DRAW_STATE")
 	ed := dialWS(t, ts, editorToken)
-	sendDraw(t, ed, "DRAW_JOIN", at)
+	// Joining the running session (as after "Mitzeichnen")
+	joinRunning := map[string]any{"join": true}
+	for k, v := range at {
+		joinRunning[k] = v
+	}
+	sendDraw(t, ed, "DRAW_JOIN", joinRunning)
 	if p := readDraw(t, ed, "DRAW_STATE"); len(p.Participants) != 2 || p.Host == p.You {
 		t.Fatalf("editor joins as second: %+v", p)
 	}

@@ -33,6 +33,8 @@ func seedAnna(t *testing.T, store *Store, anna *domain.User) {
 		{ID: "b2", Type: "bullet", Content: "Strom sparen #homelab", Level: 1},
 		{ID: "b3", Type: "todo", Content: "Backup", Checked: true, Level: 2},
 		{ID: "b4", Type: "code", Content: "docker compose up", Lang: "bash", Level: 2},
+		// A language outside the editor's list stays the block's label
+		{ID: "b5", Type: "code", Content: "pass in proto tcp to port 22", Lang: "OpenBSD-pf", Level: 2},
 	}
 	if _, err := store.CreateDocument(anna.ID, "", "Umzug", "🚀", "Projekte/Server", blocks, nil, false); err != nil {
 		t.Fatalf("CreateDocument: %v", err)
@@ -56,9 +58,9 @@ func checkRestored(t *testing.T, store *Store, ben *domain.User) {
 	}
 	got := []string{}
 	for _, b := range docs[0].Blocks {
-		got = append(got, b.Type+"@"+string(rune('0'+b.Level))+":"+b.Content)
+		got = append(got, b.Type+"@"+string(rune('0'+b.Level))+b.Lang+":"+b.Content)
 	}
-	want := []string{"h2@0:Warum", "bullet@1:Strom sparen #homelab", "todo@2:Backup", "code@2:docker compose up"}
+	want := []string{"h2@0:Warum", "bullet@1:Strom sparen #homelab", "todo@2:Backup", "code@2bash:docker compose up", "code@2OpenBSD-pf:pass in proto tcp to port 22"}
 	if strings.Join(got, "|") != strings.Join(want, "|") {
 		t.Errorf("blocks differ:\n got %v\nwant %v", got, want)
 	}

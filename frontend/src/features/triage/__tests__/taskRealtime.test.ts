@@ -42,6 +42,18 @@ describe('task realtime updates', () => {
     expect(tasksAfterUpdate(watched, task('a', { priority: 'high' }), 'l1')[0].isWatching).toBe(true);
   });
 
+  it('keeps the assignees when an update comes without them, takes an empty list as a change', () => {
+    const prev = [task('a', { assignees: ['usr_anna', 'usr_ben'], isWatching: true })];
+    // ticked in a linked note: the event used to come with assignees null
+    const ticked = tasksAfterUpdate(prev, task('a', { isCompleted: true, assignees: null as unknown as string[] }), 'l1')[0];
+    expect(ticked.isCompleted).toBe(true);
+    expect(ticked.assignees).toEqual(['usr_anna', 'usr_ben']);
+    expect(ticked.isWatching).toBe(true);
+    expect(tasksAfterUpdate(prev, task('a', { content: 'neu' }), 'l1')[0].assignees).toEqual(['usr_anna', 'usr_ben']);
+    expect(tasksAfterUpdate(prev, task('a', { assignees: [] }), 'l1')[0].assignees).toEqual([]);
+    expect(tasksAfterUpdate(prev, task('a', { assignees: ['usr_ben'] }), 'l1')[0].assignees).toEqual(['usr_ben']);
+  });
+
   it('removes a deleted task', () => {
     expect(ids(tasksAfterDelete([task('a'), task('b')], 'a'))).toEqual(['b']);
   });

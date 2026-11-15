@@ -51,9 +51,9 @@ interface KanbanBoardProps {
   renderAssignees: (task: Thought, size: 'xxs' | 'xs') => React.ReactNode;
   renderTaskProgressBar: (task: Thought) => React.ReactNode;
   safeTaskLists: TaskList[];
-  selectedTag: string | null;
+  selectedTags: readonly string[];
   setDetailTaskId: (id: string | null) => void;
-  setSelectedTag: (tag: string | null) => void;
+  onToggleTag: (tag: string) => void;
   setShowDetailModal: (show: boolean) => void;
   tasks: Thought[];
   onOpenDocument: (docId: string, blockId?: string) => void;
@@ -83,9 +83,9 @@ export function KanbanBoard({
   renderAssignees,
   renderTaskProgressBar,
   safeTaskLists,
-  selectedTag,
+  selectedTags,
   setDetailTaskId,
-  setSelectedTag,
+  onToggleTag,
   setShowDetailModal,
   tasks,
   onOpenDocument,
@@ -131,7 +131,7 @@ export function KanbanBoard({
     setDetailTaskId(taskId);
     setShowDetailModal(true);
   });
-  const toggleTag = useLatestCallback((tag: string) => setSelectedTag(selectedTag === tag ? null : tag));
+  const toggleTag = useLatestCallback(onToggleTag);
   const stableConvertToDoc = useLatestCallback(handleConvertToDoc);
   const stableDelete = useLatestCallback(handleDeletePermanent);
   const stableCyclePriority = useLatestCallback(handleCyclePriority);
@@ -216,7 +216,7 @@ export function KanbanBoard({
                       justDropped={justDroppedId === task.id}
                       prevCol={prevCol}
                       nextCol={nextCol}
-                      activeTag={selectedTag && task.tags?.includes(selectedTag) ? selectedTag : null}
+                      activeTags={selectedTags}
                       lists={safeTaskLists}
                       onDragStart={cardDragStart}
                       onDragEnd={cardDragEnd}

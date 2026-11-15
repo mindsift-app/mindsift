@@ -57,7 +57,7 @@ function ListWithSwitch({ trash }: { trash: TrashedTask[] | null }) {
       renderTaskRow={() => null}
       safeTaskLists={[]}
       selectedListId="all"
-      selectedTag={null}
+      selectedTags={[]}
       setFilter={setFilter}
       setGroupBy={() => {}}
       setSortBy={() => {}}
@@ -104,7 +104,7 @@ describe('buildTasksMenu', () => {
       openCount: 3,
       openTasksCount: 3,
       selectedListId: 'all',
-      selectedTag: null,
+      selectedTags: [],
       setMobileCreateListId: noop,
       setSelectedListId: noop,
       setShowFilterModal: noop,

@@ -18,6 +18,8 @@ if (typeof globalThis !== 'undefined') {
 export interface CodeLanguageOption {
   id: string;
   label: string;
+  /** The Prism grammar when it is not the id: a format without its own grammar takes a close one */
+  prism?: string;
 }
 
 export interface CodeLanguageGroup {
@@ -49,6 +51,18 @@ const KNOWN_OPTION_IDS = new Set<string>(CODE_LANGUAGES.map((l) => l.id));
 
 const LANGUAGE_ALIASES: Record<string, string> = codeLanguages.aliases;
 
+const PRISM_GRAMMAR_OF: Record<string, string> = Object.fromEntries(
+  CODE_LANGUAGES.filter((l) => l.prism).map((l) => [l.id, l.prism as string])
+);
+
+/**
+ * Whether a name not in the list may be a code block's language: the block shows it as typed, without
+ * highlighting (the same rule as for MCP code bullets, internal/api/mcp_code.go, and as ```name in a bullet)
+ */
+export function isCodeLanguageLabel(raw: string): boolean {
+  return /^[A-Za-z0-9+\-_.#]{1,40}$/.test(raw);
+}
+
 const SHORT_PREFIX_CANDIDATES = new Set<string>([
   'c',
   'go',
@@ -70,6 +84,7 @@ const SHORT_PREFIX_CANDIDATES = new Set<string>([
   'yml',
   'doc',
   'docker',
+  'git',
   'make',
   'proto',
   'plain',
@@ -138,6 +153,10 @@ const PRISM_LOADERS: Record<string, () => Promise<unknown>> = {
   markdown: () => import('prismjs/components/prism-markdown'),
   latex: () => import('prismjs/components/prism-latex'),
   regex: () => import('prismjs/components/prism-regex'),
+  properties: () => import('prismjs/components/prism-properties'),
+  apacheconf: () => import('prismjs/components/prism-apacheconf'),
+  'dns-zone-file': () => import('prismjs/components/prism-dns-zone-file'),
+  ignore: () => import('prismjs/components/prism-ignore'),
 };
 
 // Prerequisite grammars that must be loaded in order before the target grammar
@@ -150,12 +169,16 @@ const PRISM_DEPENDENCIES: Record<string, string[]> = {
 
 const inFlightGrammarLoads = new Map<string, Promise<boolean>>();
 
+// A name outside the list (a free label) has no grammar; a grammar's prerequisites load by their own key
 export function toPrismGrammarKey(lang?: string): string {
   if (!lang) return '';
-  const resolved = resolveLanguageId(lang) || lang.trim().toLowerCase();
-  if (!resolved || resolved === 'text' || resolved === 'plaintext') return '';
-  if (resolved === 'html') return 'markup';
-  return resolved;
+  const resolved = resolveLanguageId(lang);
+  if (!resolved) {
+    const key = lang.trim().toLowerCase();
+    return PRISM_LOADERS[key] ? key : '';
+  }
+  if (resolved === 'text') return '';
+  return PRISM_GRAMMAR_OF[resolved] ?? resolved;
 }
 
 export async function loadPrismLanguage(lang?: string): Promise<boolean> {
@@ -562,6 +585,13 @@ export const CodeBlockEditor: React.FC<CodeBlockEditorProps> = ({
             value={selectValue}
             onChange={(lang) => onChangeLang?.(lang)}
             buttonClassName={`${headerControl} px-1 gap-1`}
+            // A name not in the list is taken as typed: the header shows it, the code stays plain
+            extraOption={(typed) => {
+              const known = resolveLanguageId(typed);
+              const option = known && CODE_LANGUAGES.find((l) => l.id === known);
+              if (option) return { value: option.id, label: option.label };
+              return isCodeLanguageLabel(typed) ? { value: typed, label: t('code.useTyped', { name: typed }) } : null;
+            }}
             options={[
               { value: '', label: t('workspace:code.plain') },
               ...(hasCustomUnknownLang ? [{ value: selectValue, label: selectValue }] : []),

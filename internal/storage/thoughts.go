@@ -574,16 +574,46 @@ func (s *Store) UpdateTask(userID string, before *domain.Thought, p ThoughtPatch
 		thought.Assignees = kept
 	}
 
-	tagsJSON, _ := json.Marshal(thought.Tags)
-	subtasksJSON, _ := json.Marshal(thought.Subtasks)
-	completedInt := 0
-	if thought.IsCompleted {
-		completedInt = 1
-	}
 	// A new due date or a reopened task gets its alarm again (in the same statement)
 	rearm := thought.DueDate != oldDue || (wasCompleted && !thought.IsCompleted)
 	if rearm {
 		thought.AlarmSent = false
+	}
+	// Only the fields of the patch are written: the task is read before the transaction, and writing the
+	// others from that read would undo a change made meanwhile (a to-do of a linked note ticked while the
+	// task is renamed, ReconcileDocTaskLinks). RETURNING gives the state as stored, those changes included.
+	sets := []string{"alarm_sent = CASE WHEN ? THEN 0 ELSE alarm_sent END", "alarm_failures = CASE WHEN ? THEN 0 ELSE alarm_failures END"}
+	args := []any{rearm, rearm}
+	set := func(col string, v any) {
+		sets = append(sets, col+" = ?")
+		args = append(args, v)
+	}
+	if p.Content != nil {
+		set("content", thought.Content)
+	}
+	if p.Content != nil || p.Tags != nil {
+		tagsJSON, _ := json.Marshal(thought.Tags)
+		set("tags", string(tagsJSON))
+	}
+	if p.IsCompleted != nil || (p.KanbanStatus != nil && *p.KanbanStatus != "") {
+		set("is_completed", boolInt(thought.IsCompleted))
+		set("kanban_status", thought.KanbanStatus)
+	}
+	if p.DueDate != nil {
+		set("due_date", thought.DueDate)
+	}
+	if p.Priority != nil {
+		set("priority", thought.Priority)
+	}
+	if p.TaskListID != nil {
+		set("task_list_id", thought.TaskListID)
+	}
+	if p.Notes != nil {
+		set("notes", thought.Notes)
+	}
+	if p.Subtasks != nil {
+		subtasksJSON, _ := json.Marshal(thought.Subtasks)
+		set("subtasks", string(subtasksJSON))
 	}
 	var center []CenterAdd
 	var queue []QueuedAdd
@@ -596,14 +626,27 @@ func (s *Store) UpdateTask(userID string, before *domain.Thought, p ThoughtPatch
 		return nil, nil, err
 	}
 	defer tx.Rollback()
-	if _, err := tx.Exec(
-		`UPDATE thoughts SET content = ?, tags = ?, is_completed = ?, due_date = ?, priority = ?, task_list_id = ?, kanban_status = ?, notes = ?, subtasks = ?,
-		     alarm_sent = CASE WHEN ? THEN 0 ELSE alarm_sent END, alarm_failures = CASE WHEN ? THEN 0 ELSE alarm_failures END
-		 WHERE id = ?`,
-		thought.Content, string(tagsJSON), completedInt, thought.DueDate, thought.Priority, thought.TaskListID, thought.KanbanStatus, thought.Notes, string(subtasksJSON),
-		rearm, rearm, thought.ID,
-	); err != nil {
-		return nil, nil, err
+	var tagsStr, subtasksStr string
+	var completed int
+	if err := tx.QueryRow(
+		`UPDATE thoughts SET `+strings.Join(sets, ", ")+` WHERE id = ?
+		 RETURNING content, tags, is_completed, due_date, priority, task_list_id, kanban_status, notes, subtasks`,
+		append(args, thought.ID)...,
+	).Scan(&thought.Content, &tagsStr, &completed, &thought.DueDate, &thought.Priority, &thought.TaskListID, &thought.KanbanStatus, &thought.Notes, &subtasksStr); err != nil {
+		return nil, nil, err // sql.ErrNoRows: deleted meanwhile
+	}
+	thought.IsCompleted = completed != 0
+	if thought.KanbanStatus == "" {
+		thought.KanbanStatus = "todo"
+		if thought.IsCompleted {
+			thought.KanbanStatus = "done"
+		}
+	}
+	thought.Tags = []string{}
+	_ = json.Unmarshal([]byte(tagsStr), &thought.Tags)
+	thought.Subtasks = []domain.SubTask{}
+	if subtasksStr != "" && subtasksStr != "null" {
+		_ = json.Unmarshal([]byte(subtasksStr), &thought.Subtasks)
 	}
 	if moved {
 		if err := pruneTaskAssignees(tx, thought.ID); err != nil {

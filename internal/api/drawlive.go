@@ -59,6 +59,9 @@ type drawMessage struct {
 	Touch    bool              `json:"touch"`
 	Gone     bool              `json:"gone"`
 	ClientID string            `json:"clientId"`
+	// Join: draw along in a running session only (someone asked to join one they saw); without one the
+	// answer is "ended" instead of a new session
+	Join bool `json:"join"`
 }
 
 func drawError(c *ws.Client, docID, blockID, code string) {
@@ -206,6 +209,11 @@ func (s *Server) drawJoin(c *ws.Client, p drawMessage) {
 	for _, ch := range left {
 		s.wsHub.LeaveRoom(c, drawRoom(ch.DocID, ch.BlockID))
 		s.syncDrawLease(ch.DocID, ch.BlockID)
+	}
+	// Joining a session that ended meanwhile starts none: live drawing begins only on purpose
+	if !running && p.Join {
+		drawError(c, p.DocID, p.BlockID, "ended")
+		return
 	}
 	if !running && !s.isDrawingBlock(p.DocID, p.BlockID) {
 		drawError(c, p.DocID, p.BlockID, "no_session")

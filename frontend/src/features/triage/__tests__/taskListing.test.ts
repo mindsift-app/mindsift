@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { KanbanColumn, TaskList, Thought } from '../../../lib/types';
-import { filterAndSortTasks, followTaskUpdate, groupTasks, tasksWithTag } from '../taskListing';
+import { filterAndSortTasks, followTaskUpdate, groupTasks, tagFilterLabel, tasksWithTag, toggleTag } from '../taskListing';
 
 const task = (id: string, t: Partial<Thought> = {}) =>
   ({ id, content: id, isCompleted: false, priority: 'normal', createdAt: '2026-01-01T00:00:00Z', ...t }) as Thought;
@@ -15,11 +15,37 @@ const ctx = (lists: TaskList[] = [], now = new Date(2026, 5, 15, 12, 0)) => ({ l
 describe('task listing', () => {
   it('filters by state and hashtag', () => {
     const tasks = [task('a', { tags: ['x'] }), task('b', { isCompleted: true, tags: ['x'] }), task('c')];
-    expect(ids(filterAndSortTasks(tasks, 'open', null, 'custom'))).toEqual(['a', 'c']);
-    expect(ids(filterAndSortTasks(tasks, 'done', null, 'custom'))).toEqual(['b']);
-    expect(ids(filterAndSortTasks(tasks, 'discarded', 'x', 'custom'))).toEqual(['a', 'b']);
-    expect(ids(tasksWithTag(tasks, 'x'))).toEqual(['a', 'b']);
-    expect(tasksWithTag(tasks, null)).toBe(tasks);
+    expect(ids(filterAndSortTasks(tasks, 'open', [], 'custom'))).toEqual(['a', 'c']);
+    expect(ids(filterAndSortTasks(tasks, 'done', [], 'custom'))).toEqual(['b']);
+    expect(ids(filterAndSortTasks(tasks, 'discarded', ['x'], 'custom'))).toEqual(['a', 'b']);
+    expect(ids(tasksWithTag(tasks, ['x']))).toEqual(['a', 'b']);
+    expect(tasksWithTag(tasks, [])).toBe(tasks);
+  });
+
+  it('shows a task with at least one of several hashtags', () => {
+    const tasks = [
+      task('a', { tags: ['garten'] }),
+      task('b', { tags: ['einkauf', 'garten'] }),
+      task('c', { tags: ['büro'] }),
+      task('d'),
+      task('e', { tags: ['einkauf'], isCompleted: true }),
+    ];
+    expect(ids(tasksWithTag(tasks, ['garten', 'einkauf']))).toEqual(['a', 'b', 'e']);
+    expect(ids(filterAndSortTasks(tasks, 'open', ['einkauf', 'büro'], 'alpha'))).toEqual(['b', 'c']);
+    expect(ids(tasksWithTag(tasks, ['urlaub']))).toEqual([]);
+  });
+
+  it('switches a hashtag of the filter on and off', () => {
+    expect(toggleTag([], 'garten')).toEqual(['garten']);
+    expect(toggleTag(['garten'], 'einkauf')).toEqual(['garten', 'einkauf']);
+    expect(toggleTag(['garten', 'einkauf'], 'garten')).toEqual(['einkauf']);
+    expect(toggleTag(['einkauf'], 'einkauf')).toEqual([]);
+  });
+
+  it('names the chosen hashtags compactly', () => {
+    expect(tagFilterLabel(['garten'])).toBe('#garten');
+    expect(tagFilterLabel(['garten', 'einkauf'])).toBe('#garten, #einkauf');
+    expect(tagFilterLabel(['garten', 'einkauf', 'büro'])).toBe('#garten +2');
   });
 
   it('sorts manually, by due date, priority, title and age', () => {
@@ -28,11 +54,11 @@ describe('task listing', () => {
       task('a', { sortOrder: 1, priority: 'urgent', createdAt: '2026-01-01T00:00:00Z' }),
       task('c', { sortOrder: 1, dueDate: '2026-06-10', priority: 'high', createdAt: '2026-01-03T00:00:00Z' }),
     ];
-    expect(ids(filterAndSortTasks(tasks, 'open', null, 'custom'))).toEqual(['c', 'a', 'b']); // tie: newest first
-    expect(ids(filterAndSortTasks(tasks, 'open', null, 'due'))).toEqual(['c', 'b', 'a']); // without date last
-    expect(ids(filterAndSortTasks(tasks, 'open', null, 'priority'))).toEqual(['a', 'c', 'b']);
-    expect(ids(filterAndSortTasks(tasks, 'open', null, 'alpha'))).toEqual(['a', 'b', 'c']);
-    expect(ids(filterAndSortTasks(tasks, 'open', null, 'created'))).toEqual(['c', 'b', 'a']);
+    expect(ids(filterAndSortTasks(tasks, 'open', [], 'custom'))).toEqual(['c', 'a', 'b']); // tie: newest first
+    expect(ids(filterAndSortTasks(tasks, 'open', [], 'due'))).toEqual(['c', 'b', 'a']); // without date last
+    expect(ids(filterAndSortTasks(tasks, 'open', [], 'priority'))).toEqual(['a', 'c', 'b']);
+    expect(ids(filterAndSortTasks(tasks, 'open', [], 'alpha'))).toEqual(['a', 'b', 'c']);
+    expect(ids(filterAndSortTasks(tasks, 'open', [], 'created'))).toEqual(['c', 'b', 'a']);
   });
 
   it('groups by list in tab order, tasks without a list first', () => {

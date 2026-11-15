@@ -58,6 +58,9 @@ type Store struct {
 	settingsMu    sync.Mutex
 	settingsCache *domain.SystemSettings
 	settingsGen   uint64
+
+	// docTaskMu: LockDocTasks, striped by note (task_doc_sync.go)
+	docTaskMu [64]sync.Mutex
 }
 
 func NewStore(dbPath string, opts ...StoreOption) (*Store, error) {

@@ -1,4 +1,4 @@
-import React, { Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import React, { Suspense, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { Expand, Maximize2, Pencil, RotateCcw, Save, Shrink } from 'lucide-react';
@@ -8,6 +8,7 @@ import { ConfirmPopover } from '../../../components/ConfirmPopover';
 import { AvatarStack } from '../../../components/AvatarStack';
 import { isWebSocketConnected, tryWebSocket } from '../../../lib/api';
 import { useLatestRef } from '../../../lib/useLatestRef';
+import { NoteSharedContext } from './noteShared';
 
 // The editor (with the live drawing) is a chunk of its own, loaded when a drawing is opened; the service
 // worker precaches it with the other assets, so it opens offline as well
@@ -85,7 +86,8 @@ interface DrawingBlockProps {
   live?: { userId: string; name: string; avatarUrl?: string }[];
 }
 
-/** How the editor is open: alone as before ('solo'), looking only ('view'), or in a live session */
+/** How the editor is open: alone ('solo', a live session can start from there in a shared note), looking
+ *  only ('view'), or joining or watching a running live session */
 type EditMode = 'solo' | 'view' | 'draw' | 'watch';
 
 // Drawing in a note: a preview that fills the note's width. Hovering leaves the page scrolling as usual; after
@@ -104,6 +106,8 @@ export const DrawingBlock: React.FC<DrawingBlockProps> = ({
   live,
 }) => {
   const { t } = useTranslation('workspace');
+  // Shared with someone: "Gemeinsam zeichnen" in the editor (someone else could join)
+  const shared = useContext(NoteSharedContext);
   const drawing = useMemo(() => parseDrawing(content), [content]);
   const boxRef = useRef<HTMLDivElement | null>(null);
   const [width, setWidth] = useState(0);
@@ -112,23 +116,48 @@ export const DrawingBlock: React.FC<DrawingBlockProps> = ({
   const [view, setView] = useState<View | null>(null);
   const viewRef = useRef<View | null>(null);
   const [dragHeight, setDragHeight] = useState<number | null>(null);
-  // With a WebSocket, editing is a live session others can join; without, alone as before
-  const editMode = (): EditMode => (canEdit ? (docId && isWebSocketConnected() ? 'draw' : 'solo') : 'view');
+  // Opening draws alone (the bullet held for this person); a live session starts only on purpose in the
+  // editor ("Gemeinsam zeichnen")
+  const editMode = (): EditMode => (canEdit ? 'solo' : 'view');
   const [editing, setEditing] = useState<EditMode | null>(() => (autoOpen && canEdit ? editMode() : null));
   // Someone draws live: join or watch (asked where the click was)
   const [ask, setAsk] = useState<{ x: number; y: number } | null>(null);
-  const liveNames = live?.length ? [...new Set(live.map((p) => p.name))] : [];
+  // The live session this browser was in just ended: the note may still report it until it syncs, and that
+  // must not ask to join a session that is over (until the note reports the bullet free, or 10 s at most)
+  const [endedHere, setEndedHere] = useState<number | null>(null);
+  useEffect(() => {
+    if (endedHere === null) return;
+    if (!live?.length) {
+      // The note reported the bullet free
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setEndedHere(null);
+      return;
+    }
+    const timer = window.setTimeout(() => setEndedHere(null), Math.max(0, endedHere + 10_000 - Date.now()));
+    return () => window.clearTimeout(timer);
+  }, [endedHere, live?.length]);
+  const liveNames = live?.length && endedHere === null ? [...new Set(live.map((p) => p.name))] : [];
   const openEditor = async (e?: { clientX: number; clientY: number }) => {
     const at = { x: e?.clientX ?? window.innerWidth / 2, y: e?.clientY ?? window.innerHeight / 3 };
-    // Fell back to SSE earlier (a dropped connection, a restart): give the WebSocket a fresh try first, so
-    // drawing along does not fail on an old fallback
-    if (canEdit && docId && !isWebSocketConnected()) await tryWebSocket(3000);
     if (liveNames.length && docId) {
+      // Fell back to SSE earlier (a dropped connection, a restart): give the WebSocket a fresh try first, so
+      // drawing along does not fail on an old fallback
+      if (canEdit && !isWebSocketConnected()) await tryWebSocket(3000);
       setAsk(at);
       return;
     }
     setEditing(editMode());
   };
+  // The session ended while the question was open: there is nothing to join, open the drawing
+  useEffect(() => {
+    if (!ask || liveNames.length) return;
+    // Follows the note's report that nobody draws any more
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setAsk(null);
+    setEditing(editMode());
+    // Only when the people drawing are gone, not when canEdit changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ask, liveNames.length]);
   // Only the first editor of a fresh drawing may turn it back into a bullet when nothing was drawn
   const freshRef = useRef(!!autoOpen);
   const pointers = useRef(new Map<number, { x: number; y: number }>());
@@ -493,7 +522,7 @@ export const DrawingBlock: React.FC<DrawingBlockProps> = ({
       {editing && (
         <Suspense fallback={null}>
           <DrawingEditor
-            // The live session holds the bullet itself
+            // Drawing alone keeps the bullet held (the editor stops once a live session holds it)
             onActivity={editing === 'solo' ? onActivity : undefined}
             initial={drawing}
             baseContent={content}
@@ -502,10 +531,13 @@ export const DrawingBlock: React.FC<DrawingBlockProps> = ({
             live={
               docId && (editing === 'draw' || editing === 'watch')
                 ? { docId, blockId, mode: editing, canDraw: canEdit && isWebSocketConnected() }
+                : docId && editing === 'solo'
+                ? { docId, blockId, mode: null, canDraw: true, canStart: shared }
                 : undefined
             }
-            onClose={(next) => {
+            onClose={(next, wasLive) => {
               setEditing(null);
+              if (wasLive) setEndedHere(Date.now());
               const fresh = freshRef.current;
               freshRef.current = false;
               if (next !== null) onChange(next);

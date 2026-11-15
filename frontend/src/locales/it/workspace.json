@@ -12,7 +12,8 @@
     "copied": "Copiato!",
     "copyTitle": "Copia negli appunti",
     "copy": "Copia",
-    "plain": "Testo"
+    "plain": "Testo",
+    "useTyped": "Usa «{{name}}» come linguaggio (senza evidenziazione)"
   },
   "table": {
     "menu": "Tabella: linee e colonne",
@@ -588,6 +589,9 @@
       "needsWebSocket": "Per disegnare insieme serve una connessione WebSocket; qui puoi guardare.",
       "drawAlong": "Disegna anche tu",
       "watch": "Guarda",
+      "start": "Disegna insieme",
+      "startTitle": "Avvia una sessione dal vivo: chi può modificare la nota può disegnare anche lui, chi può leggerla può guardare",
+      "needsWebSocketStart": "Per disegnare insieme serve una connessione WebSocket. Continui a disegnare da solo.",
       "label": "Dal vivo",
       "host": "Host: {{name}}",
       "youHost": "Sei l’host",
@@ -609,7 +613,7 @@
       "idle": "Al momento nessuno disegna. Lo stato non è ancora salvato.",
       "error": {
         "forbidden": "Non hai accesso per disegnare.",
-        "locked": "Qualcuno sta modificando il disegno senza connessione dal vivo – puoi solo guardare.",
+        "locked": "Qualcun altro sta modificando il disegno in questo momento – potrete disegnare insieme quando sarà libero.",
         "limit": "Il disegno è troppo grande per la sessione dal vivo. Togli qualcosa, soprattutto tratti a mano libera.",
         "too_many": "Stai già disegnando dal vivo in troppi disegni. Chiudine uno e riapri questo.",
         "busy": "In questo momento sul server ci sono troppi disegni dal vivo. Riaprilo più tardi.",

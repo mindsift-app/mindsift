@@ -31,6 +31,8 @@ IMAGE="mindsift-e2e-image:$RUN_ID"
 PLAIN_ADMIN_PASSWORD="Tour-Angebot-$RUN_ID"
 OIDC_ADMIN_PASSWORD="Notzugang-$RUN_ID"
 OIDC_CLIENT_SECRET="dex-client-$RUN_ID"
+# /metrics of the demo server, for the server memory measured by linked-todos.e2e.mjs
+METRICS_TOKEN="e2e-metrics-$RUN_ID"
 # A free port, none of the ones given
 free_port() {
   for p in $(shuf -i 18100-18999 -n 50); do
@@ -72,7 +74,7 @@ echo "Building the image …"
 "$ENGINE" build -q --build-arg SKIP_TESTS="${E2E_SKIP_TESTS:-0}" -t "$IMAGE" "$ROOT" >/dev/null
 # Straight to the app (not the entrypoint that hands /data to uid 1000): the test data stays the host
 # user's, so the script can remove it
-"$ENGINE" run -d --entrypoint /app/mindsift --name "$NAME" --network host -e PORT="$PORT" -e MINDSIFT_DEMO=true -e DEFAULT_LANGUAGE=de \
+"$ENGINE" run -d --entrypoint /app/mindsift --name "$NAME" --network host -e PORT="$PORT" -e MINDSIFT_DEMO=true -e DEFAULT_LANGUAGE=de -e METRICS_TOKEN="$METRICS_TOKEN" \
   -v "$WORK":/data:Z "$IMAGE" >/dev/null
 "$ENGINE" run -d --entrypoint /app/mindsift --name "$PLAIN_NAME" --network host -e PORT="$PLAIN_PORT" -e DEFAULT_LANGUAGE=de \
   -e BASE_URL="http://localhost:$PLAIN_PORT" \
@@ -104,10 +106,10 @@ if [ -z "$SETUP_CODE" ]; then
 fi
 
 echo "Starting the browser tests (port $PORT, without demo $PLAIN_PORT, OIDC $OIDC_PORT with Dex on $DEX_PORT, setup $SETUP_PORT) …"
-"$ENGINE" run --rm --network host -e MINDSIFT_URL="http://localhost:$PORT" \
+"$ENGINE" run --rm --network host -e MINDSIFT_URL="http://localhost:$PORT" -e METRICS_TOKEN="$METRICS_TOKEN" \
   -e MINDSIFT_PLAIN_URL="http://localhost:$PLAIN_PORT" -e MINDSIFT_PLAIN_ADMIN=admin -e MINDSIFT_PLAIN_PASSWORD="$PLAIN_ADMIN_PASSWORD" \
   -e MINDSIFT_OIDC_URL="http://localhost:$OIDC_PORT" -e MINDSIFT_OIDC_ADMIN=admin -e MINDSIFT_OIDC_PASSWORD="$OIDC_ADMIN_PASSWORD" \
   -e MINDSIFT_SETUP_URL="http://localhost:$SETUP_PORT" -e MINDSIFT_SETUP_CODE="$SETUP_CODE" \
   -v "$ROOT/e2e":/e2e:Z -w /e2e \
   mcr.microsoft.com/playwright:v1.65.0-noble \
-  sh -c 'npm install --no-audit --no-fund >/dev/null 2>&1 && node collab.e2e.mjs && node share.e2e.mjs && node lock.e2e.mjs && node copy.e2e.mjs && node secrets.e2e.mjs && node drawing-live.e2e.mjs && node table.e2e.mjs && node live.e2e.mjs && node channels.e2e.mjs && node offline.e2e.mjs && node tour.e2e.mjs && node tour-offer.e2e.mjs && node mfa.e2e.mjs && node passkey.e2e.mjs && node oidc.e2e.mjs && node setup.e2e.mjs'
+  sh -c 'npm install --no-audit --no-fund >/dev/null 2>&1 && node collab.e2e.mjs && node share.e2e.mjs && node lock.e2e.mjs && node copy.e2e.mjs && node secrets.e2e.mjs && node drawing-live.e2e.mjs && node table.e2e.mjs && node live.e2e.mjs && node linked-todos.e2e.mjs && node channels.e2e.mjs && node offline.e2e.mjs && node tour.e2e.mjs && node tour-offer.e2e.mjs && node mfa.e2e.mjs && node passkey.e2e.mjs && node oidc.e2e.mjs && node setup.e2e.mjs'
