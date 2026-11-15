@@ -129,12 +129,12 @@ If something here is out of date or unfair, please open an issue.
 
 ### Not yet, but planned
 
-* **SAML and LDAP:** single sign-on is OpenID Connect only.
 * **Signing out at the provider signs you out of MindSift:** today a MindSift session lasts until it expires, even after you sign out at the provider. (Signing out of MindSift keeps you signed in at the provider, on purpose.)
-* **Time zones per person:** one time zone per server, not per person (Administration → Server, or `TZ`).
 
 ### Not in MindSift, for a reason
 
+* **SAML and LDAP:** single sign-on is OpenID Connect only. Providers such as Authentik, Keycloak or Entra ID speak it and connect your LDAP or Active Directory, so MindSift does not have to.
+* **Time zones per person:** one time zone per server (Administration → Server, or `TZ`); reminders, the daily summary and due dates all follow it. Ask if you need more.
 * **PostgreSQL or MySQL:** SQLite on purpose (see [design decisions](#design-decisions)).
 * **Backups to S3, WebDAV or SFTP:** backups go to `data/backups/`, where the administration restores them with one click. Copying them elsewhere belongs to the backup you run for the whole server, not to each app.
 * **A Helm chart:** it is a single container with one volume; Docker Compose, or a small Kubernetes manifest of your own, is all it takes.
