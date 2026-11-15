@@ -684,7 +684,9 @@
       "server": "Server & sharing",
       "serverHint": "Sharing & registration",
       "smtp": "Email / SMTP server",
-      "smtpHint": "Mail delivery for alarms"
+      "smtpHint": "Mail delivery for alarms",
+      "audit": "Audit log",
+      "auditHint": "Who changed what, and when"
     },
     "demo": "Disabled in the demo: server settings, email and accounts can only be viewed here.",
     "userCreated": "User “{{name}}” was created.",
@@ -1068,6 +1070,138 @@
       "off": "Looking for new versions is switched off (UPDATE_CHECK=false).",
       "demo": "The demo does not look for new versions.",
       "devBuild": "This build is not a released version, so MindSift does not look for new versions."
+    }
+  },
+  "audit": {
+    "title": "Audit log",
+    "intro": "Who changed accounts, roles and server settings, and when – in the administration, on the command line or automatically by the sign-in provider. Entries are kept for a year. Passwords and other secrets never appear, only that they were changed; IP addresses are not stored.",
+    "loadFailed": "The audit log could not be loaded",
+    "loading": "Loading …",
+    "empty": "No entries yet.",
+    "emptyFiltered": "No entries for this filter.",
+    "more": "Load older entries",
+    "deletedAccount": "Deleted account",
+    "filter": {
+      "action": "Action",
+      "account": "Account",
+      "allActions": "All actions",
+      "allAccounts": "All accounts",
+      "reset": "Reset filters"
+    },
+    "col": {
+      "time": "Time",
+      "actor": "Who",
+      "action": "What",
+      "target": "Affected"
+    },
+    "actor": {
+      "cli": "Command line",
+      "oidc": "Sign-in provider",
+      "system": "Server"
+    },
+    "target": {
+      "settings": "Server settings",
+      "inviteLink": "Invite link",
+      "organization": "Organization",
+      "backup": "Server backup"
+    },
+    "action": {
+      "account_created": "Account created",
+      "account_deleted": "Account deleted",
+      "account_approved": "Registration approved",
+      "account_role_changed": "Role changed",
+      "account_disabled": "Account locked",
+      "account_enabled": "Account unlocked",
+      "account_updated": "Account details changed",
+      "account_password_reset": "Password reset",
+      "account_mfa_reset": "Two-factor sign-in reset",
+      "invite_created": "Invite created",
+      "invite_sent": "Invite sent",
+      "invite_revoked": "Invite revoked",
+      "organization_created": "Organization created",
+      "organization_renamed": "Organization renamed",
+      "organization_deleted": "Organization deleted",
+      "organization_member_added": "Added to organization",
+      "organization_member_removed": "Removed from organization",
+      "settings_changed": "Server settings changed",
+      "setup_finished": "Setup finished",
+      "backup_created": "Backup created",
+      "backup_deleted": "Backup deleted",
+      "backup_downloaded": "Backup downloaded"
+    },
+    "detail": {
+      "fromTo": "{{label}}: {{from}} → {{to}}",
+      "changed": "{{label}}: changed",
+      "value": "{{label}}: {{value}}",
+      "renamed": "“{{from}}” → “{{to}}”",
+      "viaEnv": "From ADMIN_USER at the first start",
+      "secondFactorsRemoved": "Second factors removed",
+      "pendingRegistration": "Registration rejected",
+      "content": "With {{notes}} notes, {{tasks}} tasks, {{lists}} lists"
+    },
+    "value": {
+      "on": "on",
+      "off": "off",
+      "empty": "(empty)",
+      "sharingMode": {
+        "private": "Private",
+        "organizations": "Within organizations",
+        "open": "Open"
+      },
+      "registrationMode": {
+        "closed": "Closed",
+        "approval": "With approval",
+        "domain": "Certain email domains",
+        "domain_approval": "Domains at once, others after approval",
+        "open": "Open"
+      },
+      "mfaRequired": {
+        "admins": "Admins",
+        "all": "Everyone"
+      }
+    },
+    "field": {
+      "sharingMode": "Sharing",
+      "registrationMode": "Registration",
+      "registrationDomains": "Allowed email domains",
+      "registrationVerifyEmail": "Confirm email address",
+      "instanceName": "Instance name",
+      "smtpHost": "SMTP server",
+      "smtpPort": "SMTP port",
+      "smtpUser": "SMTP user",
+      "smtpPass": "SMTP password",
+      "smtpFrom": "Sender address",
+      "smtpFromName": "Sender name",
+      "smtpTls": "TLS",
+      "smtpSkipVerify": "Skip certificate check",
+      "allowPrivateWebhooks": "Webhooks into the local network",
+      "pushKnownServicesOnly": "Push via known services only",
+      "mfaRequired": "Two-factor required",
+      "backupEnabled": "Daily backups",
+      "backupTime": "Backup time",
+      "backupRetentionDays": "Keep backups (days)",
+      "retentionAllowNever": "Keep forever",
+      "mcpEnabled": "AI agents (MCP)",
+      "peopleSearch": "People search",
+      "publicLinks": "Public links",
+      "publicLinkMaxDays": "Public links at most (days)",
+      "calendarFeeds": "Calendar subscriptions",
+      "linkPreviews": "Link previews",
+      "defaultLanguage": "Default language",
+      "timeZone": "Time zone",
+      "displayName": "Display name",
+      "username": "Username",
+      "email": "Email address",
+      "discordWebhookUrl": "Discord webhook",
+      "role": "Role",
+      "group": "Group",
+      "organizations": "Organizations",
+      "organization": "Organization",
+      "provider": "Provider",
+      "recipient": "To",
+      "maxUses": "Uses",
+      "expiresAt": "Valid until",
+      "file": "File"
     }
   }
 }

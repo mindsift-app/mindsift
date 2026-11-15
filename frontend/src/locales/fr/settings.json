@@ -684,7 +684,9 @@
       "server": "Serveur & partage",
       "serverHint": "Partage et inscription",
       "smtp": "E-mail / Serveur SMTP",
-      "smtpHint": "Envoi d'e-mails pour les alarmes"
+      "smtpHint": "Envoi d'e-mails pour les alarmes",
+      "audit": "Journal",
+      "auditHint": "Qui a modifié quoi, et quand"
     },
     "demo": "Désactivé dans la démo : les paramètres du serveur, les e-mails et les comptes ne peuvent être consultés qu'ici.",
     "userCreated": "L’utilisateur « {{name}} » a été créé.",
@@ -1068,6 +1070,138 @@
       "off": "La recherche de nouvelles versions est désactivée (UPDATE_CHECK=false).",
       "demo": "La démo ne recherche pas de nouvelles versions.",
       "devBuild": "Ce build n’est pas une version publiée, MindSift ne recherche donc pas de nouvelles versions."
+    }
+  },
+  "audit": {
+    "title": "Journal d'audit",
+    "intro": "Qui a modifié les comptes, les rôles et les réglages du serveur, et quand : dans l'administration, en ligne de commande ou automatiquement par le fournisseur de connexion. Les entrées sont conservées un an. Les mots de passe et autres secrets n'y figurent jamais, seulement le fait qu'ils ont été modifiés ; les adresses IP ne sont pas enregistrées.",
+    "loadFailed": "Le journal n'a pas pu être chargé",
+    "loading": "Chargement …",
+    "empty": "Aucune entrée pour le moment.",
+    "emptyFiltered": "Aucune entrée pour ce filtre.",
+    "more": "Charger les entrées plus anciennes",
+    "deletedAccount": "Compte supprimé",
+    "filter": {
+      "action": "Action",
+      "account": "Compte",
+      "allActions": "Toutes les actions",
+      "allAccounts": "Tous les comptes",
+      "reset": "Réinitialiser les filtres"
+    },
+    "col": {
+      "time": "Heure",
+      "actor": "Qui",
+      "action": "Quoi",
+      "target": "Concerné"
+    },
+    "actor": {
+      "cli": "Ligne de commande",
+      "oidc": "Fournisseur de connexion",
+      "system": "Serveur"
+    },
+    "target": {
+      "settings": "Réglages du serveur",
+      "inviteLink": "Lien d'invitation",
+      "organization": "Organisation",
+      "backup": "Sauvegarde du serveur"
+    },
+    "action": {
+      "account_created": "Compte créé",
+      "account_deleted": "Compte supprimé",
+      "account_approved": "Inscription validée",
+      "account_role_changed": "Rôle modifié",
+      "account_disabled": "Compte bloqué",
+      "account_enabled": "Compte débloqué",
+      "account_updated": "Données du compte modifiées",
+      "account_password_reset": "Mot de passe réinitialisé",
+      "account_mfa_reset": "Connexion à deux facteurs réinitialisée",
+      "invite_created": "Invitation créée",
+      "invite_sent": "Invitation envoyée",
+      "invite_revoked": "Invitation révoquée",
+      "organization_created": "Organisation créée",
+      "organization_renamed": "Organisation renommée",
+      "organization_deleted": "Organisation supprimée",
+      "organization_member_added": "Ajouté à l'organisation",
+      "organization_member_removed": "Retiré de l'organisation",
+      "settings_changed": "Réglages du serveur modifiés",
+      "setup_finished": "Configuration initiale terminée",
+      "backup_created": "Sauvegarde créée",
+      "backup_deleted": "Sauvegarde supprimée",
+      "backup_downloaded": "Sauvegarde téléchargée"
+    },
+    "detail": {
+      "fromTo": "{{label}} : {{from}} → {{to}}",
+      "changed": "{{label}} : modifié",
+      "value": "{{label}} : {{value}}",
+      "renamed": "« {{from}} » → « {{to}} »",
+      "viaEnv": "Depuis ADMIN_USER au premier démarrage",
+      "secondFactorsRemoved": "Seconds facteurs supprimés",
+      "pendingRegistration": "Inscription refusée",
+      "content": "Avec {{notes}} notes, {{tasks}} tâches, {{lists}} listes"
+    },
+    "value": {
+      "on": "activé",
+      "off": "désactivé",
+      "empty": "(vide)",
+      "sharingMode": {
+        "private": "Privé",
+        "organizations": "Au sein des organisations",
+        "open": "Ouvert"
+      },
+      "registrationMode": {
+        "closed": "Fermée",
+        "approval": "Avec validation",
+        "domain": "Certains domaines e-mail",
+        "domain_approval": "Domaines tout de suite, autres après validation",
+        "open": "Ouverte"
+      },
+      "mfaRequired": {
+        "admins": "Admins",
+        "all": "Tout le monde"
+      }
+    },
+    "field": {
+      "sharingMode": "Partage",
+      "registrationMode": "Inscription",
+      "registrationDomains": "Domaines e-mail autorisés",
+      "registrationVerifyEmail": "Confirmer l'adresse e-mail",
+      "instanceName": "Nom de l'instance",
+      "smtpHost": "Serveur SMTP",
+      "smtpPort": "Port SMTP",
+      "smtpUser": "Utilisateur SMTP",
+      "smtpPass": "Mot de passe SMTP",
+      "smtpFrom": "Adresse d'expéditeur",
+      "smtpFromName": "Nom d'expéditeur",
+      "smtpTls": "TLS",
+      "smtpSkipVerify": "Ne pas vérifier le certificat",
+      "allowPrivateWebhooks": "Webhooks vers le réseau local",
+      "pushKnownServicesOnly": "Push uniquement via des services connus",
+      "mfaRequired": "Deux facteurs obligatoires",
+      "backupEnabled": "Sauvegardes quotidiennes",
+      "backupTime": "Heure de sauvegarde",
+      "backupRetentionDays": "Conserver les sauvegardes (jours)",
+      "retentionAllowNever": "Conservation illimitée",
+      "mcpEnabled": "Agents IA (MCP)",
+      "peopleSearch": "Recherche de personnes",
+      "publicLinks": "Liens publics",
+      "publicLinkMaxDays": "Liens publics au plus (jours)",
+      "calendarFeeds": "Abonnements calendrier",
+      "linkPreviews": "Aperçus de liens",
+      "defaultLanguage": "Langue par défaut",
+      "timeZone": "Fuseau horaire",
+      "displayName": "Nom d'affichage",
+      "username": "Nom d'utilisateur",
+      "email": "Adresse e-mail",
+      "discordWebhookUrl": "Webhook Discord",
+      "role": "Rôle",
+      "group": "Groupe",
+      "organizations": "Organisations",
+      "organization": "Organisation",
+      "provider": "Fournisseur",
+      "recipient": "À",
+      "maxUses": "Utilisations",
+      "expiresAt": "Valable jusqu'au",
+      "file": "Fichier"
     }
   }
 }

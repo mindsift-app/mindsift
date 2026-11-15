@@ -9,6 +9,7 @@ import {
   ArrowLeft,
   CircleAlert,
   BuildingComplex,
+  ScrollText,
 } from 'lucide-react';
 import {
   User,
@@ -18,13 +19,14 @@ import { UsersSection } from './admin/UsersSection';
 import { OrganizationsSection } from './admin/OrganizationsSection';
 import { ServerSection } from './admin/ServerSection';
 import { SmtpSection } from './admin/SmtpSection';
+import { AuditSection } from './admin/AuditSection';
 
 interface AdminSettingsViewProps {
   currentUser: User;
   onBack: () => void;
 }
 
-type AdminSection = 'users' | 'organizations' | 'server' | 'smtp';
+type AdminSection = 'users' | 'organizations' | 'server' | 'smtp' | 'audit';
 
 export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
   currentUser,
@@ -154,6 +156,21 @@ export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
                   <p className="text-[10px] text-faint">{t('admin.nav.smtpHint')}</p>
                 </div>
               </button>
+
+              <button
+                onClick={() => setSection('audit')}
+                className={`w-full px-3.5 py-3 text-left text-xs font-medium flex items-center gap-2.5 transition-colors ${
+                  section === 'audit'
+                    ? 'bg-panel-elevated text-main border-l-2 border-l-accent'
+                    : 'text-muted hover:text-main hover:bg-canvas/50'
+                }`}
+              >
+                <ScrollText className="w-4 h-4 text-accent shrink-0" />
+                <div>
+                  <p className="font-semibold">{t('admin.nav.audit')}</p>
+                  <p className="text-[10px] text-faint">{t('admin.nav.auditHint')}</p>
+                </div>
+              </button>
             </>
           )}
         </aside>
@@ -187,6 +204,11 @@ export const AdminSettingsView: React.FC<AdminSettingsViewProps> = ({
           {/* SECTION 4: E-MAIL / SMTP-SERVER (SERVER-ADMIN ONLY) */}
           {/* ================================================================= */}
           {section === 'smtp' && isServerAdmin && <SmtpSection admin={admin} />}
+
+          {/* ================================================================= */}
+          {/* SECTION 5: PROTOKOLL – WHO CHANGED WHAT (SERVER-ADMIN ONLY) */}
+          {/* ================================================================= */}
+          {section === 'audit' && isServerAdmin && <AuditSection users={admin.users} />}
         </div>
       </div>
     </div>

@@ -431,6 +431,26 @@ export interface TeamMember {
   joinedAt: string;
 }
 
+// One row of the administration's audit log (GET /admin/audit)
+export interface AuditEntry {
+  id: number;
+  at: string;
+  actorKind: 'user' | 'cli' | 'oidc' | 'system';
+  actorId?: string;
+  actorName?: string;
+  action: string;
+  targetKind?: 'user' | 'settings' | 'invite' | 'organization' | 'backup';
+  targetId?: string;
+  targetName?: string;
+  details?: Record<string, unknown>;
+  source: 'web' | 'cli' | 'oidc' | 'system';
+}
+
+export interface AuditPage {
+  entries: AuditEntry[];
+  nextBefore: number;
+}
+
 // The mail server as the administration and the setup wizard edit it (SmtpFields)
 export type SmtpForm = Pick<
   SystemSettings,
