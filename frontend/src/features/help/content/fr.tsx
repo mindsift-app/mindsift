@@ -562,7 +562,7 @@ const fr: HelpContent = {
       title: 'Sous-tâches, échéances & alertes automatiques',
       subtitle: 'Listes de contrôle avec barre de progression, notes en Markdown et notifications',
       icon: SquareCheckBig,
-      keywords: ['sous-tâches', 'alarmes', 'notifications', 'e-mail', 'discord', 'date', 'échéance', 'fuseau horaire', 'priorité', 'assigner', 'assigné'],
+      keywords: ['sous-tâches', 'alarmes', 'notifications', 'e-mail', 'discord', 'date', 'échéance', 'fuseau horaire', 'priorité', 'assigner', 'assigné', 'calendrier', 'abonnement', 'ical'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
           <ul className="space-y-1.5">
@@ -611,7 +611,7 @@ const fr: HelpContent = {
       title: 'Listes partagées, quantités & catégories par hashtag',
       subtitle: 'Listes de courses en temps réel, listes de bagages et check-lists',
       icon: ShoppingCart,
-      keywords: ['listes', 'courses', 'achats', 'checklist', 'quantités', 'catégories', 'hashtag', 'temps réel'],
+      keywords: ['listes', 'courses', 'achats', 'checklist', 'quantités', 'catégories', 'hashtag', 'temps réel', 'suggestions'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
           <p>Les listes partagées sont idéales pour les courses communes, les valises et les listes de choses à faire à plusieurs :</p>

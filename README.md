@@ -69,14 +69,14 @@ One note per day, all days below each other, with a calendar to jump around (dot
 </p>
 
 ### 🛒 Shared lists
-Shopping, packing and checklists with quantities and categories by hashtag (`oat milk #fridge`). Tick something off at the supermarket and it's gone on everyone's phone right away.
+Shopping, packing and checklists with quantities and categories by hashtag (`oat milk #fridge`). Tick something off at the supermarket and it's gone on everyone's phone right away. While you type a new item, the list suggests what you have added to it before.
 
 <p align="center">
   <img src="screenshots/Listen_desktop.webp" alt="MindSift shared lists" width="90%" />
 </p>
 
 ### ⚡ Quick capture & triage
-Capture a thought without picking a folder: the input bar (`C` or `/`), voice input (in the browser or through your own Whisper server), your phone's share menu or the API. Everything lands in an inbox, and the swipe-style triage empties it later, one card at a time: a key (`H`/`L`, arrows) or a swipe discards a card or turns it into a task, a note or a list item.
+Capture a thought without picking a folder: the Quick Dump window (`C`, or the + in the sidebar or on the phone), voice input (in the browser or through your own Whisper server), your phone's share menu or the API. Write a due date into the text ("dentist tomorrow 2pm") and it is recognised while you type, without AI. Everything lands in an inbox, and the swipe-style triage empties it later, one card at a time: a key (`H`/`L`, arrows) or a swipe discards a card or turns it into a task, a note or a list item.
 
 <p align="center">
   <img src="screenshots/Triage_desktop.webp" alt="MindSift triage on the desktop, light theme on the left, dark on the right" width="85%" />

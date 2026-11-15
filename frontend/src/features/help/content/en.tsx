@@ -561,7 +561,7 @@ const en: HelpContent = {
       title: 'Subtasks, due dates & automatic alarms',
       subtitle: 'Checklists with a progress bar, Markdown notes and notifications',
       icon: SquareCheckBig,
-      keywords: ['subtasks', 'alarms', 'notifications', 'mail', 'discord', 'date', 'due date', 'time zone', 'priority', 'assign', 'assigned'],
+      keywords: ['subtasks', 'alarms', 'notifications', 'mail', 'discord', 'date', 'due date', 'time zone', 'priority', 'assign', 'assigned', 'calendar', 'subscription', 'ical'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
           <ul className="space-y-1.5">
@@ -616,7 +616,7 @@ const en: HelpContent = {
       title: 'Shared lists, quantities & hashtag categories',
       subtitle: 'Real-time shopping lists, packing lists and checklists',
       icon: ShoppingCart,
-      keywords: ['lists', 'shopping', 'groceries', 'checklist', 'quantities', 'categories', 'hashtag', 'realtime'],
+      keywords: ['lists', 'shopping', 'groceries', 'checklist', 'quantities', 'categories', 'hashtag', 'realtime', 'suggestions'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
           <p>Shared lists are perfect for shopping, packing lists and errands together:</p>

@@ -561,7 +561,7 @@ const it: HelpContent = {
       title: 'Sottoattività, date di scadenza e notifiche automatiche',
       subtitle: 'Liste di controllo con barra di avanzamento, note in Markdown e notifiche',
       icon: SquareCheckBig,
-      keywords: ['sottoattività', 'notifiche', 'avvisi', 'email', 'discord', 'data', 'scadenza', 'fuso orario', 'priorità', 'assegna', 'assegnato'],
+      keywords: ['sottoattività', 'notifiche', 'avvisi', 'email', 'discord', 'data', 'scadenza', 'fuso orario', 'priorità', 'assegna', 'assegnato', 'calendario', 'abbonamento', 'ical'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
           <ul className="space-y-1.5">
@@ -616,7 +616,7 @@ const it: HelpContent = {
       title: 'Liste condivise, quantità e categorie hashtag',
       subtitle: 'Liste della spesa, liste bagagli e liste di controllo in tempo reale',
       icon: ShoppingCart,
-      keywords: ['liste', 'spesa', 'checklist', 'quantità', 'categorie', 'hashtag', 'tempo reale'],
+      keywords: ['liste', 'spesa', 'checklist', 'quantità', 'categorie', 'hashtag', 'tempo reale', 'suggerimenti'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
           <p>Le liste condivise sono ideali per fare la spesa, preparare la valigia o gestire commissioni insieme:</p>

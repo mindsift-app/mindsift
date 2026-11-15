@@ -726,6 +726,9 @@ const de: HelpContent = {
         'priorität',
         'zuweisen',
         'zugewiesen',
+        'kalender',
+        'abo',
+        'ical',
       ],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
@@ -790,6 +793,7 @@ const de: HelpContent = {
         'kategorien',
         'hashtag',
         'realtime',
+        'vorschläge',
       ],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">

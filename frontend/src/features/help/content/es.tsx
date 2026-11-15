@@ -639,6 +639,9 @@ const es: HelpContent = {
         'prioridad',
         'asignar',
         'asignado',
+        'calendario',
+        'suscripción',
+        'ical',
       ],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
@@ -694,7 +697,7 @@ const es: HelpContent = {
       title: 'Listas compartidas, cantidades y categorías por hashtag',
       subtitle: 'Listas de la compra, equipaje y verificación en tiempo real',
       icon: ShoppingCart,
-      keywords: ['listas', 'compra', 'supermercado', 'verificacion', 'cantidades', 'categorias', 'hashtag', 'tiempo real'],
+      keywords: ['listas', 'compra', 'supermercado', 'verificacion', 'cantidades', 'categorias', 'hashtag', 'tiempo real', 'sugerencias'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
           <p>Las listas compartidas son ideales para compras, equipaje y recados en común:</p>
