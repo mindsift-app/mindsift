@@ -209,5 +209,13 @@ export function parsePastedLines(rawLines: string[]): PastedItem[] {
   flush();
   // A fence without its closing line runs to the end (CommonMark), e.g. a code block copied without its last line
   closeFence(false);
-  return items;
+  // A line that is only a MindSift file reference (lib/media.ts) was an image or audio bullet when copied:
+  // it comes back as one; the server checks the reference like any other (mediaGate)
+  return items.map((item) =>
+    item.type === 'text' && MEDIA_LINE.test(item.content.trim())
+      ? { ...item, type: item.content.trim().startsWith('!') ? 'image' : 'audio', content: item.content.trim() }
+      : item,
+  );
 }
+
+const MEDIA_LINE = /^!?\[(?:[^\]\\]|\\.)*\]\(media:med_[0-9a-f]+\)$/;
