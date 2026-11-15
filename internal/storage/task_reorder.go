@@ -23,7 +23,8 @@ type TaskReorderResult struct {
 	Written int
 	// Audience: everyone who sees one of the moved tasks (owners and everyone with access to their lists)
 	Audience []string
-	// Spawned: a repeating task was completed and got its next occurrence (a new task the move does not list)
+	// Spawned: a repeating task was completed and got its next occurrence (a new task the move does not
+	// list). Reopened, its untouched occurrence goes with TASK_DELETED (OnTaskRemoved).
 	Spawned bool
 }
 
@@ -192,6 +193,7 @@ func (s *Store) applyTaskOrder(items []domain.ThoughtReorderItem, expected map[s
 	}
 	var changes []change
 	var completed []string // tasks that move into "done" now (repeating ones spawn their successor)
+	var reopened []string  // repeating tasks that move out of "done" (their untouched successor goes)
 	for _, it := range items {
 		cur, ok := current[it.ID]
 		if !ok {
@@ -218,6 +220,8 @@ func (s *Store) applyTaskOrder(items []domain.ThoughtReorderItem, expected map[s
 			if cur.recurrence != "" {
 				res.Spawned = true
 			}
+		} else if !next.done && cur.done && cur.recurrence != "" {
+			reopened = append(reopened, it.ID)
 		}
 	}
 
@@ -249,6 +253,9 @@ func (s *Store) applyTaskOrder(items []domain.ThoughtReorderItem, expected map[s
 	res.Written = len(changes)
 	for _, id := range completed {
 		s.spawnNextOccurrence(id)
+	}
+	for _, id := range reopened {
+		s.dropUntouchedSuccessor(id)
 	}
 	return res, nil
 }

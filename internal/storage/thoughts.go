@@ -770,6 +770,8 @@ func (s *Store) UpdateTask(userID string, before *domain.Thought, p ThoughtPatch
 	}
 	if !wasCompleted && thought.IsCompleted && thought.Recurrence != "" {
 		s.spawnNextOccurrence(thought.ID)
+	} else if wasCompleted && !thought.IsCompleted && thought.Recurrence != "" {
+		s.dropUntouchedSuccessor(thought.ID)
 	}
 	return thought, added, nil
 }
@@ -922,9 +924,11 @@ func (s *Store) SyncTaskFromBlockCheck(userID, taskID string, checked bool) {
 	res, _ := s.db.Exec(`UPDATE thoughts SET is_completed = ?, kanban_status = ?, alarm_sent = CASE WHEN ? = 0 THEN 0 ELSE alarm_sent END,
 		 alarm_failures = CASE WHEN ? = 0 THEN 0 ELSE alarm_failures END
 		 WHERE id = ? AND user_id = ? AND is_completed != ?`, doneInt, kanban, doneInt, doneInt, taskID, userID, doneInt)
-	if checked && res != nil {
-		if n, _ := res.RowsAffected(); n > 0 {
+	if res != nil {
+		if n, _ := res.RowsAffected(); n > 0 && checked {
 			s.spawnNextOccurrence(taskID)
+		} else if n > 0 {
+			s.dropUntouchedSuccessor(taskID)
 		}
 	}
 }

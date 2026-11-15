@@ -88,6 +88,7 @@ var migrations = []migration{
 	{62, "History of list items for suggestions while typing", (*Store).migrateListItemHistory},
 	{63, "New password at the next sign-in after a reset by the administration", (*Store).migrateMustChangePassword},
 	{65, "When a task was last ticked, opened or moved to another column", (*Store).migrateTaskStatusChangedAt},
+	{66, "Repeating tasks know the occurrence they follow", (*Store).migrateRecurrenceOf},
 }
 
 // migrationBlockRefs creates block_refs: until it has run (earlier steps that rewrite notes), writing a
@@ -424,6 +425,16 @@ func (s *Store) migrateTaskStatusChangedAt() error {
 			AND NEW.status_changed_at = OLD.status_changed_at BEGIN
 			UPDATE thoughts SET status_changed_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = NEW.id;
 		END`)
+}
+
+// migrateRecurrenceOf: thoughts.recurrence_of is the task a repeating task's next occurrence was spawned
+// from (spawnNextOccurrence). A task spawns again whenever it is completed and has no open successor;
+// recurrence_spawned (spawned once, for good) is no longer read. Successors spawned before stay unlinked.
+func (s *Store) migrateRecurrenceOf() error {
+	if err := s.addColumnIfMissing("thoughts", "recurrence_of", "TEXT NOT NULL DEFAULT ''"); err != nil {
+		return err
+	}
+	return s.execSchemaStatement(`CREATE INDEX IF NOT EXISTS idx_thoughts_recurrence_of ON thoughts(recurrence_of) WHERE recurrence_of != ''`)
 }
 
 func (s *Store) migrateSearchCoverIndex() error {

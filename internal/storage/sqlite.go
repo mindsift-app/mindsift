@@ -28,6 +28,8 @@ type Store struct {
 	initMu       sync.Mutex
 	// importMu: imports are applied one at a time (ApplyImport)
 	importMu sync.Mutex
+	// recurrenceMu: the check for an open successor and spawning one go together (spawnNextOccurrence)
+	recurrenceMu sync.Mutex
 	// dataDir is the directory of the database file ($DATA_DIR); empty for databases without a file
 	dataDir string
 	// mediaRoot holds the files of images and audio in notes ($DATA_DIR/media), see media.go
@@ -51,6 +53,9 @@ type Store struct {
 	// OnTaskCreated is told about tasks the store creates by itself (next occurrence of a repeating
 	// task), so the server can push them to connected clients.
 	OnTaskCreated func(*domain.Thought)
+	// OnTaskRemoved is told about tasks the store removes by itself (the untouched next occurrence of a
+	// repeating task that was reopened), with the task as it was.
+	OnTaskRemoved func(*domain.Thought)
 
 	// ConfiguredLanguage is DEFAULT_LANGUAGE, the default language until an admin picks one
 	ConfiguredLanguage string

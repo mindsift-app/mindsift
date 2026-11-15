@@ -213,6 +213,7 @@ func (s *Store) ReconcileDocTaskLinksNotify(docID string, plan func([]TaskReconc
 	var changed []TaskReconciled
 	var stmts []sqlStmt
 	var completed []string // repeating tasks ticked: their next occurrence follows the write
+	var reopened []string  // repeating tasks unticked: their untouched next occurrence goes after the write
 	for blockID, taskID := range links {
 		t := tasks[taskID]
 		if t == nil {
@@ -250,6 +251,9 @@ func (s *Store) ReconcileDocTaskLinksNotify(docID string, plan func([]TaskReconc
 				// Reopened: its due alarm comes again, as when reopened in the task view (UpdateTask)
 				after.AlarmSent = false
 				sets = append(sets, "alarm_sent = 0", "alarm_failures = 0")
+				if after.Recurrence != "" {
+					reopened = append(reopened, taskID)
+				}
 			} else if after.Recurrence != "" {
 				completed = append(completed, taskID)
 			}
@@ -310,6 +314,10 @@ func (s *Store) ReconcileDocTaskLinksNotify(docID string, plan func([]TaskReconc
 	// A repeating task ticked in its note repeats, as when completed in the task view (UpdateTask)
 	for _, id := range completed {
 		s.spawnNextOccurrence(id)
+	}
+	// ... and unticked again, its untouched next occurrence goes
+	for _, id := range reopened {
+		s.dropUntouchedSuccessor(id)
 	}
 	return changed, added
 }

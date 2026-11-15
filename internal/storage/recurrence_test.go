@@ -44,7 +44,7 @@ func TestNextDueDateCountsFromTheServersDay(t *testing.T) {
 	}
 }
 
-func TestRepeatingTaskSpawnsItsSuccessorOnce(t *testing.T) {
+func TestRepeatingTaskSpawnsItsSuccessor(t *testing.T) {
 	store, err := NewStore(filepath.Join(t.TempDir(), "recur.db"))
 	if err != nil {
 		t.Fatalf("NewStore: %v", err)
@@ -89,20 +89,27 @@ func TestRepeatingTaskSpawnsItsSuccessorOnce(t *testing.T) {
 		t.Errorf("the completed task stays completed for the history")
 	}
 
-	// Re-opening and completing again creates no duplicate
+	// Re-opening (an undone tick) removes the untouched successor, completing again spawns a fresh one:
+	// one open successor in the end
+	var removed []string
+	store.OnTaskRemoved = func(th *domain.Thought) { removed = append(removed, th.ID) }
 	open := false
 	_, _ = store.UpdateThoughtDetails(anna.ID, task.ID, nil, &open, nil, nil, nil, nil, nil, nil, nil)
 	_, _ = store.UpdateThoughtDetails(anna.ID, task.ID, nil, &done, nil, nil, nil, nil, nil, nil, nil)
-	if len(pushed) != 1 {
-		t.Fatalf("re-completing must not spawn again, got %d successors", len(pushed))
+	if len(removed) != 1 || removed[0] != next.ID || len(pushed) != 2 {
+		t.Fatalf("re-completing: removed %v, %d spawned", removed, len(pushed))
 	}
+	if got := store.openSuccessors(task.ID); len(got) != 1 || got[0] != pushed[1].ID {
+		t.Fatalf("open successors after re-completing: %v", got)
+	}
+	next = pushed[1]
 
 	// Dragging the successor into "done" on the Kanban board repeats as well
 	status := "done"
 	if err := store.ReorderTasks(tl.ID, []domain.ThoughtReorderItem{{ID: next.ID, SortOrder: 0, KanbanStatus: &status}}); err != nil {
 		t.Fatalf("ReorderTasks: %v", err)
 	}
-	if len(pushed) != 2 || pushed[1].DueDate != "2026-11-16" {
+	if len(pushed) != 3 || pushed[2].DueDate != "2026-11-16" {
 		t.Fatalf("Kanban completion should spawn the next week, got %+v", pushed)
 	}
 
@@ -110,7 +117,7 @@ func TestRepeatingTaskSpawnsItsSuccessorOnce(t *testing.T) {
 	plain, _ := store.CreateThoughtWithDetails(anna.ID, "Einmalig", "normal", "manual", "", tl.ID, "todo", "")
 	_, _ = store.UpdateThoughtTriage(anna.ID, plain.ID, "keep", "task", "", "", tl.ID)
 	_, _ = store.UpdateThoughtDetails(anna.ID, plain.ID, nil, &done, nil, nil, nil, nil, nil, nil, nil)
-	if len(pushed) != 2 {
+	if len(pushed) != 3 {
 		t.Errorf("non-repeating task must not spawn")
 	}
 }
