@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/mindsift-app/mindsift/internal/auth"
+	"github.com/mindsift-app/mindsift/internal/clock"
 	"github.com/mindsift-app/mindsift/internal/domain"
 	"github.com/mindsift-app/mindsift/internal/drawing"
 	"github.com/mindsift-app/mindsift/internal/i18n"
@@ -400,8 +401,10 @@ type noteView struct {
 	Permission string   `json:"permission"`
 	Tags       []string `json:"tags,omitempty"`
 	UpdatedAt  string   `json:"updatedAt"`
-	URL        string   `json:"url,omitempty"`
-	Content    string   `json:"content,omitempty"`
+	// IsTemplate: one of the user's note templates (create_note's template)
+	IsTemplate bool   `json:"isTemplate,omitempty"`
+	URL        string `json:"url,omitempty"`
+	Content    string `json:"content,omitempty"`
 	// Bullets with their ids (get_note), for changing single bullets (notes:write)
 	Bullets []noteBullet `json:"bullets,omitempty"`
 	// Warnings (create_note): something in the call did not end up in the note
@@ -413,7 +416,7 @@ func (s *Server) toNoteView(d *domain.Document) noteView {
 	if d.IsOwner || permission == "" {
 		permission = "owner"
 	}
-	return noteView{ID: d.ID, Title: d.Title, Icon: d.Icon, FolderPath: d.FolderPath, Permission: permission, Tags: d.Tags, UpdatedAt: d.UpdatedAt, URL: s.mcpLink("note", d.ID)}
+	return noteView{ID: d.ID, Title: d.Title, Icon: d.Icon, FolderPath: d.FolderPath, Permission: permission, Tags: d.Tags, UpdatedAt: d.UpdatedAt, IsTemplate: d.IsTemplate, URL: s.mcpLink("note", d.ID)}
 }
 
 // noteMarkdown renders the bullets as an indented Markdown list; images and recordings become a
@@ -971,17 +974,19 @@ var mcpTools = []mcpTool{
 	},
 	{
 		Name:        "list_notes",
-		Description: "Notes the user can see (own and shared), newest change first, without their content. Filter by folder (includes subfolders) or words in the title. Use get_note for the bullets.",
+		Description: "Notes the user can see (own and shared), newest change first, without their content. Filter by folder (includes subfolders) or words in the title; templates=true lists only the user's note templates (isTemplate, for create_note's template). Use get_note for the bullets.",
 		Scope:       storage.ScopeNotesRead,
 		Schema: schema(nil, map[string]any{
-			"folder": prop("string", "Only notes in this folder or below (e.g. Projekte/MindSift)"),
-			"query":  prop("string", "Only notes whose title contains this text"),
-			"limit":  prop("integer", "Maximum number of notes (default 100)"),
+			"folder":    prop("string", "Only notes in this folder or below (e.g. Projekte/MindSift)"),
+			"query":     prop("string", "Only notes whose title contains this text"),
+			"limit":     prop("integer", "Maximum number of notes (default 100)"),
+			"templates": prop("boolean", "Only the user's note templates"),
 		}),
 		run: func(ctx context.Context, s *Server, userID string, _ *apiActor, args json.RawMessage) (any, error) {
 			var a struct {
 				Folder, Query string
 				Limit         int
+				Templates     bool
 			}
 			if err := decodeArgs(args, &a); err != nil {
 				return nil, err
@@ -995,7 +1000,7 @@ var mcpTools = []mcpTool{
 			out := []noteView{}
 			for i := range docs {
 				d := &docs[i]
-				if d.IsArchived {
+				if d.IsArchived || (a.Templates && !d.IsTemplate) {
 					continue
 				}
 				if folder != "" && d.FolderPath != folder && !strings.HasPrefix(d.FolderPath, folder+"/") {
@@ -1042,18 +1047,21 @@ var mcpTools = []mcpTool{
 	{
 		Name: "create_note",
 		Description: "Create a new note. content is Markdown: a nested list (tab or 2+ spaces per level) becomes nested bullets, - [ ] a to-do, # a heading with the following bullets below it, plain lines and paragraphs become bullets. " +
-			"Example content: \"# Plan\\n- First step\\n\\t- Detail\\n- [ ] Call Anna\". A fenced ```mermaid block (flowchart/graph or mindmap) becomes a drawing, laid out automatically. Changing existing notes needs notes:write (update_note, add_note_bullet, …).",
+			"Example content: \"# Plan\\n- First step\\n\\t- Detail\\n- [ ] Call Anna\". A fenced ```mermaid block (flowchart/graph or mindmap) becomes a drawing, laid out automatically. " +
+			"template starts the note with the bullets of one of the user's note templates (its id or exact title; list_notes with templates=true lists them, isTemplate marks them), as the app's \"new note from template\" does: to-dos open, {{datum}}/{{date}} become today's date, {{titel}}/{{title}} the new title; content, if given, follows below. Using a template reads it, so it needs notes:read as well. " +
+			"Changing existing notes needs notes:write (update_note, add_note_bullet, …).",
 		Scope: storage.ScopeNotesCreate,
 		Schema: schema([]string{"title"}, map[string]any{
 			"title":      prop("string", "Title of the note, at most 60 characters (fits one line)"),
 			"content":    prop("string", "Bullets as Markdown, optional"),
 			"folderPath": prop("string", "Folder, e.g. Projekte/MindSift; empty = top level. Missing folders are created."),
 			"icon":       prop("string", "One emoji, optional (default 🗒️)"),
+			"template":   prop("string", "Id or exact title of one of the user's note templates, optional (list_notes with templates=true)"),
 		}),
-		run: func(_ context.Context, s *Server, userID string, _ *apiActor, args json.RawMessage) (any, error) {
+		run: func(ctx context.Context, s *Server, userID string, _ *apiActor, args json.RawMessage) (any, error) {
 			var a struct {
-				Title, FolderPath, Icon string
-				Content                 json.RawMessage
+				Title, FolderPath, Icon, Template string
+				Content                           json.RawMessage
 			}
 			if err := decodeArgs(args, &a); err != nil {
 				return nil, err
@@ -1089,8 +1097,21 @@ var mcpTools = []mcpTool{
 				slog.Warn("MCP create_note: content gave no bullets", "user_id", userID, "content", content)
 				warnings = append(warnings, i18n.T("en", "Aus 'content' ist kein Punkt entstanden, die Notiz ist leer. Schicke den Inhalt als Markdown-Liste, eine Zeile pro Punkt."))
 			}
-			if ignored := unknownArgs(args, "title", "content", "folderPath", "icon"); len(ignored) > 0 {
+			if ignored := unknownArgs(args, "title", "content", "folderPath", "icon", "template"); len(ignored) > 0 {
 				warnings = append(warnings, i18n.T("en", "Unbekannte Argumente ignoriert:")+" "+strings.Join(ignored, ", "))
+			}
+			// A template's bullets come first, content below them. Reading the template needs notes:read:
+			// notes:create alone may write a note but read none
+			if strings.TrimSpace(a.Template) != "" {
+				if scopes, isKey := keyScopes(ctx); isKey && !hasAnyScope(scopes, storage.ScopeNotesRead) {
+					return nil, errors.New("Eine Notiz aus einer Vorlage braucht auch den Scope notes:read (die Vorlage wird gelesen)")
+				}
+				date := i18n.ShortDate(s.userLanguage(userID), clock.In(time.Now()))
+				tmpl, err := s.store.TemplateBlocksFor(userID, a.Template, strings.TrimSpace(a.Title), date)
+				if err != nil {
+					return nil, err
+				}
+				blocks = append(tmpl, blocks...)
 			}
 			d, err := s.store.CreateDocument(userID, "", a.Title, a.Icon, folder, blocks, nil, false)
 			if err != nil {
