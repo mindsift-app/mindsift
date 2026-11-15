@@ -434,5 +434,9 @@
     "placeholder": "HH:MM",
     "placeholder12": "h:mm AM",
     "open": "Show times"
+  },
+  "naturalDate": {
+    "recognized": "Recognized due date: {{date}}",
+    "ignore": "Don't use this date"
   }
 }

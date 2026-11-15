@@ -23,6 +23,7 @@ import {
   Shapes,
   CloudOff,
   Table as TableIcon,
+  LayoutTemplate,
 } from 'lucide-react';
 import type { HelpContent } from './types';
 
@@ -167,6 +168,10 @@ const it: HelpContent = {
                 <span className="text-accent font-bold">🗣️</span>
                 <span>/diktat (parla invece di digitare: si avvia subito, tocca «Stop» per inserire il testo nel punto)</span>
               </div>
+              <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main col-span-2">
+                <LayoutTemplate className="w-3.5 h-3.5 text-accent shrink-0" />
+                <span>/modello o /template (inserisci qui il contenuto di uno dei tuoi modelli)</span>
+              </div>
             </div>
           </div>
           <div className="pt-2 border-t border-border">
@@ -253,6 +258,36 @@ const it: HelpContent = {
             </li>
             <li>
               <strong className="text-main">Ovunque:</strong> Copia, incolla, l’esportazione Markdown e gli agenti IA (MCP) vedono la tabella come tabella Markdown; le tabelle Markdown incollate e quelle dei fogli di calcolo tornano a essere una tabella.
+            </li>
+          </ul>
+        </div>
+      ),
+    },
+    // WORKSPACE: TEMPLATES
+    {
+      id: 'workspace-templates',
+      category: 'workspace',
+      title: 'Modelli (/modello)',
+      subtitle: 'Avviare note ricorrenti da un modello',
+      icon: LayoutTemplate,
+      keywords: ['modello', 'modelli', 'template', 'vorlage', 'riunione', 'piano settimanale', 'segnaposto', 'data'],
+      content: (
+        <div className="space-y-2 text-muted leading-relaxed">
+          <ul className="space-y-1.5">
+            <li>
+              <strong className="text-main">Creare un modello:</strong> Ogni nota può essere un modello. Scrivila come al solito e scegli «Usa come modello» nel menu ⋯ della nota («Non usare più come modello» lo annulla). Decidi tu dove si trova; una cartella «Modelli» li tiene insieme. Un piccolo segno nell’albero delle cartelle e accanto al titolo indica che è un modello.
+            </li>
+            <li>
+              <strong className="text-main">Inserire:</strong> Digita <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">/modello</kbd> (o <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">/template</kbd>) in un punto e scegli il modello; la ricerca aiuta quando sono tanti. Il suo contenuto entra come punti incollati: un punto vuoto diventa il primo punto del modello, altrimenti il modello segue sotto il punto, al suo livello. Titoli, codice, tabelle, disegni, immagini e valori nascosti vengono copiati; le caselle delle attività partono non spuntate e non sono collegate ad alcuna attività.
+            </li>
+            <li>
+              <strong className="text-main">Nuova nota:</strong> Se hai dei modelli, «Nuova nota» chiede nome, emoji e modello; la nuova nota parte con il contenuto del modello. Senza modelli, sul desktop la nota viene creata subito, come prima.
+            </li>
+            <li>
+              <strong className="text-main">Segnaposto:</strong> <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">{'{{date}}'}</kbd> (o <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">{'{{datum}}'}</kbd>) diventa la data di oggi all’inserimento, <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">{'{{title}}'}</kbd> (o <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">{'{{titel}}'}</kbd>) il titolo della nota. Nei blocchi di codice e nei disegni restano come sono.
+            </li>
+            <li>
+              <strong className="text-main">Personale:</strong> I modelli sono una tua scelta: puoi usare come modello qualsiasi nota che puoi leggere, anche una condivisa con te. Gli altri non vedono la tua scelta, e una nota condivisa non è un modello per loro solo perché tu la usi così.
             </li>
           </ul>
         </div>
@@ -401,7 +436,7 @@ const it: HelpContent = {
       title: 'Barra di registrazione rapida',
       subtitle: 'Cattura i pensieri in meno di un secondo – da tastiera o a voce',
       icon: Layers,
-      keywords: ['cattura', 'registrazione rapida', 'dettatura', 'voce', 'microfono', 'inbox', 'c'],
+      keywords: ['data', 'scadenza', 'domani', 'orario', 'cattura', 'registrazione rapida', 'dettatura', 'voce', 'microfono', 'inbox', 'c'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
           <p>Il Quick Dump assicura che nessun pensiero vada perso. Sul desktop il <strong className="text-main">+</strong> rotondo nella barra a sinistra lo apre come finestra sopra tutto, sul telefono il <strong className="text-main">+</strong> in basso al centro:</p>
@@ -414,6 +449,9 @@ const it: HelpContent = {
             </li>
             <li>
               <strong className="text-main">Scelta della destinazione:</strong> i pensieri finiscono nel Quick Dump per impostazione predefinita. Tramite le opzioni puoi indirizzarli subito come <strong className="text-main">attività</strong> (con priorità e scadenza), <strong className="text-main">elemento di lista</strong> (es. nella lista della spesa) o <strong className="text-main">nuova nota</strong>.
+            </li>
+            <li>
+              <strong className="text-main">Data nel testo:</strong> scrivi «Dentista domani alle 14» e il Quick Dump riconosce la data: la frase viene evidenziata nel campo e un chip mostra <em>Domani, 14:00</em>. Al salvataggio viene tolta dal testo e diventa la scadenza; la <strong className="text-main">×</strong> del chip lascia il testo com’è, senza data. Vengono riconosciuti <em>oggi</em>, <em>domani</em>, <em>dopodomani</em>, i giorni della settimana (<em>venerdì</em>, <em>martedì prossimo</em>; il giorno di oggi indica quello della settimana dopo), <em>tra 3 giorni</em>, <em>fra una settimana</em>, <em>24.12.</em>, <em>24/12/2026</em>, <em>24 dicembre</em>, <em>2026-12-24</em> e orari come <em>alle 14</em>, <em>alle ore 14:30</em> o <em>14:30</em>. Un orario da solo vale per oggi se deve ancora arrivare, altrimenti per domani. Una data scelta nel campo data ha la precedenza. Vale per la posta in arrivo e le attività dirette, anche dopo una dettatura, nella lingua dell’app.
             </li>
           </ul>
         </div>
@@ -503,6 +541,9 @@ const it: HelpContent = {
             </li>
             <li>
               <strong className="text-main">Trascina e rilascia:</strong> sposta le schede delle attività tra le colonne con semplicità. Spostare una scheda in una colonna di completamento segna automaticamente l'attività come completata.
+            </li>
+            <li>
+              <strong className="text-main">Scrivere subito la data:</strong> nel campo per una nuova attività (sullo smartphone nel pannello dietro il +) «Relazione venerdì alle 9» crea l’attività «Relazione» con scadenza venerdì alle 09:00. Il chip accanto al campo mostra la data riconosciuta, la sua × la scarta; una data scelta nel campo data ha la precedenza. Le forme riconosciute sono descritte sotto <em>Barra di registrazione rapida</em>.
             </li>
           </ul>
         </div>

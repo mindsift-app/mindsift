@@ -151,6 +151,8 @@ func (s *Server) handleUpdateDocument(w http.ResponseWriter, r *http.Request) {
 		FolderPath *string                 `json:"folderPath"`
 		Blocks     *[]domain.DocumentBlock `json:"blocks"`
 		IsPinned   *bool                   `json:"isPinned"`
+		// Personal like the pin: any note the person can read may be one of their templates
+		IsTemplate *bool `json:"isTemplate"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeError(w, http.StatusBadRequest, "Ungültiges JSON")
@@ -161,6 +163,12 @@ func (s *Server) handleUpdateDocument(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if req.IsTemplate != nil {
+		if err := s.store.SetDocTemplate(userID, docID, *req.IsTemplate); err != nil {
+			writeStoreError(w, http.StatusBadRequest, err)
+			return
+		}
+	}
 	doc, err := s.store.UpdateDocument(userID, docID, req.Title, req.Icon, req.FolderPath, req.IsPinned)
 	if err != nil {
 		// A note without access is a missing note (404), not an internal error (pentest 2026-11-13, P1)

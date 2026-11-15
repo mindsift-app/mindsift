@@ -1469,7 +1469,7 @@
     "/api/v1/documents/{id}": {
       "delete": {
         "summary": "Move a note to the trash (owner) or leave its share (others)",
-        "description": "Retrieve; update title (at most 60 characters; a longer title from before may stay or get shorter), icon, folderPath, isPinned (updating blocks here returns 400, as they are handled via /docs/{id}/sync); delete = move to trash (owner) or leave share (others)",
+        "description": "Retrieve; update title (at most 60 characters; a longer title from before may stay or get shorter), icon, folderPath, isPinned, isTemplate (the caller's own template mark) (updating blocks here returns 400, as they are handled via /docs/{id}/sync); delete = move to trash (owner) or leave share (others)",
         "tags": [
           "Workspace"
         ],
@@ -1491,7 +1491,7 @@
       },
       "get": {
         "summary": "A note",
-        "description": "Retrieve; update title (at most 60 characters; a longer title from before may stay or get shorter), icon, folderPath, isPinned (updating blocks here returns 400, as they are handled via /docs/{id}/sync); delete = move to trash (owner) or leave share (others)",
+        "description": "Retrieve; update title (at most 60 characters; a longer title from before may stay or get shorter), icon, folderPath, isPinned, isTemplate (the caller's own template mark) (updating blocks here returns 400, as they are handled via /docs/{id}/sync); delete = move to trash (owner) or leave share (others)",
         "tags": [
           "Workspace"
         ],
@@ -1513,7 +1513,7 @@
       },
       "put": {
         "summary": "Change a note (title, icon, folder, pinned)",
-        "description": "Retrieve; update title (at most 60 characters; a longer title from before may stay or get shorter), icon, folderPath, isPinned (updating blocks here returns 400, as they are handled via /docs/{id}/sync); delete = move to trash (owner) or leave share (others)",
+        "description": "Retrieve; update title (at most 60 characters; a longer title from before may stay or get shorter), icon, folderPath, isPinned, isTemplate (the caller's own template mark) (updating blocks here returns 400, as they are handled via /docs/{id}/sync); delete = move to trash (owner) or leave share (others)",
         "tags": [
           "Workspace"
         ],

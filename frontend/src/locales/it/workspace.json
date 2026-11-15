@@ -131,7 +131,9 @@
     "audio": "Nota vocale o file audio",
     "dictation": "Parla invece di digitare",
     "secret": "Nascondi un valore (password, token …)",
-    "drawing": "Disegno, diagramma, mappa mentale"
+    "drawing": "Disegno, diagramma, mappa mentale",
+    "templateName": "modello",
+    "template": "Inserisci il contenuto di un modello"
   },
   "block": {
     "expand": "Espandi sottopunti (Ctrl+clic: tutti i livelli)",
@@ -623,5 +625,18 @@
         "save": "Il salvataggio non è riuscito. Controlla la connessione e riprova."
       }
     }
+  },
+  "template": {
+    "mark": "Modello",
+    "markAs": "Usa come modello",
+    "unmark": "Non usare più come modello",
+    "marked": "Salvata come modello – inseriscila con /modello o «Nuova nota»",
+    "unmarked": "Non è più un modello",
+    "headerHint": "Il tuo modello: /modello inserisce il suo contenuto in una nota, «Nuova nota» parte da esso",
+    "search": "Cerca modello …",
+    "none": "Ancora nessun modello. Nel menu ⋯ di una nota: «Usa come modello».",
+    "blank": "Nota vuota",
+    "field": "Modello",
+    "loadFailed": "Impossibile caricare il modello."
   }
 }

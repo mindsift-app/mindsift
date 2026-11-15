@@ -102,7 +102,9 @@
     "due": "Vencimiento:",
     "placeholderList": "Añadir a «{{title}}»…",
     "list": "Lista",
-    "directTask": "Directamente como tarea"
+    "directTask": "Directamente como tarea",
+    "pillTask": "Tarea",
+    "pillNote": "Nota"
   },
   "fab": {
     "nothing": "No se reconoció nada",

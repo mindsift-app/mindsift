@@ -6,6 +6,7 @@ import { triggerHaptic } from '../../lib/api';
 import { VoiceInputButton } from '../../components/VoiceInputButton';
 import { DateField } from '../../components/DateField';
 import { SelectMenu } from '../../components/SelectMenu';
+import { NaturalDateChip, PhraseHighlight, applyNaturalDate, useNaturalDate } from '../../components/NaturalDateHint';
 
 export interface MobileTaskDraft {
   title: string;
@@ -34,17 +35,20 @@ export function MobileTaskCreateSheet({ open, onClose, lists, listId, onListIdCh
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [dueDate, setDueDate] = useState('');
   const [priority, setPriority] = useState<PriorityLevel>('normal');
+  // A date in the text ("Zahnarzt morgen 14 Uhr"), unless one was picked in the date field
+  const natural = useNaturalDate(title, open && !dueDate);
 
   if (!open) return null;
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const text = title.trim();
-    if (!text) return;
-    if (await onCreate({ title: text, priority, dueDate, listId })) {
+    if (!title.trim()) return;
+    const applied = applyNaturalDate(title, natural.parsed, dueDate);
+    if (await onCreate({ title: applied.title.trim(), priority, dueDate: applied.due, listId })) {
       setTitle('');
       setDueDate('');
       setPriority('normal');
+      natural.reset();
     }
   };
 
@@ -96,7 +100,9 @@ export function MobileTaskCreateSheet({ open, onClose, lists, listId, onListIdCh
                 }}
                 className="absolute right-1 top-1/2 -translate-y-1/2"
               />
+              {natural.parsed && <PhraseHighlight inputRef={inputRef} text={title} spans={natural.parsed.spans} />}
             </div>
+            {natural.parsed && <NaturalDateChip due={natural.parsed.due} onDismiss={natural.dismiss} className="mt-1.5" />}
           </div>
 
           {/* List Selector (if lists exist) */}

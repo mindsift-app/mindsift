@@ -6,6 +6,8 @@ import { ConfirmPopover } from '../../components/ConfirmPopover';
 import { EmojiIconButton } from '../../components/EmojiIconButton';
 import { Trans, useTranslation } from 'react-i18next';
 import { NOTE_TITLE_MAX } from '../../lib/noteTitle';
+import { SelectMenu } from '../../components/SelectMenu';
+import type { TemplateChoice } from './NoteTemplates';
 
 interface FolderDialogsProps {
   showNewFolderModal: boolean;
@@ -21,15 +23,19 @@ interface FolderDialogsProps {
   setNewNoteTitle: (title: string) => void;
   newNoteIcon: string;
   setNewNoteIcon: (icon: string) => void;
-  handleCreateDocument: (folderPath?: string, title?: string, icon?: string) => Promise<unknown>;
+  /** The person's templates; the template field shows only when there are some */
+  templates: TemplateChoice[];
+  newNoteTemplate: string;
+  setNewNoteTemplate: (id: string) => void;
+  handleCreateDocument: (folderPath?: string, title?: string, icon?: string, templateId?: string) => Promise<unknown>;
   pendingFolderDelete: { path: string; x: number; y: number } | null;
   closeFolderDelete: () => void;
   handleDeleteFolder: (path: string) => Promise<void>;
   docs: Document[];
 }
 
-// Dialogs of the folder sidebar: name of a new folder, name and emoji of a new note (phones) and the
-// confirmation before a folder goes to the trash
+// Dialogs of the folder sidebar: name of a new folder, name, emoji and template of a new note (phones, and
+// the desktop when the person has templates) and the confirmation before a folder goes to the trash
 export function FolderDialogs({
   showNewFolderModal,
   setShowNewFolderModal,
@@ -44,6 +50,9 @@ export function FolderDialogs({
   setNewNoteTitle,
   newNoteIcon,
   setNewNoteIcon,
+  templates,
+  newNoteTemplate,
+  setNewNoteTemplate,
   handleCreateDocument,
   pendingFolderDelete,
   closeFolderDelete,
@@ -73,7 +82,7 @@ export function FolderDialogs({
         </FormSheet>
       )}
 
-      {/* Phones: name and emoji of a new note before it is created */}
+      {/* Phones (and the desktop with templates): name, emoji and template of a new note before it is created */}
       {newNoteSheet && (
         <FormSheet
           title={t('menu.newNote')}
@@ -83,7 +92,7 @@ export function FolderDialogs({
             e.preventDefault();
             const { folderPath } = newNoteSheet;
             setNewNoteSheet(null);
-            void handleCreateDocument(folderPath, newNoteTitle, newNoteIcon);
+            void handleCreateDocument(folderPath, newNoteTitle, newNoteIcon, newNoteTemplate);
           }}
         >
           <div className="flex items-center gap-1.5">
@@ -98,6 +107,22 @@ export function FolderDialogs({
               className="input-field flex-1 min-w-0 h-11 sm:h-8 px-2.5 text-base sm:text-xs"
             />
           </div>
+          {templates.length > 0 && (
+            <SelectMenu
+              ariaLabel={t('template.field')}
+              value={newNoteTemplate}
+              onChange={setNewNoteTemplate}
+              options={[
+                { value: '', label: t('template.blank') },
+                ...templates.map((tpl) => ({
+                  value: tpl.id,
+                  label: tpl.title || t('editor.untitled'),
+                  lead: <span>{tpl.icon || '🗒️'}</span>,
+                  hint: tpl.folderPath || undefined,
+                })),
+              ]}
+            />
+          )}
         </FormSheet>
       )}
 

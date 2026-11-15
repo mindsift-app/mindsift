@@ -22,6 +22,7 @@ import { readViewSession, writeViewSession } from '../../lib/viewSession';
 import { useVoiceInput } from '../../lib/useVoiceInput';
 import { VoiceWave } from '../../components/VoiceWave';
 import { DateField } from '../../components/DateField';
+import { NaturalDateChip, PhraseHighlight, applyNaturalDate, useNaturalDate } from '../../components/NaturalDateHint';
 
 export type CaptureTarget = 'inbox' | 'task' | 'list_item' | 'document';
 
@@ -86,6 +87,10 @@ export const InstantCaptureBar: React.FC<InstantCaptureBarProps> = ({
   const isListening = voice.state === 'listening';
   const isTranscribing = voice.state === 'transcribing';
   const [isOverMaxHeight, setIsOverMaxHeight] = useState(false);
+  // "Zahnarzt morgen 14 Uhr": a date in the text for the inbox and tasks (list items and notes have no due
+  // date), unless one was picked in the options
+  const datedTarget = (fixedTarget || target) === 'inbox' || (fixedTarget || target) === 'task';
+  const natural = useNaturalDate(content, datedTarget && !dueDate);
 
   const adjustHeight = (el?: HTMLTextAreaElement | null) => {
     const targetEl = el || inputRef.current;
@@ -191,7 +196,14 @@ export const InstantCaptureBar: React.FC<InstantCaptureBarProps> = ({
     const effectiveListId =
       overrideListId || targetListId || (writableLists.length > 0 ? writableLists[0].id : '');
     const capturedPriority = priority;
-    const capturedDueDate = dueDate;
+    // The chip only shows for the inbox and tasks; what it shows is what is saved
+    const applied =
+      effectiveTarget === 'inbox' || effectiveTarget === 'task'
+        ? applyNaturalDate(content, natural.parsed, dueDate)
+        : { title: content, due: dueDate };
+    const capturedTitle = applied.title.trim();
+    const capturedDueDate = applied.due;
+    natural.reset();
     const capturedSource = hasVoiceInputRef.current || isListening ? 'voice' : 'manual';
     hasVoiceInputRef.current = false;
     // A recognition still running would refill the field after it was saved
@@ -224,7 +236,7 @@ export const InstantCaptureBar: React.FC<InstantCaptureBarProps> = ({
 
     try {
       const created = await api.captureThought(
-        trimmed,
+        capturedTitle,
         capturedPriority,
         capturedSource,
         capturedDueDate,
@@ -252,9 +264,9 @@ export const InstantCaptureBar: React.FC<InstantCaptureBarProps> = ({
   const selectedList = writableLists.find((l) => l.id === targetListId) || writableLists[0];
 
   const getTargetLabel = () => {
-    if (target === 'task') return selectedTaskList ? (selectedTaskList.icon ? `${selectedTaskList.icon} ${selectedTaskList.title}` : selectedTaskList.title) : 'Direkt-Aufgabe';
+    if (target === 'task') return selectedTaskList ? (selectedTaskList.icon ? `${selectedTaskList.icon} ${selectedTaskList.title}` : selectedTaskList.title) : t('capture.pillTask');
     if (target === 'list_item') return selectedList ? [selectedList.icon, selectedList.title].filter(Boolean).join(' ') : t('toList');
-    if (target === 'document') return 'Direkt-Notiz';
+    if (target === 'document') return t('capture.pillNote');
     return t('quickDump');
   };
 
@@ -318,6 +330,7 @@ export const InstantCaptureBar: React.FC<InstantCaptureBarProps> = ({
             style={{ minHeight: '22px', maxHeight: '140px' }}
             autoComplete="off"
           />
+          {natural.parsed && <PhraseHighlight inputRef={inputRef} text={content} spans={natural.parsed.spans} />}
 
           <div
             className={`flex items-center gap-1 shrink-0 ${
@@ -325,6 +338,8 @@ export const InstantCaptureBar: React.FC<InstantCaptureBarProps> = ({
               isMultiline ? 'basis-full justify-end mt-1 animate-in fade-in slide-in-from-top-1 duration-150' : 'ml-2'
             }`}
           >
+            {natural.parsed && <NaturalDateChip due={natural.parsed.due} onDismiss={natural.dismiss} />}
+
             {/* Target & Options Toggle Pill (Hidden when target picker is disabled) */}
             {!hideTargetPicker && (
               <button

@@ -11,11 +11,26 @@ import { flushSync } from 'react-dom';
 import { MobileOutlineBar, isTouchOnly } from './MobileOutlineBar';
 import { startBranchDragGhost } from './branchDragImage';
 import type { ConflictChoice } from '../../lib/docSync/engine';
+import { templateBlocks } from '../../lib/noteTemplate';
+import { TemplateChoice, TemplatePicker } from './NoteTemplates';
+import { useLatestRef } from '../../lib/useLatestRef';
+import { showError } from '../../components/ErrorNotice';
+import { errorMessage } from '../../lib/errorMessage';
 
 export interface OutlinerTreeHandle {
   focusFirstBlock: (cursor?: 'start' | 'end') => void;
   focusBlock: (blockId: string, cursor?: 'start' | 'end') => void;
 }
+
+/** What /vorlage needs: the person's templates, how to load one's bullets, the note's title ({{titel}}) */
+export interface TemplateSource {
+  templates: TemplateChoice[];
+  load: (templateId: string) => Promise<DocumentBlock[]>;
+  noteTitle: string;
+}
+
+// Bullets a template copy replaces when the slash command was typed into an empty one of these
+const REPLACEABLE_EMPTY = ['text', 'bullet', 'todo', 'numbered', 'h1', 'h2', 'h3', 'callout', 'warning', 'error'];
 
 export interface OutlinerTreeProps {
   docId: string;
@@ -62,6 +77,8 @@ export interface OutlinerTreeProps {
   onReplaceRange?: (first: DocumentBlock, deleteIds: string[], movedChildren: DocumentBlock[]) => void;
   /** The empty area below the last bullet (click adds one); off where several trees stack (hashtag page) */
   trailingArea?: boolean;
+  /** Offers /vorlage: a template's bullets go in at the bullet (lib/noteTemplate.ts) */
+  templateSource?: TemplateSource;
 }
 
 // Pasted blocks that never take the text around the cursor
@@ -138,6 +155,7 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
   onRedo,
   onReplaceRange,
   trailingArea = true,
+  templateSource,
 }, ref) => {
   const [focusedBlockId, setFocusedBlockId] = useState<string | null>(null);
 
@@ -442,6 +460,70 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
       }
     },
     [blocks, canEdit, docId, focusBlockInput, onCreateBlock, onInsertBlocks, onUpdateBlock]
+  );
+
+  // /vorlage: the picker opens at the bullet; the chosen template's bullets go in like pasted bullets (with
+  // their types, see lib/noteTemplate.ts): an empty bullet becomes the template's first bullet, otherwise
+  // the copy follows the bullet's branch on its level
+  const [templatePick, setTemplatePick] = useState<{ blockId: string; anchor: HTMLElement } | null>(null);
+  const blocksRef = useLatestRef(blocks);
+  const templateSourceRef = useLatestRef(templateSource);
+  const handleTemplateCommand = useCallback((blockId: string, anchor: HTMLElement | null) => {
+    if (anchor) setTemplatePick({ blockId, anchor });
+  }, []);
+  const insertTemplate = useCallback(
+    async (blockId: string, templateId: string) => {
+      const src = templateSourceRef.current;
+      if (!canEdit || !src) return;
+      let source: DocumentBlock[];
+      try {
+        source = await src.load(templateId);
+      } catch (err) {
+        showError(errorMessage(err));
+        focusBlockInput(blockId, 'end');
+        return;
+      }
+      const current = blocksRef.current.find((b) => b.id === blockId);
+      if (!current) return;
+      const copies = templateBlocks(source, {
+        docId,
+        baseLevel: Math.max(0, current.level || 0),
+        title: src.noteTitle,
+      });
+      if (copies.length === 0) {
+        focusBlockInput(blockId, 'end');
+        return;
+      }
+      const replace = (current.content || '').trim() === '' && REPLACEABLE_EMPTY.includes(current.type);
+      let updatedCurrent = current;
+      let newBlocks = copies;
+      if (replace) {
+        const [first, ...rest] = copies;
+        updatedCurrent = {
+          ...current,
+          type: first.type,
+          content: first.content,
+          checked: false,
+          taskId: '',
+          lang: first.lang ?? '',
+        };
+        newBlocks = rest;
+      }
+      const lastId = newBlocks.length > 0 ? newBlocks[newBlocks.length - 1].id : current.id;
+      pendingFocusRef.current = { blockId: lastId, cursor: 'end' };
+      setFocusedBlockId(lastId);
+      if (onInsertBlocks) {
+        onInsertBlocks(current.id, updatedCurrent, newBlocks);
+      } else {
+        if (replace) onUpdateBlock(updatedCurrent, true);
+        newBlocks.forEach((b, k) => onCreateBlock(b, k === 0 ? current.id : newBlocks[k - 1].id));
+      }
+      if (textareaMapRef.current.has(lastId)) {
+        pendingFocusRef.current = null;
+        focusBlockInput(lastId, 'end');
+      }
+    },
+    [blocksRef, canEdit, docId, focusBlockInput, onCreateBlock, onInsertBlocks, onUpdateBlock, templateSourceRef]
   );
 
   // Name of the other user holding the block (or, withBranch, any block below it); structural actions on
@@ -1157,6 +1239,7 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
   const stableUpdateBlock = useLatestCallback(onUpdateBlock);
   const stableCreateBlockBelow = useLatestCallback(handleCreateBlockBelow);
   const stablePasteMultiLines = useLatestCallback(handlePasteMultiLines);
+  const offersTemplates = Boolean(canEdit && templateSource);
   const stableDeleteBlock = useLatestCallback(handleDeleteBlock);
   const stableMergeWithPrevious = useLatestCallback(handleMergeWithPrevious);
   const stableIndentBlock = useLatestCallback(handleIndentBlock);
@@ -1197,6 +1280,7 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
     Boolean(onTagClick),
     Boolean(onWikiLinkClick),
     Boolean(onCopyBlockLink),
+    offersTemplates,
   ];
   const rowCache = rowCacheRef.current;
   const prevRows = sameValues(rowCache.treeValues, treeValues) ? rowCache.rows : null;
@@ -1235,6 +1319,7 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
           onZoomBlock={onZoomBlock ? stableZoomBlock : undefined}
           onExtractBlock={onExtractBlock ? stableExtractBlock : undefined}
           onInlineBlock={onInlineBlock ? stableInlineBlock : undefined}
+          onTemplateCommand={offersTemplates ? handleTemplateCommand : undefined}
           onUpdateBlock={stableUpdateBlock}
           onCreateBlockBelow={stableCreateBlockBelow}
           onPasteMultiLines={stablePasteMultiLines}
@@ -1312,6 +1397,22 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
             }
           }}
           onDrop={() => handleDropBlock(blocks.length)}
+        />
+      )}
+      {templatePick && templateSource && (
+        <TemplatePicker
+          anchor={templatePick.anchor}
+          templates={templateSource.templates}
+          onPick={(tpl) => {
+            const { blockId } = templatePick;
+            setTemplatePick(null);
+            void insertTemplate(blockId, tpl.id);
+          }}
+          onClose={() => {
+            const { blockId } = templatePick;
+            setTemplatePick(null);
+            focusBlockInput(blockId, 'end');
+          }}
         />
       )}
       {showMobileBar && (

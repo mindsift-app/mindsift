@@ -655,9 +655,11 @@ type Document struct {
 	FolderID      string          `json:"folderId,omitempty"`
 	FolderPath    string          `json:"folderPath,omitempty"`
 	IsPinned      bool            `json:"isPinned"`
-	IsArchived    bool            `json:"isArchived"`
-	CreatedAt     string          `json:"createdAt"`
-	UpdatedAt     string          `json:"updatedAt"`
+	// IsTemplate: the person marked the note as one of their templates (doc_templates, per person)
+	IsTemplate bool   `json:"isTemplate"`
+	IsArchived bool   `json:"isArchived"`
+	CreatedAt  string `json:"createdAt"`
+	UpdatedAt  string `json:"updatedAt"`
 
 	// Collaboration & Permissions
 	Permission       string     `json:"permission"` // owner | write | read

@@ -310,6 +310,7 @@ func (s *Store) hardDeleteDocument(docID string) error {
 		`DELETE FROM blocks WHERE document_id = ?`,
 		`DELETE FROM block_tags WHERE document_id = ?`,
 		`DELETE FROM doc_pins WHERE doc_id = ?`,
+		`DELETE FROM doc_templates WHERE doc_id = ?`,
 		`DELETE FROM doc_shares WHERE doc_id = ?`,
 		`DELETE FROM doc_team_shares WHERE doc_id = ?`,
 		`DELETE FROM doc_user_folders WHERE doc_id = ?`,

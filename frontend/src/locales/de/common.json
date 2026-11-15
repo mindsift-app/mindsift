@@ -432,5 +432,9 @@
     "placeholder": "HH:MM",
     "placeholder12": "h:mm AM",
     "open": "Uhrzeiten zeigen"
+  },
+  "naturalDate": {
+    "recognized": "Erkanntes Fälligkeitsdatum: {{date}}",
+    "ignore": "Datum nicht übernehmen"
   }
 }

@@ -23,6 +23,7 @@ import {
   Shapes,
   CloudOff,
   Table as TableIcon,
+  LayoutTemplate,
 } from 'lucide-react';
 import type { HelpContent } from './types';
 
@@ -167,6 +168,10 @@ const en: HelpContent = {
                 <span className="text-accent font-bold">🗣️</span>
                 <span>/diktat (speak instead of typing: starts right away, tapping “Stop” puts the text into the bullet)</span>
               </div>
+              <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main col-span-2">
+                <LayoutTemplate className="w-3.5 h-3.5 text-accent shrink-0" />
+                <span>/template or /vorlage (insert the content of one of your templates here)</span>
+              </div>
             </div>
           </div>
           <div className="pt-2 border-t border-border">
@@ -253,6 +258,36 @@ const en: HelpContent = {
             </li>
             <li>
               <strong className="text-main">Everywhere:</strong> Copying, pasting, the Markdown export and AI agents (MCP) see the table as a Markdown table; pasted Markdown tables and tables from spreadsheets become a table again.
+            </li>
+          </ul>
+        </div>
+      ),
+    },
+    // WORKSPACE: TEMPLATES
+    {
+      id: 'workspace-templates',
+      category: 'workspace',
+      title: 'Templates (/template)',
+      subtitle: 'Start recurring notes from a template',
+      icon: LayoutTemplate,
+      keywords: ['template', 'templates', 'vorlage', 'pattern', 'meeting', 'weekly plan', 'placeholder', 'date'],
+      content: (
+        <div className="space-y-2 text-muted leading-relaxed">
+          <ul className="space-y-1.5">
+            <li>
+              <strong className="text-main">Create a template:</strong> Any note can be a template. Write it as usual and choose “Use as template” in the note’s ⋯ menu (“No longer a template” undoes it). You decide where it lives; a folder “Templates” keeps them together. A small mark in the folder tree and next to the title shows that it is a template.
+            </li>
+            <li>
+              <strong className="text-main">Insert:</strong> Type <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">/template</kbd> (or <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">/vorlage</kbd>) in a bullet and choose the template; the search helps when there are many. Its content goes in like pasted bullets: an empty bullet becomes the template’s first bullet, otherwise it follows below the bullet on its level. Headings, code, tables, drawings, pictures and hidden values come along; to-do checkboxes start open and are not linked to any task.
+            </li>
+            <li>
+              <strong className="text-main">New note:</strong> If you have templates, “New note” asks for name, emoji and template; the new note starts with the template’s content. Without templates the desktop creates the note at once, as before.
+            </li>
+            <li>
+              <strong className="text-main">Placeholders:</strong> <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">{'{{date}}'}</kbd> (or <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">{'{{datum}}'}</kbd>) becomes today’s date when inserted, <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">{'{{title}}'}</kbd> (or <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">{'{{titel}}'}</kbd>) the note’s title. In code blocks and drawings they stay as they are.
+            </li>
+            <li>
+              <strong className="text-main">Personal:</strong> Templates are your own choice: you can use any note you may read as a template, also one shared with you. Others do not see your choice, and a shared note is no template for them just because you use it as one.
             </li>
           </ul>
         </div>
@@ -401,7 +436,7 @@ const en: HelpContent = {
       title: 'Instant capture bar',
       subtitle: 'Hold on to thoughts in under a second – by keyboard or voice',
       icon: Layers,
-      keywords: ['capture', 'quick capture', 'dictation', 'voice', 'microphone', 'inbox', 'c'],
+      keywords: ['date', 'due', 'tomorrow', 'time', 'capture', 'quick capture', 'dictation', 'voice', 'microphone', 'inbox', 'c'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
           <p>The Quick Dump makes sure no fleeting thought gets lost. On the desktop the round <strong className="text-main">+</strong> in the bar on the left opens it as a window over everything, on phones the <strong className="text-main">+</strong> at the bottom centre:</p>
@@ -414,6 +449,9 @@ const en: HelpContent = {
             </li>
             <li>
               <strong className="text-main">Choosing the target:</strong> thoughts land in the inbox by default. With the options you can route them right away as a <strong className="text-main">task</strong> (with priority and due date), a <strong className="text-main">list item</strong> (e.g. on the shopping list) or a <strong className="text-main">new note</strong>.
+            </li>
+            <li>
+              <strong className="text-main">Dates in the text:</strong> type “Dentist tomorrow 2pm” and the Quick Dump spots the date: the phrase is marked in the field and a chip shows <em>Tomorrow, 14:00</em>. Saving takes it out of the text and makes it the due date; the <strong className="text-main">×</strong> on the chip keeps the text as it is, without a date. It understands <em>today</em>, <em>tomorrow</em>, <em>day after tomorrow</em>, weekdays (<em>Friday</em>, <em>on Friday</em>, <em>next Tuesday</em>; today’s weekday means the one a week from now), <em>in 3 days</em>, <em>in a week</em>, <em>Dec 24</em>, <em>24 December</em>, <em>2026-12-24</em> and times such as <em>2pm</em>, <em>2:30 pm</em>, <em>14:30</em> or <em>at 9</em> (09:00), also together (“Friday at 9am”). A time alone means today if it is still ahead, otherwise tomorrow. A date picked in the date field wins. It works for the inbox and direct tasks, after dictation too, in the language of the app.
             </li>
           </ul>
         </div>
@@ -503,6 +541,9 @@ const en: HelpContent = {
             </li>
             <li>
               <strong className="text-main">Drag & drop:</strong> drag task cards between the columns with ease. Moving one into a done column checks the task off automatically.
+            </li>
+            <li>
+              <strong className="text-main">Type the date along:</strong> in the field for a new task (on phones in the sheet behind the +) “Report Friday at 9am” makes a task “Report” due Friday at 09:00. The chip at the field shows the recognised date and its × drops it; a date picked in the date field wins. Which forms are understood is listed under <em>Instant capture bar</em>.
             </li>
           </ul>
         </div>

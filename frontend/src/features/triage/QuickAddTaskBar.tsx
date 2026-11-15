@@ -5,6 +5,7 @@ import { api, triggerHaptic } from '../../lib/api';
 import { TaskList, Thought } from '../../lib/types';
 import { VoiceInputButton } from '../../components/VoiceInputButton';
 import { DateField } from '../../components/DateField';
+import { NaturalDateChip, PhraseHighlight, applyNaturalDate, useNaturalDate } from '../../components/NaturalDateHint';
 
 interface QuickAddTaskBarProps {
   // Read-only list: no input (the draft stays for when an editable list is open again)
@@ -23,16 +24,19 @@ export function QuickAddTaskBar({ hidden, currentSelectedList, selectedListId, s
   const [quickVoiceError, setQuickVoiceError] = useState<string | null>(null);
   const [quickDueDate, setQuickDueDate] = useState('');
   const quickInputRef = useRef<HTMLInputElement | null>(null);
+  // "Zahnarzt morgen 14 Uhr": a date in the text, unless one was picked in the date field
+  const natural = useNaturalDate(quickTitle, !quickDueDate);
 
   const handleQuickAddTask = async (e: React.FormEvent) => {
     e.preventDefault();
-    const title = quickTitle.trim();
-    if (!title) return;
+    if (!quickTitle.trim()) return;
+    const { title, due } = applyNaturalDate(quickTitle, natural.parsed, quickDueDate);
     triggerHaptic(10);
     setQuickTitle('');
+    natural.reset();
 
     try {
-      const created = await api.captureThought(title, 'normal', 'manual', quickDueDate, {
+      const created = await api.captureThought(title.trim(), 'normal', 'manual', due, {
         target: 'task',
         taskListId: selectedListId === 'all' ? '' : selectedListId,
       });
@@ -50,7 +54,7 @@ export function QuickAddTaskBar({ hidden, currentSelectedList, selectedListId, s
   return (
     <form
       onSubmit={handleQuickAddTask}
-      className="hidden sm:flex items-center gap-1.5 panel-surface p-2 sm:p-1.5"
+      className="hidden sm:flex relative items-center gap-1.5 panel-surface p-2 sm:p-1.5"
     >
       <Plus className="w-4 h-4 text-accent ml-1 shrink-0" />
       <input
@@ -64,6 +68,12 @@ export function QuickAddTaskBar({ hidden, currentSelectedList, selectedListId, s
         }
         className="flex-1 bg-transparent px-2 py-1.5 sm:py-1 text-sm text-main placeholder-faint focus:outline-hidden min-w-0"
       />
+      {natural.parsed && (
+        <>
+          <PhraseHighlight inputRef={quickInputRef} text={quickTitle} spans={natural.parsed.spans} />
+          <NaturalDateChip due={natural.parsed.due} onDismiss={natural.dismiss} />
+        </>
+      )}
       <div className="flex items-center gap-1 shrink-0">
         <VoiceInputButton
           value={quickTitle}

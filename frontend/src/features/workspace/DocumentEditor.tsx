@@ -29,13 +29,15 @@ import {
   CalendarDays,
   FaceSlightlySmilingPlus,
   Link2,
+  LayoutTemplate,
 } from 'lucide-react';
 import { Document, DocumentBlock, User } from '../../lib/types';
 import { api } from '../../lib/api';
 import { ConflictChoice, MAX_NOTE_BLOCKS } from '../../lib/docSync/engine';
 import { formatNumber } from '../../lib/format';
 import { Presence } from '../../lib/docSync/transport';
-import { OutlinerTree, OutlinerTreeHandle } from './OutlinerTree';
+import { OutlinerTree, OutlinerTreeHandle, TemplateSource } from './OutlinerTree';
+import type { TemplateChoice } from './NoteTemplates';
 import type { BlockLock } from './OutlinerBlock';
 import { NoteClientContext, NoteSharedContext } from './drawing/noteShared';
 import { extractHashtags } from '../../lib/hashtags';
@@ -77,6 +79,8 @@ export interface DocumentEditorProps {
   onDocRemoved?: (docId: string) => void;
   /** Notes a branch can be moved into (writable, not this one): the choice when extracting a bullet */
   moveTargets?: ExtractTarget[];
+  /** The person's templates: /vorlage offers them (lib/noteTemplate.ts) */
+  templates?: TemplateChoice[];
   /** 'journal': one day inside the journal list – no own scrolling, header or backlinks, fixed title.
    *  'tag': inside a hashtag page – the title as a fixed heading, below only the branches with tagFilter */
   variant?: 'page' | 'journal' | 'tag';
@@ -146,6 +150,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
   onDocCreated,
   onDocRemoved,
   moveTargets,
+  templates,
   variant = 'page',
   tagFilter,
   actionsTarget,
@@ -461,6 +466,32 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
     }
   };
 
+  // Personal like the pin: any note the person can read may be one of their templates
+  const handleToggleTemplate = async () => {
+    if (!doc) return;
+    try {
+      const updated = await api.updateDocument(doc.id, { isTemplate: !doc.isTemplate });
+      setDoc(updated);
+      onDocMetadataChange(updated);
+      showNotice(updated.isTemplate ? t('template.marked') : t('template.unmarked'));
+    } catch {
+      // ignore
+    }
+  };
+
+  // /vorlage in this note: the template's bullets come from the server (the person may read the note)
+  const templateSource = useMemo<TemplateSource | undefined>(
+    () =>
+      templates && canEdit && !inTrash
+        ? {
+            templates,
+            noteTitle: title,
+            load: async (id: string) => (await api.getDocument(id)).blocks,
+          }
+        : undefined,
+    [templates, canEdit, inTrash, title]
+  );
+
   const handleSelectIcon = async (icon: string) => {
     setShowEmojiPicker(false);
     if (!doc || !canEdit) return;
@@ -691,6 +722,21 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
                   }`}
                 />
                 <span>{doc?.isPinned ? t('editor.unpin') : t('editor.pin')}</span>
+              </button>
+            )}
+
+            {!inTrash && (
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setShowActionsMenu(false);
+                  void handleToggleTemplate();
+                }}
+                className="w-full min-h-[44px] sm:min-h-0 px-2.5 py-2 sm:py-1.5 rounded-btn hover:bg-panel-elevated text-left text-main font-medium flex items-center gap-2 transition-colors cursor-pointer"
+              >
+                <LayoutTemplate className="w-3.5 h-3.5 text-accent shrink-0" />
+                <span>{doc?.isTemplate ? t('template.unmark') : t('template.markAs')}</span>
               </button>
             )}
 
@@ -1068,6 +1114,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
                 onUpdateBlocks={handleUpdateBlocks}
                 onCreateBlock={handleCreateBlock}
                 onInsertBlocks={handleInsertBlocks}
+                templateSource={templateSource}
                 onDeleteBlock={handleDeleteBlock}
                 onDeleteBlocks={handleDeleteBlocks}
                 onReplaceRange={handleReplaceRange}
@@ -1202,6 +1249,15 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
                 placeholder={t('editor.titlePlaceholder')}
                 className="flex-1 min-w-0 text-2xl sm:text-3xl font-light text-main bg-transparent border-0 focus:outline-hidden focus:ring-0 tracking-tight resize-none leading-snug sm:leading-9 whitespace-pre-wrap wrap-break-word wrap-anywhere"
               />
+              {doc?.isTemplate && !inJournal && (
+                <span
+                  className="shrink-0 self-center inline-flex items-center gap-1 px-1.5 py-0.5 rounded-btn border border-border text-[11px] font-medium text-muted"
+                  title={t('template.headerHint')}
+                >
+                  <LayoutTemplate className="w-3 h-3" />
+                  {t('template.mark')}
+                </span>
+              )}
               {titleFocused && canEdit && !inJournal && noteTitleLength(title) > NOTE_TITLE_MAX - 10 && (
                 <span
                   className="absolute right-0 -bottom-4 text-[11px] leading-none text-faint tabular-nums pointer-events-none select-none"
@@ -1227,6 +1283,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
               onUpdateBlocks={handleUpdateBlocks}
               onCreateBlock={handleCreateBlock}
               onInsertBlocks={handleInsertBlocks}
+              templateSource={templateSource}
               onDeleteBlock={handleDeleteBlock}
               onDeleteBlocks={handleDeleteBlocks}
               onDeleteLastBlock={inJournal ? onEmptied : undefined}

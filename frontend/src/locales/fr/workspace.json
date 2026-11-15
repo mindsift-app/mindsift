@@ -131,7 +131,9 @@
     "audio": "Note vocale ou fichier audio",
     "dictation": "Parler au lieu d'écrire",
     "secret": "Masquer une valeur (mot de passe, jeton …)",
-    "drawing": "Dessin, diagramme, carte mentale"
+    "drawing": "Dessin, diagramme, carte mentale",
+    "templateName": "modèle",
+    "template": "Insérer le contenu d’un modèle"
   },
   "block": {
     "expand": "Déplier les sous-puces (Ctrl+clic : tous les niveaux)",
@@ -623,5 +625,18 @@
         "save": "L’enregistrement n’a pas fonctionné. Vérifie la connexion et réessaie."
       }
     }
+  },
+  "template": {
+    "mark": "Modèle",
+    "markAs": "Utiliser comme modèle",
+    "unmark": "Ne plus utiliser comme modèle",
+    "marked": "Enregistrée comme modèle – insérez-la avec /modèle ou « Nouvelle note »",
+    "unmarked": "N’est plus un modèle",
+    "headerHint": "Votre modèle : /modèle insère son contenu dans une note, « Nouvelle note » commence avec lui",
+    "search": "Rechercher un modèle …",
+    "none": "Aucun modèle pour l’instant. Dans le menu ⋯ d’une note : « Utiliser comme modèle ».",
+    "blank": "Note vide",
+    "field": "Modèle",
+    "loadFailed": "Le modèle n’a pas pu être chargé."
   }
 }

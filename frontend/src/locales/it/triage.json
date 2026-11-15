@@ -102,7 +102,9 @@
     "due": "Scadenza:",
     "placeholderList": "Aggiungi a «{{title}}»…",
     "list": "Lista",
-    "directTask": "Direttamente come attività"
+    "directTask": "Direttamente come attività",
+    "pillTask": "Attività",
+    "pillNote": "Nota"
   },
   "fab": {
     "nothing": "Nessun audio rilevato",

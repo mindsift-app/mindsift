@@ -210,6 +210,7 @@ export const workspaceApi = {
       icon?: string;
       folderPath?: string;
       isPinned?: boolean;
+      isTemplate?: boolean;
     }
   ): Promise<Document> {
     // Block content is saved through the note sync engine (lib/docSync), not here

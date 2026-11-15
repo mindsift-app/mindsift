@@ -89,10 +89,11 @@ func purgeStmts(section string) []string {
 			`DELETE FROM doc_team_shares WHERE doc_id IN ` + ownDocs,
 			`DELETE FROM doc_shares WHERE doc_id IN ` + ownDocs,
 			`DELETE FROM documents WHERE id IN ` + ownDocs,
-			// The user's own placement of notes, folders, pins and tag pages (a restore creates its
+			// The user's own placement of notes, folders, pins, templates and tag pages (a restore creates its
 			// folders again afterwards)
 			`DELETE FROM doc_user_folders WHERE user_id = ?1 AND doc_id NOT IN ` + keep,
 			`DELETE FROM doc_pins WHERE user_id = ?1 AND doc_id NOT IN ` + keep,
+			`DELETE FROM doc_templates WHERE user_id = ?1 AND doc_id NOT IN ` + keep,
 			`DELETE FROM workspace_folders WHERE user_id = ?1`,
 			`DELETE FROM trashed_folders WHERE user_id = ?1`,
 			`DELETE FROM tag_pages WHERE user_id = ?1`,

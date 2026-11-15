@@ -78,11 +78,5 @@ FLAW-31 is resolved in part (0.6.0) and stays in the overview above. FLAW-34 (re
 
 ## Feature Ideas
 
-### Capture
-- **Natural Language Dates** during capture: "Dentist tomorrow 2pm" automatically sets the due date and time.
-
-### Notes
-- **Templates** (e.g. "Weekly Review").
-
 ### Lists
 - **Suggest Frequent Items** while typing (based on completed entries).

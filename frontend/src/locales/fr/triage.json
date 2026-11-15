@@ -102,7 +102,9 @@
     "due": "Échéance le :",
     "placeholderList": "Ajouter à « {{title}} »…",
     "list": "Liste",
-    "directTask": "Directement comme tâche"
+    "directTask": "Directement comme tâche",
+    "pillTask": "Tâche",
+    "pillNote": "Note"
   },
   "fab": {
     "nothing": "Rien n'a été reconnu",

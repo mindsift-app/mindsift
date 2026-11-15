@@ -4,6 +4,7 @@ import { Document, SharedFolder } from '../../lib/types';
 import { DocRowIcon, FolderTreeItem } from './FolderTreeItem';
 import { useDocDragDrop } from './useDocDragDrop';
 import { FolderTreeNode, WorkspaceSubView } from './workspaceTypes';
+import { TemplateMark } from './NoteTemplates';
 import { useTranslation } from 'react-i18next';
 
 interface FolderTreeProps {
@@ -82,6 +83,7 @@ export function FolderTree({
                 >
                   <DocRowIcon icon={d.icon} />
                   <span className="truncate flex-1">{d.title || t('editor.untitled')}</span>
+                  {d.isTemplate && <TemplateMark />}
                   {d.sharedWith && d.sharedWith.length > 0 && (
                     <Users className="w-3 h-3 text-status-ok shrink-0" />
                   )}
@@ -143,6 +145,7 @@ export function FolderTree({
                 >
                   <DocRowIcon icon={d.icon} />
                   <span className="truncate flex-1">{d.title || t('editor.untitled')}</span>
+                  {d.isTemplate && <TemplateMark />}
                   {d.sharedWith && d.sharedWith.length > 0 && (
                     <Users className="w-3 h-3 text-status-ok shrink-0" />
                   )}

@@ -23,6 +23,7 @@ import {
   Shapes,
   CloudOff,
   Table as TableIcon,
+  LayoutTemplate,
 } from 'lucide-react';
 import type { HelpContent } from './types';
 
@@ -215,6 +216,10 @@ const de: HelpContent = {
                 <span className="text-accent font-bold">🗣️</span>
                 <span>/diktat (sprechen statt tippen: startet sofort, Tipp auf „Stopp“ setzt den Text in den Punkt)</span>
               </div>
+              <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main col-span-2">
+                <LayoutTemplate className="w-3.5 h-3.5 text-accent shrink-0" />
+                <span>/vorlage oder /template (Inhalt einer deiner Vorlagen an dieser Stelle einfügen)</span>
+              </div>
             </div>
           </div>
           <div className="pt-2 border-t border-border">
@@ -301,6 +306,36 @@ const de: HelpContent = {
             </li>
             <li>
               <strong className="text-main">Überall dabei:</strong> Kopieren, Einfügen, der Markdown-Export und KI-Agenten (MCP) sehen die Tabelle als Markdown-Tabelle; eingefügte Markdown-Tabellen und Tabellen aus Tabellenkalkulationen werden wieder zur Tabelle.
+            </li>
+          </ul>
+        </div>
+      ),
+    },
+    // WORKSPACE: TEMPLATES
+    {
+      id: 'workspace-templates',
+      category: 'workspace',
+      title: 'Vorlagen (/vorlage)',
+      subtitle: 'Wiederkehrende Notizen aus einer Vorlage starten',
+      icon: LayoutTemplate,
+      keywords: ['vorlage', 'vorlagen', 'template', 'muster', 'besprechung', 'wochenplan', 'platzhalter', 'datum'],
+      content: (
+        <div className="space-y-2 text-muted leading-relaxed">
+          <ul className="space-y-1.5">
+            <li>
+              <strong className="text-main">Vorlage anlegen:</strong> Jede Notiz kann eine Vorlage sein. Schreib sie wie gewohnt und wähle im ⋯-Menü der Notiz „Als Vorlage verwenden“ („Keine Vorlage mehr“ nimmt das zurück). Wo sie liegt, entscheidest du; ein eigener Ordner „Vorlagen“ hält sie zusammen. Im Ordnerbaum und neben dem Titel zeigt ein kleines Zeichen, dass es eine Vorlage ist.
+            </li>
+            <li>
+              <strong className="text-main">Einfügen:</strong> Tippe <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">/vorlage</kbd> (oder <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">/template</kbd>) in einen Punkt und wähle die Vorlage, die Suche hilft bei vielen. Ihr Inhalt kommt an die Stelle wie eingefügte Punkte: ein leerer Punkt wird zum ersten Punkt der Vorlage, sonst folgt sie unter dem Punkt auf seiner Ebene. Überschriften, Code, Tabellen, Zeichnungen, Bilder und versteckte Werte kommen mit; Aufgaben-Checkboxen starten offen und sind mit keiner Aufgabe verknüpft.
+            </li>
+            <li>
+              <strong className="text-main">Neue Notiz:</strong> Hast du Vorlagen, fragt „Neue Notiz“ nach Name, Emoji und Vorlage; die neue Notiz startet mit dem Inhalt der Vorlage. Ohne Vorlagen entsteht die Notiz am Desktop wie bisher sofort.
+            </li>
+            <li>
+              <strong className="text-main">Platzhalter:</strong> <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">{'{{datum}}'}</kbd> (oder <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">{'{{date}}'}</kbd>) wird beim Einfügen zum heutigen Datum, <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">{'{{titel}}'}</kbd> (oder <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">{'{{title}}'}</kbd>) zum Titel der Notiz. In Code-Blöcken und Zeichnungen bleiben sie stehen.
+            </li>
+            <li>
+              <strong className="text-main">Persönlich:</strong> Vorlagen sind deine eigene Auswahl: Du kannst jede Notiz, die du lesen darfst, als Vorlage nutzen, auch eine mit dir geteilte. Andere sehen deine Auswahl nicht, und eine geteilte Notiz ist für sie keine Vorlage, nur weil du sie so nutzt.
             </li>
           </ul>
         </div>
@@ -498,6 +533,10 @@ const de: HelpContent = {
       subtitle: 'Gedanken in unter 1 Sekunde festhalten – per Tastatur oder Sprache',
       icon: Layers,
       keywords: [
+        'datum',
+        'fälligkeit',
+        'morgen',
+        'uhrzeit',
         'capture',
         'schnellerfassung',
         'diktat',
@@ -521,6 +560,9 @@ const de: HelpContent = {
             </li>
             <li>
               <strong className="text-main">Ziel-Auswahl:</strong> Gedanken landen standardmäßig im Posteingang. Über die Optionen kannst du sie jedoch sofort als <strong className="text-main">Aufgabe</strong> (mit Priorität und Fälligkeit), <strong className="text-main">Listeneintrag</strong> (z.B. auf die Einkaufsliste) oder <strong className="text-main">neue Notiz</strong> routen.
+            </li>
+            <li>
+              <strong className="text-main">Datum im Text:</strong> Schreibst du „Zahnarzt morgen 14 Uhr“, erkennt der Quick Dump das Datum: Der Teil wird im Feld markiert, und ein Chip zeigt <em>Morgen, 14:00</em>. Beim Speichern verschwindet er aus dem Text und wird zur Fälligkeit; das <strong className="text-main">×</strong> am Chip lässt den Text, wie er ist, ohne Datum. Erkannt werden <em>heute</em>, <em>morgen</em>, <em>übermorgen</em>, Wochentage (<em>Freitag</em>, <em>am Freitag</em>, <em>nächsten Dienstag</em>; der heutige Wochentag meint den in einer Woche), <em>in 3 Tagen</em>, <em>in einer Woche</em>, <em>24.12.</em>, <em>24.12.2026</em>, <em>24. Dezember</em>, <em>2026-12-24</em> und Uhrzeiten wie <em>14 Uhr</em>, <em>14:30</em> oder <em>um 9</em>, auch zusammen („Freitag um 9“). Eine Uhrzeit allein gilt für heute, wenn sie noch kommt, sonst für morgen. Ein im Datumsfeld gewähltes Datum hat Vorrang. Das gilt für den Posteingang und Direkt-Aufgaben, auch nach einem Diktat, in der Sprache der App.
             </li>
           </ul>
         </div>
@@ -646,6 +688,9 @@ const de: HelpContent = {
             </li>
             <li>
               <strong className="text-main">Drag & Drop:</strong> Ziehe Aufgabenkarten mühelos zwischen den Spalten umher. Das Verschieben in eine Erledigt-Spalte hakt die Aufgabe automatisch ab.
+            </li>
+            <li>
+              <strong className="text-main">Datum gleich mittippen:</strong> Im Feld für eine neue Aufgabe (am Smartphone im Blatt hinter dem +) macht „Bericht Freitag um 9“ eine Aufgabe „Bericht“, fällig am Freitag um 09:00. Der Chip am Feld zeigt das erkannte Datum, sein × verwirft es; ein im Datumsfeld gewähltes Datum hat Vorrang. Welche Angaben erkannt werden, steht unter <em>Blitz-Erfassung</em>.
             </li>
           </ul>
         </div>
