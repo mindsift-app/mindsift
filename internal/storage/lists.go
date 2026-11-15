@@ -5,6 +5,7 @@ import (
 	"errors"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/mindsift-app/mindsift/internal/domain"
 )
@@ -417,60 +418,94 @@ func (s *Store) CreateListItem(listID, content, category, quantity string, sortO
 	return it, nil
 }
 
+// ToggleListItem sets an item's checked state now (SetListItemDone without a time of its own).
 func (s *Store) ToggleListItem(itemID string, isCompleted bool, userID, userName string) (*domain.ListItem, error) {
-	now := domain.NowISO()
+	it, _, err := s.SetListItemDone(itemID, isCompleted, time.Time{}, userID, userName)
+	return it, err
+}
+
+// doneTimeLayout: list_items.done_changed_at, fixed width so the strings compare like the times
+const doneTimeLayout = "2006-01-02T15:04:05.000Z"
+
+// SetListItemDone sets an item's checked state: a statement of the wanted state, never a toggle. at is
+// when the person changed it (zero: now); a phone that was offline sends its changes later. The change
+// is written only if
+//   - the item is not in that state already: two people ticking the same item leave it ticked, and the
+//     one who ticked it first stays its "done by", and
+//   - nobody changed the checked state after at: an older change sent late does not undo a newer one
+//     (the last one to change it wins, by when they did it, not by when it reached the server).
+//
+// changed tells whether it was written; either way the item is returned as stored.
+func (s *Store) SetListItemDone(itemID string, isCompleted bool, at time.Time, userID, userName string) (it *domain.ListItem, changed bool, err error) {
+	now := time.Now().UTC()
+	if at.IsZero() || at.After(now) {
+		at = now
+	}
+	stamp := at.UTC().Format(doneTimeLayout)
 	doneInt := 0
 	completedAt := ""
 	completedBy := ""
 	completedByName := ""
 	if isCompleted {
 		doneInt = 1
-		completedAt = now
+		completedAt = domain.NowISO()
 		completedBy = userID
 		completedByName = userName
 	}
 
 	res, err := s.db.Exec(
-		`UPDATE list_items SET is_completed = ?, completed_by = ?, completed_by_name = ?, completed_at = ? WHERE id = ?`,
-		doneInt, completedBy, completedByName, completedAt, itemID,
+		`UPDATE list_items SET is_completed = ?, completed_by = ?, completed_by_name = ?, completed_at = ?, done_changed_at = ?
+		 WHERE id = ? AND is_completed != ? AND done_changed_at <= ?`,
+		doneInt, completedBy, completedByName, completedAt, stamp, itemID, doneInt, stamp,
 	)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
-	if n, err := res.RowsAffected(); err == nil && n == 0 {
-		return nil, ErrListItemNotFound // deleted a moment ago
-	}
+	n, _ := res.RowsAffected()
+	changed = n > 0
 
-	it, err := s.getListItem(itemID)
+	// Not written: deleted a moment ago (getListItem reports ErrListItemNotFound), already in that state
+	// or changed by somebody later
+	it, err = s.getListItem(itemID)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
-	s.execLogged(`UPDATE lists SET updated_at = ? WHERE id = ?`, now, it.ListID)
-	return it, nil
+	if changed {
+		s.execLogged(`UPDATE lists SET updated_at = ? WHERE id = ?`, domain.NowISO(), it.ListID)
+	}
+	return it, changed, nil
 }
 
+// UpdateListItem changes the given fields (nil: unchanged). Only those are written: a change of another
+// field made meanwhile (a tick, someone else's new quantity) stays as it is.
 func (s *Store) UpdateListItem(itemID string, content *string, category *string, quantity *string) (*domain.ListItem, error) {
-	now := domain.NowISO()
+	sets := []string{}
+	args := []any{}
+	set := func(col string, v *string) {
+		if v != nil {
+			sets = append(sets, col+" = ?")
+			args = append(args, *v)
+		}
+	}
+	set("content", content)
+	set("category", category)
+	set("quantity", quantity)
+	if len(sets) > 0 {
+		res, err := s.db.Exec(`UPDATE list_items SET `+strings.Join(sets, ", ")+` WHERE id = ?`, append(args, itemID)...)
+		if err != nil {
+			return nil, err
+		}
+		if n, err := res.RowsAffected(); err == nil && n == 0 {
+			return nil, ErrListItemNotFound
+		}
+	}
 	it, err := s.getListItem(itemID)
 	if err != nil {
 		return nil, err
 	}
-
-	if content != nil {
-		it.Content = *content
+	if len(sets) > 0 {
+		s.execLogged(`UPDATE lists SET updated_at = ? WHERE id = ?`, domain.NowISO(), it.ListID)
 	}
-	if category != nil {
-		it.Category = *category
-	}
-	if quantity != nil {
-		it.Quantity = *quantity
-	}
-
-	_, err = s.db.Exec(`UPDATE list_items SET content = ?, category = ?, quantity = ? WHERE id = ?`, it.Content, it.Category, it.Quantity, itemID)
-	if err != nil {
-		return nil, err
-	}
-	s.execLogged(`UPDATE lists SET updated_at = ? WHERE id = ?`, now, it.ListID)
 	return it, nil
 }
 

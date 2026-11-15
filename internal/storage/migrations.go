@@ -80,6 +80,7 @@ var migrations = []migration{
 	{52, "Code blocks keep no hidden values; smaller results of note operations", (*Store).migrateCodeBlocksAndOpResults},
 	{53, "Covering index for the note search", (*Store).migrateSearchCoverIndex},
 	{54, "Record of changes made on the command line", (*Store).migrateCLIEvents},
+	{56, "When a list item was last ticked or opened", (*Store).migrateListItemDoneChangedAt},
 }
 
 // migrationBlockRefs creates block_refs: until it has run (earlier steps that rewrite notes), writing a
@@ -395,6 +396,13 @@ func (s *Store) migrateOpenTodoIndex() error {
 // it keeps the key unique, and a key held twice would make the external-content index delete the text of
 // the wrong bullet. The extra index is written when a bullet is inserted, deleted or restored, not when
 // its text changes.
+// migrateListItemDoneChangedAt is migration 56: list_items.done_changed_at holds when the checked state
+// last changed (doneTimeLayout, UTC), so a tick sent late by a phone that was offline does not undo a
+// change somebody made after it (SetListItemDone). Empty: never changed since the column exists.
+func (s *Store) migrateListItemDoneChangedAt() error {
+	return s.execSchemaStatement(`ALTER TABLE list_items ADD COLUMN done_changed_at TEXT NOT NULL DEFAULT ''`)
+}
+
 func (s *Store) migrateSearchCoverIndex() error {
 	_, err := s.db.Exec(`CREATE INDEX IF NOT EXISTS idx_blocks_fts_cover ON blocks(fts_rowid, deleted, document_id, id)`)
 	return err
