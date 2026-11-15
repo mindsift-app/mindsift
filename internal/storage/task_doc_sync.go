@@ -70,24 +70,34 @@ func linkedTaskIDsJSON(links map[string]string) string {
 }
 
 // linkedTasks loads the tasks of a note's links (block → task) in one query, without access check.
-func (s *Store) linkedTasks(links map[string]string) (map[string]*domain.Thought, error) {
+func (s *Store) linkedTasks(links map[string]string) (map[string]*domain.Thought, map[string][]domain.KanbanColumn, error) {
 	rows, err := s.db.Query(
-		`SELECT id, user_id, content, tags, priority, source, status, is_completed, converted_type, converted_ref_id, due_date, task_list_id, kanban_status, notes, alarm_sent, created_at, triaged_at, subtasks, sort_order, recurrence, reminders, `+originColumns("")+`
+		`SELECT id, user_id, content, tags, priority, source, status, is_completed, converted_type, converted_ref_id, due_date, task_list_id, kanban_status, notes, alarm_sent, created_at, triaged_at, subtasks, sort_order, recurrence, reminders, `+originColumns("")+`,
+		        COALESCE((SELECT tl.columns FROM task_lists tl WHERE tl.id = thoughts.task_list_id), '')
 		 FROM thoughts WHERE id IN (SELECT value FROM json_each(?))`, linkedTaskIDsJSON(links))
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	defer rows.Close()
 	var list []domain.Thought
+	columns := map[string][]domain.KanbanColumn{} // per list, for the column of a tick (statusColumn)
 	for rows.Next() {
-		t, err := scanThought(rows)
+		var raw string
+		t, err := scanThought(trailingScan{rows, &raw})
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		list = append(list, *t)
+		if _, ok := columns[t.TaskListID]; !ok {
+			var cols []domain.KanbanColumn
+			if raw != "" {
+				_ = json.Unmarshal([]byte(raw), &cols)
+			}
+			columns[t.TaskListID] = cols
+		}
 	}
 	if err := rows.Err(); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	// With their assignees: the tasks go out as TASK_UPDATED, which the apps apply as the whole task
 	s.attachTaskAssignees(list)
@@ -95,7 +105,17 @@ func (s *Store) linkedTasks(links map[string]string) (map[string]*domain.Thought
 	for i := range list {
 		out[list[i].ID] = &list[i]
 	}
-	return out, nil
+	return out, columns, nil
+}
+
+// trailingScan scans a row whose last column comes after the ones the wrapped scanner asks for into extra.
+type trailingScan struct {
+	rows  interface{ Scan(dest ...any) error }
+	extra any
+}
+
+func (r trailingScan) Scan(dest ...any) error {
+	return r.rows.Scan(append(dest, r.extra)...)
 }
 
 // DocTaskLinks returns the note's checkboxes linked to a task (block → task) and those linked as a
@@ -196,7 +216,7 @@ func (s *Store) ReconcileDocTaskLinksNotify(docID string, plan func([]TaskReconc
 	for blockID := range links {
 		taken[blockID] = true
 	}
-	tasks, err := s.linkedTasks(links)
+	tasks, columns, err := s.linkedTasks(links)
 	if err != nil {
 		logDBErr(err)
 		return nil, nil
@@ -244,7 +264,7 @@ func (s *Store) ReconcileDocTaskLinksNotify(docID string, plan func([]TaskReconc
 		if b.Props.Checked != t.IsCompleted {
 			after.IsCompleted = b.Props.Checked
 			// The list's last column marked as done (one it stands in stays), or back to its first open one
-			after.KanbanStatus = statusColumn(s.listColumns(t.TaskListID), after.IsCompleted, t.KanbanStatus)
+			after.KanbanStatus = statusColumn(columns[t.TaskListID], after.IsCompleted, t.KanbanStatus)
 			sets = append(sets, "is_completed = ?", "kanban_status = ?")
 			args = append(args, boolInt(after.IsCompleted), after.KanbanStatus)
 			if !after.IsCompleted {
@@ -331,7 +351,7 @@ func (s *Store) refreshReconciled(changed []TaskReconciled) {
 	for _, c := range changed {
 		ids[c.After.ID] = c.After.ID
 	}
-	fresh, err := s.linkedTasks(ids)
+	fresh, _, err := s.linkedTasks(ids)
 	if err != nil {
 		logDBErr(err)
 		return
@@ -385,7 +405,7 @@ func (s *Store) RelinkRestoredDocTasks(docID string, blockIDs []string) []*domai
 	if len(ids) == 0 {
 		return nil
 	}
-	tasks, err := s.linkedTasks(ids)
+	tasks, _, err := s.linkedTasks(ids)
 	if err != nil {
 		logDBErr(err)
 		return nil
