@@ -128,6 +128,8 @@ export const tasksApi = {
       kanbanStatus?: string;
       notes?: string;
       subtasks?: SubTask[];
+      /** The subtasks `subtasks` was made from: the server merges the change into the stored ones */
+      subtasksBase?: SubTask[];
       tags?: string[];
       assignees?: string[];
       recurrence?: string;

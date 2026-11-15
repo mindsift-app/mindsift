@@ -736,7 +736,7 @@ var mcpTools = []mcpTool{
 			subs := append(append([]domain.SubTask{}, t.Subtasks...), domain.SubTask{
 				ID: domain.NewID("st"), Title: title, CreatedAt: time.Now().UTC().Format(time.RFC3339),
 			})
-			updated, err := s.updateTask(userID, a.TaskID, taskPatch{Subtasks: &subs, actor: actor})
+			updated, err := s.updateTask(userID, a.TaskID, taskPatch{Subtasks: &subs, SubtasksBase: &t.Subtasks, actor: actor})
 			if err != nil {
 				return nil, err
 			}
@@ -794,7 +794,7 @@ var mcpTools = []mcpTool{
 			if !found {
 				return nil, errors.New("Unteraufgabe nicht gefunden")
 			}
-			updated, err := s.updateTask(userID, a.TaskID, taskPatch{Subtasks: &subs, actor: actor})
+			updated, err := s.updateTask(userID, a.TaskID, taskPatch{Subtasks: &subs, SubtasksBase: &t.Subtasks, actor: actor})
 			if err != nil {
 				return nil, err
 			}
