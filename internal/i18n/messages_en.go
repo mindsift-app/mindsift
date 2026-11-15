@@ -589,6 +589,7 @@ var messagesEN = map[string]string{
 	"Der Einrichtungscode stimmt nicht. Er steht im Server-Log.":                                   "The setup code is wrong. It is in the server log.",
 	"Zu viele falsche Einrichtungscodes. Die Einrichtung ist für noch {minutes} Minuten gesperrt.": "Too many wrong setup codes. The setup is locked for {minutes} more minutes.",
 	"Zu viele falsche Einrichtungscodes. Die Einrichtung ist für noch eine Minute gesperrt.":       "Too many wrong setup codes. The setup is locked for one more minute.",
+	"Ungültige Bildqualität (erlaubt: high, medium, low)":                                          "Invalid image quality (allowed: high, medium, low)",
 	"Unbekannte Zeitzone":                                                                         "Unknown time zone",
 	"ungewöhnlich stark gepackt, wird nicht entpackt":                                             "packed unusually tightly, not unpacked",
 	"zu viele Punkte (max. 20.000 pro Notiz)":                                                     "too many bullets (max. 20,000 per note)",

@@ -589,6 +589,7 @@ var messagesFR = map[string]string{
 	"Der Einrichtungscode stimmt nicht. Er steht im Server-Log.":                                   "Le code de configuration est incorrect. Il figure dans le journal du serveur.",
 	"Zu viele falsche Einrichtungscodes. Die Einrichtung ist für noch {minutes} Minuten gesperrt.": "Trop de codes de configuration erronés. La configuration est bloquée encore {minutes} minutes.",
 	"Zu viele falsche Einrichtungscodes. Die Einrichtung ist für noch eine Minute gesperrt.":       "Trop de codes de configuration erronés. La configuration est bloquée encore une minute.",
+	"Ungültige Bildqualität (erlaubt: high, medium, low)":                                          "Qualité d'image non valide (autorisées : high, medium, low)",
 	"Unbekannte Zeitzone":                                                                         "Fuseau horaire inconnu",
 	"ungewöhnlich stark gepackt, wird nicht entpackt":                                             "compressé de façon inhabituelle, pas décompressé",
 	"zu viele Punkte (max. 20.000 pro Notiz)":                                                     "trop de puces (max. 20 000 par note)",

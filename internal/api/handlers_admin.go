@@ -577,6 +577,10 @@ func (s *Server) settingsForBrowser(settings *domain.SystemSettings) *domain.Sys
 		off := false
 		out.LinkPreviews = &off // the demo sends nothing out
 	}
+	if s.cfg.Media.ImageQuality != "" {
+		out.ImageQuality = s.cfg.Media.ImageQuality
+		out.ImageQualityViaEnv = true
+	}
 	out.EmailLinksAvailable = s.emailLinksAvailable()
 	out.DefaultLanguage = s.defaultLanguage()
 	out.OIDC = s.oidcStatusForAdmin()
@@ -666,9 +670,17 @@ func (s *Server) handleAdminUpdateSettings(w http.ResponseWriter, r *http.Reques
 	if s.cfg.CalendarFeeds != nil {
 		settings.CalendarFeeds = nil // fixed by CALENDAR_FEEDS
 	}
+	if s.cfg.Media.ImageQuality != "" {
+		settings.ImageQuality = "" // fixed by MEDIA_IMAGE_QUALITY
+	}
 	settings.PeopleSearchViaEnv, settings.PublicLinksViaEnv, settings.PublicLinkMaxDaysViaEnv, settings.CalendarFeedsViaEnv = false, false, false, false
+	settings.ImageQualityViaEnv = false
 	if settings.MFARequired != nil && !storage.ValidMFARequired(*settings.MFARequired) {
 		writeErrorFrom(w, http.StatusBadRequest, storage.ErrInvalidMFARequired)
+		return
+	}
+	if settings.ImageQuality != "" && !storage.ValidImageQuality(settings.ImageQuality) {
+		writeErrorFrom(w, http.StatusBadRequest, storage.ErrInvalidImageQuality)
 		return
 	}
 	if settings.DefaultLanguage != "" && !i18n.Valid(settings.DefaultLanguage) {

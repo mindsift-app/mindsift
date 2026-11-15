@@ -589,6 +589,7 @@ var messagesIT = map[string]string{
 	"Der Einrichtungscode stimmt nicht. Er steht im Server-Log.":                                   "Il codice di configurazione non è corretto. Si trova nel log del server.",
 	"Zu viele falsche Einrichtungscodes. Die Einrichtung ist für noch {minutes} Minuten gesperrt.": "Troppi codici di configurazione errati. La configurazione è bloccata ancora per {minutes} minuti.",
 	"Zu viele falsche Einrichtungscodes. Die Einrichtung ist für noch eine Minute gesperrt.":       "Troppi codici di configurazione errati. La configurazione è bloccata ancora per un minuto.",
+	"Ungültige Bildqualität (erlaubt: high, medium, low)":                                          "Qualità immagine non valida (consentite: high, medium, low)",
 	"Unbekannte Zeitzone":                                                                         "Fuso orario sconosciuto",
 	"ungewöhnlich stark gepackt, wird nicht entpackt":                                             "compresso in modo insolitamente forte, non viene estratto",
 	"zu viele Punkte (max. 20.000 pro Notiz)":                                                     "troppi punti (max. 20.000 per nota)",

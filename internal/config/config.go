@@ -297,6 +297,9 @@ type MediaConfig struct {
 	MaxAudioMB int
 	QuotaMB    int
 	DemoMaxMB  int
+	// ImageQuality: MEDIA_IMAGE_QUALITY=high|medium|low fixes how strongly the app compresses pictures
+	// before uploading them; empty leaves it to the system settings.
+	ImageQuality string
 }
 
 // SpeechConfig: with STT_URL set, voice input is transcribed by a self-hosted, OpenAI-compatible
@@ -612,10 +615,11 @@ func Load() *Config {
 		},
 		OIDC: loadOIDC(),
 		Media: MediaConfig{
-			MaxImageMB: envInt("MEDIA_MAX_IMAGE_MB", 15, 1, 1000),
-			MaxAudioMB: envInt("MEDIA_MAX_AUDIO_MB", 50, 1, 2000),
-			QuotaMB:    envInt("MEDIA_QUOTA_MB", 0, 0, 10000000),
-			DemoMaxMB:  envInt("MEDIA_DEMO_MAX_MB", 3, 1, 100),
+			MaxImageMB:   envInt("MEDIA_MAX_IMAGE_MB", 15, 1, 1000),
+			MaxAudioMB:   envInt("MEDIA_MAX_AUDIO_MB", 50, 1, 2000),
+			QuotaMB:      envInt("MEDIA_QUOTA_MB", 0, 0, 10000000),
+			DemoMaxMB:    envInt("MEDIA_DEMO_MAX_MB", 3, 1, 100),
+			ImageQuality: imageQualityFromEnv(),
 		},
 		Legal: func() LegalTexts {
 			customLabel, customURL := legalCustomLink("LEGAL_CUSTOM_LINK_LABEL", "LEGAL_CUSTOM_LINK_URL")
@@ -737,6 +741,18 @@ func publicLinkMaxDaysFromEnv() int {
 		return MaxPublicLinkDays
 	}
 	return n
+}
+
+// imageQualityFromEnv reads MEDIA_IMAGE_QUALITY (high, medium or low); anything else is ignored with a
+// warning and leaves the level to the system settings.
+func imageQualityFromEnv() string {
+	v := strings.ToLower(strings.TrimSpace(os.Getenv("MEDIA_IMAGE_QUALITY")))
+	switch v {
+	case "", "high", "medium", "low":
+		return v
+	}
+	slog.Warn("MEDIA_IMAGE_QUALITY ignored: allowed are high, medium and low", "value", v)
+	return ""
 }
 
 // MaxPublicLinkDays is the hard limit for public links (storage.MaxPublicLinkDays): there is no link

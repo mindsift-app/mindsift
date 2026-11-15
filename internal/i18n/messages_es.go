@@ -589,6 +589,7 @@ var messagesES = map[string]string{
 	"Der Einrichtungscode stimmt nicht. Er steht im Server-Log.":                                   "El código de configuración no es correcto. Está en el registro del servidor.",
 	"Zu viele falsche Einrichtungscodes. Die Einrichtung ist für noch {minutes} Minuten gesperrt.": "Demasiados códigos de configuración incorrectos. La configuración está bloqueada {minutes} minutos más.",
 	"Zu viele falsche Einrichtungscodes. Die Einrichtung ist für noch eine Minute gesperrt.":       "Demasiados códigos de configuración incorrectos. La configuración está bloqueada un minuto más.",
+	"Ungültige Bildqualität (erlaubt: high, medium, low)":                                          "Calidad de imagen no válida (permitidas: high, medium, low)",
 	"Unbekannte Zeitzone":                                                                         "Zona horaria desconocida",
 	"ungewöhnlich stark gepackt, wird nicht entpackt":                                             "comprimido de forma inusualmente fuerte, no se descomprime",
 	"zu viele Punkte (max. 20.000 pro Notiz)":                                                     "demasiados puntos (máx. 20.000 por nota)",

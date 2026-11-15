@@ -531,6 +531,11 @@ type SystemSettings struct {
 	// LinkPreviews: the server fetches previews of web addresses in notes (default on); off, it fetches
 	// nothing and the app shows no preview cards. nil in an update leaves it unchanged. Off in demo mode.
 	LinkPreviews *bool `json:"linkPreviews,omitempty"`
+	// ImageQuality: how strongly the app compresses pictures before uploading them (always at most
+	// 2048 px): "high" (default), "medium" or "low". Empty in an update leaves it unchanged; ViaEnv:
+	// fixed by MEDIA_IMAGE_QUALITY.
+	ImageQuality       string `json:"imageQuality,omitempty"`
+	ImageQualityViaEnv bool   `json:"imageQualityConfiguredViaEnv,omitempty"`
 	// DefaultLanguage: language for people without their own choice whose browser language MindSift does
 	// not speak, and for the demo; empty in an update leaves it unchanged
 	DefaultLanguage string `json:"defaultLanguage,omitempty"`
