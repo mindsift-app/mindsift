@@ -482,12 +482,11 @@ func legalCustomLink(labelVar, urlVar string) (string, string) {
 	return label, u
 }
 
-func Load() *Config {
-	port := getEnv("PORT", "8080")
-	dataDir := getEnv("DATA_DIR", "./data")
+// DatabasePathFromEnv: the SQLite file from DATABASE_URL, else mindsift.db in DATA_DIR (./data). The
+// command line (internal/cli) opens the same file as the server without the rest of Load.
+func DatabasePathFromEnv() string {
+	dbPath := filepath.Join(getEnv("DATA_DIR", "./data"), "mindsift.db")
 	dbURL := getEnv("DATABASE_URL", "")
-
-	dbPath := filepath.Join(dataDir, "mindsift.db")
 	if strings.HasPrefix(dbURL, "sqlite://") {
 		dbPath = strings.TrimPrefix(dbURL, "sqlite://")
 	} else if strings.HasPrefix(dbURL, "postgres") {
@@ -495,6 +494,24 @@ func Load() *Config {
 	} else if dbURL != "" {
 		dbPath = dbURL
 	}
+	return dbPath
+}
+
+// DemoModeFromEnv: MINDSIFT_DEMO is the name; MINDA_DEMO and DEMO_MODE are earlier names that still switch it on.
+func DemoModeFromEnv() bool {
+	for _, name := range []string{"MINDSIFT_DEMO", "MINDA_DEMO", "DEMO_MODE"} {
+		switch strings.ToLower(getEnv(name, "false")) {
+		case "true", "1", "yes", "on":
+			return true
+		}
+	}
+	return false
+}
+
+func Load() *Config {
+	port := getEnv("PORT", "8080")
+	dataDir := getEnv("DATA_DIR", "./data")
+	dbPath := DatabasePathFromEnv()
 
 	jwtSecret := resolveJWTSecret(os.Getenv("JWT_SECRET"), filepath.Dir(dbPath))
 	secretsKey, secretsKeySource := resolveSecretsKey(os.Getenv("SECRETS_KEY"), filepath.Dir(dbPath))
@@ -504,14 +521,7 @@ func Load() *Config {
 	debug := debugFromEnv()
 	logLevel := logLevelFromEnv()
 
-	// MINDSIFT_DEMO is the name; MINDA_DEMO and DEMO_MODE are earlier names that still switch it on
-	demoMode := false
-	for _, name := range []string{"MINDSIFT_DEMO", "MINDA_DEMO", "DEMO_MODE"} {
-		switch strings.ToLower(getEnv(name, "false")) {
-		case "true", "1", "yes", "on":
-			demoMode = true
-		}
-	}
+	demoMode := DemoModeFromEnv()
 
 	smtpHost := getEnv("SMTP_HOST", "")
 	smtpPort := getEnv("SMTP_PORT", "587")
