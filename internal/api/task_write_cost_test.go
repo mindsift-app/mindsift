@@ -183,11 +183,12 @@ func newCountingTestServer(t *testing.T) (*Server, *storage.Store, string, strin
 	return srv, store, token, user.ID
 }
 
-// TestTaskWriteCost: creating and completing a task costs a fixed number of statements and at most two
-// writes that wait for the write lock, not a few statements and a write per member of its list (load
-// test 2026-11-15: creating a task was by far the slowest request, before: 331 statements and 55 writes
-// in a list shared with 50 people). Logs the cost per request; TASK_COST_SQL=1 logs every statement of
-// the first one.
+// TestTaskWriteCost: creating and completing a task costs a fixed number of statements and one write
+// that waits for the write lock (the notifications go into the transaction of the change), not a few
+// statements and a write per member of its list (load test 2026-11-15: creating a task was by far the
+// slowest request, before: 331 statements and 55 writes in a list shared with 50 people; then 67 to 73
+// statements and two writes; now 14 to 15 statements and one write, 8 to 9 in a personal list). Logs the
+// cost per request; TASK_COST_SQL=1 logs every statement of the first one.
 func TestTaskWriteCost(t *testing.T) {
 	srv, store, token, ownerID := newCountingTestServer(t)
 	router := srv.Router()
@@ -245,22 +246,22 @@ func TestTaskWriteCost(t *testing.T) {
 			}
 		})
 	}
-	check := func(what string, c taskWriteCost) {
+	check := func(what string, c taskWriteCost, maxStmts float64) {
 		t.Helper()
 		t.Logf("%s: %v", what, c)
-		if c.stmts > 80 || c.locks > 2 {
-			t.Errorf("%s: %v, expected at most 80 statements and 2 writes", what, c)
+		if c.stmts > maxStmts || c.locks > 1 {
+			t.Errorf("%s: %v, expected at most %.0f statements and 1 write", what, c, maxStmts)
 		}
 	}
 
 	sharedCreate, sharedIDs := create(shared.ID)
-	check(fmt.Sprintf("create in a list shared with %d people", members), sharedCreate)
-	check(fmt.Sprintf("complete in a list shared with %d people", members), complete(sharedIDs))
+	check(fmt.Sprintf("create in a list shared with %d people", members), sharedCreate, 16)
+	check(fmt.Sprintf("complete in a list shared with %d people", members), complete(sharedIDs), 16)
 	personalCreate, personalIDs := create(personal.ID)
-	check("create in a personal list", personalCreate)
-	check("complete in a personal list", complete(personalIDs))
+	check("create in a personal list", personalCreate, 10)
+	check("complete in a personal list", complete(personalIDs), 10)
 	inboxCreate, _ := create("")
-	check("create without a list", inboxCreate)
+	check("create without a list", inboxCreate, 6)
 
 	// What the requests did is unchanged: the creator is assigned in the shared list only, and every
 	// member has an entry for each task added and each completed

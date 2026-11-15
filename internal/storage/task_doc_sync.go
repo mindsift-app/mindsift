@@ -175,7 +175,15 @@ func (s *Store) ReconcileDocTaskLinks(docID string) []*domain.Thought {
 // take over an unlinked checkbox there with the same text). Returns the note ID if it changed.
 func (s *Store) SyncTaskToDoc(userID, taskID string) string {
 	t, err := s.GetThoughtByIDUnchecked(taskID)
-	if err != nil || t == nil || t.ConvertedType != "document_block" || !strings.Contains(t.ConvertedRefID, ":") {
+	if err != nil {
+		return ""
+	}
+	return s.SyncTaskToDocFrom(userID, t)
+}
+
+// SyncTaskToDocFrom is SyncTaskToDoc with the task as it was just written (UpdateTask), not read again.
+func (s *Store) SyncTaskToDocFrom(userID string, t *domain.Thought) string {
+	if t == nil || t.ConvertedType != "document_block" || !strings.Contains(t.ConvertedRefID, ":") {
 		return ""
 	}
 	docID, mainID, _ := strings.Cut(t.ConvertedRefID, ":")
@@ -281,7 +289,7 @@ func (s *Store) SyncTaskToDoc(userID, taskID string) string {
 	}
 	if subsChanged {
 		subsJSON, _ := json.Marshal(subs)
-		s.execLogged(`UPDATE thoughts SET subtasks = ? WHERE id = ?`, string(subsJSON), taskID)
+		s.execLogged(`UPDATE thoughts SET subtasks = ? WHERE id = ?`, string(subsJSON), t.ID)
 	}
 	for _, r := range results {
 		if r.Seq > 0 {

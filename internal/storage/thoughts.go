@@ -34,43 +34,58 @@ func (s *Store) CreateThoughtWithDetails(userID, content, priority, source, dueD
 // did afterwards). members: everyone who can see the list (GetTaskListUserIDs), nil without one.
 // Under load each separate write waited its turn for the database's write lock, which made creating a
 // task the slowest request (load test 2026-11-15).
-func (s *Store) CreateTask(userID, content, priority, source, dueDate, taskListID, notes string) (*domain.Thought, []string, error) {
+//
+// plan (may be nil) gives the notifications about the new task from it and the list's members; it runs
+// before the transaction and what it returns is stored in it, with the task. Returns the task as stored,
+// the members and the center entries as stored (in plan's order).
+func (s *Store) CreateTask(userID, content, priority, source, dueDate, taskListID, notes string, plan func(t *domain.Thought, members []string) ([]CenterAdd, []QueuedAdd)) (*domain.Thought, []string, []CenterEntry, error) {
 	t, err := s.newThought(userID, content, priority, source, dueDate, taskListID, "todo", notes)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	t.Status = domain.StatusConverted
 	t.ConvertedType = "task"
 	t.TriagedAt = t.CreatedAt
+	t.Assignees = []string{}
+	t.Reminders = []int{}
+	var members []string
+	if taskListID != "" {
+		members = s.GetTaskListUserIDs(taskListID)
+		if len(members) > 1 {
+			t.Assignees = []string{userID}
+		}
+	}
+	var center []CenterAdd
+	var queue []QueuedAdd
+	if plan != nil {
+		center, queue = plan(t, members)
+	}
 	tx, err := s.db.Begin()
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	defer tx.Rollback()
 	if err := insertThought(tx, t); err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
-	var members []string
-	if taskListID != "" {
-		members, err = taskListUserIDsTx(tx, taskListID)
-		if err != nil {
-			return nil, nil, err
+	if len(t.Assignees) > 0 {
+		if _, err := tx.Exec(`INSERT OR IGNORE INTO task_assignees (task_id, user_id, created_at) VALUES (?, ?, ?)`, t.ID, userID, domain.NowISO()); err != nil {
+			return nil, nil, nil, err
 		}
-		if len(members) > 1 {
-			if _, err := tx.Exec(`INSERT OR IGNORE INTO task_assignees (task_id, user_id, created_at) VALUES (?, ?, ?)`, t.ID, userID, domain.NowISO()); err != nil {
-				return nil, nil, err
-			}
-		}
+	}
+	added, err := storeNotificationsTx(tx, center, queue)
+	if err != nil {
+		return nil, nil, nil, err
 	}
 	if err := tx.Commit(); err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	// As stored (the same reads UpdateThoughtTriage answered with)
 	created, err := s.GetThoughtByID(userID, t.ID)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
-	return created, members, nil
+	return created, members, added, nil
 }
 
 // newThought checks the input of a new thought and builds it (tags from the text and the source); the
@@ -461,65 +476,102 @@ func (s *Store) UpdateThoughtTriage(userID, thoughtID, action, convertTo, target
 	return s.GetThoughtByID(userID, thoughtID)
 }
 
+// UpdateThoughtDetails changes a task; nil fields stay as they are (see UpdateTask).
 func (s *Store) UpdateThoughtDetails(userID, thoughtID string, content *string, isCompleted *bool, dueDate *string, priority *string, taskListID *string, kanbanStatus *string, notes *string, subtasks *[]domain.SubTask, tags *[]string) (*domain.Thought, error) {
-	thought, err := s.GetThoughtByID(userID, thoughtID)
+	before, err := s.GetThoughtByID(userID, thoughtID)
 	if err != nil {
 		return nil, err
 	}
+	t, _, err := s.UpdateTask(userID, before, ThoughtPatch{Content: content, IsCompleted: isCompleted, DueDate: dueDate, Priority: priority,
+		TaskListID: taskListID, KanbanStatus: kanbanStatus, Notes: notes, Subtasks: subtasks, Tags: tags}, nil)
+	return t, err
+}
+
+// ThoughtPatch is a partial change of a task for UpdateTask; nil fields stay as they are.
+type ThoughtPatch struct {
+	Content, DueDate, Priority, TaskListID, KanbanStatus, Notes *string
+	IsCompleted                                                 *bool
+	Subtasks                                                    *[]domain.SubTask
+	Tags                                                        *[]string
+}
+
+// NotifyPlan gives the notifications about a change from the task's new state (center entries and queued
+// events as for StoreNotifications). UpdateTask and CreateTask call it before their transaction, so it may
+// read the database, and store what it returns in the transaction of the change.
+type NotifyPlan func(t *domain.Thought) ([]CenterAdd, []QueuedAdd)
+
+// UpdateTask applies a patch to a task as GetThoughtByID read it for userID (before, which stays as it
+// is; the caller compares it with the result) and writes it in one transaction together with plan's
+// notifications: a change and what it tells others used to wait twice for the database's write lock.
+// Returns the new state and the center entries as stored, in plan's order.
+func (s *Store) UpdateTask(userID string, before *domain.Thought, p ThoughtPatch, plan NotifyPlan) (*domain.Thought, []CenterEntry, error) {
+	thought := before.Clone()
 	wasCompleted := thought.IsCompleted
 	oldDue := thought.DueDate
 	if err := s.ensureTaskListWritable(userID, thought.TaskListID); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	if taskListID != nil && *taskListID != thought.TaskListID {
-		if err := s.ensureTaskListWritable(userID, *taskListID); err != nil {
-			return nil, err
+	moved := p.TaskListID != nil && *p.TaskListID != thought.TaskListID
+	if moved {
+		if err := s.ensureTaskListWritable(userID, *p.TaskListID); err != nil {
+			return nil, nil, err
 		}
 	}
 
-	if content != nil {
-		thought.Content = strings.TrimSpace(*content)
+	if p.Content != nil {
+		thought.Content = strings.TrimSpace(*p.Content)
 		thought.Tags = domain.ExtractTags(thought.Content)
 	}
-	if tags != nil {
-		thought.Tags = *tags
+	if p.Tags != nil {
+		thought.Tags = *p.Tags
 	}
-	if isCompleted != nil {
-		thought.IsCompleted = *isCompleted
-		if *isCompleted {
+	if p.IsCompleted != nil {
+		thought.IsCompleted = *p.IsCompleted
+		if *p.IsCompleted {
 			thought.KanbanStatus = "done"
 		} else if thought.KanbanStatus == "done" {
 			thought.KanbanStatus = "todo"
 		}
 	}
-	if dueDate != nil {
-		thought.DueDate = domain.NormalizeDue(*dueDate)
+	if p.DueDate != nil {
+		thought.DueDate = domain.NormalizeDue(*p.DueDate)
 	}
-	if priority != nil {
-		p := strings.ToLower(strings.TrimSpace(*priority))
-		if p == "" || p == "none" {
-			p = "normal"
+	if p.Priority != nil {
+		pr := strings.ToLower(strings.TrimSpace(*p.Priority))
+		if pr == "" || pr == "none" {
+			pr = "normal"
 		}
-		thought.Priority = p
+		thought.Priority = pr
 	}
-	if taskListID != nil {
-		thought.TaskListID = *taskListID
+	if p.TaskListID != nil {
+		thought.TaskListID = *p.TaskListID
 	}
-	if kanbanStatus != nil && *kanbanStatus != "" {
-		thought.KanbanStatus = *kanbanStatus
-		if isCompleted == nil {
-			if *kanbanStatus == "done" {
-				thought.IsCompleted = true
-			} else {
-				thought.IsCompleted = false
+	if p.KanbanStatus != nil && *p.KanbanStatus != "" {
+		thought.KanbanStatus = *p.KanbanStatus
+		if p.IsCompleted == nil {
+			thought.IsCompleted = *p.KanbanStatus == "done"
+		}
+	}
+	if p.Notes != nil {
+		thought.Notes = *p.Notes
+	}
+	if p.Subtasks != nil {
+		thought.Subtasks = keepSubtaskLinks(thought.Subtasks, *p.Subtasks)
+	}
+	// Moved to another list: assignees without access to it go (the same rule as pruneTaskAssigneesOf
+	// below, worked out here so plan sees the new state)
+	if moved {
+		allowed := map[string]bool{}
+		for _, id := range s.GetTaskListUserIDs(thought.TaskListID) {
+			allowed[id] = true
+		}
+		kept := []string{}
+		for _, id := range thought.Assignees {
+			if thought.TaskListID != "" && allowed[id] {
+				kept = append(kept, id)
 			}
 		}
-	}
-	if notes != nil {
-		thought.Notes = *notes
-	}
-	if subtasks != nil {
-		thought.Subtasks = keepSubtaskLinks(thought.Subtasks, *subtasks)
+		thought.Assignees = kept
 	}
 
 	tagsJSON, _ := json.Marshal(thought.Tags)
@@ -528,31 +580,47 @@ func (s *Store) UpdateThoughtDetails(userID, thoughtID string, content *string, 
 	if thought.IsCompleted {
 		completedInt = 1
 	}
-
-	// A new due date or a reopened task gets its alarm again (in the same statement: a second write
-	// waited for the write lock once more)
+	// A new due date or a reopened task gets its alarm again (in the same statement)
 	rearm := thought.DueDate != oldDue || (wasCompleted && !thought.IsCompleted)
-	_, err = s.db.Exec(
+	if rearm {
+		thought.AlarmSent = false
+	}
+	var center []CenterAdd
+	var queue []QueuedAdd
+	if plan != nil {
+		center, queue = plan(thought)
+	}
+
+	tx, err := s.db.Begin()
+	if err != nil {
+		return nil, nil, err
+	}
+	defer tx.Rollback()
+	if _, err := tx.Exec(
 		`UPDATE thoughts SET content = ?, tags = ?, is_completed = ?, due_date = ?, priority = ?, task_list_id = ?, kanban_status = ?, notes = ?, subtasks = ?,
 		     alarm_sent = CASE WHEN ? THEN 0 ELSE alarm_sent END, alarm_failures = CASE WHEN ? THEN 0 ELSE alarm_failures END
 		 WHERE id = ?`,
 		thought.Content, string(tagsJSON), completedInt, thought.DueDate, thought.Priority, thought.TaskListID, thought.KanbanStatus, thought.Notes, string(subtasksJSON),
-		rearm, rearm, thoughtID,
-	)
+		rearm, rearm, thought.ID,
+	); err != nil {
+		return nil, nil, err
+	}
+	if moved {
+		if err := pruneTaskAssignees(tx, thought.ID); err != nil {
+			return nil, nil, err
+		}
+	}
+	added, err := storeNotificationsTx(tx, center, queue)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	if rearm {
-		thought.AlarmSent = false
+	if err := tx.Commit(); err != nil {
+		return nil, nil, err
 	}
-	if taskListID != nil {
-		s.pruneTaskAssigneesOf(thoughtID)
-		thought.Assignees = s.getTaskAssignees(thoughtID)
+	if !wasCompleted && thought.IsCompleted && thought.Recurrence != "" {
+		s.spawnNextOccurrence(thought.ID)
 	}
-	if !wasCompleted && thought.IsCompleted {
-		s.spawnNextOccurrence(thoughtID)
-	}
-	return thought, nil
+	return thought, added, nil
 }
 
 // DeleteThought: a task goes to the task trash (task_trash.go); anything else (a thought from the inbox

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
+	"slices"
 	"strings"
 	"time"
 
@@ -311,6 +312,20 @@ type Thought struct {
 	CreatedAt      string        `json:"createdAt"`
 	TriagedAt      string        `json:"triagedAt,omitempty"`
 	Origin         *Origin       `json:"origin,omitempty"` // API key that created / last changed it
+}
+
+// Clone copies a task with slices of its own, so changing the copy leaves t as it is.
+func (t *Thought) Clone() *Thought {
+	out := *t
+	out.Tags = slices.Clone(t.Tags)
+	out.Subtasks = slices.Clone(t.Subtasks)
+	out.Assignees = slices.Clone(t.Assignees)
+	out.Reminders = slices.Clone(t.Reminders)
+	if t.Origin != nil {
+		o := *t.Origin
+		out.Origin = &o
+	}
+	return &out
 }
 
 // Origin: which API key created an entry and which one changed it last, over which access ("api" for

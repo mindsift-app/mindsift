@@ -280,11 +280,6 @@ func userIDsOf(q docQueryer, query string, args ...any) ([]string, error) {
 	return ids, rows.Err()
 }
 
-// taskListUserIDsTx is GetTaskListUserIDs inside a transaction.
-func taskListUserIDsTx(q docQueryer, listID string) ([]string, error) {
-	return userIDsOf(q, fmt.Sprintf(taskListAccessSQL, "?"), listID, listID, listID)
-}
-
 // accessibleTaskListsSQL selects the IDs of every task list a user can see: own lists and lists shared
 // with the user directly or through a group. It takes the user ID three times (accessibleTaskListArgs).
 // This is the one definition of task list access for reading; GetTaskListPermission adds the role.
@@ -434,7 +429,14 @@ func (s *Store) PruneTaskAssignees() {
 // another list or out of any, restored, created as the next occurrence). The whole table, checked row
 // by row against the access of its list, was read for each of those before.
 func (s *Store) pruneTaskAssigneesOf(taskID string) {
-	_, err := s.db.Exec(
+	if err := pruneTaskAssignees(s.db, taskID); err != nil {
+		slog.Error("Cleaning up assignees failed", "task_id", taskID, "error", err)
+	}
+}
+
+// pruneTaskAssignees removes the assignees of a task who cannot see its list (any longer).
+func pruneTaskAssignees(db execer, taskID string) error {
+	_, err := db.Exec(
 		`DELETE FROM task_assignees WHERE task_id = ? AND rowid IN (
 		    SELECT ta.rowid FROM task_assignees ta
 		    LEFT JOIN thoughts t ON t.id = ta.task_id
@@ -442,9 +444,7 @@ func (s *Store) pruneTaskAssigneesOf(taskID string) {
 		       OR ta.user_id NOT IN (`+fmt.Sprintf(taskListAccessSQL, "t.task_list_id")+`))
 		 )`, taskID, taskID,
 	)
-	if err != nil {
-		slog.Error("Cleaning up assignees failed", "task_id", taskID, "error", err)
-	}
+	return err
 }
 
 // GetTaskListUserIDs returns every user who can see the task list: owner, direct shares and members of shared teams.

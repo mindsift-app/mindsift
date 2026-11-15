@@ -2,6 +2,7 @@ package storage
 
 import (
 	"encoding/json"
+	"strings"
 	"time"
 )
 
@@ -130,24 +131,115 @@ func (s *Store) StoreNotifications(center []CenterAdd, queue []QueuedAdd) ([]Cen
 		return nil, err
 	}
 	defer tx.Rollback()
-	out := make([]CenterEntry, 0, len(center))
-	for _, c := range center {
+	out, err := storeNotificationsTx(tx, center, queue)
+	if err != nil {
+		return nil, err
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// centerInsertBatch: rows per INSERT of entries without a group key (9 values each)
+const centerInsertBatch = 100
+
+// storeNotificationsTx is StoreNotifications inside the caller's transaction (the change the events are
+// about goes into the same one). Entries without a group key, the usual case for a list's members, go in
+// with one INSERT per batch instead of one per person; the queue alike.
+func storeNotificationsTx(tx centerDB, center []CenterAdd, queue []QueuedAdd) ([]CenterEntry, error) {
+	out := make([]CenterEntry, len(center))
+	// pending: indexes into center of entries without a group key waiting for their INSERT, each person
+	// once (their ids come back by person)
+	var pending []int
+	inPending := map[string]bool{}
+	flush := func() error {
+		if len(pending) == 0 {
+			return nil
+		}
+		now := time.Now().UTC().Format(time.RFC3339)
+		var sb strings.Builder
+		sb.WriteString(`INSERT INTO center_entries (user_id, kind, title, text, target_type, target_id, block_id, group_key, created_at) VALUES `)
+		args := make([]any, 0, 9*len(pending))
+		byUser := make(map[string]int, len(pending))
+		for n, i := range pending {
+			c := center[i]
+			if n > 0 {
+				sb.WriteString(", ")
+			}
+			sb.WriteString("(?, ?, ?, ?, ?, ?, ?, '', ?)")
+			e := c.Entry
+			args = append(args, c.UserID, e.Kind, e.Title, e.Text, e.TargetType, e.TargetID, e.BlockID, now)
+			e.CreatedAt = now
+			out[i] = e
+			byUser[c.UserID] = i
+		}
+		sb.WriteString(" RETURNING id, user_id")
+		rows, err := tx.Query(sb.String(), args...)
+		if err != nil {
+			return err
+		}
+		for rows.Next() {
+			var id int64
+			var uid string
+			if err := rows.Scan(&id, &uid); err != nil {
+				_ = rows.Close()
+				return err
+			}
+			out[byUser[uid]].ID = id
+		}
+		err = rows.Err()
+		_ = rows.Close()
+		pending = pending[:0]
+		clear(inPending)
+		return err
+	}
+	for i, c := range center {
+		if c.GroupKey == "" && !inPending[c.UserID] {
+			pending = append(pending, i)
+			inPending[c.UserID] = true
+			if len(pending) == centerInsertBatch {
+				if err := flush(); err != nil {
+					return nil, err
+				}
+			}
+			continue
+		}
+		// In order: what an entry with a group key replaces may have been added just before
+		if err := flush(); err != nil {
+			return nil, err
+		}
+		if c.GroupKey == "" {
+			pending = append(pending, i)
+			inPending[c.UserID] = true
+			continue
+		}
 		e, _, _, err := addCenterEntry(tx, c.UserID, c.Entry, c.GroupKey, CenterReplace, c.Generic)
 		if err != nil {
 			return nil, err
 		}
-		out = append(out, e)
+		out[i] = e
+	}
+	if err := flush(); err != nil {
+		return nil, err
 	}
 	now := time.Now().UTC().Format(time.RFC3339)
-	for _, q := range queue {
-		raw, _ := json.Marshal(q.Payload)
-		if _, err := tx.Exec(`INSERT INTO notification_queue (user_id, kind, payload, created_at) VALUES (?, ?, ?, ?)`,
-			q.UserID, q.Kind, string(raw), now); err != nil {
+	for start := 0; start < len(queue); start += centerInsertBatch {
+		part := queue[start:min(start+centerInsertBatch, len(queue))]
+		var sb strings.Builder
+		sb.WriteString(`INSERT INTO notification_queue (user_id, kind, payload, created_at) VALUES `)
+		args := make([]any, 0, 4*len(part))
+		for n, q := range part {
+			if n > 0 {
+				sb.WriteString(", ")
+			}
+			sb.WriteString("(?, ?, ?, ?)")
+			raw, _ := json.Marshal(q.Payload)
+			args = append(args, q.UserID, q.Kind, string(raw), now)
+		}
+		if _, err := tx.Exec(sb.String(), args...); err != nil {
 			return nil, err
 		}
-	}
-	if err := tx.Commit(); err != nil {
-		return nil, err
 	}
 	return out, nil
 }
