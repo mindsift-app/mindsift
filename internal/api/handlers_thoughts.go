@@ -326,6 +326,12 @@ type taskPatch struct {
 	Assignees    *[]string         `json:"assignees"`
 	Recurrence   *string           `json:"recurrence"`
 	Reminders    *[]int            `json:"reminders"`
+	// ChangedAt and SentAt: a tick or column change made offline and sent later by the app's outbox
+	// (changeTime); the status then changes as of that time (storage.UpdateTask). Read by PATCH only.
+	ChangedAt int64 `json:"changedAt"`
+	SentAt    int64 `json:"sentAt"`
+	// statusAt: when the status was changed (zero: now), worked out from ChangedAt and SentAt
+	statusAt time.Time
 	// actor: the API key making the change (recorded as the task's origin); nil for the app
 	actor *apiActor
 }
@@ -362,7 +368,8 @@ func (s *Server) updateTask(userID, thoughtID string, req taskPatch) (*domain.Th
 		base.Reminders = clean
 	}
 	patch := storage.ThoughtPatch{Content: req.Content, IsCompleted: req.IsCompleted, DueDate: req.DueDate, Priority: req.Priority,
-		TaskListID: req.TaskListID, KanbanStatus: req.KanbanStatus, Notes: req.Notes, Subtasks: req.Subtasks, Tags: req.Tags}
+		TaskListID: req.TaskListID, KanbanStatus: req.KanbanStatus, Notes: req.Notes, Subtasks: req.Subtasks, Tags: req.Tags,
+		StatusAt: req.statusAt}
 	if req.Subtasks != nil {
 		patch.SubtasksBase = req.SubtasksBase
 	}
@@ -396,7 +403,14 @@ func (s *Server) updateTask(userID, thoughtID string, req taskPatch) (*domain.Th
 	if err != nil {
 		return nil, err
 	}
-	s.recordThoughtOrigin(updated, req.actor, false)
+	// Only the status, and it stayed (already so, or changed by somebody after a tick sent late): nothing
+	// changed, so the task keeps its origin and nobody is told
+	statusOnly := req == taskPatch{IsCompleted: req.IsCompleted, KanbanStatus: req.KanbanStatus, ChangedAt: req.ChangedAt,
+		SentAt: req.SentAt, statusAt: req.statusAt, actor: req.actor}
+	unchanged := statusOnly && updated.IsCompleted == stored.IsCompleted && updated.KanbanStatus == stored.KanbanStatus
+	if !unchanged {
+		s.recordThoughtOrigin(updated, req.actor, false)
+	}
 	if req.Assignees != nil {
 		assignees, err := s.store.SetTaskAssignees(userID, thoughtID, *req.Assignees)
 		if err != nil {
@@ -416,7 +430,9 @@ func (s *Server) updateTask(userID, thoughtID string, req taskPatch) (*domain.Th
 	if before.TaskListID != updated.TaskListID || before.UserID != updated.UserID {
 		tellApps = append(slices.Clone(audience), s.taskAudience(before)...)
 	}
-	s.wsHub.BroadcastToUsers(tellApps, "TASK_UPDATED", updated)
+	if !unchanged {
+		s.wsHub.BroadcastToUsers(tellApps, "TASK_UPDATED", updated)
+	}
 	if req.Assignees != nil {
 		watchers = s.planTaskChange(&b, userID, before, updated, false, audience)
 		s.planTaskMentions(&b, userID, before, updated, audience)
@@ -455,6 +471,7 @@ func (s *Server) handleUpdateThought(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	req.actor = actorFrom(r.Context())
+	req.statusAt = changeTime(req.ChangedAt, req.SentAt, time.Now())
 	updated, err := s.updateTask(userID, thoughtID, req)
 	if err != nil {
 		writeStoreError(w, http.StatusBadRequest, err)
