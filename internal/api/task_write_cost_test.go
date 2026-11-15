@@ -16,7 +16,9 @@ import (
 	"time"
 
 	"github.com/mindsift-app/mindsift/internal/auth"
+	"github.com/mindsift-app/mindsift/internal/collab"
 	"github.com/mindsift-app/mindsift/internal/config"
+	"github.com/mindsift-app/mindsift/internal/domain"
 	"github.com/mindsift-app/mindsift/internal/storage"
 	"github.com/mindsift-app/mindsift/internal/ws"
 )
@@ -78,7 +80,9 @@ type stmtCountingConn struct {
 }
 
 func (c *stmtCountingConn) ExecContext(ctx context.Context, q string, args []driver.NamedValue) (driver.Result, error) {
-	countStmt(q, !c.inTx)
+	// A plain BEGIN is deferred and takes no lock (storage.readConsistent reads with one), nor does its
+	// ROLLBACK
+	countStmt(q, !c.inTx && q != "BEGIN" && q != "ROLLBACK")
 	return c.stmtFullConn.ExecContext(ctx, q, args)
 }
 
@@ -322,5 +326,104 @@ func TestTaskWriteCost(t *testing.T) {
 	}
 	if watched != n {
 		t.Errorf("center of the watcher: %d entries about watched tasks, want %d about the deleted ones", watched, n)
+	}
+}
+
+// TestNoteTodoWriteCost: ticking a to-do in a note that is linked to a task changes the note, the task
+// and tells the task's people. The task and its notifications go into one transaction
+// (ReconcileDocTaskLinksNotify), so a tick waits twice for the write lock: once for the note, once for
+// the task (before: three times, the notifications on their own; and 473 statements with 20 linked
+// to-dos, as every task read the subtasks of all the others; now 33). Note and task each in a transaction
+// of their own is deliberate: the note's change is applied under its lock inside its transaction, and
+// the task's notifications are planned from the state the change produced, before a transaction begins.
+func TestNoteTodoWriteCost(t *testing.T) {
+	srv, store, token, ownerID := newCountingTestServer(t)
+	router := srv.Router()
+
+	const members, n = 50, 20
+	list, err := store.CreateTaskList(ownerID, "", "", "Geteilt", "", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	blocks := make([]domain.DocumentBlock, n)
+	for i := range blocks {
+		blocks[i] = domain.DocumentBlock{ID: fmt.Sprintf("todo%d", i), Type: "todo", Content: fmt.Sprintf("Punkt %d", i)}
+	}
+	doc, err := store.CreateDocument(ownerID, "", "Gemeinsame Notiz", "", "", blocks, nil, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var memberIDs []string
+	for i := range members {
+		u, _ := newTestUser(t, store, fmt.Sprintf("leser%d@example.com", i))
+		memberIDs = append(memberIDs, u.ID)
+		if _, err := store.AddTaskListShare(list.ID, "user", u.ID, "editor", ownerID); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := store.CreateDocShare(ownerID, doc.ID, u.ID, "write"); err != nil {
+			t.Fatal(err)
+		}
+	}
+	var taskIDs []string
+	for i := range n {
+		th, err := store.CreateTaskFromDocBlock(ownerID, doc.ID, blocks[i].ID, blocks[i].Content, false)
+		if err != nil {
+			t.Fatal(err)
+		}
+		listID := list.ID
+		if _, _, err := store.UpdateTask(ownerID, th, storage.ThoughtPatch{TaskListID: &listID}, nil); err != nil {
+			t.Fatal(err)
+		}
+		taskIDs = append(taskIDs, th.ID)
+	}
+
+	sync := func(i int, op collab.Op) {
+		rec := sendWith(t, router, http.MethodPost, "/api/v1/docs/"+doc.ID+"/sync", token,
+			map[string]any{"clientId": "tab", "lastSeq": 0, "skipLog": true, "ops": []collab.Op{op}})
+		if rec.Code != http.StatusOK {
+			t.Fatalf("sync %d: %d %s", i, rec.Code, rec.Body.String())
+		}
+	}
+	yes := true
+	tick := measureTaskWrites(t, n, func(i int) {
+		sync(i, collab.Op{OpID: fmt.Sprintf("tick%d", i), Kind: collab.OpSetProps, BlockID: blocks[i].ID, Patch: &collab.PropsPatch{Checked: &yes}})
+	})
+	t.Logf("tick a linked to-do in a note shared with %d people: %v", members, tick)
+	if tick.locks > 2 || tick.stmts > 36 {
+		t.Errorf("tick: %v, expected at most 36 statements and 2 writes", tick)
+	}
+	snap, err := store.GetDocSnapshot(doc.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	version := map[string]int{}
+	for _, b := range snap.Blocks {
+		version[b.ID] = b.Version
+	}
+	retitle := measureTaskWrites(t, n, func(i int) {
+		text := fmt.Sprintf("Punkt %d geändert", i)
+		sync(i, collab.Op{OpID: fmt.Sprintf("text%d", i), Kind: collab.OpSetContent, BlockID: blocks[i].ID, BaseVersion: version[blocks[i].ID], Content: &text})
+	})
+	t.Logf("retitle a linked to-do in a note shared with %d people: %v", members, retitle)
+	if retitle.locks > 2 || retitle.stmts > 36 {
+		t.Errorf("retitle: %v, expected at most 36 statements and 2 writes", retitle)
+	}
+
+	// The tasks followed the note, and every member heard each one completed
+	if th, _ := store.GetThoughtByID(ownerID, taskIDs[0]); th == nil || !th.IsCompleted || th.Content != "Punkt 0 geändert" {
+		t.Errorf("linked task: %+v, want completed and retitled", th)
+	}
+	entries, _, err := store.CenterEntries(memberIDs[members-1], 100)
+	if err != nil {
+		t.Fatal(err)
+	}
+	done := 0
+	for _, e := range entries {
+		if e.Kind == "taskDone" {
+			done++
+		}
+	}
+	if done != n {
+		t.Errorf("center of a member: %d completed, want %d", done, n)
 	}
 }

@@ -347,18 +347,11 @@ func (s *Server) columnName(actorID, listID, columnID string) string {
 	return columnID
 }
 
-// notifyTaskChange covers watchers (any change), list members (task completed, task added to the list)
-// and people newly assigned to the task.
-// A deleted task plans its events with planTaskChange (deleteTask stores them with the delete).
-func (s *Server) notifyTaskChange(actorID string, before, after *domain.Thought) {
-	var b notifyBatch
-	s.planTaskChange(&b, actorID, before, after, false, nil)
-	s.storeBatch(&b)
-}
-
-// planTaskChange is notifyTaskChange without storing: it adds the events to b and returns the task's
-// watchers. audience: who sees the task now (taskAudience of after, else before) when the caller has it,
-// nil to read it here when needed.
+// planTaskChange adds the events about a change of a task to b: watchers (any change), list members
+// (task completed, task added to the list) and people newly assigned to it. The caller stores b with the
+// change (storage.UpdateTask, DeleteTask, ReconcileDocTaskLinksNotify) or on its own (storeBatch).
+// Returns the task's watchers. audience: who sees the task now (taskAudience of after, else before) when
+// the caller has it, nil to read it here when needed.
 func (s *Server) planTaskChange(b *notifyBatch, actorID string, before, after *domain.Thought, deleted bool, audience []string) []string {
 	t := after
 	if t == nil {
