@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"encoding/json"
 	"errors"
 	"sort"
 	"strings"
@@ -97,7 +98,7 @@ func (s *Store) GetTagDetails(userID, tag string) (*domain.TagDetails, error) {
 	// the same rule as everywhere else (the best of all shares, the owner of a shared folder owns its notes).
 	rows, err := s.db.Query(
 		`WITH visible(id) AS (`+sqlVisibleDocIDs+`)
-		 SELECT t.block_id, d.id, d.title, d.icon, d.folder_path, d.blocks_json, d.updated_at, d.user_id,
+		 SELECT t.block_id, d.id, d.title, d.icon, d.folder_path, d.updated_at, d.user_id,
 		        COALESCE(u.display_name, '') as owner_name
 		 FROM visible
 		 CROSS JOIN documents d ON d.id = visible.id
@@ -118,7 +119,6 @@ func (s *Store) GetTagDetails(userID, tag string) (*domain.TagDetails, error) {
 		title      string
 		icon       string
 		folderPath string
-		blocksJSON string
 		updatedAt  string
 		docUserID  string
 		ownerName  string
@@ -127,7 +127,7 @@ func (s *Store) GetTagDetails(userID, tag string) (*domain.TagDetails, error) {
 	var rawMatches []rawMatch
 	for rows.Next() {
 		var rm rawMatch
-		if err := rows.Scan(&rm.blockID, &rm.docID, &rm.title, &rm.icon, &rm.folderPath, &rm.blocksJSON, &rm.updatedAt, &rm.docUserID, &rm.ownerName); !dbFailed(err) {
+		if err := rows.Scan(&rm.blockID, &rm.docID, &rm.title, &rm.icon, &rm.folderPath, &rm.updatedAt, &rm.docUserID, &rm.ownerName); !dbFailed(err) {
 			rawMatches = append(rawMatches, rm)
 		}
 	}
@@ -146,6 +146,19 @@ func (s *Store) GetTagDetails(userID, tag string) (*domain.TagDetails, error) {
 		docMap[rm.docID] = append(docMap[rm.docID], rm)
 	}
 
+	// Only the matched bullets and their subtrees are read with their text (tagMatchBlocks), not the
+	// whole notes (a hashtag row belongs to a bullet in the table, so every note has its bullets there)
+	tagged := make(map[string][]string, len(docOrder))
+	for _, docID := range docOrder {
+		for _, m := range docMap[docID] {
+			tagged[docID] = append(tagged[docID], m.blockID)
+		}
+	}
+	found, err := s.tagMatchBlocks(tagged)
+	if err != nil {
+		return nil, err
+	}
+
 	totalMatches := 0
 	docGroups := make([]domain.TagDocumentGroup, 0, len(docOrder))
 
@@ -153,58 +166,18 @@ func (s *Store) GetTagDetails(userID, tag string) (*domain.TagDetails, error) {
 		matches := docMap[docID]
 		first := matches[0]
 
-		blocks := s.loadDocBlocks(first.docID, first.blocksJSON)
-
-		blockIdxMap := make(map[string]int, len(blocks))
-		for i, b := range blocks {
-			blockIdxMap[b.ID] = i
-		}
-
-		matchedBlocks := make([]domain.MatchedTagBlock, 0)
-		processedBlockIDs := make(map[string]bool)
-
-		// In the order of the note: a tagged bullet below another tagged one is then shown under it,
-		// not once more on its own before it (the rows come in index order, not note order)
-		sort.SliceStable(matches, func(i, j int) bool {
-			a, okA := blockIdxMap[matches[i].blockID]
-			b, okB := blockIdxMap[matches[j].blockID]
-			return okA && (!okB || a < b)
-		})
-		for _, m := range matches {
-			if processedBlockIDs[m.blockID] {
-				continue
-			}
-			idx, ok := blockIdxMap[m.blockID]
-			if !ok {
-				continue
-			}
-			rootBlock := blocks[idx]
-			processedBlockIDs[rootBlock.ID] = true
-
-			children := make([]domain.DocumentBlock, 0)
-			rootLevel := rootBlock.Level
-			for i := idx + 1; i < len(blocks); i++ {
-				if blocks[i].Level > rootLevel {
-					children = append(children, blocks[i])
-					processedBlockIDs[blocks[i].ID] = true
-				} else {
-					break
-				}
-			}
-
-			matchedBlocks = append(matchedBlocks, domain.MatchedTagBlock{
-				RootBlock: rootBlock,
-				Children:  children,
-			})
-			totalMatches++
-		}
-
+		matchedBlocks := found[docID]
+		totalMatches += len(matchedBlocks)
 		if len(matchedBlocks) == 0 {
 			continue
 		}
 
-		// As the note list shows it: owner, write (editor) or read (viewer)
-		role := s.DocRole(userID, first.docID)
+		// As the note list shows it: owner, write (editor) or read (viewer). An own note outside the trash
+		// (the query reads only those) is the owner's without asking DocRole, which reads two more rows.
+		role := DocRoleOwner
+		if first.docUserID != userID {
+			role = s.DocRole(userID, first.docID)
+		}
 		if role == "" {
 			continue
 		}
@@ -237,4 +210,216 @@ func (s *Store) GetTagDetails(userID, tag string) (*domain.TagDetails, error) {
 		Documents:     docGroups,
 		TotalMatches:  totalMatches,
 	}, nil
+}
+
+// cutTagMatches cuts the tagged bullets and their children out of a note's flat list (loadDocBlocks), in
+// the order of the note: a tagged bullet below another tagged one is shown under it, not once more on its
+// own. Rows of bullets the note does not show are skipped.
+func cutTagMatches(blocks []domain.DocumentBlock, tagged []string) []domain.MatchedTagBlock {
+	idx := make(map[string]int, len(blocks))
+	for i, b := range blocks {
+		idx[b.ID] = i
+	}
+	roots := make([]int, 0, len(tagged))
+	for _, id := range tagged {
+		if i, ok := idx[id]; ok {
+			roots = append(roots, i)
+		}
+	}
+	sort.Ints(roots)
+	out := make([]domain.MatchedTagBlock, 0)
+	next := 0 // flat index up to which bullets are shown already
+	for _, i := range roots {
+		if i < next {
+			continue
+		}
+		root := blocks[i]
+		end := i + 1
+		for end < len(blocks) && blocks[end].Level > root.Level {
+			end++
+		}
+		out = append(out, domain.MatchedTagBlock{RootBlock: root, Children: append([]domain.DocumentBlock{}, blocks[i+1:end]...)})
+		next = end
+	}
+	return out
+}
+
+// tagMatchBlocks is cutTagMatches for several notes (note to its tagged bullets) without loading whole
+// notes: the order and depth of the bullets come from the structure columns alone (parent_id, order_key;
+// siblings ordered as collab.Doc.Flatten orders them), then only the matched bullets and their subtrees
+// are read with their text, and the task links (as DocTaskLinks gives them) only of the tasks made from
+// bullets of these notes. A note without live bullets is left out.
+func (s *Store) tagMatchBlocks(tagged map[string][]string) (map[string][]domain.MatchedTagBlock, error) {
+	out := map[string][]domain.MatchedTagBlock{}
+	if len(tagged) == 0 {
+		return out, nil
+	}
+	docIDs := make([]string, 0, len(tagged))
+	for id := range tagged {
+		docIDs = append(docIDs, id)
+	}
+	docsJSON, _ := json.Marshal(docIDs)
+
+	type node struct{ id, orderKey string }
+	children := map[string]map[string][]node{} // note, parent: children
+	rows, err := s.db.Query(`SELECT document_id, id, COALESCE(parent_id, ''), COALESCE(order_key, '') FROM blocks
+		WHERE document_id IN (SELECT value FROM json_each(?)) AND deleted = 0`, string(docsJSON))
+	if err != nil {
+		return nil, err
+	}
+	for rows.Next() {
+		var docID, id, parent, key string
+		if err := rows.Scan(&docID, &id, &parent, &key); err != nil {
+			_ = rows.Close()
+			return nil, err
+		}
+		if children[docID] == nil {
+			children[docID] = map[string][]node{}
+		}
+		children[docID][parent] = append(children[docID][parent], node{id, key})
+	}
+	if err := rows.Err(); err != nil {
+		_ = rows.Close()
+		return nil, err
+	}
+	_ = rows.Close()
+
+	// The skeleton of each note in display order (id, depth, position as flatDocumentBlocks numbers
+	// it), cut like a loaded note
+	var need []string
+	for docID, byParent := range children {
+		for _, list := range byParent {
+			sort.Slice(list, func(i, j int) bool {
+				if list[i].orderKey != list[j].orderKey {
+					return list[i].orderKey < list[j].orderKey
+				}
+				return list[i].id < list[j].id
+			})
+		}
+		var flat []domain.DocumentBlock
+		var walk func(parent string, level int)
+		walk = func(parent string, level int) {
+			for _, c := range byParent[parent] {
+				flat = append(flat, domain.DocumentBlock{ID: c.id, DocumentID: docID, Level: level, Position: float64((len(flat) + 1) * 1000)})
+				walk(c.id, level+1)
+			}
+		}
+		walk("", 0)
+		if len(flat) == 0 {
+			continue
+		}
+		cut := cutTagMatches(flat, tagged[docID])
+		out[docID] = cut
+		for _, m := range cut {
+			need = append(need, m.RootBlock.ID)
+			for _, c := range m.Children {
+				need = append(need, c.ID)
+			}
+		}
+	}
+	if len(need) == 0 {
+		return out, nil
+	}
+
+	type text struct {
+		typ, content, lang string
+		checked, collapsed bool
+	}
+	texts := make(map[string]text, len(need))
+	needJSON, _ := json.Marshal(need)
+	rows, err = s.db.Query(`SELECT id, type, content, checked, collapsed, lang FROM blocks
+		WHERE id IN (SELECT value FROM json_each(?))`, string(needJSON))
+	if err != nil {
+		return nil, err
+	}
+	for rows.Next() {
+		var id string
+		var t text
+		var chk, col int
+		if err := rows.Scan(&id, &t.typ, &t.content, &chk, &col, &t.lang); err != nil {
+			_ = rows.Close()
+			return nil, err
+		}
+		t.checked, t.collapsed = chk != 0, col != 0
+		texts[id] = t
+	}
+	if err := rows.Err(); err != nil {
+		_ = rows.Close()
+		return nil, err
+	}
+	_ = rows.Close()
+
+	links, subLinks, err := s.tagTaskLinks(string(docsJSON))
+	if err != nil {
+		return nil, err
+	}
+	fill := func(b *domain.DocumentBlock) {
+		t := texts[b.ID]
+		b.Type, b.Content, b.Checked, b.Lang, b.Collapsed = t.typ, t.content, t.checked, t.lang, t.collapsed
+		if l := links[b.DocumentID]; len(l) > 0 {
+			b.TaskID = l[b.ID]
+			b.SubtaskOf = subLinks[b.DocumentID][b.ID]
+		}
+	}
+	for _, cut := range out {
+		for i := range cut {
+			fill(&cut[i].RootBlock)
+			for j := range cut[i].Children {
+				fill(&cut[i].Children[j])
+			}
+		}
+	}
+	return out, nil
+}
+
+// tagTaskLinks is DocTaskLinks for several notes (JSON array of ids) in one query: per note the bullets
+// linked to a task (bullet to task) and those tied to a subtask of one (bullet to the task of the subtask).
+func (s *Store) tagTaskLinks(docsJSON string) (tasks, subtasks map[string]map[string]string, err error) {
+	tasks, subtasks = map[string]map[string]string{}, map[string]map[string]string{}
+	// sqlTasksOfNoteBlocks per note: a range over idx_thoughts_doc_block
+	rows, err := s.db.Query(`SELECT d.value, t.id, t.converted_ref_id, t.subtasks
+		FROM json_each(?) d CROSS JOIN thoughts t
+		WHERE t.converted_type = 'document_block' AND t.converted_ref_id >= d.value || ':' AND t.converted_ref_id < d.value || ';'
+		ORDER BY d.value, t.converted_ref_id, t.rowid`, docsJSON)
+	if err != nil {
+		return nil, nil, err
+	}
+	type linked struct{ blockID, taskID, subtasks string }
+	byDoc := map[string][]linked{}
+	for rows.Next() {
+		var docID, taskID, ref, subs string
+		if err := rows.Scan(&docID, &taskID, &ref, &subs); err != nil {
+			_ = rows.Close()
+			return nil, nil, err
+		}
+		if _, blockID, ok := strings.Cut(ref, ":"); ok {
+			if tasks[docID] == nil {
+				tasks[docID] = map[string]string{}
+			}
+			tasks[docID][blockID] = taskID
+			byDoc[docID] = append(byDoc[docID], linked{blockID, taskID, subs})
+		}
+	}
+	if err := rows.Err(); err != nil {
+		_ = rows.Close()
+		return nil, nil, err
+	}
+	_ = rows.Close()
+	for docID, list := range byDoc {
+		sub := map[string]string{}
+		for _, l := range list {
+			if tasks[docID][l.blockID] != l.taskID {
+				continue // two tasks on one bullet: only the one the bullet shows counts (docSubtaskLinks)
+			}
+			var subs []domain.SubTask
+			_ = json.Unmarshal([]byte(l.subtasks), &subs)
+			for _, st := range subs {
+				if st.BlockID != "" {
+					sub[st.BlockID] = l.taskID
+				}
+			}
+		}
+		subtasks[docID] = sub
+	}
+	return tasks, subtasks, nil
 }
