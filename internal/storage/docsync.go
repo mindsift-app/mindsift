@@ -340,19 +340,24 @@ func (s *Store) ApplyDocOps(docID string, a collab.Actor, ops []collab.Op, lease
 // client resends its operations, and their opIds keep them from being applied twice.
 // References to files the person may not read are dropped from the content first (mediaGate), and
 // references to hidden values of other notes become copies in this note or a placeholder (secretGate);
-// the client gets the content as stored through the log.
+// the client gets the content as stored through the log. A code block keeps no reference to a value
+// (secrets.go): no copies for text that goes into one (codeTargets), the change puts the placeholder in.
 func (s *Store) ApplyDocOpsCtx(ctx context.Context, docID string, a collab.Actor, ops []collab.Op, leases collab.LeaseView) ([]collab.Result, int64, error) {
 	ops = s.newDocMediaGate(a.UserID, docID).cleanOps(ops)
-	ops = s.newSecretGate(a.UserID, docID).cleanOps(ops)
-	return s.applyDocChangeCtx(ctx, docID, a, leases, func(*collab.Doc) []collab.Op { return ops })
+	ops = s.newSecretGate(a.UserID, docID).cleanOps(ops, s.codeTargets(docID, ops))
+	return s.applyDocChangeCtx(ctx, docID, a, leases, true, func(*collab.Doc) []collab.Op { return ops })
 }
 
 // applyDocChange builds operations from the current state (under the document lock) and applies them.
+// Their ids are the server's own (random, never sent again), so no result is stored for them.
 func (s *Store) applyDocChange(docID string, a collab.Actor, leases collab.LeaseView, build func(*collab.Doc) []collab.Op) ([]collab.Result, int64, error) {
-	return s.applyDocChangeCtx(context.Background(), docID, a, leases, build)
+	return s.applyDocChangeCtx(context.Background(), docID, a, leases, false, build)
 }
 
-func (s *Store) applyDocChangeCtx(ctx context.Context, docID string, a collab.Actor, leases collab.LeaseView, build func(*collab.Doc) []collab.Op) ([]collab.Result, int64, error) {
+// applyDocChangeCtx applies the operations build returns. With record, every operation's result is kept
+// in doc_op_results and an operation with a kept result gets it back instead of being applied again
+// (op_results.go); without, they are applied as they are.
+func (s *Store) applyDocChangeCtx(ctx context.Context, docID string, a collab.Actor, leases collab.LeaseView, record bool, build func(*collab.Doc) []collab.Op) ([]collab.Result, int64, error) {
 	unlock, err := lockDocCtx(ctx, docID)
 	if err != nil {
 		return nil, 0, err
@@ -382,7 +387,20 @@ func (s *Store) applyDocChangeCtx(ctx context.Context, docID string, a collab.Ac
 			return dbFailed(err) || (err == nil && owner != docID) // an id that cannot be checked counts as taken
 		},
 	}
-	now := domain.NowISO()
+	// A code block keeps no reference to a hidden value (secrets.go); the placeholder in the writer's
+	// language, read through the transaction once it is needed
+	placeholder := ""
+	env.CodeText = func(content string) string {
+		if !strings.Contains(content, "{{secret:") {
+			return content
+		}
+		if placeholder == "" {
+			placeholder = secretPlaceholderIn(s.messageLanguageIn(tx, a.UserID))
+		}
+		return codeBlockText(content, placeholder)
+	}
+	at := time.Now()
+	now := at.UTC().Format(time.RFC3339) // domain.NowISO
 	ops := build(doc)
 	results := make([]collab.Result, 0, len(ops))
 	compact := s.noteStorageReady.Load()
@@ -393,18 +411,15 @@ func (s *Store) applyDocChangeCtx(ctx context.Context, docID string, a collab.Ac
 			results = append(results, collab.Result{OpID: op.OpID, Status: collab.StatusRejected, Reason: "invalid_op_id"})
 			continue
 		}
-		var stored, storedDoc string
-		err := tx.QueryRow(`SELECT result, doc_id FROM doc_op_results WHERE op_id = ?`, op.OpID).Scan(&stored, &storedDoc)
-		if err == nil {
-			var res collab.Result
-			if storedDoc != docID || json.Unmarshal([]byte(stored), &res) != nil {
-				res = collab.Result{OpID: op.OpID, Status: collab.StatusRejected, Reason: "op_id_reused"}
+		if record {
+			res, found, err := storedOpResult(tx, docID, op.OpID)
+			if err != nil {
+				return nil, 0, err
 			}
-			results = append(results, res)
-			continue
-		}
-		if !errors.Is(err, sql.ErrNoRows) {
-			return nil, 0, err
+			if found {
+				results = append(results, res)
+				continue
+			}
 		}
 
 		effects, res := collab.Apply(doc, op, a, env)
@@ -417,10 +432,10 @@ func (s *Store) applyDocChangeCtx(ctx context.Context, docID string, a collab.Ac
 		if len(effects) > 0 {
 			res.Seq = head
 		}
-		resJSON, _ := json.Marshal(res)
-		if _, err := tx.Exec(`INSERT INTO doc_op_results (op_id, doc_id, user_id, result, created_at) VALUES (?, ?, ?, ?, ?)`,
-			op.OpID, docID, a.UserID, string(resJSON), now); err != nil {
-			return nil, 0, err
+		if record {
+			if err := storeOpResult(tx, docID, res, at); err != nil {
+				return nil, 0, err
+			}
 		}
 		results = append(results, res)
 	}
@@ -479,9 +494,9 @@ func persistDocState(tx *sql.Tx, docID string, before, after *collab.Doc, head i
 		if refs {
 			var was []blockRef
 			if old, ok := before.Blocks[id]; ok {
-				was = blockRefsOf(old.Content)
+				was = blockRefsOf(old.Type, old.Content)
 			}
-			if is := blockRefsOf(b.Content); !sameRefs(was, is) {
+			if is := blockRefsOf(b.Type, b.Content); !sameRefs(was, is) {
 				if err := writeBlockRefs(tx, docID, b.ID, is); err != nil {
 					return err
 				}
@@ -991,7 +1006,7 @@ func (s *Store) CompactDocs(now time.Time) (CompactStats, error) {
 		st.Tombstones += purged
 	}
 
-	res, err := s.db.Exec(`DELETE FROM doc_op_results WHERE created_at < ?`, ts(OpResultRetention))
+	res, err := s.db.Exec(`DELETE FROM doc_op_results WHERE created_at < ?`, now.Add(-OpResultRetention).Unix())
 	if err != nil {
 		return st, err
 	}

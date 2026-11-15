@@ -49,6 +49,7 @@ import { currentVoiceConfig } from '../../lib/voice';
 import { LinkPreviewCard } from './LinkPreviewCard';
 import { linkCardUrl, hidePreviewContent, linkHost, useLinkPreviewsEnabled } from '../../lib/linkPreview';
 import { mediaContent, parseMediaContent } from '../../lib/media';
+import { codeBlockText } from '../../lib/secretRef';
 import { InlineMarkdownOptions, renderInlineMarkdown } from '../../lib/markdown';
 import { useMentionInput } from '../../lib/useMentionInput';
 import { MentionMenu } from '../../components/MentionMenu';
@@ -243,6 +244,20 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
   }, []);
   const [isLocallyFocused, setIsLocallyFocused] = useState<boolean>(false);
   const activeFocus = isFocused || isLocallyFocused;
+  // Text size and colour of the bullet's field, shared with the dimmed copy under it
+  const fieldText =
+    block.type === 'h1'
+      ? 'text-xl sm:text-2xl sm:leading-8 font-bold text-main tracking-tight'
+      : block.type === 'h2'
+      ? 'text-lg sm:text-xl sm:leading-7 font-semibold text-main'
+      : block.type === 'h3'
+      ? 'text-base font-semibold text-main'
+      : block.type === 'todo' && block.checked
+      ? 'text-sm text-faint line-through'
+      : block.type === 'callout'
+      ? 'text-sm text-main italic'
+      : 'text-sm text-main';
+  const showSecretDim = activeFocus && localContent.includes('{{secret:');
   // A block someone else is editing can still get the cursor (read-only), e.g. to press Enter at its end
   const canFocus = canEdit || (!!lockedBy && !!canAppendBelow);
   const [slashMatchInfo, setSlashMatchInfo] = useState<{ query: string; slashStart: number; cursor: number } | null>(null);
@@ -352,9 +367,18 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
         content: contentToFlush,
         ...overrides,
       };
+      // A code block keeps no hidden value (lib/secretRef.ts): the field shows the placeholder the note gets
+      if (nextBlock.type === 'code') {
+        const code = codeBlockText(nextBlock.content || '');
+        if (code !== nextBlock.content) {
+          nextBlock.content = code;
+          setShownContent(code);
+          localContentRef.current = code;
+        }
+      }
       onUpdateBlockRef.current(nextBlock, true);
     },
-    [latestBlockRef, onUpdateBlockRef]
+    [latestBlockRef, onUpdateBlockRef, localContentRef]
   );
 
   // A link to a note that no longer exists becomes plain text (asked when it is clicked)
@@ -761,9 +785,11 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
     setShowLinkModal(false);
     const b = linkBeforeRef.current ?? '';
     const a = linkAfterRef.current ?? '';
+    // A web link without a name of its own in an otherwise empty bullet becomes the bare address (with its
+    // preview card); a link with a name keeps the name
     if (b.trim() === '' && a.trim() === '') {
-      const webMatch = linkMarkdown.match(/^\[.*\]\((https?:\/\/[^\s)]+)\)$/);
-      if (webMatch) {
+      const webMatch = linkMarkdown.match(/^\[(.*)\]\((https?:\/\/[^\s)]+)\)$/);
+      if (webMatch && webMatch[1] === webMatch[2]) {
         const bareUrl = webMatch[1];
         setLocalContent(bareUrl);
         localContentRef.current = bareUrl;
@@ -1462,13 +1488,13 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
             }`}
             title={block.checked ? t('block.markOpen') : t('block.markDone')}
           >
-            <Check className="w-3 h-3 stroke-[3]" />
+            <Check className="w-3 h-3 stroke-3" />
           </button>
         )}
       </div>
 
       {/* Main Block Content */}
-      <div className="flex-1 min-w-0 pr-1 relative min-h-[1.5rem]">
+      <div className="flex-1 min-w-0 pr-1 relative min-h-6">
         {previewUrl && (
           <LinkPreviewCard
             url={previewUrl}
@@ -1661,6 +1687,12 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
             }}
             canIndent={Math.max(0, block.level || 0) < maxAllowedLevel}
             canOutdent={Math.max(0, block.level || 0) > (levelOffset || 0)}
+            onExitBelow={(content) => {
+              setLocalContent(content);
+              localContentRef.current = content;
+              flushDebounce(content);
+              onCreateBlockBelowRef.current(block.id, '');
+            }}
           />
         ) : block.type === 'table' ? (
           <TableBlock
@@ -1680,6 +1712,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
             onLeave={leaveTable}
             onDelete={deleteTable}
             onAppendBelow={lockedBy && canAppendBelow ? appendBelowTable : undefined}
+            onExitBelow={appendBelowTable}
             onHistory={tableHistory}
             onIndent={indentTable}
             onOutdent={outdentTable}
@@ -1699,7 +1732,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
                 : 'contents'
             }
           >
-          <div className="relative w-full min-h-[1.5rem]">
+          <div className="relative w-full min-h-6">
             {/* View Layer with Inline Markdown */}
             <div
               onClick={(e) => {
@@ -1709,13 +1742,13 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
                   if (!focusWithRenderedSelection()) focusAtPoint(e.clientX, e.clientY);
                 }
               }}
-              className={`w-full min-h-[1.5rem] leading-relaxed whitespace-pre-wrap break-words [overflow-wrap:anywhere] ${
+              className={`w-full min-h-6 leading-relaxed whitespace-pre-wrap wrap-break-word wrap-anywhere ${
                 activeFocus ? 'absolute inset-0 pointer-events-none' : 'relative cursor-text'
               } ${
                 block.type === 'h1'
-                  ? 'text-xl sm:text-2xl font-bold text-main tracking-tight'
+                  ? 'text-xl sm:text-2xl sm:leading-8 font-bold text-main tracking-tight'
                   : block.type === 'h2'
-                  ? 'text-lg sm:text-xl font-semibold text-main'
+                  ? 'text-lg sm:text-xl sm:leading-7 font-semibold text-main'
                   : block.type === 'h3'
                   ? 'text-base font-semibold text-main'
                   : block.type === 'todo' && block.checked
@@ -1763,7 +1796,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
                     e.stopPropagation();
                     onOpenTask?.((block.taskId || block.subtaskOf) as string);
                   }}
-                  className={`${block.taskId ? 'badge-accent' : 'badge-neutral'} inline-block align-middle ml-1.5 text-[9px] leading-none px-1.5 py-0.5 rounded font-medium select-none cursor-pointer hover:opacity-80 ${
+                  className={`${block.taskId ? 'badge-accent' : 'badge-neutral'} inline-block align-middle ml-1.5 text-[9px] leading-none px-1.5 py-0.5 rounded-sm font-medium select-none cursor-pointer hover:opacity-80 ${
                     activeFocus ? 'pointer-events-none' : 'pointer-events-auto'
                   }`}
                   title={block.taskId ? t('block.openTask') : t('block.openParentTask')}
@@ -1775,6 +1808,13 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
               )}
             </div>
 
+            {/* While a bullet with a hidden value is edited, the same text lies under the field with the
+                references dimmed: equal characters wrap and place the caret exactly alike */}
+            {showSecretDim && (
+              <div aria-hidden="true" className={`${FIELD_LAYOUT} absolute inset-0 pointer-events-none select-none ${fieldText}`}>
+                {dimSecretRefs(localContent)}
+              </div>
+            )}
             {/* Display block: inline, the focused field would sit on a text baseline and leave a gap below
                 it, so the row grew by a few pixels on every click */}
             <textarea
@@ -1824,21 +1864,11 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
                   }
                 }
               }}
-              className={`block w-full min-h-[1.5rem] resize-none overflow-hidden bg-transparent border-0 focus:outline-none focus:ring-0 leading-relaxed whitespace-pre-wrap break-words [overflow-wrap:anywhere] ${
+              className={`${FIELD_LAYOUT} ${
                 activeFocus ? 'relative z-0 text-main' : 'absolute inset-0 text-transparent selection:text-transparent pointer-events-none'
-              } ${
-                block.type === 'h1'
-                  ? 'text-xl sm:text-2xl font-bold text-main tracking-tight'
-                  : block.type === 'h2'
-                  ? 'text-lg sm:text-xl font-semibold text-main'
-                  : block.type === 'h3'
-                  ? 'text-base font-semibold text-main'
-                  : block.type === 'todo' && block.checked
-                  ? 'text-sm text-faint line-through'
-                  : block.type === 'callout'
-                  ? 'text-sm text-main italic'
-                  : 'text-sm text-main'
-              }`}
+              } ${fieldText}`}
+              // Over the dimmed copy below: its own text invisible, the caret still in the text colour
+              style={showSecretDim ? { color: 'transparent', caretColor: 'var(--text-main)' } : undefined}
             />
           </div>
           </div>
@@ -1948,7 +1978,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
           drawing keeps its width while they type and nothing moves */}
       {lockedBy && (
         <span
-          className="absolute right-1 sm:right-2 top-0.5 sm:top-1 z-20 shadow-xs h-5 inline-flex items-center gap-1 pl-0.5 pr-1.5 rounded-pill text-[10px] font-semibold bg-panel select-none max-w-[45%]"
+          className="absolute right-1 sm:right-2 top-0.5 sm:top-1 z-20 h-5 inline-flex items-center gap-1 pl-0.5 pr-1.5 rounded-pill text-[10px] font-semibold bg-panel select-none max-w-[45%]"
           style={{ color: lockColor!.text, border: `1px solid ${lockColor!.border}` }}
           title={t('lock.title', { name: lockedBy.name })}
         >
@@ -1971,7 +2001,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
         ref={bubbleRef}
         className={`absolute ${
           block.type === 'table' && canEdit ? 'right-12 sm:right-8' : 'right-1 sm:right-2'
-        } top-0.5 sm:top-1 z-20 bg-panel/90 border border-border shadow-xs rounded-pill px-1 sm:px-1.5 py-0.5 flex items-center gap-0.5 sm:gap-1 transition-opacity ${
+        } top-0.5 sm:top-1 z-20 bg-panel/90 border border-border rounded-pill px-1 sm:px-1.5 py-0.5 flex items-center gap-0.5 sm:gap-1 transition-opacity ${
           lockedBy || (!canEdit && !onCopyBlockLink && block.type !== 'drawing')
             ? // Someone else is editing the block: no actions, and the lock badge stays visible. Read only
               // without a link to copy (a public page): nothing to show, not even an empty frame
@@ -1979,9 +2009,9 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
             : // Blurred only while shown: a backdrop filter in every bullet made scrolling a long note
               // recompose the page each frame
               showBubble
-            ? 'opacity-100 pointer-events-auto backdrop-blur-sm'
+            ? 'opacity-100 pointer-events-auto backdrop-blur-xs'
             : // Hidden buttons must not take clicks; keyboard focus inside still shows it
-              'opacity-0 pointer-events-none focus-within:opacity-100 focus-within:pointer-events-auto focus-within:backdrop-blur-sm'
+              'opacity-0 pointer-events-none focus-within:opacity-100 focus-within:pointer-events-auto focus-within:backdrop-blur-xs'
         }`}
       >
         {/* A drawing's own buttons (edit, save view …) come in here */}
@@ -2147,6 +2177,30 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
     </div>
   );
 };
+
+// Layout of a bullet's text field; the dimmed copy under it must wrap exactly the same
+const FIELD_LAYOUT =
+  'block w-full min-h-6 resize-none overflow-hidden bg-transparent border-0 focus:outline-hidden focus:ring-0 leading-relaxed whitespace-pre-wrap wrap-break-word wrap-anywhere';
+
+const SECRET_REF_RE = /\{\{secret:[A-Za-z0-9_]+\}\}/g;
+
+/** The text with its hidden-value references dimmed (same characters, so it lines up with the field). */
+function dimSecretRefs(text: string): React.ReactNode[] {
+  const out: React.ReactNode[] = [];
+  let last = 0;
+  for (const m of text.matchAll(SECRET_REF_RE)) {
+    if (m.index > last) out.push(text.slice(last, m.index));
+    out.push(
+      <span key={m.index} className="text-faint">
+        {m[0]}
+      </span>
+    );
+    last = m.index + m[0].length;
+  }
+  // A trailing line break needs a character after it to take up its line, as in the field
+  out.push(text.slice(last) + '\u200b');
+  return out;
+}
 
 // Memoized: a note renders only the bullets whose props changed (OutlinerTree keeps its handlers stable),
 // not all of them on every Enter or after every pause in typing

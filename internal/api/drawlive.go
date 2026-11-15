@@ -478,7 +478,9 @@ func (s *Server) drawTickOnce() {
 
 func (s *Server) startDrawTicker() {
 	for s.wait(drawTick) {
+		done := s.demoPass()
 		s.drawTickOnce()
+		done()
 	}
 }
 

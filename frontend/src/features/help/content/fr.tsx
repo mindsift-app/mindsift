@@ -26,7 +26,7 @@ import {
 } from 'lucide-react';
 import type { HelpContent } from './types';
 
-const kbd = 'px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent';
+const kbd = 'px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent';
 
 // French help: the same cards and shortcut table as the German/English ones
 const fr: HelpContent = {
@@ -110,66 +110,66 @@ const fr: HelpContent = {
         <div className="space-y-3 text-muted leading-relaxed">
           <div>
             <p className="mb-1.5">
-              Tape <code className="text-accent bg-panel px-1 py-0.5 rounded font-mono">/</code> dans un bloc pour ouvrir le menu des types de blocs :
+              Tape <code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">/</code> dans un bloc pour ouvrir le menu des types de blocs :
             </p>
             <div className="grid grid-cols-2 gap-1.5 font-mono text-[11px]">
-              <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main">
+              <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main">
                 <ListTodo className="w-3.5 h-3.5 text-accent" />
                 <span>/todo (tâche avec case à cocher)</span>
               </div>
-              <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main">
+              <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main">
                 <LinkIcon className="w-3.5 h-3.5 text-accent" />
                 <span>/link (lier une note)</span>
               </div>
-              <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main">
+              <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main">
                 <Heading1 className="w-3.5 h-3.5 text-accent" />
                 <span>/h1, /h2, /h3 (titres)</span>
               </div>
-              <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main">
+              <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main">
                 <Code className="w-3.5 h-3.5 text-accent" />
-                <span>/code (bloc de code)</span>
+                <span>/code (bloc de code ; deux fois Entrée à la fin pour en sortir)</span>
               </div>
-              <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main col-span-2">
+              <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main col-span-2">
                 <span className="text-accent font-bold">1.</span>
                 <span>/number ou « 1. » au début (liste numérotée ; Entrée continue la numérotation, une puce vide la termine)</span>
               </div>
-              <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main col-span-2">
+              <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main col-span-2">
                 <TableIcon className="w-3.5 h-3.5 text-accent shrink-0" />
                 <span>/table ou /tableau (tableau avec ligne d’en-tête)</span>
               </div>
-              <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main">
+              <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main">
                 <KeyRound className="w-3.5 h-3.5 text-accent" />
                 <span>/hidden (masquer une valeur, p. ex. un mot de passe)</span>
               </div>
-              <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main">
+              <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main">
                 <span className="text-accent font-bold">💬</span>
                 <span>/callout (encadré)</span>
               </div>
-              <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main">
+              <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main">
                 <span className="text-status-warn font-bold">⚠</span>
                 <span>/warn, /fail (avertissement, erreur)</span>
               </div>
-              <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main">
+              <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main">
                 <span className="text-accent font-bold">—</span>
                 <span>/divider (séparateur)</span>
               </div>
-              <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main col-span-2">
+              <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main col-span-2">
                 <span className="text-accent font-bold">🖼️</span>
                 <span>/image (téléverser, photographier, coller ou lier une image ; uniquement dans une puce vide)</span>
               </div>
-              <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main col-span-2">
+              <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main col-span-2">
                 <Shapes className="w-3.5 h-3.5 text-accent shrink-0" />
                 <span>/canvas (dessin avec formes, flèches, texte et main levée)</span>
               </div>
-              <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main col-span-2">
+              <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main col-span-2">
                 <span className="text-accent font-bold">📤</span>
                 <span>/extract (déplacer la puce avec toutes ses sous-puces vers une note nouvelle ou existante, choisie comme avec le bouton, laissant un [[lien]] à sa place ; le bouton « Rappeler la note » sur le lien annule cela)</span>
               </div>
-              <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main col-span-2">
+              <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main col-span-2">
                 <span className="text-accent font-bold">🎙️</span>
                 <span>/audio (enregistrer une note vocale : le bouton vert démarre, le rouge enregistre ; ou téléverser un fichier audio)</span>
               </div>
-              <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main col-span-2">
+              <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main col-span-2">
                 <span className="text-accent font-bold">🗣️</span>
                 <span>/diktat (parler au lieu de taper : démarre immédiatement, appuyer sur « Arrêter » insère le texte dans la puce)</span>
               </div>
@@ -204,16 +204,16 @@ const fr: HelpContent = {
         <div className="space-y-2 text-muted leading-relaxed">
           <ul className="space-y-1.5">
             <li>
-              <strong className="text-main">En créer un :</strong> Tape <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">/canvas</kbd> (ou <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">/draw</kbd>, <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">/sketch</kbd>) dans une puce vide ; l’éditeur s’ouvre en plein écran. Échap ou « Terminé » enregistre et ferme.
+              <strong className="text-main">En créer un :</strong> Tape <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">/canvas</kbd> (ou <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">/draw</kbd>, <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">/sketch</kbd>) dans une puce vide ; l’éditeur s’ouvre en plein écran. Échap ou « Terminé » enregistre et ferme.
             </li>
             <li>
-              <strong className="text-main">Outils :</strong> Sélection <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">V</kbd>, déplacer la vue <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">H</kbd> (ou maintenir la barre d’espace), rectangle <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">R</kbd>, ellipse <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">O</kbd>, losange <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">D</kbd>, flèche <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">A</kbd>, main levée <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">P</kbd>, texte <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">T</kbd>, gomme <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">E</kbd>. Avec Maj, rectangles et ellipses deviennent carrés et cercles ; <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">G</kbd> active ou désactive la grille magnétique. Couleur du trait, remplissage, épaisseur et pointillés se règlent sur la forme sélectionnée.
+              <strong className="text-main">Outils :</strong> Sélection <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">V</kbd>, déplacer la vue <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">H</kbd> (ou maintenir la barre d’espace), rectangle <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">R</kbd>, ellipse <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">O</kbd>, losange <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">D</kbd>, flèche <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">A</kbd>, main levée <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">P</kbd>, texte <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">T</kbd>, gomme <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">E</kbd>. Avec Maj, rectangles et ellipses deviennent carrés et cercles ; <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">G</kbd> active ou désactive la grille magnétique. Couleur du trait, remplissage, épaisseur et pointillés se règlent sur la forme sélectionnée.
             </li>
             <li>
               <strong className="text-main">Texte et flèches :</strong> Double-clic (ou Entrée) sur une forme pour y écrire, double-clic sur une flèche pour lui donner une étiquette comme « oui » ou « non ». Les flèches s’accrochent aux formes et les suivent quand elles bougent ; elles sont droites, courbes ou à angles droits. Pour les flèches à angles droits, tu choisis où elles s’accrochent en tirant l’extrémité sur un côté de la forme (au milieu, elle s’aimante) ; chaque segment a une poignée pour le déplacer, un double-clic sur une poignée pleine supprime le segment. Une flèche accrochée ne se détache que par son extrémité.
             </li>
             <li>
-              <strong className="text-main">Modifier :</strong> <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Ctrl + Z</kbd> / <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Ctrl + Y</kbd> annulent et rétablissent, <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Ctrl + D</kbd> duplique, <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Ctrl + C</kbd> / <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Ctrl + V</kbd> copient et collent, <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Suppr</kbd> supprime, les flèches du clavier déplacent la sélection.
+              <strong className="text-main">Modifier :</strong> <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">Ctrl + Z</kbd> / <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">Ctrl + Y</kbd> annulent et rétablissent, <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">Ctrl + D</kbd> duplique, <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">Ctrl + C</kbd> / <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">Ctrl + V</kbd> copient et collent, <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">Suppr</kbd> supprime, les flèches du clavier déplacent la sélection.
             </li>
             <li>
               <strong className="text-main">Dans la note :</strong> Le dessin occupe la largeur de la note. Clique dedans, puis faire glisser déplace la vue, Ctrl + molette ou deux doigts zooment ; la molette seule fait toujours défiler la page. Un autre clic y met fin, une vue non enregistrée revient en douceur. Tire le bord inférieur pour changer la hauteur. « Enregistrer la vue » fixe cadrage, zoom et hauteur pour tout le monde, Le bouton de taille passe de la taille recommandée à « tout en grand » (dessins hauts) ou à la hauteur recommandée à déplacer sur le côté (dessins larges). Double-clic ou « Modifier » ouvre l’éditeur ; il démarre avec la main (seule la vue bouge), choisis un autre outil pour modifier. Le bouton aux flèches à côté de « Terminé » quitte sans enregistrer et demande d’abord s’il y a des modifications.
@@ -243,10 +243,10 @@ const fr: HelpContent = {
         <div className="space-y-2 text-muted leading-relaxed">
           <ul className="space-y-1.5">
             <li>
-              <strong className="text-main">En créer un :</strong> Tape <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">/table</kbd> (ou <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">/tableau</kbd>) dans une puce : un tableau de 2 colonnes et 2 lignes apparaît, le texte déjà présent dans la puce va dans la première cellule. La première ligne est l’en-tête (en gras).
+              <strong className="text-main">En créer un :</strong> Tape <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">/table</kbd> (ou <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">/tableau</kbd>) dans une puce : un tableau de 2 colonnes et 2 lignes apparaît, le texte déjà présent dans la puce va dans la première cellule. La première ligne est l’en-tête (en gras).
             </li>
             <li>
-              <strong className="text-main">Saisir :</strong> <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Entrée</kbd> ajoute une ligne sous la ligne actuelle, <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Tab</kbd> / <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Maj + Tab</kbd> passent d’une cellule à l’autre (Tab dans la dernière cellule ajoute une ligne), les flèches changent de ligne et quittent le tableau en haut et en bas. <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Retour arrière</kbd> dans une ligne vide la supprime, dans un tableau entièrement vide le tableau. Gras, italique, liens et #hashtags fonctionnent comme dans le texte.
+              <strong className="text-main">Saisir :</strong> <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">Entrée</kbd> ajoute une ligne sous la ligne actuelle, <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">Tab</kbd> / <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">Maj + Tab</kbd> passent d’une cellule à l’autre (Tab dans la dernière cellule ajoute une ligne), les flèches changent de ligne et quittent le tableau en haut et en bas. <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">Retour arrière</kbd> dans une ligne vide la supprime, dans un tableau entièrement vide le tableau. <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">Enter</kbd> dans une dernière ligne vide la supprime et ajoute une nouvelle puce sous le tableau. Gras, italique, liens et #hashtags fonctionnent comme dans le texte.
             </li>
             <li>
               <strong className="text-main">Colonnes :</strong> Le <strong className="text-main">+</strong> à droite du tableau ajoute une colonne (sur ordinateur, il apparaît quand la souris survole le tableau). En dessous, les trois points ouvrent le menu : aligner la colonne du curseur à gauche, au centre ou à droite (conservé dans le tableau Markdown), insérer une colonne à gauche ou à droite, supprimer la ligne ou la colonne du curseur, augmenter ou réduire le retrait de la puce.
@@ -276,10 +276,10 @@ const fr: HelpContent = {
           <p>Dans MindSift, notes et pensées peuvent être reliées de nombreuses façons :</p>
           <ul className="space-y-1.5">
             <li>
-              <strong className="text-main">Liens wiki :</strong> Avec <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Ctrl + L</kbd> ou <code className="text-accent bg-panel px-1 py-0.5 rounded font-mono">/link</code>, tu relies une autre note ou une seule puce ; un clic l’ouvre. Le lien affiche toujours le titre actuel de la note et fonctionne encore si tu la renommes ou la déplaces, même avec deux notes du même nom. Le texte sélectionné avant devient le texte du lien. À la main, <code className="text-accent bg-panel px-1 py-0.5 rounded font-mono">[[Nom de la note]]</code> marche aussi. Si la note liée n’existe plus, un clic demande s’il faut la créer ou supprimer le lien.
+              <strong className="text-main">Liens wiki :</strong> Avec <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">Ctrl + L</kbd> ou <code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">/link</code>, tu relies une autre note ou une seule puce ; un clic l’ouvre. Le lien affiche toujours le titre actuel de la note et fonctionne encore si tu la renommes ou la déplaces, même avec deux notes du même nom. Le texte sélectionné avant devient le texte du lien. À la main, <code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">[[Nom de la note]]</code> marche aussi. Si la note liée n’existe plus, un clic demande s’il faut la créer ou supprimer le lien.
             </li>
             <li>
-              <strong className="text-main">Hashtags :</strong> tape <code className="text-accent bg-panel px-1 py-0.5 rounded font-mono">#tag</code> directement dans le texte. Les hashtags regroupent automatiquement les thèmes dans la vue d'ensemble des tags.
+              <strong className="text-main">Hashtags :</strong> tape <code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">#tag</code> directement dans le texte. Les hashtags regroupent automatiquement les thèmes dans la vue d'ensemble des tags.
             </li>
             <li>
               <strong className="text-main">Vue d'ensemble des tags :</strong> clique sur un hashtag dans la barre latérale pour afficher toutes les puces et notes contenant ce tag sous forme de tuiles filtrables.
@@ -357,7 +357,7 @@ const fr: HelpContent = {
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
           <p>
-            L'onglet de l'espace de travail <strong className="text-main">« Tâches »</strong> rassemble automatiquement toutes les cases à cocher non cochées (<code className="text-accent bg-panel px-1 py-0.5 rounded font-mono">- [ ]</code>) de toutes tes notes.
+            L'onglet de l'espace de travail <strong className="text-main">« Tâches »</strong> rassemble automatiquement toutes les cases à cocher non cochées (<code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">- [ ]</code>) de toutes tes notes.
           </p>
           <ul className="space-y-1.5">
             <li>
@@ -436,7 +436,7 @@ const fr: HelpContent = {
         <div className="space-y-2 text-muted leading-relaxed">
           <p>Le deck de triage présente chaque pensée collectée carte par carte. Tu tranches en une fraction de seconde :</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs pt-1">
-            <div className="p-2.5 bg-panel border border-border rounded">
+            <div className="p-2.5 bg-panel border border-border rounded-sm">
               <span className="font-semibold text-main block mb-1">Clavier (ordinateur) :</span>
               <ul className="space-y-1 font-mono text-[11px]">
                 <li><strong className="text-status-err">H</strong> ou <strong>←</strong> : jeter (corbeille)</li>
@@ -446,7 +446,7 @@ const fr: HelpContent = {
                 <li><strong className="text-muted">Espace</strong> : décider plus tard (fin de pile)</li>
               </ul>
             </div>
-            <div className="p-2.5 bg-panel border border-border rounded">
+            <div className="p-2.5 bg-panel border border-border rounded-sm">
               <span className="font-semibold text-main block mb-1">Mobile &amp; tactile :</span>
               <ul className="space-y-1 text-[11px]">
                 <li>👉 <strong>Balayer vers la droite :</strong> tâche</li>
@@ -472,7 +472,7 @@ const fr: HelpContent = {
             MindSift dispose d'une API. Dans <em className="text-main">Paramètres du compte → API</em>, crée des clés personnelles et définis précisément par interrupteur ce que chacune peut faire : lire, créer ou modifier tâches, listes, notes et boîte de réception. Ces autorisations s'appliquent aux deux modes d'accès ; les notes ainsi que la lecture et le tri de la boîte de réception ne sont accessibles que via MCP. Une clé n'accède jamais aux paramètres.
           </p>
           <p>
-            <strong className="text-main">curl et domotique :</strong> avec les droits de lecture, <code className="text-accent bg-panel px-1 py-0.5 rounded font-mono">GET /api/v1/thoughts?due=today</code> renvoie les tâches du jour au format JSON (par ex. pour un capteur Home Assistant) ; avec les droits de modification, tu peux cocher des tâches. Via <code className="text-accent bg-panel px-1 py-0.5 rounded font-mono">POST /api/v1/webhooks/ingest</code>, Home Assistant, n8n ou des scripts peuvent injecter directement des alertes ou des points dans la boîte de réception, les tâches ou les listes.
+            <strong className="text-main">curl et domotique :</strong> avec les droits de lecture, <code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">GET /api/v1/thoughts?due=today</code> renvoie les tâches du jour au format JSON (par ex. pour un capteur Home Assistant) ; avec les droits de modification, tu peux cocher des tâches. Via <code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">POST /api/v1/webhooks/ingest</code>, Home Assistant, n8n ou des scripts peuvent injecter directement des alertes ou des points dans la boîte de réception, les tâches ou les listes.
           </p>
           <p>
             <strong className="text-main">Agents IA (MCP) :</strong> Claude Code, Cursor, Codex et Claude Desktop se connectent via le protocole standardisé Model Context Protocol (MCP) avec une clé d'API. claude.ai et ChatGPT se connectent sans clé comme connecteur : MindSift demande lors de la connexion quelles autorisations accorder.
@@ -595,7 +595,7 @@ const fr: HelpContent = {
               <strong className="text-main">Changer de thème :</strong> dans le menu de profil en haut à droite ou sous <em>Paramètres du compte → Apparence &amp; thèmes</em>.
             </li>
             <li>
-              <strong className="text-main">Thème personnalisé :</strong> télécharge ou colle le modèle, ajuste les couleurs et les arrondis, téléverse-le ou colle-le sous forme de fichier <code className="text-accent bg-panel px-1 py-0.5 rounded font-mono">.css</code> et choisis « Enregistrer &amp; activer ». Le thème s'applique immédiatement et est disponible sur tous tes appareils.
+              <strong className="text-main">Thème personnalisé :</strong> télécharge ou colle le modèle, ajuste les couleurs et les arrondis, téléverse-le ou colle-le sous forme de fichier <code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">.css</code> et choisis « Enregistrer &amp; activer ». Le thème s'applique immédiatement et est disponible sur tous tes appareils.
             </li>
           </ul>
         </div>

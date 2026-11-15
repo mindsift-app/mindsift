@@ -52,7 +52,7 @@ export function QuickAddTaskBar({ hidden, currentSelectedList, selectedListId, s
       onSubmit={handleQuickAddTask}
       className="hidden sm:flex items-center gap-1.5 panel-surface p-2 sm:p-1.5"
     >
-      <Plus className="w-4 h-4 text-accent ml-1 flex-shrink-0" />
+      <Plus className="w-4 h-4 text-accent ml-1 shrink-0" />
       <input
         ref={quickInputRef}
         type="text"
@@ -62,9 +62,9 @@ export function QuickAddTaskBar({ hidden, currentSelectedList, selectedListId, s
           quickVoiceError ||
           (currentSelectedList ? t('quickAdd.toList', { title: currentSelectedList.title }) : t('quickAdd.placeholder'))
         }
-        className="flex-1 bg-transparent px-2 py-1.5 sm:py-1 text-sm text-main placeholder-faint focus:outline-none min-w-0"
+        className="flex-1 bg-transparent px-2 py-1.5 sm:py-1 text-sm text-main placeholder-faint focus:outline-hidden min-w-0"
       />
-      <div className="flex items-center gap-1 flex-shrink-0">
+      <div className="flex items-center gap-1 shrink-0">
         <VoiceInputButton
           value={quickTitle}
           onChange={setQuickTitle}
@@ -79,7 +79,7 @@ export function QuickAddTaskBar({ hidden, currentSelectedList, selectedListId, s
           title={t('detail.dueDate')}
           value={quickDueDate}
           onChange={setQuickDueDate}
-          className="hidden sm:block w-[8.5rem]"
+          className="hidden sm:block w-34"
           inputClassName="h-7 px-2 input-field text-xs"
         />
         <button

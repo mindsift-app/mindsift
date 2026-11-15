@@ -13,6 +13,70 @@ import (
 	"github.com/mindsift-app/mindsift/internal/domain"
 )
 
+// migrateCodeBlocksAndOpResults is migration 52: code blocks keep no hidden values (migrateCodeBlockSecrets)
+// and doc_op_results becomes compact (migrateCompactOpResults, op_results.go).
+func (s *Store) migrateCodeBlocksAndOpResults() error {
+	if err := s.migrateCodeBlockSecrets(); err != nil {
+		return err
+	}
+	return s.migrateCompactOpResults()
+}
+
+// migrateCodeBlockSecrets gives the code blocks there are the placeholder instead of references to values
+// (secrets.go), as a change of the note by its owner (placeholder in the owner's message language), so open
+// editors get it through the log. block_refs drops their rows: the secret sweep neither copies a value for
+// a code block any more nor keeps one because of it (a value only a code block held is deleted after
+// SecretOrphanDays like any other no bullet holds). Deleted code blocks stay as they are; one that undo
+// brings back shows its reference as text, as before.
+func (s *Store) migrateCodeBlockSecrets() error {
+	if _, err := s.db.Exec(`DELETE FROM block_refs WHERE kind = 'secret' AND block_id IN (SELECT id FROM blocks WHERE type = 'code')`); err != nil {
+		return err
+	}
+	type note struct{ id, owner string }
+	rows, err := s.db.Query(`SELECT id, user_id FROM documents WHERE id IN (SELECT document_id FROM blocks
+		WHERE type = 'code' AND deleted = 0 AND instr(content, '{{secret:') > 0) ORDER BY id`)
+	if err != nil {
+		return err
+	}
+	var notes []note
+	for rows.Next() {
+		var n note
+		if err := rows.Scan(&n.id, &n.owner); err != nil {
+			_ = rows.Close()
+			return err
+		}
+		notes = append(notes, n)
+	}
+	err = rows.Err()
+	_ = rows.Close()
+	if err != nil {
+		return err
+	}
+	changed := 0
+	for _, n := range notes {
+		_, _, err := s.applyDocChange(n.id, collab.Actor{UserID: n.owner, ClientID: collab.ServerHolder}, nil, func(d *collab.Doc) []collab.Op {
+			var ops []collab.Op
+			for _, b := range d.Blocks {
+				if b.Deleted || b.Type != "code" || !secretValueRefRe.MatchString(b.Content) {
+					continue
+				}
+				// The text as it is: the change's collab.Env.CodeText puts the placeholder in
+				text := b.Content
+				ops = append(ops, collab.Op{OpID: domain.NewID("op"), Kind: collab.OpSetContent, BlockID: b.ID, BaseVersion: b.Version, Content: &text})
+			}
+			changed += len(ops)
+			return ops
+		})
+		if err != nil {
+			return err
+		}
+	}
+	if changed > 0 {
+		slog.Info("References to hidden values in code blocks replaced by the placeholder", "notes", len(notes), "code_blocks", changed)
+	}
+	return nil
+}
+
 // migrateSecretCopies gives every note its own copy of the hidden values its bullets show from other
 // notes (migration 46): until now a bullet copied or moved into another note kept pointing to the value
 // of its note of origin. source_id records which value a copy was made from (secretGate).
@@ -147,7 +211,7 @@ func (s *Store) splitNoteSecrets(docID string, users map[string]bool, res *Secre
 	}
 	byWriter := map[string][]*collab.Block{}
 	for _, b := range state.Blocks {
-		if b.Deleted || !strings.Contains(b.Content, "{{secret:") {
+		if b.Deleted || b.Type == "code" || !strings.Contains(b.Content, "{{secret:") {
 			continue
 		}
 		w := b.UpdatedBy

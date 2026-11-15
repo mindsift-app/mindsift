@@ -42,7 +42,7 @@ func (s *Server) handleForgotPassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	email := strings.TrimSpace(req.Email)
-	go func() {
+	s.background(func() {
 		user, err := s.store.GetUserByEmail(email)
 		// With the password login off only administrators have a password to reset (emergency access)
 		if err != nil || user == nil || !user.IsActive || !s.passwordLoginFor(user) {
@@ -70,7 +70,7 @@ func (s *Server) handleForgotPassword(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			slog.Warn("Password reset email not sent", "user_id", user.ID, "error", err)
 		}
-	}()
+	})
 	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
 }
 

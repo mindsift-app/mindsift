@@ -40,6 +40,8 @@ type Server struct {
 	leases   *collab.LeaseManager // block leases and open sessions of notes
 	notifier *collab.Notifier     // wakes long-poll requests on note changes
 	draw     *drawHub             // live drawing sessions (drawlive.go)
+	// docCounts: notes whose counts go to the note lists of others after a change (doc_counts.go)
+	docCounts docCountsState
 
 	demo          demoState     // periodic reset in demo mode (demo.go)
 	streamTickets streamTickets // one-time tickets for WebSocket/SSE (streamticket.go)
@@ -107,6 +109,7 @@ func NewServer(cfg *config.Config, store *storage.Store, wsHub *ws.Hub, staticFS
 	}
 	srv.background(srv.startCompaction)
 	srv.background(srv.startDrawTicker)
+	srv.background(srv.startDocCountsTicker)
 	if cfg.DemoMode && cfg.DemoResetMinutes > 0 {
 		srv.background(srv.startDemoResetTicker)
 	}
@@ -189,10 +192,11 @@ func (s *Server) Router() http.Handler {
 	r := chi.NewRouter()
 
 	r.Use(s.clientIPMiddleware)
+	// Before the language: its lookup reads the system settings, which a demo reset drops for a moment
+	r.Use(s.demoResetGate)
 	r.Use(s.languageMiddleware)
 	r.Use(s.securityHeaders)
 	r.Use(s.bodyLimit)
-	r.Use(s.demoResetGate)
 	r.Use(middleware.Recoverer)
 	r.Use(s.apiLoggingMiddleware)
 	// Browsers of other sites may only call the API when no BASE_URL is set (auth runs over the

@@ -156,6 +156,48 @@ describe('undo/redo', () => {
     expect(texts(e)).toEqual(['Start']);
   });
 
+  it('undoes a paste of a picture whose file the server dropped', async () => {
+    const server = new Server([['a', 'Start']]);
+    // A file the writer may not show becomes its caption or the placeholder (internal/storage/media.go)
+    server.gate = (op) =>
+      op.content
+        ? { ...op, content: op.content.replace('![Urlaub](media:med_f1a2)', 'Urlaub').replace('![](media:med_f2b3)', '(Datei nicht übernommen)') }
+        : op;
+    const e = await engineFor(server);
+    edit(e, (b) => [...b, { id: 'n', type: 'image', content: '![](media:med_f2b3)', level: 0 }]);
+    clock += 2000;
+    edit(e, (b) => b.map((x) => (x.id === 'a' ? { ...x, content: 'Start ![Urlaub](media:med_f1a2)' } : x)));
+    await e.syncNow();
+    expect(texts(e)).toEqual(['Start Urlaub', '(Datei nicht übernommen)']);
+    expect(e.undo().ok).toBe(true);
+    expect(texts(e)).toEqual(['Start', '(Datei nicht übernommen)']);
+    expect(e.undo().ok).toBe(true);
+    expect(texts(e)).toEqual(['Start']);
+  });
+
+  it('undoes a paste whose hidden value the server replaced by the placeholder', async () => {
+    const server = new Server([['a', 'Start']]);
+    server.gate = (op) => (op.content ? { ...op, content: op.content.replace('{{secret:fremd}}', '(versteckter Wert nicht übernommen)') } : op);
+    const e = await engineFor(server);
+    edit(e, (b) => [...b, { id: 'n', type: 'bullet', content: 'PIN {{secret:fremd}}', level: 0 }]);
+    await e.syncNow();
+    expect(texts(e)).toEqual(['Start', 'PIN (versteckter Wert nicht übernommen)']);
+    expect(e.undo().ok).toBe(true);
+    expect(texts(e)).toEqual(['Start']);
+  });
+
+  it('still skips undo when someone else changed the text around a dropped picture', async () => {
+    const server = new Server([['a', 'Start']]);
+    server.gate = (op) => (op.content ? { ...op, content: op.content.replace('![](media:med_f3c4)', '') } : op);
+    const e = await engineFor(server);
+    edit(e, (b) => [{ ...b[0], content: 'Start ![](media:med_f3c4)' }]);
+    await e.syncNow();
+    server.apply({ opId: 'other', kind: 'set_content', blockId: 'a', baseVersion: 2, content: 'Anders ' }, 'other');
+    await e.syncNow();
+    expect(e.undo().ok).toBe(false);
+    expect(texts(e)).toEqual(['Anders ']);
+  });
+
   it('still skips undo when someone else put another hidden value into the bullet', async () => {
     const server = new Server([['a', 'Start']]);
     const e = await engineFor(server);

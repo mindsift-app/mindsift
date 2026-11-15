@@ -97,7 +97,7 @@ export function TaskListTabs({
   });
 
   return (
-    <div className="hidden sm:flex items-center gap-2 !mt-0">
+    <div className="hidden sm:flex items-center gap-2 mt-0!">
       {/* Task Lists selector tabs: one row, what does not fit goes behind "⋯ n" */}
       <div ref={rowRef} className="relative flex-1 min-w-0 flex items-center gap-1">
         <button
@@ -129,7 +129,7 @@ export function TaskListTabs({
             onDrop={(e) => {
               if (!reorder.handleDrop(e, tl.id)) drop.onDrop(e);
             }}
-            className={`group tool-tab !px-0 shrink-0 ${selectedListId === tl.id ? 'tool-tab-active' : ''} ${
+            className={`group tool-tab px-0! shrink-0 ${selectedListId === tl.id ? 'tool-tab-active' : ''} ${
               dragOverListTab === tl.id ? 'ring-2 ring-accent/60 !bg-accent/10 text-main' : ''
             } ${
               reorder.draggingId === tl.id ? 'opacity-50' : ''
@@ -185,7 +185,7 @@ export function TaskListTabs({
         <button
           data-tab-fixed
           onClick={() => setShowNewListModal(true)}
-          className="tool-btn shrink-0 !gap-1"
+          className="tool-btn shrink-0 gap-1!"
           title={t('tabs.newListTitle')}
         >
           <Plus className="w-3.5 h-3.5" />

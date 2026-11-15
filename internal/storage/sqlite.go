@@ -74,9 +74,11 @@ func NewStore(dbPath string, opts ...StoreOption) (*Store, error) {
 	// journal_size_limit: the WAL grows to the size of the largest transaction (an import, a large paste)
 	// and without a limit stays that large; with it, SQLite cuts it back to 16 MB once a checkpoint has
 	// written it into the database.
+	// auto_vacuum(2): a new database gives free pages back with PRAGMA incremental_vacuum (vacuum.go);
+	// on an existing one the setting waits for the next VACUUM.
 	dsn := dbPath
 	if !strings.Contains(dsn, "?") {
-		dsn += "?_pragma=busy_timeout(10000)&_pragma=journal_mode(WAL)&_pragma=synchronous(NORMAL)&_pragma=foreign_keys(1)&_pragma=journal_size_limit(16777216)&_txlock=immediate"
+		dsn += "?_pragma=busy_timeout(10000)&_pragma=auto_vacuum(2)&_pragma=journal_mode(WAL)&_pragma=synchronous(NORMAL)&_pragma=foreign_keys(1)&_pragma=journal_size_limit(16777216)&_txlock=immediate"
 	}
 
 	db, err := sql.Open("sqlite", dsn)
@@ -674,6 +676,8 @@ func (s *Store) migrateBaseline() error {
 
 		"ALTER TABLE documents ADD COLUMN folder_id TEXT NOT NULL DEFAULT '';",
 		"ALTER TABLE documents ADD COLUMN markdown_cache TEXT NOT NULL DEFAULT '';",
+		// Dropped again by migration 51; the steps before it (anchor tags here, migration 44) still use it
+		"ALTER TABLE documents ADD COLUMN content TEXT NOT NULL DEFAULT '';",
 
 		"CREATE TABLE IF NOT EXISTS blocks (id TEXT PRIMARY KEY, document_id TEXT NOT NULL, content TEXT NOT NULL DEFAULT '', level INT NOT NULL DEFAULT 0, position REAL NOT NULL DEFAULT 0, type TEXT NOT NULL DEFAULT 'bullet', checked INTEGER NOT NULL DEFAULT 0, collapsed INTEGER NOT NULL DEFAULT 0, lang TEXT NOT NULL DEFAULT '', FOREIGN KEY(document_id) REFERENCES documents(id) ON DELETE CASCADE);",
 		"CREATE INDEX IF NOT EXISTS idx_blocks_doc_pos ON blocks(document_id, position ASC);",

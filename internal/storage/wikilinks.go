@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"log/slog"
 	"regexp"
 	"strings"
@@ -161,9 +162,11 @@ func (s *Store) resolveWikiLink(l wikiLink, docs []domain.Document, except strin
 	return pick(func(d *domain.Document) bool { return strings.EqualFold(strings.TrimSpace(d.Title), title) })
 }
 
-// DocTitles maps the id of every note the user can open to its title (for ReadableWikiLinks).
+// DocTitles maps the id of every note the user can open to its title (for ReadableWikiLinks). The notes
+// are listed without their bullets: loading those made it the most expensive part of a search whose
+// snippets held a link.
 func (s *Store) DocTitles(userID string) map[string]string {
-	docs, _ := s.GetDocuments(userID)
+	docs, _ := s.getDocuments(context.Background(), userID, false)
 	out := make(map[string]string, len(docs))
 	for _, d := range docs {
 		out[d.ID] = d.Title

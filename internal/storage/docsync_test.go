@@ -241,15 +241,19 @@ func TestFixedBlockIDsWorkInSeveralNotes(t *testing.T) {
 
 func backdate(t *testing.T, s *Store, docID string, age time.Duration) {
 	t.Helper()
-	old := time.Now().Add(-age).UTC().Format(time.RFC3339)
+	at := time.Now().Add(-age)
+	old := at.UTC().Format(time.RFC3339)
 	for _, q := range []string{
 		`UPDATE doc_ops SET created_at = ? WHERE doc_id = ?`,
-		`UPDATE doc_op_results SET created_at = ? WHERE doc_id = ?`,
 		`UPDATE blocks SET deleted_at = ? WHERE document_id = ? AND deleted = 1`,
 	} {
 		if _, err := s.db.Exec(q, old, docID); err != nil {
 			t.Fatal(err)
 		}
+	}
+	// Results of operations keep the time in Unix seconds (op_results.go)
+	if _, err := s.db.Exec(`UPDATE doc_op_results SET created_at = ? WHERE doc_id = ?`, at.Unix(), docID); err != nil {
+		t.Fatal(err)
 	}
 }
 
@@ -266,7 +270,7 @@ func TestCompactionKeepsStateAndForcesResync(t *testing.T) {
 	}
 	backdate(t, s, doc.ID, 40*24*time.Hour)
 	// Idempotency results stay longer (90 days): only the very old one goes
-	s.db.Exec(`UPDATE doc_op_results SET created_at = ? WHERE op_id = 'del-b'`, time.Now().Add(-100*24*time.Hour).UTC().Format(time.RFC3339))
+	s.db.Exec(`UPDATE doc_op_results SET created_at = ? WHERE op_id = 'del-b'`, time.Now().Add(-100*24*time.Hour).Unix())
 
 	// A client that is up to date before compaction must only need the remaining log afterwards
 	snap, _ := s.GetDocSnapshot(doc.ID)

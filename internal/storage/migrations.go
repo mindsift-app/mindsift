@@ -72,6 +72,12 @@ var migrations = []migration{
 	{44, "Note text stored only once", (*Store).migrateNoteStorage},
 	{45, "Usernames unique in the database", (*Store).migrateUniqueUsernames},
 	{46, "Hidden values copied with a bullet belong to its note", (*Store).migrateSecretCopies},
+	{47, "Search of tasks and list items without a copy of the text", (*Store).migrateItemSearch},
+	{48, "Unused copy of a note's markdown removed", (*Store).migrateDropMarkdownCache},
+	{49, "Database file shrinks after deletes (incremental auto_vacuum)", (*Store).migrateIncrementalVacuum},
+	{50, "Index for the open to-dos of the note list", (*Store).migrateOpenTodoIndex},
+	{51, "Leaner note list: indexes for its hashtag counts and shares, unused documents.content removed", (*Store).migrateNoteList},
+	{52, "Code blocks keep no hidden values; smaller results of note operations", (*Store).migrateCodeBlocksAndOpResults},
 }
 
 // migrationBlockRefs creates block_refs: until it has run (earlier steps that rewrite notes), writing a
@@ -124,7 +130,8 @@ func (s *Store) migrate() error {
 	if lastApplied > known {
 		return s.newerDatabase(lastApplied, known)
 	}
-	if pending && tables > 0 && s.systemBackupDir != "" {
+	// The demo's sample data is disposable and reset at start anyway: no copy of it (WithDemoMode)
+	if pending && tables > 0 && s.systemBackupDir != "" && !s.demoMode {
 		if err := s.backupBeforeMigrations(lastApplied); err != nil {
 			return err
 		}
@@ -369,6 +376,46 @@ func (s *Store) columnExists(table, column string) (bool, error) {
 		}
 	}
 	return false, rows.Err()
+}
+
+// migrateOpenTodoIndex indexes the open to-dos per note: the note list counts them for every listed note
+// (attachListStats, sqlOpenTodo), which read every bullet of every note. Partial, so only open to-dos get
+// an entry; the query names the same conditions, so SQLite can use it.
+func (s *Store) migrateOpenTodoIndex() error {
+	_, err := s.db.Exec(`CREATE INDEX IF NOT EXISTS idx_blocks_open_todo ON blocks(document_id) WHERE type = 'todo' AND checked = 0 AND deleted = 0`)
+	return err
+}
+
+// migrateNoteList is migration 51, for the note list:
+//   - its hashtag counts (attachListStats) looked up every tag row of every listed note in block_tags
+//     and in blocks. idx_block_tags_doc_tag (replacing idx_block_tags_doc, a prefix of it) holds what
+//     the counts need, in the order of their groups; idx_block_tags_block leads from the open to-dos to
+//     their hashtags. Both on block_tags; an index on blocks for the join would be written with every
+//     change of a bullet;
+//   - the counts no longer check each row against blocks, so rows of bullets that are not live bullets
+//     of their note go: a new note re-indexed its hashtags under the ids it was given, also where a
+//     bullet had got a new one because the id belonged to another note (createDocument);
+//   - the notes shared through a team start from the person's teams (sqlSharedDocIDs), which read all of
+//     team_members without idx_team_members_user;
+//   - documents.content has been empty since migration 44 except for a note whose blocks_json could not
+//     be converted, and that note's text is in blocks_json (loadDocBlocks, JournalDays). DROP COLUMN
+//     writes every row of documents once.
+func (s *Store) migrateNoteList() error {
+	if err := s.execInTx(
+		stmt(`DELETE FROM block_tags WHERE NOT EXISTS (SELECT 1 FROM blocks b
+			WHERE b.id = block_tags.block_id AND b.document_id = block_tags.document_id AND b.deleted = 0)`),
+		stmt(`CREATE INDEX IF NOT EXISTS idx_block_tags_doc_tag ON block_tags(document_id, tag, block_id)`),
+		stmt(`DROP INDEX IF EXISTS idx_block_tags_doc`),
+		stmt(`CREATE INDEX IF NOT EXISTS idx_block_tags_block ON block_tags(block_id, document_id, tag)`),
+		stmt(`CREATE INDEX IF NOT EXISTS idx_team_members_user ON team_members(user_id)`),
+	); err != nil {
+		return err
+	}
+	if ok, err := s.columnExists("documents", "content"); err != nil || !ok {
+		return err
+	}
+	_, err := s.db.Exec(`ALTER TABLE documents DROP COLUMN content`)
+	return err
 }
 
 // migrateLookupIndexes adds indexes for two lookups that read whole tables:

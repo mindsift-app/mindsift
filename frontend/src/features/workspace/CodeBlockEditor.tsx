@@ -6,6 +6,8 @@ import { useTranslation } from 'react-i18next';
 import i18n from '../../i18n';
 import { enterWithIndent, indentUnit } from './codeIndent';
 import { SelectMenu } from '../../components/SelectMenu';
+import { ownClipboardText } from '../../lib/outlineMarkdown';
+import { maskSecrets, secretPlaceholder } from '../../lib/secretRef';
 
 Prism.manual = true;
 if (typeof globalThis !== 'undefined') {
@@ -319,6 +321,17 @@ export function escapeHtml(raw: string): string {
     .replace(/>/g, '&gt;');
 }
 
+/**
+ * The code without its last line when the caret sits at the end of an empty (or only indented) last line,
+ * else null: then Enter leaves the code block instead of adding another line.
+ */
+export function contentWithoutEmptyLastLine(content: string, start: number, end: number): string | null {
+  if (start !== end || end !== content.length) return null;
+  const nl = content.lastIndexOf('\n');
+  if (nl === -1 || content.slice(nl + 1).trim() !== '') return null;
+  return content.slice(0, nl);
+}
+
 export interface CodeBlockEditorProps {
   block: DocumentBlock;
   content?: string;
@@ -338,6 +351,8 @@ export interface CodeBlockEditorProps {
   onOutdent?: () => void;
   canIndent?: boolean;
   canOutdent?: boolean;
+  /** Enter on an empty last line leaves the block: that line goes, a new bullet follows below */
+  onExitBelow?: (content: string) => void;
 }
 
 export const CodeBlockEditor: React.FC<CodeBlockEditorProps> = ({
@@ -356,6 +371,7 @@ export const CodeBlockEditor: React.FC<CodeBlockEditorProps> = ({
   onOutdent,
   canIndent = false,
   canOutdent = false,
+  onExitBelow,
 }) => {
   const { t } = useTranslation('workspace');
   const isControlled = content !== undefined;
@@ -516,6 +532,12 @@ export const CodeBlockEditor: React.FC<CodeBlockEditorProps> = ({
       const ta = e.currentTarget;
       const start = ta.selectionStart ?? 0;
       const end = ta.selectionEnd ?? start;
+      // A second Enter on the empty last line leaves the block, as in Markdown editors
+      const exitTo = onExitBelow ? contentWithoutEmptyLastLine(currentContent, start, end) : null;
+      if (exitTo !== null) {
+        onExitBelow?.(exitTo);
+        return;
+      }
       const { value, caret } = enterWithIndent(currentContent, start, end, block.lang);
       applyContentUpdate(value, ta);
       ta.value = value;
@@ -572,6 +594,24 @@ export const CodeBlockEditor: React.FC<CodeBlockEditorProps> = ({
     handleKeyDown?.(e);
   };
 
+  // Bullets copied from a note with hidden values: a code block shows its text as it is and cannot show a
+  // hidden value, so neither the reference nor the mask of the plain text ("••••", which looks like a value
+  // to reveal) goes in, but the placeholder the server writes where a value is not taken over, in its language
+  const onTextareaPaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    if (!canEdit) return;
+    const own = ownClipboardText(e.clipboardData);
+    if (!own) return;
+    e.preventDefault();
+    const ta = e.currentTarget;
+    const start = ta.selectionStart ?? currentContent.length;
+    const end = ta.selectionEnd ?? start;
+    const pasted = maskSecrets(own, secretPlaceholder());
+    const newVal = currentContent.slice(0, start) + pasted + currentContent.slice(end);
+    applyContentUpdate(newVal, ta);
+    ta.value = newVal;
+    setSelectionAfterUpdate(ta, start + pasted.length, start + pasted.length);
+  };
+
   const handleScroll = (e: React.UIEvent<HTMLTextAreaElement>) => {
     const target = e.currentTarget;
     if (preRef.current) {
@@ -609,7 +649,7 @@ export const CodeBlockEditor: React.FC<CodeBlockEditorProps> = ({
   // Header controls take the code block's own text colour: light themes with dark code blocks (Classic)
   // would otherwise turn them page-dark on hover
   const headerControl =
-    'min-h-[44px] sm:min-h-0 bg-transparent text-faint hover:text-code-fg focus:text-code-fg font-mono text-[11px] font-medium border border-transparent hover:border-code-fg/20 focus:border-accent rounded-btn py-0.5 outline-none';
+    'min-h-[44px] sm:min-h-0 bg-transparent text-faint hover:text-code-fg focus:text-code-fg font-mono text-[11px] font-medium border border-transparent hover:border-code-fg/20 focus:border-accent rounded-btn py-0.5 outline-hidden';
   const indentButton = (label: string, icon: React.ReactNode, onClick: (() => void) | undefined, enabled: boolean) => (
     <button
       type="button"
@@ -716,9 +756,10 @@ export const CodeBlockEditor: React.FC<CodeBlockEditorProps> = ({
             onBlur={handleBlur}
             onChange={onTextareaChange}
             onKeyDown={onTextareaKeyDown}
+            onPaste={onTextareaPaste}
             onScroll={handleScroll}
             style={{ caretColor: 'var(--text-code)' }}
-            className="relative block w-full m-0 p-2 font-mono text-xs leading-relaxed whitespace-pre bg-transparent text-transparent caret-code-fg selection:bg-accent/25 selection:text-transparent border-0 focus:outline-none focus:ring-0 resize-none overflow-x-auto overflow-y-hidden code-scroll"
+            className="relative block w-full m-0 p-2 font-mono text-xs leading-relaxed whitespace-pre bg-transparent text-transparent caret-code-fg selection:bg-accent/25 selection:text-transparent border-0 focus:outline-hidden focus:ring-0 resize-none overflow-x-auto overflow-y-hidden code-scroll"
           />
         </div>
       </div>

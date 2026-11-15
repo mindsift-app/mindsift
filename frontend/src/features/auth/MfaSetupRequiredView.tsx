@@ -32,7 +32,7 @@ export const MfaSetupRequiredView: React.FC<{
   };
 
   return (
-    <div className="min-h-[100dvh] bg-canvas text-main flex flex-col items-center justify-center p-4 font-sans" style={keyboardRoom}>
+    <div className="min-h-dvh bg-canvas text-main flex flex-col items-center justify-center p-4 font-sans" style={keyboardRoom}>
       <div className="w-full max-w-xl panel-surface shadow-panel overflow-hidden">
         <div className="p-4 bg-canvas border-b border-border flex items-center gap-2.5">
           <div className="w-8 h-8 bg-accent text-on-accent rounded-btn flex items-center justify-center">

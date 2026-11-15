@@ -270,7 +270,7 @@ export const HoldToRecordFab: React.FC<HoldToRecordFabProps> = ({ onTap, onTrans
                 {t('fab.listening')}
               </div>
               {displayedTranscript ? (
-                <div className="text-xs text-muted break-words max-w-[calc(100vw-3rem)]">
+                <div className="text-xs text-muted wrap-break-word max-w-[calc(100vw-3rem)]">
                   {displayedTranscript}
                 </div>
               ) : (

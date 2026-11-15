@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, fireEvent, screen, waitFor, act } from '@testing-library/react';
-import { CodeBlockEditor, loadPrismLanguage } from '../CodeBlockEditor';
+import { CodeBlockEditor, loadPrismLanguage, contentWithoutEmptyLastLine } from '../CodeBlockEditor';
 import { OutlinerBlock } from '../OutlinerBlock';
 import { DocumentBlock } from '../../../lib/types';
+import { OUTLINE_CLIPBOARD_TYPE } from '../../../lib/outlineMarkdown';
 
 function makeCodeBlock(overrides: Partial<DocumentBlock> = {}): DocumentBlock {
   return {
@@ -131,6 +132,28 @@ describe('CodeBlockEditor', () => {
     expect(indentCalls).toHaveLength(0);
   });
 
+  it('pastes copied bullets with hidden values with the placeholder, neither reference nor mask', () => {
+    const { container, updates } = renderOutlinerCodeBlock(makeCodeBlock({ content: 'a\nb' }));
+    const textarea = container.querySelector('textarea') as HTMLTextAreaElement;
+    textarea.focus();
+    textarea.setSelectionRange(2, 2);
+    const data: Record<string, string> = {
+      'text/plain': '- Server\n\t- PIN ••••',
+      [OUTLINE_CLIPBOARD_TYPE]: '- Server\n\t- PIN {{secret:abc}}',
+    };
+    fireEvent.paste(textarea, { clipboardData: { getData: (type: string) => data[type === 'text' ? 'text/plain' : type] || '' } });
+    expect(updates[updates.length - 1]?.content).toBe('a\n- Server\n\t- PIN (versteckter Wert nicht übernommen)b');
+  });
+
+  it('leaves a plain paste to the browser', () => {
+    const { container, updates } = renderOutlinerCodeBlock(makeCodeBlock({ content: 'a' }));
+    const textarea = container.querySelector('textarea') as HTMLTextAreaElement;
+    textarea.focus();
+    const ok = fireEvent.paste(textarea, { clipboardData: { getData: (type: string) => (type === 'text' || type === 'text/plain' ? 'x = 1' : '') } });
+    expect(ok).toBe(true);
+    expect(updates).toHaveLength(0);
+  });
+
   it('indents and outdents multiple selected lines on Tab and Shift+Tab', () => {
     const { container } = renderOutlinerCodeBlock(
       makeCodeBlock({ content: 'first: 1\nsecond: 2', lang: 'yaml' })
@@ -189,6 +212,28 @@ describe('CodeBlockEditor', () => {
     expect((screen.getByRole('button', { name: 'Einrücken' }) as HTMLButtonElement).disabled).toBe(true);
     fireEvent.click(screen.getByRole('button', { name: 'Ausrücken' }));
     expect(indentCalls).toEqual([['code-1', -1]]);
+  });
+
+  it('leaves the block with a second Enter on the empty last line', () => {
+    const below = vi.fn();
+    const { container, updates } = renderOutlinerCodeBlock(makeCodeBlock({ content: 'echo hallo' }), { onCreateBlockBelow: below });
+    const ta = container.querySelector('textarea') as HTMLTextAreaElement;
+    ta.setSelectionRange(10, 10);
+    fireEvent.keyDown(ta, { key: 'Enter' });
+    expect(below).not.toHaveBeenCalled();
+    ta.setSelectionRange(ta.value.length, ta.value.length);
+    fireEvent.keyDown(ta, { key: 'Enter' });
+    expect(below).toHaveBeenCalledWith('code-1', '');
+    expect(updates[updates.length - 1]).toMatchObject({ type: 'code', content: 'echo hallo' });
+  });
+
+  it('only an empty or indented last line with the caret at its end counts', () => {
+    expect(contentWithoutEmptyLastLine('a\n', 2, 2)).toBe('a');
+    expect(contentWithoutEmptyLastLine('if x:\n    ', 10, 10)).toBe('if x:');
+    expect(contentWithoutEmptyLastLine('a\nb', 3, 3)).toBeNull();
+    expect(contentWithoutEmptyLastLine('a\n\nb', 2, 2)).toBeNull();
+    expect(contentWithoutEmptyLastLine('abc', 3, 3)).toBeNull();
+    expect(contentWithoutEmptyLastLine('a\n', 0, 2)).toBeNull();
   });
 
   it('turns a bullet with text into code with /code at the end of the line', () => {

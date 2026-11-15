@@ -17,6 +17,7 @@ import { Document, DocumentBlock } from '../../lib/types';
 import { buildBlockLink, buildNoteLink } from '../../lib/wikiLink';
 import { SnippetRenderer } from '../../components/SnippetRenderer';
 import { NO_AUTOFILL } from '../../lib/noAutofill';
+import { useWorkspaceDocsSnapshot } from '../../lib/wikiLinkResolver';
 
 export interface LinkModalProps {
   isOpen: boolean;
@@ -46,13 +47,17 @@ export const LinkModal: React.FC<LinkModalProps> = ({
   const searchInputRef = useRef<HTMLInputElement | null>(null);
   const webTitleInputRef = useRef<HTMLInputElement | null>(null);
 
+  // The workspace's notes, when the dialog opens inside it (a bullet of the open note)
+  const workspaceDocs = useWorkspaceDocsSnapshot();
+
   // Load documents when modal opens
   useEffect(() => {
     if (!isOpen) return;
-    if (availableDocs && availableDocs.length > 0) {
-      // The notes handed in are used at once, otherwise they are loaded
+    const known = availableDocs && availableDocs.length > 0 ? availableDocs : workspaceDocs();
+    if (known && known.length > 0) {
+      // The notes handed in or held by the workspace are used at once, otherwise they are loaded
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      setDocs(availableDocs as Document[]);
+      setDocs(known as Document[]);
       return;
     }
     let isCancelled = false;
@@ -74,7 +79,7 @@ export const LinkModal: React.FC<LinkModalProps> = ({
     return () => {
       isCancelled = true;
     };
-  }, [isOpen, availableDocs]);
+  }, [isOpen, availableDocs, workspaceDocs]);
 
   // Focus input on mount or tab change
   useEffect(() => {
@@ -272,7 +277,7 @@ export const LinkModal: React.FC<LinkModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 !m-0 modal-overlay z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs"
+      className="fixed inset-0 m-0! modal-overlay z-50 flex items-center justify-center p-4 bg-black/60"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
@@ -311,7 +316,7 @@ export const LinkModal: React.FC<LinkModalProps> = ({
                 onClick={() => setTab('note')}
                 className={`h-7 px-2.5 text-xs rounded-btn font-medium flex items-center gap-1.5 border transition-colors cursor-pointer ${
                   tab === 'note'
-                    ? 'bg-panel border-accent text-accent font-semibold shadow-xs'
+                    ? 'bg-panel border-accent text-accent font-semibold'
                     : 'bg-canvas border-border text-muted hover:text-main'
                 }`}
               >
@@ -323,7 +328,7 @@ export const LinkModal: React.FC<LinkModalProps> = ({
                 onClick={() => setTab('web')}
                 className={`h-7 px-2.5 text-xs rounded-btn font-medium flex items-center gap-1.5 border transition-colors cursor-pointer ${
                   tab === 'web'
-                    ? 'bg-panel border-accent text-accent font-semibold shadow-xs'
+                    ? 'bg-panel border-accent text-accent font-semibold'
                     : 'bg-canvas border-border text-muted hover:text-main'
                 }`}
               >
@@ -448,7 +453,7 @@ export const LinkModal: React.FC<LinkModalProps> = ({
                     style={{ paddingLeft: `${0.5 + Math.min(b.level || 0, 5) * 0.875}rem` }}
                   >
                     <span className="text-faint shrink-0">•</span>
-                    <span className="line-clamp-2 break-words">{b.content}</span>
+                    <span className="line-clamp-2 wrap-break-word">{b.content}</span>
                   </button>
                 ))
               )}

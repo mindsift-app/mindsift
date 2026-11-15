@@ -178,7 +178,7 @@ export function AppearanceSection({
                 setCorners(value);
               }}
               className={`h-9 sm:h-7 px-3 rounded-btn transition-colors cursor-pointer ${
-                corners === value ? 'bg-panel text-main font-semibold shadow-sm' : 'text-muted hover:text-main'
+                corners === value ? 'bg-panel text-main font-semibold shadow-xs' : 'text-muted hover:text-main'
               }`}
             >
               {label}
@@ -211,7 +211,7 @@ export function AppearanceSection({
                 if (value) onThemeChange(resolveTheme(activeTheme));
               }}
               className={`h-9 sm:h-7 px-3 rounded-btn transition-colors cursor-pointer ${
-                followSystem === value ? 'bg-panel text-main font-semibold shadow-sm' : 'text-muted hover:text-main'
+                followSystem === value ? 'bg-panel text-main font-semibold shadow-xs' : 'text-muted hover:text-main'
               }`}
             >
               {label}
@@ -243,7 +243,7 @@ export function AppearanceSection({
                 setButtonBordersState(value);
               }}
               className={`h-9 sm:h-7 px-3 rounded-btn transition-colors cursor-pointer ${
-                buttonBorders === value ? 'bg-panel text-main font-semibold shadow-sm' : 'text-muted hover:text-main'
+                buttonBorders === value ? 'bg-panel text-main font-semibold shadow-xs' : 'text-muted hover:text-main'
               }`}
             >
               {label}
@@ -317,7 +317,7 @@ export function AppearanceSection({
               onClick={() => onThemeChange(th.id)}
               className={`flex-1 p-4 text-left border transition-all flex flex-col justify-between gap-3 ${
                 isSelected
-                  ? 'bg-canvas border-accent shadow-sm'
+                  ? 'bg-canvas border-accent shadow-xs'
                   : 'bg-canvas border-border hover:border-strong'
               }`}
             >

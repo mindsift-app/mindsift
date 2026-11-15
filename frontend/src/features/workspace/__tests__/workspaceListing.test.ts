@@ -13,6 +13,7 @@ import {
   isFolderShared,
   tagGroups,
   tagsMetadata,
+  withListedNote,
   withTodoToggled,
 } from '../workspaceListing';
 
@@ -244,6 +245,24 @@ describe('workspace listing', () => {
     expect(isFolderShared({ ...own, shares: [{ id: 'x' }] } as unknown as SharedFolder)).toBe(true);
     expect(isFolderShared({ ...own, isOwner: false })).toBe(true);
     expect(isFolderShared(undefined)).toBe(false);
+  });
+
+  it('takes a note from DOC_UPDATED as sent; only an open note keeps its bullets', () => {
+    const before = doc('a', [block('a1', 'Milch #laden', { type: 'todo' })], {
+      title: 'Einkauf',
+      openTodos: 3,
+      sharedWith: [{ userId: 'u2' }] as Document['sharedWith'],
+    });
+    // No shares and no open to-dos any more: the fields are left out, not sent empty
+    const listed = doc('a', [], { title: 'Wocheneinkauf', tagCounts: { laden: 1 } });
+    const open = withListedNote(before, listed, true);
+    expect(open.title).toBe('Wocheneinkauf');
+    expect(open.blocks).toBe(before.blocks);
+    expect(open.sharedWith).toBeUndefined();
+    const closed = withListedNote(before, listed, false);
+    expect(closed.blocks).toEqual([]);
+    expect(countOpenTodos([closed])).toBe(0);
+    expect(countHashtags([closed])).toEqual([{ tag: 'laden', count: 1 }]);
   });
 
   it('opens a note\'s folder and every folder above it', () => {

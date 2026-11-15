@@ -119,7 +119,7 @@ Component: [CountBadge.tsx](../frontend/src/components/CountBadge.tsx), CSS clas
   - `corner`: Notification badge placed at the top right of the closest `relative` parent element; used for icons, e.g. in the mobile bottom bar (`-top-1.5 -right-2.5`).
   - `inline`: In normal text flow.
 - Numbers in the mobile menu (`MobileActionContext`, `badge: number`) are automatically rendered as `CountBadge`; text badges such as "2 active" remain text tags.
-- **Important for new classes:** Tailwind purges classes from `@layer components` that are not present verbatim in the source code. Therefore, never interpolate class names (`count-badge-${variant}`); write them out fully.
+- **Important for new classes:** Tailwind only generates utility classes that appear verbatim in the source code. Therefore, never interpolate class names (`count-badge-${variant}`); write them out fully.
 
 ## View Switch (Segmented Control)
 

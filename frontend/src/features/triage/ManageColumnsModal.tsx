@@ -214,7 +214,7 @@ const ManageColumnsModalContent: React.FC<ManageColumnsModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 !m-0 modal-overlay z-50 flex items-center justify-center p-3 sm:p-4">
+    <div className="fixed inset-0 m-0! modal-overlay z-50 flex items-center justify-center p-3 sm:p-4">
       <div
         className="w-full max-w-md panel-surface shadow-panel border border-border my-auto flex flex-col max-h-[90vh] overflow-hidden"
         onClick={(e) => e.stopPropagation()}
@@ -277,7 +277,7 @@ const ManageColumnsModalContent: React.FC<ManageColumnsModalProps> = ({
                       type="button"
                       data-color-trigger
                       onClick={(e) => openColorMenu(col.id, e.currentTarget)}
-                      className="w-7 h-7 flex items-center justify-center rounded-btn border border-border bg-panel hover:border-strong flex-shrink-0"
+                      className="w-7 h-7 flex items-center justify-center rounded-btn border border-border bg-panel hover:border-strong shrink-0"
                       title={t('columnsModal.color')}
                       aria-label={t('columnsModal.colorOf', { name: col.name })}
                       aria-haspopup="menu"
@@ -298,7 +298,7 @@ const ManageColumnsModalContent: React.FC<ManageColumnsModalProps> = ({
                     <button
                       type="button"
                       onClick={() => handleToggleDone(col.id)}
-                      className={`h-7 px-2 text-[10px] rounded-btn border transition-colors flex items-center gap-1 flex-shrink-0 ${
+                      className={`h-7 px-2 text-[10px] rounded-btn border transition-colors flex items-center gap-1 shrink-0 ${
                         col.isDone
                           ? 'bg-status-ok/15 border-status-ok text-status-ok font-semibold'
                           : 'bg-panel border-border text-faint hover:text-muted'
@@ -307,7 +307,7 @@ const ManageColumnsModalContent: React.FC<ManageColumnsModalProps> = ({
                       aria-label={col.isDone ? t('columnsModal.countsDone') : t('columnsModal.countsOpen')}
                       aria-pressed={!!col.isDone}
                     >
-                      <Check className={`w-2.5 h-2.5 ${col.isDone ? 'stroke-[3]' : 'opacity-40'}`} />
+                      <Check className={`w-2.5 h-2.5 ${col.isDone ? 'stroke-3' : 'opacity-40'}`} />
                       {/* Phones: only the tick, so the row keeps room for the bin */}
                       <span className="hidden sm:inline">{t('columnsModal.done')}</span>
                     </button>
@@ -408,7 +408,7 @@ const ManageColumnsModalContent: React.FC<ManageColumnsModalProps> = ({
               role="menu"
               aria-label={t('columnsModal.colorOf', { name: col.name })}
               style={{ left: colorMenu.left, top: colorMenu.top, bottom: colorMenu.bottom }}
-              className="fixed z-[60] w-44 p-1 bg-panel border border-border rounded-card shadow-panel"
+              className="fixed z-60 w-44 p-1 bg-panel border border-border rounded-card shadow-panel"
               onClick={(e) => e.stopPropagation()}
             >
               {COLUMN_COLORS.map((c) => {
@@ -424,9 +424,9 @@ const ManageColumnsModalContent: React.FC<ManageColumnsModalProps> = ({
                       active ? 'bg-accent/10 text-main' : 'text-muted hover:text-main hover:bg-panel-hover'
                     }`}
                   >
-                    <span className={`w-3 h-3 rounded-full flex-shrink-0 ${c.cls}`} />
+                    <span className={`w-3 h-3 rounded-full shrink-0 ${c.cls}`} />
                     <span className="flex-1">{c.label}</span>
-                    {active && <Check className="w-3 h-3 text-accent stroke-[3]" />}
+                    {active && <Check className="w-3 h-3 text-accent stroke-3" />}
                   </button>
                 );
               })}

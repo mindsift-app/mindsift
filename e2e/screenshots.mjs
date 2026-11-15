@@ -41,6 +41,7 @@ async function open(browser, token, options) {
       localStorage.setItem('mindsift_active_theme', theme);
       localStorage.setItem('mindsift:demo-hint-closed', '1'); // the demo's public notice is not part of the pictures
       localStorage.setItem('mindsift:tour-offered', '1'); // nor is the offer of the guided tour
+      sessionStorage.setItem('mindsift_pwa_dismissed', '1'); // nor the phone's offer to install the app (app/usePwaInstall.ts)
     },
     [token, DARK]
   );

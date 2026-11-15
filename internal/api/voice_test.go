@@ -108,6 +108,47 @@ func TestVoiceCheckEndsWithClose(t *testing.T) {
 	}
 }
 
+// The model download (up to 2 h) is a background job too: Close cancels it and waits for it, instead of
+// leaving a request running after the server stopped.
+func TestModelDownloadEndsWithClose(t *testing.T) {
+	downloading := make(chan struct{}, 1)
+	cancelled := make(chan struct{})
+	whisper := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet {
+			_ = json.NewEncoder(w).Encode(map[string]any{"data": []any{}}) // reachable, model missing
+			return
+		}
+		select {
+		case downloading <- struct{}{}:
+		default:
+		}
+		select {
+		case <-r.Context().Done():
+			close(cancelled)
+		case <-time.After(30 * time.Second):
+		}
+	}))
+	t.Cleanup(whisper.Close)
+	srv, _ := voiceServer(t, config.SpeechConfig{URL: whisper.URL + "/v1", Model: "m", MaxParallel: 1, TimeoutSeconds: 10})
+	srv.background(srv.startVoiceCheck)
+	select {
+	case <-downloading:
+	case <-time.After(10 * time.Second):
+		t.Fatal("the voice check did not request the model download")
+	}
+
+	begin := time.Now()
+	srv.Close()
+	if d := time.Since(begin); d > 5*time.Second {
+		t.Fatalf("Close waited %s for the model download", d)
+	}
+	select {
+	case <-cancelled:
+	case <-time.After(5 * time.Second):
+		t.Fatal("the running download was not cancelled by Close")
+	}
+}
+
 func TestVoiceTranscribeForwardsToWhisper(t *testing.T) {
 	var got map[string]string
 	var downloads int32

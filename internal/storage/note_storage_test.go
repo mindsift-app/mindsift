@@ -251,10 +251,10 @@ func TestNoteTextStoredOnce(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	var blocksJSON, markdown, content string
-	_ = s.db.QueryRow(`SELECT blocks_json, markdown_cache, content FROM documents WHERE id = ?`, doc.ID).Scan(&blocksJSON, &markdown, &content)
-	if blocksJSON != "[]" || markdown != "" || content != "" {
-		t.Fatalf("documents keeps a copy: %q %q %q", blocksJSON, markdown, content)
+	var blocksJSON string
+	_ = s.db.QueryRow(`SELECT blocks_json FROM documents WHERE id = ?`, doc.ID).Scan(&blocksJSON)
+	if blocksJSON != "[]" {
+		t.Fatalf("documents keeps a copy: %q", blocksJSON)
 	}
 	got, err := s.GetDocumentByID(u.ID, doc.ID)
 	if err != nil {
@@ -368,7 +368,13 @@ func TestNoteStorageMigration(t *testing.T) {
 		}
 	}
 
-	// Back to the earlier form
+	// Back to the earlier form (markdown_cache was dropped by migration 48, content by migration 51)
+	for _, q := range []string{`ALTER TABLE documents ADD COLUMN markdown_cache TEXT NOT NULL DEFAULT ''`,
+		`ALTER TABLE documents ADD COLUMN content TEXT NOT NULL DEFAULT ''`} {
+		if _, err := s.db.Exec(q); err != nil {
+			t.Fatal(err)
+		}
+	}
 	for _, id := range append(docs, trashed.ID) {
 		d, err := s.readCollabDoc(id)
 		if err != nil {

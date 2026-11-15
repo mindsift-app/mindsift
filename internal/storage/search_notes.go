@@ -22,7 +22,7 @@ type noteSearchRow struct {
 //  2. snippets only for these hits;
 //  3. the text and type of the matched bullets.
 func (s *Store) searchVisibleNotes(ctx context.Context, userID, ftsQuery, folder string, limit int) ([]noteSearchRow, error) {
-	docs, err := s.getDocuments(userID, false)
+	docs, err := s.getDocuments(ctx, userID, false)
 	if err != nil {
 		return nil, err
 	}
@@ -88,12 +88,13 @@ func (s *Store) searchVisibleNotes(ctx context.Context, userID, ftsQuery, folder
 		return nil, nil
 	}
 
-	// 2. Snippets for the hits shown only
+	// 2. Snippets for the hits shown only. "+rowid": a plain rowid IN hands each key to FTS5 as its own
+	// lookup, which ran the whole match once per hit (40 hits: 40 to 90 ms instead of about 5)
 	ridsJSON, _ := json.Marshal(rids)
 	snips := make(map[int64]string, len(rids))
 	srows, err := s.db.QueryContext(ctx, `
 		SELECT rowid, snippet(documents_fts, -1, '<mark>', '</mark>', '…', 14)
-		FROM documents_fts WHERE documents_fts MATCH ? AND rowid IN (SELECT value FROM json_each(?))`,
+		FROM documents_fts WHERE documents_fts MATCH ? AND +rowid IN (SELECT value FROM json_each(?))`,
 		ftsQuery, string(ridsJSON))
 	if err != nil {
 		return nil, err

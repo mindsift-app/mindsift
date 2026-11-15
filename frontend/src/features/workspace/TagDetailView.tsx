@@ -111,7 +111,7 @@ export function TagDetailView({
               <LazyMount
                 key={docGroup.docId}
                 placeholder={
-                  <div className="px-2 sm:px-8 py-2 min-h-[6rem] text-lg font-semibold text-muted">
+                  <div className="px-2 sm:px-8 py-2 min-h-24 text-lg font-semibold text-muted">
                     {docGroup.icon && <span className="mr-2">{docGroup.icon}</span>}
                     {docGroup.title}
                   </div>

@@ -63,7 +63,14 @@ type Op struct {
 	Patch       *PropsPatch `json:"patch,omitempty"`       // set_props
 	IDs         []string    `json:"ids,omitempty"`         // restore
 	Title       *string     `json:"title,omitempty"`       // set_title
+	// FileDropped (set_content, server only): the server took the file this content pointed to out of
+	// it (storage's media gate), so a block that shows a file (image, audio) becomes a plain bullet with
+	// the remaining text, as an insert does. Never read from a client.
+	FileDropped bool `json:"-"`
 }
+
+// fileBlockType: blocks whose content is one file reference with its caption.
+func fileBlockType(typ string) bool { return typ == "image" || typ == "audio" }
 
 // Effect is a normalized, already validated change. The server log stores effects; replaying them in
 // order on an empty Doc reproduces the server state exactly.
@@ -107,6 +114,21 @@ type LeaseView interface {
 type Env struct {
 	Leases  LeaseView            // nil = no leases (e.g. server-internal writes)
 	IDTaken func(id string) bool // true if the block ID exists in another document
+	// CodeText rewrites the text a code block keeps (storage: references to hidden values become a
+	// placeholder, see storage/secrets.go); nil keeps every text. It applies to a code block inserted, to
+	// text written into one and to a block that becomes one (a text change of its own, after the type).
+	CodeText func(content string) string
+}
+
+// codeBlockType: blocks that show their text as code.
+const codeBlockType = "code"
+
+// codeText is Env.CodeText for a block of type typ (the text as it is for other types).
+func (ap *applier) codeText(typ, content string) string {
+	if typ != codeBlockType || ap.env.CodeText == nil {
+		return content
+	}
+	return ap.env.CodeText(content)
 }
 
 // ApplyEffect mutates the document with one effect. It never fails; effects are validated by Apply.
@@ -254,6 +276,7 @@ func (ap *applier) apply(op Op) Result {
 		if len(content) > maxContentLength {
 			return rejected(op, "too_long")
 		}
+		content = ap.codeText(typ, content)
 		if typ == drawing.BlockType && !drawing.Valid(content) {
 			return rejected(op, "invalid_drawing")
 		}
@@ -279,17 +302,20 @@ func (ap *applier) apply(op Op) Result {
 		if b.Type == drawing.BlockType && !drawing.Valid(*op.Content) {
 			return rejected(op, "invalid_drawing")
 		}
+		content := ap.codeText(b.Type, *op.Content)
 		if b.Deleted {
 			// A late edit on a deleted block brings it back instead of losing the text
 			ap.restore([]string{b.ID})
 		}
-		if *op.Content == b.Content {
+		if content == b.Content {
+			ap.dropFileType(op, b)
 			return Result{Status: StatusApplied, Version: b.Version}
 		}
 		if ap.foreignLease(b.ID) || op.BaseVersion != b.Version {
-			return ap.conflictCopy(op, b, *op.Content)
+			return ap.conflictCopy(op, b, content)
 		}
-		ap.emit(Effect{Kind: OpSetContent, BlockID: b.ID, Content: *op.Content, Version: b.Version + 1})
+		ap.emit(Effect{Kind: OpSetContent, BlockID: b.ID, Content: content, Version: b.Version + 1})
+		ap.dropFileType(op, b)
 		return Result{Status: StatusApplied, Version: b.Version}
 
 	case OpSetProps:
@@ -318,8 +344,16 @@ func (ap *applier) apply(op Op) Result {
 				props.ConflictOf, props.ConflictAuthor = "", ""
 			}
 		}
+		wasType := b.Type
 		if typ != b.Type || props != b.Props {
 			ap.emit(Effect{Kind: OpSetProps, BlockID: b.ID, Type: typ, Props: &props})
+		}
+		// A block that becomes a code block keeps only what a code block may hold, as a text change of
+		// its own (the editor sends that change itself, before the type; then there is nothing left here)
+		if typ != wasType {
+			if content := ap.codeText(typ, b.Content); content != b.Content {
+				ap.emit(Effect{Kind: OpSetContent, BlockID: b.ID, Content: content, Version: b.Version + 1})
+			}
 		}
 		return Result{Status: StatusApplied}
 
@@ -491,9 +525,22 @@ func (ap *applier) conflictCopy(op Op, b *Block, content string) Result {
 	}
 	if _, exists := ap.d.Blocks[id]; !exists {
 		props := Props{ConflictOf: b.ID, ConflictAuthor: ap.a.Name}
-		ap.emit(Effect{Kind: OpInsert, BlockID: id, ParentID: b.ParentID, OrderKey: ap.d.keyAfter(b), Type: b.Type, Content: content, Props: &props, Version: 1})
+		typ := b.Type
+		if op.FileDropped && fileBlockType(typ) {
+			typ = "bullet"
+		}
+		ap.emit(Effect{Kind: OpInsert, BlockID: id, ParentID: b.ParentID, OrderKey: ap.d.keyAfter(b), Type: typ, Content: content, Props: &props, Version: 1})
 	}
 	return Result{Status: StatusConflict, Version: b.Version, ConflictBlockID: id}
+}
+
+// dropFileType turns a block that showed a file into a plain bullet once a set_content without the
+// file (FileDropped) was applied to it.
+func (ap *applier) dropFileType(op Op, b *Block) {
+	if op.FileDropped && fileBlockType(b.Type) {
+		props := b.Props
+		ap.emit(Effect{Kind: OpSetProps, BlockID: b.ID, Type: "bullet", Props: &props})
+	}
 }
 
 // titleConflict keeps a losing title as a conflict block at the very top of the note.

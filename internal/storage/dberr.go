@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"runtime"
 	"strconv"
+	"strings"
+	"sync/atomic"
 )
 
 // Many functions here answer with a plain value (a bool, a count, a list) and have no error to return.
@@ -37,11 +39,26 @@ func (s *Store) execLogged(query string, args ...any) {
 	reportDBErr(err)
 }
 
+// demoResetsRunning counts the demo resets under way (ResetAndSeedDemo). Requests wait for a reset at
+// the server's gate, but long-lived streams, static pages and the language lookup in front of the gate
+// keep reading while the tables are dropped and created anew; their "no such table/column" is the
+// reset, not a broken database, and is not logged.
+var demoResetsRunning atomic.Int32
+
+// schemaGoneDuringReset: err is a missing table or column while a demo reset runs.
+func schemaGoneDuringReset(err error) bool {
+	if demoResetsRunning.Load() == 0 {
+		return false
+	}
+	msg := err.Error()
+	return strings.Contains(msg, "no such table") || strings.Contains(msg, "no such column")
+}
+
 func reportDBErr(err error) bool {
 	if err == nil || errors.Is(err, sql.ErrNoRows) {
 		return false
 	}
-	if !errors.Is(err, context.Canceled) { // the request went away, nothing is wrong with the database
+	if !errors.Is(err, context.Canceled) && !schemaGoneDuringReset(err) { // the request went away, nothing is wrong with the database
 		_, file, line, _ := runtime.Caller(2)
 		slog.Error("Database query failed", "at", filepath.Base(file)+":"+strconv.Itoa(line), "error", err)
 	}

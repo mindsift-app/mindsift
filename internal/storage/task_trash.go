@@ -180,7 +180,9 @@ func (s *Store) RestoreTrashedTask(userID, id string) (*domain.Thought, error) {
 	}
 	names, marks, args := "", "", []any{}
 	for k, v := range data {
-		if !cols[k] || v == nil {
+		// fts_rowid: the key in the search index is given anew (trg_thoughts_ai); the old one may be
+		// another task's by now
+		if !cols[k] || v == nil || k == "fts_rowid" {
 			continue
 		}
 		if names != "" {

@@ -471,7 +471,8 @@
     "editTitle": "Modifica valore nascosto",
     "save": "Salva",
     "gone": "Valore nascosto eliminato",
-    "unreadable": "Illeggibile"
+    "unreadable": "Illeggibile",
+    "notIncluded": "(valore nascosto non incluso)"
   },
   "publicLink": {
     "title": "Link pubblico",

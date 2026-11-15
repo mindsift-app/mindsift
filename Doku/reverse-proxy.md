@@ -229,6 +229,26 @@ MindSift also works behind proxies that block WebSockets, buffer streams, or onl
 
 A few requests can take longer than a minute: restoring a server backup, "Back up now" on a server with many accounts, deleting a large account, a test mail through a mail server that does not answer. MindSift gives them up to 5 minutes. A proxy that cuts answers earlier (Nginx: `proxy_read_timeout`, 60 s by default) answers them with an error of its own, while the server still finishes the work.
 
+## Limiting Who May Reach MCP and the API
+
+MindSift has no list of allowed addresses for its machine access; rules by origin belong in the firewall or the reverse proxy, which see the real client address. The paths involved:
+
+- **MCP:** `/api/v1/mcp`, plus the OAuth endpoints of the connectors (`/.well-known/oauth-*`, `/oauth/register`, `/oauth/token`, `/oauth/revoke`). The consent page `/oauth/authorize` is part of the app and needs no rule of its own.
+- **REST API with API keys:** `/api/v1/…` with an `Authorization: Bearer msk_…` header. The app uses the same paths, so limit by path only for MCP; API keys on the REST API can be switched off with `API_KEYS_ENABLED=false` (they then only work for MCP; see [api/rest.md](api/rest.md)).
+
+Nginx example that lets only one network reach MCP and its OAuth endpoints:
+
+```nginx
+location ~ ^/(api/v1/mcp|oauth/(register|token|revoke)|\.well-known/oauth-) {
+    allow 192.168.10.0/24;
+    deny all;
+    proxy_pass http://mindsift:8080;
+    # the same proxy_set_header lines as in "location /"
+}
+```
+
+To keep cloud AI services out entirely, block their address ranges in the firewall; MindSift itself never needs to reach them.
+
 ## 🔍 Diagnostics & Verification
 
 The following commands can be used to verify connectivity and streaming functionality:

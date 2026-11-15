@@ -113,7 +113,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
 
   // A note the app picked by itself (not a step of its own in the browser history)
   const autoSelectedDocRef = useRef(false);
-  const { docs, setDocs, folders, setFolders, sharedFolders, setSharedFolders, tagsSummary, loadWorkspaceData, rollupTodos, setRollupTodos } =
+  const { docs, setDocs, folders, setFolders, sharedFolders, setSharedFolders, tagsSummary, loadWorkspaceData, reloadDocList, reloadFolders, rollupTodos, setRollupTodos } =
     useWorkspaceData({ currentUser, setSelectedDocId, autoSelectedDocRef, reloadTrash, todosShown: subView === 'todos' });
 
   // Journal: one note per day, listed separately from the folder tree (can be switched off per device)
@@ -388,8 +388,8 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
     selectedDocId,
     setSelectedDocId,
     trash,
-    setDocs,
-    setFolders,
+    reloadDocList,
+    reloadFolders,
     setEditorNonce,
     reloadTrash,
     onStatsChange,
@@ -443,6 +443,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
   const drag = useDocDragDrop({
     docs,
     setDocs,
+    setFolders,
     selectedDocId,
     setSelectedDocId,
     setMobileShowDetail,
@@ -450,7 +451,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
     setMergeDialog,
     treeRef,
     showToast,
-    loadWorkspaceData,
+    reloadDocList,
     reloadTrash,
     onStatsChange,
   });
@@ -472,7 +473,8 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
         run: async () => {
           try {
             await api.undoMerge(result);
-            await loadWorkspaceData();
+            // The note is back in the lists by DOC_CREATED as well; fetched here so it is there before it opens
+            await reloadDocList();
             setSelectedDocId(result.sourceId);
             setEditorNonce((n) => n + 1);
             reloadTrash();
@@ -761,7 +763,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
         data-ws-pane
         className={
           focusMode
-            ? `fixed inset-0 z-[45] flex bg-editor focus-mode-enter ${zenPinTop ? 'lg:pt-[45px]' : ''} ${
+            ? `fixed inset-0 z-45 flex bg-editor focus-mode-enter ${zenPinTop ? 'lg:pt-[45px]' : ''} ${
                 zenPinSide ? 'lg:pl-80' : ''
               }`
             : 'flex flex-1 min-h-0 bg-editor rounded-card border border-border overflow-hidden'
@@ -788,7 +790,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
           className={
             focusMode
               ? // Pinned: from lg on it stays open beside the note (below a pinned header), without shadow
-                `fixed left-0 inset-y-0 z-[47] w-80 max-w-[85vw] flex flex-col bg-sidebar border-r border-border transition-transform duration-300 ease-out ${
+                `fixed left-0 inset-y-0 z-47 w-80 max-w-[85vw] flex flex-col bg-sidebar border-r border-border transition-transform duration-300 ease-out ${
                   zenSidebar !== 'closed'
                     ? 'translate-x-0 shadow-panel'
                     : zenPinSide

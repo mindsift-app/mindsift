@@ -15,7 +15,8 @@ import (
 
 // --- DOCUMENTS ---
 
-// broadcastDocToAuthorizedUsers sends each person with access the note as they see it. Pin, folder
+// broadcastDocToAuthorizedUsers sends each person with access the note as they see it, as the note list
+// has it (no bullets, with the counts; clients with the note open get its bullets by sync). Pin, folder
 // placement and permission are personal, so the note's room gets no copy of its own: every connection
 // in it belongs to one of these people and already has theirs (someone else's copy would overwrite
 // their pin and place, e.g. unpin the note for the owner after sharing it).
@@ -25,18 +26,21 @@ func (s *Server) broadcastDocToAuthorizedUsers(docID, event string) {
 		return
 	}
 	for _, uid := range users {
-		if userDoc, err := s.store.GetDocumentByID(uid, docID); err == nil && userDoc != nil {
+		if userDoc, err := s.store.GetDocumentListItem(uid, docID); err == nil && userDoc != nil {
 			s.wsHub.BroadcastToUser(uid, event, userDoc)
 		}
 	}
 }
 
-// maxDocListsBuilding: note lists built at the same time. A list no longer carries bullets, but a burst
-// of sign-ins (each client loads it at start) still queued hundreds of them on a small server.
-const maxDocListsBuilding = 4
+// maxDocListsBuilding: note lists built at the same time, a guard for memory (a few KB per note while
+// it is built) against a burst of sign-ins, each loading the list at start. It must not be the
+// bottleneck: on a busy server a build waits for CPU and database connections like every request, and
+// 4 slots then let through fewer lists than arrived (load test 2026-11-14, 1,200 people on 1 CPU: 220 of
+// 263 lists ran into the client's 30 s timeout while other requests took about 8 s).
+const maxDocListsBuilding = 32
 
 // handleGetDocuments: GET /documents, the note list without bullets (storage.GetDocumentList). Waits for
-// a free slot; a client that gave up meanwhile gets nothing built for it.
+// a free slot; when the client gives up, waiting or building, the build stops.
 func (s *Server) handleGetDocuments(w http.ResponseWriter, r *http.Request) {
 	userID := auth.GetUserID(r.Context())
 	select {
@@ -48,7 +52,10 @@ func (s *Server) handleGetDocuments(w http.ResponseWriter, r *http.Request) {
 	if r.Context().Err() != nil {
 		return
 	}
-	docs, err := s.store.GetDocumentList(userID)
+	docs, err := s.store.GetDocumentList(r.Context(), userID)
+	if r.Context().Err() != nil {
+		return // nobody waits for the answer; a cancelled query is no server error
+	}
 	if err != nil {
 		writeInternal(w, err)
 		return
@@ -197,10 +204,11 @@ func (s *Server) handleRestoreDocument(w http.ResponseWriter, r *http.Request) {
 		writeTrashError(w, err)
 		return
 	}
-	// Everyone with access reloads their tree, so the note is back for shared users as well
+	// Everyone with access gets the note back in their list (shared users as well), then reloads their folders
+	s.broadcastDocToAuthorizedUsers(docID, "DOC_CREATED")
 	authorized, _ := s.store.GetAuthorizedDocUsers(docID)
 	for _, uid := range append(authorized, userID) {
-		s.wsHub.BroadcastToUser(uid, "WORKSPACE_FOLDERS_UPDATED", map[string]string{"restored": docID})
+		s.wsHub.BroadcastToUser(uid, "WORKSPACE_FOLDERS_UPDATED", map[string]string{"type": folderEventRestored, "restored": docID})
 	}
 	writeJSON(w, http.StatusOK, map[string]bool{"restored": true})
 }
@@ -279,7 +287,7 @@ func (s *Server) handleMoveDocument(w http.ResponseWriter, r *http.Request) {
 	}
 	s.broadcastDocToAuthorizedUsers(docID, "DOC_UPDATED")
 	docUsers, _ := s.store.GetAuthorizedDocUsers(docID)
-	s.wsHub.BroadcastToUsers(append(docUsers, userID), "WORKSPACE_FOLDERS_UPDATED", map[string]string{"docId": docID})
+	s.wsHub.BroadcastToUsers(append(docUsers, userID), "WORKSPACE_FOLDERS_UPDATED", map[string]string{"type": folderEventNoteMoved, "docId": docID})
 	writeJSON(w, http.StatusOK, doc)
 }
 

@@ -453,9 +453,9 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 		}
 		if verify {
 			// Admins hear about it only once the address is confirmed
-			go s.sendVerificationMail(user)
+			s.background(func() { s.sendVerificationMail(user) })
 		} else {
-			go s.notifyAdminsOfRegistration(user)
+			s.background(func() { s.notifyAdminsOfRegistration(user) })
 		}
 		message := registrationWaitingMessage(w, user.Email, pending, verify)
 		slog.Info("Registration waiting", "user_id", user.ID, "approval", pending, "verify", verify)
@@ -977,11 +977,11 @@ func (s *Server) sendAccountNotice(user *domain.User, lang, intro string) {
 	if link := s.notifyLink(); link != "" {
 		c.Button = &mailButton{Label: i18n.T(lang, "MindSift öffnen"), URL: link}
 	}
-	go func() {
+	s.background(func() {
 		if err := s.sendMailContent(user.Email, i18n.T(lang, "MindSift: Änderung an deinem Konto"), c); err != nil {
 			slog.Warn("Notice about a changed account not sent", "user_id", user.ID, "error", err)
 		}
-	}()
+	})
 }
 
 func (s *Server) handleTestUserAlarm(w http.ResponseWriter, r *http.Request) {

@@ -106,7 +106,7 @@ export const AudioBlock: React.FC<AudioBlockProps> = ({ content, canEdit, onCapt
               onClick={() => void transcribe()}
               disabled={transcribing}
               title={t('media.transcribeTitle')}
-              className="btn-secondary !rounded-full h-11 sm:h-8 px-3 text-xs flex items-center gap-1.5 shrink-0 disabled:opacity-40"
+              className="btn-secondary rounded-full! h-11 sm:h-8 px-3 text-xs flex items-center gap-1.5 shrink-0 disabled:opacity-40"
             >
               {transcribing ? <LoaderCircle className="w-3.5 h-3.5 animate-spin" /> : <WandSparkles className="w-3.5 h-3.5" />}
               <span className="hidden sm:inline">{transcribing ? t('media.transcribing') : t('media.transcribe')}</span>
@@ -132,7 +132,7 @@ export const AudioBlock: React.FC<AudioBlockProps> = ({ content, canEdit, onCapt
             }
           }}
           placeholder={t('media.caption')}
-          className="w-full bg-transparent border-0 p-0 text-xs text-muted placeholder-faint focus:outline-none focus:ring-0"
+          className="w-full bg-transparent border-0 p-0 text-xs text-muted placeholder-faint focus:outline-hidden focus:ring-0"
         />
       ) : (
         ref.caption && <p className="text-xs text-muted">{ref.caption}</p>

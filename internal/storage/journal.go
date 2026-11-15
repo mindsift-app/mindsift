@@ -30,10 +30,11 @@ func (s *Store) migrateJournal() error {
 //
 // A day is empty when docPlainText of its note would be empty: no live bullet with text, where a drawing
 // counts only with words written in it (an image, a table or a to-do counts). The text comes from the
-// bullets; documents.content stays empty since migration 44 and only holds something for an old note
-// whose blocks_json could not be converted.
+// bullets; an old note whose blocks_json could not be converted (it has no bullets yet, loadDocBlocks
+// reads blocks_json) counts as not empty.
 func (s *Store) JournalDays(userID string) ([]JournalDay, error) {
-	rows, err := s.db.Query(`SELECT j.day, j.doc_id, TRIM(d.content) = '' AND NOT EXISTS (
+	rows, err := s.db.Query(`SELECT j.day, j.doc_id,
+			(d.blocks_json IN ('', '[]') OR EXISTS (SELECT 1 FROM blocks b WHERE b.document_id = d.id)) AND NOT EXISTS (
 			SELECT 1 FROM blocks b WHERE b.document_id = d.id AND b.deleted = 0 AND b.content != ''
 			  AND (b.type != 'drawing' OR TRIM(`+blockSearchText("b.")+`) != ''))
 		FROM journal_days j JOIN documents d ON d.id = j.doc_id

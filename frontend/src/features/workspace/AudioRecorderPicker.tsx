@@ -111,7 +111,7 @@ export const AudioRecorderPicker: React.FC<AudioRecorderPickerProps> = ({ docId,
           cancel();
         }
       }}
-      className="my-1 inline-flex max-w-full flex-col gap-2 rounded-3xl border border-border bg-panel-elevated px-4 py-2 focus:outline-none"
+      className="my-1 inline-flex max-w-full flex-col gap-2 rounded-3xl border border-border bg-panel-elevated px-4 py-2 focus:outline-hidden"
     >
       <div className="flex items-center gap-3">
         {state === 'recording' && (

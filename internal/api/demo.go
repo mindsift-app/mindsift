@@ -44,6 +44,17 @@ func (s *Server) demoResetGate(next http.Handler) http.Handler {
 	})
 }
 
+// demoPass holds a demo reset off while a pass of a background job (alarms, compaction, live drawings)
+// runs, and the pass off while a reset runs, the way the gate does for requests; call the returned func
+// when the pass is done. Outside demo mode it does nothing. The pass must not wait for a request.
+func (s *Server) demoPass() func() {
+	if !s.cfg.DemoMode {
+		return func() {}
+	}
+	s.demo.gate.RLock()
+	return s.demo.gate.RUnlock
+}
+
 // demoNextReset is zero when no periodic reset runs.
 func (s *Server) demoNextReset() time.Time {
 	s.demo.mu.Lock()

@@ -61,7 +61,7 @@ export const FinishSetupView: React.FC<{
   };
 
   return (
-    <div className="min-h-[100dvh] bg-canvas text-main flex flex-col items-center justify-center p-4 font-sans" style={keyboardRoom}>
+    <div className="min-h-dvh bg-canvas text-main flex flex-col items-center justify-center p-4 font-sans" style={keyboardRoom}>
       <div className="w-full max-w-xl panel-surface shadow-panel overflow-hidden">
         <div className="p-4 bg-canvas border-b border-border flex items-center justify-between gap-3">
           <div className="flex items-center gap-2.5">
@@ -111,7 +111,7 @@ export const FinishSetupView: React.FC<{
           {/* Beside the button: the form is long, an error on top would be out of sight */}
           {error && (
             <div role="alert" className="alert-err flex items-center gap-2">
-              <CircleAlert className="w-4 h-4 text-status-err flex-shrink-0" />
+              <CircleAlert className="w-4 h-4 text-status-err shrink-0" />
               <span>{error}</span>
             </div>
           )}

@@ -33,7 +33,7 @@ export const VoiceInputButton: React.FC<VoiceInputButtonProps> = ({ value, onCha
   const transcribing = voice.state === 'transcribing';
 
   return (
-    <span className={`inline-flex items-center gap-1 flex-shrink-0 ${className}`}>
+    <span className={`inline-flex items-center gap-1 shrink-0 ${className}`}>
       {listening && voice.mode === 'server' && <VoiceWave getLevel={voice.level} className="h-3.5 text-accent" />}
       <button
         type="button"

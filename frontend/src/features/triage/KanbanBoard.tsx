@@ -148,7 +148,7 @@ export function KanbanBoard({
       {kanbanTouch.ghost}
       <div
         ref={kanbanBoardRef}
-        className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1 lg:grid-cols-[repeat(auto-fit,minmax(var(--kanban-col-min),1fr))] lg:max-w-[var(--kanban-max-w)] lg:mx-auto"
+        className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1 lg:grid-cols-[repeat(auto-fit,minmax(var(--kanban-col-min),1fr))] lg:max-w-(--kanban-max-w) lg:mx-auto"
         style={kanbanBoardStyle(boardColumns.length)}
       >
         {boardColumns.map((col, colIndex) => {

@@ -67,7 +67,7 @@ export function DataSection({ dataExport }: { dataExport: ReturnType<typeof useD
         <button
           onClick={handleExportData}
           disabled={exportingBackup}
-          className="btn-action h-11 sm:h-9 px-4 text-xs flex items-center justify-center gap-2 flex-shrink-0 disabled:opacity-50"
+          className="btn-action h-11 sm:h-9 px-4 text-xs flex items-center justify-center gap-2 shrink-0 disabled:opacity-50"
         >
           <Download className="w-3.5 h-3.5 text-accent" />
           <span>{exportingBackup ? t('data.creating') : t('data.backupDownload')}</span>
@@ -86,7 +86,7 @@ export function DataSection({ dataExport }: { dataExport: ReturnType<typeof useD
         <button
           onClick={handleExportVault}
           disabled={exportingVault}
-          className="btn-action h-11 sm:h-9 px-4 text-xs flex items-center justify-center gap-2 flex-shrink-0 disabled:opacity-50"
+          className="btn-action h-11 sm:h-9 px-4 text-xs flex items-center justify-center gap-2 shrink-0 disabled:opacity-50"
         >
           <Download className="w-3.5 h-3.5 text-accent" />
           <span>{exportingVault ? t('data.creating') : t('data.vaultDownload')}</span>

@@ -245,3 +245,74 @@ func TestMediaGateNeverLengthensContent(t *testing.T) {
 		t.Errorf("references kept: %v", b != nil)
 	}
 }
+
+// A change (set_content) that points an image bullet to someone else's file keeps only the caption; the
+// bullet then becomes a plain bullet with that text, as an insert does. A conflict copy too.
+func TestMediaGateTurnsChangedImageBulletIntoText(t *testing.T) {
+	s, anna, ben := newImportStore(t)
+	annaDoc, _ := s.CreateDocument(anna.ID, "", "Annas", "", "", nil, nil, false)
+	benDoc, _ := s.CreateDocument(ben.ID, "", "Bens", "", "", nil, nil, false)
+	private := storeTestMedia(t, s, annaDoc.ID, anna.ID, pngBytes(t, 6))
+	own := storeTestMedia(t, s, benDoc.ID, ben.ID, pngBytes(t, 7))
+	other := storeTestMedia(t, s, benDoc.ID, ben.ID, pngBytes(t, 8))
+	actor := collab.Actor{UserID: ben.ID, ClientID: "c", Name: "Ben"}
+	apply := func(ops ...collab.Op) []collab.Result {
+		t.Helper()
+		res, _, err := s.ApplyDocOps(benDoc.ID, actor, ops, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return res
+	}
+	root := ""
+	mine := MediaContent("image", own.ID, "Meins")
+	apply(collab.Op{OpID: "op_img", Kind: collab.OpInsert, BlockID: "blk_img", ParentID: &root, OrderKey: "a0", Type: "image", Content: &mine},
+		collab.Op{OpID: "op_img2", Kind: collab.OpInsert, BlockID: "blk_img2", ParentID: &root, OrderKey: "a1", Type: "image", Content: &mine})
+	if b := blocksOf(t, s, benDoc.ID)["blk_img"]; b == nil || b.Type != "image" || b.Content != mine {
+		t.Fatalf("own image must stay: %+v", b)
+	}
+
+	// Another own picture: still an image
+	otherContent := MediaContent("image", other.ID, "Anderes")
+	if res := apply(collab.Op{OpID: "op_own", Kind: collab.OpSetContent, BlockID: "blk_img", BaseVersion: 1, Content: &otherContent}); res[0].Status != collab.StatusApplied {
+		t.Fatalf("own change: %+v", res)
+	}
+	if b := blocksOf(t, s, benDoc.ID)["blk_img"]; b.Type != "image" || b.Content != otherContent {
+		t.Fatalf("own picture must stay an image: %+v", b)
+	}
+
+	// Someone else's file: the caption as a plain bullet
+	foreign := MediaContent("image", private.ID, "Fremdes Foto")
+	if res := apply(collab.Op{OpID: "op_foreign", Kind: collab.OpSetContent, BlockID: "blk_img", BaseVersion: 2, Content: &foreign}); len(res) != 1 || res[0].Status != collab.StatusApplied {
+		t.Fatalf("foreign change: %+v", res)
+	}
+	if b := blocksOf(t, s, benDoc.ID)["blk_img"]; b.Type != "bullet" || b.Content != "Fremdes Foto" {
+		t.Fatalf("image bullet without its file must become text: %+v", b)
+	}
+
+	// The same on a stale version: the conflict copy is a plain bullet, the original stays an image
+	res := apply(collab.Op{OpID: "op_stale", Kind: collab.OpSetContent, BlockID: "blk_img2", BaseVersion: 0, Content: &foreign})
+	if len(res) != 1 || res[0].Status != collab.StatusConflict {
+		t.Fatalf("stale change: %+v", res)
+	}
+	blocks := blocksOf(t, s, benDoc.ID)
+	if c := blocks[res[0].ConflictBlockID]; c == nil || c.Type != "bullet" || c.Content != "Fremdes Foto" {
+		t.Fatalf("conflict copy must be text: %+v", c)
+	}
+	if b := blocks["blk_img2"]; b.Type != "image" || b.Content != mine {
+		t.Fatalf("the original stays untouched: %+v", b)
+	}
+
+	// The log alone rebuilds the same note: the type change is in it
+	entries, _, err := s.GetDocOpsSince(benDoc.ID, 0, 10_000)
+	if err != nil {
+		t.Fatal(err)
+	}
+	replay := collab.NewDoc()
+	for _, e := range entries {
+		replay.ApplyEffect(e.Effect)
+	}
+	if b := replay.Blocks["blk_img"]; b == nil || b.Type != "bullet" || b.Content != "Fremdes Foto" {
+		t.Fatalf("log replay: %+v", b)
+	}
+}

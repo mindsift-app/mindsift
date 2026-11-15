@@ -73,7 +73,7 @@ const KanbanCardView: React.FC<KanbanCardProps> = ({
       data-kanban-task={task.id}
       {...touchProps(task.id, task.content, !readOnly)}
       onClick={() => onOpen(task.id)}
-      className={`mt-2 first:mt-0 panel-surface p-2.5 space-y-2 hover:border-strong transition-colors shadow-sm group relative select-none ${
+      className={`mt-2 first:mt-0 panel-surface p-2.5 space-y-2 hover:border-strong transition-colors shadow-xs group relative select-none ${
         readOnly ? 'cursor-pointer' : 'cursor-grab active:cursor-grabbing'
       } ${hidden ? 'hidden' : isDragging ? 'opacity-30 border border-dashed border-accent/40' : ''} ${
         justDropped ? 'ring-2 ring-accent/60' : ''
@@ -81,14 +81,14 @@ const KanbanCardView: React.FC<KanbanCardProps> = ({
     >
       <div className="flex items-start justify-between gap-2">
         <p
-          className={`text-xs font-medium break-words flex-1 leading-snug ${
+          className={`text-xs font-medium wrap-break-word flex-1 leading-snug ${
             task.isCompleted ? 'line-through text-faint' : 'text-main'
           }`}
         >
           {task.content}
         </p>
         {!readOnly && (
-          <div className="hidden sm:flex items-center gap-1 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+          <div className="hidden sm:flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
             <button
               onClick={() => onConvertToDoc(task)}
               title={task.docId ? t('row.openNote') : t('detail.toDoc')}
@@ -112,8 +112,8 @@ const KanbanCardView: React.FC<KanbanCardProps> = ({
 
       {/* Notes preview badge */}
       {task.notes && (
-        <div className="flex items-center gap-1 text-[10px] text-muted bg-canvas p-1 rounded border border-border truncate">
-          <FileText className="w-2.5 h-2.5 text-accent flex-shrink-0" />
+        <div className="flex items-center gap-1 text-[10px] text-muted bg-canvas p-1 rounded-sm border border-border truncate">
+          <FileText className="w-2.5 h-2.5 text-accent shrink-0" />
           <span className="truncate">{renderMentions(notePreview(task.notes))}</span>
         </div>
       )}

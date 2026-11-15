@@ -369,7 +369,7 @@ export function TaskCalendar({
         {entry.time && <span className="shrink-0 font-mono text-muted">{entry.time}</span>}
         {listIcon(task) && <span className="shrink-0">{listIcon(task)}</span>}
         <span
-          className={`min-w-0 ${wrap ? 'line-clamp-3 break-words' : 'truncate'} ${task.isCompleted ? 'line-through text-faint' : overdue ? 'text-status-err' : 'text-main'}`}
+          className={`min-w-0 ${wrap ? 'line-clamp-3 wrap-break-word' : 'truncate'} ${task.isCompleted ? 'line-through text-faint' : overdue ? 'text-status-err' : 'text-main'}`}
         >
           {renderMentions(task.content)}
         </span>
@@ -622,7 +622,7 @@ export function TaskCalendar({
                 if (!el) return;
                 el.scrollTo({ left: gridAt === 'end' ? 0 : el.scrollWidth, behavior: 'smooth' });
               }}
-              className="absolute right-1.5 top-1 z-10 h-6 px-2 rounded-pill bg-panel border border-border shadow-xs text-[11px] font-medium text-muted hover:text-main cursor-pointer"
+              className="absolute right-1.5 top-1 z-10 h-6 px-2 rounded-pill bg-panel border border-border text-[11px] font-medium text-muted hover:text-main cursor-pointer"
               title={gridAt === 'end' ? t('calendar.showWeekdays') : t('calendar.showWeekend')}
             >
               {/* Always the same two labels, not the days hidden at each scroll step (flickered while scrolling) */}

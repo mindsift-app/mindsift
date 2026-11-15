@@ -65,7 +65,7 @@ export function AlarmsSection({
 
       {demoMode && (
         <div className="flex items-center gap-2 alert-err">
-          <CircleAlert className="w-4 h-4 text-status-err flex-shrink-0" />
+          <CircleAlert className="w-4 h-4 text-status-err shrink-0" />
           <span>{t('alarms.demoOff')}</span>
         </div>
       )}
@@ -77,9 +77,9 @@ export function AlarmsSection({
           }`}
         >
           {alarmMsg.type === 'ok' ? (
-            <Check className="w-4 h-4 text-status-ok flex-shrink-0" />
+            <Check className="w-4 h-4 text-status-ok shrink-0" />
           ) : (
-            <CircleAlert className="w-4 h-4 text-status-err flex-shrink-0" />
+            <CircleAlert className="w-4 h-4 text-status-err shrink-0" />
           )}
           <span>{alarmMsg.text}</span>
         </div>
@@ -356,14 +356,14 @@ export function AlarmsSection({
               type="button"
               onClick={() => handleTestChannel('email')}
               disabled={demoMode || testingChannel === 'email'}
-              className="btn-action h-8 px-3 text-xs flex items-center gap-1.5 flex-shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="btn-action h-8 px-3 text-xs flex items-center gap-1.5 shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <Send className="w-3 h-3 text-accent" />
               <span>{testingChannel === 'email' ? t('sending') : t('alarms.email.test')}</span>
             </button>
           </div>
 
-          <p className="pl-6 text-[11px] text-muted break-words">{t('alarms.email.recipient', { email: currentUser.email })}</p>
+          <p className="pl-6 text-[11px] text-muted wrap-break-word">{t('alarms.email.recipient', { email: currentUser.email })}</p>
         </div>
 
         {/* Channel 2: Discord Webhook */}
@@ -383,7 +383,7 @@ export function AlarmsSection({
               type="button"
               onClick={() => handleTestChannel('discord')}
               disabled={demoMode || testingChannel === 'discord'}
-              className="btn-action h-8 px-3 text-xs flex items-center gap-1.5 flex-shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="btn-action h-8 px-3 text-xs flex items-center gap-1.5 shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <Send className="w-3 h-3 text-accent" />
               <span>{testingChannel === 'discord' ? t('sending') : t('alarms.discord.test')}</span>
@@ -425,7 +425,7 @@ export function AlarmsSection({
               type="button"
               onClick={() => handleTestChannel('webhook')}
               disabled={demoMode || testingChannel === 'webhook'}
-              className="btn-action h-8 px-3 text-xs flex items-center gap-1.5 flex-shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="btn-action h-8 px-3 text-xs flex items-center gap-1.5 shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <Send className="w-3 h-3 text-accent" />
               <span>{testingChannel === 'webhook' ? t('sending') : t('alarms.webhook.test')}</span>

@@ -172,6 +172,9 @@ func TestSMTPPasswordFromEnvNotStored(t *testing.T) {
 	}
 	if body := sessionCall(router, "GET", "/api/v1/admin/settings", token, "", "").Body.String(); strings.Contains(body, `"smtpPassViaEnv":true`) {
 		t.Fatalf("another server: no password from the environment: %s", body)
+	} else if !strings.Contains(body, `"smtpPassEnvHost":"mail.example.com"`) || !strings.Contains(body, `"smtpPassEnvUser":"bot"`) {
+		// The form needs to know which server SMTP_PASS belongs to, to lock the field only for that one
+		t.Fatalf("the server SMTP_PASS belongs to is missing: %s", body)
 	}
 	// ... and takes a password of its own
 	sessionCall(router, "PUT", "/api/v1/admin/settings", token, `{"sharingMode":"organizations","smtpHost":"smtp.other.example","smtpUser":"bot","smtpPass":"eigenes"}`, "")

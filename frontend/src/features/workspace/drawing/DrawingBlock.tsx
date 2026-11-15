@@ -431,10 +431,10 @@ export const DrawingBlock: React.FC<DrawingBlockProps> = ({
         {liveNames.length > 0 && (
           <div
             data-live-badge
-            className="absolute top-1.5 left-1.5 max-w-[calc(100%-5rem)] inline-flex items-center gap-1.5 h-6 pl-1.5 pr-2 rounded-pill bg-panel/90 border border-border text-[11px] font-semibold text-main shadow-xs pointer-events-none"
+            className="absolute top-1.5 left-1.5 max-w-[calc(100%-5rem)] inline-flex items-center gap-1.5 h-6 pl-1.5 pr-2 rounded-pill bg-panel/90 border border-border text-[11px] font-semibold text-main pointer-events-none"
           >
             <span className="w-1.5 h-1.5 rounded-full bg-status-err animate-pulse shrink-0" />
-            <AvatarStack people={live!.map((p) => ({ id: p.userId, name: p.name, avatarUrl: p.avatarUrl }))} size="xxs" ringClass="ring-[var(--bg-panel)]" />
+            <AvatarStack people={live!.map((p) => ({ id: p.userId, name: p.name, avatarUrl: p.avatarUrl }))} size="xxs" ringClass="ring-(--bg-panel)" />
             <span className="truncate">{t('drawing.live.badge', { names: liveNames.join(', ') })}</span>
           </div>
         )}
@@ -444,7 +444,7 @@ export const DrawingBlock: React.FC<DrawingBlockProps> = ({
           </div>
         )}
 
-        {!actionsTarget && <div className="absolute top-1.5 right-1.5 flex items-center gap-0.5 p-0.5 bg-panel/90 backdrop-blur-sm border border-border rounded-btn shadow-xs" onPointerDown={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()}>{actions}</div>}
+        {!actionsTarget && <div className="absolute top-1.5 right-1.5 flex items-center gap-0.5 p-0.5 bg-panel/90 backdrop-blur-xs border border-border rounded-btn" onPointerDown={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()}>{actions}</div>}
 
         {canEdit && (
           <div

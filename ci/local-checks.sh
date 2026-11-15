@@ -11,7 +11,8 @@ set -uo pipefail
 ENGINE="${ENGINE:-podman}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 LOGS="$(mktemp -d)"
-trap 'rm -rf "$LOGS"' EXIT
+# Kept when something failed, so the full output can be read afterwards (the path is printed at the end)
+trap '[ "${KEEP_LOGS:-}" = 1 ] || rm -rf "$LOGS"' EXIT
 cd "$ROOT"
 
 # golangci-lint runs from its own image, pinned like the other images here
@@ -81,7 +82,8 @@ for entry in "${pids[@]}"; do
   wait "${entry%%:*}" || failed+=("${entry#*:}")
 done
 if [ "${E2E:-}" = 1 ] && [ ${#failed[@]} -eq 0 ]; then
-  bash e2e/run.sh >"$LOGS/e2e.log" 2>&1 || failed+=(e2e)
+  # The Go and frontend tests just passed: the image for the browser tests is built without running them again
+  E2E_SKIP_TESTS=1 bash e2e/run.sh >"$LOGS/e2e.log" 2>&1 || failed+=(e2e)
 fi
 
 # The lines of a passing part worth seeing: for the backend internal/api and internal/storage of the full run
@@ -103,4 +105,8 @@ for log in "$LOGS"/*.log; do
   fi
 done
 echo "Took $(( $(date +%s) - start )) s"
-[ ${#failed[@]} -eq 0 ]
+if [ ${#failed[@]} -ne 0 ]; then
+  KEEP_LOGS=1
+  echo "Full logs: $LOGS"
+  exit 1
+fi

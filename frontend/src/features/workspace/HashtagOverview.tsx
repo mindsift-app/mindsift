@@ -156,7 +156,7 @@ export function HashtagOverview({
                     )}
                   </div>
 
-                  <div className="flex items-center justify-between pt-2.5 border-t border-border/50 text-[11px]">
+                  <div className="flex items-center justify-between pt-2.5 border-t text-[11px]">
                     <div>
                       {meta && meta.openTodosCount > 0 && (
                         <span className="text-status-warn text-[10px] flex items-center gap-1 font-medium">

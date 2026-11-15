@@ -114,7 +114,7 @@ export const UnifiedShareModal: React.FC<UnifiedShareModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 !m-0 modal-overlay z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs"
+      className="fixed inset-0 m-0! modal-overlay z-50 flex items-center justify-center p-4 bg-black/60"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
@@ -151,7 +151,7 @@ export const UnifiedShareModal: React.FC<UnifiedShareModalProps> = ({
         </div>
 
         {error && (
-          <div className="p-2.5 bg-status-danger/10 border border-status-danger/30 text-status-danger rounded text-xs">
+          <div className="p-2.5 bg-status-danger/10 border border-status-danger/30 text-status-danger rounded-sm text-xs">
             {error}
           </div>
         )}
@@ -159,7 +159,7 @@ export const UnifiedShareModal: React.FC<UnifiedShareModalProps> = ({
         {/* Who shared it, for everyone but the owner */}
         {!isOwner && sharedBy?.name && (
           <div className="flex items-center gap-2.5 text-xs text-muted">
-            <UserAvatar userId={sharedBy.id} name={sharedBy.name} avatarUrl={sharedBy.avatarUrl} size="sm" className="border border-border/80" />
+            <UserAvatar userId={sharedBy.id} name={sharedBy.name} avatarUrl={sharedBy.avatarUrl} size="sm" className="border" />
             <span className="min-w-0 truncate">
               <Trans t={t} i18nKey="share.sharedBy" values={{ name: sharedBy.name }} components={{ b: <span className="font-semibold text-main" /> }} />
             </span>
@@ -185,7 +185,7 @@ export const UnifiedShareModal: React.FC<UnifiedShareModalProps> = ({
                   }}
                   className={`h-7 px-2.5 text-xs rounded-btn font-medium flex items-center gap-1.5 border transition-colors cursor-pointer ${
                     shareType === 'user'
-                      ? 'bg-panel border-accent text-accent font-semibold shadow-xs'
+                      ? 'bg-panel border-accent text-accent font-semibold'
                       : 'bg-canvas border-border text-muted hover:text-main'
                   }`}
                 >
@@ -201,7 +201,7 @@ export const UnifiedShareModal: React.FC<UnifiedShareModalProps> = ({
                   }}
                   className={`h-7 px-2.5 text-xs rounded-btn font-medium flex items-center gap-1.5 border transition-colors cursor-pointer ${
                     shareType === 'team'
-                      ? 'bg-panel border-accent text-accent font-semibold shadow-xs'
+                      ? 'bg-panel border-accent text-accent font-semibold'
                       : 'bg-canvas border-border text-muted hover:text-main'
                   }`}
                 >
@@ -243,7 +243,7 @@ export const UnifiedShareModal: React.FC<UnifiedShareModalProps> = ({
                     />
                   </div>
                 ) : (
-                  <span className="inline-flex items-center gap-1 text-[11px] text-muted px-2 py-1 bg-panel rounded border border-border shrink-0 self-center">
+                  <span className="inline-flex items-center gap-1 text-[11px] text-muted px-2 py-1 bg-panel rounded-sm border border-border shrink-0 self-center">
                     {effectiveFixedPerm === 'editor' ? (
                       <>
                         <Check className="w-3 h-3 text-accent" />
@@ -285,7 +285,7 @@ export const UnifiedShareModal: React.FC<UnifiedShareModalProps> = ({
                     />
                   </div>
                 ) : (
-                  <span className="inline-flex items-center gap-1 text-[11px] text-muted px-2 py-1 bg-panel rounded border border-border shrink-0 self-center">
+                  <span className="inline-flex items-center gap-1 text-[11px] text-muted px-2 py-1 bg-panel rounded-sm border border-border shrink-0 self-center">
                     {effectiveFixedPerm === 'editor' ? (
                       <>
                         <Check className="w-3 h-3 text-accent" />
@@ -350,7 +350,7 @@ export const UnifiedShareModal: React.FC<UnifiedShareModalProps> = ({
                 return (
                   <div
                     key={sh.id}
-                    className="p-2.5 bg-canvas border border-border rounded-btn flex items-center justify-between gap-3 text-xs hover:border-border/80 transition-colors"
+                    className="p-2.5 bg-canvas border border-border rounded-btn flex items-center justify-between gap-3 text-xs transition-colors"
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
                       {isTeam ? (
@@ -363,14 +363,14 @@ export const UnifiedShareModal: React.FC<UnifiedShareModalProps> = ({
                           avatarUrl={sh.avatarUrl || collaborators.find((c) => c.id === sh.targetId)?.avatarUrl}
                           name={sh.targetName || sh.targetEmail}
                           size="sm"
-                          className="border border-border/80"
+                          className="border"
                         />
                       )}
                       <div className="truncate">
                         <div className="font-medium text-main truncate flex items-center gap-1.5">
                           <span className="truncate">{sh.targetName || (isTeam ? t('share.group') : sh.targetEmail || t('share.user'))}</span>
                           <span
-                            className={`text-[9px] uppercase font-semibold px-1 py-0.2 rounded ${
+                            className={`text-[9px] uppercase font-semibold px-1 py-0.2 rounded-sm ${
                               isTeam ? 'badge-neutral' : 'bg-surface-2 text-faint'
                             }`}
                           >
@@ -385,7 +385,7 @@ export const UnifiedShareModal: React.FC<UnifiedShareModalProps> = ({
 
                     <div className="flex items-center gap-2 shrink-0">
                       <span
-                        className={`text-[10px] px-2 py-0.5 rounded font-semibold ${
+                        className={`text-[10px] px-2 py-0.5 rounded-sm font-semibold ${
                           isEditor
                             ? 'bg-accent/15 text-accent border border-accent/30'
                             : 'bg-surface-2 text-muted border border-border'
@@ -398,7 +398,7 @@ export const UnifiedShareModal: React.FC<UnifiedShareModalProps> = ({
                           type="button"
                           onClick={() => handleRemove(sh.id)}
                           disabled={loading}
-                          className="p-1 text-faint hover:text-status-err rounded transition-colors cursor-pointer"
+                          className="p-1 text-faint hover:text-status-err rounded-sm transition-colors cursor-pointer"
                           title={t('share.remove')}
                         >
                           <Trash className="w-3.5 h-3.5" />

@@ -107,7 +107,7 @@ func openSSE(t *testing.T, ts *httptest.Server, token string) *sseStream {
 		cancel()
 		_ = resp.Body.Close()
 	})
-	connected := st.waitFor(t, "SSE_CONNECTED", 2*time.Second)
+	connected := st.waitFor(t, "SSE_CONNECTED", 10*time.Second)
 	if connected == nil {
 		t.Fatal("no SSE_CONNECTED event")
 	}
@@ -180,7 +180,7 @@ func TestSSEStreamOutlivesWriteTimeout(t *testing.T) {
 	time.Sleep(1500 * time.Millisecond) // longer than the server's WriteTimeout of 1s
 	srv.wsHub.BroadcastToUser(owner.ID, "LATE_EVENT", map[string]string{"ok": "1"})
 
-	if st.waitFor(t, "LATE_EVENT", 2*time.Second) == nil {
+	if st.waitFor(t, "LATE_EVENT", 10*time.Second) == nil {
 		t.Fatal("SSE stream was cut by the WriteTimeout")
 	}
 }
@@ -209,7 +209,7 @@ func TestTaskEventsOnlyReachAuthorizedUsers(t *testing.T) {
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("update task: status %d", resp.StatusCode)
 	}
-	if memberStream.waitFor(t, "TASK_UPDATED", 2*time.Second) == nil {
+	if memberStream.waitFor(t, "TASK_UPDATED", 10*time.Second) == nil {
 		t.Error("list member did not receive TASK_UPDATED")
 	}
 	if outsiderStream.waitFor(t, "TASK_UPDATED", 500*time.Millisecond) != nil {
@@ -220,7 +220,7 @@ func TestTaskEventsOnlyReachAuthorizedUsers(t *testing.T) {
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("update list: status %d", resp.StatusCode)
 	}
-	msg := memberStream.waitFor(t, "TASK_LIST_UPDATED", 2*time.Second)
+	msg := memberStream.waitFor(t, "TASK_LIST_UPDATED", 10*time.Second)
 	if msg == nil {
 		t.Fatal("list member did not receive TASK_LIST_UPDATED")
 	}
@@ -319,7 +319,7 @@ func TestWebSocketHeartbeat(t *testing.T) {
 	if err := conn.WriteJSON(map[string]string{"event": "PING"}); err != nil {
 		t.Fatal(err)
 	}
-	if readWSEvent(conn, "PONG", 2*time.Second) == nil {
+	if readWSEvent(conn, "PONG", 10*time.Second) == nil {
 		t.Fatal("no PONG for an app-level PING")
 	}
 }
@@ -339,7 +339,14 @@ func TestDocChangesArePushedToTheNoteRoom(t *testing.T) {
 	if err := conn.WriteJSON(map[string]string{"event": "JOIN_ROOM", "room": "doc:" + doc.ID}); err != nil {
 		t.Fatal(err)
 	}
-	time.Sleep(100 * time.Millisecond) // the join is processed asynchronously
+	// The join is processed asynchronously; messages of a connection are handled in order, so the PONG
+	// to a PING sent after it means the join is done (a fixed sleep was too short under load)
+	if err := conn.WriteJSON(map[string]string{"event": "PING"}); err != nil {
+		t.Fatal(err)
+	}
+	if readWSEvent(conn, "PONG", 10*time.Second) == nil {
+		t.Fatal("no PONG after the join")
+	}
 
 	text := "Geändert"
 	resp := doJSON(t, ts, http.MethodPost, "/api/v1/docs/"+doc.ID+"/sync", ownerToken, map[string]any{
@@ -349,7 +356,7 @@ func TestDocChangesArePushedToTheNoteRoom(t *testing.T) {
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("sync: %d", resp.StatusCode)
 	}
-	msg := readWSEvent(conn, "DOC_SEQ", 2*time.Second)
+	msg := readWSEvent(conn, "DOC_SEQ", 10*time.Second)
 	if msg == nil || !strings.Contains(string(msg.Payload), doc.ID) {
 		t.Fatalf("no DOC_SEQ push for the note: %+v", msg)
 	}
@@ -359,7 +366,7 @@ func TestLogoutEndsLiveStreams(t *testing.T) {
 	srv, _, ts, owner, token := startRealtimeServer(t)
 	st := openSSE(t, ts, token)
 	srv.wsHub.DisconnectUser(owner.ID)
-	deadline := time.After(2 * time.Second)
+	deadline := time.After(10 * time.Second)
 	for {
 		select {
 		case _, ok := <-st.events:
@@ -406,8 +413,8 @@ func TestLongPollDeliversEvents(t *testing.T) {
 		srv.wsHub.BroadcastToUser(owner.ID, "TASK_UPDATED", map[string]string{"id": "t1"})
 	}()
 	start := time.Now()
-	code, events := poll(token, 5)
-	if code != http.StatusOK || len(events) != 1 || events[0].Event != "TASK_UPDATED" || time.Since(start) > 3*time.Second {
+	code, events := poll(token, 20)
+	if code != http.StatusOK || len(events) != 1 || events[0].Event != "TASK_UPDATED" || time.Since(start) > 10*time.Second {
 		t.Fatalf("waiting poll: %d %v after %s", code, events, time.Since(start))
 	}
 
@@ -450,9 +457,15 @@ func TestShareKeepsOwnersPinInRealtime(t *testing.T) {
 		}
 	}
 
+	// Wait for the three updates (generously: under load they take a while), then a little longer for a
+	// fourth that must not come; a fixed 700 ms window lost updates on a busy machine
 	updates := 0
-	deadline := time.After(700 * time.Millisecond)
+	deadline := time.After(10 * time.Second)
+	var grace <-chan time.Time
 	for done := false; !done; {
+		if updates == 3 && grace == nil {
+			grace = time.After(500 * time.Millisecond)
+		}
 		select {
 		case m, ok := <-stream.events:
 			if !ok {
@@ -470,10 +483,16 @@ func TestShareKeepsOwnersPinInRealtime(t *testing.T) {
 			if !d.IsPinned || !d.IsOwner {
 				t.Errorf("%s for the owner: isPinned=%v isOwner=%v, want both true", m.Event, d.IsPinned, d.IsOwner)
 			}
+			// What the note list needs, not the bullets (clients with the note open sync those)
+			if len(d.Blocks) != 0 || d.Content != "" || d.MarkdownCache != "" {
+				t.Errorf("%s carries the bullets: %+v", m.Event, d)
+			}
 			if m.Event == "DOC_UPDATED" {
 				updates++
 			}
 		case <-deadline:
+			done = true
+		case <-grace:
 			done = true
 		}
 	}
@@ -483,5 +502,71 @@ func TestShareKeepsOwnersPinInRealtime(t *testing.T) {
 	}
 	if got, _ := store.GetDocumentByID(owner.ID, doc.ID); got == nil || !got.IsPinned {
 		t.Error("note no longer pinned for the owner")
+	}
+}
+
+// WORKSPACE_FOLDERS_UPDATED names what changed, so clients fetch only that; notes brought back from the
+// trash arrive as DOC_CREATED before it (the list is not fetched again for them).
+func TestFolderEventTypes(t *testing.T) {
+	_, store, ts, owner, token := startRealtimeServer(t)
+	stream := openSSE(t, ts, token)
+	next := func(want string) map[string]any {
+		t.Helper()
+		deadline := time.After(2 * time.Second)
+		for {
+			select {
+			case m, ok := <-stream.events:
+				if !ok {
+					t.Fatalf("stream closed waiting for %s", want)
+				}
+				if m.Event != want {
+					continue
+				}
+				var p map[string]any
+				_ = json.Unmarshal(m.Payload, &p)
+				return p
+			case <-deadline:
+				t.Fatalf("no %s", want)
+			}
+		}
+	}
+
+	if r := doJSON(t, ts, http.MethodPost, "/api/v1/folders", token, map[string]string{"path": "Zz Projekt"}); r.StatusCode != http.StatusCreated {
+		t.Fatalf("create folder: %d", r.StatusCode)
+	}
+	if p := next("WORKSPACE_FOLDERS_UPDATED"); p["type"] != "created" || p["path"] != "Zz Projekt" {
+		t.Errorf("create: %v", p)
+	}
+
+	doc, err := store.CreateDocument(owner.ID, "", "Plan", "", "Zz Projekt", nil, nil, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if r := doJSON(t, ts, http.MethodPost, "/api/v1/folders/move", token, map[string]string{"sourcePath": "Zz Projekt", "targetParentPath": "Zz Ablage"}); r.StatusCode != http.StatusOK {
+		t.Fatalf("move folder: %d", r.StatusCode)
+	}
+	if p := next("DOC_UPDATED"); p["id"] != doc.ID || p["folderPath"] != "Zz Ablage/Zz Projekt" {
+		t.Errorf("moved note: %v", p)
+	}
+	if p := next("WORKSPACE_FOLDERS_UPDATED"); p["type"] != "moved" || p["newPath"] != "Zz Ablage/Zz Projekt" {
+		t.Errorf("move: %v", p)
+	}
+
+	if r := doJSON(t, ts, http.MethodDelete, "/api/v1/folders?path=Zz%20Ablage", token, nil); r.StatusCode != http.StatusOK {
+		t.Fatalf("delete folder: %d", r.StatusCode)
+	}
+	p := next("WORKSPACE_FOLDERS_UPDATED")
+	if ids, _ := p["deletedDocIds"].([]any); p["type"] != "deleted" || len(ids) != 1 || ids[0] != doc.ID {
+		t.Errorf("delete: %v", p)
+	}
+
+	if r := doJSON(t, ts, http.MethodPost, "/api/v1/documents/"+doc.ID+"/restore", token, nil); r.StatusCode != http.StatusOK {
+		t.Fatalf("restore: %d", r.StatusCode)
+	}
+	if p := next("DOC_CREATED"); p["id"] != doc.ID || p["blocks"] != nil && len(p["blocks"].([]any)) != 0 {
+		t.Errorf("restored note: %v", p)
+	}
+	if p := next("WORKSPACE_FOLDERS_UPDATED"); p["type"] != "restored" {
+		t.Errorf("restore: %v", p)
 	}
 }

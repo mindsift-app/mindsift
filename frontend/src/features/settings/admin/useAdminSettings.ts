@@ -111,6 +111,8 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
           smtpPassSet: Boolean(sys.smtpPassSet),
           smtpPassUnreadable: Boolean(sys.smtpPassUnreadable),
           smtpPassViaEnv: Boolean(sys.smtpPassViaEnv),
+          smtpPassEnvHost: sys.smtpPassEnvHost || '',
+          smtpPassEnvUser: sys.smtpPassEnvUser || '',
           smtpFrom: sys.smtpFrom || '',
           smtpFromName: sys.smtpFromName || '',
           smtpTls: sys.smtpTls ?? true,

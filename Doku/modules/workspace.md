@@ -5,7 +5,7 @@ Code: [WorkspaceView.tsx](../../frontend/src/features/workspace/WorkspaceView.ts
 ## Data Storage
 
 - A note is a record in `documents` plus a tree of blocks in `blocks` (`parent_id`, sort key `order_key`). Every change goes through `internal/collab` and is recorded in the `doc_ops` log. Depth level and position for the UI are calculated by the server on read. The log and deleted blocks are compacted regularly ([database.md](../database.md#verdichtung-des-notiz-logs)). Everything resides in SQLite; there are no files on disk.
-- On every change, `block_tags` is rebuilt from `#hashtags` in the blocks. Markdown and plain text are built from the blocks when a note is read (`documents.markdown_cache` and `documents.content` stay empty since Migration 44); the journal, too, takes whether a day has text from the blocks.
+- On every change, `block_tags` is rebuilt from `#hashtags` in the blocks. Markdown and plain text are built from the blocks when a note is read (`documents.content` stays empty since Migration 44, `documents.markdown_cache` was dropped by Migration 48); the journal, too, takes whether a day has text from the blocks.
 - **Hashtag rule:** `#word` only counts at the start of text or after whitespace or `(`. Anchors in links (`example.com/blog#heading`) and words like `C#` are not tags. The same rule applies on the server (`domain.ExtractTags`) and in the browser (`lib/hashtags.ts`). On first start after migration, `migrateAnchorTags` runs a one-time cleanup of stored tags that originated solely from anchors.
 - Export as `.md` is handled in the browser (button in editor, blob download).
 - Block types: Headings `h1`–`h3`, `paragraph`/`text`, `bullet`, `todo`, `code`, `callout`, `divider`, `table`, `progress`, `drawing`.
@@ -66,7 +66,8 @@ Code: [WorkspaceView.tsx](../../frontend/src/features/workspace/WorkspaceView.ts
 
 - Individual notes and entire **shared folders** can be shared with users or groups – with either the **Editor** (`write`) or **Viewer** (`read`) role ([sharing-and-permissions.md](../sharing-and-permissions.md)). Editors modify content and structure via the sync engine; viewers see changes live.
 - Recipients organize shared notes and folders within their own folder tree (`doc_user_folders`, `workspace_folder_mounts`) without affecting the owner's hierarchy.
-- Changes reach open windows via the `DOC_SEQ` wake-up call followed by sync; note lists update via `DOC_UPDATED` ([websocket.md](../api/websocket.md)).
+- Changes reach open windows via the `DOC_SEQ` wake-up call followed by sync; note lists update via `DOC_UPDATED` (the note as the list has it, without bullets), `DOC_COUNTS` (open to-dos and hashtags of a note whose bullets someone changed, at most every 3 s per note and only when they changed) and `WORKSPACE_FOLDERS_UPDATED`, whose `type` decides whether the list is fetched again ([websocket.md](../api/websocket.md)).
+- The app's note list holds bullets only for notes open in an editor (their counts follow typing); when the editor closes, the list drops them and keeps their counts in the list's fields, which the server's events then keep current.
 
 ## Limitations
 

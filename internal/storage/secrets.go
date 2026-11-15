@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/mindsift-app/mindsift/internal/domain"
+	"github.com/mindsift-app/mindsift/internal/i18n"
 )
 
 // Hidden values in notes (an IP address, a token in a technical note). The text of a bullet only holds
@@ -20,6 +21,10 @@ import (
 
 // SecretRefRe matches a reference in block text; group 1 is the id.
 var SecretRefRe = regexp.MustCompile(`\{\{secret:([A-Za-z0-9_]+)\}\}`)
+
+// secretValueRefRe matches a reference with the id format of a stored value (NewSecretID; ids of older
+// versions have "_" after "sec"). Code blocks keep none (codeBlockText).
+var secretValueRefRe = regexp.MustCompile(`\{\{secret:sec_?[0-9a-f]{24}\}\}`)
 
 // SecretOrphanDays: how long a secret no bullet of its note holds any more is kept (undo, trash, pasting
 // it back).
@@ -56,6 +61,36 @@ func (s *Store) migrateNoteSecrets() error {
 }
 
 func secretRef(id string) string { return "{{secret:" + id + "}}" }
+
+// A code block shows its text as it is and cannot show a hidden value as a chip: a reference in it showed
+// its raw id, and the gates made copies of values nobody saw. So a code block keeps no reference to a
+// value. Whatever brings one in (a bullet turned into a code block, text written or pasted into one, a new
+// note or an import with code blocks) gets the placeholder instead, the one secretGate writes for a value
+// not taken over, in the writer's message language. The editor does the same on its side
+// (frontend/src/lib/docSync/diff.ts) in the same step as the change, so undo brings the reference back;
+// the server's rule (collab.Env.CodeText, set by applyDocChangeCtx) covers everything else: older
+// clients, MCP, the API, a type change on its own. Only references with the id format of a value count:
+// "{{secret:id}}" written into code to explain the syntax stays. block_refs leaves code blocks out
+// (blockRefsOf), so the secret sweep neither copies a value for them nor keeps one because of them.
+
+// codeBlockText returns the text of a code block with every reference to a value replaced by placeholder
+// (by nothing where the placeholder is longer than the reference, as secretGate.placeholderFor).
+func codeBlockText(content, placeholder string) string {
+	if !strings.Contains(content, "{{secret:") {
+		return content
+	}
+	return secretValueRefRe.ReplaceAllStringFunc(content, func(ref string) string {
+		if len(placeholder) <= len(ref) {
+			return placeholder
+		}
+		return ""
+	})
+}
+
+// secretPlaceholderIn: the placeholder for a value not taken over, in the language lang.
+func secretPlaceholderIn(lang string) string {
+	return i18n.T(lang, "(versteckter Wert nicht übernommen)")
+}
 
 // MaskSecretRefs replaces every reference with a neutral mask (Markdown export).
 func MaskSecretRefs(text string) string {

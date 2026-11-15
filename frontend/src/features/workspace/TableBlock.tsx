@@ -18,6 +18,7 @@ import { ActionMenu, ActionMenuItem } from '../../components/ActionMenu';
 import { InlineMarkdownOptions, renderInlineMarkdown } from '../../lib/markdown';
 import { caretAtPoint, mapRenderedOffsetToRaw } from '../../lib/caret';
 import { toggleInlineFormat } from '../../lib/inlineFormat';
+import { ownClipboardText } from '../../lib/outlineMarkdown';
 import {
   TableAlign,
   TableData,
@@ -64,6 +65,8 @@ export interface TableBlockProps {
   onDelete: () => void;
   /** Enter while someone else edits the table: a new bullet below it */
   onAppendBelow?: () => void;
+  /** Enter in an empty last row: that row goes and a new bullet follows below the table */
+  onExitBelow?: () => void;
   onHistory: (redo: boolean) => void;
   /** Tab moves between cells, so the bullet is indented from the table's menu */
   onIndent?: () => void;
@@ -98,6 +101,7 @@ const TableBlockView: React.FC<TableBlockProps> = ({
   onLeave,
   onDelete,
   onAppendBelow,
+  onExitBelow,
   onHistory,
   onIndent,
   onOutdent,
@@ -250,11 +254,14 @@ const TableBlockView: React.FC<TableBlockProps> = ({
 
   const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>, r: number, c: number) => {
     if (!canEdit) return;
-    const text = e.clipboardData.getData('text');
+    // Bullets copied from a note with hidden values: the app's own format has their references where the
+    // plain text has the mask (lib/outlineMarkdown.ts); a cell shows them like a bullet does
+    const own = ownClipboardText(e.clipboardData);
+    const text = own || e.clipboardData.getData('text');
     const clean = text.replace(/\r\n?/g, '\n').replace(/\n+$/, '');
     if (!clean.includes('\n') && !clean.includes('\t')) {
       // One line: into the cell at the cursor (without the line break it may end with)
-      if (clean === text) return;
+      if (clean === text && !own) return;
       e.preventDefault();
       const ta = e.currentTarget;
       const start = ta.selectionStart ?? ta.value.length;
@@ -344,10 +351,16 @@ const TableBlockView: React.FC<TableBlockProps> = ({
       return;
     }
 
-    // Cells hold no line breaks: Enter (also with Shift) adds a row below this one
+    // Cells hold no line breaks: Enter (also with Shift) adds a row below this one. In an empty last row
+    // (not the header) it leaves the table instead, like a second Enter at the end of a code block
     if (key === 'Enter' && !e.ctrlKey && !e.metaKey && !e.altKey) {
       e.preventDefault();
       e.stopPropagation();
+      if (onExitBelow && r > 0 && r === rows.length - 1 && rows[r].every((cell) => cell.trim() === '')) {
+        commit(deleteTableRow(data, r), true);
+        onExitBelow();
+        return;
+      }
       addRowBelow(r);
       return;
     }
@@ -570,7 +583,7 @@ const TableBlockView: React.FC<TableBlockProps> = ({
             onChange={(e) => handleChange(e, r, c)}
             onKeyDown={(e) => handleKeyDown(e, r, c)}
             onPaste={(e) => handlePaste(e, r, c)}
-            className={`nt-input absolute inset-0 block w-full h-full m-0 p-0 resize-none overflow-hidden bg-transparent border-0 focus:outline-none focus:ring-0 ${
+            className={`nt-input absolute inset-0 block w-full h-full m-0 p-0 resize-none overflow-hidden bg-transparent border-0 focus:outline-hidden focus:ring-0 ${
               isActive ? 'text-main' : 'text-transparent selection:text-transparent pointer-events-none'
             }`}
           />

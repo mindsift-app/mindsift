@@ -191,13 +191,13 @@ export function PasskeyCard({
           {!off && !browserCan && <p className="text-[11px] text-muted p-3 rounded-card border border-border bg-canvas">{t('security.passkeys.unsupported')}</p>}
           {done && (
             <div role="status" className="alert-ok flex items-center gap-2">
-              <Check className="w-4 h-4 text-status-ok flex-shrink-0" />
+              <Check className="w-4 h-4 text-status-ok shrink-0" />
               <span>{done}</span>
             </div>
           )}
           {error && !removing && (
             <div role="alert" className="alert-err flex items-center gap-2">
-              <CircleAlert className="w-4 h-4 text-status-err flex-shrink-0" />
+              <CircleAlert className="w-4 h-4 text-status-err shrink-0" />
               <span>{error}</span>
             </div>
           )}

@@ -53,7 +53,7 @@ export function TriageDemo() {
     current.to === 'task'
       ? 'translate-x-[115%] rotate-6 opacity-0'
       : current.to === 'discard'
-      ? '-translate-x-[115%] -rotate-6 opacity-0'
+      ? 'translate-x-[-115%] -rotate-6 opacity-0'
       : 'translate-y-[70%] scale-90 opacity-0';
   const cardClass = stage === 0 ? '-translate-y-3 opacity-0' : stage === 1 ? 'translate-x-0 opacity-100' : away;
   const lit = (to: string) => stage === 2 && current.to === to;
@@ -73,7 +73,7 @@ export function TriageDemo() {
       </div>
       <div className="relative h-14 flex items-center justify-center">
         <div
-          className={`absolute inset-x-10 inset-y-1 panel-surface shadow-sm flex items-center justify-center text-xs font-medium text-main transition-all duration-500 ease-out ${cardClass}`}
+          className={`absolute inset-x-10 inset-y-1 panel-surface shadow-xs flex items-center justify-center text-xs font-medium text-main transition-all duration-500 ease-out ${cardClass}`}
         >
           {current.text}
         </div>

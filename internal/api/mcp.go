@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -953,7 +954,7 @@ var mcpTools = []mcpTool{
 			if err := decodeArgs(args, &a); err != nil {
 				return nil, err
 			}
-			docs, err := s.store.GetDocumentList(userID)
+			docs, err := s.store.GetDocumentList(context.Background(), userID)
 			if err != nil {
 				return nil, err
 			}

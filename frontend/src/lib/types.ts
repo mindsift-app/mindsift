@@ -417,6 +417,10 @@ export interface SystemSettings {
   smtpPassUnreadable?: boolean;
   // The password comes from SMTP_PASS (not stored) and takes precedence over one entered here
   smtpPassViaEnv?: boolean;
+  // The mail server and user SMTP_PASS belongs to (only with SMTP_PASS): the password field is locked while
+  // the form names them
+  smtpPassEnvHost?: string;
+  smtpPassEnvUser?: string;
   smtpFrom?: string;
   smtpFromName?: string; // display name when smtpFrom is a bare address (empty = MindSift)
   smtpTls?: boolean;

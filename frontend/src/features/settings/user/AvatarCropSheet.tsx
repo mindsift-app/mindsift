@@ -113,7 +113,7 @@ export function AvatarCropSheet({
         <div className="absolute inset-0 rounded-full pointer-events-none shadow-[0_0_0_999px_var(--bg-overlay)] ring-2 ring-accent" />
       </div>
       <div className="flex items-center gap-2 max-w-[16rem] mx-auto">
-        <ZoomOut className="w-4 h-4 text-muted flex-shrink-0" aria-hidden="true" />
+        <ZoomOut className="w-4 h-4 text-muted shrink-0" aria-hidden="true" />
         <input
           type="range"
           min={MIN_ZOOM}
@@ -122,9 +122,9 @@ export function AvatarCropSheet({
           value={placement.zoom}
           onChange={(e) => setPlacement(zoomAround(imgW, imgH, placement, Number(e.target.value)))}
           aria-label={t('profile.cropZoom')}
-          className="flex-1 h-11 sm:h-6 accent-[var(--accent-primary)]"
+          className="flex-1 h-11 sm:h-6 accent-(--accent-primary)"
         />
-        <ZoomIn className="w-4 h-4 text-muted flex-shrink-0" aria-hidden="true" />
+        <ZoomIn className="w-4 h-4 text-muted shrink-0" aria-hidden="true" />
       </div>
       <p className="text-[11px] text-muted text-center">{t('profile.cropHint')}</p>
     </FormSheet>

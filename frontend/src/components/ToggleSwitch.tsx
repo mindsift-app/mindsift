@@ -15,7 +15,7 @@ export const ToggleSwitch: React.FC<ToggleSwitchProps> = ({ checked, onChange, t
     aria-checked={checked}
     disabled={disabled}
     onClick={() => onChange(!checked)}
-    className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-pill border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none disabled:opacity-50 disabled:cursor-default ${
+    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-pill border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden disabled:opacity-50 disabled:cursor-default ${
       checked ? 'bg-accent' : 'bg-panel-elevated border border-border'
     }`}
     title={title}

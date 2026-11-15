@@ -332,7 +332,7 @@ func (s *Server) startVoiceCheck() {
 		case st.Reachable && !downloadRequested:
 			downloadRequested = true
 			slog.Info("Speech recognition: downloading the model (can take a few minutes)", "model", cfg.Model)
-			go s.requestModelDownload()
+			s.background(s.requestModelDownload)
 		case !st.Reachable && attempt%6 == 0:
 			slog.Warn("Speech recognition: Whisper server not reachable, will retry", "url", cfg.URL, "error", st.Error)
 		}
@@ -346,11 +346,17 @@ func (s *Server) startVoiceCheck() {
 const voiceCheckInterval = 10 * time.Second
 
 func (s *Server) requestModelDownload() {
-	// Model IDs contain a slash (owner/name); speaches takes them as a path
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Hour)
+	// A background job of its own (the check goes on while the download runs); Close cancels it
+	stopCtx, stopCancel := s.stopContext()
+	defer stopCancel()
+	ctx, cancel := context.WithTimeout(stopCtx, 2*time.Hour)
 	defer cancel()
+	// Model IDs contain a slash (owner/name); speaches takes them as a path
 	resp, err := s.sttRequest(ctx, http.MethodPost, "/v1/models/"+s.cfg.Speech.Model, nil, "")
 	if err != nil {
+		if stopCtx.Err() != nil {
+			return // the server is stopping
+		}
 		slog.Warn("Speech recognition: model download failed", "model", s.cfg.Speech.Model, "error", err)
 		return
 	}

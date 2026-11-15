@@ -28,7 +28,7 @@ export const AvatarStack: React.FC<AvatarStackProps> = ({
   people,
   max = 3,
   size = 'xs',
-  ringClass = 'ring-[var(--bg-app)]',
+  ringClass = 'ring-(--bg-app)',
   title,
   className = '',
 }) => {

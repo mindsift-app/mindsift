@@ -105,7 +105,7 @@ func (s *Store) mediaBeyondRefCap(userID string) (map[string][]string, error) {
 // block_refs row there: the secret sweep must neither delete it nor miss it when it belongs to another
 // note (splitCrossNoteSecrets).
 func secretsBeyondRefCap(q docQueryer) (map[string][]string, error) {
-	rows, err := q.Query(sqlCappedBlocks + ` AND b.deleted = 0`)
+	rows, err := q.Query(sqlCappedBlocks + ` AND b.deleted = 0 AND b.type != 'code'`)
 	if err != nil {
 		return nil, err
 	}
@@ -126,9 +126,11 @@ func secretsBeyondRefCap(q docQueryer) (map[string][]string, error) {
 }
 
 // blockRefsOf returns the references in a block's content (at most maxBlockRefs, in order of appearance),
-// sorted and without duplicates.
-func blockRefsOf(content string) []blockRef {
-	hasMedia, hasSecret := strings.Contains(content, "media:"), strings.Contains(content, "{{secret:")
+// sorted and without duplicates. A code block holds no hidden value (secrets.go): text in it that looks
+// like a reference is code, so the secret sweep neither copies a value for it nor keeps one because of it.
+func blockRefsOf(typ, content string) []blockRef {
+	hasMedia := strings.Contains(content, "media:")
+	hasSecret := typ != "code" && strings.Contains(content, "{{secret:")
 	if !hasMedia && !hasSecret {
 		return nil
 	}
@@ -246,19 +248,19 @@ func fillBlockRefs(tx *sql.Tx) error {
 		blockID, docID string
 		ref            blockRef
 	}
-	rows, err := tx.Query(`SELECT id, document_id, content FROM blocks
+	rows, err := tx.Query(`SELECT id, document_id, type, content FROM blocks
 		WHERE instr(content, 'media:') > 0 OR instr(content, '{{secret:') > 0`)
 	if err != nil {
 		return err
 	}
 	var all []row
 	for rows.Next() {
-		var id, docID, content string
-		if err := rows.Scan(&id, &docID, &content); err != nil {
+		var id, docID, typ, content string
+		if err := rows.Scan(&id, &docID, &typ, &content); err != nil {
 			_ = rows.Close()
 			return err
 		}
-		for _, r := range blockRefsOf(content) {
+		for _, r := range blockRefsOf(typ, content) {
 			all = append(all, row{id, docID, r})
 		}
 	}

@@ -131,7 +131,7 @@ export function UserList({ admin, currentUser, isServerAdmin }: { admin: Admin; 
 
       {/* Search and filters: one row from sm on, on phones the search gets a row of its own */}
       <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2">
-        <label className="relative flex-1 min-w-0 sm:min-w-[14rem]">
+        <label className="relative flex-1 min-w-0 sm:min-w-56">
           <Search className="w-3.5 h-3.5 text-muted absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
           <input
             {...NO_AUTOFILL}
@@ -210,7 +210,7 @@ function UserRow({ u, open, orgNames, showNoOrg, onToggle }: { u: User; open: bo
       aria-expanded={open}
       className={`w-full min-h-11 px-3 py-1.5 flex items-center gap-2.5 text-left cursor-pointer transition-colors ${open ? 'bg-panel' : 'hover:bg-panel'}`}
     >
-      <UserAvatar user={u} size="sm" showTitle={false} className="border border-border/80" />
+      <UserAvatar user={u} size="sm" showTitle={false} className="border" />
       <span className="flex-1 min-w-0">
         <span className="flex items-center gap-1.5 min-w-0">
           <span className="font-semibold text-main truncate">{u.displayName}</span>
@@ -246,7 +246,7 @@ function UserSheet({ u, onClose, children }: { u: User; onClose: () => void; chi
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
   return (
-    <div className="fixed inset-0 !m-0 z-50 flex items-end justify-center modal-overlay" onClick={onClose}>
+    <div className="fixed inset-0 m-0! z-50 flex items-end justify-center modal-overlay" onClick={onClose}>
       <div
         role="dialog"
         aria-modal="true"
@@ -256,7 +256,7 @@ function UserSheet({ u, onClose, children }: { u: User; onClose: () => void; chi
       >
         <div className="w-10 h-1 bg-border rounded-full mx-auto" aria-hidden="true" />
         <div className="flex items-center gap-2.5">
-          <UserAvatar user={u} size="md" showTitle={false} className="border border-border/80" />
+          <UserAvatar user={u} size="md" showTitle={false} className="border" />
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-main truncate">{u.displayName}</p>
             <p className="text-muted text-[11px] truncate">{[u.username, u.email].filter(Boolean).join(' · ')}</p>
@@ -326,7 +326,7 @@ function UserDetails({ u, admin, currentUser, isServerAdmin }: { u: User; admin:
           {/* Organizations only as information: who belongs where is set in the organization */}
           <span className="block text-muted mb-1">{t('users.organizations')}</span>
           {orgs.length > 0 ? (
-            <p className="text-main break-words">{orgs.join(', ')}</p>
+            <p className="text-main wrap-break-word">{orgs.join(', ')}</p>
           ) : (
             <p className={sharingMode === 'organizations' ? 'text-status-warn' : 'text-faint'}>
               {sharingMode === 'organizations' ? t('users.noOrgWarning') : t('users.noOrganization')}

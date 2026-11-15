@@ -60,7 +60,7 @@ export const ConfirmPopover: React.FC<ConfirmPopoverProps> = ({ x, y, message, c
       role="alertdialog"
       aria-modal="false"
       style={{ left: pos.left, top: pos.top, visibility: pos.ready ? 'visible' : 'hidden' }}
-      className="fixed z-[70] w-72 max-w-[calc(100vw-1rem)] p-3 bg-panel border border-border rounded-card shadow-panel text-xs text-main space-y-3"
+      className="fixed z-70 w-72 max-w-[calc(100vw-1rem)] p-3 bg-panel border border-border rounded-card shadow-panel text-xs text-main space-y-3"
     >
       <div className="leading-snug">{message}</div>
       <div className="flex flex-wrap justify-end gap-2">

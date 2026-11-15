@@ -66,7 +66,7 @@ export function ListTabsHeader({
     onDrop: (e: React.DragEvent) => handleDropOnListTab(e, lst),
   });
   return (
-    <div className="hidden sm:flex items-center gap-2 !mt-0">
+    <div className="hidden sm:flex items-center gap-2 mt-0!">
       {/* List Tabs: one row, what does not fit goes behind "⋯ n" */}
       <div ref={rowRef} className="relative flex-1 min-w-0 flex items-center gap-1">
         {lists.map((lst) => {
@@ -88,7 +88,7 @@ export function ListTabsHeader({
               onDrop={(e) => {
                 if (!reorder.handleDrop(e, lst.id)) drop.onDrop(e);
               }}
-              className={`group tool-tab !px-0 shrink-0 ${isSelected ? 'tool-tab-active' : ''} ${
+              className={`group tool-tab px-0! shrink-0 ${isSelected ? 'tool-tab-active' : ''} ${
                 dragOverListTab === lst.id ? 'ring-2 ring-accent/60 !bg-accent/10 text-main' : ''
               } ${
                 reorder.draggingId === lst.id ? 'opacity-50' : ''
@@ -135,7 +135,7 @@ export function ListTabsHeader({
         <button
           data-tab-fixed
           onClick={() => setShowNewListModal((prev) => !prev)}
-          className="tool-btn shrink-0 !gap-1"
+          className="tool-btn shrink-0 gap-1!"
           title={t('newListTitle')}
         >
           <Plus className="w-3.5 h-3.5" />
@@ -224,7 +224,7 @@ export function MobileListHeader({
 }) {
   const { t } = useTranslation('lists');
   return (
-    <div className="flex sm:hidden items-center justify-between gap-2 px-3 py-2 min-h-[54px] rounded-btn bg-panel border border-border !mt-0">
+    <div className="flex sm:hidden items-center justify-between gap-2 px-3 py-2 min-h-[54px] rounded-btn bg-panel border border-border mt-0!">
       <div className="flex items-center gap-2 min-w-0">
         {activeList ? (
           <ListSwitcher
@@ -242,12 +242,12 @@ export function MobileListHeader({
           <span className="text-sm font-semibold text-main truncate">{t('shoppingList')}</span>
         )}
         {openItems.length > 0 && (
-          <span className="badge-neutral text-[11px] flex-shrink-0">
+          <span className="badge-neutral text-[11px] shrink-0">
             {t('openCount', { count: openItems.length })}
           </span>
         )}
       </div>
-      <div className="flex items-center gap-1.5 flex-shrink-0">
+      <div className="flex items-center gap-1.5 shrink-0">
         <LivePill />
         {activeList && (
           <>

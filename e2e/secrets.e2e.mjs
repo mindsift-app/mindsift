@@ -1,7 +1,7 @@
 // Hidden values pasted into another note, in a real browser: the server gives the note a copy of its own
 // (internal/storage/secret_gate.go) and the editor gets the bullet with the new reference back, so the chip
 // reveals the value there; undo and redo of the paste work although the reference changed, and a paste made
-// offline gets its copy once the connection is back. The text goes in as the clipboard would put it into the
+// offline gets its copy once the connection is back, and a bullet turned into a code block gets the placeholder (undo brings the reference back). The text goes in as the clipboard would put it into the
 // bullet's field; last, two bullets are copied and pasted with the keyboard in Chromium and Firefox. Needs a server in demo mode (account admin/admin); see e2e/README.md.
 import { chromium, firefox } from 'playwright';
 
@@ -226,6 +226,25 @@ const main = async () => {
   check(offlineRef === stored, 'Back online, the paste gets the copy the note already has', await contentOf(admin, target.id, offline));
   await waitFor(() => chip(page, offline).count(), 5000);
   check(await reveals(page, offline, value), 'The chip of the bullet pasted offline reveals the value');
+
+  // 4. The bullet turned into a code block (``` at its start): a code block cannot show the value, so it gets
+  // the placeholder, and undo brings the bullet back with its reference
+  const typeOf = async (blockId) =>
+    (await api(admin, 'GET', `/api/v1/docs/${target.id}/snapshot`)).blocks.find((b) => b.id === blockId)?.type;
+  await page.locator(`[data-outline-block="${pasted}"] [data-outline-text]`).click({ force: true });
+  await page.keyboard.press('Home');
+  await page.keyboard.insertText('``` '); // at once: typed key by key, "```Ziel" turns into a code block in the language "ziel" first
+  const placeholder = '(versteckter Wert nicht übernommen)';
+  const coded = await waitFor(async () => (await typeOf(pasted)) === 'code' && (await contentOf(admin, target.id, pasted)) === `Ziel ${placeholder}`, 10000);
+  check(!!coded, 'A bullet turned into a code block holds the placeholder instead of the reference', [await typeOf(pasted), await contentOf(admin, target.id, pasted)]);
+  await page.locator(`[data-outline-block="${rest}"] [data-outline-text]`).click({ force: true });
+  const shown = await waitFor(async () => (await page.locator(`[data-outline-block="${pasted}"] textarea`).first().inputValue()) === `Ziel ${placeholder}`, 5000);
+  check(!!shown, 'The code block shows the placeholder', await page.locator(`[data-outline-block="${pasted}"] textarea`).first().inputValue().catch(() => ''));
+  await page.keyboard.press('Control+z');
+  const back = await waitFor(async () => (await typeOf(pasted)) !== 'code' && refOf(await contentOf(admin, target.id, pasted)) === stored, 10000);
+  check(!!back, 'Ctrl+Z brings the bullet back with its reference', [await typeOf(pasted), await contentOf(admin, target.id, pasted)]);
+  await waitFor(() => chip(page, pasted).count(), 5000);
+  check(await reveals(page, pasted, value), 'Its chip reveals the value again');
 
   await browser.close();
   for (const engine of [chromium, firefox]) await copySeveral(engine, admin);

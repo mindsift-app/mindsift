@@ -350,7 +350,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
       <AvatarStack
         people={people}
         size={size}
-        ringClass="ring-[var(--bg-panel)]"
+        ringClass="ring-(--bg-panel)"
         title={i18n.t('tasks:assignedTo', { names: people.map((p) => p.name).join(', ') })}
       />
     );
@@ -841,7 +841,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
 
       {/* Mobile Compact Context Bar (replaces cluttered button rows; options live in MindSift Logo Menu) */}
       {/* Same height with or without the 36 px share button (Tasks, Shopping lists) */}
-      <div className="flex sm:hidden items-center justify-between gap-2 px-3 py-2 min-h-[54px] rounded-btn bg-panel border border-border !mt-0">
+      <div className="flex sm:hidden items-center justify-between gap-2 px-3 py-2 min-h-[54px] rounded-btn bg-panel border border-border mt-0!">
         <div className="flex items-center gap-2 min-w-0">
           <ListSwitcher
             label={currentSelectedList ? [currentSelectedList.icon, currentSelectedList.title].filter(Boolean).join(' ') : '📋 Alle Aufgaben'}
@@ -852,7 +852,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
             activeId={selectedListId}
             onSelect={setSelectedListId}
           />
-          <span className="badge-neutral text-[11px] flex-shrink-0">
+          <span className="badge-neutral text-[11px] shrink-0">
             {viewMode === 'kanban'
               ? 'Kanban'
               : viewMode === 'calendar'
@@ -864,7 +864,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
               : t('tabCount.trash', { count: taskTrash.length })}
           </span>
         </div>
-        <div className="flex items-center gap-1.5 flex-shrink-0">
+        <div className="flex items-center gap-1.5 shrink-0">
           <LivePill />
           {currentSelectedList && (
             <>
@@ -918,7 +918,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
 
         {/* Kanban: manage columns; calendar: month or week (the list view has grouping and sorting above the
             list) */}
-        <div className="flex items-center gap-2 flex-shrink-0 ml-auto">
+        <div className="flex items-center gap-2 shrink-0 ml-auto">
           {viewMode === 'calendar' && <CalendarModeSwitch mode={calendarMode} onChange={setCalendarMode} />}
           {viewMode === 'kanban' && !isSelectedListReadOnly && (
             <button

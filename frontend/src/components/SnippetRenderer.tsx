@@ -15,7 +15,7 @@ export const SnippetRenderer: React.FC<{ snippet: string }> = ({ snippet }) => {
           return (
             <mark
               key={i}
-              className="bg-accent-dim text-accent font-semibold px-0.5 rounded"
+              className="bg-accent-dim text-accent font-semibold px-0.5 rounded-sm"
             >
               {text}
             </mark>

@@ -91,25 +91,25 @@ const de: HelpContent = {
         <div className="space-y-2 text-muted leading-relaxed">
           <ul className="space-y-1.5">
             <li>
-              <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Enter</kbd> : Erzeugt sofort einen neuen Bullet-Point auf derselben Ebene. Ist der Punkt leer und eingerückt, rückt er eine Ebene nach links aus.
+              <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">Enter</kbd> : Erzeugt sofort einen neuen Bullet-Point auf derselben Ebene. Ist der Punkt leer und eingerückt, rückt er eine Ebene nach links aus.
             </li>
             <li>
-              <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Tab</kbd> : Rückt den aktuellen Bullet-Point nach rechts ein und ordnet ihn dem vorherigen Punkt unter.
+              <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">Tab</kbd> : Rückt den aktuellen Bullet-Point nach rechts ein und ordnet ihn dem vorherigen Punkt unter.
             </li>
             <li>
-              <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Shift + Tab</kbd> : Rückt den Bullet-Point nach links aus (verringert die Einrückungstiefe).
+              <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">Shift + Tab</kbd> : Rückt den Bullet-Point nach links aus (verringert die Einrückungstiefe).
             </li>
             <li>
-              <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Shift + Enter</kbd> : Erzeugt einen weichen Zeilenumbruch innerhalb desselben Textblocks.
+              <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">Shift + Enter</kbd> : Erzeugt einen weichen Zeilenumbruch innerhalb desselben Textblocks.
             </li>
             <li>
-              <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Backspace</kbd> : Auf einem leeren Block löscht die Taste diesen sofort. Am Textanfang wird der Block mit dem vorherigen zusammengeführt.
+              <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">Backspace</kbd> : Auf einem leeren Block löscht die Taste diesen sofort. Am Textanfang wird der Block mit dem vorherigen zusammengeführt.
             </li>
             <li>
-              <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">↑ / ↓</kbd> : Springt flüssig zum vorherigen bzw. nächsten Block, wenn sich der Cursor ganz am Anfang oder Ende des Textes befindet.
+              <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">↑ / ↓</kbd> : Springt flüssig zum vorherigen bzw. nächsten Block, wenn sich der Cursor ganz am Anfang oder Ende des Textes befindet.
             </li>
             <li>
-              <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Strg + Z</kbd> / <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Cmd + Z</kbd> : Mehrstufiges Notiz-Undo. Wiederholen mit <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Strg + Y</kbd> bzw. <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Strg + Shift + Z</kbd>.
+              <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">Strg + Z</kbd> / <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">Cmd + Z</kbd> : Mehrstufiges Notiz-Undo. Wiederholen mit <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">Strg + Y</kbd> bzw. <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">Strg + Shift + Z</kbd>.
             </li>
           </ul>
         </div>
@@ -152,66 +152,66 @@ const de: HelpContent = {
         <div className="space-y-3 text-muted leading-relaxed">
           <div>
             <p className="mb-1.5">
-              Tippe <code className="text-accent bg-panel px-1 py-0.5 rounded font-mono">/</code> in einen Block, um das Menü für Blocktypen zu öffnen:
+              Tippe <code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">/</code> in einen Block, um das Menü für Blocktypen zu öffnen:
             </p>
             <div className="grid grid-cols-2 gap-1.5 font-mono text-[11px]">
-              <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main">
+              <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main">
                 <ListTodo className="w-3.5 h-3.5 text-accent" />
                 <span>/todo (Checkbox-Aufgabe)</span>
               </div>
-              <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main">
+              <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main">
                 <LinkIcon className="w-3.5 h-3.5 text-accent" />
                 <span>/link (Notiz verknüpfen)</span>
               </div>
-              <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main">
+              <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main">
                 <Heading1 className="w-3.5 h-3.5 text-accent" />
                 <span>/h1, /h2, /h3 (Überschriften)</span>
               </div>
-              <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main">
+              <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main">
                 <Code className="w-3.5 h-3.5 text-accent" />
-                <span>/code (Code-Block)</span>
+                <span>/code (Code-Block; zweimal Enter am Ende verlässt ihn)</span>
               </div>
-              <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main col-span-2">
+              <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main col-span-2">
                 <span className="text-accent font-bold">1.</span>
                 <span>/number oder „1. “ am Anfang (nummerierte Liste; Enter zählt weiter, ein leerer Punkt beendet sie)</span>
               </div>
-              <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main col-span-2">
+              <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main col-span-2">
                 <TableIcon className="w-3.5 h-3.5 text-accent shrink-0" />
                 <span>/table oder /tabelle (Tabelle mit Kopfzeile)</span>
               </div>
-              <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main">
+              <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main">
                 <KeyRound className="w-3.5 h-3.5 text-accent" />
                 <span>/hidden (Wert verstecken, z. B. ein Passwort)</span>
               </div>
-              <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main">
+              <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main">
                 <span className="text-accent font-bold">💬</span>
                 <span>/callout (Hinweis-Box)</span>
               </div>
-              <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main">
+              <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main">
                 <span className="text-status-warn font-bold">⚠</span>
                 <span>/warn, /fail (Warnung, Fehler)</span>
               </div>
-              <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main">
+              <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main">
                 <span className="text-accent font-bold">—</span>
                 <span>/divider (Trennlinie)</span>
               </div>
-              <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main col-span-2">
+              <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main col-span-2">
                 <span className="text-accent font-bold">🖼️</span>
                 <span>/image oder /bild (Bild hochladen, fotografieren, einfügen oder per Link; nur im leeren Punkt)</span>
               </div>
-              <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main col-span-2">
+              <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main col-span-2">
                 <Shapes className="w-3.5 h-3.5 text-accent shrink-0" />
                 <span>/canvas oder /zeichnung (Zeichnung mit Formen, Pfeilen, Text und Freihand)</span>
               </div>
-              <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main col-span-2">
+              <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main col-span-2">
                 <span className="text-accent font-bold">📤</span>
                 <span>/extract oder /notiz (Punkt mit allen Unterpunkten in eine neue oder eine bestehende Notiz auslagern, Auswahl wie am Knopf, an seiner Stelle bleibt ein [[Link]]; der Knopf „Notiz zurückholen“ am Link macht das wieder rückgängig)</span>
               </div>
-              <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main col-span-2">
+              <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main col-span-2">
                 <span className="text-accent font-bold">🎙️</span>
                 <span>/audio (Sprachnotiz aufnehmen: grüner Knopf startet, roter speichert; oder Audiodatei hochladen)</span>
               </div>
-              <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main col-span-2">
+              <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main col-span-2">
                 <span className="text-accent font-bold">🗣️</span>
                 <span>/diktat (sprechen statt tippen: startet sofort, Tipp auf „Stopp“ setzt den Text in den Punkt)</span>
               </div>
@@ -246,16 +246,16 @@ const de: HelpContent = {
         <div className="space-y-2 text-muted leading-relaxed">
           <ul className="space-y-1.5">
             <li>
-              <strong className="text-main">Anlegen:</strong> Tippe <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">/canvas</kbd> (oder <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">/zeichnung</kbd>, <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">/skizze</kbd>) in einen leeren Punkt; der Editor öffnet sich im Vollbild. Esc oder „Fertig“ speichert und schließt.
+              <strong className="text-main">Anlegen:</strong> Tippe <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">/canvas</kbd> (oder <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">/zeichnung</kbd>, <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">/skizze</kbd>) in einen leeren Punkt; der Editor öffnet sich im Vollbild. Esc oder „Fertig“ speichert und schließt.
             </li>
             <li>
-              <strong className="text-main">Werkzeuge:</strong> Auswählen <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">V</kbd>, Verschieben <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">H</kbd> (oder Leertaste gedrückt halten), Rechteck <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">R</kbd>, Ellipse <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">O</kbd>, Raute <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">D</kbd>, Pfeil <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">A</kbd>, Freihand <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">P</kbd>, Text <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">T</kbd>, Radierer <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">E</kbd>. Mit Umschalt werden Rechteck und Ellipse zu Quadrat und Kreis, <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">G</kbd> schaltet das Gitter mit Einrasten ein und aus. Linienfarbe, Füllung, Stärke und gestrichelt stellst du an der ausgewählten Form ein.
+              <strong className="text-main">Werkzeuge:</strong> Auswählen <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">V</kbd>, Verschieben <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">H</kbd> (oder Leertaste gedrückt halten), Rechteck <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">R</kbd>, Ellipse <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">O</kbd>, Raute <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">D</kbd>, Pfeil <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">A</kbd>, Freihand <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">P</kbd>, Text <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">T</kbd>, Radierer <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">E</kbd>. Mit Umschalt werden Rechteck und Ellipse zu Quadrat und Kreis, <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">G</kbd> schaltet das Gitter mit Einrasten ein und aus. Linienfarbe, Füllung, Stärke und gestrichelt stellst du an der ausgewählten Form ein.
             </li>
             <li>
               <strong className="text-main">Text und Pfeile:</strong> Doppelklick (oder Enter) auf eine Form schreibt Text hinein, Doppelklick auf einen Pfeil gibt ihm eine Beschriftung wie „ja“ oder „nein“. Pfeile docken an Formen an und wandern beim Verschieben mit; sie verlaufen gerade, gebogen oder eckig. Bei eckigen Pfeilen bestimmst du die Andockstelle, indem du das Ende an eine Seite der Form ziehst (in der Mitte rastet es ein); jedes Stück hat einen Griff zum Verschieben, ein Doppelklick auf einen vollen Griff entfernt das Stück. Angedockte Pfeile lösen sich nur über ihr Ende.
             </li>
             <li>
-              <strong className="text-main">Bearbeiten:</strong> <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Strg + Z</kbd> / <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Strg + Y</kbd> rückgängig und wiederholen, <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Strg + D</kbd> dupliziert, <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Strg + C</kbd> / <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Strg + V</kbd> kopiert und fügt ein, <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Entf</kbd> löscht, die Pfeiltasten schieben die Auswahl.
+              <strong className="text-main">Bearbeiten:</strong> <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">Strg + Z</kbd> / <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">Strg + Y</kbd> rückgängig und wiederholen, <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">Strg + D</kbd> dupliziert, <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">Strg + C</kbd> / <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">Strg + V</kbd> kopiert und fügt ein, <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">Entf</kbd> löscht, die Pfeiltasten schieben die Auswahl.
             </li>
             <li>
               <strong className="text-main">In der Notiz:</strong> Die Zeichnung füllt die Breite der Notiz. Ein Klick hinein, dann verschiebt Ziehen den Ausschnitt, Strg + Mausrad oder zwei Finger zoomen; das Mausrad allein scrollt weiter die Seite. Ein weiterer Klick beendet das, ein nicht gespeicherter Ausschnitt gleitet zurück. Die Unterkante ziehen ändert die Höhe. „Ansicht speichern“ hält Ausschnitt, Zoom und Höhe für alle fest. Der Größen-Knopf schaltet zwischen der empfohlenen Größe und „alles groß“ (hohe Zeichnungen) bzw. der empfohlenen Höhe zum seitlichen Verschieben (breite Zeichnungen) um. Doppelklick oder „Bearbeiten“ öffnet den Editor; er startet mit der Hand (nur die Ansicht bewegt sich), zum Ändern wählst du ein anderes Werkzeug. Der Knopf mit den Pfeilen neben „Fertig“ verlässt ihn ohne zu speichern und fragt bei Änderungen nach.
@@ -285,10 +285,10 @@ const de: HelpContent = {
         <div className="space-y-2 text-muted leading-relaxed">
           <ul className="space-y-1.5">
             <li>
-              <strong className="text-main">Anlegen:</strong> Tippe <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">/table</kbd> (oder <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">/tabelle</kbd>) in einen Punkt: es entsteht eine Tabelle mit 2 Spalten und 2 Zeilen, Text aus dem Punkt landet in der ersten Zelle. Die erste Zeile ist die Kopfzeile (fett).
+              <strong className="text-main">Anlegen:</strong> Tippe <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">/table</kbd> (oder <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">/tabelle</kbd>) in einen Punkt: es entsteht eine Tabelle mit 2 Spalten und 2 Zeilen, Text aus dem Punkt landet in der ersten Zelle. Die erste Zeile ist die Kopfzeile (fett).
             </li>
             <li>
-              <strong className="text-main">Tippen:</strong> <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Enter</kbd> fügt unter der aktuellen Zeile eine neue ein, <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Tab</kbd> / <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Shift + Tab</kbd> springen von Zelle zu Zelle (Tab in der letzten Zelle legt eine neue Zeile an), die Pfeiltasten wechseln die Zeile und verlassen die Tabelle oben und unten. <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Backspace</kbd> in einer leeren Zeile löscht sie, in einer ganz leeren Tabelle die Tabelle. Fett, kursiv, Links und #Hashtags gehen wie im Text.
+              <strong className="text-main">Tippen:</strong> <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">Enter</kbd> fügt unter der aktuellen Zeile eine neue ein, <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">Tab</kbd> / <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">Shift + Tab</kbd> springen von Zelle zu Zelle (Tab in der letzten Zelle legt eine neue Zeile an), die Pfeiltasten wechseln die Zeile und verlassen die Tabelle oben und unten. <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">Backspace</kbd> in einer leeren Zeile löscht sie, in einer ganz leeren Tabelle die Tabelle. <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">Enter</kbd> in einer leeren letzten Zeile entfernt sie und legt einen neuen Punkt unter der Tabelle an. Fett, kursiv, Links und #Hashtags gehen wie im Text.
             </li>
             <li>
               <strong className="text-main">Spalten:</strong> Das <strong className="text-main">+</strong> rechts neben der Tabelle fügt eine Spalte hinzu (am Desktop erscheint es, wenn die Maus über der Tabelle ist). Darunter öffnen die drei Punkte das Menü: die Spalte mit dem Cursor links, zentriert oder rechts ausrichten (bleibt in der Markdown-Tabelle erhalten), Spalte links oder rechts einfügen, Zeile oder Spalte mit dem Cursor löschen, den Punkt ein- oder ausrücken.
@@ -328,16 +328,16 @@ const de: HelpContent = {
           </p>
           <ul className="space-y-1.5">
             <li>
-              <strong className="text-main">WikiLinks:</strong> Mit <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Strg + L</kbd> oder <code className="text-accent bg-panel px-1 py-0.5 rounded font-mono">/link</code> verknüpfst du eine andere Notiz oder einen einzelnen Punkt; ein Klick öffnet das Ziel. Der Link zeigt immer den aktuellen Titel der Notiz und funktioniert weiter, wenn du sie umbenennst oder verschiebst, auch bei zwei Notizen mit gleichem Namen. Markierst du vorher Text, wird er zum eigenen Linktext. Von Hand geht auch <code className="text-accent bg-panel px-1 py-0.5 rounded font-mono">[[Name der Notiz]]</code>. Gibt es die verlinkte Notiz nicht mehr, fragt MindSift beim Klick, ob sie neu angelegt oder der Link entfernt werden soll.
+              <strong className="text-main">WikiLinks:</strong> Mit <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">Strg + L</kbd> oder <code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">/link</code> verknüpfst du eine andere Notiz oder einen einzelnen Punkt; ein Klick öffnet das Ziel. Der Link zeigt immer den aktuellen Titel der Notiz und funktioniert weiter, wenn du sie umbenennst oder verschiebst, auch bei zwei Notizen mit gleichem Namen. Markierst du vorher Text, wird er zum eigenen Linktext. Von Hand geht auch <code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">[[Name der Notiz]]</code>. Gibt es die verlinkte Notiz nicht mehr, fragt MindSift beim Klick, ob sie neu angelegt oder der Link entfernt werden soll.
             </li>
             <li>
-              <strong className="text-main">Hashtags:</strong> Tippe <code className="text-accent bg-panel px-1 py-0.5 rounded font-mono">#Projekt</code> oder <code className="text-accent bg-panel px-1 py-0.5 rounded font-mono">#Wichtig</code> an beliebiger Stelle in den Text. Hashtags werden farbig hervorgehoben und indiziert.
+              <strong className="text-main">Hashtags:</strong> Tippe <code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">#Projekt</code> oder <code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">#Wichtig</code> an beliebiger Stelle in den Text. Hashtags werden farbig hervorgehoben und indiziert.
             </li>
             <li>
               <strong className="text-main">Ansicht „Tags & Filter“:</strong> Im oberen Workspace-Reiter findest du die Tag-Übersicht. Hier siehst du alle verwendeten Hashtags, kannst Fundstellen aus allen Dokumenten gebündelt durchsuchen und sogar eigene freie Notizen auf Tag-Seiten hinterlegen.
             </li>
             <li>
-              <strong className="text-main">Rückverweise:</strong> Am Ende jeder Notiz siehst du unter „Verlinkt auf diese Notiz“, welche anderen Notizen sie mit <code className="text-accent bg-panel px-1 py-0.5 rounded font-mono">[[Titel]]</code> verlinken. Ein Klick auf die Fundstelle springt direkt dorthin.
+              <strong className="text-main">Rückverweise:</strong> Am Ende jeder Notiz siehst du unter „Verlinkt auf diese Notiz“, welche anderen Notizen sie mit <code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">[[Titel]]</code> verlinken. Ein Klick auf die Fundstelle springt direkt dorthin.
             </li>
             <li>
               <strong className="text-main">Papierkorb:</strong> Gelöschte Notizen (auch aus gelöschten Ordnern) landen im „Papierkorb“ unten in der Ordnerleiste bzw. im mobilen Menü. Dort kannst du sie schreibgeschützt ansehen, wiederherstellen oder endgültig löschen. Solange eine Notiz im Papierkorb liegt, sehen sie auch die Personen nicht, mit denen sie geteilt war. Nach der Frist aus Kontoeinstellungen → Aufbewahrung (Standard 30 Tage) wird sie endgültig gelöscht. Gelöschte Aufgaben liegen im Reiter „Papierkorb“ der Aufgaben, verworfene Gedanken im Papierkorb der Triage.
@@ -440,7 +440,7 @@ const de: HelpContent = {
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
           <p>
-            Im Workspace-Tab <strong className="text-main">„Globale To-Dos“</strong> werden automatisch sämtliche unerledigten Checkboxen (<code className="text-accent bg-panel px-1 py-0.5 rounded font-mono">- [ ]</code>) aus allen deinen Notizen gesammelt.
+            Im Workspace-Tab <strong className="text-main">„Globale To-Dos“</strong> werden automatisch sämtliche unerledigten Checkboxen (<code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">- [ ]</code>) aus allen deinen Notizen gesammelt.
           </p>
           <ul className="space-y-1.5">
             <li>
@@ -473,7 +473,7 @@ const de: HelpContent = {
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
           <p>
-            Drücke <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Cmd + K</kbd> / <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Strg + K</kbd> oder <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">/</kbd> (wenn kein Textfeld aktiv ist), um die globale Suche zu öffnen:
+            Drücke <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">Cmd + K</kbd> / <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">Strg + K</kbd> oder <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">/</kbd> (wenn kein Textfeld aktiv ist), um die globale Suche zu öffnen:
           </p>
           <ul className="space-y-1.5 list-disc list-inside">
             <li>
@@ -483,7 +483,7 @@ const de: HelpContent = {
               <strong className="text-main">Sicherheit:</strong> Zeigt nur Inhalte, auf die du tatsächlich Zugriff hast (eigene sowie freigegebene Notizen, Aufgabenlisten und Listen).
             </li>
             <li>
-              <strong className="text-main">Tastaturnavigation:</strong> Mit <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">↑</kbd> und <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">↓</kbd> blättern, mit <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Enter</kbd> Treffer direkt öffnen (Notizen direkt am gefundenen Block).
+              <strong className="text-main">Tastaturnavigation:</strong> Mit <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">↑</kbd> und <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">↓</kbd> blättern, mit <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">Enter</kbd> Treffer direkt öffnen (Notizen direkt am gefundenen Block).
             </li>
           </ul>
         </div>
@@ -514,7 +514,7 @@ const de: HelpContent = {
           </p>
           <ul className="space-y-1.5">
             <li>
-              <strong className="text-main">Per Tastatur:</strong> Drücke irgendwo in der App <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">C</kbd> (sofern du nicht gerade in einem Textfeld tippst). <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Enter</kbd> speichert, das Fenster bleibt für den nächsten Gedanken offen; <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Esc</kbd> oder ein Klick daneben schließt es.
+              <strong className="text-main">Per Tastatur:</strong> Drücke irgendwo in der App <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">C</kbd> (sofern du nicht gerade in einem Textfeld tippst). <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">Enter</kbd> speichert, das Fenster bleibt für den nächsten Gedanken offen; <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">Esc</kbd> oder ein Klick daneben schließt es.
             </li>
             <li>
               <strong className="text-main">Sprach-Diktat:</strong> Klicke auf das Mikrofon-Symbol (<Mic className="w-3.5 h-3.5 inline text-accent" />) für kontinuierliche Spracheingabe über die Web Speech API. Gesprochene Gedanken werden automatisch mit dem Tag <code className="text-accent font-mono">#diktat</code> versehen. Auf dem Smartphone kannst du außerdem den runden <strong className="text-main">+</strong>-Button in der unteren Leiste gedrückt halten, um direkt einzusprechen – beim Loslassen landet der Text sofort im Posteingang (nach oben ziehen bricht ab).
@@ -551,7 +551,7 @@ const de: HelpContent = {
             Im Triage-Deck wird jeder gesammelte Gedanke Karte für Karte vorgelegt. Du entscheidest blitzschnell:
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs pt-1">
-            <div className="p-2.5 bg-panel border border-border rounded">
+            <div className="p-2.5 bg-panel border border-border rounded-sm">
               <span className="font-semibold text-main block mb-1">Tastatur (Desktop):</span>
               <ul className="space-y-1 font-mono text-[11px]">
                 <li><strong className="text-status-err">H</strong> oder <strong>←</strong> : Wegwerfen (Papierkorb)</li>
@@ -561,7 +561,7 @@ const de: HelpContent = {
                 <li><strong className="text-muted">Leertaste</strong> : Später (ans Stapelende)</li>
               </ul>
             </div>
-            <div className="p-2.5 bg-panel border border-border rounded">
+            <div className="p-2.5 bg-panel border border-border rounded-sm">
               <span className="font-semibold text-main block mb-1">Wischgesten (Touch & Mobile):</span>
               <ul className="space-y-1 text-xs">
                 <li><strong className="text-status-err">Nach links wischen:</strong> Wegwerfen</li>
@@ -600,13 +600,13 @@ const de: HelpContent = {
             MindSift hat eine API. Unter <em className="text-main">Kontoeinstellungen → API</em> erzeugst du persönliche Schlüssel und legst mit Schaltern fest, was jeder darf: Aufgaben, Listen, Notizen und die Inbox jeweils lesen, anlegen oder ändern. Diese Rechte gelten für beide Zugänge gleich; Notizen sowie Lesen und Sortieren der Inbox gibt es nur über MCP. Einstellungen erreicht ein Schlüssel nie.
           </p>
           <p>
-            <strong className="text-main">curl und Smart Home:</strong> Mit Leserecht liefert z. B. <code className="text-accent bg-panel px-1 py-0.5 rounded font-mono">GET /api/v1/tasks?due=today&amp;status=open</code> alles, was heute ansteht, etwa für einen Home-Assistant-Sensor. Weitere Filter: <code className="font-mono">due=overdue</code>, ein Datum, <code className="font-mono">taskListId</code>. Listen kommen über <code className="font-mono">GET /api/v1/lists</code>. Mit Änderungsrecht hakst du per <code className="font-mono">PATCH /api/v1/thoughts/ID</code> ab. Die Einstellungen zeigen fertige Beispiele.
+            <strong className="text-main">curl und Smart Home:</strong> Mit Leserecht liefert z. B. <code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">GET /api/v1/tasks?due=today&amp;status=open</code> alles, was heute ansteht, etwa für einen Home-Assistant-Sensor. Weitere Filter: <code className="font-mono">due=overdue</code>, ein Datum, <code className="font-mono">taskListId</code>. Listen kommen über <code className="font-mono">GET /api/v1/lists</code>. Mit Änderungsrecht hakst du per <code className="font-mono">PATCH /api/v1/thoughts/ID</code> ab. Die Einstellungen zeigen fertige Beispiele.
           </p>
           <p>
-            <strong className="text-main">Einliefern:</strong> <code className="text-accent bg-panel px-1 py-0.5 rounded font-mono">POST /api/v1/webhooks/ingest</code> nimmt Gedanken aus iOS-Kurzbefehlen, Home Assistant oder n8n an. Mit dem Feld <code className="font-mono">"target"</code> wählst du das Ziel: <code className="font-mono">triage</code> (Standard), <code className="font-mono">task</code> (optional mit <code className="font-mono">taskListId</code>) oder <code className="font-mono">list_item</code> (mit <code className="font-mono">listId</code>).
+            <strong className="text-main">Einliefern:</strong> <code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">POST /api/v1/webhooks/ingest</code> nimmt Gedanken aus iOS-Kurzbefehlen, Home Assistant oder n8n an. Mit dem Feld <code className="font-mono">"target"</code> wählst du das Ziel: <code className="font-mono">triage</code> (Standard), <code className="font-mono">task</code> (optional mit <code className="font-mono">taskListId</code>) oder <code className="font-mono">list_item</code> (mit <code className="font-mono">listId</code>).
           </p>
           <p>
-            <strong className="text-main">KI-Agenten:</strong> Über MCP (<code className="text-accent bg-panel px-1 py-0.5 rounded font-mono">POST /api/v1/mcp</code>) lesen, anlegen, ändern, abhaken und löschen Claude Code, OpenAI Codex, Claude Desktop, Cursor und eigene Agenten deine Aufgaben, Listen und Notizen und sortieren die Inbox. Die Einstellungen zeigen den fertigen Befehl für jeden Agenten; ein Agent sieht nur die Werkzeuge, die der Schlüssel erlaubt.
+            <strong className="text-main">KI-Agenten:</strong> Über MCP (<code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">POST /api/v1/mcp</code>) lesen, anlegen, ändern, abhaken und löschen Claude Code, OpenAI Codex, Claude Desktop, Cursor und eigene Agenten deine Aufgaben, Listen und Notizen und sortieren die Inbox. Die Einstellungen zeigen den fertigen Befehl für jeden Agenten; ein Agent sieht nur die Werkzeuge, die der Schlüssel erlaubt.
           </p>
           <p>
             <strong className="text-main">Herkunft:</strong> Was ein Schlüssel anlegt oder ändert, trägt dauerhaft eine Badge mit seinem Namen, vorne ein Webhook-Symbol (API) oder ein Roboter (MCP). Fährst du darüber oder tippst darauf, siehst du, wer wann angelegt und zuletzt geändert hat.
@@ -767,7 +767,7 @@ const de: HelpContent = {
               <strong className="text-main">Theme wechseln:</strong> Im Profilmenü (dein Profilbild, am Desktop unten in der Leiste links) oder unter <em>Kontoeinstellungen → Darstellung &amp; Themes</em>.
             </li>
             <li>
-              <strong className="text-main">Eigenes Theme:</strong> Vorlage herunterladen oder einfügen, Farben und Rundungen anpassen, als <code className="text-accent bg-panel px-1 py-0.5 rounded font-mono">.css</code>-Datei hochladen oder einfügen und „Speichern &amp; aktivieren“. Das Theme greift sofort und steht dir auf allen Geräten zur Verfügung.
+              <strong className="text-main">Eigenes Theme:</strong> Vorlage herunterladen oder einfügen, Farben und Rundungen anpassen, als <code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">.css</code>-Datei hochladen oder einfügen und „Speichern &amp; aktivieren“. Das Theme greift sofort und steht dir auf allen Geräten zur Verfügung.
             </li>
           </ul>
         </div>

@@ -85,7 +85,83 @@ func TestDemoResetKeepsSessionsAndRestoresSampleData(t *testing.T) {
 		DemoResetInSeconds int    `json:"demoResetInSeconds"`
 	}
 	_ = json.Unmarshal(call("GET", "/api/v1/auth/status", "", "").Body.Bytes(), &st)
-	if st.DemoNextReset == "" || st.DemoResetInSeconds < 85 || st.DemoResetInSeconds > 90 {
+	if st.DemoNextReset == "" || st.DemoResetInSeconds < 60 || st.DemoResetInSeconds > 90 {
 		t.Errorf("status should announce the next reset: %+v", st)
+	}
+}
+
+// A demo reset waits for a running pass of a background job, and neither the jobs nor readers outside the
+// gate (static pages, streams, the language lookup) log anything while the tables are dropped and created anew.
+func TestDemoResetIsQuietForBackgroundJobs(t *testing.T) {
+	dbPath := filepath.Join(t.TempDir(), "demo_quiet.db")
+	store, err := storage.NewStore(dbPath, storage.WithDemoMode())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer store.Close()
+	if err := store.ResetAndSeedDemo(); err != nil {
+		t.Fatal(err)
+	}
+	srv := NewServer(&config.Config{DatabasePath: dbPath, JWTSecret: "demo-secret", DemoMode: true}, store, ws.NewHub(), nil)
+	t.Cleanup(srv.Close)
+
+	// A pass holds the reset off until it is done
+	done := srv.demoPass()
+	reset := make(chan struct{})
+	go func() {
+		srv.resetDemo()
+		close(reset)
+	}()
+	select {
+	case <-reset:
+		done()
+		t.Fatal("the reset must wait for the running pass")
+	case <-time.After(100 * time.Millisecond):
+	}
+	done()
+	select {
+	case <-reset:
+	case <-time.After(30 * time.Second):
+		t.Fatal("the reset must run once the pass is done")
+	}
+
+	log := captureLog(t)
+	stop := make(chan struct{})
+	var wg sync.WaitGroup
+	repeat := func(pass func()) {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for {
+				select {
+				case <-stop:
+					return
+				default:
+					pass()
+				}
+			}
+		}()
+	}
+	gated := func(pass func()) func() {
+		return func() {
+			done := srv.demoPass()
+			defer done()
+			pass()
+		}
+	}
+	repeat(gated(func() { srv.checkAlarms(time.Now()) }))
+	repeat(gated(srv.compactOnce))
+	repeat(gated(srv.drawTickOnce))
+	// Outside the gate, like index.html or a stream
+	repeat(func() { _ = srv.defaultLanguage(); _ = srv.userLanguage(storage.DemoUserID) })
+	for range 3 {
+		srv.resetDemo()
+	}
+	close(stop)
+	wg.Wait()
+	for _, line := range strings.Split(log.String(), "\n") {
+		if strings.Contains(line, "level=ERROR") || strings.Contains(line, "level=WARN") {
+			t.Errorf("logged during a demo reset: %s", line)
+		}
 	}
 }

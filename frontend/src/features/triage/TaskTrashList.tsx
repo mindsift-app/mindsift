@@ -25,7 +25,7 @@ export function TaskTrashList({ items, lists, showList, onRestore, onPurge }: Ta
           return (
             <div key={item.id} className="px-3 py-2 flex items-center justify-between gap-3 hover:bg-panel-hover">
               <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                <Trash className="w-4 h-4 text-faint flex-shrink-0" />
+                <Trash className="w-4 h-4 text-faint shrink-0" />
                 <div className="min-w-0">
                   <p className={`text-sm truncate ${item.isCompleted ? 'text-muted line-through' : 'text-main'}`}>{item.content}</p>
                   <p className="text-[11px] text-faint truncate">
@@ -42,7 +42,7 @@ export function TaskTrashList({ items, lists, showList, onRestore, onPurge }: Ta
                 </div>
               </div>
               {item.canEdit && (
-                <div className="flex items-center gap-2 flex-shrink-0">
+                <div className="flex items-center gap-2 shrink-0">
                   <button onClick={() => onRestore(item)} className="btn-action min-h-[38px] sm:min-h-0">
                     <RotateCcw className="w-3 h-3 text-accent" /> {t('triage:sheet.back')}
                   </button>

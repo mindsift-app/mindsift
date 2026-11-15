@@ -68,7 +68,7 @@ export const TriageTrash: React.FC<TriageTrashProps> = ({ onClose, onChanged }) 
                   <p className="text-sm text-main truncate">{item.content}</p>
                   {item.triagedAt && <p className="text-[11px] text-faint">{t('trash.discardedAt', { date: formatDeletedAt(item.triagedAt) })}</p>}
                 </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
+                <div className="flex items-center gap-2 shrink-0">
                   <button type="button" onClick={() => restore(item)} className="btn-action min-h-[38px] sm:min-h-0">
                     <RotateCcw className="w-3 h-3 text-accent" /> {t('sheet.back')}
                   </button>

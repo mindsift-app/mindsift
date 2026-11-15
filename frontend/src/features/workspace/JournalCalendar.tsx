@@ -67,7 +67,7 @@ export const JournalCalendar: React.FC<JournalCalendarProps> = ({ activeDate, en
             options={monthNames().map((m, i) => ({ value: String(i), label: m }))}
           />
         </div>
-        <div className="w-[4.5rem] shrink-0">
+        <div className="w-18 shrink-0">
           <SelectMenu
             ariaLabel={t('journal.year')}
             value={String(view.year)}

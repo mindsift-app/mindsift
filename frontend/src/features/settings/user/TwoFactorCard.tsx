@@ -203,13 +203,13 @@ export function TwoFactorCard({
         <>
           {done && (
             <div role="status" className="alert-ok flex items-center gap-2">
-              <Check className="w-4 h-4 text-status-ok flex-shrink-0" />
+              <Check className="w-4 h-4 text-status-ok shrink-0" />
               <span>{done}</span>
             </div>
           )}
           {error && !sheet && (
             <div role="alert" className="alert-err flex items-center gap-2">
-              <CircleAlert className="w-4 h-4 text-status-err flex-shrink-0" />
+              <CircleAlert className="w-4 h-4 text-status-err shrink-0" />
               <span>{error}</span>
             </div>
           )}

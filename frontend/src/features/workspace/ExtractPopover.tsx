@@ -115,7 +115,7 @@ export const ExtractPopover: React.FC<ExtractPopoverProps> = ({ x, y, align = 'r
       aria-label={t('extractMenu.title')}
       onKeyDown={onKeyDown}
       style={{ left: pos.left, top: pos.top, visibility: pos.ready ? 'visible' : 'hidden' }}
-      className="fixed z-[70] w-72 max-w-[calc(100vw-1rem)] p-1.5 bg-panel border border-border rounded-card shadow-panel text-xs text-main space-y-1"
+      className="fixed z-70 w-72 max-w-[calc(100vw-1rem)] p-1.5 bg-panel border border-border rounded-card shadow-panel text-xs text-main space-y-1"
     >
       <button type="button" onClick={() => choose(0)} onMouseMove={hoverRow(0)} className={rowClass(active === 0)}>
         <FilePlusCorner className="w-3.5 h-3.5 text-accent shrink-0" />
@@ -130,7 +130,7 @@ export const ExtractPopover: React.FC<ExtractPopoverProps> = ({ x, y, align = 'r
           onChange={(e) => setQuery(e.target.value)}
           {...NO_AUTOFILL}
           placeholder={t('extractMenu.search')}
-          className="flex-1 min-w-0 bg-transparent border-0 outline-none text-main placeholder:text-faint text-sm sm:text-xs"
+          className="flex-1 min-w-0 bg-transparent border-0 outline-hidden text-main placeholder:text-faint text-sm sm:text-xs"
         />
       </div>
       {results.length > 0 ? (

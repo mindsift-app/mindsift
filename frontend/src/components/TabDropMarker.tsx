@@ -4,7 +4,7 @@ export function TabDropMarker({ side }: { side: 'before' | 'after' | null }) {
   return (
     <span
       aria-hidden
-      className={`absolute top-0 bottom-0 w-0.5 bg-accent rounded-full pointer-events-none ${side === 'before' ? '-left-[3px]' : '-right-[3px]'}`}
+      className={`absolute top-0 bottom-0 w-0.5 bg-accent rounded-full pointer-events-none ${side === 'before' ? 'left-[-3px]' : 'right-[-3px]'}`}
     />
   );
 }

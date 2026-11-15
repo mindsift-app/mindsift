@@ -26,7 +26,7 @@ import {
 } from 'lucide-react';
 import type { HelpContent } from './types';
 
-const kbd = 'px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent';
+const kbd = 'px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent';
 
 // Spanish help: the same cards and shortcut table as the English and German ones
 const es: HelpContent = {
@@ -151,66 +151,66 @@ const es: HelpContent = {
         <div className="space-y-3 text-muted leading-relaxed">
           <div>
             <p className="mb-1.5">
-              Escribe <code className="text-accent bg-panel px-1 py-0.5 rounded font-mono">/</code> en un bloque para abrir el menú de tipos de bloque:
+              Escribe <code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">/</code> en un bloque para abrir el menú de tipos de bloque:
             </p>
             <div className="grid grid-cols-2 gap-1.5 font-mono text-[11px]">
-              <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main">
+              <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main">
                 <ListTodo className="w-3.5 h-3.5 text-accent" />
                 <span>/todo (tarea con casilla)</span>
               </div>
-              <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main">
+              <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main">
                 <LinkIcon className="w-3.5 h-3.5 text-accent" />
                 <span>/link (enlazar una nota)</span>
               </div>
-              <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main">
+              <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main">
                 <Heading1 className="w-3.5 h-3.5 text-accent" />
                 <span>/h1, /h2, /h3 (encabezados)</span>
               </div>
-              <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main">
+              <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main">
                 <Code className="w-3.5 h-3.5 text-accent" />
-                <span>/code (bloque de código)</span>
+                <span>/code (bloque de código; Enter dos veces al final lo deja)</span>
               </div>
-              <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main col-span-2">
+              <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main col-span-2">
                 <span className="text-accent font-bold">1.</span>
                 <span>/number o «1. » al principio (lista numerada; Intro sigue contando, un punto vacío la termina)</span>
               </div>
-              <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main col-span-2">
+              <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main col-span-2">
                 <TableIcon className="w-3.5 h-3.5 text-accent shrink-0" />
                 <span>/table o /tabla (tabla con fila de encabezado)</span>
               </div>
-              <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main">
+              <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main">
                 <KeyRound className="w-3.5 h-3.5 text-accent" />
                 <span>/hidden (ocultar un valor, p. ej. una contraseña)</span>
               </div>
-              <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main">
+              <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main">
                 <span className="text-accent font-bold">💬</span>
                 <span>/callout (cuadro destacado)</span>
               </div>
-              <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main">
+              <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main">
                 <span className="text-status-warn font-bold">⚠</span>
                 <span>/warn, /fail (advertencia, error)</span>
               </div>
-              <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main">
+              <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main">
                 <span className="text-accent font-bold">—</span>
                 <span>/divider (separador)</span>
               </div>
-              <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main col-span-2">
+              <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main col-span-2">
                 <span className="text-accent font-bold">🖼️</span>
                 <span>/image (subir, fotografiar, pegar o enlazar una imagen; solo en un punto vacío)</span>
               </div>
-              <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main col-span-2">
+              <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main col-span-2">
                 <Shapes className="w-3.5 h-3.5 text-accent shrink-0" />
                 <span>/canvas (dibujo con formas, flechas, texto y trazo libre)</span>
               </div>
-              <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main col-span-2">
+              <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main col-span-2">
                 <span className="text-accent font-bold">📤</span>
                 <span>/extract (mover el punto con todos sus subpuntos a una nota nueva o existente, elegida como con el botón, dejando un [[enlace]]; el botón «Recuperar nota» en el enlace lo revierte)</span>
               </div>
-              <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main col-span-2">
+              <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main col-span-2">
                 <span className="text-accent font-bold">🎙️</span>
                 <span>/audio (grabar una nota de voz: el botón verde inicia, el rojo guarda; o subir un archivo de audio)</span>
               </div>
-              <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main col-span-2">
+              <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main col-span-2">
                 <span className="text-accent font-bold">🗣️</span>
                 <span>/diktat (hablar en lugar de escribir: empieza al instante, pulsar «Detener» inserta el texto en el punto)</span>
               </div>
@@ -245,16 +245,16 @@ const es: HelpContent = {
         <div className="space-y-2 text-muted leading-relaxed">
           <ul className="space-y-1.5">
             <li>
-              <strong className="text-main">Crear uno:</strong> Escribe <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">/canvas</kbd> (o <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">/draw</kbd>, <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">/sketch</kbd>) en un punto vacío; el editor se abre a pantalla completa. Esc o «Listo» guarda y cierra.
+              <strong className="text-main">Crear uno:</strong> Escribe <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">/canvas</kbd> (o <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">/draw</kbd>, <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">/sketch</kbd>) en un punto vacío; el editor se abre a pantalla completa. Esc o «Listo» guarda y cierra.
             </li>
             <li>
-              <strong className="text-main">Herramientas:</strong> Seleccionar <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">V</kbd>, desplazar <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">H</kbd> (o mantener la barra espaciadora), rectángulo <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">R</kbd>, elipse <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">O</kbd>, rombo <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">D</kbd>, flecha <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">A</kbd>, trazo libre <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">P</kbd>, texto <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">T</kbd>, borrador <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">E</kbd>. Con Mayús, rectángulos y elipses se vuelven cuadrados y círculos; <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">G</kbd> activa y desactiva la cuadrícula con ajuste. Color de línea, relleno, grosor y discontinuo se ajustan en la forma seleccionada.
+              <strong className="text-main">Herramientas:</strong> Seleccionar <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">V</kbd>, desplazar <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">H</kbd> (o mantener la barra espaciadora), rectángulo <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">R</kbd>, elipse <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">O</kbd>, rombo <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">D</kbd>, flecha <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">A</kbd>, trazo libre <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">P</kbd>, texto <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">T</kbd>, borrador <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">E</kbd>. Con Mayús, rectángulos y elipses se vuelven cuadrados y círculos; <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">G</kbd> activa y desactiva la cuadrícula con ajuste. Color de línea, relleno, grosor y discontinuo se ajustan en la forma seleccionada.
             </li>
             <li>
               <strong className="text-main">Texto y flechas:</strong> Doble clic (o Intro) en una forma para escribir dentro, doble clic en una flecha para ponerle una etiqueta como «sí» o «no». Las flechas se acoplan a las formas y las siguen al moverlas; pueden ser rectas, curvas o en ángulo. En las flechas en ángulo eliges dónde se acoplan arrastrando el extremo a un lado de la forma (en el centro se ajusta); cada tramo tiene un tirador para moverlo, doble clic en un tirador lleno quita el tramo. Las flechas acopladas solo se sueltan por su extremo.
             </li>
             <li>
-              <strong className="text-main">Editar:</strong> <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Ctrl + Z</kbd> / <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Ctrl + Y</kbd> deshacen y rehacen, <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Ctrl + D</kbd> duplica, <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Ctrl + C</kbd> / <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Ctrl + V</kbd> copian y pegan, <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Supr</kbd> borra, las flechas del teclado mueven la selección.
+              <strong className="text-main">Editar:</strong> <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">Ctrl + Z</kbd> / <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">Ctrl + Y</kbd> deshacen y rehacen, <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">Ctrl + D</kbd> duplica, <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">Ctrl + C</kbd> / <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">Ctrl + V</kbd> copian y pegan, <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">Supr</kbd> borra, las flechas del teclado mueven la selección.
             </li>
             <li>
               <strong className="text-main">En la nota:</strong> El dibujo ocupa el ancho de la nota. Haz clic dentro; luego arrastrar mueve la vista y Ctrl + rueda o dos dedos hacen zoom; la rueda sola sigue desplazando la página. Otro clic lo termina, una vista sin guardar vuelve suavemente. Arrastra el borde inferior para cambiar la altura. «Guardar vista» fija sección, zoom y altura para todos, El botón de tamaño cambia entre el tamaño recomendado y «todo en grande» (dibujos altos) o la altura recomendada para desplazar de lado (dibujos anchos). Doble clic o «Editar» abre el editor; empieza con la mano (solo se mueve la vista), elige otra herramienta para cambiar algo. El botón de las flechas junto a «Listo» sale sin guardar y pregunta antes si hay cambios.
@@ -284,10 +284,10 @@ const es: HelpContent = {
         <div className="space-y-2 text-muted leading-relaxed">
           <ul className="space-y-1.5">
             <li>
-              <strong className="text-main">Crear una:</strong> Escribe <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">/table</kbd> (o <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">/tabla</kbd>) en un punto: aparece una tabla de 2 columnas y 2 filas, el texto que ya había en el punto pasa a la primera celda. La primera fila es el encabezado (en negrita).
+              <strong className="text-main">Crear una:</strong> Escribe <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">/table</kbd> (o <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">/tabla</kbd>) en un punto: aparece una tabla de 2 columnas y 2 filas, el texto que ya había en el punto pasa a la primera celda. La primera fila es el encabezado (en negrita).
             </li>
             <li>
-              <strong className="text-main">Escribir:</strong> <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Enter</kbd> añade una fila debajo de la actual, <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Tab</kbd> / <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Shift + Tab</kbd> saltan de celda en celda (Tab en la última celda añade una fila), las flechas cambian de fila y salen de la tabla por arriba y por abajo. <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Backspace</kbd> en una fila vacía la elimina; en una tabla totalmente vacía, la tabla. Negrita, cursiva, enlaces y #hashtags funcionan como en el texto.
+              <strong className="text-main">Escribir:</strong> <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">Enter</kbd> añade una fila debajo de la actual, <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">Tab</kbd> / <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">Shift + Tab</kbd> saltan de celda en celda (Tab en la última celda añade una fila), las flechas cambian de fila y salen de la tabla por arriba y por abajo. <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">Backspace</kbd> en una fila vacía la elimina; en una tabla totalmente vacía, la tabla. <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">Enter</kbd> en una última fila vacía la elimina y añade un punto nuevo debajo de la tabla. Negrita, cursiva, enlaces y #hashtags funcionan como en el texto.
             </li>
             <li>
               <strong className="text-main">Columnas:</strong> El <strong className="text-main">+</strong> a la derecha de la tabla añade una columna (en el escritorio aparece al pasar el ratón por la tabla). Debajo, los tres puntos abren el menú: alinear la columna del cursor a la izquierda, al centro o a la derecha (se conserva en la tabla Markdown), insertar una columna a la izquierda o a la derecha, eliminar la fila o la columna del cursor, aumentar o reducir la sangría del punto.
@@ -317,16 +317,16 @@ const es: HelpContent = {
           <p>En MindSift, las notas y pensamientos pueden conectarse entre sí de múltiples formas:</p>
           <ul className="space-y-1.5">
             <li>
-              <strong className="text-main">Wiki links:</strong> Con <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Ctrl + L</kbd> o <code className="text-accent bg-panel px-1 py-0.5 rounded font-mono">/link</code> enlazas otra nota o un punto concreto; un clic lo abre. El enlace muestra siempre el título actual de la nota y sigue funcionando si la renombras o la mueves, incluso con dos notas del mismo nombre. El texto que marques antes será el texto del enlace. A mano también vale <code className="text-accent bg-panel px-1 py-0.5 rounded font-mono">[[Nombre de la nota]]</code>. Si la nota enlazada ya no existe, al hacer clic se pregunta si crearla o quitar el enlace.
+              <strong className="text-main">Wiki links:</strong> Con <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">Ctrl + L</kbd> o <code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">/link</code> enlazas otra nota o un punto concreto; un clic lo abre. El enlace muestra siempre el título actual de la nota y sigue funcionando si la renombras o la mueves, incluso con dos notas del mismo nombre. El texto que marques antes será el texto del enlace. A mano también vale <code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">[[Nombre de la nota]]</code>. Si la nota enlazada ya no existe, al hacer clic se pregunta si crearla o quitar el enlace.
             </li>
             <li>
-              <strong className="text-main">Hashtags:</strong> escribe <code className="text-accent bg-panel px-1 py-0.5 rounded font-mono">#proyecto</code> o <code className="text-accent bg-panel px-1 py-0.5 rounded font-mono">#importante</code> en cualquier lugar del texto. Los hashtags se resaltan en color y se indexan.
+              <strong className="text-main">Hashtags:</strong> escribe <code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">#proyecto</code> o <code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">#importante</code> en cualquier lugar del texto. Los hashtags se resaltan en color y se indexan.
             </li>
             <li>
               <strong className="text-main">Vista «Etiquetas y filtros»:</strong> el resumen de etiquetas está en las pestañas del Workspace, arriba. Muestra todos los hashtags en uso, permite buscar sus apariciones en todos los documentos e incluso añadir notas libres en las páginas de etiquetas.
             </li>
             <li>
-              <strong className="text-main">Enlaces entrantes (backlinks):</strong> al final de cada nota, «Vinculado a esta nota» muestra qué otras notas la enlazan mediante <code className="text-accent bg-panel px-1 py-0.5 rounded font-mono">[[título]]</code>. Al hacer clic en un lugar, se salta directamente allí.
+              <strong className="text-main">Enlaces entrantes (backlinks):</strong> al final de cada nota, «Vinculado a esta nota» muestra qué otras notas la enlazan mediante <code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">[[título]]</code>. Al hacer clic en un lugar, se salta directamente allí.
             </li>
             <li>
               <strong className="text-main">Papelera:</strong> las notas eliminadas (también las de carpetas eliminadas) van a la «Papelera» en la parte inferior de la barra de carpetas o en el menú móvil. Allí puedes verlas en modo de solo lectura, restaurarlas o eliminarlas definitivamente. Mientras una nota está en la papelera, las personas con las que se compartió tampoco la ven. Tras el periodo establecido en Ajustes de la cuenta → Retención (por defecto 30 días) se elimina de forma permanente. Las tareas eliminadas se encuentran en la pestaña «Papelera» de tareas, y los pensamientos descartados en la papelera de triage.
@@ -401,7 +401,7 @@ const es: HelpContent = {
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
           <p>
-            La pestaña del Workspace <strong className="text-main">«Tareas»</strong> recopila automáticamente todas las casillas sin marcar (<code className="text-accent bg-panel px-1 py-0.5 rounded font-mono">- [ ]</code>) de todas tus notas.
+            La pestaña del Workspace <strong className="text-main">«Tareas»</strong> recopila automáticamente todas las casillas sin marcar (<code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">- [ ]</code>) de todas tus notas.
           </p>
           <ul className="space-y-1.5">
             <li>
@@ -477,7 +477,7 @@ const es: HelpContent = {
         <div className="space-y-2 text-muted leading-relaxed">
           <p>La pila de triage presenta cada pensamiento recopilado tarjeta por tarjeta. Decides en un instante:</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs pt-1">
-            <div className="p-2.5 bg-panel border border-border rounded">
+            <div className="p-2.5 bg-panel border border-border rounded-sm">
               <span className="font-semibold text-main block mb-1">Teclado (escritorio):</span>
               <ul className="space-y-1 font-mono text-[11px]">
                 <li><strong className="text-status-err">H</strong> o <strong>←</strong> : descartar (a la papelera)</li>
@@ -487,7 +487,7 @@ const es: HelpContent = {
                 <li><strong className="text-muted">Espacio</strong> : más tarde (al final de la pila)</li>
               </ul>
             </div>
-            <div className="p-2.5 bg-panel border border-border rounded">
+            <div className="p-2.5 bg-panel border border-border rounded-sm">
               <span className="font-semibold text-main block mb-1">Gestos de deslizamiento (táctil y móvil):</span>
               <ul className="space-y-1 text-xs">
                 <li><strong className="text-status-err">Deslizar a la izquierda:</strong> descartar</li>
@@ -526,13 +526,13 @@ const es: HelpContent = {
             MindSift cuenta con una API. En <em className="text-main">Ajustes de la cuenta → API</em> puedes crear claves personales e indicar mediante interruptores qué acciones puede realizar cada una: leer, crear o modificar tareas, listas, notas y la bandeja de entrada. Estos permisos se aplican por igual a ambos tipos de acceso; las notas y la lectura/clasificación de la bandeja de entrada solo están disponibles mediante MCP. Una clave nunca tiene acceso a los ajustes.
           </p>
           <p>
-            <strong className="text-main">curl y domótica:</strong> con acceso de lectura, <code className="text-accent bg-panel px-1 py-0.5 rounded font-mono">GET /api/v1/tasks?due=today&amp;status=open</code> devuelve todo lo que vence hoy, p. ej. para un sensor de Home Assistant. Más filtros: <code className="font-mono">due=overdue</code>, una fecha, <code className="font-mono">taskListId</code>. Las listas se obtienen mediante <code className="font-mono">GET /api/v1/lists</code>. Con acceso de modificación puedes tachar elementos mediante <code className="font-mono">PATCH /api/v1/thoughts/ID</code>. Los ajustes muestran ejemplos listos para usar.
+            <strong className="text-main">curl y domótica:</strong> con acceso de lectura, <code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">GET /api/v1/tasks?due=today&amp;status=open</code> devuelve todo lo que vence hoy, p. ej. para un sensor de Home Assistant. Más filtros: <code className="font-mono">due=overdue</code>, una fecha, <code className="font-mono">taskListId</code>. Las listas se obtienen mediante <code className="font-mono">GET /api/v1/lists</code>. Con acceso de modificación puedes tachar elementos mediante <code className="font-mono">PATCH /api/v1/thoughts/ID</code>. Los ajustes muestran ejemplos listos para usar.
           </p>
           <p>
-            <strong className="text-main">Envío:</strong> <code className="text-accent bg-panel px-1 py-0.5 rounded font-mono">POST /api/v1/webhooks/ingest</code> acepta pensamientos desde Atajos de iOS, Home Assistant o n8n. El campo <code className="font-mono">"target"</code> selecciona el destino: <code className="font-mono">triage</code> (por defecto), <code className="font-mono">task</code> (opcionalmente con <code className="font-mono">taskListId</code>) o <code className="font-mono">list_item</code> (con <code className="font-mono">listId</code>).
+            <strong className="text-main">Envío:</strong> <code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">POST /api/v1/webhooks/ingest</code> acepta pensamientos desde Atajos de iOS, Home Assistant o n8n. El campo <code className="font-mono">"target"</code> selecciona el destino: <code className="font-mono">triage</code> (por defecto), <code className="font-mono">task</code> (opcionalmente con <code className="font-mono">taskListId</code>) o <code className="font-mono">list_item</code> (con <code className="font-mono">listId</code>).
           </p>
           <p>
-            <strong className="text-main">Agentes de IA:</strong> mediante MCP (<code className="text-accent bg-panel px-1 py-0.5 rounded font-mono">POST /api/v1/mcp</code>), Claude Code, OpenAI Codex, Claude Desktop, Cursor y tus propios agentes pueden leer, crear, modificar, tachar y eliminar tareas, listas y notas, así como clasificar la bandeja de entrada. Los ajustes muestran el comando preparado para cada agente; un agente solo ve las herramientas permitidas por la clave.
+            <strong className="text-main">Agentes de IA:</strong> mediante MCP (<code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">POST /api/v1/mcp</code>), Claude Code, OpenAI Codex, Claude Desktop, Cursor y tus propios agentes pueden leer, crear, modificar, tachar y eliminar tareas, listas y notas, así como clasificar la bandeja de entrada. Los ajustes muestran el comando preparado para cada agente; un agente solo ve las herramientas permitidas por la clave.
           </p>
           <p>
             <strong className="text-main">Origen:</strong> cualquier elemento creado o modificado por una clave lleva un distintivo permanente con su nombre, precedido por un icono de webhook (API) o un robot (MCP). Al pasar el cursor o pulsar sobre él se muestra quién lo creó, quién lo modificó por última vez y cuándo.
@@ -673,7 +673,7 @@ const es: HelpContent = {
               <strong className="text-main">Cambiar de tema:</strong> en el menú de perfil (tu foto de perfil; en el escritorio, abajo en la barra de la izquierda) o en <em>Ajustes de la cuenta → Apariencia y temas</em>.
             </li>
             <li>
-              <strong className="text-main">Tema personalizado:</strong> descarga o pega la plantilla, ajusta colores y esquinas, súbela o pégala como archivo <code className="text-accent bg-panel px-1 py-0.5 rounded font-mono">.css</code> y selecciona «Guardar y activar». El tema se aplica de inmediato y estará disponible en todos tus dispositivos.
+              <strong className="text-main">Tema personalizado:</strong> descarga o pega la plantilla, ajusta colores y esquinas, súbela o pégala como archivo <code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">.css</code> y selecciona «Guardar y activar». El tema se aplica de inmediato y estará disponible en todos tus dispositivos.
             </li>
           </ul>
         </div>

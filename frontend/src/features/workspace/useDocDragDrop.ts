@@ -10,6 +10,7 @@ export const canTakeBranch = (d: Document) => !d.isArchived && (d.isOwner || d.p
 interface UseDocDragDropOptions {
   docs: Document[];
   setDocs: React.Dispatch<React.SetStateAction<Document[]>>;
+  setFolders: React.Dispatch<React.SetStateAction<string[]>>;
   selectedDocId: string | null;
   setSelectedDocId: (id: string | null) => void;
   setMobileShowDetail: (show: boolean) => void;
@@ -17,7 +18,8 @@ interface UseDocDragDropOptions {
   setMergeDialog: (dialog: { sourceId: string; targetId?: string } | null) => void;
   treeRef: React.RefObject<HTMLDivElement | null>;
   showToast: (text: string, actions?: { label: string; run: () => void }[]) => void;
-  loadWorkspaceData: () => Promise<void>;
+  // The note list alone fetched again (useWorkspaceData)
+  reloadDocList: () => Promise<void>;
   reloadTrash: () => void;
   onStatsChange: () => void;
 }
@@ -28,6 +30,7 @@ interface UseDocDragDropOptions {
 export function useDocDragDrop({
   docs,
   setDocs,
+  setFolders,
   selectedDocId,
   setSelectedDocId,
   setMobileShowDetail,
@@ -35,7 +38,7 @@ export function useDocDragDrop({
   setMergeDialog,
   treeRef,
   showToast,
-  loadWorkspaceData,
+  reloadDocList,
   reloadTrash,
   onStatsChange,
 }: UseDocDragDropOptions) {
@@ -177,7 +180,8 @@ export function useDocDragDrop({
           for (const id of trashed) {
             await api.restoreDocument(id).catch(() => {});
           }
-          await loadWorkspaceData();
+          // The folders follow the realtime events of the restores
+          await reloadDocList();
           reloadTrash();
           onStatsChange();
         },
@@ -323,7 +327,15 @@ export function useDocDragDrop({
     } else if (folderPath && folderPath !== targetFolder && !targetFolder.startsWith(`${folderPath}/`)) {
       triggerHaptic(15);
       try {
-        await api.moveFolder(folderPath, targetFolder);
+        const { newPath } = await api.moveFolder(folderPath, targetFolder);
+        // Shown in the new place at once; the moved notes also come as DOC_UPDATED, the folders are
+        // fetched again on WORKSPACE_FOLDERS_UPDATED (all tabs and devices)
+        const moved = (p: string) =>
+          p === folderPath ? newPath : p.startsWith(`${folderPath}/`) ? newPath + p.slice(folderPath.length) : p;
+        setFolders((prev) => Array.from(new Set(prev.map(moved))).sort());
+        setDocs((prev) =>
+          prev.map((d) => (d.folderPath && moved(d.folderPath) !== d.folderPath ? { ...d, folderPath: moved(d.folderPath) } : d))
+        );
         if (targetFolder) {
           const parts = targetFolder.split('/');
           let acc = '';
@@ -334,7 +346,6 @@ export function useDocDragDrop({
           }
           setExpandedFolders((prev) => ({ ...prev, ...expansions }));
         }
-        loadWorkspaceData();
       } catch {
         // ignore
       }

@@ -26,7 +26,7 @@ import {
 } from 'lucide-react';
 import type { HelpContent } from './types';
 
-const kbd = 'px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent';
+const kbd = 'px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent';
 
 // English help: the same cards and shortcut table as the German one (content/de.tsx)
 const en: HelpContent = {
@@ -104,66 +104,66 @@ const en: HelpContent = {
         <div className="space-y-3 text-muted leading-relaxed">
           <div>
             <p className="mb-1.5">
-              Type <code className="text-accent bg-panel px-1 py-0.5 rounded font-mono">/</code> in a block to open the menu of block types:
+              Type <code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">/</code> in a block to open the menu of block types:
             </p>
             <div className="grid grid-cols-2 gap-1.5 font-mono text-[11px]">
-              <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main">
+              <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main">
                 <ListTodo className="w-3.5 h-3.5 text-accent" />
                 <span>/todo (checkbox task)</span>
               </div>
-              <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main">
+              <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main">
                 <LinkIcon className="w-3.5 h-3.5 text-accent" />
                 <span>/link (link a note)</span>
               </div>
-              <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main">
+              <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main">
                 <Heading1 className="w-3.5 h-3.5 text-accent" />
                 <span>/h1, /h2, /h3 (headings)</span>
               </div>
-              <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main">
+              <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main">
                 <Code className="w-3.5 h-3.5 text-accent" />
-                <span>/code (code block)</span>
+                <span>/code (code block; Enter twice at the end leaves it)</span>
               </div>
-              <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main col-span-2">
+              <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main col-span-2">
                 <span className="text-accent font-bold">1.</span>
                 <span>/number or “1. ” at the start (numbered list; Enter counts on, an empty item ends it)</span>
               </div>
-              <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main col-span-2">
+              <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main col-span-2">
                 <TableIcon className="w-3.5 h-3.5 text-accent shrink-0" />
                 <span>/table (table with a header row)</span>
               </div>
-              <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main">
+              <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main">
                 <KeyRound className="w-3.5 h-3.5 text-accent" />
                 <span>/hidden (hide a value, e.g. a password)</span>
               </div>
-              <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main">
+              <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main">
                 <span className="text-accent font-bold">💬</span>
                 <span>/callout (callout box)</span>
               </div>
-              <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main">
+              <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main">
                 <span className="text-status-warn font-bold">⚠</span>
                 <span>/warn, /fail (warning, error)</span>
               </div>
-              <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main">
+              <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main">
                 <span className="text-accent font-bold">—</span>
                 <span>/divider (divider)</span>
               </div>
-              <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main col-span-2">
+              <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main col-span-2">
                 <span className="text-accent font-bold">🖼️</span>
                 <span>/image (upload, photograph, paste or link an image; only in an empty bullet)</span>
               </div>
-              <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main col-span-2">
+              <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main col-span-2">
                 <Shapes className="w-3.5 h-3.5 text-accent shrink-0" />
                 <span>/canvas (drawing with shapes, arrows, text and freehand)</span>
               </div>
-              <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main col-span-2">
+              <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main col-span-2">
                 <span className="text-accent font-bold">📤</span>
                 <span>/extract (move the bullet with all sub-bullets into a new or an existing note, chosen as with the button, leaving a [[link]] in its place; the “Pull note back” button at the link undoes it)</span>
               </div>
-              <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main col-span-2">
+              <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main col-span-2">
                 <span className="text-accent font-bold">🎙️</span>
                 <span>/audio (record a voice note: the green button starts, the red one saves; or upload an audio file)</span>
               </div>
-              <div className="p-1.5 bg-panel rounded border border-border flex items-center gap-1.5 text-main col-span-2">
+              <div className="p-1.5 bg-panel rounded-sm border border-border flex items-center gap-1.5 text-main col-span-2">
                 <span className="text-accent font-bold">🗣️</span>
                 <span>/diktat (speak instead of typing: starts right away, tapping “Stop” puts the text into the bullet)</span>
               </div>
@@ -198,16 +198,16 @@ const en: HelpContent = {
         <div className="space-y-2 text-muted leading-relaxed">
           <ul className="space-y-1.5">
             <li>
-              <strong className="text-main">Creating one:</strong> Type <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">/canvas</kbd> (or <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">/draw</kbd>, <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">/sketch</kbd>) in an empty bullet; the editor opens full screen. Esc or “Done” saves and closes it.
+              <strong className="text-main">Creating one:</strong> Type <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">/canvas</kbd> (or <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">/draw</kbd>, <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">/sketch</kbd>) in an empty bullet; the editor opens full screen. Esc or “Done” saves and closes it.
             </li>
             <li>
-              <strong className="text-main">Tools:</strong> Select <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">V</kbd>, pan <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">H</kbd> (or hold the space bar), rectangle <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">R</kbd>, ellipse <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">O</kbd>, diamond <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">D</kbd>, arrow <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">A</kbd>, freehand <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">P</kbd>, text <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">T</kbd>, eraser <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">E</kbd>. With Shift, rectangles and ellipses become squares and circles; <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">G</kbd> turns the snapping grid on and off. Set line colour, fill, width and dashes on the selected shape.
+              <strong className="text-main">Tools:</strong> Select <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">V</kbd>, pan <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">H</kbd> (or hold the space bar), rectangle <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">R</kbd>, ellipse <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">O</kbd>, diamond <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">D</kbd>, arrow <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">A</kbd>, freehand <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">P</kbd>, text <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">T</kbd>, eraser <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">E</kbd>. With Shift, rectangles and ellipses become squares and circles; <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">G</kbd> turns the snapping grid on and off. Set line colour, fill, width and dashes on the selected shape.
             </li>
             <li>
               <strong className="text-main">Text and arrows:</strong> Double-click (or Enter) a shape to write text into it, double-click an arrow to give it a label such as “yes” or “no”. Arrows dock to shapes and follow them when they move; they run straight, curved or elbowed. For elbowed arrows, choose where they dock by dragging the end onto a side of the shape (it snaps to the middle); every stretch has a handle to move it, a double-click on a full handle removes the stretch. Docked arrows come loose only by their end.
             </li>
             <li>
-              <strong className="text-main">Editing:</strong> <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Ctrl + Z</kbd> / <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Ctrl + Y</kbd> undo and redo, <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Ctrl + D</kbd> duplicates, <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Ctrl + C</kbd> / <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Ctrl + V</kbd> copy and paste, <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Del</kbd> deletes, the arrow keys nudge the selection.
+              <strong className="text-main">Editing:</strong> <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">Ctrl + Z</kbd> / <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">Ctrl + Y</kbd> undo and redo, <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">Ctrl + D</kbd> duplicates, <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">Ctrl + C</kbd> / <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">Ctrl + V</kbd> copy and paste, <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">Del</kbd> deletes, the arrow keys nudge the selection.
             </li>
             <li>
               <strong className="text-main">In the note:</strong> The drawing fills the width of the note. Click into it, then dragging moves the view and Ctrl + mouse wheel or two fingers zoom; the wheel alone keeps scrolling the page. Another click ends this, a view not saved glides back. Drag the lower edge to change the height. “Save view” keeps section, zoom and height for everyone, The size button switches between the recommended size and “all large” (tall drawings) or the recommended height to move sideways (wide drawings). Double-click or “Edit” opens the editor; it starts with the hand (only the view moves), choose another tool to change things. The button with the arrows next to “Done” leaves without saving and asks first if there are changes.
@@ -237,10 +237,10 @@ const en: HelpContent = {
         <div className="space-y-2 text-muted leading-relaxed">
           <ul className="space-y-1.5">
             <li>
-              <strong className="text-main">Creating one:</strong> Type <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">/table</kbd> in a bullet: a table with 2 columns and 2 rows appears, text already in the bullet goes into the first cell. The first row is the header (bold).
+              <strong className="text-main">Creating one:</strong> Type <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">/table</kbd> in a bullet: a table with 2 columns and 2 rows appears, text already in the bullet goes into the first cell. The first row is the header (bold).
             </li>
             <li>
-              <strong className="text-main">Typing:</strong> <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Enter</kbd> adds a row below the current one, <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Tab</kbd> / <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Shift + Tab</kbd> jump from cell to cell (Tab in the last cell adds a row), the arrow keys change rows and leave the table at the top and bottom. <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Backspace</kbd> in an empty row deletes it, in a completely empty table the table. Bold, italics, links and #hashtags work as in text.
+              <strong className="text-main">Typing:</strong> <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">Enter</kbd> adds a row below the current one, <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">Tab</kbd> / <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">Shift + Tab</kbd> jump from cell to cell (Tab in the last cell adds a row), the arrow keys change rows and leave the table at the top and bottom. <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">Backspace</kbd> in an empty row deletes it, in a completely empty table the table. <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">Enter</kbd> in an empty last row removes it and adds a new bullet below the table. Bold, italics, links and #hashtags work as in text.
             </li>
             <li>
               <strong className="text-main">Columns2:</strong> The <strong className="text-main">+</strong> right of the table adds a column (on a desktop it shows while the mouse is over the table). Below it, the three dots open the menu: align the column with the cursor left, centered or right (kept in the Markdown table), insert a column left or right, delete the row or column with the cursor, indent or outdent the bullet.
@@ -270,16 +270,16 @@ const en: HelpContent = {
           <p>Notes and thoughts can be linked with each other in many ways in MindSift:</p>
           <ul className="space-y-1.5">
             <li>
-              <strong className="text-main">Wiki links:</strong> With <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded font-mono text-[11px] text-accent">Ctrl + L</kbd> or <code className="text-accent bg-panel px-1 py-0.5 rounded font-mono">/link</code> you link another note or a single bullet; a click opens it. The link always shows the note's current title and keeps working when you rename or move it, even with two notes of the same name. Text you mark first becomes the link text. By hand, <code className="text-accent bg-panel px-1 py-0.5 rounded font-mono">[[Note name]]</code> works too. If the linked note no longer exists, a click asks whether to create it or remove the link.
+              <strong className="text-main">Wiki links:</strong> With <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">Ctrl + L</kbd> or <code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">/link</code> you link another note or a single bullet; a click opens it. The link always shows the note's current title and keeps working when you rename or move it, even with two notes of the same name. Text you mark first becomes the link text. By hand, <code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">[[Note name]]</code> works too. If the linked note no longer exists, a click asks whether to create it or remove the link.
             </li>
             <li>
-              <strong className="text-main">Hashtags:</strong> type <code className="text-accent bg-panel px-1 py-0.5 rounded font-mono">#project</code> or <code className="text-accent bg-panel px-1 py-0.5 rounded font-mono">#important</code> anywhere in the text. Hashtags are highlighted in color and indexed.
+              <strong className="text-main">Hashtags:</strong> type <code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">#project</code> or <code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">#important</code> anywhere in the text. Hashtags are highlighted in color and indexed.
             </li>
             <li>
               <strong className="text-main">“Tags & filters” view:</strong> the tag overview is in the workspace tabs at the top. It shows all hashtags in use, lets you search their places across all documents and even keep free notes on tag pages.
             </li>
             <li>
-              <strong className="text-main">Backlinks:</strong> at the end of every note, “Linked to this note” shows which other notes link to it with <code className="text-accent bg-panel px-1 py-0.5 rounded font-mono">[[title]]</code>. Clicking a place jumps right there.
+              <strong className="text-main">Backlinks:</strong> at the end of every note, “Linked to this note” shows which other notes link to it with <code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">[[title]]</code>. Clicking a place jumps right there.
             </li>
             <li>
               <strong className="text-main">Trash:</strong> deleted notes (also from deleted folders) land in the “Trash” at the bottom of the folder bar or in the mobile menu. There you can view them read-only, restore them or delete them for good. While a note is in the trash, the people it was shared with do not see it either. After the period set in Account settings → Retention (default 30 days) it is deleted for good. Deleted tasks are in the “Trash” tab of the tasks, discarded thoughts in the triage trash.
@@ -354,7 +354,7 @@ const en: HelpContent = {
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
           <p>
-            The workspace tab <strong className="text-main">“To-dos”</strong> automatically collects all unchecked checkboxes (<code className="text-accent bg-panel px-1 py-0.5 rounded font-mono">- [ ]</code>) from all your notes.
+            The workspace tab <strong className="text-main">“To-dos”</strong> automatically collects all unchecked checkboxes (<code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">- [ ]</code>) from all your notes.
           </p>
           <ul className="space-y-1.5">
             <li>
@@ -430,7 +430,7 @@ const en: HelpContent = {
         <div className="space-y-2 text-muted leading-relaxed">
           <p>The triage deck presents every collected thought card by card. You decide in a flash:</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs pt-1">
-            <div className="p-2.5 bg-panel border border-border rounded">
+            <div className="p-2.5 bg-panel border border-border rounded-sm">
               <span className="font-semibold text-main block mb-1">Keyboard (desktop):</span>
               <ul className="space-y-1 font-mono text-[11px]">
                 <li><strong className="text-status-err">H</strong> or <strong>←</strong> : discard (trash)</li>
@@ -440,7 +440,7 @@ const en: HelpContent = {
                 <li><strong className="text-muted">Space</strong> : later (to the end of the stack)</li>
               </ul>
             </div>
-            <div className="p-2.5 bg-panel border border-border rounded">
+            <div className="p-2.5 bg-panel border border-border rounded-sm">
               <span className="font-semibold text-main block mb-1">Swipe gestures (touch & mobile):</span>
               <ul className="space-y-1 text-xs">
                 <li><strong className="text-status-err">Swipe left:</strong> discard</li>
@@ -465,13 +465,13 @@ const en: HelpContent = {
             MindSift has an API. Under <em className="text-main">Account settings → API</em> you create personal keys and use switches to decide what each may do: read, create or change tasks, lists, notes and the inbox. These permissions apply to both kinds of access alike; notes as well as reading and sorting the inbox are available over MCP only. A key never reaches settings.
           </p>
           <p>
-            <strong className="text-main">curl and smart home:</strong> with read access, <code className="text-accent bg-panel px-1 py-0.5 rounded font-mono">GET /api/v1/tasks?due=today&amp;status=open</code> returns everything due today, e.g. for a Home Assistant sensor. More filters: <code className="font-mono">due=overdue</code>, a date, <code className="font-mono">taskListId</code>. Lists come via <code className="font-mono">GET /api/v1/lists</code>. With change access you check things off via <code className="font-mono">PATCH /api/v1/thoughts/ID</code>. The settings show ready-made examples.
+            <strong className="text-main">curl and smart home:</strong> with read access, <code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">GET /api/v1/tasks?due=today&amp;status=open</code> returns everything due today, e.g. for a Home Assistant sensor. More filters: <code className="font-mono">due=overdue</code>, a date, <code className="font-mono">taskListId</code>. Lists come via <code className="font-mono">GET /api/v1/lists</code>. With change access you check things off via <code className="font-mono">PATCH /api/v1/thoughts/ID</code>. The settings show ready-made examples.
           </p>
           <p>
-            <strong className="text-main">Delivering:</strong> <code className="text-accent bg-panel px-1 py-0.5 rounded font-mono">POST /api/v1/webhooks/ingest</code> accepts thoughts from iOS Shortcuts, Home Assistant or n8n. The field <code className="font-mono">"target"</code> chooses the target: <code className="font-mono">triage</code> (default), <code className="font-mono">task</code> (optionally with <code className="font-mono">taskListId</code>) or <code className="font-mono">list_item</code> (with <code className="font-mono">listId</code>).
+            <strong className="text-main">Delivering:</strong> <code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">POST /api/v1/webhooks/ingest</code> accepts thoughts from iOS Shortcuts, Home Assistant or n8n. The field <code className="font-mono">"target"</code> chooses the target: <code className="font-mono">triage</code> (default), <code className="font-mono">task</code> (optionally with <code className="font-mono">taskListId</code>) or <code className="font-mono">list_item</code> (with <code className="font-mono">listId</code>).
           </p>
           <p>
-            <strong className="text-main">AI agents:</strong> over MCP (<code className="text-accent bg-panel px-1 py-0.5 rounded font-mono">POST /api/v1/mcp</code>), Claude Code, OpenAI Codex, Claude Desktop, Cursor and your own agents read, create, change, check off and delete your tasks, lists and notes and sort the inbox. The settings show the ready command for every agent; an agent only sees the tools the key allows.
+            <strong className="text-main">AI agents:</strong> over MCP (<code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">POST /api/v1/mcp</code>), Claude Code, OpenAI Codex, Claude Desktop, Cursor and your own agents read, create, change, check off and delete your tasks, lists and notes and sort the inbox. The settings show the ready command for every agent; an agent only sees the tools the key allows.
           </p>
           <p>
             <strong className="text-main">Origin:</strong> whatever a key creates or changes carries a badge with its name for good, starting with a webhook icon (API) or a robot (MCP). Hover or tap it to see who created it and last changed it, and when.
@@ -600,7 +600,7 @@ const en: HelpContent = {
               <strong className="text-main">Switching themes:</strong> in the profile menu (your profile picture, on the desktop at the bottom of the bar on the left) or under <em>Account settings → Appearance &amp; themes</em>.
             </li>
             <li>
-              <strong className="text-main">Custom theme:</strong> download or paste the template, adjust colors and corners, upload or paste it as a <code className="text-accent bg-panel px-1 py-0.5 rounded font-mono">.css</code> file and choose “Save &amp; activate”. The theme applies right away and is available on all your devices.
+              <strong className="text-main">Custom theme:</strong> download or paste the template, adjust colors and corners, upload or paste it as a <code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">.css</code> file and choose “Save &amp; activate”. The theme applies right away and is available on all your devices.
             </li>
           </ul>
         </div>

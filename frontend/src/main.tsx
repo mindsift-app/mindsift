@@ -18,6 +18,18 @@ const publicToken = window.location.pathname.match(/^\/p\/([A-Za-z0-9_-]+)/)?.[1
 // Texts of the app (i18n/index.ts): the first render waits for the start language and German, its fallback;
 // until then the logo of index.html stays. The app's first request to the server goes out at the same time.
 if (!publicToken) prefetchAuthStatus();
+// With a stored session the app's chunk is fetched now, next to the texts, but only run by loadMainViews()
+// after the first render (the meta tag comes from vite.config.ts, nameMainChunk; not there in development)
+if (!publicToken && getToken()) {
+  for (const href of document.querySelector<HTMLMetaElement>('meta[name="mindsift-main-chunk"]')?.content.split(' ') ?? []) {
+    if (!href) continue;
+    const link = document.createElement('link');
+    link.rel = 'modulepreload';
+    link.crossOrigin = '';
+    link.href = href;
+    document.head.appendChild(link);
+  }
+}
 const lang = publicToken ? resolveLanguage(undefined, document.documentElement.lang) : startLanguage(Boolean(getToken()));
 void startI18n(lang).then(() => {
   ReactDOM.createRoot(document.getElementById('root')!).render(

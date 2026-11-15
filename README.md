@@ -251,18 +251,16 @@ The short version; what each decision costs is in [Doku/architecture.md](Doku/ar
 
 ## Performance on 1 CPU core and 1 GB RAM
 
-Load-tested with v0.95.0 on the public demo, a deliberately small server with **1 CPU core and 1 GB RAM**, with simulated people signing in, typing in notes, working with tasks and lists and searching at the same time:
+Load-tested on the public demo, a deliberately small server with **1 CPU core and 1 GB RAM**, with simulated people signing in, typing in notes, loading their note list, working with tasks and lists and searching at the same time, each with a workspace of realistic size:
 
 | People working at once | Typical answer (median) | Slowest 5 % | Errors |
 |---|---|---|---|
-| 200, about 10 per note | ~0.05 s | ~0.2 s | 0 % |
-| 300, about 10 per note | ~0.1–0.3 s | ~0.6–1.1 s | 0 % |
-| 500–800, about 10 per note | ~0.6–1.7 s | ~3–7 s | 0 % |
-| 1,200, about 10 per note | ~1.8 s | ~6.5 s | 0 % |
-| 200, all in the **same** note | ~0.3–1.3 s for an edit | ~2–3 s | 0 % |
-| 300, all in the **same** note | ~6 s for an edit | ~7–8 s | 0 % |
+| 500, about 10 per note | ~1.1 s | ~3 s | 0 % |
+| 800, about 10 per note | ~3 s | ~13 s | 0.02 % |
+| 1,200, about 10 per note | ~8 s | ~20 s | 1.6 % |
+| 300, all in the **same** note | ~0.5 s | ~4 s | 0 % |
 
-About 300 people at the same moment run smoothly on that single core; above that the CPU is the limit and everything slows down evenly instead of failing. Hundreds typing in the *same* note wait for each other, because edits to one note are applied one after another. More: [Doku/performance.md](Doku/performance.md).
+Several hundred people at the same moment work on that single core, with the server using under 200 MB of memory; above that the CPU is the limit and everything slows down, and at 1,200 about one request in 60 times out. Hundreds typing in the *same* note wait for each other, because edits to one note are applied one after another. More: [Doku/performance.md](Doku/performance.md).
 
 ---
 

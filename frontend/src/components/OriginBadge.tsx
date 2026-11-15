@@ -82,7 +82,7 @@ export const OriginBadge: React.FC<OriginBadgeProps> = ({ origin, createdAt, siz
   const Icon = via === 'mcp' ? Bot : Webhook;
 
   return (
-    <span ref={ref} className="relative inline-flex flex-shrink-0 max-w-full">
+    <span ref={ref} className="relative inline-flex shrink-0 max-w-full">
       <button
         type="button"
         draggable={false}
@@ -94,9 +94,9 @@ export const OriginBadge: React.FC<OriginBadgeProps> = ({ origin, createdAt, siz
         title={details}
         aria-label={details}
         aria-expanded={open}
-        className={`relative border border-border bg-canvas text-muted rounded-btn font-medium inline-flex items-center gap-1 max-w-[12rem] cursor-pointer hover:text-main before:absolute before:content-[''] before:inset-x-0 before:-inset-y-3 sm:before:hidden ${SIZE_CLASS[size]}`}
+        className={`relative border border-border bg-canvas text-muted rounded-btn font-medium inline-flex items-center gap-1 max-w-48 cursor-pointer hover:text-main before:absolute before:content-[''] before:inset-x-0 before:-inset-y-3 sm:before:hidden ${SIZE_CLASS[size]}`}
       >
-        <Icon className="w-2.5 h-2.5 text-accent flex-shrink-0" />
+        <Icon className="w-2.5 h-2.5 text-accent shrink-0" />
         <span className="truncate">{label}</span>
       </button>
       {open && (

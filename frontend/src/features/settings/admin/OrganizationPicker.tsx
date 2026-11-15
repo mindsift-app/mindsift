@@ -25,7 +25,7 @@ export function OrganizationPicker({
         return (
           <span key={id} className="inline-flex items-center gap-1 h-7 pl-2 pr-1 rounded-pill bg-panel border border-border text-[11px] text-main">
             <BuildingComplex className="w-3 h-3 text-accent shrink-0" />
-            <span className="truncate max-w-[10rem]">{org.name}</span>
+            <span className="truncate max-w-40">{org.name}</span>
             <button
               type="button"
               onClick={() => onChange(value.filter((x) => x !== id))}

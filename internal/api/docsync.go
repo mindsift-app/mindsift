@@ -241,9 +241,11 @@ func (s *Server) afterDocChange(actorID, docID string, ops []collab.Op, results 
 	}
 }
 
-// notifyDocChanged wakes long-poll requests and pokes WebSocket/SSE clients in the note's room.
+// notifyDocChanged wakes long-poll requests and pokes WebSocket/SSE clients in the note's room; the
+// note lists of everyone with access get its counts when they changed (doc_counts.go).
 func (s *Server) notifyDocChanged(docID string, head int64) {
 	s.notifier.Notify(docID)
+	s.touchDocCounts(docID, time.Now())
 	s.wsHub.BroadcastDocEvent(docID, "DOC_SEQ", map[string]any{"docId": docID, "headSeq": head})
 }
 
@@ -339,7 +341,9 @@ const compactionInterval = 6 * time.Hour
 
 func (s *Server) startCompaction() {
 	for {
+		done := s.demoPass()
 		s.compactOnce()
+		done()
 		if !s.wait(compactionInterval) {
 			return
 		}
@@ -366,4 +370,10 @@ func (s *Server) compactOnce() {
 	}
 	// After the deletions above: statistics of tables that grew or shrank a lot since the last run
 	logFailed("Updating the query planner statistics", s.store.Optimize())
+	// and the space they freed back to the file system (databases with incremental auto_vacuum)
+	if n, err := s.store.ReclaimFreePages(); err != nil {
+		slog.Error("Giving free pages of the database back failed", "error", err)
+	} else if n > 0 {
+		slog.Info("Database file shrunk", "freed_mb", n>>20)
+	}
 }

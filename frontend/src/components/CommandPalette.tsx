@@ -310,14 +310,14 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
     setFilter((prev) => ({ ...prev, [key]: value || undefined }));
   // One filter of the large view as a small dropdown
   const filterMenu = (key: keyof typeof filter, label: string, options: SelectMenuOption<string>[]) => (
-    <div className="max-w-[12rem]">
+    <div className="max-w-48">
       <SelectMenu size="sm" ariaLabel={label} title={label} value={(filter[key] as string) || ''} onChange={(v) => setFilterValue(key, v)} options={options} />
     </div>
   );
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center p-0 sm:p-4 sm:pt-16 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150"
+      className="fixed inset-0 z-50 flex items-start justify-center p-0 sm:p-4 sm:pt-16 bg-black/60 animate-in fade-in duration-150"
       onClick={onClose}
     >
       {/* Search Modal Container */}
@@ -337,7 +337,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
             onChange={(e) => setQuery(e.target.value)}
             {...NO_AUTOFILL}
             placeholder={t('palette.placeholder')}
-            className="flex-1 bg-transparent border-0 outline-none text-main placeholder-muted text-base sm:text-sm focus:ring-0 p-0"
+            className="flex-1 bg-transparent border-0 outline-hidden text-main placeholder-muted text-base sm:text-sm focus:ring-0 p-0"
           />
           {/* One fixed slot for the spinner or the clear button, so the field keeps its width while typing */}
           <span className="w-6 h-6 shrink-0 flex items-center justify-center">
@@ -510,14 +510,14 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                                 e.stopPropagation();
                                 void toggleDone(item);
                               }}
-                              className={`mt-0.5 w-4 h-4 shrink-0 rounded-sm border flex items-center justify-center transition-colors before:absolute before:-inset-3 relative ${
+                              className={`mt-0.5 w-4 h-4 shrink-0 rounded-xs border flex items-center justify-center transition-colors before:absolute before:-inset-3 relative ${
                                 finished ? 'bg-status-ok border-status-ok text-on-accent' : 'border-strong hover:border-accent text-transparent'
                               }`}
                               title={finished ? t('palette.reopen') : t('palette.check')}
                               aria-label={finished ? t('palette.reopen') : t('palette.check')}
                               aria-pressed={finished}
                             >
-                              <Check className="w-3 h-3 stroke-[3]" />
+                              <Check className="w-3 h-3 stroke-3" />
                             </button>
                           ) : (
                             <div className="mt-0.5 shrink-0 text-base leading-none">{item.icon || '🗒️'}</div>
@@ -575,17 +575,17 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
         <div className="hidden sm:flex items-center justify-between px-4 py-2 bg-canvas/40 border-t border-border text-[11px] text-muted shrink-0">
           <div className="flex items-center gap-3">
             <span>
-              <kbd className="px-1 py-0.5 bg-panel border border-border rounded font-mono text-[10px] text-accent">↑</kbd>{' '}
-              <kbd className="px-1 py-0.5 bg-panel border border-border rounded font-mono text-[10px] text-accent">↓</kbd> {t('common:palette.navigate')}
+              <kbd className="px-1 py-0.5 bg-panel border border-border rounded-sm font-mono text-[10px] text-accent">↑</kbd>{' '}
+              <kbd className="px-1 py-0.5 bg-panel border border-border rounded-sm font-mono text-[10px] text-accent">↓</kbd> {t('common:palette.navigate')}
             </span>
             <span>
-              <kbd className="px-1 py-0.5 bg-panel border border-border rounded font-mono text-[10px] text-accent">↵</kbd> {t('palette.select')}
+              <kbd className="px-1 py-0.5 bg-panel border border-border rounded-sm font-mono text-[10px] text-accent">↵</kbd> {t('palette.select')}
             </span>
             <span>
-              <kbd className="px-1 py-0.5 bg-panel border border-border rounded font-mono text-[10px] text-accent">Tab</kbd> {t('palette.switchKind')}
+              <kbd className="px-1 py-0.5 bg-panel border border-border rounded-sm font-mono text-[10px] text-accent">Tab</kbd> {t('palette.switchKind')}
             </span>
             <span>
-              <kbd className="px-1 py-0.5 bg-panel border border-border rounded font-mono text-[10px] text-accent">Esc</kbd> {t('close')}
+              <kbd className="px-1 py-0.5 bg-panel border border-border rounded-sm font-mono text-[10px] text-accent">Esc</kbd> {t('close')}
             </span>
           </div>
 

@@ -67,7 +67,9 @@ cleanup() {
 trap cleanup EXIT
 
 echo "Building the image …"
-"$ENGINE" build -q -t "$IMAGE" "$ROOT" >/dev/null
+# E2E_SKIP_TESTS=1 (set by ci/local-checks.sh, which ran the same Go and frontend tests just before):
+# build without running them a second time inside the image
+"$ENGINE" build -q --build-arg SKIP_TESTS="${E2E_SKIP_TESTS:-0}" -t "$IMAGE" "$ROOT" >/dev/null
 # Straight to the app (not the entrypoint that hands /data to uid 1000): the test data stays the host
 # user's, so the script can remove it
 "$ENGINE" run -d --entrypoint /app/mindsift --name "$NAME" --network host -e PORT="$PORT" -e MINDSIFT_DEMO=true -e DEFAULT_LANGUAGE=de \

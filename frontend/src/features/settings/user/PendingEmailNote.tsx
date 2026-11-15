@@ -39,12 +39,12 @@ export function PendingEmailNote({ user, onUserUpdated }: { user: User; onUserUp
   return (
     <div className="mt-1.5 p-2.5 rounded-lg border border-border bg-panel text-xs space-y-1.5" role="status">
       <div className="flex items-start gap-2">
-        <MailCheck className="w-3.5 h-3.5 mt-0.5 text-accent flex-shrink-0" />
-        <p className="text-main min-w-0 break-words">
+        <MailCheck className="w-3.5 h-3.5 mt-0.5 text-accent shrink-0" />
+        <p className="text-main min-w-0 wrap-break-word">
           {user.emailLinks ? t('pendingEmail.waiting', { email: pending }) : t('pendingEmail.noMail', { email: pending })}
         </p>
       </div>
-      <div className="flex flex-wrap gap-2 pl-5.5">
+      <div className="flex flex-wrap gap-2">
         {user.emailLinks && (
           <button type="button" onClick={resend} disabled={busy} className="btn-action h-11 sm:h-7 px-2.5 text-xs disabled:opacity-50">
             {t('pendingEmail.resend')}
@@ -54,7 +54,7 @@ export function PendingEmailNote({ user, onUserUpdated }: { user: User; onUserUp
           {t('pendingEmail.cancel')}
         </button>
       </div>
-      {msg && <p className="pl-5.5 text-muted">{msg}</p>}
+      {msg && <p className="text-muted">{msg}</p>}
     </div>
   );
 }

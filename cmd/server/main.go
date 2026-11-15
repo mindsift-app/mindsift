@@ -35,7 +35,12 @@ func main() {
 	// standard library's plain format. Errors meant for people are German catalog texts; the log shows them
 	// in English.
 	level := config.LogLevelFromEnv()
-	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: level, ReplaceAttr: i18n.LogInEnglish}))
+	logOpts := &slog.HandlerOptions{Level: level, ReplaceAttr: i18n.LogInEnglish}
+	var handler slog.Handler = slog.NewTextHandler(os.Stdout, logOpts)
+	if config.LogJSONFromEnv() {
+		handler = slog.NewJSONHandler(os.Stdout, logOpts)
+	}
+	logger := slog.New(handler)
 	slog.SetDefault(logger)
 	cfg := config.Load()
 

@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"path/filepath"
@@ -33,7 +34,7 @@ func TestDocumentListWithoutBullets(t *testing.T) {
 	other, _ := store.CreateDocument(anna.ID, "", "Leer", "", "", []domain.DocumentBlock{{ID: "x1", Type: "bullet", Content: "nichts"}}, nil, false)
 	bensDoc, _ := store.CreateDocument(ben.ID, "", "Bens", "", "", []domain.DocumentBlock{{ID: "z1", Type: "todo", Content: "Geheim #ben"}}, nil, false)
 
-	list, err := store.GetDocumentList(anna.ID)
+	list, err := store.GetDocumentList(context.Background(), anna.ID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -103,7 +104,7 @@ func TestDocumentListWithoutBullets(t *testing.T) {
 	if _, err := store.CreateDocShare(anna.ID, doc.ID, ben.ID, "read"); err != nil {
 		t.Fatal(err)
 	}
-	benList, _ := store.GetDocumentList(ben.ID)
+	benList, _ := store.GetDocumentList(context.Background(), ben.ID)
 	found := false
 	for i := range benList {
 		if benList[i].ID == doc.ID {
@@ -118,5 +119,115 @@ func TestDocumentListWithoutBullets(t *testing.T) {
 	}
 	if _, err := store.GetBlockForUser(ben.ID, "b1"); err != nil {
 		t.Fatalf("shared bullet for Ben: %v", err)
+	}
+}
+
+// One note as the list has it, for the realtime events: no bullets, the counts, the person's own view.
+func TestDocumentListItem(t *testing.T) {
+	store, err := NewStore(filepath.Join(t.TempDir(), "item.db"))
+	if err != nil {
+		t.Fatalf("NewStore: %v", err)
+	}
+	defer store.Close()
+	openSharing(t, store)
+	anna, _ := store.CreateUser("anna@example.com", "hash", "Anna", "member")
+	ben, _ := store.CreateUser("ben@example.com", "hash", "Ben", "member")
+	carla, _ := store.CreateUser("carla@example.com", "hash", "Carla", "member")
+	doc, err := store.CreateDocument(anna.ID, "", "Einkauf", "", "Privat", []domain.DocumentBlock{
+		{ID: "t1", Type: "todo", Content: "Milch #laden"},
+		{ID: "b1", Type: "bullet", Content: "Notiz #idee"},
+	}, nil, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.CreateDocShare(anna.ID, doc.ID, ben.ID, "write"); err != nil {
+		t.Fatal(err)
+	}
+
+	item, err := store.GetDocumentListItem(anna.ID, doc.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(item.Blocks) != 0 || item.Content != "" || item.MarkdownCache != "" {
+		t.Fatalf("list item carries bullets: %+v", item)
+	}
+	if item.OpenTodos != 1 || item.TagCounts["laden"] != 1 || item.TagCounts["idee"] != 1 || item.TagOpenTodos["laden"] != 1 {
+		t.Errorf("counts = %d %v %v", item.OpenTodos, item.TagCounts, item.TagOpenTodos)
+	}
+	if !item.IsOwner || !item.IsPinned || item.FolderPath != "Privat" || len(item.SharedWith) != 1 {
+		t.Errorf("owner's view: %+v", item)
+	}
+
+	forBen, err := store.GetDocumentListItem(ben.ID, doc.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if forBen.IsOwner || forBen.Permission != "write" || forBen.FolderPath != "" || forBen.OpenTodos != 1 {
+		t.Errorf("Ben's view: %+v", forBen)
+	}
+	if _, err := store.GetDocumentListItem(carla.ID, doc.ID); err == nil {
+		t.Error("Carla got a note not shared with her")
+	}
+}
+
+// A client that gave up gets nothing built: the list stops with the context's error, not a partial list.
+func TestDocumentListStopsWithContext(t *testing.T) {
+	store, err := NewStore(filepath.Join(t.TempDir(), "list.db"))
+	if err != nil {
+		t.Fatalf("NewStore: %v", err)
+	}
+	defer store.Close()
+	anna, _ := store.CreateUser("anna@example.com", "hash", "Anna", "member")
+	if _, err := store.CreateDocument(anna.ID, "", "Einkauf", "", "", nil, nil, false); err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	if list, err := store.GetDocumentList(ctx, anna.ID); !errors.Is(err, context.Canceled) || list != nil {
+		t.Fatalf("cancelled list: %v, %d notes", err, len(list))
+	}
+	if list, err := store.GetDocumentList(context.Background(), anna.ID); err != nil || len(list) != 1 {
+		t.Fatalf("list: %v, %d notes", err, len(list))
+	}
+}
+
+// A note created with bullet ids of another note (copied bullets) gets new ids for them; its hashtags are
+// counted under those, and no row of block_tags points to the other note's bullets.
+func TestDocumentListTagsOfCopiedBullets(t *testing.T) {
+	store, err := NewStore(filepath.Join(t.TempDir(), "list.db"))
+	if err != nil {
+		t.Fatalf("NewStore: %v", err)
+	}
+	defer store.Close()
+	anna, _ := store.CreateUser("anna@example.com", "hash", "Anna", "member")
+	blocks := []domain.DocumentBlock{{ID: "k1", Type: "todo", Content: "Milch #laden"}, {ID: "k2", Type: "bullet", Content: "Idee #garten"}}
+	first, err := store.CreateDocument(anna.ID, "", "Original", "", "", blocks, nil, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	blocks[1].Content = "Idee #balkon"
+	copied, err := store.CreateDocument(anna.ID, "", "Kopie", "", "", blocks, nil, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	list, err := store.GetDocumentList(context.Background(), anna.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := map[string]map[string]int{first.ID: {"laden": 1, "garten": 1}, copied.ID: {"laden": 1, "balkon": 1}}
+	for _, d := range list {
+		if len(d.TagCounts) != len(want[d.ID]) || d.TagOpenTodos["laden"] != 1 {
+			t.Errorf("%s: tags %v, open %v", d.Title, d.TagCounts, d.TagOpenTodos)
+		}
+		for tag, n := range want[d.ID] {
+			if d.TagCounts[tag] != n {
+				t.Errorf("%s: tags %v, want %v", d.Title, d.TagCounts, want[d.ID])
+			}
+		}
+	}
+	var stale int
+	if err := store.db.QueryRow(`SELECT COUNT(*) FROM block_tags bt WHERE NOT EXISTS (SELECT 1 FROM blocks b
+		WHERE b.id = bt.block_id AND b.document_id = bt.document_id AND b.deleted = 0)`).Scan(&stale); err != nil || stale != 0 {
+		t.Fatalf("%d rows of block_tags without a live bullet of their note (%v)", stale, err)
 	}
 }

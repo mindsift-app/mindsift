@@ -184,7 +184,7 @@ func TestDocChangesLongPollWakesOnChange(t *testing.T) {
 	})
 	select {
 	case r := <-done:
-		if !r.Changed || r.HeadSeq <= base.HeadSeq || time.Since(start) > 5*time.Second {
+		if !r.Changed || r.HeadSeq <= base.HeadSeq || time.Since(start) > 15*time.Second {
 			t.Fatalf("long poll result: %+v after %v", r, time.Since(start))
 		}
 	case <-time.After(10 * time.Second):

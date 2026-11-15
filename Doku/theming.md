@@ -96,7 +96,7 @@ The built-in themes are grouped into color families, each containing a light and
 
 ## 🔌 4. Tailwind Bridge & Semantic Classes
 
-In [`frontend/src/index.css`](../frontend/src/index.css) and `tailwind.config.js`, semantic utility classes are defined that automatically adapt to the selected theme:
+In [`frontend/src/index.css`](../frontend/src/index.css) (Tailwind CSS 4: the `@theme` blocks map the theme variables to Tailwind colours, corners and shadows), semantic utility classes are defined that automatically adapt to the selected theme:
 
 - `.panel-surface`: Applies `--bg-panel`, `--border-color`, and `--radius-card`.
 - `.input-field`: Applies `--bg-input`, `--border-color`, `--radius-input`, and `--text-main`.

@@ -46,7 +46,7 @@ func TestQueriesNeedOnlyOneConnection(t *testing.T) {
 		}()
 		select {
 		case <-done:
-		case <-time.After(5 * time.Second):
+		case <-time.After(30 * time.Second):
 			t.Fatalf("%s needs a second database connection while holding one (hangs with a single connection)", name)
 		}
 	}

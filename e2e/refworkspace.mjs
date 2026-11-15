@@ -32,14 +32,20 @@ const get = async (p) => (await fetch(BASE + p, { headers: { Authorization: `Bea
 
 // Notes (folder, pinned, open to-dos), folders and the trash as the server has them
 async function record(step) {
-  const [docs, folders, trash] = await Promise.all([get('/api/v1/documents'), get('/api/v1/folders'), get('/api/v1/documents/trash')]);
+  const [docs, folders, trash, noteTodos] = await Promise.all([
+    get('/api/v1/documents'),
+    get('/api/v1/folders'),
+    get('/api/v1/documents/trash'),
+    get('/api/v1/documents/todos'),
+  ]);
   lines.push(`## ${step}`);
   const folderNames = (Array.isArray(folders) ? folders : folders.folders || []).map((f) => (typeof f === 'string' ? f : f.path || f.name)).sort();
   lines.push(`Ordner: ${folderNames.join(', ')}`);
   const rows = (Array.isArray(docs) ? docs : [])
     .map((d) => {
-      const todos = (d.blocks || []).filter((b) => b.type === 'todo');
-      const open = todos.filter((b) => !b.checked).length;
+      // The note list carries no bullets; the to-dos of all notes come from their own route
+      const todos = (Array.isArray(noteTodos) ? noteTodos : []).filter((t) => t.docId === d.id);
+      const open = todos.filter((t) => !t.checked).length;
       return `${(d.folderPath || '/').padEnd(22)} ${String(d.title).slice(0, 40).padEnd(40)} ${d.isPinned ? 'angeheftet' : '          '} To-dos ${open}/${todos.length}`;
     })
     .sort();

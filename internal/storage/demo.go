@@ -7,6 +7,9 @@ import (
 
 // ResetAndSeedDemo drops all tables, recreates the schema, and seeds demo accounts and demo data.
 func (s *Store) ResetAndSeedDemo() error {
+	// Readers outside the server's gate see the tables vanish for a moment; that is not logged (dberr.go)
+	demoResetsRunning.Add(1)
+	defer demoResetsRunning.Add(-1)
 	// Logged-in demo visitors stay logged in: their sessions survive the reset (fixed account IDs)
 	kept := s.demoSessions()
 	// The settings are seeded anew with the tables

@@ -152,12 +152,12 @@ const SwipeableQueueItem: React.FC<SwipeableQueueItemProps> = ({
         className="relative bg-panel px-4 py-3.5 sm:px-3.5 sm:py-2.5 min-h-[56px] sm:min-h-[44px] flex items-center justify-between gap-3 hover:bg-panel-hover transition-colors group cursor-pointer"
       >
         <div className="flex-1 min-w-0 flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-accent flex-shrink-0" />
+          <span className="w-2 h-2 rounded-full bg-accent shrink-0" />
           <span className="text-sm sm:text-xs font-medium text-main line-clamp-2 sm:truncate">
             {item.content}
           </span>
           {item.source?.toLowerCase() === 'voice' && (
-            <span className="px-1.5 py-0.5 text-[10px] bg-canvas text-accent border border-border rounded-btn flex items-center gap-1 flex-shrink-0">
+            <span className="px-1.5 py-0.5 text-[10px] bg-canvas text-accent border border-border rounded-btn flex items-center gap-1 shrink-0">
               <Mic className="w-2.5 h-2.5" /> {t('triage:dictation')}
             </span>
           )}
@@ -166,7 +166,7 @@ const SwipeableQueueItem: React.FC<SwipeableQueueItemProps> = ({
 
         {/* Desktop quick buttons (hidden on mobile so queue items are clean & easy to tap/swipe) */}
         <div
-          className="hidden sm:flex items-center gap-1.5 flex-shrink-0"
+          className="hidden sm:flex items-center gap-1.5 shrink-0"
           onClick={(e) => e.stopPropagation()}
           onPointerDown={(e) => e.stopPropagation()}
         >
@@ -465,7 +465,7 @@ const TriageDeckView: React.FC<TriageDeckProps> = ({
   if (!activeCard) {
     return (
       <div data-tour="triage-deck" className="max-w-xl mx-auto mt-2 p-6 panel-surface text-center">
-        <div className="w-12 h-12 bg-accent text-on-accent rounded-xl flex items-center justify-center mx-auto mb-3 shadow-sm">
+        <div className="w-12 h-12 bg-accent text-on-accent rounded-xl flex items-center justify-center mx-auto mb-3 shadow-xs">
           <Sparkles className="w-6 h-6" />
         </div>
         <h2 className="text-lg font-bold text-main mb-1">{t('empty.title')}</h2>
@@ -689,7 +689,7 @@ const TriageDeckView: React.FC<TriageDeckProps> = ({
                   </div>
                 </div>
               ) : (
-                <p className="text-lg sm:text-xl font-medium text-main leading-relaxed break-words whitespace-pre-wrap">
+                <p className="text-lg sm:text-xl font-medium text-main leading-relaxed sm:leading-7 wrap-break-word whitespace-pre-wrap">
                   {activeCard.content}
                 </p>
               )}
@@ -733,7 +733,7 @@ const TriageDeckView: React.FC<TriageDeckProps> = ({
               ariaLabel={t('date.title')}
               value={taskDueDate}
               onChange={setTaskDueDate}
-              className="w-[9rem]"
+              className="w-36"
               inputClassName="h-8 input-field px-2.5 text-xs"
             />
             <button
@@ -778,7 +778,7 @@ const TriageDeckView: React.FC<TriageDeckProps> = ({
           <button
             type="button"
             onClick={() => handleAction('discard')}
-            className="min-h-[52px] px-3 py-2 rounded-xl bg-status-err-bg border border-status-err/30 text-status-err text-sm font-semibold flex items-center justify-center gap-2 touch-manipulation cursor-pointer active:scale-98"
+            className="min-h-[52px] px-3 py-2 rounded-xl bg-status-err-bg border border-status-err/30 text-status-err text-sm font-semibold flex items-center justify-center gap-2 touch-manipulation cursor-pointer"
           >
             <ArrowLeft className="w-4 h-4" />
             <span>{t('action.discard')}</span>
@@ -786,7 +786,7 @@ const TriageDeckView: React.FC<TriageDeckProps> = ({
           <button
             type="button"
             onClick={() => handleAction('keep', { convertTo: 'task' })}
-            className="min-h-[52px] px-3 py-2 rounded-xl bg-accent text-on-accent text-sm font-semibold flex items-center justify-center gap-2 touch-manipulation cursor-pointer active:scale-98"
+            className="min-h-[52px] px-3 py-2 rounded-xl bg-accent text-on-accent text-sm font-semibold flex items-center justify-center gap-2 touch-manipulation cursor-pointer"
           >
             <span>{t('action.task')}</span>
             <ArrowRight className="w-4 h-4" />
@@ -807,11 +807,11 @@ const TriageDeckView: React.FC<TriageDeckProps> = ({
               openActionSheetForCard(activeCard);
               setSheetMode('list');
             }}
-            className={`min-h-[52px] px-3.5 py-2.5 rounded-xl bg-canvas hover:bg-panel-elevated border border-border text-left flex items-center gap-3 transition-colors cursor-pointer active:scale-98 touch-manipulation ${
+            className={`min-h-[52px] px-3.5 py-2.5 rounded-xl bg-canvas hover:bg-panel-elevated border border-border text-left flex items-center gap-3 transition-colors cursor-pointer touch-manipulation ${
               writableLists.length === 0 ? 'opacity-40 cursor-not-allowed' : ''
             }`}
           >
-            <ShoppingCart className="w-5 h-5 text-accent flex-shrink-0" />
+            <ShoppingCart className="w-5 h-5 text-accent shrink-0" />
             <div className="min-w-0">
               <div className="text-sm font-semibold text-main">{t('toList')}</div>
               <div className="text-[11px] text-muted truncate">
@@ -832,9 +832,9 @@ const TriageDeckView: React.FC<TriageDeckProps> = ({
               openActionSheetForCard(activeCard);
               setSheetMode('date');
             }}
-            className="min-h-[52px] px-3.5 py-2.5 rounded-xl bg-canvas hover:bg-panel-elevated border border-border text-left flex items-center gap-3 transition-colors cursor-pointer active:scale-98 touch-manipulation"
+            className="min-h-[52px] px-3.5 py-2.5 rounded-xl bg-canvas hover:bg-panel-elevated border border-border text-left flex items-center gap-3 transition-colors cursor-pointer touch-manipulation"
           >
-            <Calendar className="w-5 h-5 text-accent flex-shrink-0" />
+            <Calendar className="w-5 h-5 text-accent shrink-0" />
             <div>
               <div className="text-sm font-semibold text-main">{t('withDate')}</div>
               <div className="text-[11px] text-muted">{t('chooseDate')}</div>
@@ -844,9 +844,9 @@ const TriageDeckView: React.FC<TriageDeckProps> = ({
           <button
             type="button"
             onClick={() => handleAction('keep', { convertTo: 'document' })}
-            className="min-h-[52px] px-3.5 py-2.5 rounded-xl bg-canvas hover:bg-panel-elevated border border-border text-left flex items-center gap-3 transition-colors cursor-pointer active:scale-98 touch-manipulation"
+            className="min-h-[52px] px-3.5 py-2.5 rounded-xl bg-canvas hover:bg-panel-elevated border border-border text-left flex items-center gap-3 transition-colors cursor-pointer touch-manipulation"
           >
-            <FileText className="w-5 h-5 text-accent flex-shrink-0" />
+            <FileText className="w-5 h-5 text-accent shrink-0" />
             <div>
               <div className="text-sm font-semibold text-main">{t('asNote')}</div>
               <div className="text-[11px] text-muted">{t('inWorkspace')}</div>
@@ -857,9 +857,9 @@ const TriageDeckView: React.FC<TriageDeckProps> = ({
             type="button"
             disabled={cards.length <= 1}
             onClick={() => handleSkipCard()}
-            className={`min-h-[52px] px-3.5 py-2.5 rounded-xl bg-canvas hover:bg-panel-elevated border border-border text-left flex items-center gap-3 transition-colors cursor-pointer active:scale-98 touch-manipulation ${cards.length <= 1 ? 'opacity-40 cursor-not-allowed' : ''}`}
+            className={`min-h-[52px] px-3.5 py-2.5 rounded-xl bg-canvas hover:bg-panel-elevated border border-border text-left flex items-center gap-3 transition-colors cursor-pointer touch-manipulation ${cards.length <= 1 ? 'opacity-40 cursor-not-allowed' : ''}`}
           >
-            <SkipForward className="w-5 h-5 text-muted flex-shrink-0" />
+            <SkipForward className="w-5 h-5 text-muted shrink-0" />
             <div>
               <div className="text-sm font-semibold text-main">{t('later')}</div>
               <div className="text-[11px] text-muted">{t('laterHint')}</div>
@@ -875,7 +875,7 @@ const TriageDeckView: React.FC<TriageDeckProps> = ({
           title={t('discardTitle')}
           className="btn-action flex-1 h-9 px-3 justify-center whitespace-nowrap"
         >
-          <X className="w-3.5 h-3.5 text-muted flex-shrink-0" />
+          <X className="w-3.5 h-3.5 text-muted shrink-0" />
           <span>{t('action.discard')}</span>
         </button>
 
@@ -887,7 +887,7 @@ const TriageDeckView: React.FC<TriageDeckProps> = ({
             cards.length <= 1 ? 'opacity-40 cursor-not-allowed' : ''
           }`}
         >
-          <SkipForward className="w-3.5 h-3.5 text-muted flex-shrink-0" />
+          <SkipForward className="w-3.5 h-3.5 text-muted shrink-0" />
           <span>{t('later')}</span>
         </button>
 
@@ -919,7 +919,7 @@ const TriageDeckView: React.FC<TriageDeckProps> = ({
               : ''
           }`}
         >
-          <ShoppingCart className="w-3.5 h-3.5 text-accent flex-shrink-0" />
+          <ShoppingCart className="w-3.5 h-3.5 text-accent shrink-0" />
           {/* A long list name is cut off (full name in the tooltip), so the bar never grows wider than the card */}
           <span className="truncate">{singleWritableList ? t('onList', { title: singleWritableList.title }) : t('toList')}</span>
         </button>
@@ -929,7 +929,7 @@ const TriageDeckView: React.FC<TriageDeckProps> = ({
           title={t('noteTitle')}
           className="btn-action flex-1 h-9 px-3 justify-center whitespace-nowrap"
         >
-          <FileText className="w-3.5 h-3.5 text-accent flex-shrink-0" />
+          <FileText className="w-3.5 h-3.5 text-accent shrink-0" />
           <span>{t('asNote')}</span>
         </button>
 
@@ -943,7 +943,7 @@ const TriageDeckView: React.FC<TriageDeckProps> = ({
             showDateModal ? 'border-accent text-accent bg-accent-dim' : ''
           }`}
         >
-          <Calendar className="w-3.5 h-3.5 text-accent flex-shrink-0" />
+          <Calendar className="w-3.5 h-3.5 text-accent shrink-0" />
           <span>{t('withDate')}</span>
         </button>
 
@@ -952,14 +952,14 @@ const TriageDeckView: React.FC<TriageDeckProps> = ({
           title={t('taskTitle')}
           className="btn-primary flex-[1.25] h-9 px-4 justify-center whitespace-nowrap font-semibold"
         >
-          <SquareCheckBig className="w-3.5 h-3.5 flex-shrink-0" />
+          <SquareCheckBig className="w-3.5 h-3.5 shrink-0" />
           <span>{t('action.task')}</span>
         </button>
       </div>
 
       {/* Waiting Quick Dump Queue List (Touch-sized & Swipeable Left/Right) */}
       {cards.length > 1 && (
-        <div className="pt-2 sm:flex-1 sm:min-h-[9rem] sm:flex sm:flex-col" ref={queueRef}>
+        <div className="pt-2 sm:flex-1 sm:min-h-36 sm:flex sm:flex-col" ref={queueRef}>
           {/* Phones: the queue stays folded so the card and its buttons fit on the screen */}
           <button
             type="button"
@@ -1018,7 +1018,7 @@ const TriageDeckView: React.FC<TriageDeckProps> = ({
       {/* LONG-PRESS / MORE OPTIONS ACTION SHEET (For Triage Card & Queue Items) */}
       {actionSheetCard && (
         <div
-          className="fixed inset-0 !m-0 modal-overlay z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-xs p-0 sm:p-4 animate-in fade-in duration-150"
+          className="fixed inset-0 m-0! modal-overlay z-50 flex items-end sm:items-center justify-center bg-black/60 p-0 sm:p-4 animate-in fade-in duration-150"
           onClick={() => setActionSheetCard(null)}
         >
           <div
@@ -1068,11 +1068,11 @@ const TriageDeckView: React.FC<TriageDeckProps> = ({
                         ? t('onList', { title: singleWritableList.title })
                         : t('setOnList')
                     }
-                    className={`min-h-[52px] px-3.5 py-2.5 rounded-xl bg-canvas hover:bg-panel-elevated border border-border text-left flex items-center gap-3 transition-colors cursor-pointer active:scale-98 ${
+                    className={`min-h-[52px] px-3.5 py-2.5 rounded-xl bg-canvas hover:bg-panel-elevated border border-border text-left flex items-center gap-3 transition-colors cursor-pointer ${
                       writableLists.length === 0 ? 'opacity-40 cursor-not-allowed' : ''
                     }`}
                   >
-                    <ShoppingCart className="w-5 h-5 text-accent flex-shrink-0" />
+                    <ShoppingCart className="w-5 h-5 text-accent shrink-0" />
                     <div className="min-w-0">
                       <div className="text-sm font-semibold text-main">{t('toList')}</div>
                       <div className="text-[11px] text-muted truncate">
@@ -1088,9 +1088,9 @@ const TriageDeckView: React.FC<TriageDeckProps> = ({
                   <button
                     type="button"
                     onClick={() => setSheetMode('date')}
-                    className="min-h-[52px] px-3.5 py-2.5 rounded-xl bg-canvas hover:bg-panel-elevated border border-border text-left flex items-center gap-3 transition-colors cursor-pointer active:scale-98"
+                    className="min-h-[52px] px-3.5 py-2.5 rounded-xl bg-canvas hover:bg-panel-elevated border border-border text-left flex items-center gap-3 transition-colors cursor-pointer"
                   >
-                    <Calendar className="w-5 h-5 text-accent flex-shrink-0" />
+                    <Calendar className="w-5 h-5 text-accent shrink-0" />
                     <div>
                       <div className="text-sm font-semibold text-main">{t('withDate')}</div>
                       <div className="text-[11px] text-muted">{t('chooseDate')}</div>
@@ -1105,9 +1105,9 @@ const TriageDeckView: React.FC<TriageDeckProps> = ({
                         thoughtOverride: actionSheetCard,
                       })
                     }
-                    className="min-h-[52px] px-3.5 py-2.5 rounded-xl bg-canvas hover:bg-panel-elevated border border-border text-left flex items-center gap-3 transition-colors cursor-pointer active:scale-98"
+                    className="min-h-[52px] px-3.5 py-2.5 rounded-xl bg-canvas hover:bg-panel-elevated border border-border text-left flex items-center gap-3 transition-colors cursor-pointer"
                   >
-                    <FileText className="w-5 h-5 text-accent flex-shrink-0" />
+                    <FileText className="w-5 h-5 text-accent shrink-0" />
                     <div>
                       <div className="text-sm font-semibold text-main">{t('asNote')}</div>
                       <div className="text-[11px] text-muted">{t('inWorkspace')}</div>
@@ -1118,11 +1118,11 @@ const TriageDeckView: React.FC<TriageDeckProps> = ({
                     type="button"
                     disabled={cards.length <= 1}
                     onClick={() => handleSkipCard(actionSheetCard.id)}
-                    className={`min-h-[52px] px-3.5 py-2.5 rounded-xl bg-canvas hover:bg-panel-elevated border border-border text-left flex items-center gap-3 transition-colors cursor-pointer active:scale-98 ${
+                    className={`min-h-[52px] px-3.5 py-2.5 rounded-xl bg-canvas hover:bg-panel-elevated border border-border text-left flex items-center gap-3 transition-colors cursor-pointer ${
                       cards.length <= 1 ? 'opacity-40 cursor-not-allowed' : ''
                     }`}
                   >
-                    <SkipForward className="w-5 h-5 text-muted flex-shrink-0" />
+                    <SkipForward className="w-5 h-5 text-muted shrink-0" />
                     <div>
                       <div className="text-sm font-semibold text-main">{t('later')}</div>
                       <div className="text-[11px] text-muted">{t('laterHint')}</div>
@@ -1171,7 +1171,7 @@ const TriageDeckView: React.FC<TriageDeckProps> = ({
                     }
                     className="min-h-[46px] px-4 py-2 rounded-xl bg-accent text-on-accent text-sm font-semibold flex items-center justify-center gap-2 whitespace-nowrap cursor-pointer"
                   >
-                    <SquareCheckBig className="w-4 h-4 flex-shrink-0" />
+                    <SquareCheckBig className="w-4 h-4 shrink-0" />
                     <span>{t('action.task')}</span>
                   </button>
                 </div>

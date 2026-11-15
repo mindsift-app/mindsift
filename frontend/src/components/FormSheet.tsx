@@ -48,7 +48,7 @@ export const FormSheet: React.FC<FormSheetProps> = ({
     : undefined;
 
   return (
-    <div className="fixed inset-0 !m-0 z-50 modal-overlay" onClick={onClose}>
+    <div className="fixed inset-0 m-0! z-50 modal-overlay" onClick={onClose}>
       <form
         onSubmit={onSubmit}
         onClick={(e) => e.stopPropagation()}
@@ -59,16 +59,16 @@ export const FormSheet: React.FC<FormSheetProps> = ({
             '--vv-max': visibleHeight ? `${visibleHeight - 16}px` : '85vh',
           } as React.CSSProperties
         }
-        className={`fixed inset-x-0 bottom-[var(--kb-inset)] max-h-[var(--vv-max)] panel-surface rounded-t-2xl rounded-b-none border-x-0 border-b-0 border-t border-border shadow-panel p-4 space-y-3 overflow-y-auto
+        className={`fixed inset-x-0 bottom-(--kb-inset) max-h-(--vv-max) panel-surface rounded-t-2xl rounded-b-none border-x-0 border-b-0 border-t border-border shadow-panel p-4 space-y-3 overflow-y-auto
           sm:inset-x-auto sm:bottom-auto sm:max-h-[85vh] sm:w-full sm:rounded-card sm:border ${
             anchor
-              ? 'sm:max-w-[16.5rem] sm:left-[var(--sheet-x)] sm:top-[var(--sheet-y)]'
+              ? 'sm:max-w-66 sm:left-(--sheet-x) sm:top-(--sheet-y)'
               : 'sm:max-w-sm sm:left-1/2 sm:top-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2'
           }`}
       >
         <div className="w-10 h-1 bg-border rounded-full mx-auto sm:hidden" aria-hidden="true" />
         {/* The grip is hidden from sm on, but space-y still spaces the header from it */}
-        <div className="flex items-center justify-between gap-2 sm:!mt-0">
+        <div className="flex items-center justify-between gap-2 sm:mt-0!">
           <h3 className="text-sm font-semibold text-main flex items-center gap-1.5 min-w-0">
             {icon}
             <span className="truncate">{title}</span>

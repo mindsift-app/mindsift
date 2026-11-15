@@ -78,7 +78,7 @@ export function VoiceSection({
                 }`}
               >
                 <span
-                  className={`mt-0.5 w-4 h-4 rounded-full border-2 flex-shrink-0 ${selected ? 'border-accent bg-accent' : 'border-strong'}`}
+                  className={`mt-0.5 w-4 h-4 rounded-full border-2 shrink-0 ${selected ? 'border-accent bg-accent' : 'border-strong'}`}
                   aria-hidden="true"
                 />
                 <span className="space-y-0.5">

@@ -2,6 +2,7 @@ package storage
 
 import (
 	"errors"
+	"sort"
 	"strings"
 
 	"github.com/mindsift-app/mindsift/internal/domain"
@@ -26,29 +27,19 @@ func (s *Store) UpdateTagPageNote(userID, tag, content string) (string, error) {
 }
 
 func (s *Store) GetWorkspaceTags(userID string) ([]domain.TagSummary, error) {
+	// Only the notes the person can see (sqlVisibleDocIDs), not every note of the server; a hashtag is
+	// in block_tags once per bullet (key tag, block_id) and every note is in visible once, so COUNT(*)
+	// counts the bullets
 	rows, err := s.db.Query(
-		`SELECT t.tag, COUNT(DISTINCT t.document_id || ':' || t.block_id) as count
-		 FROM block_tags t
-		 JOIN documents d ON t.document_id = d.id
-		 LEFT JOIN doc_shares s ON s.doc_id = d.id AND s.user_id = ?
-		 LEFT JOIN (
-		     SELECT dts2.doc_id
-		     FROM doc_team_shares dts2
-		     JOIN team_members tm ON tm.team_id = dts2.team_id
-		     WHERE tm.user_id = ?
-		 ) dts ON d.id = dts.doc_id
-		 LEFT JOIN workspace_shared_folders wsf ON d.shared_folder_id = wsf.id
-		 LEFT JOIN (
-		     SELECT wfs2.folder_id
-		     FROM workspace_folder_shares wfs2
-		     WHERE (wfs2.target_type = 'user' AND wfs2.target_id = ?)
-		        OR (wfs2.target_type = 'team' AND wfs2.target_id IN (SELECT team_id FROM team_members WHERE user_id = ?))
-		 ) wfs ON d.shared_folder_id = wfs.folder_id
-		 WHERE (d.user_id = ? OR s.user_id = ? OR dts.doc_id IS NOT NULL OR (wsf.id IS NOT NULL AND (wsf.owner_id = ? OR wfs.folder_id IS NOT NULL)))
-		   AND d.is_archived = 0
+		`WITH visible(id) AS (`+sqlVisibleDocIDs+`)
+		 SELECT t.tag, COUNT(*) AS count
+		 FROM visible
+		 CROSS JOIN documents d ON d.id = visible.id
+		 CROSS JOIN block_tags t ON t.document_id = d.id
+		 WHERE d.is_archived = 0
 		 GROUP BY t.tag
 		 ORDER BY count DESC, t.tag ASC`,
-		userID, userID, userID, userID, userID, userID, userID,
+		userID,
 	)
 	if err != nil {
 		return nil, err
@@ -101,32 +92,20 @@ func (s *Store) GetTagDetails(userID, tag string) (*domain.TagDetails, error) {
 		userID, cleanTag,
 	).Scan(&noteContent, &noteUpdatedAt))
 
+	// The candidates first (sqlVisibleDocIDs), then their bullets with the hashtag (idx_block_tags_doc_tag),
+	// instead of checking every note of the server that has it. The permission comes from DocRole below,
+	// the same rule as everywhere else (the best of all shares, the owner of a shared folder owns its notes).
 	rows, err := s.db.Query(
-		`SELECT t.block_id, d.id, d.title, d.icon, d.folder_path, d.blocks_json, d.updated_at, d.user_id,
-		        COALESCE(u.display_name, '') as owner_name,
-		        COALESCE(s.permission, dts.permission, wfs.permission, '') as shared_permission
-		 FROM block_tags t
-		 JOIN documents d ON t.document_id = d.id
+		`WITH visible(id) AS (`+sqlVisibleDocIDs+`)
+		 SELECT t.block_id, d.id, d.title, d.icon, d.folder_path, d.blocks_json, d.updated_at, d.user_id,
+		        COALESCE(u.display_name, '') as owner_name
+		 FROM visible
+		 CROSS JOIN documents d ON d.id = visible.id
+		 CROSS JOIN block_tags t ON t.document_id = d.id AND t.tag = ?2
 		 LEFT JOIN users u ON d.user_id = u.id
-		 LEFT JOIN doc_shares s ON s.doc_id = d.id AND s.user_id = ?
-		 LEFT JOIN (
-		     SELECT dts2.doc_id, dts2.permission
-		     FROM doc_team_shares dts2
-		     JOIN team_members tm ON tm.team_id = dts2.team_id
-		     WHERE tm.user_id = ?
-		 ) dts ON d.id = dts.doc_id
-		 LEFT JOIN workspace_shared_folders wsf ON d.shared_folder_id = wsf.id
-		 LEFT JOIN (
-		     SELECT wfs2.folder_id, wfs2.permission
-		     FROM workspace_folder_shares wfs2
-		     WHERE (wfs2.target_type = 'user' AND wfs2.target_id = ?)
-		        OR (wfs2.target_type = 'team' AND wfs2.target_id IN (SELECT team_id FROM team_members WHERE user_id = ?))
-		 ) wfs ON d.shared_folder_id = wfs.folder_id
-		 WHERE (d.user_id = ? OR s.user_id = ? OR dts.doc_id IS NOT NULL OR (wsf.id IS NOT NULL AND (wsf.owner_id = ? OR wfs.folder_id IS NOT NULL)))
-		   AND t.tag = ?
-		   AND d.is_archived = 0
-		 ORDER BY d.updated_at DESC`,
-		userID, userID, userID, userID, userID, userID, userID, cleanTag,
+		 WHERE d.is_archived = 0
+		 ORDER BY d.updated_at DESC, d.rowid`,
+		userID, cleanTag,
 	)
 	if err != nil {
 		return nil, err
@@ -134,22 +113,21 @@ func (s *Store) GetTagDetails(userID, tag string) (*domain.TagDetails, error) {
 	defer rows.Close()
 
 	type rawMatch struct {
-		blockID          string
-		docID            string
-		title            string
-		icon             string
-		folderPath       string
-		blocksJSON       string
-		updatedAt        string
-		docUserID        string
-		ownerName        string
-		sharedPermission string
+		blockID    string
+		docID      string
+		title      string
+		icon       string
+		folderPath string
+		blocksJSON string
+		updatedAt  string
+		docUserID  string
+		ownerName  string
 	}
 
 	var rawMatches []rawMatch
 	for rows.Next() {
 		var rm rawMatch
-		if err := rows.Scan(&rm.blockID, &rm.docID, &rm.title, &rm.icon, &rm.folderPath, &rm.blocksJSON, &rm.updatedAt, &rm.docUserID, &rm.ownerName, &rm.sharedPermission); !dbFailed(err) {
+		if err := rows.Scan(&rm.blockID, &rm.docID, &rm.title, &rm.icon, &rm.folderPath, &rm.blocksJSON, &rm.updatedAt, &rm.docUserID, &rm.ownerName); !dbFailed(err) {
 			rawMatches = append(rawMatches, rm)
 		}
 	}
@@ -185,6 +163,13 @@ func (s *Store) GetTagDetails(userID, tag string) (*domain.TagDetails, error) {
 		matchedBlocks := make([]domain.MatchedTagBlock, 0)
 		processedBlockIDs := make(map[string]bool)
 
+		// In the order of the note: a tagged bullet below another tagged one is then shown under it,
+		// not once more on its own before it (the rows come in index order, not note order)
+		sort.SliceStable(matches, func(i, j int) bool {
+			a, okA := blockIdxMap[matches[i].blockID]
+			b, okB := blockIdxMap[matches[j].blockID]
+			return okA && (!okB || a < b)
+		})
 		for _, m := range matches {
 			if processedBlockIDs[m.blockID] {
 				continue
@@ -218,12 +203,18 @@ func (s *Store) GetTagDetails(userID, tag string) (*domain.TagDetails, error) {
 			continue
 		}
 
-		isOwner := first.docUserID == userID
+		// As the note list shows it: owner, write (editor) or read (viewer)
+		role := s.DocRole(userID, first.docID)
+		if role == "" {
+			continue
+		}
+		isOwner := role == DocRoleOwner
 		permission := "read"
-		if isOwner {
+		switch role {
+		case DocRoleOwner:
 			permission = "owner"
-		} else if first.sharedPermission != "" {
-			permission = first.sharedPermission
+		case DocRoleEditor:
+			permission = "write"
 		}
 
 		docGroups = append(docGroups, domain.TagDocumentGroup{

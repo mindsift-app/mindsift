@@ -29,7 +29,7 @@ func TestBlockRefsOf(t *testing.T) {
 			[]blockRef{{refMedia, "med_a1"}, {refMedia, "med_b2"}, {refSecret, "x_1"}}},
 		{"media:nicht_med und {{secret:}} und {{secret:a b}}", nil},
 	} {
-		if got := blockRefsOf(c.content); !reflect.DeepEqual(got, c.want) {
+		if got := blockRefsOf("bullet", c.content); !reflect.DeepEqual(got, c.want) {
 			t.Errorf("blockRefsOf(%q) = %v, want %v", c.content, got, c.want)
 		}
 	}
@@ -333,7 +333,7 @@ func TestBlockRefsCappedPerBullet(t *testing.T) {
 	for i := 1; i < 500; i++ {
 		fmt.Fprintf(&sb, "media:med_%04x ", i)
 	}
-	refs := blockRefsOf(sb.String())
+	refs := blockRefsOf("bullet", sb.String())
 	if len(refs) != maxBlockRefs {
 		t.Fatalf("blockRefsOf kept %d references, want %d", len(refs), maxBlockRefs)
 	}

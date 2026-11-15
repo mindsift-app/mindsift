@@ -207,7 +207,9 @@ func (s *Server) startAlarmTicker() {
 			return
 		case <-ticker.C:
 		}
+		done := s.demoPass()
 		s.checkAlarms(time.Now())
+		done()
 	}
 }
 

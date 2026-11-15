@@ -143,7 +143,7 @@ export const UserSettingsView: React.FC<UserSettingsViewProps> = ({
                 : 'text-muted hover:text-main hover:bg-panel-hover'
             }`}
           >
-            <UserIcon className="w-4 h-4 text-accent flex-shrink-0" />
+            <UserIcon className="w-4 h-4 text-accent shrink-0" />
             <div>
               <p className="font-semibold">{t('user.nav.profile')}</p>
               <p className="text-[10px] text-faint">{t('user.nav.profileHint')}</p>
@@ -158,7 +158,7 @@ export const UserSettingsView: React.FC<UserSettingsViewProps> = ({
                 : 'text-muted hover:text-main hover:bg-panel-hover'
             }`}
           >
-            <ShieldCheck className="w-4 h-4 text-accent flex-shrink-0" />
+            <ShieldCheck className="w-4 h-4 text-accent shrink-0" />
             <div>
               <p className="font-semibold">{t('security.nav')}</p>
               <p className="text-[10px] text-faint">{t('security.navHint')}</p>
@@ -173,7 +173,7 @@ export const UserSettingsView: React.FC<UserSettingsViewProps> = ({
                 : 'text-muted hover:text-main hover:bg-panel-hover'
             }`}
           >
-            <Palette className="w-4 h-4 text-accent flex-shrink-0" />
+            <Palette className="w-4 h-4 text-accent shrink-0" />
             <div>
               <p className="font-semibold">{t('user.nav.appearance')}</p>
               <p className="text-[10px] text-faint">{t('user.nav.appearanceHint')}</p>
@@ -188,7 +188,7 @@ export const UserSettingsView: React.FC<UserSettingsViewProps> = ({
                 : 'text-muted hover:text-main hover:bg-panel-hover'
             }`}
           >
-            <Languages className="w-4 h-4 text-accent flex-shrink-0" />
+            <Languages className="w-4 h-4 text-accent shrink-0" />
             <div>
               <p className="font-semibold">{t('language.nav')}</p>
               <p className="text-[10px] text-faint">{t('language.navHint')}</p>
@@ -203,7 +203,7 @@ export const UserSettingsView: React.FC<UserSettingsViewProps> = ({
                 : 'text-muted hover:text-main hover:bg-panel-hover'
             }`}
           >
-            <Bell className="w-4 h-4 text-accent flex-shrink-0" />
+            <Bell className="w-4 h-4 text-accent shrink-0" />
             <div>
               <p className="font-semibold">{t('user.nav.alarms')}</p>
               <p className="text-[10px] text-faint">{t('user.nav.alarmsHint')}</p>
@@ -219,7 +219,7 @@ export const UserSettingsView: React.FC<UserSettingsViewProps> = ({
                   : 'text-muted hover:text-main hover:bg-panel-hover'
               }`}
             >
-              <Mic className="w-4 h-4 text-accent flex-shrink-0" />
+              <Mic className="w-4 h-4 text-accent shrink-0" />
               <div>
                 <p className="font-semibold">{t('user.nav.voice')}</p>
                 <p className="text-[10px] text-faint">{t('user.nav.voiceHint')}</p>
@@ -235,7 +235,7 @@ export const UserSettingsView: React.FC<UserSettingsViewProps> = ({
                 : 'text-muted hover:text-main hover:bg-panel-hover'
             }`}
           >
-            <Clock className="w-4 h-4 text-accent flex-shrink-0" />
+            <Clock className="w-4 h-4 text-accent shrink-0" />
             <div>
               <p className="font-semibold">{t('user.nav.retention')}</p>
               <p className="text-[10px] text-faint">{t('user.nav.retentionHint')}</p>
@@ -250,7 +250,7 @@ export const UserSettingsView: React.FC<UserSettingsViewProps> = ({
                 : 'text-muted hover:text-main hover:bg-panel-hover'
             }`}
           >
-            <Key className="w-4 h-4 text-accent flex-shrink-0" />
+            <Key className="w-4 h-4 text-accent shrink-0" />
             <div>
               <p className="font-semibold">{t('user.nav.api')}</p>
               <p className="text-[10px] text-faint">{t('user.nav.apiHint')}</p>
@@ -265,7 +265,7 @@ export const UserSettingsView: React.FC<UserSettingsViewProps> = ({
                 : 'text-muted hover:text-main hover:bg-panel-hover'
             }`}
           >
-            <Archive className="w-4 h-4 text-accent flex-shrink-0" />
+            <Archive className="w-4 h-4 text-accent shrink-0" />
             <div>
               <p className="font-semibold">{t('user.nav.data')}</p>
               <p className="text-[10px] text-faint">{t('user.nav.dataHint')}</p>

@@ -457,6 +457,86 @@ func TestSecretCopiesOutliveTheirOrigin(t *testing.T) {
 	}
 }
 
+// Deleting an account deletes the hidden values of its notes right away, not with the sweep weeks
+// later; copies in notes of others stay.
+func TestSecretsGoWithTheAccount(t *testing.T) {
+	s, anna, ben := newSecretStore(t)
+	origin, _ := s.CreateDocument(anna.ID, "", "Server", "", "", nil, nil, false)
+	x := hideValue(t, s, origin.ID, anna.ID, "geheim")
+	y := hideValue(t, s, origin.ID, anna.ID, "auch geheim")
+	if _, err := s.CreateDocShare(anna.ID, origin.ID, ben.ID, "read"); err != nil {
+		t.Fatal(err)
+	}
+	benNote, _ := s.CreateDocument(ben.ID, "", "Bens", "", "", []domain.DocumentBlock{{ID: "blk_b", Type: "bullet", Content: secretRef(x)}}, nil, false)
+	benCp := ownCopy(t, s, benNote.ID, contentOf(t, s, benNote.ID, "blk_b"), x, "geheim")
+
+	if err := s.DeleteOwnAccount(anna.ID); err != nil {
+		t.Fatal(err)
+	}
+	for _, id := range []string{x, y} {
+		if _, err := s.GetSecret(id); err != ErrSecretNotFound {
+			t.Errorf("value %s of the deleted account's note must be gone, got %v", id, err)
+		}
+	}
+	if revealIn(t, s, benNote.ID, benCp) != "geheim" {
+		t.Error("Ben's copy must stay")
+	}
+	if n := countSecrets(t, s); n != 1 {
+		t.Errorf("want only Ben's copy left, got %d values", n)
+	}
+}
+
+// The import preview names the notes whose hidden value becomes a placeholder (a value of a note the
+// person may not read), as it does for files; a value of a readable note (copied) or a reference to no
+// value (stays) is not named.
+func TestImportPreviewNamesNotesWithForeignSecrets(t *testing.T) {
+	s, anna, ben := newSecretStore(t)
+	annaDoc, _ := s.CreateDocument(anna.ID, "", "Annas", "", "", nil, nil, false)
+	foreign := hideValue(t, s, annaDoc.ID, anna.ID, "fremd")
+	benDoc, _ := s.CreateDocument(ben.ID, "", "Bens", "", "", nil, nil, false)
+	own := hideValue(t, s, benDoc.ID, ben.ID, "eigen")
+
+	note := func(title, content string) domain.Document {
+		return domain.Document{Title: title, IsOwner: true, Blocks: []domain.DocumentBlock{{Type: "bullet", Content: content}}}
+	}
+	exp := domain.FullExport{ExportedAt: "2026-11-14T00:00:00Z", Version: "manipuliert", Documents: []domain.Document{
+		note("Beute", "PIN "+secretRef(foreign)+" und "+secretRef(own)),
+		note("Eigene", "PIN "+secretRef(own)),
+		note("Verwaist", "PIN "+secretRef("sec_gibtesnicht0000000000")),
+	}}
+	data, _ := json.Marshal(exp)
+	plan, err := PlanMindSiftJSONImport(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	s.CheckImportMedia(ben.ID, plan)
+	sum := plan.Summary(false)
+	if len(sum.Skipped) != 1 || sum.Skipped[0].Path != "Beute" || !strings.Contains(sum.Skipped[0].Reason, "Versteckter Wert") {
+		t.Fatalf("preview should name only the note with Anna's value: %+v", sum.Skipped)
+	}
+
+	// Applying gives the placeholder where the preview said so
+	plan, _ = PlanMindSiftJSONImport(data)
+	if _, err := s.ApplyImport(ben.ID, plan); err != nil {
+		t.Fatal(err)
+	}
+	docs, _ := s.GetDocuments(ben.ID)
+	found := false
+	for _, d := range docs {
+		if d.Title != "Beute" {
+			continue
+		}
+		found = true
+		full, _ := s.GetDocumentByID(ben.ID, d.ID)
+		if c := full.Blocks[0].Content; !strings.Contains(c, secretPlaceholder) || strings.Contains(c, foreign) {
+			t.Errorf("Anna's value must become the placeholder: %q", c)
+		}
+	}
+	if !found {
+		t.Fatal("note not imported")
+	}
+}
+
 // The sweep marks values no live bullet of their own note holds, forgets the mark when one holds it
 // again (undo) and deletes values marked SecretOrphanDays ago; values a note shows, also one in the
 // trash, stay.
