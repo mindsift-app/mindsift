@@ -133,7 +133,7 @@ describe('UserList', () => {
     render(<UserList admin={admin} currentUser={me} isServerAdmin />);
     fireEvent.click(screen.getByRole('button', { name: /Person 001/ }));
     const mustChange = screen.getByRole('switch', { name: 'Bei der nächsten Anmeldung ändern' });
-    const revoke = screen.getByRole('switch', { name: 'API-Schlüssel und KI-Zugänge widerrufen' });
+    const revoke = screen.getByRole('switch', { name: 'API-Schlüssel, KI-Zugänge und Kalender-Abo widerrufen' });
     expect(mustChange.getAttribute('aria-checked')).toBe('false');
     expect(revoke.getAttribute('aria-checked')).toBe('false');
     fireEvent.click(mustChange);

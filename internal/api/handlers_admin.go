@@ -321,8 +321,8 @@ func (s *Server) handleAdminUpdateUser(w http.ResponseWriter, r *http.Request) {
 
 // handleAdminResetPassword sets a new password (server admins only: user managers send people to
 // "forgot password" instead) and signs every session out. mustChange: the person has to choose an own
-// password at the next sign-in before anything else; revokeKeys: the account's API keys and OAuth grants
-// (MCP connections) go as well. Neither happens unless asked for.
+// password at the next sign-in before anything else; revokeKeys: the account's API keys, OAuth grants
+// (MCP connections) and calendar subscription go as well. Neither happens unless asked for.
 func (s *Server) handleAdminResetPassword(w http.ResponseWriter, r *http.Request) {
 	targetUserID := chi.URLParam(r, "id")
 
@@ -361,14 +361,17 @@ func (s *Server) handleAdminResetPassword(w http.ResponseWriter, r *http.Request
 		details["mustChange"] = true
 	}
 	if req.RevokeKeys {
-		keys, grants, err := s.store.RevokeAPIAccess(targetUserID)
+		keys, grants, feed, err := s.store.RevokeAPIAccess(targetUserID)
 		if err != nil {
 			s.audit(r, storage.AuditAccountPasswordReset, auditUserTarget(target), details)
 			writeInternal(w, err)
 			return
 		}
 		details["keysRevoked"], details["connectionsRevoked"] = keys, grants
-		out["keysRevoked"], out["connectionsRevoked"] = keys, grants
+		out["keysRevoked"], out["connectionsRevoked"], out["calendarFeedRevoked"] = keys, grants, feed
+		if feed {
+			details["calendarFeedRevoked"] = true
+		}
 	}
 	if len(details) == 0 {
 		s.audit(r, storage.AuditAccountPasswordReset, auditUserTarget(target), nil)

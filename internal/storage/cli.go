@@ -88,24 +88,30 @@ func (s *Store) migrateMustChangePassword() error {
 }
 
 // RevokeAPIAccess removes every API key and every OAuth grant (MCP connection of an AI client) of the
-// account, with their tokens; returns how many of each went. Scripts and AI clients have to be connected
-// again by the person.
-func (s *Store) RevokeAPIAccess(userID string) (keys, grants int, err error) {
+// account, with their tokens, and its calendar subscription (its address answers 404 from then on: like a
+// leaked key it reads the person's tasks without signing in); returns how many keys and grants went and
+// whether there was a subscription. Scripts, AI clients and calendar apps have to be connected again by
+// the person. A plain password change or signing out everywhere keeps all of them.
+func (s *Store) RevokeAPIAccess(userID string) (keys, grants int, feed bool, err error) {
 	err = s.db.QueryRow(`SELECT COALESCE(SUM(kind = ?), 0), COALESCE(SUM(kind = ?), 0) FROM api_keys WHERE user_id = ?`,
 		APIKeyKindKey, APIKeyKindOAuth, userID).Scan(&keys, &grants)
 	if err != nil {
-		return 0, 0, err
+		return 0, 0, false, err
+	}
+	if err = s.db.QueryRow(`SELECT EXISTS(SELECT 1 FROM calendar_feeds WHERE user_id = ?)`, userID).Scan(&feed); err != nil {
+		return 0, 0, false, err
 	}
 	// Codes and tokens hang on their grant (ON DELETE CASCADE); removed explicitly all the same
 	err = s.execInTx(
 		stmt(`DELETE FROM oauth_codes WHERE key_id IN (SELECT id FROM api_keys WHERE user_id = ?)`, userID),
 		stmt(`DELETE FROM oauth_tokens WHERE key_id IN (SELECT id FROM api_keys WHERE user_id = ?)`, userID),
 		stmt(`DELETE FROM api_keys WHERE user_id = ?`, userID),
+		stmt(`DELETE FROM calendar_feeds WHERE user_id = ?`, userID),
 	)
 	if err != nil {
-		return 0, 0, err
+		return 0, 0, false, err
 	}
-	return keys, grants, nil
+	return keys, grants, feed, nil
 }
 
 // UsernameTaken: an account has this username (compared in lower case).

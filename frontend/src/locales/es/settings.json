@@ -675,10 +675,11 @@
     "emailRemoveHint": "Sin dirección, {{name}} ya no podrá restablecer la contraseña por correo. Iniciar sesión con nombre de usuario y contraseña sigue funcionando.",
     "mustChange": "Cambiar en el próximo inicio de sesión",
     "mustChangeHint": "Tras iniciar sesión, la persona debe elegir primero una contraseña propia.",
-    "revokeKeys": "Revocar claves API y accesos de IA",
-    "revokeKeysHint": "Elimina todas las claves API y los clientes de IA conectados (MCP) de la cuenta, por ejemplo tras un robo. Si no, siguen funcionando.",
+    "revokeKeys": "Revocar claves API, accesos de IA y la suscripción de calendario",
+    "revokeKeysHint": "Elimina todas las claves API, los clientes de IA conectados (MCP) y la suscripción de calendario de la cuenta, por ejemplo tras un robo. Si no, siguen funcionando.",
     "passwordResetMustChange": "Contraseña restablecida. En el próximo inicio de sesión se pedirá una propia.",
-    "keysRevoked": "{{keys}} claves API y {{connections}} accesos de IA revocados."
+    "keysRevoked": "{{keys}} claves API y {{connections}} accesos de IA revocados.",
+    "calendarFeedRevoked": "La suscripción de calendario está desactivada."
   },
   "orgs": {
     "createFailed": "Error al crear la organización",
@@ -1162,7 +1163,8 @@
       "emailConfirmation": "Pendiente de confirmar la dirección de correo",
       "unconfirmedDeleted": "Dirección de correo no confirmada en 48 horas",
       "mustChange": "Contraseña nueva exigida en el próximo inicio de sesión",
-      "keysRevoked": "{{keys}} claves API y {{connections}} accesos de IA revocados"
+      "keysRevoked": "{{keys}} claves API y {{connections}} accesos de IA revocados",
+      "calendarFeedRevoked": "Suscripción de calendario desactivada"
     },
     "value": {
       "on": "activado",

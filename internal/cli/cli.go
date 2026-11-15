@@ -71,7 +71,8 @@ Commands:
                                           new one-time password, signs out every session;
                                           --must-change: a new own password at the next sign-in
                                           before anything else; --revoke-keys also removes the
-                                          API keys and AI connections (MCP); --disable-2fa also
+                                          API keys, AI connections (MCP) and the calendar
+                                          subscription; --disable-2fa also
                                           removes app codes, passkeys and recovery codes
   make-admin <name> [--revoke] [--json]   give (or take away) the admin role
   check [--backup] [--json]               check the database (integrity, foreign keys);

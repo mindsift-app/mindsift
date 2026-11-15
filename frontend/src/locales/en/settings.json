@@ -589,10 +589,11 @@
     "emailRemoveHint": "Without an address, {{name}} can no longer reset the password by email. Signing in with username and password keeps working.",
     "mustChange": "Change at the next sign-in",
     "mustChangeHint": "After signing in, the person has to choose their own password first.",
-    "revokeKeys": "Revoke API keys and AI access",
-    "revokeKeysHint": "Removes all API keys and connected AI clients (MCP) of the account, for instance after a takeover. Otherwise they keep working.",
+    "revokeKeys": "Revoke API keys, AI access and the calendar subscription",
+    "revokeKeysHint": "Removes all API keys, connected AI clients (MCP) and the calendar subscription of the account, for instance after a takeover. Otherwise they keep working.",
     "passwordResetMustChange": "Password reset. An own password is asked for at the next sign-in.",
-    "keysRevoked": "{{keys}} API keys and {{connections}} AI connections revoked."
+    "keysRevoked": "{{keys}} API keys and {{connections}} AI connections revoked.",
+    "calendarFeedRevoked": "The calendar subscription is switched off."
   },
   "sharing": {
     "private": {
@@ -1162,7 +1163,8 @@
       "emailConfirmation": "Waiting for the email address to be confirmed",
       "unconfirmedDeleted": "Email address not confirmed within 48 hours",
       "mustChange": "New password required at the next sign-in",
-      "keysRevoked": "{{keys}} API keys and {{connections}} AI connections revoked"
+      "keysRevoked": "{{keys}} API keys and {{connections}} AI connections revoked",
+      "calendarFeedRevoked": "Calendar subscription switched off"
     },
     "value": {
       "on": "on",

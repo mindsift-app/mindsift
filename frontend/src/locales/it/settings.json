@@ -589,10 +589,11 @@
     "emailRemoveHint": "Senza indirizzo, {{name}} non potrà più reimpostare la password via email. L’accesso con nome utente e password continua a funzionare.",
     "mustChange": "Da cambiare al prossimo accesso",
     "mustChangeHint": "Dopo l’accesso la persona deve prima scegliere una password propria.",
-    "revokeKeys": "Revoca chiavi API e accessi IA",
-    "revokeKeysHint": "Rimuove tutte le chiavi API e i client IA collegati (MCP) dell’account, ad esempio dopo un furto. Altrimenti continuano a funzionare.",
+    "revokeKeys": "Revoca chiavi API, accessi IA e abbonamento al calendario",
+    "revokeKeysHint": "Rimuove tutte le chiavi API, i client IA collegati (MCP) e l’abbonamento al calendario dell’account, ad esempio dopo un furto. Altrimenti continuano a funzionare.",
     "passwordResetMustChange": "Password reimpostata. Al prossimo accesso ne verrà chiesta una propria.",
-    "keysRevoked": "{{keys}} chiavi API e {{connections}} accessi IA revocati."
+    "keysRevoked": "{{keys}} chiavi API e {{connections}} accessi IA revocati.",
+    "calendarFeedRevoked": "L’abbonamento al calendario è disattivato."
   },
   "sharing": {
     "private": {
@@ -1162,7 +1163,8 @@
       "emailConfirmation": "In attesa di conferma dell’indirizzo e-mail",
       "unconfirmedDeleted": "Indirizzo e-mail non confermato entro 48 ore",
       "mustChange": "Nuova password richiesta al prossimo accesso",
-      "keysRevoked": "{{keys}} chiavi API e {{connections}} accessi IA revocati"
+      "keysRevoked": "{{keys}} chiavi API e {{connections}} accessi IA revocati",
+      "calendarFeedRevoked": "Abbonamento al calendario disattivato"
     },
     "value": {
       "on": "attivo",

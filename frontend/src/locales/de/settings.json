@@ -589,10 +589,11 @@
     "emailRemoveHint": "Ohne Adresse kann {{name}} das Passwort nicht mehr per Mail zurücksetzen. Die Anmeldung mit Benutzername und Passwort geht weiter.",
     "mustChange": "Bei der nächsten Anmeldung ändern",
     "mustChangeHint": "Die Person muss nach der Anmeldung zuerst ein eigenes Passwort festlegen.",
-    "revokeKeys": "API-Schlüssel und KI-Zugänge widerrufen",
-    "revokeKeysHint": "Entfernt alle API-Schlüssel und verbundenen KI-Clients (MCP) des Kontos, etwa wenn es übernommen wurde. Sonst laufen sie weiter.",
+    "revokeKeys": "API-Schlüssel, KI-Zugänge und Kalender-Abo widerrufen",
+    "revokeKeysHint": "Entfernt alle API-Schlüssel, verbundenen KI-Clients (MCP) und das Kalender-Abo des Kontos, etwa wenn es übernommen wurde. Sonst laufen sie weiter.",
     "passwordResetMustChange": "Passwort zurückgesetzt. Bei der nächsten Anmeldung wird ein eigenes verlangt.",
-    "keysRevoked": "{{keys}} API-Schlüssel und {{connections}} KI-Zugänge widerrufen."
+    "keysRevoked": "{{keys}} API-Schlüssel und {{connections}} KI-Zugänge widerrufen.",
+    "calendarFeedRevoked": "Das Kalender-Abo ist abgeschaltet."
   },
   "sharing": {
     "private": {
@@ -1161,7 +1162,8 @@
       "emailConfirmation": "Wartet auf Bestätigung der E-Mail-Adresse",
       "unconfirmedDeleted": "E-Mail-Adresse nicht innerhalb von 48 Stunden bestätigt",
       "mustChange": "Neues Passwort bei der nächsten Anmeldung verlangt",
-      "keysRevoked": "{{keys}} API-Schlüssel und {{connections}} KI-Zugänge widerrufen"
+      "keysRevoked": "{{keys}} API-Schlüssel und {{connections}} KI-Zugänge widerrufen",
+      "calendarFeedRevoked": "Kalender-Abo abgeschaltet"
     },
     "value": {
       "on": "an",

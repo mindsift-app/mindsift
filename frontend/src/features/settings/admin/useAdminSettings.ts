@@ -357,6 +357,7 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
       const parts = [i18n.t(resetPwdMustChange ? 'settings:users.passwordResetMustChange' : 'settings:users.passwordReset')];
       if (resetPwdRevokeKeys) {
         parts.push(i18n.t('settings:users.keysRevoked', { keys: res?.keysRevoked ?? 0, connections: res?.connectionsRevoked ?? 0 }));
+        if (res?.calendarFeedRevoked) parts.push(i18n.t('settings:users.calendarFeedRevoked'));
       }
       setResetPwdUserId(null);
       setStatusMsg({ type: 'ok', text: parts.join(' ') });

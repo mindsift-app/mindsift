@@ -159,6 +159,7 @@ export function detailLines(t: TFunction, e: AuditEntry): string[] {
   if (typeof d.keysRevoked === 'number') {
     lines.push(t('audit.detail.keysRevoked', { keys: d.keysRevoked, connections: d.connectionsRevoked ?? 0 }));
   }
+  if (d.calendarFeedRevoked) lines.push(t('audit.detail.calendarFeedRevoked'));
   if (d.secondFactorsRemoved) lines.push(t('audit.detail.secondFactorsRemoved'));
   if (d.pendingRegistration) lines.push(t('audit.detail.pendingRegistration'));
   if (typeof d.notes === 'number') {

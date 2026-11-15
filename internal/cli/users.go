@@ -411,12 +411,16 @@ func (c *command) resetPassword(args []string) error {
 		c.record(storage.AuditAccountPasswordReset, userTarget(u), details)
 	}
 	var keys, grants int
+	var feed bool
 	if revokeKeys {
-		if keys, grants, err = c.store.RevokeAPIAccess(u.ID); err != nil {
+		if keys, grants, feed, err = c.store.RevokeAPIAccess(u.ID); err != nil {
 			record()
-			return fmt.Errorf("the new password is set, but revoking the API keys and AI connections failed: %w", err)
+			return fmt.Errorf("the new password is set, but revoking the API keys, AI connections and calendar subscription failed: %w", err)
 		}
 		details["keysRevoked"], details["connectionsRevoked"] = keys, grants
+		if feed {
+			details["calendarFeedRevoked"] = true
+		}
 	}
 	if disable2FA {
 		if err := c.store.ResetMFA(u.ID); err != nil {
@@ -429,7 +433,7 @@ func (c *command) resetPassword(args []string) error {
 	if c.json {
 		out := map[string]any{"reset": true, "user": c.info(u), "oneTimePassword": password, "secondFactorsRemoved": disable2FA, "mustChange": mustChange}
 		if revokeKeys {
-			out["keysRevoked"], out["connectionsRevoked"] = keys, grants
+			out["keysRevoked"], out["connectionsRevoked"], out["calendarFeedRevoked"] = keys, grants, feed
 		}
 		c.writeJSON(out)
 		return nil
@@ -444,6 +448,9 @@ func (c *command) resetPassword(args []string) error {
 	}
 	if revokeKeys {
 		c.printf("Revoked %d API keys and %d AI connections (MCP); scripts and AI clients have to be connected again.\n", keys, grants)
+		if feed {
+			c.printf("The calendar subscription is switched off; its address no longer works.\n")
+		}
 	}
 	if mustChange {
 		c.printf("After signing in with it the person has to choose an own password before anything else.\n")
