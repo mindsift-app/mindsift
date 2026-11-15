@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/mindsift-app/mindsift/internal/clock"
 	"github.com/mindsift-app/mindsift/internal/collab"
@@ -79,12 +80,12 @@ func titleFrom(title, base string) bool {
 	if title == base {
 		return true
 	}
-	rest, ok := strings.CutPrefix(title, base+" (")
-	if !ok || !strings.HasSuffix(rest, ")") {
+	open := strings.LastIndex(title, " (")
+	if open < 0 || !strings.HasSuffix(title, ")") {
 		return false
 	}
-	_, err := strconv.Atoi(strings.TrimSuffix(rest, ")"))
-	return err == nil
+	n, err := strconv.Atoi(title[open+2 : len(title)-1])
+	return err == nil && n >= 2 && title == numberedTitle(base, n)
 }
 
 // uniqueTitle appends " (2)", " (3)" … when the user already has a note of that name, so the wiki link
@@ -97,9 +98,21 @@ func (s *Store) uniqueTitle(userID, title string) string {
 	}
 	candidate := title
 	for n := 2; taken[strings.ToLower(candidate)]; n++ {
-		candidate = fmt.Sprintf("%s (%d)", title, n)
+		candidate = numberedTitle(title, n)
 	}
 	return candidate
+}
+
+// numberedTitle: title with " (n)" behind it, the title shortened (with "…") so that the result stays
+// within collab.MaxTitleRunes
+func numberedTitle(title string, n int) string {
+	suffix := fmt.Sprintf(" (%d)", n)
+	r := []rune(title)
+	room := collab.MaxTitleRunes - utf8.RuneCountInString(suffix)
+	if len(r) > room {
+		title = strings.TrimSpace(string(r[:room-1])) + "…"
+	}
+	return title + suffix
 }
 
 func countTopLevel(flat []collab.FlatBlock) int {

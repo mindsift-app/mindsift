@@ -362,7 +362,7 @@ func (s *Store) UpdateThoughtTriage(userID, thoughtID, action, convertTo, target
 			}
 			newStatus = domain.StatusConverted
 			convertedType = "document"
-			title := ShortTitle(thought.Content)
+			title := FirstLineTitle(thought.Content)
 			blocks := make([]domain.DocumentBlock, 0)
 
 			// A task turned into a note starts with the task itself as a checkbox, even though it is the title too,

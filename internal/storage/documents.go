@@ -192,6 +192,16 @@ func ShortTitle(t string) string {
 	return strings.TrimSpace(string(r[:collab.MaxTitleRunes-1])) + "…"
 }
 
+// FirstLineTitle: a title from multi-line text (an inbox entry): its first non-empty line, cut like ShortTitle
+func FirstLineTitle(t string) string {
+	for _, line := range strings.Split(t, "\n") {
+		if line = strings.TrimSpace(line); line != "" {
+			return ShortTitle(line)
+		}
+	}
+	return ""
+}
+
 // CreateDocument creates a note of userID with the given bullets. References to files userID may not
 // read are dropped from them (mediaGate); references to hidden values of other notes become copies in
 // the new note or a placeholder (secretGate).
