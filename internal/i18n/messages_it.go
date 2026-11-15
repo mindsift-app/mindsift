@@ -2,6 +2,9 @@ package i18n
 
 // Italian texts of the server, keyed by the German source text (see messages.go). Same order as messages_en.go.
 var messagesIT = map[string]string{
+	// MCP: note structure tools
+	"Der Server verarbeitet gerade andere große Anfragen (Bilder); bitte in ein paar Sekunden noch einmal versuchen": "Il server sta elaborando altre richieste di grandi dimensioni (immagini); riprova tra qualche secondo",
+
 	"'content' darf nicht leer sein":                                                        "'content' non può essere vuoto",
 	"'content' muss Text sein (Markdown)":                                                   "'content' deve essere testo (Markdown)",
 	"'icon' muss ein einzelnes Emoji sein oder leer bleiben":                                "'icon' deve essere una sola emoji o restare vuoto",

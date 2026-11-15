@@ -49,6 +49,7 @@ type Server struct {
 	streamTickets streamTickets // one-time tickets for WebSocket/SSE (streamticket.go)
 	loginGuard    *loginGuard   // brute-force protection (loginguard.go)
 	imports       importGate    // imports running at a time (importgate.go)
+	mcpLarge      mcpLargeGate  // large MCP requests (images) handled at a time (mcp_image.go)
 	// docLists: note lists being built at a time (handleGetDocuments); a burst of sign-ins waits here
 	// instead of building hundreds of lists in memory at once
 	docLists      chan struct{}

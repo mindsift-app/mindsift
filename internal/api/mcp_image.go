@@ -5,8 +5,10 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/mindsift-app/mindsift/internal/collab"
 	"github.com/mindsift-app/mindsift/internal/domain"
@@ -20,11 +22,55 @@ import (
 // server's own network); the bullet then goes in through the editor's operations, so the media gate and
 // write rights apply as for every other bullet.
 
-// mcpImageLimitText: the default image limit for the tool description (MEDIA_MAX_IMAGE_MB); a server
-// with a lower limit names it in the error
-const mcpImageLimitText = "15 MB"
+// mcpImageLimitText stands for the server's image limit (MEDIA_MAX_IMAGE_MB) in tool descriptions;
+// tools/list puts the real number in (mcpDescription)
+const mcpImageLimitText = "{imageLimit}"
 
-func (s *Server) mcpAddNoteImage(userID string, actor *apiActor, args json.RawMessage) (any, error) {
+// mcpDescription: a tool's description with the server's own limits
+func (s *Server) mcpDescription(t mcpTool) string {
+	if !strings.Contains(t.Description, mcpImageLimitText) {
+		return t.Description
+	}
+	return strings.ReplaceAll(t.Description, mcpImageLimitText, strconv.FormatInt(s.mediaLimit("image")>>20, 10)+" MB")
+}
+
+// mcpLargeBody: MCP requests above this size (in practice add_note_image with data) take a place in
+// mcpLargeGate. Reading and decoding such a request holds several copies of the image at once (the body,
+// the JSON string, the decoded file), up to some 100 MB at the largest limit; a few of them in parallel
+// would take a server far beyond its usual 200 MB.
+const mcpLargeBody = 2 << 20
+
+// maxMCPLargeRunning: large MCP requests handled at a time; others get a busy answer and try again
+const maxMCPLargeRunning = 2
+
+// mcpLargeGate counts the large MCP requests being handled (usable as zero value)
+type mcpLargeGate struct {
+	mu      sync.Mutex
+	running int
+}
+
+func (g *mcpLargeGate) enter() bool {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	if g.running >= maxMCPLargeRunning {
+		return false
+	}
+	g.running++
+	return true
+}
+
+func (g *mcpLargeGate) leave() {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	g.running--
+}
+
+// mcpLargeRequest: a body above mcpLargeBody, or one of unknown length (sent in chunks), which may be as large
+func mcpLargeRequest(r *http.Request) bool {
+	return r.ContentLength > mcpLargeBody || r.ContentLength < 0
+}
+
+func (s *Server) mcpAddNoteImage(ctx context.Context, userID string, actor *apiActor, args json.RawMessage) (any, error) {
 	var a struct{ NoteID, Data, URL, Caption, AfterID, ParentID string }
 	if err := decodeArgs(args, &a); err != nil {
 		return nil, err
@@ -55,8 +101,8 @@ func (s *Server) mcpAddNoteImage(userID string, actor *apiActor, args json.RawMe
 		if s.cfg.DemoMode {
 			return nil, errors.New("In der Demo deaktiviert")
 		}
-		// The tools get no request context; the guarded client gives up after 10 s on its own
-		if data, _, err = s.fetchExternalImage(context.Background(), a.URL); err != nil {
+		// Stops when the client goes away; the guarded client gives up after 10 s on its own
+		if data, _, err = s.fetchExternalImage(ctx, a.URL); err != nil {
 			return nil, err
 		}
 	}
@@ -68,7 +114,7 @@ func (s *Server) mcpAddNoteImage(userID string, actor *apiActor, args json.RawMe
 	content := storage.MediaContent("image", m.ID, a.Caption)
 	op := collab.Op{OpID: domain.NewID("op"), Kind: collab.OpInsert, BlockID: id, ParentID: &parent, OrderKey: key, Type: "image", Content: &content, Props: &collab.Props{}}
 	// Should this fail, the stored file is removed with the other unused ones after mediaGrace
-	if err := s.applyNoteOps(userID, actor, a.NoteID, []collab.Op{op}); err != nil {
+	if err := s.applyNoteOpsCtx(ctx, userID, actor, a.NoteID, []collab.Op{op}); err != nil {
 		return nil, err
 	}
 	res, err := noteResult(s, userID, a.NoteID)

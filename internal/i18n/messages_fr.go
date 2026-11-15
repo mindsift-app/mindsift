@@ -2,6 +2,9 @@ package i18n
 
 // French texts of the server, keyed by the German source text (see messages.go). Same order as messages_en.go.
 var messagesFR = map[string]string{
+	// MCP: note structure tools
+	"Der Server verarbeitet gerade andere große Anfragen (Bilder); bitte in ein paar Sekunden noch einmal versuchen": "Le serveur traite d'autres requêtes volumineuses (images) ; réessayez dans quelques secondes",
+
 	"'content' darf nicht leer sein":                                                        "'content' ne doit pas être vide",
 	"'content' muss Text sein (Markdown)":                                                   "'content' doit être du texte (Markdown)",
 	"'icon' muss ein einzelnes Emoji sein oder leer bleiben":                                "'icon' doit être un seul emoji ou rester vide",

@@ -2,6 +2,9 @@ package i18n
 
 // Spanish texts of the server, keyed by the German source text (see messages.go). Same order as messages_en.go.
 var messagesES = map[string]string{
+	// MCP: note structure tools
+	"Der Server verarbeitet gerade andere große Anfragen (Bilder); bitte in ein paar Sekunden noch einmal versuchen": "El servidor está procesando otras solicitudes grandes (imágenes); vuelve a intentarlo en unos segundos",
+
 	"'content' darf nicht leer sein":                                                        "'content' no puede estar vacío",
 	"'content' muss Text sein (Markdown)":                                                   "'content' debe ser texto (Markdown)",
 	"'icon' muss ein einzelnes Emoji sein oder leer bleiben":                                "'icon' debe ser un solo emoji o quedar vacío",

@@ -2,6 +2,9 @@ package i18n
 
 // English texts of the server, keyed by the German source text (see messages.go). Sorted by key.
 var messagesEN = map[string]string{
+	// MCP: note structure tools
+	"Der Server verarbeitet gerade andere große Anfragen (Bilder); bitte in ein paar Sekunden noch einmal versuchen": "The server is busy with other large requests (images); please try again in a few seconds",
+
 	"'content' darf nicht leer sein":                                                        "'content' must not be empty",
 	"'content' muss Text sein (Markdown)":                                                   "'content' must be text (Markdown)",
 	"'icon' muss ein einzelnes Emoji sein oder leer bleiben":                                "'icon' must be a single emoji or left empty",

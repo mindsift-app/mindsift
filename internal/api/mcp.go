@@ -60,6 +60,8 @@ const (
 	rpcInvalidRequest = -32600
 	rpcMethodNotFound = -32601
 	rpcInvalidParams  = -32602
+	// rpcServerBusy: too many large requests at once (mcpLargeGate); the client may try again
+	rpcServerBusy = -32000
 )
 
 // mcpTool is one callable tool: the scope an API key needs for it and the function doing the work.
@@ -71,7 +73,7 @@ type mcpTool struct {
 	// AltScope: a narrower right that allows this tool too (e.g. "create tasks" for create_task)
 	AltScope string
 	Schema   map[string]any
-	run      func(s *Server, userID string, actor *apiActor, args json.RawMessage) (any, error)
+	run      func(ctx context.Context, s *Server, userID string, actor *apiActor, args json.RawMessage) (any, error)
 }
 
 // mcpToolAllowed: sessions may use every tool, API keys only those of their scopes. search needs any
@@ -109,6 +111,15 @@ func (s *Server) handleMCP(w http.ResponseWriter, r *http.Request) {
 	// An image for add_note_image may take longer than the usual 15 s to send on a slow line
 	if r.ContentLength > defaultMaxBody {
 		allowLongTransfer(w)
+	}
+	// Only a few large requests at a time (mcpLargeGate); the body is not read while the server is busy
+	if mcpLargeRequest(r) {
+		if !s.mcpLarge.enter() {
+			w.Header().Set("Retry-After", "10")
+			writeRPC(w, nil, nil, &jsonrpcError{rpcServerBusy, "Der Server verarbeitet gerade andere große Anfragen (Bilder); bitte in ein paar Sekunden noch einmal versuchen"})
+			return
+		}
+		defer s.mcpLarge.leave()
 	}
 	var raw json.RawMessage
 	if err := json.NewDecoder(r.Body).Decode(&raw); err != nil {
@@ -172,7 +183,7 @@ func (s *Server) handleMCP(w http.ResponseWriter, r *http.Request) {
 			}
 			tools = append(tools, map[string]any{
 				"name":        t.Name,
-				"description": t.Description,
+				"description": s.mcpDescription(t),
 				"inputSchema": t.Schema,
 			})
 		}
@@ -198,7 +209,7 @@ func (s *Server) handleMCP(w http.ResponseWriter, r *http.Request) {
 		if len(p.Arguments) == 0 {
 			p.Arguments = json.RawMessage("{}")
 		}
-		result, err := tool.run(s, userID, actor, p.Arguments)
+		result, err := tool.run(r.Context(), s, userID, actor, p.Arguments)
 		if err != nil {
 			msg := errInternal
 			if errors.Is(err, sql.ErrNoRows) {
@@ -469,7 +480,7 @@ var mcpTools = []mcpTool{
 		Description: "All task lists the user can see, with permission (owner/editor/viewer), the number of open tasks and the board columns (valid kanbanStatus values). Tasks without a list live in the personal inbox list (taskListId empty).",
 		Scope:       storage.ScopeTasksRead,
 		Schema:      schema(nil, map[string]any{}),
-		run: func(s *Server, userID string, _ *apiActor, _ json.RawMessage) (any, error) {
+		run: func(_ context.Context, s *Server, userID string, _ *apiActor, _ json.RawMessage) (any, error) {
 			lists, err := s.store.GetTaskLists(userID)
 			if err != nil {
 				return nil, err
@@ -489,7 +500,7 @@ var mcpTools = []mcpTool{
 			"title": prop("string", "Name of the task list"),
 			"icon":  prop("string", "One emoji, optional (default 📋)"),
 		}),
-		run: func(s *Server, userID string, actor *apiActor, args json.RawMessage) (any, error) {
+		run: func(_ context.Context, s *Server, userID string, actor *apiActor, args json.RawMessage) (any, error) {
 			var a struct {
 				Title string `json:"title"`
 				Icon  string `json:"icon"`
@@ -522,7 +533,7 @@ var mcpTools = []mcpTool{
 			"dueBefore":  prop("string", "Only tasks due on or before this date (YYYY-MM-DD); tasks without due date are left out"),
 			"limit":      prop("integer", "Maximum number of tasks (default 100)"),
 		}),
-		run: func(s *Server, userID string, actor *apiActor, args json.RawMessage) (any, error) {
+		run: func(_ context.Context, s *Server, userID string, actor *apiActor, args json.RawMessage) (any, error) {
 			var a struct {
 				TaskListID string `json:"taskListId"`
 				Status     string `json:"status"`
@@ -576,7 +587,7 @@ var mcpTools = []mcpTool{
 		Description: "One task with all details.",
 		Scope:       storage.ScopeTasksRead,
 		Schema:      schema([]string{"id"}, map[string]any{"id": prop("string", "Task id")}),
-		run: func(s *Server, userID string, actor *apiActor, args json.RawMessage) (any, error) {
+		run: func(_ context.Context, s *Server, userID string, actor *apiActor, args json.RawMessage) (any, error) {
 			var a struct {
 				ID string `json:"id"`
 			}
@@ -604,7 +615,7 @@ var mcpTools = []mcpTool{
 			"reminders": map[string]any{"type": "array", "items": map[string]string{"type": "integer"},
 				"description": "Reminders in minutes before the due date, replacing the user's lead time: 0, 15, 30, 60, 120, 1440 (1 day), 2880, 4320, 10080 (1 week), 20160 (2 weeks), 43200 (1 month); [] = the lead time again"},
 		}),
-		run: func(s *Server, userID string, actor *apiActor, args json.RawMessage) (any, error) {
+		run: func(_ context.Context, s *Server, userID string, actor *apiActor, args json.RawMessage) (any, error) {
 			var a struct {
 				Content    string `json:"content"`
 				TaskListID string `json:"taskListId"`
@@ -651,7 +662,7 @@ var mcpTools = []mcpTool{
 			"reminders": map[string]any{"type": "array", "items": map[string]string{"type": "integer"},
 				"description": "Reminders in minutes before the due date, replacing the user's lead time: 0, 15, 30, 60, 120, 1440 (1 day), 2880, 4320, 10080 (1 week), 20160 (2 weeks), 43200 (1 month); [] = the lead time again"},
 		}),
-		run: func(s *Server, userID string, actor *apiActor, args json.RawMessage) (any, error) {
+		run: func(_ context.Context, s *Server, userID string, actor *apiActor, args json.RawMessage) (any, error) {
 			var a struct {
 				ID string `json:"id"`
 				taskPatch
@@ -679,7 +690,7 @@ var mcpTools = []mcpTool{
 			"id":        prop("string", "Task id"),
 			"completed": prop("boolean", "Default true"),
 		}),
-		run: func(s *Server, userID string, actor *apiActor, args json.RawMessage) (any, error) {
+		run: func(_ context.Context, s *Server, userID string, actor *apiActor, args json.RawMessage) (any, error) {
 			var a struct {
 				ID        string `json:"id"`
 				Completed *bool  `json:"completed"`
@@ -706,7 +717,7 @@ var mcpTools = []mcpTool{
 			"taskId": prop("string", "Task id"),
 			"title":  prop("string", "Subtask text"),
 		}),
-		run: func(s *Server, userID string, actor *apiActor, args json.RawMessage) (any, error) {
+		run: func(_ context.Context, s *Server, userID string, actor *apiActor, args json.RawMessage) (any, error) {
 			var a struct {
 				TaskID string `json:"taskId"`
 				Title  string `json:"title"`
@@ -743,7 +754,7 @@ var mcpTools = []mcpTool{
 			"title":     prop("string", "New text"),
 			"delete":    prop("boolean", "true = remove the subtask"),
 		}),
-		run: func(s *Server, userID string, actor *apiActor, args json.RawMessage) (any, error) {
+		run: func(_ context.Context, s *Server, userID string, actor *apiActor, args json.RawMessage) (any, error) {
 			var a struct {
 				TaskID    string  `json:"taskId"`
 				SubtaskID string  `json:"subtaskId"`
@@ -795,7 +806,7 @@ var mcpTools = []mcpTool{
 		Description: "Delete a task, e.g. one created by mistake: it goes to the task trash, where the user can restore it. Prefer complete_task for work that is done.",
 		Scope:       storage.ScopeTasksWrite,
 		Schema:      schema([]string{"id"}, map[string]any{"id": prop("string", "Task id")}),
-		run: func(s *Server, userID string, actor *apiActor, args json.RawMessage) (any, error) {
+		run: func(_ context.Context, s *Server, userID string, actor *apiActor, args json.RawMessage) (any, error) {
 			var a struct {
 				ID string `json:"id"`
 			}
@@ -816,7 +827,7 @@ var mcpTools = []mcpTool{
 		Description: "Shopping lists, checklists and other shared lists the user can see, with open/total item counts.",
 		Scope:       storage.ScopeListsRead,
 		Schema:      schema(nil, map[string]any{}),
-		run: func(s *Server, userID string, _ *apiActor, _ json.RawMessage) (any, error) {
+		run: func(_ context.Context, s *Server, userID string, _ *apiActor, _ json.RawMessage) (any, error) {
 			lists, err := s.store.GetAllListsForUser(userID)
 			if err != nil {
 				return nil, err
@@ -837,7 +848,7 @@ var mcpTools = []mcpTool{
 			"icon":     prop("string", "One emoji, optional"),
 			"listType": map[string]any{"type": "string", "enum": []string{"shopping", "checklist", "vacation"}, "description": "Default shopping"},
 		}),
-		run: func(s *Server, userID string, actor *apiActor, args json.RawMessage) (any, error) {
+		run: func(_ context.Context, s *Server, userID string, actor *apiActor, args json.RawMessage) (any, error) {
 			var a struct {
 				Title    string `json:"title"`
 				Icon     string `json:"icon"`
@@ -865,7 +876,7 @@ var mcpTools = []mcpTool{
 		Description: "One list with all its items (id, content, category, quantity, isCompleted).",
 		Scope:       storage.ScopeListsRead,
 		Schema:      schema([]string{"listId"}, map[string]any{"listId": prop("string", "List id from list_lists")}),
-		run: func(s *Server, userID string, actor *apiActor, args json.RawMessage) (any, error) {
+		run: func(_ context.Context, s *Server, userID string, actor *apiActor, args json.RawMessage) (any, error) {
 			var a struct {
 				ListID string `json:"listId"`
 			}
@@ -890,7 +901,7 @@ var mcpTools = []mcpTool{
 			"category": prop("string", "Category/aisle, e.g. Obst"),
 			"quantity": prop("string", "Amount, e.g. 2 or 500 g"),
 		}),
-		run: func(s *Server, userID string, actor *apiActor, args json.RawMessage) (any, error) {
+		run: func(_ context.Context, s *Server, userID string, actor *apiActor, args json.RawMessage) (any, error) {
 			var a struct {
 				ListID, Content, Category, Quantity string
 			}
@@ -912,7 +923,7 @@ var mcpTools = []mcpTool{
 			"itemId":    prop("string", "Item id from get_list"),
 			"completed": prop("boolean", "Default true"),
 		}),
-		run: func(s *Server, userID string, actor *apiActor, args json.RawMessage) (any, error) {
+		run: func(_ context.Context, s *Server, userID string, actor *apiActor, args json.RawMessage) (any, error) {
 			var a struct {
 				ListID    string `json:"listId"`
 				ItemID    string `json:"itemId"`
@@ -935,7 +946,7 @@ var mcpTools = []mcpTool{
 			"category": prop("string", "New category"),
 			"quantity": prop("string", "New amount"),
 		}),
-		run: func(s *Server, userID string, actor *apiActor, args json.RawMessage) (any, error) {
+		run: func(_ context.Context, s *Server, userID string, actor *apiActor, args json.RawMessage) (any, error) {
 			var a struct {
 				ListID   string  `json:"listId"`
 				ItemID   string  `json:"itemId"`
@@ -967,7 +978,7 @@ var mcpTools = []mcpTool{
 			"query":  prop("string", "Only notes whose title contains this text"),
 			"limit":  prop("integer", "Maximum number of notes (default 100)"),
 		}),
-		run: func(s *Server, userID string, _ *apiActor, args json.RawMessage) (any, error) {
+		run: func(ctx context.Context, s *Server, userID string, _ *apiActor, args json.RawMessage) (any, error) {
 			var a struct {
 				Folder, Query string
 				Limit         int
@@ -975,7 +986,7 @@ var mcpTools = []mcpTool{
 			if err := decodeArgs(args, &a); err != nil {
 				return nil, err
 			}
-			docs, err := s.store.GetDocumentList(context.Background(), userID)
+			docs, err := s.store.GetDocumentList(ctx, userID)
 			if err != nil {
 				return nil, err
 			}
@@ -1010,7 +1021,7 @@ var mcpTools = []mcpTool{
 		Description: "One note: content is its bullets as an indented Markdown list (one tab per level; - [ ] / - [x] are to-dos); bullets lists them with their ids, level and type, for add_note_bullet / update_note_bullet / delete_note_bullet. {{secret:…}} is a hidden value (the user keeps it off the screen; the format still says secret); it cannot be read here, keep it unchanged when editing the bullet. {{mention:<user id>}} in bullets is an @-mention of a person (content shows it as @Name); keep it unchanged as well. Drawings (type drawing) are described in words: shapes with their text, arrows as „A“ → „B“ (label).",
 		Scope:       storage.ScopeNotesRead,
 		Schema:      schema([]string{"id"}, map[string]any{"id": prop("string", "Note id")}),
-		run: func(s *Server, userID string, _ *apiActor, args json.RawMessage) (any, error) {
+		run: func(_ context.Context, s *Server, userID string, _ *apiActor, args json.RawMessage) (any, error) {
 			var a struct{ ID string }
 			if err := decodeArgs(args, &a); err != nil {
 				return nil, err
@@ -1039,7 +1050,7 @@ var mcpTools = []mcpTool{
 			"folderPath": prop("string", "Folder, e.g. Projekte/MindSift; empty = top level. Missing folders are created."),
 			"icon":       prop("string", "One emoji, optional (default 🗒️)"),
 		}),
-		run: func(s *Server, userID string, _ *apiActor, args json.RawMessage) (any, error) {
+		run: func(_ context.Context, s *Server, userID string, _ *apiActor, args json.RawMessage) (any, error) {
 			var a struct {
 				Title, FolderPath, Icon string
 				Content                 json.RawMessage
@@ -1093,7 +1104,7 @@ var mcpTools = []mcpTool{
 		Description: "Full-text search over tasks, list items and notes the user can see (each only with the matching read right). Notes come as matching bullets with the note id for get_note.",
 		Scope:       storage.ScopeTasksRead,
 		Schema:      schema([]string{"query"}, map[string]any{"query": prop("string", "Words to search for")}),
-		run: func(s *Server, userID string, actor *apiActor, args json.RawMessage) (any, error) {
+		run: func(_ context.Context, s *Server, userID string, actor *apiActor, args json.RawMessage) (any, error) {
 			var a struct {
 				Query string `json:"query"`
 			}
@@ -1126,7 +1137,7 @@ var mcpTools = []mcpTool{
 			"priority": map[string]any{"type": "string", "enum": []string{"low", "normal", "high", "urgent"}},
 			"dueDate":  prop("string", "YYYY-MM-DD, optional"),
 		}),
-		run: func(s *Server, userID string, actor *apiActor, args json.RawMessage) (any, error) {
+		run: func(_ context.Context, s *Server, userID string, actor *apiActor, args json.RawMessage) (any, error) {
 			var a struct {
 				Content, Priority, DueDate string
 			}

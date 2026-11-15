@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"image"
 	"image/jpeg"
@@ -230,5 +231,64 @@ func TestMCPAddNoteImageFromURL(t *testing.T) {
 	}
 	if _, isErr, _ := call(key.RawKey, "add_note_image", `{"noteId":"`+doc.ID+`","url":"https://example.com/bild.svg"}`); !isErr {
 		t.Fatal("an SVG behind a URL must be refused")
+	}
+}
+
+// Only a few large MCP requests at a time: the next one gets a busy error before its body is read, small
+// ones go on. The image tool names the server's own limit.
+func TestMCPLargeRequestGate(t *testing.T) {
+	srv, store, token := setupTestServer(t)
+	srv.cfg.Media.MaxImageMB = 7
+	claims, _ := auth.ValidateToken(testJWTSecret, token)
+	call := mcpCaller(t, srv)
+	key, _ := store.CreateAPIKey(claims.UserID, "Agent", []string{"notes:read", "notes:write"})
+	doc, _ := store.CreateDocument(claims.UserID, "", "Gate", "", "", nil, nil, false)
+
+	_, list := rpc(t, srv.Router(), key.RawKey, `{"jsonrpc":"2.0","id":1,"method":"tools/list"}`)
+	found := false
+	for _, tl := range list["result"].(map[string]any)["tools"].([]any) {
+		if m := tl.(map[string]any); m["name"] == "add_note_image" {
+			desc := m["description"].(string)
+			found = strings.Contains(desc, "at most 7 MB per image") && !strings.Contains(desc, mcpImageLimitText)
+		}
+	}
+	if !found {
+		t.Fatal("add_note_image must name the server's image limit (7 MB)")
+	}
+
+	big := `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"add_note_image","arguments":{"noteId":"` + doc.ID + `","data":"` + imgB64(tinyPNG(t, 3<<20)) + `"}}}`
+	for range maxMCPLargeRunning {
+		if !srv.mcpLarge.enter() {
+			t.Fatal("gate refused a free place")
+		}
+	}
+	_, out := rpc(t, srv.Router(), key.RawKey, big)
+	if e, _ := out["error"].(map[string]any); e == nil || e["code"] != float64(rpcServerBusy) || !strings.Contains(e["message"].(string), "try again") {
+		t.Fatalf("busy: want a JSON-RPC busy error, got %v", out)
+	}
+	// Small requests are not held back
+	if _, isErr, msg := call(key.RawKey, "add_note_bullet", `{"noteId":"`+doc.ID+`","text":"klein"}`); isErr {
+		t.Fatalf("small request while busy: %s", msg)
+	}
+	srv.mcpLarge.leave()
+	_, out = rpc(t, srv.Router(), key.RawKey, big)
+	if res, ok := out["result"].(map[string]any); !ok || res["isError"] == true {
+		t.Fatalf("with a free place the image goes in: %v", out)
+	}
+	srv.mcpLarge.leave()
+	if srv.mcpLarge.running != 0 {
+		t.Fatalf("every request gives its place back: %d", srv.mcpLarge.running)
+	}
+
+	// The tools get the request's context: a client that went away changes nothing
+	before, _, _ := call(key.RawKey, "get_note", `{"id":"`+doc.ID+`"}`)
+	tool, _ := mcpToolByName("add_note_bullet")
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	if _, err := tool.run(ctx, srv, claims.UserID, &apiActor{}, json.RawMessage(`{"noteId":"`+doc.ID+`","text":"weg"}`)); err == nil {
+		t.Fatal("a cancelled request must not change the note")
+	}
+	if after, _, _ := call(key.RawKey, "get_note", `{"id":"`+doc.ID+`"}`); len(bulletTexts(after)) != len(bulletTexts(before)) {
+		t.Fatalf("bullets: %v -> %v", bulletTexts(before), bulletTexts(after))
 	}
 }

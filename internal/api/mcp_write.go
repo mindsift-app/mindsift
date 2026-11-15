@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -103,6 +104,11 @@ func (s *Server) editableNote(userID, docID string) error {
 
 // applyNoteOps runs bullet operations as the agent and tells open editors and lists about them
 func (s *Server) applyNoteOps(userID string, actor *apiActor, docID string, ops []collab.Op) error {
+	return s.applyNoteOpsCtx(context.Background(), userID, actor, docID, ops)
+}
+
+// applyNoteOpsCtx is applyNoteOps that stops waiting for the note when ctx ends (the client went away)
+func (s *Server) applyNoteOpsCtx(ctx context.Context, userID string, actor *apiActor, docID string, ops []collab.Op) error {
 	a := collab.Actor{UserID: userID, ClientID: collab.MCPHolder}
 	if actor != nil && actor.KeyID != "" {
 		a.ClientID = collab.MCPKeyHolderPrefix + actor.KeyID
@@ -110,7 +116,7 @@ func (s *Server) applyNoteOps(userID string, actor *apiActor, docID string, ops 
 	if u, err := s.store.GetUserByID(userID); err == nil {
 		a.Name = u.DisplayName
 	}
-	results, _, err := s.store.ApplyDocOps(docID, a, ops, s.leases.View(docID))
+	results, _, err := s.store.ApplyDocOpsCtx(ctx, docID, a, ops, s.leases.View(docID))
 	if err != nil {
 		return err
 	}
@@ -206,7 +212,7 @@ var mcpWriteTools = []mcpTool{
 			"icon":       prop("string", "One emoji, optional"),
 			"folderPath": prop("string", "Folder, e.g. Projekte/MindSift; empty string = top level; leave out to keep it"),
 		}),
-		run: func(s *Server, userID string, _ *apiActor, args json.RawMessage) (any, error) {
+		run: func(_ context.Context, s *Server, userID string, _ *apiActor, args json.RawMessage) (any, error) {
 			var a struct {
 				ID         string
 				Title      *string
@@ -261,7 +267,7 @@ var mcpWriteTools = []mcpTool{
 			"parentId": prop("string", "Insert as the last child of this bullet (optional; ignored with afterId)"),
 			"checked":  map[string]any{"type": "boolean", "description": "For a to-do: already done"},
 		}),
-		run: func(s *Server, userID string, actor *apiActor, args json.RawMessage) (any, error) {
+		run: func(ctx context.Context, s *Server, userID string, actor *apiActor, args json.RawMessage) (any, error) {
 			var a struct {
 				NoteID, Text, Type, AfterID, ParentID string
 				Checked                               bool
@@ -299,7 +305,7 @@ var mcpWriteTools = []mcpTool{
 			}
 			props := collab.Props{Checked: a.Type == "todo" && a.Checked}
 			op := collab.Op{OpID: domain.NewID("op"), Kind: collab.OpInsert, BlockID: id, ParentID: &parent, OrderKey: key, Type: a.Type, Content: &text, Props: &props}
-			if err := s.applyNoteOps(userID, actor, a.NoteID, []collab.Op{op}); err != nil {
+			if err := s.applyNoteOpsCtx(ctx, userID, actor, a.NoteID, []collab.Op{op}); err != nil {
 				return nil, err
 			}
 			res, err := noteResult(s, userID, a.NoteID)
@@ -314,7 +320,7 @@ var mcpWriteTools = []mcpTool{
 		Description: "Add an image to a note as its own bullet (e.g. a picture you generated or a screenshot), placed like add_note_bullet. " +
 			"Give exactly one of data or url. data: the image file as base64 (standard alphabet; a data:image/…;base64, prefix is accepted too). " +
 			"url: an https address of an image on the internet; MindSift copies the image into the note (addresses in the server's own network are refused). " +
-			"Accepted: JPEG, PNG, GIF, WebP (no SVG), at most " + mcpImageLimitText + " per image (the server's limit for images in notes; the error names it if it is lower). " +
+			"Accepted: JPEG, PNG, GIF, WebP (no SVG), at most " + mcpImageLimitText + " per image (the server's limit for images in notes). " +
 			"Returns the note with addedId (the bullet) and mediaId.",
 		Scope: storage.ScopeNotesWrite,
 		Schema: schema([]string{"noteId"}, map[string]any{
@@ -325,8 +331,8 @@ var mcpWriteTools = []mcpTool{
 			"afterId":  prop("string", "Insert right after this bullet, on its level (optional)"),
 			"parentId": prop("string", "Insert as the last child of this bullet (optional; ignored with afterId)"),
 		}),
-		run: func(s *Server, userID string, actor *apiActor, args json.RawMessage) (any, error) {
-			return s.mcpAddNoteImage(userID, actor, args)
+		run: func(ctx context.Context, s *Server, userID string, actor *apiActor, args json.RawMessage) (any, error) {
+			return s.mcpAddNoteImage(ctx, userID, actor, args)
 		},
 	},
 	{
@@ -341,7 +347,7 @@ var mcpWriteTools = []mcpTool{
 			"checked":  map[string]any{"type": "boolean", "description": "To-do done (true) or open (false), optional"},
 			"type":     map[string]any{"type": "string", "enum": []string{"text", "todo", "h1", "h2", "h3", "numbered", "callout", "warning", "error", "drawing"}},
 		}),
-		run: func(s *Server, userID string, actor *apiActor, args json.RawMessage) (any, error) {
+		run: func(ctx context.Context, s *Server, userID string, actor *apiActor, args json.RawMessage) (any, error) {
 			var a struct {
 				NoteID, BulletID string
 				Text             *string
@@ -410,7 +416,7 @@ var mcpWriteTools = []mcpTool{
 			if len(ops) == 0 {
 				return noteResult(s, userID, a.NoteID)
 			}
-			if err := s.applyNoteOps(userID, actor, a.NoteID, ops); err != nil {
+			if err := s.applyNoteOpsCtx(ctx, userID, actor, a.NoteID, ops); err != nil {
 				return nil, err
 			}
 			return noteResult(s, userID, a.NoteID)
@@ -424,7 +430,7 @@ var mcpWriteTools = []mcpTool{
 			"noteId":   prop("string", "Note id"),
 			"bulletId": prop("string", "Bullet id"),
 		}),
-		run: func(s *Server, userID string, actor *apiActor, args json.RawMessage) (any, error) {
+		run: func(ctx context.Context, s *Server, userID string, actor *apiActor, args json.RawMessage) (any, error) {
 			var a struct{ NoteID, BulletID string }
 			if err := decodeArgs(args, &a); err != nil {
 				return nil, err
@@ -444,7 +450,7 @@ var mcpWriteTools = []mcpTool{
 				return nil, err
 			}
 			op := collab.Op{OpID: domain.NewID("op"), Kind: collab.OpDelete, BlockID: b.ID}
-			if err := s.applyNoteOps(userID, actor, a.NoteID, []collab.Op{op}); err != nil {
+			if err := s.applyNoteOpsCtx(ctx, userID, actor, a.NoteID, []collab.Op{op}); err != nil {
 				return nil, err
 			}
 			return noteResult(s, userID, a.NoteID)
@@ -455,7 +461,7 @@ var mcpWriteTools = []mcpTool{
 		Description: "Move one of the user's own notes into the trash (it can be restored there).",
 		Scope:       storage.ScopeNotesWrite,
 		Schema:      schema([]string{"id"}, map[string]any{"id": prop("string", "Note id")}),
-		run: func(s *Server, userID string, _ *apiActor, args json.RawMessage) (any, error) {
+		run: func(_ context.Context, s *Server, userID string, _ *apiActor, args json.RawMessage) (any, error) {
 			var a struct{ ID string }
 			if err := decodeArgs(args, &a); err != nil {
 				return nil, err
@@ -489,7 +495,7 @@ var mcpWriteTools = []mcpTool{
 			"query": prop("string", "Only entries containing this text (case-insensitive), optional"),
 			"limit": map[string]any{"type": "integer", "description": "Maximum number (default 50)"},
 		}),
-		run: func(s *Server, userID string, _ *apiActor, args json.RawMessage) (any, error) {
+		run: func(_ context.Context, s *Server, userID string, _ *apiActor, args json.RawMessage) (any, error) {
 			var a struct {
 				Query string
 				Limit int
@@ -530,7 +536,7 @@ var mcpWriteTools = []mcpTool{
 			"listId":     prop("string", "For a list item: the list (required)"),
 			"dueDate":    prop("string", "For a task: YYYY-MM-DD or YYYY-MM-DDTHH:MM, optional"),
 		}),
-		run: func(s *Server, userID string, actor *apiActor, args json.RawMessage) (any, error) {
+		run: func(_ context.Context, s *Server, userID string, actor *apiActor, args json.RawMessage) (any, error) {
 			var a struct {
 				ID, To, TaskListID, ListID, DueDate string
 			}
@@ -574,7 +580,7 @@ var mcpWriteTools = []mcpTool{
 		Description: "Discard an inbox entry. It goes to the triage trash, where the user can restore it.",
 		Scope:       storage.ScopeInboxWrite,
 		Schema:      schema([]string{"id"}, map[string]any{"id": prop("string", "Inbox entry id")}),
-		run: func(s *Server, userID string, _ *apiActor, args json.RawMessage) (any, error) {
+		run: func(_ context.Context, s *Server, userID string, _ *apiActor, args json.RawMessage) (any, error) {
 			var a struct{ ID string }
 			if err := decodeArgs(args, &a); err != nil {
 				return nil, err
