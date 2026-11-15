@@ -48,8 +48,7 @@
     "addQuantity": "+ Menge"
   },
   "quantityHint": {
-    "recognized": "Erkannte Menge: {{quantity}}",
-    "ignore": "Menge nicht übernehmen"
+    "recognized": "Erkannte Menge: {{quantity}}"
   },
   "hashtagsHeading": "Hashtags"
 }

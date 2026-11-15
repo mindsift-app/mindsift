@@ -137,33 +137,35 @@ describe('SharedListsView: quantity typed into the item', () => {
     });
   };
 
-  it('shows the quantity as a chip, marks it and saves it into its own field', async () => {
+  const qtyField = () => screen.getByLabelText('Menge (optional)') as HTMLInputElement;
+
+  it('fills the quantity field from the text, marks it and saves the name without it', async () => {
     const input = await setup();
     type(input, '2x Milch #Kühlregal');
-    expect(screen.getByTestId('quantity-chip').textContent).toBe('2x');
+    expect(qtyField().value).toBe('2x');
     expect(screen.getByTestId('quantity-mark').textContent).toBe('2x');
     await submit(input);
     expect(createListItem).toHaveBeenCalledWith('lst_1', 'Milch', 'Kühlregal', '2x');
-    expect(screen.queryByTestId('quantity-chip')).toBeNull();
+    expect(qtyField().value).toBe('');
   });
 
-  it('× keeps the text as typed', async () => {
+  it('emptying the filled quantity field keeps the text as typed', async () => {
     const input = await setup();
     type(input, '500g Pasta');
-    fireEvent.click(screen.getByRole('button', { name: 'Menge nicht übernehmen' }));
-    expect(screen.queryByTestId('quantity-chip')).toBeNull();
+    expect(qtyField().value).toBe('500g');
+    fireEvent.change(qtyField(), { target: { value: '' } });
+    expect(qtyField().value).toBe('');
+    expect(screen.queryByTestId('quantity-mark')).toBeNull();
     await submit(input);
     expect(createListItem).toHaveBeenCalledWith('lst_1', '500g Pasta', undefined, '');
   });
 
-  it('a quantity in its own field wins, units included', async () => {
+  it('a quantity typed into its own field wins, units included', async () => {
     const input = await setup();
     type(input, '3 Äpfel');
-    expect(screen.getByTestId('quantity-chip').textContent).toBe('3');
-    const qty = screen.getByLabelText('Menge (optional)') as HTMLInputElement;
-    fireEvent.change(qty, { target: { value: '500 g' } });
-    expect(qty.value).toBe('500 g');
-    expect(screen.queryByTestId('quantity-chip')).toBeNull();
+    expect(qtyField().value).toBe('3');
+    fireEvent.change(qtyField(), { target: { value: '500 g' } });
+    expect(qtyField().value).toBe('500 g');
     await submit(input);
     expect(createListItem).toHaveBeenCalledWith('lst_1', '3 Äpfel', undefined, '500 g');
   });
