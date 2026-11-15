@@ -84,6 +84,10 @@ A bullet with a hidden value of another note pasted into a note (the text goes i
 
 Tasks and shopping lists behind simulated proxies (nothing blocked; WebSocket refused and SSE held without an answer; WebSocket refused and SSE refused): another device adds a task, moves it to another column and adds a list item. Each change has to show up in the open browser within 8 s, without reloading or switching tabs.
 
+## linked-todos.e2e.mjs
+
+A to-do in a note linked to a task in a list shared with "user", assigned to both accounts. The admin has the note open, "user" the list in the list view (two browser contexts). Each round: ticked in the note → the task view shows it done; reopened and completed in the task view → the note follows; unticked in the note → open again; renamed in the note and in the task view (detail dialog) → the other side shows the new title. After every change the task view still shows both assignees. 50 rounds (`ROUNDS`); afterwards task and note agree on the server, and the JS heap of both pages (after a forced garbage collection over the Chrome DevTools Protocol) and the server's Go heap (`/metrics`, only with `METRICS_TOKEN`; `run.sh` sets one) have not grown beyond a small margin. The times from change to display are printed; `SHOT_DIR` keeps screenshots of both pages of a failed round. About two minutes.
+
 ## channels.e2e.mjs
 
 The owner types with a normal connection, the editor sits behind a simulated proxy. For each situation the chosen transport and the time until the change shows are measured: nothing blocked (WebSocket), WebSocket refused (SSE), WebSocket accepted but silent (SSE after missed heartbeats), WebSocket and SSE blocked as well as a hanging SSE (long polling), only plain requests (polling every 3 s).
