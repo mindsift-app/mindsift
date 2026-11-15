@@ -453,7 +453,8 @@
     "copy": "{{name}} bearbeitet diese Version gerade – bitte kurz warten",
     "someone": "Jemand",
     "drawing": "Wird gerade von {{name}} bearbeitet",
-    "drawingOwn": "Wird gerade auf einem anderen Gerät oder in einem anderen Tab bearbeitet"
+    "drawingOwn": "Wird gerade auf einem anderen Gerät oder in einem anderen Tab bearbeitet",
+    "you": "Du"
   },
   "extractMenu": {
     "title": "Wohin auslagern?",

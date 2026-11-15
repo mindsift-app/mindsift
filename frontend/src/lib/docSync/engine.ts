@@ -12,6 +12,7 @@ import { keepUndoHistory, takeUndoHistory } from './undoHistory';
 import { PushChannel, PushKind, realtimePush } from './push';
 import { getCurrentUserId } from '../api/client';
 import { personName } from '../mentions';
+import { browserId, deviceKind } from './device';
 import i18n from '../../i18n';
 
 export type EngineStatus = 'loading' | 'saved' | 'saving' | 'offline' | 'error';
@@ -761,7 +762,9 @@ export class DocSyncEngine {
         clientId: this.clientId,
         lastSeq: this.lastSeq,
         ops: batch || [],
-        leases: this.canEdit && this.collaborative() ? { hold: this.holds(), release: [] } : undefined,
+        ...(this.canEdit && this.collaborative()
+          ? { leases: { hold: this.holds(), release: [] }, device: deviceKind(), browser: browserId() }
+          : {}),
       });
       const lostTo = new Map<string, string>(); // block -> conflict copy of its losing text
       if (batch) {

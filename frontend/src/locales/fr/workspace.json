@@ -457,7 +457,8 @@
     "copy": "{{name}} modifie cette version en ce moment – patiente un instant",
     "someone": "Quelqu'un",
     "drawing": "En cours de modification par {{name}}",
-    "drawingOwn": "En cours de modification sur un autre appareil ou dans un autre onglet"
+    "drawingOwn": "En cours de modification sur un autre appareil ou dans un autre onglet",
+    "you": "Toi"
   },
   "extractMenu": {
     "title": "Extraire vers où ?",

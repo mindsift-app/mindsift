@@ -42,8 +42,10 @@ export function useDocPresence(
         userId: l.userId,
         name: l.name || t('lock.someone'),
         avatarUrl: avatarsById.get(l.userId),
-        // The same person in another tab or on another device
-        ...(currentUserId && l.userId === currentUserId ? { own: true } : {}),
+        // The same person in another tab or on another device (which one, as far as that client told)
+        ...(currentUserId && l.userId === currentUserId
+          ? { own: true, ownOn: l.sameBrowser ? ('tab' as const) : l.device === 'phone' ? ('phone' as const) : ('computer' as const) }
+          : {}),
         // A live drawing holds the bullet: everyone drawing in it
         ...(l.live?.length ? { live: l.live.map((p) => ({ userId: p.userId, name: p.name || t('lock.someone'), avatarUrl: avatarsById.get(p.userId) })) } : {}),
       });

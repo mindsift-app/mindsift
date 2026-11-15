@@ -11,6 +11,10 @@ export interface LeaseInfo {
   name: string;
   /** A live drawing session holds the block: everyone drawing in it (host first) */
   live?: Presence[];
+  /** Only for a block held in one's own other tab or device: the kind of device it announced */
+  device?: 'phone' | 'computer';
+  /** Only for a block held in one's own other tab: it runs in this browser */
+  sameBrowser?: boolean;
 }
 
 export interface Presence {
@@ -42,6 +46,9 @@ export interface SyncRequest {
   ops: Op[];
   leases?: { hold: string[]; release: string[] };
   skipLog?: boolean; // one-off changes do not need the log back
+  // Sent along with leases: shown to the same person's other tabs and devices (lib/docSync/device.ts)
+  device?: 'phone' | 'computer';
+  browser?: string;
 }
 
 export interface SyncResponse {

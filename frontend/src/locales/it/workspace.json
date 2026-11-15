@@ -457,7 +457,8 @@
     "copy": "{{name}} sta modificando questa versione: attendi un momento",
     "someone": "Qualcuno",
     "drawing": "In modifica da parte di {{name}} in questo momento",
-    "drawingOwn": "In modifica in questo momento su un altro dispositivo o in un'altra scheda"
+    "drawingOwn": "In modifica in questo momento su un altro dispositivo o in un'altra scheda",
+    "you": "Tu"
   },
   "extractMenu": {
     "title": "Estrarre dove?",

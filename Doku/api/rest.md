@@ -341,8 +341,9 @@ Concept and rules: [modules/collaboration.md](../modules/collaboration.md). Acce
 - At most 500 operations per request. Viewers cannot submit operations (`403`), but may query.
 - A note holds at most 20,000 live bullets and 40,000 including deleted ones (they are purged after the retention period). An operation that would add one more (insert, restore, a conflict copy) is answered `rejected` with reason `note_full`; creating a note with more bullets (`POST /documents`, import, MCP) answers `400`. Every sync and snapshot loads the whole note, so its size is the cost of each change.
 - `skipLog: true` suppresses returning the operation log; intended for single mutations without an active editor (e.g. checking off items in the to-do overview).
+- `device` (`phone` or `computer`, anything else counts as not told) and `browser` (an id of up to 32 letters and digits that all tabs of one browser share) are optional; the app sends them along with `leases`. They only serve the person's own other tabs and devices, see `leases.others[]`; `browser` is never passed on.
 
-`leases.others[]` carries `live` (everyone drawing, host first) when a live drawing session holds the bullet.
+`leases.others[]` carries `live` (everyone drawing, host first) when a live drawing session holds the bullet. A bullet the caller holds in another tab or on another device of their own (same `userId`, no live drawing) also carries `device` as that client sent it and `sameBrowser: true` when its `browser` matches the caller's; the app then shows "Du" with a phone, computer or tab icon instead of the own name. Others never get these two fields.
 
 Response: `results` (per operation: `status` `applied`/`conflict`/`rejected`, optionally `conflictBlockId`, `version`, `seq`), `ops` (log entries `{seq, opId, userId, clientId, effect}` from `lastSeq`, at most 1000; `hasMore` if more exist), `headSeq`, `resync` (reload snapshot: the client is ahead of the server, or its `lastSeq` precedes the compacted boundary `log_floor`; submitted operations are applied regardless), `role`, `shared`, `sessions`, `presence`, `leases` (`granted`, `denied`, `others`).
 

@@ -457,7 +457,8 @@
     "copy": "{{name}} está editando esta versión ahora mismo; espera un momento",
     "someone": "Alguien",
     "drawing": "{{name}} lo está editando en este momento",
-    "drawingOwn": "Se está editando ahora mismo en otro dispositivo o en otra pestaña"
+    "drawingOwn": "Se está editando ahora mismo en otro dispositivo o en otra pestaña",
+    "you": "Tú"
   },
   "extractMenu": {
     "title": "¿Extraer a dónde?",

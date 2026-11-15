@@ -98,6 +98,9 @@ func (s *Server) handleDocSync(w http.ResponseWriter, r *http.Request) {
 			Release []string `json:"release"`
 		} `json:"leases"`
 		SkipLog bool `json:"skipLog"` // one-off changes (e.g. ticking a to-do in the overview) need no log
+		// The client's device kind and its browser's id, for the person's own other tabs and devices
+		Device  string `json:"device"`
+		Browser string `json:"browser"`
 	}
 	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, syncMaxBody)).Decode(&req); err != nil {
 		writeError(w, http.StatusBadRequest, "Ungültiges JSON")
@@ -123,7 +126,7 @@ func (s *Server) handleDocSync(w http.ResponseWriter, r *http.Request) {
 	if ctx.Err() != nil {
 		return
 	}
-	actor := collab.Actor{UserID: userID, ClientID: req.ClientID}
+	actor := collab.Actor{UserID: userID, ClientID: req.ClientID, Device: syncDevice(req.Device), Browser: syncBrowser(req.Browser)}
 	if u, err := s.store.GetUserByID(userID); err == nil {
 		actor.Name = u.DisplayName
 	}
@@ -209,7 +212,7 @@ func (s *Server) handleDocSync(w http.ResponseWriter, r *http.Request) {
 	resp.Shared = s.store.IsDocShared(docID)
 	resp.TaskLinks, resp.SubtaskLinks = s.store.DocTaskLinks(docID)
 	resp.Sessions, resp.Presence = s.leases.Sessions(docID)
-	resp.Leases.Others = s.leases.Others(docID, req.ClientID)
+	resp.Leases.Others = s.leases.Others(docID, actor)
 
 	if changed {
 		s.notifyDocChanged(docID, head)
@@ -359,6 +362,27 @@ func (s *Server) handleDocLeave(w http.ResponseWriter, r *http.Request) {
 	_, head, _ := s.store.GetDocOpsSince(docID, 0, 0)
 	s.notifyDocChanged(docID, head)
 	writeJSON(w, http.StatusOK, map[string]bool{"success": true})
+}
+
+// syncDevice keeps a known device kind from a sync request; anything else counts as not told.
+func syncDevice(d string) string {
+	if d == collab.DevicePhone || d == collab.DeviceComputer {
+		return d
+	}
+	return ""
+}
+
+// syncBrowser keeps a browser id of up to 32 letters and digits from a sync request, else none.
+func syncBrowser(b string) string {
+	if len(b) > 32 {
+		return ""
+	}
+	for _, c := range b {
+		if !(c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || c >= '0' && c <= '9') {
+			return ""
+		}
+	}
+	return b
 }
 
 // reservedClientID answers 400 for a client ID that is one of the server's own lease holders (a live
