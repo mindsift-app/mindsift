@@ -129,12 +129,12 @@ If something here is out of date or unfair, please open an issue.
 
 ### Not yet, but planned
 
-* **SAML and LDAP:** single sign-on is OpenID Connect only.
 * **Signing out at the provider signs you out of MindSift:** today a MindSift session lasts until it expires, even after you sign out at the provider. (Signing out of MindSift keeps you signed in at the provider, on purpose.)
-* **Time zones per person:** one time zone per server, not per person (Administration → Server, or `TZ`).
 
 ### Not in MindSift, for a reason
 
+* **SAML and LDAP:** single sign-on is OpenID Connect only. Providers such as Authentik, Keycloak or Entra ID speak it and connect your LDAP or Active Directory, so MindSift does not have to.
+* **Time zones per person:** one time zone per server (Administration → Server, or `TZ`); reminders, the daily summary and due dates all follow it. Ask if you need more.
 * **PostgreSQL or MySQL:** SQLite on purpose (see [design decisions](#design-decisions)).
 * **Backups to S3, WebDAV or SFTP:** backups go to `data/backups/`, where the administration restores them with one click. Copying them elsewhere belongs to the backup you run for the whole server, not to each app.
 * **A Helm chart:** it is a single container with one volume; Docker Compose, or a small Kubernetes manifest of your own, is all it takes.
@@ -211,6 +211,7 @@ The most important settings (all of them are in [`.env.example`](.env.example); 
 * **Backups:** the setup wizard offers daily backups (preselected: 03:00 server time, kept 3 days). Each run saves the whole database plus one ZIP per person under `data/backups/`; copy that folder somewhere else too. Putting a whole database back: [Doku/operations.md](Doku/operations.md#restoring-a-whole-server).
 * **Updates:** `docker compose pull && docker compose up -d`. The database schema updates itself; with `user:` in the compose file, run `chown -R 1000:1000 data` first (the container runs as uid 1000 since v0.87.3).
 * **Rolling back:** before an update changes the database schema, MindSift saves a compressed copy of the database as `data/backups/system/pre-migration-<migration>-<date>-<time>.db.gz` (the last three are kept, for at most 90 days; without the copy, for example on a full disk, it does not migrate and stops). From the release after v0.95.0 on, an older image refuses to start on a database a newer one has changed and says so in the log. **v0.95.0 and earlier do not check this:** they start on the newer database without a word, and accounts that signed in on the newer version cannot sign in there any more (passwords are stored in a newer form that they cannot read). So going back to v0.95.0 or earlier always means restoring the copy from before the update; it predates the new password form, and sign-ins work again. To go back: stop the container, unpack the copy from before the update over the database (`gunzip -c data/backups/system/pre-migration-….db.gz > data/mindsift.db`) and delete `data/mindsift.db-wal` and `data/mindsift.db-shm` if they exist, pin the older image (`image: ghcr.io/mindsift-app/mindsift:vX.Y.Z`) and start it. Whatever was written after the update is not in that copy ([details](Doku/operations.md#rolling-back)).
+* **Locked out:** a small command line in the binary resets a password (with or without the second factors), makes an account admin, lists, creates or deletes accounts and checks the database, next to the running server: `docker exec mindsift mindsift reset-password anna` ([all commands](Doku/operations.md#locked-out--command-line)).
 * **Health and monitoring:** the image checks `/api/v1/health` every 30 s (Podman ignores that; copy the `healthcheck:` block of `docker-compose.yml`). `METRICS_TOKEN` switches on Prometheus metrics at `/metrics` ([scrape config and details](Doku/operations.md#monitoring)).
 * **File permissions:** everything in `data/` is readable by MindSift only; without the container, run `chmod -R go-rwx data`.
 * **Image tags:** `:stable` = the latest release (default), `:vX.Y.Z` = one release, `:latest` = every build of `main`, `:dev` = development. The project is 0.x: the [changelog](CHANGELOG.md) marks breaking changes with **Attention**.

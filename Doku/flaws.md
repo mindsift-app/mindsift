@@ -80,24 +80,15 @@ FLAW-31 is resolved in part (0.6.0) and stays in the overview above. FLAW-34 (re
 
 ### Capture
 - **Natural Language Dates** during capture: "Dentist tomorrow 2pm" automatically sets the due date and time.
-- **Email to Inbox:** A dedicated personal email address whose incoming emails become inbox thoughts.
-
-### Tasks & Reminders
-- **iCal Subscription or CalDAV** for due tasks (e.g. in Google/Apple Calendar); the calendar view inside MindSift exists.
-- **Flexible Recurrence:** "every 2nd Tuesday", "on the last business day", "3 days after completion".
 
 ### Notes
-- **View & Restore Version History:** The operations log (`doc_ops`) exists, but a dedicated UI is missing.
 - **Templates** (e.g. "Weekly Review").
-- **Graph View** based on backlinks.
 
 ### Lists
-- **Sort by Store:** Arrange categories according to the physical layout of your local supermarket.
 - **Suggest Frequent Items** while typing (based on completed entries).
 
 ### Account & Security
 - **Admin Audit Log:** Detailed record of who modified accounts, roles, and settings, and when.
 
 ### Operations
-- **Offsite Backup Destinations** (WebDAV, S3, SFTP) to survive local drive failures.
 - **Update Notifications** in the admin interface when a new release image is available.

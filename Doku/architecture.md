@@ -42,7 +42,8 @@ MindSift builds several things itself that other projects take from a library, a
 
 | Path | Contents |
 |---|---|
-| `cmd/server/` | `main.go`, embedded `dist/` |
+| `cmd/server/` | `main.go` (the server, or a command of the operator's command line when one is given), embedded `dist/` |
+| `internal/cli/` | Operator's command line (`mindsift users`, `reset-password`, `make-admin`, `check`, see [operations.md](operations.md#locked-out--command-line)); opens the database without migrating it (`storage.WithExistingSchema`), records each change in `cli_events`, which the running server reads every few seconds (`api/cli_support.go`) |
 | `internal/api/` | `server.go` (server, router with all routes, middleware, JSON helpers); handlers by domain in `handlers_*.go` (`auth`, `account`, `thoughts`, `documents`, `folders`, `lists`, `tasklists`, `teams`, `admin`, `integrations`), `realtime.go` (WebSocket/SSE/long polling), `alarms.go` (ticker and dispatch), `docsync.go`, `mail.go`, `netguard.go`, `password_reset.go` |
 | `internal/storage/` | `sqlite.go` (store, schema, migrations); data logic by domain: `users.go`, `apikeys.go`, `thoughts.go` (incl. alarms), `tasklists.go`, `documents.go`, `folders.go`, `tags.go`, `lists.go`, `teams.go`, `system.go` (settings, statistics, export), plus `visibility.go`, `docsync.go` (note log, snapshot, compaction), `doclog.go` (bullet texts in the log as references and deltas), `note_storage.go` (migration 44, search index of notes without a copy of their text), `search.go`, `trash.go`, `backlinks.go`, `recurrence.go`, among others |
 | `internal/domain/` | Structures (`models.go`), ID generation, tag extraction |

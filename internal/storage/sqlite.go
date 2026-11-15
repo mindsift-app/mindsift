@@ -45,6 +45,8 @@ type Store struct {
 	// demoMode: the database holds only the demo's sample data, so one that cannot be migrated or reset
 	// is wiped instead of stopping the start (WithDemoMode, demo.go)
 	demoMode bool
+	// existingSchema: open without creating or migrating (WithExistingSchema, cli.go)
+	existingSchema bool
 
 	// OnTaskCreated is told about tasks the store creates by itself (next occurrence of a repeating
 	// task), so the server can push them to connected clients.
@@ -127,6 +129,13 @@ func newStore(driverName, dbPath string, opts ...StoreOption) (*Store, error) {
 		store.dataDir = filepath.Dir(dbPath)
 		store.mediaRoot = filepath.Join(filepath.Dir(dbPath), "media")
 		store.systemBackupDir = filepath.Join(filepath.Dir(dbPath), "backups", "system")
+	}
+	if store.existingSchema {
+		if err := store.checkExistingSchema(dbPath); err != nil {
+			_ = db.Close()
+			return nil, err
+		}
+		return store, nil
 	}
 	if err := store.migrate(); err != nil {
 		// The demo's data is disposable: a database it cannot migrate (left half reset, say) is wiped

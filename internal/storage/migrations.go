@@ -79,6 +79,7 @@ var migrations = []migration{
 	{51, "Leaner note list: indexes for its hashtag counts and shares, unused documents.content removed", (*Store).migrateNoteList},
 	{52, "Code blocks keep no hidden values; smaller results of note operations", (*Store).migrateCodeBlocksAndOpResults},
 	{53, "Covering index for the note search", (*Store).migrateSearchCoverIndex},
+	{54, "Record of changes made on the command line", (*Store).migrateCLIEvents},
 }
 
 // migrationBlockRefs creates block_refs: until it has run (earlier steps that rewrite notes), writing a

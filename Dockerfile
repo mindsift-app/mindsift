@@ -120,6 +120,8 @@ WORKDIR /app
 COPY --from=backend-builder /app/mindsift /app/mindsift
 COPY --from=backend-builder /app/THIRD_PARTY_LICENSES.txt /app/THIRD_PARTY_LICENSES.txt
 COPY ci/entrypoint.sh /app/entrypoint.sh
+# The command line on PATH: docker exec <container> mindsift help
+COPY ci/mindsift-cli.sh /usr/local/bin/mindsift
 
 ENV PORT=8080
 ENV DATA_DIR=/data

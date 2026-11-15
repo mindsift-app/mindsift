@@ -16,6 +16,7 @@ import (
 	_ "time/tzdata" // time zones without system tzdata (scratch/alpine images)
 
 	"github.com/mindsift-app/mindsift/internal/api"
+	"github.com/mindsift-app/mindsift/internal/cli"
 	"github.com/mindsift-app/mindsift/internal/clock"
 	"github.com/mindsift-app/mindsift/internal/config"
 	"github.com/mindsift-app/mindsift/internal/i18n"
@@ -28,6 +29,11 @@ var embeddedDist embed.FS
 
 func main() {
 	privateFiles()
+	// mindsift <command>: the operator's command line (users, reset-password, check …); without one,
+	// or with "serve", the server starts as always
+	if cli.IsCommand(os.Args[1:]) {
+		os.Exit(cli.Main(os.Args[1:]))
+	}
 	// The server's time zone (internal/clock): TZ or UTC until the stored setting is read (srv.ApplyTimeZone)
 	_, _ = clock.Apply("")
 
