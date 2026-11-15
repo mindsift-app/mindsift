@@ -4,15 +4,20 @@
 // inbox, and the counters follow other people's changes in a slower shared rhythm (one request for a
 // whole burst), while this tab's own changes still show at once.
 import { WSMessage } from '../lib/types';
+import {
+  OWN_ECHO_WINDOW_MS,
+  RELOAD_SHARED_DELAY_MS,
+  RELOAD_SHARED_INTERVAL_MS,
+  RELOAD_SOON_MS,
+  createReloadScheduler,
+  type ReloadScheduler,
+} from '../lib/realtimeReload';
 
-// Own change (a view asks for it, or the echo of a change this tab just sent): short debounce
-export const STATS_SOON_MS = 300;
-// Someone else's change: wait a moment so a burst of events makes one request...
-export const STATS_SHARED_DELAY_MS = 1500;
-// ...and reload at most once in this interval while events keep coming
-export const STATS_SHARED_INTERVAL_MS = 5000;
-// An event this soon after this tab sent a change counts as the echo of it
-export const OWN_ECHO_WINDOW_MS = 3000;
+// The rhythm is the one of every realtime reload (lib/realtimeReload.ts)
+export { OWN_ECHO_WINDOW_MS };
+export const STATS_SOON_MS = RELOAD_SOON_MS;
+export const STATS_SHARED_DELAY_MS = RELOAD_SHARED_DELAY_MS;
+export const STATS_SHARED_INTERVAL_MS = RELOAD_SHARED_INTERVAL_MS;
 
 // Events that can change a counter. DOC_SEQ only announces new edits inside a note (DOC_COUNTS and
 // DOC_UPDATED follow when the to-dos change), ITEM_REORDERED only moves entries of a list.
@@ -33,40 +38,5 @@ export function eventChangesDeck(msg: WSMessage, deckIds: ReadonlySet<string>): 
   return event !== 'TASK_DELETED' && p.status === 'inbox';
 }
 
-export interface StatsScheduler {
-  /** Reload shortly (own change). */
-  soon(): void;
-  /** Reload in the shared rhythm (someone else's change). */
-  shared(): void;
-  cancel(): void;
-}
-
-// One pending reload at a time: a request asked for earlier than the pending one moves it forward, a
-// later one is covered by it. load runs when the timer fires, so a change that arrives while a request is
-// on its way schedules the next one.
-export function createStatsScheduler(load: () => void, now: () => number = Date.now): StatsScheduler {
-  let timer: number | undefined;
-  let fireAt = 0;
-  let lastLoad = -Infinity;
-  const run = () => {
-    timer = undefined;
-    lastLoad = now();
-    load();
-  };
-  const at = (t: number) => {
-    if (timer !== undefined) {
-      if (fireAt <= t) return;
-      window.clearTimeout(timer);
-    }
-    fireAt = t;
-    timer = window.setTimeout(run, Math.max(0, t - now()));
-  };
-  return {
-    soon: () => at(now() + STATS_SOON_MS),
-    shared: () => at(Math.max(now() + STATS_SHARED_DELAY_MS, lastLoad + STATS_SHARED_INTERVAL_MS)),
-    cancel: () => {
-      window.clearTimeout(timer);
-      timer = undefined;
-    },
-  };
-}
+export type StatsScheduler = ReloadScheduler;
+export const createStatsScheduler = createReloadScheduler;
