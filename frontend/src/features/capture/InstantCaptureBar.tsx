@@ -264,9 +264,9 @@ export const InstantCaptureBar: React.FC<InstantCaptureBarProps> = ({
   const selectedList = writableLists.find((l) => l.id === targetListId) || writableLists[0];
 
   const getTargetLabel = () => {
-    if (target === 'task') return selectedTaskList ? (selectedTaskList.icon ? `${selectedTaskList.icon} ${selectedTaskList.title}` : selectedTaskList.title) : 'Direkt-Aufgabe';
+    if (target === 'task') return selectedTaskList ? (selectedTaskList.icon ? `${selectedTaskList.icon} ${selectedTaskList.title}` : selectedTaskList.title) : t('capture.pillTask');
     if (target === 'list_item') return selectedList ? [selectedList.icon, selectedList.title].filter(Boolean).join(' ') : t('toList');
-    if (target === 'document') return 'Direkt-Notiz';
+    if (target === 'document') return t('capture.pillNote');
     return t('quickDump');
   };
 

@@ -102,7 +102,9 @@
     "due": "Due on:",
     "placeholderList": "Add to “{{title}}”…",
     "list": "List",
-    "directTask": "Straight as a task"
+    "directTask": "Straight as a task",
+    "pillTask": "Task",
+    "pillNote": "Note"
   },
   "fab": {
     "nothing": "Nothing recognized",
