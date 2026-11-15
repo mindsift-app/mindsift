@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { api, triggerHaptic } from '../../lib/api';
 import { KanbanColumn, TaskList, Thought } from '../../lib/types';
 import { useKanbanTouchDrag } from './useKanbanTouchDrag';
+import { tasksAfterReorder } from './useTaskRealtime';
 import { startElementDragGhost } from '../../lib/dragGhost';
 
 // Drag & drop needs a mouse or pen; on touch-only devices a draggable row can swallow a slightly
@@ -147,6 +148,19 @@ export function useTaskDrag({
     await moveTaskNextTo(sourceId, targetTask, position, newKanbanCol);
   };
 
+  // Saves a move and takes the places from the server's answer: tasks deleted meanwhile drop out, the done
+  // state follows the list's done column. Only a failed call or a new successor of a repeating task loads
+  // everything again.
+  const saveOrder = async (payload: { id: string; sortOrder: number; kanbanStatus?: string }[]) => {
+    try {
+      const res = await api.reorderTasks(payload, selectedListId !== 'all' ? selectedListId : undefined);
+      if (res?.reload) loadData();
+      else if (Array.isArray(res?.items)) setTasks((prev) => tasksAfterReorder(prev, res.items, res.skipped));
+    } catch {
+      loadData();
+    }
+  };
+
   // Shared by mouse drag & drop and the touch drag on the Kanban board
   const moveTaskNextTo = async (sourceId: string | null, targetTask: Thought, position: 'before' | 'after', newKanbanCol?: string) => {
     if (!sourceId || sourceId === targetTask.id) return;
@@ -186,14 +200,7 @@ export function useTaskDrag({
       kanbanStatus: t.kanbanStatus,
     }));
 
-    try {
-      await api.reorderTasks(
-        reorderPayload,
-        selectedListId !== 'all' ? selectedListId : undefined
-      );
-    } catch {
-      loadData();
-    }
+    await saveOrder(reorderPayload);
   };
 
   const resetKanbanDrag = () => {
@@ -316,14 +323,7 @@ export function useTaskDrag({
       kanbanStatus: t.kanbanStatus,
     }));
 
-    try {
-      await api.reorderTasks(
-        reorderPayload,
-        selectedListId !== 'all' ? selectedListId : undefined
-      );
-    } catch {
-      loadData();
-    }
+    await saveOrder(reorderPayload);
   };
 
   // Kanban with a finger: hold a card, drag it, let go (mouse and pen use HTML5 drag & drop)

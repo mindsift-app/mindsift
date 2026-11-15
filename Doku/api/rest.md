@@ -229,7 +229,7 @@ The `webhook:…` scope IDs originate from the time when keys could only ingest 
 | POST | `/tasks/trash/{id}/restore` | Restore task unchanged (with assignees; if the original list was deleted, it becomes a personal task for its creator) → task |
 | DELETE | `/tasks/trash/{id}` | Permanently delete (requires edit permission on the list, otherwise `403`) |
 | POST | `/tasks/trash/empty` | Empty trash (`taskListId`, empty = all editable) → `{deleted}` |
-| POST | `/tasks/reorder`, `/task-lists/{id}/tasks/reorder` | Update task order/column (`items[{id, sortOrder, kanbanStatus}]`) |
+| POST | `/tasks/reorder`, `/task-lists/{id}/tasks/reorder` | Update task order/column (`items[{id, sortOrder, kanbanStatus}]`) → `{success, items[{id, sortOrder, kanbanStatus, isCompleted}], skipped, reload}`. Tasks that no longer exist (deleted meanwhile) or, with a list in the path, are not in that list are skipped and listed in `skipped`; the rest is applied. A task the caller cannot see answers `404`, one in a read-only list `403` (nothing is written then). `reload`: a repeating task was completed and got a successor not contained in `items`. `TASK_REORDERED` carries the same `items` and `reload` |
 | POST | `/tasks/{id}/unlink` | Unlink from note block |
 | POST/DELETE | `/tasks/{id}/watch` | Watch or unwatch a task → `{watching}`; `404` without access. Task responses include `isWatching` |
 

@@ -48,7 +48,7 @@ Client → Server: The server processes `{"event":"JOIN_ROOM","room":"<id>"}`, `
 | `TASK_CREATED` | `POST /inbox`, webhook | Owner and list members |
 | `TASK_UPDATED` | `PATCH /thoughts/{id}`, triage | Owner and members of old and new list |
 | `TASK_DELETED` | `DELETE /thoughts/{id}` | Owner and list members |
-| `TASK_REORDERED` | Reordering tasks | Members of all affected lists |
+| `TASK_REORDERED` | Reordering tasks (payload: `taskListId`, `items[{id, sortOrder, kanbanStatus, isCompleted}]` as stored, `skipped`, `reload`, `userId`; only sent when something changed) | Members of all affected lists |
 | `TASK_LIST_UPDATED` / `TASK_LIST_DELETED` | Update, (un)share, or delete list; payload only `{id}`, clients reload their lists | Members before and after modification |
 | `DOC_CREATED`, `DOC_UPDATED`, `DOC_DELETED` | Create/update/delete note, note shares, note restored from the trash (`DOC_CREATED`). Payload of the first two: the note as each person's note list has it (`GET /documents`: no bullets, with `openTodos`, `tagCounts`, `tagOpenTodos`); `DOC_DELETED` only `{id}` (deleting a folder sends `WORKSPACE_FOLDERS_UPDATED` `deleted` instead) | Authorized users |
 | `DOC_COUNTS` | Bullets of a note changed (sync, a linked task ticked): `{id, openTodos, tagCounts, tagOpenTodos}`, the counts the note list shows, the same for everyone. Checked at most every 3 s per note (two grouped queries, [doc_counts.go](../../internal/api/doc_counts.go)) and sent only when they differ from the counts sent last (the first check after a server start always sends) | Authorized users |

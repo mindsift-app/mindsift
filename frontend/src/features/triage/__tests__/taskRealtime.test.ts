@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { Thought } from '../../../lib/types';
-import { isTaskThought, tasksAfterCreate, tasksAfterDelete, tasksAfterUpdate } from '../useTaskRealtime';
+import { isTaskThought, tasksAfterCreate, tasksAfterDelete, tasksAfterReorder, tasksAfterUpdate } from '../useTaskRealtime';
 
 const task = (id: string, t: Partial<Thought> = {}) => ({ id, content: id, status: 'kept', taskListId: 'l1', ...t }) as Thought;
 const ids = (list: Thought[]) => list.map((t) => t.id);
@@ -34,5 +34,24 @@ describe('task realtime updates', () => {
 
   it('removes a deleted task', () => {
     expect(ids(tasksAfterDelete([task('a'), task('b')], 'a'))).toEqual(['b']);
+  });
+
+  it('takes place, column and done state of a move without loading again', () => {
+    const prev = [task('a', { sortOrder: 0, kanbanStatus: 'todo', isCompleted: false }), task('b', { sortOrder: 1, kanbanStatus: 'todo', isCompleted: false })];
+    const next = tasksAfterReorder(prev, [
+      { id: 'a', sortOrder: 1, kanbanStatus: 'erledigt', isCompleted: true },
+      { id: 'b', sortOrder: 1, kanbanStatus: 'todo', isCompleted: false },
+      { id: 'unbekannt', sortOrder: 0 },
+    ]);
+    expect(next[0]).toMatchObject({ id: 'a', sortOrder: 1, kanbanStatus: 'erledigt', isCompleted: true });
+    expect(next[1]).toBe(prev[1]); // unchanged task keeps its object
+    // The same move again changes nothing
+    expect(tasksAfterReorder(next, [{ id: 'a', sortOrder: 1, kanbanStatus: 'erledigt', isCompleted: true }])).toBe(next);
+  });
+
+  it('drops the tasks the server skipped when answering the own move', () => {
+    const prev = [task('a', { sortOrder: 0 }), task('b', { sortOrder: 1 })];
+    expect(ids(tasksAfterReorder(prev, [{ id: 'a', sortOrder: 0 }], ['b']))).toEqual(['a']);
+    expect(tasksAfterReorder(prev, undefined)).toBe(prev);
   });
 });

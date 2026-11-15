@@ -61,6 +61,11 @@ type Store struct {
 }
 
 func NewStore(dbPath string, opts ...StoreOption) (*Store, error) {
+	return newStore("sqlite", dbPath, opts...)
+}
+
+// newStore opens the database with the given database/sql driver (tests wrap "sqlite" to count queries).
+func newStore(driverName, dbPath string, opts ...StoreOption) (*Store, error) {
 	if dbPath != ":memory:" && !strings.HasPrefix(dbPath, "file:") {
 		dir := filepath.Dir(dbPath)
 		if err := os.MkdirAll(dir, 0755); err != nil {
@@ -81,7 +86,7 @@ func NewStore(dbPath string, opts ...StoreOption) (*Store, error) {
 		dsn += "?_pragma=busy_timeout(10000)&_pragma=auto_vacuum(2)&_pragma=journal_mode(WAL)&_pragma=synchronous(NORMAL)&_pragma=foreign_keys(1)&_pragma=journal_size_limit(16777216)&_txlock=immediate"
 	}
 
-	db, err := sql.Open("sqlite", dsn)
+	db, err := sql.Open(driverName, dsn)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open sqlite db: %w", err)
 	}

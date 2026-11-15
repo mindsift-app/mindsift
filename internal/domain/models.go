@@ -332,6 +332,15 @@ type ThoughtReorderItem struct {
 	KanbanStatus *string `json:"kanbanStatus,omitempty"`
 }
 
+// TaskOrder is a task's place after a move, as stored: what the reorder endpoint answers and sends with
+// TASK_REORDERED, so clients can set the order without loading the tasks again.
+type TaskOrder struct {
+	ID           string `json:"id"`
+	SortOrder    int    `json:"sortOrder"`
+	KanbanStatus string `json:"kanbanStatus"`
+	IsCompleted  bool   `json:"isCompleted"`
+}
+
 type ListItemReorderItem struct {
 	ID        string  `json:"id"`
 	SortOrder int     `json:"sortOrder"`
