@@ -541,7 +541,7 @@
     "activate": "Activer",
     "passwordReset": "Mot de passe réinitialisé.",
     "deleted": "Utilisateur supprimé.",
-    "roleChanged": "Rôle de {{name}} modifié en \"{{role}}\".",
+    "roleChanged": "Rôle de {{name}} modifié en \"{{role}}\". La personne est déconnectée sur tous ses appareils et se reconnecte avec le nouveau rôle.",
     "confirmReject": "Refuser l'inscription de \"{{name}}\" ({{email}}) ? Le compte sera supprimé.",
     "confirmDelete": "Supprimer définitivement l'utilisateur \"{{name}}\" ({{email}}) ?",
     "username": "Nom d’utilisateur",
@@ -582,7 +582,13 @@
     "email": "Adresse e-mail",
     "emailChanged": "L’adresse e-mail de {{name}} est maintenant {{email}}.",
     "emailRemoved": "{{name}} n’a plus d’adresse e-mail.",
-    "emailRemoveHint": "Sans adresse, {{name}} ne pourra plus réinitialiser son mot de passe par e-mail. La connexion avec nom d’utilisateur et mot de passe continue de fonctionner."
+    "emailRemoveHint": "Sans adresse, {{name}} ne pourra plus réinitialiser son mot de passe par e-mail. La connexion avec nom d’utilisateur et mot de passe continue de fonctionner.",
+    "mustChange": "À changer à la prochaine connexion",
+    "mustChangeHint": "Après la connexion, la personne doit d’abord choisir son propre mot de passe.",
+    "revokeKeys": "Révoquer les clés API et les accès IA",
+    "revokeKeysHint": "Supprime toutes les clés API et les clients IA connectés (MCP) du compte, par exemple après une prise de contrôle. Sinon ils continuent de fonctionner.",
+    "passwordResetMustChange": "Mot de passe réinitialisé. Un mot de passe personnel sera demandé à la prochaine connexion.",
+    "keysRevoked": "{{keys}} clés API et {{connections}} accès IA révoqués."
   },
   "sharing": {
     "private": {
@@ -1129,7 +1135,10 @@
       "setup_finished": "Configuration initiale terminée",
       "backup_created": "Sauvegarde créée",
       "backup_deleted": "Sauvegarde supprimée",
-      "backup_downloaded": "Sauvegarde téléchargée"
+      "backup_downloaded": "Sauvegarde téléchargée",
+      "account_registered": "Inscription",
+      "account_unconfirmed_deleted": "Compte non confirmé supprimé",
+      "invite_redeemed": "Invitation utilisée"
     },
     "detail": {
       "fromTo": "{{label}} : {{from}} → {{to}}",
@@ -1139,7 +1148,12 @@
       "viaEnv": "Depuis ADMIN_USER au premier démarrage",
       "secondFactorsRemoved": "Seconds facteurs supprimés",
       "pendingRegistration": "Inscription refusée",
-      "content": "Avec {{notes}} notes, {{tasks}} tâches, {{lists}} listes"
+      "content": "Avec {{notes}} notes, {{tasks}} tâches, {{lists}} listes",
+      "awaitingApproval": "En attente de validation",
+      "emailConfirmation": "En attente de confirmation de l’adresse e-mail",
+      "unconfirmedDeleted": "Adresse e-mail non confirmée sous 48 heures",
+      "mustChange": "Nouveau mot de passe exigé à la prochaine connexion",
+      "keysRevoked": "{{keys}} clés API et {{connections}} accès IA révoqués"
     },
     "value": {
       "on": "activé",
@@ -1203,7 +1217,9 @@
       "recipient": "À",
       "maxUses": "Utilisations",
       "expiresAt": "Valable jusqu'au",
-      "file": "Fichier"
+      "file": "Fichier",
+      "account": "Compte",
+      "invitedBy": "Invité par"
     }
   }
 }

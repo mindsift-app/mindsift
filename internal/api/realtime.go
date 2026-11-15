@@ -44,15 +44,15 @@ func (s *Server) authenticateUserFromReq(r *http.Request) (*domain.User, string)
 }
 
 // authenticateStream: authenticateUserFromReq for the stream handlers, which answers refusals itself. A
-// session that still has to set up the required second factor gets no stream (as in authMiddleware); that
-// covers tickets issued before the administration switched the requirement on as well.
+// session that still has to choose a new password or set up the required second factor gets no stream (as
+// in authMiddleware); that covers tickets issued before the administration switched the requirement on as well.
 func (s *Server) authenticateStream(w http.ResponseWriter, r *http.Request) string {
 	user, sessionID := s.authenticateUserFromReq(r)
 	if user == nil {
 		writeError(w, http.StatusUnauthorized, "Nicht autorisiert – bitte anmelden")
 		return ""
 	}
-	if s.mfaSetupRefused(w, user, sessionID) {
+	if s.sessionRestricted(w, user, sessionID) {
 		return ""
 	}
 	return user.ID

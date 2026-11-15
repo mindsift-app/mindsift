@@ -98,6 +98,8 @@ export const App: React.FC = () => {
     setSetupPending,
     mfaSetupRequired,
     setMfaSetupRequired,
+    passwordChangeRequired,
+    setPasswordChangeRequired,
     stats,
     setStats,
     deck,
@@ -621,6 +623,23 @@ export const App: React.FC = () => {
         onDone={() => {
           setSetupPending(false);
           api.getAuthStatus().then(setAuthStatus).catch(() => {});
+          void refreshAll();
+        }}
+        onLogout={handleLogout}
+      />
+    );
+  }
+
+  // A reset by the administration asked for a new own password: nothing else answers until it is chosen (the
+  // required second factor comes after it)
+  if (passwordChangeRequired) {
+    if (!views) return <AppLoading onRetry={viewsFailed ? retryViews : undefined} />;
+    return (
+      <views.PasswordChangeRequiredView
+        user={user}
+        authStatus={authStatus}
+        onDone={() => {
+          setPasswordChangeRequired(false);
           void refreshAll();
         }}
         onLogout={handleLogout}

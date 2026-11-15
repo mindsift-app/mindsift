@@ -6,6 +6,8 @@ import (
 	"errors"
 	"strings"
 	"time"
+
+	"github.com/mindsift-app/mindsift/internal/domain"
 )
 
 // Registration without an invite: who may register (mode), from which e-mail domains, and accounts
@@ -246,11 +248,12 @@ func (s *Store) UnverifiedEmailIDs() map[string]bool {
 	return out
 }
 
-// PurgeUnverifiedAccounts deletes accounts whose confirmation link expired unused; returns how many.
-func (s *Store) PurgeUnverifiedAccounts(now time.Time) int {
+// PurgeUnverifiedAccounts deletes accounts whose confirmation link expired unused; returns the accounts
+// deleted, as they were (for the audit log).
+func (s *Store) PurgeUnverifiedAccounts(now time.Time) []domain.User {
 	rows, err := s.db.Query(`SELECT user_id FROM email_verifications WHERE expires_at < ?`, now.UTC().Format(time.RFC3339))
 	if dbFailed(err) {
-		return 0
+		return nil
 	}
 	var ids []string
 	for rows.Next() {
@@ -261,13 +264,14 @@ func (s *Store) PurgeUnverifiedAccounts(now time.Time) int {
 	}
 	logDBErr(rows.Err())
 	_ = rows.Close()
-	n := 0
+	var deleted []domain.User
 	for _, id := range ids {
-		if err := s.DeleteUser(id); err == nil {
-			n++
+		u, _ := s.GetUserByID(id)
+		if err := s.DeleteUser(id); err == nil && u != nil {
+			deleted = append(deleted, *u)
 		}
 		s.ClearEmailVerification(id)
 		s.ClearPendingRegistration(id)
 	}
-	return n
+	return deleted
 }

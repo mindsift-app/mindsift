@@ -86,6 +86,7 @@ var migrations = []migration{
 	{60, "Audit log of the administration (takes over the command line's record)", (*Store).migrateAuditLog},
 	{61, "Note templates per person", (*Store).migrateNoteTemplates},
 	{62, "History of list items for suggestions while typing", (*Store).migrateListItemHistory},
+	{63, "New password at the next sign-in after a reset by the administration", (*Store).migrateMustChangePassword},
 	{65, "When a task was last ticked, opened or moved to another column", (*Store).migrateTaskStatusChangedAt},
 }
 

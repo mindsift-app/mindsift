@@ -66,13 +66,46 @@ func (s *Store) migrateCLIEvents() error {
 	)`)
 }
 
-// ResetPassword sets a new password and ends every sign-in of the account in one transaction: the token
-// version goes up (every JWT is refused) and every session is ended, as "sign out everywhere" does.
-func (s *Store) ResetPassword(userID, passwordHash string) error {
+// ResetPassword sets a new password given by the administration (admin API, command line) and ends every
+// sign-in of the account in one transaction: the token version goes up (every JWT is refused) and every
+// session is ended, as "sign out everywhere" does. With mustChange the person has to choose an own password
+// at the next sign-in before anything else (must_change_password); without, an earlier request is dropped.
+func (s *Store) ResetPassword(userID, passwordHash string, mustChange bool) error {
+	must := 0
+	if mustChange {
+		must = 1
+	}
 	return s.execInTx(
-		stmt(`UPDATE users SET password_hash = ?, token_version = token_version + 1 WHERE id = ?`, passwordHash, userID),
+		stmt(`UPDATE users SET password_hash = ?, token_version = token_version + 1, must_change_password = ? WHERE id = ?`, passwordHash, must, userID),
 		stmt(`UPDATE sessions SET revoked_at = ? WHERE user_id = ? AND revoked_at = ''`, nowUTC(), userID),
 	)
+}
+
+// migrateMustChangePassword is migration 63: whether the account has to choose a new password at its next
+// sign-in (set by a reset of the administration that asks for it, cleared by the person's new password).
+func (s *Store) migrateMustChangePassword() error {
+	return s.addColumnIfMissing("users", "must_change_password", "INTEGER NOT NULL DEFAULT 0")
+}
+
+// RevokeAPIAccess removes every API key and every OAuth grant (MCP connection of an AI client) of the
+// account, with their tokens; returns how many of each went. Scripts and AI clients have to be connected
+// again by the person.
+func (s *Store) RevokeAPIAccess(userID string) (keys, grants int, err error) {
+	err = s.db.QueryRow(`SELECT COALESCE(SUM(kind = ?), 0), COALESCE(SUM(kind = ?), 0) FROM api_keys WHERE user_id = ?`,
+		APIKeyKindKey, APIKeyKindOAuth, userID).Scan(&keys, &grants)
+	if err != nil {
+		return 0, 0, err
+	}
+	// Codes and tokens hang on their grant (ON DELETE CASCADE); removed explicitly all the same
+	err = s.execInTx(
+		stmt(`DELETE FROM oauth_codes WHERE key_id IN (SELECT id FROM api_keys WHERE user_id = ?)`, userID),
+		stmt(`DELETE FROM oauth_tokens WHERE key_id IN (SELECT id FROM api_keys WHERE user_id = ?)`, userID),
+		stmt(`DELETE FROM api_keys WHERE user_id = ?`, userID),
+	)
+	if err != nil {
+		return 0, 0, err
+	}
+	return keys, grants, nil
 }
 
 // UsernameTaken: an account has this username (compared in lower case).

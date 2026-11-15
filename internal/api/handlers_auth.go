@@ -448,6 +448,7 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 			logFailed("Adding the invited person to the organization", s.store.AddOrganizationMember(orgID, user.ID), "org_id", orgID, "user_id", user.ID)
 		}
 	}
+	s.auditRegistration(user, validInvite, pending, verify)
 
 	// Waiting for the e-mail confirmation and/or approval: the account exists but stays locked, no session
 	if pending || verify {
@@ -643,6 +644,8 @@ func (s *Server) handleMe(w http.ResponseWriter, r *http.Request) {
 		"setupPending": user.Role == domain.RoleAdmin && s.store.SetupPending(),
 		// The administration requires a second factor this account has not set up yet (mfa.go)
 		"mfaSetupRequired": s.mfaSetupMissingFor(user, sessionIDFrom(r)),
+		// A reset by the administration asked for a new own password first (password_change.go)
+		"passwordChangeRequired": s.passwordChangeMissingFor(user, sessionIDFrom(r)),
 	})
 }
 
@@ -829,26 +832,9 @@ func (s *Server) handleUpdateUserSettings(w http.ResponseWriter, r *http.Request
 			writeErrorFrom(w, http.StatusBadRequest, err)
 			return
 		}
-		hash, err := auth.HashPassword(*req.Password)
-		if err != nil {
-			writeError(w, http.StatusInternalServerError, "Fehler beim Hashen des Passworts")
-			return
-		}
-		if err := s.store.UpdateUserPassword(userID, hash); err != nil {
-			writeError(w, http.StatusInternalServerError, "Passwort konnte nicht gespeichert werden")
-			return
-		}
 		// Every other device is logged out; this one keeps its session with a fresh token
-		sid := sessionIDFrom(r)
-		if err := s.store.RevokeOtherSessions(userID, sid); err != nil {
-			writeError(w, http.StatusInternalServerError, "Andere Sitzungen konnten nicht beendet werden")
+		if !s.setOwnPassword(w, r, userID, *req.Password) {
 			return
-		}
-		s.wsHub.DisconnectUser(userID)
-		if fresh, err := s.store.GetUserByID(userID); err == nil {
-			current := &auth.Claims{}
-			current.ID = sid
-			s.renewSessionToken(w, fresh, current, true)
 		}
 	}
 	if changesUsername {

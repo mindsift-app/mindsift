@@ -367,7 +367,7 @@ func (c *command) usersDelete(args []string) error {
 }
 
 func (c *command) resetPassword(args []string) error {
-	p, err := c.parseFlags(args, flagSpec{bools: []string{"disable-2fa"}})
+	p, err := c.parseFlags(args, flagSpec{bools: []string{"disable-2fa", "must-change", "revoke-keys"}})
 	if err != nil {
 		return err
 	}
@@ -393,31 +393,63 @@ func (c *command) resetPassword(args []string) error {
 	if err != nil {
 		return err
 	}
-	if err := c.store.ResetPassword(u.ID, hash); err != nil {
+	mustChange, disable2FA, revokeKeys := p.bools["must-change"], p.bools["disable-2fa"], p.bools["revoke-keys"]
+	if err := c.store.ResetPassword(u.ID, hash, mustChange); err != nil {
 		return err
 	}
-	disable2FA := p.bools["disable-2fa"]
+	// One audit row for the whole reset; the running server reads it (api/cli_support.go) and mails the owner
+	// when the second factors were removed, as the administration does
+	details := map[string]any{}
+	if mustChange {
+		details["mustChange"] = true
+	}
+	record := func() {
+		if len(details) == 0 {
+			c.record(storage.AuditAccountPasswordReset, userTarget(u), nil)
+			return
+		}
+		c.record(storage.AuditAccountPasswordReset, userTarget(u), details)
+	}
+	var keys, grants int
+	if revokeKeys {
+		if keys, grants, err = c.store.RevokeAPIAccess(u.ID); err != nil {
+			record()
+			return fmt.Errorf("the new password is set, but revoking the API keys and AI connections failed: %w", err)
+		}
+		details["keysRevoked"], details["connectionsRevoked"] = keys, grants
+	}
 	if disable2FA {
 		if err := c.store.ResetMFA(u.ID); err != nil {
-			c.record(storage.AuditAccountPasswordReset, userTarget(u), nil)
+			record()
 			return fmt.Errorf("the new password is set, but removing the second factors failed: %w", err)
 		}
-		c.record(storage.AuditAccountPasswordReset, userTarget(u), map[string]bool{"secondFactorsRemoved": true})
-	} else {
-		c.record(storage.AuditAccountPasswordReset, userTarget(u), nil)
+		details["secondFactorsRemoved"] = true
 	}
+	record()
 	if c.json {
-		c.writeJSON(map[string]any{"reset": true, "user": c.info(u), "oneTimePassword": password, "secondFactorsRemoved": disable2FA})
+		out := map[string]any{"reset": true, "user": c.info(u), "oneTimePassword": password, "secondFactorsRemoved": disable2FA, "mustChange": mustChange}
+		if revokeKeys {
+			out["keysRevoked"], out["connectionsRevoked"] = keys, grants
+		}
+		c.writeJSON(out)
 		return nil
 	}
 	c.printf("New password for %s (%s): %s\n", u.Username, dash(u.Email), password)
 	c.printf("It is shown only now. Every session of the account is signed out.\n")
 	if disable2FA {
 		c.printf("App codes, passkeys, recovery codes and trusted devices are removed: the account signs in with the password alone.\n")
+		c.printf("The running server mails the owner about it within a few seconds (when mail is set up).\n")
 	} else if c.store.TOTPActive(u.ID) || c.store.HasPasskeys(u.ID) {
 		c.printf("The account still asks for its second factor; add --disable-2fa if that is lost as well.\n")
 	}
-	c.printf("The person should set an own password in the account settings after signing in.\n")
+	if revokeKeys {
+		c.printf("Revoked %d API keys and %d AI connections (MCP); scripts and AI clients have to be connected again.\n", keys, grants)
+	}
+	if mustChange {
+		c.printf("After signing in with it the person has to choose an own password before anything else.\n")
+	} else {
+		c.printf("The person should set an own password in the account settings after signing in (--must-change requires it).\n")
+	}
 	return nil
 }
 
@@ -460,7 +492,8 @@ func (c *command) makeAdmin(args []string) error {
 			return refused("last_admin", "%s is the last active administrator: make another account admin first", u.Username)
 		}
 	}
-	// As in the administration; every request reads the role from the database, so it counts at once
+	// As in the administration: the new role signs every session out (token version), the running server
+	// ends the live connections when it reads the audit row
 	updated, err := c.store.UpdateUser(u.ID, nil, nil, &role, nil, nil, nil)
 	if err != nil {
 		return err
@@ -470,7 +503,7 @@ func (c *command) makeAdmin(args []string) error {
 		c.writeJSON(map[string]any{"changed": true, "user": c.info(updated)})
 		return nil
 	}
-	c.printf("%s now has the role %s (was %s); it counts from the next request on.\n", updated.Username, role, u.Role)
+	c.printf("%s now has the role %s (was %s). Every session of the account is signed out; it signs in again with the new role.\n", updated.Username, role, u.Role)
 	if !updated.IsActive {
 		c.printf("Note: the account is disabled; enable it in the administration to sign in.\n")
 	}

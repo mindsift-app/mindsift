@@ -58,8 +58,18 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
   const [pendingMode, setPendingMode] = useState<{ mode: SharingMode; affected: number } | null>(null);
   const [copiedInviteId, setCopiedInviteId] = useState<string | null>(null);
 
-  const [resetPwdUserId, setResetPwdUserId] = useState<string | null>(null);
+  const [resetPwdUserId, setResetPwdUserIdState] = useState<string | null>(null);
   const [resetPwdVal, setResetPwdVal] = useState('');
+  // The two switches of the reset form; neither is on by default, the admin chooses each time
+  const [resetPwdMustChange, setResetPwdMustChange] = useState(false);
+  const [resetPwdRevokeKeys, setResetPwdRevokeKeys] = useState(false);
+  // Opening the form for an account (or closing it) starts it empty
+  const setResetPwdUserId = (id: string | null) => {
+    setResetPwdUserIdState(id);
+    setResetPwdVal('');
+    setResetPwdMustChange(false);
+    setResetPwdRevokeKeys(false);
+  };
 
   // --- Server & SMTP Settings State ---
   const [settings, setSettings] = useState<SystemSettings>({
@@ -340,10 +350,13 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
     }
     try {
       // Not trimmed: login compares the password exactly as typed
-      await api.adminResetPassword(userId, resetPwdVal);
+      const res = await api.adminResetPassword(userId, resetPwdVal, { mustChange: resetPwdMustChange, revokeKeys: resetPwdRevokeKeys });
+      const parts = [i18n.t(resetPwdMustChange ? 'settings:users.passwordResetMustChange' : 'settings:users.passwordReset')];
+      if (resetPwdRevokeKeys) {
+        parts.push(i18n.t('settings:users.keysRevoked', { keys: res?.keysRevoked ?? 0, connections: res?.connectionsRevoked ?? 0 }));
+      }
       setResetPwdUserId(null);
-      setResetPwdVal('');
-      setStatusMsg({ type: 'ok', text: i18n.t('settings:users.passwordReset') });
+      setStatusMsg({ type: 'ok', text: parts.join(' ') });
     } catch (err) {
       setStatusMsg({ type: 'err', text: errorMessage(err) });
     }
@@ -561,6 +574,10 @@ export function useAdminSettings(currentUser: User, isServerAdmin: boolean) {
     setEmailEdit,
     handleSaveEmail,
     resetPwdVal,
+    resetPwdMustChange,
+    setResetPwdMustChange,
+    resetPwdRevokeKeys,
+    setResetPwdRevokeKeys,
     settings,
     testSmtpEmail,
     testingSmtp,

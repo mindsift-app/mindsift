@@ -112,6 +112,29 @@ describe('UserList', () => {
     expect(screen.getByText('Nicht beim eigenen Konto')).toBeTruthy();
   });
 
+  it('offers two switches with the password reset, both off: change at the next sign-in, revoke API keys', () => {
+    const admin = fakeAdmin([me, person(1)], {
+      resetPwdUserId: 'usr_1',
+      resetPwdVal: 'ein-neues-Passwort',
+      resetPwdMustChange: false,
+      setResetPwdMustChange: vi.fn(),
+      resetPwdRevokeKeys: false,
+      setResetPwdRevokeKeys: vi.fn(),
+    } as Partial<Admin>);
+    render(<UserList admin={admin} currentUser={me} isServerAdmin />);
+    fireEvent.click(screen.getByRole('button', { name: /Person 001/ }));
+    const mustChange = screen.getByRole('switch', { name: 'Bei der nächsten Anmeldung ändern' });
+    const revoke = screen.getByRole('switch', { name: 'API-Schlüssel und KI-Zugänge widerrufen' });
+    expect(mustChange.getAttribute('aria-checked')).toBe('false');
+    expect(revoke.getAttribute('aria-checked')).toBe('false');
+    fireEvent.click(mustChange);
+    expect(admin.setResetPwdMustChange).toHaveBeenCalledWith(true);
+    fireEvent.click(revoke);
+    expect(admin.setResetPwdRevokeKeys).toHaveBeenCalledWith(true);
+    fireEvent.click(screen.getByRole('button', { name: 'Speichern' }));
+    expect(admin.handleConfirmResetPassword).toHaveBeenCalledWith('usr_1');
+  });
+
   it('lets user managers change members only, without passwords or roles', () => {
     const manager = person(9, { displayName: 'Mona', role: 'manager' });
     render(<UserList admin={fakeAdmin([me, manager, person(1)])} currentUser={manager} isServerAdmin={false} />);

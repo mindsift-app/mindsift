@@ -221,6 +221,9 @@ export interface User {
   // administration's user list), oidc is linked (own profile only)
   noPassword?: boolean;
   oidc?: boolean;
+  // A reset by the administration asked for a new own password at the next sign-in (own profile and the
+  // administration's user list)
+  mustChangePassword?: boolean;
   discordWebhookUrl?: string;
   customWebhookUrl?: string;
   notifyBeforeMinutes?: number;

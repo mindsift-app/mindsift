@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -38,7 +39,7 @@ func (s *Server) handleAdminCreateOrganization(w http.ResponseWriter, r *http.Re
 	}
 	org, err := s.store.CreateOrganization(req.Name)
 	if err != nil {
-		writeErrorFrom(w, http.StatusBadRequest, err)
+		writeOrganizationError(w, err)
 		return
 	}
 	s.audit(r, storage.AuditOrgCreated, auditOrgTarget(org.ID, org.Name), nil)
@@ -56,7 +57,7 @@ func (s *Server) handleAdminRenameOrganization(w http.ResponseWriter, r *http.Re
 	orgID := chi.URLParam(r, "id")
 	before := s.organizationName(orgID)
 	if err := s.store.RenameOrganization(orgID, req.Name); err != nil {
-		writeErrorFrom(w, http.StatusBadRequest, err)
+		writeOrganizationError(w, err)
 		return
 	}
 	if after := s.organizationName(orgID); after != before {
@@ -87,12 +88,25 @@ func (s *Server) handleAdminAddOrganizationMember(w http.ResponseWriter, r *http
 		return
 	}
 	orgID := chi.URLParam(r, "id")
-	if err := s.store.AddOrganizationMember(orgID, req.UserID); err != nil {
+	// Idempotent: a person already in the organization changes nothing and is not logged again
+	added, err := s.store.JoinOrganization(orgID, req.UserID)
+	if err != nil {
 		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
-	s.auditOrgMember(r, storage.AuditOrgMemberAdded, orgID, req.UserID)
-	writeJSON(w, http.StatusOK, map[string]bool{"added": true})
+	if added {
+		s.auditOrgMember(r, storage.AuditOrgMemberAdded, orgID, req.UserID)
+	}
+	writeJSON(w, http.StatusOK, map[string]bool{"added": added})
+}
+
+// writeOrganizationError: a taken name is 409 (code organization_name_taken), the rest 400.
+func writeOrganizationError(w http.ResponseWriter, err error) {
+	if errors.Is(err, storage.ErrOrganizationNameTaken) {
+		writeErrorCode(w, http.StatusConflict, "organization_name_taken", storage.ErrOrganizationNameTaken.Msg)
+		return
+	}
+	writeErrorFrom(w, http.StatusBadRequest, err)
 }
 
 // handleAdminRemoveOrganizationMember takes a person out of an organization; ?dryRun=true only counts
@@ -291,7 +305,8 @@ func (s *Server) handleAdminUpdateUser(w http.ResponseWriter, r *http.Request) {
 		writeEmailError(w, err)
 		return
 	}
-	if req.IsActive != nil && !*req.IsActive {
+	// Locked or a new role: the store signed every session out (token version), live connections end as well
+	if (req.IsActive != nil && !*req.IsActive) || u.Role != targetUser.Role {
 		s.wsHub.DisconnectUser(targetUserID)
 	}
 	if req.IsActive != nil && *req.IsActive {
@@ -305,12 +320,16 @@ func (s *Server) handleAdminUpdateUser(w http.ResponseWriter, r *http.Request) {
 }
 
 // handleAdminResetPassword sets a new password (server admins only: user managers send people to
-// "forgot password" instead).
+// "forgot password" instead) and signs every session out. mustChange: the person has to choose an own
+// password at the next sign-in before anything else; revokeKeys: the account's API keys and OAuth grants
+// (MCP connections) go as well. Neither happens unless asked for.
 func (s *Server) handleAdminResetPassword(w http.ResponseWriter, r *http.Request) {
 	targetUserID := chi.URLParam(r, "id")
 
 	var req struct {
-		Password string `json:"password"`
+		Password   string `json:"password"`
+		MustChange bool   `json:"mustChange"`
+		RevokeKeys bool   `json:"revokeKeys"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeError(w, http.StatusBadRequest, "Neues Passwort erforderlich")
@@ -325,17 +344,38 @@ func (s *Server) handleAdminResetPassword(w http.ResponseWriter, r *http.Request
 		writeError(w, http.StatusInternalServerError, "Passwort-Hash fehlgeschlagen")
 		return
 	}
+	target, err := s.store.GetUserByID(targetUserID)
+	if err != nil || target == nil {
+		writeError(w, http.StatusNotFound, "Benutzer nicht gefunden")
+		return
+	}
 	s.loginGuard.unlockAccount(targetUserID)
-	if err := s.store.UpdateUserPassword(targetUserID, hash); err != nil {
+	if err := s.store.ResetPassword(targetUserID, hash, req.MustChange); err != nil {
 		writeInternal(w, err)
 		return
 	}
 	s.wsHub.DisconnectUser(targetUserID)
-	target, _ := s.store.GetUserByID(targetUserID)
-	if target != nil {
-		s.audit(r, storage.AuditAccountPasswordReset, auditUserTarget(target), nil)
+	out := map[string]any{"success": true}
+	details := map[string]any{}
+	if req.MustChange {
+		details["mustChange"] = true
 	}
-	writeJSON(w, http.StatusOK, map[string]bool{"success": true})
+	if req.RevokeKeys {
+		keys, grants, err := s.store.RevokeAPIAccess(targetUserID)
+		if err != nil {
+			s.audit(r, storage.AuditAccountPasswordReset, auditUserTarget(target), details)
+			writeInternal(w, err)
+			return
+		}
+		details["keysRevoked"], details["connectionsRevoked"] = keys, grants
+		out["keysRevoked"], out["connectionsRevoked"] = keys, grants
+	}
+	if len(details) == 0 {
+		s.audit(r, storage.AuditAccountPasswordReset, auditUserTarget(target), nil)
+	} else {
+		s.audit(r, storage.AuditAccountPasswordReset, auditUserTarget(target), details)
+	}
+	writeJSON(w, http.StatusOK, out)
 }
 
 // handleAdminResetMFA: POST /admin/users/{id}/mfa/reset removes every second factor of an account that

@@ -406,10 +406,10 @@ func (s *Server) mfaSetupRefused(w http.ResponseWriter, user *domain.User, sessi
 }
 
 // mfaSetupPath: what a session may do while the required second factor is missing: read itself, set the
-// factor up and sign out.
+// factor up and sign out, and choose a new password (which a reset by the administration may ask for first).
 func mfaSetupPath(path string) bool {
 	switch path {
-	case "/api/v1/auth/me", "/api/v1/auth/logout", "/api/v1/auth/mfa":
+	case "/api/v1/auth/me", "/api/v1/auth/logout", "/api/v1/auth/mfa", ownPasswordPath:
 		return true
 	}
 	return strings.HasPrefix(path, "/api/v1/auth/mfa/")

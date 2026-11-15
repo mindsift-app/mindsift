@@ -216,11 +216,7 @@ func TestAuditOnlyForServerAdmins(t *testing.T) {
 	router := srv.Router()
 	member, memberToken := newTestUser(t, store, "member@example.com")
 	_ = member
-	manager, managerToken := newTestUser(t, store, "manager@example.com")
-	role := domain.RoleManager
-	if _, err := store.UpdateUser(manager.ID, nil, nil, &role, nil, nil, nil); err != nil {
-		t.Fatal(err)
-	}
+	manager, managerToken := newTestUserWithRole(t, store, "manager@example.com", domain.RoleManager)
 	for name, tok := range map[string]string{"member": memberToken, "manager": managerToken} {
 		if rec := sessionCall(router, "GET", "/api/v1/admin/audit", tok, "", ""); rec.Code != http.StatusForbidden {
 			t.Fatalf("%s: %d", name, rec.Code)

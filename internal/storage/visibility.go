@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/mindsift-app/mindsift/internal/domain"
+	"github.com/mindsift-app/mindsift/internal/i18n"
 )
 
 // Sharing modes (system_settings.sharing_mode). They decide who can see whom; every way of finding
@@ -348,10 +349,40 @@ func (s *Store) GetOrganizations() ([]domain.Organization, error) {
 	return orgs, rows.Err()
 }
 
+// ErrOrganizationNameTaken: another organization has this name (compared trimmed and case-insensitively).
+var ErrOrganizationNameTaken = i18n.NewError("Eine Organisation mit diesem Namen gibt es schon")
+
+// organizationNameTaken: an organization other than exceptID has name, trimmed and compared without
+// regard to case (in Go, so umlauts count as well). Organizations are few; duplicates from before the
+// check stay as they are.
+func (s *Store) organizationNameTaken(name, exceptID string) (bool, error) {
+	rows, err := s.db.Query(`SELECT id, name FROM organizations`)
+	if err != nil {
+		return false, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var id, other string
+		if err := rows.Scan(&id, &other); err != nil {
+			return false, err
+		}
+		if id != exceptID && strings.EqualFold(strings.TrimSpace(other), name) {
+			return true, nil
+		}
+	}
+	return false, rows.Err()
+}
+
+// CreateOrganization refuses a name another organization has (ErrOrganizationNameTaken).
 func (s *Store) CreateOrganization(name string) (*domain.Organization, error) {
 	name = strings.TrimSpace(name)
 	if name == "" {
 		return nil, errors.New("Name der Organisation ist erforderlich")
+	}
+	if taken, err := s.organizationNameTaken(name, ""); err != nil {
+		return nil, err
+	} else if taken {
+		return nil, ErrOrganizationNameTaken
 	}
 	org := &domain.Organization{ID: domain.NewID("org"), Name: name, CreatedAt: domain.NowISO()}
 	if _, err := s.db.Exec(`INSERT INTO organizations (id, name, created_at) VALUES (?, ?, ?)`, org.ID, org.Name, org.CreatedAt); err != nil {
@@ -360,10 +391,16 @@ func (s *Store) CreateOrganization(name string) (*domain.Organization, error) {
 	return org, nil
 }
 
+// RenameOrganization refuses a name another organization has; the own name in other case is fine.
 func (s *Store) RenameOrganization(orgID, name string) error {
 	name = strings.TrimSpace(name)
 	if name == "" {
 		return errors.New("Name der Organisation ist erforderlich")
+	}
+	if taken, err := s.organizationNameTaken(name, orgID); err != nil {
+		return err
+	} else if taken {
+		return ErrOrganizationNameTaken
 	}
 	res, err := s.db.Exec(`UPDATE organizations SET name = ? WHERE id = ?`, name, orgID)
 	if err != nil {
@@ -399,19 +436,30 @@ func (s *Store) organizationExists(orgID string) bool {
 
 // AddOrganizationMember puts a user into an organization (no-op when already a member).
 func (s *Store) AddOrganizationMember(orgID, userID string) error {
+	_, err := s.JoinOrganization(orgID, userID)
+	return err
+}
+
+// JoinOrganization is AddOrganizationMember that tells whether the user was new in the organization
+// (false: already a member, nothing changed).
+func (s *Store) JoinOrganization(orgID, userID string) (bool, error) {
 	if !s.organizationExists(orgID) {
-		return ErrOrganizationNotFound
+		return false, ErrOrganizationNotFound
 	}
 	var n int
 	if err := s.db.QueryRow(`SELECT COUNT(*) FROM users WHERE id = ?`, userID).Scan(&n); err != nil {
-		return err
+		return false, err
 	}
 	if n == 0 {
-		return errors.New("Benutzer nicht gefunden")
+		return false, errors.New("Benutzer nicht gefunden")
 	}
-	_, err := s.db.Exec(`INSERT OR IGNORE INTO organization_members (org_id, user_id, created_at) VALUES (?, ?, ?)`,
+	res, err := s.db.Exec(`INSERT OR IGNORE INTO organization_members (org_id, user_id, created_at) VALUES (?, ?, ?)`,
 		orgID, userID, domain.NowISO())
-	return err
+	if err != nil {
+		return false, err
+	}
+	added, _ := res.RowsAffected()
+	return added > 0, nil
 }
 
 // RemoveOrganizationMember takes a user out of an organization. Shares, groups and task assignments

@@ -21,10 +21,10 @@ func TestUnverifiedAccountsArePurged(t *testing.T) {
 	if _, err := store.CreateEmailVerification(u.ID); err != ErrResetTooSoon {
 		t.Fatalf("second mail within the cooldown must be refused, got %v", err)
 	}
-	if n := store.PurgeUnverifiedAccounts(time.Now()); n != 0 {
+	if n := len(store.PurgeUnverifiedAccounts(time.Now())); n != 0 {
 		t.Fatalf("nothing expired yet, purged %d", n)
 	}
-	if n := store.PurgeUnverifiedAccounts(time.Now().Add(EmailVerificationTTL + time.Hour)); n != 1 {
+	if n := len(store.PurgeUnverifiedAccounts(time.Now().Add(EmailVerificationTTL + time.Hour))); n != 1 {
 		t.Fatalf("want 1 purged, got %d", n)
 	}
 	if got, _ := store.GetUserByID(u.ID); got != nil {

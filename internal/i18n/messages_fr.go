@@ -178,6 +178,7 @@ var messagesFR = map[string]string{
 	"MCP ist auf diesem Server ausgeschaltet":                                                    "MCP est désactivé sur ce serveur",
 	"Methode nicht unterstützt":                                                                  "Méthode non prise en charge",
 	"Name der Organisation ist erforderlich":                                                     "Un nom d’organisation est requis",
+	"Eine Organisation mit diesem Namen gibt es schon":                                           "Une organisation porte déjà ce nom",
 	"Name des Themes ist erforderlich":                                                           "Un nom de thème est requis",
 	"Name des Themes ist zu lang (max. 60 Zeichen)":                                              "Le nom du thème est trop long (max. 60 caractères)",
 	"Name für das Team / die Gruppe ist erforderlich":                                            "Un nom pour l’équipe / le groupe est requis",

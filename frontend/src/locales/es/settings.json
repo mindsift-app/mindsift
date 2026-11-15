@@ -627,7 +627,7 @@
     "activate": "Activar",
     "passwordReset": "Contraseña restablecida.",
     "deleted": "Usuario eliminado.",
-    "roleChanged": "El rol de {{name}} ha cambiado a «{{role}}».",
+    "roleChanged": "El rol de {{name}} ha cambiado a «{{role}}». Se cierra su sesión en todos los dispositivos y vuelve a entrar con el nuevo rol.",
     "confirmReject": "¿Rechazar el registro de «{{name}}» ({{email}})? La cuenta se eliminará.",
     "confirmDelete": "¿De verdad quieres eliminar definitivamente al usuario «{{name}}» ({{email}})?",
     "username": "Nombre de usuario",
@@ -668,7 +668,13 @@
     "email": "Dirección de correo",
     "emailChanged": "La dirección de correo de {{name}} ahora es {{email}}.",
     "emailRemoved": "{{name}} ya no tiene dirección de correo.",
-    "emailRemoveHint": "Sin dirección, {{name}} ya no podrá restablecer la contraseña por correo. Iniciar sesión con nombre de usuario y contraseña sigue funcionando."
+    "emailRemoveHint": "Sin dirección, {{name}} ya no podrá restablecer la contraseña por correo. Iniciar sesión con nombre de usuario y contraseña sigue funcionando.",
+    "mustChange": "Cambiar en el próximo inicio de sesión",
+    "mustChangeHint": "Tras iniciar sesión, la persona debe elegir primero una contraseña propia.",
+    "revokeKeys": "Revocar claves API y accesos de IA",
+    "revokeKeysHint": "Elimina todas las claves API y los clientes de IA conectados (MCP) de la cuenta, por ejemplo tras un robo. Si no, siguen funcionando.",
+    "passwordResetMustChange": "Contraseña restablecida. En el próximo inicio de sesión se pedirá una propia.",
+    "keysRevoked": "{{keys}} claves API y {{connections}} accesos de IA revocados."
   },
   "orgs": {
     "createFailed": "Error al crear la organización",
@@ -1129,7 +1135,10 @@
       "setup_finished": "Configuración inicial terminada",
       "backup_created": "Copia de seguridad creada",
       "backup_deleted": "Copia de seguridad eliminada",
-      "backup_downloaded": "Copia de seguridad descargada"
+      "backup_downloaded": "Copia de seguridad descargada",
+      "account_registered": "Registro propio",
+      "account_unconfirmed_deleted": "Cuenta sin confirmar eliminada",
+      "invite_redeemed": "Invitación canjeada"
     },
     "detail": {
       "fromTo": "{{label}}: {{from}} → {{to}}",
@@ -1139,7 +1148,12 @@
       "viaEnv": "Desde ADMIN_USER en el primer arranque",
       "secondFactorsRemoved": "Segundos factores eliminados",
       "pendingRegistration": "Registro rechazado",
-      "content": "Con {{notes}} notas, {{tasks}} tareas, {{lists}} listas"
+      "content": "Con {{notes}} notas, {{tasks}} tareas, {{lists}} listas",
+      "awaitingApproval": "Pendiente de aprobación",
+      "emailConfirmation": "Pendiente de confirmar la dirección de correo",
+      "unconfirmedDeleted": "Dirección de correo no confirmada en 48 horas",
+      "mustChange": "Contraseña nueva exigida en el próximo inicio de sesión",
+      "keysRevoked": "{{keys}} claves API y {{connections}} accesos de IA revocados"
     },
     "value": {
       "on": "activado",
@@ -1203,7 +1217,9 @@
       "recipient": "Para",
       "maxUses": "Usos",
       "expiresAt": "Válida hasta",
-      "file": "Archivo"
+      "file": "Archivo",
+      "account": "Cuenta",
+      "invitedBy": "Invitado por"
     }
   }
 }

@@ -386,11 +386,22 @@ func (s *Server) startCompaction() {
 	}
 }
 
+// purgeUnconfirmedAccounts deletes registrations whose confirmation link expired unused (48 h) and records
+// each in the audit log, with the server as actor.
+func (s *Server) purgeUnconfirmedAccounts(now time.Time) {
+	gone := s.store.PurgeUnverifiedAccounts(now)
+	if len(gone) == 0 {
+		return
+	}
+	slog.Info("Unconfirmed registrations deleted", "count", len(gone))
+	for i := range gone {
+		s.auditBy(storage.AuditActorSystem, storage.AuditSourceSystem, storage.AuditAccountUnconfirmedDeleted, auditUserTarget(&gone[i]), nil)
+	}
+}
+
 func (s *Server) compactOnce() {
 	s.leases.Sweep()
-	if n := s.store.PurgeUnverifiedAccounts(time.Now()); n > 0 {
-		slog.Info("Unconfirmed registrations deleted", "count", n)
-	}
+	s.purgeUnconfirmedAccounts(time.Now())
 	s.compactMedia(time.Now())
 	logFailed("Removing old link previews", s.store.PruneLinkPreviews(time.Now().Add(-30*24*time.Hour)))
 	st, err := s.store.CompactDocs(time.Now())

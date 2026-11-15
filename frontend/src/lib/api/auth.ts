@@ -268,8 +268,26 @@ export const authApi = {
   // setupPending: an admin from ADMIN_USER still has the wizard's instance settings to choose
   // mfaSetupRequired: the administration requires a second factor this account has not set up yet; until then
   // only the setup answers (MfaSetupRequiredView)
-  async getMe(): Promise<{ user: User; stats: DashboardStats; isLastAdmin?: boolean; setupPending?: boolean; mfaSetupRequired?: boolean }> {
-    return request<{ user: User; stats: DashboardStats; isLastAdmin?: boolean; setupPending?: boolean; mfaSetupRequired?: boolean }>('/api/v1/auth/me');
+  // passwordChangeRequired: a reset by the administration asked for a new own password first
+  // (PasswordChangeRequiredView); it comes before the second factor
+  async getMe(): Promise<{ user: User; stats: DashboardStats; isLastAdmin?: boolean; setupPending?: boolean; mfaSetupRequired?: boolean; passwordChangeRequired?: boolean }> {
+    return request<{
+      user: User;
+      stats: DashboardStats;
+      isLastAdmin?: boolean;
+      setupPending?: boolean;
+      mfaSetupRequired?: boolean;
+      passwordChangeRequired?: boolean;
+    }>('/api/v1/auth/me');
+  },
+
+  // A new own password; the current one is always needed. Other devices are signed out, this one gets a
+  // fresh token from the server.
+  async changeOwnPassword(currentPassword: string, password: string): Promise<void> {
+    await request('/api/v1/auth/password', {
+      method: 'POST',
+      body: JSON.stringify({ currentPassword, password }),
+    });
   },
 
   async updateSettings(patch: {

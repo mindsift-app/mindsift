@@ -7,7 +7,9 @@ import { formatDateTime } from '../../../lib/format';
 // The actions the server records (storage/audit.go), in the order of the filter menu
 export const AUDIT_ACTIONS = [
   'account.created',
+  'account.registered',
   'account.deleted',
+  'account.unconfirmed_deleted',
   'account.approved',
   'account.role_changed',
   'account.disabled',
@@ -17,6 +19,7 @@ export const AUDIT_ACTIONS = [
   'account.mfa_reset',
   'invite.created',
   'invite.sent',
+  'invite.redeemed',
   'invite.revoked',
   'organization.created',
   'organization.renamed',
@@ -142,6 +145,19 @@ export function detailLines(t: TFunction, e: AuditEntry): string[] {
   }
   if (typeof d.expiresAt === 'string' && d.expiresAt) {
     lines.push(t('audit.detail.value', { label: t('audit.field.expiresAt'), value: formatDateTime(d.expiresAt) }));
+  }
+  if (typeof d.account === 'string' && d.account) {
+    lines.push(t('audit.detail.value', { label: t('audit.field.account'), value: d.account }));
+  }
+  if (typeof d.invitedBy === 'string' && d.invitedBy) {
+    lines.push(t('audit.detail.value', { label: t('audit.field.invitedBy'), value: d.invitedBy }));
+  }
+  if (d.emailConfirmation) lines.push(t('audit.detail.emailConfirmation'));
+  if (d.awaitingApproval) lines.push(t('audit.detail.awaitingApproval'));
+  if (e.action === 'account.unconfirmed_deleted') lines.push(t('audit.detail.unconfirmedDeleted'));
+  if (d.mustChange) lines.push(t('audit.detail.mustChange'));
+  if (typeof d.keysRevoked === 'number') {
+    lines.push(t('audit.detail.keysRevoked', { keys: d.keysRevoked, connections: d.connectionsRevoked ?? 0 }));
   }
   if (d.secondFactorsRemoved) lines.push(t('audit.detail.secondFactorsRemoved'));
   if (d.pendingRegistration) lines.push(t('audit.detail.pendingRegistration'));

@@ -13,11 +13,7 @@ import (
 // e-mail addresses or the server settings.
 func TestUserManagerRights(t *testing.T) {
 	_, store, ts, admin, adminToken := startRealtimeServer(t)
-	manager, managerToken := newTestUser(t, store, "verwaltung@example.com")
-	role := domain.RoleManager
-	if _, err := store.UpdateUser(manager.ID, nil, nil, &role, nil, nil, nil); err != nil {
-		t.Fatalf("make manager: %v", err)
-	}
+	_, managerToken := newTestUserWithRole(t, store, "verwaltung@example.com", domain.RoleManager)
 	member, _ := newTestUser(t, store, "mitglied@example.com")
 
 	expect := func(resp *http.Response, want int, what string) {

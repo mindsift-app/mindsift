@@ -319,6 +319,7 @@ func (s *Server) Router() http.Handler {
 		r.Get("/api/v1/auth/sessions", s.handleListSessions)
 		r.Delete("/api/v1/auth/sessions/{id}", s.notInDemo(s.handleEndSession))
 		r.Post("/api/v1/auth/logout", s.handleLogout)
+		r.Post(ownPasswordPath, s.handleChangeOwnPassword)
 		r.Post("/api/v1/auth/revoke-all", s.notInDemo(s.handleRevokeAllSessions))
 		// Two-factor sign-in of the own account (mfa.go)
 		r.Get("/api/v1/auth/mfa", s.handleMFAStatus)
@@ -918,8 +919,12 @@ func (s *Server) authMiddleware(next http.Handler) http.Handler {
 				claims, sessionID = c, c.ID
 			}
 		}
-		// Two-factor sign-in required but not set up yet: only setting it up (and signing out) until then.
-		// Not for sessions from an OIDC provider, which asks for its own second factor.
+		// A new password asked for by the administration (password_change.go), then the required two-factor
+		// sign-in (mfa.go): only those steps (and signing out) until then. Not for sessions from an OIDC
+		// provider, nor for API keys.
+		if key == nil && !passwordChangePath(r.URL.Path) && s.passwordChangeRefused(w, user, sessionID) {
+			return
+		}
 		if key == nil && !mfaSetupPath(r.URL.Path) && s.mfaSetupRefused(w, user, sessionID) {
 			return
 		}

@@ -158,6 +158,8 @@ export async function request<T>(path: string, { timeout = 'normal', ...options 
     }
     // The administration requires a second factor this account has not set up (yet): the app shows the setup
     if (code === 'mfa_setup_required') window.dispatchEvent(new CustomEvent('mindsift:mfa-setup-required'));
+    // A reset by the administration asked for a new own password first: the app asks for it
+    if (code === 'password_change_required') window.dispatchEvent(new CustomEvent('mindsift:password-change-required'));
     throw new ApiError(errMsg, res.status, code);
   }
 
