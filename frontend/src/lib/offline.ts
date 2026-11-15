@@ -199,6 +199,14 @@ export function dropQueued(entryId: string): boolean {
   return true;
 }
 
+/** The status a task had before its change still waiting in the outbox (base of the queued PATCH: ticked
+ *  offline and not sent yet), or undefined. Un-ticking it again goes back to that column, so nothing is
+ *  left to send. */
+export function queuedTaskStart(taskId: string): { isCompleted?: boolean; kanbanStatus?: string } | undefined {
+  const entry = getOutbox().find((e) => e.method === 'PATCH' && e.path === `/api/v1/thoughts/${taskId}`);
+  return entry?.base as { isCompleted?: boolean; kanbanStatus?: string } | undefined;
+}
+
 // List items added offline: a stand-in id until the server knows them, derived from the outbox entry
 export const OFFLINE_ITEM_PREFIX = 'itm_offline_';
 const LIST_ITEMS_PATH = /^\/api\/v1\/lists\/([^/]+)\/items$/;
