@@ -356,6 +356,9 @@ func TestMCPExtractNoteBullet(t *testing.T) {
 			t.Errorf("%s: want a clear tool error, got %v %s", name, isErr, msg)
 		}
 	}
+	if notes() != before {
+		t.Fatal("wrong input created a note")
+	}
 	// A bullet of the branch someone is editing: refused, no note left behind
 	doc2, _ := store.CreateDocument(claims.UserID, "", "Zweite", "", "", []domain.DocumentBlock{
 		{ID: "blk_ex_c", Type: "text", Content: "C", Level: 0},
