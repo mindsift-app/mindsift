@@ -82,6 +82,8 @@ type CalendarTask struct {
 	Reminders []int
 	CreatedAt string // RFC 3339, UTC
 	ChangedAt string // last change by an API key, RFC 3339 ("" if none)
+	UpdatedAt string // last change of the task, RFC 3339 (created_at until its first change)
+	Revision  int    // how often the task changed (thoughts.revision)
 }
 
 // Window of due dates the feed covers, counted in calendar days of the server's time zone: overdue tasks
@@ -102,7 +104,7 @@ func (s *Store) CalendarTasks(userID string, now time.Time) ([]CalendarTask, err
 	from := today.AddDate(0, 0, -CalendarFeedDaysBack).Format("2006-01-02")
 	to := today.AddDate(0, 0, CalendarFeedDaysAhead+1).Format("2006-01-02") // exclusive: "YYYY-MM-DDT…" sorts after the day
 	rows, err := s.db.Query(
-		`SELECT t.id, t.content, substr(t.notes, 1, ?), t.due_date, COALESCE(tl.title, ''), t.reminders, t.created_at, t.changed_at
+		`SELECT t.id, t.content, substr(t.notes, 1, ?), t.due_date, COALESCE(tl.title, ''), t.reminders, t.created_at, t.changed_at, `+sqlTaskUpdatedAt+`, t.revision
 		 FROM thoughts t LEFT JOIN task_lists tl ON tl.id = t.task_list_id
 		 WHERE (t.user_id = ? OR t.task_list_id IN (`+accessibleTaskListsSQL+`))
 		   AND (t.status = 'kept' OR (t.status = 'converted' AND t.converted_type = 'task'))
@@ -120,7 +122,7 @@ func (s *Store) CalendarTasks(userID string, now time.Time) ([]CalendarTask, err
 	for rows.Next() {
 		var t CalendarTask
 		var reminders string
-		if err := rows.Scan(&t.ID, &t.Content, &t.Notes, &t.DueDate, &t.ListTitle, &reminders, &t.CreatedAt, &t.ChangedAt); dbFailed(err) {
+		if err := rows.Scan(&t.ID, &t.Content, &t.Notes, &t.DueDate, &t.ListTitle, &reminders, &t.CreatedAt, &t.ChangedAt, &t.UpdatedAt, &t.Revision); dbFailed(err) {
 			continue
 		}
 		t.Reminders = domain.ParseReminders(reminders)

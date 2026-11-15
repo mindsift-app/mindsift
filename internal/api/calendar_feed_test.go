@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -346,5 +347,67 @@ func TestRenderCalendarFeedTimeZones(t *testing.T) {
 	b := renderCalendarFeed(tasks, calendarFeedOptions{Loc: loc}, now.Add(3*time.Hour))
 	if a != b {
 		t.Error("the feed must not depend on the time of the request")
+	}
+}
+
+// A changed task goes out with a higher SEQUENCE and its LAST-MODIFIED; while nothing changes (reading the
+// task included) the feed, and with it the ETag, stays the same.
+func TestCalendarFeedSequence(t *testing.T) {
+	_, store, ts, owner, ownerToken := startRealtimeServer(t)
+	token := switchFeedOn(t, func(method string) *http.Response {
+		return doJSON(t, ts, method, "/api/v1/calendar-feed", ownerToken, nil)
+	})
+	url := ts.URL + "/calendar/" + token + ".ics"
+	due := clock.In(time.Now()).AddDate(0, 0, 2).Format("2006-01-02")
+	task := calendarTask(t, store, owner.ID, "Reifen wechseln", due, "", "")
+
+	event := func(body, summary string) (seq, modified string) {
+		t.Helper()
+		_, events := eventsBySummary(t, body)
+		ev := events[summary]
+		if ev == nil {
+			t.Fatalf("event %q missing:\n%s", summary, body)
+		}
+		s, _ := ev.Get("SEQUENCE")
+		m, _ := ev.Get("LAST-MODIFIED")
+		d, _ := ev.Get("DTSTAMP")
+		if d.Value != m.Value {
+			t.Errorf("DTSTAMP %q should be the last change %q", d.Value, m.Value)
+		}
+		return s.Value, m.Value
+	}
+	resp, body := fetchFeed(t, url, "")
+	etag := resp.Header.Get("ETag")
+	seq1, mod1 := event(body, "Reifen wechseln")
+	if seq1 == "" || mod1 == "" {
+		t.Fatalf("SEQUENCE %q / LAST-MODIFIED %q missing", seq1, mod1)
+	}
+
+	// Reading the task changes nothing
+	if resp := doJSON(t, ts, http.MethodGet, "/api/v1/thoughts/"+task.ID, ownerToken, nil); resp.StatusCode != http.StatusOK {
+		t.Fatalf("read task: %d", resp.StatusCode)
+	}
+	if resp, again := fetchFeed(t, url, ""); resp.Header.Get("ETag") != etag || again != body {
+		t.Error("the feed changed without a change of a task")
+	}
+	if resp, _ := fetchFeed(t, url, etag); resp.StatusCode != http.StatusNotModified {
+		t.Errorf("unchanged: status %d, want 304", resp.StatusCode)
+	}
+
+	if resp := doJSON(t, ts, http.MethodPatch, "/api/v1/thoughts/"+task.ID, ownerToken, map[string]any{"content": "Winterreifen wechseln"}); resp.StatusCode != http.StatusOK {
+		t.Fatalf("rename: %d", resp.StatusCode)
+	}
+	resp, body = fetchFeed(t, url, etag)
+	if resp.StatusCode != http.StatusOK || resp.Header.Get("ETag") == etag {
+		t.Fatalf("after a change: status %d, ETag unchanged %v", resp.StatusCode, resp.Header.Get("ETag") == etag)
+	}
+	seq2, mod2 := event(body, "Winterreifen wechseln")
+	n1, _ := strconv.Atoi(seq1)
+	n2, _ := strconv.Atoi(seq2)
+	if n2 <= n1 {
+		t.Errorf("SEQUENCE %s -> %s, want it to grow", seq1, seq2)
+	}
+	if mod2 < mod1 {
+		t.Errorf("LAST-MODIFIED went back: %s -> %s", mod1, mod2)
 	}
 }
