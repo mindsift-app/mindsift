@@ -31,8 +31,13 @@ IMAGE="mindsift-e2e-image:$RUN_ID"
 PLAIN_ADMIN_PASSWORD="Tour-Angebot-$RUN_ID"
 OIDC_ADMIN_PASSWORD="Notzugang-$RUN_ID"
 OIDC_CLIENT_SECRET="dex-client-$RUN_ID"
-# /metrics of the demo server, for the server memory measured by linked-todos.e2e.mjs
-METRICS_TOKEN="e2e-metrics-$RUN_ID"
+# /metrics of the demo server, for the server memory measured by linked-todos.e2e.mjs. The server ignores a
+# token shorter than 16 characters and leaves /metrics off (config.resolveMetricsToken), so keep it long.
+METRICS_TOKEN="e2e-metrics-token-$RUN_ID"
+if [ "${#METRICS_TOKEN}" -lt 16 ]; then
+  echo "e2e/run.sh: METRICS_TOKEN has ${#METRICS_TOKEN} characters, the server needs at least 16 or /metrics stays off" >&2
+  exit 1
+fi
 # A free port, none of the ones given
 free_port() {
   for p in $(shuf -i 18100-18999 -n 50); do
