@@ -713,6 +713,9 @@ const fr: HelpContent = {
               <strong className="text-main">Fuseau horaire du serveur :</strong> l'administrateur du serveur le règle sous <em>Administration du serveur → Serveur &amp; partage → Fuseau horaire</em>. Il vaut aussitôt pour tous : échéances avec heure, alertes, résumé quotidien et heure des sauvegardes.
             </li>
             <li>
+              <strong className="text-main">Qualité d'image :</strong> avant l'envoi, l'app réduit les images à 2048 pixels au plus. L'administrateur du serveur règle la force de la compression sous <em>Administration du serveur → Serveur &amp; partage → Qualité d'image</em> : Haute (par défaut), Moyenne ou Économe. La taille reste la même à chaque niveau, le texte des captures d'écran reste lisible ; le réglage vaut pour les nouvelles images.
+            </li>
+            <li>
               <strong className="text-main">Groupes :</strong> regroupe les personnes visibles au sein de groupes (par ex. famille, colocation, projet) et partage avec tous simultanément. Le créateur du groupe en est l'administrateur ; seuls les membres peuvent partager avec un groupe.
             </li>
             <li>

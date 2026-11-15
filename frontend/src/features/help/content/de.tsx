@@ -909,6 +909,9 @@ const de: HelpContent = {
               <strong className="text-main">Zeitzone des Servers:</strong> Server-Admins stellen sie unter <em>Server-Administration → Server &amp; Teilen → Zeitzone</em> ein. Sie gilt sofort für alle: Fälligkeiten mit Uhrzeit, Alarme, die Tageszusammenfassung und die Backup-Zeit.
             </li>
             <li>
+              <strong className="text-main">Bildqualität:</strong> Bilder verkleinert die App vor dem Hochladen auf höchstens 2048 Pixel. Wie stark sie dabei komprimiert, stellen Server-Admins unter <em>Server-Administration → Server &amp; Teilen → Bildqualität</em> ein: Hoch (Standard), Mittel oder Sparsam. Die Größe bleibt bei jeder Stufe gleich, Text in Screenshots bleibt lesbar; die Einstellung gilt für neu eingefügte Bilder.
+            </li>
+            <li>
               <strong className="text-main">Gruppen:</strong> Fasse Personen, die du sehen kannst, zu Gruppen zusammen (z. B. Familie, WG, Projekt) und teile mit allen auf einmal. Wer eine Gruppe anlegt, ist ihr Admin; mit einer Gruppe teilen kann nur, wer selbst Mitglied ist.
             </li>
             <li>

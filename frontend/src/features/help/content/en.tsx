@@ -715,6 +715,9 @@ const en: HelpContent = {
               <strong className="text-main">Server time zone:</strong> server admins set it under <em>Server administration → Server &amp; sharing → Time zone</em>. It applies to everyone at once: due times, alarms, the daily summary and the backup time.
             </li>
             <li>
+              <strong className="text-main">Image quality:</strong> the app shrinks images to at most 2048 pixels before uploading them. How strongly it compresses them is set by server admins under <em>Server administration → Server &amp; sharing → Image quality</em>: High (default), Medium or Economy. The size stays the same at every level, so text in screenshots stays readable; the setting applies to newly added images.
+            </li>
+            <li>
               <strong className="text-main">Groups:</strong> combine people you can see into groups (e.g. family, flatmates, a project) and share with all of them at once. Whoever creates a group is its admin; only members can share with a group.
             </li>
             <li>

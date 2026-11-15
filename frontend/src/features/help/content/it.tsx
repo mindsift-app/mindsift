@@ -715,6 +715,9 @@ const it: HelpContent = {
               <strong className="text-main">Fuso orario del server:</strong> l'amministratore del server lo imposta in <em>Amministrazione del server → Server e condivisione → Fuso orario</em>. Vale subito per tutti: scadenze con orario, notifiche, riepilogo giornaliero e ora dei backup.
             </li>
             <li>
+              <strong className="text-main">Qualità delle immagini:</strong> prima del caricamento l'app riduce le immagini a 2048 pixel al massimo. Quanto le comprime lo imposta l'amministratore del server in <em>Amministrazione del server → Server e condivisione → Qualità delle immagini</em>: Alta (predefinita), Media o Risparmio. La dimensione resta la stessa a ogni livello, il testo negli screenshot resta leggibile; l'impostazione vale per le nuove immagini.
+            </li>
+            <li>
               <strong className="text-main">Gruppi:</strong> raggruppa le persone visibili in gruppi (es. famiglia, coinquilini, progetto) e condividi con tutti in una volta sola. Chi crea un gruppo ne è amministratore; solo i membri possono condividere con un gruppo.
             </li>
             <li>

@@ -809,6 +809,9 @@ const es: HelpContent = {
               <strong className="text-main">Zona horaria del servidor:</strong> la administración del servidor la ajusta en <em>Administración del servidor → Servidor y compartir → Zona horaria</em>. Vale al instante para todos: vencimientos con hora, avisos, el resumen diario y la hora de las copias de seguridad.
             </li>
             <li>
+              <strong className="text-main">Calidad de imagen:</strong> antes de subirlas, la app reduce las imágenes a 2048 píxeles como máximo. Cuánto las comprime lo ajusta la administración del servidor en <em>Administración del servidor → Servidor y compartir → Calidad de imagen</em>: Alta (predeterminada), Media o Ahorro. El tamaño es el mismo en todos los niveles, el texto de las capturas sigue legible; el ajuste vale para las imágenes nuevas.
+            </li>
+            <li>
               <strong className="text-main">Grupos:</strong> agrupa a personas que puedes ver (p. ej. familia, compañeros de piso, un proyecto) y comparte contenido con todos ellos a la vez. Quien crea un grupo es su administrador; solo los miembros pueden compartir con el grupo.
             </li>
             <li>
