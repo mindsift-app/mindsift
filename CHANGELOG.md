@@ -8,6 +8,8 @@ Versions without a git tag were development states and were never published as a
 
 ## [Unreleased]
 
+**The biggest update so far, and the last step before 1.0.** Draw together live in shared notes, start notes from templates, paste or drag images and code straight into a note, and let MindSift understand dates and quantities as you type. Subscribe to your tasks in your calendar app. Administrators get two-factor sign-in, passkeys and single sign-on, an audit log, an update hint and a command line for emergencies. And it all runs comfortably for over a thousand people at once on a single CPU core.
+
 **Before you update:**
 - Without `TZ` the server now runs on UTC instead of Europe/Berlin: alarms, the daily summary and backups shift until you pick your time zone under Administration → Server (or set `TZ`).
 - A new server's setup wizard asks for a one-time setup code from the log (`docker logs mindsift | grep 'Setup code'`); scripts calling `POST /api/v1/auth/setup` send it as `setupCode`.
