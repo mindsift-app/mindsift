@@ -32,7 +32,7 @@ interface TasksMenuInput {
   setShowNewListModal: (show: boolean) => void;
   setViewMode: (mode: ViewMode) => void;
   sortBy: string;
-  trashCount: number;
+  trashCount: number | undefined; // undefined: the trash is not loaded
   safeTaskLists: TaskList[];
   viewMode: ViewMode;
 }

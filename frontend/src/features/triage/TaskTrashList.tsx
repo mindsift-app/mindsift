@@ -12,6 +12,9 @@ interface TaskTrashListProps {
   onPurge: (item: TrashedTask) => void;
 }
 
+// GET /tasks/trash answers with the newest this many entries (storage.TaskTrashLimit)
+const TASK_TRASH_LIMIT = 500;
+
 // Task trash of TasksView: deleted, cleared and automatically cleaned-up tasks with restore and purge
 export function TaskTrashList({ items, lists, showList, onRestore, onPurge }: TaskTrashListProps) {
   const { t } = useTranslation('tasks');
@@ -59,6 +62,9 @@ export function TaskTrashList({ items, lists, showList, onRestore, onPurge }: Ta
             </div>
           );
         })
+      )}
+      {items.length >= TASK_TRASH_LIMIT && (
+        <div className="px-4 py-2 text-center text-faint text-xs">{t('trash.limited', { count: TASK_TRASH_LIMIT })}</div>
       )}
     </div>
   );

@@ -30,7 +30,8 @@ interface TaskListViewProps {
   setGroupBy: (g: GroupBy) => void;
   setSortBy: (sort: TaskSort) => void;
   sortBy: TaskSort;
-  taskTrash: TrashedTask[];
+  // null: not loaded yet (it loads when the trash is opened)
+  taskTrash: TrashedTask[] | null;
 }
 
 // List view of TasksView: filter tabs (open, done, trash), grouping and sorting, clearing, then the rows
@@ -86,7 +87,7 @@ export function TaskListView({
             aria-pressed={filter === 'discarded'}
             className={`seg-item ${filter === 'discarded' ? 'seg-item-active seg-item-raised' : ''}`}
           >
-            {t('view.trashCount', { count: taskTrash.length })}
+            {taskTrash ? t('view.trashCount', { count: taskTrash.length }) : t('common:trash')}
           </button>
         </div>
 
@@ -120,7 +121,7 @@ export function TaskListView({
             />
           </div>
         </div>
-        {filter === 'discarded' && taskTrash.some((t) => t.canEdit) && (
+        {filter === 'discarded' && taskTrash?.some((t) => t.canEdit) && (
           <button
             onClick={handleEmptyTaskTrash}
             className="btn-action h-8 w-8 p-0 justify-center min-h-[38px] min-w-[38px] sm:min-h-0 sm:min-w-0 ml-auto sm:ml-0"
@@ -142,11 +143,11 @@ export function TaskListView({
         )}
       </div>
 
-      {loading ? (
+      {loading || (filter === 'discarded' && !taskTrash) ? (
         <div className="p-6 text-center text-faint text-sm">{t('view.loading')}</div>
       ) : filter === 'discarded' ? (
         <TaskTrashList
-          items={taskTrash}
+          items={taskTrash ?? []}
           lists={safeTaskLists}
           showList={selectedListId === 'all'}
           onRestore={handleRestoreTrashed}
