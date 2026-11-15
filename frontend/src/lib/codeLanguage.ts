@@ -7,9 +7,6 @@ import codeLanguages from '../features/workspace/codeLanguages.json';
 const KNOWN_IDS = new Set<string>(codeLanguages.groups.flatMap((g) => g.options.map((o) => o.id)));
 const ALIASES: Record<string, string> = codeLanguages.aliases;
 
-/** Longest language name a code block takes (menu, ```name, /code name, MCP) */
-export const CODE_LANGUAGE_MAX = 40;
-
 export function resolveLanguageId(raw?: string): string | undefined {
   if (!raw) return undefined;
   const key = raw.trim().toLowerCase();

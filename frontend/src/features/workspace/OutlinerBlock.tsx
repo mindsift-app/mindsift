@@ -748,7 +748,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
       return;
     }
 
-    const codeLangMatch = slashMatchInfo?.query.match(/^code\s+([a-z0-9_+#.-]+)$/i);
+    const codeLangMatch = slashMatchInfo?.query.match(/^code\s+([a-z0-9_+#.-]{1,40})$/i);
     const langOverride =
       cmd.type === 'code' && codeLangMatch
         ? resolveLanguageId(codeLangMatch[1]) || codeLangMatch[1]
@@ -843,11 +843,12 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
     let langOverride: string | undefined;
 
     if (block.type !== 'code') {
-      // Quick markdown shortcuts
-      const fenceSpaceMatch = val.match(/^```([a-z0-9_+#.-]*)\s([\s\S]*)$/i);
-      const fenceDirectMatch = val.match(/^```([a-z0-9_+#.-]+)$/i);
-      const slashCodeSpaceMatch = val.match(/^\/code\s+([a-z0-9_+#.-]+)\s([\s\S]*)$/i);
-      const slashCodeDirectMatch = val.match(/^\/code\s+([a-z0-9_+#.-]+)$/i);
+      // Quick markdown shortcuts. A language name has 1-40 of these characters, as in the language menu
+      // (isCodeLanguageLabel): a longer one is no shortcut, the text stays as typed
+      const fenceSpaceMatch = val.match(/^```([a-z0-9_+#.-]{0,40})\s([\s\S]*)$/i);
+      const fenceDirectMatch = val.match(/^```([a-z0-9_+#.-]{1,40})$/i);
+      const slashCodeSpaceMatch = val.match(/^\/code\s+([a-z0-9_+#.-]{1,40})\s([\s\S]*)$/i);
+      const slashCodeDirectMatch = val.match(/^\/code\s+([a-z0-9_+#.-]{1,40})$/i);
 
       if (fenceSpaceMatch) {
         const rawLang = fenceSpaceMatch[1];
@@ -908,7 +909,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
       const sel = e.currentTarget.selectionStart;
       const cursor = typeof sel === 'number' && sel > 0 ? sel : val.length;
       const textBefore = val.slice(0, cursor);
-      const slashMatch = !typeOverride ? textBefore.match(/(^|\s)\/(code\s+[a-z0-9_+#.-]*|[a-z0-9]*)$/i) : null;
+      const slashMatch = !typeOverride ? textBefore.match(/(^|\s)\/(code\s+[a-z0-9_+#.-]{0,40}|[a-z0-9]*)$/i) : null;
       if (slashMatch) {
         const slashStart = slashMatch.index! + slashMatch[1].length;
         setSlashMatchInfo({ query: slashMatch[2], slashStart, cursor });
@@ -1196,7 +1197,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
       e.stopPropagation();
       setSlashMatchInfo(null);
 
-      const fenceMatch = localContent.match(/^```([a-z0-9_+#.-]*)$/i);
+      const fenceMatch = localContent.match(/^```([a-z0-9_+#.-]{0,40})$/i);
       if (fenceMatch) {
         const rawLang = fenceMatch[1];
         const resolvedLang = rawLang ? resolveLanguageId(rawLang) || rawLang : '';
@@ -1843,7 +1844,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
                   if (ta) {
                     const cursor = ta.selectionStart;
                     const textBefore = ta.value.slice(0, cursor);
-                    const match = textBefore.match(/(^|\s)\/(code\s+[a-z0-9_+#.-]*|[a-z0-9]*)$/i);
+                    const match = textBefore.match(/(^|\s)\/(code\s+[a-z0-9_+#.-]{0,40}|[a-z0-9]*)$/i);
                     if (match) {
                       const slashStart = match.index! + match[1].length;
                       setSlashMatchInfo({ query: match[2], slashStart, cursor });
@@ -1859,7 +1860,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
                   if (ta) {
                     const cursor = ta.selectionStart;
                     const textBefore = ta.value.slice(0, cursor);
-                    const match = textBefore.match(/(^|\s)\/(code\s+[a-z0-9_+#.-]*|[a-z0-9]*)$/i);
+                    const match = textBefore.match(/(^|\s)\/(code\s+[a-z0-9_+#.-]{0,40}|[a-z0-9]*)$/i);
                     if (match) {
                       const slashStart = match.index! + match[1].length;
                       setSlashMatchInfo({ query: match[2], slashStart, cursor });

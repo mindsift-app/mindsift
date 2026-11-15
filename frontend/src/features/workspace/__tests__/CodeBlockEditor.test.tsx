@@ -348,6 +348,26 @@ describe('CodeBlockEditor', () => {
     expect(res3.updates[res3.updates.length - 1]?.content).toBe('pass in');
   });
 
+  it('takes a typed language name of up to 40 characters, a longer one is no shortcut (like the language menu)', () => {
+    const name40 = 'a'.repeat(40);
+    const ok = renderOutlinerCodeBlock({ id: 'b-40', type: 'bullet', content: '', level: 0, position: 1000 });
+    fireEvent.change(ok.container.querySelector('textarea') as HTMLTextAreaElement, { target: { value: '```' + name40 + ' x' } });
+    expect(ok.updates[ok.updates.length - 1]).toMatchObject({ type: 'code', lang: name40, content: 'x' });
+
+    for (const value of ['```' + name40 + 'b x', '/code ' + name40 + 'b x']) {
+      const long = renderOutlinerCodeBlock({ id: 'b-41', type: 'bullet', content: '', level: 0, position: 1000 });
+      const ta = long.container.querySelector('textarea') as HTMLTextAreaElement;
+      fireEvent.change(ta, { target: { value } });
+      expect(long.updates.some((u) => u.type === 'code')).toBe(false);
+      expect(ta.value).toBe(value);
+      // Enter on ```name: no code block either, the bullet goes on as text
+      fireEvent.change(ta, { target: { value: '```' + name40 + 'b' } });
+      fireEvent.keyDown(ta, { key: 'Enter' });
+      expect(long.updates.some((u) => u.type === 'code')).toBe(false);
+      long.unmount();
+    }
+  });
+
   it('renders line numbers column with aria-hidden, user-select: none, and correct line count including trailing empty lines and 100+ lines', () => {
     // 1. Single empty line
     const { container, rerender } = render(
