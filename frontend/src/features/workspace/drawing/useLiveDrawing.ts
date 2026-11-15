@@ -1,6 +1,9 @@
 // The browser's side of a live drawing session (server: internal/drawlive, internal/api/drawlive.go).
 // Drawing along sends and receives DRAW_* messages over the WebSocket; watching works on every channel
 // (SSE and long polling register over REST). Merging is in lib/drawing/live.ts.
+// A session starts only on purpose ("Gemeinsam zeichnen", or joining one that runs): until then the editor
+// draws alone (mode null) and this hook sends nothing; its merge starts from the drawing as opened, so the
+// session gets what was drawn alone before as changes.
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { api, getSSEId, isWebSocketConnected, onRealtimeStatus, onWebSocketMessage, sendWebSocketMessage } from '../../../lib/api';
 import { Applied, LiveMerge, WireElement, finalDrawing } from '../../../lib/drawing/live';
@@ -28,11 +31,16 @@ export type LiveStatus = 'connecting' | 'live' | 'offline' | 'idle';
 export type LiveEndReason = 'done' | 'discard' | 'expired';
 // busy and too_many: the server takes no further live drawing (from this person, or at all) right now
 export type LiveError = 'forbidden' | 'locked' | 'limit' | 'busy' | 'too_many' | 'save' | null;
+/** Refusals before being in a session (the editor that started it goes back to drawing alone) */
+export type LiveRefusal = 'forbidden' | 'locked' | 'limit' | 'busy' | 'too_many';
 
 export interface LiveOptions {
   docId: string;
   blockId: string;
-  mode: LiveMode;
+  /** null: drawing alone, no session (yet) */
+  mode: LiveMode | null;
+  /** Draw along in a running session only (someone asked to join one): if it ended meanwhile, none starts */
+  join?: boolean;
   /** Block content when the editor opened (a session everyone left resumes only on the same base) */
   baseContent: string;
   initial: Drawing;
@@ -46,6 +54,8 @@ export interface LiveOptions {
   onSaved: (final: Drawing) => void;
   /** The host's "Verwerfen" went through */
   onDiscarded: () => void;
+  /** Refused before being in the session; true: handled (the editor draws alone again) */
+  onRefused?: (code: LiveRefusal) => boolean;
 }
 
 // A DRAW_* message's payload or a REST answer about the session; every field is checked where it is read
@@ -73,8 +83,9 @@ export function useLiveDrawing(opts: LiveOptions | null) {
   // Made once from the drawing as opened; later changes of opts do not start over
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const merge = useMemo(() => (opts ? new LiveMerge(opts.initial) : null), []);
-  const [mode, setModeState] = useState<LiveMode | null>(opts?.mode ?? null);
-  const modeRef = useRef(mode);
+  const active = !!opts?.mode;
+  const [modeState, setModeState] = useState<LiveMode | null>(opts?.mode ?? null);
+  const modeRef = useRef(modeState);
   const setMode = (m: LiveMode) => {
     modeRef.current = m;
     setModeState(m);
@@ -103,6 +114,11 @@ export function useLiveDrawing(opts: LiveOptions | null) {
   const lastResync = useRef(0);
   const saveTimer = useRef<number | null>(null);
   const retryTimer = useRef<number | null>(null);
+  // The first join only attaches to a running session (opts.join, "Mitzeichnen"); once in, joining again
+  // (lost connection, server restart) may start it anew as before
+  const joinOnly = useRef(false);
+  const joinedRef = useRef(false);
+  const [joined, setJoined] = useState(false);
 
   const setEnded = (e: { reason: LiveEndReason; by?: string }) => {
     endedRef.current = true;
@@ -123,7 +139,7 @@ export function useLiveDrawing(opts: LiveOptions | null) {
       return;
     }
     const doc = o.getDoc();
-    send('DRAW_JOIN', { base: o.baseContent, els: merge.all(doc), grid: !!doc.grid });
+    send('DRAW_JOIN', { base: o.baseContent, els: merge.all(doc), grid: !!doc.grid, ...(joinOnly.current ? { join: true } : {}) });
   };
 
   const watch = () => {
@@ -190,6 +206,9 @@ export function useLiveDrawing(opts: LiveOptions | null) {
     }
     // In after all (another drawing was closed meanwhile)
     setError((e) => (e === 'busy' || e === 'too_many' ? null : e));
+    joinOnly.current = false;
+    joinedRef.current = true;
+    setJoined(true);
     const r = merge.reconcile(o.getDoc(), { els: st.els || [], order: st.order, grid: st.grid }, o.held());
     o.apply(r.doc, r.applied);
     lastSeq.current = Number(st.seq) || 0;
@@ -222,7 +241,13 @@ export function useLiveDrawing(opts: LiveOptions | null) {
   };
 
   useEffect(() => {
-    if (!opts || !merge) return;
+    if (!opts || !merge || !opts.mode) return;
+    // Started (again, after a refusal sent the editor back to drawing alone)
+    modeRef.current = opts.mode;
+    joinOnly.current = !!opts.join;
+    left.current = false;
+    endedRef.current = false;
+    lastSeq.current = 0;
     const offMsg = onWebSocketMessage((msg) => {
       const p = msg?.payload as DrawWire | undefined;
       const o = optsRef.current;
@@ -298,7 +323,12 @@ export function useLiveDrawing(opts: LiveOptions | null) {
             case 'limit':
             case 'busy':
             case 'too_many':
+              if (!joinedRef.current && o.onRefused?.(p.code)) break;
               setError(p.code);
+              break;
+            case 'ended':
+              // Asked to join, but the session ended meanwhile
+              setEnded({ reason: 'expired' });
               break;
             case 'no_session':
               // The session is gone (server restarted, or someone saved meanwhile): join again
@@ -339,13 +369,25 @@ export function useLiveDrawing(opts: LiveOptions | null) {
       if (pointerTimer.current !== null) window.clearTimeout(pointerTimer.current);
       if (saveTimer.current !== null) window.clearTimeout(saveTimer.current);
       if (retryTimer.current !== null) window.clearTimeout(retryTimer.current);
+      flushTimer.current = pointerTimer.current = saveTimer.current = retryTimer.current = null;
       // Declared further down; the cleanup runs after render, when it exists
       // eslint-disable-next-line react-hooks/immutability
       if (!left.current && !endedRef.current) leaveNow();
+      // Back to drawing alone (or closed): a later start begins fresh
+      modeRef.current = null;
+      setModeState(null);
+      setStatus('connecting');
+      setError(null);
+      setSaving(false);
+      setParticipants([]);
+      setWatchers([]);
+      setHost('');
+      setCursors(new Map());
+      setEndedState(null);
     };
-    // One session per editor: everything it needs is read through refs
+    // One session per start: everything it needs is read through refs
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [active]);
 
   const leaveNow = () => {
     left.current = true;
@@ -355,11 +397,13 @@ export function useLiveDrawing(opts: LiveOptions | null) {
     else if (modeRef.current === 'watch' && getSSEId()) api.watchDrawing(o.docId, o.blockId, getSSEId()!, true).catch(() => {});
   };
 
-  if (!opts) return null;
+  if (!opts || !active) return null;
 
   const isHost = !!you && host === you;
   return {
-    mode: mode!,
+    mode: (modeState ?? opts.mode)!,
+    /** Was in the session at least once */
+    joined,
     status,
     participants,
     watchers,
@@ -405,6 +449,7 @@ export function useLiveDrawing(opts: LiveOptions | null) {
     leave: leaveNow,
     /** From watching to drawing along */
     drawAlong: () => {
+      joinOnly.current = true;
       setMode('draw');
       setError(null);
       join();

@@ -35,6 +35,7 @@ vi.mock('../../../lib/api', async (importOriginal) => {
 });
 
 import { DrawingBlock } from '../drawing/DrawingBlock';
+import { NoteSharedContext } from '../drawing/noteShared';
 import { DrawingEditor } from '../drawing/DrawingEditor';
 import { parseDrawing } from '../../../lib/drawing/model';
 
@@ -83,16 +84,145 @@ describe('Live drawing in the note', () => {
     await vi.waitFor(() => expect(realtime.sent.map((m) => m.event)).toContain('DRAW_WATCH'));
   });
 
-  it('starts a live session when opened with a WebSocket', async () => {
-    render(<DrawingBlock docId="d1" blockId="b1" content={CONTENT} canEdit onChange={() => {}} />);
+  it('joining from the question only joins the running session', async () => {
+    render(<DrawingBlock docId="d1" blockId="b1" content={CONTENT} canEdit live={[live[0]]} onChange={() => {}} />);
     fireEvent.doubleClick(screen.getByRole('img'));
+    fireEvent.click(await screen.findByRole('button', { name: 'Mitzeichnen' }));
+    const join = await vi.waitFor(() => {
+      const sent = realtime.sent.find((m) => m.event === 'DRAW_JOIN');
+      expect(sent).toBeTruthy();
+      return sent;
+    });
+    expect(join?.payload).toMatchObject({ docId: 'd1', blockId: 'b1', join: true });
+    // It ended meanwhile: the editor says so, no new session starts
+    emit('DRAW_ERROR', { code: 'ended' });
+    expect(screen.getByText('Die Live-Zeichnung ist beendet.')).toBeTruthy();
+  });
+
+  it('the question goes away when the session ends meanwhile, and the drawing opens', async () => {
+    const { rerender } = render(<DrawingBlock docId="d1" blockId="b1" content={CONTENT} canEdit live={[live[0]]} onChange={() => {}} />);
+    fireEvent.doubleClick(screen.getByRole('img'));
+    expect(await screen.findByText('Anna zeichnet gerade.')).toBeTruthy();
+    rerender(<DrawingBlock docId="d1" blockId="b1" content={CONTENT} canEdit onChange={() => {}} />);
+    expect(screen.queryByRole('alertdialog')).toBeNull();
+    expect(await screen.findByRole('dialog', { name: 'Zeichnung bearbeiten' })).toBeTruthy();
+    expect(realtime.sent).toEqual([]);
+  });
+});
+
+describe('Drawing alone, and starting to draw together', () => {
+  const openBlock = (shared: boolean, onChange = () => {}) =>
+    render(
+      <NoteSharedContext.Provider value={shared}>
+        <DrawingBlock docId="d1" blockId="b1" content={CONTENT} canEdit onChange={onChange} />
+      </NoteSharedContext.Provider>
+    );
+  const editorOpen = () => screen.findByRole('dialog', { name: 'Zeichnung bearbeiten' });
+
+  it('opening a drawing draws alone, without a live session', async () => {
+    openBlock(true);
+    fireEvent.doubleClick(screen.getByRole('img'));
+    await editorOpen();
+    expect(realtime.sent).toEqual([]);
+    expect(document.querySelector('[data-live-people]')).toBeNull();
+  });
+
+  it('offers "Gemeinsam zeichnen" only in a shared note', async () => {
+    openBlock(false);
+    fireEvent.doubleClick(screen.getByRole('img'));
+    await editorOpen();
+    expect(screen.queryByRole('button', { name: 'Gemeinsam zeichnen' })).toBeNull();
+  });
+
+  it('"Gemeinsam zeichnen" starts a session with the drawing so far', async () => {
+    openBlock(true);
+    fireEvent.doubleClick(screen.getByRole('img'));
+    await editorOpen();
+    fireEvent.click(screen.getByRole('button', { name: 'Gemeinsam zeichnen' }));
     const join = await vi.waitFor(() => {
       const sent = realtime.sent.find((m) => m.event === 'DRAW_JOIN');
       expect(sent).toBeTruthy();
       return sent;
     });
     expect(join?.payload).toMatchObject({ docId: 'd1', blockId: 'b1', base: CONTENT });
+    expect(join?.payload.join).toBeUndefined();
     expect(join?.payload.els).toEqual([expect.objectContaining({ id: 'a', ver: 1, nonce: 0 })]);
+    expect(screen.queryByRole('button', { name: 'Gemeinsam zeichnen' })).toBeNull();
+  });
+
+  it('without a WebSocket it says so and goes on alone', async () => {
+    realtime.ws = false;
+    openBlock(true);
+    fireEvent.doubleClick(screen.getByRole('img'));
+    await editorOpen();
+    fireEvent.click(screen.getByRole('button', { name: 'Gemeinsam zeichnen' }));
+    expect(await screen.findByText(/Gemeinsam zeichnen geht nur mit einer WebSocket-Verbindung/)).toBeTruthy();
+    expect(realtime.sent).toEqual([]);
+  });
+
+  it('a refused start goes back to drawing alone', async () => {
+    openBlock(true);
+    fireEvent.doubleClick(screen.getByRole('img'));
+    await editorOpen();
+    fireEvent.click(screen.getByRole('button', { name: 'Gemeinsam zeichnen' }));
+    await vi.waitFor(() => expect(realtime.sent.map((m) => m.event)).toContain('DRAW_JOIN'));
+    emit('DRAW_ERROR', { code: 'busy' });
+    expect(screen.getByText(/Gerade laufen zu viele Live-Zeichnungen/)).toBeTruthy();
+    // Alone again: the tools are there and the button too
+    expect(screen.getByRole('button', { name: 'Gemeinsam zeichnen' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Fertig/ })).toBeTruthy();
+  });
+});
+
+describe('Closing without saving', () => {
+  const onClose = vi.fn();
+  beforeEach(() => onClose.mockReset());
+  const openEditor = (live?: { docId: string; blockId: string; mode: 'draw' | null; canDraw: boolean; canStart?: boolean }) =>
+    render(<DrawingEditor initial={parseDrawing(CONTENT)!} baseContent={CONTENT} draftKey="b1" live={live} onClose={onClose} />);
+  const closeButton = () => screen.getByRole('button', { name: 'Schließen ohne zu speichern' });
+
+  it('closes right away when nothing changed', () => {
+    openEditor({ docId: 'd1', blockId: 'b1', mode: null, canDraw: true, canStart: true });
+    fireEvent.click(closeButton());
+    expect(screen.queryByRole('alertdialog')).toBeNull();
+    expect(onClose).toHaveBeenCalledWith(null);
+  });
+
+  it('asks when something changed, without speaking of live', () => {
+    openEditor({ docId: 'd1', blockId: 'b1', mode: null, canDraw: true, canStart: true });
+    fireEvent.click(screen.getByRole('button', { name: /^Gitter/ }));
+    fireEvent.click(closeButton());
+    const ask = screen.getByRole('alertdialog');
+    expect(ask.textContent).toContain('Ungespeicherte Änderungen verwerfen?');
+    expect(ask.textContent).not.toMatch(/Live/);
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it('alone in a live session without changes: ends it without asking', () => {
+    openEditor({ docId: 'd1', blockId: 'b1', mode: 'draw', canDraw: true });
+    emit('DRAW_STATE', { active: true, host: 'c_ben', participants: [{ id: 'c_ben', userId: 'u_ben', name: 'Ben' }], watchers: [], you: 'c_ben', els: [], order: [], seq: 0 });
+    fireEvent.click(closeButton());
+    expect(screen.queryByRole('alertdialog')).toBeNull();
+    expect(realtime.sent.map((m) => m.event)).toContain('DRAW_DISCARD');
+  });
+
+  it('with others drawing along it asks, as that ends it for them too', () => {
+    openEditor({ docId: 'd1', blockId: 'b1', mode: 'draw', canDraw: true });
+    emit('DRAW_STATE', {
+      active: true,
+      host: 'c_ben',
+      participants: [
+        { id: 'c_ben', userId: 'u_ben', name: 'Ben' },
+        { id: 'c_anna', userId: 'u_anna', name: 'Anna' },
+      ],
+      watchers: [],
+      you: 'c_ben',
+      els: [],
+      order: [],
+      seq: 0,
+    });
+    fireEvent.click(closeButton());
+    expect(screen.getByRole('alertdialog').textContent).toContain('Verwerfen beendet die Live-Zeichnung für alle.');
   });
 });
 

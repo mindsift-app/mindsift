@@ -1,5 +1,6 @@
-// Live drawing: two browsers (Chromium and Firefox) draw in the same drawing at once and see each other's
-// shapes and pointers; a third browser without WebSocket (blocked like by a proxy, so the app falls back
+// Live drawing: opening a drawing draws alone (the others see the usual lock; in a private note there is no
+// "Gemeinsam zeichnen" and closing unchanged asks nothing). "Gemeinsam zeichnen" starts a session: two
+// browsers (Chromium and Firefox) draw in the same drawing at once and see each other's shapes and pointers; a third browser without WebSocket (blocked like by a proxy, so the app falls back
 // to SSE) watches live and gets no "Mitzeichnen". The host closes the tab, the other one becomes host and
 // saves with "Fertig": the drawing is in the note, also after reloading.
 // Needs a server in demo mode (accounts admin/admin and user/user); see e2e/README.md.
@@ -95,18 +96,48 @@ const main = async () => {
     ],
   });
   await api(admin, 'POST', `/api/v1/documents/${doc.id}/shares`, { userId: userInfo.id, permission: 'write' });
+  const privTitle = `Eigene Skizze ${stamp}`;
+  await api(admin, 'POST', '/api/v1/documents', { title: privTitle, blocks: [{ id: `lp1_${stamp}`, type: 'drawing', content: start, level: 0 }] });
+
+  // 0. A note nobody else sees: drawing alone, no "Gemeinsam zeichnen", closing unchanged closes at once
+  const P = await openNote(chromium, admin, privTitle);
+  await P.page.getByRole('img', { name: /^Zeichnung/ }).first().dblclick();
+  await editor(P.page).waitFor({ timeout: 5000 });
+  await sleep(800);
+  check((await editor(P.page).getByRole('button', { name: 'Gemeinsam zeichnen' }).count()) === 0, 'Private Notiz: kein „Gemeinsam zeichnen“');
+  await editor(P.page).getByRole('button', { name: 'Schließen ohne zu speichern' }).click();
+  await sleep(500);
+  check((await P.page.getByRole('alertdialog').count()) === 0, 'Ohne Änderung schließt der Editor ohne Rückfrage');
+  check((await editor(P.page).count()) === 0, 'Editor ist zu');
+  await P.page.getByRole('img', { name: /^Zeichnung/ }).first().dblclick();
+  await editor(P.page).waitFor({ timeout: 5000 });
+  await drawShape(P.page, 'o', [380, 300], [540, 400]);
+  await editor(P.page).getByRole('button', { name: 'Schließen ohne zu speichern' }).click();
+  const askDiscard = P.page.getByRole('alertdialog');
+  const asked = await askDiscard.waitFor({ timeout: 3000 }).then(() => true, () => false);
+  check(asked && !(await askDiscard.textContent()).includes('Live'), 'Mit Änderung fragt er, ohne von „Live“ zu sprechen', asked && (await askDiscard.textContent()));
+  await P.browser.close();
 
   const A = await openNote(chromium, admin, title);
   const B = await openNote(firefox, user, title, { phone: process.env.PHONE === '1' });
   const C = await openNote(chromium, admin, title, { noWebSocket: true });
 
-  // 1. Anna (admin, Chromium) opens the drawing: with a WebSocket that starts a live session
+  // 1. Anna (admin, Chromium) opens the drawing: she draws alone, the others see the usual lock
   await A.page.getByRole('img', { name: /^Zeichnung/ }).first().dblclick();
   await editor(A.page).waitFor({ timeout: 5000 });
-  // Alone in it, the editor looks like drawing alone: no host, no people
   await sleep(1000);
   check((await editor(A.page).locator('[data-live-host]').count()) === 0, 'Allein in der Zeichnung keine Gastgeber-Anzeige');
   await drawShape(A.page, 'o', [380, 300], [540, 400]);
+  const locked = await waitFor(async () => (await B.page.locator(`[title="${adminName} bearbeitet diesen Punkt gerade"]`).count()) === 1, 10000);
+  check(!!locked, 'Allein gezeichnet: die anderen sehen die Sperre mit Namen');
+  check((await B.page.locator('[data-live-badge]').count()) === 0, 'Allein gezeichnet: keine Live-Anzeige in der Notiz');
+  await B.page.getByRole('img', { name: /^Zeichnung/ }).first().dblclick();
+  await sleep(1500);
+  check((await editor(B.page).count()) === 0 && (await B.page.getByRole('alertdialog').count()) === 0, 'Allein gezeichnet: Doppelklick der anderen öffnet nichts zum Mitzeichnen');
+  await shot(A.page, 'alone');
+
+  // Anna starts drawing together: a live session with what she drew so far
+  await editor(A.page).getByRole('button', { name: 'Gemeinsam zeichnen' }).click();
 
   // 2. The others' note shows the live drawing instead of a lock
   const badge = await waitFor(async () => {
@@ -129,7 +160,7 @@ const main = async () => {
   const seesEllipse = await waitFor(async () => (await count(B.page, 'ellipse')) >= 1, 5000);
   check(!!seesEllipse, 'Ben sieht die Ellipse von Anna');
   const hostShown = await waitFor(async () => (await editor(A.page).locator('[data-live-host]').textContent())?.includes('Du bist Gastgeber'), 5000);
-  check(!!hostShown, 'Wer die Zeichnung geöffnet hat, ist Gastgeber, sobald jemand mitzeichnet');
+  check(!!hostShown, 'Wer gemeinsam zeichnen gestartet hat, ist Gastgeber, sobald jemand mitzeichnet');
 
   // 4. Both draw at once
   await Promise.all([drawShape(B.page, 'd', [700, 300], [860, 420]), drawShape(A.page, 'o', [380, 500], [520, 580])]);
@@ -189,6 +220,14 @@ const main = async () => {
   await editor(B.page).getByRole('button', { name: /^Fertig/ }).click();
   const closed = await waitFor(async () => (await editor(B.page).count()) === 0, 8000);
   check(!!closed, 'Fertig schließt den Editor');
+  // Right after the end the note may still report the session until it syncs: opening again draws alone
+  await B.page.getByRole('img', { name: /^Zeichnung/ }).first().dblclick();
+  const reopened = await waitFor(async () => (await editor(B.page).count()) === 1, 5000);
+  check(!!reopened && (await B.page.getByRole('alertdialog').count()) === 0, 'Gleich nach Fertig öffnet ein Doppelklick die Zeichnung, ohne nach Mitzeichnen zu fragen');
+  if (reopened) {
+    await editor(B.page).getByRole('button', { name: 'Schließen ohne zu speichern' }).click();
+    await waitFor(async () => (await editor(B.page).count()) === 0, 3000);
+  }
   const saved = await waitFor(async () => {
     const snap = await api(admin, 'GET', `/api/v1/docs/${doc.id}/snapshot`);
     const b = snap.blocks.find((x) => x.type === 'drawing' && !x.deleted);

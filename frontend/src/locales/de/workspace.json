@@ -585,6 +585,9 @@
       "needsWebSocket": "Mitzeichnen geht nur mit einer WebSocket-Verbindung; hier kannst du zusehen.",
       "drawAlong": "Mitzeichnen",
       "watch": "Zusehen",
+      "start": "Gemeinsam zeichnen",
+      "startTitle": "Live-Sitzung starten: Wer die Notiz bearbeiten darf, kann mitzeichnen, wer sie lesen darf, zusehen",
+      "needsWebSocketStart": "Gemeinsam zeichnen geht nur mit einer WebSocket-Verbindung. Du zeichnest allein weiter.",
       "label": "Live",
       "host": "Gastgeber: {{name}}",
       "youHost": "Du bist Gastgeber",
@@ -606,7 +609,7 @@
       "idle": "Gerade zeichnet niemand. Der Stand ist noch nicht gespeichert.",
       "error": {
         "forbidden": "Du hast keinen Zugriff zum Mitzeichnen.",
-        "locked": "Jemand bearbeitet die Zeichnung gerade ohne Live-Verbindung – du kannst nur ansehen.",
+        "locked": "Jemand anderes bearbeitet die Zeichnung gerade – gemeinsam zeichnen geht erst, wenn sie frei ist.",
         "limit": "Die Zeichnung ist zu groß für die Live-Sitzung. Bitte etwas entfernen, vor allem Freihand-Striche.",
         "too_many": "Du zeichnest schon in zu vielen Zeichnungen live. Schließ eine davon und öffne diese dann noch einmal.",
         "busy": "Gerade laufen zu viele Live-Zeichnungen auf dem Server. Bitte später noch einmal öffnen.",

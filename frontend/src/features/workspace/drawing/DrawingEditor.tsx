@@ -27,6 +27,7 @@ import {
   Trash,
   Type,
   Undo2,
+  Users,
   ZoomIn,
   ZoomOut,
 } from 'lucide-react';
@@ -86,7 +87,8 @@ import { ConfirmPopover } from '../../../components/ConfirmPopover';
 import { AvatarStack } from '../../../components/AvatarStack';
 import { userColor } from '../../../lib/userColor';
 import { Applied, patchDrawing } from '../../../lib/drawing/live';
-import { LiveCursor, LiveMode, useLiveDrawing } from './useLiveDrawing';
+import { LiveCursor, LiveMode, LiveRefusal, useLiveDrawing } from './useLiveDrawing';
+import { isWebSocketConnected, tryWebSocket } from '../../../lib/api';
 import { isTouchPointer } from '../../../lib/useAnchoredPopover';
 import { useLatestRef } from '../../../lib/useLatestRef';
 
@@ -192,15 +194,17 @@ export interface DrawingEditorProps {
   readOnly?: boolean;
   /** Called now and then while drawing (keeps the bullet held) */
   onActivity?: () => void;
-  /** null = nothing changed */
-  onClose: (content: string | null) => void;
-  /** Live session over WebSocket: drawing along with others ('draw') or watching ('watch'); canDraw: a
-   *  watcher may switch to drawing along */
-  live?: { docId: string; blockId: string; mode: LiveMode; canDraw: boolean };
+  /** null = nothing changed; sessionOver: a live session this editor was in ended (saved or discarded) */
+  onClose: (content: string | null, sessionOver?: boolean) => void;
+  /** Live session over WebSocket: drawing along in a running one ('draw'), watching ('watch'), or drawing
+   *  alone for now (null). canDraw: a watcher may switch to drawing along; canStart: drawing alone, the
+   *  note is shared, so "Gemeinsam zeichnen" can start a session others may join */
+  live?: { docId: string; blockId: string; mode: LiveMode | null; canDraw: boolean; canStart?: boolean };
 }
 
 // Full-screen drawing editor. Changes stay local until it closes; meanwhile a draft is kept in this browser.
-// In a live session the changes go to the others right away and the host saves for everyone.
+// In a live session (started on purpose with "Gemeinsam zeichnen", or joined) the changes go to the others
+// right away and the host saves for everyone.
 export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseContent, draftKey, readOnly: readOnlyProp = false, onActivity, onClose, live }) => {
   const { t } = useTranslation('workspace');
   const [doc, setDocState] = useState<Drawing>(initial);
@@ -259,7 +263,8 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
   const setDoc = useCallback((next: Drawing) => {
     docRef.current = next;
     setDocState(next);
-    if (Date.now() - lastActivity.current > 5000) {
+    // Drawing alone keeps the bullet held for this person; a live session holds it itself
+    if (!liveRef.current && Date.now() - lastActivity.current > 5000) {
       lastActivity.current = Date.now();
       onActivityRef.current?.();
     }
@@ -307,12 +312,17 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
       /* ignore */
     }
   };
+  // Drawing alone until "Gemeinsam zeichnen" (startedHere) or opened to join or watch a running session
+  const [liveMode, setLiveMode] = useState<LiveMode | null>(live?.mode ?? null);
+  const [startedHere, setStartedHere] = useState(false);
   const liveState = useLiveDrawing(
     live
       ? {
           docId: live.docId,
           blockId: live.blockId,
-          mode: live.mode,
+          mode: liveMode,
+          // Opened to draw along: only in the session that runs (none starts if it ended meanwhile)
+          join: !startedHere,
           baseContent,
           initial,
           getDoc: () => docRef.current,
@@ -322,11 +332,19 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
           onSaved: (final) => {
             dropDraft();
             const content = serializeDrawing(final);
-            onClose(content === baseContent ? null : content);
+            onClose(content === baseContent ? null : content, true);
           },
           onDiscarded: () => {
             dropDraft();
-            onClose(null);
+            onClose(null, true);
+          },
+          // Starting a session did not work: go on drawing alone, nothing drawn is lost
+          onRefused: (code: LiveRefusal) => {
+            if (!startedHere) return false;
+            setLiveMode(null);
+            setStartedHere(false);
+            setError(t(`drawing.live.error.${code}`));
+            return true;
           },
         }
       : null
@@ -666,7 +684,7 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
     if (l.ended || l.mode === 'watch' || readOnly) {
       if (l.ended && l.ended.reason !== 'expired') dropDraft();
       if (!l.ended) l.leave();
-      return onClose(null);
+      return onClose(null, !!l.ended);
     }
     if (textEditRef.current) commitText();
     if (!l.isHost) {
@@ -687,6 +705,19 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
     l.done();
   }
 
+  // "Gemeinsam zeichnen": a live session starts with what is drawn so far; whoever may open the note can
+  // join or watch. Drawing along needs a WebSocket (a fallback to SSE gets a fresh try first)
+  const startTogether = async () => {
+    if (textEditRef.current) commitText();
+    setError(null);
+    if (!isWebSocketConnected() && !(await tryWebSocket(3000))) {
+      setError(t('drawing.live.needsWebSocketStart'));
+      return;
+    }
+    setStartedHere(true);
+    setLiveMode('draw');
+  };
+
   // Close without saving; with changes it asks first (Verwerfen / Abbrechen)
   const discard = () => {
     if (draftTimer.current !== null) window.clearTimeout(draftTimer.current);
@@ -699,10 +730,13 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
   };
   // The drawing as it was opened, written the editor's way (the stored text may be written differently)
   const openedAs = useMemo(() => serializeDrawing(initial), [initial]);
+  // Someone else draws along: discarding ends the session for them too
+  const othersDrawing = !!liveState && liveState.participants.length > 1;
   const onDiscardClick = (e: React.MouseEvent) => {
     const changed = !!textEdit || serializeDrawing(docRef.current) !== openedAs;
-    // In a live session discarding ends it for everyone: always ask
-    if (changed || liveState) setConfirmDiscard({ x: e.clientX, y: e.clientY });
+    // Asks only when something would be lost: own changes, or a session others draw in
+    if (changed || othersDrawing) setConfirmDiscard({ x: e.clientX, y: e.clientY });
+    else if (liveState) liveState.discard();
     else discard();
   };
 
@@ -1784,6 +1818,19 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
             </span>
           </div>
         )}
+        {/* Drawing alone in a shared note: start a session the others may join (phones: the icon only) */}
+        {!liveState && live?.canStart && !readOnly && (
+          <button
+            type="button"
+            onClick={() => void startTogether()}
+            className="btn-action h-11 w-11 sm:w-auto sm:h-8 p-0 sm:px-3 text-xs inline-flex items-center justify-center gap-1.5"
+            title={t('drawing.live.startTitle')}
+            aria-label={t('drawing.live.start')}
+            data-live-start
+          >
+            <Users className="w-4 h-4 sm:w-3.5 sm:h-3.5" /> <span className="hidden sm:inline">{t('drawing.live.start')}</span>
+          </button>
+        )}
         {liveState?.mode === 'watch' && live?.canDraw && !liveState.ended && liveState.status === 'live' && (
           <button type="button" onClick={liveState.drawAlong} className="btn-action h-11 sm:h-8 px-3 text-xs inline-flex items-center gap-1.5">
             <Pencil className="w-3.5 h-3.5" /> {t('drawing.live.drawAlong')}
@@ -1841,8 +1888,8 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
           <ConfirmPopover
             x={confirmDiscard.x}
             y={confirmDiscard.y}
-            message={liveState ? t('drawing.live.discardAsk') : t('drawing.discardAsk')}
-            confirmLabel={liveState ? t('drawing.live.discardAll') : t('drawing.discard')}
+            message={othersDrawing ? t('drawing.live.discardAsk') : t('drawing.discardAsk')}
+            confirmLabel={othersDrawing ? t('drawing.live.discardAll') : t('drawing.discard')}
             danger
             onConfirm={() => {
               setConfirmDiscard(null);

@@ -589,6 +589,9 @@
       "needsWebSocket": "Para dibujar a la vez hace falta una conexión WebSocket; aquí puedes mirar.",
       "drawAlong": "Dibujar también",
       "watch": "Mirar",
+      "start": "Dibujar juntos",
+      "startTitle": "Iniciar una sesión en vivo: quien puede editar la nota puede dibujar también; quien puede leerla, mirar",
+      "needsWebSocketStart": "Para dibujar juntos hace falta una conexión WebSocket. Sigues dibujando solo.",
       "label": "En vivo",
       "host": "Anfitrión: {{name}}",
       "youHost": "Eres el anfitrión",
@@ -610,7 +613,7 @@
       "idle": "Ahora nadie está dibujando. El estado aún no está guardado.",
       "error": {
         "forbidden": "No tienes acceso para dibujar.",
-        "locked": "Alguien está editando el dibujo sin conexión en vivo – solo puedes mirarlo.",
+        "locked": "Otra persona está editando el dibujo ahora mismo – podréis dibujar juntos cuando quede libre.",
         "limit": "El dibujo es demasiado grande para la sesión en vivo. Quita algo, sobre todo trazos a mano alzada.",
         "too_many": "Ya estás dibujando en vivo en demasiados dibujos. Cierra uno y vuelve a abrir este.",
         "busy": "Ahora mismo hay demasiados dibujos en vivo en el servidor. Vuelve a abrirlo más tarde.",
