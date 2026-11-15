@@ -95,7 +95,7 @@ func (s *Server) handleCaptureInbox(w http.ResponseWriter, r *http.Request) {
 			thought = converted
 			if target == "list_item" && targetListID != "" {
 				if lst, lErr := s.store.GetListByID(userID, targetListID); lErr == nil && lst != nil {
-					s.wsHub.BroadcastListEvent(lst.ID, "LIST_UPDATED", lst)
+					s.broadcastListUpdated(lst)
 				}
 			}
 		}
@@ -186,7 +186,7 @@ func (s *Server) handleTriageAction(w http.ResponseWriter, r *http.Request) {
 	// If converted to a list item, broadcast via WebSocket to the space
 	if convertTo == "list_item" && targetListID != "" {
 		if lst, err := s.store.GetListByID(userID, targetListID); err == nil && lst != nil {
-			s.wsHub.BroadcastListEvent(lst.ID, "LIST_UPDATED", lst)
+			s.broadcastListUpdated(lst)
 		}
 	}
 

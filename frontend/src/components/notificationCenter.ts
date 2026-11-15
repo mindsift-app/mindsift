@@ -21,22 +21,17 @@ export function centerAfterEvent(state: CenterState, msg: WSMessage): { state: C
   if (msg.event === 'NOTIFICATION') {
     const entry = msg.payload as CenterEntry | null | undefined;
     if (!entry || typeof entry.id !== 'number') return { state, reload: true };
-    // A watched task keeps one entry, its latest change: the server replaced the earlier ones of the task
-    // (group "watched:<task>"). Without a target (the task was deleted) the earlier entry is not known here.
-    let reload = false;
-    let dropped: CenterEntry[] = [];
-    let items = state.items.filter((e) => e.id !== entry.id);
-    if (entry.kind === 'watched') {
-      if (entry.targetType === 'task' && entry.targetId) {
-        dropped = items.filter((e) => e.kind === 'watched' && e.targetType === 'task' && e.targetId === entry.targetId);
-        items = items.filter((e) => !dropped.includes(e));
-      } else {
-        reload = true;
-      }
-    }
+    // An entry with a group key (a watched task keeps one, its latest change) names the entries it replaced
+    const replaced = new Set(Array.isArray(entry.replaces) ? entry.replaces : []);
+    const dropped = state.items.filter((e) => e.id !== entry.id && replaced.has(e.id));
+    const items = state.items.filter((e) => e.id !== entry.id && !replaced.has(e.id));
     const known = state.items.some((e) => e.id === entry.id && !e.read);
     const unread = Math.max(0, state.unread - dropped.filter((e) => !e.read).length - (known ? 1 : 0) + (entry.read ? 0 : 1));
-    return { state: { items: [entry, ...items].slice(0, CENTER_LIMIT), unread }, reload };
+    const stored: CenterEntry = { ...entry };
+    delete stored.replaces;
+    // A replaced entry beyond the newest 50 may have been unread: only the server knows the count then
+    const reload = state.items.length >= CENTER_LIMIT && dropped.length < replaced.size;
+    return { state: { items: [stored, ...items].slice(0, CENTER_LIMIT), unread }, reload };
   }
   if (msg.event === 'NOTIFICATIONS_READ') {
     const ids = (msg.payload as { ids?: unknown } | null | undefined)?.ids;

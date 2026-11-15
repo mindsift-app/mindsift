@@ -2,6 +2,7 @@ package storage
 
 import (
 	"encoding/json"
+	"sort"
 	"strings"
 	"time"
 )
@@ -44,6 +45,8 @@ type CenterEntry struct {
 	BlockID    string `json:"blockId,omitempty"`
 	CreatedAt  string `json:"createdAt"`
 	Read       bool   `json:"read"`
+	// Replaces: the ids of the entries this one replaced (its group key), only when it was just added
+	Replaces []int64 `json:"replaces,omitempty"`
 }
 
 // CenterGroup decides how an entry with a group key is added
@@ -84,9 +87,25 @@ func addCenterEntry(db centerDB, userID string, e CenterEntry, groupKey string, 
 			if !read {
 				replaced = text
 			}
-			if _, err := db.Exec(`DELETE FROM center_entries WHERE user_id = ? AND group_key = ?`, userID, groupKey); err != nil {
+			// The ids go along with the new entry (NOTIFICATION), so open apps drop exactly these
+			rows, err := db.Query(`DELETE FROM center_entries WHERE user_id = ? AND group_key = ? RETURNING id`, userID, groupKey)
+			if err != nil {
 				return CenterEntry{}, false, "", err
 			}
+			for rows.Next() {
+				var gone int64
+				if err := rows.Scan(&gone); err != nil {
+					_ = rows.Close()
+					return CenterEntry{}, false, "", err
+				}
+				e.Replaces = append(e.Replaces, gone)
+			}
+			err = rows.Err()
+			_ = rows.Close()
+			if err != nil {
+				return CenterEntry{}, false, "", err
+			}
+			sort.Slice(e.Replaces, func(i, j int) bool { return e.Replaces[i] < e.Replaces[j] })
 		}
 	}
 	if replaced != "" && replaced != e.Text && generic != "" {

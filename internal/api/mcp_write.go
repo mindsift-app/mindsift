@@ -553,7 +553,7 @@ var mcpWriteTools = []mcpTool{
 			}
 			if convertTo == "list_item" {
 				if lst, err := s.store.GetListByID(userID, a.ListID); err == nil && lst != nil {
-					s.wsHub.BroadcastListEvent(lst.ID, "LIST_UPDATED", lst)
+					s.broadcastListUpdated(lst)
 				}
 			}
 			if convertTo == "document" && updated.ConvertedRefID != "" {

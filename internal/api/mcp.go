@@ -856,7 +856,7 @@ var mcpTools = []mcpTool{
 			if err != nil {
 				return nil, err
 			}
-			s.wsHub.BroadcastListEvent(l.ID, "LIST_CREATED", l)
+			s.wsHub.BroadcastToUser(userID, "LIST_CREATED", l)
 			return s.toListView(*l), nil
 		},
 	},

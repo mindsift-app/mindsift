@@ -170,6 +170,8 @@ export interface CenterEntry {
   blockId?: string;
   createdAt: string;
   read: boolean;
+  // Only in NOTIFICATION: the ids of the entries this one replaced (a watched task keeps one entry)
+  replaces?: number[];
 }
 
 // A person the @-mention picker offers; without access to the place they are shown greyed out

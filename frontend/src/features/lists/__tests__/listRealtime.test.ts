@@ -46,9 +46,13 @@ describe('shopping list realtime updates', () => {
   });
 
   it('reloads only for list events it cannot apply', () => {
-    expect(LIST_RELOAD_EVENTS).toEqual(['LIST_CREATED', 'LIST_SHARED', 'LIST_UNSHARED']);
+    expect(LIST_RELOAD_EVENTS).toEqual(['LIST_SHARED', 'LIST_UNSHARED']);
     const prev = lists();
     for (const e of LIST_RELOAD_EVENTS) expect(listsAfterEvent(prev, msg(e, {}))).toEqual({ lists: prev, reload: true });
+    // A new list: the creating tab shows it already, another device of the creator loads
+    expect(listsAfterEvent(prev, msg('LIST_CREATED', { id: 'l1' }))).toEqual({ lists: prev, reload: false });
+    expect(listsAfterEvent(prev, msg('LIST_CREATED', { id: 'l9' })).reload).toBe(true);
+    expect(listsAfterEvent(prev, msg('LIST_CREATED', null)).reload).toBe(true);
     expect(listsAfterEvent(prev, msg('ITEM_CREATED', item('n'))).reload).toBe(false);
   });
 });
