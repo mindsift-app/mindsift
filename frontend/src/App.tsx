@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Layers,
   SquareCheckBig,
@@ -64,7 +64,9 @@ import { MobileCaptureSheet } from './app/MobileCaptureSheet';
 import { MobileHeaderBar } from './app/AppHeader';
 import { NavRail } from './app/NavRail';
 import { captureDictation, DictationOutcome, undoDictationDate } from './features/capture/captureDictation';
-import { QuickDumpWindow, useQuickDumpShortcut } from './app/QuickDumpWindow';
+import { useQuickDumpShortcut } from './app/useQuickDumpShortcut';
+// The Quick Dump window loads on its first opening, so it stays out of the start bundle
+const QuickDumpWindow = lazy(() => import('./app/QuickDumpWindow').then((m) => ({ default: m.QuickDumpWindow })));
 import { useSessionBootstrap } from './app/useSessionBootstrap';
 import { useMainViews } from './app/useMainViews';
 import { AppLoading } from './app/AppLoading';
@@ -200,6 +202,9 @@ export const App: React.FC = () => {
   const [captureFocusCount, setCaptureFocusCount] = useState(0);
   // Desktop: the Quick Dump window (app/QuickDumpWindow.tsx)
   const [showQuickDump, setShowQuickDump] = useState(false);
+  // Once opened it stays mounted (keeps the target and an unfinished text)
+  const [quickDumpUsed, setQuickDumpUsed] = useState(false);
+  if (showQuickDump && !quickDumpUsed) setQuickDumpUsed(true);
   const closeQuickDump = useCallback(() => setShowQuickDump(false), []);
   const [refreshRevision, setRefreshRevision] = useState(0);
 
@@ -782,17 +787,21 @@ export const App: React.FC = () => {
           />
         }
       />
-      <QuickDumpWindow
-        open={showQuickDump}
-        onClose={closeQuickDump}
-        lists={lists}
-        focusTrigger={captureFocusCount}
-        onCaptured={(thought, target) => {
-          // A new note opens in the workspace: the window makes way for it
-          if (target === 'document') setShowQuickDump(false);
-          handleCaptured(thought, target);
-        }}
-      />
+      {quickDumpUsed && (
+        <Suspense fallback={null}>
+          <QuickDumpWindow
+            open={showQuickDump}
+            onClose={closeQuickDump}
+            lists={lists}
+            focusTrigger={captureFocusCount}
+            onCaptured={(thought, target) => {
+              // A new note opens in the workspace: the window makes way for it
+              if (target === 'document') setShowQuickDump(false);
+              handleCaptured(thought, target);
+            }}
+          />
+        </Suspense>
+      )}
       {authStatus.demoMode && <DemoHint minutes={authStatus.demoResetMinutes} />}
 
       <MobileHeaderMenu activeTabLabel={activeTabLabelMap[activeTab]} />

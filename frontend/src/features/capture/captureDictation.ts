@@ -1,7 +1,6 @@
 import i18n from '../../i18n';
 import { api } from '../../lib/api';
 import { extractHashtags } from '../../lib/hashtags';
-import { parseNaturalDate } from '../../lib/naturalDate';
 import { typedRecognitionOn } from '../../lib/typedRecognition';
 import { Thought } from '../../lib/types';
 
@@ -26,7 +25,8 @@ export interface DictationOutcome {
  * recognition switched off (lib/typedRecognition.ts) the text is saved as spoken, without a date.
  */
 export async function captureDictation(text: string, now: Date = new Date(), lang: string = i18n.language): Promise<SavedDictation> {
-  const parsed = typedRecognitionOn() ? parseNaturalDate(text, lang, now) : null;
+  // The date parser loads only when it is needed, so it stays out of the app's start bundle
+  const parsed = typedRecognitionOn() ? (await import('../../lib/naturalDate')).parseNaturalDate(text, lang, now) : null;
   const content = parsed ? parsed.title : text;
   const due = parsed ? parsed.due : '';
   const thought = await api.captureThought(content, 'normal', 'voice', due, { target: 'inbox' });

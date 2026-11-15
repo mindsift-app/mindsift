@@ -47,7 +47,7 @@ export function useNavRailExpanded() {
   return [expanded, setExpanded] as const;
 }
 
-// The key that opens the Quick Dump (app/QuickDumpWindow.tsx)
+// The key that opens the Quick Dump (app/useQuickDumpShortcut.ts)
 const QUICK_DUMP_KEY = 'C';
 
 const PAGES: { tab: ActiveTab; icon: React.ReactNode; stat?: keyof DashboardStats }[] = [

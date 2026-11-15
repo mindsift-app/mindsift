@@ -160,7 +160,7 @@ export const InstantCaptureBar: React.FC<InstantCaptureBarProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [inlineOptions]);
 
-  // Escape in the field empties it (the bare "c" that opens the Quick Dump lives in app/QuickDumpWindow.tsx)
+  // Escape in the field empties it (the bare "c" that opens the Quick Dump lives in app/useQuickDumpShortcut.ts)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && document.activeElement === inputRef.current) {
