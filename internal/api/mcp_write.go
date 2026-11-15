@@ -30,13 +30,24 @@ type noteBullet struct {
 	Type    string `json:"type"`
 	Text    string `json:"text"`
 	Checked bool   `json:"checked,omitempty"`
+	// Language: of a code bullet (the editor's id; empty = plain code)
+	Language string `json:"language,omitempty"`
 }
 
 // mcpBulletTypes: the types an agent may give a bullet
-var mcpBulletTypes = map[string]bool{"text": true, "todo": true, "h1": true, "h2": true, "h3": true, "numbered": true, "callout": true, "warning": true, "error": true, "table": true, drawing.BlockType: true}
+var mcpBulletTypes = map[string]bool{"text": true, "todo": true, "h1": true, "h2": true, "h3": true, "numbered": true, "callout": true, "warning": true, "error": true, "table": true, "code": true, "divider": true, drawing.BlockType: true}
+
+// mcpBulletTypeEnum: the same types for the tool schemas
+var mcpBulletTypeEnum = []string{"text", "todo", "h1", "h2", "h3", "numbered", "callout", "warning", "error", "table", "code", "divider", drawing.BlockType}
 
 // errMCPType: an unknown bullet type
-var errMCPType = errors.New("'type': text, todo, h1, h2, h3, numbered, callout, warning, error, table oder drawing")
+var errMCPType = errors.New("'type': text, todo, h1, h2, h3, numbered, callout, warning, error, table, code, divider oder drawing")
+
+// errMCPLanguage: a language for a bullet that is no code bullet
+var errMCPLanguage = errors.New("'language' gibt es nur für Code (type code)")
+
+// errMCPDividerText: text for a divider, which has none
+var errMCPDividerText = errors.New("Ein Trennstrich hat keinen Text (mit type einen anderen Typ wählen)")
 
 // errMCPDrawing: the text of a drawing bullet was neither Mermaid nor a drawing model
 var errMCPDrawing = errors.New("Für eine Zeichnung erwartet text Mermaid (flowchart/graph oder mindmap) oder ein MindSift-Zeichnungsmodell (JSON)")
@@ -85,7 +96,11 @@ func noteBullets(d *collab.Doc, titles map[string]string) []noteBullet {
 		if b.Type == drawing.BlockType {
 			text = drawing.Describe(b.Content)
 		}
-		out = append(out, noteBullet{ID: b.ID, Level: b.Level, Type: b.Type, Text: text, Checked: b.Props.Checked})
+		nb := noteBullet{ID: b.ID, Level: b.Level, Type: b.Type, Text: text, Checked: b.Props.Checked}
+		if b.Type == "code" {
+			nb.Language = b.Props.Lang
+		}
+		out = append(out, nb)
 	}
 	return out
 }
@@ -255,22 +270,23 @@ var mcpWriteTools = []mcpTool{
 	{
 		Name: "add_note_bullet",
 		Description: "Add a bullet to a note: after a bullet (same level), as the last child of a bullet, or at the end. " +
-			"Bullet ids come from get_note. type: text (default), todo, h1, h2, h3, numbered, callout, warning, error, table, drawing. " +
+			"Bullet ids come from get_note. type: text (default), todo, h1, h2, h3, numbered, callout, warning, error, table, code, divider, drawing. " +
 			"[[Note title]] links another note (with |text for an own link text); it keeps working when that note is renamed. " +
-			"type table: text is a Markdown table (header row, separator row | --- |, rows; a | inside a cell written \\|; | :---: | centers a column, | ---: | aligns it right). " + mcpDrawingHelp,
+			"type table: text is a Markdown table (header row, separator row | --- |, rows; a | inside a cell written \\|; | :---: | centers a column, | ---: | aligns it right). " + mcpCodeHelp + mcpDrawingHelp,
 		Scope: storage.ScopeNotesWrite,
-		Schema: schema([]string{"noteId", "text"}, map[string]any{
+		Schema: schema([]string{"noteId"}, map[string]any{
 			"noteId":   prop("string", "Note id"),
-			"text":     prop("string", "Text of the new bullet"),
-			"type":     map[string]any{"type": "string", "enum": []string{"text", "todo", "h1", "h2", "h3", "numbered", "callout", "warning", "error", "drawing"}},
+			"text":     prop("string", "Text of the new bullet (none for a divider)"),
+			"type":     map[string]any{"type": "string", "enum": mcpBulletTypeEnum},
+			"language": prop("string", "For type code: the code's language, e.g. go, python, typescript, bash, sql, json (optional)"),
 			"afterId":  prop("string", "Insert right after this bullet, on its level (optional)"),
 			"parentId": prop("string", "Insert as the last child of this bullet (optional; ignored with afterId)"),
 			"checked":  map[string]any{"type": "boolean", "description": "For a to-do: already done"},
 		}),
 		run: func(ctx context.Context, s *Server, userID string, actor *apiActor, args json.RawMessage) (any, error) {
 			var a struct {
-				NoteID, Text, Type, AfterID, ParentID string
-				Checked                               bool
+				NoteID, Text, Type, Language, AfterID, ParentID string
+				Checked                                         bool
 			}
 			if err := decodeArgs(args, &a); err != nil {
 				return nil, err
@@ -283,6 +299,9 @@ var mcpWriteTools = []mcpTool{
 			}
 			if !mcpBulletTypes[a.Type] {
 				return nil, errMCPType
+			}
+			if strings.TrimSpace(a.Language) != "" && a.Type != "code" {
+				return nil, errMCPLanguage
 			}
 			d, err := s.noteDoc(a.NoteID)
 			if err != nil {
@@ -304,6 +323,14 @@ var mcpWriteTools = []mcpTool{
 				text = storage.NormalizeTable(text)
 			}
 			props := collab.Props{Checked: a.Type == "todo" && a.Checked}
+			switch a.Type {
+			case "code":
+				// The code as written, like the editor's code block; the write path puts a placeholder in place
+				// of a hidden value (collab.Env.CodeText)
+				text, props.Lang = a.Text, mcpCodeLanguage(a.Language)
+			case "divider":
+				text = ""
+			}
 			op := collab.Op{OpID: domain.NewID("op"), Kind: collab.OpInsert, BlockID: id, ParentID: &parent, OrderKey: key, Type: a.Type, Content: &text, Props: &props}
 			if err := s.applyNoteOpsCtx(ctx, userID, actor, a.NoteID, []collab.Op{op}); err != nil {
 				return nil, err
@@ -338,14 +365,17 @@ var mcpWriteTools = []mcpTool{
 	{
 		Name: "update_note_bullet",
 		Description: "Change one bullet of a note: its text, tick or untick a to-do, or its type. Bullet ids come from get_note. " +
-			"A drawing is replaced as a whole: text is the new drawing (Mermaid or the model, see add_note_bullet); type drawing turns a bullet into one.",
+			"A drawing is replaced as a whole: text is the new drawing (Mermaid or the model, see add_note_bullet); type drawing turns a bullet into one. " +
+			"type code turns a bullet into a code block (its text becomes the code; language sets or changes the language), type divider into a line (its text goes). " +
+			"Code and dividers are written as in add_note_bullet.",
 		Scope: storage.ScopeNotesWrite,
 		Schema: schema([]string{"noteId", "bulletId"}, map[string]any{
 			"noteId":   prop("string", "Note id"),
 			"bulletId": prop("string", "Bullet id"),
 			"text":     prop("string", "New text, optional"),
 			"checked":  map[string]any{"type": "boolean", "description": "To-do done (true) or open (false), optional"},
-			"type":     map[string]any{"type": "string", "enum": []string{"text", "todo", "h1", "h2", "h3", "numbered", "callout", "warning", "error", "drawing"}},
+			"type":     map[string]any{"type": "string", "enum": mcpBulletTypeEnum},
+			"language": prop("string", "Language of a code bullet (type code), e.g. go, python, bash; empty = plain code; optional"),
 		}),
 		run: func(ctx context.Context, s *Server, userID string, actor *apiActor, args json.RawMessage) (any, error) {
 			var a struct {
@@ -353,6 +383,7 @@ var mcpWriteTools = []mcpTool{
 				Text             *string
 				Checked          *bool
 				Type             *string
+				Language         *string
 			}
 			if err := decodeArgs(args, &a); err != nil {
 				return nil, err
@@ -389,10 +420,35 @@ var mcpWriteTools = []mcpTool{
 					a.Text = &content
 				}
 			}
+			target := b.Type
+			if a.Type != nil {
+				target = *a.Type
+			}
+			// The language belongs to code; a table keeps its line mode there, which code would misread
+			var lang *string
+			switch {
+			case a.Language != nil && target != "code":
+				return nil, errMCPLanguage
+			case a.Language != nil:
+				l := mcpCodeLanguage(*a.Language)
+				lang = &l
+			case target != b.Type && (target == "table" || b.Type == "table"):
+				l := ""
+				lang = &l
+			}
+			// A divider has no text: a bullet that becomes one loses it
+			if target == "divider" {
+				if b.Type == "divider" && a.Text != nil && *a.Text != "" {
+					return nil, errMCPDividerText
+				}
+				empty := ""
+				a.Text = &empty
+			}
 			if err := s.bulletFree(a.NoteID, b.ID); err != nil {
 				return nil, err
 			}
-			if a.Text != nil && b.Type != drawing.BlockType && !toDrawing {
+			// Code is kept as written ([[…]] is no link there), like the editor's code block
+			if a.Text != nil && b.Type != drawing.BlockType && !toDrawing && target != "code" && target != "divider" {
 				text := s.store.WikiLinker(userID)(storage.KeepWikiLinkIDs(b.Content, *a.Text, s.store.DocTitles(userID)))
 				a.Text = &text
 			}
@@ -410,8 +466,11 @@ var mcpWriteTools = []mcpTool{
 			if a.Text != nil && *a.Text != b.Content {
 				ops = append(ops, collab.Op{OpID: domain.NewID("op"), Kind: collab.OpSetContent, BlockID: b.ID, BaseVersion: b.Version, Content: a.Text})
 			}
-			if a.Checked != nil || a.Type != nil {
-				ops = append(ops, collab.Op{OpID: domain.NewID("op"), Kind: collab.OpSetProps, BlockID: b.ID, Patch: &collab.PropsPatch{Checked: a.Checked, Type: a.Type}})
+			if lang != nil && *lang == b.Props.Lang {
+				lang = nil
+			}
+			if a.Checked != nil || a.Type != nil || lang != nil {
+				ops = append(ops, collab.Op{OpID: domain.NewID("op"), Kind: collab.OpSetProps, BlockID: b.ID, Patch: &collab.PropsPatch{Checked: a.Checked, Type: a.Type, Lang: lang}})
 			}
 			if len(ops) == 0 {
 				return noteResult(s, userID, a.NoteID)
