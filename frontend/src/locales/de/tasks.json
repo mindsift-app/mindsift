@@ -126,6 +126,7 @@
     "group": "Gruppe:",
     "sort": "Sortierung:",
     "sortCustom": "Manuell (Drag & Drop)",
+    "sortCustomShort": "Manuell",
     "sortCreated": "Erstelldatum",
     "sortDue": "Fälligkeitsdatum",
     "sortPriority": "Priorität",

@@ -126,6 +126,7 @@
     "group": "Gruppo:",
     "sort": "Ordinamento:",
     "sortCustom": "Manuale (trascina e rilascia)",
+    "sortCustomShort": "Manuale",
     "sortCreated": "Data di creazione",
     "sortDue": "Data di scadenza",
     "sortPriority": "Priorità",

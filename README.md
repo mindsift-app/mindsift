@@ -125,17 +125,22 @@ If something here is out of date or unfair, please open an issue.
 
 ---
 
-## Not (yet) in MindSift
+## Not yet in MindSift
 
-* **SAML, LDAP and logging out at the provider:** single sign-on is OpenID Connect only, and signing out of MindSift does not sign you out of the provider.
-* **Passkeys without a fixed https address:** passkeys need `BASE_URL` with https (or `http://localhost`); on a bare IP address or plain http only the authenticator app works.
-* **PostgreSQL or MySQL:** SQLite on purpose (see [design decisions](#design-decisions)).
-* **CalDAV or an iCal feed:** the calendar exists only inside MindSift.
-* **Native apps:** it is a PWA (installable, offline, push), not in the app stores.
-* **End-to-end encryption:** the server reads your data, because search, sharing and AI agents need it; only hidden values (`/hidden`) are encrypted in the database. Protect the server and its disk.
-* **Backups to S3 or WebDAV:** backups go to `data/backups/`; copying them elsewhere is up to you.
-* **A Helm chart:** Docker Compose only.
+### Not yet, but planned
+
+* **SAML and LDAP:** single sign-on is OpenID Connect only.
+* **Signing out at the provider signs you out of MindSift:** today a MindSift session lasts until it expires, even after you sign out at the provider. (Signing out of MindSift keeps you signed in at the provider, on purpose.)
 * **Time zones per person:** one time zone per server, not per person (Administration → Server, or `TZ`).
+
+### Not in MindSift, for a reason
+
+* **PostgreSQL or MySQL:** SQLite on purpose (see [design decisions](#design-decisions)).
+* **Backups to S3, WebDAV or SFTP:** backups go to `data/backups/`, where the administration restores them with one click. Copying them elsewhere belongs to the backup you run for the whole server, not to each app.
+* **A Helm chart:** it is a single container with one volume; Docker Compose, or a small Kubernetes manifest of your own, is all it takes.
+* **End-to-end encryption:** the server reads your data, because search, sharing and AI agents need it; only hidden values (`/hidden`) are encrypted in the database. Protect the server and its disk.
+* **Native apps:** it is a PWA (installable, offline, push), not in the app stores.
+* **Two-way calendar sync (CalDAV):** tasks are edited in MindSift.
 
 More ideas and the known weak spots: [Doku/flaws.md](Doku/flaws.md).
 
