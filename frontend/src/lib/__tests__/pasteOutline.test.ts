@@ -44,9 +44,9 @@ describe('parsePastedLines', () => {
     ]);
   });
 
-  it('keeps fenced code as one block', () => {
+  it('makes fenced code one code block with its language', () => {
     const items = parse('```go\nfunc main() {}\n\n```\nDanach');
-    expect(items[0].content).toBe('```go\nfunc main() {}\n\n```');
+    expect(items[0]).toEqual({ type: 'code', content: 'func main() {}', lang: 'go', indent: 0 });
     expect(items[1]).toEqual({ type: 'text', content: 'Danach', indent: 0 });
   });
 

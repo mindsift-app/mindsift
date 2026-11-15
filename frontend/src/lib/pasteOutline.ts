@@ -86,7 +86,8 @@ export function parsePastedLines(rawLines: string[]): PastedItem[] {
     if (!fence) return;
     const { marker, info, lines, indent } = fence;
     fence = null;
-    const code = lines.join('\n');
+    // Blank lines at the end of the fence are no code
+    const code = lines.join('\n').replace(/\n\s*$/, '');
     const name = info.split(/\s+/)[0] || '';
     if (name === DRAWING_FENCE) {
       const model = code.trim();
