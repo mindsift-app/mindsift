@@ -478,13 +478,14 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
   // the same change. Only while the cursor was still in that bullet, so a slow upload does not pull it
   // away from where the person went meanwhile. focus: from the /image picker, which turns the empty bullet
   // into the image whatever its type and always hands the cursor on.
+  // An empty to-do linked to a task becomes the image too (its task is unlinked and stays, as with any type change).
   const handlePasteImages = useCallback(
     (anchorId: string, contents: string[], anchor?: DocumentBlock, focus?: boolean) => {
       if (!canEdit || contents.length === 0 || blocks.length === 0) return;
       const idx = blocks.findIndex((b) => b.id === anchorId);
       const current = idx >= 0 ? (anchor ?? blocks[idx]) : blocks[blocks.length - 1];
       const replace =
-        idx >= 0 && (focus || REPLACEABLE_EMPTY.includes(current.type)) && !(current.content || '').trim() && !current.taskId && !current.subtaskOf;
+        idx >= 0 && (focus || REPLACEABLE_EMPTY.includes(current.type)) && !(current.content || '').trim();
       const updated: DocumentBlock = replace ? { ...current, type: 'image', content: contents[0], checked: false } : current;
       const level = Math.max(0, current.level || 0);
       const nowBase = Date.now().toString(36);
