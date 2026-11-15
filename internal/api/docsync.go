@@ -378,7 +378,7 @@ func syncBrowser(b string) string {
 		return ""
 	}
 	for _, c := range b {
-		if !(c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || c >= '0' && c <= '9') {
+		if (c < 'a' || c > 'z') && (c < 'A' || c > 'Z') && (c < '0' || c > '9') {
 			return ""
 		}
 	}
