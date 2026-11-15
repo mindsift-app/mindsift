@@ -461,8 +461,43 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
           onCreateBlock(newBlocks[k], afterId);
         }
       }
+      return lastTargetId;
     },
     [blocks, canEdit, docId, focusBlockInput, onCreateBlock, onInsertBlocks, onUpdateBlock]
+  );
+
+  // Pasted images, once uploaded (lib/pasteImages.ts): an empty bullet becomes the first image, otherwise they
+  // go below the bullet on its level, all in one change (one step for Ctrl+Z). anchor: the bullet as its
+  // field has it right now (text typed during the upload may not have reached the note yet). A bullet
+  // deleted during the upload: the images go to the end of the note instead of being lost.
+  const handlePasteImages = useCallback(
+    (anchorId: string, contents: string[], anchor?: DocumentBlock) => {
+      if (!canEdit || contents.length === 0 || blocks.length === 0) return;
+      const idx = blocks.findIndex((b) => b.id === anchorId);
+      const current = idx >= 0 ? (anchor ?? blocks[idx]) : blocks[blocks.length - 1];
+      const replace =
+        idx >= 0 && REPLACEABLE_EMPTY.includes(current.type) && !(current.content || '').trim() && !current.taskId && !current.subtaskOf;
+      const updated: DocumentBlock = replace ? { ...current, type: 'image', content: contents[0], checked: false } : current;
+      const level = Math.max(0, current.level || 0);
+      const nowBase = Date.now().toString(36);
+      const newBlocks: DocumentBlock[] = contents.slice(replace ? 1 : 0).map((content, j) => ({
+        id: `blk_${nowBase}_img${j}_${Math.random().toString(36).slice(2, 6)}`,
+        documentId: docId,
+        type: 'image',
+        content,
+        level,
+        checked: false,
+        collapsed: false,
+        position: (current.position || 1000) + (j + 1) * 10,
+      }));
+      if (onInsertBlocks) {
+        onInsertBlocks(current.id, updated, newBlocks);
+      } else {
+        if (replace) onUpdateBlock(updated, true);
+        newBlocks.forEach((b, k) => onCreateBlock(b, k === 0 ? current.id : newBlocks[k - 1].id));
+      }
+    },
+    [blocks, canEdit, docId, onCreateBlock, onInsertBlocks, onUpdateBlock]
   );
 
   // /vorlage: the picker opens at the bullet; the chosen template's bullets go in like pasted bullets (with
@@ -1242,6 +1277,7 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
   const stableUpdateBlock = useLatestCallback(onUpdateBlock);
   const stableCreateBlockBelow = useLatestCallback(handleCreateBlockBelow);
   const stablePasteMultiLines = useLatestCallback(handlePasteMultiLines);
+  const stablePasteImages = useLatestCallback(handlePasteImages);
   const offersTemplates = Boolean(canEdit && templateSource);
   const stableDeleteBlock = useLatestCallback(handleDeleteBlock);
   const stableMergeWithPrevious = useLatestCallback(handleMergeWithPrevious);
@@ -1326,6 +1362,7 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
           onUpdateBlock={stableUpdateBlock}
           onCreateBlockBelow={stableCreateBlockBelow}
           onPasteMultiLines={stablePasteMultiLines}
+          onPasteImages={stablePasteImages}
           listMarker={listMarker}
           onDeleteBlock={stableDeleteBlock}
           onMergeWithPrevious={stableMergeWithPrevious}

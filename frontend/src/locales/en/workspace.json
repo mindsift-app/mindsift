@@ -376,7 +376,13 @@
     "closeEsc": "Close (Esc)",
     "saving": "Saving…",
     "uploading": "Uploading…",
-    "takePhoto": "Take photo"
+    "takePhoto": "Take photo",
+    "pastingImage_one": "Uploading image…",
+    "pastingImage_other": "Uploading {{count}} images…",
+    "pasteOffline": "Images can only be pasted with a connection. Please paste again once you are online.",
+    "pasteFailed_one": "Image not pasted: {{error}}",
+    "pasteFailed_other": "{{count}} images not pasted: {{error}}",
+    "pasteTooMany": "At most {{max}} images at once, the others were not pasted."
   },
   "journal": {
     "opening": "Opening {{date}}…",

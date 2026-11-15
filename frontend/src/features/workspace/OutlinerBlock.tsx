@@ -33,6 +33,7 @@ import {
   AppWindow,
   Monitor,
   Smartphone,
+  LoaderCircle,
 } from 'lucide-react';
 import { DocumentBlock, BlockType } from '../../lib/types';
 import { LinkModal } from './LinkModal';
@@ -54,6 +55,7 @@ import { currentVoiceConfig } from '../../lib/voice';
 import { LinkPreviewCard } from './LinkPreviewCard';
 import { linkCardUrl, hidePreviewContent, linkHost, useLinkPreviewsEnabled } from '../../lib/linkPreview';
 import { mediaContent, parseMediaContent } from '../../lib/media';
+import { MAX_PASTED_IMAGES, PastedImages, pastedImages, uploadPastedImages } from '../../lib/pasteImages';
 import { codeBlockText } from '../../lib/secretRef';
 import { InlineMarkdownOptions, renderInlineMarkdown } from '../../lib/markdown';
 import { useMentionInput } from '../../lib/useMentionInput';
@@ -195,7 +197,10 @@ export interface OutlinerBlockProps {
   isDragTarget?: boolean;
   isTargeted?: boolean;
   registerTextareaRef: (blockId: string, el: HTMLTextAreaElement | null) => void;
-  onPasteMultiLines?: (blockId: string, textBefore: string, textAfter: string, rawLines: string[]) => void;
+  /** Returns the bullet the cursor ends up in (the last pasted line) */
+  onPasteMultiLines?: (blockId: string, textBefore: string, textAfter: string, rawLines: string[]) => string | void;
+  /** Uploaded pasted images become image bullets at this bullet (OutlinerTree.handlePasteImages) */
+  onPasteImages?: (anchorId: string, contents: string[], anchor?: DocumentBlock) => void;
   /** Number or letter of a numbered-list item ("1.", "b.", "iii.") */
   listMarker?: string;
   /** Another bullet on the same level follows: Enter in this empty bullet adds a bullet instead of outdenting */
@@ -249,6 +254,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
   isTargeted,
   registerTextareaRef,
   onPasteMultiLines,
+  onPasteImages,
   listMarker,
   siblingFollows = false,
   lockedBy: heldBy,
@@ -377,6 +383,9 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
   const onUpdateBlockRef = useLatestRef(onUpdateBlock);
   const onCreateBlockBelowRef = useLatestRef(onCreateBlockBelow);
   const onPasteMultiLinesRef = useLatestRef(onPasteMultiLines);
+  const onPasteImagesRef = useLatestRef(onPasteImages);
+  // Pasted images still uploading (shown below the bullet until they are image bullets)
+  const [pastingImages, setPastingImages] = useState(0);
   const onDeleteBlockRef = useLatestRef(onDeleteBlock);
   const onMergeWithPreviousRef = useLatestRef(onMergeWithPrevious);
   const onIndentBlockRef = useLatestRef(onIndentBlock);
@@ -1025,11 +1034,59 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
     }
   };
 
+  // Uploads pasted images and turns them into image bullets at anchorId (lib/pasteImages.ts). Every image
+  // that does not make it is reported, nothing disappears without a word.
+  const pasteImages = async (images: PastedImages, anchorId: string) => {
+    const count = images.files.length + images.urls.length;
+    const tooMany = images.dropped > 0 ? i18n.t('workspace:media.pasteTooMany', { max: MAX_PASTED_IMAGES }) : '';
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+      showError(i18n.t('workspace:media.pasteOffline'));
+      return;
+    }
+    setPastingImages((n) => n + count);
+    let result: { contents: string[]; errors: unknown[] };
+    try {
+      result = await uploadPastedImages(docId, images);
+    } finally {
+      setPastingImages((n) => Math.max(0, n - count));
+    }
+    if (result.contents.length > 0) {
+      let anchor: DocumentBlock | undefined;
+      if (anchorId === block.id) {
+        // The field's text, including what was typed during the upload and is still waiting to be saved
+        if (debounceTimerRef.current !== null) {
+          window.clearTimeout(debounceTimerRef.current);
+          debounceTimerRef.current = null;
+        }
+        anchor = { ...latestBlockRef.current, content: localContentRef.current };
+        acceptRemoteUntilRef.current = Date.now() + 1000;
+      }
+      onPasteImagesRef.current?.(anchorId, result.contents, anchor);
+    }
+    if (result.errors.length > 0) {
+      const offline = (typeof navigator !== 'undefined' && navigator.onLine === false) || result.errors.some((err) => err instanceof TypeError);
+      const error = offline ? i18n.t('workspace:media.pasteOffline') : errorMessage(result.errors[0], i18n.t('workspace:media.uploadFailed'));
+      showError(
+        [i18n.t('workspace:media.pasteFailed', { count: result.errors.length, error }), tooMany].filter(Boolean).join(' ')
+      );
+    } else if (tooMany) {
+      showError(tooMany);
+    }
+  };
+
   const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
     if (!canEdit || block.type === 'code') return;
     // Bullets copied from a note with hidden values: the app's own format has their references where the
     // plain text has the mask (lib/outlineMarkdown.ts)
     const own = ownClipboardText(e.clipboardData);
+    // Pasted images (screenshot, copied picture) become image bullets; bullets copied in MindSift (own) bring
+    // their image bullets as text already
+    const images = own || !onPasteImages ? null : pastedImages(e.clipboardData);
+    if (images && !images.keepText) {
+      e.preventDefault();
+      void pasteImages(images, block.id);
+      return;
+    }
     // Code blocks from other pages (ChatGPT, Claude, documentation): only their HTML says where code starts
     // and in which language, the plain text has it without a fence
     const html = own ? '' : e.clipboardData.getData('text/html');
@@ -1044,11 +1101,14 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
       applyFormattingChange(textBefore + own + textAfter, start + own.length, start + own.length);
       return;
     }
-    if (!pastedText || !pastedText.includes('\n')) return;
+    if (!pastedText || !pastedText.includes('\n')) {
+      // One line goes in through the browser; the images follow the bullet
+      if (images) void pasteImages(images, block.id);
+      return;
+    }
 
     e.preventDefault();
     const rawLines = pastedText.split(/\r?\n/);
-    if (rawLines.length <= 1) return;
 
     if (debounceTimerRef.current !== null) {
       window.clearTimeout(debounceTimerRef.current);
@@ -1058,7 +1118,9 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
     isPastingRef.current = true;
     // Pasted text that stays in this block arrives as a prop change while the field has focus: take it
     acceptRemoteUntilRef.current = Date.now() + 1000;
-    onPasteMultiLinesRef.current?.(block.id, textBefore, textAfter, rawLines);
+    const lastPasted = onPasteMultiLinesRef.current?.(block.id, textBefore, textAfter, rawLines);
+    // Images that came with the text follow its last line
+    if (images) void pasteImages(images, lastPasted || block.id);
   };
 
   // Ctrl/Cmd+Z undoes the user's own changes in the whole note (not the browser's per-field undo)
@@ -1927,6 +1989,16 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
               style={showSecretDim ? { color: 'transparent', caretColor: 'var(--text-main)' } : undefined}
             />
           </div>
+          </div>
+        )}
+
+        {/* Pasted images on their way: the same look as the /image picker while it uploads */}
+        {pastingImages > 0 && (
+          <div
+            data-testid="pasting-images"
+            className="my-1 flex items-center gap-2 px-3 py-3 rounded-card border-2 border-dashed border-border bg-panel text-xs text-muted select-none"
+          >
+            <LoaderCircle className="w-4 h-4 animate-spin text-accent" /> {t('media.pastingImage', { count: pastingImages })}
           </div>
         )}
 
