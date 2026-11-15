@@ -433,19 +433,23 @@ func (s *Server) handleUnlinkEnhancedTask(w http.ResponseWriter, r *http.Request
 }
 
 // deleteTask removes a task, tells everyone who saw it and notifies its watchers. Shared by
-// DELETE /thoughts/{id} and the MCP tool delete_task.
+// DELETE /thoughts/{id} and the MCP tool delete_task. The notifications are planned from the task before
+// the write and stored in its transaction (storage.DeleteTask), so deleting waits once for the write lock.
 func (s *Server) deleteTask(userID, thoughtID string) error {
 	th, err := s.store.GetThoughtByID(userID, thoughtID)
-	if err == nil && th.TaskListID != "" && !s.store.CanEditTaskList(userID, th.TaskListID) {
-		return storage.ErrTaskListReadOnly
-	}
-	audience := s.taskAudience(th)
-	if err := s.store.DeleteThought(userID, thoughtID); err != nil {
+	if err != nil {
 		return err
 	}
-	if th != nil {
-		s.notifyTaskChange(userID, th, nil, true)
+	audience := s.taskAudience(th)
+	var b notifyBatch // DeleteTask checks the right to edit the list before it plans
+	added, err := s.store.DeleteTask(userID, th, func(t *domain.Thought) ([]storage.CenterAdd, []storage.QueuedAdd) {
+		s.planTaskChange(&b, userID, t, nil, true, audience)
+		return b.center, b.queue
+	})
+	if err != nil {
+		return err
 	}
+	s.sendBatch(&b, added)
 	s.wsHub.BroadcastToUsers(audience, "TASK_DELETED", map[string]string{"id": thoughtID})
 	return nil
 }

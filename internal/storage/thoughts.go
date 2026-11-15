@@ -630,15 +630,54 @@ func (s *Store) DeleteThought(userID, thoughtID string) error {
 	if err != nil {
 		return err
 	}
+	_, err = s.DeleteTask(userID, thought, nil)
+	return err
+}
+
+// DeleteTask is DeleteThought for a thought as GetThoughtByID read it for userID, in one transaction
+// together with plan's notifications (planned from the thought before it begins) and forgetting the
+// task's watchers: deleting and telling others used to wait for the database's write lock three times.
+// Returns the center entries as stored, in plan's order.
+func (s *Store) DeleteTask(userID string, thought *domain.Thought, plan NotifyPlan) ([]CenterEntry, error) {
 	if err := s.ensureTaskListWritable(userID, thought.TaskListID); err != nil {
-		return err
+		return nil, err
 	}
+	var stmts []sqlStmt
 	// Tasks as in completedTaskSQL: kept, or converted into a task
 	if thought.Status == domain.StatusKept || (thought.Status == domain.StatusConverted && thought.ConvertedType == "task") {
-		return s.trashTask(thought.ID, userID)
+		var err error
+		if stmts, err = s.trashTaskStmts(thought.ID, userID); err != nil {
+			return nil, err
+		}
+	} else {
+		stmts = []sqlStmt{stmt(`DELETE FROM thoughts WHERE id = ?`, thought.ID)}
 	}
-	_, err = s.db.Exec(`DELETE FROM thoughts WHERE id = ?`, thought.ID)
-	return err
+	var center []CenterAdd
+	var queue []QueuedAdd
+	if plan != nil {
+		center, queue = plan(thought)
+	}
+	tx, err := s.db.Begin()
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+	for _, st := range stmts {
+		if _, err := tx.Exec(st.query, st.args...); err != nil {
+			return nil, err
+		}
+	}
+	if _, err := tx.Exec(`DELETE FROM task_watchers WHERE task_id = ?`, thought.ID); err != nil {
+		return nil, err
+	}
+	added, err := storeNotificationsTx(tx, center, queue)
+	if err != nil {
+		return nil, err
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+	return added, nil
 }
 
 // migrateAgentMark: released in v0.29.0; agent_mark is superseded by the origin columns (migrateOrigin)

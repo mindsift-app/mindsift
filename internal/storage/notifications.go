@@ -219,10 +219,6 @@ func (s *Store) WatchedTaskIDs(userID string) map[string]bool {
 	return out
 }
 
-func (s *Store) ForgetTaskWatchers(taskID string) {
-	s.execLogged(`DELETE FROM task_watchers WHERE task_id = ?`, taskID)
-}
-
 // --- Daily summary ---
 
 // SummaryTask is an open task with a due date, for the daily summary.

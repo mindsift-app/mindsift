@@ -183,7 +183,7 @@ func newCountingTestServer(t *testing.T) (*Server, *storage.Store, string, strin
 	return srv, store, token, user.ID
 }
 
-// TestTaskWriteCost: creating and completing a task costs a fixed number of statements and one write
+// TestTaskWriteCost: creating, completing and deleting a task costs a fixed number of statements and one write
 // that waits for the write lock (the notifications go into the transaction of the change), not a few
 // statements and a write per member of its list (load test 2026-11-15: creating a task was by far the
 // slowest request, before: 331 statements and 55 writes in a list shared with 50 people; then 67 to 73
@@ -284,5 +284,43 @@ func TestTaskWriteCost(t *testing.T) {
 	}
 	if entries, _, _ := store.CenterEntries(ownerID, 100); len(entries) != 0 {
 		t.Errorf("the creator has %d center entries for their own changes", len(entries))
+	}
+
+	// Deleting moves the task to the trash, forgets its watchers and stores what they are told in one
+	// write (before: three, the trash, the notifications and the watchers each on their own)
+	remove := func(ids []string) taskWriteCost {
+		return measureTaskWrites(t, n, func(i int) {
+			rec := sendWith(t, router, http.MethodDelete, "/api/v1/thoughts/"+ids[i], token, nil)
+			if rec.Code != http.StatusOK {
+				t.Fatalf("delete: %d %s", rec.Code, rec.Body.String())
+			}
+		})
+	}
+	// A member watches the shared tasks, so deleting them notifies someone
+	for _, id := range sharedIDs {
+		if err := store.WatchTask(id, memberIDs[0], true); err != nil {
+			t.Fatal(err)
+		}
+	}
+	check(fmt.Sprintf("delete in a list shared with %d people", members), remove(sharedIDs), 22)
+	check("delete in a personal list", remove(personalIDs), 15)
+	if trash, _ := store.GetTaskTrash(ownerID, shared.ID); len(trash) != n {
+		t.Errorf("task trash of the shared list: %d entries, want %d", len(trash), n)
+	}
+	if w := store.TaskWatchers(sharedIDs[0]); len(w) != 0 {
+		t.Errorf("a deleted task still has watchers %v", w)
+	}
+	watcherEntries, _, err := store.CenterEntries(memberIDs[0], 200)
+	if err != nil {
+		t.Fatal(err)
+	}
+	watched := 0
+	for _, e := range watcherEntries {
+		if e.Kind == "watched" {
+			watched++
+		}
+	}
+	if watched != n {
+		t.Errorf("center of the watcher: %d entries about watched tasks, want %d about the deleted ones", watched, n)
 	}
 }

@@ -231,7 +231,7 @@ func (s *Server) afterDocChange(actorID, docID string, ops []collab.Op, results 
 			s.wsHub.BroadcastToUsers(s.taskAudience(th), "TASK_UPDATED", th)
 			// Ticked or retitled in the note: told like a change in the task (unlinking alone changes nothing)
 			if len(taskChanges(before, th)) > 0 {
-				s.notifyTaskChange(actorID, before, th, false)
+				s.notifyTaskChange(actorID, before, th)
 			}
 		}
 	}
