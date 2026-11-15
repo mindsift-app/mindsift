@@ -47,6 +47,8 @@ Drawings in a note (`/canvas`): shapes, arrows that dock to them, text and freeh
 ### ✅ Tasks, kanban & calendar
 List, board and calendar (month or week, with a column of unscheduled tasks to drag onto a day), with your own columns, priorities, due dates, subtasks, recurring tasks and undo. Share task lists, mention people with @, watch tasks or mute a busy list, and get alarms and a daily summary by email, push, Discord or webhook.
 
+Subscribe to your open tasks in Google Calendar, Apple Calendar, Thunderbird or Outlook through a secret link (read-only iCalendar feed).
+
 A to-do in a note can be kept as a full task with due date, column and alarm; checkmark, title and subtasks stay in sync in both places. "Expand as a note" gives a task a note of its own, and the "To-dos" tab collects the open checkboxes of all your notes.
 
 <p align="center">
