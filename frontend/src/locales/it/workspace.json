@@ -87,6 +87,7 @@
     "changeIcon": "Modifica icona",
     "chooseIcon": "Scegli icona",
     "titlePlaceholder": "Titolo della nota…",
+    "titleLength": "{{length}} di {{max}} caratteri",
     "unpin": "Rimuovi blocco",
     "copyNoteLink": "Copia link",
     "noteLinkCopied": "Link alla nota copiato – la apre direttamente in MindSift, anche per tutti quelli con cui è condivisa",
@@ -450,7 +451,9 @@
     "notice": "{{name}} sta modificando questo punto: attendi un momento",
     "title": "{{name}} sta modificando questo punto",
     "copy": "{{name}} sta modificando questa versione: attendi un momento",
-    "someone": "Qualcuno"
+    "someone": "Qualcuno",
+    "drawing": "In modifica da parte di {{name}} in questo momento",
+    "drawingOwn": "In modifica in questo momento su un altro dispositivo o in un'altra scheda"
   },
   "extractMenu": {
     "title": "Estrarre dove?",

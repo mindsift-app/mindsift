@@ -313,7 +313,7 @@ var mcpStructureTools = []mcpTool{
 		Schema: schema([]string{"noteId", "bulletId"}, map[string]any{
 			"noteId":     prop("string", "Note id"),
 			"bulletId":   prop("string", "Id of the bullet to turn into a note"),
-			"title":      prop("string", "Title of the new note, optional (default: the bullet's text; made unique with (2), (3) … if taken)"),
+			"title":      prop("string", "Title of the new note, optional, at most 60 characters (default: the bullet's text, shortened to 60; made unique with (2), (3) … if taken)"),
 			"folderPath": prop("string", "Folder of the new note, e.g. Projekte/MindSift; empty string = top level; leave out for the folder of the original note"),
 		}),
 		run: func(ctx context.Context, s *Server, userID string, actor *apiActor, args json.RawMessage) (any, error) {

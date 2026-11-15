@@ -229,8 +229,13 @@ func (s *Server) afterDocChange(actorID, docID string, ops []collab.Op, results 
 		if i < len(ops) && ops[i].Kind == collab.OpRestore && res.Seq > 0 {
 			restored = append(restored, ops[i].IDs...)
 		}
+		// A bullet turned (back) into a to-do: a task unlinked when it stopped being one links again
+		if i < len(ops) && ops[i].Kind == collab.OpSetProps && ops[i].Patch != nil && ops[i].Patch.Type != nil && *ops[i].Patch.Type == "todo" && res.Seq > 0 {
+			restored = append(restored, ops[i].BlockID)
+		}
 	}
-	// A linked to-do back by undo: its task is linked again (deleting it had unlinked the task)
+	// A linked to-do back by undo or as a to-do again: its task is linked again (deleting it or changing
+	// its kind had unlinked the task)
 	relinked := s.store.RelinkRestoredDocTasks(docID, restored)
 	// Ticked or retitled in the note: told like a change in the task (unlinking alone changes nothing).
 	// The notifications are planned from the tasks' new state and stored with them in one transaction.

@@ -97,24 +97,31 @@ export const listsApi = {
     }
   },
 
+  // isCompleted is the wanted state ("ticked"), never a toggle: sent late from the outbox it cannot undo
+  // somebody who ticked the same item meanwhile (the server keeps what is already so)
   async toggleListItem(listId: string, itemId: string, isCompleted?: boolean): Promise<ListItem> {
     // Added offline and checked off before it was sent: nothing left to send
     if (itemId.startsWith(OFFLINE_ITEM_PREFIX) && isCompleted) {
       dropQueued(itemId.slice(OFFLINE_ITEM_PREFIX.length));
       return { id: itemId, listId, isCompleted: true } as ListItem;
     }
+    const changedAt = Date.now(); // the tap, not when a slow connection gave up
+    const path = `/api/v1/lists/${listId}/items/${itemId}`;
     try {
-      return await request<ListItem>(`/api/v1/lists/${listId}/items/${itemId}`, {
+      return await request<ListItem>(path, {
         method: 'PATCH',
         body: JSON.stringify({ isCompleted }),
       });
     } catch (err) {
       if (!(err instanceof OfflineError) || isCompleted === undefined) throw err;
-      enqueue('PATCH', `/api/v1/lists/${listId}/items/${itemId}`, { isCompleted });
+      // When it was ticked goes along: an older tick does not undo a newer change made meanwhile.
+      // Ticked and un-ticked again offline leaves nothing to send.
+      enqueue('PATCH', path, { isCompleted, changedAt }, { isCompleted: !isCompleted });
       return { id: itemId, listId, isCompleted } as ListItem;
     }
   },
 
+  // Only the given fields are sent and written; offline the change waits in the outbox
   async updateListItem(
     listId: string,
     itemId: string,
@@ -124,10 +131,14 @@ export const listsApi = {
       updateQueued(itemId.slice(OFFLINE_ITEM_PREFIX.length), payload);
       return { id: itemId, listId, ...payload } as ListItem;
     }
-    return request<ListItem>(`/api/v1/lists/${listId}/items/${itemId}`, {
-      method: 'PUT',
-      body: JSON.stringify(payload),
-    });
+    const path = `/api/v1/lists/${listId}/items/${itemId}`;
+    try {
+      return await request<ListItem>(path, { method: 'PUT', body: JSON.stringify(payload) });
+    } catch (err) {
+      if (!(err instanceof OfflineError)) throw err;
+      enqueue('PUT', path, payload);
+      return { id: itemId, listId, ...payload } as ListItem;
+    }
   },
 
   async deleteListItem(listId: string, itemId: string): Promise<void> {
@@ -135,7 +146,14 @@ export const listsApi = {
       dropQueued(itemId.slice(OFFLINE_ITEM_PREFIX.length));
       return;
     }
-    await request(`/api/v1/lists/${listId}/items/${itemId}`, { method: 'DELETE' });
+    const path = `/api/v1/lists/${listId}/items/${itemId}`;
+    try {
+      await request(path, { method: 'DELETE' });
+    } catch (err) {
+      if (!(err instanceof OfflineError)) throw err;
+      // Sent later; its queued ticks and edits are dropped
+      enqueue('DELETE', path, {});
+    }
   },
 
   async moveListItem(listId: string, itemId: string, targetListId: string): Promise<ListItem> {

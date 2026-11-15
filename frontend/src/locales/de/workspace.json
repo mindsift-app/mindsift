@@ -87,6 +87,7 @@
     "changeIcon": "Icon ändern",
     "chooseIcon": "Icon wählen",
     "titlePlaceholder": "Titel der Notiz…",
+    "titleLength": "{{length}} von {{max}} Zeichen",
     "unpin": "Anheftung lösen",
     "copyNoteLink": "Link kopieren",
     "noteLinkCopied": "Link zur Notiz kopiert – öffnet sie direkt in MindSift, auch für alle, mit denen sie geteilt ist",
@@ -446,7 +447,9 @@
     "notice": "{{name}} bearbeitet diesen Punkt gerade – bitte kurz warten",
     "title": "{{name}} bearbeitet diesen Punkt gerade",
     "copy": "{{name}} bearbeitet diese Version gerade – bitte kurz warten",
-    "someone": "Jemand"
+    "someone": "Jemand",
+    "drawing": "Wird gerade von {{name}} bearbeitet",
+    "drawingOwn": "Wird gerade auf einem anderen Gerät oder in einem anderen Tab bearbeitet"
   },
   "extractMenu": {
     "title": "Wohin auslagern?",

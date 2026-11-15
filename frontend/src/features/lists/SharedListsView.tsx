@@ -7,7 +7,7 @@ import {
 import { ListItem, SharedList, Team, User } from '../../lib/types';
 import { api, triggerHaptic } from '../../lib/api';
 import { readViewMemory, writeViewMemory } from '../../lib/viewSession';
-import { pendingListItems } from '../../lib/offline';
+import { pendingListChanges, pendingListItems } from '../../lib/offline';
 import { UnifiedShareModal } from '../../components/UnifiedShareModal';
 import { AvatarStack, AvatarPerson } from '../../components/AvatarStack';
 import { isPhoneWidth } from '../../lib/breakpoints';
@@ -16,7 +16,7 @@ import { VoiceInputButton } from '../../components/VoiceInputButton';
 import { FormSheet } from '../../components/FormSheet';
 import { EmojiIconButton } from '../../components/EmojiIconButton';
 import { useMobileActions } from '../../context/MobileActionContext';
-import { collectHashtags, deduplicateItems, findHashtagQuery, matchHashtags, groupOpenItems, parseListItemInput } from './listItems';
+import { collectHashtags, deduplicateItems, findHashtagQuery, matchHashtags, groupOpenItems, parseListItemInput, withPendingChanges } from './listItems';
 import { useListDrag } from './useListDrag';
 import { useListRealtime } from './useListRealtime';
 import { useItemEditing } from './useItemEditing';
@@ -118,14 +118,19 @@ export const SharedListsView: React.FC<SharedListsViewProps> = ({ onRefreshGloba
           // fallback
         }
       }
-      // Entries added offline and not sent yet stay visible (also after a reload without connection)
+      // Entries added offline and not sent yet stay visible (also after a reload without connection), and
+      // so do ticks, edits and deletions made offline
       const pending = pendingListItems();
+      const changes = pendingListChanges();
       const deduplicated = all.map((l) => ({
         ...l,
-        items: deduplicateItems([
-          ...pending.filter((p) => p.listId === l.id).map((p) => ({ ...p, isCompleted: false, sortOrder: 0 }) as ListItem),
-          ...(l.items || []),
-        ]),
+        items: withPendingChanges(
+          deduplicateItems([
+            ...pending.filter((p) => p.listId === l.id).map((p) => ({ ...p, isCompleted: false, sortOrder: 0 }) as ListItem),
+            ...(l.items || []),
+          ]),
+          changes
+        ),
       }));
       setLists(deduplicated);
       // A reload keeps the open list; another one is only picked when it is gone or none is open yet

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/mindsift-app/mindsift/internal/auth"
@@ -240,6 +241,13 @@ func (s *Server) handleCreateListItem(w http.ResponseWriter, r *http.Request) {
 // setListItemDone checks an item off (or back on) and tells the list's viewers. Shared by
 // PATCH /lists/{id}/items/{itemId} and the MCP tool check_list_item; access is checked first.
 func (s *Server) setListItemDone(userID, listID, itemID string, done bool, actor *apiActor) (*domain.ListItem, error) {
+	return s.setListItemDoneAt(userID, listID, itemID, done, time.Time{}, actor)
+}
+
+// setListItemDoneAt is setListItemDone for a change made at a given time (zero: now), e.g. on a phone
+// that was offline. Already in that state, or changed by somebody after at: nothing is written and
+// nobody is told; the item comes back as stored (storage.SetListItemDone).
+func (s *Server) setListItemDoneAt(userID, listID, itemID string, done bool, at time.Time, actor *apiActor) (*domain.ListItem, error) {
 	if err := s.store.EnsureListItemsWritable(userID, listID, itemID); err != nil {
 		return nil, err
 	}
@@ -248,13 +256,26 @@ func (s *Server) setListItemDone(userID, listID, itemID string, done bool, actor
 	if user != nil {
 		userName = user.DisplayName
 	}
-	item, err := s.store.ToggleListItem(itemID, done, userID, userName)
+	item, changed, err := s.store.SetListItemDone(itemID, done, at, userID, userName)
 	if err != nil {
 		return nil, err
+	}
+	if !changed {
+		return item, nil
 	}
 	s.recordListItemOrigin(item, actor, false)
 	s.wsHub.BroadcastListEvent(listID, "ITEM_TOGGLED", item)
 	return item, nil
+}
+
+// changeTime is when a change sent late was made, on the server's clock: changedAt and sentAt are the
+// sender's clock (milliseconds since 1970) at the change and at sending, so only the time in between
+// counts and a phone clock that is off does not matter. Zero (now) without them.
+func changeTime(changedAt, sentAt int64, now time.Time) time.Time {
+	if changedAt <= 0 || sentAt <= 0 || sentAt <= changedAt {
+		return time.Time{}
+	}
+	return now.Add(-time.Duration(sentAt-changedAt) * time.Millisecond)
 }
 
 func (s *Server) handleToggleListItem(w http.ResponseWriter, r *http.Request) {
@@ -265,15 +286,20 @@ func (s *Server) handleToggleListItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// isCompleted is the wanted state, never a toggle. changedAt and sentAt: a change made offline and
+	// sent later by the app's outbox (changeTime)
 	var req struct {
-		IsCompleted bool `json:"isCompleted"`
+		IsCompleted bool  `json:"isCompleted"`
+		ChangedAt   int64 `json:"changedAt"`
+		SentAt      int64 `json:"sentAt"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeError(w, http.StatusBadRequest, "Ungültiges JSON")
 		return
 	}
 
-	item, err := s.setListItemDone(userID, listID, itemID, req.IsCompleted, actorFrom(r.Context()))
+	at := changeTime(req.ChangedAt, req.SentAt, time.Now())
+	item, err := s.setListItemDoneAt(userID, listID, itemID, req.IsCompleted, at, actorFrom(r.Context()))
 	// Deleted (or the list unshared) since the check above: 404 like that check, not 400
 	if errors.Is(err, storage.ErrListItemNotFound) || errors.Is(err, storage.ErrListNotFound) {
 		writeErrorFrom(w, http.StatusNotFound, err)

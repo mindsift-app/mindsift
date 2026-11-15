@@ -362,10 +362,7 @@ func (s *Store) UpdateThoughtTriage(userID, thoughtID, action, convertTo, target
 			}
 			newStatus = domain.StatusConverted
 			convertedType = "document"
-			title := thought.Content
-			if len(title) > 72 {
-				title = title[:72] + "…"
-			}
+			title := ShortTitle(thought.Content)
 			blocks := make([]domain.DocumentBlock, 0)
 
 			// A task turned into a note starts with the task itself as a checkbox, even though it is the title too,
@@ -492,7 +489,11 @@ type ThoughtPatch struct {
 	Content, DueDate, Priority, TaskListID, KanbanStatus, Notes *string
 	IsCompleted                                                 *bool
 	Subtasks                                                    *[]domain.SubTask
-	Tags                                                        *[]string
+	// SubtasksBase: the subtasks Subtasks was made from (what the task view showed). With it, Subtasks is
+	// merged into the stored ones (MergeSubtasks) instead of replacing them, so a change made meanwhile
+	// elsewhere (the note, another task view) stays.
+	SubtasksBase *[]domain.SubTask
+	Tags         *[]string
 }
 
 // NotifyPlan gives the notifications about a change from the task's new state (center entries and queued
@@ -555,7 +556,10 @@ func (s *Store) UpdateTask(userID string, before *domain.Thought, p ThoughtPatch
 	if p.Notes != nil {
 		thought.Notes = *p.Notes
 	}
-	if p.Subtasks != nil {
+	if p.Subtasks != nil && p.SubtasksBase != nil {
+		// Merged once more inside the transaction with the subtasks as stored then; this result is for plan
+		thought.Subtasks = MergeSubtasks(*p.SubtasksBase, *p.Subtasks, thought.Subtasks)
+	} else if p.Subtasks != nil {
 		thought.Subtasks = keepSubtaskLinks(thought.Subtasks, *p.Subtasks)
 	}
 	// Moved to another list: assignees without access to it go (the same rule as pruneTaskAssigneesOf
@@ -611,9 +615,11 @@ func (s *Store) UpdateTask(userID string, before *domain.Thought, p ThoughtPatch
 	if p.Notes != nil {
 		set("notes", thought.Notes)
 	}
+	subtasksArg := -1
 	if p.Subtasks != nil {
 		subtasksJSON, _ := json.Marshal(thought.Subtasks)
 		set("subtasks", string(subtasksJSON))
+		subtasksArg = len(args) - 1
 	}
 	var center []CenterAdd
 	var queue []QueuedAdd
@@ -626,6 +632,17 @@ func (s *Store) UpdateTask(userID string, before *domain.Thought, p ThoughtPatch
 		return nil, nil, err
 	}
 	defer tx.Rollback()
+	if subtasksArg >= 0 && p.SubtasksBase != nil {
+		// The transaction holds the write lock, so this is the state the merge writes over
+		var raw string
+		if err := tx.QueryRow(`SELECT subtasks FROM thoughts WHERE id = ?`, thought.ID).Scan(&raw); err != nil {
+			return nil, nil, err // sql.ErrNoRows: deleted meanwhile
+		}
+		var stored []domain.SubTask
+		_ = json.Unmarshal([]byte(raw), &stored)
+		subtasksJSON, _ := json.Marshal(MergeSubtasks(*p.SubtasksBase, *p.Subtasks, stored))
+		args[subtasksArg] = string(subtasksJSON)
+	}
 	var tagsStr, subtasksStr string
 	var completed int
 	if err := tx.QueryRow(

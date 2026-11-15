@@ -41,6 +41,8 @@
       "voiceHint": "Language, Whisper or browser",
       "retention": "Retention",
       "retentionHint": "Clean up done items & trash",
+      "calendar": "Calendar subscription",
+      "calendarHint": "Tasks in Google, Apple & co.",
       "api": "API",
       "apiHint": "Keys, curl, smart home & AI agents",
       "data": "Export & import",
@@ -632,6 +634,8 @@
     "peopleSearchHint": "On, matching names are suggested when sharing and in groups. Off, people need the exact e-mail address or username; those already working on something together still see each other’s names there.",
     "publicLinks": "Public links to notes",
     "publicLinksHint": "Owners can share a note read only by link, also with people without an account, optionally with a password. Links always expire and stay out of search engines. Off, no existing link works any more.",
+    "calendarFeeds": "Calendar subscriptions",
+    "calendarFeedsHint": "Everyone can subscribe to their open tasks with a due date in their calendar app through a secret link (read only). Switched off, no existing link works any more.",
     "linkPreviews": "Link previews",
     "linkPreviewsHint": "When a bullet holds only a web address, the MindSift server fetches the page and shows its title, description and picture as a card. Off, the server fetches no pages, and the app shows neither preview cards nor the switch per device.",
     "publicLinkMaxDays": "Longest a link may live",
@@ -1004,5 +1008,42 @@
       "confirmedDone": "Confirmed. You can make the change within the next five minutes.",
       "linkedDone": "Your account is now linked to {{name}}."
     }
+  },
+  "calendarFeed": {
+    "title": "Calendar subscription",
+    "intro": "Your open tasks with a due date show up in the calendar app you already use, for example Google Calendar, Apple Calendar, Thunderbird or Outlook. The calendar only shows them; you keep editing in MindSift.",
+    "switch": "Calendar subscription",
+    "switchHint": "Your own tasks and those of shared task lists, due from 30 days ago up to a year ahead. All-day tasks as all-day events, tasks with a time as 30-minute events.",
+    "linkLabel": "Subscription link",
+    "copy": "Copy",
+    "copied": "Copied",
+    "secret": "Anyone who knows this link can see your tasks. Do not pass it on; if in doubt, create a new one.",
+    "renew": "Create new link",
+    "confirmRenew": "The current link stops working. Calendars subscribed to it need to be set up again with the new link.",
+    "off": "Switch off",
+    "confirmOff": "The link is deleted. Calendars subscribed to it no longer get any tasks.",
+    "unreadable": "The stored link can no longer be read (the server's key changed). Create a new link.",
+    "serverOff": "Calendar subscriptions are switched off on this server.",
+    "loadFailed": "Could not load the calendar subscription",
+    "howTo": "How to subscribe",
+    "apps": {
+      "google": {
+        "name": "Google Calendar",
+        "steps": "In the browser at calendar.google.com, click + next to “Other calendars” → “From URL”, paste the link, “Add calendar”."
+      },
+      "apple": {
+        "name": "Apple Calendar",
+        "steps": "On the Mac: File → New Calendar Subscription, paste the link. On iPhone and iPad: Settings → Calendar → Accounts → Add Account → Other → Add Subscribed Calendar."
+      },
+      "thunderbird": {
+        "name": "Thunderbird",
+        "steps": "Calendar → New Calendar → On the Network, paste the link as the location, format iCalendar (ICS)."
+      },
+      "outlook": {
+        "name": "Outlook",
+        "steps": "Calendar → Add calendar → Subscribe from web (or “From Internet”), paste the link."
+      }
+    },
+    "note": "Calendar apps fetch subscriptions only now and then, Google for example only after several hours. Changes in MindSift therefore show up there with a delay."
   }
 }

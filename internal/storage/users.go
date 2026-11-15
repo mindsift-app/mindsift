@@ -431,6 +431,7 @@ func (s *Store) DeleteUser(userID string) error {
 		stmt(`DELETE FROM trusted_devices WHERE user_id = ?`, userID),
 		stmt(`DELETE FROM user_passkeys WHERE user_id = ?`, userID),
 		stmt(`DELETE FROM oidc_identities WHERE user_id = ?`, userID),
+		stmt(`DELETE FROM calendar_feeds WHERE user_id = ?`, userID),
 		stmt(`DELETE FROM organization_members WHERE user_id = ?`, userID),
 		stmt(`DELETE FROM users WHERE id = ?`, userID),
 	); err != nil {

@@ -35,6 +35,16 @@ func (s *Server) startSession(r *http.Request, user *domain.User, via string) (s
 	return auth.GenerateToken(s.cfg.JWTSecret, user.ID, user.Email, user.DisplayName, user.TokenVersion, sid)
 }
 
+// startOIDCSession is startSession for a sign-in through the provider; oidcSID is the provider's session id
+// ("" when it sent none), which a back-channel logout names (oidc_logout.go).
+func (s *Server) startOIDCSession(r *http.Request, user *domain.User, oidcSID string) (string, error) {
+	sid, err := s.store.CreateOIDCSession(user.ID, r.UserAgent(), clientIPFrom(r).ip, oidcSID)
+	if err != nil {
+		return "", err
+	}
+	return auth.GenerateToken(s.cfg.JWTSecret, user.ID, user.Email, user.DisplayName, user.TokenVersion, sid)
+}
+
 // renewSessionToken sends a fresh token for the current session when the presented one is old (or
 // right away when force is set, e.g. after the own password changed).
 func (s *Server) renewSessionToken(w http.ResponseWriter, user *domain.User, claims *auth.Claims, force bool) {

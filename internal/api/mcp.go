@@ -736,7 +736,7 @@ var mcpTools = []mcpTool{
 			subs := append(append([]domain.SubTask{}, t.Subtasks...), domain.SubTask{
 				ID: domain.NewID("st"), Title: title, CreatedAt: time.Now().UTC().Format(time.RFC3339),
 			})
-			updated, err := s.updateTask(userID, a.TaskID, taskPatch{Subtasks: &subs, actor: actor})
+			updated, err := s.updateTask(userID, a.TaskID, taskPatch{Subtasks: &subs, SubtasksBase: &t.Subtasks, actor: actor})
 			if err != nil {
 				return nil, err
 			}
@@ -794,7 +794,7 @@ var mcpTools = []mcpTool{
 			if !found {
 				return nil, errors.New("Unteraufgabe nicht gefunden")
 			}
-			updated, err := s.updateTask(userID, a.TaskID, taskPatch{Subtasks: &subs, actor: actor})
+			updated, err := s.updateTask(userID, a.TaskID, taskPatch{Subtasks: &subs, SubtasksBase: &t.Subtasks, actor: actor})
 			if err != nil {
 				return nil, err
 			}
@@ -1045,7 +1045,7 @@ var mcpTools = []mcpTool{
 			"Example content: \"# Plan\\n- First step\\n\\t- Detail\\n- [ ] Call Anna\". A fenced ```mermaid block (flowchart/graph or mindmap) becomes a drawing, laid out automatically. Changing existing notes needs notes:write (update_note, add_note_bullet, …).",
 		Scope: storage.ScopeNotesCreate,
 		Schema: schema([]string{"title"}, map[string]any{
-			"title":      prop("string", "Title of the note"),
+			"title":      prop("string", "Title of the note, at most 60 characters (fits one line)"),
 			"content":    prop("string", "Bullets as Markdown, optional"),
 			"folderPath": prop("string", "Folder, e.g. Projekte/MindSift; empty = top level. Missing folders are created."),
 			"icon":       prop("string", "One emoji, optional (default 🗒️)"),
@@ -1060,6 +1060,9 @@ var mcpTools = []mcpTool{
 			}
 			if strings.TrimSpace(a.Title) == "" {
 				return nil, errors.New("'title' darf nicht leer sein")
+			}
+			if err := storage.CheckNoteTitle(a.Title, ""); err != nil {
+				return nil, err
 			}
 			if err := checkMCPIcon(a.Icon); err != nil {
 				return nil, err

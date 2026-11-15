@@ -353,6 +353,41 @@ describe('DocSyncEngine', () => {
     expect(contents(a)).toEqual(expect.arrayContaining(['B hat geändert', 'Start + A']));
   });
 
+  it('typing on after the focused field took over a new text builds on it (no conflict copy)', async () => {
+    const server = new FakeServer();
+    const a = await startEngine(new FakeNet(server));
+    a.focusBlock('b1');
+    // A linked task renamed in the task view: the server writes the title into the bullet
+    server.apply({ opId: 'task-title', kind: 'set_content', blockId: 'b1', baseVersion: 1, content: 'Neu aus Aufgabe' }, 'server');
+    await a.syncNow();
+    // The user had not typed, so the field showed the new text (OutlinerBlock tells the engine)
+    a.fieldShows('b1', 'Neu aus Aufgabe');
+    a.applyFlat([{ id: 'b1', type: 'bullet', content: 'Neu aus Aufgabe weiter', level: 0 }]);
+    await a.syncNow();
+
+    expect(a.getState().conflicts).toEqual([]);
+    expect(serverContents(server)).toEqual(['Neu aus Aufgabe weiter']);
+  });
+
+  it('typing on over a text the server wrote meanwhile keeps the typing and the server text as a copy', async () => {
+    const server = new FakeServer();
+    const a = await startEngine(new FakeNet(server));
+    a.focusBlock('b1');
+    edit(a, (blocks) => [{ ...blocks[0], content: 'Start getippt' }]);
+    await a.syncNow();
+    server.apply({ opId: 'task-title', kind: 'set_content', blockId: 'b1', baseVersion: 2, content: 'Neu aus Aufgabe' }, 'server');
+    await a.syncNow(); // the field keeps the user's text
+    a.applyFlat([{ id: 'b1', type: 'bullet', content: 'Start getippt weiter', level: 0 }]);
+    await a.syncNow();
+
+    expect(a.getState().conflicts).toEqual([]);
+    const b1 = server.doc.blocks.get('b1')!;
+    expect(b1.content).toBe('Start getippt weiter');
+    const copies = Array.from(server.doc.blocks.values()).filter((b) => b.props.conflictOf === 'b1');
+    expect(copies.map((b) => b.content)).toEqual(['Neu aus Aufgabe']);
+    expect(contents(a)).toEqual(['Start getippt weiter', 'Neu aus Aufgabe']);
+  });
+
   it('leaving a block someone else typed in without typing there makes no conflict copy', async () => {
     const server = new FakeServer();
     const a = await startEngine(new FakeNet(server));

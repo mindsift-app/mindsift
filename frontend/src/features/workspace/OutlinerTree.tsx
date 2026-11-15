@@ -48,8 +48,12 @@ export interface OutlinerTreeProps {
   onFocusedBlockChange?: (blockId: string | null) => void;
   /** Work in the focused block that does not change its text yet (drawing editor open) */
   onBlockActivity?: (blockId: string) => void;
+  /** The focused field took over the block's text from elsewhere (engine.fieldShows) */
+  onFieldShows?: (blockId: string, content: string) => void;
   lockedBlocks?: Map<string, BlockLock>; // blockId -> the user editing it (someone else)
   onLockedAction?: (holderName: string) => void;
+  /** A double-click on a drawing someone else is editing */
+  onLockedDrawing?: (lock: BlockLock) => void;
   onResolveConflict?: (blockId: string, choice: ConflictChoice) => void;
   onUndo?: () => void;
   onRedo?: () => void;
@@ -59,6 +63,9 @@ export interface OutlinerTreeProps {
   /** The empty area below the last bullet (click adds one); off where several trees stack (hashtag page) */
   trailingArea?: boolean;
 }
+
+// Pasted blocks that never take the text around the cursor
+const PASTED_OWN_BLOCKS = ['table', 'code', 'drawing'];
 
 // Blocks that a selection over several bullets copies whole, never cut at the selection's edge
 const WHOLE_IN_SELECTION = ['code', 'divider', 'table', 'progress'];
@@ -122,8 +129,10 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
   initialFocusedBlockId,
   onFocusedBlockChange,
   onBlockActivity,
+  onFieldShows,
   lockedBlocks,
   onLockedAction,
+  onLockedDrawing,
   onResolveConflict,
   onUndo,
   onRedo,
@@ -359,14 +368,16 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
       const parsed = parsePastedLines(rawLines);
 
       if (parsed.length === 0) return;
-      // A pasted table is a block of its own: text around the cursor stays in a bullet before or after it
-      if (parsed[0].type === 'table' && textBefore.trim() !== '') {
+      // A pasted table, code block or drawing is a block of its own: text around the cursor stays in a bullet
+      // before or after it
+      const isOwnBlock = (item: (typeof parsed)[number]) => PASTED_OWN_BLOCKS.includes(item.type);
+      if (isOwnBlock(parsed[0]) && textBefore.trim() !== '') {
         parsed.unshift({ type: 'text', content: '', indent: parsed[0].indent });
       }
-      if (parsed[parsed.length - 1].type === 'table' && textAfter.trim() !== '') {
+      if (isOwnBlock(parsed[parsed.length - 1]) && textAfter.trim() !== '') {
         parsed.push({ type: 'text', content: '', indent: parsed[parsed.length - 1].indent });
       }
-      const around = (item: (typeof parsed)[number], text: string) => (item.type === 'table' ? '' : text);
+      const around = (item: (typeof parsed)[number], text: string) => (isOwnBlock(item) ? '' : text);
 
       const line0 = parsed[0];
       const baseIndent = line0.indent;
@@ -384,6 +395,8 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
         checked: adoptedChecked,
         // A table's lang is its line mode (a code language would not be one)
         ...(adoptedType === 'table' && currentBlock.type !== 'table' ? { lang: '' } : {}),
+        // A pasted code block brings the language of its fence
+        ...(line0.type === 'code' ? { lang: line0.lang || '' } : {}),
       };
 
       const newBlocks: DocumentBlock[] = [];
@@ -401,6 +414,7 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
           type: p.type,
           checked: p.checked || false,
           content: lineContent,
+          ...(p.type === 'code' ? { lang: p.lang || '' } : {}),
           level: lineLevel,
           collapsed: false,
           position: (currentBlock.position || 1000) + j * 10,
@@ -1149,6 +1163,8 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
   const stableToggleBranch = useLatestCallback(handleToggleBranch);
   const stableNavigateFocus = useLatestCallback(handleNavigateFocus);
   const stableBlockActivity = useLatestCallback(onBlockActivity ?? noop);
+  const stableFieldShows = useLatestCallback(onFieldShows ?? noop);
+  const stableLockedDrawing = useLatestCallback(onLockedDrawing ?? noop);
   const stableOpenTask = useLatestCallback(onOpenTask ?? noop);
   const stableTagClick = useLatestCallback(onTagClick ?? noop);
   const stableWikiLinkClick = useLatestCallback(onWikiLinkClick ?? noop);
@@ -1175,6 +1191,8 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
     Boolean(onExtractBlock),
     Boolean(onInlineBlock),
     Boolean(onBlockActivity),
+    Boolean(onFieldShows),
+    Boolean(onLockedDrawing),
     Boolean(onOpenTask),
     Boolean(onTagClick),
     Boolean(onWikiLinkClick),
@@ -1207,6 +1225,7 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
           isFocused={isFocused}
           canEdit={rowCanEdit}
           lockedBy={lockedBy}
+          onLockedDrawing={onLockedDrawing ? stableLockedDrawing : undefined}
           originalLockedBy={originalLockedBy}
           canAppendBelow={canEdit}
           onResolveConflict={canEdit && onResolveConflict ? stableResolveConflict : undefined}
@@ -1228,6 +1247,7 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
           onFocusBlock={setFocusedBlockId}
           onBlurBlock={handleBlurBlock}
           onBlockActivity={onBlockActivity ? stableBlockActivity : undefined}
+          onFieldShows={onFieldShows ? stableFieldShows : undefined}
           onOpenTask={onOpenTask ? stableOpenTask : undefined}
           onTagClick={onTagClick ? stableTagClick : undefined}
           onWikiLinkClick={onWikiLinkClick ? stableWikiLinkClick : undefined}

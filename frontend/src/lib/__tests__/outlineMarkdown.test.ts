@@ -114,6 +114,24 @@ describe('blocksToMarkdown', () => {
     expect(JSON.parse(items[2].content).els[0].txt).toBe('Box');
   });
 
+  it('copied code blocks paste back as code blocks with their language, nested ones in their item', () => {
+    const blocks = [
+      b('code', 'docker compose up -d', 0, { lang: 'bash' }),
+      b('text', 'Firewall', 0),
+      b('text', 'Regeln', 1),
+      b('code', 'pass in on $int_if\n\tblock all', 2, { lang: 'OpenBSD-pf' }),
+      b('text', 'Ende', 0),
+    ];
+    const items = parsePastedLines(blocksToMarkdown(blocks).split('\n'));
+    expect(items.map((i) => [i.type, i.content, i.indent, i.lang])).toEqual([
+      ['code', 'docker compose up -d', 0, 'bash'],
+      ['text', 'Firewall', 0, undefined],
+      ['text', 'Regeln', 1, undefined],
+      ['code', 'pass in on $int_if\n\tblock all', 2, 'OpenBSD-pf'],
+      ['text', 'Ende', 0, undefined],
+    ]);
+  });
+
   it('a mindsift-canvas fence without a valid model stays text', () => {
     const items = parsePastedLines(['```mindsift-canvas', 'kein Modell', '```']);
     expect(items[0].type).toBe('text');

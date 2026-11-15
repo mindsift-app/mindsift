@@ -87,6 +87,7 @@
     "changeIcon": "Cambiar icono",
     "chooseIcon": "Elegir icono",
     "titlePlaceholder": "Título de la nota…",
+    "titleLength": "{{length}} de {{max}} caracteres",
     "unpin": "Desfijar",
     "copyNoteLink": "Copiar enlace",
     "noteLinkCopied": "Enlace a la nota copiado – la abre directamente en MindSift, también para todos con quienes está compartida",
@@ -450,7 +451,9 @@
     "notice": "{{name}} está editando este punto ahora mismo; espera un momento",
     "title": "{{name}} está editando este punto ahora mismo",
     "copy": "{{name}} está editando esta versión ahora mismo; espera un momento",
-    "someone": "Alguien"
+    "someone": "Alguien",
+    "drawing": "{{name}} lo está editando en este momento",
+    "drawingOwn": "Se está editando ahora mismo en otro dispositivo o en otra pestaña"
   },
   "extractMenu": {
     "title": "¿Extraer a dónde?",

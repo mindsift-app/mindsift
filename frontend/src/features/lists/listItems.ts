@@ -63,6 +63,32 @@ export function deduplicateItems(items: ListItem[]): ListItem[] {
   return result;
 }
 
+// Changes made offline and not sent yet, shown on top of loaded items (lib/offline.ts pendingListChanges):
+// ticks, edits, deleted items gone
+export function withPendingChanges(
+  items: ListItem[],
+  changes: Map<string, { isCompleted?: boolean; content?: string; category?: string; quantity?: string; deleted?: boolean }>
+): ListItem[] {
+  if (changes.size === 0) return items;
+  const out: ListItem[] = [];
+  for (const item of items) {
+    const c = changes.get(item.id);
+    if (!c) {
+      out.push(item);
+      continue;
+    }
+    if (c.deleted) continue;
+    out.push({
+      ...item,
+      ...(c.isCompleted !== undefined ? { isCompleted: c.isCompleted } : {}),
+      ...(c.content !== undefined ? { content: c.content } : {}),
+      ...(c.category !== undefined ? { category: c.category } : {}),
+      ...(c.quantity !== undefined ? { quantity: c.quantity } : {}),
+    });
+  }
+  return out;
+}
+
 // Viewers of a shared list can only read it
 export const canWriteList = (lst: SharedList) => lst.isOwner || lst.role !== 'viewer';
 

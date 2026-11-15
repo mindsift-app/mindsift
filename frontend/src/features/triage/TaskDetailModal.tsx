@@ -268,10 +268,12 @@ const TaskDetailModalContent: React.FC<TaskDetailModalProps & { task: Thought }>
       setIsEditingTitle(false);
       return;
     }
+    // The editor closes right away, not after the save: while it was still open, Escape pressed during
+    // the request only closed the editor (or asked about the "unsaved" title) instead of the dialog
+    setIsEditingTitle(false);
     if (trimmed !== task.content) {
       await onUpdateTitle(task, trimmed);
     }
-    setIsEditingTitle(false);
   };
 
   const handleNotesSubmit = async () => {

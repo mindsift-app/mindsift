@@ -8,7 +8,7 @@ import { ConfirmPopover } from '../../../components/ConfirmPopover';
 import { AvatarStack } from '../../../components/AvatarStack';
 import { isWebSocketConnected, tryWebSocket } from '../../../lib/api';
 import { useLatestRef } from '../../../lib/useLatestRef';
-import { NoteSharedContext } from './noteShared';
+import { NoteClientContext, NoteSharedContext } from './noteShared';
 
 // The editor (with the live drawing) is a chunk of its own, loaded when a drawing is opened; the service
 // worker precaches it with the other assets, so it opens offline as well
@@ -84,6 +84,8 @@ interface DrawingBlockProps {
   onActivity?: () => void;
   /** People drawing in it live right now (host first) */
   live?: { userId: string; name: string; avatarUrl?: string }[];
+  /** Someone else is editing it (drawing alone): a double-click shows why it does not open */
+  onLocked?: () => void;
 }
 
 /** How the editor is open: alone ('solo', a live session can start from there in a shared note), looking
@@ -104,10 +106,12 @@ export const DrawingBlock: React.FC<DrawingBlockProps> = ({
   onFocusChange,
   onActivity,
   live,
+  onLocked,
 }) => {
   const { t } = useTranslation('workspace');
   // Shared with someone: "Gemeinsam zeichnen" in the editor (someone else could join)
   const shared = useContext(NoteSharedContext);
+  const noteClientId = useContext(NoteClientContext);
   const drawing = useMemo(() => parseDrawing(content), [content]);
   const boxRef = useRef<HTMLDivElement | null>(null);
   const [width, setWidth] = useState(0);
@@ -448,7 +452,10 @@ export const DrawingBlock: React.FC<DrawingBlockProps> = ({
           (document.activeElement as HTMLElement | null)?.blur?.();
         }}
         onDragStart={(e) => e.preventDefault()}
-        onDoubleClick={(e) => (canEdit || liveNames.length > 0) && openEditor(e)}
+        onDoubleClick={(e) => {
+          if (canEdit || liveNames.length > 0) void openEditor(e);
+          else onLocked?.();
+        }}
         role="img"
         aria-label={texts.length ? t('drawing.ariaWithText', { text: texts.join(', ') }) : t('drawing.aria')}
       >
@@ -530,9 +537,9 @@ export const DrawingBlock: React.FC<DrawingBlockProps> = ({
             readOnly={editing === 'view'}
             live={
               docId && (editing === 'draw' || editing === 'watch')
-                ? { docId, blockId, mode: editing, canDraw: canEdit && isWebSocketConnected() }
+                ? { docId, blockId, mode: editing, canDraw: canEdit && isWebSocketConnected(), noteClientId }
                 : docId && editing === 'solo'
-                ? { docId, blockId, mode: null, canDraw: true, canStart: shared }
+                ? { docId, blockId, mode: null, canDraw: true, canStart: shared, noteClientId }
                 : undefined
             }
             onClose={(next, wasLive) => {

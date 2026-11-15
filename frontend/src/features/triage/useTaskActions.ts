@@ -49,7 +49,7 @@ export function useTaskActions({
         t.id === task.id ? { ...t, isCompleted: nextState, kanbanStatus: nextKanban } : t
       )
     );
-    await api.updateThought(task.id, { isCompleted: nextState, kanbanStatus: nextKanban });
+    await api.updateThought(task.id, { isCompleted: nextState, kanbanStatus: nextKanban }, { isCompleted: !!task.isCompleted, kanbanStatus: task.kanbanStatus });
     onRefreshStats();
   };
 
@@ -62,7 +62,7 @@ export function useTaskActions({
     setTasks((prev) =>
       prev.map((t) => (t.id === task.id ? { ...t, kanbanStatus: nextStatus, isCompleted } : t))
     );
-    await api.updateThought(task.id, { kanbanStatus: nextStatus, isCompleted });
+    await api.updateThought(task.id, { kanbanStatus: nextStatus, isCompleted }, { isCompleted: !!task.isCompleted, kanbanStatus: task.kanbanStatus });
     onRefreshStats();
   };
 
@@ -150,15 +150,20 @@ export function useTaskActions({
     onRefreshStats();
   };
 
+  // Shows the new subtasks right away and saves them with the list they were made on (subtasksBase): the
+  // server merges the change into the subtasks as stored, so a subtask ticked or renamed meanwhile in the
+  // note or elsewhere stays, and the list then shows the merged result
+  const saveSubtasks = async (task: Thought, next: SubTask[]) => {
+    setTasks((prev) => prev.map((t) => (t.id === task.id ? { ...t, subtasks: next } : t)));
+    const updated = await api.updateThought(task.id, { subtasks: next, subtasksBase: task.subtasks || [] });
+    if (Array.isArray(updated?.subtasks)) {
+      setTasks((prev) => prev.map((t) => (t.id === task.id ? { ...t, subtasks: updated.subtasks } : t)));
+    }
+  };
+
   const handleToggleSubtask = async (task: Thought, subtaskId: string) => {
     triggerHaptic(10);
-    const updatedSubtasks = (task.subtasks || []).map((s) =>
-      s.id === subtaskId ? { ...s, isCompleted: !s.isCompleted } : s
-    );
-    setTasks((prev) =>
-      prev.map((t) => (t.id === task.id ? { ...t, subtasks: updatedSubtasks } : t))
-    );
-    await api.updateThought(task.id, { subtasks: updatedSubtasks });
+    await saveSubtasks(task, (task.subtasks || []).map((s) => (s.id === subtaskId ? { ...s, isCompleted: !s.isCompleted } : s)));
   };
 
   const handleAddSubtask = async (task: Thought, title: string) => {
@@ -169,26 +174,16 @@ export function useTaskActions({
       isCompleted: false,
       createdAt: new Date().toISOString(),
     };
-    const updatedSubtasks = [...(task.subtasks || []), newSub];
-    setTasks((prev) =>
-      prev.map((t) => (t.id === task.id ? { ...t, subtasks: updatedSubtasks } : t))
-    );
-    await api.updateThought(task.id, { subtasks: updatedSubtasks });
+    await saveSubtasks(task, [...(task.subtasks || []), newSub]);
   };
 
   const handleDeleteSubtask = async (task: Thought, subtaskId: string) => {
     triggerHaptic(10);
-    const updatedSubtasks = (task.subtasks || []).filter((s) => s.id !== subtaskId);
-    setTasks((prev) =>
-      prev.map((t) => (t.id === task.id ? { ...t, subtasks: updatedSubtasks } : t))
-    );
-    await api.updateThought(task.id, { subtasks: updatedSubtasks });
+    await saveSubtasks(task, (task.subtasks || []).filter((s) => s.id !== subtaskId));
   };
 
   const handleRenameSubtask = async (task: Thought, subtaskId: string, title: string) => {
-    const updatedSubtasks = (task.subtasks || []).map((s) => (s.id === subtaskId ? { ...s, title } : s));
-    setTasks((prev) => prev.map((t) => (t.id === task.id ? { ...t, subtasks: updatedSubtasks } : t)));
-    await api.updateThought(task.id, { subtasks: updatedSubtasks });
+    await saveSubtasks(task, (task.subtasks || []).map((s) => (s.id === subtaskId ? { ...s, title } : s)));
   };
 
   // New order of the subtasks (ids in the wanted order); the server keeps their note links by id
@@ -197,8 +192,7 @@ export function useTaskActions({
     const reordered = orderedIds.map((id) => byId.get(id)).filter((st): st is SubTask => !!st);
     if (reordered.length !== byId.size) return;
     triggerHaptic(10);
-    setTasks((prev) => prev.map((t) => (t.id === task.id ? { ...t, subtasks: reordered } : t)));
-    await api.updateThought(task.id, { subtasks: reordered });
+    await saveSubtasks(task, reordered);
   };
 
   const handleConvertToDoc = async (task: Thought) => {

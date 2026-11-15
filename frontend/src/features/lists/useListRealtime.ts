@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { ListItem, SharedList, WSMessage } from '../../lib/types';
 import { createRealtimeConnection } from '../../lib/api';
-import { OFFLINE_ITEM_PREFIX, pendingListItems } from '../../lib/offline';
+import { OFFLINE_ITEM_PREFIX, getOutbox, isListEntry, isOffline, pendingListItems } from '../../lib/offline';
 import { deduplicateItems } from './listItems';
 import { useLatestRef } from '../../lib/useLatestRef';
 import { useRealtimeReload } from '../../lib/realtimeReload';
@@ -166,18 +166,25 @@ export function useListRealtime(
     };
   }, [activeListId]);
 
-  // Back online: once the outbox has sent the entries added offline, show the server's version
+  // Back online: once the outbox has sent the entries added offline, or ticks, edits and deletions made
+  // offline, show the server's version (a tick somebody else had made already, or a newer change of theirs,
+  // is kept there and not echoed back)
   const listsRef = useLatestRef(lists);
   useEffect(() => {
+    let queuedChanges = getOutbox().filter(isListEntry).length;
     const onOutbox = () => {
       const shown = listsRef.current.some((l) => l.items.some((i) => i.id.startsWith(OFFLINE_ITEM_PREFIX)));
       const queued = new Set(pendingListItems().map((p) => p.id));
       const sent = listsRef.current.some((l) => l.items.some((i) => i.id.startsWith(OFFLINE_ITEM_PREFIX) && !queued.has(i.id)));
+      const before = queuedChanges;
+      queuedChanges = getOutbox().filter(isListEntry).length;
       if (shown && sent) void loadListsRef.current();
+      // One reload for a whole batch sent (each sent entry is an outbox change of its own)
+      else if (queuedChanges < before && !isOffline()) reloader.request(true);
     };
     window.addEventListener('mindsift:outbox-changed', onOutbox);
     return () => window.removeEventListener('mindsift:outbox-changed', onOutbox);
-  }, [listsRef, loadListsRef]);
+  }, [listsRef, loadListsRef, reloader]);
 
   useEffect(() => {
     const handleGlobalWs = (e: CustomEvent<WSMessage | undefined>) => {

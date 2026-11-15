@@ -401,22 +401,64 @@ func TestLinkedTodoNoteToTaskSubtasks(t *testing.T) {
 	}
 }
 
-// Converting the linked to-do itself into a bullet and back.
+// Converting the linked to-do itself into a bullet unlinks the task, as for a subtask whose checkbox
+// stops being one (the task stays, with its subtasks); turned back into a to-do (by hand or undo) it is
+// linked again and takes the to-do's state, subtasks included.
 func TestLinkedTodoConvertTypes(t *testing.T) {
 	f := newLinkedFixture(t)
+	f.edit(t, insertTodo("sub1", f.main, "a0", "Rahmen abwischen"))
+	f.ownerWS.waitTask(t, "TASK_UPDATED", f.taskID, func(th *domain.Thought) bool { return len(th.Subtasks) == 1 })
+	f.memberWS.waitTask(t, "TASK_UPDATED", f.taskID, func(th *domain.Thought) bool { return len(th.Subtasks) == 1 })
 	bullet, todo := "bullet", "todo"
 	resp := f.edit(t, collab.Op{Kind: collab.OpSetProps, BlockID: f.main, Patch: &collab.PropsPatch{Type: &bullet}})
-	t.Logf("to bullet: taskLinks=%v", resp.TaskLinks)
+	ev := f.memberWS.waitTask(t, "TASK_UPDATED", f.taskID, func(th *domain.Thought) bool { return th.DocID == "" })
+	f.expectAssignees(t, "after turning the to-do into a bullet", ev)
+	if _, ok := resp.TaskLinks[f.main]; ok {
+		t.Errorf("a bullet keeps the task badge: %v", resp.TaskLinks)
+	}
 	got := f.task(t)
-	t.Logf("task after converting to a bullet: doc=%q block=%q", got.DocID, got.BlockID)
+	if got.DocID != "" || len(got.Subtasks) != 1 || got.Subtasks[0].BlockID != "" {
+		t.Fatalf("task after its to-do became a bullet: %+v", got)
+	}
+	// Unlinked: a rename in the task view leaves the bullet alone, a new text of the bullet the task
+	f.patch(t, f.ownerTok, map[string]any{"content": "Fenster putzen lassen"})
+	f.edit(t, f.textOp(t, f.main, "Fenster putzen als Punkt"))
+	if b := f.block(t, f.main); b.Content != "Fenster putzen als Punkt" {
+		t.Errorf("unlinked bullet changed by the task: %q", b.Content)
+	}
+	if got := f.task(t); got.Content != "Fenster putzen lassen" {
+		t.Errorf("unlinked task changed by the bullet: %q", got.Content)
+	}
+	f.ownerWS.quiet(300 * time.Millisecond)
+	f.memberWS.quiet(300 * time.Millisecond)
+	f.noLoop(t, "to bullet")
+
+	// A to-do again: linked, with the to-do's text and tick, and its subtask tied again
 	resp = f.edit(t, collab.Op{Kind: collab.OpSetProps, BlockID: f.main, Patch: &collab.PropsPatch{Type: &todo}})
 	if resp.TaskLinks[f.main] != f.taskID {
-		t.Fatalf("to-do again: the badge is gone: %v", resp.TaskLinks)
+		t.Fatalf("to-do again: the badge is not back: %v", resp.TaskLinks)
+	}
+	ev = f.ownerWS.waitTask(t, "TASK_UPDATED", f.taskID, func(th *domain.Thought) bool {
+		return th.DocID == f.docID && th.Content == "Fenster putzen als Punkt"
+	})
+	f.expectAssignees(t, "after turning it back into a to-do", ev)
+	if got := f.task(t); len(got.Subtasks) != 1 || got.Subtasks[0].BlockID != "sub1" {
+		t.Errorf("to-do again: subtask not tied again: %+v", got.Subtasks)
 	}
 	f.edit(t, checkOp(f.main, true))
 	f.ownerWS.waitTask(t, "TASK_UPDATED", f.taskID, func(th *domain.Thought) bool { return th.IsCompleted })
 	if got := f.task(t); !got.IsCompleted {
 		t.Fatalf("tick after converting back: %+v", got)
+	}
+
+	// Made a heading, deleted and restored: restored as no to-do, nothing is linked again
+	heading := "h2"
+	f.edit(t, collab.Op{Kind: collab.OpSetProps, BlockID: f.main, Patch: &collab.PropsPatch{Type: &heading}})
+	f.ownerWS.waitTask(t, "TASK_UPDATED", f.taskID, func(th *domain.Thought) bool { return th.DocID == "" })
+	f.edit(t, collab.Op{Kind: collab.OpDelete, BlockID: f.main})
+	f.edit(t, collab.Op{Kind: collab.OpRestore, IDs: []string{f.main}})
+	if got := f.task(t); got.DocID != "" {
+		t.Errorf("a heading restored linked the task again: %+v", got)
 	}
 
 	// A plain bullet made a to-do is no task (nothing links it)
@@ -425,6 +467,25 @@ func TestLinkedTodoConvertTypes(t *testing.T) {
 	if _, ok := resp.TaskLinks["other"]; ok {
 		t.Errorf("a new to-do got a task by itself: %v", resp.TaskLinks)
 	}
+}
+
+// A subtask's checkbox turned into a bullet and back (still under the main to-do): the same subtask is
+// tied again, no second one.
+func TestLinkedTodoSubtaskTypeRoundTrip(t *testing.T) {
+	f := newLinkedFixture(t)
+	f.edit(t, insertTodo("sub1", f.main, "a0", "Rahmen abwischen"))
+	f.ownerWS.waitTask(t, "TASK_UPDATED", f.taskID, func(th *domain.Thought) bool { return len(th.Subtasks) == 1 })
+	id := f.task(t).Subtasks[0].ID
+	bullet, todo := "bullet", "todo"
+	f.edit(t, collab.Op{Kind: collab.OpSetProps, BlockID: "sub1", Patch: &collab.PropsPatch{Type: &bullet}})
+	f.ownerWS.waitTask(t, "TASK_UPDATED", f.taskID, func(th *domain.Thought) bool { return len(th.Subtasks) == 1 && th.Subtasks[0].BlockID == "" })
+	f.edit(t, collab.Op{Kind: collab.OpSetProps, BlockID: "sub1", Patch: &collab.PropsPatch{Type: &todo}})
+	f.ownerWS.waitTask(t, "TASK_UPDATED", f.taskID, func(th *domain.Thought) bool { return len(th.Subtasks) == 1 && th.Subtasks[0].BlockID == "sub1" })
+	if got := f.task(t); len(got.Subtasks) != 1 || got.Subtasks[0].ID != id {
+		t.Fatalf("subtask after the round trip: %+v (want the same subtask %s)", got.Subtasks, id)
+	}
+	f.memberWS.quiet(300 * time.Millisecond)
+	f.noLoop(t, "subtask round trip")
 }
 
 // Deleting the linked to-do unlinks the task (it stays, with its assignees); undoing the delete

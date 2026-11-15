@@ -15,6 +15,7 @@ const (
 	SealedNoteSecret = "note_secret"
 	SealedTOTP       = "totp"
 	SealedPublicLink = "public_link"
+	SealedCalFeed    = "calendar_feed"
 	SealedSMTPPass   = "smtp_pass"
 )
 
@@ -27,6 +28,7 @@ func (s *Store) SealedSamples(perKind int) ([]SealedSample, error) {
 		{SealedNoteSecret, `SELECT id, ciphertext FROM note_secrets ORDER BY updated_at DESC LIMIT ?`},
 		{SealedTOTP, `SELECT user_id, secret_sealed FROM user_totp ORDER BY created_at DESC LIMIT ?`},
 		{SealedPublicLink, `SELECT id, token_sealed FROM public_links ORDER BY created_at DESC LIMIT ?`},
+		{SealedCalFeed, `SELECT user_id, token_sealed FROM calendar_feeds ORDER BY created_at DESC LIMIT ?`},
 		{SealedSMTPPass, `SELECT '` + smtpPassSealID + `', value FROM system_settings
 			WHERE key = 'smtp_pass' AND value LIKE '` + SealedPrefix + `%' LIMIT ?`},
 	}

@@ -34,6 +34,7 @@ import { DocumentBlock, BlockType } from '../../lib/types';
 import { LinkModal } from './LinkModal';
 import { SecretChip, NewSecretSheet } from './SecretChip';
 import { CodeBlockEditor, resolveLanguageId, isUnambiguousLanguageShortcut } from './CodeBlockEditor';
+import { htmlHasCodeBlock, htmlToMarkdown } from '../../lib/pasteHtml';
 import { TableBlock } from './TableBlock';
 import { emptyTable, serializeMarkdownTable, TableLines } from '../../lib/markdownTable';
 import { useLatestCallback } from '../../lib/useLatestCallback';
@@ -130,6 +131,8 @@ export interface BlockLock {
   avatarUrl?: string;
   /** A live drawing holds the bullet: everyone drawing in it (host first); others may join or watch */
   live?: { userId: string; name: string; avatarUrl?: string }[];
+  /** Held by the same person in another tab or on another device */
+  own?: boolean;
 }
 
 export interface OutlinerBlockProps {
@@ -158,6 +161,8 @@ export interface OutlinerBlockProps {
   onBlurBlock?: (blockId: string) => void;
   /** Work in this block that does not change its text yet (drawing editor open), keeps its lease */
   onBlockActivity?: (blockId: string) => void;
+  /** The focused field took over the block's text from elsewhere: the next edit builds on it */
+  onFieldShows?: (blockId: string, content: string) => void;
   onOpenTask?: (taskId: string) => void;
   onTagClick?: (tag: string) => void;
   onWikiLinkClick?: WikiLinkClickHandler;
@@ -176,6 +181,8 @@ export interface OutlinerBlockProps {
   /** Another bullet on the same level follows: Enter in this empty bullet adds a bullet instead of outdenting */
   siblingFollows?: boolean;
   lockedBy?: BlockLock; // someone else is editing this block
+  /** A double-click on a drawing someone else is editing: tell the user why it does not open */
+  onLockedDrawing?: (lock: BlockLock) => void;
   originalLockedBy?: BlockLock; // a conflict copy: someone else is editing its original
   canAppendBelow?: boolean; // the user may edit the note, so Enter in a locked block still adds one below
   onResolveConflict?: (blockId: string, choice: ConflictChoice) => void;
@@ -209,6 +216,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
   onFocusBlock,
   onBlurBlock,
   onBlockActivity,
+  onFieldShows,
   onOpenTask,
   onTagClick,
   onWikiLinkClick,
@@ -223,6 +231,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
   listMarker,
   siblingFollows = false,
   lockedBy: heldBy,
+  onLockedDrawing,
   originalLockedBy,
   canAppendBelow,
   onResolveConflict,
@@ -408,6 +417,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
     changeContent(next);
   };
   const onUndoRef = useLatestRef(onUndo);
+  const onFieldShowsRef = useLatestRef(onFieldShows);
   const onRedoRef = useLatestRef(onRedo);
 
   // Sync incoming remote changes ONLY when this textarea is NOT actively being edited (or not edited at all)
@@ -431,8 +441,9 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
       setShownContent(block.content || '');
       localContentRef.current = block.content || '';
       editedRef.current = false;
+      if (isActivelyEditing) onFieldShowsRef.current?.(block.id, block.content || '');
     }
-  }, [block.content, isLocallyFocused, localContentRef]);
+  }, [block.id, block.content, isLocallyFocused, localContentRef, onFieldShowsRef]);
 
   useLayoutEffect(() => {
     const pos = pendingCaretRef.current;
@@ -747,7 +758,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
       return;
     }
 
-    const codeLangMatch = slashMatchInfo?.query.match(/^code\s+([a-z0-9_+#.-]+)$/i);
+    const codeLangMatch = slashMatchInfo?.query.match(/^code\s+([a-z0-9_+#.-]{1,40})$/i);
     const langOverride =
       cmd.type === 'code' && codeLangMatch
         ? resolveLanguageId(codeLangMatch[1]) || codeLangMatch[1]
@@ -842,11 +853,12 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
     let langOverride: string | undefined;
 
     if (block.type !== 'code') {
-      // Quick markdown shortcuts
-      const fenceSpaceMatch = val.match(/^```([a-z0-9_+#.-]*)\s([\s\S]*)$/i);
-      const fenceDirectMatch = val.match(/^```([a-z0-9_+#.-]+)$/i);
-      const slashCodeSpaceMatch = val.match(/^\/code\s+([a-z0-9_+#.-]+)\s([\s\S]*)$/i);
-      const slashCodeDirectMatch = val.match(/^\/code\s+([a-z0-9_+#.-]+)$/i);
+      // Quick markdown shortcuts. A language name has 1-40 of these characters, as in the language menu
+      // (isCodeLanguageLabel): a longer one is no shortcut, the text stays as typed
+      const fenceSpaceMatch = val.match(/^```([a-z0-9_+#.-]{0,40})\s([\s\S]*)$/i);
+      const fenceDirectMatch = val.match(/^```([a-z0-9_+#.-]{1,40})$/i);
+      const slashCodeSpaceMatch = val.match(/^\/code\s+([a-z0-9_+#.-]{1,40})\s([\s\S]*)$/i);
+      const slashCodeDirectMatch = val.match(/^\/code\s+([a-z0-9_+#.-]{1,40})$/i);
 
       if (fenceSpaceMatch) {
         const rawLang = fenceSpaceMatch[1];
@@ -907,7 +919,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
       const sel = e.currentTarget.selectionStart;
       const cursor = typeof sel === 'number' && sel > 0 ? sel : val.length;
       const textBefore = val.slice(0, cursor);
-      const slashMatch = !typeOverride ? textBefore.match(/(^|\s)\/(code\s+[a-z0-9_+#.-]*|[a-z0-9]*)$/i) : null;
+      const slashMatch = !typeOverride ? textBefore.match(/(^|\s)\/(code\s+[a-z0-9_+#.-]{0,40}|[a-z0-9]*)$/i) : null;
       if (slashMatch) {
         const slashStart = slashMatch.index! + slashMatch[1].length;
         setSlashMatchInfo({ query: slashMatch[2], slashStart, cursor });
@@ -987,7 +999,11 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
     // Bullets copied from a note with hidden values: the app's own format has their references where the
     // plain text has the mask (lib/outlineMarkdown.ts)
     const own = ownClipboardText(e.clipboardData);
-    const pastedText = own || e.clipboardData.getData('text');
+    // Code blocks from other pages (ChatGPT, Claude, documentation): only their HTML says where code starts
+    // and in which language, the plain text has it without a fence
+    const html = own ? '' : e.clipboardData.getData('text/html');
+    const fromHtml = html && htmlHasCodeBlock(html) ? htmlToMarkdown(html) : '';
+    const pastedText = own || fromHtml || e.clipboardData.getData('text');
     const start = e.currentTarget.selectionStart ?? localContent.length;
     const end = e.currentTarget.selectionEnd ?? start;
     const textBefore = localContent.slice(0, start);
@@ -1191,7 +1207,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
       e.stopPropagation();
       setSlashMatchInfo(null);
 
-      const fenceMatch = localContent.match(/^```([a-z0-9_+#.-]*)$/i);
+      const fenceMatch = localContent.match(/^```([a-z0-9_+#.-]{0,40})$/i);
       if (fenceMatch) {
         const rawLang = fenceMatch[1];
         const resolvedLang = rawLang ? resolveLanguageId(rawLang) || rawLang : '';
@@ -1584,6 +1600,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
             // Someone else drawing alone holds the block: look only. A live drawing holds it for everyone
             // drawing: whoever may edit the note may join (the row itself counts as locked)
             canEdit={liveDrawing ? !!canAppendBelow : canEdit && !lockedBy}
+            onLocked={lockedBy && canAppendBelow && onLockedDrawing ? () => onLockedDrawing(lockedBy) : undefined}
             autoOpen={drawingAutoOpen}
             actionsTarget={drawingActionsEl}
             // Clicked into or open in the editor counts as the cursor in this bullet (action bubble, lease)
@@ -1838,7 +1855,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
                   if (ta) {
                     const cursor = ta.selectionStart;
                     const textBefore = ta.value.slice(0, cursor);
-                    const match = textBefore.match(/(^|\s)\/(code\s+[a-z0-9_+#.-]*|[a-z0-9]*)$/i);
+                    const match = textBefore.match(/(^|\s)\/(code\s+[a-z0-9_+#.-]{0,40}|[a-z0-9]*)$/i);
                     if (match) {
                       const slashStart = match.index! + match[1].length;
                       setSlashMatchInfo({ query: match[2], slashStart, cursor });
@@ -1854,7 +1871,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
                   if (ta) {
                     const cursor = ta.selectionStart;
                     const textBefore = ta.value.slice(0, cursor);
-                    const match = textBefore.match(/(^|\s)\/(code\s+[a-z0-9_+#.-]*|[a-z0-9]*)$/i);
+                    const match = textBefore.match(/(^|\s)\/(code\s+[a-z0-9_+#.-]{0,40}|[a-z0-9]*)$/i);
                     if (match) {
                       const slashStart = match.index! + match[1].length;
                       setSlashMatchInfo({ query: match[2], slashStart, cursor });

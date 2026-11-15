@@ -2,8 +2,8 @@ import i18n from '../i18n';
 // Offline support for the REST layer (lib/api/client.ts):
 // - Read cache: successful GET responses are kept in IndexedDB per user. Without network the last
 //   known answer is returned, so thoughts, tasks and lists stay visible offline.
-// - Outbox: a few mutations (capturing a thought, checking off a task or list item) are queued in
-//   localStorage while offline and sent in order once the connection is back.
+// - Outbox: a few mutations (capturing a thought, checking off a task, adding, ticking, editing or deleting
+//   a list item) are queued in localStorage while offline and sent in order once the connection is back.
 // Notes have their own offline store in lib/docSync.
 
 /** Thrown by request() when the server could not be reached at all (no HTTP answer). */
@@ -91,10 +91,13 @@ export async function clearOfflineData(): Promise<void> {
 
 export interface OutboxEntry {
   id: string;
-  method: 'POST' | 'PATCH';
+  method: 'POST' | 'PATCH' | 'PUT' | 'DELETE';
   path: string;
   body: Record<string, unknown>;
   createdAt: string;
+  // The state the first queued change of this path started from (not sent): a later change back to it
+  // leaves nothing to send
+  base?: Record<string, unknown>;
 }
 
 const OUTBOX_KEY = 'mindsift_outbox';
@@ -135,21 +138,42 @@ function saveOutbox(entries: OutboxEntry[]) {
 }
 
 /**
- * Queues a request. A PATCH to the same path replaces the earlier one (checking a task off and on
- * again while offline sends only the final state).
+ * Queues a request. Every change states the wanted values, never "the opposite of what I saw", so it
+ * can be sent late and meet other people's changes (the server keeps what is already so).
+ * - A PATCH or PUT to the same path is merged into the earlier one (checking a task off and on again
+ *   while offline sends only the final state). base is the state the change starts from: when the merged
+ *   change ends where the first one started (ticked and un-ticked again), nothing is left to send, so it
+ *   cannot undo what somebody else did meanwhile.
+ * - A DELETE drops the queued changes of the same path.
  */
-export function enqueue(method: OutboxEntry['method'], path: string, body: Record<string, unknown>): OutboxEntry {
-  const entries = getOutbox();
+export function enqueue(
+  method: OutboxEntry['method'],
+  path: string,
+  body: Record<string, unknown>,
+  base?: Record<string, unknown>
+): OutboxEntry {
+  let entries = getOutbox();
   const entry: OutboxEntry = {
     id: `ob_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`,
     method,
     path,
     body,
     createdAt: new Date().toISOString(),
+    ...(base ? { base } : {}),
   };
-  const same = method === 'PATCH' ? entries.findIndex((e) => e.method === 'PATCH' && e.path === path) : -1;
-  if (same >= 0) entries[same] = { ...entry, body: { ...entries[same].body, ...body } };
-  else entries.push(entry);
+  if (method === 'DELETE') entries = entries.filter((e) => !(e.path === path && (e.method === 'PATCH' || e.method === 'PUT')));
+  const same = method === 'PATCH' || method === 'PUT' ? entries.findIndex((e) => e.method === method && e.path === path) : -1;
+  if (same >= 0) {
+    const earlier = entries[same];
+    const merged: OutboxEntry = { ...entry, body: { ...earlier.body, ...body } };
+    const from = earlier.base ?? base;
+    if (from) merged.base = from;
+    const backToStart = !!from && Object.keys(from).every((k) => merged.body[k] === from[k]);
+    if (backToStart) entries.splice(same, 1);
+    else entries[same] = merged;
+  } else {
+    entries.push(entry);
+  }
   saveOutbox(entries);
   return entry;
 }
@@ -192,6 +216,37 @@ export function pendingListItems(): { listId: string; id: string; content: strin
       createdAt: e.createdAt,
     }));
 }
+
+const LIST_ITEM_PATH = /^\/api\/v1\/lists\/([^/]+)\/items\/([^/]+)$/;
+
+export interface PendingListChange {
+  isCompleted?: boolean;
+  content?: string;
+  category?: string;
+  quantity?: string;
+  deleted?: boolean;
+}
+
+/** Changes of list items still waiting in the outbox, by item id: the list view shows them on top of what
+ *  it loaded (the cached answer offline, or the server's before they are sent). */
+export function pendingListChanges(): Map<string, PendingListChange> {
+  const out = new Map<string, PendingListChange>();
+  for (const e of getOutbox()) {
+    const m = e.path.match(LIST_ITEM_PATH);
+    if (!m) continue;
+    const change = out.get(m[2]) || {};
+    if (e.method === 'DELETE') change.deleted = true;
+    else if (e.method === 'PATCH' && typeof e.body.isCompleted === 'boolean') change.isCompleted = e.body.isCompleted;
+    else if (e.method === 'PUT') {
+      for (const k of ['content', 'category', 'quantity'] as const) if (typeof e.body[k] === 'string') change[k] = e.body[k] as string;
+    }
+    out.set(m[2], change);
+  }
+  return out;
+}
+
+/** Whether an outbox entry belongs to a shopping list (an item added, changed or deleted offline). */
+export const isListEntry = (e: OutboxEntry) => e.path.startsWith('/api/v1/lists/');
 
 let flushing: Promise<number> | null = null;
 

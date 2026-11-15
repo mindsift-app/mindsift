@@ -199,7 +199,7 @@ export interface DrawingEditorProps {
   /** Live session over WebSocket: drawing along in a running one ('draw'), watching ('watch'), or drawing
    *  alone for now (null). canDraw: a watcher may switch to drawing along; canStart: drawing alone, the
    *  note is shared, so "Gemeinsam zeichnen" can start a session others may join */
-  live?: { docId: string; blockId: string; mode: LiveMode | null; canDraw: boolean; canStart?: boolean };
+  live?: { docId: string; blockId: string; mode: LiveMode | null; canDraw: boolean; canStart?: boolean; noteClientId?: string };
 }
 
 // Full-screen drawing editor. Changes stay local until it closes; meanwhile a draft is kept in this browser.
@@ -320,6 +320,7 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
       ? {
           docId: live.docId,
           blockId: live.blockId,
+          noteClientId: live.noteClientId,
           mode: liveMode,
           // Opened to draw along: only in the session that runs (none starts if it ended meanwhile)
           join: !startedHere,

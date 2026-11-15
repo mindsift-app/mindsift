@@ -187,6 +187,22 @@ export function ServerSection({
             )}
           </div>
 
+          {/* Calendar subscriptions: everyone's read-only feed of their open tasks */}
+          <div className="p-4 bg-canvas border border-border rounded-card flex items-center justify-between gap-4">
+            <div className="pr-4">
+              <p className="font-bold text-main">{t('server.calendarFeeds')}</p>
+              <p className="text-[11px] text-muted mt-0.5">
+                {t('server.calendarFeedsHint')}
+                {settings.calendarFeedsConfiguredViaEnv && ` ${t('server.fixedBy', { env: 'CALENDAR_FEEDS' })}`}
+              </p>
+            </div>
+            <ToggleSwitch
+              checked={settings.calendarFeeds !== false}
+              disabled={Boolean(settings.calendarFeedsConfiguredViaEnv)}
+              onChange={(calendarFeeds) => handleSaveSystemSettings({ calendarFeeds })}
+            />
+          </div>
+
           {/* Link previews for the whole server: off, nothing is fetched and the app shows no cards */}
           <LinkPreviewSetting settings={settings} demoMode={demoMode} onSave={(patch) => handleSaveSystemSettings(patch)} />
 

@@ -41,6 +41,8 @@
       "voiceHint": "Lingua, Whisper o browser",
       "retention": "Conservazione",
       "retentionHint": "Elimina elementi completati e cestino",
+      "calendar": "Abbonamento calendario",
+      "calendarHint": "Attività in Google, Apple e altri",
       "api": "API",
       "apiHint": "Chiavi, curl, smart home e agenti IA",
       "data": "Esportazione e importazione",
@@ -632,6 +634,8 @@
     "peopleSearchHint": "Attiva, durante la condivisione e nei gruppi vengono suggeriti i nomi. Disattiva, bisogna conoscere l’indirizzo e-mail o il nome utente esatti; chi lavora già insieme a qualcosa continua a vedersi lì con il nome.",
     "publicLinks": "Link pubblici alle note",
     "publicLinksHint": "I proprietari possono condividere una nota in sola lettura tramite link, anche con persone senza account, eventualmente con password. I link scadono sempre e non finiscono nei motori di ricerca. Disattivato, nessun link esistente funziona più.",
+    "calendarFeeds": "Abbonamenti al calendario",
+    "calendarFeedsHint": "Ogni persona può abbonarsi alle proprie attività aperte con scadenza nella sua app di calendario tramite un link segreto (sola lettura). Disattivato, nessun link esistente funziona più.",
     "linkPreviews": "Anteprime dei link",
     "linkPreviewsHint": "Quando un punto contiene solo un indirizzo web, il server MindSift recupera la pagina e ne mostra titolo, descrizione e immagine come scheda. Disattivato, il server non recupera nessuna pagina e l'app non mostra né schede di anteprima né l'interruttore per dispositivo.",
     "publicLinkMaxDays": "Durata massima di un link",
@@ -1004,5 +1008,42 @@
       "confirmedDone": "Confermato. Ora puoi fare la modifica per cinque minuti.",
       "linkedDone": "Il tuo account è ora collegato a {{name}}."
     }
+  },
+  "calendarFeed": {
+    "title": "Abbonamento al calendario",
+    "intro": "Le tue attività aperte con scadenza compaiono nella tua solita app di calendario, ad esempio Google Calendar, Calendario di Apple, Thunderbird o Outlook. Il calendario le mostra soltanto; le modifiche si fanno sempre in MindSift.",
+    "switch": "Abbonamento al calendario",
+    "switchHint": "Le tue attività e quelle degli elenchi condivisi, in scadenza da 30 giorni fa fino a un anno. Attività di tutto il giorno come eventi di tutto il giorno, attività con orario come eventi di 30 minuti.",
+    "linkLabel": "Link di abbonamento",
+    "copy": "Copia",
+    "copied": "Copiato",
+    "secret": "Chi conosce questo link vede le tue attività. Non condividerlo; nel dubbio creane uno nuovo.",
+    "renew": "Crea nuovo link",
+    "confirmRenew": "Il link attuale smetterà di funzionare. I calendari abbonati andranno configurati di nuovo con il nuovo link.",
+    "off": "Disattiva",
+    "confirmOff": "Il link verrà eliminato. I calendari abbonati non riceveranno più attività.",
+    "unreadable": "Il link salvato non è più leggibile (la chiave del server è cambiata). Crea un nuovo link.",
+    "serverOff": "Gli abbonamenti al calendario sono disattivati su questo server.",
+    "loadFailed": "Impossibile caricare l'abbonamento al calendario",
+    "howTo": "Come abbonarsi",
+    "apps": {
+      "google": {
+        "name": "Google Calendar",
+        "steps": "Nel browser su calendar.google.com, fai clic su + accanto ad «Altri calendari» → «Da URL», incolla il link, «Aggiungi calendario»."
+      },
+      "apple": {
+        "name": "Calendario di Apple",
+        "steps": "Sul Mac: Archivio → Nuovo abbonamento calendario, incolla il link. Su iPhone e iPad: Impostazioni → Calendario → Account → Aggiungi account → Altro → Aggiungi calendario sottoscritto."
+      },
+      "thunderbird": {
+        "name": "Thunderbird",
+        "steps": "Calendario → Nuovo calendario → Sulla rete, incolla il link come posizione, formato iCalendar (ICS)."
+      },
+      "outlook": {
+        "name": "Outlook",
+        "steps": "Calendario → Aggiungi calendario → Sottoscrivi dal Web (o «Da Internet»), incolla il link."
+      }
+    },
+    "note": "Le app di calendario aggiornano gli abbonamenti solo ogni tanto, Google ad esempio dopo diverse ore. Le modifiche in MindSift compaiono quindi con ritardo."
   }
 }

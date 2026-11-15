@@ -2,7 +2,10 @@
 // ticking and renaming in either one shows up in the other without reloading, and the task keeps its
 // assignees. Repeated many times (ROUNDS, default 50), the JS heap of both pages stays flat (measured
 // after a forced garbage collection through the Chrome DevTools Protocol) and so does the server's Go
-// heap (read from /metrics when METRICS_TOKEN is set for the server and the test).
+// heap (read from /metrics when METRICS_TOKEN is set for the server and the test). Then each side goes
+// offline in turn (Playwright's setOffline) while the task is changed on the other side: the offline
+// changes (tick, a new subtask, reopening) and the online ones (rename, a new subtask) all stay, note and
+// task end the same, and nothing keeps going back and forth.
 // Needs a server in demo mode (accounts admin/admin and user/user); see e2e/README.md.
 import { chromium } from 'playwright';
 
@@ -149,9 +152,9 @@ const main = async () => {
     const area = B.page.locator('textarea:focus').first();
     await area.fill(text);
     await area.press('Enter');
-    await waitFor(async () => (await B.page.locator('[title="Klicken zum Bearbeiten des Titels"]').count()) > 0, 3000);
-    // closed with its button ("Fertig"); Escape right after saving the title did not always close it
-    await B.page.getByRole('button', { name: 'Fertig', exact: true }).last().click();
+    // Escape right after saving the title closes the dialog (it used to only close the title editor while
+    // the save was on its way)
+    await B.page.keyboard.press('Escape');
     const closed = await waitFor(async () => (await B.page.locator('[title="Klicken zum Bearbeiten des Titels"]').count()) === 0, 5000);
     if (!closed) throw new Error('Aufgabendialog schließt nicht');
   };
@@ -260,6 +263,12 @@ const main = async () => {
   heapA0 ??= heapA1; // stopped before the warm-up ended
   heapB0 ??= heapB1;
   console.log(`     JS-Heap Notiz: ${heapA0.toFixed(1)} → ${heapA1.toFixed(1)} MB, Aufgaben: ${heapB0.toFixed(1)} → ${heapB1.toFixed(1)} MB`);
+  // What grows (about 1.5 MB per page over 45 rounds, then flat) is no app data: heap snapshots taken after
+  // the warm-up and at the end differ almost only in V8's compiled code ("(code)", ~1.4-1.6 MB: functions
+  // that got hot are optimized, which V8 bounds and flushes), the browser's performance timeline entries
+  // (resource, long-task, layout-shift timings; capped buffers) and DevTools network records of this test's
+  // CDP session. App objects grow by a few KB (the note's undo history is capped at 200 steps and the
+  // engine's log tail is folded into a full save every 200 entries).
   const flat = (a, b) => b - a < Math.max(8, a * 0.25);
   check(flat(heapA0, heapA1), `JS-Heap der Notiz bleibt flach (+${(heapA1 - heapA0).toFixed(1)} MB)`);
   check(flat(heapB0, heapB1), `JS-Heap der Aufgabenansicht bleibt flach (+${(heapB1 - heapB0).toFixed(1)} MB)`);
@@ -269,6 +278,91 @@ const main = async () => {
     check(server1 - server0 < Math.max(32, server0), `Server-Heap wächst nicht ohne Grenze (+${(server1 - server0).toFixed(1)} MB)`);
   } else {
     console.log('     Server-Heap: ohne METRICS_TOKEN nicht gemessen');
+  }
+
+  // Offline: one side without network while the other person changes the task online, then back online.
+  // Nothing may be lost or flip back, note and task end the same, and nothing keeps going back and forth.
+  const subtaskTexts = async () => {
+    const snap = await api(admin, 'GET', `/api/v1/docs/${doc.id}/snapshot`);
+    return snap.blocks.filter((b) => !b.deleted && b.parentId === TODO && b.type === 'todo').map((b) => b.content).sort();
+  };
+  const goOnline = async (p) => {
+    await p.ctx.setOffline(false);
+    await p.page.evaluate(() => window.dispatchEvent(new Event('online')));
+  };
+  // Nothing changes any more on the server: the task and the note's log stay as they are for 3 s
+  const settled = async () => {
+    const take = async () => {
+      const t = await api(admin, 'GET', `/api/v1/thoughts/${task.id}`);
+      const snap = await api(admin, 'GET', `/api/v1/docs/${doc.id}/snapshot`);
+      return JSON.stringify({ t: [t.content, t.isCompleted, t.subtasks], head: snap.headSeq });
+    };
+    const a = await take();
+    await sleep(3000);
+    return a === (await take());
+  };
+  try {
+    // 1. The note offline: tick the to-do and add a subtask under it (Enter at its end, "[] ", Tab)
+    await A.ctx.setOffline(true);
+    await tickInNote(true);
+    await noteBlock.getByText(title, { exact: true }).first().click();
+    await A.page.keyboard.press('End');
+    await A.page.keyboard.press('Enter');
+    await sleep(200);
+    await A.page.keyboard.type('[] Offline-Unteraufgabe'); // "[] " makes the new bullet a to-do
+    await A.page.keyboard.press('Tab');
+    await sleep(300);
+    await A.page.locator(`[data-outline-block="${INTRO}"]`).getByText('Diese Woche', { exact: true }).first().click();
+    await sleep(1500);
+    check(!(await api(admin, 'GET', `/api/v1/thoughts/${task.id}`)).isCompleted, 'Offline abgehakt: noch nicht auf dem Server');
+    // Meanwhile the other person renames the task and adds a subtask online (task view, API as the app sends it)
+    const onlineTitle = `Fenster putzen ${STAMP} online`;
+    const t0 = await api(user, 'GET', `/api/v1/thoughts/${task.id}`);
+    await api(user, 'PATCH', `/api/v1/thoughts/${task.id}`, { content: onlineTitle });
+    await api(user, 'PATCH', `/api/v1/thoughts/${task.id}`, {
+      subtasks: [...(t0.subtasks || []), { id: `st_online_${STAMP}`, title: 'Online-Unteraufgabe', isCompleted: false }],
+      subtasksBase: t0.subtasks || [],
+    });
+    title = onlineTitle;
+    await goOnline(A);
+    const merged = await waitFor(async () => {
+      const t = await api(admin, 'GET', `/api/v1/thoughts/${task.id}`);
+      const subs = (t.subtasks || []).map((s) => s.title).sort();
+      const blk = (await api(admin, 'GET', `/api/v1/docs/${doc.id}/snapshot`)).blocks.find((b) => b.id === TODO);
+      const kids = await subtaskTexts();
+      return (
+        t.content === onlineTitle && t.isCompleted && blk?.content === onlineTitle && blk?.props?.checked &&
+        JSON.stringify(subs) === JSON.stringify(['Offline-Unteraufgabe', 'Online-Unteraufgabe']) &&
+        JSON.stringify(kids) === JSON.stringify(subs)
+      );
+    }, 15000);
+    check(!!merged, 'Notiz offline, Aufgabe online geändert: Haken, Titel und beide Unteraufgaben bleiben, Notiz und Aufgabe gleich', merged ? undefined : await serverState());
+    check(!!(await waitFor(async () => (await noteText()) === onlineTitle, 8000)), 'Die Notiz zeigt nach dem Verbinden den neuen Titel', await noteText());
+    check(!!(await waitFor(noteChecked, 5000)), 'Der offline gesetzte Haken bleibt in der Notiz');
+    check(await settled(), 'Nach dem Verbinden geht nichts mehr hin und her');
+
+    // 2. The task view offline: reopen the task there (the app queues it) while the to-do is renamed in the note
+    await showTab('Erledigt');
+    check(!!(await waitFor(rowDone, 8000)), 'Aufgabenansicht zeigt die Aufgabe bei den erledigten');
+    await B.ctx.setOffline(true);
+    await tickInTasks(false);
+    const noteTitle = `Fenster putzen ${STAMP} in der Notiz`;
+    await renameInNote(noteTitle);
+    title = noteTitle;
+    await sleep(1500);
+    await goOnline(B);
+    const merged2 = await waitFor(async () => {
+      const t = await api(admin, 'GET', `/api/v1/thoughts/${task.id}`);
+      const blk = (await api(admin, 'GET', `/api/v1/docs/${doc.id}/snapshot`)).blocks.find((b) => b.id === TODO);
+      return t.content === noteTitle && !t.isCompleted && blk?.content === noteTitle && !blk?.props?.checked;
+    }, 15000);
+    check(!!merged2, 'Aufgabenansicht offline wieder geöffnet, Notiz online umbenannt: beides bleibt', merged2 ? undefined : await serverState());
+    check(!!(await waitFor(async () => !(await noteChecked()), 8000)), 'Die Notiz zeigt die Aufgabe wieder offen');
+    await showTab('Offen');
+    check(!!(await waitFor(async () => (await row().count()) > 0 && (await rowOpen()), 10000)), 'Die Aufgabenansicht zeigt nach dem Verbinden den Titel aus der Notiz');
+    check(await settled(), 'Auch danach geht nichts mehr hin und her');
+  } catch (e) {
+    check(false, `Offline-Teil abgebrochen: ${String(e.message).split('\n')[0]}`, await serverState().catch(() => undefined));
   }
 
   await browser.close();

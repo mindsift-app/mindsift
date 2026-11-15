@@ -319,6 +319,9 @@ type taskPatch struct {
 	KanbanStatus *string           `json:"kanbanStatus"`
 	Notes        *string           `json:"notes"`
 	Subtasks     *[]domain.SubTask `json:"subtasks"`
+	// SubtasksBase: the subtasks the change was made on; Subtasks is then merged into the stored ones
+	// (storage.MergeSubtasks) instead of replacing them
+	SubtasksBase *[]domain.SubTask `json:"subtasksBase"`
 	Tags         *[]string         `json:"tags"`
 	Assignees    *[]string         `json:"assignees"`
 	Recurrence   *string           `json:"recurrence"`
@@ -360,6 +363,9 @@ func (s *Server) updateTask(userID, thoughtID string, req taskPatch) (*domain.Th
 	}
 	patch := storage.ThoughtPatch{Content: req.Content, IsCompleted: req.IsCompleted, DueDate: req.DueDate, Priority: req.Priority,
 		TaskListID: req.TaskListID, KanbanStatus: req.KanbanStatus, Notes: req.Notes, Subtasks: req.Subtasks, Tags: req.Tags}
+	if req.Subtasks != nil {
+		patch.SubtasksBase = req.SubtasksBase
+	}
 	var b notifyBatch
 	var audience, watchers []string
 	plan := func(after *domain.Thought) ([]storage.CenterAdd, []storage.QueuedAdd) {

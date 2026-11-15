@@ -48,6 +48,20 @@ Offline work in notes:
 - the notice at the bottom counts notes with unsent text and explains where it is kept; signing out asks first and then deletes the stored notes
 - unsent changes survive closing the browser (persistent profile) and are sent at the next start with a connection
 
+## lists-offline.e2e.mjs
+
+A shared shopping list on two phones (admin and user, touch emulation), one of them offline for a while (`context.setOffline`). After the phone is back and its outbox has been sent, both phones show the server's state, and:
+
+- A ticks offline, B ticks online: ticked (two people doing the same thing never cancel out); both offline and both tick: ticked
+- A ticks offline, B ticks and opens it again later: open (the newer change wins, not the one that arrives last)
+- A opens a ticked entry offline: open; B opens and ticks it again afterwards: ticked
+- A ticks and un-ticks offline (no net change) while B ticks: ticked, nothing of A's is sent
+- a reload while offline keeps showing the pending tick
+- A changes the quantity offline while B ticks: ticked with the new quantity
+- A deletes offline while B ticks: gone; A ticks offline while B deletes: gone
+
+`SHOT_DIR=<dir>` (and `SHOT_PREFIX`) also saves screenshots of both phones after some of the steps.
+
 ## drawing-live.e2e.mjs
 
 Live drawing with three browsers on one shared drawing: admin in Chromium, user in Firefox, and admin again in Chromium with the WebSocket refused (the app falls back to SSE). Checked:

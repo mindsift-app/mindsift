@@ -61,6 +61,16 @@ func (s *Store) ActiveUserCount(since time.Time) int {
 // CreateSession starts a session for a login (via: SessionViaPassword, SessionViaPasskey or SessionViaOIDC);
 // old ended or idle sessions of the user are removed.
 func (s *Store) CreateSession(userID, userAgent, ip, via string) (string, error) {
+	return s.createSession(userID, userAgent, ip, via, "")
+}
+
+// CreateOIDCSession starts a session for a sign-in through the OIDC provider; oidcSID is the provider's session
+// id (the ID token's sid claim, "" when it sends none), which a back-channel logout names (api/oidc_logout.go).
+func (s *Store) CreateOIDCSession(userID, userAgent, ip, oidcSID string) (string, error) {
+	return s.createSession(userID, userAgent, ip, SessionViaOIDC, oidcSID)
+}
+
+func (s *Store) createSession(userID, userAgent, ip, via, oidcSID string) (string, error) {
 	b := make([]byte, 16)
 	if _, err := rand.Read(b); err != nil {
 		return "", err
@@ -72,8 +82,8 @@ func (s *Store) CreateSession(userID, userAgent, ip, via string) (string, error)
 	idleCutoff := time.Now().Add(-SessionIdleTimeout).UTC().Format(time.RFC3339)
 	return id, s.execInTx(
 		stmt(`DELETE FROM sessions WHERE user_id = ? AND (revoked_at != '' OR last_used_at < ?)`, userID, idleCutoff),
-		stmt(`INSERT INTO sessions (id, user_id, created_at, last_used_at, user_agent, ip, via) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-			id, userID, nowUTC(), nowUTC(), userAgent, ip, via),
+		stmt(`INSERT INTO sessions (id, user_id, created_at, last_used_at, user_agent, ip, via, oidc_sid) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+			id, userID, nowUTC(), nowUTC(), userAgent, ip, via, oidcSID),
 	)
 }
 

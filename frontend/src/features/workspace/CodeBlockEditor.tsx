@@ -9,6 +9,9 @@ import { SelectMenu } from '../../components/SelectMenu';
 import { ownClipboardText } from '../../lib/outlineMarkdown';
 import { maskSecrets, secretPlaceholder } from '../../lib/secretRef';
 import codeLanguages from './codeLanguages.json';
+import { isCodeLanguageLabel, resolveLanguageId } from '../../lib/codeLanguage';
+
+export { isCodeLanguageLabel, resolveLanguageId };
 
 Prism.manual = true;
 if (typeof globalThis !== 'undefined') {
@@ -49,19 +52,9 @@ export const CODE_LANGUAGES: CodeLanguageOption[] = CODE_LANGUAGE_GROUPS.flatMap
 
 const KNOWN_OPTION_IDS = new Set<string>(CODE_LANGUAGES.map((l) => l.id));
 
-const LANGUAGE_ALIASES: Record<string, string> = codeLanguages.aliases;
-
 const PRISM_GRAMMAR_OF: Record<string, string> = Object.fromEntries(
   CODE_LANGUAGES.filter((l) => l.prism).map((l) => [l.id, l.prism as string])
 );
-
-/**
- * Whether a name not in the list may be a code block's language: the block shows it as typed, without
- * highlighting (the same rule as for MCP code bullets, internal/api/mcp_code.go, and as ```name in a bullet)
- */
-export function isCodeLanguageLabel(raw: string): boolean {
-  return /^[A-Za-z0-9+\-_.#]{1,40}$/.test(raw);
-}
 
 const SHORT_PREFIX_CANDIDATES = new Set<string>([
   'c',
@@ -89,14 +82,6 @@ const SHORT_PREFIX_CANDIDATES = new Set<string>([
   'proto',
   'plain',
 ]);
-
-export function resolveLanguageId(raw?: string): string | undefined {
-  if (!raw) return undefined;
-  const key = raw.trim().toLowerCase();
-  if (!key) return undefined;
-  if (KNOWN_OPTION_IDS.has(key)) return key;
-  return LANGUAGE_ALIASES[key];
-}
 
 // True when a language token in `/code <lang>` or ````<lang>` cannot be a prefix of another language user is still typing
 export function isUnambiguousLanguageShortcut(raw?: string): boolean {

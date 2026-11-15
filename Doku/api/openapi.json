@@ -411,7 +411,7 @@
     "/api/v1/admin/settings": {
       "get": {
         "summary": "Server settings",
-        "description": "instanceName, allowRegistration, sharingMode (private/organizations/open), peopleSearch, publicLinks, publicLinkMaxDays (1–14), linkPreviews (the server fetches previews of web addresses in notes; default true, always false in demo mode), pushKnownServicesOnly (web push only via the push services of Google, Mozilla, Apple and Microsoft; default false), SMTP fields, timeZone (the server's time zone as an IANA name; \"\" = not set, then TZ, else UTC; 400 for an unknown name; in effect at once); changing mode cleans up shares. Values fixed by the environment come with …ConfiguredViaEnv and are not changed by PUT. smtpPass is never returned (smtpPassSet indicates whether one is stored; smtpPassUnreadable that one is stored but no longer decrypts because SECRETS_KEY changed, and no mail goes out until a new one is entered; smtpPassViaEnv that it comes from SMTP_PASS, which is never stored and takes precedence while host and user are those of the environment; a smtpPass sent for that host and user is ignored, not stored; with SMTP_PASS set, smtpPassEnvHost and smtpPassEnvUser name the host and user it belongs to); empty = unchanged; saving linkPreviews false empties the cache of previews. Read only: serverTime (zone in effect, source setting/env/default, now in RFC 3339 with the offset, fallback: the zone without the setting)",
+        "description": "instanceName, allowRegistration, sharingMode (private/organizations/open), peopleSearch, publicLinks, publicLinkMaxDays (1–14), calendarFeeds (calendar subscriptions; default true), linkPreviews (the server fetches previews of web addresses in notes; default true, always false in demo mode), pushKnownServicesOnly (web push only via the push services of Google, Mozilla, Apple and Microsoft; default false), SMTP fields, timeZone (the server's time zone as an IANA name; \"\" = not set, then TZ, else UTC; 400 for an unknown name; in effect at once); changing mode cleans up shares. Values fixed by the environment come with …ConfiguredViaEnv and are not changed by PUT. smtpPass is never returned (smtpPassSet indicates whether one is stored; smtpPassUnreadable that one is stored but no longer decrypts because SECRETS_KEY changed, and no mail goes out until a new one is entered; smtpPassViaEnv that it comes from SMTP_PASS, which is never stored and takes precedence while host and user are those of the environment; a smtpPass sent for that host and user is ignored, not stored; with SMTP_PASS set, smtpPassEnvHost and smtpPassEnvUser name the host and user it belongs to); empty = unchanged; saving linkPreviews false empties the cache of previews. Read only: serverTime (zone in effect, source setting/env/default, now in RFC 3339 with the offset, fallback: the zone without the setting)",
         "tags": [
           "Administration"
         ],
@@ -423,7 +423,7 @@
       },
       "put": {
         "summary": "Change server settings",
-        "description": "instanceName, allowRegistration, sharingMode (private/organizations/open), peopleSearch, publicLinks, publicLinkMaxDays (1–14), linkPreviews (the server fetches previews of web addresses in notes; default true, always false in demo mode), pushKnownServicesOnly (web push only via the push services of Google, Mozilla, Apple and Microsoft; default false), SMTP fields, timeZone (the server's time zone as an IANA name; \"\" = not set, then TZ, else UTC; left out = unchanged; 400 for an unknown name; in effect at once); changing mode cleans up shares. Values fixed by the environment come with …ConfiguredViaEnv and are not changed by PUT. smtpPass is never returned (smtpPassSet indicates whether one is stored; smtpPassUnreadable that one is stored but no longer decrypts because SECRETS_KEY changed, and no mail goes out until a new one is entered; smtpPassViaEnv that it comes from SMTP_PASS, which is never stored and takes precedence while host and user are those of the environment; a smtpPass sent for that host and user is ignored, not stored; with SMTP_PASS set, smtpPassEnvHost and smtpPassEnvUser name the host and user it belongs to); empty = unchanged; saving linkPreviews false empties the cache of previews",
+        "description": "instanceName, allowRegistration, sharingMode (private/organizations/open), peopleSearch, publicLinks, publicLinkMaxDays (1–14), calendarFeeds (calendar subscriptions; default true), linkPreviews (the server fetches previews of web addresses in notes; default true, always false in demo mode), pushKnownServicesOnly (web push only via the push services of Google, Mozilla, Apple and Microsoft; default false), SMTP fields, timeZone (the server's time zone as an IANA name; \"\" = not set, then TZ, else UTC; left out = unchanged; 400 for an unknown name; in effect at once); changing mode cleans up shares. Values fixed by the environment come with …ConfiguredViaEnv and are not changed by PUT. smtpPass is never returned (smtpPassSet indicates whether one is stored; smtpPassUnreadable that one is stored but no longer decrypts because SECRETS_KEY changed, and no mail goes out until a new one is entered; smtpPassViaEnv that it comes from SMTP_PASS, which is never stored and takes precedence while host and user are those of the environment; a smtpPass sent for that host and user is ignored, not stored; with SMTP_PASS set, smtpPassEnvHost and smtpPassEnvUser name the host and user it belongs to); empty = unchanged; saving linkPreviews false empties the cache of previews",
         "tags": [
           "Administration"
         ],
@@ -1375,7 +1375,7 @@
     "/api/v1/documents": {
       "get": {
         "summary": "List notes",
-        "description": "List notes without bullets (blocks [], content \"\"), with openTodos, tagCounts and tagOpenTodos per note; at most four lists built at a time; create (title, icon, folderPath, blocks, tags, isPinned; icon: \"\" = no icon, if omitted: 🗒️)",
+        "description": "List notes without bullets (blocks [], content \"\"), with openTodos, tagCounts and tagOpenTodos per note; at most four lists built at a time; create (title with at most 60 characters, icon, folderPath, blocks, tags, isPinned; icon: \"\" = no icon, if omitted: 🗒️)",
         "tags": [
           "Workspace"
         ],
@@ -1387,7 +1387,7 @@
       },
       "post": {
         "summary": "Create a note",
-        "description": "List notes; create (title, icon, folderPath, blocks, tags, isPinned; icon: \"\" = no icon, if omitted: 🗒️)",
+        "description": "List notes; create (title with at most 60 characters, icon, folderPath, blocks, tags, isPinned; icon: \"\" = no icon, if omitted: 🗒️)",
         "tags": [
           "Workspace"
         ],
@@ -1427,7 +1427,7 @@
     "/api/v1/documents/{id}": {
       "delete": {
         "summary": "Move a note to the trash (owner) or leave its share (others)",
-        "description": "Retrieve; update title, icon, folderPath, isPinned (updating blocks here returns 400, as they are handled via /docs/{id}/sync); delete = move to trash (owner) or leave share (others)",
+        "description": "Retrieve; update title (at most 60 characters; a longer title from before may stay or get shorter), icon, folderPath, isPinned (updating blocks here returns 400, as they are handled via /docs/{id}/sync); delete = move to trash (owner) or leave share (others)",
         "tags": [
           "Workspace"
         ],
@@ -1449,7 +1449,7 @@
       },
       "get": {
         "summary": "A note",
-        "description": "Retrieve; update title, icon, folderPath, isPinned (updating blocks here returns 400, as they are handled via /docs/{id}/sync); delete = move to trash (owner) or leave share (others)",
+        "description": "Retrieve; update title (at most 60 characters; a longer title from before may stay or get shorter), icon, folderPath, isPinned (updating blocks here returns 400, as they are handled via /docs/{id}/sync); delete = move to trash (owner) or leave share (others)",
         "tags": [
           "Workspace"
         ],
@@ -1471,7 +1471,7 @@
       },
       "put": {
         "summary": "Change a note (title, icon, folder, pinned)",
-        "description": "Retrieve; update title, icon, folderPath, isPinned (updating blocks here returns 400, as they are handled via /docs/{id}/sync); delete = move to trash (owner) or leave share (others)",
+        "description": "Retrieve; update title (at most 60 characters; a longer title from before may stay or get shorter), icon, folderPath, isPinned (updating blocks here returns 400, as they are handled via /docs/{id}/sync); delete = move to trash (owner) or leave share (others)",
         "tags": [
           "Workspace"
         ],
@@ -4579,6 +4579,21 @@
         }
       }
     },
+    "/api/v1/auth/oidc/backchannel-logout": {
+      "post": {
+        "summary": "OIDC back-channel logout (called by the provider)",
+        "description": "OpenID Connect Back-Channel Logout 1.0, server to server, no session or CSRF token. Form (application/x-www-form-urlencoded) logout_token: a JWT signed with the provider's keys (iss, aud with the client id, iat at most 10 minutes old, events with http://schemas.openid.net/event/backchannel-logout, sub and/or sid, jti, no nonce; each jti once). Ends the sessions started through that provider session (sid), or with sub alone every session of the account started through the provider; password and passkey sessions stay. 200 without body (also when nothing matched), 400 {\"error\": \"invalid_request\"} for a token that fails a check, 503 oidc_unavailable while the provider's discovery fails, 429 after 30 refused tokens per address in 15 minutes; Cache-Control: no-store. 404 while OIDC is off or with OIDC_BACKCHANNEL_LOGOUT=false",
+        "tags": [
+          "Public"
+        ],
+        "security": [],
+        "responses": {
+          "default": {
+            "description": "Empty on success; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
     "/api/v1/auth/oidc/confirm": {
       "post": {
         "summary": "Confirm with the OIDC provider, or link the account",
@@ -4627,6 +4642,69 @@
         "responses": {
           "default": {
             "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/api/v1/calendar-feed": {
+      "get": {
+        "summary": "The own calendar subscription",
+        "description": "Answer of all three: enabled (the server allows calendar subscriptions: CALENDAR_FEEDS, else the admin's switch), active (the person has a feed), token and url (the feed's address /calendar/<token>.ics; url only with BASE_URL, else null), createdAt, unreadable (a feed exists but its token no longer decrypts because SECRETS_KEY changed; PUT makes a new one). Not reachable with API keys",
+        "tags": [
+          "Account and General"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      },
+      "put": {
+        "summary": "Switch the calendar subscription on with a new address",
+        "description": "A new secret address; an earlier one stops working at once. 403 while the server does not allow calendar subscriptions. Answer of all three: enabled (the server allows calendar subscriptions: CALENDAR_FEEDS, else the admin's switch), active (the person has a feed), token and url (the feed's address /calendar/<token>.ics; url only with BASE_URL, else null), createdAt, unreadable (a feed exists but its token no longer decrypts because SECRETS_KEY changed; PUT makes a new one). Not reachable with API keys",
+        "tags": [
+          "Account and General"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Switch the calendar subscription off",
+        "description": "Deletes the token; the address stops working at once. Answer of all three: enabled (the server allows calendar subscriptions: CALENDAR_FEEDS, else the admin's switch), active (the person has a feed), token and url (the feed's address /calendar/<token>.ics; url only with BASE_URL, else null), createdAt, unreadable (a feed exists but its token no longer decrypts because SECRETS_KEY changed; PUT makes a new one). Not reachable with API keys",
+        "tags": [
+          "Account and General"
+        ],
+        "responses": {
+          "default": {
+            "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
+    "/calendar/{file}": {
+      "get": {
+        "summary": "Calendar subscription (iCalendar feed)",
+        "description": "No login; file is <token>.ics. Read-only iCalendar (text/calendar) of the person's open tasks with a due date (own tasks and those of shared task lists, due from 30 days ago to a year ahead) as events: all-day tasks as DATE events, timed tasks in UTC for 30 minutes, reminders as alarms. ETag with If-None-Match (304), Cache-Control private, max-age=900. Unknown or switched-off tokens and a server without calendar subscriptions: 404; too many unknown tokens from one address or too many fetches of one feed: 429",
+        "tags": [
+          "Account and General"
+        ],
+        "parameters": [
+          {
+            "name": "file",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [],
+        "responses": {
+          "default": {
+            "description": "text/calendar; 404 without body details"
           }
         }
       }

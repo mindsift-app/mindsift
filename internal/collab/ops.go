@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"sort"
+	"unicode/utf8"
 
 	"github.com/mindsift-app/mindsift/internal/drawing"
 )
@@ -34,7 +35,19 @@ const (
 	// MaxStoredNoteBlocks: blocks including deleted ones, which stay until compaction purges them after
 	// the retention period. Without it, adding and deleting would grow the note all the same.
 	MaxStoredNoteBlocks = 2 * MaxNoteBlocks
+
+	// MaxTitleRunes: characters of a note title, so that it fits on one line of the note at its full width
+	// on a desktop (about 62-70 characters of German text in the title font) and stays a usable file name
+	// on export. A title that is longer already (from before the limit, an import) stays and may be
+	// edited as long as it does not grow.
+	MaxTitleRunes = 60
 )
+
+// TitleAllowed: whether a note whose title is current may get title (see MaxTitleRunes)
+func TitleAllowed(title, current string) bool {
+	n := utf8.RuneCountInString(title)
+	return n <= MaxTitleRunes || n <= utf8.RuneCountInString(current)
+}
 
 // ReasonNoteFull: an operation was refused because the note holds as many blocks as it may.
 const ReasonNoteFull = "note_full"
@@ -422,7 +435,7 @@ func (ap *applier) apply(op Op) Result {
 		if op.Title == nil {
 			return rejected(op, "no_title")
 		}
-		if len(*op.Title) > 1000 {
+		if len(*op.Title) > 1000 || !TitleAllowed(*op.Title, d.Title) {
 			return rejected(op, "too_long")
 		}
 		if *op.Title == d.Title {

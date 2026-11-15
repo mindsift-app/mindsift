@@ -145,6 +145,23 @@ describe('TaskDetailModal', () => {
     expect((screen.getByDisplayValue('Fenster putzen lassen') as HTMLTextAreaElement).tagName).toBe('TEXTAREA');
   });
 
+  it('closes with Escape right after saving the title, while the save is still on its way', async () => {
+    const onClose = vi.fn();
+    let finish = () => {};
+    const onUpdateTitle = vi.fn(() => new Promise<void>((resolve) => (finish = resolve)));
+    const { rerender } = render(<TaskDetailModal {...props({ onClose, onUpdateTitle })} />);
+    fireEvent.click(screen.getByTitle('Klicken zum Bearbeiten des Titels'));
+    const area = screen.getByDisplayValue('Fenster putzen');
+    fireEvent.change(area, { target: { value: 'Fenster putzen lassen' } });
+    fireEvent.keyDown(area, { key: 'Enter' });
+    // The list shows the new title at once (useTaskActions), the request is still open
+    rerender(<TaskDetailModal {...props({ onClose, onUpdateTitle, task: { ...task, content: 'Fenster putzen lassen' } })} />);
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(onUpdateTitle).toHaveBeenCalledWith(expect.objectContaining({ id: 'th_1' }), 'Fenster putzen lassen');
+    finish();
+  });
+
   it('asks before closing with unsaved notes and saves on request', async () => {
     const onClose = vi.fn();
     const onUpdateNotes = vi.fn(async () => {});

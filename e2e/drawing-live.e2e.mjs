@@ -43,6 +43,16 @@ const shot = async (page, name) => {
   if (SHOTS) await page.screenshot({ path: `${SHOTS}/${name}.png` });
 };
 
+const PHONE = process.env.PHONE === '1';
+// Where Ben (the second browser) draws and points: on a phone the same gestures, within its narrower screen
+const atB = ([x, y]) => (PHONE ? [Math.round(60 + (x - 600) * 0.5), y] : [x, y]);
+
+// Phones are offered the app first; the sheet covers the page until it is answered
+async function skipAppOffer(page) {
+  await page.waitForLoadState('networkidle');
+  await page.getByText('Später im Browser weiter nutzen').click({ timeout: 3000 }).catch(() => {});
+}
+
 async function openNote(engine, token, title, { noWebSocket = false, phone = false } = {}) {
   const browser = await engine.launch();
   const ctx = await browser.newContext(
@@ -59,6 +69,7 @@ async function openNote(engine, token, title, { noWebSocket = false, phone = fal
   const page = await ctx.newPage();
   page.on('pageerror', (e) => console.log('PAGEERROR', e.message));
   await page.goto(BASE);
+  if (phone) await skipAppOffer(page);
   await page.getByRole('button', { name: /Workspace/ }).locator('visible=true').first().click();
   await page.getByText(title, { exact: true }).first().click();
   await page.getByRole('img', { name: /^Zeichnung/ }).first().waitFor({ timeout: 10000 });
@@ -119,7 +130,7 @@ const main = async () => {
   await P.browser.close();
 
   const A = await openNote(chromium, admin, title);
-  const B = await openNote(firefox, user, title, { phone: process.env.PHONE === '1' });
+  const B = await openNote(firefox, user, title, { phone: PHONE });
   const C = await openNote(chromium, admin, title, { noWebSocket: true });
 
   // 1. Anna (admin, Chromium) opens the drawing: she draws alone, the others see the usual lock
@@ -134,6 +145,15 @@ const main = async () => {
   await B.page.getByRole('img', { name: /^Zeichnung/ }).first().dblclick();
   await sleep(1500);
   check((await editor(B.page).count()) === 0 && (await B.page.getByRole('alertdialog').count()) === 0, 'Allein gezeichnet: Doppelklick der anderen öffnet nichts zum Mitzeichnen');
+  // ...but says why, with the name; the same person in another tab hears that it is open elsewhere
+  const hintB = await waitFor(async () => (await B.page.getByText(`Wird gerade von ${adminName} bearbeitet`).count()) > 0, 3000);
+  check(!!hintB, 'Doppelklick auf die gesperrte Zeichnung zeigt „Wird gerade von … bearbeitet“');
+  await shot(B.page, 'locked-hint');
+  const lockedC = await waitFor(async () => (await C.page.locator(`[title="${adminName} bearbeitet diesen Punkt gerade"]`).count()) === 1, 10000);
+  check(!!lockedC, 'Im anderen Tab derselben Person ist die Zeichnung gesperrt');
+  await C.page.getByRole('img', { name: /^Zeichnung/ }).first().dblclick();
+  const hintC = await waitFor(async () => (await C.page.getByText('Wird gerade auf einem anderen Gerät oder in einem anderen Tab bearbeitet').count()) > 0, 3000);
+  check(!!hintC && (await editor(C.page).count()) === 0, 'Im anderen Tab sagt der Doppelklick „… auf einem anderen Gerät oder in einem anderen Tab …“');
   await shot(A.page, 'alone');
 
   // Anna starts drawing together: a live session with what she drew so far
@@ -163,7 +183,7 @@ const main = async () => {
   check(!!hostShown, 'Wer gemeinsam zeichnen gestartet hat, ist Gastgeber, sobald jemand mitzeichnet');
 
   // 4. Both draw at once
-  await Promise.all([drawShape(B.page, 'd', [700, 300], [860, 420]), drawShape(A.page, 'o', [380, 500], [520, 580])]);
+  await Promise.all([drawShape(B.page, 'd', atB([700, 300]), atB([860, 420])), drawShape(A.page, 'o', [380, 500], [520, 580])]);
   const aSeesDiamond = await waitFor(async () => (await count(A.page, 'polygon')) === 1, 5000);
   check(!!aSeesDiamond, 'Anna sieht die Raute von Ben');
   const bSeesBoth = await waitFor(async () => (await count(B.page, 'ellipse')) === 2, 5000);
@@ -171,10 +191,10 @@ const main = async () => {
 
   // 5. Pointers and selections of the others with their names
   await A.page.mouse.move(600, 450, { steps: 4 });
-  await B.page.mouse.move(650, 380, { steps: 4 });
+  await B.page.mouse.move(...atB([650, 380]), { steps: 4 });
   await sleep(200);
   await A.page.mouse.move(610, 460, { steps: 2 });
-  await B.page.mouse.move(660, 390, { steps: 2 });
+  await B.page.mouse.move(...atB([660, 390]), { steps: 2 });
   const aSeesBen = await waitFor(async () => (await editor(A.page).locator(`[data-live-cursor="${userName}"]`).count()) === 1, 5000);
   check(!!aSeesBen, 'Anna sieht den Zeiger von Ben mit Namen');
   const bSeesAnna = await waitFor(async () => (await editor(B.page).locator(`[data-live-cursor="${adminName}"]`).count()) === 1, 5000);
@@ -244,6 +264,7 @@ const main = async () => {
   await shot(C.page, 'ended');
 
   await B.page.reload();
+  if (PHONE) await skipAppOffer(B.page);
   await B.page.getByRole('button', { name: /Workspace/ }).locator('visible=true').first().click();
   await B.page.getByText(title, { exact: true }).first().click();
   const afterReload = await waitFor(

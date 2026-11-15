@@ -9,7 +9,7 @@ import {
   UserTheme,
   ImportSummary,
   SearchResults,
-  SearchFilter, DeletedAccountBackups, SecondFactorProof } from '../types';
+  SearchFilter, DeletedAccountBackups, SecondFactorProof, CalendarFeedState } from '../types';
 import { authHeaders, ensureArray, request, downloadBlob } from './client';
 import i18n from '../../i18n';
 
@@ -51,6 +51,20 @@ export const dataApi = {
 
   async deleteAPIKey(id: string): Promise<void> {
     await request(`/api/v1/keys/${id}`, { method: 'DELETE' });
+  },
+
+  // --- CALENDAR SUBSCRIPTION (read-only iCalendar feed of the own tasks) ---
+  async getCalendarFeed(): Promise<CalendarFeedState> {
+    return request<CalendarFeedState>('/api/v1/calendar-feed');
+  },
+
+  // Switches the feed on with a new address; an earlier address stops working
+  async renewCalendarFeed(): Promise<CalendarFeedState> {
+    return request<CalendarFeedState>('/api/v1/calendar-feed', { method: 'PUT' });
+  },
+
+  async disableCalendarFeed(): Promise<CalendarFeedState> {
+    return request<CalendarFeedState>('/api/v1/calendar-feed', { method: 'DELETE' });
   },
 
   // --- OAUTH CONSENT (claude.ai, ChatGPT connect to MCP) ---

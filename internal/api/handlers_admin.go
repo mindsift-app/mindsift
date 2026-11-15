@@ -484,6 +484,11 @@ func (s *Server) settingsForBrowser(settings *domain.SystemSettings) *domain.Sys
 		out.PublicLinkMaxDays = s.cfg.PublicLinkMaxDays
 		out.PublicLinkMaxDaysViaEnv = true
 	}
+	if s.cfg.CalendarFeeds != nil {
+		on := *s.cfg.CalendarFeeds
+		out.CalendarFeeds = &on
+		out.CalendarFeedsViaEnv = true
+	}
 	if s.cfg.DemoMode {
 		off := false
 		out.LinkPreviews = &off // the demo sends nothing out
@@ -574,7 +579,10 @@ func (s *Server) handleAdminUpdateSettings(w http.ResponseWriter, r *http.Reques
 	if s.cfg.PublicLinkMaxDays > 0 {
 		settings.PublicLinkMaxDays = 0 // fixed by PUBLIC_LINKS_MAX_DAYS
 	}
-	settings.PeopleSearchViaEnv, settings.PublicLinksViaEnv, settings.PublicLinkMaxDaysViaEnv = false, false, false
+	if s.cfg.CalendarFeeds != nil {
+		settings.CalendarFeeds = nil // fixed by CALENDAR_FEEDS
+	}
+	settings.PeopleSearchViaEnv, settings.PublicLinksViaEnv, settings.PublicLinkMaxDaysViaEnv, settings.CalendarFeedsViaEnv = false, false, false, false
 	if settings.MFARequired != nil && !storage.ValidMFARequired(*settings.MFARequired) {
 		writeErrorFrom(w, http.StatusBadRequest, storage.ErrInvalidMFARequired)
 		return

@@ -5,6 +5,7 @@ import { FormSheet } from '../../components/FormSheet';
 import { ConfirmPopover } from '../../components/ConfirmPopover';
 import { EmojiIconButton } from '../../components/EmojiIconButton';
 import { Trans, useTranslation } from 'react-i18next';
+import { NOTE_TITLE_MAX } from '../../lib/noteTitle';
 
 interface FolderDialogsProps {
   showNewFolderModal: boolean;
@@ -92,6 +93,7 @@ export function FolderDialogs({
               autoFocus
               value={newNoteTitle}
               onChange={(e) => setNewNoteTitle(e.target.value)}
+              maxLength={NOTE_TITLE_MAX}
               placeholder={t('folder.noteNamePlaceholder')}
               className="input-field flex-1 min-w-0 h-11 sm:h-8 px-2.5 text-base sm:text-xs"
             />

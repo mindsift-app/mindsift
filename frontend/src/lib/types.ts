@@ -476,6 +476,9 @@ export interface SystemSettings {
   publicLinksConfiguredViaEnv?: boolean;
   publicLinkMaxDays?: number;
   publicLinkMaxDaysConfiguredViaEnv?: boolean;
+  // People may subscribe to their tasks in a calendar app; fixed when set via CALENDAR_FEEDS
+  calendarFeeds?: boolean;
+  calendarFeedsConfiguredViaEnv?: boolean;
   // The server fetches previews of web addresses in notes (off: no cards, nothing fetched; off in the demo)
   linkPreviews?: boolean;
   // Language for new accounts and everyone whose browser language the app does not speak
@@ -996,6 +999,18 @@ export interface PublicLinkState {
   enabled: boolean;
   maxDays: number;
   link: { token: string; expiresAt: string; hasPassword: boolean } | null;
+}
+
+// The own calendar subscription (GET/PUT/DELETE /calendar-feed): enabled = the server allows it,
+// active = the person switched it on; url only with BASE_URL (else built from the page's origin);
+// unreadable = the stored token no longer decrypts (SECRETS_KEY changed), a new link helps
+export interface CalendarFeedState {
+  enabled: boolean;
+  active: boolean;
+  token: string | null;
+  url: string | null;
+  createdAt?: string;
+  unreadable?: boolean;
 }
 
 // Backups of an account an admin or user manager deleted, kept until removeAt
