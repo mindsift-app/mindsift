@@ -53,6 +53,8 @@ COPY cmd/ ./cmd/
 COPY internal/ ./internal/
 # The route list the API test checks the router against (internal/api/openapi_test.go)
 COPY Doku/api/openapi.json ./Doku/api/openapi.json
+# The editor's code languages, which the MCP code bullets accept as well (internal/api/mcp_code_test.go)
+COPY frontend/src/features/workspace/codeLanguages.json ./frontend/src/features/workspace/codeLanguages.json
 COPY --from=frontend-builder /app/frontend/dist ./cmd/server/dist
 
 ARG SKIP_TESTS=0

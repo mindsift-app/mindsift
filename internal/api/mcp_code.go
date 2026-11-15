@@ -3,8 +3,8 @@ package api
 import "strings"
 
 // Code bullets for MCP: the language ids of the editor's language menu and the short names it accepts
-// after /code or ``` (frontend/src/features/workspace/CodeBlockEditor.tsx, CODE_LANGUAGE_GROUPS and
-// LANGUAGE_ALIASES). Keep both lists in step with the editor.
+// after /code or ``` (frontend/src/features/workspace/codeLanguages.json, which the editor reads). A test
+// (mcp_code_test.go) fails when these lists or the tool description differ from that file.
 
 // mcpCodeLanguages: the editor's language ids
 var mcpCodeLanguages = map[string]bool{
@@ -39,7 +39,7 @@ func mcpCodeLanguage(name string) string {
 // mcpCodeHelp: how code and dividers are written, for the tool descriptions
 const mcpCodeHelp = "type code: text is the code as it is (several lines, no Markdown fence; [[…]] stays plain text), " +
 	"language its language for highlighting: yaml, json, toml, ini, docker, nginx, hcl, xml, csv, graphql, protobuf, bash, powershell, makefile, systemd, vim, diff, git, log, " +
-	"javascript, typescript, jsx, tsx, html, css, scss, python, php, ruby, lua, perl, go, rust, sql, c, cpp, csharp, java, kotlin, swift, dart, zig, elixir, scala, haskell, markdown, latex, regex, text " +
+	"javascript, typescript, jsx, tsx, markup, html, css, scss, python, php, ruby, lua, perl, go, rust, sql, c, cpp, csharp, java, kotlin, swift, dart, zig, elixir, scala, haskell, markdown, latex, regex, text " +
 	"(short names like js, ts, py, sh, yml, c++ work too; an unknown or missing one shows plain code). " +
 	"A code block keeps no hidden value: a {{secret:…}} written into it becomes a placeholder. " +
 	"type divider: a horizontal line; it has no text (text is ignored). "

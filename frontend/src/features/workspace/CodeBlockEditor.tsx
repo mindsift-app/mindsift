@@ -8,6 +8,7 @@ import { enterWithIndent, indentUnit } from './codeIndent';
 import { SelectMenu } from '../../components/SelectMenu';
 import { ownClipboardText } from '../../lib/outlineMarkdown';
 import { maskSecrets, secretPlaceholder } from '../../lib/secretRef';
+import codeLanguages from './codeLanguages.json';
 
 Prism.manual = true;
 if (typeof globalThis !== 'undefined') {
@@ -24,152 +25,29 @@ export interface CodeLanguageGroup {
   options: CodeLanguageOption[];
 }
 
-export const CODE_LANGUAGE_GROUPS: CodeLanguageGroup[] = [
-  {
-    get label() {
-      return i18n.t('workspace:code.group.config');
-    },
-    options: [
-      { id: 'yaml', label: 'YAML' },
-      { id: 'json', label: 'JSON' },
-      { id: 'toml', label: 'TOML' },
-      { id: 'ini', label: 'INI' },
-      { id: 'docker', label: 'Dockerfile' },
-      { id: 'nginx', label: 'Nginx' },
-      { id: 'hcl', label: 'HCL / Terraform' },
-      { id: 'xml', label: 'XML' },
-      { id: 'csv', label: 'CSV' },
-      { id: 'graphql', label: 'GraphQL' },
-      { id: 'protobuf', label: 'Protocol Buffers' },
-    ],
+// The language list lives in codeLanguages.json: the MCP server accepts the same ids and short names for
+// code bullets (internal/api/mcp_code.go; a Go test checks that both agree).
+const GROUP_LABELS: Record<string, () => string> = {
+  config: () => i18n.t('workspace:code.group.config'),
+  shell: () => i18n.t('workspace:code.group.shell'),
+  web: () => i18n.t('workspace:code.group.web'),
+  scripting: () => i18n.t('workspace:code.group.scripting'),
+  system: () => i18n.t('workspace:code.group.system'),
+  docs: () => i18n.t('workspace:code.group.docs'),
+};
+
+export const CODE_LANGUAGE_GROUPS: CodeLanguageGroup[] = codeLanguages.groups.map((g) => ({
+  get label() {
+    return GROUP_LABELS[g.key]();
   },
-  {
-    get label() {
-      return i18n.t('workspace:code.group.shell');
-    },
-    options: [
-      { id: 'bash', label: 'Bash / Shell' },
-      { id: 'powershell', label: 'PowerShell' },
-      { id: 'makefile', label: 'Makefile' },
-      { id: 'systemd', label: 'Systemd' },
-      { id: 'vim', label: 'Vim' },
-      { id: 'diff', label: 'Diff' },
-      { id: 'git', label: 'Git' },
-      { id: 'log', label: 'Log' },
-    ],
-  },
-  {
-    get label() {
-      return i18n.t('workspace:code.group.web');
-    },
-    options: [
-      { id: 'javascript', label: 'JavaScript' },
-      { id: 'typescript', label: 'TypeScript' },
-      { id: 'jsx', label: 'JSX' },
-      { id: 'tsx', label: 'TSX' },
-      { id: 'markup', label: 'HTML / Markup' },
-      { id: 'html', label: 'HTML' },
-      { id: 'css', label: 'CSS' },
-      { id: 'scss', label: 'SCSS' },
-    ],
-  },
-  {
-    get label() {
-      return i18n.t('workspace:code.group.scripting');
-    },
-    options: [
-      { id: 'python', label: 'Python' },
-      { id: 'php', label: 'PHP' },
-      { id: 'ruby', label: 'Ruby' },
-      { id: 'lua', label: 'Lua' },
-      { id: 'perl', label: 'Perl' },
-    ],
-  },
-  {
-    get label() {
-      return i18n.t('workspace:code.group.system');
-    },
-    options: [
-      { id: 'go', label: 'Go' },
-      { id: 'rust', label: 'Rust' },
-      { id: 'sql', label: 'SQL' },
-      { id: 'c', label: 'C' },
-      { id: 'cpp', label: 'C++' },
-      { id: 'csharp', label: 'C#' },
-      { id: 'java', label: 'Java' },
-      { id: 'kotlin', label: 'Kotlin' },
-      { id: 'swift', label: 'Swift' },
-      { id: 'dart', label: 'Dart' },
-      { id: 'zig', label: 'Zig' },
-      { id: 'elixir', label: 'Elixir' },
-      { id: 'scala', label: 'Scala' },
-      { id: 'haskell', label: 'Haskell' },
-    ],
-  },
-  {
-    get label() {
-      return i18n.t('workspace:code.group.docs');
-    },
-    options: [
-      { id: 'markdown', label: 'Markdown' },
-      { id: 'latex', label: 'LaTeX' },
-      { id: 'regex', label: 'Regex' },
-      { id: 'text', label: 'Plain Text' },
-    ],
-  },
-];
+  options: g.options,
+}));
 
 export const CODE_LANGUAGES: CodeLanguageOption[] = CODE_LANGUAGE_GROUPS.flatMap((g) => g.options);
 
 const KNOWN_OPTION_IDS = new Set<string>(CODE_LANGUAGES.map((l) => l.id));
 
-const LANGUAGE_ALIASES: Record<string, string> = {
-  yml: 'yaml',
-  sh: 'bash',
-  shell: 'bash',
-  zsh: 'bash',
-  js: 'javascript',
-  mjs: 'javascript',
-  cjs: 'javascript',
-  ts: 'typescript',
-  mts: 'typescript',
-  cts: 'typescript',
-  py: 'python',
-  rb: 'ruby',
-  rs: 'rust',
-  cs: 'csharp',
-  'c#': 'csharp',
-  dotnet: 'csharp',
-  'c++': 'cpp',
-  cxx: 'cpp',
-  cc: 'cpp',
-  hpp: 'cpp',
-  h: 'c',
-  kt: 'kotlin',
-  kts: 'kotlin',
-  hs: 'haskell',
-  md: 'markdown',
-  tex: 'latex',
-  dockerfile: 'docker',
-  containerfile: 'docker',
-  htm: 'html',
-  svg: 'xml',
-  proto: 'protobuf',
-  ps1: 'powershell',
-  pwsh: 'powershell',
-  make: 'makefile',
-  gql: 'graphql',
-  tf: 'hcl',
-  terraform: 'hcl',
-  ex: 'elixir',
-  exs: 'elixir',
-  pl: 'perl',
-  conf: 'ini',
-  golang: 'go',
-  plaintext: 'text',
-  plain: 'text',
-  txt: 'text',
-};
+const LANGUAGE_ALIASES: Record<string, string> = codeLanguages.aliases;
 
 const SHORT_PREFIX_CANDIDATES = new Set<string>([
   'c',
