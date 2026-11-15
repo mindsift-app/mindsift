@@ -283,7 +283,7 @@ var mcpWriteTools = []mcpTool{
 			"noteId":   prop("string", "Note id"),
 			"text":     prop("string", "Text of the new bullet (none for a divider)"),
 			"type":     map[string]any{"type": "string", "enum": mcpBulletTypeEnum},
-			"language": prop("string", "For type code: the code's language, e.g. go, python, typescript, bash, sql, json (optional)"),
+			"language": prop("string", "For type code: the code's language, e.g. go, python, typescript, bash, sql, json; another name (e.g. pf) is kept as written, without highlighting (optional)"),
 			"afterId":  prop("string", "Insert right after this bullet, on its level (optional)"),
 			"parentId": prop("string", "Insert as the last child of this bullet (optional; ignored with afterId)"),
 			"checked":  map[string]any{"type": "boolean", "description": "For a to-do: already done"},
@@ -307,6 +307,10 @@ var mcpWriteTools = []mcpTool{
 			}
 			if strings.TrimSpace(a.Language) != "" && a.Type != "code" {
 				return nil, errMCPLanguage
+			}
+			lang, err := mcpCodeLanguage(a.Language)
+			if err != nil {
+				return nil, err
 			}
 			d, err := s.noteDoc(a.NoteID)
 			if err != nil {
@@ -332,7 +336,7 @@ var mcpWriteTools = []mcpTool{
 			case "code":
 				// The code as written, like the editor's code block; the write path puts a placeholder in place
 				// of a hidden value (collab.Env.CodeText)
-				text, props.Lang = a.Text, mcpCodeLanguage(a.Language)
+				text, props.Lang = a.Text, lang
 			case "divider":
 				text = ""
 			}
@@ -380,7 +384,7 @@ var mcpWriteTools = []mcpTool{
 			"text":     prop("string", "New text, optional"),
 			"checked":  map[string]any{"type": "boolean", "description": "To-do done (true) or open (false), optional"},
 			"type":     map[string]any{"type": "string", "enum": mcpBulletTypeEnum},
-			"language": prop("string", "Language of a code bullet (type code), e.g. go, python, bash; empty = plain code; optional"),
+			"language": prop("string", "Language of a code bullet (type code), e.g. go, python, bash; another name is kept as written, without highlighting; empty = plain code; optional"),
 		}),
 		run: func(ctx context.Context, s *Server, userID string, actor *apiActor, args json.RawMessage) (any, error) {
 			var a struct {
@@ -435,7 +439,10 @@ var mcpWriteTools = []mcpTool{
 			case a.Language != nil && target != "code":
 				return nil, errMCPLanguage
 			case a.Language != nil:
-				l := mcpCodeLanguage(*a.Language)
+				l, err := mcpCodeLanguage(*a.Language)
+				if err != nil {
+					return nil, err
+				}
 				lang = &l
 			case target != b.Type && (target == "table" || b.Type == "table"):
 				l := ""

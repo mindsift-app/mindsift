@@ -12,7 +12,8 @@
     "copied": "Kopiert!",
     "copyTitle": "In die Zwischenablage kopieren",
     "copy": "Kopieren",
-    "plain": "Text"
+    "plain": "Text",
+    "useTyped": "„{{name}}“ als Sprache (ohne Hervorhebung)"
   },
   "table": {
     "menu": "Tabelle: Linien und Spalten",

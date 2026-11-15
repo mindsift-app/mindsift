@@ -7,13 +7,18 @@
         {"id": "json", "label": "JSON"},
         {"id": "toml", "label": "TOML"},
         {"id": "ini", "label": "INI"},
+        {"id": "properties", "label": "Properties"},
         {"id": "docker", "label": "Dockerfile"},
         {"id": "nginx", "label": "Nginx"},
+        {"id": "apacheconf", "label": "Apache"},
         {"id": "hcl", "label": "HCL / Terraform"},
         {"id": "xml", "label": "XML"},
         {"id": "csv", "label": "CSV"},
         {"id": "graphql", "label": "GraphQL"},
-        {"id": "protobuf", "label": "Protocol Buffers"}
+        {"id": "protobuf", "label": "Protocol Buffers"},
+        {"id": "dns-zone-file", "label": "DNS Zone"},
+        {"id": "iptables", "label": "iptables", "prism": "bash"},
+        {"id": "nftables", "label": "nftables", "prism": "bash"}
       ]
     },
     {
@@ -26,6 +31,7 @@
         {"id": "vim", "label": "Vim"},
         {"id": "diff", "label": "Diff"},
         {"id": "git", "label": "Git"},
+        {"id": "ignore", "label": ".gitignore"},
         {"id": "log", "label": "Log"}
       ]
     },
@@ -37,7 +43,7 @@
         {"id": "jsx", "label": "JSX"},
         {"id": "tsx", "label": "TSX"},
         {"id": "markup", "label": "HTML / Markup"},
-        {"id": "html", "label": "HTML"},
+        {"id": "html", "label": "HTML", "prism": "markup"},
         {"id": "css", "label": "CSS"},
         {"id": "scss", "label": "SCSS"}
       ]
@@ -126,6 +132,14 @@
     "golang": "go",
     "plaintext": "text",
     "plain": "text",
-    "txt": "text"
+    "txt": "text",
+    "ip6tables": "iptables",
+    "iptables-save": "iptables",
+    "nft": "nftables",
+    "apache": "apacheconf",
+    "htaccess": "apacheconf",
+    "zone": "dns-zone-file",
+    "gitignore": "ignore",
+    "dockerignore": "ignore"
   }
 }

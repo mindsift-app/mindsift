@@ -12,7 +12,8 @@
     "copied": "Copié !",
     "copyTitle": "Copier dans le presse-papiers",
     "copy": "Copier",
-    "plain": "Texte"
+    "plain": "Texte",
+    "useTyped": "Utiliser « {{name}} » comme langage (sans coloration)"
   },
   "table": {
     "menu": "Tableau : lignes et colonnes",

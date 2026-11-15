@@ -23,6 +23,9 @@ interface BaseProps<T extends string> {
   // Replaces the look of the button (e.g. a tiny field in a task row or a code block's header)
   buttonClassName?: string;
   title?: string;
+  // An option for what was typed into the search field, below the matches (unless it is one of them):
+  // e.g. a code block's free language name. null offers nothing.
+  extraOption?: (query: string) => SelectMenuOption<T> | null;
 }
 
 interface SelectMenuProps<T extends string> extends BaseProps<T> {
@@ -101,6 +104,7 @@ function MenuBase<T extends string>({
   size = 'md',
   buttonClassName,
   title,
+  extraOption,
   isSelected,
   onPick,
   closeOnPick,
@@ -120,7 +124,9 @@ function MenuBase<T extends string>({
   const id = useId();
 
   const q = query.trim().toLowerCase();
-  const visible = q ? options.filter((o) => o.label.toLowerCase().includes(q)) : options;
+  const matches = q ? options.filter((o) => o.label.toLowerCase().includes(q)) : options;
+  const extra = q && extraOption ? extraOption(query.trim()) : null;
+  const visible = extra && !matches.some((o) => o.value === extra.value) ? [...matches, extra] : matches;
 
   const openList = () => {
     if (disabled) return;

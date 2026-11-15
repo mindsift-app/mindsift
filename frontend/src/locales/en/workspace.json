@@ -12,7 +12,8 @@
     "copied": "Copied!",
     "copyTitle": "Copy to the clipboard",
     "copy": "Copy",
-    "plain": "Text"
+    "plain": "Text",
+    "useTyped": "Use “{{name}}” as the language (no highlighting)"
   },
   "table": {
     "menu": "Table: lines and columns",

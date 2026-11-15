@@ -196,6 +196,65 @@ describe('CodeBlockEditor', () => {
     expect(await loadPrismLanguage('scala')).toBe(true);
   });
 
+  it('takes a language name typed into the search as it is when nothing in the list matches', () => {
+    const { updates } = renderOutlinerCodeBlock(makeCodeBlock({ lang: undefined, content: 'pass in on $ext_if proto tcp to port 22' }));
+    const picker = screen.getByRole('button', { name: 'Sprache auswählen' });
+    fireEvent.click(picker);
+    const search = screen.getByRole('textbox', { name: 'Suchen …' });
+
+    // Nothing matches: the typed name is the only option, Enter takes it as written
+    fireEvent.change(search, { target: { value: 'OpenBSD-pf' } });
+    const options = screen.getAllByRole('option');
+    expect(options).toHaveLength(1);
+    expect(options[0].textContent).toBe('„OpenBSD-pf“ als Sprache (ohne Hervorhebung)');
+    fireEvent.keyDown(search, { key: 'Enter' });
+    expect(updates[updates.length - 1].lang).toBe('OpenBSD-pf');
+    expect(picker.textContent).toContain('OpenBSD-pf');
+
+    // A short name of a listed language picks that language, not a free label
+    fireEvent.click(picker);
+    fireEvent.change(screen.getByRole('textbox', { name: 'Suchen …' }), { target: { value: 'yml' } });
+    expect(screen.getAllByRole('option').map((o) => o.textContent)).toEqual(['YAML']);
+    fireEvent.keyDown(screen.getByRole('textbox', { name: 'Suchen …' }), { key: 'Enter' });
+    expect(updates[updates.length - 1].lang).toBe('yaml');
+
+    // Partial matches come first; the typed name is offered below them
+    fireEvent.click(picker);
+    fireEvent.change(screen.getByRole('textbox', { name: 'Suchen …' }), { target: { value: 'type' } });
+    expect(screen.getAllByRole('option').map((o) => o.textContent)).toEqual(['TypeScript', '„type“ als Sprache (ohne Hervorhebung)']);
+
+    // A name with spaces or other characters cannot be a language
+    fireEvent.change(screen.getByRole('textbox', { name: 'Suchen …' }), { target: { value: 'pf conf' } });
+    expect(screen.queryAllByRole('option')).toHaveLength(0);
+    expect(screen.getByText('Nichts gefunden')).toBeTruthy();
+  });
+
+  it('shows a free language name in the header as written and the code without highlighting', async () => {
+    const code = 'table inet filter {\n  chain input { type filter hook input priority 0; }\n}';
+    const { container } = render(<CodeBlockEditor block={makeCodeBlock({ content: code, lang: 'PF.conf' })} content={code} canEdit />);
+    expect(screen.getByRole('button', { name: 'Sprache auswählen' }).textContent).toContain('PF.conf');
+    const codeEl = container.querySelector('pre code') as HTMLElement;
+    expect(codeEl.className).toBe('language-none');
+    expect(codeEl.querySelectorAll('.token')).toHaveLength(0);
+    expect(codeEl.textContent).toBe(code);
+
+    // Readers see the name, too
+    render(<CodeBlockEditor block={makeCodeBlock({ content: code, lang: 'PF.conf' })} content={code} canEdit={false} />);
+    expect(screen.getAllByText('PF.conf')).toHaveLength(2);
+
+    // A free name that happens to be a key of Prism's own (not a language) is no grammar either
+    expect(await loadPrismLanguage('extend')).toBe(false);
+    expect(await loadPrismLanguage('markup-templating')).toBe(true);
+  });
+
+  it('highlights iptables and nftables rules with the shell grammar and keeps their names', async () => {
+    const code = '# SSH erlauben\n-A INPUT -p tcp --dport 22 -j ACCEPT';
+    const { container } = render(<CodeBlockEditor block={makeCodeBlock({ content: code, lang: 'iptables' })} content={code} canEdit />);
+    expect(screen.getByRole('button', { name: 'Sprache auswählen' }).textContent).toContain('iptables');
+    await waitFor(() => expect(container.querySelector('pre code')?.className).toBe('language-bash'));
+    await waitFor(() => expect(container.querySelector('pre code .token.comment')?.textContent).toBe('# SSH erlauben'));
+  });
+
   it('moves the bullet with the arrows next to the language and greys out the impossible direction', () => {
     const { indentCalls } = renderOutlinerCodeBlock(makeCodeBlock({ level: 0 }));
     const outdent = screen.getByRole('button', { name: 'Ausrücken' }) as HTMLButtonElement;
@@ -279,6 +338,14 @@ describe('CodeBlockEditor', () => {
     fireEvent.change(ta2, { target: { value: '```json' } });
     expect(res2.updates[res2.updates.length - 1]?.type).toBe('code');
     expect(res2.updates[res2.updates.length - 1]?.lang).toBe('json');
+
+    // A name outside the list stays as typed (case included): the block shows it as its label
+    const res3 = renderOutlinerCodeBlock({ id: 'b-3', type: 'bullet', content: '', level: 0, position: 3000 });
+    const ta3 = res3.container.querySelector('textarea') as HTMLTextAreaElement;
+    fireEvent.change(ta3, { target: { value: '```OpenBSD-pf pass in' } });
+    expect(res3.updates[res3.updates.length - 1]?.type).toBe('code');
+    expect(res3.updates[res3.updates.length - 1]?.lang).toBe('OpenBSD-pf');
+    expect(res3.updates[res3.updates.length - 1]?.content).toBe('pass in');
   });
 
   it('renders line numbers column with aria-hidden, user-select: none, and correct line count including trailing empty lines and 100+ lines', () => {

@@ -12,7 +12,8 @@
     "copied": "¡Copiado!",
     "copyTitle": "Copiar al portapapeles",
     "copy": "Copiar",
-    "plain": "Texto"
+    "plain": "Texto",
+    "useTyped": "Usar «{{name}}» como lenguaje (sin resaltado)"
   },
   "table": {
     "menu": "Tabla: líneas y columnas",
