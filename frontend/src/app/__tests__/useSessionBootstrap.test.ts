@@ -10,6 +10,8 @@ const mocks = vi.hoisted(() => ({
   getAllLists: vi.fn(),
   flushOfflineQueue: vi.fn(),
   oidcExchange: vi.fn(),
+  getStats: vi.fn(),
+  lastWrite: 0,
 }));
 
 vi.mock('../../lib/api', () => ({
@@ -20,8 +22,9 @@ vi.mock('../../lib/api', () => ({
     getAllLists: mocks.getAllLists,
     flushOfflineQueue: mocks.flushOfflineQueue,
     oidcExchange: mocks.oidcExchange,
-    getStats: vi.fn(),
+    getStats: mocks.getStats,
   },
+  lastLocalWriteAt: () => mocks.lastWrite,
   getToken: () => mocks.token || null,
   clearToken: () => {
     mocks.token = '';
@@ -47,6 +50,8 @@ beforeEach(() => {
   mocks.getAllLists.mockResolvedValue([]);
   mocks.flushOfflineQueue.mockResolvedValue(0);
   mocks.oidcExchange.mockResolvedValue({ token: 'neu' });
+  mocks.getStats.mockResolvedValue({ inboxCount: 1 });
+  mocks.lastWrite = 0;
 });
 
 afterEach(() => {
@@ -128,5 +133,84 @@ describe('app start', () => {
     await act(async () => {});
     expect(result.current.user).toBeNull();
     expect(mocks.token).toBe('');
+  });
+});
+
+describe('realtime events', () => {
+  const send = (event: string, payload: unknown = {}) =>
+    act(() => {
+      window.dispatchEvent(new CustomEvent('mindsift:ws', { detail: { event, payload, timestamp: '' } }));
+    });
+  const status = (connected: boolean) =>
+    act(() => {
+      window.dispatchEvent(new CustomEvent('mindsift:ws:status', { detail: { connected, transport: 'ws' } }));
+    });
+
+  async function bootWithFakeTimers() {
+    const hook = await boot();
+    mocks.getTriageDeck.mockClear();
+    vi.useFakeTimers();
+    return hook;
+  }
+  afterEach(() => vi.useRealTimers());
+
+  it('a burst of task changes in a shared list makes one stats request and no deck request', async () => {
+    await bootWithFakeTimers();
+    for (let i = 0; i < 30; i++) send('TASK_UPDATED', { id: 'th_task' + i, status: 'kept' });
+    await act(async () => {
+      vi.advanceTimersByTime(300);
+    });
+    // Not at once: other people's changes follow in the shared rhythm
+    expect(mocks.getStats).not.toHaveBeenCalled();
+    await act(async () => {
+      vi.advanceTimersByTime(5000);
+    });
+    expect(mocks.getStats).toHaveBeenCalledTimes(1);
+    expect(mocks.getTriageDeck).not.toHaveBeenCalled();
+  });
+
+  it('a thought sorted elsewhere reloads the deck', async () => {
+    await bootWithFakeTimers();
+    send('TASK_UPDATED', { id: 'th_1', status: 'kept' });
+    await act(async () => {
+      vi.advanceTimersByTime(300);
+    });
+    expect(mocks.getTriageDeck).toHaveBeenCalledTimes(1);
+  });
+
+  it('the echo of an own change updates the counters at once', async () => {
+    await bootWithFakeTimers();
+    mocks.lastWrite = Date.now();
+    send('ITEM_TOGGLED', { id: 'it_1' });
+    await act(async () => {
+      vi.advanceTimersByTime(300);
+    });
+    expect(mocks.getStats).toHaveBeenCalledTimes(1);
+  });
+
+  it('ignores reordered list entries and edits inside a note', async () => {
+    await bootWithFakeTimers();
+    send('ITEM_REORDERED', { listId: 'l_1' });
+    send('DOC_SEQ', { docId: 'd_1' });
+    await act(async () => {
+      vi.advanceTimersByTime(10_000);
+    });
+    expect(mocks.getStats).not.toHaveBeenCalled();
+  });
+
+  it('loads counters and deck after the connection came back', async () => {
+    await bootWithFakeTimers();
+    status(true);
+    await act(async () => {
+      vi.advanceTimersByTime(1000);
+    });
+    expect(mocks.getStats).not.toHaveBeenCalled();
+    status(false);
+    status(true);
+    await act(async () => {
+      vi.advanceTimersByTime(300);
+    });
+    expect(mocks.getStats).toHaveBeenCalledTimes(1);
+    expect(mocks.getTriageDeck).toHaveBeenCalledTimes(1);
   });
 });

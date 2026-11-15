@@ -74,9 +74,17 @@ export const REQUEST_TIMEOUT = { normal: 12_000, slow: 5 * 60_000 } as const;
 
 type RequestOptions = RequestInit & { timeout?: keyof typeof REQUEST_TIMEOUT };
 
+// When this tab last sent a change (any method but GET): a realtime event shortly after is most likely the
+// echo of it, and the counters in the navigation follow at once instead of in the slower shared rhythm
+let lastWriteAt = 0;
+export function lastLocalWriteAt(): number {
+  return lastWriteAt;
+}
+
 export async function request<T>(path: string, { timeout = 'normal', ...options }: RequestOptions = {}): Promise<T> {
   const method = (options.method || 'GET').toUpperCase();
   const cacheable = method === 'GET' && isCacheablePath(path);
+  if (method !== 'GET') lastWriteAt = Date.now();
   const userKey = getCurrentUserId() || 'anon';
 
   // Known to be offline: answer from the cache right away instead of waiting for the timeout
