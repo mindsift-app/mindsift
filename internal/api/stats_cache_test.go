@@ -192,3 +192,47 @@ func TestStatsCacheThroughTheAPI(t *testing.T) {
 		t.Fatalf("after the event: want inbox %d, got %d", before.InboxCount+2, got)
 	}
 }
+
+// While changes keep coming, a request never waits behind a computation that started before the last
+// change: it computes in parallel. (Before, requests queued one computation after the other and timed out
+// under load, all of one person's tabs waiting in line.)
+func TestStatsCacheDoesNotQueueBehindAnOutdatedComputation(t *testing.T) {
+	c, _ := newTestStatsCache()
+	release := make(chan struct{})
+	started := make(chan struct{}, 4)
+	var n atomic.Int32
+	slow := func() (*domain.DashboardStats, error) {
+		v := n.Add(1)
+		started <- struct{}{}
+		<-release
+		return &domain.DashboardStats{InboxCount: int(v)}, nil
+	}
+
+	firstDone := make(chan struct{})
+	go func() { _, _ = c.get("u1", slow); close(firstDone) }()
+	<-started
+
+	// A change after the first computation started: the next request must not join it
+	c.invalidate("u1")
+	secondDone := make(chan *domain.DashboardStats, 1)
+	go func() { st, _ := c.get("u1", slow); secondDone <- st }()
+	select {
+	case <-started:
+	case <-time.After(2 * time.Second):
+		t.Fatal("the request after a change waited for the computation that started before it")
+	}
+
+	// A third request after no further change joins the second computation instead of starting another
+	thirdDone := make(chan *domain.DashboardStats, 1)
+	go func() { st, _ := c.get("u1", slow); thirdDone <- st }()
+	time.Sleep(50 * time.Millisecond)
+	if got := n.Load(); got != 2 {
+		t.Fatalf("computations = %d, want 2 (the third request joins the second)", got)
+	}
+	close(release)
+	<-firstDone
+	second, third := <-secondDone, <-thirdDone
+	if second.InboxCount != 2 || third.InboxCount != 2 {
+		t.Fatalf("second and third got %d and %d, want both the second computation's 2", second.InboxCount, third.InboxCount)
+	}
+}

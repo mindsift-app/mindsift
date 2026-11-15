@@ -31,59 +31,76 @@ type statsCache struct {
 }
 
 type statsEntry struct {
-	gen   uint64 // changes on every invalidation
-	stats *domain.DashboardStats
-	at    time.Time     // when the stored computation started
-	wait  chan struct{} // closed when the running computation for gen ends; nil while none runs
+	gen    uint64 // changes on every invalidation
+	stats  *domain.DashboardStats
+	at     time.Time    // when the stored computation started
+	flight *statsFlight // the computation of the current generation, while it runs
+}
+
+// statsFlight is one running computation; requests that join it get its result.
+type statsFlight struct {
+	gen  uint64
+	done chan struct{} // closed when st and err are set
+	st   *domain.DashboardStats
+	err  error
 }
 
 func newStatsCache() *statsCache {
 	return &statsCache{entries: make(map[string]*statsEntry), now: time.Now}
 }
 
-// get answers from the cache or computes the counters; parallel requests of the same user wait for one
-// computation.
+// get answers from the cache or computes the counters. A request joins a computation only when that one
+// started after the last invalidation (so it includes every change made before the request) and then takes
+// its result; otherwise it computes in parallel. Nobody waits for more than one computation, also while
+// changes keep coming (each of them invalidates).
 func (c *statsCache) get(userID string, compute func() (*domain.DashboardStats, error)) (*domain.DashboardStats, error) {
-	for {
-		c.mu.Lock()
-		e := c.entries[userID]
-		if e == nil {
-			c.nextGen++
-			e = &statsEntry{gen: c.nextGen}
-			c.entries[userID] = e
-		}
-		if e.stats != nil && c.now().Sub(e.at) < statsCacheTTL {
-			st := *e.stats
-			c.mu.Unlock()
-			return &st, nil
-		}
-		if e.wait != nil {
-			// Someone computes this generation already: wait and look again
-			wait := e.wait
-			c.mu.Unlock()
-			<-wait
-			continue
-		}
-		gen, started := e.gen, c.now()
-		wait := make(chan struct{})
-		e.wait = wait
-		c.mu.Unlock()
-
-		st, err := compute()
-
-		c.mu.Lock()
-		if cur := c.entries[userID]; cur != nil && cur.wait == wait {
-			cur.wait = nil
-			if err == nil && st != nil && cur.gen == gen {
-				cp := *st
-				cur.stats, cur.at = &cp, started
-			}
-		}
-		c.pruneLocked()
-		c.mu.Unlock()
-		close(wait)
-		return st, err
+	c.mu.Lock()
+	e := c.entries[userID]
+	if e == nil {
+		c.nextGen++
+		e = &statsEntry{gen: c.nextGen}
+		c.entries[userID] = e
 	}
+	if e.stats != nil && c.now().Sub(e.at) < statsCacheTTL {
+		st := *e.stats
+		c.mu.Unlock()
+		return &st, nil
+	}
+	if f := e.flight; f != nil && f.gen == e.gen {
+		c.mu.Unlock()
+		<-f.done
+		if f.err != nil || f.st == nil {
+			return f.st, f.err
+		}
+		st := *f.st
+		return &st, nil
+	}
+	f := &statsFlight{gen: e.gen, done: make(chan struct{})}
+	e.flight = f
+	started := c.now()
+	c.mu.Unlock()
+
+	st, err := compute()
+	if st != nil {
+		cp := *st
+		f.st = &cp
+	}
+	f.err = err
+
+	c.mu.Lock()
+	if cur := c.entries[userID]; cur != nil {
+		if cur.flight == f {
+			cur.flight = nil
+		}
+		if err == nil && f.st != nil && cur.gen == f.gen {
+			cp := *f.st
+			cur.stats, cur.at = &cp, started
+		}
+	}
+	c.pruneLocked()
+	c.mu.Unlock()
+	close(f.done)
+	return st, err
 }
 
 // invalidate drops the user's counters; a computation running right now is not stored.
@@ -101,8 +118,7 @@ func (c *statsCache) invalidate(userID string) {
 	c.nextGen++
 	e.gen = c.nextGen
 	e.stats = nil
-	// A computation that runs for the old generation ends without storing; waiting requests then compute
-	// the new one (wait stays: it belongs to the running computation)
+	// A computation that runs for the old generation ends without storing; new requests do not join it
 }
 
 // clear drops all counters (demo reset: the whole database changed).
@@ -123,7 +139,7 @@ func (c *statsCache) pruneLocked() {
 	}
 	now := c.now()
 	for uid, e := range c.entries {
-		if e.wait == nil && (e.stats == nil || now.Sub(e.at) >= statsCacheTTL) {
+		if e.flight == nil && (e.stats == nil || now.Sub(e.at) >= statsCacheTTL) {
 			delete(c.entries, uid)
 		}
 	}
