@@ -1,0 +1,224 @@
+package storage
+
+import (
+	"database/sql"
+	"errors"
+	"fmt"
+	"os"
+	"strings"
+	"time"
+)
+
+// What the command line (internal/cli, `mindsift users …`) needs from the store: opening the database of
+// a running server without migrating it, and a record of each change it makes. The server reads that
+// record (CLIEventsAfter) and does what only it can do: end live connections of the account, lift the
+// lock of the sign-in protection, write the change to its own log.
+
+// WithExistingSchema opens a database the server has already set up and migrated, and nothing else: no
+// new file, no migrations, no planner statistics. A database that is behind or ahead of this binary is
+// refused (SchemaMismatchError), since the command line runs next to a server that may own it.
+func WithExistingSchema() StoreOption {
+	return func(s *Store) { s.existingSchema = true }
+}
+
+// SchemaMismatchError: the database was migrated by another version of MindSift than this binary.
+type SchemaMismatchError struct {
+	DatabaseID int // highest migration applied to the database
+	KnownID    int // highest migration this binary knows
+}
+
+func (e *SchemaMismatchError) Error() string {
+	if e.DatabaseID > e.KnownID {
+		return fmt.Sprintf("the database has migration %d, this binary knows only up to %d: run the command with the binary of the MindSift version that uses this database (docker exec into the running container)", e.DatabaseID, e.KnownID)
+	}
+	return fmt.Sprintf("the database is at migration %d, this binary expects %d: start the server of this version once (it migrates the database), then run the command again", e.DatabaseID, e.KnownID)
+}
+
+// checkExistingSchema stands in for migrate under WithExistingSchema.
+func (s *Store) checkExistingSchema(dbPath string) error {
+	if !s.inMemory {
+		if _, err := os.Stat(dbPath); err != nil {
+			return fmt.Errorf("no database at %s (set DATA_DIR or DATABASE_URL as for the server): %w", dbPath, err)
+		}
+	}
+	var lastApplied sql.NullInt64
+	if err := s.db.QueryRow(`SELECT MAX(id) FROM schema_migrations`).Scan(&lastApplied); err != nil {
+		return fmt.Errorf("%s is not a MindSift database: %w", dbPath, err)
+	}
+	known := migrations[len(migrations)-1].id
+	if int(lastApplied.Int64) != known {
+		return &SchemaMismatchError{DatabaseID: int(lastApplied.Int64), KnownID: known}
+	}
+	s.blockRefsReady.Store(true)
+	s.noteStorageReady.Store(true)
+	return nil
+}
+
+// migrateCLIEvents is migration 54: the record of changes made on the command line.
+func (s *Store) migrateCLIEvents() error {
+	return s.execSchemaStatement(`CREATE TABLE IF NOT EXISTS cli_events (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		action TEXT NOT NULL,
+		user_id TEXT NOT NULL DEFAULT '',
+		username TEXT NOT NULL DEFAULT '',
+		detail TEXT NOT NULL DEFAULT '',
+		created_at TEXT NOT NULL
+	)`)
+}
+
+// CLIEvent is one change made on the command line.
+type CLIEvent struct {
+	ID        int64
+	Action    string // users-create, users-delete, reset-password, make-admin, revoke-admin
+	UserID    string
+	Username  string
+	Detail    string
+	CreatedAt string
+}
+
+// cliEventKeep: how long the record of command line changes stays.
+const cliEventKeep = 365 * 24 * time.Hour
+
+// RecordCLIEvent notes a change made on the command line; older entries than a year go at the same time.
+func (s *Store) RecordCLIEvent(action, userID, username, detail string) error {
+	now := time.Now().UTC()
+	return s.execInTx(
+		stmt(`INSERT INTO cli_events (action, user_id, username, detail, created_at) VALUES (?, ?, ?, ?, ?)`,
+			action, userID, username, detail, now.Format(time.RFC3339)),
+		stmt(`DELETE FROM cli_events WHERE created_at < ?`, now.Add(-cliEventKeep).Format(time.RFC3339)),
+	)
+}
+
+// LastCLIEventID: the newest entry (0 without any), where the server starts reading.
+func (s *Store) LastCLIEventID() (int64, error) {
+	var id sql.NullInt64
+	err := s.db.QueryRow(`SELECT MAX(id) FROM cli_events`).Scan(&id)
+	return id.Int64, err
+}
+
+// CLIEventsAfter returns the entries newer than id, oldest first.
+func (s *Store) CLIEventsAfter(id int64) ([]CLIEvent, error) {
+	rows, err := s.db.Query(`SELECT id, action, user_id, username, detail, created_at FROM cli_events WHERE id > ? ORDER BY id LIMIT 100`, id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []CLIEvent
+	for rows.Next() {
+		var e CLIEvent
+		if err := rows.Scan(&e.ID, &e.Action, &e.UserID, &e.Username, &e.Detail, &e.CreatedAt); err != nil {
+			return nil, err
+		}
+		out = append(out, e)
+	}
+	return out, rows.Err()
+}
+
+// ResetPassword sets a new password and ends every sign-in of the account in one transaction: the token
+// version goes up (every JWT is refused) and every session is ended, as "sign out everywhere" does.
+func (s *Store) ResetPassword(userID, passwordHash string) error {
+	return s.execInTx(
+		stmt(`UPDATE users SET password_hash = ?, token_version = token_version + 1 WHERE id = ?`, passwordHash, userID),
+		stmt(`UPDATE sessions SET revoked_at = ? WHERE user_id = ? AND revoked_at = ''`, nowUTC(), userID),
+	)
+}
+
+// UsernameTaken: an account has this username (compared in lower case).
+func (s *Store) UsernameTaken(username string) (bool, error) {
+	return s.usernameTaken(strings.ToLower(strings.TrimSpace(username)), "")
+}
+
+// LastSignIns: per account the time of its newest session (each sign-in starts one), RFC 3339.
+func (s *Store) LastSignIns() (map[string]string, error) {
+	rows, err := s.db.Query(`SELECT user_id, MAX(created_at) FROM sessions GROUP BY user_id`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := map[string]string{}
+	for rows.Next() {
+		var id, at string
+		if err := rows.Scan(&id, &at); err != nil {
+			return nil, err
+		}
+		out[id] = at
+	}
+	return out, rows.Err()
+}
+
+// IntegrityProblems runs PRAGMA integrity_check and PRAGMA foreign_key_check; an empty result means the
+// database is sound. Only reads, so it may run next to the server.
+func (s *Store) IntegrityProblems() ([]string, error) {
+	var problems []string
+	rows, err := s.db.Query(`PRAGMA integrity_check`)
+	if err != nil {
+		return nil, err
+	}
+	for rows.Next() {
+		var line string
+		if err := rows.Scan(&line); err != nil {
+			_ = rows.Close()
+			return nil, err
+		}
+		if line != "ok" {
+			problems = append(problems, "integrity_check: "+line)
+		}
+	}
+	if err := errors.Join(rows.Err(), rows.Close()); err != nil {
+		return nil, err
+	}
+	rows, err = s.db.Query(`PRAGMA foreign_key_check`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var table, parent string
+		var rowid sql.NullInt64
+		var fkid int
+		if err := rows.Scan(&table, &rowid, &parent, &fkid); err != nil {
+			return nil, err
+		}
+		problems = append(problems, fmt.Sprintf("foreign_key_check: %s row %d points to a missing row in %s", table, rowid.Int64, parent))
+	}
+	return problems, rows.Err()
+}
+
+// AccountContent counts what deleting an account takes with it (DeleteUser), for the command line's
+// preview. Shared* count own items others can see now; they go as well. OthersTasks are tasks of other
+// people in the account's task lists: they stay, as personal tasks of their owners.
+type AccountContent struct {
+	Notes           int `json:"notes"`
+	Tasks           int `json:"tasks"`
+	TaskLists       int `json:"taskLists"`
+	Lists           int `json:"lists"`
+	SharedNotes     int `json:"sharedNotes"`
+	SharedTaskLists int `json:"sharedTaskLists"`
+	SharedLists     int `json:"sharedLists"`
+	OthersTasks     int `json:"othersTasks"`
+}
+
+// CountAccountContent: see AccountContent.
+func (s *Store) CountAccountContent(userID string) (AccountContent, error) {
+	var c AccountContent
+	queries := []struct {
+		dst *int
+		q   string
+	}{
+		{&c.Notes, `SELECT COUNT(*) FROM documents WHERE user_id = ?1`},
+		{&c.Tasks, `SELECT COUNT(*) FROM thoughts WHERE user_id = ?1 AND (status = 'kept' OR (status = 'converted' AND converted_type IN ('task', 'document_block')))`},
+		{&c.TaskLists, `SELECT COUNT(*) FROM task_lists WHERE user_id = ?1`},
+		{&c.Lists, `SELECT COUNT(*) FROM lists WHERE user_id = ?1`},
+		{&c.SharedNotes, `SELECT COUNT(*) FROM documents d WHERE d.user_id = ?1 AND (
+			EXISTS (SELECT 1 FROM doc_shares s WHERE s.doc_id = d.id) OR EXISTS (SELECT 1 FROM doc_team_shares s WHERE s.doc_id = d.id))`},
+		{&c.SharedTaskLists, `SELECT COUNT(*) FROM task_lists t WHERE t.user_id = ?1 AND EXISTS (SELECT 1 FROM task_list_shares s WHERE s.task_list_id = t.id)`},
+		{&c.SharedLists, `SELECT COUNT(*) FROM lists l WHERE l.user_id = ?1 AND EXISTS (SELECT 1 FROM list_shares s WHERE s.list_id = l.id)`},
+		{&c.OthersTasks, `SELECT COUNT(*) FROM thoughts WHERE user_id != ?1 AND task_list_id IN (SELECT id FROM task_lists WHERE user_id = ?1)`},
+	}
+	for _, q := range queries {
+		if err := s.db.QueryRow(q.q, userID).Scan(q.dst); err != nil {
+			return c, err
+		}
+	}
+	return c, nil
+}
