@@ -161,7 +161,7 @@ export function OpenItemGroups({
                               setEditingQtyItemId(item.id);
                               setEditingQtyValue(item.quantity || '');
                             }}
-                            className={`text-xs px-2 py-0.5 rounded-full transition-colors ${
+                            className={`text-xs px-2 py-0.5 rounded-full whitespace-nowrap shrink-0 transition-colors ${
                               item.quantity
                                 ? 'badge-accent cursor-pointer hover:brightness-125'
                                 : 'opacity-0 group-hover:opacity-60 hover:opacity-100! text-muted hover:text-accent border border-dashed hover:border-accent text-[11px]'
@@ -293,7 +293,7 @@ export function CompletedItems({
                           setEditingQtyItemId(item.id);
                           setEditingQtyValue(item.quantity || '');
                         }}
-                        className={`text-xs px-1.5 py-0.5 rounded-sm transition-colors ${
+                        className={`text-xs px-1.5 py-0.5 rounded-sm whitespace-nowrap shrink-0 transition-colors ${
                           item.quantity
                             ? 'text-faint hover:text-main cursor-pointer'
                             : 'opacity-0 group-hover:opacity-60 text-faint hover:text-main text-[11px]'
