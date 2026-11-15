@@ -62,6 +62,9 @@ type drawMessage struct {
 	// Join: draw along in a running session only (someone asked to join one they saw); without one the
 	// answer is "ended" instead of a new session
 	Join bool `json:"join"`
+	// Resume: "Rückgängig" right after discarding; only brings back the session discarded moments ago
+	// (drawlive.DiscardKeep), the answer is "ended" otherwise
+	Resume bool `json:"resume"`
 }
 
 func drawError(c *ws.Client, docID, blockID, code string) {
@@ -205,13 +208,14 @@ func (s *Server) drawJoin(c *ws.Client, p drawMessage) {
 		s.wsHub.BroadcastRoom(drawRoom(ch.DocID, ch.BlockID), "DRAW_PEOPLE", people(ch.State), nil)
 	}
 	running := d.m.Running(p.DocID, p.BlockID)
+	resumable := p.Resume && d.m.Resumable(p.DocID, p.BlockID, p.Base, s.now())
 	d.mu.Unlock()
 	for _, ch := range left {
 		s.wsHub.LeaveRoom(c, drawRoom(ch.DocID, ch.BlockID))
 		s.syncDrawLease(ch.DocID, ch.BlockID)
 	}
 	// Joining a session that ended meanwhile starts none: live drawing begins only on purpose
-	if !running && p.Join {
+	if !running && (p.Join || p.Resume && !resumable) {
 		drawError(c, p.DocID, p.BlockID, "ended")
 		return
 	}
@@ -230,7 +234,7 @@ func (s *Server) drawJoin(c *ws.Client, p drawMessage) {
 		return
 	}
 	d.mu.Lock()
-	st, _, won, err := d.m.Join(p.DocID, p.BlockID, me, p.Base, els, p.Grid, s.now())
+	st, _, won, err := d.m.Join(p.DocID, p.BlockID, me, p.Base, els, p.Grid, p.Resume, s.now())
 	if err == nil {
 		d.conns[c.ID()] = c
 		c.SendEvent("DRAW_STATE", withYou(st, c.ID()))
@@ -370,11 +374,11 @@ func (s *Server) drawConnectionGone(connID string) {
 
 // drawFinish ends a session for everyone; only the host may. "Fertig": the host gets the final state and
 // saves it through the note sync (the bullet's lease goes to its note, so the save is no conflict);
-// "Verwerfen": the state is gone.
+// "Verwerfen": the state stays for drawlive.DiscardKeep only, for "Rückgängig" (DRAW_JOIN with resume).
 func (s *Server) drawFinish(c *ws.Client, p drawMessage, save bool) {
 	d := s.draw
 	d.mu.Lock()
-	st, err := d.m.Finish(p.DocID, p.BlockID, c.ID())
+	st, err := d.m.Finish(p.DocID, p.BlockID, c.ID(), save, s.now())
 	if err == nil {
 		reason := "discard"
 		if save {

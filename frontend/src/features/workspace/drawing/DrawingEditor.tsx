@@ -194,12 +194,14 @@ export interface DrawingEditorProps {
   readOnly?: boolean;
   /** Called now and then while drawing (keeps the bullet held) */
   onActivity?: () => void;
-  /** null = nothing changed; sessionOver: a live session this editor was in ended (saved or discarded) */
-  onClose: (content: string | null, sessionOver?: boolean) => void;
+  /** null = nothing changed; sessionOver: a live session this editor was in ended (saved or discarded);
+   *  undoable: this editor discarded a live session with changes, which "Rückgängig" can bring back */
+  onClose: (content: string | null, sessionOver?: boolean, undoable?: boolean) => void;
   /** Live session over WebSocket: drawing along in a running one ('draw'), watching ('watch'), or drawing
    *  alone for now (null). canDraw: a watcher may switch to drawing along; canStart: drawing alone, the
-   *  note is shared, so "Gemeinsam zeichnen" can start a session others may join */
-  live?: { docId: string; blockId: string; mode: LiveMode | null; canDraw: boolean; canStart?: boolean; noteClientId?: string };
+   *  note is shared, so "Gemeinsam zeichnen" can start a session others may join; resume: bring back the
+   *  session discarded moments ago ("Rückgängig") */
+  live?: { docId: string; blockId: string; mode: LiveMode | null; canDraw: boolean; canStart?: boolean; noteClientId?: string; resume?: boolean };
 }
 
 // Full-screen drawing editor. Changes stay local until it closes; meanwhile a draft is kept in this browser.
@@ -312,6 +314,8 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
       /* ignore */
     }
   };
+  // The live session was discarded here with changes: "Rückgängig" can bring it back
+  const discardedChanges = useRef(false);
   // Drawing alone until "Gemeinsam zeichnen" (startedHere) or opened to join or watch a running session
   const [liveMode, setLiveMode] = useState<LiveMode | null>(live?.mode ?? null);
   const [startedHere, setStartedHere] = useState(false);
@@ -323,7 +327,8 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
           noteClientId: live.noteClientId,
           mode: liveMode,
           // Opened to draw along: only in the session that runs (none starts if it ended meanwhile)
-          join: !startedHere,
+          join: !startedHere && !live.resume,
+          resume: !startedHere && !!live.resume,
           baseContent,
           initial,
           getDoc: () => docRef.current,
@@ -337,7 +342,7 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
           },
           onDiscarded: () => {
             dropDraft();
-            onClose(null, true);
+            onClose(null, true, discardedChanges.current);
           },
           // Starting a session did not work: go on drawing alone, nothing drawn is lost
           onRefused: (code: LiveRefusal) => {
@@ -678,8 +683,18 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
   };
   const closeRef = useLatestRef(close);
 
-  // Live: the host saves for everyone ("Fertig"), the others leave (the session goes on); the local draft
-  // stays until the session is saved or discarded
+  // Leaving a live session the others go on with (the host's role passes to whoever draws longest); the
+  // local draft stays until the session is saved or discarded
+  function leaveLive() {
+    const l = liveState!;
+    if (textEditRef.current) commitText();
+    saveDraft();
+    l.release();
+    l.leave();
+    onClose(null);
+  }
+
+  // Live: the host saves for everyone ("Fertig"), the others leave (the session goes on)
   function closeLive() {
     const l = liveState!;
     if (l.ended || l.mode === 'watch' || readOnly) {
@@ -688,12 +703,7 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
       return onClose(null, !!l.ended);
     }
     if (textEditRef.current) commitText();
-    if (!l.isHost) {
-      saveDraft();
-      l.release();
-      l.leave();
-      return onClose(null);
-    }
+    if (!l.isHost) return leaveLive();
     if (l.status !== 'live') {
       setError(t('drawing.live.offlineSave'));
       return;
@@ -731,12 +741,14 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
   };
   // The drawing as it was opened, written the editor's way (the stored text may be written differently)
   const openedAs = useMemo(() => serializeDrawing(initial), [initial]);
-  // Someone else draws along: discarding ends the session for them too
-  const othersDrawing = !!liveState && liveState.participants.length > 1;
+  // Someone else draws along (another connection, also one's own other tab)
+  const othersDrawing = !!liveState && liveState.participants.some((p) => p.id !== liveState.you);
+  const changedHere = () => !!textEdit || serializeDrawing(docRef.current) !== openedAs;
   const onDiscardClick = (e: React.MouseEvent) => {
-    const changed = !!textEdit || serializeDrawing(docRef.current) !== openedAs;
-    // Asks only when something would be lost: own changes, or a session others draw in
-    if (changed || othersDrawing) setConfirmDiscard({ x: e.clientX, y: e.clientY });
+    // Others draw along: closing only leaves, they go on (and one of them becomes host)
+    if (liveState && othersDrawing && liveState.mode === 'draw' && !liveState.ended) return leaveLive();
+    // The last one (or alone): asks only when something would be lost
+    if (changedHere()) setConfirmDiscard({ x: e.clientX, y: e.clientY });
     else if (liveState) liveState.discard();
     else discard();
   };
@@ -1889,8 +1901,8 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
             type="button"
             onClick={onDiscardClick}
             className="btn-action h-11 w-11 sm:h-8 sm:w-8 p-0 inline-flex items-center justify-center"
-            title={t('drawing.discardTitle')}
-            aria-label={t('drawing.discardTitle')}
+            title={othersDrawing ? t('drawing.live.leaveTitle') : t('drawing.discardTitle')}
+            aria-label={othersDrawing ? t('drawing.live.leaveTitle') : t('drawing.discardTitle')}
           >
             {/* Same sign as leaving the full screen of a note */}
             <Minimize2 className="w-3.5 h-3.5" />
@@ -1900,13 +1912,15 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
           <ConfirmPopover
             x={confirmDiscard.x}
             y={confirmDiscard.y}
-            message={othersDrawing ? t('drawing.live.discardAsk') : t('drawing.discardAsk')}
-            confirmLabel={othersDrawing ? t('drawing.live.discardAll') : t('drawing.discard')}
+            message={t('drawing.discardAsk')}
+            confirmLabel={t('drawing.discard')}
             danger
             onConfirm={() => {
               setConfirmDiscard(null);
-              if (liveState) liveState.discard();
-              else discard();
+              if (liveState) {
+                discardedChanges.current = true;
+                liveState.discard();
+              } else discard();
             }}
             onCancel={() => setConfirmDiscard(null)}
           />
