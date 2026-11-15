@@ -25,6 +25,7 @@ import { TaskListView } from './TaskListView';
 import { filterAndSortTasks, followTaskUpdate, groupTasks, tasksWithTag } from './taskListing';
 import { useTaskRealtime } from './useTaskRealtime';
 import { useTaskUndo } from './useTaskUndo';
+import { createMoveTracker } from './taskMoves';
 import { useTaskActions } from './useTaskActions';
 import { QuickAddTaskBar } from './QuickAddTaskBar';
 import { NewTaskListSheet } from './NewTaskListSheet';
@@ -333,8 +334,11 @@ export const TasksView: React.FC<TasksViewProps> = ({
   // The realtime handler is registered once; it must reload with the current list, not the first one
   const loadDataRef = useLatestRef(loadData);
 
+  // Moves of this board on their way: answers and events they overtook are not applied (taskMoves.ts)
+  const [moveTracker] = useState(createMoveTracker);
+
   // Live-Sync of tasks and task lists (useTaskRealtime)
-  useTaskRealtime({ setTasks, setTaskLists, listIdRef: selectedListIdRef, loadDataRef });
+  useTaskRealtime({ setTasks, setTaskLists, listIdRef: selectedListIdRef, loadDataRef, moveTracker });
 
   const safeTaskLists = useMemo(() => (Array.isArray(taskLists) ? taskLists : []), [taskLists]);
   const currentSelectedList = safeTaskLists.find((l) => l.id === selectedListId);
@@ -483,7 +487,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
   // --- TASK ACTIONS ---
 
   // Undo with Ctrl/Cmd+Z and the notice below (useTaskUndo)
-  const { toast, pushUndo, orderSnapshot, showToast, undoLast } = useTaskUndo({ tasks, setTasks, selectedListId, loadData, onRefreshStats });
+  const { toast, pushUndo, orderSnapshot, showToast, undoLast } = useTaskUndo({ tasks, setTasks, selectedListId, loadData, onRefreshStats, moveTracker });
 
   // Task actions (useTaskActions)
   const {
@@ -619,6 +623,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
     kanbanBoardRef,
     kanbanPhoneSnap,
     kanbanPhoneTop,
+    moveTracker,
   });
 
 

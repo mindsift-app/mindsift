@@ -1,6 +1,16 @@
-import { describe, it, expect } from 'vitest';
+import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest';
+import { renderHook } from '@testing-library/react';
 import { Thought } from '../../../lib/types';
-import { isTaskThought, tasksAfterCreate, tasksAfterDelete, tasksAfterReorder, tasksAfterUpdate } from '../useTaskRealtime';
+import { isTaskThought, tasksAfterCreate, tasksAfterDelete, tasksAfterReorder, tasksAfterUpdate, useTaskRealtime } from '../useTaskRealtime';
+import { createMoveTracker } from '../taskMoves';
+import { RELOAD_SHARED_DELAY_MS } from '../../../lib/realtimeReload';
+
+const mocks = vi.hoisted(() => ({ getTaskLists: vi.fn() }));
+vi.mock('../../../lib/api', async (original) => ({
+  ...(await original<typeof import('../../../lib/api')>()),
+  api: { getTaskLists: mocks.getTaskLists },
+  getCurrentUserId: () => 'usr_anna',
+}));
 
 const task = (id: string, t: Partial<Thought> = {}) => ({ id, content: id, status: 'kept', taskListId: 'l1', ...t }) as Thought;
 const ids = (list: Thought[]) => list.map((t) => t.id);
@@ -53,5 +63,52 @@ describe('task realtime updates', () => {
     const prev = [task('a', { sortOrder: 0 }), task('b', { sortOrder: 1 })];
     expect(ids(tasksAfterReorder(prev, [{ id: 'a', sortOrder: 0 }], ['b']))).toEqual(['a']);
     expect(tasksAfterReorder(prev, undefined)).toBe(prev);
+  });
+});
+
+describe('task realtime events in the view', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    mocks.getTaskLists.mockResolvedValue([]);
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.clearAllMocks();
+  });
+  const ws = (detail: unknown) => window.dispatchEvent(new CustomEvent('mindsift:ws', { detail }));
+  const setup = () => {
+    const setTasks = vi.fn();
+    const loadData = vi.fn(async () => {});
+    const moveTracker = createMoveTracker();
+    const hook = renderHook(() =>
+      useTaskRealtime({ setTasks, setTaskLists: vi.fn(), listIdRef: { current: 'l1' }, loadDataRef: { current: loadData }, moveTracker })
+    );
+    return { setTasks, loadData, moveTracker, hook };
+  };
+
+  it('loads the task lists once for a burst of list events', () => {
+    const { hook } = setup();
+    for (let i = 0; i < 10; i++) ws({ event: 'TASK_LIST_UPDATED', payload: { id: 'l1' } });
+    vi.advanceTimersByTime(RELOAD_SHARED_DELAY_MS);
+    expect(mocks.getTaskLists).toHaveBeenCalledTimes(1);
+    hook.unmount();
+  });
+
+  it('drops the echo of an own move and waits with other moves while own ones are on their way', () => {
+    const { setTasks, loadData, moveTracker, hook } = setup();
+    const seq = moveTracker.begin([{ id: 'a', sortOrder: 0 }]);
+    ws({ event: 'TASK_REORDERED', payload: { userId: 'usr_anna', items: [{ id: 'a', sortOrder: 0 }] } });
+    ws({ event: 'TASK_REORDERED', payload: { userId: 'usr_ben', items: [{ id: 'b', sortOrder: 4 }] } });
+    expect(setTasks).not.toHaveBeenCalled();
+    expect(moveTracker.settle(seq, false).reload).toBe(true);
+    // Nothing on its way any more: someone else's move is applied from the event
+    ws({ event: 'TASK_REORDERED', payload: { userId: 'usr_ben', items: [{ id: 'b', sortOrder: 5 }] } });
+    expect(setTasks).toHaveBeenCalledTimes(1);
+    // A move that made a new task loads once, in the shared rhythm
+    ws({ event: 'TASK_REORDERED', payload: { userId: 'usr_ben', items: [], reload: true } });
+    ws({ event: 'TASK_REORDERED', payload: { userId: 'usr_ben', items: [], reload: true } });
+    vi.advanceTimersByTime(RELOAD_SHARED_DELAY_MS);
+    expect(loadData).toHaveBeenCalledTimes(1);
+    hook.unmount();
   });
 });

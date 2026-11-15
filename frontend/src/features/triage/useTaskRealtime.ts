@@ -1,6 +1,8 @@
 import React, { useEffect } from 'react';
-import { api } from '../../lib/api';
+import { api, getCurrentUserId } from '../../lib/api';
 import { TaskList, TaskOrder, TaskReorderResult, Thought, WSMessage } from '../../lib/types';
+import { useRealtimeReload } from '../../lib/realtimeReload';
+import { MoveTracker } from './taskMoves';
 
 // Same rule as the server's task query: a fresh Quick Dump note (status inbox) is no task yet
 export const isTaskThought = (t: Thought) =>
@@ -80,10 +82,25 @@ interface TaskRealtimeOptions {
   // Refs, because the handler is registered once and must see the current list and callbacks
   listIdRef: React.RefObject<string>;
   loadDataRef: React.RefObject<() => Promise<void>>;
+  // The board's moves on their way (taskMoves.ts): their echoes and events overtaken by them are not applied
+  moveTracker: MoveTracker;
 }
 
-// Realtime updates of TasksView: created, changed, deleted and reordered tasks and changed task lists
-export function useTaskRealtime({ setTasks, setTaskLists, listIdRef, loadDataRef }: TaskRealtimeOptions) {
+// Realtime updates of TasksView: created, changed, deleted and reordered tasks and changed task lists.
+// What an event carries is applied; what it cannot carry is loaded once per burst (lib/realtimeReload.ts):
+// the task lists after TASK_LIST_* (the payload is only the id, the permission is per person), everything
+// after a move that made a new task and once after a reconnect (events of the gap are lost). A hidden tab
+// loads when it is visible again.
+export function useTaskRealtime({ setTasks, setTaskLists, listIdRef, loadDataRef, moveTracker }: TaskRealtimeOptions) {
+  const tasksReloader = useRealtimeReload(() => void loadDataRef.current());
+  // A reconnect reloads everything above, the lists included
+  const listsReloader = useRealtimeReload(
+    () => {
+      api.getTaskLists().then((lists) => setTaskLists(Array.isArray(lists) ? lists : [])).catch(() => {});
+    },
+    { reconnect: false }
+  );
+
   // Live-Sync WebSocket listener for tasks (registered once on mount; all dependencies are stable). The
   // counters in the navigation follow these events in app/useSessionBootstrap.ts already.
   useEffect(() => {
@@ -108,21 +125,23 @@ export function useTaskRealtime({ setTasks, setTaskLists, listIdRef, loadDataRef
         }
       } else if (msg.event === 'TASK_REORDERED') {
         // The places come with the event; only a completed repeating task (its successor is new) or an
-        // older server without them needs the tasks loaded again
-        const moved = msg.payload as TaskReorderResult | undefined;
+        // older server without them needs the tasks loaded again. The echo of this board's own move is
+        // left to the move's answer, and while own moves are on their way an event waits for them.
+        const moved = msg.payload as (TaskReorderResult & { userId?: string }) | undefined;
+        if (moveTracker.classify(moved, getCurrentUserId()) !== 'apply') return;
         if (!moved || moved.reload || !Array.isArray(moved.items)) {
-          loadDataRef.current();
+          tasksReloader.request();
         } else {
           const items = moved.items;
           setTasks((prev) => tasksAfterReorder(prev, items));
         }
       } else if (msg.event === 'TASK_LIST_CREATED' || msg.event === 'TASK_LIST_UPDATED' || msg.event === 'TASK_LIST_DELETED') {
         // Payload only carries the list ID; reload so permissions reflect this user's view
-        api.getTaskLists().then((lists) => setTaskLists(Array.isArray(lists) ? lists : [])).catch(() => {});
+        listsReloader.request();
       }
     };
 
     window.addEventListener('mindsift:ws', handleWs);
     return () => window.removeEventListener('mindsift:ws', handleWs);
-  }, [setTasks, setTaskLists, listIdRef, loadDataRef]);
+  }, [setTasks, listIdRef, moveTracker, tasksReloader, listsReloader]);
 }
