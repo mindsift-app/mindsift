@@ -202,6 +202,7 @@ The most important settings (all of them are in [`.env.example`](.env.example); 
 | `MCP_ENABLED` | admin UI decides | `false` switches off the endpoint for AI agents |
 | `API_KEYS_ENABLED` | `true` | `false` refuses API keys on the REST API; they keep working for MCP |
 | `UPDATE_CHECK` | `true` | `false` stops the daily look for a new MindSift release (admins get a hint); no request goes out then |
+| `HTTP_PROXY`, `HTTPS_PROXY`, `NO_PROXY` | empty | Outgoing proxy for OIDC, the update check, webhooks, push, link previews and image copies; MindSift still checks each target's addresses itself before handing it over, and needs DNS for that ([limits](Doku/security.md#nothing-reaches-into-your-network)) |
 | `METRICS_TOKEN` | empty | Switches on `/metrics` for Prometheus, see [monitoring](Doku/operations.md#monitoring) |
 | `STT_*` | empty | Your own Whisper server for voice input |
 | `MINDSIFT_DEMO` | `false` | Demo accounts `admin/admin` and `user/user` with sample data. **Never on a server with real data!** |

@@ -7,6 +7,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 	"time"
 )
@@ -91,12 +92,22 @@ func validateWebhookURL(raw string, discord, allowPrivate bool) error {
 }
 
 // guardedClient resolves the host itself and only connects to allowed addresses. Checking at dial time
-// (not just the URL) also covers DNS tricks and redirects; proxies from the environment are not used.
+// (not just the URL) also covers DNS tricks and redirects.
+//
+// With HTTP_PROXY / HTTPS_PROXY (and NO_PROXY) set, requests go through that proxy, which then resolves and
+// connects itself. So before a request is handed to it, the target host is resolved here and refused when
+// any of its addresses is not allowed (guardedProxy); the connection to the proxy itself is the operator's
+// choice and not checked. What is left (Doku/security.md): the proxy may resolve the name differently
+// (another DNS view, a record changed in between), and a name this server cannot resolve is refused.
 func guardedClient(allowPrivate bool) *http.Client {
 	dialer := &net.Dialer{Timeout: 5 * time.Second}
+	proxy, proxyAddrs := guardedProxy(allowPrivate)
 	transport := &http.Transport{
-		Proxy: nil,
+		Proxy: proxy,
 		DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
+			if proxyAddrs[addr] {
+				return dialer.DialContext(ctx, network, addr)
+			}
 			host, port, err := net.SplitHostPort(addr)
 			if err != nil {
 				return nil, err
@@ -130,6 +141,92 @@ func guardedClient(allowPrivate bool) *http.Client {
 			return nil
 		},
 	}
+}
+
+// proxyForRequest: the proxy for a request from HTTP_PROXY, HTTPS_PROXY and NO_PROXY (or their lower-case
+// forms), as Go's default transport and so OIDC's client use them; read once per process. A variable for tests.
+var proxyForRequest = http.ProxyFromEnvironment
+
+// proxyEnvAddrs: host:port of the proxies in HTTP_PROXY and HTTPS_PROXY. A variable for tests.
+var proxyEnvAddrs = func() map[string]bool {
+	addrs := map[string]bool{}
+	for _, name := range []string{"HTTP_PROXY", "http_proxy", "HTTPS_PROXY", "https_proxy"} {
+		if addr := proxyAddr(os.Getenv(name)); addr != "" {
+			addrs[addr] = true
+		}
+	}
+	return addrs
+}
+
+// guardedProxy returns the Proxy function of guardedClient's transport plus the proxies' host:port, which the
+// dialer lets through. The function answers nil (no proxy) when none applies to the request (NO_PROXY,
+// loopback), and refuses a target whose addresses are not all allowed before the proxy would see it.
+func guardedProxy(allowPrivate bool) (func(*http.Request) (*url.URL, error), map[string]bool) {
+	addrs := proxyEnvAddrs()
+	if len(addrs) == 0 {
+		return nil, addrs
+	}
+	return func(req *http.Request) (*url.URL, error) {
+		p, err := proxyForRequest(req)
+		if err != nil || p == nil {
+			return nil, err
+		}
+		if err := checkTargetHost(req.Context(), req.URL.Hostname(), allowPrivate); err != nil {
+			return nil, err
+		}
+		return p, nil
+	}, addrs
+}
+
+// proxyAddr: host:port of a proxy URL as the transport dials it (scheme-less values count as http://, as in
+// Go's ProxyFromEnvironment), "" when unset or unusable.
+func proxyAddr(raw string) string {
+	if raw == "" {
+		return ""
+	}
+	if !strings.Contains(raw, "://") {
+		raw = "http://" + raw
+	}
+	u, err := url.Parse(raw)
+	if err != nil || u.Hostname() == "" {
+		return ""
+	}
+	port := u.Port()
+	if port == "" {
+		switch u.Scheme {
+		case "https":
+			port = "443"
+		case "socks5", "socks5h":
+			port = "1080"
+		default:
+			port = "80"
+		}
+	}
+	return net.JoinHostPort(u.Hostname(), port)
+}
+
+// checkTargetHost resolves host (or takes the address it is) and refuses it unless every address is allowed:
+// through a proxy, which address gets used is the proxy's choice. A name that does not resolve is refused.
+func checkTargetHost(ctx context.Context, host string, allowPrivate bool) error {
+	if ip := net.ParseIP(host); ip != nil {
+		if !targetIPAllowed(ip, allowPrivate) {
+			return fmt.Errorf("%w (%s)", errBlockedTarget, host)
+		}
+		return nil
+	}
+	ips, err := net.DefaultResolver.LookupIPAddr(ctx, host)
+	if err != nil {
+		return err
+	}
+	if len(ips) == 0 {
+		return fmt.Errorf("%w (%s)", errBlockedTarget, host)
+	}
+	for _, ip := range ips {
+		if !targetIPAllowed(ip.IP, allowPrivate) {
+			return fmt.Errorf("%w (%s)", errBlockedTarget, host)
+		}
+	}
+	return nil
 }
 
 func (s *Server) allowPrivateWebhooks() bool {
