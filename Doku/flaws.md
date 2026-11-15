@@ -89,6 +89,3 @@ FLAW-31 is resolved in part (0.6.0) and stays in the overview above. FLAW-34 (re
 
 ### Account & Security
 - **Admin Audit Log:** Detailed record of who modified accounts, roles, and settings, and when.
-
-### Operations
-- **Update Notifications** in the admin interface when a new release image is available.

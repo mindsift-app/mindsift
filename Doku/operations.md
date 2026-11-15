@@ -42,6 +42,14 @@ The setup wizard offers daily backups (preselected: 03:00 server time, kept 3 da
 
 `docker compose pull && docker compose up -d`. The database schema updates itself; open apps offer to reload. Since v0.87.3 the container runs as uid 1000 and takes over `data/` by itself; with `user:` in the compose file, run `chown -R 1000:1000 data` first.
 
+### Update hint
+
+Release images look for a newer release once a day: a few minutes after the start (later if the last answer is less than a day old; it is kept in the database), then every 24 hours with a random delay of up to an hour. The server asks `https://api.github.com/repos/mindsift-app/mindsift/releases/latest` without signing in, with `MindSift/<version>` as User-Agent and nothing about the instance; it sends the ETag of the last answer back, so an unchanged release costs GitHub nothing. After an error it waits six hours, after a rate limit at least until GitHub takes requests again; it never retries at once. Pre-releases and drafts do not count. The request goes through the same guarded client as webhooks and link previews (no internal addresses, no proxy from the environment).
+
+When the release is newer than the running version, admins get a small card at the bottom right (after the tour offer, never together with it) with a link to the release page; "Später" or × puts it aside for that release, on every device of that admin, and a newer release shows it again. Members see nothing. *Administration → Server* shows the installed and the latest version and the update command, but there is no update button.
+
+`UPDATE_CHECK=false` switches it off completely: no request goes out. The demo (`MINDSIFT_DEMO`) and builds without a release version (local builds, `:dev`, anything with `-dev`) never ask either. The version comes from the image build (`APP_VERSION`, compiled into the binary).
+
 ## Rolling back
 
 Before an update changes the database schema, MindSift saves a compressed copy of the database as `data/backups/system/pre-migration-<migration>-<date>-<time>.db.gz` and logs where; the last three are kept, each for at most 90 days (the newest too: the copies still hold accounts deleted since, and the daily backups cover anything later). Without the copy (a full disk, for example) it does not migrate and stops ([database.md](database.md#migrations-and-startup-cleanup)).
