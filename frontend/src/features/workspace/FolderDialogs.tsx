@@ -108,6 +108,7 @@ export function FolderDialogs({
             void handleCreateDocument(folderPath, newNoteTitle, newNoteIcon, newNoteTemplate);
           }}
           anchor={newNoteSheet.anchor}
+          wide={templates.length > 0}
         >
           <div className="flex items-center gap-1.5">
             <EmojiIconButton value={newNoteIcon} onChange={setNewNoteIcon} />

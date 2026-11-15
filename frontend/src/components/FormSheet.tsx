@@ -14,6 +14,8 @@ interface FormSheetProps {
   busy?: boolean;
   // Desktop only: open next to the click instead of centred
   anchor?: { x: number; y: number } | null;
+  // Next to the click 20rem wide instead of 16.5rem (fields with long entries, e.g. template names)
+  wide?: boolean;
 }
 
 // Small create/rename dialogs. Phone: bottom sheet directly above the keyboard, full width, large
@@ -27,6 +29,7 @@ export const FormSheet: React.FC<FormSheetProps> = ({
   children,
   submitLabel = 'Erstellen',
   anchor,
+  wide = false,
   danger = false,
   busy = false,
 }) => {
@@ -42,7 +45,9 @@ export const FormSheet: React.FC<FormSheetProps> = ({
     ? ({
         '--sheet-left': `${anchor.x}px`,
         '--sheet-top': `${anchor.y}px`,
-        '--sheet-x': `clamp(12px, calc(${anchor.x}px - 8.25rem), calc(100vw - 16.5rem - 12px))`,
+        '--sheet-x': wide
+          ? `clamp(12px, calc(${anchor.x}px - 10rem), calc(100vw - 20rem - 12px))`
+          : `clamp(12px, calc(${anchor.x}px - 8.25rem), calc(100vw - 16.5rem - 12px))`,
         '--sheet-y': `calc(${anchor.y}px + 8px)`,
       } as React.CSSProperties)
     : undefined;
@@ -62,7 +67,7 @@ export const FormSheet: React.FC<FormSheetProps> = ({
         className={`fixed inset-x-0 bottom-(--kb-inset) max-h-(--vv-max) panel-surface rounded-t-2xl rounded-b-none border-x-0 border-b-0 border-t border-border shadow-panel p-4 space-y-3 overflow-y-auto
           sm:inset-x-auto sm:bottom-auto sm:max-h-[85vh] sm:w-full sm:rounded-card sm:border ${
             anchor
-              ? 'sm:max-w-66 sm:left-(--sheet-x) sm:top-(--sheet-y)'
+              ? `${wide ? 'sm:max-w-80' : 'sm:max-w-66'} sm:left-(--sheet-x) sm:top-(--sheet-y)`
               : 'sm:max-w-sm sm:left-1/2 sm:top-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2'
           }`}
       >
