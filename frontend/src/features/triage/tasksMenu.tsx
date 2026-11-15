@@ -1,17 +1,13 @@
-import { Bell, BellOff, CalendarDays, Check, Columns2, Funnel, Folder, Layers, LayoutList, Pencil, Plus, Settings, Trash, Users } from 'lucide-react';
+import { Bell, BellOff, CalendarDays, Columns2, Funnel, Folder, Layers, LayoutList, Pencil, Plus, Settings, Trash, Users } from 'lucide-react';
 import { isTaskListShared } from './TaskListTabs';
 import i18n from '../../i18n';
 import { TaskList } from '../../lib/types';
 import { MobileActionItem, MobileMenuGroup } from '../../context/MobileActionContext';
 import { ViewMode } from './taskViewTypes';
 
-type TaskFilter = 'open' | 'done' | 'discarded';
-
 interface TasksMenuInput {
   currentSelectedList: TaskList | undefined;
   defaultGroupBy: string;
-  doneCount: number;
-  filter: TaskFilter;
   groupBy: string;
   handleDeleteTaskList: (listId: string) => void;
   handleOpenShareModal: (tl: TaskList) => void;
@@ -23,7 +19,6 @@ interface TasksMenuInput {
   openTasksCount: number | undefined;
   selectedListId: string;
   selectedTag: string | null;
-  setFilter: (filter: TaskFilter) => void;
   setMobileCreateListId: (id: string) => void;
   setSelectedListId: (id: string) => void;
   setShowFilterModal: (show: boolean) => void;
@@ -32,18 +27,15 @@ interface TasksMenuInput {
   setShowNewListModal: (show: boolean) => void;
   setViewMode: (mode: ViewMode) => void;
   sortBy: string;
-  trashCount: number | undefined; // undefined: the trash is not loaded
   safeTaskLists: TaskList[];
   viewMode: ViewMode;
 }
 
-// The phone menu of TasksView (header menu): new task, filter and sorting, list management, views and the
-// switch between task lists. TasksView puts it into the menu context whenever one of the values changes.
+// The phone menu of TasksView (header menu): new task, filter and sorting, list management, the three views
+// (open / done / trash sit in the list view itself, as on the desktop) and the switch between task lists. TasksView puts it into the menu context whenever one of the values changes.
 export function buildTasksMenu({
   currentSelectedList,
   defaultGroupBy,
-  doneCount,
-  filter,
   groupBy,
   handleDeleteTaskList,
   handleOpenShareModal,
@@ -55,7 +47,6 @@ export function buildTasksMenu({
   openTasksCount,
   selectedListId,
   selectedTag,
-  setFilter,
   setMobileCreateListId,
   setSelectedListId,
   setShowFilterModal,
@@ -64,7 +55,6 @@ export function buildTasksMenu({
   setShowNewListModal,
   setViewMode,
   sortBy,
-  trashCount,
   safeTaskLists,
   viewMode,
 }: TasksMenuInput): { primaryAction: () => void; groups: MobileMenuGroup[] } {
@@ -143,37 +133,12 @@ export function buildTasksMenu({
 
   const viewItems: MobileActionItem[] = [
     {
-      id: 'filter-open',
-      label: i18n.t('tasks:menu.openList'),
+      id: 'view-list',
+      label: i18n.t('tasks:tabs.listView'),
       icon: <LayoutList className="w-4 h-4" />,
       badge: openCount,
-      active: viewMode === 'list' && filter === 'open',
-      onClick: () => {
-        setViewMode('list');
-        setFilter('open');
-      },
-    },
-    {
-      id: 'filter-done',
-      label: i18n.t('tasks:menu.done'),
-      icon: <Check className="w-4 h-4" />,
-      badge: doneCount,
-      active: viewMode === 'list' && filter === 'done',
-      onClick: () => {
-        setViewMode('list');
-        setFilter('done');
-      },
-    },
-    {
-      id: 'filter-discarded',
-      label: i18n.t('common:trash'),
-      icon: <Trash className="w-4 h-4" />,
-      badge: trashCount,
-      active: viewMode === 'list' && filter === 'discarded',
-      onClick: () => {
-        setViewMode('list');
-        setFilter('discarded');
-      },
+      active: viewMode === 'list',
+      onClick: () => setViewMode('list'),
     },
     {
       id: 'view-kanban',

@@ -496,7 +496,7 @@ const it: HelpContent = {
           </p>
           <ul className="space-y-1.5">
             <li>
-              <strong className="text-main">Cambio di vista:</strong> usa il selettore in alto a destra tra elenco e Kanban.
+              <strong className="text-main">Cambio di vista:</strong> sul desktop il selettore in alto a destra passa tra elenco, Kanban e calendario. Sullo smartphone la piccola etichetta accanto all'elenco di attività mostra la vista; toccala per passare alla successiva (Kanban → calendario → elenco). Aperte, completate e cestino si scelgono nella vista elenco con il selettore in cima all'elenco.
             </li>
             <li>
               <strong className="text-main">Colonne Kanban personalizzate:</strong> nelle impostazioni delle colonne puoi definire stati individuali per ciascuna lista di attività (es. <em>Backlog</em>, <em>In corso</em>, <em>Revisione</em>, <em>Completata</em>) impostando colori e stato di completamento.

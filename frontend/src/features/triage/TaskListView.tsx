@@ -63,13 +63,13 @@ export function TaskListView({
   const { t } = useTranslation('tasks');
   return (
     <div className="space-y-2">
-      {/* Subfilter tabs for List View (Desktop; on mobile controlled via MindSift Logo Menu) */}
+      {/* Open, done, trash: the same switch on phones (full width, 44 px tall) and on the desktop */}
       <div className="flex items-center justify-between gap-2">
-        <div className="hidden sm:flex seg-track text-xs">
+        <div className="flex flex-1 sm:flex-initial seg-track text-xs">
           <button
             onClick={() => setFilter('open')}
             aria-pressed={filter === 'open'}
-            className={`seg-item ${filter === 'open' ? 'seg-item-active seg-item-raised' : ''}`}
+            className={`seg-item flex-1 sm:flex-initial h-11 sm:h-auto ${filter === 'open' ? 'seg-item-active seg-item-raised' : ''}`}
           >
             {t('view.openCount', { count: openTasks.length })}
           </button>
@@ -77,7 +77,7 @@ export function TaskListView({
           <button
             onClick={() => setFilter('done')}
             aria-pressed={filter === 'done'}
-            className={`seg-item ${filter === 'done' ? 'seg-item-active seg-item-raised' : ''}`}
+            className={`seg-item flex-1 sm:flex-initial h-11 sm:h-auto ${filter === 'done' ? 'seg-item-active seg-item-raised' : ''}`}
           >
             {t('view.doneCount', { count: doneTasks.length })}
           </button>
@@ -85,7 +85,7 @@ export function TaskListView({
           <button
             onClick={() => setFilter('discarded')}
             aria-pressed={filter === 'discarded'}
-            className={`seg-item ${filter === 'discarded' ? 'seg-item-active seg-item-raised' : ''}`}
+            className={`seg-item flex-1 sm:flex-initial h-11 sm:h-auto ${filter === 'discarded' ? 'seg-item-active seg-item-raised' : ''}`}
           >
             {taskTrash ? t('view.trashCount', { count: taskTrash.length }) : t('common:trash')}
           </button>
@@ -124,7 +124,7 @@ export function TaskListView({
         {filter === 'discarded' && taskTrash?.some((t) => t.canEdit) && (
           <button
             onClick={handleEmptyTaskTrash}
-            className="btn-action h-8 w-8 p-0 justify-center min-h-[38px] min-w-[38px] sm:min-h-0 sm:min-w-0 ml-auto sm:ml-0"
+            className="btn-action h-8 w-8 p-0 justify-center min-h-11 min-w-11 sm:min-h-0 sm:min-w-0 sm:ml-0"
             title={t('view.emptyTrash')}
             aria-label={t('view.emptyTrash')}
           >
@@ -134,7 +134,7 @@ export function TaskListView({
         {filter === 'done' && doneTasks.length > 0 && !isSelectedListReadOnly && (
           <button
             onClick={handleClearDone}
-            className="btn-action h-8 w-8 p-0 justify-center min-h-[38px] min-w-[38px] sm:min-h-0 sm:min-w-0 ml-auto sm:ml-0"
+            className="btn-action h-8 w-8 p-0 justify-center min-h-11 min-w-11 sm:min-h-0 sm:min-w-0 sm:ml-0"
             title={t('view.doneToTrash')}
             aria-label={t('view.doneToTrash')}
           >

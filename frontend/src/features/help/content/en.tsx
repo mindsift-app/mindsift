@@ -496,7 +496,7 @@ const en: HelpContent = {
           </p>
           <ul className="space-y-1.5">
             <li>
-              <strong className="text-main">Switching views:</strong> use the switch at the top right between list and Kanban.
+              <strong className="text-main">Switching views:</strong> on the desktop the switch at the top right changes between list, Kanban and calendar. On a phone the small pill next to the task list shows the view; tap it to move on (Kanban → calendar → list). Open, done and trash are chosen in the list view with the switch at the top of the list.
             </li>
             <li>
               <strong className="text-main">Custom Kanban columns:</strong> in the column settings you define individual stages for every task list (e.g. <em>Backlog</em>, <em>In progress</em>, <em>Review</em>, <em>Done</em>) including colors and done status.

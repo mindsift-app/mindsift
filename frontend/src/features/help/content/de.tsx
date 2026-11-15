@@ -639,7 +639,7 @@ const de: HelpContent = {
           </p>
           <ul className="space-y-1.5">
             <li>
-              <strong className="text-main">Ansicht umschalten:</strong> Nutze den Umschalter oben rechts zwischen Liste und Kanban.
+              <strong className="text-main">Ansicht umschalten:</strong> Am Desktop wechselt der Umschalter oben rechts zwischen Liste, Kanban und Kalender. Auf dem Smartphone zeigt die kleine Plakette neben der Aufgabenliste die Ansicht; antippen wechselt weiter (Kanban → Kalender → Liste). Offen, Erledigt und Papierkorb wählst du in der Listenansicht über den Umschalter oben in der Liste.
             </li>
             <li>
               <strong className="text-main">Eigene Kanban-Spalten:</strong> Über die Spaltenverwaltung kannst du für jede Aufgabenliste individuelle Phasen definieren (z.B. <em>Backlog</em>, <em>In Bearbeitung</em>, <em>Review</em>, <em>Erledigt</em>) inklusive Farben und Erledigt-Status.

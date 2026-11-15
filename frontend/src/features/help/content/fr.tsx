@@ -497,7 +497,7 @@ const fr: HelpContent = {
           </p>
           <ul className="space-y-1.5">
             <li>
-              <strong className="text-main">Changer de vue :</strong> utilise le sélecteur en haut à droite pour basculer entre la liste et le Kanban.
+              <strong className="text-main">Changer de vue :</strong> sur ordinateur, le sélecteur en haut à droite bascule entre la liste, le Kanban et le calendrier. Sur téléphone, la petite pastille à côté de la liste de tâches indique la vue ; touche-la pour passer à la suivante (Kanban → calendrier → liste). À faire, terminées et corbeille se choisissent dans la vue liste avec le sélecteur en haut de la liste.
             </li>
             <li>
               <strong className="text-main">Colonnes Kanban personnalisées :</strong> dans les paramètres des colonnes, définis des colonnes sur mesure pour chaque liste de tâches (par ex. « En attente de retour », « Revue »), avec couleurs et indicateur d'achèvement.

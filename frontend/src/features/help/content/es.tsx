@@ -557,7 +557,7 @@ const es: HelpContent = {
           </p>
           <ul className="space-y-1.5">
             <li>
-              <strong className="text-main">Cambiar de vista:</strong> usa el conmutador arriba a la derecha entre lista y Kanban.
+              <strong className="text-main">Cambiar de vista:</strong> en el escritorio, el conmutador arriba a la derecha cambia entre lista, Kanban y calendario. En el móvil, la pequeña etiqueta junto a la lista de tareas muestra la vista; tócala para pasar a la siguiente (Kanban → calendario → lista). Pendientes, hechas y papelera se eligen en la vista de lista con el conmutador de arriba.
             </li>
             <li>
               <strong className="text-main">Columnas Kanban personalizadas:</strong> en la configuración de columnas puedes definir etapas individuales para cada lista de tareas (p. ej. <em>Backlog</em>, <em>En progreso</em>, <em>Revisión</em>, <em>Hecho</em>), incluidos colores y estado de finalización.
