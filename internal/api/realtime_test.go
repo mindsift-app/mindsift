@@ -505,6 +505,55 @@ func TestShareKeepsOwnersPinInRealtime(t *testing.T) {
 	}
 }
 
+// Marking a note as template (or pinning it) reaches the person's other tabs and devices at once, and
+// nobody else the note is shared with (both are personal).
+func TestTemplateAndPinReachOwnSessions(t *testing.T) {
+	_, store, ts, owner, token := startRealtimeServer(t)
+	doc, err := store.CreateDocument(owner.ID, "", "Vorlage", "", "", nil, nil, false)
+	if err != nil {
+		t.Fatalf("create doc: %v", err)
+	}
+	anna, annaToken := newTestUser(t, store, "anna@example.com")
+	if r := doJSON(t, ts, http.MethodPost, "/api/v1/documents/"+doc.ID+"/shares", token, map[string]string{"userId": anna.ID, "permission": "write"}); r.StatusCode != http.StatusCreated {
+		t.Fatalf("share: %d", r.StatusCode)
+	}
+	mine, hers := openSSE(t, ts, token), openSSE(t, ts, annaToken)
+	next := func(stream *sseStream, wait time.Duration) *domain.Document {
+		t.Helper()
+		deadline := time.After(wait)
+		for {
+			select {
+			case m, ok := <-stream.events:
+				if !ok {
+					return nil
+				}
+				var d domain.Document
+				if m.Event == "DOC_UPDATED" && json.Unmarshal(m.Payload, &d) == nil && d.ID == doc.ID {
+					return &d
+				}
+			case <-deadline:
+				return nil
+			}
+		}
+	}
+
+	if r := doJSON(t, ts, http.MethodPut, "/api/v1/documents/"+doc.ID, token, map[string]bool{"isTemplate": true}); r.StatusCode != http.StatusOK {
+		t.Fatalf("mark template: %d", r.StatusCode)
+	}
+	if d := next(mine, 10*time.Second); d == nil || !d.IsTemplate {
+		t.Fatalf("own sessions: want DOC_UPDATED with isTemplate, got %+v", d)
+	}
+	if r := doJSON(t, ts, http.MethodPut, "/api/v1/documents/"+doc.ID, token, map[string]bool{"isPinned": true}); r.StatusCode != http.StatusOK {
+		t.Fatalf("pin: %d", r.StatusCode)
+	}
+	if d := next(mine, 10*time.Second); d == nil || !d.IsPinned || !d.IsTemplate {
+		t.Fatalf("own sessions: want DOC_UPDATED with isPinned, got %+v", d)
+	}
+	if d := next(hers, 500*time.Millisecond); d != nil {
+		t.Errorf("shared person got the personal change: %+v", d)
+	}
+}
+
 // WORKSPACE_FOLDERS_UPDATED names what changed, so clients fetch only that; notes brought back from the
 // trash arrive as DOC_CREATED before it (the list is not fetched again for them).
 func TestFolderEventTypes(t *testing.T) {
