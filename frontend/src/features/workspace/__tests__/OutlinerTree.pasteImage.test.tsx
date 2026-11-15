@@ -87,6 +87,8 @@ const paste = async (el: HTMLElement, data: DataTransfer) => {
 };
 
 const summary = () => live.map((b) => `${b.type}:${b.content}`);
+// The text field of a bullet (an image bullet's caption field is empty, too)
+const textOf = (id: string) => document.querySelector(`[data-outline-block="${id}"] textarea`);
 
 beforeEach(() => {
   media.uploads = [];
@@ -102,7 +104,7 @@ describe('pasting images into a note', () => {
   it('turns an empty bullet into the pasted screenshot', async () => {
     render(<Harness initial={[mk('a', '')]} />);
     expect(await paste(field(''), clipboard({ files: [png()] }))).toBe(true);
-    await waitFor(() => expect(summary()).toEqual(['image:![](media:med_0001)']));
+    await waitFor(() => expect(summary()).toEqual(['image:![](media:med_0001)', 'text:']));
     expect(inserts).toBe(1);
   });
 
@@ -121,7 +123,7 @@ describe('pasting images into a note', () => {
     render(<Harness initial={[mk('a', '')]} />);
     await paste(field(''), clipboard({ files: [png('1.png'), png('2.png'), png('3.png')] }));
     await waitFor(() =>
-      expect(summary()).toEqual(['image:![](media:med_0001)', 'image:![](media:med_0002)', 'image:![](media:med_0003)'])
+      expect(summary()).toEqual(['image:![](media:med_0001)', 'image:![](media:med_0002)', 'image:![](media:med_0003)', 'text:'])
     );
     expect(inserts).toBe(1);
   });
@@ -187,6 +189,69 @@ describe('pasting images into a note', () => {
     } finally {
       online.mockRestore();
     }
+  });
+
+  it('puts the cursor into a new empty bullet below the image, in the same change', async () => {
+    render(<Harness initial={[mk('a', 'Vorher'), mk('b', '', 'text', 1)]} />);
+    const empty = field('');
+    empty.focus();
+    await paste(empty, clipboard({ files: [png()] }));
+    await waitFor(() => expect(summary()).toEqual(['text:Vorher', 'image:![](media:med_0001)', 'text:']));
+    expect(inserts).toBe(1);
+    expect(live[2].level).toBe(1);
+    await waitFor(() => expect(document.activeElement).toBe(textOf(live[live.length - 1].id)));
+  });
+
+  it('goes to the start of the bullet that follows instead of adding one', async () => {
+    render(<Harness initial={[mk('a', ''), mk('b', 'Danach')]} />);
+    const empty = field('');
+    empty.focus();
+    await paste(empty, clipboard({ files: [png()] }));
+    await waitFor(() => expect(summary()).toEqual(['image:![](media:med_0001)', 'text:Danach']));
+    const next = field('Danach');
+    await waitFor(() => expect(document.activeElement).toBe(next));
+    expect(next.selectionStart).toBe(0);
+  });
+
+  it('adds the bullet on the image level when the branch ends below it', async () => {
+    render(<Harness initial={[mk('a', 'Oben'), mk('b', '', 'text', 1), mk('c', 'Nächster Abschnitt')]} />);
+    const empty = field('');
+    empty.focus();
+    await paste(empty, clipboard({ files: [png()] }));
+    await waitFor(() => expect(summary()).toEqual(['text:Oben', 'image:![](media:med_0001)', 'text:', 'text:Nächster Abschnitt']));
+    expect(live[2].level).toBe(1);
+  });
+
+  it('leaves the cursor where it went during a slow upload', async () => {
+    media.hold = true;
+    render(<Harness initial={[mk('a', ''), mk('b', 'Woanders', 'text', 1)]} />);
+    const empty = field('');
+    empty.focus();
+    await paste(empty, clipboard({ files: [png()] }));
+    const other = field('Woanders');
+    other.focus();
+    await act(async () => media.release?.());
+    await waitFor(() => expect(summary()).toEqual(['image:![](media:med_0001)', 'text:Woanders']));
+    expect(document.activeElement).toBe(other);
+  });
+
+  it('does the same after /image', async () => {
+    render(<Harness initial={[mk('a', 'Vorher'), mk('b', '')]} />);
+    const empty = field('');
+    empty.focus();
+    fireEvent.change(empty, { target: { value: '/image' } });
+    fireEvent.keyDown(empty, { key: 'Enter' });
+    const input = await waitFor(() => {
+      const el = document.querySelector('input[type="file"]') as HTMLInputElement | null;
+      expect(el).toBeTruthy();
+      return el!;
+    });
+    await act(async () => {
+      fireEvent.change(input, { target: { files: [png()] } });
+    });
+    await waitFor(() => expect(summary()).toEqual(['text:Vorher', 'image:![](media:med_0001)', 'text:']));
+    expect(inserts).toBe(1); // one change, one step for Ctrl+Z
+    await waitFor(() => expect(document.activeElement).toBe(textOf(live[live.length - 1].id)));
   });
 
   it('keeps pasting bullets copied in MindSift as their own text', async () => {

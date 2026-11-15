@@ -89,6 +89,7 @@ var migrations = []migration{
 	{63, "New password at the next sign-in after a reset by the administration", (*Store).migrateMustChangePassword},
 	{65, "When a task was last ticked, opened or moved to another column", (*Store).migrateTaskStatusChangedAt},
 	{66, "Repeating tasks know the occurrence they follow", (*Store).migrateRecurrenceOf},
+	{67, "When a task was last changed and how often; switch for dates and quantities in typed text", (*Store).migrate67},
 }
 
 // migrationBlockRefs creates block_refs: until it has run (earlier steps that rewrite notes), writing a
@@ -436,6 +437,59 @@ func (s *Store) migrateRecurrenceOf() error {
 	}
 	return s.execSchemaStatement(`CREATE INDEX IF NOT EXISTS idx_thoughts_recurrence_of ON thoughts(recurrence_of) WHERE recurrence_of != ''`)
 }
+
+// migrate67: two independent steps that share the number (one free id for this round of work):
+// migrateTaskUpdatedAt and the personal switch of typed_recognition.go.
+func (s *Store) migrate67() error {
+	if err := s.migrateTypedRecognition(); err != nil {
+		return err
+	}
+	return s.migrateTaskUpdatedAt()
+}
+
+// taskChangeColumns: the columns of thoughts whose change counts as a change of the task (content, notes,
+// due date, status, priority, task list, subtasks, recurrence, reminders, tags). Moving a task within its
+// column (sort_order), the alarm mark and the link to a note bullet do not count.
+const taskChangeColumns = `content, notes, due_date, is_completed, kanban_status, status, priority, task_list_id, subtasks, recurrence, reminders, tags`
+
+// sqlTaskTouched: what the triggers set on a changed task. RFC 3339 in UTC, like created_at.
+const sqlTaskTouched = `updated_at = strftime('%Y-%m-%dT%H:%M:%SZ', 'now'), revision = revision + 1`
+
+// migrateTaskUpdatedAt is part of migration 67: thoughts.updated_at holds when a task last changed and
+// thoughts.revision counts its changes (the calendar feed sends them as LAST-MODIFIED and SEQUENCE). Both
+// are kept by triggers, so every way of changing a task (app, Kanban, a to-do ticked in its note, sync
+// from the note, API, MCP) counts without each write path knowing about it, and no request sends a
+// statement more. A change of the assignees (task_assignees) counts as well. Existing tasks start with
+// updated_at = created_at; a task inserted later keeps an empty updated_at until its first change
+// (readers fall back to created_at, see sqlTaskUpdatedAt).
+func (s *Store) migrateTaskUpdatedAt() error {
+	if err := s.addColumnIfMissing("thoughts", "updated_at", "TEXT NOT NULL DEFAULT ''"); err != nil {
+		return err
+	}
+	if err := s.addColumnIfMissing("thoughts", "revision", "INTEGER NOT NULL DEFAULT 0"); err != nil {
+		return err
+	}
+	changed := []string{}
+	for _, c := range strings.Split(taskChangeColumns, ", ") {
+		changed = append(changed, "NEW."+c+" IS NOT OLD."+c)
+	}
+	return s.execInTx(
+		stmt(`UPDATE thoughts SET updated_at = created_at WHERE updated_at = ''`),
+		stmt(`CREATE TRIGGER IF NOT EXISTS trg_thoughts_updated AFTER UPDATE OF `+taskChangeColumns+` ON thoughts
+			WHEN NEW.revision = OLD.revision AND (`+strings.Join(changed, " OR ")+`) BEGIN
+				UPDATE thoughts SET `+sqlTaskTouched+` WHERE id = NEW.id;
+			END`),
+		stmt(`CREATE TRIGGER IF NOT EXISTS trg_task_assignees_added AFTER INSERT ON task_assignees BEGIN
+				UPDATE thoughts SET `+sqlTaskTouched+` WHERE id = NEW.task_id;
+			END`),
+		stmt(`CREATE TRIGGER IF NOT EXISTS trg_task_assignees_removed AFTER DELETE ON task_assignees BEGIN
+				UPDATE thoughts SET `+sqlTaskTouched+` WHERE id = OLD.task_id;
+			END`),
+	)
+}
+
+// sqlTaskUpdatedAt reads when the task t last changed (created_at until its first change).
+const sqlTaskUpdatedAt = `COALESCE(NULLIF(t.updated_at, ''), t.created_at)`
 
 func (s *Store) migrateSearchCoverIndex() error {
 	_, err := s.db.Exec(`CREATE INDEX IF NOT EXISTS idx_blocks_fts_cover ON blocks(fts_rowid, deleted, document_id, id)`)

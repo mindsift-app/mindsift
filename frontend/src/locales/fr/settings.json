@@ -1,11 +1,13 @@
 {
   "language": {
     "nav": "Langue",
-    "navHint": "Langue de l'interface",
+    "navHint": "Interface, dates et quantités à la saisie",
     "title": "Langue",
     "intro": "La langue dans laquelle MindSift affiche ses menus et indications.",
     "autoHint": "La langue de ton navigateur si MindSift la prend en charge, sinon la langue par défaut de ce serveur ({{fallback}}).",
-    "more": "D'autres langues suivront."
+    "more": "D'autres langues suivront.",
+    "typedRecognition": "Reconnaître dates et quantités à la saisie",
+    "typedRecognitionHint": "Lit les dates comme « demain 14 h » dans ce que tu tapes ou dictes et les définit comme échéance, ainsi que les quantités comme « 2x lait » dans les listes de courses. S’applique sur tous tes appareils."
   },
   "defaultLanguage": {
     "title": "Langue par défaut",
@@ -587,10 +589,11 @@
     "emailRemoveHint": "Sans adresse, {{name}} ne pourra plus réinitialiser son mot de passe par e-mail. La connexion avec nom d’utilisateur et mot de passe continue de fonctionner.",
     "mustChange": "À changer à la prochaine connexion",
     "mustChangeHint": "Après la connexion, la personne doit d’abord choisir son propre mot de passe.",
-    "revokeKeys": "Révoquer les clés API et les accès IA",
-    "revokeKeysHint": "Supprime toutes les clés API et les clients IA connectés (MCP) du compte, par exemple après une prise de contrôle. Sinon ils continuent de fonctionner.",
+    "revokeKeys": "Révoquer les clés API, les accès IA et l’abonnement calendrier",
+    "revokeKeysHint": "Supprime toutes les clés API, les clients IA connectés (MCP) et l’abonnement calendrier du compte, par exemple après une prise de contrôle. Sinon ils continuent de fonctionner.",
     "passwordResetMustChange": "Mot de passe réinitialisé. Un mot de passe personnel sera demandé à la prochaine connexion.",
-    "keysRevoked": "{{keys}} clés API et {{connections}} accès IA révoqués."
+    "keysRevoked": "{{keys}} clés API et {{connections}} accès IA révoqués.",
+    "calendarFeedRevoked": "L’abonnement calendrier est désactivé."
   },
   "sharing": {
     "private": {
@@ -646,6 +649,11 @@
     "calendarFeedsHint": "Chaque personne peut s'abonner à ses tâches ouvertes avec échéance dans son application de calendrier via un lien secret (lecture seule). Désactivé, aucun lien existant ne fonctionne plus.",
     "linkPreviews": "Aperçus de liens",
     "linkPreviewsHint": "Quand une puce ne contient qu'une adresse web, le serveur MindSift récupère la page et affiche son titre, sa description et son image sous forme de carte. Désactivé, le serveur ne récupère plus aucune page, et l'app n'affiche ni cartes d'aperçu ni l'interrupteur par appareil.",
+    "imageQuality": "Qualité d'image",
+    "imageQualityHint": "Avant l'envoi, les images sont réduites à 2048 pixels au plus et compressées dans le navigateur. La taille reste la même à chaque niveau, pour que le texte des captures d'écran et des diagrammes reste lisible ; les niveaux inférieurs compressent davantage et économisent de l'espace. S'applique uniquement aux nouvelles images ; les GIF restent inchangés.",
+    "imageQualityHigh": "Haute (par défaut)",
+    "imageQualityMedium": "Moyenne",
+    "imageQualityLow": "Économe – fichiers plus petits, texte lisible",
     "publicLinkMaxDays": "Durée maximale d’un lien",
     "days_one": "{{count}} jour",
     "days_other": "{{count}} jours",
@@ -1155,7 +1163,8 @@
       "emailConfirmation": "En attente de confirmation de l’adresse e-mail",
       "unconfirmedDeleted": "Adresse e-mail non confirmée sous 48 heures",
       "mustChange": "Nouveau mot de passe exigé à la prochaine connexion",
-      "keysRevoked": "{{keys}} clés API et {{connections}} accès IA révoqués"
+      "keysRevoked": "{{keys}} clés API et {{connections}} accès IA révoqués",
+      "calendarFeedRevoked": "Abonnement calendrier désactivé"
     },
     "value": {
       "on": "activé",
@@ -1176,6 +1185,11 @@
       "mfaRequired": {
         "admins": "Admins",
         "all": "Tout le monde"
+      },
+      "imageQuality": {
+        "high": "Haute",
+        "medium": "Moyenne",
+        "low": "Économe"
       }
     },
     "field": {
@@ -1205,6 +1219,7 @@
       "publicLinkMaxDays": "Liens publics au plus (jours)",
       "calendarFeeds": "Abonnements calendrier",
       "linkPreviews": "Aperçus de liens",
+      "imageQuality": "Qualité d'image",
       "defaultLanguage": "Langue par défaut",
       "timeZone": "Fuseau horaire",
       "displayName": "Nom d'affichage",

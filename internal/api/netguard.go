@@ -99,33 +99,54 @@ func validateWebhookURL(raw string, discord, allowPrivate bool) error {
 // any of its addresses is not allowed (guardedProxy); the connection to the proxy itself is the operator's
 // choice and not checked. What is left (Doku/security.md): the proxy may resolve the name differently
 // (another DNS view, a record changed in between), and a name this server cannot resolve is refused.
+//
+// Proxied and direct requests use separate transports: the proxy's address may only be dialled as the proxy
+// hop, never as a direct target. Otherwise a target that bypasses the proxy (localhost, NO_PROXY) and names
+// the proxy's own host and port, e.g. https://localhost:3128/ with a proxy on localhost:3128, would get past
+// the address check.
 func guardedClient(allowPrivate bool) *http.Client {
 	dialer := &net.Dialer{Timeout: 5 * time.Second}
-	proxy, proxyAddrs := guardedProxy(allowPrivate)
-	transport := &http.Transport{
-		Proxy: proxy,
-		DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
-			if proxyAddrs[addr] {
-				return dialer.DialContext(ctx, network, addr)
+	newTransport := func(dial func(ctx context.Context, network, addr string) (net.Conn, error)) *http.Transport {
+		return &http.Transport{
+			DialContext:           dial,
+			TLSHandshakeTimeout:   5 * time.Second,
+			ResponseHeaderTimeout: 10 * time.Second,
+			MaxIdleConns:          10,
+		}
+	}
+	direct := newTransport(func(ctx context.Context, network, addr string) (net.Conn, error) {
+		host, port, err := net.SplitHostPort(addr)
+		if err != nil {
+			return nil, err
+		}
+		ips, err := net.DefaultResolver.LookupIPAddr(ctx, host)
+		if err != nil {
+			return nil, err
+		}
+		for _, ip := range ips {
+			if targetIPAllowed(ip.IP, allowPrivate) {
+				return dialer.DialContext(ctx, network, net.JoinHostPort(ip.IP.String(), port))
 			}
-			host, port, err := net.SplitHostPort(addr)
-			if err != nil {
-				return nil, err
+		}
+		return nil, fmt.Errorf("%w (%s)", errBlockedTarget, host)
+	})
+	var transport http.RoundTripper = direct
+	if proxy, proxyAddrs := guardedProxy(allowPrivate); proxy != nil {
+		// Only ever dials a proxy from the environment; guardedProxy has checked the target before
+		proxied := newTransport(func(ctx context.Context, network, addr string) (net.Conn, error) {
+			if !proxyAddrs[addr] {
+				return nil, fmt.Errorf("%w (%s)", errBlockedTarget, addr)
 			}
-			ips, err := net.DefaultResolver.LookupIPAddr(ctx, host)
-			if err != nil {
-				return nil, err
+			return dialer.DialContext(ctx, network, addr)
+		})
+		proxied.Proxy = func(req *http.Request) (*url.URL, error) {
+			p, err := proxyForRequest(req)
+			if err == nil && p == nil {
+				err = fmt.Errorf("%w (%s)", errBlockedTarget, req.URL.Host)
 			}
-			for _, ip := range ips {
-				if targetIPAllowed(ip.IP, allowPrivate) {
-					return dialer.DialContext(ctx, network, net.JoinHostPort(ip.IP.String(), port))
-				}
-			}
-			return nil, fmt.Errorf("%w (%s)", errBlockedTarget, host)
-		},
-		TLSHandshakeTimeout:   5 * time.Second,
-		ResponseHeaderTimeout: 10 * time.Second,
-		MaxIdleConns:          10,
+			return p, err
+		}
+		transport = &proxySplitTransport{proxy: proxy, direct: direct, proxied: proxied}
 	}
 	return &http.Client{
 		Timeout:   10 * time.Second,
@@ -143,6 +164,32 @@ func guardedClient(allowPrivate bool) *http.Client {
 	}
 }
 
+// proxySplitTransport sends each request (and so each redirect step) either through the proxy, once
+// guardedProxy has checked the target, or straight through the fully guarded direct transport.
+type proxySplitTransport struct {
+	proxy           func(*http.Request) (*url.URL, error)
+	direct, proxied *http.Transport
+}
+
+func (t *proxySplitTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	p, err := t.proxy(req)
+	if err != nil {
+		if req.Body != nil {
+			_ = req.Body.Close()
+		}
+		return nil, err
+	}
+	if p == nil {
+		return t.direct.RoundTrip(req)
+	}
+	return t.proxied.RoundTrip(req)
+}
+
+func (t *proxySplitTransport) CloseIdleConnections() {
+	t.direct.CloseIdleConnections()
+	t.proxied.CloseIdleConnections()
+}
+
 // proxyForRequest: the proxy for a request from HTTP_PROXY, HTTPS_PROXY and NO_PROXY (or their lower-case
 // forms), as Go's default transport and so OIDC's client use them; read once per process. A variable for tests.
 var proxyForRequest = http.ProxyFromEnvironment
@@ -158,8 +205,8 @@ var proxyEnvAddrs = func() map[string]bool {
 	return addrs
 }
 
-// guardedProxy returns the Proxy function of guardedClient's transport plus the proxies' host:port, which the
-// dialer lets through. The function answers nil (no proxy) when none applies to the request (NO_PROXY,
+// guardedProxy returns guardedClient's proxy decision plus the proxies' host:port, which only the transport
+// for proxied requests may dial. The function answers nil (no proxy) when none applies to the request (NO_PROXY,
 // loopback), and refuses a target whose addresses are not all allowed before the proxy would see it.
 func guardedProxy(allowPrivate bool) (func(*http.Request) (*url.URL, error), map[string]bool) {
 	addrs := proxyEnvAddrs()

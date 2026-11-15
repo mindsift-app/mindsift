@@ -239,8 +239,10 @@ func writeCalendarEvent(w *ical.Writer, t storage.CalendarTask, o calendarFeedOp
 	}
 	created, _ := time.Parse(time.RFC3339, t.CreatedAt)
 	modified := created
-	if changed, err := time.Parse(time.RFC3339, t.ChangedAt); err == nil && changed.After(modified) {
-		modified = changed
+	for _, at := range []string{t.ChangedAt, t.UpdatedAt} {
+		if changed, err := time.Parse(time.RFC3339, at); err == nil && changed.After(modified) {
+			modified = changed
+		}
 	}
 	if modified.IsZero() {
 		modified = now.UTC().Truncate(24 * time.Hour)
@@ -254,6 +256,10 @@ func writeCalendarEvent(w *ical.Writer, t storage.CalendarTask, o calendarFeedOp
 		w.Line("CREATED", ical.UTC(created))
 	}
 	w.Line("LAST-MODIFIED", ical.UTC(modified))
+	// SEQUENCE: grows with every change of the task (thoughts.revision), so clients take the new version.
+	// DTSTAMP is the time of the last change, not of the fetch, so the feed (and its ETag) stays the same
+	// while nothing changes.
+	w.Line("SEQUENCE", strconv.Itoa(t.Revision))
 	if hasTime {
 		w.Line("DTSTART", ical.UTC(due))
 		w.Line("DTEND", ical.UTC(due.Add(calendarEventMinutes*time.Minute)))

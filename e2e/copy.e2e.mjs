@@ -23,6 +23,14 @@ async function api(token, method, path, body) {
   return text ? JSON.parse(text) : null;
 }
 
+// Test notes go again at the end, also when a check or the run fails: to the trash and out of it
+async function removeNotes(token, ids) {
+  for (const id of ids) {
+    await api(token, 'DELETE', `/api/v1/documents/${id}`).catch(() => {});
+    await api(token, 'DELETE', `/api/v1/documents/${id}/permanent`).catch(() => {});
+  }
+}
+
 // Notes to test with and the Markdown of the whole note
 // A small drawing (block type 'drawing'): copied as a fenced block with its model
 const DRAWING = JSON.stringify({ v: 1, els: [{ id: 'a', ver: 1, t: 'rect', x: 0, y: 0, w: 120, h: 60, s: 'main', f: 'none', sw: 2, txt: 'Kasten' }] });
@@ -75,130 +83,135 @@ async function openNote(browser, token, title) {
 
 const main = async () => {
   const admin = (await api(null, 'POST', '/api/v1/auth/login', { login: 'admin', password: 'admin' })).token;
+  const created = [];
+  try {
+    for (const engine of [chromium, firefox]) {
+      const browser = await engine.launch();
+      for (const [noteName, note] of Object.entries(NOTES)) {
+        const stamp = `${Date.now()}${Math.floor(Math.random() * 1000)}`;
+        const title = `Kopier-Test ${engine.name()} ${stamp}`;
+        const doc = await api(admin, 'POST', '/api/v1/documents', {
+          title,
+          blocks: note.blocks.map(([type, content, level, lang], i) => ({ id: `cp${i}_${stamp}`, type, content, level, ...(lang ? { lang } : {}) })),
+        });
+        created.push(doc.id);
+        const { ctx, page } = await openNote(browser, admin, title);
+        const tag = `${engine.name()}, ${noteName}`;
 
-  for (const engine of [chromium, firefox]) {
-    const browser = await engine.launch();
-    for (const [noteName, note] of Object.entries(NOTES)) {
-      const stamp = `${Date.now()}${Math.floor(Math.random() * 1000)}`;
-      const title = `Kopier-Test ${engine.name()} ${stamp}`;
-      await api(admin, 'POST', '/api/v1/documents', {
-        title,
-        blocks: note.blocks.map(([type, content, level, lang], i) => ({ id: `cp${i}_${stamp}`, type, content, level, ...(lang ? { lang } : {}) })),
-      });
-      const { ctx, page } = await openNote(browser, admin, title);
-      const tag = `${engine.name()}, ${noteName}`;
+        const copy = async () => {
+          await page.evaluate(() => (window.__clip = null));
+          await page.keyboard.press('Control+c');
+          await page.waitForTimeout(300);
+          return page.evaluate(() => window.__clip);
+        };
+        // Outside the note: the empty middle of the workspace bar above it (the page has no margin beside the
+        // note any more, and the footer is not selectable, so a press there leaves the browser's selection)
+        const bar = await page.locator('.seg-track').locator('visible=true').first().boundingBox();
+        const clickOutside = () => page.mouse.click(bar.x + bar.width + 200, bar.y + bar.height / 2);
+        const rows = await page.$$eval('[data-outline-block]', (els) =>
+          els.map((e) => {
+            const r = e.getBoundingClientRect();
+            return { x: r.x, y: r.y, w: r.width, h: r.height };
+          })
+        );
+        const first = rows[0];
+        const last = rows[rows.length - 1];
+        // The rendered text (blocks without one: the text field)
+        const textBox = (row) => row.locator('[data-outline-text], textarea').first().boundingBox();
+        const firstText = await textBox(page.locator('[data-outline-block]').first());
+        const lastText = await textBox(page.locator('[data-outline-block]').last());
+        const drag = async (from, to) => {
+          await clickOutside();
+          await page.waitForTimeout(150);
+          await page.mouse.move(from.x, from.y);
+          await page.waitForTimeout(250); // hover shows the action bubble
+          await page.mouse.down();
+          await page.mouse.move(to.x, to.y, { steps: 20 });
+          await page.mouse.up();
+          await page.waitForTimeout(300);
+        };
+        const above = { x: first.x + 5, y: first.y - 40 };
+        const below = { x: last.x + last.w - 5, y: last.y + last.h + 40 };
+        const starts = {
+          'am Textanfang': (r, t) => ({ x: t.x + 1, y: r.y + r.h / 2 }),
+          'am Textende': (r, t) => ({ x: t.x + t.width + 2, y: r.y + r.h / 2 }),
+          'in der Zeilenmitte': (r) => ({ x: r.x + r.w / 2, y: r.y + r.h / 2 }),
+          'auf der Knopfleiste': (r) => ({ x: r.x + r.w - 40, y: r.y + r.h / 2 }),
+          'ganz rechts': (r) => ({ x: r.x + r.w - 5, y: r.y + r.h / 2 }),
+          'im Leeren unter dem letzten Bullet': (r) => ({ x: r.x + r.w / 2, y: r.y + r.h + 30 }),
+        };
 
-      const copy = async () => {
-        await page.evaluate(() => (window.__clip = null));
-        await page.keyboard.press('Control+c');
+        // Upwards from the start of the last bullet's text leaves that text out, as in a text editor
+        for (const [startName, at] of Object.entries(starts).filter(([n]) => n !== 'am Textanfang')) {
+          await drag(at(last, lastText), above);
+          const up = await copy();
+          check(up === note.markdown, `${tag}: von unten nach oben (Start ${startName}) gibt Markdown`, up);
+        }
+        await drag(starts['am Textanfang'](first, firstText), below);
+        const down = await copy();
+        check(down === note.markdown, `${tag}: von oben nach unten gibt Markdown`, down);
+
+        // Ctrl+A twice, then a new drag right away (the selected text must not be dragged)
+        await page.locator('[data-outline-block]').nth(1).locator('textarea, [data-outline-text]').first().click();
+        await page.keyboard.press('Control+a');
+        await page.keyboard.press('Control+a');
         await page.waitForTimeout(300);
-        return page.evaluate(() => window.__clip);
-      };
-      // Outside the note: the empty middle of the workspace bar above it (the page has no margin beside the
-      // note any more, and the footer is not selectable, so a press there leaves the browser's selection)
-      const bar = await page.locator('.seg-track').locator('visible=true').first().boundingBox();
-      const clickOutside = () => page.mouse.click(bar.x + bar.width + 200, bar.y + bar.height / 2);
-      const rows = await page.$$eval('[data-outline-block]', (els) =>
-        els.map((e) => {
-          const r = e.getBoundingClientRect();
-          return { x: r.x, y: r.y, w: r.width, h: r.height };
-        })
-      );
-      const first = rows[0];
-      const last = rows[rows.length - 1];
-      // The rendered text (blocks without one: the text field)
-      const textBox = (row) => row.locator('[data-outline-text], textarea').first().boundingBox();
-      const firstText = await textBox(page.locator('[data-outline-block]').first());
-      const lastText = await textBox(page.locator('[data-outline-block]').last());
-      const drag = async (from, to) => {
+        const all = await copy();
+        check(all === note.markdown, `${tag}: zweimal Strg+A gibt Markdown`, all);
+        // The callout's text is marked like that of any other bullet (text field, CSS highlight or the browser's selection)
+        const calloutMarked = await page.evaluate(() => {
+          const box = document.querySelector('[data-outline-block] .border-l-2.border-accent');
+          const span = box && box.querySelector('[data-outline-text]');
+          if (!span) return false;
+          // With the cursor in it (the first bullet) the selection is in its text field
+          const field = box.querySelector('textarea');
+          if (field && document.activeElement === field && field.selectionEnd > field.selectionStart) return true;
+          const highlighted = typeof CSS !== 'undefined' && CSS.highlights && [...CSS.highlights.values()].some((h) => [...h].some((r) => r.intersectsNode(span)));
+          const sel = document.getSelection();
+          return !!highlighted || !!(sel && sel.rangeCount && !sel.isCollapsed && sel.getRangeAt(0).intersectsNode(span));
+        });
+        check(calloutMarked, `${tag}: zweimal Strg+A markiert auch den Callout`);
+        const calloutBold = await page.evaluate(() => !!document.querySelector('[data-outline-block] .border-l-2.border-accent strong'));
+        check(calloutBold, `${tag}: Callout zeigt **fett** als fett`);
+        if (process.env.SHOT_DIR) await page.screenshot({ path: `${process.env.SHOT_DIR}/callout-${engine.name()}-${Object.keys(NOTES).indexOf(noteName)}.png` });
+        await drag(starts['am Textanfang'](first, firstText), below);
+        const again = await copy();
+        check(again === note.markdown, `${tag}: neues Ziehen direkt nach Strg+A gibt Markdown`, again);
+
+        // The browser's own selection over several bullets is copied as Markdown, too
+        const native = await page.evaluate(() => {
+          const spans = document.querySelectorAll('[data-outline-text]');
+          const s = document.getSelection();
+          s.removeAllRanges();
+          const r = document.createRange();
+          r.setStartBefore(document.querySelector('[data-outline-block]'));
+          r.setEndAfter(spans[spans.length - 1]);
+          s.addRange(r);
+          window.__clip = null;
+          document.execCommand('copy');
+          return window.__clip;
+        });
+        check(!!native && !native.includes('\n\n\n') && native.startsWith(note.markdown.split('\n')[0]), `${tag}: Browser-Markierung wird als Markdown kopiert`, native);
+
+        // A click outside the note ends the selection: Ctrl+C then copies nothing of it
+        await drag(starts['am Textanfang'](last, lastText), above);
         await clickOutside();
-        await page.waitForTimeout(150);
-        await page.mouse.move(from.x, from.y);
-        await page.waitForTimeout(250); // hover shows the action bubble
-        await page.mouse.down();
-        await page.mouse.move(to.x, to.y, { steps: 20 });
-        await page.mouse.up();
-        await page.waitForTimeout(300);
-      };
-      const above = { x: first.x + 5, y: first.y - 40 };
-      const below = { x: last.x + last.w - 5, y: last.y + last.h + 40 };
-      const starts = {
-        'am Textanfang': (r, t) => ({ x: t.x + 1, y: r.y + r.h / 2 }),
-        'am Textende': (r, t) => ({ x: t.x + t.width + 2, y: r.y + r.h / 2 }),
-        'in der Zeilenmitte': (r) => ({ x: r.x + r.w / 2, y: r.y + r.h / 2 }),
-        'auf der Knopfleiste': (r) => ({ x: r.x + r.w - 40, y: r.y + r.h / 2 }),
-        'ganz rechts': (r) => ({ x: r.x + r.w - 5, y: r.y + r.h / 2 }),
-        'im Leeren unter dem letzten Bullet': (r) => ({ x: r.x + r.w / 2, y: r.y + r.h + 30 }),
-      };
+        const afterOutside = await copy();
+        check(afterOutside !== note.markdown, `${tag}: Klick außerhalb hebt die Markierung auf`, afterOutside);
 
-      // Upwards from the start of the last bullet's text leaves that text out, as in a text editor
-      for (const [startName, at] of Object.entries(starts).filter(([n]) => n !== 'am Textanfang')) {
-        await drag(at(last, lastText), above);
-        const up = await copy();
-        check(up === note.markdown, `${tag}: von unten nach oben (Start ${startName}) gibt Markdown`, up);
+        // Delete everything from the bottom up, started in the empty space below the last bullet
+        await drag(starts['im Leeren unter dem letzten Bullet'](last), above);
+        await page.keyboard.press('Backspace');
+        await page.waitForTimeout(800);
+        const left = await page.$$eval('[data-outline-block] textarea', (els) => els.map((e) => e.value));
+        check(left.length === 1 && left[0] === '', `${tag}: Rücktaste löscht die ganze Markierung`, left);
+
+        await ctx.close();
       }
-      await drag(starts['am Textanfang'](first, firstText), below);
-      const down = await copy();
-      check(down === note.markdown, `${tag}: von oben nach unten gibt Markdown`, down);
-
-      // Ctrl+A twice, then a new drag right away (the selected text must not be dragged)
-      await page.locator('[data-outline-block]').nth(1).locator('textarea, [data-outline-text]').first().click();
-      await page.keyboard.press('Control+a');
-      await page.keyboard.press('Control+a');
-      await page.waitForTimeout(300);
-      const all = await copy();
-      check(all === note.markdown, `${tag}: zweimal Strg+A gibt Markdown`, all);
-      // The callout's text is marked like that of any other bullet (text field, CSS highlight or the browser's selection)
-      const calloutMarked = await page.evaluate(() => {
-        const box = document.querySelector('[data-outline-block] .border-l-2.border-accent');
-        const span = box && box.querySelector('[data-outline-text]');
-        if (!span) return false;
-        // With the cursor in it (the first bullet) the selection is in its text field
-        const field = box.querySelector('textarea');
-        if (field && document.activeElement === field && field.selectionEnd > field.selectionStart) return true;
-        const highlighted = typeof CSS !== 'undefined' && CSS.highlights && [...CSS.highlights.values()].some((h) => [...h].some((r) => r.intersectsNode(span)));
-        const sel = document.getSelection();
-        return !!highlighted || !!(sel && sel.rangeCount && !sel.isCollapsed && sel.getRangeAt(0).intersectsNode(span));
-      });
-      check(calloutMarked, `${tag}: zweimal Strg+A markiert auch den Callout`);
-      const calloutBold = await page.evaluate(() => !!document.querySelector('[data-outline-block] .border-l-2.border-accent strong'));
-      check(calloutBold, `${tag}: Callout zeigt **fett** als fett`);
-      if (process.env.SHOT_DIR) await page.screenshot({ path: `${process.env.SHOT_DIR}/callout-${engine.name()}-${Object.keys(NOTES).indexOf(noteName)}.png` });
-      await drag(starts['am Textanfang'](first, firstText), below);
-      const again = await copy();
-      check(again === note.markdown, `${tag}: neues Ziehen direkt nach Strg+A gibt Markdown`, again);
-
-      // The browser's own selection over several bullets is copied as Markdown, too
-      const native = await page.evaluate(() => {
-        const spans = document.querySelectorAll('[data-outline-text]');
-        const s = document.getSelection();
-        s.removeAllRanges();
-        const r = document.createRange();
-        r.setStartBefore(document.querySelector('[data-outline-block]'));
-        r.setEndAfter(spans[spans.length - 1]);
-        s.addRange(r);
-        window.__clip = null;
-        document.execCommand('copy');
-        return window.__clip;
-      });
-      check(!!native && !native.includes('\n\n\n') && native.startsWith(note.markdown.split('\n')[0]), `${tag}: Browser-Markierung wird als Markdown kopiert`, native);
-
-      // A click outside the note ends the selection: Ctrl+C then copies nothing of it
-      await drag(starts['am Textanfang'](last, lastText), above);
-      await clickOutside();
-      const afterOutside = await copy();
-      check(afterOutside !== note.markdown, `${tag}: Klick außerhalb hebt die Markierung auf`, afterOutside);
-
-      // Delete everything from the bottom up, started in the empty space below the last bullet
-      await drag(starts['im Leeren unter dem letzten Bullet'](last), above);
-      await page.keyboard.press('Backspace');
-      await page.waitForTimeout(800);
-      const left = await page.$$eval('[data-outline-block] textarea', (els) => els.map((e) => e.value));
-      check(left.length === 1 && left[0] === '', `${tag}: Rücktaste löscht die ganze Markierung`, left);
-
-      await ctx.close();
+      await browser.close();
     }
-    await browser.close();
+  } finally {
+    await removeNotes(admin, created);
   }
 
   console.log(failures ? `${failures} FAILED` : 'ALL CHECKS PASSED');

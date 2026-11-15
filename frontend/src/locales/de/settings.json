@@ -1,11 +1,13 @@
 {
   "language": {
     "nav": "Sprache",
-    "navHint": "Sprache der Oberfläche",
+    "navHint": "Oberfläche, Datum und Menge beim Tippen",
     "title": "Sprache",
     "intro": "In welcher Sprache MindSift Menüs und Hinweise zeigt.",
     "autoHint": "Die Sprache deines Browsers, wenn MindSift sie kann, sonst die Standardsprache dieses Servers ({{fallback}}).",
-    "more": "Weitere Sprachen folgen."
+    "more": "Weitere Sprachen folgen.",
+    "typedRecognition": "Datum und Menge beim Tippen erkennen",
+    "typedRecognitionHint": "Liest Termine wie „morgen 14 Uhr“ aus Eingaben und Diktaten und setzt sie als Fälligkeit, und Mengen wie „2x Milch“ in Einkaufslisten. Gilt auf allen deinen Geräten."
   },
   "defaultLanguage": {
     "title": "Standardsprache",
@@ -587,10 +589,11 @@
     "emailRemoveHint": "Ohne Adresse kann {{name}} das Passwort nicht mehr per Mail zurücksetzen. Die Anmeldung mit Benutzername und Passwort geht weiter.",
     "mustChange": "Bei der nächsten Anmeldung ändern",
     "mustChangeHint": "Die Person muss nach der Anmeldung zuerst ein eigenes Passwort festlegen.",
-    "revokeKeys": "API-Schlüssel und KI-Zugänge widerrufen",
-    "revokeKeysHint": "Entfernt alle API-Schlüssel und verbundenen KI-Clients (MCP) des Kontos, etwa wenn es übernommen wurde. Sonst laufen sie weiter.",
+    "revokeKeys": "API-Schlüssel, KI-Zugänge und Kalender-Abo widerrufen",
+    "revokeKeysHint": "Entfernt alle API-Schlüssel, verbundenen KI-Clients (MCP) und das Kalender-Abo des Kontos, etwa wenn es übernommen wurde. Sonst laufen sie weiter.",
     "passwordResetMustChange": "Passwort zurückgesetzt. Bei der nächsten Anmeldung wird ein eigenes verlangt.",
-    "keysRevoked": "{{keys}} API-Schlüssel und {{connections}} KI-Zugänge widerrufen."
+    "keysRevoked": "{{keys}} API-Schlüssel und {{connections}} KI-Zugänge widerrufen.",
+    "calendarFeedRevoked": "Das Kalender-Abo ist abgeschaltet."
   },
   "sharing": {
     "private": {
@@ -646,6 +649,11 @@
     "calendarFeedsHint": "Jede Person kann ihre offenen Aufgaben mit Fälligkeit über einen geheimen Link in ihrer Kalender-App abonnieren (nur lesen). Ausgeschaltet funktioniert kein bestehender Link mehr.",
     "linkPreviews": "Link-Vorschauen",
     "linkPreviewsHint": "Steht in einem Punkt nur eine Web-Adresse, ruft der MindSift-Server die Seite ab und zeigt Titel, Beschreibung und Bild als Karte. Ausgeschaltet ruft der Server keine Seiten mehr ab, und die App zeigt weder Vorschaukarten noch den Schalter pro Gerät.",
+    "imageQuality": "Bildqualität",
+    "imageQualityHint": "Bilder werden vor dem Hochladen im Browser auf höchstens 2048 Pixel verkleinert und komprimiert. Die Größe bleibt bei jeder Stufe gleich, damit Text in Screenshots und Diagrammen lesbar bleibt; niedrigere Stufen komprimieren stärker und sparen Speicherplatz. Gilt nur für neu eingefügte Bilder, GIFs bleiben unverändert.",
+    "imageQualityHigh": "Hoch (Standard)",
+    "imageQualityMedium": "Mittel",
+    "imageQualityLow": "Sparsam – kleinere Dateien, Text bleibt lesbar",
     "publicLinkMaxDays": "Längste Laufzeit eines Links",
     "days_one": "{{count}} Tag",
     "days_other": "{{count}} Tage",
@@ -1154,7 +1162,8 @@
       "emailConfirmation": "Wartet auf Bestätigung der E-Mail-Adresse",
       "unconfirmedDeleted": "E-Mail-Adresse nicht innerhalb von 48 Stunden bestätigt",
       "mustChange": "Neues Passwort bei der nächsten Anmeldung verlangt",
-      "keysRevoked": "{{keys}} API-Schlüssel und {{connections}} KI-Zugänge widerrufen"
+      "keysRevoked": "{{keys}} API-Schlüssel und {{connections}} KI-Zugänge widerrufen",
+      "calendarFeedRevoked": "Kalender-Abo abgeschaltet"
     },
     "value": {
       "on": "an",
@@ -1175,6 +1184,11 @@
       "mfaRequired": {
         "admins": "Admins",
         "all": "Alle"
+      },
+      "imageQuality": {
+        "high": "Hoch",
+        "medium": "Mittel",
+        "low": "Sparsam"
       }
     },
     "field": {
@@ -1204,6 +1218,7 @@
       "publicLinkMaxDays": "Öffentliche Links höchstens (Tage)",
       "calendarFeeds": "Kalender-Abos",
       "linkPreviews": "Link-Vorschauen",
+      "imageQuality": "Bildqualität",
       "defaultLanguage": "Standardsprache",
       "timeZone": "Zeitzone",
       "displayName": "Anzeigename",

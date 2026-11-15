@@ -95,16 +95,45 @@ export function copyExternalImage(docId: string, url: string): Promise<UploadedM
 
 const MAX_EDGE = 2048;
 
+/** How strongly pictures are compressed before upload: the administration's choice (`imageQuality`). */
+export type ImageQuality = 'high' | 'medium' | 'low';
+
+// Encoder quality per level. The size stays at MAX_EDGE for every level, so text in screenshots and
+// diagrams stays readable; only the compression changes. JPEG (no WebP encoder) a little higher.
+export const IMAGE_QUALITY: Record<ImageQuality, { webp: number; jpeg: number }> = {
+  high: { webp: 0.82, jpeg: 0.85 },
+  medium: { webp: 0.65, jpeg: 0.7 },
+  low: { webp: 0.5, jpeg: 0.55 },
+};
+
+// The server's level, as /auth/status (or the administration's last save) said
+let serverQuality: ImageQuality = 'high';
+
+export function isImageQuality(v: unknown): v is ImageQuality {
+  return v === 'high' || v === 'medium' || v === 'low';
+}
+
+/** What the server says about the image quality; anything unknown counts as high. */
+export function setServerImageQuality(level: unknown): void {
+  serverQuality = isImageQuality(level) ? level : 'high';
+}
+
+export function serverImageQuality(): ImageQuality {
+  return serverQuality;
+}
+
 function canvasBlob(canvas: HTMLCanvasElement, type: string, quality: number): Promise<Blob | null> {
   return new Promise((resolve) => canvas.toBlob((b) => resolve(b), type, quality));
 }
 
 /**
- * Shrinks photos to at most 2048 px and stores them as WebP (JPEG where the browser cannot write WebP).
- * Re-encoding also drops EXIF data such as the location. GIFs stay as they are (animation); anything
- * the browser cannot decode is sent unchanged and checked by the server.
+ * Shrinks photos to at most 2048 px and stores them as WebP (JPEG where the browser cannot write WebP),
+ * compressed as the server's image quality says. Re-encoding also drops EXIF data such as the location.
+ * GIFs stay as they are (animation); anything the browser cannot decode is sent unchanged and checked by
+ * the server.
  */
-export async function prepareImage(file: Blob): Promise<{ blob: Blob; name: string }> {
+export async function prepareImage(file: Blob, quality: ImageQuality = serverQuality): Promise<{ blob: Blob; name: string }> {
+  const q = IMAGE_QUALITY[quality] ?? IMAGE_QUALITY.high;
   if (file.type === 'image/gif' || typeof createImageBitmap === 'undefined') return { blob: file, name: 'bild' };
   let bitmap: ImageBitmap;
   try {
@@ -120,12 +149,12 @@ export async function prepareImage(file: Blob): Promise<{ blob: Blob; name: stri
   if (!ctx) return { blob: file, name: 'bild' };
   ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
   bitmap.close?.();
-  const webp = await canvasBlob(canvas, 'image/webp', 0.82);
+  const webp = await canvasBlob(canvas, 'image/webp', q.webp);
   if (webp && webp.type === 'image/webp') return { blob: webp, name: 'bild.webp' };
   // No WebP encoder (older Safari): JPEG on white, since JPEG has no transparency
   ctx.globalCompositeOperation = 'destination-over';
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
-  const jpeg = await canvasBlob(canvas, 'image/jpeg', 0.85);
+  const jpeg = await canvasBlob(canvas, 'image/jpeg', q.jpeg);
   return jpeg ? { blob: jpeg, name: 'bild.jpg' } : { blob: file, name: 'bild' };
 }

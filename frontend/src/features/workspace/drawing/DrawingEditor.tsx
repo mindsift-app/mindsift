@@ -1774,13 +1774,10 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
       .map((p) => ({ id: p.userId, name: p.name }));
   })();
   const hostName = liveState?.participants.find((p) => p.id === liveState.host)?.name;
-  // Alone in the session: nobody else draws or watches, counted by connection (one's own other tab is
-  // someone else here, though the pictures show the person once). Until the server answered a session
-  // started here, this browser does not know yet whether it is host: it counts as alone, no "Live" flashes
-  const othersInSession = liveState
-    ? liveState.participants.filter((p) => p.id !== liveState.you).length + liveState.watchers.filter((p) => p.id !== liveState.you).length
-    : 0;
-  const aloneInSession = !!liveState && othersInSession === 0 && (liveState.isHost || !liveState.you);
+  // In a session the header shows it from the server's first answer on, also alone in it (right after
+  // "Gemeinsam zeichnen", or the last one left after a hand-over): the dot, the own picture and the host.
+  // Before that answer nothing shows, so no plain "Live" flashes until it is clear who is host
+  const showLive = !!liveState && !liveState.ended && liveState.answered;
   const liveTitle = liveState
     ? [
         t('drawing.live.drawingNow', { names: [...new Set(liveState.participants.map((p) => p.name))].join(', ') }),
@@ -1823,8 +1820,7 @@ export const DrawingEditor: React.FC<DrawingEditorProps> = ({ initial, baseConte
       <div className="shrink-0 flex items-center gap-1 sm:gap-2 px-2 sm:px-4 pt-[calc(0.375rem+env(safe-area-inset-top))] pb-1.5 bg-panel/95 backdrop-blur-xs border-b border-border">
         {!readOnly && <div className="hidden sm:block">{tools}</div>}
         <div className="flex-1" />
-        {/* Alone in it (an unshared note, or nobody else there yet): no host, no people, it looks like drawing alone */}
-        {liveState && !liveState.ended && !aloneInSession && (
+        {showLive && liveState && (
           <div className="min-w-0 flex items-center gap-1.5 text-xs text-muted" title={liveTitle} data-live-people={livePeople.map((p) => p.name).join(',')}>
             {/* Dot and pictures never shrink (a crowded phone header squeezes the host's name instead) and keep
                 clear of each other: the pictures' ring reaches 2 px beyond them */}

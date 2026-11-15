@@ -31,6 +31,8 @@ export interface TemplateSource {
 
 // Bullets a template copy replaces when the slash command was typed into an empty one of these
 const REPLACEABLE_EMPTY = ['text', 'bullet', 'todo', 'numbered', 'h1', 'h2', 'h3', 'callout', 'warning', 'error'];
+// Bullets with a text field the cursor can go to
+const TEXT_FIELD_TYPES = [...REPLACEABLE_EMPTY, 'paragraph', 'code'];
 
 export interface OutlinerTreeProps {
   docId: string;
@@ -470,13 +472,20 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
   // go below the bullet on its level, all in one change (one step for Ctrl+Z). anchor: the bullet as its
   // field has it right now (text typed during the upload may not have reached the note yet). A bullet
   // deleted during the upload: the images go to the end of the note instead of being lost.
+  // When the empty bullet became an image, its text field is gone, so the cursor goes below the image(s):
+  // to the start of the bullet that follows within the branch (the place right after the image when
+  // reading), or, when nothing follows there, to a new empty text bullet on the image's level, added in
+  // the same change. Only while the cursor was still in that bullet, so a slow upload does not pull it
+  // away from where the person went meanwhile. focus: from the /image picker, which turns the empty bullet
+  // into the image whatever its type and always hands the cursor on.
+  // An empty to-do linked to a task becomes the image too (its task is unlinked and stays, as with any type change).
   const handlePasteImages = useCallback(
-    (anchorId: string, contents: string[], anchor?: DocumentBlock) => {
+    (anchorId: string, contents: string[], anchor?: DocumentBlock, focus?: boolean) => {
       if (!canEdit || contents.length === 0 || blocks.length === 0) return;
       const idx = blocks.findIndex((b) => b.id === anchorId);
       const current = idx >= 0 ? (anchor ?? blocks[idx]) : blocks[blocks.length - 1];
       const replace =
-        idx >= 0 && REPLACEABLE_EMPTY.includes(current.type) && !(current.content || '').trim() && !current.taskId && !current.subtaskOf;
+        idx >= 0 && (focus || REPLACEABLE_EMPTY.includes(current.type)) && !(current.content || '').trim();
       const updated: DocumentBlock = replace ? { ...current, type: 'image', content: contents[0], checked: false } : current;
       const level = Math.max(0, current.level || 0);
       const nowBase = Date.now().toString(36);
@@ -490,6 +499,34 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
         collapsed: false,
         position: (current.position || 1000) + (j + 1) * 10,
       }));
+      const active = typeof document !== 'undefined' ? document.activeElement : null;
+      const cursorWasHere = !active || active === document.body || active === textareaMapRef.current.get(current.id);
+      if (replace && (focus || cursorWasHere)) {
+        const next = blocks[idx + 1];
+        let target: string;
+        let cursor: 'start' | 'end' = 'end';
+        if (next && (next.level || 0) >= level && TEXT_FIELD_TYPES.includes(next.type)) {
+          target = next.id;
+          cursor = 'start';
+        } else {
+          const last = newBlocks[newBlocks.length - 1] ?? updated;
+          const empty: DocumentBlock = {
+            id: `blk_${nowBase}_txt_${Math.random().toString(36).slice(2, 6)}`,
+            documentId: docId,
+            type: 'text',
+            content: '',
+            level,
+            checked: false,
+            collapsed: false,
+            position: (last.position || 1000) + 5,
+          };
+          newBlocks.push(empty);
+          target = empty.id;
+        }
+        if (textareaMapRef.current.get(target)) focusBlockInput(target, cursor);
+        else pendingFocusRef.current = { blockId: target, cursor };
+        setFocusedBlockId(target);
+      }
       if (onInsertBlocks) {
         onInsertBlocks(current.id, updated, newBlocks);
       } else {
@@ -497,7 +534,7 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
         newBlocks.forEach((b, k) => onCreateBlock(b, k === 0 ? current.id : newBlocks[k - 1].id));
       }
     },
-    [blocks, canEdit, docId, onCreateBlock, onInsertBlocks, onUpdateBlock]
+    [blocks, canEdit, docId, focusBlockInput, onCreateBlock, onInsertBlocks, onUpdateBlock]
   );
 
   // /vorlage: the picker opens at the bullet; the chosen template's bullets go in like pasted bullets (with

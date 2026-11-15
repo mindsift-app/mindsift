@@ -40,14 +40,14 @@ export const adminApi = {
     });
   },
 
-  // mustChange: a new own password at the next sign-in; revokeKeys: the account's API keys and AI connections
-  // (MCP) go as well. The answer counts what was revoked.
+  // mustChange: a new own password at the next sign-in; revokeKeys: the account's API keys, AI connections
+  // (MCP) and calendar subscription go as well. The answer counts what was revoked.
   async adminResetPassword(
     id: string,
     password: string,
     options: { mustChange?: boolean; revokeKeys?: boolean } = {}
-  ): Promise<{ keysRevoked?: number; connectionsRevoked?: number }> {
-    return request<{ keysRevoked?: number; connectionsRevoked?: number }>(`/api/v1/admin/users/${id}/password`, {
+  ): Promise<{ keysRevoked?: number; connectionsRevoked?: number; calendarFeedRevoked?: boolean }> {
+    return request<{ keysRevoked?: number; connectionsRevoked?: number; calendarFeedRevoked?: boolean }>(`/api/v1/admin/users/${id}/password`, {
       method: 'PUT',
       body: JSON.stringify({ password, mustChange: Boolean(options.mustChange), revokeKeys: Boolean(options.revokeKeys) }),
     });

@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { X } from 'lucide-react';
 import { ItemQuantity, parseItemQuantity } from './itemQuantity';
+import { useTypedRecognition } from '../../lib/typedRecognition';
 
 // Quantities typed into a new list item (itemQuantity.ts): the item field marks the part and the quantity
 // field shows it, with a small bubble pointing at it; its × or emptying the field keeps the text as typed.
@@ -10,10 +11,11 @@ import { ItemQuantity, parseItemQuantity } from './itemQuantity';
 /**
  * The quantity recognised in text, unless off (a quantity typed into its own field wins) or dismissed (the
  * bubble's × or emptying the quantity field). Dismissing holds for that part of the text; another one is
- * shown again.
+ * shown again. Nothing is recognised while the person switched the recognition off (lib/typedRecognition.ts).
  */
-export function useItemQuantity(text: string, enabled: boolean) {
+export function useItemQuantity(text: string, wanted: boolean) {
   const { i18n } = useTranslation();
+  const enabled = useTypedRecognition() && wanted;
   const [dismissed, setDismissed] = useState<string | null>(null);
   const parsed = useMemo(() => (enabled ? parseItemQuantity(text, i18n.language) : null), [text, enabled, i18n.language]);
   const phrase = parsed ? text.slice(parsed.start, parsed.end) : null;

@@ -110,3 +110,37 @@ func TestNoteTemplatesPerPerson(t *testing.T) {
 		t.Errorf("%d template rows left after the note was deleted", n)
 	}
 }
+
+// TemplateBlocks copies like the app (lib/noteTemplate.ts templateBlocks): the shallowest bullet goes to
+// the top level, to-dos open, placeholders filled in except in code and drawings, secrets kept.
+func TestTemplateBlocks(t *testing.T) {
+	src := []domain.DocumentBlock{
+		{ID: "a", Type: "h1", Content: "{{TITEL}} am {{ datum }}", Level: 2},
+		{ID: "b", Type: "todo", Content: "{{title}} {{date}} {{secret:abc}}", Checked: true, Level: 3, TaskID: "th_1", Collapsed: true},
+		{ID: "c", Type: "code", Content: "{{date}}", Lang: "go", Level: 2},
+		{ID: "d", Type: "drawing", Content: `{"t":"{{titel}}"}`, Level: 3},
+	}
+	got := TemplateBlocks(src, "Montag", "15.11.2026")
+	want := []domain.DocumentBlock{
+		{Type: "h1", Content: "Montag am 15.11.2026", Level: 0},
+		{Type: "todo", Content: "Montag 15.11.2026 {{secret:abc}}", Level: 1},
+		{Type: "code", Content: "{{date}}", Lang: "go", Level: 0},
+		{Type: "drawing", Content: `{"t":"{{titel}}"}`, Level: 1},
+	}
+	if len(got) != len(want) {
+		t.Fatalf("got %d bullets", len(got))
+	}
+	for i := range got {
+		g := got[i]
+		if g.ID == "" || g.ID == src[i].ID {
+			t.Errorf("bullet %d: id %q", i, g.ID)
+		}
+		g.ID, g.Position = "", 0
+		if g != want[i] {
+			t.Errorf("bullet %d: %+v, want %+v", i, g, want[i])
+		}
+	}
+	if TemplateBlocks(nil, "x", "y") != nil {
+		t.Error("an empty template gives no bullets")
+	}
+}

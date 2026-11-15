@@ -11,6 +11,7 @@ import { OidcStatusCard } from './OidcStatusCard';
 import { UpdateStatusCard } from './UpdateStatusCard';
 import { TimeZoneSetting } from './TimeZoneSetting';
 import { LinkPreviewSetting } from './LinkPreviewSetting';
+import { ImageQualitySetting } from './ImageQualitySetting';
 import { SHARING_MODES, useAdminSettings } from './useAdminSettings';
 import { Trans, useTranslation } from 'react-i18next';
 import { FALLBACK_LANGUAGE, LANGUAGES } from '../../../i18n';
@@ -209,6 +210,9 @@ export function ServerSection({
 
           {/* Link previews for the whole server: off, nothing is fetched and the app shows no cards */}
           <LinkPreviewSetting settings={settings} demoMode={demoMode} onSave={(patch) => handleSaveSystemSettings(patch)} />
+
+          {/* How strongly pictures are compressed before upload (new pictures only) */}
+          <ImageQualitySetting settings={settings} onSave={(patch) => handleSaveSystemSettings(patch)} />
 
           <BackupAdminCard settings={settings} onSave={(patch) => handleSaveSystemSettings(patch)} />
 

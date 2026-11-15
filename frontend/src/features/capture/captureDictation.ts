@@ -2,6 +2,7 @@ import i18n from '../../i18n';
 import { api } from '../../lib/api';
 import { extractHashtags } from '../../lib/hashtags';
 import { parseNaturalDate } from '../../lib/naturalDate';
+import { typedRecognitionOn } from '../../lib/typedRecognition';
 import { Thought } from '../../lib/types';
 
 /** What a dictation saved: the entry, the text as spoken and the due date taken from it ('' without one). */
@@ -21,10 +22,11 @@ export interface DictationOutcome {
  * Text dictated by holding a + (the phone's floating button and the desktop rail) goes into the inbox:
  * source "voice", so the server tags it #diktat, normal priority. A date in it ("Zahnarzt morgen um 14 Uhr")
  * is read like in the capture bar (lib/naturalDate.ts, the app's language, from now) and becomes the due
- * date, its phrase taken out of the text; when nothing else would be left, the text stays as it is.
+ * date, its phrase taken out of the text; when nothing else would be left, the text stays as it is. With the
+ * recognition switched off (lib/typedRecognition.ts) the text is saved as spoken, without a date.
  */
 export async function captureDictation(text: string, now: Date = new Date(), lang: string = i18n.language): Promise<SavedDictation> {
-  const parsed = parseNaturalDate(text, lang, now);
+  const parsed = typedRecognitionOn() ? parseNaturalDate(text, lang, now) : null;
   const content = parsed ? parsed.title : text;
   const due = parsed ? parsed.due : '';
   const thought = await api.captureThought(content, 'normal', 'voice', due, { target: 'inbox' });

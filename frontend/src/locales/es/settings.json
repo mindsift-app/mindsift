@@ -1,11 +1,13 @@
 {
   "language": {
     "nav": "Idioma",
-    "navHint": "Idioma de la interfaz",
+    "navHint": "Interfaz, fechas y cantidades al escribir",
     "title": "Idioma",
     "intro": "El idioma en el que MindSift muestra sus menús y avisos.",
     "autoHint": "El idioma de tu navegador si MindSift lo admite; de lo contrario, el idioma predeterminado de este servidor ({{fallback}}).",
-    "more": "Próximamente se añadirán más idiomas."
+    "more": "Próximamente se añadirán más idiomas.",
+    "typedRecognition": "Reconocer fechas y cantidades al escribir",
+    "typedRecognitionHint": "Lee fechas como «mañana a las 14» de lo que escribes o dictas y las usa como vencimiento, y cantidades como «2x leche» en las listas de la compra. Se aplica en todos tus dispositivos."
   },
   "defaultLanguage": {
     "title": "Idioma predeterminado",
@@ -673,10 +675,11 @@
     "emailRemoveHint": "Sin dirección, {{name}} ya no podrá restablecer la contraseña por correo. Iniciar sesión con nombre de usuario y contraseña sigue funcionando.",
     "mustChange": "Cambiar en el próximo inicio de sesión",
     "mustChangeHint": "Tras iniciar sesión, la persona debe elegir primero una contraseña propia.",
-    "revokeKeys": "Revocar claves API y accesos de IA",
-    "revokeKeysHint": "Elimina todas las claves API y los clientes de IA conectados (MCP) de la cuenta, por ejemplo tras un robo. Si no, siguen funcionando.",
+    "revokeKeys": "Revocar claves API, accesos de IA y la suscripción de calendario",
+    "revokeKeysHint": "Elimina todas las claves API, los clientes de IA conectados (MCP) y la suscripción de calendario de la cuenta, por ejemplo tras un robo. Si no, siguen funcionando.",
     "passwordResetMustChange": "Contraseña restablecida. En el próximo inicio de sesión se pedirá una propia.",
-    "keysRevoked": "{{keys}} claves API y {{connections}} accesos de IA revocados."
+    "keysRevoked": "{{keys}} claves API y {{connections}} accesos de IA revocados.",
+    "calendarFeedRevoked": "La suscripción de calendario está desactivada."
   },
   "orgs": {
     "createFailed": "Error al crear la organización",
@@ -748,6 +751,11 @@
     "calendarFeedsHint": "Cada persona puede suscribirse a sus tareas abiertas con fecha de vencimiento en su app de calendario mediante un enlace secreto (solo lectura). Desactivado, ningún enlace existente sigue funcionando.",
     "linkPreviews": "Vistas previas de enlaces",
     "linkPreviewsHint": "Cuando un punto contiene solo una dirección web, el servidor de MindSift obtiene la página y muestra su título, descripción e imagen como tarjeta. Desactivado, el servidor no obtiene ninguna página y la app no muestra tarjetas de vista previa ni el interruptor por dispositivo.",
+    "imageQuality": "Calidad de imagen",
+    "imageQualityHint": "Antes de subirlas, las imágenes se reducen a 2048 píxeles como máximo y se comprimen en el navegador. El tamaño es el mismo en todos los niveles, para que el texto de capturas de pantalla y diagramas siga siendo legible; los niveles más bajos comprimen más y ahorran espacio. Solo se aplica a las imágenes nuevas; los GIF no cambian.",
+    "imageQualityHigh": "Alta (predeterminada)",
+    "imageQualityMedium": "Media",
+    "imageQualityLow": "Ahorro – archivos más pequeños, el texto sigue legible",
     "publicLinkMaxDays": "Duración máxima de un enlace",
     "days_one": "{{count}} día",
     "days_other": "{{count}} días",
@@ -1155,7 +1163,8 @@
       "emailConfirmation": "Pendiente de confirmar la dirección de correo",
       "unconfirmedDeleted": "Dirección de correo no confirmada en 48 horas",
       "mustChange": "Contraseña nueva exigida en el próximo inicio de sesión",
-      "keysRevoked": "{{keys}} claves API y {{connections}} accesos de IA revocados"
+      "keysRevoked": "{{keys}} claves API y {{connections}} accesos de IA revocados",
+      "calendarFeedRevoked": "Suscripción de calendario desactivada"
     },
     "value": {
       "on": "activado",
@@ -1176,6 +1185,11 @@
       "mfaRequired": {
         "admins": "Administradores",
         "all": "Todos"
+      },
+      "imageQuality": {
+        "high": "Alta",
+        "medium": "Media",
+        "low": "Ahorro"
       }
     },
     "field": {
@@ -1205,6 +1219,7 @@
       "publicLinkMaxDays": "Enlaces públicos como máximo (días)",
       "calendarFeeds": "Suscripciones de calendario",
       "linkPreviews": "Vistas previas de enlaces",
+      "imageQuality": "Calidad de imagen",
       "defaultLanguage": "Idioma predeterminado",
       "timeZone": "Zona horaria",
       "displayName": "Nombre visible",

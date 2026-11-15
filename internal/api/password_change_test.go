@@ -158,6 +158,56 @@ func TestAdminResetRevokesKeys(t *testing.T) {
 	}
 }
 
+// The calendar subscription reads the tasks without a sign-in, like a key: a reset that revokes keys
+// switches it off (its address answers 404), a plain reset keeps it
+func TestAdminResetRevokesCalendarFeed(t *testing.T) {
+	e := newMFAEnv(t)
+	admin := e.adminToken()
+	feedStatus := func(token string) int {
+		t.Helper()
+		return sessionCall(e.router, "GET", "/calendar/"+token+".ics", "", "", "").Code
+	}
+	switchOn := func() string {
+		t.Helper()
+		rec, res := e.call("PUT", "/api/v1/calendar-feed", e.session(), nil)
+		token, _ := res["token"].(string)
+		if rec.Code != http.StatusOK || token == "" || feedStatus(token) != http.StatusOK {
+			t.Fatalf("switch the feed on: %d %v", rec.Code, res)
+		}
+		return token
+	}
+
+	token := switchOn()
+	if res := e.adminReset(admin, "vom-admin-1234", false, false); res["calendarFeedRevoked"] != nil {
+		t.Fatalf("plain reset: %v", res)
+	}
+	if code := feedStatus(token); code != http.StatusOK {
+		t.Fatalf("a plain reset keeps the feed: %d", code)
+	}
+
+	res := e.adminReset(admin, "vom-admin-5678", false, true)
+	if res["calendarFeedRevoked"] != true {
+		t.Fatalf("answer: %v", res)
+	}
+	if code := feedStatus(token); code != http.StatusNotFound {
+		t.Fatalf("old feed address after revoking: %d, want 404", code)
+	}
+	var d map[string]any
+	_ = json.Unmarshal(lastAudit(t, e.store, storage.AuditAccountPasswordReset).Details, &d)
+	if d["calendarFeedRevoked"] != true {
+		t.Fatalf("audit details: %v", d)
+	}
+	// Without a feed the answer says so and the audit row does not mention it
+	if res := e.adminReset(admin, "vom-admin-9012", false, true); res["calendarFeedRevoked"] != false {
+		t.Fatalf("answer without a feed: %v", res)
+	}
+	d = nil
+	_ = json.Unmarshal(lastAudit(t, e.store, storage.AuditAccountPasswordReset).Details, &d)
+	if _, ok := d["calendarFeedRevoked"]; ok {
+		t.Fatalf("audit details without a feed: %v", d)
+	}
+}
+
 // Both required: the new password first, then the second factor; changing the password is reachable
 // while the second factor is missing
 func TestMustChangePasswordBeforeRequiredMFA(t *testing.T) {

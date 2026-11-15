@@ -206,3 +206,32 @@ func TestSeedSMTPFromEnvKeepsPasswordOut(t *testing.T) {
 		t.Fatalf("a password entered in the administration must stay, got %q", got.SMTPPass)
 	}
 }
+
+// The image quality is high until the admin picks another level; unknown levels are refused, and saving
+// without the field keeps the stored one
+func TestImageQualitySetting(t *testing.T) {
+	store, _, _ := setupTestStore(t)
+	sys, err := store.GetSystemSettings()
+	if err != nil || sys.ImageQuality != ImageQualityHigh {
+		t.Fatalf("default: %q %v", sys.ImageQuality, err)
+	}
+	sys.ImageQuality = ImageQualityMedium
+	if err := store.UpdateSystemSettings(sys); err != nil {
+		t.Fatal(err)
+	}
+	sys, _ = store.GetSystemSettings()
+	if sys.ImageQuality != ImageQualityMedium {
+		t.Fatalf("saved: %q", sys.ImageQuality)
+	}
+	sys.ImageQuality = ""
+	if err := store.UpdateSystemSettings(sys); err != nil {
+		t.Fatal(err)
+	}
+	if sys, _ = store.GetSystemSettings(); sys.ImageQuality != ImageQualityMedium {
+		t.Fatalf("empty must keep it: %q", sys.ImageQuality)
+	}
+	sys.ImageQuality = "ultra"
+	if err := store.UpdateSystemSettings(sys); err != ErrInvalidImageQuality {
+		t.Fatalf("unknown level: %v", err)
+	}
+}

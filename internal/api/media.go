@@ -41,6 +41,18 @@ func (s *Server) mediaLimit(kind string) int64 {
 	return int64(mb) << 20
 }
 
+// imageQuality: how strongly the app compresses pictures before uploading them: MEDIA_IMAGE_QUALITY if
+// set, else the admin's choice (default high). Uploads through MCP or the API are stored as sent.
+func (s *Server) imageQuality() string {
+	if s.cfg.Media.ImageQuality != "" {
+		return s.cfg.Media.ImageQuality
+	}
+	if sys, _ := s.store.GetSystemSettings(); sys != nil && storage.ValidImageQuality(sys.ImageQuality) {
+		return sys.ImageQuality
+	}
+	return storage.ImageQualityHigh
+}
+
 var detectMedia = storage.DetectMedia
 
 func (s *Server) canEditDoc(userID, docID string) bool {

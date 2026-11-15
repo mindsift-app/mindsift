@@ -200,7 +200,7 @@ export interface OutlinerBlockProps {
   /** Returns the bullet the cursor ends up in (the last pasted line) */
   onPasteMultiLines?: (blockId: string, textBefore: string, textAfter: string, rawLines: string[]) => string | void;
   /** Uploaded pasted images become image bullets at this bullet (OutlinerTree.handlePasteImages) */
-  onPasteImages?: (anchorId: string, contents: string[], anchor?: DocumentBlock) => void;
+  onPasteImages?: (anchorId: string, contents: string[], anchor?: DocumentBlock, focus?: boolean) => void;
   /** Number or letter of a numbered-list item ("1.", "b.", "iii.") */
   listMarker?: string;
   /** Another bullet on the same level follows: Enter in this empty bullet adds a bullet instead of outdenting */
@@ -1630,6 +1630,17 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
             onDone={(media) => {
               setMediaPicker(null);
               const content = mediaContent('image', media.id);
+              if (onPasteImagesRef.current) {
+                // Like a pasted image: the bullet becomes the image and the cursor goes below it (a new
+                // empty bullet if needed), in one change, so Ctrl+Z takes it back in one step
+                if (debounceTimerRef.current !== null) {
+                  window.clearTimeout(debounceTimerRef.current);
+                  debounceTimerRef.current = null;
+                }
+                acceptRemoteUntilRef.current = Date.now() + 1000;
+                onPasteImagesRef.current(block.id, [content], { ...latestBlockRef.current, content: '' }, true);
+                return;
+              }
               setLocalContent(content);
               localContentRef.current = content;
               flushDebounce(content, { type: 'image' });

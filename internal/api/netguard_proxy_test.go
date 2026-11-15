@@ -2,6 +2,7 @@ package api
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"net"
 	"net/http"
@@ -9,6 +10,7 @@ import (
 	"net/url"
 	"slices"
 	"sync"
+	"sync/atomic"
 	"testing"
 )
 
@@ -138,5 +140,108 @@ func TestProxyAddr(t *testing.T) {
 		if got := proxyAddr(raw); got != want {
 			t.Errorf("%q: got %q, want %q", raw, got, want)
 		}
+	}
+}
+
+// countingProxy is a fake proxy on loopback that counts every connection made to it.
+func countingProxy(t *testing.T) (*httptest.Server, func() int64) {
+	t.Helper()
+	var conns atomic.Int64
+	ts := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = io.WriteString(w, "über den Proxy")
+	}))
+	ts.Config.ConnState = func(_ net.Conn, s http.ConnState) {
+		if s == http.StateNew {
+			conns.Add(1)
+		}
+	}
+	ts.Start()
+	t.Cleanup(ts.Close)
+	return ts, conns.Load
+}
+
+// Finding from the re-test: with HTTPS_PROXY on localhost, a target that bypasses the proxy (loopback,
+// NO_PROXY) and names the proxy's own host and port was dialled directly, because the dialer let the
+// proxy's address through. The proxy address is only for the proxy hop; as a direct target it is loopback.
+func TestGuardedClientRefusesProxyAddressAsDirectTarget(t *testing.T) {
+	proxy, conns := countingProxy(t)
+	port := proxy.Listener.Addr().(*net.TCPAddr).Port
+	targets := []string{
+		fmt.Sprintf("https://127.0.0.1:%d/", port),
+		fmt.Sprintf("https://localhost:%d/", port),
+		fmt.Sprintf("http://localhost:%d/", port),
+	}
+	for _, proxyURL := range []string{fmt.Sprintf("http://localhost:%d", port), proxy.URL} {
+		useProxy(t, proxyURL)
+		for _, target := range targets {
+			if _, err := guardedClient(false).Get(target); !errors.Is(err, errBlockedTarget) {
+				t.Fatalf("proxy %s, target %s: want blocked, got %v", proxyURL, target, err)
+			}
+			if _, err := guardedClient(true).Get(target); !errors.Is(err, errBlockedTarget) {
+				t.Fatalf("proxy %s, target %s with local targets allowed: want blocked, got %v", proxyURL, target, err)
+			}
+			if _, err := mediaFetchClient().Get(target); !errors.Is(err, errBlockedTarget) {
+				t.Fatalf("image copy %s: want blocked, got %v", target, err)
+			}
+			if _, _, err := fetchLimited(t.Context(), target, 1024, "text/html"); err == nil {
+				t.Fatalf("link preview %s: want refused", target)
+			}
+		}
+		// The same with the target host in NO_PROXY: it goes direct and stays blocked
+		useProxy(t, proxyURL, "localhost", "127.0.0.1")
+		if _, err := guardedClient(false).Get(fmt.Sprintf("https://localhost:%d/", port)); !errors.Is(err, errBlockedTarget) {
+			t.Fatalf("NO_PROXY target: want blocked, got %v", err)
+		}
+	}
+	if n := conns(); n != 0 {
+		t.Fatalf("%d connection(s) reached the proxy port", n)
+	}
+
+	// The proxy's own host and port as a target *through* the proxy (CONNECT localhost:<port>) is refused
+	// by the target check before the proxy is contacted
+	useProxy(t, proxy.URL)
+	p, _ := url.Parse(proxy.URL)
+	proxyForRequest = func(*http.Request) (*url.URL, error) { return p, nil }
+	for _, target := range targets {
+		if _, err := guardedClient(false).Get(target); !errors.Is(err, errBlockedTarget) {
+			t.Fatalf("%s through the proxy: want blocked, got %v", target, err)
+		}
+	}
+	if n := conns(); n != 0 {
+		t.Fatalf("%d connection(s) reached the proxy port", n)
+	}
+
+	// The proxy itself keeps working as the proxy hop for a public target
+	resp, err := guardedClient(false).Get("http://93.184.215.14/seite")
+	if err != nil {
+		t.Fatalf("public target through the loopback proxy: %v", err)
+	}
+	body, _ := io.ReadAll(resp.Body)
+	_ = resp.Body.Close()
+	if string(body) != "über den Proxy" || conns() != 1 {
+		t.Fatalf("proxy not used: %q, %d connection(s)", body, conns())
+	}
+}
+
+// The transport for proxied requests dials nothing but the proxy: should the proxy decision ever differ
+// between the check and the dial, the request fails instead of going anywhere else
+func TestGuardedClientProxiedTransportDialsOnlyProxy(t *testing.T) {
+	proxy, conns := countingProxy(t)
+	useProxy(t, proxy.URL)
+	tr := guardedClient(false).Transport.(*proxySplitTransport)
+	if _, err := tr.proxied.DialContext(t.Context(), "tcp", "127.0.0.1:9"); !errors.Is(err, errBlockedTarget) {
+		t.Fatalf("dial to another address: %v", err)
+	}
+	direct, _ := url.Parse("https://localhost/")
+	if _, err := tr.proxied.Proxy(&http.Request{URL: direct}); !errors.Is(err, errBlockedTarget) {
+		t.Fatalf("proxied transport without a proxy for the target: %v", err)
+	}
+	if conns() != 0 {
+		t.Fatal("unexpected connection to the proxy")
+	}
+	// Without a proxy in the environment the client keeps a plain transport
+	proxyEnvAddrs = func() map[string]bool { return map[string]bool{} }
+	if _, ok := guardedClient(false).Transport.(*http.Transport); !ok {
+		t.Fatal("without HTTP(S)_PROXY the direct transport is used")
 	}
 }

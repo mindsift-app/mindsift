@@ -23,13 +23,23 @@ One container, one SQLite file, your server.
 
 ---
 
-> ### 👋 Hey, before you scroll
+> ### 👋 A personal note before you scroll
 >
-> Yes, this was coded with a *lot* of AI help. No, that doesn't make it slop. I've put many, many evenings into it: deciding what goes in and what doesn't, testing every screen on my phone on the bus, ripping things out again and nitpicking pixels until it felt right. The robot typed, I argued with it.
+> MindSift is built with a lot of help from AI. I want to be open about that. AI wrote a large part of the code, but it didn't decide what MindSift should become, how its architecture should work, or what makes a feature good enough to ship.
 >
-> Credit where it's due: none of this came out of thin air. The idea is a remix of every outliner, kanban board and shopping list app I've ever loved (and a few I rage-quit), and the code stands on the shoulders of thousands of open-source developers whose work taught the models how to write it. So really, this is a big thank-you note with a login screen. 🙏
+> I'm a trained IT specialist with a background in systems integration, infrastructure and software development. I've worked with Linux, networking, Kubernetes and web applications long before AI coding tools became part of my workflow.
 >
-> It's free, and it stays free. Use it, fork it, host it for your family. If something's broken, open an issue. If you like it, a ⭐ makes my day. And if you hate it… please don't. Just close the tab. 😅
+> I use AI as a development tool, not as a substitute for engineering. I make the architectural decisions, define requirements, challenge the generated solutions, investigate problems and take responsibility for the result.
+>
+> And I've put a lot of work into making sure that result is actually good. MindSift has gone through extensive functional, security and performance testing. Its codebase is regularly checked, complex browser workflows are tested, and even its performance under heavy concurrent load has been measured on surprisingly modest hardware.
+>
+> This isn't a project where I asked an AI to build an app and called it a day. It's a product I use myself, continuously improve and intend to maintain.
+>
+> I'm not claiming MindSift is perfect or vulnerability-free. Software never is. But I do care deeply about getting things right, being transparent about limitations and fixing problems when they show up.
+>
+> So yes, there's a lot of AI in here. But there's also a lot of engineering, testing, late nights and personal responsibility behind it.
+>
+> **Thanks for taking a look at MindSift. I hope you enjoy using it as much as I enjoy building it.** ❤️
 
 ---
 
@@ -201,6 +211,7 @@ The most important settings (all of them are in [`.env.example`](.env.example); 
 | `TRUSTED_PROXIES` | `private` | Whose `X-Forwarded-For` to trust, see [reverse proxy](Doku/reverse-proxy.md) |
 | `MCP_ENABLED` | admin UI decides | `false` switches off the endpoint for AI agents |
 | `API_KEYS_ENABLED` | `true` | `false` refuses API keys on the REST API; they keep working for MCP |
+| `MEDIA_IMAGE_QUALITY` | admin UI decides (`high`) | `high`, `medium` or `low`: how strongly the app compresses new pictures before upload (always at most 2048 px, so text stays readable) |
 | `UPDATE_CHECK` | `true` | `false` stops the daily look for a new MindSift release (admins get a hint); no request goes out then |
 | `HTTP_PROXY`, `HTTPS_PROXY`, `NO_PROXY` | empty | Outgoing proxy for OIDC, the update check, webhooks, push, link previews and image copies; MindSift still checks each target's addresses itself before handing it over, and needs DNS for that ([limits](Doku/security.md#nothing-reaches-into-your-network)) |
 | `METRICS_TOKEN` | empty | Switches on `/metrics` for Prometheus, see [monitoring](Doku/operations.md#monitoring) |

@@ -122,6 +122,9 @@ type User struct {
 	// TourOffered: the app already asked whether to take the guided tour (storage/tour.go). Only in the
 	// own profile, so the app never reads a missing value as "not asked yet".
 	TourOffered *bool `json:"tourOffered,omitempty"`
+	// TypedRecognition: the app reads due dates and quantities from typed and dictated text (storage/
+	// typed_recognition.go). Only in the own profile; missing counts as on.
+	TypedRecognition *bool `json:"typedRecognition,omitempty"`
 }
 
 // Server roles: admins run everything, user managers ("Benutzerverwaltung") look after members,
@@ -531,6 +534,11 @@ type SystemSettings struct {
 	// LinkPreviews: the server fetches previews of web addresses in notes (default on); off, it fetches
 	// nothing and the app shows no preview cards. nil in an update leaves it unchanged. Off in demo mode.
 	LinkPreviews *bool `json:"linkPreviews,omitempty"`
+	// ImageQuality: how strongly the app compresses pictures before uploading them (always at most
+	// 2048 px): "high" (default), "medium" or "low". Empty in an update leaves it unchanged; ViaEnv:
+	// fixed by MEDIA_IMAGE_QUALITY.
+	ImageQuality       string `json:"imageQuality,omitempty"`
+	ImageQualityViaEnv bool   `json:"imageQualityConfiguredViaEnv,omitempty"`
 	// DefaultLanguage: language for people without their own choice whose browser language MindSift does
 	// not speak, and for the demo; empty in an update leaves it unchanged
 	DefaultLanguage string `json:"defaultLanguage,omitempty"`

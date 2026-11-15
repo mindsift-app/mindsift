@@ -158,20 +158,26 @@ describe('Drawing alone, and starting to draw together', () => {
     expect(screen.queryByRole('button', { name: 'Gemeinsam zeichnen' })).toBeNull();
   });
 
-  it('the host sees who joins, also the own other tab, and no "Live" before the session answered', async () => {
+  it('the starter is host from the first answer on, alone too, and sees who joins, also the own other tab', async () => {
     openBlock(true);
     fireEvent.doubleClick(screen.getByRole('img'));
     await editorOpen();
     fireEvent.click(screen.getByRole('button', { name: 'Gemeinsam zeichnen' }));
     await vi.waitFor(() => expect(realtime.sent.map((m) => m.event)).toContain('DRAW_JOIN'));
-    // Not answered yet: nothing flashes
+    // Not answered yet: no plain "Live" flashes, and the buttons stay those of the host
     expect(document.querySelector('[data-live-people]')).toBeNull();
+    expect(screen.getByRole('button', { name: /^Fertig/ })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /Verlassen/ })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Schließen ohne zu speichern' })).toBeTruthy();
     const anna = { id: 'c_anna', userId: 'u_anna', name: 'Anna' };
     emit('DRAW_STATE', { active: true, host: 'c_anna', participants: [anna], watchers: [], you: 'c_anna', els: [], order: [], seq: 0 });
-    expect(document.querySelector('[data-live-people]')).toBeNull();
-    // Anna's other tab draws along: the same person, but someone else in the session
+    // Answered: still alone, but in the session and its host
+    expect(document.querySelector('[data-live-people]')?.getAttribute('data-live-people')).toBe('Anna');
+    expect(screen.getByText('Du bist Gastgeber')).toBeTruthy();
+    expect(screen.getByRole('button', { name: /^Fertig/ })).toBeTruthy();
+    // Anna's other tab draws along: the same person once in the pictures
     emit('DRAW_PEOPLE', { active: true, host: 'c_anna', participants: [anna, { id: 'c_anna2', userId: 'u_anna', name: 'Anna' }], watchers: [] });
-    expect(document.querySelector('[data-live-people]')).toBeTruthy();
+    expect(document.querySelector('[data-live-people]')?.getAttribute('data-live-people')).toBe('Anna');
     expect(screen.getByText('Du bist Gastgeber')).toBeTruthy();
     emit('DRAW_PEOPLE', { active: true, host: 'c_anna', participants: [anna, { id: 'c_ben', userId: 'u_ben', name: 'Ben' }], watchers: [] });
     expect(document.querySelector('[data-live-people]')?.getAttribute('data-live-people')).toBe('Anna,Ben');
@@ -373,12 +379,24 @@ describe('Live drawing in the editor', () => {
     expect(document.querySelector('[data-live-cursor="Anna"]')).toBeNull();
   });
 
-  it('alone in it, there is no host or people to show', () => {
+  it('joining: not host until the server says so, and no "Live" before it answered', () => {
     open();
-    emit('DRAW_STATE', { host: 'c_ben', participants: [{ id: 'c_ben', userId: 'u_ben', name: 'Ben' }], watchers: [], you: 'c_ben', els: [], order: [], seq: 0 });
-    expect(screen.queryByText('Du bist Gastgeber')).toBeNull();
     expect(document.querySelector('[data-live-people]')).toBeNull();
-    expect(screen.getByRole('button', { name: /Fertig/ })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Verlassen/ })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /^Fertig/ })).toBeNull();
+  });
+
+  it('after the hand-over the new host sees it, also when the others are all gone', () => {
+    open();
+    emit('DRAW_STATE', { ...people, watchers: [], you: 'c_ben', els: [], order: [], seq: 0 });
+    expect(screen.getByText('Gastgeber: Anna')).toBeTruthy();
+    // Anna leaves: Ben is host, alone in the session now
+    emit('DRAW_PEOPLE', { active: true, host: 'c_ben', participants: [people.participants[1]], watchers: [] });
+    expect(screen.getByText('Du bist Gastgeber')).toBeTruthy();
+    expect(document.querySelector('[data-live-people]')?.getAttribute('data-live-people')).toBe('Ben');
+    expect(document.querySelector('[data-live-host]')?.getAttribute('data-live-host')).toBe('Ben');
+    expect(screen.getByRole('button', { name: /^Fertig/ })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /Verlassen/ })).toBeNull();
   });
 
   it('takes in changes of others and shows when the host saved', () => {

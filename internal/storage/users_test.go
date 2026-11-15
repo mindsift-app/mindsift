@@ -98,7 +98,7 @@ func TestMustChangePasswordFlag(t *testing.T) {
 		}
 	}
 	// No keys: nothing to revoke, no error
-	if keys, grants, err := store.RevokeAPIAccess(u.ID); err != nil || keys != 0 || grants != 0 {
+	if keys, grants, _, err := store.RevokeAPIAccess(u.ID); err != nil || keys != 0 || grants != 0 {
 		t.Fatalf("revoke without keys: %d %d %v", keys, grants, err)
 	}
 }

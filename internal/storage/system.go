@@ -271,6 +271,10 @@ func (s *Store) readSystemSettings() (*domain.SystemSettings, error) {
 				if i18n.Valid(v) {
 					settings.DefaultLanguage = v
 				}
+			case "image_quality":
+				if ValidImageQuality(v) {
+					settings.ImageQuality = v
+				}
 			case "time_zone":
 				zone := v
 				settings.TimeZone = &zone
@@ -322,6 +326,9 @@ func (s *Store) readSystemSettings() (*domain.SystemSettings, error) {
 	}
 	if settings.PublicLinkMaxDays == 0 {
 		settings.PublicLinkMaxDays = MaxPublicLinkDays
+	}
+	if settings.ImageQuality == "" {
+		settings.ImageQuality = ImageQualityHigh
 	}
 	if settings.TimeZone == nil {
 		notSet := ""
@@ -454,6 +461,13 @@ func (s *Store) UpdateSystemSettings(settings *domain.SystemSettings) error {
 		_, err = s.db.Exec(`INSERT INTO system_settings (key, value) VALUES ('default_language', ?)
 			ON CONFLICT(key) DO UPDATE SET value = excluded.value`, settings.DefaultLanguage)
 	}
+	if err == nil && settings.ImageQuality != "" {
+		if !ValidImageQuality(settings.ImageQuality) {
+			return ErrInvalidImageQuality
+		}
+		_, err = s.db.Exec(`INSERT INTO system_settings (key, value) VALUES ('image_quality', ?)
+			ON CONFLICT(key) DO UPDATE SET value = excluded.value`, settings.ImageQuality)
+	}
 	if err == nil && settings.TimeZone != nil {
 		zone := strings.TrimSpace(*settings.TimeZone)
 		if zone != "" {
@@ -496,6 +510,20 @@ var ErrInvalidMFARequired = i18n.NewError("Ungültige Einstellung für die Zwei-
 
 func ValidMFARequired(v string) bool {
 	return v == MFARequiredNobody || v == MFARequiredAdmins || v == MFARequiredAll
+}
+
+// How strongly the app compresses pictures before uploading them (domain.SystemSettings.ImageQuality);
+// the encoder qualities per level live in the frontend (lib/media.ts).
+const (
+	ImageQualityHigh   = "high"
+	ImageQualityMedium = "medium"
+	ImageQualityLow    = "low"
+)
+
+var ErrInvalidImageQuality = i18n.NewError("Ungültige Bildqualität (erlaubt: high, medium, low)")
+
+func ValidImageQuality(v string) bool {
+	return v == ImageQualityHigh || v == ImageQualityMedium || v == ImageQualityLow
 }
 
 // MaxPublicLinkDays: no public link lives longer than this (there is no link for good).
