@@ -34,8 +34,22 @@ export function tasksAfterUpdate(prev: Thought[], updated: Thought, listId: stri
   ) {
     return prev.filter((t) => t.id !== updated.id);
   }
-  // Watching is per person and not part of what everyone gets (TASK_UPDATED leaves it out): keep it
-  return prev.map((t) => (t.id === updated.id ? (updated.isWatching === undefined ? { ...updated, isWatching: t.isWatching } : updated) : t));
+  return prev.map((t) => (t.id === updated.id ? mergeUpdated(t, updated) : t));
+}
+
+// The task as an event tells it, with what the event does not carry kept from the one shown: watching is
+// per person and not part of what everyone gets (TASK_UPDATED leaves it out), and an event without
+// assignees (null, from an older server or a path that did not load them) does not clear them. An empty
+// list is a change and is taken.
+function mergeUpdated(shown: Thought, updated: Thought): Thought {
+  const keepWatching = updated.isWatching === undefined && shown.isWatching !== undefined;
+  const keepAssignees = updated.assignees == null && shown.assignees != null;
+  if (!keepWatching && !keepAssignees) return updated;
+  return {
+    ...updated,
+    ...(keepWatching ? { isWatching: shown.isWatching } : {}),
+    ...(keepAssignees ? { assignees: shown.assignees } : {}),
+  };
 }
 
 export function tasksAfterDelete(prev: Thought[], deletedId: string): Thought[] {
