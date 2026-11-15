@@ -174,6 +174,62 @@ describe('Enter at the end of a bullet with children', () => {
   });
 });
 
+describe('Enter in a to-do', () => {
+  const enterAt = async (text: string, pos = text.length) => {
+    const ta = area(text);
+    ta.focus();
+    ta.setSelectionRange(pos, pos);
+    await act(async () => {
+      fireEvent.keyDown(ta, { key: 'Enter' });
+    });
+  };
+  const todo = (id: string, content: string, level = 0, extra: Partial<DocumentBlock> = {}) =>
+    ({ ...mk(id, content, level, 'todo'), checked: false, ...extra }) as DocumentBlock;
+
+  it('at the end adds an unticked to-do without a task below', async () => {
+    render(<Harness initial={[todo('a', 'Milch kaufen', 1, { checked: true, taskId: 't1' })]} />);
+    await enterAt('Milch kaufen');
+    expect(live.map((b) => [b.content, b.type, b.level, !!b.checked, b.taskId || ''])).toEqual([
+      ['Milch kaufen', 'todo', 1, true, 't1'],
+      ['', 'todo', 1, false, ''],
+    ]);
+  });
+
+  it('in the middle splits it into two to-dos', async () => {
+    render(<Harness initial={[todo('a', 'Brot Butter')]} />);
+    await enterAt('Brot Butter', 4);
+    expect(live.map((b) => [b.content, b.type])).toEqual([
+      ['Brot', 'todo'],
+      [' Butter', 'todo'],
+    ]);
+  });
+
+  it('in an empty to-do turns it into a plain bullet on the same level', async () => {
+    render(<Harness initial={[todo('a', 'Eins', 1), todo('b', '', 1)]} />);
+    await enterAt('');
+    expect(live.map((b) => [b.content, b.type, b.level])).toEqual([
+      ['Eins', 'todo', 1],
+      ['', 'text', 1],
+    ]);
+  });
+
+  it('then in the empty plain bullet outdents it as before', async () => {
+    render(<Harness initial={[todo('a', 'Eins', 1), todo('b', '', 1)]} />);
+    await enterAt('');
+    await enterAt('');
+    expect(live.map((b) => [b.type, b.level])).toEqual([
+      ['todo', 1],
+      ['text', 0],
+    ]);
+  });
+
+  it('keeps plain bullets plain', async () => {
+    render(<Harness initial={[mk('a', 'Text')]} />);
+    await enterAt('Text');
+    expect(live[1]).toMatchObject({ type: 'text', content: '' });
+  });
+});
+
 describe('Pasting bullets copied from a note', () => {
   const paste = async (ta: HTMLTextAreaElement, data: Record<string, string>) => {
     ta.focus();

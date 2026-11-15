@@ -339,7 +339,7 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
   const rowCacheRef = useRef<RowCache>({ treeValues: [], rows: new Map() });
 
   const handleCreateBlockBelow = useCallback(
-    (afterBlockId: string, newContent: string = '') => {
+    (afterBlockId: string, newContent: string = '', type?: BlockType) => {
       if (!canEdit) return;
       const idx = blocks.findIndex((b) => b.id === afterBlockId);
       const currentBlock = idx >= 0 ? blocks[idx] : null;
@@ -353,8 +353,10 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
       const opensChildren =
         !!currentBlock && !currentBlock.collapsed && !!nextBlock && Math.max(0, nextBlock.level || 0) > currentLevel;
       const level = currentBlock ? currentLevel + (isHeading || opensChildren ? 1 : 0) : 0;
-      // Numbered lists continue on Enter (an empty item ends the list, see OutlinerBlock)
-      const inheritedType: BlockType = currentBlock?.type === 'numbered' ? 'numbered' : 'text';
+      // Numbered lists and to-dos continue on Enter (an empty item ends them, see OutlinerBlock). The new
+      // to-do is not linked to a task itself; the server's rules for linked to-dos apply as for any other.
+      const inheritedType: BlockType =
+        type ?? (currentBlock?.type === 'numbered' || currentBlock?.type === 'todo' ? currentBlock.type : 'text');
 
       const newBlock: DocumentBlock = {
         id: `blk_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`,
@@ -1384,7 +1386,8 @@ export const OutlinerTree = forwardRef<OutlinerTreeHandle, OutlinerTreeProps>(({
             } else {
               const lastBlock = blocks[blocks.length - 1];
               if (lastBlock.content && lastBlock.content.trim() !== '') {
-                handleCreateBlockBelow(lastBlock.id, '');
+                // A click below the note starts a plain bullet, even after a to-do
+                handleCreateBlockBelow(lastBlock.id, '', 'text');
               } else {
                 focusBlockInput(lastBlock.id, 'end');
               }

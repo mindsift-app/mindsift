@@ -1216,6 +1216,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
     }
 
     // 2. Enter (without Shift) -> If block is completely empty:
+    //    - A to-do becomes a plain bullet
     //    - If level > minLevel, outdent (Shift+Tab behaviour)
     //    - Otherwise split paragraph at cursor and create new block below
     if (e.key === 'Enter' && !e.shiftKey && block.type !== 'code') {
@@ -1240,6 +1241,12 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
 
       const minLevel = levelOffset || 0;
       if (localContent === '') {
+        // Enter in an empty to-do ends the to-dos: it becomes a plain bullet on the same level
+        if (block.type === 'todo') {
+          refocusAfterTypeChangeRef.current = true;
+          flushDebounce('', { type: 'text', checked: false, taskId: '' });
+          return;
+        }
         if (Math.max(0, block.level || 0) > minLevel && !siblingFollows) {
           flushDebounce(localContent);
           onIndentBlockRef.current(block.id, -1);

@@ -103,7 +103,7 @@ const de: HelpContent = {
         <div className="space-y-2 text-muted leading-relaxed">
           <ul className="space-y-1.5">
             <li>
-              <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">Enter</kbd> : Erzeugt sofort einen neuen Bullet-Point auf derselben Ebene. Ist der Punkt leer und eingerückt, rückt er eine Ebene nach links aus.
+              <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">Enter</kbd> : Erzeugt sofort einen neuen Bullet-Point auf derselben Ebene. Ist der Punkt leer und eingerückt, rückt er eine Ebene nach links aus. Nach einem To-do kommt wieder ein To-do (nicht abgehakt, ohne eigene Aufgabe); Enter in einem leeren To-do macht daraus einen normalen Punkt.
             </li>
             <li>
               <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded-sm font-mono text-[11px] text-accent">Tab</kbd> : Rückt den aktuellen Bullet-Point nach rechts ein und ordnet ihn dem vorherigen Punkt unter.
