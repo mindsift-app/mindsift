@@ -606,7 +606,7 @@ const de: HelpContent = {
             <strong className="text-main">Einliefern:</strong> <code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">POST /api/v1/webhooks/ingest</code> nimmt Gedanken aus iOS-Kurzbefehlen, Home Assistant oder n8n an. Mit dem Feld <code className="font-mono">"target"</code> wählst du das Ziel: <code className="font-mono">triage</code> (Standard), <code className="font-mono">task</code> (optional mit <code className="font-mono">taskListId</code>) oder <code className="font-mono">list_item</code> (mit <code className="font-mono">listId</code>).
           </p>
           <p>
-            <strong className="text-main">KI-Agenten:</strong> Über MCP (<code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">POST /api/v1/mcp</code>) lesen, anlegen, ändern, abhaken und löschen Claude Code, OpenAI Codex, Claude Desktop, Cursor und eigene Agenten deine Aufgaben, Listen und Notizen und sortieren die Inbox. Die Einstellungen zeigen den fertigen Befehl für jeden Agenten; ein Agent sieht nur die Werkzeuge, die der Schlüssel erlaubt.
+            <strong className="text-main">KI-Agenten:</strong> Über MCP (<code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">POST /api/v1/mcp</code>) lesen, anlegen, ändern, abhaken und löschen Claude Code, OpenAI Codex, Claude Desktop, Cursor und eigene Agenten deine Aufgaben, Listen und Notizen und sortieren die Inbox. Die Einstellungen zeigen den fertigen Befehl für jeden Agenten; ein Agent sieht nur die Werkzeuge, die der Schlüssel erlaubt. Bilder (z. B. ein erzeugtes Bild oder einen Screenshot) fügt ein Agent als eigenen Punkt in eine Notiz ein: als Datei oder von einer https-Adresse, die MindSift in die Notiz kopiert (JPEG, PNG, GIF, WebP). In Notizen legen Agenten auch Code-Blöcke mit Sprache und Trennlinien an, verschieben Punkte mit ihren Unterpunkten (auch ein- und ausrücken) und machen wie /extract aus einem Punkt eine eigene Notiz mit Link an seiner Stelle.
           </p>
           <p>
             <strong className="text-main">Herkunft:</strong> Was ein Schlüssel anlegt oder ändert, trägt dauerhaft eine Badge mit seinem Namen, vorne ein Webhook-Symbol (API) oder ein Roboter (MCP). Fährst du darüber oder tippst darauf, siehst du, wer wann angelegt und zuletzt geändert hat.
@@ -639,7 +639,7 @@ const de: HelpContent = {
           </p>
           <ul className="space-y-1.5">
             <li>
-              <strong className="text-main">Ansicht umschalten:</strong> Nutze den Umschalter oben rechts zwischen Liste und Kanban.
+              <strong className="text-main">Ansicht umschalten:</strong> Am Desktop wechselt der Umschalter oben rechts zwischen Liste, Kanban und Kalender. Auf dem Smartphone zeigt die kleine Plakette neben der Aufgabenliste die Ansicht; antippen wechselt weiter (Kanban → Kalender → Liste). Offen, Erledigt und Papierkorb wählst du in der Listenansicht über den Umschalter oben in der Liste.
             </li>
             <li>
               <strong className="text-main">Eigene Kanban-Spalten:</strong> Über die Spaltenverwaltung kannst du für jede Aufgabenliste individuelle Phasen definieren (z.B. <em>Backlog</em>, <em>In Bearbeitung</em>, <em>Review</em>, <em>Erledigt</em>) inklusive Farben und Erledigt-Status.

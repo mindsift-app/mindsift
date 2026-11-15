@@ -174,7 +174,7 @@ It generates the secrets, asks for the admin account (and removes its password f
 
 All settings are explained in [`.env.example`](.env.example).
 
-**Without a container:** the [releases](https://github.com/mindsift-app/mindsift/releases) carry the server as a single file for Linux (amd64 and arm64), frontend included. Start `./mindsift`: it listens on port 8080 and keeps everything in `./data`. The time zone is not taken from the system but from `TZ` or the administration (UTC until one is set).
+**Without a container (not supported):** the [releases](https://github.com/mindsift-app/mindsift/releases) carry the server as a single file for Linux (amd64 and arm64), frontend included. Start `./mindsift`: it listens on port 8080 and keeps everything in `./data`. The time zone is not taken from the system but from `TZ` or the administration (UTC until one is set).
 
 ---
 
@@ -249,18 +249,32 @@ The short version; what each decision costs is in [Doku/architecture.md](Doku/ar
 
 ---
 
-## Performance on 1 CPU core and 1 GB RAM
+## Requirements and performance
 
-Load-tested on the public demo, a deliberately small server with **1 CPU core and 1 GB RAM**, with simulated people signing in, typing in notes, loading their note list, working with tasks and lists and searching at the same time, each with a workspace of realistic size:
+The numbers below come from load tests against the public demo, a deliberately small server with **1 CPU core and 1 GB RAM**: simulated people sign in, type in notes, load their note list, search, and work with tasks, Kanban boards and shared lists at the same time, each with a workspace of realistic size. From them:
+
+**Server**
+
+* **Minimum:** 1 CPU core and 512 MB RAM, Linux on amd64 or arm64 (also a Raspberry Pi with a 64-bit system), with Docker (Docker Compose is the supported way; the single binary of the releases works, but is not supported). The server used at most about 200 MB of memory in every test, also at full load.
+* **Disk:** room for the database and your files, plus about twice the database size free for updates (backups before migrations, compaction).
+* **More people at once:** several hundred people active at the same moment work on one core; above that the CPU is the limit, and more or faster cores help directly.
+
+**Devices**
+
+* A current browser: **Safari 16.4** or newer (iOS and iPadOS 16.4), **Chrome / Edge 111** or newer, **Firefox 128** or newer. Older versions, such as iPhones that stop at iOS 15, are not supported; the layout needs features they lack.
+* Installable as an app (PWA) on phones and desktops; notes you opened once keep working offline.
+
+**Measured** (1 CPU core, 1 GB RAM):
 
 | People working at once | Typical answer (median) | Slowest 5 % | Errors |
 |---|---|---|---|
 | 500, about 10 per note | ~1.1 s | ~3 s | 0 % |
 | 800, about 10 per note | ~3 s | ~13 s | 0.02 % |
-| 1,200, about 10 per note | ~8 s | ~17 s | 0.2 % |
+| 1,200, about 10 per note | ~8 s | ~16 s | 0.03 % |
 | 300, all in the **same** note | ~0.5 s | ~4 s | 0 % |
+| 500 with their own task lists (400 tasks each) | ~4 s | ~10 s | 0.2 % |
 
-Several hundred people at the same moment work on that single core, with the server using under 200 MB of memory; above that the CPU is the limit and everything slows down, and at 1,200 about one request in 450 times out. Hundreds typing in the *same* note wait for each other, because edits to one note are applied one after another. More: [Doku/performance.md](Doku/performance.md).
+At 1,200 people at once the core is full and everything slows down, but hardly anything fails. Hundreds typing in the *same* note wait for each other, because edits to one note are applied one after another. More: [Doku/performance.md](Doku/performance.md).
 
 ---
 

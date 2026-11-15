@@ -78,6 +78,7 @@ var migrations = []migration{
 	{50, "Index for the open to-dos of the note list", (*Store).migrateOpenTodoIndex},
 	{51, "Leaner note list: indexes for its hashtag counts and shares, unused documents.content removed", (*Store).migrateNoteList},
 	{52, "Code blocks keep no hidden values; smaller results of note operations", (*Store).migrateCodeBlocksAndOpResults},
+	{53, "Covering index for the note search", (*Store).migrateSearchCoverIndex},
 }
 
 // migrationBlockRefs creates block_refs: until it has run (earlier steps that rewrite notes), writing a
@@ -383,6 +384,18 @@ func (s *Store) columnExists(table, column string) (bool, error) {
 // an entry; the query names the same conditions, so SQLite can use it.
 func (s *Store) migrateOpenTodoIndex() error {
 	_, err := s.db.Exec(`CREATE INDEX IF NOT EXISTS idx_blocks_open_todo ON blocks(document_id) WHERE type = 'todo' AND checked = 0 AND deleted = 0`)
+	return err
+}
+
+// migrateSearchCoverIndex is migration 53: the note search (sqlNoteSearchHits) looks up every matched
+// bullet by its key in the index and reads deleted, document_id and id of it. With only
+// idx_blocks_fts_rowid that is one seek in the index and one in the table per match; the covering index
+// answers it from the index alone (search for a common word: 17.8 to 12.1 ms). idx_blocks_fts_rowid stays:
+// it keeps the key unique, and a key held twice would make the external-content index delete the text of
+// the wrong bullet. The extra index is written when a bullet is inserted, deleted or restored, not when
+// its text changes.
+func (s *Store) migrateSearchCoverIndex() error {
+	_, err := s.db.Exec(`CREATE INDEX IF NOT EXISTS idx_blocks_fts_cover ON blocks(fts_rowid, deleted, document_id, id)`)
 	return err
 }
 

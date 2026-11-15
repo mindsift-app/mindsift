@@ -95,6 +95,13 @@ func (s *Server) handleMentionCandidates(w http.ResponseWriter, r *http.Request)
 // notifyMentioned tells the newly mentioned people who can see the place (the center links to it: a task,
 // or a note and its bullet).
 func (s *Server) notifyMentioned(actorID string, newly []string, audience []string, title, targetType, targetID, blockID string) {
+	var b notifyBatch
+	s.planMentioned(&b, actorID, newly, audience, title, targetType, targetID, blockID)
+	s.storeBatch(&b)
+}
+
+// planMentioned is notifyMentioned without storing: it adds the event to b.
+func (s *Server) planMentioned(b *notifyBatch, actorID string, newly []string, audience []string, title, targetType, targetID, blockID string) {
 	if len(newly) == 0 {
 		return
 	}
@@ -108,7 +115,7 @@ func (s *Server) notifyMentioned(actorID string, newly []string, audience []stri
 			to = append(to, id)
 		}
 	}
-	s.notify("mentioned", actorID, to, func(lang string) map[string]string {
+	s.planNotify(b, "mentioned", actorID, to, func(lang string) map[string]string {
 		return map[string]string{
 			"title":      title,
 			"text":       i18n.T(lang, mentionedText, "name", s.actorName(lang, actorID), "title", title),
@@ -131,13 +138,21 @@ func taskMentionCounts(t *domain.Thought) map[string]int {
 	return storage.MentionCounts(texts...)
 }
 
-// notifyTaskMentions: people newly mentioned in a task's description or subtasks (before nil: a new task).
-func (s *Server) notifyTaskMentions(actorID string, before, after *domain.Thought) {
+// planTaskMentions adds to b that people were newly mentioned in a task's description or subtasks
+// (before nil: a new task). audience: taskAudience of after when the caller has it, nil to read it here
+// when someone was mentioned.
+func (s *Server) planTaskMentions(b *notifyBatch, actorID string, before, after *domain.Thought, audience []string) {
 	if after == nil {
 		return
 	}
 	newly := storage.NewlyMentioned(taskMentionCounts(before), taskMentionCounts(after))
-	s.notifyMentioned(actorID, newly, s.taskAudience(after), taskTitle(after), "task", after.ID, "")
+	if len(newly) == 0 {
+		return
+	}
+	if audience == nil {
+		audience = s.taskAudience(after)
+	}
+	s.planMentioned(b, actorID, newly, audience, taskTitle(after), "task", after.ID, "")
 }
 
 // notifyNoteMentions: people newly mentioned in the bullets an edit wrote (each bullet remembers its

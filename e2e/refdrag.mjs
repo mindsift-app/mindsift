@@ -202,8 +202,9 @@ await step('List: Homelab row onto the “Haus & Garten” tab', async () => {
 await step('Liste: Aufgabe per Klick abhaken', () => row('Heizungswartung').getByTitle('Als erledigt abhaken').click());
 await step('Liste: Aufgabe per Knopf löschen', () => row('Steuerunterlagen').getByTitle('Aufgabe löschen').click());
 await step('Trash: restore a task', async () => {
-  await d.getByRole('button', { name: /^Papierkorb \(/ }).locator('visible=true').first().click();
-  await d.getByRole('button', { name: /Zurück/ }).locator('visible=true').first().click();
+  // The trash is loaded when it is opened: until then the tab has no count
+  await d.getByRole('button', { name: /^Papierkorb( \(\d+\))?$/ }).locator('visible=true').first().click();
+  await d.getByRole('button', { name: /Zurück/ }).locator('visible=true').first().click({ timeout: 15000 });
   await sleep(600);
   await d.getByRole('button', { name: /^Offen \(/ }).locator('visible=true').first().click();
 });

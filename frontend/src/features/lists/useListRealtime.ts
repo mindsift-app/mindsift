@@ -6,9 +6,9 @@ import { deduplicateItems } from './listItems';
 import { useLatestRef } from '../../lib/useLatestRef';
 import { useRealtimeReload } from '../../lib/realtimeReload';
 
-// List events that cannot be applied from their payload: a list new to this person, shares changed (the
-// members shown need the people's details). They reload the lists, one request per burst.
-export const LIST_RELOAD_EVENTS = ['LIST_CREATED', 'LIST_SHARED', 'LIST_UNSHARED'];
+// List events that cannot be applied from their payload: shares changed (the members shown need the
+// people's details). They reload the lists, one request per burst.
+export const LIST_RELOAD_EVENTS = ['LIST_SHARED', 'LIST_UNSHARED'];
 
 type ReorderedItem = { id: string; sortOrder: number; category?: string; content?: string };
 
@@ -30,9 +30,8 @@ function itemsAfterReorder(items: ListItem[], moved: ReorderedItem[]): ListItem[
   return next.map((item, index) => ({ item, index })).sort((a, b) => a.item.sortOrder - b.item.sortOrder || a.index - b.index).map((x) => x.item);
 }
 
-// LIST_UPDATED carries the whole list as the person who changed it sees it: title, icon, type, entries,
-// shares and members are the same for everyone, whether this person owns it or may edit it is not.
-// Entries added offline and not sent yet stay.
+// LIST_UPDATED carries the list without what differs per person (isOwner, role): title, icon, type,
+// entries, shares and members. Entries added offline and not sent yet stay.
 function listAfterUpdate(l: SharedList, p: Partial<SharedList>): SharedList {
   const offline = l.items.filter((i) => i.id.startsWith(OFFLINE_ITEM_PREFIX));
   return {
@@ -50,6 +49,12 @@ function listAfterUpdate(l: SharedList, p: Partial<SharedList>): SharedList {
 // How a list event changes the lists shown; reload: it cannot be applied from what it carries
 export function listsAfterEvent(prev: SharedList[], msg: WSMessage): { lists: SharedList[]; reload: boolean } {
   if (LIST_RELOAD_EVENTS.includes(msg.event)) return { lists: prev, reload: true };
+  // Only the creator gets it: the tab that created the list shows it already, their other devices load
+  // the lists (its place among them is the server's)
+  if (msg.event === 'LIST_CREATED') {
+    const id = (msg.payload as { id?: unknown } | null | undefined)?.id;
+    return { lists: prev, reload: typeof id !== 'string' || !prev.some((l) => l.id === id) };
+  }
   const listId = msg.listId || msg.list_id;
   if (msg.event === 'LIST_UPDATED') {
     const p = msg.payload as Partial<SharedList> | null | undefined;

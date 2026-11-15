@@ -30,9 +30,19 @@ type TrashedTask struct {
 }
 
 func (s *Store) trashTask(id, byUserID string) error {
-	rows, err := s.db.Query(`SELECT * FROM thoughts WHERE id = ?`, id)
+	stmts, err := s.trashTaskStmts(id, byUserID)
 	if err != nil {
 		return err
+	}
+	return s.execInTx(stmts...)
+}
+
+// trashTaskStmts reads what trashing a task stores and returns the statements that do it (none when the
+// task is gone), for the caller's transaction; the reads happen before it.
+func (s *Store) trashTaskStmts(id, byUserID string) ([]sqlStmt, error) {
+	rows, err := s.db.Query(`SELECT * FROM thoughts WHERE id = ?`, id)
+	if err != nil {
+		return nil, err
 	}
 	cols, _ := rows.Columns()
 	data := map[string]any{}
@@ -45,7 +55,7 @@ func (s *Store) trashTask(id, byUserID string) error {
 		}
 		if err := rows.Scan(ptrs...); err != nil {
 			_ = rows.Close()
-			return err
+			return nil, err
 		}
 		for i, c := range cols {
 			if b, ok := vals[i].([]byte); ok {
@@ -58,14 +68,14 @@ func (s *Store) trashTask(id, byUserID string) error {
 	}
 	_ = rows.Close()
 	if !found {
-		return nil
+		return nil, nil
 	}
 	str := func(k string) string { v, _ := data[k].(string); return v }
 	userID, listID := str("user_id"), str("task_list_id")
 	owner := userID
 	if listID != "" {
 		if err := rowErr(s.db.QueryRow(`SELECT user_id FROM task_lists WHERE id = ?`, listID).Scan(&owner)); err != nil {
-			return err
+			return nil, err
 		}
 	}
 	done := false
@@ -76,12 +86,12 @@ func (s *Store) trashTask(id, byUserID string) error {
 	assignees := s.queryUserIDs(`SELECT user_id FROM task_assignees WHERE task_id = ?`, id)
 	dataJSON, _ := json.Marshal(data)
 	assJSON, _ := json.Marshal(assignees)
-	return s.execInTx(
+	return []sqlStmt{
 		stmt(`INSERT OR REPLACE INTO trashed_tasks (id, user_id, task_list_id, owner_id, content, is_completed, data, assignees, trashed_at, trashed_by)
 			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 			id, userID, listID, owner, str("content"), boolInt(done), string(dataJSON), string(assJSON), domain.NowISO(), byUserID),
 		stmt(`DELETE FROM thoughts WHERE id = ?`, id),
-	)
+	}, nil
 }
 
 // taskTrashScope: entries the user can see: own personal tasks and tasks of lists they can see.

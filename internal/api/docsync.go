@@ -226,15 +226,25 @@ func (s *Server) afterDocChange(actorID, docID string, ops []collab.Op, results 
 			titleChanged = true
 		}
 	}
-	for _, before := range s.store.ReconcileDocTaskLinks(docID) {
-		if th, err := s.store.GetThoughtByIDUnchecked(before.ID); err == nil {
-			s.wsHub.BroadcastToUsers(s.taskAudience(th), "TASK_UPDATED", th)
-			// Ticked or retitled in the note: told like a change in the task (unlinking alone changes nothing)
-			if len(taskChanges(before, th)) > 0 {
-				s.notifyTaskChange(actorID, before, th, false)
+	// Ticked or retitled in the note: told like a change in the task (unlinking alone changes nothing).
+	// The notifications are planned from the tasks' new state and stored with them in one transaction.
+	var b notifyBatch
+	audiences := map[string][]string{}
+	plan := func(changed []storage.TaskReconciled) ([]storage.CenterAdd, []storage.QueuedAdd) {
+		for _, c := range changed {
+			audience := s.taskAudience(c.After)
+			audiences[c.After.ID] = audience
+			if len(taskChanges(c.Before, c.After)) > 0 {
+				s.planTaskChange(&b, actorID, c.Before, c.After, false, audience)
 			}
 		}
+		return b.center, b.queue
 	}
+	changed, added := s.store.ReconcileDocTaskLinksNotify(docID, plan)
+	for _, c := range changed {
+		s.wsHub.BroadcastToUsers(audiences[c.After.ID], "TASK_UPDATED", c.After)
+	}
+	s.sendBatch(&b, added)
 	s.notifyNoteMentions(actorID, docID, ops, results)
 	if titleChanged {
 		s.broadcastDocToAuthorizedUsers(docID, "DOC_UPDATED")

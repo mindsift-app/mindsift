@@ -276,7 +276,7 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ currentUser, onBack }) =
       {/* Modal: Neue Gruppe erstellen */}
       {showCreateModal && (
         <div
-          className="fixed inset-0 m-0! modal-overlay z-50 flex items-center justify-center bg-black/60 p-4 animate-in fade-in duration-150"
+          className="fixed inset-0 m-0! modal-overlay z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150"
           onClick={() => setShowCreateModal(false)}
         >
           <div

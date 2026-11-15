@@ -16,7 +16,9 @@ import (
 	"time"
 
 	"github.com/mindsift-app/mindsift/internal/auth"
+	"github.com/mindsift-app/mindsift/internal/collab"
 	"github.com/mindsift-app/mindsift/internal/config"
+	"github.com/mindsift-app/mindsift/internal/domain"
 	"github.com/mindsift-app/mindsift/internal/storage"
 	"github.com/mindsift-app/mindsift/internal/ws"
 )
@@ -78,7 +80,9 @@ type stmtCountingConn struct {
 }
 
 func (c *stmtCountingConn) ExecContext(ctx context.Context, q string, args []driver.NamedValue) (driver.Result, error) {
-	countStmt(q, !c.inTx)
+	// A plain BEGIN is deferred and takes no lock (storage.readConsistent reads with one), nor does its
+	// ROLLBACK
+	countStmt(q, !c.inTx && q != "BEGIN" && q != "ROLLBACK")
 	return c.stmtFullConn.ExecContext(ctx, q, args)
 }
 
@@ -183,11 +187,12 @@ func newCountingTestServer(t *testing.T) (*Server, *storage.Store, string, strin
 	return srv, store, token, user.ID
 }
 
-// TestTaskWriteCost: creating and completing a task costs a fixed number of statements and at most two
-// writes that wait for the write lock, not a few statements and a write per member of its list (load
-// test 2026-11-15: creating a task was by far the slowest request, before: 331 statements and 55 writes
-// in a list shared with 50 people). Logs the cost per request; TASK_COST_SQL=1 logs every statement of
-// the first one.
+// TestTaskWriteCost: creating, completing and deleting a task costs a fixed number of statements and one write
+// that waits for the write lock (the notifications go into the transaction of the change), not a few
+// statements and a write per member of its list (load test 2026-11-15: creating a task was by far the
+// slowest request, before: 331 statements and 55 writes in a list shared with 50 people; then 67 to 73
+// statements and two writes; now 14 to 15 statements and one write, 8 to 9 in a personal list). Logs the
+// cost per request; TASK_COST_SQL=1 logs every statement of the first one.
 func TestTaskWriteCost(t *testing.T) {
 	srv, store, token, ownerID := newCountingTestServer(t)
 	router := srv.Router()
@@ -245,22 +250,22 @@ func TestTaskWriteCost(t *testing.T) {
 			}
 		})
 	}
-	check := func(what string, c taskWriteCost) {
+	check := func(what string, c taskWriteCost, maxStmts float64) {
 		t.Helper()
 		t.Logf("%s: %v", what, c)
-		if c.stmts > 80 || c.locks > 2 {
-			t.Errorf("%s: %v, expected at most 80 statements and 2 writes", what, c)
+		if c.stmts > maxStmts || c.locks > 1 {
+			t.Errorf("%s: %v, expected at most %.0f statements and 1 write", what, c, maxStmts)
 		}
 	}
 
 	sharedCreate, sharedIDs := create(shared.ID)
-	check(fmt.Sprintf("create in a list shared with %d people", members), sharedCreate)
-	check(fmt.Sprintf("complete in a list shared with %d people", members), complete(sharedIDs))
+	check(fmt.Sprintf("create in a list shared with %d people", members), sharedCreate, 16)
+	check(fmt.Sprintf("complete in a list shared with %d people", members), complete(sharedIDs), 16)
 	personalCreate, personalIDs := create(personal.ID)
-	check("create in a personal list", personalCreate)
-	check("complete in a personal list", complete(personalIDs))
+	check("create in a personal list", personalCreate, 10)
+	check("complete in a personal list", complete(personalIDs), 10)
 	inboxCreate, _ := create("")
-	check("create without a list", inboxCreate)
+	check("create without a list", inboxCreate, 6)
 
 	// What the requests did is unchanged: the creator is assigned in the shared list only, and every
 	// member has an entry for each task added and each completed
@@ -283,5 +288,142 @@ func TestTaskWriteCost(t *testing.T) {
 	}
 	if entries, _, _ := store.CenterEntries(ownerID, 100); len(entries) != 0 {
 		t.Errorf("the creator has %d center entries for their own changes", len(entries))
+	}
+
+	// Deleting moves the task to the trash, forgets its watchers and stores what they are told in one
+	// write (before: three, the trash, the notifications and the watchers each on their own)
+	remove := func(ids []string) taskWriteCost {
+		return measureTaskWrites(t, n, func(i int) {
+			rec := sendWith(t, router, http.MethodDelete, "/api/v1/thoughts/"+ids[i], token, nil)
+			if rec.Code != http.StatusOK {
+				t.Fatalf("delete: %d %s", rec.Code, rec.Body.String())
+			}
+		})
+	}
+	// A member watches the shared tasks, so deleting them notifies someone
+	for _, id := range sharedIDs {
+		if err := store.WatchTask(id, memberIDs[0], true); err != nil {
+			t.Fatal(err)
+		}
+	}
+	check(fmt.Sprintf("delete in a list shared with %d people", members), remove(sharedIDs), 22)
+	check("delete in a personal list", remove(personalIDs), 15)
+	if trash, _ := store.GetTaskTrash(ownerID, shared.ID); len(trash) != n {
+		t.Errorf("task trash of the shared list: %d entries, want %d", len(trash), n)
+	}
+	if w := store.TaskWatchers(sharedIDs[0]); len(w) != 0 {
+		t.Errorf("a deleted task still has watchers %v", w)
+	}
+	watcherEntries, _, err := store.CenterEntries(memberIDs[0], 200)
+	if err != nil {
+		t.Fatal(err)
+	}
+	watched := 0
+	for _, e := range watcherEntries {
+		if e.Kind == "watched" {
+			watched++
+		}
+	}
+	if watched != n {
+		t.Errorf("center of the watcher: %d entries about watched tasks, want %d about the deleted ones", watched, n)
+	}
+}
+
+// TestNoteTodoWriteCost: ticking a to-do in a note that is linked to a task changes the note, the task
+// and tells the task's people. The task and its notifications go into one transaction
+// (ReconcileDocTaskLinksNotify), so a tick waits twice for the write lock: once for the note, once for
+// the task (before: three times, the notifications on their own; and 473 statements with 20 linked
+// to-dos, as every task read the subtasks of all the others; now 33). Note and task each in a transaction
+// of their own is deliberate: the note's change is applied under its lock inside its transaction, and
+// the task's notifications are planned from the state the change produced, before a transaction begins.
+func TestNoteTodoWriteCost(t *testing.T) {
+	srv, store, token, ownerID := newCountingTestServer(t)
+	router := srv.Router()
+
+	const members, n = 50, 20
+	list, err := store.CreateTaskList(ownerID, "", "", "Geteilt", "", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	blocks := make([]domain.DocumentBlock, n)
+	for i := range blocks {
+		blocks[i] = domain.DocumentBlock{ID: fmt.Sprintf("todo%d", i), Type: "todo", Content: fmt.Sprintf("Punkt %d", i)}
+	}
+	doc, err := store.CreateDocument(ownerID, "", "Gemeinsame Notiz", "", "", blocks, nil, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var memberIDs []string
+	for i := range members {
+		u, _ := newTestUser(t, store, fmt.Sprintf("leser%d@example.com", i))
+		memberIDs = append(memberIDs, u.ID)
+		if _, err := store.AddTaskListShare(list.ID, "user", u.ID, "editor", ownerID); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := store.CreateDocShare(ownerID, doc.ID, u.ID, "write"); err != nil {
+			t.Fatal(err)
+		}
+	}
+	var taskIDs []string
+	for i := range n {
+		th, err := store.CreateTaskFromDocBlock(ownerID, doc.ID, blocks[i].ID, blocks[i].Content, false)
+		if err != nil {
+			t.Fatal(err)
+		}
+		listID := list.ID
+		if _, _, err := store.UpdateTask(ownerID, th, storage.ThoughtPatch{TaskListID: &listID}, nil); err != nil {
+			t.Fatal(err)
+		}
+		taskIDs = append(taskIDs, th.ID)
+	}
+
+	sync := func(i int, op collab.Op) {
+		rec := sendWith(t, router, http.MethodPost, "/api/v1/docs/"+doc.ID+"/sync", token,
+			map[string]any{"clientId": "tab", "lastSeq": 0, "skipLog": true, "ops": []collab.Op{op}})
+		if rec.Code != http.StatusOK {
+			t.Fatalf("sync %d: %d %s", i, rec.Code, rec.Body.String())
+		}
+	}
+	yes := true
+	tick := measureTaskWrites(t, n, func(i int) {
+		sync(i, collab.Op{OpID: fmt.Sprintf("tick%d", i), Kind: collab.OpSetProps, BlockID: blocks[i].ID, Patch: &collab.PropsPatch{Checked: &yes}})
+	})
+	t.Logf("tick a linked to-do in a note shared with %d people: %v", members, tick)
+	if tick.locks > 2 || tick.stmts > 36 {
+		t.Errorf("tick: %v, expected at most 36 statements and 2 writes", tick)
+	}
+	snap, err := store.GetDocSnapshot(doc.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	version := map[string]int{}
+	for _, b := range snap.Blocks {
+		version[b.ID] = b.Version
+	}
+	retitle := measureTaskWrites(t, n, func(i int) {
+		text := fmt.Sprintf("Punkt %d geändert", i)
+		sync(i, collab.Op{OpID: fmt.Sprintf("text%d", i), Kind: collab.OpSetContent, BlockID: blocks[i].ID, BaseVersion: version[blocks[i].ID], Content: &text})
+	})
+	t.Logf("retitle a linked to-do in a note shared with %d people: %v", members, retitle)
+	if retitle.locks > 2 || retitle.stmts > 36 {
+		t.Errorf("retitle: %v, expected at most 36 statements and 2 writes", retitle)
+	}
+
+	// The tasks followed the note, and every member heard each one completed
+	if th, _ := store.GetThoughtByID(ownerID, taskIDs[0]); th == nil || !th.IsCompleted || th.Content != "Punkt 0 geändert" {
+		t.Errorf("linked task: %+v, want completed and retitled", th)
+	}
+	entries, _, err := store.CenterEntries(memberIDs[members-1], 100)
+	if err != nil {
+		t.Fatal(err)
+	}
+	done := 0
+	for _, e := range entries {
+		if e.Kind == "taskDone" {
+			done++
+		}
+	}
+	if done != n {
+		t.Errorf("center of a member: %d completed, want %d", done, n)
 	}
 }

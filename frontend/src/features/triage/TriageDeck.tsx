@@ -778,7 +778,7 @@ const TriageDeckView: React.FC<TriageDeckProps> = ({
           <button
             type="button"
             onClick={() => handleAction('discard')}
-            className="min-h-[52px] px-3 py-2 rounded-xl bg-status-err-bg border border-status-err/30 text-status-err text-sm font-semibold flex items-center justify-center gap-2 touch-manipulation cursor-pointer"
+            className="min-h-[52px] px-3 py-2 rounded-xl bg-status-err-bg border border-status-err/30 text-status-err text-sm font-semibold flex items-center justify-center gap-2 touch-manipulation cursor-pointer active:scale-98 transition-[color,background-color,border-color,opacity,transform] duration-150"
           >
             <ArrowLeft className="w-4 h-4" />
             <span>{t('action.discard')}</span>
@@ -786,7 +786,7 @@ const TriageDeckView: React.FC<TriageDeckProps> = ({
           <button
             type="button"
             onClick={() => handleAction('keep', { convertTo: 'task' })}
-            className="min-h-[52px] px-3 py-2 rounded-xl bg-accent text-on-accent text-sm font-semibold flex items-center justify-center gap-2 touch-manipulation cursor-pointer"
+            className="min-h-[52px] px-3 py-2 rounded-xl bg-accent text-on-accent text-sm font-semibold flex items-center justify-center gap-2 touch-manipulation cursor-pointer active:scale-98 transition-[color,background-color,border-color,opacity,transform] duration-150"
           >
             <span>{t('action.task')}</span>
             <ArrowRight className="w-4 h-4" />
@@ -807,7 +807,7 @@ const TriageDeckView: React.FC<TriageDeckProps> = ({
               openActionSheetForCard(activeCard);
               setSheetMode('list');
             }}
-            className={`min-h-[52px] px-3.5 py-2.5 rounded-xl bg-canvas hover:bg-panel-elevated border border-border text-left flex items-center gap-3 transition-colors cursor-pointer touch-manipulation ${
+            className={`min-h-[52px] px-3.5 py-2.5 rounded-xl bg-canvas hover:bg-panel-elevated border border-border text-left flex items-center gap-3 cursor-pointer active:scale-98 transition-[color,background-color,border-color,opacity,transform] duration-150 touch-manipulation ${
               writableLists.length === 0 ? 'opacity-40 cursor-not-allowed' : ''
             }`}
           >
@@ -832,7 +832,7 @@ const TriageDeckView: React.FC<TriageDeckProps> = ({
               openActionSheetForCard(activeCard);
               setSheetMode('date');
             }}
-            className="min-h-[52px] px-3.5 py-2.5 rounded-xl bg-canvas hover:bg-panel-elevated border border-border text-left flex items-center gap-3 transition-colors cursor-pointer touch-manipulation"
+            className="min-h-[52px] px-3.5 py-2.5 rounded-xl bg-canvas hover:bg-panel-elevated border border-border text-left flex items-center gap-3 cursor-pointer active:scale-98 transition-[color,background-color,border-color,opacity,transform] duration-150 touch-manipulation"
           >
             <Calendar className="w-5 h-5 text-accent shrink-0" />
             <div>
@@ -844,7 +844,7 @@ const TriageDeckView: React.FC<TriageDeckProps> = ({
           <button
             type="button"
             onClick={() => handleAction('keep', { convertTo: 'document' })}
-            className="min-h-[52px] px-3.5 py-2.5 rounded-xl bg-canvas hover:bg-panel-elevated border border-border text-left flex items-center gap-3 transition-colors cursor-pointer touch-manipulation"
+            className="min-h-[52px] px-3.5 py-2.5 rounded-xl bg-canvas hover:bg-panel-elevated border border-border text-left flex items-center gap-3 cursor-pointer active:scale-98 transition-[color,background-color,border-color,opacity,transform] duration-150 touch-manipulation"
           >
             <FileText className="w-5 h-5 text-accent shrink-0" />
             <div>
@@ -857,7 +857,7 @@ const TriageDeckView: React.FC<TriageDeckProps> = ({
             type="button"
             disabled={cards.length <= 1}
             onClick={() => handleSkipCard()}
-            className={`min-h-[52px] px-3.5 py-2.5 rounded-xl bg-canvas hover:bg-panel-elevated border border-border text-left flex items-center gap-3 transition-colors cursor-pointer touch-manipulation ${cards.length <= 1 ? 'opacity-40 cursor-not-allowed' : ''}`}
+            className={`min-h-[52px] px-3.5 py-2.5 rounded-xl bg-canvas hover:bg-panel-elevated border border-border text-left flex items-center gap-3 cursor-pointer active:scale-98 transition-[color,background-color,border-color,opacity,transform] duration-150 touch-manipulation ${cards.length <= 1 ? 'opacity-40 cursor-not-allowed' : ''}`}
           >
             <SkipForward className="w-5 h-5 text-muted shrink-0" />
             <div>
@@ -1018,7 +1018,7 @@ const TriageDeckView: React.FC<TriageDeckProps> = ({
       {/* LONG-PRESS / MORE OPTIONS ACTION SHEET (For Triage Card & Queue Items) */}
       {actionSheetCard && (
         <div
-          className="fixed inset-0 m-0! modal-overlay z-50 flex items-end sm:items-center justify-center bg-black/60 p-0 sm:p-4 animate-in fade-in duration-150"
+          className="fixed inset-0 m-0! modal-overlay z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-xs p-0 sm:p-4 animate-in fade-in duration-150"
           onClick={() => setActionSheetCard(null)}
         >
           <div
@@ -1068,7 +1068,7 @@ const TriageDeckView: React.FC<TriageDeckProps> = ({
                         ? t('onList', { title: singleWritableList.title })
                         : t('setOnList')
                     }
-                    className={`min-h-[52px] px-3.5 py-2.5 rounded-xl bg-canvas hover:bg-panel-elevated border border-border text-left flex items-center gap-3 transition-colors cursor-pointer ${
+                    className={`min-h-[52px] px-3.5 py-2.5 rounded-xl bg-canvas hover:bg-panel-elevated border border-border text-left flex items-center gap-3 cursor-pointer active:scale-98 transition-[color,background-color,border-color,opacity,transform] duration-150 ${
                       writableLists.length === 0 ? 'opacity-40 cursor-not-allowed' : ''
                     }`}
                   >
@@ -1088,7 +1088,7 @@ const TriageDeckView: React.FC<TriageDeckProps> = ({
                   <button
                     type="button"
                     onClick={() => setSheetMode('date')}
-                    className="min-h-[52px] px-3.5 py-2.5 rounded-xl bg-canvas hover:bg-panel-elevated border border-border text-left flex items-center gap-3 transition-colors cursor-pointer"
+                    className="min-h-[52px] px-3.5 py-2.5 rounded-xl bg-canvas hover:bg-panel-elevated border border-border text-left flex items-center gap-3 cursor-pointer active:scale-98 transition-[color,background-color,border-color,opacity,transform] duration-150"
                   >
                     <Calendar className="w-5 h-5 text-accent shrink-0" />
                     <div>
@@ -1105,7 +1105,7 @@ const TriageDeckView: React.FC<TriageDeckProps> = ({
                         thoughtOverride: actionSheetCard,
                       })
                     }
-                    className="min-h-[52px] px-3.5 py-2.5 rounded-xl bg-canvas hover:bg-panel-elevated border border-border text-left flex items-center gap-3 transition-colors cursor-pointer"
+                    className="min-h-[52px] px-3.5 py-2.5 rounded-xl bg-canvas hover:bg-panel-elevated border border-border text-left flex items-center gap-3 cursor-pointer active:scale-98 transition-[color,background-color,border-color,opacity,transform] duration-150"
                   >
                     <FileText className="w-5 h-5 text-accent shrink-0" />
                     <div>
@@ -1118,7 +1118,7 @@ const TriageDeckView: React.FC<TriageDeckProps> = ({
                     type="button"
                     disabled={cards.length <= 1}
                     onClick={() => handleSkipCard(actionSheetCard.id)}
-                    className={`min-h-[52px] px-3.5 py-2.5 rounded-xl bg-canvas hover:bg-panel-elevated border border-border text-left flex items-center gap-3 transition-colors cursor-pointer ${
+                    className={`min-h-[52px] px-3.5 py-2.5 rounded-xl bg-canvas hover:bg-panel-elevated border border-border text-left flex items-center gap-3 cursor-pointer active:scale-98 transition-[color,background-color,border-color,opacity,transform] duration-150 ${
                       cards.length <= 1 ? 'opacity-40 cursor-not-allowed' : ''
                     }`}
                   >

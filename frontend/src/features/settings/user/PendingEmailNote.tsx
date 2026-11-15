@@ -44,7 +44,7 @@ export function PendingEmailNote({ user, onUserUpdated }: { user: User; onUserUp
           {user.emailLinks ? t('pendingEmail.waiting', { email: pending }) : t('pendingEmail.noMail', { email: pending })}
         </p>
       </div>
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2 pl-5.5">
         {user.emailLinks && (
           <button type="button" onClick={resend} disabled={busy} className="btn-action h-11 sm:h-7 px-2.5 text-xs disabled:opacity-50">
             {t('pendingEmail.resend')}
@@ -54,7 +54,7 @@ export function PendingEmailNote({ user, onUserUpdated }: { user: User; onUserUp
           {t('pendingEmail.cancel')}
         </button>
       </div>
-      {msg && <p className="text-muted">{msg}</p>}
+      {msg && <p className="pl-5.5 text-muted">{msg}</p>}
     </div>
   );
 }

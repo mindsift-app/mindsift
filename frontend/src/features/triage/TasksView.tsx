@@ -22,6 +22,7 @@ import { buildTasksMenu } from './tasksMenu';
 import { TasksFilterSheet } from './TasksFilterSheet';
 import { TaskListTabs } from './TaskListTabs';
 import { TaskListView } from './TaskListView';
+import { ViewCyclePill } from './ViewCyclePill';
 import { filterAndSortTasks, followTaskUpdate, groupTasks, tasksWithTag } from './taskListing';
 import { useTaskRealtime } from './useTaskRealtime';
 import { useTaskUndo } from './useTaskUndo';
@@ -696,8 +697,6 @@ export const TasksView: React.FC<TasksViewProps> = ({
     const menu = buildTasksMenu({
       currentSelectedList,
       defaultGroupBy,
-      doneCount: doneTasks.length,
-      filter,
       groupBy,
       handleDeleteTaskList,
       handleOpenShareModal,
@@ -709,7 +708,6 @@ export const TasksView: React.FC<TasksViewProps> = ({
       openTasksCount,
       selectedListId,
       selectedTag,
-      setFilter,
       setMobileCreateListId,
       setSelectedListId,
       setShowFilterModal,
@@ -718,7 +716,6 @@ export const TasksView: React.FC<TasksViewProps> = ({
       setShowNewListModal,
       setViewMode,
       sortBy,
-      trashCount: taskTrash?.length,
       safeTaskLists,
       viewMode,
     });
@@ -726,7 +723,6 @@ export const TasksView: React.FC<TasksViewProps> = ({
     setGroups(menu.groups);
   }, [
     viewMode,
-    filter,
     selectedListId,
     selectedTag,
     groupBy,
@@ -735,8 +731,6 @@ export const TasksView: React.FC<TasksViewProps> = ({
     setSelectedListId,
     sortBy,
     openTasks.length,
-    doneTasks.length,
-    taskTrash?.length,
     kanbanTasks.length,
     safeTaskLists,
     openTasksCount,
@@ -871,7 +865,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
       <div className="flex sm:hidden items-center justify-between gap-2 px-3 py-2 min-h-[54px] rounded-btn bg-panel border border-border mt-0!">
         <div className="flex items-center gap-2 min-w-0">
           <ListSwitcher
-            label={currentSelectedList ? [currentSelectedList.icon, currentSelectedList.title].filter(Boolean).join(' ') : '📋 Alle Aufgaben'}
+            label={currentSelectedList ? [currentSelectedList.icon, currentSelectedList.title].filter(Boolean).join(' ') : `📋 ${t('allTasks')}`}
             items={[
               { id: 'all', title: t('allTasks'), icon: '📋', count: openTasksCount },
               ...safeTaskLists.map((tl) => ({ id: tl.id, title: tl.title, icon: tl.icon, count: tl.tasksCount })),
@@ -879,19 +873,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
             activeId={selectedListId}
             onSelect={setSelectedListId}
           />
-          <span className="badge-neutral text-[11px] shrink-0">
-            {viewMode === 'kanban'
-              ? 'Kanban'
-              : viewMode === 'calendar'
-              ? t('calendar.label')
-              : filter === 'open'
-              ? t('tabCount.open', { count: openTasks.length })
-              : filter === 'done'
-              ? t('tabCount.done', { count: doneTasks.length })
-              : taskTrash
-              ? t('tabCount.trash', { count: taskTrash.length })
-              : t('common:trash')}
-          </span>
+          <ViewCyclePill viewMode={chosenViewMode} setViewMode={setViewMode} />
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
           <LivePill />

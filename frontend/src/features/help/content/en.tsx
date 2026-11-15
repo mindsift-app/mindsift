@@ -471,7 +471,7 @@ const en: HelpContent = {
             <strong className="text-main">Delivering:</strong> <code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">POST /api/v1/webhooks/ingest</code> accepts thoughts from iOS Shortcuts, Home Assistant or n8n. The field <code className="font-mono">"target"</code> chooses the target: <code className="font-mono">triage</code> (default), <code className="font-mono">task</code> (optionally with <code className="font-mono">taskListId</code>) or <code className="font-mono">list_item</code> (with <code className="font-mono">listId</code>).
           </p>
           <p>
-            <strong className="text-main">AI agents:</strong> over MCP (<code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">POST /api/v1/mcp</code>), Claude Code, OpenAI Codex, Claude Desktop, Cursor and your own agents read, create, change, check off and delete your tasks, lists and notes and sort the inbox. The settings show the ready command for every agent; an agent only sees the tools the key allows.
+            <strong className="text-main">AI agents:</strong> over MCP (<code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">POST /api/v1/mcp</code>), Claude Code, OpenAI Codex, Claude Desktop, Cursor and your own agents read, create, change, check off and delete your tasks, lists and notes and sort the inbox. The settings show the ready command for every agent; an agent only sees the tools the key allows. An agent adds images (e.g. one it generated or a screenshot) to a note as a bullet of their own: as a file or from an https address that MindSift copies into the note (JPEG, PNG, GIF, WebP). In notes, agents also add code blocks with a language and dividers, move bullets with their children (indent and outdent too) and, like /extract, turn a bullet into a note of its own with a link in its place.
           </p>
           <p>
             <strong className="text-main">Origin:</strong> whatever a key creates or changes carries a badge with its name for good, starting with a webhook icon (API) or a robot (MCP). Hover or tap it to see who created it and last changed it, and when.
@@ -496,7 +496,7 @@ const en: HelpContent = {
           </p>
           <ul className="space-y-1.5">
             <li>
-              <strong className="text-main">Switching views:</strong> use the switch at the top right between list and Kanban.
+              <strong className="text-main">Switching views:</strong> on the desktop the switch at the top right changes between list, Kanban and calendar. On a phone the small pill next to the task list shows the view; tap it to move on (Kanban → calendar → list). Open, done and trash are chosen in the list view with the switch at the top of the list.
             </li>
             <li>
               <strong className="text-main">Custom Kanban columns:</strong> in the column settings you define individual stages for every task list (e.g. <em>Backlog</em>, <em>In progress</em>, <em>Review</em>, <em>Done</em>) including colors and done status.

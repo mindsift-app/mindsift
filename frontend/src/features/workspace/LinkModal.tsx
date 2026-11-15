@@ -277,7 +277,7 @@ export const LinkModal: React.FC<LinkModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 m-0! modal-overlay z-50 flex items-center justify-center p-4 bg-black/60"
+      className="fixed inset-0 m-0! modal-overlay z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}

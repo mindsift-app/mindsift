@@ -154,6 +154,13 @@ func (s *Store) branchSecretGate(userID, targetID string, blocks []collab.FlatBl
 // folder and shared like the original. The bullet stays the note's first bullet (its hashtags with it). The original note is not changed here: the editor replaces the branch
 // by the returned link itself, as an ordinary own edit (no clash with unsent typing, undo works).
 func (s *Store) ExtractBranch(userID, docID, blockID string, a collab.Actor, leases collab.LeaseView) (*domain.Document, string, error) {
+	return s.ExtractBranchAs(userID, docID, blockID, "", nil, a, leases)
+}
+
+// ExtractBranchAs is ExtractBranch with a title of its own ("" = named after the bullet; made unique
+// like that name) and a folder (nil = the folder of the original note; the caller checks it may create
+// notes there). MCP's extract_note_bullet uses it.
+func (s *Store) ExtractBranchAs(userID, docID, blockID, title string, folder *string, a collab.Actor, leases collab.LeaseView) (*domain.Document, string, error) {
 	source, err := s.GetDocumentByID(userID, docID)
 	if err != nil {
 		return nil, "", err
@@ -187,8 +194,15 @@ func (s *Store) ExtractBranch(userID, docID, blockID string, a collab.Actor, lea
 		return nil, "", ErrBranchLocked
 	}
 
-	title := s.uniqueTitle(userID, branchTitle(s.MessageLanguage(userID), root.Block))
-	created, err := s.CreateDocument(userID, "", title, "🗒️", source.FolderPath, blocks, nil, false)
+	if title = strings.TrimSpace(title); title == "" {
+		title = branchTitle(s.MessageLanguage(userID), root.Block)
+	}
+	title = s.uniqueTitle(userID, title)
+	folderPath := source.FolderPath
+	if folder != nil {
+		folderPath = *folder
+	}
+	created, err := s.CreateDocument(userID, "", title, "🗒️", folderPath, blocks, nil, false)
 	if err != nil {
 		return nil, "", err
 	}

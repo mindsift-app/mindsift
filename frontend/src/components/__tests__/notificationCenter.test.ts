@@ -44,7 +44,7 @@ describe('how realtime events change the bell', () => {
     expect(state.items[0].id).toBe(100);
   });
 
-  it('a watched task keeps one entry: the earlier ones of the task go, as on the server', () => {
+  it('drops the entries the server says the new one replaced (a watched task keeps one entry)', () => {
     const prev: CenterState = {
       items: [
         entry(5, { kind: 'watched', targetType: 'task', targetId: 'th_a' }),
@@ -53,14 +53,25 @@ describe('how realtime events change the bell', () => {
       ],
       unread: 2,
     };
-    const { state, reload } = centerAfterEvent(prev, msg('NOTIFICATION', entry(6, { kind: 'watched', targetType: 'task', targetId: 'th_a' })));
+    const next = entry(6, { kind: 'watched', targetType: 'task', targetId: 'th_a', replaces: [3, 5] });
+    const { state, reload } = centerAfterEvent(prev, msg('NOTIFICATION', next));
     expect(ids(state)).toEqual([6, 4]);
     expect(state.unread).toBe(2); // one unread replaced by another
     expect(reload).toBe(false);
+    expect(state.items[0].replaces).toBeUndefined(); // not kept with the entry
+    // The task was deleted: no target, the ids still say which entry goes
+    const gone = centerAfterEvent(state, msg('NOTIFICATION', entry(7, { kind: 'watched', replaces: [6] })));
+    expect(ids(gone.state)).toEqual([7, 4]);
+    expect(gone.reload).toBe(false);
+    // Without replaces nothing else goes, whatever the kind
+    expect(ids(centerAfterEvent(gone.state, msg('NOTIFICATION', entry(8, { kind: 'watched', targetType: 'task', targetId: 'th_b' }))).state)).toEqual([8, 7, 4]);
   });
 
-  it('loads when the replaced entry cannot be known (watched task deleted) or the payload is unknown', () => {
-    expect(centerAfterEvent(start, msg('NOTIFICATION', entry(9, { kind: 'watched' }))).reload).toBe(true);
+  it('loads when a replaced entry beyond the newest 50 may have been unread, or the payload is unknown', () => {
+    const full: CenterState = { items: Array.from({ length: CENTER_LIMIT }, (_, i) => entry(CENTER_LIMIT - i)), unread: 3 };
+    expect(centerAfterEvent(full, msg('NOTIFICATION', entry(100, { replaces: [2] }))).reload).toBe(false);
+    expect(centerAfterEvent(full, msg('NOTIFICATION', entry(100, { replaces: [-5] }))).reload).toBe(true);
+    expect(centerAfterEvent(start, msg('NOTIFICATION', entry(9, { replaces: [-5] }))).reload).toBe(false);
     expect(centerAfterEvent(start, msg('NOTIFICATION', null)).reload).toBe(true);
   });
 

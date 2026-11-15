@@ -532,7 +532,7 @@ const es: HelpContent = {
             <strong className="text-main">Envío:</strong> <code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">POST /api/v1/webhooks/ingest</code> acepta pensamientos desde Atajos de iOS, Home Assistant o n8n. El campo <code className="font-mono">"target"</code> selecciona el destino: <code className="font-mono">triage</code> (por defecto), <code className="font-mono">task</code> (opcionalmente con <code className="font-mono">taskListId</code>) o <code className="font-mono">list_item</code> (con <code className="font-mono">listId</code>).
           </p>
           <p>
-            <strong className="text-main">Agentes de IA:</strong> mediante MCP (<code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">POST /api/v1/mcp</code>), Claude Code, OpenAI Codex, Claude Desktop, Cursor y tus propios agentes pueden leer, crear, modificar, tachar y eliminar tareas, listas y notas, así como clasificar la bandeja de entrada. Los ajustes muestran el comando preparado para cada agente; un agente solo ve las herramientas permitidas por la clave.
+            <strong className="text-main">Agentes de IA:</strong> mediante MCP (<code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">POST /api/v1/mcp</code>), Claude Code, OpenAI Codex, Claude Desktop, Cursor y tus propios agentes pueden leer, crear, modificar, tachar y eliminar tareas, listas y notas, así como clasificar la bandeja de entrada. Los ajustes muestran el comando preparado para cada agente; un agente solo ve las herramientas permitidas por la clave. Un agente añade imágenes (p. ej. una que ha generado o una captura de pantalla) a una nota como punto propio: como archivo o desde una dirección https que MindSift copia en la nota (JPEG, PNG, GIF, WebP). En las notas, los agentes también añaden bloques de código con su lenguaje y separadores, mueven puntos con sus subpuntos (también sangrar y quitar sangría) y, como /extract, convierten un punto en una nota propia con un enlace en su lugar.
           </p>
           <p>
             <strong className="text-main">Origen:</strong> cualquier elemento creado o modificado por una clave lleva un distintivo permanente con su nombre, precedido por un icono de webhook (API) o un robot (MCP). Al pasar el cursor o pulsar sobre él se muestra quién lo creó, quién lo modificó por última vez y cuándo.
@@ -557,7 +557,7 @@ const es: HelpContent = {
           </p>
           <ul className="space-y-1.5">
             <li>
-              <strong className="text-main">Cambiar de vista:</strong> usa el conmutador arriba a la derecha entre lista y Kanban.
+              <strong className="text-main">Cambiar de vista:</strong> en el escritorio, el conmutador arriba a la derecha cambia entre lista, Kanban y calendario. En el móvil, la pequeña etiqueta junto a la lista de tareas muestra la vista; tócala para pasar a la siguiente (Kanban → calendario → lista). Pendientes, hechas y papelera se eligen en la vista de lista con el conmutador de arriba.
             </li>
             <li>
               <strong className="text-main">Columnas Kanban personalizadas:</strong> en la configuración de columnas puedes definir etapas individuales para cada lista de tareas (p. ej. <em>Backlog</em>, <em>En progreso</em>, <em>Revisión</em>, <em>Hecho</em>), incluidos colores y estado de finalización.

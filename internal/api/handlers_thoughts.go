@@ -73,13 +73,11 @@ func (s *Server) handleCaptureInbox(w http.ResponseWriter, r *http.Request) {
 	target := strings.TrimSpace(req.Target)
 	if target == "task" {
 		// In one write (storage.CreateTask), not created in the inbox and converted afterwards
-		task, members, err := s.store.CreateTask(userID, req.Content, req.Priority, source, dueDate, taskListID, "")
+		task, err := s.insertTask(userID, req.Content, req.Priority, source, dueDate, taskListID, "", actorFrom(r.Context()))
 		if err != nil {
 			writeStoreError(w, http.StatusBadRequest, err)
 			return
 		}
-		s.recordThoughtOrigin(task, actorFrom(r.Context()), true)
-		s.announceNewTask(userID, task, members)
 		writeJSON(w, http.StatusCreated, task)
 		return
 	}
@@ -97,7 +95,7 @@ func (s *Server) handleCaptureInbox(w http.ResponseWriter, r *http.Request) {
 			thought = converted
 			if target == "list_item" && targetListID != "" {
 				if lst, lErr := s.store.GetListByID(userID, targetListID); lErr == nil && lst != nil {
-					s.wsHub.BroadcastListEvent(lst.ID, "LIST_UPDATED", lst)
+					s.broadcastListUpdated(lst)
 				}
 			}
 		}
@@ -188,7 +186,7 @@ func (s *Server) handleTriageAction(w http.ResponseWriter, r *http.Request) {
 	// If converted to a list item, broadcast via WebSocket to the space
 	if convertTo == "list_item" && targetListID != "" {
 		if lst, err := s.store.GetListByID(userID, targetListID); err == nil && lst != nil {
-			s.wsHub.BroadcastListEvent(lst.ID, "LIST_UPDATED", lst)
+			s.broadcastListUpdated(lst)
 		}
 	}
 
@@ -330,20 +328,49 @@ type taskPatch struct {
 
 // updateTask applies a patch, keeps a linked note block in step, tells everyone who sees the task
 // and sends the notifications. Errors come from the store (writeStoreError maps them).
+//
+// The task is read once: the change is worked out from that state, and its notifications are planned
+// from the result before the write and stored in the same transaction (storage.UpdateTask), so a change
+// waits once for the database's write lock. Only a change of the assignees, which are written after the
+// task, stores its notifications on its own.
 func (s *Server) updateTask(userID, thoughtID string, req taskPatch) (*domain.Thought, error) {
-	before, _ := s.store.GetThoughtByID(userID, thoughtID)
+	before, err := s.store.GetThoughtByID(userID, thoughtID)
+	if err != nil {
+		return nil, err
+	}
+	base := before
 	// The rule is set first, so completing a task in the same request already repeats it
+	if req.Recurrence != nil || req.Reminders != nil {
+		base = before.Clone()
+	}
 	if req.Recurrence != nil {
-		if err := s.store.SetTaskRecurrence(userID, thoughtID, strings.TrimSpace(*req.Recurrence)); err != nil {
+		rule := strings.TrimSpace(*req.Recurrence)
+		if err := s.store.SetTaskRecurrence(userID, thoughtID, rule); err != nil {
 			return nil, storage.GoneAsNotFound(err)
 		}
+		base.Recurrence = rule
 	}
 	if req.Reminders != nil {
-		if _, err := s.store.SetTaskReminders(userID, thoughtID, *req.Reminders); err != nil {
+		clean, err := s.store.SetTaskReminders(userID, thoughtID, *req.Reminders)
+		if err != nil {
 			return nil, storage.GoneAsNotFound(err)
 		}
+		base.Reminders = clean
 	}
-	updated, err := s.store.UpdateThoughtDetails(userID, thoughtID, req.Content, req.IsCompleted, req.DueDate, req.Priority, req.TaskListID, req.KanbanStatus, req.Notes, req.Subtasks, req.Tags)
+	patch := storage.ThoughtPatch{Content: req.Content, IsCompleted: req.IsCompleted, DueDate: req.DueDate, Priority: req.Priority,
+		TaskListID: req.TaskListID, KanbanStatus: req.KanbanStatus, Notes: req.Notes, Subtasks: req.Subtasks, Tags: req.Tags}
+	var b notifyBatch
+	var audience, watchers []string
+	plan := func(after *domain.Thought) ([]storage.CenterAdd, []storage.QueuedAdd) {
+		audience = s.taskAudience(after)
+		watchers = s.planTaskChange(&b, userID, before, after, false, audience)
+		s.planTaskMentions(&b, userID, before, after, audience)
+		return b.center, b.queue
+	}
+	if req.Assignees != nil {
+		plan = nil
+	}
+	updated, added, err := s.store.UpdateTask(userID, base, patch, plan)
 	if err != nil {
 		return nil, err
 	}
@@ -355,19 +382,25 @@ func (s *Server) updateTask(userID, thoughtID string, req taskPatch) (*domain.Th
 			return nil, storage.GoneAsNotFound(err)
 		}
 		updated.Assignees = assignees
+		audience = s.taskAudience(updated)
 	}
-	if docID := s.store.SyncTaskToDoc(userID, thoughtID); docID != "" {
+	if docID := s.store.SyncTaskToDocFrom(userID, updated); docID != "" {
 		_, head, _ := s.store.GetDocOpsSince(docID, 0, 0)
 		s.notifyDocChanged(docID, head)
 	}
-	audience := s.taskAudience(updated)
-	if before != nil && (before.TaskListID != updated.TaskListID || before.UserID != updated.UserID) {
-		audience = append(audience, s.taskAudience(before)...)
+	tellApps := audience
+	if before.TaskListID != updated.TaskListID || before.UserID != updated.UserID {
+		tellApps = append(slices.Clone(audience), s.taskAudience(before)...)
 	}
-	s.wsHub.BroadcastToUsers(audience, "TASK_UPDATED", updated)
-	s.notifyTaskChange(userID, before, updated, false)
-	s.notifyTaskMentions(userID, before, updated)
-	updated.IsWatching = s.store.IsWatching(userID, updated.ID)
+	s.wsHub.BroadcastToUsers(tellApps, "TASK_UPDATED", updated)
+	if req.Assignees != nil {
+		watchers = s.planTaskChange(&b, userID, before, updated, false, audience)
+		s.planTaskMentions(&b, userID, before, updated, audience)
+		s.storeBatch(&b)
+	} else {
+		s.sendBatch(&b, added)
+	}
+	updated.IsWatching = slices.Contains(watchers, userID)
 	return updated, nil
 }
 
@@ -400,19 +433,23 @@ func (s *Server) handleUnlinkEnhancedTask(w http.ResponseWriter, r *http.Request
 }
 
 // deleteTask removes a task, tells everyone who saw it and notifies its watchers. Shared by
-// DELETE /thoughts/{id} and the MCP tool delete_task.
+// DELETE /thoughts/{id} and the MCP tool delete_task. The notifications are planned from the task before
+// the write and stored in its transaction (storage.DeleteTask), so deleting waits once for the write lock.
 func (s *Server) deleteTask(userID, thoughtID string) error {
 	th, err := s.store.GetThoughtByID(userID, thoughtID)
-	if err == nil && th.TaskListID != "" && !s.store.CanEditTaskList(userID, th.TaskListID) {
-		return storage.ErrTaskListReadOnly
-	}
-	audience := s.taskAudience(th)
-	if err := s.store.DeleteThought(userID, thoughtID); err != nil {
+	if err != nil {
 		return err
 	}
-	if th != nil {
-		s.notifyTaskChange(userID, th, nil, true)
+	audience := s.taskAudience(th)
+	var b notifyBatch // DeleteTask checks the right to edit the list before it plans
+	added, err := s.store.DeleteTask(userID, th, func(t *domain.Thought) ([]storage.CenterAdd, []storage.QueuedAdd) {
+		s.planTaskChange(&b, userID, t, nil, true, audience)
+		return b.center, b.queue
+	})
+	if err != nil {
+		return err
 	}
+	s.sendBatch(&b, added)
 	s.wsHub.BroadcastToUsers(audience, "TASK_DELETED", map[string]string{"id": thoughtID})
 	return nil
 }

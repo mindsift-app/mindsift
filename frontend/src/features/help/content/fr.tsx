@@ -475,7 +475,7 @@ const fr: HelpContent = {
             <strong className="text-main">curl et domotique :</strong> avec les droits de lecture, <code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">GET /api/v1/thoughts?due=today</code> renvoie les tâches du jour au format JSON (par ex. pour un capteur Home Assistant) ; avec les droits de modification, tu peux cocher des tâches. Via <code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">POST /api/v1/webhooks/ingest</code>, Home Assistant, n8n ou des scripts peuvent injecter directement des alertes ou des points dans la boîte de réception, les tâches ou les listes.
           </p>
           <p>
-            <strong className="text-main">Agents IA (MCP) :</strong> Claude Code, Cursor, Codex et Claude Desktop se connectent via le protocole standardisé Model Context Protocol (MCP) avec une clé d'API. claude.ai et ChatGPT se connectent sans clé comme connecteur : MindSift demande lors de la connexion quelles autorisations accorder.
+            <strong className="text-main">Agents IA (MCP) :</strong> Claude Code, Cursor, Codex et Claude Desktop se connectent via le protocole standardisé Model Context Protocol (MCP) avec une clé d'API. claude.ai et ChatGPT se connectent sans clé comme connecteur : MindSift demande lors de la connexion quelles autorisations accorder. Un agent ajoute des images (p. ex. une image qu’il a générée ou une capture d’écran) à une note comme puce à part entière : en fichier ou depuis une adresse https que MindSift copie dans la note (JPEG, PNG, GIF, WebP). Dans les notes, les agents ajoutent aussi des blocs de code avec leur langage et des séparateurs, déplacent des puces avec leurs sous-puces (y compris indenter et désindenter) et, comme /extract, font d’une puce une note à part avec un lien à sa place.
           </p>
         </div>
       ),
@@ -497,7 +497,7 @@ const fr: HelpContent = {
           </p>
           <ul className="space-y-1.5">
             <li>
-              <strong className="text-main">Changer de vue :</strong> utilise le sélecteur en haut à droite pour basculer entre la liste et le Kanban.
+              <strong className="text-main">Changer de vue :</strong> sur ordinateur, le sélecteur en haut à droite bascule entre la liste, le Kanban et le calendrier. Sur téléphone, la petite pastille à côté de la liste de tâches indique la vue ; touche-la pour passer à la suivante (Kanban → calendrier → liste). À faire, terminées et corbeille se choisissent dans la vue liste avec le sélecteur en haut de la liste.
             </li>
             <li>
               <strong className="text-main">Colonnes Kanban personnalisées :</strong> dans les paramètres des colonnes, définis des colonnes sur mesure pour chaque liste de tâches (par ex. « En attente de retour », « Revue »), avec couleurs et indicateur d'achèvement.

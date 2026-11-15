@@ -56,7 +56,7 @@ export const SharedImportToast: React.FC<SharedImportToastProps> = ({ thoughtIds
   };
 
   const big =
-    'min-h-[52px] px-3 py-2 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 touch-manipulation cursor-pointer disabled:opacity-50';
+    'min-h-[52px] px-3 py-2 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 touch-manipulation cursor-pointer active:scale-98 transition-[color,background-color,border-color,opacity,transform] duration-150 disabled:opacity-50';
 
   return (
     <>

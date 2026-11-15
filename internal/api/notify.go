@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -44,6 +45,42 @@ type notifyItem struct {
 // write of its own, so a task completed in a list shared with 50 people waited 50 times for the
 // database's write lock (load test 2026-11-15).
 func (s *Server) notify(kind, actorID string, recipients []string, payload func(lang string) map[string]string) {
+	var b notifyBatch
+	s.planNotify(&b, kind, actorID, recipients, payload)
+	s.storeBatch(&b)
+}
+
+// notifyBatch collects what several events store for their recipients, so it goes into one transaction:
+// with storeBatch on its own, or with the change the events are about (storage.UpdateTask, CreateTask).
+type notifyBatch struct {
+	center []storage.CenterAdd
+	queue  []storage.QueuedAdd
+}
+
+// storeBatch stores a batch in a transaction of its own and tells the recipients' open apps.
+func (s *Server) storeBatch(b *notifyBatch) {
+	if len(b.center) == 0 && len(b.queue) == 0 {
+		return
+	}
+	added, err := s.store.StoreNotifications(b.center, b.queue)
+	if err != nil {
+		slog.Warn("Storing notifications failed", "entries", len(b.center), "queued", len(b.queue), "error", err)
+		return
+	}
+	s.sendBatch(b, added)
+}
+
+// sendBatch tells the recipients' open apps about the center entries of a batch as stored (in its order).
+func (s *Server) sendBatch(b *notifyBatch, added []storage.CenterEntry) {
+	for i, e := range added {
+		if i < len(b.center) {
+			s.wsHub.BroadcastToUser(b.center[i].UserID, "NOTIFICATION", e)
+		}
+	}
+}
+
+// planNotify is notify without storing: it adds the event's entries and queued messages to b.
+func (s *Server) planNotify(b *notifyBatch, kind, actorID string, recipients []string, payload func(lang string) map[string]string) {
 	seen := map[string]bool{}
 	ids := make([]string, 0, len(recipients))
 	for _, uid := range recipients {
@@ -75,11 +112,9 @@ func (s *Server) notify(kind, actorID string, recipients []string, payload func(
 	if !s.cfg.DemoMode {
 		settings = s.store.NotificationSettingsOfUsers(ids)
 	}
-	var center []storage.CenterAdd
-	var queue []storage.QueuedAdd
 	for _, uid := range ids {
 		if uid != actorID {
-			center = append(center, centerAdd(uid, kind, textsFor(uid)))
+			b.center = append(b.center, centerAdd(uid, kind, textsFor(uid)))
 		}
 		if s.cfg.DemoMode {
 			continue
@@ -94,15 +129,7 @@ func (s *Server) notify(kind, actorID string, recipients []string, payload func(
 		if !set.Channels(kind).Any() {
 			continue
 		}
-		queue = append(queue, storage.QueuedAdd{UserID: uid, Kind: kind, Payload: textsFor(uid)})
-	}
-	added, err := s.store.StoreNotifications(center, queue)
-	if err != nil {
-		slog.Warn("Storing notifications failed", "kind", kind, "recipients", len(ids), "error", err)
-		return
-	}
-	for i, e := range added {
-		s.wsHub.BroadcastToUser(center[i].UserID, "NOTIFICATION", e)
+		b.queue = append(b.queue, storage.QueuedAdd{UserID: uid, Kind: kind, Payload: textsFor(uid)})
 	}
 }
 
@@ -320,15 +347,18 @@ func (s *Server) columnName(actorID, listID, columnID string) string {
 	return columnID
 }
 
-// notifyTaskChange covers watchers (any change), list members (task completed, task added to the list)
-// and people newly assigned to the task.
-func (s *Server) notifyTaskChange(actorID string, before, after *domain.Thought, deleted bool) {
+// planTaskChange adds the events about a change of a task to b: watchers (any change), list members
+// (task completed, task added to the list) and people newly assigned to it. The caller stores b with the
+// change (storage.UpdateTask, DeleteTask, ReconcileDocTaskLinksNotify) or on its own (storeBatch).
+// Returns the task's watchers. audience: who sees the task now (taskAudience of after, else before) when
+// the caller has it, nil to read it here when needed.
+func (s *Server) planTaskChange(b *notifyBatch, actorID string, before, after *domain.Thought, deleted bool, audience []string) []string {
 	t := after
 	if t == nil {
 		t = before
 	}
 	if t == nil {
-		return
+		return nil
 	}
 	title := taskTitle(t)
 	var changes []taskChange
@@ -407,7 +437,7 @@ func (s *Server) notifyTaskChange(actorID string, before, after *domain.Thought,
 				assigned[id] = true
 			}
 		}
-		s.notify("assigned", actorID, added, single(taskAssignedText))
+		s.planNotify(b, "assigned", actorID, added, single(taskAssignedText))
 	}
 	watchers := s.store.TaskWatchers(t.ID)
 	watching := map[string]bool{}
@@ -418,15 +448,18 @@ func (s *Server) notifyTaskChange(actorID string, before, after *domain.Thought,
 			tellWatchers = append(tellWatchers, w)
 		}
 	}
-	s.notify("watched", actorID, tellWatchers, payload)
+	s.planNotify(b, "watched", actorID, tellWatchers, payload)
 
+	moved := before != nil && after != nil && !deleted && after.TaskListID != "" && before.TaskListID != after.TaskListID
 	done := false
 	for _, c := range changes {
 		done = done || c.sentence == changeDone
 	}
-	if done && t.TaskListID != "" {
+	if (done || moved) && t.TaskListID != "" && audience == nil {
+		audience = s.taskAudience(t)
+	}
+	if done && t.TaskListID != "" && othersIn(audience, actorID) {
 		var members []string
-		audience := s.taskAudience(t)
 		muted := s.store.TaskListMutedBy(t.TaskListID, audience)
 		for _, uid := range audience {
 			// Watchers already hear about it; a muted list stays quiet
@@ -434,15 +467,13 @@ func (s *Server) notifyTaskChange(actorID string, before, after *domain.Thought,
 				members = append(members, uid)
 			}
 		}
-		s.notify("taskDone", actorID, members, single(changeDone))
+		s.planNotify(b, "taskDone", actorID, members, single(changeDone))
 	}
 	// Moved into a shared list: new there for its members
-	if before != nil && after != nil && !deleted && after.TaskListID != "" && before.TaskListID != after.TaskListID {
-		s.notifyTaskAdded(actorID, after, watching)
+	if moved && isTask(after) {
+		s.planTaskAdded(b, actorID, after, watching, audience)
 	}
-	if deleted {
-		s.store.ForgetTaskWatchers(t.ID)
-	}
+	return watchers
 }
 
 // assignCreator: a task created in a shared task list starts out assigned to the one who created it (it
@@ -462,22 +493,40 @@ func (s *Server) notifyTaskAdded(actorID string, t *domain.Thought, skip map[str
 	if !isTask(t) || t.TaskListID == "" {
 		return
 	}
-	s.notifyTaskAddedTo(actorID, t, skip, s.taskAudience(t))
+	var b notifyBatch
+	s.planTaskAdded(&b, actorID, t, skip, s.taskAudience(t))
+	s.storeBatch(&b)
 }
 
-// announceNewTask tells everyone who sees a task just created (storage.CreateTask) about it and its
-// list's members that it was added. members: those of its list as CreateTask returned them, so they are
-// not read again.
-func (s *Server) announceNewTask(actorID string, t *domain.Thought, members []string) {
-	audience := append(members, t.UserID)
-	s.wsHub.BroadcastToUsers(audience, "TASK_CREATED", t)
-	if t.TaskListID != "" {
-		s.notifyTaskAddedTo(actorID, t, nil, audience)
+// insertTask creates a task in one write (storage.CreateTask) together with the notifications about it:
+// its list's members hear that it was added, people mentioned in its description that they were. Then
+// everyone who sees it gets it in their open apps.
+func (s *Server) insertTask(userID, content, priority, source, dueDate, taskListID, notes string, actor *apiActor) (*domain.Thought, error) {
+	var b notifyBatch
+	plan := func(t *domain.Thought, members []string) ([]storage.CenterAdd, []storage.QueuedAdd) {
+		audience := append(slices.Clone(members), t.UserID)
+		if t.TaskListID != "" {
+			s.planTaskAdded(&b, userID, t, nil, audience)
+		}
+		s.planTaskMentions(&b, userID, nil, t, audience)
+		return b.center, b.queue
 	}
+	task, members, added, err := s.store.CreateTask(userID, content, priority, source, dueDate, taskListID, notes, plan)
+	if err != nil {
+		return nil, err
+	}
+	s.recordThoughtOrigin(task, actor, true)
+	s.wsHub.BroadcastToUsers(append(members, task.UserID), "TASK_CREATED", task)
+	s.sendBatch(&b, added)
+	return task, nil
 }
 
-// notifyTaskAddedTo is notifyTaskAdded with the task's audience (taskAudience) at hand.
-func (s *Server) notifyTaskAddedTo(actorID string, t *domain.Thought, skip map[string]bool, audience []string) {
+// planTaskAdded adds to b that a task was added to its list, for the list's members (audience, as
+// taskAudience gives it) but those in skip.
+func (s *Server) planTaskAdded(b *notifyBatch, actorID string, t *domain.Thought, skip map[string]bool, audience []string) {
+	if !othersIn(audience, actorID) {
+		return // a personal list: nobody to tell
+	}
 	list := s.store.TaskListTitle(actorID, t.TaskListID)
 	muted := s.store.TaskListMutedBy(t.TaskListID, audience)
 	var members []string
@@ -487,7 +536,7 @@ func (s *Server) notifyTaskAddedTo(actorID string, t *domain.Thought, skip map[s
 		}
 	}
 	title := taskTitle(t)
-	s.notify("taskCreated", actorID, members, func(lang string) map[string]string {
+	s.planNotify(b, "taskCreated", actorID, members, func(lang string) map[string]string {
 		return map[string]string{
 			"title":      title,
 			"text":       i18n.T(lang, taskAddedToList, "name", s.actorName(lang, actorID), "title", title, "list", list),
@@ -495,6 +544,17 @@ func (s *Server) notifyTaskAddedTo(actorID string, t *domain.Thought, skip map[s
 			centerID:     t.ID,
 		}
 	})
+}
+
+// othersIn: someone besides the actor is among the people (so the list's title, mutes and the like are
+// worth reading).
+func othersIn(people []string, actorID string) bool {
+	for _, id := range people {
+		if id != actorID {
+			return true
+		}
+	}
+	return false
 }
 
 // --- Background jobs ---

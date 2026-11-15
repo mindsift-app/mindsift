@@ -35,6 +35,33 @@ func (s *Server) handleGetListByID(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, lst)
 }
 
+// listForEveryone is a list as LIST_UPDATED sends it to everyone in its room: without isOwner and role,
+// which are the changer's own and differ per person.
+type listForEveryone struct {
+	ID        string                  `json:"id"`
+	UserID    string                  `json:"userId"`
+	OwnerName string                  `json:"ownerName,omitempty"`
+	Title     string                  `json:"title"`
+	Icon      string                  `json:"icon"`
+	ListType  string                  `json:"listType"`
+	Items     []domain.ListItem       `json:"items"`
+	Shares    []domain.ListShare      `json:"shares,omitempty"`
+	Members   []domain.TaskListMember `json:"members,omitempty"`
+	UpdatedAt string                  `json:"updatedAt"`
+	CreatedAt string                  `json:"createdAt"`
+}
+
+// broadcastListUpdated sends LIST_UPDATED with what is the same for everyone who sees the list.
+func (s *Server) broadcastListUpdated(l *domain.SharedList) {
+	if l == nil {
+		return
+	}
+	s.wsHub.BroadcastListEvent(l.ID, "LIST_UPDATED", listForEveryone{
+		ID: l.ID, UserID: l.UserID, OwnerName: l.OwnerName, Title: l.Title, Icon: l.Icon, ListType: l.ListType,
+		Items: l.Items, Shares: l.Shares, Members: l.Members, UpdatedAt: l.UpdatedAt, CreatedAt: l.CreatedAt,
+	})
+}
+
 func (s *Server) handleCreateList(w http.ResponseWriter, r *http.Request) {
 	userID := auth.GetUserID(r.Context())
 	var req struct {
@@ -57,7 +84,8 @@ func (s *Server) handleCreateList(w http.ResponseWriter, r *http.Request) {
 		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
-	s.wsHub.BroadcastListEvent(lst.ID, "LIST_CREATED", lst)
+	// Shared with nobody yet: only the creator's other devices learn of it (its room has no one in it)
+	s.wsHub.BroadcastToUser(userID, "LIST_CREATED", lst)
 	writeJSON(w, http.StatusCreated, lst)
 }
 
@@ -99,7 +127,7 @@ func (s *Server) handleUpdateList(w http.ResponseWriter, r *http.Request) {
 		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
-	s.wsHub.BroadcastListEvent(listID, "LIST_UPDATED", l)
+	s.broadcastListUpdated(l)
 	writeJSON(w, http.StatusOK, l)
 }
 

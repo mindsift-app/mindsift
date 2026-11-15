@@ -129,6 +129,7 @@ Component: [SegmentedControl.tsx](../frontend/src/components/SegmentedControl.ts
 - Short labels, the longer explanation goes into `title` (hover). Screen readers get `radiogroup` and `radio` with `aria-checked`.
 - The choice is a per-device convenience and is kept in `localStorage` where it should survive a reload (to-dos: `mindsift_todo_show`, `mindsift_todo_grouping`).
 - Build new switches of this kind with this component instead of copying button classes. Rows that cannot be a radio group (they are buttons other code and tests click: the workspace views notes / to-dos / hashtags, open / done / trash of the task list) use the same classes, the chosen one with `seg-item-active seg-item-raised` and `aria-pressed`.
+- **Task views on phones:** no switch for list / Kanban / calendar; the pill beside the task-list picker names the view and a tap moves on (Kanban → calendar → list → Kanban, `ViewCyclePill`, 44 px tall, its label names the current and the next view). Open / done / trash is the same row in the list view on phones as on the desktop (full width, 44 px tall); the phone menu lists only the three views.
 
 ## Navigation Rail (Desktop)
 

@@ -3,7 +3,6 @@ package storage
 import (
 	"context"
 	"encoding/json"
-	"strconv"
 	"strings"
 
 	"github.com/mindsift-app/mindsift/internal/drawing"
@@ -15,6 +14,23 @@ type noteSearchRow struct {
 	score                                           float64
 	rid                                             int64
 }
+
+// sqlNoteSearchHits: matches of the full-text index (arguments: query, JSON array of visible note ids,
+// limit), joined by key to the notes and bullets. Notes have negative keys in the index (their title),
+// bullets positive ones (their text). A bullet is found through idx_blocks_fts_cover (migration 53),
+// which holds everything the query reads of it, so no row of blocks is read for a match.
+const sqlNoteSearchHits = `
+		WITH m AS (
+			SELECT rowid AS rid, bm25(documents_fts, 10.0, 1.0) AS score
+			FROM documents_fts WHERE documents_fts MATCH ?
+		), allowed AS (SELECT value AS id FROM json_each(?))
+		SELECT m.rid, m.score, COALESCE(b.document_id, d.id), COALESCE(b.id, '')
+		FROM m
+		LEFT JOIN blocks b ON m.rid > 0 AND b.fts_rowid = m.rid AND b.deleted = 0
+		LEFT JOIN documents d ON m.rid < 0 AND d.fts_rowid = m.rid
+		WHERE COALESCE(b.document_id, d.id) IN (SELECT id FROM allowed)
+		ORDER BY m.score ASC
+		LIMIT ?`
 
 // searchVisibleNotes finds the best matches among the notes the user can see (optionally below a folder):
 //  1. matches and bm25 scores from the full-text index alone, joined by key to the notes and bullets
@@ -46,19 +62,7 @@ func (s *Store) searchVisibleNotes(ctx context.Context, userID, ftsQuery, folder
 	}
 	idsJSON, _ := json.Marshal(ids)
 
-	// Notes have negative keys in the index (their title), bullets positive ones (their text)
-	rows, err := s.db.QueryContext(ctx, `
-		WITH m AS (
-			SELECT rowid AS rid, bm25(documents_fts, 10.0, 1.0) AS score
-			FROM documents_fts WHERE documents_fts MATCH ?
-		), allowed AS (SELECT value AS id FROM json_each(?))
-		SELECT m.rid, m.score, COALESCE(b.document_id, d.id), COALESCE(b.id, '')
-		FROM m
-		LEFT JOIN blocks b ON m.rid > 0 AND b.fts_rowid = m.rid AND b.deleted = 0
-		LEFT JOIN documents d ON m.rid < 0 AND d.fts_rowid = m.rid
-		WHERE COALESCE(b.document_id, d.id) IN (SELECT id FROM allowed)
-		ORDER BY m.score ASC
-		LIMIT `+strconv.Itoa(limit), ftsQuery, string(idsJSON))
+	rows, err := s.db.QueryContext(ctx, sqlNoteSearchHits, ftsQuery, string(idsJSON), limit)
 	if err != nil {
 		return nil, err
 	}

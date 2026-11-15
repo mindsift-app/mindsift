@@ -262,14 +262,7 @@ func (s *Server) createTask(userID, content, priority, source, dueDate, taskList
 	if taskListID != "" && !s.store.CanEditTaskList(userID, taskListID) {
 		return nil, storage.ErrTaskListReadOnly
 	}
-	task, members, err := s.store.CreateTask(userID, content, priority, source, dueDate, taskListID, notes)
-	if err != nil {
-		return nil, err
-	}
-	s.recordThoughtOrigin(task, actor, true)
-	s.announceNewTask(userID, task, members)
-	s.notifyTaskMentions(userID, nil, task)
-	return task, nil
+	return s.insertTask(userID, content, priority, source, dueDate, taskListID, notes, actor)
 }
 
 func (s *Server) ingestTask(w http.ResponseWriter, userID, content, priority, source, dueDate, taskListID string, actor *apiActor) {

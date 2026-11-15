@@ -402,7 +402,7 @@ func TestNoteStorageMigration(t *testing.T) {
 		}
 	}
 	for _, q := range append(noteSearchSQL()[:8],
-		`DROP INDEX idx_doc_ops_text`, `DROP INDEX idx_blocks_fts_rowid`, `DROP INDEX idx_documents_fts_rowid`,
+		`DROP INDEX idx_doc_ops_text`, `DROP INDEX idx_blocks_fts_rowid`, `DROP INDEX idx_blocks_fts_cover`, `DROP INDEX idx_documents_fts_rowid`,
 		`ALTER TABLE doc_ops DROP COLUMN content_ref`, `ALTER TABLE blocks DROP COLUMN fts_rowid`, `ALTER TABLE documents DROP COLUMN fts_rowid`,
 		`DELETE FROM schema_migrations WHERE id = 44`) {
 		if _, err := s.db.Exec(q); err != nil {

@@ -77,12 +77,12 @@ func (s *Store) messageLanguageIn(q docQueryer, userID string) string {
 	return i18n.Fallback
 }
 
-// DefaultLanguageSetting: the admin's default language, "" while none was stored.
+// DefaultLanguageSetting: the admin's default language, "" while none was stored. From the settings in
+// memory (GetSystemSettings, forgotten on every change): the language middleware asks on every request.
 func (s *Store) DefaultLanguageSetting() string {
-	var v string
-	logDBErr(s.db.QueryRow(`SELECT value FROM system_settings WHERE key = 'default_language'`).Scan(&v))
-	if !i18n.Valid(v) {
+	set, err := s.GetSystemSettings()
+	if err != nil || set == nil || !i18n.Valid(set.DefaultLanguage) {
 		return ""
 	}
-	return v
+	return set.DefaultLanguage
 }

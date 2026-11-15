@@ -471,7 +471,7 @@ const it: HelpContent = {
             <strong className="text-main">Invio dati:</strong> <code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">POST /api/v1/webhooks/ingest</code> accetta pensieri da Comandi Rapidi di iOS, Home Assistant o n8n. Il campo <code className="font-mono">"target"</code> specifica la destinazione: <code className="font-mono">triage</code> (predefinita), <code className="font-mono">task</code> (opzionalmente con <code className="font-mono">taskListId</code>) o <code className="font-mono">list_item</code> (con <code className="font-mono">listId</code>).
           </p>
           <p>
-            <strong className="text-main">Agenti IA:</strong> tramite MCP (<code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">POST /api/v1/mcp</code>), Claude Code, OpenAI Codex, Claude Desktop, Cursor e i tuoi agenti possono leggere, creare, modificare, spuntare ed eliminare attività, liste e note, oltre a organizzare la posta in arrivo. Nelle impostazioni trovi il comando pronto per ogni agente; un agente vede solo gli strumenti autorizzati dalla chiave.
+            <strong className="text-main">Agenti IA:</strong> tramite MCP (<code className="text-accent bg-panel px-1 py-0.5 rounded-sm font-mono">POST /api/v1/mcp</code>), Claude Code, OpenAI Codex, Claude Desktop, Cursor e i tuoi agenti possono leggere, creare, modificare, spuntare ed eliminare attività, liste e note, oltre a organizzare la posta in arrivo. Nelle impostazioni trovi il comando pronto per ogni agente; un agente vede solo gli strumenti autorizzati dalla chiave. Un agente aggiunge immagini (ad es. una che ha generato o uno screenshot) a una nota come punto a sé: come file o da un indirizzo https che MindSift copia nella nota (JPEG, PNG, GIF, WebP). Nelle note gli agenti aggiungono anche blocchi di codice con il linguaggio e separatori, spostano punti con i loro sottopunti (anche rientro e rientro inverso) e, come /extract, trasformano un punto in una nota a sé con un link al suo posto.
           </p>
           <p>
             <strong className="text-main">Origine:</strong> tutto ciò che una chiave crea o modifica riporta in modo permanente un contrassegno con il suo nome, preceduto dall'icona di un webhook (API) o di un robot (MCP). Passandoci sopra o toccandolo puoi verificare chi lo ha creato e modificato per l'ultima volta, e quando.
@@ -496,7 +496,7 @@ const it: HelpContent = {
           </p>
           <ul className="space-y-1.5">
             <li>
-              <strong className="text-main">Cambio di vista:</strong> usa il selettore in alto a destra tra elenco e Kanban.
+              <strong className="text-main">Cambio di vista:</strong> sul desktop il selettore in alto a destra passa tra elenco, Kanban e calendario. Sullo smartphone la piccola etichetta accanto all'elenco di attività mostra la vista; toccala per passare alla successiva (Kanban → calendario → elenco). Aperte, completate e cestino si scelgono nella vista elenco con il selettore in cima all'elenco.
             </li>
             <li>
               <strong className="text-main">Colonne Kanban personalizzate:</strong> nelle impostazioni delle colonne puoi definire stati individuali per ciascuna lista di attività (es. <em>Backlog</em>, <em>In corso</em>, <em>Revisione</em>, <em>Completata</em>) impostando colori e stato di completamento.

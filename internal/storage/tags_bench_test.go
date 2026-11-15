@@ -33,4 +33,12 @@ func BenchmarkTags(b *testing.B) {
 			}
 		}
 	})
+	// The same as before (every matching note loaded whole), for comparison
+	b.Run("page_own_tag_whole_notes", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			if _, err := tagDetailsReference(store, me.ID, "projekt"); err != nil {
+				b.Fatal(err)
+			}
+		}
+	})
 }

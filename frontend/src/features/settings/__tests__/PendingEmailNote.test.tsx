@@ -23,10 +23,15 @@ describe('PendingEmailNote', () => {
     render(<PendingEmailNote user={user} onUserUpdated={onUserUpdated} />);
     expect(screen.getByText(/Wartet auf Bestätigung: anna.neu@example.org/)).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Link erneut senden' }));
-    await waitFor(() => expect(resend).toHaveBeenCalledWith('account'));
-    fireEvent.click(screen.getByRole('button', { name: 'Bisherige behalten' }));
-    await waitFor(() => expect(cancel).toHaveBeenCalledWith('account'));
-    expect(onUserUpdated).toHaveBeenCalledWith(expect.objectContaining({ pendingEmail: undefined }));
+    expect(resend).toHaveBeenCalledWith('account');
+    // Both buttons stay disabled until the request has settled, which can take a while on a busy machine
+    const keep = screen.getByRole('button', { name: 'Bisherige behalten' }) as HTMLButtonElement;
+    expect(keep.disabled).toBe(true);
+    await waitFor(() => expect(keep.disabled).toBe(false));
+    fireEvent.click(keep);
+    expect(cancel).toHaveBeenCalledWith('account');
+    // The address only goes once the request has answered
+    await waitFor(() => expect(onUserUpdated).toHaveBeenCalledWith(expect.objectContaining({ pendingEmail: undefined })));
   });
 
   it('says why nothing comes without a mail server, and shows nothing without a waiting address', () => {

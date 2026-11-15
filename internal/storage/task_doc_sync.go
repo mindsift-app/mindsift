@@ -16,12 +16,20 @@ import (
 // subtask leaves its checkbox in the note.
 
 // docSubtaskLinks maps checkbox IDs of a note to the task whose subtask they are.
-func (s *Store) docSubtaskLinks(docID string, mainLinks map[string]string) map[string]string {
+// One query for all tasks of the note (it used to be one per task, on every sync).
+func (s *Store) docSubtaskLinks(mainLinks map[string]string) map[string]string {
 	out := map[string]string{}
-	for _, taskID := range mainLinks {
-		var raw string
-		if err := s.db.QueryRow(`SELECT subtasks FROM thoughts WHERE id = ?`, taskID).Scan(&raw); err != nil {
-			logDBErr(err)
+	if len(mainLinks) == 0 {
+		return out
+	}
+	rows, err := s.db.Query(`SELECT id, subtasks FROM thoughts WHERE id IN (SELECT value FROM json_each(?))`, linkedTaskIDsJSON(mainLinks))
+	if dbFailed(err) {
+		return out
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var taskID, raw string
+		if dbFailed(rows.Scan(&taskID, &raw)) {
 			continue
 		}
 		var subs []domain.SubTask
@@ -32,14 +40,45 @@ func (s *Store) docSubtaskLinks(docID string, mainLinks map[string]string) map[s
 			}
 		}
 	}
+	logDBErr(rows.Err())
 	return out
+}
+
+// linkedTaskIDsJSON: the task ids of a note's links (block → task) as a JSON array for json_each.
+func linkedTaskIDsJSON(links map[string]string) string {
+	ids := make([]string, 0, len(links))
+	for _, id := range links {
+		ids = append(ids, id)
+	}
+	raw, _ := json.Marshal(ids)
+	return string(raw)
+}
+
+// linkedTasks loads the tasks of a note's links (block → task) in one query, without access check.
+func (s *Store) linkedTasks(links map[string]string) (map[string]*domain.Thought, error) {
+	rows, err := s.db.Query(
+		`SELECT id, user_id, content, tags, priority, source, status, is_completed, converted_type, converted_ref_id, due_date, task_list_id, kanban_status, notes, alarm_sent, created_at, triaged_at, subtasks, sort_order, recurrence, reminders, `+originColumns("")+`
+		 FROM thoughts WHERE id IN (SELECT value FROM json_each(?))`, linkedTaskIDsJSON(links))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := make(map[string]*domain.Thought, len(links))
+	for rows.Next() {
+		t, err := scanThought(rows)
+		if err != nil {
+			return nil, err
+		}
+		out[t.ID] = t
+	}
+	return out, rows.Err()
 }
 
 // DocTaskLinks returns the note's checkboxes linked to a task (block → task) and those linked as a
 // subtask (block → task of the subtask), for the editor's badges.
 func (s *Store) DocTaskLinks(docID string) (tasks, subtasks map[string]string) {
 	tasks = s.docTaskLinks(docID)
-	return tasks, s.docSubtaskLinks(docID, tasks)
+	return tasks, s.docSubtaskLinks(tasks)
 }
 
 // reconcileSubtasks brings the subtasks of the task linked to mainID in line with the note: linked
@@ -97,55 +136,87 @@ func reconcileSubtasks(d *collab.Doc, mainID string, subs []domain.SubTask, take
 	return out, changed
 }
 
+// TaskReconciled is a task ReconcileDocTaskLinks brought in line with its note: as it was before and as
+// it is now.
+type TaskReconciled struct {
+	Before, After *domain.Thought
+}
+
 // ReconcileDocTaskLinks brings tasks linked to blocks in line with the note after it changed: tick,
 // title and subtasks. A deleted main checkbox unlinks the task and its subtasks (all of them stay).
-// Returns the changed tasks as they were before (for the notifications about the change).
-func (s *Store) ReconcileDocTaskLinks(docID string) []*domain.Thought {
+// Returns the changed tasks before and after (for the notifications about the change).
+func (s *Store) ReconcileDocTaskLinks(docID string) []TaskReconciled {
+	changed, _ := s.ReconcileDocTaskLinksNotify(docID, nil)
+	return changed
+}
+
+// ReconcileDocTaskLinksNotify is ReconcileDocTaskLinks that stores the notifications about the changes
+// in the same transaction as the tasks (one write instead of two). The changes are worked out first;
+// plan (may be nil) gives the notifications from them before the transaction begins, so it may read the
+// database. Returns the changes and the center entries as stored, in plan's order.
+func (s *Store) ReconcileDocTaskLinksNotify(docID string, plan func([]TaskReconciled) ([]CenterAdd, []QueuedAdd)) ([]TaskReconciled, []CenterEntry) {
 	links := s.docTaskLinks(docID)
 	if len(links) == 0 {
-		return nil
+		return nil, nil
 	}
 	d, _, err := loadCollabDoc(s.db, docID)
 	if err != nil {
 		logDBErr(err)
-		return nil
+		return nil, nil
 	}
 	taken := map[string]bool{}
 	for blockID := range links {
 		taken[blockID] = true
 	}
-	var changed []*domain.Thought
+	tasks, err := s.linkedTasks(links)
+	if err != nil {
+		logDBErr(err)
+		return nil, nil
+	}
+	// Subtask checkboxes of the tasks in this note (checkbox → task), kept up to date as tasks change
+	subLinks := map[string]string{}
+	for _, t := range tasks {
+		for _, st := range t.Subtasks {
+			if st.BlockID != "" {
+				subLinks[st.BlockID] = t.ID
+			}
+		}
+	}
+	var changed []TaskReconciled
+	var stmts []sqlStmt
 	for blockID, taskID := range links {
-		t, err := s.GetThoughtByIDUnchecked(taskID)
-		if err != nil || t == nil {
+		t := tasks[taskID]
+		if t == nil {
 			continue
 		}
+		after := t.Clone()
 		b, ok := d.Blocks[blockID]
 		if !ok || b.Deleted {
-			for i := range t.Subtasks {
-				t.Subtasks[i].BlockID = ""
+			for i := range after.Subtasks {
+				delete(subLinks, after.Subtasks[i].BlockID)
+				after.Subtasks[i].BlockID = ""
 			}
-			subsJSON, _ := json.Marshal(t.Subtasks)
-			if _, err := s.db.Exec(`UPDATE thoughts SET converted_type = '', converted_ref_id = '', subtasks = ? WHERE id = ?`, string(subsJSON), taskID); err == nil {
-				changed = append(changed, t)
-			}
+			after.ConvertedType, after.ConvertedRefID, after.DocID, after.BlockID = "", "", "", ""
+			subsJSON, _ := json.Marshal(after.Subtasks)
+			stmts = append(stmts, stmt(`UPDATE thoughts SET converted_type = '', converted_ref_id = '', subtasks = ? WHERE id = ?`, string(subsJSON), taskID))
+			changed = append(changed, TaskReconciled{Before: t, After: after})
 			continue
 		}
 		update := false
-		content, done, kanban := t.Content, t.IsCompleted, t.KanbanStatus
 		if b.Props.Checked != t.IsCompleted {
-			done, update = b.Props.Checked, true
-			kanban = "todo"
-			if done {
-				kanban = "done"
+			after.IsCompleted, update = b.Props.Checked, true
+			after.KanbanStatus = "todo"
+			if after.IsCompleted {
+				after.KanbanStatus = "done"
 			}
 		}
 		if title := strings.TrimSpace(b.Content); title != "" && title != t.Content {
-			content, update = title, true
+			after.Content, update = title, true
+			after.Tags = domain.ExtractTags(title) // manual tags stay unless the title changed
 		}
 		// Subtask checkboxes of other tasks in this note are not adopted
 		otherSubs := map[string]bool{}
-		for id, owner := range s.docSubtaskLinks(docID, links) {
+		for id, owner := range subLinks {
 			if owner != taskID {
 				otherSubs[id] = true
 			}
@@ -157,17 +228,54 @@ func (s *Store) ReconcileDocTaskLinks(docID string) []*domain.Thought {
 		if !update && !subsChanged {
 			continue
 		}
-		tagsJSON, _ := json.Marshal(domain.ExtractTags(content))
-		subsJSON, _ := json.Marshal(subs)
-		if content == t.Content {
-			tagsJSON, _ = json.Marshal(t.Tags) // manual tags stay unless the title changed
+		for _, st := range t.Subtasks {
+			delete(subLinks, st.BlockID)
 		}
-		if _, err := s.db.Exec(`UPDATE thoughts SET content = ?, tags = ?, is_completed = ?, kanban_status = ?, subtasks = ? WHERE id = ?`,
-			content, string(tagsJSON), boolInt(done), kanban, string(subsJSON), taskID); err == nil {
-			changed = append(changed, t)
+		for _, st := range subs {
+			if st.BlockID != "" {
+				subLinks[st.BlockID] = taskID
+			}
+		}
+		after.Subtasks = subs
+		tagsJSON, _ := json.Marshal(after.Tags)
+		subsJSON, _ := json.Marshal(subs)
+		stmts = append(stmts, stmt(`UPDATE thoughts SET content = ?, tags = ?, is_completed = ?, kanban_status = ?, subtasks = ? WHERE id = ?`,
+			after.Content, string(tagsJSON), boolInt(after.IsCompleted), after.KanbanStatus, string(subsJSON), taskID))
+		changed = append(changed, TaskReconciled{Before: t, After: after})
+	}
+	if len(changed) == 0 {
+		return nil, nil
+	}
+	var center []CenterAdd
+	var queue []QueuedAdd
+	if plan != nil {
+		center, queue = plan(changed)
+	}
+	added, err := s.storeTaskReconcile(stmts, center, queue)
+	if err != nil {
+		logDBErr(err)
+		return nil, nil
+	}
+	return changed, added
+}
+
+// storeTaskReconcile writes the task updates of a reconcile and their notifications in one transaction.
+func (s *Store) storeTaskReconcile(stmts []sqlStmt, center []CenterAdd, queue []QueuedAdd) ([]CenterEntry, error) {
+	tx, err := s.db.Begin()
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+	for _, st := range stmts {
+		if _, err := tx.Exec(st.query, st.args...); err != nil {
+			return nil, err
 		}
 	}
-	return changed
+	added, err := storeNotificationsTx(tx, center, queue)
+	if err != nil {
+		return nil, err
+	}
+	return added, tx.Commit()
 }
 
 // SyncTaskToDoc carries a linked task's tick, title and subtasks into its note: linked checkboxes get
@@ -175,7 +283,15 @@ func (s *Store) ReconcileDocTaskLinks(docID string) []*domain.Thought {
 // take over an unlinked checkbox there with the same text). Returns the note ID if it changed.
 func (s *Store) SyncTaskToDoc(userID, taskID string) string {
 	t, err := s.GetThoughtByIDUnchecked(taskID)
-	if err != nil || t == nil || t.ConvertedType != "document_block" || !strings.Contains(t.ConvertedRefID, ":") {
+	if err != nil {
+		return ""
+	}
+	return s.SyncTaskToDocFrom(userID, t)
+}
+
+// SyncTaskToDocFrom is SyncTaskToDoc with the task as it was just written (UpdateTask), not read again.
+func (s *Store) SyncTaskToDocFrom(userID string, t *domain.Thought) string {
+	if t == nil || t.ConvertedType != "document_block" || !strings.Contains(t.ConvertedRefID, ":") {
 		return ""
 	}
 	docID, mainID, _ := strings.Cut(t.ConvertedRefID, ":")
@@ -281,7 +397,7 @@ func (s *Store) SyncTaskToDoc(userID, taskID string) string {
 	}
 	if subsChanged {
 		subsJSON, _ := json.Marshal(subs)
-		s.execLogged(`UPDATE thoughts SET subtasks = ? WHERE id = ?`, string(subsJSON), taskID)
+		s.execLogged(`UPDATE thoughts SET subtasks = ? WHERE id = ?`, string(subsJSON), t.ID)
 	}
 	for _, r := range results {
 		if r.Seq > 0 {

@@ -114,7 +114,7 @@ export const EmojiPickerModal: React.FC<EmojiPickerModalProps> = ({
     <>
       {/* Mobile Backdrop (below sm) */}
       <div
-        className={`fixed inset-0 bg-black/60 sm:hidden ${anchor ? 'z-60' : 'z-40'}`}
+        className={`fixed inset-0 bg-black/60 sm:hidden backdrop-blur-xs ${anchor ? 'z-60' : 'z-40'}`}
         onClick={onClose}
         aria-hidden="true"
       />
