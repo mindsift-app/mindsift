@@ -2841,7 +2841,7 @@
       },
       "patch": {
         "summary": "Check or uncheck an item",
-        "description": "Check off item (isCompleted)",
+        "description": "Check off or reopen an item. isCompleted is the wanted state, not a toggle; already in that state, nothing is written or broadcast. Optional changedAt and sentAt (sender's clock, ms since 1970): a change made offline and sent later; the server takes its time as now minus (sentAt - changedAt), so the clocks need not agree, and ignores it when the checked state changed after it.",
         "tags": [
           "Shared Lists"
         ],
@@ -2866,12 +2866,38 @@
         "responses": {
           "default": {
             "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "isCompleted": {
+                    "type": "boolean",
+                    "description": "The wanted state (false when left out)"
+                  },
+                  "changedAt": {
+                    "type": "integer",
+                    "format": "int64",
+                    "description": "When the change was made (sender's clock, ms since 1970)"
+                  },
+                  "sentAt": {
+                    "type": "integer",
+                    "format": "int64",
+                    "description": "When it was sent (same clock as changedAt)"
+                  }
+                }
+              }
+            }
           }
         }
       },
       "put": {
         "summary": "Change an item",
-        "description": "Update item (content, category, quantity)",
+        "description": "Update an item: only the fields sent are written, a field left out keeps its value.",
         "tags": [
           "Shared Lists"
         ],
@@ -2896,6 +2922,28 @@
         "responses": {
           "default": {
             "description": "JSON; errors as {\"error\": \"…\"}"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "content": {
+                    "type": "string"
+                  },
+                  "category": {
+                    "type": "string"
+                  },
+                  "quantity": {
+                    "type": "string",
+                    "description": "Free text, e.g. \"2x\" or \"500 g\""
+                  }
+                }
+              }
+            }
           }
         }
       }
