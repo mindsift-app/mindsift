@@ -136,7 +136,9 @@ func reconcileSubtasks(d *collab.Doc, mainID string, subs []domain.SubTask, take
 		}
 	}
 	for _, child := range d.Children(mainID) {
-		if child.Deleted || child.Type != "todo" || linked[child.ID] || taken[child.ID] {
+		// A conflict copy (text that lost against another change of a subtask's checkbox) is no new subtask
+		// until someone keeps it
+		if child.Deleted || child.Type != "todo" || linked[child.ID] || taken[child.ID] || child.Props.ConflictOf != "" {
 			continue
 		}
 		title := strings.TrimSpace(child.Content)
@@ -167,7 +169,8 @@ type TaskReconciled struct {
 }
 
 // ReconcileDocTaskLinks brings tasks linked to blocks in line with the note after it changed: tick,
-// title and subtasks. A deleted main checkbox unlinks the task and its subtasks (all of them stay).
+// title and subtasks. A main checkbox deleted or turned into another kind of bullet unlinks the task and
+// its subtasks (all of them stay).
 // Returns the changed tasks before and after (for the notifications about the change).
 func (s *Store) ReconcileDocTaskLinks(docID string) []TaskReconciled {
 	changed, _ := s.ReconcileDocTaskLinksNotify(docID, nil)
@@ -217,12 +220,16 @@ func (s *Store) ReconcileDocTaskLinksNotify(docID string, plan func([]TaskReconc
 		}
 		after := t.Clone()
 		b, ok := d.Blocks[blockID]
-		if !ok || b.Deleted {
+		// Deleted or no longer a to-do (turned into a bullet, a heading …): the task is unlinked and stays,
+		// as a subtask whose checkbox stops being one. Turned back into a to-do (or the delete undone), it is
+		// linked again (RelinkRestoredDocTasks).
+		if !ok || b.Deleted || b.Type != "todo" {
 			for i := range after.Subtasks {
 				delete(subLinks, after.Subtasks[i].BlockID)
 				after.Subtasks[i].BlockID = ""
 			}
-			// converted_ref_id stays: undoing the delete (restore) links the task again (RelinkRestoredDocTasks)
+			// converted_ref_id stays: undoing the delete (restore) or turning the bullet back into a to-do links
+			// the task again (RelinkRestoredDocTasks)
 			after.ConvertedType, after.DocID, after.BlockID = "", "", ""
 			subsJSON, _ := json.Marshal(after.Subtasks)
 			stmts = append(stmts, stmt(`UPDATE thoughts SET converted_type = '', subtasks = ? WHERE id = ?`, string(subsJSON), taskID))
@@ -331,18 +338,30 @@ func (s *Store) refreshReconciled(changed []TaskReconciled) {
 }
 
 // RelinkRestoredDocTasks links tasks again whose to-do came back in the note (undoing a delete restores
-// the block): deleting it only unlinked them and kept the reference. Explicitly unlinked tasks are not
-// linked again (UnlinkTaskFromDocBlock drops the reference). Returns the tasks linked again.
+// the block, or the bullet became a to-do again): deleting it or changing its kind only unlinked them and
+// kept the reference. A block that is no to-do (restored as a bullet) links nothing. Explicitly unlinked
+// tasks are not linked again (UnlinkTaskFromDocBlock drops the reference). Returns the tasks linked again.
 func (s *Store) RelinkRestoredDocTasks(docID string, blockIDs []string) []*domain.Thought {
 	if len(blockIDs) == 0 {
 		return nil
 	}
-	refs := make([]string, len(blockIDs))
-	for i, id := range blockIDs {
-		refs[i] = docID + ":" + id
+	d, _, err := loadCollabDoc(s.db, docID)
+	if err != nil {
+		logDBErr(err)
+		return nil
+	}
+	refs := make([]string, 0, len(blockIDs))
+	for _, id := range blockIDs {
+		if b, ok := d.Blocks[id]; ok && !b.Deleted && b.Type == "todo" {
+			refs = append(refs, docID+":"+id)
+		}
+	}
+	if len(refs) == 0 {
+		return nil
 	}
 	raw, _ := json.Marshal(refs)
-	// Only on a restore, so the scan past the partial index (converted_type = 'document_block') is fine
+	// Only on a restore or a bullet becoming a to-do, so the scan past the partial index
+	// (converted_type = 'document_block') is fine
 	rows, err := s.db.Query(`UPDATE thoughts SET converted_type = 'document_block'
 		WHERE converted_type = '' AND converted_ref_id IN (SELECT value FROM json_each(?)) RETURNING id`, string(raw))
 	if dbFailed(err) {
@@ -511,7 +530,7 @@ func (s *Store) SyncTaskToDocFrom(userID string, t, before *domain.Thought) stri
 			}
 			// Not in the note yet: take over an unlinked checkbox with the same text, else add one
 			for _, c := range d.Children(mainID) {
-				if !c.Deleted && c.Type == "todo" && !used[c.ID] && strings.TrimSpace(c.Content) == titles[i] {
+				if !c.Deleted && c.Type == "todo" && !used[c.ID] && c.Props.ConflictOf == "" && strings.TrimSpace(c.Content) == titles[i] {
 					subs[i].BlockID, used[c.ID], subsChanged = c.ID, true, true
 					setBlock(c, true, subs[i].IsCompleted, "")
 					break
