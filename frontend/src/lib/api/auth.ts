@@ -308,6 +308,7 @@ export const authApi = {
     language?: string;
     retention?: Retention;
     tourOffered?: boolean;
+    typedRecognition?: boolean;
   } & { code?: string; passkeyToken?: string; passkey?: Record<string, unknown> }): Promise<User> {
     return request<User>('/api/v1/auth/settings', {
       method: 'PATCH',

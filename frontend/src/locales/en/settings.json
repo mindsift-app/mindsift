@@ -1,11 +1,13 @@
 {
   "language": {
     "nav": "Language",
-    "navHint": "Language of the interface",
+    "navHint": "Interface, dates and quantities while typing",
     "title": "Language",
     "intro": "The language MindSift shows its menus and hints in.",
     "autoHint": "Your browser's language if MindSift speaks it, otherwise this server's default language ({{fallback}}).",
-    "more": "More languages will follow."
+    "more": "More languages will follow.",
+    "typedRecognition": "Recognize dates and quantities while typing",
+    "typedRecognitionHint": "Reads dates like “tomorrow 2 pm” from what you type or dictate and sets them as the due date, and quantities like “2x milk” in shopping lists. Applies on all your devices."
   },
   "defaultLanguage": {
     "title": "Default language",

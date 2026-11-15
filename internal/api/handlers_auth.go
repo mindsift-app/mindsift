@@ -774,6 +774,8 @@ func (s *Server) handleUpdateUserSettings(w http.ResponseWriter, r *http.Request
 		Retention *domain.Retention `json:"retention"`
 		// The app asked about the guided tour (storage/tour.go); ignored in the demo, whose accounts everybody shares
 		TourOffered *bool `json:"tourOffered"`
+		// Dates and quantities read from typed text (storage/typed_recognition.go)
+		TypedRecognition *bool `json:"typedRecognition"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeError(w, http.StatusBadRequest, "Ungültiges JSON")
@@ -909,6 +911,12 @@ func (s *Server) handleUpdateUserSettings(w http.ResponseWriter, r *http.Request
 	}
 	if req.TourOffered != nil && !s.cfg.DemoMode {
 		if err := s.store.SetTourOffered(userID, *req.TourOffered); err != nil {
+			writeInternal(w, err)
+			return
+		}
+	}
+	if req.TypedRecognition != nil {
+		if err := s.store.SetTypedRecognition(userID, *req.TypedRecognition); err != nil {
 			writeInternal(w, err)
 			return
 		}
@@ -1087,6 +1095,8 @@ func (s *Server) fillUserPreferences(u *domain.User) {
 	u.OIDC = s.oidcLinked(u)
 	offered := s.store.TourOffered(u.ID)
 	u.TourOffered = &offered
+	typed := s.store.TypedRecognition(u.ID)
+	u.TypedRecognition = &typed
 }
 
 // maskLogin: a typed sign-in name as logged. Only its start, so a password typed into the name field

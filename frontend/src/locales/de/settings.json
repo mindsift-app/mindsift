@@ -1,11 +1,13 @@
 {
   "language": {
     "nav": "Sprache",
-    "navHint": "Sprache der Oberfläche",
+    "navHint": "Oberfläche, Datum und Menge beim Tippen",
     "title": "Sprache",
     "intro": "In welcher Sprache MindSift Menüs und Hinweise zeigt.",
     "autoHint": "Die Sprache deines Browsers, wenn MindSift sie kann, sonst die Standardsprache dieses Servers ({{fallback}}).",
-    "more": "Weitere Sprachen folgen."
+    "more": "Weitere Sprachen folgen.",
+    "typedRecognition": "Datum und Menge beim Tippen erkennen",
+    "typedRecognitionHint": "Liest Termine wie „morgen 14 Uhr“ aus Eingaben und Diktaten und setzt sie als Fälligkeit, und Mengen wie „2x Milch“ in Einkaufslisten. Gilt auf allen deinen Geräten."
   },
   "defaultLanguage": {
     "title": "Standardsprache",

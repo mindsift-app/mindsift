@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { CalendarClock, X } from 'lucide-react';
 import { DateSpan, NaturalDate, parseNaturalDate, phraseOf } from '../lib/naturalDate';
 import { formatDue } from '../lib/due';
+import { useTypedRecognition } from '../lib/typedRecognition';
 
 // Due dates typed into a one-line capture (lib/naturalDate.ts): the field marks the phrase, a chip shows the
 // date with an × to ignore it. Only what the chip shows is applied on saving, so the text never changes
@@ -10,10 +11,12 @@ import { formatDue } from '../lib/due';
 
 /**
  * The date recognised in text, unless off (a date picked by hand wins, a target without due dates) or
- * dismissed with the ×. Dismissing holds for that phrase; another phrase shows a chip again.
+ * dismissed with the ×. Dismissing holds for that phrase; another phrase shows a chip again. Nothing is
+ * recognised while the person switched the recognition off (lib/typedRecognition.ts).
  */
-export function useNaturalDate(text: string, enabled: boolean) {
+export function useNaturalDate(text: string, wanted: boolean) {
   const { i18n } = useTranslation();
+  const enabled = useTypedRecognition() && wanted;
   const [dismissed, setDismissed] = useState<string | null>(null);
   const parsed = useMemo(
     () => (enabled ? parseNaturalDate(text, i18n.language, new Date()) : null),

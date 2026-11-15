@@ -9,6 +9,7 @@ const api = vi.hoisted(() => ({
 vi.mock('../../../lib/api', () => ({ api }));
 
 import { captureDictation, undoDictationDate } from '../captureDictation';
+import { setTypedRecognition } from '../../../lib/typedRecognition';
 
 // Monday, 16 November 2026, 10:00 local time
 const NOW = new Date(2026, 10, 16, 10, 0);
@@ -37,6 +38,17 @@ describe('captureDictation', () => {
     expect(saved.due).toBe('2026-11-17T14:00');
     expect(saved.dictated).toBe('Zahnarzt anrufen morgen um 14 Uhr');
     expect(saved.thought.content).toBe('Zahnarzt anrufen');
+  });
+
+  it('keeps the text as spoken and sets no date while the recognition is switched off', async () => {
+    setTypedRecognition(false);
+    try {
+      const saved = await captureDictation('Zahnarzt anrufen morgen um 14 Uhr', NOW, 'de');
+      expect(api.captureThought).toHaveBeenCalledWith('Zahnarzt anrufen morgen um 14 Uhr', 'normal', 'voice', '', { target: 'inbox' });
+      expect(saved.due).toBe('');
+    } finally {
+      setTypedRecognition(true);
+    }
   });
 
   it('takes "am" with a weekday along', async () => {

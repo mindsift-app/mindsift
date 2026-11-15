@@ -122,6 +122,9 @@ type User struct {
 	// TourOffered: the app already asked whether to take the guided tour (storage/tour.go). Only in the
 	// own profile, so the app never reads a missing value as "not asked yet".
 	TourOffered *bool `json:"tourOffered,omitempty"`
+	// TypedRecognition: the app reads due dates and quantities from typed and dictated text (storage/
+	// typed_recognition.go). Only in the own profile; missing counts as on.
+	TypedRecognition *bool `json:"typedRecognition,omitempty"`
 }
 
 // Server roles: admins run everything, user managers ("Benutzerverwaltung") look after members,

@@ -248,6 +248,8 @@ export interface User {
   organizations?: { id: string; name: string }[];
   // Own profile only (GET /auth/me): the app already asked about the guided tour (features/tour/tourOffer.ts)
   tourOffered?: boolean;
+  // Own profile only: the app reads due dates and quantities from typed text (lib/typedRecognition.ts); missing = on
+  typedRecognition?: boolean;
   // In the directory: the viewer may share with this person (others only show by name, because they work
   // on something together with the viewer)
   findable?: boolean;

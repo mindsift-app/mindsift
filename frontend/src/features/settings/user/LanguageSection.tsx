@@ -3,21 +3,26 @@ import { useTranslation } from 'react-i18next';
 import { User } from '../../../lib/types';
 import { api } from '../../../lib/api';
 import { LANGUAGES, languageName } from '../../../i18n';
+import { ToggleSwitch } from '../../../components/ToggleSwitch';
 
-// Language of the app: own choice or the browser's ('' = browser, then the server's default)
+// Language of the app: own choice or the browser's ('' = browser, then the server's default); dates and
+// quantities read from typed text (lib/typedRecognition.ts), on unless switched off
 export function useLanguageSetting(onUserUpdated: (u: User) => void) {
   const [languageSaving, setLanguageSaving] = useState(false);
 
-  const handleChangeLanguage = async (next: string) => {
+  const save = async (settings: { language?: string; typedRecognition?: boolean }) => {
     setLanguageSaving(true);
     try {
-      onUserUpdated(await api.updateSettings({ language: next }));
+      onUserUpdated(await api.updateSettings(settings));
     } finally {
       setLanguageSaving(false);
     }
   };
 
-  return { languageSaving, handleChangeLanguage };
+  const handleChangeLanguage = (next: string) => save({ language: next });
+  const handleChangeTypedRecognition = (next: boolean) => save({ typedRecognition: next });
+
+  return { languageSaving, handleChangeLanguage, handleChangeTypedRecognition };
 }
 
 // Kontoeinstellungen → Sprache
@@ -31,7 +36,7 @@ export function LanguageSection({
   serverDefault?: string;
 }) {
   const { t } = useTranslation('settings');
-  const { languageSaving, handleChangeLanguage } = language;
+  const { languageSaving, handleChangeLanguage, handleChangeTypedRecognition } = language;
   const options = [
     { value: '', title: t('common:languageAuto'), text: t('language.autoHint', { fallback: languageName(serverDefault || 'de') }) },
     ...LANGUAGES.map((l) => ({ value: l.id as string, title: l.name, text: '' })),
@@ -70,6 +75,18 @@ export function LanguageSection({
         })}
       </div>
       <p className="text-muted">{t('language.more')}</p>
+      <div className="p-3.5 rounded-card border border-border bg-canvas flex items-center justify-between gap-4">
+        <div className="text-xs">
+          <p className="font-semibold text-main">{t('language.typedRecognition')}</p>
+          <p className="text-[11px] text-faint">{t('language.typedRecognitionHint')}</p>
+        </div>
+        <ToggleSwitch
+          checked={currentUser.typedRecognition !== false}
+          disabled={languageSaving}
+          onChange={(v) => void handleChangeTypedRecognition(v)}
+          title={t('language.typedRecognition')}
+        />
+      </div>
     </div>
   );
 }

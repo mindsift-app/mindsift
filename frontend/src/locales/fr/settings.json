@@ -1,11 +1,13 @@
 {
   "language": {
     "nav": "Langue",
-    "navHint": "Langue de l'interface",
+    "navHint": "Interface, dates et quantités à la saisie",
     "title": "Langue",
     "intro": "La langue dans laquelle MindSift affiche ses menus et indications.",
     "autoHint": "La langue de ton navigateur si MindSift la prend en charge, sinon la langue par défaut de ce serveur ({{fallback}}).",
-    "more": "D'autres langues suivront."
+    "more": "D'autres langues suivront.",
+    "typedRecognition": "Reconnaître dates et quantités à la saisie",
+    "typedRecognitionHint": "Lit les dates comme « demain 14 h » dans ce que tu tapes ou dictes et les définit comme échéance, ainsi que les quantités comme « 2x lait » dans les listes de courses. S’applique sur tous tes appareils."
   },
   "defaultLanguage": {
     "title": "Langue par défaut",

@@ -1,11 +1,13 @@
 {
   "language": {
     "nav": "Lingua",
-    "navHint": "Lingua dell'interfaccia",
+    "navHint": "Interfaccia, date e quantità durante la digitazione",
     "title": "Lingua",
     "intro": "La lingua con cui MindSift mostra menu e avvisi.",
     "autoHint": "La lingua del browser se MindSift la supporta, altrimenti la lingua predefinita di questo server ({{fallback}}).",
-    "more": "Altre lingue seguiranno presto."
+    "more": "Altre lingue seguiranno presto.",
+    "typedRecognition": "Riconoscere date e quantità durante la digitazione",
+    "typedRecognitionHint": "Legge date come «domani alle 14» da ciò che scrivi o detti e le imposta come scadenza, e quantità come «2x latte» nelle liste della spesa. Vale su tutti i tuoi dispositivi."
   },
   "defaultLanguage": {
     "title": "Lingua predefinita",
