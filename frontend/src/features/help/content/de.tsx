@@ -533,6 +533,10 @@ const de: HelpContent = {
       subtitle: 'Gedanken in unter 1 Sekunde festhalten – per Tastatur oder Sprache',
       icon: Layers,
       keywords: [
+        'datum',
+        'fälligkeit',
+        'morgen',
+        'uhrzeit',
         'capture',
         'schnellerfassung',
         'diktat',
@@ -556,6 +560,9 @@ const de: HelpContent = {
             </li>
             <li>
               <strong className="text-main">Ziel-Auswahl:</strong> Gedanken landen standardmäßig im Posteingang. Über die Optionen kannst du sie jedoch sofort als <strong className="text-main">Aufgabe</strong> (mit Priorität und Fälligkeit), <strong className="text-main">Listeneintrag</strong> (z.B. auf die Einkaufsliste) oder <strong className="text-main">neue Notiz</strong> routen.
+            </li>
+            <li>
+              <strong className="text-main">Datum im Text:</strong> Schreibst du „Zahnarzt morgen 14 Uhr“, erkennt der Quick Dump das Datum: Der Teil wird im Feld markiert, und ein Chip zeigt <em>Morgen, 14:00</em>. Beim Speichern verschwindet er aus dem Text und wird zur Fälligkeit; das <strong className="text-main">×</strong> am Chip lässt den Text, wie er ist, ohne Datum. Erkannt werden <em>heute</em>, <em>morgen</em>, <em>übermorgen</em>, Wochentage (<em>Freitag</em>, <em>am Freitag</em>, <em>nächsten Dienstag</em>; der heutige Wochentag meint den in einer Woche), <em>in 3 Tagen</em>, <em>in einer Woche</em>, <em>24.12.</em>, <em>24.12.2026</em>, <em>24. Dezember</em>, <em>2026-12-24</em> und Uhrzeiten wie <em>14 Uhr</em>, <em>14:30</em> oder <em>um 9</em>, auch zusammen („Freitag um 9“). Eine Uhrzeit allein gilt für heute, wenn sie noch kommt, sonst für morgen. Ein im Datumsfeld gewähltes Datum hat Vorrang. Das gilt für den Posteingang und Direkt-Aufgaben, auch nach einem Diktat, in der Sprache der App.
             </li>
           </ul>
         </div>
@@ -681,6 +688,9 @@ const de: HelpContent = {
             </li>
             <li>
               <strong className="text-main">Drag & Drop:</strong> Ziehe Aufgabenkarten mühelos zwischen den Spalten umher. Das Verschieben in eine Erledigt-Spalte hakt die Aufgabe automatisch ab.
+            </li>
+            <li>
+              <strong className="text-main">Datum gleich mittippen:</strong> Im Feld für eine neue Aufgabe (am Smartphone im Blatt hinter dem +) macht „Bericht Freitag um 9“ eine Aufgabe „Bericht“, fällig am Freitag um 09:00. Der Chip am Feld zeigt das erkannte Datum, sein × verwirft es; ein im Datumsfeld gewähltes Datum hat Vorrang. Welche Angaben erkannt werden, steht unter <em>Blitz-Erfassung</em>.
             </li>
           </ul>
         </div>

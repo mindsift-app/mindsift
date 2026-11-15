@@ -436,7 +436,7 @@ const en: HelpContent = {
       title: 'Instant capture bar',
       subtitle: 'Hold on to thoughts in under a second – by keyboard or voice',
       icon: Layers,
-      keywords: ['capture', 'quick capture', 'dictation', 'voice', 'microphone', 'inbox', 'c'],
+      keywords: ['date', 'due', 'tomorrow', 'time', 'capture', 'quick capture', 'dictation', 'voice', 'microphone', 'inbox', 'c'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
           <p>The Quick Dump makes sure no fleeting thought gets lost. On the desktop the round <strong className="text-main">+</strong> in the bar on the left opens it as a window over everything, on phones the <strong className="text-main">+</strong> at the bottom centre:</p>
@@ -449,6 +449,9 @@ const en: HelpContent = {
             </li>
             <li>
               <strong className="text-main">Choosing the target:</strong> thoughts land in the inbox by default. With the options you can route them right away as a <strong className="text-main">task</strong> (with priority and due date), a <strong className="text-main">list item</strong> (e.g. on the shopping list) or a <strong className="text-main">new note</strong>.
+            </li>
+            <li>
+              <strong className="text-main">Dates in the text:</strong> type “Dentist tomorrow 2pm” and the Quick Dump spots the date: the phrase is marked in the field and a chip shows <em>Tomorrow, 14:00</em>. Saving takes it out of the text and makes it the due date; the <strong className="text-main">×</strong> on the chip keeps the text as it is, without a date. It understands <em>today</em>, <em>tomorrow</em>, <em>day after tomorrow</em>, weekdays (<em>Friday</em>, <em>on Friday</em>, <em>next Tuesday</em>; today’s weekday means the one a week from now), <em>in 3 days</em>, <em>in a week</em>, <em>Dec 24</em>, <em>24 December</em>, <em>2026-12-24</em> and times such as <em>2pm</em>, <em>2:30 pm</em>, <em>14:30</em> or <em>at 9</em> (09:00), also together (“Friday at 9am”). A time alone means today if it is still ahead, otherwise tomorrow. A date picked in the date field wins. It works for the inbox and direct tasks, after dictation too, in the language of the app.
             </li>
           </ul>
         </div>
@@ -538,6 +541,9 @@ const en: HelpContent = {
             </li>
             <li>
               <strong className="text-main">Drag & drop:</strong> drag task cards between the columns with ease. Moving one into a done column checks the task off automatically.
+            </li>
+            <li>
+              <strong className="text-main">Type the date along:</strong> in the field for a new task (on phones in the sheet behind the +) “Report Friday at 9am” makes a task “Report” due Friday at 09:00. The chip at the field shows the recognised date and its × drops it; a date picked in the date field wins. Which forms are understood is listed under <em>Instant capture bar</em>.
             </li>
           </ul>
         </div>

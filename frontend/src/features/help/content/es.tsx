@@ -483,7 +483,7 @@ const es: HelpContent = {
       title: 'Barra de captura rápida',
       subtitle: 'Apunta pensamientos en menos de un segundo: por teclado o voz',
       icon: Layers,
-      keywords: ['captura', 'captura rapida', 'dictado', 'voz', 'microfono', 'inbox', 'c'],
+      keywords: ['fecha', 'vencimiento', 'mañana', 'hora', 'captura', 'captura rapida', 'dictado', 'voz', 'microfono', 'inbox', 'c'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
           <p>El Quick Dump garantiza que ningún pensamiento fugaz se pierda. En el escritorio, el <strong className="text-main">+</strong> redondo de la barra de la izquierda lo abre como ventana sobre todo lo demás; en el móvil, el <strong className="text-main">+</strong> abajo en el centro:</p>
@@ -496,6 +496,9 @@ const es: HelpContent = {
             </li>
             <li>
               <strong className="text-main">Elegir destino:</strong> los pensamientos van al inbox por defecto. Con las opciones puedes enviarlos directamente como <strong className="text-main">tarea</strong> (con prioridad y fecha de vencimiento), <strong className="text-main">elemento de lista</strong> (p. ej. en la lista de la compra) o <strong className="text-main">nueva nota</strong>.
+            </li>
+            <li>
+              <strong className="text-main">Fecha en el texto:</strong> escribe «Dentista mañana a las 14» y el Quick Dump reconoce la fecha: la expresión se resalta en el campo y una etiqueta muestra <em>Mañana, 14:00</em>. Al guardar se quita del texto y pasa a ser el vencimiento; la <strong className="text-main">×</strong> de la etiqueta deja el texto tal cual, sin fecha. Se reconocen <em>hoy</em>, <em>mañana</em>, <em>pasado mañana</em>, los días de la semana (<em>viernes</em>, <em>el próximo martes</em>; el día de hoy significa el de la semana siguiente), <em>en 3 días</em>, <em>en una semana</em>, <em>24.12.</em>, <em>24/12/2026</em>, <em>24 de diciembre</em>, <em>2026-12-24</em> y horas como <em>a las 14</em> o <em>14:30</em>. Una hora sola vale para hoy si aún no ha pasado, si no para mañana. Una fecha elegida en el campo de fecha tiene prioridad. Funciona para la bandeja de entrada y las tareas directas, también tras un dictado, en el idioma de la app.
             </li>
           </ul>
         </div>
@@ -599,6 +602,9 @@ const es: HelpContent = {
             </li>
             <li>
               <strong className="text-main">Arrastrar y soltar:</strong> mueve fácilmente tarjetas de tareas entre columnas. Mover una tarjeta a una columna de tareas completadas la marca automáticamente como hecha.
+            </li>
+            <li>
+              <strong className="text-main">Escribir la fecha al momento:</strong> en el campo de una nueva tarea (en el móvil, en el panel tras el +) «Informe el viernes a las 9» crea la tarea «Informe» con vencimiento el viernes a las 09:00. La etiqueta junto al campo muestra la fecha reconocida y su × la descarta; una fecha elegida en el campo de fecha tiene prioridad. Las formas reconocidas se describen en <em>Barra de captura rápida</em>.
             </li>
           </ul>
         </div>

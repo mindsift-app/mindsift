@@ -442,7 +442,7 @@ const fr: HelpContent = {
       title: 'Barre de saisie instantanée (Instant Capture Bar)',
       subtitle: 'Capturer des pensées en moins d\'une seconde – au clavier ou à la voix',
       icon: Layers,
-      keywords: ['capture', 'saisie rapide', 'dictée', 'voix', 'microphone', 'boîte de réception', 'c'],
+      keywords: ['date', 'échéance', 'demain', 'heure', 'capture', 'saisie rapide', 'dictée', 'voix', 'microphone', 'boîte de réception', 'c'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
           <p>Le Quick Dump garantit qu'aucune idée fugace ne se perde. Sur ordinateur, le <strong className="text-main">+</strong> rond dans la barre de gauche l'ouvre en fenêtre par-dessus tout ; sur mobile, le <strong className="text-main">+</strong> en bas au centre :</p>
@@ -455,6 +455,9 @@ const fr: HelpContent = {
             </li>
             <li>
               <strong className="text-main">Destination personnalisée :</strong> par défaut, les pensées arrivent dans le Quick Dump (pour triage ultérieur), mais tu peux aussi les envoyer directement comme tâche, note ou élément de liste en un clic.
+            </li>
+            <li>
+              <strong className="text-main">Date dans le texte :</strong> écris « Dentiste demain 14h » et le Quick Dump reconnaît la date : l’expression est surlignée dans le champ et une pastille affiche <em>Demain, 14:00</em>. À l’enregistrement, elle est retirée du texte et devient l’échéance ; le <strong className="text-main">×</strong> de la pastille garde le texte tel quel, sans date. Sont reconnus <em>aujourd’hui</em>, <em>demain</em>, <em>après-demain</em>, les jours de la semaine (<em>vendredi</em>, <em>mardi prochain</em> ; le jour même désigne celui de la semaine suivante), <em>dans 3 jours</em>, <em>dans une semaine</em>, <em>24.12.</em>, <em>24/12/2026</em>, <em>24 décembre</em>, <em>2026-12-24</em> et les heures comme <em>14h</em>, <em>14h30</em> ou <em>14:30</em>. Une heure seule vaut pour aujourd’hui si elle est encore à venir, sinon pour demain. Une date choisie dans le champ de date est prioritaire. Cela vaut pour la boîte de réception et les tâches directes, aussi après une dictée, dans la langue de l’application.
             </li>
           </ul>
         </div>
@@ -539,6 +542,9 @@ const fr: HelpContent = {
             </li>
             <li>
               <strong className="text-main">Glisser-déposer :</strong> déplace simplement les cartes d'une colonne à une autre pour actualiser leur statut.
+            </li>
+            <li>
+              <strong className="text-main">Taper la date avec :</strong> dans le champ d’une nouvelle tâche (sur smartphone dans le panneau derrière le +), « Rapport vendredi 9h » crée la tâche « Rapport », due vendredi à 09:00. La pastille près du champ montre la date reconnue, son × l’écarte ; une date choisie dans le champ de date est prioritaire. Les formes reconnues sont décrites sous <em>Barre de saisie instantanée</em>.
             </li>
           </ul>
         </div>

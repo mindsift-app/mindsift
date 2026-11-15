@@ -436,7 +436,7 @@ const it: HelpContent = {
       title: 'Barra di registrazione rapida',
       subtitle: 'Cattura i pensieri in meno di un secondo – da tastiera o a voce',
       icon: Layers,
-      keywords: ['cattura', 'registrazione rapida', 'dettatura', 'voce', 'microfono', 'inbox', 'c'],
+      keywords: ['data', 'scadenza', 'domani', 'orario', 'cattura', 'registrazione rapida', 'dettatura', 'voce', 'microfono', 'inbox', 'c'],
       content: (
         <div className="space-y-2 text-muted leading-relaxed">
           <p>Il Quick Dump assicura che nessun pensiero vada perso. Sul desktop il <strong className="text-main">+</strong> rotondo nella barra a sinistra lo apre come finestra sopra tutto, sul telefono il <strong className="text-main">+</strong> in basso al centro:</p>
@@ -449,6 +449,9 @@ const it: HelpContent = {
             </li>
             <li>
               <strong className="text-main">Scelta della destinazione:</strong> i pensieri finiscono nel Quick Dump per impostazione predefinita. Tramite le opzioni puoi indirizzarli subito come <strong className="text-main">attività</strong> (con priorità e scadenza), <strong className="text-main">elemento di lista</strong> (es. nella lista della spesa) o <strong className="text-main">nuova nota</strong>.
+            </li>
+            <li>
+              <strong className="text-main">Data nel testo:</strong> scrivi «Dentista domani alle 14» e il Quick Dump riconosce la data: la frase viene evidenziata nel campo e un chip mostra <em>Domani, 14:00</em>. Al salvataggio viene tolta dal testo e diventa la scadenza; la <strong className="text-main">×</strong> del chip lascia il testo com’è, senza data. Vengono riconosciuti <em>oggi</em>, <em>domani</em>, <em>dopodomani</em>, i giorni della settimana (<em>venerdì</em>, <em>martedì prossimo</em>; il giorno di oggi indica quello della settimana dopo), <em>tra 3 giorni</em>, <em>fra una settimana</em>, <em>24.12.</em>, <em>24/12/2026</em>, <em>24 dicembre</em>, <em>2026-12-24</em> e orari come <em>alle 14</em>, <em>alle ore 14:30</em> o <em>14:30</em>. Un orario da solo vale per oggi se deve ancora arrivare, altrimenti per domani. Una data scelta nel campo data ha la precedenza. Vale per la posta in arrivo e le attività dirette, anche dopo una dettatura, nella lingua dell’app.
             </li>
           </ul>
         </div>
@@ -538,6 +541,9 @@ const it: HelpContent = {
             </li>
             <li>
               <strong className="text-main">Trascina e rilascia:</strong> sposta le schede delle attività tra le colonne con semplicità. Spostare una scheda in una colonna di completamento segna automaticamente l'attività come completata.
+            </li>
+            <li>
+              <strong className="text-main">Scrivere subito la data:</strong> nel campo per una nuova attività (sullo smartphone nel pannello dietro il +) «Relazione venerdì alle 9» crea l’attività «Relazione» con scadenza venerdì alle 09:00. Il chip accanto al campo mostra la data riconosciuta, la sua × la scarta; una data scelta nel campo data ha la precedenza. Le forme riconosciute sono descritte sotto <em>Barra di registrazione rapida</em>.
             </li>
           </ul>
         </div>
