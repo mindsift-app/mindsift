@@ -77,8 +77,12 @@ RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache
 # steps above are the same for every platform and run once.
 ARG TARGETOS
 ARG TARGETARCH
+# The version the server knows itself as (the same APP_VERSION as the header): a release looks for newer
+# releases once a day (internal/api/update.go), a build without one never does
+ARG APP_VERSION=""
 RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build \
-    CGO_ENABLED=0 GOOS="${TARGETOS}" GOARCH="${TARGETARCH}" go build -ldflags="-s -w" -o /app/mindsift ./cmd/server
+    CGO_ENABLED=0 GOOS="${TARGETOS}" GOARCH="${TARGETARCH}" \
+      go build -ldflags="-s -w -X main.version=${APP_VERSION}" -o /app/mindsift ./cmd/server
 # The licenses of everything in that binary: the npm packages from the frontend stage, the Go modules it
 # imports on this platform and Go's standard library
 COPY --from=frontend-builder /app/third-party-npm.txt /app/third-party-npm.txt

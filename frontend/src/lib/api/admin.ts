@@ -1,5 +1,5 @@
 // REST calls: Administration: users, invites, server settings, voice, organizations
-import { Organization, SetupInfo, SmtpForm, SystemSettings, SharingMode, User, UserInvite, VoiceAdminStatus } from '../types';
+import { AuditPage, Organization, SetupInfo, SmtpForm, SystemSettings, SharingMode, UpdateStatus, User, UserInvite, VoiceAdminStatus } from '../types';
 import { authHeaders, ensureArray, request } from './client';
 import i18n from '../../i18n';
 
@@ -93,6 +93,15 @@ export const adminApi = {
     await request(`/api/v1/admin/invites/${id}`, { method: 'DELETE' });
   },
 
+  async adminUpdateStatus(): Promise<UpdateStatus> {
+    return request<UpdateStatus>('/api/v1/admin/update');
+  },
+
+  // Puts the hint for this release aside for the signed-in admin; a newer release shows it again
+  async adminDismissUpdate(version: string): Promise<UpdateStatus> {
+    return request<UpdateStatus>('/api/v1/admin/update/dismiss', { method: 'POST', body: JSON.stringify({ version }) });
+  },
+
   async adminVoiceStatus(): Promise<VoiceAdminStatus> {
     return request<VoiceAdminStatus>('/api/v1/admin/voice');
   },
@@ -180,5 +189,18 @@ export const adminApi = {
       body: JSON.stringify(smtp ? { toEmail, smtp } : { toEmail }),
       timeout: 'slow',
     });
+  },
+
+  // Audit log, newest first: action is a key or a category ending in a dot, user an account id, before
+  // the nextBefore of the previous page
+  async adminGetAudit(params: { action?: string; user?: string; before?: number; limit?: number } = {}): Promise<AuditPage> {
+    const q = new URLSearchParams();
+    if (params.action) q.set('action', params.action);
+    if (params.user) q.set('user', params.user);
+    if (params.before) q.set('before', String(params.before));
+    if (params.limit) q.set('limit', String(params.limit));
+    const qs = q.toString();
+    const res = await request<AuditPage>(`/api/v1/admin/audit${qs ? `?${qs}` : ''}`);
+    return { entries: ensureArray(res?.entries), nextBefore: res?.nextBefore || 0 };
   },
 };

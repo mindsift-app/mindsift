@@ -41,6 +41,7 @@ func (s *Server) handleAdminCreateOrganization(w http.ResponseWriter, r *http.Re
 		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
+	s.audit(r, storage.AuditOrgCreated, auditOrgTarget(org.ID, org.Name), nil)
 	writeJSON(w, http.StatusCreated, org)
 }
 
@@ -52,17 +53,27 @@ func (s *Server) handleAdminRenameOrganization(w http.ResponseWriter, r *http.Re
 		writeError(w, http.StatusBadRequest, "Ungültiges JSON")
 		return
 	}
-	if err := s.store.RenameOrganization(chi.URLParam(r, "id"), req.Name); err != nil {
+	orgID := chi.URLParam(r, "id")
+	before := s.organizationName(orgID)
+	if err := s.store.RenameOrganization(orgID, req.Name); err != nil {
 		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
+	}
+	if after := s.organizationName(orgID); after != before {
+		s.audit(r, storage.AuditOrgRenamed, auditOrgTarget(orgID, after), map[string]string{"from": before, "to": after})
 	}
 	writeJSON(w, http.StatusOK, map[string]bool{"updated": true})
 }
 
 func (s *Server) handleAdminDeleteOrganization(w http.ResponseWriter, r *http.Request) {
-	if err := s.store.DeleteOrganization(chi.URLParam(r, "id")); err != nil {
+	orgID := chi.URLParam(r, "id")
+	name := s.organizationName(orgID)
+	if err := s.store.DeleteOrganization(orgID); err != nil {
 		writeInternal(w, err)
 		return
+	}
+	if name != "" {
+		s.audit(r, storage.AuditOrgDeleted, auditOrgTarget(orgID, name), nil)
 	}
 	writeJSON(w, http.StatusOK, map[string]bool{"deleted": true})
 }
@@ -75,10 +86,12 @@ func (s *Server) handleAdminAddOrganizationMember(w http.ResponseWriter, r *http
 		writeError(w, http.StatusBadRequest, "Ungültiges JSON")
 		return
 	}
-	if err := s.store.AddOrganizationMember(chi.URLParam(r, "id"), req.UserID); err != nil {
+	orgID := chi.URLParam(r, "id")
+	if err := s.store.AddOrganizationMember(orgID, req.UserID); err != nil {
 		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
+	s.auditOrgMember(r, storage.AuditOrgMemberAdded, orgID, req.UserID)
 	writeJSON(w, http.StatusOK, map[string]bool{"added": true})
 }
 
@@ -99,6 +112,7 @@ func (s *Server) handleAdminRemoveOrganizationMember(w http.ResponseWriter, r *h
 		writeInternal(w, err)
 		return
 	}
+	s.auditOrgMember(r, storage.AuditOrgMemberRemoved, orgID, userID)
 	writeJSON(w, http.StatusOK, map[string]bool{"removed": true})
 }
 
@@ -203,6 +217,11 @@ func (s *Server) handleAdminCreateUser(w http.ResponseWriter, r *http.Request) {
 			u.OrganizationIDs = append(u.OrganizationIDs, orgID)
 		}
 	}
+	created := map[string]any{"role": u.Role}
+	if names := s.organizationNames(u.OrganizationIDs); len(names) > 0 {
+		created["organizations"] = names
+	}
+	s.audit(r, storage.AuditAccountCreated, auditUserTarget(u), created)
 	writeJSON(w, http.StatusCreated, staffUser{User: *u})
 }
 
@@ -280,6 +299,7 @@ func (s *Server) handleAdminUpdateUser(w http.ResponseWriter, r *http.Request) {
 		s.store.ClearPendingRegistration(targetUserID)
 		s.store.ClearEmailVerification(targetUserID)
 	}
+	s.auditUserUpdate(r, targetUser, u)
 	u.NoPassword = !auth.HasPassword(u.PasswordHash)
 	writeJSON(w, http.StatusOK, staffUser{User: *u})
 }
@@ -311,6 +331,10 @@ func (s *Server) handleAdminResetPassword(w http.ResponseWriter, r *http.Request
 		return
 	}
 	s.wsHub.DisconnectUser(targetUserID)
+	target, _ := s.store.GetUserByID(targetUserID)
+	if target != nil {
+		s.audit(r, storage.AuditAccountPasswordReset, auditUserTarget(target), nil)
+	}
 	writeJSON(w, http.StatusOK, map[string]bool{"success": true})
 }
 
@@ -339,6 +363,7 @@ func (s *Server) handleAdminResetMFA(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	slog.Warn("Two-factor sign-in reset by an administrator", "user_id", target.ID, "by", callerID)
+	s.audit(r, storage.AuditAccountMFAReset, auditUserTarget(target), nil)
 	s.notifySecurityChange(target, securityChangeReset)
 	writeJSON(w, http.StatusOK, map[string]bool{"success": true})
 }
@@ -357,9 +382,18 @@ func (s *Server) handleAdminDeleteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	allowLongWork(w)
+	// A rejected registration is deleted the same way; the log says which it was
+	pending := s.store.IsPendingRegistration(targetUserID)
 	if err := s.deleteAccount(targetUserID, targetUser, time.Now()); err != nil {
 		writeInternal(w, err)
 		return
+	}
+	if targetUser != nil {
+		var details any
+		if pending {
+			details = map[string]bool{"pendingRegistration": true}
+		}
+		s.audit(r, storage.AuditAccountDeleted, auditUserTarget(targetUser), details)
 	}
 	writeJSON(w, http.StatusOK, map[string]bool{"deleted": true})
 }
@@ -410,14 +444,24 @@ func (s *Server) handleAdminCreateInvite(w http.ResponseWriter, r *http.Request)
 		writeErrorFrom(w, http.StatusBadRequest, err)
 		return
 	}
+	// Never the code: it lets anybody register while the invite is valid
+	invDetails := map[string]any{"maxUses": inv.MaxUses, "expiresAt": inv.ExpiresAt}
+	if names := s.organizationNames(inv.OrganizationIDs); len(names) > 0 {
+		invDetails["organizations"] = names
+	}
+	s.audit(r, storage.AuditInviteCreated, auditInviteTarget(inv), invDetails)
 	writeJSON(w, http.StatusCreated, inv)
 }
 
 func (s *Server) handleAdminDeleteInvite(w http.ResponseWriter, r *http.Request) {
 	inviteID := chi.URLParam(r, "id")
+	inv, _ := s.store.GetUserInviteByID(inviteID)
 	if err := s.store.DeleteUserInvite(inviteID); err != nil {
 		writeInternal(w, err)
 		return
+	}
+	if inv != nil {
+		s.audit(r, storage.AuditInviteRevoked, auditInviteTarget(inv), nil)
 	}
 	writeJSON(w, http.StatusOK, map[string]bool{"deleted": true})
 }
@@ -600,9 +644,15 @@ func (s *Server) handleAdminUpdateSettings(w http.ResponseWriter, r *http.Reques
 	}
 	previousMode := s.store.SharingMode()
 	linksBefore := s.emailLinksAvailable()
+	before, _ := s.store.GetSystemSettings()
 	if err := s.store.UpdateSystemSettings(&settings); err != nil {
 		writeInternal(w, err)
 		return
+	}
+	if after, err := s.store.GetSystemSettings(); err == nil {
+		if changes := settingsChanges(before, after); len(changes) > 0 {
+			s.audit(r, storage.AuditSettingsChanged, storage.AuditEntry{TargetKind: storage.AuditTargetSettings}, auditChanges{Changes: changes})
+		}
 	}
 	// A new time zone counts from now on: due dates, alarms, the daily summary and backups read it
 	if settings.TimeZone != nil {

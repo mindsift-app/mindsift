@@ -262,8 +262,10 @@ func TestResetPasswordEndsSessions(t *testing.T) {
 		t.Fatalf("--disable-2fa: code %d, totp %v, %s", r.code, store.TOTPActive(bert.ID), r.stdout)
 	}
 
-	events, _ := store.CLIEventsAfter(0)
-	if len(events) != 2 || events[0].Action != actionResetPassword || events[0].UserID != bert.ID {
+	events, _ := store.AuditEntriesAfter(0, storage.AuditSourceCLI)
+	if len(events) != 2 || events[0].Action != storage.AuditAccountPasswordReset || events[0].TargetID != bert.ID ||
+		events[0].ActorKind != storage.AuditActorCLI || len(events[0].Details) != 0 ||
+		string(events[1].Details) != `{"secondFactorsRemoved":true}` {
 		t.Fatalf("each reset is recorded for the server: %+v", events)
 	}
 
@@ -343,7 +345,8 @@ func TestDeleteDryRunAndDelete(t *testing.T) {
 	if docs, _ := store.GetDocuments(bert.ID); len(docs) != 0 {
 		t.Fatal("its notes are gone")
 	}
-	if events, _ := store.CLIEventsAfter(0); len(events) != 1 || events[0].Action != actionDelete {
+	if events, _ := store.AuditEntriesAfter(0, storage.AuditSourceCLI); len(events) != 1 || events[0].Action != storage.AuditAccountDeleted ||
+		events[0].TargetName != "bert" || !strings.Contains(string(events[0].Details), `"notes":`) {
 		t.Fatalf("recorded: %+v", events)
 	}
 }

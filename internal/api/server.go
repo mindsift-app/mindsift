@@ -60,6 +60,8 @@ type Server struct {
 	metrics           *apiMetrics   // what /metrics reports (metrics.go)
 	// oidc: sign-in through an OpenID Connect provider (oidc.go); nil while it is off
 	oidc *oidcService
+	// update: the daily look for a new MindSift release (update.go)
+	update *updateChecker
 	// now: the time codes of authenticator apps and trusted devices are checked against (tests set it)
 	now func() time.Time
 
@@ -104,6 +106,16 @@ func NewServer(cfg *config.Config, store *storage.Store, wsHub *ws.Hub, staticFS
 		srv.background(srv.startVoiceCheck)
 	}
 	srv.draw = newDrawHub()
+	srv.update = newUpdateChecker(cfg.AppVersion, store.UpdateCheckState(), func(st updateState) {
+		if b, err := json.Marshal(st); err == nil {
+			if err := store.SetUpdateCheckState(string(b)); err != nil {
+				slog.Warn("Keeping the result of the release check failed", "error", err)
+			}
+		}
+	})
+	if srv.updateCheckOff() == "" {
+		srv.background(srv.startUpdateCheck)
+	}
 	wsHub.SetRoomAuthorizer(srv.canJoinRoom)
 	wsHub.SetMessageHandler(drawMessageHandler{srv})
 	wsHub.SetOriginCheck(srv.streamOriginAllowed)
@@ -530,7 +542,10 @@ func (s *Server) Router() http.Handler {
 			r.Put("/api/v1/admin/settings", s.notInDemo(s.handleAdminUpdateSettings))
 			r.Get("/api/v1/admin/settings/sharing-impact", s.handleAdminSharingImpact)
 			r.Get("/api/v1/admin/voice", s.handleAdminVoiceStatus)
+			r.Get("/api/v1/admin/update", s.handleAdminUpdate)
+			r.Post("/api/v1/admin/update/dismiss", s.notInDemo(s.handleAdminDismissUpdate))
 			r.Post("/api/v1/admin/smtp/test", s.notInDemo(s.handleAdminTestSMTP))
+			r.Get("/api/v1/admin/audit", s.handleAdminAudit)
 		})
 	})
 

@@ -27,6 +27,10 @@ import (
 //go:embed all:dist
 var embeddedDist embed.FS
 
+// version: the release the binary was built as, set by the image build (-ldflags "-X main.version=…" from
+// APP_VERSION). Empty for local builds; only a release version looks for newer releases (api/update.go).
+var version = ""
+
 func main() {
 	privateFiles()
 	// mindsift <command>: the operator's command line (users, reset-password, check …); without one,
@@ -49,8 +53,9 @@ func main() {
 	logger := slog.New(handler)
 	slog.SetDefault(logger)
 	cfg := config.Load()
+	cfg.AppVersion = version
 
-	slog.Info("MindSift Server starting", "port", cfg.Port, "log_level", level.String())
+	slog.Info("MindSift Server starting", "port", cfg.Port, "log_level", level.String(), "version", version)
 
 	// OIDC_*: half a configuration would leave a sign-in button that cannot work, so the start stops here
 	if err := cfg.OIDC.Resolve(); err != nil {

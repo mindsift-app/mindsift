@@ -684,7 +684,9 @@
       "server": "Server e condivisione",
       "serverHint": "Condivisione e registrazione",
       "smtp": "Server email / SMTP",
-      "smtpHint": "Invio email per le notifiche"
+      "smtpHint": "Invio email per le notifiche",
+      "audit": "Registro",
+      "auditHint": "Chi ha cambiato cosa e quando"
     },
     "demo": "Disattivato nella demo: le impostazioni del server, le email e gli account possono essere solo visualizzati qui.",
     "userCreated": "L’utente «{{name}}» è stato creato.",
@@ -1045,5 +1047,161 @@
       }
     },
     "note": "Le app di calendario aggiornano gli abbonamenti solo ogni tanto, Google ad esempio dopo diverse ore. Le modifiche in MindSift compaiono quindi con ritardo."
+  },
+  "update": {
+    "card": {
+      "title": "È disponibile MindSift {{version}}",
+      "text": "Hai installato la {{current}}. Cosa è cambiato e come aggiornare lo trovi anche nell’amministrazione.",
+      "whatsNew": "Novità",
+      "later": "Più tardi",
+      "close": "Chiudi"
+    },
+    "admin": {
+      "title": "Versione di MindSift",
+      "hint": "Una volta al giorno il server chiede a GitHub l’ultima versione. Non viene inviato nulla sulla tua istanza.",
+      "installed": "Installata",
+      "latest": "Ultima",
+      "checked": "Ultimo controllo",
+      "upToDate": "Stai usando l’ultima versione.",
+      "available": "È disponibile MindSift {{version}}.",
+      "whatsNew": "Novità",
+      "howTo": "Aggiornare con Docker Compose (nella cartella con docker-compose.yml):",
+      "notYet": "Ancora nessuna risposta da GitHub. Il primo controllo avviene pochi minuti dopo l’avvio.",
+      "off": "La ricerca di nuove versioni è disattivata (UPDATE_CHECK=false).",
+      "demo": "La demo non cerca nuove versioni.",
+      "devBuild": "Questa build non è una versione pubblicata, quindi MindSift non cerca nuove versioni."
+    }
+  },
+  "audit": {
+    "title": "Registro attività",
+    "intro": "Chi ha modificato account, ruoli e impostazioni del server, e quando: nell'amministrazione, dalla riga di comando o automaticamente dal provider di accesso. Le voci restano per un anno. Password e altri segreti non compaiono mai, solo il fatto che sono stati modificati; gli indirizzi IP non vengono salvati.",
+    "loadFailed": "Impossibile caricare il registro",
+    "loading": "Caricamento …",
+    "empty": "Ancora nessuna voce.",
+    "emptyFiltered": "Nessuna voce per questo filtro.",
+    "more": "Carica voci precedenti",
+    "deletedAccount": "Account eliminato",
+    "filter": {
+      "action": "Azione",
+      "account": "Account",
+      "allActions": "Tutte le azioni",
+      "allAccounts": "Tutti gli account",
+      "reset": "Azzera filtri"
+    },
+    "col": {
+      "time": "Ora",
+      "actor": "Chi",
+      "action": "Cosa",
+      "target": "Interessato"
+    },
+    "actor": {
+      "cli": "Riga di comando",
+      "oidc": "Provider di accesso",
+      "system": "Server"
+    },
+    "target": {
+      "settings": "Impostazioni del server",
+      "inviteLink": "Link di invito",
+      "organization": "Organizzazione",
+      "backup": "Backup del server"
+    },
+    "action": {
+      "account_created": "Account creato",
+      "account_deleted": "Account eliminato",
+      "account_approved": "Registrazione approvata",
+      "account_role_changed": "Ruolo cambiato",
+      "account_disabled": "Account bloccato",
+      "account_enabled": "Account sbloccato",
+      "account_updated": "Dati dell'account modificati",
+      "account_password_reset": "Password reimpostata",
+      "account_mfa_reset": "Accesso a due fattori reimpostato",
+      "invite_created": "Invito creato",
+      "invite_sent": "Invito inviato",
+      "invite_revoked": "Invito revocato",
+      "organization_created": "Organizzazione creata",
+      "organization_renamed": "Organizzazione rinominata",
+      "organization_deleted": "Organizzazione eliminata",
+      "organization_member_added": "Aggiunto all'organizzazione",
+      "organization_member_removed": "Rimosso dall'organizzazione",
+      "settings_changed": "Impostazioni del server modificate",
+      "setup_finished": "Configurazione iniziale completata",
+      "backup_created": "Backup creato",
+      "backup_deleted": "Backup eliminato",
+      "backup_downloaded": "Backup scaricato"
+    },
+    "detail": {
+      "fromTo": "{{label}}: {{from}} → {{to}}",
+      "changed": "{{label}}: modificato",
+      "value": "{{label}}: {{value}}",
+      "renamed": "«{{from}}» → «{{to}}»",
+      "viaEnv": "Da ADMIN_USER al primo avvio",
+      "secondFactorsRemoved": "Secondi fattori rimossi",
+      "pendingRegistration": "Registrazione rifiutata",
+      "content": "Con {{notes}} note, {{tasks}} attività, {{lists}} liste"
+    },
+    "value": {
+      "on": "attivo",
+      "off": "disattivo",
+      "empty": "(vuoto)",
+      "sharingMode": {
+        "private": "Privato",
+        "organizations": "Dentro le organizzazioni",
+        "open": "Aperto"
+      },
+      "registrationMode": {
+        "closed": "Chiusa",
+        "approval": "Con approvazione",
+        "domain": "Solo certi domini email",
+        "domain_approval": "Domini subito, altri dopo approvazione",
+        "open": "Aperta"
+      },
+      "mfaRequired": {
+        "admins": "Amministratori",
+        "all": "Tutti"
+      }
+    },
+    "field": {
+      "sharingMode": "Condivisione",
+      "registrationMode": "Registrazione",
+      "registrationDomains": "Domini email consentiti",
+      "registrationVerifyEmail": "Conferma dell'email",
+      "instanceName": "Nome dell'istanza",
+      "smtpHost": "Server SMTP",
+      "smtpPort": "Porta SMTP",
+      "smtpUser": "Utente SMTP",
+      "smtpPass": "Password SMTP",
+      "smtpFrom": "Indirizzo mittente",
+      "smtpFromName": "Nome mittente",
+      "smtpTls": "TLS",
+      "smtpSkipVerify": "Non verificare il certificato",
+      "allowPrivateWebhooks": "Webhook verso la rete locale",
+      "pushKnownServicesOnly": "Push solo tramite servizi noti",
+      "mfaRequired": "Due fattori obbligatori",
+      "backupEnabled": "Backup giornalieri",
+      "backupTime": "Ora del backup",
+      "backupRetentionDays": "Conserva i backup (giorni)",
+      "retentionAllowNever": "Conservazione illimitata",
+      "mcpEnabled": "Agenti IA (MCP)",
+      "peopleSearch": "Ricerca persone",
+      "publicLinks": "Link pubblici",
+      "publicLinkMaxDays": "Link pubblici al massimo (giorni)",
+      "calendarFeeds": "Abbonamenti calendario",
+      "linkPreviews": "Anteprime dei link",
+      "defaultLanguage": "Lingua predefinita",
+      "timeZone": "Fuso orario",
+      "displayName": "Nome visualizzato",
+      "username": "Nome utente",
+      "email": "Indirizzo email",
+      "discordWebhookUrl": "Webhook Discord",
+      "role": "Ruolo",
+      "group": "Gruppo",
+      "organizations": "Organizzazioni",
+      "organization": "Organizzazione",
+      "provider": "Provider",
+      "recipient": "A",
+      "maxUses": "Utilizzi",
+      "expiresAt": "Valido fino al",
+      "file": "File"
+    }
   }
 }

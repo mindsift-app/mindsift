@@ -17,15 +17,6 @@ import (
 	"github.com/mindsift-app/mindsift/internal/storage"
 )
 
-// Actions recorded in cli_events (the server reacts to some of them, api/cli_support.go)
-const (
-	actionCreate        = "users-create"
-	actionDelete        = "users-delete"
-	actionResetPassword = "reset-password"
-	actionMakeAdmin     = "make-admin"
-	actionRevokeAdmin   = "revoke-admin"
-)
-
 // userInfo is an account as the command line shows it.
 type userInfo struct {
 	ID          string `json:"id"`
@@ -213,10 +204,16 @@ func (c *command) readPassword(p *parsed) (string, error) {
 	return pw, nil
 }
 
-func (c *command) record(action string, u *domain.User, detail string) {
-	if err := c.store.RecordCLIEvent(action, u.ID, u.Username, detail); err != nil {
-		_, _ = fmt.Fprintln(c.env.Stderr, "Warning: the change is done, but recording it for the running server failed:", err)
+// record writes a change to the audit log; the running server reads it from there (api/cli_support.go).
+func (c *command) record(action string, target storage.AuditEntry, details any) {
+	target.Action, target.ActorKind, target.Source = action, storage.AuditActorCLI, storage.AuditSourceCLI
+	if err := c.store.RecordAudit(target, details); err != nil {
+		_, _ = fmt.Fprintln(c.env.Stderr, "Warning: the change is done, but writing it to the audit log failed:", err)
 	}
+}
+
+func userTarget(u *domain.User) storage.AuditEntry {
+	return storage.AuditEntry{TargetKind: storage.AuditTargetUser, TargetID: u.ID, TargetName: u.Username}
 }
 
 func (c *command) usersCreate(args []string) error {
@@ -291,7 +288,7 @@ func (c *command) usersCreate(args []string) error {
 			_, _ = fmt.Fprintln(c.env.Stderr, "Warning: marking the setup as unfinished failed:", err)
 		}
 	}
-	c.record(actionCreate, u, "role="+role)
+	c.record(storage.AuditAccountCreated, userTarget(u), map[string]string{"role": role})
 
 	if c.json {
 		res := map[string]any{"created": true, "user": c.info(u)}
@@ -359,7 +356,7 @@ func (c *command) usersDelete(args []string) error {
 	if err := api.NewAccountTools(cfg, c.store).DeleteAccount(u); err != nil {
 		return err
 	}
-	c.record(actionDelete, u, fmt.Sprintf("notes=%d tasks=%d lists=%d taskLists=%d", content.Notes, content.Tasks, content.Lists, content.TaskLists))
+	c.record(storage.AuditAccountDeleted, userTarget(u), content)
 	if c.json {
 		c.writeJSON(map[string]any{"deleted": true, "user": c.info(u), "content": content})
 		return nil
@@ -399,16 +396,16 @@ func (c *command) resetPassword(args []string) error {
 	if err := c.store.ResetPassword(u.ID, hash); err != nil {
 		return err
 	}
-	detail := "sessions ended"
 	disable2FA := p.bools["disable-2fa"]
 	if disable2FA {
 		if err := c.store.ResetMFA(u.ID); err != nil {
-			c.record(actionResetPassword, u, detail)
+			c.record(storage.AuditAccountPasswordReset, userTarget(u), nil)
 			return fmt.Errorf("the new password is set, but removing the second factors failed: %w", err)
 		}
-		detail += ", second factors removed"
+		c.record(storage.AuditAccountPasswordReset, userTarget(u), map[string]bool{"secondFactorsRemoved": true})
+	} else {
+		c.record(storage.AuditAccountPasswordReset, userTarget(u), nil)
 	}
-	c.record(actionResetPassword, u, detail)
 	if c.json {
 		c.writeJSON(map[string]any{"reset": true, "user": c.info(u), "oneTimePassword": password, "secondFactorsRemoved": disable2FA})
 		return nil
@@ -444,9 +441,9 @@ func (c *command) makeAdmin(args []string) error {
 		return err
 	}
 	revoke := p.bools["revoke"]
-	role, action := domain.RoleAdmin, actionMakeAdmin
+	role := domain.RoleAdmin
 	if revoke {
-		role, action = domain.RoleMember, actionRevokeAdmin
+		role = domain.RoleMember
 	}
 	if u.Role == role || (revoke && u.Role != domain.RoleAdmin) {
 		if c.json {
@@ -468,7 +465,7 @@ func (c *command) makeAdmin(args []string) error {
 	if err != nil {
 		return err
 	}
-	c.record(action, updated, "role "+u.Role+" -> "+role)
+	c.record(storage.AuditAccountRoleChanged, userTarget(updated), map[string]string{"from": u.Role, "to": role})
 	if c.json {
 		c.writeJSON(map[string]any{"changed": true, "user": c.info(updated)})
 		return nil

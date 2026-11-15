@@ -65,6 +65,8 @@ func (s *Server) CreateInitialAdmin() error {
 	if err != nil {
 		return fmt.Errorf("creating the account: %w", err)
 	}
+	s.auditBy(storage.AuditActorSystem, storage.AuditSourceSystem, storage.AuditAccountCreated, auditUserTarget(user),
+		map[string]string{"role": user.Role, "via": "ADMIN_USER"})
 	// The wizard's other questions come after the first sign-in
 	if err := s.store.SetSetupPending(true); err != nil {
 		logFailed("Marking the setup as unfinished", err, "user_id", user.ID)

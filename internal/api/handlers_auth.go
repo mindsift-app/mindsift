@@ -199,6 +199,7 @@ func (s *Server) handleFirstBootSetup(w http.ResponseWriter, r *http.Request) {
 		s.setupCode.clear()
 		slog.Info("First administrator created in the setup wizard; the setup code is no longer valid", "user_id", user.ID)
 	}
+	s.auditAs(user, storage.AuditAccountCreated, auditUserTarget(user), map[string]string{"role": user.Role})
 	if err := s.applySetupChoices(r, user, req.setupChoices); err != nil {
 		writeError(w, http.StatusInternalServerError, "Einstellungen konnten nicht gespeichert werden: "+clientMessage(err))
 		return
@@ -297,8 +298,13 @@ func (s *Server) applySetupChoices(r *http.Request, user *domain.User, c setupCh
 		if c.SMTP != nil {
 			c.SMTP.store(sys)
 		}
+		before, _ := s.store.GetSystemSettings()
 		if err := s.store.UpdateSystemSettings(sys); err != nil {
 			return err
+		}
+		if after, err := s.store.GetSystemSettings(); err == nil {
+			s.auditAs(user, storage.AuditSetupFinished, storage.AuditEntry{TargetKind: storage.AuditTargetSettings},
+				auditChanges{Changes: settingsChanges(before, after)})
 		}
 		if c.TimeZone != nil {
 			s.ApplyTimeZone()

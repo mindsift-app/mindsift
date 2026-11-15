@@ -2,7 +2,7 @@
 // password for a locked-out account, the admin role, an integrity check of the database. It runs in the
 // server binary (`mindsift users`, in the image `docker exec <container> mindsift users`), next to a
 // server that may be running on the same database: it opens the database the way the server does,
-// never migrates it, and keeps its transactions short. Changes are recorded in cli_events, which the
+// never migrates it, and keeps its transactions short. Changes are recorded in the audit log, which the
 // running server reads to end live connections and to log them (api/cli_support.go).
 package cli
 
@@ -74,6 +74,8 @@ Commands:
   make-admin <name> [--revoke] [--json]   give (or take away) the admin role
   check [--backup] [--json]               check the database (integrity, foreign keys);
                                           --backup first writes a snapshot to backups/system
+  audit [--limit <n>] [--json]            the audit log, newest first (default 50 entries):
+                                          who changed accounts, roles and server settings
   help                                    this text
 
 <name> is the username, the email address or the ID of an account.
@@ -163,6 +165,8 @@ func (c *command) run(args []string) error {
 		return c.makeAdmin(rest)
 	case "check":
 		return c.check(rest)
+	case "audit":
+		return c.audit(rest)
 	}
 	return usageErr("unknown command %q", name)
 }

@@ -6,13 +6,12 @@ import (
 	"fmt"
 	"os"
 	"strings"
-	"time"
 )
 
 // What the command line (internal/cli, `mindsift users …`) needs from the store: opening the database of
-// a running server without migrating it, and a record of each change it makes. The server reads that
-// record (CLIEventsAfter) and does what only it can do: end live connections of the account, lift the
-// lock of the sign-in protection, write the change to its own log.
+// a running server without migrating it. Each change it makes goes to the audit log (audit.go), which
+// the server reads (AuditEntriesAfter) to do what only it can do: end live connections of the account,
+// lift the lock of the sign-in protection, write the change to its own log.
 
 // WithExistingSchema opens a database the server has already set up and migrated, and nothing else: no
 // new file, no migrations, no planner statistics. A database that is behind or ahead of this binary is
@@ -54,7 +53,8 @@ func (s *Store) checkExistingSchema(dbPath string) error {
 	return nil
 }
 
-// migrateCLIEvents is migration 54: the record of changes made on the command line.
+// migrateCLIEvents is migration 54: the record of changes made on the command line (moved into the
+// audit log and dropped by migration 60).
 func (s *Store) migrateCLIEvents() error {
 	return s.execSchemaStatement(`CREATE TABLE IF NOT EXISTS cli_events (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -64,54 +64,6 @@ func (s *Store) migrateCLIEvents() error {
 		detail TEXT NOT NULL DEFAULT '',
 		created_at TEXT NOT NULL
 	)`)
-}
-
-// CLIEvent is one change made on the command line.
-type CLIEvent struct {
-	ID        int64
-	Action    string // users-create, users-delete, reset-password, make-admin, revoke-admin
-	UserID    string
-	Username  string
-	Detail    string
-	CreatedAt string
-}
-
-// cliEventKeep: how long the record of command line changes stays.
-const cliEventKeep = 365 * 24 * time.Hour
-
-// RecordCLIEvent notes a change made on the command line; older entries than a year go at the same time.
-func (s *Store) RecordCLIEvent(action, userID, username, detail string) error {
-	now := time.Now().UTC()
-	return s.execInTx(
-		stmt(`INSERT INTO cli_events (action, user_id, username, detail, created_at) VALUES (?, ?, ?, ?, ?)`,
-			action, userID, username, detail, now.Format(time.RFC3339)),
-		stmt(`DELETE FROM cli_events WHERE created_at < ?`, now.Add(-cliEventKeep).Format(time.RFC3339)),
-	)
-}
-
-// LastCLIEventID: the newest entry (0 without any), where the server starts reading.
-func (s *Store) LastCLIEventID() (int64, error) {
-	var id sql.NullInt64
-	err := s.db.QueryRow(`SELECT MAX(id) FROM cli_events`).Scan(&id)
-	return id.Int64, err
-}
-
-// CLIEventsAfter returns the entries newer than id, oldest first.
-func (s *Store) CLIEventsAfter(id int64) ([]CLIEvent, error) {
-	rows, err := s.db.Query(`SELECT id, action, user_id, username, detail, created_at FROM cli_events WHERE id > ? ORDER BY id LIMIT 100`, id)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var out []CLIEvent
-	for rows.Next() {
-		var e CLIEvent
-		if err := rows.Scan(&e.ID, &e.Action, &e.UserID, &e.Username, &e.Detail, &e.CreatedAt); err != nil {
-			return nil, err
-		}
-		out = append(out, e)
-	}
-	return out, rows.Err()
 }
 
 // ResetPassword sets a new password and ends every sign-in of the account in one transaction: the token

@@ -136,6 +136,7 @@ func (s *Server) handleAdminRunBackup(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "Backup fehlgeschlagen: "+clientMessage(err))
 		return
 	}
+	s.audit(r, storage.AuditBackupCreated, storage.AuditEntry{TargetKind: storage.AuditTargetBackup}, nil)
 	s.handleAdminListBackups(w, r)
 }
 
@@ -146,11 +147,17 @@ func (s *Server) handleAdminDeleteBackup(w http.ResponseWriter, r *http.Request)
 		writeErrorFrom(w, http.StatusNotFound, err)
 		return
 	}
+	s.audit(r, storage.AuditBackupDeleted, storage.AuditEntry{TargetKind: storage.AuditTargetBackup, TargetName: chi.URLParam(r, "name")}, nil)
 	s.handleAdminListBackups(w, r)
 }
 
+// handleAdminDownloadBackup: a snapshot holds everybody's data, so the download is in the audit log.
 func (s *Server) handleAdminDownloadBackup(w http.ResponseWriter, r *http.Request) {
-	serveBackupFile(w, r, filepath.Join(s.backupRoot(), "system"), chi.URLParam(r, "name"), "application/gzip")
+	dir, name := filepath.Join(s.backupRoot(), "system"), chi.URLParam(r, "name")
+	if _, err := storage.BackupPath(dir, name); err == nil {
+		s.audit(r, storage.AuditBackupDownloaded, storage.AuditEntry{TargetKind: storage.AuditTargetBackup, TargetName: name}, nil)
+	}
+	serveBackupFile(w, r, dir, name, "application/gzip")
 }
 
 func (s *Server) handleListMyBackups(w http.ResponseWriter, r *http.Request) {
@@ -347,6 +354,17 @@ func (s *Server) handleAdminDeletedBackups(w http.ResponseWriter, r *http.Reques
 }
 
 // handleAdminDownloadDeletedBackup: GET /admin/backups/deleted/{userId}/{name}
+// The backup holds the data of the deleted account: the download is in the audit log, with the
+// account as target.
 func (s *Server) handleAdminDownloadDeletedBackup(w http.ResponseWriter, r *http.Request) {
-	serveBackupFile(w, r, s.deletedBackupDir(chi.URLParam(r, "userId")), chi.URLParam(r, "name"), "application/zip")
+	dir, name := s.deletedBackupDir(chi.URLParam(r, "userId")), chi.URLParam(r, "name")
+	if _, err := storage.BackupPath(dir, name); err == nil {
+		target := storage.AuditEntry{TargetKind: storage.AuditTargetUser, TargetID: filepath.Base(dir)}
+		var d deletedAccountBackups
+		if raw, err := os.ReadFile(filepath.Join(dir, "account.json")); err == nil && json.Unmarshal(raw, &d) == nil {
+			target.TargetName = d.DisplayName
+		}
+		s.audit(r, storage.AuditBackupDownloaded, target, map[string]any{"file": name, "deletedAccount": true})
+	}
+	serveBackupFile(w, r, dir, name, "application/zip")
 }

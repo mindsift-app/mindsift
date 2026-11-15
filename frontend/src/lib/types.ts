@@ -115,6 +115,20 @@ export interface VoiceAdminStatus {
   status?: { reachable: boolean; modelReady: boolean; error?: string; checkedAt?: string };
 }
 
+// Admin: the daily look for a new MindSift release (GET /admin/update)
+export interface UpdateStatus {
+  enabled: boolean;
+  // Why there is no check: UPDATE_CHECK=false, the demo, or a build that is no release
+  reason?: 'off' | 'demo' | 'devBuild';
+  current: string;
+  latest?: string;
+  url?: string;
+  publishedAt?: string;
+  checkedAt?: string;
+  available: boolean;
+  dismissed: boolean;
+}
+
 // Who can see whom: nobody, members of the same organization, or everybody (Doku/sharing-and-permissions.md)
 export type SharingMode = 'private' | 'organizations' | 'open';
 
@@ -415,6 +429,26 @@ export interface TeamMember {
   avatarUrl?: string;
   role: 'admin' | 'member';
   joinedAt: string;
+}
+
+// One row of the administration's audit log (GET /admin/audit)
+export interface AuditEntry {
+  id: number;
+  at: string;
+  actorKind: 'user' | 'cli' | 'oidc' | 'system';
+  actorId?: string;
+  actorName?: string;
+  action: string;
+  targetKind?: 'user' | 'settings' | 'invite' | 'organization' | 'backup';
+  targetId?: string;
+  targetName?: string;
+  details?: Record<string, unknown>;
+  source: 'web' | 'cli' | 'oidc' | 'system';
+}
+
+export interface AuditPage {
+  entries: AuditEntry[];
+  nextBefore: number;
 }
 
 // The mail server as the administration and the setup wizard edit it (SmtpFields)
