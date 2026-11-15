@@ -4,6 +4,7 @@ import (
 	"path/filepath"
 
 	"github.com/mindsift-app/mindsift/internal/clock"
+	"github.com/mindsift-app/mindsift/internal/storage"
 )
 
 // check runs SQLite's integrity and foreign key checks; with --backup it first writes a snapshot of the
@@ -38,6 +39,7 @@ func (c *command) check(args []string) error {
 			return err
 		}
 		path := filepath.Join(dir, name)
+		c.record(storage.AuditBackupCreated, storage.AuditEntry{TargetKind: storage.AuditTargetBackup, TargetName: name}, nil)
 		res["backup"] = path
 		if !c.json {
 			c.printf("Backup written: %s\n", path)

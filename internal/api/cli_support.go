@@ -12,17 +12,17 @@ import (
 // The command line (internal/cli, `mindsift users …`) changes accounts in the database while the server
 // may be running on it. Everything a request checks comes from the database on every request (user row,
 // token version, session), so a new password, a deleted account or a changed role count at once. What
-// the server keeps in memory is caught up here: the command line records each change in cli_events, and
-// cliEventInterval later the server ends the live connections (WebSocket, SSE) of the account, lifts the
-// lock of the sign-in protection after a new password, and writes the change to its log.
+// the server keeps in memory is caught up here: the command line records each change in the audit log
+// (source cli), and cliEventInterval later the server ends the live connections (WebSocket, SSE) of the
+// account, lifts the lock of the sign-in protection after a new password, and writes the change to its log.
 
 // cliEventInterval: how often the server looks for changes made on the command line.
 const cliEventInterval = 3 * time.Second
 
-// startCLIEventWatcher follows cli_events from the newest entry at start (older changes were made
+// startCLIEventWatcher follows the audit log from the newest row at start (older changes were made
 // before this server ran, so nothing in its memory belongs to them).
 func (s *Server) startCLIEventWatcher() {
-	last, err := s.store.LastCLIEventID()
+	last, err := s.store.LastAuditID()
 	if err != nil {
 		slog.Warn("Reading the changes made on the command line failed", "error", err)
 	}
@@ -31,27 +31,27 @@ func (s *Server) startCLIEventWatcher() {
 	}
 }
 
-// applyCLIEvents handles the entries after last and returns the newest one handled.
+// applyCLIEvents handles the command line's rows after last and returns the newest one handled.
 func (s *Server) applyCLIEvents(last int64) int64 {
-	events, err := s.store.CLIEventsAfter(last)
+	events, err := s.store.AuditEntriesAfter(last, storage.AuditSourceCLI)
 	if err != nil {
 		return last
 	}
 	for _, e := range events {
 		last = e.ID
-		slog.Info("Account changed on the command line", "action", e.Action, "username", e.Username,
-			"user_id", e.UserID, "detail", e.Detail, "by", "cli", "at", e.CreatedAt)
-		if e.UserID == "" {
+		slog.Info("Changed on the command line", "action", e.Action, "target", e.TargetName,
+			"target_id", e.TargetID, "details", string(e.Details), "by", "cli", "at", e.At)
+		if e.TargetKind != storage.AuditTargetUser || e.TargetID == "" {
 			continue
 		}
 		// Signed out (new password, other role) or gone: live connections end, as after the same change
 		// in the administration
-		s.wsHub.DisconnectUser(e.UserID)
-		s.stats.invalidate(e.UserID)
+		s.wsHub.DisconnectUser(e.TargetID)
+		s.stats.invalidate(e.TargetID)
 		switch e.Action {
-		case "reset-password":
-			s.loginGuard.unlockAccount(e.UserID)
-		case "users-delete":
+		case storage.AuditAccountPasswordReset:
+			s.loginGuard.unlockAccount(e.TargetID)
+		case storage.AuditAccountDeleted:
 			// Counters of others included what the account shared
 			s.stats.clear()
 		}
