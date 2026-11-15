@@ -328,6 +328,9 @@ const fr: HelpContent = {
             <li>
               <strong className="text-main">Rétroliens (Backlinks) :</strong> en bas de chaque note, une section affiche toutes les autres notes qui font référence à la note actuelle.
             </li>
+            <li>
+              <strong className="text-main">Corbeille :</strong> tu supprimes tes propres notes avec ⋯ → « Supprimer la note » ou avec le bouton corbeille qui apparaît au survol d'une note dans la barre des dossiers (sur téléphone, sur la note ouverte ; une confirmation est demandée). Les notes supprimées (y compris celles de dossiers supprimés) arrivent dans la « Corbeille » en bas de la barre des dossiers ou dans le menu mobile. Tu peux les y consulter en lecture seule, les restaurer ou les supprimer définitivement. Tant qu'une note est dans la corbeille, les personnes avec qui elle était partagée ne la voient pas non plus. Passé le délai défini dans Paramètres du compte → Rétention (30 jours par défaut), elle est supprimée définitivement. Les tâches supprimées se trouvent dans l'onglet « Corbeille » des tâches, les pensées jetées dans la corbeille de triage.
+            </li>
           </ul>
         </div>
       ),
