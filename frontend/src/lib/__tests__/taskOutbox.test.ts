@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { tasksApi } from '../api/tasks';
-import { getOutbox } from '../offline';
+import { enqueue, getOutbox, pendingTaskChanges, withPendingTaskChanges } from '../offline';
 import { useTaskActions } from '../../features/triage/useTaskActions';
 import { KanbanColumn, Thought } from '../types';
 
@@ -88,5 +88,49 @@ describe('tasks changed offline', () => {
     expect(box).toHaveLength(1);
     expect(box[0].body).toMatchObject({ kanbanStatus: 'done', isCompleted: true });
     expect(box[0].base).toEqual({ isCompleted: false, kanbanStatus: 'todo' });
+  });
+});
+
+// After a reload without connection the tasks come from the cached answer, which is older than the ticks
+// still waiting in the outbox: they are shown on top, so list, Kanban board and counts show the pending state.
+describe('ticks waiting in the outbox', () => {
+  const realFetch = globalThis.fetch;
+  afterEach(() => {
+    globalThis.fetch = realFetch;
+  });
+  beforeEach(() => localStorage.clear());
+
+  it('collects the latest tick and column per task, nothing else', () => {
+    enqueue('PATCH', '/api/v1/thoughts/t1', { isCompleted: true, kanbanStatus: 'done' }, { isCompleted: false, kanbanStatus: 'todo' });
+    enqueue('PATCH', '/api/v1/thoughts/t2', { isCompleted: false, kanbanStatus: 'in_progress' }, { isCompleted: true, kanbanStatus: 'done' });
+    enqueue('PATCH', '/api/v1/thoughts/t3', { isCompleted: true });
+    enqueue('PATCH', '/api/v1/lists/l1/items/t4', { isCompleted: true });
+    enqueue('POST', '/api/v1/inbox', { content: 'Neu' });
+    expect(Object.fromEntries(pendingTaskChanges())).toEqual({
+      t1: { isCompleted: true, kanbanStatus: 'done' },
+      t2: { isCompleted: false, kanbanStatus: 'in_progress' },
+      t3: { isCompleted: true },
+    });
+    const shown = withPendingTaskChanges([
+      { id: 't1', isCompleted: false, kanbanStatus: 'todo' },
+      { id: 't3', isCompleted: false, kanbanStatus: 'waiting' },
+      { id: 't9', isCompleted: true, kanbanStatus: 'done' },
+    ] as Thought[]);
+    expect(shown.map((t) => [t.id, t.isCompleted, t.kanbanStatus])).toEqual([
+      ['t1', true, 'done'],
+      ['t3', true, 'waiting'],
+      ['t9', true, 'done'],
+    ]);
+  });
+
+  it('getTasks shows a tick that waits on top of the answer', async () => {
+    globalThis.fetch = (async () =>
+      new Response(JSON.stringify([{ id: 't1', content: 'Abwasch', isCompleted: false, kanbanStatus: 'todo' }]), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      })) as typeof fetch;
+    expect((await tasksApi.getTasks())[0]).toMatchObject({ isCompleted: false, kanbanStatus: 'todo' });
+    enqueue('PATCH', '/api/v1/thoughts/t1', { isCompleted: true, kanbanStatus: 'done' }, { isCompleted: false, kanbanStatus: 'todo' });
+    expect((await tasksApi.getTasks())[0]).toMatchObject({ isCompleted: true, kanbanStatus: 'done' });
   });
 });

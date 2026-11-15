@@ -1,7 +1,7 @@
 // REST calls: Capture, thoughts, triage, tasks, task trash and task lists
 import { TrashedTask, KanbanColumn, PriorityLevel, TaskList, TaskListShare, TaskReorderResult, Thought, SubTask } from '../types';
 import { extractHashtags } from '../hashtags';
-import { OfflineError, enqueue, flushOutbox, queuedTaskStart } from '../offline';
+import { OfflineError, enqueue, flushOutbox, queuedTaskStart, withPendingTaskChanges } from '../offline';
 import { getToken, getCurrentUserId, ensureArray, request, sendOutboxEntry } from './client';
 
 export const tasksApi = {
@@ -94,7 +94,9 @@ export const tasksApi = {
   async getTasks(taskListId?: string): Promise<Thought[]> {
     const query = taskListId ? `?taskListId=${encodeURIComponent(taskListId)}` : '';
     const res = await request<Thought[]>(`/api/v1/tasks${query}`);
-    return ensureArray(res);
+    // Ticks and column changes made offline and not sent yet stay visible, also after a reload without
+    // connection (the cached answer is older than them): list, Kanban board and counts come from here
+    return withPendingTaskChanges(ensureArray(res));
   },
 
   async watchTask(taskId: string): Promise<{ watching: boolean }> {
