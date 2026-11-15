@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"fmt"
 	"path/filepath"
 	"testing"
 	"time"
@@ -243,5 +244,74 @@ func TestReorderIntoCustomDoneColumn(t *testing.T) {
 	_ = s.ReorderTasks(list.ID, []domain.ThoughtReorderItem{{ID: task.ID, SortOrder: 0, KanbanStatus: &open}})
 	if got, _ := s.GetThoughtByIDUnchecked(task.ID); got.IsCompleted {
 		t.Fatal("an open column reopens it")
+	}
+}
+
+// The trash answers with the newest TaskTrashLimit entries, each with the edit right of its list, and
+// emptying it still takes every entry the user may edit.
+func TestTaskTrashLimitAndRights(t *testing.T) {
+	s, err := NewStore(filepath.Join(t.TempDir(), "trashlimit.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer s.Close()
+	openSharing(t, s)
+	anna, _ := s.CreateUser("anna@example.com", "hash", "Anna", "member")
+	ben, _ := s.CreateUser("ben@example.com", "hash", "Ben", "member")
+	own, _ := s.CreateTaskList(ben.ID, "", "", "Bens Liste", "", "")
+	readOnly, _ := s.CreateTaskList(anna.ID, "", "", "Annas Liste", "", "")
+	_, _ = s.AddTaskListShare(readOnly.ID, "user", ben.ID, "viewer", anna.ID)
+
+	add := func(id, listID, owner, at string) {
+		t.Helper()
+		if _, err := s.db.Exec(`INSERT INTO trashed_tasks (id, user_id, task_list_id, owner_id, content, data, trashed_at, trashed_by)
+			VALUES (?, ?, ?, ?, ?, '{}', ?, '')`, id, owner, listID, owner, "Aufgabe "+id, at); err != nil {
+			t.Fatal(err)
+		}
+	}
+	total := TaskTrashLimit + 40
+	newest := ""
+	for i := 0; i < total; i++ {
+		at := time.Date(2026, 11, 1, 0, 0, 0, 0, time.UTC).Add(time.Duration(i) * time.Minute).Format(time.RFC3339)
+		var id string
+		switch i % 3 {
+		case 0:
+			id = fmt.Sprintf("p%04d", i)
+			add(id, "", ben.ID, at) // personal
+		case 1:
+			id = fmt.Sprintf("o%04d", i)
+			add(id, own.ID, ben.ID, at)
+		default:
+			id = fmt.Sprintf("r%04d", i)
+			add(id, readOnly.ID, anna.ID, at)
+		}
+		newest = id
+	}
+	items, err := s.GetTaskTrash(ben.ID, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(items) != TaskTrashLimit || items[0].ID != newest {
+		t.Fatalf("got %d entries starting with %s, want the newest %d starting with %s", len(items), items[0].ID, TaskTrashLimit, newest)
+	}
+	for i, it := range items {
+		if i > 0 && it.TrashedAt > items[i-1].TrashedAt {
+			t.Fatalf("not newest first at %d", i)
+		}
+		if want := it.TaskListID != readOnly.ID; it.CanEdit != want {
+			t.Fatalf("%s: canEdit %v, want %v", it.ID, it.CanEdit, want)
+		}
+	}
+
+	ids, err := s.EmptyTaskTrash(ben.ID, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var left, readOnlyLeft int
+	_ = s.db.QueryRow(`SELECT COUNT(*) FROM trashed_tasks`).Scan(&left)
+	_ = s.db.QueryRow(`SELECT COUNT(*) FROM trashed_tasks WHERE task_list_id = ?`, readOnly.ID).Scan(&readOnlyLeft)
+	if left != readOnlyLeft || len(ids) != total-readOnlyLeft {
+		t.Fatalf("emptying should take all %d editable entries, not only the listed ones: deleted %d, %d left (%d read-only)",
+			total-readOnlyLeft, len(ids), left, readOnlyLeft)
 	}
 }

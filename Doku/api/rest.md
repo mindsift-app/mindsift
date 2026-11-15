@@ -225,7 +225,7 @@ The `webhook:…` scope IDs originate from the time when keys could only ingest 
 | PATCH | `/triage/{id}` | `action`: `keep`/`discard`/`restore`; with `convertTo`: `task`/`document`/`list_item` |
 | GET | `/tasks?taskListId=&status=&due=` | Tasks (optionally filtered by list; filters see [API Keys](#api-keys-scopes-and-origin)) |
 | POST | `/tasks/clear-done` | Move completed tasks to task trash (`taskListId`, empty = all editable) → `{deleted}` |
-| GET | `/tasks/trash?taskListId=` | Task trash (for a list, otherwise all visible): `id`, `content`, `taskListId`, `isCompleted`, `trashedAt`, `trashedBy` (name, empty = automatic), `canEdit` |
+| GET | `/tasks/trash?taskListId=` | Task trash (for a list, otherwise all visible), newest first, at most 500 entries (emptying still takes all): `id`, `content`, `taskListId`, `isCompleted`, `trashedAt`, `trashedBy` (name, empty = automatic), `canEdit` |
 | POST | `/tasks/trash/{id}/restore` | Restore task unchanged (with assignees; if the original list was deleted, it becomes a personal task for its creator) → task |
 | DELETE | `/tasks/trash/{id}` | Permanently delete (requires edit permission on the list, otherwise `403`) |
 | POST | `/tasks/trash/empty` | Empty trash (`taskListId`, empty = all editable) → `{deleted}` |
@@ -237,7 +237,7 @@ The `webhook:…` scope IDs originate from the time when keys could only ingest 
 
 | Method | Path | Purpose |
 |---|---|---|
-| GET/POST | `/task-lists` | Lists (`permission` per list: `owner`/`editor`/`viewer`) in the person's own order (see `PUT /task-lists/order`); create (`title`, `icon`, `color`, `teamId`; `icon: ""` = no icon, if omitted: 📋) |
+| GET/POST | `/task-lists` | Lists (`permission` per list: `owner`/`editor`/`viewer`; `tasksCount` = open tasks; `shares`; `members`: the owner first, then everyone the list is shared with, directly or through a group, by name) in the person's own order (see `PUT /task-lists/order`); create (`title`, `icon`, `color`, `teamId`; `icon: ""` = no icon, if omitted: 📋) |
 | PUT | `/task-lists/order` | Own order of the task list tabs (`ids`); per person, also for shared lists. Lists without a position (new ones) follow, most recently changed first. `204` |
 | PUT/DELETE | `/task-lists/{id}` | Update (`title`, `icon`, `color`, `teamId`, `columns`) – not allowed for viewers; delete allowed for owner only. Lists in answers carry their standard columns (`todo`, `in_progress`, `waiting`, `done`) in the request's language as long as they still have a standard name in any language (`storage.LocalizeColumns`) |
 | PUT/DELETE | `/task-lists/{id}/mute` | Mute / unmute the list for the requesting person (`{"muted": bool}`, `404` without access). A muted list sends no list-wide notifications (new task, completed, due date of unassigned tasks); assignments, mentions and watched tasks still come. `GET /task-lists` returns `isMuted` per list |
