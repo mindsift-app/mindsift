@@ -149,8 +149,8 @@ const main = async () => {
   const hintB = await waitFor(async () => (await B.page.getByText(`Wird gerade von ${adminName} bearbeitet`).count()) > 0, 3000);
   check(!!hintB, 'Doppelklick auf die gesperrte Zeichnung zeigt „Wird gerade von … bearbeitet“');
   await shot(B.page, 'locked-hint');
-  const lockedC = await waitFor(async () => (await C.page.locator(`[title="${adminName} bearbeitet diesen Punkt gerade"]`).count()) === 1, 10000);
-  check(!!lockedC, 'Im anderen Tab derselben Person ist die Zeichnung gesperrt');
+  const lockedC = await waitFor(async () => (await C.page.locator('[title="Wird gerade auf einem anderen Gerät oder in einem anderen Tab bearbeitet"]').count()) === 1, 10000);
+  check(!!lockedC, 'Im anderen Tab derselben Person ist die Zeichnung gesperrt (ohne den eigenen Namen)');
   await C.page.getByRole('img', { name: /^Zeichnung/ }).first().dblclick();
   const hintC = await waitFor(async () => (await C.page.getByText('Wird gerade auf einem anderen Gerät oder in einem anderen Tab bearbeitet').count()) > 0, 3000);
   check(!!hintC && (await editor(C.page).count()) === 0, 'Im anderen Tab sagt der Doppelklick „… auf einem anderen Gerät oder in einem anderen Tab …“');
