@@ -477,7 +477,8 @@ func (s *Store) getDocuments(ctx context.Context, userID string, withBlocks bool
 	return docs, nil
 }
 
-// docColumns: the columns of documents (d, with the pin p) that scanDocRow reads, in its order.
+// docColumns: the columns of documents (d, with the pin p) that scanDocRow reads, in its order; whether
+// ?1 uses the note as a template is looked up in doc_templates (personal, like the pin).
 // blocks_json is only read when the bullets are wanted (withBlockJSON): it holds something only for a
 // very old note whose block list could not be converted (loadDocBlocks); the note list has no bullets.
 func docColumns(withBlockJSON bool) string {
@@ -487,6 +488,7 @@ func docColumns(withBlockJSON bool) string {
 	}
 	return `d.id, d.user_id, d.space_id, d.title, d.icon, ` + blocksJSON + `, d.tags, d.folder_path,
 		CASE WHEN p.doc_id IS NOT NULL THEN 1 ELSE 0 END AS is_pinned,
+		EXISTS(SELECT 1 FROM doc_templates t WHERE t.user_id = ?1 AND t.doc_id = d.id) AS is_template,
 		d.is_archived, d.created_at, d.updated_at,
 		d.shared_folder_id, d.sub_folder_path`
 }
@@ -495,16 +497,17 @@ func docColumns(withBlockJSON bool) string {
 // its blocks_json.
 func scanDocRow(row interface{ Scan(dest ...any) error }, d *domain.Document, extra ...any) (string, error) {
 	var blocksStr, tagsStr string
-	var isPinned, isArchived int
+	var isPinned, isTemplate, isArchived int
 	dest := append([]any{
 		&d.ID, &d.UserID, &d.SpaceID, &d.Title, &d.Icon,
-		&blocksStr, &tagsStr, &d.FolderPath, &isPinned, &isArchived, &d.CreatedAt, &d.UpdatedAt,
+		&blocksStr, &tagsStr, &d.FolderPath, &isPinned, &isTemplate, &isArchived, &d.CreatedAt, &d.UpdatedAt,
 		&d.SharedFolderID, &d.SubFolderPath,
 	}, extra...)
 	if err := row.Scan(dest...); err != nil {
 		return "", err
 	}
 	d.IsPinned = isPinned != 0
+	d.IsTemplate = isTemplate != 0
 	d.IsArchived = isArchived != 0
 	d.Tags = []string{}
 	_ = json.Unmarshal([]byte(tagsStr), &d.Tags)
