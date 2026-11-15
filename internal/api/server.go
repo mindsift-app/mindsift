@@ -42,6 +42,8 @@ type Server struct {
 	draw     *drawHub             // live drawing sessions (drawlive.go)
 	// docCounts: notes whose counts go to the note lists of others after a change (doc_counts.go)
 	docCounts docCountsState
+	// stats: the counters of the navigation per user for a few seconds (stats_cache.go)
+	stats *statsCache
 
 	demo          demoState     // periodic reset in demo mode (demo.go)
 	streamTickets streamTickets // one-time tickets for WebSocket/SSE (streamticket.go)
@@ -88,6 +90,7 @@ func NewServer(cfg *config.Config, store *storage.Store, wsHub *ws.Hub, staticFS
 		stop:         make(chan struct{}),
 		now:          time.Now,
 		docLists:     make(chan struct{}, maxDocListsBuilding),
+		stats:        newStatsCache(),
 	}
 	srv.loginGuard = newLoginGuard(!cfg.DisableLoginProtection)
 	srv.prepareSetupCode()
@@ -103,6 +106,7 @@ func NewServer(cfg *config.Config, store *storage.Store, wsHub *ws.Hub, staticFS
 	wsHub.SetRoomAuthorizer(srv.canJoinRoom)
 	wsHub.SetMessageHandler(drawMessageHandler{srv})
 	wsHub.SetOriginCheck(srv.streamOriginAllowed)
+	wsHub.SetDeliveryListener(srv.statsEventDelivered)
 	// Next occurrences of repeating tasks appear live on every connected client
 	store.OnTaskCreated = func(th *domain.Thought) {
 		srv.wsHub.BroadcastToUsers(srv.taskAudience(th), "TASK_CREATED", th)
@@ -262,6 +266,7 @@ func (s *Server) Router() http.Handler {
 	// Authenticated API Routes
 	r.Group(func(r chi.Router) {
 		r.Use(s.authMiddleware)
+		r.Use(s.invalidateStatsOnWrite)
 
 		r.Get("/api/v1/auth/me", s.handleMe)
 		// Licenses of the third-party software in this build (licenses.go), shown in the app's About part

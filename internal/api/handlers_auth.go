@@ -624,7 +624,7 @@ func (s *Server) handleMe(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "Benutzer nicht gefunden")
 		return
 	}
-	stats, _ := s.store.GetDashboardStats(userID)
+	stats, _ := s.dashboardStats(userID)
 	ns := s.store.NotificationSettingsOf(userID)
 	user.NotificationSettings = &ns
 	s.fillUserPreferences(user)
@@ -642,7 +642,7 @@ func (s *Server) handleMe(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleStats(w http.ResponseWriter, r *http.Request) {
 	userID := auth.GetUserID(r.Context())
-	stats, err := s.store.GetDashboardStats(userID)
+	stats, err := s.dashboardStats(userID)
 	if err != nil {
 		writeInternal(w, err)
 		return

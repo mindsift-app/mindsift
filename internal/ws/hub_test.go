@@ -116,3 +116,39 @@ func TestIdlePollConnectionsAreClosed(t *testing.T) {
 		t.Fatalf("only the new connection should stay registered, got %d", len(hub.sseUserRooms["user-1"]))
 	}
 }
+
+// The delivery listener learns every user an event goes to: directly, through a list room (WebSocket and
+// SSE) and through a note room
+func TestDeliveryListenerLearnsTheRecipients(t *testing.T) {
+	hub := NewHub()
+	hub.SetRoomAuthorizer(func(userID, roomID string) bool { return true })
+	var mu sync.Mutex
+	got := map[string][]string{}
+	hub.SetDeliveryListener(func(userID, event string) {
+		mu.Lock()
+		got[event] = append(got[event], userID)
+		mu.Unlock()
+	})
+	wsc := &Client{hub: hub, userID: "user-ws", send: make(chan []byte, 10)}
+	hub.JoinRoom(wsc, "lst_1")
+	hub.JoinRoom(wsc, "doc:d1")
+	sse := &SSEClient{id: "sse_1", userID: "user-sse", send: make(chan []byte, 10),
+		subscribedRooms: map[string]bool{"lst_1": true}}
+	hub.RegisterSSE(sse)
+
+	hub.BroadcastToUser("user-offline", "TASK_UPDATED", nil)
+	hub.BroadcastListEvent("lst_1", "ITEM_TOGGLED", nil)
+	hub.BroadcastDocEvent("d1", "DOC_UPDATED", nil)
+
+	mu.Lock()
+	defer mu.Unlock()
+	if len(got["TASK_UPDATED"]) != 1 || got["TASK_UPDATED"][0] != "user-offline" {
+		t.Fatalf("direct event: %v", got["TASK_UPDATED"])
+	}
+	if len(got["ITEM_TOGGLED"]) != 2 {
+		t.Fatalf("list room: want both connections, got %v", got["ITEM_TOGGLED"])
+	}
+	if len(got["DOC_UPDATED"]) != 1 || got["DOC_UPDATED"][0] != "user-ws" {
+		t.Fatalf("note room: %v", got["DOC_UPDATED"])
+	}
+}

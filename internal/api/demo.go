@@ -78,6 +78,7 @@ func (s *Server) resetDemo() {
 		slog.Error("Demo reset failed", "error", err)
 		return
 	}
+	s.stats.clear()
 	s.wsHub.BroadcastSystem("DEMO_RESET")
 }
 
