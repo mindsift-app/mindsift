@@ -3,6 +3,7 @@ import { Folder, FolderOpen, FolderPlus, Plus, Trash, Users } from 'lucide-react
 import { SharedFolder } from '../../lib/types';
 import { FolderTreeNode, WorkspaceSubView } from './workspaceTypes';
 import { isFolderShared } from './workspaceListing';
+import { TemplateMark } from './NoteTemplates';
 import { useTranslation } from 'react-i18next';
 
 interface FolderTreeItemProps {
@@ -245,6 +246,7 @@ export const FolderTreeItem: React.FC<FolderTreeItemProps> = ({
               <span aria-hidden="true" className={TICK} style={{ left: guideX(depth) - 1 }} />
               <DocRowIcon icon={d.icon} />
               <span className="truncate flex-1">{d.title || t('editor.untitled')}</span>
+              {d.isTemplate && <TemplateMark />}
             </div>
           ))}
 

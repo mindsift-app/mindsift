@@ -131,7 +131,9 @@
     "audio": "Sprachnotiz oder Audiodatei",
     "dictation": "Sprechen statt tippen",
     "secret": "Wert verstecken (Passwort, Token …)",
-    "drawing": "Zeichnung, Diagramm, Mindmap"
+    "drawing": "Zeichnung, Diagramm, Mindmap",
+    "templateName": "vorlage",
+    "template": "Inhalt einer Vorlage einfügen"
   },
   "block": {
     "expand": "Unterpunkte ausklappen (Strg+Klick: alle Ebenen)",
@@ -619,5 +621,18 @@
         "save": "Speichern hat nicht geklappt. Prüfe die Verbindung und versuch es noch einmal."
       }
     }
+  },
+  "template": {
+    "mark": "Vorlage",
+    "markAs": "Als Vorlage verwenden",
+    "unmark": "Keine Vorlage mehr",
+    "marked": "Als Vorlage gemerkt – mit /vorlage oder „Neue Notiz“ einfügen",
+    "unmarked": "Keine Vorlage mehr",
+    "headerHint": "Deine Vorlage: /vorlage fügt ihren Inhalt in eine Notiz ein, „Neue Notiz“ startet mit ihm",
+    "search": "Vorlage suchen …",
+    "none": "Noch keine Vorlagen. Im ⋯-Menü einer Notiz: „Als Vorlage verwenden“.",
+    "blank": "Leere Notiz",
+    "field": "Vorlage",
+    "loadFailed": "Die Vorlage konnte nicht geladen werden."
   }
 }

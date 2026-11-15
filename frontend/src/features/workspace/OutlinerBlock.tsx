@@ -29,6 +29,7 @@ import {
   Unlink,
   KeyRound,
   Table as TableIcon,
+  LayoutTemplate,
 } from 'lucide-react';
 import { DocumentBlock, BlockType } from '../../lib/types';
 import { LinkModal } from './LinkModal';
@@ -72,8 +73,8 @@ import { errorMessage } from '../../lib/errorMessage';
 import { useLatestRef } from '../../lib/useLatestRef';
 
 export interface SlashCommand {
-  type: BlockType | 'link' | 'secret' | 'dictation' | 'extract';
-  label: string;
+  type: BlockType | 'link' | 'secret' | 'dictation' | 'extract' | 'template';
+  readonly label: string;
   readonly desc: string;
   icon: React.ReactNode;
   /** Only offered in an empty bullet; the bullet turns into an inline picker first */
@@ -122,6 +123,8 @@ const SLASH_COMMANDS: SlashCommand[] = [
   { type: 'drawing', label: '/canvas', get desc() { return i18n.t('workspace:slash.drawing'); }, icon: <Shapes className="w-3.5 h-3.5" />, aliases: ['draw', 'sketch', 'diagram', 'zeichnung', 'skizze'] },
   { type: 'audio', label: '/audio', get desc() { return i18n.t('workspace:slash.audio'); }, icon: <Mic className="w-3.5 h-3.5" />, media: true, aliases: ['sprachnotiz'] },
   { type: 'dictation', label: '/diktat', get desc() { return i18n.t('workspace:slash.dictation'); }, icon: <AudioLines className="w-3.5 h-3.5" />, media: true, aliases: ['dictate'] },
+  // A template's bullets (lib/noteTemplate.ts): named in the app's language, every language's name finds it
+  { type: 'template', get label() { return `/${i18n.t('workspace:slash.templateName')}`; }, get desc() { return i18n.t('workspace:slash.template'); }, icon: <LayoutTemplate className="w-3.5 h-3.5" />, aliases: ['template', 'vorlage', 'plantilla', 'modèle', 'modele', 'modello'] },
 ];
 
 // Another user's lock on a block: name for the badge, user id for the person's color
@@ -149,6 +152,8 @@ export interface OutlinerBlockProps {
   /** at: where the extract button was clicked, to ask there where the branch should go */
   onExtractBlock?: (blockId: string, at?: { x: number; y: number; align?: 'left' | 'right' }) => void;
   onInlineBlock?: (blockId: string) => void;
+  /** /vorlage: the bullet asks for a template, the picker opens at its text field (anchor) */
+  onTemplateCommand?: (blockId: string, anchor: HTMLElement | null) => void;
   onUpdateBlock: (updated: DocumentBlock, immediate?: boolean) => void;
   onCreateBlockBelow: (afterBlockId: string, newContent?: string) => void;
   onDeleteBlock: (blockId: string, deleteSubtree?: boolean) => void;
@@ -206,6 +211,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
   onZoomBlock,
   onExtractBlock,
   onInlineBlock,
+  onTemplateCommand,
   onUpdateBlock,
   onCreateBlockBelow,
   onDeleteBlock,
@@ -628,8 +634,10 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
         (c.aliases || []).some((a) => a.includes(cmdQuery));
       if (!matchesQuery) return false;
 
-      // /link, /hidden and /dictation everywhere
+      // /link, /hidden and /dictation everywhere; /template where the tree offers templates (the copy goes
+      // below the bullet, or replaces it when it is empty)
       if (c.type === 'link' || c.type === 'secret') return true;
+      if (c.type === 'template') return !!onTemplateCommand;
       if (c.type === 'dictation') {
         return ['server', 'browser'].includes(currentVoiceConfig().mode);
       }
@@ -667,7 +675,7 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
 
       return true;
     }).sort((a, b) => slashRank(a, cmdQuery) - slashRank(b, cmdQuery));
-  }, [slashMatchInfo, localContent, onExtractBlock]);
+  }, [slashMatchInfo, localContent, onExtractBlock, onTemplateCommand]);
 
   useEffect(() => {
     if (slashSearch === null) return;
@@ -726,6 +734,14 @@ const OutlinerBlockView: React.FC<OutlinerBlockProps> = ({
       // the slash menu was, and steered with the keyboard
       const r = textareaRef.current?.getBoundingClientRect();
       onExtractBlock?.(block.id, r ? { x: r.left, y: r.bottom, align: 'left' } : undefined);
+      return;
+    }
+
+    if (cmd.type === 'template') {
+      setLocalContent(clean);
+      localContentRef.current = clean;
+      flushDebounce(clean);
+      onTemplateCommand?.(block.id, textareaRef.current);
       return;
     }
 

@@ -131,7 +131,9 @@
     "audio": "Voice note or audio file",
     "dictation": "Speak instead of typing",
     "secret": "Hide a value (password, token …)",
-    "drawing": "Drawing, diagram, mind map"
+    "drawing": "Drawing, diagram, mind map",
+    "templateName": "template",
+    "template": "Insert the content of a template"
   },
   "block": {
     "expand": "Expand sub-bullets (Ctrl+click: all levels)",
@@ -623,5 +625,18 @@
         "save": "Saving did not work. Check the connection and try again."
       }
     }
+  },
+  "template": {
+    "mark": "Template",
+    "markAs": "Use as template",
+    "unmark": "No longer a template",
+    "marked": "Saved as template – insert it with /template or “New note”",
+    "unmarked": "No longer a template",
+    "headerHint": "Your template: /template inserts its content into a note, “New note” starts with it",
+    "search": "Search templates …",
+    "none": "No templates yet. In a note’s ⋯ menu: “Use as template”.",
+    "blank": "Empty note",
+    "field": "Template",
+    "loadFailed": "The template could not be loaded."
   }
 }

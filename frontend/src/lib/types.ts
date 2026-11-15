@@ -685,6 +685,8 @@ export interface Document {
   tags: string[];
   folderPath?: string;
   isPinned: boolean;
+  /** The person uses the note as one of their templates (personal, like the pin) */
+  isTemplate?: boolean;
   isArchived: boolean;
   createdAt: string;
   updatedAt: string;

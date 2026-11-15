@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import {
   Document,
+  DocumentBlock,
   MergeResult,
   SharedFolder,
   TagDetails,
@@ -58,6 +59,8 @@ import { cachedBlock, lookupBlock } from '../../lib/blockLookup';
 import { errorMessage } from '../../lib/errorMessage';
 import { useLatestRef } from '../../lib/useLatestRef';
 import { shortNoteTitle } from '../../lib/noteTitle';
+import { templateBlocks } from '../../lib/noteTemplate';
+import { templateChoices } from './NoteTemplates';
 
 interface WorkspaceViewProps {
   currentUser?: User | null;
@@ -263,18 +266,30 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
     }
   }, [initialDocId, initialBlockId, openDocNonce]);
 
+  // The person's templates (personal marks, lib/noteTemplate.ts): /vorlage and "Neue Notiz" offer them
+  const templates = useMemo(() => templateChoices(docs), [docs]);
+
   const handleCreateDocument = useCallback(
-    async (folderPath = '', title = i18n.t('workspace:editor.newNote'), icon = '🗒️') => {
+    async (folderPath = '', title = i18n.t('workspace:editor.newNote'), icon = '🗒️', templateId = '') => {
       if (isCreatingRef.current) return;
       isCreatingRef.current = true;
       triggerHaptic(10);
       try {
-        const created = await api.createDocument({
-          // A wiki link to a missing note may be longer than a title may be
-          title: shortNoteTitle(title) || i18n.t('workspace:editor.newNote'),
-          icon: icon.trim(),
-          folderPath,
-          blocks: [
+        // A wiki link to a missing note may be longer than a title may be
+        const noteTitle = shortNoteTitle(title) || i18n.t('workspace:editor.newNote');
+        // From a template: a copy of its bullets (the server checks pictures and hidden values like a paste)
+        let blocks: DocumentBlock[] = [];
+        if (templateId) {
+          try {
+            const template = await api.getDocument(templateId);
+            blocks = templateBlocks(template.blocks, { docId: '', title: noteTitle });
+          } catch (err) {
+            showError(errorMessage(err, i18n.t('workspace:template.loadFailed')));
+            return undefined;
+          }
+        }
+        if (blocks.length === 0) {
+          blocks = [
             {
               id: `blk_${Date.now().toString(36)}_0`,
               type: 'text',
@@ -282,7 +297,13 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
               level: 0,
               position: 1000,
             },
-          ],
+          ];
+        }
+        const created = await api.createDocument({
+          title: noteTitle,
+          icon: icon.trim(),
+          folderPath,
+          blocks,
         });
         setDocs((prev) => (prev.some((d) => d.id === created.id) ? prev : [created, ...prev]));
         setNewlyCreatedDocId(created.id);
@@ -311,17 +332,22 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
   const [newNoteSheet, setNewNoteSheet] = useState<{ folderPath: string } | null>(null);
   const [newNoteTitle, setNewNoteTitle] = useState('');
   const [newNoteIcon, setNewNoteIcon] = useState('🗒️');
+  // '' = an empty note; otherwise the id of the template the note starts from
+  const [newNoteTemplate, setNewNoteTemplate] = useState('');
+  // With templates the desktop asks too (name, emoji, template); without, it creates at once as before
+  const hasTemplates = templates.length > 0;
   const openNewNote = useCallback(
     (folderPath = '') => {
-      if (!isPhoneWidth()) {
+      if (!isPhoneWidth() && !hasTemplates) {
         void handleCreateDocument(folderPath);
         return;
       }
       setNewNoteTitle('');
       setNewNoteIcon('🗒️');
+      setNewNoteTemplate('');
       setNewNoteSheet({ folderPath });
     },
-    [handleCreateDocument]
+    [handleCreateDocument, hasTemplates]
   );
 
   const handleJumpToDocBlock = useCallback((docId: string, blockId?: string) => {
@@ -837,7 +863,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
               {/* A bullet dragged here becomes a note of its own */}
               <button
                 type="button"
-                onClick={() => handleCreateDocument('')}
+                onClick={() => openNewNote('')}
                 data-tour="new-note"
                 {...drag.newNoteDropProps}
                 className={`btn-icon h-8 w-8 transition-transform ${drag.newNoteHover ? 'scale-110 text-accent ring-2 ring-accent bg-accent/10' : ''}`}
@@ -893,7 +919,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
             selectedDocId={selectedDocId}
             subView={subView}
             drag={drag}
-            handleCreateDocument={handleCreateDocument}
+            handleCreateDocument={openNewNote}
             handleOpenNewFolder={handleOpenNewFolder}
             handleShareFolderClick={handleShareFolderClick}
             requestDeleteFolder={requestDeleteFolder}
@@ -1000,6 +1026,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
               onStatsChange();
             }}
             moveTargets={moveTargets}
+            templates={templates}
             onBackMobile={() => setMobileShowDetail(false)}
             onOpenTask={onOpenTask}
             onSaveStatusChange={(status, err) => {
@@ -1111,6 +1138,9 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
         setNewNoteTitle={setNewNoteTitle}
         newNoteIcon={newNoteIcon}
         setNewNoteIcon={setNewNoteIcon}
+        templates={templates}
+        newNoteTemplate={newNoteTemplate}
+        setNewNoteTemplate={setNewNoteTemplate}
         handleCreateDocument={handleCreateDocument}
         pendingFolderDelete={pendingFolderDelete}
         closeFolderDelete={closeFolderDelete}

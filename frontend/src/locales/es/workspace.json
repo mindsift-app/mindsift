@@ -131,7 +131,9 @@
     "audio": "Nota de voz o archivo de audio",
     "dictation": "Hablar en lugar de escribir",
     "secret": "Ocultar un valor (contraseña, token …)",
-    "drawing": "Dibujo, diagrama, mapa mental"
+    "drawing": "Dibujo, diagrama, mapa mental",
+    "templateName": "plantilla",
+    "template": "Insertar el contenido de una plantilla"
   },
   "block": {
     "expand": "Desplegar subpuntos (Ctrl+clic: todos los niveles)",
@@ -623,5 +625,18 @@
         "save": "No se pudo guardar. Comprueba la conexión e inténtalo de nuevo."
       }
     }
+  },
+  "template": {
+    "mark": "Plantilla",
+    "markAs": "Usar como plantilla",
+    "unmark": "Dejar de usar como plantilla",
+    "marked": "Guardada como plantilla: insértala con /plantilla o «Nueva nota»",
+    "unmarked": "Ya no es una plantilla",
+    "headerHint": "Tu plantilla: /plantilla inserta su contenido en una nota, «Nueva nota» empieza con él",
+    "search": "Buscar plantilla …",
+    "none": "Aún no hay plantillas. En el menú ⋯ de una nota: «Usar como plantilla».",
+    "blank": "Nota vacía",
+    "field": "Plantilla",
+    "loadFailed": "No se pudo cargar la plantilla."
   }
 }
