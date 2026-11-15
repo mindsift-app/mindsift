@@ -4579,6 +4579,21 @@
         }
       }
     },
+    "/api/v1/auth/oidc/backchannel-logout": {
+      "post": {
+        "summary": "OIDC back-channel logout (called by the provider)",
+        "description": "OpenID Connect Back-Channel Logout 1.0, server to server, no session or CSRF token. Form (application/x-www-form-urlencoded) logout_token: a JWT signed with the provider's keys (iss, aud with the client id, iat at most 10 minutes old, events with http://schemas.openid.net/event/backchannel-logout, sub and/or sid, jti, no nonce; each jti once). Ends the sessions started through that provider session (sid), or with sub alone every session of the account started through the provider; password and passkey sessions stay. 200 without body (also when nothing matched), 400 {\"error\": \"invalid_request\"} for a token that fails a check, 503 oidc_unavailable while the provider's discovery fails, 429 after 30 refused tokens per address in 15 minutes; Cache-Control: no-store. 404 while OIDC is off or with OIDC_BACKCHANNEL_LOGOUT=false",
+        "tags": [
+          "Public"
+        ],
+        "security": [],
+        "responses": {
+          "default": {
+            "description": "Empty on success; errors as {\"error\": \"…\"}"
+          }
+        }
+      }
+    },
     "/api/v1/auth/oidc/confirm": {
       "post": {
         "summary": "Confirm with the OIDC provider, or link the account",
